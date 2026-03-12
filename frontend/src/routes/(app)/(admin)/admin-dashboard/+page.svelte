@@ -6,8 +6,7 @@
   import { notificationStore } from '$lib/stores/notification.store.svelte';
   import { getApiClient } from '$lib/utils/api-client';
 
-  // Local modules
-  import { MESSAGES } from './_lib/constants';
+  import { createMessages } from './_lib/constants';
   import {
     getEmployeeName,
     getOrgLevelText,
@@ -52,6 +51,10 @@
 
   /** Props from server load function */
   const { data }: { data: PageData } = $props();
+
+  // Hierarchy labels from layout data inheritance (A6)
+  const labels = $derived(data.hierarchyLabels);
+  const messages = $derived(createMessages(labels));
 
   // Destructure data - PageData guarantees all properties exist from +page.server.ts
   const stats = $derived(data.stats);
@@ -106,14 +109,14 @@
           <i class="fas fa-building"></i>
         </div>
         <div class="card-stat__value">{stats.departmentCount}</div>
-        <div class="card-stat__label">Abteilungen</div>
+        <div class="card-stat__label">{messages.STAT_DEPARTMENTS}</div>
       </div>
       <div class="card-stat">
         <div class="card-stat__icon">
           <i class="fas fa-user-friends"></i>
         </div>
         <div class="card-stat__value">{stats.teamCount}</div>
-        <div class="card-stat__label">Teams</div>
+        <div class="card-stat__label">{messages.STAT_TEAMS}</div>
       </div>
     </div>
 
@@ -141,9 +144,9 @@
               <div class="empty-state__icon">
                 <i class="fas fa-sticky-note"></i>
               </div>
-              <h3 class="empty-state__title">{MESSAGES.noBlackboard}</h3>
+              <h3 class="empty-state__title">{messages.noBlackboard}</h3>
               <p class="empty-state__description">
-                {MESSAGES.noBlackboardDescription}
+                {messages.noBlackboardDescription}
               </p>
             </div>
           {:else}
@@ -227,7 +230,10 @@
                       <span
                         class="sticky-note__badge sticky-note__badge--org-{entry.orgLevel}"
                       >
-                        {getBlackboardOrgLabel(entry.orgLevel)}
+                        {getBlackboardOrgLabel(
+                          entry.orgLevel,
+                          messages.blackboardOrgLabels,
+                        )}
                       </span>
                     </div>
                     <div class="sticky-note__footer-row">
@@ -235,7 +241,7 @@
                         <i class="fas fa-user"></i>
                         {entry.authorFullName ??
                           entry.authorName ??
-                          MESSAGES.unknownAuthor}
+                          messages.unknownAuthor}
                       </span>
                       <span class="sticky-note__date">
                         <i class="fas fa-calendar"></i>
@@ -277,7 +283,7 @@
             </button>
             <div class="space-y-2">
               {#if recentEmployees.length === 0}
-                <p class="text-muted p-2">{MESSAGES.noEmployees}</p>
+                <p class="text-muted p-2">{messages.noEmployees}</p>
               {:else}
                 {#each recentEmployees as employee (employee.id)}
                   <div class="compact-item">
@@ -316,7 +322,7 @@
             </button>
             <div class="space-y-2">
               {#if recentDocuments.length === 0}
-                <p class="text-muted p-2">{MESSAGES.noDocuments}</p>
+                <p class="text-muted p-2">{messages.noDocuments}</p>
               {:else}
                 {#each recentDocuments as doc (doc.id)}
                   <div class="compact-item">
@@ -341,7 +347,7 @@
                 class="fas fa-building"
                 style="color: var(--color-icon-primary)"
               ></i>
-              Abteilungen
+              {messages.CARD_DEPARTMENTS}
             </h3>
           </div>
           <div class="card-accent__content">
@@ -352,11 +358,11 @@
                 navigateTo('/manage-departments');
               }}
             >
-              Abteilungen verwalten
+              {messages.BTN_MANAGE_DEPARTMENTS}
             </button>
             <div class="space-y-2">
               {#if departments.length === 0}
-                <p class="text-muted p-2">{MESSAGES.noDepartments}</p>
+                <p class="text-muted p-2">{messages.noDepartments}</p>
               {:else}
                 {#each departments as dept (dept.id)}
                   <div class="compact-item">
@@ -378,7 +384,7 @@
                 class="fas fa-user-friends"
                 style="color: var(--color-icon-primary)"
               ></i>
-              Teams
+              {messages.CARD_TEAMS}
             </h3>
           </div>
           <div class="card-accent__content">
@@ -389,11 +395,11 @@
                 navigateTo('/manage-teams');
               }}
             >
-              Teams verwalten
+              {messages.BTN_MANAGE_TEAMS}
             </button>
             <div class="space-y-2">
               {#if teams.length === 0}
-                <p class="text-muted p-2">{MESSAGES.noTeams}</p>
+                <p class="text-muted p-2">{messages.noTeams}</p>
               {:else}
                 {#each teams as team (team.id)}
                   <div class="compact-item">
@@ -432,10 +438,10 @@
               {#if upcomingEvents.length === 0}
                 <div class="rounded p-2 text-xs">
                   <strong class="block font-semibold"
-                    >{MESSAGES.upcomingEvents}</strong
+                    >{messages.upcomingEvents}</strong
                   >
                   <p class="mt-1 text-(--color-text-secondary)">
-                    {MESSAGES.noEvents}
+                    {messages.noEvents}
                   </p>
                 </div>
               {:else}
@@ -462,7 +468,7 @@
                       <span class="event-month">{dateInfo.month}</span>
                       <span class="event-time">
                         {isAllDay(event.allDay) ?
-                          MESSAGES.allDay
+                          messages.allDay
                         : dateInfo.time}
                       </span>
                     </div>
@@ -470,7 +476,7 @@
                       <div class="event-title">
                         {event.title !== '' ?
                           event.title
-                        : MESSAGES.unknownEvent}
+                        : messages.unknownEvent}
                       </div>
                       {#if event.location}
                         <div class="event-location">
@@ -481,16 +487,18 @@
                       <div class="event-badges">
                         {#if hasArea}
                           <span class="event-level event-level-area"
-                            >Bereich</span
+                            >{messages.EVENT_AREA}</span
                           >
                         {/if}
                         {#if hasDept}
                           <span class="event-level event-level-department"
-                            >Abteilung</span
+                            >{messages.EVENT_DEPARTMENT}</span
                           >
                         {/if}
                         {#if hasTeam}
-                          <span class="event-level event-level-team">Team</span>
+                          <span class="event-level event-level-team"
+                            >{messages.EVENT_TEAM}</span
+                          >
                         {/if}
                         {#if !hasArea && !hasDept && !hasTeam}
                           <span
@@ -498,7 +506,10 @@
                               event.orgLevel ?? 'personal',
                             )}"
                           >
-                            {getOrgLevelText(event.orgLevel ?? 'personal')}
+                            {getOrgLevelText(
+                              event.orgLevel ?? 'personal',
+                              messages.orgLevelLabels,
+                            )}
                           </span>
                         {/if}
                       </div>

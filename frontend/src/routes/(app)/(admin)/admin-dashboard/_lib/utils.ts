@@ -8,11 +8,7 @@
 
 import { goto } from '$app/navigation';
 
-import {
-  ORG_LEVEL_LABELS,
-  BLACKBOARD_ORG_LABELS,
-  PRIORITY_LABELS,
-} from './constants';
+import { PRIORITY_LABELS, type DashboardMessages } from './constants';
 
 import type {
   User,
@@ -30,10 +26,13 @@ export function getEmployeeName(user: User): string {
   return fullName !== '' ? fullName : user.email;
 }
 
-/** Get org level text in German */
-export function getOrgLevelText(orgLevel: string): string {
-  if (orgLevel in ORG_LEVEL_LABELS) {
-    return ORG_LEVEL_LABELS[orgLevel as OrgLevel];
+/** Get org level text with dynamic labels */
+export function getOrgLevelText(
+  orgLevel: string,
+  orgLevelLabels: DashboardMessages['orgLevelLabels'],
+): string {
+  if (orgLevel in orgLevelLabels) {
+    return orgLevelLabels[orgLevel as OrgLevel];
   }
   return 'Persönlich';
 }
@@ -48,9 +47,12 @@ export function getPriorityLabel(priority: Priority): string {
   return PRIORITY_LABELS[priority];
 }
 
-/** Get blackboard org level label */
-export function getBlackboardOrgLabel(orgLevel: BlackboardOrgLevel): string {
-  return BLACKBOARD_ORG_LABELS[orgLevel];
+/** Get blackboard org level label with dynamic labels */
+export function getBlackboardOrgLabel(
+  orgLevel: BlackboardOrgLevel,
+  blackboardOrgLabels: DashboardMessages['blackboardOrgLabels'],
+): string {
+  return blackboardOrgLabels[orgLevel];
 }
 
 /** Format blackboard date (German locale, date only - no time) */

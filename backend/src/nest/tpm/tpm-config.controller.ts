@@ -31,8 +31,8 @@ import {
 } from '@nestjs/common';
 
 import { CurrentUser } from '../common/decorators/current-user.decorator.js';
+import { RequireAddon } from '../common/decorators/require-addon.decorator.js';
 import { RequirePermission } from '../common/decorators/require-permission.decorator.js';
-import { TenantFeature } from '../common/decorators/tenant-feature.decorator.js';
 import { TenantId } from '../common/decorators/tenant.decorator.js';
 import type { NestAuthUser } from '../common/interfaces/auth.interface.js';
 import {
@@ -57,7 +57,7 @@ const FEAT = 'tpm';
 const MOD_CONFIG = 'tpm-config';
 
 @Controller('tpm/config')
-@TenantFeature('tpm')
+@RequireAddon('tpm')
 export class TpmConfigController {
   constructor(
     private readonly escalationService: TpmEscalationService,

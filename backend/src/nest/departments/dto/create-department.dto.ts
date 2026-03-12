@@ -20,7 +20,7 @@ export const CreateDepartmentSchema = z.object({
     .string()
     .trim()
     .max(500, 'Description must not exceed 500 characters')
-    .optional(),
+    .nullish(),
   departmentLeadId: z.coerce
     .number()
     .int()

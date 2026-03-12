@@ -37,8 +37,8 @@ import type {
   CreateAdminRequest,
   CreateRootUserRequest,
   DashboardStats,
+  DbAddonCodeRow,
   DbCountRow,
-  DbFeatureCodeRow,
   DbIdRow,
   DbSubdomainRow,
   DbUserRow,
@@ -398,7 +398,7 @@ export class RootService {
     this.logger.debug(`Getting dashboard stats for tenant ${tenantId}`);
 
     // SECURITY: Use UserRepository for accurate active user counts (is_active = 1)
-    const [adminCount, employeeCount, totalUserCount, tenantCount, features] =
+    const [adminCount, employeeCount, totalUserCount, tenantCount, addons] =
       await Promise.all([
         this.userRepository.countByRole('admin', tenantId),
         this.userRepository.countByRole('employee', tenantId),
@@ -406,10 +406,19 @@ export class RootService {
         this.db.query<DbCountRow>(
           "SELECT COUNT(*) as count FROM tenants WHERE status = 'active'",
         ),
-        this.db.query<DbFeatureCodeRow>(
-          `SELECT f.code FROM tenant_features tf
-         JOIN features f ON tf.feature_id = f.id
-         WHERE tf.tenant_id = $1 AND tf.is_active = ${IS_ACTIVE.ACTIVE}`,
+        this.db.query<DbAddonCodeRow>(
+          `SELECT a.code FROM addons a
+         WHERE a.is_active = ${IS_ACTIVE.ACTIVE}
+           AND (
+             a.is_core = true
+             OR EXISTS (
+               SELECT 1 FROM tenant_addons ta
+               WHERE ta.addon_id = a.id
+                 AND ta.tenant_id = $1
+                 AND ta.is_active = ${IS_ACTIVE.ACTIVE}
+                 AND ta.status IN ('active', 'trial')
+             )
+           )`,
           [tenantId],
         ),
       ]);
@@ -421,7 +430,7 @@ export class RootService {
       employeeCount,
       totalUsers: totalUserCount,
       tenantCount: tenantCountNum,
-      activeFeatures: features.map((f: DbFeatureCodeRow) => f.code),
+      activeAddons: addons.map((a: DbAddonCodeRow) => a.code),
       systemHealth: {
         database: 'healthy',
         storage: 'healthy',

@@ -25,7 +25,7 @@ export class DocumentNotificationService {
   ): void {
     const recipientMapping = this.mapAccessScopeToRecipient(data);
     if (recipientMapping !== null) {
-      void this.notificationsService.createFeatureNotification(
+      void this.notificationsService.createAddonNotification(
         'document',
         documentId,
         `Neues Dokument: ${data.originalName}`,

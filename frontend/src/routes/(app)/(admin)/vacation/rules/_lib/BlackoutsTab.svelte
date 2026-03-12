@@ -7,6 +7,10 @@
   import { invalidateAll } from '$app/navigation';
 
   import AppDatePicker from '$lib/components/AppDatePicker.svelte';
+  import {
+    DEFAULT_HIERARCHY_LABELS,
+    type HierarchyLabels,
+  } from '$lib/types/hierarchy-labels';
   import { showSuccessAlert, showErrorAlert } from '$lib/utils';
   import { createLogger } from '$lib/utils/logger';
 
@@ -14,6 +18,12 @@
   import { rulesState } from './state.svelte';
 
   import type { CreateBlackoutPayload } from './types';
+
+  interface Props {
+    labels?: HierarchyLabels;
+  }
+
+  const { labels = DEFAULT_HIERARCHY_LABELS }: Props = $props();
 
   const log = createLogger('BlackoutsTab');
 
@@ -498,7 +508,7 @@
             for="bo-area-select"
             class="form-field__label"
           >
-            <i class="fas fa-layer-group mr-1"></i>Bereiche (Areas)
+            <i class="fas fa-layer-group mr-1"></i>{labels.area}
           </label>
           <select
             id="bo-area-select"
@@ -518,15 +528,16 @@
                 {area.name}{(
                   area.departmentCount !== undefined && area.departmentCount > 0
                 ) ?
-                  ` (${area.departmentCount} Abt.)`
+                  ` (${area.departmentCount} ${labels.department})`
                 : ''}
               </option>
             {/each}
           </select>
           <span class="form-field__message text-(--color-text-secondary)">
             <i class="fas fa-info-circle mr-1"></i>
-            Strg/Cmd + Klick fuer Mehrfachauswahl. Bereiche vererben Zugriff auf zugehoerige
-            Abteilungen.
+            Strg/Cmd + Klick fuer Mehrfachauswahl. {labels.area} vererben Zugriff
+            auf zugehörige
+            {labels.department}.
           </span>
         </div>
 
@@ -538,7 +549,7 @@
             for="bo-department-select"
             class="form-field__label"
           >
-            <i class="fas fa-sitemap mr-1"></i>Zusätzliche Abteilungen
+            <i class="fas fa-sitemap mr-1"></i>Zusätzliche {labels.department}
           </label>
           <select
             id="bo-department-select"
@@ -565,8 +576,8 @@
           </select>
           <span class="form-field__message text-(--color-text-secondary)">
             <i class="fas fa-info-circle mr-1"></i>
-            Strg/Cmd + Klick fuer Mehrfachauswahl. Nur Abteilungen die nicht bereits
-            durch Bereiche abgedeckt sind.
+            Strg/Cmd + Klick fuer Mehrfachauswahl. Nur {labels.department} die nicht
+            bereits durch {labels.area} abgedeckt sind.
           </span>
         </div>
 
@@ -578,7 +589,7 @@
             for="bo-team-select"
             class="form-field__label"
           >
-            <i class="fas fa-users mr-1"></i>Teams
+            <i class="fas fa-users mr-1"></i>{labels.team}
           </label>
           <select
             id="bo-team-select"
@@ -599,8 +610,8 @@
           </select>
           <span class="form-field__message text-(--color-text-secondary)">
             <i class="fas fa-info-circle mr-1"></i>
-            Teams werden automatisch vererbt: Bereich-/Abteilungs-Auswahl blendet
-            zugehoerige Teams aus.
+            {labels.team} werden automatisch vererbt: Übergeordnete Auswahl blendet
+            zugehörige {labels.team} aus.
           </span>
         </div>
       </div>

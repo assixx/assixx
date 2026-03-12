@@ -11,31 +11,32 @@
   import {
     INTERVAL_LABELS,
     CARD_ROLE_LABELS,
-    MESSAGES,
+    type TpmMessages,
   } from '../../../_lib/constants';
 
   import type { TpmCard } from '../../../_lib/types';
 
   interface Props {
+    messages: TpmMessages;
     existingCards: TpmCard[];
     oncontinue: () => void;
     oncancel: () => void;
   }
 
-  const { existingCards, oncontinue, oncancel }: Props = $props();
+  const { messages, existingCards, oncontinue, oncancel }: Props = $props();
 </script>
 
 <ConfirmModal
   show={true}
   id="tpm-card-duplicate-warning-modal"
-  title={MESSAGES.DUPLICATE_TITLE}
+  title={messages.DUPLICATE_TITLE}
   variant="warning"
-  confirmLabel={MESSAGES.DUPLICATE_CONTINUE}
-  cancelLabel={MESSAGES.DUPLICATE_CANCEL}
+  confirmLabel={messages.DUPLICATE_CONTINUE}
+  cancelLabel={messages.DUPLICATE_CANCEL}
   onconfirm={oncontinue}
   {oncancel}
 >
-  {MESSAGES.DUPLICATE_MESSAGE}
+  {messages.DUPLICATE_MESSAGE}
   {#snippet extra()}
     <ul class="dup-list">
       {#each existingCards as card (card.uuid)}

@@ -136,7 +136,7 @@ diff database/migrations/001_baseline_complete_schema.sql customer/fresh-install
 
 **Datei:** `backend/src/nest/notifications/notifications.service.ts`
 
-#### 2.1 Neue Methode: createFeatureNotification()
+#### 2.1 Neue Methode: createAddonNotification()
 
 ```typescript
 /**
@@ -152,7 +152,7 @@ diff database/migrations/001_baseline_complete_schema.sql customer/fresh-install
  * @param tenantId - Tenant ID
  * @param createdBy - User ID who created the feature
  */
-async createFeatureNotification(
+async createAddonNotification(
   type: 'survey' | 'document' | 'kvp',
   featureId: number,
   title: string,
@@ -234,7 +234,7 @@ export class SurveysService {
     });
 
     // NEW: Create persistent notification
-    await this.notificationsService.createFeatureNotification(
+    await this.notificationsService.createAddonNotification(
       'survey',
       survey.id,
       `Neue Umfrage: ${dto.title}`,
@@ -267,7 +267,7 @@ async uploadDocument(dto: UploadDto, userId: number, tenantId: number): Promise<
   });
 
   // NEW: Create persistent notification
-  await this.notificationsService.createFeatureNotification(
+  await this.notificationsService.createAddonNotification(
     'document',
     document.id,
     `Neues Dokument: ${document.filename}`,
@@ -299,7 +299,7 @@ async submitKvp(dto: CreateKvpDto, userId: number, tenantId: number): Promise<Kv
   });
 
   // NEW: Create persistent notification for admins
-  await this.notificationsService.createFeatureNotification(
+  await this.notificationsService.createAddonNotification(
     'kvp',
     kvp.id,
     `Neuer KVP-Vorschlag: ${dto.title}`,
@@ -555,7 +555,7 @@ git checkout frontend/src/lib/stores/notification.store.svelte.ts
   - [ ] Enum-Werte verifiziert
 
 - [ ] **Phase 2:** NotificationsService
-  - [ ] `createFeatureNotification()` implementiert
+  - [ ] `createAddonNotification()` implementiert
   - [ ] `markFeatureTypeAsRead()` implementiert
   - [ ] Unit Tests geschrieben
 

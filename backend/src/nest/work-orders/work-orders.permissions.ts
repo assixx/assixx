@@ -1,7 +1,7 @@
 /**
  * Work Orders — Permission Definition (ADR-020)
  *
- * Defines the permission category and modules for the Work Orders feature.
+ * Defines the permission category and modules for the Work Orders addon.
  * Two modules:
  * - work-orders-manage: Admin — create, edit, delete, assign
  * - work-orders-execute: Employee — view assigned, update status, comment, upload photos

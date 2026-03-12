@@ -325,6 +325,33 @@ export class DepartmentsService {
   }
 
   /**
+   * Validate leader exists, is active, and has admin/root role.
+   * Safety gate: only admin/root users can lead departments.
+   */
+  private async validateLeader(
+    leaderId: number | null | undefined,
+    tenantId: number,
+  ): Promise<void> {
+    if (leaderId === null || leaderId === undefined) return;
+
+    const rows = await this.db.query<{ id: number; role: string }>(
+      `SELECT id, role FROM users WHERE id = $1 AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}`,
+      [leaderId, tenantId],
+    );
+
+    if (rows.length === 0) {
+      throw new BadRequestException('Invalid leader ID or user inactive');
+    }
+
+    const user = rows[0];
+    if (user?.role !== 'admin' && user?.role !== 'root') {
+      throw new BadRequestException(
+        'Department leader must have role "admin" or "root"',
+      );
+    }
+  }
+
+  /**
    * Create a new department
    */
   async createDepartment(
@@ -337,6 +364,8 @@ export class DepartmentsService {
     if (dto.name.trim() === '') {
       throw new BadRequestException('Department name is required');
     }
+
+    await this.validateLeader(dto.departmentLeadId, tenantId);
 
     const isActive = dto.isActive ?? 1;
 
@@ -446,6 +475,8 @@ export class DepartmentsService {
       areaId: existingDept?.area_id,
       isActive: existingDept?.is_active,
     };
+
+    await this.validateLeader(dto.departmentLeadId, tenantId);
 
     const { fields, values } = this.buildUpdateFields(dto);
     if (fields.length > 0) {

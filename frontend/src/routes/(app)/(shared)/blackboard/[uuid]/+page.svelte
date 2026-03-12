@@ -11,6 +11,10 @@
 
   import { notificationStore } from '$lib/stores/notification.store.svelte';
   import {
+    DEFAULT_HIERARCHY_LABELS,
+    type HierarchyLabels,
+  } from '$lib/types/hierarchy-labels';
+  import {
     sanitizeWithLineBreaks,
     showConfirm,
     showErrorAlert,
@@ -49,16 +53,18 @@
   import type { PageData } from './$types';
   import type { Attachment, PreviewAttachment } from './_lib/types';
 
-  /** Resolve path with base prefix (for dynamic runtime paths) */
-  function resolvePath(path: string): string {
-    return (resolve as (p: string) => string)(path);
-  }
-
   // =============================================================================
   // SSR DATA (single source of truth via $derived)
   // =============================================================================
 
   const { data }: { data: PageData } = $props();
+
+  // Hierarchy labels from layout (SSR)
+  const labels = $derived(
+    ((data as Record<string, unknown>).hierarchyLabels as
+      | HierarchyLabels
+      | undefined) ?? DEFAULT_HIERARCHY_LABELS,
+  );
 
   // Derived from SSR data
   const entry = $derived(data.entry);
@@ -173,7 +179,7 @@
     const success = await archiveApi(uuid);
     if (success) {
       showSuccessAlert('Eintrag wurde archiviert');
-      await goto(resolvePath('/blackboard'));
+      await goto(resolve('/blackboard'));
     } else {
       showErrorAlert('Fehler beim Archivieren');
     }
@@ -198,7 +204,7 @@
     const result = await deleteApi(uuid);
     if (result.success) {
       showSuccessAlert('Eintrag wurde gelöscht');
-      await goto(resolvePath('/blackboard'));
+      await goto(resolve('/blackboard'));
     } else {
       showErrorAlert(result.error);
     }
@@ -249,7 +255,7 @@
   }
 
   function goBack(): void {
-    void goto(resolvePath('/blackboard'));
+    void goto(resolve('/blackboard'));
   }
 
   // =============================================================================
@@ -330,7 +336,7 @@
           <div class="data-list__item">
             <span class="data-list__label">Sichtbarkeit</span>
             <span class="badge {getVisibilityBadgeClass(entry.orgLevel)}"
-              >{getOrgLevelText(entry.orgLevel, entry)}</span
+              >{getOrgLevelText(entry.orgLevel, entry, labels)}</span
             >
           </div>
           {#if entry.tags && entry.tags.length > 0}

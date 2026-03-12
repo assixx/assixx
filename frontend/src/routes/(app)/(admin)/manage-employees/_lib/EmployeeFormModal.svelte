@@ -3,8 +3,17 @@
 
   import AppDatePicker from '$lib/components/AppDatePicker.svelte';
   import PasswordStrengthIndicator from '$lib/components/PasswordStrengthIndicator.svelte';
+  import {
+    DEFAULT_HIERARCHY_LABELS,
+    resolvePositionDisplay,
+    type HierarchyLabels,
+  } from '$lib/types/hierarchy-labels';
 
-  import { POSITION_OPTIONS, MESSAGES } from './constants';
+  import {
+    POSITION_OPTIONS,
+    MESSAGES,
+    type EmployeeMessages,
+  } from './constants';
   import {
     getStatusBadgeClass,
     getStatusLabel,
@@ -23,6 +32,7 @@
     modalTitle: string;
     allTeams: Team[];
     submitting: boolean;
+    messages?: EmployeeMessages;
     // Form fields (all bindable)
     formFirstName: string;
     formLastName: string;
@@ -43,17 +53,25 @@
     onsubmit: (e: Event) => void;
     onvalidateemails: () => void;
     onvalidatepasswords: () => void;
+    positionOptions?: string[];
+    labels?: HierarchyLabels;
     onupgrade?: () => void;
   }
 
   /* eslint-disable prefer-const, @typescript-eslint/no-useless-default-assignment -- Svelte $bindable() requires let and is not a useless default */
   // prettier-ignore
-  let { show, isEditMode, modalTitle, allTeams, submitting, formFirstName = $bindable(), formLastName = $bindable(), formEmail = $bindable(), formEmailConfirm = $bindable(), formPassword = $bindable(), formPasswordConfirm = $bindable(), formEmployeeNumber = $bindable(), formPosition = $bindable(), formPhone = $bindable(), formDateOfBirth = $bindable(), formIsActive = $bindable(), formTeamIds = $bindable(), emailError = $bindable(), passwordError = $bindable(), onclose, onsubmit, onvalidateemails, onvalidatepasswords, onupgrade }: Props = $props();
+  let { show, isEditMode, modalTitle, allTeams, submitting, messages: msg = MESSAGES, positionOptions, labels: lbl = DEFAULT_HIERARCHY_LABELS, formFirstName = $bindable(), formLastName = $bindable(), formEmail = $bindable(), formEmailConfirm = $bindable(), formPassword = $bindable(), formPasswordConfirm = $bindable(), formEmployeeNumber = $bindable(), formPosition = $bindable(), formPhone = $bindable(), formDateOfBirth = $bindable(), formIsActive = $bindable(), formTeamIds = $bindable(), emailError = $bindable(), passwordError = $bindable(), onclose, onsubmit, onvalidateemails, onvalidatepasswords, onupgrade }: Props = $props();
   /* eslint-enable prefer-const, @typescript-eslint/no-useless-default-assignment */
 
   // =============================================================================
   // LOCAL STATE
   // =============================================================================
+
+  const effectivePositions = $derived(
+    positionOptions !== undefined && positionOptions.length > 0 ?
+      positionOptions
+    : POSITION_OPTIONS,
+  );
 
   // Dropdown States
   let positionDropdownOpen = $state(false);
@@ -288,7 +306,7 @@
             oninput={onvalidateemails}
           />
           <span class="form-field__message text-(--color-text-secondary)"
-            >{MESSAGES.EMAIL_HINT}</span
+            >{msg.EMAIL_HINT}</span
           >
         </div>
 
@@ -314,7 +332,7 @@
           />
           {#if emailError}
             <span class="form-field__message form-field__message--error"
-              >{MESSAGES.EMAIL_MISMATCH}</span
+              >{msg.EMAIL_MISMATCH}</span
             >
           {/if}
         </div>
@@ -334,7 +352,7 @@
                 class="tooltip__content tooltip__content--info tooltip__content--right"
                 role="tooltip"
               >
-                {MESSAGES.PASSWORD_HINT}
+                {msg.PASSWORD_HINT}
               </span>
             </span>
           </label>
@@ -409,7 +427,7 @@
           </div>
           {#if passwordError}
             <span class="form-field__message form-field__message--error"
-              >{MESSAGES.PASSWORD_MISMATCH}</span
+              >{msg.PASSWORD_MISMATCH}</span
             >
           {:else if formPasswordConfirm !== '' && passwordMatch}
             <span class="form-field__message form-field__message--success">
@@ -457,7 +475,9 @@
               onclick={togglePositionDropdown}
             >
               <span
-                >{formPosition !== '' ? formPosition : 'Bitte wählen...'}</span
+                >{formPosition !== '' ?
+                  resolvePositionDisplay(formPosition, lbl)
+                : 'Bitte wählen...'}</span
               >
               <i class="fas fa-chevron-down"></i>
             </div>
@@ -465,7 +485,7 @@
               class="dropdown__menu"
               class:active={positionDropdownOpen}
             >
-              {#each POSITION_OPTIONS as position (position)}
+              {#each effectivePositions as position (position)}
                 <!-- svelte-ignore a11y_click_events_have_key_events -->
                 <!-- svelte-ignore a11y_no_static_element_interactions -->
                 <div
@@ -474,7 +494,7 @@
                     selectPosition(position);
                   }}
                 >
-                  {position}
+                  {resolvePositionDisplay(position, lbl)}
                 </div>
               {/each}
             </div>
@@ -496,7 +516,7 @@
             bind:value={formEmployeeNumber}
           />
           <span class="form-field__message text-(--color-text-secondary)"
-            >{MESSAGES.EMPLOYEE_NUMBER_HINT}</span
+            >{msg.EMPLOYEE_NUMBER_HINT}</span
           >
         </div>
 
@@ -512,7 +532,7 @@
         <div class="mt-6 border-t border-(--color-border) pt-6">
           <h4 class="mb-4 font-medium text-(--color-text-primary)">
             <i class="fas fa-users mr-2"></i>
-            Team-Zuweisung
+            {msg.TEAM_ASSIGNMENT_TITLE}
           </h4>
 
           <div class="alert alert--info mb-4">
@@ -521,7 +541,7 @@
             </div>
             <div class="alert__content">
               <div class="alert__message">
-                {MESSAGES.TEAM_INFO}
+                {msg.TEAM_INFO}
               </div>
             </div>
           </div>
@@ -535,7 +555,7 @@
               for="employee-teams"
             >
               <i class="fas fa-users mr-1"></i>
-              Teams
+              {msg.TH_TEAMS}
             </label>
             <select
               id="employee-teams"
@@ -560,7 +580,7 @@
             </select>
             <span class="form-field__message text-(--color-text-secondary)">
               <i class="fas fa-info-circle mr-1"></i>
-              {MESSAGES.TEAM_MULTISELECT_HINT}
+              {msg.TEAM_MULTISELECT_HINT}
             </span>
           </div>
         </div>
@@ -631,7 +651,7 @@
             <span
               class="form-field__message mt-1 block text-(--color-text-secondary)"
             >
-              {MESSAGES.STATUS_HINT}
+              {msg.STATUS_HINT}
             </span>
           </div>
 
@@ -643,10 +663,10 @@
             >
               <h4 class="mb-2 font-medium text-(--color-danger)">
                 <i class="fas fa-exclamation-triangle mr-2"></i>
-                {MESSAGES.UPGRADE_TITLE}
+                {msg.UPGRADE_TITLE}
               </h4>
               <p class="mb-4 text-sm text-(--color-text-secondary)">
-                {MESSAGES.UPGRADE_DESCRIPTION}
+                {msg.UPGRADE_DESCRIPTION}
               </p>
               {#if !upgradeConfirmActive}
                 <button
@@ -662,7 +682,7 @@
                   }}
                 >
                   <i class="fas fa-arrow-up mr-1"></i>
-                  {MESSAGES.UPGRADE_BUTTON}
+                  {msg.UPGRADE_BUTTON}
                 </button>
               {:else}
                 <div class="alert alert--danger mb-4">
@@ -671,7 +691,7 @@
                   </div>
                   <div class="alert__content">
                     <p class="alert__message">
-                      {MESSAGES.UPGRADE_CONFIRM_MESSAGE}
+                      {msg.UPGRADE_CONFIRM_MESSAGE}
                     </p>
                   </div>
                 </div>
@@ -691,7 +711,7 @@
                     onclick={onupgrade}
                   >
                     <i class="fas fa-check mr-1"></i>
-                    {MESSAGES.UPGRADE_CONFIRM_BUTTON}
+                    {msg.UPGRADE_CONFIRM_BUTTON}
                   </button>
                 </div>
               {/if}

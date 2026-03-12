@@ -5,19 +5,19 @@
 import { escapeHtml } from '$lib/utils/sanitize-html';
 
 import {
-  STATUS_BADGE_CLASSES,
-  STATUS_LABELS,
   AVAILABILITY_BADGE_CLASSES,
   AVAILABILITY_ICONS,
   AVAILABILITY_LABELS,
   AVAILABILITY_STATUS_LABELS,
-  PASSWORD_STRENGTH_LABELS,
-  PASSWORD_CRACK_TIMES,
-  MESSAGES,
   DEFAULT_BADGE_CLASS,
   INFO_BADGE_CLASS,
+  PASSWORD_CRACK_TIMES,
+  PASSWORD_STRENGTH_LABELS,
+  STATUS_BADGE_CLASSES,
+  STATUS_LABELS,
 } from './constants';
 
+import type { HierarchyLabels } from '$lib/types/hierarchy-labels';
 import type {
   Employee,
   IsActiveStatus,
@@ -126,20 +126,26 @@ function extractTeamData(employee: Employee): TeamData | null {
  * Uses teamIds/teamNames from API response (flat arrays)
  * Falls back to legacy teams array if available
  */
-export function getTeamsBadge(employee: Employee): BadgeInfo {
+export function getTeamsBadge(
+  employee: Employee,
+  labels: HierarchyLabels,
+): BadgeInfo {
   const teamData = extractTeamData(employee);
 
   if (teamData === null) {
     return {
       class: DEFAULT_BADGE_CLASS,
-      text: MESSAGES.NO_TEAM,
-      title: MESSAGES.NO_TEAM_TITLE,
+      text: 'Nicht zugewiesen',
+      title: 'Nicht zugewiesen',
     };
   }
 
   return {
     class: INFO_BADGE_CLASS,
-    text: teamData.count === 1 ? teamData.firstName : `${teamData.count} Teams`,
+    text:
+      teamData.count === 1 ?
+        teamData.firstName
+      : `${teamData.count} ${labels.team}`,
     title: teamData.names,
   };
 }
@@ -475,15 +481,17 @@ function buildInheritedBadge(displayText: string, tooltip: string): BadgeInfo {
 }
 
 /** Build badge for direct area assignments */
-function buildDirectAreasBadge(areas: Employee['areas']): BadgeInfo | null {
+function buildDirectAreasBadge(
+  areas: Employee['areas'],
+  labels: HierarchyLabels,
+): BadgeInfo | null {
   if (!hasItems(areas)) return null;
 
   const count = areas.length;
-  const label = count === 1 ? 'Bereich' : 'Bereiche';
   const areaNames = areas.map((area) => area.name).join(', ');
   return {
     class: INFO_BADGE_CLASS,
-    text: `${count} ${label}`,
+    text: `${count} ${labels.area}`,
     title: areaNames,
   };
 }
@@ -493,17 +501,20 @@ function buildDirectAreasBadge(areas: Employee['areas']): BadgeInfo | null {
  * Shows count with tooltip listing area names
  * BADGE-INHERITANCE-DISPLAY: Areas are inherited from teams→departments→areas for employees
  */
-export function getAreasBadge(employee: Employee): BadgeInfo {
+export function getAreasBadge(
+  employee: Employee,
+  labels: HierarchyLabels,
+): BadgeInfo {
   if (checkEmployeeFullAccess(employee)) {
     return {
       class: 'badge--primary',
       text: '<i class="fas fa-globe mr-1"></i>Alle',
-      title: 'Voller Zugriff auf alle Bereiche',
+      title: `Voller Zugriff auf alle ${labels.area}`,
     };
   }
 
   // Direct area assignments (rare for employees)
-  const directBadge = buildDirectAreasBadge(employee.areas);
+  const directBadge = buildDirectAreasBadge(employee.areas, labels);
   if (directBadge !== null) return directBadge;
 
   // Inherited via teams→departments→areas
@@ -513,7 +524,7 @@ export function getAreasBadge(employee: Employee): BadgeInfo {
   return {
     class: DEFAULT_BADGE_CLASS,
     text: 'Keine',
-    title: 'Kein Bereich zugewiesen',
+    title: 'Nicht zugewiesen',
   };
 }
 
@@ -548,15 +559,15 @@ function buildAreaInheritedBadge(
 /** Build badge for direct department assignments */
 function buildDirectDeptsBadge(
   departments: Employee['departments'],
+  labels: HierarchyLabels,
 ): BadgeInfo | null {
   if (!hasItems(departments)) return null;
 
   const count = departments.length;
-  const label = count === 1 ? 'Abteilung' : 'Abteilungen';
   const deptNames = departments.map((dept) => dept.name).join(', ');
   return {
     class: INFO_BADGE_CLASS,
-    text: `${count} ${label}`,
+    text: `${count} ${labels.department}`,
     title: deptNames,
   };
 }
@@ -579,17 +590,20 @@ function buildLegacyDeptBadge(
  * Shows count with tooltip listing department names
  * BADGE-INHERITANCE-DISPLAY: Departments are inherited from teams for employees
  */
-export function getDepartmentsBadge(employee: Employee): BadgeInfo {
+export function getDepartmentsBadge(
+  employee: Employee,
+  labels: HierarchyLabels,
+): BadgeInfo {
   if (checkEmployeeFullAccess(employee)) {
     return {
       class: 'badge--primary',
       text: '<i class="fas fa-globe mr-1"></i>Alle',
-      title: 'Voller Zugriff auf alle Abteilungen',
+      title: `Voller Zugriff auf alle ${labels.department}`,
     };
   }
 
   // Direct department assignments (user_departments table)
-  const directBadge = buildDirectDeptsBadge(employee.departments);
+  const directBadge = buildDirectDeptsBadge(employee.departments, labels);
   if (directBadge !== null) return directBadge;
 
   // Inherited via teams→departments
@@ -603,7 +617,7 @@ export function getDepartmentsBadge(employee: Employee): BadgeInfo {
   return {
     class: DEFAULT_BADGE_CLASS,
     text: 'Keine',
-    title: 'Keine Abteilung zugewiesen',
+    title: 'Nicht zugewiesen',
   };
 }
 

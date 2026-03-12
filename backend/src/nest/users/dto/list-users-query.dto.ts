@@ -17,6 +17,7 @@ import {
 export const ListUsersQuerySchema = PaginationSchema.extend({
   search: z.string().trim().optional(),
   role: RoleSchema.optional(),
+  position: z.string().trim().optional(),
   isActive: z.preprocess(
     (val: unknown) =>
       typeof val === 'string' ? Number.parseInt(val, 10) : val,

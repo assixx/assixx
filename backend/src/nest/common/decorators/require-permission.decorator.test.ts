@@ -35,7 +35,7 @@ describe('SECURITY: RequirePermission()', () => {
     expect(metadata).toBeDefined();
   });
 
-  it('should store featureCode in metadata', () => {
+  it('should store addonCode in metadata', () => {
     class TestController {
       @RequirePermission('blackboard', 'blackboard-posts', 'canRead')
       testMethod(): void {
@@ -48,7 +48,7 @@ describe('SECURITY: RequirePermission()', () => {
       TestController.prototype.testMethod,
     ) as RequiredPermission;
 
-    expect(metadata.featureCode).toBe('blackboard');
+    expect(metadata.addonCode).toBe('blackboard');
   });
 
   it('should store moduleCode in metadata', () => {

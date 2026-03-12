@@ -29,7 +29,7 @@
     updateAssetAvailability as apiUpdateAssetAvailability,
   } from './_lib/api';
   import AssetFormModal from './_lib/AssetFormModal.svelte';
-  import { MESSAGES } from './_lib/constants';
+  import { createMessages } from './_lib/constants';
   import DeleteModals from './_lib/DeleteModals.svelte';
   import { applyAllFilters } from './_lib/filters';
   import { assetState } from './_lib/state.svelte';
@@ -53,11 +53,16 @@
 
   const { data }: { data: PageData } = $props();
 
+  // Hierarchy labels via data inheritance (A6) — reactive
+  const labels = $derived(data.hierarchyLabels);
+  const messages = $derived(createMessages(labels));
+
   // SSR data via $derived - updates when invalidateAll() is called
   const allAssets = $derived<Asset[]>(data.assets);
 
-  // Sync SSR data to state store for child components (departments, areas, teams)
+  // Sync SSR data + labels to state store for child components
   $effect(() => {
+    assetState.setLabels(data.hierarchyLabels);
     assetState.setDepartments(data.departments);
     assetState.setAreas(data.areas);
     assetState.setTeams(data.teams);
@@ -82,10 +87,10 @@
   );
 
   const emptyStateTitle = $derived(
-    getEmptyStateTitle(assetState.currentStatusFilter),
+    getEmptyStateTitle(assetState.currentStatusFilter, messages),
   );
   const emptyStateDescription = $derived(
-    getEmptyStateDescription(assetState.currentStatusFilter),
+    getEmptyStateDescription(assetState.currentStatusFilter, messages),
   );
 
   // Sync filtered assets to state store for search results dropdown
@@ -102,7 +107,7 @@
 
     try {
       if (!assetState.formName.trim()) {
-        showErrorAlert(MESSAGES.ERROR_NAME_REQUIRED);
+        showErrorAlert(messages.ERROR_NAME_REQUIRED);
         assetState.setSubmitting(false);
         return;
       }
@@ -135,8 +140,8 @@
 
       showSuccessAlert(
         assetState.isEditMode ?
-          MESSAGES.SUCCESS_UPDATED
-        : MESSAGES.SUCCESS_CREATED,
+          messages.SUCCESS_UPDATED
+        : messages.SUCCESS_CREATED,
       );
       assetState.closeAssetModal();
       // Level 3: Trigger SSR refetch
@@ -144,7 +149,7 @@
     } catch (err: unknown) {
       log.error({ err }, 'Error saving asset');
       showErrorAlert(
-        err instanceof Error ? err.message : MESSAGES.ERROR_SAVE_FAILED,
+        err instanceof Error ? err.message : messages.ERROR_SAVE_FAILED,
       );
     } finally {
       assetState.setSubmitting(false);
@@ -156,13 +161,13 @@
 
     try {
       await apiDeleteAsset(assetState.deleteAssetId);
-      showSuccessAlert(MESSAGES.SUCCESS_DELETED);
+      showSuccessAlert(messages.SUCCESS_DELETED);
       assetState.closeDeleteModal();
       // Level 3: Trigger SSR refetch
       await invalidateAll();
     } catch (err: unknown) {
       log.error({ err }, 'Error deleting asset');
-      showErrorAlert(MESSAGES.ERROR_DELETE_FAILED);
+      showErrorAlert(messages.ERROR_DELETE_FAILED);
     }
   }
 
@@ -308,7 +313,7 @@
         ...(availabilityReason !== '' && { availabilityReason }),
         ...(availabilityNotes !== '' && { availabilityNotes }),
       });
-      showSuccessAlert('Anlagenverfügbarkeit aktualisiert');
+      showSuccessAlert('Verfügbarkeit aktualisiert');
       closeAvailabilityModal();
       await invalidateAll();
     } catch (err: unknown) {
@@ -406,7 +411,7 @@
 </script>
 
 <svelte:head>
-  <title>{MESSAGES.PAGE_TITLE}</title>
+  <title>{messages.PAGE_TITLE}</title>
 </svelte:head>
 
 <svelte:window onkeydown={handleKeydown} />
@@ -416,10 +421,10 @@
     <div class="card__header">
       <h2 class="card__title">
         <i class="fas fa-cogs mr-2"></i>
-        {MESSAGES.PAGE_HEADING}
+        {messages.PAGE_HEADING}
       </h2>
       <p class="mt-2 text-(--color-text-secondary)">
-        {MESSAGES.PAGE_DESCRIPTION}
+        {messages.PAGE_DESCRIPTION}
       </p>
 
       <div class="alert alert--info alert--sm mt-4">
@@ -448,7 +453,7 @@
             }}
           >
             <i class="fas fa-list"></i>
-            {MESSAGES.FILTER_ALL}
+            {messages.FILTER_ALL}
           </button>
           <button
             type="button"
@@ -459,7 +464,7 @@
             }}
           >
             <i class="fas fa-check-circle"></i>
-            {MESSAGES.FILTER_OPERATIONAL}
+            {messages.FILTER_OPERATIONAL}
           </button>
           <button
             type="button"
@@ -470,7 +475,7 @@
             }}
           >
             <i class="fas fa-wrench"></i>
-            {MESSAGES.FILTER_MAINTENANCE}
+            {messages.FILTER_MAINTENANCE}
           </button>
           <button
             type="button"
@@ -481,7 +486,7 @@
             }}
           >
             <i class="fas fa-tools"></i>
-            {MESSAGES.FILTER_REPAIR}
+            {messages.FILTER_REPAIR}
           </button>
           <button
             type="button"
@@ -492,7 +497,7 @@
             }}
           >
             <i class="fas fa-pause-circle"></i>
-            {MESSAGES.FILTER_STANDBY}
+            {messages.FILTER_STANDBY}
           </button>
           <button
             type="button"
@@ -503,7 +508,7 @@
             }}
           >
             <i class="fas fa-broom"></i>
-            {MESSAGES.FILTER_CLEANING}
+            {messages.FILTER_CLEANING}
           </button>
           <button
             type="button"
@@ -514,7 +519,7 @@
             }}
           >
             <i class="fas fa-clock"></i>
-            {MESSAGES.FILTER_OTHER}
+            {messages.FILTER_OTHER}
           </button>
         </div>
 
@@ -532,7 +537,7 @@
               type="search"
               id="asset-search"
               class="search-input__field"
-              placeholder={MESSAGES.SEARCH_PLACEHOLDER}
+              placeholder={messages.SEARCH_PLACEHOLDER}
               autocomplete="off"
               value={assetState.currentSearchQuery}
               oninput={handleSearchInput}
@@ -554,7 +559,7 @@
           >
             {#if assetState.currentSearchQuery && filteredAssets.length === 0}
               <div class="search-input__no-results">
-                {MESSAGES.SEARCH_NO_RESULTS}
+                {messages.SEARCH_NO_RESULTS}
               </div>
             {:else if assetState.currentSearchQuery}
               {#each filteredAssets.slice(0, 5) as asset (asset.id)}
@@ -614,7 +619,7 @@
             class="btn btn-primary mt-4"
             onclick={() => invalidateAll()}
           >
-            {MESSAGES.BTN_RETRY}
+            {messages.BTN_RETRY}
           </button>
         </div>
       {:else if filteredAssets.length === 0}
@@ -632,7 +637,7 @@
               onclick={openAddModal}
             >
               <i class="fas fa-plus"></i>
-              {MESSAGES.BTN_ADD_MACHINE}
+              {messages.BTN_ADD}
             </button>
           {/if}
         </div>
@@ -645,24 +650,25 @@
             >
               <thead>
                 <tr>
-                  <th scope="col">{MESSAGES.TH_ID}</th>
-                  <th scope="col">{MESSAGES.TH_NAME}</th>
-                  <th scope="col">{MESSAGES.TH_MODEL}</th>
-                  <th scope="col">{MESSAGES.TH_MANUFACTURER}</th>
-                  <th scope="col">{MESSAGES.TH_AREA}</th>
-                  <th scope="col">{MESSAGES.TH_DEPARTMENT}</th>
-                  <th scope="col">{MESSAGES.TH_TEAMS}</th>
-                  <th scope="col">{MESSAGES.TH_NEXT_ABSENCE}</th>
-                  <th scope="col">{MESSAGES.TH_ACTIONS}</th>
+                  <th scope="col">{messages.TH_ID}</th>
+                  <th scope="col">{messages.TH_NAME}</th>
+                  <th scope="col">{messages.TH_MODEL}</th>
+                  <th scope="col">{messages.TH_MANUFACTURER}</th>
+                  <th scope="col">{messages.TH_AREA}</th>
+                  <th scope="col">{messages.TH_DEPARTMENT}</th>
+                  <th scope="col">{messages.TH_TEAMS}</th>
+                  <th scope="col">{messages.TH_NEXT_ABSENCE}</th>
+                  <th scope="col">{messages.TH_ACTIONS}</th>
                 </tr>
               </thead>
               <tbody>
                 {#each filteredAssets as asset (asset.id)}
-                  {@const areaBadge = getAreaBadgeData(asset.areaName)}
+                  {@const areaBadge = getAreaBadgeData(asset.areaName, labels)}
                   {@const deptBadge = getDepartmentBadgeData(
                     asset.departmentName,
+                    labels,
                   )}
-                  {@const teamsBadge = getTeamsBadgeData(asset.teams)}
+                  {@const teamsBadge = getTeamsBadgeData(asset.teams, labels)}
                   <tr>
                     <td><code class="text-muted">{asset.id}</code></td>
                     <td><strong>{asset.name}</strong></td>
@@ -715,7 +721,7 @@
                           type="button"
                           class="action-icon action-icon--info"
                           title="Verfügbarkeit"
-                          aria-label="Anlagenverfügbarkeit bearbeiten"
+                          aria-label="Verfügbarkeit bearbeiten"
                           onclick={() => {
                             openAvailabilityModal({
                               name: asset.name,
@@ -729,7 +735,7 @@
                           type="button"
                           class="action-icon action-icon--edit"
                           title="Bearbeiten"
-                          aria-label="Anlage bearbeiten"
+                          aria-label="Bearbeiten"
                           onclick={() => openEditModal(asset.id)}
                         >
                           <i class="fas fa-edit"></i>
@@ -738,7 +744,7 @@
                           type="button"
                           class="action-icon action-icon--delete"
                           title="Löschen"
-                          aria-label="Anlage löschen"
+                          aria-label="Löschen"
                           onclick={() => {
                             assetState.openDeleteModal(asset.id);
                           }}
@@ -763,7 +769,7 @@
   type="button"
   class="btn-float add-asset-btn"
   onclick={openAddModal}
-  aria-label="Anlage hinzufügen"
+  aria-label="Hinzufügen"
 >
   <i class="fas fa-plus"></i>
 </button>

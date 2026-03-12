@@ -7,9 +7,19 @@ on:
       - develop
     tags:
       - "v*"
+    paths-ignore:
+      - "docs/**"
+      - "**/*.md"
+      - ".changeset/**"
+      - "LICENSE"
   pull_request:
     branches:
       - main
+    paths-ignore:
+      - "docs/**"
+      - "**/*.md"
+      - ".changeset/**"
+      - "LICENSE"
 
 env:
   REGISTRY: ghcr.io

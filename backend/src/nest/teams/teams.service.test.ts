@@ -286,8 +286,8 @@ describe('TeamsService', () => {
 
       // validateDepartment: SELECT departments → found
       mockDb.query.mockResolvedValueOnce([{ id: 5 }]);
-      // validateLeader: SELECT users → found with admin role
-      mockDb.query.mockResolvedValueOnce([{ role: 'admin' }]);
+      // validateLeader: SELECT id, position → user exists, active, position=Teamleiter
+      mockDb.query.mockResolvedValueOnce([{ id: 42, position: 'Teamleiter' }]);
       // checkDuplicateName: no duplicate
       mockDb.query.mockResolvedValueOnce([]);
       // INSERT team RETURNING id
@@ -344,16 +344,47 @@ describe('TeamsService', () => {
       );
     });
 
-    it('should throw BadRequestException when leader is not admin/root', async () => {
+    it('should allow employee with position "Teamleiter" as team leader', async () => {
       const dto = {
-        name: 'Bad Role',
+        name: 'Employee Led',
         description: null,
         departmentId: null,
         leaderId: 5,
       } as unknown as CreateTeamDto;
 
-      // validateLeader: SELECT users → found with employee role
-      mockDb.query.mockResolvedValueOnce([{ role: 'employee' }]);
+      // validateLeader: employee with position Teamleiter
+      mockDb.query.mockResolvedValueOnce([{ id: 5, position: 'Teamleiter' }]);
+      // checkDuplicateName: no duplicate
+      mockDb.query.mockResolvedValueOnce([]);
+      // INSERT team RETURNING id
+      mockDb.query.mockResolvedValueOnce([{ id: 9 }]);
+      // ensureLeaderInTeam: SELECT user_teams → not existing
+      mockDb.query.mockResolvedValueOnce([]);
+      // ensureLeaderInTeam: INSERT user_teams
+      mockDb.query.mockResolvedValueOnce([]);
+      // getTeamById
+      mockDb.query.mockResolvedValueOnce([
+        makeTeamRow({ id: 9, name: 'Employee Led', team_lead_id: 5 }),
+      ]);
+
+      const result = await service.createTeam(dto, 1, 10);
+
+      expect(result.id).toBe(9);
+      expect(result.leaderId).toBe(5);
+    });
+
+    it('should reject user without position "Teamleiter"', async () => {
+      const dto = {
+        name: 'No Position',
+        description: null,
+        departmentId: null,
+        leaderId: 5,
+      } as unknown as CreateTeamDto;
+
+      // validateLeader: user exists but has wrong position
+      mockDb.query.mockResolvedValueOnce([
+        { id: 5, position: 'Lagerarbeiter' },
+      ]);
 
       await expect(service.createTeam(dto, 1, 10)).rejects.toThrow(
         BadRequestException,
@@ -377,8 +408,8 @@ describe('TeamsService', () => {
         leaderId: 42,
       } as unknown as CreateTeamDto;
 
-      // validateLeader: found with admin role
-      mockDb.query.mockResolvedValueOnce([{ role: 'admin' }]);
+      // validateLeader: SELECT id, position → user exists, active, position=Teamleiter
+      mockDb.query.mockResolvedValueOnce([{ id: 42, position: 'Teamleiter' }]);
       // checkDuplicateName: no duplicate
       mockDb.query.mockResolvedValueOnce([]);
       // INSERT team RETURNING id
@@ -439,8 +470,8 @@ describe('TeamsService', () => {
 
       // find existing team (has old leader)
       mockDb.query.mockResolvedValueOnce([makeTeamRow({ team_lead_id: 3 })]);
-      // validateLeader: SELECT users → found with root role
-      mockDb.query.mockResolvedValueOnce([{ role: 'root' }]);
+      // validateLeader: SELECT id, position → user exists, active, position=Teamleiter
+      mockDb.query.mockResolvedValueOnce([{ id: 5, position: 'Teamleiter' }]);
       // UPDATE teams (team_lead_id)
       mockDb.query.mockResolvedValueOnce([]);
       // handleLeaderChange: demote old leader

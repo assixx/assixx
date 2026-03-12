@@ -53,9 +53,9 @@ import * as path from 'node:path';
 import { v7 as uuidv7 } from 'uuid';
 
 import { CurrentUser } from '../common/decorators/current-user.decorator.js';
+import { RequireAddon } from '../common/decorators/require-addon.decorator.js';
 import { RequirePermission } from '../common/decorators/require-permission.decorator.js';
 import { Roles } from '../common/decorators/roles.decorator.js';
-import { TenantFeature } from '../common/decorators/tenant-feature.decorator.js';
 import { TenantId } from '../common/decorators/tenant.decorator.js';
 import { RolesGuard } from '../common/guards/roles.guard.js';
 import type { NestAuthUser } from '../common/interfaces/auth.interface.js';
@@ -110,7 +110,7 @@ const KVP_SUGGESTIONS = 'kvp-suggestions';
 const KVP_COMMENTS = 'kvp-comments';
 
 @Controller('kvp')
-@TenantFeature('kvp')
+@RequireAddon('kvp')
 export class KvpController {
   constructor(
     private readonly kvpService: KvpService,

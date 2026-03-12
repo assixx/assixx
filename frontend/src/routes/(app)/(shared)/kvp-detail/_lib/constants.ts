@@ -2,6 +2,11 @@
 // KVP-DETAIL - CONSTANTS
 // =============================================================================
 
+import {
+  DEFAULT_HIERARCHY_LABELS,
+  type HierarchyLabels,
+} from '$lib/types/hierarchy-labels';
+
 import type { KvpStatus, KvpPriority, OrgLevel } from './types';
 
 /**
@@ -82,27 +87,43 @@ export const VISIBILITY_BADGE_CLASSES: Record<OrgLevel, string> = {
 } as const;
 
 /**
- * Visibility info by org level
+ * Factory: Visibility info by org level with dynamic hierarchy labels
  */
-export const VISIBILITY_INFO: Record<OrgLevel, { icon: string; text: string }> =
-  {
+export function createVisibilityInfo(
+  labels: HierarchyLabels,
+): Record<OrgLevel, { icon: string; text: string }> {
+  return {
     company: { icon: 'fa-globe', text: 'Firmenweit' },
-    department: { icon: 'fa-building', text: 'Abteilung' },
-    area: { icon: 'fa-sitemap', text: 'Bereich' },
+    department: { icon: 'fa-building', text: labels.department },
+    area: { icon: 'fa-sitemap', text: labels.area },
     team: { icon: 'fa-users', text: 'Team' },
-    asset: { icon: 'fa-cog', text: 'Anlage' },
-  } as const;
+    asset: { icon: 'fa-cog', text: labels.asset },
+  };
+}
+
+/** Backward-compatible static export */
+export const VISIBILITY_INFO: Record<OrgLevel, { icon: string; text: string }> =
+  createVisibilityInfo(DEFAULT_HIERARCHY_LABELS);
 
 /**
- * Share level text (German)
+ * Factory: Share level text with dynamic hierarchy labels
  */
-export const SHARE_LEVEL_TEXT: Record<OrgLevel, string> = {
-  company: 'Firmenebene',
-  department: 'Abteilungsebene',
-  area: 'Bereichsebene',
-  team: 'Teamebene',
-  asset: 'Anlagenebene',
-} as const;
+export function createShareLevelText(
+  labels: HierarchyLabels,
+): Record<OrgLevel, string> {
+  return {
+    company: 'Firmenebene',
+    department: `${labels.department}-Ebene`,
+    area: `${labels.area}-Ebene`,
+    team: 'Teamebene',
+    asset: `${labels.asset}-Ebene`,
+  };
+}
+
+/** Backward-compatible static export */
+export const SHARE_LEVEL_TEXT: Record<OrgLevel, string> = createShareLevelText(
+  DEFAULT_HIERARCHY_LABELS,
+);
 
 /**
  * Status options for admin dropdown

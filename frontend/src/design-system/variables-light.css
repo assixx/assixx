@@ -99,7 +99,7 @@
   --section-dim-filter: saturate(0.1) opacity(0.9);
 
   /* Glass Backgrounds (dark overlays on light surfaces) */
-  --glass-bg: oklch(0% 0 0 / 1%);
+  --glass-bg: oklch(0% 0 0 / 2%);
   --glass-bg-hover: oklch(0% 0 0 / 5%);
   --glass-bg-active: oklch(0% 0 0 / 6%);
   --glass-border: 1px solid oklch(0% 0 0 / 20%);
@@ -164,6 +164,9 @@
   /* Dark Button - Strong shadow */
   --shadow-btn-dark: 0 2px 4px oklch(0% 0 0 / 20%);
   --shadow-btn-dark-hover: 0 4px 12px oklch(0% 0 0 / 28%);
+
+  /* Organigramm Connection Lines */
+  --org-connection-stroke: oklch(0% 0 0);
 
   /* Navigation-specific (light mode) */
   --nav-hover-bg: oklch(65.82% 0.169 248.81 / 10%);

@@ -486,7 +486,7 @@ export class FeatureService {
 
     const rows = await this.databaseService.query<DbFeatureRow>(
       `SELECT id, tenant_id, name, created_at, updated_at
-       FROM features
+       FROM addons
        WHERE tenant_id = $1 AND is_active = 1
        ORDER BY created_at DESC`,
       [tenantId],

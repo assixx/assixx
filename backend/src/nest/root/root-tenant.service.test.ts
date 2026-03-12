@@ -3,9 +3,8 @@
  *
  * Phase 11: Service tests — mocked dependencies.
  * Focus: getTenants (parallel stats aggregation),
- *        getStorageInfo (plan lookup + parallel breakdown).
+ *        getStorageInfo (tenant_storage lookup + parallel breakdown).
  */
-import { NotFoundException } from '@nestjs/common';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { DatabaseService } from '../database/database.service.js';
@@ -20,13 +19,11 @@ vi.mock('./root.helpers.js', () => ({
   ERROR_CODES: { NOT_FOUND: 'NOT_FOUND' },
 }));
 
-vi.mock('./root.types.js', () => ({
-  STORAGE_LIMITS: {
-    basic: 1_073_741_824,
-    professional: 5_368_709_120,
-    enterprise: 10_737_418_240,
-  } as Record<string, number>,
-}));
+vi.mock('./root.types.js', async () => {
+  const actual =
+    await vi.importActual<typeof import('./root.types.js')>('./root.types.js');
+  return { ...actual };
+});
 
 // =============================================================
 // Mock factories
@@ -78,7 +75,6 @@ describe('RootTenantService', () => {
           id: 10,
           company_name: 'Acme Corp',
           subdomain: 'acme',
-          current_plan: 'professional',
           status: 'active',
           created_at: new Date(),
           updated_at: new Date(),
@@ -106,17 +102,9 @@ describe('RootTenantService', () => {
   // =============================================================
 
   describe('getStorageInfo', () => {
-    it('should throw NotFoundException when tenant not found', async () => {
-      mockDb.query.mockResolvedValueOnce([]);
-
-      await expect(service.getStorageInfo(999)).rejects.toThrow(
-        NotFoundException,
-      );
-    });
-
-    it('should return storage breakdown', async () => {
-      // tenant plan
-      mockDb.query.mockResolvedValueOnce([{ current_plan: 'basic' }]);
+    it('should return storage breakdown from tenant_storage', async () => {
+      // tenant_storage query
+      mockDb.query.mockResolvedValueOnce([{ storage_limit_gb: 100 }]);
       // documents
       mockDb.query.mockResolvedValueOnce([{ total: '500000' }]);
       // attachments
@@ -127,22 +115,25 @@ describe('RootTenantService', () => {
       const result = await service.getStorageInfo(10);
 
       expect(result.used).toBe(750000);
-      expect(result.total).toBe(1_073_741_824);
-      expect(result.plan).toBe('basic');
-      expect(result.breakdown.documents).toBe(500000);
-      expect(result.breakdown.attachments).toBe(200000);
-      expect(result.breakdown.logs).toBe(50000);
+      expect(result.total).toBe(100 * 1024 * 1024 * 1024);
+      expect(result.storageLimitGb).toBe(100);
+      expect(result.breakdown?.documents).toBe(500000);
+      expect(result.breakdown?.attachments).toBe(200000);
+      expect(result.breakdown?.logs).toBe(50000);
     });
 
-    it('should default to basic when plan unknown', async () => {
-      mockDb.query.mockResolvedValueOnce([{ current_plan: 'unknown_plan' }]);
+    it('should default to 100 GB when no tenant_storage entry', async () => {
+      // tenant_storage returns empty
+      mockDb.query.mockResolvedValueOnce([]);
+      // documents, attachments, logs
       mockDb.query.mockResolvedValueOnce([{ total: '0' }]);
       mockDb.query.mockResolvedValueOnce([{ total: '0' }]);
       mockDb.query.mockResolvedValueOnce([{ total: '0' }]);
 
       const result = await service.getStorageInfo(10);
 
-      expect(result.total).toBe(1_073_741_824); // basic fallback
+      expect(result.total).toBe(100 * 1024 * 1024 * 1024);
+      expect(result.storageLimitGb).toBe(100);
     });
   });
 });

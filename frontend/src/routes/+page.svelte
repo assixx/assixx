@@ -3,11 +3,8 @@
 
   import { resolve } from '$app/paths';
 
-  import {
-    isDark,
-    forceDark,
-    restoreUserTheme,
-  } from '$lib/stores/theme.svelte';
+  import ThemeToggle from '$lib/components/ThemeToggle.svelte';
+  import { isDark } from '$lib/stores/theme.svelte';
 
   import FeaturesGrid from './_lib/FeaturesGrid.svelte';
   import PricingSection from './_lib/PricingSection.svelte';
@@ -16,13 +13,11 @@
   // Modal state
   let showSignupModal: boolean = $state(false);
 
-  // Always-dark page + body class for landing page (disables global gradient)
+  // Body class for landing page (disables global gradient)
   onMount(() => {
-    forceDark();
     document.body.classList.add('landing-page-active');
     return () => {
       document.body.classList.remove('landing-page-active');
-      restoreUserTheme();
     };
   });
 
@@ -66,14 +61,15 @@
         </button>
       </div>
       <div class="nav-links">
-        <a href="#features">Features</a>
+        <a href="#module">Module</a>
         <a href="#security">Sicherheit</a>
         <a href="#pricing">Preise</a>
         <a href={resolve('/login', {})}>Anmelden</a>
         <a
           href={resolve('/signup', {})}
-          class="btn btn-primary-first">Registrieren</a
+          class="btn btn-index">Registrieren</a
         >
+        <ThemeToggle />
       </div>
     </nav>
   </header>
@@ -87,7 +83,7 @@
     </p>
     <a
       href={resolve('/signup', {})}
-      class="btn btn-primary-first">Jetzt registrieren</a
+      class="btn btn-index">Jetzt registrieren</a
     >
   </section>
 
@@ -118,7 +114,7 @@
   >
     <div class="modal-content">
       <h2>Jetzt kostenlos testen</h2>
-      <p>14 Tage kostenlos - keine Kreditkarte erforderlich</p>
+      <p>30 Tage kostenlos testen - keine Kreditkarte erforderlich</p>
       <p class="u-mb-md">
         Bitte nutzen Sie unser vollständiges Registrierungsformular:
       </p>
@@ -253,16 +249,20 @@
       color-mix(in oklch, var(--color-black) 20%, transparent);
   }
 
+  /* Hero CTA button: always white text (sits on dark image overlay in both modes) */
+  .hero :global(.btn) {
+    color: var(--color-white);
+  }
+
   /* Footer */
   .footer {
     backdrop-filter: blur(20px);
     box-shadow: 0 -8px 32px
-      color-mix(in oklch, var(--color-black) 40%, transparent);
-    border-top: 1px solid
-      color-mix(in oklch, var(--color-white) 15%, transparent);
-    background: color-mix(in oklch, var(--color-white) 2%, transparent);
+      color-mix(in oklch, var(--color-black) 20%, transparent);
+    border-top: 1px solid var(--color-glass-border);
+    background: var(--glass-bg);
     padding: var(--spacing-6) 5%;
-    color: var(--text-secondary);
+    color: var(--color-text-secondary);
     text-align: center;
   }
 
@@ -282,9 +282,9 @@
   }
 
   .modal-content {
-    border: 1px solid color-mix(in oklch, var(--color-white) 10%, transparent);
+    border: 1px solid var(--color-glass-border);
     border-radius: var(--radius-xl);
-    background: color-mix(in oklch, var(--color-white) 2%, transparent);
+    background: var(--glass-bg);
     padding: var(--spacing-6);
     width: 90%;
     max-width: 500px;
@@ -307,6 +307,11 @@
   .btn-cancel--full {
     margin-top: 1rem;
     width: 100%;
+  }
+
+  /* Light mode overrides */
+  :global(html:not(.dark)) .nav-links a:hover {
+    color: var(--color-primary);
   }
 
   /* Responsive */

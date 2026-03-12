@@ -19,10 +19,6 @@
 
   import type { WorkOrderListItem } from './types';
 
-  function resolvePath(path: string): string {
-    return (resolve as (p: string) => string)(path);
-  }
-
   interface Props {
     workOrder: WorkOrderListItem;
   }
@@ -49,7 +45,7 @@
       new Date(workOrder.dueDate) < new Date(),
   );
 
-  const detailUrl = $derived(resolvePath(`/work-orders/${workOrder.uuid}`));
+  const detailUrl = $derived(resolve(`/work-orders/${workOrder.uuid}`));
 </script>
 
 <a

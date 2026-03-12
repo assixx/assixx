@@ -8,7 +8,6 @@ import nodemailer, { SendMailOptions, Transporter } from 'nodemailer';
 import path from 'path';
 
 import { getErrorMessage } from '../nest/common/utils/error.utils.js';
-import featureCheck from './feature-check.js';
 import { logger } from './logger.js';
 
 // Type definition for attachment (from nodemailer)
@@ -545,32 +544,15 @@ async function sendWelcomeEmail(user: User): Promise<EmailResult> {
   }
 }
 
-async function checkBulkEmailFeature(
-  options: BulkMessageOptions,
-  userCount: number,
-): Promise<EmailResult | null> {
-  if (options.tenantId == null || options.checkFeature !== true) return null;
-
-  const hasAccess = await featureCheck.checkTenantAccess(
-    options.tenantId,
-    'email_notifications',
-  );
-  if (!hasAccess) {
-    return {
-      success: false,
-      error: 'Keine Berechtigung für Massen-E-Mails. Bitte Feature upgraden.',
-    };
-  }
-
-  await featureCheck.logUsage(
-    options.tenantId,
-    'email_notifications',
-    options.userId,
-    {
-      recipients: userCount,
-      subject: options.subject,
-    },
-  );
+/**
+ * Bulk email feature check — always allows access.
+ * The deprecated feature-check stub was removed (ADR-033).
+ * Proper addon-based gating will use AddonCheckService via NestJS DI.
+ */
+function checkBulkEmailFeature(
+  _options: BulkMessageOptions,
+  _userCount: number,
+): EmailResult | null {
   return null;
 }
 
@@ -603,10 +585,7 @@ async function sendBulkNotification(
   messageOptions: BulkMessageOptions,
 ): Promise<EmailResult> {
   try {
-    const featureError = await checkBulkEmailFeature(
-      messageOptions,
-      users.length,
-    );
+    const featureError = checkBulkEmailFeature(messageOptions, users.length);
     if (featureError !== null) return featureError;
 
     const validUsers = users.filter((user: User) => user.email !== '');

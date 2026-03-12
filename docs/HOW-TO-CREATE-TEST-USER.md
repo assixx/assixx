@@ -23,6 +23,7 @@ Das Script ruft `POST /api/v2/signup` auf. Die Signup API erstellt automatisch:
 | Tenant    | API Test GmbH (subdomain: `apitest`)            |
 | Root-User | admin@apitest.de mit `has_full_access = true`   |
 | Passwort  | `ApiTest12345!` (bcrypt-gehasht durch die API)  |
+| Adresse   | Musterstraße 42, 10115 Berlin, DE               |
 | Features  | Alle 20 Features aktiviert (14 Tage Trial)      |
 | Plan      | Basic (Trial-Status)                            |
 | Audit-Log | Registrierung wird in `root_logs` protokolliert |
@@ -45,6 +46,7 @@ Domain:   apitest
 Email:    admin@apitest.de
 Passwort: ApiTest12345!
 Rolle:    Root (has_full_access = true)
+Adresse:  Musterstraße 42, 10115 Berlin, DE
 ```
 
 ---
@@ -56,8 +58,7 @@ Die Signup API übernimmt automatisch:
 - **Passwort-Hashing** (bcrypt, salt 12) — kein Platzhalter-Hash
 - **`has_full_access = true`** für Root — kein vergessenes Pflichtfeld
 - **`employee_number`** + **`employee_id`** — automatisch generiert
-- **`tenant_features`** — alle Features aktiviert mit Ablaufdatum
-- **`tenant_plans`** — Plan-Zuordnung
+- **`tenant_addons`** — alle Addons aktiviert mit Ablaufdatum
 - **Audit-Log** — Registrierung protokolliert
 - **UUID** — UUIDv7 automatisch vergeben
 

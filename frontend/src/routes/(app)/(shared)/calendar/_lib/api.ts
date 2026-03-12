@@ -594,7 +594,7 @@ export async function loadOrganizationData(): Promise<{
  */
 export async function markCalendarVisited(): Promise<void> {
   try {
-    await apiClient.post('/feature-visits/mark', { feature: 'calendar' });
+    await apiClient.post('/addon-visits/mark', { addon: 'calendar' });
     log.debug('Calendar marked as visited');
   } catch (err: unknown) {
     // Non-critical error - don't break the page

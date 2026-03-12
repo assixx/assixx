@@ -130,6 +130,9 @@ html.dark {
   --shadow-btn-dark-hover:
     0 4px 12px oklch(0% 0 0 / 40%), inset 0 1px 0 oklch(100% 0 0 / 10%);
 
+  /* Organigramm Connection Lines */
+  --org-connection-stroke: oklch(100% 0 0);
+
   /* Navigation-specific (dark mode) */
   --nav-hover-bg: oklch(86.39% 0.0576 237.64 / 28%);
   --nav-active-submenu-bg: oklch(63.24% 0 0 / 12%);

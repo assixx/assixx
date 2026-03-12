@@ -18,12 +18,15 @@
     formatAvailabilityPeriod,
   } from './utils';
 
+  import type { HierarchyLabels } from '$lib/types/hierarchy-labels';
   import type { Employee } from './types';
 
   /**
    * Props interface for EmployeeSidebar
    */
   interface Props {
+    /** Dynamic hierarchy labels from layout */
+    labels: HierarchyLabels;
     employees: Employee[];
     weekDates: Date[];
     canEditShifts: boolean;
@@ -38,6 +41,7 @@
   }
 
   const {
+    labels,
     employees,
     weekDates,
     canEditShifts,
@@ -70,7 +74,7 @@
     <div class="mt-2 mb-2 flex items-center gap-2">
       <span
         class="badge badge--warning"
-        title="Mindestbesetzung für diese Anlage"
+        title={`Mindestbesetzung für diese ${labels.asset}`}
       >
         <i class="fas fa-hard-hat"></i>
         Mindestbesetzung: {minStaffCount}

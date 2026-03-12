@@ -4,7 +4,7 @@
    * Extracted from +layout.svelte for modularity (max-lines)
    * @module (app)/_lib/AppSidebar
    */
-  import { SvelteSet } from 'svelte/reactivity';
+  import { SvelteMap, SvelteSet } from 'svelte/reactivity';
 
   import { resolve } from '$app/paths';
   import { page } from '$app/stores';
@@ -13,7 +13,6 @@
   import { notificationStore } from '$lib/stores/notification.store.svelte';
 
   import { type NavItem } from './navigation-config';
-  import SidebarStorageWidget from './SidebarStorageWidget.svelte';
   import SidebarUserCard from './SidebarUserCard.svelte';
 
   /**
@@ -125,23 +124,108 @@
     }
   }
 
-  /** Toggle submenu */
-  function toggleSubmenu(itemId: string): void {
+  // --- SUBMENU AUTO-SCROLL ---
+  const submenuScrollPositions = new SvelteMap<string, number>();
+  const SCROLL_DURATION = 230;
+
+  /** Animate scroll on the sidebar nav container (easeOutCubic) */
+  function smoothScrollNav(container: HTMLElement, to: number): void {
+    const from = container.scrollTop;
+    const distance = to - from;
+    if (Math.abs(distance) < 1) return;
+
+    const start = performance.now();
+
+    function step(now: number): void {
+      const progress = Math.min((now - start) / SCROLL_DURATION, 1);
+      const eased = 1 - (1 - progress) ** 3;
+      container.scrollTop = from + distance * eased;
+      if (progress < 1) requestAnimationFrame(step);
+    }
+
+    requestAnimationFrame(step);
+  }
+
+  /** Scroll sidebar to reveal newly opened submenu — starts on next frame, parallel to CSS */
+  function scrollSubmenuIntoView(
+    target: EventTarget | null | undefined,
+    itemId: string,
+  ): void {
+    if (!(target instanceof HTMLElement)) return;
+    const nav = target.closest('.sidebar-nav');
+    const li = target.closest('li');
+    if (!(nav instanceof HTMLElement) || li === null) return;
+
+    submenuScrollPositions.set(itemId, nav.scrollTop);
+
+    requestAnimationFrame(() => {
+      const submenuUl = li.querySelector(
+        ':scope > .submenu-wrapper > .submenu',
+      );
+      if (!(submenuUl instanceof HTMLElement)) return;
+
+      const navRect = nav.getBoundingClientRect();
+      const buttonBottom = target.getBoundingClientRect().bottom;
+      const finalBottom = buttonBottom + submenuUl.scrollHeight + 16;
+
+      if (finalBottom > navRect.bottom) {
+        smoothScrollNav(nav, nav.scrollTop + (finalBottom - navRect.bottom));
+      }
+    });
+  }
+
+  /** Scroll back to saved position BEFORE collapsing. Returns true if scroll started. */
+  function scrollSubmenuBack(
+    target: EventTarget | null | undefined,
+    itemId: string,
+  ): boolean {
+    if (!(target instanceof HTMLElement)) return false;
+    const nav = target.closest('.sidebar-nav');
+    if (!(nav instanceof HTMLElement)) return false;
+
+    const saved = submenuScrollPositions.get(itemId);
+    if (saved === undefined) return false;
+    submenuScrollPositions.delete(itemId);
+
+    const maxScroll = nav.scrollHeight - nav.clientHeight;
+    const to = Math.min(saved, maxScroll);
+    if (Math.abs(nav.scrollTop - to) < 1) return false;
+
+    smoothScrollNav(nav, to);
+    return true;
+  }
+
+  /** Toggle submenu — on close: scroll back first, then collapse */
+  function toggleSubmenu(itemId: string, event?: MouseEvent): void {
     if (collapsed) return;
     if (openSubmenus.has(itemId)) {
-      openSubmenus.delete(itemId);
+      const didScroll = scrollSubmenuBack(event?.currentTarget, itemId);
+      setTimeout(
+        () => {
+          openSubmenus.delete(itemId);
+        },
+        didScroll ? SCROLL_DURATION : 0,
+      );
     } else {
       openSubmenus.add(itemId);
+      scrollSubmenuIntoView(event?.currentTarget, itemId);
     }
   }
 
-  /** Toggle nested sub-submenu */
-  function toggleSubSubmenu(itemId: string): void {
+  /** Toggle nested sub-submenu — on close: scroll back first, then collapse */
+  function toggleSubSubmenu(itemId: string, event?: MouseEvent): void {
     if (collapsed) return;
     if (openSubSubmenus.has(itemId)) {
-      openSubSubmenus.delete(itemId);
+      const didScroll = scrollSubmenuBack(event?.currentTarget, itemId);
+      setTimeout(
+        () => {
+          openSubSubmenus.delete(itemId);
+        },
+        didScroll ? SCROLL_DURATION : 0,
+      );
     } else {
       openSubSubmenus.add(itemId);
+      scrollSubmenuIntoView(event?.currentTarget, itemId);
     }
   }
 
@@ -178,8 +262,8 @@
             <button
               type="button"
               class="sidebar-link"
-              onclick={() => {
-                toggleSubmenu(item.id);
+              onclick={(event: MouseEvent) => {
+                toggleSubmenu(item.id, event);
               }}
             >
               <span
@@ -223,8 +307,8 @@
                         type="button"
                         class="submenu-link submenu-link--toggle"
                         class:active={isActive(subItem)}
-                        onclick={() => {
-                          toggleSubSubmenu(subItem.id);
+                        onclick={(event: MouseEvent) => {
+                          toggleSubSubmenu(subItem.id, event);
                         }}
                       >
                         <span>{subItem.label}</span>
@@ -337,9 +421,6 @@
 
   <!-- Sidebar Footer Area — pinned to bottom via flex -->
   <div class="sidebar-footer-area">
-    {#if currentRole === 'root'}
-      <SidebarStorageWidget />
-    {/if}
     <SidebarUserCard
       {user}
       {tenant}
@@ -455,10 +536,6 @@
     border-radius: var(--glass-card-radius);
     background: var(--nav-hover-bg);
     content: '';
-  }
-
-  .sidebar.collapsed :global(.storage-widget) {
-    display: none;
   }
 
   /* Sidebar menu */
@@ -771,14 +848,6 @@
     .sidebar.mobile-open .submenu-arrow {
       display: flex;
     }
-
-    .sidebar :global(.storage-widget) {
-      position: relative;
-      right: auto;
-      bottom: auto;
-      left: auto;
-      margin-top: var(--spacing-6);
-    }
   }
 
   /* Tablet: 768px – 1023px */
@@ -798,10 +867,6 @@
 
     .sidebar .submenu-wrapper {
       display: none !important;
-    }
-
-    .sidebar :global(.storage-widget) {
-      display: none;
     }
 
     .sidebar .sidebar-link {

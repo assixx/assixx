@@ -8,7 +8,7 @@
     logApiError,
     updateDummy,
   } from './_lib/api';
-  import { MESSAGES } from './_lib/constants';
+  import { createDummyMessages } from './_lib/constants';
   import DeleteConfirmModal from './_lib/DeleteConfirmModal.svelte';
   import DummyFormModal from './_lib/DummyFormModal.svelte';
   import DummyTable from './_lib/DummyTable.svelte';
@@ -28,6 +28,10 @@
   // =============================================================================
 
   const { data }: { data: PageData } = $props();
+
+  // Hierarchy labels from layout data inheritance (A6)
+  const labels = $derived(data.hierarchyLabels);
+  const messages = $derived(createDummyMessages(labels));
 
   // =============================================================================
   // CLIENT STATE
@@ -180,7 +184,7 @@
 </script>
 
 <svelte:head>
-  <title>{MESSAGES.PAGE_TITLE}</title>
+  <title>{messages.PAGE_TITLE}</title>
 </svelte:head>
 
 <div class="container">
@@ -188,10 +192,10 @@
     <div class="card__header">
       <h2 class="card__title">
         <i class="fas fa-desktop mr-2"></i>
-        {MESSAGES.HEADING}
+        {messages.HEADING}
       </h2>
       <p class="mt-2 text-(--color-text-secondary)">
-        {MESSAGES.HEADING_SUBTITLE}
+        {messages.HEADING_SUBTITLE}
       </p>
 
       <div
@@ -216,16 +220,16 @@
           <div class="empty-state__icon">
             <i class="fas fa-spinner fa-spin"></i>
           </div>
-          <p class="empty-state__description">{MESSAGES.LOADING}</p>
+          <p class="empty-state__description">{messages.LOADING}</p>
         </div>
       {:else if dummies.length === 0}
         <div class="empty-state">
           <div class="empty-state__icon">
             <i class="fas fa-desktop"></i>
           </div>
-          <h3 class="empty-state__title">{MESSAGES.EMPTY_TITLE}</h3>
+          <h3 class="empty-state__title">{messages.EMPTY_TITLE}</h3>
           <p class="empty-state__description">
-            {MESSAGES.EMPTY_DESCRIPTION}
+            {messages.EMPTY_DESCRIPTION}
           </p>
           <button
             type="button"
@@ -238,6 +242,7 @@
         </div>
       {:else}
         <DummyTable
+          {messages}
           {dummies}
           onedit={openEditModal}
           ondelete={openDeleteModal}
@@ -296,7 +301,7 @@
 <button
   type="button"
   class="btn-float"
-  aria-label={MESSAGES.BTN_CREATE}
+  aria-label={messages.BTN_CREATE}
   onclick={openCreateModal}
 >
   <i class="fas fa-plus"></i>

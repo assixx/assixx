@@ -1,5 +1,10 @@
 <script lang="ts">
   import {
+    DEFAULT_HIERARCHY_LABELS,
+    resolvePositionDisplay,
+  } from '$lib/types/hierarchy-labels';
+
+  import {
     getStatusBadgeClass,
     getStatusLabel,
     getAvatarColor,
@@ -11,6 +16,7 @@
     getTruncatedNotes,
   } from './utils';
 
+  import type { HierarchyLabels } from '$lib/types/hierarchy-labels';
   import type { Employee } from './types';
 
   // =============================================================================
@@ -19,22 +25,29 @@
 
   interface Props {
     employee: Employee;
+    labels?: HierarchyLabels;
     onedit: (employeeId: number) => void;
     onavailability: (employeeId: number) => void;
     onpermission: (uuid: string) => void;
     ondelete: (employeeId: number) => void;
   }
 
-  const { employee, onedit, onavailability, onpermission, ondelete }: Props =
-    $props();
+  const {
+    employee,
+    labels = DEFAULT_HIERARCHY_LABELS,
+    onedit,
+    onavailability,
+    onpermission,
+    ondelete,
+  }: Props = $props();
 
   // =============================================================================
   // DERIVED VALUES
   // =============================================================================
 
-  const teamsBadge = $derived(getTeamsBadge(employee));
-  const areasBadge = $derived(getAreasBadge(employee));
-  const departmentsBadge = $derived(getDepartmentsBadge(employee));
+  const teamsBadge = $derived(getTeamsBadge(employee, labels));
+  const areasBadge = $derived(getAreasBadge(employee, labels));
+  const departmentsBadge = $derived(getDepartmentsBadge(employee, labels));
   const availabilityBadge = $derived(getAvailabilityBadge(employee));
   const plannedAvailability = $derived(getPlannedAvailability(employee));
   const notes = $derived(getTruncatedNotes(employee.availabilityNotes));
@@ -53,7 +66,7 @@
     </div>
   </td>
   <td>{employee.email}</td>
-  <td>{employee.position ?? '-'}</td>
+  <td>{resolvePositionDisplay(employee.position ?? '', labels)}</td>
   <td>{employee.employeeNumber ?? '-'}</td>
   <td>
     <span class="badge {getStatusBadgeClass(employee.isActive)}"

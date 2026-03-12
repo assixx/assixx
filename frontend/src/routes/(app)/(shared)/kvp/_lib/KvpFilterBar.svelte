@@ -7,8 +7,12 @@
   import { SvelteSet } from 'svelte/reactivity';
 
   import { onClickOutsideDropdown } from '$lib/actions/click-outside';
+  import {
+    DEFAULT_HIERARCHY_LABELS,
+    type HierarchyLabels,
+  } from '$lib/types/hierarchy-labels';
 
-  import { FILTER_OPTIONS, STATUS_FILTER_OPTIONS } from './constants';
+  import { createFilterOptions, STATUS_FILTER_OPTIONS } from './constants';
   import { kvpState } from './state.svelte';
   import { debounce } from './utils';
 
@@ -17,9 +21,16 @@
   interface Props {
     userOrganizations: UserTeamWithAssets[];
     onfilterchange: () => void;
+    labels?: HierarchyLabels;
   }
 
-  const { userOrganizations, onfilterchange }: Props = $props();
+  const {
+    userOrganizations,
+    onfilterchange,
+    labels = DEFAULT_HIERARCHY_LABELS,
+  }: Props = $props();
+
+  const filterOptions = $derived(createFilterOptions(labels));
 
   // ==========================================================================
   // DROPDOWN STATE
@@ -28,9 +39,16 @@
   let activeDropdown = $state<string | null>(null);
   let statusDisplayText = $state('Alle Status');
   let categoryDisplayText = $state('Alle Kategorien');
-  let departmentDisplayText = $state('Alle Abteilungen');
-  let teamDisplayText = $state('Alle Teams');
-  let assetDisplayText = $state('Alle Anlagen');
+  let departmentDisplayText = $state<string | null>(null);
+  let teamDisplayText = $state<string | null>(null);
+  let assetDisplayText = $state<string | null>(null);
+
+  /** Show selected name or dynamic default */
+  const departmentDisplay = $derived(
+    departmentDisplayText ?? `Alle ${labels.department}`,
+  );
+  const teamDisplay = $derived(teamDisplayText ?? `Alle ${labels.team}`);
+  const assetDisplay = $derived(assetDisplayText ?? `Alle ${labels.asset}`);
 
   const debouncedSearch = debounce(() => {
     onfilterchange();
@@ -67,21 +85,21 @@
     onfilterchange();
   }
 
-  function handleDepartmentSelect(value: string, label: string) {
+  function handleDepartmentSelect(value: string, label: string | null) {
     kvpState.setDepartmentFilter(value);
     departmentDisplayText = label;
     closeAllDropdowns();
     onfilterchange();
   }
 
-  function handleTeamSelect(value: string, label: string) {
+  function handleTeamSelect(value: string, label: string | null) {
     kvpState.setTeamFilter(value);
     teamDisplayText = label;
     closeAllDropdowns();
     onfilterchange();
   }
 
-  function handleAssetSelect(value: string, label: string) {
+  function handleAssetSelect(value: string, label: string | null) {
     kvpState.setAssetFilter(value);
     assetDisplayText = label;
     closeAllDropdowns();
@@ -129,7 +147,7 @@
           class="toggle-group mt-2"
           id="kvpFilter"
         >
-          {#each FILTER_OPTIONS as option (option.value)}
+          {#each filterOptions as option (option.value)}
             <button
               type="button"
               class="toggle-group__btn"
@@ -241,7 +259,7 @@
 
       <!-- Department Filter -->
       <div class="form-field">
-        <span class="form-field__label">Abteilung</span>
+        <span class="form-field__label">{labels.department}</span>
         <div
           class="dropdown mt-2"
           data-dropdown="department"
@@ -254,7 +272,7 @@
               toggleDropdown('department');
             }}
           >
-            <span>{departmentDisplayText}</span>
+            <span>{departmentDisplay}</span>
             <i class="fas fa-chevron-down"></i>
           </button>
           <div
@@ -267,10 +285,10 @@
               data-action="select-department"
               data-value=""
               onclick={() => {
-                handleDepartmentSelect('', 'Alle Abteilungen');
+                handleDepartmentSelect('', null);
               }}
             >
-              Alle Abteilungen
+              Alle {labels.department}
             </button>
             {#each kvpState.departments as dept (dept.id)}
               <button
@@ -291,7 +309,7 @@
 
       <!-- Team Filter -->
       <div class="form-field">
-        <span class="form-field__label">Team</span>
+        <span class="form-field__label">{labels.team}</span>
         <div
           class="dropdown mt-2"
           data-dropdown="team"
@@ -304,7 +322,7 @@
               toggleDropdown('team');
             }}
           >
-            <span>{teamDisplayText}</span>
+            <span>{teamDisplay}</span>
             <i class="fas fa-chevron-down"></i>
           </button>
           <div
@@ -315,10 +333,10 @@
               type="button"
               class="dropdown__option"
               onclick={() => {
-                handleTeamSelect('', 'Alle Teams');
+                handleTeamSelect('', null);
               }}
             >
-              Alle Teams
+              Alle {labels.team}
             </button>
             {#each userOrganizations as team (team.teamId)}
               <button
@@ -338,7 +356,7 @@
       <!-- Asset Filter -->
       {#if allFilterAssets.length > 0}
         <div class="form-field">
-          <span class="form-field__label">Anlage</span>
+          <span class="form-field__label">{labels.asset}</span>
           <div
             class="dropdown mt-2"
             data-dropdown="asset"
@@ -351,7 +369,7 @@
                 toggleDropdown('asset');
               }}
             >
-              <span>{assetDisplayText}</span>
+              <span>{assetDisplay}</span>
               <i class="fas fa-chevron-down"></i>
             </button>
             <div
@@ -362,10 +380,10 @@
                 type="button"
                 class="dropdown__option"
                 onclick={() => {
-                  handleAssetSelect('', 'Alle Anlagen');
+                  handleAssetSelect('', null);
                 }}
               >
-                Alle Anlagen
+                Alle {labels.asset}
               </button>
               {#each allFilterAssets as asset (asset.id)}
                 <button

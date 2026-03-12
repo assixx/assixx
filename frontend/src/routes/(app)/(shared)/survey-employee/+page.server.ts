@@ -6,7 +6,7 @@
  */
 import { redirect } from '@sveltejs/kit';
 
-import { requireFeature } from '$lib/utils/feature-guard';
+import { requireAddon } from '$lib/utils/addon-guard';
 import { createLogger } from '$lib/utils/logger';
 
 import type { PageServerLoad } from './$types';
@@ -61,8 +61,8 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
     redirect(302, '/login');
   }
 
-  const { activeFeatures } = await parent();
-  requireFeature(activeFeatures, 'surveys');
+  const { activeAddons } = await parent();
+  requireAddon(activeAddons, 'surveys');
 
   // Load all surveys, filter to only active/completed (employees don't see draft/paused/archived)
   const surveysData = await apiFetch<Survey[]>('/surveys', token, fetch);

@@ -1,8 +1,8 @@
 /**
  * Require Permission Decorator
  *
- * Defines required feature permission for accessing a route.
- * Used with PermissionGuard to implement per-user feature permission control.
+ * Defines required addon permission for accessing a route.
+ * Used with PermissionGuard to implement per-user addon permission control.
  * Works alongside \@Roles() — roles are checked first, then permissions.
  *
  * @see docs/infrastructure/adr/ADR-020-per-user-feature-permissions.md
@@ -15,20 +15,20 @@ export const PERMISSION_KEY = 'requiredPermission';
 
 /** Metadata shape stored by the decorator */
 export interface RequiredPermission {
-  featureCode: string;
+  addonCode: string;
   moduleCode: string;
   action: PermissionType;
 }
 
 /**
- * Require a specific feature permission for route access.
- * PermissionGuard reads this metadata and checks user_feature_permissions table.
+ * Require a specific addon permission for route access.
+ * PermissionGuard reads this metadata and checks user_addon_permissions table.
  *
  * Root and admin-with-full-access bypass this check automatically.
  * All other users must have an explicit grant in the DB.
  *
- * @param featureCode - Feature category code (e.g. 'blackboard')
- * @param moduleCode - Module code within the feature (e.g. 'blackboard-posts')
+ * @param addonCode - Addon code (e.g. 'blackboard')
+ * @param moduleCode - Module code within the addon (e.g. 'blackboard-posts')
  * @param action - Permission type required ('canRead' | 'canWrite' | 'canDelete')
  *
  * @example
@@ -39,8 +39,8 @@ export interface RequiredPermission {
  * ```
  */
 export const RequirePermission = (
-  featureCode: string,
+  addonCode: string,
   moduleCode: string,
   action: PermissionType,
 ): ReturnType<typeof SetMetadata> =>
-  SetMetadata(PERMISSION_KEY, { featureCode, moduleCode, action });
+  SetMetadata(PERMISSION_KEY, { addonCode, moduleCode, action });

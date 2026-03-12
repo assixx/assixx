@@ -7,7 +7,7 @@
  */
 import { redirect } from '@sveltejs/kit';
 
-import { requireFeature } from '$lib/utils/feature-guard';
+import { requireAddon } from '$lib/utils/addon-guard';
 import { createLogger } from '$lib/utils/logger';
 
 import type { PageServerLoad } from './$types';
@@ -79,8 +79,8 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
     redirect(302, '/login');
   }
 
-  const { activeFeatures } = await parent();
-  requireFeature(activeFeatures, 'vacation');
+  const { activeAddons } = await parent();
+  requireAddon(activeAddons, 'vacation');
 
   const now = new Date();
   const currentYear = now.getFullYear();

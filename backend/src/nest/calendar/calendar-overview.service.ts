@@ -6,8 +6,8 @@
  */
 import { Injectable } from '@nestjs/common';
 
+import { AddonVisitsService } from '../addon-visits/addon-visits.service.js';
 import { DatabaseService } from '../database/database.service.js';
-import { FeatureVisitsService } from '../feature-visits/feature-visits.service.js';
 import { CalendarPermissionService } from './calendar-permission.service.js';
 import {
   PERMISSION_BASED_COUNT_QUERY,
@@ -23,7 +23,7 @@ import type {
 export class CalendarOverviewService {
   constructor(
     private readonly databaseService: DatabaseService,
-    private readonly featureVisitsService: FeatureVisitsService,
+    private readonly addonVisitsService: AddonVisitsService,
     private readonly permissionService: CalendarPermissionService,
   ) {}
 
@@ -140,7 +140,7 @@ export class CalendarOverviewService {
     _userTeamId: number | null,
   ): Promise<{ count: number }> {
     const userRole = await this.permissionService.getUserRole(userId, tenantId);
-    const lastVisited = await this.featureVisitsService.getLastVisited(
+    const lastVisited = await this.addonVisitsService.getLastVisited(
       tenantId,
       userId,
       'calendar',

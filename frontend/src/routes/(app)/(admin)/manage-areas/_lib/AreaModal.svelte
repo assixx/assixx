@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { TYPE_OPTIONS, MESSAGES } from './constants';
+  import { TYPE_OPTIONS } from './constants';
   import {
     getStatusBadgeClass,
     getStatusLabel,
@@ -7,11 +7,13 @@
     getAreaLeadDisplayName,
   } from './utils';
 
+  import type { AreaMessages } from './constants';
   import type {
     FormIsActiveStatus,
     AreaType,
     AdminUser,
     Department,
+    Hall,
   } from './types';
 
   // Props with bindable for two-way binding
@@ -19,16 +21,18 @@
     show: boolean;
     isEditMode: boolean;
     modalTitle: string;
+    messages: AreaMessages;
     formName: string;
     formDescription: string;
     formAreaLeadId: number | null;
     formType: AreaType;
     formCapacity: number | null;
-    formAddress: string;
     formDepartmentIds: number[];
+    formHallIds: number[];
     formIsActive: FormIsActiveStatus;
     areaLeads: AdminUser[];
     allDepartments: Department[];
+    allHalls: Hall[];
     submitting: boolean;
     onclose: () => void;
     onsubmit: (e: Event) => void;
@@ -36,7 +40,7 @@
 
   /* eslint-disable prefer-const, @typescript-eslint/no-useless-default-assignment -- Svelte $bindable() requires let and is not a useless default */
   // prettier-ignore
-  let { show, isEditMode, modalTitle, formName = $bindable(), formDescription = $bindable(), formAreaLeadId = $bindable(), formType = $bindable(), formCapacity = $bindable(), formAddress = $bindable(), formDepartmentIds = $bindable(), formIsActive = $bindable(), areaLeads, allDepartments, submitting, onclose, onsubmit }: Props = $props();
+  let { show, isEditMode, modalTitle, messages, formName = $bindable(), formDescription = $bindable(), formAreaLeadId = $bindable(), formType = $bindable(), formCapacity = $bindable(), formDepartmentIds = $bindable(), formHallIds = $bindable(), formIsActive = $bindable(), areaLeads, allDepartments, allHalls, submitting, onclose, onsubmit }: Props = $props();
   /* eslint-enable prefer-const, @typescript-eslint/no-useless-default-assignment */
 
   // Local dropdown states
@@ -171,7 +175,7 @@
             class="form-field__label"
             for="area-name"
           >
-            {MESSAGES.LABEL_NAME} <span class="text-red-500">*</span>
+            {messages.LABEL_NAME} <span class="text-red-500">*</span>
           </label>
           <input
             type="text"
@@ -180,7 +184,7 @@
             class="form-field__control"
             required
             bind:value={formName}
-            placeholder={MESSAGES.PLACEHOLDER_NAME}
+            placeholder={messages.PLACEHOLDER_NAME}
           />
         </div>
 
@@ -188,7 +192,7 @@
         <div class="form-field">
           <label
             class="form-field__label"
-            for="area-description">{MESSAGES.LABEL_DESCRIPTION}</label
+            for="area-description">{messages.LABEL_DESCRIPTION}</label
           >
           <textarea
             id="area-description"
@@ -196,7 +200,7 @@
             class="form-field__control"
             rows="3"
             bind:value={formDescription}
-            placeholder={MESSAGES.PLACEHOLDER_DESCRIPTION}
+            placeholder={messages.PLACEHOLDER_DESCRIPTION}
           ></textarea>
         </div>
 
@@ -207,58 +211,71 @@
             for="area-lead-hidden"
           >
             <i class="fas fa-user-tie mr-1"></i>
-            {MESSAGES.LABEL_AREA_LEAD}
+            {messages.LABEL_AREA_LEAD}
           </label>
+          <div
+            class="alert alert--info alert--sm"
+            style="margin-bottom: var(--spacing-3);"
+          >
+            <span class="alert__icon">
+              <i class="fas fa-info-circle"></i>
+            </span>
+            <div class="alert__content">
+              <p class="alert__message">
+                Nur Admins/Root mit der Position &laquo;{messages.AREA_LEAD_POSITION}&raquo;
+                stehen zur Auswahl. Zuweisung über die
+                <a href="/manage-admins">Admin-Verwaltung</a>.
+              </p>
+            </div>
+          </div>
           <input
             type="hidden"
             id="area-lead-hidden"
             value={formAreaLeadId ?? ''}
           />
-          <div
-            class="dropdown"
-            id="area-lead-dropdown"
-          >
-            <button
-              type="button"
-              class="dropdown__trigger"
-              class:active={areaLeadDropdownOpen}
-              onclick={toggleAreaLeadDropdown}
-            >
-              <span>{areaLeadDisplayName}</span>
-              <i class="fas fa-chevron-down"></i>
-            </button>
+          {#if areaLeads.length > 0}
             <div
-              class="dropdown__menu"
-              class:active={areaLeadDropdownOpen}
+              class="dropdown"
+              id="area-lead-dropdown"
             >
               <button
                 type="button"
-                class="dropdown__option"
-                onclick={() => {
-                  selectAreaLead(null);
-                }}
+                class="dropdown__trigger"
+                class:active={areaLeadDropdownOpen}
+                onclick={toggleAreaLeadDropdown}
               >
-                {MESSAGES.NO_AREA_LEAD}
+                <span>{areaLeadDisplayName}</span>
+                <i class="fas fa-chevron-down"></i>
               </button>
-              {#each areaLeads as user (user.id)}
+              <div
+                class="dropdown__menu"
+                class:active={areaLeadDropdownOpen}
+              >
                 <button
                   type="button"
                   class="dropdown__option"
                   onclick={() => {
-                    selectAreaLead(user.id);
+                    selectAreaLead(null);
                   }}
                 >
-                  {user.firstName}
-                  {user.lastName}
-                  {user.role === 'root' ? '(Root)' : '(Admin)'}
+                  {messages.NO_AREA_LEAD}
                 </button>
-              {/each}
+                {#each areaLeads as user (user.id)}
+                  <button
+                    type="button"
+                    class="dropdown__option"
+                    onclick={() => {
+                      selectAreaLead(user.id);
+                    }}
+                  >
+                    {user.firstName}
+                    {user.lastName}
+                    {user.role === 'root' ? '(Root)' : '(Admin)'}
+                  </button>
+                {/each}
+              </div>
             </div>
-          </div>
-          <span class="form-field__message text-(--color-text-secondary)">
-            <i class="fas fa-info-circle mr-1"></i>
-            {MESSAGES.AREA_LEAD_HINT}
-          </span>
+          {/if}
         </div>
 
         <!-- Type Dropdown -->
@@ -267,7 +284,7 @@
             class="form-field__label"
             for="area-type-hidden"
           >
-            {MESSAGES.LABEL_TYPE} <span class="text-red-500">*</span>
+            {messages.LABEL_TYPE} <span class="text-red-500">*</span>
           </label>
           <input
             type="hidden"
@@ -310,7 +327,7 @@
         <div class="form-field">
           <label
             class="form-field__label"
-            for="area-capacity">{MESSAGES.LABEL_CAPACITY}</label
+            for="area-capacity">{messages.LABEL_CAPACITY}</label
           >
           <input
             type="number"
@@ -319,23 +336,7 @@
             class="form-field__control"
             min="0"
             bind:value={formCapacity}
-            placeholder={MESSAGES.PLACEHOLDER_CAPACITY}
-          />
-        </div>
-
-        <!-- Address -->
-        <div class="form-field">
-          <label
-            class="form-field__label"
-            for="area-address">{MESSAGES.LABEL_ADDRESS}</label
-          >
-          <input
-            type="text"
-            id="area-address"
-            name="address"
-            class="form-field__control"
-            bind:value={formAddress}
-            placeholder={MESSAGES.PLACEHOLDER_ADDRESS}
+            placeholder={messages.PLACEHOLDER_CAPACITY}
           />
         </div>
 
@@ -346,7 +347,7 @@
             for="area-departments"
           >
             <i class="fas fa-sitemap mr-1"></i>
-            {MESSAGES.LABEL_DEPARTMENTS}
+            {messages.LABEL_DEPARTMENTS}
           </label>
           <select
             id="area-departments"
@@ -361,7 +362,33 @@
           </select>
           <span class="form-field__message text-(--color-text-secondary)">
             <i class="fas fa-info-circle mr-1"></i>
-            {MESSAGES.DEPARTMENTS_HINT}
+            {messages.DEPARTMENTS_HINT}
+          </span>
+        </div>
+
+        <!-- Hall Multi-Select -->
+        <div class="form-field">
+          <label
+            class="form-field__label"
+            for="area-halls"
+          >
+            <i class="fas fa-warehouse mr-1"></i>
+            {messages.LABEL_HALLS}
+          </label>
+          <select
+            id="area-halls"
+            name="hallIds"
+            multiple
+            class="multi-select"
+            bind:value={formHallIds}
+          >
+            {#each allHalls as hall (hall.id)}
+              <option value={hall.id}>{hall.name}</option>
+            {/each}
+          </select>
+          <span class="form-field__message text-(--color-text-secondary)">
+            <i class="fas fa-info-circle mr-1"></i>
+            {messages.HALLS_HINT}
           </span>
         </div>
 
@@ -372,7 +399,7 @@
               class="form-field__label"
               for="area-status-hidden"
             >
-              {MESSAGES.LABEL_STATUS} <span class="text-red-500">*</span>
+              {messages.LABEL_STATUS} <span class="text-red-500">*</span>
             </label>
             <input
               type="hidden"
@@ -430,7 +457,7 @@
             <span
               class="form-field__message mt-1 block text-(--color-text-secondary)"
             >
-              {MESSAGES.STATUS_HINT}
+              {messages.STATUS_HINT}
             </span>
           </div>
         {/if}
@@ -440,7 +467,7 @@
         <button
           type="button"
           class="btn btn-cancel"
-          onclick={onclose}>{MESSAGES.BTN_CANCEL}</button
+          onclick={onclose}>{messages.BTN_CANCEL}</button
         >
         <button
           type="submit"
@@ -449,7 +476,7 @@
         >
           {#if submitting}<span class="spinner-ring spinner-ring--sm mr-2"
             ></span>{/if}
-          {MESSAGES.BTN_SAVE}
+          {messages.BTN_SAVE}
         </button>
       </div>
     </form>

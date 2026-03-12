@@ -282,8 +282,7 @@ export function validateUserForCategory(
   ) {
     return {
       valid: false,
-      error:
-        'Sie müssen einer Abteilung zugeordnet sein, um Abteilungs-Dokumente hochzuladen!',
+      error: MESSAGES.UPLOAD_NO_DEPARTMENT,
     };
   }
 

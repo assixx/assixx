@@ -36,7 +36,7 @@ export function getStatusLabel(isActive: IsActiveStatus): string {
 
 /** Get area display name */
 export function getAreaDisplay(areaName: string | null | undefined): string {
-  return areaName ?? 'Kein Bereich';
+  return areaName ?? 'Keine Zuordnung';
 }
 
 /** Get department lead display name */
@@ -45,8 +45,8 @@ export function getLeadDisplay(leadName: string | null | undefined): string {
 }
 
 /** Get team count display text */
-export function getTeamCountText(count: number): string {
-  return count === 1 ? '1 Team' : `${count} Teams`;
+export function getTeamCountText(count: number, teamLabel: string): string {
+  return `${count} ${teamLabel}`;
 }
 
 // =============================================================================
@@ -58,9 +58,9 @@ export function getSelectedAreaName(
   areaId: number | null,
   areas: Area[],
 ): string {
-  if (areaId === null) return 'Kein Bereich';
+  if (areaId === null) return 'Keine Zuordnung';
   const area = areas.find((a) => a.id === areaId);
-  return area?.name ?? 'Kein Bereich';
+  return area?.name ?? 'Keine Zuordnung';
 }
 
 /** Get selected lead name for dropdown trigger */
@@ -68,9 +68,9 @@ export function getSelectedLeadName(
   leadId: number | null,
   leads: AdminUser[],
 ): string {
-  if (leadId === null) return 'Kein Abteilungsleiter';
+  if (leadId === null) return 'Kein Leiter';
   const lead = leads.find((l) => l.id === leadId);
-  if (!lead) return 'Kein Abteilungsleiter';
+  if (!lead) return 'Kein Leiter';
   const roleLabel = lead.role === 'root' ? '(Root)' : '(Admin)';
   return `${lead.firstName} ${lead.lastName} ${roleLabel}`;
 }

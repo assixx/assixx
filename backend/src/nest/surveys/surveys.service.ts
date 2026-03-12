@@ -708,7 +708,7 @@ export class SurveysService {
       : {}),
     });
 
-    void this.notificationsService.createFeatureNotification(
+    void this.notificationsService.createAddonNotification(
       'survey',
       surveyId,
       `Neue Umfrage: ${dto.title}`,

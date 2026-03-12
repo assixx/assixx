@@ -3,6 +3,11 @@
    * CapacityIndicator — Shows capacity analysis result.
    * Displays overall status, team analysis, blackout conflicts, entitlement check.
    */
+  import {
+    DEFAULT_HIERARCHY_LABELS,
+    type HierarchyLabels,
+  } from '$lib/types/hierarchy-labels';
+
   import { CAPACITY_STATUS_CLASS, CAPACITY_STATUS_LABELS } from './constants';
 
   import type { VacationCapacityAnalysis } from './types';
@@ -10,9 +15,11 @@
   const {
     analysis,
     isLoading = false,
+    labels = DEFAULT_HIERARCHY_LABELS,
   }: {
     analysis: VacationCapacityAnalysis | null;
     isLoading?: boolean;
+    labels?: HierarchyLabels;
   } = $props();
 
   const hasConflicts = $derived(
@@ -39,7 +46,7 @@
     // Blocked — show the specific reason
     if (insufficientBalance) return 'Urlaubskontingent erschöpft';
     if (hasConflicts) return 'Sperrzeitraum-Konflikt';
-    if (hasAssetCritical) return 'Anlagenbesetzung kritisch';
+    if (hasAssetCritical) return `Besetzung ${labels.asset} kritisch`;
     return CAPACITY_STATUS_LABELS.blocked;
   });
 </script>

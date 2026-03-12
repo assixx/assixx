@@ -1,7 +1,7 @@
 /**
- * User Feature Permissions Controller
+ * User Addon Permissions Controller
  *
- * HTTP endpoints for per-user feature permission management.
+ * HTTP endpoints for per-user addon permission management.
  * Access: root always, admin only with has_full_access = true.
  * Returns raw data — ResponseInterceptor wraps automatically (ADR-007).
  *
@@ -50,7 +50,7 @@ export class UserPermissionsController {
 
   /**
    * Upsert permissions for a user.
-   * Validates featureCode/moduleCode against the permission registry.
+   * Validates addonCode/moduleCode against the permission registry.
    * Non-allowed permission types are forced to false.
    */
   @Put(':uuid')

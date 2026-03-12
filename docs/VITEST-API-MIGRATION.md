@@ -75,10 +75,10 @@ docker exec assixx-redis redis-cli -a 'dev_only_redis_p@ss_a1b2c3d4e5f6g7h8i9j0'
 These must be set once after initial DB setup. Without them, KVP tests fail:
 
 ```sql
--- Enable all features for apitest tenant
-INSERT INTO tenant_features (tenant_id, feature_id, is_active, activated_at)
-SELECT 1, id, 1, NOW() FROM features WHERE is_active = 1
-ON CONFLICT (tenant_id, feature_id) DO UPDATE SET is_active = 1;
+-- Enable all addons for apitest tenant
+INSERT INTO tenant_addons (tenant_id, addon_id, status, activated_at)
+SELECT 1, id, 'active', NOW() FROM addons WHERE is_active = 1
+ON CONFLICT (tenant_id, addon_id) DO UPDATE SET status = 'active';
 
 -- Set apitest user (id=1) as team lead (required for KVP create)
 UPDATE teams SET team_lead_id = 1 WHERE id = 2 AND tenant_id = 1;
@@ -358,9 +358,9 @@ failing tests currently, but should be fixed for consistency.
 
 1. The apitest user (root role) was NOT a team lead for any team. `kvp.service.ts`
    line 334-340 requires admin/root users to be team leads to create KVP suggestions.
-2. No features were enabled for tenant 1 (tenant_features table was empty).
+2. No addons were enabled for tenant 1 (tenant_addons table was empty).
 
 **Fix:**
 
 1. Set apitest user as team lead: `UPDATE teams SET team_lead_id = 1 WHERE id = 2`
-2. Enabled all features: `INSERT INTO tenant_features ... SELECT 1, id, 1, NOW() FROM features`
+2. Enabled all addons: `INSERT INTO tenant_addons ... SELECT 1, id, 'active', NOW() FROM addons`

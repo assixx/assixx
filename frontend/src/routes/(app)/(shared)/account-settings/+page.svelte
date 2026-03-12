@@ -44,6 +44,7 @@
     data.pendingDeletion ?? null,
   );
   const hasPendingDeletion = $derived(pendingDeletion !== null);
+  const shiftPlanningEnabled = $derived<boolean>(data.shiftPlanningEnabled);
   const ssrShiftTimes = $derived<ShiftTimeData[]>(data.shiftTimes);
 
   // =============================================================================
@@ -228,106 +229,140 @@
 
 <div class="container">
   <!-- ================================================================= -->
-  <!-- SECTION 1: Shift Times Configuration                              -->
+  <!-- SECTION 1: Shift Times Configuration (nur mit shift_planning)     -->
+  <!-- ================================================================= -->
+  {#if shiftPlanningEnabled}
+    <div class="card mb-8">
+      <div class="card__header">
+        <h2 class="card__title">
+          <i class="fas fa-clock mr-2"></i>
+          Schichtzeiten
+        </h2>
+        <p class="mt-2 text-(--color-text-secondary)">
+          Schichtzeiten für die Schichtplanung.
+        </p>
+      </div>
+
+      <div class="card__body">
+        {#if shiftTimesEdits.length > 0}
+          <!-- Column headers -->
+          <div
+            class="st-header"
+            aria-hidden="true"
+          >
+            <span></span>
+            <span>Bezeichnung</span>
+            <span>Beginn</span>
+            <span>Ende</span>
+          </div>
+
+          <!-- Shift rows -->
+          <div class="st-grid">
+            {#each shiftTimesEdits as shiftTime, index (shiftTime.shiftKey)}
+              {@const info = SHIFT_KEY_INFO[shiftTime.shiftKey]}
+              <div class="st-row {info.colorClass}">
+                <i class="fas {info.icon} st-icon"></i>
+                <input
+                  type="text"
+                  id="shift-label-{shiftTime.shiftKey}"
+                  class="form-field__control"
+                  aria-label="Bezeichnung {shiftTime.shiftKey}"
+                  maxlength={100}
+                  bind:value={shiftTimesEdits[index].label}
+                />
+                <input
+                  type="time"
+                  id="shift-start-{shiftTime.shiftKey}"
+                  class="form-field__control"
+                  aria-label="Beginn {shiftTime.shiftKey}"
+                  bind:value={shiftTimesEdits[index].startTime}
+                />
+                <input
+                  type="time"
+                  id="shift-end-{shiftTime.shiftKey}"
+                  class="form-field__control"
+                  aria-label="Ende {shiftTime.shiftKey}"
+                  bind:value={shiftTimesEdits[index].endTime}
+                />
+              </div>
+            {/each}
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="mt-4 flex gap-3">
+            <button
+              type="button"
+              class="btn btn-primary"
+              onclick={handleSaveShiftTimes}
+              disabled={shiftSaving ||
+                !shiftTimesChanged() ||
+                !shiftTimesValid()}
+            >
+              {#if shiftSaving}
+                <span class="spinner-ring spinner-ring--sm"></span>
+                Speichere...
+              {:else}
+                <i class="fas fa-save"></i>
+                Speichern
+              {/if}
+            </button>
+            <button
+              type="button"
+              class="btn btn-cancel"
+              onclick={handleResetShiftTimes}
+              disabled={shiftResetting}
+            >
+              {#if shiftResetting}
+                <span class="spinner-ring spinner-ring--sm"></span>
+                Zurücksetzen...
+              {:else}
+                <i class="fas fa-undo"></i>
+                Standardwerte
+              {/if}
+            </button>
+          </div>
+        {:else}
+          <div class="flex items-center gap-3 text-(--color-text-secondary)">
+            <span class="spinner-ring spinner-ring--sm"></span>
+            Schichtzeiten werden geladen...
+          </div>
+        {/if}
+      </div>
+    </div>
+  {/if}
+
+  <!-- ================================================================= -->
+  <!-- SECTION 2: Storage Usage                                          -->
   <!-- ================================================================= -->
   <div class="card mb-8">
     <div class="card__header">
       <h2 class="card__title">
-        <i class="fas fa-clock mr-2"></i>
-        Schichtzeiten
+        <i class="fas fa-database mr-2"></i>
+        Speicherplatz
       </h2>
       <p class="mt-2 text-(--color-text-secondary)">
-        Schichtzeiten für die Schichtplanung.
+        Speicherverbrauch des Tenants.
       </p>
     </div>
-
     <div class="card__body">
-      {#if shiftTimesEdits.length > 0}
-        <!-- Column headers -->
-        <div
-          class="st-header"
-          aria-hidden="true"
-        >
-          <span></span>
-          <span>Bezeichnung</span>
-          <span>Beginn</span>
-          <span>Ende</span>
+      <div class="storage-bar">
+        <div class="storage-bar__labels">
+          <span class="storage-bar__used">-- GB belegt</span>
+          <span class="storage-bar__total">von -- GB</span>
         </div>
-
-        <!-- Shift rows -->
-        <div class="st-grid">
-          {#each shiftTimesEdits as shiftTime, index (shiftTime.shiftKey)}
-            {@const info = SHIFT_KEY_INFO[shiftTime.shiftKey]}
-            <div class="st-row {info.colorClass}">
-              <i class="fas {info.icon} st-icon"></i>
-              <input
-                type="text"
-                id="shift-label-{shiftTime.shiftKey}"
-                class="form-field__control"
-                aria-label="Bezeichnung {shiftTime.shiftKey}"
-                maxlength={100}
-                bind:value={shiftTimesEdits[index].label}
-              />
-              <input
-                type="time"
-                id="shift-start-{shiftTime.shiftKey}"
-                class="form-field__control"
-                aria-label="Beginn {shiftTime.shiftKey}"
-                bind:value={shiftTimesEdits[index].startTime}
-              />
-              <input
-                type="time"
-                id="shift-end-{shiftTime.shiftKey}"
-                class="form-field__control"
-                aria-label="Ende {shiftTime.shiftKey}"
-                bind:value={shiftTimesEdits[index].endTime}
-              />
-            </div>
-          {/each}
+        <div class="storage-bar__track">
+          <div
+            class="storage-bar__fill"
+            style="width: 0%"
+          ></div>
         </div>
-
-        <!-- Action Buttons -->
-        <div class="mt-4 flex gap-3">
-          <button
-            type="button"
-            class="btn btn-primary"
-            onclick={handleSaveShiftTimes}
-            disabled={shiftSaving || !shiftTimesChanged() || !shiftTimesValid()}
-          >
-            {#if shiftSaving}
-              <span class="spinner-ring spinner-ring--sm"></span>
-              Speichere...
-            {:else}
-              <i class="fas fa-save"></i>
-              Speichern
-            {/if}
-          </button>
-          <button
-            type="button"
-            class="btn btn-cancel"
-            onclick={handleResetShiftTimes}
-            disabled={shiftResetting}
-          >
-            {#if shiftResetting}
-              <span class="spinner-ring spinner-ring--sm"></span>
-              Zurücksetzen...
-            {:else}
-              <i class="fas fa-undo"></i>
-              Standardwerte
-            {/if}
-          </button>
-        </div>
-      {:else}
-        <div class="flex items-center gap-3 text-(--color-text-secondary)">
-          <span class="spinner-ring spinner-ring--sm"></span>
-          Schichtzeiten werden geladen...
-        </div>
-      {/if}
+        <div class="storage-bar__percent">0% belegt</div>
+      </div>
     </div>
   </div>
 
   <!-- ================================================================= -->
-  <!-- SECTION 2: Danger Zone (Tenant Deletion)                          -->
+  <!-- SECTION 3: Danger Zone (Tenant Deletion)                          -->
   <!-- ================================================================= -->
   <div class="card card--danger-border">
     <div class="card__header">
@@ -621,6 +656,64 @@
 
   .st-row.shift-night .st-icon {
     color: oklch(51.68% 0.2151 321.23);
+  }
+
+  /* Storage Bar */
+  .storage-bar__labels {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+    font-size: 0.875rem;
+  }
+
+  .storage-bar__used {
+    font-weight: 600;
+    color: var(--color-text-primary);
+  }
+
+  .storage-bar__total {
+    color: var(--color-text-secondary);
+  }
+
+  .storage-bar__track {
+    border-radius: 4px;
+    background: color-mix(in oklch, var(--color-white) 8%, transparent);
+    box-shadow: inset 0 1px 3px
+      color-mix(in oklch, var(--color-black) 30%, transparent);
+    height: 10px;
+    overflow: hidden;
+  }
+
+  .storage-bar__fill {
+    position: relative;
+    border-radius: 4px;
+    background: var(--color-success, #22c55e);
+    height: 100%;
+    overflow: hidden;
+  }
+
+  .storage-bar__fill::after {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      45deg,
+      transparent 25%,
+      color-mix(in oklch, var(--color-white) 20%, transparent) 25%,
+      color-mix(in oklch, var(--color-white) 20%, transparent) 50%,
+      transparent 50%,
+      transparent 75%,
+      color-mix(in oklch, var(--color-white) 20%, transparent) 75%,
+      color-mix(in oklch, var(--color-white) 20%, transparent)
+    );
+    background-size: 20px 20px;
+    content: '';
+  }
+
+  .storage-bar__percent {
+    margin-top: 0.375rem;
+    font-size: 0.75rem;
+    color: var(--color-text-secondary);
+    text-align: right;
   }
 
   @media (width <= 640px) {

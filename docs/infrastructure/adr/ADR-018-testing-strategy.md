@@ -128,21 +128,21 @@ Assixx had **no automated tests** until early 2026. API endpoints were manually 
                                 │
                    ┌────────────┴────────────┐
                    │  API Integration Tests   │  Tier 2: Real HTTP
-                   │  19 files, 194 tests     │  against Docker backend
+                   │  32 files, 515 tests     │  against Docker backend
                    │  vitest --project api    │  Sequential, fetch()
                    └────────────┬─────────────┘
                                 │
           ┌─────────────────────┴─────────────────────┐
           │           Unit Tests                       │  Tier 1: Pure Functions
-          │  207 files, 4767 tests                     │  No Docker needed
-          │  vitest --project unit                     │  Parallel, <10s
+          │  223 files, 5364 tests                     │  No Docker needed
+          │  vitest --project unit                     │  Parallel, <12s
           ├────────────────────────────────────────────┤
           │  🔴 Permission/Security Tests              │  Tier 1a: CRITICAL subset
-          │  17 files, 374 tests                       │  Access control, auth, RBAC
+          │  17 files, 380 tests                       │  Access control, auth, RBAC
           │  vitest --project permission               │  Badged: SECURITY:
           ├────────────────────────────────────────────┤
           │           Frontend Unit Tests              │  Tier 1b: Frontend Utils
-          │  11 files, 238 tests (Phase 7+)            │  No Docker needed
+          │  16 files, 330 tests (Phase 7+)            │  No Docker needed
           │  vitest --project frontend-unit            │  Parallel, <1s
           └────────────────────────────────────────────┘
 ```
@@ -175,7 +175,8 @@ Phase 5: Service logic (Mocking) — roles, rotation, features, auth   ✅ 86 Te
 Phase 6: Remaining helpers       — blackboard, calendar, chat, etc.  ✅ 27 Tests
 Phase 7: Frontend utils          — password-strength, jwt, auth      ✅ 19 Tests
 Phase 8: DTO validations         — All modules (13 files)            ✅ 460 Tests
-Phase 9: Additional service tests— Coverage from 10% → 30%+          ← Next
+Phase 9: Service coverage push   — 11 services: 47%→99% avg           ✅ ~930 Tests
+Phase 10: New modules + coverage — organigram, TPM, vacation, halls    ✅ ~600 Tests
 ```
 
 **What is NOT unit-tested:**
@@ -199,29 +200,42 @@ Phase 9: Additional service tests— Coverage from 10% → 30%+          ← Nex
 | Timeout       | 30s per test, 30s per hook                                 |
 | Prerequisite  | Docker backend running (`docker-compose up -d`)            |
 
-**19 Modules, 194 Tests:**
+**32 Modules, 511 Tests:**
 
-| Module        | Tests | Specifics                                   |
-| ------------- | ----- | ------------------------------------------- |
-| auth          | 9     | Login + Refresh + Logout                    |
-| users         | 10    | CRUD + ensureTestEmployee                   |
-| departments   | 9     | CRUD                                        |
-| teams         | 11    | CRUD + members                              |
-| roles         | 4     | Read-only                                   |
-| notifications | 9     | CRUD + preferences + stats                  |
-| blackboard    | 18    | CRUD + comments + confirm + archive         |
-| calendar      | 8     | Events CRUD + dashboard                     |
-| kvp           | 15    | CRUD + categories + comments + dashboard    |
-| machines      | 15    | CRUD + categories + maintenance + stats     |
-| surveys       | 10    | CRUD + templates + statistics               |
-| chat          | 6     | Needs 2nd user (ensureTestEmployee)         |
-| documents     | 4     | Folders + list                              |
-| shifts        | 12    | Rotation generation + week/history deletion |
-| logs          | 24    | Export JSON/CSV/TXT + validation + throttle |
-| settings      | 4     | System + tenant + user + categories         |
-| features      | 4     | List + categories + my-features             |
-| areas         | 3     | List + stats                                |
-| work-orders   | 19    | Full lifecycle + status + comments + stats  |
+| Module                    | Tests | Specifics                                   |
+| ------------------------- | ----- | ------------------------------------------- |
+| auth                      | 9     | Login + Refresh + Logout                    |
+| users                     | 10    | CRUD + ensureTestEmployee                   |
+| departments               | 9     | CRUD                                        |
+| teams                     | 11    | CRUD + members                              |
+| roles                     | 4     | Read-only                                   |
+| notifications             | 13    | CRUD + preferences + stats                  |
+| blackboard                | 18    | CRUD + comments + confirm + archive         |
+| calendar                  | 8     | Events CRUD + dashboard                     |
+| kvp                       | 15    | CRUD + categories + comments + dashboard    |
+| assets                    | 15    | CRUD + categories + maintenance + stats     |
+| surveys                   | 10    | CRUD + templates + statistics               |
+| chat                      | 6     | Needs 2nd user (ensureTestEmployee)         |
+| chat-e2e-messages         | 17    | E2E message CRUD + read receipts            |
+| chat-e2e-roundtrip        | 7     | E2E encryption roundtrip                    |
+| documents                 | 4     | Folders + list                              |
+| dummy-users               | 18    | CRUD + auth + role restrictions             |
+| e2e-keys                  | 9     | E2E encryption key management               |
+| features                  | 17    | List + categories + my-features + plans     |
+| halls                     | 10    | CRUD + area assignment                      |
+| logs                      | 24    | Export JSON/CSV/TXT + validation + throttle |
+| organigram                | 16    | Tree + hierarchy-labels + positions + RBAC  |
+| partitions                | 9     | Partition management + status               |
+| settings                  | 4     | System + tenant + user + categories         |
+| shifts                    | 12    | Rotation generation + week/history deletion |
+| tpm-executions            | 63    | Full execution lifecycle + cards + status   |
+| tpm-plans                 | 59    | Full plan CRUD + cards + scheduling         |
+| tpm-schedule-projection   | 15    | Schedule projection + timeline              |
+| user-permissions          | 16    | Permission CRUD + hierarchy                 |
+| vacation                  | 36    | Full lifecycle + approval + calendar        |
+| work-orders               | 36    | Full lifecycle + status + comments + stats  |
+| work-orders-read-tracking | 13    | Read tracking + bulk mark                   |
+| areas                     | 3     | List + stats                                |
 
 **Critical Patterns:**
 
@@ -357,17 +371,17 @@ pnpm test                                           # All 4 projects (unit + per
 pnpm test -- --reporter=verbose                     # With details
 
 # ── Backend Unit Tests ────────────────────────────────────────
-pnpm test --project unit                            # 4767 tests (~10s, no Docker)
+pnpm test --project unit                            # 5364 tests (~12s, no Docker)
 pnpm vitest run --project unit -- backend/src/nest/auth/auth.service.test.ts  # Single file
 
 # ── 🔴 Permission/Security Tests ─────────────────────────────
-pnpm run test:permission                            # 374 tests (~1s, CRITICAL subset of unit)
+pnpm run test:permission                            # 380 tests (~1s, CRITICAL subset of unit)
 
 # ── Frontend Unit Tests ───────────────────────────────────────
-pnpm test --project frontend-unit                   # 238 tests (<1s, no Docker)
+pnpm test --project frontend-unit                   # 330 tests (<1s, no Docker)
 
 # ── API Integration Tests ────────────────────────────────────
-pnpm test --project api                             # 194 tests (~6s, Docker MUST be running!)
+pnpm test --project api                             # 515 tests (~14s, Docker MUST be running!)
 pnpm vitest run --project api -- backend/test/calendar.api.test.ts  # Single module
 
 # ── Coverage ──────────────────────────────────────────────────
@@ -404,21 +418,22 @@ Phase 6: Remaining Helpers          ✅ DONE    27 Tests   (blackboard, calendar
 Phase 7: Frontend Utils             ✅ DONE   238 Tests   (password-strength, auth, jwt, utils)
 Phase 8: DTO Validations            ✅ DONE   460 Tests   (13 modules, 13 files)
 Phase 9: Service Coverage Push      ✅ DONE   ~930 Tests  (11 services: 47%→99% avg)
+Phase 10: New Modules + Coverage    ✅ DONE  ~600 Tests  (organigram, tpm, vacation, halls, etc.)
 ──────────────────────────────────────────────────────────────────────
-TOTAL: 4767 Unit + 374 Permission (subset) + 238 Frontend + 194 API = 5199 Tests
+TOTAL: 5363 Unit + 380 Permission (subset) + 330 Frontend + 515 API = 6209 Tests
 ──────────────────────────────────────────────────────────────────────
 ```
 
-### Coverage Thresholds (raised 2026-02-24 after Phase 9)
+### Coverage Thresholds (raised 2026-03-10 after Phase 10)
 
-| Metric     | Current (Phase 9) | Threshold (Floor) | Long-term Goal |
-| ---------- | ----------------- | ----------------- | -------------- |
-| Lines      | **84.82%**        | **83%**           | 90%            |
-| Branches   | **78.30%**        | **76%**           | 85%            |
-| Functions  | **85.09%**        | **83%**           | 90%            |
-| Statements | **84.93%**        | **83%**           | 90%            |
+| Metric     | Current (Phase 10) | Threshold (Floor) | Long-term Goal |
+| ---------- | ------------------ | ----------------- | -------------- |
+| Lines      | **87.57%**         | **83%**           | 90%            |
+| Branches   | **81.45%**         | **76%**           | 85%            |
+| Functions  | **88.89%**         | **83%**           | 90%            |
+| Statements | **87.52%**         | **83%**           | 90%            |
 
-> **Phase 9 pushed service coverage from ~47% avg to ~99% avg** across 11 service files (vacation, audit, documents, admin-permissions, signup, teams, kvp-lifecycle, presence.store). Thresholds raised from 77%/70% to 83%/76%.
+> **Phase 10 added organigram, TPM, vacation, halls, dummy-users, and other modules.** Coverage rose from ~85% to ~88% across all metrics. Thresholds remain at 83%/76% (floor).
 
 ### CI/CD Integration (implemented 2026-02-05)
 
@@ -430,7 +445,7 @@ unit-tests:
   steps:
     - uses: actions/checkout@v4
     - uses: pnpm/action-setup@v2
-      with: { version: 10.31.0 }
+      with: { version: 10.32.0 }
     - uses: actions/setup-node@v5
       with: { node-version: '24', cache: 'pnpm' }
     - run: pnpm install --frozen-lockfile
@@ -471,13 +486,13 @@ Settings → Branches → main:
 
 - **Single Tool** — Vitest for unit + integration, no tool fragmentation
 - **ESM-native** — No workarounds, no `--experimental-vm-modules` flags
-- **Fast** — 4767 unit tests in ~10s, 374 permission tests in ~1s, 194 API tests in ~6s, 238 frontend tests in <1s
+- **Fast** — 5364 unit tests in ~12s, 380 permission tests in ~1s, 515 API tests in ~14s, 330 frontend tests in <1s
 - **Deterministic** — `vi.useFakeTimers()` for dates, `flushThrottleKeys()` for rate limiting
 - **Workspace Separation** — Unit tests (CI-compatible, no Docker) vs. API tests (Docker required)
 - **Bruno CLI eliminated** — 329 npm packages removed, no state management via `bru.setVar()`
 - **Tests as Documentation** — Edge cases (is_active multi-state, password NIST rules) become visible through tests
 - **Bugs discovered and fixed through tests** — sanitizeData camelCase bug (SENSITIVE_FIELDS lowercase normalization, fixed 2026-02-05), EmailSchema trim order documented
-- **Regression Protection** — 5199 automated tests (4767 unit + 374 permission [subset] + 238 frontend + 194 API)
+- **Regression Protection** — 6209 automated tests (5364 unit + 380 permission [subset] + 330 frontend + 515 API)
 - **CI as Merge Gate** — Unit tests + coverage thresholds block merge on failure
 - **Coverage Floor** — Thresholds prevent coverage from gradually declining
 
@@ -527,6 +542,7 @@ Settings → Branches → main:
 - [VITEST-UNIT-TEST-PLAN.md](../../VITEST-UNIT-TEST-PLAN.md) — Detailed phase plan (Phase 0-8)
 - [VITEST-API-MIGRATION.md](../../VITEST-API-MIGRATION.md) — Bruno → Vitest migration (103 tests)
 - [HOW-TO-TEST-WITH-VITEST.md](../../HOW-TO-TEST-WITH-VITEST.md) — User guide for API tests
+- [HOW-TO-CREATE-TEST-USER.md](../../HOW-TO-CREATE-TEST-USER.md) — Test-Tenant `apitest` erstellen (Voraussetzung für API Integration Tests)
 
 ## Related ADRs
 
@@ -537,4 +553,4 @@ Settings → Branches → main:
 
 ---
 
-_Last Updated: 2026-03-03 (v6 - Work Orders module added: 19 API tests, 247 unit tests (123 service + 124 DTO), dummy role fix, 5199 total tests)_
+_Last Updated: 2026-03-10 (v7 - Full sync: 32 API modules (515 tests), 5364 unit tests, 330 frontend tests, 380 permission tests. Added organigram, TPM (executions/plans/schedule), vacation, halls, dummy-users, e2e-keys, chat-e2e, user-permissions, partitions, work-orders-read-tracking. Coverage: 87.5%/81.5%/88.9%/87.5%. Total: 6209 tests)_

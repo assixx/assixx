@@ -268,13 +268,11 @@ truncated or converted first.
 
 Seeds are **global configuration data** without tenant_id:
 
-| Table              | Rows | Description                                          |
-| ------------------ | ---- | ---------------------------------------------------- |
-| `plans`            | 3    | Subscription plans (Basic, Professional, Enterprise) |
-| `features`         | 20   | Available features                                   |
-| `plan_features`    | 60   | Plan-to-feature mapping                              |
-| `kvp_categories`   | 6    | KVP proposal categories                              |
-| `asset_categories` | 11   | Asset categories (Anlagen)                           |
+| Table              | Rows | Description                                             |
+| ------------------ | ---- | ------------------------------------------------------- |
+| `addons`           | 20   | Available addons (8 core + 12 purchasable, see ADR-033) |
+| `kvp_categories`   | 6    | KVP proposal categories                                 |
+| `asset_categories` | 11   | Asset categories (Anlagen)                              |
 
 ```bash
 # Apply seeds (idempotent — safe to run multiple times)
@@ -581,14 +579,12 @@ ORDER BY t.typname, e.enumsortorder;
 
 These tables are protected from DELETE:
 
-- `plans` - Subscription plans
-- `features` - Available features
-- `plan_features` - Plan-to-feature mapping
+- `addons` - Available addons (core + purchasable)
 
 ```sql
 -- DELETE attempt will be blocked
-DELETE FROM plans WHERE id = 1;
--- ERROR: PROTECTED TABLE: DELETE not allowed on plans - system critical data
+DELETE FROM addons WHERE id = 1;
+-- ERROR: PROTECTED TABLE: DELETE not allowed on addons - system critical data
 ```
 
 ---
@@ -951,7 +947,8 @@ Architectural Tests in `shared/src/architectural.test.ts` verhindern:
 
 ## Changelog
 
-| Version | Datum      | Änderung                                                                                             |
-| ------- | ---------- | ---------------------------------------------------------------------------------------------------- |
-| 1.0     | 2026-01-27 | Initiale Version — PostgreSQL-Migration von MySQL, kompletter Guide                                  |
-| 1.1     | 2026-03-08 | Best-Practice-Hinweis: Migrationen IMMER via `db:migrate:create` generieren (kein manuelles Anlegen) |
+| Version | Datum      | Änderung                                                                                                                  |
+| ------- | ---------- | ------------------------------------------------------------------------------------------------------------------------- |
+| 1.0     | 2026-01-27 | Initiale Version — PostgreSQL-Migration von MySQL, kompletter Guide                                                       |
+| 1.1     | 2026-03-08 | Best-Practice-Hinweis: Migrationen IMMER via `db:migrate:create` generieren (kein manuelles Anlegen)                      |
+| 1.2     | 2026-03-11 | ADR-033 Addon-Refactor: Seeds-Tabelle aktualisiert (plans/features/plan_features → addons), Protected Tables aktualisiert |

@@ -3,8 +3,18 @@ name: Code Quality Checks
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - "docs/**"
+      - "**/*.md"
+      - ".changeset/**"
+      - "LICENSE"
   pull_request:
     branches: [main]
+    paths-ignore:
+      - "docs/**"
+      - "**/*.md"
+      - ".changeset/**"
+      - "LICENSE"
 
 permissions:
   contents: read
@@ -22,7 +32,7 @@ jobs:
       - name: Install pnpm
         uses: pnpm/action-setup@v2
         with:
-          version: 10.31.0
+          version: 10.32.0
 
       - name: Setup Node.js
         uses: actions/setup-node@v5
@@ -60,7 +70,7 @@ jobs:
       - name: Install pnpm
         uses: pnpm/action-setup@v2
         with:
-          version: 10.31.0
+          version: 10.32.0
 
       - name: Setup Node.js
         uses: actions/setup-node@v5
@@ -95,7 +105,7 @@ jobs:
       - name: Install pnpm
         uses: pnpm/action-setup@v2
         with:
-          version: 10.31.0
+          version: 10.32.0
 
       - name: Setup Node.js
         uses: actions/setup-node@v5

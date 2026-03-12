@@ -113,11 +113,11 @@ describe('SECURITY: UserPermissionsService', () => {
         mockRegistry.getAll.mockReturnValue([category]);
         mockDb.queryOne.mockResolvedValue({ id: 42 });
 
-        // 1st client.query: tenant_features
+        // 1st client.query: tenant_addons
         mockClient.query.mockResolvedValueOnce({
           rows: [{ code: 'blackboard' }],
         });
-        // 2nd client.query: user_feature_permissions
+        // 2nd client.query: user_addon_permissions
         mockClient.query.mockResolvedValueOnce({ rows: [] });
 
         const result = await service.getPermissions(1, 'user-uuid-1');
@@ -145,7 +145,7 @@ describe('SECURITY: UserPermissionsService', () => {
         mockClient.query.mockResolvedValueOnce({
           rows: [
             {
-              feature_code: 'blackboard',
+              addon_code: 'blackboard',
               module_code: 'blackboard-posts',
               can_read: true,
               can_write: false,
@@ -197,14 +197,14 @@ describe('SECURITY: UserPermissionsService', () => {
         mockClient.query.mockResolvedValueOnce({
           rows: [
             {
-              feature_code: 'blackboard',
+              addon_code: 'blackboard',
               module_code: 'mod-a',
               can_read: true,
               can_write: false,
               can_delete: false,
             },
             {
-              feature_code: 'blackboard',
+              addon_code: 'blackboard',
               module_code: 'mod-c',
               can_read: false,
               can_write: true,
@@ -255,14 +255,14 @@ describe('SECURITY: UserPermissionsService', () => {
         mockClient.query.mockResolvedValueOnce({
           rows: [
             {
-              feature_code: 'blackboard',
+              addon_code: 'blackboard',
               module_code: 'blackboard-posts',
               can_read: true,
               can_write: false,
               can_delete: false,
             },
             {
-              feature_code: 'kvp',
+              addon_code: 'kvp',
               module_code: 'blackboard-posts',
               can_read: false,
               can_write: true,
@@ -280,8 +280,8 @@ describe('SECURITY: UserPermissionsService', () => {
       });
     });
 
-    describe('Tenant-Feature-Filtering', () => {
-      it('should filter categories by tenant active features', async () => {
+    describe('Tenant-Addon-Filtering', () => {
+      it('should filter categories by tenant active addons', async () => {
         const categories = [
           createCategory({ code: 'blackboard' }),
           createCategory({ code: 'calendar' }),
@@ -290,7 +290,7 @@ describe('SECURITY: UserPermissionsService', () => {
         mockRegistry.getAll.mockReturnValue(categories);
         mockDb.queryOne.mockResolvedValue({ id: 42 });
 
-        // Tenant only has blackboard + calendar active
+        // Tenant only has blackboard + calendar addons active
         mockClient.query.mockResolvedValueOnce({
           rows: [{ code: 'blackboard' }, { code: 'calendar' }],
         });
@@ -302,7 +302,7 @@ describe('SECURITY: UserPermissionsService', () => {
         expect(result.map((c) => c.code)).toEqual(['blackboard', 'calendar']);
       });
 
-      it('should return empty tree when tenant has no active features', async () => {
+      it('should return empty tree when tenant has no active addons', async () => {
         mockRegistry.getAll.mockReturnValue([createCategory()]);
         mockDb.queryOne.mockResolvedValue({ id: 42 });
 
@@ -314,13 +314,13 @@ describe('SECURITY: UserPermissionsService', () => {
         expect(result).toHaveLength(0);
       });
 
-      it('should return empty tree when no categories match tenant features', async () => {
+      it('should return empty tree when no categories match tenant addons', async () => {
         mockRegistry.getAll.mockReturnValue([
           createCategory({ code: 'blackboard' }),
         ]);
         mockDb.queryOne.mockResolvedValue({ id: 42 });
 
-        // Tenant has calendar, but registry only knows blackboard
+        // Tenant has calendar addon, but registry only knows blackboard
         mockClient.query.mockResolvedValueOnce({
           rows: [{ code: 'calendar' }],
         });
@@ -407,7 +407,7 @@ describe('SECURITY: UserPermissionsService', () => {
     });
 
     describe('DB-Call Verification', () => {
-      it('should query user_feature_permissions with correct user_id', async () => {
+      it('should query user_addon_permissions with correct user_id', async () => {
         mockRegistry.getAll.mockReturnValue([createCategory()]);
         mockDb.queryOne.mockResolvedValue({ id: 42 });
 
@@ -418,12 +418,12 @@ describe('SECURITY: UserPermissionsService', () => {
 
         await service.getPermissions(1, 'user-uuid-1');
 
-        // Second client.query call is for user_feature_permissions
+        // Second client.query call is for user_addon_permissions
         const secondCall = mockClient.query.mock.calls[1];
         expect(secondCall?.[1]).toContain(42);
       });
 
-      it('should query tenant_features for active features', async () => {
+      it('should query tenant_addons for active addons', async () => {
         mockRegistry.getAll.mockReturnValue([createCategory()]);
         mockDb.queryOne.mockResolvedValue({ id: 42 });
 
@@ -434,9 +434,9 @@ describe('SECURITY: UserPermissionsService', () => {
 
         await service.getPermissions(1, 'user-uuid-1');
 
-        // First client.query call is for tenant_features
+        // First client.query call is for tenant_addons
         const firstCallSql = mockClient.query.mock.calls[0]?.[0] as string;
-        expect(firstCallSql).toContain('tenant_features');
+        expect(firstCallSql).toContain('tenant_addons');
         expect(firstCallSql).toContain(`is_active = ${IS_ACTIVE.ACTIVE}`);
       });
     });
@@ -463,7 +463,7 @@ describe('SECURITY: UserPermissionsService', () => {
           'user-uuid-1',
           [
             {
-              featureCode: 'blackboard',
+              addonCode: 'blackboard',
               moduleCode: 'blackboard-posts',
               canRead: true,
               canWrite: false,
@@ -475,7 +475,7 @@ describe('SECURITY: UserPermissionsService', () => {
 
         // calls[0] = capturePermissionState, calls[1] = UPSERT
         const sql = mockClient.query.mock.calls[1]?.[0] as string;
-        expect(sql).toContain('INSERT INTO user_feature_permissions');
+        expect(sql).toContain('INSERT INTO user_addon_permissions');
         expect(sql).toContain('ON CONFLICT');
       });
 
@@ -494,7 +494,7 @@ describe('SECURITY: UserPermissionsService', () => {
           'user-uuid-1',
           [
             {
-              featureCode: 'blackboard',
+              addonCode: 'blackboard',
               moduleCode: 'blackboard-posts',
               canRead: true,
               canWrite: false,
@@ -508,7 +508,7 @@ describe('SECURITY: UserPermissionsService', () => {
         const params = mockClient.query.mock.calls[1]?.[1] as unknown[];
         expect(params).toContain(1); // tenantId
         expect(params).toContain(42); // userId
-        expect(params).toContain('blackboard'); // featureCode
+        expect(params).toContain('blackboard'); // addonCode
         expect(params).toContain('blackboard-posts'); // moduleCode
         expect(params).toContain(true); // canRead
         expect(params).toContain(99); // assignedBy
@@ -529,7 +529,7 @@ describe('SECURITY: UserPermissionsService', () => {
           'user-uuid-1',
           [
             {
-              featureCode: 'blackboard',
+              addonCode: 'blackboard',
               moduleCode: 'blackboard-posts',
               canRead: true,
               canWrite: false,
@@ -560,21 +560,21 @@ describe('SECURITY: UserPermissionsService', () => {
           'user-uuid-1',
           [
             {
-              featureCode: 'blackboard',
+              addonCode: 'blackboard',
               moduleCode: 'blackboard-posts',
               canRead: true,
               canWrite: false,
               canDelete: false,
             },
             {
-              featureCode: 'calendar',
+              addonCode: 'calendar',
               moduleCode: 'calendar-events',
               canRead: true,
               canWrite: true,
               canDelete: false,
             },
             {
-              featureCode: 'kvp',
+              addonCode: 'kvp',
               moduleCode: 'kvp-proposals',
               canRead: false,
               canWrite: false,
@@ -611,7 +611,7 @@ describe('SECURITY: UserPermissionsService', () => {
         mockClient.query.mockResolvedValueOnce({
           rows: [
             {
-              feature_code: 'blackboard',
+              addon_code: 'blackboard',
               module_code: 'blackboard-posts',
               can_read: true,
               can_write: false,
@@ -627,7 +627,7 @@ describe('SECURITY: UserPermissionsService', () => {
           'user-uuid-1',
           [
             {
-              featureCode: 'blackboard',
+              addonCode: 'blackboard',
               moduleCode: 'blackboard-posts',
               canRead: true,
               canWrite: true,
@@ -637,10 +637,10 @@ describe('SECURITY: UserPermissionsService', () => {
           99,
         );
 
-        // capturePermissionState queried user_feature_permissions
+        // capturePermissionState queried user_addon_permissions
         const captureCall = mockClient.query.mock.calls[0];
         const captureSql = captureCall?.[0] as string;
-        expect(captureSql).toContain('user_feature_permissions');
+        expect(captureSql).toContain('user_addon_permissions');
         expect(captureCall?.[1]).toContain(42);
       });
 
@@ -657,7 +657,7 @@ describe('SECURITY: UserPermissionsService', () => {
         mockClient.query.mockResolvedValueOnce({
           rows: [
             {
-              feature_code: 'blackboard',
+              addon_code: 'blackboard',
               module_code: 'blackboard-posts',
               can_read: true,
               can_write: false,
@@ -673,7 +673,7 @@ describe('SECURITY: UserPermissionsService', () => {
           'user-uuid-1',
           [
             {
-              featureCode: 'blackboard',
+              addonCode: 'blackboard',
               moduleCode: 'blackboard-posts',
               canRead: true,
               canWrite: false,
@@ -700,7 +700,7 @@ describe('SECURITY: UserPermissionsService', () => {
           'user-uuid-1',
           [
             {
-              featureCode: 'blackboard',
+              addonCode: 'blackboard',
               moduleCode: 'readonly-mod',
               canRead: true,
               canWrite: true, // Should be forced to false
@@ -712,7 +712,7 @@ describe('SECURITY: UserPermissionsService', () => {
 
         // calls[0] = capturePermissionState, calls[1] = UPSERT
         const params = mockClient.query.mock.calls[1]?.[1] as unknown[];
-        // params: [tenantId, userId, featureCode, moduleCode, canRead, canWrite, canDelete, assignedBy]
+        // params: [tenantId, userId, addonCode, moduleCode, canRead, canWrite, canDelete, assignedBy]
         expect(params?.[4]).toBe(true); // canRead allowed
         expect(params?.[5]).toBe(false); // canWrite forced to false
       });
@@ -731,7 +731,7 @@ describe('SECURITY: UserPermissionsService', () => {
           'user-uuid-1',
           [
             {
-              featureCode: 'blackboard',
+              addonCode: 'blackboard',
               moduleCode: 'rw-mod',
               canRead: true,
               canWrite: true,
@@ -763,7 +763,7 @@ describe('SECURITY: UserPermissionsService', () => {
           'user-uuid-1',
           [
             {
-              featureCode: 'blackboard',
+              addonCode: 'blackboard',
               moduleCode: 'blackboard-posts',
               canRead: true,
               canWrite: true,
@@ -782,7 +782,7 @@ describe('SECURITY: UserPermissionsService', () => {
     });
 
     describe('Validation against Registry', () => {
-      it('should throw BadRequestException for unknown featureCode', async () => {
+      it('should throw BadRequestException for unknown addonCode', async () => {
         mockDb.queryOne.mockResolvedValue({ id: 42 });
         mockRegistry.isValidModule.mockReturnValue(false);
         mockClient.query.mockResolvedValue({ rows: [] });
@@ -793,7 +793,7 @@ describe('SECURITY: UserPermissionsService', () => {
             'user-uuid-1',
             [
               {
-                featureCode: 'unknown',
+                addonCode: 'unknown',
                 moduleCode: 'unknown-mod',
                 canRead: true,
                 canWrite: false,
@@ -816,7 +816,7 @@ describe('SECURITY: UserPermissionsService', () => {
             'user-uuid-1',
             [
               {
-                featureCode: 'blackboard',
+                addonCode: 'blackboard',
                 moduleCode: 'unknown',
                 canRead: true,
                 canWrite: false,
@@ -848,21 +848,21 @@ describe('SECURITY: UserPermissionsService', () => {
             'user-uuid-1',
             [
               {
-                featureCode: 'blackboard',
+                addonCode: 'blackboard',
                 moduleCode: 'blackboard-posts',
                 canRead: true,
                 canWrite: false,
                 canDelete: false,
               },
               {
-                featureCode: 'invalid',
+                addonCode: 'invalid',
                 moduleCode: 'invalid-mod',
                 canRead: true,
                 canWrite: false,
                 canDelete: false,
               },
               {
-                featureCode: 'kvp',
+                addonCode: 'kvp',
                 moduleCode: 'kvp-proposals',
                 canRead: true,
                 canWrite: false,
@@ -889,7 +889,7 @@ describe('SECURITY: UserPermissionsService', () => {
             'nonexistent-uuid',
             [
               {
-                featureCode: 'blackboard',
+                addonCode: 'blackboard',
                 moduleCode: 'blackboard-posts',
                 canRead: true,
                 canWrite: false,
@@ -916,7 +916,7 @@ describe('SECURITY: UserPermissionsService', () => {
           'user-uuid-1',
           [
             {
-              featureCode: 'blackboard',
+              addonCode: 'blackboard',
               moduleCode: 'blackboard-posts',
               canRead: true,
               canWrite: false,
@@ -933,11 +933,11 @@ describe('SECURITY: UserPermissionsService', () => {
   });
 
   // -----------------------------------------------------------
-  // getActiveFeaturesForTenant() — indirectly via getPermissions
+  // getActiveAddonsForTenant() — indirectly via getPermissions
   // -----------------------------------------------------------
 
-  describe('getActiveFeaturesForTenant() — indirect', () => {
-    it(`should return only is_active = ${IS_ACTIVE.ACTIVE} features`, async () => {
+  describe('getActiveAddonsForTenant() — indirect', () => {
+    it(`should return only is_active = ${IS_ACTIVE.ACTIVE} addons`, async () => {
       const categories = [
         createCategory({ code: 'blackboard' }),
         createCategory({ code: 'calendar' }),
@@ -946,7 +946,7 @@ describe('SECURITY: UserPermissionsService', () => {
       mockRegistry.getAll.mockReturnValue(categories);
       mockDb.queryOne.mockResolvedValue({ id: 42 });
 
-      // SQL filters by is_active = 1 — mock returns only active features
+      // SQL filters by is_active = 1 — mock returns only active addons
       mockClient.query.mockResolvedValueOnce({
         rows: [{ code: 'blackboard' }, { code: 'calendar' }],
       });
@@ -958,7 +958,7 @@ describe('SECURITY: UserPermissionsService', () => {
       expect(result.map((c) => c.code)).toEqual(['blackboard', 'calendar']);
     });
 
-    it('should return empty Set when no features exist', async () => {
+    it('should return empty Set when no addons exist', async () => {
       mockRegistry.getAll.mockReturnValue([createCategory()]);
       mockDb.queryOne.mockResolvedValue({ id: 42 });
 
@@ -972,16 +972,16 @@ describe('SECURITY: UserPermissionsService', () => {
   });
 
   // -----------------------------------------------------------
-  // getReadableFeatureCodes() — ADR-020 notification filtering
+  // getReadableAddonCodes() — ADR-020 notification filtering
   // -----------------------------------------------------------
 
-  describe('getReadableFeatureCodes()', () => {
-    it('should return Set of feature codes with can_read = true', async () => {
+  describe('getReadableAddonCodes()', () => {
+    it('should return Set of addon codes with can_read = true', async () => {
       mockClient.query.mockResolvedValue({
-        rows: [{ feature_code: 'blackboard' }, { feature_code: 'calendar' }],
+        rows: [{ addon_code: 'blackboard' }, { addon_code: 'calendar' }],
       });
 
-      const result = await service.getReadableFeatureCodes(42);
+      const result = await service.getReadableAddonCodes(42);
 
       expect(result).toBeInstanceOf(Set);
       expect(result.size).toBe(2);
@@ -989,10 +989,10 @@ describe('SECURITY: UserPermissionsService', () => {
       expect(result.has('calendar')).toBe(true);
     });
 
-    it('should return empty Set when user has no readable features', async () => {
+    it('should return empty Set when user has no readable addons', async () => {
       mockClient.query.mockResolvedValue({ rows: [] });
 
-      const result = await service.getReadableFeatureCodes(42);
+      const result = await service.getReadableAddonCodes(42);
 
       expect(result).toBeInstanceOf(Set);
       expect(result.size).toBe(0);
@@ -1000,10 +1000,10 @@ describe('SECURITY: UserPermissionsService', () => {
 
     it('should use DISTINCT to avoid duplicates', async () => {
       mockClient.query.mockResolvedValue({
-        rows: [{ feature_code: 'blackboard' }],
+        rows: [{ addon_code: 'blackboard' }],
       });
 
-      await service.getReadableFeatureCodes(42);
+      await service.getReadableAddonCodes(42);
 
       const sql = mockClient.query.mock.calls[0]?.[0] as string;
       expect(sql).toContain('DISTINCT');
@@ -1013,10 +1013,10 @@ describe('SECURITY: UserPermissionsService', () => {
     it('should query with correct userId parameter', async () => {
       mockClient.query.mockResolvedValue({ rows: [] });
 
-      await service.getReadableFeatureCodes(99);
+      await service.getReadableAddonCodes(99);
 
       expect(mockClient.query).toHaveBeenCalledWith(
-        expect.stringContaining('user_feature_permissions'),
+        expect.stringContaining('user_addon_permissions'),
         [99],
       );
     });
@@ -1024,7 +1024,7 @@ describe('SECURITY: UserPermissionsService', () => {
     it('should use tenantTransaction for RLS compliance', async () => {
       mockClient.query.mockResolvedValue({ rows: [] });
 
-      await service.getReadableFeatureCodes(42);
+      await service.getReadableAddonCodes(42);
 
       expect(mockDb.tenantTransaction).toHaveBeenCalledOnce();
       expect(mockDb.query).not.toHaveBeenCalled();
@@ -1144,13 +1144,13 @@ describe('SECURITY: UserPermissionsService', () => {
     });
 
     describe('DB-Call Verification', () => {
-      it('should query with correct userId, featureCode, moduleCode', async () => {
+      it('should query with correct userId, addonCode, moduleCode', async () => {
         mockClient.query.mockResolvedValue({ rows: [] });
 
         await service.hasPermission(42, 'blackboard', 'posts', 'canRead');
 
         expect(mockClient.query).toHaveBeenCalledWith(
-          expect.stringContaining('user_feature_permissions'),
+          expect.stringContaining('user_addon_permissions'),
           [42, 'blackboard', 'posts'],
         );
       });

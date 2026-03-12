@@ -11,8 +11,12 @@
    * Pattern: Controlled component with local dropdown state
    */
   import { onClickOutsideDropdown } from '$lib/actions/click-outside';
+  import {
+    DEFAULT_HIERARCHY_LABELS,
+    type HierarchyLabels,
+  } from '$lib/types/hierarchy-labels';
 
-  import { SORT_OPTIONS } from './constants';
+  import { SORT_OPTIONS, createLevelFilterOptions } from './constants';
 
   interface Props {
     searchQuery: string;
@@ -21,6 +25,7 @@
     sortDir: 'ASC' | 'DESC';
     sortLabel: string;
     expanded: boolean;
+    labels?: HierarchyLabels;
     onsearchchange: (query: string) => void;
     onlevelchange: (level: typeof levelFilter) => void;
     onsortchange: (value: string) => void;
@@ -34,6 +39,7 @@
     sortDir,
     sortLabel,
     expanded,
+    labels = DEFAULT_HIERARCHY_LABELS,
     onsearchchange,
     onlevelchange,
     onsortchange,
@@ -102,14 +108,8 @@
     });
   });
 
-  // Level filter options
-  const levelOptions = [
-    { value: 'all', label: 'Alle', icon: 'fa-globe' },
-    { value: 'company', label: 'Firma', icon: 'fa-building' },
-    { value: 'area', label: 'Bereich', icon: 'fa-map-marked-alt' },
-    { value: 'department', label: 'Abteilung', icon: 'fa-sitemap' },
-    { value: 'team', label: 'Team', icon: 'fa-users' },
-  ] as const;
+  // Level filter options (dynamic from hierarchy labels)
+  const levelOptions = $derived(createLevelFilterOptions(labels));
 </script>
 
 <div class="card mb-6">

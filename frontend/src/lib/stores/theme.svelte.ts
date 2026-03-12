@@ -72,7 +72,7 @@ export function setTheme(theme: 'dark' | 'light'): void {
 }
 
 /**
- * Force dark mode for always-dark pages (/, /login, /signup).
+ * Force dark mode for always-dark pages (/).
  * Updates reactive state + DOM class but does NOT persist to localStorage,
  * so the user's actual preference is preserved.
  */

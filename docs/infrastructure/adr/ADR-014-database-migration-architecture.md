@@ -330,7 +330,7 @@ export function down(pgm: MigrationBuilder): void {
 | **Tracking**    | `pgmigrations` table          | No tracking (idempotent)            |
 | **Idempotency** | Execute once                  | Can be run any number of times      |
 | **Content**     | DDL (schema changes)          | DML (configuration data)            |
-| **Example**     | `CREATE TABLE`, `ALTER TABLE` | `INSERT INTO features VALUES(...)`  |
+| **Example**     | `CREATE TABLE`, `ALTER TABLE` | `INSERT INTO addons VALUES(...)`    |
 | **Rollback**    | `down()` function             | Not needed (ON CONFLICT DO NOTHING) |
 
 ### CLI Commands

@@ -10,7 +10,8 @@
  */
 import { redirect } from '@sveltejs/kit';
 
-import { requireFeature } from '$lib/utils/feature-guard';
+import { DEFAULT_HIERARCHY_LABELS } from '$lib/types/hierarchy-labels';
+import { requireAddon } from '$lib/utils/addon-guard';
 import { createLogger } from '$lib/utils/logger';
 
 import type { PageServerLoad } from './$types';
@@ -239,7 +240,9 @@ function buildEmployeeTeamInfo(
     teamName:
       userData.teamNames?.[0] ?? userData.teamName ?? 'Unbekanntes Team',
     departmentId: userData.teamDepartmentId ?? 0,
-    departmentName: userData.teamDepartmentName ?? 'Unbekannte Abteilung',
+    departmentName:
+      userData.teamDepartmentName ??
+      `Unbekannte ${DEFAULT_HIERARCHY_LABELS.department}`,
     areaId: userData.teamAreaId ?? 0,
     areaName: userData.teamAreaName ?? 'Unbekannter Bereich',
     teamLeaderId,
@@ -334,7 +337,7 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
   }
 
   const parentData = await parent();
-  requireFeature(parentData.activeFeatures, 'shift_planning');
+  requireAddon(parentData.activeAddons, 'shift_planning');
   if (!parentData.user) {
     redirect(302, '/login');
   }

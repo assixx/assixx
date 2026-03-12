@@ -28,11 +28,11 @@ Lean Management          [1]  ← Notification Badge
 
 ### Backend-Andockpunkte
 
-| Was                     | Status | Dateipfad                                             | Detail                                                                |
-| ----------------------- | ------ | ----------------------------------------------------- | --------------------------------------------------------------------- |
-| Navigation Config       | 🔄     | `frontend/src/routes/(app)/_lib/navigation-config.ts` | `NavItem` Interface mit `featureCode?: string` und `badgeType?` Union |
-| Feature-Filter          | ✅     | gleiche Datei, `filterMenuByFeatures()`               | Filtert Items wo `featureCode` nicht in `activeFeatures`              |
-| Lean Management Submenu | ✅     | gleiche Datei, `LEAN_ADMIN_SUBMENU[]`                 | KVP ist schon drin — TPM als weiteres SubItem daneben                 |
+| Was                     | Status | Dateipfad                                             | Detail                                                              |
+| ----------------------- | ------ | ----------------------------------------------------- | ------------------------------------------------------------------- |
+| Navigation Config       | 🔄     | `frontend/src/routes/(app)/_lib/navigation-config.ts` | `NavItem` Interface mit `addonCode?: string` und `badgeType?` Union |
+| Addon-Filter            | ✅     | gleiche Datei, `filterMenuByAddons()`                 | Filtert Items wo `addonCode` nicht in `activeAddons`                |
+| Lean Management Submenu | ✅     | gleiche Datei, `LEAN_ADMIN_SUBMENU[]`                 | KVP ist schon drin — TPM als weiteres SubItem daneben               |
 
 ### Konkretes Beispiel (bestehendes Pattern)
 
@@ -42,7 +42,7 @@ const LEAN_ADMIN_SUBMENU: NavItem[] = [
   {
     id: 'kvp',
     label: LABELS.KVP_SYSTEM,
-    featureCode: 'kvp', // ← Feature-Flag
+    addonCode: 'kvp', // ← Addon-Flag
     submenu: [
       { id: 'kvp-main', label: 'Vorschläge', url: '/kvp', badgeType: 'kvp' },
       { id: 'kvp-categories', label: 'Definitionen', url: '/kvp-categories' },
@@ -54,11 +54,11 @@ const LEAN_ADMIN_SUBMENU: NavItem[] = [
 ### Was muss gemacht werden
 
 - 🔄 `NavItem.badgeType` Union erweitern um `'tpm'`
-- 🔄 `LEAN_ADMIN_SUBMENU` + `LEAN_SHARED_SUBMENU` — TPM-Einträge hinzufügen mit `featureCode: 'tpm'`
+- 🔄 `LEAN_ADMIN_SUBMENU` + `LEAN_SHARED_SUBMENU` — TPM-Einträge hinzufügen mit `addonCode: 'tpm'`
 
 ### ADR-Referenz
 
-- **ADR-024** Frontend Feature Guards — `featureCode` steuert Sichtbarkeit
+- **ADR-024** Frontend Addon Guards — `addonCode` steuert Sichtbarkeit
 
 ---
 
@@ -527,14 +527,14 @@ color: z.string().regex(/^#[0-9a-f]{6}$/i, 'Color must be a valid hex color (e.g
 
 ### Backend-Andockpunkte
 
-| Was                          | Status | Service / Tabelle                | Detail                                                                             | Dateipfad                                                         |
-| ---------------------------- | ------ | -------------------------------- | ---------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
-| RBAC Basis                   | ✅     | `users.role` + `has_full_access` | root=immer full, admin=konfigurierbar, employee=immer false                        | ADR-010                                                           |
-| Admin Area Permissions       | ✅     | `admin_area_permissions`         | `(admin_user_id, area_id, can_read, can_write, can_delete)`                        | DB                                                                |
-| Admin Department Permissions | ✅     | `admin_department_permissions`   | `(admin_user_id, department_id, can_read, can_write, can_delete)`                  | DB                                                                |
-| Permission Registry          | ✅     | `PermissionRegistryService`      | Singleton, jedes Modul registriert sich via `OnModuleInit()`                       | `backend/src/nest/common/permission-registry/`                    |
-| User Feature Permissions     | ✅     | `user_feature_permissions`       | `(tenant_id, user_id, feature_code, module_code, can_read, can_write, can_delete)` | DB                                                                |
-| Permission Types             | ✅     | `permission.types.ts`            | `PermissionType = 'canRead' \| 'canWrite' \| 'canDelete'`                          | `backend/src/nest/common/permission-registry/permission.types.ts` |
+| Was                          | Status | Service / Tabelle                | Detail                                                                           | Dateipfad                                                         |
+| ---------------------------- | ------ | -------------------------------- | -------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| RBAC Basis                   | ✅     | `users.role` + `has_full_access` | root=immer full, admin=konfigurierbar, employee=immer false                      | ADR-010                                                           |
+| Admin Area Permissions       | ✅     | `admin_area_permissions`         | `(admin_user_id, area_id, can_read, can_write, can_delete)`                      | DB                                                                |
+| Admin Department Permissions | ✅     | `admin_department_permissions`   | `(admin_user_id, department_id, can_read, can_write, can_delete)`                | DB                                                                |
+| Permission Registry          | ✅     | `PermissionRegistryService`      | Singleton, jedes Modul registriert sich via `OnModuleInit()`                     | `backend/src/nest/common/permission-registry/`                    |
+| User Feature Permissions     | ✅     | `user_addon_permissions`         | `(tenant_id, user_id, addon_code, module_code, can_read, can_write, can_delete)` | DB                                                                |
+| Permission Types             | ✅     | `permission.types.ts`            | `PermissionType = 'canRead' \| 'canWrite' \| 'canDelete'`                        | `backend/src/nest/common/permission-registry/permission.types.ts` |
 
 ### Konkretes Registration-Pattern (aus Vacation)
 
@@ -597,27 +597,27 @@ providers: [VacationPermissionRegistrar /* ... */];
 
 ### Backend-Andockpunkte
 
-| Was                        | Status | Detail                                                                 | Dateipfad                                                        |
-| -------------------------- | ------ | ---------------------------------------------------------------------- | ---------------------------------------------------------------- |
-| Route Groups               | ✅     | `(root)/` = nur Root, `(admin)/` = Admin+Root, `(shared)/` = alle Auth | `frontend/src/routes/(app)/`                                     |
-| requireFeature()           | ✅     | Redirected zu `/feature-unavailable` wenn Feature nicht aktiv          | `frontend/src/lib/utils/feature-guard.ts`                        |
-| TenantFeatureGuard         | ✅     | Backend-Guard: prüft `tenant_features.is_active` + `expires_at`        | `backend/src/nest/common/guards/tenant-feature.guard.ts`         |
-| @TenantFeature() Decorator | ✅     | Setzt Metadata auf Controller-Klasse                                   | `backend/src/nest/common/decorators/tenant-feature.decorator.ts` |
+| Was                       | Status | Detail                                                                 | Dateipfad                                                      |
+| ------------------------- | ------ | ---------------------------------------------------------------------- | -------------------------------------------------------------- |
+| Route Groups              | ✅     | `(root)/` = nur Root, `(admin)/` = Admin+Root, `(shared)/` = alle Auth | `frontend/src/routes/(app)/`                                   |
+| requireAddon()            | ✅     | Redirected zu `/addon-unavailable` wenn Addon nicht aktiv              | `frontend/src/lib/utils/addon-guard.ts`                        |
+| TenantAddonGuard          | ✅     | Backend-Guard: prüft `tenant_addons.is_active` + `expires_at`          | `backend/src/nest/common/guards/tenant-addon.guard.ts`         |
+| @RequireAddon() Decorator | ✅     | Setzt Metadata auf Controller-Klasse                                   | `backend/src/nest/common/decorators/tenant-addon.decorator.ts` |
 
 ### Konkretes Pattern (aus Blackboard)
 
 ```typescript
 // Backend Controller — Feature-Gate auf Controller-Ebene
 @Controller('blackboard')
-@TenantFeature('blackboard') // ← Guard prüft tenant_features
+@RequireAddon('blackboard') // ← Guard prüft tenant_addons
 export class BlackboardController {}
 
 // Frontend +page.server.ts — Feature-Gate auf Route-Ebene
 export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
   const token = cookies.get('accessToken');
   if (!token) redirect(302, '/login');
-  const { activeFeatures } = await parent();
-  requireFeature(activeFeatures, 'blackboard'); // ← Layer 4 Schutz
+  const { activeAddons } = await parent();
+  requireAddon(activeAddons, 'blackboard'); // ← Layer 4 Schutz
   // ... fetch data
 };
 ```
@@ -627,21 +627,21 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
 ```
 routes/(app)/
 ├── (admin)/lean-management/tpm/           ← Admin: Pläne erstellen, Karten verwalten
-│   └── +page.server.ts                    ← requireFeature(activeFeatures, 'tpm')
+│   └── +page.server.ts                    ← requireAddon(activeAddons, 'tpm')
 └── (shared)/lean-management/tpm/          ← Employee: Board ansehen, Karten erledigen
-    └── +page.server.ts                    ← requireFeature(activeFeatures, 'tpm')
+    └── +page.server.ts                    ← requireAddon(activeAddons, 'tpm')
 ```
 
 ### Was muss gemacht werden
 
-- ❌ Feature-Flag 'tpm' in `features` Tabelle + `tenant_features` Eintrag (Migration)
-- ❌ `@TenantFeature('tpm')` auf TPM-Controller
-- ❌ `requireFeature(activeFeatures, 'tpm')` in jeder TPM `+page.server.ts`
+- ❌ Addon-Flag 'tpm' in `features` Tabelle + `tenant_addons` Eintrag (Migration)
+- ❌ `@RequireAddon('tpm')` auf TPM-Controller
+- ❌ `requireAddon(activeAddons, 'tpm')` in jeder TPM `+page.server.ts`
 
 ### ADR-Referenz
 
 - **ADR-012** Frontend Route Security Groups — Fail-Closed RBAC
-- **ADR-024** Frontend Feature Guards — `requireFeature()` als Layer 4
+- **ADR-024** Frontend Addon Guards — `requireAddon()` als Layer 4
 
 ---
 
@@ -754,18 +754,18 @@ export class ScheduledMessageProcessorService implements OnModuleInit {
 
 ### Backend-Andockpunkte
 
-| Was                          | Status | Service / Datei              | Detail                                                                                                                              |
-| ---------------------------- | ------ | ---------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| EventBus Singleton           | ✅     | `eventBus`                   | `backend/src/utils/eventBus.ts` — `emit*(tenantId, payload)` Methoden                                                               |
-| SSE Controller               | ✅     | `NotificationsController`    | `backend/src/nest/notifications/notifications.controller.ts` — `@Sse('stream')`                                                     |
-| SSE Handler Factory          | ✅     | gleich                       | `createSSEHandler(messageType, dataKey, tenantId, eventSubject)`                                                                    |
-| Feature-Notification Service | ✅     | `NotificationFeatureService` | `backend/src/nest/notifications/notification-feature.service.ts` — `createFeatureNotification()`                                    |
-| Persistent Insert            | ✅     | gleich                       | `INSERT INTO notifications (tenant_id, type, title, message, priority, recipient_type, recipient_id, ...)`                          |
-| Mark as Read                 | ✅     | gleich                       | `markFeatureTypeAsRead(type, userId, tenantId)` — Batch mit CTE                                                                     |
-| Notification Store           | 🔄     | `NotificationCounts`         | `frontend/src/lib/stores/notification.store.svelte.ts` — `{ total, surveys, documents, kvp, chat, blackboard, calendar, vacation }` |
-| SSE→Count Mapping            | 🔄     | gleich                       | `SSE_EVENT_TO_COUNT Map` — muss TPM-Events hinzufügen                                                                               |
-| Recipient Types              | ✅     | DB                           | `ENUM ('user', 'department', 'team', 'all')`                                                                                        |
-| Priority Levels              | ✅     | DB                           | `ENUM ('low', 'normal', 'medium', 'high', 'urgent')`                                                                                |
+| Was                          | Status | Service / Datei            | Detail                                                                                                                              |
+| ---------------------------- | ------ | -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| EventBus Singleton           | ✅     | `eventBus`                 | `backend/src/utils/eventBus.ts` — `emit*(tenantId, payload)` Methoden                                                               |
+| SSE Controller               | ✅     | `NotificationsController`  | `backend/src/nest/notifications/notifications.controller.ts` — `@Sse('stream')`                                                     |
+| SSE Handler Factory          | ✅     | gleich                     | `createSSEHandler(messageType, dataKey, tenantId, eventSubject)`                                                                    |
+| Feature-Notification Service | ✅     | `NotificationAddonService` | `backend/src/nest/notifications/notification-addon.service.ts` — `createAddonNotification()`                                        |
+| Persistent Insert            | ✅     | gleich                     | `INSERT INTO notifications (tenant_id, type, title, message, priority, recipient_type, recipient_id, ...)`                          |
+| Mark as Read                 | ✅     | gleich                     | `markFeatureTypeAsRead(type, userId, tenantId)` — Batch mit CTE                                                                     |
+| Notification Store           | 🔄     | `NotificationCounts`       | `frontend/src/lib/stores/notification.store.svelte.ts` — `{ total, surveys, documents, kvp, chat, blackboard, calendar, vacation }` |
+| SSE→Count Mapping            | 🔄     | gleich                     | `SSE_EVENT_TO_COUNT Map` — muss TPM-Events hinzufügen                                                                               |
+| Recipient Types              | ✅     | DB                         | `ENUM ('user', 'department', 'team', 'all')`                                                                                        |
+| Priority Levels              | ✅     | DB                         | `ENUM ('low', 'normal', 'medium', 'high', 'urgent')`                                                                                |
 
 ### Konkretes Dual-Notification-Pattern (aus Vacation)
 
@@ -844,27 +844,27 @@ CREATE TYPE tpm_interval_type AS ENUM (
 
 ### Direkt nutzbar (kein neuer Code)
 
-| #   | Was                            | Andockpunkt                                                                                  |
-| --- | ------------------------------ | -------------------------------------------------------------------------------------------- |
-| 1   | Machine CRUD + UUID + RLS      | `MachinesService` → `backend/src/nest/machines/machines.service.ts`                          |
-| 2   | Machine ↔ Team Assignment      | `MachineTeamService.setMachineTeams()` → `asset-team.service.ts`                             |
-| 3   | User ↔ Team (Multi-Team)       | `user_teams` (kein UNIQUE) → Migration `20260218000040`                                      |
-| 4   | Machine Availability CRUD      | `MachineAvailabilityService.updateAvailability()` → `asset-availability.service.ts`          |
-| 5   | Machine Availability Batch     | `MachineAvailabilityService.getMachineAvailabilityBatch()` → gleich                          |
-| 6   | Machine Availability DateRange | `MachineAvailabilityService.getMachineAvailabilityForDateRange()` → gleich                   |
-| 7   | User Availability Batch        | `UserAvailabilityService.getUserAvailabilityBatch()` → `user-availability.service.ts`        |
-| 8   | Shifts + Machine FK            | `ShiftsService.findAll({ asset_Id })` → `shifts.service.ts`                                  |
-| 9   | Route Groups                   | `(admin)/`, `(shared)/` → `frontend/src/routes/(app)/`                                       |
-| 10  | requireFeature()               | `frontend/src/lib/utils/feature-guard.ts`                                                    |
-| 11  | TenantFeatureGuard             | `@TenantFeature('tpm')` → `tenant-feature.guard.ts`                                          |
-| 12  | Permission Registry            | `PermissionRegistryService.register()` → `permission-registry/`                              |
-| 13  | Activity Logger                | `ActivityLoggerService` → ADR-009                                                            |
-| 14  | Notification Feature Service   | `NotificationFeatureService.createFeatureNotification()` → `notification-feature.service.ts` |
-| 15  | EventBus Singleton             | `eventBus.emit*()` → `backend/src/utils/eventBus.ts`                                         |
-| 16  | SSE Stream                     | `NotificationsController.stream()` → `notifications.controller.ts`                           |
-| 17  | Multi-Tenant RLS               | Alle Tabellen mit `tenant_id` + RLS Policy                                                   |
-| 18  | Org-Hierarchie                 | `areas` → `departments` → `teams` → `user_teams`                                             |
-| 19  | Deputy Lead                    | `teams.deputy_lead_id` → für Freigabe-Vertretung                                             |
+| #   | Was                            | Andockpunkt                                                                            |
+| --- | ------------------------------ | -------------------------------------------------------------------------------------- |
+| 1   | Machine CRUD + UUID + RLS      | `MachinesService` → `backend/src/nest/machines/machines.service.ts`                    |
+| 2   | Machine ↔ Team Assignment      | `MachineTeamService.setMachineTeams()` → `asset-team.service.ts`                       |
+| 3   | User ↔ Team (Multi-Team)       | `user_teams` (kein UNIQUE) → Migration `20260218000040`                                |
+| 4   | Machine Availability CRUD      | `MachineAvailabilityService.updateAvailability()` → `asset-availability.service.ts`    |
+| 5   | Machine Availability Batch     | `MachineAvailabilityService.getMachineAvailabilityBatch()` → gleich                    |
+| 6   | Machine Availability DateRange | `MachineAvailabilityService.getMachineAvailabilityForDateRange()` → gleich             |
+| 7   | User Availability Batch        | `UserAvailabilityService.getUserAvailabilityBatch()` → `user-availability.service.ts`  |
+| 8   | Shifts + Machine FK            | `ShiftsService.findAll({ asset_Id })` → `shifts.service.ts`                            |
+| 9   | Route Groups                   | `(admin)/`, `(shared)/` → `frontend/src/routes/(app)/`                                 |
+| 10  | requireAddon()                 | `frontend/src/lib/utils/addon-guard.ts`                                                |
+| 11  | TenantAddonGuard               | `@RequireAddon('tpm')` → `tenant-addon.guard.ts`                                       |
+| 12  | Permission Registry            | `PermissionRegistryService.register()` → `permission-registry/`                        |
+| 13  | Activity Logger                | `ActivityLoggerService` → ADR-009                                                      |
+| 14  | Notification Addon Service     | `NotificationAddonService.createAddonNotification()` → `notification-addon.service.ts` |
+| 15  | EventBus Singleton             | `eventBus.emit*()` → `backend/src/utils/eventBus.ts`                                   |
+| 16  | SSE Stream                     | `NotificationsController.stream()` → `notifications.controller.ts`                     |
+| 17  | Multi-Tenant RLS               | Alle Tabellen mit `tenant_id` + RLS Policy                                             |
+| 18  | Org-Hierarchie                 | `areas` → `departments` → `teams` → `user_teams`                                       |
+| 19  | Deputy Lead                    | `teams.deputy_lead_id` → für Freigabe-Vertretung                                       |
 
 ### Muss erweitert werden (bestehende Module ändern)
 
@@ -886,7 +886,7 @@ CREATE TYPE tpm_interval_type AS ENUM (
 | 1   | TPM Backend Module          | `backend/src/nest/tpm/` (Service, Controller, DTOs, Module)                                                                                                                                  |
 | 2   | TPM DB-Tabellen             | Migration: `tpm_maintenance_plans`, `tpm_cards`, `tpm_card_executions`, `tpm_card_execution_photos`, `tpm_time_estimates`, `tpm_card_templates`, `tpm_escalation_config`, `tpm_color_config` |
 | 3   | TPM Permission              | `tpm.permissions.ts` + `tpm-permission.registrar.ts`                                                                                                                                         |
-| 4   | TPM Feature Flag            | Migration: `INSERT INTO features` + `tenant_features`                                                                                                                                        |
+| 4   | TPM Feature Flag            | Migration: `INSERT INTO addons` + `tenant_addons`                                                                                                                                            |
 | 5   | TPM Notification Service    | `tpm-notification.service.ts` — Dual EventBus + DB                                                                                                                                           |
 | 6   | Slot Availability Assistant | `tpm-slot-assistant.service.ts` — 4 Datenquellen                                                                                                                                             |
 | 7   | Interval Cascade Logic      | In `tpm-cards.service.ts` — Batch-Update                                                                                                                                                     |
@@ -911,8 +911,8 @@ CREATE TYPE tpm_interval_type AS ENUM (
 | Dual Notification       | Vacation      | `backend/src/nest/vacation/vacation-notification.service.ts`                             |
 | Cron Scheduler          | Chat          | `backend/src/nest/chat/scheduled-message-processor.service.ts`                           |
 | Color Config            | KVP           | `backend/src/nest/kvp/dto/create-custom-category.dto.ts`                                 |
-| Feature Guard Backend   | Common        | `backend/src/nest/common/guards/tenant-feature.guard.ts`                                 |
-| Feature Guard Frontend  | Utils         | `frontend/src/lib/utils/feature-guard.ts`                                                |
+| Addon Guard Backend     | Common        | `backend/src/nest/common/guards/tenant-addon.guard.ts`                                   |
+| Addon Guard Frontend    | Utils         | `frontend/src/lib/utils/addon-guard.ts`                                                  |
 | SSE Stream              | Notifications | `backend/src/nest/notifications/notifications.controller.ts`                             |
 | Dashboard Counts        | Dashboard     | `backend/src/nest/dashboard/dashboard.service.ts`                                        |
 | Machine Availability    | Machines      | `backend/src/nest/machines/asset-availability.service.ts`                                |

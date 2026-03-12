@@ -11,33 +11,6 @@ export interface Country {
 }
 
 /**
- * Subscription plan option
- */
-export interface Plan {
-  value: string; // Internal value (e.g., "enterprise")
-  name: string; // Display name (e.g., "Enterprise")
-  price: string; // Price display (e.g., "€149/M")
-}
-
-/**
- * Form data structure (internal state)
- */
-export interface SignupFormData {
-  companyName: string;
-  subdomain: string;
-  email: string;
-  emailConfirm: string;
-  firstName: string;
-  lastName: string;
-  phone: string;
-  countryCode: string;
-  password: string;
-  passwordConfirm: string;
-  selectedPlan: string;
-  termsAccepted: boolean;
-}
-
-/**
  * API request payload for registration
  * Matches backend SignupSchema (backend/src/nest/signup/dto/signup.dto.ts)
  */
@@ -47,7 +20,6 @@ export interface RegisterPayload {
   subdomain: string;
   email: string; // Company contact email
   phone: string;
-  address?: string;
 
   // Admin user information
   adminEmail: string;

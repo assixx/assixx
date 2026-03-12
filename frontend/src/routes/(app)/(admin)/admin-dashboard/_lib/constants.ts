@@ -3,24 +3,12 @@
  * @module admin-dashboard/_lib/constants
  */
 
+import {
+  DEFAULT_HIERARCHY_LABELS,
+  type HierarchyLabels,
+} from '$lib/types/hierarchy-labels';
+
 import type { Priority, OrgLevel, BlackboardOrgLevel } from './types';
-
-/** Org level labels (German) */
-export const ORG_LEVEL_LABELS: Record<OrgLevel, string> = {
-  company: 'Firma',
-  department: 'Abteilung',
-  team: 'Team',
-  area: 'Bereich',
-  personal: 'Persönlich',
-};
-
-/** Blackboard org level labels (German) */
-export const BLACKBOARD_ORG_LABELS: Record<BlackboardOrgLevel, string> = {
-  company: 'Firma',
-  department: 'Abteilung',
-  team: 'Team',
-  area: 'Bereich',
-};
 
 /** Priority labels (German) */
 export const PRIORITY_LABELS: Record<Priority, string> = {
@@ -51,12 +39,10 @@ export const LIST_LIMITS = {
 /** Calendar events date range (months ahead) */
 export const CALENDAR_MONTHS_AHEAD = 3;
 
-/** UI Messages (German) */
-export const MESSAGES = {
+/** Static messages that don't depend on hierarchy labels */
+const STATIC_MESSAGES = {
   noEmployees: 'Keine neuen Mitarbeiter',
   noDocuments: 'Keine neuen Dokumente',
-  noDepartments: 'Keine Abteilungen vorhanden',
-  noTeams: 'Keine Teams vorhanden',
   noEvents: 'Keine anstehenden Termine',
   noBlackboard: 'Keine aktuellen Einträge',
   noBlackboardDescription:
@@ -66,4 +52,44 @@ export const MESSAGES = {
   allDay: 'Ganztägig',
   unknownEvent: 'Unbenannter Termin',
   unknownAuthor: 'Unbekannt',
-} as const;
+};
+
+/**
+ * UI Messages — factory with dynamic hierarchy labels.
+ * Entity-specific strings use labels, compound words are neutralized (A4).
+ */
+export function createMessages(labels: HierarchyLabels) {
+  return {
+    ...STATIC_MESSAGES,
+    noDepartments: `Keine ${labels.department} vorhanden`,
+    noTeams: `Keine ${labels.team} vorhanden`,
+    STAT_DEPARTMENTS: labels.department,
+    STAT_TEAMS: labels.team,
+    CARD_DEPARTMENTS: labels.department,
+    CARD_TEAMS: labels.team,
+    BTN_MANAGE_DEPARTMENTS: `${labels.department} verwalten`,
+    BTN_MANAGE_TEAMS: `${labels.team} verwalten`,
+    orgLevelLabels: {
+      company: 'Firma',
+      department: labels.department,
+      team: labels.team,
+      area: labels.area,
+      personal: 'Persönlich',
+    } satisfies Record<OrgLevel, string>,
+    blackboardOrgLabels: {
+      company: 'Firma',
+      department: labels.department,
+      team: labels.team,
+      area: labels.area,
+    } satisfies Record<BlackboardOrgLevel, string>,
+    EVENT_AREA: labels.area,
+    EVENT_DEPARTMENT: labels.department,
+    EVENT_TEAM: labels.team,
+  };
+}
+
+/** Message type for component props */
+export type DashboardMessages = ReturnType<typeof createMessages>;
+
+/** Default messages (used in non-Svelte contexts) */
+export const MESSAGES = createMessages(DEFAULT_HIERARCHY_LABELS);

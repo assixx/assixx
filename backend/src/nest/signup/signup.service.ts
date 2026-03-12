@@ -18,6 +18,7 @@ import { randomBytes } from 'crypto';
 import type { PoolClient, QueryResultRow } from 'pg';
 import { v7 as uuidv7 } from 'uuid';
 
+import { AppConfigService } from '../config/config.service.js';
 import { DatabaseService } from '../database/database.service.js';
 import type {
   SignupDto,
@@ -64,12 +65,9 @@ interface DbUserResult extends QueryResultRow {
   id: number;
 }
 
-interface DbFeatureResult extends QueryResultRow {
+interface DbAddonResult extends QueryResultRow {
   id: number;
-}
-
-interface DbPlanResult extends QueryResultRow {
-  id: number;
+  trial_days: number;
 }
 
 // ============================================================================
@@ -80,7 +78,10 @@ interface DbPlanResult extends QueryResultRow {
 export class SignupService {
   private readonly logger = new Logger(SignupService.name);
 
-  constructor(private readonly db: DatabaseService) {}
+  constructor(
+    private readonly db: DatabaseService,
+    private readonly config: AppConfigService,
+  ) {}
 
   /**
    * Register a new tenant with admin user
@@ -154,7 +155,7 @@ export class SignupService {
   }
 
   /**
-   * Execute the registration transaction (create tenant, user, plan, features)
+   * Execute the registration transaction (create tenant, user, activate trial addons)
    */
   private async executeRegistrationTransaction(
     dto: SignupDto,
@@ -169,8 +170,7 @@ export class SignupService {
 
       const tenantId = await this.createTenant(client, dto, trialEndsAt);
       const userId = await this.createRootUser(client, tenantId, dto);
-      const planId = await this.assignBasicPlan(client, tenantId);
-      await this.activateTrialFeatures(client, tenantId, planId);
+      await this.activateTrialAddons(client, tenantId);
 
       return { tenantId, userId, trialEndsAt };
     });
@@ -186,15 +186,19 @@ export class SignupService {
   ): Promise<number> {
     const tenantUuid = uuidv7();
     const tenantRows = await client.query<DbTenantResult>(
-      `INSERT INTO tenants (company_name, subdomain, email, phone, address, trial_ends_at, billing_email, status, uuid, uuid_created_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, 'trial', $8, NOW())
+      `INSERT INTO tenants (company_name, subdomain, email, phone, street, house_number, postal_code, city, country_code, trial_ends_at, billing_email, status, uuid, uuid_created_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 'trial', $12, NOW())
        RETURNING id`,
       [
         dto.companyName,
         dto.subdomain,
         dto.email,
         dto.phone,
-        dto.address ?? null,
+        dto.street ?? null,
+        dto.houseNumber ?? null,
+        dto.postalCode ?? null,
+        dto.city ?? null,
+        dto.countryCode ?? null,
         trialEndsAt,
         dto.adminEmail,
         tenantUuid,
@@ -330,63 +334,40 @@ export class SignupService {
   }
 
   /**
-   * Assign basic plan to new tenant.
-   * Returns the assigned plan ID (needed by activateTrialFeatures).
+   * Activate purchasable addons as trial for new tenant (ADR-033).
+   * Core addons are always accessible without tenant_addons entries.
+   * Dev mode: activate ALL purchasable addons for convenience.
+   * Production: no auto-activation — admin activates via addon store.
    */
-  private async assignBasicPlan(
+  private async activateTrialAddons(
     client: PoolClient,
     tenantId: number,
-  ): Promise<number> {
-    const planRows = await client.query<DbPlanResult>(
-      `SELECT id FROM plans WHERE code = $1 AND is_active = ${IS_ACTIVE.ACTIVE}`,
-      ['basic'],
-    );
-
-    const basicPlanId = planRows.rows[0]?.id;
-    if (basicPlanId === undefined) {
-      throw new Error('Basic plan not found — seeds missing?');
+  ): Promise<void> {
+    if (!this.config.isDevelopment) {
+      return;
     }
 
-    await client.query(
-      `INSERT INTO tenant_plans (tenant_id, plan_id, status, started_at)
-       VALUES ($1, $2, 'trial', NOW())`,
-      [tenantId, basicPlanId],
+    const addonRows = await client.query<DbAddonResult>(
+      `SELECT id, COALESCE(trial_days, 30) AS trial_days
+       FROM addons
+       WHERE is_core = false AND is_active = ${IS_ACTIVE.ACTIVE}`,
     );
 
-    await client.query(
-      'UPDATE tenants SET current_plan_id = $1 WHERE id = $2',
-      [basicPlanId, tenantId],
-    );
+    for (const addon of addonRows.rows) {
+      const trialEndsAt = new Date();
+      trialEndsAt.setDate(trialEndsAt.getDate() + addon.trial_days);
 
-    return basicPlanId;
-  }
-
-  /**
-   * Activate trial features for new tenant.
-   * Only activates features included in the tenant's plan (ADR-032).
-   */
-  private async activateTrialFeatures(
-    client: PoolClient,
-    tenantId: number,
-    planId: number,
-  ): Promise<void> {
-    const featureRows = await client.query<DbFeatureResult>(
-      `SELECT f.id
-       FROM plan_features pf
-       JOIN features f ON pf.feature_id = f.id
-       WHERE pf.plan_id = $1
-         AND pf.is_included = true
-         AND f.is_active = ${IS_ACTIVE.ACTIVE}`,
-      [planId],
-    );
-
-    for (const feature of featureRows.rows) {
       await client.query(
-        `INSERT INTO tenant_features (tenant_id, feature_id, is_active, expires_at)
-         VALUES ($1, $2, 1, NOW() + INTERVAL '${TRIAL_DAYS} days')`,
-        [tenantId, feature.id],
+        `INSERT INTO tenant_addons
+           (tenant_id, addon_id, status, trial_started_at, trial_ends_at, activated_at, is_active, created_at, updated_at)
+         VALUES ($1, $2, 'trial', NOW(), $3, NOW(), ${IS_ACTIVE.ACTIVE}, NOW(), NOW())`,
+        [tenantId, addon.id, trialEndsAt],
       );
     }
+
+    this.logger.log(
+      `DEV MODE: Activated ${addonRows.rows.length} purchasable addons as trial for tenant ${tenantId}`,
+    );
   }
 
   /**
@@ -450,8 +431,17 @@ export class SignupService {
             admin_first_name: dto.adminFirstName,
             admin_last_name: dto.adminLastName,
             phone: dto.phone,
-            address: dto.address,
-            plan: dto.plan ?? 'trial',
+            ...(dto.street !== undefined && { street: dto.street }),
+            ...(dto.houseNumber !== undefined && {
+              house_number: dto.houseNumber,
+            }),
+            ...(dto.postalCode !== undefined && {
+              postal_code: dto.postalCode,
+            }),
+            ...(dto.city !== undefined && { city: dto.city }),
+            ...(dto.countryCode !== undefined && {
+              country_code: dto.countryCode,
+            }),
           }),
           ipAddress ?? null,
           userAgent ?? null,

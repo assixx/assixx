@@ -2,6 +2,11 @@
 // KVP - CONSTANTS
 // =============================================================================
 
+import {
+  DEFAULT_HIERARCHY_LABELS,
+  type HierarchyLabels,
+} from '$lib/types/hierarchy-labels';
+
 import type { KvpStatus, KvpPriority, OrgLevel, KvpFilter } from './types';
 
 /**
@@ -78,16 +83,17 @@ export const PRIORITY_TEXT: Record<KvpPriority, string> = {
   urgent: 'Dringend',
 } as const;
 
-/**
- * Filter toggle options
- */
-export const FILTER_OPTIONS: {
-  value: KvpFilter;
-  label: string;
-  icon: string;
-  title: string;
-  showBadge: boolean;
-}[] = [
+/** Filter option shape */
+interface FilterOption {
+  readonly value: KvpFilter;
+  readonly label: string;
+  readonly icon: string;
+  readonly title: string;
+  readonly showBadge: boolean;
+}
+
+/** Static filter options (no hierarchy labels needed) */
+const STATIC_FILTER_OPTIONS: FilterOption[] = [
   {
     value: 'all',
     label: 'Alle',
@@ -109,20 +115,10 @@ export const FILTER_OPTIONS: {
     title: 'Team Vorschläge',
     showBadge: true,
   },
-  {
-    value: 'asset',
-    label: 'Anlage',
-    icon: 'fa-cog',
-    title: 'Anlagen-Vorschläge',
-    showBadge: true,
-  },
-  {
-    value: 'department',
-    label: 'Abteilung',
-    icon: 'fa-building',
-    title: 'Abteilungs-Vorschläge',
-    showBadge: true,
-  },
+];
+
+/** Static filter options (trailing group) */
+const STATIC_FILTER_OPTIONS_TAIL: FilterOption[] = [
   {
     value: 'company',
     label: 'Firmenweit',
@@ -144,7 +140,36 @@ export const FILTER_OPTIONS: {
     title: 'Archivierte Vorschläge',
     showBadge: true,
   },
-] as const;
+];
+
+/** Factory: Filter toggle options with dynamic hierarchy labels */
+export function createFilterOptions(
+  labels: HierarchyLabels,
+): readonly FilterOption[] {
+  return [
+    ...STATIC_FILTER_OPTIONS,
+    {
+      value: 'asset',
+      label: labels.asset,
+      icon: 'fa-cog',
+      title: `${labels.asset}-Vorschläge`,
+      showBadge: true,
+    },
+    {
+      value: 'department',
+      label: labels.department,
+      icon: 'fa-building',
+      title: `${labels.department}-Vorschläge`,
+      showBadge: true,
+    },
+    ...STATIC_FILTER_OPTIONS_TAIL,
+  ];
+}
+
+/** Backward-compatible static export */
+export const FILTER_OPTIONS: readonly FilterOption[] = createFilterOptions(
+  DEFAULT_HIERARCHY_LABELS,
+);
 
 /**
  * Status filter options for dropdown
@@ -170,16 +195,23 @@ export const PRIORITY_OPTIONS = [
 ] as const;
 
 /**
- * Visibility info by org level
+ * Factory: Visibility info by org level with dynamic hierarchy labels
  */
-export const VISIBILITY_INFO: Record<OrgLevel, { icon: string; text: string }> =
-  {
+export function createVisibilityInfo(
+  labels: HierarchyLabels,
+): Record<OrgLevel, { icon: string; text: string }> {
+  return {
     company: { icon: 'fa-globe', text: 'Firmenweit' },
-    department: { icon: 'fa-building', text: 'Abteilung' },
-    area: { icon: 'fa-sitemap', text: 'Bereich' },
+    department: { icon: 'fa-building', text: labels.department },
+    area: { icon: 'fa-sitemap', text: labels.area },
     team: { icon: 'fa-users', text: 'Team' },
-    asset: { icon: 'fa-cog', text: 'Anlage' },
-  } as const;
+    asset: { icon: 'fa-cog', text: labels.asset },
+  };
+}
+
+/** Backward-compatible static export */
+export const VISIBILITY_INFO: Record<OrgLevel, { icon: string; text: string }> =
+  createVisibilityInfo(DEFAULT_HIERARCHY_LABELS);
 
 /**
  * Max file upload settings

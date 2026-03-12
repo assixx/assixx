@@ -59,7 +59,7 @@ Each migration is independently reversible. If migration 30 (availability rebuil
 
 | Migration | Purpose                                                 | Risk Mitigation                                     |
 | --------- | ------------------------------------------------------- | --------------------------------------------------- |
-| 027       | Feature flag (`tenant_features` row for "vacation")     | Idempotent INSERT, no schema change                 |
+| 027       | Feature flag (`tenant_addons` row for "vacation")       | Idempotent INSERT, no schema change                 |
 | 028       | Teams extension (`deputy_lead_id`, `UNIQUE user_teams`) | Pre-check query, RAISE EXCEPTION if duplicate data  |
 | 029       | 7 core tables + RLS policies + indexes + status log     | All in single transaction, full RLS from day one    |
 | 030       | Rename `employee_availability` → `user_availability`    | Deployed atomically with backend code changes       |

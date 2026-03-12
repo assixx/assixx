@@ -517,8 +517,8 @@ const config = {
   }
 };
 
-// Features controlled at runtime via database (tenant_features table)
-const features = await this.featuresService.getActiveFeatures(tenantId);
+// Addons controlled at runtime via database (tenant_addons table)
+const addons = await this.addonsService.getActiveAddons(tenantId);
 ```
 
 **Rationale:**

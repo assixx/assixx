@@ -7,6 +7,7 @@
 import { BadRequestException, ConflictException } from '@nestjs/common';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import type { AppConfigService } from '../config/config.service.js';
 import type { DatabaseService } from '../database/database.service.js';
 import type { SignupDto } from './dto/index.js';
 import { SignupService } from './signup.service.js';
@@ -27,6 +28,10 @@ vi.mock('uuid', () => ({ v7: mockUuidV7 }));
 // Setup
 // ============================================================
 
+const mockConfig = {
+  isDevelopment: false,
+} as unknown as AppConfigService;
+
 function createServiceWithMock(): {
   service: SignupService;
   mockDb: {
@@ -38,7 +43,10 @@ function createServiceWithMock(): {
     query: vi.fn(),
     transaction: vi.fn(),
   };
-  const service = new SignupService(mockDb as unknown as DatabaseService);
+  const service = new SignupService(
+    mockDb as unknown as DatabaseService,
+    mockConfig,
+  );
   return { service, mockDb };
 }
 
@@ -243,6 +251,11 @@ describe('SignupService – registration', () => {
       subdomain: 'test-gmbh',
       email: 'info@test-gmbh.de',
       phone: '+49123456789',
+      street: 'Musterstraße',
+      houseNumber: '42',
+      postalCode: '10115',
+      city: 'Berlin',
+      countryCode: 'DE',
       adminEmail: 'admin@test-gmbh.de',
       adminPassword: 'SecurePass123!',
       adminFirstName: 'Max',
@@ -264,16 +277,7 @@ describe('SignupService – registration', () => {
     mockClient.query.mockResolvedValueOnce({ rows: [{ id: 1 }] });
     // createRootUser UPDATE employee_id
     mockClient.query.mockResolvedValueOnce({ rows: [] });
-    // assignBasicPlan SELECT
-    mockClient.query.mockResolvedValueOnce({ rows: [{ id: 5 }] });
-    // assignBasicPlan INSERT tenant_plans
-    mockClient.query.mockResolvedValueOnce({ rows: [] });
-    // assignBasicPlan UPDATE tenants
-    mockClient.query.mockResolvedValueOnce({ rows: [] });
-    // activateTrialFeatures SELECT
-    mockClient.query.mockResolvedValueOnce({ rows: [{ id: 1 }] });
-    // activateTrialFeatures INSERT feature 1
-    mockClient.query.mockResolvedValueOnce({ rows: [] });
+    // activateTrialAddons: production mode → returns early (no queries)
     // 3. createAuditLog INSERT
     mockDb.query.mockResolvedValueOnce([]);
   }
@@ -305,25 +309,26 @@ describe('SignupService – registration', () => {
       expect(result.trialEndsAt).toBeDefined();
     });
 
-    it('should pass address and plan to audit log when provided', async () => {
+    it('should pass address to audit log when provided', async () => {
       setupFullHappyPath();
       const dto = createValidDto();
-      dto.address = 'Musterstraße 1';
-      dto.plan = 'basic';
 
       const result = await service.registerTenant(dto, '127.0.0.1', 'Agent');
 
       expect(result.tenantId).toBe(10);
 
-      // Verify audit log contains address and plan
+      // Verify audit log contains structured address
       const auditCall = mockDb.query.mock.calls[1] as unknown[];
       const auditParams = auditCall[1] as unknown[];
       const newValues = JSON.parse(auditParams[6] as string) as Record<
         string,
         unknown
       >;
-      expect(newValues.address).toBe('Musterstraße 1');
-      expect(newValues.plan).toBe('basic');
+      expect(newValues.street).toBe('Musterstraße');
+      expect(newValues.house_number).toBe('42');
+      expect(newValues.postal_code).toBe('10115');
+      expect(newValues.city).toBe('Berlin');
+      expect(newValues.country_code).toBe('DE');
     });
 
     it('should throw BadRequestException for invalid subdomain', async () => {
@@ -379,20 +384,56 @@ describe('SignupService – registration', () => {
       );
     });
 
-    it('should throw when basic plan is missing', async () => {
-      mockDb.query.mockResolvedValueOnce([]);
-      mockDb.transaction.mockImplementation(
+    it('should activate ALL purchasable addons in development mode', async () => {
+      const devConfig = {
+        isDevelopment: true,
+      } as unknown as AppConfigService;
+      const devDb = {
+        query: vi.fn(),
+        transaction: vi.fn(),
+      };
+      const devService = new SignupService(
+        devDb as unknown as DatabaseService,
+        devConfig,
+      );
+
+      // isSubdomainAvailable → available
+      devDb.query.mockResolvedValueOnce([]);
+      // transaction executes callback
+      devDb.transaction.mockImplementation(
         async (cb: (c: unknown) => Promise<unknown>) => cb(mockClient),
       );
+      // createTenant INSERT
       mockClient.query.mockResolvedValueOnce({ rows: [{ id: 10 }] });
+      // createRootUser INSERT
       mockClient.query.mockResolvedValueOnce({ rows: [{ id: 1 }] });
+      // createRootUser UPDATE employee_id
       mockClient.query.mockResolvedValueOnce({ rows: [] });
-      // assignBasicPlan SELECT → no plan found
+      // activateTrialAddons SELECT purchasable addons
+      mockClient.query.mockResolvedValueOnce({
+        rows: [
+          { id: 1, trial_days: 30 },
+          { id: 2, trial_days: 30 },
+          { id: 3, trial_days: 30 },
+        ],
+      });
+      // activateTrialAddons INSERT addon 1, 2, 3
       mockClient.query.mockResolvedValueOnce({ rows: [] });
+      mockClient.query.mockResolvedValueOnce({ rows: [] });
+      mockClient.query.mockResolvedValueOnce({ rows: [] });
+      // createAuditLog INSERT
+      devDb.query.mockResolvedValueOnce([]);
 
-      await expect(service.registerTenant(createValidDto())).rejects.toThrow(
-        BadRequestException,
-      );
+      const result = await devService.registerTenant(createValidDto());
+
+      expect(result.tenantId).toBe(10);
+
+      // Dev-mode query selects purchasable addons (is_core = false)
+      const addonSelectCall = mockClient.query.mock.calls[3] as unknown[];
+      expect(addonSelectCall[0]).toContain('is_core = false');
+
+      // 3 setup queries + 1 addon SELECT + 3 addon INSERTs = 7
+      expect(mockClient.query).toHaveBeenCalledTimes(7);
     });
 
     it('should succeed even when audit log fails', async () => {
@@ -406,14 +447,7 @@ describe('SignupService – registration', () => {
       mockClient.query.mockResolvedValueOnce({ rows: [{ id: 1 }] });
       // createRootUser UPDATE employee_id
       mockClient.query.mockResolvedValueOnce({ rows: [] });
-      // assignBasicPlan SELECT plans
-      mockClient.query.mockResolvedValueOnce({ rows: [{ id: 5 }] });
-      // assignBasicPlan INSERT tenant_plans
-      mockClient.query.mockResolvedValueOnce({ rows: [] });
-      // assignBasicPlan UPDATE tenants
-      mockClient.query.mockResolvedValueOnce({ rows: [] });
-      // activateTrialFeatures SELECT → no features
-      mockClient.query.mockResolvedValueOnce({ rows: [] });
+      // activateTrialAddons: production mode → returns early
       // createAuditLog → fails
       mockDb.query.mockRejectedValueOnce(new Error('Audit log failed'));
 

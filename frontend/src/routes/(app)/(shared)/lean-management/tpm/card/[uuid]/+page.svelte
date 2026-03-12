@@ -24,10 +24,6 @@
   import type { PageData } from './$types';
   import type { TpmExecution, TpmLocation } from '../../_lib/types';
 
-  function resolvePath(path: string): string {
-    return (resolve as (p: string) => string)(path);
-  }
-
   const { data }: { data: PageData } = $props();
 
   const card = $derived(data.card);
@@ -59,21 +55,21 @@
 
   function navigateToBoard(): void {
     if (card?.planUuid !== undefined) {
-      void goto(resolvePath(`/lean-management/tpm/board/${card.planUuid}`));
+      void goto(resolve(`/lean-management/tpm/board/${card.planUuid}`));
     } else {
-      void goto(resolvePath('/lean-management/tpm/overview'));
+      void goto(resolve('/lean-management/tpm/overview'));
     }
   }
 
   function navigateToHistory(): void {
     if (card !== null) {
-      void goto(resolvePath(`/lean-management/tpm/card/${card.uuid}/history`));
+      void goto(resolve(`/lean-management/tpm/card/${card.uuid}/history`));
     }
   }
 
   function navigateToDefects(): void {
     if (card !== null) {
-      void goto(resolvePath(`/lean-management/tpm/card/${card.uuid}/defects`));
+      void goto(resolve(`/lean-management/tpm/card/${card.uuid}/defects`));
     }
   }
 

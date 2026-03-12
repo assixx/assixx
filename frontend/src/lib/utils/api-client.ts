@@ -419,17 +419,17 @@ export class ApiClient {
 
   /**
    * Handle 403 Forbidden responses:
-   * - Feature not enabled → redirect to /feature-unavailable
+   * - Addon not enabled → redirect to /addon-unavailable
    * - Permission denied → humanize message + throw ApiError
    */
   private handleForbidden(data: Record<string, unknown>): void {
     const { message } = extractErrorMessage(data);
 
-    if (message.toLowerCase().includes('feature is not enabled')) {
+    if (message.toLowerCase().includes('addon is not enabled')) {
       if (browser) {
-        void goto('/feature-unavailable');
+        void goto('/addon-unavailable');
       }
-      throw new ApiError('Feature nicht verfügbar', 'FEATURE_DISABLED', 403);
+      throw new ApiError('Modul nicht verfügbar', 'ADDON_DISABLED', 403);
     }
 
     const humanMessage = humanizePermissionError(message);

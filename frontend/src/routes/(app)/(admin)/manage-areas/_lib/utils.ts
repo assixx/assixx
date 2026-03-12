@@ -15,6 +15,7 @@ import type {
   Area,
   AdminUser,
   Department,
+  Hall,
   IsActiveStatus,
   AreaType,
   FormIsActiveStatus,
@@ -55,9 +56,9 @@ export function getAreaLeadDisplayName(
   areaLeadId: number | null,
   areaLeads: AdminUser[],
 ): string {
-  if (areaLeadId === null) return 'Kein Bereichsleiter';
+  if (areaLeadId === null) return 'Kein Leiter';
   const lead = areaLeads.find((u) => u.id === areaLeadId);
-  if (!lead) return 'Kein Bereichsleiter';
+  if (!lead) return 'Kein Leiter';
   const roleLabel = lead.role === 'root' ? '(Root)' : '(Admin)';
   return `${lead.firstName} ${lead.lastName} ${roleLabel}`;
 }
@@ -75,10 +76,21 @@ export function getDepartmentIdsForArea(
 }
 
 /** Get department count display text */
-export function getDepartmentCountText(count: number): string {
+export function getDepartmentCountText(
+  count: number,
+  departmentLabel: string,
+): string {
   if (count === 0) return 'Keine';
-  if (count === 1) return '1 Abteilung';
-  return `${count} Abteilungen`;
+  return `${count} ${departmentLabel}`;
+}
+
+// =============================================================================
+// HALL HELPERS
+// =============================================================================
+
+/** Get hall IDs assigned to an area */
+export function getHallIdsForArea(areaId: number, halls: Hall[]): number[] {
+  return halls.filter((h) => h.areaId === areaId).map((h) => h.id);
 }
 
 // =============================================================================
@@ -89,6 +101,7 @@ export function getDepartmentCountText(count: number): string {
 export function populateFormFromArea(
   area: Area,
   departments: Department[],
+  halls: Hall[] = [],
 ): {
   name: string;
   description: string;
@@ -97,6 +110,7 @@ export function populateFormFromArea(
   capacity: number | null;
   address: string;
   departmentIds: number[];
+  hallIds: number[];
   isActive: FormIsActiveStatus;
 } {
   return {
@@ -107,6 +121,7 @@ export function populateFormFromArea(
     capacity: area.capacity ?? null,
     address: area.address ?? '',
     departmentIds: getDepartmentIdsForArea(area.id, departments),
+    hallIds: getHallIdsForArea(area.id, halls),
     isActive: (area.isActive === IS_ACTIVE.DELETED ?
       IS_ACTIVE.INACTIVE
     : area.isActive) as FormIsActiveStatus,

@@ -188,7 +188,7 @@ Nullable TIMESTAMPTZ auf `work_orders` — Flag für Cron Fälligkeits-Benachric
 | Polymorphe source_type JOINs | Kein JOIN nötig — Auftrag ist eigenständig |
 | Race Condition bei Zuweisung | FOR UPDATE Lock auf work_orders Row        |
 | SSE-Notification Flut        | Targeted Delivery (nur Assignees + Admins) |
-| Feature-Flag vergessen       | @TenantFeature auf Controller              |
+| Addon-Flag vergessen         | @RequireAddon auf Controller               |
 
 ---
 

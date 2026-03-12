@@ -15,6 +15,7 @@ import type {
   Area,
   AdminUser,
   Department,
+  Hall,
   AreaPayload,
   AreaType,
   FormIsActiveStatus,
@@ -103,8 +104,7 @@ export async function loadAreas(): Promise<{
 
     return {
       areas: [],
-      error:
-        err instanceof Error ? err.message : 'Fehler beim Laden der Bereiche',
+      error: err instanceof Error ? err.message : 'Fehler beim Laden',
     };
   }
 }
@@ -136,10 +136,7 @@ export async function loadAreaLeads(): Promise<{
     log.error({ err }, 'Error loading area leads');
     return {
       users: [],
-      error:
-        err instanceof Error ?
-          err.message
-        : 'Fehler beim Laden der Bereichsleiter',
+      error: err instanceof Error ? err.message : 'Fehler beim Laden',
     };
   }
 }
@@ -162,10 +159,30 @@ export async function loadDepartments(): Promise<{
     log.error({ err }, 'Error loading departments');
     return {
       departments: [],
-      error:
-        err instanceof Error ?
-          err.message
-        : 'Fehler beim Laden der Abteilungen',
+      error: err instanceof Error ? err.message : 'Fehler beim Laden',
+    };
+  }
+}
+
+/**
+ * Load halls from API
+ */
+export async function loadHalls(): Promise<{
+  halls: Hall[];
+  error: string | null;
+}> {
+  try {
+    const data: unknown = await apiClient.get(API_ENDPOINTS.HALLS);
+    const halls: Hall[] =
+      Array.isArray(data) ?
+        (data as Hall[])
+      : ((data as { data?: Hall[] }).data ?? []);
+    return { halls, error: null };
+  } catch (err: unknown) {
+    log.error({ err }, 'Error loading halls');
+    return {
+      halls: [],
+      error: err instanceof Error ? err.message : 'Fehler beim Laden',
     };
   }
 }
@@ -181,6 +198,7 @@ export function buildAreaPayload(formData: {
   capacity: number | null;
   address: string;
   departmentIds: number[];
+  hallIds: number[];
   isActive: FormIsActiveStatus;
 }): AreaPayload {
   return {
@@ -192,30 +210,66 @@ export function buildAreaPayload(formData: {
     address: formData.address || null,
     isActive: formData.isActive,
     departmentIds: formData.departmentIds,
+    hallIds: formData.hallIds,
   };
 }
 
 /**
- * Save area (create or update)
+ * Extract area ID from API response (handles `{ id }` and `{ data: { id } }`)
+ */
+function extractAreaId(result: unknown): number | null {
+  if (!isNonNullObject(result)) return null;
+  if (typeof result.id === 'number') return result.id;
+  if (isNonNullObject(result.data) && typeof result.data.id === 'number') {
+    return result.data.id;
+  }
+  return null;
+}
+
+/**
+ * Save area (create or update) — returns areaId for subsequent assign calls
  */
 export async function saveArea(
   payload: AreaPayload,
   editId: number | null,
-): Promise<{ success: boolean; error: string | null }> {
+): Promise<{ success: boolean; error: string | null; areaId: number | null }> {
   try {
     if (editId !== null) {
       await apiClient.put(API_ENDPOINTS.area(editId), payload);
-    } else {
-      await apiClient.post(API_ENDPOINTS.AREAS, payload);
+      return { success: true, error: null, areaId: editId };
     }
-    return { success: true, error: null };
+    const result: unknown = await apiClient.post(API_ENDPOINTS.AREAS, payload);
+    return { success: true, error: null, areaId: extractAreaId(result) };
   } catch (err: unknown) {
     log.error({ err }, 'Error saving area');
     return {
       success: false,
       error: err instanceof Error ? err.message : 'Fehler beim Speichern',
+      areaId: null,
     };
   }
+}
+
+/**
+ * Assign departments to an area
+ */
+export async function assignDepartmentsToArea(
+  areaId: number,
+  departmentIds: number[],
+): Promise<void> {
+  await apiClient.post(API_ENDPOINTS.areaDepartments(areaId), {
+    departmentIds,
+  });
+}
+
+/**
+ * Assign halls to an area
+ */
+export async function assignHallsToArea(
+  areaId: number,
+  hallIds: number[],
+): Promise<void> {
+  await apiClient.post(API_ENDPOINTS.areaHalls(areaId), { hallIds });
 }
 
 /**

@@ -59,6 +59,9 @@
 
   // --- SSR DATA ---
   const { data }: { data: PageData } = $props();
+
+  // Hierarchy labels (propagated from layout)
+  const labels = $derived(data.hierarchyLabels);
   const ssrUser = $derived(data.user);
   const ssrAreas = $derived(data.areas);
   const ssrTeams = $derived(data.teams);
@@ -307,7 +310,7 @@
             >{shiftsState.employeeTeamInfo.teamName}</span
           >
           <span class="font-medium text-(--color-text-secondary)"
-            >Abteilung:</span
+            >{labels.department}:</span
           >
           <span class="font-semibold text-blue-400"
             >{shiftsState.employeeTeamInfo.departmentName}</span
@@ -323,6 +326,7 @@
       <!-- Admin Filter Controls (Extracted Component) -->
       {#if shiftsState.isAdmin && shiftsState.employeeTeamInfo === null}
         <FilterDropdowns
+          {labels}
           areas={shiftsState.areas}
           departments={shiftsState.departments}
           assets={shiftsState.assets}
@@ -354,7 +358,7 @@
           onteamChange={handleTeamChange}
           onfavoriteClick={handleFavoriteClick}
           ondeleteFavorite={handleDeleteFavorite}
-          onaddToFavorites={handleAddToFavorites}
+          onaddToFavorites={() => handleAddToFavorites(labels)}
         />
       {/if}
     </div>
@@ -379,10 +383,10 @@
       {#if !shiftsState.showPlanningUI && shiftsState.isAdmin}
         <div class="department-notice">
           <div class="notice-icon"><i class="fas fa-info-circle"></i></div>
-          <h3>Anlage auswählen</h3>
+          <h3>{labels.asset} auswählen</h3>
           <p>
-            Bitte wählen Sie einen Bereich, eine Abteilung, ein Team und eine
-            Anlage aus, um den Schichtplan anzuzeigen.
+            Bitte wählen Sie {labels.area}, {labels.department}, {labels.team} und
+            {labels.asset} aus, um den Schichtplan anzuzeigen.
           </p>
         </div>
       {/if}
@@ -412,6 +416,7 @@
         <div class="main-planning-area">
           <!-- Week Schedule (Extracted Component) -->
           <ShiftScheduleGrid
+            {labels}
             afterLegend={assignmentCountsSnippet}
             {weekDates}
             {shiftTimesMap}
@@ -438,6 +443,7 @@
           <!-- Employee Sidebar (Extracted Component) -->
           {#if shiftsState.isAdmin || shiftsState.employees.length > 0}
             <EmployeeSidebar
+              {labels}
               employees={shiftsState.employees}
               {weekDates}
               canEditShifts={shiftsState.canEditShifts}

@@ -1,10 +1,10 @@
-# FEAT: Frontend Feature Guards — Execution Masterplan
+# FEAT: Frontend Addon Guards — Execution Masterplan
 
 > **Created:** 2026-02-15
 > **Version:** 2.0.0 (Feature Complete)
 > **Status:** DONE ✅ — Alle 5 Phasen abgeschlossen
 > **Branch:** `todo` (aktueller Branch)
-> **Context:** Backend TenantFeatureGuard bereits implementiert (Session 1-2)
+> **Context:** Backend TenantAddonGuard bereits implementiert (Session 1-2)
 > **Estimated Sessions:** 5
 > **Actual Sessions:** 5 / 5
 
@@ -19,7 +19,7 @@
 | 1.0.0   | 2026-02-15 | Phase 1 DONE: Sidebar Feature-Filterung (SSR), manuell getestet                         |
 | 1.1.0   | 2026-02-15 | Phase 2 DONE: Page-Level Guards (17 Dateien) + 403-Handling + /feature-unavailable      |
 | 1.2.0   | 2026-02-15 | ESLint-Fix: `?? []` entfernt (10×), `features/+page.svelte` ternary→`??` (2×)           |
-| 1.3.0   | 2026-02-15 | Phase 3 Tests: 31 Tests navigation-config + 26 Tests feature-guard = 57 neue Tests      |
+| 1.3.0   | 2026-02-15 | Phase 3 Tests: 31 Tests navigation-config + 26 Tests addon-guard = 57 neue Tests        |
 | 1.4.0   | 2026-02-15 | Phase 4: Features Page komplett modernisiert (Design System, Dark/Light, Confirm Modal) |
 | 2.0.0   | 2026-02-15 | Feature COMPLETE: ADR-024 + FEATURES.md + DAILY-PROGRESS.md — alle 5 Phasen done        |
 
@@ -48,10 +48,10 @@
 Layer 1: hooks.server.ts          → Authentication (Token valid?)
 Layer 2: (app)/+layout.server.ts  → User Data Fetch + Feature Fetch (NEU)
 Layer 3: Group Layout              → Role Authorization (ADR-012)
-Layer 4: +page.server.ts          → Feature Authorization (NEU: requireFeature)
+Layer 4: +page.server.ts          → Feature Authorization (NEU: requireAddon)
 Layer 5: Sidebar Filter            → UX: Deaktivierte Features unsichtbar (NEU)
 Layer 6: api-client.ts            → Client-Side Feature-403 Redirect (NEU)
-Layer 7: Backend API Guards        → TenantFeatureGuard + PermissionGuard (DONE)
+Layer 7: Backend API Guards        → TenantAddonGuard + PermissionGuard (DONE)
 ```
 
 Layers 2, 4, 5, 6 sind das, was dieser Masterplan implementiert.
@@ -64,11 +64,11 @@ Layers 2, 4, 5, 6 sind das, was dieser Masterplan implementiert.
 
 | Komponente                  | Status | Beschreibung                                                         |
 | --------------------------- | ------ | -------------------------------------------------------------------- |
-| `TenantFeatureGuard`        | DONE   | Globaler APP_GUARD, prüft `@TenantFeature()` Decorator               |
-| `@TenantFeature('code')`    | DONE   | Decorator auf allen 8 Feature-Controllern + 1 Rotation-Controller    |
-| `FeatureCheckService`       | DONE   | Prüft `tenant_features` Tabelle (is_active + expires_at)             |
+| `TenantAddonGuard`          | DONE   | Globaler APP_GUARD, prüft `@RequireAddon()` Decorator                |
+| `@RequireAddon('code')`     | DONE   | Decorator auf allen 8 Feature-Controllern + 1 Rotation-Controller    |
+| `FeatureCheckService`       | DONE   | Prüft `tenant_addons` Tabelle (is_active + expires_at)               |
 | `GET /features/my-features` | DONE   | Gibt alle Features mit Tenant-Status zurück (code, status, isActive) |
-| Unit Tests (52 Tests)       | DONE   | TenantFeatureGuard (16) + VacationController (36)                    |
+| Unit Tests (52 Tests)       | DONE   | TenantAddonGuard (16) + VacationController (36)                      |
 | Guard Reihenfolge           | DONE   | JwtAuth → Roles → **TenantFeature** → Permission                     |
 
 ### Frontend (GELÖST — Phase 1+2 implementiert)
@@ -88,40 +88,40 @@ Layers 2, 4, 5, 6 sind das, was dieser Masterplan implementiert.
 ### 0.1 Must Be True Before Starting
 
 - [ ] Docker Stack running (alle Container healthy)
-- [ ] Backend TenantFeatureGuard deployed und getestet (DONE)
+- [ ] Backend TenantAddonGuard deployed und getestet (DONE)
 - [ ] `GET /features/my-features` Endpoint erreichbar
 - [ ] Mindestens 1 Test-Tenant mit aktivierten UND deaktivierten Features
 - [ ] Bestehende Frontend-Tests laufen durch
 
 ### 0.2 Risk Register
 
-| #   | Risiko                                                      | Impact  | Wahrscheinlichkeit | Mitigation                                                                                 | Verifikation                                                               |
-| --- | ----------------------------------------------------------- | ------- | ------------------ | ------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------- |
-| R1  | Core-Features (Dashboard, Profil) versehentlich versteckt   | Hoch    | Mittel             | Explicit Allowlist: Nur die 8 bekannten Feature-Codes filtern, Rest passiert immer durch   | Unit Test: NavItem ohne `featureCode` wird NIE gefiltert                   |
-| R2  | SSR Performance: Extra API-Call pro Navigation              | Mittel  | Hoch               | Parallel-Fetch mit `/users/me` + `/dashboard/counts` (bereits bestehendes Pattern)         | Perf-Log: Layout-Load < 200ms (Messung in +layout.server.ts)               |
-| R3  | Race Condition: Feature wird deaktiviert während User aktiv | Niedrig | Niedrig            | Backend-Guard fängt ab → 403 → api-client redirected zu Feature-Unavailable                | Manueller Test: Feature deaktivieren → nächste Aktion zeigt Fehler         |
-| R4  | Root-User sieht keine Features-Admin-Seite                  | Hoch    | Niedrig            | `/features`-Route KEIN Feature-Gate (ist Core-Admin-Funktion)                              | Root login → /features erreichbar ohne Feature-Aktivierung                 |
-| R5  | Sidebar-Flash: Items erscheinen kurz und verschwinden       | Mittel  | Mittel             | SSR: Feature-Daten serverseitig laden, kein Client-Side-Fetch für Sidebar                  | Visueller Test: Kein Flackern bei Page Load                                |
-| R6  | `parent()` Daten-Kette bricht in (admin)/(root) Gruppe      | Hoch    | Mittel             | `activeFeatures` kommt von (app)/+layout.server.ts → fließt durch alle Group-Layouts       | Test: `await parent()` in (admin) Seite gibt `activeFeatures` Array zurück |
-| R7  | `lean-management` Submenu-Sonderfall: verschachtelte kvp    | Niedrig | Mittel             | Rekursiver Filter: `featureCode` auf `kvp` Sub-Item, nicht auf `kvp-main`/`kvp-categories` | Unit Test: kvp deaktiviert → ganzer kvp-Submenu-Block verschwindet         |
+| #   | Risiko                                                      | Impact  | Wahrscheinlichkeit | Mitigation                                                                               | Verifikation                                                             |
+| --- | ----------------------------------------------------------- | ------- | ------------------ | ---------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| R1  | Core-Features (Dashboard, Profil) versehentlich versteckt   | Hoch    | Mittel             | Explicit Allowlist: Nur die 8 bekannten Feature-Codes filtern, Rest passiert immer durch | Unit Test: NavItem ohne `addonCode` wird NIE gefiltert                   |
+| R2  | SSR Performance: Extra API-Call pro Navigation              | Mittel  | Hoch               | Parallel-Fetch mit `/users/me` + `/dashboard/counts` (bereits bestehendes Pattern)       | Perf-Log: Layout-Load < 200ms (Messung in +layout.server.ts)             |
+| R3  | Race Condition: Feature wird deaktiviert während User aktiv | Niedrig | Niedrig            | Backend-Guard fängt ab → 403 → api-client redirected zu Feature-Unavailable              | Manueller Test: Feature deaktivieren → nächste Aktion zeigt Fehler       |
+| R4  | Root-User sieht keine Features-Admin-Seite                  | Hoch    | Niedrig            | `/features`-Route KEIN Feature-Gate (ist Core-Admin-Funktion)                            | Root login → /features erreichbar ohne Feature-Aktivierung               |
+| R5  | Sidebar-Flash: Items erscheinen kurz und verschwinden       | Mittel  | Mittel             | SSR: Feature-Daten serverseitig laden, kein Client-Side-Fetch für Sidebar                | Visueller Test: Kein Flackern bei Page Load                              |
+| R6  | `parent()` Daten-Kette bricht in (admin)/(root) Gruppe      | Hoch    | Mittel             | `activeAddons` kommt von (app)/+layout.server.ts → fließt durch alle Group-Layouts       | Test: `await parent()` in (admin) Seite gibt `activeAddons` Array zurück |
+| R7  | `lean-management` Submenu-Sonderfall: verschachtelte kvp    | Niedrig | Mittel             | Rekursiver Filter: `addonCode` auf `kvp` Sub-Item, nicht auf `kvp-main`/`kvp-categories` | Unit Test: kvp deaktiviert → ganzer kvp-Submenu-Block verschwindet       |
 
 ### 0.3 Ecosystem Integration Points
 
-| Bestehendes System            | Art der Integration                                       | Phase | Verifiziert am |
-| ----------------------------- | --------------------------------------------------------- | ----- | -------------- |
-| `+layout.server.ts`           | Neuer paralleler Fetch: `/features/my-features`           | 1     | 2026-02-15     |
-| `navigation-config.ts`        | Neues `featureCode?` Feld auf `NavItem` + Filter-Funktion | 1     | 2026-02-15     |
-| `+layout.svelte`              | `menuItems` Derived-Chain erweitern um Feature-Filter     | 1     | 2026-02-15     |
-| `api-client.ts`               | 403 Feature-Error abfangen VOR handleAuthenticationError  | 2     | 2026-02-15     |
-| 17× Feature `+page.server.ts` | Page-Level Guard: Feature-Check + redirect                | 2     | 2026-02-15     |
-| `feature-unavailable/` (NEU)  | Neue Fehlerseite für deaktivierte Features                | 2     | 2026-02-15     |
-| ADR-012 Pattern               | `requireFeature()` folgt dem Group-Layout-Guard-Muster    | 2     | 2026-02-15     |
+| Bestehendes System            | Art der Integration                                      | Phase | Verifiziert am |
+| ----------------------------- | -------------------------------------------------------- | ----- | -------------- |
+| `+layout.server.ts`           | Neuer paralleler Fetch: `/features/my-features`          | 1     | 2026-02-15     |
+| `navigation-config.ts`        | Neues `addonCode?` Feld auf `NavItem` + Filter-Funktion  | 1     | 2026-02-15     |
+| `+layout.svelte`              | `menuItems` Derived-Chain erweitern um Feature-Filter    | 1     | 2026-02-15     |
+| `api-client.ts`               | 403 Feature-Error abfangen VOR handleAuthenticationError | 2     | 2026-02-15     |
+| 17× Feature `+page.server.ts` | Page-Level Guard: Feature-Check + redirect               | 2     | 2026-02-15     |
+| `feature-unavailable/` (NEU)  | Neue Fehlerseite für deaktivierte Features               | 2     | 2026-02-15     |
+| ADR-012 Pattern               | `requireAddon()` folgt dem Group-Layout-Guard-Muster     | 2     | 2026-02-15     |
 
 ---
 
 ## Phase 1: Sidebar Feature-Filterung (SSR)
 
-> **Abhängigkeit:** Backend TenantFeatureGuard (DONE)
+> **Abhängigkeit:** Backend TenantAddonGuard (DONE)
 > **Ziel:** Sidebar zeigt NUR Features an, die für den Tenant aktiviert sind
 
 ### Step 1.1: Feature-Daten im Layout laden [DONE ✅]
@@ -132,7 +132,7 @@ Layers 2, 4, 5, 6 sind das, was dieser Masterplan implementiert.
 
 1. Neuer paralleler Fetch zu `GET /features/my-features` (analog zu `/dashboard/counts` und `/settings/user/theme`)
 2. Response parsen → `Set<string>` mit aktiven Feature-Codes extrahieren
-3. Set als `activeFeatures: string[]` an Layout-Data zurückgeben
+3. Set als `activeAddons: string[]` an Layout-Data zurückgeben
 
 **Konkrete Änderungen:**
 
@@ -164,34 +164,34 @@ return {
   isAuthenticated: true,
   dashboardCounts: await parseDashboardCounts(countsResponse),
   theme: await parseThemeSetting(themeResponse),
-  activeFeatures: await parseActiveFeatures(featuresResponse), // NEU
+  activeAddons: await parseActiveFeatures(featuresResponse), // NEU
 };
 ```
 
 **Performance:** Kein zusätzlicher Roundtrip — läuft parallel zu bestehenden Fetches.
 
-### Step 1.2: NavItem um `featureCode` erweitern [DONE]
+### Step 1.2: NavItem um `addonCode` erweitern [DONE]
 
 **Datei:** `frontend/src/routes/(app)/_lib/navigation-config.ts`
 
 **Was passiert:**
 
-1. `NavItem` Interface um optionales `featureCode?: string` Feld erweitern
+1. `NavItem` Interface um optionales `addonCode?: string` Feld erweitern
 2. Allen Feature-gebundenen NavItems das Feld zuweisen
 3. Neue Filter-Funktion `filterMenuByFeatures()` erstellen
 
-**Mapping NavItem.id → featureCode:**
+**Mapping NavItem.id → addonCode:**
 
-| NavItem.id          | featureCode      | Betrifft Rollen       | Hinweis                                                  |
+| NavItem.id          | addonCode        | Betrifft Rollen       | Hinweis                                                  |
 | ------------------- | ---------------- | --------------------- | -------------------------------------------------------- |
 | `blackboard`        | `blackboard`     | root, admin, employee | Root/Admin: hat Submenu (main + archive)                 |
 | `calendar`          | `calendar`       | root, admin, employee |                                                          |
 | `chat`              | `chat`           | root, admin, employee |                                                          |
 | `documents`         | `documents`      | root, admin, employee | Hat Submenu (documents-explorer)                         |
-| `lean-management`   | —                | Eltern-Container      | KEIN featureCode — verschwindet wenn alle Kinder weg     |
+| `lean-management`   | —                | Eltern-Container      | KEIN addonCode — verschwindet wenn alle Kinder weg       |
 | └ `kvp`             | `kvp`            | root, admin, employee | Root/Admin: hat Sub-Submenu (Vorschläge + Definitionen)  |
-| └─ `kvp-main`       | —                | (Kind von kvp)        | Erbt von Eltern — KEIN eigenes featureCode               |
-| └─ `kvp-categories` | —                | (Kind von kvp)        | Erbt von Eltern — KEIN eigenes featureCode               |
+| └─ `kvp-main`       | —                | (Kind von kvp)        | Erbt von Eltern — KEIN eigenes addonCode                 |
+| └─ `kvp-categories` | —                | (Kind von kvp)        | Erbt von Eltern — KEIN eigenes addonCode                 |
 | └ `surveys`         | `surveys`        | root, admin, employee |                                                          |
 | `shifts`            | `shift_planning` | admin, employee       | Root sieht keine Schichtplanung in Sidebar               |
 | `vacation`          | `vacation`       | root, admin, employee | Hat Submenu (Übersicht, Anträge, Regeln, Ansprüche, ...) |
@@ -199,14 +199,14 @@ return {
 **Rekursions-Logik am Beispiel `lean-management`:**
 
 ```
-lean-management (kein featureCode → passiert durch)
-  ├─ kvp (featureCode: 'kvp')
-  │    ├─ kvp-main (kein featureCode → passiert durch)
-  │    └─ kvp-categories (kein featureCode → wird ggf. von filterMenuByAccess entfernt)
-  └─ surveys (featureCode: 'surveys')
+lean-management (kein addonCode → passiert durch)
+  ├─ kvp (addonCode: 'kvp')
+  │    ├─ kvp-main (kein addonCode → passiert durch)
+  │    └─ kvp-categories (kein addonCode → wird ggf. von filterMenuByAccess entfernt)
+  └─ surveys (addonCode: 'surveys')
 
 Szenario: kvp=DISABLED, surveys=DISABLED
-→ kvp entfernt (featureCode nicht in activeFeatures) → Kinder damit auch weg
+→ kvp entfernt (addonCode nicht in activeAddons) → Kinder damit auch weg
 → surveys entfernt
 → lean-management hat 0 Kinder UND keine eigene URL → ENTFERNT
 
@@ -216,7 +216,7 @@ Szenario: kvp=ACTIVE, surveys=DISABLED
 → lean-management hat 1 Kind → BLEIBT
 ```
 
-**WICHTIG — Items OHNE `featureCode` werden NIE gefiltert:**
+**WICHTIG — Items OHNE `addonCode` werden NIE gefiltert:**
 
 - `dashboard` → Core (kein Gate)
 - `root-users`, `admins`, `departments`, `areas`, `teams` → Core-Admin (kein Gate)
@@ -227,19 +227,19 @@ Szenario: kvp=ACTIVE, surveys=DISABLED
 ```typescript
 /**
  * Filter menu items based on tenant feature activation.
- * Items without featureCode always pass through (core features).
+ * Items without addonCode always pass through (core features).
  * Recursive for nested submenus — removes empty parent containers.
  */
-export function filterMenuByFeatures(items: NavItem[], activeFeatures: ReadonlySet<string>): NavItem[] {
+export function filterMenuByFeatures(items: NavItem[], activeAddons: ReadonlySet<string>): NavItem[] {
   return items.reduce<NavItem[]>((acc, item) => {
-    // Item has featureCode and feature is NOT active → skip
-    if (item.featureCode !== undefined && !activeFeatures.has(item.featureCode)) {
+    // Item has addonCode and feature is NOT active → skip
+    if (item.addonCode !== undefined && !activeAddons.has(item.addonCode)) {
       return acc;
     }
 
     // Recurse into submenus
     if (item.submenu !== undefined) {
-      const filtered = filterMenuByFeatures(item.submenu, activeFeatures);
+      const filtered = filterMenuByFeatures(item.submenu, activeAddons);
       // Keep parent only if it has remaining children OR its own URL
       if (filtered.length > 0 || item.url !== undefined) {
         acc.push({ ...item, submenu: filtered });
@@ -259,7 +259,7 @@ export function filterMenuByFeatures(items: NavItem[], activeFeatures: ReadonlyS
 
 **Was passiert:**
 
-1. `activeFeatures` aus SSR-Data lesen
+1. `activeAddons` aus SSR-Data lesen
 2. `Set<string>` erzeugen
 3. In `menuItems` Derived-Chain einfügen: **nach** `filterMenuByAccess`, **vor** Übergabe an `AppSidebar`
 
@@ -272,10 +272,10 @@ const menuItems = $derived<NavItem[]>(filterMenuByAccess(getMenuItemsForRole(cur
 **Neue Chain:**
 
 ```typescript
-const activeFeaturesSet = $derived(new Set(data.activeFeatures ?? []));
+const activeAddonsSet = $derived(new Set(data.activeAddons ?? []));
 
 const menuItems = $derived<NavItem[]>(
-  filterMenuByFeatures(filterMenuByAccess(getMenuItemsForRole(currentRole), hasFullAccess), activeFeaturesSet),
+  filterMenuByFeatures(filterMenuByAccess(getMenuItemsForRole(currentRole), hasFullAccess), activeAddonsSet),
 );
 ```
 
@@ -288,10 +288,10 @@ const menuItems = $derived<NavItem[]>(
 ### Phase 1 — Definition of Done ✅
 
 - [x] `GET /features/my-features` wird parallel im Layout geladen (kein Extra-Roundtrip)
-- [x] `NavItem` Interface hat optionales `featureCode?: string` Feld
-- [x] Alle 8 Feature-NavItems haben korrektes `featureCode` zugewiesen
+- [x] `NavItem` Interface hat optionales `addonCode?: string` Feld
+- [x] Alle 8 Feature-NavItems haben korrektes `addonCode` zugewiesen
 - [x] `filterMenuByFeatures()` Funktion existiert und ist rekursiv (Submenus)
-- [x] Items OHNE `featureCode` werden NIE gefiltert (Core-Features sicher)
+- [x] Items OHNE `addonCode` werden NIE gefiltert (Core-Features sicher)
 - [x] Leere Eltern-Container (z.B. "LEAN-Management" ohne kvp+surveys) werden entfernt
 - [x] `+layout.svelte` verwendet 3-stufige Filter-Chain
 - [x] Kein Sidebar-Flash (SSR → Daten sofort verfügbar)
@@ -331,7 +331,7 @@ Semantisch verschiedene Fehler mit verschiedenen Lösungswegen:
 - Buttons: "Zurück" + "Zur Startseite"
 - Optional Query-Param `?feature=vacation` für spezifischere Meldung
 
-### Step 2.2: Page-Level Feature Guards [DONE]
+### Step 2.2: Page-Level Addon Guards [DONE]
 
 **Konzept:** Analog zu `(admin)/+layout.server.ts` (RBAC-Guard), aber für Feature-Aktivierung.
 
@@ -347,24 +347,24 @@ frontend/src/routes/(app)/(shared)/
   ...
 ```
 
-**Aber:** Die Features liegen in verschiedenen Gruppen (`(shared)`, `(admin)`), und jedes Feature hat EINEN featureCode. Eine Layout-Gruppe würde nicht passen, weil verschiedene Features verschiedene Codes haben.
+**Aber:** Die Features liegen in verschiedenen Gruppen (`(shared)`, `(admin)`), und jedes Feature hat EINEN addonCode. Eine Layout-Gruppe würde nicht passen, weil verschiedene Features verschiedene Codes haben.
 
 **→ Option B — Utility-Funktion in jeder `+page.server.ts` (gewählt):**
 
 ```typescript
-// frontend/src/lib/utils/feature-guard.ts (NEU)
+// frontend/src/lib/utils/addon-guard.ts (NEU)
 import { redirect } from '@sveltejs/kit';
 
 /**
  * Page-level feature guard.
  * Call in +page.server.ts load() to redirect if feature is disabled.
  *
- * @param activeFeatures - Array from parent layout data
- * @param featureCode - Required feature code (e.g., 'vacation')
+ * @param activeAddons - Array from parent layout data
+ * @param addonCode - Required feature code (e.g., 'vacation')
  */
-export function requireFeature(activeFeatures: string[], featureCode: string): void {
-  if (!activeFeatures.includes(featureCode)) {
-    redirect(302, `/feature-unavailable?feature=${featureCode}`);
+export function requireAddon(activeAddons: string[], addonCode: string): void {
+  if (!activeAddons.includes(addonCode)) {
+    redirect(302, `/feature-unavailable?feature=${addonCode}`);
   }
 }
 ```
@@ -377,8 +377,8 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
   const token = cookies.get('accessToken');
   if (!token) redirect(302, '/login');
 
-  const { activeFeatures } = await parent();
-  requireFeature(activeFeatures, 'blackboard'); // ← NEU (1 Zeile!)
+  const { activeAddons } = await parent();
+  requireAddon(activeAddons, 'blackboard'); // ← NEU (1 Zeile!)
 
   // ... rest of load function
 };
@@ -410,8 +410,8 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
 
 **Aufwand-Erklärung:**
 
-- Dateien MIT `await parent()`: 2 Zeilen (destructure `activeFeatures` + `requireFeature()`)
-- Dateien OHNE `await parent()`: 3 Zeilen (`parent` in Params + destructure + `requireFeature()`)
+- Dateien MIT `await parent()`: 2 Zeilen (destructure `activeAddons` + `requireAddon()`)
+- Dateien OHNE `await parent()`: 3 Zeilen (`parent` in Params + destructure + `requireAddon()`)
 
 **ACHTUNG:** 8 der 17 Dateien rufen `await parent()` noch NICHT auf.
 Diese brauchen `parent` als zusätzlichen Parameter im load-Destrukturierung.
@@ -474,8 +474,8 @@ if (response.status === 401 || response.status === 403) {
 ### Phase 2 — Definition of Done ✅
 
 - [x] `/feature-unavailable` Seite existiert mit korrektem Design-System Styling
-- [x] `requireFeature()` Utility-Funktion erstellt
-- [x] Alle 17 Feature-gated `+page.server.ts` Dateien verwenden `requireFeature()`
+- [x] `requireAddon()` Utility-Funktion erstellt
+- [x] Alle 17 Feature-gated `+page.server.ts` Dateien verwenden `requireAddon()`
 - [x] 8 Dateien ohne `await parent()` → `parent` Parameter ergänzt
 - [x] `api-client.ts` unterscheidet Feature-403 von Auth-403
 - [x] Direkt-Navigation zu deaktiviertem Feature → Redirect zu `/feature-unavailable`
@@ -509,35 +509,35 @@ if (response.status === 401 || response.status === 403) {
    - `lean-management` mit kvp aber ohne surveys → bleibt mit nur kvp
 
 3. **filterMenuByFeatures — Sicherheit:**
-   - Items ohne `featureCode` werden NIE gefiltert
+   - Items ohne `addonCode` werden NIE gefiltert
    - `dashboard`, `profile`, `settings` bleiben IMMER
-   - Leere `activeFeatures` Set → nur Core-Items
+   - Leere `activeAddons` Set → nur Core-Items
 
 4. **Kombination mit filterMenuByAccess:**
    - `filterMenuByAccess` → `filterMenuByFeatures` Reihenfolge korrekt
    - Kein Konflikt zwischen Access-Filter und Feature-Filter
 
-### Step 3.2: Unit Test für feature-guard Utility [DONE — 26 Tests]
+### Step 3.2: Unit Test für addon-guard Utility [DONE — 26 Tests]
 
-**Datei:** `frontend/src/lib/utils/feature-guard.test.ts` (NEU)
+**Datei:** `frontend/src/lib/utils/addon-guard.test.ts` (NEU)
 
 **Test-Szenarien:**
 
-1. Feature in `activeFeatures` → kein Redirect (no-op)
-2. Feature NICHT in `activeFeatures` → Redirect zu `/feature-unavailable?feature=xxx`
-3. Leere `activeFeatures` → Redirect
+1. Feature in `activeAddons` → kein Redirect (no-op)
+2. Feature NICHT in `activeAddons` → Redirect zu `/feature-unavailable?feature=xxx`
+3. Leere `activeAddons` → Redirect
 4. Alle 8 Feature-Codes durchiterieren
 
 ### Step 3.3: Dokumentation [DONE ✅]
 
-- [x] ADR-024 für Frontend Feature Guards (Architekturentscheidung: Utility statt Layout-Group)
+- [x] ADR-024 für Frontend Addon Guards (Architekturentscheidung: Utility statt Layout-Group)
 - [x] FEATURES.md aktualisiert (Frontend Feature-Gating als System-Feature #10)
 - [x] DAILY-PROGRESS.md erstellt
 
 ### Phase 3 — Definition of Done ✅
 
 - [x] > = 20 Unit Tests für `filterMenuByFeatures()` → **31 Tests**
-- [x] > = 8 Unit Tests für `requireFeature()` → **26 Tests**
+- [x] > = 8 Unit Tests für `requireAddon()` → **26 Tests**
 - [x] Alle Tests grün (238 frontend-unit total)
 - [x] ADR-024 geschrieben
 - [x] FEATURES.md aktualisiert
@@ -600,8 +600,8 @@ if (response.status === 401 || response.status === 403) {
 
 | Session | Phase | Beschreibung                                                     | Status | Datum      |
 | ------- | ----- | ---------------------------------------------------------------- | ------ | ---------- |
-| 1       | 1     | Layout Feature-Fetch + NavItem featureCode + Filtering           | DONE   | 2026-02-15 |
-| 2       | 2     | Feature-Unavailable-Seite + requireFeature Utility               | DONE   | 2026-02-15 |
+| 1       | 1     | Layout Feature-Fetch + NavItem addonCode + Filtering             | DONE   | 2026-02-15 |
+| 2       | 2     | Feature-Unavailable-Seite + requireAddon Utility                 | DONE   | 2026-02-15 |
 | 3       | 2     | Page-Level Guards in 17 Dateien (8 ohne parent) + api-client Fix | DONE   | 2026-02-15 |
 | 4       | 3+4   | Tests (57) + Features Page Modernisierung (Design System)        | DONE   | 2026-02-15 |
 | 5       | 3+5   | ADR-024 + FEATURES.md + DAILY-PROGRESS.md + Masterplan 2.0.0     | DONE   | 2026-02-15 |
@@ -614,37 +614,37 @@ if (response.status === 401 || response.status === 403) {
 
 | Datei                                                           | Zweck                         |
 | --------------------------------------------------------------- | ----------------------------- |
-| `frontend/src/lib/utils/feature-guard.ts`                       | Page-Level Feature Guard      |
-| `frontend/src/lib/utils/feature-guard.test.ts`                  | Tests für Feature Guard       |
+| `frontend/src/lib/utils/addon-guard.ts`                         | Page-Level Addon Guard        |
+| `frontend/src/lib/utils/addon-guard.test.ts`                    | Tests für Addon Guard         |
 | `frontend/src/routes/(app)/feature-unavailable/+page.svelte`    | Feature-Unavailable-Seite     |
 | `frontend/src/routes/(app)/feature-unavailable/+page.server.ts` | Server-Load für Feature-Seite |
 | `frontend/src/routes/(app)/_lib/navigation-config.test.ts`      | Tests für Navigation-Filter   |
 
 ### Frontend (geändert — 21 Dateien)
 
-| Datei                                                 | Änderung                                               |
-| ----------------------------------------------------- | ------------------------------------------------------ |
-| `frontend/src/routes/(app)/+layout.server.ts`         | Parallel-Fetch `/features/my-features`, activeFeatures |
-| `frontend/src/routes/(app)/+layout.svelte`            | 3-stufige Filter-Chain für menuItems                   |
-| `frontend/src/routes/(app)/_lib/navigation-config.ts` | `featureCode` auf NavItem + filterMenuByFeatures()     |
-| `frontend/src/lib/utils/api-client.ts`                | Feature-403 VOR handleAuthenticationError abfangen     |
-| `(shared)/blackboard/+page.server.ts`                 | +parent +requireFeature('blackboard')                  |
-| `(shared)/blackboard/archived/+page.server.ts`        | +parent +requireFeature('blackboard')                  |
-| `(shared)/blackboard/[uuid]/+page.server.ts`          | +requireFeature('blackboard')                          |
-| `(shared)/calendar/+page.server.ts`                   | +requireFeature('calendar')                            |
-| `(shared)/chat/+page.server.ts`                       | +requireFeature('chat')                                |
-| `(shared)/documents-explorer/+page.server.ts`         | +requireFeature('documents')                           |
-| `(shared)/kvp/+page.server.ts`                        | +requireFeature('kvp')                                 |
-| `(admin)/kvp-categories/+page.server.ts`              | +requireFeature('kvp')                                 |
-| `(shared)/survey-employee/+page.server.ts`            | +parent +requireFeature('surveys')                     |
-| `(admin)/survey-admin/+page.server.ts`                | +requireFeature('surveys')                             |
-| `(admin)/survey-results/+page.server.ts`              | +parent +requireFeature('surveys')                     |
-| `(shared)/shifts/+page.server.ts`                     | +requireFeature('shift_planning')                      |
-| `(shared)/vacation/+page.server.ts`                   | +requireFeature('vacation')                            |
-| `(admin)/vacation/rules/+page.server.ts`              | +parent +requireFeature('vacation')                    |
-| `(admin)/vacation/overview/+page.server.ts`           | +parent +requireFeature('vacation')                    |
-| `(admin)/vacation/entitlements/+page.server.ts`       | +parent +requireFeature('vacation')                    |
-| `(root)/vacation/holidays/+page.server.ts`            | +parent +requireFeature('vacation')                    |
+| Datei                                                 | Änderung                                             |
+| ----------------------------------------------------- | ---------------------------------------------------- |
+| `frontend/src/routes/(app)/+layout.server.ts`         | Parallel-Fetch `/features/my-features`, activeAddons |
+| `frontend/src/routes/(app)/+layout.svelte`            | 3-stufige Filter-Chain für menuItems                 |
+| `frontend/src/routes/(app)/_lib/navigation-config.ts` | `addonCode` auf NavItem + filterMenuByFeatures()     |
+| `frontend/src/lib/utils/api-client.ts`                | Feature-403 VOR handleAuthenticationError abfangen   |
+| `(shared)/blackboard/+page.server.ts`                 | +parent +requireAddon('blackboard')                  |
+| `(shared)/blackboard/archived/+page.server.ts`        | +parent +requireAddon('blackboard')                  |
+| `(shared)/blackboard/[uuid]/+page.server.ts`          | +requireAddon('blackboard')                          |
+| `(shared)/calendar/+page.server.ts`                   | +requireAddon('calendar')                            |
+| `(shared)/chat/+page.server.ts`                       | +requireAddon('chat')                                |
+| `(shared)/documents-explorer/+page.server.ts`         | +requireAddon('documents')                           |
+| `(shared)/kvp/+page.server.ts`                        | +requireAddon('kvp')                                 |
+| `(admin)/kvp-categories/+page.server.ts`              | +requireAddon('kvp')                                 |
+| `(shared)/survey-employee/+page.server.ts`            | +parent +requireAddon('surveys')                     |
+| `(admin)/survey-admin/+page.server.ts`                | +requireAddon('surveys')                             |
+| `(admin)/survey-results/+page.server.ts`              | +parent +requireAddon('surveys')                     |
+| `(shared)/shifts/+page.server.ts`                     | +requireAddon('shift_planning')                      |
+| `(shared)/vacation/+page.server.ts`                   | +requireAddon('vacation')                            |
+| `(admin)/vacation/rules/+page.server.ts`              | +parent +requireAddon('vacation')                    |
+| `(admin)/vacation/overview/+page.server.ts`           | +parent +requireAddon('vacation')                    |
+| `(admin)/vacation/entitlements/+page.server.ts`       | +parent +requireAddon('vacation')                    |
+| `(root)/vacation/holidays/+page.server.ts`            | +parent +requireAddon('vacation')                    |
 
 ---
 
@@ -684,7 +684,7 @@ if (response.status === 401 || response.status === 403) {
 │  2. Parallel-Fetch:                                                 │
 │     /users/me  |  /dashboard/counts  |  /settings/theme             │
 │                |                     |  /features/my-features  ← NEU│
-│  3. Return: { user, counts, theme, activeFeatures }                 │
+│  3. Return: { user, counts, theme, activeAddons }                 │
 └─────────────────┬───────────────────────────────────────────────────┘
                   │
                   ▼
@@ -696,7 +696,7 @@ if (response.status === 401 || response.status === 403) {
 │      getMenuItemsForRole(currentRole),                              │
 │      hasFullAccess                                                  │
 │    ),                                                               │
-│    activeFeaturesSet  ← NEU                                         │
+│    activeAddonsSet  ← NEU                                         │
 │  )                                                                  │
 │                                                                     │
 │  Sidebar zeigt nur aktivierte Features                              │
@@ -706,8 +706,8 @@ if (response.status === 401 || response.status === 403) {
 ┌─────────────────────────────────────────────────────────────────────┐
 │  (shared)/blackboard/+page.server.ts                                │
 │                                                                     │
-│  const { activeFeatures } = await parent();                         │
-│  requireFeature(activeFeatures, 'blackboard');  ← NEU               │
+│  const { activeAddons } = await parent();                         │
+│  requireAddon(activeAddons, 'blackboard');  ← NEU               │
 │                                                                     │
 │  Feature nicht aktiv?                                               │
 │    → redirect(302, '/feature-unavailable?feature=blackboard')       │

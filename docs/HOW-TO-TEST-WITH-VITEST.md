@@ -58,10 +58,10 @@ curl -s http://localhost:3000/health | jq .
 Without these, KVP tests will fail:
 
 ```sql
--- Enable all features for apitest tenant
-INSERT INTO tenant_features (tenant_id, feature_id, is_active, activated_at)
-SELECT 1, id, 1, NOW() FROM features WHERE is_active = 1
-ON CONFLICT (tenant_id, feature_id) DO UPDATE SET is_active = 1;
+-- Enable all addons for apitest tenant
+INSERT INTO tenant_addons (tenant_id, addon_id, status, activated_at)
+SELECT 1, id, 'active', NOW() FROM addons WHERE is_active = 1
+ON CONFLICT (tenant_id, addon_id) DO UPDATE SET status = 'active';
 
 -- Set brunotest user (id=1) as team lead (required for KVP create)
 UPDATE teams SET team_lead_id = 1 WHERE id = 2 AND tenant_id = 1;
@@ -438,7 +438,7 @@ export type JsonBody = Record<string, any>;
 | `400 Bad Request`           | Content-Type on GET/DELETE       | Use `authOnly()` instead of `authHeaders()`                    |
 | `400 Bad Request`           | Validation error                 | Check body format (Zod schema)                                 |
 | `403 Forbidden` (KVP)       | User is not team lead            | `UPDATE teams SET team_lead_id = 1 WHERE id = 2`               |
-| `403 Forbidden` (Feature)   | Feature not enabled              | `INSERT INTO tenant_features ...` (see Prerequisites)          |
+| `403 Forbidden` (Addon)     | Addon not enabled                | `INSERT INTO tenant_addons ...` (see Prerequisites)            |
 | `404 Not Found`             | Resource does not exist          | Create describe must come BEFORE Get/Delete                    |
 | `500 Internal Server Error` | Backend bug                      | `docker logs assixx-backend`                                   |
 | `ECONNREFUSED`              | Backend down                     | `doppler run -- docker-compose up -d`                          |

@@ -1,31 +1,36 @@
 -- =============================================================================
 -- Global Seed Data - Idempotent (safe to run multiple times)
 -- =============================================================================
--- Tables: features, kvp_categories, asset_categories, plans, plan_features
+-- Tables: addons, kvp_categories, asset_categories
 -- These are global tables (no tenant_id, no RLS).
+-- ADR-033: Addon-based SaaS model (replaces plan-tier system).
 -- =============================================================================
 
--- Features (20 entries)
-INSERT INTO public.features VALUES (1, 'dashboard', 'Dashboard', 'Dashboard mit Übersicht', 'basic', 0.00, 1, false, NULL, NULL, 0, '2025-07-23 09:56:05+02', '2026-01-14 15:50:32.587296+01') ON CONFLICT (id) DO NOTHING;
-INSERT INTO public.features VALUES (2, 'employees', 'Mitarbeiterverwaltung', 'Mitarbeiter verwalten', 'core', 0.00, 1, false, NULL, NULL, 0, '2025-07-23 09:56:05+02', '2025-07-23 09:56:05+02') ON CONFLICT (id) DO NOTHING;
-INSERT INTO public.features VALUES (3, 'departments', 'Abteilungen', 'Abteilungen verwalten', 'core', 0.00, 1, false, NULL, NULL, 0, '2025-07-23 09:56:05+02', '2025-07-23 09:56:05+02') ON CONFLICT (id) DO NOTHING;
-INSERT INTO public.features VALUES (4, 'teams', 'Teams', 'Teams verwalten', 'core', 0.00, 1, false, NULL, NULL, 0, '2025-07-23 09:56:05+02', '2025-07-23 09:56:05+02') ON CONFLICT (id) DO NOTHING;
-INSERT INTO public.features VALUES (5, 'shift_planning', 'Schichtplanung', 'Schichtpläne erstellen und verwalten', 'premium', 0.00, 1, false, NULL, NULL, 0, '2025-07-23 09:56:05+02', '2026-01-14 15:50:32.587296+01') ON CONFLICT (id) DO NOTHING;
-INSERT INTO public.features VALUES (6, 'calendar', 'Kalender', 'Gemeinsamer Kalender', 'basic', 0.00, 1, false, NULL, NULL, 0, '2025-07-23 09:56:05+02', '2025-07-23 09:56:05+02') ON CONFLICT (id) DO NOTHING;
-INSERT INTO public.features VALUES (7, 'blackboard', 'Schwarzes Brett', 'Digitales schwarzes Brett', 'basic', 0.00, 1, false, NULL, NULL, 0, '2025-07-23 09:56:05+02', '2025-07-23 09:56:05+02') ON CONFLICT (id) DO NOTHING;
-INSERT INTO public.features VALUES (8, 'chat', 'Chat', 'Team-Chat Funktion', 'premium', 0.00, 1, false, NULL, NULL, 0, '2025-07-23 09:56:05+02', '2025-07-23 09:56:05+02') ON CONFLICT (id) DO NOTHING;
-INSERT INTO public.features VALUES (9, 'documents', 'Dokumente', 'Dokumentenverwaltung', 'core', 0.00, 1, false, NULL, NULL, 0, '2025-07-23 09:56:05+02', '2025-07-23 09:56:05+02') ON CONFLICT (id) DO NOTHING;
-INSERT INTO public.features VALUES (10, 'surveys', 'Umfragen', 'Umfragen erstellen und auswerten', 'premium', 0.00, 1, false, NULL, NULL, 0, '2025-07-23 09:56:05+02', '2025-07-23 09:56:05+02') ON CONFLICT (id) DO NOTHING;
-INSERT INTO public.features VALUES (11, 'kvp', 'KVP', 'Kontinuierlicher Verbesserungsprozess', 'enterprise', 0.00, 1, false, NULL, NULL, 0, '2025-07-23 09:56:05+02', '2025-07-23 09:56:05+02') ON CONFLICT (id) DO NOTHING;
-INSERT INTO public.features VALUES (12, 'settings', 'Einstellungen', 'Systemeinstellungen', 'basic', 0.00, 1, false, NULL, NULL, 0, '2025-07-23 09:56:05+02', '2025-07-23 09:56:05+02') ON CONFLICT (id) DO NOTHING;
-INSERT INTO public.features VALUES (13, 'vacation', 'Urlaubsverwaltung', 'Digitale Urlaubsanträge mit automatischer Genehmigung, Vertreterregelung und Kapazitätsprüfung', 'basic', 0.00, 1, false, NULL, NULL, 50, '2026-02-12 13:11:15.666947+01', '2026-02-12 13:11:15.666947+01') ON CONFLICT (id) DO NOTHING;
-INSERT INTO public.features VALUES (14, 'tpm', 'TPM / Wartung', 'Total Productive Maintenance — Kamishibai Board, Wartungspläne, Intervall-Karten', 'enterprise', 0.00, 1, false, NULL, NULL, 0, '2026-02-18 22:42:13.995392+01', '2026-02-18 22:42:13.995392+01') ON CONFLICT (id) DO NOTHING;
-INSERT INTO public.features VALUES (15, 'work_orders', 'Arbeitsaufträge', 'Modulübergreifendes Arbeitsauftrag-System für Mängelbeseitigung und Aufgabenverwaltung', 'premium', 0.00, 1, false, NULL, NULL, 55, '2026-03-02 21:35:39.500487+01', '2026-03-02 21:35:39.500487+01') ON CONFLICT (id) DO NOTHING;
-INSERT INTO public.features VALUES (16, 'assets', 'Anlagen & Maschinen', 'Verwaltung von Anlagen, Maschinen und Verfügbarkeit', 'premium', 0.00, 1, false, NULL, NULL, 60, '2026-03-09 17:19:58.544799+01', '2026-03-09 17:19:58.544799+01') ON CONFLICT (id) DO NOTHING;
-INSERT INTO public.features VALUES (17, 'reports', 'Berichte & Auswertungen', 'Unternehmensberichte und Analytics', 'premium', 0.00, 1, false, NULL, NULL, 65, '2026-03-09 17:19:58.544799+01', '2026-03-09 17:19:58.544799+01') ON CONFLICT (id) DO NOTHING;
-INSERT INTO public.features VALUES (18, 'audit_trail', 'Protokoll & Audit', 'Audit-Protokollierung und Compliance-Berichte', 'enterprise', 0.00, 1, false, NULL, NULL, 70, '2026-03-09 17:19:58.544799+01', '2026-03-09 17:19:58.544799+01') ON CONFLICT (id) DO NOTHING;
-INSERT INTO public.features VALUES (19, 'notifications', 'Benachrichtigungen', 'Benachrichtigungsverwaltung und SSE-Streaming', 'basic', 0.00, 1, false, NULL, NULL, 75, '2026-03-09 17:19:58.544799+01', '2026-03-09 17:19:58.544799+01') ON CONFLICT (id) DO NOTHING;
-INSERT INTO public.features VALUES (20, 'dummy_users', 'Platzhalter-Benutzer', 'Anonyme Anzeige-Accounts für Bildschirme', 'core', 0.00, 1, false, NULL, NULL, 80, '2026-03-09 17:19:58.544799+01', '2026-03-09 17:19:58.544799+01') ON CONFLICT (id) DO NOTHING;
+-- Addons (20 entries)
+-- is_core=true: always active, no subscription needed (8 core addons)
+-- is_core=false: purchasable, 30-day trial, 10€/month (12 purchasable addons)
+INSERT INTO public.addons (id, code, name, description, price_monthly, is_active, requires_setup, icon, sort_order, is_core, trial_days, created_at, updated_at) VALUES
+  (1,  'dashboard',      'Dashboard',               'Dashboard mit Übersicht',                                                                            NULL,  1, false, NULL, 0,  true,  NULL, '2025-07-23 09:56:05+02', '2026-03-11 12:00:00+01'),
+  (2,  'employees',      'Mitarbeiterverwaltung',   'Mitarbeiter verwalten',                                                                              NULL,  1, false, NULL, 0,  true,  NULL, '2025-07-23 09:56:05+02', '2026-03-11 12:00:00+01'),
+  (3,  'departments',    'Abteilungen',             'Abteilungen verwalten',                                                                              NULL,  1, false, NULL, 0,  true,  NULL, '2025-07-23 09:56:05+02', '2026-03-11 12:00:00+01'),
+  (4,  'teams',          'Teams',                   'Teams verwalten',                                                                                    NULL,  1, false, NULL, 0,  true,  NULL, '2025-07-23 09:56:05+02', '2026-03-11 12:00:00+01'),
+  (5,  'shift_planning', 'Schichtplanung',          'Schichtpläne erstellen und verwalten',                                                               10.00, 1, false, NULL, 0,  false, 30,   '2025-07-23 09:56:05+02', '2026-03-11 12:00:00+01'),
+  (6,  'calendar',       'Kalender',                'Gemeinsamer Kalender',                                                                               NULL,  1, false, NULL, 0,  true,  NULL, '2025-07-23 09:56:05+02', '2026-03-11 12:00:00+01'),
+  (7,  'blackboard',     'Schwarzes Brett',         'Digitales schwarzes Brett',                                                                          NULL,  1, false, NULL, 0,  true,  NULL, '2025-07-23 09:56:05+02', '2026-03-11 12:00:00+01'),
+  (8,  'chat',           'Chat',                    'Team-Chat Funktion',                                                                                 10.00, 1, false, NULL, 0,  false, 30,   '2025-07-23 09:56:05+02', '2026-03-11 12:00:00+01'),
+  (9,  'documents',      'Dokumente',               'Dokumentenverwaltung',                                                                               10.00, 1, false, NULL, 0,  false, 30,   '2025-07-23 09:56:05+02', '2026-03-11 12:00:00+01'),
+  (10, 'surveys',        'Umfragen',                'Umfragen erstellen und auswerten',                                                                   10.00, 1, false, NULL, 0,  false, 30,   '2025-07-23 09:56:05+02', '2026-03-11 12:00:00+01'),
+  (11, 'kvp',            'KVP',                     'Kontinuierlicher Verbesserungsprozess',                                                              10.00, 1, false, NULL, 0,  false, 30,   '2025-07-23 09:56:05+02', '2026-03-11 12:00:00+01'),
+  (12, 'settings',       'Einstellungen',           'Systemeinstellungen',                                                                                NULL,  1, false, NULL, 0,  true,  NULL, '2025-07-23 09:56:05+02', '2026-03-11 12:00:00+01'),
+  (13, 'vacation',       'Urlaubsverwaltung',       'Digitale Urlaubsanträge mit automatischer Genehmigung, Vertreterregelung und Kapazitätsprüfung',     10.00, 1, false, NULL, 50, false, 30,   '2026-02-12 13:11:15+01', '2026-03-11 12:00:00+01'),
+  (14, 'tpm',            'TPM / Wartung',           'Total Productive Maintenance — Kamishibai Board, Wartungspläne, Intervall-Karten',                   10.00, 1, false, NULL, 0,  false, 30,   '2026-02-18 22:42:13+01', '2026-03-11 12:00:00+01'),
+  (15, 'work_orders',    'Arbeitsaufträge',         'Modulübergreifendes Arbeitsauftrag-System für Mängelbeseitigung und Aufgabenverwaltung',             10.00, 1, false, NULL, 55, false, 30,   '2026-03-02 21:35:39+01', '2026-03-11 12:00:00+01'),
+  (16, 'assets',         'Anlagen & Maschinen',     'Verwaltung von Anlagen, Maschinen und Verfügbarkeit',                                                10.00, 1, false, NULL, 60, false, 30,   '2026-03-09 17:19:58+01', '2026-03-11 12:00:00+01'),
+  (17, 'reports',        'Berichte & Auswertungen', 'Unternehmensberichte und Analytics',                                                                 10.00, 1, false, NULL, 65, false, 30,   '2026-03-09 17:19:58+01', '2026-03-11 12:00:00+01'),
+  (18, 'audit_trail',    'Protokoll & Audit',       'Audit-Protokollierung und Compliance-Berichte',                                                      10.00, 1, false, NULL, 70, false, 30,   '2026-03-09 17:19:58+01', '2026-03-11 12:00:00+01'),
+  (19, 'notifications',  'Benachrichtigungen',      'Benachrichtigungsverwaltung und SSE-Streaming',                                                      NULL,  1, false, NULL, 75, true,  NULL, '2026-03-09 17:19:58+01', '2026-03-11 12:00:00+01'),
+  (20, 'dummy_users',    'Platzhalter-Benutzer',    'Anonyme Anzeige-Accounts für Bildschirme',                                                           10.00, 1, false, NULL, 80, false, 30,   '2026-03-09 17:19:58+01', '2026-03-11 12:00:00+01')
+ON CONFLICT (id) DO NOTHING;
 
 -- KVP Categories (6 entries)
 INSERT INTO public.kvp_categories VALUES (1, 'Sicherheit', 'Verbesserungen zur Arbeitssicherheit', '#e74c3c', '🛡️', '2025-11-13 22:07:17+01') ON CONFLICT (id) DO NOTHING;
@@ -48,93 +53,7 @@ INSERT INTO public.asset_categories VALUES (9, 'Kühlanlagen', 'Klimatisierung u
 INSERT INTO public.asset_categories VALUES (10, 'Sonstige', 'Andere Anlagentypen', 'fa-wrench', 10, 1) ON CONFLICT (id) DO NOTHING;
 INSERT INTO public.asset_categories VALUES (11, 'Test Category', 'Test Category Description', 'fa-test', 99, 1) ON CONFLICT (id) DO NOTHING;
 
--- Plans (3 tiers)
-INSERT INTO public.plans VALUES (1, 'basic', 'Basic', 'Perfekt für kleine Teams und Startups', 49.00, 10, 1, 100, 1, 1, '2025-06-02 19:21:07+02', '2026-01-14 15:31:35.067297+01') ON CONFLICT (id) DO NOTHING;
-INSERT INTO public.plans VALUES (2, 'professional', 'Professional', 'Für wachsende Unternehmen', 149.00, 50, 3, 500, 1, 2, '2025-06-02 19:21:07+02', '2026-01-14 15:31:35.079892+01') ON CONFLICT (id) DO NOTHING;
-INSERT INTO public.plans VALUES (3, 'enterprise', 'Enterprise', 'Für große Organisationen', 299.00, NULL, NULL, 1000, 1, 3, '2025-06-02 19:21:07+02', '2026-01-14 15:31:35.081322+01') ON CONFLICT (id) DO NOTHING;
-
--- Plan Features (60 associations: 20 features × 3 plans)
--- ADR-032: features.category bestimmt Plan-Zuordnung deterministisch:
---   basic/core → Basic(✓) Professional(✓) Enterprise(✓)
---   premium    → Basic(✗) Professional(✓) Enterprise(✓)
---   enterprise → Basic(✗) Professional(✗) Enterprise(✓)
---
--- === Basic Plan (plan_id=1) ===
--- basic features: dashboard(1), calendar(6), blackboard(7), settings(12), vacation(13), notifications(19)
-INSERT INTO public.plan_features VALUES (1, 1, 1, true, '2025-07-23 09:56:05+02') ON CONFLICT (id) DO NOTHING;
-INSERT INTO public.plan_features VALUES (6, 1, 6, true, '2025-07-23 09:56:05+02') ON CONFLICT (id) DO NOTHING;
-INSERT INTO public.plan_features VALUES (7, 1, 7, true, '2025-07-23 09:56:05+02') ON CONFLICT (id) DO NOTHING;
-INSERT INTO public.plan_features VALUES (12, 1, 12, true, '2025-07-23 09:56:05+02') ON CONFLICT (id) DO NOTHING;
-INSERT INTO public.plan_features VALUES (37, 1, 13, true, '2026-02-12 13:11:15+01') ON CONFLICT (id) DO NOTHING;
-INSERT INTO public.plan_features VALUES (52, 1, 19, true, '2026-03-09 17:19:58.544799+01') ON CONFLICT (id) DO NOTHING;
--- core features: employees(2), departments(3), teams(4), documents(9), dummy_users(20)
-INSERT INTO public.plan_features VALUES (2, 1, 2, true, '2025-07-23 09:56:05+02') ON CONFLICT (id) DO NOTHING;
-INSERT INTO public.plan_features VALUES (3, 1, 3, true, '2025-07-23 09:56:05+02') ON CONFLICT (id) DO NOTHING;
-INSERT INTO public.plan_features VALUES (4, 1, 4, true, '2025-07-23 09:56:05+02') ON CONFLICT (id) DO NOTHING;
-INSERT INTO public.plan_features VALUES (9, 1, 9, true, '2025-07-23 09:56:05+02') ON CONFLICT (id) DO NOTHING;
-INSERT INTO public.plan_features VALUES (55, 1, 20, true, '2026-03-09 17:19:58.544799+01') ON CONFLICT (id) DO NOTHING;
--- premium features: NOT in Basic
-INSERT INTO public.plan_features VALUES (5, 1, 5, false, '2025-07-23 09:56:05+02') ON CONFLICT (id) DO NOTHING;
-INSERT INTO public.plan_features VALUES (8, 1, 8, false, '2025-07-23 09:56:05+02') ON CONFLICT (id) DO NOTHING;
-INSERT INTO public.plan_features VALUES (10, 1, 10, false, '2025-07-23 09:56:05+02') ON CONFLICT (id) DO NOTHING;
-INSERT INTO public.plan_features VALUES (58, 1, 15, false, '2026-03-10 00:00:00+01') ON CONFLICT (id) DO NOTHING;
-INSERT INTO public.plan_features VALUES (43, 1, 16, false, '2026-03-09 17:19:58.544799+01') ON CONFLICT (id) DO NOTHING;
-INSERT INTO public.plan_features VALUES (46, 1, 17, false, '2026-03-09 17:19:58.544799+01') ON CONFLICT (id) DO NOTHING;
--- enterprise features: NOT in Basic
-INSERT INTO public.plan_features VALUES (11, 1, 11, false, '2025-07-23 09:56:05+02') ON CONFLICT (id) DO NOTHING;
-INSERT INTO public.plan_features VALUES (40, 1, 14, false, '2026-02-18 22:42:13+01') ON CONFLICT (id) DO NOTHING;
-INSERT INTO public.plan_features VALUES (49, 1, 18, false, '2026-03-09 17:19:58.544799+01') ON CONFLICT (id) DO NOTHING;
---
--- === Professional Plan (plan_id=2) ===
--- basic + core features: all true
-INSERT INTO public.plan_features VALUES (13, 2, 1, true, '2025-07-23 09:56:05+02') ON CONFLICT (id) DO NOTHING;
-INSERT INTO public.plan_features VALUES (14, 2, 2, true, '2025-07-23 09:56:05+02') ON CONFLICT (id) DO NOTHING;
-INSERT INTO public.plan_features VALUES (15, 2, 3, true, '2025-07-23 09:56:05+02') ON CONFLICT (id) DO NOTHING;
-INSERT INTO public.plan_features VALUES (16, 2, 4, true, '2025-07-23 09:56:05+02') ON CONFLICT (id) DO NOTHING;
-INSERT INTO public.plan_features VALUES (18, 2, 6, true, '2025-07-23 09:56:05+02') ON CONFLICT (id) DO NOTHING;
-INSERT INTO public.plan_features VALUES (19, 2, 7, true, '2025-07-23 09:56:05+02') ON CONFLICT (id) DO NOTHING;
-INSERT INTO public.plan_features VALUES (21, 2, 9, true, '2025-07-23 09:56:05+02') ON CONFLICT (id) DO NOTHING;
-INSERT INTO public.plan_features VALUES (24, 2, 12, true, '2025-07-23 09:56:05+02') ON CONFLICT (id) DO NOTHING;
-INSERT INTO public.plan_features VALUES (38, 2, 13, true, '2026-02-12 13:11:15+01') ON CONFLICT (id) DO NOTHING;
-INSERT INTO public.plan_features VALUES (53, 2, 19, true, '2026-03-09 17:19:58.544799+01') ON CONFLICT (id) DO NOTHING;
-INSERT INTO public.plan_features VALUES (56, 2, 20, true, '2026-03-09 17:19:58.544799+01') ON CONFLICT (id) DO NOTHING;
--- premium features: included in Professional
-INSERT INTO public.plan_features VALUES (17, 2, 5, true, '2025-07-23 09:56:05+02') ON CONFLICT (id) DO NOTHING;
-INSERT INTO public.plan_features VALUES (20, 2, 8, true, '2025-07-23 09:56:05+02') ON CONFLICT (id) DO NOTHING;
-INSERT INTO public.plan_features VALUES (22, 2, 10, true, '2025-07-23 09:56:05+02') ON CONFLICT (id) DO NOTHING;
-INSERT INTO public.plan_features VALUES (59, 2, 15, true, '2026-03-10 00:00:00+01') ON CONFLICT (id) DO NOTHING;
-INSERT INTO public.plan_features VALUES (44, 2, 16, true, '2026-03-09 17:19:58.544799+01') ON CONFLICT (id) DO NOTHING;
-INSERT INTO public.plan_features VALUES (47, 2, 17, true, '2026-03-09 17:19:58.544799+01') ON CONFLICT (id) DO NOTHING;
--- enterprise features: NOT in Professional
-INSERT INTO public.plan_features VALUES (23, 2, 11, false, '2025-07-23 09:56:05+02') ON CONFLICT (id) DO NOTHING;
-INSERT INTO public.plan_features VALUES (41, 2, 14, false, '2026-02-18 22:42:13+01') ON CONFLICT (id) DO NOTHING;
-INSERT INTO public.plan_features VALUES (50, 2, 18, false, '2026-03-09 17:19:58.544799+01') ON CONFLICT (id) DO NOTHING;
---
--- === Enterprise Plan (plan_id=3) — all features included ===
-INSERT INTO public.plan_features VALUES (25, 3, 1, true, '2025-07-23 09:56:05+02') ON CONFLICT (id) DO NOTHING;
-INSERT INTO public.plan_features VALUES (26, 3, 2, true, '2025-07-23 09:56:05+02') ON CONFLICT (id) DO NOTHING;
-INSERT INTO public.plan_features VALUES (27, 3, 3, true, '2025-07-23 09:56:05+02') ON CONFLICT (id) DO NOTHING;
-INSERT INTO public.plan_features VALUES (28, 3, 4, true, '2025-07-23 09:56:05+02') ON CONFLICT (id) DO NOTHING;
-INSERT INTO public.plan_features VALUES (29, 3, 5, true, '2025-07-23 09:56:05+02') ON CONFLICT (id) DO NOTHING;
-INSERT INTO public.plan_features VALUES (30, 3, 6, true, '2025-07-23 09:56:05+02') ON CONFLICT (id) DO NOTHING;
-INSERT INTO public.plan_features VALUES (31, 3, 7, true, '2025-07-23 09:56:05+02') ON CONFLICT (id) DO NOTHING;
-INSERT INTO public.plan_features VALUES (32, 3, 8, true, '2025-07-23 09:56:05+02') ON CONFLICT (id) DO NOTHING;
-INSERT INTO public.plan_features VALUES (33, 3, 9, true, '2025-07-23 09:56:05+02') ON CONFLICT (id) DO NOTHING;
-INSERT INTO public.plan_features VALUES (34, 3, 10, true, '2025-07-23 09:56:05+02') ON CONFLICT (id) DO NOTHING;
-INSERT INTO public.plan_features VALUES (35, 3, 11, true, '2025-07-23 09:56:05+02') ON CONFLICT (id) DO NOTHING;
-INSERT INTO public.plan_features VALUES (36, 3, 12, true, '2025-07-23 09:56:05+02') ON CONFLICT (id) DO NOTHING;
-INSERT INTO public.plan_features VALUES (39, 3, 13, true, '2026-02-12 13:11:15+01') ON CONFLICT (id) DO NOTHING;
-INSERT INTO public.plan_features VALUES (42, 3, 14, true, '2026-02-18 22:42:13+01') ON CONFLICT (id) DO NOTHING;
-INSERT INTO public.plan_features VALUES (60, 3, 15, true, '2026-03-10 00:00:00+01') ON CONFLICT (id) DO NOTHING;
-INSERT INTO public.plan_features VALUES (45, 3, 16, true, '2026-03-09 17:19:58.544799+01') ON CONFLICT (id) DO NOTHING;
-INSERT INTO public.plan_features VALUES (48, 3, 17, true, '2026-03-09 17:19:58.544799+01') ON CONFLICT (id) DO NOTHING;
-INSERT INTO public.plan_features VALUES (51, 3, 18, true, '2026-03-09 17:19:58.544799+01') ON CONFLICT (id) DO NOTHING;
-INSERT INTO public.plan_features VALUES (54, 3, 19, true, '2026-03-09 17:19:58.544799+01') ON CONFLICT (id) DO NOTHING;
-INSERT INTO public.plan_features VALUES (57, 3, 20, true, '2026-03-09 17:19:58.544799+01') ON CONFLICT (id) DO NOTHING;
-
 -- Sync sequences to max values
-SELECT pg_catalog.setval('public.features_id_seq', GREATEST((SELECT MAX(id) FROM public.features), 20), true);
+SELECT pg_catalog.setval('public.addons_id_seq', GREATEST((SELECT MAX(id) FROM public.addons), 20), true);
 SELECT pg_catalog.setval('public.kvp_categories_id_seq', GREATEST((SELECT MAX(id) FROM public.kvp_categories), 6), true);
 SELECT pg_catalog.setval('public.asset_categories_id_seq', GREATEST((SELECT MAX(id) FROM public.asset_categories), 11), true);
-SELECT pg_catalog.setval('public.plan_features_id_seq', GREATEST((SELECT MAX(id) FROM public.plan_features), 60), true);
-SELECT pg_catalog.setval('public.plans_id_seq', GREATEST((SELECT MAX(id) FROM public.plans), 3), true);

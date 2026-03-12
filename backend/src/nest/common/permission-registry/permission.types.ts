@@ -2,7 +2,7 @@
  * Permission Registry Types
  *
  * Shared interfaces for the decentralized permission registry pattern.
- * Feature modules define their own PermissionCategoryDef and register
+ * Addon modules define their own PermissionCategoryDef and register
  * via OnModuleInit — no central God-Object.
  *
  * @see docs/USER-PERMISSIONS-PLAN.md
@@ -12,9 +12,9 @@
 /** Permission types that can be granted per module */
 export type PermissionType = 'canRead' | 'canWrite' | 'canDelete';
 
-/** A sub-module within a feature that has its own permission set */
+/** A sub-module within an addon that has its own permission set */
 export interface PermissionModuleDef {
-  /** Unique code within the feature (e.g. 'blackboard-posts') */
+  /** Unique code within the addon (e.g. 'blackboard-posts') */
   code: string;
   /** Human-readable label for UI display */
   label: string;
@@ -24,9 +24,9 @@ export interface PermissionModuleDef {
   allowedPermissions: PermissionType[];
 }
 
-/** A feature category containing one or more permission modules */
+/** An addon category containing one or more permission modules */
 export interface PermissionCategoryDef {
-  /** Must match features.code in DB (e.g. 'blackboard', 'calendar') */
+  /** Must match addons.code in DB (e.g. 'blackboard', 'calendar') */
   code: string;
   /** Human-readable label for UI display */
   label: string;

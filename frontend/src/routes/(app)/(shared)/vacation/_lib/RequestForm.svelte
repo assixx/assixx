@@ -12,6 +12,10 @@
 
   import { onClickOutsideDropdown } from '$lib/actions/click-outside';
   import AppDatePicker from '$lib/components/AppDatePicker.svelte';
+  import {
+    DEFAULT_HIERARCHY_LABELS,
+    type HierarchyLabels,
+  } from '$lib/types/hierarchy-labels';
 
   import CapacityIndicator from './CapacityIndicator.svelte';
   import {
@@ -31,12 +35,14 @@
   const {
     editingRequest = null,
     initialCapacity = null,
+    labels = DEFAULT_HIERARCHY_LABELS,
     onsubmit,
     onCapacityCheck,
   }: {
     editingRequest?: VacationRequest | null;
     /** Pre-fetched capacity from parent (edit mode). Avoids redundant API call on mount. */
     initialCapacity?: VacationCapacityAnalysis | null;
+    labels?: HierarchyLabels;
     onsubmit: (payload: CreateVacationRequestPayload) => void;
     onCapacityCheck: (
       startDate: string,
@@ -401,6 +407,7 @@
 <CapacityIndicator
   analysis={capacityAnalysis}
   isLoading={isCheckingCapacity}
+  {labels}
 />
 
 <style>

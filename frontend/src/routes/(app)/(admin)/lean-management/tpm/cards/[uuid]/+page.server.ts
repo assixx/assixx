@@ -7,7 +7,7 @@
  */
 import { redirect } from '@sveltejs/kit';
 
-import { requireFeature } from '$lib/utils/feature-guard';
+import { requireAddon } from '$lib/utils/addon-guard';
 import { createLogger } from '$lib/utils/logger';
 
 import type { PageServerLoad } from './$types';
@@ -86,8 +86,8 @@ export const load: PageServerLoad = async ({
     redirect(302, '/login');
   }
 
-  const { activeFeatures } = await parent();
-  requireFeature(activeFeatures, 'tpm');
+  const { activeAddons } = await parent();
+  requireAddon(activeAddons, 'tpm');
 
   const planUuid = params.uuid;
 

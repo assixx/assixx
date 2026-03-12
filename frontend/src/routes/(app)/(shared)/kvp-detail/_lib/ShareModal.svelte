@@ -1,13 +1,19 @@
 <script lang="ts">
+  import {
+    DEFAULT_HIERARCHY_LABELS,
+    type HierarchyLabels,
+  } from '$lib/types/hierarchy-labels';
+
   import { kvpDetailState } from './state.svelte';
 
   import type { KvpOrgAssignment } from './types';
 
   interface Props {
     onconfirm: () => void;
+    labels?: HierarchyLabels;
   }
 
-  const { onconfirm }: Props = $props();
+  const { onconfirm, labels = DEFAULT_HIERARCHY_LABELS }: Props = $props();
 
   /** Teams not yet assigned (directly or via asset ownership) */
   const availableTeams = $derived.by(() => {
@@ -85,9 +91,9 @@
               }}
             />
             <span class="choice-card__text">
-              Abteilung
+              {labels.department}
               <span class="choice-card__description"
-                >Für Ihre gesamte Abteilung sichtbar</span
+                >Für Ihre gesamte {labels.department} sichtbar</span
               >
             </span>
             <!-- Dropdown inside label like Legacy -->
@@ -114,8 +120,8 @@
                     {kvpDetailState.selectedOrgId !== null ?
                       (kvpDetailState.departments.find(
                         (d) => d.id === kvpDetailState.selectedOrgId,
-                      )?.name ?? 'Abteilung auswählen...')
-                    : 'Abteilung auswählen...'}
+                      )?.name ?? '{labels.department} auswählen...')
+                    : '{labels.department} auswählen...'}
                   </span>
                   <i class="fas fa-chevron-down"></i>
                 </button>
@@ -224,9 +230,9 @@
                 }}
               />
               <span class="choice-card__text">
-                Team
+                {labels.team}
                 <span class="choice-card__description"
-                  >Für ein bestimmtes Team sichtbar</span
+                  >Für ein bestimmtes {labels.team} sichtbar</span
                 >
               </span>
               {#if kvpDetailState.selectedShareLevel === 'team'}
@@ -252,8 +258,8 @@
                       {kvpDetailState.selectedOrgId !== null ?
                         (availableTeams.find(
                           (t) => t.id === kvpDetailState.selectedOrgId,
-                        )?.name ?? 'Team auswählen...')
-                      : 'Team auswählen...'}
+                        )?.name ?? '{labels.team} auswählen...')
+                      : '{labels.team} auswählen...'}
                     </span>
                     <i class="fas fa-chevron-down"></i>
                   </button>
@@ -294,9 +300,9 @@
                 }}
               />
               <span class="choice-card__text">
-                Anlage
+                {labels.asset}
                 <span class="choice-card__description"
-                  >Für eine bestimmte Anlage sichtbar</span
+                  >Für eine bestimmte {labels.asset} sichtbar</span
                 >
               </span>
               {#if kvpDetailState.selectedShareLevel === 'asset'}
@@ -323,8 +329,8 @@
                       {kvpDetailState.selectedOrgId !== null ?
                         (availableAssets.find(
                           (m) => m.id === kvpDetailState.selectedOrgId,
-                        )?.name ?? 'Anlage auswählen...')
-                      : 'Anlage auswählen...'}
+                        )?.name ?? '{labels.asset} auswählen...')
+                      : '{labels.asset} auswählen...'}
                     </span>
                     <i class="fas fa-chevron-down"></i>
                   </button>

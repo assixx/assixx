@@ -2,6 +2,12 @@
 // MANAGE AREAS - CONSTANTS
 // =============================================================================
 
+import {
+  DEFAULT_HIERARCHY_LABELS,
+  resolvePositionDisplay,
+  type HierarchyLabels,
+} from '$lib/types/hierarchy-labels';
+
 import type { AreaType, TypeOption, FormIsActiveStatus } from './types';
 
 export { STATUS_BADGE_CLASSES, STATUS_LABELS } from '@assixx/shared/constants';
@@ -30,107 +36,101 @@ export const TYPE_OPTIONS: TypeOption[] = [
   { value: 'other', label: 'Sonstiges' },
 ];
 
-/**
- * UI Messages for i18n preparation
- */
-export const MESSAGES = {
-  // Page
-  PAGE_TITLE: 'Bereichsübersicht',
-  PAGE_DESCRIPTION: 'Bereiche und Standorte verwalten',
-
-  // Loading
-  LOADING: 'Bereiche werden geladen...',
-
-  // Empty states
-  NO_AREAS_FOUND: 'Keine Bereiche gefunden',
-  CREATE_FIRST_AREA: 'Erstellen Sie Ihren ersten Bereich',
-
-  // Modal titles
-  MODAL_TITLE_ADD: 'Neuer Bereich',
-  MODAL_TITLE_EDIT: 'Bereich bearbeiten',
-
-  // Delete
-  DELETE_TITLE: 'Bereich löschen',
+/** Static messages that don't depend on hierarchy labels */
+const STATIC_MESSAGES = {
+  CREATE_FIRST_AREA: 'Erstellen Sie den ersten Eintrag',
+  MODAL_TITLE_ADD: 'Hinzufügen',
+  MODAL_TITLE_EDIT: 'Bearbeiten',
+  DELETE_TITLE: 'Löschen',
   DELETE_CONFIRM_TITLE: 'Endgültig löschen?',
   DELETE_CONFIRM_WARNING: 'Diese Aktion kann nicht rückgängig gemacht werden!',
   DELETE_CONFIRM_MESSAGE:
-    'Der Bereich wird unwiderruflich aus dem System entfernt.',
-
-  // Force delete
-  FORCE_DELETE_TITLE: 'Bereich hat Abhängigkeiten',
+    'Der Eintrag wird unwiderruflich aus dem System entfernt.',
+  FORCE_DELETE_TITLE: 'Abhängigkeiten vorhanden',
   FORCE_DELETE_DEFAULT_MESSAGE:
-    'Dieser Bereich wird von anderen Elementen verwendet. Möchten Sie den Bereich trotzdem löschen? Alle Zuordnungen werden entfernt.',
-
-  // Search
-  SEARCH_PLACEHOLDER: 'Bereiche suchen...',
-  SEARCH_NO_RESULTS: 'Keine Bereiche gefunden für',
+    'Dieser Eintrag wird von anderen Elementen verwendet. Möchten Sie ihn trotzdem löschen? Alle Zuordnungen werden entfernt.',
   moreResults: (count: number) => `${count} weitere Ergebnisse in Tabelle`,
-
-  // Form labels
   LABEL_NAME: 'Name',
   LABEL_DESCRIPTION: 'Beschreibung',
-  LABEL_AREA_LEAD: 'Bereichsleiter',
+  LABEL_AREA_LEAD: 'Leiter',
   LABEL_TYPE: 'Typ',
   LABEL_CAPACITY: 'Kapazität',
   LABEL_ADDRESS: 'Adresse',
-  LABEL_DEPARTMENTS: 'Abteilungen zuweisen',
+  LABEL_HALLS: 'Hallen zuweisen', // overridden by factory
   LABEL_STATUS: 'Status',
-
-  // Placeholders
-  PLACEHOLDER_NAME: 'Bereichsname eingeben',
+  PLACEHOLDER_NAME: 'Name eingeben',
   PLACEHOLDER_DESCRIPTION: 'Optionale Beschreibung',
   PLACEHOLDER_CAPACITY: 'z.B. 50',
   PLACEHOLDER_ADDRESS: 'Straße, PLZ, Ort',
-
-  // Area lead
-  NO_AREA_LEAD: 'Kein Bereichsleiter',
+  NO_AREA_LEAD: 'Kein Leiter',
   AREA_LEAD_HINT:
-    'Nur Administratoren können als Bereichsleiter zugewiesen werden.',
-
-  // Departments
-  DEPARTMENTS_HINT:
-    'Strg/Cmd + Klick für Mehrfachauswahl. Ausgewählte Abteilungen werden diesem Bereich zugeordnet.',
+    'Nur Admins/Root mit der entsprechenden Leiter-Position stehen zur Auswahl. Zuweisung über die Admin-Verwaltung.',
+  HALLS_HINT: 'Strg/Cmd + Klick für Mehrfachauswahl.', // overridden by factory
   NO_DEPARTMENTS: 'Keine',
-  ONE_DEPARTMENT: '1 Abteilung',
-  multipleDepartments: (count: number) => `${count} Abteilungen`,
-
-  // Status
-  STATUS_HINT: 'Inaktive/Archivierte Bereiche werden nicht angezeigt',
-
-  // Buttons
-  BTN_ADD_AREA: 'Bereich hinzufügen',
+  NO_HALLS: 'Keine',
+  ONE_HALL: '1', // overridden by factory
+  multipleHalls: (count: number) => `${count}`, // overridden by factory
+  BTN_ADD_AREA: 'Hinzufügen',
   BTN_SAVE: 'Speichern',
   BTN_CANCEL: 'Abbrechen',
   BTN_DELETE: 'Löschen',
   BTN_DELETE_FINAL: 'Endgültig löschen',
-
-  // Filter labels
   FILTER_ACTIVE: 'Aktive',
   FILTER_INACTIVE: 'Inaktive',
   FILTER_ARCHIVED: 'Archiviert',
   FILTER_ALL: 'Alle',
-
-  // Table headers
   TH_NAME: 'Name',
   TH_DESCRIPTION: 'Beschreibung',
-  TH_AREA_LEAD: 'Bereichsleiter',
+  TH_AREA_LEAD: 'Leiter',
   TH_TYPE: 'Typ',
   TH_CAPACITY: 'Kapazität',
-  TH_ADDRESS: 'Adresse',
-  TH_DEPARTMENTS: 'Abteilungen',
+  TH_HALLS: 'Hallen', // overridden by factory
   TH_STATUS: 'Status',
   TH_ACTIONS: 'Aktionen',
-
-  // API errors
-  ERROR_LOADING: 'Fehler beim Laden der Bereiche',
+  ERROR_LOADING: 'Fehler beim Laden',
   ERROR_SAVING: 'Fehler beim Speichern',
   ERROR_DELETING: 'Fehler beim Löschen',
+  SUCCESS_CREATED: 'Erfolgreich erstellt',
+  SUCCESS_UPDATED: 'Erfolgreich aktualisiert',
+  SUCCESS_DELETED: 'Erfolgreich gelöscht',
+};
 
-  // Success messages
-  SUCCESS_CREATED: 'Bereich erfolgreich erstellt',
-  SUCCESS_UPDATED: 'Bereich erfolgreich aktualisiert',
-  SUCCESS_DELETED: 'Bereich erfolgreich gelöscht',
-} as const;
+/**
+ * UI Messages — factory with dynamic hierarchy labels.
+ * Entity-specific strings use labels, compound words are neutralized (A4).
+ */
+export function createMessages(labels: HierarchyLabels) {
+  return {
+    ...STATIC_MESSAGES,
+    AREA_LEAD_POSITION: resolvePositionDisplay('area_lead', labels),
+    PAGE_TITLE: `${labels.area} — Übersicht`,
+    PAGE_DESCRIPTION: `${labels.area} verwalten`,
+    LOADING: `${labels.area} werden geladen...`,
+    NO_AREAS_FOUND: `Keine ${labels.area} gefunden`,
+    SEARCH_PLACEHOLDER: `${labels.area} suchen...`,
+    SEARCH_NO_RESULTS: `Keine ${labels.area} gefunden für`,
+    LABEL_DEPARTMENTS: `${labels.department} zuweisen`,
+    DEPARTMENTS_HINT: `Strg/Cmd + Klick für Mehrfachauswahl. Ausgewählte ${labels.department} werden zugeordnet.`,
+    multipleDepartments: (count: number) => `${count} ${labels.department}`,
+    STATUS_HINT: `Inaktive/Archivierte ${labels.area} werden nicht angezeigt`,
+    FILTER_ACTIVE_TITLE: `Aktive ${labels.area}`,
+    FILTER_INACTIVE_TITLE: `Inaktive ${labels.area}`,
+    FILTER_ARCHIVED_TITLE: `Archivierte ${labels.area}`,
+    FILTER_ALL_TITLE: `Alle ${labels.area}`,
+    TH_DEPARTMENTS: labels.department,
+    LABEL_HALLS: `${labels.hall} zuweisen`,
+    HALLS_HINT: `Strg/Cmd + Klick für Mehrfachauswahl. Ausgewählte ${labels.hall} werden zugeordnet.`,
+    ONE_HALL: `1 ${labels.hall}`,
+    multipleHalls: (count: number) => `${count} ${labels.hall}`,
+    TH_HALLS: labels.hall,
+  };
+}
+
+/** Message type for component props */
+export type AreaMessages = ReturnType<typeof createMessages>;
+
+/** Default messages (used in non-Svelte contexts) */
+export const MESSAGES = createMessages(DEFAULT_HIERARCHY_LABELS);
 
 /**
  * API Endpoints
@@ -139,9 +139,12 @@ export const API_ENDPOINTS = {
   AREAS: '/areas',
   area: (id: number) => `/areas/${id}`,
   areaForceDelete: (id: number) => `/areas/${id}?force=true`,
-  USERS_ADMIN: '/users?role=admin',
-  USERS_ROOT: '/users?role=root',
+  USERS_ADMIN: '/users?role=admin&isActive=1&position=area_lead',
+  USERS_ROOT: '/users?role=root&isActive=1&position=area_lead',
   DEPARTMENTS: '/departments',
+  HALLS: '/halls',
+  areaHalls: (id: number) => `/areas/${id}/halls`,
+  areaDepartments: (id: number) => `/areas/${id}/departments`,
 } as const;
 
 /**
@@ -155,6 +158,7 @@ export const FORM_DEFAULTS: {
   capacity: number | null;
   address: string;
   departmentIds: number[];
+  hallIds: number[];
   isActive: FormIsActiveStatus;
 } = {
   name: '',
@@ -164,5 +168,6 @@ export const FORM_DEFAULTS: {
   capacity: null,
   address: '',
   departmentIds: [],
+  hallIds: [],
   isActive: 1,
 };

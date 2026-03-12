@@ -516,7 +516,7 @@ Team.department_id = NULL:
 
 | Risiko           | Mitigation                                    |
 | ---------------- | --------------------------------------------- |
-| Breaking Changes | Schrittweise Migration, Feature-Flag          |
+| Breaking Changes | Schrittweise Migration, Addon-Flag            |
 | Performance      | Caching für Permission-Lookups (später)       |
 | Komplexität      | Zentrale Service-Klasse, keine doppelte Logik |
 | Edge Cases       | NULL-Handling klar definiert, Tests           |

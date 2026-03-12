@@ -1,5 +1,9 @@
 <script lang="ts">
   import SearchResultUser from '$lib/components/SearchResultUser.svelte';
+  import {
+    DEFAULT_HIERARCHY_LABELS,
+    type HierarchyLabels,
+  } from '$lib/types/hierarchy-labels';
 
   import { MESSAGES } from './constants';
   import { getPositionDisplay } from './utils';
@@ -13,10 +17,16 @@
   interface Props {
     searchQuery: string;
     filteredAdmins: Admin[];
+    labels?: HierarchyLabels;
     onresultClick: (adminId: number) => void;
   }
 
-  const { searchQuery, filteredAdmins, onresultClick }: Props = $props();
+  const {
+    searchQuery,
+    filteredAdmins,
+    labels = DEFAULT_HIERARCHY_LABELS,
+    onresultClick,
+  }: Props = $props();
 </script>
 
 {#if searchQuery && filteredAdmins.length === 0}
@@ -34,7 +44,7 @@
       imageUrl={admin.profilePicture}
       employeeNumber={admin.employeeNumber}
       role="admin"
-      position={getPositionDisplay(admin.position ?? '')}
+      position={getPositionDisplay(admin.position ?? '', labels)}
       query={searchQuery}
       onclick={() => {
         onresultClick(admin.id);

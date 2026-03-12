@@ -6,7 +6,7 @@
 
 **Enterprise 2.0 Platform for Industrial Companies**
 
-[![Version](https://img.shields.io/badge/Version-0.4.0-blue.svg)](https://github.com/assixx-dev/Assixx)
+[![Version](https://img.shields.io/badge/Version-0.4.5-blue.svg)](https://github.com/assixx-dev/Assixx)
 [![Status](https://img.shields.io/badge/Status-Development-yellow.svg)](https://github.com/assixx-dev/Assixx)
 [![License](https://img.shields.io/badge/License-Proprietary-red.svg)](./LICENSE)
 
@@ -95,12 +95,12 @@ Details: [FEATURES.md](./docs/FEATURES.md)
 
 ## Documentation
 
-| Document                                  | Content                  |
-| ----------------------------------------- | ------------------------ |
-| [FEATURES.md](./docs/FEATURES.md)         | Feature Overview & Plans |
-| [ARCHITECTURE.md](./docs/ARCHITECTURE.md) | Technical Architecture   |
-| [DOCKER-SETUP.md](./docs/DOCKER-SETUP.md) | Docker Setup             |
-| [TODO.md](./TODO.md)                      | Current Tasks            |
+| Document                                  | Content                       |
+| ----------------------------------------- | ----------------------------- |
+| [FEATURES.md](./docs/FEATURES.md)         | Addon-Übersicht & Preismodell |
+| [ARCHITECTURE.md](./docs/ARCHITECTURE.md) | Technical Architecture        |
+| [DOCKER-SETUP.md](./docs/DOCKER-SETUP.md) | Docker Setup                  |
+| [TODO.md](./TODO.md)                      | Current Tasks                 |
 
 ---
 

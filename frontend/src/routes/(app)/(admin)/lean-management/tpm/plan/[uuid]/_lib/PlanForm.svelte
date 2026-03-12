@@ -14,7 +14,7 @@
   import {
     ESTIMATE_INTERVALS,
     WEEKDAY_LABELS,
-    MESSAGES,
+    type TpmMessages,
   } from '../../../_lib/constants';
 
   import AssetCascadeSelector from './AssetCascadeSelector.svelte';
@@ -32,6 +32,7 @@
   } from '../../../_lib/types';
 
   interface Props {
+    messages: TpmMessages;
     plan: TpmPlan | null;
     assets: Asset[];
     areas: TpmArea[];
@@ -55,6 +56,7 @@
   }
 
   const {
+    messages,
     plan,
     assets,
     areas,
@@ -227,13 +229,13 @@
   /** Live preview: base_time + buffer_hours = end time */
   const timeWindowPreview = $derived.by(() => {
     const trimmed = baseTime.trim();
-    if (trimmed.length === 0) return MESSAGES.HELP_BUFFER_FULL_DAY;
+    if (trimmed.length === 0) return messages.HELP_BUFFER_FULL_DAY;
     const parts = trimmed.split(':');
-    if (parts.length < 2) return MESSAGES.HELP_BUFFER_FULL_DAY;
+    if (parts.length < 2) return messages.HELP_BUFFER_FULL_DAY;
     const h = Number(parts[0]);
     const m = Number(parts[1]);
     if (Number.isNaN(h) || Number.isNaN(m))
-      return MESSAGES.HELP_BUFFER_FULL_DAY;
+      return messages.HELP_BUFFER_FULL_DAY;
     const totalMinutes = h * 60 + m + bufferHours * 60;
     const endH = Math.floor(totalMinutes / 60) % 24;
     const endM = Math.round(totalMinutes % 60);
@@ -291,6 +293,7 @@
   <!-- Asset Selection (cascade in create mode, static in edit mode) -->
   {#if isCreateMode}
     <AssetCascadeSelector
+      {messages}
       {assets}
       {areas}
       {departments}
@@ -300,7 +303,7 @@
     />
   {:else if plan !== null}
     <div class="form-field">
-      <span class="form-field__label">{MESSAGES.LABEL_MACHINE}</span>
+      <span class="form-field__label">{messages.LABEL_MACHINE}</span>
       <div class="form-static">
         <i class="fas fa-cog"></i>
         {plan.assetName ?? '—'}
@@ -312,13 +315,13 @@
   <div class="form-field">
     <label
       class="form-field__label"
-      for="name">{MESSAGES.LABEL_PLAN_NAME}</label
+      for="name">{messages.LABEL_PLAN_NAME}</label
     >
     <input
       id="name"
       type="text"
       class="form-field__control"
-      placeholder={MESSAGES.PH_PLAN_NAME}
+      placeholder={messages.PH_PLAN_NAME}
       bind:value={name}
       disabled={submitting}
       required
@@ -329,7 +332,7 @@
   <!-- Weekday + Repeat (side by side) -->
   <div class="form-row">
     <div class="form-field plan-form__half">
-      <span class="form-field__label">{MESSAGES.LABEL_WEEKDAY}</span>
+      <span class="form-field__label">{messages.LABEL_WEEKDAY}</span>
       <div class="dropdown">
         <button
           type="button"
@@ -362,16 +365,16 @@
           {/each}
         </div>
       </div>
-      <span class="form-field__message">{MESSAGES.HELP_WEEKDAY}</span>
+      <span class="form-field__message">{messages.HELP_WEEKDAY}</span>
     </div>
 
     <div class="form-field plan-form__half">
       <label
         class="form-field__label"
-        for="repeat">{MESSAGES.LABEL_REPEAT_EVERY}</label
+        for="repeat">{messages.LABEL_REPEAT_EVERY}</label
       >
       <div class="form-input-group">
-        <span class="form-input-group__prefix">{MESSAGES.PH_REPEAT}</span>
+        <span class="form-input-group__prefix">{messages.PH_REPEAT}</span>
         <input
           id="repeat"
           type="number"
@@ -385,7 +388,7 @@
           >. {WEEKDAY_LABELS[baseWeekday] ?? '—'} im Monat</span
         >
       </div>
-      <span class="form-field__message">{MESSAGES.HELP_REPEAT}</span>
+      <span class="form-field__message">{messages.HELP_REPEAT}</span>
     </div>
   </div>
 
@@ -409,17 +412,17 @@
       onchange={toggleAllDay}
       disabled={submitting}
     />
-    <span class="choice-card__text">{MESSAGES.LABEL_ALL_DAY}</span>
+    <span class="choice-card__text">{messages.LABEL_ALL_DAY}</span>
   </label>
 
   <!-- Time + Buffer Hours (side by side) -->
   <div class="form-row">
     <div class="form-field plan-form__half">
-      <span class="form-field__label">{MESSAGES.LABEL_TIME}</span>
+      <span class="form-field__label">{messages.LABEL_TIME}</span>
       {#if isAllDay}
         <div class="form-static">
           <i class="fas fa-clock"></i>
-          {MESSAGES.HELP_BUFFER_FULL_DAY}
+          {messages.HELP_BUFFER_FULL_DAY}
         </div>
       {:else}
         <AppTimePicker
@@ -432,7 +435,7 @@
     <div class="form-field plan-form__half">
       <label
         class="form-field__label"
-        for="bufferHours">{MESSAGES.LABEL_BUFFER_HOURS}</label
+        for="bufferHours">{messages.LABEL_BUFFER_HOURS}</label
       >
       <div class="form-input-group">
         <input
@@ -447,13 +450,13 @@
         />
         <span class="form-input-group__suffix">Stunden</span>
       </div>
-      <span class="form-field__message">{MESSAGES.HELP_BUFFER_HOURS}</span>
+      <span class="form-field__message">{messages.HELP_BUFFER_HOURS}</span>
     </div>
   </div>
 
   <!-- Time window preview -->
   <div class="form-field">
-    <span class="form-field__label">{MESSAGES.LABEL_TIME_WINDOW}</span>
+    <span class="form-field__label">{messages.LABEL_TIME_WINDOW}</span>
     <div class="form-static">
       <i class="fas fa-clock"></i>
       {timeWindowPreview}
@@ -481,21 +484,21 @@
         disabled={submitting}
       />
       <span class="toggle-switch__slider"></span>
-      <span class="toggle-switch__label">{MESSAGES.LABEL_SHIFT_REQUIRED}</span>
+      <span class="toggle-switch__label">{messages.LABEL_SHIFT_REQUIRED}</span>
     </label>
-    <span class="form-field__message">{MESSAGES.HELP_SHIFT_REQUIRED}</span>
+    <span class="form-field__message">{messages.HELP_SHIFT_REQUIRED}</span>
   </div>
 
   <!-- Notes -->
   <div class="form-field">
     <label
       class="form-field__label"
-      for="notes">{MESSAGES.LABEL_NOTES}</label
+      for="notes">{messages.LABEL_NOTES}</label
     >
     <textarea
       id="notes"
       class="form-field__control form-field__control--textarea"
-      placeholder={MESSAGES.PH_NOTES}
+      placeholder={messages.PH_NOTES}
       bind:value={notes}
       disabled={submitting}
       rows={3}
@@ -511,7 +514,7 @@
       onclick={oncancel}
       disabled={submitting}
     >
-      {MESSAGES.BTN_CANCEL}
+      {messages.BTN_CANCEL}
     </button>
     <button
       type="submit"
@@ -521,7 +524,7 @@
       {#if submitting}
         <i class="fas fa-spinner fa-spin"></i>
       {/if}
-      {isCreateMode ? MESSAGES.BTN_CREATE_PLAN : MESSAGES.BTN_SAVE}
+      {isCreateMode ? messages.BTN_CREATE_PLAN : messages.BTN_SAVE}
     </button>
   </div>
 </form>

@@ -21,7 +21,7 @@
     checkDuplicate as apiCheckDuplicate,
     logApiError,
   } from '../../_lib/api';
-  import { MESSAGES } from '../../_lib/constants';
+  import { createTpmMessages } from '../../_lib/constants';
 
   import CardForm from './_lib/CardForm.svelte';
   import CardList from './_lib/CardList.svelte';
@@ -39,6 +39,10 @@
   // ===========================================================================
 
   const { data }: { data: PageData } = $props();
+
+  // Hierarchy labels from layout data inheritance (A6)
+  const labels = $derived(data.hierarchyLabels);
+  const messages = $derived(createTpmMessages(labels));
 
   // ===========================================================================
   // STATE
@@ -63,16 +67,8 @@
 
   const isCreateMode = $derived(editingCard === null);
   const formHeading = $derived(
-    isCreateMode ? MESSAGES.CARD_CREATE_TITLE : MESSAGES.CARD_EDIT_TITLE,
+    isCreateMode ? messages.CARD_CREATE_TITLE : messages.CARD_EDIT_TITLE,
   );
-
-  // ===========================================================================
-  // HELPERS
-  // ===========================================================================
-
-  function resolvePath(path: string): string {
-    return (resolve as (p: string) => string)(path);
-  }
 
   function openCreateForm(): void {
     editingCard = null;
@@ -120,13 +116,13 @@
     submitting = true;
     try {
       await apiCreateCard(payload);
-      showSuccessAlert(MESSAGES.SUCCESS_CARD_CREATED);
+      showSuccessAlert(messages.SUCCESS_CARD_CREATED);
       closeForm();
       await invalidateAll();
     } catch (err: unknown) {
       logApiError('createCard', err);
       const msg =
-        err instanceof Error ? err.message : MESSAGES.ERROR_CARD_CREATE;
+        err instanceof Error ? err.message : messages.ERROR_CARD_CREATE;
       showErrorAlert(msg);
     } finally {
       submitting = false;
@@ -138,13 +134,13 @@
     submitting = true;
     try {
       await apiUpdateCard(editingCard.uuid, payload);
-      showSuccessAlert(MESSAGES.SUCCESS_CARD_UPDATED);
+      showSuccessAlert(messages.SUCCESS_CARD_UPDATED);
       closeForm();
       await invalidateAll();
     } catch (err: unknown) {
       logApiError('updateCard', err);
       const msg =
-        err instanceof Error ? err.message : MESSAGES.ERROR_CARD_UPDATE;
+        err instanceof Error ? err.message : messages.ERROR_CARD_UPDATE;
       showErrorAlert(msg);
     } finally {
       submitting = false;
@@ -168,12 +164,12 @@
     submitting = true;
     try {
       await apiDeleteCard(targetUuid);
-      showSuccessAlert(MESSAGES.SUCCESS_CARD_DELETED);
+      showSuccessAlert(messages.SUCCESS_CARD_DELETED);
       await invalidateAll();
     } catch (err: unknown) {
       logApiError('deleteCard', err);
       const msg =
-        err instanceof Error ? err.message : MESSAGES.ERROR_CARD_DELETE;
+        err instanceof Error ? err.message : messages.ERROR_CARD_DELETE;
       showErrorAlert(msg);
     } finally {
       submitting = false;
@@ -207,7 +203,7 @@
 </script>
 
 <svelte:head>
-  <title>{MESSAGES.CARD_PAGE_TITLE}</title>
+  <title>{messages.CARD_PAGE_TITLE}</title>
 </svelte:head>
 
 <div class="container">
@@ -218,7 +214,7 @@
         type="button"
         class="btn btn-light"
         onclick={() => {
-          void goto(resolvePath(`/lean-management/tpm/board/${data.planUuid}`));
+          void goto(resolve(`/lean-management/tpm/board/${data.planUuid}`));
         }}
       >
         <i class="fas fa-arrow-left mr-2"></i>Zurück zum Board
@@ -230,7 +226,7 @@
           class="flex items-center gap-2 text-2xl font-bold text-(--color-text-primary)"
         >
           <i class="fas fa-th"></i>
-          {MESSAGES.CARD_PAGE_HEADING}
+          {messages.CARD_PAGE_HEADING}
         </h1>
         <p class="mt-1 text-sm text-(--color-text-secondary)">
           {data.plan.assetName ?? '—'} — {data.plan.name}
@@ -241,12 +237,10 @@
           type="button"
           class="btn btn-primary"
           onclick={() => {
-            void goto(
-              resolvePath(`/lean-management/tpm/board/${data.planUuid}`),
-            );
+            void goto(resolve(`/lean-management/tpm/board/${data.planUuid}`));
           }}
         >
-          <i class="fas fa-th-large mr-2"></i>{MESSAGES.BTN_VIEW_BOARD}
+          <i class="fas fa-th-large mr-2"></i>{messages.BTN_VIEW_BOARD}
         </button>
         {#if !showForm}
           <button
@@ -255,7 +249,7 @@
             onclick={openCreateForm}
           >
             <i class="fas fa-plus"></i>
-            {MESSAGES.BTN_NEW_CARD}
+            {messages.BTN_NEW_CARD}
           </button>
         {/if}
       </div>
@@ -361,13 +355,13 @@
 <ConfirmModal
   show={showDeleteModal && deleteTarget !== null}
   id="tpm-card-delete-modal"
-  title={MESSAGES.CARD_DELETE_TITLE}
-  confirmLabel={MESSAGES.BTN_DELETE}
+  title={messages.CARD_DELETE_TITLE}
+  confirmLabel={messages.BTN_DELETE}
   {submitting}
   onconfirm={confirmDelete}
   oncancel={cancelDelete}
 >
-  {MESSAGES.CARD_DELETE_MESSAGE}
+  {messages.CARD_DELETE_MESSAGE}
   {#if deleteTarget !== null}
     <br /><br />
     <strong>{deleteTarget.cardCode}</strong> — {deleteTarget.title}
@@ -377,6 +371,7 @@
 <!-- Duplicate Warning Modal -->
 {#if showDuplicateWarning}
   <DuplicateWarning
+    {messages}
     existingCards={duplicateCards}
     oncontinue={handleDuplicateContinue}
     oncancel={handleDuplicateCancel}

@@ -58,13 +58,21 @@ export const load: PageServerLoad = async ({ cookies, fetch }) => {
     redirect(302, '/login');
   }
 
-  // Parallel fetch: departments + areas + admins (for leads) + roots (for leads)
+  // Parallel fetch: departments + areas + leader candidates (admin/root with position=Abteilungsleiter)
   const [departmentsData, areasData, adminsData, rootsData] = await Promise.all(
     [
       apiFetch<Department[]>('/departments', token, fetch),
       apiFetch<Area[]>('/areas', token, fetch),
-      apiFetch<AdminUser[]>('/users?role=admin', token, fetch),
-      apiFetch<AdminUser[]>('/users?role=root', token, fetch),
+      apiFetch<AdminUser[]>(
+        '/users?role=admin&isActive=1&position=department_lead',
+        token,
+        fetch,
+      ),
+      apiFetch<AdminUser[]>(
+        '/users?role=root&isActive=1&position=department_lead',
+        token,
+        fetch,
+      ),
     ],
   );
 

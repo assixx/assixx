@@ -269,13 +269,11 @@
   // NAVIGATION
   // ===========================================================================
 
-  const resolvePath = resolve as (p: string) => string;
-
   function goBack(): void {
     if (card !== null) {
-      void goto(resolvePath(`/lean-management/tpm/card/${card.uuid}`));
+      void goto(resolve(`/lean-management/tpm/card/${card.uuid}`));
     } else {
-      void goto(resolvePath('/lean-management/tpm/overview'));
+      void goto(resolve('/lean-management/tpm/overview'));
     }
   }
 </script>
@@ -338,7 +336,7 @@
           class="btn btn-primary"
           onclick={() => {
             void goto(
-              resolvePath(`/lean-management/tpm/card/${card.uuid}/history`),
+              resolve(`/lean-management/tpm/card/${card.uuid}/history`),
             );
           }}
         >
@@ -447,7 +445,7 @@
                               </span>
                             {/if}
                             <a
-                              href={resolvePath(
+                              href={resolve(
                                 `/work-orders/${defect.workOrderUuid}`,
                               )}
                               class="btn btn-sm btn-ghost"

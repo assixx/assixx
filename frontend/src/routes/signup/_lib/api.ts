@@ -44,26 +44,19 @@ export function createRegisterPayload(formData: {
   phone: string;
   countryCode: string;
   password: string;
-  selectedPlan: string;
 }): RegisterPayload {
   // Format phone: combine country code + digits only
   const phoneDigits = formData.phone.replace(/\s/g, '');
   const fullPhone = `${formData.countryCode}${phoneDigits}`;
 
   return {
-    // Company information
     companyName: formData.companyName,
     subdomain: formData.subdomain,
-    email: formData.email, // Company contact email (same as admin for now)
+    email: formData.email,
     phone: fullPhone,
-
-    // Admin user information
-    adminEmail: formData.email, // Admin uses same email as company contact
+    adminEmail: formData.email,
     adminPassword: formData.password,
     adminFirstName: formData.firstName,
     adminLastName: formData.lastName,
-
-    // Subscription plan
-    plan: formData.selectedPlan as RegisterPayload['plan'],
   };
 }

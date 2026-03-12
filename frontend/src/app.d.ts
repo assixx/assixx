@@ -29,4 +29,18 @@ declare global {
   }
 }
 
+/**
+ * Module augmentation: adds a string overload for resolve().
+ *
+ * SvelteKit's generic resolve<T>() only accepts generated Pathname/RouteId
+ * literal types. Runtime-computed paths (variables, template literals from
+ * config objects) can't satisfy that constraint.
+ *
+ * This overload lets resolve() accept plain strings as a fallback while
+ * keeping full type safety for string literals (matched by the generic first).
+ */
+declare module '$app/paths' {
+  export function resolve(pathname: string): string;
+}
+
 export {};
