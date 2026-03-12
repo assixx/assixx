@@ -24,6 +24,7 @@ function createMockSettings() {
     getHierarchyLabels: vi.fn(),
     getViewport: vi.fn(),
     getHallOverrides: vi.fn(),
+    getCanvasBg: vi.fn(),
   };
 }
 
@@ -101,6 +102,7 @@ describe('OrganigramService', () => {
     });
     mockSettings.getViewport.mockResolvedValue({ ...DEFAULT_VIEWPORT });
     mockSettings.getHallOverrides.mockResolvedValue({});
+    mockSettings.getCanvasBg.mockResolvedValue(null);
     mockLayout.getPositions.mockResolvedValue([]);
   });
 

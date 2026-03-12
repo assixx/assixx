@@ -5,7 +5,9 @@
   Zoom: Mausrad
 -->
 <script lang="ts">
-  import { HALL_COLOR, LAYOUT } from './constants.js';
+  import { showWarningAlert } from '$lib/stores/toast';
+
+  import { LAYOUT } from './constants.js';
   import OrgNode from './OrgNode.svelte';
   import {
     getConnections,
@@ -58,6 +60,16 @@
   let resizeStartBounds = $state({ x: 0, y: 0, width: 0, height: 0 });
 
   const HANDLE_SIZE = 8;
+  const LOCK_MSG = 'Bitte erst die Bearbeitung entsperren';
+
+  /** Throttle damit Mausrad-Spam nicht 100 Toasts erzeugt */
+  let lastLockToast = 0;
+  function showLockWarning(): void {
+    const now = Date.now();
+    if (now - lastLockToast < 2000) return;
+    lastLockToast = now;
+    showWarningAlert(LOCK_MSG);
+  }
 
   function clientToSvg(
     clientX: number,
@@ -88,6 +100,10 @@
 
   function handleWheel(event: WheelEvent): void {
     event.preventDefault();
+    if (isLocked) {
+      showLockWarning();
+      return;
+    }
     const delta = event.deltaY > 0 ? -LAYOUT.ZOOM_STEP : LAYOUT.ZOOM_STEP;
     const rect = svgElement.getBoundingClientRect();
     zoomAt(delta, event.clientX - rect.left, event.clientY - rect.top);
@@ -193,7 +209,10 @@
   }
 
   function handlePointerDown(event: PointerEvent): void {
-    if (isLocked) return;
+    if (isLocked) {
+      showLockWarning();
+      return;
+    }
     const isPanTrigger = event.button === 0 || event.button === 1;
     if (!isPanTrigger) return;
 
@@ -350,8 +369,8 @@
           rx="12"
           ry="12"
           fill="none"
-          stroke={HALL_COLOR.border}
-          stroke-width="1.5"
+          stroke="var(--org-connection-stroke, #000)"
+          stroke-width="1.65"
           stroke-dasharray="6 3"
           opacity="0.8"
         />
@@ -359,7 +378,7 @@
           x={hall.x + 12}
           y={hall.y + 26}
           class="hall-label"
-          fill={HALL_COLOR.border}
+          fill="var(--org-connection-stroke, #000)"
         >
           <tspan
             font-weight="600"
@@ -501,8 +520,8 @@
         y1={hc.y1}
         x2={hc.x2}
         y2={hc.y2}
-        stroke={HALL_COLOR.border}
-        stroke-width="2"
+        stroke="var(--org-connection-stroke, #000)"
+        stroke-width="2.2"
         stroke-dasharray="8 4"
         opacity="0.6"
         class="connection"
@@ -517,8 +536,8 @@
         fill="none"
         stroke={highlighted ?
           'var(--color-primary, #3b82f6)'
-        : 'var(--color-text-tertiary, #666)'}
-        stroke-width={highlighted ? 2.5 : 1.5}
+        : 'var(--org-connection-stroke, #000)'}
+        stroke-width={highlighted ? 2.75 : 1.65}
         stroke-dasharray={highlighted ? 'none' : '4 2'}
         opacity={highlighted ? 0.8 : 0.4}
         class="connection"

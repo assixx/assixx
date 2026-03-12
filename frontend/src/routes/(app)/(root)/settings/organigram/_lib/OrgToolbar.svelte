@@ -1,14 +1,17 @@
 <!--
   OrgToolbar — Toolbar für Organigramm-Aktionen
-  Zoom In/Out/Reset, Auto-Layout, Speichern, Hierarchie-Labels
+  Zoom In/Out/Reset, Auto-Layout, Speichern, Hierarchie-Labels, Canvas-Background
 -->
 <script lang="ts">
+  import ColorPicker from 'svelte-awesome-color-picker';
+
   interface Props {
     zoom: number;
     fontSize: number;
     isDirty: boolean;
     isSaving: boolean;
     isLocked: boolean;
+    canvasBg: string | null;
     onzoomin: () => void;
     onzoomout: () => void;
     onzoomreset: () => void;
@@ -20,6 +23,7 @@
     onopenlabels: () => void;
     ontogglelock: () => void;
     onfullscreen: () => void;
+    oncanvasbg: (color: string | null) => void;
   }
 
   const {
@@ -28,6 +32,7 @@
     isDirty,
     isSaving,
     isLocked,
+    canvasBg,
     onzoomin,
     onzoomout,
     onzoomreset,
@@ -39,9 +44,30 @@
     onopenlabels,
     ontogglelock,
     onfullscreen,
+    oncanvasbg,
   }: Props = $props();
 
   const zoomPercent = $derived(Math.round(zoom * 100));
+
+  let pickerHex = $state<string | null>(null);
+  let showPicker = $state(false);
+
+  /** Track last known value to detect actual user interaction */
+  let lastPickerHex: string | null = null;
+
+  /** Sync picker wenn canvasBg sich von außen ändert (z.B. Reset) */
+  $effect(() => {
+    pickerHex = canvasBg;
+    lastPickerHex = canvasBg;
+  });
+
+  /** Propagate bind:hex changes — nur wenn User tatsächlich den Picker bewegt */
+  $effect(() => {
+    if (showPicker && pickerHex !== lastPickerHex) {
+      lastPickerHex = pickerHex;
+      oncanvasbg(pickerHex);
+    }
+  });
 </script>
 
 <div class="org-toolbar">
@@ -121,6 +147,47 @@
       class:fa-lock-open={!isLocked}
     ></i>
   </button>
+
+  <div class="toolbar-divider"></div>
+
+  <!-- Canvas Background Color Picker -->
+  <div class="color-picker-wrapper">
+    <button
+      type="button"
+      class="btn btn-icon btn-secondary"
+      title="Hintergrundfarbe"
+      onmousedown={(e: MouseEvent) => {
+        e.stopPropagation();
+        showPicker = !showPicker;
+      }}
+    >
+      <span
+        class="color-swatch"
+        style:background-color={canvasBg ?? 'transparent'}
+      ></span>
+    </button>
+
+    <ColorPicker
+      bind:hex={pickerHex}
+      bind:isOpen={showPicker}
+      label=""
+      nullable
+      isAlpha
+      position="responsive"
+      texts={{ label: { withoutColor: 'Transparent' } }}
+      --input-size="0px"
+      --picker-height="150px"
+      --picker-width="150px"
+      --slider-width="150px"
+      --focus-color="var(--color-primary, #2196f3)"
+      --cp-bg-color="var(--color-gray-900, #212121)"
+      --cp-border-color="#616161"
+      --cp-text-color="#fff"
+      --cp-input-color="#424242"
+      --cp-button-hover-color="#616161"
+      --picker-z-index="1060"
+    />
+  </div>
 
   <div class="toolbar-divider"></div>
 
@@ -265,6 +332,60 @@
 
   .dirty-indicator i {
     font-size: 0.4rem;
+  }
+
+  .color-picker-wrapper {
+    position: relative;
+  }
+
+  .color-swatch {
+    display: inline-block;
+    width: 18px;
+    height: 18px;
+    border-radius: 4px;
+    border: 2px solid var(--color-border, #555);
+    background-image:
+      linear-gradient(
+        45deg,
+        var(--color-gray-400) 25%,
+        transparent 25%,
+        transparent 75%,
+        var(--color-gray-400) 75%
+      ),
+      linear-gradient(
+        45deg,
+        var(--color-gray-400) 25%,
+        transparent 25%,
+        transparent 75%,
+        var(--color-gray-400) 75%
+      );
+    background-size: 8px 8px;
+    background-position:
+      0 0,
+      4px 4px;
+  }
+
+  /* Hide the ColorPicker's default trigger — we use our own button */
+  .color-picker-wrapper :global(.color-picker > label) {
+    position: absolute;
+    width: 0;
+    height: 0;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    pointer-events: none;
+  }
+
+  /* Style the ColorPicker popup */
+  .color-picker-wrapper :global(.wrapper[role='dialog']) {
+    border-radius: var(--radius-xl, 12px);
+    box-shadow: var(--shadow-dropdown);
+  }
+
+  /* Hue + Alpha slider: hide thumb */
+  .color-picker-wrapper :global(.h .thumb),
+  .color-picker-wrapper :global(.a .thumb) {
+    display: none;
   }
 
   .lock-active {

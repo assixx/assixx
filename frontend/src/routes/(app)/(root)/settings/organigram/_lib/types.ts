@@ -73,6 +73,7 @@ export interface OrgChartTree {
   hierarchyLabels: HierarchyLabels;
   viewport: OrgViewport;
   hallOverrides: Record<string, HallOverride>;
+  canvasBg: string | null;
   nodes: OrgChartNode[];
   halls: OrgTreeHall[];
 }

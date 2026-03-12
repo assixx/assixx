@@ -25,6 +25,7 @@ const EMPTY_TREE: OrgChartTree = {
   },
   viewport: { zoom: 1, panX: 0, panY: 0, fontSize: 13 },
   hallOverrides: {},
+  canvasBg: null,
   nodes: [],
   halls: [],
 };

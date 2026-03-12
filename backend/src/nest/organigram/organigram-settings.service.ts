@@ -42,6 +42,19 @@ export class OrganigramSettingsService {
     private readonly activityLogger: ActivityLoggerService,
   ) {}
 
+  /** Persist merged settings JSONB — single source for all organigramm writes */
+  private async persistSettings(
+    tenantId: number,
+    mergedSettings: Record<string, unknown>,
+  ): Promise<void> {
+    await this.db.tenantTransaction(async (client: PoolClient) => {
+      await client.query(
+        'UPDATE tenants SET settings = $1::jsonb WHERE id = $2',
+        [JSON.stringify(mergedSettings), tenantId],
+      );
+    });
+  }
+
   async getViewport(tenantId: number): Promise<OrgViewport> {
     const rows = await this.db.query<TenantSettingsRow>(SELECT_SETTINGS, [
       tenantId,
@@ -104,12 +117,7 @@ export class OrganigramSettingsService {
       orgHallOverrides: overrides,
     };
 
-    await this.db.tenantTransaction(async (client: PoolClient) => {
-      await client.query(
-        'UPDATE tenants SET settings = $1::jsonb WHERE id = $2',
-        [JSON.stringify(mergedSettings), tenantId],
-      );
-    });
+    await this.persistSettings(tenantId, mergedSettings);
   }
 
   async saveViewport(tenantId: number, viewport: OrgViewport): Promise<void> {
@@ -128,12 +136,38 @@ export class OrganigramSettingsService {
       orgViewport: viewport,
     };
 
-    await this.db.tenantTransaction(async (client: PoolClient) => {
-      await client.query(
-        'UPDATE tenants SET settings = $1::jsonb WHERE id = $2',
-        [JSON.stringify(mergedSettings), tenantId],
-      );
-    });
+    await this.persistSettings(tenantId, mergedSettings);
+  }
+
+  async getCanvasBg(tenantId: number): Promise<string | null> {
+    const rows = await this.db.query<TenantSettingsRow>(SELECT_SETTINGS, [
+      tenantId,
+    ]);
+
+    const settings = rows[0]?.settings;
+    if (settings === null || settings === undefined) return null;
+
+    const stored = settings['orgCanvasBg'] as string | undefined;
+    return stored ?? null;
+  }
+
+  async saveCanvasBg(tenantId: number, canvasBg: string | null): Promise<void> {
+    const settingsRows = await this.db.query<TenantSettingsRow>(
+      SELECT_SETTINGS,
+      [tenantId],
+    );
+
+    const currentSettings =
+      settingsRows.length > 0 && settingsRows[0] !== undefined ?
+        (settingsRows[0].settings ?? {})
+      : {};
+
+    const mergedSettings = {
+      ...currentSettings,
+      orgCanvasBg: canvasBg,
+    };
+
+    await this.persistSettings(tenantId, mergedSettings);
   }
 
   async getHierarchyLabels(tenantId: number): Promise<HierarchyLabels> {
@@ -197,12 +231,7 @@ export class OrganigramSettingsService {
       orgHierarchy: { levels: mergedLabels },
     };
 
-    await this.db.tenantTransaction(async (client: PoolClient) => {
-      await client.query(
-        'UPDATE tenants SET settings = $1::jsonb WHERE id = $2',
-        [JSON.stringify(mergedSettings), tenantId],
-      );
-    });
+    await this.persistSettings(tenantId, mergedSettings);
 
     this.logger.log(`Hierarchy labels updated for tenant ${String(tenantId)}`);
 
@@ -275,12 +304,7 @@ export class OrganigramSettingsService {
       positionOptions: merged,
     };
 
-    await this.db.tenantTransaction(async (client: PoolClient) => {
-      await client.query(
-        'UPDATE tenants SET settings = $1::jsonb WHERE id = $2',
-        [JSON.stringify(mergedSettings), tenantId],
-      );
-    });
+    await this.persistSettings(tenantId, mergedSettings);
 
     this.logger.log(`Position options updated for tenant ${String(tenantId)}`);
 

@@ -165,6 +165,9 @@
   --shadow-btn-dark: 0 2px 4px oklch(0% 0 0 / 20%);
   --shadow-btn-dark-hover: 0 4px 12px oklch(0% 0 0 / 28%);
 
+  /* Organigramm Connection Lines */
+  --org-connection-stroke: oklch(0% 0 0);
+
   /* Navigation-specific (light mode) */
   --nav-hover-bg: oklch(65.82% 0.169 248.81 / 10%);
   --nav-active-submenu-bg: oklch(0% 0 0 / 6%);

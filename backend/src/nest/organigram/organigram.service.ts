@@ -64,6 +64,7 @@ export class OrganigramService {
       labels,
       viewport,
       hallOverrides,
+      canvasBg,
       areas,
       departments,
       teams,
@@ -75,6 +76,7 @@ export class OrganigramService {
       this.settings.getHierarchyLabels(tenantId),
       this.settings.getViewport(tenantId),
       this.settings.getHallOverrides(tenantId),
+      this.settings.getCanvasBg(tenantId),
       this.fetchAreas(tenantId),
       this.fetchDepartments(tenantId),
       this.fetchTeams(tenantId),
@@ -97,6 +99,7 @@ export class OrganigramService {
       hierarchyLabels: labels,
       viewport,
       hallOverrides,
+      canvasBg,
       nodes,
       halls: orgHalls,
     };

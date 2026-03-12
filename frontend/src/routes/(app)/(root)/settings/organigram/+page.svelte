@@ -5,6 +5,7 @@
 <script lang="ts">
   import { invalidateAll } from '$app/navigation';
 
+  import { showSuccessAlert, showErrorAlert } from '$lib/stores/toast';
   import { createLogger } from '$lib/utils/logger.js';
 
   import { savePositions, updateHierarchyLabels } from './_lib/api.js';
@@ -13,6 +14,8 @@
   import OrgToolbar from './_lib/OrgToolbar.svelte';
   import {
     adjustZoom,
+    getCanvasBg,
+    getCanvasBgForSave,
     getFontSize,
     getIsDirty,
     getIsLocked,
@@ -26,6 +29,7 @@
     recomputeAutoLayout,
     resetToSaved,
     resetView,
+    setCanvasBg,
     setFontSize,
     setSaving,
     toggleLock,
@@ -44,6 +48,7 @@
   const isSaving = $derived(getIsSaving());
   const currentZoom = $derived(getZoom());
   const currentFontSize = $derived(getFontSize());
+  const currentCanvasBg = $derived(getCanvasBg());
 
   /** Single Source of Truth: Layout-Data (A7) */
   const labels = $derived(data.tree.hierarchyLabels);
@@ -77,10 +82,13 @@
       const positions = getPositionsForSave();
       const viewport = getViewportForSave();
       const overrides = getHallOverridesForSave();
-      await savePositions(positions, viewport, overrides);
+      const bg = getCanvasBgForSave();
+      await savePositions(positions, viewport, overrides, bg);
       markSaved();
+      showSuccessAlert('Organigramm gespeichert');
     } catch (err: unknown) {
       log.error({ err }, 'Positionen speichern fehlgeschlagen');
+      showErrorAlert('Fehler beim Speichern des Organigramms');
       setSaving(false);
     }
   }
@@ -92,8 +100,10 @@
       updateTreeLabels(saved);
       showLabelsModal = false;
       await invalidateAll();
+      showSuccessAlert('Hierarchie-Ebenen gespeichert');
     } catch (err: unknown) {
       log.error({ err }, 'Hierarchie-Labels speichern fehlgeschlagen');
+      showErrorAlert('Fehler beim Speichern der Hierarchie-Ebenen');
     } finally {
       isLabelsSaving = false;
     }
@@ -171,6 +181,7 @@
     <OrgToolbar
       zoom={currentZoom}
       fontSize={currentFontSize}
+      canvasBg={currentCanvasBg}
       {isDirty}
       {isSaving}
       {isLocked}
@@ -195,10 +206,14 @@
       }}
       ontogglelock={toggleLock}
       onfullscreen={toggleFullscreen}
+      oncanvasbg={setCanvasBg}
     />
 
     <!-- Canvas -->
-    <div class="canvas-wrapper">
+    <div
+      class="canvas-wrapper"
+      style:--org-canvas-bg={currentCanvasBg ?? 'transparent'}
+    >
       {#if data.loadError}
         <div
           class="flex flex-col items-center justify-center py-16 text-center"
@@ -292,6 +307,11 @@
     border: var(--glass-border);
   }
 
+  /* Canvas Background — nur Dark Mode (Light Mode behält Default) */
+  :global(html.dark) .canvas-wrapper {
+    background-color: var(--org-canvas-bg, transparent);
+  }
+
   /* Dot pattern — dark mode: white dots, thick center → thin edges */
   .canvas-wrapper::after {
     position: absolute;
@@ -303,9 +323,9 @@
     content: '';
   }
 
-  /* Dot pattern — light mode: dark dots */
+  /* Light mode: custom bg or default gray */
   :global(html:not(.dark)) .canvas-wrapper::after {
-    background: var(--color-gray-300);
+    background: var(--org-canvas-bg, var(--color-gray-300));
   }
 
   /* Fullscreen Mode — 1:1 Blackboard-Pattern */

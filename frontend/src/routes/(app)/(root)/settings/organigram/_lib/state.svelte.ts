@@ -45,6 +45,7 @@ let tree = $state<OrgChartTree>({
   },
   viewport: { zoom: 1, panX: 0, panY: 0, fontSize: 13 },
   hallOverrides: {},
+  canvasBg: null,
   nodes: [],
   halls: [],
 });
@@ -58,6 +59,7 @@ let saving = $state(false);
 let hoveredNodeKey = $state('');
 let locked = $state(true);
 let hallOverrides = $state<Record<string, HallOverride>>({});
+let canvasBg = $state<string | null>(null);
 
 // --- Getters ---
 
@@ -110,6 +112,15 @@ export function toggleLock(): void {
   locked = !locked;
 }
 
+export function getCanvasBg(): string | null {
+  return canvasBg;
+}
+
+export function setCanvasBg(value: string | null): void {
+  canvasBg = value;
+  dirty = true;
+}
+
 // --- Init ---
 
 export function initFromTree(data: OrgChartTree): void {
@@ -134,6 +145,9 @@ export function initFromTree(data: OrgChartTree): void {
 
   // 4. Restore hall overrides
   hallOverrides = data.hallOverrides;
+
+  // 5. Restore canvas background
+  canvasBg = data.canvasBg;
 }
 
 function overlaySavedPositions(
@@ -403,6 +417,10 @@ export function setHallOverride(hallId: string, bounds: HallOverride): void {
   dirty = true;
 }
 
+export function getCanvasBgForSave(): string | null {
+  return canvasBg;
+}
+
 export function getHallOverridesForSave(): Record<string, HallOverride> {
   return { ...hallOverrides };
 }
@@ -527,7 +545,7 @@ function computeAssignedHallBounds(
     id: hall.uuid,
     hallName: hall.name,
     areaUuid: hall.areaUuid,
-    leadName: areaNode.leadName,
+    leadName: undefined,
     x: minX - PADDING,
     y: minY - PADDING - HEADER_HEIGHT,
     width: maxX - minX + PADDING * 2,

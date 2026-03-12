@@ -72,6 +72,9 @@ export class OrganigramController {
     if (dto.hallOverrides !== undefined) {
       await this.settingsService.saveHallOverrides(tenantId, dto.hallOverrides);
     }
+    if (dto.canvasBg !== undefined) {
+      await this.settingsService.saveCanvasBg(tenantId, dto.canvasBg);
+    }
     return { message: 'Positionen gespeichert' };
   }
 

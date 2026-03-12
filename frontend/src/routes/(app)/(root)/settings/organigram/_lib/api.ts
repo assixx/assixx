@@ -37,11 +37,13 @@ export async function savePositions(
   positions: PositionPayload[],
   viewport: OrgViewport,
   hallOverrides: Record<string, HallOverride>,
+  canvasBg: string | null,
 ): Promise<void> {
   const api = getApiClient();
   await api.put('/organigram/positions', {
     positions,
     viewport,
     hallOverrides,
+    canvasBg,
   });
 }

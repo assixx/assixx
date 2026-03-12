@@ -40,6 +40,14 @@ export const UpsertPositionsSchema = z.object({
     .max(500, 'Maximal 500 Positionen pro Request'),
   viewport: ViewportSchema,
   hallOverrides: z.record(z.string(), HallOverrideSchema).optional(),
+  canvasBg: z
+    .string()
+    .regex(
+      /^#[\da-f]{6,8}$/i,
+      'canvasBg muss ein Hex-Farbwert sein (#rrggbb oder #rrggbbaa)',
+    )
+    .nullable()
+    .optional(),
 });
 
 export class UpsertPositionsDto extends createZodDto(UpsertPositionsSchema) {}

@@ -555,7 +555,6 @@
                     <td><code class="text-muted">{team.id}</code></td>
                     <td>
                       <div class="flex items-center gap-2">
-                        <i class="fas fa-users text-blue-500"></i>
                         <span class="font-medium">{team.name}</span>
                       </div>
                     </td>
