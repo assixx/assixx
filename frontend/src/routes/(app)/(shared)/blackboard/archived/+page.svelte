@@ -9,6 +9,13 @@
   import { goto } from '$app/navigation';
   import { resolve } from '$app/paths';
 
+  import {
+    DEFAULT_HIERARCHY_LABELS,
+    type HierarchyLabels,
+  } from '$lib/types/hierarchy-labels';
+
+  import { createOrgLevelLabels } from '../_lib/constants';
+
   import type { PageData } from './$types';
 
   // =============================================================================
@@ -17,16 +24,18 @@
 
   const { data }: { data: PageData } = $props();
 
+  const labels = $derived(
+    ((data as Record<string, unknown>).hierarchyLabels as
+      | HierarchyLabels
+      | undefined) ?? DEFAULT_HIERARCHY_LABELS,
+  );
+
   const entries = $derived(data.entries);
   const error = $derived(data.error);
 
   // =============================================================================
   // HELPERS
   // =============================================================================
-
-  function resolvePath(path: string): string {
-    return (resolve as (p: string) => string)(path);
-  }
 
   function formatDate(dateStr: string | null): string {
     if (dateStr === null || dateStr === '') return '-';
@@ -63,14 +72,12 @@
     return map[priority] ?? 'badge--secondary';
   }
 
+  const orgLevelLabels = $derived(createOrgLevelLabels(labels));
+
   function getOrgLevelText(orgLevel: string): string {
-    const map: Record<string, string> = {
-      company: 'Firma',
-      department: 'Abteilung',
-      team: 'Team',
-      area: 'Bereich',
-    };
-    return map[orgLevel] ?? orgLevel;
+    const key = orgLevel as keyof typeof orgLevelLabels;
+    if (key in orgLevelLabels) return orgLevelLabels[key];
+    return orgLevel;
   }
 
   // =============================================================================
@@ -78,11 +85,11 @@
   // =============================================================================
 
   function navigateToEntry(uuid: string): void {
-    void goto(resolvePath(`/blackboard/${uuid}`));
+    void goto(resolve(`/blackboard/${uuid}`));
   }
 
   function goBack(): void {
-    void goto(resolvePath('/blackboard'));
+    void goto(resolve('/blackboard'));
   }
 </script>
 

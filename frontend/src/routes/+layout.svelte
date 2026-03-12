@@ -1,4 +1,5 @@
 <script lang="ts">
+  import '$lib/actions/modal-dropdown-scroll';
   import '../app.css';
   import ToastContainer from '$lib/components/ToastContainer.svelte';
 

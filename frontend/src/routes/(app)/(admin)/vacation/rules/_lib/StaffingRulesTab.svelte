@@ -6,6 +6,10 @@
    */
   import { invalidateAll } from '$app/navigation';
 
+  import {
+    DEFAULT_HIERARCHY_LABELS,
+    type HierarchyLabels,
+  } from '$lib/types/hierarchy-labels';
   import { showSuccessAlert, showErrorAlert } from '$lib/utils';
   import { createLogger } from '$lib/utils/logger';
 
@@ -13,6 +17,12 @@
   import { rulesState } from './state.svelte';
 
   import type { CreateStaffingRulePayload, OrgAsset } from './types';
+
+  interface Props {
+    labels?: HierarchyLabels;
+  }
+
+  const { labels = DEFAULT_HIERARCHY_LABELS }: Props = $props();
 
   const log = createLogger('StaffingRulesTab');
 
@@ -98,29 +108,30 @@
   }
 
   function getSelectedAreaName(): string {
-    if (selectedAreaId === null) return 'Bereich wählen...';
+    if (selectedAreaId === null) return `${labels.area} wählen...`;
     return (
       rulesState.areas.find((a) => a.id === selectedAreaId)?.name ??
-      'Bereich wählen...'
+      `${labels.area} wählen...`
     );
   }
 
   function getSelectedDepartmentName(): string {
-    if (selectedAreaId === null) return 'Erst Bereich wählen...';
-    if (selectedDepartmentId === null) return 'Abteilung wählen...';
+    if (selectedAreaId === null) return `Erst ${labels.area} wählen...`;
+    if (selectedDepartmentId === null) return `${labels.department} wählen...`;
     return (
       filteredDepartments.find((d) => d.id === selectedDepartmentId)?.name ??
-      'Abteilung wählen...'
+      `${labels.department} wählen...`
     );
   }
 
   function getSelectedAssetName(): string {
-    if (selectedDepartmentId === null) return 'Erst Abteilung wählen...';
+    if (selectedDepartmentId === null)
+      return `Erst ${labels.department} wählen...`;
     if (isLoadingAssets) return 'Laden...';
-    if (selectedAssetId === null) return 'Anlage wählen...';
+    if (selectedAssetId === null) return `${labels.asset} wählen...`;
     return (
       cascadeAssets.find((m) => m.id === selectedAssetId)?.name ??
-      'Anlage wählen...'
+      `${labels.asset} wählen...`
     );
   }
 
@@ -249,7 +260,7 @@
             type="search"
             id="staffing-search"
             class="search-input__field"
-            placeholder="Anlage suchen..."
+            placeholder={`${labels.asset} suchen...`}
             autocomplete="off"
             value={searchQuery}
             oninput={handleSearchInput}
@@ -275,8 +286,7 @@
         </div>
         <h3 class="empty-state__title">Keine Besetzungsregeln definiert</h3>
         <p class="empty-state__description">
-          Besetzungsregeln legen fest, wie viele Mitarbeiter pro Anlage
-          mindestens anwesend sein muessen.
+          Besetzungsregeln legen die Mindestbesetzung je {labels.asset} fest.
         </p>
       </div>
     {:else if filteredRules.length === 0}
@@ -291,7 +301,7 @@
           <div class="rules-list__item">
             <div class="rules-list__info">
               <span class="rules-list__name">
-                {rule.assetName ?? `Anlage #${rule.assetId}`}
+                {rule.assetName ?? `#${rule.assetId}`}
               </span>
               <div class="rules-list__meta">
                 <span>
@@ -389,22 +399,20 @@
         {#if rulesState.editingStaffingRule !== null}
           <!-- Edit mode: asset is locked, show name only -->
           <div class="form-field">
-            <span class="form-field__label">Anlage</span>
+            <span class="form-field__label">{labels.asset}</span>
             <p style="padding: 0.5rem 0; opacity: 70%;">
               <i class="fas fa-cog mr-1"></i>
               {rulesState.editingStaffingRule.assetName ??
-                `Anlage #${rulesState.editingStaffingRule.assetId}`}
+                `#${rulesState.editingStaffingRule.assetId}`}
             </p>
-            <span class="form-field__hint">
-              Anlage kann nicht geaendert werden
-            </span>
+            <span class="form-field__hint"> Kann nicht geändert werden </span>
           </div>
         {:else}
           <!-- Create mode: Cascade Area -> Department -> Asset -->
 
           <!-- Area Dropdown -->
           <div class="form-field">
-            <span class="form-field__label">Bereich</span>
+            <span class="form-field__label">{labels.area}</span>
             <div class="dropdown">
               <div
                 class="dropdown__trigger"
@@ -455,7 +463,7 @@
 
           <!-- Department Dropdown -->
           <div class="form-field">
-            <span class="form-field__label">Abteilung</span>
+            <span class="form-field__label">{labels.department}</span>
             <div
               class="dropdown"
               class:dropdown--disabled={selectedAreaId === null}
@@ -511,7 +519,7 @@
 
           <!-- Asset Dropdown -->
           <div class="form-field">
-            <span class="form-field__label">Anlage</span>
+            <span class="form-field__label">{labels.asset}</span>
             <div
               class="dropdown"
               class:dropdown--disabled={selectedDepartmentId === null ||
@@ -553,7 +561,7 @@
                     class="dropdown__option"
                     style="opacity: 50%; cursor: default;"
                   >
-                    Keine Anlagen in dieser Abteilung
+                    Keine {labels.asset} verfügbar
                   </div>
                 {:else}
                   {#each cascadeAssets as asset (asset.id)}
@@ -673,7 +681,7 @@
       <div class="ds-modal__body">
         <p>
           Moechten Sie die Besetzungsregel fuer
-          <strong>"{rule.assetName ?? `Anlage #${rule.assetId}`}"</strong>
+          <strong>"{rule.assetName ?? `#${rule.assetId}`}"</strong>
           wirklich loeschen?
         </p>
       </div>

@@ -48,7 +48,7 @@
   import LogoutModal from './_lib/LogoutModal.svelte';
   import {
     filterMenuByAccess,
-    filterMenuByFeatures,
+    filterMenuByAddons,
     getMenuItemsForRole,
     type NavItem,
   } from './_lib/navigation-config';
@@ -222,15 +222,21 @@
     document.title = count > 0 ? `(${count}) ${base}` : base;
   });
 
-  // Navigation menu items - filtered by access level and tenant feature activation
+  // Hierarchy labels from SSR (tenant-specific names for areas, departments, etc.)
+  const hierarchyLabels = $derived(data.hierarchyLabels);
+
+  // Navigation menu items - filtered by access level and tenant addon activation
   const hasFullAccess = $derived(
     data.user?.role === 'root' || Boolean(data.user?.hasFullAccess),
   );
-  const activeFeaturesSet = $derived(new Set(data.activeFeatures));
+  const activeAddonsSet = $derived(new Set(data.activeAddons));
   const menuItems = $derived<NavItem[]>(
-    filterMenuByFeatures(
-      filterMenuByAccess(getMenuItemsForRole(currentRole), hasFullAccess),
-      activeFeaturesSet,
+    filterMenuByAddons(
+      filterMenuByAccess(
+        getMenuItemsForRole(currentRole, hierarchyLabels),
+        hasFullAccess,
+      ),
+      activeAddonsSet,
     ),
   );
 
@@ -523,7 +529,10 @@
       class="min-h-[calc(100vh-60px)] flex-1 bg-(--background-primary) p-2 md:p-3 lg:p-4"
     >
       <div id="breadcrumb-container">
-        <Breadcrumb userRole={currentRole} />
+        <Breadcrumb
+          userRole={currentRole}
+          {hierarchyLabels}
+        />
       </div>
       {@render children()}
     </main>

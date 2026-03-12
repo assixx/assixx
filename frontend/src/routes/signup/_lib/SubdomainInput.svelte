@@ -89,7 +89,7 @@
     align-items: center;
     backdrop-filter: blur(5px);
     transition: all 0.2s ease;
-    border: 1px solid color-mix(in oklch, var(--color-white) 12%, transparent);
+    border: var(--form-field-border);
     border-left: none;
     border-radius: 0 var(--form-field-radius) var(--form-field-radius) 0;
     background: color-mix(in oklch, var(--color-white) 8%, transparent);

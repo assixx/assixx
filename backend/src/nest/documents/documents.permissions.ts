@@ -1,7 +1,7 @@
 /**
  * Documents Permission Definitions
  *
- * Defines which permission modules the documents feature exposes.
+ * Defines which permission modules the documents addon exposes.
  * Registered via DocumentsPermissionRegistrar (OnModuleInit).
  *
  * @see docs/USER-PERMISSIONS-PLAN.md

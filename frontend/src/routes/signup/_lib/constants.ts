@@ -2,7 +2,7 @@
 // SIGNUP PAGE - CONSTANTS
 // =============================================================================
 
-import type { Country, Plan } from './types';
+import type { Country } from './types';
 
 /**
  * Available country codes for phone number prefix
@@ -25,24 +25,9 @@ export const COUNTRIES: readonly Country[] = [
 ] as const;
 
 /**
- * Available subscription plans
- * Ordered by price (highest first for upselling)
- */
-export const PLANS: readonly Plan[] = [
-  { value: 'enterprise', name: 'Enterprise', price: '€149/M' },
-  { value: 'professional', name: 'Professional', price: '€99/M' },
-  { value: 'basic', name: 'Basic', price: '€49/M' },
-] as const;
-
-/**
  * Default country selection (Germany)
  */
 export const DEFAULT_COUNTRY: Country = COUNTRIES[0];
-
-/**
- * Default plan selection (Enterprise)
- */
-export const DEFAULT_PLAN: Plan = PLANS[0];
 
 /**
  * Password requirements

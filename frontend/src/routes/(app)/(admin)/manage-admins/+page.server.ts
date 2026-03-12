@@ -83,12 +83,18 @@ export const load: PageServerLoad = async ({ cookies, fetch }) => {
     redirect(302, '/login');
   }
 
-  // Parallel fetch: admins + areas + departments
-  const [adminsData, areasData, departmentsData] = await Promise.all([
-    apiFetch<Admin[]>('/users?role=admin', token, fetch),
-    apiFetch<Area[]>('/areas', token, fetch),
-    apiFetch<Department[]>('/departments', token, fetch),
-  ]);
+  // Parallel fetch: admins + areas + departments + position options
+  const [adminsData, areasData, departmentsData, posOptData] =
+    await Promise.all([
+      apiFetch<Admin[]>('/users?role=admin', token, fetch),
+      apiFetch<Area[]>('/areas', token, fetch),
+      apiFetch<Department[]>('/departments', token, fetch),
+      apiFetch<{ admin: string[] }>(
+        '/organigram/position-options',
+        token,
+        fetch,
+      ),
+    ]);
 
   const rawAdmins = Array.isArray(adminsData) ? adminsData : [];
   const areas = Array.isArray(areasData) ? areasData : [];
@@ -103,5 +109,6 @@ export const load: PageServerLoad = async ({ cookies, fetch }) => {
     admins,
     areas,
     departments,
+    positionOptions: posOptData?.admin ?? [],
   };
 };

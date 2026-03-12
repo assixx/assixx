@@ -67,7 +67,7 @@ function incrementCount(state: NotificationState, type: CountType): void {
 }
 
 /**
- * SSE event types suppressed by feature pages that handle their own badge updates.
+ * SSE event types suppressed by addon pages that handle their own badge updates.
  * When a page has a direct real-time channel (e.g., chat page uses WebSocket),
  * it suppresses the SSE handler to prevent double-counting.
  */
@@ -132,7 +132,7 @@ function setCountsMut(
   state.lastUpdate = new Date();
 }
 
-export type FeatureType =
+export type AddonType =
   | 'survey'
   | 'document'
   | 'kvp'
@@ -140,8 +140,8 @@ export type FeatureType =
   | 'tpm'
   | 'work_orders';
 
-/** Map feature type to store count key */
-const FEATURE_TO_COUNT_KEY: Record<FeatureType, CountType> = {
+/** Map addon type to store count key */
+const ADDON_TO_COUNT_KEY: Record<AddonType, CountType> = {
   survey: 'surveys',
   document: 'documents',
   kvp: 'kvp',
@@ -161,14 +161,14 @@ function rollbackCount(
 }
 
 /**
- * Mark all notifications of a feature type as read via API (ADR-004)
+ * Mark all notifications of an addon type as read via API (ADR-004)
  * Resets local count and persists to backend
  */
-async function markFeatureTypeAsRead(
+async function markAddonTypeAsRead(
   state: NotificationState,
-  featureType: FeatureType,
+  addonType: AddonType,
 ): Promise<void> {
-  const countKey = FEATURE_TO_COUNT_KEY[featureType];
+  const countKey = ADDON_TO_COUNT_KEY[addonType];
   const previousCount = state.counts[countKey];
 
   // Optimistically reset local count
@@ -176,7 +176,7 @@ async function markFeatureTypeAsRead(
 
   try {
     const response = await fetch(
-      `/api/v2/notifications/mark-read/${featureType}`,
+      `/api/v2/notifications/mark-read/${addonType}`,
       {
         method: 'POST',
         credentials: 'include',
@@ -195,21 +195,21 @@ async function markFeatureTypeAsRead(
  * Mark notifications for a specific entity as read (e.g., one work order).
  * Decrements count by the number of actually marked notifications.
  */
-async function markFeatureEntityAsRead(
+async function markAddonEntityAsRead(
   state: NotificationState,
-  featureType: FeatureType,
+  addonType: AddonType,
   entityUuid: string,
 ): Promise<void> {
   try {
     const response = await fetch(
-      `/api/v2/notifications/mark-read/${featureType}/${entityUuid}`,
+      `/api/v2/notifications/mark-read/${addonType}/${entityUuid}`,
       { method: 'POST', credentials: 'include' },
     );
 
     if (!response.ok) return;
 
     const json = (await response.json()) as { marked: number };
-    const countKey = FEATURE_TO_COUNT_KEY[featureType];
+    const countKey = ADDON_TO_COUNT_KEY[addonType];
 
     for (let i = 0; i < json.marked; i++) {
       decrementCountMut(state, countKey);
@@ -425,16 +425,15 @@ function buildStoreActions(
     initFromSSR: (counts: SSRCounts) => {
       initFromSSRData(state, counts);
     },
-    markTypeAsRead: async (featureType: FeatureType) => {
-      if (browser) await markFeatureTypeAsRead(state, featureType);
+    markTypeAsRead: async (addonType: AddonType) => {
+      if (browser) await markAddonTypeAsRead(state, addonType);
     },
-    markEntityAsRead: async (featureType: FeatureType, entityUuid: string) => {
-      if (browser)
-        await markFeatureEntityAsRead(state, featureType, entityUuid);
+    markEntityAsRead: async (addonType: AddonType, entityUuid: string) => {
+      if (browser) await markAddonEntityAsRead(state, addonType, entityUuid);
     },
     /**
      * Suppress an SSE event type from auto-incrementing badge counts.
-     * Used by feature pages that handle their own real-time updates
+     * Used by addon pages that handle their own real-time updates
      * (e.g., chat page uses WebSocket, so it suppresses SSE NEW_MESSAGE).
      */
     suppressSSEType: (type: string) => suppressedSSETypes.add(type),

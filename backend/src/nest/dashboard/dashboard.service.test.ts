@@ -76,7 +76,7 @@ function createMockSurveysService() {
 
 /**
  * Mock UserPermissionsService (ADR-020).
- * Default: returns all feature codes as readable (full access).
+ * Default: returns all addon codes as readable (full access).
  */
 /**
  * Mock DatabaseService for vacation count query.
@@ -89,7 +89,7 @@ function createMockDatabaseService() {
 
 function createMockPermissionsService() {
   return {
-    getReadableFeatureCodes: vi
+    getReadableAddonCodes: vi
       .fn()
       .mockResolvedValue(
         new Set([
@@ -185,19 +185,19 @@ describe('DashboardService', () => {
   // =============================================================
 
   describe('getCounts — permission filtering', () => {
-    it('should return 0 counts for features without permission', async () => {
+    it('should return 0 counts for addons without permission', async () => {
       // Employee only has blackboard + chat readable
-      mockPermissions.getReadableFeatureCodes.mockResolvedValue(
+      mockPermissions.getReadableAddonCodes.mockResolvedValue(
         new Set(['blackboard', 'chat']),
       );
 
       const result = await service.getCounts(makeUser(), 10);
 
-      // Features WITH permission: normal counts
+      // Addons WITH permission: normal counts
       expect(result.blackboard.count).toBe(4);
       expect(result.chat.totalUnread).toBe(3);
 
-      // Features WITHOUT permission: 0
+      // Addons WITHOUT permission: 0
       expect(result.calendar.count).toBe(0);
       expect(result.documents.count).toBe(0);
       expect(result.kvp.count).toBe(0);
@@ -207,8 +207,8 @@ describe('DashboardService', () => {
       expect(result.notifications.total).toBe(10);
     });
 
-    it('should skip all feature count queries when no permissions', async () => {
-      mockPermissions.getReadableFeatureCodes.mockResolvedValue(new Set());
+    it('should skip all addon count queries when no permissions', async () => {
+      mockPermissions.getReadableAddonCodes.mockResolvedValue(new Set());
 
       const result = await service.getCounts(makeUser(), 10);
 
@@ -219,7 +219,7 @@ describe('DashboardService', () => {
       expect(result.kvp.count).toBe(0);
       expect(result.surveys.count).toBe(0);
 
-      // Service methods NOT called for forbidden features
+      // Service methods NOT called for forbidden addons
       expect(mockChat.getUnreadCount).not.toHaveBeenCalled();
       expect(mockBlackboard.getUnconfirmedCount).not.toHaveBeenCalled();
     });
@@ -235,7 +235,7 @@ describe('DashboardService', () => {
       expect(result.calendar.count).toBe(7);
 
       // Permission service NOT called for root
-      expect(mockPermissions.getReadableFeatureCodes).not.toHaveBeenCalled();
+      expect(mockPermissions.getReadableAddonCodes).not.toHaveBeenCalled();
     });
 
     it('should bypass permission check for admin with fullAccess', async () => {
@@ -247,7 +247,7 @@ describe('DashboardService', () => {
       const result = await service.getCounts(adminUser, 10);
 
       expect(result.blackboard.count).toBe(4);
-      expect(mockPermissions.getReadableFeatureCodes).not.toHaveBeenCalled();
+      expect(mockPermissions.getReadableAddonCodes).not.toHaveBeenCalled();
     });
 
     it('should check permissions for admin without fullAccess', async () => {
@@ -255,7 +255,7 @@ describe('DashboardService', () => {
         activeRole: 'admin',
         hasFullAccess: false,
       });
-      mockPermissions.getReadableFeatureCodes.mockResolvedValue(
+      mockPermissions.getReadableAddonCodes.mockResolvedValue(
         new Set(['blackboard']),
       );
 
@@ -263,7 +263,7 @@ describe('DashboardService', () => {
 
       expect(result.blackboard.count).toBe(4);
       expect(result.kvp.count).toBe(0);
-      expect(mockPermissions.getReadableFeatureCodes).toHaveBeenCalledWith(
+      expect(mockPermissions.getReadableAddonCodes).toHaveBeenCalledWith(
         adminNoFull.id,
       );
     });

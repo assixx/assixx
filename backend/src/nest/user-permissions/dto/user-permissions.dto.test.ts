@@ -2,7 +2,7 @@
  * Unit tests for UpsertUserPermissionsSchema (Zod)
  *
  * Tests schema validation via .safeParse() — no mocks needed.
- * Business validation (featureCode/moduleCode existence) is in the service,
+ * Business validation (addonCode/moduleCode existence) is in the service,
  * these tests cover structural Zod validation only.
  *
  * @see docs/USER-PERMISSIONS-UNIT-TEST-PLAN.md — Test-Datei 2
@@ -17,7 +17,7 @@ import { UpsertUserPermissionsSchema } from './upsert-user-permissions.dto.js';
 
 function createValidEntry(overrides?: Record<string, unknown>) {
   return {
-    featureCode: 'blackboard',
+    addonCode: 'blackboard',
     moduleCode: 'blackboard-posts',
     canRead: true,
     canWrite: false,
@@ -48,14 +48,14 @@ describe('SECURITY: UpsertUserPermissionsSchema', () => {
       const result = UpsertUserPermissionsSchema.safeParse({
         permissions: [
           createValidEntry({
-            featureCode: 'blackboard',
+            addonCode: 'blackboard',
             moduleCode: 'blackboard-posts',
           }),
           createValidEntry({
-            featureCode: 'calendar',
+            addonCode: 'calendar',
             moduleCode: 'calendar-events',
           }),
-          createValidEntry({ featureCode: 'kvp', moduleCode: 'kvp-proposals' }),
+          createValidEntry({ addonCode: 'kvp', moduleCode: 'kvp-proposals' }),
         ],
       });
 
@@ -64,14 +64,14 @@ describe('SECURITY: UpsertUserPermissionsSchema', () => {
       const parsed = UpsertUserPermissionsSchema.parse({
         permissions: [
           createValidEntry({
-            featureCode: 'blackboard',
+            addonCode: 'blackboard',
             moduleCode: 'blackboard-posts',
           }),
           createValidEntry({
-            featureCode: 'calendar',
+            addonCode: 'calendar',
             moduleCode: 'calendar-events',
           }),
-          createValidEntry({ featureCode: 'kvp', moduleCode: 'kvp-proposals' }),
+          createValidEntry({ addonCode: 'kvp', moduleCode: 'kvp-proposals' }),
         ],
       });
       expect(parsed.permissions).toHaveLength(3);
@@ -112,11 +112,11 @@ describe('SECURITY: UpsertUserPermissionsSchema', () => {
   });
 
   // -----------------------------------------------------------
-  // featureCode Validation
+  // addonCode Validation
   // -----------------------------------------------------------
 
-  describe('featureCode Validation', () => {
-    it('should reject missing featureCode', () => {
+  describe('addonCode Validation', () => {
+    it('should reject missing addonCode', () => {
       const result = UpsertUserPermissionsSchema.safeParse({
         permissions: [
           {
@@ -131,17 +131,17 @@ describe('SECURITY: UpsertUserPermissionsSchema', () => {
       expect(result.success).toBe(false);
     });
 
-    it('should reject empty string featureCode', () => {
+    it('should reject empty string addonCode', () => {
       const result = UpsertUserPermissionsSchema.safeParse({
-        permissions: [createValidEntry({ featureCode: '' })],
+        permissions: [createValidEntry({ addonCode: '' })],
       });
 
       expect(result.success).toBe(false);
     });
 
-    it('should reject non-string featureCode', () => {
+    it('should reject non-string addonCode', () => {
       const result = UpsertUserPermissionsSchema.safeParse({
-        permissions: [createValidEntry({ featureCode: 123 })],
+        permissions: [createValidEntry({ addonCode: 123 })],
       });
 
       expect(result.success).toBe(false);
@@ -157,7 +157,7 @@ describe('SECURITY: UpsertUserPermissionsSchema', () => {
       const result = UpsertUserPermissionsSchema.safeParse({
         permissions: [
           {
-            featureCode: 'blackboard',
+            addonCode: 'blackboard',
             canRead: true,
             canWrite: false,
             canDelete: false,

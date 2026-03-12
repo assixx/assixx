@@ -1,7 +1,7 @@
 /**
  * Vacation Permission Definition (ADR-020)
  *
- * Defines the permission category and modules for the vacation feature.
+ * Defines the permission category and modules for the vacation addon.
  * Registered automatically via VacationPermissionRegistrar on module init.
  */
 import type { PermissionCategoryDef } from '../common/permission-registry/permission.types.js';

@@ -17,12 +17,12 @@ export const DUMMY_EMPLOYEE_PREFIX = 'DUMMY';
 
 /** Permissions auto-assigned to every new dummy user (read-only) */
 export const DUMMY_PERMISSIONS = [
-  { featureCode: 'blackboard', moduleCode: 'blackboard-posts' },
-  { featureCode: 'blackboard', moduleCode: 'blackboard-comments' },
-  { featureCode: 'calendar', moduleCode: 'calendar-events' },
-  { featureCode: 'tpm', moduleCode: 'tpm-plans' },
-  { featureCode: 'tpm', moduleCode: 'tpm-cards' },
-  { featureCode: 'tpm', moduleCode: 'tpm-executions' },
+  { addonCode: 'blackboard', moduleCode: 'blackboard-posts' },
+  { addonCode: 'blackboard', moduleCode: 'blackboard-comments' },
+  { addonCode: 'calendar', moduleCode: 'calendar-events' },
+  { addonCode: 'tpm', moduleCode: 'tpm-plans' },
+  { addonCode: 'tpm', moduleCode: 'tpm-cards' },
+  { addonCode: 'tpm', moduleCode: 'tpm-executions' },
 ] as const;
 
 // ============================================================================

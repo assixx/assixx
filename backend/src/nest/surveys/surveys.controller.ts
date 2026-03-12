@@ -36,9 +36,9 @@ import {
 import type { FastifyReply } from 'fastify';
 
 import { CurrentUser } from '../common/decorators/current-user.decorator.js';
+import { RequireAddon } from '../common/decorators/require-addon.decorator.js';
 import { RequirePermission } from '../common/decorators/require-permission.decorator.js';
 import { Roles } from '../common/decorators/roles.decorator.js';
-import { TenantFeature } from '../common/decorators/tenant-feature.decorator.js';
 import { TenantId } from '../common/decorators/tenant.decorator.js';
 import { RolesGuard } from '../common/guards/roles.guard.js';
 import type { NestAuthUser } from '../common/interfaces/auth.interface.js';
@@ -72,7 +72,7 @@ const SURVEY_PARTICIPATE = 'surveys-participate';
 const SURVEY_RESULTS = 'surveys-results';
 
 @Controller('surveys')
-@TenantFeature('surveys')
+@RequireAddon('surveys')
 export class SurveysController {
   constructor(private readonly surveysService: SurveysService) {}
 

@@ -602,13 +602,13 @@ export class NotificationsController {
 
   /**
    * POST /notifications/mark-read/:type
-   * Mark all notifications of a feature type as read (ADR-004)
+   * Mark all notifications of an addon type as read (ADR-004)
    *
    * @param type - 'survey' | 'document' | 'kvp' | 'vacation'
    */
   @Post('mark-read/:type')
   @HttpCode(HttpStatus.OK)
-  async markFeatureTypeAsRead(
+  async markAddonTypeAsRead(
     @Param('type') type: string,
     @CurrentUser() user: NestAuthUser,
     @TenantId() tenantId: number,
@@ -628,7 +628,7 @@ export class NotificationsController {
       );
     }
 
-    const marked = await this.notificationsService.markFeatureTypeAsRead(
+    const marked = await this.notificationsService.markAddonTypeAsRead(
       type as
         | 'survey'
         | 'document'
@@ -652,7 +652,7 @@ export class NotificationsController {
    */
   @Post('mark-read/:type/:entityUuid')
   @HttpCode(HttpStatus.OK)
-  async markFeatureEntityAsRead(
+  async markAddonEntityAsRead(
     @Param('type') type: string,
     @Param('entityUuid') entityUuid: string,
     @CurrentUser() user: NestAuthUser,
@@ -665,7 +665,7 @@ export class NotificationsController {
       );
     }
 
-    const marked = await this.notificationsService.markFeatureEntityAsRead(
+    const marked = await this.notificationsService.markAddonEntityAsRead(
       type as 'work_orders',
       entityUuid,
       user.id,
@@ -802,28 +802,26 @@ export class NotificationsController {
       })),
     );
 
-    // Resolve readable features for permission filtering (ADR-020)
-    // Root and admin with fullAccess: null = all features
-    const readableFeaturesPromise = this.resolveReadableFeatures(user);
+    // Resolve readable addons for permission filtering (ADR-020)
+    // Root and admin with fullAccess: null = all addons
+    const readableAddonsPromise = this.resolveReadableAddons(user);
 
     // Register handlers asynchronously after permission check
-    void readableFeaturesPromise.then(
-      (readableFeatures: Set<string> | null) => {
-        const handlers = registerSSEHandlers(
-          role,
-          tenantId,
-          userId,
-          eventSubject,
-          readableFeatures,
-        );
-        eventSubject.pipe(takeUntil(destroy$)).subscribe({
-          complete: (): void => {
-            cleanupSSEHandlers(handlers);
-          },
-        });
-        return undefined;
-      },
-    );
+    void readableAddonsPromise.then((readableAddons: Set<string> | null) => {
+      const handlers = registerSSEHandlers(
+        role,
+        tenantId,
+        userId,
+        eventSubject,
+        readableAddons,
+      );
+      eventSubject.pipe(takeUntil(destroy$)).subscribe({
+        complete: (): void => {
+          cleanupSSEHandlers(handlers);
+        },
+      });
+      return undefined;
+    });
 
     // Merge streams
     type SSESubscriber = import('rxjs').Subscriber<{ data: SSEMessageData }>;
@@ -838,16 +836,16 @@ export class NotificationsController {
   }
 
   /**
-   * Resolve readable feature codes for SSE permission filtering.
-   * Root and admin with fullAccess: null (all features accessible).
-   * Others: Set of feature codes with can_read = true.
+   * Resolve readable addon codes for SSE permission filtering.
+   * Root and admin with fullAccess: null (all addons accessible).
+   * Others: Set of addon codes with can_read = true.
    */
-  private async resolveReadableFeatures(
+  private async resolveReadableAddons(
     user: NestAuthUser,
   ): Promise<Set<string> | null> {
     if (user.activeRole === 'root') return null;
     if (user.activeRole === 'admin' && user.hasFullAccess) return null;
-    return await this.permissionsService.getReadableFeatureCodes(user.id);
+    return await this.permissionsService.getReadableAddonCodes(user.id);
   }
 
   /**

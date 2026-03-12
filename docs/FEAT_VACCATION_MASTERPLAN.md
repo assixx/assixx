@@ -73,7 +73,7 @@
 **Verification:**
 
 ```bash
-docker exec assixx-postgres psql -U assixx_user -d assixx -c "SELECT code, name FROM features WHERE code = 'vacation';"
+docker exec assixx-postgres psql -U assixx_user -d assixx -c "SELECT code, name FROM addons WHERE code = 'vacation';"
 docker exec assixx-postgres psql -U assixx_user -d assixx -c "\d teams" | grep deputy_lead
 docker exec assixx-postgres psql -U assixx_user -d assixx -c "\d user_teams" | grep idx_ut_one_team
 ```
@@ -255,7 +255,7 @@ backend/src/nest/vacation/
 
 **Permission definition pattern** (from `shifts.permissions.ts`):
 
-> **SPEC DEVIATION:** The spec (`prompt_vacation.md` Section 2.12) uses `featureCode` and `{ code, name }` for modules. This is WRONG — the actual `PermissionCategoryDef` interface (at `backend/src/nest/common/permission-registry/permission.types.ts`) uses `code`, `label`, `icon`, and `modules[]` with `allowedPermissions`. The correct import is `from '../common/permission-registry/permission.types.js'` (NOT `from '../admin-permissions/permission-registry.service'` as the spec says). The registrar imports from `'../common/permission-registry/permission-registry.service.js'`.
+> **SPEC DEVIATION:** The spec (`prompt_vacation.md` Section 2.12) uses `addonCode` and `{ code, name }` for modules. This is WRONG — the actual `PermissionCategoryDef` interface (at `backend/src/nest/common/permission-registry/permission.types.ts`) uses `code`, `label`, `icon`, and `modules[]` with `allowedPermissions`. The correct import is `from '../common/permission-registry/permission.types.js'` (NOT `from '../admin-permissions/permission-registry.service'` as the spec says). The registrar imports from `'../common/permission-registry/permission-registry.service.js'`.
 
 ```typescript
 // vacation.permissions.ts
@@ -507,7 +507,7 @@ VACATION_REQUEST_CANCELLED: 'vacation.request.cancelled',
 - `vacation.service.ts` — Injected VacationNotificationService, notify calls after create/respond/withdraw/cancel
 - `vacation-queries.service.ts` — New method `getUnreadNotificationRequestIds()` for "Neu" badges
 - `vacation.controller.ts` — New endpoint `GET /vacation/notifications/unread-ids`
-- `notification-feature.service.ts` — Extended type union to include 'vacation'
+- `notification-addon.service.ts` — Extended type union to include 'vacation'
 - `notifications.service.ts` — Extended facade type union to include 'vacation'
 - `notifications.controller.ts` — Extended mark-read endpoint to accept 'vacation'
 - `dashboard.service.ts` — Added `fetchVacationCount()` + vacation in parallel fetch
@@ -991,25 +991,25 @@ Session 24: Phase 6 — Audit logging integration (ADR-009): ActivityLoggerServi
 
 ### Backend (modified)
 
-| File                                                             | Change                                                                                                                                                   |
-| ---------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `backend/src/nest/app.module.ts`                                 | Add VacationModule import                                                                                                                                |
-| `backend/src/utils/eventBus.ts`                                  | Add VacationRequestEvent interface + 4 emit methods [DONE Session 11]                                                                                    |
-| `backend/src/nest/notifications/notifications.controller.ts`     | Add 4 SSE_EVENTS + NotificationEventData.request + canAccess('vacation') block + registerVacationHandlers() helper + 4 listener counts [DONE Session 11] |
-| `backend/src/nest/users/user-availability.service.ts`            | Rename 12 SQL + 8 column references (employee_availability → user_availability)                                                                          |
-| `backend/src/nest/teams/teams.service.ts`                        | Rename 2 LEFT JOIN references                                                                                                                            |
-| `backend/src/nest/users/users.service.ts`                        | Update 3 comment references                                                                                                                              |
-| `backend/src/nest/users/users.helpers.ts`                        | Update 2 comment references                                                                                                                              |
-| `backend/src/nest/users/users.types.ts`                          | Update 1 comment reference                                                                                                                               |
-| `backend/src/nest/users/dto/update-availability.dto.ts`          | Update 1 comment reference                                                                                                                               |
-| `backend/src/nest/users/user-availability.service.test.ts`       | **CRITICAL:** Update test data (employee_id → user_id) + SQL assertions                                                                                  |
-| `backend/src/nest/dashboard/dashboard.service.ts`                | Added DatabaseService injection + `fetchVacationCount()` + vacation in parallel fetch [Session 23]                                                       |
-| `backend/src/nest/dashboard/dto/dashboard-counts.dto.ts`         | Added `vacation: CountItemSchema` to Zod schema [Session 23]                                                                                             |
-| `backend/src/nest/notifications/notification-feature.service.ts` | Extended type union to include 'vacation' [Session 23]                                                                                                   |
-| `backend/src/nest/notifications/notifications.service.ts`        | Extended facade type union to include 'vacation' [Session 23]                                                                                            |
-| `backend/src/nest/notifications/notifications.controller.ts`     | Extended mark-read/:type to accept 'vacation' [Session 23]                                                                                               |
-| `backend/src/nest/common/services/activity-logger.service.ts`    | 6 neue EntityTypes: vacation, vacation_blackout, vacation_holiday, vacation_staffing_rule, vacation_entitlement, vacation_settings [Session 24]          |
-| `backend/src/nest/common/audit/audit.constants.ts`               | 5 neue RESOURCE_TABLE_MAP Einträge: request, blackout, holiday, staffing-rule, entitlement [Session 24]                                                  |
+| File                                                           | Change                                                                                                                                                   |
+| -------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `backend/src/nest/app.module.ts`                               | Add VacationModule import                                                                                                                                |
+| `backend/src/utils/eventBus.ts`                                | Add VacationRequestEvent interface + 4 emit methods [DONE Session 11]                                                                                    |
+| `backend/src/nest/notifications/notifications.controller.ts`   | Add 4 SSE_EVENTS + NotificationEventData.request + canAccess('vacation') block + registerVacationHandlers() helper + 4 listener counts [DONE Session 11] |
+| `backend/src/nest/users/user-availability.service.ts`          | Rename 12 SQL + 8 column references (employee_availability → user_availability)                                                                          |
+| `backend/src/nest/teams/teams.service.ts`                      | Rename 2 LEFT JOIN references                                                                                                                            |
+| `backend/src/nest/users/users.service.ts`                      | Update 3 comment references                                                                                                                              |
+| `backend/src/nest/users/users.helpers.ts`                      | Update 2 comment references                                                                                                                              |
+| `backend/src/nest/users/users.types.ts`                        | Update 1 comment reference                                                                                                                               |
+| `backend/src/nest/users/dto/update-availability.dto.ts`        | Update 1 comment reference                                                                                                                               |
+| `backend/src/nest/users/user-availability.service.test.ts`     | **CRITICAL:** Update test data (employee_id → user_id) + SQL assertions                                                                                  |
+| `backend/src/nest/dashboard/dashboard.service.ts`              | Added DatabaseService injection + `fetchVacationCount()` + vacation in parallel fetch [Session 23]                                                       |
+| `backend/src/nest/dashboard/dto/dashboard-counts.dto.ts`       | Added `vacation: CountItemSchema` to Zod schema [Session 23]                                                                                             |
+| `backend/src/nest/notifications/notification-addon.service.ts` | Extended type union to include 'vacation' [Session 23]                                                                                                   |
+| `backend/src/nest/notifications/notifications.service.ts`      | Extended facade type union to include 'vacation' [Session 23]                                                                                            |
+| `backend/src/nest/notifications/notifications.controller.ts`   | Extended mark-read/:type to accept 'vacation' [Session 23]                                                                                               |
+| `backend/src/nest/common/services/activity-logger.service.ts`  | 6 neue EntityTypes: vacation, vacation_blackout, vacation_holiday, vacation_staffing_rule, vacation_entitlement, vacation_settings [Session 24]          |
+| `backend/src/nest/common/audit/audit.constants.ts`             | 5 neue RESOURCE_TABLE_MAP Einträge: request, blackout, holiday, staffing-rule, entitlement [Session 24]                                                  |
 
 ### Database (new)
 
@@ -1095,7 +1095,7 @@ These are errors or outdated patterns in the spec that MUST be corrected during 
 | #   | Spec Says                                                                                       | Actual Ecosystem                                                                                            | Resolution                                                                                                     |
 | --- | ----------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
 | D1  | `import { type PermissionCategoryDef } from '../admin-permissions/permission-registry.service'` | Import path is `'../common/permission-registry/permission.types.js'`                                        | Use actual path                                                                                                |
-| D2  | `PermissionCategoryDef` has `featureCode` and modules with `{ code, name }`                     | Actual interface uses `code`, `label`, `icon`, and modules with `{ code, label, icon, allowedPermissions }` | Use actual interface shape                                                                                     |
+| D2  | `PermissionCategoryDef` has `addonCode` and modules with `{ code, name }`                       | Actual interface uses `code`, `label`, `icon`, and modules with `{ code, label, icon, allowedPermissions }` | Use actual interface shape                                                                                     |
 | D3  | `GRANT SELECT, INSERT, UPDATE, DELETE` for ALL tables                                           | `vacation_request_status_log` is append-only audit → `GRANT SELECT, INSERT` only (no UPDATE/DELETE)         | Apply exception for status_log                                                                                 |
 | D4  | Spec lists 3 backend files for availability rename                                              | Actually 12 files: 2 SQL services + 4 comment files + 2 DTO files + 1 test file + 3 frontend files          | Updated all 12                                                                                                 |
 | D5  | Spec doesn't mention `SSE_EVENTS` constant map                                                  | `notifications.controller.ts` uses a const object at line ~108 with all event strings                       | Must add 4 vacation entries to SSE_EVENTS                                                                      |

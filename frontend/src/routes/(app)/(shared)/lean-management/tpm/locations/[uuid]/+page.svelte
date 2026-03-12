@@ -28,10 +28,6 @@
   import type { PageData } from './$types';
   import type { TpmLocation } from '../../_lib/types';
 
-  function resolvePath(path: string): string {
-    return (resolve as (p: string) => string)(path);
-  }
-
   const { data }: { data: PageData } = $props();
 
   const plan = $derived(data.plan);
@@ -224,9 +220,7 @@
   }
 
   function navigateToBoard(): void {
-    window.location.href = resolvePath(
-      `/lean-management/tpm/board/${planUuid}`,
-    );
+    window.location.href = resolve(`/lean-management/tpm/board/${planUuid}`);
   }
 </script>
 

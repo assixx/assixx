@@ -2,6 +2,11 @@
 // MANAGE ADMINS - FILTER FUNCTIONS (Pure Functions)
 // =============================================================================
 
+import {
+  DEFAULT_HIERARCHY_LABELS,
+  type HierarchyLabels,
+} from '$lib/types/hierarchy-labels';
+
 import { getPositionDisplay } from './utils';
 
 import type { Admin, StatusFilter, Department } from './types';
@@ -26,14 +31,18 @@ export function filterByStatus(admins: Admin[], status: StatusFilter): Admin[] {
  * Filter admins by search query.
  * Searches in: full name, email, position, employee number
  */
-export function filterBySearch(admins: Admin[], query: string): Admin[] {
+export function filterBySearch(
+  admins: Admin[],
+  query: string,
+  labels: HierarchyLabels = DEFAULT_HIERARCHY_LABELS,
+): Admin[] {
   const term = query.toLowerCase().trim();
   if (!term) return admins;
 
   return admins.filter((a) => {
     const fullName = `${a.firstName} ${a.lastName}`.toLowerCase();
     const email = a.email.toLowerCase();
-    const position = getPositionDisplay(a.position ?? '').toLowerCase();
+    const position = getPositionDisplay(a.position ?? '', labels).toLowerCase();
     const employeeNumber = (a.employeeNumber ?? '').toLowerCase();
 
     return (

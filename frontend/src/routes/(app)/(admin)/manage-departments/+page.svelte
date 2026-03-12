@@ -21,7 +21,7 @@
     forceDeleteDepartment as apiForceDeleteDepartment,
     buildDependencyMessage,
   } from './_lib/api';
-  import { MESSAGES } from './_lib/constants';
+  import { createMessages, createDependencyLabels } from './_lib/constants';
   import DeleteModals from './_lib/DeleteModals.svelte';
   import DepartmentModal from './_lib/DepartmentModal.svelte';
   import { applyAllFilters } from './_lib/filters';
@@ -55,6 +55,11 @@
   const allDepartments = $derived<Department[]>(data.departments);
   const allAreas = $derived<Area[]>(data.areas);
   const allDepartmentLeads = $derived<AdminUser[]>(data.departmentLeads);
+
+  // Hierarchy labels from layout data inheritance (A6)
+  const labels = $derived(data.hierarchyLabels);
+  const messages = $derived(createMessages(labels));
+  const dependencyLabels = $derived(createDependencyLabels(labels));
 
   // =============================================================================
   // UI STATE - Filtering and form state (client-side only)
@@ -98,7 +103,7 @@
 
   const isEditMode = $derived(currentEditId !== null);
   const modalTitle = $derived(
-    isEditMode ? MESSAGES.MODAL_TITLE_EDIT : MESSAGES.MODAL_TITLE_ADD,
+    isEditMode ? messages.MODAL_TITLE_EDIT : messages.MODAL_TITLE_ADD,
   );
 
   // Derived: Filtered departments based on current filter/search state
@@ -113,7 +118,7 @@
   async function saveDepartment(): Promise<void> {
     submitting = true;
     if (!formName.trim()) {
-      showWarningAlert(MESSAGES.VALIDATION_NAME_REQUIRED);
+      showWarningAlert(messages.VALIDATION_NAME_REQUIRED);
       submitting = false;
       return;
     }
@@ -130,7 +135,7 @@
       // Level 3: Trigger SSR refetch
       await invalidateAll();
       showSuccessAlert(
-        isEditMode ? 'Abteilung aktualisiert' : 'Abteilung erstellt',
+        isEditMode ? 'Erfolgreich aktualisiert' : 'Erfolgreich erstellt',
       );
     } else if (result.error !== null) {
       showErrorAlert(result.error);
@@ -149,7 +154,7 @@
     if (result.success) {
       // Level 3: Trigger SSR refetch
       await invalidateAll();
-      showSuccessAlert('Abteilung wurde gelöscht');
+      showSuccessAlert('Erfolgreich gelöscht');
     } else if (
       result.hasDependencies === true &&
       result.dependencyDetails !== undefined
@@ -171,7 +176,7 @@
     if (result.success) {
       // Level 3: Trigger SSR refetch
       await invalidateAll();
-      showSuccessAlert('Abteilung wurde endgültig gelöscht');
+      showSuccessAlert('Erfolgreich gelöscht');
     } else if (result.error !== null) {
       showErrorAlert(result.error);
     }
@@ -180,8 +185,8 @@
   function showForceDeleteWarning(details: DependencyDetails) {
     showDeleteModal = false;
     const totalDeps = details.totalDependencies ?? 0;
-    const depList = buildDependencyMessage(details);
-    forceDeleteMessage = MESSAGES.forceDeleteMessage(totalDeps, depList);
+    const depList = buildDependencyMessage(details, dependencyLabels);
+    forceDeleteMessage = messages.forceDeleteMessage(totalDeps, depList);
     showForceDeleteModal = true;
   }
 
@@ -310,7 +315,7 @@
 </script>
 
 <svelte:head>
-  <title>{MESSAGES.PAGE_TITLE}</title>
+  <title>{messages.PAGE_TITLE}</title>
 </svelte:head>
 
 <svelte:window onkeydown={handleKeydown} />
@@ -320,10 +325,10 @@
     <div class="card__header">
       <h2 class="card__title">
         <i class="fas fa-building mr-2"></i>
-        {MESSAGES.PAGE_HEADING}
+        {messages.PAGE_HEADING}
       </h2>
       <p class="mt-2 text-(--color-text-secondary)">
-        {MESSAGES.PAGE_DESCRIPTION}
+        {messages.PAGE_DESCRIPTION}
       </p>
 
       <div class="mt-6 flex items-center justify-between gap-4">
@@ -336,49 +341,49 @@
             type="button"
             class="toggle-group__btn"
             class:active={currentStatusFilter === 'active'}
-            title="Aktive Abteilungen"
+            title={messages.FILTER_ACTIVE_TITLE}
             onclick={() => {
               handleStatusToggle('active');
             }}
           >
             <i class="fas fa-check"></i>
-            {MESSAGES.FILTER_ACTIVE}
+            {messages.FILTER_ACTIVE}
           </button>
           <button
             type="button"
             class="toggle-group__btn"
             class:active={currentStatusFilter === 'inactive'}
-            title="Inaktive Abteilungen"
+            title={messages.FILTER_INACTIVE_TITLE}
             onclick={() => {
               handleStatusToggle('inactive');
             }}
           >
             <i class="fas fa-times"></i>
-            {MESSAGES.FILTER_INACTIVE}
+            {messages.FILTER_INACTIVE}
           </button>
           <button
             type="button"
             class="toggle-group__btn"
             class:active={currentStatusFilter === 'archived'}
-            title="Archivierte Abteilungen"
+            title={messages.FILTER_ARCHIVED_TITLE}
             onclick={() => {
               handleStatusToggle('archived');
             }}
           >
             <i class="fas fa-archive"></i>
-            {MESSAGES.FILTER_ARCHIVED}
+            {messages.FILTER_ARCHIVED}
           </button>
           <button
             type="button"
             class="toggle-group__btn"
             class:active={currentStatusFilter === 'all'}
-            title="Alle Abteilungen"
+            title={messages.FILTER_ALL_TITLE}
             onclick={() => {
               handleStatusToggle('all');
             }}
           >
             <i class="fas fa-building"></i>
-            {MESSAGES.FILTER_ALL}
+            {messages.FILTER_ALL}
           </button>
         </div>
 
@@ -396,7 +401,7 @@
               type="search"
               id="department-search"
               class="search-input__field"
-              placeholder={MESSAGES.SEARCH_PLACEHOLDER}
+              placeholder={messages.SEARCH_PLACEHOLDER}
               autocomplete="off"
               value={currentSearchQuery}
               oninput={handleSearchInput}
@@ -417,7 +422,7 @@
           >
             {#if currentSearchQuery && filteredDepartments.length === 0}
               <div class="search-input__no-results">
-                {MESSAGES.SEARCH_NO_RESULTS} "{currentSearchQuery}"
+                {messages.SEARCH_NO_RESULTS} "{currentSearchQuery}"
               </div>
             {:else if currentSearchQuery}
               {#each filteredDepartments.slice(0, 5) as dept (dept.id)}
@@ -446,7 +451,7 @@
               {/each}
               {#if filteredDepartments.length > 5}
                 <div class="search-result-item__more py-2">
-                  {MESSAGES.moreResults(filteredDepartments.length - 5)}
+                  {messages.moreResults(filteredDepartments.length - 5)}
                 </div>
               {/if}
             {/if}
@@ -465,7 +470,7 @@
           <button
             type="button"
             class="btn btn-primary mt-4"
-            onclick={() => invalidateAll()}>{MESSAGES.BTN_RETRY}</button
+            onclick={() => invalidateAll()}>{messages.BTN_RETRY}</button
           >
         </div>
       {:else if filteredDepartments.length === 0}
@@ -474,9 +479,9 @@
           class="empty-state"
         >
           <div class="empty-state__icon"><i class="fas fa-building"></i></div>
-          <h3 class="empty-state__title">{MESSAGES.NO_DEPARTMENTS_FOUND}</h3>
+          <h3 class="empty-state__title">{messages.NO_DEPARTMENTS_FOUND}</h3>
           <p class="empty-state__description">
-            {MESSAGES.CREATE_FIRST_DEPARTMENT}
+            {messages.CREATE_FIRST_DEPARTMENT}
           </p>
           <button
             type="button"
@@ -484,7 +489,7 @@
             onclick={openAddModal}
           >
             <i class="fas fa-plus"></i>
-            {MESSAGES.BTN_ADD_DEPARTMENT}
+            {messages.BTN_ADD_DEPARTMENT}
           </button>
         </div>
       {:else}
@@ -497,13 +502,13 @@
               <thead>
                 <tr>
                   <th scope="col">ID</th>
-                  <th scope="col">{MESSAGES.TH_NAME}</th>
-                  <th scope="col">{MESSAGES.TH_DESCRIPTION}</th>
-                  <th scope="col">{MESSAGES.TH_STATUS}</th>
-                  <th scope="col">{MESSAGES.TH_AREA}</th>
-                  <th scope="col">{MESSAGES.TH_DEPARTMENT_LEAD}</th>
-                  <th scope="col">{MESSAGES.TH_TEAMS}</th>
-                  <th scope="col">{MESSAGES.TH_ACTIONS}</th>
+                  <th scope="col">{messages.TH_NAME}</th>
+                  <th scope="col">{messages.TH_DESCRIPTION}</th>
+                  <th scope="col">{messages.TH_STATUS}</th>
+                  <th scope="col">{messages.TH_AREA}</th>
+                  <th scope="col">{messages.TH_DEPARTMENT_LEAD}</th>
+                  <th scope="col">{messages.TH_TEAMS}</th>
+                  <th scope="col">{messages.TH_ACTIONS}</th>
                 </tr>
               </thead>
               <tbody>
@@ -534,7 +539,7 @@
                         ) ?
                           'badge--info'
                         : 'badge--secondary'}"
-                        title={dept.areaName ?? 'Kein Bereich zugewiesen'}
+                        title={dept.areaName ?? 'Keine Zuordnung'}
                       >
                         {getAreaDisplay(dept.areaName)}
                       </span>
@@ -549,9 +554,9 @@
                         class="badge {(dept.teamCount ?? 0) > 0 ?
                           'badge--info'
                         : 'badge--secondary'}"
-                        title={dept.teamNames ?? 'Keine Teams zugewiesen'}
+                        title={dept.teamNames ?? 'Keine zugeordnet'}
                       >
-                        {getTeamCountText(dept.teamCount ?? 0)}
+                        {getTeamCountText(dept.teamCount ?? 0, labels.team)}
                       </span>
                     </td>
                     <td>
@@ -560,7 +565,7 @@
                           type="button"
                           class="action-icon action-icon--edit"
                           title="Bearbeiten"
-                          aria-label="Abteilung bearbeiten"
+                          aria-label="Bearbeiten"
                           onclick={() => {
                             openEditModal(dept.id);
                           }}
@@ -571,7 +576,7 @@
                           type="button"
                           class="action-icon action-icon--delete"
                           title="Löschen"
-                          aria-label="Abteilung löschen"
+                          aria-label="Löschen"
                           onclick={() => {
                             openDeleteModal(dept.id);
                           }}
@@ -596,7 +601,7 @@
   type="button"
   class="btn-float"
   onclick={openAddModal}
-  aria-label="Abteilung hinzufügen"
+  aria-label="Hinzufügen"
 >
   <i class="fas fa-plus"></i>
 </button>
@@ -606,6 +611,7 @@
   show={showDepartmentModal}
   {isEditMode}
   {modalTitle}
+  {messages}
   bind:formName
   bind:formDescription
   bind:formAreaId
@@ -623,6 +629,7 @@
   show={showDeleteModal}
   {showForceDeleteModal}
   {forceDeleteMessage}
+  {messages}
   oncancel={closeDeleteModalFn}
   onconfirm={deleteDepartment}
   onCloseForceDelete={closeForceDeleteModalFn}

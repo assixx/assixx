@@ -1,9 +1,9 @@
 /**
  * Permission Registry Service
  *
- * Global singleton that collects permission definitions from feature modules.
- * Each feature module registers its PermissionCategoryDef via OnModuleInit.
- * No feature-specific knowledge lives here — pure registry.
+ * Global singleton that collects permission definitions from addon modules.
+ * Each addon module registers its PermissionCategoryDef via OnModuleInit.
+ * No addon-specific knowledge lives here — pure registry.
  *
  * @see docs/USER-PERMISSIONS-PLAN.md
  */
@@ -21,8 +21,8 @@ export class PermissionRegistryService {
   private readonly categories = new Map<string, PermissionCategoryDef>();
 
   /**
-   * Register a feature category with its modules.
-   * Called by feature modules during OnModuleInit.
+   * Register an addon category with its modules.
+   * Called by addon modules during OnModuleInit.
    * Throws on duplicate registration (fail-fast).
    */
   register(category: PermissionCategoryDef): void {
@@ -42,14 +42,14 @@ export class PermissionRegistryService {
     return Array.from(this.categories.values());
   }
 
-  /** Get a specific category by its feature code */
+  /** Get a specific category by its addon code */
   getByCode(code: string): PermissionCategoryDef | undefined {
     return this.categories.get(code);
   }
 
-  /** Check if a module exists within a feature */
-  isValidModule(featureCode: string, moduleCode: string): boolean {
-    const category = this.categories.get(featureCode);
+  /** Check if a module exists within an addon */
+  isValidModule(addonCode: string, moduleCode: string): boolean {
+    const category = this.categories.get(addonCode);
     if (category === undefined) {
       return false;
     }
@@ -60,10 +60,10 @@ export class PermissionRegistryService {
 
   /** Get the allowed permission types for a specific module */
   getAllowedPermissions(
-    featureCode: string,
+    addonCode: string,
     moduleCode: string,
   ): PermissionType[] {
-    const category = this.categories.get(featureCode);
+    const category = this.categories.get(addonCode);
     if (category === undefined) {
       return [];
     }

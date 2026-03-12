@@ -155,8 +155,7 @@ psql -h localhost -U assixx_user -d assixx -f database/seeds/001_global-seed-dat
 
 # Seed-Daten prüfen
 psql -h localhost -U assixx_user -d assixx -c "SELECT id, name FROM kvp_categories ORDER BY id;"
-psql -h localhost -U assixx_user -d assixx -c "SELECT id, name FROM features ORDER BY id;"
-psql -h localhost -U assixx_user -d assixx -c "SELECT id, name FROM plans ORDER BY id;"
+psql -h localhost -U assixx_user -d assixx -c "SELECT id, name FROM addons ORDER BY id;"
 ```
 
 ---

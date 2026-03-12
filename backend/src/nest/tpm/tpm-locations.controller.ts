@@ -32,8 +32,8 @@ import * as path from 'node:path';
 import { v7 as uuidv7 } from 'uuid';
 
 import { CurrentUser } from '../common/decorators/current-user.decorator.js';
+import { RequireAddon } from '../common/decorators/require-addon.decorator.js';
 import { RequirePermission } from '../common/decorators/require-permission.decorator.js';
-import { TenantFeature } from '../common/decorators/tenant-feature.decorator.js';
 import { TenantId } from '../common/decorators/tenant.decorator.js';
 import type { NestAuthUser } from '../common/interfaces/auth.interface.js';
 import type { MulterFile } from '../common/interfaces/multer.interface.js';
@@ -59,7 +59,7 @@ const locationPhotoOptions = {
 };
 
 @Controller('tpm/locations')
-@TenantFeature('tpm')
+@RequireAddon('tpm')
 export class TpmLocationsController {
   constructor(private readonly locationsService: TpmLocationsService) {}
 

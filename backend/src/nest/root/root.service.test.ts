@@ -365,7 +365,7 @@ describe('RootService', () => {
       mockUserRepo.countAll.mockResolvedValueOnce(55);
       // tenant count
       mockDb.query.mockResolvedValueOnce([{ count: '2' }]);
-      // features
+      // addons
       mockDb.query.mockResolvedValueOnce([
         { code: 'chat' },
         { code: 'documents' },
@@ -377,7 +377,7 @@ describe('RootService', () => {
       expect(result.employeeCount).toBe(50);
       expect(result.totalUsers).toBe(55);
       expect(result.tenantCount).toBe(2);
-      expect(result.activeFeatures).toEqual(['chat', 'documents']);
+      expect(result.activeAddons).toEqual(['chat', 'documents']);
       expect(result.systemHealth.database).toBe('healthy');
     });
   });

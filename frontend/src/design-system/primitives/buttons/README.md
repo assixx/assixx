@@ -27,7 +27,7 @@ Professional button component library following atomic design principles. Fully 
 **Example:** Register, Get Started, Login
 
 ```html
-<button class="btn btn-primary-first">Get Started</button>
+<button class="btn btn-primary">Get Started</button>
 ```
 
 **⚠️ Critical:** `background: none !important` - This is intentional!

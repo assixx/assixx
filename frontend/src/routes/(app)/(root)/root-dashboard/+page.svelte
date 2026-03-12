@@ -27,11 +27,6 @@
 
   import type { PageData } from './$types';
 
-  /** Resolve path with base prefix (for dynamic runtime paths) */
-  function resolvePath(path: string): string {
-    return (resolve as (p: string) => string)(path);
-  }
-
   // =============================================================================
   // SSR DATA - Loaded server-side in +page.server.ts
   // Data is INSTANTLY available - no loading states for initial render!
@@ -200,7 +195,7 @@
         Aktivitätsverlauf
       </h2>
       <a
-        href={resolvePath('/logs')}
+        href={resolve('/logs')}
         class="btn btn-link"
       >
         <i class="fas fa-external-link-alt mr-1.5"></i>

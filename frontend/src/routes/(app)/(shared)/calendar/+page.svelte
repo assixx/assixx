@@ -13,6 +13,10 @@
   import '@event-calendar/core/index.css';
 
   import { notificationStore } from '$lib/stores/notification.store.svelte';
+  import {
+    DEFAULT_HIERARCHY_LABELS,
+    type HierarchyLabels,
+  } from '$lib/types/hierarchy-labels';
   import { showSuccessAlert, showErrorAlert } from '$lib/utils';
   import { createLogger } from '$lib/utils/logger';
 
@@ -20,7 +24,7 @@
 
   import * as api from './_lib/api';
   import CalendarView from './_lib/CalendarView.svelte';
-  import { FILTER_OPTIONS, DE_LOCALE } from './_lib/constants';
+  import { createFilterOptions, DE_LOCALE } from './_lib/constants';
   import DeleteConfirmModal from './_lib/DeleteConfirmModal.svelte';
   import EventDetailModal from './_lib/EventDetailModal.svelte';
   import EventFormModal from './_lib/EventFormModal.svelte';
@@ -46,6 +50,14 @@
   // ==========================================================================
 
   const { data }: { data: PageData } = $props();
+
+  // Hierarchy labels from layout (SSR)
+  const labels = $derived(
+    ((data as Record<string, unknown>).hierarchyLabels as
+      | HierarchyLabels
+      | undefined) ?? DEFAULT_HIERARCHY_LABELS,
+  );
+  const filterOptions = $derived(createFilterOptions(labels));
 
   const upcomingEvents = $derived(data.upcomingEvents);
   const recentlyAddedEvents = $derived(data.recentlyAddedEvents);
@@ -476,7 +488,7 @@
             class="toggle-group mt-2"
             id="levelFilter"
           >
-            {#each FILTER_OPTIONS as option (option.value)}
+            {#each filterOptions as option (option.value)}
               <button
                 type="button"
                 class="toggle-group__btn"
@@ -572,15 +584,15 @@
             </div>
             <div class="legend-item">
               <span class="legend-color legend-area"></span>
-              <span class="legend-label">Bereich</span>
+              <span class="legend-label">{labels.area}</span>
             </div>
             <div class="legend-item">
               <span class="legend-color legend-department"></span>
-              <span class="legend-label">Abteilung</span>
+              <span class="legend-label">{labels.department}</span>
             </div>
             <div class="legend-item">
               <span class="legend-color legend-team"></span>
-              <span class="legend-label">Team</span>
+              <span class="legend-label">{labels.team}</span>
             </div>
             <div class="legend-item">
               <span class="legend-color legend-personal"></span>
@@ -623,6 +635,7 @@
       subtitle="(Aktueller Monat)"
       emptyStateMessage="Keine anstehenden Termine in diesem Monat."
       events={upcomingEvents}
+      {labels}
       onEventClick={handleEventClick}
     />
     <EventList
@@ -630,6 +643,7 @@
       icon="fa-plus-circle"
       emptyStateMessage="Keine neuen Termine hinzugefuegt."
       events={recentlyAddedEvents}
+      {labels}
       onEventClick={handleEventClick}
     />
   </div>
@@ -645,6 +659,7 @@
     canEdit={calendarState.canEditEvent(calendarState.viewingEvent)}
     canDelete={calendarState.canDeleteEvent(calendarState.viewingEvent)}
     isPast={calendarState.isEventPast(calendarState.viewingEvent)}
+    {labels}
     {areas}
     {departments}
     {teams}
@@ -661,6 +676,7 @@
     bind:formData
     editingEvent={calendarState.editingEvent}
     isAdmin={calendarState.isAdmin}
+    {labels}
     departments={calendarState.departments}
     teams={calendarState.teams}
     areas={calendarState.areas}

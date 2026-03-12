@@ -254,10 +254,10 @@
           --slider-width="150px"
           --focus-color="var(--color-primary, #2196f3)"
           --cp-bg-color="var(--color-gray-900, #212121)"
-          --cp-border-color="var(--color-border, #616161)"
-          --cp-text-color="var(--color-text-primary, #fff)"
-          --cp-input-color="var(--color-gray-800, #424242)"
-          --cp-button-hover-color="var(--color-gray-700, #616161)"
+          --cp-border-color="#616161"
+          --cp-text-color="#fff"
+          --cp-input-color="#424242"
+          --cp-button-hover-color="#616161"
           --picker-z-index="1060"
         />
         <span class="color-hex-display">{row.colorHex}</span>
@@ -446,11 +446,10 @@
     display: none;
   }
 
-  /* Hue slider thumb: no fill, only border */
-  .color-picker-wrapper :global(.h),
-  .color-picker-wrapper :global(.a) {
-    --thumb-background: transparent;
-    --thumb-border: 2px solid var(--color-text-primary, #fff);
+  /* Hue + Alpha slider: hide thumb */
+  .color-picker-wrapper :global(.h .thumb),
+  .color-picker-wrapper :global(.a .thumb) {
+    display: none;
   }
 
   .interval-preview-toggle {

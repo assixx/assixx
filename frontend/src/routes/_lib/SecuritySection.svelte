@@ -148,11 +148,9 @@
 <style>
   .security-section {
     backdrop-filter: blur(10px);
-    border-top: 1px solid
-      color-mix(in oklch, var(--color-white) 10%, transparent);
-    border-bottom: 1px solid
-      color-mix(in oklch, var(--color-white) 10%, transparent);
-    background: color-mix(in oklch, var(--color-white) 1%, transparent);
+    border-top: 1px solid var(--color-glass-border);
+    border-bottom: 1px solid var(--color-glass-border);
+    background: var(--glass-bg);
     padding: calc(var(--spacing-8) * 2) 5%;
   }
 
@@ -187,12 +185,16 @@
     margin-bottom: calc(var(--spacing-8) * 2);
   }
 
-  /* Feature card — duplicated from FeaturesGrid (scoped styles require it) */
   .feature-card {
-    border: 1px solid color-mix(in oklch, var(--color-white) 10%, transparent);
+    border: 1px solid var(--color-glass-border);
     border-radius: var(--radius-xl);
-    background: color-mix(in oklch, var(--color-white) 2%, transparent);
+    background: var(--glass-bg);
     padding: var(--spacing-6);
+    transition:
+      transform 0.3s ease,
+      box-shadow 0.3s ease,
+      border-color 0.3s ease,
+      background 0.3s ease;
   }
 
   .feature-card:hover {
@@ -201,7 +203,7 @@
       0 10px 40px color-mix(in oklch, var(--color-primary) 30%, transparent),
       inset 0 1px 0 color-mix(in oklch, var(--color-white) 10%, transparent);
     border-color: var(--primary-color);
-    background: color-mix(in oklch, var(--color-white) 4%, transparent);
+    background: var(--glass-bg-hover);
   }
 
   .feature-card h3 {

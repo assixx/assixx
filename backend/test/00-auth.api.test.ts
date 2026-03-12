@@ -26,17 +26,18 @@ let _userId: number;
 let _tenantId: number;
 
 /**
- * Enable all features and set team lead for the test tenant.
- * Required for KVP tests (team lead) and feature-gated endpoints.
+ * Enable all purchasable addons and set team lead for the test tenant.
+ * Required for KVP tests (team lead) and addon-gated endpoints (ADR-033).
  * Runs via docker exec — safe because auth tokens are in-process, not Redis.
  */
 function applyDbPrerequisites(tenantId: number, userId: number): void {
   execSync(
     `docker exec assixx-postgres psql -U assixx_user -d assixx -c "
-      -- Enable all features for the test tenant
-      INSERT INTO tenant_features (tenant_id, feature_id, is_active, activated_at)
-      SELECT ${tenantId}, id, 1, NOW() FROM features WHERE is_active = 1
-      ON CONFLICT (tenant_id, feature_id) DO UPDATE SET is_active = 1;
+      -- Enable all purchasable addons for the test tenant (ADR-033)
+      INSERT INTO tenant_addons (tenant_id, addon_id, status, activated_at, is_active, created_at, updated_at)
+      SELECT ${tenantId}, id, 'active', NOW(), 1, NOW(), NOW()
+      FROM addons WHERE is_active = 1 AND is_core = false
+      ON CONFLICT (tenant_id, addon_id) DO UPDATE SET status = 'active', is_active = 1, deactivated_at = NULL, updated_at = NOW();
 
       -- Ensure a department exists (required FK for teams)
       INSERT INTO departments (tenant_id, name, description, is_active, uuid, uuid_created_at)
@@ -106,8 +107,12 @@ describe('Setup: Apitest Tenant', () => {
         companyName: 'API Test GmbH',
         subdomain: 'apitest',
         email: 'info@apitest.de',
-        phone: '+49 123 456789',
-        address: 'Teststrasse 1, 12345 Teststadt',
+        phone: '+49123456789',
+        street: 'Musterstraße',
+        houseNumber: '42',
+        postalCode: '10115',
+        city: 'Berlin',
+        countryCode: 'DE',
         adminEmail: APITEST_EMAIL,
         adminPassword: APITEST_PASSWORD,
         adminFirstName: 'John',
@@ -142,7 +147,7 @@ describe('Setup: Apitest Tenant', () => {
     _userId = body.data.user.id;
     _tenantId = body.data.user.tenantId;
 
-    // Enable features + set team lead (idempotent, runs every time)
+    // Enable addons + set team lead (idempotent, runs every time)
     applyDbPrerequisites(_tenantId, _userId);
   });
 });

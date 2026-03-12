@@ -66,7 +66,7 @@ log_info "Schema synchronisiert."
 log_info "Dumpe Seed-Data..."
 docker exec ${CONTAINER} pg_dump -U ${DB_USER} -d ${DB_NAME} \
     --data-only --inserts --no-owner --no-privileges \
-    -t plans -t features -t plan_features -t kvp_categories -t asset_categories \
+    -t addons -t kvp_categories -t asset_categories \
     -f /tmp/seed.sql
 
 docker cp ${CONTAINER}:/tmp/seed.sql \

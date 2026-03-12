@@ -57,7 +57,7 @@ function createMockDb() {
 }
 
 function createMockNotifications() {
-  return { createFeatureNotification: vi.fn().mockResolvedValue(undefined) };
+  return { createAddonNotification: vi.fn().mockResolvedValue(undefined) };
 }
 
 function createMockActivityLogger() {
@@ -1122,7 +1122,7 @@ describe('SurveysService', () => {
       );
 
       expect(
-        mocks.mockNotifications.createFeatureNotification,
+        mocks.mockNotifications.createAddonNotification,
       ).toHaveBeenCalled();
       expect(mocks.mockActivityLogger.logCreate).toHaveBeenCalledWith(
         1,
@@ -1145,7 +1145,7 @@ describe('SurveysService', () => {
       );
 
       expect(
-        mocks.mockNotifications.createFeatureNotification,
+        mocks.mockNotifications.createAddonNotification,
       ).toHaveBeenCalled();
     });
   });

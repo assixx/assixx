@@ -3,10 +3,16 @@
 // =============================================================================
 
 import {
+  DEFAULT_HIERARCHY_LABELS,
+  type HierarchyLabels,
+} from '$lib/types/hierarchy-labels';
+
+import {
   STATUS_BADGE_CLASSES,
   STATUS_LABELS,
   MACHINE_TYPE_LABELS,
   MESSAGES,
+  type AssetMessages,
 } from './constants';
 
 import type {
@@ -56,7 +62,10 @@ export function getStatusLabel(status: AssetStatus): string {
  * Generate Teams badge data for table display
  * Following ASSIXX badge standard: count + tooltip with names
  */
-export function getTeamsBadgeData(teams?: AssetTeamInfo[]): BadgeData {
+export function getTeamsBadgeData(
+  teams?: AssetTeamInfo[],
+  labels: HierarchyLabels = DEFAULT_HIERARCHY_LABELS,
+): BadgeData {
   const teamList = teams ?? [];
   const count = teamList.length;
   const names = teamList.map((t) => t.name).join(', ');
@@ -65,14 +74,13 @@ export function getTeamsBadgeData(teams?: AssetTeamInfo[]): BadgeData {
     return {
       class: 'badge--secondary',
       text: 'Keine',
-      tooltip: 'Keine Teams zugewiesen',
+      tooltip: `Keine ${labels.team} zugewiesen`,
     };
   }
 
-  const label = count === 1 ? 'Team' : 'Teams';
   return {
     class: 'badge--info',
-    text: `${count} ${label}`,
+    text: `${count} ${labels.team}`,
     tooltip: names,
   };
 }
@@ -81,7 +89,10 @@ export function getTeamsBadgeData(teams?: AssetTeamInfo[]): BadgeData {
  * Generate Area badge data for table display.
  * A asset always belongs to exactly 0 or 1 area — show the name directly.
  */
-export function getAreaBadgeData(areaName?: string): BadgeData {
+export function getAreaBadgeData(
+  areaName?: string,
+  labels: HierarchyLabels = DEFAULT_HIERARCHY_LABELS,
+): BadgeData {
   if (areaName !== undefined && areaName !== '') {
     return {
       class: 'badge--info',
@@ -92,7 +103,7 @@ export function getAreaBadgeData(areaName?: string): BadgeData {
   return {
     class: 'badge--secondary',
     text: 'Keine',
-    tooltip: 'Kein Bereich zugewiesen',
+    tooltip: `Keine ${labels.area} zugewiesen`,
   };
 }
 
@@ -100,7 +111,10 @@ export function getAreaBadgeData(areaName?: string): BadgeData {
  * Generate Department badge data for table display.
  * A asset always belongs to exactly 0 or 1 department — show the name directly.
  */
-export function getDepartmentBadgeData(departmentName?: string): BadgeData {
+export function getDepartmentBadgeData(
+  departmentName?: string,
+  labels: HierarchyLabels = DEFAULT_HIERARCHY_LABELS,
+): BadgeData {
   if (departmentName !== undefined && departmentName !== '') {
     return {
       class: 'badge--info',
@@ -111,7 +125,7 @@ export function getDepartmentBadgeData(departmentName?: string): BadgeData {
   return {
     class: 'badge--secondary',
     text: 'Keine',
-    tooltip: 'Keine Abteilung zugewiesen',
+    tooltip: `Keine ${labels.department} zugewiesen`,
   };
 }
 
@@ -182,22 +196,25 @@ export function formatOperatingHours(hours?: number): string {
 /**
  * Get empty state title based on filter
  */
-export function getEmptyStateTitle(statusFilter: AssetStatusFilter): string {
+export function getEmptyStateTitle(
+  statusFilter: AssetStatusFilter,
+  msgs: AssetMessages = MESSAGES,
+): string {
   switch (statusFilter) {
     case 'operational':
-      return MESSAGES.EMPTY_OPERATIONAL;
+      return msgs.EMPTY_OPERATIONAL;
     case 'maintenance':
-      return MESSAGES.EMPTY_MAINTENANCE;
+      return msgs.EMPTY_MAINTENANCE;
     case 'repair':
-      return MESSAGES.EMPTY_REPAIR;
+      return msgs.EMPTY_REPAIR;
     case 'standby':
-      return MESSAGES.EMPTY_STANDBY;
+      return msgs.EMPTY_STANDBY;
     case 'cleaning':
-      return MESSAGES.EMPTY_CLEANING;
+      return msgs.EMPTY_CLEANING;
     case 'other':
-      return MESSAGES.EMPTY_OTHER;
+      return msgs.EMPTY_OTHER;
     default:
-      return MESSAGES.EMPTY_TITLE;
+      return msgs.EMPTY_TITLE;
   }
 }
 
@@ -206,11 +223,12 @@ export function getEmptyStateTitle(statusFilter: AssetStatusFilter): string {
  */
 export function getEmptyStateDescription(
   statusFilter: AssetStatusFilter,
+  msgs: AssetMessages = MESSAGES,
 ): string {
   if (statusFilter !== 'all') {
-    return MESSAGES.EMPTY_FILTER_DESC;
+    return msgs.EMPTY_FILTER_DESC;
   }
-  return MESSAGES.EMPTY_DESCRIPTION;
+  return msgs.EMPTY_DESCRIPTION;
 }
 
 // =============================================================================

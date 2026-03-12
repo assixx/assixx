@@ -1,7 +1,7 @@
 /**
  * Shift Planning Permission Definitions
  *
- * Defines which permission modules the shift planning feature exposes.
+ * Defines which permission modules the shift planning addon exposes.
  * Registered via ShiftsPermissionRegistrar (OnModuleInit).
  *
  * @see docs/USER-PERMISSIONS-PLAN.md

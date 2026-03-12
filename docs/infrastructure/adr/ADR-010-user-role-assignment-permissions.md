@@ -127,11 +127,15 @@ admin_department_permissions (
 #### 3.3 Lead-Positionen
 
 ```sql
--- In their respective tables
-areas.area_lead_id             → users.id (root/admin only)
-departments.department_lead_id → users.id (root/admin only)
-teams.team_lead_id             → users.id (root/admin only)
+-- In their respective tables (backend-validated)
+areas.area_lead_id             → users.id (admin/root role, validated)
+departments.department_lead_id → users.id (admin/root role, validated)
+teams.team_lead_id             → users.id (position = 'Teamleiter', validated)
 ```
+
+> **Note (2026-03):** Team leaders use position-based validation (any role with
+> position "Teamleiter") to separate system role from organizational function.
+> Area/Department leaders use role-based validation (admin/root only).
 
 ### 4. Inheritance Rules (CRITICAL)
 
@@ -443,16 +447,16 @@ backend/src/nest/
 
 ### Database Tables
 
-| Table                            | Purpose                          |
-| -------------------------------- | -------------------------------- |
-| `users.has_full_access`          | Full access flag                 |
-| `admin_area_permissions`         | Admin → Area assignments         |
-| `admin_department_permissions`   | Admin → Department assignments   |
-| `user_departments`               | Employee → Department membership |
-| `user_teams`                     | Employee → Team membership       |
-| `areas.area_lead_id`             | Area leader (root/admin only)    |
-| `departments.department_lead_id` | Dept leader (root/admin only)    |
-| `teams.team_lead_id`             | Team leader (root/admin only)    |
+| Table                            | Purpose                                                |
+| -------------------------------- | ------------------------------------------------------ |
+| `users.has_full_access`          | Full access flag                                       |
+| `admin_area_permissions`         | Admin → Area assignments                               |
+| `admin_department_permissions`   | Admin → Department assignments                         |
+| `user_departments`               | Employee → Department membership                       |
+| `user_teams`                     | Employee → Team membership                             |
+| `areas.area_lead_id`             | Area leader (admin/root role, backend-validated)       |
+| `departments.department_lead_id` | Dept leader (admin/root role, backend-validated)       |
+| `teams.team_lead_id`             | Team leader (position "Teamleiter", backend-validated) |
 
 ---
 

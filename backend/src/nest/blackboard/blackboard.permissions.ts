@@ -1,7 +1,7 @@
 /**
  * Blackboard Permission Definitions
  *
- * Defines which permission modules the blackboard feature exposes.
+ * Defines which permission modules the blackboard addon exposes.
  * Registered via BlackboardPermissionRegistrar (OnModuleInit).
  *
  * @see docs/USER-PERMISSIONS-PLAN.md

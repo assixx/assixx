@@ -85,7 +85,7 @@ export class DashboardService {
     tenantId: number,
   ): Promise<DashboardCounts> {
     // Determine which features the user can access (ADR-020)
-    const canAccess = await this.buildFeatureAccessCheck(user);
+    const canAccess = await this.buildAddonAccessCheck(user);
 
     // Execute count queries in parallel — skip features without permission
     const [
@@ -144,12 +144,12 @@ export class DashboardService {
 
   /**
    * Execute all count queries in parallel.
-   * Skips queries for features the user cannot access (ADR-020).
+   * Skips queries for addons the user cannot access (ADR-020).
    */
   private async fetchAllCounts(
     user: NestAuthUser,
     tenantId: number,
-    canAccess: (featureCode: string) => boolean,
+    canAccess: (addonCode: string) => boolean,
   ): Promise<AllCounts> {
     const g = this.createGuard(canAccess);
     const uid: number = user.id;
@@ -188,13 +188,13 @@ export class DashboardService {
   }
 
   /**
-   * Build a feature access check function for the current user.
-   * Root and admin with fullAccess bypass — all features accessible.
-   * Others: only features with at least one can_read = true module.
+   * Build an addon access check function for the current user.
+   * Root and admin with fullAccess bypass — all addons accessible.
+   * Others: only addons with at least one can_read = true module.
    */
-  private async buildFeatureAccessCheck(
+  private async buildAddonAccessCheck(
     user: NestAuthUser,
-  ): Promise<(featureCode: string) => boolean> {
+  ): Promise<(addonCode: string) => boolean> {
     // Root always has full access
     if (user.activeRole === 'root') {
       return () => true;
@@ -205,12 +205,12 @@ export class DashboardService {
       return () => true;
     }
 
-    // Query readable feature codes from DB (ADR-020)
-    const readable = await this.permissionsService.getReadableFeatureCodes(
+    // Query readable addon codes from DB (ADR-020)
+    const readable = await this.permissionsService.getReadableAddonCodes(
       user.id,
     );
 
-    return (featureCode: string) => readable.has(featureCode);
+    return (addonCode: string) => readable.has(addonCode);
   }
 
   /**

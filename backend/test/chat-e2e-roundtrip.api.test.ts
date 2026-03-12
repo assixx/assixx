@@ -196,14 +196,14 @@ beforeAll(async () => {
     body: JSON.stringify({
       permissions: [
         {
-          featureCode: 'chat',
+          addonCode: 'chat',
           moduleCode: 'chat-conversations',
           canRead: true,
           canWrite: true,
           canDelete: false,
         },
         {
-          featureCode: 'chat',
+          addonCode: 'chat',
           moduleCode: 'chat-messages',
           canRead: true,
           canWrite: true,

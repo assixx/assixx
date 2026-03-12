@@ -427,7 +427,7 @@ const REFERENCE_DATA_ENDPOINTS: readonly string[] = [
 const PAGE_INIT_ENDPOINTS: readonly string[] = [
   '/api/v2/users/me', // Auth/profile check
   '/api/v2/notifications/stats/me', // Notification badge
-  '/api/v2/features/my-features', // Feature flags
+  '/api/v2/addons/my-addons', // Addon flags
   '/api/v2/plans/current', // Subscription plan
 ];
 ```
@@ -439,13 +439,13 @@ The audit trail logged API calls, not USER ACTIONS.
 
 **Solution:** Multi-layer noise reduction:
 
-| Layer                        | What              | Example                              |
-| ---------------------------- | ----------------- | ------------------------------------ |
-| `EXCLUDED_PATHS`             | Never log         | `/health`, `/metrics`                |
-| `SKIPPED_GET_SUFFIXES`       | Skip stats/counts | `/stats`, `/count`, `-count`         |
-| `REFERENCE_DATA_ENDPOINTS`   | Skip dropdowns    | `/departments`, `/teams`, `/users`   |
-| `PAGE_INIT_ENDPOINTS`        | Skip page init    | `/users/me`, `/features/my-features` |
-| `shouldThrottleListAction()` | Throttle 30s      | Same user + endpoint = 1 log         |
+| Layer                        | What              | Example                            |
+| ---------------------------- | ----------------- | ---------------------------------- |
+| `EXCLUDED_PATHS`             | Never log         | `/health`, `/metrics`              |
+| `SKIPPED_GET_SUFFIXES`       | Skip stats/counts | `/stats`, `/count`, `-count`       |
+| `REFERENCE_DATA_ENDPOINTS`   | Skip dropdowns    | `/departments`, `/teams`, `/users` |
+| `PAGE_INIT_ENDPOINTS`        | Skip page init    | `/users/me`, `/addons/my-addons`   |
+| `shouldThrottleListAction()` | Throttle 30s      | Same user + endpoint = 1 log       |
 
 **Result:** "User visited Blackboard" = 1 log entry (not 6-7).
 

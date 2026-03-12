@@ -5,7 +5,7 @@
 > **Letzte Aktualisierung:** 2026-03-09
 > **Letzte Verifizierung:** 2026-03-09 (gegen Code + DB + 41 Controller)
 > **Status:** VERIFIZIERT
-> **Quelle:** Code-Analyse `backend/src/nest/*/\*.permissions.ts` + DB `user_feature_permissions` + alle 41 Controller
+> **Quelle:** Code-Analyse `backend/src/nest/*/\*.permissions.ts` + DB `user_addon_permissions` + alle 41 Controller
 > **Zweck:** Single Source of Truth für Permission-Architektur — verhindert Regression
 
 ---
@@ -33,15 +33,15 @@
 ### Guard-Kette (Reihenfolge)
 
 ```
-Request → JwtAuthGuard → RolesGuard → TenantFeatureGuard → PermissionGuard → Controller
+Request → JwtAuthGuard → RolesGuard → TenantAddonGuard → PermissionGuard → Controller
 ```
 
 ### Zwei-Schichten-Modell
 
-| Schicht      | Decorator                                     | Guard                | Prüft                                            | Bypass?                                            |
-| ------------ | --------------------------------------------- | -------------------- | ------------------------------------------------ | -------------------------------------------------- |
-| Tenant-Level | `@TenantFeature('code')`                      | `TenantFeatureGuard` | Feature für Tenant aktiviert + nicht abgelaufen? | **Kein Bypass** — Billing-Entscheidung             |
-| User-Level   | `@RequirePermission(feature, module, action)` | `PermissionGuard`    | Hat dieser User die Boolean-Flag?                | `hasFullAccess=true` (Root immer, Admin per Grant) |
+| Schicht      | Decorator                                     | Guard              | Prüft                                            | Bypass?                                            |
+| ------------ | --------------------------------------------- | ------------------ | ------------------------------------------------ | -------------------------------------------------- |
+| Tenant-Level | `@RequireAddon('code')`                       | `TenantAddonGuard` | Feature für Tenant aktiviert + nicht abgelaufen? | **Kein Bypass** — Billing-Entscheidung             |
+| User-Level   | `@RequirePermission(feature, module, action)` | `PermissionGuard`  | Hat dieser User die Boolean-Flag?                | `hasFullAccess=true` (Root immer, Admin per Grant) |
 
 ### Verhalten ohne Decorator
 
@@ -61,7 +61,7 @@ Request → JwtAuthGuard → RolesGuard → TenantFeatureGuard → PermissionGua
 | 2   | `blackboard-comments` | Kommentare | fa-comments    |    R    |    W     |     D     |          6           |
 | 3   | `blackboard-archive`  | Archiv     | fa-archive     |    R    |    W     |     —     |          6           |
 
-**Controller:** `BlackboardController` (24 Endpoints) — `@TenantFeature('blackboard')`
+**Controller:** `BlackboardController` (24 Endpoints) — `@RequireAddon('blackboard')`
 **Registrar:** `blackboard-permission.registrar.ts`
 **Status:** OK — Registry und Controller stimmen überein
 
@@ -73,7 +73,7 @@ Request → JwtAuthGuard → RolesGuard → TenantFeatureGuard → PermissionGua
 | --- | ----------------- | ------- | --------------- | :-----: | :------: | :-------: | :------------------: |
 | 1   | `calendar-events` | Termine | fa-calendar-day |    R    |    W     |     D     |          14          |
 
-**Controller:** `CalendarController` (14 Endpoints) — `@TenantFeature('calendar')`
+**Controller:** `CalendarController` (14 Endpoints) — `@RequireAddon('calendar')`
 **Registrar:** `calendar-permission.registrar.ts`
 **Status:** OK
 
@@ -86,7 +86,7 @@ Request → JwtAuthGuard → RolesGuard → TenantFeatureGuard → PermissionGua
 | 1   | `chat-conversations` | Gespräche   | fa-comment-dots |    R    |    W     |     D     |          10          |
 | 2   | `chat-messages`      | Nachrichten | fa-envelope     |    R    |    W     |     D     |          16          |
 
-**Controller:** `ChatController` (26 Endpoints) — `@TenantFeature('chat')`
+**Controller:** `ChatController` (26 Endpoints) — `@RequireAddon('chat')`
 **Registrar:** `chat-permission.registrar.ts`
 **Status:** OK
 
@@ -99,7 +99,7 @@ Request → JwtAuthGuard → RolesGuard → TenantFeatureGuard → PermissionGua
 | 1   | `documents-files`   | Dokumente | fa-file-alt |    R    |    W     |     D     |          16          |
 | 2   | `documents-archive` | Archiv    | fa-archive  |    R    |    W     |     —     |          6           |
 
-**Controller:** `DocumentsController` (22 Endpoints) — `@TenantFeature('documents')`
+**Controller:** `DocumentsController` (22 Endpoints) — `@RequireAddon('documents')`
 **Registrar:** `documents-permission.registrar.ts`
 **Status:** OK
 
@@ -112,7 +112,7 @@ Request → JwtAuthGuard → RolesGuard → TenantFeatureGuard → PermissionGua
 | 1   | `kvp-suggestions` | Vorschläge | fa-lightbulb |    R    |    W     |     D     |          18          |
 | 2   | `kvp-comments`    | Kommentare | fa-comments  |    R    |    W     |     D     |          5           |
 
-**Controller:** `KvpController` (27 Endpoints) — `@TenantFeature('kvp')`
+**Controller:** `KvpController` (27 Endpoints) — `@RequireAddon('kvp')`
 **Registrar:** `kvp-permission.registrar.ts`
 **Status:** OK — ~~BUG B1~~ GEFIXT (v1.1.0): `canDelete` zu `kvp-comments.allowedPermissions` hinzugefügt
 
@@ -127,7 +127,7 @@ Request → JwtAuthGuard → RolesGuard → TenantFeatureGuard → PermissionGua
 | 3   | `shift-rotation` | Rotation      | fa-sync-alt     |    R    |    W     |     D     |          18          |
 | 4   | `shift-times`    | Schichtzeiten | fa-clock        |    R    |    W     |     —     |          4           |
 
-**Controller:** `ShiftsController` (28), `RotationController` (18), `ShiftTimesController` (4) — alle `@TenantFeature('shift_planning')`
+**Controller:** `ShiftsController` (28), `RotationController` (18), `ShiftTimesController` (4) — alle `@RequireAddon('shift_planning')`
 **Registrar:** `shifts-permission.registrar.ts`
 **Status:** OK — ~~BUG B4~~ GEFIXT (v1.1.0). ~~LÜCKE L1~~ GEFIXT (v1.3.0): `ShiftTimesController` hat jetzt `@TenantFeature` + `@RequirePermission`
 
@@ -141,7 +141,7 @@ Request → JwtAuthGuard → RolesGuard → TenantFeatureGuard → PermissionGua
 | 2   | `surveys-participate` | Teilnahme  | fa-clipboard-check |    R    |    W     |     —     |          3           |
 | 3   | `surveys-results`     | Ergebnisse | fa-chart-bar       |    R    |    —     |     —     |          3           |
 
-**Controller:** `SurveysController` (14 Endpoints) — `@TenantFeature('surveys')`
+**Controller:** `SurveysController` (14 Endpoints) — `@RequireAddon('surveys')`
 **Registrar:** `surveys-permission.registrar.ts`
 **Status:** OK
 
@@ -157,7 +157,7 @@ Request → JwtAuthGuard → RolesGuard → TenantFeatureGuard → PermissionGua
 | 4   | `tpm-config`     | Konfiguration  | fa-cogs           |    R    |    W     |     —     |          14          |
 | 5   | `tpm-locations`  | Standorte      | fa-map-marker-alt |    R    |    W     |     D     |          7           |
 
-**Controller:** `TpmPlansController` (17), `TpmCardsController` (9), `TpmExecutionsController` (11), `TpmConfigController` (14), `TpmLocationsController` (7) — alle `@TenantFeature('tpm')`
+**Controller:** `TpmPlansController` (17), `TpmCardsController` (9), `TpmExecutionsController` (11), `TpmConfigController` (14), `TpmLocationsController` (7) — alle `@RequireAddon('tpm')`
 **Registrar:** `tpm-permission.registrar.ts`
 **Status:** OK — ~~LÜCKE L2~~ GEFIXT (v1.3.0): `tpm-config` eigenes Modul. ~~LÜCKE L3~~ GEFIXT (v1.3.0): `tpm-locations` eigenes Modul. Datenmigration kopiert bestehende Rechte
 
@@ -173,11 +173,11 @@ Request → JwtAuthGuard → RolesGuard → TenantFeatureGuard → PermissionGua
 | 4   | `vacation-holidays`     | Feiertage            | fa-calendar-day |    R    |    W     |     D     |          5           |
 | 5   | `vacation-overview`     | Übersicht & Kalender | fa-chart-bar    |    R    |    —     |     —     |          6           |
 
-**Controller:** `VacationController` (29 Endpoints) — `@TenantFeature('vacation')`
+**Controller:** `VacationController` (29 Endpoints) — `@RequireAddon('vacation')`
 **Registrar:** `vacation-permission.registrar.ts`
 **Status:** ~~BUG B2+B3~~ GEFIXT (v1.1.0): `canDelete` zu `vacation-requests` und `vacation-entitlements` hinzugefügt
 
-> **HINWEIS:** VacationController ruft redundant `FeatureCheckService.checkTenantAccess()` in jedem Endpoint auf, obwohl `@TenantFeature('vacation')` bereits auf Klasse gesetzt ist.
+> **HINWEIS:** VacationController ruft redundant `AddonCheckService.checkTenantAccess()` in jedem Endpoint auf, obwohl `@RequireAddon('vacation')` bereits auf Klasse gesetzt ist.
 
 ---
 
@@ -188,7 +188,7 @@ Request → JwtAuthGuard → RolesGuard → TenantFeatureGuard → PermissionGua
 | 1   | `work-orders-manage`  | Aufträge verwalten | fa-tasks  |    R    |    W     |     D     |          8           |
 | 2   | `work-orders-execute` | Aufträge ausführen | fa-wrench |    R    |    W     |     —     |          14          |
 
-**Controller:** `WorkOrdersController` (22 Endpoints, nicht 17 wie Code-Kommentar sagt) — `@TenantFeature('work_orders')`
+**Controller:** `WorkOrdersController` (22 Endpoints, nicht 17 wie Code-Kommentar sagt) — `@RequireAddon('work_orders')`
 **Registrar:** `work-orders-permission.registrar.ts`
 **Status:** OK
 
@@ -201,7 +201,7 @@ Request → JwtAuthGuard → RolesGuard → TenantFeatureGuard → PermissionGua
 | 1   | `employees-manage`       | Benutzer verwalten | fa-user-edit  |    R    |    W     |     D     |          12          |
 | 2   | `employees-availability` | Verfügbarkeit      | fa-user-clock |    R    |    W     |     D     |          5           |
 
-**Controller:** `UsersController` (27 Endpoints, davon 17 admin-only mit `@RequirePermission`, 10 Self-Service ohne Guard) — `@TenantFeature('employees')` (auf Klasse, sofern Feature aktiviert)
+**Controller:** `UsersController` (27 Endpoints, davon 17 admin-only mit `@RequirePermission`, 10 Self-Service ohne Guard) — `@RequireAddon('employees')` (auf Klasse, sofern Feature aktiviert)
 **Registrar:** `users-permission.registrar.ts`
 **Status:** NEU (v1.3.0) — Self-Service Endpoints (`/me/*`) haben bewusst KEIN `@RequirePermission`
 
@@ -214,7 +214,7 @@ Request → JwtAuthGuard → RolesGuard → TenantFeatureGuard → PermissionGua
 | 1   | `departments-manage` | Abteilungen verwalten | fa-building |    —    |    W     |     D     |          3           |
 | 2   | `areas-manage`       | Bereiche verwalten    | fa-map      |    —    |    W     |     D     |          4           |
 
-**Controller:** `DepartmentsController` (7 Endpoints, davon 3 admin-only), `AreasController` (7 Endpoints, davon 4 admin-only) — `@TenantFeature('departments')` (sofern aktiviert)
+**Controller:** `DepartmentsController` (7 Endpoints, davon 3 admin-only), `AreasController` (7 Endpoints, davon 4 admin-only) — `@RequireAddon('departments')` (sofern aktiviert)
 **Registrar:** `departments-permission.registrar.ts`
 **Status:** NEU (v1.3.0) — GET-Endpoints offen für alle auth. User (kein canRead nötig, da Lesezugriff für Org-Daten Standard)
 
@@ -226,7 +226,7 @@ Request → JwtAuthGuard → RolesGuard → TenantFeatureGuard → PermissionGua
 | --- | -------------- | --------------- | --------------- | :-----: | :------: | :-------: | :------------------: |
 | 1   | `teams-manage` | Teams verwalten | fa-people-group |    —    |    W     |     D     |          6           |
 
-**Controller:** `TeamsController` (13 Endpoints, davon 6 admin-only) — `@TenantFeature('teams')` (sofern aktiviert)
+**Controller:** `TeamsController` (13 Endpoints, davon 6 admin-only) — `@RequireAddon('teams')` (sofern aktiviert)
 **Registrar:** `teams-permission.registrar.ts`
 **Status:** NEU (v1.3.0) — GET-Endpoints offen für alle auth. User
 

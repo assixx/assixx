@@ -117,10 +117,6 @@
   // HELPERS
   // =============================================================================
 
-  function resolvePath(path: string): string {
-    return (resolve as (p: string) => string)(path);
-  }
-
   /** Check if entry is editable (endDate must be today or in the future) */
   function isEditable(entry: AvailabilityEntry): boolean {
     // eslint-disable-next-line svelte/prefer-svelte-reactivity -- Pure comparison function, not reactive state
@@ -137,7 +133,7 @@
   // =============================================================================
 
   function goBack(): void {
-    void goto(resolvePath('/manage-root'));
+    void goto(resolve('/manage-root'));
   }
 
   function navigateWithFilter(year: string, month: string): void {
@@ -147,7 +143,7 @@
     const queryString = params.toString();
     const uuid = employee?.uuid ?? '';
     void goto(
-      resolvePath(
+      resolve(
         `/manage-root/availability/${uuid}${queryString !== '' ? `?${queryString}` : ''}`,
       ),
     );
@@ -165,7 +161,7 @@
 
   function clearFilter(): void {
     const uuid = employee?.uuid ?? '';
-    void goto(resolvePath(`/manage-root/availability/${uuid}`));
+    void goto(resolve(`/manage-root/availability/${uuid}`));
   }
 
   // =============================================================================
@@ -284,7 +280,7 @@
               <i class="fas fa-chevron-down"></i>
             </div>
             {#if yearDropdownOpen}
-              <div class="dropdown__menu dropdown__menu--scrollable active">
+              <div class="dropdown__menu active">
                 {#each yearOptions as opt (opt.value)}
                   <div
                     class="dropdown__option"
@@ -331,7 +327,7 @@
               <i class="fas fa-chevron-down"></i>
             </div>
             {#if monthDropdownOpen}
-              <div class="dropdown__menu dropdown__menu--scrollable active">
+              <div class="dropdown__menu active">
                 {#each monthOptions as opt (opt.value)}
                   <div
                     class="dropdown__option"

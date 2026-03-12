@@ -41,14 +41,6 @@
   ];
 
   let activeTab = $state<ConfigTab>('colors');
-
-  // ===========================================================================
-  // HELPERS
-  // ===========================================================================
-
-  function resolvePath(path: string): string {
-    return (resolve as (p: string) => string)(path);
-  }
 </script>
 
 <svelte:head>
@@ -63,7 +55,7 @@
         type="button"
         class="btn btn-light"
         onclick={() => {
-          void goto(resolvePath('/lean-management/tpm'));
+          void goto(resolve('/lean-management/tpm'));
         }}
       >
         <i class="fas fa-arrow-left mr-2"></i>{MESSAGES.BTN_BACK_TO_OVERVIEW}

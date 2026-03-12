@@ -332,7 +332,9 @@ export class TeamsService {
   }
 
   /**
-   * Validate leader exists and has appropriate role
+   * Validate leader exists, is active, and has position "Teamleiter".
+   * Safety gate: only users explicitly designated as team leaders
+   * in manage-employees can be assigned — prevents accidental privilege escalation.
    */
   private async validateLeader(
     leaderId: number | null | undefined,
@@ -340,13 +342,8 @@ export class TeamsService {
   ): Promise<void> {
     if (leaderId === null || leaderId === undefined) return;
 
-    interface UserRow {
-      role: string;
-    }
-
-    // SECURITY: Only allow ACTIVE users (is_active = 1) as team leaders
-    const rows = await this.db.query<UserRow>(
-      `SELECT role FROM users WHERE id = $1 AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}`,
+    const rows = await this.db.query<{ id: number; position: string | null }>(
+      `SELECT id, position FROM users WHERE id = $1 AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}`,
       [leaderId, tenantId],
     );
 
@@ -355,8 +352,10 @@ export class TeamsService {
     }
 
     const user = rows[0];
-    if (user !== undefined && user.role !== 'root' && user.role !== 'admin') {
-      throw new BadRequestException('Team leader must be a root user or admin');
+    if (user?.position !== 'Teamleiter') {
+      throw new BadRequestException(
+        'User must have position "Teamleiter" — assign it first in employee management',
+      );
     }
   }
 

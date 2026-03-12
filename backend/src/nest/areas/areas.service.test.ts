@@ -4,7 +4,7 @@
  * Phase 11: Service tests -- mocked dependencies.
  * Phase 14 B5: Deepened from 11 -> 28 tests.
  * Focus: CRUD operations, dependency checking, force delete,
- *        stats aggregation, department assignment, private helpers.
+ *        stats aggregation, department/hall assignment, private helpers.
  *
  * Uses DatabaseService mock (migrated from legacy execute pattern).
  */
@@ -82,9 +82,9 @@ describe('AreasService', () => {
   let mockDb: MockDb;
   let mockActivityLogger: ReturnType<typeof createMockActivityLogger>;
 
-  /** Mock 5 dependency checks all returning empty */
+  /** Mock 6 dependency checks all returning empty */
   function mockNoDependencies(): void {
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < 6; i++) {
       mockDb.query.mockResolvedValueOnce([]);
     }
   }
@@ -260,6 +260,94 @@ describe('AreasService', () => {
         'Failed to create area',
       );
     });
+
+    it('should create area with admin leader', async () => {
+      const dto = {
+        name: 'Led Area',
+        type: 'production',
+        areaLeadId: 42,
+      } as unknown as CreateAreaDto;
+
+      // validateLeader: admin found
+      mockDb.query.mockResolvedValueOnce([{ id: 42, role: 'admin' }]);
+      // INSERT RETURNING id
+      mockDb.query.mockResolvedValueOnce([{ id: 8 }]);
+      // getAreaById
+      mockDb.query.mockResolvedValueOnce([
+        makeAreaRow({ id: 8, name: 'Led Area', area_lead_id: 42 }),
+      ]);
+
+      const result = await service.createArea(dto, 10, 1);
+
+      expect(result.id).toBe(8);
+      expect(result.areaLeadId).toBe(42);
+    });
+
+    it('should create area with root leader', async () => {
+      const dto = {
+        name: 'Root Led',
+        type: 'building',
+        areaLeadId: 1,
+      } as unknown as CreateAreaDto;
+
+      // validateLeader: root found
+      mockDb.query.mockResolvedValueOnce([{ id: 1, role: 'root' }]);
+      // INSERT RETURNING id
+      mockDb.query.mockResolvedValueOnce([{ id: 9 }]);
+      // getAreaById
+      mockDb.query.mockResolvedValueOnce([
+        makeAreaRow({ id: 9, area_lead_id: 1 }),
+      ]);
+
+      const result = await service.createArea(dto, 10, 1);
+
+      expect(result.areaLeadId).toBe(1);
+    });
+
+    it('should reject employee as area leader', async () => {
+      const dto = {
+        name: 'Bad Lead',
+        type: 'office',
+        areaLeadId: 99,
+      } as unknown as CreateAreaDto;
+
+      // validateLeader: employee found — not admin/root
+      mockDb.query.mockResolvedValueOnce([{ id: 99, role: 'employee' }]);
+
+      await expect(service.createArea(dto, 10, 1)).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it('should reject inactive user as area leader', async () => {
+      const dto = {
+        name: 'Inactive Lead',
+        type: 'warehouse',
+        areaLeadId: 50,
+      } as unknown as CreateAreaDto;
+
+      // validateLeader: no active user found
+      mockDb.query.mockResolvedValueOnce([]);
+
+      await expect(service.createArea(dto, 10, 1)).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it('should reject non-existent user as area leader', async () => {
+      const dto = {
+        name: 'Ghost Lead',
+        type: 'other',
+        areaLeadId: 9999,
+      } as unknown as CreateAreaDto;
+
+      // validateLeader: no user found
+      mockDb.query.mockResolvedValueOnce([]);
+
+      await expect(service.createArea(dto, 10, 1)).rejects.toThrow(
+        BadRequestException,
+      );
+    });
   });
 
   // =============================================================
@@ -308,6 +396,54 @@ describe('AreasService', () => {
         NotFoundException,
       );
     });
+
+    it('should validate leader on update with admin', async () => {
+      const dto = { areaLeadId: 42 } as unknown as UpdateAreaDto;
+
+      // getAreaById (existing check)
+      mockDb.query.mockResolvedValueOnce([makeAreaRow()]);
+      // validateLeader: admin found
+      mockDb.query.mockResolvedValueOnce([{ id: 42, role: 'admin' }]);
+      // UPDATE areas
+      mockDb.query.mockResolvedValueOnce([]);
+      // getAreaById (return updated)
+      mockDb.query.mockResolvedValueOnce([makeAreaRow({ area_lead_id: 42 })]);
+
+      const result = await service.updateArea(1, dto, 1, 10);
+
+      expect(result.areaLeadId).toBe(42);
+    });
+
+    it('should reject employee leader on update', async () => {
+      const dto = { areaLeadId: 99 } as unknown as UpdateAreaDto;
+
+      // getAreaById (existing check)
+      mockDb.query.mockResolvedValueOnce([makeAreaRow()]);
+      // validateLeader: employee found
+      mockDb.query.mockResolvedValueOnce([{ id: 99, role: 'employee' }]);
+
+      await expect(service.updateArea(1, dto, 1, 10)).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it('should allow removing leader (null)', async () => {
+      const dto = { areaLeadId: null } as unknown as UpdateAreaDto;
+
+      // getAreaById (existing with leader)
+      mockDb.query.mockResolvedValueOnce([makeAreaRow({ area_lead_id: 42 })]);
+      // validateLeader: null → skip
+      // UPDATE areas
+      mockDb.query.mockResolvedValueOnce([]);
+      // cascadeVacationApprover: old=42, new=null
+      mockDb.query.mockResolvedValueOnce([{ count: '0' }]);
+      // getAreaById (return updated)
+      mockDb.query.mockResolvedValueOnce([makeAreaRow({ area_lead_id: null })]);
+
+      const result = await service.updateArea(1, dto, 1, 10);
+
+      expect(result.areaLeadId).toBeUndefined();
+    });
   });
 
   // =============================================================
@@ -326,8 +462,8 @@ describe('AreasService', () => {
     it('should throw BadRequestException when has dependencies and force=false', async () => {
       // getAreaById
       mockDb.query.mockResolvedValueOnce([makeAreaRow()]);
-      // checkAreaDependencies -> 5 table checks (1 has data)
-      for (let i = 0; i < 5; i++) {
+      // checkAreaDependencies -> 6 table checks (1 has data)
+      for (let i = 0; i < 6; i++) {
         mockDb.query.mockResolvedValueOnce(i === 0 ? [{ id: 1 }] : []);
       }
 
@@ -353,12 +489,13 @@ describe('AreasService', () => {
     it('should force-delete area removing dependencies first', async () => {
       // getAreaById
       mockDb.query.mockResolvedValueOnce([makeAreaRow()]);
-      // checkAreaDependencies -> departments=2, assets=1, rest empty
-      mockDb.query.mockResolvedValueOnce([{ id: 1 }, { id: 2 }]);
-      mockDb.query.mockResolvedValueOnce([{ id: 3 }]);
-      mockDb.query.mockResolvedValueOnce([]);
-      mockDb.query.mockResolvedValueOnce([]);
-      mockDb.query.mockResolvedValueOnce([]);
+      // checkAreaDependencies -> departments=2, halls=0, assets=1, rest empty
+      mockDb.query.mockResolvedValueOnce([{ id: 1 }, { id: 2 }]); // departments
+      mockDb.query.mockResolvedValueOnce([]); // halls
+      mockDb.query.mockResolvedValueOnce([{ id: 3 }]); // assets
+      mockDb.query.mockResolvedValueOnce([]); // shifts
+      mockDb.query.mockResolvedValueOnce([]); // shift_plans
+      mockDb.query.mockResolvedValueOnce([]); // shift_favorites
       // removeAreaDependencies -> UPDATE departments, UPDATE assets (2 calls)
       mockDb.query.mockResolvedValueOnce([]);
       mockDb.query.mockResolvedValueOnce([]);
@@ -376,6 +513,7 @@ describe('AreasService', () => {
       mockDb.query.mockResolvedValueOnce([makeAreaRow()]);
       // checkAreaDependencies -> only shiftFavorites=1
       mockDb.query.mockResolvedValueOnce([]); // departments
+      mockDb.query.mockResolvedValueOnce([]); // halls
       mockDb.query.mockResolvedValueOnce([]); // assets
       mockDb.query.mockResolvedValueOnce([]); // shifts
       mockDb.query.mockResolvedValueOnce([]); // shift_plans
@@ -427,6 +565,47 @@ describe('AreasService', () => {
       const result = await service.assignDepartmentsToArea(1, [], 10);
 
       expect(result.message).toBe('Departments assigned successfully');
+      // Only 2 calls: getAreaById + clear (no assign)
+      expect(mockDb.query).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  // =============================================================
+  // assignHallsToArea
+  // =============================================================
+
+  describe('assignHallsToArea', () => {
+    it('should throw NotFoundException for unknown area', async () => {
+      mockDb.query.mockResolvedValueOnce([]);
+
+      await expect(service.assignHallsToArea(999, [1, 2], 10)).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+
+    it('should assign halls to area', async () => {
+      // getAreaById
+      mockDb.query.mockResolvedValueOnce([makeAreaRow()]);
+      // Clear existing assignments
+      mockDb.query.mockResolvedValueOnce([]);
+      // Assign new halls
+      mockDb.query.mockResolvedValueOnce([]);
+
+      const result = await service.assignHallsToArea(1, [10, 20], 10);
+
+      expect(result.message).toBe('Halls assigned successfully');
+      expect(mockDb.query).toHaveBeenCalledTimes(3);
+    });
+
+    it('should only clear assignments when hallIds is empty', async () => {
+      // getAreaById
+      mockDb.query.mockResolvedValueOnce([makeAreaRow()]);
+      // Clear existing assignments
+      mockDb.query.mockResolvedValueOnce([]);
+
+      const result = await service.assignHallsToArea(1, [], 10);
+
+      expect(result.message).toBe('Halls assigned successfully');
       // Only 2 calls: getAreaById + clear (no assign)
       expect(mockDb.query).toHaveBeenCalledTimes(2);
     });

@@ -4,18 +4,17 @@
  * Handles tenant listing and storage information.
  * Extracted from root.service.ts — bounded context: tenant management.
  */
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 
 import { DatabaseService } from '../database/database.service.js';
 import { UserRepository } from '../database/repositories/user.repository.js';
-import { ERROR_CODES } from './root.helpers.js';
 import type {
   DbStorageTotalRow,
   DbTenantRow,
+  DbTenantStorageRow,
   StorageInfo,
   Tenant,
 } from './root.types.js';
-import { STORAGE_LIMITS } from './root.types.js';
 
 @Injectable()
 export class RootTenantService {
@@ -58,7 +57,6 @@ export class RootTenantService {
           id: tenant.id,
           companyName: tenant.company_name,
           subdomain: tenant.subdomain,
-          currentPlan: tenant.current_plan ?? undefined,
           status: tenant.status as Tenant['status'],
           createdAt: tenant.created_at,
           updatedAt: tenant.updated_at,
@@ -76,27 +74,14 @@ export class RootTenantService {
   async getStorageInfo(tenantId: number): Promise<StorageInfo> {
     this.logger.debug(`Getting storage info for tenant ${tenantId}`);
 
-    // Get tenant plan
-    const tenant = await this.db.query<DbTenantRow>(
-      'SELECT current_plan FROM tenants WHERE id = $1',
+    // Get storage limit from tenant_storage (ADR-033: replaces plan-based limits)
+    const storageRows = await this.db.query<DbTenantStorageRow>(
+      'SELECT storage_limit_gb FROM tenant_storage WHERE tenant_id = $1 AND is_active = 1',
       [tenantId],
     );
 
-    const tenantData = tenant[0];
-    if (tenantData === undefined) {
-      throw new NotFoundException({
-        code: ERROR_CODES.NOT_FOUND,
-        message: 'Tenant not found',
-      });
-    }
-
-    const planKey = tenantData.current_plan ?? 'basic';
-    const defaultStorage = STORAGE_LIMITS['basic'] ?? 0;
-
-    const totalStorage =
-      Object.hasOwn(STORAGE_LIMITS, planKey) ?
-        (STORAGE_LIMITS[planKey] ?? defaultStorage)
-      : defaultStorage;
+    const storageLimitGb = storageRows[0]?.storage_limit_gb ?? 100;
+    const totalStorage = storageLimitGb * 1024 * 1024 * 1024; // GB → bytes
 
     // Get storage breakdown in parallel
     const [documentsSize, attachmentsSize, logsSize] = await Promise.all([
@@ -127,7 +112,7 @@ export class RootTenantService {
       used: usedStorage,
       total: totalStorage,
       percentage: Math.min(percentage, 100),
-      plan: planKey,
+      storageLimitGb,
       breakdown: {
         documents,
         attachments,

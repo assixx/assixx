@@ -17,8 +17,6 @@
     selectedValue: string;
     /** Text shown on the trigger button */
     displayText: string;
-    /** Enable scrollable menu for long option lists */
-    scrollable?: boolean;
     /** Called when user selects an option */
     onselect: (value: string) => void;
   }
@@ -29,7 +27,6 @@
     options,
     selectedValue,
     displayText,
-    scrollable = false,
     onselect,
   }: Props = $props();
 
@@ -93,7 +90,6 @@
     </button>
     <div
       class="dropdown__menu"
-      class:dropdown__menu--scrollable={scrollable}
       class:active={open}
     >
       {#each options as option (option.value)}

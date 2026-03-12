@@ -8,7 +8,7 @@
  *   1. GET returns default permissions (all false) for user
  *   2. GET returns categories filtered by tenant's active features
  *   3. PUT saves permissions, GET returns saved values
- *   4. PUT with unknown featureCode returns 400
+ *   4. PUT with unknown addonCode returns 400
  *   5. PUT with invalid body returns 400
  *   6. GET with non-existent UUID returns 404
  *   7. Non-admin (employee) gets 403
@@ -172,7 +172,7 @@ describe('User Permissions: PUT + GET Roundtrip', () => {
       body: JSON.stringify({
         permissions: [
           {
-            featureCode: 'blackboard',
+            addonCode: 'blackboard',
             moduleCode: 'blackboard-posts',
             canRead: true,
             canWrite: true,
@@ -223,7 +223,7 @@ describe('User Permissions: PUT + GET Roundtrip', () => {
       body: JSON.stringify({
         permissions: [
           {
-            featureCode: 'blackboard',
+            addonCode: 'blackboard',
             moduleCode: 'blackboard-posts',
             canRead: false,
             canWrite: false,
@@ -262,17 +262,17 @@ describe('User Permissions: PUT + GET Roundtrip', () => {
   });
 });
 
-// ─── PUT with Unknown featureCode (seq: 4) ────────────────────────────────────
+// ─── PUT with Unknown addonCode (seq: 4) ────────────────────────────────────
 
-describe('User Permissions: PUT Validation — Unknown Feature', () => {
-  it('should return 400 for unknown featureCode', async () => {
+describe('User Permissions: PUT Validation — Unknown Addon', () => {
+  it('should return 400 for unknown addonCode', async () => {
     const res = await fetch(`${BASE_URL}/user-permissions/${employeeUuid}`, {
       method: 'PUT',
       headers: authHeaders(auth.authToken),
       body: JSON.stringify({
         permissions: [
           {
-            featureCode: 'nonexistent-feature',
+            addonCode: 'nonexistent-feature',
             moduleCode: 'nonexistent-module',
             canRead: true,
             canWrite: false,
@@ -306,7 +306,7 @@ describe('User Permissions: PUT Validation — Invalid Body', () => {
       body: JSON.stringify({
         permissions: [
           {
-            featureCode: 'blackboard',
+            addonCode: 'blackboard',
             moduleCode: 'blackboard-posts',
             // Missing canRead, canWrite, canDelete
           },
@@ -324,7 +324,7 @@ describe('User Permissions: PUT Validation — Invalid Body', () => {
       body: JSON.stringify({
         permissions: [
           {
-            featureCode: 'blackboard',
+            addonCode: 'blackboard',
             moduleCode: 'blackboard-posts',
             canRead: 'yes',
             canWrite: 0,
@@ -369,7 +369,7 @@ describe('User Permissions: Employee Access Denied', () => {
       body: JSON.stringify({
         permissions: [
           {
-            featureCode: 'blackboard',
+            addonCode: 'blackboard',
             moduleCode: 'blackboard-posts',
             canRead: true,
             canWrite: false,

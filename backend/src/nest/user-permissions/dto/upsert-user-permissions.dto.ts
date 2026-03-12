@@ -2,7 +2,7 @@
  * Upsert User Permissions DTO
  *
  * Validates the structure of permission upsert requests.
- * Business validation (featureCode/moduleCode existence) happens in the service,
+ * Business validation (addonCode/moduleCode existence) happens in the service,
  * because Zod schemas have no access to PermissionRegistryService.
  *
  * @see docs/USER-PERMISSIONS-PLAN.md
@@ -10,12 +10,12 @@
 import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';
 
-/** Single permission entry for one feature module */
+/** Single permission entry for one addon module */
 export const PermissionEntrySchema = z.object({
-  featureCode: z
+  addonCode: z
     .string()
-    .min(1, 'featureCode must not be empty')
-    .max(50, 'featureCode must not exceed 50 characters'),
+    .min(1, 'addonCode must not be empty')
+    .max(50, 'addonCode must not exceed 50 characters'),
   moduleCode: z
     .string()
     .min(1, 'moduleCode must not be empty')

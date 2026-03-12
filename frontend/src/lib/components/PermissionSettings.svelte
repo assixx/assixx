@@ -124,7 +124,7 @@
           ?.split('=')[1] ?? '';
 
       const permissions: {
-        featureCode: string;
+        addonCode: string;
         moduleCode: string;
         canRead: boolean;
         canWrite: boolean;
@@ -134,7 +134,7 @@
       for (const cat of categories) {
         for (const mod of cat.modules) {
           permissions.push({
-            featureCode: cat.code,
+            addonCode: cat.code,
             moduleCode: mod.code,
             canRead: mod.canRead,
             canWrite: mod.canWrite,
@@ -174,10 +174,6 @@
   // HELPERS
   // =============================================================================
 
-  function resolvePath(path: string): string {
-    return (resolve as (p: string) => string)(path);
-  }
-
   /** Set a single module's permissions to the given value (respecting allowedPermissions) */
   function setModulePermissions(mod: ModulePermission, value: boolean): void {
     mod.canRead = value && mod.allowedPermissions.includes('canRead');
@@ -204,7 +200,7 @@
   }
 
   function goBack(): void {
-    void goto(resolvePath(backUrl));
+    void goto(resolve(backUrl));
   }
 </script>
 

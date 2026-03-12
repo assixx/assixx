@@ -39,7 +39,7 @@ function createMockDb() {
 }
 
 function createMockNotifications() {
-  return { createFeatureNotification: vi.fn().mockResolvedValue(undefined) };
+  return { createAddonNotification: vi.fn().mockResolvedValue(undefined) };
 }
 
 function createMockActivityLogger() {

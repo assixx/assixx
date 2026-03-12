@@ -198,7 +198,7 @@
               <i class="fas fa-chevron-down"></i>
             </div>
             {#if editStatusDropdownOpen}
-              <div class="dropdown__menu dropdown__menu--scrollable active">
+              <div class="dropdown__menu active">
                 {#each MACHINE_AVAILABILITY_STATUS_OPTIONS as opt (opt.value)}
                   <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
                   <div

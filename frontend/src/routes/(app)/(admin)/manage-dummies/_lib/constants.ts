@@ -4,6 +4,11 @@
 
 import { IS_ACTIVE, STATUS_LABELS } from '@assixx/shared/constants';
 
+import {
+  DEFAULT_HIERARCHY_LABELS,
+  type HierarchyLabels,
+} from '$lib/types/hierarchy-labels';
+
 import type { DummyFormData } from './types';
 
 // =============================================================================
@@ -54,7 +59,7 @@ export const FORM_DEFAULTS: DummyFormData = {
 // UI MESSAGES (German)
 // =============================================================================
 
-export const MESSAGES = {
+const BASE_MESSAGES = {
   // Page
   PAGE_TITLE: 'Dummy-Benutzer verwalten - Assixx',
   HEADING: 'Dummy-Benutzer',
@@ -126,6 +131,19 @@ export const MESSAGES = {
   // Loading
   LOADING: 'Dummy-Benutzer werden geladen...',
 } as const;
+
+/** Factory: dummy messages with dynamic hierarchy labels */
+export function createDummyMessages(labels: HierarchyLabels) {
+  return {
+    ...BASE_MESSAGES,
+    COL_TEAMS: labels.team,
+    COL_AREAS: labels.area,
+    COL_DEPARTMENTS: labels.department,
+  };
+}
+
+/** Backward-compatible static export */
+export const MESSAGES = createDummyMessages(DEFAULT_HIERARCHY_LABELS);
 
 // =============================================================================
 // PASSWORD STRENGTH

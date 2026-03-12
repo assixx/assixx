@@ -23,6 +23,7 @@
   // ==========================================================================
 
   const { data }: { data: PageData } = $props();
+  const labels = $derived(data.hierarchyLabels);
 
   // ==========================================================================
   // QUERY PARAM: ?tab=staffing-rules|blackouts|settings
@@ -112,9 +113,9 @@
 
   <!-- Tab Content -->
   {#if rulesState.activeTab === 'blackouts'}
-    <BlackoutsTab />
+    <BlackoutsTab {labels} />
   {:else if rulesState.activeTab === 'staffing-rules'}
-    <StaffingRulesTab />
+    <StaffingRulesTab {labels} />
   {:else if rulesState.activeTab === 'settings'}
     <SettingsTab />
   {/if}

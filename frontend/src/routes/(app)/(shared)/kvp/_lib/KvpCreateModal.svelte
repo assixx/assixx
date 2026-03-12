@@ -3,6 +3,10 @@
 
   import { onClickOutsideDropdown } from '$lib/actions/click-outside';
   import {
+    DEFAULT_HIERARCHY_LABELS,
+    type HierarchyLabels,
+  } from '$lib/types/hierarchy-labels';
+  import {
     showWarningAlert,
     showErrorAlert,
     showSuccessAlert,
@@ -22,9 +26,15 @@
     userOrganizations: UserTeamWithAssets[];
     onclose: () => void;
     onsuccess: () => void;
+    labels?: HierarchyLabels;
   }
 
-  const { userOrganizations, onclose, onsuccess }: Props = $props();
+  const {
+    userOrganizations,
+    onclose,
+    onsuccess,
+    labels = DEFAULT_HIERARCHY_LABELS,
+  }: Props = $props();
 
   // Photo state
   let photoPreviews = $state<string[]>([]);
@@ -238,7 +248,7 @@
 
     if (!hasOrgSelection) {
       showWarningAlert(
-        'Bitte wählen Sie mindestens ein Team oder eine Anlage aus',
+        `Bitte wählen Sie mindestens ein ${labels.team} oder eine ${labels.asset} aus`,
       );
       return;
     }
@@ -533,7 +543,7 @@
               class="form-field__label"
               for="kvpAssetSelect"
             >
-              Anlage(n) zuweisen
+              {labels.asset} zuweisen
               <span class="text-red-500">*</span>
               <span class="form-field__hint"
                 >(Strg+Klick für Mehrfachauswahl)</span
@@ -560,7 +570,8 @@
           <div class="form-field md:col-span-2">
             <p class="text-sm text-amber-400">
               <i class="fas fa-exclamation-triangle mr-1"></i>
-              Bitte wählen Sie mindestens ein Team oder eine Anlage aus.
+              Bitte wählen Sie mindestens ein {labels.team} oder eine {labels.asset}
+              aus.
             </p>
           </div>
         {/if}

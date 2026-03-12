@@ -1,12 +1,12 @@
 # ADR-032: Feature-Katalog und Plan-Tier-Zuordnung
 
-| Metadata                | Value                                                                               |
-| ----------------------- | ----------------------------------------------------------------------------------- |
-| **Status**              | Accepted                                                                            |
-| **Date**                | 2026-03-10                                                                          |
-| **Decision Makers**     | SCS Technik                                                                         |
-| **Affected Components** | PostgreSQL (`features`, `plans`, `plan_features`), Seeds, Backend, Frontend Sidebar |
-| **Related ADRs**        | ADR-020 (Per-User Permissions), ADR-024 (Frontend Feature Guards)                   |
+| Metadata                | Value                                                                                         |
+| ----------------------- | --------------------------------------------------------------------------------------------- |
+| **Status**              | **Superseded** by [ADR-033: Addon-basiertes SaaS-Modell](./ADR-033-addon-based-saas-model.md) |
+| **Date**                | 2026-03-10                                                                                    |
+| **Decision Makers**     | SCS Technik                                                                                   |
+| **Affected Components** | PostgreSQL (`features`, `plans`, `plan_features`), Seeds, Backend, Frontend Sidebar           |
+| **Related ADRs**        | ADR-020 (Per-User Permissions), ADR-024 (Frontend Feature Guards)                             |
 
 ---
 

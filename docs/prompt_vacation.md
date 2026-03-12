@@ -69,7 +69,7 @@ Diese Entscheidungen wurden im Brainstorming + Q&A getroffen und sind **nicht me
 
 ```sql
 -- Register vacation feature (global, no RLS)
-INSERT INTO features (code, name, description, category, base_price, is_active, sort_order)
+INSERT INTO addons (code, name, description, category, base_price, is_active, sort_order)
 VALUES (
     'vacation',
     'Urlaubsverwaltung',
@@ -970,7 +970,7 @@ Logik:
 
 ### 2.11 API Endpoints
 
-**Feature-Flag Check (MANDATORY):** Jeder Controller-Endpoint muss pruefen ob der Tenant das Feature 'vacation' aktiviert hat. Es gibt KEINEN `@Feature()`-Decorator — stattdessen inline im Controller oder als private Guard-Methode:
+**Addon-Flag Check (MANDATORY):** Jeder Controller-Endpoint muss pruefen ob der Tenant das Feature 'vacation' aktiviert hat. Es gibt KEINEN `@Feature()`-Decorator — stattdessen inline im Controller oder als private Guard-Methode:
 
 ```typescript
 // FeatureCheckService injizieren, dann am Anfang jeder Methode:
@@ -1041,7 +1041,7 @@ GET    /api/v2/vacation/overview                    # Jahresuebersicht alle Mita
 import { type PermissionCategoryDef } from '../admin-permissions/permission-registry.service';
 
 export const VACATION_PERMISSIONS: PermissionCategoryDef = {
-  featureCode: 'vacation',
+  addonCode: 'vacation',
   modules: [
     { code: 'vacation-requests', name: 'UrlaubsAnträge' },
     { code: 'vacation-rules', name: 'Regeln & Sperren' },
@@ -1176,7 +1176,7 @@ interface VacationEmailService {
 frontend/src/routes/(app)/
     (shared)/vacation/                       # Alle authentifizierten Rollen
         +page.svelte                         # Hauptseite (rollenabhaengig)
-        +page.server.ts                      # Auth + Feature-Flag Check
+        +page.server.ts                      # Auth + Addon-Flag Check
         _lib/
             api.ts                           # API-Calls (apiClient Wrapper)
             types.ts                         # TypeScript Interfaces
@@ -1243,7 +1243,7 @@ frontend/src/routes/(app)/
 ```typescript
 export const load: LayoutServerLoad = async ({ parent }) => {
   const { user } = await parent();
-  // Feature-Flag Check: Ist 'vacation' fuer diesen Tenant aktiv?
+  // Addon-Flag Check: Ist 'vacation' fuer diesen Tenant aktiv?
   // → Redirect wenn nicht aktiv
   return { user };
 };

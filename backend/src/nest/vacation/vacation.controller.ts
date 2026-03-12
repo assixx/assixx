@@ -12,15 +12,14 @@
  *   - Settings (2): get + update
  *   - Overview (2): team calendar + overview (balance)
  *
- * Guards: JwtAuthGuard + RolesGuard (class-level)
- * Permissions: RequirePermission decorator (ADR-020) + FeatureCheckService (tenant feature flag)
+ * Guards: JwtAuthGuard + RolesGuard (class-level), @RequireAddon('vacation') (tenant addon gate)
+ * Permissions: RequirePermission decorator (ADR-020)
  * Response: raw data — ResponseInterceptor wraps (ADR-007)
  */
 import {
   Body,
   Controller,
   Delete,
-  ForbiddenException,
   Get,
   HttpCode,
   HttpStatus,
@@ -34,13 +33,12 @@ import {
 } from '@nestjs/common';
 
 import { CurrentUser } from '../common/decorators/current-user.decorator.js';
+import { RequireAddon } from '../common/decorators/require-addon.decorator.js';
 import { RequirePermission } from '../common/decorators/require-permission.decorator.js';
 import { Roles } from '../common/decorators/roles.decorator.js';
-import { TenantFeature } from '../common/decorators/tenant-feature.decorator.js';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard.js';
 import { RolesGuard } from '../common/guards/roles.guard.js';
 import type { JwtPayload } from '../common/interfaces/auth.interface.js';
-import { FeatureCheckService } from '../feature-check/feature-check.service.js';
 import {
   CapacityQueryDto,
   CreateBlackoutDto,
@@ -89,7 +87,7 @@ const MOD_OVERVIEW = 'vacation-overview';
 
 @Controller('vacation')
 @UseGuards(JwtAuthGuard, RolesGuard)
-@TenantFeature('vacation')
+@RequireAddon('vacation')
 export class VacationController {
   constructor(
     private readonly vacationService: VacationService,
@@ -100,7 +98,6 @@ export class VacationController {
     private readonly staffingRulesService: VacationStaffingRulesService,
     private readonly holidaysService: VacationHolidaysService,
     private readonly settingsService: VacationSettingsService,
-    private readonly featureCheck: FeatureCheckService,
   ) {}
 
   // ==========================================================================
@@ -115,7 +112,6 @@ export class VacationController {
     @CurrentUser() user: JwtPayload,
     @Body() dto: CreateVacationRequestDto,
   ): Promise<VacationRequest> {
-    await this.ensureFeatureEnabled(user.tenantId);
     return await this.vacationService.createRequest(
       user.id,
       user.tenantId,
@@ -130,7 +126,6 @@ export class VacationController {
     @CurrentUser() user: JwtPayload,
     @Query() query: VacationQueryDto,
   ): Promise<PaginatedResult<VacationRequest>> {
-    await this.ensureFeatureEnabled(user.tenantId);
     return await this.queriesService.getMyRequests(
       user.id,
       user.tenantId,
@@ -148,7 +143,6 @@ export class VacationController {
     @CurrentUser() user: JwtPayload,
     @Query() query: VacationQueryDto,
   ): Promise<PaginatedResult<VacationRequest>> {
-    await this.ensureFeatureEnabled(user.tenantId);
     return await this.queriesService.getIncomingRequests(
       user.id,
       user.tenantId,
@@ -165,7 +159,6 @@ export class VacationController {
   async getUnreadNotificationRequestIds(
     @CurrentUser() user: JwtPayload,
   ): Promise<string[]> {
-    await this.ensureFeatureEnabled(user.tenantId);
     return await this.queriesService.getUnreadNotificationRequestIds(
       user.tenantId,
       user.id,
@@ -179,7 +172,6 @@ export class VacationController {
     @CurrentUser() user: JwtPayload,
     @Param('id') id: string,
   ): Promise<VacationRequest> {
-    await this.ensureFeatureEnabled(user.tenantId);
     return await this.queriesService.getRequestById(user.tenantId, id);
   }
 
@@ -191,7 +183,6 @@ export class VacationController {
     @Param('id') id: string,
     @Body() dto: UpdateVacationRequestDto,
   ): Promise<VacationRequest> {
-    await this.ensureFeatureEnabled(user.tenantId);
     return await this.vacationService.editRequest(
       user.id,
       user.tenantId,
@@ -208,7 +199,6 @@ export class VacationController {
     @Param('id') id: string,
     @Body() dto: RespondVacationRequestDto,
   ): Promise<VacationRequest> {
-    await this.ensureFeatureEnabled(user.tenantId);
     return await this.vacationService.respondToRequest(
       user.id,
       user.tenantId,
@@ -225,7 +215,6 @@ export class VacationController {
     @CurrentUser() user: JwtPayload,
     @Param('id') id: string,
   ): Promise<void> {
-    await this.ensureFeatureEnabled(user.tenantId);
     await this.vacationService.withdrawRequest(user.id, user.tenantId, id);
   }
 
@@ -239,7 +228,6 @@ export class VacationController {
     @Param('id') id: string,
     @Body('reason') reason: string,
   ): Promise<void> {
-    await this.ensureFeatureEnabled(user.tenantId);
     await this.vacationService.cancelRequest(
       user.id,
       user.tenantId,
@@ -259,7 +247,6 @@ export class VacationController {
     @CurrentUser() user: JwtPayload,
     @Query() query: CapacityQueryDto,
   ): Promise<VacationCapacityAnalysis> {
-    await this.ensureFeatureEnabled(user.tenantId);
     const params: CapacityAnalysisParams = {
       tenantId: user.tenantId,
       startDate: query.startDate,
@@ -280,7 +267,6 @@ export class VacationController {
     @CurrentUser() user: JwtPayload,
     @Query('year') year?: number,
   ): Promise<VacationBalance> {
-    await this.ensureFeatureEnabled(user.tenantId);
     return await this.entitlementsService.getBalance(
       user.tenantId,
       user.id,
@@ -297,7 +283,6 @@ export class VacationController {
     @Param('userId', ParseIntPipe) userId: number,
     @Query('year') year?: number,
   ): Promise<VacationBalance> {
-    await this.ensureFeatureEnabled(user.tenantId);
     return await this.entitlementsService.getBalance(
       user.tenantId,
       userId,
@@ -314,7 +299,6 @@ export class VacationController {
     @Param('userId', ParseIntPipe) userId: number,
     @Body() dto: CreateEntitlementDto,
   ): Promise<VacationEntitlement> {
-    await this.ensureFeatureEnabled(user.tenantId);
     return await this.entitlementsService.createOrUpdateEntitlement(
       user.tenantId,
       userId,
@@ -332,7 +316,6 @@ export class VacationController {
     @Body('year') year: number,
     @Body('days') days: number,
   ): Promise<VacationEntitlement> {
-    await this.ensureFeatureEnabled(user.tenantId);
     return await this.entitlementsService.addDays(
       user.tenantId,
       user.id,
@@ -353,7 +336,6 @@ export class VacationController {
     @CurrentUser() user: JwtPayload,
     @Query('year') year?: number,
   ): Promise<VacationBlackout[]> {
-    await this.ensureFeatureEnabled(user.tenantId);
     return await this.blackoutsService.getBlackouts(user.tenantId, year);
   }
 
@@ -366,7 +348,6 @@ export class VacationController {
     @CurrentUser() user: JwtPayload,
     @Body() dto: CreateBlackoutDto,
   ): Promise<VacationBlackout> {
-    await this.ensureFeatureEnabled(user.tenantId);
     return await this.blackoutsService.createBlackout(
       user.tenantId,
       user.id,
@@ -383,7 +364,6 @@ export class VacationController {
     @Param('id') id: string,
     @Body() dto: UpdateBlackoutDto,
   ): Promise<VacationBlackout> {
-    await this.ensureFeatureEnabled(user.tenantId);
     return await this.blackoutsService.updateBlackout(
       user.tenantId,
       user.id,
@@ -401,7 +381,6 @@ export class VacationController {
     @CurrentUser() user: JwtPayload,
     @Param('id') id: string,
   ): Promise<void> {
-    await this.ensureFeatureEnabled(user.tenantId);
     await this.blackoutsService.deleteBlackout(user.tenantId, user.id, id);
   }
 
@@ -415,7 +394,6 @@ export class VacationController {
   async getStaffingRules(
     @CurrentUser() user: JwtPayload,
   ): Promise<VacationStaffingRule[]> {
-    await this.ensureFeatureEnabled(user.tenantId);
     return await this.staffingRulesService.getStaffingRules(user.tenantId);
   }
 
@@ -428,7 +406,6 @@ export class VacationController {
     @CurrentUser() user: JwtPayload,
     @Body() dto: CreateStaffingRuleDto,
   ): Promise<VacationStaffingRule> {
-    await this.ensureFeatureEnabled(user.tenantId);
     return await this.staffingRulesService.createStaffingRule(
       user.tenantId,
       user.id,
@@ -445,7 +422,6 @@ export class VacationController {
     @Param('id') id: string,
     @Body() dto: UpdateStaffingRuleDto,
   ): Promise<VacationStaffingRule> {
-    await this.ensureFeatureEnabled(user.tenantId);
     return await this.staffingRulesService.updateStaffingRule(
       user.tenantId,
       user.id,
@@ -463,7 +439,6 @@ export class VacationController {
     @CurrentUser() user: JwtPayload,
     @Param('id') id: string,
   ): Promise<void> {
-    await this.ensureFeatureEnabled(user.tenantId);
     await this.staffingRulesService.deleteStaffingRule(
       user.tenantId,
       user.id,
@@ -482,7 +457,6 @@ export class VacationController {
     @CurrentUser() user: JwtPayload,
     @Query('year') year?: number,
   ): Promise<VacationHoliday[]> {
-    await this.ensureFeatureEnabled(user.tenantId);
     return await this.holidaysService.getHolidays(user.tenantId, year);
   }
 
@@ -495,7 +469,6 @@ export class VacationController {
     @CurrentUser() user: JwtPayload,
     @Body() dto: CreateHolidayDto,
   ): Promise<VacationHoliday> {
-    await this.ensureFeatureEnabled(user.tenantId);
     return await this.holidaysService.createHoliday(
       user.tenantId,
       user.id,
@@ -512,7 +485,6 @@ export class VacationController {
     @Param('id') id: string,
     @Body() dto: UpdateHolidayDto,
   ): Promise<VacationHoliday> {
-    await this.ensureFeatureEnabled(user.tenantId);
     return await this.holidaysService.updateHoliday(
       user.tenantId,
       user.id,
@@ -530,7 +502,6 @@ export class VacationController {
     @CurrentUser() user: JwtPayload,
     @Param('id') id: string,
   ): Promise<void> {
-    await this.ensureFeatureEnabled(user.tenantId);
     await this.holidaysService.deleteHoliday(user.tenantId, user.id, id);
   }
 
@@ -545,7 +516,6 @@ export class VacationController {
   async getSettings(
     @CurrentUser() user: JwtPayload,
   ): Promise<VacationSettings> {
-    await this.ensureFeatureEnabled(user.tenantId);
     return await this.settingsService.getSettings(user.tenantId);
   }
 
@@ -557,7 +527,6 @@ export class VacationController {
     @CurrentUser() user: JwtPayload,
     @Body() dto: UpdateSettingsDto,
   ): Promise<VacationSettings> {
-    await this.ensureFeatureEnabled(user.tenantId);
     return await this.settingsService.updateSettings(
       user.tenantId,
       user.id,
@@ -581,7 +550,6 @@ export class VacationController {
     @Query('startDate') startDate: string,
     @Query('endDate') endDate: string,
   ): Promise<CalendarVacationEntry[]> {
-    await this.ensureFeatureEnabled(user.tenantId);
     return await this.queriesService.getMyCalendarVacations(
       user.id,
       user.tenantId,
@@ -603,7 +571,6 @@ export class VacationController {
     @Query('month', ParseIntPipe) month: number,
     @Query('year', ParseIntPipe) year: number,
   ): Promise<TeamCalendarData> {
-    await this.ensureFeatureEnabled(user.tenantId);
     return await this.queriesService.getTeamCalendar(
       user.tenantId,
       teamId,
@@ -620,19 +587,5 @@ export class VacationController {
     @Query('year') year?: number,
   ): Promise<VacationBalance> {
     return await this.getMyBalance(user, year);
-  }
-
-  // ==========================================================================
-  // Private helpers
-  // ==========================================================================
-
-  /** Guard: throw 403 if tenant doesn't have the vacation feature enabled. */
-  private async ensureFeatureEnabled(tenantId: number): Promise<void> {
-    const enabled = await this.featureCheck.checkTenantAccess(tenantId, FEAT);
-    if (!enabled) {
-      throw new ForbiddenException(
-        'Vacation feature is not enabled for this tenant',
-      );
-    }
   }
 }

@@ -20,10 +20,6 @@
     CardStatus,
   } from '../../../_lib/types';
 
-  function resolvePath(path: string): string {
-    return (resolve as (p: string) => string)(path);
-  }
-
   interface Props {
     card: TpmCard;
     colors: TpmColorConfigEntry[];
@@ -245,7 +241,7 @@
           class="kamishibai-card__detail-btn"
           onclick={(e: MouseEvent) => {
             e.stopPropagation();
-            void goto(resolvePath(`/lean-management/tpm/card/${card.uuid}`));
+            void goto(resolve(`/lean-management/tpm/card/${card.uuid}`));
           }}
         >
           <i class="fas fa-expand-alt"></i>

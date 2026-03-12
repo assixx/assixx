@@ -162,7 +162,7 @@ describe('DummyUsersService', () => {
       // Verify each permission call has correct structure
       for (const call of permCalls) {
         const sql = call[0] as string;
-        expect(sql).toContain('user_feature_permissions');
+        expect(sql).toContain('user_addon_permissions');
         expect(sql).toContain('can_read, can_write, can_delete');
         expect(sql).toContain('true, false, false');
         expect(sql).toContain('ON CONFLICT');

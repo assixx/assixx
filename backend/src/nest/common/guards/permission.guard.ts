@@ -1,14 +1,14 @@
 /**
  * Permission Guard
  *
- * Per-user feature permission enforcement.
+ * Per-user addon permission enforcement.
  * Reads \@RequirePermission() decorator metadata and checks
- * user_feature_permissions table via UserPermissionsService.
+ * user_addon_permissions table via UserPermissionsService.
  *
  * Guard execution order (all global):
  *   1. JwtAuthGuard — authenticates, attaches user to request
  *   2. RolesGuard — checks user role against \@Roles()
- *   3. PermissionGuard — checks feature permission against \@RequirePermission()
+ *   3. PermissionGuard — checks addon permission against \@RequirePermission()
  *
  * Bypass rules:
  *   - No \@RequirePermission() metadata → pass through
@@ -72,17 +72,17 @@ export class PermissionGuard implements CanActivate {
     // Check permission in DB (fail-closed: no row = denied)
     const granted = await this.permissionService.hasPermission(
       user.id,
-      required.featureCode,
+      required.addonCode,
       required.moduleCode,
       required.action,
     );
 
     if (!granted) {
       this.logger.warn(
-        `Permission denied: user ${user.id} (${user.activeRole}) lacks ${required.action} for ${required.featureCode}/${required.moduleCode}`,
+        `Permission denied: user ${user.id} (${user.activeRole}) lacks ${required.action} for ${required.addonCode}/${required.moduleCode}`,
       );
       throw new ForbiddenException(
-        `Permission denied: ${required.action} access required for ${required.featureCode}/${required.moduleCode}`,
+        `Permission denied: ${required.action} access required for ${required.addonCode}/${required.moduleCode}`,
       );
     }
 

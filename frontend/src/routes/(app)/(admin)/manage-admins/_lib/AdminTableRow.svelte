@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { DEFAULT_HIERARCHY_LABELS } from '$lib/types/hierarchy-labels';
   import { getProfilePictureUrl } from '$lib/utils/avatar-helpers';
 
   import {
@@ -14,6 +15,7 @@
     getTruncatedNotes,
   } from './utils';
 
+  import type { HierarchyLabels } from '$lib/types/hierarchy-labels';
   import type { Admin } from './types';
 
   // =============================================================================
@@ -22,14 +24,21 @@
 
   interface Props {
     admin: Admin;
+    labels?: HierarchyLabels;
     onedit: (adminId: number) => void;
     onavailability: (adminId: number) => void;
     onpermission: (uuid: string) => void;
     ondelete: (adminId: number) => void;
   }
 
-  const { admin, onedit, onavailability, onpermission, ondelete }: Props =
-    $props();
+  const {
+    admin,
+    labels = DEFAULT_HIERARCHY_LABELS,
+    onedit,
+    onavailability,
+    onpermission,
+    ondelete,
+  }: Props = $props();
 
   // =============================================================================
   // DERIVED VALUES
@@ -40,9 +49,9 @@
       admin.profilePicture !== undefined &&
       admin.profilePicture !== '',
   );
-  const areasBadge = $derived(getAreasBadge(admin));
-  const deptsBadge = $derived(getDepartmentsBadge(admin));
-  const teamsBadge = $derived(getTeamsBadge(admin));
+  const areasBadge = $derived(getAreasBadge(admin, labels));
+  const deptsBadge = $derived(getDepartmentsBadge(admin, labels));
+  const teamsBadge = $derived(getTeamsBadge(admin, labels));
   const availabilityBadge = $derived(getAvailabilityBadge(admin));
   const plannedAvailability = $derived(getPlannedAvailability(admin));
   const notes = $derived(getTruncatedNotes(admin.availabilityNotes));
@@ -74,7 +83,7 @@
   </td>
   <td>{admin.email}</td>
   <td>{admin.employeeNumber ?? '-'}</td>
-  <td>{getPositionDisplay(admin.position ?? '')}</td>
+  <td>{getPositionDisplay(admin.position ?? '', labels)}</td>
   <td>
     <span class="badge {getStatusBadgeClass(admin.isActive)}"
       >{getStatusLabel(admin.isActive)}</span

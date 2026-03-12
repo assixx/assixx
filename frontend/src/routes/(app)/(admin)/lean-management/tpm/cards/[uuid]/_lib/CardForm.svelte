@@ -313,7 +313,7 @@
           <i class="fas fa-chevron-down"></i>
         </button>
         <div
-          class="dropdown__menu dropdown__menu--scrollable"
+          class="dropdown__menu"
           class:active={intervalDropdownOpen}
         >
           {#each INTERVAL_OPTIONS as intv (intv)}
@@ -515,7 +515,7 @@
           </button>
         </div>
         <div
-          class="dropdown__menu dropdown__menu--scrollable"
+          class="dropdown__menu"
           class:active={locationDropdownOpen}
         >
           <button

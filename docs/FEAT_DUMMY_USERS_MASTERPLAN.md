@@ -44,7 +44,7 @@
 | Verfügbarkeit    | Ja                 | Nein                                   |
 | Berechtigungen   | Granular (ADR-020) | Fest: nur Blackboard/Kalender/TPM      |
 | Seitenfreigabe   | Alle (shared)      | Nur Whitelist                          |
-| Feature-Flag     | Kein eigener       | Kein eigener                           |
+| Addon-Flag       | Kein eigener       | Kein eigener                           |
 | Startseite       | Dashboard          | Blackboard                             |
 
 ---
@@ -82,7 +82,7 @@
 | `RoleEnumSchema` (Zod)        | `dummy` zu Zod enum hinzufügen (`role-id-param.dto.ts`)            | 2     |                |
 | `ROLE_LABELS`                 | Deutsches Label "Dummy" hinzufügen                                 | 2     |                |
 | `JwtAuthGuard`                | Dummy-Rolle validieren (USER_ROLES check — automatisch via shared) | 2     |                |
-| `user_feature_permissions`    | Read-only Permissions auto-assign bei Dummy-Erstellung             | 3     |                |
+| `user_addon_permissions`      | Read-only Permissions auto-assign bei Dummy-Erstellung             | 3     |                |
 | `UsersService.listUsers`      | `AND role != 'dummy'` Filter hinzufügen                            | 3     |                |
 | `ChatService.getChatUsers`    | `AND u.role != 'dummy'` Filter hinzufügen                          | 3     |                |
 | `TeamsService.getTeamMembers` | `AND u.role != 'dummy'` Filter hinzufügen                          | 3     |                |
@@ -405,7 +405,7 @@ WHERE tenant_id = $1 AND role = 'dummy';
 | PUT    | `/dummy-users/:uuid` | @Roles('admin', 'root') | Aktualisieren     |
 | DELETE | `/dummy-users/:uuid` | @Roles('admin', 'root') | Soft-Delete       |
 
-**Kein Feature-Gate nötig** (User-Entscheidung: kein eigener Feature-Flag).
+**Kein Feature-Gate nötig** (User-Entscheidung: kein eigener Addon-Flag).
 
 **Kein Permission-Guard nötig** (nur Admin/Root, keine granularen Permissions).
 
@@ -422,14 +422,14 @@ WHERE tenant_id = $1 AND role = 'dummy';
 >
 > **Realität:** Blackboard GET-Endpoints haben KEINE `@Roles()`-Decorators. Calendar und TPM
 > haben auf KEINEM Endpoint `@Roles()`. Die Zugriffskontrolle läuft ausschließlich über
-> `@RequirePermission()` → `PermissionGuard` → `user_feature_permissions`-Tabelle.
+> `@RequirePermission()` → `PermissionGuard` → `user_addon_permissions`-Tabelle.
 >
 > **Der tatsächliche Zugangsweg für Dummies:**
 >
 > 1. `JwtAuthGuard`: Prüft `USER_ROLES.includes(role)` → ✅ durch Phase 2 gelöst
 > 2. `RolesGuard`: Kein `@Roles()` auf GET-Endpoints → ✅ passiert automatisch durch
-> 3. `TenantFeatureGuard`: Prüft ob Feature für Tenant aktiv → ✅ keine Änderung nötig
-> 4. `PermissionGuard`: Prüft `user_feature_permissions`-Tabelle → ❌ **HIER IST DER BLOCKER**
+> 3. `TenantAddonGuard`: Prüft ob Feature für Tenant aktiv → ✅ keine Änderung nötig
+> 4. `PermissionGuard`: Prüft `user_addon_permissions`-Tabelle → ❌ **HIER IST DER BLOCKER**
 >
 > **Lösung:** Read-only Permissions automatisch beim Erstellen eines Dummies anlegen.
 
@@ -450,12 +450,12 @@ WHERE tenant_id = $1 AND role = 'dummy';
 
 **Auto-Assign Permissions in `DummyUsersService.create()`:**
 
-Nach dem User-INSERT müssen automatisch die folgenden `user_feature_permissions`-Rows
+Nach dem User-INSERT müssen automatisch die folgenden `user_addon_permissions`-Rows
 angelegt werden (nur `canRead = true`, `canWrite = false`, `canDelete = false`):
 
 ```sql
-INSERT INTO user_feature_permissions
-  (tenant_id, user_id, feature_code, module_code, can_read, can_write, can_delete, assigned_by)
+INSERT INTO user_addon_permissions
+  (tenant_id, user_id, addon_code, module_code, can_read, can_write, can_delete, assigned_by)
 VALUES
   ($1, $2, 'blackboard', 'blackboard-posts',    true, false, false, $3),
   ($1, $2, 'blackboard', 'blackboard-comments', true, false, false, $3),
@@ -463,12 +463,12 @@ VALUES
   ($1, $2, 'tpm',        'tpm-plans',           true, false, false, $3),
   ($1, $2, 'tpm',        'tpm-cards',           true, false, false, $3),
   ($1, $2, 'tpm',        'tpm-executions',      true, false, false, $3)
-ON CONFLICT (tenant_id, user_id, feature_code, module_code) DO NOTHING;
+ON CONFLICT (tenant_id, user_id, addon_code, module_code) DO NOTHING;
 ```
 
 > **WICHTIG:** Nur `canRead`! Dummies dürfen NICHTS schreiben/löschen.
 > Die Permissions werden nur für Features angelegt, die beim Tenant aktiv sind
-> (`TenantFeatureGuard` prüft das separat). Ist ein Feature nicht aktiv, greift
+> (`TenantAddonGuard` prüft das separat). Ist ein Feature nicht aktiv, greift
 > der Guard vorher → 403, egal ob Permission-Row existiert.
 
 **Bewusste Entscheidung — Blackboard Confirm/Comment:**
@@ -1177,7 +1177,7 @@ const dummyMenuItems: NavItem[] = [
     icon: ICONS.calendar,
     label: 'Kalender',
     url: '/calendar',
-    featureCode: 'calendar',
+    addonCode: 'calendar',
   },
   {
     id: 'lean-management',
@@ -1189,7 +1189,7 @@ const dummyMenuItems: NavItem[] = [
         icon: ICONS.wrench,
         label: 'TPM',
         url: '/lean-management/tpm',
-        featureCode: 'tpm',
+        addonCode: 'tpm',
       },
     ],
   },
@@ -1360,11 +1360,11 @@ userRole?: 'root' | 'admin' | 'employee' | 'dummy'
 
 ## Spec Deviations
 
-| #   | Ursprüngliche Idee                             | Tatsächlicher Plan                               | Entscheidung                                                       |
-| --- | ---------------------------------------------- | ------------------------------------------------ | ------------------------------------------------------------------ |
-| D1  | Email: `dummy_eins@sub.xx`                     | Email: `dummy_1@sub.display`                     | Sequentiell statt Bezeichnung-basiert (User-Entscheidung)          |
-| D2  | Bezeichnung in first_name                      | Neues display_name Feld                          | Sauberer semantisch (User-Entscheidung)                            |
-| D3  | Feature-Flag für Dummies                       | Kein Feature-Flag                                | Immer verfügbar für Admins (User-Entscheidung)                     |
-| D4  | `@Roles('dummy')` auf Controller-Endpoints     | Auto-Assign read-only `user_feature_permissions` | Code-Review: Endpoints nutzen `@RequirePermission`, nicht `@Roles` |
-| D5  | Login-Redirect in Phase 6                      | Login-Redirect in Phase 2 (Step 2.5)             | Code-Review: `Record<UserRole, string>` bricht sonst TypeScript    |
-| D6  | TPM-Routen: `/tpm/boards`, `/tpm/boards/:uuid` | `/tpm/plans`, `/tpm/plans/:uuid/board`           | Code-Review: Tatsächliche Route-Struktur verifiziert               |
+| #   | Ursprüngliche Idee                             | Tatsächlicher Plan                             | Entscheidung                                                       |
+| --- | ---------------------------------------------- | ---------------------------------------------- | ------------------------------------------------------------------ |
+| D1  | Email: `dummy_eins@sub.xx`                     | Email: `dummy_1@sub.display`                   | Sequentiell statt Bezeichnung-basiert (User-Entscheidung)          |
+| D2  | Bezeichnung in first_name                      | Neues display_name Feld                        | Sauberer semantisch (User-Entscheidung)                            |
+| D3  | Addon-Flag für Dummies                         | Kein Addon-Flag                                | Immer verfügbar für Admins (User-Entscheidung)                     |
+| D4  | `@Roles('dummy')` auf Controller-Endpoints     | Auto-Assign read-only `user_addon_permissions` | Code-Review: Endpoints nutzen `@RequirePermission`, nicht `@Roles` |
+| D5  | Login-Redirect in Phase 6                      | Login-Redirect in Phase 2 (Step 2.5)           | Code-Review: `Record<UserRole, string>` bricht sonst TypeScript    |
+| D6  | TPM-Routen: `/tpm/boards`, `/tpm/boards/:uuid` | `/tpm/plans`, `/tpm/plans/:uuid/board`         | Code-Review: Tatsächliche Route-Struktur verifiziert               |

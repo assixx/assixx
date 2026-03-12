@@ -2,6 +2,11 @@
 // CALENDAR - CONSTANTS
 // =============================================================================
 
+import {
+  DEFAULT_HIERARCHY_LABELS,
+  type HierarchyLabels,
+} from '$lib/types/hierarchy-labels';
+
 import type { OrgLevel, EventLevelInfo } from './types';
 
 /**
@@ -31,24 +36,36 @@ export const ORG_LEVEL_COLORS: Record<OrgLevel, string> = {
 } as const;
 
 /**
- * Event level info for UI display
- * MUST match legacy calendar.css exactly!
+ * Factory: Event level info for UI display
+ * Dynamic labels for department/team/area, static for company/personal.
  */
-export const EVENT_LEVEL_INFO: Record<OrgLevel, EventLevelInfo> = {
-  company: { class: 'event-level-company', text: 'Firma', color: '#3498db' },
-  department: {
-    class: 'event-level-department',
-    text: 'Abteilung',
-    color: '#e67e22',
-  },
-  team: { class: 'event-level-team', text: 'Team', color: '#2ecc71' },
-  area: { class: 'event-level-area', text: 'Bereich', color: '#e53935' }, // Red
-  personal: {
-    class: 'event-level-personal',
-    text: 'Persoenlich',
-    color: '#9b59b6',
-  },
-} as const;
+export function createEventLevelInfo(
+  labels: HierarchyLabels,
+): Record<OrgLevel, EventLevelInfo> {
+  return {
+    company: { class: 'event-level-company', text: 'Firma', color: '#3498db' },
+    department: {
+      class: 'event-level-department',
+      text: labels.department,
+      color: '#e67e22',
+    },
+    team: { class: 'event-level-team', text: labels.team, color: '#2ecc71' },
+    area: {
+      class: 'event-level-area',
+      text: labels.area,
+      color: '#e53935',
+    },
+    personal: {
+      class: 'event-level-personal',
+      text: 'Persoenlich',
+      color: '#9b59b6',
+    },
+  };
+}
+
+/** Default event level info — backward-compatible static export */
+export const EVENT_LEVEL_INFO: Record<OrgLevel, EventLevelInfo> =
+  createEventLevelInfo(DEFAULT_HIERARCHY_LABELS);
 
 /**
  * German locale for EventCalendar
@@ -72,49 +89,87 @@ export const DE_LOCALE = {
   noEventsText: 'Keine Ereignisse',
 } as const;
 
-/**
- * Filter options for organization level
- * MUST match legacy calendar.html exactly!
- */
-export const FILTER_OPTIONS = [
-  { value: 'all', label: 'Gesamt', icon: 'fa-globe', title: 'Alle Termine' },
-  {
-    value: 'company',
-    label: 'Firma',
-    icon: 'fa-building',
-    title: 'Firmentermine',
-  },
-  {
-    value: 'area',
-    label: 'Bereich',
-    icon: 'fa-map-marked-alt',
-    title: 'Bereichstermine',
-  },
-  {
-    value: 'department',
-    label: 'Abteilung',
-    icon: 'fa-sitemap',
-    title: 'Abteilungstermine',
-  },
-  { value: 'team', label: 'Team', icon: 'fa-users', title: 'Teamtermine' },
-  {
-    value: 'personal',
-    label: 'Meine',
-    icon: 'fa-user',
-    title: 'Persoenliche Termine',
-  },
-] as const;
+/** Filter option shape for organization level */
+interface FilterOption {
+  readonly value: string;
+  readonly label: string;
+  readonly icon: string;
+  readonly title: string;
+}
 
 /**
- * Org level options for form
+ * Factory: Filter options for organization level
+ * Dynamic labels for department/team/area, static for company/personal.
  */
-export const ORG_LEVEL_OPTIONS = [
-  { value: 'personal', label: 'Persoenlich', icon: 'fa-user' },
-  { value: 'company', label: 'Firma', icon: 'fa-building' },
-  { value: 'department', label: 'Abteilung', icon: 'fa-sitemap' },
-  { value: 'team', label: 'Team', icon: 'fa-users' },
-  { value: 'area', label: 'Bereich', icon: 'fa-map-marked-alt' },
-] as const;
+export function createFilterOptions(
+  labels: HierarchyLabels,
+): readonly FilterOption[] {
+  return [
+    { value: 'all', label: 'Gesamt', icon: 'fa-globe', title: 'Alle Termine' },
+    {
+      value: 'company',
+      label: 'Firma',
+      icon: 'fa-building',
+      title: 'Firmentermine',
+    },
+    {
+      value: 'area',
+      label: labels.area,
+      icon: 'fa-map-marked-alt',
+      title: `${labels.area}-Termine`,
+    },
+    {
+      value: 'department',
+      label: labels.department,
+      icon: 'fa-sitemap',
+      title: `${labels.department}-Termine`,
+    },
+    {
+      value: 'team',
+      label: labels.team,
+      icon: 'fa-users',
+      title: `${labels.team}-Termine`,
+    },
+    {
+      value: 'personal',
+      label: 'Meine',
+      icon: 'fa-user',
+      title: 'Persoenliche Termine',
+    },
+  ];
+}
+
+/** Default filter options — backward-compatible static export */
+export const FILTER_OPTIONS: readonly FilterOption[] = createFilterOptions(
+  DEFAULT_HIERARCHY_LABELS,
+);
+
+/** Org level option shape for form selects */
+interface OrgLevelOption {
+  readonly value: string;
+  readonly label: string;
+  readonly icon: string;
+}
+
+/**
+ * Factory: Org level options for form
+ * Dynamic labels for department/team/area, static for personal/company.
+ */
+export function createOrgLevelOptions(
+  labels: HierarchyLabels,
+): readonly OrgLevelOption[] {
+  return [
+    { value: 'personal', label: 'Persoenlich', icon: 'fa-user' },
+    { value: 'company', label: 'Firma', icon: 'fa-building' },
+    { value: 'department', label: labels.department, icon: 'fa-sitemap' },
+    { value: 'team', label: labels.team, icon: 'fa-users' },
+    { value: 'area', label: labels.area, icon: 'fa-map-marked-alt' },
+  ];
+}
+
+/** Default org level options — backward-compatible static export */
+export const ORG_LEVEL_OPTIONS: readonly OrgLevelOption[] =
+  createOrgLevelOptions(DEFAULT_HIERARCHY_LABELS);
 
 /**
  * Work order calendar event color — uses design-system token --color-slate (oklch)

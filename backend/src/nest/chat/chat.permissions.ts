@@ -1,7 +1,7 @@
 /**
  * Chat Permission Definitions
  *
- * Defines which permission modules the chat feature exposes.
+ * Defines which permission modules the chat addon exposes.
  * Registered via ChatPermissionRegistrar (OnModuleInit).
  *
  * @see docs/USER-PERMISSIONS-PLAN.md

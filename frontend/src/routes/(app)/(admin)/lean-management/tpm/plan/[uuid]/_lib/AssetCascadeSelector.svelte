@@ -6,11 +6,12 @@
    * Three-level cascade dropdown for selecting a asset.
    * Used in TPM plan create mode only.
    */
-  import { MESSAGES } from '../../../_lib/constants';
+  import { type TpmMessages } from '../../../_lib/constants';
 
   import type { Asset, TpmArea, TpmDepartment } from '../../../_lib/types';
 
   interface Props {
+    messages: TpmMessages;
     assets: Asset[];
     areas: TpmArea[];
     departments: TpmDepartment[];
@@ -20,6 +21,7 @@
   }
 
   const {
+    messages,
     assets,
     areas,
     departments,
@@ -95,25 +97,25 @@
   const isAssetDisabled = $derived(formDepartmentId === null);
 
   const selectedAreaText = $derived.by(() => {
-    if (formAreaId === null) return MESSAGES.PH_AREA;
+    if (formAreaId === null) return messages.PH_AREA;
     const match = areas.find((a: TpmArea) => a.id === formAreaId);
-    return match?.name ?? MESSAGES.PH_AREA;
+    return match?.name ?? messages.PH_AREA;
   });
 
   const selectedDepartmentText = $derived.by(() => {
-    if (isDepartmentDisabled) return MESSAGES.PH_SELECT_AREA_FIRST;
-    if (formDepartmentId === null) return MESSAGES.PH_DEPARTMENT;
+    if (isDepartmentDisabled) return messages.PH_SELECT_AREA_FIRST;
+    if (formDepartmentId === null) return messages.PH_DEPARTMENT;
     const match = filteredDepartments.find(
       (d: TpmDepartment) => d.id === formDepartmentId,
     );
-    return match?.name ?? MESSAGES.PH_DEPARTMENT;
+    return match?.name ?? messages.PH_DEPARTMENT;
   });
 
   const selectedAssetText = $derived.by(() => {
-    if (isAssetDisabled) return MESSAGES.PH_SELECT_DEPT_FIRST;
-    if (assetUuid === '') return MESSAGES.PH_MACHINE;
+    if (isAssetDisabled) return messages.PH_SELECT_DEPT_FIRST;
+    if (assetUuid === '') return messages.PH_MACHINE;
     const match = filteredAssets.find((m: Asset) => m.uuid === assetUuid);
-    if (match === undefined) return MESSAGES.PH_MACHINE;
+    if (match === undefined) return messages.PH_MACHINE;
     const num = match.assetNumber?.trim() ?? '';
     return num.length > 0 ? `${match.name} (${num})` : match.name;
   });
@@ -146,7 +148,7 @@
 
 <!-- Area -->
 <div class="form-field">
-  <span class="form-field__label">{MESSAGES.LABEL_AREA}</span>
+  <span class="form-field__label">{messages.LABEL_AREA}</span>
   <div class="dropdown">
     <button
       type="button"
@@ -163,7 +165,7 @@
       <i class="fas fa-chevron-down"></i>
     </button>
     <div
-      class="dropdown__menu dropdown__menu--scrollable"
+      class="dropdown__menu"
       class:active={areaDropdownOpen}
     >
       {#each areas as area (area.id)}
@@ -184,7 +186,7 @@
 
 <!-- Department (disabled until area selected) -->
 <div class="form-field">
-  <span class="form-field__label">{MESSAGES.LABEL_DEPARTMENT}</span>
+  <span class="form-field__label">{messages.LABEL_DEPARTMENT}</span>
   <div
     class="dropdown"
     class:disabled={isDepartmentDisabled}
@@ -206,7 +208,7 @@
     </button>
     {#if !isDepartmentDisabled}
       <div
-        class="dropdown__menu dropdown__menu--scrollable"
+        class="dropdown__menu"
         class:active={departmentDropdownOpen}
       >
         {#each filteredDepartments as dept (dept.id)}
@@ -228,7 +230,7 @@
 
 <!-- Asset (disabled until department selected) -->
 <div class="form-field">
-  <span class="form-field__label">{MESSAGES.LABEL_MACHINE}</span>
+  <span class="form-field__label">{messages.LABEL_MACHINE}</span>
   <div
     class="dropdown"
     class:disabled={isAssetDisabled}
@@ -250,7 +252,7 @@
     </button>
     {#if !isAssetDisabled}
       <div
-        class="dropdown__menu dropdown__menu--scrollable"
+        class="dropdown__menu"
         class:active={assetDropdownOpen}
       >
         {#each filteredAssets as asset (asset.uuid)}
@@ -271,7 +273,7 @@
             {/if}
             {#if hasPlan}
               <span class="dropdown__option-hint">
-                ({MESSAGES.MACHINE_HAS_PLAN})
+                ({messages.MACHINE_HAS_PLAN})
               </span>
             {/if}
           </button>

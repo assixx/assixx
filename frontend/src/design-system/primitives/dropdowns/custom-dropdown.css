@@ -163,27 +163,33 @@
     z-index: 10;
   }
 
-  /* Max Height with Scroll */
-  .dropdown__menu--scrollable {
+  /* Auto-scroll when 6+ options — no manual class needed */
+  .dropdown__menu:has(> .dropdown__option:nth-child(6)) {
     max-height: 200px;
     overflow-y: auto;
   }
 
   /* Custom Scrollbar */
-  .dropdown__menu--scrollable::-webkit-scrollbar {
+  .dropdown__menu:has(> .dropdown__option:nth-child(6))::-webkit-scrollbar {
     width: 4px;
   }
 
-  .dropdown__menu--scrollable::-webkit-scrollbar-track {
+  .dropdown__menu:has(
+      > .dropdown__option:nth-child(6)
+    )::-webkit-scrollbar-track {
     background: var(--glass-bg);
   }
 
-  .dropdown__menu--scrollable::-webkit-scrollbar-thumb {
+  .dropdown__menu:has(
+      > .dropdown__option:nth-child(6)
+    )::-webkit-scrollbar-thumb {
     border-radius: 2px;
     background: var(--color-glass-border);
   }
 
-  .dropdown__menu--scrollable::-webkit-scrollbar-thumb:hover {
+  .dropdown__menu:has(
+      > .dropdown__option:nth-child(6)
+    )::-webkit-scrollbar-thumb:hover {
     background: var(--color-glass-border-hover);
   }
 }

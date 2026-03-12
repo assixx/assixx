@@ -2,6 +2,11 @@
 // MANAGE MACHINES - CONSTANTS
 // =============================================================================
 
+import {
+  DEFAULT_HIERARCHY_LABELS,
+  type HierarchyLabels,
+} from '$lib/types/hierarchy-labels';
+
 import type { AssetStatus, AssetType } from './types';
 
 /**
@@ -65,42 +70,26 @@ export const STATUS_OPTIONS: {
   { value: 'decommissioned', label: 'Außer Betrieb', class: 'badge--error' },
 ];
 
-/**
- * UI Messages (German) - Prepared for i18n
- */
-export const MESSAGES = {
-  // Page titles
-  PAGE_TITLE: 'Anlagen verwalten - Assixx',
-  PAGE_HEADING: 'Anlagenübersicht',
-  PAGE_DESCRIPTION: 'Alle Anlagen verwalten und bearbeiten',
-
-  // Modal titles
-  MODAL_ADD_TITLE: 'Neue Anlage',
-  MODAL_EDIT_TITLE: 'Anlage bearbeiten',
-  MODAL_DELETE_TITLE: 'Anlage löschen',
+/** Static messages that don't depend on hierarchy labels */
+const STATIC_MESSAGES = {
+  // Modal titles (neutralized per A4)
+  MODAL_ADD_TITLE: 'Hinzufügen',
+  MODAL_EDIT_TITLE: 'Bearbeiten',
+  MODAL_DELETE_TITLE: 'Löschen',
   MODAL_DELETE_CONFIRM_TITLE: 'Endgültig löschen?',
 
-  // Labels
+  // Labels (entity-neutral)
   LABEL_NAME: 'Name',
   LABEL_MODEL: 'Modell',
   LABEL_MANUFACTURER: 'Hersteller',
   LABEL_SERIAL: 'Seriennummer',
-  LABEL_DEPARTMENT: 'Abteilung',
-  LABEL_AREA: 'Bereich',
-  LABEL_TEAMS: 'Teams',
-  LABEL_TYPE: 'Anlagentyp',
+  LABEL_TYPE: 'Typ',
   LABEL_STATUS: 'Status',
   LABEL_HOURS: 'Betriebsstunden',
   LABEL_NEXT_MAINTENANCE: 'Nächste Wartung',
 
-  // Dropdown placeholders
-  PLACEHOLDER_DEPARTMENT: 'Keine Abteilung',
-  PLACEHOLDER_AREA: 'Kein Bereich',
-  PLACEHOLDER_TYPE: 'Anlagentyp wählen',
-  PLACEHOLDER_TEAMS: 'Keine Teams zugewiesen',
-  PLACEHOLDER_SELECT_AREA_FIRST: 'Bitte zuerst Bereich wählen',
-  PLACEHOLDER_SELECT_DEPT_FIRST: 'Bitte zuerst Abteilung wählen',
-  PLACEHOLDER_NO_TEAMS_AVAILABLE: 'Keine Teams verfügbar',
+  // Dropdown placeholders (entity-neutral)
+  PLACEHOLDER_TYPE: 'Typ wählen',
 
   // Buttons
   BTN_SAVE: 'Speichern',
@@ -108,7 +97,7 @@ export const MESSAGES = {
   BTN_DELETE: 'Löschen',
   BTN_DELETE_FINAL: 'Endgültig löschen',
   BTN_RETRY: 'Erneut versuchen',
-  BTN_ADD_MACHINE: 'Anlage hinzufügen',
+  BTN_ADD: 'Hinzufügen',
 
   // Status filter buttons
   FILTER_ALL: 'Alle',
@@ -121,61 +110,96 @@ export const MESSAGES = {
 
   // Search
   SEARCH_PLACEHOLDER: 'Name, Modell, Hersteller...',
-  SEARCH_NO_RESULTS: 'Keine Anlagen gefunden',
 
-  // Empty state
-  EMPTY_TITLE: 'Keine Anlagen gefunden',
-  EMPTY_DESCRIPTION:
-    'Fügen Sie Ihre erste Anlage hinzu, um die Verwaltung zu starten.',
+  // Validation (neutralized)
+  ERROR_NAME_REQUIRED: 'Bitte geben Sie einen Namen ein',
+  ERROR_SAVE_FAILED: 'Fehler beim Speichern',
+  ERROR_DELETE_FAILED: 'Fehler beim Löschen',
+  ERROR_LOAD_FAILED: 'Fehler beim Laden',
+  ERROR_NETWORK: 'Netzwerkfehler beim Laden',
 
-  // Empty state by filter
-  EMPTY_OPERATIONAL: 'Keine betriebsbereiten Anlagen',
-  EMPTY_MAINTENANCE: 'Keine Anlagen in Wartung',
-  EMPTY_REPAIR: 'Keine Anlagen in Reparatur',
-  EMPTY_STANDBY: 'Keine Anlagen im Stillstand',
-  EMPTY_CLEANING: 'Keine Anlagen in Reinigung',
-  EMPTY_OTHER: 'Keine Anlagen unter Sonstiges',
-  EMPTY_FILTER_DESC: 'Es gibt aktuell keine Anlagen in dieser Kategorie.',
-
-  // Loading
-  LOADING_MACHINES: 'Anlagen werden geladen...',
-
-  // Validation errors
-  ERROR_NAME_REQUIRED: 'Bitte geben Sie einen Anlagennamen ein',
-  ERROR_SAVE_FAILED: 'Fehler beim Speichern der Anlage',
-  ERROR_DELETE_FAILED: 'Fehler beim Löschen der Anlage',
-  ERROR_LOAD_FAILED: 'Fehler beim Laden der Anlagen',
-  ERROR_NETWORK: 'Netzwerkfehler beim Laden der Anlagen',
-
-  // Delete confirmation
-  DELETE_CONFIRM_MESSAGE: 'Möchten Sie diese Anlage wirklich löschen?',
+  // Delete confirmation (neutralized)
+  DELETE_CONFIRM_MESSAGE: 'Möchten Sie diesen Eintrag wirklich löschen?',
   DELETE_FINAL_WARNING:
     'ACHTUNG: Diese Aktion kann nicht rückgängig gemacht werden!',
-  DELETE_FINAL_INFO: 'Die Anlage wird unwiderruflich aus dem System entfernt.',
+  DELETE_FINAL_INFO: 'Der Eintrag wird unwiderruflich aus dem System entfernt.',
 
-  // Success messages
-  SUCCESS_CREATED: 'Anlage erfolgreich erstellt',
-  SUCCESS_UPDATED: 'Anlage erfolgreich aktualisiert',
-  SUCCESS_DELETED: 'Anlage gelöscht',
+  // Success messages (neutralized)
+  SUCCESS_CREATED: 'Erfolgreich erstellt',
+  SUCCESS_UPDATED: 'Erfolgreich aktualisiert',
+  SUCCESS_DELETED: 'Erfolgreich gelöscht',
 
-  // Table headers
+  // Table headers (entity-neutral)
   TH_ID: 'ID',
   TH_NAME: 'Name',
   TH_MODEL: 'Modell',
   TH_MANUFACTURER: 'Hersteller',
-  TH_AREA: 'Bereich',
-  TH_DEPARTMENT: 'Abteilung',
-  TH_TEAMS: 'Teams',
   TH_STATUS: 'Status',
   TH_HOURS: 'Betriebsstunden',
   TH_MAINTENANCE: 'Nächste Wartung',
   TH_NEXT_ABSENCE: 'Nächste Abwesenheit',
   TH_ACTIONS: 'Aktionen',
+};
 
-  // Teams display
-  teamsSelected: (count: number) =>
-    count <= 2 ? '' : `${count} Teams ausgewählt`,
-} as const;
+/**
+ * UI Messages — factory with dynamic hierarchy labels.
+ * Entity-specific strings use labels, compound words are neutralized (A4).
+ */
+export function createMessages(labels: HierarchyLabels) {
+  return {
+    ...STATIC_MESSAGES,
+
+    // Page
+    PAGE_TITLE: `${labels.asset} verwalten - Assixx`,
+    PAGE_HEADING: `${labels.asset} — Übersicht`,
+    PAGE_DESCRIPTION: `${labels.asset} verwalten`,
+
+    // Labels (FK-references)
+    LABEL_DEPARTMENT: labels.department,
+    LABEL_AREA: labels.area,
+    LABEL_TEAMS: labels.team,
+
+    // Dropdown placeholders (dynamic)
+    PLACEHOLDER_DEPARTMENT: `Keine ${labels.department}`,
+    PLACEHOLDER_AREA: `Keine ${labels.area}`,
+    PLACEHOLDER_TEAMS: `Keine ${labels.team} zugewiesen`,
+    PLACEHOLDER_SELECT_AREA_FIRST: `Bitte zuerst ${labels.area} wählen`,
+    PLACEHOLDER_SELECT_DEPT_FIRST: `Bitte zuerst ${labels.department} wählen`,
+    PLACEHOLDER_NO_TEAMS_AVAILABLE: `Keine ${labels.team} verfügbar`,
+
+    // Search
+    SEARCH_NO_RESULTS: `Keine ${labels.asset} gefunden`,
+
+    // Empty state
+    EMPTY_TITLE: `Keine ${labels.asset} gefunden`,
+    EMPTY_DESCRIPTION: 'Erstellen Sie den ersten Eintrag',
+    EMPTY_OPERATIONAL: `Keine betriebsbereiten ${labels.asset}`,
+    EMPTY_MAINTENANCE: `Keine ${labels.asset} in Wartung`,
+    EMPTY_REPAIR: `Keine ${labels.asset} in Reparatur`,
+    EMPTY_STANDBY: `Keine ${labels.asset} im Stillstand`,
+    EMPTY_CLEANING: `Keine ${labels.asset} in Reinigung`,
+    EMPTY_OTHER: `Keine ${labels.asset} unter Sonstiges`,
+    EMPTY_FILTER_DESC: `Es gibt aktuell keine ${labels.asset} in dieser Kategorie.`,
+
+    // Loading
+    LOADING: `${labels.asset} werden geladen...`,
+
+    // Table headers (FK-references)
+    TH_AREA: labels.area,
+    TH_DEPARTMENT: labels.department,
+    TH_TEAMS: labels.team,
+
+    // Teams display
+    teamsSelected: (count: number) =>
+      count <= 2 ? '' : `${count} ${labels.team} ausgewählt`,
+  };
+}
+
+/** Message type for component props */
+export type AssetMessages = ReturnType<typeof createMessages>;
+
+/** Default messages (used in non-Svelte contexts) */
+export const MESSAGES = createMessages(DEFAULT_HIERARCHY_LABELS);
 
 /**
  * Default values for form reset

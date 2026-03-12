@@ -6,12 +6,12 @@
  * Sub-services:
  * - NotificationPreferencesService - user preference CRUD
  * - NotificationStatisticsService - analytics and stats
- * - NotificationFeatureService - feature-specific notifications (ADR-004)
+ * - NotificationAddonService - addon-specific notifications (ADR-004)
  */
 import { Module } from '@nestjs/common';
 
 import { UserPermissionsModule } from '../user-permissions/user-permissions.module.js';
-import { NotificationFeatureService } from './notification-feature.service.js';
+import { NotificationAddonService } from './notification-addon.service.js';
 import { NotificationPreferencesService } from './notification-preferences.service.js';
 import { NotificationStatisticsService } from './notification-statistics.service.js';
 import { NotificationsPermissionRegistrar } from './notifications-permission.registrar.js';
@@ -25,7 +25,7 @@ import { NotificationsService } from './notifications.service.js';
     NotificationsService,
     NotificationPreferencesService,
     NotificationStatisticsService,
-    NotificationFeatureService,
+    NotificationAddonService,
     NotificationsPermissionRegistrar,
   ],
   exports: [NotificationsService],

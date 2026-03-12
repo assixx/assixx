@@ -2,6 +2,11 @@
 // TPM Employee View — CONSTANTS
 // =============================================================================
 
+import {
+  DEFAULT_HIERARCHY_LABELS,
+  type HierarchyLabels,
+} from '$lib/types/hierarchy-labels';
+
 import type { CardCategory, CardStatus, IntervalType } from './types';
 
 /** Interval type colors for Gesamtansicht headers */
@@ -82,8 +87,8 @@ export const WEEKDAY_LABELS: string[] = [
   'Sonntag',
 ];
 
-/** UI Messages (German) */
-export const MESSAGES = {
+/** UI Messages (German) — base messages, use createTpmMessages() for dynamic labels */
+const BASE_MESSAGES = {
   PAGE_TITLE: 'TPM Wartung - Assixx',
   PAGE_HEADING: 'TPM Wartung',
   PAGE_DESCRIPTION: 'Ihre zugewiesenen Anlagen und Wartungsaufgaben',
@@ -230,6 +235,7 @@ export const MESSAGES = {
   // Zoom controls
   ZOOM_IN: 'Vergrößern',
   ZOOM_OUT: 'Verkleinern',
+  ZOOM_RESET: 'Zoom zurücksetzen',
   ZOOM_FULLSCREEN: 'Vollbild',
 
   // Locations
@@ -316,3 +322,23 @@ export const MESSAGES = {
   TIME_MINUTES: 'Min.',
   TIME_NO_ESTIMATE: 'Keine Zeitschätzung hinterlegt',
 } as const;
+
+/** Factory: TPM employee messages with dynamic hierarchy labels */
+export function createTpmMessages(labels: HierarchyLabels) {
+  return {
+    ...BASE_MESSAGES,
+    PAGE_DESCRIPTION: `Ihre zugewiesenen ${labels.asset} und Wartungsaufgaben`,
+    STAT_MACHINES: `Zugewiesene ${labels.asset}`,
+    MACHINE_LIST_TITLE: `Ihre ${labels.asset}`,
+    MACHINE_COL_NAME: labels.asset,
+    EMPTY_DESCRIPTION: `Ihnen sind aktuell keine ${labels.asset} mit TPM-Wartungsplänen zugewiesen.`,
+    GESAMTANSICHT_TH_MACHINE: labels.asset,
+    LOCATIONS_PHOTO_HINT: `Zeigt wo sich der Standort befindet (max. 5 MB)`,
+  };
+}
+
+/** Messages type for child components */
+export type TpmMessages = ReturnType<typeof createTpmMessages>;
+
+/** Backward-compatible static export — uses default hierarchy labels */
+export const MESSAGES = createTpmMessages(DEFAULT_HIERARCHY_LABELS);

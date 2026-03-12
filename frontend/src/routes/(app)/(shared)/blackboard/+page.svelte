@@ -12,14 +12,13 @@
   import { resolve } from '$app/paths';
   import { page } from '$app/stores';
 
-  /** Resolve path with base prefix (for dynamic runtime paths) */
-  function resolvePath(path: string): string {
-    return (resolve as (p: string) => string)(path);
-  }
-
   // API Client (for mutations only)
   import { notificationStore } from '$lib/stores/notification.store.svelte';
   import { showErrorAlert, showSuccessAlert } from '$lib/stores/toast';
+  import {
+    DEFAULT_HIERARCHY_LABELS,
+    type HierarchyLabels,
+  } from '$lib/types/hierarchy-labels';
   import { getApiClient } from '$lib/utils/api-client';
   import { createLogger } from '$lib/utils/logger';
 
@@ -47,6 +46,13 @@
   // =============================================================================
 
   const { data }: { data: PageData } = $props();
+
+  // Hierarchy labels from layout (SSR)
+  const labels = $derived(
+    ((data as Record<string, unknown>).hierarchyLabels as
+      | HierarchyLabels
+      | undefined) ?? DEFAULT_HIERARCHY_LABELS,
+  );
 
   // SSR data as derived - updates automatically when data changes
   const entries = $derived(data.entries);
@@ -309,6 +315,10 @@
     if (zoomLevel > ZOOM_CONFIG.MIN) zoomLevel -= ZOOM_CONFIG.STEP;
   }
 
+  function zoomReset(): void {
+    zoomLevel = ZOOM_CONFIG.DEFAULT;
+  }
+
   async function toggleFullscreen(): Promise<void> {
     try {
       document.body.classList.add('fullscreen-mode');
@@ -396,7 +406,7 @@
         }
       });
     }
-    void goto(resolvePath(`/blackboard/${uuid}`));
+    void goto(resolve(`/blackboard/${uuid}`));
   }
 
   // =============================================================================
@@ -467,6 +477,7 @@
     {sortDir}
     {sortLabel}
     expanded={filterExpanded}
+    {labels}
     onsearchchange={handleSearch}
     onlevelchange={setLevelFilter}
     onsortchange={setSort}
@@ -489,6 +500,12 @@
           class="btn btn-icon btn-secondary"
           title="Verkleinern"
           onclick={zoomOut}><i class="fas fa-minus"></i></button
+        >
+        <button
+          type="button"
+          class="btn btn-icon btn-secondary"
+          title="Zoom zurücksetzen"
+          onclick={zoomReset}><i class="fas fa-compress-arrows-alt"></i></button
         >
         <button
           type="button"
@@ -534,19 +551,13 @@
         >
       </div>
     {:else if entries.length === 0}
-      <div class="p-5 text-center">
+      <div class="flex flex-col items-center justify-center py-16 text-center">
         <i
-          class="fas fa-clipboard-list mb-4 text-4xl text-(--color-text-secondary) opacity-50"
+          class="fas fa-clipboard-list mb-6 text-7xl text-(--color-text-secondary) opacity-40"
         ></i>
-        <p class="text-(--color-text-secondary)">{MESSAGES.NO_ENTRIES}</p>
-        {#if isAdmin}
-          <button
-            type="button"
-            class="btn btn-primary mt-4"
-            onclick={openCreateModal}
-            ><i class="fas fa-plus mr-2"></i>{MESSAGES.CREATE_FIRST}</button
-          >
-        {/if}
+        <p class="text-xl text-(--color-text-secondary)">
+          {MESSAGES.NO_ENTRIES}
+        </p>
       </div>
     {:else}
       <div
@@ -615,6 +626,7 @@
     {departments}
     {teams}
     {areas}
+    {labels}
     onclose={closeEntryModal}
     onsubmit={handleEntrySubmit}
     ontitlechange={(v: string) => (formTitle = v)}

@@ -2,6 +2,11 @@
 // DOCUMENTS EXPLORER - CONSTANTS
 // =============================================================================
 
+import {
+  DEFAULT_HIERARCHY_LABELS,
+  type HierarchyLabels,
+} from '$lib/types/hierarchy-labels';
+
 import type {
   DocumentCategory,
   SortOption,
@@ -9,71 +14,58 @@ import type {
   AccessScope,
 } from './types';
 
-/**
- * Folder definitions with icons (SVG)
- */
-export const FOLDER_DEFINITIONS: {
-  category: DocumentCategory;
-  label: string;
-  icon: string;
-}[] = [
-  {
-    category: 'all',
-    label: 'Alle Dokumente',
-    icon: `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path>
-    </svg>`,
-  },
-  {
-    category: 'personal',
-    label: 'Persönlich',
-    icon: `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
-    </svg>`,
-  },
-  {
-    category: 'team',
-    label: 'Team Dokumente',
-    icon: `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
-    </svg>`,
-  },
-  {
-    category: 'department',
-    label: 'Abteilung',
-    icon: `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
-    </svg>`,
-  },
-  {
-    category: 'company',
-    label: 'Firma',
-    icon: `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
-    </svg>`,
-  },
-  {
-    category: 'payroll',
-    label: 'Gehaltsabrechnungen',
-    icon: `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-    </svg>`,
-  },
-  {
-    category: 'blackboard',
-    label: 'Schwarzes Brett',
-    icon: `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path>
-    </svg>`,
-  },
-  {
-    category: 'chat',
-    label: 'Chat Anhänge',
-    icon: `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
-    </svg>`,
-  },
-];
+/** SVG icons for folder categories */
+const FOLDER_ICONS: Record<DocumentCategory, string> = {
+  all: `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path></svg>`,
+  personal: `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>`,
+  team: `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>`,
+  department: `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>`,
+  company: `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>`,
+  payroll: `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`,
+  blackboard: `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>`,
+  chat: `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>`,
+};
+
+/** Static folder labels (non-hierarchy) */
+const STATIC_FOLDER_LABELS: Partial<Record<DocumentCategory, string>> = {
+  all: 'Alle Dokumente',
+  personal: 'Persönlich',
+  company: 'Firma',
+  payroll: 'Gehaltsabrechnungen',
+  blackboard: 'Schwarzes Brett',
+  chat: 'Chat Anhänge',
+};
+
+/** Factory: folder definitions with dynamic hierarchy labels */
+export function createFolderDefinitions(labels: HierarchyLabels) {
+  const dynamicLabels: Record<DocumentCategory, string> = {
+    ...STATIC_FOLDER_LABELS,
+    team: `${labels.team} Dokumente`,
+    department: labels.department,
+  } as Record<DocumentCategory, string>;
+
+  return (
+    [
+      'all',
+      'personal',
+      'team',
+      'department',
+      'company',
+      'payroll',
+      'blackboard',
+      'chat',
+    ] as const
+  ).map((cat: DocumentCategory) => ({
+    category: cat,
+    label: dynamicLabels[cat],
+    icon: FOLDER_ICONS[cat],
+  }));
+}
+
+/** Backward-compatible static export */
+export const FOLDER_DEFINITIONS = createFolderDefinitions(
+  DEFAULT_HIERARCHY_LABELS,
+);
 
 /**
  * Sort options for toolbar dropdown
@@ -95,19 +87,25 @@ export const SORT_LABELS: Record<SortOption, string> = {
   size: 'Nach Größe',
 };
 
-/**
- * Category labels for breadcrumb and display
- */
-export const CATEGORY_LABELS: Record<DocumentCategory, string> = {
-  all: 'Alle Dokumente',
-  personal: 'Persönliche Dokumente',
-  team: 'Team Dokumente',
-  department: 'Abteilung',
-  company: 'Firma',
-  payroll: 'Gehaltsabrechnungen',
-  blackboard: 'Schwarzes Brett',
-  chat: 'Chat Anhänge',
-};
+/** Factory: category labels with dynamic hierarchy labels */
+export function createCategoryLabels(
+  labels: HierarchyLabels,
+): Record<DocumentCategory, string> {
+  return {
+    all: 'Alle Dokumente',
+    personal: 'Persönliche Dokumente',
+    team: `${labels.team} Dokumente`,
+    department: labels.department,
+    company: 'Firma',
+    payroll: 'Gehaltsabrechnungen',
+    blackboard: 'Schwarzes Brett',
+    chat: 'Chat Anhänge',
+  };
+}
+
+/** Backward-compatible static export */
+export const CATEGORY_LABELS: Record<DocumentCategory, string> =
+  createCategoryLabels(DEFAULT_HIERARCHY_LABELS);
 
 /**
  * DB category value labels (for display in table)
@@ -150,20 +148,25 @@ export const CATEGORY_MAPPINGS: Record<string, CategoryMapping> = {
   },
 };
 
-/**
- * Upload category options for dropdown
- */
-export const UPLOAD_CATEGORY_OPTIONS: {
+/** Factory: upload category options with dynamic hierarchy labels */
+export function createUploadCategoryOptions(labels: HierarchyLabels): {
   value: string;
   label: string;
   icon: string;
-}[] = [
-  { value: 'company', label: 'Firmenweit', icon: 'fas fa-building' },
-  { value: 'department', label: 'Abteilung', icon: 'fas fa-users' },
-  { value: 'team', label: 'Team', icon: 'fas fa-user-friends' },
-  { value: 'personal', label: 'Persönlich', icon: 'fas fa-user' },
-  { value: 'payroll', label: 'Gehaltsabrechnung', icon: 'fas fa-euro-sign' },
-];
+}[] {
+  return [
+    { value: 'company', label: 'Firmenweit', icon: 'fas fa-building' },
+    { value: 'department', label: labels.department, icon: 'fas fa-users' },
+    { value: 'team', label: labels.team, icon: 'fas fa-user-friends' },
+    { value: 'personal', label: 'Persönlich', icon: 'fas fa-user' },
+    { value: 'payroll', label: 'Gehaltsabrechnung', icon: 'fas fa-euro-sign' },
+  ];
+}
+
+/** Backward-compatible static export */
+export const UPLOAD_CATEGORY_OPTIONS = createUploadCategoryOptions(
+  DEFAULT_HIERARCHY_LABELS,
+);
 
 /**
  * Allowed file types for upload
@@ -183,10 +186,7 @@ export const ALLOWED_FILE_TYPES = [
  */
 export const MAX_FILE_SIZE = 5 * 1024 * 1024;
 
-/**
- * UI Messages (German) - Prepared for i18n
- */
-export const MESSAGES = {
+const BASE_MESSAGES = {
   // Page titles
   PAGE_TITLE: 'Dokumente - Assixx',
 
@@ -264,6 +264,18 @@ export const MESSAGES = {
   AUTH_REDIRECT_MESSAGE:
     'Sie werden in 3 Sekunden zur Login-Seite weitergeleitet...',
 } as const;
+
+/** Factory: documents messages with dynamic hierarchy labels */
+export function createDocumentsMessages(labels: HierarchyLabels) {
+  return {
+    ...BASE_MESSAGES,
+    UPLOAD_NO_TEAM: `Sie müssen einem ${labels.team} zugeordnet sein, um ${labels.team}-Dokumente hochzuladen!`,
+    UPLOAD_NO_DEPARTMENT: `Sie müssen einer ${labels.department} zugeordnet sein, um ${labels.department}-Dokumente hochzuladen!`,
+  };
+}
+
+/** Backward-compatible static export */
+export const MESSAGES = createDocumentsMessages(DEFAULT_HIERARCHY_LABELS);
 
 /**
  * Minimum rows to display in list view (for striped appearance)

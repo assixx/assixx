@@ -1,11 +1,11 @@
-# User Feature Permissions — Unit Test Plan
+# User Addon Permissions — Unit Test Plan
 
 > **Bezieht sich auf:** [`docs/USER-PERMISSIONS-PLAN.md`](./USER-PERMISSIONS-PLAN.md) (Phase 6)
 > **Runner:** Vitest (`vitest run --project unit`)
 > **Muster:** Existierende Test-Patterns aus `auth.service.test.ts`, `auth.dto.test.ts`, `documents.service.test.ts`
 > **Quellen:** `ADR-018` (Vitest Single Runner), `docs/HOW-TO-TEST-WITH-VITEST.md`
 > **Update 2026-02-07:** Erweitert um Phase 5b (Enforcement) — `hasPermission()`, `PermissionGuard`, `@RequirePermission()`
-> **Update 2026-02-07:** Erweitert um Phase 9 (Notification Coupling) — `getReadableFeatureCodes()`, Dashboard permission filtering
+> **Update 2026-02-07:** Erweitert um Phase 9 (Notification Coupling) — `getReadableAddonCodes()`, Dashboard permission filtering
 
 ---
 
@@ -13,14 +13,14 @@
 
 Sechs Test-Dateien, die alle Backend-Logik des Permission-Features abdecken:
 
-| #   | Test-Datei                             | SUT (System Under Test)                                          | Geschätzter Umfang |
-| --- | -------------------------------------- | ---------------------------------------------------------------- | ------------------ |
-| 1   | `permission-registry.service.test.ts`  | PermissionRegistryService                                        | ~20 Tests          |
-| 2   | `user-permissions.dto.test.ts`         | UpsertUserPermissionsSchema (Zod)                                | ~18 Tests          |
-| 3   | `user-permissions.service.test.ts`     | UserPermissionsService (CRUD + hasPermission + readableFeatures) | ~42 Tests          |
-| 4   | `permission.guard.test.ts`             | PermissionGuard (Enforcement)                                    | ~16 Tests          |
-| 5   | `require-permission.decorator.test.ts` | RequirePermission Decorator (Metadata)                           | ~5 Tests           |
-| 6   | `dashboard.service.test.ts`            | DashboardService (Aggregation + Permission Filtering)            | ~12 Tests          |
+| #   | Test-Datei                             | SUT (System Under Test)                                        | Geschätzter Umfang |
+| --- | -------------------------------------- | -------------------------------------------------------------- | ------------------ |
+| 1   | `permission-registry.service.test.ts`  | PermissionRegistryService                                      | ~20 Tests          |
+| 2   | `user-permissions.dto.test.ts`         | UpsertUserPermissionsSchema (Zod)                              | ~18 Tests          |
+| 3   | `user-permissions.service.test.ts`     | UserPermissionsService (CRUD + hasPermission + readableAddons) | ~42 Tests          |
+| 4   | `permission.guard.test.ts`             | PermissionGuard (Enforcement)                                  | ~16 Tests          |
+| 5   | `require-permission.decorator.test.ts` | RequirePermission Decorator (Metadata)                         | ~5 Tests           |
+| 6   | `dashboard.service.test.ts`            | DashboardService (Aggregation + Permission Filtering)          | ~12 Tests          |
 
 **Gesamt: ~106 Unit Tests**
 
@@ -136,7 +136,7 @@ function createPermissionRow(overrides?: Record<string, unknown>): Record<string
     id: 1,
     tenant_id: 42,
     user_id: 10,
-    feature_code: 'blackboard',
+    addon_code: 'blackboard',
     module_code: 'blackboard-posts',
     can_read: false,
     can_write: false,
@@ -295,20 +295,20 @@ beforeEach(() => {
 
 #### Happy Path
 
-| #   | Test                                                       | Mock-Setup                                                                                                                                    | Erwartung                                                    |
-| --- | ---------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
-| 1   | should return full category tree with default false values | Registry: 1 Kategorie mit 1 Modul. DB: UUID → userId resolved. tenant_features: `['blackboard']`. user_feature_permissions: `[]` (keine Rows) | Tree mit `canRead: false, canWrite: false, canDelete: false` |
-| 2   | should return saved permission values from DB              | DB: 1 Permission-Row mit `can_read: true`                                                                                                     | Tree mit `canRead: true, canWrite: false, canDelete: false`  |
-| 3   | should merge multiple modules correctly                    | Registry: 1 Kategorie mit 3 Modulen. DB: 2 von 3 haben Rows                                                                                   | 2 Module mit DB-Werten, 1 Modul mit Default false            |
-| 4   | should merge multiple categories                           | Registry: 3 Kategorien. DB: Rows für 2 von 3                                                                                                  | Alle 3 Kategorien im Tree, korrekte Werte                    |
+| #   | Test                                                       | Mock-Setup                                                                                                                                | Erwartung                                                    |
+| --- | ---------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| 1   | should return full category tree with default false values | Registry: 1 Kategorie mit 1 Modul. DB: UUID → userId resolved. tenant_addons: `['blackboard']`. user_addon_permissions: `[]` (keine Rows) | Tree mit `canRead: false, canWrite: false, canDelete: false` |
+| 2   | should return saved permission values from DB              | DB: 1 Permission-Row mit `can_read: true`                                                                                                 | Tree mit `canRead: true, canWrite: false, canDelete: false`  |
+| 3   | should merge multiple modules correctly                    | Registry: 1 Kategorie mit 3 Modulen. DB: 2 von 3 haben Rows                                                                               | 2 Module mit DB-Werten, 1 Modul mit Default false            |
+| 4   | should merge multiple categories                           | Registry: 3 Kategorien. DB: Rows für 2 von 3                                                                                              | Alle 3 Kategorien im Tree, korrekte Werte                    |
 
 #### Tenant-Feature-Filtering
 
-| #   | Test                                                              | Mock-Setup                                                                                            | Erwartung                                         |
-| --- | ----------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- | ------------------------------------------------- |
-| 5   | should filter categories by tenant's active features              | Registry: 3 Kategorien (blackboard, calendar, kvp). tenant_features: nur `['blackboard', 'calendar']` | Tree enthält NUR blackboard + calendar, NICHT kvp |
-| 6   | should return empty tree when tenant has no active features       | tenant_features: `[]`                                                                                 | Leerer Tree (keine Kategorien)                    |
-| 7   | should return empty tree when no categories match tenant features | Registry: `['blackboard']`. tenant_features: `['calendar']`                                           | Leerer Tree                                       |
+| #   | Test                                                              | Mock-Setup                                                                                          | Erwartung                                         |
+| --- | ----------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- | ------------------------------------------------- |
+| 5   | should filter categories by tenant's active features              | Registry: 3 Kategorien (blackboard, calendar, kvp). tenant_addons: nur `['blackboard', 'calendar']` | Tree enthält NUR blackboard + calendar, NICHT kvp |
+| 6   | should return empty tree when tenant has no active features       | tenant_addons: `[]`                                                                                 | Leerer Tree (keine Kategorien)                    |
+| 7   | should return empty tree when no categories match tenant features | Registry: `['blackboard']`. tenant_addons: `['calendar']`                                           | Leerer Tree                                       |
 
 #### allowedPermissions Filtering
 
@@ -326,22 +326,22 @@ beforeEach(() => {
 
 #### DB-Call Verification
 
-| #   | Test                                                       | Mock-Setup                    | Erwartung                                                                     |
-| --- | ---------------------------------------------------------- | ----------------------------- | ----------------------------------------------------------------------------- |
-| 12  | should query user_feature_permissions with correct user_id | UUID resolves to `userId: 42` | `mockClient.query` Call enthält `42` als Parameter                            |
-| 13  | should query tenant_features for active features           | tenantId = 1                  | `mockClient.query` Call enthält SQL mit `tenant_features` und `is_active = 1` |
+| #   | Test                                                     | Mock-Setup                    | Erwartung                                                                   |
+| --- | -------------------------------------------------------- | ----------------------------- | --------------------------------------------------------------------------- |
+| 12  | should query user_addon_permissions with correct user_id | UUID resolves to `userId: 42` | `mockClient.query` Call enthält `42` als Parameter                          |
+| 13  | should query tenant_addons for active features           | tenantId = 1                  | `mockClient.query` Call enthält SQL mit `tenant_addons` und `is_active = 1` |
 
 ### describe('upsertPermissions()')
 
 #### Happy Path
 
-| #   | Test                                           | Mock-Setup                                                                                                              | Erwartung                                                                                |
-| --- | ---------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| 14  | should execute UPSERT SQL with ON CONFLICT     | Registry: `isValidModule` → `true`, `getAllowedPermissions` → `['canRead', 'canWrite', 'canDelete']`. DB: UUID resolves | `mockClient.query` Call enthält `INSERT INTO user_feature_permissions` und `ON CONFLICT` |
-| 15  | should pass correct values to UPSERT           | Input: `featureCode: 'blackboard', moduleCode: 'blackboard-posts', canRead: true`                                       | SQL-Params enthalten `'blackboard'`, `'blackboard-posts'`, `true`                        |
-| 16  | should set assignedBy from caller              | `assignedBy: 99`                                                                                                        | SQL-Params enthalten `99`                                                                |
-| 17  | should handle multiple permissions in one call | Array mit 3 Entries                                                                                                     | `mockClient.query` wird 3x für INSERT aufgerufen (oder 1x mit Bulk)                      |
-| 18  | should handle empty permissions array          | `permissions: []`                                                                                                       | Kein INSERT, kein Error                                                                  |
+| #   | Test                                           | Mock-Setup                                                                                                              | Erwartung                                                                              |
+| --- | ---------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| 14  | should execute UPSERT SQL with ON CONFLICT     | Registry: `isValidModule` → `true`, `getAllowedPermissions` → `['canRead', 'canWrite', 'canDelete']`. DB: UUID resolves | `mockClient.query` Call enthält `INSERT INTO user_addon_permissions` und `ON CONFLICT` |
+| 15  | should pass correct values to UPSERT           | Input: `featureCode: 'blackboard', moduleCode: 'blackboard-posts', canRead: true`                                       | SQL-Params enthalten `'blackboard'`, `'blackboard-posts'`, `true`                      |
+| 16  | should set assignedBy from caller              | `assignedBy: 99`                                                                                                        | SQL-Params enthalten `99`                                                              |
+| 17  | should handle multiple permissions in one call | Array mit 3 Entries                                                                                                     | `mockClient.query` wird 3x für INSERT aufgerufen (oder 1x mit Bulk)                    |
+| 18  | should handle empty permissions array          | `permissions: []`                                                                                                       | Kein INSERT, kein Error                                                                |
 
 #### allowedPermissions Enforcement
 

@@ -373,7 +373,7 @@ For each service, evaluate whether queries touch tenant-scoped tables with RLS p
 | `areas.service.ts`                | `areas`             | Yes  | `tenantTransaction()` |
 | `role-switch.service.ts`          | `users`             | Yes  | `tenantTransaction()` |
 | `admin-permissions.controller.ts` | `admin_permissions` | Yes  | `tenantTransaction()` |
-| `featureCheck.ts`                 | `tenant_features`   | Yes  | `tenantTransaction()` |
+| `featureCheck.ts`                 | `tenant_addons`     | Yes  | `tenantTransaction()` |
 | `websocket.ts`                    | `chat_*`            | Yes  | `tenantTransaction()` |
 
 **All of them should use `tenantTransaction()`.** This is the biggest win of this migration — these services currently bypass RLS entirely by using `execute()` which goes through `db.ts`'s pool without setting GUC context.

@@ -1,7 +1,7 @@
 /**
  * Calendar Permission Definitions
  *
- * Defines which permission modules the calendar feature exposes.
+ * Defines which permission modules the calendar addon exposes.
  * Registered via CalendarPermissionRegistrar (OnModuleInit).
  *
  * @see docs/USER-PERMISSIONS-PLAN.md

@@ -687,7 +687,7 @@ export class SessionManager {
     localStorage.removeItem('activeNavigation');
     localStorage.removeItem('profilePictureCache');
 
-    // FEATURE STATE
+    // ADDON STATE
     localStorage.removeItem('lastKvpClickTimestamp');
     localStorage.removeItem('lastKnownKvpCount');
     localStorage.removeItem('shifts_context');

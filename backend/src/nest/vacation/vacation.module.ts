@@ -7,7 +7,6 @@
  */
 import { Module } from '@nestjs/common';
 
-import { FeatureCheckModule } from '../feature-check/feature-check.module.js';
 import { VacationApproverService } from './vacation-approver.service.js';
 import { VacationBlackoutsService } from './vacation-blackouts.service.js';
 import { VacationCapacityService } from './vacation-capacity.service.js';
@@ -23,7 +22,6 @@ import { VacationController } from './vacation.controller.js';
 import { VacationService } from './vacation.service.js';
 
 @Module({
-  imports: [FeatureCheckModule],
   controllers: [VacationController],
   providers: [
     // Permission registration (ADR-020)

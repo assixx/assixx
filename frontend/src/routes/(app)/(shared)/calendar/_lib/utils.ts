@@ -2,6 +2,11 @@
 // CALENDAR - UTILITY FUNCTIONS
 // =============================================================================
 
+import {
+  DEFAULT_HIERARCHY_LABELS,
+  type HierarchyLabels,
+} from '$lib/types/hierarchy-labels';
+
 import { EVENT_LEVEL_INFO } from './constants';
 
 import type { CalendarEvent, OrgLevel, User, EventLevelInfo } from './types';
@@ -42,18 +47,22 @@ export function getEventLevelInfo(
 }
 
 /**
- * Get event level text for display
+ * Get event level text for display.
+ * Uses dynamic hierarchy labels for department/team/area terms.
  */
-export function getEventLevelText(event: CalendarEvent): string {
+export function getEventLevelText(
+  event: CalendarEvent,
+  labels: HierarchyLabels = DEFAULT_HIERARCHY_LABELS,
+): string {
   switch (event.orgLevel) {
     case 'company':
       return 'Firmentermin';
     case 'department':
-      return `Abteilungstermin${event.departmentName !== undefined ? `: ${event.departmentName}` : ''}`;
+      return `${labels.department}-Termin${event.departmentName !== undefined ? `: ${event.departmentName}` : ''}`;
     case 'team':
-      return `Teamtermin${event.teamName !== undefined ? `: ${event.teamName}` : ''}`;
+      return `${labels.team}-Termin${event.teamName !== undefined ? `: ${event.teamName}` : ''}`;
     case 'area':
-      return 'Bereichstermin';
+      return `${labels.area}-Termin`;
     default:
       return 'Persoenlicher Termin';
   }

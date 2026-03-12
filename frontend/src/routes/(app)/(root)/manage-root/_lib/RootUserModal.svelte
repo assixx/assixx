@@ -1,7 +1,7 @@
 <script lang="ts">
   import PasswordStrengthIndicator from '$lib/components/PasswordStrengthIndicator.svelte';
 
-  import { POSITION_OPTIONS, MESSAGES } from './constants';
+  import { POSITION_OPTIONS, type createRootMessages } from './constants';
   import {
     getStatusBadgeClass,
     getStatusLabel,
@@ -12,6 +12,7 @@
 
   // Props with bindable for two-way binding
   interface Props {
+    messages: ReturnType<typeof createRootMessages>;
     show: boolean;
     isEditMode: boolean;
     modalTitle: string;
@@ -31,13 +32,20 @@
     onclose: () => void;
     onsubmit: (e: Event) => void;
     onValidateEmails: () => void;
+    positionOptions?: string[];
     onValidatePasswords: () => void;
   }
 
   /* eslint-disable prefer-const, @typescript-eslint/no-useless-default-assignment -- Svelte $bindable() requires let and is not a useless default */
   // prettier-ignore
-  let { show, isEditMode, modalTitle, firstName = $bindable(), lastName = $bindable(), email = $bindable(), emailConfirm = $bindable(), password = $bindable(), passwordConfirm = $bindable(), employeeNumber = $bindable(), position = $bindable(), notes = $bindable(), isActive = $bindable(), emailError = $bindable(), passwordError = $bindable(), submitting, onclose, onsubmit, onValidateEmails, onValidatePasswords }: Props = $props();
+  let { messages, show, isEditMode, modalTitle, positionOptions, firstName = $bindable(), lastName = $bindable(), email = $bindable(), emailConfirm = $bindable(), password = $bindable(), passwordConfirm = $bindable(), employeeNumber = $bindable(), position = $bindable(), notes = $bindable(), isActive = $bindable(), emailError = $bindable(), passwordError = $bindable(), submitting, onclose, onsubmit, onValidateEmails, onValidatePasswords }: Props = $props();
   /* eslint-enable prefer-const, @typescript-eslint/no-useless-default-assignment */
+
+  const effectivePositions = $derived(
+    positionOptions !== undefined && positionOptions.length > 0 ?
+      positionOptions
+    : POSITION_OPTIONS,
+  );
 
   // Local dropdown and visibility state
   let positionDropdownOpen = $state(false);
@@ -195,7 +203,7 @@
             oninput={onValidateEmails}
           />
           <span class="form-field__message text-(--color-text-secondary)"
-            >{MESSAGES.EMAIL_USED_AS_USERNAME}</span
+            >{messages.EMAIL_USED_AS_USERNAME}</span
           >
         </div>
 
@@ -216,7 +224,7 @@
           />
           {#if emailError}
             <span class="form-field__message form-field__message--error"
-              >{MESSAGES.EMAILS_NOT_MATCH}</span
+              >{messages.EMAILS_NOT_MATCH}</span
             >
           {/if}
         </div>
@@ -322,7 +330,7 @@
           </div>
           {#if passwordError}
             <span class="form-field__message form-field__message--error"
-              >{MESSAGES.PASSWORDS_NOT_MATCH}</span
+              >{messages.PASSWORDS_NOT_MATCH}</span
             >
           {:else if passwordConfirm !== '' && passwordMatch}
             <span class="form-field__message form-field__message--success">
@@ -343,8 +351,8 @@
           <div class="alert alert--info">
             <div class="alert__icon"><i class="fas fa-building"></i></div>
             <div class="alert__content">
-              <div class="alert__title">{MESSAGES.FULL_ACCESS_TITLE}</div>
-              <div class="alert__message">{MESSAGES.FULL_ACCESS_MESSAGE}</div>
+              <div class="alert__title">{messages.FULL_ACCESS_TITLE}</div>
+              <div class="alert__message">{messages.FULL_ACCESS_MESSAGE}</div>
             </div>
           </div>
         </div>
@@ -371,7 +379,7 @@
               onclick={togglePositionDropdown}
             >
               <span
-                >{position !== '' ? position : MESSAGES.SELECT_POSITION}</span
+                >{position !== '' ? position : messages.SELECT_POSITION}</span
               >
               <i class="fas fa-chevron-down"></i>
             </div>
@@ -379,7 +387,7 @@
               class="dropdown__menu"
               class:active={positionDropdownOpen}
             >
-              {#each POSITION_OPTIONS as pos (pos)}
+              {#each effectivePositions as pos (pos)}
                 <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
                 <div
                   class="dropdown__option"
@@ -469,7 +477,7 @@
             </div>
             <span
               class="form-field__message mt-1 block text-(--color-text-secondary)"
-              >{MESSAGES.INACTIVE_HINT}</span
+              >{messages.INACTIVE_HINT}</span
             >
           </div>
         {/if}

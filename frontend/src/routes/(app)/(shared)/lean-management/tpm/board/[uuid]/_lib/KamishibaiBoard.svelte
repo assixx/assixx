@@ -214,6 +214,10 @@
     if (zoomLevel > ZOOM_CONFIG.MIN) zoomLevel -= ZOOM_CONFIG.STEP;
   }
 
+  function zoomReset(): void {
+    zoomLevel = ZOOM_CONFIG.DEFAULT;
+  }
+
   /** Fullscreen — same pattern as Gesamtansicht (OverallViewTable) */
   const FULLSCREEN_CLASS = 'tpm-board-fullscreen';
 
@@ -269,6 +273,12 @@
         title={MESSAGES.ZOOM_OUT}
         disabled={zoomLevel <= ZOOM_CONFIG.MIN}
         onclick={zoomOut}><i class="fas fa-minus"></i></button
+      >
+      <button
+        type="button"
+        class="btn btn-icon btn-secondary"
+        title={MESSAGES.ZOOM_RESET}
+        onclick={zoomReset}><i class="fas fa-compress-arrows-alt"></i></button
       >
       <button
         type="button"

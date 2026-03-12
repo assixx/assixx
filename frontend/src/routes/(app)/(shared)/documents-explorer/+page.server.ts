@@ -6,7 +6,7 @@
  */
 import { redirect } from '@sveltejs/kit';
 
-import { requireFeature } from '$lib/utils/feature-guard';
+import { requireAddon } from '$lib/utils/addon-guard';
 import { createLogger } from '$lib/utils/logger';
 
 import type { PageServerLoad } from './$types';
@@ -112,7 +112,7 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
 
   // Get user from parent layout
   const parentData = await parent();
-  requireFeature(parentData.activeFeatures, 'documents');
+  requireAddon(parentData.activeAddons, 'documents');
 
   // Process documents with field mapping
   const rawDocs = Array.isArray(documentsData) ? documentsData : [];

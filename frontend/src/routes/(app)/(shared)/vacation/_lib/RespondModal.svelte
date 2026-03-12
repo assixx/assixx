@@ -6,6 +6,10 @@
    */
   import { onMount } from 'svelte';
 
+  import {
+    DEFAULT_HIERARCHY_LABELS,
+    type HierarchyLabels,
+  } from '$lib/types/hierarchy-labels';
   import { showErrorAlert } from '$lib/utils';
   import { createLogger } from '$lib/utils/logger';
 
@@ -24,11 +28,18 @@
   interface Props {
     request: VacationRequest;
     action: 'approve' | 'deny';
+    labels?: HierarchyLabels;
     onclose: () => void;
     onsubmit: (payload: RespondPayload) => Promise<void>;
   }
 
-  const { request, action, onclose, onsubmit }: Props = $props();
+  const {
+    request,
+    action,
+    labels = DEFAULT_HIERARCHY_LABELS,
+    onclose,
+    onsubmit,
+  }: Props = $props();
 
   let responseNote = $state('');
   let isSpecialLeave = $state(false);
@@ -129,6 +140,7 @@
         <CapacityIndicator
           analysis={respondCapacity}
           isLoading={isLoadingCapacity}
+          {labels}
         />
 
         <SpecialLeaveCheckbox

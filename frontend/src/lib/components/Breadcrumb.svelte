@@ -2,13 +2,10 @@
   import { resolve } from '$app/paths';
   import { page } from '$app/stores';
 
-  /**
-   * Resolve a dynamic path with base prefix.
-   * Casts to pathname type for dynamic runtime paths.
-   */
-  function resolvePath(path: string): string {
-    return (resolve as (p: string) => string)(path);
-  }
+  import {
+    DEFAULT_HIERARCHY_LABELS,
+    type HierarchyLabels,
+  } from '$lib/types/hierarchy-labels';
 
   // =============================================================================
   // SVELTE 5 RUNES - Breadcrumb Navigation
@@ -18,8 +15,12 @@
   // Props
   interface Props {
     userRole?: 'root' | 'admin' | 'employee' | 'dummy';
+    hierarchyLabels?: HierarchyLabels;
   }
-  const { userRole = 'employee' }: Props = $props();
+  const {
+    userRole = 'employee',
+    hierarchyLabels = DEFAULT_HIERARCHY_LABELS,
+  }: Props = $props();
 
   // Frequently used icon constants
   const ICON_CALENDAR = 'fa-calendar-alt';
@@ -42,92 +43,118 @@
   // URL MAPPINGS (from breadcrumb-config.js)
   // =============================================================================
 
-  const urlMappings: Partial<Record<string, { label: string; icon: string }>> =
-    {
-      '/': { label: 'Home', icon: 'fa-home' },
-      '/root-dashboard': { label: 'Root Dashboard', icon: 'fa-shield-alt' },
-      '/admin-dashboard': {
-        label: 'Admin Dashboard',
-        icon: 'fa-tachometer-alt',
-      },
-      '/employee-dashboard': {
-        label: 'Mitarbeiter Dashboard',
-        icon: 'fa-user',
-      },
-      '/manage-employees': { label: 'Mitarbeiter verwalten', icon: 'fa-users' },
-      '/manage-admins': { label: 'Admins verwalten', icon: 'fa-user-shield' },
-      '/manage-departments': {
-        label: 'Abteilungen verwalten',
-        icon: 'fa-sitemap',
-      },
-      '/manage-areas': { label: 'Bereiche verwalten', icon: 'fa-building' },
-      '/manage-teams': { label: 'Teams verwalten', icon: 'fa-users' },
-      '/manage-assets': { label: 'Anlagen verwalten', icon: 'fa-cogs' },
-      '/manage-root': { label: 'Root User Verwaltung', icon: 'fa-shield-alt' },
-      '/blackboard': { label: 'Schwarzes Brett', icon: 'fa-clipboard' },
-      '/blackboard-detail': {
-        label: 'Schwarzes Brett Details',
-        icon: 'fa-info-circle',
-      },
-      '/calendar': { label: 'Kalender', icon: ICON_CALENDAR },
-      '/chat': { label: 'Chat', icon: 'fa-comments' },
-      '/documents': { label: 'Dokumente', icon: 'fa-file-alt' },
-      '/documents-explorer': { label: 'Dokumente', icon: 'fa-file-alt' },
-      '/shifts': { label: 'Schichtplan', icon: 'fa-clock' },
-      '/kvp': { label: 'KVP', icon: 'fa-lightbulb' },
-      '/kvp-categories': { label: 'Definitionen', icon: 'fa-tags' },
-      '/kvp-detail': { label: 'KVP-Details', icon: 'fa-info-circle' },
-      '/survey-admin': { label: 'Umfragen', icon: 'fa-poll' },
-      '/survey-employee': { label: 'Mitarbeiter-Umfrage', icon: 'fa-poll-h' },
-      '/survey-results': { label: 'Umfrage-Ergebnisse', icon: 'fa-chart-bar' },
-      '/account-settings': {
-        label: 'Konto-Einstellungen',
-        icon: 'fa-user-cog',
-      },
-      '/settings/design': { label: 'Design', icon: 'fa-palette' },
-      '/storage-upgrade': { label: 'Speicher-Upgrade', icon: 'fa-hdd' },
-      '/admin-profile': { label: 'Admin-Profil', icon: 'fa-user-shield' },
-      '/employee-profile': { label: 'Mitarbeiter-Profil', icon: 'fa-user' },
-      '/root-profile': { label: 'Root-Profil', icon: 'fa-user-lock' },
-      '/features': { label: 'Features', icon: 'fas fa-puzzle-piece' },
-      '/vacation': { label: 'Urlaubsverwaltung', icon: 'fa-umbrella-beach' },
-      '/vacation/rules': { label: 'Urlaubsregeln', icon: 'fa-shield-alt' },
-      '/vacation/entitlements': {
-        label: 'Urlaubsansprüche',
-        icon: 'fa-calculator',
-      },
-      '/vacation/holidays': { label: 'Feiertage', icon: 'fa-calendar-day' },
-      '/vacation/overview': {
-        label: 'Urlaubsübersicht',
-        icon: ICON_CALENDAR,
-      },
-      '/logs': { label: 'Logs', icon: 'fa-list-alt' },
-      '/lean-management/tpm': { label: 'TPM Wartung', icon: 'fa-tools' },
-      '/lean-management/tpm/config': {
-        label: 'TPM Konfiguration',
-        icon: 'fa-cog',
-      },
-      '/lean-management/tpm/overview': {
-        label: 'TPM Übersicht',
-        icon: 'fa-tools',
-      },
-      '/tenant-deletion-status': {
-        label: 'Tenant Löschstatus',
-        icon: 'fa-trash-alt',
-      },
-      '/work-orders': {
-        label: 'Meine Arbeitsaufträge',
-        icon: 'fa-clipboard-check',
-      },
-      '/work-orders/admin': {
-        label: 'Alle Aufträge',
-        icon: 'fa-clipboard-check',
-      },
-      '/manage-dummies': {
-        label: 'Dummy-Benutzer verwalten',
-        icon: 'fa-desktop',
-      },
-    };
+  const urlMappings = $derived<
+    Partial<Record<string, { label: string; icon: string }>>
+  >({
+    '/': { label: 'Home', icon: 'fa-home' },
+    '/root-dashboard': { label: 'Root Dashboard', icon: 'fa-shield-alt' },
+    '/admin-dashboard': {
+      label: 'Admin Dashboard',
+      icon: 'fa-tachometer-alt',
+    },
+    '/employee-dashboard': {
+      label: 'Mitarbeiter Dashboard',
+      icon: 'fa-user',
+    },
+    '/manage-employees': { label: 'Mitarbeiter verwalten', icon: 'fa-users' },
+    '/manage-admins': { label: 'Admins verwalten', icon: 'fa-user-shield' },
+    '/manage-departments': {
+      label: `${hierarchyLabels.department} verwalten`,
+      icon: 'fa-sitemap',
+    },
+    '/manage-areas': {
+      label: `${hierarchyLabels.area} verwalten`,
+      icon: 'fa-building',
+    },
+    '/manage-halls': {
+      label: `${hierarchyLabels.hall} verwalten`,
+      icon: 'fa-warehouse',
+    },
+    '/manage-teams': {
+      label: `${hierarchyLabels.team} verwalten`,
+      icon: 'fa-users',
+    },
+    '/manage-assets': {
+      label: `${hierarchyLabels.asset} verwalten`,
+      icon: 'fa-cogs',
+    },
+    '/manage-root': { label: 'Root User Verwaltung', icon: 'fa-shield-alt' },
+    '/blackboard': { label: 'Schwarzes Brett', icon: 'fa-clipboard' },
+    '/blackboard-detail': {
+      label: 'Schwarzes Brett Details',
+      icon: 'fa-info-circle',
+    },
+    '/calendar': { label: 'Kalender', icon: ICON_CALENDAR },
+    '/chat': { label: 'Chat', icon: 'fa-comments' },
+    '/documents': { label: 'Dokumente', icon: 'fa-file-alt' },
+    '/documents-explorer': { label: 'Dokumente', icon: 'fa-file-alt' },
+    '/shifts': { label: 'Schichtplan', icon: 'fa-clock' },
+    '/kvp': { label: 'KVP', icon: 'fa-lightbulb' },
+    '/kvp-categories': { label: 'Definitionen', icon: 'fa-tags' },
+    '/kvp-detail': { label: 'KVP-Details', icon: 'fa-info-circle' },
+    '/survey-admin': { label: 'Umfragen', icon: 'fa-poll' },
+    '/survey-employee': { label: 'Mitarbeiter-Umfrage', icon: 'fa-poll-h' },
+    '/survey-results': { label: 'Umfrage-Ergebnisse', icon: 'fa-chart-bar' },
+    '/account-settings': {
+      label: 'Konto-Einstellungen',
+      icon: 'fa-user-cog',
+    },
+    '/settings/design': { label: 'Design', icon: 'fa-palette' },
+    '/storage-upgrade': { label: 'Speicher-Upgrade', icon: 'fa-hdd' },
+    '/admin-profile': { label: 'Admin-Profil', icon: 'fa-user-shield' },
+    '/employee-profile': { label: 'Mitarbeiter-Profil', icon: 'fa-user' },
+    '/root-profile': { label: 'Root-Profil', icon: 'fa-user-lock' },
+    '/addons': { label: 'Module', icon: 'fas fa-puzzle-piece' },
+    '/vacation': { label: 'Urlaubsverwaltung', icon: 'fa-umbrella-beach' },
+    '/vacation/rules': { label: 'Urlaubsregeln', icon: 'fa-shield-alt' },
+    '/vacation/entitlements': {
+      label: 'Urlaubsansprüche',
+      icon: 'fa-calculator',
+    },
+    '/vacation/holidays': { label: 'Feiertage', icon: 'fa-calendar-day' },
+    '/vacation/overview': {
+      label: 'Urlaubsübersicht',
+      icon: ICON_CALENDAR,
+    },
+    '/logs': { label: 'Logs', icon: 'fa-list-alt' },
+    '/lean-management/tpm': { label: 'TPM Wartung', icon: 'fa-tools' },
+    '/lean-management/tpm/config': {
+      label: 'TPM Konfiguration',
+      icon: 'fa-cog',
+    },
+    '/lean-management/tpm/overview': {
+      label: 'TPM Übersicht',
+      icon: 'fa-tools',
+    },
+    '/tenant-deletion-status': {
+      label: 'Tenant Löschstatus',
+      icon: 'fa-trash-alt',
+    },
+    '/work-orders': {
+      label: 'Meine Arbeitsaufträge',
+      icon: 'fa-clipboard-check',
+    },
+    '/work-orders/admin': {
+      label: 'Alle Aufträge',
+      icon: 'fa-clipboard-check',
+    },
+    '/manage-dummies': {
+      label: 'Dummy-Benutzer verwalten',
+      icon: 'fa-desktop',
+    },
+    '/settings/organigram': {
+      label: 'Organigramm',
+      icon: 'fa-sitemap',
+    },
+    '/settings/organigram/positions': {
+      label: 'Positionen',
+      icon: 'fa-id-badge',
+    },
+    '/settings/company': {
+      label: 'Firmendaten',
+      icon: 'fa-building',
+    },
+  });
 
   /**
    * Dynamic route patterns - for routes with parameters like /blackboard/[uuid]
@@ -236,6 +263,21 @@
       href: '/settings/design',
       icon: 'fa-cog',
     },
+    '/settings/organigram': {
+      label: 'System',
+      href: '/root-dashboard',
+      icon: 'fa-cog',
+    },
+    '/settings/organigram/positions': {
+      label: 'Organigramm',
+      href: '/settings/organigram',
+      icon: 'fa-sitemap',
+    },
+    '/settings/company': {
+      label: 'System',
+      href: '/root-dashboard',
+      icon: 'fa-cog',
+    },
     '/blackboard-detail': {
       label: 'Schwarzes Brett',
       href: '/blackboard',
@@ -252,12 +294,9 @@
    * Dynamic intermediate breadcrumbs - for routes with parameters
    * Pattern: regex to match, result: intermediate breadcrumb to insert
    */
-  const dynamicIntermediateBreadcrumbs: {
-    pattern: RegExp;
-    label: string;
-    href: string;
-    icon: string;
-  }[] = [
+  const dynamicIntermediateBreadcrumbs = $derived<
+    { pattern: RegExp; label: string; href: string; icon: string }[]
+  >([
     {
       pattern: /^\/manage-employees\/availability\/[^/]+$/,
       label: 'Mitarbeiter verwalten',
@@ -272,7 +311,7 @@
     },
     {
       pattern: /^\/manage-root\/availability\/[^/]+$/,
-      label: 'Root User Verwaltung',
+      label: 'Root Benutzer Verwaltung',
       href: '/manage-root',
       icon: 'fa-shield-alt',
     },
@@ -290,7 +329,7 @@
     },
     {
       pattern: /^\/manage-assets\/availability\/[^/]+$/,
-      label: 'Anlagen verwalten',
+      label: `${hierarchyLabels.asset} verwalten`,
       href: '/manage-assets',
       icon: 'fa-cogs',
     },
@@ -342,7 +381,7 @@
       href: '/work-orders',
       icon: 'fa-clipboard-check',
     },
-  ];
+  ]);
 
   // =============================================================================
   // HELPER FUNCTIONS
@@ -384,7 +423,7 @@
     if (asset?.name !== undefined) {
       return asset.name;
     }
-    return 'Anlage';
+    return hierarchyLabels.asset;
   }
 
   /** Build breadcrumb items for a matched dynamic route */
@@ -402,7 +441,7 @@
     if (baseIntermediate && !hasStaticIntermediate && !hasDynamicIntermediate) {
       items.push({
         label: baseIntermediate.label,
-        href: resolvePath(baseIntermediate.href),
+        href: resolve(baseIntermediate.href),
         icon: baseIntermediate.icon,
       });
     }
@@ -469,7 +508,7 @@
     // Always add Home first (always a link, never current)
     items.push({
       label: 'Home',
-      href: resolvePath(getHomeUrl()),
+      href: resolve(getHomeUrl()),
       icon: 'fa-home',
     });
 
@@ -478,7 +517,7 @@
     if (intermediate) {
       items.push({
         label: intermediate.label,
-        href: resolvePath(intermediate.href),
+        href: resolve(intermediate.href),
         icon: intermediate.icon,
       });
     }
@@ -490,7 +529,7 @@
     if (dynIntermediate && !intermediate) {
       items.push({
         label: dynIntermediate.label,
-        href: resolvePath(dynIntermediate.href),
+        href: resolve(dynIntermediate.href),
         icon: dynIntermediate.icon,
       });
     }

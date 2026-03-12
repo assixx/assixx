@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { AreaIdParamSchema } from './area-id-param.dto.js';
 import { AssignDepartmentsSchema } from './assign-departments.dto.js';
+import { AssignHallsSchema } from './assign-halls.dto.js';
 import { AreaTypeSchema, CreateAreaSchema } from './create-area.dto.js';
 import { DeleteAreaQuerySchema } from './delete-area-query.dto.js';
 import { ListAreasQuerySchema } from './list-areas-query.dto.js';
@@ -220,5 +221,42 @@ describe('AssignDepartmentsSchema', () => {
 
   it('should reject missing departmentIds', () => {
     expect(AssignDepartmentsSchema.safeParse({}).success).toBe(false);
+  });
+});
+
+// =============================================================
+// AssignHallsSchema
+// =============================================================
+
+describe('AssignHallsSchema', () => {
+  it('should accept valid hall IDs', () => {
+    expect(AssignHallsSchema.safeParse({ hallIds: [1, 2, 3] }).success).toBe(
+      true,
+    );
+  });
+
+  it('should accept empty array', () => {
+    expect(AssignHallsSchema.safeParse({ hallIds: [] }).success).toBe(true);
+  });
+
+  it('should coerce string IDs to numbers', () => {
+    const result = AssignHallsSchema.safeParse({ hallIds: ['1', '5'] });
+    expect(result.success).toBe(true);
+    const data = (result as { success: true; data: { hallIds: number[] } })
+      .data;
+    expect(data.hallIds).toEqual([1, 5]);
+  });
+
+  it('should reject non-positive IDs', () => {
+    expect(AssignHallsSchema.safeParse({ hallIds: [0] }).success).toBe(false);
+    expect(AssignHallsSchema.safeParse({ hallIds: [-1] }).success).toBe(false);
+  });
+
+  it('should reject non-integer IDs', () => {
+    expect(AssignHallsSchema.safeParse({ hallIds: [1.5] }).success).toBe(false);
+  });
+
+  it('should reject missing hallIds', () => {
+    expect(AssignHallsSchema.safeParse({}).success).toBe(false);
   });
 });

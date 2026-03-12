@@ -7,7 +7,7 @@
  */
 import { redirect } from '@sveltejs/kit';
 
-import { requireFeature } from '$lib/utils/feature-guard';
+import { requireAddon } from '$lib/utils/addon-guard';
 import { createLogger } from '$lib/utils/logger';
 
 import type { PageServerLoad } from './$types';
@@ -102,7 +102,7 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
   }
 
   const parentData = await parent();
-  requireFeature(parentData.activeFeatures, 'tpm');
+  requireAddon(parentData.activeAddons, 'tpm');
 
   // Phase 1: Fetch plans + colors in parallel
   const [plansRaw, colorsData] = await Promise.all([

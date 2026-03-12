@@ -12,6 +12,10 @@
   // Extracted Components
   import ActiveSurveyCard from './_lib/ActiveSurveyCard.svelte';
   import CompletedSurveyCard from './_lib/CompletedSurveyCard.svelte';
+  import {
+    createAssignmentBadgeMap,
+    createSurveyMessages,
+  } from './_lib/constants';
   import DraftSurveyCard from './_lib/DraftSurveyCard.svelte';
   import {
     getSurveyId,
@@ -48,6 +52,11 @@
   // =============================================================================
 
   const { data }: { data: PageData } = $props();
+
+  // Hierarchy labels from layout data inheritance (A6)
+  const labels = $derived(data.hierarchyLabels);
+  const surveyMessages = $derived(createSurveyMessages(labels));
+  const badgeMap = $derived(createAssignmentBadgeMap(labels));
 
   // SSR data as derived - updates automatically when invalidateAll() is called
   const surveys = $derived<Survey[]>(data.surveys);
@@ -334,6 +343,7 @@
                 departments,
                 teams,
                 areas,
+                badgeMap,
               )}
               onedit={handleEditSurvey}
               onviewresults={handleViewResults}
@@ -467,6 +477,7 @@
 </button>
 
 <SurveyFormModal
+  messages={surveyMessages}
   bind:formTitle
   bind:formDescription
   bind:formIsAnonymous

@@ -30,7 +30,7 @@
     syncTeamMemberships,
     buildEmployeePayload,
   } from './_lib/api';
-  import { MESSAGES } from './_lib/constants';
+  import { createMessages } from './_lib/constants';
   import DeleteModals from './_lib/DeleteModals.svelte';
   import EmployeeFormModal from './_lib/EmployeeFormModal.svelte';
   import EmployeeTableRow from './_lib/EmployeeTableRow.svelte';
@@ -66,6 +66,11 @@
   // SSR data via $derived - updates when invalidateAll() is called
   const allEmployees = $derived<Employee[]>(data.employees);
   const allTeams = $derived<Team[]>(data.teams);
+  const positionOptions = $derived<string[]>(data.positionOptions);
+
+  // Hierarchy labels (propagated from layout)
+  const labels = $derived(data.hierarchyLabels);
+  const messages = $derived(createMessages(labels));
 
   // Permission: Only root or admin with has_full_access may upgrade roles
   const canUpgrade = $derived(
@@ -135,7 +140,7 @@
 
   const isEditMode = $derived(currentEditId !== null);
   const modalTitle = $derived(
-    isEditMode ? MESSAGES.MODAL_TITLE_EDIT : MESSAGES.MODAL_TITLE_ADD,
+    isEditMode ? messages.MODAL_TITLE_EDIT : messages.MODAL_TITLE_ADD,
   );
 
   // Derived: Filtered employees based on current filter/search state
@@ -219,7 +224,7 @@
     } catch (err: unknown) {
       log.error({ err }, 'Error saving employee');
       showErrorAlert(
-        err instanceof Error ? err.message : MESSAGES.ERROR_SAVING,
+        err instanceof Error ? err.message : messages.ERROR_SAVING,
       );
     } finally {
       submitting = false;
@@ -230,7 +235,7 @@
   function upgradeEmployee(): void {
     if (currentEditId === null) return;
     if (!canUpgrade) {
-      showWarningAlert(MESSAGES.UPGRADE_UNAUTHORIZED);
+      showWarningAlert(messages.UPGRADE_UNAUTHORIZED);
       return;
     }
     upgradeEmployeeId = currentEditId;
@@ -242,7 +247,7 @@
   async function confirmUpgradeEmployee(): Promise<void> {
     if (upgradeEmployeeId === null) return;
     if (!canUpgrade) {
-      showWarningAlert(MESSAGES.UPGRADE_UNAUTHORIZED);
+      showWarningAlert(messages.UPGRADE_UNAUTHORIZED);
       return;
     }
     const userId = upgradeEmployeeId;
@@ -253,11 +258,11 @@
       upgradeEmployeeId = null;
       await apiUpgradeToAdmin(userId);
       await invalidateAll();
-      showSuccessAlert(MESSAGES.UPGRADE_SUCCESS);
+      showSuccessAlert(messages.UPGRADE_SUCCESS);
     } catch (err: unknown) {
       log.error({ err }, 'Error upgrading employee to admin');
       showErrorAlert(
-        err instanceof Error ? err.message : MESSAGES.UPGRADE_ERROR,
+        err instanceof Error ? err.message : messages.UPGRADE_ERROR,
       );
     } finally {
       upgradeLoading = false;
@@ -284,7 +289,7 @@
       showSuccessAlert('Mitarbeiter wurde gelöscht');
     } catch (err: unknown) {
       log.error({ err }, 'Error deleting employee');
-      showErrorAlert(MESSAGES.ERROR_DELETING);
+      showErrorAlert(messages.ERROR_DELETING);
     }
   }
 
@@ -596,7 +601,7 @@
               type="search"
               id="employee-search"
               class="search-input__field"
-              placeholder={MESSAGES.SEARCH_PLACEHOLDER}
+              placeholder={messages.SEARCH_PLACEHOLDER}
               autocomplete="off"
               value={currentSearchQuery}
               oninput={handleSearchInput}
@@ -643,9 +648,9 @@
           <div class="empty-state__icon">
             <i class="fas fa-users"></i>
           </div>
-          <h3 class="empty-state__title">{MESSAGES.NO_EMPLOYEES_FOUND}</h3>
+          <h3 class="empty-state__title">{messages.NO_EMPLOYEES_FOUND}</h3>
           <p class="empty-state__description">
-            {MESSAGES.CREATE_FIRST_EMPLOYEE}
+            {messages.CREATE_FIRST_EMPLOYEE}
           </p>
           <button
             type="button"
@@ -671,9 +676,9 @@
                   <th scope="col">Position</th>
                   <th scope="col">Personalnummer</th>
                   <th scope="col">Status</th>
-                  <th scope="col">Bereiche</th>
-                  <th scope="col">Abteilungen</th>
-                  <th scope="col">Teams</th>
+                  <th scope="col">{messages.TH_AREAS}</th>
+                  <th scope="col">{messages.TH_DEPARTMENTS}</th>
+                  <th scope="col">{messages.TH_TEAMS}</th>
                   <th scope="col">Verfügbarkeit</th>
                   <th scope="col">Geplant</th>
                   <th scope="col">Notizen</th>
@@ -684,6 +689,7 @@
                 {#each filteredEmployees as employee (employee.id)}
                   <EmployeeTableRow
                     {employee}
+                    {labels}
                     onedit={openEditModal}
                     onavailability={openAvailabilityModal}
                     onpermission={navigateToPermissionPage}
@@ -716,6 +722,9 @@
   {modalTitle}
   {allTeams}
   {submitting}
+  {messages}
+  {positionOptions}
+  {labels}
   bind:formFirstName
   bind:formLastName
   bind:formEmail
@@ -763,13 +772,13 @@
 <ConfirmModal
   show={showUpgradeConfirmModal}
   id="upgrade-confirm-modal"
-  title={MESSAGES.UPGRADE_TITLE}
+  title={messages.UPGRADE_TITLE}
   variant="warning"
   icon="fa-arrow-up"
-  confirmLabel={MESSAGES.UPGRADE_CONFIRM_BUTTON}
+  confirmLabel={messages.UPGRADE_CONFIRM_BUTTON}
   submitting={upgradeLoading}
   onconfirm={() => void confirmUpgradeEmployee()}
   oncancel={closeUpgradeConfirmModal}
 >
-  <strong>{MESSAGES.UPGRADE_CONFIRM_MESSAGE}</strong>
+  <strong>{messages.UPGRADE_CONFIRM_MESSAGE}</strong>
 </ConfirmModal>

@@ -8,11 +8,6 @@
   import { goto, invalidateAll } from '$app/navigation';
   import { resolve } from '$app/paths';
 
-  /** Resolve path with base prefix (for dynamic runtime paths) */
-  function resolvePath(path: string): string {
-    return (resolve as (p: string) => string)(path);
-  }
-
   import AvailabilityModal from '$lib/availability/AvailabilityModal.svelte';
   import SearchResultUser from '$lib/components/SearchResultUser.svelte';
   import {
@@ -31,7 +26,7 @@
     buildRootUserPayload,
     updateRootAvailability as apiUpdateAvailability,
   } from './_lib/api';
-  import { MESSAGES } from './_lib/constants';
+  import { createRootMessages } from './_lib/constants';
   import DeleteModals from './_lib/DeleteModals.svelte';
   import { applyAllFilters } from './_lib/filters';
   import RootUserModal from './_lib/RootUserModal.svelte';
@@ -65,8 +60,13 @@
 
   const { data }: { data: PageData } = $props();
 
+  // Hierarchy labels from layout data inheritance (A6)
+  const labels = $derived(data.hierarchyLabels);
+  const messages = $derived(createRootMessages(labels));
+
   // SSR data via $derived - updates when invalidateAll() is called
   const allRootUsers = $derived<RootUser[]>(data.rootUsers);
+  const positionOptions = $derived<string[]>(data.positionOptions);
 
   // =============================================================================
   // UI STATE - Filtering and form state (client-side only)
@@ -122,7 +122,7 @@
 
   const isEditMode = $derived(currentEditId !== null);
   const modalTitle = $derived(
-    isEditMode ? MESSAGES.MODAL_TITLE_EDIT : MESSAGES.MODAL_TITLE_ADD,
+    isEditMode ? messages.MODAL_TITLE_EDIT : messages.MODAL_TITLE_ADD,
   );
 
   // Derived: Filtered users based on current filter/search state
@@ -184,7 +184,7 @@
       return false;
     }
     if (formPosition === '') {
-      showWarningAlert(MESSAGES.SELECT_POSITION_ERROR);
+      showWarningAlert(messages.SELECT_POSITION_ERROR);
       return false;
     }
     return true;
@@ -216,17 +216,17 @@
       const result = await apiSaveRootUser(payload, currentEditId);
       if (result.success) {
         showSuccessAlert(
-          isEditMode ? MESSAGES.SUCCESS_UPDATED : MESSAGES.SUCCESS_CREATED,
+          isEditMode ? messages.SUCCESS_UPDATED : messages.SUCCESS_CREATED,
         );
         closeRootModal();
         // Level 3: Trigger SSR refetch
         await invalidateAll();
       } else {
-        showErrorAlert(result.error ?? MESSAGES.ERROR_SAVING);
+        showErrorAlert(result.error ?? messages.ERROR_SAVING);
       }
     } catch (err: unknown) {
       log.error({ err }, 'Error saving user');
-      showErrorAlert(MESSAGES.ERROR_SAVING);
+      showErrorAlert(messages.ERROR_SAVING);
     } finally {
       submitting = false;
     }
@@ -240,16 +240,16 @@
     try {
       const result = await apiDeleteRootUser(userIdToDelete);
       if (result.success) {
-        showSuccessAlert(MESSAGES.SUCCESS_DELETED);
+        showSuccessAlert(messages.SUCCESS_DELETED);
         closeDeleteModal();
         // Level 3: Trigger SSR refetch
         await invalidateAll();
       } else {
-        showErrorAlert(result.error ?? MESSAGES.ERROR_DELETING);
+        showErrorAlert(result.error ?? messages.ERROR_DELETING);
       }
     } catch (err: unknown) {
       log.error({ err }, 'Error deleting user');
-      showErrorAlert(MESSAGES.ERROR_DELETING);
+      showErrorAlert(messages.ERROR_DELETING);
     }
   }
 
@@ -323,7 +323,7 @@
 
   function navigateToAvailabilityPage(uuid: string): void {
     closeAvailabilityModal();
-    void goto(resolvePath(`/manage-root/availability/${uuid}`));
+    void goto(resolve(`/manage-root/availability/${uuid}`));
   }
 
   // =============================================================================
@@ -440,7 +440,7 @@
 </script>
 
 <svelte:head>
-  <title>{MESSAGES.PAGE_TITLE}</title>
+  <title>{messages.PAGE_TITLE}</title>
 </svelte:head>
 
 <svelte:window onkeydown={handleKeydown} />
@@ -449,10 +449,10 @@
   <div class="card">
     <div class="card__header">
       <h2 class="card__title">
-        <i class="fas fa-shield-alt mr-2"></i>{MESSAGES.PAGE_HEADING}
+        <i class="fas fa-shield-alt mr-2"></i>{messages.PAGE_HEADING}
       </h2>
       <p class="mt-2 text-(--color-text-secondary)">
-        {MESSAGES.PAGE_DESCRIPTION}
+        {messages.PAGE_DESCRIPTION}
       </p>
 
       <div class="mt-6 flex items-center justify-between gap-4">
@@ -514,7 +514,7 @@
             <input
               type="search"
               class="search-input__field"
-              placeholder={MESSAGES.SEARCH_PLACEHOLDER}
+              placeholder={messages.SEARCH_PLACEHOLDER}
               autocomplete="off"
               value={currentSearchQuery}
               oninput={handleSearchInput}
@@ -530,7 +530,7 @@
           <div class="search-input__results">
             {#if currentSearchQuery && filteredUsers.length === 0}
               <div class="search-input__no-results">
-                {MESSAGES.SEARCH_NO_RESULTS} "{currentSearchQuery}"
+                {messages.SEARCH_NO_RESULTS} "{currentSearchQuery}"
               </div>
             {:else if currentSearchQuery}
               {#each filteredUsers.slice(0, 5) as user (user.id)}
@@ -541,7 +541,7 @@
                   email={user.email}
                   employeeNumber={user.employeeNumber}
                   role="root"
-                  position={user.position ?? MESSAGES.NO_POSITION}
+                  position={user.position ?? messages.NO_POSITION}
                   query={currentSearchQuery}
                   onclick={() => {
                     handleSearchResultClick(user.id);
@@ -552,7 +552,7 @@
                 <div
                   class="search-input__result-item search-input__result-more"
                 >
-                  {MESSAGES.moreResults(filteredUsers.length - 5)}
+                  {messages.moreResults(filteredUsers.length - 5)}
                 </div>
               {/if}
             {/if}
@@ -565,8 +565,8 @@
       <div class="alert alert--warning mb-4">
         <div class="alert__icon"><i class="fas fa-shield-alt"></i></div>
         <div class="alert__content">
-          <div class="alert__title">{MESSAGES.SECURITY_TITLE}</div>
-          <div class="alert__message">{MESSAGES.SECURITY_MESSAGE}</div>
+          <div class="alert__title">{messages.SECURITY_TITLE}</div>
+          <div class="alert__message">{messages.SECURITY_MESSAGE}</div>
         </div>
       </div>
 
@@ -585,8 +585,8 @@
       {:else if filteredUsers.length === 0}
         <div class="empty-state">
           <div class="empty-state__icon"><i class="fas fa-shield-alt"></i></div>
-          <h3 class="empty-state__title">{MESSAGES.NO_USERS_FOUND}</h3>
-          <p class="empty-state__description">{MESSAGES.CREATE_FIRST_USER}</p>
+          <h3 class="empty-state__title">{messages.NO_USERS_FOUND}</h3>
+          <p class="empty-state__description">{messages.CREATE_FIRST_USER}</p>
           <button
             type="button"
             class="btn btn-primary"
@@ -605,9 +605,9 @@
                 <th>Personalnummer</th>
                 <th>Position</th>
                 <th>Status</th>
-                <th>{MESSAGES.TH_AVAILABILITY}</th>
-                <th>{MESSAGES.TH_PLANNED}</th>
-                <th>{MESSAGES.TH_NOTES}</th>
+                <th>{messages.TH_AVAILABILITY}</th>
+                <th>{messages.TH_PLANNED}</th>
+                <th>{messages.TH_NOTES}</th>
                 <th>Erstellt am</th>
                 <th>Aktionen</th>
               </tr>
@@ -691,11 +691,11 @@
           <div class="alert__icon"><i class="fas fa-info-circle"></i></div>
           <div class="alert__content">
             <div class="alert__message">
-              {MESSAGES.PROFILE_INFO}
+              {messages.PROFILE_INFO}
               <a
-                href={resolvePath('/root-profile')}
+                href={resolve('/root-profile')}
                 class="text-blue-500 hover:underline"
-                >{MESSAGES.PROFILE_LINK_TEXT}</a
+                >{messages.PROFILE_LINK_TEXT}</a
               >.
             </div>
           </div>
@@ -714,9 +714,11 @@
 >
 
 <RootUserModal
+  {messages}
   show={showRootModal}
   {isEditMode}
   {modalTitle}
+  {positionOptions}
   bind:firstName={formFirstName}
   bind:lastName={formLastName}
   bind:email={formEmail}

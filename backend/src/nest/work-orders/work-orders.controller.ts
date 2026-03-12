@@ -6,7 +6,7 @@
  * - Employee view (execute: my orders)
  * - Status transitions, comments, photos, assignees
  *
- * 17 endpoints total. All require @TenantFeature('work_orders').
+ * 17 endpoints total. All require @RequireAddon('work_orders').
  */
 import {
   BadRequestException,
@@ -30,8 +30,8 @@ import multer from 'fastify-multer';
 import { createReadStream } from 'node:fs';
 
 import { CurrentUser } from '../common/decorators/current-user.decorator.js';
+import { RequireAddon } from '../common/decorators/require-addon.decorator.js';
 import { RequirePermission } from '../common/decorators/require-permission.decorator.js';
-import { TenantFeature } from '../common/decorators/tenant-feature.decorator.js';
 import { TenantId } from '../common/decorators/tenant.decorator.js';
 import type { NestAuthUser } from '../common/interfaces/auth.interface.js';
 import type { MulterFile } from '../common/interfaces/multer.interface.js';
@@ -85,7 +85,7 @@ const photoUploadOptions = {
 };
 
 @Controller('work-orders')
-@TenantFeature('work_orders')
+@RequireAddon('work_orders')
 export class WorkOrdersController {
   constructor(
     private readonly service: WorkOrdersService,

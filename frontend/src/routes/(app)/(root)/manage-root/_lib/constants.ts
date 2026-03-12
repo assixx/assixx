@@ -2,6 +2,11 @@
 // MANAGE ROOT - CONSTANTS
 // =============================================================================
 
+import {
+  DEFAULT_HIERARCHY_LABELS,
+  type HierarchyLabels,
+} from '$lib/types/hierarchy-labels';
+
 import type { FormIsActiveStatus } from './types';
 
 export { STATUS_BADGE_CLASSES, STATUS_LABELS } from '@assixx/shared/constants';
@@ -30,7 +35,7 @@ export const POSITION_OPTIONS = [
 /**
  * UI Messages for i18n preparation
  */
-export const MESSAGES = {
+const BASE_MESSAGES = {
   // Page
   PAGE_TITLE: 'Root User Verwaltung - Assixx',
   PAGE_HEADING: 'Root User Verwaltung',
@@ -109,6 +114,18 @@ export const MESSAGES = {
   PASSWORD_STRONG: 'Stark',
   PASSWORD_VERY_STRONG: 'Sehr stark',
 } as const;
+
+/** Factory: root messages with dynamic hierarchy labels */
+export function createRootMessages(labels: HierarchyLabels) {
+  return {
+    ...BASE_MESSAGES,
+    FULL_ACCESS_TITLE: `Vollzugriff auf alle ${labels.area}`,
+    FULL_ACCESS_MESSAGE: `Root-User haben automatisch Zugriff auf alle ${labels.department} und ${labels.area} des Tenants.`,
+  };
+}
+
+/** Backward-compatible static export */
+export const MESSAGES = createRootMessages(DEFAULT_HIERARCHY_LABELS);
 
 /**
  * Password strength labels

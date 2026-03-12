@@ -6,7 +6,7 @@
 
 ## 2026-02-15
 
-### Frontend Feature Guards — Komplett implementiert
+### Frontend Addon Guards — Komplett implementiert
 
 **Sessions:** 4 (von 5 geschätzten) + Session 5 (Dokumentation)
 
@@ -22,7 +22,7 @@
 
 **Metriken:**
 
-- **Neue Dateien:** 8 (feature-guard.ts, test files, feature-unavailable page, ADR-024)
+- **Neue Dateien:** 8 (addon-guard.ts, test files, feature-unavailable page, ADR-024)
 - **Geänderte Dateien:** 21 (17 page guards + layout + sidebar + navigation-config + api-client)
 - **Unit Tests:** 57 neue Tests (31 navigation-config + 26 feature-guard)
 - **Gesamt-Frontend-Tests:** 238
@@ -31,7 +31,7 @@
 
 **Architektur:**
 
-- ADR-024 geschrieben: Frontend Feature Guards
+- ADR-024 geschrieben: Frontend Addon Guards
 - Defense in Depth: 4 Frontend-Layers + Backend-Guard
 - Parallel-Fetch: kein Extra-Roundtrip für Feature-Daten
 - Rekursive Submenu-Filterung

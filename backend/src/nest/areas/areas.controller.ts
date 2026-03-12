@@ -9,6 +9,7 @@
  * - PUT    /areas/:id       - Update area (admin only)
  * - DELETE /areas/:id       - Delete area (admin only)
  * - POST   /areas/:id/departments - Assign departments (admin only)
+ * - POST   /areas/:id/halls      - Assign halls (admin only)
  */
 import {
   Body,
@@ -33,6 +34,7 @@ import type { AreaResponse, AreaStatsResponse } from './areas.service.js';
 import { AreasService } from './areas.service.js';
 import {
   AssignDepartmentsDto,
+  AssignHallsDto,
   CreateAreaDto,
   DeleteAreaQueryDto,
   ListAreasQueryDto,
@@ -158,5 +160,20 @@ export class AreasController {
       dto.departmentIds,
       tenantId,
     );
+  }
+
+  /**
+   * POST /areas/:id/halls
+   * Assign halls to an area (admin only)
+   */
+  @Post(':id/halls')
+  @Roles('admin', 'root')
+  @RequirePermission(FEAT, MOD, 'canWrite')
+  async assignHalls(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: AssignHallsDto,
+    @TenantId() tenantId: number,
+  ): Promise<MessageResponse> {
+    return await this.areasService.assignHallsToArea(id, dto.hallIds, tenantId);
   }
 }

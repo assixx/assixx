@@ -12,6 +12,7 @@
   import { surveyAdminState } from './state.svelte';
   import { getTeamMemberCount } from './utils';
 
+  import type { SurveyMessages } from './constants';
   import type { QuestionType, Department, Team, Area } from './types';
 
   // =============================================================================
@@ -19,6 +20,7 @@
   // =============================================================================
 
   interface Props {
+    messages: SurveyMessages;
     formTitle: string;
     formDescription: string;
     formIsAnonymous: boolean;
@@ -59,7 +61,7 @@
 
   /* eslint-disable prefer-const, @typescript-eslint/no-useless-default-assignment -- Svelte $bindable() requires let and is not a useless default */
   // prettier-ignore
-  let { formTitle = $bindable(), formDescription = $bindable(), formIsAnonymous = $bindable(), formIsMandatory = $bindable(), formStartDate = $bindable(), formStartTime = $bindable(), formEndDate = $bindable(), formEndTime = $bindable(), formCompanyWide = $bindable(), formSelectedAreas = $bindable(), formSelectedDepartments = $bindable(), formSelectedTeams = $bindable(), formQuestions = $bindable(), departments, teams, areas, canAssignCompanyWide, onclose, onsavedraft, onsaveactive, onaddquestion, onremovequestion, onquestiontypechange, onaddoption, onremoveoption, onupdateoption }: Props = $props();
+  let { messages, formTitle = $bindable(), formDescription = $bindable(), formIsAnonymous = $bindable(), formIsMandatory = $bindable(), formStartDate = $bindable(), formStartTime = $bindable(), formEndDate = $bindable(), formEndTime = $bindable(), formCompanyWide = $bindable(), formSelectedAreas = $bindable(), formSelectedDepartments = $bindable(), formSelectedTeams = $bindable(), formQuestions = $bindable(), departments, teams, areas, canAssignCompanyWide, onclose, onsavedraft, onsaveactive, onaddquestion, onremovequestion, onquestiontypechange, onaddoption, onremoveoption, onupdateoption }: Props = $props();
   /* eslint-enable prefer-const, @typescript-eslint/no-useless-default-assignment */
 
   // =============================================================================
@@ -359,7 +361,8 @@
             class="form-field__label"
             for="survey-area-select"
           >
-            <i class="fas fa-layer-group mr-1"></i> Bereiche (Areas)
+            <i class="fas fa-layer-group mr-1"></i>
+            {messages.AREA_LABEL}
           </label>
           <select
             id="survey-area-select"
@@ -384,8 +387,7 @@
           </select>
           <span class="form-field__message text-(--color-text-secondary)">
             <i class="fas fa-info-circle mr-1"></i>
-            Strg/Cmd + Klick für Mehrfachauswahl. Bereiche vererben Zugriff auf zugehörige
-            Abteilungen.
+            {messages.AREA_INHERIT_HINT}
           </span>
         </div>
 
@@ -398,7 +400,8 @@
             class="form-field__label"
             for="survey-department-select"
           >
-            <i class="fas fa-sitemap mr-1"></i> Zusätzliche Abteilungen
+            <i class="fas fa-sitemap mr-1"></i>
+            {messages.ADDITIONAL_DEPARTMENTS}
           </label>
           <select
             id="survey-department-select"
@@ -423,8 +426,7 @@
           </select>
           <span class="form-field__message text-(--color-text-secondary)">
             <i class="fas fa-info-circle mr-1"></i>
-            Strg/Cmd + Klick für Mehrfachauswahl. Nur Abteilungen die nicht bereits
-            durch Bereiche abgedeckt sind.
+            {messages.DEPT_FILTER_HINT}
           </span>
         </div>
 
@@ -437,7 +439,8 @@
             class="form-field__label"
             for="survey-team-select"
           >
-            <i class="fas fa-users mr-1"></i> Teams
+            <i class="fas fa-users mr-1"></i>
+            {messages.TEAM_LABEL}
           </label>
           <select
             id="survey-team-select"
@@ -454,8 +457,7 @@
           </select>
           <span class="form-field__message text-(--color-text-secondary)">
             <i class="fas fa-info-circle mr-1"></i>
-            Teams werden automatisch vererbt: Bereich-/Abteilungs-Auswahl blendet
-            zugehörige Teams aus.
+            {messages.TEAM_INHERIT_HINT}
           </span>
         </div>
 

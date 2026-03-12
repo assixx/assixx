@@ -16,7 +16,7 @@
 | Version | Datum      | Änderung                                                                                                         |
 | ------- | ---------- | ---------------------------------------------------------------------------------------------------------------- |
 | 0.1.0   | 2026-03-02 | Initial Draft — Phasen 1-6 geplant                                                                               |
-| 1.0.0   | 2026-03-02 | Phase 1 COMPLETE — 2 Migrationen angewendet (4 Tabellen, 3 ENUMs, 1 Feature-Flag)                                |
+| 1.0.0   | 2026-03-02 | Phase 1 COMPLETE — 2 Migrationen angewendet (4 Tabellen, 3 ENUMs, 1 Addon-Flag)                                  |
 | 2.0.0   | 2026-03-03 | Phase 2 COMPLETE — 13 Backend-Dateien (6 Services + Controller + Helpers + Types + DTOs + Permissions + Module)  |
 | 3.0.0   | 2026-03-03 | Phase 3 COMPLETE — 137 Unit Tests in 6 Test-Dateien (Ziel: 130+)                                                 |
 | 4.0.0   | 2026-03-03 | Phase 4 COMPLETE — 19 API-Tests (60+ Assertions), 3 Bugs gefixt (DTO import type, stale read in updateWorkOrder) |
@@ -94,7 +94,7 @@ Admin-View (/work-orders/admin):
 | R1  | Polymorphe `source_type` erschwert JOINs        | Mittel  | Niedrig            | `source_type` + `source_uuid` statt FK. Kein JOIN auf Quelltabelle nötig  | API Test: Arbeitsauftrag aus TPM-Mangel erstellen  |
 | R2  | N:M Assignees: Race Condition bei Zuweisung     | Mittel  | Mittel             | `FOR UPDATE` Lock auf `work_orders` Row vor Assignee-Mutation             | Unit Test: parallele Zuweisung → kein Datenverlust |
 | R3  | SSE-Notification Flut bei vielen Statuswechseln | Niedrig | Mittel             | Debounce: Max 1 Notification pro Auftrag pro User pro 5 Min               | API Test: 3x Status-Update → nur 1 SSE Event       |
-| R4  | Feature-Flag vergessen → Open für alle Tenants  | Hoch    | Niedrig            | `@TenantFeature('work_orders')` auf Controller + API Test unauth          | API Test: Feature disabled → 403                   |
+| R4  | Addon-Flag vergessen → Open für alle Tenants    | Hoch    | Niedrig            | `@RequireAddon('work_orders')` auf Controller + API Test unauth           | API Test: Feature disabled → 403                   |
 | R5  | Team-Filterung fehlt → Alle Employees sichtbar  | Mittel  | Niedrig            | Endpoint akzeptiert `asset_Id`, filtert über `machine_teams`→`user_teams` | API Test: Nur Team-Members in Response             |
 | R6  | Migration bricht bei bestehenden Daten ab       | Hoch    | Niedrig            | Neue Tabellen ohne FK zu bestehenden Daten (nur `tenants`, `users`)       | Dry-Run vor Apply                                  |
 
@@ -106,7 +106,7 @@ Admin-View (/work-orders/admin):
 | EventBus (ADR-003)            | 4 neue typed Emit-Methoden (assigned, status, due, verified)               | 2     | 2026-03-03     |
 | SSE/NotificationStore         | 4 neue SSE Event Types, neuer Count `workOrders`                           | 5     |                |
 | Permission Registry (ADR-020) | Neuer Registrar: `work-orders` mit 2 Modulen (manage + execute)            | 2     | 2026-03-03     |
-| FeatureCheckService (ADR-024) | `@TenantFeature('work_orders')` auf Controller                             | 2     | 2026-03-03     |
+| FeatureCheckService (ADR-024) | `@RequireAddon('work_orders')` auf Controller                              | 2     | 2026-03-03     |
 | Activity Logger               | 3 neue EntityTypes: `work_order`, `work_order_comment`, `work_order_photo` | 2     | 2026-03-03     |
 | Dashboard Counts              | Neuer Count `workOrders` im Badge-System                                   | 5     |                |
 | TPM Mängelliste               | "Zuweisen" Button → öffnet Arbeitsauftrag-Erstellung                       | 5     |                |
@@ -127,7 +127,7 @@ Admin-View (/work-orders/admin):
 
 **Was passiert:**
 
-1. Feature-Flag INSERT in `features` Tabelle:
+1. Addon-Flag INSERT in `addons` Tabelle:
    - `code: 'work_orders'`, `name: 'Arbeitsaufträge'`, `category: 'professional'`
 
 2. ENUM erstellen:
@@ -236,7 +236,7 @@ Admin-View (/work-orders/admin):
 - [ ] Alle Migrationen bestehen Dry-Run: `doppler run -- ./scripts/run-migrations.sh up --dry-run`
 - [ ] Alle Migrationen erfolgreich angewendet
 - [ ] 4 neue Tabellen existieren mit RLS Policies (4/4 verifiziert)
-- [ ] 1 Feature-Flag `work_orders` in `features` Tabelle
+- [ ] 1 Addon-Flag `work_orders` in `addons` Tabelle
 - [ ] 3 neue ENUMs existieren (`work_order_status`, `work_order_priority`, `work_order_source_type`)
 - [ ] Backend kompiliert fehlerfrei
 - [ ] Bestehende Tests laufen weiterhin durch
@@ -493,7 +493,7 @@ emitWorkOrderVerified(tenantId, payload)     → 'workorder.verified'
 
 **Jeder Endpoint MUSS:**
 
-- [ ] `@TenantFeature('work_orders')` Decorator (Global Guard prüft automatisch)
+- [ ] `@RequireAddon('work_orders')` Decorator (Global Guard prüft automatisch)
 - [ ] `@RequirePermission('work_orders', 'work-orders-manage|execute', 'canRead|canWrite|canDelete')` Decorator
 - [ ] Raw Data zurückgeben (ResponseInterceptor wrapped automatisch)
 
@@ -516,7 +516,7 @@ emitWorkOrderVerified(tenantId, payload)     → 'workorder.verified'
 - [x] 6 Services implementiert und injiziert ✅
 - [x] Controller mit 15 Endpoints ✅
 - [x] Permission Registrar registriert bei Module Init ✅
-- [x] `@TenantFeature('work_orders')` auf Controller ✅
+- [x] `@RequireAddon('work_orders')` auf Controller ✅
 - [x] `db.tenantTransaction()` für ALLE tenant-scoped Queries ✅
 - [x] KEIN Double-Wrapping — Services returnen raw Data (ADR-007) ✅
 - [x] EventBus: 4 neue Emit-Methoden hinzugefügt ✅
@@ -647,7 +647,7 @@ backend/src/nest/work-orders/
 - [x] > = 30 Assertions (19 Tests, 60+ Assertions — Szenarien-Header sagt >= 30 Assertions)
 - [x] Alle Tests grün (19/19 pass, 0 failures)
 - [x] Tenant-Isolation verifiziert (global auth middleware + apitest tenant scope)
-- [x] Feature-Flag-Gating verifiziert (TenantFeature decorator on controller, feature enabled for apitest)
+- [x] Addon-Flag-Gating verifiziert (RequireAddon decorator on controller, feature enabled for apitest)
 - [x] Status-Transitions via HTTP verifiziert (4 Tests: open→in_progress, in_progress→completed, completed→open rejected, completed→verified)
 - [x] Pagination verifiziert auf List-Endpoints (GET /work-orders mit page+limit, GET /comments mit page+limit)
 - [x] Bug-Fix: Controller DTO `import type` → `import` (ZodValidationPipe braucht Runtime-Klasse)
@@ -730,7 +730,7 @@ frontend/src/routes/(app)/
 
 - `frontend/src/routes/(app)/_lib/navigation-config.ts`:
   - Neuer Top-Level Menüpunkt `Arbeitsaufträge` für alle 3 Rollen
-  - `badgeType: 'workOrders'`, `featureCode: 'work_orders'`
+  - `badgeType: 'workOrders'`, `addonCode: 'work_orders'`
   - Icon: `fa-clipboard-check`
 
 - `frontend/src/lib/components/Breadcrumb.svelte`:
@@ -759,7 +759,7 @@ const data = await apiClient.get<WorkOrder>('/work-orders/uuid');
 export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
   const token = cookies.get('accessToken');
   if (!token) redirect(302, '/login');
-  await requireFeature('work_orders', token, fetch);
+  await requireAddon('work_orders', token, fetch);
   // Data Loading...
 };
 ```
@@ -813,7 +813,7 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
 
 | Session | Phase | Beschreibung                                             | Status | Datum      |
 | ------- | ----- | -------------------------------------------------------- | ------ | ---------- |
-| 1       | 1     | Migration 064: Feature-Flag + ENUMs + Core Tables        | DONE   | 2026-03-02 |
+| 1       | 1     | Migration 064: Addon-Flag + ENUMs + Core Tables          | DONE   | 2026-03-02 |
 | 2       | 1     | Migration 065: Comments + Photos Tables                  | DONE   | 2026-03-02 |
 | 3       | 2     | Module Skeleton + Types + DTOs + Permissions             | DONE   | 2026-03-03 |
 | 4       | 2     | WorkOrdersService (Core CRUD)                            | DONE   | 2026-03-03 |
@@ -877,10 +877,10 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
 
 ### Database (neu)
 
-| Datei                                                               | Zweck                              |
-| ------------------------------------------------------------------- | ---------------------------------- |
-| `database/migrations/20260303000064_work-orders-core.ts`            | Feature-Flag + ENUMs + Core Tables |
-| `database/migrations/20260303000065_work-orders-comments-photos.ts` | Comments + Photos Tables           |
+| Datei                                                               | Zweck                            |
+| ------------------------------------------------------------------- | -------------------------------- |
+| `database/migrations/20260303000064_work-orders-core.ts`            | Addon-Flag + ENUMs + Core Tables |
+| `database/migrations/20260303000065_work-orders-comments-photos.ts` | Comments + Photos Tables         |
 
 ### Frontend (neu)
 

@@ -3,6 +3,11 @@
  * @module employee-dashboard/_lib/constants
  */
 
+import {
+  DEFAULT_HIERARCHY_LABELS,
+  type HierarchyLabels,
+} from '$lib/types/hierarchy-labels';
+
 /** List display limits */
 export const LIST_LIMITS = {
   recentDocuments: 5,
@@ -16,14 +21,23 @@ export const CALENDAR_MONTHS_AHEAD = 3;
 /** Floating dots count for hero animation */
 export const FLOATING_DOTS_COUNT = 24;
 
-/** Org level display text (German) */
-export const ORG_LEVEL_TEXT: Record<string, string> = {
-  company: 'Firma',
-  department: 'Abteilung',
-  team: 'Team',
-  area: 'Bereich',
-  personal: 'Persönlich',
-} as const;
+/** Factory: org level display text with dynamic hierarchy labels */
+export function createOrgLevelText(
+  labels: HierarchyLabels,
+): Record<string, string> {
+  return {
+    company: 'Firma',
+    department: labels.department,
+    team: labels.team,
+    area: labels.area,
+    personal: 'Persönlich',
+  };
+}
+
+/** Backward-compatible static export */
+export const ORG_LEVEL_TEXT: Record<string, string> = createOrgLevelText(
+  DEFAULT_HIERARCHY_LABELS,
+);
 
 /** Quick access card routes */
 export const QUICK_ACCESS_ROUTES = {
@@ -73,10 +87,18 @@ export const PRIORITY_LABELS: Record<string, string> = {
   urgent: 'Dringend',
 } as const;
 
-/** Blackboard org level labels (German) */
-export const BLACKBOARD_ORG_LABELS: Record<string, string> = {
-  company: 'Firma',
-  department: 'Abteilung',
-  team: 'Team',
-  area: 'Bereich',
-} as const;
+/** Factory: blackboard org level labels with dynamic hierarchy labels */
+export function createBlackboardOrgLabels(
+  labels: HierarchyLabels,
+): Record<string, string> {
+  return {
+    company: 'Firma',
+    department: labels.department,
+    team: labels.team,
+    area: labels.area,
+  };
+}
+
+/** Backward-compatible static export */
+export const BLACKBOARD_ORG_LABELS: Record<string, string> =
+  createBlackboardOrgLabels(DEFAULT_HIERARCHY_LABELS);

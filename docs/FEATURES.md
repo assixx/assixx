@@ -1,14 +1,14 @@
 # Assixx Features & Overview
 
-> **Last Updated:** 2026-03-04
-> **Version:** 1.5.0
-> **Status:** Production Ready (13 of 14 main features live)
+> **Last Updated:** 2026-03-11
+> **Version:** 2.0.0
+> **Status:** Production Ready (20 Addons: 8 Core + 12 Kaufbar)
 
 ## Table of Contents
 
 1. [Current Features](#current-features)
-2. [Feature Status Matrix](#feature-status-matrix)
-3. [Pricing Plans](#pricing-plans)
+2. [Addon Status Matrix](#addon-status-matrix-adr-033)
+3. [Preismodell](#preismodell)
 4. [Feature Details](#feature-details)
 5. [Planned Features](#planned-features)
 
@@ -102,17 +102,17 @@
 - Status Audit Trail (append-only log with notes)
 - 5 Admin Pages: Anträge, Regeln, Urlaubsansprüche, Feiertage, Übersicht
 
-#### 10. **Feature-Gating System** (NEW — System Feature)
+#### 10. **Addon-System** (ADR-033 — System Feature)
 
-- Per-Tenant Feature Activation/Deactivation
-- Backend: `TenantFeatureGuard` (APP_GUARD) on all Feature-Controllers
+- Addon-basiertes SaaS-Modell (ersetzt Plan-Tiers, siehe ADR-033)
+- 8 Core-Addons (immer aktiv) + 12 kaufbare Addons (je €10/Monat, 30 Tage Trial)
+- Backend: `TenantAddonGuard` (APP_GUARD) on all Addon-Controllers
 - Frontend: Sidebar-Filterung (SSR, kein Flash), Page-Level Guards, api-client 403-Handling
-- Admin-Seite `/features` für Feature-Verwaltung (modernisiert mit Design System)
-- Separate `/feature-unavailable` Fehlerseite (vs. `/permission-denied` für Rollen)
+- Admin-Seite `/addons` für Addon-Verwaltung (Aktivieren/Deaktivieren/Trial)
+- Separate `/addon-unavailable` Fehlerseite (vs. `/permission-denied` für Rollen)
 - Rekursive Submenu-Filterung (leere Container werden entfernt)
-- 57 Unit Tests (navigation-config 31 + feature-guard 26)
-- Core-Features (Dashboard, Profil, Settings) werden NIE gefiltert
-- Architektur: ADR-024
+- Deaktivierung erhält User-Permissions (sofortige Reaktivierung möglich)
+- Architektur: ADR-033 (supersedes ADR-024, ADR-032)
 
 #### 11. **TPM — Total Productive Maintenance** (NEW)
 
@@ -171,51 +171,48 @@
 - Real-Time Results
 - Export Functions
 
-## Feature Status Matrix
+## Addon Status Matrix (ADR-033)
 
-| Feature             | Basic    | Premium   | Enterprise   | Status          |
-| ------------------- | -------- | --------- | ------------ | --------------- |
-| User Management     | 50 Users | 200 Users | Unlimited    | Live            |
-| Document Management | 10GB     | 100GB     | 1TB          | Live            |
-| Bulletin Board      | Yes      | Yes       | Yes          | Live            |
-| Calendar            | Yes      | Yes       | Yes          | Live            |
-| CIP System          | No       | Yes       | Yes          | Live            |
-| Shift Planning      | No       | Yes       | Yes          | Live            |
-| Chat System         | Basic    | Extended  | Full Version | Live            |
-| Backup System       | Yes      | Yes       | Yes          | Live            |
-| Vacation Management | No       | Yes       | Yes          | Live            |
-| Feature-Gating      | Yes      | Yes       | Yes          | Live            |
-| TPM Wartung         | No       | Yes       | Yes          | Live            |
-| Arbeitsaufträge     | No       | Yes       | Yes          | Live            |
-| Dummy-Benutzer      | Yes      | Yes       | Yes          | Live            |
-| Survey Tool         | No       | Yes       | Yes          | In Development  |
-| Mobile App          | No       | No        | Yes          | Planned Q2/2025 |
+> **Modell:** Core + À-la-carte Addons (keine Plan-Tiers mehr, siehe ADR-033)
 
-## Pricing Plans
+| Addon                 | Typ     | Preis/Monat | Status         |
+| --------------------- | ------- | ----------- | -------------- |
+| Dashboard             | Core    | —           | Live           |
+| Mitarbeiterverwaltung | Core    | —           | Live           |
+| Abteilungen           | Core    | —           | Live           |
+| Teams                 | Core    | —           | Live           |
+| Kalender              | Core    | —           | Live           |
+| Schwarzes Brett       | Core    | —           | Live           |
+| Einstellungen         | Core    | —           | Live           |
+| Benachrichtigungen    | Core    | —           | Live           |
+| Dokumente             | Kaufbar | €10         | Live           |
+| Schichtplanung        | Kaufbar | €10         | Live           |
+| Chat                  | Kaufbar | €10         | Live           |
+| Umfragen              | Kaufbar | €10         | In Development |
+| KVP                   | Kaufbar | €10         | Live           |
+| Urlaubsverwaltung     | Kaufbar | €10         | Live           |
+| TPM / Wartung         | Kaufbar | €10         | Live           |
+| Arbeitsaufträge       | Kaufbar | €10         | Live           |
+| Anlagen & Maschinen   | Kaufbar | €10         | Live           |
+| Berichte              | Kaufbar | €10         | Live           |
+| Protokoll & Audit     | Kaufbar | €10         | Live           |
+| Platzhalter-Benutzer  | Kaufbar | €10         | Live           |
 
-### Basic Plan — 49/month
+## Preismodell
 
-- Up to 50 Users
-- 10GB Storage
-- Basic Features
+### Core (Grundgebühr — Preis TBD)
+
+- Unbegrenzte Benutzer (Root, Admin, Employee)
+- 100 GB Storage (Default)
+- 8 Core-Addons (immer aktiv)
 - Email Support
 
-### Premium Plan — 149/month
+### Kaufbare Addons — je €10/Monat (provisorisch)
 
-- Up to 200 Users
-- 100GB Storage
-- All Features except Enterprise
-- Priority Support
-- Monthly Training Sessions
-
-### Enterprise Plan — Custom Pricing
-
-- Unlimited Users
-- 1TB+ Storage
-- All Features + Customization
-- 24/7 Phone Support
-- Dedicated Account Manager
-- On-Premise Option
+- 30 Tage kostenloser Trial pro Addon
+- Jederzeit aktivierbar und deaktivierbar
+- Daten und Permissions bleiben bei Deaktivierung erhalten
+- Sofortige Reaktivierung ohne Neueinrichtung
 
 ## Feature Details
 

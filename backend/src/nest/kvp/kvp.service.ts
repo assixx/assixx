@@ -725,7 +725,7 @@ export class KvpService {
     const description =
       dto.description.substring(0, 100) +
       (dto.description.length > 100 ? '...' : '');
-    void this.notificationsService.createFeatureNotification(
+    void this.notificationsService.createAddonNotification(
       'kvp',
       suggestionId,
       `Neuer Verbesserungsvorschlag: ${dto.title}`,

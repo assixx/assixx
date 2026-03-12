@@ -74,7 +74,8 @@ export type ActivityEntityType =
   | 'work_order_comment'
   | 'work_order_photo'
   | 'dummy_user'
-  | 'user_feature_permission';
+  | 'user_addon_permission'
+  | 'hall';
 
 /**
  * Parameters for logging an activity

@@ -152,7 +152,7 @@
       <div class="linked-wo-list">
         {#each linkedWorkOrders as wo (wo.uuid)}
           <a
-            href={(resolve as (p: string) => string)(`/work-orders/${wo.uuid}`)}
+            href={resolve(`/work-orders/${wo.uuid}`)}
             class="linked-wo-item"
           >
             <div class="linked-wo-item__title truncate">{wo.title}</div>

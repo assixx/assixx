@@ -15,7 +15,7 @@ import { DocumentNotificationService } from './document-notification.service.js'
 // =============================================================
 
 function createMockNotifications() {
-  return { createFeatureNotification: vi.fn().mockResolvedValue(undefined) };
+  return { createAddonNotification: vi.fn().mockResolvedValue(undefined) };
 }
 
 function makeDocInput(overrides: Record<string, unknown> = {}) {
@@ -132,12 +132,12 @@ describe('DocumentNotificationService', () => {
   // =============================================================
 
   describe('createUploadNotification', () => {
-    it('should call createFeatureNotification for company scope', () => {
+    it('should call createAddonNotification for company scope', () => {
       const data = makeDocInput({ accessScope: 'company' });
 
       service.createUploadNotification(data as never, 99, 10, 5);
 
-      expect(mockNotifications.createFeatureNotification).toHaveBeenCalledWith(
+      expect(mockNotifications.createAddonNotification).toHaveBeenCalledWith(
         'document',
         99,
         'Neues Dokument: report.pdf',
@@ -149,14 +149,12 @@ describe('DocumentNotificationService', () => {
       );
     });
 
-    it('should not call createFeatureNotification for payroll scope', () => {
+    it('should not call createAddonNotification for payroll scope', () => {
       const data = makeDocInput({ accessScope: 'payroll' });
 
       service.createUploadNotification(data as never, 99, 10, 5);
 
-      expect(
-        mockNotifications.createFeatureNotification,
-      ).not.toHaveBeenCalled();
+      expect(mockNotifications.createAddonNotification).not.toHaveBeenCalled();
     });
   });
 });

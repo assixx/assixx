@@ -17,7 +17,7 @@ import {
   deleteSurvey,
   completeSurvey,
 } from './api';
-import { ASSIGNMENT_BADGE_MAP } from './constants';
+import { ASSIGNMENT_BADGE_MAP, type AssignmentBadgeMap } from './constants';
 import { surveyAdminState } from './state.svelte';
 import {
   getTextFromBuffer,
@@ -112,6 +112,41 @@ function resolveEntityText(
   return entity !== undefined ? entity.name : fallback;
 }
 
+/** Resolve display text for an assignment entity (inline name → lookup → fallback) */
+function resolveAssignmentText(
+  assignment: SurveyAssignment,
+  type: string,
+  departments: { id: number; name: string }[],
+  teams: { id: number; name: string }[],
+  areas: { id: number; name: string }[],
+  fallback: string,
+): string {
+  const nameMap: Partial<
+    Record<
+      string,
+      { name?: string; id?: number; list: { id: number; name: string }[] }
+    >
+  > = {
+    team: { name: assignment.teamName, id: assignment.teamId, list: teams },
+    department: {
+      name: assignment.departmentName,
+      id: assignment.departmentId,
+      list: departments,
+    },
+    area: { name: assignment.areaName, id: assignment.areaId, list: areas },
+  };
+  const entry = nameMap[type];
+  if (entry === undefined) return fallback;
+  return (
+    entry.name ??
+    resolveEntityText(
+      entry.id,
+      (id) => entry.list.find((e) => e.id === id),
+      fallback,
+    )
+  );
+}
+
 /**
  * Build a single badge from one assignment + lookup arrays.
  */
@@ -120,42 +155,22 @@ function buildBadgeFromAssignment(
   departments: { id: number; name: string }[],
   teams: { id: number; name: string }[],
   areas: { id: number; name: string }[],
+  badgeMap: AssignmentBadgeMap = ASSIGNMENT_BADGE_MAP,
 ): AssignmentBadgeInfo | null {
   const type = assignment.assignmentType ?? assignment.type;
   if (type === undefined) return null;
 
-  const badge = ASSIGNMENT_BADGE_MAP[type];
+  const badge = badgeMap[type];
   if (badge === undefined) return null;
 
-  // Prefer inline name from backend, fall back to lookup arrays
-  let text = badge.label;
-
-  if (type === 'team') {
-    text =
-      assignment.teamName ??
-      resolveEntityText(
-        assignment.teamId,
-        (id) => teams.find((t) => t.id === id),
-        badge.label,
-      );
-  } else if (type === 'department') {
-    text =
-      assignment.departmentName ??
-      resolveEntityText(
-        assignment.departmentId,
-        (id) => departments.find((d) => d.id === id),
-        badge.label,
-      );
-  } else if (type === 'area') {
-    text =
-      assignment.areaName ??
-      resolveEntityText(
-        assignment.areaId,
-        (id) => areas.find((a) => a.id === id),
-        badge.label,
-      );
-  }
-
+  const text = resolveAssignmentText(
+    assignment,
+    type,
+    departments,
+    teams,
+    areas,
+    badge.label,
+  );
   return { badgeClass: badge.badgeClass, icon: badge.icon, text };
 }
 
@@ -168,6 +183,7 @@ export function getAssignmentBadges(
   departments: { id: number; name: string }[],
   teams: { id: number; name: string }[],
   areas: { id: number; name: string }[],
+  badgeMap: AssignmentBadgeMap = ASSIGNMENT_BADGE_MAP,
 ): AssignmentBadgeInfo[] {
   if (survey.assignments === undefined || survey.assignments.length === 0)
     return [];
@@ -179,6 +195,7 @@ export function getAssignmentBadges(
       departments,
       teams,
       areas,
+      badgeMap,
     );
     if (badge !== null) {
       badges.push(badge);
