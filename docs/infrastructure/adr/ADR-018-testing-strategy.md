@@ -555,4 +555,4 @@ Settings → Branches → main:
 
 ---
 
-_Last Updated: 2026-03-12 (v8 - Vitest 4.0.18→4.1.0. Added `coverage.changed: 'main'` (only changed files in coverage report). Added `pnpm run test:api:leaks` for `--detect-async-leaks` debugging. 33 API modules (539 tests), 5477 unit tests, 388 frontend tests, 380 permission tests. Total: 6404 tests)_
+_Last Updated: 2026-03-12 (v8 - Vitest 4.0.18→4.1.0. Added `coverage.changed: 'main'` (only changed files in coverage report). Added `pnpm run test:unit:leaks` for `--detect-async-leaks` debugging (unit only — API tests produce false positives from fetch() internals). 33 API modules (539 tests), 5477 unit tests, 388 frontend tests, 380 permission tests. Total: 6404 tests)_

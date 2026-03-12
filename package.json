@@ -97,7 +97,7 @@
     "css:analyze:verbose": "node scripts/analyze-css.cjs --verbose",
     "css:analyze:file": "node scripts/analyze-css.cjs --file",
     "test:api": "vitest run --project api",
-    "test:api:leaks": "vitest run --project api --detect-async-leaks",
+    "test:unit:leaks": "vitest run --project unit --detect-async-leaks",
     "test:permission": "vitest run --project permission",
     "prepare": "husky",
     "knip": "knip",

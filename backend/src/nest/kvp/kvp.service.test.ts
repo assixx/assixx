@@ -278,6 +278,117 @@ describe('KvpService', () => {
   });
 
   // =============================================================
+  // getMyOrganizations
+  // =============================================================
+
+  describe('getMyOrganizations', () => {
+    it('returns mapped teams with parsed assets', async () => {
+      mockDb.query.mockResolvedValueOnce([
+        {
+          team_id: 5,
+          team_name: 'Alpha',
+          assets: [{ id: 10, name: 'CNC-1' }],
+        },
+        {
+          team_id: 8,
+          team_name: 'Bravo',
+          assets: [],
+        },
+      ]);
+
+      const result = await service.getMyOrganizations(3, 42);
+
+      expect(result).toHaveLength(2);
+      expect(result[0]).toEqual({
+        teamId: 5,
+        teamName: 'Alpha',
+        assets: [{ id: 10, name: 'CNC-1' }],
+      });
+      expect(result[1]).toEqual({
+        teamId: 8,
+        teamName: 'Bravo',
+        assets: [],
+      });
+    });
+
+    it('handles string JSON assets from pg', async () => {
+      mockDb.query.mockResolvedValueOnce([
+        {
+          team_id: 5,
+          team_name: 'Alpha',
+          assets: JSON.stringify([{ id: 10, name: 'CNC-1' }]),
+        },
+      ]);
+
+      const result = await service.getMyOrganizations(3, 42);
+
+      expect(result[0]?.assets).toEqual([{ id: 10, name: 'CNC-1' }]);
+    });
+
+    it('returns empty array when user has no teams', async () => {
+      mockDb.query.mockResolvedValueOnce([]);
+
+      const result = await service.getMyOrganizations(3, 42);
+
+      expect(result).toEqual([]);
+    });
+
+    it('handles null assets gracefully', async () => {
+      mockDb.query.mockResolvedValueOnce([
+        { team_id: 5, team_name: 'Alpha', assets: null },
+      ]);
+
+      const result = await service.getMyOrganizations(3, 42);
+
+      expect(result[0]?.assets).toEqual([]);
+    });
+  });
+
+  // =============================================================
+  // getOrgAssignments
+  // =============================================================
+
+  describe('getOrgAssignments', () => {
+    it('returns mapped org assignments with team names', async () => {
+      // Q1: junction table query
+      mockDb.query.mockResolvedValueOnce([
+        { org_type: 'team', org_id: 5, org_name: 'Alpha' },
+        { org_type: 'team', org_id: 8, org_name: 'Bravo' },
+      ]);
+
+      const result = await service.getOrgAssignments(1, 42);
+
+      expect(result).toHaveLength(2);
+      expect(result[0]).toEqual({
+        orgType: 'team',
+        orgId: 5,
+        orgName: 'Alpha',
+      });
+    });
+
+    it('maps null org_name to undefined', async () => {
+      mockDb.query.mockResolvedValueOnce([
+        { org_type: 'asset', org_id: 10, org_name: null },
+      ]);
+      // enrichAssetTeamIds → asset_teams query
+      mockDb.query.mockResolvedValueOnce([{ asset_id: 10, team_id: 5 }]);
+
+      const result = await service.getOrgAssignments(1, 42);
+
+      expect(result[0]?.orgName).toBeUndefined();
+      expect(result[0]?.relatedTeamIds).toEqual([5]);
+    });
+
+    it('returns empty array when no assignments', async () => {
+      mockDb.query.mockResolvedValueOnce([]);
+
+      const result = await service.getOrgAssignments(1, 42);
+
+      expect(result).toEqual([]);
+    });
+  });
+
+  // =============================================================
   // getCategories
   // =============================================================
 
@@ -484,6 +595,39 @@ describe('KvpService', () => {
 
       expect(result.id).toBe(1);
       expect(result.title).toBe('Test KVP');
+    });
+
+    it('inserts both team and asset org assignments', async () => {
+      // Q1: assertDailyLimitNotReached
+      mockDb.query.mockResolvedValueOnce([{ count: '0' }]);
+      // Q2: INSERT suggestion
+      mockDb.query.mockResolvedValueOnce([{ id: 1 }]);
+      // Q3: insertOrgAssignments (teams + assets combined)
+      mockDb.query.mockResolvedValueOnce([]);
+      // Q4–Q6: getSuggestionById chain
+      mockGetSuggestionByIdChain(mockDb);
+
+      await service.createSuggestion(
+        {
+          title: 'Multi-Org KVP',
+          description: 'With teams and assets',
+          orgLevel: 'team',
+          orgId: 5,
+          teamIds: [5, 8],
+          assetIds: [10, 20],
+        },
+        42,
+        3,
+        'employee',
+      );
+
+      // insertOrgAssignments is Q3 — verify it was called with 4 entries (2 teams + 2 assets)
+      const insertCall = mockDb.query.mock.calls[2];
+      const insertSql = insertCall?.[0] as string;
+      expect(insertSql).toContain('kvp_suggestion_organizations');
+      // 4 entries × 4 params = 16 placeholders
+      const insertParams = insertCall?.[1] as unknown[];
+      expect(insertParams).toHaveLength(16);
     });
 
     it('creates suggestion for admin with team lead role', async () => {
@@ -859,6 +1003,52 @@ describe('KvpService', () => {
       expect(result.suggestions).toEqual([]);
       expect(result.pagination.totalItems).toBe(0);
     });
+
+    it('enriches asset org assignments with related team IDs', async () => {
+      // Q1: org info
+      mockDb.query.mockResolvedValueOnce([FULL_ACCESS_ORG_ROW]);
+      // Q2: count
+      mockDb.query.mockResolvedValueOnce([{ total: 1 }]);
+      // Q3: list query
+      mockDb.query.mockResolvedValueOnce([createMockDbSuggestion()]);
+      // Q4: attachOrgAssignmentsBatch — junction table with asset
+      mockDb.query.mockResolvedValueOnce([
+        { suggestion_id: 1, org_type: 'team', org_id: 5, org_name: 'Alpha' },
+        { suggestion_id: 1, org_type: 'asset', org_id: 10, org_name: 'CNC-1' },
+      ]);
+      // Q5: enrichAssetTeamIds — asset_teams lookup
+      mockDb.query.mockResolvedValueOnce([
+        { asset_id: 10, team_id: 5 },
+        { asset_id: 10, team_id: 8 },
+      ]);
+
+      const result = await service.listSuggestions(42, 3, 'admin', {
+        page: 1,
+        limit: 20,
+        status: undefined,
+        categoryId: undefined,
+        customCategoryId: undefined,
+        priority: undefined,
+        orgLevel: undefined,
+        teamId: undefined,
+        assetId: undefined,
+        search: undefined,
+        mineOnly: undefined,
+      });
+
+      const orgs = result.suggestions[0]?.organizations ?? [];
+      expect(orgs).toHaveLength(2);
+
+      const assetOrg = orgs.find(
+        (o: { orgType: string }) => o.orgType === 'asset',
+      );
+      expect(assetOrg?.relatedTeamIds).toEqual([5, 8]);
+
+      const teamOrg = orgs.find(
+        (o: { orgType: string }) => o.orgType === 'team',
+      );
+      expect(teamOrg?.orgName).toBe('Alpha');
+    });
   });
 
   // =============================================================
@@ -1009,6 +1199,20 @@ describe('KvpService', () => {
         undefined,
         undefined,
       );
+    });
+  });
+
+  describe('getReplies', () => {
+    it('delegates to commentsService', async () => {
+      const mockReplies = [
+        { id: 10, suggestionId: 1, comment: 'Reply', parentId: 5 },
+      ];
+      mockComments.getReplies = vi.fn().mockResolvedValueOnce(mockReplies);
+
+      const result = await service.getReplies(5, 42, 'admin');
+
+      expect(result).toEqual(mockReplies);
+      expect(mockComments.getReplies).toHaveBeenCalledWith(5, 42, 'admin');
     });
   });
 
