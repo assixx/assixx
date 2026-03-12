@@ -1,7 +1,7 @@
 # API Integration Testing with Vitest
 
-> **Vitest** runs as a pnpm dependency — no global install needed!
-> 18 modules, 175 assertions, 100% passing.
+> **Vitest 4.1** runs as a pnpm dependency — no global install needed!
+> 33 modules, 539 assertions, 100% passing.
 
 ---
 
@@ -26,7 +26,7 @@ Tests run in an **isolated tenant** called `apitest`:
 
 ```bash
 # Run all API integration tests
-pnpm run test:api:vitest
+pnpm run test:api
 
 # Or directly with vitest CLI
 vitest run --project api
@@ -87,28 +87,43 @@ sleep 20 && doppler run -- docker-compose ps
 ## Project Structure
 
 ```
-backend/test/                        # NestJS convention: integration tests at project level
-├── helpers.ts                       # Shared: login, auth headers, retry, throttle flush
-├── tsconfig.json                    # TS config (moduleResolution: NodeNext)
-├── 00-auth.api.test.ts              # Auth (login + refresh + logout)
-├── users.api.test.ts                # Users CRUD
-├── departments.api.test.ts          # Departments CRUD
-├── teams.api.test.ts                # Teams CRUD
-├── roles.api.test.ts                # Roles
-├── notifications.api.test.ts        # Notifications CRUD + preferences + stats
-├── blackboard.api.test.ts           # Blackboard CRUD
-├── calendar.api.test.ts             # Calendar Events
-├── kvp.api.test.ts                  # KVP (Improvement Proposals)
-├── machines.api.test.ts             # Machines CRUD
-├── surveys.api.test.ts              # Surveys CRUD
-├── chat.api.test.ts                 # Chat (requires 2nd user via ensureTestEmployee)
-├── documents.api.test.ts            # Documents
-├── shifts.api.test.ts               # Shifts + Rotation + Cleanup
-├── logs.api.test.ts                 # Audit Log Export (JSON/CSV/TXT + Validation)
-├── settings.api.test.ts             # Tenant Settings
-├── features.api.test.ts             # Feature Flags
-├── areas.api.test.ts                # Areas
-└── user-permissions.api.test.ts     # User Permissions CRUD
+backend/test/                              # NestJS convention: integration tests at project level
+├── helpers.ts                             # Shared: login, auth headers, retry, throttle flush
+├── global-teardown.ts                     # Global teardown (cleanup after all tests)
+├── tsconfig.json                          # TS config (moduleResolution: NodeNext)
+├── 00-auth.api.test.ts                    # Auth (login + refresh + logout)
+├── addons.api.test.ts                     # Addons CRUD
+├── areas.api.test.ts                      # Areas CRUD
+├── assets.api.test.ts                     # Assets CRUD
+├── blackboard.api.test.ts                 # Blackboard CRUD
+├── calendar.api.test.ts                   # Calendar Events
+├── chat.api.test.ts                       # Chat (requires 2nd user via ensureTestEmployee)
+├── chat-e2e-messages.api.test.ts          # Chat E2E encrypted messages
+├── chat-e2e-roundtrip.api.test.ts         # Chat E2E key roundtrip
+├── departments.api.test.ts                # Departments CRUD
+├── documents.api.test.ts                  # Documents
+├── dummy-users.api.test.ts                # Dummy Users
+├── e2e-keys.api.test.ts                   # E2E encryption keys
+├── features.api.test.ts                   # Feature Flags
+├── halls.api.test.ts                      # Halls CRUD
+├── kvp.api.test.ts                        # KVP (Improvement Proposals)
+├── logs.api.test.ts                       # Audit Log Export (JSON/CSV/TXT + Validation)
+├── notifications.api.test.ts              # Notifications CRUD + preferences + stats
+├── organigram.api.test.ts                 # Organigram
+├── partitions.api.test.ts                 # Partitions (pg_partman)
+├── roles.api.test.ts                      # Roles
+├── settings.api.test.ts                   # Tenant Settings
+├── shifts.api.test.ts                     # Shifts + Rotation + Cleanup
+├── surveys.api.test.ts                    # Surveys CRUD
+├── teams.api.test.ts                      # Teams CRUD
+├── tpm-executions.api.test.ts             # TPM Executions
+├── tpm-plans.api.test.ts                  # TPM Plans
+├── tpm-schedule-projection.api.test.ts    # TPM Schedule Projections
+├── user-permissions.api.test.ts           # User Permissions CRUD
+├── users.api.test.ts                      # Users CRUD
+├── vacation.api.test.ts                   # Vacation Requests
+├── work-orders.api.test.ts                # Work Orders CRUD
+└── work-orders-read-tracking.api.test.ts  # Work Orders Read Tracking
 ```
 
 ---
@@ -134,15 +149,16 @@ Defined in `vitest.config.ts` as the `api` project:
 
 ## npm Scripts
 
-| Script                     | Description                                |
-| -------------------------- | ------------------------------------------ |
-| `pnpm run test:api:vitest` | Run all 18 modules (175 tests) with Vitest |
+| Script                    | Description                                         |
+| ------------------------- | --------------------------------------------------- |
+| `pnpm run test:api`       | Run all 33 modules (539 tests) with Vitest          |
+| `pnpm run test:api:leaks` | Same, but with `--detect-async-leaks` (slow, debug) |
 
 ### Useful Vitest CLI Flags
 
 ```bash
 # Run all tests
-pnpm run test:api:vitest
+pnpm run test:api
 
 # Run a single test file
 vitest run --project api backend/test/calendar.api.test.ts
@@ -515,20 +531,20 @@ In tests: call `flushThrottleKeys()` before each export request.
 ## Interpreting Test Results
 
 ```
-✓ backend/test/auth.api.test.ts (9 tests)
+✓ backend/test/00-auth.api.test.ts (9 tests)
 ✓ backend/test/users.api.test.ts (10 tests)
 ...
-✓ backend/test/areas.api.test.ts (3 tests)
+✓ backend/test/work-orders.api.test.ts (12 tests)
 
-Test Files  18 passed (18)
-     Tests  175 passed (175)
+Test Files  33 passed (33)
+     Tests  539 passed (539)
   Start at  ...
   Duration  ...
 ```
 
 - **Test Files**: Each `.api.test.ts` file = 1 module
 - **Tests**: Each `it()` block = 1 test
-- **Duration**: Total runtime (typically 10-20s with warm backend)
+- **Duration**: Total runtime (typically 10-15s with warm backend)
 
 ---
 
@@ -540,7 +556,7 @@ cd /home/scs/projects/Assixx/docker
 doppler run -- docker-compose up -d
 
 # 2. Run all API tests
-pnpm run test:api:vitest
+pnpm run test:api
 
 # 3. On failures: debug individual modules (verbose)
 vitest run --project api backend/test/calendar.api.test.ts --reporter verbose
@@ -556,4 +572,4 @@ docker logs assixx-backend --tail 100
 
 ---
 
-_Created: 2026-02-04 | Updated: 2026-02-09_
+_Created: 2026-02-04 | Updated: 2026-03-12_
