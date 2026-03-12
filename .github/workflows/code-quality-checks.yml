@@ -3,8 +3,18 @@ name: Code Quality Checks
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - "docs/**"
+      - "**/*.md"
+      - ".changeset/**"
+      - "LICENSE"
   pull_request:
     branches: [main]
+    paths-ignore:
+      - "docs/**"
+      - "**/*.md"
+      - ".changeset/**"
+      - "LICENSE"
 
 permissions:
   contents: read

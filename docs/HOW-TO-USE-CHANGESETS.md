@@ -1,126 +1,126 @@
-# How to Changesets - Versionierung & Changelog
+# How to Changesets - Versioning & Changelog
 
-> **Tool:** `@changesets/cli` v2.29.8 | **Stand:** 2026-02-19
+> **Tool:** `@changesets/cli` v2.29.8 | **Updated:** 2026-03-12
 > **Docs:** <https://github.com/changesets/changesets>
 
 ---
 
-## Was ist Changesets?
+## What is Changesets?
 
-Changesets erfasst **was sich geändert hat** und **welcher Semver-Bump nötig ist** — zum Zeitpunkt der Änderung, nicht erst beim Release. Ein Changeset ist eine Markdown-Datei mit YAML-Frontmatter in `.changeset/`.
+Changesets captures **what changed** and **which semver bump is needed** — at the time of the change, not at release time. A changeset is a Markdown file with YAML frontmatter in `.changeset/`.
 
-**Warum:** Git-Commit-Messages sind für Changelogs ungeeignet. Changesets entkoppeln die Versionierungsentscheidung vom Release-Prozess.
+**Why:** Git commit messages are unsuitable for changelogs. Changesets decouple the versioning decision from the release process.
 
 ---
 
-## Dateien
+## Files
 
-| Datei/Verzeichnis               | Zweck                                                                 |
-| ------------------------------- | --------------------------------------------------------------------- |
-| `.changeset/config.json`        | Konfiguration (Fixed Versioning, baseBranch, etc.)                    |
-| `.changeset/README.md`          | Erklärung für Contributors                                            |
-| `.changeset/*.md`               | Ausstehende Changesets (temporär, werden bei Version-Bump konsumiert) |
-| `scripts/sync-root-version.mjs` | Synct Root-Version nach `changeset version`                           |
-| `CHANGELOG.md`                  | Wird automatisch generiert/aktualisiert                               |
+| File/Directory                  | Purpose                                                      |
+| ------------------------------- | ------------------------------------------------------------ |
+| `.changeset/config.json`        | Configuration (Fixed Versioning, baseBranch, etc.)           |
+| `.changeset/README.md`          | Explanation for contributors                                 |
+| `.changeset/*.md`               | Pending changesets (temporary, consumed during version bump) |
+| `scripts/sync-root-version.mjs` | Syncs root version after `changeset version`                 |
+| `CHANGELOG.md`                  | Automatically generated/updated                              |
 
 ---
 
 ## Quick Start
 
 ```bash
-# 1. Changeset erstellen (nach Feature-Arbeit)
+# 1. Create changeset (after feature work)
 pnpm changeset
 
-# 2. Versionen bumpen (vor Release)
+# 2. Bump versions (before release)
 pnpm changeset:version
 
-# 3. Git-Tag erstellen
+# 3. Create git tag
 pnpm changeset:tag
 
-# 4. Pushen mit Tags
+# 4. Push with tags
 git push --follow-tags
 ```
 
 ---
 
-## Workflow im Detail
+## Detailed Workflow
 
-### Schritt 1: Changeset erstellen
+### Step 1: Create a Changeset
 
-Nach einer relevanten Änderung (Feature, Bugfix, Breaking Change):
+After a relevant change (feature, bugfix, breaking change):
 
 ```bash
 pnpm changeset
 ```
 
-Interaktiver Prompt:
+Interactive prompt:
 
-1. **Welche Packages?** — Entfällt bei uns (Fixed Group → alle werden zusammen gebumpt)
-2. **Semver-Bump?** — `patch` / `minor` / `major`
-3. **Beschreibung** — Wird zum CHANGELOG-Eintrag (Markdown erlaubt)
+1. **Which packages?** — Not applicable (Fixed Group — all are bumped together)
+2. **Semver bump?** — `patch` / `minor` / `major`
+3. **Description** — Becomes the CHANGELOG entry (Markdown allowed)
 
-Das erzeugt eine Datei wie `.changeset/brave-lions-roar.md`:
+This creates a file like `.changeset/brave-lions-roar.md`:
 
 ```markdown
 ---
 'assixx-backend': minor
 ---
 
-TPM-Modul: Wartungspläne und Kamishibai-Board implementiert
+TPM module: maintenance plans and Kamishibai board implemented
 ```
 
-**Diese Datei wird mit dem PR committed.**
+**This file is committed with the PR.**
 
-### Schritt 2: Versionen bumpen (Release vorbereiten)
+### Step 2: Bump Versions (Prepare Release)
 
 ```bash
 pnpm changeset:version
 ```
 
-Was passiert:
+What happens:
 
-- Alle `.changeset/*.md` Dateien werden **konsumiert** (gelöscht)
-- `package.json` Versionen werden gebumpt (alle 4 synchron durch Fixed Group)
-- `CHANGELOG.md` wird generiert/aktualisiert aus den Changeset-Beschreibungen
-- Root `package.json` wird automatisch via `sync-root-version.mjs` synchronisiert
+- All `.changeset/*.md` files are **consumed** (deleted)
+- `package.json` versions are bumped (all 4 in sync via Fixed Group)
+- `CHANGELOG.md` is generated/updated from changeset descriptions
+- Root `package.json` is automatically synced via `sync-root-version.mjs`
 
-**Ergebnis committen.**
+**Commit the result.**
 
-### Schritt 3: Git-Tag erstellen
+### Step 3: Create Git Tag
 
 ```bash
 pnpm changeset:tag
 ```
 
-Erstellt Tags wie `assixx-backend@0.4.0`, `assixx-frontend@0.4.0`, etc.
+Creates a single annotated git tag like `v0.4.5` (reads version from `package.json`).
 
-> **Hinweis:** Du taggst zusätzlich manuell `v0.4.0` für den Docker-Build-Workflow.
+> **Note:** We do **not** use `changeset tag` (which creates per-package tags like `assixx-backend@0.4.5`). Assixx is a single deployable product with Fixed Group — one `v`-tag is sufficient. The `v*`-tag triggers the Docker build workflow.
 
-### Schritt 4: Pushen
+### Step 4: Push
 
 ```bash
 git push --follow-tags
 ```
 
-Der `v*`-Tag triggert den Docker-Build in `.github/workflows/docker-build.yml`.
+The `v*`-tag triggers the Docker build in `.github/workflows/docker-build.yml`.
 
 ---
 
-## Semver-Regeln
+## Semver Rules
 
-| Bump    | Wann                                            | Beispiel          |
-| ------- | ----------------------------------------------- | ----------------- |
-| `patch` | Bugfix, kleine Verbesserung, keine API-Änderung | `0.3.2` → `0.3.3` |
-| `minor` | Neues Feature, rückwärtskompatibel              | `0.3.2` → `0.4.0` |
-| `major` | Breaking Change, Migrationsbedarf               | `0.3.2` → `1.0.0` |
+| Bump    | When                                     | Example           |
+| ------- | ---------------------------------------- | ----------------- |
+| `patch` | Bugfix, small improvement, no API change | `0.3.2` → `0.3.3` |
+| `minor` | New feature, backwards compatible        | `0.3.2` → `0.4.0` |
+| `major` | Breaking change, migration required      | `0.3.2` → `1.0.0` |
 
-**Bei Unsicherheit:** `minor` für Features, `patch` für alles andere.
+**When uncertain:** `minor` for features, `patch` for everything else.
 
 ---
 
-## Konfiguration
+## Configuration
 
-Datei: `.changeset/config.json`
+File: `.changeset/config.json`
 
 ```json
 {
@@ -134,45 +134,45 @@ Datei: `.changeset/config.json`
 }
 ```
 
-| Option            | Wert                       | Bedeutung                                                |
-| ----------------- | -------------------------- | -------------------------------------------------------- |
-| `fixed`           | Alle 3 Workspace-Packages  | Lockstep — immer gleiche Version                         |
-| `commit`          | `false`                    | Changesets committed nicht automatisch                   |
-| `access`          | `restricted`               | Kein npm-Publish (privates Projekt)                      |
-| `baseBranch`      | `main`                     | Basis-Branch für Vergleiche                              |
-| `privatePackages` | `version: true, tag: true` | Private Packages werden trotzdem versioniert und getaggt |
+| Option            | Value                      | Meaning                                         |
+| ----------------- | -------------------------- | ----------------------------------------------- |
+| `fixed`           | All 3 workspace packages   | Lockstep — always same version                  |
+| `commit`          | `false`                    | Changesets does not auto-commit                 |
+| `access`          | `restricted`               | No npm publish (private project)                |
+| `baseBranch`      | `main`                     | Base branch for comparisons                     |
+| `privatePackages` | `version: true, tag: true` | Private packages are still versioned and tagged |
 
 ---
 
-## Alle Befehle
+## All Commands
 
 ```bash
-pnpm changeset                 # Neues Changeset erstellen (interaktiv)
-pnpm changeset --empty         # Leeres Changeset (CI-Pflicht, aber nichts Versionswürdiges)
-pnpm changeset:status          # Ausstehende Changesets anzeigen
-pnpm changeset:version         # Versionen bumpen + CHANGELOG generieren
-pnpm changeset:tag             # Git-Tags erstellen
+pnpm changeset                 # Create new changeset (interactive)
+pnpm changeset --empty         # Empty changeset (CI requirement, nothing version-worthy)
+pnpm changeset:status          # Show pending changesets
+pnpm changeset:version         # Bump versions + generate CHANGELOG
+pnpm changeset:tag             # Create annotated v-tag (e.g. v0.4.5)
 ```
 
 ---
 
-## Häufige Szenarien
+## Common Scenarios
 
-### Feature-Branch mit mehreren Änderungen
+### Feature Branch with Multiple Changes
 
 ```bash
-# Erste Änderung
+# First change
 git commit -m "feat(tpm): add maintenance plan service"
 pnpm changeset
-# → minor, "TPM: Wartungsplan-Service implementiert"
+# → minor, "TPM: maintenance plan service implemented"
 
-# Zweite Änderung (gleicher Branch)
+# Second change (same branch)
 git commit -m "feat(tpm): add card execution"
 pnpm changeset
-# → minor, "TPM: Kartendurchführung implementiert"
+# → minor, "TPM: card execution implemented"
 
-# Beide Changesets werden beim nächsten `changeset version` aggregiert
-# → Ergebnis: EIN minor-Bump mit beiden Einträgen im CHANGELOG
+# Both changesets are aggregated at the next `changeset version`
+# → Result: ONE minor bump with both entries in the CHANGELOG
 ```
 
 ### Bugfix
@@ -180,68 +180,67 @@ pnpm changeset
 ```bash
 git commit -m "fix(auth): token refresh race condition"
 pnpm changeset
-# → patch, "Auth: Race Condition beim Token-Refresh behoben"
+# → patch, "Auth: fixed race condition in token refresh"
 ```
 
-### Keine versionswürdige Änderung
+### No Version-Worthy Change
 
-Für Änderungen die keinen Release rechtfertigen (Docs, CI, Refactoring ohne externe Wirkung):
+For changes that don't justify a release (docs, CI, refactoring without external impact):
 
 ```bash
 pnpm changeset --empty
-# Oder: Einfach kein Changeset erstellen
+# Or: Simply don't create a changeset
 ```
 
-### Changeset nachträglich bearbeiten
+### Edit a Changeset After Creation
 
-Changesets sind normale Markdown-Dateien. Einfach öffnen und bearbeiten:
+Changesets are normal Markdown files. Just open and edit:
 
 ```bash
-# Datei finden
+# Find the file
 ls .changeset/*.md
 
-# Bearbeiten (Beschreibung ändern, Bump-Level anpassen)
+# Edit (change description, adjust bump level)
 code .changeset/brave-lions-roar.md
 ```
 
-### Mehrere Changesets aggregieren
+### Multiple Changesets Aggregation
 
-Wenn mehrere Changesets denselben Bump-Typ haben, wird der **höchste** genommen:
+When multiple changesets have the same bump type, the **highest** wins:
 
 - 3x `patch` → `patch`
 - 2x `patch` + 1x `minor` → `minor`
 - 1x `minor` + 1x `major` → `major`
 
-Alle Beschreibungen landen als separate Einträge im CHANGELOG.
+All descriptions become separate entries in the CHANGELOG.
 
 ---
 
-## Release-Checkliste
+## Release Checklist
 
 ```
-[ ] Alle Feature-Branches gemerged
-[ ] `pnpm changeset:status` zeigt alle erwarteten Changesets
-[ ] `pnpm changeset:version` ausgeführt
-[ ] CHANGELOG.md geprüft (Einträge korrekt?)
-[ ] Alle 4 package.json Versionen identisch
-[ ] Änderungen committed
-[ ] `pnpm changeset:tag` ausgeführt
-[ ] Manueller v-Tag erstellt (z.B. `git tag v0.4.0`)
+[ ] All feature branches merged
+[ ] `pnpm changeset:status` shows all expected changesets
+[ ] `pnpm changeset:version` executed
+[ ] CHANGELOG.md reviewed (entries correct?)
+[ ] All 4 package.json versions identical
+[ ] Changes committed
+[ ] `pnpm changeset:tag` executed (creates `v0.4.5` automatically)
 [ ] `git push --follow-tags`
-[ ] Docker-Build-Workflow durch v-Tag getriggert
+[ ] Docker build workflow triggered by v-tag
 ```
 
 ---
 
-## Fixed Group — was bedeutet das?
+## Fixed Group — What Does It Mean?
 
-Alle 3 Workspace-Packages (`assixx-backend`, `assixx-frontend`, `@assixx/shared`) sind in einer **Fixed Group**. Das heißt:
+All 3 workspace packages (`assixx-backend`, `assixx-frontend`, `@assixx/shared`) are in a **Fixed Group**. This means:
 
-- Ein Changeset für **ein** Package bumpt **alle drei** auf die gleiche Version
-- Versionen driften nie auseinander
-- Das Root-Package (`assixx`) wird via `scripts/sync-root-version.mjs` automatisch nachgezogen
+- A changeset for **one** package bumps **all three** to the same version
+- Versions never drift apart
+- The root package (`assixx`) is automatically synced via `scripts/sync-root-version.mjs`
 
-**Warum:** Assixx ist ein deployables Produkt, keine Library-Sammlung. Eine Version = ein Release-Stand.
+**Why:** Assixx is a deployable product, not a library collection. One version = one release state.
 
 ---
 
@@ -250,22 +249,31 @@ Alle 3 Workspace-Packages (`assixx-backend`, `assixx-frontend`, `@assixx/shared`
 ### "Some packages have been changed but no changesets were found"
 
 ```bash
-# Erwarteter Fehler wenn Änderungen existieren aber kein Changeset
-# Lösung: Changeset erstellen oder leeres Changeset
+# Expected error when changes exist but no changeset
+# Solution: Create a changeset or empty changeset
 pnpm changeset
-# oder
+# or
 pnpm changeset --empty
 ```
 
-### CHANGELOG.md sieht falsch aus
-
-- Changeset-Dateien sind editierbar — Beschreibung vor `changeset version` anpassen
-- Nach `changeset version` kann `CHANGELOG.md` direkt bearbeitet werden (vor dem Commit)
-
-### Version stimmt nicht
+### "tag already exists"
 
 ```bash
-# Alle Versionen prüfen
+# Tag was already created (e.g. from a previous run)
+# Solution: Delete locally and recreate
+git tag -d v0.4.5
+pnpm changeset:tag
+```
+
+### CHANGELOG.md Looks Wrong
+
+- Changeset files are editable — adjust description before `changeset version`
+- After `changeset version`, `CHANGELOG.md` can be edited directly (before committing)
+
+### Version Mismatch
+
+```bash
+# Check all versions
 node -e "
 import {readFileSync} from 'fs';
 ['package.json','backend/package.json','frontend/package.json','shared/package.json']
@@ -276,25 +284,26 @@ import {readFileSync} from 'fs';
 "
 ```
 
-### js-yaml Fehler
+### js-yaml Error
 
-Die `pnpm.overrides` in `package.json` enthält einen eingeschränkten Override für `js-yaml`:
+The `pnpm.overrides` in `package.json` contains a restricted override for `js-yaml`:
 
 ```json
 "js-yaml@>=4.0.0 <4.1.1": ">=4.1.1"
 ```
 
-Dieser Override darf **nicht** auf `"js-yaml@<4.1.1"` erweitert werden — das bricht `read-yaml-file` (Changeset-Dependency), die js-yaml 3.x mit `safeLoad` braucht.
+This override must **not** be expanded to `"js-yaml@<4.1.1"` — that breaks `read-yaml-file` (changeset dependency), which needs js-yaml 3.x with `safeLoad`.
 
 ---
 
-## Architektur-Entscheidung
+## Architecture Decision
 
-| Aspekt               | Entscheidung                                     | Begründung                                |
-| -------------------- | ------------------------------------------------ | ----------------------------------------- |
-| Tool                 | Changesets (nicht semantic-release, nicht lerna) | KISS, Markdown-basiert, pnpm-nativ        |
-| Versioning-Strategie | Fixed Group                                      | Ein Produkt = eine Version                |
-| npm Publish          | Nein (`access: restricted`)                      | Privates SaaS, kein öffentliches Package  |
-| Auto-Commit          | Nein (`commit: false`)                           | Manuelle Kontrolle über Commits           |
-| CHANGELOG-Format     | Default (`@changesets/cli/changelog`)            | Einfach, funktional, erweiterbar          |
-| Root-Sync            | `scripts/sync-root-version.mjs`                  | Changesets managed nur Workspace-Packages |
+| Aspect              | Decision                                     | Reasoning                                  |
+| ------------------- | -------------------------------------------- | ------------------------------------------ |
+| Tool                | Changesets (not semantic-release, not lerna) | KISS, Markdown-based, pnpm-native          |
+| Versioning Strategy | Fixed Group                                  | One product = one version                  |
+| npm Publish         | No (`access: restricted`)                    | Private SaaS, not a public package         |
+| Auto-Commit         | No (`commit: false`)                         | Manual control over commits                |
+| CHANGELOG Format    | Default (`@changesets/cli/changelog`)        | Simple, functional, extensible             |
+| Root Sync           | `scripts/sync-root-version.mjs`              | Changesets only manages workspace packages |
+| Tagging             | Custom `git tag -a` (not `changeset tag`)    | Single `v`-tag, no per-package tag noise   |
