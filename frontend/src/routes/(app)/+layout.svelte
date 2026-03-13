@@ -520,6 +520,7 @@
       {currentRole}
       {user}
       {tenant}
+      {hierarchyLabels}
       {mobileMenuOpen}
       {isMobile}
       onCloseMobile={closeMobileMenu}

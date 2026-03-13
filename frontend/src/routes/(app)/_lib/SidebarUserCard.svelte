@@ -5,6 +5,11 @@
 -->
 <script lang="ts">
   import {
+    type HierarchyLabels,
+    DEFAULT_HIERARCHY_LABELS,
+    resolvePositionDisplay,
+  } from '$lib/types/hierarchy-labels';
+  import {
     getAvatarColorClass,
     getProfilePictureUrl,
   } from '$lib/utils/avatar-helpers';
@@ -26,10 +31,24 @@
     roleBadgeClass: string;
     roleBadgeText: string;
     collapsed: boolean;
+    hierarchyLabels?: HierarchyLabels;
   }
 
-  const { user, tenant, roleBadgeClass, roleBadgeText, collapsed }: Props =
-    $props();
+  const {
+    user,
+    tenant,
+    roleBadgeClass,
+    roleBadgeText,
+    collapsed,
+    hierarchyLabels = DEFAULT_HIERARCHY_LABELS,
+  }: Props = $props();
+
+  /** Resolve position to human-readable display name */
+  const positionDisplay: string | undefined = $derived(
+    user?.position !== undefined ?
+      resolvePositionDisplay(user.position, hierarchyLabels)
+    : undefined,
+  );
 
   let expanded = $state(false);
 
@@ -113,8 +132,8 @@
       {#if user?.email}
         <div class="detail-item">{user.email}</div>
       {/if}
-      {#if user?.position}
-        <div class="detail-item">{user.position}</div>
+      {#if positionDisplay}
+        <div class="detail-item">{positionDisplay}</div>
       {/if}
       {#if user?.employeeNumber}
         <div class="detail-item detail-mono">{user.employeeNumber}</div>

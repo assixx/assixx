@@ -15,6 +15,8 @@
   import { type NavItem } from './navigation-config';
   import SidebarUserCard from './SidebarUserCard.svelte';
 
+  import type { HierarchyLabels } from '$lib/types/hierarchy-labels';
+
   /**
    * Resolve dynamic path with base prefix.
    * Type assertion needed for runtime-computed paths that can't be
@@ -42,6 +44,7 @@
     currentRole: 'root' | 'admin' | 'employee' | 'dummy';
     user: UserInfo | null;
     tenant: { id?: number; companyName?: string } | null;
+    hierarchyLabels?: HierarchyLabels;
     mobileMenuOpen?: boolean;
     isMobile?: boolean;
     onCloseMobile?: () => void;
@@ -53,6 +56,7 @@
     currentRole,
     user,
     tenant,
+    hierarchyLabels,
     mobileMenuOpen = false,
     isMobile = false,
     onCloseMobile,
@@ -427,6 +431,7 @@
       {roleBadgeClass}
       {roleBadgeText}
       {collapsed}
+      {hierarchyLabels}
     />
   </div>
 </aside>
