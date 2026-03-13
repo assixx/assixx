@@ -10,7 +10,7 @@
  */
 import { redirect } from '@sveltejs/kit';
 
-import { apiFetch } from '$lib/server/api-fetch';
+import { apiFetch, apiFetchWithPermission } from '$lib/server/api-fetch';
 import { DEFAULT_HIERARCHY_LABELS } from '$lib/types/hierarchy-labels';
 import { requireAddon } from '$lib/utils/addon-guard';
 import { createLogger } from '$lib/utils/logger';
@@ -59,10 +59,9 @@ interface StaffingRuleRaw {
   minStaffCount: number;
 }
 
-/** Processed fetch results */
+/** Processed fetch results (shiftTimes fetched separately with permission check) */
 interface FetchResults {
   areas: Area[];
-  shiftTimes: ShiftTimeApiResponse[];
   teams: Team[];
   teamMembers: TeamMember[];
   favorites: ShiftFavorite[];
@@ -151,9 +150,6 @@ function processFetchResults(
 
   // Process each result type declaratively
   const areas = asArray<Area>(resultByLabel.get('areas'));
-  const shiftTimes = asArray<ShiftTimeApiResponse>(
-    resultByLabel.get('shiftTimes'),
-  );
   const teams = asArray<Team>(resultByLabel.get('teams'));
   const teamMembers = processRawTeamMembers(resultByLabel.get('teamMembers'));
   const favorites = asArray<ShiftFavorite>(resultByLabel.get('favorites'));
@@ -164,7 +160,6 @@ function processFetchResults(
 
   return {
     areas,
-    shiftTimes,
     teams,
     teamMembers,
     favorites,
@@ -247,13 +242,9 @@ function prepareFetchPromises(
   const promises: Promise<unknown>[] = [];
   const labels: string[] = [];
 
-  // Always load areas and shift times
+  // Always load areas (shift times handled separately with permission check)
   promises.push(apiFetch<Area[]>('/areas', token, fetchFn));
   labels.push('areas');
-  promises.push(
-    apiFetch<ShiftTimeApiResponse[]>('/shift-times', token, fetchFn),
-  );
-  labels.push('shiftTimes');
 
   if (hasTeam && primaryTeamId !== null) {
     const departmentId = userData.teamDepartmentId;
@@ -288,8 +279,96 @@ function prepareFetchPromises(
   return { promises, labels };
 }
 
+/**
+ * Build empty response for permission-denied case
+ */
+function buildDeniedResponse(
+  userData: User,
+  primaryTeamId: number | null,
+  isEmployee: boolean,
+  isAdminOrRoot: boolean,
+) {
+  return {
+    permissionDenied: true as const,
+    user: buildUserResponse(userData, primaryTeamId),
+    areas: [] as Area[],
+    shiftTimes: [] as ShiftTimeApiResponse[],
+    teams: [] as Team[],
+    teamMembers: [] as TeamMember[],
+    favorites: [] as ShiftFavorite[],
+    staffingRules: [] as StaffingRuleRaw[],
+    employeeTeamInfo: null,
+    isEmployee,
+    isAdminOrRoot,
+  };
+}
+
+/**
+ * Fetch and assemble all shift data for a given user
+ */
+async function loadShiftsDataForUser(
+  token: string,
+  fetchFn: typeof fetch,
+  userData: User,
+) {
+  const isEmployee = userData.role === 'employee';
+  const primaryTeamId = userData.teamIds?.[0] ?? userData.teamId ?? null;
+  const hasTeam = isEmployee && primaryTeamId !== null;
+  const isAdminOrRoot = userData.role === 'admin' || userData.role === 'root';
+
+  const shiftTimesResult = await apiFetchWithPermission<ShiftTimeApiResponse[]>(
+    '/shift-times',
+    token,
+    fetchFn,
+  );
+
+  if (shiftTimesResult.permissionDenied) {
+    return buildDeniedResponse(
+      userData,
+      primaryTeamId,
+      isEmployee,
+      isAdminOrRoot,
+    );
+  }
+
+  const { promises, labels } = prepareFetchPromises(
+    token,
+    fetchFn,
+    userData,
+    hasTeam,
+    primaryTeamId,
+    isAdminOrRoot,
+  );
+  const results = await Promise.all(promises);
+  const processed = processFetchResults(
+    results,
+    labels,
+    hasTeam,
+    primaryTeamId,
+  );
+
+  return {
+    permissionDenied: false as const,
+    user: buildUserResponse(userData, primaryTeamId),
+    areas: processed.areas,
+    shiftTimes:
+      Array.isArray(shiftTimesResult.data) ? shiftTimesResult.data : [],
+    teams: processed.teams,
+    teamMembers: processed.teamMembers,
+    favorites: processed.favorites,
+    staffingRules: processed.staffingRules,
+    employeeTeamInfo: buildEmployeeTeamInfo(
+      userData,
+      hasTeam,
+      primaryTeamId,
+      processed.teamLeaderId,
+    ),
+    isEmployee,
+    isAdminOrRoot,
+  };
+}
+
 export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
-  // Auth check
   const token = cookies.get('accessToken');
   if (token === undefined || token === '') {
     redirect(302, '/login');
@@ -301,58 +380,11 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
     redirect(302, '/login');
   }
 
-  // Fetch full user data
   const userData = await apiFetch<User>('/users/me', token, fetch);
   if (!userData) {
     log.error('Failed to fetch user data');
     redirect(302, '/login');
   }
 
-  // Determine user context
-  const isEmployee = userData.role === 'employee';
-  const primaryTeamId = userData.teamIds?.[0] ?? userData.teamId ?? null;
-  const hasTeam = isEmployee && primaryTeamId !== null;
-  const isAdminOrRoot = userData.role === 'admin' || userData.role === 'root';
-
-  // Prepare and execute parallel fetches
-  const { promises, labels } = prepareFetchPromises(
-    token,
-    fetch,
-    userData,
-    hasTeam,
-    primaryTeamId,
-    isAdminOrRoot,
-  );
-  const results = await Promise.all(promises);
-
-  // Process results
-  const {
-    areas,
-    shiftTimes,
-    teams,
-    teamMembers,
-    favorites,
-    staffingRules,
-    teamLeaderId,
-  } = processFetchResults(results, labels, hasTeam, primaryTeamId);
-
-  const employeeTeamInfo = buildEmployeeTeamInfo(
-    userData,
-    hasTeam,
-    primaryTeamId,
-    teamLeaderId,
-  );
-
-  return {
-    user: buildUserResponse(userData, primaryTeamId),
-    areas,
-    shiftTimes,
-    teams,
-    teamMembers,
-    favorites,
-    staffingRules,
-    employeeTeamInfo,
-    isEmployee,
-    isAdminOrRoot,
-  };
+  return await loadShiftsDataForUser(token, fetch, userData);
 };

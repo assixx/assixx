@@ -7,7 +7,7 @@
  */
 import { redirect } from '@sveltejs/kit';
 
-import { apiFetch } from '$lib/server/api-fetch';
+import { apiFetch, apiFetchWithPermission } from '$lib/server/api-fetch';
 import { requireAddon } from '$lib/utils/addon-guard';
 
 import type { PageServerLoad } from './$types';
@@ -42,8 +42,8 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
   const parentData = await parent();
   requireAddon(parentData.activeAddons, 'work_orders');
 
-  const [workOrdersData, statsData] = await Promise.all([
-    apiFetch<PaginatedResponse<WorkOrderListItem>>(
+  const [workOrdersResult, statsData] = await Promise.all([
+    apiFetchWithPermission<PaginatedResponse<WorkOrderListItem>>(
       '/work-orders/my?page=1&limit=20',
       token,
       fetch,
@@ -51,8 +51,17 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
     apiFetch<WorkOrderStats>('/work-orders/my/stats', token, fetch),
   ]);
 
+  if (workOrdersResult.permissionDenied) {
+    return {
+      permissionDenied: true as const,
+      workOrders: emptyPage(),
+      stats: emptyStats(),
+    };
+  }
+
   return {
-    workOrders: workOrdersData ?? emptyPage(),
+    permissionDenied: false as const,
+    workOrders: workOrdersResult.data ?? emptyPage(),
     stats: statsData ?? emptyStats(),
   };
 };

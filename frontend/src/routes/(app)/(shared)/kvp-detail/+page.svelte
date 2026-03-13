@@ -10,6 +10,7 @@
   import { resolve } from '$app/paths';
 
   import { onClickOutsideDropdown } from '$lib/actions/click-outside';
+  import PermissionDenied from '$lib/components/PermissionDenied.svelte';
   import { notificationStore } from '$lib/stores/notification.store.svelte';
   import { showConfirm, showErrorAlert, showSuccessAlert } from '$lib/utils';
 
@@ -68,6 +69,8 @@
 
   const { data }: { data: PageData } = $props();
 
+  const permissionDenied = $derived(data.permissionDenied);
+
   // Hierarchy labels from layout data inheritance
   const labels = $derived<HierarchyLabels>(data.hierarchyLabels);
 
@@ -88,7 +91,9 @@
   );
 
   // Derived: Visibility info for current suggestion (with dynamic hierarchy labels)
-  const visibilityInfo = $derived(getVisibilityInfo(suggestion, labels));
+  const visibilityInfo = $derived(
+    suggestion !== null ? getVisibilityInfo(suggestion, labels) : null,
+  );
 
   // Derived: Effective role (with role switch support)
   const effectiveRole = $derived.by(() => {
@@ -241,6 +246,7 @@
     const comment = textarea.value.trim();
     if (comment === '') return;
 
+    if (suggestion === null) return;
     kvpDetailState.setAddingComment(true);
 
     const result = await addComment(suggestion.uuid, comment);
@@ -298,6 +304,7 @@
   }
 
   async function performStatusUpdate(newStatus: KvpStatus, reason?: string) {
+    if (suggestion === null) return;
     kvpDetailState.setUpdatingStatus(true);
 
     const result = await updateSuggestionStatus(
@@ -342,6 +349,7 @@
       return;
     }
 
+    if (suggestion === null) return;
     kvpDetailState.setSharing(true);
     kvpDetailState.closeShareModal();
 
@@ -362,7 +370,7 @@
     const confirmed = await showConfirm(
       'Möchten Sie das Teilen wirklich rückgängig machen?',
     );
-    if (!confirmed) return;
+    if (!confirmed || suggestion === null) return;
 
     const result = await unshareSuggestion(suggestion.uuid);
     if (result.success) {
@@ -378,6 +386,7 @@
   // ==========================================================================
 
   async function handleConfirm() {
+    if (suggestion === null) return;
     const result = await confirmSuggestion(suggestion.uuid);
     if (result.success) {
       notificationStore.decrementCount('kvp'); // Update badge immediately
@@ -389,6 +398,7 @@
   }
 
   async function handleUnconfirm() {
+    if (suggestion === null) return;
     const result = await unconfirmSuggestion(suggestion.uuid);
     if (result.success) {
       notificationStore.incrementCount('kvp'); // Update badge immediately
@@ -407,7 +417,7 @@
     const confirmed = await showConfirm(
       'Möchten Sie diesen Vorschlag wirklich archivieren?',
     );
-    if (!confirmed) return;
+    if (!confirmed || suggestion === null) return;
 
     const result = await archiveSuggestion(suggestion.uuid);
     if (result.success) {
@@ -426,7 +436,7 @@
     const confirmed = await showConfirm(
       'Möchten Sie diesen Vorschlag wirklich wiederherstellen?',
     );
-    if (!confirmed) return;
+    if (!confirmed || suggestion === null) return;
 
     const result = await unarchiveSuggestion(suggestion.uuid);
     if (result.success) {
@@ -474,272 +484,283 @@
 
 <svelte:window onkeydown={handleKeydown} />
 
-<div class="container">
-  <!-- Back Button -->
-  <div class="mb-4">
-    <button
-      type="button"
-      class="btn btn-light"
-      onclick={() => {
-        filterState.reset();
-        void goto(resolve('/kvp'));
-      }}
-    >
-      <i class="fas fa-arrow-left mr-2"></i>Zurück zur Übersicht
-    </button>
-  </div>
-
-  <div class="detail-container">
-    <!-- Main Content -->
-    <div class="detail-main card">
-      <!-- Header -->
-      <div class="detail-header">
-        <div>
-          <div class="detail-title">{suggestion.title}</div>
-          <div class="detail-meta">
-            <span>
-              <i class="fas fa-user"></i>
-              {suggestion.submittedByName}
-              {suggestion.submittedByLastname}
-            </span>
-            <span>
-              <i class="fas fa-calendar"></i>
-              {formatDate(suggestion.createdAt)}
-            </span>
-            <span>
-              <i class="fas fa-building"></i>
-              {suggestion.departmentName}
-            </span>
-          </div>
-        </div>
-        <div class="status-priority">
-          <span class="badge {getPriorityBadgeClass(suggestion.priority)}">
-            {getPriorityText(suggestion.priority)}
-          </span>
-          <span class="badge {getStatusBadgeClass(suggestion.status)}">
-            {getStatusText(suggestion.status)}
-          </span>
-          <div class="share-info">
-            <i class="fas fa-share-alt"></i>
-            <span class="badge {getVisibilityBadgeClass(suggestion.orgLevel)}">
-              <i class="fas {visibilityInfo.icon}"></i>
-              <span>{visibilityInfo.text}{getSharedByInfo(suggestion)}</span>
-            </span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Details Section -->
-      <div class="content-section">
-        <h3 class="section-title">
-          <i class="fas fa-info-circle"></i>
-          Details
-        </h3>
-        <div class="data-list data-list--grid">
-          <div class="data-list__item">
-            <span class="data-list__label">Kategorie</span>
-            <span class="data-list__value">
-              <div
-                class="category-tag"
-                class:category-tag--deleted={suggestion.categoryIsDeleted ===
-                  true}
-                style:background="{suggestion.categoryColor}20"
-                style:color={suggestion.categoryColor}
-                style:border="1px solid {suggestion.categoryColor}"
-              >
-                {#if isFaIcon(suggestion.categoryIcon)}
-                  <i
-                    class="fas fa-{suggestion.categoryIcon}"
-                    style:margin-right="0.1em"
-                  ></i>
-                {:else}
-                  {suggestion.categoryIcon}
-                {/if}
-                {suggestion.categoryName}
-              </div>
-            </span>
-          </div>
-          <div class="data-list__item">
-            <span class="data-list__label">Status</span>
-            {#if canUpdateStatus(effectiveRole)}
-              <!-- Admin Status Dropdown -->
-              <div
-                class="dropdown"
-                data-dropdown="status"
-              >
-                <button
-                  type="button"
-                  class="dropdown__trigger"
-                  class:active={kvpDetailState.activeDropdown === 'status'}
-                  onclick={() => {
-                    kvpDetailState.toggleDropdown('status');
-                  }}
-                >
-                  <span>{getStatusText(suggestion.status)}</span>
-                  <i class="fas fa-chevron-down"></i>
-                </button>
-                <div
-                  class="dropdown__menu"
-                  class:active={kvpDetailState.activeDropdown === 'status'}
-                >
-                  {#each STATUS_OPTIONS as option (option.value)}
-                    <button
-                      type="button"
-                      class="dropdown__option"
-                      onclick={() => handleStatusChange(option.value)}
-                    >
-                      {option.label}
-                    </button>
-                  {/each}
-                </div>
-              </div>
-            {:else}
-              <span class="data-list__value"
-                >{getStatusText(suggestion.status)}</span
-              >
-            {/if}
-          </div>
-          {#if suggestion.assignedToName !== undefined}
-            <div class="data-list__item">
-              <span class="data-list__label">Zugewiesen an</span>
-              <span class="data-list__value">{suggestion.assignedToName}</span>
-            </div>
-          {/if}
-          {#if hasImplementationDate(suggestion)}
-            <div class="data-list__item">
-              <span class="data-list__label">Umsetzung</span>
-              <span class="data-list__value"
-                >{formatDate(suggestion.implementationDate ?? '')}</span
-              >
-            </div>
-          {/if}
-          {#if suggestion.status === 'rejected' && suggestion.rejectionReason !== undefined && suggestion.rejectionReason !== ''}
-            <div class="data-list__item">
-              <span class="data-list__label">Ablehnungsgrund</span>
-              <span class="data-list__value">{suggestion.rejectionReason}</span>
-            </div>
-          {/if}
-        </div>
-      </div>
-
-      <!-- Description -->
-      <div class="content-section">
-        <h3 class="section-title">
-          <i class="fas fa-align-left"></i>
-          Beschreibung
-        </h3>
-        <div class="section-content">{suggestion.description}</div>
-      </div>
-
-      <!-- Expected Benefit -->
-      <div class="content-section">
-        <h3 class="section-title">
-          <i class="fas fa-chart-line"></i>
-          Erwarteter Nutzen
-        </h3>
-        <div class="section-content">
-          {(
-            suggestion.expectedBenefit !== null &&
-            suggestion.expectedBenefit !== undefined &&
-            suggestion.expectedBenefit !== ''
-          ) ?
-            suggestion.expectedBenefit
-          : 'Keine Angabe'}
-        </div>
-      </div>
-
-      <!-- Photo Gallery -->
-      {#if photoAttachments.length > 0}
-        <div class="content-section">
-          <h3 class="section-title">
-            <i class="fas fa-images"></i>
-            Fotos
-          </h3>
-          <PhotoGallery
-            photos={photoAttachments}
-            onphotoclick={openPreview}
-          />
-        </div>
-      {/if}
-
-      <!-- Financial Info -->
-      {#if hasFinancialInfo(suggestion)}
-        <div class="content-section">
-          <h3 class="section-title">
-            <i class="fas fa-euro-sign"></i>
-            Finanzielle Informationen
-          </h3>
-          <div class="data-list data-list--grid">
-            {#if suggestion.estimatedCost !== undefined && suggestion.estimatedCost !== 0}
-              <div class="data-list__item">
-                <span class="data-list__label">Geschätzte Kosten</span>
-                <span class="data-list__value"
-                  >{formatCurrency(suggestion.estimatedCost)}</span
-                >
-              </div>
-            {/if}
-            {#if suggestion.actualSavings !== undefined && suggestion.actualSavings !== 0}
-              <div class="data-list__item">
-                <span class="data-list__label">Tatsaechliche Einsparungen</span>
-                <span class="data-list__value"
-                  >{formatCurrency(suggestion.actualSavings)}</span
-                >
-              </div>
-            {/if}
-          </div>
-        </div>
-      {/if}
-
-      <!-- Comments Section -->
-      <CommentsSection
-        bind:this={commentsSectionRef}
-        onaddcomment={handleAddComment}
-      />
+{#if permissionDenied}
+  <PermissionDenied addonName="das KVP-Modul" />
+{:else if suggestion !== null}
+  <div class="container">
+    <!-- Back Button -->
+    <div class="mb-4">
+      <button
+        type="button"
+        class="btn btn-light"
+        onclick={() => {
+          filterState.reset();
+          void goto(resolve('/kvp'));
+        }}
+      >
+        <i class="fas fa-arrow-left mr-2"></i>Zurück zur Übersicht
+      </button>
     </div>
 
-    <!-- Sidebar -->
-    <DetailSidebar
-      {suggestion}
-      {linkedWorkOrders}
-      onopensharemodal={handleOpenShareModal}
-      onunshare={handleUnshare}
-      onarchive={handleArchive}
-      onunarchive={handleUnarchive}
-      onconfirm={handleConfirm}
-      onunconfirm={handleUnconfirm}
-      onopenpreview={openPreview}
-      onopenworkordermodal={handleOpenWoModal}
-    />
-  </div>
-</div>
+    <div class="detail-container">
+      <!-- Main Content -->
+      <div class="detail-main card">
+        <!-- Header -->
+        <div class="detail-header">
+          <div>
+            <div class="detail-title">{suggestion.title}</div>
+            <div class="detail-meta">
+              <span>
+                <i class="fas fa-user"></i>
+                {suggestion.submittedByName}
+                {suggestion.submittedByLastname}
+              </span>
+              <span>
+                <i class="fas fa-calendar"></i>
+                {formatDate(suggestion.createdAt)}
+              </span>
+              <span>
+                <i class="fas fa-building"></i>
+                {suggestion.departmentName}
+              </span>
+            </div>
+          </div>
+          <div class="status-priority">
+            <span class="badge {getPriorityBadgeClass(suggestion.priority)}">
+              {getPriorityText(suggestion.priority)}
+            </span>
+            <span class="badge {getStatusBadgeClass(suggestion.status)}">
+              {getStatusText(suggestion.status)}
+            </span>
+            <div class="share-info">
+              <i class="fas fa-share-alt"></i>
+              <span
+                class="badge {getVisibilityBadgeClass(suggestion.orgLevel)}"
+              >
+                <i class="fas {visibilityInfo?.icon}"></i>
+                <span>{visibilityInfo?.text}{getSharedByInfo(suggestion)}</span>
+              </span>
+            </div>
+          </div>
+        </div>
 
-<!-- Modal Components -->
-{#if kvpDetailState.isAdmin}
-  <CreateWorkOrderFromKvp
-    show={showWoModal}
-    {suggestion}
-    onclose={handleCloseWoModal}
-    onsaved={handleWoSaved}
+        <!-- Details Section -->
+        <div class="content-section">
+          <h3 class="section-title">
+            <i class="fas fa-info-circle"></i>
+            Details
+          </h3>
+          <div class="data-list data-list--grid">
+            <div class="data-list__item">
+              <span class="data-list__label">Kategorie</span>
+              <span class="data-list__value">
+                <div
+                  class="category-tag"
+                  class:category-tag--deleted={suggestion.categoryIsDeleted ===
+                    true}
+                  style:background="{suggestion.categoryColor}20"
+                  style:color={suggestion.categoryColor}
+                  style:border="1px solid {suggestion.categoryColor}"
+                >
+                  {#if isFaIcon(suggestion.categoryIcon)}
+                    <i
+                      class="fas fa-{suggestion.categoryIcon}"
+                      style:margin-right="0.1em"
+                    ></i>
+                  {:else}
+                    {suggestion.categoryIcon}
+                  {/if}
+                  {suggestion.categoryName}
+                </div>
+              </span>
+            </div>
+            <div class="data-list__item">
+              <span class="data-list__label">Status</span>
+              {#if canUpdateStatus(effectiveRole)}
+                <!-- Admin Status Dropdown -->
+                <div
+                  class="dropdown"
+                  data-dropdown="status"
+                >
+                  <button
+                    type="button"
+                    class="dropdown__trigger"
+                    class:active={kvpDetailState.activeDropdown === 'status'}
+                    onclick={() => {
+                      kvpDetailState.toggleDropdown('status');
+                    }}
+                  >
+                    <span>{getStatusText(suggestion.status)}</span>
+                    <i class="fas fa-chevron-down"></i>
+                  </button>
+                  <div
+                    class="dropdown__menu"
+                    class:active={kvpDetailState.activeDropdown === 'status'}
+                  >
+                    {#each STATUS_OPTIONS as option (option.value)}
+                      <button
+                        type="button"
+                        class="dropdown__option"
+                        onclick={() => handleStatusChange(option.value)}
+                      >
+                        {option.label}
+                      </button>
+                    {/each}
+                  </div>
+                </div>
+              {:else}
+                <span class="data-list__value"
+                  >{getStatusText(suggestion.status)}</span
+                >
+              {/if}
+            </div>
+            {#if suggestion.assignedToName !== undefined}
+              <div class="data-list__item">
+                <span class="data-list__label">Zugewiesen an</span>
+                <span class="data-list__value">{suggestion.assignedToName}</span
+                >
+              </div>
+            {/if}
+            {#if hasImplementationDate(suggestion)}
+              <div class="data-list__item">
+                <span class="data-list__label">Umsetzung</span>
+                <span class="data-list__value"
+                  >{formatDate(suggestion.implementationDate ?? '')}</span
+                >
+              </div>
+            {/if}
+            {#if suggestion.status === 'rejected' && suggestion.rejectionReason !== undefined && suggestion.rejectionReason !== ''}
+              <div class="data-list__item">
+                <span class="data-list__label">Ablehnungsgrund</span>
+                <span class="data-list__value"
+                  >{suggestion.rejectionReason}</span
+                >
+              </div>
+            {/if}
+          </div>
+        </div>
+
+        <!-- Description -->
+        <div class="content-section">
+          <h3 class="section-title">
+            <i class="fas fa-align-left"></i>
+            Beschreibung
+          </h3>
+          <div class="section-content">{suggestion.description}</div>
+        </div>
+
+        <!-- Expected Benefit -->
+        <div class="content-section">
+          <h3 class="section-title">
+            <i class="fas fa-chart-line"></i>
+            Erwarteter Nutzen
+          </h3>
+          <div class="section-content">
+            {(
+              suggestion.expectedBenefit !== null &&
+              suggestion.expectedBenefit !== undefined &&
+              suggestion.expectedBenefit !== ''
+            ) ?
+              suggestion.expectedBenefit
+            : 'Keine Angabe'}
+          </div>
+        </div>
+
+        <!-- Photo Gallery -->
+        {#if photoAttachments.length > 0}
+          <div class="content-section">
+            <h3 class="section-title">
+              <i class="fas fa-images"></i>
+              Fotos
+            </h3>
+            <PhotoGallery
+              photos={photoAttachments}
+              onphotoclick={openPreview}
+            />
+          </div>
+        {/if}
+
+        <!-- Financial Info -->
+        {#if hasFinancialInfo(suggestion)}
+          <div class="content-section">
+            <h3 class="section-title">
+              <i class="fas fa-euro-sign"></i>
+              Finanzielle Informationen
+            </h3>
+            <div class="data-list data-list--grid">
+              {#if suggestion.estimatedCost !== undefined && suggestion.estimatedCost !== 0}
+                <div class="data-list__item">
+                  <span class="data-list__label">Geschätzte Kosten</span>
+                  <span class="data-list__value"
+                    >{formatCurrency(suggestion.estimatedCost)}</span
+                  >
+                </div>
+              {/if}
+              {#if suggestion.actualSavings !== undefined && suggestion.actualSavings !== 0}
+                <div class="data-list__item">
+                  <span class="data-list__label"
+                    >Tatsaechliche Einsparungen</span
+                  >
+                  <span class="data-list__value"
+                    >{formatCurrency(suggestion.actualSavings)}</span
+                  >
+                </div>
+              {/if}
+            </div>
+          </div>
+        {/if}
+
+        <!-- Comments Section -->
+        <CommentsSection
+          bind:this={commentsSectionRef}
+          onaddcomment={handleAddComment}
+        />
+      </div>
+
+      <!-- Sidebar -->
+      <DetailSidebar
+        {suggestion}
+        {linkedWorkOrders}
+        onopensharemodal={handleOpenShareModal}
+        onunshare={handleUnshare}
+        onarchive={handleArchive}
+        onunarchive={handleUnarchive}
+        onconfirm={handleConfirm}
+        onunconfirm={handleUnconfirm}
+        onopenpreview={openPreview}
+        onopenworkordermodal={handleOpenWoModal}
+      />
+    </div>
+  </div>
+
+  <!-- Modal Components -->
+  {#if kvpDetailState.isAdmin}
+    <CreateWorkOrderFromKvp
+      show={showWoModal}
+      {suggestion}
+      onclose={handleCloseWoModal}
+      onsaved={handleWoSaved}
+    />
+  {/if}
+  <ShareModal
+    {labels}
+    onconfirm={handleConfirmShare}
+  />
+  <RejectionModal
+    bind:rejectionReason
+    onconfirm={handleConfirmRejection}
+    oncancel={handleCancelRejection}
+  />
+  <AttachmentPreviewModal
+    show={showPreviewModal}
+    attachment={previewAttachment}
+    onclose={closePreview}
+    onprev={handlePreviewPrev}
+    onnext={handlePreviewNext}
+    currentIndex={previewIndex ?? undefined}
+    totalCount={attachments.length}
   />
 {/if}
-<ShareModal
-  {labels}
-  onconfirm={handleConfirmShare}
-/>
-<RejectionModal
-  bind:rejectionReason
-  onconfirm={handleConfirmRejection}
-  oncancel={handleCancelRejection}
-/>
-<AttachmentPreviewModal
-  show={showPreviewModal}
-  attachment={previewAttachment}
-  onclose={closePreview}
-  onprev={handlePreviewPrev}
-  onnext={handlePreviewNext}
-  currentIndex={previewIndex ?? undefined}
-  totalCount={attachments.length}
-/>
 
 <style>
   /* ─── Layout ──────── */

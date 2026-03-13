@@ -6,7 +6,7 @@
  */
 import { redirect } from '@sveltejs/kit';
 
-import { apiFetch } from '$lib/server/api-fetch';
+import { apiFetch, apiFetchWithPermission } from '$lib/server/api-fetch';
 import { requireAddon } from '$lib/utils/addon-guard';
 
 import type { PageServerLoad } from './$types';
@@ -35,16 +35,29 @@ export const load: PageServerLoad = async ({
 
   const { uuid: planUuid } = params;
 
-  const [plan, locationsRaw] = await Promise.all([
-    apiFetch<TpmPlan>(`/tpm/plans/${planUuid}`, token, fetch),
+  const [planResult, locationsRaw] = await Promise.all([
+    apiFetchWithPermission<TpmPlan>(`/tpm/plans/${planUuid}`, token, fetch),
     apiFetch<unknown>(`/tpm/locations?planUuid=${planUuid}`, token, fetch),
   ]);
 
+  if (planResult.permissionDenied) {
+    return {
+      permissionDenied: true as const,
+      plan: null,
+      planUuid,
+      locations: [] as TpmLocation[],
+      userRole: 'employee',
+      error: null,
+    };
+  }
+
+  const plan = planResult.data;
   const locations = extractArray<TpmLocation>(locationsRaw);
 
   const userRole = parentData.user?.role ?? 'employee';
 
   return {
+    permissionDenied: false as const,
     plan,
     planUuid,
     locations,

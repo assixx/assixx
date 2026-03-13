@@ -6,7 +6,7 @@
  */
 import { redirect } from '@sveltejs/kit';
 
-import { apiFetch } from '$lib/server/api-fetch';
+import { apiFetch, apiFetchWithPermission } from '$lib/server/api-fetch';
 import { requireAddon } from '$lib/utils/addon-guard';
 
 import type { PageServerLoad } from './$types';
@@ -29,18 +29,29 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
     redirect(302, '/login');
   }
 
-  // Parallel fetch: documents + chat folders
-  const [documentsData, chatFoldersData] = await Promise.all([
-    apiFetch<RawDocument[]>('/documents', token, fetch),
-    apiFetch<ChatFolder[]>('/documents/chat-folders', token, fetch),
-  ]);
-
   // Get user from parent layout
   const parentData = await parent();
   requireAddon(parentData.activeAddons, 'documents');
 
+  // Parallel fetch: documents (permission-aware) + chat folders
+  const [documentsResult, chatFoldersData] = await Promise.all([
+    apiFetchWithPermission<RawDocument[]>('/documents', token, fetch),
+    apiFetch<ChatFolder[]>('/documents/chat-folders', token, fetch),
+  ]);
+
+  // 403 → early return with empty data + permission flag
+  if (documentsResult.permissionDenied) {
+    return {
+      permissionDenied: true as const,
+      documents: [] as Document[],
+      chatFolders: [] as ChatFolder[],
+      currentUser: parentData.user,
+    };
+  }
+
   // Process documents with field mapping
-  const rawDocs = Array.isArray(documentsData) ? documentsData : [];
+  const rawDocs =
+    Array.isArray(documentsResult.data) ? documentsResult.data : [];
   const documents: Document[] = rawDocs.map((doc) => ({
     ...doc,
     size: doc.fileSize ?? doc.size ?? 0,
@@ -51,6 +62,7 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
   const chatFolders = Array.isArray(chatFoldersData) ? chatFoldersData : [];
 
   return {
+    permissionDenied: false as const,
     documents,
     chatFolders,
     currentUser: parentData.user,

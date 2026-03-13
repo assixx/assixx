@@ -6,14 +6,13 @@
  */
 import { redirect } from '@sveltejs/kit';
 
+import { apiFetchWithPermission } from '$lib/server/api-fetch';
 import { requireAddon } from '$lib/utils/addon-guard';
 import { createLogger } from '$lib/utils/logger';
 
 import type { PageServerLoad } from './$types';
 
 const log = createLogger('BlackboardArchived');
-
-const API_BASE = process.env.API_URL ?? 'http://localhost:3000/api/v2';
 
 interface ArchivedEntry {
   id: number;
@@ -29,19 +28,6 @@ interface ArchivedEntry {
   orgLevel: string;
 }
 
-interface ApiResponse {
-  success?: boolean;
-  data?: ArchivedEntry[];
-  meta?: {
-    pagination?: {
-      total: number;
-      page: number;
-      limit: number;
-      totalPages: number;
-    };
-  };
-}
-
 export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
   const token = cookies.get('accessToken');
   if (token === undefined || token === '') {
@@ -51,63 +37,26 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
   const { activeAddons } = await parent();
   requireAddon(activeAddons, 'blackboard');
 
-  try {
-    // Fetch archived entries (isActive=3)
-    const response = await fetch(
-      `${API_BASE}/blackboard/entries?isActive=3&limit=100`,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      },
-    );
+  const result = await apiFetchWithPermission<ArchivedEntry[]>(
+    '/blackboard/entries?isActive=3&limit=100',
+    token,
+    fetch,
+  );
 
-    if (!response.ok) {
-      log.error(
-        { status: response.status },
-        'Failed to fetch archived entries',
-      );
-      return {
-        entries: [],
-        error: 'Fehler beim Laden der archivierten Einträge',
-      };
-    }
-
-    const json = (await response.json()) as ApiResponse;
-
-    log.info({ count: json.data?.length ?? 0 }, 'API response received');
-
-    if (
-      json.success === true &&
-      json.data !== undefined &&
-      Array.isArray(json.data)
-    ) {
-      log.info({ count: json.data.length }, 'Entries found');
-      // Ensure plain serializable objects (SvelteKit requires JSON-serializable data)
-      const entries = json.data.map((entry) => ({
-        id: entry.id,
-        uuid: entry.uuid,
-        title: entry.title,
-        content: entry.content,
-        authorFullName: entry.authorFullName,
-        authorName: entry.authorName,
-        createdAt: entry.createdAt,
-        updatedAt: entry.updatedAt,
-        expiresAt: entry.expiresAt,
-        priority: entry.priority,
-        orgLevel: entry.orgLevel,
-      }));
-      return {
-        entries,
-        error: null,
-      };
-    }
-
-    log.warn({ json }, 'No entries found or invalid response structure');
-    return { entries: [] as ArchivedEntry[], error: null };
-  } catch (err: unknown) {
-    log.error({ err }, 'Error fetching archived entries');
-    return { entries: [], error: 'Verbindungsfehler' };
+  if (result.permissionDenied) {
+    return {
+      permissionDenied: true as const,
+      entries: [],
+      error: null,
+    };
   }
+
+  const entries = Array.isArray(result.data) ? result.data : [];
+  log.info({ count: entries.length }, 'Archived entries loaded');
+
+  return {
+    permissionDenied: false as const,
+    entries,
+    error: null,
+  };
 };

@@ -6,7 +6,7 @@
  */
 import { redirect } from '@sveltejs/kit';
 
-import { apiFetch } from '$lib/server/api-fetch';
+import { apiFetch, apiFetchWithPermission } from '$lib/server/api-fetch';
 import { requireAddon } from '$lib/utils/addon-guard';
 
 import type { PageServerLoad } from './$types';
@@ -41,13 +41,26 @@ export const load: PageServerLoad = async ({
 
   const { uuid: cardUuid } = params;
 
-  // Step 1: Fetch card + colors + employees in parallel
-  const [card, colorsRaw, employeesRaw] = await Promise.all([
-    apiFetch<TpmCard>(`/tpm/cards/${cardUuid}`, token, fetch),
+  // Step 1: Fetch card (permission-aware) + colors + employees in parallel
+  const [cardResult, colorsRaw, employeesRaw] = await Promise.all([
+    apiFetchWithPermission<TpmCard>(`/tpm/cards/${cardUuid}`, token, fetch),
     apiFetch<unknown>('/tpm/config/colors', token, fetch),
     apiFetch<unknown>('/tpm/executions/eligible-participants', token, fetch),
   ]);
 
+  if (cardResult.permissionDenied) {
+    return {
+      permissionDenied: true as const,
+      card: null,
+      colors: [] as TpmColorConfigEntry[],
+      timeEstimates: [] as TpmTimeEstimate[],
+      locations: [] as TpmLocation[],
+      employees: [] as TpmEmployee[],
+      error: null,
+    };
+  }
+
+  const card = cardResult.data;
   const colors = extractArray<TpmColorConfigEntry>(colorsRaw);
   const employees = extractArray<TpmEmployee>(employeesRaw);
 
@@ -72,6 +85,7 @@ export const load: PageServerLoad = async ({
   }
 
   return {
+    permissionDenied: false as const,
     card,
     colors,
     timeEstimates,

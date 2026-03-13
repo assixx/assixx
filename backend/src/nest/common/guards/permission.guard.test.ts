@@ -377,7 +377,7 @@ describe('SECURITY: PermissionGuard', () => {
 
   describe('Logging', () => {
     it('should log warning with user details on permission denied', async () => {
-      const warnSpy = vi.spyOn(Logger.prototype, 'warn');
+      const debugSpy = vi.spyOn(Logger.prototype, 'debug');
       mockReflector.getAllAndOverride.mockReturnValue({
         addonCode: 'blackboard',
         moduleCode: 'blackboard-posts',
@@ -393,9 +393,11 @@ describe('SECURITY: PermissionGuard', () => {
         ForbiddenException,
       );
 
-      expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('42'));
-      expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('employee'));
-      expect(warnSpy).toHaveBeenCalledWith(
+      expect(debugSpy).toHaveBeenCalledWith(expect.stringContaining('42'));
+      expect(debugSpy).toHaveBeenCalledWith(
+        expect.stringContaining('employee'),
+      );
+      expect(debugSpy).toHaveBeenCalledWith(
         expect.stringContaining('blackboard'),
       );
     });

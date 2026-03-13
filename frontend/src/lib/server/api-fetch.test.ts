@@ -6,7 +6,12 @@
  */
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 
-import { API_BASE, apiFetch, extractResponseData } from './api-fetch';
+import {
+  API_BASE,
+  apiFetch,
+  apiFetchWithPermission,
+  extractResponseData,
+} from './api-fetch';
 
 // ─── extractResponseData ────────────────────────────────────────────────────
 
@@ -184,5 +189,161 @@ describe('apiFetch – error handling', () => {
       mockFetch as typeof fetch,
     );
     expect(result).toBeNull();
+  });
+});
+
+// ─── apiFetchWithPermission ─────────────────────────────────────────────────
+
+describe('apiFetchWithPermission – request construction', () => {
+  it('should call fetch with correct URL and headers', async () => {
+    mockFetch.mockResolvedValueOnce(mockResponse({ success: true, data: [] }));
+
+    await apiFetchWithPermission('/kvp', TOKEN, mockFetch as typeof fetch);
+
+    expect(mockFetch).toHaveBeenCalledWith(`${API_BASE}/kvp`, {
+      headers: {
+        Authorization: `Bearer ${TOKEN}`,
+        'Content-Type': 'application/json',
+      },
+    });
+  });
+});
+
+describe('apiFetchWithPermission – 403 detection', () => {
+  it('should return permissionDenied: true on 403', async () => {
+    mockFetch.mockResolvedValueOnce(mockResponse(null, false, 403));
+
+    const result = await apiFetchWithPermission(
+      '/kvp',
+      TOKEN,
+      mockFetch as typeof fetch,
+    );
+
+    expect(result).toEqual({ data: null, permissionDenied: true });
+  });
+
+  it('should NOT flag permissionDenied on 401', async () => {
+    mockFetch.mockResolvedValueOnce(mockResponse(null, false, 401));
+
+    const result = await apiFetchWithPermission(
+      '/kvp',
+      TOKEN,
+      mockFetch as typeof fetch,
+    );
+
+    expect(result).toEqual({ data: null, permissionDenied: false });
+  });
+
+  it('should NOT flag permissionDenied on 404', async () => {
+    mockFetch.mockResolvedValueOnce(mockResponse(null, false, 404));
+
+    const result = await apiFetchWithPermission(
+      '/kvp/nonexistent',
+      TOKEN,
+      mockFetch as typeof fetch,
+    );
+
+    expect(result).toEqual({ data: null, permissionDenied: false });
+  });
+
+  it('should NOT flag permissionDenied on 500', async () => {
+    mockFetch.mockResolvedValueOnce(mockResponse(null, false, 500));
+
+    const result = await apiFetchWithPermission(
+      '/kvp',
+      TOKEN,
+      mockFetch as typeof fetch,
+    );
+
+    expect(result).toEqual({ data: null, permissionDenied: false });
+  });
+});
+
+describe('apiFetchWithPermission – success responses', () => {
+  it('should return extracted data from { success: true, data: T }', async () => {
+    mockFetch.mockResolvedValueOnce(
+      mockResponse({ success: true, data: [{ id: 1 }] }),
+    );
+
+    const result = await apiFetchWithPermission<{ id: number }[]>(
+      '/items',
+      TOKEN,
+      mockFetch as typeof fetch,
+    );
+
+    expect(result).toEqual({
+      data: [{ id: 1 }],
+      permissionDenied: false,
+    });
+  });
+
+  it('should handle { data: T } without success field', async () => {
+    mockFetch.mockResolvedValueOnce(mockResponse({ data: { count: 42 } }));
+
+    const result = await apiFetchWithPermission<{ count: number }>(
+      '/stats',
+      TOKEN,
+      mockFetch as typeof fetch,
+    );
+
+    expect(result).toEqual({
+      data: { count: 42 },
+      permissionDenied: false,
+    });
+  });
+
+  it('should handle raw array response', async () => {
+    mockFetch.mockResolvedValueOnce(mockResponse([1, 2, 3]));
+
+    const result = await apiFetchWithPermission<number[]>(
+      '/raw',
+      TOKEN,
+      mockFetch as typeof fetch,
+    );
+
+    expect(result).toEqual({ data: [1, 2, 3], permissionDenied: false });
+  });
+
+  it('should return data: null for empty success response', async () => {
+    mockFetch.mockResolvedValueOnce(
+      mockResponse({ success: true, data: null }),
+    );
+
+    const result = await apiFetchWithPermission(
+      '/empty',
+      TOKEN,
+      mockFetch as typeof fetch,
+    );
+
+    expect(result).toEqual({ data: null, permissionDenied: false });
+  });
+});
+
+describe('apiFetchWithPermission – error handling', () => {
+  it('should return permissionDenied: false on network error', async () => {
+    mockFetch.mockRejectedValueOnce(new Error('ECONNREFUSED'));
+
+    const result = await apiFetchWithPermission(
+      '/offline',
+      TOKEN,
+      mockFetch as typeof fetch,
+    );
+
+    expect(result).toEqual({ data: null, permissionDenied: false });
+  });
+
+  it('should return permissionDenied: false on JSON parse error', async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: () => Promise.reject(new SyntaxError('Unexpected token')),
+    });
+
+    const result = await apiFetchWithPermission(
+      '/bad-json',
+      TOKEN,
+      mockFetch as typeof fetch,
+    );
+
+    expect(result).toEqual({ data: null, permissionDenied: false });
   });
 });

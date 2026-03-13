@@ -17,6 +17,7 @@ const { mockLogger } = vi.hoisted(() => ({
   mockLogger: {
     error: vi.fn(),
     warn: vi.fn(),
+    debug: vi.fn(),
   },
 }));
 

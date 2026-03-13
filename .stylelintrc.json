@@ -54,7 +54,7 @@
     "import-notation": "string",
     "keyframe-selector-notation": "percentage-unless-within-keyword-only-block",
     "length-zero-no-unit": true,
-    "lightness-notation": "percentage",
+    "lightness-notation": null,
     "max-nesting-depth": 3,
     "media-feature-range-notation": "context",
     "no-descending-specificity": null,

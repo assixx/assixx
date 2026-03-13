@@ -6,7 +6,7 @@
  */
 import { redirect } from '@sveltejs/kit';
 
-import { apiFetch } from '$lib/server/api-fetch';
+import { apiFetch, apiFetchWithPermission } from '$lib/server/api-fetch';
 import { requireAddon } from '$lib/utils/addon-guard';
 
 import type { PageServerLoad } from './$types';
@@ -86,9 +86,9 @@ export const load: PageServerLoad = async ({ cookies, fetch, url, parent }) => {
   const apiParams = buildApiParams(url);
 
   // Parallel fetch: entries with filters + organization data for dropdowns
-  const [entriesResult, departmentsData, teamsData, areasData] =
+  const [entriesCheck, departmentsData, teamsData, areasData] =
     await Promise.all([
-      apiFetch<EntriesResponse | BlackboardEntry[]>(
+      apiFetchWithPermission<EntriesResponse | BlackboardEntry[]>(
         `/blackboard/entries?${apiParams.toString()}`,
         token,
         fetch,
@@ -98,9 +98,21 @@ export const load: PageServerLoad = async ({ cookies, fetch, url, parent }) => {
       apiFetch<Area[]>('/areas', token, fetch),
     ]);
 
-  const { entries, totalPages } = processEntriesResponse(entriesResult);
+  if (entriesCheck.permissionDenied) {
+    return {
+      permissionDenied: true as const,
+      entries: [],
+      totalPages: 1,
+      departments: [],
+      teams: [],
+      areas: [],
+    };
+  }
+
+  const { entries, totalPages } = processEntriesResponse(entriesCheck.data);
 
   return {
+    permissionDenied: false as const,
     entries,
     totalPages,
     departments: safeArray(departmentsData),

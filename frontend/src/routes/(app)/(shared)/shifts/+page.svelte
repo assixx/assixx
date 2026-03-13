@@ -2,6 +2,8 @@
   // SHIFTS PAGE - Svelte 5 + SSR
   import { onMount } from 'svelte';
 
+  import PermissionDenied from '$lib/components/PermissionDenied.svelte';
+
   import AdminActions from './_lib/AdminActions.svelte';
   import {
     fetchAssignmentCounts,
@@ -59,6 +61,8 @@
 
   // --- SSR DATA ---
   const { data }: { data: PageData } = $props();
+
+  const permissionDenied = $derived(data.permissionDenied);
 
   // Hierarchy labels (propagated from layout)
   const labels = $derived(data.hierarchyLabels);
@@ -277,244 +281,250 @@
   <title>Schichtplanung - Assixx</title>
 </svelte:head>
 
-<div class="container">
-  <div class="card">
-    <div class="card__header">
-      <h2 class="card__title">
-        <i class="fas fa-calendar-alt mr-2"></i>Schichtplanung
-      </h2>
-      <p class="mt-2 text-(--color-text-secondary)">
-        Schichten planen und verwalten
-      </p>
+{#if permissionDenied}
+  <PermissionDenied addonName="die Schichtplanung" />
+{:else}
+  <div class="container">
+    <div class="card">
+      <div class="card__header">
+        <h2 class="card__title">
+          <i class="fas fa-calendar-alt mr-2"></i>Schichtplanung
+        </h2>
+        <p class="mt-2 text-(--color-text-secondary)">
+          Schichten planen und verwalten
+        </p>
 
-      <!-- Loading Overlay (Design System) - ONLY during initial load, NOT during week changes -->
-      {#if shiftsState.isLoading && !shiftsState.showPlanningUI}
-        <div class="flex items-center justify-center gap-3 py-12">
-          <div class="spinner-ring spinner-ring--lg"></div>
-          <span class="text-(--color-text-secondary)">Laden...</span>
-        </div>
-      {/if}
-
-      <!-- Employee Team Info Bar -->
-      {#if shiftsState.employeeTeamInfo !== null}
-        <div
-          class="mt-4 flex flex-wrap items-center gap-3 rounded-xl border border-(--color-glass-border)
-            bg-(--glass-bg) p-4"
-          role="status"
-        >
-          <i class="fas fa-users text-(--color-text-secondary)"></i>
-          <span class="font-medium text-(--color-text-secondary)"
-            >Dein Team:</span
-          >
-          <span class="font-semibold text-blue-400"
-            >{shiftsState.employeeTeamInfo.teamName}</span
-          >
-          <span class="font-medium text-(--color-text-secondary)"
-            >{labels.department}:</span
-          >
-          <span class="font-semibold text-blue-400"
-            >{shiftsState.employeeTeamInfo.departmentName}</span
-          >
-          <span class="font-medium text-(--color-text-secondary)">Bereich:</span
-          >
-          <span class="font-semibold text-blue-400"
-            >{shiftsState.employeeTeamInfo.areaName}</span
-          >
-        </div>
-      {/if}
-
-      <!-- Admin Filter Controls (Extracted Component) -->
-      {#if shiftsState.isAdmin && shiftsState.employeeTeamInfo === null}
-        <FilterDropdowns
-          {labels}
-          areas={shiftsState.areas}
-          departments={shiftsState.departments}
-          assets={shiftsState.assets}
-          teams={shiftsState.teams}
-          favorites={ssrFavorites}
-          selectedContext={shiftsState.selectedContext}
-          areaDropdownOpen={shiftsState.areaDropdownOpen}
-          departmentDropdownOpen={shiftsState.departmentDropdownOpen}
-          assetDropdownOpen={shiftsState.assetDropdownOpen}
-          teamDropdownOpen={shiftsState.teamDropdownOpen}
-          ontoggleAreaDropdown={() => {
-            shiftsState.toggleAreaDropdown();
-          }}
-          ontoggleDepartmentDropdown={() => {
-            shiftsState.toggleDepartmentDropdown();
-          }}
-          ontoggleAssetDropdown={() => {
-            shiftsState.toggleAssetDropdown();
-          }}
-          ontoggleTeamDropdown={() => {
-            shiftsState.toggleTeamDropdown();
-          }}
-          oncloseAllDropdowns={() => {
-            shiftsState.closeAllDropdowns();
-          }}
-          onareaChange={handleAreaChange}
-          ondepartmentChange={handleDepartmentChange}
-          onassetChange={handleAssetChange}
-          onteamChange={handleTeamChange}
-          onfavoriteClick={handleFavoriteClick}
-          ondeleteFavorite={handleDeleteFavorite}
-          onaddToFavorites={() => handleAddToFavorites(labels)}
-        />
-      {/if}
-    </div>
-    <!-- END card__header -->
-
-    <div class="card__body">
-      <!-- Employee without Team - Error Notice -->
-      {#if ssrIsEmployee && !ssrEmployeeTeamInfo}
-        <div class="department-notice">
-          <div class="notice-icon">
-            <i class="fas fa-exclamation-triangle"></i>
+        <!-- Loading Overlay (Design System) - ONLY during initial load, NOT during week changes -->
+        {#if shiftsState.isLoading && !shiftsState.showPlanningUI}
+          <div class="flex items-center justify-center gap-3 py-12">
+            <div class="spinner-ring spinner-ring--lg"></div>
+            <span class="text-(--color-text-secondary)">Laden...</span>
           </div>
-          <h3>Kein Team zugewiesen</h3>
-          <p>
-            Du bist noch keinem Team zugeordnet. Bitte wende dich an deinen
-            Administrator.
-          </p>
-        </div>
-      {/if}
-
-      <!-- Admin Notice (show when filters incomplete) -->
-      {#if !shiftsState.showPlanningUI && shiftsState.isAdmin}
-        <div class="department-notice">
-          <div class="notice-icon"><i class="fas fa-info-circle"></i></div>
-          <h3>{labels.asset} auswählen</h3>
-          <p>
-            Bitte wählen Sie {labels.area}, {labels.department}, {labels.team} und
-            {labels.asset} aus, um den Schichtplan anzuzeigen.
-          </p>
-        </div>
-      {/if}
-
-      <!-- Main Planning UI -->
-      {#if shiftsState.showPlanningUI}
-        <!-- Shift Control Toggles (Admin Only) -->
-        {#if shiftsState.isAdmin}
-          <ShiftControls
-            autofillConfig={shiftsState.autofillConfig}
-            standardRotationEnabled={shiftsState.standardRotationEnabled}
-            customRotationEnabled={shiftsState.customRotationEnabled}
-            isPlanLocked={shiftsState.isPlanLocked}
-            onautofillChange={(enabled: boolean) => {
-              shiftsState.setAutofillConfig({ enabled });
-            }}
-            onstandardRotationChange={(enabled: boolean) => {
-              shiftsState.setStandardRotationEnabled(enabled);
-            }}
-            oncustomRotationChange={(enabled: boolean) => {
-              shiftsState.setCustomRotationEnabled(enabled);
-            }}
-          />
         {/if}
 
-        <!-- Main Planning Area (enthält NUR week-schedule + employee-sidebar!) -->
-        <div class="main-planning-area">
-          <!-- Week Schedule (Extracted Component) -->
-          <ShiftScheduleGrid
-            {labels}
-            afterLegend={assignmentCountsSnippet}
-            {weekDates}
-            {shiftTimesMap}
-            weeklyNotes={shiftsState.weeklyNotes}
-            canEditShifts={shiftsState.canEditShifts}
-            isEditMode={shiftsState.isEditMode}
-            currentPlanId={shiftsState.currentPlanId}
-            assetAvailabilityMap={shiftsState.assetAvailabilityMap}
-            {getShiftEmployees}
-            getEmployeeById={(id: number) => shiftsState.getEmployeeById(id)}
-            getShiftDetail={(key: string) => shiftsState.shiftDetails.get(key)}
-            hasRotationShift={(key: string) =>
-              shiftsState.rotationHistoryMap.has(key)}
-            ondragover={handleDragOver}
-            ondragenter={handleDragEnter}
-            ondragleave={handleDragLeave}
-            ondrop={handleDrop}
-            onremoveEmployee={removeEmployeeFromShift}
-            onnotesChange={(notes: string) => {
-              shiftsState.setWeeklyNotes(notes);
-            }}
-          />
+        <!-- Employee Team Info Bar -->
+        {#if shiftsState.employeeTeamInfo !== null}
+          <div
+            class="mt-4 flex flex-wrap items-center gap-3 rounded-xl border border-(--color-glass-border)
+            bg-(--glass-bg) p-4"
+            role="status"
+          >
+            <i class="fas fa-users text-(--color-text-secondary)"></i>
+            <span class="font-medium text-(--color-text-secondary)"
+              >Dein Team:</span
+            >
+            <span class="font-semibold text-blue-400"
+              >{shiftsState.employeeTeamInfo.teamName}</span
+            >
+            <span class="font-medium text-(--color-text-secondary)"
+              >{labels.department}:</span
+            >
+            <span class="font-semibold text-blue-400"
+              >{shiftsState.employeeTeamInfo.departmentName}</span
+            >
+            <span class="font-medium text-(--color-text-secondary)"
+              >Bereich:</span
+            >
+            <span class="font-semibold text-blue-400"
+              >{shiftsState.employeeTeamInfo.areaName}</span
+            >
+          </div>
+        {/if}
 
-          <!-- Employee Sidebar (Extracted Component) -->
-          {#if shiftsState.isAdmin || shiftsState.employees.length > 0}
-            <EmployeeSidebar
+        <!-- Admin Filter Controls (Extracted Component) -->
+        {#if shiftsState.isAdmin && shiftsState.employeeTeamInfo === null}
+          <FilterDropdowns
+            {labels}
+            areas={shiftsState.areas}
+            departments={shiftsState.departments}
+            assets={shiftsState.assets}
+            teams={shiftsState.teams}
+            favorites={ssrFavorites}
+            selectedContext={shiftsState.selectedContext}
+            areaDropdownOpen={shiftsState.areaDropdownOpen}
+            departmentDropdownOpen={shiftsState.departmentDropdownOpen}
+            assetDropdownOpen={shiftsState.assetDropdownOpen}
+            teamDropdownOpen={shiftsState.teamDropdownOpen}
+            ontoggleAreaDropdown={() => {
+              shiftsState.toggleAreaDropdown();
+            }}
+            ontoggleDepartmentDropdown={() => {
+              shiftsState.toggleDepartmentDropdown();
+            }}
+            ontoggleAssetDropdown={() => {
+              shiftsState.toggleAssetDropdown();
+            }}
+            ontoggleTeamDropdown={() => {
+              shiftsState.toggleTeamDropdown();
+            }}
+            oncloseAllDropdowns={() => {
+              shiftsState.closeAllDropdowns();
+            }}
+            onareaChange={handleAreaChange}
+            ondepartmentChange={handleDepartmentChange}
+            onassetChange={handleAssetChange}
+            onteamChange={handleTeamChange}
+            onfavoriteClick={handleFavoriteClick}
+            ondeleteFavorite={handleDeleteFavorite}
+            onaddToFavorites={() => handleAddToFavorites(labels)}
+          />
+        {/if}
+      </div>
+      <!-- END card__header -->
+
+      <div class="card__body">
+        <!-- Employee without Team - Error Notice -->
+        {#if ssrIsEmployee && !ssrEmployeeTeamInfo}
+          <div class="department-notice">
+            <div class="notice-icon">
+              <i class="fas fa-exclamation-triangle"></i>
+            </div>
+            <h3>Kein Team zugewiesen</h3>
+            <p>
+              Du bist noch keinem Team zugeordnet. Bitte wende dich an deinen
+              Administrator.
+            </p>
+          </div>
+        {/if}
+
+        <!-- Admin Notice (show when filters incomplete) -->
+        {#if !shiftsState.showPlanningUI && shiftsState.isAdmin}
+          <div class="department-notice">
+            <div class="notice-icon"><i class="fas fa-info-circle"></i></div>
+            <h3>{labels.asset} auswählen</h3>
+            <p>
+              Bitte wählen Sie {labels.area}, {labels.department}, {labels.team} und
+              {labels.asset} aus, um den Schichtplan anzuzeigen.
+            </p>
+          </div>
+        {/if}
+
+        <!-- Main Planning UI -->
+        {#if shiftsState.showPlanningUI}
+          <!-- Shift Control Toggles (Admin Only) -->
+          {#if shiftsState.isAdmin}
+            <ShiftControls
+              autofillConfig={shiftsState.autofillConfig}
+              standardRotationEnabled={shiftsState.standardRotationEnabled}
+              customRotationEnabled={shiftsState.customRotationEnabled}
+              isPlanLocked={shiftsState.isPlanLocked}
+              onautofillChange={(enabled: boolean) => {
+                shiftsState.setAutofillConfig({ enabled });
+              }}
+              onstandardRotationChange={(enabled: boolean) => {
+                shiftsState.setStandardRotationEnabled(enabled);
+              }}
+              oncustomRotationChange={(enabled: boolean) => {
+                shiftsState.setCustomRotationEnabled(enabled);
+              }}
+            />
+          {/if}
+
+          <!-- Main Planning Area (enthält NUR week-schedule + employee-sidebar!) -->
+          <div class="main-planning-area">
+            <!-- Week Schedule (Extracted Component) -->
+            <ShiftScheduleGrid
               {labels}
-              employees={shiftsState.employees}
+              afterLegend={assignmentCountsSnippet}
               {weekDates}
+              {shiftTimesMap}
+              weeklyNotes={shiftsState.weeklyNotes}
               canEditShifts={shiftsState.canEditShifts}
               isEditMode={shiftsState.isEditMode}
               currentPlanId={shiftsState.currentPlanId}
-              hasRotationHistory={shiftsState.rotationHistoryMap.size > 0}
-              {minStaffCount}
-              ondragstart={handleDragStart}
-              ondragend={handleDragEnd}
+              assetAvailabilityMap={shiftsState.assetAvailabilityMap}
+              {getShiftEmployees}
+              getEmployeeById={(id: number) => shiftsState.getEmployeeById(id)}
+              getShiftDetail={(key: string) =>
+                shiftsState.shiftDetails.get(key)}
+              hasRotationShift={(key: string) =>
+                shiftsState.rotationHistoryMap.has(key)}
+              ondragover={handleDragOver}
+              ondragenter={handleDragEnter}
+              ondragleave={handleDragLeave}
+              ondrop={handleDrop}
+              onremoveEmployee={removeEmployeeFromShift}
+              onnotesChange={(notes: string) => {
+                shiftsState.setWeeklyNotes(notes);
+              }}
+            />
+
+            <!-- Employee Sidebar (Extracted Component) -->
+            {#if shiftsState.isAdmin || shiftsState.employees.length > 0}
+              <EmployeeSidebar
+                {labels}
+                employees={shiftsState.employees}
+                {weekDates}
+                canEditShifts={shiftsState.canEditShifts}
+                isEditMode={shiftsState.isEditMode}
+                currentPlanId={shiftsState.currentPlanId}
+                hasRotationHistory={shiftsState.rotationHistoryMap.size > 0}
+                {minStaffCount}
+                ondragstart={handleDragStart}
+                ondragend={handleDragEnd}
+              />
+            {/if}
+          </div>
+          <!-- END main-planning-area -->
+
+          <!-- Admin Actions (Extracted Component) -->
+          {#if shiftsState.isAdmin}
+            <AdminActions
+              currentPatternId={shiftsState.currentPatternId}
+              isPlanLocked={shiftsState.isPlanLocked}
+              isEditMode={shiftsState.isEditMode}
+              onreset={handleResetSchedule}
+              onsave={() => handleSaveSchedule(shiftTimesMap)}
+              ondiscardWeek={handleDiscardWeek}
+              ondiscardTeamPlan={handleDiscardTeamPlan}
+              ondiscardYearPlan={handleDiscardYearPlan}
+              onenterEditMode={() => {
+                shiftsState.setIsEditMode(true);
+              }}
             />
           {/if}
-        </div>
-        <!-- END main-planning-area -->
-
-        <!-- Admin Actions (Extracted Component) -->
-        {#if shiftsState.isAdmin}
-          <AdminActions
-            currentPatternId={shiftsState.currentPatternId}
-            isPlanLocked={shiftsState.isPlanLocked}
-            isEditMode={shiftsState.isEditMode}
-            onreset={handleResetSchedule}
-            onsave={() => handleSaveSchedule(shiftTimesMap)}
-            ondiscardWeek={handleDiscardWeek}
-            ondiscardTeamPlan={handleDiscardTeamPlan}
-            ondiscardYearPlan={handleDiscardYearPlan}
-            onenterEditMode={() => {
-              shiftsState.setIsEditMode(true);
-            }}
-          />
         {/if}
-      {/if}
+      </div>
+      <!-- END card__body -->
     </div>
-    <!-- END card__body -->
+    <!-- END card -->
   </div>
-  <!-- END card -->
-</div>
-<!-- END container -->
+  <!-- END container -->
 
-<!-- MODALS -->
-{#if shiftsState.showRotationSetupModal}
-  <RotationSetupModal
-    employees={shiftsState.employees}
-    selectedContext={shiftsState.selectedContext}
-    initialStartDate={currentWeekStart}
-    initialEndDate={currentWeekEnd}
-    onclose={() => {
-      shiftsState.setShowRotationSetupModal(false);
-      // Reset toggle to match actual pattern state (Legacy behavior)
-      syncRotationToggles();
-    }}
-    oncomplete={(startDate: string) => {
-      shiftsState.setShowRotationSetupModal(false);
-      navigateToWeekContainingDate(startDate);
-      void loadShiftPlan();
-    }}
-  />
-{/if}
+  <!-- MODALS -->
+  {#if shiftsState.showRotationSetupModal}
+    <RotationSetupModal
+      employees={shiftsState.employees}
+      selectedContext={shiftsState.selectedContext}
+      initialStartDate={currentWeekStart}
+      initialEndDate={currentWeekEnd}
+      onclose={() => {
+        shiftsState.setShowRotationSetupModal(false);
+        // Reset toggle to match actual pattern state (Legacy behavior)
+        syncRotationToggles();
+      }}
+      oncomplete={(startDate: string) => {
+        shiftsState.setShowRotationSetupModal(false);
+        navigateToWeekContainingDate(startDate);
+        void loadShiftPlan();
+      }}
+    />
+  {/if}
 
-<!-- Custom Rotation Pattern Modal -->
-{#if shiftsState.showCustomRotationModal}
-  <CustomRotationModal
-    employees={shiftsState.employees}
-    initialStartDate={currentWeekStart}
-    initialEndDate={currentWeekEnd}
-    onclose={() => {
-      shiftsState.setShowCustomRotationModal(false);
-      // Reset toggle to match actual pattern state (Legacy behavior)
-      syncRotationToggles();
-    }}
-    ongenerate={handleCustomRotationGenerate}
-  />
+  <!-- Custom Rotation Pattern Modal -->
+  {#if shiftsState.showCustomRotationModal}
+    <CustomRotationModal
+      employees={shiftsState.employees}
+      initialStartDate={currentWeekStart}
+      initialEndDate={currentWeekEnd}
+      onclose={() => {
+        shiftsState.setShowCustomRotationModal(false);
+        // Reset toggle to match actual pattern state (Legacy behavior)
+        syncRotationToggles();
+      }}
+      ongenerate={handleCustomRotationGenerate}
+    />
+  {/if}
 {/if}
 
 <style>

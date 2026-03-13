@@ -8,7 +8,7 @@
  */
 import { redirect } from '@sveltejs/kit';
 
-import { apiFetch } from '$lib/server/api-fetch';
+import { apiFetch, apiFetchWithPermission } from '$lib/server/api-fetch';
 import { requireAddon } from '$lib/utils/addon-guard';
 import { createLogger } from '$lib/utils/logger';
 
@@ -65,8 +65,8 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent, url }) => {
 
   requireAddon(parentData.activeAddons, 'work_orders');
 
-  const [workOrdersData, statsData, eligibleUsersData] = await Promise.all([
-    apiFetch<PaginatedResponse<WorkOrderListItem>>(
+  const [workOrdersResult, statsData, eligibleUsersData] = await Promise.all([
+    apiFetchWithPermission<PaginatedResponse<WorkOrderListItem>>(
       '/work-orders?page=1&limit=20',
       token,
       fetch,
@@ -75,8 +75,18 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent, url }) => {
     apiFetch<EligibleUser[]>('/work-orders/eligible-users', token, fetch),
   ]);
 
+  if (workOrdersResult.permissionDenied) {
+    return {
+      permissionDenied: true as const,
+      workOrders: emptyPage(),
+      stats: emptyStats(),
+      eligibleUsers: [] as EligibleUser[],
+    };
+  }
+
   return {
-    workOrders: workOrdersData ?? emptyPage(),
+    permissionDenied: false as const,
+    workOrders: workOrdersResult.data ?? emptyPage(),
     stats: statsData ?? emptyStats(),
     eligibleUsers: Array.isArray(eligibleUsersData) ? eligibleUsersData : [],
   };

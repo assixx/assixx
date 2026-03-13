@@ -6,6 +6,7 @@
    * Level 3 SSR: Stats cards, filter bar, data table, FAB, modals.
    * Role guard in +page.server.ts (admin/root only).
    */
+  import PermissionDenied from '$lib/components/PermissionDenied.svelte';
   import { showSuccessAlert, showErrorAlert } from '$lib/stores/toast';
 
   import ConfirmModal from '$design-system/components/confirm-modal/ConfirmModal.svelte';
@@ -45,6 +46,8 @@
   // =============================================================================
 
   const { data }: { data: PageData } = $props();
+
+  const permissionDenied = $derived<boolean>(data.permissionDenied);
 
   // =============================================================================
   // CLIENT STATE
@@ -289,265 +292,269 @@
 
 <svelte:window onkeydown={handleKeydown} />
 
-<div class="container">
-  <!-- Header -->
-  <div class="card mb-6">
-    <div class="card__header">
-      <h2 class="card__title">
-        <i class="fas fa-clipboard-check mr-2"></i>
-        {MESSAGES.HEADING_ADMIN}
-      </h2>
-    </div>
-  </div>
-
-  <!-- Stats Cards -->
-  <div class="stats-grid mb-6">
-    <div class="card-stat card-stat--sm">
-      <div class="card-stat__icon"><i class="fas fa-circle"></i></div>
-      <span class="card-stat__value">{stats.open}</span>
-      <span class="card-stat__label">{MESSAGES.STAT_OPEN}</span>
-    </div>
-    <div class="card-stat card-stat--sm">
-      <div class="card-stat__icon"><i class="fas fa-spinner"></i></div>
-      <span class="card-stat__value">{stats.inProgress}</span>
-      <span class="card-stat__label">{MESSAGES.STAT_IN_PROGRESS}</span>
-    </div>
-    <div class="card-stat card-stat--sm">
-      <div class="card-stat__icon"><i class="fas fa-check-circle"></i></div>
-      <span class="card-stat__value">{stats.completed}</span>
-      <span class="card-stat__label">{MESSAGES.STAT_COMPLETED}</span>
-    </div>
-    <div class="card-stat card-stat--sm">
-      <div class="card-stat__icon"><i class="fas fa-check-double"></i></div>
-      <span class="card-stat__value">{stats.verified}</span>
-      <span class="card-stat__label">{MESSAGES.STAT_VERIFIED}</span>
-    </div>
-    <div class="card-stat card-stat--sm">
-      <div class="card-stat__icon">
-        <i class="fas fa-exclamation-triangle"></i>
-      </div>
-      <span class="card-stat__value">{stats.overdue}</span>
-      <span class="card-stat__label">{MESSAGES.STAT_OVERDUE}</span>
-    </div>
-    <div class="card-stat card-stat--sm">
-      <div class="card-stat__icon"><i class="fas fa-list"></i></div>
-      <span class="card-stat__value">{stats.total}</span>
-      <span class="card-stat__label">{MESSAGES.STAT_TOTAL}</span>
-    </div>
-  </div>
-
-  <!-- Filter Bar + Table -->
-  <div class="card">
-    <div class="card__header">
-      <div class="filter-bar">
-        <!-- Is-Active toggle (Aktive / Archiviert / Alle) -->
-        <div class="toggle-group">
-          <button
-            type="button"
-            class="toggle-group__btn"
-            class:active={isActiveFilter === 'active'}
-            onclick={() => {
-              handleIsActiveFilterChange('active');
-            }}
-          >
-            <i class="fas fa-clipboard-check"></i>
-            {MESSAGES.FILTER_ACTIVE}
-          </button>
-          <button
-            type="button"
-            class="toggle-group__btn"
-            class:active={isActiveFilter === 'archived'}
-            onclick={() => {
-              handleIsActiveFilterChange('archived');
-            }}
-          >
-            <i class="fas fa-archive"></i>
-            {MESSAGES.FILTER_ARCHIVED}
-          </button>
-          <button
-            type="button"
-            class="toggle-group__btn"
-            class:active={isActiveFilter === 'all'}
-            onclick={() => {
-              handleIsActiveFilterChange('all');
-            }}
-          >
-            <i class="fas fa-list"></i>
-            {MESSAGES.FILTER_ALL}
-          </button>
-        </div>
-
-        <!-- Status filter -->
-        <div class="toggle-group">
-          {#each STATUS_FILTER_OPTIONS as opt (opt.value)}
-            <button
-              type="button"
-              class="toggle-group__btn"
-              class:active={statusFilter === opt.value}
-              onclick={() => {
-                handleStatusFilterChange(opt.value);
-              }}
-            >
-              {opt.label}
-            </button>
-          {/each}
-        </div>
-
-        <!-- Priority filter -->
-        <div class="toggle-group">
-          {#each PRIORITY_FILTER_OPTIONS as opt (opt.value)}
-            <button
-              type="button"
-              class="toggle-group__btn"
-              class:active={priorityFilter === opt.value}
-              onclick={() => {
-                handlePriorityFilterChange(opt.value);
-              }}
-            >
-              {opt.label}
-            </button>
-          {/each}
-        </div>
+{#if permissionDenied}
+  <PermissionDenied addonName="die Arbeitsaufträge" />
+{:else}
+  <div class="container">
+    <!-- Header -->
+    <div class="card mb-6">
+      <div class="card__header">
+        <h2 class="card__title">
+          <i class="fas fa-clipboard-check mr-2"></i>
+          {MESSAGES.HEADING_ADMIN}
+        </h2>
       </div>
     </div>
 
-    <div class="card__body">
-      {#if loading}
-        <div class="empty-state empty-state--in-card">
-          <div class="empty-state__icon">
-            <i class="fas fa-spinner fa-spin"></i>
-          </div>
-          <p class="empty-state__description">{MESSAGES.LOADING}</p>
+    <!-- Stats Cards -->
+    <div class="stats-grid mb-6">
+      <div class="card-stat card-stat--sm">
+        <div class="card-stat__icon"><i class="fas fa-circle"></i></div>
+        <span class="card-stat__value">{stats.open}</span>
+        <span class="card-stat__label">{MESSAGES.STAT_OPEN}</span>
+      </div>
+      <div class="card-stat card-stat--sm">
+        <div class="card-stat__icon"><i class="fas fa-spinner"></i></div>
+        <span class="card-stat__value">{stats.inProgress}</span>
+        <span class="card-stat__label">{MESSAGES.STAT_IN_PROGRESS}</span>
+      </div>
+      <div class="card-stat card-stat--sm">
+        <div class="card-stat__icon"><i class="fas fa-check-circle"></i></div>
+        <span class="card-stat__value">{stats.completed}</span>
+        <span class="card-stat__label">{MESSAGES.STAT_COMPLETED}</span>
+      </div>
+      <div class="card-stat card-stat--sm">
+        <div class="card-stat__icon"><i class="fas fa-check-double"></i></div>
+        <span class="card-stat__value">{stats.verified}</span>
+        <span class="card-stat__label">{MESSAGES.STAT_VERIFIED}</span>
+      </div>
+      <div class="card-stat card-stat--sm">
+        <div class="card-stat__icon">
+          <i class="fas fa-exclamation-triangle"></i>
         </div>
-      {:else if !hasWorkOrders}
-        <div class="empty-state empty-state--in-card">
-          <div class="empty-state__icon">
-            <i class="fas fa-clipboard-check"></i>
-          </div>
-          <h3 class="empty-state__title">{MESSAGES.EMPTY_TITLE}</h3>
-          <p class="empty-state__description">
-            {MESSAGES.EMPTY_DESCRIPTION_ADMIN}
-          </p>
-        </div>
-      {:else}
-        <AdminWorkOrderTable
-          items={workOrders.items}
-          onedit={openEditModal}
-          onarchive={openArchiveConfirm}
-          onrestore={handleRestore}
-          onassign={openAssignModal}
-        />
+        <span class="card-stat__value">{stats.overdue}</span>
+        <span class="card-stat__label">{MESSAGES.STAT_OVERDUE}</span>
+      </div>
+      <div class="card-stat card-stat--sm">
+        <div class="card-stat__icon"><i class="fas fa-list"></i></div>
+        <span class="card-stat__value">{stats.total}</span>
+        <span class="card-stat__label">{MESSAGES.STAT_TOTAL}</span>
+      </div>
+    </div>
 
-        <!-- Pagination -->
-        {#if totalPages > 1}
-          <nav
-            class="pagination mt-6"
-            aria-label="Seitennavigation"
-          >
+    <!-- Filter Bar + Table -->
+    <div class="card">
+      <div class="card__header">
+        <div class="filter-bar">
+          <!-- Is-Active toggle (Aktive / Archiviert / Alle) -->
+          <div class="toggle-group">
             <button
               type="button"
-              class="pagination__btn pagination__btn--prev"
-              disabled={currentPage <= 1}
+              class="toggle-group__btn"
+              class:active={isActiveFilter === 'active'}
               onclick={() => {
-                handlePageChange(currentPage - 1);
+                handleIsActiveFilterChange('active');
               }}
             >
-              <i class="fas fa-chevron-left"></i>
-              Zurück
+              <i class="fas fa-clipboard-check"></i>
+              {MESSAGES.FILTER_ACTIVE}
             </button>
-            <div class="pagination__pages">
-              {#each Array.from({ length: totalPages }, (_: unknown, i: number) => i + 1) as page (page)}
-                <button
-                  type="button"
-                  class="pagination__page"
-                  class:pagination__page--active={page === currentPage}
-                  onclick={() => {
-                    handlePageChange(page);
-                  }}
-                >
-                  {page}
-                </button>
-              {/each}
+            <button
+              type="button"
+              class="toggle-group__btn"
+              class:active={isActiveFilter === 'archived'}
+              onclick={() => {
+                handleIsActiveFilterChange('archived');
+              }}
+            >
+              <i class="fas fa-archive"></i>
+              {MESSAGES.FILTER_ARCHIVED}
+            </button>
+            <button
+              type="button"
+              class="toggle-group__btn"
+              class:active={isActiveFilter === 'all'}
+              onclick={() => {
+                handleIsActiveFilterChange('all');
+              }}
+            >
+              <i class="fas fa-list"></i>
+              {MESSAGES.FILTER_ALL}
+            </button>
+          </div>
+
+          <!-- Status filter -->
+          <div class="toggle-group">
+            {#each STATUS_FILTER_OPTIONS as opt (opt.value)}
+              <button
+                type="button"
+                class="toggle-group__btn"
+                class:active={statusFilter === opt.value}
+                onclick={() => {
+                  handleStatusFilterChange(opt.value);
+                }}
+              >
+                {opt.label}
+              </button>
+            {/each}
+          </div>
+
+          <!-- Priority filter -->
+          <div class="toggle-group">
+            {#each PRIORITY_FILTER_OPTIONS as opt (opt.value)}
+              <button
+                type="button"
+                class="toggle-group__btn"
+                class:active={priorityFilter === opt.value}
+                onclick={() => {
+                  handlePriorityFilterChange(opt.value);
+                }}
+              >
+                {opt.label}
+              </button>
+            {/each}
+          </div>
+        </div>
+      </div>
+
+      <div class="card__body">
+        {#if loading}
+          <div class="empty-state empty-state--in-card">
+            <div class="empty-state__icon">
+              <i class="fas fa-spinner fa-spin"></i>
             </div>
-            <button
-              type="button"
-              class="pagination__btn pagination__btn--next"
-              disabled={currentPage >= totalPages}
-              onclick={() => {
-                handlePageChange(currentPage + 1);
-              }}
+            <p class="empty-state__description">{MESSAGES.LOADING}</p>
+          </div>
+        {:else if !hasWorkOrders}
+          <div class="empty-state empty-state--in-card">
+            <div class="empty-state__icon">
+              <i class="fas fa-clipboard-check"></i>
+            </div>
+            <h3 class="empty-state__title">{MESSAGES.EMPTY_TITLE}</h3>
+            <p class="empty-state__description">
+              {MESSAGES.EMPTY_DESCRIPTION_ADMIN}
+            </p>
+          </div>
+        {:else}
+          <AdminWorkOrderTable
+            items={workOrders.items}
+            onedit={openEditModal}
+            onarchive={openArchiveConfirm}
+            onrestore={handleRestore}
+            onassign={openAssignModal}
+          />
+
+          <!-- Pagination -->
+          {#if totalPages > 1}
+            <nav
+              class="pagination mt-6"
+              aria-label="Seitennavigation"
             >
-              Weiter
-              <i class="fas fa-chevron-right"></i>
-            </button>
-          </nav>
-          <span class="pagination__info mt-2">
-            {MESSAGES.PAGINATION_SHOWING}
-            {workOrders.items.length}
-            {MESSAGES.PAGINATION_OF}
-            {workOrders.total}
-            {MESSAGES.PAGINATION_ENTRIES}
-          </span>
+              <button
+                type="button"
+                class="pagination__btn pagination__btn--prev"
+                disabled={currentPage <= 1}
+                onclick={() => {
+                  handlePageChange(currentPage - 1);
+                }}
+              >
+                <i class="fas fa-chevron-left"></i>
+                Zurück
+              </button>
+              <div class="pagination__pages">
+                {#each Array.from({ length: totalPages }, (_: unknown, i: number) => i + 1) as page (page)}
+                  <button
+                    type="button"
+                    class="pagination__page"
+                    class:pagination__page--active={page === currentPage}
+                    onclick={() => {
+                      handlePageChange(page);
+                    }}
+                  >
+                    {page}
+                  </button>
+                {/each}
+              </div>
+              <button
+                type="button"
+                class="pagination__btn pagination__btn--next"
+                disabled={currentPage >= totalPages}
+                onclick={() => {
+                  handlePageChange(currentPage + 1);
+                }}
+              >
+                Weiter
+                <i class="fas fa-chevron-right"></i>
+              </button>
+            </nav>
+            <span class="pagination__info mt-2">
+              {MESSAGES.PAGINATION_SHOWING}
+              {workOrders.items.length}
+              {MESSAGES.PAGINATION_OF}
+              {workOrders.total}
+              {MESSAGES.PAGINATION_ENTRIES}
+            </span>
+          {/if}
         {/if}
-      {/if}
+      </div>
     </div>
   </div>
-</div>
 
-<!-- FAB: Create Work Order -->
-<button
-  type="button"
-  class="btn-float"
-  aria-label={MESSAGES.BTN_CREATE}
-  onclick={openCreateModal}
->
-  <i class="fas fa-plus"></i>
-</button>
+  <!-- FAB: Create Work Order -->
+  <button
+    type="button"
+    class="btn-float"
+    aria-label={MESSAGES.BTN_CREATE}
+    onclick={openCreateModal}
+  >
+    <i class="fas fa-plus"></i>
+  </button>
 
-<!-- Edit/Create Modal -->
-<EditWorkOrderModal
-  show={showEditModal}
-  workOrder={editingItem}
-  {eligibleUsers}
-  {submitting}
-  attachmentFiles={pendingFiles}
-  onclose={closeAllModals}
-  onsave={handleSaveWorkOrder}
-  onfileschange={(files: File[] | null) => {
-    pendingFiles = files;
-  }}
-/>
+  <!-- Edit/Create Modal -->
+  <EditWorkOrderModal
+    show={showEditModal}
+    workOrder={editingItem}
+    {eligibleUsers}
+    {submitting}
+    attachmentFiles={pendingFiles}
+    onclose={closeAllModals}
+    onsave={handleSaveWorkOrder}
+    onfileschange={(files: File[] | null) => {
+      pendingFiles = files;
+    }}
+  />
 
-<!-- Assign Users Modal -->
-<AssignUserModal
-  show={showAssignModal}
-  workOrder={assigningItem}
-  {eligibleUsers}
-  {submitting}
-  onclose={closeAllModals}
-  onsave={handleAssignUsers}
-/>
+  <!-- Assign Users Modal -->
+  <AssignUserModal
+    show={showAssignModal}
+    workOrder={assigningItem}
+    {eligibleUsers}
+    {submitting}
+    onclose={closeAllModals}
+    onsave={handleAssignUsers}
+  />
 
-<!-- Archive Confirmation -->
-<ConfirmModal
-  show={showArchiveConfirm && archivingItem !== null}
-  id="work-order-archive-confirm-modal"
-  title={MESSAGES.ARCHIVE_CONFIRM_TITLE}
-  variant="warning"
-  icon="fa-archive"
-  confirmLabel={MESSAGES.BTN_ARCHIVE}
-  {submitting}
-  onconfirm={() => void handleArchive()}
-  oncancel={() => {
-    showArchiveConfirm = false;
-    archivingItem = null;
-  }}
->
-  {#if archivingItem !== null}
-    <strong>{archivingItem.title}</strong><br />
-  {/if}
-  {MESSAGES.ARCHIVE_CONFIRM_TEXT}
-</ConfirmModal>
+  <!-- Archive Confirmation -->
+  <ConfirmModal
+    show={showArchiveConfirm && archivingItem !== null}
+    id="work-order-archive-confirm-modal"
+    title={MESSAGES.ARCHIVE_CONFIRM_TITLE}
+    variant="warning"
+    icon="fa-archive"
+    confirmLabel={MESSAGES.BTN_ARCHIVE}
+    {submitting}
+    onconfirm={() => void handleArchive()}
+    oncancel={() => {
+      showArchiveConfirm = false;
+      archivingItem = null;
+    }}
+  >
+    {#if archivingItem !== null}
+      <strong>{archivingItem.title}</strong><br />
+    {/if}
+    {MESSAGES.ARCHIVE_CONFIRM_TEXT}
+  </ConfirmModal>
+{/if}
 
 <style>
   .stats-grid {

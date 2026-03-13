@@ -6,7 +6,7 @@
  */
 import { redirect, error } from '@sveltejs/kit';
 
-import { apiFetch } from '$lib/server/api-fetch';
+import { apiFetch, apiFetchWithPermission } from '$lib/server/api-fetch';
 import { requireAddon } from '$lib/utils/addon-guard';
 
 import type { PageServerLoad } from './$types';
@@ -111,11 +111,28 @@ export const load: PageServerLoad = async ({ cookies, fetch, url, parent }) => {
   const parentData = await parent();
   requireAddon(parentData.activeAddons, 'kvp');
 
-  const suggestion = await apiFetch<KvpSuggestion>(
+  const kvpResult = await apiFetchWithPermission<KvpSuggestion>(
     `/kvp/${idOrUuid}`,
     token,
     fetch,
   );
+
+  if (kvpResult.permissionDenied) {
+    return {
+      permissionDenied: true as const,
+      suggestion: null,
+      comments: EMPTY_COMMENTS,
+      attachments: [] as Attachment[],
+      departments: [] as Department[],
+      teams: [] as Team[],
+      areas: [] as Area[],
+      assets: [] as Asset[],
+      linkedWorkOrders: [] as LinkedWorkOrder[],
+      currentUser: parentData.user,
+    };
+  }
+
+  const suggestion = kvpResult.data;
   if (!suggestion) {
     error(404, 'Vorschlag nicht gefunden');
   }
@@ -126,6 +143,7 @@ export const load: PageServerLoad = async ({ cookies, fetch, url, parent }) => {
   ]);
 
   return {
+    permissionDenied: false as const,
     suggestion,
     ...pageData,
     linkedWorkOrders,

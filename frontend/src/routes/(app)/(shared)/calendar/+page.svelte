@@ -12,6 +12,7 @@
 
   import '@event-calendar/core/index.css';
 
+  import PermissionDenied from '$lib/components/PermissionDenied.svelte';
   import { notificationStore } from '$lib/stores/notification.store.svelte';
   import {
     DEFAULT_HIERARCHY_LABELS,
@@ -66,6 +67,7 @@
   const areas = $derived(data.areas);
   const users = $derived(data.users);
   const currentUser = $derived(data.currentUser);
+  const permissionDenied = $derived<boolean>(data.permissionDenied);
 
   // ==========================================================================
   // UI STATE (local only)
@@ -472,228 +474,232 @@
      MAIN CONTENT
      ======================================================================== -->
 
-<div class="container">
-  <!-- Filter Card -->
-  <div class="card mb-6">
-    <div class="card__header">
-      <h3 class="card__title">
-        <i class="fas fa-filter mr-2"></i>
-        Filter & Anzeige
-      </h3>
-      <div class="mt-6 flex flex-wrap items-end justify-between gap-6">
-        <!-- Level Filter -->
-        <div class="form-field">
-          <span class="form-field__label">Organisationsebene</span>
-          <div
-            class="toggle-group mt-2"
-            id="levelFilter"
-          >
-            {#each filterOptions as option (option.value)}
+{#if permissionDenied}
+  <PermissionDenied addonName="den Kalender" />
+{:else}
+  <div class="container">
+    <!-- Filter Card -->
+    <div class="card mb-6">
+      <div class="card__header">
+        <h3 class="card__title">
+          <i class="fas fa-filter mr-2"></i>
+          Filter & Anzeige
+        </h3>
+        <div class="mt-6 flex flex-wrap items-end justify-between gap-6">
+          <!-- Level Filter -->
+          <div class="form-field">
+            <span class="form-field__label">Organisationsebene</span>
+            <div
+              class="toggle-group mt-2"
+              id="levelFilter"
+            >
+              {#each filterOptions as option (option.value)}
+                <button
+                  type="button"
+                  class="toggle-group__btn"
+                  class:active={calendarState.currentFilter === option.value}
+                  data-value={option.value}
+                  onclick={() => {
+                    handleFilterChange(option.value as FilterLevel);
+                  }}
+                  title={option.title}
+                >
+                  <i class="fas {option.icon}"></i>
+                  {option.label}
+                </button>
+              {/each}
+              <!-- Schichten Toggle -->
               <button
                 type="button"
                 class="toggle-group__btn"
-                class:active={calendarState.currentFilter === option.value}
-                data-value={option.value}
+                class:active={shiftIndicators.showShifts}
+                id="showShiftsToggle"
+                title="Schichten anzeigen/ausblenden"
+                data-action="toggle-shifts"
                 onclick={() => {
-                  handleFilterChange(option.value as FilterLevel);
+                  const isNowActive = shiftIndicators.toggle();
+                  if (isNowActive) {
+                    refetchCalendarEvents();
+                  }
                 }}
-                title={option.title}
               >
-                <i class="fas {option.icon}"></i>
-                {option.label}
+                <i class="fas fa-clock"></i>
+                Schichten
               </button>
-            {/each}
-            <!-- Schichten Toggle -->
-            <button
-              type="button"
-              class="toggle-group__btn"
-              class:active={shiftIndicators.showShifts}
-              id="showShiftsToggle"
-              title="Schichten anzeigen/ausblenden"
-              data-action="toggle-shifts"
-              onclick={() => {
-                const isNowActive = shiftIndicators.toggle();
-                if (isNowActive) {
+              <!-- Urlaub Toggle -->
+              <button
+                type="button"
+                class="toggle-group__btn"
+                class:active={vacationIndicators.showVacations}
+                id="showVacationsToggle"
+                title="Urlaub anzeigen/ausblenden"
+                data-action="toggle-vacations"
+                onclick={() => {
+                  const isNowActive = vacationIndicators.toggle();
+                  if (isNowActive) {
+                    refetchCalendarEvents();
+                  }
+                }}
+              >
+                <i class="fas fa-umbrella-beach"></i>
+                Urlaub
+              </button>
+              <!-- Arbeitsaufträge Toggle -->
+              <button
+                type="button"
+                class="toggle-group__btn"
+                class:active={showWorkOrders}
+                id="showWorkOrdersToggle"
+                title="Arbeitsaufträge anzeigen/ausblenden"
+                data-action="toggle-work-orders"
+                onclick={() => {
+                  toggleWorkOrders();
                   refetchCalendarEvents();
-                }
-              }}
-            >
-              <i class="fas fa-clock"></i>
-              Schichten
-            </button>
-            <!-- Urlaub Toggle -->
-            <button
-              type="button"
-              class="toggle-group__btn"
-              class:active={vacationIndicators.showVacations}
-              id="showVacationsToggle"
-              title="Urlaub anzeigen/ausblenden"
-              data-action="toggle-vacations"
-              onclick={() => {
-                const isNowActive = vacationIndicators.toggle();
-                if (isNowActive) {
+                }}
+              >
+                <i class="fas fa-wrench"></i>
+                Aufträge
+              </button>
+              <!-- TPM Toggle -->
+              <button
+                type="button"
+                class="toggle-group__btn"
+                class:active={showTpmAssignments}
+                id="showTpmToggle"
+                title="TPM-Wartungstermine anzeigen/ausblenden"
+                data-action="toggle-tpm"
+                onclick={() => {
+                  toggleTpmAssignments();
                   refetchCalendarEvents();
-                }
-              }}
-            >
-              <i class="fas fa-umbrella-beach"></i>
-              Urlaub
-            </button>
-            <!-- Arbeitsaufträge Toggle -->
-            <button
-              type="button"
-              class="toggle-group__btn"
-              class:active={showWorkOrders}
-              id="showWorkOrdersToggle"
-              title="Arbeitsaufträge anzeigen/ausblenden"
-              data-action="toggle-work-orders"
-              onclick={() => {
-                toggleWorkOrders();
-                refetchCalendarEvents();
-              }}
-            >
-              <i class="fas fa-wrench"></i>
-              Aufträge
-            </button>
-            <!-- TPM Toggle -->
-            <button
-              type="button"
-              class="toggle-group__btn"
-              class:active={showTpmAssignments}
-              id="showTpmToggle"
-              title="TPM-Wartungstermine anzeigen/ausblenden"
-              data-action="toggle-tpm"
-              onclick={() => {
-                toggleTpmAssignments();
-                refetchCalendarEvents();
-              }}
-            >
-              <i class="fas fa-tools"></i>
-              TPM
-            </button>
+                }}
+              >
+                <i class="fas fa-tools"></i>
+                TPM
+              </button>
+            </div>
           </div>
-        </div>
 
-        <!-- Legend -->
-        <div class="form-field">
-          <span class="form-field__label">Legende</span>
-          <div class="legend-container mt-2">
-            <div class="legend-item">
-              <span class="legend-color legend-company"></span>
-              <span class="legend-label">Firma</span>
-            </div>
-            <div class="legend-item">
-              <span class="legend-color legend-area"></span>
-              <span class="legend-label">{labels.area}</span>
-            </div>
-            <div class="legend-item">
-              <span class="legend-color legend-department"></span>
-              <span class="legend-label">{labels.department}</span>
-            </div>
-            <div class="legend-item">
-              <span class="legend-color legend-team"></span>
-              <span class="legend-label">{labels.team}</span>
-            </div>
-            <div class="legend-item">
-              <span class="legend-color legend-personal"></span>
-              <span class="legend-label">Persoenlich</span>
-            </div>
-            <div class="legend-item">
-              <span class="legend-color legend-vacation"></span>
-              <span class="legend-label">Urlaub</span>
-            </div>
-            <div class="legend-item">
-              <span class="legend-color legend-work-order"></span>
-              <span class="legend-label">Aufträge</span>
-            </div>
-            <div class="legend-item">
-              <span class="legend-color legend-tpm"></span>
-              <span class="legend-label">TPM</span>
+          <!-- Legend -->
+          <div class="form-field">
+            <span class="form-field__label">Legende</span>
+            <div class="legend-container mt-2">
+              <div class="legend-item">
+                <span class="legend-color legend-company"></span>
+                <span class="legend-label">Firma</span>
+              </div>
+              <div class="legend-item">
+                <span class="legend-color legend-area"></span>
+                <span class="legend-label">{labels.area}</span>
+              </div>
+              <div class="legend-item">
+                <span class="legend-color legend-department"></span>
+                <span class="legend-label">{labels.department}</span>
+              </div>
+              <div class="legend-item">
+                <span class="legend-color legend-team"></span>
+                <span class="legend-label">{labels.team}</span>
+              </div>
+              <div class="legend-item">
+                <span class="legend-color legend-personal"></span>
+                <span class="legend-label">Persoenlich</span>
+              </div>
+              <div class="legend-item">
+                <span class="legend-color legend-vacation"></span>
+                <span class="legend-label">Urlaub</span>
+              </div>
+              <div class="legend-item">
+                <span class="legend-color legend-work-order"></span>
+                <span class="legend-label">Aufträge</span>
+              </div>
+              <div class="legend-item">
+                <span class="legend-color legend-tpm"></span>
+                <span class="legend-label">TPM</span>
+              </div>
             </div>
           </div>
         </div>
       </div>
     </div>
+
+    <!-- Calendar Card (extracted into CalendarView) -->
+    <CalendarView
+      bind:this={calendarViewRef}
+      plugins={calendarPlugins}
+      options={calendarOptions}
+      onNewEvent={() => {
+        openEventForm();
+      }}
+      onToggleFullscreen={toggleFullscreen}
+    />
+
+    <!-- Two-column layout for events -->
+    <div class="mb-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
+      <EventList
+        title="Anstehende Termine"
+        icon="fa-clock"
+        subtitle="(Aktueller Monat)"
+        emptyStateMessage="Keine anstehenden Termine in diesem Monat."
+        events={upcomingEvents}
+        {labels}
+        onEventClick={handleEventClick}
+      />
+      <EventList
+        title="Neueste Termine"
+        icon="fa-plus-circle"
+        emptyStateMessage="Keine neuen Termine hinzugefuegt."
+        events={recentlyAddedEvents}
+        {labels}
+        onEventClick={handleEventClick}
+      />
+    </div>
   </div>
 
-  <!-- Calendar Card (extracted into CalendarView) -->
-  <CalendarView
-    bind:this={calendarViewRef}
-    plugins={calendarPlugins}
-    options={calendarOptions}
-    onNewEvent={() => {
-      openEventForm();
-    }}
-    onToggleFullscreen={toggleFullscreen}
-  />
-
-  <!-- Two-column layout for events -->
-  <div class="mb-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
-    <EventList
-      title="Anstehende Termine"
-      icon="fa-clock"
-      subtitle="(Aktueller Monat)"
-      emptyStateMessage="Keine anstehenden Termine in diesem Monat."
-      events={upcomingEvents}
-      {labels}
-      onEventClick={handleEventClick}
-    />
-    <EventList
-      title="Neueste Termine"
-      icon="fa-plus-circle"
-      emptyStateMessage="Keine neuen Termine hinzugefuegt."
-      events={recentlyAddedEvents}
-      {labels}
-      onEventClick={handleEventClick}
-    />
-  </div>
-</div>
-
-<!-- ========================================================================
+  <!-- ========================================================================
      MODALS
      ======================================================================== -->
 
-{#if calendarState.showDetailModal && calendarState.viewingEvent}
-  <EventDetailModal
-    event={calendarState.viewingEvent}
-    canEdit={calendarState.canEditEvent(calendarState.viewingEvent)}
-    canDelete={calendarState.canDeleteEvent(calendarState.viewingEvent)}
-    isPast={calendarState.isEventPast(calendarState.viewingEvent)}
-    {labels}
-    {areas}
-    {departments}
-    {teams}
-    onclose={() => {
-      calendarState.closeDetailModal();
-    }}
-    onedit={openEditForm}
-    ondelete={handleDeleteClick}
-  />
-{/if}
+  {#if calendarState.showDetailModal && calendarState.viewingEvent}
+    <EventDetailModal
+      event={calendarState.viewingEvent}
+      canEdit={calendarState.canEditEvent(calendarState.viewingEvent)}
+      canDelete={calendarState.canDeleteEvent(calendarState.viewingEvent)}
+      isPast={calendarState.isEventPast(calendarState.viewingEvent)}
+      {labels}
+      {areas}
+      {departments}
+      {teams}
+      onclose={() => {
+        calendarState.closeDetailModal();
+      }}
+      onedit={openEditForm}
+      ondelete={handleDeleteClick}
+    />
+  {/if}
 
-{#if calendarState.showEventModal}
-  <EventFormModal
-    bind:formData
-    editingEvent={calendarState.editingEvent}
-    isAdmin={calendarState.isAdmin}
-    {labels}
-    departments={calendarState.departments}
-    teams={calendarState.teams}
-    areas={calendarState.areas}
-    onclose={() => {
-      calendarState.closeEventModal();
-    }}
-    onsave={handleSaveEvent}
-  />
-{/if}
+  {#if calendarState.showEventModal}
+    <EventFormModal
+      bind:formData
+      editingEvent={calendarState.editingEvent}
+      isAdmin={calendarState.isAdmin}
+      {labels}
+      departments={calendarState.departments}
+      teams={calendarState.teams}
+      areas={calendarState.areas}
+      onclose={() => {
+        calendarState.closeEventModal();
+      }}
+      onsave={handleSaveEvent}
+    />
+  {/if}
 
-{#if calendarState.showDeleteModal}
-  <DeleteConfirmModal
-    onclose={() => {
-      calendarState.closeDeleteModal();
-    }}
-    onconfirm={handleConfirmDelete}
-  />
+  {#if calendarState.showDeleteModal}
+    <DeleteConfirmModal
+      onclose={() => {
+        calendarState.closeDeleteModal();
+      }}
+      onconfirm={handleConfirmDelete}
+    />
+  {/if}
 {/if}
 
 <style>

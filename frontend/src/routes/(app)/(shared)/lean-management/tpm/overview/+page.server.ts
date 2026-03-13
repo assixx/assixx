@@ -7,7 +7,7 @@
  */
 import { redirect } from '@sveltejs/kit';
 
-import { apiFetch } from '$lib/server/api-fetch';
+import { apiFetch, apiFetchWithPermission } from '$lib/server/api-fetch';
 import { requireAddon } from '$lib/utils/addon-guard';
 
 import type { PageServerLoad } from './$types';
@@ -63,13 +63,21 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
   const parentData = await parent();
   requireAddon(parentData.activeAddons, 'tpm');
 
-  // Phase 1: Fetch plans + colors in parallel
-  const [plansRaw, colorsData] = await Promise.all([
-    apiFetch<unknown>('/tpm/plans?page=1&limit=50', token, fetch),
+  // Phase 1: Fetch plans (permission-aware) + colors in parallel
+  const [plansResult, colorsData] = await Promise.all([
+    apiFetchWithPermission<unknown>('/tpm/plans?page=1&limit=50', token, fetch),
     apiFetch<TpmColorConfigEntry[]>('/tpm/config/colors', token, fetch),
   ]);
 
-  const plans = extractPlans(plansRaw);
+  if (plansResult.permissionDenied) {
+    return {
+      permissionDenied: true as const,
+      assets: [] as AssetWithTpmStatus[],
+      colors: [] as TpmColorConfigEntry[],
+    };
+  }
+
+  const plans = extractPlans(plansResult.data);
   const colors = Array.isArray(colorsData) ? colorsData : [];
 
   // Phase 2: Fetch board data (cards) for each plan in parallel
@@ -94,5 +102,5 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
     },
   );
 
-  return { assets, colors };
+  return { permissionDenied: false as const, assets, colors };
 };

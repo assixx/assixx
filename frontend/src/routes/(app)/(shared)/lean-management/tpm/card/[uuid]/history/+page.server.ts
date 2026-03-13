@@ -6,7 +6,7 @@
  */
 import { redirect } from '@sveltejs/kit';
 
-import { apiFetch } from '$lib/server/api-fetch';
+import { apiFetch, apiFetchWithPermission } from '$lib/server/api-fetch';
 import { requireAddon } from '$lib/utils/addon-guard';
 
 import type { PageServerLoad } from './$types';
@@ -48,8 +48,8 @@ export const load: PageServerLoad = async ({
 
   const { uuid: cardUuid } = params;
 
-  const [card, executionsRaw] = await Promise.all([
-    apiFetch<TpmCard>(`/tpm/cards/${cardUuid}`, token, fetch),
+  const [cardResult, executionsRaw] = await Promise.all([
+    apiFetchWithPermission<TpmCard>(`/tpm/cards/${cardUuid}`, token, fetch),
     apiFetch<unknown>(
       `/tpm/cards/${cardUuid}/executions?page=1&limit=50`,
       token,
@@ -57,9 +57,21 @@ export const load: PageServerLoad = async ({
     ),
   ]);
 
+  if (cardResult.permissionDenied) {
+    return {
+      permissionDenied: true as const,
+      card: null,
+      executions: [] as TpmExecution[],
+      total: 0,
+      error: null,
+    };
+  }
+
+  const card = cardResult.data;
   const { executions, total } = extractExecutions(executionsRaw);
 
   return {
+    permissionDenied: false as const,
     card,
     executions,
     total,

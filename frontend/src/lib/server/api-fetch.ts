@@ -45,6 +45,56 @@ export function extractResponseData<T>(json: ServerApiResponse<T>): T | null {
  * Returns null on any error (network, HTTP status, parse failure).
  * All errors are logged with endpoint context.
  */
+/** Result of a permission-aware API fetch */
+export interface PermissionCheckResult<T> {
+  data: T | null;
+  permissionDenied: boolean;
+}
+
+/**
+ * Authenticated GET fetch that distinguishes 403 from other errors.
+ *
+ * Use this for the PRIMARY addon-gated endpoint in a page's load function.
+ * Returns `{ permissionDenied: true }` on 403, so the page can show
+ * "Keine Berechtigung" instead of misleading "no data" empty states.
+ */
+export async function apiFetchWithPermission<T>(
+  endpoint: string,
+  token: string,
+  fetchFn: typeof fetch,
+): Promise<PermissionCheckResult<T>> {
+  try {
+    const response = await fetchFn(`${API_BASE}${endpoint}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (response.status === 403) {
+      log.debug({ endpoint }, 'Permission denied (403)');
+      return { data: null, permissionDenied: true };
+    }
+
+    if (!response.ok) {
+      if (response.status >= 500) {
+        log.error({ status: response.status, endpoint }, 'API server error');
+      } else if (response.status === 401) {
+        log.debug({ status: response.status, endpoint }, 'API auth denied');
+      } else {
+        log.warn({ status: response.status, endpoint }, 'API client error');
+      }
+      return { data: null, permissionDenied: false };
+    }
+
+    const json = (await response.json()) as ServerApiResponse<T>;
+    return { data: extractResponseData(json), permissionDenied: false };
+  } catch (err: unknown) {
+    log.error({ err, endpoint }, 'Fetch error');
+    return { data: null, permissionDenied: false };
+  }
+}
+
 export async function apiFetch<T>(
   endpoint: string,
   token: string,

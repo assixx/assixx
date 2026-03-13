@@ -6,7 +6,7 @@
  */
 import { redirect } from '@sveltejs/kit';
 
-import { apiFetch } from '$lib/server/api-fetch';
+import { apiFetchWithPermission } from '$lib/server/api-fetch';
 import { requireAddon } from '$lib/utils/addon-guard';
 
 import type { PageServerLoad } from './$types';
@@ -38,20 +38,31 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
   requireAddon(parentData.activeAddons, 'chat');
   const user = parentData.user;
 
-  // Load conversations
-  const conversationsData = await apiFetch<Conversation[]>(
+  // Load conversations (apiFetchWithPermission to detect 403 vs empty data)
+  const conversationsResult = await apiFetchWithPermission<Conversation[]>(
     '/chat/conversations',
     token,
     fetch,
   );
 
+  if (conversationsResult.permissionDenied) {
+    return {
+      permissionDenied: true as const,
+      conversations: [] as Conversation[],
+      currentUser: user,
+    };
+  }
+
   // Unwrap (handles {conversations: [...]}) + normalize (ensure participants array exists)
-  const conversations = unwrapConversations(conversationsData).map((conv) => ({
-    ...conv,
-    participants: Array.isArray(conv.participants) ? conv.participants : [],
-  }));
+  const conversations = unwrapConversations(conversationsResult.data).map(
+    (conv) => ({
+      ...conv,
+      participants: Array.isArray(conv.participants) ? conv.participants : [],
+    }),
+  );
 
   return {
+    permissionDenied: false as const,
     conversations,
     currentUser: user,
   };

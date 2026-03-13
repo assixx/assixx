@@ -6,7 +6,7 @@
  */
 import { error, redirect } from '@sveltejs/kit';
 
-import { apiFetch } from '$lib/server/api-fetch';
+import { apiFetch, apiFetchWithPermission } from '$lib/server/api-fetch';
 import { requireAddon } from '$lib/utils/addon-guard';
 
 import type { PageServerLoad } from './$types';
@@ -65,8 +65,8 @@ export const load: PageServerLoad = async ({
 
   const { uuid } = params;
 
-  const [workOrder, commentsData, photosData] = await Promise.all([
-    apiFetch<WorkOrder>(`/work-orders/${uuid}`, token, fetch),
+  const [workOrderResult, commentsData, photosData] = await Promise.all([
+    apiFetchWithPermission<WorkOrder>(`/work-orders/${uuid}`, token, fetch),
     apiFetch<PaginatedResponse<WorkOrderComment>>(
       `/work-orders/${uuid}/comments?page=1&limit=50`,
       token,
@@ -74,6 +74,20 @@ export const load: PageServerLoad = async ({
     ),
     apiFetch<WorkOrderPhoto[]>(`/work-orders/${uuid}/photos`, token, fetch),
   ]);
+
+  if (workOrderResult.permissionDenied) {
+    return {
+      permissionDenied: true as const,
+      workOrder: null,
+      comments: buildComments(null),
+      photos: [] as WorkOrderPhoto[],
+      sourcePhotos: [] as SourcePhoto[],
+      userRole: 'employee' as const,
+      userId: 0,
+    };
+  }
+
+  const workOrder = workOrderResult.data;
 
   if (workOrder === null) {
     error(404, 'Arbeitsauftrag nicht gefunden');
@@ -83,6 +97,7 @@ export const load: PageServerLoad = async ({
   const user = parentData.user;
 
   return {
+    permissionDenied: false as const,
     workOrder,
     comments: buildComments(commentsData),
     photos: Array.isArray(photosData) ? photosData : [],

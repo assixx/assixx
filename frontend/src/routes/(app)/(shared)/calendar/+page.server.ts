@@ -7,7 +7,7 @@
  */
 import { redirect } from '@sveltejs/kit';
 
-import { apiFetch } from '$lib/server/api-fetch';
+import { apiFetch, apiFetchWithPermission } from '$lib/server/api-fetch';
 import { requireAddon } from '$lib/utils/addon-guard';
 
 import type { PageServerLoad } from './$types';
@@ -46,15 +46,20 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
 
   // Parallel fetch: upcoming events + organization data
   // Note: /users only for admin/root (employees get 403)
+  // apiFetchWithPermission for /calendar/dashboard to detect 403 (permission denied vs empty data)
   const [
-    upcomingEventsData,
+    dashboardResult,
     recentlyAddedData,
     departmentsData,
     teamsData,
     areasData,
     usersData,
   ] = await Promise.all([
-    apiFetch<CalendarEvent[]>('/calendar/dashboard', token, fetch),
+    apiFetchWithPermission<CalendarEvent[]>(
+      '/calendar/dashboard',
+      token,
+      fetch,
+    ),
     apiFetch<CalendarEvent[]>('/calendar/recently-added', token, fetch),
     apiFetch<Department[]>('/departments', token, fetch),
     apiFetch<Team[]>('/teams', token, fetch),
@@ -64,8 +69,22 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
     : Promise.resolve(null),
   ]);
 
+  if (dashboardResult.permissionDenied) {
+    return {
+      permissionDenied: true as const,
+      upcomingEvents: [] as CalendarEvent[],
+      recentlyAddedEvents: [] as CalendarEvent[],
+      departments: [] as Department[],
+      teams: [] as Team[],
+      areas: [] as Area[],
+      users: [] as User[],
+      currentUser: parentData.user,
+    };
+  }
+
   return {
-    upcomingEvents: unwrapEvents(upcomingEventsData),
+    permissionDenied: false as const,
+    upcomingEvents: unwrapEvents(dashboardResult.data),
     recentlyAddedEvents: unwrapEvents(recentlyAddedData),
     departments: toArray(departmentsData),
     teams: toArray(teamsData),

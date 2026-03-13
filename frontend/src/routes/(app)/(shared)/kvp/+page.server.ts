@@ -6,7 +6,7 @@
  */
 import { redirect } from '@sveltejs/kit';
 
-import { apiFetch } from '$lib/server/api-fetch';
+import { apiFetch, apiFetchWithPermission } from '$lib/server/api-fetch';
 import { requireAddon } from '$lib/utils/addon-guard';
 
 import type { PageServerLoad } from './$types';
@@ -75,38 +75,34 @@ async function fetchKvpData(
   fetchFn: typeof fetch,
   isAdmin: boolean,
 ) {
-  const fetchPromises: Promise<
-    | KvpCategory[]
-    | Department[]
-    | SuggestionsApiResponse
-    | KvpStats
-    | UserTeamWithAssets[]
-    | null
-  >[] = [
-    apiFetch<KvpCategory[]>('/kvp/categories', token, fetchFn),
-    apiFetch<Department[]>('/departments', token, fetchFn),
-    apiFetch<SuggestionsApiResponse>('/kvp', token, fetchFn),
-    apiFetch<UserTeamWithAssets[]>('/kvp/my-organizations', token, fetchFn),
-  ];
+  // apiFetchWithPermission for /kvp to detect 403 (permission denied vs empty data)
+  const [kvpResult, categoriesData, departmentsData, orgsData, statsData] =
+    await Promise.all([
+      apiFetchWithPermission<SuggestionsApiResponse>('/kvp', token, fetchFn),
+      apiFetch<KvpCategory[]>('/kvp/categories', token, fetchFn),
+      apiFetch<Department[]>('/departments', token, fetchFn),
+      apiFetch<UserTeamWithAssets[]>('/kvp/my-organizations', token, fetchFn),
+      isAdmin ?
+        apiFetch<KvpStats>('/kvp/dashboard/stats', token, fetchFn)
+      : Promise.resolve(null),
+    ]);
 
-  if (isAdmin) {
-    fetchPromises.push(
-      apiFetch<KvpStats>('/kvp/dashboard/stats', token, fetchFn),
-    );
+  if (kvpResult.permissionDenied) {
+    return {
+      permissionDenied: true as const,
+      categories: [] as KvpCategory[],
+      departments: Array.isArray(departmentsData) ? departmentsData : [],
+      suggestions: [] as KvpSuggestion[],
+      userOrganizations: [] as UserTeamWithAssets[],
+      statistics: null,
+    };
   }
 
-  const results = await Promise.all(fetchPromises);
-
-  const categoriesData = results[0] as KvpCategory[] | null;
-  const departmentsData = results[1] as Department[] | null;
-  const suggestionsData = results[2] as SuggestionsApiResponse | null;
-  const orgsData = results[3] as UserTeamWithAssets[] | null;
-  const statsData = isAdmin ? (results[4] as KvpStats | null) : null;
-
   return {
+    permissionDenied: false as const,
     categories: Array.isArray(categoriesData) ? categoriesData : [],
     departments: Array.isArray(departmentsData) ? departmentsData : [],
-    suggestions: parseSuggestionsResponse(suggestionsData),
+    suggestions: parseSuggestionsResponse(kvpResult.data),
     userOrganizations: Array.isArray(orgsData) ? orgsData : [],
     statistics: statsData,
   };

@@ -9,6 +9,7 @@
   import { invalidateAll } from '$app/navigation';
 
   import { onClickOutsideDropdown } from '$lib/actions/click-outside';
+  import PermissionDenied from '$lib/components/PermissionDenied.svelte';
   import { notificationStore } from '$lib/stores/notification.store.svelte';
   import { showSuccessAlert, showErrorAlert } from '$lib/utils';
   import { createLogger } from '$lib/utils/logger';
@@ -46,6 +47,7 @@
 
   const { data }: { data: PageData } = $props();
 
+  const permissionDenied = $derived<boolean>(data.permissionDenied);
   const myRequests = $derived(data.myRequests);
   const incomingRequests = $derived(data.incomingRequests);
   const balance = $derived(data.balance);
@@ -440,334 +442,339 @@
 
 <svelte:window onkeydown={handleKeyDown} />
 
-<div class="container">
-  <!-- Header -->
-  <div class="card mb-6">
-    <div class="card__header">
-      <div class="flex items-center justify-between">
-        <h2 class="card__title">
-          <i class="fas fa-umbrella-beach mr-2"></i>
-          Urlaubsverwaltung
-        </h2>
-        <button
-          type="button"
-          class="btn btn-primary"
-          onclick={() => {
-            showCreateModal = true;
-          }}
-        >
-          <i class="fas fa-plus mr-1"></i>
-          Neuer Antrag
-        </button>
+{#if permissionDenied}
+  <PermissionDenied addonName="die Urlaubsverwaltung" />
+{:else}
+  <div class="container">
+    <!-- Header -->
+    <div class="card mb-6">
+      <div class="card__header">
+        <div class="flex items-center justify-between">
+          <h2 class="card__title">
+            <i class="fas fa-umbrella-beach mr-2"></i>
+            Urlaubsverwaltung
+          </h2>
+          <button
+            type="button"
+            class="btn btn-primary"
+            onclick={() => {
+              showCreateModal = true;
+            }}
+          >
+            <i class="fas fa-plus mr-1"></i>
+            Neuer Antrag
+          </button>
+        </div>
       </div>
     </div>
-  </div>
 
-  <!-- Balance -->
-  {#if balance !== null}
+    <!-- Balance -->
+    {#if balance !== null}
+      <div class="card mb-6">
+        <div class="card__header">
+          <h3 class="card__title">
+            <i class="fas fa-chart-pie mr-2"></i>
+            Mein Urlaubskonto ({balance.year})
+          </h3>
+        </div>
+        <div class="card__body">
+          <div class="balance-summary">
+            <div class="balance-summary__bar">
+              <div class="mb-2 flex items-center justify-between">
+                <span
+                  class="text-muted"
+                  style="font-size: 0.875rem;"
+                >
+                  {balance.remainingDays} von {balance.availableDays} Tagen verbleibend
+                </span>
+                <span
+                  style="font-size: 0.875rem; font-weight: 600; color: {balanceColor};"
+                >
+                  {balancePercent}%
+                </span>
+              </div>
+              <div class="progress-bar">
+                <div
+                  class="progress-bar__fill"
+                  style="width: {balancePercent}%; background: {balanceColor};"
+                ></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    {:else}
+      <div class="card mb-6">
+        <div class="card__body">
+          <span class="text-muted">Kein Urlaubskonto vorhanden</span>
+        </div>
+      </div>
+    {/if}
+
+    <!-- Filter Card (same pattern as KVP) -->
     <div class="card mb-6">
       <div class="card__header">
         <h3 class="card__title">
-          <i class="fas fa-chart-pie mr-2"></i>
-          Mein Urlaubskonto ({balance.year})
+          <i class="fas fa-filter mr-2"></i>
+          Filter & Anzeige
+        </h3>
+        <div class="vacation-filter-row mt-6">
+          <!-- Tab Toggle -->
+          <div class="form-field">
+            <span class="form-field__label">Ansicht</span>
+            <div class="toggle-group mt-2">
+              {#each VIEW_TABS as tab (tab.value)}
+                {#if tab.value !== 'incoming' || canApprove}
+                  <button
+                    type="button"
+                    class="toggle-group__btn"
+                    class:active={activeTab === tab.value}
+                    onclick={() => {
+                      handleTabChange(tab.value);
+                    }}
+                  >
+                    {tab.label}
+                  </button>
+                {/if}
+              {/each}
+            </div>
+          </div>
+
+          <!-- Status Dropdown -->
+          <div class="form-field">
+            <span class="form-field__label">Status</span>
+            <div
+              class="dropdown mt-2"
+              data-dropdown="status"
+            >
+              <button
+                type="button"
+                class="dropdown__trigger"
+                class:active={activeDropdown === 'status'}
+                onclick={() => {
+                  toggleDropdown('status');
+                }}
+              >
+                <span>{statusDisplayText}</span>
+                <i class="fas fa-chevron-down"></i>
+              </button>
+              <div
+                class="dropdown__menu"
+                class:active={activeDropdown === 'status'}
+              >
+                {#each STATUS_FILTER_OPTIONS as option (option.value)}
+                  <button
+                    type="button"
+                    class="dropdown__option"
+                    data-action="select-status"
+                    data-value={option.value}
+                    onclick={() => {
+                      handleStatusSelect(option.value, option.label);
+                    }}
+                  >
+                    {option.label}
+                  </button>
+                {/each}
+              </div>
+            </div>
+          </div>
+
+          <!-- Year Dropdown -->
+          <div class="form-field">
+            <span class="form-field__label">Jahr</span>
+            <div
+              class="dropdown mt-2"
+              data-dropdown="year"
+            >
+              <button
+                type="button"
+                class="dropdown__trigger"
+                class:active={activeDropdown === 'year'}
+                onclick={() => {
+                  toggleDropdown('year');
+                }}
+              >
+                <span>{yearDisplayText}</span>
+                <i class="fas fa-chevron-down"></i>
+              </button>
+              <div
+                class="dropdown__menu"
+                class:active={activeDropdown === 'year'}
+              >
+                {#each yearOptions as year (year)}
+                  <button
+                    type="button"
+                    class="dropdown__option"
+                    data-action="select-year"
+                    data-value={String(year)}
+                    onclick={() => {
+                      handleYearSelect(year);
+                    }}
+                  >
+                    {year}
+                  </button>
+                {/each}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Request List -->
+    <div class="card mb-6">
+      <div class="card__header">
+        <h3 class="card__title">
+          {#if activeTab === 'my-requests'}
+            <i class="fas fa-list mr-2"></i>
+            Meine Anträge
+            <span class="text-muted ml-2"
+              >({vacationState.myRequests.total})</span
+            >
+          {:else}
+            <i class="fas fa-inbox mr-2"></i>
+            Eingehende Anträge
+            <span class="text-muted ml-2"
+              >({vacationState.incomingRequests.total})</span
+            >
+          {/if}
         </h3>
       </div>
       <div class="card__body">
-        <div class="balance-summary">
-          <div class="balance-summary__bar">
-            <div class="mb-2 flex items-center justify-between">
-              <span
-                class="text-muted"
-                style="font-size: 0.875rem;"
-              >
-                {balance.remainingDays} von {balance.availableDays} Tagen verbleibend
-              </span>
-              <span
-                style="font-size: 0.875rem; font-weight: 600; color: {balanceColor};"
-              >
-                {balancePercent}%
-              </span>
-            </div>
-            <div class="progress-bar">
-              <div
-                class="progress-bar__fill"
-                style="width: {balancePercent}%; background: {balanceColor};"
-              ></div>
-            </div>
+        {#if isLoadingMore}
+          <div class="spinner-container spinner-container--sm">
+            <div class="spinner-ring spinner-ring--sm"></div>
           </div>
-        </div>
-      </div>
-    </div>
-  {:else}
-    <div class="card mb-6">
-      <div class="card__body">
-        <span class="text-muted">Kein Urlaubskonto vorhanden</span>
-      </div>
-    </div>
-  {/if}
-
-  <!-- Filter Card (same pattern as KVP) -->
-  <div class="card mb-6">
-    <div class="card__header">
-      <h3 class="card__title">
-        <i class="fas fa-filter mr-2"></i>
-        Filter & Anzeige
-      </h3>
-      <div class="vacation-filter-row mt-6">
-        <!-- Tab Toggle -->
-        <div class="form-field">
-          <span class="form-field__label">Ansicht</span>
-          <div class="toggle-group mt-2">
-            {#each VIEW_TABS as tab (tab.value)}
-              {#if tab.value !== 'incoming' || canApprove}
+        {:else if activeTab === 'my-requests'}
+          {#if vacationState.myRequests.data.length === 0}
+            <div class="empty-state empty-state--in-card">
+              <div class="empty-state__icon">
+                <i class="fas fa-umbrella-beach"></i>
+              </div>
+              <h3 class="empty-state__title">Keine Urlaubsanträge vorhanden</h3>
+              <p class="empty-state__description">
+                Erstellen Sie Ihren ersten Urlaubsantrag.
+              </p>
+              <div class="empty-state__actions">
                 <button
                   type="button"
-                  class="toggle-group__btn"
-                  class:active={activeTab === tab.value}
+                  class="btn btn-primary"
                   onclick={() => {
-                    handleTabChange(tab.value);
+                    showCreateModal = true;
                   }}
                 >
-                  {tab.label}
+                  <i class="fas fa-plus mr-1"></i>
+                  Ersten Antrag erstellen
                 </button>
-              {/if}
-            {/each}
-          </div>
-        </div>
-
-        <!-- Status Dropdown -->
-        <div class="form-field">
-          <span class="form-field__label">Status</span>
-          <div
-            class="dropdown mt-2"
-            data-dropdown="status"
-          >
-            <button
-              type="button"
-              class="dropdown__trigger"
-              class:active={activeDropdown === 'status'}
-              onclick={() => {
-                toggleDropdown('status');
-              }}
-            >
-              <span>{statusDisplayText}</span>
-              <i class="fas fa-chevron-down"></i>
-            </button>
-            <div
-              class="dropdown__menu"
-              class:active={activeDropdown === 'status'}
-            >
-              {#each STATUS_FILTER_OPTIONS as option (option.value)}
-                <button
-                  type="button"
-                  class="dropdown__option"
-                  data-action="select-status"
-                  data-value={option.value}
-                  onclick={() => {
-                    handleStatusSelect(option.value, option.label);
-                  }}
-                >
-                  {option.label}
-                </button>
+              </div>
+            </div>
+          {:else}
+            <div class="request-list">
+              {#each vacationState.myRequests.data as request (request.id)}
+                <RequestCard
+                  {request}
+                  isNew={unreadRequestIds.has(request.id)}
+                  onDetail={handleDetail}
+                  onEdit={handleEdit}
+                  onWithdraw={handleWithdraw}
+                />
               {/each}
             </div>
-          </div>
-        </div>
-
-        <!-- Year Dropdown -->
-        <div class="form-field">
-          <span class="form-field__label">Jahr</span>
-          <div
-            class="dropdown mt-2"
-            data-dropdown="year"
-          >
-            <button
-              type="button"
-              class="dropdown__trigger"
-              class:active={activeDropdown === 'year'}
-              onclick={() => {
-                toggleDropdown('year');
-              }}
-            >
-              <span>{yearDisplayText}</span>
-              <i class="fas fa-chevron-down"></i>
-            </button>
-            <div
-              class="dropdown__menu"
-              class:active={activeDropdown === 'year'}
-            >
-              {#each yearOptions as year (year)}
-                <button
-                  type="button"
-                  class="dropdown__option"
-                  data-action="select-year"
-                  data-value={String(year)}
-                  onclick={() => {
-                    handleYearSelect(year);
-                  }}
-                >
-                  {year}
-                </button>
-              {/each}
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Request List -->
-  <div class="card mb-6">
-    <div class="card__header">
-      <h3 class="card__title">
-        {#if activeTab === 'my-requests'}
-          <i class="fas fa-list mr-2"></i>
-          Meine Anträge
-          <span class="text-muted ml-2">({vacationState.myRequests.total})</span
-          >
-        {:else}
-          <i class="fas fa-inbox mr-2"></i>
-          Eingehende Anträge
-          <span class="text-muted ml-2"
-            >({vacationState.incomingRequests.total})</span
-          >
-        {/if}
-      </h3>
-    </div>
-    <div class="card__body">
-      {#if isLoadingMore}
-        <div class="spinner-container spinner-container--sm">
-          <div class="spinner-ring spinner-ring--sm"></div>
-        </div>
-      {:else if activeTab === 'my-requests'}
-        {#if vacationState.myRequests.data.length === 0}
+          {/if}
+        {:else if vacationState.incomingRequests.data.length === 0}
           <div class="empty-state empty-state--in-card">
             <div class="empty-state__icon">
-              <i class="fas fa-umbrella-beach"></i>
+              <i class="fas fa-inbox"></i>
             </div>
-            <h3 class="empty-state__title">Keine Urlaubsanträge vorhanden</h3>
+            <h3 class="empty-state__title">Keine eingehenden Anträge</h3>
             <p class="empty-state__description">
-              Erstellen Sie Ihren ersten Urlaubsantrag.
+              Derzeit liegen keine Urlaubsanträge zur Bearbeitung vor.
             </p>
-            <div class="empty-state__actions">
-              <button
-                type="button"
-                class="btn btn-primary"
-                onclick={() => {
-                  showCreateModal = true;
-                }}
-              >
-                <i class="fas fa-plus mr-1"></i>
-                Ersten Antrag erstellen
-              </button>
-            </div>
           </div>
         {:else}
           <div class="request-list">
-            {#each vacationState.myRequests.data as request (request.id)}
-              <RequestCard
+            {#each vacationState.incomingRequests.data as request (request.id)}
+              <IncomingRequestCard
                 {request}
                 isNew={unreadRequestIds.has(request.id)}
+                onApprove={(r: VacationRequest) => {
+                  openRespondModal(r, 'approve');
+                }}
+                onDeny={(r: VacationRequest) => {
+                  openRespondModal(r, 'deny');
+                }}
                 onDetail={handleDetail}
-                onEdit={handleEdit}
-                onWithdraw={handleWithdraw}
+                onRevoke={openRevokeModal}
               />
             {/each}
           </div>
         {/if}
-      {:else if vacationState.incomingRequests.data.length === 0}
-        <div class="empty-state empty-state--in-card">
-          <div class="empty-state__icon">
-            <i class="fas fa-inbox"></i>
-          </div>
-          <h3 class="empty-state__title">Keine eingehenden Anträge</h3>
-          <p class="empty-state__description">
-            Derzeit liegen keine Urlaubsanträge zur Bearbeitung vor.
-          </p>
-        </div>
-      {:else}
-        <div class="request-list">
-          {#each vacationState.incomingRequests.data as request (request.id)}
-            <IncomingRequestCard
-              {request}
-              isNew={unreadRequestIds.has(request.id)}
-              onApprove={(r: VacationRequest) => {
-                openRespondModal(r, 'approve');
-              }}
-              onDeny={(r: VacationRequest) => {
-                openRespondModal(r, 'deny');
-              }}
-              onDetail={handleDetail}
-              onRevoke={openRevokeModal}
-            />
-          {/each}
-        </div>
-      {/if}
 
-      <!-- Pagination -->
-      {#if hasMorePages}
-        <div class="vacation-load-more">
-          <button
-            type="button"
-            class="btn btn-cancel btn"
-            onclick={loadNextPage}
-            disabled={isLoadingMore}
-          >
-            Weitere laden ({currentList.page}/{currentList.totalPages})
-          </button>
-        </div>
-      {/if}
+        <!-- Pagination -->
+        {#if hasMorePages}
+          <div class="vacation-load-more">
+            <button
+              type="button"
+              class="btn btn-cancel btn"
+              onclick={loadNextPage}
+              disabled={isLoadingMore}
+            >
+              Weitere laden ({currentList.page}/{currentList.totalPages})
+            </button>
+          </div>
+        {/if}
+      </div>
     </div>
   </div>
-</div>
 
-{#if showCreateModal}
-  <CreateModal
-    onclose={() => {
-      showCreateModal = false;
-    }}
-    onsubmit={handleCreateSubmit}
-    onCapacityCheck={handleCapacityCheck}
-  />
-{/if}
+  {#if showCreateModal}
+    <CreateModal
+      onclose={() => {
+        showCreateModal = false;
+      }}
+      onsubmit={handleCreateSubmit}
+      onCapacityCheck={handleCapacityCheck}
+    />
+  {/if}
 
-{#if vacationState.showDetailModal && vacationState.selectedRequest !== null}
-  <DetailModal
-    request={vacationState.selectedRequest}
-    {canApprove}
-    onclose={() => {
-      vacationState.closeDetailModal();
-    }}
-  />
-{/if}
+  {#if vacationState.showDetailModal && vacationState.selectedRequest !== null}
+    <DetailModal
+      request={vacationState.selectedRequest}
+      {canApprove}
+      onclose={() => {
+        vacationState.closeDetailModal();
+      }}
+    />
+  {/if}
 
-{#if vacationState.showEditModal && vacationState.selectedRequest !== null}
-  <EditModal
-    request={vacationState.selectedRequest}
-    initialCapacity={editCapacity}
-    onclose={() => {
-      vacationState.closeEditModal();
-    }}
-    onsubmit={handleEditSubmit}
-    onCapacityCheck={handleCapacityCheck}
-  />
-{/if}
+  {#if vacationState.showEditModal && vacationState.selectedRequest !== null}
+    <EditModal
+      request={vacationState.selectedRequest}
+      initialCapacity={editCapacity}
+      onclose={() => {
+        vacationState.closeEditModal();
+      }}
+      onsubmit={handleEditSubmit}
+      onCapacityCheck={handleCapacityCheck}
+    />
+  {/if}
 
-{#if showRespondModal && respondingRequest !== null}
-  <RespondModal
-    request={respondingRequest}
-    action={respondAction}
-    onclose={closeRespondModal}
-    onsubmit={handleRespondSubmit}
-  />
-{/if}
+  {#if showRespondModal && respondingRequest !== null}
+    <RespondModal
+      request={respondingRequest}
+      action={respondAction}
+      onclose={closeRespondModal}
+      onsubmit={handleRespondSubmit}
+    />
+  {/if}
 
-{#if showRevokeModal && revokingRequest !== null}
-  <RevokeModal
-    request={revokingRequest}
-    onclose={closeRevokeModal}
-    onsubmit={handleRevokeSubmit}
-  />
+  {#if showRevokeModal && revokingRequest !== null}
+    <RevokeModal
+      request={revokingRequest}
+      onclose={closeRevokeModal}
+      onsubmit={handleRevokeSubmit}
+    />
+  {/if}
 {/if}
 
 <style>

@@ -13,6 +13,7 @@
   import { page } from '$app/stores';
 
   // API Client (for mutations only)
+  import PermissionDenied from '$lib/components/PermissionDenied.svelte';
   import { notificationStore } from '$lib/stores/notification.store.svelte';
   import { showErrorAlert, showSuccessAlert } from '$lib/stores/toast';
   import {
@@ -53,6 +54,9 @@
       | HierarchyLabels
       | undefined) ?? DEFAULT_HIERARCHY_LABELS,
   );
+
+  // Permission check
+  const permissionDenied = $derived<boolean>(data.permissionDenied);
 
   // SSR data as derived - updates automatically when data changes
   const entries = $derived(data.entries);
@@ -468,187 +472,194 @@
 <svelte:window onkeydown={handleKeyDown} />
 <svelte:document onfullscreenchange={handleFullscreenChange} />
 
-<div class="container">
-  <!-- Filter Card -->
-  <BlackboardFilterCard
-    {searchQuery}
-    {levelFilter}
-    {sortBy}
-    {sortDir}
-    {sortLabel}
-    expanded={filterExpanded}
-    {labels}
-    onsearchchange={handleSearch}
-    onlevelchange={setLevelFilter}
-    onsortchange={setSort}
-    ontoggle={toggleFilter}
-  />
+{#if permissionDenied}
+  <PermissionDenied addonName="das Schwarze Brett" />
+{:else}
+  <div class="container">
+    <!-- Filter Card -->
+    <BlackboardFilterCard
+      {searchQuery}
+      {levelFilter}
+      {sortBy}
+      {sortDir}
+      {sortLabel}
+      expanded={filterExpanded}
+      {labels}
+      onsearchchange={handleSearch}
+      onlevelchange={setLevelFilter}
+      onsortchange={setSort}
+      ontoggle={toggleFilter}
+    />
 
-  <!-- Controls -->
-  <div class="mb-6 flex justify-between">
-    <div class="controls-flex">
-      <div class="zoom-controls zoom-controls-inline">
-        <button
-          type="button"
-          class="btn btn-icon btn-secondary"
-          title="Vergrößern"
-          onclick={zoomIn}><i class="fas fa-plus"></i></button
-        >
-        <span class="zoom-level">{zoomLevel}%</span>
-        <button
-          type="button"
-          class="btn btn-icon btn-secondary"
-          title="Verkleinern"
-          onclick={zoomOut}><i class="fas fa-minus"></i></button
-        >
-        <button
-          type="button"
-          class="btn btn-icon btn-secondary"
-          title="Zoom zurücksetzen"
-          onclick={zoomReset}><i class="fas fa-compress-arrows-alt"></i></button
-        >
-        <button
-          type="button"
-          class="btn btn-icon btn-secondary ml-2"
-          title="Vollbild"
-          onclick={toggleFullscreen}><i class="fas fa-expand"></i></button
-        >
+    <!-- Controls -->
+    <div class="mb-6 flex justify-between">
+      <div class="controls-flex">
+        <div class="zoom-controls zoom-controls-inline">
+          <button
+            type="button"
+            class="btn btn-icon btn-secondary"
+            title="Vergrößern"
+            onclick={zoomIn}><i class="fas fa-plus"></i></button
+          >
+          <span class="zoom-level">{zoomLevel}%</span>
+          <button
+            type="button"
+            class="btn btn-icon btn-secondary"
+            title="Verkleinern"
+            onclick={zoomOut}><i class="fas fa-minus"></i></button
+          >
+          <button
+            type="button"
+            class="btn btn-icon btn-secondary"
+            title="Zoom zurücksetzen"
+            onclick={zoomReset}
+            ><i class="fas fa-compress-arrows-alt"></i></button
+          >
+          <button
+            type="button"
+            class="btn btn-icon btn-secondary ml-2"
+            title="Vollbild"
+            onclick={toggleFullscreen}><i class="fas fa-expand"></i></button
+          >
+        </div>
+        {#if isAdmin}
+          <button
+            type="button"
+            class="btn btn-primary"
+            onclick={openCreateModal}
+            disabled={loading}
+            ><i class="fas fa-plus mr-2"></i>Neuer Eintrag</button
+          >
+        {/if}
       </div>
-      {#if isAdmin}
-        <button
-          type="button"
-          class="btn btn-primary"
-          onclick={openCreateModal}
-          disabled={loading}
-          ><i class="fas fa-plus mr-2"></i>Neuer Eintrag</button
-        >
-      {/if}
     </div>
-  </div>
 
-  <!-- Blackboard Container -->
-  <div
-    class="blackboard-container"
-    id="blackboardContainer"
-  >
-    {#if loading}
-      <div class="p-5 text-center">
-        <div class="spinner-ring spinner-ring--md"></div>
-        <p class="mt-4 text-(--color-text-secondary)">
-          {MESSAGES.LOADING}
-        </p>
-      </div>
-    {:else if error}
-      <div class="p-5 text-center">
-        <i
-          class="fas fa-exclamation-triangle mb-4 text-4xl text-(--color-danger)"
-        ></i>
-        <p class="text-(--color-text-secondary)">{error}</p>
-        <button
-          type="button"
-          class="btn btn-primary mt-4"
-          onclick={() => void invalidateAll()}>{MESSAGES.RETRY}</button
+    <!-- Blackboard Container -->
+    <div
+      class="blackboard-container"
+      id="blackboardContainer"
+    >
+      {#if loading}
+        <div class="p-5 text-center">
+          <div class="spinner-ring spinner-ring--md"></div>
+          <p class="mt-4 text-(--color-text-secondary)">
+            {MESSAGES.LOADING}
+          </p>
+        </div>
+      {:else if error}
+        <div class="p-5 text-center">
+          <i
+            class="fas fa-exclamation-triangle mb-4 text-4xl text-(--color-danger)"
+          ></i>
+          <p class="text-(--color-text-secondary)">{error}</p>
+          <button
+            type="button"
+            class="btn btn-primary mt-4"
+            onclick={() => void invalidateAll()}>{MESSAGES.RETRY}</button
+          >
+        </div>
+      {:else if entries.length === 0}
+        <div
+          class="flex flex-col items-center justify-center py-16 text-center"
         >
-      </div>
-    {:else if entries.length === 0}
-      <div class="flex flex-col items-center justify-center py-16 text-center">
-        <i
-          class="fas fa-clipboard-list mb-6 text-7xl text-(--color-text-secondary) opacity-40"
-        ></i>
-        <p class="text-xl text-(--color-text-secondary)">
-          {MESSAGES.NO_ENTRIES}
-        </p>
-      </div>
-    {:else}
-      <div
-        class="pinboard-grid"
-        style="
+          <i
+            class="fas fa-clipboard-list mb-6 text-7xl text-(--color-text-secondary) opacity-40"
+          ></i>
+          <p class="text-xl text-(--color-text-secondary)">
+            {MESSAGES.NO_ENTRIES}
+          </p>
+        </div>
+      {:else}
+        <div
+          class="pinboard-grid"
+          style="
 
 --zoom-level: {zoomLevel / 100};"
-      >
-        {#each entries as entry (entry.id)}
-          <BlackboardEntryCard
-            {entry}
-            onclick={goToDetail}
-          />
-        {/each}
+        >
+          {#each entries as entry (entry.id)}
+            <BlackboardEntryCard
+              {entry}
+              onclick={goToDetail}
+            />
+          {/each}
+        </div>
+      {/if}
+    </div>
+
+    <!-- Pagination -->
+    {#if totalPages > 1}
+      <div class="mt-6 flex items-center justify-center gap-2">
+        <div class="pagination">
+          <button
+            type="button"
+            class="pagination__btn"
+            disabled={currentPage === 1}
+            onclick={() => goToPage(currentPage - 1)}
+            aria-label="Vorherige Seite"
+            ><i class="fas fa-chevron-left"></i></button
+          >
+          {#each Array(totalPages) as _, i (i)}
+            <button
+              type="button"
+              class="pagination__btn"
+              class:active={currentPage === i + 1}
+              onclick={() => goToPage(i + 1)}>{i + 1}</button
+            >
+          {/each}
+          <button
+            type="button"
+            class="pagination__btn"
+            disabled={currentPage === totalPages}
+            onclick={() => goToPage(currentPage + 1)}
+            aria-label="Nächste Seite"
+            ><i class="fas fa-chevron-right"></i></button
+          >
+        </div>
       </div>
     {/if}
   </div>
 
-  <!-- Pagination -->
-  {#if totalPages > 1}
-    <div class="mt-6 flex items-center justify-center gap-2">
-      <div class="pagination">
-        <button
-          type="button"
-          class="pagination__btn"
-          disabled={currentPage === 1}
-          onclick={() => goToPage(currentPage - 1)}
-          aria-label="Vorherige Seite"
-          ><i class="fas fa-chevron-left"></i></button
-        >
-        {#each Array(totalPages) as _, i (i)}
-          <button
-            type="button"
-            class="pagination__btn"
-            class:active={currentPage === i + 1}
-            onclick={() => goToPage(i + 1)}>{i + 1}</button
-          >
-        {/each}
-        <button
-          type="button"
-          class="pagination__btn"
-          disabled={currentPage === totalPages}
-          onclick={() => goToPage(currentPage + 1)}
-          aria-label="Nächste Seite"
-          ><i class="fas fa-chevron-right"></i></button
-        >
-      </div>
-    </div>
+  <!-- Entry Form Modal -->
+  {#if showEntryModal}
+    <BlackboardEntryModal
+      mode={entryModalMode}
+      title={formTitle}
+      content={formContent}
+      priority={formPriority}
+      color={formColor}
+      expiresAt={formExpiresAt}
+      companyWide={formCompanyWide}
+      departmentIds={formDepartmentIds}
+      teamIds={formTeamIds}
+      areaIds={formAreaIds}
+      {attachmentFiles}
+      {departments}
+      {teams}
+      {areas}
+      {labels}
+      onclose={closeEntryModal}
+      onsubmit={handleEntrySubmit}
+      ontitlechange={(v: string) => (formTitle = v)}
+      oncontentchange={(v: string) => (formContent = v)}
+      onprioritychange={(v: Priority) => (formPriority = v)}
+      oncolorchange={(v: EntryColor) => (formColor = v)}
+      onexpireschange={(v: string) => (formExpiresAt = v)}
+      oncompanywidechange={(v: boolean) => (formCompanyWide = v)}
+      ondepartmentschange={(v: number[]) => (formDepartmentIds = v)}
+      onteamschange={(v: number[]) => (formTeamIds = v)}
+      onareaschange={(v: number[]) => (formAreaIds = v)}
+      onfileschange={(v: File[] | null) => (attachmentFiles = v)}
+    />
   {/if}
-</div>
 
-<!-- Entry Form Modal -->
-{#if showEntryModal}
-  <BlackboardEntryModal
-    mode={entryModalMode}
-    title={formTitle}
-    content={formContent}
-    priority={formPriority}
-    color={formColor}
-    expiresAt={formExpiresAt}
-    companyWide={formCompanyWide}
-    departmentIds={formDepartmentIds}
-    teamIds={formTeamIds}
-    areaIds={formAreaIds}
-    {attachmentFiles}
-    {departments}
-    {teams}
-    {areas}
-    {labels}
-    onclose={closeEntryModal}
-    onsubmit={handleEntrySubmit}
-    ontitlechange={(v: string) => (formTitle = v)}
-    oncontentchange={(v: string) => (formContent = v)}
-    onprioritychange={(v: Priority) => (formPriority = v)}
-    oncolorchange={(v: EntryColor) => (formColor = v)}
-    onexpireschange={(v: string) => (formExpiresAt = v)}
-    oncompanywidechange={(v: boolean) => (formCompanyWide = v)}
-    ondepartmentschange={(v: number[]) => (formDepartmentIds = v)}
-    onteamschange={(v: number[]) => (formTeamIds = v)}
-    onareaschange={(v: number[]) => (formAreaIds = v)}
-    onfileschange={(v: File[] | null) => (attachmentFiles = v)}
+  <!-- Delete Confirmation Modal -->
+  <DeleteConfirmModal
+    show={showDeleteModal}
+    {loading}
+    oncancel={closeDeleteModals}
+    onconfirm={deleteEntry}
   />
 {/if}
-
-<!-- Delete Confirmation Modal -->
-<DeleteConfirmModal
-  show={showDeleteModal}
-  {loading}
-  oncancel={closeDeleteModals}
-  onconfirm={deleteEntry}
-/>
 
 <style>
   /* ─── Blackboard Container ──────── */
