@@ -64,6 +64,7 @@ export class ChatWebSocketServer {
   private redis: Redis;
   private heartbeatInterval: ReturnType<typeof setInterval> | null = null;
   private readonly messageHandler: WebSocketMessageHandler;
+  private shuttingDown = false;
 
   /** Lua script for atomic GET + DELETE (single-use ticket) */
   private readonly CONSUME_TICKET_SCRIPT = `
@@ -676,8 +677,9 @@ export class ChatWebSocketServer {
       this.clients.delete(ws.userId);
       this.presenceStore.remove(ws.userId);
 
-      // Offline-Status senden
-      if (ws.tenantId !== undefined) {
+      // Skip DB query during shutdown — all clients are being disconnected,
+      // nobody left to receive "offline" status, and the DB pool may already be closed.
+      if (!this.shuttingDown && ws.tenantId !== undefined) {
         await this.broadcastUserStatus(ws.userId, ws.tenantId, 'offline');
       }
     }
@@ -708,6 +710,7 @@ export class ChatWebSocketServer {
    */
   public async shutdown(): Promise<void> {
     logger.info('ChatWebSocketServer shutting down...');
+    this.shuttingDown = true;
 
     // 1. Stop heartbeat interval
     if (this.heartbeatInterval !== null) {

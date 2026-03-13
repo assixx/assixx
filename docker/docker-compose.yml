@@ -127,6 +127,8 @@ services:
       DELETION_GRACE_PERIOD_DAYS: ${DELETION_GRACE_PERIOD_DAYS:-30}
       DELETION_COOLING_OFF_HOURS: ${DELETION_COOLING_OFF_HOURS:-24}
       TENANT_DELETION_GRACE_MINUTES: ${TENANT_DELETION_GRACE_MINUTES:-43200}
+      # Log level override (default: info, set to debug for troubleshooting)
+      LOG_LEVEL: ${LOG_LEVEL:-info}
       SCARF_ANALYTICS: false
       DO_NOT_TRACK: 1
       # Redis Connection (for rate limiting)

@@ -84,6 +84,10 @@ export class AllExceptionsFilter implements ExceptionFilter {
           errorCode: errorResponse.error.code,
         },
       });
+    } else if (status === 401 || status === 403) {
+      this.logger.debug(
+        `[${request.method}] ${request.url} - ${status}: ${errorResponse.error.message}`,
+      );
     } else {
       this.logger.warn(
         `[${request.method}] ${request.url} - ${status}: ${errorResponse.error.message}`,

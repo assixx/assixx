@@ -148,22 +148,6 @@
 </svelte:head>
 
 <div class="container">
-  <!-- Admin Info Box -->
-  {#if kvpState.isAdmin}
-    <div class="alert alert--info mb-6">
-      <div class="alert__icon">
-        <i class="fas fa-lightbulb"></i>
-      </div>
-      <div class="alert__content">
-        <strong class="alert__title">Tipp für Admins:</strong>
-        <p class="alert__message">
-          Wechseln Sie zur Employee-Ansicht um selbst Vorschläge einzureichen.
-          Als Admin können Sie Vorschläge verwalten und firmenweit teilen.
-        </p>
-      </div>
-    </div>
-  {/if}
-
   <!-- Statistics Overview (Admin only) -->
   {#if kvpState.isAdmin}
     <div class="mb-6 grid grid-cols-1 gap-6 md:grid-cols-3">

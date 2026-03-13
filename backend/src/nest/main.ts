@@ -36,6 +36,7 @@ import {
   REDACT_PATHS,
 } from './common/logger/logger.constants.js';
 import { ZodValidationPipe } from './common/pipes/zod-validation.pipe.js';
+import { getErrorMessage } from './common/utils/error.utils.js';
 import { DatabaseService } from './database/database.service.js';
 import { PartitionHealthService } from './database/partition-health.service.js';
 
@@ -132,34 +133,39 @@ async function gracefulShutdown(signal: string): Promise<void> {
   const logger = new NestLogger('Shutdown');
   logger.log(`Received ${signal}. Starting graceful shutdown...`);
 
-  // Flush pending Sentry events before shutdown (max 2 seconds)
-  // Without this, errors that happen just before shutdown are lost
+  await flushSentry(logger);
+  await shutdownWebSocket(logger);
+  await closeApp(logger);
+
+  process.exit(0);
+}
+
+async function flushSentry(logger: NestLogger): Promise<void> {
   try {
     await Sentry.close(2000);
     logger.log('Sentry events flushed');
   } catch {
     logger.warn('Failed to flush Sentry events (timeout or error)');
   }
+}
 
-  // Close WebSocket server and Redis connection before NestJS shutdown
-  if (chatWsInstance !== null) {
-    try {
-      await chatWsInstance.shutdown();
-    } catch (error: unknown) {
-      logger.error('Error during WebSocket shutdown:', error);
-    }
+async function shutdownWebSocket(logger: NestLogger): Promise<void> {
+  if (chatWsInstance === null) return;
+  try {
+    await chatWsInstance.shutdown();
+  } catch (error: unknown) {
+    logger.error(`Error during WebSocket shutdown: ${getErrorMessage(error)}`);
   }
+}
 
-  if (appInstance) {
-    try {
-      await appInstance.close();
-      logger.log('NestJS application closed successfully. Port released.');
-    } catch (error: unknown) {
-      logger.error('Error during shutdown:', error);
-    }
+async function closeApp(logger: NestLogger): Promise<void> {
+  if (appInstance === null) return;
+  try {
+    await appInstance.close();
+    logger.log('NestJS application closed successfully. Port released.');
+  } catch (error: unknown) {
+    logger.error(`Error during shutdown: ${getErrorMessage(error)}`);
   }
-
-  process.exit(0);
 }
 
 // Register signal handlers BEFORE bootstrap
@@ -221,9 +227,11 @@ async function bootstrap(): Promise<void> {
   // Store reference for graceful shutdown
   appInstance = app;
 
-  // Enable NestJS shutdown hooks (onModuleDestroy, beforeApplicationShutdown)
-  // CRITICAL: Without this, cleanup hooks in services won't be called!
-  app.enableShutdownHooks();
+  // NOTE: Do NOT call app.enableShutdownHooks() here.
+  // It registers its own SIGTERM/SIGINT listeners that call app.close(),
+  // but we already have custom signal handlers (lines 167-169) that do the same.
+  // Having both causes a double-close race condition.
+  // app.close() triggers onModuleDestroy hooks regardless of enableShutdownHooks().
 
   app.setGlobalPrefix('api/v2');
 
