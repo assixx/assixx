@@ -1,25 +1,27 @@
 # FEAT: Organizational Scope Access Control — Unified Masterplan
 
 > **Created:** 2026-03-13
-> **Version:** 0.4.0 (Draft — Verifizierter Review)
+> **Version:** 0.6.0 (Draft — Codebase-Verifiziert + Fixes)
 > **Status:** DRAFT — Phase 0 (Planung)
 > **Branch:** `feat/org-scope-access`
 > **ADR:** ADR-036 (zu erstellen in Phase 8)
 > **Author:** SCS-Technik Team
-> **Estimated Sessions:** 9
-> **Actual Sessions:** 0 / 9
+> **Estimated Sessions:** 10
+> **Actual Sessions:** 0 / 10
 > **Supersedes:** `FEAT_LEAD_ACCESS_MASTERPLAN.md` + `FEAT_USER_SCOPE_FILTERING_MASTERPLAN.md`
 
 ---
 
 ## Changelog
 
-| Version | Datum      | Änderung                                                                                                                                                                            |
-| ------- | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 0.1.0   | 2026-03-13 | Initial Draft — Zusammenführung beider Einzelpläne                                                                                                                                  |
-| 0.2.0   | 2026-03-13 | Decisions finalisiert: D1=NEIN, D2=A (extend HierarchyPermissionService), D3=A (CLS)                                                                                                |
-| 0.3.0   | 2026-03-13 | Review-Fixes: CTE-Syntax (Subquery statt FULL OUTER JOIN), Migration für manage_hierarchy ergänzt                                                                                   |
-| 0.4.0   | 2026-03-13 | Verifizierter Review: ScopeGuard→ScopeGuard (Timing-Bug), users.department_id entfernt (existiert nicht), isEntityInScope Signatur gefixt, HierarchyPermissionModule Import ergänzt |
+| Version | Datum      | Änderung                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| ------- | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 0.1.0   | 2026-03-13 | Initial Draft — Zusammenführung beider Einzelpläne                                                                                                                                                                                                                                                                                                                                                                                                          |
+| 0.2.0   | 2026-03-13 | Decisions finalisiert: D1=NEIN, D2=A (extend HierarchyPermissionService), D3=A (CLS)                                                                                                                                                                                                                                                                                                                                                                        |
+| 0.3.0   | 2026-03-13 | Review-Fixes: CTE-Syntax (Subquery statt FULL OUTER JOIN), Migration für manage_hierarchy ergänzt                                                                                                                                                                                                                                                                                                                                                           |
+| 0.4.0   | 2026-03-13 | Verifizierter Review: ScopeGuard→ScopeGuard (Timing-Bug), users.department_id entfernt (existiert nicht), isEntityInScope Signatur gefixt, HierarchyPermissionModule Import ergänzt                                                                                                                                                                                                                                                                         |
+| 0.5.0   | 2026-03-13 | Code-Verifizierter Review + Entscheidungen E1-E5: Deputy=Lead+Settings-Toggle (E1), ScopeGuard→ScopeService Lazy (E2), Admins manuell durch Root (E3), Auto-Seed bei Lead-Zuweisung (E4), manage-dummies→root (E5). CTE-Fix: is_active JOIN für perm_areas/perm_depts. BlackboardAccessService als Consumer dokumentiert. ensureEntityInScope 'user'-Typ gefixt. Migration vereinfacht (nur Addon-Eintrag, keine Admin-Rows). IS_ACTIVE-Konstanten-Hinweis. |
+| 0.6.0   | 2026-03-13 | Codebase-Verifizierung: (1) Migration down() UPDATE statt DELETE (prevent_addons_delete Trigger). (2) Step 3.5 Prerequisite: deputyLeaderId in DTO/Service/Controller (DB-Spalte existiert, kein Codepfad zum Setzen). (3) ScopeService: Dead-Code userRole entfernt (getUserInfo() löst Rolle intern).                                                                                                                                                     |
 
 ---
 
@@ -72,15 +74,16 @@ Kein neuer Service — die bestehenden Methoden (`getAccessibleAreaIds()` etc.) 
 │  Employee (kein Lead) / Dummy:                                       │
 │    → type: 'none'                                                    │
 │                                                                      │
-│  Scope wird EINMAL pro Request aufgelöst (ScopeGuard → CLS).       │
-│  Services lesen aus CLS — keine redundanten Queries.                │
+│  Scope wird LAZY aufgelöst (ScopeService).                          │
+│  Erste Abfrage → DB-Query + CLS-Cache. Danach aus CLS.             │
+│  ~90% der Requests (Chat, Calendar, etc.) lösen NIE Scope auf.     │
 └──────────────────────────────────────────────────────────────────────┘
 ```
 
 **Jeder Service nutzt denselben Filter-Pfad:**
 
 ```typescript
-const scope = this.cls.get<OrganizationalScope>('orgScope'); // aus CLS, bereits aufgelöst
+const scope = await this.scopeService.getScope(); // Lazy: erste Abfrage → DB, danach CLS-Cache
 if (scope.type === 'full') return allEntities;
 if (scope.type === 'none' || scope.teamIds.length === 0) return [];
 return filterByIds(scope.teamIds); // Works for Admin AND Employee-Lead
@@ -89,24 +92,32 @@ return filterByIds(scope.teamIds); // Works for Admin AND Employee-Lead
 ### Regeln
 
 1. **Root / has_full_access**: Sieht alles, kein Filter (unverändert)
-2. **Scoped Admin**: Sieht Entities in seinem Permission-Scope + Lead-Scope
-3. **Employee-Lead**: Sieht Entities in seinem Lead-Scope (Read+Edit, KEIN Create/Delete)
+2. **Scoped Admin**: Sieht Entities in seinem Permission-Scope + Lead-Scope. **Admin braucht explizite `manage_hierarchy` Permission-Row** (Root vergibt manuell)
+3. **Employee-Lead**: Sieht Entities in seinem Lead-Scope (Read+Edit, KEIN Create/Delete). **Permission-Rows werden automatisch geseeded** bei Lead-Zuweisung
 4. **Kaskade**: Area-Scope vererbt sich auf Departments + Teams darunter
-5. **Deputy = Lead**: `deputy_lead_id` hat identische Rechte wie `team_lead_id`
-6. **ADR-020 Override**: Admin kann einem Lead den Zugriff via Permission-Seite entziehen
+5. **Deputy = Lead**: `deputy_lead_id` hat identische Rechte wie `team_lead_id`. **TODO (V2):** Per-Tenant-Setting ob Deputy volle Lead-Rechte hat (Jede Firma entscheidet selbst). Code vorbereiten mit `DEPUTY_EQUALS_LEAD`-Flag für einfaches Anknüpfen
+6. **ADR-020 Override**: Root kann einem Admin/Lead den Zugriff via Permission-Seite entziehen
 7. **Kein Hall-Lead**: Hall = physischer Ort, kein Lead-Konzept
 8. **manage-admins = Root-only**: Nur Root verwaltet Admins
+9. **manage-dummies = Root-only**: Nur Root verwaltet Platzhalter-Benutzer
+10. **manage-assets = Bleibt in (admin)**: Bereits über Permission-System steuerbar, kein Scope-Filter nötig
+11. **Fail-Closed überall**: PermissionGuard hat EIN Verhalten — kein Row = kein Zugang. Keine Sonderfälle
 
 ### Seiten-Matrix
 
-| Manage-Seite       | Root | Admin (full) | Admin (scoped) | Employee Team-Lead | Employee |
-| ------------------ | ---- | ------------ | -------------- | ------------------ | -------- |
-| manage-areas       | alle | alle         | sein Scope     | ---                | ---      |
-| manage-departments | alle | alle         | sein Scope     | ---                | ---      |
-| manage-teams       | alle | alle         | sein Scope     | sein Team(s)       | ---      |
-| manage-employees   | alle | alle         | sein Scope     | seine Team-Members | ---      |
-| manage-admins      | alle | ---          | ---            | ---                | ---      |
-| manage-halls       | alle | alle         | alle           | ---                | ---      |
+| Manage-Seite       | Root | Admin (full) | Admin (scoped + Schlüssel) | Employee Team-Lead | Employee |
+| ------------------ | ---- | ------------ | -------------------------- | ------------------ | -------- |
+| manage-areas       | alle | alle         | sein Scope                 | ---                | ---      |
+| manage-departments | alle | alle         | sein Scope                 | ---                | ---      |
+| manage-teams       | alle | alle         | sein Scope                 | sein Team(s)       | ---      |
+| manage-employees   | alle | alle         | sein Scope                 | seine Team-Members | ---      |
+| manage-admins      | alle | ---          | ---                        | ---                | ---      |
+| manage-halls       | alle | alle         | alle                       | ---                | ---      |
+| manage-dummies     | alle | ---          | ---                        | ---                | ---      |
+| manage-assets      | alle | alle         | alle (Permission-basiert)  | ---                | ---      |
+
+> **"Schlüssel"** = `manage_hierarchy` Permission-Row in `user_addon_permissions`. Root vergibt an Admins manuell. Employee-Leads bekommen ihn automatisch bei Lead-Zuweisung.
+> **Admin ohne Schlüssel** sieht KEINE manage-Seiten (außer manage-halls/manage-assets, die eigene Permissions haben).
 
 > **D1 = NEIN:** Employees können NICHT Area/Department-Lead sein (validateLeader() bleibt admin/root only, ADR-035 konform). Employee-Leads sind ausschließlich team_lead_id oder deputy_lead_id.
 
@@ -137,37 +148,45 @@ return filterByIds(scope.teamIds); // Works for Admin AND Employee-Lead
 
 ### 0.2 Risk Register
 
-| #   | Risiko                                                   | Impact  | Wahrscheinlichkeit | Mitigation                                                      | Verifikation                                    |
-| --- | -------------------------------------------------------- | ------- | ------------------ | --------------------------------------------------------------- | ----------------------------------------------- |
-| R1  | Route Group Migration bricht Root/Admin-Zugriffe         | Hoch    | Mittel             | +page.server.ts behält explizite Role-Checks                    | E2E: Root/Admin auf alle Manage-Seiten          |
-| R2  | Scope-CTE-Query ist langsam                              | Mittel  | Niedrig            | Single CTE, alle Pfade in einer Query                           | EXPLAIN ANALYZE < 10ms bei 500 Usern            |
-| R3  | ADR-020 Default-Deny vs Lead-Default-Grant Konflikt      | Hoch    | Mittel             | Kein ADR-020 Eintrag + ist Lead = GRANT                         | Unit Test: Lead ohne Permission-Row hat Zugriff |
-| R4  | Scope-Filter bricht Root/has_full_access                 | Hoch    | Niedrig            | Early return `type: 'full'` vor jedem Filter                    | API-Test: Root sieht ALLES                      |
-| R5  | Employee sieht Manage-Seite aber Backend blockt Mutation | Mittel  | Hoch               | Frontend conditional: Lead sieht Read+Edit, NICHT Create/Delete | Smoke Test                                      |
-| R6  | Dropdown-Scoping bricht andere Module                    | Hoch    | Mittel             | Scope nur wenn NOT root/has_full_access                         | Test: Root sieht alle Areas in Dropdowns        |
-| R7  | Admin ohne Scope sieht leere Tabelle                     | Niedrig | Mittel             | ScopeInfoBanner erklärt Situation                               | Manueller Test                                  |
+| #   | Risiko                                                   | Impact  | Wahrscheinlichkeit | Mitigation                                                                                    | Verifikation                                     |
+| --- | -------------------------------------------------------- | ------- | ------------------ | --------------------------------------------------------------------------------------------- | ------------------------------------------------ |
+| R1  | Route Group Migration bricht Root/Admin-Zugriffe         | Hoch    | Mittel             | +page.server.ts behält explizite Role-Checks                                                  | E2E: Root/Admin auf alle Manage-Seiten           |
+| R2  | Scope-CTE-Query ist langsam                              | Mittel  | Niedrig            | Single CTE, alle Pfade in einer Query                                                         | EXPLAIN ANALYZE < 10ms bei 500 Usern             |
+| R3  | ADR-020 Override vs Auto-Seed Konflikt                   | Mittel  | Niedrig            | Auto-Seed nutzt ON CONFLICT DO NOTHING → ADR-020 Override bleibt                              | Unit Test: Lead mit entzogener Permission = DENY |
+| R4  | Scope-Filter bricht Root/has_full_access                 | Hoch    | Niedrig            | Early return `type: 'full'` vor jedem Filter                                                  | API-Test: Root sieht ALLES                       |
+| R5  | Employee sieht Manage-Seite aber Backend blockt Mutation | Mittel  | Hoch               | Frontend conditional: Lead sieht Read+Edit, NICHT Create/Delete                               | Smoke Test                                       |
+| R6  | Dropdown-Scoping bricht andere Module                    | Hoch    | Niedrig            | V1: Kein Dropdown-Scope-Filter (Known Limitation #12). Backend fängt ungültige Zuweisungen ab | Bewusst ausgeschlossen für V1                    |
+| R7  | Admin ohne Scope sieht leere Tabelle                     | Niedrig | Mittel             | ScopeInfoBanner erklärt Situation                                                             | Manueller Test                                   |
+| R8  | Admin ohne manage_hierarchy Permission sieht nichts      | Mittel  | Mittel             | Root muss explizit vergeben (D5). Kein Auto-Grant bei Admin-Erstellung                        | Permission-Seite testen                          |
 
 ### 0.3 Decisions (FINALISIERT)
 
-| #   | Frage                                        | Entscheidung                                | Begründung                                                                                                                               |
-| --- | -------------------------------------------- | ------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| D1  | Dürfen Employees Area/Department-Leads sein? | **NEIN**                                    | ADR-035 bleibt: area/dept leads = admin/root only. Employee-Leads nur team_lead/deputy_lead                                              |
-| D2  | Wo lebt die Scope-Logik?                     | **A: HierarchyPermissionService erweitern** | Ein Service für alle Hierarchy-Permissions. Keine bestehenden Consumer, alles dev. Bestehende Methoden werden durch `getScope()` ersetzt |
-| D3  | Scope-Auflösung wann?                        | **A: Einmal pro Request → CLS**             | ScopeGuard löst Scope auf, speichert in CLS. Services lesen nur. Eine Query pro Request statt N                                          |
+| #   | Frage                                        | Entscheidung                                | Begründung                                                                                                                                                                       |
+| --- | -------------------------------------------- | ------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| D1  | Dürfen Employees Area/Department-Leads sein? | **NEIN**                                    | ADR-035 bleibt: area/dept leads = admin/root only. Employee-Leads nur team_lead/deputy_lead                                                                                      |
+| D2  | Wo lebt die Scope-Logik?                     | **A: HierarchyPermissionService erweitern** | Ein Service für alle Hierarchy-Permissions. Bestehender Consumer: `BlackboardAccessService` — wird auf `getScope()` migriert. Bestehende `getAccessible*Ids()` werden deprecated |
+| D3  | Scope-Auflösung wann?                        | **LAZY via ScopeService**                   | ScopeService löst Scope beim ersten Zugriff auf, cached in CLS. ~90% der Requests (Chat, Calendar etc.) lösen NIE Scope auf → kein DB-Overhead                                   |
+| D4  | Deputy = Lead?                               | **JA (V1), Settings-Toggle (V2)**           | `deputy_lead_id` hat identische Rechte wie `team_lead_id`. Code mit `DEPUTY_EQUALS_LEAD`-Flag vorbereiten für Per-Tenant-Setting in V2                                           |
+| D5  | Wie bekommen Admins manage_hierarchy Zugang? | **Explizit durch Root**                     | Kein Auto-Seed. Root vergibt `manage_hierarchy` manuell auf Permission-Seite. Maximale Kontrolle. DB = Test-Daten, kein Prod-Migrationsproblem                                   |
+| D6  | Wie bekommen Leads manage_hierarchy Zugang?  | **Auto-Seed bei Lead-Zuweisung**            | TeamsService seeded Permission-Rows bei `team_lead_id`/`deputy_lead_id` Änderung. Auto-Cleanup bei Entfernung. Guard bleibt einheitlich fail-closed                              |
+| D7  | manage-dummies Zugang?                       | **Root-only**                               | Verschieben von (admin) nach (root)                                                                                                                                              |
+| D8  | manage-assets Zugang?                        | **Bleibt in (admin)**                       | Bereits über bestehendes Permission-System steuerbar, kein Scope-Filter nötig                                                                                                    |
 
 ### 0.4 Ecosystem Integration Points
 
-| Bestehendes System          | Art der Integration                                                                                          | Phase |
-| --------------------------- | ------------------------------------------------------------------------------------------------------------ | ----- |
-| HierarchyPermissionService  | Erweitern: neue Methode `getScope()` + Unified CTE                                                           | 1     |
-| ScopeGuard (NEU)            | Scope einmal pro Request auflösen → CLS speichern (APP_GUARD, zwischen TenantAddonGuard und PermissionGuard) | 1     |
-| PermissionGuard             | Erweitern um Lead-Check (manage_hierarchy)                                                                   | 3     |
-| Permission Registry         | Neue Kategorie `manage_hierarchy` registrieren                                                               | 3     |
-| DB Migration                | `addons`-Eintrag + `user_addon_permissions` für bestehende Admins                                            | 3     |
-| Navigation Config           | `filterMenuByScope()` + Scope-basierte Items                                                                 | 6     |
-| (app)/+layout.server.ts     | `fetchOrgScope()` parallel laden                                                                             | 5     |
-| KVP EXTENDED_ORG_INFO_QUERY | Refactoring → nutzt `HierarchyPermissionService.getScope()`                                                  | 1     |
-| Route Groups (admin)/(root) | manage-\* Seiten nach (shared) migrieren                                                                     | 5     |
+| Bestehendes System          | Art der Integration                                                                                      | Phase |
+| --------------------------- | -------------------------------------------------------------------------------------------------------- | ----- |
+| HierarchyPermissionService  | Erweitern: neue Methode `getScope()` + Unified CTE                                                       | 1     |
+| ScopeService (NEU)          | Lazy Scope-Auflösung: erste Abfrage → DB + CLS-Cache. Kein APP_GUARD, normaler Injectable Service        | 1     |
+| PermissionGuard             | Keine Änderung — bleibt einheitlich fail-closed. Auto-Seed-Rows machen Sonderlogik überflüssig           | —     |
+| Permission Registry         | Neue Kategorie `manage_hierarchy` registrieren                                                           | 3     |
+| DB Migration                | Nur `addons`-Eintrag (is_core=true). Keine Admin-Permission-Rows (Root vergibt manuell, DB = Test-Daten) | 3     |
+| TeamsService                | Auto-Seed/Cleanup von `manage_hierarchy` Permission-Rows bei Lead-Zuweisung/-Entfernung                  | 3     |
+| BlackboardAccessService     | Migrieren von `getAccessible*Ids()` auf `ScopeService.getScope()` (bestehender Consumer!)                | 2     |
+| Navigation Config           | `filterMenuByScope()` + Scope-basierte Items                                                             | 6     |
+| (app)/+layout.server.ts     | `fetchOrgScope()` parallel laden                                                                         | 5     |
+| KVP EXTENDED_ORG_INFO_QUERY | Refactoring → nutzt `HierarchyPermissionService.getScope()`. **Achtung:** deputy_lead_id NEU für KVP     | 1     |
+| Route Groups (admin)/(root) | manage-\* Seiten nach (shared) migrieren + manage-dummies nach (root)                                    | 5     |
 
 ---
 
@@ -175,14 +194,16 @@ return filterByIds(scope.teamIds); // Works for Admin AND Employee-Lead
 
 ### Route Groups
 
-| Seite              | Aktuell | Ziel     |
-| ------------------ | ------- | -------- |
-| manage-areas       | (admin) | (shared) |
-| manage-departments | (admin) | (shared) |
-| manage-teams       | (root)  | (shared) |
-| manage-employees   | (admin) | (shared) |
-| manage-admins      | (admin) | (root)   |
-| manage-halls       | (admin) | bleibt   |
+| Seite              | Aktuell | Ziel     | Begründung                           |
+| ------------------ | ------- | -------- | ------------------------------------ |
+| manage-areas       | (admin) | (shared) | Admin + Employee-Lead (Scope-Filter) |
+| manage-departments | (admin) | (shared) | Admin + Employee-Lead (Scope-Filter) |
+| manage-teams       | (root)  | (shared) | Admin + Employee-Lead (Scope-Filter) |
+| manage-employees   | (admin) | (shared) | Admin + Employee-Lead (Scope-Filter) |
+| manage-admins      | (admin) | (root)   | Root-only (D7-konform)               |
+| manage-dummies     | (admin) | (root)   | Root-only (D7)                       |
+| manage-halls       | (admin) | bleibt   | Kein Scope-Filter nötig              |
+| manage-assets      | (admin) | bleibt   | Permission-System reicht (D8)        |
 
 ### Backend Services (kein Scope-Filter)
 
@@ -211,7 +232,7 @@ return filterByIds(scope.teamIds); // Works for Admin AND Employee-Lead
 ## Phase 1: Backend — HierarchyPermissionService erweitern
 
 > **Abhängigkeit:** Keine
-> **Ziel:** Bestehenden Service um `getScope()` + Unified CTE erweitern, ScopeGuard für CLS
+> **Ziel:** Bestehenden Service um `getScope()` + Unified CTE erweitern, ScopeService (Lazy) erstellen
 
 ### Step 1.1: Types definieren [PENDING]
 
@@ -247,12 +268,15 @@ Neue Methoden `getScope()`, `getVisibleUserIds()`, `isEntityInScope()` hinzufüg
 
 **Unified CTE-Query (alle Zugriffspfade in einer Query):**
 
+> **WICHTIG:** Im Code `${IS_ACTIVE.ACTIVE}` statt `1` und `${IS_ACTIVE.DELETED}` statt `4` verwenden (No-Go #16, TYPESCRIPT-STANDARDS.md). Hier als Klartext für Lesbarkeit.
+
 ```sql
 WITH
--- Pfad 1: Admin area permissions (direkt)
+-- Pfad 1: Admin area permissions (direkt) — NUR aktive Areas (is_active JOIN!)
 perm_areas AS (
-  SELECT area_id AS id FROM admin_area_permissions
-  WHERE admin_user_id = $1 AND tenant_id = $2
+  SELECT aap.area_id AS id FROM admin_area_permissions aap
+  INNER JOIN areas a ON a.id = aap.area_id AND a.is_active = 1
+  WHERE aap.admin_user_id = $1 AND aap.tenant_id = $2
 ),
 -- Pfad 2: Area-Lead Position
 lead_areas AS (
@@ -263,10 +287,11 @@ lead_areas AS (
 all_areas AS (
   SELECT id FROM perm_areas UNION SELECT id FROM lead_areas
 ),
--- Pfad 3: Admin department permissions (direkt)
+-- Pfad 3: Admin department permissions (direkt) — NUR aktive Departments (is_active JOIN!)
 perm_depts AS (
-  SELECT department_id AS id FROM admin_department_permissions
-  WHERE admin_user_id = $1 AND tenant_id = $2
+  SELECT adp.department_id AS id FROM admin_department_permissions adp
+  INNER JOIN departments d ON d.id = adp.department_id AND d.is_active = 1
+  WHERE adp.admin_user_id = $1 AND adp.tenant_id = $2
 ),
 -- Pfad 4: Department-Lead Position
 lead_depts AS (
@@ -286,6 +311,7 @@ all_depts AS (
   UNION SELECT id FROM inherited_depts
 ),
 -- Pfad 5: Team-Lead / Deputy-Lead Position
+-- deputy_lead_id = team_lead_id (D4: Deputy=Lead V1, DEPUTY_EQUALS_LEAD Flag für V2)
 lead_teams AS (
   SELECT id FROM teams
   WHERE (team_lead_id = $1 OR deputy_lead_id = $1)
@@ -338,60 +364,73 @@ WHERE u.tenant_id = $1 AND u.is_active != 4 AND (
 
 **Geänderte Datei:** `backend/src/nest/kvp/kvp.service.ts`
 
-- `EXTENDED_ORG_INFO_QUERY` durch `HierarchyPermissionService.getScope()` ersetzen
-- KVP-Module importiert `HierarchyPermissionService` (bereits via CommonModule verfügbar)
+- `EXTENDED_ORG_INFO_QUERY` (kvp.constants.ts:29-69) durch `ScopeService.getScope()` ersetzen
+- KVP-Module importiert `ScopeService` (via ScopeModule)
 - Bestehende KVP-Tests müssen weiterhin grün sein
 
-### Step 1.4: ScopeGuard — Scope einmal pro Request in CLS [PENDING]
+> **⚠ Verhaltensänderung (D4):** Die bestehende `EXTENDED_ORG_INFO_QUERY` prüft NUR `team_lead_id`, NICHT `deputy_lead_id`. Die neue `getScope()` CTE prüft **beides**. Konsequenz: Deputies bekommen KVP-Lead-Rechte (Vorschläge bestätigen etc.), die sie vorher NICHT hatten. Dies ist gewollt (D4: Deputy = Lead). Code mit `DEPUTY_EQUALS_LEAD`-Flag vorbereiten:
+>
+> ```typescript
+> // TODO (V2): Per-Tenant-Setting ob Deputy volle Lead-Rechte hat
+> // Wenn DEPUTY_EQUALS_LEAD = false → deputy_lead_id aus CTE-Query entfernen
+> const DEPUTY_EQUALS_LEAD = true; // V1: immer true
+> ```
 
-**Neue Datei:** `backend/src/nest/common/guards/scope.guard.ts`
+### Step 1.4: ScopeService — Lazy Scope-Auflösung mit CLS-Cache [PENDING]
 
-> **Warum Guard statt Interceptor? (v0.4.0 Fix)**
-> NestJS Execution Order: Middleware → **Guards** → Interceptors → Pipes → Handler.
-> `PermissionGuard` (Step 3.2) braucht `orgScope` aus CLS um Lead-Default-Grant zu prüfen.
-> Als Interceptor würde die Scope-Resolution NACH dem PermissionGuard laufen → CLS leer → Bug.
-> Deshalb: **Guard**, registriert zwischen `TenantAddonGuard` und `PermissionGuard`.
+**Neue Datei:** `backend/src/nest/hierarchy-permission/scope.service.ts`
+
+> **Warum Lazy statt APP_GUARD? (v0.5.0, D3)**
+> Ein APP_GUARD würde für JEDEN authentifizierten Request eine DB-Query auslösen — auch für Chat, Calendar, Blackboard etc. wo kein Scope gebraucht wird (~90% der Requests).
+> **ScopeService** löst den Scope erst auf wenn ein Service ihn tatsächlich braucht (erste Abfrage → DB + CLS-Cache, danach aus CLS). Kein Guard, kein Overhead.
 
 ```typescript
 @Injectable()
-export class ScopeGuard implements CanActivate {
+export class ScopeService {
   constructor(
     private readonly hierarchyPermission: HierarchyPermissionService,
     private readonly cls: ClsService,
   ) {}
 
-  async canActivate(context: ExecutionContext): Promise<boolean> {
-    const request = context.switchToHttp().getRequest<FastifyRequest & { user?: NestAuthUser }>();
-    const user = request.user;
+  /** Lazy: Erste Abfrage → DB-Query + CLS-Cache. Danach aus CLS. */
+  async getScope(): Promise<OrganizationalScope> {
+    const cached = this.cls.get<OrganizationalScope>('orgScope');
+    if (cached !== undefined) return cached;
 
-    if (user) {
-      const tenantId = this.cls.get<number>('tenantId');
-      const scope = await this.hierarchyPermission.getScope(user.id, tenantId);
-      this.cls.set('orgScope', scope);
-    }
+    const userId = this.cls.get<number>('userId');
+    const tenantId = this.cls.get<number>('tenantId');
 
-    return true; // Guard lässt immer durch — Scope ist informational, kein Gate
+    // Rolle wird NICHT aus CLS gelesen — HierarchyPermissionService.getScope()
+    // bestimmt role + has_full_access intern via getUserInfo() (Single-Row PK-Lookup)
+    const scope = await this.hierarchyPermission.getScope(userId, tenantId);
+    this.cls.set('orgScope', scope);
+    return scope;
   }
 }
 ```
 
-**Registrierung:** Global in AppModule als `APP_GUARD`, **nach TenantAddonGuard, VOR PermissionGuard:**
+**Neues Modul:** `backend/src/nest/hierarchy-permission/scope.module.ts`
 
 ```typescript
-// Guard-Reihenfolge in app.module.ts providers:
-{ provide: APP_GUARD, useClass: JwtAuthGuard },        // 1. Auth
-{ provide: APP_GUARD, useClass: RolesGuard },           // 2. Role Check
-{ provide: APP_GUARD, useClass: TenantAddonGuard },     // 3. Addon Check
-{ provide: APP_GUARD, useClass: ScopeGuard },           // 4. NEU: Scope → CLS
-{ provide: APP_GUARD, useClass: PermissionGuard },      // 5. Permission Check (liest orgScope aus CLS)
+@Module({
+  imports: [HierarchyPermissionModule],
+  providers: [ScopeService],
+  exports: [ScopeService],
+})
+export class ScopeModule {}
 ```
 
-> **Hinweis:** `HierarchyPermissionModule` muss in `AppModule.imports` aufgenommen werden, da ScopeGuard global registriert wird und `HierarchyPermissionService` braucht (Modul ist NICHT @Global()).
+> **Kein APP_GUARD, keine Änderung an app.module.ts Guard-Reihenfolge.**
+> Guard-Reihenfolge bleibt unverändert: JwtAuth → Roles → TenantAddon → Permission.
+> PermissionGuard braucht keinen Scope (D6: Auto-Seed macht Sonderlogik überflüssig).
 
-**Services lesen aus CLS:**
+**Services injizieren ScopeService:**
 
 ```typescript
-const scope = this.cls.get<OrganizationalScope>('orgScope');
+constructor(private readonly scopeService: ScopeService) {}
+
+// In Service-Methoden:
+const scope = await this.scopeService.getScope();
 ```
 
 ### Step 1.5: Neuer Endpoint — GET /users/me/org-scope [PENDING]
@@ -402,23 +441,25 @@ const scope = this.cls.get<OrganizationalScope>('orgScope');
 | ------ | --------------------- | ------------ | -------------------------------------- |
 | GET    | `/users/me/org-scope` | JwtAuthGuard | Organisationsscope des aktuellen Users |
 
-Kein @Roles — jeder authentifizierte User kann seinen Scope abfragen. Liest aus CLS (bereits aufgelöst durch ScopeGuard).
+Kein @Roles — jeder authentifizierte User kann seinen Scope abfragen. Nutzt `ScopeService.getScope()` (lazy, CLS-cached).
 
 ### Phase 1 — Definition of Done
 
-- [ ] `OrganizationalScope` Types definiert
+- [ ] `OrganizationalScope` Types definiert (inkl. `DEPUTY_EQUALS_LEAD` Flag)
 - [ ] `HierarchyPermissionService.getScope()` mit Unified-CTE implementiert
-- [ ] Bestehende `getAccessible*Ids()` durch `getScope()` ersetzt
+- [ ] CTE filtert soft-deleted Entities korrekt aus (is_active JOIN auf perm_areas/perm_depts)
+- [ ] CTE nutzt `IS_ACTIVE`-Konstanten (keine Magic Numbers)
 - [ ] `getScope()` liefert korrekten Scope für Root, Admin (full/scoped), Employee-Lead, Employee
 - [ ] `getVisibleUserIds()` liefert korrekte User-IDs basierend auf Scope
-- [ ] ScopeGuard als APP_GUARD registriert (nach TenantAddonGuard, VOR PermissionGuard)
-- [ ] ScopeGuard speichert Scope in CLS (einmal pro Request)
-- [ ] HierarchyPermissionModule in AppModule.imports aufgenommen
-- [ ] Endpoint `GET /users/me/org-scope` funktioniert
-- [ ] KVP refactored: nutzt `HierarchyPermissionService.getScope()`
+- [ ] `ScopeService` implementiert (Lazy: DB bei erstem Zugriff → CLS-Cache)
+- [ ] `ScopeModule` exportiert `ScopeService`
+- [ ] Endpoint `GET /users/me/org-scope` funktioniert (nutzt ScopeService)
+- [ ] KVP refactored: nutzt `ScopeService.getScope()` statt `EXTENDED_ORG_INFO_QUERY`
+- [ ] Deputy = Lead Verhaltensänderung in KVP bewusst getestet
 - [ ] EXPLAIN ANALYZE der CTE-Query < 10ms
 - [ ] ESLint 0 Errors, Type-Check passed
 - [ ] Bestehende KVP-Tests grün
+- [ ] Bestehende `getAccessible*Ids()` als `@deprecated` markiert (Entfernung nach Blackboard-Migration)
 
 ---
 
@@ -434,7 +475,7 @@ Kein @Roles — jeder authentifizierte User kann seinen Scope abfragen. Liest au
 ```typescript
 // Einheitliches Pattern für ALLE 4 Services:
 async listTeams(tenantId: number, filters: TeamFilters): Promise<TeamResponse[]> {
-  const scope = this.cls.get<OrganizationalScope>('orgScope'); // Bereits in CLS (ScopeGuard)
+  const scope = await this.scopeService.getScope(); // Lazy: DB nur bei erstem Zugriff
 
   if (scope.type === 'full') {
     return this.getAllTeams(tenantId, filters);
@@ -476,28 +517,43 @@ if ((query.role === 'admin' || query.role === 'root') && user.role !== 'root') {
 **Datei:** `backend/src/nest/users/users.service.ts`
 
 ```typescript
-private ensureEntityInScope(
-  targetEntityId: number,
-  entityType: 'user' | 'area' | 'department' | 'team',
+/** Prüft ob eine Org-Entity (Area/Dept/Team) im Scope liegt. Synchron, kein DB-Zugriff. */
+private ensureOrgEntityInScope(
+  scope: OrganizationalScope,
+  entityType: 'area' | 'department' | 'team',
+  entityId: number,
 ): void {
-  const scope = this.cls.get<OrganizationalScope>('orgScope');
   if (scope.type === 'full') return;
-
-  const inScope = HierarchyPermissionService.isEntityInScope(scope, entityType, targetEntityId);
-  if (!inScope) {
+  if (!HierarchyPermissionService.isEntityInScope(scope, entityType, entityId)) {
     throw new ForbiddenException('Entity is not in your organizational scope');
+  }
+}
+
+/** Prüft ob ein User im Scope liegt. Async, braucht DB-Query für User→Team/Dept Zuordnung. */
+private async ensureUserInScope(
+  scope: OrganizationalScope,
+  targetUserId: number,
+  tenantId: number,
+): Promise<void> {
+  if (scope.type === 'full') return;
+  const visibleUserIds = await this.hierarchyPermission.getVisibleUserIds(scope, tenantId);
+  if (visibleUserIds === 'all') return;
+  if (!visibleUserIds.includes(targetUserId)) {
+    throw new ForbiddenException('User is not in your organizational scope');
   }
 }
 ```
 
+> **Warum zwei Methoden?** `isEntityInScope()` ist synchron (ID-Lookup in Arrays). Aber User→Scope-Check braucht eine DB-Query (`getVisibleUserIds()`) weil User über Junction-Tables (user_teams, user_departments) zugeordnet sind — die IDs stehen nicht im Scope-Objekt.
+
 **Betroffene Methoden:**
 
-| Methode               | Prüfung                              |
-| --------------------- | ------------------------------------ |
-| `updateUser()`        | ensureEntityInScope vor Update       |
-| `deleteUser()`        | ensureEntityInScope vor Delete       |
-| `getUserByUuid()`     | ensureEntityInScope vor Return       |
-| User-Permissions Page | ensureEntityInScope vor Daten-Return |
+| Methode               | Prüfung                                |
+| --------------------- | -------------------------------------- |
+| `updateUser()`        | `ensureUserInScope()` vor Update       |
+| `deleteUser()`        | `ensureUserInScope()` vor Delete       |
+| `getUserByUuid()`     | `ensureUserInScope()` vor Return       |
+| User-Permissions Page | `ensureUserInScope()` vor Daten-Return |
 
 ### Step 2.4: Scope-Info als Response-Metadata [PENDING]
 
@@ -515,6 +571,29 @@ interface ScopedPaginatedResult<T> extends PaginatedResult<T> {
 }
 ```
 
+### Step 2.5: BlackboardAccessService migrieren [PENDING]
+
+**Geänderte Datei:** `backend/src/nest/blackboard/blackboard-access.service.ts`
+
+> **Bestehender Consumer!** `BlackboardAccessService.validateOrgPermissions()` (Line 260-262) ruft alle drei `getAccessible*Ids()` Methoden auf. Muss auf `ScopeService.getScope()` migriert werden.
+
+```typescript
+// ALT (3 separate Queries):
+const [accessibleAreas, accessibleDepts, accessibleTeams] = await Promise.all([
+  this.hierarchyPermission.getAccessibleAreaIds(userId, tenantId),
+  this.hierarchyPermission.getAccessibleDepartmentIds(userId, tenantId),
+  this.hierarchyPermission.getAccessibleTeamIds(userId, tenantId),
+]);
+
+// NEU (1 Query, lazy cached):
+const scope = await this.scopeService.getScope();
+const accessibleAreas = scope.type === 'full' ? 'all' : scope.areaIds;
+const accessibleDepts = scope.type === 'full' ? 'all' : scope.departmentIds;
+const accessibleTeams = scope.type === 'full' ? 'all' : scope.teamIds;
+```
+
+**BlackboardModule** importiert `ScopeModule` statt `HierarchyPermissionModule`.
+
 ### Phase 2 — Definition of Done
 
 - [ ] Alle 4 List-Methods scope-gefiltert (Areas, Departments, Teams, Users)
@@ -522,9 +601,11 @@ interface ScopedPaginatedResult<T> extends PaginatedResult<T> {
 - [ ] Scoped Admin sieht nur seinen Scope
 - [ ] Employee-Lead sieht nur seinen Lead-Scope
 - [ ] Employee ohne Lead sieht leere Liste
-- [ ] Mutations (update/delete) prüfen Scope
+- [ ] Mutations (update/delete) prüfen Scope (`ensureUserInScope` für Users, `ensureOrgEntityInScope` für Org-Entities)
 - [ ] `role=admin/root` Listing nur für Root
 - [ ] Scope-Info in User-List-Response
+- [ ] BlackboardAccessService auf ScopeService migriert
+- [ ] Bestehende Blackboard-Tests grün
 - [ ] ESLint 0 Errors, Type-Check passed
 
 ---
@@ -557,72 +638,57 @@ export const MANAGE_HIERARCHY_PERMISSIONS: PermissionCategoryDef = {
 
 **Kein canDelete**: Leads dürfen nicht löschen. Create bleibt Root/Admin.
 
-### Step 3.1b: DB Migration — manage_hierarchy Addon + Admin-Permissions [PENDING]
+### Step 3.1b: DB Migration — manage_hierarchy Addon [PENDING]
 
-**Neue Datei:** `database/migrations/XXXXXX_manage-hierarchy-permissions.ts`
+**Neue Datei:** `database/migrations/XXXXXX_manage-hierarchy-addon.ts`
 
-**Warum:** Ohne diese Migration verlieren scoped Admins (has_full_access=false) den Zugang zu manage-\*, sobald `@RequirePermission('manage_hierarchy', ...)` auf den Controllern sitzt. Fail-closed = kein Row → DENY → Breaking Regression.
+> **Vereinfacht (D5):** Nur Addon-Eintrag. Keine Admin-Permission-Rows seeden. Root vergibt `manage_hierarchy` manuell auf der Permission-Seite. DB = Test-Daten, kein Prod-Migrationsproblem.
 
 **Migration up:**
 
 ```sql
--- 1. Addon registrieren (core, immer aktiv)
+-- Addon registrieren (core, immer aktiv)
 INSERT INTO addons (code, name, description, is_core, is_active, icon, sort_order)
 VALUES ('manage_hierarchy', 'Organisationsstruktur', 'Verwaltung von Bereichen, Abteilungen, Teams und Mitarbeitern', true, 1, 'fa-sitemap', 50)
 ON CONFLICT (code) DO NOTHING;
-
--- 2. Bestehende Admins: manage_hierarchy Permissions seeden
--- Pattern aus 20260309200080_permission-new-categories.ts
-INSERT INTO user_addon_permissions (tenant_id, user_id, addon_code, module_code, can_read, can_write, can_delete, assigned_by)
-SELECT u.tenant_id, u.id, 'manage_hierarchy', module.code, true, true, false, u.id
-FROM users u
-CROSS JOIN (VALUES
-  ('manage-areas'),
-  ('manage-departments'),
-  ('manage-teams'),
-  ('manage-employees')
-) AS module(code)
-WHERE u.role = 'admin' AND u.is_active = 1 AND u.tenant_id IS NOT NULL
-ON CONFLICT (tenant_id, user_id, addon_code, module_code) DO NOTHING;
 ```
 
 **Migration down:**
 
 ```sql
 DELETE FROM user_addon_permissions WHERE addon_code = 'manage_hierarchy';
-DELETE FROM addons WHERE code = 'manage_hierarchy';
+-- UPDATE statt DELETE: prevent_addons_delete Trigger blockt DELETE auf addons
+UPDATE addons SET is_active = 0 WHERE code = 'manage_hierarchy';
 ```
 
-**Wichtig:**
+**Test-Daten (manuell nach Migration, NICHT in Migration selbst):**
 
-- `can_delete = false` — DELETE-Endpoints behalten `@Roles('admin', 'root')` ohne `@RequirePermission`, brauchen keinen Permission-Eintrag
-- Root/has_full_access bypassen den PermissionGuard sowieso (Step 2 im Guard)
-- Leads brauchen keine Rows (Lead-Default-Grant, Step 3.2 neue Logik)
+```sql
+-- Nur für Dev/Test: Admin-Permissions manuell seeden
+INSERT INTO user_addon_permissions (tenant_id, user_id, addon_code, module_code, can_read, can_write, can_delete, assigned_by)
+SELECT u.tenant_id, u.id, 'manage_hierarchy', module.code, true, true, false, u.id
+FROM users u
+CROSS JOIN (VALUES ('manage-areas'), ('manage-departments'), ('manage-teams'), ('manage-employees')) AS module(code)
+WHERE u.role = 'admin' AND u.is_active = 1 AND u.tenant_id IS NOT NULL
+ON CONFLICT (tenant_id, user_id, addon_code, module_code) DO NOTHING;
+```
+
+> **Optional:** Dieses SQL kann als Seed-Datei abgelegt werden für einfaches Re-Seeding nach DB-Truncate.
+
 - `ON CONFLICT DO NOTHING` = idempotent, sicher bei Re-Run
 
-### Step 3.2: PermissionGuard erweitern [PENDING]
+### Step 3.2: PermissionGuard — KEINE Änderung [ENTFÄLLT]
 
-**Geänderte Datei:** `backend/src/nest/common/guards/permission.guard.ts`
-
-**Neue Logik (Ergänzung nach hasFullAccess-Check):**
-
-```
-Aktuelle Logik:
-  1. Kein @RequirePermission → pass
-  2. hasFullAccess → pass
-  3. DB-Lookup → grant/deny (fail-closed)
-
-Neue Logik:
-  1. Kein @RequirePermission → pass
-  2. hasFullAccess → pass
-  3. NEU: Ist manage_hierarchy Kategorie UND User ist Lead?
-     → Check ADR-020 für expliziten DENY (invertierte Logik!)
-       → Kein Eintrag = GRANT (Lead-Default)
-       → Eintrag mit canRead=false = DENY (Admin Override)
-  4. Standard DB-Lookup → grant/deny (fail-closed)
-```
-
-**Kritisch:** Invertierte Default-Logik gilt NUR für `manage_hierarchy` + Lead. Alles andere bleibt fail-closed.
+> **v0.5.0 (D6):** PermissionGuard bleibt **unverändert**. Kein invertiertes Default-Verhalten, kein Sonderfall.
+>
+> **Warum:** Auto-Seed bei Lead-Zuweisung (Step 3.4) erstellt Permission-Rows für Leads. Der Guard findet diese Rows → standard fail-closed → GRANT. Kein Sonder-Code nötig.
+>
+> ```
+> Logik bleibt:
+>   1. Kein @RequirePermission → pass
+>   2. hasFullAccess → pass
+>   3. DB-Lookup → grant/deny (fail-closed, EIN Verhalten für alle)
+> ```
 
 ### Step 3.3: Controller @Roles erweitern [PENDING]
 
@@ -639,14 +705,94 @@ Neue Logik:
 
 validateLeader() bleibt unverändert — Area/Department-Leads nur admin/root (ADR-035 konform).
 
+### Step 3.5: Auto-Seed/Cleanup bei Lead-Zuweisung (D6) [PENDING]
+
+**Geänderte Datei:** `backend/src/nest/teams/teams.service.ts`
+
+> **Prerequisite (v0.6.0):** `deputy_lead_id` existiert als DB-Spalte (Migration 028), aber kein Codepfad zum Setzen. Vor dem Auto-Seed muss in diesem Step:
+>
+> 1. `UpdateTeamDto` um `deputyLeaderId?: number | null` erweitern
+> 2. `buildUpdateFields()` Mapping `deputyLeaderId → deputy_lead_id` hinzufügen
+> 3. `validateLeader()` auch für Deputy aufrufen (Position = 'Teamleiter')
+> 4. `TeamRow` + `TeamResponse` um `deputy_lead_id` / `deputyLeadId` erweitern
+> 5. Controller: PUT /teams/:id akzeptiert `deputyLeaderId`
+
+> **Kernidee:** Wenn ein Employee zum Team-Lead oder Deputy-Lead ernannt wird, erstellt das System automatisch `manage_hierarchy` Permission-Rows. Bei Entfernung als Lead → Cleanup (nur wenn kein anderes Team mehr geführt wird).
+
+**Seed bei Lead-Zuweisung:**
+
+```typescript
+/** Wird aufgerufen in updateTeam() wenn team_lead_id oder deputy_lead_id sich ändert */
+private async seedLeadPermissions(userId: number, tenantId: number, assignedBy: number): Promise<void> {
+  const modules = ['manage-teams', 'manage-employees'];
+  for (const moduleCode of modules) {
+    await this.db.query(
+      `INSERT INTO user_addon_permissions (tenant_id, user_id, addon_code, module_code, can_read, can_write, can_delete, assigned_by)
+       VALUES ($1, $2, 'manage_hierarchy', $3, true, true, false, $4)
+       ON CONFLICT (tenant_id, user_id, addon_code, module_code) DO NOTHING`,
+      [tenantId, userId, moduleCode, assignedBy],
+    );
+  }
+}
+```
+
+**Cleanup bei Lead-Entfernung:**
+
+```typescript
+/** Wird aufgerufen in updateTeam() wenn team_lead_id oder deputy_lead_id auf NULL/anderen User gesetzt wird */
+private async cleanupLeadPermissions(userId: number, tenantId: number): Promise<void> {
+  // Prüfen ob User noch Lead eines anderen Teams ist
+  const remainingLeadships = await this.db.query<{ count: string }>(
+    `SELECT COUNT(*) AS count FROM teams
+     WHERE (team_lead_id = $1 OR deputy_lead_id = $1)
+       AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}`,
+    [userId, tenantId],
+  );
+
+  if (Number(remainingLeadships[0]?.count ?? 0) === 0) {
+    // Kein Lead mehr → Permission-Rows löschen
+    await this.db.query(
+      `DELETE FROM user_addon_permissions
+       WHERE user_id = $1 AND tenant_id = $2 AND addon_code = 'manage_hierarchy'`,
+      [userId, tenantId],
+    );
+  }
+}
+```
+
+**Integration in `updateTeam()`:**
+
+```typescript
+// In TeamsService.updateTeam():
+const oldTeam = await this.getTeamById(teamId, tenantId);
+
+// ... update query ...
+
+// Lead-Change Detection:
+if (oldTeam.teamLeadId !== dto.teamLeadId) {
+  if (dto.teamLeadId !== null) await this.seedLeadPermissions(dto.teamLeadId, tenantId, currentUserId);
+  if (oldTeam.teamLeadId !== null) await this.cleanupLeadPermissions(oldTeam.teamLeadId, tenantId);
+}
+if (oldTeam.deputyLeadId !== dto.deputyLeadId) {
+  if (dto.deputyLeadId !== null) await this.seedLeadPermissions(dto.deputyLeadId, tenantId, currentUserId);
+  if (oldTeam.deputyLeadId !== null) await this.cleanupLeadPermissions(oldTeam.deputyLeadId, tenantId);
+}
+```
+
+> **ADR-020 Override:** Root kann einem Lead die Permissions auf der Permission-Seite entziehen (`can_read=false`). Der Auto-Seed überschreibt das NICHT (`ON CONFLICT DO NOTHING`). Erst wenn der Lead entfernt und neu zugewiesen wird, werden die Permissions zurückgesetzt.
+
 ### Phase 3 — Definition of Done
 
 - [ ] `manage_hierarchy` Permission-Kategorie registriert
-- [ ] DB Migration: `manage_hierarchy` in `addons`-Tabelle + Permissions für bestehende Admins geseeded
-- [ ] PermissionGuard Lead-Logik implementiert
+- [ ] DB Migration: `manage_hierarchy` in `addons`-Tabelle (is_core=true, NUR Addon-Eintrag)
+- [ ] PermissionGuard: KEINE Änderung (bleibt fail-closed, D6)
+- [ ] Auto-Seed bei Lead-Zuweisung in TeamsService implementiert
+- [ ] Auto-Cleanup bei Lead-Entfernung implementiert (mit Multi-Team-Check)
+- [ ] ADR-020 Override funktioniert (Root entzieht Lead Permissions, Auto-Seed überschreibt NICHT)
 - [ ] GET/PUT Endpoints erlauben Employee-Rolle (mit Permission-Check)
 - [ ] POST/DELETE Endpoints bleiben Admin/Root only
 - [ ] Root/Admin Zugriffe unverändert (Regression)
+- [ ] Test-SQL für Dev-Admin-Permissions dokumentiert
 - [ ] ESLint 0 Errors, Type-Check passed
 
 ---
@@ -678,19 +824,20 @@ validateLeader() bleibt unverändert — Area/Department-Leads nur admin/root (A
 | 13  | Tenant-Isolation                          | Lead aus anderem Tenant → leer   |
 | 14  | Kombiniert: Area-Perm + Dept-Lead (Admin) | Union beider Scopes              |
 
-### Step 4.2: PermissionGuard Lead-Logik Tests [PENDING]
+### Step 4.2: Auto-Seed/Cleanup Tests [PENDING]
 
-**Mindestens 7 Szenarien:**
+**Mindestens 8 Szenarien:**
 
-| #   | Szenario                                 | Erwartung            |
-| --- | ---------------------------------------- | -------------------- |
-| 1   | Employee + Lead + kein ADR-020 Eintrag   | GRANT                |
-| 2   | Employee + Lead + ADR-020 canRead=true   | GRANT                |
-| 3   | Employee + Lead + ADR-020 canRead=false  | DENY                 |
-| 4   | Employee + kein Lead                     | DENY                 |
-| 5   | Root → manage_hierarchy                  | GRANT (unverändert)  |
-| 6   | Admin + hasFullAccess → manage_hierarchy | GRANT (unverändert)  |
-| 7   | Non-manage_hierarchy Permission          | Standard fail-closed |
+| #   | Szenario                                                      | Erwartung                                    |
+| --- | ------------------------------------------------------------- | -------------------------------------------- |
+| 1   | Employee wird team_lead → Permission-Rows existieren          | manage-teams + manage-employees canRead=true |
+| 2   | Employee wird deputy_lead → Permission-Rows existieren        | manage-teams + manage-employees canRead=true |
+| 3   | Lead wird entfernt (kein anderes Team) → Rows gelöscht        | Keine manage_hierarchy Rows mehr             |
+| 4   | Lead wird entfernt (führt noch anderes Team) → Rows bleiben   | manage_hierarchy Rows bleiben                |
+| 5   | Root setzt canRead=false → Auto-Seed überschreibt NICHT       | ON CONFLICT DO NOTHING, canRead bleibt false |
+| 6   | Lead entfernt + neu zugewiesen → Permissions zurückgesetzt    | Neue Rows mit canRead=true                   |
+| 7   | Admin mit manage_hierarchy Permission → PermissionGuard GRANT | Standard fail-closed findet Row              |
+| 8   | Admin ohne manage_hierarchy Permission → PermissionGuard DENY | Standard fail-closed, kein Row → DENY        |
 
 ### Step 4.3: Service Scope-Tests [PENDING]
 
@@ -728,8 +875,10 @@ validateLeader() bleibt unverändert — Area/Department-Leads nur admin/root (A
 | `(root)/manage-teams/`        | `(shared)/manage-teams/`       | Admin + Employee-Lead |
 | `(admin)/manage-employees/`   | `(shared)/manage-employees/`   | Admin + Employee-Lead |
 | `(admin)/manage-admins/`      | `(root)/manage-admins/`        | Root-only             |
+| `(admin)/manage-dummies/`     | `(root)/manage-dummies/`       | Root-only (D7)        |
 
-**URLs bleiben identisch.** Route Groups in SvelteKit beeinflussen nicht die URL.
+> **Nicht migriert:** manage-halls (bleibt admin), manage-assets (bleibt admin, D8).
+> **URLs bleiben identisch.** Route Groups in SvelteKit beeinflussen nicht die URL.
 
 ### Step 5.2: +page.server.ts Access-Checks [PENDING]
 
@@ -774,12 +923,12 @@ const [counts, theme, addons, labels, orgScope] = await Promise.all([
 ]);
 ```
 
-**Für Root/Admin full: orgScope-Query ist trotzdem billig (< 1ms, returns type:'full').**
+**orgScope wird per SSR geladen.** Für Root/has_full_access ist die Backend-Query billig (< 1ms, early return type:'full').
 
 ### Phase 5 — Definition of Done
 
 - [ ] 4 Route-Ordner nach (shared) verschoben
-- [ ] manage-admins nach (root) verschoben
+- [ ] manage-admins + manage-dummies nach (root) verschoben
 - [ ] URLs unverändert
 - [ ] orgScope in Layout-Data verfügbar
 - [ ] Jede +page.server.ts hat expliziten Role + Scope Check
@@ -944,7 +1093,7 @@ Zeigt für scoped Admins auf manage-employees:
 **Inhalte:**
 
 - Context: Manage-Seiten haben keine Scope-Filterung, Leads können nicht verwalten
-- Decision: HierarchyPermissionService.getScope() + Unified CTE + ScopeGuard/CLS + Lead-Default-Grant
+- Decision: HierarchyPermissionService.getScope() + Unified CTE + ScopeService (Lazy/CLS) + Auto-Seed bei Lead-Zuweisung (fail-closed)
 - Alternatives: Zwei separate Services (rejected), RLS-Umbau (rejected), Frontend-only Filter (rejected)
 - Consequences: Positive + Negative
 
@@ -987,17 +1136,18 @@ Zeigt für scoped Admins auf manage-employees:
 
 ## Session Tracking
 
-| Session | Phase | Beschreibung                                                                           | Status | Datum |
-| ------- | ----- | -------------------------------------------------------------------------------------- | ------ | ----- |
-| 1       | 1     | HierarchyPermissionService erweitern + Types + CTE + ScopeGuard (APP_GUARD) + Endpoint |        |       |
-| 2       | 1+2   | KVP Refactoring + List-Method Scope-Filtering                                          |        |       |
-| 3       | 2     | User-List Scope + Mutations + Scope-Info Response                                      |        |       |
-| 4       | 3     | Permission Registry + Guard Extension + Controller @Roles                              |        |       |
-| 5       | 4     | Unit Tests (Scope, Guard, Services)                                                    |        |       |
-| 6       | 5     | Route Migration + Layout Data + Access Checks                                          |        |       |
-| 7       | 6     | Navigation Config + Filter Pipeline + ScopeInfoBanner                                  |        |       |
-| 8       | 6+7   | Manage-Seiten Lead-View + API Integration Tests                                        |        |       |
-| 9       | 8     | ADR-036 + Docs + Smoke Tests + Polish                                                  |        |       |
+| Session | Phase | Beschreibung                                                                                | Status | Datum |
+| ------- | ----- | ------------------------------------------------------------------------------------------- | ------ | ----- |
+| 1       | 1     | Types + HierarchyPermissionService.getScope() + Unified CTE + ScopeService (Lazy)           |        |       |
+| 2       | 1     | Endpoint /users/me/org-scope + KVP Refactoring (EXTENDED_ORG_INFO_QUERY → ScopeService)     |        |       |
+| 3       | 2     | List-Method Scope-Filtering (Areas, Departments, Teams) + BlackboardAccessService Migration |        |       |
+| 4       | 2     | User-List Scope + ensureUserInScope/ensureOrgEntityInScope + Scope-Info Response            |        |       |
+| 5       | 3     | Permission Registry + Migration + Auto-Seed/Cleanup bei Lead-Zuweisung + Controller @Roles  |        |       |
+| 6       | 4     | Unit Tests (Scope, Auto-Seed/Cleanup, Services)                                             |        |       |
+| 7       | 5     | Route Migration (4→shared, 2→root) + Layout Data + Access Checks                            |        |       |
+| 8       | 6     | Navigation Config + Filter Pipeline + ScopeInfoBanner                                       |        |       |
+| 9       | 6+7   | Manage-Seiten Lead-View + API Integration Tests                                             |        |       |
+| 10      | 8     | ADR-036 + Docs + Smoke Tests + Polish                                                       |        |       |
 
 ---
 
@@ -1005,31 +1155,33 @@ Zeigt für scoped Admins auf manage-employees:
 
 ### Backend (neu)
 
-| Datei                                                                          | Zweck                                      |
-| ------------------------------------------------------------------------------ | ------------------------------------------ |
-| `backend/src/nest/hierarchy-permission/organizational-scope.types.ts`          | OrganizationalScope Interface              |
-| `backend/src/nest/common/guards/scope.guard.ts`                                | Scope einmal pro Request → CLS (APP_GUARD) |
-| `backend/src/nest/common/permissions/manage-hierarchy.permissions.ts`          | Permission-Kategorie                       |
-| `backend/src/nest/common/permissions/manage-hierarchy-permission.registrar.ts` | Registrar                                  |
-| `database/migrations/XXXXXX_manage-hierarchy-permissions.ts`                   | Addon + Admin-Permissions Seed             |
-| `backend/test/org-scope.api.test.ts`                                           | API Integration Tests                      |
+| Datei                                                                          | Zweck                                        |
+| ------------------------------------------------------------------------------ | -------------------------------------------- |
+| `backend/src/nest/hierarchy-permission/organizational-scope.types.ts`          | OrganizationalScope Interface                |
+| `backend/src/nest/hierarchy-permission/scope.service.ts`                       | Lazy Scope-Auflösung mit CLS-Cache           |
+| `backend/src/nest/hierarchy-permission/scope.module.ts`                        | ScopeModule (exportiert ScopeService)        |
+| `backend/src/nest/common/permissions/manage-hierarchy.permissions.ts`          | Permission-Kategorie                         |
+| `backend/src/nest/common/permissions/manage-hierarchy-permission.registrar.ts` | Registrar                                    |
+| `database/migrations/XXXXXX_manage-hierarchy-addon.ts`                         | Addon-Eintrag (nur is_core, keine User-Rows) |
+| `backend/test/org-scope.api.test.ts`                                           | API Integration Tests                        |
 
 ### Backend (geändert)
 
-| Datei                                                                   | Änderung                                                    |
-| ----------------------------------------------------------------------- | ----------------------------------------------------------- |
-| `backend/src/nest/hierarchy-permission/hierarchy-permission.service.ts` | `getScope()` + Unified CTE + `getVisibleUserIds()`          |
-| `backend/src/nest/app.module.ts`                                        | ScopeGuard als APP_GUARD + HierarchyPermissionModule Import |
-| `backend/src/nest/common/guards/permission.guard.ts`                    | Lead-Default-Grant Logik                                    |
-| `backend/src/nest/areas/areas.controller.ts`                            | @Roles + @RequirePermission                                 |
-| `backend/src/nest/departments/departments.controller.ts`                | @Roles + @RequirePermission                                 |
-| `backend/src/nest/teams/teams.controller.ts`                            | @Roles + @RequirePermission                                 |
-| `backend/src/nest/users/users.controller.ts`                            | Neuer Endpoint + @Roles                                     |
-| `backend/src/nest/areas/areas.service.ts`                               | Scope-Filterung (liest aus CLS)                             |
-| `backend/src/nest/departments/departments.service.ts`                   | Scope-Filterung (liest aus CLS)                             |
-| `backend/src/nest/teams/teams.service.ts`                               | Scope-Filterung (liest aus CLS)                             |
-| `backend/src/nest/users/users.service.ts`                               | Scope-Filterung + Mutation-Checks + Role-Restriction        |
-| `backend/src/nest/kvp/kvp.service.ts`                                   | Refactored → nutzt `HierarchyPermissionService.getScope()`  |
+| Datei                                                                   | Änderung                                                     |
+| ----------------------------------------------------------------------- | ------------------------------------------------------------ |
+| `backend/src/nest/hierarchy-permission/hierarchy-permission.service.ts` | `getScope()` + Unified CTE + `getVisibleUserIds()`           |
+| `backend/src/nest/blackboard/blackboard-access.service.ts`              | Migration: `getAccessible*Ids()` → `ScopeService.getScope()` |
+| `backend/src/nest/blackboard/blackboard.module.ts`                      | Import: `HierarchyPermissionModule` → `ScopeModule`          |
+| `backend/src/nest/teams/teams.service.ts`                               | Auto-Seed/Cleanup bei Lead-Zuweisung                         |
+| `backend/src/nest/areas/areas.controller.ts`                            | @Roles + @RequirePermission                                  |
+| `backend/src/nest/departments/departments.controller.ts`                | @Roles + @RequirePermission                                  |
+| `backend/src/nest/teams/teams.controller.ts`                            | @Roles + @RequirePermission                                  |
+| `backend/src/nest/users/users.controller.ts`                            | Neuer Endpoint + @Roles                                      |
+| `backend/src/nest/areas/areas.service.ts`                               | Scope-Filterung (liest aus CLS)                              |
+| `backend/src/nest/departments/departments.service.ts`                   | Scope-Filterung (liest aus CLS)                              |
+| `backend/src/nest/teams/teams.service.ts`                               | Scope-Filterung (liest aus CLS)                              |
+| `backend/src/nest/users/users.service.ts`                               | Scope-Filterung + Mutation-Checks + Role-Restriction         |
+| `backend/src/nest/kvp/kvp.service.ts`                                   | Refactored → nutzt `HierarchyPermissionService.getScope()`   |
 
 ### Frontend (verschoben)
 
@@ -1040,6 +1192,7 @@ Zeigt für scoped Admins auf manage-employees:
 | `(root)/manage-teams/`        | `(shared)/manage-teams/`       |
 | `(admin)/manage-employees/`   | `(shared)/manage-employees/`   |
 | `(admin)/manage-admins/`      | `(root)/manage-admins/`        |
+| `(admin)/manage-dummies/`     | `(root)/manage-dummies/`       |
 
 ### Frontend (neu)
 
@@ -1070,6 +1223,9 @@ Zeigt für scoped Admins auf manage-employees:
 7. **Kein granulares RWX pro Scope-Segment**: Scoped Admin kann jeden sichtbaren User editieren/löschen (V2)
 8. **Keine Scope-Filterung in Exports/E-Mails**: Nur API-Responses werden gefiltert
 9. **Employee-Leads nur auf Team-Ebene**: Employees können nur team_lead/deputy_lead sein, NICHT area/department-lead (D1=NEIN, ADR-035 konform)
+10. **Deputy = Lead (hart)**: In V1 hat `deputy_lead_id` immer identische Rechte wie `team_lead_id`. Per-Tenant-Setting geplant für V2 (Flag: `DEPUTY_EQUALS_LEAD`)
+11. **Neue Admins brauchen manuelle Permission-Vergabe**: Root muss `manage_hierarchy` Permissions explizit vergeben. Kein Auto-Grant bei Admin-Erstellung
+12. **Kein Scope-Filter in Dropdowns (V1)**: Create-Forms (z.B. neuen Employee erstellen) zeigen alle Entities in Dropdowns, nicht nur scoped. Backend-Scope-Filter fängt ungültige Zuweisungen ab
 
 ---
 
@@ -1089,7 +1245,7 @@ Zeigt für scoped Admins auf manage-employees:
 - Route-Migration nach (shared)
 - filterMenuByLeadRoles → integriert in filterMenuByScope
 - PermissionGuard manage_hierarchy Extension
-- Lead-Default-Grant mit ADR-020 Override
+- Auto-Seed bei Lead-Zuweisung mit ADR-020 Override (fail-closed)
 - KVP-Refactoring
 - CRUD-Matrix (Read+Edit, kein Create/Delete)
 
@@ -1106,12 +1262,16 @@ Zeigt für scoped Admins auf manage-employees:
 ### Was geändert wurde:
 
 - **Kein separater LeadScopeService** — `getScope()` direkt auf HierarchyPermissionService
-- **Bestehende getAccessible\*Ids() ersetzt** — durch unified `getScope()` mit Lead-Support
+- **Bestehende getAccessible\*Ids() deprecated** — durch unified `getScope()` mit Lead-Support (BlackboardAccessService migriert)
 - **Eine CTE statt zwei** — alle Zugriffspfade (Permissions + Leads) in einer Query
 - **Ein Filter-Pfad pro Service** statt zwei separate (Admin vs Employee)
-- **ScopeGuard (APP_GUARD) + CLS** — Scope einmal pro Request, nicht pro Service-Call. Guard statt Interceptor wegen NestJS Execution Order (Guards vor Interceptors)
+- **ScopeService (Lazy)** statt ScopeGuard (APP_GUARD) — kein DB-Overhead für ~90% der Requests
+- **Fail-Closed überall** — Auto-Seed bei Lead-Zuweisung statt invertierter Guard-Logik (D6)
+- **Admin braucht explizite Permission** — Root vergibt manuell, kein Auto-Grant (D5)
 - **manage-employees → (shared)** statt in (admin) zu bleiben (Plan 2 Abweichung)
+- **manage-dummies → (root)** (D7)
 - **D1=NEIN** — Employee-Leads nur Team-Level (Plan 1 wollte Area/Dept öffnen)
+- **D4=Deputy=Lead** — mit DEPUTY_EQUALS_LEAD Flag für V2 Settings-Toggle
 - **ADR-036** statt zwei konkurrierende ADR-035s
 
 ---
