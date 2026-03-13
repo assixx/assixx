@@ -1,5 +1,9 @@
 <script lang="ts">
   import PasswordStrengthIndicator from '$lib/components/PasswordStrengthIndicator.svelte';
+  import {
+    type HierarchyLabels,
+    resolvePositionDisplay,
+  } from '$lib/types/hierarchy-labels';
 
   import { POSITION_OPTIONS, type createRootMessages } from './constants';
   import {
@@ -33,12 +37,13 @@
     onsubmit: (e: Event) => void;
     onValidateEmails: () => void;
     positionOptions?: string[];
+    hierarchyLabels: HierarchyLabels;
     onValidatePasswords: () => void;
   }
 
   /* eslint-disable prefer-const, @typescript-eslint/no-useless-default-assignment -- Svelte $bindable() requires let and is not a useless default */
   // prettier-ignore
-  let { messages, show, isEditMode, modalTitle, positionOptions, firstName = $bindable(), lastName = $bindable(), email = $bindable(), emailConfirm = $bindable(), password = $bindable(), passwordConfirm = $bindable(), employeeNumber = $bindable(), position = $bindable(), notes = $bindable(), isActive = $bindable(), emailError = $bindable(), passwordError = $bindable(), submitting, onclose, onsubmit, onValidateEmails, onValidatePasswords }: Props = $props();
+  let { messages, show, isEditMode, modalTitle, positionOptions, hierarchyLabels, firstName = $bindable(), lastName = $bindable(), email = $bindable(), emailConfirm = $bindable(), password = $bindable(), passwordConfirm = $bindable(), employeeNumber = $bindable(), position = $bindable(), notes = $bindable(), isActive = $bindable(), emailError = $bindable(), passwordError = $bindable(), submitting, onclose, onsubmit, onValidateEmails, onValidatePasswords }: Props = $props();
   /* eslint-enable prefer-const, @typescript-eslint/no-useless-default-assignment */
 
   const effectivePositions = $derived(
@@ -379,7 +384,9 @@
               onclick={togglePositionDropdown}
             >
               <span
-                >{position !== '' ? position : messages.SELECT_POSITION}</span
+                >{position !== '' ?
+                  resolvePositionDisplay(position, hierarchyLabels)
+                : messages.SELECT_POSITION}</span
               >
               <i class="fas fa-chevron-down"></i>
             </div>
@@ -395,7 +402,7 @@
                     selectPosition(pos);
                   }}
                 >
-                  {pos}
+                  {resolvePositionDisplay(pos, hierarchyLabels)}
                 </div>
               {/each}
             </div>

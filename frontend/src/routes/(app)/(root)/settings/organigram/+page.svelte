@@ -3,7 +3,8 @@
   Visueller Organigramm-Builder unter /settings/organigram
 -->
 <script lang="ts">
-  import { invalidateAll } from '$app/navigation';
+  import { invalidateAll, replaceState } from '$app/navigation';
+  import { page } from '$app/state';
 
   import { showSuccessAlert, showErrorAlert } from '$lib/stores/toast';
   import { createLogger } from '$lib/utils/logger.js';
@@ -55,6 +56,14 @@
 
   let showLabelsModal = $state(false);
   let isLabelsSaving = $state(false);
+
+  /** Auto-open modal when navigated with ?editLabels */
+  $effect(() => {
+    if (page.url.searchParams.has('editLabels')) {
+      showLabelsModal = true;
+      replaceState(page.url.pathname, {});
+    }
+  });
 
   async function toggleFullscreen(): Promise<void> {
     try {

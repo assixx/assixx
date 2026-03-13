@@ -149,9 +149,9 @@ Defined in `vitest.config.ts` as the `api` project:
 
 ## npm Scripts
 
-| Script                    | Description                                         |
-| ------------------------- | --------------------------------------------------- |
-| `pnpm run test:api`       | Run all 33 modules (539 tests) with Vitest          |
+| Script                     | Description                                          |
+| -------------------------- | ---------------------------------------------------- |
+| `pnpm run test:api`        | Run all 33 modules (539 tests) with Vitest           |
 | `pnpm run test:unit:leaks` | Unit tests with `--detect-async-leaks` (slow, debug) |
 
 ### Useful Vitest CLI Flags
