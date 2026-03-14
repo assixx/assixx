@@ -8,6 +8,7 @@
   import { invalidateAll } from '$app/navigation';
   import { resolve } from '$app/paths';
 
+  import PermissionDenied from '$lib/components/PermissionDenied.svelte';
   import { showToast } from '$lib/stores/toast';
   import { createLogger } from '$lib/utils/logger';
 
@@ -30,6 +31,7 @@
 
   const { data }: { data: PageData } = $props();
 
+  const permissionDenied = $derived(data.permissionDenied);
   const plan = $derived(data.plan);
   const planUuid = $derived(data.planUuid);
   const locations = $derived(data.locations);
@@ -230,312 +232,320 @@
   </title>
 </svelte:head>
 
-<!-- Hidden file input for photo upload -->
-<input
-  bind:this={fileInput}
-  type="file"
-  accept="image/jpeg,image/png,image/webp"
-  class="loc-sr-only"
-  onchange={handleFileSelected}
-/>
+{#if permissionDenied}
+  <PermissionDenied addonName="das TPM-System" />
+{:else}
+  <!-- Hidden file input for photo upload -->
+  <input
+    bind:this={fileInput}
+    type="file"
+    accept="image/jpeg,image/png,image/webp"
+    class="loc-sr-only"
+    onchange={handleFileSelected}
+  />
 
-<div class="container">
-  <!-- Back Navigation -->
-  <div class="mb-4">
-    <button
-      type="button"
-      class="btn btn-light"
-      onclick={navigateToBoard}
-    >
-      <i class="fas fa-arrow-left mr-2"></i>
-      {MESSAGES.LOCATIONS_BACK}
-    </button>
-  </div>
-
-  {#if data.error !== null || plan === null}
-    <div class="empty-state">
-      <div class="empty-state__icon">
-        <i class="fas fa-exclamation-triangle"></i>
-      </div>
-      <h3 class="empty-state__title">Wartungsplan nicht gefunden</h3>
-      <p class="empty-state__description">
-        Der angeforderte Wartungsplan existiert nicht oder wurde gelöscht.
-      </p>
+  <div class="container">
+    <!-- Back Navigation -->
+    <div class="mb-4">
+      <button
+        type="button"
+        class="btn btn-light"
+        onclick={navigateToBoard}
+      >
+        <i class="fas fa-arrow-left mr-2"></i>
+        {MESSAGES.LOCATIONS_BACK}
+      </button>
     </div>
-  {:else}
-    <!-- Page Header (matches card detail page header) -->
-    <div class="card">
-      <div class="card__header">
-        <div class="flex flex-wrap items-center justify-between gap-4">
-          <div class="flex items-center gap-3">
-            <div>
-              <h2 class="card__title m-0">{MESSAGES.LOCATIONS_HEADING}</h2>
-              <div class="mt-1 flex items-center gap-2">
-                <span
-                  class="text-xs font-bold tracking-wider text-(--color-text-muted) uppercase"
-                >
-                  {plan.name}
-                </span>
-                {#if plan.assetName !== undefined}
-                  <span class="badge badge--info">{plan.assetName}</span>
-                {/if}
-                <span class="badge badge--success">
-                  {locations.length} Standorte
-                </span>
+
+    {#if data.error !== null || plan === null}
+      <div class="empty-state">
+        <div class="empty-state__icon">
+          <i class="fas fa-exclamation-triangle"></i>
+        </div>
+        <h3 class="empty-state__title">Wartungsplan nicht gefunden</h3>
+        <p class="empty-state__description">
+          Der angeforderte Wartungsplan existiert nicht oder wurde gelöscht.
+        </p>
+      </div>
+    {:else}
+      <!-- Page Header (matches card detail page header) -->
+      <div class="card">
+        <div class="card__header">
+          <div class="flex flex-wrap items-center justify-between gap-4">
+            <div class="flex items-center gap-3">
+              <div>
+                <h2 class="card__title m-0">{MESSAGES.LOCATIONS_HEADING}</h2>
+                <div class="mt-1 flex items-center gap-2">
+                  <span
+                    class="text-xs font-bold tracking-wider text-(--color-text-muted) uppercase"
+                  >
+                    {plan.name}
+                  </span>
+                  {#if plan.assetName !== undefined}
+                    <span class="badge badge--info">{plan.assetName}</span>
+                  {/if}
+                  <span class="badge badge--success">
+                    {locations.length} Standorte
+                  </span>
+                </div>
               </div>
             </div>
+            {#if canWrite && !showForm}
+              <button
+                type="button"
+                class="btn btn-primary"
+                onclick={() => {
+                  showForm = true;
+                  editingLocation = undefined;
+                }}
+              >
+                <i class="fas fa-plus mr-2"></i>
+                {MESSAGES.LOCATIONS_ADD}
+              </button>
+            {/if}
           </div>
-          {#if canWrite && !showForm}
-            <button
-              type="button"
-              class="btn btn-primary"
-              onclick={() => {
-                showForm = true;
-                editingLocation = undefined;
-              }}
-            >
-              <i class="fas fa-plus mr-2"></i>
-              {MESSAGES.LOCATIONS_ADD}
-            </button>
-          {/if}
         </div>
       </div>
-    </div>
 
-    <!-- Detail Grid: Main (locations) + Sidebar (form or info) -->
-    <div class="loc-detail-grid mt-4">
-      <!-- Main: Location List -->
-      <div class="flex flex-col gap-4">
-        {#if canWrite && showForm}
-          {#if !isEditing}
-            <div class="alert alert--info alert--sm mb-6">
-              <i class="fas fa-info-circle"></i>
-              Bilder können zum Standort erst nach Erstellung des Standorts hinzugefügt
-              werden.
+      <!-- Detail Grid: Main (locations) + Sidebar (form or info) -->
+      <div class="loc-detail-grid mt-4">
+        <!-- Main: Location List -->
+        <div class="flex flex-col gap-4">
+          {#if canWrite && showForm}
+            {#if !isEditing}
+              <div class="alert alert--info alert--sm mb-6">
+                <i class="fas fa-info-circle"></i>
+                Bilder können zum Standort erst nach Erstellung des Standorts hinzugefügt
+                werden.
+              </div>
+            {/if}
+            <!-- Create/Edit Form Section -->
+            <div class="card">
+              <div class="card__body">
+                <h3 class="loc-section-title mb-3">
+                  <i class="fas fa-edit"></i>
+                  {isEditing ? MESSAGES.LOCATIONS_EDIT : MESSAGES.LOCATIONS_ADD}
+                </h3>
+                <LocationForm
+                  location={editingLocation}
+                  {nextPosition}
+                  {saving}
+                  onSave={handleSave}
+                  onCancel={handleCancel}
+                />
+              </div>
             </div>
           {/if}
-          <!-- Create/Edit Form Section -->
+
+          {#if locations.length === 0 && !showForm}
+            <div class="empty-state">
+              <div class="empty-state__icon">
+                <i class="fas fa-map-pin"></i>
+              </div>
+              <h3 class="empty-state__title">
+                {MESSAGES.LOCATIONS_EMPTY_TITLE}
+              </h3>
+              <p class="empty-state__description">
+                {MESSAGES.LOCATIONS_EMPTY_DESC}
+              </p>
+            </div>
+          {:else}
+            <div class="loc-grid">
+              {#each locations as location (location.uuid)}
+                <LocationCard
+                  {location}
+                  {canWrite}
+                  onEdit={handleEdit}
+                  onDelete={handleDeleteRequest}
+                  onUploadPhoto={handleUploadPhoto}
+                  onRemovePhoto={handleRemovePhoto}
+                  onPreviewPhoto={openPreview}
+                />
+              {/each}
+            </div>
+          {/if}
+        </div>
+
+        <!-- Sidebar: Plan Info -->
+        <div class="flex flex-col gap-4">
           <div class="card">
             <div class="card__body">
               <h3 class="loc-section-title mb-3">
-                <i class="fas fa-edit"></i>
-                {isEditing ? MESSAGES.LOCATIONS_EDIT : MESSAGES.LOCATIONS_ADD}
+                <i class="fas fa-info-circle"></i>
+                Plandetails
               </h3>
-              <LocationForm
-                location={editingLocation}
-                {nextPosition}
-                {saving}
-                onSave={handleSave}
-                onCancel={handleCancel}
-              />
-            </div>
-          </div>
-        {/if}
-
-        {#if locations.length === 0 && !showForm}
-          <div class="empty-state">
-            <div class="empty-state__icon">
-              <i class="fas fa-map-pin"></i>
-            </div>
-            <h3 class="empty-state__title">{MESSAGES.LOCATIONS_EMPTY_TITLE}</h3>
-            <p class="empty-state__description">
-              {MESSAGES.LOCATIONS_EMPTY_DESC}
-            </p>
-          </div>
-        {:else}
-          <div class="loc-grid">
-            {#each locations as location (location.uuid)}
-              <LocationCard
-                {location}
-                {canWrite}
-                onEdit={handleEdit}
-                onDelete={handleDeleteRequest}
-                onUploadPhoto={handleUploadPhoto}
-                onRemovePhoto={handleRemovePhoto}
-                onPreviewPhoto={openPreview}
-              />
-            {/each}
-          </div>
-        {/if}
-      </div>
-
-      <!-- Sidebar: Plan Info -->
-      <div class="flex flex-col gap-4">
-        <div class="card">
-          <div class="card__body">
-            <h3 class="loc-section-title mb-3">
-              <i class="fas fa-info-circle"></i>
-              Plandetails
-            </h3>
-            <div class="loc-info">
-              <div class="loc-info__row">
-                <span class="loc-info__label">Wartungsplan</span>
-                <span class="loc-info__value">{plan.name}</span>
-              </div>
-              {#if plan.assetName !== undefined}
+              <div class="loc-info">
                 <div class="loc-info__row">
-                  <span class="loc-info__label">Anlage</span>
-                  <span class="loc-info__value">{plan.assetName}</span>
+                  <span class="loc-info__label">Wartungsplan</span>
+                  <span class="loc-info__value">{plan.name}</span>
                 </div>
-              {/if}
-              <div class="loc-info__row">
-                <span class="loc-info__label">Standorte</span>
-                <span class="loc-info__value">{locations.length} / 200</span>
-              </div>
-              <div class="loc-info__row">
-                <span class="loc-info__label">Mit Foto</span>
-                <span class="loc-info__value">
-                  {locations.filter((l: TpmLocation) => l.photoPath !== null)
-                    .length}
-                </span>
+                {#if plan.assetName !== undefined}
+                  <div class="loc-info__row">
+                    <span class="loc-info__label">Anlage</span>
+                    <span class="loc-info__value">{plan.assetName}</span>
+                  </div>
+                {/if}
+                <div class="loc-info__row">
+                  <span class="loc-info__label">Standorte</span>
+                  <span class="loc-info__value">{locations.length} / 200</span>
+                </div>
+                <div class="loc-info__row">
+                  <span class="loc-info__label">Mit Foto</span>
+                  <span class="loc-info__value">
+                    {locations.filter((l: TpmLocation) => l.photoPath !== null)
+                      .length}
+                  </span>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 
-        <!-- Hint Card -->
-        <div class="card">
-          <div class="card__body">
-            <h3 class="loc-section-title mb-2">
-              <i class="fas fa-lightbulb"></i>
-              Hinweis
-            </h3>
-            <p class="loc-hint">
-              Standorte beschreiben Positionen an der Anlage, die bei der
-              Wartung relevant sind. Jeder Standort kann mit einem Foto
-              dokumentiert werden, das zeigt, wo sich die Stelle befindet.
-            </p>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Delete Confirmation Modal (design system pattern) -->
-    {#if confirmDelete !== null}
-      <div
-        id="tpm-location-delete-confirm-modal"
-        class="modal-overlay modal-overlay--active"
-      >
-        <div class="ds-modal ds-modal--sm">
-          <div class="ds-modal__header">
-            <h3 class="ds-modal__title">{MESSAGES.LOCATIONS_DELETE_CONFIRM}</h3>
-            <button
-              type="button"
-              class="ds-modal__close"
-              onclick={() => {
-                confirmDelete = null;
-              }}
-              aria-label="Schließen"
-            >
-              <i class="fas fa-times"></i>
-            </button>
-          </div>
-          <div class="ds-modal__body">
-            <p>
-              Standort <strong
-                >#{confirmDelete.positionNumber} {confirmDelete.title}</strong
-              >
-              wird unwiderruflich gelöscht.
-            </p>
-          </div>
-          <div class="ds-modal__footer">
-            <button
-              type="button"
-              class="btn btn-cancel"
-              onclick={() => {
-                confirmDelete = null;
-              }}
-              disabled={saving}
-            >
-              {MESSAGES.LOCATIONS_CANCEL}
-            </button>
-            <button
-              type="button"
-              class="btn btn-danger"
-              onclick={handleDeleteConfirm}
-              disabled={saving}
-            >
-              {#if saving}
-                <i class="fas fa-spinner fa-spin mr-1"></i>
-              {/if}
-              {MESSAGES.LOCATIONS_DELETE}
-            </button>
+          <!-- Hint Card -->
+          <div class="card">
+            <div class="card__body">
+              <h3 class="loc-section-title mb-2">
+                <i class="fas fa-lightbulb"></i>
+                Hinweis
+              </h3>
+              <p class="loc-hint">
+                Standorte beschreiben Positionen an der Anlage, die bei der
+                Wartung relevant sind. Jeder Standort kann mit einem Foto
+                dokumentiert werden, das zeigt, wo sich die Stelle befindet.
+              </p>
+            </div>
           </div>
         </div>
       </div>
-    {/if}
-  {/if}
-</div>
 
-<!-- Photo Preview Modal (blackboard AttachmentPreviewModal pattern, image-only) -->
-{#if showPreviewModal && previewLocation !== null && previewLocation.photoPath !== null}
-  <div
-    id="tpm-location-photo-preview-modal"
-    class="modal-overlay modal-overlay--active"
-    onclick={closePreview}
-    onkeydown={handlePreviewKeydown}
-    role="dialog"
-    aria-modal="true"
-    tabindex="-1"
-  >
-    <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-    <div
-      class="ds-modal ds-modal--lg"
-      style="max-height: 95vh;"
-      onclick={stopPropagation}
-      onkeydown={stopPropagation}
-      role="document"
-    >
-      <div class="ds-modal__header">
-        <h3 class="ds-modal__title">
-          <i class="fas fa-image text-success-500 mr-2"></i>
-          {previewLocation.photoFileName ?? previewLocation.title}
-        </h3>
-        <button
-          type="button"
-          class="ds-modal__close"
-          onclick={closePreview}
-          aria-label="Schließen"><i class="fas fa-times"></i></button
-        >
-      </div>
-      <div class="ds-modal__body p-0">
+      <!-- Delete Confirmation Modal (design system pattern) -->
+      {#if confirmDelete !== null}
         <div
-          class="flex h-[80vh] min-h-[600px] w-full items-center justify-center bg-(--surface-1)"
+          id="tpm-location-delete-confirm-modal"
+          class="modal-overlay modal-overlay--active"
         >
-          <img
-            src={getPhotoUrl(previewLocation)}
-            alt="Standort {previewLocation.title}"
-            class="max-h-full max-w-full object-contain"
-          />
-        </div>
-        <div class="border-t border-(--border-subtle) bg-(--surface-2) p-4">
-          <div
-            class="flex items-center gap-6 text-sm text-(--color-text-secondary)"
-          >
-            {#if previewLocation.photoFileSize !== null}
-              <span class="flex items-center gap-2">
-                <i class="fas fa-file-archive"></i>
-                {formatFileSize(previewLocation.photoFileSize)}
-              </span>
-            {/if}
-            <span class="flex items-center gap-2">
-              <i class="fas fa-map-marker-alt"></i>
-              #{previewLocation.positionNumber}
-              {previewLocation.title}
-            </span>
+          <div class="ds-modal ds-modal--sm">
+            <div class="ds-modal__header">
+              <h3 class="ds-modal__title">
+                {MESSAGES.LOCATIONS_DELETE_CONFIRM}
+              </h3>
+              <button
+                type="button"
+                class="ds-modal__close"
+                onclick={() => {
+                  confirmDelete = null;
+                }}
+                aria-label="Schließen"
+              >
+                <i class="fas fa-times"></i>
+              </button>
+            </div>
+            <div class="ds-modal__body">
+              <p>
+                Standort <strong
+                  >#{confirmDelete.positionNumber} {confirmDelete.title}</strong
+                >
+                wird unwiderruflich gelöscht.
+              </p>
+            </div>
+            <div class="ds-modal__footer">
+              <button
+                type="button"
+                class="btn btn-cancel"
+                onclick={() => {
+                  confirmDelete = null;
+                }}
+                disabled={saving}
+              >
+                {MESSAGES.LOCATIONS_CANCEL}
+              </button>
+              <button
+                type="button"
+                class="btn btn-danger"
+                onclick={handleDeleteConfirm}
+                disabled={saving}
+              >
+                {#if saving}
+                  <i class="fas fa-spinner fa-spin mr-1"></i>
+                {/if}
+                {MESSAGES.LOCATIONS_DELETE}
+              </button>
+            </div>
           </div>
         </div>
-      </div>
-      <div class="ds-modal__footer">
-        <button
-          type="button"
-          class="btn btn-cancel"
-          onclick={closePreview}
-          ><i class="fas fa-times mr-2"></i>Schließen</button
-        >
+      {/if}
+    {/if}
+  </div>
+
+  <!-- Photo Preview Modal (blackboard AttachmentPreviewModal pattern, image-only) -->
+  {#if showPreviewModal && previewLocation !== null && previewLocation.photoPath !== null}
+    <div
+      id="tpm-location-photo-preview-modal"
+      class="modal-overlay modal-overlay--active"
+      onclick={closePreview}
+      onkeydown={handlePreviewKeydown}
+      role="dialog"
+      aria-modal="true"
+      tabindex="-1"
+    >
+      <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+      <div
+        class="ds-modal ds-modal--lg"
+        style="max-height: 95vh;"
+        onclick={stopPropagation}
+        onkeydown={stopPropagation}
+        role="document"
+      >
+        <div class="ds-modal__header">
+          <h3 class="ds-modal__title">
+            <i class="fas fa-image text-success-500 mr-2"></i>
+            {previewLocation.photoFileName ?? previewLocation.title}
+          </h3>
+          <button
+            type="button"
+            class="ds-modal__close"
+            onclick={closePreview}
+            aria-label="Schließen"><i class="fas fa-times"></i></button
+          >
+        </div>
+        <div class="ds-modal__body p-0">
+          <div
+            class="flex h-[80vh] min-h-[600px] w-full items-center justify-center bg-(--surface-1)"
+          >
+            <img
+              src={getPhotoUrl(previewLocation)}
+              alt="Standort {previewLocation.title}"
+              class="max-h-full max-w-full object-contain"
+            />
+          </div>
+          <div class="border-t border-(--border-subtle) bg-(--surface-2) p-4">
+            <div
+              class="flex items-center gap-6 text-sm text-(--color-text-secondary)"
+            >
+              {#if previewLocation.photoFileSize !== null}
+                <span class="flex items-center gap-2">
+                  <i class="fas fa-file-archive"></i>
+                  {formatFileSize(previewLocation.photoFileSize)}
+                </span>
+              {/if}
+              <span class="flex items-center gap-2">
+                <i class="fas fa-map-marker-alt"></i>
+                #{previewLocation.positionNumber}
+                {previewLocation.title}
+              </span>
+            </div>
+          </div>
+        </div>
+        <div class="ds-modal__footer">
+          <button
+            type="button"
+            class="btn btn-cancel"
+            onclick={closePreview}
+            ><i class="fas fa-times mr-2"></i>Schließen</button
+          >
+        </div>
       </div>
     </div>
-  </div>
+  {/if}
 {/if}
 
 <style>

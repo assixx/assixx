@@ -28,7 +28,18 @@
     zoomAt,
   } from './state.svelte.js';
 
-  import type { Connection, HallBounds, ResizeEdge } from './types.js';
+  import type {
+    Connection,
+    HallBounds,
+    OrgEntityType,
+    ResizeEdge,
+  } from './types.js';
+
+  interface Props {
+    ondblclicknode?: (entityType: OrgEntityType, entityUuid: string) => void;
+  }
+
+  const { ondblclicknode }: Props = $props();
 
   const zoom = $derived(getZoom());
   const panX = $derived(getPanX());
@@ -549,6 +560,7 @@
       <OrgNode
         {node}
         {svgElement}
+        {ondblclicknode}
       />
     {/each}
   </g>

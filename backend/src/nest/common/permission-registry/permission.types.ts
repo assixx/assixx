@@ -22,6 +22,8 @@ export interface PermissionModuleDef {
   icon: string;
   /** Which permission types this module supports */
   allowedPermissions: PermissionType[];
+  /** If set, module only shown for users with these roles. Omit = all roles. */
+  allowedRoles?: readonly string[];
 }
 
 /** An addon category containing one or more permission modules */

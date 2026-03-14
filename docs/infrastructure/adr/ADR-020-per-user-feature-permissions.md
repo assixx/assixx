@@ -1,13 +1,13 @@
 # ADR-020: Per-User Feature Permission Control
 
-| Metadata                | Value                                                                            |
-| ----------------------- | -------------------------------------------------------------------------------- |
-| **Status**              | Accepted                                                                         |
-| **Date**                | 2026-02-07                                                                       |
-| **Decision Makers**     | SCS-Technik Team                                                                 |
-| **Affected Components** | PostgreSQL, Backend (NestJS modules, DatabaseService), Frontend (SvelteKit)      |
-| **Supersedes**          | —                                                                                |
-| **Related ADRs**        | ADR-005 (Auth), ADR-006 (CLS), ADR-007 (Response), ADR-012 (RBAC), ADR-019 (RLS) |
+| Metadata                | Value                                                                                                                               |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| **Status**              | Accepted                                                                                                                            |
+| **Date**                | 2026-02-07                                                                                                                          |
+| **Decision Makers**     | SCS-Technik Team                                                                                                                    |
+| **Affected Components** | PostgreSQL, Backend (NestJS modules, DatabaseService), Frontend (SvelteKit)                                                         |
+| **Supersedes**          | —                                                                                                                                   |
+| **Related ADRs**        | ADR-005 (Auth), ADR-006 (CLS), ADR-007 (Response), ADR-012 (RBAC), ADR-019 (RLS), ADR-035 (Hierarchy), ADR-036 (Scope + Delegation) |
 
 ---
 
@@ -249,6 +249,77 @@ SELECT id FROM users WHERE uuid = $1
 
 RLS ensures only users within the current tenant are resolvable. A UUID from another tenant returns 0 rows → `NotFoundException`.
 
+### 6. Frontend Permission-Denied Handling (2026-03-13)
+
+> **Problem discovered:** The backend `PermissionGuard` correctly returns HTTP 403 when a user lacks permission. But the frontend's generic `apiFetch()` utility returned `null` for ALL errors (network failures, 500s, 403s alike). Pages could not distinguish "no data" from "no permission" — leading to **misleading error messages** (e.g. "Sie wurden keinem Team zugeordnet" when the actual problem was a missing permission).
+
+**Solution: `apiFetchWithPermission<T>()`**
+
+A permission-aware fetch utility that explicitly detects 403 responses. Located in `frontend/src/lib/server/api-fetch.ts`:
+
+```typescript
+export interface PermissionCheckResult<T> {
+  data: T | null;
+  permissionDenied: boolean;
+}
+
+export async function apiFetchWithPermission<T>(
+  endpoint: string,
+  token: string,
+  fetchFn: typeof fetch,
+): Promise<PermissionCheckResult<T>>;
+```
+
+**Behavior:**
+
+| HTTP Status                      | `data`        | `permissionDenied` |
+| -------------------------------- | ------------- | ------------------ |
+| 200 (success)                    | Extracted `T` | `false`            |
+| **403 (PermissionGuard denied)** | `null`        | **`true`**         |
+| 401, 404, 500, network error     | `null`        | `false`            |
+
+**Shared UI Component: `PermissionDenied.svelte`**
+
+```svelte
+<PermissionDenied addonName="das KVP-Modul" />
+```
+
+Renders a lock icon with the message: _"Sie haben keine Berechtigung für {addonName}. Bitte wenden Sie sich an Ihren Administrator."_ — consistent across all addon-gated pages.
+
+**Coverage:**
+
+Applied to **all 31 addon-gated pages** (`requireAddon` + `apiFetchWithPermission`) across all route groups:
+
+- **(shared)** — 20 pages: KVP (2), Blackboard (3), Calendar, Chat, Documents, Shifts, Vacation, Survey-Employee, Work-Orders (3), TPM (6)
+- **(admin)** — 10 pages: Vacation (3), Survey-Admin, Survey-Results, KVP-Categories, TPM (4)
+- **(root)** — 1 page: Vacation/Holidays
+
+**Pattern in `+page.server.ts`:**
+
+```typescript
+const result = await apiFetchWithPermission<T>('/endpoint', token, fetch);
+
+if (result.permissionDenied) {
+  return { permissionDenied: true as const /* empty data */ };
+}
+
+return { permissionDenied: false as const /* actual data */ };
+```
+
+**Pattern in `+page.svelte`:**
+
+```svelte
+{#if permissionDenied}
+  <PermissionDenied addonName="..." />
+{:else}
+  <!-- normal page content -->
+{/if}
+```
+
+**Test coverage:** 11 unit tests in `frontend/src/lib/server/api-fetch.test.ts` — covering 403 detection, non-403 errors, all three response envelope formats, network failures, and JSON parse errors.
+
+> **Design principle:** The generic `apiFetch()` remains unchanged (returns `T | null`). Only pages that need to distinguish 403 from other errors use `apiFetchWithPermission()`. This avoids breaking the ~46 other call sites that don't need permission-awareness.
+
 ---
 
 ## Alternatives Considered
@@ -331,6 +402,7 @@ Evaluate permissions based on attributes (user department, time of day, location
 6. **Audit-ready** — `assigned_by` + `updated_at` track who changed permissions and when
 7. **Type-safe** — registry validates feature/module codes at runtime, TypeScript catches structural errors at compile time
 8. **KISS** — single table, single UPSERT pattern, no complex inheritance trees
+9. **Consistent frontend UX** — all 31 addon-gated pages show "Keine Berechtigung" on 403 instead of misleading empty states (added 2026-03-13)
 
 ### Negative
 
@@ -348,6 +420,8 @@ Evaluate permissions based on attributes (user department, time of day, location
 | Permission codes drift from `addons.code`      | Code review + integration tests validate `addon_code` against `addons` table                             |
 | Admin locks themselves out                     | Admin role check is at controller level (`@Roles('admin')`) — permissions apply to employees, not admins |
 | Cross-tenant permission visibility             | RLS `tenant_isolation` policy on `user_addon_permissions` (ADR-019)                                      |
+| Frontend shows wrong error on 403              | `apiFetchWithPermission()` detects 403 explicitly → `PermissionDenied.svelte` component (11 unit tests)  |
+| New page forgets permission-denied handling    | ESLint: every page with `requireAddon` must also use `apiFetchWithPermission` (convention, not enforced) |
 
 ---
 
@@ -355,16 +429,61 @@ Evaluate permissions based on attributes (user department, time of day, location
 
 This ADR establishes the **atomic foundation** for a comprehensive access control system, analogous to Microsoft Entra ID scoped to application features:
 
-| Phase                  | Capability                                                    | Status                                                                |
-| ---------------------- | ------------------------------------------------------------- | --------------------------------------------------------------------- |
-| **Phase 1** (this ADR) | Per-user, per-module, per-action permissions                  | **Done** — 19 categories, 42 modules, 26 guarded controllers (v1.4.0) |
-| Phase 2                | Permission templates ("Standard Employee", "Quality Manager") | Future                                                                |
-| Phase 3                | Group-based assignment (department/team → template)           | Future                                                                |
-| Phase 4                | `valid_from` / `valid_until` for time-limited access          | Future                                                                |
-| Phase 5                | Self-service access requests with admin approval workflow     | Future                                                                |
-| Phase 6                | Compliance dashboard ("Who has delete access to Documents?")  | Future                                                                |
+| Phase                  | Capability                                                    | Status                                                                                                                         |
+| ---------------------- | ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| **Phase 1** (this ADR) | Per-user, per-module, per-action permissions                  | **Done** — 19 categories, 42 modules, 26 guarded controllers. Frontend: 31 pages with consistent 403→PermissionDenied handling |
+| Phase 2                | Permission templates ("Standard Employee", "Quality Manager") | Future                                                                                                                         |
+| Phase 3                | Group-based assignment (department/team → template)           | Future                                                                                                                         |
+| Phase 4                | `valid_from` / `valid_until` for time-limited access          | Future                                                                                                                         |
+| Phase 5                | Self-service access requests with admin approval workflow     | Future                                                                                                                         |
+| Phase 6                | Compliance dashboard ("Who has delete access to Documents?")  | Future                                                                                                                         |
 
 Each future phase builds on the `user_addon_permissions` table without schema redesign. The decentralized registry pattern scales with new features. The RLS isolation protects all phases equally.
+
+---
+
+### 7. Delegated Permission Management (2026-03-14)
+
+> **Erweiterung:** Leads können Addon-Permissions ihrer Untergebenen verwalten — mit strikter Hierarchie-Kontrolle. Zuvor: Nur Root und Admin mit `has_full_access=true`.
+
+**Delegationskette:** `Root → Admin(full) → Area-Lead → Dept-Lead → Team-Lead → Team-Members`
+
+**Controller-Änderung:** `assertFullAccess()` ersetzt durch `assertPermissionAccess()`:
+
+```
+1. Root → immer OK (inkl. Self-Edit)
+2. Admin mit has_full_access → OK (Self-Edit blockiert)
+3. Lead mit manage-permissions.canRead/canWrite → OK:
+   a) Target-User im eigenen Scope (ScopeService)
+   b) Target-User ≠ Current-User (kein Self-Grant)
+4. Alle anderen → 403
+```
+
+**`@Roles('admin', 'root', 'employee')`** — Employee-Rolle jetzt erlaubt auf Permission-Endpoints.
+
+**Service-Änderungen:**
+
+- `upsertPermissions()`: Neuer Parameter `delegatorScope` für delegierte Filterung
+- `filterDelegatedPermissions()`: Regel 2 (nur eigene Permissions) + Regel 4 (manage-permissions nicht delegierbar)
+- `filterByLeaderPerms()`: GET zeigt nur Module die der Lead hat
+- `hideManagePermissionsModule()`: manage-permissions nur für Leads sichtbar (nicht für Nicht-Leads)
+- Return-Type: `{ applied: number }` statt `void` (tatsächlicher Count nach Filterung)
+
+**Neue Permission:** `manage_hierarchy.manage-permissions` (canRead + canWrite)
+
+- canRead = Permission-Seite von Untergebenen sehen
+- canWrite = Permissions von Untergebenen ändern
+- Rote Hervorhebung (`perm-row--danger`) in UI
+- NUR für Leads sichtbar/setzbar (Backend + DB-Trigger)
+
+**DB-Trigger (Defense-in-Depth):**
+
+1. `trg_prevent_manage_permissions_self_grant`: Nur Root/Admin-full dürfen `manage-permissions.canWrite` vergeben
+2. `trg_enforce_manage_permissions_target_is_lead`: `manage-permissions` NUR für Users mit Lead-Position
+
+**`allowedRoles` auf `PermissionModuleDef`:** Neues optionales Feld — wenn gesetzt, wird das Modul nur für Users mit diesen Rollen auf der Permission-Seite angezeigt.
+
+**@see** [FEAT_DELEGATED_PERMISSION_MANAGEMENT_MASTERPLAN.md](../../FEAT_DELEGATED_PERMISSION_MANAGEMENT_MASTERPLAN.md), [ADR-036](./ADR-036-organizational-scope-access-control.md)
 
 ---
 

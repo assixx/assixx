@@ -14,6 +14,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import type { DatabaseService } from '../database/database.service.js';
+import type { ScopeService } from '../hierarchy-permission/scope.service.js';
 import type { DepartmentRow } from './departments.service.js';
 import { DepartmentsService } from './departments.service.js';
 import type { CreateDepartmentDto } from './dto/create-department.dto.js';
@@ -47,6 +48,24 @@ function createMockActivityLogger() {
     logUpdate: vi.fn().mockResolvedValue(undefined),
     logDelete: vi.fn().mockResolvedValue(undefined),
     log: vi.fn().mockResolvedValue(undefined),
+  };
+}
+
+function createMockScope() {
+  return {
+    getScope: vi.fn().mockResolvedValue({
+      type: 'full',
+      areaIds: [],
+      departmentIds: [],
+      teamIds: [],
+      leadAreaIds: [],
+      leadDepartmentIds: [],
+      leadTeamIds: [],
+      isAreaLead: false,
+      isDepartmentLead: false,
+      isTeamLead: false,
+      isAnyLead: false,
+    }),
   };
 }
 
@@ -92,9 +111,11 @@ describe('DepartmentsService', () => {
     vi.clearAllMocks();
     mockActivityLogger = createMockActivityLogger();
     mockDb = createMockDb();
+    const mockScope = createMockScope();
     service = new DepartmentsService(
       mockActivityLogger as unknown as ActivityLoggerService,
       mockDb as unknown as DatabaseService,
+      mockScope as unknown as ScopeService,
     );
   });
 
@@ -114,6 +135,21 @@ describe('DepartmentsService', () => {
       expect(result).toHaveLength(2);
       expect(result[0]?.name).toBe('Engineering');
       expect(result[1]?.name).toBe('QA');
+    });
+
+    it('should return empty array when scope is "none"', async () => {
+      const mockScope = createMockScope();
+      mockScope.getScope.mockResolvedValueOnce({ type: 'none' });
+      const scopedService = new DepartmentsService(
+        mockActivityLogger as unknown as ActivityLoggerService,
+        mockDb as unknown as DatabaseService,
+        mockScope as unknown as ScopeService,
+      );
+
+      const result = await scopedService.listDepartments(10);
+
+      expect(result).toEqual([]);
+      expect(mockDb.query).not.toHaveBeenCalled();
     });
 
     it('should fall back to simple query on error', async () => {
@@ -498,6 +534,23 @@ describe('DepartmentsService', () => {
 
       expect(result.message).toBe('Department deleted successfully');
       expect(mockActivityLogger.logDelete).toHaveBeenCalled();
+    });
+
+    it('should force-delete with UPDATE-type dependency cleanup', async () => {
+      // find department
+      mockDb.query.mockResolvedValueOnce([makeDeptRow()]);
+      // checkDepartmentDependencies → 11 table checks (teams at index 1 has data)
+      for (let i = 0; i < 11; i++) {
+        mockDb.query.mockResolvedValueOnce(i === 1 ? [{ id: 2 }] : []);
+      }
+      // removeDependencyFrom → UPDATE teams SET department_id = NULL
+      mockDb.query.mockResolvedValueOnce([]);
+      // DELETE FROM departments
+      mockDb.query.mockResolvedValueOnce([]);
+
+      const result = await service.deleteDepartment(1, 1, 10, true);
+
+      expect(result.message).toBe('Department deleted successfully');
     });
 
     it('should delete directly when no dependencies exist', async () => {

@@ -8,6 +8,7 @@
   import { invalidateAll } from '$app/navigation';
 
   import AppDatePicker from '$lib/components/AppDatePicker.svelte';
+  import PermissionDenied from '$lib/components/PermissionDenied.svelte';
   import { notificationStore } from '$lib/stores/notification.store.svelte';
   import { showErrorAlert, showSuccessAlert } from '$lib/utils';
   import { createLogger } from '$lib/utils/logger';
@@ -38,6 +39,8 @@
   // =============================================================================
 
   const { data }: { data: PageData } = $props();
+
+  const permissionDenied = $derived<boolean>(data.permissionDenied);
 
   // SSR data via $derived - updates when invalidateAll() is called
   const allSurveys = $derived<SurveyWithStatus[]>(data.surveys);
@@ -276,337 +279,341 @@
   <title>Mitarbeiterumfragen - Assixx</title>
 </svelte:head>
 
-<div class="container">
-  <div class="card">
-    <div class="card__header flex items-center justify-between">
-      <div>
-        <h2 class="card-title">Mitarbeiterumfragen</h2>
-        <p class="text-secondary">
-          Hier finden Sie alle Umfragen, an denen Sie teilnehmen können oder
-          bereits teilgenommen haben.
-        </p>
+{#if permissionDenied}
+  <PermissionDenied addonName="die Umfragen" />
+{:else}
+  <div class="container">
+    <div class="card">
+      <div class="card__header flex items-center justify-between">
+        <div>
+          <h2 class="card-title">Mitarbeiterumfragen</h2>
+          <p class="text-secondary">
+            Hier finden Sie alle Umfragen, an denen Sie teilnehmen können oder
+            bereits teilgenommen haben.
+          </p>
+        </div>
       </div>
-    </div>
-    <div class="card-body">
-      <!-- Pending Surveys -->
-      <div class="surveys-section">
-        <h2 class="section-title">
-          <i class="fas fa-clock"></i>
-          Offene Umfragen
-        </h2>
-        {#if pendingSurveys.length === 0}
-          <div class="empty-state">
-            <div class="empty-state__icon">
-              <i class="fas fa-clipboard-list"></i>
+      <div class="card-body">
+        <!-- Pending Surveys -->
+        <div class="surveys-section">
+          <h2 class="section-title">
+            <i class="fas fa-clock"></i>
+            Offene Umfragen
+          </h2>
+          {#if pendingSurveys.length === 0}
+            <div class="empty-state">
+              <div class="empty-state__icon">
+                <i class="fas fa-clipboard-list"></i>
+              </div>
+              <h3 class="empty-state__title">Keine offenen Umfragen</h3>
+              <p class="empty-state__description">
+                Aktuell gibt es keine Umfragen, an denen Sie teilnehmen können.
+              </p>
             </div>
-            <h3 class="empty-state__title">Keine offenen Umfragen</h3>
-            <p class="empty-state__description">
-              Aktuell gibt es keine Umfragen, an denen Sie teilnehmen können.
-            </p>
-          </div>
-        {:else}
-          <div class="surveys-grid">
-            {#each pendingSurveys as survey (survey.id)}
-              <SurveyCard
-                {survey}
-                mode="pending"
-                onclick={() => handleStartSurvey(survey.id)}
-              />
-            {/each}
-          </div>
-        {/if}
-      </div>
-
-      <!-- Section Divider -->
-      <div class="section-divider"></div>
-
-      <!-- Completed Surveys -->
-      <div class="surveys-section">
-        <h2 class="section-title">
-          <i class="fas fa-check-circle"></i>
-          Abgeschlossene Umfragen
-        </h2>
-        {#if completedSurveys.length === 0}
-          <div class="empty-state">
-            <div class="empty-state__icon">
-              <i class="fas fa-check-circle"></i>
+          {:else}
+            <div class="surveys-grid">
+              {#each pendingSurveys as survey (survey.id)}
+                <SurveyCard
+                  {survey}
+                  mode="pending"
+                  onclick={() => handleStartSurvey(survey.id)}
+                />
+              {/each}
             </div>
-            <h3 class="empty-state__title">Keine abgeschlossenen Umfragen</h3>
-            <p class="empty-state__description">
-              Sie haben noch an keinen Umfragen teilgenommen.
-            </p>
-          </div>
-        {:else}
-          <div class="surveys-grid">
-            {#each completedSurveys as survey (survey.id)}
-              <SurveyCard
-                {survey}
-                mode={survey.hasResponded ? 'responded' : 'ended'}
-                onclick={() => {
-                  if (survey.hasResponded) {
-                    void handleViewResponse(survey.id);
-                  }
-                }}
-              />
-            {/each}
-          </div>
-        {/if}
+          {/if}
+        </div>
+
+        <!-- Section Divider -->
+        <div class="section-divider"></div>
+
+        <!-- Completed Surveys -->
+        <div class="surveys-section">
+          <h2 class="section-title">
+            <i class="fas fa-check-circle"></i>
+            Abgeschlossene Umfragen
+          </h2>
+          {#if completedSurveys.length === 0}
+            <div class="empty-state">
+              <div class="empty-state__icon">
+                <i class="fas fa-check-circle"></i>
+              </div>
+              <h3 class="empty-state__title">Keine abgeschlossenen Umfragen</h3>
+              <p class="empty-state__description">
+                Sie haben noch an keinen Umfragen teilgenommen.
+              </p>
+            </div>
+          {:else}
+            <div class="surveys-grid">
+              {#each completedSurveys as survey (survey.id)}
+                <SurveyCard
+                  {survey}
+                  mode={survey.hasResponded ? 'responded' : 'ended'}
+                  onclick={() => {
+                    if (survey.hasResponded) {
+                      void handleViewResponse(survey.id);
+                    }
+                  }}
+                />
+              {/each}
+            </div>
+          {/if}
+        </div>
       </div>
     </div>
   </div>
-</div>
 
-<!-- Survey Response Modal -->
-{#if surveyEmployeeState.showSurveyModal && surveyEmployeeState.currentSurvey !== null}
-  {@const survey = surveyEmployeeState.currentSurvey}
-  <div
-    id="survey-detail-modal"
-    class="modal-overlay modal-overlay--active"
-  >
-    <form
-      class="ds-modal ds-modal--lg"
-      onsubmit={handleSubmit}
+  <!-- Survey Response Modal -->
+  {#if surveyEmployeeState.showSurveyModal && surveyEmployeeState.currentSurvey !== null}
+    {@const survey = surveyEmployeeState.currentSurvey}
+    <div
+      id="survey-detail-modal"
+      class="modal-overlay modal-overlay--active"
     >
-      <div class="ds-modal__header flex-col items-stretch">
-        <!-- Title Row: Title + Close Button -->
-        <div class="flex w-full items-center justify-between">
-          <h3 class="ds-modal__title">{getTextFromBuffer(survey.title)}</h3>
-          <button
-            type="button"
-            class="ds-modal__close"
-            aria-label="Schließen"
-            onclick={() => {
-              surveyEmployeeState.closeSurveyModal();
-            }}
-          >
-            <i class="fas fa-times"></i>
-          </button>
+      <form
+        class="ds-modal ds-modal--lg"
+        onsubmit={handleSubmit}
+      >
+        <div class="ds-modal__header flex-col items-stretch">
+          <!-- Title Row: Title + Close Button -->
+          <div class="flex w-full items-center justify-between">
+            <h3 class="ds-modal__title">{getTextFromBuffer(survey.title)}</h3>
+            <button
+              type="button"
+              class="ds-modal__close"
+              aria-label="Schließen"
+              onclick={() => {
+                surveyEmployeeState.closeSurveyModal();
+              }}
+            >
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+
+          <!-- Progress Bar Row -->
+          <div class="mt-6 w-full">
+            <div class="progress progress--lg">
+              <div
+                class="progress__bar progress__bar--info"
+                role="progressbar"
+                aria-valuenow={surveyEmployeeState.progressPercentage}
+                aria-valuemin="0"
+                aria-valuemax="100"
+                style="width: {surveyEmployeeState.progressPercentage}%"
+              ></div>
+            </div>
+            <div class="progress-text text-secondary mt-2 text-center text-sm">
+              {surveyEmployeeState.answeredCount} von {surveyEmployeeState.totalQuestions}
+              Fragen beantwortet
+            </div>
+          </div>
         </div>
 
-        <!-- Progress Bar Row -->
-        <div class="mt-6 w-full">
-          <div class="progress progress--lg">
-            <div
-              class="progress__bar progress__bar--info"
-              role="progressbar"
-              aria-valuenow={surveyEmployeeState.progressPercentage}
-              aria-valuemin="0"
-              aria-valuemax="100"
-              style="width: {surveyEmployeeState.progressPercentage}%"
-            ></div>
-          </div>
-          <div class="progress-text text-secondary mt-2 text-center text-sm">
-            {surveyEmployeeState.answeredCount} von {surveyEmployeeState.totalQuestions}
-            Fragen beantwortet
-          </div>
-        </div>
-      </div>
-
-      <div class="ds-modal__body">
-        <!-- Questions Container -->
-        <div id="questionsContainer">
-          {#each survey.questions as question, qIndex (question.id)}
-            {@const required = isQuestionRequired(question.isRequired)}
-            <div class="question-item">
-              <div class="question-header">
-                <span class="question-number">{qIndex + 1}</span>
-                <div class="question-text">
-                  {getTextFromBuffer(question.questionText)}
-                  {#if required}
-                    <span class="required-indicator">*</span>
-                  {/if}
-                </div>
-              </div>
-              <div class="answer-container">
-                <!-- Text Input -->
-                {#if question.questionType === 'text'}
-                  <div class="form-field">
-                    <textarea
-                      class="form-field__control form-field__control--textarea"
-                      placeholder="Ihre Antwort..."
-                      rows="4"
-                      {required}
-                      oninput={(e) => {
-                        handleTextChange(
-                          question.id,
-                          (e.target as HTMLTextAreaElement).value,
-                        );
-                      }}
-                    ></textarea>
+        <div class="ds-modal__body">
+          <!-- Questions Container -->
+          <div id="questionsContainer">
+            {#each survey.questions as question, qIndex (question.id)}
+              {@const required = isQuestionRequired(question.isRequired)}
+              <div class="question-item">
+                <div class="question-header">
+                  <span class="question-number">{qIndex + 1}</span>
+                  <div class="question-text">
+                    {getTextFromBuffer(question.questionText)}
+                    {#if required}
+                      <span class="required-indicator">*</span>
+                    {/if}
                   </div>
+                </div>
+                <div class="answer-container">
+                  <!-- Text Input -->
+                  {#if question.questionType === 'text'}
+                    <div class="form-field">
+                      <textarea
+                        class="form-field__control form-field__control--textarea"
+                        placeholder="Ihre Antwort..."
+                        rows="4"
+                        {required}
+                        oninput={(e) => {
+                          handleTextChange(
+                            question.id,
+                            (e.target as HTMLTextAreaElement).value,
+                          );
+                        }}
+                      ></textarea>
+                    </div>
 
-                  <!-- Single Choice -->
-                {:else if question.questionType === 'single_choice'}
-                  <div class="choice-group">
-                    {#each question.options ?? [] as option, optIndex (optIndex)}
-                      {@const optionId = getOptionId(option, optIndex)}
-                      {@const optionText = getOptionText(option)}
+                    <!-- Single Choice -->
+                  {:else if question.questionType === 'single_choice'}
+                    <div class="choice-group">
+                      {#each question.options ?? [] as option, optIndex (optIndex)}
+                        {@const optionId = getOptionId(option, optIndex)}
+                        {@const optionText = getOptionText(option)}
+                        <label class="choice-card">
+                          <input
+                            type="radio"
+                            class="choice-card__input"
+                            name="question_{question.id}"
+                            value={optionId}
+                            {required}
+                            onchange={() => {
+                              handleSingleChoiceChange(question.id, optionId);
+                            }}
+                          />
+                          <span class="choice-card__text">{optionText}</span>
+                        </label>
+                      {/each}
+                    </div>
+
+                    <!-- Multiple Choice -->
+                  {:else if question.questionType === 'multiple_choice'}
+                    <div class="choice-group">
+                      {#each question.options ?? [] as option, optIndex (optIndex)}
+                        {@const optionId = getOptionId(option, optIndex)}
+                        {@const optionText = getOptionText(option)}
+                        <label class="choice-card">
+                          <input
+                            type="checkbox"
+                            class="choice-card__input"
+                            value={optionId}
+                            checked={isMultipleOptionSelected(
+                              question.id,
+                              optionId,
+                            )}
+                            onchange={(e) => {
+                              handleMultipleChoiceChange(
+                                question.id,
+                                optionId,
+                                (e.target as HTMLInputElement).checked,
+                              );
+                            }}
+                          />
+                          <span class="choice-card__text">{optionText}</span>
+                        </label>
+                      {/each}
+                    </div>
+
+                    <!-- Rating -->
+                  {:else if question.questionType === 'rating'}
+                    <div class="flex flex-wrap gap-3">
+                      {#each [1, 2, 3, 4, 5] as value (value)}
+                        <button
+                          type="button"
+                          class="rating-button"
+                          class:rating-button--selected={isRatingSelected(
+                            question.id,
+                            value,
+                          )}
+                          aria-label="Bewertung {value} von 5"
+                          onclick={() => {
+                            handleRatingClick(question.id, value);
+                          }}
+                        >
+                          {value}
+                        </button>
+                      {/each}
+                    </div>
+
+                    <!-- Yes/No -->
+                  {:else if question.questionType === 'yes_no'}
+                    <div class="choice-group">
                       <label class="choice-card">
                         <input
                           type="radio"
                           class="choice-card__input"
                           name="question_{question.id}"
-                          value={optionId}
+                          value="1"
                           {required}
                           onchange={() => {
-                            handleSingleChoiceChange(question.id, optionId);
+                            handleSingleChoiceChange(question.id, 1);
                           }}
                         />
-                        <span class="choice-card__text">{optionText}</span>
+                        <span class="choice-card__text">Ja</span>
                       </label>
-                    {/each}
-                  </div>
-
-                  <!-- Multiple Choice -->
-                {:else if question.questionType === 'multiple_choice'}
-                  <div class="choice-group">
-                    {#each question.options ?? [] as option, optIndex (optIndex)}
-                      {@const optionId = getOptionId(option, optIndex)}
-                      {@const optionText = getOptionText(option)}
                       <label class="choice-card">
                         <input
-                          type="checkbox"
+                          type="radio"
                           class="choice-card__input"
-                          value={optionId}
-                          checked={isMultipleOptionSelected(
-                            question.id,
-                            optionId,
-                          )}
-                          onchange={(e) => {
-                            handleMultipleChoiceChange(
-                              question.id,
-                              optionId,
-                              (e.target as HTMLInputElement).checked,
-                            );
+                          name="question_{question.id}"
+                          value="2"
+                          {required}
+                          onchange={() => {
+                            handleSingleChoiceChange(question.id, 2);
                           }}
                         />
-                        <span class="choice-card__text">{optionText}</span>
+                        <span class="choice-card__text">Nein</span>
                       </label>
-                    {/each}
-                  </div>
+                    </div>
 
-                  <!-- Rating -->
-                {:else if question.questionType === 'rating'}
-                  <div class="flex flex-wrap gap-3">
-                    {#each [1, 2, 3, 4, 5] as value (value)}
-                      <button
-                        type="button"
-                        class="rating-button"
-                        class:rating-button--selected={isRatingSelected(
-                          question.id,
-                          value,
-                        )}
-                        aria-label="Bewertung {value} von 5"
-                        onclick={() => {
-                          handleRatingClick(question.id, value);
-                        }}
-                      >
-                        {value}
-                      </button>
-                    {/each}
-                  </div>
-
-                  <!-- Yes/No -->
-                {:else if question.questionType === 'yes_no'}
-                  <div class="choice-group">
-                    <label class="choice-card">
+                    <!-- Number -->
+                  {:else if question.questionType === 'number'}
+                    <div class="form-field">
                       <input
-                        type="radio"
-                        class="choice-card__input"
-                        name="question_{question.id}"
-                        value="1"
+                        type="number"
+                        class="form-field__control"
+                        placeholder="Zahl eingeben..."
                         {required}
-                        onchange={() => {
-                          handleSingleChoiceChange(question.id, 1);
+                        oninput={(e) => {
+                          handleNumberChange(
+                            question.id,
+                            (e.target as HTMLInputElement).value,
+                          );
                         }}
                       />
-                      <span class="choice-card__text">Ja</span>
-                    </label>
-                    <label class="choice-card">
-                      <input
-                        type="radio"
-                        class="choice-card__input"
-                        name="question_{question.id}"
-                        value="2"
+                    </div>
+
+                    <!-- Date -->
+                  {:else if question.questionType === 'date'}
+                    <div class="form-field">
+                      <AppDatePicker
                         {required}
-                        onchange={() => {
-                          handleSingleChoiceChange(question.id, 2);
+                        onchange={(v: string) => {
+                          handleDateChange(question.id, v);
                         }}
                       />
-                      <span class="choice-card__text">Nein</span>
-                    </label>
-                  </div>
-
-                  <!-- Number -->
-                {:else if question.questionType === 'number'}
-                  <div class="form-field">
-                    <input
-                      type="number"
-                      class="form-field__control"
-                      placeholder="Zahl eingeben..."
-                      {required}
-                      oninput={(e) => {
-                        handleNumberChange(
-                          question.id,
-                          (e.target as HTMLInputElement).value,
-                        );
-                      }}
-                    />
-                  </div>
-
-                  <!-- Date -->
-                {:else if question.questionType === 'date'}
-                  <div class="form-field">
-                    <AppDatePicker
-                      {required}
-                      onchange={(v: string) => {
-                        handleDateChange(question.id, v);
-                      }}
-                    />
-                  </div>
-                {/if}
+                    </div>
+                  {/if}
+                </div>
               </div>
-            </div>
-          {/each}
+            {/each}
+          </div>
         </div>
-      </div>
 
-      <div class="ds-modal__footer ds-modal__footer--right">
-        <button
-          type="button"
-          class="btn btn-cancel"
-          onclick={() => {
-            surveyEmployeeState.closeSurveyModal();
-          }}
-        >
-          Abbrechen
-        </button>
-        <button
-          type="submit"
-          class="btn btn-primary"
-          disabled={surveyEmployeeState.isSubmitting}
-        >
-          {#if surveyEmployeeState.isSubmitting}
-            <span class="spinner-ring spinner-ring--sm"></span>
-          {:else}
-            <i class="fas fa-paper-plane"></i>
-          {/if}
-          Antworten absenden
-        </button>
-      </div>
-    </form>
-  </div>
-{/if}
+        <div class="ds-modal__footer ds-modal__footer--right">
+          <button
+            type="button"
+            class="btn btn-cancel"
+            onclick={() => {
+              surveyEmployeeState.closeSurveyModal();
+            }}
+          >
+            Abbrechen
+          </button>
+          <button
+            type="submit"
+            class="btn btn-primary"
+            disabled={surveyEmployeeState.isSubmitting}
+          >
+            {#if surveyEmployeeState.isSubmitting}
+              <span class="spinner-ring spinner-ring--sm"></span>
+            {:else}
+              <i class="fas fa-paper-plane"></i>
+            {/if}
+            Antworten absenden
+          </button>
+        </div>
+      </form>
+    </div>
+  {/if}
 
-<!-- Response Viewing Modal -->
-{#if responseModalData}
-  <ResponseModal
-    survey={responseModalData.survey}
-    response={responseModalData.response}
-    onclose={() => {
-      surveyEmployeeState.closeResponseModal();
-    }}
-  />
+  <!-- Response Viewing Modal -->
+  {#if responseModalData}
+    <ResponseModal
+      survey={responseModalData.survey}
+      response={responseModalData.response}
+      onclose={() => {
+        surveyEmployeeState.closeResponseModal();
+      }}
+    />
+  {/if}
 {/if}
 
 <style>

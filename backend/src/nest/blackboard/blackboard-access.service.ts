@@ -7,7 +7,7 @@
 import { ForbiddenException, Injectable, Logger } from '@nestjs/common';
 
 import { DatabaseService } from '../database/database.service.js';
-import { HierarchyPermissionService } from '../hierarchy-permission/hierarchy-permission.service.js';
+import { ScopeService } from '../hierarchy-permission/scope.service.js';
 import type {
   DbBlackboardEntry,
   UserAccessInfo,
@@ -20,25 +20,8 @@ export class BlackboardAccessService {
 
   constructor(
     private readonly db: DatabaseService,
-    private readonly hierarchyPermission: HierarchyPermissionService,
+    private readonly scopeService: ScopeService,
   ) {}
-
-  // ==========================================================================
-  // LOGGING HELPERS
-  // ==========================================================================
-
-  /**
-   * Log access denied event for debugging.
-   */
-  private logAccessDenied(
-    userId: number,
-    entryId: number,
-    reason: string,
-  ): void {
-    this.logger.warn(
-      `Access denied for user ${userId} to entry ${entryId}: ${reason}`,
-    );
-  }
 
   // ==========================================================================
   // USER INFO
@@ -246,29 +229,26 @@ export class BlackboardAccessService {
 
   /**
    * Validate user has permission to assign entry to specified organizations.
+   * Uses ScopeService (lazy CLS-cached) instead of 3 separate DB queries.
    * Throws ForbiddenException if any permission is missing.
    */
   async validateOrgPermissions(
-    userId: number,
-    tenantId: number,
+    _userId: number,
+    _tenantId: number,
     areaIds: number[] = [],
     departmentIds: number[] = [],
     teamIds: number[] = [],
   ): Promise<void> {
-    const [accessibleAreas, accessibleDepts, accessibleTeams] =
-      await Promise.all([
-        this.hierarchyPermission.getAccessibleAreaIds(userId, tenantId),
-        this.hierarchyPermission.getAccessibleDepartmentIds(userId, tenantId),
-        this.hierarchyPermission.getAccessibleTeamIds(userId, tenantId),
-      ]);
+    const scope = await this.scopeService.getScope();
+    if (scope.type === 'full') return;
 
-    const accessibleAreaSet = new Set(accessibleAreas);
-    const accessibleDeptSet = new Set(accessibleDepts);
-    const accessibleTeamSet = new Set(accessibleTeams);
+    const accessibleAreaSet = new Set(scope.areaIds);
+    const accessibleDeptSet = new Set(scope.departmentIds);
+    const accessibleTeamSet = new Set(scope.teamIds);
 
     for (const areaId of areaIds) {
       if (!accessibleAreaSet.has(areaId)) {
-        this.logAccessDenied(userId, 0, `No permission for area ${areaId}`);
+        this.logger.warn(`Org permission denied: area ${areaId} not in scope`);
         throw new ForbiddenException(
           `No permission to create entries for area ${areaId}`,
         );
@@ -277,10 +257,8 @@ export class BlackboardAccessService {
 
     for (const deptId of departmentIds) {
       if (!accessibleDeptSet.has(deptId)) {
-        this.logAccessDenied(
-          userId,
-          0,
-          `No permission for department ${deptId}`,
+        this.logger.warn(
+          `Org permission denied: department ${deptId} not in scope`,
         );
         throw new ForbiddenException(
           `No permission to create entries for department ${deptId}`,
@@ -290,7 +268,7 @@ export class BlackboardAccessService {
 
     for (const teamId of teamIds) {
       if (!accessibleTeamSet.has(teamId)) {
-        this.logAccessDenied(userId, 0, `No permission for team ${teamId}`);
+        this.logger.warn(`Org permission denied: team ${teamId} not in scope`);
         throw new ForbiddenException(
           `No permission to create entries for team ${teamId}`,
         );

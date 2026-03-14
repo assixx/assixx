@@ -6,8 +6,8 @@
  */
 import { redirect } from '@sveltejs/kit';
 
+import { apiFetch, apiFetchWithPermission } from '$lib/server/api-fetch';
 import { requireAddon } from '$lib/utils/addon-guard';
-import { createLogger } from '$lib/utils/logger';
 
 import type { PageServerLoad } from './$types';
 import type {
@@ -16,47 +16,6 @@ import type {
   CategoryColorConfigEntry,
   TpmEscalationConfig,
 } from '../_lib/types';
-
-const log = createLogger('TpmConfig');
-
-const API_BASE = process.env.API_URL ?? 'http://localhost:3000/api/v2';
-
-interface ApiResponse<T> {
-  success?: boolean;
-  data?: T;
-}
-
-async function apiFetch<T>(
-  endpoint: string,
-  token: string,
-  fetchFn: typeof fetch,
-): Promise<T | null> {
-  try {
-    const response = await fetchFn(`${API_BASE}${endpoint}`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      log.error({ status: response.status, endpoint }, 'API error');
-      return null;
-    }
-
-    const json = (await response.json()) as ApiResponse<T>;
-    if ('success' in json && json.success === true) {
-      return json.data ?? null;
-    }
-    if ('data' in json && json.data !== undefined) {
-      return json.data;
-    }
-    return json as unknown as T;
-  } catch (err: unknown) {
-    log.error({ err, endpoint }, 'Fetch error');
-    return null;
-  }
-}
 
 export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
   const token = cookies.get('accessToken');
@@ -67,9 +26,30 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
   const { activeAddons } = await parent();
   requireAddon(activeAddons, 'tpm');
 
-  const [escalationData, colorsData, intervalColorsData, categoryColorsData] =
+  const escalationResult = await apiFetchWithPermission<TpmEscalationConfig>(
+    '/tpm/config/escalation',
+    token,
+    fetch,
+  );
+
+  if (escalationResult.permissionDenied) {
+    return {
+      permissionDenied: true as const,
+      escalation: {
+        escalationAfterHours: 48,
+        notifyTeamLead: true,
+        notifyDepartmentLead: false,
+        createdAt: '',
+        updatedAt: '',
+      },
+      colors: [] as TpmColorConfigEntry[],
+      intervalColors: [] as IntervalColorConfigEntry[],
+      categoryColors: [] as CategoryColorConfigEntry[],
+    };
+  }
+
+  const [colorsData, intervalColorsData, categoryColorsData] =
     await Promise.all([
-      apiFetch<TpmEscalationConfig>('/tpm/config/escalation', token, fetch),
       apiFetch<TpmColorConfigEntry[]>('/tpm/config/colors', token, fetch),
       apiFetch<IntervalColorConfigEntry[]>(
         '/tpm/config/interval-colors',
@@ -84,7 +64,8 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
     ]);
 
   return {
-    escalation: escalationData ?? {
+    permissionDenied: false as const,
+    escalation: escalationResult.data ?? {
       escalationAfterHours: 48,
       notifyTeamLead: true,
       notifyDepartmentLead: false,

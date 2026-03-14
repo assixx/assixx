@@ -8,6 +8,9 @@ import type {
   OrgChartPosition,
   OrgChartTree,
   OrgEntityType,
+  OrgNodeDetail,
+  OrgNodeDetailEntry,
+  OrgNodeDetailPerson,
   OrgTreeHall,
 } from './organigram.types.js';
 
@@ -48,6 +51,55 @@ interface HallRow {
   name: string;
   hall_uuid: string;
   area_uuid: string | null;
+}
+
+// ---- Node Detail Row Types ----
+
+interface AreaDetailRow {
+  uuid: string;
+  name: string;
+  area_type: string;
+  lead_uuid: string | null;
+  lead_name: string | null;
+}
+
+interface DeptDetailRow {
+  uuid: string;
+  name: string;
+  lead_uuid: string | null;
+  lead_name: string | null;
+  area_uuid: string | null;
+  area_name: string | null;
+}
+
+interface TeamDetailRow {
+  uuid: string;
+  name: string;
+  lead_uuid: string | null;
+  lead_name: string | null;
+  deputy_uuid: string | null;
+  deputy_name: string | null;
+  dept_uuid: string | null;
+  dept_name: string | null;
+  area_uuid: string | null;
+  area_name: string | null;
+}
+
+interface AssetDetailRow {
+  uuid: string;
+  name: string;
+  asset_status: string | null;
+  asset_type: string | null;
+  area_uuid: string | null;
+  area_name: string | null;
+  dept_uuid: string | null;
+  dept_name: string | null;
+}
+
+interface DetailChildRow {
+  uuid: string;
+  name: string;
+  extra: string | null;
 }
 
 @Injectable()
@@ -352,5 +404,293 @@ export class OrganigramService {
         p,
       ]),
     );
+  }
+
+  // ---- Node Detail ----
+
+  async getNodeDetails(
+    tenantId: number,
+    entityType: OrgEntityType,
+    entityUuid: string,
+  ): Promise<OrgNodeDetail> {
+    switch (entityType) {
+      case 'area':
+        return await this.getAreaDetail(tenantId, entityUuid);
+      case 'department':
+        return await this.getDeptDetail(tenantId, entityUuid);
+      case 'team':
+        return await this.getTeamDetail(tenantId, entityUuid);
+      case 'asset':
+        return await this.getAssetDetail(tenantId, entityUuid);
+    }
+  }
+
+  private async getAreaDetail(
+    tenantId: number,
+    uuid: string,
+  ): Promise<OrgNodeDetail> {
+    const [baseRows, deptRows, assetRows, hallRows] = await Promise.all([
+      this.db.query<AreaDetailRow>(
+        `SELECT a.uuid, a.name, a.type::text AS area_type,
+                u.uuid AS lead_uuid,
+                TRIM(CONCAT(u.first_name, ' ', u.last_name)) AS lead_name
+         FROM areas a
+         LEFT JOIN users u ON a.area_lead_id = u.id
+         WHERE a.tenant_id = $1 AND a.uuid = $2 AND a.is_active = 1`,
+        [tenantId, uuid],
+      ),
+      this.db.query<DetailChildRow>(
+        `SELECT d.uuid, d.name,
+                NULLIF(TRIM(CONCAT(u.first_name, ' ', u.last_name)), '') AS extra
+         FROM departments d
+         LEFT JOIN users u ON d.department_lead_id = u.id
+         WHERE d.area_id = (SELECT id FROM areas WHERE uuid = $2 AND tenant_id = $1)
+           AND d.is_active = 1
+         ORDER BY d.name`,
+        [tenantId, uuid],
+      ),
+      this.db.query<DetailChildRow>(
+        `SELECT ast.uuid, ast.name, ast.status::text AS extra
+         FROM assets ast
+         WHERE ast.area_id = (SELECT id FROM areas WHERE uuid = $2 AND tenant_id = $1)
+           AND ast.is_active = 1
+         ORDER BY ast.name`,
+        [tenantId, uuid],
+      ),
+      this.db.query<DetailChildRow>(
+        `SELECT h.uuid, h.name, NULL::text AS extra
+         FROM halls h
+         WHERE h.area_id = (SELECT id FROM areas WHERE uuid = $2 AND tenant_id = $1)
+           AND h.is_active = 1
+         ORDER BY h.name`,
+        [tenantId, uuid],
+      ),
+    ]);
+
+    const base = baseRows[0];
+    if (base === undefined) throw new NotFoundException('Area nicht gefunden');
+
+    const lead = this.toPerson(base.lead_uuid, base.lead_name);
+    const departments = this.mapChildren(deptRows);
+    const assets = this.mapChildren(assetRows);
+    const halls = this.mapChildren(hallRows);
+
+    return {
+      entityType: 'area',
+      entityUuid: base.uuid.trim(),
+      name: base.name,
+      areaType: base.area_type,
+      ...(lead !== undefined && { lead }),
+      ...(departments !== undefined && { departments }),
+      ...(assets !== undefined && { assets }),
+      ...(halls !== undefined && { halls }),
+    };
+  }
+
+  private async getDeptDetail(
+    tenantId: number,
+    uuid: string,
+  ): Promise<OrgNodeDetail> {
+    const sub = `(SELECT id FROM departments WHERE uuid = $2 AND tenant_id = $1)`;
+    const [baseRows, teamRows, empRows, assetRows] = await Promise.all([
+      this.db.query<DeptDetailRow>(
+        `SELECT d.uuid, d.name, u.uuid AS lead_uuid,
+                TRIM(CONCAT(u.first_name, ' ', u.last_name)) AS lead_name,
+                pa.uuid AS area_uuid, pa.name AS area_name
+         FROM departments d
+         LEFT JOIN users u ON d.department_lead_id = u.id
+         LEFT JOIN areas pa ON d.area_id = pa.id
+         WHERE d.tenant_id = $1 AND d.uuid = $2 AND d.is_active = 1`,
+        [tenantId, uuid],
+      ),
+      this.db.query<DetailChildRow>(
+        `SELECT t.uuid, t.name,
+                CONCAT_WS(' · ', NULLIF(TRIM(CONCAT(u.first_name, ' ', u.last_name)), ''),
+                  COALESCE(mc.cnt, 0) || ' Mitgl.') AS extra
+         FROM teams t
+         LEFT JOIN users u ON t.team_lead_id = u.id
+         LEFT JOIN (SELECT team_id, COUNT(*)::int AS cnt FROM user_teams GROUP BY team_id) mc ON mc.team_id = t.id
+         WHERE t.department_id = ${sub} AND t.is_active = 1
+         ORDER BY t.name`,
+        [tenantId, uuid],
+      ),
+      this.db.query<DetailChildRow>(
+        `SELECT u.uuid, TRIM(CONCAT(u.first_name, ' ', u.last_name)) AS name,
+                CASE WHEN ud.is_primary THEN 'Primär' ELSE NULL END AS extra
+         FROM user_departments ud JOIN users u ON ud.user_id = u.id
+         WHERE ud.department_id = ${sub} ORDER BY u.last_name`,
+        [tenantId, uuid],
+      ),
+      this.db.query<DetailChildRow>(
+        `SELECT ast.uuid, ast.name, ast.status::text AS extra FROM assets ast
+         WHERE ast.department_id = ${sub} AND ast.is_active = 1 ORDER BY ast.name`,
+        [tenantId, uuid],
+      ),
+    ]);
+
+    const base = baseRows[0];
+    if (base === undefined)
+      throw new NotFoundException('Abteilung nicht gefunden');
+    const lead = this.toPerson(base.lead_uuid, base.lead_name);
+    const parentArea = this.toParent(base.area_uuid, base.area_name);
+    const m = (rows: DetailChildRow[]): OrgNodeDetailEntry[] =>
+      rows.map((r: DetailChildRow) => this.toDetailEntry(r));
+
+    return {
+      entityType: 'department',
+      entityUuid: base.uuid.trim(),
+      name: base.name,
+      ...(lead !== undefined && { lead }),
+      ...(parentArea !== undefined && { parentArea }),
+      ...(teamRows.length > 0 && { teams: m(teamRows) }),
+      ...(empRows.length > 0 && { employees: m(empRows) }),
+      ...(assetRows.length > 0 && { assets: m(assetRows) }),
+    };
+  }
+
+  private async getTeamDetail(
+    tenantId: number,
+    uuid: string,
+  ): Promise<OrgNodeDetail> {
+    const [baseRows, memberRows, assetRows] = await Promise.all([
+      this.db.query<TeamDetailRow>(
+        `SELECT t.uuid, t.name,
+                lu.uuid AS lead_uuid,
+                TRIM(CONCAT(lu.first_name, ' ', lu.last_name)) AS lead_name,
+                du.uuid AS deputy_uuid,
+                TRIM(CONCAT(du.first_name, ' ', du.last_name)) AS deputy_name,
+                pd.uuid AS dept_uuid, pd.name AS dept_name,
+                pa.uuid AS area_uuid, pa.name AS area_name
+         FROM teams t
+         LEFT JOIN users lu ON t.team_lead_id = lu.id
+         LEFT JOIN users du ON t.deputy_lead_id = du.id
+         LEFT JOIN departments pd ON t.department_id = pd.id
+         LEFT JOIN areas pa ON pd.area_id = pa.id
+         WHERE t.tenant_id = $1 AND t.uuid = $2 AND t.is_active = 1`,
+        [tenantId, uuid],
+      ),
+      this.db.query<DetailChildRow>(
+        `SELECT u.uuid, TRIM(CONCAT(u.first_name, ' ', u.last_name)) AS name,
+                ut.role::text AS extra
+         FROM user_teams ut
+         JOIN users u ON ut.user_id = u.id
+         WHERE ut.team_id = (SELECT id FROM teams WHERE uuid = $2 AND tenant_id = $1)
+         ORDER BY u.last_name`,
+        [tenantId, uuid],
+      ),
+      this.db.query<DetailChildRow>(
+        `SELECT ast.uuid, ast.name, ast.status::text AS extra
+         FROM asset_teams at2
+         JOIN assets ast ON at2.asset_id = ast.id
+         WHERE at2.team_id = (SELECT id FROM teams WHERE uuid = $2 AND tenant_id = $1)
+           AND ast.is_active = 1
+         ORDER BY ast.name`,
+        [tenantId, uuid],
+      ),
+    ]);
+
+    const base = baseRows[0];
+    if (base === undefined) throw new NotFoundException('Team nicht gefunden');
+
+    const lead = this.toPerson(base.lead_uuid, base.lead_name);
+    const deputyLead = this.toPerson(base.deputy_uuid, base.deputy_name);
+    const parentDepartment = this.toParent(base.dept_uuid, base.dept_name);
+    const parentArea = this.toParent(base.area_uuid, base.area_name);
+    const members = this.mapChildren(memberRows);
+    const assets = this.mapChildren(assetRows);
+
+    return {
+      entityType: 'team',
+      entityUuid: base.uuid.trim(),
+      name: base.name,
+      ...(lead !== undefined && { lead }),
+      ...(deputyLead !== undefined && { deputyLead }),
+      ...(parentDepartment !== undefined && { parentDepartment }),
+      ...(parentArea !== undefined && { parentArea }),
+      ...(members !== undefined && { members }),
+      ...(assets !== undefined && { assets }),
+    };
+  }
+
+  private async getAssetDetail(
+    tenantId: number,
+    uuid: string,
+  ): Promise<OrgNodeDetail> {
+    const [baseRows, teamRows] = await Promise.all([
+      this.db.query<AssetDetailRow>(
+        `SELECT ast.uuid, ast.name, ast.status::text AS asset_status,
+                ast.asset_type::text,
+                pa.uuid AS area_uuid, pa.name AS area_name,
+                pd.uuid AS dept_uuid, pd.name AS dept_name
+         FROM assets ast
+         LEFT JOIN areas pa ON ast.area_id = pa.id
+         LEFT JOIN departments pd ON ast.department_id = pd.id
+         WHERE ast.tenant_id = $1 AND ast.uuid = $2 AND ast.is_active = 1`,
+        [tenantId, uuid],
+      ),
+      this.db.query<DetailChildRow>(
+        `SELECT t.uuid, t.name, NULL::text AS extra
+         FROM asset_teams at2
+         JOIN teams t ON at2.team_id = t.id
+         WHERE at2.asset_id = (SELECT id FROM assets WHERE uuid = $2 AND tenant_id = $1)
+           AND t.is_active = 1
+         ORDER BY t.name`,
+        [tenantId, uuid],
+      ),
+    ]);
+
+    const base = baseRows[0];
+    if (base === undefined)
+      throw new NotFoundException('Anlage nicht gefunden');
+
+    const parentArea = this.toParent(base.area_uuid, base.area_name);
+    const parentDepartment = this.toParent(base.dept_uuid, base.dept_name);
+    const assignedTeams = this.mapChildren(teamRows);
+
+    return {
+      entityType: 'asset',
+      entityUuid: base.uuid.trim(),
+      name: base.name,
+      ...(base.asset_status !== null && { assetStatus: base.asset_status }),
+      ...(base.asset_type !== null && { assetType: base.asset_type }),
+      ...(parentArea !== undefined && { parentArea }),
+      ...(parentDepartment !== undefined && { parentDepartment }),
+      ...(assignedTeams !== undefined && { assignedTeams }),
+    };
+  }
+
+  // ---- Node Detail Helpers ----
+
+  private toPerson(
+    uuid: string | null,
+    name: string | null,
+  ): OrgNodeDetailPerson | undefined {
+    if (uuid === null || name === null) return undefined;
+    const trimmed = name.trim();
+    if (trimmed === '') return undefined;
+    return { uuid: uuid.trim(), name: trimmed };
+  }
+
+  private toParent(
+    uuid: string | null | undefined,
+    name: string | null | undefined,
+  ): OrgNodeDetailEntry | undefined {
+    if (uuid === null || uuid === undefined) return undefined;
+    if (name === null || name === undefined) return undefined;
+    return { uuid: uuid.trim(), name };
+  }
+
+  private toDetailEntry(row: DetailChildRow): OrgNodeDetailEntry {
+    const entry: OrgNodeDetailEntry = { uuid: row.uuid.trim(), name: row.name };
+    const extra = row.extra?.trim();
+    if (extra !== undefined && extra !== '') entry.extra = extra;
+    return entry;
+  }
+
+  private mapChildren(
+    rows: DetailChildRow[],
+  ): OrgNodeDetailEntry[] | undefined {
+    if (rows.length === 0) return undefined;
+    return rows.map((r: DetailChildRow) => this.toDetailEntry(r));
   }
 }

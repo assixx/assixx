@@ -25,6 +25,9 @@ import { v7 as uuidv7 } from 'uuid';
 import { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import { DatabaseService } from '../database/database.service.js';
 import { UserRepository } from '../database/repositories/user.repository.js';
+import { HierarchyPermissionService } from '../hierarchy-permission/hierarchy-permission.service.js';
+import type { OrganizationalScope } from '../hierarchy-permission/organizational-scope.types.js';
+import { ScopeService } from '../hierarchy-permission/scope.service.js';
 import type { CreateUserDto } from './dto/create-user.dto.js';
 import type { ListUsersQueryDto } from './dto/list-users-query.dto.js';
 import type { UpdateUserDto } from './dto/update-user.dto.js';
@@ -41,6 +44,7 @@ import {
 import type {
   PaginatedResult,
   SafeUserResponse,
+  ScopedPaginatedResult,
   TenantInfo,
   UserDepartmentRow,
   UserRow,
@@ -58,6 +62,22 @@ const ERROR_MESSAGES = {
     'Mitarbeiter dürfen keinen Vollzugriff erhalten. Nur Admin- und Root-Benutzer können has_full_access=true haben.',
 } as const;
 
+/** Empty paginated result for scope-denied or no-data cases */
+function emptyPaginatedResult(
+  page: number,
+  limit: number,
+): PaginatedResult<SafeUserResponse> {
+  return {
+    data: [],
+    pagination: {
+      currentPage: page,
+      totalPages: 0,
+      pageSize: limit,
+      totalItems: 0,
+    },
+  };
+}
+
 @Injectable()
 export class UsersService {
   constructor(
@@ -65,50 +85,49 @@ export class UsersService {
     private readonly activityLogger: ActivityLoggerService,
     private readonly userRepository: UserRepository,
     private readonly availabilityService: UserAvailabilityService,
+    private readonly scopeService: ScopeService,
+    private readonly hierarchyPermission: HierarchyPermissionService,
   ) {}
 
   // ============================================
   // Public Methods
   // ============================================
 
-  /** List users with pagination and filters */
+  /** List users with pagination and filters (scope-filtered) */
   async listUsers(
     tenantId: number,
     query: ListUsersQueryDto,
-  ): Promise<PaginatedResult<SafeUserResponse>> {
-    const page = query.page;
-    const limit = query.limit;
+    userRole: string = 'employee',
+  ): Promise<ScopedPaginatedResult<SafeUserResponse>> {
+    const { page, limit } = query;
     const offset = (page - 1) * limit;
+    this.assertCanListRole(query.role, userRole);
 
-    // Build WHERE clause using helper
+    // Build WHERE + scope filter
     const { whereClause, params, paramIndex } = buildUserListWhereClause(
       tenantId,
       query,
     );
-
-    // Get total count
-    const countResult = await this.databaseService.query<{ count: string }>(
-      `SELECT COUNT(*) as count FROM users WHERE ${whereClause}`,
-      params,
+    const { scopeClause, scopeParams } = await this.buildScopeFilter(
+      tenantId,
+      paramIndex,
     );
-    const total = Number.parseInt(countResult[0]?.count ?? '0', 10);
+    if (scopeClause === 'DENY') {
+      return emptyPaginatedResult(page, limit);
+    }
 
-    // Build ORDER BY clause
-    const sortBy = mapSortField(query.sortBy ?? 'createdAt');
-    const sortOrder = query.sortOrder === 'desc' ? 'DESC' : 'ASC';
+    const fullWhere = `${whereClause}${scopeClause}`;
+    const fullParams = [...params, ...scopeParams];
+    const nextIdx = paramIndex + scopeParams.length;
 
-    // Get users (availability fields removed - now from user_availability table)
-    const users = await this.databaseService.query<UserRow>(
-      `SELECT id, uuid, tenant_id, email, role, username, first_name, last_name,
-              is_active, last_login, created_at, updated_at,
-              phone, address, position, employee_number, profile_picture,
-              emergency_contact, date_of_birth,
-              has_full_access
-       FROM users
-       WHERE ${whereClause}
-       ORDER BY ${sortBy} ${sortOrder}
-       LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`,
-      [...params, limit, offset],
+    // Count + fetch
+    const { total, users } = await this.fetchUsersWithCount(
+      fullWhere,
+      fullParams,
+      nextIdx,
+      query,
+      limit,
+      offset,
     );
 
     // Convert to responses
@@ -131,6 +150,7 @@ export class UsersService {
       );
     }
 
+    const scopeInfo = await this.resolveScopeInfo(tenantId);
     return {
       data: responses,
       pagination: {
@@ -139,6 +159,7 @@ export class UsersService {
         pageSize: limit,
         totalItems: total,
       },
+      ...(scopeInfo !== undefined ? { scope: scopeInfo } : {}),
     };
   }
 
@@ -308,6 +329,10 @@ export class UsersService {
     if (existingUser === null) {
       throw new NotFoundException(ERROR_MESSAGES.USER_NOT_FOUND);
     }
+
+    // Scope check: target user must be in acting user's scope
+    const scope = await this.scopeService.getScope();
+    await this.ensureUserInScope(scope, userId, tenantId);
 
     // Guard: Role changes require root OR admin with has_full_access
     if (dto.role !== undefined && dto.role !== existingUser.role) {
@@ -481,6 +506,10 @@ export class UsersService {
     if (user === null) {
       throw new NotFoundException(ERROR_MESSAGES.USER_NOT_FOUND);
     }
+
+    // Scope check: target user must be in acting user's scope
+    const scope = await this.scopeService.getScope();
+    await this.ensureUserInScope(scope, userId, tenantId);
 
     // Soft delete (is_active = 4 = deleted)
     await this.databaseService.query(
@@ -660,6 +689,118 @@ export class UsersService {
     );
   }
 
+  /** Fetch users with total count (extracted for max-lines compliance) */
+  private async fetchUsersWithCount(
+    whereClause: string,
+    params: unknown[],
+    paramIndex: number,
+    query: ListUsersQueryDto,
+    limit: number,
+    offset: number,
+  ): Promise<{ total: number; users: UserRow[] }> {
+    const countResult = await this.databaseService.query<{ count: string }>(
+      `SELECT COUNT(*) as count FROM users WHERE ${whereClause}`,
+      params,
+    );
+    const total = Number.parseInt(countResult[0]?.count ?? '0', 10);
+    const sortBy = mapSortField(query.sortBy ?? 'createdAt');
+    const sortOrder = query.sortOrder === 'desc' ? 'DESC' : 'ASC';
+
+    const users = await this.databaseService.query<UserRow>(
+      `SELECT id, uuid, tenant_id, email, role, username, first_name, last_name,
+              is_active, last_login, created_at, updated_at,
+              phone, address, position, employee_number, profile_picture,
+              emergency_contact, date_of_birth, has_full_access
+       FROM users
+       WHERE ${whereClause}
+       ORDER BY ${sortBy} ${sortOrder}
+       LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`,
+      [...params, limit, offset],
+    );
+
+    return { total, users };
+  }
+
+  /** Only root can list admins/root users */
+  private assertCanListRole(
+    queryRole: string | undefined,
+    userRole: string,
+  ): void {
+    if (
+      (queryRole === 'admin' || queryRole === 'root') &&
+      userRole !== 'root'
+    ) {
+      throw new ForbiddenException(
+        'Only root users can list admins/root users',
+      );
+    }
+  }
+
+  /** Resolve scope metadata for response (area/department names). Returns undefined for full scope. */
+  private async resolveScopeInfo(
+    tenantId: number,
+  ): Promise<ScopedPaginatedResult<never>['scope']> {
+    const scope = await this.scopeService.getScope(); // CLS-cached, no DB hit
+    if (scope.type !== 'limited') return undefined;
+
+    const [areas, depts] = await Promise.all([
+      this.databaseService.query<{ name: string }>(
+        'SELECT name FROM areas WHERE id = ANY($1::int[]) AND tenant_id = $2',
+        [scope.areaIds, tenantId],
+      ),
+      this.databaseService.query<{ name: string }>(
+        'SELECT name FROM departments WHERE id = ANY($1::int[]) AND tenant_id = $2',
+        [scope.departmentIds, tenantId],
+      ),
+    ]);
+
+    return {
+      type: 'limited',
+      areaNames: areas.map((a: { name: string }) => a.name),
+      departmentNames: depts.map((d: { name: string }) => d.name),
+    };
+  }
+
+  /** Ensures a target user is within the current user's scope. Async, needs DB. */
+  private async ensureUserInScope(
+    scope: OrganizationalScope,
+    targetUserId: number,
+    tenantId: number,
+  ): Promise<void> {
+    if (scope.type === 'full') return;
+    const visibleIds = await this.hierarchyPermission.getVisibleUserIds(
+      scope,
+      tenantId,
+    );
+    if (visibleIds === 'all') return;
+    if (!visibleIds.includes(targetUserId)) {
+      throw new ForbiddenException('User is not in your organizational scope');
+    }
+  }
+
+  /** Build scope filter clause for user listing. Returns 'DENY' if no access. */
+  private async buildScopeFilter(
+    tenantId: number,
+    paramIndex: number,
+  ): Promise<{ scopeClause: string; scopeParams: unknown[] }> {
+    const scope = await this.scopeService.getScope();
+    if (scope.type === 'full') return { scopeClause: '', scopeParams: [] };
+    if (scope.type === 'none') return { scopeClause: 'DENY', scopeParams: [] };
+
+    const visibleIds = await this.hierarchyPermission.getVisibleUserIds(
+      scope,
+      tenantId,
+    );
+    if (visibleIds === 'all') return { scopeClause: '', scopeParams: [] };
+    if (visibleIds.length === 0)
+      return { scopeClause: 'DENY', scopeParams: [] };
+
+    return {
+      scopeClause: ` AND id = ANY($${paramIndex}::int[])`,
+      scopeParams: [visibleIds],
+    };
+  }
+
   /** Get team assignments for multiple users (batch query, includes inheritance chain) */
   private async getUserTeamsBatch(
     userIds: number[],
@@ -775,6 +916,9 @@ export class UsersService {
     tenantId: number,
   ): Promise<SafeUserResponse> {
     const userId = await this.resolveUserIdByUuid(uuid, tenantId);
+    // Scope check: target user must be in acting user's scope
+    const scope = await this.scopeService.getScope();
+    await this.ensureUserInScope(scope, userId, tenantId);
     return await this.getUserById(userId, tenantId);
   }
 

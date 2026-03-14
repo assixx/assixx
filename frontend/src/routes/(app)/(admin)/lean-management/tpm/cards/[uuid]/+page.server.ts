@@ -7,8 +7,8 @@
  */
 import { redirect } from '@sveltejs/kit';
 
+import { apiFetch, apiFetchWithPermission } from '$lib/server/api-fetch';
 import { requireAddon } from '$lib/utils/addon-guard';
-import { createLogger } from '$lib/utils/logger';
 
 import type { PageServerLoad } from './$types';
 import type { TpmPlan, TpmCard, PaginatedResponse } from '../../_lib/types';
@@ -19,47 +19,6 @@ interface LocationOption {
   positionNumber: number;
   title: string;
   photoPath: string | null;
-}
-
-const log = createLogger('TpmCardManagement');
-
-const API_BASE = process.env.API_URL ?? 'http://localhost:3000/api/v2';
-
-interface ApiResponse<T> {
-  success?: boolean;
-  data?: T;
-}
-
-async function apiFetch<T>(
-  endpoint: string,
-  token: string,
-  fetchFn: typeof fetch,
-): Promise<T | null> {
-  try {
-    const response = await fetchFn(`${API_BASE}${endpoint}`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      log.error({ status: response.status, endpoint }, 'API error');
-      return null;
-    }
-
-    const json = (await response.json()) as ApiResponse<T>;
-    if ('success' in json && json.success === true) {
-      return json.data ?? null;
-    }
-    if ('data' in json && json.data !== undefined) {
-      return json.data;
-    }
-    return json as unknown as T;
-  } catch (err: unknown) {
-    log.error({ err, endpoint }, 'Fetch error');
-    return null;
-  }
 }
 
 /** Extract cards + total from paginated API response */
@@ -91,9 +50,28 @@ export const load: PageServerLoad = async ({
 
   const planUuid = params.uuid;
 
-  // Load plan + cards + locations in parallel
-  const [planData, cardsData, locationsData] = await Promise.all([
-    apiFetch<TpmPlan>(`/tpm/plans/${planUuid}`, token, fetch),
+  const planResult = await apiFetchWithPermission<TpmPlan>(
+    `/tpm/plans/${planUuid}`,
+    token,
+    fetch,
+  );
+
+  if (planResult.permissionDenied) {
+    return {
+      permissionDenied: true as const,
+      plan: null as TpmPlan | null,
+      cards: [] as TpmCard[],
+      totalCards: 0,
+      locations: [] as LocationOption[],
+      planUuid,
+    };
+  }
+
+  if (planResult.data === null) {
+    redirect(302, '/lean-management/tpm');
+  }
+
+  const [cardsData, locationsData] = await Promise.all([
     apiFetch<PaginatedResponse<TpmCard>>(
       `/tpm/cards?planUuid=${planUuid}&page=1&limit=50`,
       token,
@@ -106,18 +84,14 @@ export const load: PageServerLoad = async ({
     ),
   ]);
 
-  if (planData === null) {
-    redirect(302, '/lean-management/tpm');
-  }
-
   const { cards, totalCards } = extractCards(cardsData);
-  const locations = Array.isArray(locationsData) ? locationsData : [];
 
   return {
-    plan: planData,
+    permissionDenied: false as const,
+    plan: planResult.data,
     cards,
     totalCards,
-    locations,
+    locations: Array.isArray(locationsData) ? locationsData : [],
     planUuid,
   };
 };

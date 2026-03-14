@@ -63,11 +63,15 @@ function onDropdownClassChange(menu: HTMLElement): void {
   const modal = body.closest<HTMLElement>('.ds-modal');
 
   if (menu.classList.contains('active')) {
-    requestAnimationFrame(() => {
+    // Wait for dropdown transition (200ms ease) to finish before measuring.
+    // WHY: During transition, translateY(-10px→0) shifts getBoundingClientRect()
+    // up by ~10px. If the overflow is minimal (e.g. RootUserModal), this causes
+    // overflow <= 0 and the scroll is skipped — even though the menu WILL overlap.
+    setTimeout(() => {
       if (scrollToShowMenu(body, modal, menu)) {
         scrolledBodies.add(body);
       }
-    });
+    }, 230);
   } else if (scrolledBodies.has(body)) {
     scrolledBodies.delete(body);
     resetScroll(body, modal);

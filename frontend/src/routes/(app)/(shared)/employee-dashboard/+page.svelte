@@ -13,6 +13,7 @@
   import {
     DEFAULT_HIERARCHY_LABELS,
     type HierarchyLabels,
+    resolvePositionDisplay,
   } from '$lib/types/hierarchy-labels';
   import { getApiClient } from '$lib/utils/api-client';
 
@@ -97,7 +98,9 @@
     (user?.teamNames?.length ?? 0) > 0 ? (user?.teamNames ?? null) : null,
   );
   const employeePosition = $derived(
-    getDisplayValue(user?.position, PLACEHOLDER_TEXT.employee),
+    user?.position !== undefined && user.position !== '' ?
+      resolvePositionDisplay(user.position, labels)
+    : PLACEHOLDER_TEXT.employee,
   );
 </script>
 

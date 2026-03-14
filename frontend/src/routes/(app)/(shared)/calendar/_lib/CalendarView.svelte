@@ -358,6 +358,7 @@
       margin: 0 !important;
       border: 0;
       border-radius: 0 !important;
+      background: var(--main-bg-gradient), var(--main-bg) !important;
     }
 
     .calendar-fullscreen-mode #calendarContainer .card__header {

@@ -24,11 +24,13 @@ export const CreateTeamSchema = z.object({
     .number()
     .int()
     .positive('Department ID must be a positive integer')
+    .nullable()
     .optional(),
   leaderId: z.coerce
     .number()
     .int()
     .positive('Leader ID must be a positive integer')
+    .nullable()
     .optional(),
 });
 

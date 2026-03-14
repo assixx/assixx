@@ -6,6 +6,7 @@
  */
 import { redirect, error } from '@sveltejs/kit';
 
+import { apiFetchWithPermission } from '$lib/server/api-fetch';
 import { requireAddon } from '$lib/utils/addon-guard';
 import { createLogger } from '$lib/utils/logger';
 
@@ -14,8 +15,6 @@ import type { FullEntryResponse, PaginatedComments } from './_lib/types';
 
 const log = createLogger('BlackboardDetail');
 
-const API_BASE = process.env.API_URL ?? 'http://localhost:3000/api/v2';
-
 interface ParentUser {
   id: number;
   role: string;
@@ -23,16 +22,11 @@ interface ParentUser {
   hasFullAccess?: boolean;
 }
 
-/** Handle API response errors */
-function handleApiError(response: Response, uuid: string): never {
-  if (response.status === 404) {
-    error(404, 'Eintrag nicht gefunden');
-  }
-  log.error(
-    { status: response.status, uuid },
-    'API error for blackboard entry',
-  );
-  error(response.status, 'Fehler beim Laden des Eintrags');
+/** Inner data shape returned by /blackboard/entries/:uuid/full */
+interface FullEntryData {
+  entry: FullEntryResponse['data']['entry'];
+  comments?: PaginatedComments;
+  attachments?: FullEntryResponse['data']['attachments'];
 }
 
 /** Map parent user to current user format */
@@ -62,21 +56,27 @@ export const load: PageServerLoad = async ({
     error(400, 'UUID fehlt');
   }
 
-  const response = await fetch(`${API_BASE}/blackboard/entries/${uuid}/full`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    },
-  });
+  const result = await apiFetchWithPermission<FullEntryData>(
+    `/blackboard/entries/${uuid}/full`,
+    token,
+    fetch,
+  );
 
-  if (!response.ok) {
-    handleApiError(response, uuid);
+  if (result.permissionDenied) {
+    const parentData = await parent();
+    requireAddon(parentData.activeAddons, 'blackboard');
+    return {
+      permissionDenied: true as const,
+      entry: null,
+      comments: { comments: [], total: 0, hasMore: false } as PaginatedComments,
+      attachments: [],
+      currentUser: null,
+    };
   }
 
-  const result = (await response.json()) as FullEntryResponse;
-
-  if (!result.success) {
-    error(500, result.error?.message ?? 'Fehler beim Laden des Eintrags');
+  if (result.data === null) {
+    log.error({ uuid }, 'Failed to load blackboard entry');
+    error(404, 'Eintrag nicht gefunden');
   }
 
   const parentData = await parent();
@@ -89,6 +89,7 @@ export const load: PageServerLoad = async ({
   };
 
   return {
+    permissionDenied: false as const,
     entry: result.data.entry,
     comments: result.data.comments ?? defaultComments,
     attachments: result.data.attachments ?? [],

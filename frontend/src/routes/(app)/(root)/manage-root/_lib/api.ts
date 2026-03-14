@@ -2,7 +2,7 @@
 // MANAGE ROOT - API FUNCTIONS
 // =============================================================================
 
-import { getApiClient } from '$lib/utils/api-client';
+import { getApiClient, getApiErrorMessage } from '$lib/utils/api-client';
 import { createLogger } from '$lib/utils/logger';
 
 import { API_ENDPOINTS } from './constants';
@@ -75,7 +75,7 @@ export async function saveRootUser(
     log.error({ err }, 'Error saving user');
     return {
       success: false,
-      error: err instanceof Error ? err.message : 'Fehler beim Speichern',
+      error: getApiErrorMessage(err, 'Fehler beim Speichern'),
     };
   }
 }

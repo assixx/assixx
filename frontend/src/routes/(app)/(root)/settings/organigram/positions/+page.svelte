@@ -7,6 +7,7 @@
   import { showSuccessAlert, showErrorAlert } from '$lib/stores/toast';
   import {
     isLeadPosition,
+    LEAD_POSITION_KEYS,
     resolvePositionDisplay,
   } from '$lib/types/hierarchy-labels';
   import { getApiClient } from '$lib/utils/api-client';
@@ -44,13 +45,37 @@
     root: [],
   });
 
+  /** Hierarchie-Reihenfolge: area → department → team (oben nach unten) */
+  const LEAD_ORDER: string[] = [
+    LEAD_POSITION_KEYS.AREA,
+    LEAD_POSITION_KEYS.DEPARTMENT,
+    LEAD_POSITION_KEYS.TEAM,
+  ];
+
+  /** System positions always first, sorted by hierarchy level */
+  function sortSystemFirst(list: string[]): string[] {
+    const system = list
+      .filter((p: string) => isLeadPosition(p))
+      .sort(
+        (a: string, b: string) => LEAD_ORDER.indexOf(a) - LEAD_ORDER.indexOf(b),
+      );
+    const custom = list.filter((p: string) => !isLeadPosition(p));
+    return [...system, ...custom];
+  }
+
+  /** Inject missing lead keys + sort system first */
+  function ensureLeadPositions(list: string[]): string[] {
+    const missing = LEAD_ORDER.filter((key: string) => !list.includes(key));
+    return sortSystemFirst([...missing, ...list]);
+  }
+
   /** Sync editable copy from server data (mount + after save via data mutation) */
   $effect(() => {
     const src = serverPositions;
     positions = {
-      employee: [...src.employee],
-      admin: [...src.admin],
-      root: [...src.root],
+      employee: sortSystemFirst([...src.employee]),
+      admin: ensureLeadPositions([...src.admin]),
+      root: ensureLeadPositions([...src.root]),
     };
   });
 
@@ -61,10 +86,13 @@
   let saving = $state(false);
 
   const currentList = $derived(positions[activeTab]);
+  /** Compare only custom positions (lead keys are auto-injected) */
   const hasChanges = $derived.by(() => {
     for (const cat of CATEGORIES) {
-      const cur = positions[cat];
-      const srv = serverPositions[cat];
+      const cur = positions[cat].filter((p: string) => !isLeadPosition(p));
+      const srv = serverPositions[cat].filter(
+        (p: string) => !isLeadPosition(p),
+      );
       if (cur.length !== srv.length) return true;
       if (cur.some((p: string, i: number) => p !== srv[i])) return true;
     }
@@ -141,6 +169,7 @@
   function moveUp(index: number): void {
     if (index === 0) return;
     const list = [...positions[activeTab]];
+    if (isLeadPosition(list[index - 1] ?? '')) return;
     const temp = list[index - 1];
     list[index - 1] = list[index];
     list[index] = temp;
@@ -223,29 +252,13 @@
             Benutzern.
           </p>
         </div>
-        <div class="flex shrink-0 items-center gap-2">
-          <a
-            href="/settings/organigram"
-            class="btn btn--secondary btn--sm"
-          >
-            <i class="fas fa-sitemap"></i>
-            Organigramm
-          </a>
-          <button
-            type="button"
-            class="btn btn-primary"
-            disabled={!hasChanges || saving}
-            onclick={saveAll}
-          >
-            {#if saving}
-              <span class="spinner-ring spinner-ring--sm"></span>
-              Speichern...
-            {:else}
-              <i class="fas fa-save"></i>
-              Speichern
-            {/if}
-          </button>
-        </div>
+        <a
+          href="/settings/organigram"
+          class="btn btn-secondary btn-sm"
+        >
+          <i class="fas fa-sitemap"></i>
+          Organigramm
+        </a>
       </div>
 
       <!-- Tabs -->
@@ -269,11 +282,11 @@
     </div>
 
     <div class="card__body">
-      <!-- Add new -->
+      <!-- Add new + Save -->
       <div class="add-row">
         <input
           type="text"
-          class="input"
+          class="form-field__control"
           placeholder="Neue Position hinzufügen..."
           maxlength="100"
           bind:value={newPosition}
@@ -281,12 +294,26 @@
         />
         <button
           type="button"
-          class="btn btn--primary btn--sm"
+          class="btn btn-primary"
           disabled={newPosition.trim() === ''}
           onclick={addPosition}
         >
           <i class="fas fa-plus"></i>
           Hinzufügen
+        </button>
+        <button
+          type="button"
+          class="btn btn-success"
+          disabled={!hasChanges || saving}
+          onclick={saveAll}
+        >
+          {#if saving}
+            <span class="spinner-ring spinner-ring--sm"></span>
+            Speichern...
+          {:else}
+            <i class="fas fa-save"></i>
+            Speichern
+          {/if}
         </button>
       </div>
 
@@ -307,7 +334,7 @@
               {#if editingIndex === index && !isSystem}
                 <input
                   type="text"
-                  class="input edit-input"
+                  class="form-field__control edit-input"
                   maxlength="100"
                   bind:value={editingValue}
                   onkeydown={handleKeydown}
@@ -345,17 +372,22 @@
                   {/if}
                 </span>
                 {#if isSystem}
-                  <span class="system-hint"
-                    >Geschützt — wird dynamisch aus Organigramm-Bezeichnungen
-                    abgeleitet</span
+                  <a
+                    href="/settings/organigram?editLabels"
+                    class="system-hint-link"
+                    title="Bezeichnungen bearbeiten"
                   >
+                    <i class="fas fa-pen-to-square"></i>
+                    Bezeichnung ändern
+                  </a>
                 {:else}
                   <div class="item-actions">
                     <button
                       type="button"
                       class="btn-icon"
                       title="Nach oben"
-                      disabled={index === 0}
+                      disabled={index === 0 ||
+                        isLeadPosition(currentList[index - 1] ?? '')}
                       onclick={() => {
                         moveUp(index);
                       }}
@@ -468,7 +500,7 @@
     margin-bottom: 1rem;
   }
 
-  .add-row .input {
+  .add-row .form-field__control {
     flex: 1;
   }
 
@@ -529,11 +561,20 @@
     padding: 0.0625rem 0.375rem;
   }
 
-  .system-hint {
+  .system-hint-link {
     font-size: 0.75rem;
-    color: var(--color-text-secondary);
+    color: var(--color-primary, #3b82f6);
     opacity: 70%;
     flex-shrink: 0;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    transition: opacity 150ms ease;
+  }
+
+  .system-hint-link:hover {
+    opacity: 100%;
   }
 
   .position-name {

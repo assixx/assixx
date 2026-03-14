@@ -91,6 +91,7 @@ const BASE_MESSAGES = {
   EMAILS_NOT_MATCH: 'E-Mail-Adressen stimmen nicht überein',
   PASSWORDS_NOT_MATCH: 'Passwörter stimmen nicht überein',
   SELECT_POSITION_ERROR: 'Bitte wählen Sie eine Position aus',
+  EMPLOYEE_NUMBER_REQUIRED: 'Bitte geben Sie eine Personalnummer ein',
 
   // Success
   SUCCESS_CREATED: 'Root-Benutzer erfolgreich erstellt',

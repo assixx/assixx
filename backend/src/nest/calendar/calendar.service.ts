@@ -21,6 +21,7 @@ import {
 
 import { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import { DatabaseService } from '../database/database.service.js';
+import { ScopeService } from '../hierarchy-permission/scope.service.js';
 import { CalendarCreationService } from './calendar-creation.service.js';
 import {
   generateCsvExport,
@@ -66,6 +67,7 @@ export class CalendarService {
     private readonly permissionService: CalendarPermissionService,
     private readonly creationService: CalendarCreationService,
     private readonly overviewService: CalendarOverviewService,
+    private readonly scopeService: ScopeService,
   ) {}
 
   // ============================================
@@ -84,7 +86,11 @@ export class CalendarService {
   ): Promise<PaginatedEventsResult> {
     const { page, limit, offset } = normalizePagination(filters);
     const status = filters.status === 'cancelled' ? 'cancelled' : 'confirmed';
-    const userRole = await this.permissionService.getUserRole(userId, tenantId);
+    const scope = await this.scopeService.getScope();
+    const memberships = await this.permissionService.getUserMemberships(
+      userId,
+      tenantId,
+    );
 
     let query = `
       SELECT e.*, u.username as creator_name
@@ -95,13 +101,10 @@ export class CalendarService {
     const params: unknown[] = [tenantId, status];
     let paramIndex = 3;
 
-    // CRITICAL: Only root OR has_full_access=true gets unrestricted access
     const filterType = filters.filter ?? 'all';
-    const hasUnrestrictedAccess =
-      userRole.has_full_access || userRole.role === 'root';
 
     const accessFilter =
-      hasUnrestrictedAccess ?
+      scope.type === 'full' ?
         this.permissionService.buildAdminOrgLevelFilter(
           filterType,
           userId,
@@ -109,8 +112,9 @@ export class CalendarService {
         )
       : this.permissionService.buildPermissionBasedFilter(
           filterType,
+          scope,
+          memberships,
           userId,
-          tenantId,
           paramIndex,
         );
     query += accessFilter.clause;
@@ -166,12 +170,17 @@ export class CalendarService {
       throw new NotFoundException(ERROR_EVENT_NOT_FOUND);
     }
 
-    // Check access
-    const userRole = await this.permissionService.getUserRole(userId, tenantId);
+    // Check access via scope + memberships
+    const scope = await this.scopeService.getScope();
+    const memberships = await this.permissionService.getUserMemberships(
+      userId,
+      tenantId,
+    );
     const hasAccess = await this.permissionService.checkEventAccess(
       event,
       userId,
-      userRole,
+      scope,
+      memberships,
     );
     if (!hasAccess) {
       throw new NotFoundException(ERROR_EVENT_NOT_FOUND);

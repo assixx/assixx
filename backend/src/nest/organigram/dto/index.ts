@@ -1,4 +1,8 @@
 export {
+  NodeDetailParamDto,
+  NodeDetailParamSchema,
+} from './node-detail-param.dto.js';
+export {
   UpdateHierarchyLabelsDto,
   UpdateHierarchyLabelsSchema,
 } from './update-hierarchy-labels.dto.js';

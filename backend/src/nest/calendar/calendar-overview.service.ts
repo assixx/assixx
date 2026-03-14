@@ -8,12 +8,9 @@ import { Injectable } from '@nestjs/common';
 
 import { AddonVisitsService } from '../addon-visits/addon-visits.service.js';
 import { DatabaseService } from '../database/database.service.js';
+import { ScopeService } from '../hierarchy-permission/scope.service.js';
 import { CalendarPermissionService } from './calendar-permission.service.js';
-import {
-  PERMISSION_BASED_COUNT_QUERY,
-  buildVisibilityClause,
-  dbToApiEvent,
-} from './calendar.helpers.js';
+import { buildVisibilityClause, dbToApiEvent } from './calendar.helpers.js';
 import type {
   CalendarEventResponse,
   DbCalendarEvent,
@@ -25,6 +22,7 @@ export class CalendarOverviewService {
     private readonly databaseService: DatabaseService,
     private readonly addonVisitsService: AddonVisitsService,
     private readonly permissionService: CalendarPermissionService,
+    private readonly scopeService: ScopeService,
   ) {}
 
   /**
@@ -50,9 +48,11 @@ export class CalendarOverviewService {
     const todayStr = today.toISOString().split('T')[0];
     const endOfMonthStr = endOfMonth.toISOString().split('T')[0];
 
-    const userRole = await this.permissionService.getUserRole(userId, tenantId);
-    const hasUnrestrictedAccess =
-      userRole.has_full_access || userRole.role === 'root';
+    const scope = await this.scopeService.getScope();
+    const memberships = await this.permissionService.getUserMemberships(
+      userId,
+      tenantId,
+    );
 
     let query = `
       SELECT e.*, u.username as creator_name
@@ -63,15 +63,19 @@ export class CalendarOverviewService {
     `;
     const params: unknown[] = [tenantId, todayStr, endOfMonthStr];
 
-    // Permission-based access control
-    if (!hasUnrestrictedAccess) {
-      // Regular users: full visibility check
-      query += ` AND ${buildVisibilityClause(4, 1)}`;
-      params.push(userId);
-    } else {
+    if (scope.type === 'full') {
       // ADR-010: Even admins/root can only see their OWN personal events
       query += ` AND (e.org_level != 'personal' OR e.user_id = $4)`;
       params.push(userId);
+    } else {
+      const { clause, params: visParams } = buildVisibilityClause(
+        scope,
+        memberships,
+        userId,
+        4,
+      );
+      query += ` AND ${clause}`;
+      params.push(...visParams);
     }
 
     const limitIndex = params.length + 1;
@@ -94,9 +98,11 @@ export class CalendarOverviewService {
     userId: number,
     limit: number = 3,
   ): Promise<CalendarEventResponse[]> {
-    const userRole = await this.permissionService.getUserRole(userId, tenantId);
-    const hasUnrestrictedAccess =
-      userRole.has_full_access || userRole.role === 'root';
+    const scope = await this.scopeService.getScope();
+    const memberships = await this.permissionService.getUserMemberships(
+      userId,
+      tenantId,
+    );
 
     let query = `
       SELECT e.*, u.username as creator_name
@@ -106,15 +112,19 @@ export class CalendarOverviewService {
     `;
     const params: unknown[] = [tenantId];
 
-    // Permission-based access control
-    if (!hasUnrestrictedAccess) {
-      // Regular users: full visibility check
-      query += ` AND ${buildVisibilityClause(2, 1)}`;
-      params.push(userId);
-    } else {
+    if (scope.type === 'full') {
       // ADR-010: Even admins/root can only see their OWN personal events
       query += ` AND (e.org_level != 'personal' OR e.user_id = $2)`;
       params.push(userId);
+    } else {
+      const { clause, params: visParams } = buildVisibilityClause(
+        scope,
+        memberships,
+        userId,
+        2,
+      );
+      query += ` AND ${clause}`;
+      params.push(...visParams);
     }
 
     const limitIndex = params.length + 1;
@@ -139,7 +149,7 @@ export class CalendarOverviewService {
     _userDepartmentId: number | null,
     _userTeamId: number | null,
   ): Promise<{ count: number }> {
-    const userRole = await this.permissionService.getUserRole(userId, tenantId);
+    const scope = await this.scopeService.getScope();
     const lastVisited = await this.addonVisitsService.getLastVisited(
       tenantId,
       userId,
@@ -155,14 +165,10 @@ export class CalendarOverviewService {
     const endOfWeek = new Date(startOfDay);
     endOfWeek.setDate(endOfWeek.getDate() + 7);
 
-    // CRITICAL: Only root OR has_full_access=true gets unrestricted access
-    // Regular admins use permission-based visibility like employees
-    const hasUnrestrictedAccess =
-      userRole.has_full_access || userRole.role === 'root';
     const lastVisitDate = lastVisited ?? new Date('1970-01-01');
 
     const count =
-      hasUnrestrictedAccess ?
+      scope.type === 'full' ?
         await this.countUpcomingForFullAccess(
           tenantId,
           userId,
@@ -214,8 +220,8 @@ export class CalendarOverviewService {
   }
 
   /**
-   * Count upcoming events with permission-based visibility
-   * Uses PERMISSION_BASED_COUNT_QUERY constant for visibility rules
+   * Count upcoming events with scope + membership visibility.
+   * Preserves e.user_id != $N (creator-exclusion for badge count).
    */
   private async countUpcomingWithPermissions(
     tenantId: number,
@@ -224,10 +230,47 @@ export class CalendarOverviewService {
     endOfWeek: Date,
     lastVisited: Date,
   ): Promise<number> {
-    const result = await this.databaseService.query<{ count: string }>(
-      PERMISSION_BASED_COUNT_QUERY,
-      [tenantId, startOfDay, endOfWeek, lastVisited, userId],
+    const scope = await this.scopeService.getScope();
+    const memberships = await this.permissionService.getUserMemberships(
+      userId,
+      tenantId,
     );
+
+    if (
+      scope.type === 'none' &&
+      memberships.departmentIds.length === 0 &&
+      memberships.teamIds.length === 0
+    ) {
+      return 0;
+    }
+
+    const { clause, params: visParams } = buildVisibilityClause(
+      scope,
+      memberships,
+      userId,
+      6,
+    );
+
+    const query = `
+      SELECT COUNT(DISTINCT e.id) as count
+      FROM calendar_events e
+      WHERE e.tenant_id = $1
+        AND e.start_date >= $2
+        AND e.start_date < $3
+        AND e.status != 'cancelled'
+        AND e.created_at > $4
+        AND e.user_id != $5
+        AND ${clause}
+    `;
+
+    const result = await this.databaseService.query<{ count: string }>(query, [
+      tenantId,
+      startOfDay,
+      endOfWeek,
+      lastVisited,
+      userId,
+      ...visParams,
+    ]);
     return Number.parseInt(result[0]?.count ?? '0', 10);
   }
 }

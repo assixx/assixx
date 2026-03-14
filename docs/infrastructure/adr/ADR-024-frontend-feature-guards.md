@@ -156,6 +156,22 @@ Addon-Check direkt in hooks, analog zum alten ROUTE_PERMISSIONS Pattern:
 
 Wenn ein Addon deaktiviert wird (`AddonsService.deactivateAddon()`), werden **alle `user_addon_permissions`** für dieses Addon auf `can_read=false, can_write=false, can_delete=false` zurückgesetzt.
 
+### Abgrenzung: Tenant-Addon vs. Per-User-Permission (2026-03-13)
+
+Dieses ADR behandelt **Tenant-Level Addon-Gating** (`requireAddon`): Hat der Tenant das Addon abonniert?
+
+Davon unabhängig gibt es **Per-User-Permission-Gating** (ADR-020 §6): Hat der einzelne User die Berechtigung?
+
+Beide Prüfungen passieren im selben `+page.server.ts` in dieser Reihenfolge:
+
+```
+1. requireAddon()               → Addon nicht aktiviert? → redirect (ADR-024)
+2. apiFetchWithPermission()     → User keine Permission? → PermissionDenied.svelte (ADR-020 §6)
+3. Normaler Seiteninhalt        → Alles ok
+```
+
+Alle 31 addon-gated Seiten implementieren beide Prüfungen konsistent. Siehe ADR-020 §6 für Details zum `apiFetchWithPermission` Pattern.
+
 **Warum:** Verhindert "Magic Restore" — ohne Reset würden alte Permissions beim Re-Aktivieren eines Addons automatisch wiederhergestellt, ohne dass der Admin das bewusst entscheidet.
 
 **Implementierung:**

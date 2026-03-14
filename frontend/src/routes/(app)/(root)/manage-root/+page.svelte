@@ -15,6 +15,7 @@
     showWarningAlert,
     showErrorAlert,
   } from '$lib/stores/toast';
+  import { resolvePositionDisplay } from '$lib/types/hierarchy-labels';
   import { ApiError } from '$lib/utils/api-client';
   import { createLogger } from '$lib/utils/logger';
 
@@ -185,6 +186,10 @@
     }
     if (formPosition === '') {
       showWarningAlert(messages.SELECT_POSITION_ERROR);
+      return false;
+    }
+    if (formEmployeeNumber.trim() === '') {
+      showWarningAlert(messages.EMPLOYEE_NUMBER_REQUIRED);
       return false;
     }
     return true;
@@ -637,7 +642,11 @@
                   </td>
                   <td>{user.email}</td>
                   <td>{user.employeeNumber ?? '-'}</td>
-                  <td>{user.position ?? '-'}</td>
+                  <td
+                    >{user.position !== undefined ?
+                      resolvePositionDisplay(user.position, labels)
+                    : '-'}</td
+                  >
                   <td>
                     <span class="badge {getStatusBadgeClass(user.isActive)}">
                       {getStatusLabel(user.isActive)}
@@ -719,6 +728,7 @@
   {isEditMode}
   {modalTitle}
   {positionOptions}
+  hierarchyLabels={labels}
   bind:firstName={formFirstName}
   bind:lastName={formLastName}
   bind:email={formEmail}

@@ -11,6 +11,7 @@
 
   import { resolve } from '$app/paths';
 
+  import PermissionDenied from '$lib/components/PermissionDenied.svelte';
   import { notificationStore } from '$lib/stores/notification.store.svelte';
 
   import { markWorkOrderAsRead } from '../_lib/api';
@@ -52,6 +53,8 @@
 
   const { data }: { data: PageData } = $props();
 
+  const permissionDenied = $derived<boolean>(data.permissionDenied);
+
   const workOrder = $derived(data.workOrder);
   const comments = $derived(data.comments);
   const photos = $derived(data.photos);
@@ -90,6 +93,7 @@
   }
 
   onMount(() => {
+    if (permissionDenied || workOrder === null) return;
     void notificationStore.markEntityAsRead('work_orders', workOrder.uuid);
     void markWorkOrderAsRead(workOrder.uuid);
   });
@@ -103,284 +107,294 @@
 </script>
 
 <svelte:head>
-  <title>{workOrder.title} — {MESSAGES.PAGE_TITLE_DETAIL}</title>
+  <title>
+    {permissionDenied ?
+      MESSAGES.PAGE_TITLE_DETAIL
+    : `${workOrder?.title ?? ''} — ${MESSAGES.PAGE_TITLE_DETAIL}`}
+  </title>
 </svelte:head>
 
 <svelte:window onkeydown={handleSourceKeydown} />
 
-<div class="container">
-  <!-- Back button -->
-  <div class="mb-4">
-    <a
-      href={resolve('/work-orders')}
-      class="btn btn-light"
-    >
-      <i class="fas fa-arrow-left mr-2"></i>
-      {MESSAGES.BTN_BACK}
-    </a>
-  </div>
-
-  <!-- Header -->
-  <div class="card mb-6">
-    <div class="card__header">
-      <div class="detail-header">
-        <h2 class="card__title">{workOrder.title}</h2>
-        <div class="detail-header__badges">
-          <StatusBadge status={workOrder.status} />
-          {#if workOrder.isActive === 3}
-            <span class="badge badge--secondary">
-              <i class="fas fa-archive"></i>
-              {MESSAGES.BADGE_ARCHIVED}
-            </span>
-          {/if}
-        </div>
-      </div>
+{#if permissionDenied}
+  <PermissionDenied addonName="die Arbeitsaufträge" />
+{:else if workOrder !== null}
+  <div class="container">
+    <!-- Back button -->
+    <div class="mb-4">
+      <a
+        href={resolve('/work-orders')}
+        class="btn btn-light"
+      >
+        <i class="fas fa-arrow-left mr-2"></i>
+        {MESSAGES.BTN_BACK}
+      </a>
     </div>
-    {#if statusLogs.length > 0}
-      <div class="card__body status-log-list">
-        {#each statusLogs as log (log.id)}
-          <div class="alert alert--info status-log-entry">
-            <i class="alert__icon fas fa-exchange-alt"></i>
-            <span class="status-log-entry__text">
-              <strong>{log.firstName} {log.lastName}</strong>
-              — {MESSAGES.COMMENTS_STATUS_CHANGE}: {statusChangeText(log)}
-            </span>
-            <span class="status-log-entry__date">
-              {formatDateTime(log.createdAt)}
-            </span>
-          </div>
-        {/each}
-      </div>
-    {/if}
-  </div>
 
-  <!-- Two-column layout -->
-  <div class="detail-layout">
-    <!-- Main content -->
-    <div class="detail-main">
-      <!-- Description -->
-      <div class="card mb-6">
-        <div class="card__header">
-          <h3 class="card__title">
-            <i class="fas fa-align-left mr-2"></i>
-            {MESSAGES.DETAIL_DESCRIPTION}
-          </h3>
-        </div>
-        <div class="card__body">
-          {#if workOrder.description !== null && workOrder.description !== ''}
-            <p class="description-text">{workOrder.description}</p>
-          {:else}
-            <p class="description-empty">{MESSAGES.DETAIL_NO_DESCRIPTION}</p>
-          {/if}
+    <!-- Header -->
+    <div class="card mb-6">
+      <div class="card__header">
+        <div class="detail-header">
+          <h2 class="card__title">{workOrder.title}</h2>
+          <div class="detail-header__badges">
+            <StatusBadge status={workOrder.status} />
+            {#if workOrder.isActive === 3}
+              <span class="badge badge--secondary">
+                <i class="fas fa-archive"></i>
+                {MESSAGES.BADGE_ARCHIVED}
+              </span>
+            {/if}
+          </div>
         </div>
       </div>
-
-      <!-- Info fields -->
-      <div class="card mb-6">
-        <div class="card__header">
-          <h3 class="card__title">
-            <i class="fas fa-info-circle mr-2"></i>
-            {MESSAGES.HEADING_DETAIL}
-          </h3>
-        </div>
-        <div class="card__body">
-          <WorkOrderInfo {workOrder} />
-        </div>
-      </div>
-
-      <!-- Expected Benefit (KVP) -->
-      {#if workOrder.sourceExpectedBenefit !== null && workOrder.sourceExpectedBenefit !== ''}
-        <div class="card mb-6">
-          <div class="card__header">
-            <h3 class="card__title">
-              <i class="fas fa-lightbulb mr-2"></i>
-              Erwarteter Nutzen
-            </h3>
-          </div>
-          <div class="card__body">
-            <p class="description-text">{workOrder.sourceExpectedBenefit}</p>
-          </div>
+      {#if statusLogs.length > 0}
+        <div class="card__body status-log-list">
+          {#each statusLogs as log (log.id)}
+            <div class="alert alert--info status-log-entry">
+              <i class="alert__icon fas fa-exchange-alt"></i>
+              <span class="status-log-entry__text">
+                <strong>{log.firstName} {log.lastName}</strong>
+                — {MESSAGES.COMMENTS_STATUS_CHANGE}: {statusChangeText(log)}
+              </span>
+              <span class="status-log-entry__date">
+                {formatDateTime(log.createdAt)}
+              </span>
+            </div>
+          {/each}
         </div>
       {/if}
+    </div>
 
-      <!-- Source Photos / Attachments -->
-      {#if sourcePhotos.length > 0}
+    <!-- Two-column layout -->
+    <div class="detail-layout">
+      <!-- Main content -->
+      <div class="detail-main">
+        <!-- Description -->
         <div class="card mb-6">
           <div class="card__header">
             <h3 class="card__title">
-              <i class="fas fa-camera mr-2"></i>
-              {workOrder.sourceType === 'kvp_proposal' ?
-                'Quell-Anhänge (KVP-Vorschlag)'
-              : 'Quell-Fotos (TPM-Mangel)'}
-              <span class="badge badge--count ml-2">{sourcePhotos.length}</span>
+              <i class="fas fa-align-left mr-2"></i>
+              {MESSAGES.DETAIL_DESCRIPTION}
             </h3>
           </div>
           <div class="card__body">
-            <div class="source-photo-grid">
-              {#each sourcePhotos as photo, index (photo.uuid)}
-                <div
-                  class="source-photo-thumb"
-                  role="button"
-                  tabindex="0"
-                  onclick={() => {
-                    openSourcePreview(index);
-                  }}
-                  onkeydown={(e: KeyboardEvent) => {
-                    if (e.key === 'Enter') openSourcePreview(index);
-                  }}
-                >
-                  <img
-                    src="/{photo.filePath}"
-                    alt={photo.fileName}
-                    loading="lazy"
-                  />
-                </div>
-              {/each}
+            {#if workOrder.description !== null && workOrder.description !== ''}
+              <p class="description-text">{workOrder.description}</p>
+            {:else}
+              <p class="description-empty">{MESSAGES.DETAIL_NO_DESCRIPTION}</p>
+            {/if}
+          </div>
+        </div>
+
+        <!-- Info fields -->
+        <div class="card mb-6">
+          <div class="card__header">
+            <h3 class="card__title">
+              <i class="fas fa-info-circle mr-2"></i>
+              {MESSAGES.HEADING_DETAIL}
+            </h3>
+          </div>
+          <div class="card__body">
+            <WorkOrderInfo {workOrder} />
+          </div>
+        </div>
+
+        <!-- Expected Benefit (KVP) -->
+        {#if workOrder.sourceExpectedBenefit !== null && workOrder.sourceExpectedBenefit !== ''}
+          <div class="card mb-6">
+            <div class="card__header">
+              <h3 class="card__title">
+                <i class="fas fa-lightbulb mr-2"></i>
+                Erwarteter Nutzen
+              </h3>
+            </div>
+            <div class="card__body">
+              <p class="description-text">{workOrder.sourceExpectedBenefit}</p>
             </div>
           </div>
+        {/if}
+
+        <!-- Source Photos / Attachments -->
+        {#if sourcePhotos.length > 0}
+          <div class="card mb-6">
+            <div class="card__header">
+              <h3 class="card__title">
+                <i class="fas fa-camera mr-2"></i>
+                {workOrder.sourceType === 'kvp_proposal' ?
+                  'Quell-Anhänge (KVP-Vorschlag)'
+                : 'Quell-Fotos (TPM-Mangel)'}
+                <span class="badge badge--count ml-2"
+                  >{sourcePhotos.length}</span
+                >
+              </h3>
+            </div>
+            <div class="card__body">
+              <div class="source-photo-grid">
+                {#each sourcePhotos as photo, index (photo.uuid)}
+                  <div
+                    class="source-photo-thumb"
+                    role="button"
+                    tabindex="0"
+                    onclick={() => {
+                      openSourcePreview(index);
+                    }}
+                    onkeydown={(e: KeyboardEvent) => {
+                      if (e.key === 'Enter') openSourcePreview(index);
+                    }}
+                  >
+                    <img
+                      src="/{photo.filePath}"
+                      alt={photo.fileName}
+                      loading="lazy"
+                    />
+                  </div>
+                {/each}
+              </div>
+            </div>
+          </div>
+        {/if}
+
+        <!-- Comments -->
+        <div class="card">
+          <div class="card__body">
+            <CommentSection
+              comments={regularComments}
+              total={comments.total - statusLogs.length}
+              hasMore={comments.hasMore}
+              uuid={workOrder.uuid}
+            />
+          </div>
+        </div>
+      </div>
+
+      <!-- Sidebar -->
+      <div class="detail-sidebar">
+        <!-- Status transitions -->
+        <div class="card">
+          <div class="card__body">
+            <StatusTransition
+              uuid={workOrder.uuid}
+              currentStatus={workOrder.status}
+              {userRole}
+            />
+          </div>
+        </div>
+
+        <!-- Assignees -->
+        <div class="card">
+          <div class="card__body">
+            <AssigneeList assignees={workOrder.assignees} />
+          </div>
+        </div>
+
+        <!-- Photos -->
+        <div class="card">
+          <div class="card__body">
+            <PhotoGallery
+              {photos}
+              uuid={workOrder.uuid}
+              {userRole}
+              {userId}
+              workOrderStatus={workOrder.status}
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Source Photo Preview Modal -->
+  {#if showSourcePreview && currentSourcePhoto !== null}
+    <!-- svelte-ignore a11y_click_events_have_key_events -->
+    <div
+      class="modal-overlay modal-overlay--active"
+      onclick={closeSourcePreview}
+      role="dialog"
+      aria-modal="true"
+      tabindex="-1"
+    >
+      <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+      <div
+        class="ds-modal ds-modal--lg"
+        style="max-height: 95vh;"
+        onclick={(e: MouseEvent) => {
+          e.stopPropagation();
+        }}
+        onkeydown={(e: KeyboardEvent) => {
+          e.stopPropagation();
+        }}
+        role="document"
+      >
+        <div class="ds-modal__header">
+          <h3 class="ds-modal__title">
+            <i class="fas fa-image text-success-500 mr-2"></i>
+            {currentSourcePhoto.fileName}
+          </h3>
+          <button
+            type="button"
+            class="ds-modal__close"
+            onclick={closeSourcePreview}
+            aria-label="Schließen"><i class="fas fa-times"></i></button
+          >
+        </div>
+        <div class="ds-modal__body p-0">
+          <div
+            class="flex h-[80vh] min-h-[600px] w-full items-center justify-center bg-(--surface-1)"
+          >
+            <img
+              src="/{currentSourcePhoto.filePath}"
+              alt={currentSourcePhoto.fileName}
+              class="max-h-full max-w-full object-contain"
+            />
+          </div>
+        </div>
+        <div class="ds-modal__footer">
+          <button
+            type="button"
+            class="btn btn-cancel"
+            onclick={closeSourcePreview}
+          >
+            <i class="fas fa-times mr-2"></i>Schließen
+          </button>
+        </div>
+      </div>
+      {#if sourcePhotos.length > 1}
+        <button
+          type="button"
+          class="absolute top-1/2 left-6 z-10 flex h-12 w-12 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border-none bg-white/15 text-xl text-white transition-colors hover:bg-white/30"
+          onclick={(e: MouseEvent) => {
+            e.stopPropagation();
+            if (sourcePreviewIndex > 0) sourcePreviewIndex--;
+          }}
+          aria-label="Vorheriges Foto"
+        >
+          <i class="fas fa-chevron-left"></i>
+        </button>
+        <button
+          type="button"
+          class="absolute top-1/2 right-6 z-10 flex h-12 w-12 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border-none bg-white/15 text-xl text-white transition-colors hover:bg-white/30"
+          onclick={(e: MouseEvent) => {
+            e.stopPropagation();
+            if (sourcePreviewIndex < sourcePhotos.length - 1)
+              sourcePreviewIndex++;
+          }}
+          aria-label="Nächstes Foto"
+        >
+          <i class="fas fa-chevron-right"></i>
+        </button>
+        <!-- svelte-ignore a11y_click_events_have_key_events -->
+        <!-- svelte-ignore a11y_no_static_element_interactions -->
+        <div
+          class="absolute bottom-6 left-1/2 z-10 -translate-x-1/2 rounded-xl bg-black/50 px-3 py-1 text-sm text-white"
+          onclick={(e: MouseEvent) => {
+            e.stopPropagation();
+          }}
+        >
+          {sourcePreviewIndex + 1} / {sourcePhotos.length}
         </div>
       {/if}
-
-      <!-- Comments -->
-      <div class="card">
-        <div class="card__body">
-          <CommentSection
-            comments={regularComments}
-            total={comments.total - statusLogs.length}
-            hasMore={comments.hasMore}
-            uuid={workOrder.uuid}
-          />
-        </div>
-      </div>
     </div>
-
-    <!-- Sidebar -->
-    <div class="detail-sidebar">
-      <!-- Status transitions -->
-      <div class="card">
-        <div class="card__body">
-          <StatusTransition
-            uuid={workOrder.uuid}
-            currentStatus={workOrder.status}
-            {userRole}
-          />
-        </div>
-      </div>
-
-      <!-- Assignees -->
-      <div class="card">
-        <div class="card__body">
-          <AssigneeList assignees={workOrder.assignees} />
-        </div>
-      </div>
-
-      <!-- Photos -->
-      <div class="card">
-        <div class="card__body">
-          <PhotoGallery
-            {photos}
-            uuid={workOrder.uuid}
-            {userRole}
-            {userId}
-            workOrderStatus={workOrder.status}
-          />
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- Source Photo Preview Modal -->
-{#if showSourcePreview && currentSourcePhoto !== null}
-  <!-- svelte-ignore a11y_click_events_have_key_events -->
-  <div
-    class="modal-overlay modal-overlay--active"
-    onclick={closeSourcePreview}
-    role="dialog"
-    aria-modal="true"
-    tabindex="-1"
-  >
-    <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-    <div
-      class="ds-modal ds-modal--lg"
-      style="max-height: 95vh;"
-      onclick={(e: MouseEvent) => {
-        e.stopPropagation();
-      }}
-      onkeydown={(e: KeyboardEvent) => {
-        e.stopPropagation();
-      }}
-      role="document"
-    >
-      <div class="ds-modal__header">
-        <h3 class="ds-modal__title">
-          <i class="fas fa-image text-success-500 mr-2"></i>
-          {currentSourcePhoto.fileName}
-        </h3>
-        <button
-          type="button"
-          class="ds-modal__close"
-          onclick={closeSourcePreview}
-          aria-label="Schließen"><i class="fas fa-times"></i></button
-        >
-      </div>
-      <div class="ds-modal__body p-0">
-        <div
-          class="flex h-[80vh] min-h-[600px] w-full items-center justify-center bg-(--surface-1)"
-        >
-          <img
-            src="/{currentSourcePhoto.filePath}"
-            alt={currentSourcePhoto.fileName}
-            class="max-h-full max-w-full object-contain"
-          />
-        </div>
-      </div>
-      <div class="ds-modal__footer">
-        <button
-          type="button"
-          class="btn btn-cancel"
-          onclick={closeSourcePreview}
-        >
-          <i class="fas fa-times mr-2"></i>Schließen
-        </button>
-      </div>
-    </div>
-    {#if sourcePhotos.length > 1}
-      <button
-        type="button"
-        class="absolute top-1/2 left-6 z-10 flex h-12 w-12 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border-none bg-white/15 text-xl text-white transition-colors hover:bg-white/30"
-        onclick={(e: MouseEvent) => {
-          e.stopPropagation();
-          if (sourcePreviewIndex > 0) sourcePreviewIndex--;
-        }}
-        aria-label="Vorheriges Foto"
-      >
-        <i class="fas fa-chevron-left"></i>
-      </button>
-      <button
-        type="button"
-        class="absolute top-1/2 right-6 z-10 flex h-12 w-12 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border-none bg-white/15 text-xl text-white transition-colors hover:bg-white/30"
-        onclick={(e: MouseEvent) => {
-          e.stopPropagation();
-          if (sourcePreviewIndex < sourcePhotos.length - 1)
-            sourcePreviewIndex++;
-        }}
-        aria-label="Nächstes Foto"
-      >
-        <i class="fas fa-chevron-right"></i>
-      </button>
-      <!-- svelte-ignore a11y_click_events_have_key_events -->
-      <!-- svelte-ignore a11y_no_static_element_interactions -->
-      <div
-        class="absolute bottom-6 left-1/2 z-10 -translate-x-1/2 rounded-xl bg-black/50 px-3 py-1 text-sm text-white"
-        onclick={(e: MouseEvent) => {
-          e.stopPropagation();
-        }}
-      >
-        {sourcePreviewIndex + 1} / {sourcePhotos.length}
-      </div>
-    {/if}
-  </div>
+  {/if}
 {/if}
 
 <style>

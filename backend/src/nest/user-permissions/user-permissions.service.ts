@@ -42,11 +42,6 @@ interface DbTenantAddonRow {
   code: string;
 }
 
-/** DB row shape for UUID to id resolution */
-interface DbUserIdRow {
-  id: number;
-}
-
 /** Shape for a single applied permission after registry validation */
 interface AppliedPermission {
   addonCode: string;
@@ -94,40 +89,116 @@ export class UserPermissionsService {
   async getPermissions(
     tenantId: number,
     userUuid: string,
+    filterByLeaderId?: number,
   ): Promise<PermissionCategoryResponse[]> {
     return await this.db.tenantTransaction(
       async (client: PoolClient): Promise<PermissionCategoryResponse[]> => {
-        const userId = await this.resolveUserIdFromUuid(userUuid, tenantId);
-
-        // Get tenant's active addon codes
+        const user = await this.resolveUserFromUuid(userUuid, tenantId);
         const activeAddons = await this.getActiveAddonsForTenant(client);
 
-        // Get all registered categories, filtered by tenant addons
-        const allCategories = this.registry.getAll();
-        const filteredCategories = allCategories.filter(
-          (cat: PermissionCategoryDef) => activeAddons.has(cat.code),
-        );
+        // Filter categories by tenant addons + target user role
+        let categories = this.filterCategoriesByRole(activeAddons, user.role);
 
-        // Get existing permission rows for this user (RLS filters by tenant)
-        const rows = await client.query<DbPermissionRow>(
-          `SELECT addon_code, module_code, can_read, can_write, can_delete
-           FROM user_addon_permissions
-           WHERE user_id = $1`,
-          [userId],
-        );
-
-        // Build lookup map: "addonCode:moduleCode" -> permission row
-        const permMap = new Map<string, DbPermissionRow>();
-        for (const row of rows.rows) {
-          permMap.set(`${row.addon_code}:${row.module_code}`, row);
+        // Per design: manage-permissions ONLY for leads. Root/admin-full bypass via hasFullAccess.
+        if (!user.isAnyLead) {
+          categories = this.hideManagePermissionsModule(categories);
         }
 
-        // Merge DB rows with registry definitions
+        // Delegated: additionally filter to only modules the leader has
+        const filteredCategories =
+          filterByLeaderId !== undefined ?
+            await this.filterByLeaderPerms(client, categories, filterByLeaderId)
+          : categories;
+
+        const userId = user.id;
+        const permMap = await this.loadUserPermissionMap(client, userId);
+
         return filteredCategories.map((cat: PermissionCategoryDef) =>
           this.buildCategoryResponse(cat, permMap),
         );
       },
     );
+  }
+
+  /** Filter registered categories by tenant addons + target user role */
+  private filterCategoriesByRole(
+    activeAddons: Set<string>,
+    targetRole: string,
+  ): PermissionCategoryDef[] {
+    return this.registry
+      .getAll()
+      .filter((cat: PermissionCategoryDef) => activeAddons.has(cat.code))
+      .map((cat: PermissionCategoryDef) => ({
+        ...cat,
+        modules: cat.modules.filter(
+          (mod: PermissionModuleDef) =>
+            mod.allowedRoles === undefined ||
+            mod.allowedRoles.includes(targetRole),
+        ),
+      }))
+      .filter((cat: PermissionCategoryDef) => cat.modules.length > 0);
+  }
+
+  /** Hide manage-permissions module for non-lead employees (they can never delegate) */
+  private hideManagePermissionsModule(
+    categories: PermissionCategoryDef[],
+  ): PermissionCategoryDef[] {
+    return categories
+      .map((cat: PermissionCategoryDef) => ({
+        ...cat,
+        modules: cat.modules.filter(
+          (mod: PermissionModuleDef) =>
+            !(
+              cat.code === 'manage_hierarchy' &&
+              mod.code === 'manage-permissions'
+            ),
+        ),
+      }))
+      .filter((cat: PermissionCategoryDef) => cat.modules.length > 0);
+  }
+
+  /** Delegated view: only show modules the leader has (Regel 2 for GET) */
+  private async filterByLeaderPerms(
+    client: PoolClient,
+    categories: PermissionCategoryDef[],
+    leaderId: number,
+  ): Promise<PermissionCategoryDef[]> {
+    const leaderPerms = await this.loadLeaderPermissions(client, leaderId);
+
+    return categories
+      .map((cat: PermissionCategoryDef) => ({
+        ...cat,
+        modules: cat.modules.filter((mod: PermissionModuleDef) => {
+          // Regel 4: non-delegatable modules are hidden in delegated view
+          if (
+            cat.code === 'manage_hierarchy' &&
+            mod.code === 'manage-permissions'
+          ) {
+            return false;
+          }
+          // Regel 2: leader must have at least canRead for this module
+          const key = `${cat.code}:${mod.code}:canRead`;
+          return leaderPerms.has(key);
+        }),
+      }))
+      .filter((cat: PermissionCategoryDef) => cat.modules.length > 0);
+  }
+
+  /** Load user permission rows as lookup map */
+  private async loadUserPermissionMap(
+    client: PoolClient,
+    userId: number,
+  ): Promise<Map<string, DbPermissionRow>> {
+    const rows = await client.query<DbPermissionRow>(
+      `SELECT addon_code, module_code, can_read, can_write, can_delete
+       FROM user_addon_permissions WHERE user_id = $1`,
+      [userId],
+    );
+    const permMap = new Map<string, DbPermissionRow>();
+    for (const row of rows.rows) {
+      permMap.set(`${row.addon_code}:${row.module_code}`, row);
+    }
+    return permMap;
   }
 
   /**
@@ -143,17 +214,42 @@ export class UserPermissionsService {
     userUuid: string,
     permissions: PermissionEntry[],
     assignedByUserId: number,
-  ): Promise<void> {
+    delegatorScope?: import('../hierarchy-permission/organizational-scope.types.js').OrganizationalScope,
+  ): Promise<{ applied: number }> {
     let userId = 0;
     let oldState = new Map<string, DbPermissionRow>();
     const applied: AppliedPermission[] = [];
+    const isDelegated = delegatorScope !== undefined;
+
+    // Per design: manage-permissions ONLY for leads. Root/admin-full bypass via hasFullAccess.
+    const targetUser = await this.resolveUserFromUuid(userUuid, tenantId);
+    const targetCanDelegate = targetUser.isAnyLead;
+
+    // Pre-filter delegated entries (Regel 2 + 4) outside transaction for clarity
+    const filteredPermissions =
+      isDelegated ?
+        await this.filterDelegatedPermissions(
+          permissions,
+          assignedByUserId,
+          tenantId,
+        )
+      : permissions;
 
     await this.db.tenantTransaction(
       async (client: PoolClient): Promise<void> => {
         userId = await this.resolveUserIdFromUuid(userUuid, tenantId);
         oldState = await this.capturePermissionState(client, userId);
 
-        for (const entry of permissions) {
+        for (const entry of filteredPermissions) {
+          // Per design: manage-permissions only for leads/admin/root
+          if (
+            !targetCanDelegate &&
+            entry.addonCode === 'manage_hierarchy' &&
+            entry.moduleCode === 'manage-permissions'
+          ) {
+            continue;
+          }
+
           const result = await this.upsertSingleEntry(
             client,
             tenantId,
@@ -165,7 +261,7 @@ export class UserPermissionsService {
         }
 
         this.logger.log(
-          `Upserted ${permissions.length} permission(s) for user ${userUuid}`,
+          `Upserted ${applied.length}/${permissions.length} permission(s) for user ${userUuid}${isDelegated ? ' (delegated)' : ''}`,
         );
       },
     );
@@ -178,6 +274,73 @@ export class UserPermissionsService {
       oldState,
       applied,
     );
+
+    return { applied: applied.length };
+  }
+
+  /**
+   * Check if a permission entry is delegatable by a non-root/non-admin-full user.
+   * Regel 4: manage-permissions itself is NOT delegatable.
+   */
+  /** Filter permissions for delegated upsert: Regel 2 (only own) + Regel 4 (no manage-permissions) */
+  private async filterDelegatedPermissions(
+    permissions: PermissionEntry[],
+    leaderId: number,
+    _tenantId: number,
+  ): Promise<PermissionEntry[]> {
+    const leaderPerms = await this.db.tenantTransaction(
+      async (client: PoolClient): Promise<Set<string>> =>
+        await this.loadLeaderPermissions(client, leaderId),
+    );
+
+    return permissions.filter((entry: PermissionEntry) => {
+      if (!this.isDelegatableEntry(entry, leaderId)) return false;
+      return this.leaderHasPermission(leaderPerms, entry);
+    });
+  }
+
+  private isDelegatableEntry(
+    entry: PermissionEntry,
+    _assignedByUserId: number,
+  ): boolean {
+    return !(
+      entry.addonCode === 'manage_hierarchy' &&
+      entry.moduleCode === 'manage-permissions'
+    );
+  }
+
+  /** Load all permissions the leader has (single query, used for Regel 2 batch check) */
+  private async loadLeaderPermissions(
+    client: PoolClient,
+    leaderId: number,
+  ): Promise<Set<string>> {
+    const result = await client.query<DbPermissionRow>(
+      `SELECT addon_code, module_code, can_read, can_write, can_delete
+       FROM user_addon_permissions WHERE user_id = $1`,
+      [leaderId],
+    );
+    const perms = new Set<string>();
+    for (const row of result.rows) {
+      if (row.can_read)
+        perms.add(`${row.addon_code}:${row.module_code}:canRead`);
+      if (row.can_write)
+        perms.add(`${row.addon_code}:${row.module_code}:canWrite`);
+      if (row.can_delete)
+        perms.add(`${row.addon_code}:${row.module_code}:canDelete`);
+    }
+    return perms;
+  }
+
+  /** Regel 2: Leader can only delegate permissions they have themselves */
+  private leaderHasPermission(
+    leaderPerms: Set<string>,
+    entry: PermissionEntry,
+  ): boolean {
+    const key = `${entry.addonCode}:${entry.moduleCode}`;
+    if (entry.canRead && !leaderPerms.has(`${key}:canRead`)) return false;
+    if (entry.canWrite && !leaderPerms.has(`${key}:canWrite`)) return false;
+    if (entry.canDelete && !leaderPerms.has(`${key}:canDelete`)) return false;
+    return true;
   }
 
   /** Validate a single entry against registry, upsert to DB, return applied values. */
@@ -387,12 +550,36 @@ export class UserPermissionsService {
    *
    * @throws NotFoundException if user not found or inactive
    */
+  /** Public UUID → ID resolution (used by controller for scope checks) */
+  async resolveUserId(userUuid: string, tenantId: number): Promise<number> {
+    const result = await this.resolveUserFromUuid(userUuid, tenantId);
+    return result.id;
+  }
+
   private async resolveUserIdFromUuid(
     userUuid: string,
     tenantId: number,
   ): Promise<number> {
-    const result = await this.db.queryOne<DbUserIdRow>(
-      `SELECT id FROM users WHERE uuid = $1 AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}`,
+    const result = await this.resolveUserFromUuid(userUuid, tenantId);
+    return result.id;
+  }
+
+  /** Resolve UUID to user ID + role + lead status (for filtering) */
+  private async resolveUserFromUuid(
+    userUuid: string,
+    tenantId: number,
+  ): Promise<{ id: number; role: string; isAnyLead: boolean }> {
+    const result = await this.db.queryOne<{
+      id: number;
+      role: string;
+      is_any_lead: boolean;
+    }>(
+      `SELECT u.id, u.role,
+        (EXISTS (SELECT 1 FROM teams t WHERE (t.team_lead_id = u.id OR t.deputy_lead_id = u.id) AND t.is_active = ${IS_ACTIVE.ACTIVE})
+         OR EXISTS (SELECT 1 FROM departments d WHERE d.department_lead_id = u.id AND d.is_active = ${IS_ACTIVE.ACTIVE})
+         OR EXISTS (SELECT 1 FROM areas a WHERE a.area_lead_id = u.id AND a.is_active = ${IS_ACTIVE.ACTIVE})
+        ) AS is_any_lead
+       FROM users u WHERE u.uuid = $1 AND u.tenant_id = $2 AND u.is_active = ${IS_ACTIVE.ACTIVE}`,
       [userUuid, tenantId],
     );
 
@@ -400,7 +587,7 @@ export class UserPermissionsService {
       throw new NotFoundException(`User not found: ${userUuid}`);
     }
 
-    return result.id;
+    return { id: result.id, role: result.role, isAnyLead: result.is_any_lead };
   }
 
   /** Get active addon codes for the current tenant (RLS filters by tenant). */

@@ -3,7 +3,11 @@
   import { resolve } from '$app/paths';
 
   import PasswordStrengthIndicator from '$lib/components/PasswordStrengthIndicator.svelte';
-  import { showWarningAlert, showErrorAlert } from '$lib/stores/toast';
+  import {
+    showWarningAlert,
+    showErrorAlert,
+    showSuccessAlert,
+  } from '$lib/stores/toast';
   import {
     analyzePassword,
     type PasswordStrengthResult,
@@ -47,7 +51,6 @@
   let strengthLoading = $state(false);
   let termsAccepted = $state(false);
   let loading = $state(false);
-  let showSuccess = $state(false);
   let emailMatchError: string | null = $state(null);
   let passwordMatchError: string | null = $state(null);
 
@@ -147,7 +150,10 @@
 
       await registerUser(payload);
 
-      showSuccess = true;
+      showSuccessAlert(
+        'Erfolgreich registriert! Sie werden zur Anmeldung weitergeleitet...',
+        SUCCESS_REDIRECT_DELAY,
+      );
 
       setTimeout(() => {
         void goto(resolve('/login'));
@@ -193,30 +199,6 @@
       <p class="signup-subtitle">
         30 Tage kostenlos testen — keine Kreditkarte nötig
       </p>
-
-      <!-- Success Message -->
-      {#if showSuccess}
-        <div
-          class="toast toast--success"
-          role="alert"
-        >
-          <div class="toast__icon">
-            <i class="fas fa-check-circle"></i>
-          </div>
-          <div class="toast__content">
-            <div class="toast__title">Erfolgreich registriert!</div>
-            <div class="toast__message">
-              Sie werden in 5 Sekunden zur Anmeldung weitergeleitet...
-            </div>
-          </div>
-          <div class="toast__progress">
-            <div
-              class="toast__progress-bar"
-              style="animation-duration: 5s"
-            ></div>
-          </div>
-        </div>
-      {/if}
 
       <!-- Signup Form -->
       <form
@@ -286,47 +268,49 @@
           </div>
         </div>
 
-        <div class="form-field">
-          <label
-            class="form-field__label form-field__label--required"
-            for="email">E-Mail</label
-          >
-          <input
-            type="email"
-            id="email"
-            name="email"
-            class="form-field__control"
-            required
-            placeholder="email@firma.de"
-            autocomplete="email"
-            bind:value={email}
-            oninput={handleEmailConfirmInput}
-            disabled={loading}
-          />
-        </div>
+        <div class="inline-row">
+          <div class="form-field">
+            <label
+              class="form-field__label form-field__label--required"
+              for="email">E-Mail</label
+            >
+            <input
+              type="email"
+              id="email"
+              name="email"
+              class="form-field__control"
+              required
+              placeholder="email@firma.de"
+              autocomplete="email"
+              bind:value={email}
+              oninput={handleEmailConfirmInput}
+              disabled={loading}
+            />
+          </div>
 
-        <div class="form-field">
-          <label
-            class="form-field__label form-field__label--required"
-            for="email_confirm">E-Mail bestätigen</label
-          >
-          <input
-            type="email"
-            id="email_confirm"
-            name="email_confirm"
-            class="form-field__control"
-            class:is-error={emailMatchError}
-            required
-            placeholder="email@firma.de"
-            bind:value={emailConfirm}
-            oninput={handleEmailConfirmInput}
-            disabled={loading}
-          />
-          {#if emailMatchError}
-            <p class="form-field__message form-field__message--error">
-              {emailMatchError}
-            </p>
-          {/if}
+          <div class="form-field">
+            <label
+              class="form-field__label form-field__label--required"
+              for="email_confirm">E-Mail bestätigen</label
+            >
+            <input
+              type="email"
+              id="email_confirm"
+              name="email_confirm"
+              class="form-field__control"
+              class:is-error={emailMatchError}
+              required
+              placeholder="email@firma.de"
+              bind:value={emailConfirm}
+              oninput={handleEmailConfirmInput}
+              disabled={loading}
+            />
+            {#if emailMatchError}
+              <p class="form-field__message form-field__message--error">
+                {emailMatchError}
+              </p>
+            {/if}
+          </div>
         </div>
 
         <CountryPhoneInput
@@ -338,49 +322,97 @@
         <div class="section-divider"></div>
 
         <!-- Password -->
-        <div class="form-field">
-          <label
-            class="form-field__label form-field__label--required"
-            for="password"
-          >
-            Passwort
-            <span class="tooltip ml-1">
-              <i class="fas fa-info-circle"></i>
-              <span
-                class="tooltip__content tooltip__content--info tooltip__content--right"
-                role="tooltip"
-              >
-                Min. 12 Zeichen, max. 72 Zeichen. Enthält 3 von 4:
-                Großbuchstaben, Kleinbuchstaben, Zahlen, Sonderzeichen
-                (!@#$%^&*)
-              </span>
-            </span>
-          </label>
-          <div class="form-field__password-wrapper">
-            <input
-              type={showPassword ? 'text' : 'password'}
-              id="password"
-              name="password"
-              class="form-field__control"
-              required
-              minlength="12"
-              maxlength="72"
-              placeholder="Min. 12 Zeichen"
-              autocomplete="new-password"
-              bind:value={password}
-              oninput={handlePasswordInput}
-              disabled={loading}
-            />
-            <button
-              type="button"
-              class="form-field__password-toggle"
-              aria-label="Passwort anzeigen"
-              onclick={() => {
-                togglePasswordVisibility('password');
-              }}
+        <div class="inline-row">
+          <div class="form-field">
+            <label
+              class="form-field__label form-field__label--required"
+              for="password"
             >
-              <i class="fas {showPassword ? 'fa-eye-slash' : 'fa-eye'}"></i>
-            </button>
+              Passwort
+              <span class="tooltip ml-1">
+                <i class="fas fa-info-circle"></i>
+                <span
+                  class="tooltip__content tooltip__content--info tooltip__content--right"
+                  role="tooltip"
+                >
+                  Min. 12 Zeichen, max. 72 Zeichen. Enthält 3 von 4:
+                  Großbuchstaben, Kleinbuchstaben, Zahlen, Sonderzeichen
+                  (!@#$%^&*)
+                </span>
+              </span>
+            </label>
+            <div class="form-field__password-wrapper">
+              <input
+                type={showPassword ? 'text' : 'password'}
+                id="password"
+                name="password"
+                class="form-field__control"
+                required
+                minlength="12"
+                maxlength="72"
+                placeholder="Min. 12 Zeichen"
+                autocomplete="new-password"
+                bind:value={password}
+                oninput={handlePasswordInput}
+                disabled={loading}
+              />
+              <button
+                type="button"
+                class="form-field__password-toggle"
+                aria-label="Passwort anzeigen"
+                onclick={() => {
+                  togglePasswordVisibility('password');
+                }}
+              >
+                <i class="fas {showPassword ? 'fa-eye-slash' : 'fa-eye'}"></i>
+              </button>
+            </div>
+          </div>
+
+          <div
+            class="form-field"
+            class:is-error={passwordMatchError}
+            class:is-success={passwordConfirm !== '' && passwordMatch}
+          >
+            <label
+              class="form-field__label form-field__label--required"
+              for="password_confirm">Passwort bestätigen</label
+            >
+            <div class="form-field__password-wrapper">
+              <input
+                type={showPasswordConfirm ? 'text' : 'password'}
+                id="password_confirm"
+                name="password_confirm"
+                class="form-field__control"
+                class:is-error={passwordMatchError}
+                class:is-success={passwordConfirm !== '' && passwordMatch}
+                required
+                autocomplete="new-password"
+                bind:value={passwordConfirm}
+                oninput={handlePasswordConfirmInput}
+                disabled={loading}
+              />
+              <button
+                type="button"
+                class="form-field__password-toggle"
+                aria-label="Passwort anzeigen"
+                onclick={() => {
+                  togglePasswordVisibility('confirm');
+                }}
+              >
+                <i class="fas {showPasswordConfirm ? 'fa-eye-slash' : 'fa-eye'}"
+                ></i>
+              </button>
+            </div>
+            {#if passwordMatchError}
+              <p class="form-field__message form-field__message--error">
+                {passwordMatchError}
+              </p>
+            {:else if passwordConfirm !== '' && passwordMatch}
+              <p class="form-field__message form-field__message--success">
+                <i class="fas fa-check"></i> Passwörter stimmen überein
+              </p>
+            {/if}
           </div>
         </div>
 
@@ -393,52 +425,6 @@
             feedback={passwordStrength?.feedback ?? null}
           />
         {/if}
-
-        <div
-          class="form-field"
-          class:is-error={passwordMatchError}
-          class:is-success={passwordConfirm !== '' && passwordMatch}
-        >
-          <label
-            class="form-field__label form-field__label--required"
-            for="password_confirm">Passwort bestätigen</label
-          >
-          <div class="form-field__password-wrapper">
-            <input
-              type={showPasswordConfirm ? 'text' : 'password'}
-              id="password_confirm"
-              name="password_confirm"
-              class="form-field__control"
-              class:is-error={passwordMatchError}
-              class:is-success={passwordConfirm !== '' && passwordMatch}
-              required
-              autocomplete="new-password"
-              bind:value={passwordConfirm}
-              oninput={handlePasswordConfirmInput}
-              disabled={loading}
-            />
-            <button
-              type="button"
-              class="form-field__password-toggle"
-              aria-label="Passwort anzeigen"
-              onclick={() => {
-                togglePasswordVisibility('confirm');
-              }}
-            >
-              <i class="fas {showPasswordConfirm ? 'fa-eye-slash' : 'fa-eye'}"
-              ></i>
-            </button>
-          </div>
-          {#if passwordMatchError}
-            <p class="form-field__message form-field__message--error">
-              {passwordMatchError}
-            </p>
-          {:else if passwordConfirm !== '' && passwordMatch}
-            <p class="form-field__message form-field__message--success">
-              <i class="fas fa-check"></i> Passwörter stimmen überein
-            </p>
-          {/if}
-        </div>
 
         <!-- Terms & Submit -->
         <label class="terms-checkbox">
@@ -557,7 +543,7 @@
     display: flex;
     justify-content: center;
     align-items: flex-start;
-    padding: 75px 120px;
+    padding: 115px 120px;
     overflow-y: auto;
   }
 
@@ -606,7 +592,8 @@
     padding: 6px 12px;
   }
 
-  .name-row {
+  .name-row,
+  .inline-row {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 8px;
@@ -715,7 +702,8 @@
   }
 
   @media (width < 480px) {
-    .name-row {
+    .name-row,
+    .inline-row {
       grid-template-columns: 1fr;
     }
 

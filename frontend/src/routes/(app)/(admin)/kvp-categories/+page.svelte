@@ -4,6 +4,7 @@
   import { invalidateAll } from '$app/navigation';
 
   import { onClickOutsideDropdown } from '$lib/actions/click-outside';
+  import PermissionDenied from '$lib/components/PermissionDenied.svelte';
   import {
     showSuccessAlert,
     showErrorAlert,
@@ -33,6 +34,7 @@
   const log = createLogger('KvpCategoriesPage');
 
   interface PageData {
+    permissionDenied: boolean;
     categories: {
       defaults: CustomizableDefault[];
       custom: CustomCategory[];
@@ -44,6 +46,7 @@
   }
 
   const { data }: { data: PageData } = $props();
+  const permissionDenied = $derived<boolean>(data.permissionDenied);
 
   // Override editing state: map categoryId -> edited custom name
   let overrideEdits = $state<Record<number, string>>({});
@@ -263,454 +266,461 @@
   <title>Definitionen - Assixx</title>
 </svelte:head>
 
-<div class="container">
-  {#if data.error !== null}
-    <div class="card">
-      <div class="card__body">
-        <div class="p-6 text-center">
-          <i
-            class="fas fa-exclamation-triangle mb-4 text-4xl text-(--color-danger)"
-          ></i>
-          <p class="text-(--color-text-secondary)">{data.error}</p>
-          <button
-            type="button"
-            class="btn btn-primary mt-4"
-            onclick={() => void invalidateAll()}>Erneut versuchen</button
-          >
+{#if permissionDenied}
+  <PermissionDenied addonName="das KVP-Modul" />
+{:else}
+  <div class="container">
+    {#if data.error !== null}
+      <div class="card">
+        <div class="card__body">
+          <div class="p-6 text-center">
+            <i
+              class="fas fa-exclamation-triangle mb-4 text-4xl text-(--color-danger)"
+            ></i>
+            <p class="text-(--color-text-secondary)">{data.error}</p>
+            <button
+              type="button"
+              class="btn btn-primary mt-4"
+              onclick={() => void invalidateAll()}>Erneut versuchen</button
+            >
+          </div>
         </div>
       </div>
-    </div>
-  {:else if data.categories !== null}
-    <!-- Card 1: Override Default Categories -->
-    <div class="card mb-6">
-      <div class="card__header">
-        <h2 class="card__title">
-          <i class="fas fa-edit mr-2"></i>
-          {LABELS.SECTION_DEFAULTS}
-        </h2>
-        <p class="mt-2 text-(--color-text-secondary)">
-          {LABELS.PAGE_DESCRIPTION}
-        </p>
-      </div>
-      <div class="card__body">
-        <div class="table-responsive">
-          <table class="data-table data-table--hover data-table--striped">
-            <thead>
-              <tr>
-                <th scope="col">#</th>
-                <th scope="col">{LABELS.COL_DEFAULT}</th>
-                <th scope="col">{LABELS.COL_CUSTOM_NAME}</th>
-                <th scope="col">{LABELS.COL_ACTION}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {#each data.categories.defaults as defaultCat, i (defaultCat.id)}
-                <tr>
-                  <td>{i + 1}</td>
-                  <td>
-                    <div class="flex items-center gap-2">
-                      <span
-                        class="inline-block h-3 w-3 rounded-full"
-                        style="background-color: {defaultCat.color}"
-                      ></span>
-                      <span class="font-medium">{defaultCat.defaultName}</span>
-                    </div>
-                  </td>
-                  <td>
-                    <input
-                      type="text"
-                      class="form-field__control"
-                      placeholder={defaultCat.defaultName}
-                      maxlength="50"
-                      bind:value={overrideEdits[defaultCat.id]}
-                    />
-                  </td>
-                  <td>
-                    {#if defaultCat.isCustomized}
-                      <button
-                        type="button"
-                        class="action-icon action-icon--delete"
-                        title={LABELS.BTN_RESET}
-                        aria-label="Zurücksetzen"
-                        onclick={() => {
-                          requestResetOverride(
-                            defaultCat.id,
-                            defaultCat.defaultName,
-                          );
-                        }}
-                      >
-                        <i class="fas fa-undo"></i>
-                      </button>
-                    {/if}
-                  </td>
-                </tr>
-              {/each}
-            </tbody>
-          </table>
+    {:else if data.categories !== null}
+      <!-- Card 1: Override Default Categories -->
+      <div class="card mb-6">
+        <div class="card__header">
+          <h2 class="card__title">
+            <i class="fas fa-edit mr-2"></i>
+            {LABELS.SECTION_DEFAULTS}
+          </h2>
+          <p class="mt-2 text-(--color-text-secondary)">
+            {LABELS.PAGE_DESCRIPTION}
+          </p>
         </div>
-
-        <div class="mt-4">
-          <button
-            type="button"
-            class="btn btn-primary"
-            disabled={isSaving || !hasUnsavedChanges()}
-            onclick={handleSaveOverrides}
-          >
-            {#if isSaving}
-              <span class="spinner-ring spinner-ring--sm"></span>
-              Speichern...
-            {:else}
-              <i class="fas fa-save"></i>
-              {LABELS.BTN_SAVE}
-            {/if}
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Card 2: Custom Categories -->
-    <div class="card">
-      <div class="card__header">
-        <h2 class="card__title">
-          <i class="fas fa-tags mr-2"></i>
-          {LABELS.SECTION_CUSTOM}
-        </h2>
-        <p class="mt-2 text-(--color-text-secondary)">
-          <span class="badge badge--info">
-            {LABELS.remaining(data.categories.remainingSlots)}
-          </span>
-          <span class="badge ml-2">
-            {LABELS.counter(
-              data.categories.totalCount,
-              data.categories.maxAllowed,
-            )}
-          </span>
-        </p>
-      </div>
-      <div class="card__body">
-        {#if data.categories.custom.length > 0}
+        <div class="card__body">
           <div class="table-responsive">
             <table class="data-table data-table--hover data-table--striped">
               <thead>
                 <tr>
-                  <th scope="col">{LABELS.COL_NAME}</th>
-                  <th scope="col">{LABELS.COL_COLOR}</th>
-                  <th scope="col">{LABELS.COL_ICON}</th>
+                  <th scope="col">#</th>
+                  <th scope="col">{LABELS.COL_DEFAULT}</th>
+                  <th scope="col">{LABELS.COL_CUSTOM_NAME}</th>
                   <th scope="col">{LABELS.COL_ACTION}</th>
                 </tr>
               </thead>
               <tbody>
-                {#each data.categories.custom as cat (cat.id)}
+                {#each data.categories.defaults as defaultCat, i (defaultCat.id)}
                   <tr>
-                    <td>
-                      <span class="font-medium">{cat.name}</span>
-                      {#if cat.suggestionCount > 0}
-                        <span
-                          class="badge badge--info ml-2"
-                          title="{cat.suggestionCount} Vorschlag/Vorschläge verwenden diese Kategorie"
-                        >
-                          {cat.suggestionCount}
-                        </span>
-                      {/if}
-                    </td>
+                    <td>{i + 1}</td>
                     <td>
                       <div class="flex items-center gap-2">
                         <span
-                          class="inline-block h-4 w-4 rounded-full border border-gray-400"
-                          style="background-color: {cat.color}"
+                          class="inline-block h-3 w-3 rounded-full"
+                          style="background-color: {defaultCat.color}"
                         ></span>
-                        <span class="text-sm text-(--color-text-secondary)"
-                          >{cat.color}</span
+                        <span class="font-medium">{defaultCat.defaultName}</span
                         >
                       </div>
                     </td>
                     <td>
-                      <i class="fas fa-{cat.icon}"></i>
+                      <input
+                        type="text"
+                        class="form-field__control"
+                        placeholder={defaultCat.defaultName}
+                        maxlength="50"
+                        bind:value={overrideEdits[defaultCat.id]}
+                      />
                     </td>
                     <td>
-                      <div class="flex gap-1">
-                        <button
-                          type="button"
-                          class="action-icon action-icon--edit"
-                          title={LABELS.BTN_EDIT}
-                          aria-label="Kategorie bearbeiten"
-                          onclick={() => {
-                            openEditModal(cat);
-                          }}
-                        >
-                          <i class="fas fa-edit"></i>
-                        </button>
+                      {#if defaultCat.isCustomized}
                         <button
                           type="button"
                           class="action-icon action-icon--delete"
-                          title={LABELS.BTN_DELETE}
-                          aria-label="Kategorie löschen"
+                          title={LABELS.BTN_RESET}
+                          aria-label="Zurücksetzen"
                           onclick={() => {
-                            requestDeleteCustom(cat);
+                            requestResetOverride(
+                              defaultCat.id,
+                              defaultCat.defaultName,
+                            );
                           }}
                         >
-                          <i class="fas fa-trash"></i>
+                          <i class="fas fa-undo"></i>
                         </button>
-                      </div>
+                      {/if}
                     </td>
                   </tr>
                 {/each}
               </tbody>
             </table>
           </div>
-        {:else}
-          <div class="empty-state">
-            <div class="empty-state__icon">
-              <i class="fas fa-tags"></i>
-            </div>
-            <h3 class="empty-state__title">Keine eigenen Kategorien</h3>
-            <p class="empty-state__description">
-              Noch keine eigenen Kategorien erstellt.
-            </p>
+
+          <div class="mt-4">
+            <button
+              type="button"
+              class="btn btn-primary"
+              disabled={isSaving || !hasUnsavedChanges()}
+              onclick={handleSaveOverrides}
+            >
+              {#if isSaving}
+                <span class="spinner-ring spinner-ring--sm"></span>
+                Speichern...
+              {:else}
+                <i class="fas fa-save"></i>
+                {LABELS.BTN_SAVE}
+              {/if}
+            </button>
           </div>
-        {/if}
+        </div>
+      </div>
 
-        {#if data.categories.remainingSlots > 0}
-          {#if showNewForm}
-            <div class="card card--compact card--no-margin mt-4">
-              <div class="card__header">
-                <h3 class="card__title">
-                  <i class="fas fa-plus-circle mr-2"></i>
-                  Neue Kategorie
-                </h3>
-              </div>
-              <div class="card__body">
-                <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
-                  <div class="form-field">
-                    <label
-                      class="form-field__label form-field__label--required"
-                      for="newCatName"
-                    >
-                      Name
-                    </label>
-                    <input
-                      type="text"
-                      id="newCatName"
-                      class="form-field__control"
-                      placeholder="z.B. Digitalisierung"
-                      maxlength="50"
-                      bind:value={newName}
-                    />
-                  </div>
-
-                  <div class="form-field">
-                    <label
-                      class="form-field__label form-field__label--required"
-                      for="newCatColor"
-                    >
-                      Farbe
-                    </label>
-                    <div class="color-picker-wrapper">
-                      <ColorPicker
-                        bind:hex={newColor}
-                        label=""
-                        isAlpha={false}
-                        position="responsive"
-                        --picker-height="150px"
-                        --picker-width="150px"
-                        --slider-width="150px"
-                        --focus-color="var(--color-primary, #2196f3)"
-                        --cp-bg-color="var(--color-gray-900, #212121)"
-                        --cp-border-color="#616161"
-                        --cp-text-color="#fff"
-                        --cp-input-color="#424242"
-                        --cp-button-hover-color="#616161"
-                        --picker-z-index="1060"
-                      />
-                      <span class="text-sm text-(--color-text-secondary)"
-                        >{newColor}</span
-                      >
-                    </div>
-                  </div>
-
-                  <div class="form-field">
-                    <span class="form-field__label form-field__label--required">
-                      Icon
-                    </span>
-                    <div
-                      class="dropdown mt-2"
-                      data-dropdown="icon"
-                    >
-                      <button
-                        type="button"
-                        class="dropdown__trigger"
-                        class:active={activeDropdown === 'icon'}
-                        onclick={() => {
-                          toggleDropdown('icon');
-                        }}
-                      >
-                        <span>
-                          <i
-                            class="fas fa-{newIcon} mr-2"
-                            style="color: {newColor}"
-                          ></i>
-                          {selectedIconLabel}
-                        </span>
-                        <i class="fas fa-chevron-down"></i>
-                      </button>
-                      <div
-                        class="dropdown__menu"
-                        class:active={activeDropdown === 'icon'}
-                      >
-                        {#each ICON_OPTIONS as opt (opt.value)}
+      <!-- Card 2: Custom Categories -->
+      <div class="card">
+        <div class="card__header">
+          <h2 class="card__title">
+            <i class="fas fa-tags mr-2"></i>
+            {LABELS.SECTION_CUSTOM}
+          </h2>
+          <p class="mt-2 text-(--color-text-secondary)">
+            <span class="badge badge--info">
+              {LABELS.remaining(data.categories.remainingSlots)}
+            </span>
+            <span class="badge ml-2">
+              {LABELS.counter(
+                data.categories.totalCount,
+                data.categories.maxAllowed,
+              )}
+            </span>
+          </p>
+        </div>
+        <div class="card__body">
+          {#if data.categories.custom.length > 0}
+            <div class="table-responsive">
+              <table class="data-table data-table--hover data-table--striped">
+                <thead>
+                  <tr>
+                    <th scope="col">{LABELS.COL_NAME}</th>
+                    <th scope="col">{LABELS.COL_COLOR}</th>
+                    <th scope="col">{LABELS.COL_ICON}</th>
+                    <th scope="col">{LABELS.COL_ACTION}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {#each data.categories.custom as cat (cat.id)}
+                    <tr>
+                      <td>
+                        <span class="font-medium">{cat.name}</span>
+                        {#if cat.suggestionCount > 0}
+                          <span
+                            class="badge badge--info ml-2"
+                            title="{cat.suggestionCount} Vorschlag/Vorschläge verwenden diese Kategorie"
+                          >
+                            {cat.suggestionCount}
+                          </span>
+                        {/if}
+                      </td>
+                      <td>
+                        <div class="flex items-center gap-2">
+                          <span
+                            class="inline-block h-4 w-4 rounded-full border border-gray-400"
+                            style="background-color: {cat.color}"
+                          ></span>
+                          <span class="text-sm text-(--color-text-secondary)"
+                            >{cat.color}</span
+                          >
+                        </div>
+                      </td>
+                      <td>
+                        <i class="fas fa-{cat.icon}"></i>
+                      </td>
+                      <td>
+                        <div class="flex gap-1">
                           <button
                             type="button"
-                            class="dropdown__option"
-                            class:selected={newIcon === opt.value}
+                            class="action-icon action-icon--edit"
+                            title={LABELS.BTN_EDIT}
+                            aria-label="Kategorie bearbeiten"
                             onclick={() => {
-                              newIcon = opt.value;
-                              activeDropdown = null;
+                              openEditModal(cat);
                             }}
                           >
-                            <i class="fas fa-{opt.value} mr-2"></i>
-                            {opt.label}
+                            <i class="fas fa-edit"></i>
                           </button>
-                        {/each}
-                      </div>
-                    </div>
-                    <div class="mt-2">
-                      <i
-                        class="fas fa-{newIcon} text-lg"
-                        style="color: {newColor}"
-                      ></i>
-                      <span class="ml-2 text-sm">Vorschau</span>
-                    </div>
-                  </div>
-
-                  <div class="form-field">
-                    <label
-                      class="form-field__label"
-                      for="newCatDescription"
-                    >
-                      Beschreibung
-                    </label>
-                    <textarea
-                      id="newCatDescription"
-                      class="form-field__control"
-                      placeholder="Optionale Beschreibung..."
-                      rows="2"
-                      maxlength="500"
-                      bind:value={newDescription}
-                    ></textarea>
-                  </div>
-                </div>
+                          <button
+                            type="button"
+                            class="action-icon action-icon--delete"
+                            title={LABELS.BTN_DELETE}
+                            aria-label="Kategorie löschen"
+                            onclick={() => {
+                              requestDeleteCustom(cat);
+                            }}
+                          >
+                            <i class="fas fa-trash"></i>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  {/each}
+                </tbody>
+              </table>
+            </div>
+          {:else}
+            <div class="empty-state">
+              <div class="empty-state__icon">
+                <i class="fas fa-tags"></i>
               </div>
-              <div class="card__footer flex gap-2">
-                <button
-                  type="button"
-                  class="btn btn-primary"
-                  disabled={isCreating || newName.trim() === ''}
-                  onclick={handleCreateCustom}
-                >
-                  {#if isCreating}
-                    <span class="spinner-ring spinner-ring--sm"></span>
-                    Erstellen...
-                  {:else}
-                    <i class="fas fa-plus"></i>
-                    Erstellen
-                  {/if}
-                </button>
-                <button
-                  type="button"
-                  class="btn btn-cancel"
-                  onclick={() => {
-                    showNewForm = false;
-                  }}
-                >
-                  Abbrechen
-                </button>
-              </div>
+              <h3 class="empty-state__title">Keine eigenen Kategorien</h3>
+              <p class="empty-state__description">
+                Noch keine eigenen Kategorien erstellt.
+              </p>
             </div>
           {/if}
-        {:else}
-          <div class="alert alert--warning mt-4">
-            <span class="alert__icon">
-              <i class="fas fa-exclamation-triangle"></i>
-            </span>
-            <p class="alert__content">{MESSAGES.LIMIT_REACHED}</p>
-          </div>
-        {/if}
+
+          {#if data.categories.remainingSlots > 0}
+            {#if showNewForm}
+              <div class="card card--compact card--no-margin mt-4">
+                <div class="card__header">
+                  <h3 class="card__title">
+                    <i class="fas fa-plus-circle mr-2"></i>
+                    Neue Kategorie
+                  </h3>
+                </div>
+                <div class="card__body">
+                  <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+                    <div class="form-field">
+                      <label
+                        class="form-field__label form-field__label--required"
+                        for="newCatName"
+                      >
+                        Name
+                      </label>
+                      <input
+                        type="text"
+                        id="newCatName"
+                        class="form-field__control"
+                        placeholder="z.B. Digitalisierung"
+                        maxlength="50"
+                        bind:value={newName}
+                      />
+                    </div>
+
+                    <div class="form-field">
+                      <label
+                        class="form-field__label form-field__label--required"
+                        for="newCatColor"
+                      >
+                        Farbe
+                      </label>
+                      <div class="color-picker-wrapper">
+                        <ColorPicker
+                          bind:hex={newColor}
+                          label=""
+                          isAlpha={false}
+                          position="responsive"
+                          --picker-height="150px"
+                          --picker-width="150px"
+                          --slider-width="150px"
+                          --focus-color="var(--color-primary, #2196f3)"
+                          --cp-bg-color="var(--color-gray-900, #212121)"
+                          --cp-border-color="#616161"
+                          --cp-text-color="#fff"
+                          --cp-input-color="#424242"
+                          --cp-button-hover-color="#616161"
+                          --picker-z-index="1060"
+                        />
+                        <span class="text-sm text-(--color-text-secondary)"
+                          >{newColor}</span
+                        >
+                      </div>
+                    </div>
+
+                    <div class="form-field">
+                      <span
+                        class="form-field__label form-field__label--required"
+                      >
+                        Icon
+                      </span>
+                      <div
+                        class="dropdown mt-2"
+                        data-dropdown="icon"
+                      >
+                        <button
+                          type="button"
+                          class="dropdown__trigger"
+                          class:active={activeDropdown === 'icon'}
+                          onclick={() => {
+                            toggleDropdown('icon');
+                          }}
+                        >
+                          <span>
+                            <i
+                              class="fas fa-{newIcon} mr-2"
+                              style="color: {newColor}"
+                            ></i>
+                            {selectedIconLabel}
+                          </span>
+                          <i class="fas fa-chevron-down"></i>
+                        </button>
+                        <div
+                          class="dropdown__menu"
+                          class:active={activeDropdown === 'icon'}
+                        >
+                          {#each ICON_OPTIONS as opt (opt.value)}
+                            <button
+                              type="button"
+                              class="dropdown__option"
+                              class:selected={newIcon === opt.value}
+                              onclick={() => {
+                                newIcon = opt.value;
+                                activeDropdown = null;
+                              }}
+                            >
+                              <i class="fas fa-{opt.value} mr-2"></i>
+                              {opt.label}
+                            </button>
+                          {/each}
+                        </div>
+                      </div>
+                      <div class="mt-2">
+                        <i
+                          class="fas fa-{newIcon} text-lg"
+                          style="color: {newColor}"
+                        ></i>
+                        <span class="ml-2 text-sm">Vorschau</span>
+                      </div>
+                    </div>
+
+                    <div class="form-field">
+                      <label
+                        class="form-field__label"
+                        for="newCatDescription"
+                      >
+                        Beschreibung
+                      </label>
+                      <textarea
+                        id="newCatDescription"
+                        class="form-field__control"
+                        placeholder="Optionale Beschreibung..."
+                        rows="2"
+                        maxlength="500"
+                        bind:value={newDescription}
+                      ></textarea>
+                    </div>
+                  </div>
+                </div>
+                <div class="card__footer flex gap-2">
+                  <button
+                    type="button"
+                    class="btn btn-primary"
+                    disabled={isCreating || newName.trim() === ''}
+                    onclick={handleCreateCustom}
+                  >
+                    {#if isCreating}
+                      <span class="spinner-ring spinner-ring--sm"></span>
+                      Erstellen...
+                    {:else}
+                      <i class="fas fa-plus"></i>
+                      Erstellen
+                    {/if}
+                  </button>
+                  <button
+                    type="button"
+                    class="btn btn-cancel"
+                    onclick={() => {
+                      showNewForm = false;
+                    }}
+                  >
+                    Abbrechen
+                  </button>
+                </div>
+              </div>
+            {/if}
+          {:else}
+            <div class="alert alert--warning mt-4">
+              <span class="alert__icon">
+                <i class="fas fa-exclamation-triangle"></i>
+              </span>
+              <p class="alert__content">{MESSAGES.LIMIT_REACHED}</p>
+            </div>
+          {/if}
+        </div>
       </div>
-    </div>
 
-    {#if data.categories.remainingSlots > 0 && !showNewForm}
-      <button
-        type="button"
-        class="btn-float"
-        aria-label="Neue Kategorie"
-        onclick={() => {
-          showNewForm = true;
-        }}
-      >
-        <i class="fas fa-plus"></i>
-      </button>
+      {#if data.categories.remainingSlots > 0 && !showNewForm}
+        <button
+          type="button"
+          class="btn-float"
+          aria-label="Neue Kategorie"
+          onclick={() => {
+            showNewForm = true;
+          }}
+        >
+          <i class="fas fa-plus"></i>
+        </button>
+      {/if}
     {/if}
-  {/if}
-</div>
+  </div>
 
-<!-- Delete Confirmation Modal -->
-<ConfirmModal
-  show={showDeleteModal && deleteTarget !== null}
-  id="kvp-category-delete-modal"
-  title="Kategorie löschen"
-  icon="fa-trash-alt"
-  confirmLabel="Löschen"
-  centered
-  onconfirm={() => void confirmDeleteCustom()}
-  oncancel={() => {
-    showDeleteModal = false;
-    deleteTarget = null;
-  }}
->
-  {#if deleteTarget !== null}
-    {#if deleteTarget.suggestionCount > 0}
-      {deleteConfirmWithRefs(deleteTarget.suggestionCount)}<br />
-    {:else}
-      {MESSAGES.DELETE_CONFIRM}<br />
-    {/if}
-    <strong>"{deleteTarget.name}"</strong>
-  {/if}
-</ConfirmModal>
-
-<!-- Reset Override Confirmation Modal -->
-<ConfirmModal
-  show={showResetModal && resetTarget !== null}
-  id="kvp-category-reset-modal"
-  title="Bezeichnung zurücksetzen"
-  variant="warning"
-  icon="fa-undo"
-  confirmLabel="Zurücksetzen"
-  centered
-  onconfirm={() => void confirmResetOverride()}
-  oncancel={() => {
-    showResetModal = false;
-    resetTarget = null;
-  }}
->
-  {#if resetTarget !== null}
-    Die eigene Bezeichnung für <strong>"{resetTarget.name}"</strong> wird entfernt
-    und der Standard-Name wiederhergestellt.
-  {/if}
-</ConfirmModal>
-
-<!-- Edit Category Modal -->
-{#if showEditModal && editTarget !== null}
-  <EditCategoryModal
-    categoryId={editTarget.id}
-    categoryName={editTarget.name}
-    categoryColor={editTarget.color}
-    categoryIcon={editTarget.icon}
-    categoryDescription={editTarget.description}
-    onclose={() => {
-      showEditModal = false;
-      editTarget = null;
+  <!-- Delete Confirmation Modal -->
+  <ConfirmModal
+    show={showDeleteModal && deleteTarget !== null}
+    id="kvp-category-delete-modal"
+    title="Kategorie löschen"
+    icon="fa-trash-alt"
+    confirmLabel="Löschen"
+    centered
+    onconfirm={() => void confirmDeleteCustom()}
+    oncancel={() => {
+      showDeleteModal = false;
+      deleteTarget = null;
     }}
-  />
+  >
+    {#if deleteTarget !== null}
+      {#if deleteTarget.suggestionCount > 0}
+        {deleteConfirmWithRefs(deleteTarget.suggestionCount)}<br />
+      {:else}
+        {MESSAGES.DELETE_CONFIRM}<br />
+      {/if}
+      <strong>"{deleteTarget.name}"</strong>
+    {/if}
+  </ConfirmModal>
+
+  <!-- Reset Override Confirmation Modal -->
+  <ConfirmModal
+    show={showResetModal && resetTarget !== null}
+    id="kvp-category-reset-modal"
+    title="Bezeichnung zurücksetzen"
+    variant="warning"
+    icon="fa-undo"
+    confirmLabel="Zurücksetzen"
+    centered
+    onconfirm={() => void confirmResetOverride()}
+    oncancel={() => {
+      showResetModal = false;
+      resetTarget = null;
+    }}
+  >
+    {#if resetTarget !== null}
+      Die eigene Bezeichnung für <strong>"{resetTarget.name}"</strong> wird entfernt
+      und der Standard-Name wiederhergestellt.
+    {/if}
+  </ConfirmModal>
+
+  <!-- Edit Category Modal -->
+  {#if showEditModal && editTarget !== null}
+    <EditCategoryModal
+      categoryId={editTarget.id}
+      categoryName={editTarget.name}
+      categoryColor={editTarget.color}
+      categoryIcon={editTarget.icon}
+      categoryDescription={editTarget.description}
+      onclose={() => {
+        showEditModal = false;
+        editTarget = null;
+      }}
+    />
+  {/if}
 {/if}
 
 <style>

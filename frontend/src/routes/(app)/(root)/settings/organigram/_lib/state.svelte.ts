@@ -60,6 +60,8 @@ let hoveredNodeKey = $state('');
 let locked = $state(true);
 let hallOverrides = $state<Record<string, HallOverride>>({});
 let canvasBg = $state<string | null>(null);
+let nodeWidth = $state<number>(LAYOUT.NODE_WIDTH);
+let nodeHeight = $state<number>(LAYOUT.NODE_HEIGHT);
 
 // --- Getters ---
 
@@ -84,7 +86,7 @@ export function getFontSize(): number {
 }
 
 export function setFontSize(value: number): void {
-  fontSize = Math.max(8, Math.min(24, value));
+  fontSize = Math.max(8, Math.min(120, value));
   dirty = true;
 }
 
@@ -121,6 +123,32 @@ export function setCanvasBg(value: string | null): void {
   dirty = true;
 }
 
+export function getNodeWidth(): number {
+  return nodeWidth;
+}
+
+export function getNodeHeight(): number {
+  return nodeHeight;
+}
+
+export function adjustNodeSize(delta: number): void {
+  const wStep = delta * 20;
+  const hStep = delta * 8;
+  const newW = Math.max(100, Math.min(1000, nodeWidth + wStep));
+  const newH = Math.max(40, Math.min(400, nodeHeight + hStep));
+  if (newW === nodeWidth && newH === nodeHeight) return;
+
+  const updated: Record<PositionKey, NodePosition> = {};
+  for (const [key, pos] of Object.entries(nodePositions)) {
+    updated[key as PositionKey] = { ...pos, width: newW, height: newH };
+  }
+  nodePositions = updated;
+
+  nodeWidth = newW;
+  nodeHeight = newH;
+  dirty = true;
+}
+
 // --- Init ---
 
 export function initFromTree(data: OrgChartTree): void {
@@ -142,6 +170,8 @@ export function initFromTree(data: OrgChartTree): void {
   panX = data.viewport.panX;
   panY = data.viewport.panY;
   fontSize = data.viewport.fontSize;
+  nodeWidth = data.viewport.nodeWidth ?? LAYOUT.NODE_WIDTH;
+  nodeHeight = data.viewport.nodeHeight ?? LAYOUT.NODE_HEIGHT;
 
   // 4. Restore hall overrides
   hallOverrides = data.hallOverrides;
@@ -185,20 +215,19 @@ function computeAutoLayout(
     // Areas (depth 0) get extra offset for the container header
     const headerOffset =
       node.entityType === 'area' ? LAYOUT.AREA_HEADER_HEIGHT : 0;
-    const y =
-      pad + headerOffset + depth * (LAYOUT.NODE_HEIGHT + LAYOUT.VERTICAL_GAP);
+    const y = pad + headerOffset + depth * (nodeHeight + LAYOUT.VERTICAL_GAP);
     const allChildren = [...node.children, ...node.assets];
 
     if (allChildren.length === 0) {
       const x = nextLeafX;
-      nextLeafX += LAYOUT.NODE_WIDTH + LAYOUT.HORIZONTAL_GAP;
+      nextLeafX += nodeWidth + LAYOUT.HORIZONTAL_GAP;
       result[makeKey(node.entityType, node.entityUuid)] = {
         x,
         y,
-        width: LAYOUT.NODE_WIDTH,
-        height: LAYOUT.NODE_HEIGHT,
+        width: nodeWidth,
+        height: nodeHeight,
       };
-      return { left: x, right: x + LAYOUT.NODE_WIDTH };
+      return { left: x, right: x + nodeWidth };
     }
 
     let groupLeft = Infinity;
@@ -209,17 +238,17 @@ function computeAutoLayout(
       groupRight = Math.max(groupRight, bounds.right);
     }
 
-    const x = (groupLeft + groupRight) / 2 - LAYOUT.NODE_WIDTH / 2;
+    const x = (groupLeft + groupRight) / 2 - nodeWidth / 2;
     result[makeKey(node.entityType, node.entityUuid)] = {
       x,
       y,
-      width: LAYOUT.NODE_WIDTH,
-      height: LAYOUT.NODE_HEIGHT,
+      width: nodeWidth,
+      height: nodeHeight,
     };
 
     return {
       left: Math.min(x, groupLeft),
-      right: Math.max(x + LAYOUT.NODE_WIDTH, groupRight),
+      right: Math.max(x + nodeWidth, groupRight),
     };
   }
 
@@ -430,8 +459,10 @@ export function getViewportForSave(): {
   panX: number;
   panY: number;
   fontSize: number;
+  nodeWidth: number;
+  nodeHeight: number;
 } {
-  return { zoom, panX, panY, fontSize };
+  return { zoom, panX, panY, fontSize, nodeWidth, nodeHeight };
 }
 
 export function getPositionsForSave(): {

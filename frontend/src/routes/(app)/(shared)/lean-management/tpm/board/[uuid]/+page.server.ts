@@ -5,8 +5,8 @@
  */
 import { redirect } from '@sveltejs/kit';
 
+import { apiFetch, apiFetchWithPermission } from '$lib/server/api-fetch';
 import { requireAddon } from '$lib/utils/addon-guard';
-import { createLogger } from '$lib/utils/logger';
 
 import type { PageServerLoad } from './$types';
 import type {
@@ -17,47 +17,51 @@ import type {
   CategoryColorConfigEntry,
 } from '../../_lib/types';
 
-const log = createLogger('TpmBoard');
-
-const API_BASE = process.env.API_URL ?? 'http://localhost:3000/api/v2';
-
-interface ApiResponse<T> {
-  success?: boolean;
-  data?: T;
-}
-
-async function apiFetch<T>(
-  endpoint: string,
-  token: string,
-  fetchFn: typeof fetch,
-): Promise<T | null> {
-  try {
-    const response = await fetchFn(`${API_BASE}${endpoint}`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-    });
-    if (!response.ok) {
-      log.error({ status: response.status, endpoint }, 'API error');
-      return null;
-    }
-    const json = (await response.json()) as ApiResponse<T>;
-    if ('success' in json && json.success === true) return json.data ?? null;
-    if ('data' in json && json.data !== undefined) return json.data;
-    return json as unknown as T;
-  } catch (err: unknown) {
-    log.error({ err, endpoint }, 'Fetch error');
-    return null;
-  }
-}
-
 function extractCards(raw: unknown): TpmCard[] {
   if (raw === null || typeof raw !== 'object') return [];
   const obj = raw as Record<string, unknown>;
   if (Array.isArray(obj.data)) return obj.data as TpmCard[];
   if (Array.isArray(obj.items)) return obj.items as TpmCard[];
   return [];
+}
+
+async function fetchBoardData(
+  token: string,
+  fetchFn: typeof fetch,
+  planUuid: string,
+) {
+  return await Promise.all([
+    apiFetchWithPermission<TpmPlan>(`/tpm/plans/${planUuid}`, token, fetchFn),
+    apiFetch<unknown>(
+      `/tpm/plans/${planUuid}/board?page=1&limit=200`,
+      token,
+      fetchFn,
+    ),
+    apiFetch<TpmColorConfigEntry[]>('/tpm/config/colors', token, fetchFn),
+    apiFetch<IntervalColorConfigEntry[]>(
+      '/tpm/config/interval-colors',
+      token,
+      fetchFn,
+    ),
+    apiFetch<CategoryColorConfigEntry[]>(
+      '/tpm/config/category-colors',
+      token,
+      fetchFn,
+    ),
+  ]);
+}
+
+function buildBoardDeniedResponse(planUuid: string) {
+  return {
+    permissionDenied: true as const,
+    planUuid,
+    plan: null,
+    cards: [] as TpmCard[],
+    colors: [] as TpmColorConfigEntry[],
+    intervalColors: [] as IntervalColorConfigEntry[],
+    categoryColors: [] as CategoryColorConfigEntry[],
+    userRole: 'employee',
+  };
 }
 
 export const load: PageServerLoad = async ({
@@ -73,44 +77,26 @@ export const load: PageServerLoad = async ({
   requireAddon(parentData.activeAddons, 'tpm');
 
   const { uuid: planUuid } = params;
+  const [
+    planResult,
+    boardRaw,
+    colorsData,
+    intervalColorsData,
+    categoryColorsData,
+  ] = await fetchBoardData(token, fetch, planUuid);
 
-  const [plan, boardRaw, colorsData, intervalColorsData, categoryColorsData] =
-    await Promise.all([
-      apiFetch<TpmPlan>(`/tpm/plans/${planUuid}`, token, fetch),
-      apiFetch<unknown>(
-        `/tpm/plans/${planUuid}/board?page=1&limit=200`,
-        token,
-        fetch,
-      ),
-      apiFetch<TpmColorConfigEntry[]>('/tpm/config/colors', token, fetch),
-      apiFetch<IntervalColorConfigEntry[]>(
-        '/tpm/config/interval-colors',
-        token,
-        fetch,
-      ),
-      apiFetch<CategoryColorConfigEntry[]>(
-        '/tpm/config/category-colors',
-        token,
-        fetch,
-      ),
-    ]);
-
-  const cards = extractCards(boardRaw);
-  const colors = Array.isArray(colorsData) ? colorsData : [];
-  const intervalColors =
-    Array.isArray(intervalColorsData) ? intervalColorsData : [];
-  const categoryColors =
-    Array.isArray(categoryColorsData) ? categoryColorsData : [];
-
-  const userRole = parentData.user?.role ?? 'employee';
+  if (planResult.permissionDenied) {
+    return buildBoardDeniedResponse(planUuid);
+  }
 
   return {
+    permissionDenied: false as const,
     planUuid,
-    plan,
-    cards,
-    colors,
-    intervalColors,
-    categoryColors,
-    userRole,
+    plan: planResult.data,
+    cards: extractCards(boardRaw),
+    colors: Array.isArray(colorsData) ? colorsData : [],
+    intervalColors: Array.isArray(intervalColorsData) ? intervalColorsData : [],
+    categoryColors: Array.isArray(categoryColorsData) ? categoryColorsData : [],
+    userRole: parentData.user?.role ?? 'employee',
   };
 };

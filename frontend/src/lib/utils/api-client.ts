@@ -654,7 +654,7 @@ export function getApiClient(): ApiClient {
 export const apiClient = ApiClient.getInstance();
 
 // Re-export for backward compatibility (consumers import from api-client)
-export { ApiError } from './api-client.types';
+export { ApiError, getApiErrorMessage } from './api-client.types';
 export type { AuthTokenProvider, LogoutReason } from './api-client.types';
 
 // Debug mode: expose cache stats to window (DEV only for security)

@@ -6,33 +6,18 @@
  */
 import { redirect } from '@sveltejs/kit';
 
+import {
+  API_BASE,
+  extractResponseData,
+  type ServerApiResponse,
+} from '$lib/server/api-fetch';
+import { dashboardForRole } from '$lib/server/role-redirects';
 import { createLogger } from '$lib/utils/logger';
 
 import type { PageServerLoad } from './$types';
 import type { DeletionStatusData, ShiftTimeData } from './_lib/types';
 
 const log = createLogger('AccountSettings');
-
-const API_BASE = process.env.API_URL ?? 'http://localhost:3000/api/v2';
-
-interface ApiResponse<T> {
-  success?: boolean;
-  data?: T;
-}
-
-/**
- * Extract data from API response, handling multiple response formats.
- * API can return: {success: true, data: T} or {data: T} or T directly.
- */
-function extractResponseData<T>(json: ApiResponse<T>): unknown {
-  if ('success' in json && json.success === true) {
-    return json.data ?? null;
-  }
-  if ('data' in json && json.data !== undefined) {
-    return json.data;
-  }
-  return json;
-}
 
 /**
  * Check if data represents an empty nested response.
@@ -45,6 +30,10 @@ function isEmptyNestedResponse(data: unknown): boolean {
   return 'data' in data && (data as { data: unknown }).data === null;
 }
 
+/**
+ * Custom apiFetch for account-settings: silently returns null on 404
+ * and filters out empty nested responses.
+ */
 async function apiFetch<T>(
   endpoint: string,
   token: string,
@@ -64,14 +53,14 @@ async function apiFetch<T>(
       return null;
     }
 
-    const json = (await response.json()) as ApiResponse<T>;
+    const json = (await response.json()) as ServerApiResponse<T>;
     const data = extractResponseData(json);
 
     if (isEmptyNestedResponse(data)) {
       return null;
     }
 
-    return data as T | null;
+    return data;
   } catch (err: unknown) {
     log.error({ err, endpoint }, 'Fetch error');
     return null;
@@ -84,10 +73,13 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
     redirect(302, '/login');
   }
 
-  // Get user from parent layout - only root can access
+  // Guard: only root can access account settings
   const parentData = await parent();
-  if (parentData.user?.role !== 'root') {
-    redirect(302, '/dashboard');
+  if (!parentData.user) {
+    redirect(302, '/login');
+  }
+  if (parentData.user.role !== 'root') {
+    redirect(302, dashboardForRole(parentData.user.role));
   }
 
   const activeAddons: string[] =

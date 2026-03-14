@@ -122,10 +122,23 @@ export DB_PORT=5432
 
 ### 1. Generate Migration File
 
-> **WICHTIG:** Migrationsdateien IMMER mit dem Generator erstellen — NIEMALS manuell anlegen!
-> Manuelle Dateinamen verwenden kein korrektes UTC-Timestamp-Format (`YYYYMMDDHHmmss`),
-> was zu `Can't determine timestamp` Warnungen bei `node-pg-migrate` führt.
-> Der Generator erzeugt den Timestamp automatisch korrekt.
+> **⚠️ KRITISCH — NIEMALS Migrationsdateien manuell erstellen!**
+>
+> Migrationsdateien **AUSSCHLIESSLICH** mit dem Generator erstellen:
+>
+> ```bash
+> doppler run -- pnpm run db:migrate:create <name>
+> ```
+>
+> **Warum:** Die Config (`migrationFilenameFormat: "utc"`) erwartet Timestamps im Format `YYYYMMDDHHmmss`.
+> Manuell erstellte Dateien (z.B. per `Write`-Tool, `touch`, oder Copy-Paste) verwenden
+> oft Unix-Millisekunden-Timestamps (`1773429974779_...`) oder erfundene Nummern —
+> `node-pg-migrate` kann diese nicht parsen und bricht mit `Can't determine timestamp` ab.
+>
+> **Auch Claude/AI-Agenten dürfen KEINE Migrationsdateien manuell erstellen.**
+> Immer erst den Generator ausführen, dann den generierten Stub befüllen.
+>
+> **Workflow:** Generator → Datei öffnen → `up()` und `down()` implementieren → fertig.
 
 ```bash
 doppler run -- pnpm run db:migrate:create add-employee-skills
@@ -428,6 +441,7 @@ Password: see docker/.env
 | Hardcoded Year-Ranges (Partitionen)            | Zeitbombe — INSERTs scheitern nach Ablauf                        | Mindestens 5 Jahre voraus + Kommentar wann nächste Erweiterung nötig                    |
 | `ON CONFLICT DO NOTHING` ohne Kommentar        | Schluckt Duplikate still — maskiert Korruptionsrisiko            | Expliziter Kommentar WARUM, oder `ON CONFLICT DO UPDATE`                                |
 | MySQL-Legacy-Namen (`idx_19037_*`, `_ibfk_*`)  | Fragile OID-basierte Namen brechen in anderen Umgebungen         | Aussagekräftige Namen: `idx_tablename_column`                                           |
+| Manuell erstellte Migrationsdateien            | Falsches Timestamp-Format → `Can't determine timestamp` Fehler   | **IMMER** `doppler run -- pnpm run db:migrate:create <name>` benutzen                   |
 
 ### Pflicht-Patterns (ALWAYS)
 
@@ -450,6 +464,7 @@ Password: see docker/.env
 - [ ] Keine MySQL-Legacy-Namen (idx_NNNNN_*, _ibfk_*)
 - [ ] RLS Policy + GRANTs vorhanden (für tenant-isolierte Tabellen)
 - [ ] Kein IF EXISTS im up() (Ausnahme: DROP vor REPLACE bei Triggern)
+- [ ] Datei wurde mit `db:migrate:create` generiert (NICHT manuell erstellt)
 ```
 
 ---

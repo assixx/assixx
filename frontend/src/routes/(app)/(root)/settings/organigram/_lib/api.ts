@@ -8,6 +8,8 @@ import type {
   HallOverride,
   HierarchyLabels,
   OrgChartTree,
+  OrgEntityType,
+  OrgNodeDetail,
   OrgViewport,
   PositionPayload,
   UpdateHierarchyLabelsPayload,
@@ -30,6 +32,16 @@ export async function updateHierarchyLabels(
   return await api.patch<HierarchyLabels>(
     '/organigram/hierarchy-labels',
     payload,
+  );
+}
+
+export async function fetchNodeDetails(
+  entityType: OrgEntityType,
+  entityUuid: string,
+): Promise<OrgNodeDetail> {
+  const api = getApiClient();
+  return await api.get<OrgNodeDetail>(
+    `/organigram/node-details/${entityType}/${entityUuid}`,
   );
 }
 

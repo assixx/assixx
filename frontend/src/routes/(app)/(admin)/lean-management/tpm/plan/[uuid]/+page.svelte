@@ -9,6 +9,7 @@
   import { goto, invalidateAll } from '$app/navigation';
   import { resolve } from '$app/paths';
 
+  import PermissionDenied from '$lib/components/PermissionDenied.svelte';
   import { showSuccessAlert, showErrorAlert, showConfirm } from '$lib/utils';
 
   import {
@@ -39,6 +40,7 @@
   // =============================================================================
 
   const { data }: { data: PageData } = $props();
+  const permissionDenied = $derived(data.permissionDenied);
 
   // Hierarchy labels from layout data inheritance (A6)
   const labels = $derived(data.hierarchyLabels);
@@ -158,153 +160,160 @@
   <title>{pageTitle}</title>
 </svelte:head>
 
-<div class="container">
-  <!-- Header -->
-  <div class="mb-6">
-    <div class="mb-4">
-      <button
-        type="button"
-        class="btn btn-light"
-        onclick={() => {
-          void goto(resolve('/lean-management/tpm'));
-        }}
+{#if permissionDenied}
+  <PermissionDenied addonName="das TPM-System" />
+{:else}
+  <div class="container">
+    <!-- Header -->
+    <div class="mb-6">
+      <div class="mb-4">
+        <button
+          type="button"
+          class="btn btn-light"
+          onclick={() => {
+            void goto(resolve('/lean-management/tpm'));
+          }}
+        >
+          <i class="fas fa-arrow-left mr-2"></i>{messages.BTN_BACK_TO_OVERVIEW}
+        </button>
+      </div>
+      <h1
+        class="flex items-center gap-2 text-2xl font-bold text-(--color-text-primary)"
       >
-        <i class="fas fa-arrow-left mr-2"></i>{messages.BTN_BACK_TO_OVERVIEW}
-      </button>
+        <i class="fas fa-clipboard-list"></i>
+        {heading}
+      </h1>
+      {#if !isCreateMode && data.plan !== null}
+        <p class="mt-1 text-sm text-(--color-text-secondary)">
+          {data.plan.assetName ?? '—'} — {data.plan.name}
+        </p>
+      {/if}
     </div>
-    <h1
-      class="flex items-center gap-2 text-2xl font-bold text-(--color-text-primary)"
-    >
-      <i class="fas fa-clipboard-list"></i>
-      {heading}
-    </h1>
-    {#if !isCreateMode && data.plan !== null}
-      <p class="mt-1 text-sm text-(--color-text-secondary)">
-        {data.plan.assetName ?? '—'} — {data.plan.name}
-      </p>
-    {/if}
-  </div>
 
-  <!-- Slot Assistant: full width above form (hidden for archived plans) -->
-  {#if !isCreateMode && data.plan !== null && !isArchived}
-    <div class="mb-6">
-      <SlotAssistant
-        planUuid={data.plan.uuid}
-        cardsHref={resolve(`/lean-management/tpm/cards/${data.plan.uuid}`)}
-        intervalColors={data.intervalColors}
-        {previewWeekday}
-        {previewRepeatEvery}
-        ondataload={(slots: ProjectedSlot[], assigns: TpmPlanAssignment[]) => {
-          projectionSlots = slots;
-          planAssignments = assigns;
-        }}
-      />
-    </div>
-  {:else if isCreateMode && createAssetUuid.length > 0}
-    <div class="mb-6">
-      <SlotAssistant
-        assetUuid={createAssetUuid}
-        shiftPlanRequired={createShiftPlanRequired}
-        intervalColors={data.intervalColors}
-        {previewWeekday}
-        {previewRepeatEvery}
-      />
-    </div>
-  {/if}
-
-  <!-- Team-Verfügbarkeit: full width directly below SlotAssistant (edit mode, not archived) -->
-  {#if !isCreateMode && data.plan !== null && !isArchived}
-    <div class="mb-6">
-      <EmployeeAssignment
-        planUuid={data.plan.uuid}
-        {projectionSlots}
-        {planAssignments}
-      />
-    </div>
-  {/if}
-
-  <!-- Content grid: Plan form + Actions -->
-  <div class="grid grid-cols-1 items-start gap-6 lg:grid-cols-[1fr_360px]">
-    <!-- Main: Plan form -->
-    <div class="min-w-0">
-      <div class="card">
-        <div class="card__header">
-          <h2 class="card__title">
-            {isCreateMode ? 'Plandetails' : 'Plan bearbeiten'}
-          </h2>
-        </div>
-        <div class="card__body">
-          <PlanForm
-            {messages}
-            plan={data.plan}
-            assets={data.assets}
-            areas={data.areas}
-            departments={data.departments}
-            assetUuidsWithPlans={data.assetUuidsWithPlans ?? []}
-            timeEstimates={data.timeEstimates}
-            {isCreateMode}
-            submitting={submitting || isArchived}
-            oncreate={handleCreate}
-            onupdate={handleUpdate}
-            oncancel={handleCancel}
-            onassetchange={(uuid: string) => {
-              createAssetUuid = uuid;
-            }}
-            onshiftplanchange={(val: boolean) => {
-              createShiftPlanRequired = val;
-            }}
-            onschedulepreview={(
-              weekday: number | undefined,
-              repeatEvery: number | undefined,
-            ) => {
-              previewWeekday = weekday;
-              previewRepeatEvery = repeatEvery;
-            }}
-          />
-        </div>
+    <!-- Slot Assistant: full width above form (hidden for archived plans) -->
+    {#if !isCreateMode && data.plan !== null && !isArchived}
+      <div class="mb-6">
+        <SlotAssistant
+          planUuid={data.plan.uuid}
+          cardsHref={resolve(`/lean-management/tpm/cards/${data.plan.uuid}`)}
+          intervalColors={data.intervalColors}
+          {previewWeekday}
+          {previewRepeatEvery}
+          ondataload={(
+            slots: ProjectedSlot[],
+            assigns: TpmPlanAssignment[],
+          ) => {
+            projectionSlots = slots;
+            planAssignments = assigns;
+          }}
+        />
       </div>
-    </div>
-
-    <!-- Sidebar: Actions (edit mode only) -->
-    {#if !isCreateMode && data.plan !== null}
-      <div class="flex flex-col gap-6">
-        <!-- Archive / Restore Actions -->
-        {#if isArchived}
-          <div class="card">
-            <div class="card__body p-4 text-center">
-              <i class="fas fa-archive mb-2 text-3xl text-(--color-warning)"
-              ></i>
-              <p class="mb-4 text-(--color-text-secondary)">
-                {messages.ARCHIVED_NOTICE}
-              </p>
-              <button
-                type="button"
-                class="btn btn-light"
-                onclick={handleRestore}
-              >
-                <i class="fas fa-undo mr-2"></i>{messages.BTN_RESTORE}
-              </button>
-            </div>
-          </div>
-        {:else}
-          <div class="card">
-            <div class="card__header">
-              <h2 class="card__title">
-                <i class="fas fa-cog"></i> Aktionen
-              </h2>
-            </div>
-            <div class="card__body">
-              <button
-                type="button"
-                class="btn btn-light w-full"
-                onclick={handleArchive}
-              >
-                <i class="fas fa-archive mr-2"></i>{messages.BTN_ARCHIVE}
-              </button>
-            </div>
-          </div>
-        {/if}
+    {:else if isCreateMode && createAssetUuid.length > 0}
+      <div class="mb-6">
+        <SlotAssistant
+          assetUuid={createAssetUuid}
+          shiftPlanRequired={createShiftPlanRequired}
+          intervalColors={data.intervalColors}
+          {previewWeekday}
+          {previewRepeatEvery}
+        />
       </div>
     {/if}
+
+    <!-- Team-Verfügbarkeit: full width directly below SlotAssistant (edit mode, not archived) -->
+    {#if !isCreateMode && data.plan !== null && !isArchived}
+      <div class="mb-6">
+        <EmployeeAssignment
+          planUuid={data.plan.uuid}
+          {projectionSlots}
+          {planAssignments}
+        />
+      </div>
+    {/if}
+
+    <!-- Content grid: Plan form + Actions -->
+    <div class="grid grid-cols-1 items-start gap-6 lg:grid-cols-[1fr_360px]">
+      <!-- Main: Plan form -->
+      <div class="min-w-0">
+        <div class="card">
+          <div class="card__header">
+            <h2 class="card__title">
+              {isCreateMode ? 'Plandetails' : 'Plan bearbeiten'}
+            </h2>
+          </div>
+          <div class="card__body">
+            <PlanForm
+              {messages}
+              plan={data.plan}
+              assets={data.assets}
+              areas={data.areas}
+              departments={data.departments}
+              assetUuidsWithPlans={data.assetUuidsWithPlans ?? []}
+              timeEstimates={data.timeEstimates}
+              {isCreateMode}
+              submitting={submitting || isArchived}
+              oncreate={handleCreate}
+              onupdate={handleUpdate}
+              oncancel={handleCancel}
+              onassetchange={(uuid: string) => {
+                createAssetUuid = uuid;
+              }}
+              onshiftplanchange={(val: boolean) => {
+                createShiftPlanRequired = val;
+              }}
+              onschedulepreview={(
+                weekday: number | undefined,
+                repeatEvery: number | undefined,
+              ) => {
+                previewWeekday = weekday;
+                previewRepeatEvery = repeatEvery;
+              }}
+            />
+          </div>
+        </div>
+      </div>
+
+      <!-- Sidebar: Actions (edit mode only) -->
+      {#if !isCreateMode && data.plan !== null}
+        <div class="flex flex-col gap-6">
+          <!-- Archive / Restore Actions -->
+          {#if isArchived}
+            <div class="card">
+              <div class="card__body p-4 text-center">
+                <i class="fas fa-archive mb-2 text-3xl text-(--color-warning)"
+                ></i>
+                <p class="mb-4 text-(--color-text-secondary)">
+                  {messages.ARCHIVED_NOTICE}
+                </p>
+                <button
+                  type="button"
+                  class="btn btn-light"
+                  onclick={handleRestore}
+                >
+                  <i class="fas fa-undo mr-2"></i>{messages.BTN_RESTORE}
+                </button>
+              </div>
+            </div>
+          {:else}
+            <div class="card">
+              <div class="card__header">
+                <h2 class="card__title">
+                  <i class="fas fa-cog"></i> Aktionen
+                </h2>
+              </div>
+              <div class="card__body">
+                <button
+                  type="button"
+                  class="btn btn-light w-full"
+                  onclick={handleArchive}
+                >
+                  <i class="fas fa-archive mr-2"></i>{messages.BTN_ARCHIVE}
+                </button>
+              </div>
+            </div>
+          {/if}
+        </div>
+      {/if}
+    </div>
   </div>
-</div>
+{/if}

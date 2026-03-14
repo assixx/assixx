@@ -11,6 +11,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import type { DatabaseService } from '../database/database.service.js';
+import type { ScopeService } from '../hierarchy-permission/scope.service.js';
 import type { NotificationsService } from '../notifications/notifications.service.js';
 import type { KvpAttachmentsService } from './kvp-attachments.service.js';
 import type { KvpCommentsService } from './kvp-comments.service.js';
@@ -90,6 +91,24 @@ function createMockLifecycle() {
   };
 }
 
+function createMockScope() {
+  return {
+    getScope: vi.fn().mockResolvedValue({
+      type: 'full',
+      areaIds: [],
+      departmentIds: [],
+      teamIds: [],
+      leadAreaIds: [],
+      leadDepartmentIds: [],
+      leadTeamIds: [],
+      isAreaLead: false,
+      isDepartmentLead: false,
+      isTeamLead: false,
+      isAnyLead: false,
+    }),
+  };
+}
+
 /** Complete mock DB suggestion row with all required fields */
 function createMockDbSuggestion(overrides?: Record<string, unknown>) {
   return {
@@ -127,32 +146,6 @@ function createMockDbSuggestion(overrides?: Record<string, unknown>) {
   };
 }
 
-/** Empty org info result (no memberships) */
-const EMPTY_ORG_ROW = {
-  team_ids: [],
-  department_ids: [],
-  area_ids: [],
-  team_lead_of: [],
-  department_lead_of: [],
-  area_lead_of: [],
-  teams_department_ids: [],
-  departments_area_ids: [],
-  has_full_access: false,
-};
-
-/** Org info with full access */
-const FULL_ACCESS_ORG_ROW = {
-  ...EMPTY_ORG_ROW,
-  has_full_access: true,
-};
-
-/** Org info with team lead role */
-const TEAM_LEAD_ORG_ROW = {
-  ...EMPTY_ORG_ROW,
-  team_lead_of: [5],
-  team_ids: [5],
-};
-
 // =============================================================
 // Service Factory
 // =============================================================
@@ -166,6 +159,7 @@ interface ServiceMocks {
   mockAttachments: ReturnType<typeof createMockAttachments>;
   mockConfirmations: ReturnType<typeof createMockConfirmations>;
   mockLifecycle: ReturnType<typeof createMockLifecycle>;
+  mockScope: ReturnType<typeof createMockScope>;
 }
 
 function createService(): ServiceMocks {
@@ -176,6 +170,7 @@ function createService(): ServiceMocks {
   const mockAttachments = createMockAttachments();
   const mockConfirmations = createMockConfirmations();
   const mockLifecycle = createMockLifecycle();
+  const mockScope = createMockScope();
 
   const service = new KvpService(
     mockDb as unknown as DatabaseService,
@@ -185,6 +180,7 @@ function createService(): ServiceMocks {
     mockAttachments as unknown as KvpAttachmentsService,
     mockConfirmations as unknown as KvpConfirmationsService,
     mockLifecycle as unknown as KvpLifecycleService,
+    mockScope as unknown as ScopeService,
   );
 
   return {
@@ -196,6 +192,7 @@ function createService(): ServiceMocks {
     mockAttachments,
     mockConfirmations,
     mockLifecycle,
+    mockScope,
   };
 }
 
@@ -207,11 +204,9 @@ function mockGetSuggestionByIdChain(
   mockDb: ReturnType<typeof createMockDb>,
   dbSuggestion?: Record<string, unknown>,
 ): void {
-  // Q1: getExtendedUserOrgInfo
-  mockDb.query.mockResolvedValueOnce([FULL_ACCESS_ORG_ROW]);
-  // Q2: detail query
+  // Q1: detail query
   mockDb.query.mockResolvedValueOnce([createMockDbSuggestion(dbSuggestion)]);
-  // Q3: getOrgAssignments (junction table)
+  // Q2: getOrgAssignments (junction table)
   mockDb.query.mockResolvedValueOnce([]);
 }
 
@@ -227,6 +222,7 @@ describe('KvpService', () => {
   let mockComments: ReturnType<typeof createMockComments>;
   let mockConfirmations: ReturnType<typeof createMockConfirmations>;
   let mockLifecycle: ReturnType<typeof createMockLifecycle>;
+  let mockScope: ReturnType<typeof createMockScope>;
 
   beforeEach(() => {
     const mocks = createService();
@@ -237,6 +233,7 @@ describe('KvpService', () => {
     mockComments = mocks.mockComments;
     mockConfirmations = mocks.mockConfirmations;
     mockLifecycle = mocks.mockLifecycle;
+    mockScope = mocks.mockScope;
   });
 
   // =============================================================
@@ -244,36 +241,146 @@ describe('KvpService', () => {
   // =============================================================
 
   describe('getExtendedUserOrgInfo', () => {
-    it('returns EMPTY_ORG_INFO when no rows', async () => {
-      mockDb.query.mockResolvedValueOnce([]);
+    it('maps scope to org info format', async () => {
+      mockScope.getScope.mockResolvedValueOnce({
+        type: 'scoped',
+        areaIds: [100],
+        departmentIds: [10],
+        teamIds: [1, 2],
+        leadAreaIds: [],
+        leadDepartmentIds: [10],
+        leadTeamIds: [1],
+        isAreaLead: false,
+        isDepartmentLead: true,
+        isTeamLead: true,
+        isAnyLead: true,
+      });
 
-      const result = await service['getExtendedUserOrgInfo'](3, 42);
+      const result = await service['getExtendedUserOrgInfo']();
 
       expect(result.hasFullAccess).toBe(false);
-      expect(result.teamIds).toEqual([]);
-    });
-
-    it('maps DB row to API format', async () => {
-      mockDb.query.mockResolvedValueOnce([
-        {
-          has_full_access: true,
-          team_ids: [1, 2],
-          department_ids: [10],
-          area_ids: [100],
-          team_lead_of: [1],
-          department_lead_of: [10],
-          area_lead_of: [],
-          teams_department_ids: [10],
-          departments_area_ids: [100],
-        },
-      ]);
-
-      const result = await service['getExtendedUserOrgInfo'](3, 42);
-
-      expect(result.hasFullAccess).toBe(true);
       expect(result.teamIds).toEqual([1, 2]);
       expect(result.departmentIds).toEqual([10]);
       expect(result.teamLeadOf).toEqual([1]);
+    });
+
+    it('maps full scope to hasFullAccess', async () => {
+      // Default mock already returns type: 'full'
+      const result = await service['getExtendedUserOrgInfo']();
+
+      expect(result.hasFullAccess).toBe(true);
+      expect(result.teamIds).toEqual([]);
+    });
+  });
+
+  // =============================================================
+  // getMyOrganizations
+  // =============================================================
+
+  describe('getMyOrganizations', () => {
+    it('returns mapped teams with parsed assets', async () => {
+      mockDb.query.mockResolvedValueOnce([
+        {
+          team_id: 5,
+          team_name: 'Alpha',
+          assets: [{ id: 10, name: 'CNC-1' }],
+        },
+        {
+          team_id: 8,
+          team_name: 'Bravo',
+          assets: [],
+        },
+      ]);
+
+      const result = await service.getMyOrganizations(3, 42);
+
+      expect(result).toHaveLength(2);
+      expect(result[0]).toEqual({
+        teamId: 5,
+        teamName: 'Alpha',
+        assets: [{ id: 10, name: 'CNC-1' }],
+      });
+      expect(result[1]).toEqual({
+        teamId: 8,
+        teamName: 'Bravo',
+        assets: [],
+      });
+    });
+
+    it('handles string JSON assets from pg', async () => {
+      mockDb.query.mockResolvedValueOnce([
+        {
+          team_id: 5,
+          team_name: 'Alpha',
+          assets: JSON.stringify([{ id: 10, name: 'CNC-1' }]),
+        },
+      ]);
+
+      const result = await service.getMyOrganizations(3, 42);
+
+      expect(result[0]?.assets).toEqual([{ id: 10, name: 'CNC-1' }]);
+    });
+
+    it('returns empty array when user has no teams', async () => {
+      mockDb.query.mockResolvedValueOnce([]);
+
+      const result = await service.getMyOrganizations(3, 42);
+
+      expect(result).toEqual([]);
+    });
+
+    it('handles null assets gracefully', async () => {
+      mockDb.query.mockResolvedValueOnce([
+        { team_id: 5, team_name: 'Alpha', assets: null },
+      ]);
+
+      const result = await service.getMyOrganizations(3, 42);
+
+      expect(result[0]?.assets).toEqual([]);
+    });
+  });
+
+  // =============================================================
+  // getOrgAssignments
+  // =============================================================
+
+  describe('getOrgAssignments', () => {
+    it('returns mapped org assignments with team names', async () => {
+      // Q1: junction table query
+      mockDb.query.mockResolvedValueOnce([
+        { org_type: 'team', org_id: 5, org_name: 'Alpha' },
+        { org_type: 'team', org_id: 8, org_name: 'Bravo' },
+      ]);
+
+      const result = await service.getOrgAssignments(1, 42);
+
+      expect(result).toHaveLength(2);
+      expect(result[0]).toEqual({
+        orgType: 'team',
+        orgId: 5,
+        orgName: 'Alpha',
+      });
+    });
+
+    it('maps null org_name to undefined', async () => {
+      mockDb.query.mockResolvedValueOnce([
+        { org_type: 'asset', org_id: 10, org_name: null },
+      ]);
+      // enrichAssetTeamIds → asset_teams query
+      mockDb.query.mockResolvedValueOnce([{ asset_id: 10, team_id: 5 }]);
+
+      const result = await service.getOrgAssignments(1, 42);
+
+      expect(result[0]?.orgName).toBeUndefined();
+      expect(result[0]?.relatedTeamIds).toEqual([5]);
+    });
+
+    it('returns empty array when no assignments', async () => {
+      mockDb.query.mockResolvedValueOnce([]);
+
+      const result = await service.getOrgAssignments(1, 42);
+
+      expect(result).toEqual([]);
     });
   });
 
@@ -330,10 +437,12 @@ describe('KvpService', () => {
           approved: 25,
           implemented: 15,
           rejected: 10,
+          team_total: 40,
+          team_implemented: 8,
         },
       ]);
 
-      const result = await service.getDashboardStats(42);
+      const result = await service.getDashboardStats(42, 3);
 
       expect(result).toEqual({
         totalSuggestions: 100,
@@ -342,13 +451,15 @@ describe('KvpService', () => {
         approvedSuggestions: 25,
         implementedSuggestions: 15,
         rejectedSuggestions: 10,
+        teamTotalSuggestions: 40,
+        teamImplementedSuggestions: 8,
       });
     });
 
     it('should return zeros when no stats returned', async () => {
       mockDb.query.mockResolvedValueOnce([]);
 
-      const result = await service.getDashboardStats(42);
+      const result = await service.getDashboardStats(42, 3);
 
       expect(result).toEqual({
         totalSuggestions: 0,
@@ -357,6 +468,8 @@ describe('KvpService', () => {
         approvedSuggestions: 0,
         implementedSuggestions: 0,
         rejectedSuggestions: 0,
+        teamTotalSuggestions: 0,
+        teamImplementedSuggestions: 0,
       });
     });
   });
@@ -376,15 +489,13 @@ describe('KvpService', () => {
     });
 
     it('returns suggestion by UUID', async () => {
-      // Q1: org info
-      mockDb.query.mockResolvedValueOnce([FULL_ACCESS_ORG_ROW]);
-      // Q2: detail by uuid
+      // Q1: detail by uuid
       mockDb.query.mockResolvedValueOnce([
         createMockDbSuggestion({
           uuid: '019450aa-bbbb-7ccc-dddd-eeeeeeeeeeee',
         }),
       ]);
-      // Q3: getOrgAssignments
+      // Q2: getOrgAssignments
       mockDb.query.mockResolvedValueOnce([]);
 
       const result = await service.getSuggestionById(
@@ -398,7 +509,6 @@ describe('KvpService', () => {
     });
 
     it('throws NotFoundException when suggestion not found', async () => {
-      mockDb.query.mockResolvedValueOnce([FULL_ACCESS_ORG_ROW]);
       mockDb.query.mockResolvedValueOnce([]);
 
       await expect(
@@ -413,8 +523,20 @@ describe('KvpService', () => {
 
   describe('createSuggestion', () => {
     it('should throw ForbiddenException for admin without team lead role', async () => {
-      mockDb.query.mockResolvedValueOnce([EMPTY_ORG_ROW]);
-
+      // Override: scoped admin without leads → hasFullAccess=false, teamLeadOf=[]
+      mockScope.getScope.mockResolvedValueOnce({
+        type: 'limited',
+        areaIds: [],
+        departmentIds: [],
+        teamIds: [],
+        leadAreaIds: [],
+        leadDepartmentIds: [],
+        leadTeamIds: [],
+        isAreaLead: false,
+        isDepartmentLead: false,
+        isTeamLead: false,
+        isAnyLead: false,
+      });
       await expect(
         service.createSuggestion(
           {
@@ -455,12 +577,8 @@ describe('KvpService', () => {
       mockDb.query.mockResolvedValueOnce([{ id: 1 }]);
       // Q3: insertOrgAssignments → INSERT into junction table
       mockDb.query.mockResolvedValueOnce([]);
-      // Q4: getSuggestionById → org info
-      mockDb.query.mockResolvedValueOnce([FULL_ACCESS_ORG_ROW]);
-      // Q5: getSuggestionById → detail
-      mockDb.query.mockResolvedValueOnce([createMockDbSuggestion()]);
-      // Q6: getSuggestionById → getOrgAssignments
-      mockDb.query.mockResolvedValueOnce([]);
+      // Q4–Q5: getSuggestionById chain
+      mockGetSuggestionByIdChain(mockDb);
 
       const result = await service.createSuggestion(
         {
@@ -480,19 +598,60 @@ describe('KvpService', () => {
       expect(result.title).toBe('Test KVP');
     });
 
-    it('creates suggestion for admin with team lead role', async () => {
-      // Q1: getExtendedUserOrgInfo → team lead
-      mockDb.query.mockResolvedValueOnce([TEAM_LEAD_ORG_ROW]);
-      // Q2: INSERT → [{id: 1}]
+    it('inserts both team and asset org assignments', async () => {
+      // Q1: assertDailyLimitNotReached
+      mockDb.query.mockResolvedValueOnce([{ count: '0' }]);
+      // Q2: INSERT suggestion
       mockDb.query.mockResolvedValueOnce([{ id: 1 }]);
-      // Q3: insertOrgAssignments → INSERT into junction table
+      // Q3: insertOrgAssignments (teams + assets combined)
       mockDb.query.mockResolvedValueOnce([]);
-      // Q4: getSuggestionById → org info
-      mockDb.query.mockResolvedValueOnce([FULL_ACCESS_ORG_ROW]);
-      // Q5: getSuggestionById → detail
-      mockDb.query.mockResolvedValueOnce([createMockDbSuggestion()]);
-      // Q6: getSuggestionById → getOrgAssignments
+      // Q4–Q6: getSuggestionById chain
+      mockGetSuggestionByIdChain(mockDb);
+
+      await service.createSuggestion(
+        {
+          title: 'Multi-Org KVP',
+          description: 'With teams and assets',
+          orgLevel: 'team',
+          orgId: 5,
+          teamIds: [5, 8],
+          assetIds: [10, 20],
+        },
+        42,
+        3,
+        'employee',
+      );
+
+      // insertOrgAssignments is Q3 — verify it was called with 4 entries (2 teams + 2 assets)
+      const insertCall = mockDb.query.mock.calls[2];
+      const insertSql = insertCall?.[0] as string;
+      expect(insertSql).toContain('kvp_suggestion_organizations');
+      // 4 entries × 4 params = 16 placeholders
+      const insertParams = insertCall?.[1] as unknown[];
+      expect(insertParams).toHaveLength(16);
+    });
+
+    it('creates suggestion for admin with team lead role', async () => {
+      // Override scope: admin is team lead of team 5
+      mockScope.getScope.mockResolvedValueOnce({
+        type: 'scoped',
+        areaIds: [],
+        departmentIds: [],
+        teamIds: [5],
+        leadAreaIds: [],
+        leadDepartmentIds: [],
+        leadTeamIds: [5],
+        isAreaLead: false,
+        isDepartmentLead: false,
+        isTeamLead: true,
+        isAnyLead: true,
+      });
+      // Q1: INSERT → [{id: 1}]
+      mockDb.query.mockResolvedValueOnce([{ id: 1 }]);
+      // Q2: insertOrgAssignments → INSERT into junction table
       mockDb.query.mockResolvedValueOnce([]);
+      // Q3–Q4: getSuggestionById chain
+      mockGetSuggestionByIdChain(mockDb);
 
       const result = await service.createSuggestion(
         {
@@ -506,6 +665,53 @@ describe('KvpService', () => {
         42,
         2,
         'admin',
+      );
+
+      expect(result.id).toBe(1);
+    });
+
+    it('truncates long description in notification', async () => {
+      const longDesc = 'A'.repeat(150);
+      mockDb.query.mockResolvedValueOnce([{ count: '0' }]);
+      mockDb.query.mockResolvedValueOnce([{ id: 1 }]);
+      mockDb.query.mockResolvedValueOnce([]);
+      mockGetSuggestionByIdChain(mockDb);
+
+      await service.createSuggestion(
+        {
+          title: 'Long Desc KVP',
+          description: longDesc,
+          orgLevel: 'team',
+          orgId: 5,
+          teamIds: [5],
+          assetIds: [],
+        },
+        42,
+        3,
+        'employee',
+      );
+
+      expect(mockDb.query).toHaveBeenCalled();
+    });
+
+    it('creates suggestion with empty org assignments', async () => {
+      mockDb.query.mockResolvedValueOnce([{ count: '0' }]);
+      mockDb.query.mockResolvedValueOnce([{ id: 1 }]);
+      // No insertOrgAssignments call (entries.length === 0)
+      mockGetSuggestionByIdChain(mockDb);
+
+      const result = await service.createSuggestion(
+        {
+          title: 'No Orgs KVP',
+          description: 'Simple',
+          orgLevel: 'company',
+          orgId: null,
+          teamIds: [],
+          assetIds: [],
+        },
+        42,
+        3,
+        'employee',
       );
 
       expect(result.id).toBe(1);
@@ -558,15 +764,26 @@ describe('KvpService', () => {
     });
 
     it('passes for admin with full access', async () => {
-      mockDb.query.mockResolvedValueOnce([FULL_ACCESS_ORG_ROW]);
-
+      // Default scope returns type: 'full' → hasFullAccess = true
       await expect(
         service['assertCanUpdateStatus'](mockSuggestion, 2, 42, 'admin'),
       ).resolves.toBeUndefined();
     });
 
     it('passes for admin who is team lead of KVP team', async () => {
-      mockDb.query.mockResolvedValueOnce([TEAM_LEAD_ORG_ROW]);
+      mockScope.getScope.mockResolvedValueOnce({
+        type: 'scoped',
+        areaIds: [],
+        departmentIds: [],
+        teamIds: [5],
+        leadAreaIds: [],
+        leadDepartmentIds: [],
+        leadTeamIds: [5],
+        isAreaLead: false,
+        isDepartmentLead: false,
+        isTeamLead: true,
+        isAnyLead: true,
+      });
 
       await expect(
         service['assertCanUpdateStatus'](mockSuggestion, 2, 42, 'admin'),
@@ -574,7 +791,19 @@ describe('KvpService', () => {
     });
 
     it('throws for admin without access to KVP team', async () => {
-      mockDb.query.mockResolvedValueOnce([EMPTY_ORG_ROW]);
+      mockScope.getScope.mockResolvedValueOnce({
+        type: 'scoped',
+        areaIds: [],
+        departmentIds: [],
+        teamIds: [],
+        leadAreaIds: [],
+        leadDepartmentIds: [],
+        leadTeamIds: [],
+        isAreaLead: false,
+        isDepartmentLead: false,
+        isTeamLead: false,
+        isAnyLead: false,
+      });
 
       await expect(
         service['assertCanUpdateStatus'](mockSuggestion, 2, 42, 'admin'),
@@ -643,14 +872,34 @@ describe('KvpService', () => {
       ).rejects.toThrow(ForbiddenException);
     });
 
-    it('checks status update permissions for admin', async () => {
-      // getSuggestionById chain (Q1 org, Q2 detail, Q3 orgAssignments)
-      mockGetSuggestionByIdChain(mockDb, { submitted_by: 99 });
-      // Q4: assertCanUpdateStatus → org info (admin with full access)
-      mockDb.query.mockResolvedValueOnce([FULL_ACCESS_ORG_ROW]);
-      // Q5: UPDATE
+    it('updates suggestion by UUID', async () => {
+      mockGetSuggestionByIdChain(mockDb, { submitted_by: 3 });
       mockDb.query.mockResolvedValueOnce([]);
-      // getSuggestionById chain (Q6 org, Q7 detail, Q8 orgAssignments)
+      mockGetSuggestionByIdChain(mockDb, {
+        submitted_by: 3,
+        title: 'Via UUID',
+      });
+
+      const result = await service.updateSuggestion(
+        '019450aa-bbbb-7ccc-dddd-eeeeeeeeeeee',
+        { title: 'Via UUID' } as never,
+        42,
+        3,
+        'employee',
+      );
+
+      expect(result.id).toBe(1);
+      const updateCall = mockDb.query.mock.calls[2];
+      expect(updateCall?.[0]).toContain('uuid');
+    });
+
+    it('checks status update permissions for admin', async () => {
+      // getSuggestionById chain (Q1 detail, Q2 orgAssignments)
+      mockGetSuggestionByIdChain(mockDb, { submitted_by: 99 });
+      // assertCanUpdateStatus uses scope mock (default = full access)
+      // Q3: UPDATE
+      mockDb.query.mockResolvedValueOnce([]);
+      // getSuggestionById chain (Q4 detail, Q5 orgAssignments)
       mockGetSuggestionByIdChain(mockDb, {
         submitted_by: 99,
         status: 'approved',
@@ -690,6 +939,22 @@ describe('KvpService', () => {
 
       expect(result.message).toBe('Suggestion deleted successfully');
       expect(mockActivityLogger.logDelete).toHaveBeenCalledOnce();
+    });
+
+    it('deletes suggestion by UUID', async () => {
+      mockGetSuggestionByIdChain(mockDb, { submitted_by: 3 });
+      mockDb.query.mockResolvedValueOnce([]);
+
+      const result = await service.deleteSuggestion(
+        '019450aa-bbbb-7ccc-dddd-eeeeeeeeeeee',
+        42,
+        3,
+        'employee',
+      );
+
+      expect(result.message).toBe('Suggestion deleted successfully');
+      const deleteCall = mockDb.query.mock.calls[2];
+      expect(deleteCall?.[0]).toContain('uuid');
     });
 
     it('allows root to delete any suggestion', async () => {
@@ -751,8 +1016,20 @@ describe('KvpService', () => {
 
   describe('unshareSuggestion', () => {
     it('unshares suggestion and resets to team level', async () => {
-      // Q1: getExtendedUserOrgInfo → user with team
-      mockDb.query.mockResolvedValueOnce([{ ...EMPTY_ORG_ROW, team_ids: [5] }]);
+      // Override scope: user belongs to team 5
+      mockScope.getScope.mockResolvedValueOnce({
+        type: 'scoped',
+        areaIds: [],
+        departmentIds: [],
+        teamIds: [5],
+        leadAreaIds: [],
+        leadDepartmentIds: [],
+        leadTeamIds: [],
+        isAreaLead: false,
+        isDepartmentLead: false,
+        isTeamLead: false,
+        isAnyLead: false,
+      });
 
       const result = await service.unshareSuggestion(1, 42, 3, 'admin');
 
@@ -761,7 +1038,7 @@ describe('KvpService', () => {
     });
 
     it('uses 0 as team id when user has no teams', async () => {
-      mockDb.query.mockResolvedValueOnce([EMPTY_ORG_ROW]);
+      // Default scope has teamIds: [] → fallbackTeamId = 0
 
       await service.unshareSuggestion(1, 42, 3, 'admin');
 
@@ -775,13 +1052,11 @@ describe('KvpService', () => {
 
   describe('listSuggestions', () => {
     it('returns paginated suggestions', async () => {
-      // Q1: getExtendedUserOrgInfo (visibility)
-      mockDb.query.mockResolvedValueOnce([FULL_ACCESS_ORG_ROW]);
-      // Q2: executeCountQuery
+      // Q1: executeCountQuery
       mockDb.query.mockResolvedValueOnce([{ total: 5 }]);
-      // Q3: list query
+      // Q2: list query
       mockDb.query.mockResolvedValueOnce([createMockDbSuggestion()]);
-      // Q4: attachOrgAssignmentsBatch
+      // Q3: attachOrgAssignmentsBatch
       mockDb.query.mockResolvedValueOnce([]);
 
       const result = await service.listSuggestions(42, 3, 'admin', {
@@ -805,15 +1080,13 @@ describe('KvpService', () => {
     });
 
     it('applies mineOnly filter', async () => {
-      // Q1: org info
-      mockDb.query.mockResolvedValueOnce([FULL_ACCESS_ORG_ROW]);
-      // Q2: count
+      // Q1: count
       mockDb.query.mockResolvedValueOnce([{ total: 1 }]);
-      // Q3: list
+      // Q2: list
       mockDb.query.mockResolvedValueOnce([
         createMockDbSuggestion({ submitted_by: 3 }),
       ]);
-      // Q4: attachOrgAssignmentsBatch
+      // Q3: attachOrgAssignmentsBatch
       mockDb.query.mockResolvedValueOnce([]);
 
       const result = await service.listSuggestions(42, 3, 'employee', {
@@ -831,8 +1104,28 @@ describe('KvpService', () => {
       expect(result.suggestions).toHaveLength(1);
     });
 
+    it('uses default page=1 and limit=20 when not provided', async () => {
+      mockDb.query.mockResolvedValueOnce([{ total: 1 }]);
+      mockDb.query.mockResolvedValueOnce([createMockDbSuggestion()]);
+      mockDb.query.mockResolvedValueOnce([]);
+
+      const result = await service.listSuggestions(42, 3, 'admin', {
+        status: undefined,
+        categoryId: undefined,
+        customCategoryId: undefined,
+        priority: undefined,
+        orgLevel: undefined,
+        teamId: undefined,
+        assetId: undefined,
+        search: undefined,
+        mineOnly: undefined,
+      } as never);
+
+      expect(result.pagination.currentPage).toBe(1);
+      expect(result.pagination.pageSize).toBe(20);
+    });
+
     it('returns empty when count is 0', async () => {
-      mockDb.query.mockResolvedValueOnce([FULL_ACCESS_ORG_ROW]);
       mockDb.query.mockResolvedValueOnce([{ total: 0 }]);
       mockDb.query.mockResolvedValueOnce([]);
 
@@ -852,6 +1145,50 @@ describe('KvpService', () => {
 
       expect(result.suggestions).toEqual([]);
       expect(result.pagination.totalItems).toBe(0);
+    });
+
+    it('enriches asset org assignments with related team IDs', async () => {
+      // Q1: count
+      mockDb.query.mockResolvedValueOnce([{ total: 1 }]);
+      // Q2: list query
+      mockDb.query.mockResolvedValueOnce([createMockDbSuggestion()]);
+      // Q3: attachOrgAssignmentsBatch — junction table with asset
+      mockDb.query.mockResolvedValueOnce([
+        { suggestion_id: 1, org_type: 'team', org_id: 5, org_name: 'Alpha' },
+        { suggestion_id: 1, org_type: 'asset', org_id: 10, org_name: 'CNC-1' },
+      ]);
+      // Q4: enrichAssetTeamIds — asset_teams lookup
+      mockDb.query.mockResolvedValueOnce([
+        { asset_id: 10, team_id: 5 },
+        { asset_id: 10, team_id: 8 },
+      ]);
+
+      const result = await service.listSuggestions(42, 3, 'admin', {
+        page: 1,
+        limit: 20,
+        status: undefined,
+        categoryId: undefined,
+        customCategoryId: undefined,
+        priority: undefined,
+        orgLevel: undefined,
+        teamId: undefined,
+        assetId: undefined,
+        search: undefined,
+        mineOnly: undefined,
+      });
+
+      const orgs = result.suggestions[0]?.organizations ?? [];
+      expect(orgs).toHaveLength(2);
+
+      const assetOrg = orgs.find(
+        (o: { orgType: string }) => o.orgType === 'asset',
+      );
+      expect(assetOrg?.relatedTeamIds).toEqual([5, 8]);
+
+      const teamOrg = orgs.find(
+        (o: { orgType: string }) => o.orgType === 'team',
+      );
+      expect(teamOrg?.orgName).toBe('Alpha');
     });
   });
 
@@ -953,7 +1290,20 @@ describe('KvpService', () => {
         org_level: 'area',
         org_id: 999,
       });
-      mockDb.query.mockResolvedValueOnce([EMPTY_ORG_ROW]);
+      // Override scope: no access to any org
+      mockScope.getScope.mockResolvedValueOnce({
+        type: 'scoped',
+        areaIds: [],
+        departmentIds: [],
+        teamIds: [],
+        leadAreaIds: [],
+        leadDepartmentIds: [],
+        leadTeamIds: [],
+        isAreaLead: false,
+        isDepartmentLead: false,
+        isTeamLead: false,
+        isAnyLead: false,
+      });
 
       await expect(
         service.getAttachment('file-uuid', 42, 3, 'employee'),
@@ -969,8 +1319,20 @@ describe('KvpService', () => {
         org_level: 'team',
         org_id: 5,
       });
-      // User has team membership for team 5
-      mockDb.query.mockResolvedValueOnce([{ ...EMPTY_ORG_ROW, team_ids: [5] }]);
+      // Override scope: user belongs to team 5
+      mockScope.getScope.mockResolvedValueOnce({
+        type: 'scoped',
+        areaIds: [],
+        departmentIds: [],
+        teamIds: [5],
+        leadAreaIds: [],
+        leadDepartmentIds: [],
+        leadTeamIds: [],
+        isAreaLead: false,
+        isDepartmentLead: false,
+        isTeamLead: false,
+        isAnyLead: false,
+      });
 
       const result = await service.getAttachment(
         'file-uuid',
@@ -1003,6 +1365,20 @@ describe('KvpService', () => {
         undefined,
         undefined,
       );
+    });
+  });
+
+  describe('getReplies', () => {
+    it('delegates to commentsService', async () => {
+      const mockReplies = [
+        { id: 10, suggestionId: 1, comment: 'Reply', parentId: 5 },
+      ];
+      mockComments.getReplies = vi.fn().mockResolvedValueOnce(mockReplies);
+
+      const result = await service.getReplies(5, 42, 'admin');
+
+      expect(result).toEqual(mockReplies);
+      expect(mockComments.getReplies).toHaveBeenCalledWith(5, 42, 'admin');
     });
   });
 
@@ -1066,8 +1442,7 @@ describe('KvpService', () => {
 
   describe('getUnconfirmedCount', () => {
     it('fetches org info then delegates to confirmationsService', async () => {
-      mockDb.query.mockResolvedValueOnce([FULL_ACCESS_ORG_ROW]);
-
+      // Scope mock (default = full) provides org info via getExtendedUserOrgInfo
       const result = await service.getUnconfirmedCount(3, 42);
 
       expect(result).toEqual({ count: 0 });

@@ -31,6 +31,20 @@ SELECT setval('audit_trail_partitioned_id_seq', 1, false);
 SELECT last_value, is_called FROM audit_trail_partitioned_id_seq;
 ```
 
+## Achtung: Sequenznamen NIE raten
+
+Partitionierte Tabellen verwenden `{tabelle}_partitioned_id_seq` statt `{tabelle}_id_seq`. Den Namen **immer** per `pg_get_serial_sequence()` nachschlagen — nie aus dem Tabellennamen ableiten.
+
+```sql
+-- ✅ Korrekt: Immer nachschlagen
+SELECT pg_get_serial_sequence('root_logs', 'id');
+-- → public.root_logs_partitioned_id_seq (NICHT root_logs_id_seq!)
+
+-- ❌ Falsch: Namen raten
+SELECT last_value FROM root_logs_id_seq;
+-- ERROR: relation "root_logs_id_seq" does not exist
+```
+
 ## Warum `setval()` statt `ALTER SEQUENCE`?
 
 `ALTER SEQUENCE ... RESTART WITH 1` funktioniert bei **partitionierten Tabellen** nicht zuverlässig — die Sequenz-Metadaten werden intern nicht korrekt aktualisiert.

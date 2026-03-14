@@ -3,18 +3,6 @@
  * @module employee-profile/_lib/constants
  */
 
-/** Position display mapping (German) */
-export const POSITION_MAP: Record<string, string> = {
-  bereichsleiter: 'Bereichsleiter',
-  personalleiter: 'Personalleiter',
-  geschäftsführer: 'Geschäftsführer',
-  werksleiter: 'Werksleiter',
-  produktionsleiter: 'Produktionsleiter',
-  qualitätsleiter: 'Qualitätsleiter',
-  'it-leiter': 'IT-Leiter',
-  vertriebsleiter: 'Vertriebsleiter',
-} as const;
-
 /** Password validation rules */
 export const PASSWORD_RULES = {
   minLength: 12,

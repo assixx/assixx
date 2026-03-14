@@ -12,6 +12,7 @@
 import { Module } from '@nestjs/common';
 
 import { AddonVisitsModule } from '../addon-visits/addon-visits.module.js';
+import { ScopeModule } from '../hierarchy-permission/scope.module.js';
 import { CalendarCreationService } from './calendar-creation.service.js';
 import { CalendarOverviewService } from './calendar-overview.service.js';
 import { CalendarPermissionRegistrar } from './calendar-permission.registrar.js';
@@ -20,7 +21,7 @@ import { CalendarController } from './calendar.controller.js';
 import { CalendarService } from './calendar.service.js';
 
 @Module({
-  imports: [AddonVisitsModule],
+  imports: [AddonVisitsModule, ScopeModule],
   controllers: [CalendarController],
   providers: [
     CalendarService,

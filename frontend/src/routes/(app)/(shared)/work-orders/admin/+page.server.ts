@@ -8,6 +8,7 @@
  */
 import { redirect } from '@sveltejs/kit';
 
+import { apiFetch, apiFetchWithPermission } from '$lib/server/api-fetch';
 import { requireAddon } from '$lib/utils/addon-guard';
 import { createLogger } from '$lib/utils/logger';
 
@@ -21,55 +22,8 @@ import type {
 
 const log = createLogger('WorkOrdersAdmin');
 
-const API_BASE = process.env.API_URL ?? 'http://localhost:3000/api/v2';
-
 /** Roles allowed to access the admin work orders view */
 const ALLOWED_ROLES: ReadonlySet<string> = new Set(['admin', 'root']);
-
-interface ApiResponse<T> {
-  success?: boolean;
-  data?: T;
-}
-
-/**
- * Extract data from API response.
- * Handles: { success: true, data: T } | { data: T } | T
- */
-function extractResponseData<T>(json: ApiResponse<T>): T | null {
-  if ('success' in json && json.success === true) {
-    return json.data ?? null;
-  }
-  if ('data' in json && json.data !== undefined) {
-    return json.data;
-  }
-  return json as unknown as T;
-}
-
-async function apiFetch<T>(
-  endpoint: string,
-  token: string,
-  fetchFn: typeof fetch,
-): Promise<T | null> {
-  try {
-    const response = await fetchFn(`${API_BASE}${endpoint}`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      log.error({ status: response.status, endpoint }, 'API error');
-      return null;
-    }
-
-    const json = (await response.json()) as ApiResponse<T>;
-    return extractResponseData(json);
-  } catch (err: unknown) {
-    log.error({ err, endpoint }, 'Fetch error');
-    return null;
-  }
-}
 
 function emptyPage(): PaginatedResponse<WorkOrderListItem> {
   return { items: [], total: 0, page: 1, pageSize: 20 };
@@ -111,8 +65,8 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent, url }) => {
 
   requireAddon(parentData.activeAddons, 'work_orders');
 
-  const [workOrdersData, statsData, eligibleUsersData] = await Promise.all([
-    apiFetch<PaginatedResponse<WorkOrderListItem>>(
+  const [workOrdersResult, statsData, eligibleUsersData] = await Promise.all([
+    apiFetchWithPermission<PaginatedResponse<WorkOrderListItem>>(
       '/work-orders?page=1&limit=20',
       token,
       fetch,
@@ -121,8 +75,18 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent, url }) => {
     apiFetch<EligibleUser[]>('/work-orders/eligible-users', token, fetch),
   ]);
 
+  if (workOrdersResult.permissionDenied) {
+    return {
+      permissionDenied: true as const,
+      workOrders: emptyPage(),
+      stats: emptyStats(),
+      eligibleUsers: [] as EligibleUser[],
+    };
+  }
+
   return {
-    workOrders: workOrdersData ?? emptyPage(),
+    permissionDenied: false as const,
+    workOrders: workOrdersResult.data ?? emptyPage(),
     stats: statsData ?? emptyStats(),
     eligibleUsers: Array.isArray(eligibleUsersData) ? eligibleUsersData : [],
   };

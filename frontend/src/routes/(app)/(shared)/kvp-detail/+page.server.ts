@@ -6,8 +6,8 @@
  */
 import { redirect, error } from '@sveltejs/kit';
 
+import { apiFetch, apiFetchWithPermission } from '$lib/server/api-fetch';
 import { requireAddon } from '$lib/utils/addon-guard';
-import { createLogger } from '$lib/utils/logger';
 
 import type { PageServerLoad } from './$types';
 import type {
@@ -21,53 +21,11 @@ import type {
   PaginatedComments,
 } from './_lib/types';
 
-const log = createLogger('KvpDetail');
-
-const API_BASE = process.env.API_URL ?? 'http://localhost:3000/api/v2';
-
-interface ApiResponse<T> {
-  success?: boolean;
-  data?: T;
-}
-
 /**
  * Safely convert API response to array with empty fallback
  */
 function ensureArray<T>(data: T[] | null): T[] {
   return Array.isArray(data) ? data : [];
-}
-
-async function apiFetch<T>(
-  endpoint: string,
-  token: string,
-  fetchFn: typeof fetch,
-): Promise<T | null> {
-  try {
-    const response = await fetchFn(`${API_BASE}${endpoint}`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      if (response.status === 404) return null;
-      log.error({ status: response.status, endpoint }, 'API error');
-      return null;
-    }
-
-    const json = (await response.json()) as ApiResponse<T>;
-    if ('success' in json && json.success === true) {
-      return json.data ?? null;
-    }
-    if ('data' in json && json.data !== undefined) {
-      return json.data;
-    }
-    return json as unknown as T;
-  } catch (err: unknown) {
-    log.error({ err, endpoint }, 'Fetch error');
-    return null;
-  }
 }
 
 const EMPTY_COMMENTS: PaginatedComments = {
@@ -153,11 +111,28 @@ export const load: PageServerLoad = async ({ cookies, fetch, url, parent }) => {
   const parentData = await parent();
   requireAddon(parentData.activeAddons, 'kvp');
 
-  const suggestion = await apiFetch<KvpSuggestion>(
+  const kvpResult = await apiFetchWithPermission<KvpSuggestion>(
     `/kvp/${idOrUuid}`,
     token,
     fetch,
   );
+
+  if (kvpResult.permissionDenied) {
+    return {
+      permissionDenied: true as const,
+      suggestion: null,
+      comments: EMPTY_COMMENTS,
+      attachments: [] as Attachment[],
+      departments: [] as Department[],
+      teams: [] as Team[],
+      areas: [] as Area[],
+      assets: [] as Asset[],
+      linkedWorkOrders: [] as LinkedWorkOrder[],
+      currentUser: parentData.user,
+    };
+  }
+
+  const suggestion = kvpResult.data;
   if (!suggestion) {
     error(404, 'Vorschlag nicht gefunden');
   }
@@ -168,6 +143,7 @@ export const load: PageServerLoad = async ({ cookies, fetch, url, parent }) => {
   ]);
 
   return {
+    permissionDenied: false as const,
     suggestion,
     ...pageData,
     linkedWorkOrders,

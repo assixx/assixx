@@ -234,6 +234,7 @@ async getHierarchyLabels(@Req() req): Promise<HierarchyLabelsResponse> {
 - **Plural-Only Limitation**: "Bereichsleiter" kann nicht dynamisch zu "Hallenleiter" werden — nutzt stattdessen "Leiter" oder wird übersprungen (KL#2)
 - **Kein Live-Update**: Label-Änderungen werden erst nach Navigation/Reload sichtbar, nicht in Echtzeit
 - **~~7 Module nicht propagiert~~ (V2.1 RESOLVED)**: employee-dashboard, documents-explorer, calendar, shifts, kvp, kvp-detail, blackboard — alle ~110 Stellen in V2.1 nachpropagiert
+- **~~Sidebar User Card nicht propagiert~~ (V2.2 RESOLVED)**: `SidebarUserCard` zeigte Lead-Positionen (`team_lead`, `area_lead`, `department_lead`) als rohe DB-Werte statt `resolvePositionDisplay()` zu nutzen — behoben durch Prop-Threading von `hierarchyLabels` über Layout → AppSidebar → SidebarUserCard
 - **Keine E-Mail/PDF-Propagation**: Backend-generierte Texte (Notifications, Exports) nutzen weiterhin Default-Labels
 - **`hall` ist kein OrgEntityType**: Hall hat keine eigene Org-Chart-Farbe in `ENTITY_COLORS`, sondern eine separate `HALL_COLOR`-Konstante im Organigram-Modal
 
@@ -249,8 +250,9 @@ async getHierarchyLabels(@Req() req): Promise<HierarchyLabelsResponse> {
 | 4     | Remaining Pages (halls, admins, dashboard, TPM, ...) | 4           | ~25     |
 | 5     | Smoke Test + Docs + Polish                           | 1 (pending) | ~3      |
 | V2.1  | Nachpropagation: 7 zurückgestellte Module            | 1           | ~35     |
+| V2.2  | Sidebar User Card: Lead-Position Display             | 1           | 3       |
 
-**Total:** 9 Sessions, ~360 String-Ersetzungen, 0 Breaking Changes.
+**Total:** 10 Sessions, ~360 String-Ersetzungen, 0 Breaking Changes.
 
 ---
 

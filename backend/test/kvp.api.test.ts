@@ -166,23 +166,41 @@ describe('KVP: Categories', () => {
 // ---- seq: 6 -- Get KVP Dashboard Statistics ----------------------------------
 
 describe('KVP: Dashboard Statistics', () => {
-  it('should return 200 OK', async () => {
-    const res = await fetch(`${BASE_URL}/kvp/dashboard/stats`, {
+  let statsRes: Response;
+  let statsBody: JsonBody;
+
+  beforeAll(async () => {
+    statsRes = await fetch(`${BASE_URL}/kvp/dashboard/stats`, {
       headers: authOnly(auth.authToken),
     });
-    const body = (await res.json()) as JsonBody;
-
-    expect(res.status).toBe(200);
-    expect(body.success).toBe(true);
+    statsBody = (await statsRes.json()) as JsonBody;
   });
 
-  it('should return statistics with totalSuggestions', async () => {
-    const res = await fetch(`${BASE_URL}/kvp/dashboard/stats`, {
-      headers: authOnly(auth.authToken),
-    });
-    const body = (await res.json()) as JsonBody;
+  it('should return 200 OK', () => {
+    expect(statsRes.status).toBe(200);
+    expect(statsBody.success).toBe(true);
+  });
 
-    expect(body.data).toHaveProperty('totalSuggestions');
+  it('should return tenant-wide statistics', () => {
+    expect(statsBody.data).toHaveProperty('totalSuggestions');
+    expect(statsBody.data).toHaveProperty('newSuggestions');
+    expect(statsBody.data).toHaveProperty('inReviewSuggestions');
+    expect(statsBody.data).toHaveProperty('approvedSuggestions');
+    expect(statsBody.data).toHaveProperty('implementedSuggestions');
+    expect(statsBody.data).toHaveProperty('rejectedSuggestions');
+  });
+
+  it('should return team-scoped statistics', () => {
+    expect(typeof statsBody.data.teamTotalSuggestions).toBe('number');
+    expect(typeof statsBody.data.teamImplementedSuggestions).toBe('number');
+    expect(statsBody.data.teamTotalSuggestions).toBeGreaterThanOrEqual(0);
+    expect(statsBody.data.teamImplementedSuggestions).toBeGreaterThanOrEqual(0);
+  });
+
+  it('should have teamImplemented <= teamTotal', () => {
+    expect(statsBody.data.teamImplementedSuggestions).toBeLessThanOrEqual(
+      statsBody.data.teamTotalSuggestions,
+    );
   });
 });
 

@@ -22,7 +22,9 @@ const ViewportSchema = z
     zoom: z.number().min(0.1).max(5),
     panX: z.number(),
     panY: z.number(),
-    fontSize: z.number().int().min(8).max(24).optional(),
+    fontSize: z.number().int().min(8).max(120).optional(),
+    nodeWidth: z.number().int().min(100).max(1000).optional(),
+    nodeHeight: z.number().int().min(40).max(400).optional(),
   })
   .optional();
 
