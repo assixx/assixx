@@ -8,6 +8,7 @@
   import { goto, invalidateAll } from '$app/navigation';
 
   import AvailabilityModal from '$lib/availability/AvailabilityModal.svelte';
+  import PermissionDenied from '$lib/components/PermissionDenied.svelte';
   import { showToast } from '$lib/stores/toast';
   import {
     showSuccessAlert,
@@ -71,6 +72,11 @@
   // Hierarchy labels (propagated from layout)
   const labels = $derived(data.hierarchyLabels);
   const messages = $derived(createMessages(labels));
+
+  // Lead-View: Employees can Read+Edit but NOT Create/Delete
+  const canMutate = $derived(
+    data.user?.role === 'root' || data.user?.role === 'admin',
+  );
 
   // Permission: Only root or admin with has_full_access may upgrade roles
   const canUpgrade = $derived(
@@ -518,267 +524,274 @@
 
 <svelte:window onkeydown={handleKeydown} />
 
-<div class="container">
-  <div class="card">
-    <div class="card__header">
-      <h2 class="card__title">
-        <i class="fas fa-users mr-2"></i>
-        Mitarbeiterverwaltung
-      </h2>
-      <p class="mt-2 text-(--color-text-secondary)">
-        Mitarbeiter erstellen und verwalten
-      </p>
+{#if data.permissionDenied}
+  <PermissionDenied addonName="die Mitarbeiterverwaltung" />
+{:else}
+  <div class="container">
+    <div class="card">
+      <div class="card__header">
+        <h2 class="card__title">
+          <i class="fas fa-users mr-2"></i>
+          Mitarbeiterverwaltung
+        </h2>
+        <p class="mt-2 text-(--color-text-secondary)">
+          Mitarbeiter erstellen und verwalten
+        </p>
 
-      <div
-        class="mt-6 flex flex-col items-stretch gap-4 md:flex-row md:items-center md:justify-between"
-      >
-        <!-- Status Toggle Group -->
         <div
-          class="toggle-group"
-          id="employee-status-toggle"
+          class="mt-6 flex flex-col items-stretch gap-4 md:flex-row md:items-center md:justify-between"
         >
-          <button
-            type="button"
-            class="toggle-group__btn"
-            class:active={currentStatusFilter === 'active'}
-            title="Aktive Mitarbeiter"
-            onclick={() => {
-              handleStatusToggle('active');
-            }}
-          >
-            <i class="fas fa-user-check"></i>
-            Aktive
-          </button>
-          <button
-            type="button"
-            class="toggle-group__btn"
-            class:active={currentStatusFilter === 'inactive'}
-            title="Inaktive Mitarbeiter"
-            onclick={() => {
-              handleStatusToggle('inactive');
-            }}
-          >
-            <i class="fas fa-user-times"></i>
-            Inaktive
-          </button>
-          <button
-            type="button"
-            class="toggle-group__btn"
-            class:active={currentStatusFilter === 'archived'}
-            title="Archivierte Mitarbeiter"
-            onclick={() => {
-              handleStatusToggle('archived');
-            }}
-          >
-            <i class="fas fa-archive"></i>
-            Archiviert
-          </button>
-          <button
-            type="button"
-            class="toggle-group__btn"
-            class:active={currentStatusFilter === 'all'}
-            title="Alle Mitarbeiter"
-            onclick={() => {
-              handleStatusToggle('all');
-            }}
-          >
-            <i class="fas fa-users"></i>
-            Alle
-          </button>
-        </div>
-
-        <!-- Search Input -->
-        <div
-          class="search-input-wrapper max-w-80"
-          class:search-input-wrapper--open={searchOpen}
-        >
+          <!-- Status Toggle Group -->
           <div
-            class="search-input"
-            id="employee-search-container"
+            class="toggle-group"
+            id="employee-status-toggle"
           >
-            <i class="search-input__icon fas fa-search"></i>
-            <input
-              type="search"
-              id="employee-search"
-              class="search-input__field"
-              placeholder={messages.SEARCH_PLACEHOLDER}
-              autocomplete="off"
-              value={currentSearchQuery}
-              oninput={handleSearchInput}
-            />
             <button
-              class="search-input__clear"
-              class:search-input__clear--visible={currentSearchQuery.length > 0}
               type="button"
-              aria-label="Suche löschen"
-              onclick={clearSearch}
+              class="toggle-group__btn"
+              class:active={currentStatusFilter === 'active'}
+              title="Aktive Mitarbeiter"
+              onclick={() => {
+                handleStatusToggle('active');
+              }}
             >
-              <i class="fas fa-times"></i>
+              <i class="fas fa-user-check"></i>
+              Aktive
+            </button>
+            <button
+              type="button"
+              class="toggle-group__btn"
+              class:active={currentStatusFilter === 'inactive'}
+              title="Inaktive Mitarbeiter"
+              onclick={() => {
+                handleStatusToggle('inactive');
+              }}
+            >
+              <i class="fas fa-user-times"></i>
+              Inaktive
+            </button>
+            <button
+              type="button"
+              class="toggle-group__btn"
+              class:active={currentStatusFilter === 'archived'}
+              title="Archivierte Mitarbeiter"
+              onclick={() => {
+                handleStatusToggle('archived');
+              }}
+            >
+              <i class="fas fa-archive"></i>
+              Archiviert
+            </button>
+            <button
+              type="button"
+              class="toggle-group__btn"
+              class:active={currentStatusFilter === 'all'}
+              title="Alle Mitarbeiter"
+              onclick={() => {
+                handleStatusToggle('all');
+              }}
+            >
+              <i class="fas fa-users"></i>
+              Alle
             </button>
           </div>
-          <SearchResults
-            searchQuery={currentSearchQuery}
-            employees={filteredEmployees}
-            onresultclick={handleSearchResultClick}
-          />
+
+          <!-- Search Input -->
+          <div
+            class="search-input-wrapper max-w-80"
+            class:search-input-wrapper--open={searchOpen}
+          >
+            <div
+              class="search-input"
+              id="employee-search-container"
+            >
+              <i class="search-input__icon fas fa-search"></i>
+              <input
+                type="search"
+                id="employee-search"
+                class="search-input__field"
+                placeholder={messages.SEARCH_PLACEHOLDER}
+                autocomplete="off"
+                value={currentSearchQuery}
+                oninput={handleSearchInput}
+              />
+              <button
+                class="search-input__clear"
+                class:search-input__clear--visible={currentSearchQuery.length >
+                  0}
+                type="button"
+                aria-label="Suche löschen"
+                onclick={clearSearch}
+              >
+                <i class="fas fa-times"></i>
+              </button>
+            </div>
+            <SearchResults
+              searchQuery={currentSearchQuery}
+              employees={filteredEmployees}
+              onresultclick={handleSearchResultClick}
+            />
+          </div>
         </div>
       </div>
-    </div>
 
-    <div class="card__body">
-      {#if error}
-        <div class="p-6 text-center">
-          <i
-            class="fas fa-exclamation-triangle mb-4 text-4xl text-(--color-danger)"
-          ></i>
-          <p class="text-(--color-text-secondary)">{error}</p>
-          <button
-            type="button"
-            class="btn btn-primary mt-4"
-            onclick={() => invalidateAll()}
-          >
-            Erneut versuchen
-          </button>
-        </div>
-      {:else if filteredEmployees.length === 0}
-        <div
-          id="employees-empty"
-          class="empty-state"
-        >
-          <div class="empty-state__icon">
-            <i class="fas fa-users"></i>
-          </div>
-          <h3 class="empty-state__title">{messages.NO_EMPLOYEES_FOUND}</h3>
-          <p class="empty-state__description">
-            {messages.CREATE_FIRST_EMPLOYEE}
-          </p>
-          <button
-            type="button"
-            class="btn btn-primary"
-            onclick={openAddModal}
-          >
-            <i class="fas fa-plus"></i>
-            Mitarbeiter hinzufügen
-          </button>
-        </div>
-      {:else}
-        <div id="employees-table-content">
-          <div class="table-responsive">
-            <table
-              class="data-table data-table--hover data-table--striped"
-              id="employees-table"
+      <div class="card__body">
+        {#if error}
+          <div class="p-6 text-center">
+            <i
+              class="fas fa-exclamation-triangle mb-4 text-4xl text-(--color-danger)"
+            ></i>
+            <p class="text-(--color-text-secondary)">{error}</p>
+            <button
+              type="button"
+              class="btn btn-primary mt-4"
+              onclick={() => invalidateAll()}
             >
-              <thead>
-                <tr>
-                  <th scope="col">ID</th>
-                  <th scope="col">Name</th>
-                  <th scope="col">E-Mail</th>
-                  <th scope="col">Position</th>
-                  <th scope="col">Personalnummer</th>
-                  <th scope="col">Status</th>
-                  <th scope="col">{messages.TH_AREAS}</th>
-                  <th scope="col">{messages.TH_DEPARTMENTS}</th>
-                  <th scope="col">{messages.TH_TEAMS}</th>
-                  <th scope="col">Verfügbarkeit</th>
-                  <th scope="col">Geplant</th>
-                  <th scope="col">Notizen</th>
-                  <th scope="col">Aktionen</th>
-                </tr>
-              </thead>
-              <tbody>
-                {#each filteredEmployees as employee (employee.id)}
-                  <EmployeeTableRow
-                    {employee}
-                    {labels}
-                    onedit={openEditModal}
-                    onavailability={openAvailabilityModal}
-                    onpermission={navigateToPermissionPage}
-                    ondelete={openDeleteModal}
-                  />
-                {/each}
-              </tbody>
-            </table>
+              Erneut versuchen
+            </button>
           </div>
-        </div>
-      {/if}
+        {:else if filteredEmployees.length === 0}
+          <div
+            id="employees-empty"
+            class="empty-state"
+          >
+            <div class="empty-state__icon">
+              <i class="fas fa-users"></i>
+            </div>
+            <h3 class="empty-state__title">{messages.NO_EMPLOYEES_FOUND}</h3>
+            <p class="empty-state__description">
+              {messages.CREATE_FIRST_EMPLOYEE}
+            </p>
+            <button
+              type="button"
+              class="btn btn-primary"
+              onclick={openAddModal}
+            >
+              <i class="fas fa-plus"></i>
+              Mitarbeiter hinzufügen
+            </button>
+          </div>
+        {:else}
+          <div id="employees-table-content">
+            <div class="table-responsive">
+              <table
+                class="data-table data-table--hover data-table--striped"
+                id="employees-table"
+              >
+                <thead>
+                  <tr>
+                    <th scope="col">ID</th>
+                    <th scope="col">Name</th>
+                    <th scope="col">E-Mail</th>
+                    <th scope="col">Position</th>
+                    <th scope="col">Personalnummer</th>
+                    <th scope="col">Status</th>
+                    <th scope="col">{messages.TH_AREAS}</th>
+                    <th scope="col">{messages.TH_DEPARTMENTS}</th>
+                    <th scope="col">{messages.TH_TEAMS}</th>
+                    <th scope="col">Verfügbarkeit</th>
+                    <th scope="col">Geplant</th>
+                    <th scope="col">Notizen</th>
+                    <th scope="col">Aktionen</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {#each filteredEmployees as employee (employee.id)}
+                    <EmployeeTableRow
+                      {employee}
+                      {labels}
+                      onedit={openEditModal}
+                      onavailability={openAvailabilityModal}
+                      onpermission={navigateToPermissionPage}
+                      ondelete={openDeleteModal}
+                    />
+                  {/each}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        {/if}
+      </div>
     </div>
   </div>
-</div>
 
-<!-- Floating Action Button -->
-<button
-  type="button"
-  class="btn-float add-employee-btn"
-  onclick={openAddModal}
-  aria-label="Mitarbeiter hinzufügen"
->
-  <i class="fas fa-user-plus"></i>
-</button>
+  {#if canMutate}
+    <!-- Floating Action Button (Root/Admin only) -->
+    <button
+      type="button"
+      class="btn-float add-employee-btn"
+      onclick={openAddModal}
+      aria-label="Mitarbeiter hinzufügen"
+    >
+      <i class="fas fa-user-plus"></i>
+    </button>
+  {/if}
 
-<!-- Employee Form Modal Component -->
-<EmployeeFormModal
-  show={showEmployeeModal}
-  {isEditMode}
-  {modalTitle}
-  {allTeams}
-  {submitting}
-  {messages}
-  {positionOptions}
-  {labels}
-  bind:formFirstName
-  bind:formLastName
-  bind:formEmail
-  bind:formEmailConfirm
-  bind:formPassword
-  bind:formPasswordConfirm
-  bind:formEmployeeNumber
-  bind:formPosition
-  bind:formPhone
-  bind:formDateOfBirth
-  bind:formIsActive
-  bind:formTeamIds
-  bind:emailError
-  bind:passwordError
-  onclose={closeEmployeeModal}
-  onsubmit={handleFormSubmit}
-  onvalidateemails={validateEmails}
-  onvalidatepasswords={validatePasswords}
-  onupgrade={canUpgrade ? upgradeEmployee : undefined}
-/>
+  <!-- Employee Form Modal Component -->
+  <EmployeeFormModal
+    show={showEmployeeModal}
+    {isEditMode}
+    {modalTitle}
+    {allTeams}
+    {submitting}
+    {messages}
+    {positionOptions}
+    {labels}
+    bind:formFirstName
+    bind:formLastName
+    bind:formEmail
+    bind:formEmailConfirm
+    bind:formPassword
+    bind:formPasswordConfirm
+    bind:formEmployeeNumber
+    bind:formPosition
+    bind:formPhone
+    bind:formDateOfBirth
+    bind:formIsActive
+    bind:formTeamIds
+    bind:emailError
+    bind:passwordError
+    onclose={closeEmployeeModal}
+    onsubmit={handleFormSubmit}
+    onvalidateemails={validateEmails}
+    onvalidatepasswords={validatePasswords}
+    onupgrade={canUpgrade ? upgradeEmployee : undefined}
+  />
 
-<!-- Delete Modals Component -->
-<DeleteModals
-  show={showDeleteModal}
-  oncancel={closeDeleteModal}
-  onconfirm={deleteEmployee}
-/>
+  <!-- Delete Modals Component -->
+  <DeleteModals
+    show={showDeleteModal}
+    oncancel={closeDeleteModal}
+    onconfirm={deleteEmployee}
+  />
 
-<!-- Availability Modal Component -->
-<AvailabilityModal
-  show={showAvailabilityModal}
-  person={availabilityEmployee}
-  submitting={availabilitySubmitting}
-  bind:availabilityStatus
-  bind:availabilityStart
-  bind:availabilityEnd
-  bind:availabilityReason
-  bind:availabilityNotes
-  onclose={closeAvailabilityModal}
-  onsave={saveAvailability}
-  onmanage={navigateToAvailabilityPage}
-/>
+  <!-- Availability Modal Component -->
+  <AvailabilityModal
+    show={showAvailabilityModal}
+    person={availabilityEmployee}
+    submitting={availabilitySubmitting}
+    bind:availabilityStatus
+    bind:availabilityStart
+    bind:availabilityEnd
+    bind:availabilityReason
+    bind:availabilityNotes
+    onclose={closeAvailabilityModal}
+    onsave={saveAvailability}
+    onmanage={navigateToAvailabilityPage}
+  />
 
-<!-- Upgrade Confirm Modal -->
-<ConfirmModal
-  show={showUpgradeConfirmModal}
-  id="upgrade-confirm-modal"
-  title={messages.UPGRADE_TITLE}
-  variant="warning"
-  icon="fa-arrow-up"
-  confirmLabel={messages.UPGRADE_CONFIRM_BUTTON}
-  submitting={upgradeLoading}
-  onconfirm={() => void confirmUpgradeEmployee()}
-  oncancel={closeUpgradeConfirmModal}
->
-  <strong>{messages.UPGRADE_CONFIRM_MESSAGE}</strong>
-</ConfirmModal>
+  <!-- Upgrade Confirm Modal -->
+  <ConfirmModal
+    show={showUpgradeConfirmModal}
+    id="upgrade-confirm-modal"
+    title={messages.UPGRADE_TITLE}
+    variant="warning"
+    icon="fa-arrow-up"
+    confirmLabel={messages.UPGRADE_CONFIRM_BUTTON}
+    submitting={upgradeLoading}
+    onconfirm={() => void confirmUpgradeEmployee()}
+    oncancel={closeUpgradeConfirmModal}
+  >
+    <strong>{messages.UPGRADE_CONFIRM_MESSAGE}</strong>
+  </ConfirmModal>
+{/if}

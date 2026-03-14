@@ -6,7 +6,7 @@
  */
 import { redirect } from '@sveltejs/kit';
 
-import { apiFetch } from '$lib/server/api-fetch';
+import { apiFetch, apiFetchWithPermission } from '$lib/server/api-fetch';
 import { requireAddon } from '$lib/utils/addon-guard';
 
 import type { PageServerLoad } from './$types';
@@ -26,9 +26,30 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
   const { activeAddons } = await parent();
   requireAddon(activeAddons, 'tpm');
 
-  const [escalationData, colorsData, intervalColorsData, categoryColorsData] =
+  const escalationResult = await apiFetchWithPermission<TpmEscalationConfig>(
+    '/tpm/config/escalation',
+    token,
+    fetch,
+  );
+
+  if (escalationResult.permissionDenied) {
+    return {
+      permissionDenied: true as const,
+      escalation: {
+        escalationAfterHours: 48,
+        notifyTeamLead: true,
+        notifyDepartmentLead: false,
+        createdAt: '',
+        updatedAt: '',
+      },
+      colors: [] as TpmColorConfigEntry[],
+      intervalColors: [] as IntervalColorConfigEntry[],
+      categoryColors: [] as CategoryColorConfigEntry[],
+    };
+  }
+
+  const [colorsData, intervalColorsData, categoryColorsData] =
     await Promise.all([
-      apiFetch<TpmEscalationConfig>('/tpm/config/escalation', token, fetch),
       apiFetch<TpmColorConfigEntry[]>('/tpm/config/colors', token, fetch),
       apiFetch<IntervalColorConfigEntry[]>(
         '/tpm/config/interval-colors',
@@ -43,7 +64,8 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
     ]);
 
   return {
-    escalation: escalationData ?? {
+    permissionDenied: false as const,
+    escalation: escalationResult.data ?? {
       escalationAfterHours: 48,
       notifyTeamLead: true,
       notifyDepartmentLead: false,

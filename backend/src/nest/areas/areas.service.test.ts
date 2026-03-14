@@ -14,6 +14,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import type { DatabaseService } from '../database/database.service.js';
+import type { ScopeService } from '../hierarchy-permission/scope.service.js';
 import type { AreaRow } from './areas.service.js';
 import { AreasService } from './areas.service.js';
 import type { CreateAreaDto } from './dto/create-area.dto.js';
@@ -47,6 +48,24 @@ function createMockActivityLogger() {
     logUpdate: vi.fn().mockResolvedValue(undefined),
     logDelete: vi.fn().mockResolvedValue(undefined),
     log: vi.fn().mockResolvedValue(undefined),
+  };
+}
+
+function createMockScope() {
+  return {
+    getScope: vi.fn().mockResolvedValue({
+      type: 'full',
+      areaIds: [],
+      departmentIds: [],
+      teamIds: [],
+      leadAreaIds: [],
+      leadDepartmentIds: [],
+      leadTeamIds: [],
+      isAreaLead: false,
+      isDepartmentLead: false,
+      isTeamLead: false,
+      isAnyLead: false,
+    }),
   };
 }
 
@@ -93,9 +112,11 @@ describe('AreasService', () => {
     vi.clearAllMocks();
     mockDb = createMockDb();
     mockActivityLogger = createMockActivityLogger();
+    const mockScope = createMockScope();
     service = new AreasService(
       mockActivityLogger as unknown as ActivityLoggerService,
       mockDb as unknown as DatabaseService,
+      mockScope as unknown as ScopeService,
     );
   });
 
@@ -134,6 +155,59 @@ describe('AreasService', () => {
 
       const callArgs = mockDb.query.mock.calls[0];
       expect(callArgs?.[1]).toEqual([10, 'warehouse']);
+    });
+
+    it('should return empty array when scope is "none"', async () => {
+      const mockScope = createMockScope();
+      mockScope.getScope.mockResolvedValueOnce({ type: 'none' });
+      const scopedService = new AreasService(
+        mockActivityLogger as unknown as ActivityLoggerService,
+        mockDb as unknown as DatabaseService,
+        mockScope as unknown as ScopeService,
+      );
+
+      const result = await scopedService.listAreas(10, {} as ListAreasQueryDto);
+
+      expect(result).toEqual([]);
+      expect(mockDb.query).not.toHaveBeenCalled();
+    });
+
+    it('should return empty array when scope is "limited" with no areaIds', async () => {
+      const mockScope = createMockScope();
+      mockScope.getScope.mockResolvedValueOnce({
+        type: 'limited',
+        areaIds: [],
+      });
+      const scopedService = new AreasService(
+        mockActivityLogger as unknown as ActivityLoggerService,
+        mockDb as unknown as DatabaseService,
+        mockScope as unknown as ScopeService,
+      );
+
+      const result = await scopedService.listAreas(10, {} as ListAreasQueryDto);
+
+      expect(result).toEqual([]);
+      expect(mockDb.query).not.toHaveBeenCalled();
+    });
+
+    it('should filter by areaIds when scope is "limited"', async () => {
+      const mockScope = createMockScope();
+      mockScope.getScope.mockResolvedValueOnce({
+        type: 'limited',
+        areaIds: [1, 3, 5],
+      });
+      const scopedService = new AreasService(
+        mockActivityLogger as unknown as ActivityLoggerService,
+        mockDb as unknown as DatabaseService,
+        mockScope as unknown as ScopeService,
+      );
+      mockDb.query.mockResolvedValueOnce([makeAreaRow()]);
+
+      await scopedService.listAreas(10, {} as ListAreasQueryDto);
+
+      const callArgs = mockDb.query.mock.calls[0];
+      expect(callArgs?.[0]).toContain('ANY($2::int[])');
+      expect(callArgs?.[1]).toEqual([10, [1, 3, 5]]);
     });
 
     it('should apply search filter via buildFilteredQuery', async () => {
@@ -425,6 +499,25 @@ describe('AreasService', () => {
       await expect(service.updateArea(1, dto, 1, 10)).rejects.toThrow(
         BadRequestException,
       );
+    });
+
+    it('should cascade vacation approver when leader changes and requests exist', async () => {
+      const dto = { areaLeadId: 99 } as unknown as UpdateAreaDto;
+
+      // getAreaById (existing with old leader)
+      mockDb.query.mockResolvedValueOnce([makeAreaRow({ area_lead_id: 42 })]);
+      // validateLeader: admin found
+      mockDb.query.mockResolvedValueOnce([{ id: 99, role: 'admin' }]);
+      // UPDATE areas
+      mockDb.query.mockResolvedValueOnce([]);
+      // cascadeVacationApprover: 3 requests re-assigned
+      mockDb.query.mockResolvedValueOnce([{ count: '3' }]);
+      // getAreaById (return updated)
+      mockDb.query.mockResolvedValueOnce([makeAreaRow({ area_lead_id: 99 })]);
+
+      const result = await service.updateArea(1, dto, 1, 10);
+
+      expect(result.areaLeadId).toBe(99);
     });
 
     it('should allow removing leader (null)', async () => {

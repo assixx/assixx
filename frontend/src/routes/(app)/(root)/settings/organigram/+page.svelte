@@ -195,10 +195,10 @@
       {isSaving}
       {isLocked}
       onzoomin={() => {
-        adjustZoom(0.1);
+        adjustZoom(0.05);
       }}
       onzoomout={() => {
-        adjustZoom(-0.1);
+        adjustZoom(-0.05);
       }}
       onzoomreset={resetView}
       onfontinc={() => {

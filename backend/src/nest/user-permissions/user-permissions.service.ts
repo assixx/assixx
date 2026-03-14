@@ -42,11 +42,6 @@ interface DbTenantAddonRow {
   code: string;
 }
 
-/** DB row shape for UUID to id resolution */
-interface DbUserIdRow {
-  id: number;
-}
-
 /** Shape for a single applied permission after registry validation */
 interface AppliedPermission {
   addonCode: string;
@@ -97,16 +92,25 @@ export class UserPermissionsService {
   ): Promise<PermissionCategoryResponse[]> {
     return await this.db.tenantTransaction(
       async (client: PoolClient): Promise<PermissionCategoryResponse[]> => {
-        const userId = await this.resolveUserIdFromUuid(userUuid, tenantId);
+        const user = await this.resolveUserFromUuid(userUuid, tenantId);
 
         // Get tenant's active addon codes
         const activeAddons = await this.getActiveAddonsForTenant(client);
 
-        // Get all registered categories, filtered by tenant addons
+        // Get all registered categories, filtered by tenant addons + user role
         const allCategories = this.registry.getAll();
-        const filteredCategories = allCategories.filter(
-          (cat: PermissionCategoryDef) => activeAddons.has(cat.code),
-        );
+        const filteredCategories = allCategories
+          .filter((cat: PermissionCategoryDef) => activeAddons.has(cat.code))
+          .map((cat: PermissionCategoryDef) => ({
+            ...cat,
+            modules: cat.modules.filter(
+              (mod: PermissionModuleDef) =>
+                mod.allowedRoles === undefined ||
+                mod.allowedRoles.includes(user.role),
+            ),
+          }))
+          .filter((cat: PermissionCategoryDef) => cat.modules.length > 0);
+        const userId = user.id;
 
         // Get existing permission rows for this user (RLS filters by tenant)
         const rows = await client.query<DbPermissionRow>(
@@ -391,8 +395,17 @@ export class UserPermissionsService {
     userUuid: string,
     tenantId: number,
   ): Promise<number> {
-    const result = await this.db.queryOne<DbUserIdRow>(
-      `SELECT id FROM users WHERE uuid = $1 AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}`,
+    const result = await this.resolveUserFromUuid(userUuid, tenantId);
+    return result.id;
+  }
+
+  /** Resolve UUID to user ID + role (for role-based module filtering) */
+  private async resolveUserFromUuid(
+    userUuid: string,
+    tenantId: number,
+  ): Promise<{ id: number; role: string }> {
+    const result = await this.db.queryOne<{ id: number; role: string }>(
+      `SELECT id, role FROM users WHERE uuid = $1 AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}`,
       [userUuid, tenantId],
     );
 
@@ -400,7 +413,7 @@ export class UserPermissionsService {
       throw new NotFoundException(`User not found: ${userUuid}`);
     }
 
-    return result.id;
+    return result;
   }
 
   /** Get active addon codes for the current tenant (RLS filters by tenant). */

@@ -6,7 +6,7 @@
  */
 import { redirect } from '@sveltejs/kit';
 
-import { apiFetch } from '$lib/server/api-fetch';
+import { apiFetch, apiFetchWithPermission } from '$lib/server/api-fetch';
 import { requireAddon } from '$lib/utils/addon-guard';
 
 import type { PageServerLoad } from './$types';
@@ -40,26 +40,36 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
   const { activeAddons } = await parent();
   requireAddon(activeAddons, 'tpm');
 
-  const [plansData, colorsData, matrixData] = await Promise.all([
-    apiFetch<PaginatedResponse<TpmPlan>>(
-      '/tpm/plans?page=1&limit=20',
-      token,
-      fetch,
-    ),
+  const plansResult = await apiFetchWithPermission<PaginatedResponse<TpmPlan>>(
+    '/tpm/plans?page=1&limit=20',
+    token,
+    fetch,
+  );
+
+  if (plansResult.permissionDenied) {
+    return {
+      permissionDenied: true as const,
+      plans: [] as TpmPlan[],
+      totalPlans: 0,
+      colors: [] as TpmColorConfigEntry[],
+      intervalMatrix: [] as IntervalMatrixEntry[],
+    };
+  }
+
+  const [colorsData, matrixData] = await Promise.all([
     apiFetch<TpmColorConfigEntry[]>('/tpm/config/colors', token, fetch),
     apiFetch<IntervalMatrixEntry[]>('/tpm/plans/interval-matrix', token, fetch),
   ]);
 
   const { plans, total: totalPlans } = extractPlans(
-    plansData as Record<string, unknown> | null,
+    plansResult.data as Record<string, unknown> | null,
   );
-  const colors = Array.isArray(colorsData) ? colorsData : [];
-  const intervalMatrix = Array.isArray(matrixData) ? matrixData : [];
 
   return {
+    permissionDenied: false as const,
     plans,
     totalPlans,
-    colors,
-    intervalMatrix,
+    colors: Array.isArray(colorsData) ? colorsData : [],
+    intervalMatrix: Array.isArray(matrixData) ? matrixData : [],
   };
 };

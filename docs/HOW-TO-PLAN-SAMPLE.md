@@ -7,6 +7,10 @@
 
 ---
 
+> **WICHTIG: Alle Masterpläne MÜSSEN in Englisch geschrieben werden.** Dieses Template ist auf Deutsch als Anleitung, aber der tatsächliche Masterplan — alle Phasen, Steps, Session-Protokolle, Risk Register, DoDs — wird ausschließlich auf Englisch verfasst. Kein Denglisch, kein Mix. Englisch. Punkt.
+
+---
+
 ## Warum ein Masterplan?
 
 Ohne Plan baust du ein Haus ohne Bauzeichnung. Du wirst fertig — aber die Türen passen nicht, die Rohre kreuzen sich, und beim dritten Umbau reißt du alles ab.
@@ -651,6 +655,10 @@ Schreibe explizit auf, was du NICHT baust. Das verhindert:
 - Falsche Erwartungen ("ich dachte das kann auch X")
 - Endlose Sessions ("nur noch dieses eine Feature...")
 
-### 8. Post-Mortem = Lernen für das nächste Feature
+### 8. Masterplan IMMER auf Englisch
+
+Der gesamte Masterplan — Phasen, Steps, Session-Protokolle, Risk Register, Spec Deviations, Known Limitations, Post-Mortem — wird auf Englisch geschrieben. Keine Ausnahmen. Deutsche Labels/Texte im Frontend-Code sind davon unberührt, aber die Dokumentation des Plans ist Englisch.
+
+### 9. Post-Mortem = Lernen für das nächste Feature
 
 Nach Abschluss: Was lief gut? Was lief schlecht? Konkrete Metriken (geplant vs. tatsächlich). Das ist kein Overhead — das ist Investment in dein zukünftiges Ich.

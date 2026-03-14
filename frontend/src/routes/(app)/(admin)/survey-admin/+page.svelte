@@ -7,6 +7,7 @@
    */
   import { invalidateAll } from '$app/navigation';
 
+  import PermissionDenied from '$lib/components/PermissionDenied.svelte';
   import { showErrorAlert } from '$lib/utils';
 
   // Extracted Components
@@ -52,6 +53,7 @@
   // =============================================================================
 
   const { data }: { data: PageData } = $props();
+  const permissionDenied = $derived(data.permissionDenied);
 
   // Hierarchy labels from layout data inheritance (A6)
   const labels = $derived(data.hierarchyLabels);
@@ -305,77 +307,39 @@
   <title>Umfrage-Verwaltung - Assixx</title>
 </svelte:head>
 
-<div class="container">
-  <div class="card">
-    <div class="card__header flex items-center justify-between">
-      <div>
-        <h4 class="card-title">Umfrage-Verwaltung</h4>
-        <p class="text-secondary">
-          Erstellen und verwalten Sie Mitarbeiterumfragen
-        </p>
-      </div>
-    </div>
-
-    <div class="card-body">
-      <h4>Aktive Umfragen</h4>
-      {#if activeSurveys.length === 0}
-        <div class="empty-state">
-          <div class="empty-state__icon">
-            <i class="fas fa-clipboard-list"></i>
-          </div>
-          <h3 class="empty-state__title">Keine aktiven Umfragen</h3>
-          <p class="empty-state__description">
-            Es gibt derzeit keine aktiven Umfragen. Erstellen Sie eine neue oder
-            aktivieren Sie einen Entwurf.
+{#if permissionDenied}
+  <PermissionDenied addonName="die Umfragen" />
+{:else}
+  <div class="container">
+    <div class="card">
+      <div class="card__header flex items-center justify-between">
+        <div>
+          <h4 class="card-title">Umfrage-Verwaltung</h4>
+          <p class="text-secondary">
+            Erstellen und verwalten Sie Mitarbeiterumfragen
           </p>
         </div>
-      {:else}
-        <div
-          class="mb-8 grid grid-cols-[repeat(auto-fill,minmax(350px,1fr))] gap-6"
-        >
-          {#each activeSurveys as survey (getSurveyId(survey))}
-            <ActiveSurveyCard
-              {survey}
-              surveyId={getSurveyId(survey)}
-              canManage={survey.canManage ?? false}
-              assignmentBadges={getAssignmentBadges(
-                survey,
-                departments,
-                teams,
-                areas,
-                badgeMap,
-              )}
-              onedit={handleEditSurvey}
-              onviewresults={handleViewResults}
-              ondelete={(id: number | string) =>
-                handleDeleteSurveyWithInvalidate(id, invalidateAll)}
-              oncomplete={(id: number | string) =>
-                handleCompleteSurveyWithInvalidate(id, invalidateAll)}
-            />
-          {/each}
-        </div>
-      {/if}
+      </div>
 
-      <div class="completed-section">
-        <div class="completed-header">
-          <h4 class="completed-title">Beendete Umfragen</h4>
-        </div>
-        {#if completedSurveys.length === 0}
+      <div class="card-body">
+        <h4>Aktive Umfragen</h4>
+        {#if activeSurveys.length === 0}
           <div class="empty-state">
             <div class="empty-state__icon">
-              <i class="fas fa-check-circle"></i>
+              <i class="fas fa-clipboard-list"></i>
             </div>
-            <h3 class="empty-state__title">Keine beendeten Umfragen</h3>
+            <h3 class="empty-state__title">Keine aktiven Umfragen</h3>
             <p class="empty-state__description">
-              Beendete und archivierte Umfragen werden hier angezeigt.
+              Es gibt derzeit keine aktiven Umfragen. Erstellen Sie eine neue
+              oder aktivieren Sie einen Entwurf.
             </p>
           </div>
         {:else}
           <div
             class="mb-8 grid grid-cols-[repeat(auto-fill,minmax(350px,1fr))] gap-6"
           >
-            {#each completedSurveys as survey (getSurveyId(survey))}
-              <CompletedSurveyCard
+            {#each activeSurveys as survey (getSurveyId(survey))}
+              <ActiveSurveyCard
                 {survey}
                 surveyId={getSurveyId(survey)}
                 canManage={survey.canManage ?? false}
@@ -384,127 +348,176 @@
                   departments,
                   teams,
                   areas,
+                  badgeMap,
                 )}
+                onedit={handleEditSurvey}
                 onviewresults={handleViewResults}
                 ondelete={(id: number | string) =>
                   handleDeleteSurveyWithInvalidate(id, invalidateAll)}
+                oncomplete={(id: number | string) =>
+                  handleCompleteSurveyWithInvalidate(id, invalidateAll)}
               />
             {/each}
           </div>
         {/if}
-      </div>
 
-      <div class="drafts-section">
-        <div class="drafts-header"><h4 class="drafts-title">Entwürfe</h4></div>
-        {#if draftSurveys.length === 0}
-          <div class="empty-state">
-            <div class="empty-state__icon"><i class="fas fa-file-alt"></i></div>
-            <h3 class="empty-state__title">Keine Entwürfe</h3>
-            <p class="empty-state__description">
-              Sie haben keine Umfrage-Entwürfe. Erstellen Sie eine neue und
-              speichern Sie sie als Entwurf.
-            </p>
+        <div class="completed-section">
+          <div class="completed-header">
+            <h4 class="completed-title">Beendete Umfragen</h4>
           </div>
-        {:else}
-          <div
-            class="mb-8 grid grid-cols-[repeat(auto-fill,minmax(350px,1fr))] gap-6"
-          >
-            {#each draftSurveys as survey (getSurveyId(survey))}
-              <DraftSurveyCard
-                {survey}
-                surveyId={getSurveyId(survey)}
-                canManage={survey.canManage ?? false}
-                onedit={handleEditSurvey}
-                ondelete={(id: number | string) =>
-                  handleDeleteSurveyWithInvalidate(id, invalidateAll)}
-              />
-            {/each}
-          </div>
-        {/if}
-      </div>
-
-      <div class="templates-section">
-        <div class="templates-header">
-          <h4 class="templates-title">Vorlagen</h4>
-        </div>
-        {#if templates.length === 0}
-          <div class="empty-state">
-            <div class="empty-state__icon">
-              <i class="fas fa-folder-open"></i>
-            </div>
-            <h3 class="empty-state__title">Keine Vorlagen verfügbar</h3>
-            <p class="empty-state__description">
-              Es sind noch keine Umfragevorlagen vorhanden. Vorlagen werden
-              automatisch erstellt.
-            </p>
-          </div>
-        {:else}
-          <div
-            class="mb-8 grid grid-cols-[repeat(auto-fill,minmax(350px,1fr))] gap-6"
-          >
-            {#each templates as template (template.id)}
-              <div
-                class="card card--clickable"
-                role="button"
-                tabindex="0"
-                onclick={() => {
-                  handleCreateFromTemplate(template.id);
-                }}
-                onkeydown={(e) => {
-                  if (e.key === 'Enter') handleCreateFromTemplate(template.id);
-                }}
-              >
-                <h4 class="text-primary mb-2 font-semibold">{template.name}</h4>
-                <p class="text-secondary text-sm leading-normal">
-                  {template.description}
-                </p>
+          {#if completedSurveys.length === 0}
+            <div class="empty-state">
+              <div class="empty-state__icon">
+                <i class="fas fa-check-circle"></i>
               </div>
-            {/each}
+              <h3 class="empty-state__title">Keine beendeten Umfragen</h3>
+              <p class="empty-state__description">
+                Beendete und archivierte Umfragen werden hier angezeigt.
+              </p>
+            </div>
+          {:else}
+            <div
+              class="mb-8 grid grid-cols-[repeat(auto-fill,minmax(350px,1fr))] gap-6"
+            >
+              {#each completedSurveys as survey (getSurveyId(survey))}
+                <CompletedSurveyCard
+                  {survey}
+                  surveyId={getSurveyId(survey)}
+                  canManage={survey.canManage ?? false}
+                  assignmentBadges={getAssignmentBadges(
+                    survey,
+                    departments,
+                    teams,
+                    areas,
+                  )}
+                  onviewresults={handleViewResults}
+                  ondelete={(id: number | string) =>
+                    handleDeleteSurveyWithInvalidate(id, invalidateAll)}
+                />
+              {/each}
+            </div>
+          {/if}
+        </div>
+
+        <div class="drafts-section">
+          <div class="drafts-header">
+            <h4 class="drafts-title">Entwürfe</h4>
           </div>
-        {/if}
+          {#if draftSurveys.length === 0}
+            <div class="empty-state">
+              <div class="empty-state__icon">
+                <i class="fas fa-file-alt"></i>
+              </div>
+              <h3 class="empty-state__title">Keine Entwürfe</h3>
+              <p class="empty-state__description">
+                Sie haben keine Umfrage-Entwürfe. Erstellen Sie eine neue und
+                speichern Sie sie als Entwurf.
+              </p>
+            </div>
+          {:else}
+            <div
+              class="mb-8 grid grid-cols-[repeat(auto-fill,minmax(350px,1fr))] gap-6"
+            >
+              {#each draftSurveys as survey (getSurveyId(survey))}
+                <DraftSurveyCard
+                  {survey}
+                  surveyId={getSurveyId(survey)}
+                  canManage={survey.canManage ?? false}
+                  onedit={handleEditSurvey}
+                  ondelete={(id: number | string) =>
+                    handleDeleteSurveyWithInvalidate(id, invalidateAll)}
+                />
+              {/each}
+            </div>
+          {/if}
+        </div>
+
+        <div class="templates-section">
+          <div class="templates-header">
+            <h4 class="templates-title">Vorlagen</h4>
+          </div>
+          {#if templates.length === 0}
+            <div class="empty-state">
+              <div class="empty-state__icon">
+                <i class="fas fa-folder-open"></i>
+              </div>
+              <h3 class="empty-state__title">Keine Vorlagen verfügbar</h3>
+              <p class="empty-state__description">
+                Es sind noch keine Umfragevorlagen vorhanden. Vorlagen werden
+                automatisch erstellt.
+              </p>
+            </div>
+          {:else}
+            <div
+              class="mb-8 grid grid-cols-[repeat(auto-fill,minmax(350px,1fr))] gap-6"
+            >
+              {#each templates as template (template.id)}
+                <div
+                  class="card card--clickable"
+                  role="button"
+                  tabindex="0"
+                  onclick={() => {
+                    handleCreateFromTemplate(template.id);
+                  }}
+                  onkeydown={(e) => {
+                    if (e.key === 'Enter')
+                      handleCreateFromTemplate(template.id);
+                  }}
+                >
+                  <h4 class="text-primary mb-2 font-semibold">
+                    {template.name}
+                  </h4>
+                  <p class="text-secondary text-sm leading-normal">
+                    {template.description}
+                  </p>
+                </div>
+              {/each}
+            </div>
+          {/if}
+        </div>
       </div>
     </div>
   </div>
-</div>
 
-<button
-  type="button"
-  class="btn-float"
-  aria-label="Neue Umfrage erstellen"
-  onclick={handleOpenCreateModal}
->
-  <i class="fas fa-plus"></i>
-</button>
+  <button
+    type="button"
+    class="btn-float"
+    aria-label="Neue Umfrage erstellen"
+    onclick={handleOpenCreateModal}
+  >
+    <i class="fas fa-plus"></i>
+  </button>
 
-<SurveyFormModal
-  messages={surveyMessages}
-  bind:formTitle
-  bind:formDescription
-  bind:formIsAnonymous
-  bind:formIsMandatory
-  bind:formStartDate
-  bind:formStartTime
-  bind:formEndDate
-  bind:formEndTime
-  bind:formCompanyWide
-  bind:formSelectedAreas
-  bind:formSelectedDepartments
-  bind:formSelectedTeams
-  bind:formQuestions
-  departments={filteredOrgData.departments}
-  teams={filteredOrgData.teams}
-  areas={filteredOrgData.areas}
-  canAssignCompanyWide={filteredOrgData.canAssignCompanyWide}
-  onclose={handleCloseModal}
-  onsavedraft={() => handleSaveSurvey('draft')}
-  onsaveactive={() => handleSaveSurvey('active')}
-  onaddquestion={addQuestion}
-  onremovequestion={removeQuestion}
-  onquestiontypechange={handleQuestionTypeChange}
-  onaddoption={addOption}
-  onremoveoption={removeOption}
-  onupdateoption={updateOptionText}
-/>
+  <SurveyFormModal
+    messages={surveyMessages}
+    bind:formTitle
+    bind:formDescription
+    bind:formIsAnonymous
+    bind:formIsMandatory
+    bind:formStartDate
+    bind:formStartTime
+    bind:formEndDate
+    bind:formEndTime
+    bind:formCompanyWide
+    bind:formSelectedAreas
+    bind:formSelectedDepartments
+    bind:formSelectedTeams
+    bind:formQuestions
+    departments={filteredOrgData.departments}
+    teams={filteredOrgData.teams}
+    areas={filteredOrgData.areas}
+    canAssignCompanyWide={filteredOrgData.canAssignCompanyWide}
+    onclose={handleCloseModal}
+    onsavedraft={() => handleSaveSurvey('draft')}
+    onsaveactive={() => handleSaveSurvey('active')}
+    onaddquestion={addQuestion}
+    onremovequestion={removeQuestion}
+    onquestiontypechange={handleQuestionTypeChange}
+    onaddoption={addOption}
+    onremoveoption={removeOption}
+    onupdateoption={updateOptionText}
+  />
+{/if}
 
 <style>
   /* Survey Stats — used in child card components */

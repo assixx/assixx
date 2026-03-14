@@ -350,8 +350,8 @@ export function buildTeamPayload(formData: {
     name: formData.name,
     description:
       formData.description.length > 0 ? formData.description : undefined,
-    departmentId: formData.departmentId ?? undefined,
-    leaderId: formData.leaderId ?? undefined,
+    departmentId: formData.departmentId,
+    leaderId: formData.leaderId,
     isActive: formData.isActive,
   };
 }

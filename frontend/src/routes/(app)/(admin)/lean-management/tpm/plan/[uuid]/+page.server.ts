@@ -7,7 +7,7 @@
  */
 import { redirect } from '@sveltejs/kit';
 
-import { apiFetch } from '$lib/server/api-fetch';
+import { apiFetch, apiFetchWithPermission } from '$lib/server/api-fetch';
 import { requireAddon } from '$lib/utils/addon-guard';
 
 import type { PageServerLoad } from './$types';
@@ -39,6 +39,20 @@ function extractAssetUuids(plansData: PlanListData | null): string[] {
         (uuid: string | undefined): uuid is string => uuid !== undefined,
       ) ?? []
   );
+}
+
+/** Empty data returned when permission is denied */
+function buildDeniedResult() {
+  return {
+    permissionDenied: true as const,
+    isCreateMode: false,
+    plan: null as TpmPlan | null,
+    timeEstimates: [] as TpmTimeEstimate[],
+    assets: [] as Asset[],
+    areas: [] as TpmArea[],
+    departments: [] as TpmDepartment[],
+    intervalColors: [] as IntervalColorConfigEntry[],
+  };
 }
 
 /** Load shared org data (assets, areas, departments, interval colors) */
@@ -84,6 +98,17 @@ export const load: PageServerLoad = async ({
   requireAddon(activeAddons, 'tpm');
 
   const isCreateMode = params.uuid === 'new';
+
+  // Permission check: use plans list for create, plan detail for edit
+  const permEndpoint =
+    isCreateMode ? '/tpm/plans?page=1&limit=1' : `/tpm/plans/${params.uuid}`;
+  const permResult = await apiFetchWithPermission<unknown>(
+    permEndpoint,
+    token,
+    fetch,
+  );
+  if (permResult.permissionDenied) return buildDeniedResult();
+
   const shared = await loadOrgData(token, fetch);
 
   if (isCreateMode) {
@@ -93,6 +118,7 @@ export const load: PageServerLoad = async ({
       fetch,
     );
     return {
+      permissionDenied: false as const,
       isCreateMode: true,
       plan: null,
       timeEstimates: [],
@@ -101,17 +127,18 @@ export const load: PageServerLoad = async ({
     };
   }
 
-  const [planData, estimatesData] = await Promise.all([
-    apiFetch<TpmPlan>(`/tpm/plans/${params.uuid}`, token, fetch),
-    apiFetch<TpmTimeEstimate[]>(
-      `/tpm/plans/${params.uuid}/time-estimates`,
-      token,
-      fetch,
-    ),
-  ]);
+  // Edit mode: plan already fetched via permResult
+  const planData = permResult.data as TpmPlan | null;
   if (planData === null) redirect(302, '/lean-management/tpm');
 
+  const estimatesData = await apiFetch<TpmTimeEstimate[]>(
+    `/tpm/plans/${params.uuid}/time-estimates`,
+    token,
+    fetch,
+  );
+
   return {
+    permissionDenied: false as const,
     isCreateMode: false,
     plan: planData,
     timeEstimates: safeArray(estimatesData),

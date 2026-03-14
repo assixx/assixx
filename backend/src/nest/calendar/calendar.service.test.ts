@@ -9,6 +9,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import type { DatabaseService } from '../database/database.service.js';
+import type { ScopeService } from '../hierarchy-permission/scope.service.js';
 import type { CalendarCreationService } from './calendar-creation.service.js';
 import type { CalendarOverviewService } from './calendar-overview.service.js';
 import type { CalendarPermissionService } from './calendar-permission.service.js';
@@ -25,6 +26,7 @@ function createServiceWithMock(): {
   mockPermission: Record<string, ReturnType<typeof vi.fn>>;
   mockCreation: Record<string, ReturnType<typeof vi.fn>>;
   mockOverview: Record<string, ReturnType<typeof vi.fn>>;
+  mockScope: { getScope: ReturnType<typeof vi.fn> };
 } {
   const mockDb = { query: vi.fn() };
   const mockActivityLogger = {
@@ -33,7 +35,10 @@ function createServiceWithMock(): {
     logDelete: vi.fn(),
   };
   const mockPermission = {
-    getUserRole: vi.fn(),
+    getUserMemberships: vi.fn().mockResolvedValue({
+      departmentIds: [],
+      teamIds: [],
+    }),
     checkEventAccess: vi.fn(),
     getEventAttendees: vi.fn(),
     buildAdminOrgLevelFilter: vi.fn(),
@@ -51,6 +56,21 @@ function createServiceWithMock(): {
     getRecentlyAddedEvents: vi.fn(),
     getUpcomingCount: vi.fn(),
   };
+  const mockScope = {
+    getScope: vi.fn().mockResolvedValue({
+      type: 'none',
+      areaIds: [],
+      departmentIds: [],
+      teamIds: [],
+      leadAreaIds: [],
+      leadDepartmentIds: [],
+      leadTeamIds: [],
+      isAreaLead: false,
+      isDepartmentLead: false,
+      isTeamLead: false,
+      isAnyLead: false,
+    }),
+  };
 
   const service = new CalendarService(
     mockDb as unknown as DatabaseService,
@@ -58,6 +78,7 @@ function createServiceWithMock(): {
     mockPermission as unknown as CalendarPermissionService,
     mockCreation as unknown as CalendarCreationService,
     mockOverview as unknown as CalendarOverviewService,
+    mockScope as unknown as ScopeService,
   );
 
   return {
@@ -67,6 +88,7 @@ function createServiceWithMock(): {
     mockPermission,
     mockCreation,
     mockOverview,
+    mockScope,
   };
 }
 
@@ -189,10 +211,6 @@ describe('CalendarService – DB-mocked methods', () => {
           end_date: new Date(),
         },
       ]);
-      mockPermission.getUserRole.mockResolvedValueOnce({
-        role: 'employee',
-        has_full_access: false,
-      });
       mockPermission.checkEventAccess.mockResolvedValueOnce(false);
 
       await expect(service.getEventById(1, 1, 5)).rejects.toThrow(

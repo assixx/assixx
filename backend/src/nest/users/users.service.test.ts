@@ -20,6 +20,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import type { DatabaseService } from '../database/database.service.js';
 import type { UserRepository } from '../database/repositories/user.repository.js';
+import type { HierarchyPermissionService } from '../hierarchy-permission/hierarchy-permission.service.js';
+import type { ScopeService } from '../hierarchy-permission/scope.service.js';
 import type { CreateUserDto } from './dto/create-user.dto.js';
 import type { ListUsersQueryDto } from './dto/list-users-query.dto.js';
 import type { UpdateUserDto } from './dto/update-user.dto.js';
@@ -75,6 +77,32 @@ function createMockAvailabilityService() {
   };
 }
 
+function createMockScope() {
+  return {
+    getScope: vi.fn().mockResolvedValue({
+      type: 'full',
+      areaIds: [],
+      departmentIds: [],
+      teamIds: [],
+      leadAreaIds: [],
+      leadDepartmentIds: [],
+      leadTeamIds: [],
+      isAreaLead: false,
+      isDepartmentLead: false,
+      isTeamLead: false,
+      isAnyLead: false,
+    }),
+  };
+}
+
+function createMockHierarchyPermission() {
+  return {
+    getScope: vi.fn(),
+    getVisibleUserIds: vi.fn().mockResolvedValue('all'),
+    isEntityInScope: vi.fn().mockReturnValue(true),
+  };
+}
+
 /** Standard user row — all optional fields set to null (NOT undefined!) */
 function makeUserRow(overrides: Partial<UserRow> = {}): UserRow {
   return {
@@ -120,11 +148,15 @@ describe('UsersService', () => {
     mockActivityLogger = createMockActivityLogger();
     mockUserRepo = createMockUserRepository();
     mockAvailability = createMockAvailabilityService();
+    const mockScope = createMockScope();
+    const mockHierarchyPermission = createMockHierarchyPermission();
     service = new UsersService(
       mockDb as unknown as DatabaseService,
       mockActivityLogger as unknown as ActivityLoggerService,
       mockUserRepo as unknown as UserRepository,
       mockAvailability as unknown as UserAvailabilityService,
+      mockScope as unknown as ScopeService,
+      mockHierarchyPermission as unknown as HierarchyPermissionService,
     );
   });
 
@@ -167,6 +199,87 @@ describe('UsersService', () => {
       expect(result.data).toHaveLength(0);
       expect(result.pagination.totalItems).toBe(0);
       expect(result.pagination.totalPages).toBe(0);
+    });
+
+    it('should return empty result when scope is denied', async () => {
+      const deniedScope = createMockScope();
+      deniedScope.getScope.mockResolvedValue({ type: 'none' });
+      const deniedHierarchy = createMockHierarchyPermission();
+      const scopedService = new UsersService(
+        mockDb as unknown as DatabaseService,
+        mockActivityLogger as unknown as ActivityLoggerService,
+        mockUserRepo as unknown as UserRepository,
+        mockAvailability as unknown as UserAvailabilityService,
+        deniedScope as unknown as ScopeService,
+        deniedHierarchy as unknown as HierarchyPermissionService,
+      );
+
+      const query = { page: 1, limit: 10 } as unknown as ListUsersQueryDto;
+      const result = await scopedService.listUsers(10, query);
+
+      expect(result.data).toHaveLength(0);
+      expect(result.pagination.totalItems).toBe(0);
+      expect(mockDb.query).not.toHaveBeenCalled();
+    });
+
+    it('should return scoped result with team data for limited scope', async () => {
+      const limitedScope = createMockScope();
+      limitedScope.getScope.mockResolvedValue({
+        type: 'limited',
+        areaIds: [1],
+        departmentIds: [10],
+        teamIds: [100],
+      });
+      const limitedHierarchy = createMockHierarchyPermission();
+      limitedHierarchy.getVisibleUserIds.mockResolvedValue([5, 6]);
+      const scopedService = new UsersService(
+        mockDb as unknown as DatabaseService,
+        mockActivityLogger as unknown as ActivityLoggerService,
+        mockUserRepo as unknown as UserRepository,
+        mockAvailability as unknown as UserAvailabilityService,
+        limitedScope as unknown as ScopeService,
+        limitedHierarchy as unknown as HierarchyPermissionService,
+      );
+
+      // COUNT
+      mockDb.query.mockResolvedValueOnce([{ count: '1' }]);
+      // SELECT users
+      mockDb.query.mockResolvedValueOnce([makeUserRow({ id: 5 })]);
+      // getUserTeamsBatch — returns team data
+      mockDb.query.mockResolvedValueOnce([
+        {
+          user_id: 5,
+          team_id: 100,
+          team_name: 'Alpha',
+          department_id: 10,
+          department_name: 'Eng',
+          area_id: 1,
+          area_name: 'HQ',
+        },
+      ]);
+      // resolveScopeInfo — area names
+      mockDb.query.mockResolvedValueOnce([{ name: 'HQ' }]);
+      // resolveScopeInfo — dept names
+      mockDb.query.mockResolvedValueOnce([{ name: 'Eng' }]);
+
+      const query = { page: 1, limit: 10 } as unknown as ListUsersQueryDto;
+      const result = await scopedService.listUsers(10, query);
+
+      expect(result.data).toHaveLength(1);
+      expect(result.scope).toBeDefined();
+      expect(result.scope?.type).toBe('limited');
+    });
+
+    it('should throw ForbiddenException when admin lists admin role', async () => {
+      const query = {
+        page: 1,
+        limit: 10,
+        role: 'admin',
+      } as unknown as ListUsersQueryDto;
+
+      await expect(service.listUsers(10, query, 'admin')).rejects.toThrow(
+        ForbiddenException,
+      );
     });
 
     it('should calculate totalPages correctly for partial last page', async () => {
@@ -759,6 +872,21 @@ describe('UsersService', () => {
       await expect(service.getUserByUuid('unknown-uuid', 10)).rejects.toThrow(
         NotFoundException,
       );
+    });
+
+    it('should resolve UUID and apply scope check', async () => {
+      mockUserRepo.resolveUuidToId.mockResolvedValueOnce(5);
+      // getUserById chain: findUserById + getTenantInfo + getDepartments + getUserTeamsBatch
+      mockDb.query.mockResolvedValueOnce([makeUserRow({ id: 5 })]);
+      mockDb.query.mockResolvedValueOnce([
+        { company_name: 'TestCo', subdomain: 'test' },
+      ]);
+      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.query.mockResolvedValueOnce([]);
+
+      const result = await service.getUserByUuid('valid-uuid', 10);
+
+      expect(result.id).toBe(5);
     });
   });
 

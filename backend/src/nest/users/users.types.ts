@@ -71,6 +71,15 @@ export interface PaginatedResult<T> {
   };
 }
 
+/** Paginated result with optional scope metadata for ScopeInfoBanner */
+export interface ScopedPaginatedResult<T> extends PaginatedResult<T> {
+  scope?: {
+    type: 'full' | 'limited';
+    areaNames?: string[];
+    departmentNames?: string[];
+  };
+}
+
 /**
  * Tenant info for user response
  */

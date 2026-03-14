@@ -10,8 +10,6 @@ import {
   showInfoAlert,
 } from '$lib/stores/toast';
 
-import { POSITION_MAP } from './constants';
-
 import type { ToastType } from './types';
 
 /** Toast type to store function mapping */
@@ -54,14 +52,6 @@ export function doPasswordsMatch(
   confirmPassword: string,
 ): boolean {
   return password === confirmPassword;
-}
-
-/** Get display position from position key */
-export function getDisplayPosition(position?: string): string {
-  if (position === undefined || position === '') {
-    return '-';
-  }
-  return POSITION_MAP[position.toLowerCase()] ?? position;
 }
 
 /** Get display department name */

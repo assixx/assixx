@@ -6,12 +6,7 @@
  */
 import { redirect, error } from '@sveltejs/kit';
 
-import {
-  apiFetch,
-  API_BASE,
-  extractResponseData,
-  type ServerApiResponse,
-} from '$lib/server/api-fetch';
+import { apiFetch, apiFetchWithPermission } from '$lib/server/api-fetch';
 import { requireAddon } from '$lib/utils/addon-guard';
 
 import type { PageServerLoad } from './$types';
@@ -21,40 +16,6 @@ import type {
   SurveyStatistics,
   SurveyResponseWithUser,
 } from './_lib/types';
-
-/** Fetch survey with management permission check, throws on 403/404 */
-async function fetchSurveyWithPermission(
-  surveyId: string,
-  token: string,
-  fetchFn: typeof fetch,
-): Promise<Survey> {
-  const response = await fetchFn(
-    `${API_BASE}/surveys/${surveyId}?manage=true`,
-    {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-    },
-  );
-
-  if (response.status === 403) {
-    error(403, 'Keine Berechtigung für diese Umfrage-Ergebnisse');
-  }
-
-  if (!response.ok) {
-    error(404, 'Umfrage nicht gefunden');
-  }
-
-  const json = (await response.json()) as ServerApiResponse<Survey>;
-  const surveyData = extractResponseData(json);
-
-  if (surveyData === null) {
-    error(404, 'Umfrage nicht gefunden');
-  }
-
-  return surveyData;
-}
 
 export const load: PageServerLoad = async ({ cookies, fetch, url, parent }) => {
   const token = cookies.get('accessToken');
@@ -70,10 +31,27 @@ export const load: PageServerLoad = async ({ cookies, fetch, url, parent }) => {
     error(400, 'Keine Umfrage-ID angegeben');
   }
 
-  // Step 1: Fetch survey with management permission check
-  const surveyData = await fetchSurveyWithPermission(surveyId, token, fetch);
+  const surveyResult = await apiFetchWithPermission<Survey>(
+    `/surveys/${surveyId}?manage=true`,
+    token,
+    fetch,
+  );
 
-  // Step 2: Parallel fetch remaining data (statistics, questions, responses)
+  if (surveyResult.permissionDenied) {
+    return {
+      permissionDenied: true as const,
+      surveyId,
+      survey: null,
+      questions: [] as SurveyQuestion[],
+      statistics: null as SurveyStatistics | null,
+      responses: [] as SurveyResponseWithUser[],
+    };
+  }
+
+  if (surveyResult.data === null) {
+    error(404, 'Umfrage nicht gefunden');
+  }
+
   const [questionsData, statisticsData, responsesData] = await Promise.all([
     apiFetch<SurveyQuestion[]>(`/surveys/${surveyId}/questions`, token, fetch),
     apiFetch<SurveyStatistics>(`/surveys/${surveyId}/statistics`, token, fetch),
@@ -84,16 +62,13 @@ export const load: PageServerLoad = async ({ cookies, fetch, url, parent }) => {
     ),
   ]);
 
-  // Safe fallbacks
-  const questions = Array.isArray(questionsData) ? questionsData : [];
-  const responses =
-    Array.isArray(responsesData?.responses) ? responsesData.responses : [];
-
   return {
+    permissionDenied: false as const,
     surveyId,
-    survey: surveyData,
-    questions,
+    survey: surveyResult.data,
+    questions: Array.isArray(questionsData) ? questionsData : [],
     statistics: statisticsData,
-    responses,
+    responses:
+      Array.isArray(responsesData?.responses) ? responsesData.responses : [],
   };
 };

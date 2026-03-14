@@ -49,6 +49,7 @@
   import {
     filterMenuByAccess,
     filterMenuByAddons,
+    filterMenuByScope,
     getMenuItemsForRole,
     type NavItem,
   } from './_lib/navigation-config';
@@ -232,9 +233,14 @@
   const activeAddonsSet = $derived(new Set(data.activeAddons));
   const menuItems = $derived<NavItem[]>(
     filterMenuByAddons(
-      filterMenuByAccess(
-        getMenuItemsForRole(currentRole, hierarchyLabels),
-        hasFullAccess,
+      filterMenuByScope(
+        filterMenuByAccess(
+          getMenuItemsForRole(currentRole, hierarchyLabels),
+          hasFullAccess,
+        ),
+        data.orgScope,
+        currentRole,
+        hierarchyLabels,
       ),
       activeAddonsSet,
     ),

@@ -17,6 +17,7 @@ import { v7 as uuidv7 } from 'uuid';
 import { getErrorMessage } from '../common/index.js';
 import { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import { DatabaseService } from '../database/database.service.js';
+import { ScopeService } from '../hierarchy-permission/scope.service.js';
 import type { CreateTeamDto } from './dto/create-team.dto.js';
 import type { UpdateTeamDto } from './dto/update-team.dto.js';
 
@@ -37,6 +38,7 @@ export interface TeamRow {
   description: string | null;
   department_id: number | null;
   team_lead_id: number | null;
+  deputy_lead_id: number | null;
   is_active: number;
   tenant_id: number;
   created_at: Date;
@@ -44,6 +46,7 @@ export interface TeamRow {
   department_name: string | undefined;
   department_area_name: string | undefined;
   team_lead_name: string | undefined;
+  deputy_lead_name: string | undefined;
   member_count: number | undefined;
   asset_count: number | undefined;
   member_names: string | null;
@@ -59,6 +62,7 @@ export interface TeamResponse {
   description: string | null;
   departmentId: number | null;
   leaderId: number | null;
+  deputyLeaderId: number | null;
   isActive: number;
   status: 'active' | 'inactive';
   tenantId: number;
@@ -67,6 +71,7 @@ export interface TeamResponse {
   departmentName: string | undefined;
   departmentAreaName: string | undefined;
   leaderName: string | undefined;
+  deputyLeaderName: string | undefined;
   memberCount: number | undefined;
   assetCount: number | undefined;
   memberNames: string | undefined;
@@ -170,6 +175,7 @@ export class TeamsService {
   constructor(
     private readonly activityLogger: ActivityLoggerService,
     private readonly db: DatabaseService,
+    private readonly scopeService: ScopeService,
   ) {}
 
   /**
@@ -182,6 +188,7 @@ export class TeamsService {
       d.name as department_name,
       a.name as department_area_name,
       CONCAT(COALESCE(u.first_name, ''), ' ', COALESCE(u.last_name, '')) as team_lead_name,
+      CONCAT(COALESCE(du.first_name, ''), ' ', COALESCE(du.last_name, '')) as deputy_lead_name,
       (SELECT COUNT(*) FROM user_teams ut WHERE ut.team_id = t.id) as member_count,
       (SELECT COUNT(*) FROM asset_teams mt WHERE mt.team_id = t.id) as asset_count,
       (SELECT STRING_AGG(CONCAT(COALESCE(mu.first_name, ''), ' ', COALESCE(mu.last_name, '')), ', ' ORDER BY mu.last_name)
@@ -196,6 +203,7 @@ export class TeamsService {
     LEFT JOIN departments d ON t.department_id = d.id
     LEFT JOIN areas a ON d.area_id = a.id
     LEFT JOIN users u ON t.team_lead_id = u.id
+    LEFT JOIN users du ON t.deputy_lead_id = du.id
     WHERE t.tenant_id = $1 AND t.is_active != ${IS_ACTIVE.DELETED}
     ORDER BY t.name`;
 
@@ -209,6 +217,7 @@ export class TeamsService {
       description: team.description,
       departmentId: team.department_id,
       leaderId: team.team_lead_id,
+      deputyLeaderId: team.deputy_lead_id,
       isActive: team.is_active,
       status: team.is_active === 1 ? 'active' : 'inactive',
       tenantId: team.tenant_id,
@@ -217,6 +226,7 @@ export class TeamsService {
       departmentName: team.department_name,
       departmentAreaName: team.department_area_name,
       leaderName: team.team_lead_name,
+      deputyLeaderName: team.deputy_lead_name ?? undefined,
       memberCount: team.member_count,
       assetCount: team.asset_count,
       memberNames: team.member_names ?? undefined,
@@ -233,11 +243,26 @@ export class TeamsService {
   ): Promise<TeamResponse[]> {
     this.logger.debug(`Fetching teams for tenant ${tenantId}`);
 
+    const scope = await this.scopeService.getScope();
+    if (
+      scope.type === 'none' ||
+      (scope.type === 'limited' && scope.teamIds.length === 0)
+    ) {
+      return [];
+    }
+
     const rows = await this.db.query<TeamRow>(this.FIND_ALL_TEAMS_QUERY, [
       tenantId,
     ]);
 
     let teams = rows.map((team: TeamRow) => this.mapToResponse(team));
+
+    // Scope filter: limited scope → only accessible teams
+    if (scope.type === 'limited') {
+      teams = teams.filter((team: TeamResponse) =>
+        scope.teamIds.includes(team.id),
+      );
+    }
 
     if (filters?.departmentId !== undefined) {
       teams = teams.filter(
@@ -332,7 +357,7 @@ export class TeamsService {
   }
 
   /**
-   * Validate leader exists, is active, and has position "Teamleiter".
+   * Validate leader exists, is active, and has position "team_lead".
    * Safety gate: only users explicitly designated as team leaders
    * in manage-employees can be assigned — prevents accidental privilege escalation.
    */
@@ -352,9 +377,9 @@ export class TeamsService {
     }
 
     const user = rows[0];
-    if (user?.position !== 'Teamleiter') {
+    if (user?.position !== 'team_lead') {
       throw new BadRequestException(
-        'User must have position "Teamleiter" — assign it first in employee management',
+        'User must have position "team_lead" — assign it first in employee management',
       );
     }
   }
@@ -433,7 +458,7 @@ export class TeamsService {
 
     const teamId = rows[0].id;
 
-    if (dto.leaderId !== undefined) {
+    if (dto.leaderId !== undefined && dto.leaderId !== null) {
       await this.ensureLeaderInTeam(dto.leaderId, teamId, tenantId);
     }
 
@@ -471,6 +496,7 @@ export class TeamsService {
       ['description', 'description'],
       ['departmentId', 'department_id'],
       ['leaderId', 'team_lead_id'],
+      ['deputyLeaderId', 'deputy_lead_id'],
       ['isActive', 'is_active'],
     ];
 
@@ -483,6 +509,83 @@ export class TeamsService {
     }
 
     return { fields, values };
+  }
+
+  /** Auto-seed manage_hierarchy permissions when a user becomes Lead (D6) */
+  private async seedLeadPermissions(
+    userId: number,
+    tenantId: number,
+    assignedBy: number,
+  ): Promise<void> {
+    const modules = ['manage-teams', 'manage-employees'];
+    for (const moduleCode of modules) {
+      // ON CONFLICT DO NOTHING: ADR-020 Override bleibt erhalten (Root kann Rechte entziehen)
+      await this.db.query(
+        `INSERT INTO user_addon_permissions (tenant_id, user_id, addon_code, module_code, can_read, can_write, can_delete, assigned_by)
+         VALUES ($1, $2, 'manage_hierarchy', $3, true, true, false, $4)
+         ON CONFLICT (tenant_id, user_id, addon_code, module_code) DO NOTHING`,
+        [tenantId, userId, moduleCode, assignedBy],
+      );
+    }
+    this.logger.log(`Seeded manage_hierarchy permissions for user ${userId}`);
+  }
+
+  /** Cleanup manage_hierarchy permissions when a user is no longer Lead of any team */
+  private async cleanupLeadPermissions(
+    userId: number,
+    tenantId: number,
+  ): Promise<void> {
+    const remaining = await this.db.query<{ count: string }>(
+      `SELECT COUNT(*) AS count FROM teams
+       WHERE (team_lead_id = $1 OR deputy_lead_id = $1)
+         AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}`,
+      [userId, tenantId],
+    );
+
+    if (Number(remaining[0]?.count ?? 0) === 0) {
+      await this.db.query(
+        `DELETE FROM user_addon_permissions
+         WHERE user_id = $1 AND tenant_id = $2 AND addon_code = 'manage_hierarchy'`,
+        [userId, tenantId],
+      );
+      this.logger.log(
+        `Cleaned up manage_hierarchy permissions for user ${userId}`,
+      );
+    }
+  }
+
+  /** Handle seed/cleanup for a single lead field change */
+  private async syncLeadPermission(
+    newId: number | null | undefined,
+    oldId: number | null,
+    tenantId: number,
+    actingUserId: number,
+  ): Promise<void> {
+    if (newId === undefined || oldId === newId) return;
+    if (newId !== null)
+      await this.seedLeadPermissions(newId, tenantId, actingUserId);
+    if (oldId !== null) await this.cleanupLeadPermissions(oldId, tenantId);
+  }
+
+  /** Detect lead changes and auto-seed/cleanup permissions */
+  private async handleLeadPermissionChanges(
+    oldTeam: TeamRow,
+    dto: UpdateTeamDto,
+    tenantId: number,
+    actingUserId: number,
+  ): Promise<void> {
+    await this.syncLeadPermission(
+      dto.leaderId,
+      oldTeam.team_lead_id,
+      tenantId,
+      actingUserId,
+    );
+    await this.syncLeadPermission(
+      dto.deputyLeaderId,
+      oldTeam.deputy_lead_id,
+      tenantId,
+      actingUserId,
+    );
   }
 
   /**
@@ -523,17 +626,11 @@ export class TeamsService {
       throw new NotFoundException(ERROR_MESSAGES.TEAM_NOT_FOUND);
     }
 
-    const currentTeam = existing[0] as TeamRow;
-    const oldValues = {
-      name: currentTeam.name,
-      description: currentTeam.description,
-      departmentId: currentTeam.department_id,
-      leaderId: currentTeam.team_lead_id,
-      isActive: currentTeam.is_active,
-    };
+    const old = existing[0] as TeamRow;
 
     await this.validateDepartment(dto.departmentId, tenantId);
     await this.validateLeader(dto.leaderId, tenantId);
+    await this.validateLeader(dto.deputyLeaderId, tenantId);
     if (dto.name !== undefined)
       await this.checkDuplicateName(dto.name, tenantId, id);
 
@@ -546,25 +643,28 @@ export class TeamsService {
       );
     }
 
-    await this.handleLeaderChange(dto, currentTeam.team_lead_id, id, tenantId);
+    await this.handleLeaderChange(dto, old.team_lead_id, id, tenantId);
+    await this.handleLeadPermissionChanges(old, dto, tenantId, actingUserId);
     const result = await this.getTeamById(id, tenantId);
-
-    const newValues = {
-      name: dto.name,
-      description: dto.description,
-      departmentId: dto.departmentId,
-      leaderId: dto.leaderId,
-      isActive: dto.isActive,
-    };
 
     await this.activityLogger.logUpdate(
       tenantId,
       actingUserId,
       'team',
       id,
-      `Team aktualisiert: ${currentTeam.name}`,
-      oldValues,
-      newValues,
+      `Team aktualisiert: ${old.name}`,
+      {
+        name: old.name,
+        departmentId: old.department_id,
+        leaderId: old.team_lead_id,
+        deputyLeaderId: old.deputy_lead_id,
+      },
+      {
+        name: dto.name,
+        departmentId: dto.departmentId,
+        leaderId: dto.leaderId,
+        deputyLeaderId: dto.deputyLeaderId,
+      },
     );
 
     return result;

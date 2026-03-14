@@ -7,7 +7,7 @@
  */
 import { redirect } from '@sveltejs/kit';
 
-import { apiFetch } from '$lib/server/api-fetch';
+import { apiFetchWithPermission } from '$lib/server/api-fetch';
 import { requireAddon } from '$lib/utils/addon-guard';
 
 import type { PageServerLoad } from './$types';
@@ -24,14 +24,23 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
 
   const currentYear = new Date().getFullYear();
 
-  const holidaysData = await apiFetch<VacationHoliday[]>(
+  const result = await apiFetchWithPermission<VacationHoliday[]>(
     `/vacation/holidays?year=${currentYear}`,
     token,
     fetch,
   );
 
+  if (result.permissionDenied) {
+    return {
+      permissionDenied: true as const,
+      holidays: [] as VacationHoliday[],
+      currentYear,
+    };
+  }
+
   return {
-    holidays: holidaysData ?? [],
+    permissionDenied: false as const,
+    holidays: result.data ?? [],
     currentYear,
   };
 };

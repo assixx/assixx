@@ -13,6 +13,7 @@
  */
 import { Module } from '@nestjs/common';
 
+import { ScopeModule } from '../hierarchy-permission/scope.module.js';
 import { NotificationsModule } from '../notifications/notifications.module.js';
 import { KvpAttachmentsService } from './kvp-attachments.service.js';
 import { KvpCategoriesService } from './kvp-categories.service.js';
@@ -24,7 +25,7 @@ import { KvpController } from './kvp.controller.js';
 import { KvpService } from './kvp.service.js';
 
 @Module({
-  imports: [NotificationsModule],
+  imports: [NotificationsModule, ScopeModule],
   controllers: [KvpController],
   providers: [
     KvpService,

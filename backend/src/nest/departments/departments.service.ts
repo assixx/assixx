@@ -16,6 +16,7 @@ import { v7 as uuidv7 } from 'uuid';
 import { getErrorMessage } from '../common/index.js';
 import { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import { DatabaseService } from '../database/database.service.js';
+import { ScopeService } from '../hierarchy-permission/scope.service.js';
 import type { CreateDepartmentDto } from './dto/create-department.dto.js';
 import type { UpdateDepartmentDto } from './dto/update-department.dto.js';
 
@@ -119,6 +120,7 @@ export class DepartmentsService {
   constructor(
     private readonly activityLogger: ActivityLoggerService,
     private readonly db: DatabaseService,
+    private readonly scopeService: ScopeService,
   ) {}
 
   /**
@@ -197,10 +199,23 @@ export class DepartmentsService {
   ): Promise<DepartmentResponse[]> {
     this.logger.debug(`Fetching departments for tenant ${tenantId}`);
 
+    const scope = await this.scopeService.getScope();
+    if (
+      scope.type === 'none' ||
+      (scope.type === 'limited' && scope.departmentIds.length === 0)
+    ) {
+      return [];
+    }
+
+    const scopeFilter =
+      scope.type === 'limited' ? ` AND d.id = ANY($3::int[])` : '';
+    const scopeParams: unknown[] =
+      scope.type === 'limited' ? [scope.departmentIds] : [];
+
     try {
       const rows = await this.db.query<DepartmentRow>(
-        this.FIND_ALL_DEPARTMENTS_QUERY,
-        [tenantId, tenantId],
+        `${this.FIND_ALL_DEPARTMENTS_QUERY}${scopeFilter}`,
+        [tenantId, tenantId, ...scopeParams],
       );
 
       return rows.map((dept: DepartmentRow) =>
@@ -211,9 +226,11 @@ export class DepartmentsService {
         `Extended query failed, using simple query: ${getErrorMessage(error)}`,
       );
 
+      const simpleScope =
+        scope.type === 'limited' ? ` AND id = ANY($2::int[])` : '';
       const rows = await this.db.query<DepartmentRow>(
-        `SELECT * FROM departments WHERE tenant_id = $1 AND is_active IN (${IS_ACTIVE.INACTIVE}, ${IS_ACTIVE.ACTIVE}, ${IS_ACTIVE.ARCHIVED}) ORDER BY name`,
-        [tenantId],
+        `SELECT * FROM departments WHERE tenant_id = $1 AND is_active IN (${IS_ACTIVE.INACTIVE}, ${IS_ACTIVE.ACTIVE}, ${IS_ACTIVE.ARCHIVED})${simpleScope} ORDER BY name`,
+        [tenantId, ...scopeParams],
       );
 
       return rows.map((dept: DepartmentRow) => this.mapToResponse(dept, false));

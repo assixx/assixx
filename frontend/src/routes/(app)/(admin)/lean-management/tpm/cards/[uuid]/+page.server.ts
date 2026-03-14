@@ -7,7 +7,7 @@
  */
 import { redirect } from '@sveltejs/kit';
 
-import { apiFetch } from '$lib/server/api-fetch';
+import { apiFetch, apiFetchWithPermission } from '$lib/server/api-fetch';
 import { requireAddon } from '$lib/utils/addon-guard';
 
 import type { PageServerLoad } from './$types';
@@ -50,9 +50,28 @@ export const load: PageServerLoad = async ({
 
   const planUuid = params.uuid;
 
-  // Load plan + cards + locations in parallel
-  const [planData, cardsData, locationsData] = await Promise.all([
-    apiFetch<TpmPlan>(`/tpm/plans/${planUuid}`, token, fetch),
+  const planResult = await apiFetchWithPermission<TpmPlan>(
+    `/tpm/plans/${planUuid}`,
+    token,
+    fetch,
+  );
+
+  if (planResult.permissionDenied) {
+    return {
+      permissionDenied: true as const,
+      plan: null as TpmPlan | null,
+      cards: [] as TpmCard[],
+      totalCards: 0,
+      locations: [] as LocationOption[],
+      planUuid,
+    };
+  }
+
+  if (planResult.data === null) {
+    redirect(302, '/lean-management/tpm');
+  }
+
+  const [cardsData, locationsData] = await Promise.all([
     apiFetch<PaginatedResponse<TpmCard>>(
       `/tpm/cards?planUuid=${planUuid}&page=1&limit=50`,
       token,
@@ -65,18 +84,14 @@ export const load: PageServerLoad = async ({
     ),
   ]);
 
-  if (planData === null) {
-    redirect(302, '/lean-management/tpm');
-  }
-
   const { cards, totalCards } = extractCards(cardsData);
-  const locations = Array.isArray(locationsData) ? locationsData : [];
 
   return {
-    plan: planData,
+    permissionDenied: false as const,
+    plan: planResult.data,
     cards,
     totalCards,
-    locations,
+    locations: Array.isArray(locationsData) ? locationsData : [],
     planUuid,
   };
 };

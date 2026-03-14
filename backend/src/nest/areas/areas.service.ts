@@ -19,6 +19,7 @@ import { v7 as uuidv7 } from 'uuid';
 
 import { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import { DatabaseService } from '../database/database.service.js';
+import { ScopeService } from '../hierarchy-permission/scope.service.js';
 import type { CreateAreaDto } from './dto/create-area.dto.js';
 import type { ListAreasQueryDto } from './dto/list-areas-query.dto.js';
 import type { UpdateAreaDto } from './dto/update-area.dto.js';
@@ -103,6 +104,7 @@ export class AreasService {
   constructor(
     private readonly activityLogger: ActivityLoggerService,
     private readonly db: DatabaseService,
+    private readonly scopeService: ScopeService,
   ) {}
 
   /**
@@ -188,10 +190,25 @@ export class AreasService {
   ): Promise<AreaResponse[]> {
     this.logger.debug(`Fetching areas for tenant ${tenantId}`);
 
-    const { whereClause, params } = this.buildFilteredQuery(query);
-    const fullQuery = `${this.FIND_ALL_AREAS_QUERY}${whereClause} GROUP BY a.id ORDER BY a.name`;
+    const scope = await this.scopeService.getScope();
+    if (
+      scope.type === 'none' ||
+      (scope.type === 'limited' && scope.areaIds.length === 0)
+    ) {
+      return [];
+    }
 
-    const rows = await this.db.query<AreaRow>(fullQuery, [tenantId, ...params]);
+    const { whereClause, params, paramIndex } = this.buildFilteredQuery(query);
+    const allParams: unknown[] = [tenantId, ...params];
+    let scopeClause = '';
+
+    if (scope.type === 'limited') {
+      scopeClause = ` AND a.id = ANY($${paramIndex}::int[])`;
+      allParams.push(scope.areaIds);
+    }
+
+    const fullQuery = `${this.FIND_ALL_AREAS_QUERY}${whereClause}${scopeClause} GROUP BY a.id ORDER BY a.name`;
+    const rows = await this.db.query<AreaRow>(fullQuery, allParams);
 
     return rows.map((row: AreaRow) => this.mapToResponse(row));
   }

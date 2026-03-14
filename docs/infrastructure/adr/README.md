@@ -58,6 +58,7 @@ ADRs document important architectural decisions:
 | [ADR-033](./ADR-033-addon-based-saas-model.md)                               | Addon-basiertes SaaS-Modell                        | Accepted   | 2026-03-10 |
 | [ADR-034](./ADR-034-hierarchy-labels-propagation.md)                         | Hierarchy Labels Propagation                       | Accepted   | 2026-03-11 |
 | [ADR-035](./ADR-035-organizational-hierarchy-and-assignment-architecture.md) | Organizational Hierarchy & Assignment Architecture | Accepted   | 2026-03-13 |
+| [ADR-036](./ADR-036-organizational-scope-access-control.md)                  | Organizational Scope Access Control                | Accepted   | 2026-03-14 |
 
 ## Template
 

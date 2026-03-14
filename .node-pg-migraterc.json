@@ -1,10 +1,10 @@
 {
-  "migrationsDir": "database/migrations",
-  "migrationsTable": "pgmigrations",
+  "migrations-dir": "database/migrations",
+  "migrations-table": "pgmigrations",
   "schema": "public",
-  "checkOrder": true,
+  "check-order": true,
   "verbose": true,
   "decamelize": true,
-  "migrationFilenameFormat": "utc",
-  "migrationFileLanguage": "ts"
+  "migration-filename-format": "utc",
+  "migration-file-language": "ts"
 }

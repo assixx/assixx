@@ -213,13 +213,13 @@
 
 <div class="container">
   <!-- Back Button -->
-  <div class="mb-4">
+  <div class="mb-2">
     <button
       type="button"
       class="btn btn-light"
       onclick={goBack}
     >
-      <i class="fas fa-arrow-left mr-2"></i>Zurück zur {backLabel}
+      <i class="fas fa-arrow-left mr-1"></i>Zurück zur {backLabel}
     </button>
   </div>
 
@@ -377,7 +377,7 @@
 
         <!-- Save Button -->
         <div
-          class="mt-8 flex justify-end border-t border-(--color-glass-border) pt-6"
+          class="mt-4 flex justify-end border-t border-(--color-glass-border) pt-3"
         >
           <button
             type="button"
@@ -421,11 +421,11 @@
   .perm-row {
     display: flex;
     align-items: center;
-    min-height: 48px;
+    min-height: 36px;
   }
 
   .perm-row--header {
-    padding-bottom: 12px;
+    padding-bottom: 6px;
   }
 
   /* Bulk action buttons container */
@@ -436,15 +436,15 @@
   }
 
   .perm-row--category {
-    padding-top: 20px;
-    padding-bottom: 4px;
-    font-size: 1.125rem;
+    padding-top: 10px;
+    padding-bottom: 2px;
+    font-size: 1rem;
     font-weight: 600;
     color: var(--color-text-primary);
   }
 
   .perm-row--module {
-    padding: 8px 0;
+    padding: 3px 0;
     border-radius: var(--radius-sm);
     transition: background-color 0.15s ease;
   }
@@ -466,8 +466,9 @@
   }
 
   .perm-label--module {
-    padding-left: 28px;
+    padding-left: 24px;
     font-weight: 400;
+    font-size: 0.875rem;
   }
 
   /* ================================================================
@@ -483,14 +484,14 @@
      Column Headers
      ================================================================ */
   .perm-col-header {
-    width: 90px;
+    width: 80px;
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    gap: 2px;
+    gap: 1px;
     color: var(--color-text-secondary);
-    font-size: 0.813rem;
+    font-size: 0.75rem;
     letter-spacing: 0.05em;
   }
 
@@ -498,7 +499,7 @@
      Checkbox Cells
      ================================================================ */
   .perm-cell {
-    width: 90px;
+    width: 80px;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -524,8 +525,8 @@
   }
 
   .perm-hdivider--space {
-    margin-top: 8px;
-    margin-bottom: 4px;
+    margin-top: 4px;
+    margin-bottom: 2px;
   }
 
   /* ================================================================
@@ -557,8 +558,8 @@
   }
 
   .perm-check__box {
-    width: 20px;
-    height: 20px;
+    width: 18px;
+    height: 18px;
     border-radius: var(--radius-md);
     border: 2px solid var(--color-glass-border);
     display: flex;
@@ -569,7 +570,7 @@
   }
 
   .perm-check__icon {
-    font-size: 0.875rem;
+    font-size: 0.75rem;
     opacity: 0%;
     transform: scale(0.5);
     transition: all 0.2s ease;

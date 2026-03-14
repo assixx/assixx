@@ -7,7 +7,7 @@
  */
 import { redirect } from '@sveltejs/kit';
 
-import { apiFetch } from '$lib/server/api-fetch';
+import { apiFetch, apiFetchWithPermission } from '$lib/server/api-fetch';
 import { requireAddon } from '$lib/utils/addon-guard';
 
 import type { PageServerLoad } from './$types';
@@ -31,19 +31,32 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
 
   const currentYear = new Date().getFullYear();
 
+  const blackoutsResult = await apiFetchWithPermission<VacationBlackout[]>(
+    `/vacation/blackouts?year=${currentYear}`,
+    token,
+    fetch,
+  );
+
+  if (blackoutsResult.permissionDenied) {
+    return {
+      permissionDenied: true as const,
+      blackouts: [] as VacationBlackout[],
+      staffingRules: [] as VacationStaffingRule[],
+      settings: null as VacationSettings | null,
+      areas: [] as OrgArea[],
+      departments: [] as OrgDepartment[],
+      teams: [] as OrgTeam[],
+      currentYear,
+    };
+  }
+
   const [
-    blackoutsData,
     staffingRulesData,
     settingsData,
     areasData,
     departmentsData,
     teamsData,
   ] = await Promise.all([
-    apiFetch<VacationBlackout[]>(
-      `/vacation/blackouts?year=${currentYear}`,
-      token,
-      fetch,
-    ),
     apiFetch<VacationStaffingRule[]>('/vacation/staffing-rules', token, fetch),
     apiFetch<VacationSettings>('/vacation/settings', token, fetch),
     apiFetch<OrgArea[]>('/areas', token, fetch),
@@ -52,7 +65,8 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
   ]);
 
   return {
-    blackouts: blackoutsData ?? [],
+    permissionDenied: false as const,
+    blackouts: blackoutsResult.data ?? [],
     staffingRules: staffingRulesData ?? [],
     settings: settingsData,
     areas: areasData ?? [],

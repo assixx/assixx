@@ -10,7 +10,7 @@ import { ForbiddenException } from '@nestjs/common';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { DatabaseService } from '../database/database.service.js';
-import type { HierarchyPermissionService } from '../hierarchy-permission/hierarchy-permission.service.js';
+import type { ScopeService } from '../hierarchy-permission/scope.service.js';
 import { BlackboardAccessService } from './blackboard-access.service.js';
 import type { DbBlackboardEntry } from './blackboard.types.js';
 
@@ -22,11 +22,21 @@ function createMockDb() {
   return { query: vi.fn() };
 }
 
-function createMockHierarchyPermission() {
+function createMockScopeService() {
   return {
-    getAccessibleAreaIds: vi.fn().mockResolvedValue([]),
-    getAccessibleDepartmentIds: vi.fn().mockResolvedValue([]),
-    getAccessibleTeamIds: vi.fn().mockResolvedValue([]),
+    getScope: vi.fn().mockResolvedValue({
+      type: 'limited',
+      areaIds: [],
+      departmentIds: [],
+      teamIds: [],
+      leadAreaIds: [],
+      leadDepartmentIds: [],
+      leadTeamIds: [],
+      isAreaLead: false,
+      isDepartmentLead: false,
+      isTeamLead: false,
+      isAnyLead: false,
+    }),
   };
 }
 
@@ -56,15 +66,15 @@ function makeEntry(
 describe('SECURITY: BlackboardAccessService', () => {
   let service: BlackboardAccessService;
   let mockDb: ReturnType<typeof createMockDb>;
-  let mockHierarchy: ReturnType<typeof createMockHierarchyPermission>;
+  let mockScope: ReturnType<typeof createMockScopeService>;
 
   beforeEach(() => {
     vi.clearAllMocks();
     mockDb = createMockDb();
-    mockHierarchy = createMockHierarchyPermission();
+    mockScope = createMockScopeService();
     service = new BlackboardAccessService(
       mockDb as unknown as DatabaseService,
-      mockHierarchy as unknown as HierarchyPermissionService,
+      mockScope as unknown as ScopeService,
     );
   });
 
@@ -281,6 +291,52 @@ describe('SECURITY: BlackboardAccessService', () => {
 
       expect(result).toBe(true);
     });
+
+    it('should grant admin access via team permission', async () => {
+      // no company-wide assignments
+      mockDb.query.mockResolvedValueOnce([]);
+      // no area access
+      mockDb.query.mockResolvedValueOnce([]);
+      // no department access
+      mockDb.query.mockResolvedValueOnce([]);
+      // team access found
+      mockDb.query.mockResolvedValueOnce([{ count: 1 }]);
+
+      const result = await service.checkEntryAccess(
+        makeEntry({ org_level: 'team', org_id: 7 }),
+        'admin',
+        false,
+        2,
+        10,
+        null,
+        null,
+      );
+
+      expect(result).toBe(true);
+    });
+
+    it('should deny admin access when no permissions match', async () => {
+      // no company-wide assignments
+      mockDb.query.mockResolvedValueOnce([]);
+      // no area access
+      mockDb.query.mockResolvedValueOnce([]);
+      // no department access
+      mockDb.query.mockResolvedValueOnce([]);
+      // no team access
+      mockDb.query.mockResolvedValueOnce([]);
+
+      const result = await service.checkEntryAccess(
+        makeEntry({ org_level: 'team', org_id: 7 }),
+        'admin',
+        false,
+        2,
+        10,
+        null,
+        null,
+      );
+
+      expect(result).toBe(false);
+    });
   });
 
   // =============================================================
@@ -295,11 +351,21 @@ describe('SECURITY: BlackboardAccessService', () => {
     });
 
     it('should throw ForbiddenException for inaccessible area', async () => {
-      // mockHierarchy returns empty arrays by default
-
       await expect(service.validateOrgPermissions(1, 10, [99])).rejects.toThrow(
         ForbiddenException,
       );
+    });
+
+    it('should throw ForbiddenException for inaccessible department', async () => {
+      await expect(
+        service.validateOrgPermissions(1, 10, [], [42]),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('should throw ForbiddenException for inaccessible team', async () => {
+      await expect(
+        service.validateOrgPermissions(1, 10, [], [], [77]),
+      ).rejects.toThrow(ForbiddenException);
     });
   });
 });

@@ -8,6 +8,7 @@
   import { invalidateAll } from '$app/navigation';
 
   import HighlightText from '$lib/components/HighlightText.svelte';
+  import PermissionDenied from '$lib/components/PermissionDenied.svelte';
   import { showErrorAlert, showSuccessAlert } from '$lib/stores/toast';
   import { createLogger } from '$lib/utils/logger';
 
@@ -64,6 +65,11 @@
   // Hierarchy labels from layout data inheritance (A6)
   const labels = $derived(data.hierarchyLabels);
   const messages = $derived(createMessages(labels));
+
+  // Lead-View: Employees can Read+Edit but NOT Create/Delete
+  const canMutate = $derived(
+    data.user?.role === 'root' || data.user?.role === 'admin',
+  );
 
   // =============================================================================
   // UI STATE - Filtering and form state (client-side only)
@@ -357,316 +363,327 @@
 
 <svelte:window onkeydown={handleKeydown} />
 
-<div class="container">
-  <div class="card">
-    <div class="card__header">
-      <h2 class="card__title">
-        <i class="fas fa-users-cog mr-2"></i>
-        {messages.PAGE_TITLE}
-      </h2>
-      <p class="mt-2 text-(--color-text-secondary)">
-        {messages.PAGE_DESCRIPTION}
-      </p>
+{#if data.permissionDenied}
+  <PermissionDenied addonName="die Teamverwaltung" />
+{:else}
+  <div class="container">
+    <div class="card">
+      <div class="card__header">
+        <h2 class="card__title">
+          <i class="fas fa-users-cog mr-2"></i>
+          {messages.PAGE_TITLE}
+        </h2>
+        <p class="mt-2 text-(--color-text-secondary)">
+          {messages.PAGE_DESCRIPTION}
+        </p>
 
-      <div class="mt-6 flex items-center justify-between gap-4">
-        <!-- Status Toggle Group -->
-        <div
-          class="toggle-group"
-          id="team-status-toggle"
-        >
-          <button
-            type="button"
-            class="toggle-group__btn"
-            class:active={currentStatusFilter === 'active'}
-            title={messages.FILTER_ACTIVE_TITLE}
-            onclick={() => {
-              handleStatusToggle('active');
-            }}
-          >
-            <i class="fas fa-check-circle"></i>
-            Aktive
-          </button>
-          <button
-            type="button"
-            class="toggle-group__btn"
-            class:active={currentStatusFilter === 'inactive'}
-            title={messages.FILTER_INACTIVE_TITLE}
-            onclick={() => {
-              handleStatusToggle('inactive');
-            }}
-          >
-            <i class="fas fa-times-circle"></i>
-            Inaktive
-          </button>
-          <button
-            type="button"
-            class="toggle-group__btn"
-            class:active={currentStatusFilter === 'archived'}
-            title={messages.FILTER_ARCHIVED_TITLE}
-            onclick={() => {
-              handleStatusToggle('archived');
-            }}
-          >
-            <i class="fas fa-archive"></i>
-            Archiviert
-          </button>
-          <button
-            type="button"
-            class="toggle-group__btn"
-            class:active={currentStatusFilter === 'all'}
-            title={messages.FILTER_ALL_TITLE}
-            onclick={() => {
-              handleStatusToggle('all');
-            }}
-          >
-            <i class="fas fa-users"></i>
-            Alle
-          </button>
-        </div>
-
-        <!-- Search Input -->
-        <div
-          class="search-input-wrapper max-w-80"
-          class:search-input-wrapper--open={searchOpen}
-        >
+        <div class="mt-6 flex items-center justify-between gap-4">
+          <!-- Status Toggle Group -->
           <div
-            class="search-input"
-            id="team-search-container"
+            class="toggle-group"
+            id="team-status-toggle"
           >
-            <i class="search-input__icon fas fa-search"></i>
-            <input
-              type="search"
-              id="team-search"
-              class="search-input__field"
-              placeholder={messages.SEARCH_PLACEHOLDER}
-              autocomplete="off"
-              value={currentSearchQuery}
-              oninput={handleSearchInput}
-            />
             <button
-              class="search-input__clear"
-              class:search-input__clear--visible={currentSearchQuery.length > 0}
               type="button"
-              aria-label="Suche löschen"
-              onclick={clearSearch}
+              class="toggle-group__btn"
+              class:active={currentStatusFilter === 'active'}
+              title={messages.FILTER_ACTIVE_TITLE}
+              onclick={() => {
+                handleStatusToggle('active');
+              }}
             >
-              <i class="fas fa-times"></i>
+              <i class="fas fa-check-circle"></i>
+              Aktive
+            </button>
+            <button
+              type="button"
+              class="toggle-group__btn"
+              class:active={currentStatusFilter === 'inactive'}
+              title={messages.FILTER_INACTIVE_TITLE}
+              onclick={() => {
+                handleStatusToggle('inactive');
+              }}
+            >
+              <i class="fas fa-times-circle"></i>
+              Inaktive
+            </button>
+            <button
+              type="button"
+              class="toggle-group__btn"
+              class:active={currentStatusFilter === 'archived'}
+              title={messages.FILTER_ARCHIVED_TITLE}
+              onclick={() => {
+                handleStatusToggle('archived');
+              }}
+            >
+              <i class="fas fa-archive"></i>
+              Archiviert
+            </button>
+            <button
+              type="button"
+              class="toggle-group__btn"
+              class:active={currentStatusFilter === 'all'}
+              title={messages.FILTER_ALL_TITLE}
+              onclick={() => {
+                handleStatusToggle('all');
+              }}
+            >
+              <i class="fas fa-users"></i>
+              Alle
             </button>
           </div>
+
+          <!-- Search Input -->
           <div
-            class="search-input__results"
-            id="team-search-results"
+            class="search-input-wrapper max-w-80"
+            class:search-input-wrapper--open={searchOpen}
           >
-            {#if currentSearchQuery && filteredTeams.length === 0}
-              <div class="search-input__no-results">
-                {messages.SEARCH_NO_RESULTS} "{currentSearchQuery}"
-              </div>
-            {:else if currentSearchQuery}
-              {#each filteredTeams.slice(0, 5) as team (team.id)}
-                <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
-                <div
-                  class="search-input__result-item"
-                  onclick={() => {
-                    void handleSearchResultClick(team.id);
-                  }}
-                >
-                  <i class="fas fa-users-cog text-blue-500"></i>
-                  <span>
-                    <HighlightText
-                      text={team.name}
-                      query={currentSearchQuery}
-                    />
-                  </span>
-                  {#if team.departmentName}
-                    <span class="ml-2 text-sm text-(--color-text-secondary)"
-                      >&rarr; {team.departmentName}</span
-                    >
-                  {/if}
+            <div
+              class="search-input"
+              id="team-search-container"
+            >
+              <i class="search-input__icon fas fa-search"></i>
+              <input
+                type="search"
+                id="team-search"
+                class="search-input__field"
+                placeholder={messages.SEARCH_PLACEHOLDER}
+                autocomplete="off"
+                value={currentSearchQuery}
+                oninput={handleSearchInput}
+              />
+              <button
+                class="search-input__clear"
+                class:search-input__clear--visible={currentSearchQuery.length >
+                  0}
+                type="button"
+                aria-label="Suche löschen"
+                onclick={clearSearch}
+              >
+                <i class="fas fa-times"></i>
+              </button>
+            </div>
+            <div
+              class="search-input__results"
+              id="team-search-results"
+            >
+              {#if currentSearchQuery && filteredTeams.length === 0}
+                <div class="search-input__no-results">
+                  {messages.SEARCH_NO_RESULTS} "{currentSearchQuery}"
                 </div>
-              {/each}
-            {/if}
+              {:else if currentSearchQuery}
+                {#each filteredTeams.slice(0, 5) as team (team.id)}
+                  <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
+                  <div
+                    class="search-input__result-item"
+                    onclick={() => {
+                      void handleSearchResultClick(team.id);
+                    }}
+                  >
+                    <i class="fas fa-users-cog text-blue-500"></i>
+                    <span>
+                      <HighlightText
+                        text={team.name}
+                        query={currentSearchQuery}
+                      />
+                    </span>
+                    {#if team.departmentName}
+                      <span class="ml-2 text-sm text-(--color-text-secondary)"
+                        >&rarr; {team.departmentName}</span
+                      >
+                    {/if}
+                  </div>
+                {/each}
+              {/if}
+            </div>
           </div>
         </div>
       </div>
-    </div>
 
-    <div class="card__body">
-      {#if error}
-        <div class="p-6 text-center">
-          <i
-            class="fas fa-exclamation-triangle mb-4 text-4xl text-(--color-danger)"
-          ></i>
-          <p class="text-(--color-text-secondary)">{error}</p>
-          <button
-            type="button"
-            class="btn btn-primary mt-4"
-            onclick={() => void invalidateAll()}>Erneut versuchen</button
-          >
-        </div>
-      {:else if filteredTeams.length === 0}
-        <div
-          id="teams-empty"
-          class="empty-state"
-        >
-          <div class="empty-state__icon">
-            <i class="fas fa-users-cog"></i>
-          </div>
-          <h3 class="empty-state__title">{messages.NO_TEAMS_FOUND}</h3>
-          <p class="empty-state__description">{messages.CREATE_FIRST_TEAM}</p>
-          <button
-            type="button"
-            class="btn btn-primary"
-            onclick={openAddModal}
-          >
-            <i class="fas fa-plus"></i>
-            {messages.BTN_ADD}
-          </button>
-        </div>
-      {:else}
-        <div id="teams-table-content">
-          <div class="table-responsive">
-            <table
-              class="data-table data-table--hover data-table--striped"
-              id="teams-table"
+      <div class="card__body">
+        {#if error}
+          <div class="p-6 text-center">
+            <i
+              class="fas fa-exclamation-triangle mb-4 text-4xl text-(--color-danger)"
+            ></i>
+            <p class="text-(--color-text-secondary)">{error}</p>
+            <button
+              type="button"
+              class="btn btn-primary mt-4"
+              onclick={() => void invalidateAll()}>Erneut versuchen</button
             >
-              <thead>
-                <tr>
-                  <th scope="col">ID</th>
-                  <th scope="col">Name</th>
-                  <th scope="col">{messages.TH_DEPARTMENT}</th>
-                  <th scope="col">Leiter</th>
-                  <th scope="col">Mitglieder</th>
-                  <th scope="col">{messages.TH_ASSETS}</th>
-                  <th scope="col">Status</th>
-                  <th scope="col">Erstellt am</th>
-                  <th scope="col">Aktionen</th>
-                </tr>
-              </thead>
-              <tbody>
-                {#each filteredTeams as team (team.id)}
-                  {@const deptBadge = getDepartmentBadge(
-                    team,
-                    allDepartments,
-                    labels,
-                  )}
-                  {@const membersBadge = getMembersBadge(team)}
-                  {@const assetsBadge = getAssetsBadge(team, labels)}
-                  <tr>
-                    <td><code class="text-muted">{team.id}</code></td>
-                    <td>
-                      <div class="flex items-center gap-2">
-                        <span class="font-medium">{team.name}</span>
-                      </div>
-                    </td>
-                    <td>
-                      <span
-                        class="badge {deptBadge.class}"
-                        title={deptBadge.title}
-                      >
-                        <!-- eslint-disable-next-line svelte/no-at-html-tags -- Safe: internal badge, no user input -->
-                        {@html deptBadge.text}
-                      </span>
-                    </td>
-                    <td>{team.leaderName ?? '-'}</td>
-                    <td>
-                      <span
-                        class="badge {membersBadge.class}"
-                        title={membersBadge.title}
-                      >
-                        <!-- eslint-disable-next-line svelte/no-at-html-tags -- Safe: internal badge, no user input -->
-                        {@html membersBadge.text}
-                      </span>
-                    </td>
-                    <td>
-                      <span
-                        class="badge {assetsBadge.class}"
-                        title={assetsBadge.title}
-                      >
-                        <!-- eslint-disable-next-line svelte/no-at-html-tags -- Safe: internal badge, no user input -->
-                        {@html assetsBadge.text}
-                      </span>
-                    </td>
-                    <td>
-                      <span class="badge {getStatusBadgeClass(team.isActive)}"
-                        >{getStatusLabel(team.isActive)}</span
-                      >
-                    </td>
-                    <td>{formatDate(team.createdAt)}</td>
-                    <td>
-                      <div class="flex gap-2">
-                        <button
-                          type="button"
-                          class="action-icon action-icon--edit"
-                          title="Bearbeiten"
-                          aria-label="Bearbeiten"
-                          onclick={() => void openEditModal(team.id)}
-                        >
-                          <i class="fas fa-edit"></i>
-                        </button>
-                        <button
-                          type="button"
-                          class="action-icon action-icon--delete"
-                          title="Löschen"
-                          aria-label="Löschen"
-                          onclick={() => {
-                            openDeleteModal(team.id);
-                          }}
-                        >
-                          <i class="fas fa-trash"></i>
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                {/each}
-              </tbody>
-            </table>
           </div>
-        </div>
-      {/if}
+        {:else if filteredTeams.length === 0}
+          <div
+            id="teams-empty"
+            class="empty-state"
+          >
+            <div class="empty-state__icon">
+              <i class="fas fa-users-cog"></i>
+            </div>
+            <h3 class="empty-state__title">{messages.NO_TEAMS_FOUND}</h3>
+            <p class="empty-state__description">{messages.CREATE_FIRST_TEAM}</p>
+            {#if canMutate}
+              <button
+                type="button"
+                class="btn btn-primary"
+                onclick={openAddModal}
+              >
+                <i class="fas fa-plus"></i>
+                {messages.BTN_ADD}
+              </button>
+            {/if}
+          </div>
+        {:else}
+          <div id="teams-table-content">
+            <div class="table-responsive">
+              <table
+                class="data-table data-table--hover data-table--striped"
+                id="teams-table"
+              >
+                <thead>
+                  <tr>
+                    <th scope="col">ID</th>
+                    <th scope="col">Name</th>
+                    <th scope="col">{messages.TH_DEPARTMENT}</th>
+                    <th scope="col">Leiter</th>
+                    <th scope="col">Mitglieder</th>
+                    <th scope="col">{messages.TH_ASSETS}</th>
+                    <th scope="col">Status</th>
+                    <th scope="col">Erstellt am</th>
+                    <th scope="col">Aktionen</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {#each filteredTeams as team (team.id)}
+                    {@const deptBadge = getDepartmentBadge(
+                      team,
+                      allDepartments,
+                      labels,
+                    )}
+                    {@const membersBadge = getMembersBadge(team)}
+                    {@const assetsBadge = getAssetsBadge(team, labels)}
+                    <tr>
+                      <td><code class="text-muted">{team.id}</code></td>
+                      <td>
+                        <div class="flex items-center gap-2">
+                          <span class="font-medium">{team.name}</span>
+                        </div>
+                      </td>
+                      <td>
+                        <span
+                          class="badge {deptBadge.class}"
+                          title={deptBadge.title}
+                        >
+                          <!-- eslint-disable-next-line svelte/no-at-html-tags -- Safe: internal badge, no user input -->
+                          {@html deptBadge.text}
+                        </span>
+                      </td>
+                      <td>{team.leaderName ?? '-'}</td>
+                      <td>
+                        <span
+                          class="badge {membersBadge.class}"
+                          title={membersBadge.title}
+                        >
+                          <!-- eslint-disable-next-line svelte/no-at-html-tags -- Safe: internal badge, no user input -->
+                          {@html membersBadge.text}
+                        </span>
+                      </td>
+                      <td>
+                        <span
+                          class="badge {assetsBadge.class}"
+                          title={assetsBadge.title}
+                        >
+                          <!-- eslint-disable-next-line svelte/no-at-html-tags -- Safe: internal badge, no user input -->
+                          {@html assetsBadge.text}
+                        </span>
+                      </td>
+                      <td>
+                        <span class="badge {getStatusBadgeClass(team.isActive)}"
+                          >{getStatusLabel(team.isActive)}</span
+                        >
+                      </td>
+                      <td>{formatDate(team.createdAt)}</td>
+                      <td>
+                        <div class="flex gap-2">
+                          <button
+                            type="button"
+                            class="action-icon action-icon--edit"
+                            title="Bearbeiten"
+                            aria-label="Bearbeiten"
+                            onclick={() => void openEditModal(team.id)}
+                          >
+                            <i class="fas fa-edit"></i>
+                          </button>
+                          {#if canMutate}
+                            <button
+                              type="button"
+                              class="action-icon action-icon--delete"
+                              title="Löschen"
+                              aria-label="Löschen"
+                              onclick={() => {
+                                openDeleteModal(team.id);
+                              }}
+                            >
+                              <i class="fas fa-trash"></i>
+                            </button>
+                          {/if}
+                        </div>
+                      </td>
+                    </tr>
+                  {/each}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        {/if}
+      </div>
     </div>
   </div>
-</div>
 
-<!-- Floating Action Button -->
-<button
-  type="button"
-  class="btn-float"
-  onclick={openAddModal}
-  aria-label="Hinzufügen"
->
-  <i class="fas fa-plus"></i>
-</button>
+  {#if canMutate}
+    <!-- Floating Action Button (Root/Admin only) -->
+    <button
+      type="button"
+      class="btn-float"
+      onclick={openAddModal}
+      aria-label="Hinzufügen"
+    >
+      <i class="fas fa-plus"></i>
+    </button>
+  {/if}
 
-<!-- Add/Edit Team Modal -->
-{#if showTeamModal}
-  <TeamFormModal
-    {isEditMode}
-    {modalTitle}
-    {labels}
-    {formName}
-    {formDescription}
-    {formDepartmentId}
-    {formLeaderId}
-    {formMemberIds}
-    {formAssetIds}
-    {formIsActive}
-    {allDepartments}
-    {allLeaders}
-    {allEmployees}
-    {allAssets}
-    {submitting}
-    onclose={closeTeamModal}
-    onsubmit={handleFormSubmit}
+  <!-- Add/Edit Team Modal -->
+  {#if showTeamModal}
+    <TeamFormModal
+      {isEditMode}
+      {modalTitle}
+      {labels}
+      {formName}
+      {formDescription}
+      {formDepartmentId}
+      {formLeaderId}
+      {formMemberIds}
+      {formAssetIds}
+      {formIsActive}
+      {allDepartments}
+      {allLeaders}
+      {allEmployees}
+      {allAssets}
+      {submitting}
+      onclose={closeTeamModal}
+      onsubmit={handleFormSubmit}
+    />
+  {/if}
+
+  <!-- Delete Modals -->
+  <TeamDeleteModals
+    show={showDeleteModal}
+    {showForceDeleteModal}
+    {forceDeleteMemberCount}
+    oncancel={closeDeleteModal}
+    onconfirm={deleteTeam}
+    oncloseForceDelete={closeForceDeleteModal}
+    onforceDelete={forceDeleteTeam}
   />
 {/if}
-
-<!-- Delete Modals -->
-<TeamDeleteModals
-  show={showDeleteModal}
-  {showForceDeleteModal}
-  {forceDeleteMemberCount}
-  oncancel={closeDeleteModal}
-  onconfirm={deleteTeam}
-  oncloseForceDelete={closeForceDeleteModal}
-  onforceDelete={forceDeleteTeam}
-/>

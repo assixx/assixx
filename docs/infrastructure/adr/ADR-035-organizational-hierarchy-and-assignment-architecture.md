@@ -1038,6 +1038,7 @@ frontend/src/
 - [ADR-020: Per-User Feature Permissions](./ADR-020-per-user-feature-permissions.md) — Addon-basierte Feature-Permissions
 - [ADR-033: Addon-basiertes SaaS-Modell](./ADR-033-addon-based-saas-model.md) — Core vs. Purchasable Addons
 - [ADR-034: Hierarchy Labels Propagation](./ADR-034-hierarchy-labels-propagation.md) — Dynamische UI-Labels
+- [ADR-036: Organizational Scope Access Control](./ADR-036-organizational-scope-access-control.md) — Scope-basierte Zugriffskontrolle für Manage-Seiten (Employee-Leads + Scoped Admins)
 - [HIERARCHY.md](/docs/HIERARCHY.md) — Historische Organisationsstruktur-Dokumentation
 - [Refactoring Assignment Plan](/docs/plans/refactoring-assignment-plan.md) — H-RBAC Design-Entscheidungen
 - [Refactoring Assignment Concrete Plan](/docs/plans/refactoring-assignment-concrete-plan.md) — Implementierungsdetails

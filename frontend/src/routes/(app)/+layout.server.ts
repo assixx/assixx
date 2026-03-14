@@ -13,9 +13,11 @@ import { redirect } from '@sveltejs/kit';
 
 import { API_BASE } from '$lib/server/api-fetch';
 import { DEFAULT_HIERARCHY_LABELS } from '$lib/types/hierarchy-labels';
+import { DEFAULT_ORG_SCOPE } from '$lib/types/organizational-scope';
 import { createLogger } from '$lib/utils/logger';
 
 import type { HierarchyLabels } from '$lib/types/hierarchy-labels';
+import type { OrganizationalScope } from '$lib/types/organizational-scope';
 import type { LayoutServerLoad } from './$types';
 
 const log = createLogger('AppLayout');
@@ -184,6 +186,19 @@ async function parseHierarchyLabels(
   }
 }
 
+/** Parse org scope from response (graceful fallback to default) */
+async function parseOrgScope(
+  response: Response | null,
+): Promise<OrganizationalScope> {
+  if (response?.ok !== true) return DEFAULT_ORG_SCOPE;
+  try {
+    const json = (await response.json()) as ApiResponse<OrganizationalScope>;
+    return json.data ?? DEFAULT_ORG_SCOPE;
+  } catch {
+    return DEFAULT_ORG_SCOPE;
+  }
+}
+
 /** Clear auth cookies and redirect to login */
 function clearAuthAndRedirect(
   cookies: Parameters<LayoutServerLoad>[0]['cookies'],
@@ -202,6 +217,7 @@ const UNAUTHENTICATED_RESPONSE = {
   theme: null,
   activeAddons: [] as string[],
   hierarchyLabels: DEFAULT_HIERARCHY_LABELS,
+  orgScope: DEFAULT_ORG_SCOPE,
 } as const;
 
 /** Build authenticated response from user data, counts, theme, addons, and labels */
@@ -211,6 +227,7 @@ async function buildAuthenticatedResponse(
   themeResponse: Response | null,
   addonsResponse: Response | null,
   labelsResponse: Response | null,
+  scopeResponse: Response | null,
 ) {
   return {
     user: mapUserData(userData),
@@ -220,6 +237,7 @@ async function buildAuthenticatedResponse(
     theme: await parseThemeSetting(themeResponse),
     activeAddons: await parseActiveAddons(addonsResponse),
     hierarchyLabels: await parseHierarchyLabels(labelsResponse),
+    orgScope: await parseOrgScope(scopeResponse),
   };
 }
 
@@ -232,17 +250,30 @@ async function fetchCountsThemeAddonsAndLabels(
   themeResponse: Response | null;
   addonsResponse: Response | null;
   labelsResponse: Response | null;
+  scopeResponse: Response | null;
 }> {
-  const [countsResponse, themeResponse, addonsResponse, labelsResponse] =
-    await Promise.all([
-      fetchFn(`${API_BASE}/dashboard/counts`, { headers }).catch(() => null),
-      fetchFn(`${API_BASE}/settings/user/theme`, { headers }).catch(() => null),
-      fetchFn(`${API_BASE}/addons/my-addons`, { headers }).catch(() => null),
-      fetchFn(`${API_BASE}/organigram/hierarchy-labels`, { headers }).catch(
-        () => null,
-      ),
-    ]);
-  return { countsResponse, themeResponse, addonsResponse, labelsResponse };
+  const [
+    countsResponse,
+    themeResponse,
+    addonsResponse,
+    labelsResponse,
+    scopeResponse,
+  ] = await Promise.all([
+    fetchFn(`${API_BASE}/dashboard/counts`, { headers }).catch(() => null),
+    fetchFn(`${API_BASE}/settings/user/theme`, { headers }).catch(() => null),
+    fetchFn(`${API_BASE}/addons/my-addons`, { headers }).catch(() => null),
+    fetchFn(`${API_BASE}/organigram/hierarchy-labels`, { headers }).catch(
+      () => null,
+    ),
+    fetchFn(`${API_BASE}/users/me/org-scope`, { headers }).catch(() => null),
+  ]);
+  return {
+    countsResponse,
+    themeResponse,
+    addonsResponse,
+    labelsResponse,
+    scopeResponse,
+  };
 }
 
 /** Fetch user data, dashboard counts, theme, active addons, and hierarchy labels in parallel */
@@ -255,6 +286,7 @@ async function fetchUserCountsThemeAddonsAndLabels(
   themeResponse: Response | null;
   addonsResponse: Response | null;
   labelsResponse: Response | null;
+  scopeResponse: Response | null;
 }> {
   const [
     userResponse,
@@ -262,6 +294,7 @@ async function fetchUserCountsThemeAddonsAndLabels(
     themeResponse,
     addonsResponse,
     labelsResponse,
+    scopeResponse,
   ] = await Promise.all([
     fetchFn(`${API_BASE}/users/me`, { headers }),
     fetchFn(`${API_BASE}/dashboard/counts`, { headers }).catch(() => null),
@@ -270,6 +303,7 @@ async function fetchUserCountsThemeAddonsAndLabels(
     fetchFn(`${API_BASE}/organigram/hierarchy-labels`, { headers }).catch(
       () => null,
     ),
+    fetchFn(`${API_BASE}/users/me/org-scope`, { headers }).catch(() => null),
   ]);
   return {
     userResponse,
@@ -277,6 +311,7 @@ async function fetchUserCountsThemeAddonsAndLabels(
     themeResponse,
     addonsResponse,
     labelsResponse,
+    scopeResponse,
   };
 }
 
@@ -321,8 +356,13 @@ export const load: LayoutServerLoad = async ({
   if (rbacUser !== undefined) {
     // FAST PATH: Reuse user from RBAC hook - fetch counts, theme, addons + labels in parallel
     const fetchStart = performance.now();
-    const { countsResponse, themeResponse, addonsResponse, labelsResponse } =
-      await fetchCountsThemeAddonsAndLabels(fetch, headers);
+    const {
+      countsResponse,
+      themeResponse,
+      addonsResponse,
+      labelsResponse,
+      scopeResponse,
+    } = await fetchCountsThemeAddonsAndLabels(fetch, headers);
     const fetchTime = Math.round(performance.now() - fetchStart);
     const totalTime = Math.round(performance.now() - startTime);
 
@@ -337,6 +377,7 @@ export const load: LayoutServerLoad = async ({
       themeResponse,
       addonsResponse,
       labelsResponse,
+      scopeResponse,
     );
   }
 
@@ -369,6 +410,7 @@ async function loadUserWithFetch(
     themeResponse,
     addonsResponse,
     labelsResponse,
+    scopeResponse,
   } = await fetchUserCountsThemeAddonsAndLabels(fetchFn, headers);
   const fetchTime = Math.round(performance.now() - fetchStart);
 
@@ -397,5 +439,6 @@ async function loadUserWithFetch(
     themeResponse,
     addonsResponse,
     labelsResponse,
+    scopeResponse,
   );
 }

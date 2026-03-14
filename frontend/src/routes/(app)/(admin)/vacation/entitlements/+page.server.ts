@@ -7,7 +7,7 @@
  */
 import { redirect } from '@sveltejs/kit';
 
-import { apiFetch } from '$lib/server/api-fetch';
+import { apiFetchWithPermission } from '$lib/server/api-fetch';
 import { requireAddon } from '$lib/utils/addon-guard';
 
 import type { PageServerLoad } from './$types';
@@ -35,16 +35,22 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
 
   const currentYear = new Date().getFullYear();
 
-  // Fetch active employees
-  // ResponseInterceptor flattens paginated responses: data = [...users] directly
-  const usersData = await apiFetch<RawUser[]>(
+  const usersResult = await apiFetchWithPermission<RawUser[]>(
     '/users?limit=100&isActive=1&sortBy=lastName&sortOrder=asc',
     token,
     fetch,
   );
 
-  const rawUsers = Array.isArray(usersData) ? usersData : [];
-  const employees: EmployeeListItem[] = rawUsers.map((u) => ({
+  if (usersResult.permissionDenied) {
+    return {
+      permissionDenied: true as const,
+      employees: [] as EmployeeListItem[],
+      currentYear,
+    };
+  }
+
+  const rawUsers = Array.isArray(usersResult.data) ? usersResult.data : [];
+  const employees: EmployeeListItem[] = rawUsers.map((u: RawUser) => ({
     id: u.id,
     firstName: u.firstName,
     lastName: u.lastName,
@@ -56,6 +62,7 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
   }));
 
   return {
+    permissionDenied: false as const,
     employees,
     currentYear,
   };

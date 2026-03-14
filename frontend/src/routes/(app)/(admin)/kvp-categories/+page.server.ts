@@ -6,7 +6,7 @@
  */
 import { redirect } from '@sveltejs/kit';
 
-import { API_BASE, type ServerApiResponse } from '$lib/server/api-fetch';
+import { apiFetchWithPermission } from '$lib/server/api-fetch';
 import { requireAddon } from '$lib/utils/addon-guard';
 import { createLogger } from '$lib/utils/logger';
 
@@ -15,53 +15,12 @@ import type { CustomizableCategoriesData } from './_lib/types';
 
 const log = createLogger('KvpCategoriesPage');
 
-interface CategoryResult {
-  categories: CustomizableCategoriesData | null;
-  error: string | null;
-}
-
-/** Fetch customizable categories from backend API */
-async function fetchCategories(
-  fetchFn: typeof fetch,
-  token: string,
-): Promise<CategoryResult> {
-  try {
-    const response = await fetchFn(`${API_BASE}/kvp/categories/customizable`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      log.error({ status: response.status }, 'API error loading categories');
-      return { categories: null, error: 'Fehler beim Laden der Kategorien' };
-    }
-
-    const json =
-      (await response.json()) as ServerApiResponse<CustomizableCategoriesData>;
-    const data =
-      json.success === true && json.data !== undefined ?
-        json.data
-      : (json as unknown as CustomizableCategoriesData);
-
-    return { categories: data, error: null };
-  } catch (err: unknown) {
-    log.error({ err }, 'Fetch error');
-    return {
-      categories: null,
-      error: 'Netzwerkfehler beim Laden der Kategorien',
-    };
-  }
-}
-
 export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
   const token = cookies.get('accessToken');
   if (token === undefined || token === '') {
     redirect(302, '/login');
   }
 
-  // Permission: root always, admin needs has_full_access
   const { user, activeAddons } = await parent();
   requireAddon(activeAddons, 'kvp');
   if (user !== null && user.role !== 'root' && !user.hasFullAccess) {
@@ -72,5 +31,23 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
     redirect(302, '/permission-denied');
   }
 
-  return await fetchCategories(fetch, token);
+  const result = await apiFetchWithPermission<CustomizableCategoriesData>(
+    '/kvp/categories/customizable',
+    token,
+    fetch,
+  );
+
+  if (result.permissionDenied) {
+    return {
+      permissionDenied: true as const,
+      categories: null,
+      error: null,
+    };
+  }
+
+  return {
+    permissionDenied: false as const,
+    categories: result.data,
+    error: result.data === null ? 'Fehler beim Laden der Kategorien' : null,
+  };
 };

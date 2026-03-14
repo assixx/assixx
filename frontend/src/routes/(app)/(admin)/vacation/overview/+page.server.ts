@@ -7,7 +7,7 @@
  */
 import { redirect } from '@sveltejs/kit';
 
-import { apiFetch } from '$lib/server/api-fetch';
+import { apiFetch, apiFetchWithPermission } from '$lib/server/api-fetch';
 import { requireAddon } from '$lib/utils/addon-guard';
 
 import type { PageServerLoad } from './$types';
@@ -40,13 +40,30 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
   const currentYear = now.getFullYear();
   const currentMonth = now.getMonth() + 1;
 
-  const [teamsData, blackoutsData] = await Promise.all([
-    apiFetch<RawTeam[]>('/teams', token, fetch),
-    apiFetch<RawBlackout[]>('/vacation/blackouts', token, fetch),
-  ]);
+  const teamsResult = await apiFetchWithPermission<RawTeam[]>(
+    '/teams',
+    token,
+    fetch,
+  );
+
+  if (teamsResult.permissionDenied) {
+    return {
+      permissionDenied: true as const,
+      teams: [] as TeamListItem[],
+      blackouts: [] as BlackoutPeriod[],
+      currentYear,
+      currentMonth,
+    };
+  }
+
+  const blackoutsData = await apiFetch<RawBlackout[]>(
+    '/vacation/blackouts',
+    token,
+    fetch,
+  );
 
   const teams: TeamListItem[] =
-    teamsData
+    teamsResult.data
       ?.map((t: RawTeam) => ({ id: t.id, name: t.name }))
       .sort((a: TeamListItem, b: TeamListItem) =>
         a.name.localeCompare(b.name, 'de'),
@@ -62,6 +79,7 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
     })) ?? [];
 
   return {
+    permissionDenied: false as const,
     teams,
     blackouts,
     currentYear,

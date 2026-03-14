@@ -17,6 +17,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import type { DatabaseService } from '../database/database.service.js';
+import type { ScopeService } from '../hierarchy-permission/scope.service.js';
 import type { CreateTeamDto } from './dto/create-team.dto.js';
 import type { UpdateTeamDto } from './dto/update-team.dto.js';
 import type { TeamRow } from './teams.service.js';
@@ -50,6 +51,24 @@ function createMockActivityLogger() {
     logUpdate: vi.fn().mockResolvedValue(undefined),
     logDelete: vi.fn().mockResolvedValue(undefined),
     log: vi.fn().mockResolvedValue(undefined),
+  };
+}
+
+function createMockScope() {
+  return {
+    getScope: vi.fn().mockResolvedValue({
+      type: 'full',
+      areaIds: [],
+      departmentIds: [],
+      teamIds: [],
+      leadAreaIds: [],
+      leadDepartmentIds: [],
+      leadTeamIds: [],
+      isAreaLead: false,
+      isDepartmentLead: false,
+      isTeamLead: false,
+      isAnyLead: false,
+    }),
   };
 }
 
@@ -89,9 +108,11 @@ describe('TeamsService', () => {
     vi.clearAllMocks();
     mockActivityLogger = createMockActivityLogger();
     mockDb = createMockDb();
+    const mockScope = createMockScope();
     service = new TeamsService(
       mockActivityLogger as unknown as ActivityLoggerService,
       mockDb as unknown as DatabaseService,
+      mockScope as unknown as ScopeService,
     );
   });
 
@@ -174,6 +195,43 @@ describe('TeamsService', () => {
       });
 
       expect(result).toHaveLength(2);
+    });
+
+    it('should return empty array when scope is "none"', async () => {
+      const mockScope = createMockScope();
+      mockScope.getScope.mockResolvedValueOnce({ type: 'none' });
+      const scopedService = new TeamsService(
+        mockActivityLogger as unknown as ActivityLoggerService,
+        mockDb as unknown as DatabaseService,
+        mockScope as unknown as ScopeService,
+      );
+
+      const result = await scopedService.listTeams(10);
+
+      expect(result).toEqual([]);
+      expect(mockDb.query).not.toHaveBeenCalled();
+    });
+
+    it('should filter teams by scope when limited', async () => {
+      const mockScope = createMockScope();
+      mockScope.getScope.mockResolvedValueOnce({
+        type: 'limited',
+        teamIds: [1],
+      });
+      const scopedService = new TeamsService(
+        mockActivityLogger as unknown as ActivityLoggerService,
+        mockDb as unknown as DatabaseService,
+        mockScope as unknown as ScopeService,
+      );
+      mockDb.query.mockResolvedValueOnce([
+        makeTeamRow({ id: 1 }),
+        makeTeamRow({ id: 2, name: 'Beta Team' }),
+      ]);
+
+      const result = await scopedService.listTeams(10);
+
+      expect(result).toHaveLength(1);
+      expect(result[0]?.id).toBe(1);
     });
 
     it('should map member_names and asset_names', async () => {
@@ -286,8 +344,8 @@ describe('TeamsService', () => {
 
       // validateDepartment: SELECT departments → found
       mockDb.query.mockResolvedValueOnce([{ id: 5 }]);
-      // validateLeader: SELECT id, position → user exists, active, position=Teamleiter
-      mockDb.query.mockResolvedValueOnce([{ id: 42, position: 'Teamleiter' }]);
+      // validateLeader: SELECT id, position → user exists, active, position=team_lead
+      mockDb.query.mockResolvedValueOnce([{ id: 42, position: 'team_lead' }]);
       // checkDuplicateName: no duplicate
       mockDb.query.mockResolvedValueOnce([]);
       // INSERT team RETURNING id
@@ -344,7 +402,7 @@ describe('TeamsService', () => {
       );
     });
 
-    it('should allow employee with position "Teamleiter" as team leader', async () => {
+    it('should allow employee with position "team_lead" as team leader', async () => {
       const dto = {
         name: 'Employee Led',
         description: null,
@@ -352,8 +410,8 @@ describe('TeamsService', () => {
         leaderId: 5,
       } as unknown as CreateTeamDto;
 
-      // validateLeader: employee with position Teamleiter
-      mockDb.query.mockResolvedValueOnce([{ id: 5, position: 'Teamleiter' }]);
+      // validateLeader: employee with position team_lead
+      mockDb.query.mockResolvedValueOnce([{ id: 5, position: 'team_lead' }]);
       // checkDuplicateName: no duplicate
       mockDb.query.mockResolvedValueOnce([]);
       // INSERT team RETURNING id
@@ -373,7 +431,7 @@ describe('TeamsService', () => {
       expect(result.leaderId).toBe(5);
     });
 
-    it('should reject user without position "Teamleiter"', async () => {
+    it('should reject user without position "team_lead"', async () => {
       const dto = {
         name: 'No Position',
         description: null,
@@ -408,8 +466,8 @@ describe('TeamsService', () => {
         leaderId: 42,
       } as unknown as CreateTeamDto;
 
-      // validateLeader: SELECT id, position → user exists, active, position=Teamleiter
-      mockDb.query.mockResolvedValueOnce([{ id: 42, position: 'Teamleiter' }]);
+      // validateLeader: SELECT id, position → user exists, active, position=team_lead
+      mockDb.query.mockResolvedValueOnce([{ id: 42, position: 'team_lead' }]);
       // checkDuplicateName: no duplicate
       mockDb.query.mockResolvedValueOnce([]);
       // INSERT team RETURNING id
@@ -470,8 +528,8 @@ describe('TeamsService', () => {
 
       // find existing team (has old leader)
       mockDb.query.mockResolvedValueOnce([makeTeamRow({ team_lead_id: 3 })]);
-      // validateLeader: SELECT id, position → user exists, active, position=Teamleiter
-      mockDb.query.mockResolvedValueOnce([{ id: 5, position: 'Teamleiter' }]);
+      // validateLeader: SELECT id, position → user exists, active, position=team_lead
+      mockDb.query.mockResolvedValueOnce([{ id: 5, position: 'team_lead' }]);
       // UPDATE teams (team_lead_id)
       mockDb.query.mockResolvedValueOnce([]);
       // handleLeaderChange: demote old leader
@@ -480,6 +538,12 @@ describe('TeamsService', () => {
       mockDb.query.mockResolvedValueOnce([{ id: 1 }]);
       // ensureLeaderInTeam: UPDATE user_teams role='lead'
       mockDb.query.mockResolvedValueOnce([]);
+      // handleLeadPermissionChanges → seedLeadPermissions(5): INSERT manage-teams
+      mockDb.query.mockResolvedValueOnce([]);
+      // handleLeadPermissionChanges → seedLeadPermissions(5): INSERT manage-employees
+      mockDb.query.mockResolvedValueOnce([]);
+      // handleLeadPermissionChanges → cleanupLeadPermissions(3): COUNT remaining leaderships
+      mockDb.query.mockResolvedValueOnce([{ count: '1' }]);
       // getTeamById
       mockDb.query.mockResolvedValueOnce([makeTeamRow({ team_lead_id: 5 })]);
 
@@ -692,6 +756,14 @@ describe('TeamsService', () => {
   // =============================================================
 
   describe('removeTeamMember', () => {
+    it('should throw NotFoundException when team not found', async () => {
+      mockDb.query.mockResolvedValueOnce([]);
+
+      await expect(service.removeTeamMember(999, 1, 10)).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+
     it('should throw BadRequestException when user not member', async () => {
       // find team
       mockDb.query.mockResolvedValueOnce([makeTeamRow()]);

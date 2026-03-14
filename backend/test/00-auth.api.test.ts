@@ -44,6 +44,9 @@ function applyDbPrerequisites(tenantId: number, userId: number): void {
       SELECT ${tenantId}, 'Test Department', 'Auto-created for API tests', 1, gen_random_uuid()::char(36), NOW()
       WHERE NOT EXISTS (SELECT 1 FROM departments WHERE tenant_id = ${tenantId});
 
+      -- Ensure user has team_lead position (required by validate_team_lead_position trigger)
+      UPDATE users SET position = 'team_lead' WHERE id = ${userId} AND (position IS NULL OR position != 'team_lead');
+
       -- Ensure a team exists (required for KVP team_lead)
       INSERT INTO teams (tenant_id, name, department_id, team_lead_id, is_active, uuid, uuid_created_at)
       SELECT ${tenantId}, 'Test Team',

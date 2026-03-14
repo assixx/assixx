@@ -106,8 +106,8 @@ export interface TeamFormData {
 export interface TeamPayload {
   name: string;
   description?: string;
-  departmentId?: number;
-  leaderId?: number;
+  departmentId?: number | null;
+  leaderId?: number | null;
   isActive: FormIsActiveStatus;
 }
 

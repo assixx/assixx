@@ -83,14 +83,14 @@ export interface EventFilters {
 }
 
 /**
- * User role info with full access flag
- * Uses arrays because a user can belong to multiple teams/departments
+ * User's organizational memberships for content visibility.
+ * Separate from OrganizationalScope (manage-page access) — see R7 in masterplan.
+ *
+ * Calendar Visibility = OrganizationalScope ∪ CalendarMemberships
  */
-export interface UserRoleInfo {
-  role: string | null;
-  department_ids: number[];
-  team_ids: number[];
-  has_full_access: boolean;
+export interface CalendarMemberships {
+  readonly departmentIds: number[];
+  readonly teamIds: number[];
 }
 
 /**
