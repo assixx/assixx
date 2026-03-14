@@ -140,6 +140,18 @@ describe('CalendarService – pure helpers', () => {
       expect(statusField?.transform?.('confirmed')).toBe('confirmed');
       expect(statusField?.transform?.('other')).toBe('confirmed');
     });
+
+    it('transforms startTime and endTime to Date objects', () => {
+      const fields = service['getEventFieldMappings'](false);
+      const startField = fields.find((f) => f.key === 'startTime');
+      const endField = fields.find((f) => f.key === 'endTime');
+
+      const startResult = startField?.transform?.('2026-03-14T10:00:00Z');
+      const endResult = endField?.transform?.('2026-03-14T12:00:00Z');
+
+      expect(startResult).toBeInstanceOf(Date);
+      expect(endResult).toBeInstanceOf(Date);
+    });
   });
 
   describe('buildEventUpdateQuery', () => {
@@ -179,6 +191,7 @@ describe('CalendarService – DB-mocked methods', () => {
   let service: CalendarService;
   let mockDb: { query: ReturnType<typeof vi.fn> };
   let mockPermission: Record<string, ReturnType<typeof vi.fn>>;
+  let mockCreation: Record<string, ReturnType<typeof vi.fn>>;
   let mockActivityLogger: Record<string, ReturnType<typeof vi.fn>>;
   let mockOverview: Record<string, ReturnType<typeof vi.fn>>;
 
@@ -187,6 +200,7 @@ describe('CalendarService – DB-mocked methods', () => {
     service = result.service;
     mockDb = result.mockDb;
     mockPermission = result.mockPermission;
+    mockCreation = result.mockCreation;
     mockActivityLogger = result.mockActivityLogger;
     mockOverview = result.mockOverview;
   });
@@ -217,6 +231,50 @@ describe('CalendarService – DB-mocked methods', () => {
         NotFoundException,
       );
     });
+
+    it('returns event with attendees on happy path', async () => {
+      const now = new Date();
+      mockDb.query.mockResolvedValueOnce([
+        {
+          id: 1,
+          uuid: 'evt-uuid',
+          title: 'Team Meeting',
+          user_id: 5,
+          tenant_id: 1,
+          start_date: now,
+          end_date: now,
+          all_day: 0,
+          is_private: 0,
+          status: 'confirmed',
+          org_level: 'company',
+          department_id: null,
+          team_id: null,
+          area_id: null,
+          allow_attendees: 1,
+          created_at: now,
+          updated_at: now,
+        },
+      ]);
+      mockPermission.checkEventAccess.mockResolvedValueOnce(true);
+      mockPermission.getEventAttendees.mockResolvedValueOnce([
+        {
+          user_id: 10,
+          username: 'john',
+          first_name: 'John',
+          last_name: 'Doe',
+          email: 'john@test.de',
+          profile_picture: null,
+        },
+      ]);
+
+      const result = await service.getEventById(1, 1, 5);
+
+      expect(result).toHaveProperty('title', 'Team Meeting');
+      expect(result).toHaveProperty('attendees');
+      const attendees = result['attendees'] as unknown[];
+      expect(attendees).toHaveLength(1);
+      expect(mockPermission.getEventAttendees).toHaveBeenCalledWith(1, 1);
+    });
   });
 
   describe('updateEvent', () => {
@@ -229,6 +287,9 @@ describe('CalendarService – DB-mocked methods', () => {
     });
 
     it('throws ForbiddenException for non-owner non-admin', async () => {
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+
       mockDb.query.mockResolvedValueOnce([
         {
           id: 1,
@@ -236,13 +297,108 @@ describe('CalendarService – DB-mocked methods', () => {
           user_id: 99, // owned by user 99
           tenant_id: 1,
           start_date: new Date(),
-          end_date: new Date(),
+          end_date: tomorrow,
         },
       ]);
 
       await expect(
         service.updateEvent(1, { title: 'New' } as never, 1, 5, 'employee'),
       ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('throws ForbiddenException for past events', async () => {
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+
+      mockDb.query.mockResolvedValueOnce([
+        {
+          id: 1,
+          title: 'Past Event',
+          user_id: 5,
+          tenant_id: 1,
+          start_date: yesterday,
+          end_date: yesterday,
+        },
+      ]);
+
+      await expect(
+        service.updateEvent(1, { title: 'New' } as never, 1, 5, 'admin'),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('updates future event as admin and logs activity', async () => {
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      const now = new Date();
+
+      // SELECT existing event
+      mockDb.query.mockResolvedValueOnce([
+        {
+          id: 1,
+          uuid: 'evt-uuid',
+          title: 'Original',
+          user_id: 5,
+          tenant_id: 1,
+          start_date: now,
+          end_date: tomorrow,
+          all_day: 0,
+          is_private: 0,
+          status: 'confirmed',
+          org_level: 'company',
+          department_id: null,
+          team_id: null,
+          area_id: null,
+          allow_attendees: 1,
+          created_at: now,
+          updated_at: now,
+        },
+      ]);
+      // UPDATE query
+      mockDb.query.mockResolvedValueOnce([]);
+      // getEventById → SELECT event
+      mockDb.query.mockResolvedValueOnce([
+        {
+          id: 1,
+          uuid: 'evt-uuid',
+          title: 'Updated',
+          user_id: 5,
+          tenant_id: 1,
+          start_date: now,
+          end_date: tomorrow,
+          all_day: 0,
+          is_private: 0,
+          status: 'confirmed',
+          org_level: 'company',
+          department_id: null,
+          team_id: null,
+          area_id: null,
+          allow_attendees: 1,
+          created_at: now,
+          updated_at: now,
+        },
+      ]);
+      mockPermission.checkEventAccess.mockResolvedValueOnce(true);
+      mockPermission.getEventAttendees.mockResolvedValueOnce([]);
+      mockActivityLogger.logUpdate.mockResolvedValueOnce(undefined);
+
+      const result = await service.updateEvent(
+        1,
+        { title: 'Updated' } as never,
+        1,
+        5,
+        'admin',
+      );
+
+      expect(result).toHaveProperty('title', 'Updated');
+      expect(mockActivityLogger.logUpdate).toHaveBeenCalledWith(
+        1,
+        5,
+        'calendar',
+        1,
+        expect.any(String),
+        expect.any(Object),
+        expect.any(Object),
+      );
     });
   });
 
@@ -336,6 +492,63 @@ describe('CalendarService – DB-mocked methods', () => {
         ),
       ).rejects.toThrow(ForbiddenException);
     });
+
+    it('creates event with attendees and returns result', async () => {
+      const now = new Date();
+      const later = new Date(now.getTime() + 3600000);
+
+      mockCreation.insertEvent.mockResolvedValueOnce(42);
+      mockCreation.addAttendeesToEvent.mockResolvedValueOnce(undefined);
+      mockCreation.createChildEvents.mockResolvedValueOnce(undefined);
+      mockCreation.logEventCreated.mockResolvedValueOnce(undefined);
+
+      // getEventById called at the end → SELECT event + access check + attendees
+      mockDb.query.mockResolvedValueOnce([
+        {
+          id: 42,
+          uuid: 'new-uuid',
+          title: 'New Event',
+          user_id: 5,
+          tenant_id: 1,
+          start_date: now,
+          end_date: later,
+          all_day: 0,
+          is_private: 0,
+          status: 'confirmed',
+          org_level: 'company',
+          department_id: null,
+          team_id: null,
+          area_id: null,
+          allow_attendees: 1,
+          created_at: now,
+          updated_at: now,
+        },
+      ]);
+      mockPermission.checkEventAccess.mockResolvedValueOnce(true);
+      mockPermission.getEventAttendees.mockResolvedValueOnce([]);
+
+      const result = await service.createEvent(
+        {
+          title: 'New Event',
+          startTime: now.toISOString(),
+          endTime: later.toISOString(),
+          attendeeIds: [10, 20],
+        } as never,
+        1,
+        5,
+      );
+
+      expect(result).toHaveProperty('title', 'New Event');
+      expect(mockCreation.insertEvent).toHaveBeenCalledOnce();
+      expect(mockCreation.addAttendeesToEvent).toHaveBeenCalledWith(
+        42,
+        5,
+        [10, 20],
+        1,
+      );
+      expect(mockCreation.createChildEvents).toHaveBeenCalledOnce();
+      expect(mockCreation.logEventCreated).toHaveBeenCalledOnce();
+    });
   });
 
   describe('resolveEventIdByUuid', () => {
@@ -367,6 +580,19 @@ describe('CalendarService – DB-mocked methods', () => {
     });
   });
 
+  describe('getRecentlyAddedEvents – delegation', () => {
+    it('delegates to overview service', async () => {
+      mockOverview.getRecentlyAddedEvents.mockResolvedValueOnce([
+        { title: 'Recent' },
+      ]);
+
+      const result = await service.getRecentlyAddedEvents(1, 5, 3);
+
+      expect(mockOverview.getRecentlyAddedEvents).toHaveBeenCalledWith(1, 5, 3);
+      expect(result).toHaveLength(1);
+    });
+  });
+
   describe('getUpcomingCount – delegation', () => {
     it('delegates to overview service', async () => {
       mockOverview.getUpcomingCount.mockResolvedValueOnce({ count: 7 });
@@ -380,6 +606,336 @@ describe('CalendarService – DB-mocked methods', () => {
         null,
       );
       expect(result.count).toBe(7);
+    });
+  });
+
+  describe('listEvents', () => {
+    it('returns paginated events for full-scope user', async () => {
+      const now = new Date();
+      const mockScope = {
+        getScope: vi.fn().mockResolvedValue({ type: 'full' }),
+      };
+      const {
+        service: svc,
+        mockDb: db,
+        mockPermission: perm,
+      } = createServiceWithMock();
+      // Override scope mock
+      Object.assign(svc, { scopeService: mockScope });
+
+      perm.getUserMemberships.mockResolvedValueOnce({
+        departmentIds: [],
+        teamIds: [],
+      });
+      perm.buildAdminOrgLevelFilter.mockReturnValueOnce({
+        clause: '',
+        newParams: [],
+        newIndex: 3,
+      });
+
+      // COUNT query
+      db.query.mockResolvedValueOnce([{ count: '2' }]);
+      // SELECT events
+      db.query.mockResolvedValueOnce([
+        {
+          id: 1,
+          uuid: 'u1',
+          title: 'Event 1',
+          user_id: 5,
+          tenant_id: 1,
+          start_date: now,
+          end_date: now,
+          all_day: 0,
+          is_private: 0,
+          status: 'confirmed',
+          org_level: 'company',
+          department_id: null,
+          team_id: null,
+          area_id: null,
+          allow_attendees: 0,
+          created_at: now,
+          updated_at: now,
+        },
+        {
+          id: 2,
+          uuid: 'u2',
+          title: 'Event 2',
+          user_id: 5,
+          tenant_id: 1,
+          start_date: now,
+          end_date: now,
+          all_day: 0,
+          is_private: 0,
+          status: 'confirmed',
+          org_level: 'company',
+          department_id: null,
+          team_id: null,
+          area_id: null,
+          allow_attendees: 0,
+          created_at: now,
+          updated_at: now,
+        },
+      ]);
+
+      const result = await svc.listEvents(1, 5, null, null, {
+        status: undefined,
+        filter: undefined,
+        search: undefined,
+        startDate: undefined,
+        endDate: undefined,
+        page: 1,
+        limit: 20,
+        sortBy: undefined,
+        sortOrder: undefined,
+      });
+
+      expect(result.events).toHaveLength(2);
+      expect(result.pagination.total).toBe(2);
+      expect(result.pagination.page).toBe(1);
+    });
+
+    it('uses permission-based filter for non-full scope', async () => {
+      const mockScope = {
+        getScope: vi.fn().mockResolvedValue({
+          type: 'limited',
+          areaIds: [1],
+          departmentIds: [2],
+          teamIds: [3],
+        }),
+      };
+      const {
+        service: svc,
+        mockDb: db,
+        mockPermission: perm,
+      } = createServiceWithMock();
+      Object.assign(svc, { scopeService: mockScope });
+
+      perm.getUserMemberships.mockResolvedValueOnce({
+        departmentIds: [2],
+        teamIds: [3],
+      });
+      perm.buildPermissionBasedFilter.mockReturnValueOnce({
+        clause: ' AND e.id > 0',
+        newParams: [],
+        newIndex: 3,
+      });
+
+      db.query.mockResolvedValueOnce([{ count: '0' }]);
+      db.query.mockResolvedValueOnce([]);
+
+      const result = await svc.listEvents(1, 5, null, null, {
+        status: 'cancelled',
+        filter: 'my',
+        search: undefined,
+        startDate: undefined,
+        endDate: undefined,
+        page: undefined,
+        limit: undefined,
+        sortBy: 'title',
+        sortOrder: 'DESC',
+      });
+
+      expect(result.events).toHaveLength(0);
+      expect(perm.buildPermissionBasedFilter).toHaveBeenCalledOnce();
+    });
+  });
+
+  describe('exportEvents', () => {
+    it('returns ICS export string', async () => {
+      const now = new Date();
+      mockDb.query.mockResolvedValueOnce([
+        {
+          id: 1,
+          uuid: 'u1',
+          title: 'Export Event',
+          user_id: 5,
+          tenant_id: 1,
+          start_date: now,
+          end_date: now,
+          all_day: 0,
+          is_private: 0,
+          status: 'confirmed',
+          org_level: 'company',
+          department_id: null,
+          team_id: null,
+          area_id: null,
+          allow_attendees: 0,
+          created_at: now,
+          updated_at: now,
+        },
+      ]);
+
+      const result = await service.exportEvents(1, 5, null, 'ics');
+
+      expect(result).toContain('BEGIN:VCALENDAR');
+      expect(result).toContain('Export Event');
+    });
+
+    it('returns CSV export string', async () => {
+      const now = new Date();
+      mockDb.query.mockResolvedValueOnce([
+        {
+          id: 1,
+          uuid: 'u1',
+          title: 'CSV Event',
+          user_id: 5,
+          tenant_id: 1,
+          start_date: now,
+          end_date: now,
+          all_day: 0,
+          is_private: 0,
+          status: 'confirmed',
+          org_level: 'company',
+          department_id: null,
+          team_id: null,
+          area_id: null,
+          allow_attendees: 0,
+          created_at: now,
+          updated_at: now,
+          creator_name: 'admin',
+        },
+      ]);
+
+      const result = await service.exportEvents(1, 5, null, 'csv');
+
+      expect(result).toContain('CSV Event');
+    });
+  });
+
+  describe('UUID-based delegation methods', () => {
+    it('getEventByUuid resolves UUID and delegates', async () => {
+      const now = new Date();
+      // resolveEventIdByUuid query
+      mockDb.query.mockResolvedValueOnce([{ id: 10 }]);
+      // getEventById query
+      mockDb.query.mockResolvedValueOnce([
+        {
+          id: 10,
+          uuid: 'test-uuid',
+          title: 'UUID Event',
+          user_id: 5,
+          tenant_id: 1,
+          start_date: now,
+          end_date: now,
+          all_day: 0,
+          is_private: 0,
+          status: 'confirmed',
+          org_level: 'company',
+          department_id: null,
+          team_id: null,
+          area_id: null,
+          allow_attendees: 0,
+          created_at: now,
+          updated_at: now,
+        },
+      ]);
+      mockPermission.checkEventAccess.mockResolvedValueOnce(true);
+      mockPermission.getEventAttendees.mockResolvedValueOnce([]);
+
+      const result = await service.getEventByUuid('test-uuid', 1, 5);
+
+      expect(result).toHaveProperty('title', 'UUID Event');
+    });
+
+    it('updateEventByUuid resolves UUID and delegates', async () => {
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      const now = new Date();
+
+      // resolveEventIdByUuid
+      mockDb.query.mockResolvedValueOnce([{ id: 10 }]);
+      // updateEvent → SELECT existing
+      mockDb.query.mockResolvedValueOnce([
+        {
+          id: 10,
+          uuid: 'test-uuid',
+          title: 'Original',
+          user_id: 5,
+          tenant_id: 1,
+          start_date: now,
+          end_date: tomorrow,
+          all_day: 0,
+          is_private: 0,
+          status: 'confirmed',
+          org_level: 'company',
+          department_id: null,
+          team_id: null,
+          area_id: null,
+          allow_attendees: 0,
+          created_at: now,
+          updated_at: now,
+        },
+      ]);
+      // UPDATE
+      mockDb.query.mockResolvedValueOnce([]);
+      // getEventById at end
+      mockDb.query.mockResolvedValueOnce([
+        {
+          id: 10,
+          uuid: 'test-uuid',
+          title: 'Via UUID',
+          user_id: 5,
+          tenant_id: 1,
+          start_date: now,
+          end_date: tomorrow,
+          all_day: 0,
+          is_private: 0,
+          status: 'confirmed',
+          org_level: 'company',
+          department_id: null,
+          team_id: null,
+          area_id: null,
+          allow_attendees: 0,
+          created_at: now,
+          updated_at: now,
+        },
+      ]);
+      mockPermission.checkEventAccess.mockResolvedValueOnce(true);
+      mockPermission.getEventAttendees.mockResolvedValueOnce([]);
+      mockActivityLogger.logUpdate.mockResolvedValueOnce(undefined);
+
+      const result = await service.updateEventByUuid(
+        'test-uuid',
+        { title: 'Via UUID' } as never,
+        1,
+        5,
+        'admin',
+      );
+
+      expect(result).toHaveProperty('title', 'Via UUID');
+    });
+
+    it('deleteEventByUuid resolves UUID and delegates', async () => {
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+
+      // resolveEventIdByUuid
+      mockDb.query.mockResolvedValueOnce([{ id: 10 }]);
+      // deleteEvent → SELECT
+      mockDb.query.mockResolvedValueOnce([
+        {
+          id: 10,
+          title: 'Delete Me',
+          user_id: 5,
+          tenant_id: 1,
+          start_date: new Date(),
+          end_date: tomorrow,
+        },
+      ]);
+      // DELETE attendees
+      mockDb.query.mockResolvedValueOnce([]);
+      // DELETE event
+      mockDb.query.mockResolvedValueOnce([]);
+      mockActivityLogger.logDelete.mockResolvedValueOnce(undefined);
+
+      const result = await service.deleteEventByUuid(
+        'test-uuid',
+        1,
+        5,
+        'admin',
+      );
+
+      expect(result.message).toBe('Event deleted successfully');
     });
   });
 });

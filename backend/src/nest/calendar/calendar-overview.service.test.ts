@@ -162,6 +162,29 @@ describe('CalendarOverviewService', () => {
 
       expect(result).toHaveLength(2);
     });
+
+    it('should use personal-event filter for full-scope user', async () => {
+      mockScope.getScope.mockResolvedValueOnce({
+        type: 'full',
+        areaIds: [],
+        departmentIds: [],
+        teamIds: [],
+        leadAreaIds: [],
+        leadDepartmentIds: [],
+        leadTeamIds: [],
+        isAreaLead: false,
+        isDepartmentLead: false,
+        isTeamLead: false,
+        isAnyLead: false,
+      });
+      mockDb.query.mockResolvedValueOnce([]);
+
+      await service.getRecentlyAddedEvents(10, 1, 3);
+
+      const queryCall = mockDb.query.mock.calls[0];
+      expect(queryCall?.[0]).toContain('org_level');
+      expect(queryCall?.[0]).toContain('personal');
+    });
   });
 
   // =============================================================
@@ -236,6 +259,32 @@ describe('CalendarOverviewService', () => {
       const result = await service.getUpcomingCount(10, 5, null, null);
 
       expect(result.count).toBe(0);
+    });
+
+    it('should return 0 for scope=none with no memberships', async () => {
+      mockAddonVisits.getLastVisited.mockResolvedValueOnce(null);
+      mockScope.getScope.mockResolvedValueOnce({
+        type: 'none',
+        areaIds: [],
+        departmentIds: [],
+        teamIds: [],
+        leadAreaIds: [],
+        leadDepartmentIds: [],
+        leadTeamIds: [],
+        isAreaLead: false,
+        isDepartmentLead: false,
+        isTeamLead: false,
+        isAnyLead: false,
+      });
+      mockPermission.getUserMemberships.mockResolvedValueOnce({
+        departmentIds: [],
+        teamIds: [],
+      });
+
+      const result = await service.getUpcomingCount(10, 5, null, null);
+
+      expect(result.count).toBe(0);
+      expect(mockDb.query).not.toHaveBeenCalled();
     });
   });
 });

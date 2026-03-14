@@ -15,6 +15,7 @@ import {
   authOnly,
   ensureTestEmployee,
   fetchWithRetry,
+  flushThrottleKeys,
   loginApitest,
 } from './helpers.js';
 
@@ -222,6 +223,9 @@ describe('Dummy Users: Login & Access', () => {
     const body = (await res.json()) as JsonBody;
     accessDummyUuid = body.data.uuid as string;
     accessDummyEmail = body.data.email as string;
+
+    // Flush throttle keys to prevent 429 from accumulated login requests
+    await flushThrottleKeys();
 
     // Login as the dummy user
     const loginRes = await fetchWithRetry(`${BASE_URL}/auth/login`, {

@@ -337,6 +337,30 @@ describe('SECURITY: CalendarPermissionService', () => {
       expect(result.newIndex).toBe(4);
     });
 
+    it('should handle area filter', () => {
+      const result = service.buildAdminOrgLevelFilter('area', 5, 3);
+
+      expect(result.clause).toContain("'area'");
+      expect(result.newParams).toEqual([]);
+      expect(result.newIndex).toBe(3);
+    });
+
+    it('should handle department filter', () => {
+      const result = service.buildAdminOrgLevelFilter('department', 5, 3);
+
+      expect(result.clause).toContain("'department'");
+      expect(result.newParams).toEqual([]);
+      expect(result.newIndex).toBe(3);
+    });
+
+    it('should handle team filter', () => {
+      const result = service.buildAdminOrgLevelFilter('team', 5, 3);
+
+      expect(result.clause).toContain("'team'");
+      expect(result.newParams).toEqual([]);
+      expect(result.newIndex).toBe(3);
+    });
+
     it('should handle default (all) filter', () => {
       const result = service.buildAdminOrgLevelFilter('all', 5, 3);
 

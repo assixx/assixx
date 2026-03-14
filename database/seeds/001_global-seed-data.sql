@@ -6,7 +6,7 @@
 -- ADR-033: Addon-based SaaS model (replaces plan-tier system).
 -- =============================================================================
 
--- Addons (20 entries)
+-- Addons (21 entries)
 -- is_core=true: always active, no subscription needed (8 core addons)
 -- is_core=false: purchasable, 30-day trial, 10€/month (12 purchasable addons)
 INSERT INTO public.addons (id, code, name, description, price_monthly, is_active, requires_setup, icon, sort_order, is_core, trial_days, created_at, updated_at) VALUES
@@ -29,7 +29,8 @@ INSERT INTO public.addons (id, code, name, description, price_monthly, is_active
   (17, 'reports',        'Berichte & Auswertungen', 'Unternehmensberichte und Analytics',                                                                 10.00, 1, false, NULL, 65, false, 30,   '2026-03-09 17:19:58+01', '2026-03-11 12:00:00+01'),
   (18, 'audit_trail',    'Protokoll & Audit',       'Audit-Protokollierung und Compliance-Berichte',                                                      10.00, 1, false, NULL, 70, false, 30,   '2026-03-09 17:19:58+01', '2026-03-11 12:00:00+01'),
   (19, 'notifications',  'Benachrichtigungen',      'Benachrichtigungsverwaltung und SSE-Streaming',                                                      NULL,  1, false, NULL, 75, true,  NULL, '2026-03-09 17:19:58+01', '2026-03-11 12:00:00+01'),
-  (20, 'dummy_users',    'Platzhalter-Benutzer',    'Anonyme Anzeige-Accounts für Bildschirme',                                                           10.00, 1, false, NULL, 80, false, 30,   '2026-03-09 17:19:58+01', '2026-03-11 12:00:00+01')
+  (20, 'dummy_users',    'Platzhalter-Benutzer',    'Anonyme Anzeige-Accounts für Bildschirme',                                                           10.00, 1, false, NULL, 80, false, 30,   '2026-03-09 17:19:58+01', '2026-03-11 12:00:00+01'),
+  (21, 'manage_hierarchy','Organisationsstruktur',  'Verwaltung von Bereichen, Abteilungen, Teams und Mitarbeitern',                                       0.00,  1, false, 'fa-sitemap', 50, true, 30, '2026-03-13 20:27:32+01', '2026-03-13 20:27:32+01')
 ON CONFLICT (id) DO NOTHING;
 
 -- KVP Categories (6 entries)
@@ -54,6 +55,6 @@ INSERT INTO public.asset_categories VALUES (10, 'Sonstige', 'Andere Anlagentypen
 INSERT INTO public.asset_categories VALUES (11, 'Test Category', 'Test Category Description', 'fa-test', 99, 1) ON CONFLICT (id) DO NOTHING;
 
 -- Sync sequences to max values
-SELECT pg_catalog.setval('public.addons_id_seq', GREATEST((SELECT MAX(id) FROM public.addons), 20), true);
+SELECT pg_catalog.setval('public.addons_id_seq', GREATEST((SELECT MAX(id) FROM public.addons), 21), true);
 SELECT pg_catalog.setval('public.kvp_categories_id_seq', GREATEST((SELECT MAX(id) FROM public.kvp_categories), 6), true);
 SELECT pg_catalog.setval('public.asset_categories_id_seq', GREATEST((SELECT MAX(id) FROM public.asset_categories), 11), true);
