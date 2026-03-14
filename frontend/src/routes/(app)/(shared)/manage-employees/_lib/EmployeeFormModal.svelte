@@ -85,8 +85,7 @@
     const system = raw
       .filter((p: string) => isLeadPosition(p))
       .sort(
-        (a: string, b: string) =>
-          LEAD_ORDER.indexOf(a) - LEAD_ORDER.indexOf(b),
+        (a: string, b: string) => LEAD_ORDER.indexOf(a) - LEAD_ORDER.indexOf(b),
       );
     const custom = raw.filter((p: string) => !isLeadPosition(p));
     return [...system, ...custom];
