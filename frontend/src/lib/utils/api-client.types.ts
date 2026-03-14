@@ -122,5 +122,38 @@ export class ApiError extends Error {
   }
 }
 
+// =============================================================================
+// ERROR MESSAGE EXTRACTION
+// =============================================================================
+
+/** Type guard for validation detail objects from API error responses */
+function isValidationDetail(value: unknown): value is { message: string } {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'message' in value &&
+    typeof value.message === 'string'
+  );
+}
+
+/**
+ * Extract user-friendly message from API error, including field-level validation details.
+ * Falls back to err.message, then to the provided fallback string.
+ */
+export function getApiErrorMessage(err: unknown, fallback: string): string {
+  if (!(err instanceof ApiError)) {
+    return err instanceof Error ? err.message : fallback;
+  }
+
+  if (Array.isArray(err.details) && err.details.length > 0) {
+    const messages = err.details
+      .filter(isValidationDetail)
+      .map((d) => d.message);
+    if (messages.length > 0) return messages.join(', ');
+  }
+
+  return err.message;
+}
+
 // Re-export types for consumers
 export type { LogoutReason };

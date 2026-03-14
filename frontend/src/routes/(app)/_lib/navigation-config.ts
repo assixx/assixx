@@ -355,6 +355,12 @@ function buildRootMenuItems(labels: HierarchyLabels): NavItem[] {
     },
     { id: 'teams', icon: ICONS.team, label: labels.team, url: '/manage-teams' },
     {
+      id: 'employees',
+      icon: ICONS.users,
+      label: 'Mitarbeiter',
+      url: '/manage-employees',
+    },
+    {
       id: 'halls',
       icon: ICONS.warehouse,
       label: labels.hall,

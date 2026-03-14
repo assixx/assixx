@@ -15,7 +15,7 @@
     showErrorAlert,
     showWarningAlert,
   } from '$lib/utils';
-  import { ApiError } from '$lib/utils/api-client';
+  import { ApiError, getApiErrorMessage } from '$lib/utils/api-client';
   import { createLogger } from '$lib/utils/logger';
 
   const log = createLogger('ManageEmployeesPage');
@@ -168,6 +168,18 @@
   async function saveEmployee(): Promise<void> {
     submitting = true;
 
+    // Validate required fields (client-side toast instead of native browser tooltip)
+    if (formPosition === '') {
+      showWarningAlert('Bitte wählen Sie eine Position aus');
+      submitting = false;
+      return;
+    }
+    if (formEmployeeNumber.trim() === '') {
+      showWarningAlert('Bitte geben Sie eine Personalnummer ein');
+      submitting = false;
+      return;
+    }
+
     // Validate form fields
     const validationError = validateSaveEmployeeForm(
       formEmail,
@@ -229,9 +241,7 @@
       }
     } catch (err: unknown) {
       log.error({ err }, 'Error saving employee');
-      showErrorAlert(
-        err instanceof Error ? err.message : messages.ERROR_SAVING,
-      );
+      showErrorAlert(getApiErrorMessage(err, messages.ERROR_SAVING));
     } finally {
       submitting = false;
     }

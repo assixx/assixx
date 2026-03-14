@@ -1,6 +1,8 @@
 <script lang="ts">
   import PasswordStrengthIndicator from '$lib/components/PasswordStrengthIndicator.svelte';
   import {
+    isLeadPosition,
+    LEAD_POSITION_KEYS,
     type HierarchyLabels,
     resolvePositionDisplay,
   } from '$lib/types/hierarchy-labels';
@@ -46,11 +48,26 @@
   let { messages, show, isEditMode, modalTitle, positionOptions, hierarchyLabels, firstName = $bindable(), lastName = $bindable(), email = $bindable(), emailConfirm = $bindable(), password = $bindable(), passwordConfirm = $bindable(), employeeNumber = $bindable(), position = $bindable(), notes = $bindable(), isActive = $bindable(), emailError = $bindable(), passwordError = $bindable(), submitting, onclose, onsubmit, onValidateEmails, onValidatePasswords }: Props = $props();
   /* eslint-enable prefer-const, @typescript-eslint/no-useless-default-assignment */
 
-  const effectivePositions = $derived(
-    positionOptions !== undefined && positionOptions.length > 0 ?
-      positionOptions
-    : POSITION_OPTIONS,
-  );
+  const LEAD_ORDER: string[] = [
+    LEAD_POSITION_KEYS.AREA,
+    LEAD_POSITION_KEYS.DEPARTMENT,
+    LEAD_POSITION_KEYS.TEAM,
+  ];
+
+  const effectivePositions = $derived.by(() => {
+    const raw =
+      positionOptions !== undefined && positionOptions.length > 0 ?
+        positionOptions
+      : POSITION_OPTIONS;
+    const system = raw
+      .filter((p: string) => isLeadPosition(p))
+      .sort(
+        (a: string, b: string) =>
+          LEAD_ORDER.indexOf(a) - LEAD_ORDER.indexOf(b),
+      );
+    const custom = raw.filter((p: string) => !isLeadPosition(p));
+    return [...system, ...custom];
+  });
 
   // Local dropdown and visibility state
   let positionDropdownOpen = $state(false);
@@ -237,13 +254,14 @@
         <div class="form-field">
           <label
             class="form-field__label"
-            for="root-employee-number">Personalnummer</label
+            for="root-employee-number"
+            >Personalnummer <span class="text-red-500">*</span></label
           >
           <input
             type="text"
             id="root-employee-number"
             class="form-field__control"
-            placeholder="z.B. ABC-123 (optional, max 10 Zeichen)"
+            placeholder="z.B. ABC-123 (max 10 Zeichen)"
             maxlength="10"
             bind:value={employeeNumber}
           />

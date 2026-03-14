@@ -188,6 +188,10 @@
       showWarningAlert(messages.SELECT_POSITION_ERROR);
       return false;
     }
+    if (formEmployeeNumber.trim() === '') {
+      showWarningAlert(messages.EMPLOYEE_NUMBER_REQUIRED);
+      return false;
+    }
     return true;
   }
 

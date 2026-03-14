@@ -2,6 +2,8 @@
   import PasswordStrengthIndicator from '$lib/components/PasswordStrengthIndicator.svelte';
   import {
     DEFAULT_HIERARCHY_LABELS,
+    isLeadPosition,
+    LEAD_POSITION_KEYS,
     type HierarchyLabels,
   } from '$lib/types/hierarchy-labels';
 
@@ -55,11 +57,26 @@
   // LOCAL STATE
   // =============================================================================
 
-  const effectivePositions = $derived(
-    positionOptions !== undefined && positionOptions.length > 0 ?
-      positionOptions
-    : POSITION_OPTIONS,
-  );
+  const LEAD_ORDER: string[] = [
+    LEAD_POSITION_KEYS.AREA,
+    LEAD_POSITION_KEYS.DEPARTMENT,
+    LEAD_POSITION_KEYS.TEAM,
+  ];
+
+  const effectivePositions = $derived.by(() => {
+    const raw =
+      positionOptions !== undefined && positionOptions.length > 0 ?
+        positionOptions
+      : POSITION_OPTIONS;
+    const system = raw
+      .filter((p: string) => isLeadPosition(p))
+      .sort(
+        (a: string, b: string) =>
+          LEAD_ORDER.indexOf(a) - LEAD_ORDER.indexOf(b),
+      );
+    const custom = raw.filter((p: string) => !isLeadPosition(p));
+    return [...system, ...custom];
+  });
 
   let positionDropdownOpen = $state(false);
   let showPassword = $state(false);
@@ -392,8 +409,6 @@
             class="form-field__control"
             placeholder="z.B. ABC-123 oder 2025-001"
             maxlength="10"
-            pattern="[A-Za-z0-9\-]{'{'}1,10}"
-            required
             bind:value={formEmployeeNumber}
           />
           <span class="form-field__message text-(--color-text-secondary)"

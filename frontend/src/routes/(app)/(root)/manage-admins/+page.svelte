@@ -14,7 +14,7 @@
     showErrorAlert,
     showToast,
   } from '$lib/stores/toast';
-  import { ApiError } from '$lib/utils/api-client';
+  import { ApiError, getApiErrorMessage } from '$lib/utils/api-client';
   import { createLogger } from '$lib/utils/logger';
 
   const log = createLogger('ManageAdminsPage');
@@ -243,9 +243,7 @@
       }
     } catch (err: unknown) {
       log.error({ err }, 'Error saving admin');
-      showErrorAlert(
-        err instanceof Error ? err.message : messages.ERROR_SAVE_FAILED,
-      );
+      showErrorAlert(getApiErrorMessage(err, messages.ERROR_SAVE_FAILED));
     } finally {
       submitting = false;
     }
