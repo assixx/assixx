@@ -1,5 +1,16 @@
 # assixx-frontend
 
+## 0.4.6
+
+### Minor Changes
+
+- feat: PermissionControl (docs/infrastructure/adr/ADR-036-organizational-scope-access-control.md and docs/infrastructure/adr/ADR-020-per-user-feature-permissions.md)
+
+### Patch Changes
+
+- Updated dependencies
+  - @assixx/shared@0.4.6
+
 ## 0.4.5
 
 ### Patch Changes
