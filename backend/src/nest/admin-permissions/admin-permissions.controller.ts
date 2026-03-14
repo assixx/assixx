@@ -89,6 +89,8 @@ export class AdminPermissionsController {
         totalDepartments: 0,
         assignedAreas: 0,
         assignedDepartments: 0,
+        leadAreas: [],
+        leadDepartments: [],
       };
     }
 

@@ -62,8 +62,6 @@ export class DepartmentsController {
    * List all departments with optional extended info
    */
   @Get()
-  @Roles('admin', 'root', 'employee')
-  @RequirePermission(SCOPE_FEAT, SCOPE_MOD, 'canRead')
   async listDepartments(
     @Query() query: ListDepartmentsQueryDto,
     @TenantId() tenantId: number,
@@ -80,8 +78,6 @@ export class DepartmentsController {
    * Get department statistics for the tenant
    */
   @Get('stats')
-  @Roles('admin', 'root', 'employee')
-  @RequirePermission(SCOPE_FEAT, SCOPE_MOD, 'canRead')
   async getDepartmentStats(
     @TenantId() tenantId: number,
   ): Promise<DepartmentStats> {
@@ -93,8 +89,6 @@ export class DepartmentsController {
    * Get department by ID
    */
   @Get(':id')
-  @Roles('admin', 'root', 'employee')
-  @RequirePermission(SCOPE_FEAT, SCOPE_MOD, 'canRead')
   async getDepartmentById(
     @Param('id', ParseIntPipe) id: number,
     @TenantId() tenantId: number,
@@ -107,8 +101,6 @@ export class DepartmentsController {
    * Get department members
    */
   @Get(':id/members')
-  @Roles('admin', 'root', 'employee')
-  @RequirePermission(SCOPE_FEAT, SCOPE_MOD, 'canRead')
   async getDepartmentMembers(
     @Param('id', ParseIntPipe) id: number,
     @TenantId() tenantId: number,

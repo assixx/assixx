@@ -48,6 +48,8 @@ export interface AdminDepartment {
   id: number;
   name: string;
   description?: string | undefined;
+  areaId?: number | undefined;
+  areaName?: string | undefined;
   canRead: boolean;
   canWrite: boolean;
   canDelete: boolean;
@@ -74,6 +76,10 @@ export interface AdminPermissionsResponse {
   totalDepartments: number;
   assignedAreas: number;
   assignedDepartments: number;
+  /** Areas where user is area_lead (excludes those already in areas) */
+  leadAreas: AdminArea[];
+  /** Departments where user is department_lead (excludes those already in departments) */
+  leadDepartments: AdminDepartment[];
 }
 
 /** Result of a permission check */
@@ -98,6 +104,8 @@ interface DbDepartmentPermissionRow extends QueryResultRow {
   id: number;
   name: string;
   description: string | null;
+  area_id: number | null;
+  area_name: string | null;
   can_read: boolean;
   can_write: boolean;
   can_delete: boolean;
@@ -132,6 +140,21 @@ interface DbAffectedRows extends QueryResultRow {
   affected_rows?: number;
 }
 
+interface DbLeadAreaRow extends QueryResultRow {
+  id: number;
+  name: string;
+  description: string | null;
+  department_count: number | string;
+}
+
+interface DbLeadDepartmentRow extends QueryResultRow {
+  id: number;
+  name: string;
+  description: string | null;
+  area_id: number | null;
+  area_name: string | null;
+}
+
 // ============================================================================
 // SERVICE IMPLEMENTATION
 // ============================================================================
@@ -161,11 +184,22 @@ export class AdminPermissionsService {
     );
 
     const { hasFullAccess } = await this.getUserRoleInfo(userId, tenantId);
-    const areas = await this.getAreaPermissions(userId, tenantId);
-    const departments = await this.getDepartmentPermissions(userId, tenantId);
+    const [
+      areas,
+      departments,
+      leadAreas,
+      leadDepartments,
+      totalAreas,
+      totalDepartments,
+    ] = await Promise.all([
+      this.getAreaPermissions(userId, tenantId),
+      this.getDepartmentPermissions(userId, tenantId),
+      this.getLeadAreas(userId, tenantId),
+      this.getLeadDepartments(userId, tenantId),
+      this.getTotalAreas(tenantId),
+      this.getTotalDepartments(tenantId),
+    ]);
     const groups = this.getGroupPermissions(); // DEPRECATED: returns empty array
-    const totalAreas = await this.getTotalAreas(tenantId);
-    const totalDepartments = await this.getTotalDepartments(tenantId);
 
     return {
       areas,
@@ -176,6 +210,8 @@ export class AdminPermissionsService {
       totalDepartments,
       assignedAreas: areas.length,
       assignedDepartments: departments.length,
+      leadAreas,
+      leadDepartments,
     };
   }
 
@@ -713,11 +749,14 @@ export class AdminPermissionsService {
         d.id,
         d.name,
         d.description,
+        d.area_id,
+        a.name AS area_name,
         adp.can_read,
         adp.can_write,
         adp.can_delete
       FROM admin_department_permissions adp
       JOIN departments d ON adp.department_id = d.id
+      LEFT JOIN areas a ON d.area_id = a.id
       WHERE adp.admin_user_id = $1
         AND adp.tenant_id = $2
         AND d.is_active = ${IS_ACTIVE.ACTIVE}
@@ -725,19 +764,113 @@ export class AdminPermissionsService {
       [adminId, tenantId],
     );
 
-    return rows.map((row: DbDepartmentPermissionRow) => {
-      const result: AdminDepartment = {
+    return rows.map((row: DbDepartmentPermissionRow) =>
+      this.mapDepartmentRow(row, row.can_read, row.can_write, row.can_delete),
+    );
+  }
+
+  /**
+   * Get areas where user is area_lead (ADR-035: implicit Area permission)
+   * Excludes areas already present in admin_area_permissions to avoid duplicates
+   */
+  private async getLeadAreas(
+    userId: number,
+    tenantId: number,
+  ): Promise<AdminArea[]> {
+    const rows = await this.db.query<DbLeadAreaRow>(
+      `SELECT
+        a.id,
+        a.name,
+        a.description,
+        COUNT(DISTINCT d.id) as department_count
+      FROM areas a
+      LEFT JOIN departments d ON d.area_id = a.id AND d.tenant_id = a.tenant_id
+      WHERE a.area_lead_id = $1
+        AND a.tenant_id = $2
+        AND a.is_active = ${IS_ACTIVE.ACTIVE}
+        AND NOT EXISTS (
+          SELECT 1 FROM admin_area_permissions aap
+          WHERE aap.area_id = a.id AND aap.admin_user_id = $1 AND aap.tenant_id = $2
+        )
+      GROUP BY a.id, a.name, a.description
+      ORDER BY a.name`,
+      [userId, tenantId],
+    );
+
+    return rows.map((row: DbLeadAreaRow) => {
+      const result: AdminArea = {
         id: row.id,
         name: row.name,
-        canRead: row.can_read,
-        canWrite: row.can_write,
-        canDelete: row.can_delete,
+        departmentCount: Number(row.department_count),
+        canRead: true,
+        canWrite: false,
+        canDelete: false,
       };
       if (row.description !== null) {
         result.description = row.description;
       }
       return result;
     });
+  }
+
+  /**
+   * Get departments where user is department_lead (ADR-035: implicit Department permission)
+   * Excludes departments already present in admin_department_permissions to avoid duplicates
+   */
+  private async getLeadDepartments(
+    userId: number,
+    tenantId: number,
+  ): Promise<AdminDepartment[]> {
+    const rows = await this.db.query<DbLeadDepartmentRow>(
+      `SELECT d.id, d.name, d.description, d.area_id, a.name AS area_name
+      FROM departments d
+      LEFT JOIN areas a ON d.area_id = a.id
+      WHERE d.department_lead_id = $1
+        AND d.tenant_id = $2
+        AND d.is_active = ${IS_ACTIVE.ACTIVE}
+        AND NOT EXISTS (
+          SELECT 1 FROM admin_department_permissions adp
+          WHERE adp.department_id = d.id AND adp.admin_user_id = $1 AND adp.tenant_id = $2
+        )
+      ORDER BY d.name`,
+      [userId, tenantId],
+    );
+
+    return rows.map((row: DbLeadDepartmentRow) =>
+      this.mapDepartmentRow(row, true, false, false),
+    );
+  }
+
+  /** Map a department DB row to AdminDepartment (shared by explicit + lead queries) */
+  private mapDepartmentRow(
+    row: {
+      id: number;
+      name: string;
+      description: string | null;
+      area_id: number | null;
+      area_name: string | null;
+    },
+    canRead: boolean,
+    canWrite: boolean,
+    canDelete: boolean,
+  ): AdminDepartment {
+    const result: AdminDepartment = {
+      id: row.id,
+      name: row.name,
+      canRead,
+      canWrite,
+      canDelete,
+    };
+    if (row.description !== null) {
+      result.description = row.description;
+    }
+    if (row.area_id !== null) {
+      result.areaId = row.area_id;
+    }
+    if (row.area_name !== null) {
+      result.areaName = row.area_name;
+    }
+    return result;
   }
 
   /**

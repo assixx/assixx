@@ -236,6 +236,12 @@ describe('SECURITY: AdminPermissionsService', () => {
         },
       ]);
 
+      // getLeadAreas
+      mockDb.query.mockResolvedValueOnce([]);
+
+      // getLeadDepartments
+      mockDb.query.mockResolvedValueOnce([]);
+
       // getTotalAreas
       mockDb.query.mockResolvedValueOnce([{ total: '5' }]);
 
@@ -248,6 +254,8 @@ describe('SECURITY: AdminPermissionsService', () => {
       expect(result.areas).toHaveLength(1);
       expect(result.departments).toHaveLength(1);
       expect(result.groups).toEqual([]); // Deprecated
+      expect(result.leadAreas).toEqual([]);
+      expect(result.leadDepartments).toEqual([]);
       expect(result.totalAreas).toBe(5);
       expect(result.totalDepartments).toBe(12);
       expect(result.assignedAreas).toBe(1);
@@ -269,7 +277,9 @@ describe('SECURITY: AdminPermissionsService', () => {
           can_delete: false,
         },
       ]);
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.query.mockResolvedValueOnce([]); // getDepartmentPermissions
+      mockDb.query.mockResolvedValueOnce([]); // getLeadAreas
+      mockDb.query.mockResolvedValueOnce([]); // getLeadDepartments
       mockDb.query.mockResolvedValueOnce([{ total: '1' }]);
       mockDb.query.mockResolvedValueOnce([{ total: '7' }]);
 
@@ -293,7 +303,9 @@ describe('SECURITY: AdminPermissionsService', () => {
           can_delete: false,
         },
       ]);
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.query.mockResolvedValueOnce([]); // getDepartmentPermissions
+      mockDb.query.mockResolvedValueOnce([]); // getLeadAreas
+      mockDb.query.mockResolvedValueOnce([]); // getLeadDepartments
       mockDb.query.mockResolvedValueOnce([{ total: '1' }]);
       mockDb.query.mockResolvedValueOnce([{ total: '0' }]);
 
@@ -673,6 +685,8 @@ describe('SECURITY: AdminPermissionsService', () => {
           can_delete: false,
         },
       ]);
+      mockDb.query.mockResolvedValueOnce([]); // getLeadAreas
+      mockDb.query.mockResolvedValueOnce([]); // getLeadDepartments
       mockDb.query.mockResolvedValueOnce([{ total: '0' }]);
       mockDb.query.mockResolvedValueOnce([{ total: '1' }]);
 

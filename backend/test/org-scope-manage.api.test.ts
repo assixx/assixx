@@ -83,7 +83,7 @@ describe('Root → GET /teams', () => {
 // 4. Employee ohne Lead → GET /teams → 403
 // =============================================================
 
-describe('Employee ohne Lead → GET /teams', () => {
+describe('Employee ohne Lead → GET /teams (scope-filtered)', () => {
   let response: Response | undefined;
 
   beforeAll(async () => {
@@ -93,9 +93,9 @@ describe('Employee ohne Lead → GET /teams', () => {
     });
   });
 
-  it('should return 403 for employee without manage_hierarchy permission', () => {
+  it('should return 200 with scope-filtered data (no @RequirePermission on GET)', () => {
     if (!employeeLoggedIn) return;
-    expect(response?.status).toBe(403);
+    expect(response?.status).toBe(200);
   });
 });
 
@@ -217,7 +217,7 @@ describe('Root regression — manage endpoints accessible', () => {
 // Employee → GET /areas, /departments → 403 (D1=NEIN)
 // =============================================================
 
-describe('Employee → manage areas/departments denied (D1=NEIN)', () => {
+describe('Employee → GET areas/departments returns scope-filtered data (D1=NEIN)', () => {
   let areasRes: Response | undefined;
   let deptsRes: Response | undefined;
 
@@ -229,13 +229,13 @@ describe('Employee → manage areas/departments denied (D1=NEIN)', () => {
     ]);
   });
 
-  it('GET /areas → 403 for employee', () => {
+  it('GET /areas → 200 with scope-filtered data (no @RequirePermission on GET)', () => {
     if (!employeeLoggedIn) return;
-    expect(areasRes?.status).toBe(403);
+    expect(areasRes?.status).toBe(200);
   });
 
-  it('GET /departments → 403 for employee', () => {
+  it('GET /departments → 200 with scope-filtered data (no @RequirePermission on GET)', () => {
     if (!employeeLoggedIn) return;
-    expect(deptsRes?.status).toBe(403);
+    expect(deptsRes?.status).toBe(200);
   });
 });

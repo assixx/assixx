@@ -169,13 +169,6 @@ export class UserPermissionsService {
       .map((cat: PermissionCategoryDef) => ({
         ...cat,
         modules: cat.modules.filter((mod: PermissionModuleDef) => {
-          // Regel 4: non-delegatable modules are hidden in delegated view
-          if (
-            cat.code === 'manage_hierarchy' &&
-            mod.code === 'manage-permissions'
-          ) {
-            return false;
-          }
           // Regel 2: leader must have at least canRead for this module
           const key = `${cat.code}:${mod.code}:canRead`;
           return leaderPerms.has(key);
@@ -300,13 +293,13 @@ export class UserPermissionsService {
   }
 
   private isDelegatableEntry(
-    entry: PermissionEntry,
+    _entry: PermissionEntry,
     _assignedByUserId: number,
   ): boolean {
-    return !(
-      entry.addonCode === 'manage_hierarchy' &&
-      entry.moduleCode === 'manage-permissions'
-    );
+    // All entries are delegatable — Regel 2 (leaderHasPermission) ensures
+    // the leader can only grant what they have. manage-permissions follows
+    // the delegation chain: superior grants to subordinate.
+    return true;
   }
 
   /** Load all permissions the leader has (single query, used for Regel 2 batch check) */

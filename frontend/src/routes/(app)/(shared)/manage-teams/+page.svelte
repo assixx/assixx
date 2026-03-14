@@ -546,6 +546,7 @@
                     <th scope="col">ID</th>
                     <th scope="col">Name</th>
                     <th scope="col">{messages.TH_DEPARTMENT}</th>
+                    <th scope="col">{labels.area}</th>
                     <th scope="col">Leiter</th>
                     <th scope="col">Mitglieder</th>
                     <th scope="col">{messages.TH_ASSETS}</th>
@@ -578,6 +579,22 @@
                           <!-- eslint-disable-next-line svelte/no-at-html-tags -- Safe: internal badge, no user input -->
                           {@html deptBadge.text}
                         </span>
+                      </td>
+                      <td>
+                        {#if team.departmentAreaName}
+                          <span
+                            class="badge badge--info"
+                            title={team.departmentAreaName}
+                          >
+                            <i class="fas fa-sitemap mr-1"
+                            ></i>{team.departmentAreaName}
+                          </span>
+                        {:else}
+                          <span
+                            class="badge badge--secondary"
+                            title="Keine Zuordnung">Keine Zuordnung</span
+                          >
+                        {/if}
                       </td>
                       <td>{team.leaderName ?? '-'}</td>
                       <td>

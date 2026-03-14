@@ -27,6 +27,7 @@ import type {
   AdminFormData,
   AvailabilityStatus,
   BadgeInfo,
+  Department,
   FormIsActiveStatus,
   IsActiveStatus,
 } from './types';
@@ -90,7 +91,32 @@ export function hasFullAccess(admin: Admin): boolean {
 }
 
 /**
+ * Get unique area names inherited upward from departments (explicit + lead)
+ * ADR-035: Department permission → READ-ONLY context on parent area
+ */
+function getInheritedAreaNames(admin: Admin): string[] {
+  const allDepts: Department[] = [
+    ...(admin.departments ?? []),
+    ...(admin.leadDepartments ?? []),
+  ];
+  const seen = new Set<number>();
+  const names: string[] = [];
+  for (const dept of allDepts) {
+    if (
+      dept.areaName !== undefined &&
+      dept.areaId !== undefined &&
+      !seen.has(dept.areaId)
+    ) {
+      seen.add(dept.areaId);
+      names.push(dept.areaName);
+    }
+  }
+  return names;
+}
+
+/**
  * Get badge info for areas column
+ * Decision tree: Full Access → Direct/Lead count → Inherited from Depts → Keine
  */
 export function getAreasBadge(
   admin: Admin,
@@ -104,48 +130,72 @@ export function getAreasBadge(
       icon: 'fa-globe',
     };
   }
-  if (!admin.areas || admin.areas.length === 0) {
+
+  // Direct areas (explicit permissions + lead positions)
+  const count = getAreaCount(admin);
+  if (count > 0) {
+    const names = getAreaNames(admin);
     return {
-      class: BADGE_CLASS.SECONDARY,
-      text: MESSAGES.BADGE_NONE,
-      title: `Keine ${labels.area} zugewiesen`,
+      class: BADGE_CLASS.INFO,
+      text: `${count} ${labels.area}`,
+      title: names,
     };
   }
-  const count = admin.areas.length;
-  const names = admin.areas.map((a) => a.name).join(', ');
+
+  // Upward inheritance: Departments belong to areas → READ-ONLY context
+  const inheritedNames = getInheritedAreaNames(admin);
+  if (inheritedNames.length > 0) {
+    return {
+      class: BADGE_CLASS.WARNING,
+      text: MESSAGES.BADGE_INHERITED,
+      title: `Vererbt von: ${getDepartmentNames(admin)} → ${inheritedNames.join(', ')}`,
+      icon: 'fa-sitemap',
+    };
+  }
+
   return {
-    class: BADGE_CLASS.INFO,
-    text: `${count} ${labels.area}`,
-    title: names,
+    class: BADGE_CLASS.SECONDARY,
+    text: MESSAGES.BADGE_NONE,
+    title: `Keine ${labels.area} zugewiesen`,
   };
 }
 
 /**
- * Get department count safely
+ * Get total department count (explicit permissions + lead positions)
  */
 function getDepartmentCount(admin: Admin): number {
-  return admin.departments?.length ?? 0;
+  return (
+    (admin.departments?.length ?? 0) + (admin.leadDepartments?.length ?? 0)
+  );
 }
 
 /**
- * Get area count safely
+ * Get total area count (explicit permissions + lead positions)
  */
 function getAreaCount(admin: Admin): number {
-  return admin.areas?.length ?? 0;
+  return (admin.areas?.length ?? 0) + (admin.leadAreas?.length ?? 0);
 }
 
 /**
- * Get comma-separated department names
+ * Get comma-separated department names (explicit + lead with suffix)
  */
 function getDepartmentNames(admin: Admin): string {
-  return admin.departments?.map((d) => d.name).join(', ') ?? '';
+  const explicit =
+    admin.departments?.map((d: { name: string }) => d.name) ?? [];
+  const lead =
+    admin.leadDepartments?.map((d: { name: string }) => `${d.name} (Lead)`) ??
+    [];
+  return [...explicit, ...lead].join(', ');
 }
 
 /**
- * Get comma-separated area names
+ * Get comma-separated area names (explicit + lead with suffix)
  */
 function getAreaNames(admin: Admin): string {
-  return admin.areas?.map((a) => a.name).join(', ') ?? '';
+  const explicit = admin.areas?.map((a: { name: string }) => a.name) ?? [];
+  const lead =
+    admin.leadAreas?.map((a: { name: string }) => `${a.name} (Lead)`) ?? [];
+  return [...explicit, ...lead].join(', ');
 }
 
 /**
@@ -185,7 +235,7 @@ export function getDepartmentsBadge(
 
   if (areaCount > 0) {
     return {
-      class: BADGE_CLASS.INFO,
+      class: BADGE_CLASS.WARNING,
       text: MESSAGES.BADGE_INHERITED,
       title: `Vererbt von: ${getAreaNames(admin)}`,
       icon: 'fa-sitemap',
@@ -241,7 +291,7 @@ export function getTeamsBadge(
 
   if (hasAreas || hasDepts) {
     return {
-      class: BADGE_CLASS.INFO,
+      class: BADGE_CLASS.WARNING,
       text: MESSAGES.BADGE_INHERITED,
       title: buildTeamsInheritanceTitle(admin, labels),
       icon: 'fa-sitemap',

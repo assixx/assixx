@@ -713,6 +713,7 @@
                     <EmployeeTableRow
                       {employee}
                       {labels}
+                      currentUserId={data.user?.id ?? 0}
                       {canManagePermissions}
                       {canMutate}
                       onedit={openEditModal}

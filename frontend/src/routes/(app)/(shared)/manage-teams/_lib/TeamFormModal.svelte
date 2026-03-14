@@ -102,6 +102,11 @@
   let assetsDropdownOpen = $state(false);
   let statusDropdownOpen = $state(false);
 
+  // Filter: exclude current leader from members dropdown (leader is auto-member)
+  const availableEmployees = $derived(
+    allEmployees.filter((e: TeamMember) => e.id !== localLeaderId),
+  );
+
   function closeOtherDropdowns(except: string): void {
     if (except !== 'department') departmentDropdownOpen = false;
     if (except !== 'leader') leaderDropdownOpen = false;
@@ -394,14 +399,16 @@
             class:active={membersDropdownOpen}
             onclick={toggleMembersDropdown}
           >
-            <span>{getMembersDisplayText(localMemberIds, allEmployees)}</span>
+            <span
+              >{getMembersDisplayText(localMemberIds, availableEmployees)}</span
+            >
             <i class="fas fa-chevron-down"></i>
           </button>
           <div
             class="dropdown__menu"
             class:active={membersDropdownOpen}
           >
-            {#each allEmployees as employee (employee.id)}
+            {#each availableEmployees as employee (employee.id)}
               <button
                 type="button"
                 class="dropdown__option dropdown__option--checkbox"
@@ -424,7 +431,7 @@
                 {employee.lastName}
               </button>
             {/each}
-            {#if allEmployees.length === 0}
+            {#if availableEmployees.length === 0}
               <div class="dropdown__option dropdown__option--disabled">
                 {messages.NO_EMPLOYEES_AVAILABLE}
               </div>

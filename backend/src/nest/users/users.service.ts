@@ -334,6 +334,13 @@ export class UsersService {
     const scope = await this.scopeService.getScope();
     await this.ensureUserInScope(scope, userId, tenantId);
 
+    // Self-edit block: use /users/me/profile for self-editing (Root exempt)
+    if (userId === actingUserId && actingUserRole !== 'root') {
+      throw new ForbiddenException(
+        'Eigene Daten können nur über die Profilseite bearbeitet werden',
+      );
+    }
+
     // Guard: Role changes require root OR admin with has_full_access
     if (dto.role !== undefined && dto.role !== existingUser.role) {
       await this.assertCanChangeRole(actingUserId, actingUserRole, tenantId);

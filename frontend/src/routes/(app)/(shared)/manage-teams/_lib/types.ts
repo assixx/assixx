@@ -76,6 +76,9 @@ export interface Team {
   leaderName?: string;
   departmentId?: number;
   departmentName?: string;
+  departmentAreaName?: string;
+  deputyLeaderId?: number | null;
+  deputyLeaderName?: string;
   memberCount?: number | string;
   memberNames?: string;
   assetCount?: number | string;

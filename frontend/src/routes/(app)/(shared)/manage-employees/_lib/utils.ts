@@ -11,6 +11,7 @@ import {
   AVAILABILITY_STATUS_LABELS,
   DEFAULT_BADGE_CLASS,
   INFO_BADGE_CLASS,
+  INHERITED_BADGE_CLASS,
   PASSWORD_CRACK_TIMES,
   PASSWORD_STRENGTH_LABELS,
   STATUS_BADGE_CLASSES,
@@ -474,7 +475,7 @@ function buildInheritedBadge(displayText: string, tooltip: string): BadgeInfo {
   // SECURITY FIX: Escape user-provided text to prevent XSS
   const safeText = escapeHtml(displayText);
   return {
-    class: INFO_BADGE_CLASS,
+    class: INHERITED_BADGE_CLASS,
     text: `<i class="fas fa-sitemap mr-1"></i>${safeText}`,
     title: tooltip,
   };

@@ -139,10 +139,8 @@ export class UsersController {
     private readonly scopeService: ScopeService,
   ) {}
 
-  /** GET /users - List all users with pagination and filters (admin only) */
+  /** GET /users - List all users with pagination and filters (scope-filtered) */
   @Get()
-  @Roles('admin', 'root', 'employee')
-  @RequirePermission(SCOPE_FEAT, SCOPE_MOD, 'canRead')
   async listUsers(
     @Query() query: ListUsersQueryDto,
     @TenantId() tenantId: number,
@@ -167,8 +165,6 @@ export class UsersController {
 
   /** GET /users/uuid/:uuid - Get user by UUID (admin only, preferred) */
   @Get('uuid/:uuid')
-  @Roles('admin', 'root', 'employee')
-  @RequirePermission(SCOPE_FEAT, SCOPE_MOD, 'canRead')
   async getUserByUuid(
     @Param('uuid') uuid: string,
     @TenantId() tenantId: number,
@@ -182,8 +178,6 @@ export class UsersController {
    * @deprecated Use GET /users/uuid/:uuid instead
    */
   @Get(':id')
-  @Roles('admin', 'root', 'employee')
-  @RequirePermission(SCOPE_FEAT, SCOPE_MOD, 'canRead')
   async getUserById(
     @Param('id', ParseIntPipe) id: number,
     @TenantId() tenantId: number,

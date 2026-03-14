@@ -747,6 +747,7 @@
                   <AdminTableRow
                     {admin}
                     {labels}
+                    currentUserId={data.user?.id ?? 0}
                     onedit={openEditModal}
                     onavailability={openAvailabilityModal}
                     onpermission={navigateToPermissionPage}

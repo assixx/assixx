@@ -31,6 +31,11 @@ export const DEFAULT_BADGE_CLASS = 'badge--secondary';
 export const INFO_BADGE_CLASS = 'badge--info';
 
 /**
+ * Warning badge class for inherited/indirect assignments
+ */
+export const INHERITED_BADGE_CLASS = 'badge--warning';
+
+/**
  * Position options for employees
  */
 export const POSITION_OPTIONS: readonly string[] = [

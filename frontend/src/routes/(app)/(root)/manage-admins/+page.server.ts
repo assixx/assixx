@@ -12,6 +12,23 @@ import { apiFetch } from '$lib/server/api-fetch';
 import type { PageServerLoad } from './$types';
 import type { Admin, AdminPermissions, Area, Department } from './_lib/types';
 
+/** Extract permission fields with safe defaults */
+function extractPermissions(
+  raw: AdminPermissions | null | undefined,
+): Pick<
+  Admin,
+  'areas' | 'departments' | 'leadAreas' | 'leadDepartments' | 'hasFullAccess'
+> {
+  const p = raw ?? {};
+  return {
+    areas: p.areas ?? [],
+    departments: p.departments ?? [],
+    leadAreas: p.leadAreas ?? [],
+    leadDepartments: p.leadDepartments ?? [],
+    hasFullAccess: p.hasFullAccess ?? false,
+  };
+}
+
 /**
  * Load permissions for a single admin and return new admin object with permissions
  * Returns a NEW object to avoid ESLint require-atomic-updates warnings
@@ -27,13 +44,7 @@ async function loadAdminPermissions(
     fetchFn,
   );
 
-  // Return new object with permissions merged (avoids mutation)
-  return {
-    ...admin,
-    areas: permsData?.areas ?? [],
-    departments: permsData?.departments ?? [],
-    hasFullAccess: permsData?.hasFullAccess ?? false,
-  };
+  return { ...admin, ...extractPermissions(permsData) };
 }
 
 export const load: PageServerLoad = async ({ cookies, fetch }) => {

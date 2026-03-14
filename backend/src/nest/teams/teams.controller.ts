@@ -73,8 +73,6 @@ export class TeamsController {
    * List all teams with optional filters
    */
   @Get()
-  @Roles('admin', 'root', 'employee')
-  @RequirePermission(SCOPE_FEAT, SCOPE_MOD, 'canRead')
   async listTeams(
     @Query() query: ListTeamsQueryDto,
     @TenantId() tenantId: number,
@@ -91,8 +89,6 @@ export class TeamsController {
    * Get team by ID
    */
   @Get(':id')
-  @Roles('admin', 'root', 'employee')
-  @RequirePermission(SCOPE_FEAT, SCOPE_MOD, 'canRead')
   async getTeamById(
     @Param('id', ParseIntPipe) id: number,
     @TenantId() tenantId: number,
@@ -158,8 +154,6 @@ export class TeamsController {
    * Query params: ?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD
    */
   @Get(':id/members')
-  @Roles('admin', 'root', 'employee')
-  @RequirePermission(SCOPE_FEAT, SCOPE_MOD, 'canRead')
   async getTeamMembers(
     @Param('id', ParseIntPipe) id: number,
     @Query() query: TeamMembersQueryDto,
@@ -207,8 +201,6 @@ export class TeamsController {
    * Get team assets
    */
   @Get(':id/assets')
-  @Roles('admin', 'root', 'employee')
-  @RequirePermission(SCOPE_FEAT, SCOPE_MOD, 'canRead')
   async getTeamAssets(
     @Param('id', ParseIntPipe) id: number,
     @TenantId() tenantId: number,

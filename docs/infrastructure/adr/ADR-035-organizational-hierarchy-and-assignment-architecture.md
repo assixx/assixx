@@ -707,28 +707,44 @@ Die Zuweisungen werden in den Management-Tabellen durch ein einheitliches Badge-
 | --------------- | ------------------ | ------------ | -------------------------------------- |
 | **Vollzugriff** | `badge--primary`   | `fa-globe`   | `has_full_access = true`               |
 | **Anzahl**      | `badge--info`      | —            | N direkte Zuweisungen, Tooltip = Namen |
-| **Vererbt**     | `badge--info`      | `fa-sitemap` | Zugriff via Parent-Hierarchie          |
+| **Vererbt**     | `badge--warning`   | `fa-sitemap` | Zugriff via Hierarchie-Vererbung (orange) |
 | **Keine**       | `badge--secondary` | —            | Keine Zuweisungen                      |
 
 **Badge-Logik für Admins:**
 
+Datenquellen: `areas[]` + `leadAreas[]` (explizite Permissions + Lead-Positionen, dedupliziert).
+Ebenso: `departments[]` + `leadDepartments[]`. Lead-Einträge erhalten Suffix `(Lead)` im Tooltip.
+
 ```
 getAreasBadge(admin):
   has_full_access → "Alle" (globe)
-  areas.length > 0 → "N Bereiche" (info)
+  (areas + leadAreas).length > 0 → "N {label}" (info), Tooltip: Namen
+  departments/leadDepartments haben areaId → "Vererbt" (sitemap, Aufwärts ↑)
   else → "Keine" (secondary)
 
 getDepartmentsBadge(admin):
   has_full_access → "Alle" (globe)
-  direct_depts + area_inheritance → "N + Vererbt"
-  only direct → "N Abteilungen"
-  only inherited → "Vererbt" (sitemap)
+  (depts + leadDepts) + (areas + leadAreas) → "N + Vererbt"
+  only (depts + leadDepts) → "N {label}"
+  only (areas + leadAreas) → "Vererbt" (sitemap, Abwärts ↓)
   else → "Keine"
 
 getTeamsBadge(admin):
   has_full_access → "Alle" (globe)
-  has areas OR departments → "Vererbt" (sitemap, Tooltip zeigt Vererbungskette)
+  has (areas + leadAreas) OR (depts + leadDepts) → "Vererbt" (sitemap)
   else → "Keine"
+```
+
+**API-Response (`GET /admin-permissions/:id`):**
+
+```json
+{
+  "areas": [...],            // Explizite admin_area_permissions
+  "departments": [...],      // Explizite admin_department_permissions (inkl. areaId/areaName)
+  "leadAreas": [...],        // Areas WHERE area_lead_id = userId (ohne Duplikate)
+  "leadDepartments": [...],  // Departments WHERE department_lead_id = userId (inkl. areaId/areaName)
+  "hasFullAccess": false
+}
 ```
 
 **Badge-Logik für Employees:**

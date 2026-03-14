@@ -293,11 +293,11 @@ describe('Dummy Users: Login & Access', () => {
     expect(res.status).toBe(403);
   });
 
-  it('should deny dummy GET /users (not admin/root)', async () => {
+  it('should return 200 with scope-filtered data for dummy GET /users (no @RequirePermission on GET)', async () => {
     const res = await fetch(`${BASE_URL}/users`, {
       headers: authOnly(accessDummyAuth.authToken),
     });
-    expect(res.status).toBe(403);
+    expect(res.status).toBe(200);
   });
 });
 
