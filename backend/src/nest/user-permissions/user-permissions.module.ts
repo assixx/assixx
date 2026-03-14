@@ -8,10 +8,13 @@
  */
 import { Module } from '@nestjs/common';
 
+import { HierarchyPermissionModule } from '../hierarchy-permission/hierarchy-permission.module.js';
+import { ScopeModule } from '../hierarchy-permission/scope.module.js';
 import { UserPermissionsController } from './user-permissions.controller.js';
 import { UserPermissionsService } from './user-permissions.service.js';
 
 @Module({
+  imports: [ScopeModule, HierarchyPermissionModule],
   controllers: [UserPermissionsController],
   providers: [UserPermissionsService],
   exports: [UserPermissionsService],

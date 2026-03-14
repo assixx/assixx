@@ -6,8 +6,8 @@
  */
 import { redirect } from '@sveltejs/kit';
 
+import { apiFetch, apiFetchWithPermission } from '$lib/server/api-fetch';
 import { requireAddon } from '$lib/utils/addon-guard';
-import { createLogger } from '$lib/utils/logger';
 
 import type { PageServerLoad } from './$types';
 import type {
@@ -17,41 +17,6 @@ import type {
   TpmLocation,
   TpmTimeEstimate,
 } from '../../_lib/types';
-
-const log = createLogger('TpmCardDetail');
-
-const API_BASE = process.env.API_URL ?? 'http://localhost:3000/api/v2';
-
-interface ApiResponse<T> {
-  success?: boolean;
-  data?: T;
-}
-
-async function apiFetch<T>(
-  endpoint: string,
-  token: string,
-  fetchFn: typeof fetch,
-): Promise<T | null> {
-  try {
-    const response = await fetchFn(`${API_BASE}${endpoint}`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-    });
-    if (!response.ok) {
-      log.error({ status: response.status, endpoint }, 'API error');
-      return null;
-    }
-    const json = (await response.json()) as ApiResponse<T>;
-    if ('success' in json && json.success === true) return json.data ?? null;
-    if ('data' in json && json.data !== undefined) return json.data;
-    return json as unknown as T;
-  } catch (err: unknown) {
-    log.error({ err, endpoint }, 'Fetch error');
-    return null;
-  }
-}
 
 function extractArray<T>(raw: unknown): T[] {
   if (Array.isArray(raw)) return raw as T[];
@@ -76,13 +41,26 @@ export const load: PageServerLoad = async ({
 
   const { uuid: cardUuid } = params;
 
-  // Step 1: Fetch card + colors + employees in parallel
-  const [card, colorsRaw, employeesRaw] = await Promise.all([
-    apiFetch<TpmCard>(`/tpm/cards/${cardUuid}`, token, fetch),
+  // Step 1: Fetch card (permission-aware) + colors + employees in parallel
+  const [cardResult, colorsRaw, employeesRaw] = await Promise.all([
+    apiFetchWithPermission<TpmCard>(`/tpm/cards/${cardUuid}`, token, fetch),
     apiFetch<unknown>('/tpm/config/colors', token, fetch),
     apiFetch<unknown>('/tpm/executions/eligible-participants', token, fetch),
   ]);
 
+  if (cardResult.permissionDenied) {
+    return {
+      permissionDenied: true as const,
+      card: null,
+      colors: [] as TpmColorConfigEntry[],
+      timeEstimates: [] as TpmTimeEstimate[],
+      locations: [] as TpmLocation[],
+      employees: [] as TpmEmployee[],
+      error: null,
+    };
+  }
+
+  const card = cardResult.data;
   const colors = extractArray<TpmColorConfigEntry>(colorsRaw);
   const employees = extractArray<TpmEmployee>(employeesRaw);
 
@@ -107,6 +85,7 @@ export const load: PageServerLoad = async ({
   }
 
   return {
+    permissionDenied: false as const,
     card,
     colors,
     timeEstimates,

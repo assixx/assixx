@@ -7,77 +7,29 @@
  */
 import { redirect } from '@sveltejs/kit';
 
+import { apiFetch, apiFetchWithPermission } from '$lib/server/api-fetch';
 import { requireAddon } from '$lib/utils/addon-guard';
-import { createLogger } from '$lib/utils/logger';
 
 import type { PageServerLoad } from './$types';
 import type { CalendarEvent, Department, Team, Area, User } from './_lib/types';
 
-const log = createLogger('Calendar');
-
-const API_BASE = process.env.API_URL ?? 'http://localhost:3000/api/v2';
-
-interface ApiResponse<T> {
-  success?: boolean;
-  data?: T;
-  events?: T;
-}
-
-/**
- * Extract data from various API response formats.
- * Handles: { success: true, data: { events: [...] } } | { success: true, data: T } | { data: T } | T
- */
-function extractResponseData<T>(json: ApiResponse<T>): T | null {
-  // Format: { success: true, data: { events: [...] } }
-  if ('success' in json && json.success === true) {
-    if (json.data === undefined || json.data === null) {
-      return null;
-    }
-    const innerData = json.data as unknown as { events?: T };
-    if ('events' in innerData) {
-      return innerData.events ?? null;
-    }
-    return json.data;
-  }
-
-  // Format: { data: T }
-  if ('data' in json && json.data !== undefined) {
-    return json.data;
-  }
-
-  // Format: T (raw response)
-  return json as unknown as T;
-}
-
-async function apiFetch<T>(
-  endpoint: string,
-  token: string,
-  fetchFn: typeof fetch,
-): Promise<T | null> {
-  try {
-    const response = await fetchFn(`${API_BASE}${endpoint}`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      log.error({ status: response.status, endpoint }, 'API error');
-      return null;
-    }
-
-    const json = (await response.json()) as ApiResponse<T>;
-    return extractResponseData(json);
-  } catch (err: unknown) {
-    log.error({ err, endpoint }, 'Fetch error');
-    return null;
-  }
-}
-
 /** Safe array fallback - returns empty array if data is not an array */
 function toArray<T>(data: T[] | null): T[] {
   return Array.isArray(data) ? data : [];
+}
+
+/**
+ * Unwrap calendar events from API response.
+ * Calendar endpoints may return `{ events: [...] }` instead of a plain array
+ * when the shared apiFetch extracts the `data` envelope.
+ */
+function unwrapEvents(data: unknown): CalendarEvent[] {
+  if (Array.isArray(data)) return data as CalendarEvent[];
+  if (data !== null && typeof data === 'object' && 'events' in data) {
+    const wrapped = data as { events: unknown };
+    if (Array.isArray(wrapped.events)) return wrapped.events as CalendarEvent[];
+  }
+  return [];
 }
 
 export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
@@ -94,15 +46,20 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
 
   // Parallel fetch: upcoming events + organization data
   // Note: /users only for admin/root (employees get 403)
+  // apiFetchWithPermission for /calendar/dashboard to detect 403 (permission denied vs empty data)
   const [
-    upcomingEventsData,
+    dashboardResult,
     recentlyAddedData,
     departmentsData,
     teamsData,
     areasData,
     usersData,
   ] = await Promise.all([
-    apiFetch<CalendarEvent[]>('/calendar/dashboard', token, fetch),
+    apiFetchWithPermission<CalendarEvent[]>(
+      '/calendar/dashboard',
+      token,
+      fetch,
+    ),
     apiFetch<CalendarEvent[]>('/calendar/recently-added', token, fetch),
     apiFetch<Department[]>('/departments', token, fetch),
     apiFetch<Team[]>('/teams', token, fetch),
@@ -112,9 +69,23 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
     : Promise.resolve(null),
   ]);
 
+  if (dashboardResult.permissionDenied) {
+    return {
+      permissionDenied: true as const,
+      upcomingEvents: [] as CalendarEvent[],
+      recentlyAddedEvents: [] as CalendarEvent[],
+      departments: [] as Department[],
+      teams: [] as Team[],
+      areas: [] as Area[],
+      users: [] as User[],
+      currentUser: parentData.user,
+    };
+  }
+
   return {
-    upcomingEvents: toArray(upcomingEventsData),
-    recentlyAddedEvents: toArray(recentlyAddedData),
+    permissionDenied: false as const,
+    upcomingEvents: unwrapEvents(dashboardResult.data),
+    recentlyAddedEvents: unwrapEvents(recentlyAddedData),
     departments: toArray(departmentsData),
     teams: toArray(teamsData),
     areas: toArray(areasData),

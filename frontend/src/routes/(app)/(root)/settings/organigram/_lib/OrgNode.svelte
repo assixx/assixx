@@ -15,20 +15,19 @@
     setHoveredNodeKey,
   } from './state.svelte.js';
 
-  import type { RenderNode } from './types.js';
+  import type { OrgEntityType, RenderNode } from './types.js';
 
   interface Props {
     node: RenderNode;
     svgElement: SVGSVGElement;
+    ondblclicknode?: (entityType: OrgEntityType, entityUuid: string) => void;
   }
 
-  const { node, svgElement }: Props = $props();
+  const { node, svgElement, ondblclicknode }: Props = $props();
 
   const colors = $derived(ENTITY_COLORS[node.entityType]);
-  const sub = $derived(buildSubtitle());
   const isLocked = $derived(getIsLocked());
   const nodeFontSize = $derived(getFontSize());
-  const subtitleFontSize = $derived(Math.max(8, nodeFontSize - 2));
 
   let isDragging = $state(false);
   let dragOffsetX = $state(0);
@@ -36,17 +35,6 @@
 
   function nodeKey(): string {
     return `${node.entityType}:${node.entityUuid}`;
-  }
-
-  function buildSubtitle(): string {
-    const parts: string[] = [];
-    if (node.leadName !== undefined && node.leadName !== '') {
-      parts.push(node.leadName);
-    }
-    if (node.memberCount !== undefined && node.memberCount > 0) {
-      parts.push(`${String(node.memberCount)} Mitgl.`);
-    }
-    return parts.join(' \u00b7 ');
   }
 
   function truncate(text: string, maxLen: number): string {
@@ -113,6 +101,12 @@
       setHoveredNodeKey('');
     }
   }
+
+  function handleDblClick(event: MouseEvent): void {
+    event.stopPropagation();
+    event.preventDefault();
+    ondblclicknode?.(node.entityType, node.entityUuid);
+  }
 </script>
 
 <g
@@ -123,6 +117,7 @@
   onpointerdown={handlePointerDown}
   onpointermove={handlePointerMove}
   onpointerup={handlePointerUp}
+  ondblclick={handleDblClick}
   onmouseenter={handleMouseEnter}
   onmouseleave={handleMouseLeave}
   role="group"
@@ -160,10 +155,10 @@
     clip-path="url(#clip-{node.entityUuid})"
   />
 
-  <!-- Name -->
+  <!-- Name (Details per Doppelklick im Modal) -->
   <text
     x={node.width / 2}
-    y={node.height / 2 - (sub !== '' ? 6 : 0)}
+    y={node.height / 2}
     text-anchor="middle"
     dominant-baseline="central"
     class="node-name"
@@ -172,21 +167,6 @@
   >
     {truncate(node.name, 22)}
   </text>
-
-  <!-- Subtitle (Lead + Mitglieder) -->
-  {#if sub !== ''}
-    <text
-      x={node.width / 2}
-      y={node.height / 2 + 19}
-      text-anchor="middle"
-      dominant-baseline="central"
-      class="node-subtitle"
-      fill="var(--color-text-secondary)"
-      font-size="{subtitleFontSize}px"
-    >
-      {truncate(sub, 28)}
-    </text>
-  {/if}
 </g>
 
 <style>
@@ -214,12 +194,6 @@
 
   .node-name {
     font-weight: 600;
-    pointer-events: none;
-    user-select: none;
-  }
-
-  .node-subtitle {
-    font-weight: 400;
     pointer-events: none;
     user-select: none;
   }

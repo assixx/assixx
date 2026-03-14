@@ -17,6 +17,7 @@ const { mockLogger } = vi.hoisted(() => ({
   mockLogger: {
     error: vi.fn(),
     warn: vi.fn(),
+    debug: vi.fn(),
   },
 }));
 
@@ -177,6 +178,24 @@ describe('AllExceptionsFilter', () => {
       });
     });
 
+    it('should include requestId for ZodError when header present', () => {
+      const zodError = new ZodError([
+        {
+          code: 'invalid_type',
+          path: ['name'],
+          message: 'bad',
+        },
+      ] as ZodError['issues']);
+      const host = createMockHost({
+        headers: { 'x-request-id': 'zod-req-1' },
+      });
+
+      catchException(filter, zodError, host);
+
+      const { body } = getSentResponse(host);
+      expect(body.requestId).toBe('zod-req-1');
+    });
+
     it('should not report ZodError to Sentry (4xx)', () => {
       const zodError = new ZodError([
         {
@@ -255,6 +274,21 @@ describe('AllExceptionsFilter', () => {
       expect(body.error.code).toBe('CUSTOM');
       // HttpException uses the JSON-stringified object as the message property
       expect(body.error.message).toBe(exception.message);
+    });
+
+    it('should include requestId for object response when header present', () => {
+      const exception = new HttpException(
+        { code: 'CUSTOM', message: 'msg' },
+        HttpStatus.BAD_REQUEST,
+      );
+      const host = createMockHost({
+        headers: { 'x-request-id': 'obj-req-1' },
+      });
+
+      catchException(filter, exception, host);
+
+      const { body } = getSentResponse(host);
+      expect(body.requestId).toBe('obj-req-1');
     });
 
     it('should not include details when not provided in object response', () => {
@@ -338,6 +372,22 @@ describe('AllExceptionsFilter', () => {
       ]);
     });
 
+    it('should include requestId for ServiceError when header present', () => {
+      const serviceError = {
+        code: 'LIMIT',
+        message: 'Over limit',
+        statusCode: 429,
+      };
+      const host = createMockHost({
+        headers: { 'x-request-id': 'svc-req-1' },
+      });
+
+      catchException(filter, serviceError, host);
+
+      const { body } = getSentResponse(host);
+      expect(body.requestId).toBe('svc-req-1');
+    });
+
     it('should not include details when ServiceError has no details', () => {
       const serviceError = {
         code: 'NOT_FOUND',
@@ -412,6 +462,17 @@ describe('AllExceptionsFilter', () => {
       const { body } = getSentResponse(host);
       expect(body.error.message).toBe('raw string error');
       process.env['NODE_ENV'] = originalEnv;
+    });
+
+    it('should include requestId for unknown error when header present', () => {
+      const host = createMockHost({
+        headers: { 'x-request-id': 'unk-req-1' },
+      });
+
+      catchException(filter, new Error('boom'), host);
+
+      const { body } = getSentResponse(host);
+      expect(body.requestId).toBe('unk-req-1');
     });
 
     it('should report unknown errors to Sentry (5xx)', () => {

@@ -97,6 +97,8 @@ export interface DbDashboardStats {
   implemented: string;
   rejected: string;
   approved: string;
+  team_total: string;
+  team_implemented: string;
 }
 
 /**
@@ -264,6 +266,8 @@ export interface DashboardStats {
   approvedSuggestions: number;
   implementedSuggestions: number;
   rejectedSuggestions: number;
+  teamTotalSuggestions: number;
+  teamImplementedSuggestions: number;
 }
 
 export interface PaginatedSuggestionsResult {
@@ -293,19 +297,6 @@ export interface SuggestionFilters {
 // ============================================================================
 // INTERNAL TYPES (used by sub-services and helpers)
 // ============================================================================
-
-/** DB result interface for extended org info query */
-export interface DbExtendedOrgInfo {
-  has_full_access: boolean;
-  team_ids: number[];
-  department_ids: number[];
-  area_ids: number[];
-  team_lead_of: number[];
-  department_lead_of: number[];
-  area_lead_of: number[];
-  teams_department_ids: number[];
-  departments_area_ids: number[];
-}
 
 /** SQL placeholder strings for org-based visibility queries */
 export interface OrgPlaceholders {

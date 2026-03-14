@@ -133,7 +133,9 @@
    * Fallback: .landing-page-active class added via onMount (legacy browsers)
    */
   body:has(.landing-page)::after,
-  body.landing-page-active::after {
+  body.landing-page-active::after,
+  body.fullscreen-mode::after,
+  body.calendar-fullscreen-mode::after {
     display: none;
   }
 

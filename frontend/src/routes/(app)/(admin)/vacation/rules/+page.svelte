@@ -9,6 +9,8 @@
 
   import { page } from '$app/state';
 
+  import PermissionDenied from '$lib/components/PermissionDenied.svelte';
+
   import BlackoutsTab from './_lib/BlackoutsTab.svelte';
   import { RULES_TABS } from './_lib/constants';
   import SettingsTab from './_lib/SettingsTab.svelte';
@@ -23,6 +25,7 @@
   // ==========================================================================
 
   const { data }: { data: PageData } = $props();
+  const permissionDenied = $derived(data.permissionDenied);
   const labels = $derived(data.hierarchyLabels);
 
   // ==========================================================================
@@ -77,49 +80,53 @@
   <title>Urlaubsregeln - Assixx</title>
 </svelte:head>
 
-<div class="container">
-  <!-- Header -->
-  <div class="card mb-6">
-    <div class="card__header">
-      <div class="flex items-center justify-between">
-        <h2 class="card__title">
-          <i class="fas fa-shield-alt mr-2"></i>
-          Urlaubsregeln & Einstellungen
-        </h2>
+{#if permissionDenied}
+  <PermissionDenied addonName="die Urlaubsverwaltung" />
+{:else}
+  <div class="container">
+    <!-- Header -->
+    <div class="card mb-6">
+      <div class="card__header">
+        <div class="flex items-center justify-between">
+          <h2 class="card__title">
+            <i class="fas fa-shield-alt mr-2"></i>
+            Urlaubsregeln & Einstellungen
+          </h2>
+        </div>
       </div>
     </div>
-  </div>
 
-  <!-- Tab Navigation -->
-  <div class="card mb-6">
-    <div class="card__header">
-      <div class="toggle-group">
-        {#each RULES_TABS as tab (tab.value)}
-          <button
-            type="button"
-            class="toggle-group__btn"
-            class:active={rulesState.activeTab === tab.value}
-            onclick={() => {
-              handleTabChange(tab.value);
-            }}
-          >
-            <i class="{tab.icon} mr-1"></i>
-            {tab.label}
-          </button>
-        {/each}
+    <!-- Tab Navigation -->
+    <div class="card mb-6">
+      <div class="card__header">
+        <div class="toggle-group">
+          {#each RULES_TABS as tab (tab.value)}
+            <button
+              type="button"
+              class="toggle-group__btn"
+              class:active={rulesState.activeTab === tab.value}
+              onclick={() => {
+                handleTabChange(tab.value);
+              }}
+            >
+              <i class="{tab.icon} mr-1"></i>
+              {tab.label}
+            </button>
+          {/each}
+        </div>
       </div>
     </div>
-  </div>
 
-  <!-- Tab Content -->
-  {#if rulesState.activeTab === 'blackouts'}
-    <BlackoutsTab {labels} />
-  {:else if rulesState.activeTab === 'staffing-rules'}
-    <StaffingRulesTab {labels} />
-  {:else if rulesState.activeTab === 'settings'}
-    <SettingsTab />
-  {/if}
-</div>
+    <!-- Tab Content -->
+    {#if rulesState.activeTab === 'blackouts'}
+      <BlackoutsTab {labels} />
+    {:else if rulesState.activeTab === 'staffing-rules'}
+      <StaffingRulesTab {labels} />
+    {:else if rulesState.activeTab === 'settings'}
+      <SettingsTab />
+    {/if}
+  </div>
+{/if}
 
 <style>
   /* Vacation Rules — all styles used in child components (BlackoutsTab, StaffingRulesTab, SettingsTab) */

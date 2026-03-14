@@ -40,12 +40,14 @@ export interface OrgChartNode {
   memberCount?: number;
 }
 
-/** Gespeicherter Viewport-Zustand (Zoom + Pan + Font-Größe) */
+/** Gespeicherter Viewport-Zustand (Zoom + Pan + Font-Größe + Node-Größe) */
 export interface OrgViewport {
   zoom: number;
   panX: number;
   panY: number;
   fontSize: number;
+  nodeWidth?: number;
+  nodeHeight?: number;
 }
 
 export const DEFAULT_VIEWPORT: OrgViewport = {
@@ -96,6 +98,40 @@ export interface OrgChartPositionRow {
   created_at: Date;
   updated_at: Date;
   uuid_created_at: Date;
+}
+
+// ---- Node Detail Types ----
+
+export interface OrgNodeDetailPerson {
+  name: string;
+  uuid: string;
+}
+
+export interface OrgNodeDetailEntry {
+  uuid: string;
+  name: string;
+  extra?: string;
+}
+
+/** Aggregated detail view for a single org entity (area/department/team/asset) */
+export interface OrgNodeDetail {
+  entityType: OrgEntityType;
+  entityUuid: string;
+  name: string;
+  areaType?: string;
+  assetStatus?: string;
+  assetType?: string;
+  lead?: OrgNodeDetailPerson;
+  deputyLead?: OrgNodeDetailPerson;
+  parentArea?: OrgNodeDetailEntry;
+  parentDepartment?: OrgNodeDetailEntry;
+  halls?: OrgNodeDetailEntry[];
+  departments?: OrgNodeDetailEntry[];
+  teams?: OrgNodeDetailEntry[];
+  members?: OrgNodeDetailEntry[];
+  employees?: OrgNodeDetailEntry[];
+  assets?: OrgNodeDetailEntry[];
+  assignedTeams?: OrgNodeDetailEntry[];
 }
 
 /** Default-Labels wenn tenants.settings.orgHierarchy nicht gesetzt */

@@ -20,7 +20,7 @@ LABEL org.opencontainers.image.authors="Assixx"
 
 # Fix CVE-2025-64756: Update npm to get patched glob (>=11.1.0)
 # pnpm version configurable for consistency across environments
-ARG PNPM_VERSION=10.32.0
+ARG PNPM_VERSION=10.32.1
 RUN npm install -g npm@11.9.0 "pnpm@${PNPM_VERSION}"
 
 WORKDIR /app
@@ -64,7 +64,7 @@ LABEL org.opencontainers.image.authors="Assixx"
 # - dumb-init: PID 1 signal forwarding (SIGTERM, SIGINT)
 # - Fix CVE-2025-64756: npm upgrade for patched glob
 # Note: CVE-2025-64118 (tar) is fixed via pnpm override in package.json
-ARG PNPM_VERSION=10.32.0
+ARG PNPM_VERSION=10.32.1
 RUN apk add --no-cache dumb-init && \
     npm install -g npm@11.9.0 "pnpm@${PNPM_VERSION}" && \
     addgroup -g 1001 -S nodejs && \

@@ -8,7 +8,7 @@
 import { Module } from '@nestjs/common';
 
 import { DocumentsModule } from '../documents/documents.module.js';
-import { HierarchyPermissionModule } from '../hierarchy-permission/hierarchy-permission.module.js';
+import { ScopeModule } from '../hierarchy-permission/scope.module.js';
 import { BlackboardAccessService } from './blackboard-access.service.js';
 import { BlackboardArchiveService } from './blackboard-archive.service.js';
 import { BlackboardAttachmentsService } from './blackboard-attachments.service.js';
@@ -20,7 +20,7 @@ import { BlackboardController } from './blackboard.controller.js';
 import { BlackboardService } from './blackboard.service.js';
 
 @Module({
-  imports: [DocumentsModule, HierarchyPermissionModule],
+  imports: [DocumentsModule, ScopeModule],
   controllers: [BlackboardController],
   providers: [
     // Main facade service

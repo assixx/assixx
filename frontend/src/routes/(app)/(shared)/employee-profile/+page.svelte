@@ -11,6 +11,7 @@
   import ImageCropModal from '$lib/components/ImageCropModal.svelte';
   import PasswordStrengthIndicator from '$lib/components/PasswordStrengthIndicator.svelte';
   import { e2e } from '$lib/crypto/e2e-state.svelte';
+  import { resolvePositionDisplay } from '$lib/types/hierarchy-labels';
   import { getAvatarColorClass, getInitials } from '$lib/utils/avatar-helpers';
   import { analyzePassword } from '$lib/utils/password-strength';
 
@@ -35,7 +36,6 @@
     isCurrentPasswordError,
     isPasswordLengthValid,
     doPasswordsMatch,
-    getDisplayPosition,
   } from './_lib/utils';
 
   import type { PageData } from './$types';
@@ -49,6 +49,7 @@
 
   // SSR data via $derived - updates when invalidateAll() is called
   const user = $derived<EmployeeProfile | null>(data.profile ?? null);
+  const hierarchyLabels = $derived(data.hierarchyLabels);
 
   // Initialize form values from SSR data
   $effect(() => {
@@ -56,7 +57,10 @@
       formEmail = user.email;
       formFirstName = user.firstName ?? '';
       formLastName = user.lastName ?? '';
-      formPosition = getDisplayPosition(user.position);
+      formPosition =
+        user.position !== undefined && user.position !== '' ?
+          resolvePositionDisplay(user.position, hierarchyLabels)
+        : '-';
       profilePicture = apiLoadProfilePicture(user.profilePicture);
     }
   });

@@ -49,9 +49,9 @@ interface MessageResponse {
   message: string;
 }
 
-/** Permission constants */
-const FEAT = 'departments';
-const MOD = 'departments-manage';
+/** Permission constants — manage_hierarchy (GET/PUT scope-filtered) */
+const SCOPE_FEAT = 'manage_hierarchy';
+const SCOPE_MOD = 'manage-departments';
 
 @Controller('departments')
 export class DepartmentsController {
@@ -62,6 +62,8 @@ export class DepartmentsController {
    * List all departments with optional extended info
    */
   @Get()
+  @Roles('admin', 'root', 'employee')
+  @RequirePermission(SCOPE_FEAT, SCOPE_MOD, 'canRead')
   async listDepartments(
     @Query() query: ListDepartmentsQueryDto,
     @TenantId() tenantId: number,
@@ -78,6 +80,8 @@ export class DepartmentsController {
    * Get department statistics for the tenant
    */
   @Get('stats')
+  @Roles('admin', 'root', 'employee')
+  @RequirePermission(SCOPE_FEAT, SCOPE_MOD, 'canRead')
   async getDepartmentStats(
     @TenantId() tenantId: number,
   ): Promise<DepartmentStats> {
@@ -89,6 +93,8 @@ export class DepartmentsController {
    * Get department by ID
    */
   @Get(':id')
+  @Roles('admin', 'root', 'employee')
+  @RequirePermission(SCOPE_FEAT, SCOPE_MOD, 'canRead')
   async getDepartmentById(
     @Param('id', ParseIntPipe) id: number,
     @TenantId() tenantId: number,
@@ -101,6 +107,8 @@ export class DepartmentsController {
    * Get department members
    */
   @Get(':id/members')
+  @Roles('admin', 'root', 'employee')
+  @RequirePermission(SCOPE_FEAT, SCOPE_MOD, 'canRead')
   async getDepartmentMembers(
     @Param('id', ParseIntPipe) id: number,
     @TenantId() tenantId: number,
@@ -114,7 +122,6 @@ export class DepartmentsController {
    */
   @Post()
   @Roles('admin', 'root')
-  @RequirePermission(FEAT, MOD, 'canWrite')
   @HttpCode(HttpStatus.CREATED)
   async createDepartment(
     @Body() dto: CreateDepartmentDto,
@@ -133,8 +140,8 @@ export class DepartmentsController {
    * Update department (admin only)
    */
   @Put(':id')
-  @Roles('admin', 'root')
-  @RequirePermission(FEAT, MOD, 'canWrite')
+  @Roles('admin', 'root', 'employee')
+  @RequirePermission(SCOPE_FEAT, SCOPE_MOD, 'canWrite')
   async updateDepartment(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateDepartmentDto,
@@ -156,7 +163,6 @@ export class DepartmentsController {
    */
   @Delete(':id')
   @Roles('admin', 'root')
-  @RequirePermission(FEAT, MOD, 'canDelete')
   async deleteDepartment(
     @Param('id', ParseIntPipe) id: number,
     @Query() query: DeleteDepartmentQueryDto,

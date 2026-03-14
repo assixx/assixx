@@ -275,6 +275,21 @@ describe('SECURITY: permission level enforcement', () => {
     expect(result).toBe(false);
   });
 
+  it('should deny access for unknown permission level', async () => {
+    mockUser('admin', false);
+    mockQueryReturn([{ can_read: true, can_write: true, can_delete: true }]);
+
+    const result = await service.hasAccess(
+      1,
+      1,
+      'area',
+      10,
+      'unknown' as never,
+    );
+
+    expect(result).toBe(false);
+  });
+
   it('should deny delete when user has can_read + can_write but not can_delete', async () => {
     mockUser('admin', false);
     // Area permission: can_read=true, can_write=true, can_delete=false
@@ -378,5 +393,452 @@ describe('SECURITY: getAccessibleTeamIds', () => {
     const result = await service.getAccessibleTeamIds(999, 1);
 
     expect(result).toEqual([]);
+  });
+
+  it('should combine member teams + inherited teams for regular admin', async () => {
+    mockUser('admin', false);
+    // 1. user_teams (member teams)
+    mockQueryReturn([{ team_id: 10 }]);
+    // 2. getAccessibleDepartmentIds flow:
+    //    getUserInfo (again)
+    mockUser('admin', false);
+    //    direct dept permissions
+    mockQueryReturn([{ department_id: 5 }]);
+    //    getAccessibleAreaIds flow: getUserInfo
+    mockUser('admin', false);
+    //    area permissions (none)
+    mockQueryReturn([]);
+    // 3. inherited teams from depts (dept 5 → team 20)
+    mockQueryReturn([{ id: 20 }]);
+
+    const result = await service.getAccessibleTeamIds(1, 1);
+
+    expect(result).toContain(10);
+    expect(result).toContain(20);
+  });
+});
+
+// ============================================
+// getScope — Organizational Scope Resolution
+// ============================================
+
+/** Mock CTE query result for getScope */
+function mockScopeCte(row: {
+  area_ids?: number[];
+  department_ids?: number[];
+  team_ids?: number[];
+  lead_area_ids?: number[];
+  lead_department_ids?: number[];
+  lead_team_ids?: number[];
+}) {
+  mockQueryReturn([
+    {
+      area_ids: row.area_ids ?? [],
+      department_ids: row.department_ids ?? [],
+      team_ids: row.team_ids ?? [],
+      lead_area_ids: row.lead_area_ids ?? [],
+      lead_department_ids: row.lead_department_ids ?? [],
+      lead_team_ids: row.lead_team_ids ?? [],
+    },
+  ]);
+}
+
+describe('SECURITY: getScope', () => {
+  // Scenario 1: Root user
+  it('should return full scope for root user', async () => {
+    mockUser('root', false);
+    const scope = await service.getScope(1, 1);
+    expect(scope.type).toBe('full');
+  });
+
+  // Scenario 2: Admin with has_full_access
+  it('should return full scope for admin with has_full_access', async () => {
+    mockUser('admin', true);
+    const scope = await service.getScope(1, 1);
+    expect(scope.type).toBe('full');
+  });
+
+  // Scenario 3: Admin with area permissions → cascaded depts/teams
+  it('should return limited scope with area permissions + cascade', async () => {
+    mockUser('admin', false);
+    mockScopeCte({
+      area_ids: [1],
+      department_ids: [10, 11],
+      team_ids: [100, 101],
+      lead_area_ids: [],
+    });
+
+    const scope = await service.getScope(1, 1);
+
+    expect(scope.type).toBe('limited');
+    expect(scope.areaIds).toEqual([1]);
+    expect(scope.departmentIds).toEqual([10, 11]);
+    expect(scope.teamIds).toEqual([100, 101]);
+  });
+
+  // Scenario 4: Admin as area_lead (no admin_area_permissions)
+  it('should include lead area in scope', async () => {
+    mockUser('admin', false);
+    mockScopeCte({
+      area_ids: [5],
+      lead_area_ids: [5],
+      department_ids: [50],
+      team_ids: [500],
+    });
+
+    const scope = await service.getScope(1, 1);
+
+    expect(scope.type).toBe('limited');
+    expect(scope.areaIds).toEqual([5]);
+    expect(scope.leadAreaIds).toEqual([5]);
+    expect(scope.isAreaLead).toBe(true);
+  });
+
+  // Scenario 5: Admin with dept permissions → cascaded teams
+  it('should return limited scope with dept permissions', async () => {
+    mockUser('admin', false);
+    mockScopeCte({ department_ids: [10], team_ids: [100, 101] });
+
+    const scope = await service.getScope(1, 1);
+
+    expect(scope.type).toBe('limited');
+    expect(scope.areaIds).toEqual([]);
+    expect(scope.departmentIds).toEqual([10]);
+    expect(scope.teamIds).toEqual([100, 101]);
+  });
+
+  // Scenario 6: Admin as department_lead
+  it('should include lead department in scope', async () => {
+    mockUser('admin', false);
+    mockScopeCte({
+      department_ids: [20],
+      lead_department_ids: [20],
+      team_ids: [200],
+    });
+
+    const scope = await service.getScope(1, 1);
+
+    expect(scope.leadDepartmentIds).toEqual([20]);
+    expect(scope.isDepartmentLead).toBe(true);
+  });
+
+  // Scenario 7: Admin as team_lead only
+  it('should return only team scope for team lead admin', async () => {
+    mockUser('admin', false);
+    mockScopeCte({ team_ids: [300], lead_team_ids: [300] });
+
+    const scope = await service.getScope(1, 1);
+
+    expect(scope.type).toBe('limited');
+    expect(scope.areaIds).toEqual([]);
+    expect(scope.departmentIds).toEqual([]);
+    expect(scope.teamIds).toEqual([300]);
+    expect(scope.isTeamLead).toBe(true);
+  });
+
+  // Scenario 8: Admin without permissions and not a lead
+  it('should return limited scope with empty arrays for admin without perms', async () => {
+    mockUser('admin', false);
+    mockScopeCte({});
+
+    const scope = await service.getScope(1, 1);
+
+    expect(scope.type).toBe('limited');
+    expect(scope.areaIds).toEqual([]);
+    expect(scope.departmentIds).toEqual([]);
+    expect(scope.teamIds).toEqual([]);
+    expect(scope.isAnyLead).toBe(false);
+  });
+
+  // Scenario 9: Employee as team_lead
+  it('should return limited scope for employee team lead', async () => {
+    mockUser('employee', false);
+    mockScopeCte({ team_ids: [268], lead_team_ids: [268] });
+
+    const scope = await service.getScope(106, 3);
+
+    expect(scope.type).toBe('limited');
+    expect(scope.teamIds).toEqual([268]);
+    expect(scope.isTeamLead).toBe(true);
+    expect(scope.isAnyLead).toBe(true);
+  });
+
+  // Scenario 10: Employee as deputy_lead (same behavior as team_lead, D4)
+  it('should return limited scope for employee deputy lead', async () => {
+    mockUser('employee', false);
+    mockScopeCte({ team_ids: [268], lead_team_ids: [268] });
+
+    const scope = await service.getScope(107, 3);
+
+    expect(scope.type).toBe('limited');
+    expect(scope.teamIds).toEqual([268]);
+    expect(scope.isTeamLead).toBe(true);
+  });
+
+  // Scenario 11: Employee without lead position
+  it('should return none scope for employee without lead', async () => {
+    mockUser('employee', false);
+    mockScopeCte({});
+
+    const scope = await service.getScope(200, 3);
+
+    expect(scope.type).toBe('none');
+  });
+
+  // Scenario 12: Dummy user
+  it('should return none scope for dummy user', async () => {
+    mockUser('dummy', false);
+
+    const scope = await service.getScope(300, 1);
+
+    expect(scope.type).toBe('none');
+  });
+
+  // Scenario 13: User not found
+  it('should return none scope for user not found', async () => {
+    mockUserNotFound();
+
+    const scope = await service.getScope(999, 1);
+
+    expect(scope.type).toBe('none');
+  });
+
+  // Scenario 14: CTE returns empty row (edge case)
+  it('should return none for employee when CTE returns no rows', async () => {
+    mockUser('employee', false);
+    mockQueryReturn([]);
+
+    const scope = await service.getScope(1, 1);
+
+    expect(scope.type).toBe('none');
+  });
+});
+
+// ============================================
+// getVisibleUserIds
+// ============================================
+
+describe('SECURITY: getVisibleUserIds', () => {
+  it('should return all for full scope', async () => {
+    const result = await service.getVisibleUserIds(
+      {
+        type: 'full',
+        areaIds: [],
+        departmentIds: [],
+        teamIds: [],
+        leadAreaIds: [],
+        leadDepartmentIds: [],
+        leadTeamIds: [],
+        isAreaLead: false,
+        isDepartmentLead: false,
+        isTeamLead: false,
+        isAnyLead: false,
+      },
+      1,
+    );
+    expect(result).toBe('all');
+  });
+
+  it('should return empty array for none scope', async () => {
+    const result = await service.getVisibleUserIds(
+      {
+        type: 'none',
+        areaIds: [],
+        departmentIds: [],
+        teamIds: [],
+        leadAreaIds: [],
+        leadDepartmentIds: [],
+        leadTeamIds: [],
+        isAreaLead: false,
+        isDepartmentLead: false,
+        isTeamLead: false,
+        isAnyLead: false,
+      },
+      1,
+    );
+    expect(result).toEqual([]);
+  });
+
+  it('should return empty when dept+team IDs are empty', async () => {
+    const result = await service.getVisibleUserIds(
+      {
+        type: 'limited',
+        areaIds: [1],
+        departmentIds: [],
+        teamIds: [],
+        leadAreaIds: [],
+        leadDepartmentIds: [],
+        leadTeamIds: [],
+        isAreaLead: false,
+        isDepartmentLead: false,
+        isTeamLead: false,
+        isAnyLead: false,
+      },
+      1,
+    );
+    expect(result).toEqual([]);
+  });
+
+  it('should query users by dept+team IDs', async () => {
+    mockQueryReturn([{ id: 10 }, { id: 20 }, { id: 30 }]);
+
+    const result = await service.getVisibleUserIds(
+      {
+        type: 'limited',
+        areaIds: [],
+        departmentIds: [5],
+        teamIds: [100],
+        leadAreaIds: [],
+        leadDepartmentIds: [],
+        leadTeamIds: [],
+        isAreaLead: false,
+        isDepartmentLead: false,
+        isTeamLead: false,
+        isAnyLead: false,
+      },
+      1,
+    );
+
+    expect(result).toEqual([10, 20, 30]);
+  });
+});
+
+// ============================================
+// isEntityInScope (static)
+// ============================================
+
+describe('SECURITY: isEntityInScope', () => {
+  it('should return true for full scope', () => {
+    const result = HierarchyPermissionService.isEntityInScope(
+      {
+        type: 'full',
+        areaIds: [],
+        departmentIds: [],
+        teamIds: [],
+        leadAreaIds: [],
+        leadDepartmentIds: [],
+        leadTeamIds: [],
+        isAreaLead: false,
+        isDepartmentLead: false,
+        isTeamLead: false,
+        isAnyLead: false,
+      },
+      'team',
+      999,
+    );
+    expect(result).toBe(true);
+  });
+
+  it('should return false for none scope', () => {
+    const result = HierarchyPermissionService.isEntityInScope(
+      {
+        type: 'none',
+        areaIds: [],
+        departmentIds: [],
+        teamIds: [],
+        leadAreaIds: [],
+        leadDepartmentIds: [],
+        leadTeamIds: [],
+        isAreaLead: false,
+        isDepartmentLead: false,
+        isTeamLead: false,
+        isAnyLead: false,
+      },
+      'area',
+      1,
+    );
+    expect(result).toBe(false);
+  });
+
+  it('should return true when entity is in scope', () => {
+    const result = HierarchyPermissionService.isEntityInScope(
+      {
+        type: 'limited',
+        areaIds: [1, 2],
+        departmentIds: [10],
+        teamIds: [100],
+        leadAreaIds: [],
+        leadDepartmentIds: [],
+        leadTeamIds: [],
+        isAreaLead: false,
+        isDepartmentLead: false,
+        isTeamLead: false,
+        isAnyLead: false,
+      },
+      'area',
+      2,
+    );
+    expect(result).toBe(true);
+  });
+
+  it('should return false when entity is not in scope', () => {
+    const result = HierarchyPermissionService.isEntityInScope(
+      {
+        type: 'limited',
+        areaIds: [1],
+        departmentIds: [10],
+        teamIds: [100],
+        leadAreaIds: [],
+        leadDepartmentIds: [],
+        leadTeamIds: [],
+        isAreaLead: false,
+        isDepartmentLead: false,
+        isTeamLead: false,
+        isAnyLead: false,
+      },
+      'department',
+      99,
+    );
+    expect(result).toBe(false);
+  });
+
+  it('should return false for unknown entity type', () => {
+    const scope = {
+      type: 'limited' as const,
+      areaIds: [1],
+      departmentIds: [10],
+      teamIds: [100],
+      leadAreaIds: [],
+      leadDepartmentIds: [],
+      leadTeamIds: [],
+      isAreaLead: false,
+      isDepartmentLead: false,
+      isTeamLead: false,
+      isAnyLead: false,
+    };
+    const result = HierarchyPermissionService.isEntityInScope(
+      scope,
+      'unknown' as never,
+      1,
+    );
+    expect(result).toBe(false);
+  });
+
+  it('should check correct entity type', () => {
+    const scope = {
+      type: 'limited' as const,
+      areaIds: [1],
+      departmentIds: [10],
+      teamIds: [100],
+      leadAreaIds: [],
+      leadDepartmentIds: [],
+      leadTeamIds: [],
+      isAreaLead: false,
+      isDepartmentLead: false,
+      isTeamLead: false,
+      isAnyLead: false,
+    };
+    expect(HierarchyPermissionService.isEntityInScope(scope, 'area', 1)).toBe(
+      true,
+    );
+    expect(
+      HierarchyPermissionService.isEntityInScope(scope, 'department', 10),
+    ).toBe(true);
+    expect(HierarchyPermissionService.isEntityInScope(scope, 'team', 100)).toBe(
+      true,
+    );
+    expect(HierarchyPermissionService.isEntityInScope(scope, 'area', 10)).toBe(
+      false,
+    );
   });
 });

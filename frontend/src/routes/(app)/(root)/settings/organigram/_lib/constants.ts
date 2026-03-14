@@ -63,7 +63,7 @@ export const LAYOUT = {
   CANVAS_PADDING: 60,
   /** Höhe des Hallen-Headers über dem Area-Node */
   AREA_HEADER_HEIGHT: 40,
-  MIN_ZOOM: 0.3,
+  MIN_ZOOM: 0.05,
   MAX_ZOOM: 3,
   ZOOM_STEP: 0.05,
   GRID_SIZE: 20,

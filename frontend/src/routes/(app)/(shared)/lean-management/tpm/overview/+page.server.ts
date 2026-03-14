@@ -7,8 +7,8 @@
  */
 import { redirect } from '@sveltejs/kit';
 
+import { apiFetch, apiFetchWithPermission } from '$lib/server/api-fetch';
 import { requireAddon } from '$lib/utils/addon-guard';
-import { createLogger } from '$lib/utils/logger';
 
 import type { PageServerLoad } from './$types';
 import type {
@@ -18,47 +18,6 @@ import type {
   AssetWithTpmStatus,
   StatusCounts,
 } from '../_lib/types';
-
-const log = createLogger('TpmEmployee');
-
-const API_BASE = process.env.API_URL ?? 'http://localhost:3000/api/v2';
-
-interface ApiResponse<T> {
-  success?: boolean;
-  data?: T;
-}
-
-async function apiFetch<T>(
-  endpoint: string,
-  token: string,
-  fetchFn: typeof fetch,
-): Promise<T | null> {
-  try {
-    const response = await fetchFn(`${API_BASE}${endpoint}`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      log.error({ status: response.status, endpoint }, 'API error');
-      return null;
-    }
-
-    const json = (await response.json()) as ApiResponse<T>;
-    if ('success' in json && json.success === true) {
-      return json.data ?? null;
-    }
-    if ('data' in json && json.data !== undefined) {
-      return json.data;
-    }
-    return json as unknown as T;
-  } catch (err: unknown) {
-    log.error({ err, endpoint }, 'Fetch error');
-    return null;
-  }
-}
 
 /** Count card statuses from a list of cards */
 function countStatuses(cards: TpmCard[]): StatusCounts {
@@ -104,13 +63,21 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
   const parentData = await parent();
   requireAddon(parentData.activeAddons, 'tpm');
 
-  // Phase 1: Fetch plans + colors in parallel
-  const [plansRaw, colorsData] = await Promise.all([
-    apiFetch<unknown>('/tpm/plans?page=1&limit=50', token, fetch),
+  // Phase 1: Fetch plans (permission-aware) + colors in parallel
+  const [plansResult, colorsData] = await Promise.all([
+    apiFetchWithPermission<unknown>('/tpm/plans?page=1&limit=50', token, fetch),
     apiFetch<TpmColorConfigEntry[]>('/tpm/config/colors', token, fetch),
   ]);
 
-  const plans = extractPlans(plansRaw);
+  if (plansResult.permissionDenied) {
+    return {
+      permissionDenied: true as const,
+      assets: [] as AssetWithTpmStatus[],
+      colors: [] as TpmColorConfigEntry[],
+    };
+  }
+
+  const plans = extractPlans(plansResult.data);
   const colors = Array.isArray(colorsData) ? colorsData : [];
 
   // Phase 2: Fetch board data (cards) for each plan in parallel
@@ -135,5 +102,5 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
     },
   );
 
-  return { assets, colors };
+  return { permissionDenied: false as const, assets, colors };
 };

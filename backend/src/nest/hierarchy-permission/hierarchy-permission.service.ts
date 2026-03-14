@@ -11,10 +11,20 @@
  *
  * Migrated from services/hierarchyPermission.service.ts to NestJS \@Injectable.
  */
+import { IS_ACTIVE } from '@assixx/shared/constants';
 import { Injectable, Logger } from '@nestjs/common';
 import type { QueryResultRow } from 'pg';
 
 import { DatabaseService } from '../database/database.service.js';
+import {
+  FULL_SCOPE,
+  NO_SCOPE,
+  buildLimitedScope,
+} from './organizational-scope.types.js';
+import type {
+  OrganizationalScope,
+  ScopeQueryRow,
+} from './organizational-scope.types.js';
 
 // ============================================================================
 // TYPES
@@ -76,6 +86,89 @@ interface DepartmentIdRow extends QueryResultRow {
 interface TeamIdRow extends QueryResultRow {
   team_id: number;
 }
+
+// ============================================================================
+// SQL CONSTANTS
+// ============================================================================
+
+/**
+ * Unified CTE — resolves ALL access paths in a single query:
+ * Admin-Permissions + Lead-Positions + Kaskade (Area→Dept→Team)
+ *
+ * Parameters: $1 = userId, $2 = tenantId
+ * D4: deputy_lead_id = team_lead_id (DEPUTY_EQUALS_LEAD Flag für V2)
+ */
+const UNIFIED_SCOPE_CTE = `
+WITH
+perm_areas AS (
+  SELECT aap.area_id AS id FROM admin_area_permissions aap
+  INNER JOIN areas a ON a.id = aap.area_id AND a.is_active = ${IS_ACTIVE.ACTIVE}
+  WHERE aap.admin_user_id = $1 AND aap.tenant_id = $2
+),
+lead_areas AS (
+  SELECT id FROM areas
+  WHERE area_lead_id = $1 AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}
+),
+all_areas AS (
+  SELECT id FROM perm_areas UNION SELECT id FROM lead_areas
+),
+perm_depts AS (
+  SELECT adp.department_id AS id FROM admin_department_permissions adp
+  INNER JOIN departments d ON d.id = adp.department_id AND d.is_active = ${IS_ACTIVE.ACTIVE}
+  WHERE adp.admin_user_id = $1 AND adp.tenant_id = $2
+),
+lead_depts AS (
+  SELECT id FROM departments
+  WHERE department_lead_id = $1 AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}
+),
+inherited_depts AS (
+  SELECT d.id FROM departments d
+  INNER JOIN all_areas aa ON d.area_id = aa.id
+  WHERE d.is_active = ${IS_ACTIVE.ACTIVE} AND d.tenant_id = $2
+),
+all_depts AS (
+  SELECT id FROM perm_depts
+  UNION SELECT id FROM lead_depts
+  UNION SELECT id FROM inherited_depts
+),
+lead_teams AS (
+  SELECT id FROM teams
+  WHERE (team_lead_id = $1 OR deputy_lead_id = $1)
+    AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}
+),
+inherited_teams AS (
+  SELECT t.id FROM teams t
+  INNER JOIN all_depts ad ON t.department_id = ad.id
+  WHERE t.is_active = ${IS_ACTIVE.ACTIVE} AND t.tenant_id = $2
+),
+all_teams AS (
+  SELECT id FROM lead_teams UNION SELECT id FROM inherited_teams
+)
+SELECT
+  (SELECT COALESCE(array_agg(DISTINCT id), '{}') FROM all_areas) AS area_ids,
+  (SELECT COALESCE(array_agg(DISTINCT id), '{}') FROM all_depts) AS department_ids,
+  (SELECT COALESCE(array_agg(DISTINCT id), '{}') FROM all_teams) AS team_ids,
+  (SELECT COALESCE(array_agg(DISTINCT id), '{}') FROM lead_areas) AS lead_area_ids,
+  (SELECT COALESCE(array_agg(DISTINCT id), '{}') FROM lead_depts) AS lead_department_ids,
+  (SELECT COALESCE(array_agg(DISTINCT id), '{}') FROM lead_teams) AS lead_team_ids
+`;
+
+/**
+ * Visible users query — finds users in scope via junction tables.
+ * Parameters: $1 = tenantId, $2 = departmentIds (int[]), $3 = teamIds (int[])
+ */
+const VISIBLE_USERS_QUERY = `
+SELECT DISTINCT u.id FROM users u
+WHERE u.tenant_id = $1 AND u.is_active != ${IS_ACTIVE.DELETED} AND (
+  EXISTS (SELECT 1 FROM user_departments ud
+          WHERE ud.user_id = u.id AND ud.department_id = ANY($2::int[]))
+  OR EXISTS (SELECT 1 FROM user_teams ut
+             WHERE ut.user_id = u.id AND ut.team_id = ANY($3::int[]))
+  OR EXISTS (SELECT 1 FROM teams t
+             WHERE (t.team_lead_id = u.id OR t.deputy_lead_id = u.id)
+               AND t.id = ANY($3::int[]) AND t.is_active = ${IS_ACTIVE.ACTIVE})
+)
+`;
 
 // ============================================================================
 // SERVICE
@@ -149,6 +242,87 @@ export class HierarchyPermissionService {
     } catch (error: unknown) {
       this.logger.error(error, 'Error in hasAccess');
       return false;
+    }
+  }
+
+  // ==========================================================================
+  // ORGANIZATIONAL SCOPE
+  // ==========================================================================
+
+  /**
+   * Resolve the organizational scope for a user.
+   * Single CTE merges Admin-Permissions + Lead-Positions + Kaskade.
+   *
+   * - Root / has_full_access → type: 'full'
+   * - Admin → type: 'limited' (even if empty scope)
+   * - Employee with Lead → type: 'limited'
+   * - Employee without Lead / Dummy → type: 'none'
+   */
+  async getScope(
+    userId: number,
+    tenantId: number,
+  ): Promise<OrganizationalScope> {
+    const user = await this.getUserInfo(userId, tenantId);
+    if (user === null) return NO_SCOPE;
+    if (user.role === 'root' || user.has_full_access) return FULL_SCOPE;
+    if (user.role === 'dummy') return NO_SCOPE;
+
+    const rows = await this.db.query<ScopeQueryRow>(UNIFIED_SCOPE_CTE, [
+      userId,
+      tenantId,
+    ]);
+    const row = rows[0];
+    if (row === undefined) return NO_SCOPE;
+
+    const scope = buildLimitedScope(row);
+
+    // Employee without any lead position → no manage-page access
+    if (user.role === 'employee' && !scope.isAnyLead) return NO_SCOPE;
+
+    return scope;
+  }
+
+  /**
+   * Get all user IDs visible within a scope (via user_departments + user_teams).
+   * Returns 'all' for full scope, empty array for no scope.
+   */
+  async getVisibleUserIds(
+    scope: OrganizationalScope,
+    tenantId: number,
+  ): Promise<number[] | 'all'> {
+    if (scope.type === 'full') return 'all';
+    if (scope.type === 'none') return [];
+
+    if (scope.departmentIds.length === 0 && scope.teamIds.length === 0) {
+      return [];
+    }
+
+    const rows = await this.db.query<{ id: number }>(VISIBLE_USERS_QUERY, [
+      tenantId,
+      scope.departmentIds,
+      scope.teamIds,
+    ]);
+    return rows.map((r: { id: number }) => r.id);
+  }
+
+  /** Synchronous check: is an org entity within the given scope? */
+  static isEntityInScope(
+    scope: OrganizationalScope,
+    entityType: 'area' | 'department' | 'team',
+    entityId: number,
+  ): boolean {
+    if (scope.type === 'full') return true;
+    if (scope.type === 'none') return false;
+
+    switch (entityType) {
+      case 'area':
+        return scope.areaIds.includes(entityId);
+      case 'department':
+        return scope.departmentIds.includes(entityId);
+      case 'team':
+        return scope.teamIds.includes(entityId);
+      default:
+        return false;
     }
   }
 
@@ -256,7 +430,7 @@ export class HierarchyPermissionService {
   // BATCH ACCESS CHECKS (for filtering lists)
   // ==========================================================================
 
-  /** Get all Area IDs user has access to */
+  /** DEPRECATED: Use getScope() instead — removal after BlackboardAccessService migration (Phase 2.5) */
   async getAccessibleAreaIds(
     userId: number,
     tenantId: number,
@@ -283,7 +457,7 @@ export class HierarchyPermissionService {
     return assignedAreas.map((a: AreaIdRow) => a.area_id);
   }
 
-  /** Get all Department IDs user has access to (direct + inherited from Areas) */
+  /** DEPRECATED: Use getScope() instead — removal after BlackboardAccessService migration (Phase 2.5) */
   async getAccessibleDepartmentIds(
     userId: number,
     tenantId: number,
@@ -330,7 +504,7 @@ export class HierarchyPermissionService {
     return [...deptSet];
   }
 
-  /** Get all Team IDs user has access to (membership + inherited from Departments) */
+  /** DEPRECATED: Use getScope() instead — removal after BlackboardAccessService migration (Phase 2.5) */
   async getAccessibleTeamIds(
     userId: number,
     tenantId: number,

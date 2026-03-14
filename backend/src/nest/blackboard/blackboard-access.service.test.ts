@@ -10,7 +10,7 @@ import { ForbiddenException } from '@nestjs/common';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { DatabaseService } from '../database/database.service.js';
-import type { HierarchyPermissionService } from '../hierarchy-permission/hierarchy-permission.service.js';
+import type { ScopeService } from '../hierarchy-permission/scope.service.js';
 import { BlackboardAccessService } from './blackboard-access.service.js';
 import type { DbBlackboardEntry } from './blackboard.types.js';
 
@@ -22,11 +22,21 @@ function createMockDb() {
   return { query: vi.fn() };
 }
 
-function createMockHierarchyPermission() {
+function createMockScopeService() {
   return {
-    getAccessibleAreaIds: vi.fn().mockResolvedValue([]),
-    getAccessibleDepartmentIds: vi.fn().mockResolvedValue([]),
-    getAccessibleTeamIds: vi.fn().mockResolvedValue([]),
+    getScope: vi.fn().mockResolvedValue({
+      type: 'limited',
+      areaIds: [],
+      departmentIds: [],
+      teamIds: [],
+      leadAreaIds: [],
+      leadDepartmentIds: [],
+      leadTeamIds: [],
+      isAreaLead: false,
+      isDepartmentLead: false,
+      isTeamLead: false,
+      isAnyLead: false,
+    }),
   };
 }
 
@@ -56,15 +66,15 @@ function makeEntry(
 describe('SECURITY: BlackboardAccessService', () => {
   let service: BlackboardAccessService;
   let mockDb: ReturnType<typeof createMockDb>;
-  let mockHierarchy: ReturnType<typeof createMockHierarchyPermission>;
+  let mockScope: ReturnType<typeof createMockScopeService>;
 
   beforeEach(() => {
     vi.clearAllMocks();
     mockDb = createMockDb();
-    mockHierarchy = createMockHierarchyPermission();
+    mockScope = createMockScopeService();
     service = new BlackboardAccessService(
       mockDb as unknown as DatabaseService,
-      mockHierarchy as unknown as HierarchyPermissionService,
+      mockScope as unknown as ScopeService,
     );
   });
 
@@ -184,6 +194,21 @@ describe('SECURITY: BlackboardAccessService', () => {
       expect(result.params).toContain(3); // departmentId
       expect(result.params).toContain(7); // teamId
     });
+
+    it('should use 0 as fallback for null department/team', () => {
+      const params = [10];
+      const result = service.applyAccessControl(
+        baseQuery,
+        [...params],
+        'employee',
+        null,
+        null,
+      );
+
+      expect(result.params).toContain(0); // departmentId ?? 0
+      expect(result.params[1]).toBe(0);
+      expect(result.params[2]).toBe(0);
+    });
   });
 
   // =============================================================
@@ -247,6 +272,20 @@ describe('SECURITY: BlackboardAccessService', () => {
       expect(result).toBe(true);
     });
 
+    it('should grant employee access to their team entries', async () => {
+      const result = await service.checkEntryAccess(
+        makeEntry({ org_level: 'team', org_id: 7 }),
+        'employee',
+        false,
+        5,
+        10,
+        3,
+        7,
+      );
+
+      expect(result).toBe(true);
+    });
+
     it('should deny employee access to other department entries', async () => {
       const result = await service.checkEntryAccess(
         makeEntry({ org_level: 'department', org_id: 99 }),
@@ -259,6 +298,44 @@ describe('SECURITY: BlackboardAccessService', () => {
       );
 
       expect(result).toBe(false);
+    });
+
+    it('should grant admin access via company-wide entry (no assignments)', async () => {
+      // company-wide found — early return
+      mockDb.query.mockResolvedValueOnce([{ count: 1 }]);
+
+      const result = await service.checkEntryAccess(
+        makeEntry({ org_level: 'company' }),
+        'admin',
+        false,
+        2,
+        10,
+        null,
+        null,
+      );
+
+      expect(result).toBe(true);
+      expect(mockDb.query).toHaveBeenCalledTimes(1);
+    });
+
+    it('should grant admin access via area permission', async () => {
+      // no company-wide assignments
+      mockDb.query.mockResolvedValueOnce([]);
+      // area access found — early return
+      mockDb.query.mockResolvedValueOnce([{ count: 1 }]);
+
+      const result = await service.checkEntryAccess(
+        makeEntry({ org_level: 'area', org_id: 2 }),
+        'admin',
+        false,
+        2,
+        10,
+        null,
+        null,
+      );
+
+      expect(result).toBe(true);
+      expect(mockDb.query).toHaveBeenCalledTimes(2);
     });
 
     it('should check admin permission tables', async () => {
@@ -281,6 +358,52 @@ describe('SECURITY: BlackboardAccessService', () => {
 
       expect(result).toBe(true);
     });
+
+    it('should grant admin access via team permission', async () => {
+      // no company-wide assignments
+      mockDb.query.mockResolvedValueOnce([]);
+      // no area access
+      mockDb.query.mockResolvedValueOnce([]);
+      // no department access
+      mockDb.query.mockResolvedValueOnce([]);
+      // team access found
+      mockDb.query.mockResolvedValueOnce([{ count: 1 }]);
+
+      const result = await service.checkEntryAccess(
+        makeEntry({ org_level: 'team', org_id: 7 }),
+        'admin',
+        false,
+        2,
+        10,
+        null,
+        null,
+      );
+
+      expect(result).toBe(true);
+    });
+
+    it('should deny admin access when no permissions match', async () => {
+      // no company-wide assignments
+      mockDb.query.mockResolvedValueOnce([]);
+      // no area access
+      mockDb.query.mockResolvedValueOnce([]);
+      // no department access
+      mockDb.query.mockResolvedValueOnce([]);
+      // no team access
+      mockDb.query.mockResolvedValueOnce([]);
+
+      const result = await service.checkEntryAccess(
+        makeEntry({ org_level: 'team', org_id: 7 }),
+        'admin',
+        false,
+        2,
+        10,
+        null,
+        null,
+      );
+
+      expect(result).toBe(false);
+    });
   });
 
   // =============================================================
@@ -294,12 +417,48 @@ describe('SECURITY: BlackboardAccessService', () => {
       ).resolves.toBeUndefined();
     });
 
-    it('should throw ForbiddenException for inaccessible area', async () => {
-      // mockHierarchy returns empty arrays by default
+    it('should skip validation for full-scope user', async () => {
+      mockScope.getScope.mockResolvedValueOnce({
+        type: 'full',
+        areaIds: [],
+        departmentIds: [],
+        teamIds: [],
+      });
 
+      await expect(
+        service.validateOrgPermissions(1, 10, [99], [42], [77]),
+      ).resolves.toBeUndefined();
+    });
+
+    it('should pass when all IDs are in scope', async () => {
+      mockScope.getScope.mockResolvedValueOnce({
+        type: 'limited',
+        areaIds: [1, 2],
+        departmentIds: [10, 20],
+        teamIds: [100, 200],
+      });
+
+      await expect(
+        service.validateOrgPermissions(1, 10, [1], [10], [100]),
+      ).resolves.toBeUndefined();
+    });
+
+    it('should throw ForbiddenException for inaccessible area', async () => {
       await expect(service.validateOrgPermissions(1, 10, [99])).rejects.toThrow(
         ForbiddenException,
       );
+    });
+
+    it('should throw ForbiddenException for inaccessible department', async () => {
+      await expect(
+        service.validateOrgPermissions(1, 10, [], [42]),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('should throw ForbiddenException for inaccessible team', async () => {
+      await expect(
+        service.validateOrgPermissions(1, 10, [], [], [77]),
+      ).rejects.toThrow(ForbiddenException);
     });
   });
 });

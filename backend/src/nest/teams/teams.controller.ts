@@ -60,9 +60,9 @@ interface AddAssetResponse {
   message: string;
 }
 
-/** Permission constants */
-const FEAT = 'teams';
-const MOD = 'teams-manage';
+/** Permission constants — manage_hierarchy (GET/PUT scope-filtered) */
+const SCOPE_FEAT = 'manage_hierarchy';
+const SCOPE_MOD = 'manage-teams';
 
 @Controller('teams')
 export class TeamsController {
@@ -73,6 +73,8 @@ export class TeamsController {
    * List all teams with optional filters
    */
   @Get()
+  @Roles('admin', 'root', 'employee')
+  @RequirePermission(SCOPE_FEAT, SCOPE_MOD, 'canRead')
   async listTeams(
     @Query() query: ListTeamsQueryDto,
     @TenantId() tenantId: number,
@@ -89,6 +91,8 @@ export class TeamsController {
    * Get team by ID
    */
   @Get(':id')
+  @Roles('admin', 'root', 'employee')
+  @RequirePermission(SCOPE_FEAT, SCOPE_MOD, 'canRead')
   async getTeamById(
     @Param('id', ParseIntPipe) id: number,
     @TenantId() tenantId: number,
@@ -102,7 +106,6 @@ export class TeamsController {
    */
   @Post()
   @Roles('admin', 'root')
-  @RequirePermission(FEAT, MOD, 'canWrite')
   @HttpCode(HttpStatus.CREATED)
   async createTeam(
     @Body() dto: CreateTeamDto,
@@ -117,8 +120,8 @@ export class TeamsController {
    * Update team (admin only)
    */
   @Put(':id')
-  @Roles('admin', 'root')
-  @RequirePermission(FEAT, MOD, 'canWrite')
+  @Roles('admin', 'root', 'employee')
+  @RequirePermission(SCOPE_FEAT, SCOPE_MOD, 'canWrite')
   async updateTeam(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateTeamDto,
@@ -135,7 +138,6 @@ export class TeamsController {
    */
   @Delete(':id')
   @Roles('admin', 'root')
-  @RequirePermission(FEAT, MOD, 'canDelete')
   async deleteTeam(
     @Param('id', ParseIntPipe) id: number,
     @Query() query: DeleteTeamQueryDto,
@@ -156,6 +158,8 @@ export class TeamsController {
    * Query params: ?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD
    */
   @Get(':id/members')
+  @Roles('admin', 'root', 'employee')
+  @RequirePermission(SCOPE_FEAT, SCOPE_MOD, 'canRead')
   async getTeamMembers(
     @Param('id', ParseIntPipe) id: number,
     @Query() query: TeamMembersQueryDto,
@@ -175,7 +179,6 @@ export class TeamsController {
    */
   @Post(':id/members')
   @Roles('admin', 'root')
-  @RequirePermission(FEAT, MOD, 'canWrite')
   @HttpCode(HttpStatus.CREATED)
   async addTeamMember(
     @Param('id', ParseIntPipe) id: number,
@@ -191,7 +194,6 @@ export class TeamsController {
    */
   @Delete(':id/members/:userId')
   @Roles('admin', 'root')
-  @RequirePermission(FEAT, MOD, 'canDelete')
   async removeTeamMember(
     @Param('id', ParseIntPipe) id: number,
     @Param('userId', ParseIntPipe) userId: number,
@@ -205,6 +207,8 @@ export class TeamsController {
    * Get team assets
    */
   @Get(':id/assets')
+  @Roles('admin', 'root', 'employee')
+  @RequirePermission(SCOPE_FEAT, SCOPE_MOD, 'canRead')
   async getTeamAssets(
     @Param('id', ParseIntPipe) id: number,
     @TenantId() tenantId: number,
@@ -218,7 +222,6 @@ export class TeamsController {
    */
   @Post(':id/assets')
   @Roles('admin', 'root')
-  @RequirePermission(FEAT, MOD, 'canWrite')
   @HttpCode(HttpStatus.CREATED)
   async addTeamAsset(
     @Param('id', ParseIntPipe) id: number,
@@ -240,7 +243,6 @@ export class TeamsController {
    */
   @Delete(':id/assets/:assetId')
   @Roles('admin', 'root')
-  @RequirePermission(FEAT, MOD, 'canDelete')
   async removeTeamAsset(
     @Param('id', ParseIntPipe) id: number,
     @Param('assetId', ParseIntPipe) assetId: number,

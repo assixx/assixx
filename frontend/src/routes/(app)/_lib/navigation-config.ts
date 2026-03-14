@@ -8,6 +8,8 @@ import {
   type HierarchyLabels,
 } from '$lib/types/hierarchy-labels';
 
+import type { OrganizationalScope } from '$lib/types/organizational-scope';
+
 // Shared labels to avoid duplication
 const LABELS = {
   BLACKBOARD: 'Schwarzes Brett',
@@ -353,6 +355,12 @@ function buildRootMenuItems(labels: HierarchyLabels): NavItem[] {
     },
     { id: 'teams', icon: ICONS.team, label: labels.team, url: '/manage-teams' },
     {
+      id: 'employees',
+      icon: ICONS.users,
+      label: 'Mitarbeiter',
+      url: '/manage-employees',
+    },
+    {
       id: 'halls',
       icon: ICONS.warehouse,
       label: labels.hall,
@@ -362,15 +370,9 @@ function buildRootMenuItems(labels: HierarchyLabels): NavItem[] {
   ];
 }
 
-/** Employees submenu (admin view) */
+/** Employees submenu (admin view — manage-dummies moved to root, D7) */
 const EMPLOYEES_SUBMENU: NavItem[] = [
   { id: 'employees-list', label: 'Mitarbeiter', url: '/manage-employees' },
-  {
-    id: 'dummy-users',
-    icon: ICONS.desktop,
-    label: 'Dummy-Benutzer',
-    url: '/manage-dummies',
-  },
 ];
 
 /** Admin settings submenu */
@@ -701,4 +703,84 @@ export function filterMenuByAddons(
     acc.push(item);
     return acc;
   }, []);
+}
+
+/** Manage items to inject for admins (not in default admin menu, only root has them) */
+function buildAdminScopeItems(labels: HierarchyLabels): NavItem[] {
+  return [
+    {
+      id: 'areas',
+      icon: ICONS.sitemap,
+      label: labels.area,
+      url: '/manage-areas',
+    },
+    {
+      id: 'departments',
+      icon: ICONS.building,
+      label: labels.department,
+      url: '/manage-departments',
+    },
+    { id: 'teams', icon: ICONS.team, label: labels.team, url: '/manage-teams' },
+  ];
+}
+
+/** Find insertion point after employees submenu in admin menu */
+function findAdminInsertPoint(items: NavItem[]): number {
+  const idx = items.findIndex((i: NavItem) => i.id === 'employees');
+  return idx >= 0 ? idx + 1 : 2;
+}
+
+/**
+ * Filter/inject menu items based on organizational scope.
+ * - Root: pass through (already has all manage items)
+ * - Admin (full/limited): inject manage-areas/departments/teams (not in default admin menu)
+ * - Admin (none): no injection (no manage_hierarchy permission)
+ * - Employee-Lead: inject manage-teams + manage-employees
+ * - Employee without lead / Dummy: pass through
+ */
+export function filterMenuByScope(
+  items: NavItem[],
+  orgScope: OrganizationalScope,
+  role: string,
+  labels: HierarchyLabels = DEFAULT_HIERARCHY_LABELS,
+): NavItem[] {
+  if (role === 'root') return items;
+
+  // Admin: inject areas/departments/teams (missing from default admin menu)
+  if (role === 'admin' && orgScope.type !== 'none') {
+    const insertAt = findAdminInsertPoint(items);
+    const manageItems = buildAdminScopeItems(labels);
+    return [
+      ...items.slice(0, insertAt),
+      ...manageItems,
+      ...items.slice(insertAt),
+    ];
+  }
+
+  // Employee-Lead: inject manage-teams + manage-employees
+  if (role === 'employee' && orgScope.isTeamLead) {
+    const dashboardIdx = items.findIndex((i: NavItem) => i.id === 'dashboard');
+    const insertAt = dashboardIdx >= 0 ? dashboardIdx + 1 : 0;
+    const leadItems: NavItem[] = [
+      {
+        id: 'teams',
+        icon: ICONS.team,
+        label: labels.team,
+        url: '/manage-teams',
+      },
+      {
+        id: 'employees',
+        icon: ICONS.users,
+        label: 'Mitarbeiter',
+        url: '/manage-employees',
+      },
+    ];
+    return [
+      ...items.slice(0, insertAt),
+      ...leadItems,
+      ...items.slice(insertAt),
+    ];
+  }
+
+  return items;
 }

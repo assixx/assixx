@@ -7,11 +7,12 @@
 import { Injectable } from '@nestjs/common';
 
 import { DatabaseService } from '../database/database.service.js';
+import type { OrganizationalScope } from '../hierarchy-permission/organizational-scope.types.js';
 import { buildVisibilityClause } from './calendar.helpers.js';
 import type {
+  CalendarMemberships,
   DbCalendarEvent,
   DbEventAttendee,
-  UserRoleInfo,
 } from './calendar.types.js';
 
 @Injectable()
@@ -19,89 +20,82 @@ export class CalendarPermissionService {
   constructor(private readonly databaseService: DatabaseService) {}
 
   /**
-   * Get user role info with ALL departments and teams
-   * A user can belong to multiple teams/departments — must check all of them
+   * Get user's organizational memberships (departments + teams).
+   * Separate from OrganizationalScope (manage-page access) — see R7 in masterplan.
    */
-  async getUserRole(userId: number, tenantId: number): Promise<UserRoleInfo> {
+  async getUserMemberships(
+    userId: number,
+    tenantId: number,
+  ): Promise<CalendarMemberships> {
     const rows = await this.databaseService.query<{
-      role: string | null;
-      has_full_access: boolean;
       department_ids: number[] | null;
       team_ids: number[] | null;
     }>(
-      `SELECT u.role,
-              u.has_full_access,
-              (SELECT ARRAY_AGG(DISTINCT ud.department_id)
-               FROM user_departments ud
-               WHERE ud.user_id = u.id AND ud.tenant_id = u.tenant_id) AS department_ids,
-              (SELECT ARRAY_AGG(DISTINCT ut.team_id)
-               FROM user_teams ut
-               WHERE ut.user_id = u.id AND ut.tenant_id = u.tenant_id) AS team_ids
+      `SELECT
+         (SELECT ARRAY_AGG(DISTINCT ud.department_id)
+          FROM user_departments ud
+          WHERE ud.user_id = u.id AND ud.tenant_id = u.tenant_id) AS department_ids,
+         (SELECT ARRAY_AGG(DISTINCT ut.team_id)
+          FROM user_teams ut
+          WHERE ut.user_id = u.id AND ut.tenant_id = u.tenant_id) AS team_ids
        FROM users u
        WHERE u.id = $1 AND u.tenant_id = $2`,
       [userId, tenantId],
     );
 
     const row = rows[0];
-    if (row === undefined) {
-      return {
-        role: null,
-        department_ids: [],
-        team_ids: [],
-        has_full_access: false,
-      };
-    }
-
     return {
-      role: row.role,
-      has_full_access: row.has_full_access,
-      department_ids: row.department_ids ?? [],
-      team_ids: row.team_ids ?? [],
+      departmentIds: row?.department_ids ?? [],
+      teamIds: row?.team_ids ?? [],
     };
   }
 
   /**
-   * Check if user has access to event
+   * Check if user has access to a specific event.
+   * Uses Scope (management access) + Memberships (content visibility).
+   * Bug-Fix F2: Now includes area-level check via scope.areaIds.
    */
   async checkEventAccess(
     event: DbCalendarEvent,
     userId: number,
-    userRole: UserRoleInfo,
+    scope: OrganizationalScope,
+    memberships: CalendarMemberships,
   ): Promise<boolean> {
-    // Admins/root can see all events
-    if (userRole.role === 'admin' || userRole.role === 'root') {
+    if (scope.type === 'full') return true;
+    if (event.user_id === userId) return true;
+    if (event.org_level === 'company') return true;
+
+    // Merge scope + memberships for visibility
+    const deptIds = [
+      ...new Set([...scope.departmentIds, ...memberships.departmentIds]),
+    ];
+    const teamIds = [...new Set([...scope.teamIds, ...memberships.teamIds])];
+
+    if (
+      event.org_level === 'area' &&
+      event.area_id !== null &&
+      scope.areaIds.includes(event.area_id)
+    ) {
       return true;
     }
 
-    // Creator can see their event
-    if (event.user_id === userId) {
-      return true;
-    }
-
-    // Company events visible to all
-    if (event.org_level === 'company') {
-      return true;
-    }
-
-    // Department events visible to department members
     if (
       event.org_level === 'department' &&
       event.department_id !== null &&
-      userRole.department_ids.includes(event.department_id)
+      deptIds.includes(event.department_id)
     ) {
       return true;
     }
 
-    // Team events visible to team members
     if (
       event.org_level === 'team' &&
       event.team_id !== null &&
-      userRole.team_ids.includes(event.team_id)
+      teamIds.includes(event.team_id)
     ) {
       return true;
     }
 
-    // Check if user is an attendee
+    // Attendee check (DB query, last resort)
     const attendees = await this.databaseService.query<{ user_id: number }>(
       `SELECT user_id FROM calendar_attendees WHERE event_id = $1 AND user_id = $2`,
       [event.id, userId],
@@ -173,18 +167,24 @@ export class CalendarPermissionService {
   }
 
   /**
-   * Build permission-based filter for users without full_access
-   * Uses shared buildVisibilityClause helper for consistency
+   * Build permission-based filter for users without full_access.
+   * Combines scope-based visibility clause with optional org-level UI filter.
    */
   buildPermissionBasedFilter(
     filterType: string,
+    scope: OrganizationalScope,
+    memberships: CalendarMemberships,
     userId: number,
-    tenantId: number,
     startIndex: number,
   ): { clause: string; newParams: unknown[]; newIndex: number } {
-    // Use helper to build visibility clause with correct parameter indices
-    const visibilityClause = buildVisibilityClause(startIndex, startIndex + 1);
-    let clause = ` AND ${visibilityClause}`;
+    const { clause: visClause, params } = buildVisibilityClause(
+      scope,
+      memberships,
+      userId,
+      startIndex,
+    );
+
+    let clause = ` AND ${visClause}`;
 
     // Apply additional UI filter if requested
     const orgLevelFilters: Record<string, string> = {
@@ -196,6 +196,7 @@ export class CalendarPermissionService {
     };
     clause += orgLevelFilters[filterType] ?? '';
 
-    return { clause, newParams: [userId, tenantId], newIndex: startIndex + 2 };
+    // 4 params: areaIds, deptIds, teamIds, userId
+    return { clause, newParams: params, newIndex: startIndex + 4 };
   }
 }

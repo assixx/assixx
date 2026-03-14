@@ -40,6 +40,8 @@ export interface OrgViewport {
   panX: number;
   panY: number;
   fontSize: number;
+  nodeWidth?: number;
+  nodeHeight?: number;
 }
 
 /** Manuelle Hallen-Bounds (Override über Auto-Compute) */
@@ -89,6 +91,39 @@ export interface PositionPayload {
 
 export interface UpdateHierarchyLabelsPayload {
   levels: Partial<HierarchyLabels>;
+}
+
+// ---- Node Detail Types ----
+
+export interface OrgNodeDetailPerson {
+  name: string;
+  uuid: string;
+}
+
+export interface OrgNodeDetailEntry {
+  uuid: string;
+  name: string;
+  extra?: string;
+}
+
+export interface OrgNodeDetail {
+  entityType: OrgEntityType;
+  entityUuid: string;
+  name: string;
+  areaType?: string;
+  assetStatus?: string;
+  assetType?: string;
+  lead?: OrgNodeDetailPerson;
+  deputyLead?: OrgNodeDetailPerson;
+  parentArea?: OrgNodeDetailEntry;
+  parentDepartment?: OrgNodeDetailEntry;
+  halls?: OrgNodeDetailEntry[];
+  departments?: OrgNodeDetailEntry[];
+  teams?: OrgNodeDetailEntry[];
+  members?: OrgNodeDetailEntry[];
+  employees?: OrgNodeDetailEntry[];
+  assets?: OrgNodeDetailEntry[];
+  assignedTeams?: OrgNodeDetailEntry[];
 }
 
 /** Flattened node with resolved position for rendering */

@@ -332,6 +332,43 @@ describe('SECURITY: UserPermissionsService', () => {
       });
     });
 
+    describe('allowedRoles Filtering', () => {
+      it('should exclude modules where user role is not in allowedRoles', async () => {
+        const category = createCategory({
+          modules: [
+            {
+              code: 'admin-only-mod',
+              label: 'Admin Only',
+              icon: 'fa-lock',
+              allowedPermissions: ['canRead'],
+              allowedRoles: ['admin', 'root'],
+            },
+            {
+              code: 'all-roles-mod',
+              label: 'All Roles',
+              icon: 'fa-users',
+              allowedPermissions: ['canRead'],
+            },
+          ],
+        });
+        mockRegistry.getAll.mockReturnValue([category]);
+        // User is employee — not in allowedRoles ['admin', 'root']
+        mockDb.queryOne.mockResolvedValue({ id: 42, role: 'employee' });
+
+        mockClient.query.mockResolvedValueOnce({
+          rows: [{ code: 'blackboard' }],
+        });
+        mockClient.query.mockResolvedValueOnce({ rows: [] });
+
+        const result = await service.getPermissions(1, 'user-uuid-1');
+
+        expect(result).toHaveLength(1);
+        // admin-only-mod filtered out, only all-roles-mod remains
+        expect(result[0]?.modules).toHaveLength(1);
+        expect(result[0]?.modules[0]?.code).toBe('all-roles-mod');
+      });
+    });
+
     describe('allowedPermissions Filtering', () => {
       it('should include allowedPermissions metadata in response', async () => {
         const category = createCategory({
@@ -746,6 +783,33 @@ describe('SECURITY: UserPermissionsService', () => {
         expect(params?.[4]).toBe(true); // canRead
         expect(params?.[5]).toBe(true); // canWrite
         expect(params?.[6]).toBe(false); // canDelete forced to false
+      });
+
+      it('should force canRead to false when not in allowedPermissions', async () => {
+        mockDb.queryOne.mockResolvedValue({ id: 42 });
+        mockRegistry.isValidModule.mockReturnValue(true);
+        // Module only allows canWrite — canRead is NOT allowed
+        mockRegistry.getAllowedPermissions.mockReturnValue(['canWrite']);
+        mockClient.query.mockResolvedValue({ rows: [] });
+
+        await service.upsertPermissions(
+          1,
+          'user-uuid-1',
+          [
+            {
+              addonCode: 'blackboard',
+              moduleCode: 'write-only-mod',
+              canRead: true, // Should be forced to false
+              canWrite: true,
+              canDelete: false,
+            },
+          ],
+          99,
+        );
+
+        const params = mockClient.query.mock.calls[1]?.[1] as unknown[];
+        expect(params?.[4]).toBe(false); // canRead forced to false
+        expect(params?.[5]).toBe(true); // canWrite allowed
       });
 
       it('should keep all permissions when all are allowed', async () => {
@@ -1163,6 +1227,124 @@ describe('SECURITY: UserPermissionsService', () => {
         expect(mockDb.tenantTransaction).toHaveBeenCalledOnce();
         expect(mockDb.query).not.toHaveBeenCalled();
       });
+    });
+  });
+
+  // -----------------------------------------------------------
+  // SECURITY: manage-permissions only for leads/admin/root
+  // -----------------------------------------------------------
+
+  describe('SECURITY: manage-permissions target filtering', () => {
+    const MANAGE_HIERARCHY_WITH_PERMS: PermissionCategoryDef = {
+      code: 'manage_hierarchy',
+      label: 'Organisationsstruktur',
+      icon: 'fa-sitemap',
+      modules: [
+        {
+          code: 'manage-teams',
+          label: 'Teams',
+          icon: 'fa-users',
+          allowedPermissions: ['canRead', 'canWrite'],
+        },
+        {
+          code: 'manage-permissions',
+          label: 'Berechtigungen verwalten',
+          icon: 'fa-shield-alt',
+          allowedPermissions: ['canRead', 'canWrite'],
+        },
+      ],
+    };
+
+    it('should HIDE manage-permissions for non-lead employee in getPermissions', async () => {
+      // Q1: resolveUserFromUuid (db.queryOne, outside transaction)
+      mockDb.queryOne.mockResolvedValueOnce({
+        id: 99,
+        role: 'employee',
+        is_any_lead: false,
+      });
+      // Q2: getActiveAddonsForTenant (client.query, inside transaction)
+      mockClient.query.mockResolvedValueOnce({
+        rows: [{ code: 'manage_hierarchy' }],
+      });
+
+      mockRegistry.getAll.mockReturnValue([MANAGE_HIERARCHY_WITH_PERMS]);
+
+      // Q3: loadUserPermissionMap (client.query)
+      mockClient.query.mockResolvedValueOnce({ rows: [] });
+
+      const result = await service.getPermissions(1, 'employee-uuid');
+
+      const allModuleCodes = result.flatMap(
+        (cat: { modules: { code: string }[] }) =>
+          cat.modules.map((m: { code: string }) => m.code),
+      );
+      expect(allModuleCodes).not.toContain('manage-permissions');
+      expect(allModuleCodes).toContain('manage-teams');
+    });
+
+    it('should SHOW manage-permissions for lead employee in getPermissions', async () => {
+      mockDb.queryOne.mockResolvedValueOnce({
+        id: 34,
+        role: 'employee',
+        is_any_lead: true,
+      });
+      mockClient.query.mockResolvedValueOnce({
+        rows: [{ code: 'manage_hierarchy' }],
+      });
+      mockRegistry.getAll.mockReturnValue([MANAGE_HIERARCHY_WITH_PERMS]);
+      mockClient.query.mockResolvedValueOnce({ rows: [] });
+
+      const result = await service.getPermissions(1, 'lead-uuid');
+
+      const allModuleCodes = result.flatMap(
+        (cat: { modules: { code: string }[] }) =>
+          cat.modules.map((m: { code: string }) => m.code),
+      );
+      expect(allModuleCodes).toContain('manage-permissions');
+      expect(allModuleCodes).toContain('manage-teams');
+    });
+
+    it('should HIDE manage-permissions for admin without lead position', async () => {
+      mockDb.queryOne.mockResolvedValueOnce({
+        id: 30,
+        role: 'admin',
+        is_any_lead: false,
+      });
+      mockClient.query.mockResolvedValueOnce({
+        rows: [{ code: 'manage_hierarchy' }],
+      });
+      mockRegistry.getAll.mockReturnValue([MANAGE_HIERARCHY_WITH_PERMS]);
+      mockClient.query.mockResolvedValueOnce({ rows: [] });
+
+      const result = await service.getPermissions(1, 'admin-uuid');
+
+      const allModuleCodes = result.flatMap(
+        (cat: { modules: { code: string }[] }) =>
+          cat.modules.map((m: { code: string }) => m.code),
+      );
+      expect(allModuleCodes).not.toContain('manage-permissions');
+      expect(allModuleCodes).toContain('manage-teams');
+    });
+
+    it('should SHOW manage-permissions for admin WHO IS a lead', async () => {
+      mockDb.queryOne.mockResolvedValueOnce({
+        id: 30,
+        role: 'admin',
+        is_any_lead: true,
+      });
+      mockClient.query.mockResolvedValueOnce({
+        rows: [{ code: 'manage_hierarchy' }],
+      });
+      mockRegistry.getAll.mockReturnValue([MANAGE_HIERARCHY_WITH_PERMS]);
+      mockClient.query.mockResolvedValueOnce({ rows: [] });
+
+      const result = await service.getPermissions(1, 'admin-lead-uuid');
+
+      const allModuleCodes = result.flatMap(
+        (cat: { modules: { code: string }[] }) =>
+          cat.modules.map((m: { code: string }) => m.code),
+      );
+      expect(allModuleCodes).toContain('manage-permissions');
     });
   });
 });

@@ -4,8 +4,10 @@
  * Pure functions for calendar module - no DI dependencies.
  * Includes: mappers, transforms, recurrence calculation, visibility clause builder.
  */
+import type { OrganizationalScope } from '../hierarchy-permission/organizational-scope.types.js';
 import type {
   CalendarEventResponse,
+  CalendarMemberships,
   DbCalendarEvent,
   EventFilters,
 } from './calendar.types.js';
@@ -31,110 +33,64 @@ export const SORT_BY_MAP: Record<string, string> = {
   createdAt: 'created_at',
 };
 
-/** SQL query for permission-based event visibility ($1=tenantId, $2=startOfDay, $3=endOfWeek, $4=lastVisited, $5=userId) */
-export const PERMISSION_BASED_COUNT_QUERY = `
-  SELECT COUNT(DISTINCT e.id) as count
-  FROM calendar_events e
-  WHERE e.tenant_id = $1
-    AND e.start_date >= $2
-    AND e.start_date < $3
-    AND e.status != 'cancelled'
-    AND e.created_at > $4
-    AND e.user_id != $5
-    AND (
-      -- 1. Company level: everyone sees
-      e.org_level = 'company'
-      -- 2. Area level: check area permissions
-      OR (e.org_level = 'area' AND (
-        EXISTS (SELECT 1 FROM admin_area_permissions aap
-                WHERE aap.admin_user_id = $5 AND aap.area_id = e.area_id AND aap.tenant_id = $1)
-        OR EXISTS (SELECT 1 FROM areas a
-                   WHERE a.id = e.area_id AND a.area_lead_id = $5 AND a.tenant_id = $1)
-        OR EXISTS (SELECT 1 FROM user_departments ud
-                   JOIN departments d ON ud.department_id = d.id
-                   WHERE ud.user_id = $5 AND ud.tenant_id = $1 AND d.area_id = e.area_id)
-      ))
-      -- 3. Department level: check department permissions
-      OR (e.org_level = 'department' AND (
-        EXISTS (SELECT 1 FROM admin_department_permissions adp
-                WHERE adp.admin_user_id = $5 AND adp.department_id = e.department_id AND adp.tenant_id = $1)
-        OR EXISTS (SELECT 1 FROM departments d
-                   WHERE d.id = e.department_id AND d.department_lead_id = $5 AND d.tenant_id = $1)
-        OR EXISTS (SELECT 1 FROM user_departments ud
-                   WHERE ud.user_id = $5 AND ud.department_id = e.department_id AND ud.tenant_id = $1)
-        OR EXISTS (SELECT 1 FROM departments d
-                   JOIN admin_area_permissions aap ON aap.area_id = d.area_id
-                   WHERE d.id = e.department_id AND aap.admin_user_id = $5 AND aap.tenant_id = $1)
-      ))
-      -- 4. Team level: check team membership or lead
-      OR (e.org_level = 'team' AND (
-        EXISTS (SELECT 1 FROM user_teams ut
-                WHERE ut.user_id = $5 AND ut.team_id = e.team_id AND ut.tenant_id = $1)
-        OR EXISTS (SELECT 1 FROM teams t
-                   WHERE t.id = e.team_id AND t.team_lead_id = $5 AND t.tenant_id = $1)
-        OR EXISTS (SELECT 1 FROM teams t
-                   JOIN admin_department_permissions adp ON adp.department_id = t.department_id
-                   WHERE t.id = e.team_id AND adp.admin_user_id = $5 AND adp.tenant_id = $1)
-        OR EXISTS (SELECT 1 FROM teams t
-                   JOIN departments d ON t.department_id = d.id
-                   JOIN admin_area_permissions aap ON aap.area_id = d.area_id
-                   WHERE t.id = e.team_id AND aap.admin_user_id = $5 AND aap.tenant_id = $1)
-      ))
-    )
-`;
-
 // ============================================
-// Visibility Clause Builder
+// Visibility Clause Builder (Scope + Memberships)
 // ============================================
 
 /**
- * Build SQL visibility clause for permission-based event access.
- * Checks: admin permissions, lead positions, department/team memberships, personal, attendees.
- * @param userIdx - SQL parameter index ($N) for userId
- * @param tenantIdx - SQL parameter index ($N) for tenantId
+ * Build SQL visibility clause using OrganizationalScope + CalendarMemberships.
+ *
+ * Replaces the old 11-EXISTS pattern with pre-resolved arrays via ANY().
+ * Calendar Visibility = Management-Scope ∪ Membership-Scope + personal + attendee.
+ *
+ * @param scope - User's organizational scope (from ScopeService)
+ * @param memberships - User's dept/team memberships (from CalendarPermissionService)
+ * @param userId - For personal events + attendee check
+ * @param startIdx - Next available SQL parameter index ($N)
+ * @returns clause (empty string for full scope) + params array
  */
 export function buildVisibilityClause(
-  userIdx: number,
-  tenantIdx: number,
-): string {
-  return `(
+  scope: OrganizationalScope,
+  memberships: CalendarMemberships,
+  userId: number,
+  startIdx: number,
+): { clause: string; params: unknown[] } {
+  if (scope.type === 'full') {
+    return { clause: '', params: [] };
+  }
+
+  // Merge scope + memberships — deduplicated via Set
+  const areaIds = scope.areaIds;
+  const deptIds = [
+    ...new Set([...scope.departmentIds, ...memberships.departmentIds]),
+  ];
+  const teamIds = [...new Set([...scope.teamIds, ...memberships.teamIds])];
+
+  // PostgreSQL ANY() requires non-empty arrays — [0] matches nothing
+  const toSafeArray = (ids: number[]): number[] => (ids.length > 0 ? ids : [0]);
+
+  const areaIdx = startIdx;
+  const deptIdx = startIdx + 1;
+  const teamIdx = startIdx + 2;
+  const userIdx = startIdx + 3;
+
+  const params: unknown[] = [
+    toSafeArray(areaIds),
+    toSafeArray(deptIds),
+    toSafeArray(teamIds),
+    userId,
+  ];
+
+  const clause = `(
     e.org_level = 'company'
-    OR (e.org_level = 'area' AND (
-      EXISTS (SELECT 1 FROM admin_area_permissions aap
-              WHERE aap.admin_user_id = $${userIdx} AND aap.area_id = e.area_id AND aap.tenant_id = $${tenantIdx})
-      OR EXISTS (SELECT 1 FROM areas a
-                 WHERE a.id = e.area_id AND a.area_lead_id = $${userIdx} AND a.tenant_id = $${tenantIdx})
-      OR EXISTS (SELECT 1 FROM user_departments ud
-                 JOIN departments d ON ud.department_id = d.id
-                 WHERE ud.user_id = $${userIdx} AND ud.tenant_id = $${tenantIdx} AND d.area_id = e.area_id)
-    ))
-    OR (e.org_level = 'department' AND (
-      EXISTS (SELECT 1 FROM admin_department_permissions adp
-              WHERE adp.admin_user_id = $${userIdx} AND adp.department_id = e.department_id AND adp.tenant_id = $${tenantIdx})
-      OR EXISTS (SELECT 1 FROM departments d
-                 WHERE d.id = e.department_id AND d.department_lead_id = $${userIdx} AND d.tenant_id = $${tenantIdx})
-      OR EXISTS (SELECT 1 FROM user_departments ud
-                 WHERE ud.user_id = $${userIdx} AND ud.department_id = e.department_id AND ud.tenant_id = $${tenantIdx})
-      OR EXISTS (SELECT 1 FROM departments d
-                 JOIN admin_area_permissions aap ON aap.area_id = d.area_id
-                 WHERE d.id = e.department_id AND aap.admin_user_id = $${userIdx} AND aap.tenant_id = $${tenantIdx})
-    ))
-    OR (e.org_level = 'team' AND (
-      EXISTS (SELECT 1 FROM user_teams ut
-              WHERE ut.user_id = $${userIdx} AND ut.team_id = e.team_id AND ut.tenant_id = $${tenantIdx})
-      OR EXISTS (SELECT 1 FROM teams t
-                 WHERE t.id = e.team_id AND t.team_lead_id = $${userIdx} AND t.tenant_id = $${tenantIdx})
-      OR EXISTS (SELECT 1 FROM teams t
-                 JOIN admin_department_permissions adp ON adp.department_id = t.department_id
-                 WHERE t.id = e.team_id AND adp.admin_user_id = $${userIdx} AND adp.tenant_id = $${tenantIdx})
-      OR EXISTS (SELECT 1 FROM teams t
-                 JOIN departments d ON t.department_id = d.id
-                 JOIN admin_area_permissions aap ON aap.area_id = d.area_id
-                 WHERE t.id = e.team_id AND aap.admin_user_id = $${userIdx} AND aap.tenant_id = $${tenantIdx})
-    ))
+    OR (e.org_level = 'area' AND e.area_id = ANY($${areaIdx}))
+    OR (e.org_level = 'department' AND e.department_id = ANY($${deptIdx}))
+    OR (e.org_level = 'team' AND e.team_id = ANY($${teamIdx}))
     OR (e.org_level = 'personal' AND e.user_id = $${userIdx})
     OR EXISTS (SELECT 1 FROM calendar_attendees ca WHERE ca.event_id = e.id AND ca.user_id = $${userIdx})
   )`;
+
+  return { clause, params };
 }
 
 // ============================================

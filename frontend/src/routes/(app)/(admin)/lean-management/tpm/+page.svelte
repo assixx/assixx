@@ -8,6 +8,7 @@
   import { invalidateAll } from '$app/navigation';
   import { resolve } from '$app/paths';
 
+  import PermissionDenied from '$lib/components/PermissionDenied.svelte';
   import { showSuccessAlert, showErrorAlert } from '$lib/stores/toast';
 
   import ConfirmModal from '$design-system/components/confirm-modal/ConfirmModal.svelte';
@@ -25,6 +26,7 @@
   // =============================================================================
 
   const { data }: { data: PageData } = $props();
+  const permissionDenied = $derived(data.permissionDenied);
 
   // Hierarchy labels from layout data inheritance (A6)
   const labels = $derived(data.hierarchyLabels);
@@ -106,89 +108,93 @@
 
 <svelte:window onkeydown={handleKeydown} />
 
-<div class="container">
-  <!-- Stats (2 cards side by side) -->
-  <div class="grid grid-cols-1 gap-6 md:grid-cols-2 md:items-start">
-    <div class="card-stat card-stat--sm">
-      <div class="card-stat__icon">
-        <i class="fas fa-clipboard-list"></i>
-      </div>
-      <div class="card-stat__content">
-        <div class="card-stat__value">{totalPlans}</div>
-        <div class="card-stat__label">{messages.STAT_TOTAL_PLANS}</div>
-      </div>
-    </div>
-
-    <div class="card-stat card-stat--success card-stat--sm">
-      <div class="card-stat__icon">
-        <i class="fas fa-check-circle"></i>
-      </div>
-      <div class="card-stat__content">
-        <div class="card-stat__value">{activePlanCount}</div>
-        <div class="card-stat__label">{messages.STAT_ACTIVE_PLANS}</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Plan table (full width) -->
-  <div class="mt-6">
-    <div class="card">
-      <div class="card__header">
-        <div class="flex items-center justify-between gap-4">
-          <h2 class="card__title">{messages.STAT_TOTAL_PLANS}</h2>
-          <div class="flex gap-2">
-            <a
-              href={resolve('/lean-management/tpm/gesamtansicht')}
-              class="btn btn-info"
-            >
-              <i class="fas fa-table"></i>
-              {messages.BTN_GESAMTANSICHT}
-            </a>
-            <a
-              href={resolve('/lean-management/tpm/plan/new')}
-              class="btn btn-primary"
-            >
-              <i class="fas fa-plus"></i>
-              {messages.BTN_NEW_PLAN}
-            </a>
-          </div>
+{#if permissionDenied}
+  <PermissionDenied addonName="das TPM-System" />
+{:else}
+  <div class="container">
+    <!-- Stats (2 cards side by side) -->
+    <div class="grid grid-cols-1 gap-6 md:grid-cols-2 md:items-start">
+      <div class="card-stat card-stat--sm">
+        <div class="card-stat__icon">
+          <i class="fas fa-clipboard-list"></i>
+        </div>
+        <div class="card-stat__content">
+          <div class="card-stat__value">{totalPlans}</div>
+          <div class="card-stat__label">{messages.STAT_TOTAL_PLANS}</div>
         </div>
       </div>
-      <div class="card__body">
-        <PlanOverview
-          {messages}
-          plans={allPlans}
-          {totalPlans}
-          currentPage={tpmState.currentPage}
-          statusFilter={tpmState.statusFilter}
-          searchQuery={tpmState.searchQuery}
-          loading={tpmState.loading}
-          intervalMatrix={data.intervalMatrix}
-          ondelete={handleDeleteRequest}
-          onpagechange={handlePageChange}
-          onfilterchange={handleFilterChange}
-          onsearch={handleSearch}
-        />
+
+      <div class="card-stat card-stat--success card-stat--sm">
+        <div class="card-stat__icon">
+          <i class="fas fa-check-circle"></i>
+        </div>
+        <div class="card-stat__content">
+          <div class="card-stat__value">{activePlanCount}</div>
+          <div class="card-stat__label">{messages.STAT_ACTIVE_PLANS}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Plan table (full width) -->
+    <div class="mt-6">
+      <div class="card">
+        <div class="card__header">
+          <div class="flex items-center justify-between gap-4">
+            <h2 class="card__title">{messages.STAT_TOTAL_PLANS}</h2>
+            <div class="flex gap-2">
+              <a
+                href={resolve('/lean-management/tpm/gesamtansicht')}
+                class="btn btn-info"
+              >
+                <i class="fas fa-table"></i>
+                {messages.BTN_GESAMTANSICHT}
+              </a>
+              <a
+                href={resolve('/lean-management/tpm/plan/new')}
+                class="btn btn-primary"
+              >
+                <i class="fas fa-plus"></i>
+                {messages.BTN_NEW_PLAN}
+              </a>
+            </div>
+          </div>
+        </div>
+        <div class="card__body">
+          <PlanOverview
+            {messages}
+            plans={allPlans}
+            {totalPlans}
+            currentPage={tpmState.currentPage}
+            statusFilter={tpmState.statusFilter}
+            searchQuery={tpmState.searchQuery}
+            loading={tpmState.loading}
+            intervalMatrix={data.intervalMatrix}
+            ondelete={handleDeleteRequest}
+            onpagechange={handlePageChange}
+            onfilterchange={handleFilterChange}
+            onsearch={handleSearch}
+          />
+        </div>
       </div>
     </div>
   </div>
-</div>
 
-<!-- Delete Confirmation Modal -->
-<ConfirmModal
-  show={tpmState.showDeleteModal}
-  id="tpm-plan-delete-modal"
-  title={messages.DELETE_CONFIRM_TITLE}
-  confirmLabel={messages.BTN_DELETE}
-  submitting={tpmState.submitting}
-  onconfirm={confirmDelete}
-  oncancel={() => {
-    tpmState.closeDeleteModal();
-  }}
->
-  {messages.DELETE_CONFIRM_MESSAGE}
-  {#if tpmState.deletePlanName.length > 0}
-    <br /><br />
-    <strong>{tpmState.deletePlanName}</strong>
-  {/if}
-</ConfirmModal>
+  <!-- Delete Confirmation Modal -->
+  <ConfirmModal
+    show={tpmState.showDeleteModal}
+    id="tpm-plan-delete-modal"
+    title={messages.DELETE_CONFIRM_TITLE}
+    confirmLabel={messages.BTN_DELETE}
+    submitting={tpmState.submitting}
+    onconfirm={confirmDelete}
+    oncancel={() => {
+      tpmState.closeDeleteModal();
+    }}
+  >
+    {messages.DELETE_CONFIRM_MESSAGE}
+    {#if tpmState.deletePlanName.length > 0}
+      <br /><br />
+      <strong>{tpmState.deletePlanName}</strong>
+    {/if}
+  </ConfirmModal>
+{/if}

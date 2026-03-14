@@ -6,20 +6,11 @@
  */
 import { redirect } from '@sveltejs/kit';
 
+import { apiFetch, apiFetchWithPermission } from '$lib/server/api-fetch';
 import { requireAddon } from '$lib/utils/addon-guard';
-import { createLogger } from '$lib/utils/logger';
 
 import type { PageServerLoad } from './$types';
 import type { DefectWithContext, TpmCard } from '../../../_lib/types';
-
-const log = createLogger('TpmCardDefects');
-
-const API_BASE = process.env.API_URL ?? 'http://localhost:3000/api/v2';
-
-interface ApiResponse<T> {
-  success?: boolean;
-  data?: T;
-}
 
 interface PaginatedApiResponse<T> {
   success?: boolean;
@@ -27,32 +18,6 @@ interface PaginatedApiResponse<T> {
   total?: number;
   page?: number;
   pageSize?: number;
-}
-
-async function apiFetch<T>(
-  endpoint: string,
-  token: string,
-  fetchFn: typeof fetch,
-): Promise<T | null> {
-  try {
-    const response = await fetchFn(`${API_BASE}${endpoint}`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-    });
-    if (!response.ok) {
-      log.error({ status: response.status, endpoint }, 'API error');
-      return null;
-    }
-    const json = (await response.json()) as ApiResponse<T>;
-    if ('success' in json && json.success === true) return json.data ?? null;
-    if ('data' in json && json.data !== undefined) return json.data;
-    return json as unknown as T;
-  } catch (err: unknown) {
-    log.error({ err, endpoint }, 'Fetch error');
-    return null;
-  }
 }
 
 function extractDefects(raw: unknown): {
@@ -84,8 +49,8 @@ export const load: PageServerLoad = async ({
 
   const { uuid: cardUuid } = params;
 
-  const [card, defectsRaw] = await Promise.all([
-    apiFetch<TpmCard>(`/tpm/cards/${cardUuid}`, token, fetch),
+  const [cardResult, defectsRaw] = await Promise.all([
+    apiFetchWithPermission<TpmCard>(`/tpm/cards/${cardUuid}`, token, fetch),
     apiFetch<unknown>(
       `/tpm/cards/${cardUuid}/defects?page=1&limit=50`,
       token,
@@ -93,12 +58,26 @@ export const load: PageServerLoad = async ({
     ),
   ]);
 
+  if (cardResult.permissionDenied) {
+    return {
+      permissionDenied: true as const,
+      card: null,
+      defects: [] as DefectWithContext[],
+      total: 0,
+      error: null,
+      userRole: 'employee',
+      expandExecutionUuid: null,
+    };
+  }
+
+  const card = cardResult.data;
   const { defects, total } = extractDefects(defectsRaw);
 
   const user = parentData.user;
   if (!user) redirect(302, '/login');
 
   return {
+    permissionDenied: false as const,
     card,
     defects,
     total,

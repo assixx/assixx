@@ -9,6 +9,8 @@
   import { goto } from '$app/navigation';
   import { resolve } from '$app/paths';
 
+  import PermissionDenied from '$lib/components/PermissionDenied.svelte';
+
   import { fetchPhotos, logApiError } from '../../../_lib/api';
   import {
     INTERVAL_LABELS,
@@ -26,6 +28,7 @@
 
   const { data }: { data: PageData } = $props();
 
+  const permissionDenied = $derived(data.permissionDenied);
   const card = $derived(data.card);
   const executions = $derived(data.executions);
   const total = $derived(data.total);
@@ -202,467 +205,482 @@
   </title>
 </svelte:head>
 
-<div class="container">
-  <!-- Back Button -->
-  <div class="mb-4">
-    <button
-      type="button"
-      class="btn btn-light"
-      onclick={goBack}
-    >
-      <i class="fas fa-arrow-left mr-2"></i>{MESSAGES.HISTORY_BACK}
-    </button>
-  </div>
-
-  <div class="card">
-    <div
-      class="card__header"
-      style="display: flex; justify-content: space-between; align-items: flex-start;"
-    >
-      <div>
-        <h2 class="card__title">
-          <i class="fas fa-history mr-2"></i>
-          {MESSAGES.HISTORY_HEADING}
-        </h2>
-        {#if card !== null}
-          <p class="mt-1 text-(--color-text-secondary)">
-            <span class="font-semibold">{card.cardCode}</span>
-            — {card.title}
-            · {INTERVAL_LABELS[card.intervalType]}
-            {#if card.assetName !== undefined}
-              · {card.assetName}
-            {/if}
-          </p>
-          <div class="mt-2 flex items-center gap-3">
-            <span class="badge {CARD_STATUS_BADGE_CLASSES[card.status]}">
-              {CARD_STATUS_LABELS[card.status]}
-            </span>
-            <span class="text-sm text-(--color-text-muted)">
-              {total}
-              {MESSAGES.HISTORY_COUNT}
-            </span>
-          </div>
-        {/if}
-      </div>
-      {#if card !== null}
-        <button
-          type="button"
-          class="btn btn-primary"
-          onclick={() => {
-            void goto(
-              resolve(`/lean-management/tpm/card/${card.uuid}/defects`),
-            );
-          }}
-        >
-          <i class="fas fa-exclamation-triangle mr-2"></i>{MESSAGES.BTN_DEFECTS}
-        </button>
-      {/if}
+{#if permissionDenied}
+  <PermissionDenied addonName="das TPM-System" />
+{:else}
+  <div class="container">
+    <!-- Back Button -->
+    <div class="mb-4">
+      <button
+        type="button"
+        class="btn btn-light"
+        onclick={goBack}
+      >
+        <i class="fas fa-arrow-left mr-2"></i>{MESSAGES.HISTORY_BACK}
+      </button>
     </div>
 
-    <div class="card__body">
-      {#if error !== null}
-        <div class="p-6 text-center">
-          <i
-            class="fas fa-exclamation-triangle mb-4 text-4xl text-(--color-danger)"
-          ></i>
-          <p class="text-(--color-text-secondary)">{error}</p>
+    <div class="card">
+      <div
+        class="card__header"
+        style="display: flex; justify-content: space-between; align-items: flex-start;"
+      >
+        <div>
+          <h2 class="card__title">
+            <i class="fas fa-history mr-2"></i>
+            {MESSAGES.HISTORY_HEADING}
+          </h2>
+          {#if card !== null}
+            <p class="mt-1 text-(--color-text-secondary)">
+              <span class="font-semibold">{card.cardCode}</span>
+              — {card.title}
+              · {INTERVAL_LABELS[card.intervalType]}
+              {#if card.assetName !== undefined}
+                · {card.assetName}
+              {/if}
+            </p>
+            <div class="mt-2 flex items-center gap-3">
+              <span class="badge {CARD_STATUS_BADGE_CLASSES[card.status]}">
+                {CARD_STATUS_LABELS[card.status]}
+              </span>
+              <span class="text-sm text-(--color-text-muted)">
+                {total}
+                {MESSAGES.HISTORY_COUNT}
+              </span>
+            </div>
+          {/if}
         </div>
-      {:else if executions.length === 0}
-        <div class="empty-state">
-          <div class="empty-state__icon">
-            <i class="fas fa-clipboard-check"></i>
-          </div>
-          <h3 class="empty-state__title">{MESSAGES.HISTORY_EMPTY_TITLE}</h3>
-          <p class="empty-state__description">{MESSAGES.HISTORY_EMPTY_DESC}</p>
+        {#if card !== null}
           <button
             type="button"
-            class="btn btn-primary mt-4"
-            onclick={goBack}
+            class="btn btn-primary"
+            onclick={() => {
+              void goto(
+                resolve(`/lean-management/tpm/card/${card.uuid}/defects`),
+              );
+            }}
           >
-            <i class="fas fa-arrow-left mr-2"></i>
-            {MESSAGES.HISTORY_BACK}
+            <i class="fas fa-exclamation-triangle mr-2"
+            ></i>{MESSAGES.BTN_DEFECTS}
           </button>
-        </div>
-      {:else}
-        <div class="table-responsive">
-          <table class="data-table data-table--hover data-table--striped">
-            <thead>
-              <tr>
-                <th scope="col">{MESSAGES.HISTORY_COL_DATE}</th>
-                <th scope="col">{MESSAGES.HISTORY_COL_PERSON}</th>
-                <th scope="col">{MESSAGES.HISTORY_COL_STATUS}</th>
-                <th scope="col">{MESSAGES.HISTORY_COL_PHOTOS}</th>
-                <th scope="col">{MESSAGES.HISTORY_COL_DEFECTS}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {#each executions as execution (execution.uuid)}
-                <!-- Row -->
-                <tr
-                  class="history-row"
-                  class:history-row--expanded={expandedUuid === execution.uuid}
-                  onclick={() => {
-                    toggleExpand(execution.uuid);
-                  }}
-                  role="button"
-                  tabindex="0"
-                  onkeydown={(e) => {
-                    if (e.key === 'Enter') toggleExpand(execution.uuid);
-                  }}
-                >
-                  <td>
-                    <div class="font-medium">
-                      {formatDate(execution.executionDate)}
-                    </div>
-                    <div class="text-xs text-(--color-text-muted)">
-                      {formatDateTime(execution.createdAt)}
-                    </div>
-                  </td>
-                  <td>{execution.executedByName ?? '-'}</td>
-                  <td>
-                    <span
-                      class="badge {getApprovalBadgeClass(
-                        execution.approvalStatus,
-                      )}"
-                    >
-                      {getApprovalLabel(execution.approvalStatus)}
-                    </span>
-                  </td>
-                  <td>
-                    {#if (execution.photoCount ?? 0) > 0}
-                      <span class="flex items-center gap-1 text-sm">
-                        <i class="fas fa-camera text-(--color-text-muted)"></i>
-                        {execution.photoCount}
-                      </span>
-                    {:else}
-                      <span class="text-sm text-(--color-text-muted)">—</span>
-                    {/if}
-                  </td>
-                  <td>
-                    {#if (execution.defectCount ?? 0) > 0}
-                      <button
-                        type="button"
-                        class="history-defect-link"
-                        onclick={(e: MouseEvent) => {
-                          e.stopPropagation();
-                          void goto(
-                            resolve(
-                              `/lean-management/tpm/card/${card?.uuid ?? ''}/defects?execution=${execution.uuid}`,
-                            ),
-                          );
-                        }}
-                      >
-                        <i class="fas fa-exclamation-triangle"></i>
-                        {execution.defectCount}
-                      </button>
-                    {:else}
-                      <span class="text-sm text-(--color-text-muted)">—</span>
-                    {/if}
-                  </td>
+        {/if}
+      </div>
+
+      <div class="card__body">
+        {#if error !== null}
+          <div class="p-6 text-center">
+            <i
+              class="fas fa-exclamation-triangle mb-4 text-4xl text-(--color-danger)"
+            ></i>
+            <p class="text-(--color-text-secondary)">{error}</p>
+          </div>
+        {:else if executions.length === 0}
+          <div class="empty-state">
+            <div class="empty-state__icon">
+              <i class="fas fa-clipboard-check"></i>
+            </div>
+            <h3 class="empty-state__title">{MESSAGES.HISTORY_EMPTY_TITLE}</h3>
+            <p class="empty-state__description">
+              {MESSAGES.HISTORY_EMPTY_DESC}
+            </p>
+            <button
+              type="button"
+              class="btn btn-primary mt-4"
+              onclick={goBack}
+            >
+              <i class="fas fa-arrow-left mr-2"></i>
+              {MESSAGES.HISTORY_BACK}
+            </button>
+          </div>
+        {:else}
+          <div class="table-responsive">
+            <table class="data-table data-table--hover data-table--striped">
+              <thead>
+                <tr>
+                  <th scope="col">{MESSAGES.HISTORY_COL_DATE}</th>
+                  <th scope="col">{MESSAGES.HISTORY_COL_PERSON}</th>
+                  <th scope="col">{MESSAGES.HISTORY_COL_STATUS}</th>
+                  <th scope="col">{MESSAGES.HISTORY_COL_PHOTOS}</th>
+                  <th scope="col">{MESSAGES.HISTORY_COL_DEFECTS}</th>
                 </tr>
+              </thead>
+              <tbody>
+                {#each executions as execution (execution.uuid)}
+                  <!-- Row -->
+                  <tr
+                    class="history-row"
+                    class:history-row--expanded={expandedUuid ===
+                      execution.uuid}
+                    onclick={() => {
+                      toggleExpand(execution.uuid);
+                    }}
+                    role="button"
+                    tabindex="0"
+                    onkeydown={(e) => {
+                      if (e.key === 'Enter') toggleExpand(execution.uuid);
+                    }}
+                  >
+                    <td>
+                      <div class="font-medium">
+                        {formatDate(execution.executionDate)}
+                      </div>
+                      <div class="text-xs text-(--color-text-muted)">
+                        {formatDateTime(execution.createdAt)}
+                      </div>
+                    </td>
+                    <td>{execution.executedByName ?? '-'}</td>
+                    <td>
+                      <span
+                        class="badge {getApprovalBadgeClass(
+                          execution.approvalStatus,
+                        )}"
+                      >
+                        {getApprovalLabel(execution.approvalStatus)}
+                      </span>
+                    </td>
+                    <td>
+                      {#if (execution.photoCount ?? 0) > 0}
+                        <span class="flex items-center gap-1 text-sm">
+                          <i class="fas fa-camera text-(--color-text-muted)"
+                          ></i>
+                          {execution.photoCount}
+                        </span>
+                      {:else}
+                        <span class="text-sm text-(--color-text-muted)">—</span>
+                      {/if}
+                    </td>
+                    <td>
+                      {#if (execution.defectCount ?? 0) > 0}
+                        <button
+                          type="button"
+                          class="history-defect-link"
+                          onclick={(e: MouseEvent) => {
+                            e.stopPropagation();
+                            void goto(
+                              resolve(
+                                `/lean-management/tpm/card/${card?.uuid ?? ''}/defects?execution=${execution.uuid}`,
+                              ),
+                            );
+                          }}
+                        >
+                          <i class="fas fa-exclamation-triangle"></i>
+                          {execution.defectCount}
+                        </button>
+                      {:else}
+                        <span class="text-sm text-(--color-text-muted)">—</span>
+                      {/if}
+                    </td>
+                  </tr>
 
-                <!-- Expanded Details -->
-                {#if expandedUuid === execution.uuid}
-                  <tr class="history-detail">
-                    <td colspan="5">
-                      <div class="history-detail__content">
-                        <!-- No Issues Checkbox Result -->
-                        {#if execution.noIssuesFound}
-                          <div class="history-detail__no-issues">
-                            <i class="fas fa-check-circle"></i>
-                            {MESSAGES.EXEC_NO_ISSUES}
-                          </div>
-                        {/if}
-
-                        <!-- Duration + Staff -->
-                        {#if execution.actualDurationMinutes !== null || execution.actualStaffCount !== null}
-                          <div class="history-detail__meta">
-                            {#if execution.actualDurationMinutes !== null}
-                              <span class="history-detail__meta-item">
-                                <i class="fas fa-clock"></i>
-                                {execution.actualDurationMinutes}
-                                {MESSAGES.EXEC_DURATION_UNIT}
-                              </span>
-                            {/if}
-                            {#if execution.actualStaffCount !== null}
-                              <span class="history-detail__meta-item">
-                                <i class="fas fa-users"></i>
-                                {execution.actualStaffCount}
-                                {MESSAGES.TIME_STAFF}
-                              </span>
-                            {/if}
-                          </div>
-                        {/if}
-
-                        <!-- Participants -->
-                        {#if execution.participants !== undefined && execution.participants.length > 0}
-                          <div class="history-detail__section">
-                            <h4 class="history-detail__label">
-                              <i class="fas fa-user-friends"></i>
-                              Beteiligte Mitarbeiter
-                            </h4>
-                            <div class="history-detail__participants">
-                              {#each execution.participants as participant (participant.uuid)}
-                                <span class="history-detail__participant-chip">
-                                  {participant.firstName}
-                                  {participant.lastName}
-                                </span>
-                              {/each}
+                  <!-- Expanded Details -->
+                  {#if expandedUuid === execution.uuid}
+                    <tr class="history-detail">
+                      <td colspan="5">
+                        <div class="history-detail__content">
+                          <!-- No Issues Checkbox Result -->
+                          {#if execution.noIssuesFound}
+                            <div class="history-detail__no-issues">
+                              <i class="fas fa-check-circle"></i>
+                              {MESSAGES.EXEC_NO_ISSUES}
                             </div>
-                          </div>
-                        {/if}
-
-                        <!-- Documentation -->
-                        <div class="history-detail__section">
-                          <h4 class="history-detail__label">
-                            <i class="fas fa-file-alt"></i>
-                            {MESSAGES.HISTORY_DOCUMENTATION}
-                          </h4>
-                          {#if execution.documentation !== null && execution.documentation.trim().length > 0}
-                            <p class="history-detail__text">
-                              {execution.documentation}
-                            </p>
-                          {:else}
-                            <p
-                              class="history-detail__text history-detail__text--empty"
-                            >
-                              {MESSAGES.HISTORY_NO_DOCUMENTATION}
-                            </p>
                           {/if}
-                        </div>
 
-                        <!-- Photos -->
-                        {#if (execution.photoCount ?? 0) > 0}
+                          <!-- Duration + Staff -->
+                          {#if execution.actualDurationMinutes !== null || execution.actualStaffCount !== null}
+                            <div class="history-detail__meta">
+                              {#if execution.actualDurationMinutes !== null}
+                                <span class="history-detail__meta-item">
+                                  <i class="fas fa-clock"></i>
+                                  {execution.actualDurationMinutes}
+                                  {MESSAGES.EXEC_DURATION_UNIT}
+                                </span>
+                              {/if}
+                              {#if execution.actualStaffCount !== null}
+                                <span class="history-detail__meta-item">
+                                  <i class="fas fa-users"></i>
+                                  {execution.actualStaffCount}
+                                  {MESSAGES.TIME_STAFF}
+                                </span>
+                              {/if}
+                            </div>
+                          {/if}
+
+                          <!-- Participants -->
+                          {#if execution.participants !== undefined && execution.participants.length > 0}
+                            <div class="history-detail__section">
+                              <h4 class="history-detail__label">
+                                <i class="fas fa-user-friends"></i>
+                                Beteiligte Mitarbeiter
+                              </h4>
+                              <div class="history-detail__participants">
+                                {#each execution.participants as participant (participant.uuid)}
+                                  <span
+                                    class="history-detail__participant-chip"
+                                  >
+                                    {participant.firstName}
+                                    {participant.lastName}
+                                  </span>
+                                {/each}
+                              </div>
+                            </div>
+                          {/if}
+
+                          <!-- Documentation -->
                           <div class="history-detail__section">
                             <h4 class="history-detail__label">
-                              <i class="fas fa-camera"></i>
-                              {MESSAGES.PHOTO_HEADING}
-                              <span
-                                class="text-xs font-normal text-(--color-text-muted)"
-                              >
-                                ({execution.photoCount})
-                              </span>
+                              <i class="fas fa-file-alt"></i>
+                              {MESSAGES.HISTORY_DOCUMENTATION}
                             </h4>
-                            {#if loadingPhotos[execution.uuid]}
-                              <span
-                                class="flex items-center gap-1.5 text-sm text-(--color-primary)"
+                            {#if execution.documentation !== null && execution.documentation.trim().length > 0}
+                              <p class="history-detail__text">
+                                {execution.documentation}
+                              </p>
+                            {:else}
+                              <p
+                                class="history-detail__text history-detail__text--empty"
                               >
-                                <i class="fas fa-spinner fa-spin"></i>
-                                {MESSAGES.HISTORY_PHOTOS_LOADING}
-                              </span>
-                            {:else if photoErrors[execution.uuid]}
-                              <span
-                                class="flex items-center gap-1.5 text-sm text-(--color-danger)"
-                              >
-                                <i class="fas fa-exclamation-circle"></i>
-                                {MESSAGES.HISTORY_PHOTOS_ERROR}
-                              </span>
-                            {:else if loadedPhotos[execution.uuid] !== undefined}
-                              <div class="history-detail__photos">
-                                {#each loadedPhotos[execution.uuid] as photo, photoIdx (photo.uuid)}
-                                  <div
-                                    class="history-detail__photo-thumb"
-                                    role="button"
-                                    tabindex="0"
-                                    onclick={() => {
-                                      openPhotoPreview(
-                                        loadedPhotos[execution.uuid] ?? [],
-                                        photoIdx,
-                                      );
-                                    }}
-                                    onkeydown={(e) => {
-                                      if (e.key === 'Enter')
+                                {MESSAGES.HISTORY_NO_DOCUMENTATION}
+                              </p>
+                            {/if}
+                          </div>
+
+                          <!-- Photos -->
+                          {#if (execution.photoCount ?? 0) > 0}
+                            <div class="history-detail__section">
+                              <h4 class="history-detail__label">
+                                <i class="fas fa-camera"></i>
+                                {MESSAGES.PHOTO_HEADING}
+                                <span
+                                  class="text-xs font-normal text-(--color-text-muted)"
+                                >
+                                  ({execution.photoCount})
+                                </span>
+                              </h4>
+                              {#if loadingPhotos[execution.uuid]}
+                                <span
+                                  class="flex items-center gap-1.5 text-sm text-(--color-primary)"
+                                >
+                                  <i class="fas fa-spinner fa-spin"></i>
+                                  {MESSAGES.HISTORY_PHOTOS_LOADING}
+                                </span>
+                              {:else if photoErrors[execution.uuid]}
+                                <span
+                                  class="flex items-center gap-1.5 text-sm text-(--color-danger)"
+                                >
+                                  <i class="fas fa-exclamation-circle"></i>
+                                  {MESSAGES.HISTORY_PHOTOS_ERROR}
+                                </span>
+                              {:else if loadedPhotos[execution.uuid] !== undefined}
+                                <div class="history-detail__photos">
+                                  {#each loadedPhotos[execution.uuid] as photo, photoIdx (photo.uuid)}
+                                    <div
+                                      class="history-detail__photo-thumb"
+                                      role="button"
+                                      tabindex="0"
+                                      onclick={() => {
                                         openPhotoPreview(
                                           loadedPhotos[execution.uuid] ?? [],
                                           photoIdx,
                                         );
-                                    }}
-                                  >
-                                    <img
-                                      src="/{photo.filePath}"
-                                      alt={photo.fileName}
-                                      class="history-detail__photo-img"
-                                      loading="lazy"
-                                    />
-                                    {#if photoIdx === 0 && (loadedPhotos[execution.uuid]?.length ?? 0) > 1}
-                                      <span class="history-detail__photo-count">
-                                        {loadedPhotos[execution.uuid]?.length} Fotos
-                                      </span>
-                                    {/if}
-                                  </div>
-                                {/each}
-                              </div>
-                            {/if}
-                          </div>
-                        {/if}
-
-                        <!-- Approval Details -->
-                        {#if execution.approvalStatus !== 'none'}
-                          <div class="history-detail__section">
-                            <h4 class="history-detail__label">
-                              <i class="fas fa-check-double"></i>
-                              {MESSAGES.APPROVAL_HEADING}
-                            </h4>
-                            <div class="history-detail__approval">
-                              <span
-                                class="badge {getApprovalBadgeClass(
-                                  execution.approvalStatus,
-                                )}"
-                              >
-                                {getApprovalLabel(execution.approvalStatus)}
-                              </span>
-                              {#if execution.approvedByName !== undefined}
-                                <span
-                                  class="text-sm text-(--color-text-secondary)"
-                                >
-                                  {MESSAGES.HISTORY_APPROVAL_BY}
-                                  {execution.approvedByName}
-                                </span>
-                              {/if}
-                              {#if execution.approvedAt !== null}
-                                <span class="text-sm text-(--color-text-muted)">
-                                  {formatDateTime(execution.approvedAt)}
-                                </span>
+                                      }}
+                                      onkeydown={(e) => {
+                                        if (e.key === 'Enter')
+                                          openPhotoPreview(
+                                            loadedPhotos[execution.uuid] ?? [],
+                                            photoIdx,
+                                          );
+                                      }}
+                                    >
+                                      <img
+                                        src="/{photo.filePath}"
+                                        alt={photo.fileName}
+                                        class="history-detail__photo-img"
+                                        loading="lazy"
+                                      />
+                                      {#if photoIdx === 0 && (loadedPhotos[execution.uuid]?.length ?? 0) > 1}
+                                        <span
+                                          class="history-detail__photo-count"
+                                        >
+                                          {loadedPhotos[execution.uuid]?.length} Fotos
+                                        </span>
+                                      {/if}
+                                    </div>
+                                  {/each}
+                                </div>
                               {/if}
                             </div>
-                            {#if execution.approvalNote !== null && execution.approvalNote.trim().length > 0}
-                              <div class="mt-2">
+                          {/if}
+
+                          <!-- Approval Details -->
+                          {#if execution.approvalStatus !== 'none'}
+                            <div class="history-detail__section">
+                              <h4 class="history-detail__label">
+                                <i class="fas fa-check-double"></i>
+                                {MESSAGES.APPROVAL_HEADING}
+                              </h4>
+                              <div class="history-detail__approval">
                                 <span
-                                  class="text-xs font-semibold text-(--color-text-muted)"
+                                  class="badge {getApprovalBadgeClass(
+                                    execution.approvalStatus,
+                                  )}"
                                 >
-                                  {MESSAGES.HISTORY_APPROVAL_NOTE}:
+                                  {getApprovalLabel(execution.approvalStatus)}
                                 </span>
-                                <p class="history-detail__text">
-                                  {execution.approvalNote}
-                                </p>
+                                {#if execution.approvedByName !== undefined}
+                                  <span
+                                    class="text-sm text-(--color-text-secondary)"
+                                  >
+                                    {MESSAGES.HISTORY_APPROVAL_BY}
+                                    {execution.approvedByName}
+                                  </span>
+                                {/if}
+                                {#if execution.approvedAt !== null}
+                                  <span
+                                    class="text-sm text-(--color-text-muted)"
+                                  >
+                                    {formatDateTime(execution.approvedAt)}
+                                  </span>
+                                {/if}
                               </div>
-                            {/if}
-                          </div>
-                        {/if}
-                      </div>
-                    </td>
-                  </tr>
-                {/if}
-              {/each}
-            </tbody>
-          </table>
-        </div>
-      {/if}
+                              {#if execution.approvalNote !== null && execution.approvalNote.trim().length > 0}
+                                <div class="mt-2">
+                                  <span
+                                    class="text-xs font-semibold text-(--color-text-muted)"
+                                  >
+                                    {MESSAGES.HISTORY_APPROVAL_NOTE}:
+                                  </span>
+                                  <p class="history-detail__text">
+                                    {execution.approvalNote}
+                                  </p>
+                                </div>
+                              {/if}
+                            </div>
+                          {/if}
+                        </div>
+                      </td>
+                    </tr>
+                  {/if}
+                {/each}
+              </tbody>
+            </table>
+          </div>
+        {/if}
+      </div>
     </div>
   </div>
-</div>
 
-<!-- Photo Preview Modal -->
-{#if showPhotoPreview && previewPhoto !== null}
-  <div
-    id="tpm-history-photo-preview-modal"
-    class="modal-overlay modal-overlay--active"
-    onclick={closePhotoPreview}
-    onkeydown={(e) => {
-      if (e.key === 'Escape') closePhotoPreview();
-    }}
-    role="dialog"
-    aria-modal="true"
-    tabindex="-1"
-  >
-    <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+  <!-- Photo Preview Modal -->
+  {#if showPhotoPreview && previewPhoto !== null}
     <div
-      class="ds-modal ds-modal--lg"
-      style="max-height: 95vh;"
-      onclick={(e) => {
-        e.stopPropagation();
-      }}
+      id="tpm-history-photo-preview-modal"
+      class="modal-overlay modal-overlay--active"
+      onclick={closePhotoPreview}
       onkeydown={(e) => {
-        e.stopPropagation();
+        if (e.key === 'Escape') closePhotoPreview();
       }}
-      role="document"
+      role="dialog"
+      aria-modal="true"
+      tabindex="-1"
     >
-      <div class="ds-modal__header">
-        <h3 class="ds-modal__title">
-          <i class="fas fa-image text-success-500 mr-2"></i>
-          {previewPhoto.fileName}
-        </h3>
-        <button
-          type="button"
-          class="ds-modal__close"
-          onclick={closePhotoPreview}
-          aria-label="Schließen"><i class="fas fa-times"></i></button
-        >
-      </div>
-      <div class="ds-modal__body p-0">
-        <div
-          class="flex h-[80vh] min-h-[600px] w-full items-center justify-center bg-(--surface-1)"
-        >
-          <img
-            src="/{previewPhoto.filePath}"
-            alt={previewPhoto.fileName}
-            class="max-h-full max-w-full object-contain"
-          />
-        </div>
-        <div class="border-t border-(--border-subtle) bg-(--surface-2) p-4">
-          <div
-            class="flex items-center gap-6 text-sm text-(--color-text-secondary)"
+      <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+      <div
+        class="ds-modal ds-modal--lg"
+        style="max-height: 95vh;"
+        onclick={(e) => {
+          e.stopPropagation();
+        }}
+        onkeydown={(e) => {
+          e.stopPropagation();
+        }}
+        role="document"
+      >
+        <div class="ds-modal__header">
+          <h3 class="ds-modal__title">
+            <i class="fas fa-image text-success-500 mr-2"></i>
+            {previewPhoto.fileName}
+          </h3>
+          <button
+            type="button"
+            class="ds-modal__close"
+            onclick={closePhotoPreview}
+            aria-label="Schließen"><i class="fas fa-times"></i></button
           >
-            <span class="flex items-center gap-2">
-              <i class="fas fa-file-archive"></i>
-              {formatFileSize(previewPhoto.fileSize)}
-            </span>
+        </div>
+        <div class="ds-modal__body p-0">
+          <div
+            class="flex h-[80vh] min-h-[600px] w-full items-center justify-center bg-(--surface-1)"
+          >
+            <img
+              src="/{previewPhoto.filePath}"
+              alt={previewPhoto.fileName}
+              class="max-h-full max-w-full object-contain"
+            />
+          </div>
+          <div class="border-t border-(--border-subtle) bg-(--surface-2) p-4">
+            <div
+              class="flex items-center gap-6 text-sm text-(--color-text-secondary)"
+            >
+              <span class="flex items-center gap-2">
+                <i class="fas fa-file-archive"></i>
+                {formatFileSize(previewPhoto.fileSize)}
+              </span>
+            </div>
           </div>
         </div>
+        <div class="ds-modal__footer">
+          <button
+            type="button"
+            class="btn btn-cancel"
+            onclick={closePhotoPreview}
+            ><i class="fas fa-times mr-2"></i>Schließen</button
+          >
+          <button
+            type="button"
+            class="btn btn-primary"
+            onclick={() => {
+              window.open(`/${previewPhoto.filePath}`, '_blank');
+            }}><i class="fas fa-download mr-2"></i>Herunterladen</button
+          >
+        </div>
       </div>
-      <div class="ds-modal__footer">
+      {#if previewPhotos.length > 1}
         <button
           type="button"
-          class="btn btn-cancel"
-          onclick={closePhotoPreview}
-          ><i class="fas fa-times mr-2"></i>Schließen</button
-        >
-        <button
-          type="button"
-          class="btn btn-primary"
-          onclick={() => {
-            window.open(`/${previewPhoto.filePath}`, '_blank');
-          }}><i class="fas fa-download mr-2"></i>Herunterladen</button
-        >
-      </div>
-    </div>
-    {#if previewPhotos.length > 1}
-      <button
-        type="button"
-        class="absolute top-1/2 left-6 z-10 flex h-12 w-12 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border-none bg-white/15 text-xl text-white transition-colors hover:bg-white/30"
-        onclick={(e) => {
-          e.stopPropagation();
-          handlePreviewPrev();
-        }}
-        aria-label="Vorheriges"
-      >
-        <i class="fas fa-chevron-left"></i>
-      </button>
-      <button
-        type="button"
-        class="absolute top-1/2 right-6 z-10 flex h-12 w-12 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border-none bg-white/15 text-xl text-white transition-colors hover:bg-white/30"
-        onclick={(e) => {
-          e.stopPropagation();
-          handlePreviewNext();
-        }}
-        aria-label="Nächstes"
-      >
-        <i class="fas fa-chevron-right"></i>
-      </button>
-      {#if previewPhotoIndex !== null}
-        <!-- svelte-ignore a11y_click_events_have_key_events -->
-        <!-- svelte-ignore a11y_no_static_element_interactions -->
-        <div
-          class="absolute bottom-6 left-1/2 z-10 -translate-x-1/2 rounded-xl bg-black/50 px-3 py-1 text-sm text-white"
+          class="absolute top-1/2 left-6 z-10 flex h-12 w-12 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border-none bg-white/15 text-xl text-white transition-colors hover:bg-white/30"
           onclick={(e) => {
             e.stopPropagation();
+            handlePreviewPrev();
           }}
+          aria-label="Vorheriges"
         >
-          {previewPhotoIndex + 1} / {previewPhotos.length}
-        </div>
+          <i class="fas fa-chevron-left"></i>
+        </button>
+        <button
+          type="button"
+          class="absolute top-1/2 right-6 z-10 flex h-12 w-12 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border-none bg-white/15 text-xl text-white transition-colors hover:bg-white/30"
+          onclick={(e) => {
+            e.stopPropagation();
+            handlePreviewNext();
+          }}
+          aria-label="Nächstes"
+        >
+          <i class="fas fa-chevron-right"></i>
+        </button>
+        {#if previewPhotoIndex !== null}
+          <!-- svelte-ignore a11y_click_events_have_key_events -->
+          <!-- svelte-ignore a11y_no_static_element_interactions -->
+          <div
+            class="absolute bottom-6 left-1/2 z-10 -translate-x-1/2 rounded-xl bg-black/50 px-3 py-1 text-sm text-white"
+            onclick={(e) => {
+              e.stopPropagation();
+            }}
+          >
+            {previewPhotoIndex + 1} / {previewPhotos.length}
+          </div>
+        {/if}
       {/if}
-    {/if}
-  </div>
+    </div>
+  {/if}
 {/if}
 
 <style>

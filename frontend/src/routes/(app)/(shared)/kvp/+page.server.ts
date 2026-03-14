@@ -6,8 +6,8 @@
  */
 import { redirect } from '@sveltejs/kit';
 
+import { apiFetch, apiFetchWithPermission } from '$lib/server/api-fetch';
 import { requireAddon } from '$lib/utils/addon-guard';
-import { createLogger } from '$lib/utils/logger';
 
 import type { PageServerLoad } from './$types';
 import type {
@@ -18,47 +18,6 @@ import type {
   SuggestionsResponse,
   UserTeamWithAssets,
 } from './_lib/types';
-
-const log = createLogger('Kvp');
-
-const API_BASE = process.env.API_URL ?? 'http://localhost:3000/api/v2';
-
-interface ApiResponse<T> {
-  success?: boolean;
-  data?: T;
-}
-
-async function apiFetch<T>(
-  endpoint: string,
-  token: string,
-  fetchFn: typeof fetch,
-): Promise<T | null> {
-  try {
-    const response = await fetchFn(`${API_BASE}${endpoint}`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      log.error({ status: response.status, endpoint }, 'API error');
-      return null;
-    }
-
-    const json = (await response.json()) as ApiResponse<T>;
-    if ('success' in json && json.success === true) {
-      return json.data ?? null;
-    }
-    if ('data' in json && json.data !== undefined) {
-      return json.data;
-    }
-    return json as unknown as T;
-  } catch (err: unknown) {
-    log.error({ err, endpoint }, 'Fetch error');
-    return null;
-  }
-}
 
 /**
  * Possible API response formats for suggestions endpoint
@@ -116,38 +75,34 @@ async function fetchKvpData(
   fetchFn: typeof fetch,
   isAdmin: boolean,
 ) {
-  const fetchPromises: Promise<
-    | KvpCategory[]
-    | Department[]
-    | SuggestionsApiResponse
-    | KvpStats
-    | UserTeamWithAssets[]
-    | null
-  >[] = [
-    apiFetch<KvpCategory[]>('/kvp/categories', token, fetchFn),
-    apiFetch<Department[]>('/departments', token, fetchFn),
-    apiFetch<SuggestionsApiResponse>('/kvp', token, fetchFn),
-    apiFetch<UserTeamWithAssets[]>('/kvp/my-organizations', token, fetchFn),
-  ];
+  // apiFetchWithPermission for /kvp to detect 403 (permission denied vs empty data)
+  const [kvpResult, categoriesData, departmentsData, orgsData, statsData] =
+    await Promise.all([
+      apiFetchWithPermission<SuggestionsApiResponse>('/kvp', token, fetchFn),
+      apiFetch<KvpCategory[]>('/kvp/categories', token, fetchFn),
+      apiFetch<Department[]>('/departments', token, fetchFn),
+      apiFetch<UserTeamWithAssets[]>('/kvp/my-organizations', token, fetchFn),
+      isAdmin ?
+        apiFetch<KvpStats>('/kvp/dashboard/stats', token, fetchFn)
+      : Promise.resolve(null),
+    ]);
 
-  if (isAdmin) {
-    fetchPromises.push(
-      apiFetch<KvpStats>('/kvp/dashboard/stats', token, fetchFn),
-    );
+  if (kvpResult.permissionDenied) {
+    return {
+      permissionDenied: true as const,
+      categories: [] as KvpCategory[],
+      departments: Array.isArray(departmentsData) ? departmentsData : [],
+      suggestions: [] as KvpSuggestion[],
+      userOrganizations: [] as UserTeamWithAssets[],
+      statistics: null,
+    };
   }
 
-  const results = await Promise.all(fetchPromises);
-
-  const categoriesData = results[0] as KvpCategory[] | null;
-  const departmentsData = results[1] as Department[] | null;
-  const suggestionsData = results[2] as SuggestionsApiResponse | null;
-  const orgsData = results[3] as UserTeamWithAssets[] | null;
-  const statsData = isAdmin ? (results[4] as KvpStats | null) : null;
-
   return {
+    permissionDenied: false as const,
     categories: Array.isArray(categoriesData) ? categoriesData : [],
     departments: Array.isArray(departmentsData) ? departmentsData : [],
-    suggestions: parseSuggestionsResponse(suggestionsData),
+    suggestions: parseSuggestionsResponse(kvpResult.data),
     userOrganizations: Array.isArray(orgsData) ? orgsData : [],
     statistics: statsData,
   };

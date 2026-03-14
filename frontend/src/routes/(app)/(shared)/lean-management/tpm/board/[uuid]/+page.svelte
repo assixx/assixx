@@ -7,6 +7,8 @@
   import { goto } from '$app/navigation';
   import { resolve } from '$app/paths';
 
+  import PermissionDenied from '$lib/components/PermissionDenied.svelte';
+
   import { MESSAGES } from '../../_lib/constants';
 
   import BoardFilter from './_lib/BoardFilter.svelte';
@@ -25,6 +27,7 @@
 
   const { data }: { data: PageData } = $props();
 
+  const permissionDenied = $derived(data.permissionDenied);
   const plan = $derived(data.plan);
   const cards = $derived(data.cards);
   const colors = $derived(data.colors);
@@ -102,171 +105,175 @@
   <title>{pageTitle} — Assixx</title>
 </svelte:head>
 
-<div class="container">
-  <!-- Back Navigation -->
-  <div class="mb-4">
-    <button
-      type="button"
-      class="btn btn-light"
-      onclick={() => {
-        void goto(resolve('/lean-management/tpm'));
-      }}
-    >
-      <i class="fas fa-arrow-left mr-2"></i>
-      {MESSAGES.BTN_BACK_TO_OVERVIEW}
-    </button>
-  </div>
+{#if permissionDenied}
+  <PermissionDenied addonName="das TPM-System" />
+{:else}
+  <div class="container">
+    <!-- Back Navigation -->
+    <div class="mb-4">
+      <button
+        type="button"
+        class="btn btn-light"
+        onclick={() => {
+          void goto(resolve('/lean-management/tpm'));
+        }}
+      >
+        <i class="fas fa-arrow-left mr-2"></i>
+        {MESSAGES.BTN_BACK_TO_OVERVIEW}
+      </button>
+    </div>
 
-  <!-- Page Header -->
-  <div class="card">
-    <div class="card__header">
-      <div class="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h2 class="card__title">
-            <i class="fas fa-columns mr-2"></i>
-            Kamishibai Board
-          </h2>
-          {#if plan !== null}
-            <p
-              class="mt-2 flex items-center gap-3 text-(--color-text-secondary)"
-            >
-              {#if plan.departmentName}
-                <span class="text-lg font-bold">{plan.departmentName}</span>
-                <span class="text-(--color-text-muted)">/</span>
-              {/if}
-              <span class="inline-flex items-center gap-1 text-lg font-bold">
-                <i class="fas fa-cog"></i>
-                {plan.assetName ?? '—'}
+    <!-- Page Header -->
+    <div class="card">
+      <div class="card__header">
+        <div class="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <h2 class="card__title">
+              <i class="fas fa-columns mr-2"></i>
+              Kamishibai Board
+            </h2>
+            {#if plan !== null}
+              <p
+                class="mt-2 flex items-center gap-3 text-(--color-text-secondary)"
+              >
+                {#if plan.departmentName}
+                  <span class="text-lg font-bold">{plan.departmentName}</span>
+                  <span class="text-(--color-text-muted)">/</span>
+                {/if}
+                <span class="inline-flex items-center gap-1 text-lg font-bold">
+                  <i class="fas fa-cog"></i>
+                  {plan.assetName ?? '—'}
+                </span>
+              </p>
+            {/if}
+          </div>
+
+          <div class="flex items-center gap-3">
+            {#if openCount > 0}
+              <span class="badge badge--danger">
+                <i class="fas fa-exclamation-circle"></i>
+                {openCount} offen
               </span>
-            </p>
-          {/if}
-        </div>
-
-        <div class="flex items-center gap-3">
-          {#if openCount > 0}
-            <span class="badge badge--danger">
-              <i class="fas fa-exclamation-circle"></i>
-              {openCount} offen
-            </span>
-          {:else if cards.length > 0}
-            <span class="badge badge--success">
-              <i class="fas fa-check-circle"></i>
-              Alles erledigt
-            </span>
-          {/if}
-          <button
-            type="button"
-            class="btn btn-primary"
-            onclick={() => {
-              void goto(
-                resolve(`/lean-management/tpm/locations/${data.planUuid}`),
-              );
-            }}
-          >
-            <i class="fas fa-map-marker-alt mr-2"></i>{MESSAGES.BTN_LOCATIONS}
-          </button>
-          {#if canWrite}
+            {:else if cards.length > 0}
+              <span class="badge badge--success">
+                <i class="fas fa-check-circle"></i>
+                Alles erledigt
+              </span>
+            {/if}
             <button
               type="button"
               class="btn btn-primary"
               onclick={() => {
                 void goto(
-                  resolve(`/lean-management/tpm/cards/${data.planUuid}`),
+                  resolve(`/lean-management/tpm/locations/${data.planUuid}`),
                 );
               }}
             >
-              <i class="fas fa-th mr-2"></i>{MESSAGES.BTN_MANAGE_CARDS}
+              <i class="fas fa-map-marker-alt mr-2"></i>{MESSAGES.BTN_LOCATIONS}
             </button>
-          {/if}
+            {#if canWrite}
+              <button
+                type="button"
+                class="btn btn-primary"
+                onclick={() => {
+                  void goto(
+                    resolve(`/lean-management/tpm/cards/${data.planUuid}`),
+                  );
+                }}
+              >
+                <i class="fas fa-th mr-2"></i>{MESSAGES.BTN_MANAGE_CARDS}
+              </button>
+            {/if}
+          </div>
         </div>
       </div>
     </div>
-  </div>
 
-  <!-- Legend -->
-  <div class="board-legend">
-    <span class="board-legend__group-label">Status</span>
-    {#each colors as c (c.statusKey)}
-      <span class="board-legend__item">
-        <span
-          class="board-legend__dot"
-          style="background-color: {c.colorHex}"
-        ></span>
-        {c.label}
-      </span>
-    {/each}
-    {#if legendIntervalColors.length > 0}
-      <span class="board-legend__divider"></span>
-      <span class="board-legend__group-label">Intervall</span>
-      {#each legendIntervalColors as ic (ic.statusKey)}
+    <!-- Legend -->
+    <div class="board-legend">
+      <span class="board-legend__group-label">Status</span>
+      {#each colors as c (c.statusKey)}
         <span class="board-legend__item">
           <span
             class="board-legend__dot"
-            style="background-color: {ic.colorHex}"
+            style="background-color: {c.colorHex}"
           ></span>
-          {ic.label}
+          {c.label}
         </span>
       {/each}
-    {/if}
-    {#if legendCategoryColors.length > 0}
-      <span class="board-legend__divider"></span>
-      <span class="board-legend__group-label">Kategorie</span>
-      {#each legendCategoryColors as cc (cc.categoryKey)}
-        <span class="board-legend__item">
-          <span
-            class="board-legend__dot"
-            style="background-color: {cc.colorHex}"
-          ></span>
-          {cc.label}
-        </span>
-      {/each}
-    {/if}
-  </div>
+      {#if legendIntervalColors.length > 0}
+        <span class="board-legend__divider"></span>
+        <span class="board-legend__group-label">Intervall</span>
+        {#each legendIntervalColors as ic (ic.statusKey)}
+          <span class="board-legend__item">
+            <span
+              class="board-legend__dot"
+              style="background-color: {ic.colorHex}"
+            ></span>
+            {ic.label}
+          </span>
+        {/each}
+      {/if}
+      {#if legendCategoryColors.length > 0}
+        <span class="board-legend__divider"></span>
+        <span class="board-legend__group-label">Kategorie</span>
+        {#each legendCategoryColors as cc (cc.categoryKey)}
+          <span class="board-legend__item">
+            <span
+              class="board-legend__dot"
+              style="background-color: {cc.colorHex}"
+            ></span>
+            {cc.label}
+          </span>
+        {/each}
+      {/if}
+    </div>
 
-  <!-- Filter Bar -->
-  <div class="mt-4 flex flex-wrap items-center justify-between gap-4">
-    <BoardFilter
-      bind:filter={activeFilter}
-      bind:categoryFilter={activeCategoryFilter}
-    />
-    <span class="text-sm whitespace-nowrap text-(--color-text-muted)">
-      {filteredCards.length} / {cards.length} Karten
-    </span>
-  </div>
-
-  <!-- Board Content -->
-  <div class="mt-4">
-    {#if plan === null}
-      <div class="empty-state">
-        <div class="empty-state__icon">
-          <i class="fas fa-exclamation-triangle"></i>
-        </div>
-        <h3 class="empty-state__title">Wartungsplan nicht gefunden</h3>
-        <p class="empty-state__description">
-          Der angeforderte Wartungsplan existiert nicht oder wurde gelöscht.
-        </p>
-      </div>
-    {:else if cards.length === 0}
-      <div class="empty-state">
-        <div class="empty-state__icon">
-          <i class="fas fa-th"></i>
-        </div>
-        <h3 class="empty-state__title">Keine Karten vorhanden</h3>
-        <p class="empty-state__description">
-          Für diesen Wartungsplan sind noch keine Karten erstellt.
-        </p>
-      </div>
-    {:else}
-      <KamishibaiBoard
-        allCards={cards}
-        {filteredCards}
-        {colors}
-        {intervalColors}
-        {categoryColors}
+    <!-- Filter Bar -->
+    <div class="mt-4 flex flex-wrap items-center justify-between gap-4">
+      <BoardFilter
+        bind:filter={activeFilter}
+        bind:categoryFilter={activeCategoryFilter}
       />
-    {/if}
+      <span class="text-sm whitespace-nowrap text-(--color-text-muted)">
+        {filteredCards.length} / {cards.length} Karten
+      </span>
+    </div>
+
+    <!-- Board Content -->
+    <div class="mt-4">
+      {#if plan === null}
+        <div class="empty-state">
+          <div class="empty-state__icon">
+            <i class="fas fa-exclamation-triangle"></i>
+          </div>
+          <h3 class="empty-state__title">Wartungsplan nicht gefunden</h3>
+          <p class="empty-state__description">
+            Der angeforderte Wartungsplan existiert nicht oder wurde gelöscht.
+          </p>
+        </div>
+      {:else if cards.length === 0}
+        <div class="empty-state">
+          <div class="empty-state__icon">
+            <i class="fas fa-th"></i>
+          </div>
+          <h3 class="empty-state__title">Keine Karten vorhanden</h3>
+          <p class="empty-state__description">
+            Für diesen Wartungsplan sind noch keine Karten erstellt.
+          </p>
+        </div>
+      {:else}
+        <KamishibaiBoard
+          allCards={cards}
+          {filteredCards}
+          {colors}
+          {intervalColors}
+          {categoryColors}
+        />
+      {/if}
+    </div>
   </div>
-</div>
+{/if}
 
 <style>
   .board-legend {

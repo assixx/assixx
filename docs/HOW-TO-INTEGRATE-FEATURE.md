@@ -257,11 +257,14 @@ emitFeatureEvent(tenantId: number, payload: FeaturePayload): void {
 
 ### 3.2 SSR Data Loading (`+page.server.ts`)
 
+- [ ] `import { apiFetch } from '$lib/server/api-fetch'` — **keine lokale Kopie!**
 - [ ] Auth-Check: `cookies.get('accessToken')` → redirect wenn fehlt
 - [ ] `await parent()` für User-Daten aus Parent-Layout
 - [ ] Parallele API-Calls mit `Promise.all()`:
 
 ```typescript
+import { apiFetch } from '$lib/server/api-fetch';
+
 const [items, stats] = await Promise.all([
   apiFetch<PaginatedResult<Item>>('/feature/items?page=1&limit=20', token, fetch),
   apiFetch<FeatureStats>('/feature/stats', token, fetch),
@@ -271,6 +274,7 @@ const [items, stats] = await Promise.all([
 - [ ] Fallback für fehlgeschlagene Calls (leere Defaults, nicht crashen)
 
 > **Ref:** `frontend/src/routes/(app)/(shared)/vacation/+page.server.ts`
+> **Shared Utility:** `frontend/src/lib/server/api-fetch.ts` (auth headers, envelope unwrapping, error logging)
 
 ### 3.3 Page Component (`+page.svelte`)
 

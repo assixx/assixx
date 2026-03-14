@@ -275,14 +275,15 @@ export class KvpController {
 
   /**
    * GET /kvp/dashboard/stats
-   * Get dashboard statistics
+   * Get dashboard statistics (tenant-wide + team-scoped for current user)
    */
   @Get('dashboard/stats')
   @RequirePermission(KVP_FEATURE, KVP_SUGGESTIONS, 'canRead')
   async getDashboardStats(
+    @CurrentUser() user: NestAuthUser,
     @TenantId() tenantId: number,
   ): Promise<DashboardStats> {
-    return await this.kvpService.getDashboardStats(tenantId);
+    return await this.kvpService.getDashboardStats(tenantId, user.id);
   }
 
   // ==========================================================================

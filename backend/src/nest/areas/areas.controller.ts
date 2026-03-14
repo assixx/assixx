@@ -48,9 +48,11 @@ interface MessageResponse {
   message: string;
 }
 
-/** Permission constants — areas use departments feature code */
-const FEAT = 'departments';
-const MOD = 'areas-manage';
+/** Permission constants — areas use departments feature code (legacy, POST/DELETE) */
+
+/** Permission constants — manage_hierarchy (GET/PUT scope-filtered) */
+const SCOPE_FEAT = 'manage_hierarchy';
+const SCOPE_MOD = 'manage-areas';
 
 @Controller('areas')
 export class AreasController {
@@ -58,9 +60,11 @@ export class AreasController {
 
   /**
    * GET /areas
-   * List all areas with optional filters
+   * List all areas with optional filters (scope-filtered)
    */
   @Get()
+  @Roles('admin', 'root', 'employee')
+  @RequirePermission(SCOPE_FEAT, SCOPE_MOD, 'canRead')
   async listAreas(
     @Query() query: ListAreasQueryDto,
     @TenantId() tenantId: number,
@@ -73,6 +77,8 @@ export class AreasController {
    * Get area statistics for the tenant
    */
   @Get('stats')
+  @Roles('admin', 'root', 'employee')
+  @RequirePermission(SCOPE_FEAT, SCOPE_MOD, 'canRead')
   async getAreaStats(@TenantId() tenantId: number): Promise<AreaStatsResponse> {
     return await this.areasService.getAreaStats(tenantId);
   }
@@ -82,6 +88,8 @@ export class AreasController {
    * Get area by ID
    */
   @Get(':id')
+  @Roles('admin', 'root', 'employee')
+  @RequirePermission(SCOPE_FEAT, SCOPE_MOD, 'canRead')
   async getAreaById(
     @Param('id', ParseIntPipe) id: number,
     @TenantId() tenantId: number,
@@ -95,7 +103,6 @@ export class AreasController {
    */
   @Post()
   @Roles('admin', 'root')
-  @RequirePermission(FEAT, MOD, 'canWrite')
   @HttpCode(HttpStatus.CREATED)
   async createArea(
     @Body() dto: CreateAreaDto,
@@ -110,8 +117,8 @@ export class AreasController {
    * Update area (admin only)
    */
   @Put(':id')
-  @Roles('admin', 'root')
-  @RequirePermission(FEAT, MOD, 'canWrite')
+  @Roles('admin', 'root', 'employee')
+  @RequirePermission(SCOPE_FEAT, SCOPE_MOD, 'canWrite')
   async updateArea(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateAreaDto,
@@ -128,7 +135,6 @@ export class AreasController {
    */
   @Delete(':id')
   @Roles('admin', 'root')
-  @RequirePermission(FEAT, MOD, 'canDelete')
   async deleteArea(
     @Param('id', ParseIntPipe) id: number,
     @Query() query: DeleteAreaQueryDto,
@@ -149,7 +155,6 @@ export class AreasController {
    */
   @Post(':id/departments')
   @Roles('admin', 'root')
-  @RequirePermission(FEAT, MOD, 'canWrite')
   async assignDepartments(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: AssignDepartmentsDto,
@@ -168,7 +173,6 @@ export class AreasController {
    */
   @Post(':id/halls')
   @Roles('admin', 'root')
-  @RequirePermission(FEAT, MOD, 'canWrite')
   async assignHalls(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: AssignHallsDto,

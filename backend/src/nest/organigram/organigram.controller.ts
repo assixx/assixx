@@ -4,6 +4,7 @@ import {
   Get,
   HttpCode,
   HttpStatus,
+  Param,
   Patch,
   Put,
 } from '@nestjs/common';
@@ -11,6 +12,7 @@ import {
 import { Roles } from '../common/decorators/roles.decorator.js';
 import { TenantId } from '../common/decorators/tenant.decorator.js';
 import {
+  NodeDetailParamDto,
   UpdateHierarchyLabelsDto,
   UpdatePositionOptionsDto,
   UpsertPositionsDto,
@@ -22,6 +24,7 @@ import {
   DEFAULT_VIEWPORT,
   type HierarchyLabels,
   type OrgChartTree,
+  type OrgNodeDetail,
   type PositionOptions,
 } from './organigram.types.js';
 
@@ -37,6 +40,19 @@ export class OrganigramController {
   @Roles('root')
   async getOrgChartTree(@TenantId() tenantId: number): Promise<OrgChartTree> {
     return await this.organigramService.getOrgChartTree(tenantId);
+  }
+
+  @Get('node-details/:entityType/:entityUuid')
+  @Roles('root')
+  async getNodeDetails(
+    @TenantId() tenantId: number,
+    @Param() params: NodeDetailParamDto,
+  ): Promise<OrgNodeDetail> {
+    return await this.organigramService.getNodeDetails(
+      tenantId,
+      params.entityType,
+      params.entityUuid,
+    );
   }
 
   @Get('hierarchy-labels')
@@ -64,10 +80,22 @@ export class OrganigramController {
   ): Promise<{ message: string }> {
     await this.layoutService.upsertPositions(tenantId, dto);
     if (dto.viewport !== undefined) {
-      await this.settingsService.saveViewport(tenantId, {
-        ...dto.viewport,
+      const viewport: {
+        zoom: number;
+        panX: number;
+        panY: number;
+        fontSize: number;
+        nodeWidth: number;
+        nodeHeight: number;
+      } = {
+        zoom: dto.viewport.zoom,
+        panX: dto.viewport.panX,
+        panY: dto.viewport.panY,
         fontSize: dto.viewport.fontSize ?? DEFAULT_VIEWPORT.fontSize,
-      });
+        nodeWidth: dto.viewport.nodeWidth ?? 200,
+        nodeHeight: dto.viewport.nodeHeight ?? 80,
+      };
+      await this.settingsService.saveViewport(tenantId, viewport);
     }
     if (dto.hallOverrides !== undefined) {
       await this.settingsService.saveHallOverrides(tenantId, dto.hallOverrides);

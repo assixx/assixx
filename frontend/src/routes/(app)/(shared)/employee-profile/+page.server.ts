@@ -4,55 +4,15 @@
  *
  * SSR: Loads employee user profile data.
  * Note: Employee profile is readonly except for password.
- * Access: employee role (or admin/root viewing as employee)
+ * Access: employee role only (admin/root get redirected to their profile)
  */
 import { redirect } from '@sveltejs/kit';
 
-import { createLogger } from '$lib/utils/logger';
+import { apiFetch } from '$lib/server/api-fetch';
+import { profileForRole } from '$lib/server/role-redirects';
 
 import type { PageServerLoad } from './$types';
 import type { EmployeeProfile } from './_lib/types';
-
-const log = createLogger('EmployeeProfile');
-
-const API_BASE = process.env.API_URL ?? 'http://localhost:3000/api/v2';
-
-interface ApiResponse<T> {
-  success?: boolean;
-  data?: T;
-}
-
-async function apiFetch<T>(
-  endpoint: string,
-  token: string,
-  fetchFn: typeof fetch,
-): Promise<T | null> {
-  try {
-    const response = await fetchFn(`${API_BASE}${endpoint}`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      log.error({ status: response.status, endpoint }, 'API error');
-      return null;
-    }
-
-    const json = (await response.json()) as ApiResponse<T>;
-    if ('success' in json && json.success === true) {
-      return json.data ?? null;
-    }
-    if ('data' in json && json.data !== undefined) {
-      return json.data;
-    }
-    return json as unknown as T;
-  } catch (err: unknown) {
-    log.error({ err, endpoint }, 'Fetch error');
-    return null;
-  }
-}
 
 export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
   const token = cookies.get('accessToken');
@@ -60,12 +20,13 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
     redirect(302, '/login');
   }
 
-  // Get user from parent layout
-  // Allow: employee, admin, root (admin/root can view as employee via role switch)
+  // Guard: only employee can access their profile
   const parentData = await parent();
-  const allowedRoles = ['employee', 'admin', 'root'];
-  if (!parentData.user || !allowedRoles.includes(parentData.user.role)) {
+  if (!parentData.user) {
     redirect(302, '/login');
+  }
+  if (parentData.user.role !== 'employee') {
+    redirect(302, profileForRole(parentData.user.role));
   }
 
   // Fetch employee profile data

@@ -79,6 +79,8 @@ export class OrganigramSettingsService {
       panX: stored.panX ?? DEFAULT_VIEWPORT.panX,
       panY: stored.panY ?? DEFAULT_VIEWPORT.panY,
       fontSize: stored.fontSize ?? DEFAULT_VIEWPORT.fontSize,
+      ...(stored.nodeWidth !== undefined && { nodeWidth: stored.nodeWidth }),
+      ...(stored.nodeHeight !== undefined && { nodeHeight: stored.nodeHeight }),
     };
   }
 

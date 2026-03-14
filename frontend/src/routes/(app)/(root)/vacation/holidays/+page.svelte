@@ -10,6 +10,7 @@
 
   import { onClickOutsideDropdown } from '$lib/actions/click-outside';
   import AppDatePicker from '$lib/components/AppDatePicker.svelte';
+  import PermissionDenied from '$lib/components/PermissionDenied.svelte';
   import { showSuccessAlert, showErrorAlert } from '$lib/utils';
   import { createLogger } from '$lib/utils/logger';
 
@@ -27,6 +28,7 @@
   // ==========================================================================
 
   const { data }: { data: PageData } = $props();
+  const permissionDenied = $derived(data.permissionDenied);
 
   const ssrHolidays = $derived(data.holidays);
 
@@ -169,357 +171,363 @@
   <title>Feiertage - Assixx</title>
 </svelte:head>
 
-<div class="container">
-  <!-- Header -->
-  <div class="card mb-6">
-    <div class="card__header">
-      <div class="flex items-center justify-between">
-        <h2 class="card__title">
-          <i class="fas fa-calendar-day mr-2"></i>
-          Feiertage verwalten
-        </h2>
-        <div class="flex items-center gap-3">
-          <span class="form-field__label mb-0">Jahr:</span>
-          <div
-            class="dropdown"
-            data-dropdown="hol-year"
-          >
-            <button
-              type="button"
-              class="dropdown__trigger"
-              class:active={yearDropdownOpen}
-              onclick={() => {
-                yearDropdownOpen = !yearDropdownOpen;
-              }}
-            >
-              <span>{yearDisplayText}</span>
-              <i class="fas fa-chevron-down"></i>
-            </button>
+{#if permissionDenied}
+  <PermissionDenied addonName="die Urlaubsverwaltung" />
+{:else}
+  <div class="container">
+    <!-- Header -->
+    <div class="card mb-6">
+      <div class="card__header">
+        <div class="flex items-center justify-between">
+          <h2 class="card__title">
+            <i class="fas fa-calendar-day mr-2"></i>
+            Feiertage verwalten
+          </h2>
+          <div class="flex items-center gap-3">
+            <span class="form-field__label mb-0">Jahr:</span>
             <div
-              class="dropdown__menu"
-              class:active={yearDropdownOpen}
+              class="dropdown"
+              data-dropdown="hol-year"
             >
-              {#each yearOptions() as year (year)}
-                <button
-                  type="button"
-                  class="dropdown__option"
-                  onclick={() => {
-                    void handleYearSelect(year);
-                  }}
-                >
-                  {year}
-                </button>
-              {/each}
+              <button
+                type="button"
+                class="dropdown__trigger"
+                class:active={yearDropdownOpen}
+                onclick={() => {
+                  yearDropdownOpen = !yearDropdownOpen;
+                }}
+              >
+                <span>{yearDisplayText}</span>
+                <i class="fas fa-chevron-down"></i>
+              </button>
+              <div
+                class="dropdown__menu"
+                class:active={yearDropdownOpen}
+              >
+                {#each yearOptions() as year (year)}
+                  <button
+                    type="button"
+                    class="dropdown__option"
+                    onclick={() => {
+                      void handleYearSelect(year);
+                    }}
+                  >
+                    {year}
+                  </button>
+                {/each}
+              </div>
             </div>
           </div>
         </div>
       </div>
     </div>
-  </div>
 
-  <!-- Holiday List -->
-  <div class="card">
-    <div class="card__header">
-      <div class="flex items-center justify-between">
-        <h3 class="card__title">
-          <i class="fas fa-list mr-2"></i>
-          Feiertage
-          <span class="text-muted ml-2">
-            ({holidaysState.holidays.length} gesamt, {holidaysState.recurringCount}
-            jährlich, {holidaysState.oneTimeCount} einmalig)
-          </span>
-        </h3>
-        <button
-          type="button"
-          class="btn btn-primary"
-          onclick={() => {
-            holidaysState.openCreateHoliday();
-          }}
-        >
-          <i class="fas fa-plus mr-1"></i>
-          Neuer Feiertag
-        </button>
+    <!-- Holiday List -->
+    <div class="card">
+      <div class="card__header">
+        <div class="flex items-center justify-between">
+          <h3 class="card__title">
+            <i class="fas fa-list mr-2"></i>
+            Feiertage
+            <span class="text-muted ml-2">
+              ({holidaysState.holidays.length} gesamt, {holidaysState.recurringCount}
+              jährlich, {holidaysState.oneTimeCount} einmalig)
+            </span>
+          </h3>
+          <button
+            type="button"
+            class="btn btn-primary"
+            onclick={() => {
+              holidaysState.openCreateHoliday();
+            }}
+          >
+            <i class="fas fa-plus mr-1"></i>
+            Neuer Feiertag
+          </button>
+        </div>
       </div>
-    </div>
-    <div class="card__body">
-      {#if holidaysState.isLoading}
-        <div
-          class="text-center"
-          style="padding: var(--spacing-8);"
-        >
-          <div class="spinner-ring spinner-ring--sm"></div>
-          <p class="text-muted mt-3">Feiertage werden geladen...</p>
-        </div>
-      {:else if holidaysState.sortedHolidays.length === 0}
-        <div class="empty-state empty-state--in-card">
-          <div class="empty-state__icon">
-            <i class="fas fa-calendar-day"></i>
+      <div class="card__body">
+        {#if holidaysState.isLoading}
+          <div
+            class="text-center"
+            style="padding: var(--spacing-8);"
+          >
+            <div class="spinner-ring spinner-ring--sm"></div>
+            <p class="text-muted mt-3">Feiertage werden geladen...</p>
           </div>
-          <h3 class="empty-state__title">Keine Feiertage definiert</h3>
-          <p class="empty-state__description">
-            Feiertage werden bei der Berechnung von Urlaubstagen
-            beruecksichtigt.
-          </p>
-        </div>
-      {:else}
-        <div class="holiday-list">
-          {#each holidaysState.sortedHolidays as holiday (holiday.id)}
-            <div class="holiday-list__item">
-              <div class="holiday-list__info">
-                <span class="holiday-list__name">{holiday.name}</span>
-                <div class="holiday-list__meta">
-                  <span>
-                    <i class="fas fa-calendar-alt mr-1"></i>
-                    {formatDate(holiday.holidayDate)}
-                  </span>
-                  <span
-                    class="badge {holiday.recurring ? 'badge--info' : (
-                      'badge--warning'
-                    )} badge--sm"
+        {:else if holidaysState.sortedHolidays.length === 0}
+          <div class="empty-state empty-state--in-card">
+            <div class="empty-state__icon">
+              <i class="fas fa-calendar-day"></i>
+            </div>
+            <h3 class="empty-state__title">Keine Feiertage definiert</h3>
+            <p class="empty-state__description">
+              Feiertage werden bei der Berechnung von Urlaubstagen
+              beruecksichtigt.
+            </p>
+          </div>
+        {:else}
+          <div class="holiday-list">
+            {#each holidaysState.sortedHolidays as holiday (holiday.id)}
+              <div class="holiday-list__item">
+                <div class="holiday-list__info">
+                  <span class="holiday-list__name">{holiday.name}</span>
+                  <div class="holiday-list__meta">
+                    <span>
+                      <i class="fas fa-calendar-alt mr-1"></i>
+                      {formatDate(holiday.holidayDate)}
+                    </span>
+                    <span
+                      class="badge {holiday.recurring ? 'badge--info' : (
+                        'badge--warning'
+                      )} badge--sm"
+                    >
+                      {RECURRING_LABELS[String(holiday.recurring)]}
+                    </span>
+                  </div>
+                </div>
+                <div class="holiday-list__actions">
+                  <button
+                    type="button"
+                    class="action-icon action-icon--edit"
+                    title="Bearbeiten"
+                    aria-label="Feiertag bearbeiten"
+                    onclick={() => {
+                      holidaysState.openEditHoliday(holiday);
+                    }}
                   >
-                    {RECURRING_LABELS[String(holiday.recurring)]}
-                  </span>
+                    <i class="fas fa-edit"></i>
+                  </button>
+                  <button
+                    type="button"
+                    class="action-icon action-icon--delete"
+                    title="Löschen"
+                    aria-label="Feiertag löschen"
+                    onclick={() => {
+                      holidaysState.openDeleteHoliday(holiday);
+                    }}
+                  >
+                    <i class="fas fa-trash"></i>
+                  </button>
                 </div>
               </div>
-              <div class="holiday-list__actions">
-                <button
-                  type="button"
-                  class="action-icon action-icon--edit"
-                  title="Bearbeiten"
-                  aria-label="Feiertag bearbeiten"
-                  onclick={() => {
-                    holidaysState.openEditHoliday(holiday);
-                  }}
-                >
-                  <i class="fas fa-edit"></i>
-                </button>
-                <button
-                  type="button"
-                  class="action-icon action-icon--delete"
-                  title="Löschen"
-                  aria-label="Feiertag löschen"
-                  onclick={() => {
-                    holidaysState.openDeleteHoliday(holiday);
-                  }}
-                >
-                  <i class="fas fa-trash"></i>
-                </button>
-              </div>
-            </div>
-          {/each}
-        </div>
-      {/if}
+            {/each}
+          </div>
+        {/if}
+      </div>
     </div>
   </div>
-</div>
 
-<!-- ================================================================
+  <!-- ================================================================
      FORM MODAL (Create / Edit)
      ================================================================ -->
 
-{#if holidaysState.showHolidayForm}
-  <div
-    id="holiday-form-modal"
-    class="modal-overlay modal-overlay--active"
-    role="dialog"
-    aria-modal="true"
-    tabindex="-1"
-    onclick={() => {
-      holidaysState.closeHolidayForm();
-    }}
-    onkeydown={(e) => {
-      if (e.key === 'Escape') holidaysState.closeHolidayForm();
-    }}
-  >
-    <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-    <form
-      class="ds-modal"
-      onclick={(e) => {
-        e.stopPropagation();
+  {#if holidaysState.showHolidayForm}
+    <div
+      id="holiday-form-modal"
+      class="modal-overlay modal-overlay--active"
+      role="dialog"
+      aria-modal="true"
+      tabindex="-1"
+      onclick={() => {
+        holidaysState.closeHolidayForm();
       }}
       onkeydown={(e) => {
-        e.stopPropagation();
-      }}
-      onsubmit={(e) => {
-        e.preventDefault();
-        handleSubmit();
+        if (e.key === 'Escape') holidaysState.closeHolidayForm();
       }}
     >
-      <div class="ds-modal__header">
-        <h3 class="ds-modal__title">
-          <i class="fas fa-calendar-day mr-2"></i>
-          {holidaysState.editingHoliday !== null ?
-            'Feiertag bearbeiten'
-          : 'Neuer Feiertag'}
-        </h3>
-        <button
-          type="button"
-          class="ds-modal__close"
-          aria-label="Schliessen"
-          onclick={() => {
-            holidaysState.closeHolidayForm();
-          }}
-        >
-          <i class="fas fa-times"></i>
-        </button>
-      </div>
-
-      <div class="ds-modal__body">
-        <div class="form-field">
-          <label
-            class="form-field__label"
-            for="hol-name">Name</label
+      <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+      <form
+        class="ds-modal"
+        onclick={(e) => {
+          e.stopPropagation();
+        }}
+        onkeydown={(e) => {
+          e.stopPropagation();
+        }}
+        onsubmit={(e) => {
+          e.preventDefault();
+          handleSubmit();
+        }}
+      >
+        <div class="ds-modal__header">
+          <h3 class="ds-modal__title">
+            <i class="fas fa-calendar-day mr-2"></i>
+            {holidaysState.editingHoliday !== null ?
+              'Feiertag bearbeiten'
+            : 'Neuer Feiertag'}
+          </h3>
+          <button
+            type="button"
+            class="ds-modal__close"
+            aria-label="Schliessen"
+            onclick={() => {
+              holidaysState.closeHolidayForm();
+            }}
           >
-          <input
-            id="hol-name"
-            type="text"
-            class="form-field__control"
-            placeholder="z.B. Neujahr"
-            maxlength="100"
-            bind:value={holidayName}
-            required
-          />
+            <i class="fas fa-times"></i>
+          </button>
         </div>
 
-        <div class="form-field">
-          <label
-            class="form-field__label"
-            for="hol-date">Datum</label
-          >
-          <AppDatePicker
-            bind:value={holidayDate}
-            required
-          />
-        </div>
-
-        <div class="form-field">
-          <label class="toggle-switch">
+        <div class="ds-modal__body">
+          <div class="form-field">
+            <label
+              class="form-field__label"
+              for="hol-name">Name</label
+            >
             <input
-              type="checkbox"
-              class="toggle-switch__input"
-              bind:checked={holidayRecurring}
+              id="hol-name"
+              type="text"
+              class="form-field__control"
+              placeholder="z.B. Neujahr"
+              maxlength="100"
+              bind:value={holidayName}
+              required
             />
-            <span class="toggle-switch__slider"></span>
-            <span class="toggle-switch__label"> Jaehrlich wiederkehrend </span>
-          </label>
-          <p class="form-field__hint">
-            Wiederkehrende Feiertage werden jedes Jahr am gleichen Tag
-            beruecksichtigt (Monat + Tag).
-          </p>
+          </div>
+
+          <div class="form-field">
+            <label
+              class="form-field__label"
+              for="hol-date">Datum</label
+            >
+            <AppDatePicker
+              bind:value={holidayDate}
+              required
+            />
+          </div>
+
+          <div class="form-field">
+            <label class="toggle-switch">
+              <input
+                type="checkbox"
+                class="toggle-switch__input"
+                bind:checked={holidayRecurring}
+              />
+              <span class="toggle-switch__slider"></span>
+              <span class="toggle-switch__label">
+                Jaehrlich wiederkehrend
+              </span>
+            </label>
+            <p class="form-field__hint">
+              Wiederkehrende Feiertage werden jedes Jahr am gleichen Tag
+              beruecksichtigt (Monat + Tag).
+            </p>
+          </div>
         </div>
-      </div>
 
-      <div class="ds-modal__footer">
-        <button
-          type="button"
-          class="btn btn-cancel"
-          onclick={() => {
-            holidaysState.closeHolidayForm();
-          }}
-        >
-          Abbrechen
-        </button>
-        <button
-          type="submit"
-          class="btn btn-primary"
-          disabled={!canSubmit || isSaving}
-        >
-          <i class="fas fa-save mr-1"></i>
-          {holidaysState.editingHoliday !== null ?
-            'Aktualisieren'
-          : 'Erstellen'}
-        </button>
-      </div>
-    </form>
-  </div>
-{/if}
+        <div class="ds-modal__footer">
+          <button
+            type="button"
+            class="btn btn-cancel"
+            onclick={() => {
+              holidaysState.closeHolidayForm();
+            }}
+          >
+            Abbrechen
+          </button>
+          <button
+            type="submit"
+            class="btn btn-primary"
+            disabled={!canSubmit || isSaving}
+          >
+            <i class="fas fa-save mr-1"></i>
+            {holidaysState.editingHoliday !== null ?
+              'Aktualisieren'
+            : 'Erstellen'}
+          </button>
+        </div>
+      </form>
+    </div>
+  {/if}
 
-<!-- ================================================================
+  <!-- ================================================================
      DELETE CONFIRM MODAL
      ================================================================ -->
 
-{#if holidaysState.showDeleteConfirm && holidaysState.deletingHoliday !== null}
-  <div
-    id="holiday-delete-modal"
-    class="modal-overlay modal-overlay--active"
-    role="dialog"
-    aria-modal="true"
-    tabindex="-1"
-    onclick={() => {
-      holidaysState.closeDeleteHoliday();
-    }}
-    onkeydown={(e) => {
-      if (e.key === 'Escape') holidaysState.closeDeleteHoliday();
-    }}
-  >
-    <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+  {#if holidaysState.showDeleteConfirm && holidaysState.deletingHoliday !== null}
     <div
-      class="ds-modal"
-      role="document"
-      onclick={(e) => {
-        e.stopPropagation();
+      id="holiday-delete-modal"
+      class="modal-overlay modal-overlay--active"
+      role="dialog"
+      aria-modal="true"
+      tabindex="-1"
+      onclick={() => {
+        holidaysState.closeDeleteHoliday();
       }}
       onkeydown={(e) => {
-        e.stopPropagation();
+        if (e.key === 'Escape') holidaysState.closeDeleteHoliday();
       }}
     >
-      <div class="ds-modal__header">
-        <h3 class="ds-modal__title">
-          <i class="fas fa-exclamation-triangle text-danger mr-2"></i>
-          Feiertag loeschen
-        </h3>
-        <button
-          type="button"
-          class="ds-modal__close"
-          aria-label="Schliessen"
-          onclick={() => {
-            holidaysState.closeDeleteHoliday();
-          }}
-        >
-          <i class="fas fa-times"></i>
-        </button>
-      </div>
-      <div class="ds-modal__body">
-        <p>
-          Moechten Sie den Feiertag
-          <strong>"{holidaysState.deletingHoliday.name}"</strong>
-          ({formatDate(holidaysState.deletingHoliday.holidayDate)}) wirklich
-          loeschen?
-        </p>
-        {#if holidaysState.deletingHoliday.recurring}
-          <p
-            class="text-warning mt-2"
-            style="font-size: 0.875rem;"
+      <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+      <div
+        class="ds-modal"
+        role="document"
+        onclick={(e) => {
+          e.stopPropagation();
+        }}
+        onkeydown={(e) => {
+          e.stopPropagation();
+        }}
+      >
+        <div class="ds-modal__header">
+          <h3 class="ds-modal__title">
+            <i class="fas fa-exclamation-triangle text-danger mr-2"></i>
+            Feiertag loeschen
+          </h3>
+          <button
+            type="button"
+            class="ds-modal__close"
+            aria-label="Schliessen"
+            onclick={() => {
+              holidaysState.closeDeleteHoliday();
+            }}
           >
-            <i class="fas fa-exclamation-circle mr-1"></i>
-            Dieser Feiertag ist jährlich wiederkehrend. Er wird in keinem Jahr mehr
-            beruecksichtigt.
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        <div class="ds-modal__body">
+          <p>
+            Moechten Sie den Feiertag
+            <strong>"{holidaysState.deletingHoliday.name}"</strong>
+            ({formatDate(holidaysState.deletingHoliday.holidayDate)}) wirklich
+            loeschen?
           </p>
-        {/if}
-      </div>
-      <div class="ds-modal__footer">
-        <button
-          type="button"
-          class="btn btn-cancel"
-          onclick={() => {
-            holidaysState.closeDeleteHoliday();
-          }}
-        >
-          Abbrechen
-        </button>
-        <button
-          type="button"
-          class="btn btn-danger"
-          onclick={() => {
-            void handleDelete();
-          }}
-        >
-          <i class="fas fa-trash mr-1"></i>
-          Loeschen
-        </button>
+          {#if holidaysState.deletingHoliday.recurring}
+            <p
+              class="text-warning mt-2"
+              style="font-size: 0.875rem;"
+            >
+              <i class="fas fa-exclamation-circle mr-1"></i>
+              Dieser Feiertag ist jährlich wiederkehrend. Er wird in keinem Jahr mehr
+              beruecksichtigt.
+            </p>
+          {/if}
+        </div>
+        <div class="ds-modal__footer">
+          <button
+            type="button"
+            class="btn btn-cancel"
+            onclick={() => {
+              holidaysState.closeDeleteHoliday();
+            }}
+          >
+            Abbrechen
+          </button>
+          <button
+            type="button"
+            class="btn btn-danger"
+            onclick={() => {
+              void handleDelete();
+            }}
+          >
+            <i class="fas fa-trash mr-1"></i>
+            Loeschen
+          </button>
+        </div>
       </div>
     </div>
-  </div>
+  {/if}
 {/if}
 
 <style>

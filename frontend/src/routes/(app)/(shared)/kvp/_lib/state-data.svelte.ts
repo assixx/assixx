@@ -4,13 +4,37 @@
 
 import type { KvpSuggestion, KvpCategory, Department, KvpStats } from './types';
 
+const EMPTY_STATS: KvpStats = {
+  totalSuggestions: 0,
+  newSuggestions: 0,
+  inReviewSuggestions: 0,
+  approvedSuggestions: 0,
+  implementedSuggestions: 0,
+  rejectedSuggestions: 0,
+  teamTotalSuggestions: 0,
+  teamImplementedSuggestions: 0,
+};
+
+/** Compute implementation rate as integer percentage (0–100) */
+function computeImplementationRate(total: number, implemented: number): number {
+  return total > 0 ? Math.round((implemented / total) * 100) : 0;
+}
+
 /** Format KVP statistics for display */
 function formatKvpStats(stats: KvpStats | null) {
+  const s = stats ?? EMPTY_STATS;
+
   return {
-    total: stats?.totalSuggestions ?? 0,
-    inReview: stats?.inReviewSuggestions ?? 0,
-    implemented: stats?.implementedSuggestions ?? 0,
-    approved: stats?.approvedSuggestions ?? 0,
+    total: s.totalSuggestions,
+    inReview: s.inReviewSuggestions,
+    implemented: s.implementedSuggestions,
+    approved: s.approvedSuggestions,
+    teamTotal: s.teamTotalSuggestions,
+    teamImplemented: s.teamImplementedSuggestions,
+    implementationRate: computeImplementationRate(
+      s.teamTotalSuggestions,
+      s.teamImplementedSuggestions,
+    ),
   };
 }
 

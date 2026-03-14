@@ -7,6 +7,8 @@
 
   import { onMount, onDestroy } from 'svelte';
 
+  import PermissionDenied from '$lib/components/PermissionDenied.svelte';
+
   import { createChatPageState } from './_lib/chat-page-state.svelte';
   import ChatHeader from './_lib/ChatHeader.svelte';
   import ChatSidebar from './_lib/ChatSidebar.svelte';
@@ -20,6 +22,7 @@
   import type { PageData } from './$types';
 
   const { data }: { data: PageData } = $props();
+  const permissionDenied = $derived<boolean>(data.permissionDenied);
 
   const state = createChatPageState({
     getSsrUser: () => data.currentUser,
@@ -41,132 +44,136 @@
   <title>Chat - Assixx</title>
 </svelte:head>
 
-<main class="chat-page-main">
-  <div class="chat-container">
-    <ChatSidebar
-      conversations={state.conversations}
-      activeConversationId={state.activeConversation?.id ?? null}
-      currentUserId={state.currentUser?.id ?? 0}
-      canStartNewConversation={state.canStartNewConversation}
-      showUserSearch={state.showUserSearch}
-      bind:userSearchQuery={state.userSearchQuery}
-      userSearchResults={state.userSearchResults}
-      isSearchingUsers={state.isSearchingUsers}
-      isLoading={state.isLoading}
-      ontoggleusersearch={state.toggleUserSearch}
-      onsearchusers={state.searchUsers}
-      onclearusersearch={state.clearUserSearch}
-      onstartconversation={state.startConversationWith}
-      onselectconversation={state.selectConversation}
-    />
+{#if permissionDenied}
+  <PermissionDenied addonName="den Chat" />
+{:else}
+  <main class="chat-page-main">
+    <div class="chat-container">
+      <ChatSidebar
+        conversations={state.conversations}
+        activeConversationId={state.activeConversation?.id ?? null}
+        currentUserId={state.currentUser?.id ?? 0}
+        canStartNewConversation={state.canStartNewConversation}
+        showUserSearch={state.showUserSearch}
+        bind:userSearchQuery={state.userSearchQuery}
+        userSearchResults={state.userSearchResults}
+        isSearchingUsers={state.isSearchingUsers}
+        isLoading={state.isLoading}
+        ontoggleusersearch={state.toggleUserSearch}
+        onsearchusers={state.searchUsers}
+        onclearusersearch={state.clearUserSearch}
+        onstartconversation={state.startConversationWith}
+        onselectconversation={state.selectConversation}
+      />
 
-    <div class="chat-main">
-      {#if state.isDisconnected}
-        <div
-          class="connection-lost-banner"
-          role="alert"
-        >
-          <i class="fas fa-exclamation-triangle"></i>
-          <span>{MESSAGES.reconnecting}</span>
-        </div>
-      {/if}
-      {#if state.activeConversation}
-        <ChatHeader
-          conversation={state.activeConversation}
-          partner={state.chatPartner ?? undefined}
-          partnerName={state.chatPartnerName}
-          partnerStatus={state.chatPartnerStatus}
-          currentUserId={state.currentUser?.id ?? 0}
-          isAdmin={state.isAdmin}
-          showSearchBar={state.showSearchBar}
-          bind:searchQuery={state.searchQuery}
-          searchResultCount={state.searchResultCount}
-          currentSearchIndex={state.currentSearchIndex}
-          ontogglesearch={state.toggleSearchBar}
-          onnavigateprev={() => {
-            state.navigateSearch('prev');
-          }}
-          onnavigatenext={() => {
-            state.navigateSearch('next');
-          }}
-          ondelete={state.deleteCurrentConversation}
-        />
-
-        <MessagesArea
-          bind:this={state.messagesAreaRef}
-          messages={state.messages}
-          scheduledMessages={state.scheduledMessages}
-          currentUserId={state.currentUser?.id ?? 0}
-          searchQuery={state.debouncedSearchQuery}
-          isLoading={state.isLoadingMessages}
-          oncancelscheduled={state.cancelScheduled}
-          onimageclick={state.openImagePreview}
-        />
-
-        {#if state.typingUsers.length > 0}
-          <div class="typing-indicator">
-            <span class="typing-dots"
-              ><span></span><span></span><span></span></span
-            >
-            <span class="typing-text">{MESSAGES.labelTyping}</span>
+      <div class="chat-main">
+        {#if state.isDisconnected}
+          <div
+            class="connection-lost-banner"
+            role="alert"
+          >
+            <i class="fas fa-exclamation-triangle"></i>
+            <span>{MESSAGES.reconnecting}</span>
           </div>
         {/if}
-        <MessageInputArea
-          bind:messageInput={state.messageInput}
-          selectedFiles={state.selectedFiles}
-          scheduledFor={state.scheduledFor}
-          onsend={state.sendMessage}
-          onkeydown={state.handleKeyDown}
-          oninput={state.handleTyping}
-          onopenfilepicker={state.openFilePicker}
-          onremovefile={state.removeFile}
-          onopenschedule={state.openScheduleModal}
-          onclearschedule={state.clearSchedule}
-        />
-      {:else}
-        <div class="messages-container">
-          <div class="empty-chat">
-            <div class="empty-chat-icon">
-              <i class="fas fa-comments"></i>
+        {#if state.activeConversation}
+          <ChatHeader
+            conversation={state.activeConversation}
+            partner={state.chatPartner ?? undefined}
+            partnerName={state.chatPartnerName}
+            partnerStatus={state.chatPartnerStatus}
+            currentUserId={state.currentUser?.id ?? 0}
+            isAdmin={state.isAdmin}
+            showSearchBar={state.showSearchBar}
+            bind:searchQuery={state.searchQuery}
+            searchResultCount={state.searchResultCount}
+            currentSearchIndex={state.currentSearchIndex}
+            ontogglesearch={state.toggleSearchBar}
+            onnavigateprev={() => {
+              state.navigateSearch('prev');
+            }}
+            onnavigatenext={() => {
+              state.navigateSearch('next');
+            }}
+            ondelete={state.deleteCurrentConversation}
+          />
+
+          <MessagesArea
+            bind:this={state.messagesAreaRef}
+            messages={state.messages}
+            scheduledMessages={state.scheduledMessages}
+            currentUserId={state.currentUser?.id ?? 0}
+            searchQuery={state.debouncedSearchQuery}
+            isLoading={state.isLoadingMessages}
+            oncancelscheduled={state.cancelScheduled}
+            onimageclick={state.openImagePreview}
+          />
+
+          {#if state.typingUsers.length > 0}
+            <div class="typing-indicator">
+              <span class="typing-dots"
+                ><span></span><span></span><span></span></span
+              >
+              <span class="typing-text">{MESSAGES.labelTyping}</span>
             </div>
-            <h3>{MESSAGES.emptyWelcome}</h3>
-            <p>{MESSAGES.emptySelectConversation}</p>
+          {/if}
+          <MessageInputArea
+            bind:messageInput={state.messageInput}
+            selectedFiles={state.selectedFiles}
+            scheduledFor={state.scheduledFor}
+            onsend={state.sendMessage}
+            onkeydown={state.handleKeyDown}
+            oninput={state.handleTyping}
+            onopenfilepicker={state.openFilePicker}
+            onremovefile={state.removeFile}
+            onopenschedule={state.openScheduleModal}
+            onclearschedule={state.clearSchedule}
+          />
+        {:else}
+          <div class="messages-container">
+            <div class="empty-chat">
+              <div class="empty-chat-icon">
+                <i class="fas fa-comments"></i>
+              </div>
+              <h3>{MESSAGES.emptyWelcome}</h3>
+              <p>{MESSAGES.emptySelectConversation}</p>
+            </div>
           </div>
-        </div>
-      {/if}
+        {/if}
+      </div>
     </div>
-  </div>
-</main>
+  </main>
 
-<input
-  type="file"
-  class="hidden"
-  multiple
-  bind:this={state.fileInputRef}
-  onchange={state.handleFileSelect}
-/>
+  <input
+    type="file"
+    class="hidden"
+    multiple
+    bind:this={state.fileInputRef}
+    onchange={state.handleFileSelect}
+  />
 
-<ScheduleModal
-  show={state.showScheduleModal}
-  bind:date={state.scheduleDate}
-  bind:time={state.scheduleTimeInput}
-  errorMessage={state.scheduleError}
-  onclose={state.closeScheduleModal}
-  onconfirm={state.confirmSchedule}
-/>
+  <ScheduleModal
+    show={state.showScheduleModal}
+    bind:date={state.scheduleDate}
+    bind:time={state.scheduleTimeInput}
+    errorMessage={state.scheduleError}
+    onclose={state.closeScheduleModal}
+    onconfirm={state.confirmSchedule}
+  />
 
-<ConfirmDialog
-  show={state.showConfirmDialog}
-  message={state.confirmMessage}
-  onclose={state.closeConfirmDialog}
-  onconfirm={state.executeConfirm}
-/>
+  <ConfirmDialog
+    show={state.showConfirmDialog}
+    message={state.confirmMessage}
+    onclose={state.closeConfirmDialog}
+    onconfirm={state.executeConfirm}
+  />
 
-<ImagePreviewModal
-  show={state.previewImage !== null}
-  image={state.previewImage}
-  onclose={state.closeImagePreview}
-/>
+  <ImagePreviewModal
+    show={state.previewImage !== null}
+    image={state.previewImage}
+    onclose={state.closeImagePreview}
+  />
+{/if}
 
 <style>
   /* stylelint-disable declaration-block-no-redundant-longhand-properties -- Need individual props for left override */

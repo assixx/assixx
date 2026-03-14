@@ -78,7 +78,7 @@ export class PermissionGuard implements CanActivate {
     );
 
     if (!granted) {
-      this.logger.warn(
+      this.logger.debug(
         `Permission denied: user ${user.id} (${user.activeRole}) lacks ${required.action} for ${required.addonCode}/${required.moduleCode}`,
       );
       throw new ForbiddenException(

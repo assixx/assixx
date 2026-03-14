@@ -6,8 +6,8 @@
  */
 import { error, redirect } from '@sveltejs/kit';
 
+import { apiFetch, apiFetchWithPermission } from '$lib/server/api-fetch';
 import { requireAddon } from '$lib/utils/addon-guard';
-import { createLogger } from '$lib/utils/logger';
 
 import type { PageServerLoad } from './$types';
 import type {
@@ -18,51 +18,6 @@ import type {
   WorkOrderComment,
   WorkOrderPhoto,
 } from '../_lib/types';
-
-const log = createLogger('WorkOrderDetail');
-
-const API_BASE = process.env.API_URL ?? 'http://localhost:3000/api/v2';
-
-interface ApiResponse<T> {
-  success?: boolean;
-  data?: T;
-}
-
-function extractResponseData<T>(json: ApiResponse<T>): T | null {
-  if ('success' in json && json.success === true) {
-    return json.data ?? null;
-  }
-  if ('data' in json && json.data !== undefined) {
-    return json.data;
-  }
-  return json as unknown as T;
-}
-
-async function apiFetch<T>(
-  endpoint: string,
-  token: string,
-  fetchFn: typeof fetch,
-): Promise<T | null> {
-  try {
-    const response = await fetchFn(`${API_BASE}${endpoint}`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      log.error({ status: response.status, endpoint }, 'API error');
-      return null;
-    }
-
-    const json = (await response.json()) as ApiResponse<T>;
-    return extractResponseData(json);
-  } catch (err: unknown) {
-    log.error({ err, endpoint }, 'Fetch error');
-    return null;
-  }
-}
 
 async function fetchSourcePhotos(
   workOrder: WorkOrder,
@@ -110,8 +65,8 @@ export const load: PageServerLoad = async ({
 
   const { uuid } = params;
 
-  const [workOrder, commentsData, photosData] = await Promise.all([
-    apiFetch<WorkOrder>(`/work-orders/${uuid}`, token, fetch),
+  const [workOrderResult, commentsData, photosData] = await Promise.all([
+    apiFetchWithPermission<WorkOrder>(`/work-orders/${uuid}`, token, fetch),
     apiFetch<PaginatedResponse<WorkOrderComment>>(
       `/work-orders/${uuid}/comments?page=1&limit=50`,
       token,
@@ -119,6 +74,20 @@ export const load: PageServerLoad = async ({
     ),
     apiFetch<WorkOrderPhoto[]>(`/work-orders/${uuid}/photos`, token, fetch),
   ]);
+
+  if (workOrderResult.permissionDenied) {
+    return {
+      permissionDenied: true as const,
+      workOrder: null,
+      comments: buildComments(null),
+      photos: [] as WorkOrderPhoto[],
+      sourcePhotos: [] as SourcePhoto[],
+      userRole: 'employee' as const,
+      userId: 0,
+    };
+  }
+
+  const workOrder = workOrderResult.data;
 
   if (workOrder === null) {
     error(404, 'Arbeitsauftrag nicht gefunden');
@@ -128,6 +97,7 @@ export const load: PageServerLoad = async ({
   const user = parentData.user;
 
   return {
+    permissionDenied: false as const,
     workOrder,
     comments: buildComments(commentsData),
     photos: Array.isArray(photosData) ? photosData : [],

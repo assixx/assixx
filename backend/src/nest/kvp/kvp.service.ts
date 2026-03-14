@@ -24,6 +24,8 @@ import { v7 as uuidv7 } from 'uuid';
 import { eventBus } from '../../utils/event-bus.js';
 import { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import { DatabaseService } from '../database/database.service.js';
+import type { OrganizationalScope } from '../hierarchy-permission/organizational-scope.types.js';
+import { ScopeService } from '../hierarchy-permission/scope.service.js';
 import { NotificationsService } from '../notifications/notifications.service.js';
 import type { CreateSuggestionDto } from './dto/create-suggestion.dto.js';
 import type { ShareSuggestionDto } from './dto/share-suggestion.dto.js';
@@ -32,11 +34,7 @@ import { KvpAttachmentsService } from './kvp-attachments.service.js';
 import { KvpCommentsService } from './kvp-comments.service.js';
 import { KvpConfirmationsService } from './kvp-confirmations.service.js';
 import { KvpLifecycleService } from './kvp-lifecycle.service.js';
-import {
-  EMPTY_ORG_INFO,
-  ERROR_SUGGESTION_NOT_FOUND,
-  EXTENDED_ORG_INFO_QUERY,
-} from './kvp.constants.js';
+import { ERROR_SUGGESTION_NOT_FOUND } from './kvp.constants.js';
 import {
   buildCountQuery,
   buildDetailBaseQuery,
@@ -54,7 +52,6 @@ import type {
   CategoryOption,
   DashboardStats,
   DbDashboardStats,
-  DbExtendedOrgInfo,
   DbSuggestion,
   ExtendedUserOrgInfo,
   KVPAttachment,
@@ -93,6 +90,7 @@ export class KvpService {
     private readonly attachmentsService: KvpAttachmentsService,
     private readonly confirmationsService: KvpConfirmationsService,
     private readonly lifecycleService: KvpLifecycleService,
+    private readonly scopeService: ScopeService,
   ) {}
 
   // ==========================================================================
@@ -101,29 +99,32 @@ export class KvpService {
 
   /**
    * Get extended user organization info for KVP visibility checks.
-   * @see /docs/kvp-share-doc.md
+   * Uses ScopeService (lazy CLS-cached) instead of separate DB query.
+   *
+   * Behavioral change: Visibility is now scope-based (admin-permissions +
+   * lead-positions + cascade) instead of membership-based (user_teams).
+   * Employees without lead see only own + implemented + company-level suggestions.
+   * Leads share suggestions via shareSuggestion() for broader visibility.
    */
-  private async getExtendedUserOrgInfo(
-    userId: number,
-    tenantId: number,
-  ): Promise<ExtendedUserOrgInfo> {
-    const rows = await this.db.query<DbExtendedOrgInfo>(
-      EXTENDED_ORG_INFO_QUERY,
-      [userId, tenantId],
-    );
-    const row = rows[0];
-    if (row === undefined) return EMPTY_ORG_INFO;
+  private async getExtendedUserOrgInfo(): Promise<ExtendedUserOrgInfo> {
+    const scope = await this.scopeService.getScope();
+    return KvpService.mapScopeToOrgInfo(scope);
+  }
 
+  /** Map OrganizationalScope → ExtendedUserOrgInfo for helper compatibility */
+  private static mapScopeToOrgInfo(
+    scope: OrganizationalScope,
+  ): ExtendedUserOrgInfo {
     return {
-      teamIds: row.team_ids,
-      departmentIds: row.department_ids,
-      areaIds: row.area_ids,
-      teamLeadOf: row.team_lead_of,
-      departmentLeadOf: row.department_lead_of,
-      areaLeadOf: row.area_lead_of,
-      teamsDepartmentIds: row.teams_department_ids,
-      departmentsAreaIds: row.departments_area_ids,
-      hasFullAccess: row.has_full_access,
+      teamIds: scope.teamIds,
+      departmentIds: scope.departmentIds,
+      areaIds: scope.areaIds,
+      teamLeadOf: scope.leadTeamIds,
+      departmentLeadOf: scope.leadDepartmentIds,
+      areaLeadOf: scope.leadAreaIds,
+      teamsDepartmentIds: [], // covered by scope.departmentIds (cascade)
+      departmentsAreaIds: [], // covered by scope.areaIds (cascade)
+      hasFullAccess: scope.type === 'full',
     };
   }
 
@@ -261,24 +262,38 @@ export class KvpService {
     return await this.db.query<CategoryOption>(query, [tenantId]);
   }
 
-  /** Get dashboard statistics */
-  async getDashboardStats(tenantId: number): Promise<DashboardStats> {
+  /** Get dashboard statistics (tenant-wide + team-scoped for current user) */
+  async getDashboardStats(
+    tenantId: number,
+    userId: number,
+  ): Promise<DashboardStats> {
     this.logger.debug(`Getting dashboard stats for tenant ${tenantId}`);
 
     const query = `
+      WITH my_team_suggestions AS (
+        SELECT DISTINCT kso.suggestion_id
+        FROM kvp_suggestion_organizations kso
+        JOIN user_teams ut ON ut.team_id = kso.org_id AND kso.org_type = 'team'
+        WHERE ut.user_id = $2 AND ut.tenant_id = $1
+      )
       SELECT
         COUNT(*) as total_suggestions,
-        COUNT(CASE WHEN status = 'new' THEN 1 END) as new_suggestions,
-        COUNT(CASE WHEN status = 'in_review' THEN 1 END) as in_progress_count,
-        COUNT(CASE WHEN status = 'approved' THEN 1 END) as approved,
-        COUNT(CASE WHEN status = 'implemented' THEN 1 END) as implemented,
-        COUNT(CASE WHEN status = 'rejected' THEN 1 END) as rejected
-      FROM kvp_suggestions
-      WHERE tenant_id = $1
-        AND status != 'archived'
+        COUNT(CASE WHEN s.status = 'new' THEN 1 END) as new_suggestions,
+        COUNT(CASE WHEN s.status = 'in_review' THEN 1 END) as in_progress_count,
+        COUNT(CASE WHEN s.status = 'approved' THEN 1 END) as approved,
+        COUNT(CASE WHEN s.status = 'implemented' THEN 1 END) as implemented,
+        COUNT(CASE WHEN s.status = 'rejected' THEN 1 END) as rejected,
+        COUNT(CASE WHEN s.id IN (SELECT suggestion_id FROM my_team_suggestions) THEN 1 END) as team_total,
+        COUNT(CASE WHEN s.status = 'implemented' AND s.id IN (SELECT suggestion_id FROM my_team_suggestions) THEN 1 END) as team_implemented
+      FROM kvp_suggestions s
+      WHERE s.tenant_id = $1
+        AND s.status != 'archived'
     `;
 
-    const rows = await this.db.query<DbDashboardStats>(query, [tenantId]);
+    const rows = await this.db.query<DbDashboardStats>(query, [
+      tenantId,
+      userId,
+    ]);
     const stats = rows[0];
 
     if (stats === undefined) {
@@ -289,6 +304,8 @@ export class KvpService {
         approvedSuggestions: 0,
         implementedSuggestions: 0,
         rejectedSuggestions: 0,
+        teamTotalSuggestions: 0,
+        teamImplementedSuggestions: 0,
       };
     }
 
@@ -300,6 +317,8 @@ export class KvpService {
       approvedSuggestions: Number(stats.approved),
       implementedSuggestions: Number(stats.implemented),
       rejectedSuggestions: Number(stats.rejected),
+      teamTotalSuggestions: Number(stats.team_total),
+      teamImplementedSuggestions: Number(stats.team_implemented),
     };
   }
 
@@ -326,7 +345,7 @@ export class KvpService {
     const params: unknown[] = [tenantId, userId];
 
     // Apply visibility restrictions — only has_full_access bypasses
-    const orgInfo = await this.getExtendedUserOrgInfo(userId, tenantId);
+    const orgInfo = await this.getExtendedUserOrgInfo();
     const visibility = buildVisibilityClause(
       orgInfo,
       userId,
@@ -497,7 +516,7 @@ export class KvpService {
     const params: unknown[] = [id, tenantId, userId];
 
     // Apply visibility restrictions — only has_full_access bypasses
-    const orgInfo = await this.getExtendedUserOrgInfo(userId, tenantId);
+    const orgInfo = await this.getExtendedUserOrgInfo();
     const visibility = buildVisibilityClause(
       orgInfo,
       userId,
@@ -536,10 +555,10 @@ export class KvpService {
   ): Promise<KVPSuggestionResponse> {
     this.logger.log(`Creating suggestion: ${dto.title}`);
 
-    // Permission: admin/root must be team leads to create KVP suggestions
+    // Permission: admin/root with full access can always create, others need team lead
     if (userRole !== 'employee') {
-      const orgInfo = await this.getExtendedUserOrgInfo(userId, tenantId);
-      if (orgInfo.teamLeadOf.length === 0) {
+      const orgInfo = await this.getExtendedUserOrgInfo();
+      if (!orgInfo.hasFullAccess && orgInfo.teamLeadOf.length === 0) {
         throw new ForbiddenException(
           'Nur Mitarbeiter und Teamleiter dürfen KVP-Vorschläge erstellen.',
         );
@@ -667,8 +686,8 @@ export class KvpService {
    */
   private async assertCanUpdateStatus(
     suggestion: KVPSuggestionResponse,
-    userId: number,
-    tenantId: number,
+    _userId: number,
+    _tenantId: number,
     userRole: string,
   ): Promise<void> {
     if (userRole === 'root') return;
@@ -679,7 +698,7 @@ export class KvpService {
       );
     }
 
-    const orgInfo = await this.getExtendedUserOrgInfo(userId, tenantId);
+    const orgInfo = await this.getExtendedUserOrgInfo();
     if (orgInfo.hasFullAccess) return;
 
     const kvpTeamId = suggestion.teamId;
@@ -871,10 +890,10 @@ export class KvpService {
   async unshareSuggestion(
     id: number | string,
     tenantId: number,
-    userId: number,
+    _userId: number,
     _userRole: string,
   ): Promise<{ message: string }> {
-    const orgInfo = await this.getExtendedUserOrgInfo(userId, tenantId);
+    const orgInfo = await this.getExtendedUserOrgInfo();
     const fallbackTeamId = orgInfo.teamIds[0] ?? 0;
     return await this.lifecycleService.unshareSuggestion(
       id,
@@ -1040,7 +1059,7 @@ export class KvpService {
     const isPublic = attachment.status === 'implemented';
 
     if (!isOwner && !isPublic) {
-      const orgInfo = await this.getExtendedUserOrgInfo(userId, tenantId);
+      const orgInfo = await this.getExtendedUserOrgInfo();
       if (
         !hasExtendedOrgAccess(attachment.org_level, attachment.org_id, orgInfo)
       ) {
@@ -1062,7 +1081,7 @@ export class KvpService {
     userId: number,
     tenantId: number,
   ): Promise<{ count: number }> {
-    const orgInfo = await this.getExtendedUserOrgInfo(userId, tenantId);
+    const orgInfo = await this.getExtendedUserOrgInfo();
     return await this.confirmationsService.getUnconfirmedCount(
       userId,
       tenantId,
