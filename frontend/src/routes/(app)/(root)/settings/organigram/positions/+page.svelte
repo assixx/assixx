@@ -45,18 +45,27 @@
     root: [],
   });
 
-  const ALL_LEAD_KEYS: string[] = Object.values(LEAD_POSITION_KEYS);
+  /** Hierarchie-Reihenfolge: area → department → team (oben nach unten) */
+  const LEAD_ORDER: string[] = [
+    LEAD_POSITION_KEYS.AREA,
+    LEAD_POSITION_KEYS.DEPARTMENT,
+    LEAD_POSITION_KEYS.TEAM,
+  ];
 
-  /** System positions always first */
+  /** System positions always first, sorted by hierarchy level */
   function sortSystemFirst(list: string[]): string[] {
-    const system = list.filter((p: string) => isLeadPosition(p));
+    const system = list
+      .filter((p: string) => isLeadPosition(p))
+      .sort(
+        (a: string, b: string) => LEAD_ORDER.indexOf(a) - LEAD_ORDER.indexOf(b),
+      );
     const custom = list.filter((p: string) => !isLeadPosition(p));
     return [...system, ...custom];
   }
 
   /** Inject missing lead keys + sort system first */
   function ensureLeadPositions(list: string[]): string[] {
-    const missing = ALL_LEAD_KEYS.filter((key) => !list.includes(key));
+    const missing = LEAD_ORDER.filter((key: string) => !list.includes(key));
     return sortSystemFirst([...missing, ...list]);
   }
 
