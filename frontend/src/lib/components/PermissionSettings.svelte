@@ -326,11 +326,28 @@
 
             <!-- Module Rows -->
             {#each category.modules as perm, modIdx (perm.code)}
-              <div class="perm-row perm-row--module">
+              <div
+                class="perm-row perm-row--module"
+                class:perm-row--danger={category.code === 'manage_hierarchy' &&
+                  perm.code === 'manage-permissions'}
+              >
                 <div class="perm-label perm-label--module">
-                  <i class="fas {perm.icon} mr-2 text-(--color-text-secondary)"
-                  ></i>
+                  {#if category.code === 'manage_hierarchy' && perm.code === 'manage-permissions'}
+                    <i
+                      class="fas fa-exclamation-triangle mr-2 text-(--color-danger)"
+                    ></i>
+                  {:else}
+                    <i
+                      class="fas {perm.icon} mr-2 text-(--color-text-secondary)"
+                    ></i>
+                  {/if}
                   {perm.label}
+                  {#if category.code === 'manage_hierarchy' && perm.code === 'manage-permissions'}
+                    <span class="u-fs-11 ml-2 text-(--color-text-secondary)"
+                      >(Eigene Berechtigungen können nicht selbst bearbeitet
+                      werden)</span
+                    >
+                  {/if}
                 </div>
                 <div class="perm-cols">
                   {#each PERMISSION_COLUMNS as col, colIdx (col.key)}
@@ -451,6 +468,16 @@
 
   .perm-row--module:hover {
     background: color-mix(in oklch, var(--color-white) 3%, transparent);
+  }
+
+  .perm-row--danger {
+    background: color-mix(in oklch, var(--color-danger) 8%, transparent);
+    border-left: 3px solid var(--color-danger);
+    padding-left: 8px;
+  }
+
+  .perm-row--danger:hover {
+    background: color-mix(in oklch, var(--color-danger) 14%, transparent);
   }
 
   /* ================================================================
@@ -601,6 +628,23 @@
   .perm-check input:focus-visible + .perm-check__box {
     outline: 2px solid var(--color-primary);
     outline-offset: 2px;
+  }
+
+  /* Danger row: red checkboxes */
+  .perm-row--danger .perm-check input:checked + .perm-check__box {
+    background: var(--color-danger);
+    border-color: var(--color-danger);
+    box-shadow: 0 2px 8px
+      color-mix(in oklch, var(--color-danger) 30%, transparent);
+  }
+
+  .perm-row--danger .perm-check:hover .perm-check__box {
+    border-color: var(--color-danger);
+    background: color-mix(in oklch, var(--color-danger) 8%, transparent);
+  }
+
+  .perm-row--danger .perm-check input:focus-visible + .perm-check__box {
+    outline-color: var(--color-danger);
   }
 
   /* ================================================================

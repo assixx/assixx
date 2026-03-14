@@ -246,6 +246,56 @@ Jede +page.server.ts hat einen expliziten Scope-Check (Defense-in-Depth):
 
 ---
 
+## Delegated Permission Management (Erweiterung)
+
+Leads können Addon-Permissions ihrer Untergebenen verwalten — mit strikter Hierarchie-Kontrolle.
+
+### Delegationskette
+
+```
+Root → Admin (full) → Area-Lead → Dept-Lead → Team-Lead → Team-Members
+```
+
+Jede Ebene kann NUR an die Ebene darunter delegieren. NIEMALS nach oben, seitwärts, oder an sich selbst.
+
+### Sicherheitsregeln
+
+| #   | Regel                                                     | Enforcement                                 |
+| --- | --------------------------------------------------------- | ------------------------------------------- |
+| 1   | Kein Self-Grant (targetUser ≠ currentUser, Ausnahme Root) | Controller `assertNotSelf()`                |
+| 2   | Nur eigene Permissions delegierbar                        | Service `leaderHasPermission()`             |
+| 3   | Nur an Users im eigenen Scope                             | Controller `assertTargetInScope()`          |
+| 4   | manage-permissions selbst nicht delegierbar               | Service `isDelegatableEntry()` + DB-Trigger |
+| 5   | Audit-Trail für jede Änderung                             | `assigned_by` Spalte + Activity Logger      |
+
+### Neue Permission: `manage-permissions`
+
+Neues Modul in `manage_hierarchy` Addon:
+
+- `canRead`: Permission-Seite von Untergebenen sehen
+- `canWrite`: Permissions von Untergebenen ändern
+- Rote Hervorhebung (`perm-row--danger`) in der UI als visuelle Warnung
+- DB-Trigger `trg_prevent_manage_permissions_self_grant`: Nur Root/Admin-full dürfen diese Permission vergeben
+
+### Controller-Architektur
+
+`assertPermissionAccess()` ersetzt `assertFullAccess()`:
+
+1. Root → immer OK (inkl. Self-Edit)
+2. Admin mit has_full_access → OK (Self-Edit blockiert)
+3. Lead mit manage-permissions → OK (Self-Edit + Scope-Check)
+4. Alle anderen → 403
+
+### Service-Architektur
+
+`upsertPermissions()` mit optionalem `delegatorScope`:
+
+- Wenn gesetzt → Pre-Filter `filterDelegatedPermissions()`: Regel 2 + 4
+- `loadLeaderPermissions()`: Batch-Load als Set für O(1) Lookup
+- `filterByLeaderPerms()`: GET zeigt nur Module die der Lead hat
+
+---
+
 ## Implementation Summary
 
 | Phase | Beschreibung                                                 | Files                |

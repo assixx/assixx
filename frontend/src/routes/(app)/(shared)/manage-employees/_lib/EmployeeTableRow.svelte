@@ -26,6 +26,8 @@
   interface Props {
     employee: Employee;
     labels?: HierarchyLabels;
+    canManagePermissions?: boolean;
+    canMutate?: boolean;
     onedit: (employeeId: number) => void;
     onavailability: (employeeId: number) => void;
     onpermission: (uuid: string) => void;
@@ -35,6 +37,8 @@
   const {
     employee,
     labels = DEFAULT_HIERARCHY_LABELS,
+    canManagePermissions = true,
+    canMutate = true,
     onedit,
     onavailability,
     onpermission,
@@ -132,28 +136,32 @@
       >
         <i class="fas fa-calendar-alt"></i>
       </button>
-      <button
-        type="button"
-        class="action-icon action-icon--info"
-        title="Berechtigungen"
-        aria-label="Berechtigungen verwalten"
-        onclick={() => {
-          onpermission(employee.uuid);
-        }}
-      >
-        <i class="fas fa-cog"></i>
-      </button>
-      <button
-        type="button"
-        class="action-icon action-icon--delete"
-        title="Löschen"
-        aria-label="Mitarbeiter löschen"
-        onclick={() => {
-          ondelete(employee.id);
-        }}
-      >
-        <i class="fas fa-trash"></i>
-      </button>
+      {#if canManagePermissions}
+        <button
+          type="button"
+          class="action-icon action-icon--info"
+          title="Berechtigungen"
+          aria-label="Berechtigungen verwalten"
+          onclick={() => {
+            onpermission(employee.uuid);
+          }}
+        >
+          <i class="fas fa-shield-alt"></i>
+        </button>
+      {/if}
+      {#if canMutate}
+        <button
+          type="button"
+          class="action-icon action-icon--delete"
+          title="Löschen"
+          aria-label="Mitarbeiter löschen"
+          onclick={() => {
+            ondelete(employee.id);
+          }}
+        >
+          <i class="fas fa-trash"></i>
+        </button>
+      {/if}
     </div>
   </td>
 </tr>

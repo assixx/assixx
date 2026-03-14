@@ -3,17 +3,25 @@
   Visueller Organigramm-Builder unter /settings/organigram
 -->
 <script lang="ts">
+  import { untrack } from 'svelte';
+
   import { invalidateAll, replaceState } from '$app/navigation';
   import { page } from '$app/state';
 
   import { showSuccessAlert, showErrorAlert } from '$lib/stores/toast';
   import { createLogger } from '$lib/utils/logger.js';
 
-  import { savePositions, updateHierarchyLabels } from './_lib/api.js';
+  import {
+    fetchNodeDetails,
+    savePositions,
+    updateHierarchyLabels,
+  } from './_lib/api.js';
   import HierarchyLabelsModal from './_lib/HierarchyLabelsModal.svelte';
+  import NodeDetailModal from './_lib/NodeDetailModal.svelte';
   import OrgCanvas from './_lib/OrgCanvas.svelte';
   import OrgToolbar from './_lib/OrgToolbar.svelte';
   import {
+    adjustNodeSize,
     adjustZoom,
     getCanvasBg,
     getCanvasBgForSave,
@@ -22,6 +30,8 @@
     getIsLocked,
     getIsSaving,
     getHallOverridesForSave,
+    getNodeHeight,
+    getNodeWidth,
     getPositionsForSave,
     getViewportForSave,
     getZoom,
@@ -38,7 +48,11 @@
   } from './_lib/state.svelte.js';
 
   import type { PageData } from './$types';
-  import type { HierarchyLabels } from './_lib/types.js';
+  import type {
+    HierarchyLabels,
+    OrgEntityType,
+    OrgNodeDetail,
+  } from './_lib/types.js';
 
   const log = createLogger('Organigram:Page');
 
@@ -50,12 +64,41 @@
   const currentZoom = $derived(getZoom());
   const currentFontSize = $derived(getFontSize());
   const currentCanvasBg = $derived(getCanvasBg());
+  const currentNodeWidth = $derived(getNodeWidth());
+  const currentNodeHeight = $derived(getNodeHeight());
 
   /** Single Source of Truth: Layout-Data (A7) */
   const labels = $derived(data.tree.hierarchyLabels);
 
   let showLabelsModal = $state(false);
   let isLabelsSaving = $state(false);
+
+  let detailData = $state<OrgNodeDetail | null>(null);
+  let showDetailModal = $state(false);
+  let isDetailLoading = $state(false);
+
+  async function handleNodeDblClick(
+    entityType: OrgEntityType,
+    entityUuid: string,
+  ): Promise<void> {
+    showDetailModal = true;
+    isDetailLoading = true;
+    detailData = null;
+    try {
+      detailData = await fetchNodeDetails(entityType, entityUuid);
+    } catch (err: unknown) {
+      log.error({ err }, 'Node-Details laden fehlgeschlagen');
+      showErrorAlert('Fehler beim Laden der Details');
+      showDetailModal = false;
+    } finally {
+      isDetailLoading = false;
+    }
+  }
+
+  function closeDetail(): void {
+    showDetailModal = false;
+    detailData = null;
+  }
 
   /** Auto-open modal when navigated with ?editLabels */
   $effect(() => {
@@ -82,7 +125,10 @@
   }
 
   $effect(() => {
-    initFromTree(data.tree);
+    const tree = data.tree;
+    untrack(() => {
+      initFromTree(tree);
+    });
   });
 
   async function handleSavePositions(): Promise<void> {
@@ -207,6 +253,14 @@
       onfontdec={() => {
         setFontSize(currentFontSize - 1);
       }}
+      nodeWidth={currentNodeWidth}
+      nodeHeight={currentNodeHeight}
+      onnodeinc={() => {
+        adjustNodeSize(1);
+      }}
+      onnodedec={() => {
+        adjustNodeSize(-1);
+      }}
       onautolayout={recomputeAutoLayout}
       onsave={handleSavePositions}
       onreset={resetToSaved}
@@ -249,13 +303,21 @@
           </p>
         </div>
       {:else}
-        <OrgCanvas />
+        <OrgCanvas ondblclicknode={handleNodeDblClick} />
       {/if}
     </div>
   </div>
 </div>
 
-<!-- Modal -->
+<!-- Modals -->
+<NodeDetailModal
+  show={showDetailModal}
+  detail={detailData}
+  isLoading={isDetailLoading}
+  {labels}
+  onclose={closeDetail}
+/>
+
 <HierarchyLabelsModal
   show={showLabelsModal}
   {labels}
@@ -350,6 +412,7 @@
     width: 100% !important;
     min-height: 100vh !important;
     overflow: hidden;
+    background: var(--main-bg-gradient), var(--main-bg) !important;
   }
 
   :global(body.fullscreen-mode .sidebar),

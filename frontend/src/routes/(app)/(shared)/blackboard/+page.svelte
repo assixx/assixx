@@ -770,6 +770,7 @@
     width: 100% !important;
     min-height: 100vh !important;
     overflow-y: auto;
+    background: var(--main-bg-gradient), var(--main-bg) !important;
   }
 
   :global(body.fullscreen-mode .pinboard-grid) {

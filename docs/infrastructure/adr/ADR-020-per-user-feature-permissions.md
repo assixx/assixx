@@ -1,13 +1,13 @@
 # ADR-020: Per-User Feature Permission Control
 
-| Metadata                | Value                                                                            |
-| ----------------------- | -------------------------------------------------------------------------------- |
-| **Status**              | Accepted                                                                         |
-| **Date**                | 2026-02-07                                                                       |
-| **Decision Makers**     | SCS-Technik Team                                                                 |
-| **Affected Components** | PostgreSQL, Backend (NestJS modules, DatabaseService), Frontend (SvelteKit)      |
-| **Supersedes**          | —                                                                                |
-| **Related ADRs**        | ADR-005 (Auth), ADR-006 (CLS), ADR-007 (Response), ADR-012 (RBAC), ADR-019 (RLS) |
+| Metadata                | Value                                                                                                                               |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| **Status**              | Accepted                                                                                                                            |
+| **Date**                | 2026-02-07                                                                                                                          |
+| **Decision Makers**     | SCS-Technik Team                                                                                                                    |
+| **Affected Components** | PostgreSQL, Backend (NestJS modules, DatabaseService), Frontend (SvelteKit)                                                         |
+| **Supersedes**          | —                                                                                                                                   |
+| **Related ADRs**        | ADR-005 (Auth), ADR-006 (CLS), ADR-007 (Response), ADR-012 (RBAC), ADR-019 (RLS), ADR-035 (Hierarchy), ADR-036 (Scope + Delegation) |
 
 ---
 
@@ -439,6 +439,51 @@ This ADR establishes the **atomic foundation** for a comprehensive access contro
 | Phase 6                | Compliance dashboard ("Who has delete access to Documents?")  | Future                                                                                                                         |
 
 Each future phase builds on the `user_addon_permissions` table without schema redesign. The decentralized registry pattern scales with new features. The RLS isolation protects all phases equally.
+
+---
+
+### 7. Delegated Permission Management (2026-03-14)
+
+> **Erweiterung:** Leads können Addon-Permissions ihrer Untergebenen verwalten — mit strikter Hierarchie-Kontrolle. Zuvor: Nur Root und Admin mit `has_full_access=true`.
+
+**Delegationskette:** `Root → Admin(full) → Area-Lead → Dept-Lead → Team-Lead → Team-Members`
+
+**Controller-Änderung:** `assertFullAccess()` ersetzt durch `assertPermissionAccess()`:
+
+```
+1. Root → immer OK (inkl. Self-Edit)
+2. Admin mit has_full_access → OK (Self-Edit blockiert)
+3. Lead mit manage-permissions.canRead/canWrite → OK:
+   a) Target-User im eigenen Scope (ScopeService)
+   b) Target-User ≠ Current-User (kein Self-Grant)
+4. Alle anderen → 403
+```
+
+**`@Roles('admin', 'root', 'employee')`** — Employee-Rolle jetzt erlaubt auf Permission-Endpoints.
+
+**Service-Änderungen:**
+
+- `upsertPermissions()`: Neuer Parameter `delegatorScope` für delegierte Filterung
+- `filterDelegatedPermissions()`: Regel 2 (nur eigene Permissions) + Regel 4 (manage-permissions nicht delegierbar)
+- `filterByLeaderPerms()`: GET zeigt nur Module die der Lead hat
+- `hideManagePermissionsModule()`: manage-permissions nur für Leads sichtbar (nicht für Nicht-Leads)
+- Return-Type: `{ applied: number }` statt `void` (tatsächlicher Count nach Filterung)
+
+**Neue Permission:** `manage_hierarchy.manage-permissions` (canRead + canWrite)
+
+- canRead = Permission-Seite von Untergebenen sehen
+- canWrite = Permissions von Untergebenen ändern
+- Rote Hervorhebung (`perm-row--danger`) in UI
+- NUR für Leads sichtbar/setzbar (Backend + DB-Trigger)
+
+**DB-Trigger (Defense-in-Depth):**
+
+1. `trg_prevent_manage_permissions_self_grant`: Nur Root/Admin-full dürfen `manage-permissions.canWrite` vergeben
+2. `trg_enforce_manage_permissions_target_is_lead`: `manage-permissions` NUR für Users mit Lead-Position
+
+**`allowedRoles` auf `PermissionModuleDef`:** Neues optionales Feld — wenn gesetzt, wird das Modul nur für Users mit diesen Rollen auf der Permission-Seite angezeigt.
+
+**@see** [FEAT_DELEGATED_PERMISSION_MANAGEMENT_MASTERPLAN.md](../../FEAT_DELEGATED_PERMISSION_MANAGEMENT_MASTERPLAN.md), [ADR-036](./ADR-036-organizational-scope-access-control.md)
 
 ---
 

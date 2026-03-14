@@ -17,6 +17,10 @@
     onzoomreset: () => void;
     onfontinc: () => void;
     onfontdec: () => void;
+    onnodeinc: () => void;
+    onnodedec: () => void;
+    nodeWidth: number;
+    nodeHeight: number;
     onautolayout: () => void;
     onsave: () => void;
     onreset: () => void;
@@ -38,6 +42,10 @@
     onzoomreset,
     onfontinc,
     onfontdec,
+    onnodeinc,
+    onnodedec,
+    nodeWidth,
+    nodeHeight,
     onautolayout,
     onsave,
     onreset,
@@ -70,189 +78,223 @@
   });
 </script>
 
-<div class="org-toolbar">
-  <div class="zoom-controls">
-    <button
-      type="button"
-      class="btn btn-icon btn-secondary"
-      title="Vergrößern"
-      onclick={onzoomin}
-    >
-      <i class="fas fa-plus"></i>
-    </button>
-    <span class="zoom-level">{zoomPercent}%</span>
-    <button
-      type="button"
-      class="btn btn-icon btn-secondary"
-      title="Verkleinern"
-      onclick={onzoomout}
-    >
-      <i class="fas fa-minus"></i>
-    </button>
-    <button
-      type="button"
-      class="btn btn-icon btn-secondary"
-      title="Zoom zurücksetzen"
-      onclick={onzoomreset}
-    >
-      <i class="fas fa-compress-arrows-alt"></i>
-    </button>
-    <button
-      type="button"
-      class="btn btn-icon btn-secondary ml-2"
-      title="Vollbild"
-      onclick={onfullscreen}
-    >
-      <i class="fas fa-expand"></i>
-    </button>
-  </div>
-
-  <div class="toolbar-divider"></div>
-
-  <div class="font-controls">
-    <button
-      type="button"
-      class="btn btn-icon btn-secondary"
-      title="Schrift verkleinern"
-      disabled={fontSize <= 8}
-      onclick={onfontdec}
-    >
-      <i class="fas fa-font font-icon--sm"></i>
-    </button>
-    <span class="font-level">{fontSize}px</span>
-    <button
-      type="button"
-      class="btn btn-icon btn-secondary"
-      title="Schrift vergrößern"
-      disabled={fontSize >= 24}
-      onclick={onfontinc}
-    >
-      <i class="fas fa-font font-icon--lg"></i>
-    </button>
-  </div>
-
-  <div class="toolbar-divider"></div>
-
-  <button
-    type="button"
-    class="btn btn-icon"
-    class:btn-secondary={!isLocked}
-    class:lock-active={isLocked}
-    title={isLocked ? 'Bearbeitung entsperren' : 'Bearbeitung sperren'}
-    onclick={ontogglelock}
+<div class="toolbar-wrapper">
+  <div
+    class="dirty-banner"
+    class:dirty-banner--visible={isDirty}
   >
-    <i
-      class="fas"
-      class:fa-lock={isLocked}
-      class:fa-lock-open={!isLocked}
-    ></i>
-  </button>
-
-  <div class="toolbar-divider"></div>
-
-  <!-- Canvas Background Color Picker -->
-  <div class="color-picker-wrapper">
-    <button
-      type="button"
-      class="btn btn-icon btn-secondary"
-      title="Hintergrundfarbe"
-      onmousedown={(e: MouseEvent) => {
-        e.stopPropagation();
-        showPicker = !showPicker;
-      }}
-    >
-      <span
-        class="color-swatch"
-        style:background-color={canvasBg ?? 'transparent'}
-      ></span>
-    </button>
-
-    <ColorPicker
-      bind:hex={pickerHex}
-      bind:isOpen={showPicker}
-      label=""
-      nullable
-      isAlpha
-      position="responsive"
-      texts={{ label: { withoutColor: 'Transparent' } }}
-      --input-size="0px"
-      --picker-height="150px"
-      --picker-width="150px"
-      --slider-width="150px"
-      --focus-color="var(--color-primary, #2196f3)"
-      --cp-bg-color="var(--color-gray-900, #212121)"
-      --cp-border-color="#616161"
-      --cp-text-color="#fff"
-      --cp-input-color="#424242"
-      --cp-button-hover-color="#616161"
-      --picker-z-index="1060"
-    />
+    <i class="fas fa-circle"></i>
+    Ungespeichert
   </div>
 
-  <div class="toolbar-divider"></div>
+  <div class="org-toolbar">
+    <div class="zoom-controls">
+      <button
+        type="button"
+        class="btn btn-icon btn-secondary"
+        title="Vergrößern"
+        disabled={isLocked}
+        onclick={onzoomin}
+      >
+        <i class="fas fa-plus"></i>
+      </button>
+      <span class="zoom-level">{zoomPercent}%</span>
+      <button
+        type="button"
+        class="btn btn-icon btn-secondary"
+        title="Verkleinern"
+        disabled={isLocked}
+        onclick={onzoomout}
+      >
+        <i class="fas fa-minus"></i>
+      </button>
+      <button
+        type="button"
+        class="btn btn-icon btn-secondary"
+        title="Zoom zurücksetzen"
+        disabled={isLocked}
+        onclick={onzoomreset}
+      >
+        <i class="fas fa-compress-arrows-alt"></i>
+      </button>
+      <button
+        type="button"
+        class="btn btn-icon btn-secondary ml-2"
+        title="Vollbild"
+        onclick={onfullscreen}
+      >
+        <i class="fas fa-expand"></i>
+      </button>
+    </div>
 
-  <div class="toolbar-group">
+    <div class="toolbar-divider"></div>
+
+    <div class="font-controls">
+      <button
+        type="button"
+        class="btn btn-icon btn-secondary"
+        title="Schrift verkleinern"
+        disabled={isLocked || fontSize <= 8}
+        onclick={onfontdec}
+      >
+        <i class="fas fa-font font-icon--sm"></i>
+      </button>
+      <span class="font-level">{fontSize}px</span>
+      <button
+        type="button"
+        class="btn btn-icon btn-secondary"
+        title="Schrift vergrößern"
+        disabled={isLocked || fontSize >= 120}
+        onclick={onfontinc}
+      >
+        <i class="fas fa-font font-icon--lg"></i>
+      </button>
+    </div>
+
+    <div class="toolbar-divider"></div>
+
+    <div class="font-controls">
+      <button
+        type="button"
+        class="btn btn-icon btn-secondary"
+        title="Knoten verkleinern"
+        disabled={isLocked || nodeWidth <= 100}
+        onclick={onnodedec}
+      >
+        <i class="fas fa-compress-alt"></i>
+      </button>
+      <span class="font-level">{nodeWidth}×{nodeHeight}</span>
+      <button
+        type="button"
+        class="btn btn-icon btn-secondary"
+        title="Knoten vergrößern"
+        disabled={isLocked || nodeWidth >= 1000}
+        onclick={onnodeinc}
+      >
+        <i class="fas fa-expand-alt"></i>
+      </button>
+    </div>
+
+    <div class="toolbar-divider"></div>
+
     <button
       type="button"
-      class="btn btn-secondary"
-      title="Auto-Layout: Positionen neu berechnen"
-      disabled={isLocked}
-      onclick={onautolayout}
+      class="btn btn-icon"
+      class:btn-secondary={!isLocked}
+      class:lock-active={isLocked}
+      title={isLocked ? 'Bearbeitung entsperren' : 'Bearbeitung sperren'}
+      onclick={ontogglelock}
     >
-      <i class="fas fa-th-large"></i>
-      <span class="toolbar-label">Auto-Layout</span>
+      <i
+        class="fas"
+        class:fa-lock={isLocked}
+        class:fa-lock-open={!isLocked}
+      ></i>
     </button>
 
-    <button
-      type="button"
-      class="btn btn-secondary"
-      title="Hierarchie-Ebenen anpassen"
-      onclick={onopenlabels}
-    >
-      <i class="fas fa-tags"></i>
-      <span class="toolbar-label">Hierarchie-Ebenen</span>
-    </button>
-  </div>
+    <div class="toolbar-divider"></div>
 
-  <div class="toolbar-spacer"></div>
+    <!-- Canvas Background Color Picker -->
+    <div class="color-picker-wrapper">
+      <button
+        type="button"
+        class="btn btn-icon btn-secondary"
+        title="Hintergrundfarbe"
+        onmousedown={(e: MouseEvent) => {
+          e.stopPropagation();
+          showPicker = !showPicker;
+        }}
+      >
+        <span
+          class="color-swatch"
+          style:background-color={canvasBg ?? 'transparent'}
+        ></span>
+      </button>
 
-  <div class="toolbar-group">
-    {#if isDirty}
-      <span class="dirty-indicator">
-        <i class="fas fa-circle"></i>
-        Ungespeichert
-      </span>
-    {/if}
+      <ColorPicker
+        bind:hex={pickerHex}
+        bind:isOpen={showPicker}
+        label=""
+        nullable
+        isAlpha
+        position="responsive"
+        texts={{ label: { withoutColor: 'Transparent' } }}
+        --input-size="0px"
+        --picker-height="150px"
+        --picker-width="150px"
+        --slider-width="150px"
+        --focus-color="var(--color-primary, #2196f3)"
+        --cp-bg-color="var(--color-gray-900, #212121)"
+        --cp-border-color="#616161"
+        --cp-text-color="#fff"
+        --cp-input-color="#424242"
+        --cp-button-hover-color="#616161"
+        --picker-z-index="1060"
+      />
+    </div>
 
-    <button
-      type="button"
-      class="btn btn-secondary"
-      title="Änderungen verwerfen"
-      disabled={!isDirty || isSaving}
-      onclick={onreset}
-    >
-      <i class="fas fa-undo"></i>
-      <span class="toolbar-label">Zurücksetzen</span>
-    </button>
+    <div class="toolbar-divider"></div>
 
-    <button
-      type="button"
-      class="btn btn-primary"
-      title="Positionen speichern"
-      disabled={!isDirty || isSaving}
-      onclick={onsave}
-    >
-      {#if isSaving}
-        <span class="spinner-ring spinner-ring--sm"></span>
-      {:else}
-        <i class="fas fa-save"></i>
-      {/if}
-      <span class="toolbar-label">Speichern</span>
-    </button>
+    <div class="toolbar-group">
+      <button
+        type="button"
+        class="btn btn-secondary"
+        title="Auto-Layout: Positionen neu berechnen"
+        disabled={isLocked}
+        onclick={onautolayout}
+      >
+        <i class="fas fa-th-large"></i>
+        <span class="toolbar-label">Auto-Layout</span>
+      </button>
+
+      <button
+        type="button"
+        class="btn btn-secondary"
+        title="Hierarchie-Ebenen anpassen"
+        onclick={onopenlabels}
+      >
+        <i class="fas fa-tags"></i>
+        <span class="toolbar-label">Hierarchie-Ebenen</span>
+      </button>
+    </div>
+
+    <div class="toolbar-spacer"></div>
+
+    <div class="toolbar-group">
+      <button
+        type="button"
+        class="btn btn-secondary"
+        title="Änderungen verwerfen"
+        disabled={!isDirty || isSaving}
+        onclick={onreset}
+      >
+        <i class="fas fa-undo"></i>
+        <span class="toolbar-label">Zurücksetzen</span>
+      </button>
+
+      <button
+        type="button"
+        class="btn btn-primary"
+        title="Positionen speichern"
+        disabled={!isDirty || isSaving}
+        onclick={onsave}
+      >
+        {#if isSaving}
+          <span class="spinner-ring spinner-ring--sm"></span>
+        {:else}
+          <i class="fas fa-save"></i>
+        {/if}
+        <span class="toolbar-label">Speichern</span>
+      </button>
+    </div>
   </div>
 </div>
 
 <style>
+  .toolbar-wrapper {
+    position: relative;
+  }
+
   .org-toolbar {
     display: flex;
     align-items: center;
@@ -321,17 +363,27 @@
     font-weight: 500;
   }
 
-  .dirty-indicator {
+  .dirty-banner {
+    position: absolute;
+    top: -1.25rem;
+    left: 0;
     display: flex;
     align-items: center;
-    gap: 0.25rem;
-    font-size: 0.75rem;
+    gap: 0.375rem;
     color: var(--color-warning, #f59e0b);
-    padding: 0 0.5rem;
+    font-size: 0.7rem;
+    font-weight: 600;
+    opacity: 0%;
+    transition: opacity 0.2s ease;
+    pointer-events: none;
   }
 
-  .dirty-indicator i {
-    font-size: 0.4rem;
+  .dirty-banner--visible {
+    opacity: 100%;
+  }
+
+  .dirty-banner i {
+    font-size: 0.35rem;
   }
 
   .color-picker-wrapper {

@@ -78,6 +78,9 @@
     data.user?.role === 'root' || data.user?.role === 'admin',
   );
 
+  // Permission delegation: show shield button (backend checks actual permission)
+  const canManagePermissions = $derived(canMutate || data.orgScope.isAnyLead);
+
   // Permission: Only root or admin with has_full_access may upgrade roles
   const canUpgrade = $derived(
     data.user !== null &&
@@ -710,6 +713,8 @@
                     <EmployeeTableRow
                       {employee}
                       {labels}
+                      {canManagePermissions}
+                      {canMutate}
                       onedit={openEditModal}
                       onavailability={openAvailabilityModal}
                       onpermission={navigateToPermissionPage}

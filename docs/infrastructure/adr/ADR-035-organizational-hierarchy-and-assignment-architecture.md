@@ -1029,6 +1029,20 @@ frontend/src/
 
 ---
 
+## Lead-Positionen und Permission-Delegation (2026-03-14)
+
+Lead-Positionen (`team_lead_id`, `deputy_lead_id`, `department_lead_id`, `area_lead_id`) haben seit ADR-036 erweiterte Bedeutung:
+
+1. **Scope-Zugang:** Leads sehen/bearbeiten Entities in ihrem Scope (Manage-Seiten)
+2. **Permission-Delegation:** Leads mit `manage-permissions` können Addon-Permissions ihrer Untergebenen verwalten
+3. **DB-Trigger:** `trg_enforce_manage_permissions_target_is_lead` — `manage-permissions` kann NUR an Users mit Lead-Position vergeben werden
+4. **DB-Trigger:** `trg_validate_team_lead_position` — `team_lead_id`/`deputy_lead_id` muss `position='team_lead'` haben
+5. **DB-Trigger:** `trg_validate_dept_lead` / `trg_validate_area_lead` — Dept/Area-Leads müssen admin/root sein
+
+**Konsequenz:** Lead-Entfernung (SET NULL) entfernt Scope-Zugang + Delegationsrechte. Auto-Cleanup in `TeamsService.cleanupLeadPermissions()`.
+
+---
+
 ## References
 
 - [ADR-005: Authentication Strategy](./ADR-005-authentication-strategy.md) — JWT Guard

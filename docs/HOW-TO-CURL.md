@@ -5,11 +5,21 @@
 **NIEMALS selbst einloggen.** Der User gibt den Token direkt als Text in der Nachricht mit.
 Token einfach 1:1 übernehmen — KEIN Login-Request nötig.
 
+**Regeln:**
+
+1. Token IMMER direkt inline im curl-Befehl verwenden
+2. **KEINE Variablen** wie `T=`, `TOKEN=`, `$T` — NIEMALS
+3. Token hat IMMER das Format: `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.<PAYLOAD>.<SIGNATURE>`
+
 ```bash
-# So benutzt du den Token (User gibt ihn dir):
+# RICHTIG — Token direkt inline:
 curl -s http://localhost:3000/api/v2/ENDPOINT \
-  -H "Authorization: Bearer <TOKEN-VOM-USER>" \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.PAYLOAD.SIGNATURE" \
   -H "X-Tenant-ID: testfirma" | jq '.'
+
+# FALSCH — NIEMALS so:
+# T="eyJ..."
+# curl ... -H "Authorization: Bearer $T"
 ```
 
 ---
@@ -43,12 +53,12 @@ TOKEN=$(curl -s -X POST http://localhost:3000/api/v2/auth/login \
 
 Jeder Request braucht zwei Header: `Authorization` und `X-Tenant-ID`.
 
-```bash
-T="<TOKEN>"
+**KEINE Variablen wie `T=` oder `TOKEN=` verwenden — Token IMMER direkt inline im curl-Befehl!**
 
-# GET
+```bash
+# GET — Token DIREKT inline, KEINE Variable!
 curl -s http://localhost:3000/api/v2/users/me \
-  -H "Authorization: Bearer $T" \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.PAYLOAD.SIGNATURE" \
   -H "X-Tenant-ID: testfirma" | jq '.'
 
 # POST (Body als JSON-Datei)
@@ -58,7 +68,7 @@ EOF
 
 curl -s -X POST http://localhost:3000/api/v2/tpm/cards \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer $T" \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.PAYLOAD.SIGNATURE" \
   -H "X-Tenant-ID: testfirma" \
   -d @/tmp/payload.json | jq '.'
 ```

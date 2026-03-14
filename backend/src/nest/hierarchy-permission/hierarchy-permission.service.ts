@@ -164,6 +164,9 @@ WHERE u.tenant_id = $1 AND u.is_active != ${IS_ACTIVE.DELETED} AND (
           WHERE ud.user_id = u.id AND ud.department_id = ANY($2::int[]))
   OR EXISTS (SELECT 1 FROM user_teams ut
              WHERE ut.user_id = u.id AND ut.team_id = ANY($3::int[]))
+  OR EXISTS (SELECT 1 FROM teams t
+             WHERE (t.team_lead_id = u.id OR t.deputy_lead_id = u.id)
+               AND t.id = ANY($3::int[]) AND t.is_active = ${IS_ACTIVE.ACTIVE})
 )
 `;
 
