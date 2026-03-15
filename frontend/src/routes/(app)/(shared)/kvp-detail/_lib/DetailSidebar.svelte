@@ -166,8 +166,8 @@
     </div>
   {/if}
 
-  <!-- Actions (Admin Only) -->
-  {#if kvpDetailState.isAdmin}
+  <!-- Actions (Admin, Root, Team Lead) -->
+  {#if kvpDetailState.canManage}
     <div class="sidebar-card card">
       <h3 class="section-title">
         <i class="fas fa-cog"></i>
@@ -190,7 +190,7 @@
             Arbeitsauftrag generieren
           </button>
         {/if}
-        {#if canShareSuggestion(suggestion, kvpDetailState.effectiveRole)}
+        {#if canShareSuggestion(suggestion, kvpDetailState.effectiveRole, kvpDetailState.canManage)}
           <button
             type="button"
             class="btn btn-edit"
@@ -200,7 +200,7 @@
             Teilen
           </button>
         {/if}
-        {#if canUnshareSuggestion(suggestion, kvpDetailState.effectiveRole, kvpDetailState.currentUser?.id)}
+        {#if canUnshareSuggestion(suggestion, kvpDetailState.effectiveRole, kvpDetailState.currentUser?.id, kvpDetailState.canManage)}
           <button
             type="button"
             class="btn btn-secondary"
@@ -210,7 +210,7 @@
             Teilen rückgängig
           </button>
         {/if}
-        {#if canArchiveSuggestion(kvpDetailState.effectiveRole, suggestion.status)}
+        {#if canArchiveSuggestion(kvpDetailState.effectiveRole, suggestion.status, kvpDetailState.canManage)}
           <button
             type="button"
             class="btn btn-light"
@@ -220,7 +220,7 @@
             Archivieren
           </button>
         {/if}
-        {#if canUnarchiveSuggestion(kvpDetailState.effectiveRole, suggestion.status)}
+        {#if canUnarchiveSuggestion(kvpDetailState.effectiveRole, suggestion.status, kvpDetailState.canManage)}
           <button
             type="button"
             class="btn btn-success"

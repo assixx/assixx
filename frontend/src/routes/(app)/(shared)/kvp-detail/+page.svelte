@@ -172,6 +172,7 @@
         role: currentUser.role,
         tenantId: 0,
       });
+      kvpDetailState.setTeamLead(data.isTeamLead ?? false);
       kvpDetailState.setSuggestion(suggestion);
       kvpDetailState.setComments(
         comments.comments,
@@ -532,15 +533,19 @@
             <span class="badge {getStatusBadgeClass(suggestion.status)}">
               {getStatusText(suggestion.status)}
             </span>
-            <div class="share-info">
-              <i class="fas fa-share-alt"></i>
-              <span
-                class="badge {getVisibilityBadgeClass(suggestion.orgLevel)}"
-              >
-                <i class="fas {visibilityInfo?.icon}"></i>
-                <span>{visibilityInfo?.text}{getSharedByInfo(suggestion)}</span>
-              </span>
-            </div>
+            {#if suggestion.isShared}
+              <div class="share-info">
+                <i class="fas fa-share-alt"></i>
+                <span
+                  class="badge {getVisibilityBadgeClass(suggestion.orgLevel)}"
+                >
+                  <i class="fas {visibilityInfo?.icon}"></i>
+                  <span
+                    >{visibilityInfo?.text}{getSharedByInfo(suggestion)}</span
+                  >
+                </span>
+              </div>
+            {/if}
           </div>
         </div>
 
@@ -576,7 +581,7 @@
             </div>
             <div class="data-list__item">
               <span class="data-list__label">Status</span>
-              {#if canUpdateStatus(effectiveRole)}
+              {#if canUpdateStatus(effectiveRole, kvpDetailState.canManage)}
                 <!-- Admin Status Dropdown -->
                 <div
                   class="dropdown"
@@ -734,7 +739,7 @@
   </div>
 
   <!-- Modal Components -->
-  {#if kvpDetailState.isAdmin}
+  {#if kvpDetailState.canManage}
     <CreateWorkOrderFromKvp
       show={showWoModal}
       {suggestion}

@@ -92,13 +92,15 @@
         </span>
       {/if}
     </div>
-    <div class="share-info">
-      <i class="fas fa-share-alt"></i>
-      <span class="badge {getVisibilityBadgeClass(suggestion.orgLevel)}">
-        <i class="fas {visibilityInfo.icon}"></i>
-        <span>{visibilityInfo.text}{getSharedByInfo(suggestion)}</span>
-      </span>
-    </div>
+    {#if suggestion.isShared}
+      <div class="share-info">
+        <i class="fas fa-share-alt"></i>
+        <span class="badge {getVisibilityBadgeClass(suggestion.orgLevel)}">
+          <i class="fas {visibilityInfo.icon}"></i>
+          <span>{visibilityInfo.text}{getSharedByInfo(suggestion)}</span>
+        </span>
+      </div>
+    {/if}
   </div>
 
   <div class="suggestion-description">{suggestion.description}</div>

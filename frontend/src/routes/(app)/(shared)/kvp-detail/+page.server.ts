@@ -142,11 +142,15 @@ export const load: PageServerLoad = async ({ cookies, fetch, url, parent }) => {
     fetchLinkedWorkOrders(suggestion.uuid, token, fetch),
   ]);
 
+  const isTeamLead =
+    (parentData.user as { position?: string } | null)?.position === 'team_lead';
+
   return {
     permissionDenied: false as const,
     suggestion,
     ...pageData,
     linkedWorkOrders,
     currentUser: parentData.user,
+    isTeamLead,
   };
 };

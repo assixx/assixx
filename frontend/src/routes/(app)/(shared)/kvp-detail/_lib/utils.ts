@@ -277,68 +277,78 @@ export function getSharedByInfo(suggestion: KvpSuggestion): string {
 /**
  * Check if user can update status
  */
-export function canUpdateStatus(userRole: string): boolean {
-  return userRole === 'admin' || userRole === 'root';
+export function canUpdateStatus(userRole: string, canManage = false): boolean {
+  return userRole === 'admin' || userRole === 'root' || canManage;
 }
 
 /**
  * Check if user can share suggestion
- * Admin/Root can share when the suggestion is not yet shared.
+ * Admin/Root/TeamLead can share when the suggestion is not yet shared.
  * Once shared, use "unshare" first before re-sharing at a different level.
  */
 export function canShareSuggestion(
   suggestion: KvpSuggestion,
   userRole: string,
+  canManage = false,
 ): boolean {
-  return (userRole === 'admin' || userRole === 'root') && !suggestion.isShared;
+  const hasPermission =
+    userRole === 'admin' || userRole === 'root' || canManage;
+  return hasPermission && !suggestion.isShared;
 }
 
 /**
  * Check if user can unshare suggestion
  * Allows unsharing for any shared suggestion (team, department, area, company)
- * - Admin/Root can always unshare
+ * - Admin/Root/TeamLead can always unshare
  * - Original sharer can unshare their own shares
  */
 export function canUnshareSuggestion(
   suggestion: KvpSuggestion,
   userRole: string,
   userId: number | undefined,
+  canManage = false,
 ): boolean {
   if (!suggestion.isShared) {
     return false;
   }
 
-  // Admin/Root can always unshare, or the person who shared it
   return (
     userRole === 'admin' ||
     userRole === 'root' ||
+    canManage ||
     suggestion.sharedBy === userId
   );
 }
 
 /**
- * Check if user can archive suggestion (must be admin/root AND not already archived)
+ * Check if user can archive suggestion (must have manage rights AND not already archived)
  */
 export function canArchiveSuggestion(
   userRole: string,
   status: string,
+  canManage = false,
 ): boolean {
-  return (userRole === 'admin' || userRole === 'root') && status !== 'archived';
+  const hasPermission =
+    userRole === 'admin' || userRole === 'root' || canManage;
+  return hasPermission && status !== 'archived';
 }
 
 /**
- * Check if user can unarchive (restore) suggestion (must be admin/root AND archived)
+ * Check if user can unarchive (restore) suggestion (must have manage rights AND archived)
  */
 export function canUnarchiveSuggestion(
   userRole: string,
   status: string,
+  canManage = false,
 ): boolean {
-  return (userRole === 'admin' || userRole === 'root') && status === 'archived';
+  const hasPermission =
+    userRole === 'admin' || userRole === 'root' || canManage;
+  return hasPermission && status === 'archived';
 }
 
 /**
- * Check if user can add comments
+ * Check if user can add comments (admin, root, or team lead)
  */
-export function canAddComments(userRole: string): boolean {
-  return userRole === 'admin' || userRole === 'root';
+export function canAddComments(userRole: string, canManage = false): boolean {
+  return userRole === 'admin' || userRole === 'root' || canManage;
 }

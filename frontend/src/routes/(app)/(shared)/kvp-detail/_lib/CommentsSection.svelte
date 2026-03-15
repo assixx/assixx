@@ -158,7 +158,7 @@
   </h3>
 
   <!-- Comment Form (Admin only) -->
-  {#if canAddComments(kvpDetailState.effectiveRole)}
+  {#if canAddComments(kvpDetailState.effectiveRole, kvpDetailState.canManage)}
     <form
       class="comment-form"
       onsubmit={(e) => {
@@ -237,7 +237,7 @@
               </div>
               <p class="thread-item__text">{comment.comment}</p>
               <div class="thread-item__actions">
-                {#if canAddComments(kvpDetailState.effectiveRole)}
+                {#if canAddComments(kvpDetailState.effectiveRole, kvpDetailState.canManage)}
                   <button
                     type="button"
                     class="thread-action-btn"

@@ -15,29 +15,6 @@
 
   const { onconfirm, labels = DEFAULT_HIERARCHY_LABELS }: Props = $props();
 
-  /** Teams not yet assigned (directly or via asset ownership) */
-  const availableTeams = $derived.by(() => {
-    const orgs: KvpOrgAssignment[] =
-      kvpDetailState.suggestion?.organizations ?? [];
-
-    // Collect all team IDs that already have visibility
-    const coveredTeamIds: Record<number, true> = {};
-
-    for (const org of orgs) {
-      if (org.orgType === 'team') {
-        coveredTeamIds[org.orgId] = true;
-      }
-      // Teams that own an assigned asset
-      if (org.orgType === 'asset' && org.relatedTeamIds !== undefined) {
-        for (const teamId of org.relatedTeamIds) {
-          coveredTeamIds[teamId] = true;
-        }
-      }
-    }
-
-    return kvpDetailState.teams.filter((t) => !(t.id in coveredTeamIds));
-  });
-
   /** Assets not yet assigned to this suggestion */
   const availableAssets = $derived.by(() => {
     const orgs: KvpOrgAssignment[] =
@@ -73,7 +50,7 @@
       </div>
       <div class="ds-modal__body">
         <p class="mb-6">
-          wählen Sie die Organisationsebene aus, auf der Sie diesen Vorschlag
+          Wählen Sie die Organisationsebene aus, auf der Sie diesen Vorschlag
           teilen möchten:
         </p>
 
@@ -217,74 +194,72 @@
           </label>
 
           <!-- Team -->
-          {#if availableTeams.length > 0}
-            <label class="choice-card choice-card--lg">
-              <input
-                type="radio"
-                name="orgLevel"
-                value="team"
-                class="choice-card__input"
-                checked={kvpDetailState.selectedShareLevel === 'team'}
-                onchange={() => {
-                  kvpDetailState.setSelectedShareLevel('team');
+          <label class="choice-card choice-card--lg">
+            <input
+              type="radio"
+              name="orgLevel"
+              value="team"
+              class="choice-card__input"
+              checked={kvpDetailState.selectedShareLevel === 'team'}
+              onchange={() => {
+                kvpDetailState.setSelectedShareLevel('team');
+              }}
+            />
+            <span class="choice-card__text">
+              {labels.team}
+              <span class="choice-card__description"
+                >Für ein bestimmtes {labels.team} sichtbar</span
+              >
+            </span>
+            {#if kvpDetailState.selectedShareLevel === 'team'}
+              <!-- svelte-ignore a11y_click_events_have_key_events -->
+              <!-- svelte-ignore a11y_no_static_element_interactions -->
+              <div
+                class="dropdown"
+                data-dropdown="shareTeam"
+                onclick={(e) => {
+                  e.stopPropagation();
                 }}
-              />
-              <span class="choice-card__text">
-                {labels.team}
-                <span class="choice-card__description"
-                  >Für ein bestimmtes {labels.team} sichtbar</span
-                >
-              </span>
-              {#if kvpDetailState.selectedShareLevel === 'team'}
-                <!-- svelte-ignore a11y_click_events_have_key_events -->
-                <!-- svelte-ignore a11y_no_static_element_interactions -->
-                <div
-                  class="dropdown"
-                  data-dropdown="shareTeam"
+              >
+                <button
+                  type="button"
+                  class="dropdown__trigger"
+                  class:active={kvpDetailState.activeDropdown === 'shareTeam'}
                   onclick={(e) => {
-                    e.stopPropagation();
+                    e.preventDefault();
+                    kvpDetailState.toggleDropdown('shareTeam');
                   }}
                 >
-                  <button
-                    type="button"
-                    class="dropdown__trigger"
-                    class:active={kvpDetailState.activeDropdown === 'shareTeam'}
-                    onclick={(e) => {
-                      e.preventDefault();
-                      kvpDetailState.toggleDropdown('shareTeam');
-                    }}
-                  >
-                    <span>
-                      {kvpDetailState.selectedOrgId !== null ?
-                        (availableTeams.find(
-                          (t) => t.id === kvpDetailState.selectedOrgId,
-                        )?.name ?? '{labels.team} auswählen...')
-                      : '{labels.team} auswählen...'}
-                    </span>
-                    <i class="fas fa-chevron-down"></i>
-                  </button>
-                  <div
-                    class="dropdown__menu"
-                    class:active={kvpDetailState.activeDropdown === 'shareTeam'}
-                  >
-                    {#each availableTeams as team (team.id)}
-                      <button
-                        type="button"
-                        class="dropdown__option"
-                        onclick={(e) => {
-                          e.preventDefault();
-                          kvpDetailState.setSelectedOrgId(team.id);
-                          kvpDetailState.closeAllDropdowns();
-                        }}
-                      >
-                        {team.name}
-                      </button>
-                    {/each}
-                  </div>
+                  <span>
+                    {kvpDetailState.selectedOrgId !== null ?
+                      (kvpDetailState.teams.find(
+                        (t) => t.id === kvpDetailState.selectedOrgId,
+                      )?.name ?? `${labels.team} auswählen...`)
+                    : `${labels.team} auswählen...`}
+                  </span>
+                  <i class="fas fa-chevron-down"></i>
+                </button>
+                <div
+                  class="dropdown__menu"
+                  class:active={kvpDetailState.activeDropdown === 'shareTeam'}
+                >
+                  {#each kvpDetailState.teams as team (team.id)}
+                    <button
+                      type="button"
+                      class="dropdown__option"
+                      onclick={(e) => {
+                        e.preventDefault();
+                        kvpDetailState.setSelectedOrgId(team.id);
+                        kvpDetailState.closeAllDropdowns();
+                      }}
+                    >
+                      {team.name}
+                    </button>
+                  {/each}
                 </div>
-              {/if}
-            </label>
-          {/if}
+              </div>
+            {/if}
+          </label>
 
           <!-- Asset -->
           {#if availableAssets.length > 0}

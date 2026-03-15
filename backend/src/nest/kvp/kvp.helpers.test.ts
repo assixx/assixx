@@ -145,14 +145,15 @@ describe('buildVisibilityClause', () => {
     expect(result.clause).toContain('s.is_shared = true');
   });
 
-  it('should use direct user_teams check for unshared KVPs (not scope)', () => {
+  it('should use only team_lead/deputy_lead check for unshared KVPs (not user_teams)', () => {
     const orgInfo = createOrgInfo({ teamIds: [1, 2, 3] });
     const result = buildVisibilityClause(orgInfo, 42, 3);
 
-    // Unshared branch uses user_teams subquery, not ANY(teamIds)
+    // Unshared branch uses team_lead_id/deputy_lead_id only, NOT user_teams
     expect(result.clause).toContain('s.is_shared = false');
-    expect(result.clause).toContain('user_teams ut');
-    expect(result.clause).toContain('ut.user_id =');
+    expect(result.clause).toContain('t.team_lead_id =');
+    expect(result.clause).toContain('t.deputy_lead_id =');
+    expect(result.clause).not.toMatch(/is_shared = false[\s\S]*?user_teams/);
   });
 
   it('should include team_lead/deputy_lead check for unshared KVPs', () => {

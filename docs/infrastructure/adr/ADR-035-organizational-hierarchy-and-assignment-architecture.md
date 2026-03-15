@@ -703,12 +703,12 @@ Das Assixx-System hat **zwei orthogonale Berechtigungsebenen**, die unabhängig 
 
 Die Zuweisungen werden in den Management-Tabellen durch ein einheitliches Badge-System visualisiert:
 
-| Badge-Typ       | CSS-Klasse         | Icon         | Verwendung                             |
-| --------------- | ------------------ | ------------ | -------------------------------------- |
-| **Vollzugriff** | `badge--primary`   | `fa-globe`   | `has_full_access = true`               |
-| **Anzahl**      | `badge--info`      | —            | N direkte Zuweisungen, Tooltip = Namen |
+| Badge-Typ       | CSS-Klasse         | Icon         | Verwendung                                |
+| --------------- | ------------------ | ------------ | ----------------------------------------- |
+| **Vollzugriff** | `badge--primary`   | `fa-globe`   | `has_full_access = true`                  |
+| **Anzahl**      | `badge--info`      | —            | N direkte Zuweisungen, Tooltip = Namen    |
 | **Vererbt**     | `badge--warning`   | `fa-sitemap` | Zugriff via Hierarchie-Vererbung (orange) |
-| **Keine**       | `badge--secondary` | —            | Keine Zuweisungen                      |
+| **Keine**       | `badge--secondary` | —            | Keine Zuweisungen                         |
 
 **Badge-Logik für Admins:**
 

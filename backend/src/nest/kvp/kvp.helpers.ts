@@ -142,9 +142,6 @@ export function buildVisibilityClause(
       WHERE kso.suggestion_id = s.id
         AND (
           (kso.org_type = 'team' AND kso.org_id IN (
-            SELECT ut.team_id FROM user_teams ut
-            WHERE ut.user_id = ${h.userId} AND ut.tenant_id = s.tenant_id
-            UNION ALL
             SELECT t.id FROM teams t
             WHERE (t.team_lead_id = ${h.userId} OR t.deputy_lead_id = ${h.userId})
               AND t.tenant_id = s.tenant_id
@@ -152,9 +149,6 @@ export function buildVisibilityClause(
           OR (kso.org_type = 'asset' AND EXISTS (
             SELECT 1 FROM asset_teams ats
             WHERE ats.asset_id = kso.org_id AND ats.team_id IN (
-              SELECT ut.team_id FROM user_teams ut
-              WHERE ut.user_id = ${h.userId} AND ut.tenant_id = s.tenant_id
-              UNION ALL
               SELECT t.id FROM teams t
               WHERE (t.team_lead_id = ${h.userId} OR t.deputy_lead_id = ${h.userId})
                 AND t.tenant_id = s.tenant_id
