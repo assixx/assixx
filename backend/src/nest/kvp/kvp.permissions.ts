@@ -18,7 +18,7 @@ export const KVP_PERMISSIONS: PermissionCategoryDef = {
       code: 'kvp-suggestions',
       label: 'Vorschläge',
       icon: 'fa-lightbulb',
-      allowedPermissions: ['canRead', 'canWrite', 'canDelete'],
+      allowedPermissions: ['canRead', 'canWrite'],
     },
     {
       code: 'kvp-comments',

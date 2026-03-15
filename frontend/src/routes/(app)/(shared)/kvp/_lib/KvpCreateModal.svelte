@@ -16,11 +16,11 @@
   const log = createLogger('KvpCreateModal');
 
   import { createSuggestion, uploadPhotos } from './api';
-  import { PRIORITY_OPTIONS, UPLOAD_CONFIG } from './constants';
+  import { UPLOAD_CONFIG } from './constants';
   import { kvpState } from './state.svelte';
   import { validatePhotoFile, readFileAsDataUrl, isFaIcon } from './utils';
 
-  import type { KvpFormData, KvpPriority, UserTeamWithAssets } from './types';
+  import type { KvpFormData, UserTeamWithAssets } from './types';
 
   interface Props {
     userOrganizations: UserTeamWithAssets[];
@@ -46,8 +46,6 @@
   let formCategoryIcon = $state<string | undefined>(undefined);
   let formCategoryColor = $state<string | undefined>(undefined);
   let formCategoryValue = $state('');
-  let formPriorityDisplay = $state('Normal');
-  let formPriorityValue = $state<KvpPriority>('normal');
 
   // Team/Asset selection state
   let selectedTeamIds = $state<number[]>([]);
@@ -101,12 +99,6 @@
     formCategoryIcon = icon;
     formCategoryColor = color;
     formCategoryDisplay = label;
-    closeAllDropdowns();
-  }
-
-  function handleFormPrioritySelect(value: string, label: string) {
-    formPriorityValue = value as KvpPriority;
-    formPriorityDisplay = label;
     closeAllDropdowns();
   }
 
@@ -182,8 +174,6 @@
     formCategoryIcon = undefined;
     formCategoryColor = undefined;
     formCategoryValue = '';
-    formPriorityDisplay = 'Normal';
-    formPriorityValue = 'normal';
     formElement?.reset();
     onclose();
   }
@@ -211,7 +201,6 @@
       description: description.trim(),
       categoryId,
       customCategoryId,
-      priority: formPriorityValue,
       expectedBenefit: expectedBenefit !== '' ? expectedBenefit : undefined,
       teamIds: selectedTeamIds,
       assetIds: selectedAssetIds,
@@ -452,60 +441,6 @@
           </div>
         </div>
 
-        <div class="form-field">
-          <label
-            class="form-field__label"
-            for="kvpPriorityValue">Priorität</label
-          >
-          <div
-            class="dropdown"
-            data-dropdown="kvpPriority"
-          >
-            <div
-              class="dropdown__trigger"
-              class:active={activeDropdown === 'kvpPriority'}
-              role="button"
-              tabindex="0"
-              onclick={() => {
-                toggleDropdown('kvpPriority');
-              }}
-              onkeydown={(e) => {
-                if (e.key === 'Enter') toggleDropdown('kvpPriority');
-              }}
-            >
-              <span>{formPriorityDisplay}</span>
-              <i class="fas fa-chevron-down"></i>
-            </div>
-            <div
-              class="dropdown__menu"
-              class:active={activeDropdown === 'kvpPriority'}
-            >
-              {#each PRIORITY_OPTIONS as option (option.value)}
-                <div
-                  class="dropdown__option"
-                  role="button"
-                  tabindex="0"
-                  onclick={() => {
-                    handleFormPrioritySelect(option.value, option.label);
-                  }}
-                  onkeydown={(e) => {
-                    if (e.key === 'Enter')
-                      handleFormPrioritySelect(option.value, option.label);
-                  }}
-                >
-                  {option.label}
-                </div>
-              {/each}
-            </div>
-            <input
-              type="hidden"
-              id="kvpPriorityValue"
-              name="priority"
-              value={formPriorityValue}
-            />
-          </div>
-        </div>
-
         <!-- Team Selection -->
         <div
           class="form-field"
@@ -587,6 +522,7 @@
             class="form-field__control"
             placeholder="Welche Vorteile bringt dieser Vorschlag?"
             rows="3"
+            maxlength="1000"
           ></textarea>
         </div>
 

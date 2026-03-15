@@ -47,7 +47,7 @@ export const UpdateSuggestionSchema = z.object({
   expectedBenefit: z
     .string()
     .trim()
-    .max(500, 'Expected benefit cannot exceed 500 characters')
+    .max(1000, 'Expected benefit cannot exceed 1000 characters')
     .optional(),
   estimatedCost: z
     .string()

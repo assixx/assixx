@@ -156,7 +156,6 @@ export interface KvpFormData {
   description: string;
   categoryId: number | null;
   customCategoryId: number | null;
-  priority: KvpPriority;
   expectedBenefit?: string;
   teamIds: number[];
   assetIds: number[];
