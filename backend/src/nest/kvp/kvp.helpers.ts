@@ -115,11 +115,12 @@ function attachConfirmationStatus(
 /**
  * Build visibility clause for KVP queries
  *
- * Implements the 4-tier visibility model:
- * - Stufe 1: Team (creator, team members, team lead)
- * - Stufe 2: Department (+ dept members via teams, dept lead)
- * - Stufe 3: Area (+ area members via depts, area lead)
- * - Stufe 4: Company (all users in tenant)
+ * Two-phase visibility model:
+ * - Unshared (is_shared=false): Strict team scope — only creator, direct team members
+ *   (user_teams), team_lead/deputy_lead. Admins without has_full_access cannot see.
+ * - Shared (is_shared=true): Full org-scope visibility via admin permissions + lead
+ *   positions + hierarchy cascade (dept/area/company).
+ * - Always visible: creator's own, implemented, company-level
  */
 export function buildVisibilityClause(
   orgInfo: ExtendedUserOrgInfo,
@@ -133,21 +134,49 @@ export function buildVisibilityClause(
   const { params, placeholders: h } = buildOrgParams(orgInfo, userId, startIdx);
 
   const clause = ` AND (
-    s.submitted_by = ${h.userId} OR s.status = 'implemented'
-    OR (s.org_level = 'team' AND (s.org_id = ANY(${h.teamIds}) OR s.org_id = ANY(${h.teamLeadOf})))
-    OR (s.org_level = 'department' AND (s.org_id = ANY(${h.deptIds}) OR s.org_id = ANY(${h.teamsDeptIds}) OR s.org_id = ANY(${h.deptLeadOf})))
-    OR (s.org_level = 'area' AND (s.org_id = ANY(${h.areaIds}) OR s.org_id = ANY(${h.deptsAreaIds}) OR s.org_id = ANY(${h.areaLeadOf})))
+    s.submitted_by = ${h.userId}
+    OR s.status = 'implemented'
     OR s.org_level = 'company'
-    OR (s.org_level = 'asset' AND EXISTS (
+    OR (s.is_shared = false AND EXISTS (
       SELECT 1 FROM kvp_suggestion_organizations kso
-      JOIN asset_teams mt ON kso.org_type = 'asset' AND kso.org_id = mt.asset_id
-      WHERE kso.suggestion_id = s.id AND mt.team_id = ANY(${h.teamIds})
+      WHERE kso.suggestion_id = s.id
+        AND (
+          (kso.org_type = 'team' AND kso.org_id IN (
+            SELECT ut.team_id FROM user_teams ut
+            WHERE ut.user_id = ${h.userId} AND ut.tenant_id = s.tenant_id
+            UNION ALL
+            SELECT t.id FROM teams t
+            WHERE (t.team_lead_id = ${h.userId} OR t.deputy_lead_id = ${h.userId})
+              AND t.tenant_id = s.tenant_id
+          ))
+          OR (kso.org_type = 'asset' AND EXISTS (
+            SELECT 1 FROM asset_teams ats
+            WHERE ats.asset_id = kso.org_id AND ats.team_id IN (
+              SELECT ut.team_id FROM user_teams ut
+              WHERE ut.user_id = ${h.userId} AND ut.tenant_id = s.tenant_id
+              UNION ALL
+              SELECT t.id FROM teams t
+              WHERE (t.team_lead_id = ${h.userId} OR t.deputy_lead_id = ${h.userId})
+                AND t.tenant_id = s.tenant_id
+            )
+          ))
+        )
     ))
-    OR EXISTS (
-      SELECT 1 FROM kvp_suggestion_organizations kso
-      WHERE kso.suggestion_id = s.id AND kso.org_type = 'team'
-        AND kso.org_id = ANY(${h.teamIds})
-    )
+    OR (s.is_shared = true AND (
+      (s.org_level = 'team' AND (s.org_id = ANY(${h.teamIds}) OR s.org_id = ANY(${h.teamLeadOf})))
+      OR (s.org_level = 'department' AND (s.org_id = ANY(${h.deptIds}) OR s.org_id = ANY(${h.teamsDeptIds}) OR s.org_id = ANY(${h.deptLeadOf})))
+      OR (s.org_level = 'area' AND (s.org_id = ANY(${h.areaIds}) OR s.org_id = ANY(${h.deptsAreaIds}) OR s.org_id = ANY(${h.areaLeadOf})))
+      OR (s.org_level = 'asset' AND EXISTS (
+        SELECT 1 FROM kvp_suggestion_organizations kso
+        JOIN asset_teams mt ON kso.org_type = 'asset' AND kso.org_id = mt.asset_id
+        WHERE kso.suggestion_id = s.id AND mt.team_id = ANY(${h.teamIds})
+      ))
+      OR EXISTS (
+        SELECT 1 FROM kvp_suggestion_organizations kso
+        WHERE kso.suggestion_id = s.id AND kso.org_type = 'team'
+          AND kso.org_id = ANY(${h.teamIds})
+      )
+    ))
   )`;
 
   return { clause, params };

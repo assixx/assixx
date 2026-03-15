@@ -57,6 +57,7 @@
     data.userOrganizations,
   );
   const permissionDenied = $derived<boolean>(data.permissionDenied);
+  const showStats = $derived<boolean>(data.showStats);
 
   // Sync SSR data to state store (for UI components that depend on it)
   // IMPORTANT: Use untrack to prevent infinite loop - setUser calls updateEffectiveRole
@@ -153,8 +154,8 @@
   <PermissionDenied addonName="das KVP-Modul" />
 {:else}
   <div class="container">
-    <!-- Statistics Overview (Admin only) -->
-    {#if kvpState.isAdmin}
+    <!-- Statistics Overview (Admin, Root, Team Lead) -->
+    {#if showStats}
       <div class="mb-6 grid grid-cols-1 gap-6 md:grid-cols-3">
         <div class="card-stat">
           <div class="card-stat__icon">

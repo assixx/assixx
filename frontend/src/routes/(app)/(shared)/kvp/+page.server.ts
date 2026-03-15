@@ -47,6 +47,7 @@ function parseSuggestionsResponse(
 interface ParentUser {
   id: number;
   role: 'root' | 'admin' | 'employee';
+  position?: string;
   tenantId: number;
   teamIds?: number[];
   teamDepartmentId?: number | null;
@@ -118,11 +119,15 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
   requireAddon(parentData.activeAddons, 'kvp');
   const isAdmin =
     parentData.user?.role === 'admin' || parentData.user?.role === 'root';
+  const isTeamLead =
+    (parentData.user as ParentUser | null)?.position === 'team_lead';
+  const showStats = isAdmin || isTeamLead;
 
-  const kvpData = await fetchKvpData(token, fetch, isAdmin);
+  const kvpData = await fetchKvpData(token, fetch, showStats);
 
   return {
     ...kvpData,
+    showStats,
     currentUser: mapParentUserToCurrentUser(
       parentData.user as ParentUser | null,
     ),

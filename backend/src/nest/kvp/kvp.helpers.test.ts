@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   buildFilterConditions,
   buildStatusFilter,
+  buildVisibilityClause,
   hasExtendedOrgAccess,
   isUuid,
   mapOrgLevelToRecipient,
@@ -99,6 +100,100 @@ describe('hasExtendedOrgAccess', () => {
     const orgInfo = createOrgInfo();
 
     expect(hasExtendedOrgAccess('unknown', 1, orgInfo)).toBe(false);
+  });
+});
+
+// =============================================================
+// buildVisibilityClause (two-phase: unshared vs shared)
+// =============================================================
+
+describe('buildVisibilityClause', () => {
+  it('should return empty clause when user has full access', () => {
+    const orgInfo = createOrgInfo({ hasFullAccess: true });
+    const result = buildVisibilityClause(orgInfo, 1, 3);
+
+    expect(result.clause).toBe('');
+    expect(result.params).toHaveLength(0);
+  });
+
+  it('should always include creator visibility (submitted_by)', () => {
+    const orgInfo = createOrgInfo();
+    const result = buildVisibilityClause(orgInfo, 42, 3);
+
+    expect(result.clause).toContain('s.submitted_by =');
+  });
+
+  it('should always include implemented status visibility', () => {
+    const orgInfo = createOrgInfo();
+    const result = buildVisibilityClause(orgInfo, 1, 3);
+
+    expect(result.clause).toContain("s.status = 'implemented'");
+  });
+
+  it('should always include company-level visibility', () => {
+    const orgInfo = createOrgInfo();
+    const result = buildVisibilityClause(orgInfo, 1, 3);
+
+    expect(result.clause).toContain("s.org_level = 'company'");
+  });
+
+  it('should split unshared and shared visibility phases', () => {
+    const orgInfo = createOrgInfo({ teamIds: [1] });
+    const result = buildVisibilityClause(orgInfo, 1, 3);
+
+    expect(result.clause).toContain('s.is_shared = false');
+    expect(result.clause).toContain('s.is_shared = true');
+  });
+
+  it('should use direct user_teams check for unshared KVPs (not scope)', () => {
+    const orgInfo = createOrgInfo({ teamIds: [1, 2, 3] });
+    const result = buildVisibilityClause(orgInfo, 42, 3);
+
+    // Unshared branch uses user_teams subquery, not ANY(teamIds)
+    expect(result.clause).toContain('s.is_shared = false');
+    expect(result.clause).toContain('user_teams ut');
+    expect(result.clause).toContain('ut.user_id =');
+  });
+
+  it('should include team_lead/deputy_lead check for unshared KVPs', () => {
+    const orgInfo = createOrgInfo();
+    const result = buildVisibilityClause(orgInfo, 1, 3);
+
+    // Unshared branch checks team_lead_id and deputy_lead_id
+    expect(result.clause).toContain('t.team_lead_id =');
+    expect(result.clause).toContain('t.deputy_lead_id =');
+  });
+
+  it('should include asset_teams check for unshared asset-level KVPs', () => {
+    const orgInfo = createOrgInfo();
+    const result = buildVisibilityClause(orgInfo, 1, 3);
+
+    expect(result.clause).toContain('asset_teams ats');
+  });
+
+  it('should use scope-based ANY() checks for shared KVPs', () => {
+    const orgInfo = createOrgInfo({
+      teamIds: [1],
+      departmentIds: [10],
+      areaIds: [20],
+    });
+    const result = buildVisibilityClause(orgInfo, 1, 3);
+
+    // Shared branch uses ANY() with scope arrays
+    expect(result.clause).toContain('s.is_shared = true');
+    expect(result.clause).toContain("s.org_level = 'team'");
+    expect(result.clause).toContain("s.org_level = 'department'");
+    expect(result.clause).toContain("s.org_level = 'area'");
+  });
+
+  it('should generate correct number of params (9 org arrays + userId)', () => {
+    const orgInfo = createOrgInfo({ teamIds: [1, 2], departmentIds: [10] });
+    const result = buildVisibilityClause(orgInfo, 42, 3);
+
+    // 8 org arrays + 1 userId = 9 params
+    expect(result.params).toHaveLength(9);
+    // Last param is userId
+    expect(result.params[8]).toBe(42);
   });
 });
 
