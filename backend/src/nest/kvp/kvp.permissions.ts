@@ -20,11 +20,6 @@ export const KVP_PERMISSIONS: PermissionCategoryDef = {
       icon: 'fa-lightbulb',
       allowedPermissions: ['canRead', 'canWrite'],
     },
-    {
-      code: 'kvp-comments',
-      label: 'Kommentare',
-      icon: 'fa-comments',
-      allowedPermissions: ['canRead', 'canWrite', 'canDelete'],
-    },
+    // kvp-comments entfernt: Employees haben nur impliziten Read-Zugriff (Backend erlaubt Write/Delete ausschließlich Admin/Root)
   ],
 };
