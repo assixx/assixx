@@ -44,6 +44,7 @@ export interface TeamRow {
   created_at: Date;
   updated_at: Date;
   department_name: string | undefined;
+  department_area_id: number | null;
   department_area_name: string | undefined;
   team_lead_name: string | undefined;
   deputy_lead_name: string | undefined;
@@ -69,6 +70,7 @@ export interface TeamResponse {
   createdAt: string | undefined;
   updatedAt: string | undefined;
   departmentName: string | undefined;
+  departmentAreaId: number | null;
   departmentAreaName: string | undefined;
   leaderName: string | undefined;
   deputyLeaderName: string | undefined;
@@ -186,6 +188,7 @@ export class TeamsService {
   private readonly FIND_ALL_TEAMS_QUERY = `
     SELECT t.*,
       d.name as department_name,
+      d.area_id as department_area_id,
       a.name as department_area_name,
       CONCAT(COALESCE(u.first_name, ''), ' ', COALESCE(u.last_name, '')) as team_lead_name,
       CONCAT(COALESCE(du.first_name, ''), ' ', COALESCE(du.last_name, '')) as deputy_lead_name,
@@ -224,6 +227,7 @@ export class TeamsService {
       createdAt: team.created_at.toISOString(),
       updatedAt: team.updated_at.toISOString(),
       departmentName: team.department_name,
+      departmentAreaId: team.department_area_id,
       departmentAreaName: team.department_area_name,
       leaderName: team.team_lead_name,
       deputyLeaderName: team.deputy_lead_name ?? undefined,
@@ -291,6 +295,7 @@ export class TeamsService {
     const rows = await this.db.query<TeamRow>(
       `SELECT t.*,
         d.name as department_name,
+        d.area_id as department_area_id,
         a.name as department_area_name,
         CONCAT(COALESCE(u.first_name, ''), ' ', COALESCE(u.last_name, '')) as team_lead_name,
         (SELECT COUNT(*) FROM user_teams ut WHERE ut.team_id = t.id) as member_count,

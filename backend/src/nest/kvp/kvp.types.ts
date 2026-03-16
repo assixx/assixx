@@ -300,7 +300,6 @@ export interface SuggestionFilters {
 
 /** SQL placeholder strings for org-based visibility queries */
 export interface OrgPlaceholders {
-  teamIds: string;
   teamLeadOf: string;
   deptIds: string;
   teamsDeptIds: string;

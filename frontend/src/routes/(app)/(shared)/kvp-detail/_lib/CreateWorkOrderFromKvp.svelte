@@ -9,11 +9,7 @@
   import AppDatePicker from '$lib/components/AppDatePicker.svelte';
   import { showSuccessAlert, showErrorAlert } from '$lib/stores/toast';
 
-  import {
-    createWorkOrder,
-    fetchEligibleUsers,
-    logApiError,
-  } from '../../work-orders/_lib/api';
+  import { createWorkOrder, logApiError } from '../../work-orders/_lib/api';
   import {
     PRIORITY_LABELS,
     MESSAGES as WO_MESSAGES,
@@ -29,11 +25,18 @@
   interface Props {
     show: boolean;
     suggestion: KvpSuggestion | null;
+    preloadedUsers?: EligibleUser[] | null;
     onclose: () => void;
     onsaved: () => void;
   }
 
-  const { show, suggestion, onclose, onsaved }: Props = $props();
+  const {
+    show,
+    suggestion,
+    preloadedUsers = null,
+    onclose,
+    onsaved,
+  }: Props = $props();
 
   // ---------------------------------------------------------------------------
   // FORM STATE
@@ -56,7 +59,7 @@
   // ---------------------------------------------------------------------------
 
   let eligibleUsers = $state<EligibleUser[]>([]);
-  let loadingUsers = $state(false);
+  const loadingUsers = $state(false);
   let submitting = $state(false);
   let errorMessage = $state<string | null>(null);
   let priorityDropdownOpen = $state(false);
@@ -77,21 +80,9 @@
       assigneeTouched = false;
       dueDateTouched = false;
       errorMessage = null;
-      void loadUsers();
+      eligibleUsers = preloadedUsers ?? [];
     }
   });
-
-  async function loadUsers(): Promise<void> {
-    loadingUsers = true;
-    try {
-      eligibleUsers = await fetchEligibleUsers();
-    } catch (err: unknown) {
-      logApiError('fetchEligibleUsers', err);
-      eligibleUsers = [];
-    } finally {
-      loadingUsers = false;
-    }
-  }
 
   // ---------------------------------------------------------------------------
   // HANDLERS

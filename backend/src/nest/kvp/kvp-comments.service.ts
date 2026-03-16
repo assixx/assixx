@@ -4,12 +4,7 @@
  * Manages comments on KVP suggestions. Supports threaded comments (parent_id) and pagination.
  * Called by KvpService facade — never directly by the controller.
  */
-import {
-  BadRequestException,
-  ForbiddenException,
-  Injectable,
-  Logger,
-} from '@nestjs/common';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 
 import { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import { DatabaseService } from '../database/database.service.js';
@@ -132,7 +127,8 @@ export class KvpCommentsService {
 
   /**
    * Add a comment (or reply) to a suggestion.
-   * Only admin and root can add comments (Defense in Depth).
+   * Access: PermissionGuard enforces kvp-comments.canWrite.
+   * Internal comments are restricted to admin/root — employees are forced to isInternal=false.
    * When parentId is provided, validates the parent belongs to the same suggestion.
    */
   async addComment(
@@ -146,11 +142,8 @@ export class KvpCommentsService {
   ): Promise<KVPComment> {
     this.logger.log(`Adding comment to suggestion ${numericId}`);
 
-    if (userRole !== 'admin' && userRole !== 'root') {
-      throw new ForbiddenException(
-        'Only admins can add comments to KVP suggestions',
-      );
-    }
+    const safeIsInternal =
+      userRole === 'admin' || userRole === 'root' ? isInternal : false;
 
     if (parentId !== undefined) {
       const parentRows = await this.db.query<{ suggestion_id: number }>(
@@ -173,7 +166,7 @@ export class KvpCommentsService {
       `INSERT INTO kvp_comments (tenant_id, suggestion_id, user_id, comment, is_internal, parent_id)
        VALUES ($1, $2, $3, $4, $5, $6)
        RETURNING id`,
-      [tenantId, numericId, userId, comment, isInternal, parentId ?? null],
+      [tenantId, numericId, userId, comment, safeIsInternal, parentId ?? null],
     );
 
     if (rows[0] === undefined) {
@@ -193,7 +186,7 @@ export class KvpCommentsService {
       id: rows[0].id,
       suggestionId: numericId,
       comment,
-      isInternal,
+      isInternal: safeIsInternal,
       parentId: parentId ?? null,
       replyCount: 0,
       createdBy: userId,

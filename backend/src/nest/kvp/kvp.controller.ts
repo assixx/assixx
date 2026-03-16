@@ -108,6 +108,7 @@ interface MessageResponse {
 const KVP_FEATURE = 'kvp';
 const KVP_SUGGESTIONS = 'kvp-suggestions';
 const KVP_COMMENTS = 'kvp-comments';
+const KVP_SHARING = 'kvp-sharing';
 
 @Controller('kvp')
 @RequireAddon('kvp')
@@ -456,12 +457,11 @@ export class KvpController {
 
   /**
    * PUT /kvp/:id/share
-   * Share a suggestion at organization level (admin/root only)
+   * Share a suggestion at organization level
+   * Requires kvp-sharing.canWrite permission (PermissionGuard enforced)
    */
   @Put(':id/share')
-  @UseGuards(RolesGuard)
-  @Roles('admin', 'root')
-  @RequirePermission(KVP_FEATURE, KVP_SUGGESTIONS, 'canWrite')
+  @RequirePermission(KVP_FEATURE, KVP_SHARING, 'canWrite')
   async shareSuggestion(
     @Param('id') id: string,
     @Body() dto: ShareSuggestionDto,
@@ -480,12 +480,11 @@ export class KvpController {
 
   /**
    * POST /kvp/:id/unshare
-   * Unshare a suggestion (admin/root only)
+   * Unshare a suggestion
+   * Requires kvp-sharing.canWrite permission (PermissionGuard enforced)
    */
   @Post(':id/unshare')
-  @UseGuards(RolesGuard)
-  @Roles('admin', 'root')
-  @RequirePermission(KVP_FEATURE, KVP_SUGGESTIONS, 'canWrite')
+  @RequirePermission(KVP_FEATURE, KVP_SHARING, 'canWrite')
   async unshareSuggestion(
     @Param('id') id: string,
     @CurrentUser() user: NestAuthUser,
@@ -590,11 +589,9 @@ export class KvpController {
   /**
    * POST /kvp/:id/comments
    * Add a comment or reply to a suggestion
-   * Only admin and root users can add comments
+   * Requires kvp-comments.canWrite permission (PermissionGuard enforced)
    */
   @Post(':id/comments')
-  @UseGuards(RolesGuard)
-  @Roles('admin', 'root')
   @RequirePermission(KVP_FEATURE, KVP_COMMENTS, 'canWrite')
   @HttpCode(HttpStatus.CREATED)
   async addComment(

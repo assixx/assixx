@@ -34,6 +34,39 @@ const EMPTY_COMMENTS: PaginatedComments = {
   hasMore: false,
 };
 
+/** Derive departments from teams when scope-filtered endpoint returns empty */
+function deriveDepartments(teamList: Team[]): Department[] {
+  const map = new Map<number, Department>();
+  for (const t of teamList) {
+    if (
+      t.departmentId !== undefined &&
+      t.departmentId !== null &&
+      t.departmentName !== undefined
+    ) {
+      map.set(t.departmentId, { id: t.departmentId, name: t.departmentName });
+    }
+  }
+  return [...map.values()];
+}
+
+/** Derive areas from teams when scope-filtered endpoint returns empty */
+function deriveAreas(teamList: Team[]): Area[] {
+  const map = new Map<number, Area>();
+  for (const t of teamList) {
+    if (
+      t.departmentAreaId !== undefined &&
+      t.departmentAreaId !== null &&
+      t.departmentAreaName !== undefined
+    ) {
+      map.set(t.departmentAreaId, {
+        id: t.departmentAreaId,
+        name: t.departmentAreaName,
+      });
+    }
+  }
+  return [...map.values()];
+}
+
 /** Parallel fetch: comments, attachments, and org data for share modal */
 async function fetchPageData(
   idOrUuid: string,
@@ -54,12 +87,17 @@ async function fetchPageData(
       apiFetch<Asset[]>('/assets', token, fetchFn),
     ]);
 
+  const teamList = ensureArray(teams);
+  const departmentList = ensureArray(depts);
+  const areaList = ensureArray(areas);
+
   return {
     comments: commentsData ?? EMPTY_COMMENTS,
     attachments: ensureArray(attachmentsData),
-    departments: ensureArray(depts),
-    teams: ensureArray(teams),
-    areas: ensureArray(areas),
+    departments:
+      departmentList.length > 0 ? departmentList : deriveDepartments(teamList),
+    teams: teamList,
+    areas: areaList.length > 0 ? areaList : deriveAreas(teamList),
     assets: ensureArray(assets),
   };
 }

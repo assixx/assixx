@@ -55,145 +55,7 @@
         </p>
 
         <div class="choice-group">
-          <!-- Department -->
-          <label class="choice-card choice-card--lg">
-            <input
-              type="radio"
-              name="orgLevel"
-              value="department"
-              class="choice-card__input"
-              checked={kvpDetailState.selectedShareLevel === 'department'}
-              onchange={() => {
-                kvpDetailState.setSelectedShareLevel('department');
-              }}
-            />
-            <span class="choice-card__text">
-              {labels.department}
-              <span class="choice-card__description"
-                >Für Ihre gesamte {labels.department} sichtbar</span
-              >
-            </span>
-            <!-- Dropdown inside label like Legacy -->
-            {#if kvpDetailState.selectedShareLevel === 'department'}
-              <!-- svelte-ignore a11y_click_events_have_key_events -->
-              <!-- svelte-ignore a11y_no_static_element_interactions -->
-              <div
-                class="dropdown"
-                data-dropdown="shareDept"
-                onclick={(e) => {
-                  e.stopPropagation();
-                }}
-              >
-                <button
-                  type="button"
-                  class="dropdown__trigger"
-                  class:active={kvpDetailState.activeDropdown === 'shareDept'}
-                  onclick={(e) => {
-                    e.preventDefault();
-                    kvpDetailState.toggleDropdown('shareDept');
-                  }}
-                >
-                  <span>
-                    {kvpDetailState.selectedOrgId !== null ?
-                      (kvpDetailState.departments.find(
-                        (d) => d.id === kvpDetailState.selectedOrgId,
-                      )?.name ?? '{labels.department} auswählen...')
-                    : '{labels.department} auswählen...'}
-                  </span>
-                  <i class="fas fa-chevron-down"></i>
-                </button>
-                <div
-                  class="dropdown__menu"
-                  class:active={kvpDetailState.activeDropdown === 'shareDept'}
-                >
-                  {#each kvpDetailState.departments as dept (dept.id)}
-                    <button
-                      type="button"
-                      class="dropdown__option"
-                      onclick={(e) => {
-                        e.preventDefault();
-                        kvpDetailState.setSelectedOrgId(dept.id);
-                        kvpDetailState.closeAllDropdowns();
-                      }}
-                    >
-                      {dept.name}
-                    </button>
-                  {/each}
-                </div>
-              </div>
-            {/if}
-          </label>
-
-          <!-- Area -->
-          <label class="choice-card choice-card--lg">
-            <input
-              type="radio"
-              name="orgLevel"
-              value="area"
-              class="choice-card__input"
-              checked={kvpDetailState.selectedShareLevel === 'area'}
-              onchange={() => {
-                kvpDetailState.setSelectedShareLevel('area');
-              }}
-            />
-            <span class="choice-card__text">
-              Bereich
-              <span class="choice-card__description"
-                >Für alle im gleichen Bereich sichtbar</span
-              >
-            </span>
-            <!-- Dropdown inside label like Legacy -->
-            {#if kvpDetailState.selectedShareLevel === 'area'}
-              <!-- svelte-ignore a11y_click_events_have_key_events -->
-              <!-- svelte-ignore a11y_no_static_element_interactions -->
-              <div
-                class="dropdown"
-                data-dropdown="shareArea"
-                onclick={(e) => {
-                  e.stopPropagation();
-                }}
-              >
-                <button
-                  type="button"
-                  class="dropdown__trigger"
-                  class:active={kvpDetailState.activeDropdown === 'shareArea'}
-                  onclick={(e) => {
-                    e.preventDefault();
-                    kvpDetailState.toggleDropdown('shareArea');
-                  }}
-                >
-                  <span>
-                    {kvpDetailState.selectedOrgId !== null ?
-                      (kvpDetailState.areas.find(
-                        (a) => a.id === kvpDetailState.selectedOrgId,
-                      )?.name ?? 'Bereich auswählen...')
-                    : 'Bereich auswählen...'}
-                  </span>
-                  <i class="fas fa-chevron-down"></i>
-                </button>
-                <div
-                  class="dropdown__menu"
-                  class:active={kvpDetailState.activeDropdown === 'shareArea'}
-                >
-                  {#each kvpDetailState.areas as area (area.id)}
-                    <button
-                      type="button"
-                      class="dropdown__option"
-                      onclick={(e) => {
-                        e.preventDefault();
-                        kvpDetailState.setSelectedOrgId(area.id);
-                        kvpDetailState.closeAllDropdowns();
-                      }}
-                    >
-                      {area.name}
-                    </button>
-                  {/each}
-                </div>
-              </div>
-            {/if}
-          </label>
-
-          <!-- Team -->
+          <!-- Team (smallest scope first) -->
           <label class="choice-card choice-card--lg">
             <input
               type="radio"
@@ -261,6 +123,142 @@
             {/if}
           </label>
 
+          <!-- Department -->
+          <label class="choice-card choice-card--lg">
+            <input
+              type="radio"
+              name="orgLevel"
+              value="department"
+              class="choice-card__input"
+              checked={kvpDetailState.selectedShareLevel === 'department'}
+              onchange={() => {
+                kvpDetailState.setSelectedShareLevel('department');
+              }}
+            />
+            <span class="choice-card__text">
+              {labels.department}
+              <span class="choice-card__description"
+                >Für Ihre gesamte {labels.department} sichtbar</span
+              >
+            </span>
+            {#if kvpDetailState.selectedShareLevel === 'department'}
+              <!-- svelte-ignore a11y_click_events_have_key_events -->
+              <!-- svelte-ignore a11y_no_static_element_interactions -->
+              <div
+                class="dropdown"
+                data-dropdown="shareDept"
+                onclick={(e) => {
+                  e.stopPropagation();
+                }}
+              >
+                <button
+                  type="button"
+                  class="dropdown__trigger"
+                  class:active={kvpDetailState.activeDropdown === 'shareDept'}
+                  onclick={(e) => {
+                    e.preventDefault();
+                    kvpDetailState.toggleDropdown('shareDept');
+                  }}
+                >
+                  <span>
+                    {kvpDetailState.selectedOrgId !== null ?
+                      (kvpDetailState.departments.find(
+                        (d) => d.id === kvpDetailState.selectedOrgId,
+                      )?.name ?? `${labels.department} auswählen...`)
+                    : `${labels.department} auswählen...`}
+                  </span>
+                  <i class="fas fa-chevron-down"></i>
+                </button>
+                <div
+                  class="dropdown__menu"
+                  class:active={kvpDetailState.activeDropdown === 'shareDept'}
+                >
+                  {#each kvpDetailState.departments as dept (dept.id)}
+                    <button
+                      type="button"
+                      class="dropdown__option"
+                      onclick={(e) => {
+                        e.preventDefault();
+                        kvpDetailState.setSelectedOrgId(dept.id);
+                        kvpDetailState.closeAllDropdowns();
+                      }}
+                    >
+                      {dept.name}
+                    </button>
+                  {/each}
+                </div>
+              </div>
+            {/if}
+          </label>
+
+          <!-- Area -->
+          <label class="choice-card choice-card--lg">
+            <input
+              type="radio"
+              name="orgLevel"
+              value="area"
+              class="choice-card__input"
+              checked={kvpDetailState.selectedShareLevel === 'area'}
+              onchange={() => {
+                kvpDetailState.setSelectedShareLevel('area');
+              }}
+            />
+            <span class="choice-card__text">
+              {labels.area}
+              <span class="choice-card__description"
+                >Für alle im gleichen {labels.area} sichtbar</span
+              >
+            </span>
+            {#if kvpDetailState.selectedShareLevel === 'area'}
+              <!-- svelte-ignore a11y_click_events_have_key_events -->
+              <!-- svelte-ignore a11y_no_static_element_interactions -->
+              <div
+                class="dropdown"
+                data-dropdown="shareArea"
+                onclick={(e) => {
+                  e.stopPropagation();
+                }}
+              >
+                <button
+                  type="button"
+                  class="dropdown__trigger"
+                  class:active={kvpDetailState.activeDropdown === 'shareArea'}
+                  onclick={(e) => {
+                    e.preventDefault();
+                    kvpDetailState.toggleDropdown('shareArea');
+                  }}
+                >
+                  <span>
+                    {kvpDetailState.selectedOrgId !== null ?
+                      (kvpDetailState.areas.find(
+                        (a) => a.id === kvpDetailState.selectedOrgId,
+                      )?.name ?? `${labels.area} auswählen...`)
+                    : `${labels.area} auswählen...`}
+                  </span>
+                  <i class="fas fa-chevron-down"></i>
+                </button>
+                <div
+                  class="dropdown__menu"
+                  class:active={kvpDetailState.activeDropdown === 'shareArea'}
+                >
+                  {#each kvpDetailState.areas as area (area.id)}
+                    <button
+                      type="button"
+                      class="dropdown__option"
+                      onclick={(e) => {
+                        e.preventDefault();
+                        kvpDetailState.setSelectedOrgId(area.id);
+                        kvpDetailState.closeAllDropdowns();
+                      }}
+                    >
+                      {area.name}
+                    </button>
+                  {/each}
+                </div>
+              </div>
+            {/if}
+          </label>
+
           <!-- Asset -->
           {#if availableAssets.length > 0}
             <label class="choice-card choice-card--lg">
@@ -304,8 +302,8 @@
                       {kvpDetailState.selectedOrgId !== null ?
                         (availableAssets.find(
                           (m) => m.id === kvpDetailState.selectedOrgId,
-                        )?.name ?? '{labels.asset} auswählen...')
-                      : '{labels.asset} auswählen...'}
+                        )?.name ?? `${labels.asset} auswählen...`)
+                      : `${labels.asset} auswählen...`}
                     </span>
                     <i class="fas fa-chevron-down"></i>
                   </button>
@@ -333,7 +331,7 @@
             </label>
           {/if}
 
-          <!-- Company -->
+          <!-- Company (broadest scope last) -->
           <label class="choice-card choice-card--lg">
             <input
               type="radio"
@@ -379,21 +377,3 @@
     </div>
   </div>
 {/if}
-
-<style>
-  :global([data-dropdown='shareDept'] .dropdown__trigger),
-  :global([data-dropdown='shareArea'] .dropdown__trigger),
-  :global([data-dropdown='shareTeam'] .dropdown__trigger),
-  :global([data-dropdown='shareAsset'] .dropdown__trigger) {
-    min-width: 220px;
-    width: 50%;
-  }
-
-  :global([data-dropdown='shareDept'] .dropdown__menu),
-  :global([data-dropdown='shareArea'] .dropdown__menu),
-  :global([data-dropdown='shareTeam'] .dropdown__menu),
-  :global([data-dropdown='shareAsset'] .dropdown__menu) {
-    min-width: 220px;
-    width: 50%;
-  }
-</style>

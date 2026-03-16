@@ -19,12 +19,12 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
+import { ClsService } from 'nestjs-cls';
 import { v7 as uuidv7 } from 'uuid';
 
 import { eventBus } from '../../utils/event-bus.js';
 import { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import { DatabaseService } from '../database/database.service.js';
-import type { OrganizationalScope } from '../hierarchy-permission/organizational-scope.types.js';
 import { ScopeService } from '../hierarchy-permission/scope.service.js';
 import { NotificationsService } from '../notifications/notifications.service.js';
 import type { CreateSuggestionDto } from './dto/create-suggestion.dto.js';
@@ -34,7 +34,10 @@ import { KvpAttachmentsService } from './kvp-attachments.service.js';
 import { KvpCommentsService } from './kvp-comments.service.js';
 import { KvpConfirmationsService } from './kvp-confirmations.service.js';
 import { KvpLifecycleService } from './kvp-lifecycle.service.js';
-import { ERROR_SUGGESTION_NOT_FOUND } from './kvp.constants.js';
+import {
+  EMPLOYEE_MEMBERSHIP_QUERY,
+  ERROR_SUGGESTION_NOT_FOUND,
+} from './kvp.constants.js';
 import {
   buildCountQuery,
   buildDetailBaseQuery,
@@ -46,6 +49,7 @@ import {
   hasExtendedOrgAccess,
   isUuid,
   mapOrgLevelToRecipient,
+  mapScopeToOrgInfo,
   transformSuggestion,
 } from './kvp.helpers.js';
 import type {
@@ -91,46 +95,40 @@ export class KvpService {
     private readonly confirmationsService: KvpConfirmationsService,
     private readonly lifecycleService: KvpLifecycleService,
     private readonly scopeService: ScopeService,
+    private readonly cls: ClsService,
   ) {}
-
-  // ==========================================================================
-  // ORG INFO (shared across facade operations)
-  // ==========================================================================
 
   /**
    * Get extended user organization info for KVP visibility checks.
-   * Uses ScopeService (lazy CLS-cached) instead of separate DB query.
-   *
-   * Behavioral change: Visibility is now scope-based (admin-permissions +
-   * lead-positions + cascade) instead of membership-based (user_teams).
-   * Employees without lead see only own + implemented + company-level suggestions.
-   * Leads share suggestions via shareSuggestion() for broader visibility.
+   * Leads/admins: uses ScopeService (management scope).
+   * Regular employees: loads team/department MEMBERSHIP from user_teams/user_departments.
    */
   private async getExtendedUserOrgInfo(): Promise<ExtendedUserOrgInfo> {
     const scope = await this.scopeService.getScope();
-    return KvpService.mapScopeToOrgInfo(scope);
-  }
+    if (scope.type !== 'none') return mapScopeToOrgInfo(scope);
 
-  /** Map OrganizationalScope → ExtendedUserOrgInfo for helper compatibility */
-  private static mapScopeToOrgInfo(
-    scope: OrganizationalScope,
-  ): ExtendedUserOrgInfo {
+    const userId = this.cls.get<number>('userId');
+    const tenantId = this.cls.get<number>('tenantId');
+    const rows = await this.db.query<{
+      team_ids: number[];
+      dept_ids: number[];
+      dept_area_ids: number[];
+      teams_dept_ids: number[];
+    }>(EMPLOYEE_MEMBERSHIP_QUERY, [userId, tenantId]);
+
+    const m = rows[0];
     return {
-      teamIds: scope.teamIds,
-      departmentIds: scope.departmentIds,
-      areaIds: scope.areaIds,
-      teamLeadOf: scope.leadTeamIds,
-      departmentLeadOf: scope.leadDepartmentIds,
-      areaLeadOf: scope.leadAreaIds,
-      teamsDepartmentIds: [], // covered by scope.departmentIds (cascade)
-      departmentsAreaIds: [], // covered by scope.areaIds (cascade)
-      hasFullAccess: scope.type === 'full',
+      teamIds: m?.team_ids ?? [],
+      departmentIds: m?.dept_ids ?? [],
+      areaIds: m?.dept_area_ids ?? [],
+      teamLeadOf: [],
+      departmentLeadOf: [],
+      areaLeadOf: [],
+      teamsDepartmentIds: m?.teams_dept_ids ?? [],
+      departmentsAreaIds: [],
+      hasFullAccess: false,
     };
   }
-
-  // ==========================================================================
-  // MY ORGANIZATIONS (for KVP create modal)
-  // ==========================================================================
 
   /** Get user's assigned teams with their assets — for KVP create modal */
   async getMyOrganizations(
@@ -220,10 +218,6 @@ export class KvpService {
 
     return assignments;
   }
-
-  // ==========================================================================
-  // CATEGORIES & DASHBOARD
-  // ==========================================================================
 
   /** Get KVP categories with tenant-specific overrides and custom categories */
   async getCategories(tenantId: number): Promise<CategoryOption[]> {
@@ -321,10 +315,6 @@ export class KvpService {
       teamImplementedSuggestions: Number(stats.team_implemented),
     };
   }
-
-  // ==========================================================================
-  // CRUD OPERATIONS
-  // ==========================================================================
 
   /** List suggestions with filters and pagination */
   async listSuggestions(
@@ -866,11 +856,6 @@ export class KvpService {
     return { message: 'Suggestion deleted successfully' };
   }
 
-  // ==========================================================================
-  // DELEGATION: LIFECYCLE (share, unshare, archive, unarchive)
-  // ==========================================================================
-
-  /** Share a suggestion at org level (delegates to KvpLifecycleService) */
   async shareSuggestion(
     id: number | string,
     dto: ShareSuggestionDto,
@@ -886,7 +871,6 @@ export class KvpService {
     );
   }
 
-  /** Unshare a suggestion (delegates to KvpLifecycleService) */
   async unshareSuggestion(
     id: number | string,
     tenantId: number,
@@ -902,7 +886,6 @@ export class KvpService {
     );
   }
 
-  /** Archive a suggestion (delegates to KvpLifecycleService) */
   async archiveSuggestion(
     id: number | string,
     tenantId: number,
@@ -911,7 +894,6 @@ export class KvpService {
     return await this.lifecycleService.archiveSuggestion(id, tenantId, userId);
   }
 
-  /** Unarchive a suggestion (delegates to KvpLifecycleService) */
   async unarchiveSuggestion(
     id: number | string,
     tenantId: number,
@@ -923,10 +905,6 @@ export class KvpService {
       userId,
     );
   }
-
-  // ==========================================================================
-  // DELEGATION: COMMENTS
-  // ==========================================================================
 
   /** Get top-level comments for a suggestion with pagination */
   async getComments(
@@ -961,7 +939,6 @@ export class KvpService {
     return await this.commentsService.getReplies(commentId, tenantId, userRole);
   }
 
-  /** Add a comment or reply (delegates to KvpCommentsService) */
   async addComment(
     id: number | string,
     userId: number,
@@ -988,11 +965,6 @@ export class KvpService {
     );
   }
 
-  // ==========================================================================
-  // DELEGATION: ATTACHMENTS
-  // ==========================================================================
-
-  /** Get attachments for a suggestion (delegates to KvpAttachmentsService) */
   async getAttachments(
     id: number | string,
     tenantId: number,
@@ -1011,7 +983,6 @@ export class KvpService {
     );
   }
 
-  /** Add attachment (delegates to KvpAttachmentsService) */
   async addAttachment(
     suggestionId: number | string,
     attachmentData: {
@@ -1072,11 +1043,6 @@ export class KvpService {
     return { filePath: attachment.file_path, fileName: attachment.file_name };
   }
 
-  // ==========================================================================
-  // DELEGATION: CONFIRMATIONS
-  // ==========================================================================
-
-  /** Get unconfirmed count (delegates to KvpConfirmationsService) */
   async getUnconfirmedCount(
     userId: number,
     tenantId: number,
@@ -1089,7 +1055,6 @@ export class KvpService {
     );
   }
 
-  /** Confirm a suggestion (delegates to KvpConfirmationsService) */
   async confirmSuggestion(
     uuid: string,
     userId: number,
@@ -1102,7 +1067,6 @@ export class KvpService {
     );
   }
 
-  /** Unconfirm a suggestion (delegates to KvpConfirmationsService) */
   async unconfirmSuggestion(
     uuid: string,
     userId: number,

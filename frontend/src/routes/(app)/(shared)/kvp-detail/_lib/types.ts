@@ -151,6 +151,10 @@ export interface Department {
 export interface Team {
   id: number;
   name: string;
+  departmentId?: number | null;
+  departmentName?: string;
+  departmentAreaId?: number | null;
+  departmentAreaName?: string;
 }
 
 /**

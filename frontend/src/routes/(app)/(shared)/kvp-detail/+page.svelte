@@ -12,10 +12,16 @@
   import { onClickOutsideDropdown } from '$lib/actions/click-outside';
   import PermissionDenied from '$lib/components/PermissionDenied.svelte';
   import { notificationStore } from '$lib/stores/notification.store.svelte';
-  import { showConfirm, showErrorAlert, showSuccessAlert } from '$lib/utils';
+  import {
+    showConfirm,
+    showErrorAlert,
+    showSuccessAlert,
+    showWarningAlert,
+  } from '$lib/utils';
 
   import { filterState } from '../kvp/_lib/state-filters.svelte';
   import { isFaIcon } from '../kvp/_lib/utils';
+  import { fetchEligibleUsers } from '../work-orders/_lib/api';
 
   import {
     addComment,
@@ -56,6 +62,7 @@
   import type { HierarchyLabels } from '$lib/types/hierarchy-labels';
   import type { PageData } from './$types';
   import type { Attachment, KvpStatus } from './_lib/types';
+  import type { EligibleUser } from '../work-orders/_lib/types';
 
   /** Interface for CommentsSection component exported methods */
   interface CommentsSectionExports {
@@ -453,9 +460,26 @@
   // ==========================================================================
 
   let showWoModal = $state(false);
+  let woPreloadedUsers = $state<EligibleUser[] | null>(null);
 
-  function handleOpenWoModal(): void {
-    showWoModal = true;
+  async function handleOpenWoModal(): Promise<void> {
+    try {
+      const users = await fetchEligibleUsers();
+      woPreloadedUsers = users;
+      showWoModal = true;
+    } catch (err: unknown) {
+      const is403 =
+        err instanceof Error &&
+        'status' in err &&
+        (err as { status: number }).status === 403;
+      if (is403) {
+        showWarningAlert(
+          'Keine Berechtigung für Arbeitsaufträge. Bitte Administrator kontaktieren.',
+        );
+      } else {
+        showErrorAlert('Fehler beim Laden der Arbeitsauftrag-Daten.');
+      }
+    }
   }
 
   function handleCloseWoModal(): void {
@@ -743,6 +767,7 @@
     <CreateWorkOrderFromKvp
       show={showWoModal}
       {suggestion}
+      preloadedUsers={woPreloadedUsers}
       onclose={handleCloseWoModal}
       onsaved={handleWoSaved}
     />

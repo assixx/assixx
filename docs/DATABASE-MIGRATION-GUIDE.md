@@ -120,6 +120,38 @@ export DB_PORT=5432
 
 ## Workflow: Creating a New Migration
 
+> ### 🚨🚨🚨 HARD BLOCK — LLMs / AI AGENTS 🚨🚨🚨
+>
+> **These rules are NOT optional. Every violation is a critical failure.**
+>
+> 1. **BACKUP FIRST** — Before ANY DB change. No exceptions. No "I'll do it later".
+> 2. **GENERATOR ONLY** — `doppler run -- pnpm run db:migrate:create <name>`. Period.
+>    - NO `Write` tool, NO `touch`, NO copy-paste, NO manual file creation.
+>    - NO renaming generated files.
+>    - The generated file is the ONLY one that may exist.
+> 3. **DRY RUN MANDATORY** — `doppler run -- ./scripts/run-migrations.sh up --dry-run`
+>    - If dry run fails: **STOP IMMEDIATELY**. Do NOT bypass. Do NOT "just run SQL directly".
+>    - Analyze the error, inform the user, decide together.
+> 4. **NEVER execute raw SQL** to bypass migration tooling.
+>    - No `docker exec ... psql -c "DROP TRIGGER ..."` as a shortcut.
+>    - No `INSERT INTO pgmigrations` to fake failed migrations.
+>
+> **When in doubt:** STOP and ask the user. ALWAYS. It costs 10 seconds.
+> A broken DB costs hours.
+>
+> **Mandatory sequence — MUST be followed in order:**
+> ```
+> 1. Create BACKUP
+> 2. Run generator (db:migrate:create)
+> 3. Fill generated stub with up()/down() (Edit tool, NOT Write)
+> 4. Dry run
+> 5. Dry run OK? → Run migration
+> 6. Dry run FAILED? → STOP. Inform user. Do NOT bypass.
+> 7. Verify (pgmigrations, schema, RLS)
+> 8. Restart backend
+> 9. Sync customer fresh-install
+> ```
+
 ### 1. Generate Migration File
 
 > **⚠️ KRITISCH — NIEMALS Migrationsdateien manuell erstellen!**

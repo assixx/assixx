@@ -6,6 +6,7 @@
 import { IS_ACTIVE } from '@assixx/shared/constants';
 
 import { dbToApi } from '../../utils/field-mapper.js';
+import type { OrganizationalScope } from '../hierarchy-permission/organizational-scope.types.js';
 import type { CreateSuggestionDto } from './dto/create-suggestion.dto.js';
 import type { UpdateSuggestionDto } from './dto/update-suggestion.dto.js';
 import type {
@@ -122,6 +123,62 @@ function attachConfirmationStatus(
  *   positions + hierarchy cascade (dept/area/company).
  * - Always visible: creator's own, implemented, company-level
  */
+/** L0: Not shared — creator + team lead/deputy of assigned team */
+function buildUnsharedClause(h: OrgPlaceholders): string {
+  return `(s.is_shared = false AND (
+    (s.org_level = 'team' AND s.org_id IN (
+      SELECT t.id FROM teams t
+      WHERE (t.team_lead_id = ${h.userId} OR t.deputy_lead_id = ${h.userId}) AND t.tenant_id = s.tenant_id
+    ))
+    OR EXISTS (
+      SELECT 1 FROM kvp_suggestion_organizations kso
+      WHERE kso.suggestion_id = s.id AND (
+        (kso.org_type = 'team' AND kso.org_id IN (
+          SELECT t.id FROM teams t
+          WHERE (t.team_lead_id = ${h.userId} OR t.deputy_lead_id = ${h.userId}) AND t.tenant_id = s.tenant_id
+        ))
+        OR (kso.org_type = 'asset' AND EXISTS (
+          SELECT 1 FROM asset_teams ats JOIN teams t ON ats.team_id = t.id
+          WHERE ats.asset_id = kso.org_id AND (t.team_lead_id = ${h.userId} OR t.deputy_lead_id = ${h.userId}) AND t.tenant_id = s.tenant_id
+        ))
+      )
+    )
+  ))`;
+}
+
+/**
+ * L1-L4: Shared — cascading visibility via user_teams membership.
+ * Team-level uses user_teams JOIN (NOT cascaded scope) — see KVP-SHARING-VISIBILITY.md
+ */
+function buildSharedClause(h: OrgPlaceholders): string {
+  return `(s.is_shared = true AND (
+    (s.org_level = 'team' AND (
+      s.org_id = ANY(${h.teamLeadOf})
+      OR EXISTS (SELECT 1 FROM user_teams ut WHERE ut.user_id = ${h.userId} AND ut.team_id = s.org_id)
+    ))
+    OR (s.org_level = 'department' AND (
+      s.org_id = ANY(${h.deptIds}) OR s.org_id = ANY(${h.teamsDeptIds}) OR s.org_id = ANY(${h.deptLeadOf})
+      OR EXISTS (SELECT 1 FROM user_teams ut JOIN teams t ON ut.team_id = t.id WHERE ut.user_id = ${h.userId} AND t.department_id = s.org_id)
+    ))
+    OR (s.org_level = 'area' AND (
+      s.org_id = ANY(${h.areaIds}) OR s.org_id = ANY(${h.deptsAreaIds}) OR s.org_id = ANY(${h.areaLeadOf})
+      OR EXISTS (SELECT 1 FROM user_teams ut JOIN teams t ON ut.team_id = t.id JOIN departments d ON t.department_id = d.id WHERE ut.user_id = ${h.userId} AND d.area_id = s.org_id)
+    ))
+    OR (s.org_level = 'asset' AND EXISTS (
+      SELECT 1 FROM kvp_suggestion_organizations kso
+      JOIN asset_teams mt ON kso.org_type = 'asset' AND kso.org_id = mt.asset_id
+      JOIN user_teams ut ON mt.team_id = ut.team_id AND ut.user_id = ${h.userId}
+      WHERE kso.suggestion_id = s.id
+    ))
+    OR EXISTS (
+      SELECT 1 FROM kvp_suggestion_organizations kso
+      JOIN user_teams ut ON kso.org_id = ut.team_id AND ut.user_id = ${h.userId}
+      WHERE kso.suggestion_id = s.id AND kso.org_type = 'team'
+    )
+  ))`;
+}
+
+/** KVP Visibility — see KVP-SHARING-VISIBILITY.md for full rules */
 export function buildVisibilityClause(
   orgInfo: ExtendedUserOrgInfo,
   userId: number,
@@ -137,40 +194,8 @@ export function buildVisibilityClause(
     s.submitted_by = ${h.userId}
     OR s.status = 'implemented'
     OR s.org_level = 'company'
-    OR (s.is_shared = false AND EXISTS (
-      SELECT 1 FROM kvp_suggestion_organizations kso
-      WHERE kso.suggestion_id = s.id
-        AND (
-          (kso.org_type = 'team' AND kso.org_id IN (
-            SELECT t.id FROM teams t
-            WHERE (t.team_lead_id = ${h.userId} OR t.deputy_lead_id = ${h.userId})
-              AND t.tenant_id = s.tenant_id
-          ))
-          OR (kso.org_type = 'asset' AND EXISTS (
-            SELECT 1 FROM asset_teams ats
-            WHERE ats.asset_id = kso.org_id AND ats.team_id IN (
-              SELECT t.id FROM teams t
-              WHERE (t.team_lead_id = ${h.userId} OR t.deputy_lead_id = ${h.userId})
-                AND t.tenant_id = s.tenant_id
-            )
-          ))
-        )
-    ))
-    OR (s.is_shared = true AND (
-      (s.org_level = 'team' AND (s.org_id = ANY(${h.teamIds}) OR s.org_id = ANY(${h.teamLeadOf})))
-      OR (s.org_level = 'department' AND (s.org_id = ANY(${h.deptIds}) OR s.org_id = ANY(${h.teamsDeptIds}) OR s.org_id = ANY(${h.deptLeadOf})))
-      OR (s.org_level = 'area' AND (s.org_id = ANY(${h.areaIds}) OR s.org_id = ANY(${h.deptsAreaIds}) OR s.org_id = ANY(${h.areaLeadOf})))
-      OR (s.org_level = 'asset' AND EXISTS (
-        SELECT 1 FROM kvp_suggestion_organizations kso
-        JOIN asset_teams mt ON kso.org_type = 'asset' AND kso.org_id = mt.asset_id
-        WHERE kso.suggestion_id = s.id AND mt.team_id = ANY(${h.teamIds})
-      ))
-      OR EXISTS (
-        SELECT 1 FROM kvp_suggestion_organizations kso
-        WHERE kso.suggestion_id = s.id AND kso.org_type = 'team'
-          AND kso.org_id = ANY(${h.teamIds})
-      )
-    ))
+    OR ${buildUnsharedClause(h)}
+    OR ${buildSharedClause(h)}
   )`;
 
   return { clause, params };
@@ -186,7 +211,6 @@ export function buildOrgParams(
   let idx = startIdx;
 
   const params: unknown[] = [
-    toArray(orgInfo.teamIds),
     toArray(orgInfo.teamLeadOf),
     toArray(orgInfo.departmentIds),
     toArray(orgInfo.teamsDepartmentIds),
@@ -198,7 +222,6 @@ export function buildOrgParams(
   ];
 
   const placeholders: OrgPlaceholders = {
-    teamIds: `$${idx++}`,
     teamLeadOf: `$${idx++}`,
     deptIds: `$${idx++}`,
     teamsDeptIds: `$${idx++}`,
@@ -556,4 +579,21 @@ export function mapOrgLevelToRecipient(dto: CreateSuggestionDto): {
     default:
       return { type: 'all', id: null };
   }
+}
+
+/** Map OrganizationalScope → ExtendedUserOrgInfo for helper compatibility */
+export function mapScopeToOrgInfo(
+  scope: OrganizationalScope,
+): ExtendedUserOrgInfo {
+  return {
+    teamIds: scope.teamIds,
+    departmentIds: scope.departmentIds,
+    areaIds: scope.areaIds,
+    teamLeadOf: scope.leadTeamIds,
+    departmentLeadOf: scope.leadDepartmentIds,
+    areaLeadOf: scope.leadAreaIds,
+    teamsDepartmentIds: [],
+    departmentsAreaIds: [],
+    hasFullAccess: scope.type === 'full',
+  };
 }
