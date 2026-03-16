@@ -445,6 +445,37 @@ export type JsonBody = Record<string, any>;
 
 ---
 
+## Coverage Ignore Comments (v8 Provider)
+
+Für beweisbar unerreichbaren Code (`noUncheckedIndexedAccess` Guards, exhaustive `switch default`):
+
+```typescript
+// Nächsten Code-Knoten ignorieren (ganzer if-Block, Funktion, switch-case)
+/* v8 ignore next -- @preserve Begründung */
+if (unreachableGuard) {
+  throw new Error('dead code');
+}
+
+// switch default
+/* v8 ignore next -- @preserve exhaustive switch */
+default: return false;
+
+// Block-Bereich ignorieren
+/* v8 ignore start -- @preserve Begründung */
+// ... unerreichbarer Code ...
+/* v8 ignore stop */
+
+// Selektiv if- oder else-Branch ignorieren
+/* v8 ignore if -- @preserve */
+/* v8 ignore else -- @preserve */
+```
+
+**Wichtig:** `/* v8 ignore next N */` (mit Zahl) existiert **nicht**. `next` ignoriert immer den nächsten AST-Knoten.
+
+Vollständige Referenz: [Vitest Coverage Docs](https://vitest.dev/guide/coverage) | [ADR-018](./infrastructure/adr/ADR-018-testing-strategy.md)
+
+---
+
 ## Troubleshooting
 
 | Symptom                     | Cause                            | Solution                                                       |

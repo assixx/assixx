@@ -153,7 +153,9 @@ describe('buildVisibilityClause', () => {
     expect(result.clause).toContain('s.is_shared = false');
     expect(result.clause).toContain('t.team_lead_id =');
     expect(result.clause).toContain('t.deputy_lead_id =');
-    expect(result.clause).not.toMatch(/is_shared = false[\s\S]*?user_teams/);
+    // Extract only the unshared block (between is_shared = false and is_shared = true)
+    const unsharedBlock = result.clause.split('s.is_shared = true')[0] ?? '';
+    expect(unsharedBlock).not.toContain('user_teams');
   });
 
   it('should include team_lead/deputy_lead check for unshared KVPs', () => {
@@ -187,14 +189,14 @@ describe('buildVisibilityClause', () => {
     expect(result.clause).toContain("s.org_level = 'area'");
   });
 
-  it('should generate correct number of params (9 org arrays + userId)', () => {
+  it('should generate correct number of params (7 org arrays + userId)', () => {
     const orgInfo = createOrgInfo({ teamIds: [1, 2], departmentIds: [10] });
     const result = buildVisibilityClause(orgInfo, 42, 3);
 
-    // 8 org arrays + 1 userId = 9 params
-    expect(result.params).toHaveLength(9);
+    // 7 org arrays + 1 userId = 8 params (teamIds removed — uses user_teams JOIN instead)
+    expect(result.params).toHaveLength(8);
     // Last param is userId
-    expect(result.params[8]).toBe(42);
+    expect(result.params[7]).toBe(42);
   });
 });
 

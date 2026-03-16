@@ -7,6 +7,7 @@
  * Pure logic (transforms, query builders, visibility) tested in kvp.helpers.test.ts.
  */
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
+import type { ClsService } from 'nestjs-cls';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { ActivityLoggerService } from '../common/services/activity-logger.service.js';
@@ -109,6 +110,14 @@ function createMockScope() {
   };
 }
 
+function createMockCls() {
+  const store = new Map<string, unknown>([
+    ['userId', 99],
+    ['tenantId', 42],
+  ]);
+  return { get: vi.fn((key: string) => store.get(key)) };
+}
+
 /** Complete mock DB suggestion row with all required fields */
 function createMockDbSuggestion(overrides?: Record<string, unknown>) {
   return {
@@ -160,6 +169,7 @@ interface ServiceMocks {
   mockConfirmations: ReturnType<typeof createMockConfirmations>;
   mockLifecycle: ReturnType<typeof createMockLifecycle>;
   mockScope: ReturnType<typeof createMockScope>;
+  mockCls: ReturnType<typeof createMockCls>;
 }
 
 function createService(): ServiceMocks {
@@ -171,6 +181,7 @@ function createService(): ServiceMocks {
   const mockConfirmations = createMockConfirmations();
   const mockLifecycle = createMockLifecycle();
   const mockScope = createMockScope();
+  const mockCls = createMockCls();
 
   const service = new KvpService(
     mockDb as unknown as DatabaseService,
@@ -181,6 +192,7 @@ function createService(): ServiceMocks {
     mockConfirmations as unknown as KvpConfirmationsService,
     mockLifecycle as unknown as KvpLifecycleService,
     mockScope as unknown as ScopeService,
+    mockCls as unknown as ClsService,
   );
 
   return {
@@ -193,6 +205,7 @@ function createService(): ServiceMocks {
     mockConfirmations,
     mockLifecycle,
     mockScope,
+    mockCls,
   };
 }
 
@@ -223,6 +236,7 @@ describe('KvpService', () => {
   let mockConfirmations: ReturnType<typeof createMockConfirmations>;
   let mockLifecycle: ReturnType<typeof createMockLifecycle>;
   let mockScope: ReturnType<typeof createMockScope>;
+  let mockCls: ReturnType<typeof createMockCls>;
 
   beforeEach(() => {
     const mocks = createService();
@@ -234,6 +248,7 @@ describe('KvpService', () => {
     mockConfirmations = mocks.mockConfirmations;
     mockLifecycle = mocks.mockLifecycle;
     mockScope = mocks.mockScope;
+    mockCls = mocks.mockCls;
   });
 
   // =============================================================
@@ -270,6 +285,63 @@ describe('KvpService', () => {
 
       expect(result.hasFullAccess).toBe(true);
       expect(result.teamIds).toEqual([]);
+    });
+
+    it('loads membership from DB for scope type none (employee)', async () => {
+      mockScope.getScope.mockResolvedValueOnce({
+        type: 'none',
+        areaIds: [],
+        departmentIds: [],
+        teamIds: [],
+        leadAreaIds: [],
+        leadDepartmentIds: [],
+        leadTeamIds: [],
+        isAreaLead: false,
+        isDepartmentLead: false,
+        isTeamLead: false,
+        isAnyLead: false,
+      });
+      mockDb.query.mockResolvedValueOnce([
+        {
+          team_ids: [86],
+          dept_ids: [10],
+          dept_area_ids: [1],
+          teams_dept_ids: [10],
+        },
+      ]);
+
+      const result = await service['getExtendedUserOrgInfo']();
+
+      expect(result.hasFullAccess).toBe(false);
+      expect(result.teamIds).toEqual([86]);
+      expect(result.departmentIds).toEqual([10]);
+      expect(result.areaIds).toEqual([1]);
+      expect(result.teamsDepartmentIds).toEqual([10]);
+      expect(result.teamLeadOf).toEqual([]);
+      expect(mockCls.get).toHaveBeenCalledWith('userId');
+      expect(mockCls.get).toHaveBeenCalledWith('tenantId');
+    });
+
+    it('returns empty arrays when DB returns no rows for scope none', async () => {
+      mockScope.getScope.mockResolvedValueOnce({
+        type: 'none',
+        areaIds: [],
+        departmentIds: [],
+        teamIds: [],
+        leadAreaIds: [],
+        leadDepartmentIds: [],
+        leadTeamIds: [],
+        isAreaLead: false,
+        isDepartmentLead: false,
+        isTeamLead: false,
+        isAnyLead: false,
+      });
+      mockDb.query.mockResolvedValueOnce([]);
+
+      const result = await service['getExtendedUserOrgInfo']();
+
+      expect(result.teamIds).toEqual([]);
+      expect(result.departmentIds).toEqual([]);
     });
   });
 

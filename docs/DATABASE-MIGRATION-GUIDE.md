@@ -140,6 +140,7 @@ export DB_PORT=5432
 > A broken DB costs hours.
 >
 > **Mandatory sequence — MUST be followed in order:**
+>
 > ```
 > 1. Create BACKUP
 > 2. Run generator (db:migrate:create)

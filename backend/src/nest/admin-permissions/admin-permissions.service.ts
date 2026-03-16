@@ -691,6 +691,7 @@ export class AdminPermissionsService {
     }
 
     const userRow = rows[0];
+    /* v8 ignore next -- @preserve noUncheckedIndexedAccess guard: rows.length > 0 guarantees rows[0] exists */
     if (userRow === undefined) {
       throw new NotFoundException('User not found or inactive');
     }
@@ -946,6 +947,7 @@ export class AdminPermissionsService {
         return permission.can_write;
       case 'delete':
         return permission.can_delete;
+      /* v8 ignore next -- @preserve exhaustive switch: PermissionLevel is 'read' | 'write' | 'delete' */
       default:
         return false;
     }

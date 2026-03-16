@@ -444,6 +444,58 @@ TOTAL: 5568 Unit + 430 Permission (subset) + 399 Frontend + 558 API = 6955 Tests
 
 > **Phase 11 added scope/hierarchy-permission tests (ADR-036).** Coverage remains above thresholds. Thresholds remain at 83%/76% (floor).
 
+### Coverage Ignore Comments (v8 Provider)
+
+Für unerreichbaren defensiven Code (z.B. `noUncheckedIndexedAccess` Guards, exhaustive `switch default`) nutzt das Projekt `/* v8 ignore next */`. **Quelle:** [Vitest Coverage Docs](https://vitest.dev/guide/coverage)
+
+```typescript
+// Nächsten Code-Knoten ignorieren (if-Block, Funktion, Klasse, switch-case)
+/* v8 ignore next -- @preserve Begründung */
+if (unreachableGuard) {
+  throw new Error('dead code');
+}
+
+// switch default (exhaustive type union)
+switch (level) {
+  case 'read':
+    return true;
+  case 'write':
+    return false;
+  /* v8 ignore next -- @preserve exhaustive switch */
+  default:
+    return false;
+}
+
+// Ganzen Block ignorieren (start/stop)
+/* v8 ignore start -- @preserve Begründung */
+if (defensiveGuard) {
+  throw new Error('dead code');
+}
+/* v8 ignore stop */
+
+// if-Branch oder else-Branch selektiv ignorieren
+/* v8 ignore if -- @preserve Begründung */
+if (condition) {
+  /* ignoriert */
+} else {
+  /* gezählt */
+}
+
+/* v8 ignore else -- @preserve Begründung */
+if (condition) {
+  /* gezählt */
+} else {
+  /* ignoriert */
+}
+```
+
+**Regeln:**
+
+- `/* v8 ignore next */` ignoriert den **nächsten AST-Knoten** (nicht nur die nächste Zeile!)
+- Es gibt **kein** `/* v8 ignore next N */` — die Zahl-Syntax existiert nicht
+- `-- @preserve` verhindert, dass Minifier den Kommentar entfernt
+- Nur für **beweisbar unerreichbaren** Code — nicht als Ausrede für fehlende Tests
+
 ### CI/CD Integration (implemented 2026-02-05)
 
 ```yaml

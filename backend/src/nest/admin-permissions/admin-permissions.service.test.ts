@@ -666,6 +666,106 @@ describe('SECURITY: AdminPermissionsService', () => {
   });
 
   // =============================================================
+  // getAdminPermissions — lead areas & lead departments
+  // =============================================================
+
+  describe('getAdminPermissions — lead areas returned', () => {
+    it('should map lead areas with read-only permissions', async () => {
+      mockDb.query.mockResolvedValueOnce([
+        { role: 'admin', has_full_access: false },
+      ]);
+      mockDb.query.mockResolvedValueOnce([]); // getAreaPermissions
+      mockDb.query.mockResolvedValueOnce([]); // getDepartmentPermissions
+      // getLeadAreas — user is area_lead
+      mockDb.query.mockResolvedValueOnce([
+        {
+          id: 5,
+          name: 'Lead Area',
+          description: 'Area led by this user',
+          department_count: '2',
+        },
+      ]);
+      mockDb.query.mockResolvedValueOnce([]); // getLeadDepartments
+      mockDb.query.mockResolvedValueOnce([{ total: '3' }]);
+      mockDb.query.mockResolvedValueOnce([{ total: '0' }]);
+
+      const result = await service.getAdminPermissions(1, 10);
+
+      expect(result.leadAreas).toHaveLength(1);
+      expect(result.leadAreas[0]).toEqual({
+        id: 5,
+        name: 'Lead Area',
+        description: 'Area led by this user',
+        departmentCount: 2,
+        canRead: true,
+        canWrite: false,
+        canDelete: false,
+      });
+    });
+
+    it('should omit description from lead area when null', async () => {
+      mockDb.query.mockResolvedValueOnce([
+        { role: 'admin', has_full_access: false },
+      ]);
+      mockDb.query.mockResolvedValueOnce([]); // getAreaPermissions
+      mockDb.query.mockResolvedValueOnce([]); // getDepartmentPermissions
+      mockDb.query.mockResolvedValueOnce([
+        {
+          id: 7,
+          name: 'No Desc Area',
+          description: null,
+          department_count: '0',
+        },
+      ]);
+      mockDb.query.mockResolvedValueOnce([]); // getLeadDepartments
+      mockDb.query.mockResolvedValueOnce([{ total: '1' }]);
+      mockDb.query.mockResolvedValueOnce([{ total: '0' }]);
+
+      const result = await service.getAdminPermissions(1, 10);
+
+      expect(result.leadAreas[0]).not.toHaveProperty('description');
+      expect(result.leadAreas[0]?.canRead).toBe(true);
+    });
+  });
+
+  describe('getAdminPermissions — lead departments returned', () => {
+    it('should map lead departments with read-only permissions via mapDepartmentRow', async () => {
+      mockDb.query.mockResolvedValueOnce([
+        { role: 'admin', has_full_access: false },
+      ]);
+      mockDb.query.mockResolvedValueOnce([]); // getAreaPermissions
+      mockDb.query.mockResolvedValueOnce([]); // getDepartmentPermissions
+      mockDb.query.mockResolvedValueOnce([]); // getLeadAreas
+      // getLeadDepartments — user is department_lead
+      mockDb.query.mockResolvedValueOnce([
+        {
+          id: 20,
+          name: 'Lead Dept',
+          description: 'Dept led by this user',
+          area_id: 3,
+          area_name: 'Parent Area',
+        },
+      ]);
+      mockDb.query.mockResolvedValueOnce([{ total: '0' }]);
+      mockDb.query.mockResolvedValueOnce([{ total: '5' }]);
+
+      const result = await service.getAdminPermissions(1, 10);
+
+      expect(result.leadDepartments).toHaveLength(1);
+      expect(result.leadDepartments[0]).toEqual({
+        id: 20,
+        name: 'Lead Dept',
+        description: 'Dept led by this user',
+        areaId: 3,
+        areaName: 'Parent Area',
+        canRead: true,
+        canWrite: false,
+        canDelete: false,
+      });
+    });
+  });
+
+  // =============================================================
   // getAdminPermissions — description included
   // =============================================================
 

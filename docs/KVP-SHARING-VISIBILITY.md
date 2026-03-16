@@ -48,10 +48,10 @@ Each level includes everything from the previous level.
 
 ## Key Distinction: Management Scope vs. Content Visibility
 
-| Concept | Purpose | Example |
-|---------|---------|---------|
-| **Management Scope** (ADR-036) | Who can manage entities (teams, employees) | Dept-Lead manages all teams in their department |
-| **Content Visibility** (this doc) | Who can see shared content | Dept-Lead does NOT see team-level shared KVP unless they're a team member |
+| Concept                           | Purpose                                    | Example                                                                   |
+| --------------------------------- | ------------------------------------------ | ------------------------------------------------------------------------- |
+| **Management Scope** (ADR-036)    | Who can manage entities (teams, employees) | Dept-Lead manages all teams in their department                           |
+| **Content Visibility** (this doc) | Who can see shared content                 | Dept-Lead does NOT see team-level shared KVP unless they're a team member |
 
 A department lead has management scope over all teams in their department. But that does **NOT** grant visibility to team-level shared KVP suggestions. If the team lead wants the department lead to see it, they must share at department level.
 
