@@ -48,6 +48,19 @@
     onShowLogoutModal,
   }: Props = $props();
 
+  /** Header compacts when user scrolls past threshold */
+  let scrolled = $state(false);
+
+  $effect(() => {
+    function onScroll(): void {
+      scrolled = window.scrollY > 50;
+    }
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+    };
+  });
+
   /**
    * Resolve dynamic path with base prefix.
    * Type assertion needed for runtime-computed paths.
@@ -75,7 +88,10 @@
   }
 </script>
 
-<header class="header">
+<header
+  class="header"
+  class:scrolled
+>
   <button
     type="button"
     class="sidebar-toggle"
@@ -184,15 +200,9 @@
     align-items: center;
     z-index: 1000;
 
-    background: var(--header-bg);
     padding: 0.5rem 1rem;
     height: 65px;
     min-height: 3.5rem;
-  }
-
-  :global(html:not(.dark)) .header {
-    box-shadow: 0 1px 2px
-      color-mix(in oklch, var(--color-black) 18%, transparent);
   }
 
   .header-content {
@@ -265,6 +275,11 @@
     display: flex;
     align-items: center;
     gap: calc(var(--spacing-6) + 8px);
+  }
+
+  /* Hide header-actions on scroll */
+  .header.scrolled .header-actions {
+    display: none;
   }
 
   #user-info {
