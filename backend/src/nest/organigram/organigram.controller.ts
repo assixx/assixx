@@ -100,6 +100,12 @@ export class OrganigramController {
     if (dto.hallOverrides !== undefined) {
       await this.settingsService.saveHallOverrides(tenantId, dto.hallOverrides);
     }
+    if (dto.hallConnectionAnchors !== undefined) {
+      await this.settingsService.saveHallConnectionAnchors(
+        tenantId,
+        dto.hallConnectionAnchors,
+      );
+    }
     if (dto.canvasBg !== undefined) {
       await this.settingsService.saveCanvasBg(tenantId, dto.canvasBg);
     }

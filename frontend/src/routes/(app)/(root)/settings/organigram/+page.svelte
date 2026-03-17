@@ -29,6 +29,7 @@
     getIsDirty,
     getIsLocked,
     getIsSaving,
+    getHallConnectionAnchorsForSave,
     getHallOverridesForSave,
     getNodeHeight,
     getNodeWidth,
@@ -137,8 +138,9 @@
       const positions = getPositionsForSave();
       const viewport = getViewportForSave();
       const overrides = getHallOverridesForSave();
+      const anchors = getHallConnectionAnchorsForSave();
       const bg = getCanvasBgForSave();
-      await savePositions(positions, viewport, overrides, bg);
+      await savePositions(positions, viewport, overrides, anchors, bg);
       markSaved();
       showSuccessAlert('Organigramm gespeichert');
     } catch (err: unknown) {

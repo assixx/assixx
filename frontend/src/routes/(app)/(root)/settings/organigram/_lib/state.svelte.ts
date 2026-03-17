@@ -13,6 +13,7 @@ import type {
   OrgChartTree,
   OrgEntityType,
   OrgTreeHall,
+  PerimeterAnchor,
   RenderNode,
 } from './types.js';
 
@@ -45,6 +46,7 @@ let tree = $state<OrgChartTree>({
   },
   viewport: { zoom: 1, panX: 0, panY: 0, fontSize: 13 },
   hallOverrides: {},
+  hallConnectionAnchors: {},
   canvasBg: null,
   nodes: [],
   halls: [],
@@ -59,6 +61,7 @@ let saving = $state(false);
 let hoveredNodeKey = $state('');
 let locked = $state(true);
 let hallOverrides = $state<Record<string, HallOverride>>({});
+let hallConnectionAnchors = $state<Record<string, PerimeterAnchor>>({});
 let canvasBg = $state<string | null>(null);
 let nodeWidth = $state<number>(LAYOUT.NODE_WIDTH);
 let nodeHeight = $state<number>(LAYOUT.NODE_HEIGHT);
@@ -173,8 +176,9 @@ export function initFromTree(data: OrgChartTree): void {
   nodeWidth = data.viewport.nodeWidth ?? LAYOUT.NODE_WIDTH;
   nodeHeight = data.viewport.nodeHeight ?? LAYOUT.NODE_HEIGHT;
 
-  // 4. Restore hall overrides
+  // 4. Restore hall overrides + connection anchors
   hallOverrides = data.hallOverrides;
+  hallConnectionAnchors = data.hallConnectionAnchors;
 
   // 5. Restore canvas background
   canvasBg = data.canvasBg;
@@ -416,6 +420,7 @@ export function recomputeAutoLayout(): void {
   const autoPositions = computeAutoLayout(tree.nodes);
   nodePositions = autoPositions;
   hallOverrides = {};
+  hallConnectionAnchors = {};
   dirty = true;
 }
 
@@ -452,6 +457,25 @@ export function getCanvasBgForSave(): string | null {
 
 export function getHallOverridesForSave(): Record<string, HallOverride> {
   return { ...hallOverrides };
+}
+
+export function getHallConnectionAnchors(): Record<string, PerimeterAnchor> {
+  return hallConnectionAnchors;
+}
+
+export function setHallConnectionAnchor(
+  key: string,
+  anchor: PerimeterAnchor,
+): void {
+  hallConnectionAnchors[key] = anchor;
+  dirty = true;
+}
+
+export function getHallConnectionAnchorsForSave(): Record<
+  string,
+  PerimeterAnchor
+> {
+  return { ...hallConnectionAnchors };
 }
 
 export function getViewportForSave(): {

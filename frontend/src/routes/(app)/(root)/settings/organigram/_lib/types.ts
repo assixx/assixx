@@ -52,6 +52,15 @@ export interface HallOverride {
   height: number;
 }
 
+/** Seite eines Rechtecks für Ankerpunkte */
+export type AnchorSide = 'top' | 'right' | 'bottom' | 'left';
+
+/** Ankerpunkt auf dem Rand einer Halle — side + t (0–1 entlang der Kante) */
+export interface PerimeterAnchor {
+  side: AnchorSide;
+  t: number;
+}
+
 export type ResizeEdge =
   | 'top'
   | 'bottom'
@@ -75,6 +84,7 @@ export interface OrgChartTree {
   hierarchyLabels: HierarchyLabels;
   viewport: OrgViewport;
   hallOverrides: Record<string, HallOverride>;
+  hallConnectionAnchors: Record<string, PerimeterAnchor>;
   canvasBg: string | null;
   nodes: OrgChartNode[];
   halls: OrgTreeHall[];

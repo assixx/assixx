@@ -14,6 +14,7 @@ import {
   type HallOverride,
   type HierarchyLabels,
   type OrgViewport,
+  type PerimeterAnchor,
   type PositionOptions,
 } from './organigram.types.js';
 
@@ -117,6 +118,44 @@ export class OrganigramSettingsService {
     const mergedSettings = {
       ...currentSettings,
       orgHallOverrides: overrides,
+    };
+
+    await this.persistSettings(tenantId, mergedSettings);
+  }
+
+  async getHallConnectionAnchors(
+    tenantId: number,
+  ): Promise<Record<string, PerimeterAnchor>> {
+    const rows = await this.db.query<TenantSettingsRow>(SELECT_SETTINGS, [
+      tenantId,
+    ]);
+
+    const settings = rows[0]?.settings;
+    if (settings === null || settings === undefined) return {};
+
+    const stored = settings['orgHallConnectionAnchors'] as
+      | Record<string, PerimeterAnchor>
+      | undefined;
+    return stored ?? {};
+  }
+
+  async saveHallConnectionAnchors(
+    tenantId: number,
+    anchors: Record<string, PerimeterAnchor>,
+  ): Promise<void> {
+    const settingsRows = await this.db.query<TenantSettingsRow>(
+      SELECT_SETTINGS,
+      [tenantId],
+    );
+
+    const currentSettings =
+      settingsRows.length > 0 && settingsRows[0] !== undefined ?
+        (settingsRows[0].settings ?? {})
+      : {};
+
+    const mergedSettings = {
+      ...currentSettings,
+      orgHallConnectionAnchors: anchors,
     };
 
     await this.persistSettings(tenantId, mergedSettings);

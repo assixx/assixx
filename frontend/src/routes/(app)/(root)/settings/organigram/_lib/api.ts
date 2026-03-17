@@ -11,6 +11,7 @@ import type {
   OrgEntityType,
   OrgNodeDetail,
   OrgViewport,
+  PerimeterAnchor,
   PositionPayload,
   UpdateHierarchyLabelsPayload,
 } from './types.js';
@@ -49,6 +50,7 @@ export async function savePositions(
   positions: PositionPayload[],
   viewport: OrgViewport,
   hallOverrides: Record<string, HallOverride>,
+  hallConnectionAnchors: Record<string, PerimeterAnchor>,
   canvasBg: string | null,
 ): Promise<void> {
   const api = getApiClient();
@@ -56,6 +58,7 @@ export async function savePositions(
     positions,
     viewport,
     hallOverrides,
+    hallConnectionAnchors,
     canvasBg,
   });
 }
