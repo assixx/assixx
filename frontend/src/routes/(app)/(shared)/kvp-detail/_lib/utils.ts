@@ -71,49 +71,11 @@ export function getVisibilityInfo(
   icon: string;
   text: string;
 } {
-  // Junction table organizations take priority (new multi-team/asset flow)
-  if (
-    suggestion.organizations !== undefined &&
-    suggestion.organizations.length > 0
-  ) {
-    return getOrganizationsVisibility(suggestion, labels);
-  }
-
-  // Legacy fallback: single orgLevel/orgId
-  return getLegacyVisibility(suggestion, labels);
+  return getOrgLevelVisibility(suggestion, labels);
 }
 
-/** Visibility from junction table organizations */
-function getOrganizationsVisibility(
-  suggestion: KvpSuggestion,
-  labels: HierarchyLabels,
-): {
-  icon: string;
-  text: string;
-} {
-  const orgs = suggestion.organizations ?? [];
-  const teams = orgs.filter((o) => o.orgType === 'team');
-  const assets = orgs.filter((o) => o.orgType === 'asset');
-
-  const parts: string[] = [];
-  for (const t of teams) {
-    parts.push(t.orgName ?? `Team ${t.orgId}`);
-  }
-  for (const m of assets) {
-    parts.push(m.orgName ?? `${labels.asset} ${m.orgId}`);
-  }
-
-  if (parts.length > 0) {
-    const icon =
-      assets.length > 0 && teams.length === 0 ? 'fa-cog' : 'fa-users';
-    return { icon, text: parts.join(', ') };
-  }
-
-  return { icon: 'fa-lock', text: 'Keine Zuordnung' };
-}
-
-/** Legacy visibility from single orgLevel field */
-function getLegacyVisibility(
+/** Visibility from orgLevel + orgId on the main record */
+function getOrgLevelVisibility(
   suggestion: KvpSuggestion,
   labels: HierarchyLabels,
 ): {

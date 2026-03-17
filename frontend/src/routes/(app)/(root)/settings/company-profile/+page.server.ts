@@ -1,5 +1,5 @@
 /**
- * Addon Settings — Server-Side Data Loading
+ * Company Profile — Server-Side Data Loading
  * Root-only: RBAC enforced by (root) layout group
  */
 import { redirect } from '@sveltejs/kit';
@@ -8,17 +8,24 @@ import { createLogger } from '$lib/utils/logger.js';
 
 import type { PageServerLoad } from './$types';
 
-const log = createLogger('Settings:Addons');
+const log = createLogger('Settings:CompanyProfile');
 
 const API_BASE = process.env.API_URL ?? 'http://localhost:3000/api/v2';
 
-interface KvpSettings {
-  dailyLimit: number;
+interface CompanyData {
+  companyName: string;
+  street: string | null;
+  houseNumber: string | null;
+  postalCode: string | null;
+  city: string | null;
+  countryCode: string | null;
+  phone: string | null;
+  email: string;
 }
 
 interface ApiResponse {
   success?: boolean;
-  data?: KvpSettings;
+  data?: CompanyData;
 }
 
 export const load: PageServerLoad = async ({ cookies, fetch }) => {
@@ -28,7 +35,7 @@ export const load: PageServerLoad = async ({ cookies, fetch }) => {
   }
 
   try {
-    const response = await fetch(`${API_BASE}/kvp/settings`, {
+    const response = await fetch(`${API_BASE}/company`, {
       headers: {
         Authorization: `Bearer ${token}`,
         'Content-Type': 'application/json',
@@ -36,16 +43,16 @@ export const load: PageServerLoad = async ({ cookies, fetch }) => {
     });
 
     if (!response.ok) {
-      log.error({ status: response.status }, 'Failed to load KVP settings');
-      return { kvpSettings: null, loadError: true };
+      log.error({ status: response.status }, 'Failed to load company data');
+      return { company: null, loadError: true };
     }
 
     const json = (await response.json()) as ApiResponse;
-    const data = json.data ?? (json as unknown as KvpSettings);
+    const data = json.data ?? (json as unknown as CompanyData);
 
-    return { kvpSettings: data, loadError: false };
+    return { company: data, loadError: false };
   } catch (err: unknown) {
     log.error({ err }, 'Fetch error');
-    return { kvpSettings: null, loadError: true };
+    return { company: null, loadError: true };
   }
 };

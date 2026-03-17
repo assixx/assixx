@@ -6,7 +6,7 @@ import {
   buildVisibilityClause,
   hasExtendedOrgAccess,
   isUuid,
-  mapOrgLevelToRecipient,
+  mapTeamToRecipient,
 } from './kvp.helpers.js';
 
 // Factory for ExtendedUserOrgInfo test data
@@ -167,13 +167,6 @@ describe('buildVisibilityClause', () => {
     expect(result.clause).toContain('t.deputy_lead_id =');
   });
 
-  it('should include asset_teams check for unshared asset-level KVPs', () => {
-    const orgInfo = createOrgInfo();
-    const result = buildVisibilityClause(orgInfo, 1, 3);
-
-    expect(result.clause).toContain('asset_teams ats');
-  });
-
   it('should use scope-based ANY() checks for shared KVPs', () => {
     const orgInfo = createOrgInfo({
       teamIds: [1],
@@ -275,68 +268,11 @@ describe('buildFilterConditions', () => {
 });
 
 // =============================================================
-// mapOrgLevelToRecipient
+// mapTeamToRecipient
 // =============================================================
 
-describe('mapOrgLevelToRecipient', () => {
-  it('should map team level to team recipient via teamIds', () => {
-    const dto = {
-      teamIds: [5],
-      assetIds: [],
-    } as Parameters<typeof mapOrgLevelToRecipient>[0];
-
-    expect(mapOrgLevelToRecipient(dto)).toEqual({ type: 'team', id: 5 });
-  });
-
-  it('should map asset level to all', () => {
-    const dto = {
-      teamIds: [],
-      assetIds: [10],
-    } as Parameters<typeof mapOrgLevelToRecipient>[0];
-
-    expect(mapOrgLevelToRecipient(dto)).toEqual({ type: 'all', id: null });
-  });
-
-  it('should map department level using departmentId (legacy fallback)', () => {
-    const dto = {
-      teamIds: [],
-      assetIds: [],
-      orgLevel: 'department',
-      orgId: 10,
-      departmentId: 7,
-    } as Parameters<typeof mapOrgLevelToRecipient>[0];
-
-    expect(mapOrgLevelToRecipient(dto)).toEqual({ type: 'department', id: 7 });
-  });
-
-  it('should map area level to department when departmentId exists (legacy fallback)', () => {
-    const dto = {
-      teamIds: [],
-      assetIds: [],
-      orgLevel: 'area',
-      departmentId: 3,
-    } as Parameters<typeof mapOrgLevelToRecipient>[0];
-
-    expect(mapOrgLevelToRecipient(dto)).toEqual({ type: 'department', id: 3 });
-  });
-
-  it('should map area level to all when no departmentId (legacy fallback)', () => {
-    const dto = {
-      teamIds: [],
-      assetIds: [],
-      orgLevel: 'area',
-    } as Parameters<typeof mapOrgLevelToRecipient>[0];
-
-    expect(mapOrgLevelToRecipient(dto)).toEqual({ type: 'all', id: null });
-  });
-
-  it('should map company level to all (legacy fallback)', () => {
-    const dto = {
-      teamIds: [],
-      assetIds: [],
-      orgLevel: 'company',
-    } as Parameters<typeof mapOrgLevelToRecipient>[0];
-
-    expect(mapOrgLevelToRecipient(dto)).toEqual({ type: 'all', id: null });
+describe('mapTeamToRecipient', () => {
+  it('should return team recipient with given teamId', () => {
+    expect(mapTeamToRecipient(5)).toEqual({ type: 'team', id: 5 });
   });
 });

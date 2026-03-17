@@ -100,8 +100,6 @@ export interface KvpSuggestion {
   isConfirmed?: boolean;
   /** When user FIRST saw this suggestion (null = never seen, for "Neu" badge) */
   firstSeenAt?: string | null;
-  /** Organization assignments from junction table (teams and/or assets) */
-  organizations?: KvpOrgAssignment[];
 }
 
 /**
@@ -157,18 +155,7 @@ export interface KvpFormData {
   categoryId: number | null;
   customCategoryId: number | null;
   expectedBenefit?: string;
-  teamIds: number[];
-  assetIds: number[];
   departmentId: number | null;
-}
-
-/** Organization assignment on a KVP suggestion */
-export interface KvpOrgAssignment {
-  orgType: 'team' | 'asset';
-  orgId: number;
-  orgName?: string;
-  /** For assets: team IDs that own this asset (from asset_teams) */
-  relatedTeamIds?: number[];
 }
 
 /** User's team with assigned assets — from GET /kvp/my-organizations */

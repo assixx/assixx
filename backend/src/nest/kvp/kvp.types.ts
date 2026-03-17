@@ -25,7 +25,7 @@ export interface DbSuggestion {
   description: string;
   category_id: number;
   custom_category_id: number | null;
-  org_level: 'company' | 'department' | 'area' | 'team' | 'asset';
+  org_level: 'company' | 'department' | 'area' | 'team';
   org_id: number;
   department_id: number | null;
   team_id: number | null;
@@ -168,15 +168,6 @@ export interface CategoryOption {
   icon?: string;
 }
 
-/** Single org assignment from kvp_suggestion_organizations junction table */
-export interface KvpOrgAssignment {
-  orgType: 'team' | 'asset';
-  orgId: number;
-  orgName?: string | undefined;
-  /** For assets: team IDs that own this asset (from asset_teams) */
-  relatedTeamIds?: number[];
-}
-
 export interface KVPSuggestionResponse {
   id: number;
   uuid: string;
@@ -204,8 +195,6 @@ export interface KVPSuggestionResponse {
   confirmedAt?: string;
   /** When the user FIRST saw this suggestion (never reset, for "Neu" badge) */
   firstSeenAt?: string;
-  /** Organization assignments from junction table (teams and/or assets) */
-  organizations?: KvpOrgAssignment[];
   category?: {
     id: number;
     name: string;
@@ -287,7 +276,6 @@ export interface SuggestionFilters {
   priority: string | undefined;
   orgLevel: string | undefined;
   teamId: number | undefined;
-  assetId: number | undefined;
   search: string | undefined;
   page: number | undefined;
   limit: number | undefined;

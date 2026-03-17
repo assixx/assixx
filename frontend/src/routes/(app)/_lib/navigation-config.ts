@@ -234,7 +234,16 @@ const ORGANIGRAM_SUBMENU: NavItem[] = [
 
 /** System settings submenu (root only) */
 const SYSTEM_SUBMENU: NavItem[] = [
-  { id: 'company', label: 'Firmendaten', url: '/settings/company' },
+  {
+    id: 'company-profile',
+    label: 'Firmenprofil',
+    url: '/settings/company-profile',
+  },
+  {
+    id: 'addon-settings',
+    label: 'Addon-Einstellungen',
+    url: '/settings/company',
+  },
   { id: 'design', label: 'Design', url: '/settings/design' },
   {
     id: 'organigram',

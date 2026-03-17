@@ -7,7 +7,6 @@ import { IS_ACTIVE } from '@assixx/shared/constants';
 
 import { dbToApi } from '../../utils/field-mapper.js';
 import type { OrganizationalScope } from '../hierarchy-permission/organizational-scope.types.js';
-import type { CreateSuggestionDto } from './dto/create-suggestion.dto.js';
 import type { UpdateSuggestionDto } from './dto/update-suggestion.dto.js';
 import type {
   DbSuggestion,
@@ -126,22 +125,9 @@ function attachConfirmationStatus(
 /** L0: Not shared — creator + team lead/deputy of assigned team */
 function buildUnsharedClause(h: OrgPlaceholders): string {
   return `(s.is_shared = false AND (
-    (s.org_level = 'team' AND s.org_id IN (
+    s.org_level = 'team' AND s.org_id IN (
       SELECT t.id FROM teams t
       WHERE (t.team_lead_id = ${h.userId} OR t.deputy_lead_id = ${h.userId}) AND t.tenant_id = s.tenant_id
-    ))
-    OR EXISTS (
-      SELECT 1 FROM kvp_suggestion_organizations kso
-      WHERE kso.suggestion_id = s.id AND (
-        (kso.org_type = 'team' AND kso.org_id IN (
-          SELECT t.id FROM teams t
-          WHERE (t.team_lead_id = ${h.userId} OR t.deputy_lead_id = ${h.userId}) AND t.tenant_id = s.tenant_id
-        ))
-        OR (kso.org_type = 'asset' AND EXISTS (
-          SELECT 1 FROM asset_teams ats JOIN teams t ON ats.team_id = t.id
-          WHERE ats.asset_id = kso.org_id AND (t.team_lead_id = ${h.userId} OR t.deputy_lead_id = ${h.userId}) AND t.tenant_id = s.tenant_id
-        ))
-      )
     )
   ))`;
 }
@@ -164,17 +150,6 @@ function buildSharedClause(h: OrgPlaceholders): string {
       s.org_id = ANY(${h.areaIds}) OR s.org_id = ANY(${h.deptsAreaIds}) OR s.org_id = ANY(${h.areaLeadOf})
       OR EXISTS (SELECT 1 FROM user_teams ut JOIN teams t ON ut.team_id = t.id JOIN departments d ON t.department_id = d.id WHERE ut.user_id = ${h.userId} AND d.area_id = s.org_id)
     ))
-    OR (s.org_level = 'asset' AND EXISTS (
-      SELECT 1 FROM kvp_suggestion_organizations kso
-      JOIN asset_teams mt ON kso.org_type = 'asset' AND kso.org_id = mt.asset_id
-      JOIN user_teams ut ON mt.team_id = ut.team_id AND ut.user_id = ${h.userId}
-      WHERE kso.suggestion_id = s.id
-    ))
-    OR EXISTS (
-      SELECT 1 FROM kvp_suggestion_organizations kso
-      JOIN user_teams ut ON kso.org_id = ut.team_id AND ut.user_id = ${h.userId}
-      WHERE kso.suggestion_id = s.id AND kso.org_type = 'team'
-    )
   ))`;
 }
 
@@ -272,12 +247,6 @@ export function hasExtendedOrgAccess(
       orgInfo.areaLeadOf.includes(orgId)
     );
   }
-
-  // Asset level: visible via junction table check (handled at query level)
-  // For single-check scenarios, asset KVPs are visible if user is in any
-  // team that has this asset assigned — but we can't check asset_teams
-  // from a pure function. Return true and let the query-level check handle it.
-  if (orgLevel === 'asset') return true;
 
   return false;
 }
@@ -420,18 +389,8 @@ export function buildFilterConditions(
     params.push(filters.orgLevel);
   }
   if (filters.teamId !== undefined) {
-    clause += ` AND EXISTS (
-      SELECT 1 FROM kvp_suggestion_organizations kso
-      WHERE kso.suggestion_id = s.id AND kso.org_type = 'team' AND kso.org_id = $${idx++}
-    )`;
+    clause += ` AND s.team_id = $${idx++}`;
     params.push(filters.teamId);
-  }
-  if (filters.assetId !== undefined) {
-    clause += ` AND EXISTS (
-      SELECT 1 FROM kvp_suggestion_organizations kso
-      WHERE kso.suggestion_id = s.id AND kso.org_type = 'asset' AND kso.org_id = $${idx++}
-    )`;
-    params.push(filters.assetId);
   }
   if (isNonEmptyString(filters.search)) {
     clause += ` AND (s.title ILIKE $${idx} OR s.description ILIKE $${idx})`;
@@ -519,66 +478,12 @@ export function buildSuggestionUpdateClause(
   return { updates, params };
 }
 
-/** Derive orgLevel, orgId, and teamId from DTO fields */
-export function deriveOrgFields(dto: CreateSuggestionDto): {
-  orgLevel: string;
-  orgId: number;
-  teamId: number | null;
+/** Map team ID to notification recipient */
+export function mapTeamToRecipient(teamId: number): {
+  type: 'team';
+  id: number;
 } {
-  const teamIds = dto.teamIds;
-  const assetIds = dto.assetIds;
-  const hasTeams = teamIds.length > 0;
-  const hasAssets = assetIds.length > 0;
-  const orgLevel =
-    dto.orgLevel ??
-    (hasTeams ? 'team'
-    : hasAssets ? 'asset'
-    : 'team');
-  const orgId =
-    dto.orgId ??
-    (hasTeams ? (teamIds[0] ?? 0)
-    : hasAssets ? (assetIds[0] ?? 0)
-    : 0);
-  const teamId = orgLevel === 'team' ? orgId : null;
-
-  return { orgLevel, orgId, teamId };
-}
-
-/** Map organization level to notification recipient */
-export function mapOrgLevelToRecipient(dto: CreateSuggestionDto): {
-  type: 'user' | 'department' | 'team' | 'all';
-  id: number | null;
-} {
-  // New teamIds/assetIds flow: notify first team or fall back to 'all'
-  const teamIds = dto.teamIds;
-  const assetIds = dto.assetIds;
-  if (teamIds.length > 0) {
-    return { type: 'team', id: teamIds[0] ?? null };
-  }
-  if (assetIds.length > 0) {
-    // Asset-level: no direct team notification, use 'all' for the tenant
-    return { type: 'all', id: null };
-  }
-
-  // Legacy fallback for orgLevel/orgId
-  switch (dto.orgLevel) {
-    case 'team':
-      return { type: 'team', id: dto.orgId ?? null };
-    case 'department':
-      return {
-        type: 'department',
-        id: dto.departmentId ?? dto.orgId ?? null,
-      };
-    case 'area':
-      return dto.departmentId !== undefined && dto.departmentId !== null ?
-          { type: 'department', id: dto.departmentId }
-        : { type: 'all', id: null };
-    case 'asset':
-      return { type: 'all', id: null };
-    case 'company':
-    default:
-      return { type: 'all', id: null };
-  }
+  return { type: 'team', id: teamId };
 }
 
 /** Map OrganizationalScope → ExtendedUserOrgInfo for helper compatibility */

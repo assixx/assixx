@@ -6,6 +6,7 @@ import { CreateSuggestionSchema } from './create-suggestion.dto.js';
 import { OverrideCategoryNameSchema } from './override-category-name.dto.js';
 import { ListSuggestionsQuerySchema } from './query-suggestion.dto.js';
 import { ShareSuggestionSchema } from './share-suggestion.dto.js';
+import { UpdateKvpSettingsSchema } from './update-kvp-settings.dto.js';
 import { UpdateSuggestionSchema } from './update-suggestion.dto.js';
 
 // =============================================================
@@ -266,5 +267,57 @@ describe('OverrideCategoryNameSchema', () => {
         customName: 'N'.repeat(51),
       }).success,
     ).toBe(false);
+  });
+});
+
+// =============================================================
+// UpdateKvpSettingsSchema
+// =============================================================
+
+describe('UpdateKvpSettingsSchema', () => {
+  it('should accept dailyLimit = 1 (default)', () => {
+    expect(UpdateKvpSettingsSchema.safeParse({ dailyLimit: 1 }).success).toBe(
+      true,
+    );
+  });
+
+  it('should accept dailyLimit = 0 (unlimited)', () => {
+    expect(UpdateKvpSettingsSchema.safeParse({ dailyLimit: 0 }).success).toBe(
+      true,
+    );
+  });
+
+  it('should accept dailyLimit = 100 (max)', () => {
+    expect(UpdateKvpSettingsSchema.safeParse({ dailyLimit: 100 }).success).toBe(
+      true,
+    );
+  });
+
+  it('should reject dailyLimit > 100', () => {
+    expect(UpdateKvpSettingsSchema.safeParse({ dailyLimit: 101 }).success).toBe(
+      false,
+    );
+  });
+
+  it('should reject negative dailyLimit', () => {
+    expect(UpdateKvpSettingsSchema.safeParse({ dailyLimit: -1 }).success).toBe(
+      false,
+    );
+  });
+
+  it('should reject non-integer dailyLimit', () => {
+    expect(UpdateKvpSettingsSchema.safeParse({ dailyLimit: 2.5 }).success).toBe(
+      false,
+    );
+  });
+
+  it('should reject missing dailyLimit', () => {
+    expect(UpdateKvpSettingsSchema.safeParse({}).success).toBe(false);
+  });
+
+  it('should reject string dailyLimit', () => {
+    expect(UpdateKvpSettingsSchema.safeParse({ dailyLimit: '5' }).success).toBe(
+      false,
+    );
   });
 });

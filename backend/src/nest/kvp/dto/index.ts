@@ -30,3 +30,7 @@ export {
   UpdateCustomCategoryDto,
   UpdateCustomCategorySchema,
 } from './update-custom-category.dto.js';
+export {
+  UpdateKvpSettingsDto,
+  UpdateKvpSettingsSchema,
+} from './update-kvp-settings.dto.js';

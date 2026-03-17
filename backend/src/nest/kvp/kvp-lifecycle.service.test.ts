@@ -4,7 +4,7 @@
  * Mocked dependencies: DatabaseService (db.query), ActivityLoggerService,
  * kvp.helpers (isUuid).
  *
- * Tests: share/unshare (junction table management), archive/unarchive
+ * Tests: share/unshare (org-level visibility changes), archive/unarchive
  * (state transitions + activity logging), NotFoundException paths.
  *
  * Note: db.query() returns arrays directly (DatabaseService wrapper extracts rows).
@@ -78,11 +78,8 @@ describe('KvpLifecycleService', () => {
   // -----------------------------------------------------------
 
   describe('shareSuggestion()', () => {
-    it('should share at team level and insert junction table entry', async () => {
-      // Q1: UPDATE RETURNING id
+    it('should share at specified org level via UPDATE', async () => {
       mockDb.query.mockResolvedValueOnce([{ id: 42 }]);
-      // Q2: INSERT junction table
-      mockDb.query.mockResolvedValueOnce([]);
 
       const result = await service.shareSuggestion(
         42,
@@ -92,45 +89,10 @@ describe('KvpLifecycleService', () => {
       );
 
       expect(result.message).toBe('Suggestion shared successfully');
-      expect(mockDb.query).toHaveBeenCalledTimes(2);
-      expect(mockDb.query).toHaveBeenNthCalledWith(
-        2,
-        expect.stringContaining('kvp_suggestion_organizations'),
-        [42, 'team', 5, 1],
+      expect(mockDb.query).toHaveBeenCalledExactlyOnceWith(
+        expect.stringContaining('UPDATE kvp_suggestions'),
+        ['team', 5, 100, 42, 1],
       );
-    });
-
-    it('should insert junction table entry for asset org level', async () => {
-      mockDb.query.mockResolvedValueOnce([{ id: 42 }]);
-      mockDb.query.mockResolvedValueOnce([]);
-
-      await service.shareSuggestion(
-        42,
-        createShareDto({ orgLevel: 'asset', orgId: 10 }),
-        1,
-        100,
-      );
-
-      expect(mockDb.query).toHaveBeenCalledTimes(2);
-      expect(mockDb.query).toHaveBeenNthCalledWith(
-        2,
-        expect.stringContaining('ON CONFLICT'),
-        [42, 'asset', 10, 1],
-      );
-    });
-
-    it('should skip junction table for company org level', async () => {
-      mockDb.query.mockResolvedValueOnce([{ id: 42 }]);
-
-      await service.shareSuggestion(
-        42,
-        createShareDto({ orgLevel: 'company' as any, orgId: 1 }),
-        1,
-        100,
-      );
-
-      // Only UPDATE, no junction INSERT
-      expect(mockDb.query).toHaveBeenCalledOnce();
     });
 
     it('should throw NotFoundException when suggestion not found', async () => {
@@ -144,12 +106,10 @@ describe('KvpLifecycleService', () => {
     it('should use uuid column when id is UUID', async () => {
       mockIsUuid.mockReturnValueOnce(true);
       mockDb.query.mockResolvedValueOnce([{ id: 42 }]);
-      mockDb.query.mockResolvedValueOnce([]);
 
       await service.shareSuggestion('abc-uuid-123', createShareDto(), 1, 100);
 
-      expect(mockDb.query).toHaveBeenNthCalledWith(
-        1,
+      expect(mockDb.query).toHaveBeenCalledExactlyOnceWith(
         expect.stringContaining('uuid'),
         expect.arrayContaining(['abc-uuid-123']),
       );
@@ -161,68 +121,34 @@ describe('KvpLifecycleService', () => {
   // -----------------------------------------------------------
 
   describe('unshareSuggestion()', () => {
-    it('should unshare and reset to team level', async () => {
-      // Q1: SELECT current share info
-      mockDb.query.mockResolvedValueOnce([
-        { id: 42, org_level: 'team', org_id: 5 },
-      ]);
-      // Q2: DELETE junction table
-      mockDb.query.mockResolvedValueOnce([]);
-      // Q3: UPDATE reset
-      mockDb.query.mockResolvedValueOnce([]);
+    it('should unshare and reset to team level with single UPDATE', async () => {
+      mockDb.query.mockResolvedValueOnce([{ id: 42 }]);
 
-      const result = await service.unshareSuggestion(42, 1, 99);
+      const result = await service.unshareSuggestion(42, 1);
 
       expect(result.message).toBe('Suggestion unshared successfully');
-      expect(mockDb.query).toHaveBeenCalledTimes(3);
-      // Verify DELETE from junction
-      expect(mockDb.query).toHaveBeenNthCalledWith(
-        2,
-        expect.stringContaining('DELETE FROM kvp_suggestion_organizations'),
-        [42, 'team', 5],
-      );
-      // Verify reset UPDATE
-      expect(mockDb.query).toHaveBeenNthCalledWith(
-        3,
+      expect(mockDb.query).toHaveBeenCalledExactlyOnceWith(
         expect.stringContaining("org_level = 'team'"),
-        [99, 42, 1],
+        [42, 1],
       );
-    });
-
-    it('should skip junction table delete for non-team/asset org level', async () => {
-      mockDb.query.mockResolvedValueOnce([
-        { id: 42, org_level: 'company', org_id: 1 },
-      ]);
-      // No DELETE, just UPDATE reset
-      mockDb.query.mockResolvedValueOnce([]);
-
-      await service.unshareSuggestion(42, 1, 99);
-
-      // Only SELECT + UPDATE, no DELETE
-      expect(mockDb.query).toHaveBeenCalledTimes(2);
     });
 
     it('should throw NotFoundException when suggestion not found', async () => {
       mockDb.query.mockResolvedValueOnce([]);
 
-      await expect(service.unshareSuggestion(42, 1, 99)).rejects.toThrow(
+      await expect(service.unshareSuggestion(42, 1)).rejects.toThrow(
         NotFoundException,
       );
     });
 
-    it('should delete junction for asset org level', async () => {
-      mockDb.query.mockResolvedValueOnce([
-        { id: 42, org_level: 'asset', org_id: 10 },
-      ]);
-      mockDb.query.mockResolvedValueOnce([]);
-      mockDb.query.mockResolvedValueOnce([]);
+    it('should use org_id = team_id in the UPDATE query', async () => {
+      mockDb.query.mockResolvedValueOnce([{ id: 42 }]);
 
-      await service.unshareSuggestion(42, 1, 99);
+      await service.unshareSuggestion(42, 1);
 
-      expect(mockDb.query).toHaveBeenNthCalledWith(
-        2,
-        expect.stringContaining('DELETE'),
-        [42, 'asset', 10],
+      expect(mockDb.query).toHaveBeenCalledWith(
+        expect.stringContaining('org_id = team_id'),
+        [42, 1],
       );
     });
   });

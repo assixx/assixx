@@ -53,60 +53,30 @@ export class KvpLifecycleService {
       throw new NotFoundException(ERROR_SUGGESTION_NOT_FOUND);
     }
 
-    // Add shared org to junction table (team/asset only)
-    if (dto.orgLevel === 'team' || dto.orgLevel === 'asset') {
-      await this.db.query(
-        `INSERT INTO kvp_suggestion_organizations (suggestion_id, org_type, org_id, tenant_id)
-         VALUES ($1, $2, $3, $4)
-         ON CONFLICT (suggestion_id, org_type, org_id) DO NOTHING`,
-        [suggestion.id, dto.orgLevel, dto.orgId, tenantId],
-      );
-    }
-
     return { message: 'Suggestion shared successfully' };
   }
 
-  /** Unshare a suggestion (reset to team level) */
+  /** Unshare a suggestion (reset to team level — uses team_id from creation) */
   async unshareSuggestion(
     id: number | string,
     tenantId: number,
-    fallbackTeamId: number,
   ): Promise<{ message: string }> {
     this.logger.log(`Unsharing suggestion ${String(id)}`);
 
     const idColumn = isUuid(id) ? 'uuid' : 'id';
 
-    // Get current share info to clean up junction table
-    const rows = await this.db.query<{
-      id: number;
-      org_level: string;
-      org_id: number;
-    }>(
-      `SELECT id, org_level, org_id FROM kvp_suggestions WHERE ${idColumn} = $1 AND tenant_id = $2`,
+    // Reset to original team level (team_id is preserved from creation)
+    const rows = await this.db.query<{ id: number }>(
+      `UPDATE kvp_suggestions
+       SET org_level = 'team', org_id = team_id, is_shared = FALSE, shared_by = NULL, shared_at = NULL, updated_at = NOW()
+       WHERE ${idColumn} = $1 AND tenant_id = $2
+       RETURNING id`,
       [id, tenantId],
     );
 
-    const suggestion = rows[0];
-    if (suggestion === undefined) {
+    if (rows[0] === undefined) {
       throw new NotFoundException(ERROR_SUGGESTION_NOT_FOUND);
     }
-
-    // Remove shared org from junction table (team/asset only)
-    if (suggestion.org_level === 'team' || suggestion.org_level === 'asset') {
-      await this.db.query(
-        `DELETE FROM kvp_suggestion_organizations
-         WHERE suggestion_id = $1 AND org_type = $2 AND org_id = $3`,
-        [suggestion.id, suggestion.org_level, suggestion.org_id],
-      );
-    }
-
-    // Reset main record to original team level
-    await this.db.query(
-      `UPDATE kvp_suggestions
-       SET org_level = 'team', org_id = $1, is_shared = FALSE, shared_by = NULL, shared_at = NULL, updated_at = NOW()
-       WHERE id = $2 AND tenant_id = $3`,
-      [fallbackTeamId, suggestion.id, tenantId],
-    );
 
     return { message: 'Suggestion unshared successfully' };
   }

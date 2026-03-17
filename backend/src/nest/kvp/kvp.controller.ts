@@ -68,6 +68,7 @@ import {
   OverrideCategoryNameDto,
   ShareSuggestionDto,
   UpdateCustomCategoryDto,
+  UpdateKvpSettingsDto,
   UpdateSuggestionDto,
 } from './dto/index.js';
 import type { CustomizableCategoriesResponse } from './kvp-categories.service.js';
@@ -117,6 +118,41 @@ export class KvpController {
     private readonly kvpService: KvpService,
     private readonly categoriesService: KvpCategoriesService,
   ) {}
+
+  // ==========================================================================
+  // ADDON SETTINGS (root / admin+has_full_access only)
+  // ==========================================================================
+
+  /**
+   * GET /kvp/settings
+   * Get KVP addon settings (daily limit) for the tenant
+   */
+  @Get('settings')
+  @UseGuards(RolesGuard)
+  @Roles('root')
+  async getKvpSettings(
+    @TenantId() tenantId: number,
+  ): Promise<{ dailyLimit: number }> {
+    return await this.kvpService.getKvpSettings(tenantId);
+  }
+
+  /**
+   * PUT /kvp/settings
+   * Update KVP addon settings (daily limit) for the tenant
+   */
+  @Put('settings')
+  @UseGuards(RolesGuard)
+  @Roles('root')
+  async updateKvpSettings(
+    @Body() dto: UpdateKvpSettingsDto,
+    @TenantId() tenantId: number,
+  ): Promise<{ dailyLimit: number }> {
+    return await this.kvpService.updateKvpSettings(tenantId, dto.dailyLimit);
+  }
+
+  // ==========================================================================
+  // CATEGORIES
+  // ==========================================================================
 
   /**
    * GET /kvp/categories
@@ -364,7 +400,6 @@ export class KvpController {
       priority: query.priority,
       orgLevel: query.orgLevel,
       teamId: query.teamId,
-      assetId: query.assetId,
       search: query.search,
       page: query.page,
       limit: query.limit,

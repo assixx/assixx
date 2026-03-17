@@ -9,13 +9,9 @@ import { z } from 'zod';
 /**
  * Organization level enum
  */
-const OrgLevelSchema = z.enum(
-  ['company', 'department', 'area', 'team', 'asset'],
-  {
-    message:
-      'Organization level must be company, department, area, team, or asset',
-  },
-);
+const OrgLevelSchema = z.enum(['company', 'department', 'area', 'team'], {
+  message: 'Organization level must be company, department, area, or team',
+});
 
 /**
  * Share suggestion request body schema

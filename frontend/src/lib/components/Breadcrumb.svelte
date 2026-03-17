@@ -151,7 +151,11 @@
       icon: 'fa-id-badge',
     },
     '/settings/company': {
-      label: 'Firmendaten',
+      label: 'Addon-Einstellungen',
+      icon: 'fa-sliders-h',
+    },
+    '/settings/company-profile': {
+      label: 'Firmenprofil',
       icon: 'fa-building',
     },
   });
@@ -274,6 +278,11 @@
       icon: 'fa-sitemap',
     },
     '/settings/company': {
+      label: 'System',
+      href: '/root-dashboard',
+      icon: 'fa-cog',
+    },
+    '/settings/company-profile': {
       label: 'System',
       href: '/root-dashboard',
       icon: 'fa-cog',

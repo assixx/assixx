@@ -304,8 +304,6 @@
   <!-- Create KVP Modal -->
   {#if kvpState.showCreateModal}
     <KvpCreateModal
-      userOrganizations={ssrUserOrganizations}
-      {labels}
       onclose={handleCloseCreateModal}
       onsuccess={handleModalSuccess}
     />

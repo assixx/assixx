@@ -86,17 +86,6 @@ export interface KvpSuggestion {
   isConfirmed?: boolean;
   /** When the user confirmed (read) this suggestion */
   confirmedAt?: string;
-  /** Organization assignments from junction table (teams and/or assets) */
-  organizations?: KvpOrgAssignment[];
-}
-
-/** Organization assignment on a KVP suggestion */
-export interface KvpOrgAssignment {
-  orgType: 'team' | 'asset';
-  orgId: number;
-  orgName?: string;
-  /** For assets: team IDs that own this asset (from asset_teams) */
-  relatedTeamIds?: number[];
 }
 
 /**

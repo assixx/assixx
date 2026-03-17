@@ -25,6 +25,108 @@ beforeAll(async () => {
   auth = await loginApitest();
 });
 
+// ---- seq: 0 -- KVP Settings (root-only) ------------------------------------
+
+describe('KVP: Get Settings', () => {
+  let settingsRes: Response;
+  let settingsBody: JsonBody;
+
+  beforeAll(async () => {
+    settingsRes = await fetch(`${BASE_URL}/kvp/settings`, {
+      headers: authOnly(auth.authToken),
+    });
+    settingsBody = (await settingsRes.json()) as JsonBody;
+  });
+
+  it('should return 200 OK', () => {
+    expect(settingsRes.status).toBe(200);
+    expect(settingsBody.success).toBe(true);
+  });
+
+  it('should return dailyLimit as number', () => {
+    expect(typeof settingsBody.data.dailyLimit).toBe('number');
+    expect(settingsBody.data.dailyLimit).toBeGreaterThanOrEqual(0);
+  });
+});
+
+describe('KVP: Update Settings', () => {
+  let updateRes: Response;
+  let updateBody: JsonBody;
+
+  beforeAll(async () => {
+    updateRes = await fetch(`${BASE_URL}/kvp/settings`, {
+      method: 'PUT',
+      headers: authHeaders(auth.authToken),
+      body: JSON.stringify({ dailyLimit: 5 }),
+    });
+    updateBody = (await updateRes.json()) as JsonBody;
+  });
+
+  it('should return 200 OK', () => {
+    expect(updateRes.status).toBe(200);
+    expect(updateBody.success).toBe(true);
+  });
+
+  it('should return updated dailyLimit', () => {
+    expect(updateBody.data.dailyLimit).toBe(5);
+  });
+});
+
+describe('KVP: Verify Settings Persistence', () => {
+  let verifyRes: Response;
+  let verifyBody: JsonBody;
+
+  beforeAll(async () => {
+    verifyRes = await fetch(`${BASE_URL}/kvp/settings`, {
+      headers: authOnly(auth.authToken),
+    });
+    verifyBody = (await verifyRes.json()) as JsonBody;
+  });
+
+  it('should return persisted dailyLimit = 5', () => {
+    expect(verifyBody.data.dailyLimit).toBe(5);
+  });
+});
+
+describe('KVP: Reset Settings to Default', () => {
+  let resetRes: Response;
+  let resetBody: JsonBody;
+
+  beforeAll(async () => {
+    resetRes = await fetch(`${BASE_URL}/kvp/settings`, {
+      method: 'PUT',
+      headers: authHeaders(auth.authToken),
+      body: JSON.stringify({ dailyLimit: 1 }),
+    });
+    resetBody = (await resetRes.json()) as JsonBody;
+  });
+
+  it('should return 200 OK', () => {
+    expect(resetRes.status).toBe(200);
+    expect(resetBody.data.dailyLimit).toBe(1);
+  });
+});
+
+describe('KVP: Settings Validation', () => {
+  it('should reject negative dailyLimit', async () => {
+    const res = await fetch(`${BASE_URL}/kvp/settings`, {
+      method: 'PUT',
+      headers: authHeaders(auth.authToken),
+      body: JSON.stringify({ dailyLimit: -1 }),
+    });
+    expect(res.status).toBe(400);
+  });
+
+  it('should reject dailyLimit > 100', async () => {
+    const res = await fetch(`${BASE_URL}/kvp/settings`, {
+      method: 'PUT',
+      headers: authHeaders(auth.authToken),
+      body: JSON.stringify({ dailyLimit: 101 }),
+    });
+    expect(res.status).toBe(400);
+  });
+});
+
 // ---- seq: 1 -- List KVP Suggestions -----------------------------------------
 
 describe('KVP: List Suggestions', () => {
