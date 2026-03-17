@@ -193,7 +193,7 @@
         {#if canShareSuggestion(suggestion, kvpDetailState.effectiveRole, kvpDetailState.canManage)}
           <button
             type="button"
-            class="btn btn-edit"
+            class="btn btn-secondary"
             onclick={onopensharemodal}
           >
             <i class="fas fa-share-alt"></i>

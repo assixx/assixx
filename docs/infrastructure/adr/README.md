@@ -59,6 +59,7 @@ ADRs document important architectural decisions:
 | [ADR-034](./ADR-034-hierarchy-labels-propagation.md)                         | Hierarchy Labels Propagation                       | Accepted   | 2026-03-11 |
 | [ADR-035](./ADR-035-organizational-hierarchy-and-assignment-architecture.md) | Organizational Hierarchy & Assignment Architecture | Accepted   | 2026-03-13 |
 | [ADR-036](./ADR-036-organizational-scope-access-control.md)                  | Organizational Scope Access Control                | Accepted   | 2026-03-14 |
+| [ADR-037](./ADR-037-approvals-architecture.md)                               | Approvals (Freigabe-System) Architecture           | Accepted   | 2026-03-17 |
 
 ## Template
 

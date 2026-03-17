@@ -130,6 +130,10 @@
       label: 'Tenant Löschstatus',
       icon: 'fa-trash-alt',
     },
+    '/manage-approvals': {
+      label: 'Freigaben verwalten',
+      icon: 'fa-check-double',
+    },
     '/work-orders': {
       label: 'Meine Arbeitsaufträge',
       icon: 'fa-clipboard-check',

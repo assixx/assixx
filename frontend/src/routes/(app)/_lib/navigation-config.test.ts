@@ -10,13 +10,17 @@
 import { describe, expect, it } from 'vitest';
 
 import { DEFAULT_HIERARCHY_LABELS } from '$lib/types/hierarchy-labels';
+import { DEFAULT_ORG_SCOPE } from '$lib/types/organizational-scope';
 
 import {
   type NavItem,
   filterMenuByAccess,
   filterMenuByAddons,
+  filterMenuByScope,
   getMenuItemsForRole,
 } from './navigation-config.js';
+
+import type { OrganizationalScope } from '$lib/types/organizational-scope';
 
 /** Convenience: build real menus with default labels for tests */
 const rootMenuItems = getMenuItemsForRole('root', DEFAULT_HIERARCHY_LABELS);
@@ -286,8 +290,9 @@ describe('filterMenuByAddons: real rootMenuItems', () => {
     const ids = collectIds(filterMenuByAddons(rootMenuItems, NO_ADDONS));
 
     expect(ids).toContain('dashboard');
+    expect(ids).toContain('verwalten');
     expect(ids).toContain('root-users');
-    expect(ids).toContain('admins');
+    expect(ids).toContain('admins-list');
     expect(ids).toContain('areas');
     expect(ids).toContain('departments');
     expect(ids).toContain('addons');
@@ -328,7 +333,8 @@ describe('filterMenuByAddons: real adminMenuItems', () => {
     const ids = collectIds(filterMenuByAddons(adminMenuItems, NO_ADDONS));
 
     expect(ids).toContain('dashboard');
-    expect(ids).toContain('employees');
+    expect(ids).toContain('verwalten');
+    expect(ids).toContain('employees-list');
     expect(ids).toContain('assets');
     expect(ids).toContain('settings');
     expect(ids).toContain('profile');
@@ -461,8 +467,8 @@ describe('getMenuItemsForRole', () => {
       asset: 'Maschinen',
     };
     const items = getMenuItemsForRole('root', customLabels);
-    const areasItem = items.find((item) => item.id === 'areas');
-    const deptsItem = items.find((item) => item.id === 'departments');
+    const areasItem = findById(items, 'areas');
+    const deptsItem = findById(items, 'departments');
 
     expect(areasItem?.label).toBe('Werke');
     expect(deptsItem?.label).toBe('Segmente');
@@ -488,5 +494,148 @@ describe('filterMenuByAccess', () => {
     expect(collectIds(filterMenuByAccess(rootMenuItems, false))).toContain(
       'kvp-main',
     );
+  });
+});
+
+// =============================================================================
+// filterMenuByScope — APPROVALS INJECTION
+// =============================================================================
+
+/** Helper: create scope with specific lead flags */
+function scopeWith(
+  overrides: Partial<OrganizationalScope>,
+): OrganizationalScope {
+  return { ...DEFAULT_ORG_SCOPE, ...overrides };
+}
+
+describe('filterMenuByScope: root', () => {
+  it('should pass through without changes (approvals already static)', () => {
+    const result = filterMenuByScope(rootMenuItems, DEFAULT_ORG_SCOPE, 'root');
+
+    expect(result).toBe(rootMenuItems);
+  });
+
+  it('should contain approvals in static root menu', () => {
+    expect(collectIds(rootMenuItems)).toContain('approvals');
+  });
+});
+
+describe('filterMenuByScope: admin', () => {
+  it('should contain approvals in static admin menu', () => {
+    expect(collectIds(adminMenuItems)).toContain('approvals');
+  });
+
+  it('should inject manage items into verwalten submenu for admin with org scope', () => {
+    const scope = scopeWith({ type: 'full' });
+    const result = filterMenuByScope(adminMenuItems, scope, 'admin');
+    const verwalten = findById(result, 'verwalten');
+    const subIds = collectIds(verwalten?.submenu ?? []);
+
+    expect(subIds).toContain('employees-list');
+    expect(subIds).toContain('areas');
+    expect(subIds).toContain('departments');
+    expect(subIds).toContain('teams');
+    expect(subIds).toContain('assets');
+    expect(subIds).toContain('halls');
+  });
+});
+
+describe('filterMenuByScope: employee team lead', () => {
+  it('should inject approvals for team lead', () => {
+    const scope = scopeWith({ isTeamLead: true, isAnyLead: true });
+    const result = filterMenuByScope(employeeMenuItems, scope, 'employee');
+    const ids = collectIds(result);
+
+    expect(ids).toContain('approvals');
+  });
+
+  it('should inject teams + employees for team lead', () => {
+    const scope = scopeWith({ isTeamLead: true, isAnyLead: true });
+    const result = filterMenuByScope(employeeMenuItems, scope, 'employee');
+    const ids = collectIds(result);
+
+    expect(ids).toContain('teams');
+    expect(ids).toContain('employees');
+  });
+
+  it('should place approvals before profile', () => {
+    const scope = scopeWith({ isTeamLead: true, isAnyLead: true });
+    const result = filterMenuByScope(employeeMenuItems, scope, 'employee');
+    const ids = collectIds(result);
+    const approvalsIdx = ids.indexOf('approvals');
+    const profileIdx = ids.indexOf('profile');
+
+    expect(approvalsIdx).toBeGreaterThan(-1);
+    expect(profileIdx).toBeGreaterThan(-1);
+    expect(approvalsIdx).toBeLessThan(profileIdx);
+  });
+});
+
+describe('filterMenuByScope: employee area lead', () => {
+  it('should inject approvals for area lead', () => {
+    const scope = scopeWith({ isAreaLead: true, isAnyLead: true });
+    const result = filterMenuByScope(employeeMenuItems, scope, 'employee');
+
+    expect(collectIds(result)).toContain('approvals');
+  });
+
+  it('should NOT inject teams/employees for area lead (only team lead gets those)', () => {
+    const scope = scopeWith({ isAreaLead: true, isAnyLead: true });
+    const result = filterMenuByScope(employeeMenuItems, scope, 'employee');
+    const ids = collectIds(result);
+
+    expect(ids).not.toContain('teams');
+    expect(ids).not.toContain('employees');
+  });
+});
+
+describe('filterMenuByScope: employee department lead', () => {
+  it('should inject approvals for department lead', () => {
+    const scope = scopeWith({ isDepartmentLead: true, isAnyLead: true });
+    const result = filterMenuByScope(employeeMenuItems, scope, 'employee');
+
+    expect(collectIds(result)).toContain('approvals');
+  });
+
+  it('should place approvals before profile', () => {
+    const scope = scopeWith({ isDepartmentLead: true, isAnyLead: true });
+    const result = filterMenuByScope(employeeMenuItems, scope, 'employee');
+    const ids = collectIds(result);
+
+    expect(ids.indexOf('approvals')).toBeLessThan(ids.indexOf('profile'));
+  });
+});
+
+describe('filterMenuByScope: employee without lead', () => {
+  it('should NOT inject approvals for regular employee', () => {
+    const result = filterMenuByScope(
+      employeeMenuItems,
+      DEFAULT_ORG_SCOPE,
+      'employee',
+    );
+
+    expect(collectIds(result)).not.toContain('approvals');
+  });
+
+  it('should return items unchanged', () => {
+    const result = filterMenuByScope(
+      employeeMenuItems,
+      DEFAULT_ORG_SCOPE,
+      'employee',
+    );
+
+    expect(result).toBe(employeeMenuItems);
+  });
+});
+
+describe('filterMenuByScope: dummy', () => {
+  it('should NOT inject approvals for dummy users', () => {
+    const result = filterMenuByScope(
+      dummyMenuItems,
+      DEFAULT_ORG_SCOPE,
+      'dummy',
+    );
+
+    expect(collectIds(result)).not.toContain('approvals');
   });
 });
