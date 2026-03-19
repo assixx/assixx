@@ -488,6 +488,13 @@
 
 <!-- AUTH GUARD: Block ALL content until authenticated -->
 {#if isAuthenticated}
+  <RoleSwitchBanner
+    isVisible={showRoleSwitchBanner}
+    {userRole}
+    {activeRole}
+    onDismiss={dismissRoleSwitchBanner}
+  />
+
   <AppHeader
     {sidebarCollapsed}
     {tokenTimeLeft}
@@ -501,13 +508,6 @@
     onShowLogoutModal={() => {
       showLogoutModal = true;
     }}
-  />
-
-  <RoleSwitchBanner
-    isVisible={showRoleSwitchBanner}
-    {userRole}
-    {activeRole}
-    onDismiss={dismissRoleSwitchBanner}
   />
 
   <div class="layout-container">
