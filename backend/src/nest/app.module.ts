@@ -19,6 +19,7 @@ import { AddonCheckModule } from './addon-check/addon-check.module.js';
 import { AddonVisitsModule } from './addon-visits/addon-visits.module.js';
 import { AddonsModule } from './addons/addons.module.js';
 import { AdminPermissionsModule } from './admin-permissions/admin-permissions.module.js';
+import { ApprovalsModule } from './approvals/approvals.module.js';
 import { AreasModule } from './areas/areas.module.js';
 import { AssetsModule } from './assets/assets.module.js';
 import { AuditTrailModule } from './audit-trail/audit-trail.module.js';
@@ -148,6 +149,7 @@ import { WorkOrdersModule } from './work-orders/work-orders.module.js';
 
     // Feature modules
     AdminPermissionsModule,
+    ApprovalsModule,
     AreasModule,
     AuditTrailModule,
     AuthModule,

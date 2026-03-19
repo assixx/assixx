@@ -3,10 +3,14 @@
    * Manage Approvals — Eingehende Freigaben
    * @module shared/manage-approvals/+page
    *
-   * Level 3 SSR: Stats cards, filter bar, data table.
-   * Pattern: mirrors work-orders/admin layout.
-   * Core addon — always active, no permission-denied fallback needed.
+   * Level 3 SSR: Stats cards, filter bar, data table, approve/reject modals.
+   * Connected to real backend API.
    */
+  import { invalidateAll } from '$app/navigation';
+
+  import { showErrorAlert, showSuccessAlert } from '$lib/stores/toast';
+
+  import ConfirmModal from '$design-system/components/confirm-modal/ConfirmModal.svelte';
 
   import type { PageData } from './$types';
 
@@ -17,14 +21,35 @@
   const { data }: { data: PageData } = $props();
 
   // =============================================================================
+  // TYPES
+  // =============================================================================
+
+  interface ApprovalItem {
+    uuid: string;
+    addonCode: string;
+    title: string;
+    requestedByName: string;
+    status: 'pending' | 'approved' | 'rejected';
+    priority: string;
+    decidedByName: string | null;
+    decisionNote: string | null;
+    createdAt: string;
+  }
+
+  // =============================================================================
   // CLIENT STATE
   // =============================================================================
 
   let statusFilter = $state('');
   let addonFilter = $state('');
-  let priorityFilter = $state('');
-  // eslint-disable-next-line prefer-const -- $state requires let, will be reassigned when API is connected
-  let loading = $state(false);
+  let submitting = $state(false);
+
+  // Modal state
+  let showApproveModal = $state(false);
+  let showRejectModal = $state(false);
+  let activeApproval = $state<ApprovalItem | null>(null);
+  let rejectNote = $state('');
+  let approveNote = $state('');
 
   // =============================================================================
   // CONSTANTS
@@ -44,13 +69,6 @@
     { value: 'blackboard', label: 'Schwarzes Brett' },
     { value: 'calendar', label: 'Kalender' },
     { value: 'surveys', label: 'Umfragen' },
-  ] as const;
-
-  const PRIORITY_FILTER_OPTIONS = [
-    { value: '', label: 'Alle Prioritäten' },
-    { value: 'low', label: 'Niedrig' },
-    { value: 'medium', label: 'Mittel' },
-    { value: 'high', label: 'Hoch' },
   ] as const;
 
   const STATUS_BADGE: Record<
@@ -76,31 +94,95 @@
 
   const stats = $derived(data.stats);
   const approvals = $derived(data.approvals);
-  const hasApprovals = $derived(approvals.length > 0);
+  const items = $derived<ApprovalItem[]>(
+    'items' in approvals ? (approvals.items as ApprovalItem[]) : [],
+  );
+
+  /** Client-side filtering (SSR already filtered, this is for quick toggling) */
+  const filteredItems = $derived(
+    items.filter((a: ApprovalItem) => {
+      if (statusFilter !== '' && a.status !== statusFilter) return false;
+      if (addonFilter !== '' && a.addonCode !== addonFilter) return false;
+      return true;
+    }),
+  );
+
+  const hasApprovals = $derived(filteredItems.length > 0);
 
   // =============================================================================
-  // HANDLERS (placeholders for backend integration)
+  // HANDLERS
   // =============================================================================
 
-  function handleStatusFilterChange(value: string): void {
-    statusFilter = value;
-    // TODO: reload from API
+  function openApproveModal(approval: ApprovalItem): void {
+    activeApproval = approval;
+    approveNote = '';
+    showApproveModal = true;
   }
 
-  function handleAddonFilterChange(value: string): void {
-    addonFilter = value;
-    // TODO: reload from API
+  function openRejectModal(approval: ApprovalItem): void {
+    activeApproval = approval;
+    rejectNote = '';
+    showRejectModal = true;
   }
 
-  function handlePriorityFilterChange(value: string): void {
-    priorityFilter = value;
-    // TODO: reload from API
+  async function handleApprove(): Promise<void> {
+    if (activeApproval === null) return;
+    submitting = true;
+    try {
+      const res = await fetch(
+        `/api/v2/approvals/${activeApproval.uuid}/approve`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            decisionNote: approveNote !== '' ? approveNote : null,
+          }),
+        },
+      );
+      if (res.ok) {
+        showSuccessAlert('Freigabe genehmigt');
+        showApproveModal = false;
+        activeApproval = null; // eslint-disable-line require-atomic-updates -- Svelte single-threaded
+        await invalidateAll();
+      } else {
+        const body = (await res.json()) as { error?: { message?: string } };
+        showErrorAlert(body.error?.message ?? 'Fehler beim Genehmigen');
+      }
+    } catch {
+      showErrorAlert('Fehler beim Genehmigen');
+    } finally {
+      submitting = false;
+    }
   }
 
-  // Suppress unused variable warnings — will be used when backend API is available
-  void loading;
-  void handleAddonFilterChange;
-  void handlePriorityFilterChange;
+  async function handleReject(): Promise<void> {
+    if (activeApproval === null || rejectNote.trim() === '') return;
+    submitting = true;
+    try {
+      const res = await fetch(
+        `/api/v2/approvals/${activeApproval.uuid}/reject`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ decisionNote: rejectNote }),
+        },
+      );
+      if (res.ok) {
+        showSuccessAlert('Freigabe abgelehnt');
+        showRejectModal = false;
+        activeApproval = null; // eslint-disable-line require-atomic-updates -- Svelte single-threaded
+        rejectNote = ''; // eslint-disable-line require-atomic-updates -- Svelte single-threaded
+        await invalidateAll();
+      } else {
+        const body = (await res.json()) as { error?: { message?: string } };
+        showErrorAlert(body.error?.message ?? 'Fehler beim Ablehnen');
+      }
+    } catch {
+      showErrorAlert('Fehler beim Ablehnen');
+    } finally {
+      submitting = false;
+    }
+  }
 </script>
 
 <svelte:head>
@@ -146,7 +228,6 @@
   <div class="card">
     <div class="card__header">
       <div class="filter-bar">
-        <!-- Status filter -->
         <div class="toggle-group">
           {#each STATUS_FILTER_OPTIONS as opt (opt.value)}
             <button
@@ -154,7 +235,7 @@
               class="toggle-group__btn"
               class:active={statusFilter === opt.value}
               onclick={() => {
-                handleStatusFilterChange(opt.value);
+                statusFilter = opt.value;
               }}
             >
               {opt.label}
@@ -162,7 +243,6 @@
           {/each}
         </div>
 
-        <!-- Addon filter -->
         <div class="toggle-group">
           {#each ADDON_FILTER_OPTIONS as opt (opt.value)}
             <button
@@ -170,23 +250,7 @@
               class="toggle-group__btn"
               class:active={addonFilter === opt.value}
               onclick={() => {
-                handleAddonFilterChange(opt.value);
-              }}
-            >
-              {opt.label}
-            </button>
-          {/each}
-        </div>
-
-        <!-- Priority filter -->
-        <div class="toggle-group">
-          {#each PRIORITY_FILTER_OPTIONS as opt (opt.value)}
-            <button
-              type="button"
-              class="toggle-group__btn"
-              class:active={priorityFilter === opt.value}
-              onclick={() => {
-                handlePriorityFilterChange(opt.value);
+                addonFilter = opt.value;
               }}
             >
               {opt.label}
@@ -197,14 +261,7 @@
     </div>
 
     <div class="card__body">
-      {#if loading}
-        <div class="empty-state empty-state--in-card">
-          <div class="empty-state__icon">
-            <i class="fas fa-spinner fa-spin"></i>
-          </div>
-          <p class="empty-state__description">Freigaben werden geladen...</p>
-        </div>
-      {:else if !hasApprovals}
+      {#if !hasApprovals}
         <div class="empty-state empty-state--in-card">
           <div class="empty-state__icon">
             <i class="fas fa-check-double"></i>
@@ -215,7 +272,6 @@
           </p>
         </div>
       {:else}
-        <!-- Approvals Table -->
         <div class="table-responsive">
           <table class="table">
             <thead>
@@ -230,7 +286,7 @@
               </tr>
             </thead>
             <tbody>
-              {#each approvals as approval (approval.uuid)}
+              {#each filteredItems as approval (approval.uuid)}
                 {@const badge =
                   STATUS_BADGE[approval.status] ?? STATUS_BADGE.pending}
                 <tr>
@@ -263,6 +319,9 @@
                           type="button"
                           class="action-icon action-icon--success"
                           title="Genehmigen"
+                          onclick={() => {
+                            openApproveModal(approval);
+                          }}
                         >
                           <i class="fas fa-check"></i>
                         </button>
@@ -270,17 +329,20 @@
                           type="button"
                           class="action-icon action-icon--danger"
                           title="Ablehnen"
+                          onclick={() => {
+                            openRejectModal(approval);
+                          }}
                         >
                           <i class="fas fa-times"></i>
                         </button>
+                      {:else if approval.decisionNote !== null}
+                        <span
+                          class="text-muted"
+                          title={approval.decisionNote}
+                        >
+                          <i class="fas fa-comment"></i>
+                        </span>
                       {/if}
-                      <button
-                        type="button"
-                        class="action-icon"
-                        title="Details anzeigen"
-                      >
-                        <i class="fas fa-eye"></i>
-                      </button>
                     </div>
                   </td>
                 </tr>
@@ -293,6 +355,80 @@
   </div>
 </div>
 
+<!-- Approve Modal -->
+<ConfirmModal
+  show={showApproveModal && activeApproval !== null}
+  id="approve-modal"
+  title="Freigabe genehmigen"
+  variant="success"
+  icon="fa-check"
+  confirmLabel="Genehmigen"
+  {submitting}
+  onconfirm={() => void handleApprove()}
+  oncancel={() => {
+    showApproveModal = false;
+    activeApproval = null;
+  }}
+>
+  {#if activeApproval !== null}
+    <p><strong>{activeApproval.title}</strong></p>
+    <p>
+      Modul: {activeApproval.addonCode} | Angefragt von: {activeApproval.requestedByName}
+    </p>
+    <div class="form-group mt-4">
+      <label
+        class="form-label"
+        for="approve-note">Kommentar (optional)</label
+      >
+      <textarea
+        id="approve-note"
+        class="form-textarea"
+        rows="3"
+        bind:value={approveNote}
+        placeholder="Optionaler Kommentar zur Genehmigung..."
+      ></textarea>
+    </div>
+  {/if}
+</ConfirmModal>
+
+<!-- Reject Modal -->
+<ConfirmModal
+  show={showRejectModal && activeApproval !== null}
+  id="reject-modal"
+  title="Freigabe ablehnen"
+  variant="danger"
+  icon="fa-times"
+  confirmLabel="Ablehnen"
+  {submitting}
+  onconfirm={() => void handleReject()}
+  oncancel={() => {
+    showRejectModal = false;
+    activeApproval = null;
+    rejectNote = '';
+  }}
+>
+  {#if activeApproval !== null}
+    <p><strong>{activeApproval.title}</strong></p>
+    <p>
+      Modul: {activeApproval.addonCode} | Angefragt von: {activeApproval.requestedByName}
+    </p>
+    <div class="form-group mt-4">
+      <label
+        class="form-label"
+        for="reject-note">Begründung (Pflicht)</label
+      >
+      <textarea
+        id="reject-note"
+        class="form-textarea"
+        rows="3"
+        bind:value={rejectNote}
+        placeholder="Begründung für die Ablehnung..."
+        required
+      ></textarea>
+    </div>
+  {/if}
+</ConfirmModal>
+
 <style>
   .stats-grid {
     display: grid;
@@ -301,12 +437,6 @@
   }
 
   @media (width <= 768px) {
-    .stats-grid {
-      grid-template-columns: repeat(2, 1fr);
-    }
-  }
-
-  @media (width <= 480px) {
     .stats-grid {
       grid-template-columns: repeat(2, 1fr);
     }
@@ -352,5 +482,31 @@
 
   .action-icon--danger:hover {
     color: var(--color-danger, #e74c3c);
+  }
+
+  .text-muted {
+    opacity: 50%;
+  }
+
+  .form-group {
+    margin-bottom: 0;
+  }
+
+  .form-label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    font-size: 0.875rem;
+  }
+
+  .form-textarea {
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--border-color, rgb(255 255 255 / 10%));
+    border-radius: 8px;
+    background: var(--bg-input, rgb(255 255 255 / 5%));
+    color: inherit;
+    font-size: 0.875rem;
+    resize: vertical;
   }
 </style>

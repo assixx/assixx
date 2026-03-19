@@ -21,6 +21,7 @@
     Admin,
     TeamMember,
     Asset,
+    Hall,
     FormIsActiveStatus,
   } from './types';
 
@@ -34,11 +35,13 @@
     formLeaderId: number | null;
     formMemberIds: number[];
     formAssetIds: number[];
+    formHallId: number | null;
     formIsActive: FormIsActiveStatus;
     allDepartments: Department[];
     allLeaders: Admin[];
     allEmployees: TeamMember[];
     allAssets: Asset[];
+    allHalls: Hall[];
     submitting: boolean;
     onclose: () => void;
     onsubmit: (data: {
@@ -48,6 +51,7 @@
       leaderId: number | null;
       memberIds: number[];
       assetIds: number[];
+      hallId: number | null;
       isActive: FormIsActiveStatus;
     }) => void;
   }
@@ -63,11 +67,13 @@
     formLeaderId,
     formMemberIds,
     formAssetIds,
+    formHallId,
     formIsActive,
     allDepartments,
     allLeaders,
     allEmployees,
     allAssets,
+    allHalls,
     submitting,
     onclose,
     onsubmit,
@@ -82,6 +88,7 @@
   let localLeaderId = $state<number | null>(null);
   let localMemberIds = $state<number[]>([]);
   let localAssetIds = $state<number[]>([]);
+  let localHallId = $state<number | null>(null);
   let localIsActive = $state<FormIsActiveStatus>(1);
 
   // Sync props to local state when they change
@@ -92,11 +99,13 @@
     localLeaderId = formLeaderId;
     localMemberIds = [...formMemberIds];
     localAssetIds = [...formAssetIds];
+    localHallId = formHallId;
     localIsActive = formIsActive;
   });
 
   // Dropdown states
   let departmentDropdownOpen = $state(false);
+  let hallDropdownOpen = $state(false);
   let leaderDropdownOpen = $state(false);
   let membersDropdownOpen = $state(false);
   let assetsDropdownOpen = $state(false);
@@ -109,6 +118,7 @@
 
   function closeOtherDropdowns(except: string): void {
     if (except !== 'department') departmentDropdownOpen = false;
+    if (except !== 'hall') hallDropdownOpen = false;
     if (except !== 'leader') leaderDropdownOpen = false;
     if (except !== 'members') membersDropdownOpen = false;
     if (except !== 'assets') assetsDropdownOpen = false;
@@ -124,6 +134,23 @@
   function selectDepartment(id: number | null): void {
     localDepartmentId = id;
     departmentDropdownOpen = false;
+  }
+
+  function toggleHallDropdown(e: MouseEvent): void {
+    e.stopPropagation();
+    closeOtherDropdowns('hall');
+    hallDropdownOpen = !hallDropdownOpen;
+  }
+
+  function selectHall(id: number | null): void {
+    localHallId = id;
+    hallDropdownOpen = false;
+  }
+
+  function getHallDisplayText(): string {
+    if (localHallId === null) return '— Keine Zuordnung —';
+    const hall = allHalls.find((h: Hall) => h.id === localHallId);
+    return hall?.name ?? '— Keine Zuordnung —';
   }
 
   function toggleLeaderDropdown(e: MouseEvent): void {
@@ -168,10 +195,6 @@
     statusDropdownOpen = false;
   }
 
-  function handleOverlayClick(e: MouseEvent): void {
-    if (e.target === e.currentTarget) onclose();
-  }
-
   function handleFormSubmit(e: Event): void {
     e.preventDefault();
     onsubmit({
@@ -181,6 +204,7 @@
       leaderId: localLeaderId,
       memberIds: localMemberIds,
       assetIds: localAssetIds,
+      hallId: localHallId,
       isActive: localIsActive,
     });
   }
@@ -189,6 +213,7 @@
   $effect(() => {
     return onClickOutsideDropdown(() => {
       departmentDropdownOpen = false;
+      hallDropdownOpen = false;
       leaderDropdownOpen = false;
       membersDropdownOpen = false;
       assetsDropdownOpen = false;
@@ -204,20 +229,9 @@
   aria-modal="true"
   aria-labelledby="team-modal-title"
   tabindex="-1"
-  onclick={handleOverlayClick}
-  onkeydown={(e) => {
-    if (e.key === 'Escape') onclose();
-  }}
 >
-  <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
   <form
     class="ds-modal"
-    onclick={(e) => {
-      e.stopPropagation();
-    }}
-    onkeydown={(e) => {
-      e.stopPropagation();
-    }}
     onsubmit={handleFormSubmit}
   >
     <div class="ds-modal__header">
@@ -319,6 +333,54 @@
           </div>
         </div>
       </div>
+
+      {#if allHalls.length > 0}
+        <div class="form-field">
+          <label
+            class="form-field__label"
+            for="team-hall">{labels.hall}</label
+          >
+          <div
+            class="dropdown"
+            id="hall-dropdown"
+          >
+            <button
+              type="button"
+              class="dropdown__trigger"
+              class:active={hallDropdownOpen}
+              onclick={toggleHallDropdown}
+            >
+              <span>{getHallDisplayText()}</span>
+              <i class="fas fa-chevron-down"></i>
+            </button>
+            <div
+              class="dropdown__menu"
+              class:active={hallDropdownOpen}
+            >
+              <button
+                type="button"
+                class="dropdown__option"
+                onclick={() => {
+                  selectHall(null);
+                }}
+              >
+                — Keine Zuordnung —
+              </button>
+              {#each allHalls as hall (hall.id)}
+                <button
+                  type="button"
+                  class="dropdown__option"
+                  onclick={() => {
+                    selectHall(hall.id);
+                  }}
+                >
+                  {hall.name}
+                </button>
+              {/each}
+            </div>
+          </div>
+        </div>
+      {/if}
 
       <div class="form-field">
         <label

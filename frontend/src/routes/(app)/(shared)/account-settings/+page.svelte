@@ -212,20 +212,12 @@
     deleteReason = '';
   }
 
-  function handleKeydown(event: KeyboardEvent): void {
-    if (event.key === 'Escape' && showDeleteModal) {
-      closeDeleteModal();
-    }
-  }
-
   function handleBackdropClick(event: MouseEvent): void {
     if (event.target === event.currentTarget && showDeleteModal) {
       closeDeleteModal();
     }
   }
 </script>
-
-<svelte:window on:keydown={handleKeydown} />
 
 <div class="container">
   <!-- ================================================================= -->
@@ -440,12 +432,16 @@
 
 <!-- Delete Confirmation Modal -->
 {#if showDeleteModal}
-  <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div
     id="account-delete-modal"
     class="modal-overlay modal-overlay--active"
+    role="dialog"
+    aria-modal="true"
+    tabindex="-1"
     onclick={handleBackdropClick}
-    onkeydown={handleKeydown}
+    onkeydown={(e: KeyboardEvent) => {
+      if (e.key === 'Escape') closeDeleteModal();
+    }}
   >
     <div class="ds-modal ds-modal--md">
       <div class="ds-modal__header ds-modal__header--danger">

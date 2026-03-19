@@ -39,6 +39,9 @@ export interface DepartmentRow {
   employee_names: string | undefined;
   team_count: number | undefined;
   team_names: string | undefined;
+  hall_ids: number[] | undefined;
+  hall_names: string | undefined;
+  hall_count: number | undefined;
 }
 
 /**
@@ -60,6 +63,9 @@ export interface DepartmentResponse {
   employeeNames: string | undefined;
   teamCount: number | undefined;
   teamNames: string | undefined;
+  hallIds: number[] | undefined;
+  hallNames: string | undefined;
+  hallCount: number | undefined;
 }
 
 /**
@@ -141,15 +147,27 @@ export class DepartmentsService {
       SELECT department_id, COUNT(*) as count,
         STRING_AGG(name, E'\\n' ORDER BY name) as names
       FROM teams GROUP BY department_id
+    ),
+    hall_assignments AS (
+      SELECT dh.department_id,
+        ARRAY_AGG(dh.hall_id ORDER BY h.name) as hall_ids,
+        COUNT(*) as count,
+        STRING_AGG(h.name, E'\\n' ORDER BY h.name) as names
+      FROM department_halls dh
+      JOIN halls h ON dh.hall_id = h.id
+      WHERE dh.tenant_id = $1
+      GROUP BY dh.department_id
     )
     SELECT d.*, CONCAT(COALESCE(u.first_name, ''), ' ', COALESCE(u.last_name, '')) as department_lead_name, a.name as "areaName",
       COALESCE(ec.count, 0) as employee_count, COALESCE(ec.names, '') as employee_names,
-      COALESCE(tc.count, 0) as team_count, COALESCE(tc.names, '') as team_names
+      COALESCE(tc.count, 0) as team_count, COALESCE(tc.names, '') as team_names,
+      ha.hall_ids, COALESCE(ha.count, 0) as hall_count, COALESCE(ha.names, '') as hall_names
     FROM departments d
     LEFT JOIN users u ON d.department_lead_id = u.id
     LEFT JOIN areas a ON d.area_id = a.id
     LEFT JOIN employee_counts ec ON ec.department_id = d.id
     LEFT JOIN team_counts tc ON tc.department_id = d.id
+    LEFT JOIN hall_assignments ha ON ha.department_id = d.id
     WHERE d.tenant_id = $2 AND d.is_active IN (${IS_ACTIVE.INACTIVE}, ${IS_ACTIVE.ACTIVE}, ${IS_ACTIVE.ARCHIVED})
     ORDER BY d.name`;
 
@@ -176,6 +194,9 @@ export class DepartmentsService {
       employeeNames: undefined,
       teamCount: undefined,
       teamNames: undefined,
+      hallIds: undefined,
+      hallNames: undefined,
+      hallCount: undefined,
     };
 
     if (includeExtended) {
@@ -185,6 +206,9 @@ export class DepartmentsService {
       response.employeeNames = dept.employee_names;
       response.teamCount = dept.team_count;
       response.teamNames = dept.team_names;
+      response.hallIds = dept.hall_ids ?? [];
+      response.hallNames = dept.hall_names;
+      response.hallCount = dept.hall_count;
     }
 
     return response;
@@ -254,15 +278,27 @@ export class DepartmentsService {
       SELECT department_id, COUNT(*) as count,
         STRING_AGG(name, E'\\n' ORDER BY name) as names
       FROM teams GROUP BY department_id
+    ),
+    hall_assignments AS (
+      SELECT dh.department_id,
+        ARRAY_AGG(dh.hall_id ORDER BY h.name) as hall_ids,
+        COUNT(*) as count,
+        STRING_AGG(h.name, E'\\n' ORDER BY h.name) as names
+      FROM department_halls dh
+      JOIN halls h ON dh.hall_id = h.id
+      WHERE dh.tenant_id = $1
+      GROUP BY dh.department_id
     )
     SELECT d.*, CONCAT(COALESCE(u.first_name, ''), ' ', COALESCE(u.last_name, '')) as department_lead_name, a.name as "areaName",
       COALESCE(ec.count, 0) as employee_count, COALESCE(ec.names, '') as employee_names,
-      COALESCE(tc.count, 0) as team_count, COALESCE(tc.names, '') as team_names
+      COALESCE(tc.count, 0) as team_count, COALESCE(tc.names, '') as team_names,
+      ha.hall_ids, COALESCE(ha.count, 0) as hall_count, COALESCE(ha.names, '') as hall_names
     FROM departments d
     LEFT JOIN users u ON d.department_lead_id = u.id
     LEFT JOIN areas a ON d.area_id = a.id
     LEFT JOIN employee_counts ec ON ec.department_id = d.id
     LEFT JOIN team_counts tc ON tc.department_id = d.id
+    LEFT JOIN hall_assignments ha ON ha.department_id = d.id
     WHERE d.id = $2 AND d.tenant_id = $3`;
 
   /**
@@ -789,6 +825,59 @@ export class DepartmentsService {
       role: user.role ?? 'employee',
       isActive: user.is_active === 1,
     }));
+  }
+
+  /**
+   * Assign halls to a department (clear-then-reassign)
+   */
+  async assignHallsToDepartment(
+    departmentId: number,
+    hallIds: number[],
+    tenantId: number,
+    assignedBy: number,
+  ): Promise<{ message: string }> {
+    this.logger.log(
+      `Assigning ${hallIds.length} halls to department ${departmentId}`,
+    );
+
+    await this.getDepartmentById(departmentId, tenantId);
+
+    await this.db.query(
+      `DELETE FROM department_halls WHERE tenant_id = $1 AND department_id = $2`,
+      [tenantId, departmentId],
+    );
+
+    if (hallIds.length > 0) {
+      const values: unknown[] = [tenantId, departmentId, assignedBy];
+      const rows = hallIds
+        .map((_: number, i: number) => {
+          values.push(hallIds[i]);
+          return `($1, $2, $${i + 4}, $3, NOW())`;
+        })
+        .join(', ');
+
+      await this.db.query(
+        `INSERT INTO department_halls (tenant_id, department_id, hall_id, assigned_by, assigned_at)
+         VALUES ${rows}`,
+        values,
+      );
+    }
+
+    return { message: 'Halls assigned to department successfully' };
+  }
+
+  /**
+   * Get hall IDs assigned to a department
+   */
+  async getDepartmentHallIds(
+    departmentId: number,
+    tenantId: number,
+  ): Promise<number[]> {
+    const rows = await this.db.query<{ hall_id: number }>(
+      `SELECT hall_id FROM department_halls WHERE department_id = $1 AND tenant_id = $2`,
+      [departmentId, tenantId],
+    );
+    return rows.map((r: { hall_id: number }) => r.hall_id);
   }
 
   /**

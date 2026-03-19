@@ -91,6 +91,10 @@ export interface OrgChartTree {
   canvasBg: string | null;
   nodes: OrgChartNode[];
   halls: OrgTreeHall[];
+  /** Maps department UUID → assigned hall UUIDs (from department_halls) */
+  departmentHallMap: Record<string, string[]>;
+  /** Maps team UUID → assigned hall UUIDs (from team_halls) */
+  teamHallMap: Record<string, string[]>;
 }
 
 /** DB row type for org_chart_positions table */

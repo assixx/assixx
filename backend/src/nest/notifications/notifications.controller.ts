@@ -112,6 +112,16 @@ interface NotificationEventData {
     assigneeUserIds: number[];
   };
   changedByUserId?: number;
+  approval?: {
+    uuid: string;
+    title: string;
+    addonCode: string;
+    status: string;
+    requestedByName: string;
+    decidedByName?: string;
+  };
+  approverUserIds?: number[];
+  requestedByUserId?: number;
 }
 
 /**
@@ -144,6 +154,8 @@ const SSE_EVENTS = {
   WORKORDER_STATUS_CHANGED: 'workorder.status.changed',
   WORKORDER_DUE_SOON: 'workorder.due.soon',
   WORKORDER_VERIFIED: 'workorder.verified',
+  APPROVAL_CREATED: 'approval.created',
+  APPROVAL_DECIDED: 'approval.decided',
 } as const;
 
 /**
@@ -419,6 +431,47 @@ function registerSurveyHandlers(
 }
 
 /**
+ * Register approval SSE handlers (Core addon — always active).
+ * NEW_APPROVAL: targeted to configured masters (approverUserIds).
+ * APPROVAL_DECIDED: targeted to the requester (requestedByUserId).
+ */
+function registerApprovalHandlers(
+  handlers: EventHandler[],
+  userId: number,
+  tenantId: number,
+  eventSubject: Subject<{ data: SSEMessageData }>,
+): void {
+  // New approval → notify configured masters
+  const createdHandler = (eventData: NotificationEventData): void => {
+    if (eventData.tenantId !== tenantId) return;
+    const approverIds = eventData.approverUserIds ?? [];
+    if (!approverIds.includes(userId)) return;
+    eventSubject.next({
+      data: {
+        type: 'NEW_APPROVAL',
+        timestamp: new Date().toISOString(),
+        approval: eventData.approval,
+      },
+    });
+  };
+  registerHandler(handlers, SSE_EVENTS.APPROVAL_CREATED, createdHandler);
+
+  // Approval decided → notify the requester
+  const decidedHandler = (eventData: NotificationEventData): void => {
+    if (eventData.tenantId !== tenantId) return;
+    if (eventData.requestedByUserId !== userId) return;
+    eventSubject.next({
+      data: {
+        type: 'APPROVAL_DECIDED',
+        timestamp: new Date().toISOString(),
+        approval: eventData.approval,
+      },
+    });
+  };
+  registerHandler(handlers, SSE_EVENTS.APPROVAL_DECIDED, decidedHandler);
+}
+
+/**
  * Register SSE handlers based on user role AND feature permissions (ADR-020).
  * Only registers handlers for features the user has read access to.
  * Root and admin with fullAccess: readableFeatures is null → all features.
@@ -469,6 +522,9 @@ function registerSSEHandlers(
   if (canAccess('work_orders')) {
     registerWorkOrderHandlers(handlers, userId, role, tenantId, eventSubject);
   }
+
+  // Approvals — Core addon, always registered (no canAccess check)
+  registerApprovalHandlers(handlers, userId, tenantId, eventSubject);
 
   return handlers;
 }

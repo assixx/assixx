@@ -685,15 +685,15 @@ export class AuthService {
   ): Promise<number> {
     const result = await this.databaseService.query<{ count: string }>(
       `WITH updated AS (
-         UPDATE refresh_tokens SET is_revoked = true WHERE user_id = $1 AND tenant_id = $2 RETURNING 1
+         UPDATE refresh_tokens SET is_revoked = true
+         WHERE user_id = $1 AND tenant_id = $2 AND is_revoked = false
+         RETURNING 1
        )
        SELECT COUNT(*) as count FROM updated`,
       [userId, tenantId],
     );
 
-    const count = Number.parseInt(result[0]?.count ?? '0', 10);
-    this.logger.log(`Revoked ${count} tokens for user ${userId}`);
-    return count;
+    return Number.parseInt(result[0]?.count ?? '0', 10);
   }
 
   // ============================================

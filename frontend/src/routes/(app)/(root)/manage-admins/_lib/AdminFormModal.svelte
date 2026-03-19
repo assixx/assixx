@@ -100,10 +100,6 @@
   // HANDLERS
   // =============================================================================
 
-  function handleOverlayClick(e: MouseEvent) {
-    if (e.target === e.currentTarget) onclose();
-  }
-
   function togglePositionDropdown(e: MouseEvent) {
     e.stopPropagation();
     positionDropdownOpen = !positionDropdownOpen;
@@ -173,21 +169,10 @@
     aria-modal="true"
     aria-labelledby="admin-modal-title"
     tabindex="-1"
-    onclick={handleOverlayClick}
-    onkeydown={(e) => {
-      if (e.key === 'Escape') onclose();
-    }}
   >
-    <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
     <form
       id="admin-form"
       class="ds-modal"
-      onclick={(e) => {
-        e.stopPropagation();
-      }}
-      onkeydown={(e) => {
-        e.stopPropagation();
-      }}
       {onsubmit}
     >
       <div class="ds-modal__header">

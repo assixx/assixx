@@ -81,10 +81,6 @@
     password !== '' && passwordConfirm !== '' && password === passwordConfirm,
   );
 
-  function handleOverlayClick(e: MouseEvent): void {
-    if (e.target === e.currentTarget) onclose();
-  }
-
   function selectPosition(pos: string): void {
     position = pos;
     positionDropdownOpen = false;
@@ -147,18 +143,10 @@
     aria-modal="true"
     aria-labelledby="root-modal-title"
     tabindex="-1"
-    onclick={handleOverlayClick}
-    onkeydown={(e) => {
-      if (e.key === 'Escape') onclose();
-    }}
   >
-    <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_noninteractive_element_interactions -->
     <form
       id="root-form"
       class="ds-modal"
-      onclick={(e) => {
-        e.stopPropagation();
-      }}
       {onsubmit}
     >
       <div class="ds-modal__header">

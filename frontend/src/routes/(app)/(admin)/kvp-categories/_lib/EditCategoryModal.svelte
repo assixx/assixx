@@ -74,10 +74,6 @@
   // EVENT HANDLERS
   // =============================================================================
 
-  function handleOverlayClick(e: MouseEvent): void {
-    if (e.target === e.currentTarget) onclose();
-  }
-
   async function handleFormSubmit(e: Event): Promise<void> {
     e.preventDefault();
     if (editName.trim() === '') return;
@@ -135,20 +131,9 @@
   aria-modal="true"
   aria-labelledby="edit-category-modal-title"
   tabindex="-1"
-  onclick={handleOverlayClick}
-  onkeydown={(e) => {
-    if (e.key === 'Escape') onclose();
-  }}
 >
-  <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
   <form
     class="ds-modal"
-    onclick={(e) => {
-      e.stopPropagation();
-    }}
-    onkeydown={(e) => {
-      e.stopPropagation();
-    }}
     onsubmit={(e) => void handleFormSubmit(e)}
   >
     <div class="ds-modal__header">

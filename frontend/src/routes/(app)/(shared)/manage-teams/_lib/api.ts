@@ -355,3 +355,14 @@ export function buildTeamPayload(formData: {
     isActive: formData.isActive,
   };
 }
+
+/**
+ * Assign a single hall to a team (or clear assignment)
+ */
+export async function assignTeamHall(
+  teamId: number,
+  hallId: number | null,
+): Promise<void> {
+  const hallIds = hallId !== null ? [hallId] : [];
+  await apiClient.post(`${API_ENDPOINTS.TEAMS}/${teamId}/halls`, { hallIds });
+}

@@ -16,6 +16,9 @@ export interface Hall {
   description?: string | null;
   areaId?: number | null;
   areaName?: string | null;
+  departmentIds?: number[];
+  departmentNames?: string;
+  departmentCount?: number;
   isActive: IsActiveStatus;
   createdAt?: string;
   updatedAt?: string;

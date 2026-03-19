@@ -21,18 +21,6 @@
     image?.mimeType === undefined || image.mimeType.startsWith('image/'),
   );
 
-  function handleOverlayClick(e: MouseEvent): void {
-    if (e.target === e.currentTarget) {
-      onclose();
-    }
-  }
-
-  function handleKeydown(e: KeyboardEvent): void {
-    if (e.key === 'Escape') {
-      onclose();
-    }
-  }
-
   function handleDownload(): void {
     if (image === null) return;
 
@@ -43,22 +31,12 @@
   }
 </script>
 
-<svelte:window onkeydown={handleKeydown} />
-
 {#if show && image !== null}
-  <!-- svelte-ignore a11y_click_events_have_key_events -->
-  <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div
     id="chat-image-preview-modal"
     class="modal-overlay modal-overlay--active"
-    onclick={handleOverlayClick}
   >
-    <div
-      class="ds-modal ds-modal--lg"
-      onclick={(e) => {
-        e.stopPropagation();
-      }}
-    >
+    <div class="ds-modal ds-modal--lg">
       <div class="ds-modal__header">
         <h3 class="ds-modal__title">
           {#if isPdf}

@@ -34,6 +34,7 @@
 @import './button.link.css';
 @import './button.index.css';
 @import './button.upload.css';
+@import './button.cancel.css';
 @import './button.modal.css';
 
 /* Modifiers - Sizes and layouts */

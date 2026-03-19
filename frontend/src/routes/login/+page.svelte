@@ -2,7 +2,7 @@
   import { onMount } from 'svelte';
 
   import { enhance } from '$app/forms';
-  import { goto, replaceState } from '$app/navigation';
+  import { replaceState } from '$app/navigation';
   import { resolve } from '$app/paths';
 
   import ThemeToggle from '$lib/components/ThemeToggle.svelte';
@@ -283,11 +283,14 @@
             localStorage.setItem('activeRole', user.role);
 
             // Bridge login password for E2E key escrow recovery (ADR-022)
-            // Must happen before goto() — consumed by e2e-state.initialize()
+            // Must happen before redirect — consumed by e2e-state.initialize()
             setLoginPassword(password);
 
-            // Redirect to dashboard
-            await goto(redirectTo ?? '/admin-dashboard');
+            // Full page load — login is a state boundary (unauthenticated → authenticated).
+            // Client-side goto() fails with Vite 8 SSR: when navigating from /login (outside
+            // (app) group) to dashboard (inside (app) group), the intermediate (app)-layout
+            // insertion doesn't clean up the old SSR-rendered login DOM nodes.
+            window.location.href = redirectTo ?? '/admin-dashboard';
             return;
           }
 

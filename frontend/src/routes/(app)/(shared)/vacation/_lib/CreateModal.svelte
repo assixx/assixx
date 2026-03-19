@@ -35,20 +35,9 @@
   role="dialog"
   aria-modal="true"
   tabindex="-1"
-  onclick={onclose}
-  onkeydown={(e) => {
-    if (e.key === 'Escape') onclose();
-  }}
 >
-  <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
   <form
     class="ds-modal"
-    onclick={(e) => {
-      e.stopPropagation();
-    }}
-    onkeydown={(e) => {
-      e.stopPropagation();
-    }}
     onsubmit={(e) => {
       e.preventDefault();
       formRef?.submitForm();

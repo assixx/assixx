@@ -456,20 +456,12 @@
       lastEditUuid = '';
     }
   });
-
-  function handleKeyDown(e: KeyboardEvent): void {
-    if (e.key === 'Escape') {
-      if (showDeleteModal) showDeleteModal = false;
-      else if (showEntryModal) closeEntryModal();
-    }
-  }
 </script>
 
 <svelte:head>
   <title>Schwarzes Brett - Assixx</title>
 </svelte:head>
 
-<svelte:window onkeydown={handleKeyDown} />
 <svelte:document onfullscreenchange={handleFullscreenChange} />
 
 {#if permissionDenied}

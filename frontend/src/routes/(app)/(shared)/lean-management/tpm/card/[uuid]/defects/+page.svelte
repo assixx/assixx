@@ -189,8 +189,7 @@
 
   function handleKeydown(e: KeyboardEvent): void {
     if (!showPhotoPreview) return;
-    if (e.key === 'Escape') closePhotoPreview();
-    else if (e.key === 'ArrowLeft') handlePreviewPrev();
+    if (e.key === 'ArrowLeft') handlePreviewPrev();
     else if (e.key === 'ArrowRight') handlePreviewNext();
   }
 
@@ -714,7 +713,7 @@
       id="tpm-defect-photo-preview-modal"
       class="modal-overlay modal-overlay--active"
       onclick={closePhotoPreview}
-      onkeydown={(e) => {
+      onkeydown={(e: KeyboardEvent) => {
         if (e.key === 'Escape') closePhotoPreview();
       }}
       role="dialog"

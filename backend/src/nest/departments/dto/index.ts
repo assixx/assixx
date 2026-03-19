@@ -2,6 +2,10 @@
  * Departments DTOs Barrel Export
  */
 export {
+  AssignHallsToDepartmentDto,
+  AssignHallsSchema,
+} from './assign-halls.dto.js';
+export {
   CreateDepartmentDto,
   CreateDepartmentSchema,
 } from './create-department.dto.js';

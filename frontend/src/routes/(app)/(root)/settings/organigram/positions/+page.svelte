@@ -37,7 +37,12 @@
   /** Hierarchy labels from parent layout (ADR-034) */
   const labels = $derived(data.hierarchyLabels);
 
-  const serverPositions = $derived(data.positions);
+  /** Server snapshot — writable $derived: tracks data.positions reactively, overridden after save (line 212) */
+  let serverPositions = $derived<PositionOptions>({
+    employee: [...data.positions.employee],
+    admin: [...data.positions.admin],
+    root: [...data.positions.root],
+  });
 
   let positions = $state<PositionOptions>({
     employee: [],
@@ -70,7 +75,7 @@
   }
 
   /** Sync editable copy from server data (mount + after save via data mutation) */
-  $effect(() => {
+  $effect.pre(() => {
     const src = serverPositions;
     positions = {
       employee: sortSystemFirst([...src.employee]),
@@ -205,8 +210,7 @@
         },
       );
 
-      data.positions = { ...result };
-      positions = {
+      serverPositions = {
         employee: [...result.employee],
         admin: [...result.admin],
         root: [...result.root],

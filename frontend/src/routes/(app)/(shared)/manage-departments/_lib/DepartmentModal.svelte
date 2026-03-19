@@ -7,7 +7,7 @@
   } from './utils';
 
   import type { DepartmentMessages } from './constants';
-  import type { FormIsActiveStatus, Area, AdminUser } from './types';
+  import type { FormIsActiveStatus, Area, AdminUser, Hall } from './types';
 
   // Props with bindable for two-way binding
   interface Props {
@@ -19,8 +19,10 @@
     formDescription: string;
     formAreaId: number | null;
     formDepartmentLeadId: number | null;
+    formHallIds: number[];
     formIsActive: FormIsActiveStatus;
     allAreas: Area[];
+    allHalls: Hall[];
     allDepartmentLeads: AdminUser[];
     submitting: boolean;
     onclose: () => void;
@@ -29,7 +31,7 @@
 
   /* eslint-disable prefer-const, @typescript-eslint/no-useless-default-assignment -- Svelte $bindable() requires let and is not a useless default */
   // prettier-ignore
-  let { show, isEditMode, modalTitle, messages, formName = $bindable(), formDescription = $bindable(), formAreaId = $bindable(), formDepartmentLeadId = $bindable(), formIsActive = $bindable(), allAreas, allDepartmentLeads, submitting, onclose, onsubmit }: Props = $props();
+  let { show, isEditMode, modalTitle, messages, formName = $bindable(), formDescription = $bindable(), formAreaId = $bindable(), formDepartmentLeadId = $bindable(), formHallIds = $bindable(), formIsActive = $bindable(), allAreas, allHalls, allDepartmentLeads, submitting, onclose, onsubmit }: Props = $props();
   /* eslint-enable prefer-const, @typescript-eslint/no-useless-default-assignment */
 
   // Local dropdown states
@@ -81,10 +83,6 @@
   function selectStatus(status: FormIsActiveStatus): void {
     formIsActive = status;
     statusDropdownOpen = false;
-  }
-
-  function handleOverlayClick(e: MouseEvent): void {
-    if (e.target === e.currentTarget) onclose();
   }
 
   /**
@@ -144,18 +142,10 @@
     aria-modal="true"
     aria-labelledby="department-modal-title"
     tabindex="-1"
-    onclick={handleOverlayClick}
-    onkeydown={(e) => {
-      if (e.key === 'Escape') onclose();
-    }}
   >
-    <!-- svelte-ignore a11y_no_noninteractive_element_interactions, a11y_click_events_have_key_events -->
     <form
       id="department-form"
       class="ds-modal"
-      onclick={(e) => {
-        e.stopPropagation();
-      }}
       {onsubmit}
     >
       <div class="ds-modal__header">
@@ -327,6 +317,32 @@
               </div>
             </div>
           {/if}
+        </div>
+
+        <!-- Hall Multi-Select -->
+        <div class="form-field">
+          <label
+            class="form-field__label"
+            for="department-halls"
+          >
+            <i class="fas fa-warehouse mr-1"></i>
+            {messages.LABEL_HALLS}
+          </label>
+          <select
+            id="department-halls"
+            name="hallIds"
+            multiple
+            class="multi-select"
+            bind:value={formHallIds}
+          >
+            {#each allHalls as hall (hall.id)}
+              <option value={hall.id}>{hall.name}</option>
+            {/each}
+          </select>
+          <span class="form-field__message text-(--color-text-secondary)">
+            <i class="fas fa-info-circle mr-1"></i>
+            {messages.HALLS_HINT}
+          </span>
         </div>
 
         {#if isEditMode}

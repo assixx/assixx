@@ -44,30 +44,18 @@
     if (attachment === null) return;
     window.open(buildDownloadUrl(attachment.downloadUrl), '_blank');
   }
-
-  function stopPropagation(e: Event): void {
-    e.stopPropagation();
-  }
 </script>
 
 {#if show && attachment !== null}
   <div
     id="blackboard-attachment-preview-modal"
     class="modal-overlay modal-overlay--active"
-    onclick={onclose}
-    onkeydown={(e) => {
-      if (e.key === 'Escape') onclose();
-    }}
     role="dialog"
     aria-modal="true"
-    tabindex="-1"
   >
-    <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
     <div
       class="ds-modal ds-modal--lg"
       style="max-height: 95vh;"
-      onclick={stopPropagation}
-      onkeydown={stopPropagation}
       role="document"
     >
       <div class="ds-modal__header">
@@ -153,8 +141,7 @@
       <button
         type="button"
         class="absolute top-1/2 left-6 z-10 flex h-12 w-12 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border-none bg-white/15 text-xl text-white transition-colors hover:bg-white/30"
-        onclick={(e) => {
-          e.stopPropagation();
+        onclick={() => {
           onprev?.();
         }}
         aria-label="Vorheriges"
@@ -164,8 +151,7 @@
       <button
         type="button"
         class="absolute top-1/2 right-6 z-10 flex h-12 w-12 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border-none bg-white/15 text-xl text-white transition-colors hover:bg-white/30"
-        onclick={(e) => {
-          e.stopPropagation();
+        onclick={() => {
           onnext?.();
         }}
         aria-label="Nächstes"
@@ -173,13 +159,8 @@
         <i class="fas fa-chevron-right"></i>
       </button>
       {#if currentIndex !== undefined}
-        <!-- svelte-ignore a11y_click_events_have_key_events -->
-        <!-- svelte-ignore a11y_no_static_element_interactions -->
         <div
           class="absolute bottom-6 left-1/2 z-10 -translate-x-1/2 rounded-xl bg-black/50 px-3 py-1 text-sm text-white"
-          onclick={(e) => {
-            e.stopPropagation();
-          }}
         >
           {currentIndex + 1} / {totalCount}
         </div>

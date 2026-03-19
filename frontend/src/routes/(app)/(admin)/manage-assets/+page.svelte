@@ -392,7 +392,7 @@
   });
 
   // =============================================================================
-  // ESCAPE KEY HANDLER
+  // HELPERS
   // =============================================================================
 
   /** Format ISO date string to German locale (dd.mm.yyyy) */
@@ -400,21 +400,11 @@
     const [year, month, day] = isoDate.split('-');
     return `${day}.${month}.${year}`;
   }
-
-  function handleKeydown(e: KeyboardEvent) {
-    if (e.key === 'Escape') {
-      if (showAvailabilityModal) closeAvailabilityModal();
-      else if (assetState.showDeleteModal) assetState.closeDeleteModal();
-      else if (assetState.showAssetModal) assetState.closeAssetModal();
-    }
-  }
 </script>
 
 <svelte:head>
   <title>{messages.PAGE_TITLE}</title>
 </svelte:head>
-
-<svelte:window onkeydown={handleKeydown} />
 
 <div class="container">
   <div class="card">

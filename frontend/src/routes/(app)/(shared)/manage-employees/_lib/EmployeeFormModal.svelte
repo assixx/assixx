@@ -167,14 +167,6 @@
   }
 
   // =============================================================================
-  // OVERLAY CLICK HANDLER
-  // =============================================================================
-
-  function handleOverlayClick(e: MouseEvent): void {
-    if (e.target === e.currentTarget) onclose();
-  }
-
-  // =============================================================================
   // OUTSIDE CLICK HANDLERS
   // =============================================================================
 
@@ -232,7 +224,6 @@
 
 {#if show}
   <!-- Add/Edit Employee Modal -->
-  <!-- svelte-ignore a11y_no_noninteractive_element_interactions, a11y_click_events_have_key_events -->
   <div
     id="employee-modal"
     class="modal-overlay modal-overlay--active"
@@ -240,18 +231,10 @@
     aria-modal="true"
     aria-labelledby="employee-modal-title"
     tabindex="-1"
-    onclick={handleOverlayClick}
-    onkeydown={(e) => {
-      if (e.key === 'Escape') onclose();
-    }}
   >
-    <!-- svelte-ignore a11y_no_noninteractive_element_interactions, a11y_click_events_have_key_events -->
     <form
       id="employee-form"
       class="ds-modal"
-      onclick={(e) => {
-        e.stopPropagation();
-      }}
       {onsubmit}
     >
       <div class="ds-modal__header">

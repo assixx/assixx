@@ -22,6 +22,7 @@
     getRenderNodes,
     getZoom,
     isHallPrimary,
+    moveGhostNodesByHall,
     moveNodeWithChildren,
     setHallConnectionAnchor,
     setHallOverride,
@@ -278,9 +279,19 @@
     } else {
       const hall = hallBounds.find((h: HallBounds) => h.id === draggedHallId);
       if (hall !== undefined) {
+        const newX = svg.x - hallDragOffsetX;
+        const newY = svg.y - hallDragOffsetY;
+        const dx = newX - hall.x;
+        const dy = newY - hall.y;
+
+        // Move ghost nodes inside secondary hall
+        if (draggedHallAreaUuid !== null) {
+          moveGhostNodesByHall(draggedHallId, dx, dy);
+        }
+
         setHallOverride(draggedHallId, {
-          x: svg.x - hallDragOffsetX,
-          y: svg.y - hallDragOffsetY,
+          x: newX,
+          y: newY,
           width: hall.width,
           height: hall.height,
         });
@@ -692,14 +703,23 @@
           stroke="transparent"
           stroke-width={hitWidth}
           class="connection-hitarea"
+          role="presentation"
           onpointerdown={(e: PointerEvent) => {
             const svg = clientToSvg(e.clientX, e.clientY);
             const d1 = (svg.x - hc.x1) ** 2 + (svg.y - hc.y1) ** 2;
             const d2 = (svg.x - hc.x2) ** 2 + (svg.y - hc.y2) ** 2;
             if (d1 <= d2) {
-              startAnchorDrag(e, hc.hallIdA, `${hc.hallIdA}\u2192${hc.hallIdB}`);
+              startAnchorDrag(
+                e,
+                hc.hallIdA,
+                `${hc.hallIdA}\u2192${hc.hallIdB}`,
+              );
             } else {
-              startAnchorDrag(e, hc.hallIdB, `${hc.hallIdB}\u2192${hc.hallIdA}`);
+              startAnchorDrag(
+                e,
+                hc.hallIdB,
+                `${hc.hallIdB}\u2192${hc.hallIdA}`,
+              );
             }
           }}
         />
@@ -744,7 +764,7 @@
     {/each}
 
     <!-- Knoten -->
-    {#each renderNodes as node (node.entityUuid)}
+    {#each renderNodes as node (node.renderKey)}
       <OrgNode
         {node}
         {svgElement}
@@ -794,7 +814,7 @@
 
   .anchor-handle:hover {
     fill: var(--org-connection-stroke, #000);
-    fill-opacity: 0.6;
+    fill-opacity: 60%;
     stroke: var(--org-connection-stroke, #000);
     stroke-width: 2;
   }

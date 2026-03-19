@@ -30,10 +30,6 @@
     }
   });
 
-  function handleOverlayClick(e: MouseEvent) {
-    if (e.target === e.currentTarget) onclose();
-  }
-
   function selectCategory(category: string) {
     editCategory = category;
     categoryDropdownOpen = false;
@@ -73,20 +69,13 @@
 </script>
 
 {#if show && document}
-  <!-- svelte-ignore a11y_click_events_have_key_events -->
-  <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div
     id="edit-modal"
     class="modal-overlay modal-overlay--active"
-    onclick={handleOverlayClick}
   >
-    <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
     <form
       id="edit-form"
       class="ds-modal ds-modal--md"
-      onclick={(e) => {
-        e.stopPropagation();
-      }}
       onsubmit={(e) => {
         e.preventDefault();
         handleSubmit();

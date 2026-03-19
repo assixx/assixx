@@ -23,6 +23,7 @@
     buildTeamPayload,
     fetchTeamMembers,
     fetchTeamAssets,
+    assignTeamHall,
   } from './_lib/api';
   import { createMessages } from './_lib/constants';
   import { applyAllFilters } from './_lib/filters';
@@ -45,6 +46,7 @@
     Admin,
     TeamMember,
     Asset,
+    Hall,
     StatusFilter,
     FormIsActiveStatus,
   } from './_lib/types';
@@ -61,6 +63,7 @@
   const allLeaders = $derived<Admin[]>(data.leaders);
   const allEmployees = $derived<TeamMember[]>(data.employees);
   const allAssets = $derived<Asset[]>(data.assets);
+  const allHalls = $derived<Hall[]>(data.halls);
 
   // Hierarchy labels from layout data inheritance (A6)
   const labels = $derived(data.hierarchyLabels);
@@ -102,6 +105,7 @@
   let formLeaderId = $state<number | null>(null);
   let formMemberIds = $state<number[]>([]);
   let formAssetIds = $state<number[]>([]);
+  let formHallId = $state<number | null>(null);
   let formIsActive = $state<FormIsActiveStatus>(1);
 
   // Form Submit Loading
@@ -132,6 +136,7 @@
     leaderId: number | null;
     memberIds: number[];
     assetIds: number[];
+    hallId: number | null;
     isActive: FormIsActiveStatus;
   }): Promise<void> {
     submitting = true;
@@ -154,6 +159,7 @@
           formData.assetIds,
           isEditMode,
         );
+        await assignTeamHall(teamId, formData.hallId);
       }
 
       closeTeamModal();
@@ -256,6 +262,7 @@
     // Set member and asset IDs from fetched data
     formMemberIds = members.map((m) => m.id);
     formAssetIds = assets.map((m) => m.id);
+    formHallId = team.hallIds?.[0] ?? null;
 
     showTeamModal = true;
   }
@@ -290,6 +297,7 @@
     formLeaderId = defaults.leaderId;
     formMemberIds = defaults.memberIds;
     formAssetIds = defaults.assetIds;
+    formHallId = null;
     formIsActive = defaults.isActive;
   }
 
@@ -343,25 +351,11 @@
       };
     }
   });
-
-  // =============================================================================
-  // ESCAPE KEY HANDLER
-  // =============================================================================
-
-  function handleKeydown(e: KeyboardEvent): void {
-    if (e.key === 'Escape') {
-      if (showForceDeleteModal) closeForceDeleteModal();
-      else if (showDeleteModal) closeDeleteModal();
-      else if (showTeamModal) closeTeamModal();
-    }
-  }
 </script>
 
 <svelte:head>
   <title>{messages.PAGE_TITLE} - Assixx</title>
 </svelte:head>
-
-<svelte:window onkeydown={handleKeydown} />
 
 {#if data.permissionDenied}
   <PermissionDenied addonName="die Teamverwaltung" />
@@ -550,6 +544,7 @@
                     <th scope="col">Leiter</th>
                     <th scope="col">Mitglieder</th>
                     <th scope="col">{messages.TH_ASSETS}</th>
+                    <th scope="col">{labels.hall}</th>
                     <th scope="col">Status</th>
                     <th scope="col">Erstellt am</th>
                     <th scope="col">Aktionen</th>
@@ -614,6 +609,18 @@
                           <!-- eslint-disable-next-line svelte/no-at-html-tags -- Safe: internal badge, no user input -->
                           {@html assetsBadge.text}
                         </span>
+                      </td>
+                      <td>
+                        {#if team.hallNames}
+                          <span
+                            class="badge badge--info"
+                            title={team.hallNames}
+                          >
+                            {team.hallNames}
+                          </span>
+                        {:else}
+                          <span class="badge badge--secondary">—</span>
+                        {/if}
                       </td>
                       <td>
                         <span class="badge {getStatusBadgeClass(team.isActive)}"
@@ -682,11 +689,13 @@
       {formLeaderId}
       {formMemberIds}
       {formAssetIds}
+      {formHallId}
       {formIsActive}
       {allDepartments}
       {allLeaders}
       {allEmployees}
       {allAssets}
+      {allHalls}
       {submitting}
       onclose={closeTeamModal}
       onsubmit={handleFormSubmit}

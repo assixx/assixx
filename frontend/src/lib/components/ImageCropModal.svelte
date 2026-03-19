@@ -134,41 +134,15 @@
       saving = false;
     }
   }
-
-  /**
-   * Handle overlay click (close modal)
-   */
-  function handleOverlayClick(e: MouseEvent): void {
-    if (e.target === e.currentTarget) {
-      onclose();
-    }
-  }
-
-  /**
-   * Handle escape key
-   */
-  function handleKeydown(e: KeyboardEvent): void {
-    if (e.key === 'Escape' && show) {
-      onclose();
-    }
-  }
 </script>
 
-<svelte:window onkeydown={handleKeydown} />
-
 {#if show && imageSrc !== null}
-  <!-- svelte-ignore a11y_click_events_have_key_events -->
-  <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div
     id="image-crop-modal"
     class="modal-overlay modal-overlay--active"
-    onclick={handleOverlayClick}
   >
     <div
       class="ds-modal ds-modal--md"
-      onclick={(e) => {
-        e.stopPropagation();
-      }}
       role="dialog"
       aria-modal="true"
       aria-labelledby="crop-modal-title"

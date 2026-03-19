@@ -25,6 +25,8 @@ const EMPTY_TREE: OrgChartTree = {
   canvasBg: null,
   nodes: [],
   halls: [],
+  departmentHallMap: {},
+  teamHallMap: {},
 };
 
 export const load: PageServerLoad = async ({ cookies, fetch }) => {

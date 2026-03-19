@@ -60,10 +60,6 @@
     oncancel,
   }: Props = $props();
 
-  function handleOverlayClick(e: MouseEvent): void {
-    if (e.target === e.currentTarget) oncancel();
-  }
-
   const btnVariantClass = $derived(
     variant === 'danger' ? 'confirm-modal__btn--danger'
     : variant === 'warning' ? 'confirm-modal__btn--warning'
@@ -80,18 +76,8 @@
     aria-modal="true"
     aria-labelledby="{id}-title"
     tabindex="-1"
-    onclick={handleOverlayClick}
-    onkeydown={(e) => {
-      if (e.key === 'Escape') oncancel();
-    }}
   >
-    <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
-    <div
-      class="confirm-modal confirm-modal--{variant}"
-      onclick={(e) => {
-        e.stopPropagation();
-      }}
-    >
+    <div class="confirm-modal confirm-modal--{variant}">
       <div class="confirm-modal__icon">
         <i class="fas {icon}"></i>
       </div>

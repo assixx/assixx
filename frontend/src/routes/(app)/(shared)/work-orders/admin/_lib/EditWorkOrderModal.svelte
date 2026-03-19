@@ -152,10 +152,6 @@
     input.value = '';
   }
 
-  function handleOverlayClick(e: MouseEvent): void {
-    if (e.target === e.currentTarget) onclose();
-  }
-
   function handleSubmit(event: SubmitEvent): void {
     event.preventDefault();
     const trimmedTitle = formTitle.trim();
@@ -196,17 +192,9 @@
     aria-modal="true"
     aria-labelledby="wo-modal-title"
     tabindex="-1"
-    onclick={handleOverlayClick}
-    onkeydown={(e: KeyboardEvent) => {
-      if (e.key === 'Escape') onclose();
-    }}
   >
-    <!-- svelte-ignore a11y_no_noninteractive_element_interactions, a11y_click_events_have_key_events -->
     <form
       class="ds-modal"
-      onclick={(e: MouseEvent) => {
-        e.stopPropagation();
-      }}
       onsubmit={handleSubmit}
     >
       <div class="ds-modal__header">

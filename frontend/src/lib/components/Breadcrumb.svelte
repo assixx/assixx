@@ -134,6 +134,10 @@
       label: 'Freigaben verwalten',
       icon: 'fa-check-double',
     },
+    '/settings/approvals': {
+      label: 'Freigabe-Einstellungen',
+      icon: 'fa-check-double',
+    },
     '/work-orders': {
       label: 'Meine Arbeitsaufträge',
       icon: 'fa-clipboard-check',

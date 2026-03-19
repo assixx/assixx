@@ -2,13 +2,14 @@
  * Manage Approvals — Server-Side Data Loading
  * @module shared/manage-approvals/+page.server
  *
- * SSR: Placeholder for approval data loading.
- * Access: root, admin (hasFullAccess), department_lead, area_lead, team_lead, approval masters.
+ * SSR: Loads approvals + stats from backend API.
+ * Access: root, admin (hasFullAccess), department_lead, area_lead, team_lead.
  * Route lives in (shared) group — role check at page level.
  * Core addon — no requireAddon() needed (always active).
  */
 import { redirect } from '@sveltejs/kit';
 
+import { apiFetch } from '$lib/server/api-fetch';
 import { createLogger } from '$lib/utils/logger';
 
 import type { OrganizationalScope } from '$lib/types/organizational-scope';
@@ -18,12 +19,27 @@ interface ApprovalListItem {
   uuid: string;
   addonCode: string;
   sourceEntityType: string;
+  sourceUuid: string;
   title: string;
   description: string | null;
+  requestedBy: number;
   requestedByName: string;
+  assignedTo: number | null;
+  assignedToName: string | null;
   status: 'pending' | 'approved' | 'rejected';
   priority: string;
+  decidedBy: number | null;
+  decidedByName: string | null;
+  decidedAt: string | null;
+  decisionNote: string | null;
   createdAt: string;
+}
+
+interface PaginatedApprovals {
+  items: ApprovalListItem[];
+  total: number;
+  page: number;
+  pageSize: number;
 }
 
 interface ApprovalStats {
@@ -45,7 +61,7 @@ function hasManageAccess(
   return orgScope.isAnyLead;
 }
 
-export const load: PageServerLoad = async ({ cookies, parent, url }) => {
+export const load: PageServerLoad = async ({ cookies, fetch, parent, url }) => {
   const token = cookies.get('accessToken');
   if (token === undefined || token === '') {
     redirect(302, '/login');
@@ -68,15 +84,26 @@ export const load: PageServerLoad = async ({ cookies, parent, url }) => {
     redirect(302, '/permission-denied');
   }
 
-  void token;
-
+  const emptyPage: PaginatedApprovals = {
+    items: [],
+    total: 0,
+    page: 1,
+    pageSize: 20,
+  };
   const emptyStats: ApprovalStats = {
     pending: 0,
     approved: 0,
     rejected: 0,
     total: 0,
   };
-  const emptyApprovals: ApprovalListItem[] = [];
 
-  return { stats: emptyStats, approvals: emptyApprovals };
+  const [approvalsData, statsData] = await Promise.all([
+    apiFetch<PaginatedApprovals>('/approvals?page=1&limit=20', token, fetch),
+    apiFetch<ApprovalStats>('/approvals/stats', token, fetch),
+  ]);
+
+  return {
+    approvals: approvalsData ?? emptyPage,
+    stats: statsData ?? emptyStats,
+  };
 };

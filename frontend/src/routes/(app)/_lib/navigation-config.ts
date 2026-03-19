@@ -36,7 +36,8 @@ export interface NavItem {
     | 'calendar'
     | 'vacation'
     | 'tpm'
-    | 'workOrders';
+    | 'workOrders'
+    | 'approvals';
   /** Tenant addon code — items with this field are hidden when addon is not active */
   addonCode?: string;
 }
@@ -237,6 +238,11 @@ const SYSTEM_SUBMENU: NavItem[] = [
   },
   { id: 'design', label: 'Design', url: '/settings/design' },
   {
+    id: 'approval-settings',
+    label: 'Freigabe-Master',
+    url: '/settings/approvals',
+  },
+  {
     id: 'organigram',
     label: 'Organigramm',
     submenu: ORGANIGRAM_SUBMENU,
@@ -307,6 +313,7 @@ const ROOT_STATIC_BOTTOM: NavItem[] = [
     icon: ICONS['check-double'],
     label: 'Freigaben',
     url: '/manage-approvals',
+    badgeType: 'approvals',
   },
   {
     id: 'chat',
@@ -361,6 +368,11 @@ function buildRootMenuItems(labels: HierarchyLabels): NavItem[] {
 /** Admin settings submenu */
 const ADMIN_SETTINGS_SUBMENU: NavItem[] = [
   { id: 'design', label: 'Design', url: '/settings/design' },
+  {
+    id: 'approval-settings',
+    label: 'Freigabe-Master',
+    url: '/settings/approvals',
+  },
 ];
 
 /** Static admin menu items before "Verwalten" group */
@@ -422,6 +434,7 @@ const ADMIN_STATIC_BOTTOM: NavItem[] = [
     icon: ICONS['check-double'],
     label: 'Freigaben',
     url: '/manage-approvals',
+    badgeType: 'approvals',
   },
   {
     id: 'shifts',
@@ -727,6 +740,7 @@ const APPROVALS_NAV_ITEM: NavItem = {
   icon: ICONS['check-double'],
   label: 'Freigaben',
   url: '/manage-approvals',
+  badgeType: 'approvals',
 };
 
 /** Insert an item before 'profile' in a menu array, or at the end */

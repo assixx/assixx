@@ -53,6 +53,16 @@ interface HallRow {
   area_uuid: string | null;
 }
 
+interface DepartmentHallRow {
+  department_uuid: string;
+  hall_uuid: string;
+}
+
+interface TeamHallRow {
+  team_uuid: string;
+  hall_uuid: string;
+}
+
 // ---- Node Detail Row Types ----
 
 interface AreaDetailRow {
@@ -124,6 +134,8 @@ export class OrganigramService {
       assets,
       halls,
       positions,
+      deptHallRows,
+      teamHallRows,
     ] = await Promise.all([
       this.fetchTenantInfo(tenantId),
       this.settings.getHierarchyLabels(tenantId),
@@ -137,14 +149,16 @@ export class OrganigramService {
       this.fetchAssets(tenantId),
       this.fetchHalls(tenantId),
       this.layout.getPositions(tenantId),
+      this.fetchDepartmentHalls(tenantId),
+      this.fetchTeamHalls(tenantId),
     ]);
 
-    const orgHalls: OrgTreeHall[] = halls.map((h: HallRow) => ({
-      uuid: h.hall_uuid.trim(),
-      name: h.name,
-      areaUuid: h.area_uuid?.trim() ?? null,
-    }));
-
+    const orgHalls = this.mapHallRows(halls);
+    const departmentHallMap = this.buildUuidHallMap(
+      deptHallRows,
+      'department_uuid',
+    );
+    const teamHallMap = this.buildUuidHallMap(teamHallRows, 'team_uuid');
     const nodes = this.buildTree(areas, departments, teams, assets, positions);
 
     return {
@@ -157,7 +171,31 @@ export class OrganigramService {
       canvasBg,
       nodes,
       halls: orgHalls,
+      departmentHallMap,
+      teamHallMap,
     };
+  }
+
+  private mapHallRows(halls: HallRow[]): OrgTreeHall[] {
+    return halls.map((h: HallRow) => ({
+      uuid: h.hall_uuid.trim(),
+      name: h.name,
+      areaUuid: h.area_uuid?.trim() ?? null,
+    }));
+  }
+
+  private buildUuidHallMap<T extends { hall_uuid: string }>(
+    rows: T[],
+    uuidKey: keyof T,
+  ): Record<string, string[]> {
+    const map: Record<string, string[]> = {};
+    for (const row of rows) {
+      const entityUuid = String(row[uuidKey]).trim();
+      const hallUuid = row.hall_uuid.trim();
+      map[entityUuid] ??= [];
+      map[entityUuid].push(hallUuid);
+    }
+    return map;
   }
 
   private async fetchTenantInfo(tenantId: number): Promise<TenantInfoRow> {
@@ -231,6 +269,30 @@ export class OrganigramService {
        LEFT JOIN departments pd ON ast.department_id = pd.id
        WHERE ast.tenant_id = $1 AND ast.is_active = 1
        ORDER BY ast.name`,
+      [tenantId],
+    );
+  }
+
+  private async fetchDepartmentHalls(
+    tenantId: number,
+  ): Promise<DepartmentHallRow[]> {
+    return await this.db.query<DepartmentHallRow>(
+      `SELECT d.uuid AS department_uuid, h.uuid AS hall_uuid
+       FROM department_halls dh
+       JOIN departments d ON dh.department_id = d.id
+       JOIN halls h ON dh.hall_id = h.id
+       WHERE dh.tenant_id = $1`,
+      [tenantId],
+    );
+  }
+
+  private async fetchTeamHalls(tenantId: number): Promise<TeamHallRow[]> {
+    return await this.db.query<TeamHallRow>(
+      `SELECT t.uuid AS team_uuid, h.uuid AS hall_uuid
+       FROM team_halls th
+       JOIN teams t ON th.team_id = t.id
+       JOIN halls h ON th.hall_id = h.id
+       WHERE th.tenant_id = $1`,
       [tenantId],
     );
   }

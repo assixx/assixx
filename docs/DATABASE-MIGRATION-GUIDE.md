@@ -314,11 +314,11 @@ truncated or converted first.
 
 Seeds are **global configuration data** without tenant_id:
 
-| Table              | Rows | Description                                             |
-| ------------------ | ---- | ------------------------------------------------------- |
-| `addons`           | 20   | Available addons (8 core + 12 purchasable, see ADR-033) |
-| `kvp_categories`   | 6    | KVP proposal categories                                 |
-| `asset_categories` | 11   | Asset categories (equipment/installations)              |
+| Table              | Rows | Description                                              |
+| ------------------ | ---- | -------------------------------------------------------- |
+| `addons`           | 22   | Available addons (10 core + 12 purchasable, see ADR-033) |
+| `kvp_categories`   | 6    | KVP proposal categories                                  |
+| `asset_categories` | 11   | Asset categories (equipment/installations)               |
 
 ```bash
 # Apply seeds (idempotent — safe to run multiple times)

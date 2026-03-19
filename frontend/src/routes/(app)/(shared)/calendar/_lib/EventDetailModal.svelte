@@ -55,14 +55,10 @@
   id="calendar-event-detail-modal"
   class="modal-overlay modal-overlay--active"
   role="presentation"
-  onclick={onclose}
 >
   <div
     class="ds-modal"
     role="presentation"
-    onclick={(e) => {
-      e.stopPropagation();
-    }}
   >
     <div class="ds-modal__header">
       <h3 class="ds-modal__title">

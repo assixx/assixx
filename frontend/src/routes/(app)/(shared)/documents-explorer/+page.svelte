@@ -69,19 +69,9 @@
     }
   });
 
-  /** Global Escape key handler for modals */
+  /** Global keyboard handler for preview navigation */
   function handleKeydown(e: KeyboardEvent): void {
-    if (e.key === 'Escape') {
-      if (docExplorerState.showDeleteConfirmModal) {
-        docExplorerState.closeDeleteConfirmModal();
-      } else if (docExplorerState.showEditModal) {
-        docExplorerState.closeEditModal();
-      } else if (docExplorerState.showUploadModal) {
-        docExplorerState.closeUploadModal();
-      } else if (docExplorerState.showPreviewModal) {
-        docExplorerState.closePreview();
-      }
-    } else if (docExplorerState.showPreviewModal) {
+    if (docExplorerState.showPreviewModal) {
       if (e.key === 'ArrowLeft') docExplorerState.navigatePreviewPrev();
       else if (e.key === 'ArrowRight') docExplorerState.navigatePreviewNext();
     }

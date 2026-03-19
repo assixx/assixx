@@ -60,6 +60,7 @@ ADRs document important architectural decisions:
 | [ADR-035](./ADR-035-organizational-hierarchy-and-assignment-architecture.md) | Organizational Hierarchy & Assignment Architecture | Accepted   | 2026-03-13 |
 | [ADR-036](./ADR-036-organizational-scope-access-control.md)                  | Organizational Scope Access Control                | Accepted   | 2026-03-14 |
 | [ADR-037](./ADR-037-approvals-architecture.md)                               | Approvals (Freigabe-System) Architecture           | Accepted   | 2026-03-17 |
+| [ADR-038](./ADR-038-position-catalog-architecture.md)                        | Position Catalog Architecture                      | Proposed   | 2026-03-17 |
 
 ## Template
 

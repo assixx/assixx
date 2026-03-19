@@ -73,10 +73,6 @@
     }
   }
 
-  function handleOverlayClick(e: MouseEvent) {
-    if (e.target === e.currentTarget) onclose();
-  }
-
   // Capture-phase click-outside: works inside modals (bypasses stopPropagation)
   $effect(() => {
     return onClickOutsideDropdown(() => {
@@ -93,21 +89,10 @@
     aria-modal="true"
     aria-labelledby="asset-modal-title"
     tabindex="-1"
-    onclick={handleOverlayClick}
-    onkeydown={(e) => {
-      if (e.key === 'Escape') onclose();
-    }}
   >
-    <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
     <form
       id="asset-form"
       class="ds-modal"
-      onclick={(e) => {
-        e.stopPropagation();
-      }}
-      onkeydown={(e) => {
-        e.stopPropagation();
-      }}
       {onsubmit}
     >
       <div class="ds-modal__header">

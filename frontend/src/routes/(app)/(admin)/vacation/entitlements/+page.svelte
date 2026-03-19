@@ -512,7 +512,7 @@
       onclick={() => {
         entitlementsState.closeEntitlementForm();
       }}
-      onkeydown={(e) => {
+      onkeydown={(e: KeyboardEvent) => {
         if (e.key === 'Escape') entitlementsState.closeEntitlementForm();
       }}
     >

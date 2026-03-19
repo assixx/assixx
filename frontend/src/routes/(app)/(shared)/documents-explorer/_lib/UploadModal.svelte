@@ -37,10 +37,6 @@
       CATEGORY_MAPPINGS[uploadCategory].requiresPayrollPeriod === true,
   );
 
-  function handleOverlayClick(e: MouseEvent) {
-    if (e.target === e.currentTarget) handleClose();
-  }
-
   function handleClose() {
     resetForm();
     onclose();
@@ -129,20 +125,13 @@
 </script>
 
 {#if show}
-  <!-- svelte-ignore a11y_click_events_have_key_events -->
-  <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div
     id="upload-modal"
     class="modal-overlay modal-overlay--active"
-    onclick={handleOverlayClick}
   >
-    <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
     <form
       id="upload-form"
       class="ds-modal ds-modal--lg"
-      onclick={(e) => {
-        e.stopPropagation();
-      }}
       onsubmit={(e) => {
         e.preventDefault();
         handleSubmit();

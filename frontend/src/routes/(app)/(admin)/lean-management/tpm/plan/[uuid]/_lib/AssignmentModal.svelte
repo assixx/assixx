@@ -105,14 +105,6 @@
     }
   }
 
-  function handleBackdropClick(e: MouseEvent): void {
-    if (e.target === e.currentTarget) onclose();
-  }
-
-  function handleKeydown(e: KeyboardEvent): void {
-    if (e.key === 'Escape') onclose();
-  }
-
   // =========================================================================
   // AVATAR HELPERS
   // =========================================================================
@@ -128,14 +120,7 @@
   }
 </script>
 
-<svelte:window onkeydown={handleKeydown} />
-
-<!-- svelte-ignore a11y_no_static_element_interactions -->
-<div
-  class="modal-overlay modal-overlay--active"
-  onclick={handleBackdropClick}
-  onkeydown={handleKeydown}
->
+<div class="modal-overlay modal-overlay--active">
   <div
     class="ds-modal ds-modal--md"
     role="dialog"

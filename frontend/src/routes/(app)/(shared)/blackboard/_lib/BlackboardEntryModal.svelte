@@ -169,13 +169,6 @@
     onfileschange(filtered.length > 0 ? filtered : null);
   }
 
-  function handleKeyDown(e: KeyboardEvent): void {
-    if (e.key === 'Escape') {
-      priorityDropdownOpen = false;
-      onclose();
-    }
-  }
-
   // Capture-phase click-outside: works inside modals (bypasses stopPropagation)
   $effect(() => {
     return onClickOutsideDropdown(() => {
@@ -184,28 +177,14 @@
   });
 </script>
 
-<svelte:window onkeydown={handleKeyDown} />
-
 <div
   id="blackboard-entry-modal"
   class="modal-overlay modal-overlay--active"
-  onclick={onclose}
-  onkeydown={(e) => {
-    if (e.key === 'Escape') onclose();
-  }}
   role="dialog"
   aria-modal="true"
-  tabindex="-1"
 >
-  <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
   <form
     class="ds-modal ds-modal--lg"
-    onclick={(e) => {
-      e.stopPropagation();
-    }}
-    onkeydown={(e) => {
-      e.stopPropagation();
-    }}
     {onsubmit}
   >
     <div class="ds-modal__header">

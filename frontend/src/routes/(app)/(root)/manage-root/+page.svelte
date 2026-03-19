@@ -409,14 +409,6 @@
     void saveUser();
   }
 
-  function handleKeydown(e: KeyboardEvent): void {
-    if (e.key === 'Escape') {
-      if (showAvailabilityModal) closeAvailabilityModal();
-      else if (showDeleteModal) closeDeleteModal();
-      else if (showRootModal) closeRootModal();
-    }
-  }
-
   function validateEmails(): void {
     emailError = !validateEmailMatch(formEmail, formEmailConfirm);
   }
@@ -447,8 +439,6 @@
 <svelte:head>
   <title>{messages.PAGE_TITLE}</title>
 </svelte:head>
-
-<svelte:window onkeydown={handleKeydown} />
 
 <div class="container">
   <div class="card">

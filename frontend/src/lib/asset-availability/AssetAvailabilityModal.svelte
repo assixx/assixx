@@ -79,10 +79,6 @@
   // HANDLERS
   // =============================================================================
 
-  function handleOverlayClick(e: MouseEvent): void {
-    if (e.target === e.currentTarget) onclose();
-  }
-
   function handleSubmit(e: Event): void {
     e.preventDefault();
     onsave();
@@ -137,7 +133,6 @@
 
 {#if show && asset !== null}
   <!-- Asset Availability Modal -->
-  <!-- svelte-ignore a11y_no_noninteractive_element_interactions, a11y_click_events_have_key_events -->
   <div
     id="asset-availability-modal"
     class="modal-overlay modal-overlay--active"
@@ -145,18 +140,10 @@
     aria-modal="true"
     aria-labelledby="asset-availability-modal-title"
     tabindex="-1"
-    onclick={handleOverlayClick}
-    onkeydown={(e) => {
-      if (e.key === 'Escape') onclose();
-    }}
   >
-    <!-- svelte-ignore a11y_no_noninteractive_element_interactions, a11y_click_events_have_key_events -->
     <form
       id="asset-availability-form"
       class="ds-modal"
-      onclick={(e) => {
-        e.stopPropagation();
-      }}
       onsubmit={handleSubmit}
     >
       <div class="ds-modal__header">

@@ -357,19 +357,11 @@
   id="rotation-setup-modal"
   class="modal-overlay modal-overlay--active"
   role="presentation"
-  onclick={handleClose}
 >
   <div
     class="ds-modal ds-modal--lg"
     role="dialog"
     aria-modal="true"
-    tabindex="-1"
-    onclick={(e) => {
-      e.stopPropagation();
-    }}
-    onkeydown={(e) => {
-      if (e.key === 'Escape') handleClose();
-    }}
   >
     <div class="ds-modal__header">
       <h2 class="ds-modal__title">Schichtrotation einrichten</h2>

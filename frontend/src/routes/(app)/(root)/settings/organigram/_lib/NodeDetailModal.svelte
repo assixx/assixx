@@ -137,14 +137,6 @@
         s.entries !== undefined && s.entries.length > 0,
     );
   });
-
-  function handleOverlayClick(event: MouseEvent): void {
-    if (event.target === event.currentTarget) onclose();
-  }
-
-  function handleKeydown(event: KeyboardEvent): void {
-    if (event.key === 'Escape') onclose();
-  }
 </script>
 
 {#if show}
@@ -154,8 +146,6 @@
     aria-modal="true"
     aria-labelledby="node-detail-title"
     tabindex="-1"
-    onclick={handleOverlayClick}
-    onkeydown={handleKeydown}
   >
     <div
       class="ds-modal ds-modal--sm"

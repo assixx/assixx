@@ -48,21 +48,10 @@
   role="dialog"
   aria-modal="true"
   tabindex="-1"
-  onclick={onclose}
-  onkeydown={(e) => {
-    if (e.key === 'Escape') onclose();
-  }}
 >
-  <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
   <div
     class="ds-modal"
     role="document"
-    onclick={(e) => {
-      e.stopPropagation();
-    }}
-    onkeydown={(e) => {
-      e.stopPropagation();
-    }}
   >
     <div class="ds-modal__header">
       <h3 class="ds-modal__title">

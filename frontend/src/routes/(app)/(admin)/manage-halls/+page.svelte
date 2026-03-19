@@ -32,12 +32,7 @@
   } from './_lib/utils';
 
   import type { PageData } from './$types';
-  import type {
-    Hall,
-    Area,
-    StatusFilter,
-    FormIsActiveStatus,
-  } from './_lib/types';
+  import type { Hall, StatusFilter, FormIsActiveStatus } from './_lib/types';
 
   // =============================================================================
   // SSR DATA
@@ -46,7 +41,6 @@
   const { data }: { data: PageData } = $props();
 
   const allHalls = $derived<Hall[]>(data.halls);
-  const allAreas = $derived<Area[]>(data.areas);
 
   // Hierarchy labels from layout data inheritance (A6)
   const labels = $derived(data.hierarchyLabels);
@@ -71,7 +65,6 @@
 
   let formName = $state('');
   let formDescription = $state('');
-  let formAreaId: number | null = $state(null);
   let formIsActive: FormIsActiveStatus = $state(1);
 
   let submitting = $state(false);
@@ -103,7 +96,7 @@
     const payload = buildHallPayload({
       name: formName,
       description: formDescription,
-      areaId: formAreaId,
+      areaId: null,
       isActive: formIsActive,
     });
     const result = await apiSaveHall(payload, currentEditId);
@@ -149,7 +142,6 @@
     const formData = populateFormFromHall(hall);
     formName = formData.name;
     formDescription = formData.description;
-    formAreaId = formData.areaId;
     formIsActive = formData.isActive;
     showHallModal = true;
   }
@@ -174,7 +166,6 @@
     const defaults = getDefaultFormValues();
     formName = defaults.name;
     formDescription = defaults.description;
-    formAreaId = defaults.areaId;
     formIsActive = defaults.isActive;
   }
 
@@ -225,24 +216,11 @@
       };
     }
   });
-
-  // =============================================================================
-  // ESCAPE KEY HANDLER
-  // =============================================================================
-
-  function handleKeydown(e: KeyboardEvent) {
-    if (e.key === 'Escape') {
-      if (showDeleteModal) closeDeleteModalFn();
-      else if (showHallModal) closeHallModal();
-    }
-  }
 </script>
 
 <svelte:head>
   <title>{messages.PAGE_TITLE}</title>
 </svelte:head>
-
-<svelte:window onkeydown={handleKeydown} />
 
 <div class="container">
   <div class="card">
@@ -427,6 +405,7 @@
                   <th scope="col">{messages.TH_DESCRIPTION}</th>
                   <th scope="col">{messages.TH_STATUS}</th>
                   <th scope="col">{messages.TH_AREA}</th>
+                  <th scope="col">{messages.TH_DEPARTMENTS}</th>
                   <th scope="col">{messages.TH_ACTIONS}</th>
                 </tr>
               </thead>
@@ -461,6 +440,17 @@
                         title={hall.areaName ?? messages.NO_AREA}
                       >
                         {getAreaDisplay(hall.areaName)}
+                      </span>
+                    </td>
+                    <td>
+                      <span
+                        class="badge {(hall.departmentCount ?? 0) > 0 ?
+                          'badge--info'
+                        : 'badge--secondary'}"
+                        title={hall.departmentNames ?? 'Keine zugeordnet'}
+                      >
+                        {hall.departmentCount ?? 0}
+                        {labels.department}
                       </span>
                     </td>
                     <td>
@@ -517,9 +507,7 @@
   {modalTitle}
   bind:formName
   bind:formDescription
-  bind:formAreaId
   bind:formIsActive
-  {allAreas}
   {submitting}
   {messages}
   onclose={closeHallModal}

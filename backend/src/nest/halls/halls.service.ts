@@ -30,6 +30,9 @@ export interface HallRow {
   created_at: Date;
   updated_at: Date;
   area_name: string | undefined;
+  department_ids: number[] | undefined;
+  department_names: string | undefined;
+  department_count: number | undefined;
 }
 
 export interface HallResponse {
@@ -42,6 +45,9 @@ export interface HallResponse {
   createdAt: string | undefined;
   updatedAt: string | undefined;
   areaName: string | undefined;
+  departmentIds: number[] | undefined;
+  departmentNames: string | undefined;
+  departmentCount: number | undefined;
 }
 
 export interface HallStats {
@@ -60,9 +66,22 @@ export class HallsService {
   ) {}
 
   private readonly FIND_ALL_HALLS_QUERY = `
-    SELECT h.*, a.name as area_name
+    WITH dept_assignments AS (
+      SELECT dh.hall_id,
+        ARRAY_AGG(dh.department_id ORDER BY d.name) as department_ids,
+        COUNT(*) as count,
+        STRING_AGG(d.name, E'\\n' ORDER BY d.name) as names
+      FROM department_halls dh
+      JOIN departments d ON dh.department_id = d.id
+      WHERE dh.tenant_id = $1
+      GROUP BY dh.hall_id
+    )
+    SELECT h.*, a.name as area_name,
+      da.department_ids, COALESCE(da.count, 0) as department_count,
+      COALESCE(da.names, '') as department_names
     FROM halls h
     LEFT JOIN areas a ON h.area_id = a.id
+    LEFT JOIN dept_assignments da ON da.hall_id = h.id
     WHERE h.tenant_id = $1
       AND h.is_active IN (${IS_ACTIVE.INACTIVE}, ${IS_ACTIVE.ACTIVE}, ${IS_ACTIVE.ARCHIVED})
     ORDER BY h.name`;
@@ -78,6 +97,9 @@ export class HallsService {
       createdAt: hall.created_at.toISOString(),
       updatedAt: hall.updated_at.toISOString(),
       areaName: includeExtended ? hall.area_name : undefined,
+      departmentIds: includeExtended ? (hall.department_ids ?? []) : undefined,
+      departmentNames: includeExtended ? hall.department_names : undefined,
+      departmentCount: includeExtended ? hall.department_count : undefined,
     };
   }
 

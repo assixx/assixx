@@ -553,27 +553,11 @@
       };
     }
   });
-
-  // =============================================================================
-  // ESCAPE KEY HANDLER
-  // =============================================================================
-
-  function handleKeydown(e: KeyboardEvent) {
-    if (e.key === 'Escape') {
-      if (showAvailabilityModal) closeAvailabilityModal();
-      else if (showDowngradeConfirmModal) closeDowngradeConfirmModal();
-      else if (showUpgradeConfirmModal) closeUpgradeConfirmModal();
-      else if (showDeleteModal) closeDeleteModal();
-      else if (showAdminModal) closeAdminModal();
-    }
-  }
 </script>
 
 <svelte:head>
   <title>{messages.PAGE_TITLE}</title>
 </svelte:head>
-
-<svelte:window onkeydown={handleKeydown} />
 
 <div class="container">
   <div class="card">

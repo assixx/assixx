@@ -1,12 +1,8 @@
 <script lang="ts">
-  import {
-    getStatusBadgeClass,
-    getStatusLabel,
-    getSelectedAreaName,
-  } from './utils';
+  import { getStatusBadgeClass, getStatusLabel } from './utils';
 
   import type { HallMessages } from './constants';
-  import type { FormIsActiveStatus, Area } from './types';
+  import type { FormIsActiveStatus } from './types';
 
   interface Props {
     show: boolean;
@@ -14,9 +10,7 @@
     modalTitle: string;
     formName: string;
     formDescription: string;
-    formAreaId: number | null;
     formIsActive: FormIsActiveStatus;
-    allAreas: Area[];
     submitting: boolean;
     messages: HallMessages;
     onclose: () => void;
@@ -25,38 +19,19 @@
 
   /* eslint-disable prefer-const, @typescript-eslint/no-useless-default-assignment -- Svelte $bindable() requires let and is not a useless default */
   // prettier-ignore
-  let { show, isEditMode, modalTitle, formName = $bindable(), formDescription = $bindable(), formAreaId = $bindable(), formIsActive = $bindable(), allAreas, submitting, messages, onclose, onsubmit }: Props = $props();
+  let { show, isEditMode, modalTitle, formName = $bindable(), formDescription = $bindable(), formIsActive = $bindable(), submitting, messages, onclose, onsubmit }: Props = $props();
   /* eslint-enable prefer-const, @typescript-eslint/no-useless-default-assignment */
 
-  let areaDropdownOpen = $state(false);
   let statusDropdownOpen = $state(false);
-
-  const selectedAreaName = $derived(getSelectedAreaName(formAreaId, allAreas));
-
-  function toggleAreaDropdown(e: MouseEvent): void {
-    e.stopPropagation();
-    statusDropdownOpen = false;
-    areaDropdownOpen = !areaDropdownOpen;
-  }
-
-  function selectArea(areaId: number | null): void {
-    formAreaId = areaId;
-    areaDropdownOpen = false;
-  }
 
   function toggleStatusDropdown(e: MouseEvent): void {
     e.stopPropagation();
-    areaDropdownOpen = false;
     statusDropdownOpen = !statusDropdownOpen;
   }
 
   function selectStatus(status: FormIsActiveStatus): void {
     formIsActive = status;
     statusDropdownOpen = false;
-  }
-
-  function handleOverlayClick(e: MouseEvent): void {
-    if (e.target === e.currentTarget) onclose();
   }
 
   function isClickOutsideElement(
@@ -69,27 +44,16 @@
 
   $effect(() => {
     if (show) {
-      areaDropdownOpen = false;
       statusDropdownOpen = false;
     }
   });
 
   $effect(() => {
-    const anyDropdownOpen = areaDropdownOpen || statusDropdownOpen;
-    if (!anyDropdownOpen) return;
+    if (!statusDropdownOpen) return;
 
     const handleClick = (e: MouseEvent): void => {
       const target = e.target as HTMLElement;
-      if (
-        areaDropdownOpen &&
-        isClickOutsideElement(target, 'hall-area-dropdown')
-      ) {
-        areaDropdownOpen = false;
-      }
-      if (
-        statusDropdownOpen &&
-        isClickOutsideElement(target, 'hall-status-dropdown')
-      ) {
+      if (isClickOutsideElement(target, 'hall-status-dropdown')) {
         statusDropdownOpen = false;
       }
     };
@@ -109,18 +73,10 @@
     aria-modal="true"
     aria-labelledby="hall-modal-title"
     tabindex="-1"
-    onclick={handleOverlayClick}
-    onkeydown={(e) => {
-      if (e.key === 'Escape') onclose();
-    }}
   >
-    <!-- svelte-ignore a11y_no_noninteractive_element_interactions, a11y_click_events_have_key_events -->
     <form
       id="hall-form"
       class="ds-modal"
-      onclick={(e) => {
-        e.stopPropagation();
-      }}
       {onsubmit}
     >
       <div class="ds-modal__header">
@@ -169,57 +125,6 @@
             rows="3"
             bind:value={formDescription}
           ></textarea>
-        </div>
-
-        <div class="form-field">
-          <label
-            class="form-field__label"
-            for="hall-area-hidden">{messages.LABEL_AREA}</label
-          >
-          <input
-            type="hidden"
-            id="hall-area-hidden"
-            value={formAreaId ?? ''}
-          />
-          <div
-            class="dropdown"
-            id="hall-area-dropdown"
-          >
-            <button
-              type="button"
-              class="dropdown__trigger"
-              class:active={areaDropdownOpen}
-              onclick={toggleAreaDropdown}
-            >
-              <span>{selectedAreaName}</span>
-              <i class="fas fa-chevron-down"></i>
-            </button>
-            <div
-              class="dropdown__menu"
-              class:active={areaDropdownOpen}
-            >
-              <button
-                type="button"
-                class="dropdown__option"
-                onclick={() => {
-                  selectArea(null);
-                }}
-              >
-                {messages.NO_AREA}
-              </button>
-              {#each allAreas as area (area.id)}
-                <button
-                  type="button"
-                  class="dropdown__option"
-                  onclick={() => {
-                    selectArea(area.id);
-                  }}
-                >
-                  {area.name}
-                </button>
-              {/each}
-            </div>
-          </div>
         </div>
 
         {#if isEditMode}

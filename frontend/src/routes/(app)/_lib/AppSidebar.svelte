@@ -170,7 +170,7 @@
 
       const navRect = nav.getBoundingClientRect();
       const buttonBottom = target.getBoundingClientRect().bottom;
-      const finalBottom = buttonBottom + submenuUl.scrollHeight + 16;
+      const finalBottom = buttonBottom + submenuUl.scrollHeight + 40;
 
       if (finalBottom > navRect.bottom) {
         smoothScrollNav(nav, nav.scrollTop + (finalBottom - navRect.bottom));

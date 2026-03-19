@@ -93,10 +93,6 @@
     areaLeadDropdownOpen = false;
   }
 
-  function handleOverlayClick(e: MouseEvent): void {
-    if (e.target === e.currentTarget) onclose();
-  }
-
   // Reset local UI state when modal opens
   $effect(() => {
     if (show) {
@@ -137,18 +133,10 @@
     aria-modal="true"
     aria-labelledby="area-modal-title"
     tabindex="-1"
-    onclick={handleOverlayClick}
-    onkeydown={(e) => {
-      if (e.key === 'Escape') onclose();
-    }}
   >
-    <!-- svelte-ignore a11y_no_noninteractive_element_interactions, a11y_click_events_have_key_events -->
     <form
       id="area-form"
       class="ds-modal"
-      onclick={(e) => {
-        e.stopPropagation();
-      }}
       {onsubmit}
     >
       <div class="ds-modal__header">

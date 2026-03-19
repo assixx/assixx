@@ -264,11 +264,7 @@
   // =============================================================================
 
   function handleKeydown(e: KeyboardEvent): void {
-    if (e.key === 'Escape') {
-      if (showDeleteModal) cancelDelete();
-      else if (showEditModal) showEditModal = false;
-      else if (showPreviewModal) closePreview();
-    } else if (showPreviewModal) {
+    if (showPreviewModal) {
       if (e.key === 'ArrowLeft') handlePreviewPrev();
       else if (e.key === 'ArrowRight') handlePreviewNext();
     }

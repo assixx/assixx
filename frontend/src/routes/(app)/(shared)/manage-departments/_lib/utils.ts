@@ -79,12 +79,21 @@ export function getSelectedLeadName(
 // FORM HELPERS
 // =============================================================================
 
+/** Get hall count display text */
+export function getHallCountText(count: number, hallLabel: string): string {
+  return `${count} ${hallLabel}`;
+}
+
 /** Populate form from department data (for edit mode) */
-export function populateFormFromDepartment(department: Department): {
+export function populateFormFromDepartment(
+  department: Department,
+  hallIds: number[] = [],
+): {
   name: string;
   description: string;
   areaId: number | null;
   departmentLeadId: number | null;
+  hallIds: number[];
   isActive: FormIsActiveStatus;
 } {
   return {
@@ -92,6 +101,7 @@ export function populateFormFromDepartment(department: Department): {
     description: department.description ?? '',
     areaId: department.areaId ?? null,
     departmentLeadId: department.departmentLeadId ?? null,
+    hallIds,
     isActive: (department.isActive === 4 ?
       0
     : department.isActive) as FormIsActiveStatus,

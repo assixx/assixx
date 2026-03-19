@@ -24,6 +24,7 @@ function createMockSettings() {
     getHierarchyLabels: vi.fn(),
     getViewport: vi.fn(),
     getHallOverrides: vi.fn(),
+    getHallConnectionAnchors: vi.fn(),
     getCanvasBg: vi.fn(),
   };
 }
@@ -61,6 +62,8 @@ function setupTreeQueries(
     teams?: Record<string, unknown>[];
     assets?: Record<string, unknown>[];
     halls?: Record<string, unknown>[];
+    deptHalls?: Record<string, unknown>[];
+    teamHalls?: Record<string, unknown>[];
   },
 ): void {
   mockDb.query.mockResolvedValueOnce(
@@ -73,6 +76,8 @@ function setupTreeQueries(
   mockDb.query.mockResolvedValueOnce(data.teams ?? []);
   mockDb.query.mockResolvedValueOnce(data.assets ?? []);
   mockDb.query.mockResolvedValueOnce(data.halls ?? []);
+  mockDb.query.mockResolvedValueOnce(data.deptHalls ?? []);
+  mockDb.query.mockResolvedValueOnce(data.teamHalls ?? []);
 }
 
 // =============================================================
@@ -102,6 +107,7 @@ describe('OrganigramService', () => {
     });
     mockSettings.getViewport.mockResolvedValue({ ...DEFAULT_VIEWPORT });
     mockSettings.getHallOverrides.mockResolvedValue({});
+    mockSettings.getHallConnectionAnchors.mockResolvedValue({});
     mockSettings.getCanvasBg.mockResolvedValue(null);
     mockLayout.getPositions.mockResolvedValue([]);
   });
@@ -122,6 +128,8 @@ describe('OrganigramService', () => {
       mockDb.query.mockResolvedValueOnce([]); // teams
       mockDb.query.mockResolvedValueOnce([]); // assets
       mockDb.query.mockResolvedValueOnce([]); // halls
+      mockDb.query.mockResolvedValueOnce([]); // deptHalls
+      mockDb.query.mockResolvedValueOnce([]); // teamHalls
 
       await expect(service.getOrgChartTree(999)).rejects.toThrow(
         NotFoundException,
@@ -419,8 +427,8 @@ describe('OrganigramService', () => {
 
       await service.getOrgChartTree(1);
 
-      // 6 DB queries + 3 settings + 1 layout = 10 parallel calls
-      expect(mockDb.query).toHaveBeenCalledTimes(6);
+      // 8 DB queries + 3 settings + 1 layout = 12 parallel calls
+      expect(mockDb.query).toHaveBeenCalledTimes(8);
       expect(mockSettings.getHierarchyLabels).toHaveBeenCalledOnce();
       expect(mockSettings.getViewport).toHaveBeenCalledOnce();
       expect(mockSettings.getHallOverrides).toHaveBeenCalledOnce();

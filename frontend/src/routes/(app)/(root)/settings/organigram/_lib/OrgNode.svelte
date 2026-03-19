@@ -11,7 +11,7 @@
     getPanX,
     getPanY,
     getZoom,
-    moveNodeOnly,
+    moveNodeByKey,
     setHoveredNodeKey,
   } from './state.svelte.js';
 
@@ -27,6 +27,7 @@
 
   const colors = $derived(ENTITY_COLORS[node.entityType]);
   const isLocked = $derived(getIsLocked());
+  const isGhost = $derived(node.isGhost === true);
   const nodeFontSize = $derived(getFontSize());
 
   let isDragging = $state(false);
@@ -78,12 +79,7 @@
     const svgX = (event.clientX - rect.left - px) / z;
     const svgY = (event.clientY - rect.top - py) / z;
 
-    moveNodeOnly(
-      node.entityType,
-      node.entityUuid,
-      svgX - dragOffsetX,
-      svgY - dragOffsetY,
-    );
+    moveNodeByKey(node.renderKey, svgX - dragOffsetX, svgY - dragOffsetY);
   }
 
   function handlePointerUp(): void {
@@ -113,6 +109,7 @@
   class="org-node"
   class:org-node--dragging={isDragging}
   class:org-node--locked={isLocked}
+  class:org-node--ghost={isGhost}
   transform="translate({node.x}, {node.y})"
   onpointerdown={handlePointerDown}
   onpointermove={handlePointerMove}
@@ -125,7 +122,7 @@
 >
   <!-- ClipPath für abgerundeten Akzentstreifen -->
   <defs>
-    <clipPath id="clip-{node.entityUuid}">
+    <clipPath id="clip-{node.renderKey}">
       <rect
         width={node.width}
         height={node.height}
@@ -152,7 +149,7 @@
     width={node.width}
     height="4"
     fill={colors.border}
-    clip-path="url(#clip-{node.entityUuid})"
+    clip-path="url(#clip-{node.renderKey})"
   />
 
   <!-- Name (Details per Doppelklick im Modal) -->

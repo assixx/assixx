@@ -118,10 +118,6 @@
     }, 300);
   }
 
-  function handleOverlayClick(e: MouseEvent): void {
-    if (e.target === e.currentTarget) onclose();
-  }
-
   function handleTeamChange(e: Event): void {
     const select = e.target as HTMLSelectElement;
     formData.teamIds = Array.from(select.selectedOptions).map(
@@ -131,7 +127,6 @@
 </script>
 
 {#if show}
-  <!-- svelte-ignore a11y_no_noninteractive_element_interactions, a11y_click_events_have_key_events -->
   <div
     id="dummy-form-modal"
     class="modal-overlay modal-overlay--active"
@@ -139,17 +134,9 @@
     aria-modal="true"
     aria-labelledby="dummy-modal-title"
     tabindex="-1"
-    onclick={handleOverlayClick}
-    onkeydown={(e: KeyboardEvent) => {
-      if (e.key === 'Escape') onclose();
-    }}
   >
-    <!-- svelte-ignore a11y_no_noninteractive_element_interactions, a11y_click_events_have_key_events -->
     <form
       class="ds-modal"
-      onclick={(e: MouseEvent) => {
-        e.stopPropagation();
-      }}
       onsubmit={handleSubmit}
     >
       <div class="ds-modal__header">

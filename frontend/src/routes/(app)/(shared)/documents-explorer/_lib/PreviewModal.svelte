@@ -33,10 +33,6 @@
       totalCount > 1,
   );
 
-  function handleOverlayClick(e: MouseEvent) {
-    if (e.target === e.currentTarget) onclose();
-  }
-
   // Cookie-based auth: accessToken cookie sent automatically on same-origin request
   // No token in URL = no token in logs/history
   const previewUrl = $derived.by(() => {
@@ -49,24 +45,12 @@
   <div
     id="preview-modal"
     class="modal-overlay modal-overlay--active"
-    onclick={handleOverlayClick}
-    onkeydown={(e) => {
-      if (e.key === 'Escape') onclose();
-    }}
     role="dialog"
     aria-modal="true"
-    tabindex="-1"
   >
-    <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
     <div
       class="ds-modal ds-modal--lg"
       style="max-height: 95vh"
-      onclick={(e) => {
-        e.stopPropagation();
-      }}
-      onkeydown={(e) => {
-        e.stopPropagation();
-      }}
       role="document"
     >
       <div class="ds-modal__header">

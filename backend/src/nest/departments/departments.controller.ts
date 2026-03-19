@@ -36,6 +36,7 @@ import type {
 } from './departments.service.js';
 import { DepartmentsService } from './departments.service.js';
 import {
+  AssignHallsToDepartmentDto,
   CreateDepartmentDto,
   DeleteDepartmentQueryDto,
   ListDepartmentsQueryDto,
@@ -145,6 +146,26 @@ export class DepartmentsController {
       dto,
       user.id,
       tenantId,
+    );
+  }
+
+  /**
+   * POST /departments/:id/halls
+   * Assign halls to a department (admin only)
+   */
+  @Post(':id/halls')
+  @Roles('admin', 'root')
+  async assignHalls(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: AssignHallsToDepartmentDto,
+    @CurrentUser() user: NestAuthUser,
+    @TenantId() tenantId: number,
+  ): Promise<MessageResponse> {
+    return await this.departmentsService.assignHallsToDepartment(
+      id,
+      dto.hallIds,
+      tenantId,
+      user.id,
     );
   }
 

@@ -28,6 +28,9 @@ export interface Department {
   employeeNames?: string;
   teamCount?: number;
   teamNames?: string;
+  hallIds?: number[];
+  hallNames?: string;
+  hallCount?: number;
   assetCount?: number;
   budget?: number;
   costCenter?: string;
@@ -58,6 +61,15 @@ export interface AdminUser {
   lastName: string;
   email: string;
   role: 'admin' | 'root';
+}
+
+/**
+ * Hall for multi-select assignment
+ */
+export interface Hall {
+  id: number;
+  name: string;
+  areaId?: number | null;
 }
 
 /**

@@ -200,8 +200,6 @@
     if (e.key === 'Escape') {
       yearDropdownOpen = false;
       monthDropdownOpen = false;
-      if (showEditModal) closeEditModal();
-      if (showDeleteModal) closeDeleteModal();
     }
   }
 

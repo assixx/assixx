@@ -88,6 +88,10 @@ export interface OrgChartTree {
   canvasBg: string | null;
   nodes: OrgChartNode[];
   halls: OrgTreeHall[];
+  /** Maps department UUID → assigned hall UUIDs (from department_halls) */
+  departmentHallMap: Record<string, string[]>;
+  /** Maps team UUID → assigned hall UUIDs (from team_halls) */
+  teamHallMap: Record<string, string[]>;
 }
 
 export interface PositionPayload {
@@ -138,6 +142,8 @@ export interface OrgNodeDetail {
 
 /** Flattened node with resolved position for rendering */
 export interface RenderNode {
+  /** Unique key for Svelte {#each} — differs for ghost copies */
+  renderKey: string;
   entityType: OrgEntityType;
   entityUuid: string;
   name: string;
@@ -147,6 +153,8 @@ export interface RenderNode {
   height: number;
   leadName?: string;
   memberCount?: number;
+  /** Ghost copies in secondary halls are read-only (no drag, no interaction) */
+  isGhost?: boolean;
 }
 
 /** Connection line between parent and child */

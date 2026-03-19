@@ -62,6 +62,7 @@ export function createMessages(labels: HierarchyLabels) {
     LABEL_AREA: labels.area,
     NO_AREA: 'Nicht zugewiesen',
     TH_AREA: labels.area,
+    TH_DEPARTMENTS: labels.department,
   };
 }
 

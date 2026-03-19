@@ -94,19 +94,11 @@
       tpmState.setSubmitting(false);
     }
   }
-
-  function handleKeydown(e: KeyboardEvent): void {
-    if (e.key === 'Escape' && tpmState.showDeleteModal) {
-      tpmState.closeDeleteModal();
-    }
-  }
 </script>
 
 <svelte:head>
   <title>{messages.PAGE_TITLE}</title>
 </svelte:head>
-
-<svelte:window onkeydown={handleKeydown} />
 
 {#if permissionDenied}
   <PermissionDenied addonName="das TPM-System" />

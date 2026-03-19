@@ -66,6 +66,15 @@ export interface Admin {
 }
 
 /**
+ * Hall interface
+ */
+export interface Hall {
+  id: number;
+  name: string;
+  areaId?: number;
+}
+
+/**
  * Team interface - main data model
  */
 export interface Team {
@@ -83,6 +92,9 @@ export interface Team {
   memberNames?: string;
   assetCount?: number | string;
   assetNames?: string;
+  hallIds?: number[];
+  hallCount?: string;
+  hallNames?: string;
   isActive: IsActiveStatus;
   createdAt: string;
   updatedAt: string;
@@ -100,6 +112,7 @@ export interface TeamFormData {
   leaderId: number | null;
   memberIds: number[];
   assetIds: number[];
+  hallIds: number[];
   isActive: FormIsActiveStatus;
 }
 

@@ -97,6 +97,23 @@ export interface WorkOrderEvent {
   changedByName?: string;
 }
 
+interface ApprovalEvent {
+  tenantId: number;
+  approval: {
+    uuid: string;
+    title: string;
+    addonCode: string;
+    status: string;
+    requestedByName: string;
+    decidedByName?: string;
+    decisionNote?: string | null;
+  };
+  /** User IDs of configured approval masters (for targeted delivery) */
+  approverUserIds: number[];
+  /** User ID of the requester (for decision notifications) */
+  requestedByUserId: number;
+}
+
 class NotificationEventBus extends EventEmitter {
   private static instance: NotificationEventBus | null = null;
 
@@ -293,6 +310,37 @@ class NotificationEventBus extends EventEmitter {
   // Get active listener count for monitoring
   getListenerCount(event: string): number {
     return this.listenerCount(event);
+  }
+
+  // ── Approval Events ────────────────────────────────────────────
+
+  emitApprovalCreated(
+    tenantId: number,
+    approval: ApprovalEvent['approval'],
+    approverUserIds: number[],
+    requestedByUserId: number,
+  ): void {
+    logger.info(`[EventBus] Emitting approval.created for tenant ${tenantId}`);
+    this.emit('approval.created', {
+      tenantId,
+      approval,
+      approverUserIds,
+      requestedByUserId,
+    });
+  }
+
+  emitApprovalDecided(
+    tenantId: number,
+    approval: ApprovalEvent['approval'],
+    requestedByUserId: number,
+  ): void {
+    logger.info(`[EventBus] Emitting approval.decided for tenant ${tenantId}`);
+    this.emit('approval.decided', {
+      tenantId,
+      approval,
+      approverUserIds: [],
+      requestedByUserId,
+    });
   }
 
   // Get all active events

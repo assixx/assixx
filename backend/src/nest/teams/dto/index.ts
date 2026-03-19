@@ -18,3 +18,7 @@ export {
   TeamMembersQueryDto,
   TeamMembersQuerySchema,
 } from './team-members-query.dto.js';
+export {
+  AssignHallsToTeamDto,
+  AssignHallsToTeamSchema,
+} from './assign-halls.dto.js';

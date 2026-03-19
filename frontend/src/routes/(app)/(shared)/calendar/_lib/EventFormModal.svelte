@@ -179,14 +179,10 @@
   id="calendar-event-form-modal"
   class="modal-overlay modal-overlay--active"
   role="presentation"
-  onclick={onclose}
 >
   <form
     class="ds-modal ds-modal--lg"
     role="presentation"
-    onclick={(e) => {
-      e.stopPropagation();
-    }}
     onsubmit={(e) => {
       e.preventDefault();
       onsave();

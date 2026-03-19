@@ -120,26 +120,6 @@
   });
 
   // ==========================================================================
-  // GLOBAL KEYBOARD HANDLER
-  // ==========================================================================
-
-  function handleKeyDown(e: KeyboardEvent) {
-    if (e.key === 'Escape') {
-      if (showRevokeModal) {
-        closeRevokeModal();
-      } else if (showRespondModal) {
-        closeRespondModal();
-      } else if (vacationState.showEditModal) {
-        vacationState.closeEditModal();
-      } else if (vacationState.showDetailModal) {
-        vacationState.closeDetailModal();
-      } else if (showCreateModal) {
-        showCreateModal = false;
-      }
-    }
-  }
-
-  // ==========================================================================
   // DROPDOWN STATE (same pattern as KVP page)
   // ==========================================================================
 
@@ -439,8 +419,6 @@
 <svelte:head>
   <title>Urlaubsverwaltung - Assixx</title>
 </svelte:head>
-
-<svelte:window onkeydown={handleKeyDown} />
 
 {#if permissionDenied}
   <PermissionDenied addonName="die Urlaubsverwaltung" />

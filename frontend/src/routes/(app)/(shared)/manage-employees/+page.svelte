@@ -504,14 +504,6 @@
     void saveEmployee();
   }
 
-  function handleKeydown(e: KeyboardEvent): void {
-    if (e.key === 'Escape') {
-      if (showUpgradeConfirmModal) closeUpgradeConfirmModal();
-      else if (showDeleteModal) closeDeleteModal();
-      else if (showEmployeeModal) closeEmployeeModal();
-    }
-  }
-
   // =============================================================================
   // OUTSIDE CLICK HANDLER
   // =============================================================================
@@ -534,8 +526,6 @@
 <svelte:head>
   <title>Mitarbeiterverwaltung - Assixx</title>
 </svelte:head>
-
-<svelte:window onkeydown={handleKeydown} />
 
 {#if data.permissionDenied}
   <PermissionDenied addonName="die Mitarbeiterverwaltung" />

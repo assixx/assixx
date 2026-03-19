@@ -5,7 +5,7 @@
 | **Status**              | Accepted                                                                                                                                |
 | **Date**                | 2026-03-17                                                                                                                              |
 | **Decision Makers**     | SCS-Technik Team                                                                                                                        |
-| **Affected Components** | PostgreSQL (1 Migration, 2 Tabellen, 2 ENUMs), Backend (NestJS approvals Modul), Frontend (SvelteKit manage-page)                       |
+| **Affected Components** | PostgreSQL (3 Migrations, 2 Tabellen, 3 ENUMs), Backend (NestJS ApprovalsModule, 10 Endpoints), Frontend (2 Pages, Sidebar, Tests)      |
 | **Supersedes**          | ---                                                                                                                                     |
 | **Related ADRs**        | ADR-009 (Role Assignment), ADR-019 (RLS), ADR-020 (Permissions), ADR-028 (Work Orders), ADR-033 (Addon-Modell), ADR-035 (Org Hierarchy) |
 

@@ -93,10 +93,6 @@
     previewLocation = null;
   }
 
-  function handlePreviewKeydown(e: KeyboardEvent): void {
-    if (e.key === 'Escape') closePreview();
-  }
-
   function stopPropagation(e: Event): void {
     e.stopPropagation();
   }
@@ -389,7 +385,9 @@
       id="tpm-card-photo-preview-modal"
       class="modal-overlay modal-overlay--active"
       onclick={closePreview}
-      onkeydown={handlePreviewKeydown}
+      onkeydown={(e: KeyboardEvent) => {
+        if (e.key === 'Escape') closePreview();
+      }}
       role="dialog"
       aria-modal="true"
       tabindex="-1"

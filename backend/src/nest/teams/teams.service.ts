@@ -52,6 +52,9 @@ export interface TeamRow {
   asset_count: number | undefined;
   member_names: string | null;
   asset_names: string | null;
+  hall_ids: number[] | null;
+  hall_count: string | null;
+  hall_names: string | null;
 }
 
 /**
@@ -78,6 +81,9 @@ export interface TeamResponse {
   assetCount: number | undefined;
   memberNames: string | undefined;
   assetNames: string | undefined;
+  hallIds: number[];
+  hallCount: string;
+  hallNames: string;
 }
 
 /**
@@ -186,6 +192,15 @@ export class TeamsService {
    * Includes aggregated member/asset names for tooltips
    */
   private readonly FIND_ALL_TEAMS_QUERY = `
+    WITH hall_assignments AS (
+      SELECT th.team_id,
+        ARRAY_AGG(th.hall_id ORDER BY th.hall_id) AS hall_ids,
+        COUNT(*)::text AS hall_count,
+        STRING_AGG(h.name, ', ' ORDER BY h.name) AS hall_names
+      FROM team_halls th
+      JOIN halls h ON th.hall_id = h.id
+      GROUP BY th.team_id
+    )
     SELECT t.*,
       d.name as department_name,
       d.area_id as department_area_id,
@@ -201,12 +216,16 @@ export class TeamsService {
       (SELECT STRING_AGG(mm.name, ', ' ORDER BY mm.name)
        FROM asset_teams mmt
        JOIN assets mm ON mmt.asset_id = mm.id
-       WHERE mmt.team_id = t.id) as asset_names
+       WHERE mmt.team_id = t.id) as asset_names,
+      ha.hall_ids,
+      ha.hall_count,
+      ha.hall_names
     FROM teams t
     LEFT JOIN departments d ON t.department_id = d.id
     LEFT JOIN areas a ON d.area_id = a.id
     LEFT JOIN users u ON t.team_lead_id = u.id
     LEFT JOIN users du ON t.deputy_lead_id = du.id
+    LEFT JOIN hall_assignments ha ON ha.team_id = t.id
     WHERE t.tenant_id = $1 AND t.is_active != ${IS_ACTIVE.DELETED}
     ORDER BY t.name`;
 
@@ -235,6 +254,9 @@ export class TeamsService {
       assetCount: team.asset_count,
       memberNames: team.member_names ?? undefined,
       assetNames: team.asset_names ?? undefined,
+      hallIds: team.hall_ids ?? [],
+      hallCount: team.hall_count ?? '0',
+      hallNames: team.hall_names ?? '',
     };
   }
 
@@ -970,5 +992,58 @@ export class TeamsService {
     );
 
     return { message: 'Asset removed from team successfully' };
+  }
+
+  /**
+   * Assign halls to a team (clear-then-reassign pattern)
+   */
+  async assignHallsToTeam(
+    teamId: number,
+    hallIds: number[],
+    tenantId: number,
+    assignedBy: number,
+  ): Promise<{ message: string }> {
+    this.logger.log(`Assigning ${hallIds.length} halls to team ${teamId}`);
+
+    const teamRows = await this.db.query<TeamRow>(FIND_TEAM_BY_ID_QUERY, [
+      teamId,
+      tenantId,
+    ]);
+    if (teamRows.length === 0) {
+      throw new NotFoundException(ERROR_MESSAGES.TEAM_NOT_FOUND);
+    }
+
+    await this.db.query(
+      'DELETE FROM team_halls WHERE team_id = $1 AND tenant_id = $2',
+      [teamId, tenantId],
+    );
+
+    if (hallIds.length > 0) {
+      const valuePlaceholders = hallIds
+        .map(
+          (_: number, i: number) =>
+            `($1, $2, $${i + 3}, $${hallIds.length + 3}, NOW())`,
+        )
+        .join(', ');
+
+      await this.db.query(
+        `INSERT INTO team_halls (tenant_id, team_id, hall_id, assigned_by, assigned_at)
+         VALUES ${valuePlaceholders}`,
+        [tenantId, teamId, ...hallIds, assignedBy],
+      );
+    }
+
+    return { message: `${hallIds.length} halls assigned to team` };
+  }
+
+  /**
+   * Get hall IDs assigned to a team
+   */
+  async getTeamHallIds(teamId: number, tenantId: number): Promise<number[]> {
+    const rows = await this.db.query<{ hall_id: number }>(
+      'SELECT hall_id FROM team_halls WHERE team_id = $1 AND tenant_id = $2 ORDER BY hall_id',
+      [teamId, tenantId],
+    );
+    return rows.map((r: { hall_id: number }) => r.hall_id);
   }
 }

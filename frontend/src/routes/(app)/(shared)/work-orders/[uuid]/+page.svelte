@@ -82,7 +82,6 @@
 
   function handleSourceKeydown(event: KeyboardEvent): void {
     if (!showSourcePreview) return;
-    if (event.key === 'Escape') closeSourcePreview();
     if (event.key === 'ArrowLeft' && sourcePreviewIndex > 0)
       sourcePreviewIndex--;
     if (

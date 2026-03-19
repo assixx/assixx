@@ -41,18 +41,6 @@
   let password = $state('');
 
   const canConfirm = $derived(confirmText === 'LÖSCHEN' && password !== '');
-
-  function handleOverlayClick(event: MouseEvent): void {
-    if (event.target === event.currentTarget) {
-      onclose();
-    }
-  }
-
-  function handleOverlayKeydown(event: KeyboardEvent): void {
-    if (event.key === 'Escape') {
-      onclose();
-    }
-  }
 </script>
 
 <div
@@ -62,18 +50,9 @@
   aria-modal="true"
   aria-labelledby="delete-modal-title"
   tabindex="-1"
-  onclick={handleOverlayClick}
-  onkeydown={handleOverlayKeydown}
 >
-  <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
   <div
     class="ds-modal ds-modal--md"
-    onclick={(e) => {
-      e.stopPropagation();
-    }}
-    onkeydown={(e) => {
-      e.stopPropagation();
-    }}
     role="document"
   >
     <!-- Header -->
