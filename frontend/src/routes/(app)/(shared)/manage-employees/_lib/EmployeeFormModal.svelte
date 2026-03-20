@@ -84,12 +84,13 @@
       positionOptions !== undefined && positionOptions.length > 0 ?
         positionOptions
       : POSITION_OPTIONS;
-    const system = raw
+    const unique = [...new Set(raw)];
+    const system = unique
       .filter((p: string) => isLeadPosition(p))
       .sort(
         (a: string, b: string) => LEAD_ORDER.indexOf(a) - LEAD_ORDER.indexOf(b),
       );
-    const custom = raw.filter((p: string) => !isLeadPosition(p));
+    const custom = unique.filter((p: string) => !isLeadPosition(p));
     return [...system, ...custom];
   });
 
