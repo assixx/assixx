@@ -112,7 +112,7 @@ Use agents for reading. Read whole files.
 8. [frontend/src/styles/tailwind.css](./frontend/src/styles/tailwind.css) (UI context)
 9. [frontend/src/design-system/README.md](./frontend/src/design-system/README.md) (UI context)
 10. [backend/docs/ZOD-INTEGRATION-GUIDE.md](./backend/docs/ZOD-INTEGRATION-GUIDE.md)
-11. [docs/HOW-TO-TEST-WITH-VITEST.md](./docs/HOW-TO-TEST-WITH-VITEST.md)
+11. [docs/how-to/README.md](./docs/how-to/README.md) (HOW-TO Guide Katalog)
 12. [docs/CODE-OF-CONDUCT-SVELTE.md](./docs/CODE-OF-CONDUCT-SVELTE.md)
 13. [docs/PRODUCTION-AND-DEVELOPMENT-TESTING.md](./docs/PRODUCTION-AND-DEVELOPMENT-TESTING.md) (Docker/Nginx/SvelteKit setup)
 14. All ADRs in [docs/infrastructure/adr/](./docs/infrastructure/adr/)
