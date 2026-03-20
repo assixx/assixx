@@ -35,7 +35,12 @@
         "scripts/**/*.{js,ts}"
       ],
       "project": ["src/**/*.ts"],
-      "ignore": ["src/**/*.spec.ts", "src/**/*.test.ts", "dist/**", "scripts/**/*.js"],
+      "ignore": [
+        "src/**/*.spec.ts",
+        "src/**/*.test.ts",
+        "dist/**",
+        "scripts/**/*.js"
+      ],
       "ignoreDependencies": [
         "reflect-metadata",
         "pino-pretty",
@@ -87,8 +92,19 @@
     "backups/**",
     "**/index.ts"
   ],
-  "ignoreBinaries": ["svelte-kit", "docker-compose", "only-allow", "type-coverage"],
-  "ignoreUnresolved": ["./\\$types", "\\$app/.+", "\\$env/.+", "\\$lib/.+", "./vitest\\..+"],
+  "ignoreBinaries": [
+    "svelte-kit",
+    "docker-compose",
+    "only-allow",
+    "type-coverage"
+  ],
+  "ignoreUnresolved": [
+    "./\\$types",
+    "\\$app/.+",
+    "\\$env/.+",
+    "\\$lib/.+",
+    "./vitest\\..+"
+  ],
   "rules": {
     "enumMembers": "off"
   }
