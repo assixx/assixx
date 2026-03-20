@@ -18,7 +18,8 @@ export type ApprovalApproverType =
   | 'user'
   | 'team_lead'
   | 'area_lead'
-  | 'department_lead';
+  | 'department_lead'
+  | 'position';
 
 // =============================================================================
 // CONSTANTS
@@ -43,6 +44,7 @@ export const APPROVER_TYPE_LABELS: Readonly<
   team_lead: 'Team Lead',
   area_lead: 'Bereichsleiter',
   department_lead: 'Abteilungsleiter',
+  position: 'Position',
 };
 
 // =============================================================================
@@ -56,6 +58,7 @@ export interface ApprovalConfigRow {
   addon_code: string;
   approver_type: ApprovalApproverType;
   approver_user_id: number | null;
+  approver_position_id: string | null;
   is_active: number;
   created_at: string;
   updated_at: string;
@@ -99,6 +102,8 @@ export interface ApprovalConfig {
   approverType: ApprovalApproverType;
   approverUserId: number | null;
   approverUserName: string | null;
+  approverPositionId: string | null;
+  approverPositionName: string | null;
   createdAt: string;
 }
 
@@ -134,7 +139,10 @@ export interface ApprovalStats {
 // =============================================================================
 
 export function mapConfigRowToApi(
-  row: ApprovalConfigRow & { approver_user_name?: string | null },
+  row: ApprovalConfigRow & {
+    approver_user_name?: string | null;
+    approver_position_name?: string | null;
+  },
 ): ApprovalConfig {
   return {
     uuid: row.uuid.trim(),
@@ -142,6 +150,8 @@ export function mapConfigRowToApi(
     approverType: row.approver_type,
     approverUserId: row.approver_user_id,
     approverUserName: row.approver_user_name ?? null,
+    approverPositionId: row.approver_position_id,
+    approverPositionName: row.approver_position_name ?? null,
     createdAt: row.created_at,
   };
 }

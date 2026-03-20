@@ -6,8 +6,15 @@ import { z } from 'zod';
 
 const baseSchema = z.object({
   addonCode: z.string().min(1).max(50),
-  approverType: z.enum(['user', 'team_lead', 'area_lead', 'department_lead']),
+  approverType: z.enum([
+    'user',
+    'team_lead',
+    'area_lead',
+    'department_lead',
+    'position',
+  ]),
   approverUserId: z.number().int().positive().nullable().optional(),
+  approverPositionId: z.uuid().nullable().optional(),
 });
 
 export const UpsertApprovalConfigSchema = baseSchema.refine(
@@ -16,11 +23,18 @@ export const UpsertApprovalConfigSchema = baseSchema.refine(
     if (data.approverType === 'user') {
       return data.approverUserId !== null && data.approverUserId !== undefined;
     }
+    if (data.approverType === 'position') {
+      return (
+        data.approverPositionId !== null &&
+        data.approverPositionId !== undefined
+      );
+    }
     return true;
   },
   {
-    message: 'approverUserId is required when approverType is "user"',
-    path: ['approverUserId'],
+    message:
+      'approverUserId required for type "user", approverPositionId required for type "position"',
+    path: ['approverType'],
   },
 );
 

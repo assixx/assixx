@@ -2,7 +2,7 @@
 
 | Metadata                | Value                                                                                                                                                                                                             |
 | ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Status**              | Proposed                                                                                                                                                                                                          |
+| **Status**              | Accepted                                                                                                                                                                                                          |
 | **Date**                | 2026-03-17                                                                                                                                                                                                        |
 | **Decision Makers**     | SCS Technik                                                                                                                                                                                                       |
 | **Affected Components** | `database/migrations/`, `backend/src/nest/organigram/`, `backend/src/nest/approvals/`, `frontend/src/routes/(app)/(root)/settings/organigram/positions/`, `frontend/src/routes/(app)/(admin)/settings/approvals/` |

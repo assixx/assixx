@@ -1,6 +1,8 @@
 /**
  * Positionen-Verwaltung — Server-Side Data Loading
  * Root-only: RBAC enforced by (root) layout group
+ *
+ * Loads positions from position_catalog API (ADR-038).
  */
 import { redirect } from '@sveltejs/kit';
 
@@ -12,10 +14,12 @@ const log = createLogger('Organigram:Positions');
 
 const API_BASE = process.env.API_URL ?? 'http://localhost:3000/api/v2';
 
-interface PositionOptions {
-  employee: string[];
-  admin: string[];
-  root: string[];
+interface PositionCatalogEntry {
+  id: string;
+  name: string;
+  roleCategory: 'employee' | 'admin' | 'root';
+  sortOrder: number;
+  isSystem: boolean;
 }
 
 interface ApiResponse<T> {
@@ -23,20 +27,13 @@ interface ApiResponse<T> {
   data?: T;
 }
 
-const DEFAULT_OPTIONS: PositionOptions = {
-  employee: [],
-  admin: [],
-  root: [],
-};
-
-function extractData(json: ApiResponse<PositionOptions>): PositionOptions {
-  if ('success' in json && json.success === true) {
-    return json.data ?? DEFAULT_OPTIONS;
-  }
-  if ('data' in json && json.data !== undefined) {
+function extractData(
+  json: ApiResponse<PositionCatalogEntry[]>,
+): PositionCatalogEntry[] {
+  if (json.success === true && json.data !== undefined) {
     return json.data;
   }
-  return json as unknown as PositionOptions;
+  return [];
 }
 
 export const load: PageServerLoad = async ({ cookies, fetch }) => {
@@ -46,7 +43,7 @@ export const load: PageServerLoad = async ({ cookies, fetch }) => {
   }
 
   try {
-    const response = await fetch(`${API_BASE}/organigram/position-options`, {
+    const response = await fetch(`${API_BASE}/organigram/positions`, {
       headers: {
         Authorization: `Bearer ${token}`,
         'Content-Type': 'application/json',
@@ -55,13 +52,13 @@ export const load: PageServerLoad = async ({ cookies, fetch }) => {
 
     if (!response.ok) {
       log.error({ status: response.status }, 'API error loading positions');
-      return { positions: DEFAULT_OPTIONS, loadError: true };
+      return { positions: [] as PositionCatalogEntry[], loadError: true };
     }
 
-    const json = (await response.json()) as ApiResponse<PositionOptions>;
+    const json = (await response.json()) as ApiResponse<PositionCatalogEntry[]>;
     return { positions: extractData(json), loadError: false };
   } catch (err: unknown) {
     log.error({ err }, 'Fetch error loading positions');
-    return { positions: DEFAULT_OPTIONS, loadError: true };
+    return { positions: [] as PositionCatalogEntry[], loadError: true };
   }
 };

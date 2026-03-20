@@ -3,19 +3,14 @@ import type { PoolClient } from 'pg';
 
 import { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import { DatabaseService } from '../database/database.service.js';
-import type {
-  UpdateHierarchyLabelsDto,
-  UpdatePositionOptionsDto,
-} from './dto/index.js';
+import type { UpdateHierarchyLabelsDto } from './dto/index.js';
 import {
   DEFAULT_HIERARCHY_LABELS,
-  DEFAULT_POSITION_OPTIONS,
   DEFAULT_VIEWPORT,
   type HallOverride,
   type HierarchyLabels,
   type OrgViewport,
   type PerimeterAnchor,
-  type PositionOptions,
 } from './organigram.types.js';
 
 interface TenantSettingsRow {
@@ -24,12 +19,6 @@ interface TenantSettingsRow {
 
 interface OrgHierarchySettings {
   levels?: Partial<HierarchyLabels>;
-}
-
-interface PositionOptionsSettings {
-  employee?: string[];
-  admin?: string[];
-  root?: string[];
 }
 
 const SELECT_SETTINGS = 'SELECT settings FROM tenants WHERE id = $1';
@@ -288,78 +277,5 @@ export class OrganigramSettingsService {
     );
 
     return mergedLabels;
-  }
-
-  async getPositionOptions(tenantId: number): Promise<PositionOptions> {
-    const rows = await this.db.query<TenantSettingsRow>(SELECT_SETTINGS, [
-      tenantId,
-    ]);
-
-    if (rows.length === 0 || rows[0] === undefined) {
-      return { ...DEFAULT_POSITION_OPTIONS };
-    }
-
-    const settings = rows[0].settings;
-    if (settings === null) {
-      return { ...DEFAULT_POSITION_OPTIONS };
-    }
-
-    const stored = settings['positionOptions'] as
-      | PositionOptionsSettings
-      | undefined;
-    if (stored === undefined) {
-      return { ...DEFAULT_POSITION_OPTIONS };
-    }
-
-    return {
-      employee: stored.employee ?? [...DEFAULT_POSITION_OPTIONS.employee],
-      admin: stored.admin ?? [...DEFAULT_POSITION_OPTIONS.admin],
-      root: stored.root ?? [...DEFAULT_POSITION_OPTIONS.root],
-    };
-  }
-
-  async updatePositionOptions(
-    tenantId: number,
-    dto: UpdatePositionOptionsDto,
-  ): Promise<PositionOptions> {
-    const current = await this.getPositionOptions(tenantId);
-
-    const merged: PositionOptions = {
-      employee: dto.employee ?? current.employee,
-      admin: dto.admin ?? current.admin,
-      root: dto.root ?? current.root,
-    };
-
-    const settingsRows = await this.db.query<TenantSettingsRow>(
-      SELECT_SETTINGS,
-      [tenantId],
-    );
-
-    const currentSettings =
-      settingsRows.length > 0 && settingsRows[0] !== undefined ?
-        (settingsRows[0].settings ?? {})
-      : {};
-
-    const mergedSettings = {
-      ...currentSettings,
-      positionOptions: merged,
-    };
-
-    await this.persistSettings(tenantId, mergedSettings);
-
-    this.logger.log(`Position options updated for tenant ${String(tenantId)}`);
-
-    const userId = this.db.getUserId() ?? 0;
-    void this.activityLogger.logUpdate(
-      tenantId,
-      userId,
-      'settings',
-      tenantId,
-      'Position-Optionen aktualisiert',
-      current as unknown as Record<string, unknown>,
-      merged as unknown as Record<string, unknown>,
-    );
-
-    return merged;
   }
 }

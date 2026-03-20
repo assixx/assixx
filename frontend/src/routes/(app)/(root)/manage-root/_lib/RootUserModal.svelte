@@ -1,5 +1,6 @@
 <script lang="ts">
   import PasswordStrengthIndicator from '$lib/components/PasswordStrengthIndicator.svelte';
+  import UserPositionChips from '$lib/components/UserPositionChips.svelte';
   import {
     isLeadPosition,
     LEAD_POSITION_KEYS,
@@ -39,13 +40,14 @@
     onsubmit: (e: Event) => void;
     onValidateEmails: () => void;
     positionOptions?: string[];
+    editUserId?: number | null;
     hierarchyLabels: HierarchyLabels;
     onValidatePasswords: () => void;
   }
 
   /* eslint-disable prefer-const, @typescript-eslint/no-useless-default-assignment -- Svelte $bindable() requires let and is not a useless default */
   // prettier-ignore
-  let { messages, show, isEditMode, modalTitle, positionOptions, hierarchyLabels, firstName = $bindable(), lastName = $bindable(), email = $bindable(), emailConfirm = $bindable(), password = $bindable(), passwordConfirm = $bindable(), employeeNumber = $bindable(), position = $bindable(), notes = $bindable(), isActive = $bindable(), emailError = $bindable(), passwordError = $bindable(), submitting, onclose, onsubmit, onValidateEmails, onValidatePasswords }: Props = $props();
+  let { messages, show, isEditMode, modalTitle, positionOptions, editUserId, hierarchyLabels, firstName = $bindable(), lastName = $bindable(), email = $bindable(), emailConfirm = $bindable(), password = $bindable(), passwordConfirm = $bindable(), employeeNumber = $bindable(), position = $bindable(), notes = $bindable(), isActive = $bindable(), emailError = $bindable(), passwordError = $bindable(), submitting, onclose, onsubmit, onValidateEmails, onValidatePasswords }: Props = $props();
   /* eslint-enable prefer-const, @typescript-eslint/no-useless-default-assignment */
 
   const LEAD_ORDER: string[] = [
@@ -412,6 +414,22 @@
               {/each}
             </div>
           </div>
+          <div class="alert alert--info alert--sm mt-2">
+            <div class="alert__icon"><i class="fas fa-id-badge"></i></div>
+            <div class="alert__content">
+              <div class="alert__title">Position nicht dabei?</div>
+              <div class="alert__message">
+                <a
+                  href="/settings/organigram/positions"
+                  target="_blank">Neue Position anlegen</a
+                >
+                — oder bestehende Positionen bearbeiten.
+              </div>
+            </div>
+          </div>
+          {#if isEditMode && editUserId !== undefined && editUserId !== null}
+            <UserPositionChips userId={editUserId} />
+          {/if}
         </div>
 
         <div class="form-field">

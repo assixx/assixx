@@ -77,7 +77,8 @@ export type ActivityEntityType =
   | 'user_addon_permission'
   | 'hall'
   | 'approval'
-  | 'approval_config';
+  | 'approval_config'
+  | 'position_catalog';
 
 /**
  * Parameters for logging an activity

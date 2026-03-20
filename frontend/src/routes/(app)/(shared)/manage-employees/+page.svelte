@@ -743,6 +743,7 @@
     {messages}
     {positionOptions}
     {labels}
+    editUserId={currentEditId}
     bind:formFirstName
     bind:formLastName
     bind:formEmail

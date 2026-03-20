@@ -767,6 +767,7 @@
   {submitting}
   {messages}
   {positionOptions}
+  editUserId={currentEditId}
   {labels}
   bind:formFirstName
   bind:formLastName

@@ -56,6 +56,9 @@ import { TenantId } from '../common/decorators/tenant.decorator.js';
 import type { NestAuthUser } from '../common/interfaces/auth.interface.js';
 import type { OrganizationalScope } from '../hierarchy-permission/organizational-scope.types.js';
 import { ScopeService } from '../hierarchy-permission/scope.service.js';
+import { AssignPositionDto } from '../organigram/dto/assign-position.dto.js';
+import type { UserPositionEntry } from '../organigram/position-catalog.types.js';
+import { UserPositionService } from '../organigram/user-position.service.js';
 import {
   AvailabilityHistoryQueryDto,
   type AvailabilityHistoryResponse,
@@ -137,6 +140,7 @@ export class UsersController {
     private readonly userProfileService: UserProfileService,
     private readonly availabilityService: UserAvailabilityService,
     private readonly scopeService: ScopeService,
+    private readonly userPositionService: UserPositionService,
   ) {}
 
   /** GET /users - List all users with pagination and filters (scope-filtered) */
@@ -516,6 +520,43 @@ export class UsersController {
       user.id,
       user.tenantId,
     );
+  }
+
+  // ── User Position Assignment ─────────────────────────────
+
+  /** GET /users/:id/positions - List positions of a user */
+  @Get(':id/positions')
+  @Roles('root', 'admin')
+  async getUserPositions(
+    @TenantId() tenantId: number,
+    @Param('id', ParseIntPipe) userId: number,
+  ): Promise<UserPositionEntry[]> {
+    return await this.userPositionService.getByUser(tenantId, userId);
+  }
+
+  /** POST /users/:id/positions - Assign position to user */
+  @Post(':id/positions')
+  @Roles('root')
+  @HttpCode(HttpStatus.CREATED)
+  async assignPosition(
+    @TenantId() tenantId: number,
+    @Param('id', ParseIntPipe) userId: number,
+    @Body() dto: AssignPositionDto,
+  ): Promise<{ message: string }> {
+    await this.userPositionService.assign(tenantId, userId, dto.positionId);
+    return { message: 'Position zugewiesen' };
+  }
+
+  /** DELETE /users/:id/positions/:positionId - Unassign position from user */
+  @Delete(':id/positions/:positionId')
+  @Roles('root')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async unassignPosition(
+    @TenantId() tenantId: number,
+    @Param('id', ParseIntPipe) userId: number,
+    @Param('positionId') positionId: string,
+  ): Promise<void> {
+    await this.userPositionService.unassign(tenantId, userId, positionId);
   }
 
   /** Get MIME type for image extension (switch to avoid object injection) */

@@ -38,10 +38,10 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent, url }) => {
   }
 
   // Parallel fetch remaining data (permission confirmed)
-  const [teamsData, posOptData] = await Promise.all([
+  const [teamsData, positionsData] = await Promise.all([
     apiFetch<Team[]>('/teams', token, fetch),
-    apiFetch<{ employee: string[] }>(
-      '/organigram/position-options',
+    apiFetch<{ name: string; roleCategory: string }[]>(
+      '/organigram/positions?roleCategory=employee',
       token,
       fetch,
     ),
@@ -56,6 +56,9 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent, url }) => {
     permissionDenied: false as const,
     employees,
     teams: Array.isArray(teamsData) ? teamsData : [],
-    positionOptions: posOptData?.employee ?? [],
+    positionOptions:
+      Array.isArray(positionsData) ?
+        positionsData.map((p: { name: string }) => p.name)
+      : [],
   };
 };

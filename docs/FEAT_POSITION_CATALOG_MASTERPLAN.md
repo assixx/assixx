@@ -2,12 +2,12 @@
 
 > **Created:** 2026-03-17
 > **Version:** 0.3.1 (4th review pass)
-> **Status:** DRAFT — Phase 0 (Planning)
+> **Status:** COMPLETE — All 5 phases implemented
 > **Branch:** `feat/position-catalog`
 > **ADR:** [ADR-038](./infrastructure/adr/ADR-038-position-catalog-architecture.md)
 > **Author:** SCS Technik (Senior Engineer)
 > **Estimated Sessions:** 6
-> **Actual Sessions:** 0 / 6
+> **Actual Sessions:** 6 / 6
 
 ---
 
@@ -87,11 +87,16 @@ enabling position-based approval masters and multi-position user assignments.
 ## Phase 1: Database Migrations
 
 > **Dependency:** None (first phase)
-> **Files:** 1 migration file (all schema changes combined)
+> **Files:** 2 migration files (ENUM extension must commit before usage — PG17 constraint)
 
-### Step 1.1: Create tables + extend approval_configs [PENDING]
+### Step 1.1: Create tables + extend approval_configs ✅ DONE (2026-03-20)
 
-**New file:** `database/migrations/{timestamp}_position-catalog.ts`
+**Files:**
+
+- `database/migrations/20260320140411753_position-catalog.ts` — ENUM extension only (noTransaction)
+- `database/migrations/20260320140713884_position-catalog-tables.ts` — tables, columns, CHECK, index rebuild
+
+**Why 2 files?** PostgreSQL requires a COMMIT between `ALTER TYPE ... ADD VALUE` and any usage of the new ENUM value (CHECK constraints, INSERTs). `pgm.noTransaction()` in the first migration enables this.
 
 **Schema:**
 
@@ -283,7 +288,7 @@ docker exec assixx-postgres psql -U assixx_user -d assixx -c "SELECT enumlabel F
 > **Dependency:** Phase 1 complete
 > **Reference:** `backend/src/nest/organigram/` (existing position logic)
 
-### Step 2.1: Types + DTOs [PENDING]
+### Step 2.1: Types + DTOs ✅ DONE (2026-03-20)
 
 **New/modified files:**
 
@@ -323,7 +328,7 @@ interface UserPositionRow {
 }
 ```
 
-### Step 2.2: PositionCatalogService [PENDING]
+### Step 2.2: PositionCatalogService ✅ DONE (2026-03-20)
 
 **File:** `backend/src/nest/organigram/position-catalog.service.ts`
 
@@ -359,7 +364,7 @@ System positions seeded:
 - System positions (`is_system = true`) cannot be edited or deleted
 - `ON DELETE RESTRICT` on FK means DB blocks deletion if position is assigned
 
-### Step 2.3: Refactor organigram-settings.service.ts [PENDING]
+### Step 2.3: Refactor organigram-settings.service.ts ✅ DONE (2026-03-20)
 
 **Modified file:** `backend/src/nest/organigram/organigram-settings.service.ts`
 
@@ -372,7 +377,7 @@ System positions seeded:
 - This is the backward-compat facade — all existing consumers (manage-employees, manage-admins, manage-root, EmployeeFormModal, AdminFormModal, RootUserModal) continue to work without changes
 - **Mark as transitional artifact:** Both methods should carry a `@deprecated` JSDoc tag with note: "Use PositionCatalogService CRUD methods directly. This facade will be removed once all frontend consumers migrate to the position_catalog API."
 
-### Step 2.4: UserPositionService [PENDING]
+### Step 2.4: UserPositionService ✅ DONE (2026-03-20)
 
 **File:** `backend/src/nest/organigram/user-position.service.ts`
 
@@ -384,7 +389,7 @@ System positions seeded:
 - `unassign(tenantId, userId, positionId)` — remove position from user
 - `hasPosition(tenantId, userId, positionId)` — check if user has position
 
-### Step 2.5: Approval Service Extension [PENDING]
+### Step 2.5: Approval Service Extension ✅ DONE (2026-03-20)
 
 **Modified file:** `backend/src/nest/approvals/approvals-config.service.ts`
 
@@ -434,7 +439,7 @@ WHERE ac.addon_code = $1
 
 - Add `approverPositionId` to Zod schema (nullable, required when `approverType === 'position'`)
 
-### Step 2.6: Controller Endpoints [PENDING]
+### Step 2.6: Controller Endpoints ✅ DONE (2026-03-20)
 
 **Position catalog routes in `organigram.controller.ts`:**
 
@@ -477,7 +482,7 @@ WHERE ac.addon_code = $1
 
 > **Dependency:** Phase 2 complete
 
-### Step 3.1: Unit Tests [PENDING]
+### Step 3.1: Unit Tests ✅ DONE (2026-03-20)
 
 **Files:**
 
@@ -498,7 +503,7 @@ WHERE ac.addon_code = $1
 - [ ] `ensureSystemPositions()` is idempotent (ON CONFLICT DO NOTHING)
 - [ ] `getPositionOptions()` backward-compat shape
 
-### Step 3.2: API Integration Tests [PENDING]
+### Step 3.2: API Integration Tests ✅ DONE (2026-03-20)
 
 **File:** `backend/test/position-catalog.api.test.ts`
 
@@ -527,7 +532,7 @@ WHERE ac.addon_code = $1
 > **Dependency:** Phase 2 complete (endpoints available)
 > **Reference:** Current `/settings/organigram/positions` page
 
-### Step 4.1: Positions Page — CRUD on `position_catalog` [PENDING]
+### Step 4.1: Positions Page — CRUD on `position_catalog` ✅ DONE (2026-03-20)
 
 **Modified files:**
 
@@ -542,7 +547,7 @@ WHERE ac.addon_code = $1
 - Add/edit/delete custom positions via API
 - Keep existing 3-tab layout (Employee / Admin / Root)
 
-### Step 4.2: Approval Settings — Position Dropdown [PENDING]
+### Step 4.2: Approval Settings — Position Dropdown ✅ DONE (2026-03-20)
 
 **Modified files:**
 
@@ -557,7 +562,7 @@ WHERE ac.addon_code = $1
 - Grouped by role_category (Employee / Admin / Root)
 - Create approval config with `approverType: 'position'` + `approverPositionId`
 
-### Step 4.3: User Position Assignment UI [PENDING]
+### Step 4.3: User Position Assignment UI ✅ DONE (2026-03-20)
 
 **Location:** Existing form modals — extend the position dropdown to multi-select.
 
@@ -589,7 +594,7 @@ WHERE ac.addon_code = $1
 
 > **Dependency:** Phase 4 complete
 
-### Step 5.1: Backward Compatibility Verification [PENDING]
+### Step 5.1: Backward Compatibility Verification ✅ DONE (2026-03-20)
 
 **All 4 consumer pages must work without changes:**
 
@@ -610,7 +615,7 @@ WHERE ac.addon_code = $1
 
 **Verification:** Open each page, verify position dropdown renders correctly with same options.
 
-### Step 5.2: Production Migration Path [PENDING]
+### Step 5.2: Production Migration Path ✅ DONE (2026-03-20)
 
 > **Dev environment:** DB will be reset, no data migration needed.
 > **Production (future):** Document how to migrate existing JSONB data to `position_catalog`.
@@ -645,7 +650,7 @@ ON CONFLICT DO NOTHING;
 > UUIDs for system positions across tenants. Excluding them ensures `ensureSystemPositions()` is the single
 > source of truth for system position UUIDs.
 
-### Step 5.3: Documentation [PENDING]
+### Step 5.3: Documentation ✅ DONE (2026-03-20)
 
 - [ ] ADR-038 finalized (status: Accepted)
 - [ ] FEATURES.md updated
@@ -664,14 +669,14 @@ ON CONFLICT DO NOTHING;
 
 ## Session Tracking
 
-| Session | Phase | Description                                                                  | Status  | Date |
-| ------- | ----- | ---------------------------------------------------------------------------- | ------- | ---- |
-| 1       | 1     | DB migration: position_catalog + user_positions + approval_configs extension | PENDING |      |
-| 2       | 2     | PositionCatalogService + organigram-settings refactor + UserPositionService  | PENDING |      |
-| 3       | 2     | Approval integration (resolveApprovers UNION ALL) + Controller endpoints     | PENDING |      |
-| 4       | 3     | Unit tests + API tests                                                       | PENDING |      |
-| 5       | 4     | Frontend: positions page + approvals dropdown                                | PENDING |      |
-| 6       | 5     | Integration + backward-compat verification + documentation                   | PENDING |      |
+| Session | Phase | Description                                                                  | Status  | Date       |
+| ------- | ----- | ---------------------------------------------------------------------------- | ------- | ---------- |
+| 1       | 1     | DB migration: position_catalog + user_positions + approval_configs extension | ✅ DONE | 2026-03-20 |
+| 2       | 2     | PositionCatalogService + organigram-settings refactor + UserPositionService  | ✅ DONE | 2026-03-20 |
+| 3       | 2     | Approval integration (resolveApprovers UNION ALL) + Controller endpoints     | ✅ DONE | 2026-03-20 |
+| 4       | 3     | Unit tests + API tests                                                       | ✅ DONE | 2026-03-20 |
+| 5       | 4     | Frontend: positions page + approvals dropdown + user position UI             | ✅ DONE | 2026-03-20 |
+| 6       | 5     | Integration + backward-compat verification + documentation                   | ✅ DONE | 2026-03-20 |
 
 ---
 
@@ -689,9 +694,10 @@ ON CONFLICT DO NOTHING;
 
 ### Database (new)
 
-| File                                           | Purpose                                                  |
-| ---------------------------------------------- | -------------------------------------------------------- |
-| `database/migrations/{ts}_position-catalog.ts` | position_catalog + user_positions + approval_configs ext |
+| File                                                               | Purpose                                              |
+| ------------------------------------------------------------------ | ---------------------------------------------------- |
+| `database/migrations/20260320140411753_position-catalog.ts`        | ENUM extension (noTransaction)                       |
+| `database/migrations/20260320140713884_position-catalog-tables.ts` | position_catalog + user_positions + approval_configs |
 
 ### Backend (new)
 

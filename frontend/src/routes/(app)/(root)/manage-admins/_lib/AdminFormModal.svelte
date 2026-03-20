@@ -1,5 +1,6 @@
 <script lang="ts">
   import PasswordStrengthIndicator from '$lib/components/PasswordStrengthIndicator.svelte';
+  import UserPositionChips from '$lib/components/UserPositionChips.svelte';
   import {
     DEFAULT_HIERARCHY_LABELS,
     isLeadPosition,
@@ -44,13 +45,14 @@
     onsubmit: (e: Event) => void;
     onupgrade?: () => void;
     positionOptions?: string[];
+    editUserId?: number | null;
     ondowngrade?: () => void;
     labels?: HierarchyLabels;
   }
 
   /* eslint-disable prefer-const, @typescript-eslint/no-useless-default-assignment -- Svelte $bindable() requires let and is not a useless default */
   // prettier-ignore
-  let { show, isEditMode, modalTitle, allAreas, allDepartments, submitting, messages: msg = MESSAGES, positionOptions, labels: lbl = DEFAULT_HIERARCHY_LABELS, formFirstName = $bindable(), formLastName = $bindable(), formEmail = $bindable(), formEmailConfirm = $bindable(), formPassword = $bindable(), formPasswordConfirm = $bindable(), formEmployeeNumber = $bindable(), formPosition = $bindable(), formNotes = $bindable(), formIsActive = $bindable(), formHasFullAccess = $bindable(), formAreaIds = $bindable(), formDepartmentIds = $bindable(), onclose, onsubmit, onupgrade, ondowngrade }: Props = $props();
+  let { show, isEditMode, modalTitle, allAreas, allDepartments, submitting, messages: msg = MESSAGES, positionOptions, editUserId, labels: lbl = DEFAULT_HIERARCHY_LABELS, formFirstName = $bindable(), formLastName = $bindable(), formEmail = $bindable(), formEmailConfirm = $bindable(), formPassword = $bindable(), formPasswordConfirm = $bindable(), formEmployeeNumber = $bindable(), formPosition = $bindable(), formNotes = $bindable(), formIsActive = $bindable(), formHasFullAccess = $bindable(), formAreaIds = $bindable(), formDepartmentIds = $bindable(), onclose, onsubmit, onupgrade, ondowngrade }: Props = $props();
   /* eslint-enable prefer-const, @typescript-eslint/no-useless-default-assignment */
 
   // =============================================================================
@@ -443,6 +445,22 @@
               {/each}
             </div>
           </div>
+          <div class="alert alert--info alert--sm mt-2">
+            <div class="alert__icon"><i class="fas fa-id-badge"></i></div>
+            <div class="alert__content">
+              <div class="alert__title">Position nicht dabei?</div>
+              <div class="alert__message">
+                <a
+                  href="/settings/organigram/positions"
+                  target="_blank">Neue Position anlegen</a
+                >
+                — oder bestehende Positionen bearbeiten.
+              </div>
+            </div>
+          </div>
+          {#if isEditMode && editUserId !== undefined && editUserId !== null}
+            <UserPositionChips userId={editUserId} />
+          {/if}
         </div>
 
         <div class="form-field">

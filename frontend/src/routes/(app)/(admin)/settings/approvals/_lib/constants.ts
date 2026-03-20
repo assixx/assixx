@@ -28,6 +28,7 @@ export function createApproverTypeOptions(
     },
     { value: 'area_lead', label: `${labels.area} Lead`, icon: 'fa-sitemap' },
     { value: 'user', label: 'Bestimmter Benutzer', icon: 'fa-user' },
+    { value: 'position', label: 'Position', icon: 'fa-id-badge' },
   ];
 }
 

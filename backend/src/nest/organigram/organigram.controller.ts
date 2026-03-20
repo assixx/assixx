@@ -1,20 +1,25 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   HttpStatus,
   Param,
   Patch,
+  Post,
   Put,
+  Query,
 } from '@nestjs/common';
 
 import { Roles } from '../common/decorators/roles.decorator.js';
 import { TenantId } from '../common/decorators/tenant.decorator.js';
 import {
+  CreatePositionDto,
   NodeDetailParamDto,
+  PositionIdParamDto,
   UpdateHierarchyLabelsDto,
-  UpdatePositionOptionsDto,
+  UpdatePositionDto,
   UpsertPositionsDto,
 } from './dto/index.js';
 import { OrganigramLayoutService } from './organigram-layout.service.js';
@@ -25,8 +30,9 @@ import {
   type HierarchyLabels,
   type OrgChartTree,
   type OrgNodeDetail,
-  type PositionOptions,
 } from './organigram.types.js';
+import { PositionCatalogService } from './position-catalog.service.js';
+import type { PositionCatalogEntry } from './position-catalog.types.js';
 
 @Controller('organigram')
 export class OrganigramController {
@@ -34,6 +40,7 @@ export class OrganigramController {
     private readonly organigramService: OrganigramService,
     private readonly settingsService: OrganigramSettingsService,
     private readonly layoutService: OrganigramLayoutService,
+    private readonly positionCatalogService: PositionCatalogService,
   ) {}
 
   @Get('tree')
@@ -112,20 +119,44 @@ export class OrganigramController {
     return { message: 'Positionen gespeichert' };
   }
 
-  @Get('position-options')
-  async getPositionOptions(
+  // ── Position Catalog CRUD ──────────────────────────────────
+
+  @Get('positions')
+  @Roles('root', 'admin')
+  async listPositions(
     @TenantId() tenantId: number,
-  ): Promise<PositionOptions> {
-    return await this.settingsService.getPositionOptions(tenantId);
+    @Query('roleCategory') roleCategory?: 'employee' | 'admin' | 'root',
+  ): Promise<PositionCatalogEntry[]> {
+    return await this.positionCatalogService.getAll(tenantId, roleCategory);
   }
 
-  @Put('position-options')
+  @Post('positions')
+  @Roles('root')
+  async createPosition(
+    @TenantId() tenantId: number,
+    @Body() dto: CreatePositionDto,
+  ): Promise<PositionCatalogEntry> {
+    return await this.positionCatalogService.create(tenantId, dto);
+  }
+
+  @Put('positions/:id')
   @Roles('root')
   @HttpCode(HttpStatus.OK)
-  async updatePositionOptions(
+  async updatePosition(
     @TenantId() tenantId: number,
-    @Body() dto: UpdatePositionOptionsDto,
-  ): Promise<PositionOptions> {
-    return await this.settingsService.updatePositionOptions(tenantId, dto);
+    @Param() params: PositionIdParamDto,
+    @Body() dto: UpdatePositionDto,
+  ): Promise<PositionCatalogEntry> {
+    return await this.positionCatalogService.update(tenantId, params.id, dto);
+  }
+
+  @Delete('positions/:id')
+  @Roles('root')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async deletePosition(
+    @TenantId() tenantId: number,
+    @Param() params: PositionIdParamDto,
+  ): Promise<void> {
+    await this.positionCatalogService.delete(tenantId, params.id);
   }
 }

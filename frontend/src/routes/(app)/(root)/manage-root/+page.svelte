@@ -718,6 +718,7 @@
   {isEditMode}
   {modalTitle}
   {positionOptions}
+  editUserId={currentEditId}
   hierarchyLabels={labels}
   bind:firstName={formFirstName}
   bind:lastName={formLastName}

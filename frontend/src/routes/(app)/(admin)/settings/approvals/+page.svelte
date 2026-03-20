@@ -9,7 +9,12 @@
   import SearchResultUser from '$lib/components/SearchResultUser.svelte';
   import { showErrorAlert, showSuccessAlert } from '$lib/stores/toast';
 
-  import { createConfig, deleteConfig, fetchConfigs } from './_lib/api';
+  import {
+    createConfig,
+    deleteConfig,
+    fetchConfigs,
+    fetchPositions,
+  } from './_lib/api';
   import {
     APPROVABLE_ADDONS,
     createApproverTypeOptions,
@@ -20,6 +25,7 @@
   import type {
     ApprovalApproverType,
     ApprovalConfig,
+    PositionOption,
     UserOption,
   } from './_lib/types';
 
@@ -58,6 +64,11 @@
   let userSearchLoading = $state(false);
   let selectedUsers = $state<UserOption[]>([]);
 
+  // Position selection state
+  let positionOptions = $state<PositionOption[]>([]);
+  let positionDropdownOpen = $state(false);
+  let selectedPositionId = $state<string | null>(null);
+
   // =============================================================================
   // DERIVED
   // =============================================================================
@@ -93,13 +104,22 @@
   );
 
   const isUserType = $derived(selectedType === 'user');
+  const isPositionType = $derived(selectedType === 'position');
 
-  const isLeadType = $derived(selectedType !== 'user');
+  const isLeadType = $derived(
+    selectedType !== 'user' && selectedType !== 'position',
+  );
+
+  const selectedPositionLabel = $derived(
+    positionOptions.find((p: PositionOption) => p.id === selectedPositionId)
+      ?.name ?? '— Position wählen —',
+  );
 
   const canAdd = $derived(
     selectedAddon !== '' &&
       !submitting &&
-      (!isUserType || selectedUsers.length > 0),
+      (!isUserType || selectedUsers.length > 0) &&
+      (!isPositionType || selectedPositionId !== null),
   );
 
   // =============================================================================
@@ -119,12 +139,24 @@
       userSearchQuery = '';
       userSearchResults = [];
     }
+    if (value === 'position' && positionOptions.length === 0) {
+      void loadPositions();
+    }
+    if (value !== 'position') {
+      selectedPositionId = null;
+      positionDropdownOpen = false;
+    }
+  }
+
+  async function loadPositions(): Promise<void> {
+    positionOptions = await fetchPositions();
   }
 
   function closeAllDropdowns(): void {
     addonDropdownOpen = false;
     typeDropdownOpen = false;
     searchOpen = false;
+    positionDropdownOpen = false;
   }
 
   function handleKeydown(e: KeyboardEvent): void {
@@ -209,26 +241,36 @@
   // CONFIG HANDLERS
   // =============================================================================
 
+  async function submitConfigs(
+    addon: string,
+    type: ApprovalApproverType,
+  ): Promise<boolean> {
+    if (type === 'position') {
+      const r = await createConfig(addon, type, null, selectedPositionId);
+      return r !== null;
+    }
+    if (type === 'user') {
+      let ok = false;
+      for (const user of selectedUsers) {
+        const r = await createConfig(addon, type, user.id);
+        if (r !== null) ok = true;
+      }
+      return ok;
+    }
+    const r = await createConfig(addon, type, null);
+    return r !== null;
+  }
+
   async function handleAddConfig(): Promise<void> {
     if (!canAdd) return;
-    const addonToAdd = selectedAddon;
-    const typeToAdd = selectedType;
-    const usersToAdd = isUserType ? [...selectedUsers] : [null];
     submitting = true;
     try {
-      let anySuccess = false;
-      for (const user of usersToAdd) {
-        const result = await createConfig(
-          addonToAdd,
-          typeToAdd,
-          user !== null ? user.id : null,
-        );
-        if (result !== null) anySuccess = true;
-      }
-      if (anySuccess) {
+      const success = await submitConfigs(selectedAddon, selectedType);
+      if (success) {
         clientConfigs = await fetchConfigs();
-        selectedAddon = ''; // eslint-disable-line require-atomic-updates
-        selectedUsers = []; // eslint-disable-line require-atomic-updates
+        selectedAddon = ''; // eslint-disable-line require-atomic-updates -- Svelte single-threaded
+        selectedUsers = [];
+        selectedPositionId = null;
         showSuccessAlert(MESSAGES.SAVE_SUCCESS);
       } else {
         showErrorAlert(MESSAGES.SAVE_ERROR);
@@ -292,6 +334,13 @@
         <div class="alert alert--info mb-4">
           <i class="fas fa-info-circle mr-2"></i>
           Alle Benutzer mit dieser Lead-Position werden automatisch Freigabe-Master
+          für das gewählte Modul.
+        </div>
+      {/if}
+      {#if isPositionType}
+        <div class="alert alert--info mb-4">
+          <i class="fas fa-info-circle mr-2"></i>
+          Alle Benutzer, denen diese Position zugewiesen ist, werden automatisch Freigabe-Master
           für das gewählte Modul.
         </div>
       {/if}
@@ -367,6 +416,64 @@
             {/each}
           </div>
         </div>
+
+        <!-- Position Dropdown (when position type selected) -->
+        {#if isPositionType}
+          <div class="dropdown">
+            <button
+              type="button"
+              class="dropdown__trigger"
+              class:active={positionDropdownOpen}
+              onclick={() => {
+                positionDropdownOpen = !positionDropdownOpen;
+                addonDropdownOpen = false;
+                typeDropdownOpen = false;
+              }}
+            >
+              <span
+                ><i class="fas fa-id-badge mr-2"
+                ></i>{selectedPositionLabel}</span
+              >
+              <i class="fas fa-chevron-down"></i>
+            </button>
+            <div
+              class="dropdown__menu dropdown__menu--tall"
+              class:active={positionDropdownOpen}
+            >
+              {#each ['employee', 'admin', 'root'] as category (category)}
+                {@const catPositions = positionOptions.filter(
+                  (p: PositionOption) => p.roleCategory === category,
+                )}
+                {#if catPositions.length > 0}
+                  <div class="dropdown__group-label">
+                    {category === 'employee' ? 'Mitarbeiter'
+                    : category === 'admin' ? 'Admin'
+                    : 'Root'}
+                  </div>
+                  {#each catPositions as pos (pos.id)}
+                    <button
+                      type="button"
+                      class="dropdown__option"
+                      class:dropdown__option--selected={selectedPositionId ===
+                        pos.id}
+                      onclick={() => {
+                        selectedPositionId = pos.id;
+                        positionDropdownOpen = false;
+                      }}
+                    >
+                      {pos.name}
+                      {#if pos.isSystem}
+                        <span class="badge badge--primary badge--xs ml-2"
+                          >System</span
+                        >
+                      {/if}
+                    </button>
+                  {/each}
+                {/if}
+              {/each}
+            </div>
+          </div>
+        {/if}
 
         <!-- User Search (always visible) -->
         <div class="search-input-wrapper">
@@ -488,6 +595,11 @@
                   {#if cfg.approverUserName !== null}
                     <span class="config-item__user"
                       >— {cfg.approverUserName}</span
+                    >
+                  {/if}
+                  {#if cfg.approverPositionName !== null}
+                    <span class="config-item__user"
+                      >— {cfg.approverPositionName}</span
                     >
                   {/if}
                 </div>
@@ -661,5 +773,20 @@
   .btn-icon--danger:hover {
     background: color-mix(in oklch, var(--color-error) 15%, transparent);
     color: var(--color-error);
+  }
+
+  :global(.dropdown__menu--tall) {
+    max-height: 300px;
+    overflow-y: auto;
+  }
+
+  :global(.dropdown__group-label) {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-text-muted);
+    pointer-events: none;
   }
 </style>
