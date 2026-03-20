@@ -52,7 +52,12 @@
   let editingValue = $state('');
   let busy = $state(false);
 
-  const LEAD_ORDER = ['area_lead', 'department_lead', 'team_lead'];
+  const LEAD_ORDER = [
+    'area_lead',
+    'department_lead',
+    'team_lead',
+    'deputy_lead',
+  ];
 
   const systemPositions = $derived(
     positions

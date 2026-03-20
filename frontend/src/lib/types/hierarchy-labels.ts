@@ -25,6 +25,7 @@ export const LEAD_POSITION_KEYS = {
   AREA: 'area_lead',
   DEPARTMENT: 'department_lead',
   TEAM: 'team_lead',
+  DEPUTY: 'deputy_lead',
 } as const;
 
 export type LeadPositionKey =
@@ -47,6 +48,8 @@ export function resolvePositionDisplay(
       return `${labels.department}-Leiter`;
     case LEAD_POSITION_KEYS.TEAM:
       return `${labels.team}-Leiter`;
+    case LEAD_POSITION_KEYS.DEPUTY:
+      return `${labels.team} Stellvertreter`;
     default:
       return position;
   }

@@ -19,6 +19,7 @@
 | ------- | ---------- | --------------------------------------------- |
 | 0.1.0   | 2026-03-20 | Initial Draft — 4 phases, 4 sessions planned  |
 | 0.1.1   | 2026-03-20 | Added: ADR-004 persistent notifications (Step 1.5), ADR-018 test reference, Related Documents section, linked parent masterplans |
+| 0.2.0   | 2026-03-21 | Real-Life Workflow documented, TBD resolved: dynamic dropdown rules, CRON archives BOTH rejected+implemented, `status='archived'` (no is_active on kvp_suggestions) |
 
 ---
 
@@ -29,6 +30,71 @@ KVP suggestions are currently approved/rejected **directly by Team Leads** via a
 The Approvals System (ADR-037) and Position Catalog (ADR-038) were built specifically to enable this: a tenant configures a **KVP Master** (e.g. position "Qualitätsmanager") as approval master for addon `kvp`. Team Leads curate KVP suggestions and **request formal approval** from the configured masters. The approval decision is **binding** — it automatically syncs to the KVP status.
 
 **Goal:** Connect KVP as the first consumer of the Approvals System. Team Lead requests approval → KVP Master decides → KVP status auto-syncs.
+
+---
+
+## Real-Life Workflow (Example)
+
+**Setup:** KVP "Lichtschranke" (UUID `019ceec8-...`), submitted by John Doe (Team Linie 99). KVP Master: Jürgen Schmitz (User 30), configured via `/settings/approvals` for addon `kvp`.
+
+**Actors:**
+- **John Doe** — Team member, submitted the KVP suggestion
+- **Corc Öztürk** — Team Lead of Linie 99, sees the KVP on `/kvp-detail`
+- **Jürgen Schmitz** — KVP Master (approval master), sees pending approvals on `/manage-approvals`
+
+**Visibility (unshared KVP):** Only author (John Doe), Team Lead + Deputy Lead (Corc Öztürk), and users with `has_full_access = true`. Department/Area Leads do NOT see unshared KVPs.
+
+### Step-by-Step Flow
+
+```
+1. John Doe (employee) creates KVP "Lichtschranke"
+   → Status: "offen" (new)
+   → Visible to: John Doe, Corc Öztürk (Team Lead), has_full_access users
+
+2. Corc Öztürk (Team Lead) opens KVP detail page
+   → Reads description, discusses in comment section
+   → Dropdown shows: "offen", "abgelehnt" (NO "genehmigt" — blocked by approval config)
+   → Sidebar shows: "Freigabe anfordern" button (in Aktionen card)
+
+3a. BAD KVP → Corc sets status directly to "abgelehnt" via dropdown
+   → No approval needed for rejection
+   → Status: "abgelehnt" → LOCKED (no further changes)
+   → After 30 days: CRON archives (is_active = 4)
+
+3b. GOOD KVP → Corc clicks "Freigabe anfordern"
+   → Status auto-changes to "in Prüfung" (in_review)
+   → Dropdown: LOCKED (nobody can change status manually)
+   → Approval request created → appears in /manage-approvals
+   → Jürgen Schmitz receives notification (SSE + persistent DB)
+
+4. Jürgen Schmitz (KVP Master) opens /manage-approvals
+   → Sees "Lichtschranke" approval request
+   → Reviews, decides:
+
+   4a. APPROVE → Status auto-syncs to "genehmigt" (approved)
+      → Corc Öztürk receives notification
+      → Dropdown unlocks: only "umgesetzt" available
+      → Corc sets to "umgesetzt" when implementation is complete
+      → After 30 days: CRON archives (is_active = 4)
+
+   4b. REJECT → Status auto-syncs to "abgelehnt" (rejected) with reason
+      → Corc Öztürk receives notification with rejection reason
+      → LOCKED — no re-submission allowed
+      → John Doe must create a new KVP if desired
+      → After 30 days: CRON archives (is_active = 4)
+```
+
+### Dynamic Dropdown Rules (when approval config exists for KVP)
+
+| Current Status | Dropdown Options | "Freigabe anfordern" Button | Rationale |
+| --- | --- | --- | --- |
+| `new` (offen) | `abgelehnt` only | visible | Team Lead curates: reject bad, request approval for good |
+| `in_review` (in Prüfung) | LOCKED | hidden | Waiting for master decision — no manual override |
+| `approved` (genehmigt) | `umgesetzt` only | hidden | Master approved — Team Lead confirms implementation |
+| `rejected` (abgelehnt) | LOCKED | hidden | Final — no re-submission, CRON archives after 30 days |
+| `implemented` (umgesetzt) | LOCKED | hidden | Final — CRON archives after 30 days |
+
+> **Without approval config:** Old behavior — all status options available in dropdown, no "Freigabe anfordern" button.
 
 ---
 
@@ -53,7 +119,7 @@ The Approvals System (ADR-037) and Position Catalog (ADR-038) were built specifi
 | R2  | Double approval request for same KVP       | Medium | Medium      | DB query: EXISTS check before creating                           | API test: second request → 409 ConflictException                 |
 | R3  | KVP status out of sync with approval       | High   | Low         | EventBus + startup reconciliation + idempotent status sync       | E2E test: approve → verify KVP status = 'approved'               |
 | R4  | No approval config for 'kvp' → button UX   | Low    | High        | Hide button when no approval config exists for addon 'kvp'       | Frontend check: button hidden when hasApprovalConfig = false     |
-| R5  | CRON archives KVP with pending approval    | High   | Low         | CRON only targets `status = 'rejected'` + `is_active = 1`       | Unit test: pending KVP not touched by CRON                       |
+| R5  | CRON archives KVP with pending approval    | High   | Low         | CRON only targets `status IN ('rejected', 'implemented')`        | Unit test: pending/in_review/approved KVP not touched by CRON    |
 | R6  | Self-approval (Team Lead is also KVP Master)| Medium | Medium     | Already enforced by ApprovalsService: `requested_by !== decided_by` | Existing unit test covers this                                  |
 
 ### 0.3 Ecosystem Integration Points
@@ -169,19 +235,23 @@ constructor(/* deps */) {
 **Pattern:** Follows blackboard-archive.service.ts
 
 ```typescript
-@Cron('1 0 * * *', { name: 'kvp-rejected-archive', timeZone: 'Europe/Berlin' })
-async archiveRejectedKvps(): Promise<void> {
-  // UPDATE kvp_suggestions SET is_active = 4
-  // WHERE status = 'rejected' AND is_active = 1
+@Cron('1 0 * * *', { name: 'kvp-final-archive', timeZone: 'Europe/Berlin' })
+async archiveFinalKvps(): Promise<void> {
+  // UPDATE kvp_suggestions SET status = 'archived'
+  // WHERE status IN ('rejected', 'implemented')
   //   AND updated_at < NOW() - INTERVAL '30 days'
 }
 ```
+
+> **Note:** `kvp_suggestions` has NO `is_active` column (verified in DB schema).
+> Archival uses `status = 'archived'` — consistent with existing KVP status enum.
+> The Blackboard pattern uses `is_active` because blackboard_entries HAS that column.
 
 **Schedules:**
 - Primary: Daily at 00:01 (Europe/Berlin)
 - Startup: `onModuleInit()` recovery
 
-**is_active = 4** (DELETED) — not 3 (ARCHIVED). Rejected KVPs are soft-deleted after 30 days.
+**Both `rejected` AND `implemented`** KVPs are archived after 30 days.
 
 ### Step 1.5: Persistent Notifications (ADR-004) [PENDING]
 
@@ -251,9 +321,10 @@ async archiveRejectedKvps(): Promise<void> {
 - [ ] hasApprovalConfig: no config → false
 - [ ] Persistent notification created for KVP masters on request
 - [ ] Persistent notification created for Team Lead on decision
-- [ ] CRON: rejected KVP older than 30 days → is_active = 4
-- [ ] CRON: rejected KVP younger than 30 days → untouched
-- [ ] CRON: pending/approved KVP → untouched (only rejected)
+- [ ] CRON: rejected KVP older than 30 days → status = 'archived'
+- [ ] CRON: implemented KVP older than 30 days → status = 'archived'
+- [ ] CRON: rejected/implemented KVP younger than 30 days → untouched
+- [ ] CRON: new/in_review/approved KVP → untouched (not final states)
 
 ### Step 2.2: API Integration Tests [PENDING]
 
@@ -319,18 +390,27 @@ async archiveRejectedKvps(): Promise<void> {
 - Approved: green badge "Freigabe erteilt" + approver name + date
 - Rejected: red badge "Freigabe abgelehnt" + rejector name + reason + date
 
-### Step 3.4: TBD — Status Dropdown Blocking Behavior [PENDING]
+### Step 3.4: Dynamic Status Dropdown [PENDING]
 
-> **TO BE CLARIFIED by user after plan review.**
->
-> Open question: When approval config exists for KVP, should the 'approved' status
-> in the Team Lead's status dropdown be BLOCKED (grayed out / removed)?
-> This would force the approval workflow and prevent bypassing.
->
-> Options:
-> - A) Block 'approved' in dropdown when config exists → forces approval flow
-> - B) Keep dropdown as-is → Team Lead can still directly approve (approval is optional)
-> - C) Block only when a pending approval exists → hybrid approach
+**RESOLVED** — Dropdown options depend on current status + approval config existence.
+
+**Modified files:**
+- `frontend/src/routes/(app)/(shared)/kvp-detail/+page.svelte` (status dropdown logic)
+- `frontend/src/routes/(app)/(shared)/kvp-detail/_lib/constants.ts` (dropdown option sets)
+
+**Logic (when approval config exists for addon 'kvp'):**
+
+| Current Status | Dropdown Options | "Freigabe anfordern" | Rationale |
+| --- | --- | --- | --- |
+| `new` | `abgelehnt` only | visible | Curate: reject bad, request approval for good |
+| `in_review` | LOCKED (disabled) | hidden | Waiting for master — no manual override |
+| `approved` | `umgesetzt` only | hidden | Master approved — confirm implementation |
+| `rejected` | LOCKED (disabled) | hidden | Final state |
+| `implemented` | LOCKED (disabled) | hidden | Final state |
+
+**Without approval config:** Old behavior — all status options available, no "Freigabe anfordern" button. Backward compatible.
+
+**Implementation:** Conditional rendering based on `hasApprovalConfig` prop from `+page.server.ts`. When true, filter `STATUS_OPTIONS` array based on current status. When `in_review`/`rejected`/`implemented`, disable dropdown entirely.
 
 ### Phase 3 — Definition of Done
 
@@ -339,7 +419,9 @@ async archiveRejectedKvps(): Promise<void> {
 - [ ] Approval status badge displayed (pending/approved/rejected)
 - [ ] Button hidden when no approval config exists
 - [ ] Button hidden when approval already exists (no re-submission)
-- [ ] TBD blocking behavior implemented (after user clarification)
+- [ ] Dynamic dropdown: options filtered by current status + approval config
+- [ ] Dropdown LOCKED during `in_review`, `rejected`, `implemented`
+- [ ] Without approval config: old behavior preserved (backward compat)
 - [ ] svelte-check 0 errors
 - [ ] ESLint 0 errors
 - [ ] Responsive design
@@ -405,6 +487,7 @@ async archiveRejectedKvps(): Promise<void> {
 3. **No batch approval from KVP list** — Approval must be requested per-KVP from detail page. Batch operations are V2.
 4. **No approval deadline/SLA** — No auto-escalation if approval master doesn't decide within X days. V2.
 5. **30-day archive is hard-coded** — Not configurable per tenant in V1.
+6. **`kvp_suggestions` has no `is_active` column** — Archival uses `status = 'archived'` (existing ENUM value), not the `is_active` pattern used by blackboard. This is consistent with the existing KVP status lifecycle.
 
 ---
 

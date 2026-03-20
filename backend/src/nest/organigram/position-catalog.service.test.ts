@@ -85,8 +85,8 @@ describe('PositionCatalogService', () => {
 
       await service.ensureSystemPositions(10);
 
-      // 3 system + 18 defaults = 21
-      expect(mockDb.query).toHaveBeenCalledTimes(21);
+      // 4 system + 18 defaults = 22
+      expect(mockDb.query).toHaveBeenCalledTimes(22);
       const calls = mockDb.query.mock.calls;
       // All use ON CONFLICT with partial index predicate
       expect(calls[0]?.[0]).toContain('ON CONFLICT');
@@ -96,13 +96,16 @@ describe('PositionCatalogService', () => {
         expect.arrayContaining([10, 'team_lead', 'employee']),
       );
       expect(calls[1]?.[1]).toEqual(
-        expect.arrayContaining([10, 'area_lead', 'admin']),
+        expect.arrayContaining([10, 'deputy_lead', 'employee']),
       );
       expect(calls[2]?.[1]).toEqual(
+        expect.arrayContaining([10, 'area_lead', 'admin']),
+      );
+      expect(calls[3]?.[1]).toEqual(
         expect.arrayContaining([10, 'department_lead', 'admin']),
       );
       // Default positions after (is_system = false)
-      expect(calls[3]?.[1]).toEqual(
+      expect(calls[4]?.[1]).toEqual(
         expect.arrayContaining([10, 'Produktionsmitarbeiter', 'employee']),
       );
     });
@@ -115,8 +118,8 @@ describe('PositionCatalogService', () => {
   describe('getAll', () => {
     /** Mock 21 seed queries + 1 SELECT */
     function mockSeedThenSelect(selectResult: PositionCatalogRow[]): void {
-      // 21 seed queries return empty (ON CONFLICT DO NOTHING)
-      for (let i = 0; i < 21; i++) {
+      // 22 seed queries return empty (ON CONFLICT DO NOTHING)
+      for (let i = 0; i < 22; i++) {
         mockDb.query.mockResolvedValueOnce([]);
       }
       // Final SELECT
@@ -128,7 +131,7 @@ describe('PositionCatalogService', () => {
 
       const result = await service.getAll(10);
 
-      expect(mockDb.query).toHaveBeenCalledTimes(22);
+      expect(mockDb.query).toHaveBeenCalledTimes(23);
       expect(result).toHaveLength(1);
       expect(result[0]?.name).toBe('Qualitätsmanager');
       expect(result[0]?.roleCategory).toBe('employee');
@@ -139,7 +142,7 @@ describe('PositionCatalogService', () => {
 
       await service.getAll(10, 'admin');
 
-      const selectCall = mockDb.query.mock.calls[21];
+      const selectCall = mockDb.query.mock.calls[22];
       expect(selectCall?.[0]).toContain('AND role_category = $3');
       expect(selectCall?.[1]).toContain('admin');
     });

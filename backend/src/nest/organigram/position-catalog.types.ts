@@ -30,6 +30,7 @@ export const SYSTEM_POSITIONS: readonly {
   roleCategory: PositionRoleCategory;
 }[] = [
   { name: 'team_lead', roleCategory: 'employee' },
+  { name: 'deputy_lead', roleCategory: 'employee' },
   { name: 'area_lead', roleCategory: 'admin' },
   { name: 'department_lead', roleCategory: 'admin' },
 ];
