@@ -1,7 +1,7 @@
 # FEAT: Position Catalog — Execution Masterplan
 
 > **Created:** 2026-03-17
-> **Version:** 0.3.0 (3rd review pass)
+> **Version:** 0.3.1 (4th review pass)
 > **Status:** DRAFT — Phase 0 (Planning)
 > **Branch:** `feat/position-catalog`
 > **ADR:** [ADR-038](./infrastructure/adr/ADR-038-position-catalog-architecture.md)
@@ -19,6 +19,7 @@
 | 0.2.0   | 2026-03-17 | Review corrections: ENUM fix, unique index, routing, seed trigger, merged sessions, production migration path                                                                                                                   |
 | 0.2.1   | 2026-03-18 | Fix: down() data cleanup before index rebuild + ENUM recast, getConfigs() position-name JOIN, createConfig() duplicate-check for position-type, ADR session count                                                               |
 | 0.3.0   | 2026-03-18 | UNIQUE → partial index (soft-delete safe), CHECK constraint (mutual exclusivity), TBD resolved (form modals), production migration excludes system positions, PUT facade marked @deprecated, system-position mapping documented |
+| 0.3.1   | 2026-03-20 | Fix: ON CONFLICT must include WHERE is_active = 1 for partial index (PG17 verified), is_active INTEGER → SMALLINT (codebase consistency), prerequisite wording clarified                                                        |
 
 ---
 
@@ -49,7 +50,7 @@ enabling position-based approval masters and multi-position user assignments.
 - [ ] DB reset executed (tenant data wiped, seeds intact)
 - [ ] Branch `feat/position-catalog` checked out
 - [ ] No pending migrations
-- [ ] Approvals V1 (ADR-037) complete and merged
+- [ ] Approvals DB-Schema vorhanden (`approval_configs` Tabelle + `approval_approver_type` ENUM)
 
 ### 0.2 Risk Register
 
@@ -110,7 +111,7 @@ CREATE TABLE position_catalog (
     role_category position_role_category NOT NULL,
     sort_order INTEGER NOT NULL DEFAULT 0,
     is_system BOOLEAN NOT NULL DEFAULT false,
-    is_active INTEGER NOT NULL DEFAULT 1,
+    is_active SMALLINT NOT NULL DEFAULT 1,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -339,7 +340,9 @@ Lazy seed on first `GET /organigram/positions` call per tenant. Implementation:
 
 ```typescript
 async ensureSystemPositions(tenantId: number): Promise<void> {
-  // INSERT ... ON CONFLICT (tenant_id, name, role_category) DO NOTHING
+  // INSERT ... ON CONFLICT (tenant_id, name, role_category) WHERE is_active = 1 DO NOTHING
+  // WHERE-Klausel PFLICHT: partial unique index erfordert exaktes Predicate-Matching.
+  // Ohne WHERE → PG17 Error: "there is no unique or exclusion constraint matching the ON CONFLICT specification"
   // No race condition: ON CONFLICT is atomic.
   // Called at the beginning of getAll().
 }

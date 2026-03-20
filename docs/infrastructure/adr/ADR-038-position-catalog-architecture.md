@@ -139,7 +139,7 @@ position_catalog                       user_positions
 │   ENUM(employee,admin,root)  │       │ UNIQUE(tenant_id,        │
 │ sort_order INTEGER           │       │   user_id, position_id)  │
 │ is_system BOOLEAN            │       └──────────────────────────┘
-│ is_active INTEGER            │
+│ is_active SMALLINT           │
 │ created_at TIMESTAMPTZ       │       approval_configs (extended)
 │ updated_at TIMESTAMPTZ       │       ┌──────────────────────────────────────┐
 │ PARTIAL UNIQUE INDEX:        │       │ ...existing columns...               │
@@ -219,7 +219,7 @@ System positions:
 
 ### System Position Seed Trigger
 
-System positions (`team_lead`, `area_lead`, `department_lead`) are lazy-seeded on first `GET /organigram/positions` per tenant. Implementation uses `INSERT ... ON CONFLICT (tenant_id, name, role_category) DO NOTHING` — atomic, no race conditions, idempotent.
+System positions (`team_lead`, `area_lead`, `department_lead`) are lazy-seeded on first `GET /organigram/positions` per tenant. Implementation uses `INSERT ... ON CONFLICT (tenant_id, name, role_category) WHERE is_active = 1 DO NOTHING` — the WHERE-clause is **mandatory** because `idx_position_catalog_unique` is a partial index. Without it, PostgreSQL 17 throws `ERROR: there is no unique or exclusion constraint matching the ON CONFLICT specification`. Atomic, no race conditions, idempotent.
 
 ### Production Migration Path
 
@@ -286,4 +286,4 @@ See [FEAT_POSITION_CATALOG_MASTERPLAN.md](../../FEAT_POSITION_CATALOG_MASTERPLAN
 
 ---
 
-_Last Updated: 2026-03-18 (v3 — Partial unique index, CHECK constraint for mutual exclusivity, production migration excludes system positions, PUT facade @deprecated)_
+_Last Updated: 2026-03-20 (v3.1 — ON CONFLICT WHERE-fix for partial index (PG17 verified), is_active SMALLINT (codebase consistency))_

@@ -1,18 +1,24 @@
 {
-  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "$schema": "https://unpkg.com/knip@6/schema.json",
   "workspaces": {
     ".": {
       "entry": [
         "scripts/**/*.{js,cjs,mjs,ts}",
-        "frontend/.storybook/**/*.{js,ts}"
+        "frontend/.storybook/**/*.{js,ts}",
+        "vitest.setup.ts",
+        "vitest.frontend-setup.ts"
       ],
       "project": ["scripts/**/*.{js,cjs,mjs,ts}"],
       "ignoreDependencies": [
         "husky",
         "concurrently",
         "markdownlint-cli",
-        "purgecss"
-      ]
+        "purgecss",
+        "prettier-plugin-svelte",
+        "@tailwindcss/vite"
+      ],
+      "svelte": false,
+      "sveltekit": false
     },
     "backend": {
       "entry": [
@@ -29,7 +35,7 @@
         "scripts/**/*.{js,ts}"
       ],
       "project": ["src/**/*.ts"],
-      "ignore": ["src/**/*.spec.ts", "src/**/*.test.ts", "dist/**"],
+      "ignore": ["src/**/*.spec.ts", "src/**/*.test.ts", "dist/**", "scripts/**/*.js"],
       "ignoreDependencies": [
         "reflect-metadata",
         "pino-pretty",
@@ -61,7 +67,11 @@
         "pino-pretty",
         "pino-loki",
         "@sentry/sveltekit"
-      ]
+      ],
+      "ignoreUnresolved": ["./\\$types", "\\$app/.+", "\\$env/.+", "\\$lib/.+"],
+      "sveltekit": {
+        "config": ["svelte.config.js"]
+      }
     }
   },
   "ignore": [
@@ -77,9 +87,9 @@
     "backups/**",
     "**/index.ts"
   ],
-  "ignoreUnresolved": ["./$types", "$app/*", "$env/*", "$lib/*"],
+  "ignoreBinaries": ["svelte-kit", "docker-compose", "only-allow", "type-coverage"],
+  "ignoreUnresolved": ["./\\$types", "\\$app/.+", "\\$env/.+", "\\$lib/.+", "./vitest\\..+"],
   "rules": {
-    "classMembers": "off",
     "enumMembers": "off"
   }
 }
