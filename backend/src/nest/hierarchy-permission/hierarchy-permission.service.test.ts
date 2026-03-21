@@ -17,11 +17,16 @@ const mockDb = {
   query: vi.fn(),
 } as unknown as DatabaseService;
 
+const mockOrgSettings = {
+  getDeputyHasLeadScope: vi.fn().mockResolvedValue(true),
+} as unknown as import('../organigram/organigram-settings.service.js').OrganigramSettingsService;
+
 let service: HierarchyPermissionService;
 
 beforeEach(() => {
   vi.resetAllMocks();
-  service = new HierarchyPermissionService(mockDb);
+  (mockOrgSettings.getDeputyHasLeadScope as ReturnType<typeof vi.fn>).mockResolvedValue(true);
+  service = new HierarchyPermissionService(mockDb, mockOrgSettings);
 });
 
 // ============================================
@@ -635,6 +640,66 @@ describe('SECURITY: getScope', () => {
 
     expect(scope.type).toBe('none');
   });
+
+  // ===========================================================================
+  // ADR-039: Deputy Scope Toggle — ON vs OFF
+  // ===========================================================================
+
+  // Scenario 15: Toggle OFF — deputy gets NO scope (CTE excludes deputy columns)
+  it('should pass CTE WITHOUT deputy columns when toggle is OFF', async () => {
+    (mockOrgSettings.getDeputyHasLeadScope as ReturnType<typeof vi.fn>).mockResolvedValue(false);
+    mockUser('employee', false);
+    mockScopeCte({});
+
+    const scope = await service.getScope(107, 3);
+
+    expect(scope.type).toBe('none');
+    const sql = (mockDb.query as ReturnType<typeof vi.fn>).mock.calls[1]?.[0] as string;
+    expect(sql).not.toContain('area_deputy_lead_id');
+    expect(sql).not.toContain('department_deputy_lead_id');
+    expect(sql).not.toContain('team_deputy_lead_id');
+  });
+
+  // Scenario 16: Toggle ON — CTE includes deputy columns
+  it('should pass CTE WITH deputy columns when toggle is ON', async () => {
+    (mockOrgSettings.getDeputyHasLeadScope as ReturnType<typeof vi.fn>).mockResolvedValue(true);
+    mockUser('admin', false);
+    mockScopeCte({ area_ids: [1], lead_area_ids: [1] });
+
+    const scope = await service.getScope(42, 3);
+
+    expect(scope.type).toBe('limited');
+    const sql = (mockDb.query as ReturnType<typeof vi.fn>).mock.calls[1]?.[0] as string;
+    expect(sql).toContain('area_deputy_lead_id');
+    expect(sql).toContain('department_deputy_lead_id');
+    expect(sql).toContain('team_deputy_lead_id');
+  });
+
+  // Scenario 17: Toggle OFF — regular lead still gets scope (only deputies affected)
+  it('should still grant scope for regular lead when toggle is OFF', async () => {
+    (mockOrgSettings.getDeputyHasLeadScope as ReturnType<typeof vi.fn>).mockResolvedValue(false);
+    mockUser('employee', false);
+    mockScopeCte({ team_ids: [100], lead_team_ids: [100] });
+
+    const scope = await service.getScope(42, 3);
+
+    expect(scope.type).toBe('limited');
+    expect(scope.teamIds).toEqual([100]);
+    expect(scope.isTeamLead).toBe(true);
+  });
+
+  // Scenario 18: Toggle OFF — admin area lead still gets scope
+  it('should still grant scope for admin area lead when toggle is OFF', async () => {
+    (mockOrgSettings.getDeputyHasLeadScope as ReturnType<typeof vi.fn>).mockResolvedValue(false);
+    mockUser('admin', false);
+    mockScopeCte({ area_ids: [5], lead_area_ids: [5], department_ids: [10] });
+
+    const scope = await service.getScope(42, 3);
+
+    expect(scope.type).toBe('limited');
+    expect(scope.areaIds).toEqual([5]);
+    expect(scope.isAreaLead).toBe(true);
+  });
 });
 
 // ============================================
@@ -723,6 +788,57 @@ describe('SECURITY: getVisibleUserIds', () => {
     );
 
     expect(result).toEqual([10, 20, 30]);
+  });
+
+  // ADR-039: Verify visible users query respects toggle
+  it('should include deputy columns in visible users query when toggle ON', async () => {
+    (mockOrgSettings.getDeputyHasLeadScope as ReturnType<typeof vi.fn>).mockResolvedValue(true);
+    mockQueryReturn([{ id: 10 }]);
+
+    await service.getVisibleUserIds(
+      {
+        type: 'limited',
+        areaIds: [],
+        departmentIds: [5],
+        teamIds: [100],
+        leadAreaIds: [],
+        leadDepartmentIds: [],
+        leadTeamIds: [],
+        isAreaLead: false,
+        isDepartmentLead: false,
+        isTeamLead: false,
+        isAnyLead: false,
+      },
+      1,
+    );
+
+    const sql = (mockDb.query as ReturnType<typeof vi.fn>).mock.calls[0]?.[0] as string;
+    expect(sql).toContain('team_deputy_lead_id');
+  });
+
+  it('should exclude deputy columns in visible users query when toggle OFF', async () => {
+    (mockOrgSettings.getDeputyHasLeadScope as ReturnType<typeof vi.fn>).mockResolvedValue(false);
+    mockQueryReturn([{ id: 10 }]);
+
+    await service.getVisibleUserIds(
+      {
+        type: 'limited',
+        areaIds: [],
+        departmentIds: [5],
+        teamIds: [100],
+        leadAreaIds: [],
+        leadDepartmentIds: [],
+        leadTeamIds: [],
+        isAreaLead: false,
+        isDepartmentLead: false,
+        isTeamLead: false,
+        isAnyLead: false,
+      },
+      1,
+    );
+
+    const sql = (mockDb.query as ReturnType<typeof vi.fn>).mock.calls[0]?.[0] as string;
+    expect(sql).not.toContain('team_deputy_lead_id');
   });
 });
 

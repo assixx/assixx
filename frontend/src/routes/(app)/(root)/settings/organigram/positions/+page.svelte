@@ -46,6 +46,7 @@
   let editingId = $state<string | null>(null);
   let editingValue = $state('');
   let busy = $state(false);
+  let deputyHasLeadScope = $state((data.deputyHasLeadScope as boolean | undefined) ?? false);
 
   const LEAD_ORDER = [
     'area_lead',
@@ -78,6 +79,23 @@
       return resolvePositionDisplay(p.name, labels);
     }
     return p.name;
+  }
+
+  async function toggleDeputyScope(): Promise<void> {
+    busy = true;
+    try {
+      await apiClient.patch('/organigram/deputy-scope', { enabled: deputyHasLeadScope });
+      showSuccessAlert(
+        deputyHasLeadScope ?
+          'Stellvertreter haben jetzt gleiche Rechte wie Leiter'
+        : 'Stellvertreter-Rechte deaktiviert',
+      );
+    } catch {
+      deputyHasLeadScope = !deputyHasLeadScope;
+      showErrorAlert('Einstellung konnte nicht gespeichert werden');
+    } finally {
+      busy = false;
+    }
   }
 
   async function addPosition(): Promise<void> {
@@ -293,6 +311,21 @@
             </div>
           </div>
         </div>
+
+        <label class="deputy-scope-toggle mt-4">
+          <input
+            type="checkbox"
+            bind:checked={deputyHasLeadScope}
+            onchange={() => {
+              void toggleDeputyScope();
+            }}
+            disabled={busy}
+          />
+          <span class="deputy-scope-label">
+            Stellvertreter haben gleiche Rechte wie ihre Leiter
+            <span class="deputy-scope-hint">(Scope & Sichtbarkeit auf Verwaltungsseiten)</span>
+          </span>
+        </label>
       {:else}
         <!-- Add new -->
         <div class="add-row">
@@ -611,5 +644,35 @@
 
   .empty-state i {
     font-size: 2rem;
+  }
+
+  .deputy-scope-toggle {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.625rem;
+    padding: 0.75rem 1rem;
+    border-radius: 0.5rem;
+    background: color-mix(in oklch, var(--color-info, #3b82f6) 8%, transparent);
+    border: 1px solid color-mix(in oklch, var(--color-info, #3b82f6) 20%, transparent);
+    cursor: pointer;
+  }
+
+  .deputy-scope-toggle input[type='checkbox'] {
+    margin-top: 0.125rem;
+    accent-color: var(--color-primary, #3b82f6);
+  }
+
+  .deputy-scope-label {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--color-text-primary);
+  }
+
+  .deputy-scope-hint {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 400;
+    color: var(--color-text-secondary);
+    margin-top: 0.125rem;
   }
 </style>

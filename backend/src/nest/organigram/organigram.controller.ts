@@ -76,6 +76,22 @@ export class OrganigramController {
     return await this.settingsService.updateHierarchyLabels(tenantId, dto);
   }
 
+  @Get('deputy-scope')
+  async getDeputyScope(@TenantId() tenantId: number): Promise<{ deputyHasLeadScope: boolean }> {
+    const enabled = await this.settingsService.getDeputyHasLeadScope(tenantId);
+    return { deputyHasLeadScope: enabled };
+  }
+
+  @Patch('deputy-scope')
+  @Roles('root')
+  async updateDeputyScope(
+    @TenantId() tenantId: number,
+    @Body() body: { enabled: boolean },
+  ): Promise<{ deputyHasLeadScope: boolean }> {
+    const result = await this.settingsService.updateDeputyHasLeadScope(tenantId, body.enabled);
+    return { deputyHasLeadScope: result };
+  }
+
   @Put('positions')
   @Roles('root')
   @HttpCode(HttpStatus.OK)

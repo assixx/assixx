@@ -47,10 +47,9 @@ export interface OrganizationalScope {
 // ============================================================================
 
 /**
- * Deputies have identical scope rights as their corresponding leads.
- * Applies to ALL 3 hierarchy levels: area, department, team.
- * V2-Erweiterung: Per-Tenant-Setting (ADR-036 Known Limitations #10).
- * Wenn false → *_deputy_lead_id aus CTE-Queries entfernen.
+ * @deprecated Replaced by per-tenant setting `deputyHasLeadScope` (ADR-039).
+ * Read via OrganigramSettingsService.getDeputyHasLeadScope().
+ * Kept for backward-compat in tests — will be removed when tests are migrated.
  */
 export const DEPUTY_EQUALS_LEAD = true;
 

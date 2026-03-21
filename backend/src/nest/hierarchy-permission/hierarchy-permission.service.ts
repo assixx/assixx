@@ -16,6 +16,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import type { QueryResultRow } from 'pg';
 
 import { DatabaseService } from '../database/database.service.js';
+import { OrganigramSettingsService } from '../organigram/organigram-settings.service.js';
 import { FULL_SCOPE, NO_SCOPE, buildLimitedScope } from './organizational-scope.types.js';
 import type { OrganizationalScope, ScopeQueryRow } from './organizational-scope.types.js';
 
@@ -85,13 +86,15 @@ interface TeamIdRow extends QueryResultRow {
 // ============================================================================
 
 /**
- * Unified CTE — resolves ALL access paths in a single query:
- * Admin-Permissions + Lead-Positions + Kaskade (Area→Dept→Team)
- *
- * Parameters: $1 = userId, $2 = tenantId
- * D4: Deputies have equal scope rights as their leads at ALL 3 levels (DEPUTY_EQUALS_LEAD)
+ * Build the Unified Scope CTE — resolves ALL access paths in a single query.
+ * When deputyScope=true, deputies get equal scope rights as their leads (ADR-039).
+ * When deputyScope=false, only direct lead positions grant scope.
  */
-const UNIFIED_SCOPE_CTE = `
+function buildScopeCte(deputyScope: boolean): string {
+  const areaDeputy = deputyScope ? 'OR area_deputy_lead_id = $1' : '';
+  const deptDeputy = deputyScope ? 'OR department_deputy_lead_id = $1' : '';
+  const teamDeputy = deputyScope ? 'OR team_deputy_lead_id = $1' : '';
+  return `
 WITH
 perm_areas AS (
   SELECT aap.area_id AS id FROM admin_area_permissions aap
@@ -100,7 +103,7 @@ perm_areas AS (
 ),
 lead_areas AS (
   SELECT id FROM areas
-  WHERE (area_lead_id = $1 OR area_deputy_lead_id = $1)
+  WHERE (area_lead_id = $1 ${areaDeputy})
     AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}
 ),
 all_areas AS (
@@ -113,7 +116,7 @@ perm_depts AS (
 ),
 lead_depts AS (
   SELECT id FROM departments
-  WHERE (department_lead_id = $1 OR department_deputy_lead_id = $1)
+  WHERE (department_lead_id = $1 ${deptDeputy})
     AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}
 ),
 inherited_depts AS (
@@ -128,7 +131,7 @@ all_depts AS (
 ),
 lead_teams AS (
   SELECT id FROM teams
-  WHERE (team_lead_id = $1 OR team_deputy_lead_id = $1)
+  WHERE (team_lead_id = $1 ${teamDeputy})
     AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}
 ),
 inherited_teams AS (
@@ -139,20 +142,18 @@ inherited_teams AS (
 all_teams AS (
   SELECT id FROM lead_teams UNION SELECT id FROM inherited_teams
 )
-SELECT
-  (SELECT COALESCE(array_agg(DISTINCT id), '{}') FROM all_areas) AS area_ids,
+SELECT (SELECT COALESCE(array_agg(DISTINCT id), '{}') FROM all_areas) AS area_ids,
   (SELECT COALESCE(array_agg(DISTINCT id), '{}') FROM all_depts) AS department_ids,
   (SELECT COALESCE(array_agg(DISTINCT id), '{}') FROM all_teams) AS team_ids,
   (SELECT COALESCE(array_agg(DISTINCT id), '{}') FROM lead_areas) AS lead_area_ids,
   (SELECT COALESCE(array_agg(DISTINCT id), '{}') FROM lead_depts) AS lead_department_ids,
-  (SELECT COALESCE(array_agg(DISTINCT id), '{}') FROM lead_teams) AS lead_team_ids
-`;
+  (SELECT COALESCE(array_agg(DISTINCT id), '{}') FROM lead_teams) AS lead_team_ids`;
+}
 
-/**
- * Visible users query — finds users in scope via junction tables.
- * Parameters: $1 = tenantId, $2 = departmentIds (int[]), $3 = teamIds (int[])
- */
-const VISIBLE_USERS_QUERY = `
+/** Build visible users query — conditionally includes deputy lead checks */
+function buildVisibleUsersQuery(deputyScope: boolean): string {
+  const teamDeputy = deputyScope ? 'OR t.team_deputy_lead_id = u.id' : '';
+  return `
 SELECT DISTINCT u.id FROM users u
 WHERE u.tenant_id = $1 AND u.is_active != ${IS_ACTIVE.DELETED} AND (
   EXISTS (SELECT 1 FROM user_departments ud
@@ -160,10 +161,11 @@ WHERE u.tenant_id = $1 AND u.is_active != ${IS_ACTIVE.DELETED} AND (
   OR EXISTS (SELECT 1 FROM user_teams ut
              WHERE ut.user_id = u.id AND ut.team_id = ANY($3::int[]))
   OR EXISTS (SELECT 1 FROM teams t
-             WHERE (t.team_lead_id = u.id OR t.team_deputy_lead_id = u.id)
+             WHERE (t.team_lead_id = u.id ${teamDeputy})
                AND t.id = ANY($3::int[]) AND t.is_active = ${IS_ACTIVE.ACTIVE})
 )
 `;
+}
 
 // ============================================================================
 // SERVICE
@@ -174,7 +176,10 @@ WHERE u.tenant_id = $1 AND u.is_active != ${IS_ACTIVE.DELETED} AND (
 export class HierarchyPermissionService {
   private readonly logger = new Logger(HierarchyPermissionService.name);
 
-  constructor(private readonly db: DatabaseService) {}
+  constructor(
+    private readonly db: DatabaseService,
+    private readonly orgSettings: OrganigramSettingsService,
+  ) {}
 
   // ==========================================================================
   // MAIN ACCESS CHECK
@@ -249,7 +254,9 @@ export class HierarchyPermissionService {
     if (user.role === 'root' || user.has_full_access) return FULL_SCOPE;
     if (user.role === 'dummy') return NO_SCOPE;
 
-    const rows = await this.db.query<ScopeQueryRow>(UNIFIED_SCOPE_CTE, [userId, tenantId]);
+    const deputyScope = await this.orgSettings.getDeputyHasLeadScope(tenantId);
+    const cte = buildScopeCte(deputyScope);
+    const rows = await this.db.query<ScopeQueryRow>(cte, [userId, tenantId]);
     const row = rows[0];
     if (row === undefined) return NO_SCOPE;
 
@@ -273,7 +280,9 @@ export class HierarchyPermissionService {
       return [];
     }
 
-    const rows = await this.db.query<{ id: number }>(VISIBLE_USERS_QUERY, [
+    const deputyScope = await this.orgSettings.getDeputyHasLeadScope(tenantId);
+    const query = buildVisibleUsersQuery(deputyScope);
+    const rows = await this.db.query<{ id: number }>(query, [
       tenantId,
       scope.departmentIds,
       scope.teamIds,

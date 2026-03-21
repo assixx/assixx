@@ -40,23 +40,36 @@ export const load: PageServerLoad = async ({ cookies, fetch }) => {
     redirect(302, '/login');
   }
 
-  try {
-    const response = await fetch(`${API_BASE}/organigram/positions`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-    });
+  const headers = {
+    Authorization: `Bearer ${token}`,
+    'Content-Type': 'application/json',
+  };
 
-    if (!response.ok) {
-      log.error({ status: response.status }, 'API error loading positions');
-      return { positions: [] as PositionCatalogEntry[], loadError: true };
+  try {
+    const [positionsRes, deputyScopeRes] = await Promise.all([
+      fetch(`${API_BASE}/organigram/positions`, { headers }),
+      fetch(`${API_BASE}/organigram/deputy-scope`, { headers }).catch(() => null),
+    ]);
+
+    if (!positionsRes.ok) {
+      log.error({ status: positionsRes.status }, 'API error loading positions');
+      return {
+        positions: [] as PositionCatalogEntry[],
+        loadError: true,
+        deputyHasLeadScope: false,
+      };
     }
 
-    const json = (await response.json()) as ApiResponse<PositionCatalogEntry[]>;
-    return { positions: extractData(json), loadError: false };
+    const json = (await positionsRes.json()) as ApiResponse<PositionCatalogEntry[]>;
+    let deputyScope = false;
+    if (deputyScopeRes?.ok === true) {
+      const body = (await deputyScopeRes.json()) as { data?: { deputyHasLeadScope: boolean } };
+      deputyScope = body.data?.deputyHasLeadScope ?? false;
+    }
+
+    return { positions: extractData(json), loadError: false, deputyHasLeadScope: deputyScope };
   } catch (err: unknown) {
     log.error({ err }, 'Fetch error loading positions');
-    return { positions: [] as PositionCatalogEntry[], loadError: true };
+    return { positions: [] as PositionCatalogEntry[], loadError: true, deputyHasLeadScope: false };
   }
 };
