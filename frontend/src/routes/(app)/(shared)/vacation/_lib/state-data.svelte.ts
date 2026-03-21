@@ -17,10 +17,8 @@ function emptyPage<T>(): PaginatedResult<T> {
 }
 
 function createDataState() {
-  let myRequests =
-    $state<PaginatedResult<VacationRequest>>(emptyPage<VacationRequest>());
-  let incomingRequests =
-    $state<PaginatedResult<VacationRequest>>(emptyPage<VacationRequest>());
+  let myRequests = $state<PaginatedResult<VacationRequest>>(emptyPage<VacationRequest>());
+  let incomingRequests = $state<PaginatedResult<VacationRequest>>(emptyPage<VacationRequest>());
   let balance = $state<VacationBalance | null>(null);
   let capacityAnalysis = $state<VacationCapacityAnalysis | null>(null);
   let statusLog = $state<VacationStatusLogEntry[]>([]);

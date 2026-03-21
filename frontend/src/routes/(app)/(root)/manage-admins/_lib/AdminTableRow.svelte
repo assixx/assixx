@@ -77,8 +77,7 @@
             class="avatar__image"
           />
         {:else}
-          <span class="avatar__initials"
-            >{admin.firstName.charAt(0)}{admin.lastName.charAt(0)}</span
+          <span class="avatar__initials">{admin.firstName.charAt(0)}{admin.lastName.charAt(0)}</span
           >
         {/if}
       </div>
@@ -89,8 +88,7 @@
   <td>{admin.employeeNumber ?? '-'}</td>
   <td>{getPositionDisplay(admin.position ?? '', labels)}</td>
   <td>
-    <span class="badge {getStatusBadgeClass(admin.isActive)}"
-      >{getStatusLabel(admin.isActive)}</span
+    <span class="badge {getStatusBadgeClass(admin.isActive)}">{getStatusLabel(admin.isActive)}</span
     >
   </td>
   <td>
@@ -122,8 +120,7 @@
   </td>
   <td>
     <span class="badge {availabilityBadge.class}">
-      {#if availabilityBadge.icon}<i class="fas {availabilityBadge.icon} mr-1"
-        ></i>{/if}
+      {#if availabilityBadge.icon}<i class="fas {availabilityBadge.icon} mr-1"></i>{/if}
       {availabilityBadge.text}
     </span>
   </td>

@@ -50,19 +50,14 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
     };
   }
 
-  const [
-    staffingRulesData,
-    settingsData,
-    areasData,
-    departmentsData,
-    teamsData,
-  ] = await Promise.all([
-    apiFetch<VacationStaffingRule[]>('/vacation/staffing-rules', token, fetch),
-    apiFetch<VacationSettings>('/vacation/settings', token, fetch),
-    apiFetch<OrgArea[]>('/areas', token, fetch),
-    apiFetch<OrgDepartment[]>('/departments', token, fetch),
-    apiFetch<OrgTeam[]>('/teams', token, fetch),
-  ]);
+  const [staffingRulesData, settingsData, areasData, departmentsData, teamsData] =
+    await Promise.all([
+      apiFetch<VacationStaffingRule[]>('/vacation/staffing-rules', token, fetch),
+      apiFetch<VacationSettings>('/vacation/settings', token, fetch),
+      apiFetch<OrgArea[]>('/areas', token, fetch),
+      apiFetch<OrgDepartment[]>('/departments', token, fetch),
+      apiFetch<OrgTeam[]>('/teams', token, fetch),
+    ]);
 
   return {
     permissionDenied: false as const,

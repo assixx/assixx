@@ -14,15 +14,10 @@
     cardEstimatedMinutes?: number | null;
   }
 
-  const {
-    estimates,
-    intervalType,
-    cardEstimatedMinutes = null,
-  }: Props = $props();
+  const { estimates, intervalType, cardEstimatedMinutes = null }: Props = $props();
 
   const estimate = $derived(
-    estimates.find((e: TpmTimeEstimate) => e.intervalType === intervalType) ??
-      null,
+    estimates.find((e: TpmTimeEstimate) => e.intervalType === intervalType) ?? null,
   );
 </script>
 

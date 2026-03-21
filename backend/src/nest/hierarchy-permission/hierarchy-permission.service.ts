@@ -16,15 +16,8 @@ import { Injectable, Logger } from '@nestjs/common';
 import type { QueryResultRow } from 'pg';
 
 import { DatabaseService } from '../database/database.service.js';
-import {
-  FULL_SCOPE,
-  NO_SCOPE,
-  buildLimitedScope,
-} from './organizational-scope.types.js';
-import type {
-  OrganizationalScope,
-  ScopeQueryRow,
-} from './organizational-scope.types.js';
+import { FULL_SCOPE, NO_SCOPE, buildLimitedScope } from './organizational-scope.types.js';
+import type { OrganizationalScope, ScopeQueryRow } from './organizational-scope.types.js';
 
 // ============================================================================
 // TYPES
@@ -217,20 +210,10 @@ export class HierarchyPermissionService {
       // Step 4: Check based on resource type
       switch (resourceType) {
         case 'area':
-          return await this.checkAreaAccess(
-            userId,
-            resourceId,
-            permission,
-            tenantId,
-          );
+          return await this.checkAreaAccess(userId, resourceId, permission, tenantId);
 
         case 'department':
-          return await this.checkDepartmentAccess(
-            userId,
-            resourceId,
-            permission,
-            tenantId,
-          );
+          return await this.checkDepartmentAccess(userId, resourceId, permission, tenantId);
 
         case 'team':
           return await this.checkTeamAccess(userId, resourceId, tenantId);
@@ -258,19 +241,13 @@ export class HierarchyPermissionService {
    * - Employee with Lead → type: 'limited'
    * - Employee without Lead / Dummy → type: 'none'
    */
-  async getScope(
-    userId: number,
-    tenantId: number,
-  ): Promise<OrganizationalScope> {
+  async getScope(userId: number, tenantId: number): Promise<OrganizationalScope> {
     const user = await this.getUserInfo(userId, tenantId);
     if (user === null) return NO_SCOPE;
     if (user.role === 'root' || user.has_full_access) return FULL_SCOPE;
     if (user.role === 'dummy') return NO_SCOPE;
 
-    const rows = await this.db.query<ScopeQueryRow>(UNIFIED_SCOPE_CTE, [
-      userId,
-      tenantId,
-    ]);
+    const rows = await this.db.query<ScopeQueryRow>(UNIFIED_SCOPE_CTE, [userId, tenantId]);
     const row = rows[0];
     if (row === undefined) return NO_SCOPE;
 
@@ -286,10 +263,7 @@ export class HierarchyPermissionService {
    * Get all user IDs visible within a scope (via user_departments + user_teams).
    * Returns 'all' for full scope, empty array for no scope.
    */
-  async getVisibleUserIds(
-    scope: OrganizationalScope,
-    tenantId: number,
-  ): Promise<number[] | 'all'> {
+  async getVisibleUserIds(scope: OrganizationalScope, tenantId: number): Promise<number[] | 'all'> {
     if (scope.type === 'full') return 'all';
     if (scope.type === 'none') return [];
 
@@ -381,12 +355,7 @@ export class HierarchyPermissionService {
     // 2. Check Area inheritance (only if department has area_id)
     const dept = await this.getDepartmentInfo(departmentId, tenantId);
     if (dept !== null && dept.area_id !== null) {
-      const hasAreaPerm = await this.checkAreaAccess(
-        userId,
-        dept.area_id,
-        permission,
-        tenantId,
-      );
+      const hasAreaPerm = await this.checkAreaAccess(userId, dept.area_id, permission, tenantId);
       if (hasAreaPerm) {
         return true;
       }
@@ -415,12 +384,7 @@ export class HierarchyPermissionService {
     // 2. Check Department inheritance (if team has department_id)
     const team = await this.getTeamInfo(teamId, tenantId);
     if (team !== null && team.department_id !== null) {
-      return await this.checkDepartmentAccess(
-        userId,
-        team.department_id,
-        'read',
-        tenantId,
-      );
+      return await this.checkDepartmentAccess(userId, team.department_id, 'read', tenantId);
     }
 
     return false;
@@ -431,19 +395,15 @@ export class HierarchyPermissionService {
   // ==========================================================================
 
   /** DEPRECATED: Use getScope() instead — removal after BlackboardAccessService migration (Phase 2.5) */
-  async getAccessibleAreaIds(
-    userId: number,
-    tenantId: number,
-  ): Promise<number[]> {
+  async getAccessibleAreaIds(userId: number, tenantId: number): Promise<number[]> {
     const user = await this.getUserInfo(userId, tenantId);
     if (user === null) return [];
 
     // Root or full access = all areas
     if (user.role === 'root' || user.has_full_access) {
-      const allAreas = await this.db.query<IdRow>(
-        `SELECT id FROM areas WHERE tenant_id = $1`,
-        [tenantId],
-      );
+      const allAreas = await this.db.query<IdRow>(`SELECT id FROM areas WHERE tenant_id = $1`, [
+        tenantId,
+      ]);
       return allAreas.map((a: IdRow) => a.id);
     }
 
@@ -458,10 +418,7 @@ export class HierarchyPermissionService {
   }
 
   /** DEPRECATED: Use getScope() instead — removal after BlackboardAccessService migration (Phase 2.5) */
-  async getAccessibleDepartmentIds(
-    userId: number,
-    tenantId: number,
-  ): Promise<number[]> {
+  async getAccessibleDepartmentIds(userId: number, tenantId: number): Promise<number[]> {
     const user = await this.getUserInfo(userId, tenantId);
     if (user === null) return [];
 
@@ -481,16 +438,12 @@ export class HierarchyPermissionService {
       [userId, tenantId],
     );
 
-    const deptSet = new Set<number>(
-      directDepts.map((d: DepartmentIdRow) => d.department_id),
-    );
+    const deptSet = new Set<number>(directDepts.map((d: DepartmentIdRow) => d.department_id));
 
     // Get departments inherited from areas
     const accessibleAreas = await this.getAccessibleAreaIds(userId, tenantId);
     if (accessibleAreas.length > 0) {
-      const placeholders = accessibleAreas
-        .map((_: number, i: number) => `$${i + 2}`)
-        .join(',');
+      const placeholders = accessibleAreas.map((_: number, i: number) => `$${i + 2}`).join(',');
       const inheritedDepts = await this.db.query<IdRow>(
         `SELECT id FROM departments
          WHERE tenant_id = $1 AND area_id IN (${placeholders})`,
@@ -505,19 +458,15 @@ export class HierarchyPermissionService {
   }
 
   /** DEPRECATED: Use getScope() instead — removal after BlackboardAccessService migration (Phase 2.5) */
-  async getAccessibleTeamIds(
-    userId: number,
-    tenantId: number,
-  ): Promise<number[]> {
+  async getAccessibleTeamIds(userId: number, tenantId: number): Promise<number[]> {
     const user = await this.getUserInfo(userId, tenantId);
     if (user === null) return [];
 
     // Root or full access = all teams
     if (user.role === 'root' || user.has_full_access) {
-      const allTeams = await this.db.query<IdRow>(
-        `SELECT id FROM teams WHERE tenant_id = $1`,
-        [tenantId],
-      );
+      const allTeams = await this.db.query<IdRow>(`SELECT id FROM teams WHERE tenant_id = $1`, [
+        tenantId,
+      ]);
       return allTeams.map((t: IdRow) => t.id);
     }
 
@@ -527,19 +476,12 @@ export class HierarchyPermissionService {
       [userId],
     );
 
-    const teamSet = new Set<number>(
-      memberTeams.map((t: TeamIdRow) => t.team_id),
-    );
+    const teamSet = new Set<number>(memberTeams.map((t: TeamIdRow) => t.team_id));
 
     // Get teams inherited from departments
-    const accessibleDepts = await this.getAccessibleDepartmentIds(
-      userId,
-      tenantId,
-    );
+    const accessibleDepts = await this.getAccessibleDepartmentIds(userId, tenantId);
     if (accessibleDepts.length > 0) {
-      const placeholders = accessibleDepts
-        .map((_: number, i: number) => `$${i + 2}`)
-        .join(',');
+      const placeholders = accessibleDepts.map((_: number, i: number) => `$${i + 2}`).join(',');
       const inheritedTeams = await this.db.query<IdRow>(
         `SELECT id FROM teams
          WHERE tenant_id = $1 AND department_id IN (${placeholders})`,
@@ -558,10 +500,7 @@ export class HierarchyPermissionService {
   // ==========================================================================
 
   /** Get user info for permission checks */
-  private async getUserInfo(
-    userId: number,
-    tenantId: number,
-  ): Promise<UserInfoRow | null> {
+  private async getUserInfo(userId: number, tenantId: number): Promise<UserInfoRow | null> {
     const rows = await this.db.query<UserInfoRow>(
       `SELECT id, role, has_full_access FROM users WHERE id = $1 AND tenant_id = $2`,
       [userId, tenantId],
@@ -582,10 +521,7 @@ export class HierarchyPermissionService {
   }
 
   /** Get team info for inheritance */
-  private async getTeamInfo(
-    teamId: number,
-    tenantId: number,
-  ): Promise<TeamInfoRow | null> {
+  private async getTeamInfo(teamId: number, tenantId: number): Promise<TeamInfoRow | null> {
     const rows = await this.db.query<TeamInfoRow>(
       `SELECT id, department_id FROM teams WHERE id = $1 AND tenant_id = $2`,
       [teamId, tenantId],
@@ -594,11 +530,7 @@ export class HierarchyPermissionService {
   }
 
   /** Check if user is team member */
-  private async isTeamMember(
-    userId: number,
-    teamId: number,
-    _tenantId: number,
-  ): Promise<boolean> {
+  private async isTeamMember(userId: number, teamId: number, _tenantId: number): Promise<boolean> {
     const rows = await this.db.query<TeamMemberRow>(
       `SELECT user_id FROM user_teams WHERE user_id = $1 AND team_id = $2`,
       [userId, teamId],
@@ -607,10 +539,7 @@ export class HierarchyPermissionService {
   }
 
   /** Check if permission row has required level */
-  private hasPermissionLevel(
-    perm: PermissionRow,
-    level: PermissionLevel,
-  ): boolean {
+  private hasPermissionLevel(perm: PermissionRow, level: PermissionLevel): boolean {
     switch (level) {
       case 'read':
         return perm.can_read;

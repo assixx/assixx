@@ -112,8 +112,7 @@ export function transformMessage(msg: MessageRow): Message {
     conversationId: msg.conversation_id,
     senderId: msg.sender_id,
     senderName: buildFullName(msg.sender_first_name, msg.sender_last_name),
-    senderUsername:
-      msg.sender_username !== '' ? msg.sender_username : 'unknown',
+    senderUsername: msg.sender_username !== '' ? msg.sender_username : 'unknown',
     senderProfilePicture: msg.sender_profile_picture,
     content: msg.content,
     attachment:
@@ -122,8 +121,7 @@ export function transformMessage(msg: MessageRow): Message {
           url: `/api/v2/chat/attachments/${msg.attachment_path}/download`,
           filename: msg.attachment_name ?? 'attachment',
           mimeType: msg.attachment_type ?? 'application/octet-stream',
-          size:
-            typeof msg.attachment_size === 'number' ? msg.attachment_size : 0,
+          size: typeof msg.attachment_size === 'number' ? msg.attachment_size : 0,
         }
       : null,
     attachments: [],
@@ -223,9 +221,7 @@ export function mapDocumentAttachments(
       fileSize: row.file_size,
       mimeType: row.mime_type,
       downloadUrl: `/api/v2/documents/${row.id}/download`,
-      ...(row.uploaded_at !== null ?
-        { createdAt: new Date(row.uploaded_at).toISOString() }
-      : {}),
+      ...(row.uploaded_at !== null ? { createdAt: new Date(row.uploaded_at).toISOString() } : {}),
     });
     attachmentMap.set(row.message_id, attachments);
   }
@@ -384,9 +380,7 @@ export function filterUsersBySearch(
     return (
       user.username.toLowerCase().includes(searchLower) ||
       user.email.toLowerCase().includes(searchLower) ||
-      buildFullName(user.first_name, user.last_name, '')
-        .toLowerCase()
-        .includes(searchLower)
+      buildFullName(user.first_name, user.last_name, '').toLowerCase().includes(searchLower)
     );
   });
 }

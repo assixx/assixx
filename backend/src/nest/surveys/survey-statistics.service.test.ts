@@ -178,9 +178,7 @@ describe('SurveyStatisticsService', () => {
         },
       ]);
       // rating stats
-      mockDb.query.mockResolvedValueOnce([
-        { average: 4.5, min: 3, max: 5, total_responses: '3' },
-      ]);
+      mockDb.query.mockResolvedValueOnce([{ average: 4.5, min: 3, max: 5, total_responses: '3' }]);
 
       const questions: DbSurveyQuestion[] = [
         {
@@ -214,10 +212,7 @@ describe('SurveyStatisticsService', () => {
         },
       ]);
       // answer_options
-      mockDb.query.mockResolvedValueOnce([
-        { answer_options: '[1]' },
-        { answer_options: '[2]' },
-      ]);
+      mockDb.query.mockResolvedValueOnce([{ answer_options: '[1]' }, { answer_options: '[2]' }]);
 
       const questions: DbSurveyQuestion[] = [
         {

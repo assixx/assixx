@@ -68,7 +68,6 @@ export const load: PageServerLoad = async ({ cookies, fetch, url, parent }) => {
     survey: surveyResult.data,
     questions: Array.isArray(questionsData) ? questionsData : [],
     statistics: statisticsData,
-    responses:
-      Array.isArray(responsesData?.responses) ? responsesData.responses : [],
+    responses: Array.isArray(responsesData?.responses) ? responsesData.responses : [],
   };
 };

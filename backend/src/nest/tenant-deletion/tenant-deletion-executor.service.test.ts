@@ -8,10 +8,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { TenantDeletionExecutor } from './tenant-deletion-executor.service.js';
-import {
-  getTablesWithTenantId,
-  getUserRelatedTables,
-} from './tenant-deletion.helpers.js';
+import { getTablesWithTenantId, getUserRelatedTables } from './tenant-deletion.helpers.js';
 
 vi.mock('./tenant-deletion.helpers.js', () => ({
   getTablesWithTenantId: vi.fn(),
@@ -58,9 +55,7 @@ describe('TenantDeletionExecutor', () => {
         .mockResolvedValueOnce(undefined); // RELEASE SAVEPOINT
 
       // Phase 3: user-related tables
-      mockGetUserTables.mockResolvedValue([
-        { TABLE_NAME: 'user_sessions' },
-      ] as never);
+      mockGetUserTables.mockResolvedValue([{ TABLE_NAME: 'user_sessions' }] as never);
       mockConn.query
         .mockResolvedValueOnce(undefined) // SAVEPOINT sp_user_user_sessions
         .mockResolvedValueOnce(mockResult(2)) // DELETE with USING users
@@ -110,9 +105,7 @@ describe('TenantDeletionExecutor', () => {
         .mockResolvedValueOnce(undefined);
 
       // Phase 5 & 6: users + tenants
-      mockConn.query
-        .mockResolvedValueOnce(mockResult(0))
-        .mockResolvedValueOnce(mockResult(0));
+      mockConn.query.mockResolvedValueOnce(mockResult(0)).mockResolvedValueOnce(mockResult(0));
 
       const result = await executor.executeDeletions(1, mockConn as never);
 
@@ -155,16 +148,12 @@ describe('TenantDeletionExecutor', () => {
         .mockResolvedValueOnce(undefined)
         .mockResolvedValueOnce(undefined);
       // Phase 5+6
-      mockConn.query
-        .mockResolvedValueOnce(mockResult(0))
-        .mockResolvedValueOnce(mockResult(0));
+      mockConn.query.mockResolvedValueOnce(mockResult(0)).mockResolvedValueOnce(mockResult(0));
 
       const result = await executor.executeDeletions(1, mockConn as never);
 
       // No regular tables deleted — only users/tenants with 0
-      const regularDeleted = result.filter(
-        (r) => r.table !== 'users' && r.table !== 'tenants',
-      );
+      const regularDeleted = result.filter((r) => r.table !== 'users' && r.table !== 'tenants');
       expect(regularDeleted).toHaveLength(0);
     });
   });
@@ -177,28 +166,16 @@ describe('TenantDeletionExecutor', () => {
     it('should delete using tenant_id by default', async () => {
       mockConn.query.mockResolvedValueOnce(mockResult(5));
 
-      const result = await executor.deleteFromTableDirect(
-        'users',
-        1,
-        mockConn as never,
-      );
+      const result = await executor.deleteFromTableDirect('users', 1, mockConn as never);
 
       expect(result).toEqual({ table: 'users', deleted: 5 });
-      expect(mockConn.query).toHaveBeenCalledWith(
-        expect.stringContaining('tenant_id'),
-        [1],
-      );
+      expect(mockConn.query).toHaveBeenCalledWith(expect.stringContaining('tenant_id'), [1]);
     });
 
     it('should use custom idColumn when provided', async () => {
       mockConn.query.mockResolvedValueOnce(mockResult(1));
 
-      const result = await executor.deleteFromTableDirect(
-        'tenants',
-        1,
-        mockConn as never,
-        'id',
-      );
+      const result = await executor.deleteFromTableDirect('tenants', 1, mockConn as never, 'id');
 
       expect(result).toEqual({ table: 'tenants', deleted: 1 });
       expect(mockConn.query).toHaveBeenCalledWith(
@@ -210,19 +187,13 @@ describe('TenantDeletionExecutor', () => {
     it('should return log entry with 0 when no rows affected', async () => {
       mockConn.query.mockResolvedValueOnce(mockResult(0));
 
-      const result = await executor.deleteFromTableDirect(
-        'empty_table',
-        999,
-        mockConn as never,
-      );
+      const result = await executor.deleteFromTableDirect('empty_table', 999, mockConn as never);
 
       expect(result).toEqual({ table: 'empty_table', deleted: 0 });
     });
 
     it('should rethrow on query error', async () => {
-      mockConn.query.mockRejectedValueOnce(
-        new Error('relation does not exist'),
-      );
+      mockConn.query.mockRejectedValueOnce(new Error('relation does not exist'));
 
       await expect(
         executor.deleteFromTableDirect('bad_table', 1, mockConn as never),
@@ -355,17 +326,10 @@ describe('TenantDeletionExecutor', () => {
   // ============================================
 
   describe('deleteFromTable (private)', () => {
-    const callPrivate = async (
-      table: string,
-      tenantId: number,
-    ): Promise<unknown> => {
+    const callPrivate = async (table: string, tenantId: number): Promise<unknown> => {
       return await (
         executor as unknown as {
-          deleteFromTable: (
-            t: string,
-            id: number,
-            c: unknown,
-          ) => Promise<unknown>;
+          deleteFromTable: (t: string, id: number, c: unknown) => Promise<unknown>;
         }
       ).deleteFromTable(table, tenantId, mockConn);
     };
@@ -423,17 +387,10 @@ describe('TenantDeletionExecutor', () => {
   // ============================================
 
   describe('deleteFromUserRelatedTable (private)', () => {
-    const callPrivate = async (
-      table: string,
-      tenantId: number,
-    ): Promise<unknown> => {
+    const callPrivate = async (table: string, tenantId: number): Promise<unknown> => {
       return await (
         executor as unknown as {
-          deleteFromUserRelatedTable: (
-            t: string,
-            id: number,
-            c: unknown,
-          ) => Promise<unknown>;
+          deleteFromUserRelatedTable: (t: string, id: number, c: unknown) => Promise<unknown>;
         }
       ).deleteFromUserRelatedTable(table, tenantId, mockConn);
     };

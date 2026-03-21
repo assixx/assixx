@@ -8,11 +8,7 @@ import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 
 import { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import { DatabaseService } from '../database/database.service.js';
-import type {
-  DbComment,
-  KVPComment,
-  PaginatedKVPComments,
-} from './kvp.types.js';
+import type { DbComment, KVPComment, PaginatedKVPComments } from './kvp.types.js';
 
 /** Shared SELECT columns for comment queries */
 const COMMENT_SELECT = `
@@ -40,8 +36,7 @@ function mapComment(row: DbComment): KVPComment {
   };
   if (row.first_name !== undefined) comment.createdByName = row.first_name;
   if (row.last_name !== undefined) comment.createdByLastname = row.last_name;
-  if (row.profile_picture !== undefined)
-    comment.profilePicture = row.profile_picture;
+  if (row.profile_picture !== undefined) comment.profilePicture = row.profile_picture;
   return comment;
 }
 
@@ -68,8 +63,7 @@ export class KvpCommentsService {
   ): Promise<PaginatedKVPComments> {
     this.logger.debug(`Getting comments for suggestion ${numericId}`);
 
-    const internalFilter =
-      userRole === 'employee' ? ' AND c.is_internal = FALSE' : '';
+    const internalFilter = userRole === 'employee' ? ' AND c.is_internal = FALSE' : '';
 
     const [countResult, rows] = await Promise.all([
       this.db.query<{ total: number }>(
@@ -104,15 +98,10 @@ export class KvpCommentsService {
    * Get all replies for a top-level comment.
    * Sorted by created_at ASC (oldest first).
    */
-  async getReplies(
-    commentId: number,
-    tenantId: number,
-    userRole: string,
-  ): Promise<KVPComment[]> {
+  async getReplies(commentId: number, tenantId: number, userRole: string): Promise<KVPComment[]> {
     this.logger.debug(`Getting replies for comment ${commentId}`);
 
-    const internalFilter =
-      userRole === 'employee' ? ' AND c.is_internal = FALSE' : '';
+    const internalFilter = userRole === 'employee' ? ' AND c.is_internal = FALSE' : '';
 
     const rows = await this.db.query<DbComment>(
       `SELECT ${COMMENT_SELECT}
@@ -142,8 +131,7 @@ export class KvpCommentsService {
   ): Promise<KVPComment> {
     this.logger.log(`Adding comment to suggestion ${numericId}`);
 
-    const safeIsInternal =
-      userRole === 'admin' || userRole === 'root' ? isInternal : false;
+    const safeIsInternal = userRole === 'admin' || userRole === 'root' ? isInternal : false;
 
     if (parentId !== undefined) {
       const parentRows = await this.db.query<{ suggestion_id: number }>(
@@ -156,9 +144,7 @@ export class KvpCommentsService {
         throw new BadRequestException('Parent comment not found');
       }
       if (parentRows[0].suggestion_id !== numericId) {
-        throw new BadRequestException(
-          'Parent comment does not belong to this suggestion',
-        );
+        throw new BadRequestException('Parent comment does not belong to this suggestion');
       }
     }
 

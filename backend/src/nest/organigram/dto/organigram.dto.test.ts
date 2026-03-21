@@ -55,9 +55,7 @@ describe('UpsertPositionsSchema', () => {
   });
 
   it('should reject empty positions array', () => {
-    expect(UpsertPositionsSchema.safeParse({ positions: [] }).success).toBe(
-      false,
-    );
+    expect(UpsertPositionsSchema.safeParse({ positions: [] }).success).toBe(false);
   });
 
   it('should reject more than 500 positions', () => {
@@ -254,9 +252,7 @@ describe('UpdateHierarchyLabelsSchema', () => {
   });
 
   it('should accept empty levels object (all optional)', () => {
-    expect(UpdateHierarchyLabelsSchema.safeParse({ levels: {} }).success).toBe(
-      true,
-    );
+    expect(UpdateHierarchyLabelsSchema.safeParse({ levels: {} }).success).toBe(true);
   });
 
   it('should reject missing levels key', () => {

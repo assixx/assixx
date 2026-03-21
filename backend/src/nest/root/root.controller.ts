@@ -177,11 +177,7 @@ export class RootController {
     @Query() query: AdminLogsQueryDto,
     @TenantId() tenantId: number,
   ): Promise<{ logs: AdminLog[] }> {
-    const logs = await this.rootService.getAdminLogs(
-      params.id,
-      tenantId,
-      query.days,
-    );
+    const logs = await this.rootService.getAdminLogs(params.id, tenantId, query.days);
     return { logs };
   }
 
@@ -190,9 +186,7 @@ export class RootController {
   // ============================================
 
   @Get('tenants')
-  async getTenants(
-    @TenantId() tenantId: number,
-  ): Promise<{ tenants: Tenant[] }> {
+  async getTenants(@TenantId() tenantId: number): Promise<{ tenants: Tenant[] }> {
     const tenants = await this.rootService.getTenants(tenantId);
     return { tenants };
   }
@@ -202,9 +196,7 @@ export class RootController {
   // ============================================
 
   @Get('users')
-  async getRootUsers(
-    @TenantId() tenantId: number,
-  ): Promise<{ users: RootUser[] }> {
+  async getRootUsers(@TenantId() tenantId: number): Promise<{ users: RootUser[] }> {
     const users = await this.rootService.getRootUsers(tenantId);
     return { users };
   }
@@ -292,9 +284,7 @@ export class RootController {
   }
 
   @Get('storage')
-  async getStorageInfo(
-    @TenantId() tenantId: number,
-  ): Promise<{ data: StorageInfo }> {
+  async getStorageInfo(@TenantId() tenantId: number): Promise<{ data: StorageInfo }> {
     const data = await this.rootService.getStorageInfo(tenantId);
     return { data };
   }
@@ -329,8 +319,7 @@ export class RootController {
         queueId,
         tenantId,
         scheduledDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-        message:
-          'Löschung eingeleitet - Genehmigung von zweitem Root-Benutzer erforderlich',
+        message: 'Löschung eingeleitet - Genehmigung von zweitem Root-Benutzer erforderlich',
         approvalRequired: true,
       },
     };
@@ -386,9 +375,7 @@ export class RootController {
   }
 
   @Post('tenant/deletion-dry-run')
-  async deletionDryRun(
-    @TenantId() tenantId: number,
-  ): Promise<DeletionDryRunReport> {
+  async deletionDryRun(@TenantId() tenantId: number): Promise<DeletionDryRunReport> {
     return await this.rootService.performDeletionDryRun(tenantId);
   }
 

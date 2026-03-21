@@ -6,10 +6,7 @@
 import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';
 
-import {
-  DefaultPermissions,
-  PermissionSetSchema,
-} from './permission-set.schema.js';
+import { DefaultPermissions, PermissionSetSchema } from './permission-set.schema.js';
 
 export const SetAreaPermissionsSchema = z.object({
   // Empty array = remove all area permissions for this admin
@@ -17,6 +14,4 @@ export const SetAreaPermissionsSchema = z.object({
   permissions: PermissionSetSchema.optional().default(DefaultPermissions),
 });
 
-export class SetAreaPermissionsDto extends createZodDto(
-  SetAreaPermissionsSchema,
-) {}
+export class SetAreaPermissionsDto extends createZodDto(SetAreaPermissionsSchema) {}

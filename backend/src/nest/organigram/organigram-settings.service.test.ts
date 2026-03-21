@@ -3,10 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import type { DatabaseService } from '../database/database.service.js';
 import { OrganigramSettingsService } from './organigram-settings.service.js';
-import {
-  DEFAULT_HIERARCHY_LABELS,
-  DEFAULT_VIEWPORT,
-} from './organigram.types.js';
+import { DEFAULT_HIERARCHY_LABELS, DEFAULT_VIEWPORT } from './organigram.types.js';
 
 // =============================================================
 // Mocks
@@ -71,9 +68,7 @@ describe('OrganigramSettingsService', () => {
     });
 
     it('should return defaults when orgViewport key is missing', async () => {
-      mockDb.query.mockResolvedValueOnce([
-        { settings: { someOtherKey: true } },
-      ]);
+      mockDb.query.mockResolvedValueOnce([{ settings: { someOtherKey: true } }]);
 
       const result = await service.getViewport(1);
 
@@ -82,9 +77,7 @@ describe('OrganigramSettingsService', () => {
 
     it('should return stored viewport when present', async () => {
       const custom = { zoom: 1.5, panX: 100, panY: -50, fontSize: 16 };
-      mockDb.query.mockResolvedValueOnce([
-        { settings: { orgViewport: custom } },
-      ]);
+      mockDb.query.mockResolvedValueOnce([{ settings: { orgViewport: custom } }]);
 
       const result = await service.getViewport(1);
 
@@ -92,9 +85,7 @@ describe('OrganigramSettingsService', () => {
     });
 
     it('should fill missing viewport fields from defaults', async () => {
-      mockDb.query.mockResolvedValueOnce([
-        { settings: { orgViewport: { zoom: 2 } } },
-      ]);
+      mockDb.query.mockResolvedValueOnce([{ settings: { orgViewport: { zoom: 2 } } }]);
 
       const result = await service.getViewport(1);
 
@@ -135,9 +126,7 @@ describe('OrganigramSettingsService', () => {
     });
 
     it('should return empty object when orgHallOverrides is missing', async () => {
-      mockDb.query.mockResolvedValueOnce([
-        { settings: { someOtherKey: true } },
-      ]);
+      mockDb.query.mockResolvedValueOnce([{ settings: { someOtherKey: true } }]);
 
       const result = await service.getHallOverrides(1);
 
@@ -148,9 +137,7 @@ describe('OrganigramSettingsService', () => {
       const overrides = {
         'area-uuid-1': { x: 10, y: 20, width: 300, height: 200 },
       };
-      mockDb.query.mockResolvedValueOnce([
-        { settings: { orgHallOverrides: overrides } },
-      ]);
+      mockDb.query.mockResolvedValueOnce([{ settings: { orgHallOverrides: overrides } }]);
 
       const result = await service.getHallOverrides(1);
 
@@ -180,9 +167,7 @@ describe('OrganigramSettingsService', () => {
     });
 
     it('should return null when orgCanvasBg key is missing', async () => {
-      mockDb.query.mockResolvedValueOnce([
-        { settings: { someOtherKey: true } },
-      ]);
+      mockDb.query.mockResolvedValueOnce([{ settings: { someOtherKey: true } }]);
 
       const result = await service.getCanvasBg(1);
 
@@ -190,9 +175,7 @@ describe('OrganigramSettingsService', () => {
     });
 
     it('should return stored color when present', async () => {
-      mockDb.query.mockResolvedValueOnce([
-        { settings: { orgCanvasBg: '#1a2b3c' } },
-      ]);
+      mockDb.query.mockResolvedValueOnce([{ settings: { orgCanvasBg: '#1a2b3c' } }]);
 
       const result = await service.getCanvasBg(1);
 
@@ -221,15 +204,12 @@ describe('OrganigramSettingsService', () => {
     beforeEach(() => {
       mockClient = { query: vi.fn() };
       mockDb.tenantTransaction.mockImplementation(
-        async (fn: (client: typeof mockClient) => Promise<void>) =>
-          fn(mockClient),
+        async (fn: (client: typeof mockClient) => Promise<void>) => fn(mockClient),
       );
     });
 
     it('should merge canvasBg into existing settings', async () => {
-      mockDb.query.mockResolvedValueOnce([
-        { settings: { orgHierarchy: { levels: {} } } },
-      ]);
+      mockDb.query.mockResolvedValueOnce([{ settings: { orgHierarchy: { levels: {} } } }]);
 
       await service.saveCanvasBg(1, '#ff0000');
 
@@ -258,9 +238,7 @@ describe('OrganigramSettingsService', () => {
     });
 
     it('should save null to clear canvas background', async () => {
-      mockDb.query.mockResolvedValueOnce([
-        { settings: { orgCanvasBg: '#ff0000' } },
-      ]);
+      mockDb.query.mockResolvedValueOnce([{ settings: { orgCanvasBg: '#ff0000' } }]);
 
       await service.saveCanvasBg(1, null);
 
@@ -280,15 +258,12 @@ describe('OrganigramSettingsService', () => {
     beforeEach(() => {
       mockClient = { query: vi.fn() };
       mockDb.tenantTransaction.mockImplementation(
-        async (fn: (client: typeof mockClient) => Promise<void>) =>
-          fn(mockClient),
+        async (fn: (client: typeof mockClient) => Promise<void>) => fn(mockClient),
       );
     });
 
     it('should merge overrides into existing settings', async () => {
-      mockDb.query.mockResolvedValueOnce([
-        { settings: { orgHierarchy: { levels: {} } } },
-      ]);
+      mockDb.query.mockResolvedValueOnce([{ settings: { orgHierarchy: { levels: {} } } }]);
 
       const overrides = {
         'area-1': { x: 0, y: 0, width: 100, height: 100 },
@@ -324,6 +299,94 @@ describe('OrganigramSettingsService', () => {
   });
 
   // =============================================================
+  // getHallConnectionAnchors
+  // =============================================================
+
+  describe('getHallConnectionAnchors', () => {
+    it('should return empty object when no rows', async () => {
+      mockDb.query.mockResolvedValueOnce([]);
+
+      const result = await service.getHallConnectionAnchors(1);
+
+      expect(result).toEqual({});
+    });
+
+    it('should return empty object when settings is null', async () => {
+      mockDb.query.mockResolvedValueOnce([{ settings: null }]);
+
+      const result = await service.getHallConnectionAnchors(1);
+
+      expect(result).toEqual({});
+    });
+
+    it('should return empty object when key is missing', async () => {
+      mockDb.query.mockResolvedValueOnce([{ settings: { someOtherKey: true } }]);
+
+      const result = await service.getHallConnectionAnchors(1);
+
+      expect(result).toEqual({});
+    });
+
+    it('should return stored anchors when present', async () => {
+      const anchors = {
+        'conn-1': { side: 'top', offset: 0.5 },
+        'conn-2': { side: 'left', offset: 0.3 },
+      };
+      mockDb.query.mockResolvedValueOnce([{ settings: { orgHallConnectionAnchors: anchors } }]);
+
+      const result = await service.getHallConnectionAnchors(1);
+
+      expect(result).toEqual(anchors);
+    });
+  });
+
+  // =============================================================
+  // saveHallConnectionAnchors
+  // =============================================================
+
+  describe('saveHallConnectionAnchors', () => {
+    let mockClient: { query: ReturnType<typeof vi.fn> };
+
+    beforeEach(() => {
+      mockClient = { query: vi.fn() };
+      mockDb.tenantTransaction.mockImplementation(
+        async (fn: (client: typeof mockClient) => Promise<void>) => fn(mockClient),
+      );
+    });
+
+    it('should merge anchors into existing settings', async () => {
+      mockDb.query.mockResolvedValueOnce([{ settings: { orgHierarchy: { levels: {} } } }]);
+
+      const anchors = { 'conn-1': { side: 'top', offset: 0.5 } };
+      await service.saveHallConnectionAnchors(1, anchors);
+
+      const writtenJson = mockClient.query.mock.calls[0]?.[1]?.[0] as string;
+      const written = JSON.parse(writtenJson) as Record<string, unknown>;
+      expect(written['orgHierarchy']).toEqual({ levels: {} });
+      expect(written['orgHallConnectionAnchors']).toEqual(anchors);
+    });
+
+    it('should handle empty settings rows', async () => {
+      mockDb.query.mockResolvedValueOnce([]);
+
+      const anchors = { 'conn-1': { side: 'bottom', offset: 0.8 } };
+      await service.saveHallConnectionAnchors(1, anchors);
+
+      const writtenJson = mockClient.query.mock.calls[0]?.[1]?.[0] as string;
+      const written = JSON.parse(writtenJson) as Record<string, unknown>;
+      expect(written).toEqual({ orgHallConnectionAnchors: anchors });
+    });
+
+    it('should handle null settings value', async () => {
+      mockDb.query.mockResolvedValueOnce([{ settings: null }]);
+
+      await service.saveHallConnectionAnchors(1, {});
+
+      expect(mockDb.tenantTransaction).toHaveBeenCalledOnce();
+    });
+  });
+
+  // =============================================================
   // saveViewport
   // =============================================================
 
@@ -333,15 +396,12 @@ describe('OrganigramSettingsService', () => {
     beforeEach(() => {
       mockClient = { query: vi.fn() };
       mockDb.tenantTransaction.mockImplementation(
-        async (fn: (client: typeof mockClient) => Promise<void>) =>
-          fn(mockClient),
+        async (fn: (client: typeof mockClient) => Promise<void>) => fn(mockClient),
       );
     });
 
     it('should merge viewport into existing settings', async () => {
-      mockDb.query.mockResolvedValueOnce([
-        { settings: { orgHierarchy: { levels: {} } } },
-      ]);
+      mockDb.query.mockResolvedValueOnce([{ settings: { orgHierarchy: { levels: {} } } }]);
 
       const viewport = { zoom: 2, panX: 50, panY: -30, fontSize: 14 };
       await service.saveViewport(1, viewport);
@@ -396,9 +456,7 @@ describe('OrganigramSettingsService', () => {
     });
 
     it('should return defaults when orgHierarchy key is missing', async () => {
-      mockDb.query.mockResolvedValueOnce([
-        { settings: { someOtherKey: true } },
-      ]);
+      mockDb.query.mockResolvedValueOnce([{ settings: { someOtherKey: true } }]);
 
       const result = await service.getHierarchyLabels(1);
 
@@ -476,8 +534,7 @@ describe('OrganigramSettingsService', () => {
     beforeEach(() => {
       mockClient = { query: vi.fn() };
       mockDb.tenantTransaction.mockImplementation(
-        async (fn: (client: typeof mockClient) => Promise<void>) =>
-          fn(mockClient),
+        async (fn: (client: typeof mockClient) => Promise<void>) => fn(mockClient),
       );
     });
 
@@ -533,10 +590,7 @@ describe('OrganigramSettingsService', () => {
       });
 
       const writtenJson = mockClient.query.mock.calls[0]?.[1]?.[0] as string;
-      const writtenSettings = JSON.parse(writtenJson) as Record<
-        string,
-        unknown
-      >;
+      const writtenSettings = JSON.parse(writtenJson) as Record<string, unknown>;
       expect(writtenSettings['someFeature']).toEqual({ enabled: true });
     });
 
@@ -568,10 +622,7 @@ describe('OrganigramSettingsService', () => {
 
       // Should write with empty base settings (no prior keys to preserve)
       const writtenJson = mockClient.query.mock.calls[0]?.[1]?.[0] as string;
-      const writtenSettings = JSON.parse(writtenJson) as Record<
-        string,
-        unknown
-      >;
+      const writtenSettings = JSON.parse(writtenJson) as Record<string, unknown>;
       expect(writtenSettings).toEqual({
         orgHierarchy: {
           levels: {

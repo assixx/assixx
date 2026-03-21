@@ -4,10 +4,7 @@
    * that match the currently selected weekday + repeat pattern.
    * Shows interval type badges with their original colors.
    */
-  import {
-    INTERVAL_LABELS,
-    INTERVAL_SHORT_LABELS,
-  } from '../../../_lib/constants';
+  import { INTERVAL_LABELS, INTERVAL_SHORT_LABELS } from '../../../_lib/constants';
 
   import type { IntervalType } from '../../../_lib/types';
 
@@ -25,14 +22,12 @@
       <span
         class="slot-preview__badge"
         style="background: {colorMap[interval]}"
-        title={INTERVAL_LABELS[interval]}
-        >{INTERVAL_SHORT_LABELS[interval]}</span
+        title={INTERVAL_LABELS[interval]}>{INTERVAL_SHORT_LABELS[interval]}</span
       >
     {/each}
   </div>
 {:else}
-  <span class="slot-preview__badge slot-preview__badge--fallback">Vorschau</span
-  >
+  <span class="slot-preview__badge slot-preview__badge--fallback">Vorschau</span>
 {/if}
 
 <style>

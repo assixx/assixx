@@ -27,9 +27,7 @@ export class PermissionRegistryService {
    */
   register(category: PermissionCategoryDef): void {
     if (this.categories.has(category.code)) {
-      throw new Error(
-        `Permission category "${category.code}" already registered`,
-      );
+      throw new Error(`Permission category "${category.code}" already registered`);
     }
     this.categories.set(category.code, category);
     this.logger.log(
@@ -53,23 +51,16 @@ export class PermissionRegistryService {
     if (category === undefined) {
       return false;
     }
-    return category.modules.some(
-      (m: PermissionModuleDef) => m.code === moduleCode,
-    );
+    return category.modules.some((m: PermissionModuleDef) => m.code === moduleCode);
   }
 
   /** Get the allowed permission types for a specific module */
-  getAllowedPermissions(
-    addonCode: string,
-    moduleCode: string,
-  ): PermissionType[] {
+  getAllowedPermissions(addonCode: string, moduleCode: string): PermissionType[] {
     const category = this.categories.get(addonCode);
     if (category === undefined) {
       return [];
     }
-    const mod = category.modules.find(
-      (m: PermissionModuleDef) => m.code === moduleCode,
-    );
+    const mod = category.modules.find((m: PermissionModuleDef) => m.code === moduleCode);
     return mod?.allowedPermissions ?? [];
   }
 }

@@ -17,9 +17,7 @@
   /** Determine if the file is a PDF based on mimeType */
   const isPdf = $derived(image?.mimeType === 'application/pdf');
   /** Determine if the file is an image based on mimeType or default behavior */
-  const isImage = $derived(
-    image?.mimeType === undefined || image.mimeType.startsWith('image/'),
-  );
+  const isImage = $derived(image?.mimeType === undefined || image.mimeType.startsWith('image/'));
 
   function handleDownload(): void {
     if (image === null) return;
@@ -63,9 +61,7 @@
             title="Dokumentenvorschau"
           ></iframe>
         {:else if isImage}
-          <div
-            class="bg-surface-1 flex h-[70vh] min-h-[600px] w-full items-center justify-center"
-          >
+          <div class="bg-surface-1 flex h-[70vh] min-h-[600px] w-full items-center justify-center">
             <img
               src={image.src}
               class="max-h-full max-w-full object-contain"
@@ -73,15 +69,11 @@
             />
           </div>
         {:else}
-          <div
-            class="bg-surface-1 flex h-[70vh] min-h-[600px] w-full items-center justify-center"
-          >
+          <div class="bg-surface-1 flex h-[70vh] min-h-[600px] w-full items-center justify-center">
             <div class="text-content-secondary text-center">
               <i class="fas fa-file-alt mb-4 text-6xl"></i>
               <p class="text-lg">Keine Vorschau verfügbar</p>
-              <p class="mt-2 text-sm">
-                Bitte laden Sie die Datei herunter, um sie anzuzeigen.
-              </p>
+              <p class="mt-2 text-sm">Bitte laden Sie die Datei herunter, um sie anzuzeigen.</p>
             </div>
           </div>
         {/if}

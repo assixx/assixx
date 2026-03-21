@@ -8,11 +8,7 @@
  */
 import { describe, expect, it } from 'vitest';
 
-import {
-  getPositionDisplay,
-  validateEmailsMatch,
-  validatePasswordsMatch,
-} from './utils.js';
+import { getPositionDisplay, validateEmailsMatch, validatePasswordsMatch } from './utils.js';
 
 import type { HierarchyLabels } from '$lib/types/hierarchy-labels';
 
@@ -43,9 +39,7 @@ describe('getPositionDisplay', () => {
 
   it('should resolve lead keys with custom labels', () => {
     expect(getPositionDisplay('area_lead', customLabels)).toBe('Hallen-Leiter');
-    expect(getPositionDisplay('department_lead', customLabels)).toBe(
-      'Segmente-Leiter',
-    );
+    expect(getPositionDisplay('department_lead', customLabels)).toBe('Segmente-Leiter');
   });
 
   it('should fall through to POSITION_DISPLAY_MAP for known non-lead positions', () => {

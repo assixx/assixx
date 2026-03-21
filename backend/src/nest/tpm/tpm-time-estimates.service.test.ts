@@ -27,9 +27,7 @@ function createMockDb() {
 }
 type MockDb = ReturnType<typeof createMockDb>;
 
-function createEstimateRow(
-  overrides?: Partial<TpmTimeEstimateRow>,
-): TpmTimeEstimateRow {
+function createEstimateRow(overrides?: Partial<TpmTimeEstimateRow>): TpmTimeEstimateRow {
   return {
     id: 1,
     uuid: 'est-uuid-001                           ',
@@ -202,11 +200,7 @@ describe('TpmTimeEstimatesService', () => {
     it('should return a single estimate for plan+interval', async () => {
       mockDb.queryOne.mockResolvedValueOnce(createEstimateRow());
 
-      const result = await service.getEstimateForInterval(
-        10,
-        'plan-uuid-001',
-        'weekly',
-      );
+      const result = await service.getEstimateForInterval(10, 'plan-uuid-001', 'weekly');
 
       expect(result).not.toBeNull();
       expect(result?.intervalType).toBe('weekly');
@@ -216,11 +210,7 @@ describe('TpmTimeEstimatesService', () => {
     it('should return null when no estimate found', async () => {
       mockDb.queryOne.mockResolvedValueOnce(null);
 
-      const result = await service.getEstimateForInterval(
-        10,
-        'plan-uuid-001',
-        'annual',
-      );
+      const result = await service.getEstimateForInterval(10, 'plan-uuid-001', 'annual');
 
       expect(result).toBeNull();
     });
@@ -236,9 +226,7 @@ describe('TpmTimeEstimatesService', () => {
         rows: [{ id: 1 }],
       });
 
-      await expect(
-        service.deleteEstimate(10, 1, 'est-uuid-001'),
-      ).resolves.toBeUndefined();
+      await expect(service.deleteEstimate(10, 1, 'est-uuid-001')).resolves.toBeUndefined();
 
       const sql = mockClient.query.mock.calls[0]?.[0] as string;
       expect(sql).toContain(`is_active = ${IS_ACTIVE.DELETED}`);
@@ -247,9 +235,7 @@ describe('TpmTimeEstimatesService', () => {
     it('should throw NotFoundException when estimate not found', async () => {
       mockClient.query.mockResolvedValueOnce({ rows: [] });
 
-      await expect(
-        service.deleteEstimate(10, 1, 'nonexistent'),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.deleteEstimate(10, 1, 'nonexistent')).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -259,15 +245,9 @@ describe('TpmTimeEstimatesService', () => {
 
   describe('UUID trimming', () => {
     it('should trim whitespace from uuid in mapped result', async () => {
-      mockDb.queryOne.mockResolvedValueOnce(
-        createEstimateRow({ uuid: '  abc-def-123   ' }),
-      );
+      mockDb.queryOne.mockResolvedValueOnce(createEstimateRow({ uuid: '  abc-def-123   ' }));
 
-      const result = await service.getEstimateForInterval(
-        10,
-        'plan-uuid-001',
-        'weekly',
-      );
+      const result = await service.getEstimateForInterval(10, 'plan-uuid-001', 'weekly');
 
       expect(result?.uuid).toBe('abc-def-123');
     });

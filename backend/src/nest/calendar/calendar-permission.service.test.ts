@@ -31,9 +31,7 @@ function createMockDb(): { query: ReturnType<typeof vi.fn> } {
   return { query: vi.fn() };
 }
 
-function makeEvent(
-  overrides: Record<string, unknown> = {},
-): Record<string, unknown> {
+function makeEvent(overrides: Record<string, unknown> = {}): Record<string, unknown> {
   return {
     id: 1,
     user_id: 5,
@@ -45,9 +43,7 @@ function makeEvent(
   };
 }
 
-function makeScope(
-  overrides: Partial<OrganizationalScope> = {},
-): OrganizationalScope {
+function makeScope(overrides: Partial<OrganizationalScope> = {}): OrganizationalScope {
   return {
     type: 'none',
     areaIds: [],
@@ -64,9 +60,7 @@ function makeScope(
   };
 }
 
-function makeMemberships(
-  overrides: Partial<CalendarMemberships> = {},
-): CalendarMemberships {
+function makeMemberships(overrides: Partial<CalendarMemberships> = {}): CalendarMemberships {
   return {
     departmentIds: [3],
     teamIds: [7],
@@ -85,9 +79,7 @@ describe('SECURITY: CalendarPermissionService', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockDb = createMockDb();
-    service = new CalendarPermissionService(
-      mockDb as unknown as DatabaseService,
-    );
+    service = new CalendarPermissionService(mockDb as unknown as DatabaseService);
   });
 
   // =============================================================
@@ -96,9 +88,7 @@ describe('SECURITY: CalendarPermissionService', () => {
 
   describe('getUserMemberships', () => {
     it('should return department and team IDs', async () => {
-      mockDb.query.mockResolvedValueOnce([
-        { department_ids: [1, 2], team_ids: [3] },
-      ]);
+      mockDb.query.mockResolvedValueOnce([{ department_ids: [1, 2], team_ids: [3] }]);
 
       const result = await service.getUserMemberships(5, 10);
 
@@ -116,9 +106,7 @@ describe('SECURITY: CalendarPermissionService', () => {
     });
 
     it('should handle null arrays from DB (no memberships)', async () => {
-      mockDb.query.mockResolvedValueOnce([
-        { department_ids: null, team_ids: null },
-      ]);
+      mockDb.query.mockResolvedValueOnce([{ department_ids: null, team_ids: null }]);
 
       const result = await service.getUserMemberships(5, 10);
 
@@ -306,9 +294,7 @@ describe('SECURITY: CalendarPermissionService', () => {
 
   describe('getEventAttendees', () => {
     it('should return attendees list', async () => {
-      mockDb.query.mockResolvedValueOnce([
-        { user_id: 5, username: 'max', first_name: 'Max' },
-      ]);
+      mockDb.query.mockResolvedValueOnce([{ user_id: 5, username: 'max', first_name: 'Max' }]);
 
       const result = await service.getEventAttendees(1, 10);
 

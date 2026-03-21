@@ -4,11 +4,7 @@
  * Focus: CRUD, system position protection, duplicate detection,
  * ensureSystemPositions idempotency, soft-delete.
  */
-import {
-  ConflictException,
-  ForbiddenException,
-  NotFoundException,
-} from '@nestjs/common';
+import { ConflictException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { ActivityLoggerService } from '../common/services/activity-logger.service.js';
@@ -40,9 +36,7 @@ function createMockActivityLogger() {
   return { log: vi.fn().mockResolvedValue(undefined) };
 }
 
-function makeRow(
-  overrides: Partial<PositionCatalogRow> = {},
-): PositionCatalogRow {
+function makeRow(overrides: Partial<PositionCatalogRow> = {}): PositionCatalogRow {
   return {
     id: 'pos-uuid-001',
     tenant_id: 10,
@@ -92,18 +86,10 @@ describe('PositionCatalogService', () => {
       expect(calls[0]?.[0]).toContain('ON CONFLICT');
       expect(calls[0]?.[0]).toContain('WHERE is_active = 1');
       // System positions first (is_system = true)
-      expect(calls[0]?.[1]).toEqual(
-        expect.arrayContaining([10, 'team_lead', 'employee']),
-      );
-      expect(calls[1]?.[1]).toEqual(
-        expect.arrayContaining([10, 'deputy_lead', 'employee']),
-      );
-      expect(calls[2]?.[1]).toEqual(
-        expect.arrayContaining([10, 'area_lead', 'admin']),
-      );
-      expect(calls[3]?.[1]).toEqual(
-        expect.arrayContaining([10, 'department_lead', 'admin']),
-      );
+      expect(calls[0]?.[1]).toEqual(expect.arrayContaining([10, 'team_lead', 'employee']));
+      expect(calls[1]?.[1]).toEqual(expect.arrayContaining([10, 'deputy_lead', 'employee']));
+      expect(calls[2]?.[1]).toEqual(expect.arrayContaining([10, 'area_lead', 'admin']));
+      expect(calls[3]?.[1]).toEqual(expect.arrayContaining([10, 'department_lead', 'admin']));
       // Default positions after (is_system = false)
       expect(calls[4]?.[1]).toEqual(
         expect.arrayContaining([10, 'Produktionsmitarbeiter', 'employee']),
@@ -201,9 +187,7 @@ describe('PositionCatalogService', () => {
       // assertNameUnique
       mockDb.query.mockResolvedValueOnce([]);
       // UPDATE RETURNING
-      mockDb.query.mockResolvedValueOnce([
-        makeRow({ name: 'Neuer Name', sort_order: 5 }),
-      ]);
+      mockDb.query.mockResolvedValueOnce([makeRow({ name: 'Neuer Name', sort_order: 5 })]);
 
       const result = await service.update(10, 'pos-uuid-001', {
         name: 'Neuer Name',
@@ -217,9 +201,9 @@ describe('PositionCatalogService', () => {
     it('should throw ForbiddenException for system positions', async () => {
       mockDb.query.mockResolvedValueOnce([makeRow({ is_system: true })]);
 
-      await expect(
-        service.update(10, 'pos-uuid-001', { name: 'Renamed' }),
-      ).rejects.toThrow(ForbiddenException);
+      await expect(service.update(10, 'pos-uuid-001', { name: 'Renamed' })).rejects.toThrow(
+        ForbiddenException,
+      );
     });
 
     it('should throw ConflictException on duplicate name during update', async () => {
@@ -227,9 +211,9 @@ describe('PositionCatalogService', () => {
       // assertNameUnique finds duplicate
       mockDb.query.mockResolvedValueOnce([makeRow({ id: 'other-uuid' })]);
 
-      await expect(
-        service.update(10, 'pos-uuid-001', { name: 'Duplicate' }),
-      ).rejects.toThrow(ConflictException);
+      await expect(service.update(10, 'pos-uuid-001', { name: 'Duplicate' })).rejects.toThrow(
+        ConflictException,
+      );
     });
 
     it('should return unchanged entry when no fields provided', async () => {
@@ -245,9 +229,9 @@ describe('PositionCatalogService', () => {
     it('should throw NotFoundException when position does not exist', async () => {
       mockDb.query.mockResolvedValueOnce([]);
 
-      await expect(
-        service.update(10, 'nonexistent', { name: 'X' }),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.update(10, 'nonexistent', { name: 'X' })).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
@@ -270,17 +254,13 @@ describe('PositionCatalogService', () => {
     it('should throw ForbiddenException for system positions', async () => {
       mockDb.query.mockResolvedValueOnce([makeRow({ is_system: true })]);
 
-      await expect(service.delete(10, 'pos-uuid-001')).rejects.toThrow(
-        ForbiddenException,
-      );
+      await expect(service.delete(10, 'pos-uuid-001')).rejects.toThrow(ForbiddenException);
     });
 
     it('should throw NotFoundException when position does not exist', async () => {
       mockDb.query.mockResolvedValueOnce([]);
 
-      await expect(service.delete(10, 'nonexistent')).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.delete(10, 'nonexistent')).rejects.toThrow(NotFoundException);
     });
   });
 });

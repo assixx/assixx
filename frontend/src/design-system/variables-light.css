@@ -32,8 +32,7 @@
 
   /* Typography Families */
   --font-primary:
-    'Outfit', -apple-system, blinkmacsystemfont, 'Segoe UI', roboto, arial,
-    sans-serif;
+    'Outfit', -apple-system, blinkmacsystemfont, 'Segoe UI', roboto, arial, sans-serif;
 
   /* Status Colors (theme-independent) */
   --success-color: oklch(67.31% 0.1624 144.21);
@@ -146,8 +145,7 @@
 
   /* Status Inactive - Green glow */
   --shadow-btn-status-inactive: 0 2px 4px oklch(64.01% 0.1751 146.74 / 10%);
-  --shadow-btn-status-inactive-hover: 0 4px 12px
-    oklch(64.01% 0.1751 146.74 / 15%);
+  --shadow-btn-status-inactive-hover: 0 4px 12px oklch(64.01% 0.1751 146.74 / 15%);
 
   /* Warning Button - Orange glow */
   --shadow-btn-warning: 0 2px 4px oklch(77.03% 0.1741 64.05 / 12%);

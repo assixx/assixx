@@ -9,12 +9,7 @@ import type {
   AvailabilityStatus,
 } from '@assixx/shared';
 
-export type {
-  IsActiveStatus,
-  FormIsActiveStatus,
-  StatusFilter,
-  AvailabilityStatus,
-};
+export type { IsActiveStatus, FormIsActiveStatus, StatusFilter, AvailabilityStatus };
 
 /**
  * Area entity - Organizational unit containing departments

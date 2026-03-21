@@ -81,9 +81,7 @@
   // DERIVED
   // =============================================================================
 
-  const personName = $derived(
-    person !== null ? `${person.firstName} ${person.lastName}` : '',
-  );
+  const personName = $derived(person !== null ? `${person.firstName} ${person.lastName}` : '');
 
   // =============================================================================
   // HANDLERS
@@ -108,10 +106,7 @@
   // OUTSIDE CLICK HANDLER
   // =============================================================================
 
-  function isClickOutsideDropdown(
-    target: HTMLElement,
-    elementId: string,
-  ): boolean {
+  function isClickOutsideDropdown(target: HTMLElement, elementId: string): boolean {
     const el = document.getElementById(elementId);
     return el !== null && !el.contains(target);
   }
@@ -314,8 +309,7 @@
             class="btn btn-primary"
             disabled={submitting}
           >
-            {#if submitting}<span class="spinner-ring spinner-ring--sm mr-2"
-              ></span>{/if}
+            {#if submitting}<span class="spinner-ring spinner-ring--sm mr-2"></span>{/if}
             Speichern
           </button>
         </div>

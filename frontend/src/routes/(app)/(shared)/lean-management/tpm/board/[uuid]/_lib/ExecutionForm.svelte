@@ -15,18 +15,9 @@
 
   import AppDatePicker from '$lib/components/AppDatePicker.svelte';
   import SearchResultUser from '$lib/components/SearchResultUser.svelte';
-  import {
-    showSuccessAlert,
-    showErrorAlert,
-    showWarningAlert,
-  } from '$lib/stores/toast';
+  import { showSuccessAlert, showErrorAlert, showWarningAlert } from '$lib/stores/toast';
 
-  import {
-    createExecution,
-    uploadPhoto,
-    uploadDefectPhoto,
-    logApiError,
-  } from '../../../_lib/api';
+  import { createExecution, uploadPhoto, uploadDefectPhoto, logApiError } from '../../../_lib/api';
   import { MESSAGES } from '../../../_lib/constants';
 
   import DefectSection from './DefectSection.svelte';
@@ -52,12 +43,7 @@
     onExecutionCreated: (execution: TpmExecution) => void;
   }
 
-  const {
-    card,
-    timeEstimates = [],
-    employees = [],
-    onExecutionCreated,
-  }: Props = $props();
+  const { card, timeEstimates = [], employees = [], onExecutionCreated }: Props = $props();
 
   // Form state
   let executionDate = $state(new Date().toISOString().slice(0, 10));
@@ -96,16 +82,11 @@
     if (term === '') return [];
     return employees
       .filter((e: TpmEmployee) => {
-        if (selectedEmployees.some((s: TpmEmployee) => s.uuid === e.uuid))
-          return false;
+        if (selectedEmployees.some((s: TpmEmployee) => s.uuid === e.uuid)) return false;
         const fullName = `${e.firstName} ${e.lastName}`.toLowerCase();
         const email = e.email.toLowerCase();
         const empNr = (e.employeeNumber ?? '').toLowerCase();
-        return (
-          fullName.includes(term) ||
-          email.includes(term) ||
-          empNr.includes(term)
-        );
+        return fullName.includes(term) || email.includes(term) || empNr.includes(term);
       })
       .slice(0, MAX_SEARCH_RESULTS);
   });
@@ -117,9 +98,7 @@
   }
 
   function removeEmployee(uuid: string): void {
-    selectedEmployees = selectedEmployees.filter(
-      (e: TpmEmployee) => e.uuid !== uuid,
-    );
+    selectedEmployees = selectedEmployees.filter((e: TpmEmployee) => e.uuid !== uuid);
   }
 
   function handleEmployeeInput(): void {
@@ -144,9 +123,7 @@
 
   // Derived: SOLL values from time estimates matching this card's interval
   const matchingEstimate = $derived(
-    timeEstimates.find(
-      (e: TpmTimeEstimate) => e.intervalType === card.intervalType,
-    ),
+    timeEstimates.find((e: TpmTimeEstimate) => e.intervalType === card.intervalType),
   );
   const sollDuration = $derived(matchingEstimate?.executionMinutes ?? null);
   const sollStaff = $derived(matchingEstimate?.staffCount ?? null);
@@ -160,17 +137,12 @@
   });
 
   // Derived: validation
-  const canExecute = $derived(
-    card.status === 'red' || card.status === 'overdue',
-  );
+  const canExecute = $derived(card.status === 'red' || card.status === 'overdue');
   const requiresDocs = $derived(card.requiresApproval && !noIssuesFound);
   const hasValidDefects = $derived(
-    noIssuesFound ||
-      defects.some((d: DefectEntry) => d.title.trim().length > 0),
+    noIssuesFound || defects.some((d: DefectEntry) => d.title.trim().length > 0),
   );
-  const isValid = $derived(
-    hasValidDefects && (!requiresDocs || documentation.trim().length > 0),
-  );
+  const isValid = $derived(hasValidDefects && (!requiresDocs || documentation.trim().length > 0));
   const canAddPhoto = $derived(stagedPhotos.length < MAX_PHOTOS && !submitting);
 
   function validateFile(file: File): string | null {
@@ -192,18 +164,13 @@
     }
 
     photoError = null;
-    stagedPhotos = [
-      ...stagedPhotos,
-      { file, previewUrl: URL.createObjectURL(file) },
-    ];
+    stagedPhotos = [...stagedPhotos, { file, previewUrl: URL.createObjectURL(file) }];
     input.value = '';
   }
 
   function removePhoto(index: number): void {
     URL.revokeObjectURL(stagedPhotos[index].previewUrl);
-    stagedPhotos = stagedPhotos.filter(
-      (_: StagedPhoto, i: number) => i !== index,
-    );
+    stagedPhotos = stagedPhotos.filter((_: StagedPhoto, i: number) => i !== index);
   }
 
   function cleanupPreviews(): void {
@@ -230,8 +197,7 @@
           .filter((d: DefectEntry) => d.title.trim().length > 0)
           .map((d: DefectEntry) => ({
             title: d.title.trim(),
-            description:
-              d.description.trim().length > 0 ? d.description.trim() : null,
+            description: d.description.trim().length > 0 ? d.description.trim() : null,
           }));
 
     return {
@@ -240,8 +206,7 @@
       noIssuesFound,
       actualDurationMinutes: parseIntOrNull(actualDurationMinutes),
       actualStaffCount: parseIntOrNull(actualStaffCount),
-      documentation:
-        documentation.trim().length > 0 ? documentation.trim() : null,
+      documentation: documentation.trim().length > 0 ? documentation.trim() : null,
       participantUuids:
         selectedEmployees.length > 0 ?
           selectedEmployees.map((e: TpmEmployee) => e.uuid)
@@ -265,13 +230,9 @@
   }
 
   /** Upload staged defect photos, return failure count */
-  async function uploadStagedDefectPhotos(
-    execution: TpmExecution,
-  ): Promise<number> {
+  async function uploadStagedDefectPhotos(execution: TpmExecution): Promise<number> {
     if (noIssuesFound) return 0;
-    const validDefects = defects.filter(
-      (d: DefectEntry) => d.title.trim().length > 0,
-    );
+    const validDefects = defects.filter((d: DefectEntry) => d.title.trim().length > 0);
     const serverDefects = execution.defects ?? [];
     const limit = Math.min(validDefects.length, serverDefects.length);
     let failed = 0;
@@ -298,8 +259,7 @@
     try {
       const execution = await createExecution(buildExecutionPayload());
       const failedUploads =
-        (await uploadStagedPhotos(execution.uuid)) +
-        (await uploadStagedDefectPhotos(execution));
+        (await uploadStagedPhotos(execution.uuid)) + (await uploadStagedDefectPhotos(execution));
 
       cleanupPreviews();
 
@@ -327,9 +287,7 @@
 </script>
 
 <div class="flex flex-col gap-3">
-  <h4
-    class="m-0 flex items-center gap-2 text-sm font-semibold text-(--color-text-primary)"
-  >
+  <h4 class="m-0 flex items-center gap-2 text-sm font-semibold text-(--color-text-primary)">
     <i class="fas fa-check-double"></i>
     {MESSAGES.EXEC_HEADING}
   </h4>
@@ -450,8 +408,7 @@
           <span class="form-field__label">Beteiligte Mitarbeiter</span>
           <div
             class="search-input-wrapper relative"
-            class:search-input-wrapper--open={employeeSearchOpen &&
-              employeeQuery.trim().length > 0}
+            class:search-input-wrapper--open={employeeSearchOpen && employeeQuery.trim().length > 0}
           >
             <div class="search-input">
               <i class="search-input__icon fas fa-search"></i>
@@ -497,9 +454,7 @@
                   />
                 {/each}
               {:else}
-                <div
-                  class="px-3 py-2 text-[0.813rem] text-(--color-text-muted) italic"
-                >
+                <div class="px-3 py-2 text-[0.813rem] text-(--color-text-muted) italic">
                   Keine Mitarbeiter gefunden
                 </div>
               {/if}

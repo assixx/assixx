@@ -55,10 +55,7 @@ describe('SECURITY: RoleSwitchService', () => {
     vi.clearAllMocks();
     mockJwtService = createMockJwtService();
     mockDb = createMockDb();
-    service = new RoleSwitchService(
-      mockJwtService as never,
-      mockDb as unknown as DatabaseService,
-    );
+    service = new RoleSwitchService(mockJwtService as never, mockDb as unknown as DatabaseService);
   });
 
   // =============================================================
@@ -69,17 +66,13 @@ describe('SECURITY: RoleSwitchService', () => {
     it('should throw NotFoundException when user not found', async () => {
       mockDb.query.mockResolvedValueOnce([]);
 
-      await expect(service.switchToEmployee(999, 10)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.switchToEmployee(999, 10)).rejects.toThrow(NotFoundException);
     });
 
     it('should throw ForbiddenException for employee user', async () => {
       mockDb.query.mockResolvedValueOnce([makeUserRow({ role: 'employee' })]);
 
-      await expect(service.switchToEmployee(1, 10)).rejects.toThrow(
-        ForbiddenException,
-      );
+      await expect(service.switchToEmployee(1, 10)).rejects.toThrow(ForbiddenException);
     });
 
     it('should switch admin to employee view', async () => {
@@ -132,9 +125,7 @@ describe('SECURITY: RoleSwitchService', () => {
     it('should throw ForbiddenException for employee', async () => {
       mockDb.query.mockResolvedValueOnce([makeUserRow({ role: 'employee' })]);
 
-      await expect(service.switchToOriginal(1, 10)).rejects.toThrow(
-        ForbiddenException,
-      );
+      await expect(service.switchToOriginal(1, 10)).rejects.toThrow(ForbiddenException);
     });
   });
 
@@ -146,9 +137,7 @@ describe('SECURITY: RoleSwitchService', () => {
     it('should throw ForbiddenException for non-root user', async () => {
       mockDb.query.mockResolvedValueOnce([makeUserRow({ role: 'admin' })]);
 
-      await expect(service.rootToAdmin(1, 10)).rejects.toThrow(
-        ForbiddenException,
-      );
+      await expect(service.rootToAdmin(1, 10)).rejects.toThrow(ForbiddenException);
     });
 
     it('should switch root to admin view', async () => {

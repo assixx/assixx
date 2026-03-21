@@ -12,11 +12,7 @@ export const CreateHallSchema = z.object({
     .trim()
     .min(2, 'Hall name must be at least 2 characters')
     .max(255, 'Hall name must not exceed 255 characters'),
-  description: z
-    .string()
-    .trim()
-    .max(500, 'Description must not exceed 500 characters')
-    .nullish(),
+  description: z.string().trim().max(500, 'Description must not exceed 500 characters').nullish(),
   areaId: z.coerce
     .number()
     .int()

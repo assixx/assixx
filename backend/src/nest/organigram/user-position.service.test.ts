@@ -35,9 +35,7 @@ function createMockActivityLogger() {
   return { log: vi.fn().mockResolvedValue(undefined) };
 }
 
-function makeDetailRow(
-  overrides: Partial<UserPositionDetailRow> = {},
-): UserPositionDetailRow {
+function makeDetailRow(overrides: Partial<UserPositionDetailRow> = {}): UserPositionDetailRow {
   return {
     id: 'up-uuid-001',
     tenant_id: 10,
@@ -144,18 +142,14 @@ describe('UserPositionService', () => {
     it('should throw NotFoundException when position does not exist', async () => {
       mockDb.query.mockResolvedValueOnce([]);
 
-      await expect(service.assign(10, 42, 'nonexistent')).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.assign(10, 42, 'nonexistent')).rejects.toThrow(NotFoundException);
     });
 
     it('should be idempotent — second assign does not throw', async () => {
       mockDb.query.mockResolvedValueOnce([{ id: 'pos-uuid-001' }]);
       mockDb.query.mockResolvedValueOnce([]);
 
-      await expect(
-        service.assign(10, 42, 'pos-uuid-001'),
-      ).resolves.toBeUndefined();
+      await expect(service.assign(10, 42, 'pos-uuid-001')).resolves.toBeUndefined();
     });
   });
 
@@ -177,9 +171,7 @@ describe('UserPositionService', () => {
     it('should not throw when assignment does not exist', async () => {
       mockDb.query.mockResolvedValueOnce([]);
 
-      await expect(
-        service.unassign(10, 42, 'pos-uuid-001'),
-      ).resolves.toBeUndefined();
+      await expect(service.unassign(10, 42, 'pos-uuid-001')).resolves.toBeUndefined();
     });
   });
 

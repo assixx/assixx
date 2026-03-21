@@ -116,17 +116,15 @@ export class KvpCategoriesService {
       this.db.query<DbCustomRow>(customQuery, [tenantId]),
     ]);
 
-    const defaults: CustomizableDefault[] = defaultRows.map(
-      (row: DbDefaultRow) => ({
-        id: row.id,
-        defaultName: row.name,
-        customName: row.custom_name,
-        description: row.description,
-        color: row.color,
-        icon: row.icon,
-        isCustomized: row.custom_name !== null,
-      }),
-    );
+    const defaults: CustomizableDefault[] = defaultRows.map((row: DbDefaultRow) => ({
+      id: row.id,
+      defaultName: row.name,
+      customName: row.custom_name,
+      description: row.description,
+      color: row.color,
+      icon: row.icon,
+      isCustomized: row.custom_name !== null,
+    }));
 
     const custom: CustomCategory[] = customRows.map((row: DbCustomRow) => ({
       id: row.id,
@@ -159,9 +157,7 @@ export class KvpCategoriesService {
     userRole: string,
   ): Promise<{ id: number }> {
     await this.assertHasFullAccess(userId, userRole, tenantId);
-    this.logger.log(
-      `Upserting override for category ${categoryId} in tenant ${tenantId}`,
-    );
+    this.logger.log(`Upserting override for category ${categoryId} in tenant ${tenantId}`);
 
     await this.assertGlobalCategoryExists(categoryId);
 
@@ -173,11 +169,7 @@ export class KvpCategoriesService {
       RETURNING id
     `;
 
-    const rows = await this.db.query<{ id: number }>(query, [
-      tenantId,
-      categoryId,
-      customName,
-    ]);
+    const rows = await this.db.query<{ id: number }>(query, [tenantId, categoryId, customName]);
 
     if (rows[0] === undefined) {
       throw new Error('Failed to upsert override');
@@ -196,9 +188,7 @@ export class KvpCategoriesService {
     userRole: string,
   ): Promise<void> {
     await this.assertHasFullAccess(userId, userRole, tenantId);
-    this.logger.log(
-      `Deleting override for category ${categoryId} in tenant ${tenantId}`,
-    );
+    this.logger.log(`Deleting override for category ${categoryId} in tenant ${tenantId}`);
 
     const query = `
       DELETE FROM kvp_categories_custom
@@ -221,9 +211,7 @@ export class KvpCategoriesService {
     description?: string,
   ): Promise<{ id: number }> {
     await this.assertHasFullAccess(userId, userRole, tenantId);
-    this.logger.log(
-      `Creating custom category "${name}" for tenant ${tenantId}`,
-    );
+    this.logger.log(`Creating custom category "${name}" for tenant ${tenantId}`);
 
     await this.assertCategoryLimitNotReached(tenantId);
 
@@ -324,9 +312,7 @@ export class KvpCategoriesService {
     userRole: string,
   ): Promise<{ affectedSuggestions: number }> {
     await this.assertHasFullAccess(userId, userRole, tenantId);
-    this.logger.log(
-      `Soft-deleting custom category ${id} for tenant ${tenantId}`,
-    );
+    this.logger.log(`Soft-deleting custom category ${id} for tenant ${tenantId}`);
 
     const query = `
       UPDATE kvp_categories_custom
@@ -371,9 +357,7 @@ export class KvpCategoriesService {
     );
 
     if (rows[0] === undefined) {
-      throw new NotFoundException(
-        `Global category with ID ${categoryId} not found`,
-      );
+      throw new NotFoundException(`Global category with ID ${categoryId} not found`);
     }
   }
 
@@ -390,9 +374,7 @@ export class KvpCategoriesService {
     const count = rows[0]?.cnt ?? 0;
 
     if (count >= MAX_CATEGORIES_PER_TENANT) {
-      throw new ForbiddenException(
-        `Maximum ${MAX_CATEGORIES_PER_TENANT} categories reached`,
-      );
+      throw new ForbiddenException(`Maximum ${MAX_CATEGORIES_PER_TENANT} categories reached`);
     }
   }
 
@@ -413,8 +395,6 @@ export class KvpCategoriesService {
       if (rows[0]?.has_full_access === true) return;
     }
 
-    throw new ForbiddenException(
-      'Nur Administratoren mit Vollzugriff können Kategorien verwalten',
-    );
+    throw new ForbiddenException('Nur Administratoren mit Vollzugriff können Kategorien verwalten');
   }
 }

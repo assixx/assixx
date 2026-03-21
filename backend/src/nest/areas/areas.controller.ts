@@ -135,12 +135,7 @@ export class AreasController {
     @CurrentUser() user: NestAuthUser,
     @TenantId() tenantId: number,
   ): Promise<MessageResponse> {
-    return await this.areasService.deleteArea(
-      id,
-      user.id,
-      tenantId,
-      query.force,
-    );
+    return await this.areasService.deleteArea(id, user.id, tenantId, query.force);
   }
 
   /**
@@ -154,11 +149,7 @@ export class AreasController {
     @Body() dto: AssignDepartmentsDto,
     @TenantId() tenantId: number,
   ): Promise<MessageResponse> {
-    return await this.areasService.assignDepartmentsToArea(
-      id,
-      dto.departmentIds,
-      tenantId,
-    );
+    return await this.areasService.assignDepartmentsToArea(id, dto.departmentIds, tenantId);
   }
 
   /**

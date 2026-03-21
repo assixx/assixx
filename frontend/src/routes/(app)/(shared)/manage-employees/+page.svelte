@@ -10,11 +10,7 @@
   import AvailabilityModal from '$lib/availability/AvailabilityModal.svelte';
   import PermissionDenied from '$lib/components/PermissionDenied.svelte';
   import { showToast } from '$lib/stores/toast';
-  import {
-    showSuccessAlert,
-    showErrorAlert,
-    showWarningAlert,
-  } from '$lib/utils';
+  import { showSuccessAlert, showErrorAlert, showWarningAlert } from '$lib/utils';
   import { ApiError, getApiErrorMessage } from '$lib/utils/api-client';
   import { createLogger } from '$lib/utils/logger';
 
@@ -74,9 +70,7 @@
   const messages = $derived(createMessages(labels));
 
   // Lead-View: Employees can Read+Edit but NOT Create/Delete
-  const canMutate = $derived(
-    data.user?.role === 'root' || data.user?.role === 'admin',
-  );
+  const canMutate = $derived(data.user?.role === 'root' || data.user?.role === 'admin');
 
   // Permission delegation: show shield button (backend checks actual permission)
   const canManagePermissions = $derived(canMutate || data.orgScope.isAnyLead);
@@ -84,8 +78,7 @@
   // Permission: Only root or admin with has_full_access may upgrade roles
   const canUpgrade = $derived(
     data.user !== null &&
-      (data.user.role === 'root' ||
-        (data.user.role === 'admin' && data.user.hasFullAccess)),
+      (data.user.role === 'root' || (data.user.role === 'admin' && data.user.hasFullAccess)),
   );
 
   // =============================================================================
@@ -148,9 +141,7 @@
   // =============================================================================
 
   const isEditMode = $derived(currentEditId !== null);
-  const modalTitle = $derived(
-    isEditMode ? messages.MODAL_TITLE_EDIT : messages.MODAL_TITLE_ADD,
-  );
+  const modalTitle = $derived(isEditMode ? messages.MODAL_TITLE_EDIT : messages.MODAL_TITLE_ADD);
 
   // Derived: Filtered employees based on current filter/search state
   const filteredEmployees = $derived(
@@ -216,12 +207,7 @@
       );
 
       const result = await apiSaveEmployee(payload, currentEditId);
-      await syncTeamMemberships(
-        result.id,
-        formTeamIds,
-        originalTeamIds,
-        isEditMode,
-      );
+      await syncTeamMemberships(result.id, formTeamIds, originalTeamIds, isEditMode);
 
       closeEmployeeModal();
       await invalidateAll();
@@ -238,9 +224,7 @@
           },
         });
       } else {
-        showSuccessAlert(
-          isEditMode ? 'Mitarbeiter aktualisiert' : 'Mitarbeiter erstellt',
-        );
+        showSuccessAlert(isEditMode ? 'Mitarbeiter aktualisiert' : 'Mitarbeiter erstellt');
       }
     } catch (err: unknown) {
       log.error({ err }, 'Error saving employee');
@@ -280,9 +264,7 @@
       showSuccessAlert(messages.UPGRADE_SUCCESS);
     } catch (err: unknown) {
       log.error({ err }, 'Error upgrading employee to admin');
-      showErrorAlert(
-        err instanceof Error ? err.message : messages.UPGRADE_ERROR,
-      );
+      showErrorAlert(err instanceof Error ? err.message : messages.UPGRADE_ERROR);
     } finally {
       upgradeLoading = false;
     }
@@ -421,9 +403,7 @@
     } catch (err: unknown) {
       log.error({ err }, 'Error updating availability');
       const message =
-        err instanceof ApiError ?
-          err.message
-        : 'Fehler beim Speichern der Verfügbarkeit';
+        err instanceof ApiError ? err.message : 'Fehler beim Speichern der Verfügbarkeit';
       showErrorAlert(message);
     } finally {
       availabilitySubmitting = false;
@@ -537,9 +517,7 @@
           <i class="fas fa-users mr-2"></i>
           Mitarbeiterverwaltung
         </h2>
-        <p class="mt-2 text-(--color-text-secondary)">
-          Mitarbeiter erstellen und verwalten
-        </p>
+        <p class="mt-2 text-(--color-text-secondary)">Mitarbeiter erstellen und verwalten</p>
 
         <div
           class="mt-6 flex flex-col items-stretch gap-4 md:flex-row md:items-center md:justify-between"
@@ -620,8 +598,7 @@
               />
               <button
                 class="search-input__clear"
-                class:search-input__clear--visible={currentSearchQuery.length >
-                  0}
+                class:search-input__clear--visible={currentSearchQuery.length > 0}
                 type="button"
                 aria-label="Suche löschen"
                 onclick={clearSearch}
@@ -641,9 +618,7 @@
       <div class="card__body">
         {#if error}
           <div class="p-6 text-center">
-            <i
-              class="fas fa-exclamation-triangle mb-4 text-4xl text-(--color-danger)"
-            ></i>
+            <i class="fas fa-exclamation-triangle mb-4 text-4xl text-(--color-danger)"></i>
             <p class="text-(--color-text-secondary)">{error}</p>
             <button
               type="button"

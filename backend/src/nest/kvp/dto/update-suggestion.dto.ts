@@ -56,10 +56,7 @@ export const UpdateSuggestionSchema = z.object({
     .optional(),
   actualSavings: z.preprocess(
     (val: unknown) => (typeof val === 'string' ? Number.parseFloat(val) : val),
-    z
-      .number()
-      .min(0, 'Actual savings must be a non-negative number')
-      .optional(),
+    z.number().min(0, 'Actual savings must be a non-negative number').optional(),
   ),
   status: StatusSchema.optional(),
   assignedTo: IdSchema.optional(),

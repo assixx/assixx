@@ -15,16 +15,7 @@
  * - PATCH  /admin-permissions/:userId/full-access                  - Set full access flag (root only)
  */
 import { IS_ACTIVE } from '@assixx/shared/constants';
-import {
-  Body,
-  Controller,
-  Delete,
-  Get,
-  Param,
-  ParseIntPipe,
-  Patch,
-  Post,
-} from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post } from '@nestjs/common';
 
 import { CurrentUser } from '../common/decorators/current-user.decorator.js';
 import { Roles } from '../common/decorators/roles.decorator.js';
@@ -94,10 +85,7 @@ export class AdminPermissionsController {
       };
     }
 
-    return await this.adminPermissionsService.getAdminPermissions(
-      user.id,
-      tenantId,
-    );
+    return await this.adminPermissionsService.getAdminPermissions(user.id, tenantId);
   }
 
   /**
@@ -116,20 +104,14 @@ export class AdminPermissionsController {
     @Param('adminId', ParseIntPipe) adminId: number,
   ): Promise<AdminPermissionsResponse> {
     // Get the admin's tenant ID
-    const adminRows = await this.db.query<{ tenant_id: number }>(
-      GET_ADMIN_TENANT_QUERY,
-      [adminId],
-    );
+    const adminRows = await this.db.query<{ tenant_id: number }>(GET_ADMIN_TENANT_QUERY, [adminId]);
 
     if (adminRows.length === 0 || adminRows[0] === undefined) {
       throw new Error(ERROR_ADMIN_NOT_FOUND);
     }
 
     const targetTenantId = adminRows[0].tenant_id;
-    return await this.adminPermissionsService.getAdminPermissions(
-      adminId,
-      targetTenantId,
-    );
+    return await this.adminPermissionsService.getAdminPermissions(adminId, targetTenantId);
   }
 
   /**
@@ -143,10 +125,9 @@ export class AdminPermissionsController {
     @CurrentUser() user: JwtPayload,
   ): Promise<MessageResponse> {
     // Get the admin's tenant ID
-    const adminRows = await this.db.query<{ tenant_id: number }>(
-      GET_ADMIN_TENANT_QUERY,
-      [dto.adminId],
-    );
+    const adminRows = await this.db.query<{ tenant_id: number }>(GET_ADMIN_TENANT_QUERY, [
+      dto.adminId,
+    ]);
 
     if (adminRows.length === 0 || adminRows[0] === undefined) {
       throw new Error(ERROR_ADMIN_NOT_FOUND);
@@ -189,10 +170,7 @@ export class AdminPermissionsController {
     @CurrentUser() user: JwtPayload,
   ): Promise<MessageResponse> {
     // Get the admin's tenant ID
-    const adminRows = await this.db.query<{ tenant_id: number }>(
-      GET_ADMIN_TENANT_QUERY,
-      [adminId],
-    );
+    const adminRows = await this.db.query<{ tenant_id: number }>(GET_ADMIN_TENANT_QUERY, [adminId]);
 
     if (adminRows.length === 0 || adminRows[0] === undefined) {
       throw new Error(ERROR_ADMIN_NOT_FOUND);
@@ -222,10 +200,7 @@ export class AdminPermissionsController {
     @CurrentUser() user: JwtPayload,
   ): Promise<MessageResponse> {
     // Get the admin's tenant ID
-    const adminRows = await this.db.query<{ tenant_id: number }>(
-      GET_ADMIN_TENANT_QUERY,
-      [adminId],
-    );
+    const adminRows = await this.db.query<{ tenant_id: number }>(GET_ADMIN_TENANT_QUERY, [adminId]);
 
     if (adminRows.length === 0 || adminRows[0] === undefined) {
       throw new Error(ERROR_ADMIN_NOT_FOUND);
@@ -234,12 +209,7 @@ export class AdminPermissionsController {
     const targetTenantId = adminRows[0].tenant_id;
 
     // DEPRECATED: Always throws NotFoundException - groups system removed (never returns)
-    this.adminPermissionsService.removeGroupPermission(
-      adminId,
-      groupId,
-      user.id,
-      targetTenantId,
-    );
+    this.adminPermissionsService.removeGroupPermission(adminId, groupId, user.id, targetTenantId);
   }
 
   /**
@@ -275,10 +245,7 @@ export class AdminPermissionsController {
     @Param('permissionLevel') permissionLevel: string,
   ): Promise<PermissionCheckResult> {
     // Get the admin's tenant ID
-    const adminRows = await this.db.query<{ tenant_id: number }>(
-      GET_ADMIN_TENANT_QUERY,
-      [adminId],
-    );
+    const adminRows = await this.db.query<{ tenant_id: number }>(GET_ADMIN_TENANT_QUERY, [adminId]);
 
     if (adminRows.length === 0 || adminRows[0] === undefined) {
       throw new Error(ERROR_ADMIN_NOT_FOUND);
@@ -311,10 +278,7 @@ export class AdminPermissionsController {
     @Param('departmentId', ParseIntPipe) departmentId: number,
   ): Promise<PermissionCheckResult> {
     // Get the admin's tenant ID
-    const adminRows = await this.db.query<{ tenant_id: number }>(
-      GET_ADMIN_TENANT_QUERY,
-      [adminId],
-    );
+    const adminRows = await this.db.query<{ tenant_id: number }>(GET_ADMIN_TENANT_QUERY, [adminId]);
 
     if (adminRows.length === 0 || adminRows[0] === undefined) {
       throw new Error(ERROR_ADMIN_NOT_FOUND);
@@ -342,10 +306,7 @@ export class AdminPermissionsController {
     @CurrentUser() user: JwtPayload,
   ): Promise<MessageResponse> {
     // Get user tenant
-    const userRows = await this.db.query<{ tenant_id: number }>(
-      GET_USER_TENANT_QUERY,
-      [userId],
-    );
+    const userRows = await this.db.query<{ tenant_id: number }>(GET_USER_TENANT_QUERY, [userId]);
 
     if (userRows.length === 0 || userRows[0] === undefined) {
       throw new Error(ERROR_USER_NOT_FOUND);
@@ -376,10 +337,7 @@ export class AdminPermissionsController {
     @CurrentUser() user: JwtPayload,
   ): Promise<MessageResponse> {
     // Get user tenant
-    const userRows = await this.db.query<{ tenant_id: number }>(
-      GET_USER_TENANT_QUERY,
-      [userId],
-    );
+    const userRows = await this.db.query<{ tenant_id: number }>(GET_USER_TENANT_QUERY, [userId]);
 
     if (userRows.length === 0 || userRows[0] === undefined) {
       throw new Error(ERROR_USER_NOT_FOUND);
@@ -409,10 +367,7 @@ export class AdminPermissionsController {
     @CurrentUser() user: JwtPayload,
   ): Promise<MessageResponse> {
     // Get user tenant
-    const userRows = await this.db.query<{ tenant_id: number }>(
-      GET_USER_TENANT_QUERY,
-      [userId],
-    );
+    const userRows = await this.db.query<{ tenant_id: number }>(GET_USER_TENANT_QUERY, [userId]);
 
     if (userRows.length === 0 || userRows[0] === undefined) {
       throw new Error(ERROR_USER_NOT_FOUND);
@@ -428,8 +383,7 @@ export class AdminPermissionsController {
     );
 
     return {
-      message:
-        dto.hasFullAccess ? 'Full access granted' : 'Full access revoked',
+      message: dto.hasFullAccess ? 'Full access granted' : 'Full access revoked',
     };
   }
 }

@@ -7,10 +7,7 @@
   import { invalidateAll } from '$app/navigation';
 
   import { showSuccessAlert, showErrorAlert } from '$lib/stores/toast';
-  import {
-    isLeadPosition,
-    resolvePositionDisplay,
-  } from '$lib/types/hierarchy-labels';
+  import { isLeadPosition, resolvePositionDisplay } from '$lib/types/hierarchy-labels';
   import { getApiClient } from '$lib/utils/api-client';
 
   import type { PageData } from './$types';
@@ -42,9 +39,7 @@
 
   const labels = $derived(data.hierarchyLabels);
 
-  let positions = $derived<PositionEntry[]>([
-    ...(data.positions as PositionEntry[]),
-  ]);
+  let positions = $derived<PositionEntry[]>([...(data.positions as PositionEntry[])]);
 
   let activeTab = $state<Tab>('employee');
   let newPosition = $state('');
@@ -52,12 +47,7 @@
   let editingValue = $state('');
   let busy = $state(false);
 
-  const LEAD_ORDER = [
-    'area_lead',
-    'department_lead',
-    'team_lead',
-    'deputy_lead',
-  ];
+  const LEAD_ORDER = ['area_lead', 'department_lead', 'team_lead', 'deputy_lead'];
 
   const systemPositions = $derived(
     positions
@@ -69,15 +59,11 @@
   );
 
   const currentList = $derived(
-    positions.filter(
-      (p: PositionEntry) => p.roleCategory === activeTab && !p.isSystem,
-    ),
+    positions.filter((p: PositionEntry) => p.roleCategory === activeTab && !p.isSystem),
   );
 
   function countByCategory(cat: Category): number {
-    return positions.filter(
-      (p: PositionEntry) => p.roleCategory === cat && !p.isSystem,
-    ).length;
+    return positions.filter((p: PositionEntry) => p.roleCategory === cat && !p.isSystem).length;
   }
 
   function displayName(p: PositionEntry): string {
@@ -93,17 +79,14 @@
 
     busy = true;
     try {
-      const created = await apiClient.request<PositionEntry>(
-        '/organigram/positions',
-        {
-          method: 'POST',
-          body: JSON.stringify({
-            name: trimmed,
-            roleCategory: activeTab,
-            sortOrder: currentList.length,
-          }),
-        },
-      );
+      const created = await apiClient.request<PositionEntry>('/organigram/positions', {
+        method: 'POST',
+        body: JSON.stringify({
+          name: trimmed,
+          roleCategory: activeTab,
+          sortOrder: currentList.length,
+        }),
+      });
       positions = [...positions, created];
       newPosition = ''; // eslint-disable-line require-atomic-updates -- Svelte single-threaded
       showSuccessAlert(`Position "${trimmed}" erstellt`);
@@ -153,16 +136,11 @@
 
     busy = true;
     try {
-      const updated = await apiClient.request<PositionEntry>(
-        `/organigram/positions/${editingId}`,
-        {
-          method: 'PUT',
-          body: JSON.stringify({ name: trimmed }),
-        },
-      );
-      positions = positions.map((p: PositionEntry) =>
-        p.id === editingId ? updated : p,
-      );
+      const updated = await apiClient.request<PositionEntry>(`/organigram/positions/${editingId}`, {
+        method: 'PUT',
+        body: JSON.stringify({ name: trimmed }),
+      });
+      positions = positions.map((p: PositionEntry) => (p.id === editingId ? updated : p));
       cancelEdit();
       showSuccessAlert('Position umbenannt');
     } catch {
@@ -172,10 +150,7 @@
     }
   }
 
-  async function movePosition(
-    p: PositionEntry,
-    direction: 'up' | 'down',
-  ): Promise<void> {
+  async function movePosition(p: PositionEntry, direction: 'up' | 'down'): Promise<void> {
     if (p.isSystem || busy) return;
 
     const list = currentList;
@@ -192,13 +167,10 @@
         method: 'PUT',
         body: JSON.stringify({ sortOrder: neighbor.sortOrder }),
       });
-      await apiClient.request<PositionEntry>(
-        `/organigram/positions/${neighbor.id}`,
-        {
-          method: 'PUT',
-          body: JSON.stringify({ sortOrder: p.sortOrder }),
-        },
-      );
+      await apiClient.request<PositionEntry>(`/organigram/positions/${neighbor.id}`, {
+        method: 'PUT',
+        body: JSON.stringify({ sortOrder: p.sortOrder }),
+      });
       await invalidateAll();
     } catch {
       showErrorAlert('Fehler beim Verschieben');
@@ -235,9 +207,8 @@
             Positionen verwalten
           </h2>
           <p class="mt-2 text-(--color-text-secondary)">
-            Definiere die verfügbaren Positionen pro Benutzerrolle. Diese
-            erscheinen in den Dropdown-Menüs beim Erstellen und Bearbeiten von
-            Benutzern.
+            Definiere die verfügbaren Positionen pro Benutzerrolle. Diese erscheinen in den
+            Dropdown-Menüs beim Erstellen und Bearbeiten von Benutzern.
           </p>
         </div>
         <a
@@ -292,9 +263,7 @@
               <span class="position-name">
                 <i class="fas fa-lock system-lock-icon"></i>
                 {displayName(position)}
-                <span class="badge badge--primary badge--xs system-badge"
-                  >System</span
-                >
+                <span class="badge badge--primary badge--xs system-badge">System</span>
               </span>
               <a
                 href="/settings/organigram?editLabels"
@@ -311,10 +280,9 @@
           <div class="alert__icon"><i class="fas fa-info-circle"></i></div>
           <div class="alert__content">
             <div class="alert__message">
-              Leitende Positionen werden automatisch vergeben und können nicht
-              bearbeitet werden. Die Bezeichnungen können über die
-              <a href="/settings/organigram?editLabels">Hierarchie-Labels</a> angepasst
-              werden.
+              Leitende Positionen werden automatisch vergeben und können nicht bearbeitet werden.
+              Die Bezeichnungen können über die
+              <a href="/settings/organigram?editLabels">Hierarchie-Labels</a> angepasst werden.
             </div>
           </div>
         </div>
@@ -488,11 +456,7 @@
   }
 
   .tab.active .tab-count {
-    background: color-mix(
-      in oklch,
-      var(--color-primary, #3b82f6) 20%,
-      transparent
-    );
+    background: color-mix(in oklch, var(--color-primary, #3b82f6) 20%, transparent);
     color: var(--color-primary, #3b82f6);
   }
 
@@ -532,22 +496,13 @@
   }
 
   .position-item--system {
-    background: color-mix(
-      in oklch,
-      var(--color-primary, #3b82f6) 8%,
-      transparent
-    );
-    border: 1px solid
-      color-mix(in oklch, var(--color-primary, #3b82f6) 20%, transparent);
+    background: color-mix(in oklch, var(--color-primary, #3b82f6) 8%, transparent);
+    border: 1px solid color-mix(in oklch, var(--color-primary, #3b82f6) 20%, transparent);
     cursor: default;
   }
 
   .position-item--system:hover {
-    background: color-mix(
-      in oklch,
-      var(--color-primary, #3b82f6) 12%,
-      transparent
-    );
+    background: color-mix(in oklch, var(--color-primary, #3b82f6) 12%, transparent);
   }
 
   .system-lock-icon {
@@ -623,20 +578,12 @@
   }
 
   .btn-icon--danger:hover:not(:disabled) {
-    background: color-mix(
-      in oklch,
-      var(--color-error, #ef4444) 15%,
-      transparent
-    );
+    background: color-mix(in oklch, var(--color-error, #ef4444) 15%, transparent);
     color: var(--color-error, #ef4444);
   }
 
   .btn-icon--success:hover:not(:disabled) {
-    background: color-mix(
-      in oklch,
-      var(--color-success, #22c55e) 15%,
-      transparent
-    );
+    background: color-mix(in oklch, var(--color-success, #22c55e) 15%, transparent);
     color: var(--color-success, #22c55e);
   }
 

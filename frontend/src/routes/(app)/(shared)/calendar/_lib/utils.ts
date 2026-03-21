@@ -2,10 +2,7 @@
 // CALENDAR - UTILITY FUNCTIONS
 // =============================================================================
 
-import {
-  DEFAULT_HIERARCHY_LABELS,
-  type HierarchyLabels,
-} from '$lib/types/hierarchy-labels';
+import { DEFAULT_HIERARCHY_LABELS, type HierarchyLabels } from '$lib/types/hierarchy-labels';
 
 import { EVENT_LEVEL_INFO } from './constants';
 
@@ -37,9 +34,7 @@ export function escapeHtml(text: string | null | undefined): string {
 /**
  * Get event level info for UI display
  */
-export function getEventLevelInfo(
-  orgLevel: OrgLevel | undefined,
-): EventLevelInfo {
+export function getEventLevelInfo(orgLevel: OrgLevel | undefined): EventLevelInfo {
   if (orgLevel === undefined) {
     return EVENT_LEVEL_INFO.personal;
   }
@@ -86,10 +81,7 @@ export function getUserDisplayName(user: User | undefined): string {
 /**
  * Format date for display
  */
-export function formatDate(
-  dateStr: string,
-  options?: Intl.DateTimeFormatOptions,
-): string {
+export function formatDate(dateStr: string, options?: Intl.DateTimeFormatOptions): string {
   const date = new Date(dateStr);
   const defaultOptions: Intl.DateTimeFormatOptions = {
     weekday: 'long',

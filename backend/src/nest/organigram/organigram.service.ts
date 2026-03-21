@@ -154,10 +154,7 @@ export class OrganigramService {
     ]);
 
     const orgHalls = this.mapHallRows(halls);
-    const departmentHallMap = this.buildUuidHallMap(
-      deptHallRows,
-      'department_uuid',
-    );
+    const departmentHallMap = this.buildUuidHallMap(deptHallRows, 'department_uuid');
     const teamHallMap = this.buildUuidHallMap(teamHallRows, 'team_uuid');
     const nodes = this.buildTree(areas, departments, teams, assets, positions);
 
@@ -273,9 +270,7 @@ export class OrganigramService {
     );
   }
 
-  private async fetchDepartmentHalls(
-    tenantId: number,
-  ): Promise<DepartmentHallRow[]> {
+  private async fetchDepartmentHalls(tenantId: number): Promise<DepartmentHallRow[]> {
     return await this.db.query<DepartmentHallRow>(
       `SELECT d.uuid AS department_uuid, h.uuid AS hall_uuid
        FROM department_halls dh
@@ -321,17 +316,10 @@ export class OrganigramService {
     const areaNodes = areas.map((a: AreaRow) =>
       this.toNode('area', a.uuid, a.name, posMap, a.lead_name),
     );
-    const areaMap = new Map(
-      areaNodes.map((n: OrgChartNode) => [n.entityUuid, n]),
-    );
+    const areaMap = new Map(areaNodes.map((n: OrgChartNode) => [n.entityUuid, n]));
     topLevel.push(...areaNodes);
 
-    const deptMap = this.attachDepartments(
-      departments,
-      areaMap,
-      posMap,
-      topLevel,
-    );
+    const deptMap = this.attachDepartments(departments, areaMap, posMap, topLevel);
     this.attachTeams(teams, deptMap, posMap, topLevel);
     this.attachAssets(assets, areaMap, deptMap, posMap, topLevel);
 
@@ -347,13 +335,7 @@ export class OrganigramService {
     const deptMap = new Map<string, OrgChartNode>();
 
     for (const d of departments) {
-      const node = this.toNode(
-        'department',
-        d.uuid,
-        d.name,
-        posMap,
-        d.lead_name,
-      );
+      const node = this.toNode('department', d.uuid, d.name, posMap, d.lead_name);
       deptMap.set(node.entityUuid, node);
 
       if (d.area_uuid !== null) {
@@ -377,14 +359,7 @@ export class OrganigramService {
     topLevel: OrgChartNode[],
   ): void {
     for (const t of teams) {
-      const node = this.toNode(
-        'team',
-        t.uuid,
-        t.name,
-        posMap,
-        t.lead_name,
-        t.member_count,
-      );
+      const node = this.toNode('team', t.uuid, t.name, posMap, t.lead_name, t.member_count);
 
       if (t.department_uuid !== null) {
         const parent = deptMap.get(t.department_uuid.trim());
@@ -460,15 +435,8 @@ export class OrganigramService {
     return node;
   }
 
-  private buildPositionMap(
-    positions: OrgChartPosition[],
-  ): Map<string, OrgChartPosition> {
-    return new Map(
-      positions.map((p: OrgChartPosition) => [
-        `${p.entityType}:${p.entityUuid}`,
-        p,
-      ]),
-    );
+  private buildPositionMap(positions: OrgChartPosition[]): Map<string, OrgChartPosition> {
+    return new Map(positions.map((p: OrgChartPosition) => [`${p.entityType}:${p.entityUuid}`, p]));
   }
 
   // ---- Node Detail ----
@@ -490,10 +458,7 @@ export class OrganigramService {
     }
   }
 
-  private async getAreaDetail(
-    tenantId: number,
-    uuid: string,
-  ): Promise<OrgNodeDetail> {
+  private async getAreaDetail(tenantId: number, uuid: string): Promise<OrgNodeDetail> {
     const [baseRows, deptRows, assetRows, hallRows] = await Promise.all([
       this.db.query<AreaDetailRow>(
         `SELECT a.uuid, a.name, a.type::text AS area_type,
@@ -552,10 +517,7 @@ export class OrganigramService {
     };
   }
 
-  private async getDeptDetail(
-    tenantId: number,
-    uuid: string,
-  ): Promise<OrgNodeDetail> {
+  private async getDeptDetail(tenantId: number, uuid: string): Promise<OrgNodeDetail> {
     const sub = `(SELECT id FROM departments WHERE uuid = $2 AND tenant_id = $1)`;
     const [baseRows, teamRows, empRows, assetRows] = await Promise.all([
       this.db.query<DeptDetailRow>(
@@ -594,8 +556,7 @@ export class OrganigramService {
     ]);
 
     const base = baseRows[0];
-    if (base === undefined)
-      throw new NotFoundException('Abteilung nicht gefunden');
+    if (base === undefined) throw new NotFoundException('Abteilung nicht gefunden');
     const lead = this.toPerson(base.lead_uuid, base.lead_name);
     const parentArea = this.toParent(base.area_uuid, base.area_name);
     const m = (rows: DetailChildRow[]): OrgNodeDetailEntry[] =>
@@ -613,10 +574,7 @@ export class OrganigramService {
     };
   }
 
-  private async getTeamDetail(
-    tenantId: number,
-    uuid: string,
-  ): Promise<OrgNodeDetail> {
+  private async getTeamDetail(tenantId: number, uuid: string): Promise<OrgNodeDetail> {
     const [baseRows, memberRows, assetRows] = await Promise.all([
       this.db.query<TeamDetailRow>(
         `SELECT t.uuid, t.name,
@@ -677,10 +635,7 @@ export class OrganigramService {
     };
   }
 
-  private async getAssetDetail(
-    tenantId: number,
-    uuid: string,
-  ): Promise<OrgNodeDetail> {
+  private async getAssetDetail(tenantId: number, uuid: string): Promise<OrgNodeDetail> {
     const [baseRows, teamRows] = await Promise.all([
       this.db.query<AssetDetailRow>(
         `SELECT ast.uuid, ast.name, ast.status::text AS asset_status,
@@ -705,8 +660,7 @@ export class OrganigramService {
     ]);
 
     const base = baseRows[0];
-    if (base === undefined)
-      throw new NotFoundException('Anlage nicht gefunden');
+    if (base === undefined) throw new NotFoundException('Anlage nicht gefunden');
 
     const parentArea = this.toParent(base.area_uuid, base.area_name);
     const parentDepartment = this.toParent(base.dept_uuid, base.dept_name);
@@ -726,10 +680,7 @@ export class OrganigramService {
 
   // ---- Node Detail Helpers ----
 
-  private toPerson(
-    uuid: string | null,
-    name: string | null,
-  ): OrgNodeDetailPerson | undefined {
+  private toPerson(uuid: string | null, name: string | null): OrgNodeDetailPerson | undefined {
     if (uuid === null || name === null) return undefined;
     const trimmed = name.trim();
     if (trimmed === '') return undefined;
@@ -752,9 +703,7 @@ export class OrganigramService {
     return entry;
   }
 
-  private mapChildren(
-    rows: DetailChildRow[],
-  ): OrgNodeDetailEntry[] | undefined {
+  private mapChildren(rows: DetailChildRow[]): OrgNodeDetailEntry[] | undefined {
     if (rows.length === 0) return undefined;
     return rows.map((r: DetailChildRow) => this.toDetailEntry(r));
   }

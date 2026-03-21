@@ -100,8 +100,7 @@ describe('ShiftAssignmentsQuerySchema', () => {
     });
     expect(result.success).toBe(false);
     expect(
-      (result as { success: false; error: { issues: { path: string[] }[] } })
-        .error.issues[0]?.path,
+      (result as { success: false; error: { issues: { path: string[] }[] } }).error.issues[0]?.path,
     ).toContain('endDate');
   });
 

@@ -39,9 +39,7 @@
     workOrderStatus === 'completed' || workOrderStatus === 'verified',
   );
   const canUpload = $derived(photos.length < MAX_PHOTOS && !isClosedStatus);
-  const currentPhoto = $derived(
-    showPreview && photos.length > 0 ? photos[previewIndex] : null,
-  );
+  const currentPhoto = $derived(showPreview && photos.length > 0 ? photos[previewIndex] : null);
   const hasNavigation = $derived(photos.length > 1);
   const isPrivileged = $derived(userRole === 'root' || userRole === 'admin');
 
@@ -290,9 +288,7 @@
           </div>
         {/if}
         <div class="border-t border-(--border-subtle) bg-(--surface-2) p-4">
-          <div
-            class="flex items-center gap-6 text-sm text-(--color-text-secondary)"
-          >
+          <div class="flex items-center gap-6 text-sm text-(--color-text-secondary)">
             <span class="flex items-center gap-2">
               <i class="fas fa-file-archive"></i>
               {formatFileSize(currentPhoto.fileSize)}
@@ -326,14 +322,12 @@
           <button
             type="button"
             class="btn btn-cancel"
-            onclick={closePreview}
-            ><i class="fas fa-times mr-2"></i>Schließen</button
+            onclick={closePreview}><i class="fas fa-times mr-2"></i>Schließen</button
           >
           <button
             type="button"
             class="btn btn-primary"
-            onclick={downloadPhoto}
-            ><i class="fas fa-download mr-2"></i>Herunterladen</button
+            onclick={downloadPhoto}><i class="fas fa-download mr-2"></i>Herunterladen</button
           >
         </div>
       </div>

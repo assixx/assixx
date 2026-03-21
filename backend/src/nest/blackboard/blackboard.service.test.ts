@@ -156,12 +156,7 @@ describe('BlackboardService – delegation', () => {
 
       const result = await service.getComments(1, 1);
 
-      expect(mockComments.getComments).toHaveBeenCalledWith(
-        1,
-        1,
-        undefined,
-        undefined,
-      );
+      expect(mockComments.getComments).toHaveBeenCalledWith(1, 1, undefined, undefined);
       expect(result).toEqual(paginated);
     });
 

@@ -86,15 +86,7 @@ describe('CalendarCreationService', () => {
       mockDb.query.mockResolvedValueOnce([]);
 
       await expect(
-        service.insertEvent(
-          makeCreateDto() as never,
-          10,
-          5,
-          new Date(),
-          new Date(),
-          null,
-          null,
-        ),
+        service.insertEvent(makeCreateDto() as never, 10, 5, new Date(), new Date(), null, null),
       ).rejects.toThrow('Failed to create event');
     });
   });

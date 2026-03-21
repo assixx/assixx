@@ -1,10 +1,6 @@
 <script lang="ts">
   import { onClickOutsideDropdown } from '$lib/actions/click-outside';
-  import {
-    showWarningAlert,
-    showErrorAlert,
-    showSuccessAlert,
-  } from '$lib/utils';
+  import { showWarningAlert, showErrorAlert, showSuccessAlert } from '$lib/utils';
   import { createLogger } from '$lib/utils/logger';
 
   const log = createLogger('KvpCreateModal');
@@ -75,9 +71,7 @@
 
     for (const file of files) {
       if (selectedPhotos.length >= UPLOAD_CONFIG.MAX_FILES) {
-        showWarningAlert(
-          `Sie können maximal ${UPLOAD_CONFIG.MAX_FILES} Fotos hochladen.`,
-        );
+        showWarningAlert(`Sie können maximal ${UPLOAD_CONFIG.MAX_FILES} Fotos hochladen.`);
         break;
       }
 
@@ -150,9 +144,7 @@
     const uploadResult = await uploadPhotos(suggestionId, selectedPhotos);
     if (!uploadResult.success) {
       const errorMsg = uploadResult.error ?? 'Unbekannter Fehler';
-      showWarningAlert(
-        `Vorschlag erstellt, aber Fotos fehlgeschlagen: ${errorMsg}`,
-      );
+      showWarningAlert(`Vorschlag erstellt, aber Fotos fehlgeschlagen: ${errorMsg}`);
     }
   }
 
@@ -227,10 +219,9 @@
         <div class="alert__content">
           <strong class="alert__title">Wichtiger Hinweis:</strong>
           <p class="alert__message">
-            Nach dem Einreichen können Sie Ihren Vorschlag nicht mehr bearbeiten
-            oder löschen. Bitte prüfen Sie alle Angaben sorgfältig, bevor Sie
-            den Vorschlag absenden. KVP-Vorschläge können vom Vorgesetzten
-            firmenweit oder abteilungsübergreifend geteilt werden.
+            Nach dem Einreichen können Sie Ihren Vorschlag nicht mehr bearbeiten oder löschen. Bitte
+            prüfen Sie alle Angaben sorgfältig, bevor Sie den Vorschlag absenden. KVP-Vorschläge
+            können vom Vorgesetzten firmenweit oder abteilungsübergreifend geteilt werden.
           </p>
         </div>
       </div>
@@ -391,9 +382,7 @@
             for="kvpPhotos"
           >
             Fotos hinzufügen (optional)
-            <span class="form-field__hint"
-              >Max. 5 Fotos, je max. 10MB, nur JPG/PNG</span
-            >
+            <span class="form-field__hint">Max. 5 Fotos, je max. 10MB, nur JPG/PNG</span>
           </label>
           <div class="mt-2">
             <input
@@ -417,9 +406,7 @@
             >
               <i class="fas fa-camera"></i>
               <p>Klicken Sie hier, um Fotos auszuwählen</p>
-              <p class="mt-2 text-sm text-gray-400">
-                oder ziehen Sie Dateien hierher
-              </p>
+              <p class="mt-2 text-sm text-gray-400">oder ziehen Sie Dateien hierher</p>
             </div>
             <div class="mt-6 flex flex-wrap gap-2">
               {#each photoPreviews as preview, index (index)}

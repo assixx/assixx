@@ -13,23 +13,11 @@
  *
  * @see ADR-022 (E2E Key Escrow)
  */
-import {
-  Body,
-  Controller,
-  Get,
-  HttpCode,
-  HttpStatus,
-  Post,
-  Put,
-  UseGuards,
-} from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, HttpStatus, Post, Put, UseGuards } from '@nestjs/common';
 
 import { CurrentUser } from '../common/decorators/current-user.decorator.js';
 import { TenantId } from '../common/decorators/tenant.decorator.js';
-import {
-  AuthThrottle,
-  UserThrottle,
-} from '../common/decorators/throttle.decorators.js';
+import { AuthThrottle, UserThrottle } from '../common/decorators/throttle.decorators.js';
 import { CustomThrottlerGuard } from '../common/guards/throttler.guard.js';
 import type { NestAuthUser } from '../common/interfaces/auth.interface.js';
 import { StoreEscrowDto } from './dto/index.js';

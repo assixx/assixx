@@ -120,13 +120,10 @@ describe('Update Notification Preferences', () => {
 
 describe('Mark Notification as Read', () => {
   it('should return 200 OK', async () => {
-    const res = await fetch(
-      `${BASE_URL}/notifications/${notificationId}/read`,
-      {
-        method: 'PUT',
-        headers: authOnly(auth.authToken),
-      },
-    );
+    const res = await fetch(`${BASE_URL}/notifications/${notificationId}/read`, {
+      method: 'PUT',
+      headers: authOnly(auth.authToken),
+    });
     const body = (await res.json()) as JsonBody;
 
     expect(res.status).toBe(200);
@@ -192,10 +189,10 @@ describe('Mark Feature Entity as Read (work_orders)', () => {
   });
 
   it('should reject invalid type', async () => {
-    const res = await fetch(
-      `${BASE_URL}/notifications/mark-read/invalid/some-uuid`,
-      { method: 'POST', headers: authOnly(auth.authToken) },
-    );
+    const res = await fetch(`${BASE_URL}/notifications/mark-read/invalid/some-uuid`, {
+      method: 'POST',
+      headers: authOnly(auth.authToken),
+    });
 
     expect(res.status).toBe(400);
   });

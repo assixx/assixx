@@ -12,22 +12,11 @@ import { browser } from '$app/environment';
 import { invalidateAll } from '$app/navigation';
 
 import { notificationStore } from '$lib/stores/notification.store.svelte';
-import {
-  showAlert,
-  showErrorAlert,
-  showSuccessAlert,
-  showWarningAlert,
-} from '$lib/utils';
+import { showAlert, showErrorAlert, showSuccessAlert, showWarningAlert } from '$lib/utils';
 import { createLogger } from '$lib/utils/logger';
-import {
-  getNotificationSSE,
-  type NotificationEvent,
-} from '$lib/utils/notification-sse';
+import { getNotificationSSE, type NotificationEvent } from '$lib/utils/notification-sse';
 
-import {
-  markConversationAsRead as apiMarkConversationAsRead,
-  fetchConversationById,
-} from './api';
+import { markConversationAsRead as apiMarkConversationAsRead, fetchConversationById } from './api';
 import {
   cancelScheduledMessage,
   uploadMessageFiles,
@@ -35,10 +24,7 @@ import {
   sendImmediateMessage,
 } from './chat-message-pipeline';
 import { MESSAGES } from './constants';
-import {
-  decryptLoadedMessages,
-  decryptLoadedScheduledMessages,
-} from './e2e-handlers';
+import { decryptLoadedMessages, decryptLoadedScheduledMessages } from './e2e-handlers';
 import * as handlers from './handlers';
 import {
   getChatPartner,
@@ -137,20 +123,14 @@ export function createChatPageState(deps: ChatPageDeps) {
     };
   });
 
-  const isAdmin = $derived(
-    currentUser?.role === 'admin' || currentUser?.role === 'root',
-  );
+  const isAdmin = $derived(currentUser?.role === 'admin' || currentUser?.role === 'root');
   const canStartNewConversation = $derived(isAdmin);
-  const chatPartner = $derived.by(() =>
-    getChatPartner(activeConversation, currentUser?.id ?? 0),
-  );
+  const chatPartner = $derived.by(() => getChatPartner(activeConversation, currentUser?.id ?? 0));
   const chatPartnerName = $derived.by(() =>
     getChatPartnerName(chatPartner, activeConversation?.name),
   );
   const chatPartnerStatus = $derived.by(() => chatPartner?.status ?? 'offline');
-  const filteredMessages = $derived.by(() =>
-    filterMessagesByQuery(messages, debouncedSearchQuery),
-  );
+  const filteredMessages = $derived.by(() => filterMessagesByQuery(messages, debouncedSearchQuery));
   const searchResultCount = $derived(filteredMessages.length);
 
   // ==========================================================================
@@ -197,15 +177,12 @@ export function createChatPageState(deps: ChatPageDeps) {
     const isOwnMessage = newMessage.senderId === currentUser?.id;
     if (isActiveConv) {
       messages = [...messages, newMessage];
-      if (!isOwnMessage)
-        void apiMarkConversationAsRead(newMessage.conversationId);
+      if (!isOwnMessage) void apiMarkConversationAsRead(newMessage.conversationId);
     } else if (!isOwnMessage) {
       notificationStore.incrementCount('chat');
     }
 
-    const conversationExists = conversations.some(
-      (c) => c.id === newMessage.conversationId,
-    );
+    const conversationExists = conversations.some((c) => c.id === newMessage.conversationId);
 
     if (conversationExists) {
       conversations = updateConversationWithMessage(
@@ -229,8 +206,7 @@ export function createChatPageState(deps: ChatPageDeps) {
     createdAt: string;
     isE2e?: boolean;
   } {
-    const content =
-      msg.isE2e === true ? (msg.decryptedContent ?? '') : (msg.content ?? '');
+    const content = msg.isE2e === true ? (msg.decryptedContent ?? '') : (msg.content ?? '');
     return {
       content,
       createdAt: msg.createdAt,
@@ -274,11 +250,7 @@ export function createChatPageState(deps: ChatPageDeps) {
 
   /** Handle user status change — updates sidebar, active conversation, and search results */
   function handleUserStatus(userId: number, status: string): void {
-    conversations = updateConversationsUserStatus(
-      conversations,
-      userId,
-      status as UserStatus,
-    );
+    conversations = updateConversationsUserStatus(conversations, userId, status as UserStatus);
     if (activeConversation !== null) {
       activeConversation = {
         ...activeConversation,
@@ -365,9 +337,7 @@ export function createChatPageState(deps: ChatPageDeps) {
       if (activeConversation?.id === messageData.conversationId) {
         void reloadActiveConversationMessages();
       } else {
-        const convIndex = conversations.findIndex(
-          (c) => c.id === messageData.conversationId,
-        );
+        const convIndex = conversations.findIndex((c) => c.id === messageData.conversationId);
         if (convIndex >= 0) {
           const conv = { ...conversations[convIndex] };
           conv.unreadCount = (conv.unreadCount ?? 0) + 1;
@@ -375,10 +345,7 @@ export function createChatPageState(deps: ChatPageDeps) {
             content: messageData.preview ?? '',
             createdAt: new Date().toISOString(),
           };
-          conversations = [
-            conv,
-            ...conversations.filter((_, i) => i !== convIndex),
-          ];
+          conversations = [conv, ...conversations.filter((_, i) => i !== convIndex)];
         } else {
           // New conversation not in sidebar — fetch from backend
           void fetchAndAddConversation(messageData.conversationId, null);
@@ -401,8 +368,7 @@ export function createChatPageState(deps: ChatPageDeps) {
   // ==========================================================================
 
   async function reloadActiveConversationMessages(): Promise<void> {
-    if (activeConversation === null || activeConversation.isPending === true)
-      return;
+    if (activeConversation === null || activeConversation.isPending === true) return;
     try {
       const result = await handlers.loadMessages(activeConversation.id);
       messages = await decryptLoadedMessages(
@@ -420,10 +386,7 @@ export function createChatPageState(deps: ChatPageDeps) {
       updateSidebarPreviewFromMessages(activeConversation.id, messages);
       setTimeout(() => messagesAreaRef?.scrollToBottom(), 50);
     } catch (error: unknown) {
-      log.error(
-        { err: error },
-        'Failed to reload messages after SSE notification',
-      );
+      log.error({ err: error }, 'Failed to reload messages after SSE notification');
     }
   }
 
@@ -481,8 +444,7 @@ export function createChatPageState(deps: ChatPageDeps) {
       const conv = conversations.find((c) => c.id === conversation.id);
       if (conv) {
         const unreadToDecrement = conv.unreadCount ?? 0;
-        for (let i = 0; i < unreadToDecrement; i++)
-          notificationStore.decrementCount('chat');
+        for (let i = 0; i < unreadToDecrement; i++) notificationStore.decrementCount('chat');
         conv.unreadCount = 0;
       }
       setTimeout(() => messagesAreaRef?.scrollToBottom(), 50);
@@ -540,15 +502,11 @@ export function createChatPageState(deps: ChatPageDeps) {
   // ==========================================================================
 
   async function persistPendingIfNeeded(): Promise<number | null> {
-    if (activeConversation?.isPending !== true)
-      return activeConversation?.id ?? null;
-    const persistedConversation =
-      await handlers.persistPendingConversation(activeConversation);
+    if (activeConversation?.isPending !== true) return activeConversation?.id ?? null;
+    const persistedConversation = await handlers.persistPendingConversation(activeConversation);
     const pendingId = activeConversation.id;
     activeConversation = persistedConversation;
-    conversations = conversations.map((c) =>
-      c.id === pendingId ? persistedConversation : c,
-    );
+    conversations = conversations.map((c) => (c.id === pendingId ? persistedConversation : c));
     await invalidateAll();
     log.info(
       { conversationId: persistedConversation.id },
@@ -617,18 +575,9 @@ export function createChatPageState(deps: ChatPageDeps) {
       return;
     }
     if (conversationId === null) return;
-    const uploaded = await uploadMessageFiles(
-      conversationId,
-      filesToSend,
-      showNotification,
-    );
+    const uploaded = await uploadMessageFiles(conversationId, filesToSend, showNotification);
     if (uploaded === null) return;
-    const result = await dispatchMessage(
-      conversationId,
-      content,
-      uploaded,
-      capturedSchedule,
-    );
+    const result = await dispatchMessage(conversationId, content, uploaded, capturedSchedule);
     if (result.scheduled !== undefined) scheduledMessages = result.scheduled;
     // eslint-disable-next-line require-atomic-updates -- intentional: restore captured content on E2E failure
     if (!result.sent) messageInput = content;
@@ -681,10 +630,7 @@ export function createChatPageState(deps: ChatPageDeps) {
   }
 
   function confirmSchedule(): void {
-    const result = handlers.validateAndSetSchedule(
-      scheduleDate,
-      scheduleTimeInput,
-    );
+    const result = handlers.validateAndSetSchedule(scheduleDate, scheduleTimeInput);
     if (!result.isValid) {
       scheduleError = result.error ?? MESSAGES.errorScheduleMessage;
       return;
@@ -693,18 +639,11 @@ export function createChatPageState(deps: ChatPageDeps) {
     scheduledFor = result.date;
     scheduleError = '';
     showScheduleModal = false;
-    showNotification(
-      `${MESSAGES.infoScheduledAt} ${formatScheduleTime(scheduledFor)}`,
-      'info',
-    );
+    showNotification(`${MESSAGES.infoScheduledAt} ${formatScheduleTime(scheduledFor)}`, 'info');
   }
 
   async function cancelScheduled(scheduled: ScheduledMessage): Promise<void> {
-    const result = await cancelScheduledMessage(
-      scheduled.id,
-      scheduledMessages,
-      showNotification,
-    );
+    const result = await cancelScheduledMessage(scheduled.id, scheduledMessages, showNotification);
     // eslint-disable-next-line require-atomic-updates -- intentional: Svelte reactive state, no real race
     if (result !== null) scheduledMessages = result;
   }
@@ -721,13 +660,9 @@ export function createChatPageState(deps: ChatPageDeps) {
     if (filteredMessages.length === 0) return;
     const len = filteredMessages.length;
     currentSearchIndex =
-      direction === 'next' ?
-        (currentSearchIndex + 1) % len
-      : (currentSearchIndex - 1 + len) % len;
+      direction === 'next' ? (currentSearchIndex + 1) % len : (currentSearchIndex - 1 + len) % len;
     document
-      .querySelector(
-        `[data-message-id="${filteredMessages[currentSearchIndex]?.id}"]`,
-      )
+      .querySelector(`[data-message-id="${filteredMessages[currentSearchIndex]?.id}"]`)
       ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
 
@@ -753,10 +688,7 @@ export function createChatPageState(deps: ChatPageDeps) {
     showConfirmDialog = true;
   }
 
-  function showNotification(
-    msg: string,
-    type: 'success' | 'error' | 'info' | 'warning',
-  ): void {
+  function showNotification(msg: string, type: 'success' | 'error' | 'info' | 'warning'): void {
     log.warn({ type }, msg);
     switch (type) {
       case 'success':

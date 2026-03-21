@@ -56,9 +56,7 @@ describe('SECURITY: AdminPermissionsService', () => {
 
   describe('checkAccess', () => {
     it('should return hasAccess: true when user has read permission', async () => {
-      mockDb.query.mockResolvedValueOnce([
-        { can_read: true, can_write: false, can_delete: false },
-      ]);
+      mockDb.query.mockResolvedValueOnce([{ can_read: true, can_write: false, can_delete: false }]);
 
       const result = await service.checkAccess(1, 10, 5, 'read');
 
@@ -77,9 +75,7 @@ describe('SECURITY: AdminPermissionsService', () => {
     });
 
     it('should check write permission when requested', async () => {
-      mockDb.query.mockResolvedValueOnce([
-        { can_read: true, can_write: true, can_delete: false },
-      ]);
+      mockDb.query.mockResolvedValueOnce([{ can_read: true, can_write: true, can_delete: false }]);
 
       const result = await service.checkAccess(1, 10, 5, 'write');
 
@@ -87,9 +83,7 @@ describe('SECURITY: AdminPermissionsService', () => {
     });
 
     it('should check delete permission when requested', async () => {
-      mockDb.query.mockResolvedValueOnce([
-        { can_read: true, can_write: true, can_delete: true },
-      ]);
+      mockDb.query.mockResolvedValueOnce([{ can_read: true, can_write: true, can_delete: true }]);
 
       const result = await service.checkAccess(1, 10, 5, 'delete');
 
@@ -97,9 +91,7 @@ describe('SECURITY: AdminPermissionsService', () => {
     });
 
     it('should return hasAccess: false when no write but write requested', async () => {
-      mockDb.query.mockResolvedValueOnce([
-        { can_read: true, can_write: false, can_delete: false },
-      ]);
+      mockDb.query.mockResolvedValueOnce([{ can_read: true, can_write: false, can_delete: false }]);
 
       const result = await service.checkAccess(1, 10, 5, 'write');
 
@@ -107,9 +99,7 @@ describe('SECURITY: AdminPermissionsService', () => {
     });
 
     it('should return permissions object on direct access', async () => {
-      mockDb.query.mockResolvedValueOnce([
-        { can_read: true, can_write: true, can_delete: false },
-      ]);
+      mockDb.query.mockResolvedValueOnce([{ can_read: true, can_write: true, can_delete: false }]);
 
       const result = await service.checkAccess(1, 10, 5, 'read');
 
@@ -131,9 +121,7 @@ describe('SECURITY: AdminPermissionsService', () => {
     });
 
     it('should default to read permission level', async () => {
-      mockDb.query.mockResolvedValueOnce([
-        { can_read: true, can_write: false, can_delete: false },
-      ]);
+      mockDb.query.mockResolvedValueOnce([{ can_read: true, can_write: false, can_delete: false }]);
 
       const result = await service.checkAccess(1, 10, 5);
 
@@ -158,9 +146,7 @@ describe('SECURITY: AdminPermissionsService', () => {
 
   describe('removeGroupPermission', () => {
     it('should throw NotFoundException', () => {
-      expect(() => service.removeGroupPermission(1, 10, 5, 1)).toThrow(
-        NotFoundException,
-      );
+      expect(() => service.removeGroupPermission(1, 10, 5, 1)).toThrow(NotFoundException);
     });
 
     it('should mention Area permissions in error message', () => {
@@ -207,9 +193,7 @@ describe('SECURITY: AdminPermissionsService', () => {
   describe('getAdminPermissions', () => {
     it('should return complete permissions response', async () => {
       // getUserRoleInfo
-      mockDb.query.mockResolvedValueOnce([
-        { role: 'admin', has_full_access: false },
-      ]);
+      mockDb.query.mockResolvedValueOnce([{ role: 'admin', has_full_access: false }]);
 
       // getAreaPermissions
       mockDb.query.mockResolvedValueOnce([
@@ -263,9 +247,7 @@ describe('SECURITY: AdminPermissionsService', () => {
     });
 
     it('should convert department_count string to number', async () => {
-      mockDb.query.mockResolvedValueOnce([
-        { role: 'admin', has_full_access: false },
-      ]);
+      mockDb.query.mockResolvedValueOnce([{ role: 'admin', has_full_access: false }]);
       mockDb.query.mockResolvedValueOnce([
         {
           id: 1,
@@ -289,9 +271,7 @@ describe('SECURITY: AdminPermissionsService', () => {
     });
 
     it('should omit description when null in area', async () => {
-      mockDb.query.mockResolvedValueOnce([
-        { role: 'admin', has_full_access: false },
-      ]);
+      mockDb.query.mockResolvedValueOnce([{ role: 'admin', has_full_access: false }]);
       mockDb.query.mockResolvedValueOnce([
         {
           id: 1,
@@ -317,9 +297,7 @@ describe('SECURITY: AdminPermissionsService', () => {
     it('should throw NotFoundException when user not found', async () => {
       mockDb.query.mockResolvedValueOnce([]);
 
-      await expect(service.getAdminPermissions(999, 10)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.getAdminPermissions(999, 10)).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -330,28 +308,20 @@ describe('SECURITY: AdminPermissionsService', () => {
   describe('setHasFullAccess', () => {
     it('should throw BadRequestException when granting full access to employee', async () => {
       // getUserRoleInfo → employee
-      mockDb.query.mockResolvedValueOnce([
-        { role: 'employee', has_full_access: false },
-      ]);
+      mockDb.query.mockResolvedValueOnce([{ role: 'employee', has_full_access: false }]);
 
-      await expect(service.setHasFullAccess(1, true, 99, 10)).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(service.setHasFullAccess(1, true, 99, 10)).rejects.toThrow(BadRequestException);
     });
 
     it('should allow granting full access to admin', async () => {
       // getUserRoleInfo → admin
-      mockDb.query.mockResolvedValueOnce([
-        { role: 'admin', has_full_access: false },
-      ]);
+      mockDb.query.mockResolvedValueOnce([{ role: 'admin', has_full_access: false }]);
       // UPDATE RETURNING
       mockDb.query.mockResolvedValueOnce([{ 1: 1 }]);
       // createAuditLog
       mockDb.query.mockResolvedValueOnce([]);
 
-      await expect(
-        service.setHasFullAccess(1, true, 99, 10),
-      ).resolves.toBeUndefined();
+      await expect(service.setHasFullAccess(1, true, 99, 10)).resolves.toBeUndefined();
     });
 
     it('should allow revoking full access from employee (false is always ok)', async () => {
@@ -361,30 +331,22 @@ describe('SECURITY: AdminPermissionsService', () => {
       // createAuditLog
       mockDb.query.mockResolvedValueOnce([]);
 
-      await expect(
-        service.setHasFullAccess(1, false, 99, 10),
-      ).resolves.toBeUndefined();
+      await expect(service.setHasFullAccess(1, false, 99, 10)).resolves.toBeUndefined();
     });
 
     it('should throw NotFoundException when user not found during grant', async () => {
       // getUserRoleInfo → empty (user not found)
       mockDb.query.mockResolvedValueOnce([]);
 
-      await expect(service.setHasFullAccess(999, true, 99, 10)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.setHasFullAccess(999, true, 99, 10)).rejects.toThrow(NotFoundException);
     });
 
     it('should propagate CHECK constraint error (23514) as DB safety net', async () => {
       // getUserRoleInfo → admin (passes service-level check)
-      mockDb.query.mockResolvedValueOnce([
-        { role: 'admin', has_full_access: false },
-      ]);
+      mockDb.query.mockResolvedValueOnce([{ role: 'admin', has_full_access: false }]);
       // UPDATE triggers CHECK constraint violation (DB safety net)
       const pgError = Object.assign(
-        new Error(
-          'new row violates check constraint "chk_employee_no_full_access"',
-        ),
+        new Error('new row violates check constraint "chk_employee_no_full_access"'),
         { code: '23514' },
       );
       mockDb.query.mockRejectedValueOnce(pgError);
@@ -400,9 +362,7 @@ describe('SECURITY: AdminPermissionsService', () => {
       // UPDATE RETURNING → empty
       mockDb.query.mockResolvedValueOnce([]);
 
-      await expect(
-        service.setHasFullAccess(999, false, 99, 10),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.setHasFullAccess(999, false, 99, 10)).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -460,18 +420,16 @@ describe('SECURITY: AdminPermissionsService', () => {
       // createAuditLog
       mockDb.query.mockResolvedValueOnce([]);
 
-      await expect(
-        service.removeDepartmentPermission(1, 10, 99, 5),
-      ).resolves.toBeUndefined();
+      await expect(service.removeDepartmentPermission(1, 10, 99, 5)).resolves.toBeUndefined();
       expect(mockDb.query).toHaveBeenCalledTimes(2);
     });
 
     it('should throw NotFoundException when permission not found', async () => {
       mockDb.query.mockResolvedValueOnce([]);
 
-      await expect(
-        service.removeDepartmentPermission(1, 999, 99, 5),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.removeDepartmentPermission(1, 999, 99, 5)).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
@@ -492,14 +450,7 @@ describe('SECURITY: AdminPermissionsService', () => {
       mockDb.query.mockResolvedValueOnce([]);
       mockDb.query.mockResolvedValueOnce([]);
 
-      const result = await service.bulkUpdatePermissions(
-        [1, 2],
-        'assign',
-        [10],
-        perms,
-        99,
-        5,
-      );
+      const result = await service.bulkUpdatePermissions([1, 2], 'assign', [10], perms, 99, 5);
 
       expect(result.successCount).toBe(2);
       expect(result.totalCount).toBe(2);
@@ -511,14 +462,7 @@ describe('SECURITY: AdminPermissionsService', () => {
       mockDb.query.mockResolvedValueOnce([]);
       mockDb.query.mockResolvedValueOnce([]);
 
-      const result = await service.bulkUpdatePermissions(
-        [1],
-        'remove',
-        undefined,
-        perms,
-        99,
-        5,
-      );
+      const result = await service.bulkUpdatePermissions([1], 'remove', undefined, perms, 99, 5);
 
       expect(result.successCount).toBe(1);
     });
@@ -530,14 +474,7 @@ describe('SECURITY: AdminPermissionsService', () => {
       mockDb.query.mockResolvedValueOnce([]);
       mockDb.query.mockResolvedValueOnce([]);
 
-      const result = await service.bulkUpdatePermissions(
-        [1, 2],
-        'remove',
-        undefined,
-        perms,
-        99,
-        5,
-      );
+      const result = await service.bulkUpdatePermissions([1, 2], 'remove', undefined, perms, 99, 5);
 
       expect(result.successCount).toBe(1);
       expect(result.totalCount).toBe(2);
@@ -546,14 +483,7 @@ describe('SECURITY: AdminPermissionsService', () => {
     });
 
     it('should return success:false for assign without departmentIds', async () => {
-      const result = await service.bulkUpdatePermissions(
-        [1],
-        'assign',
-        undefined,
-        perms,
-        99,
-        5,
-      );
+      const result = await service.bulkUpdatePermissions([1], 'assign', undefined, perms, 99, 5);
 
       expect(result.successCount).toBe(0);
       expect(mockDb.query).not.toHaveBeenCalled();
@@ -633,17 +563,13 @@ describe('SECURITY: AdminPermissionsService', () => {
       // createAuditLog
       mockDb.query.mockResolvedValueOnce([]);
 
-      await expect(
-        service.removeAreaPermission(1, 10, 99, 5),
-      ).resolves.toBeUndefined();
+      await expect(service.removeAreaPermission(1, 10, 99, 5)).resolves.toBeUndefined();
     });
 
     it('should throw NotFoundException when area permission not found', async () => {
       mockDb.query.mockResolvedValueOnce([]);
 
-      await expect(service.removeAreaPermission(1, 999, 99, 5)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.removeAreaPermission(1, 999, 99, 5)).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -671,9 +597,7 @@ describe('SECURITY: AdminPermissionsService', () => {
 
   describe('getAdminPermissions — lead areas returned', () => {
     it('should map lead areas with read-only permissions', async () => {
-      mockDb.query.mockResolvedValueOnce([
-        { role: 'admin', has_full_access: false },
-      ]);
+      mockDb.query.mockResolvedValueOnce([{ role: 'admin', has_full_access: false }]);
       mockDb.query.mockResolvedValueOnce([]); // getAreaPermissions
       mockDb.query.mockResolvedValueOnce([]); // getDepartmentPermissions
       // getLeadAreas — user is area_lead
@@ -704,9 +628,7 @@ describe('SECURITY: AdminPermissionsService', () => {
     });
 
     it('should omit description from lead area when null', async () => {
-      mockDb.query.mockResolvedValueOnce([
-        { role: 'admin', has_full_access: false },
-      ]);
+      mockDb.query.mockResolvedValueOnce([{ role: 'admin', has_full_access: false }]);
       mockDb.query.mockResolvedValueOnce([]); // getAreaPermissions
       mockDb.query.mockResolvedValueOnce([]); // getDepartmentPermissions
       mockDb.query.mockResolvedValueOnce([
@@ -730,9 +652,7 @@ describe('SECURITY: AdminPermissionsService', () => {
 
   describe('getAdminPermissions — lead departments returned', () => {
     it('should map lead departments with read-only permissions via mapDepartmentRow', async () => {
-      mockDb.query.mockResolvedValueOnce([
-        { role: 'admin', has_full_access: false },
-      ]);
+      mockDb.query.mockResolvedValueOnce([{ role: 'admin', has_full_access: false }]);
       mockDb.query.mockResolvedValueOnce([]); // getAreaPermissions
       mockDb.query.mockResolvedValueOnce([]); // getDepartmentPermissions
       mockDb.query.mockResolvedValueOnce([]); // getLeadAreas
@@ -771,9 +691,7 @@ describe('SECURITY: AdminPermissionsService', () => {
 
   describe('getAdminPermissions — department with description', () => {
     it('should include description when not null', async () => {
-      mockDb.query.mockResolvedValueOnce([
-        { role: 'admin', has_full_access: true },
-      ]);
+      mockDb.query.mockResolvedValueOnce([{ role: 'admin', has_full_access: true }]);
       mockDb.query.mockResolvedValueOnce([]); // areas
       mockDb.query.mockResolvedValueOnce([
         {
@@ -810,9 +728,7 @@ describe('SECURITY: AdminPermissionsService', () => {
       mockDb.query.mockRejectedValueOnce(new Error('Audit DB down'));
 
       // setDepartmentPermissions with empty depts (skips INSERT) → just DELETE + audit
-      await expect(
-        service.setDepartmentPermissions(1, [], perms, 99, 5),
-      ).resolves.toBeUndefined();
+      await expect(service.setDepartmentPermissions(1, [], perms, 99, 5)).resolves.toBeUndefined();
     });
   });
 });

@@ -138,10 +138,7 @@ export function getFileType(doc: Document): 'pdf' | 'image' | 'document' {
 /**
  * Get file type display info for upload preview
  */
-export function getFileTypeDisplayInfo(
-  mimeType: string,
-  extension: string,
-): FileTypeDisplayInfo {
+export function getFileTypeDisplayInfo(mimeType: string, extension: string): FileTypeDisplayInfo {
   if (mimeType === 'application/pdf' || extension === 'pdf') {
     return {
       cssClass: 'file-upload-item__preview--pdf',
@@ -212,8 +209,7 @@ export function truncateFilename(filename: string, maxLength: number): string {
 
   const extension = filename.slice(lastDot);
   const nameWithoutExt = filename.slice(0, lastDot);
-  const truncated =
-    nameWithoutExt.slice(0, maxLength - extension.length - 3) + '...';
+  const truncated = nameWithoutExt.slice(0, maxLength - extension.length - 3) + '...';
 
   return truncated + extension;
 }
@@ -265,14 +261,10 @@ export function validateUserForCategory(
     return { valid: true };
   }
 
-  if (
-    mapping.requiresField === 'teamId' &&
-    (user.teamId === null || user.teamId === undefined)
-  ) {
+  if (mapping.requiresField === 'teamId' && (user.teamId === null || user.teamId === undefined)) {
     return {
       valid: false,
-      error:
-        'Sie müssen einem Team zugeordnet sein, um Team-Dokumente hochzuladen!',
+      error: 'Sie müssen einem Team zugeordnet sein, um Team-Dokumente hochzuladen!',
     };
   }
 
@@ -312,11 +304,7 @@ function populateTargetIds(
     return;
   }
 
-  if (
-    accessScope === 'team' &&
-    user.teamId !== null &&
-    user.teamId !== undefined
-  ) {
+  if (accessScope === 'team' && user.teamId !== null && user.teamId !== undefined) {
     uploadData.targetTeamId = user.teamId;
     return;
   }
@@ -420,10 +408,7 @@ export function canSeeActions(role: string | null): boolean {
  * - admin with hasFullAccess=false: can only edit own documents
  * - employee: can only edit own documents
  */
-export function canEditDocument(
-  doc: Document,
-  user: CurrentUser | null,
-): boolean {
+export function canEditDocument(doc: Document, user: CurrentUser | null): boolean {
   if (user === null) return false;
 
   // root can edit everything
@@ -447,10 +432,7 @@ export function canEditDocument(
  * - admin with hasFullAccess=false: can only delete own documents
  * - employee: can only delete own documents
  */
-export function canDeleteDocument(
-  doc: Document,
-  user: CurrentUser | null,
-): boolean {
+export function canDeleteDocument(doc: Document, user: CurrentUser | null): boolean {
   // Same logic as edit for now
   return canEditDocument(doc, user);
 }
@@ -490,10 +472,7 @@ export function validateUploadData(
   if (!validation.valid) {
     return { valid: false, error: validation.error ?? '', type: 'warning' };
   }
-  if (
-    mapping.requiresPayrollPeriod === true &&
-    (data.salaryYear === 0 || data.salaryMonth === 0)
-  ) {
+  if (mapping.requiresPayrollPeriod === true && (data.salaryYear === 0 || data.salaryMonth === 0)) {
     return {
       valid: false,
       error: MESSAGES.UPLOAD_SELECT_PAYROLL_PERIOD,

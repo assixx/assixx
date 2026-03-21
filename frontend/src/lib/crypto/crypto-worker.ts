@@ -138,9 +138,7 @@ const epochKeyCache = new Map<string, Uint8Array>();
 /** Get the user-scoped IndexedDB name. Throws if userId not set. */
 function getDbName(): string {
   if (activeUserId === null) {
-    throw new Error(
-      'Worker not initialized — userId required before DB access',
-    );
+    throw new Error('Worker not initialized — userId required before DB access');
   }
   return `${DB_NAME_PREFIX}${activeUserId}`;
 }
@@ -162,11 +160,7 @@ function openDb(): Promise<IDBDatabase> {
     };
 
     request.onerror = () => {
-      reject(
-        new Error(
-          `IndexedDB open failed: ${request.error?.message ?? 'unknown'}`,
-        ),
-      );
+      reject(new Error(`IndexedDB open failed: ${request.error?.message ?? 'unknown'}`));
     };
   });
 }
@@ -184,11 +178,7 @@ async function readKeyFromDb(): Promise<StoredPrivateKey | undefined> {
     };
 
     getReq.onerror = () => {
-      reject(
-        new Error(
-          `IndexedDB read failed: ${getReq.error?.message ?? 'unknown'}`,
-        ),
-      );
+      reject(new Error(`IndexedDB read failed: ${getReq.error?.message ?? 'unknown'}`));
     };
 
     tx.oncomplete = () => {
@@ -260,13 +250,7 @@ function getEpochKey(
 
   const sharedSecret = getSharedSecret(recipientPublicKeyB64);
   const info = new TextEncoder().encode(`${HKDF_INFO_PREFIX}${keyEpoch}`);
-  const derivedKey = hkdf(
-    sha256,
-    sharedSecret,
-    conversationSaltBytes,
-    info,
-    32,
-  );
+  const derivedKey = hkdf(sha256, sharedSecret, conversationSaltBytes, info, 32);
   epochKeyCache.set(cacheKey, derivedKey);
   return derivedKey;
 }
@@ -279,11 +263,7 @@ function encryptMessage(
   keyEpoch: number,
 ): { ciphertext: string; nonce: string; keyEpoch: number } {
   const conversationSaltBytes = fromBase64(conversationSaltB64);
-  const encKey = getEpochKey(
-    recipientPublicKeyB64,
-    conversationSaltBytes,
-    keyEpoch,
-  );
+  const encKey = getEpochKey(recipientPublicKeyB64, conversationSaltBytes, keyEpoch);
   const nonce = randomBytes(NONCE_LENGTH);
   const plaintextBytes = new TextEncoder().encode(plaintext);
 
@@ -306,11 +286,7 @@ function decryptMessage(
   keyEpoch: number,
 ): string {
   const conversationSaltBytes = fromBase64(conversationSaltB64);
-  const encKey = getEpochKey(
-    senderPublicKeyB64,
-    conversationSaltBytes,
-    keyEpoch,
-  );
+  const encKey = getEpochKey(senderPublicKeyB64, conversationSaltBytes, keyEpoch);
   const ciphertextBytes = fromBase64(ciphertextB64);
   const nonceBytes = fromBase64(nonceB64);
 
@@ -367,9 +343,7 @@ async function handleInit(requestId: string, userId: number): Promise<void> {
 }
 
 /** Atomic key generation with IndexedDB readwrite transaction (serializes across tabs) */
-async function atomicKeyGeneration(
-  db: IDBDatabase,
-): Promise<StoredPrivateKey | null> {
+async function atomicKeyGeneration(db: IDBDatabase): Promise<StoredPrivateKey | null> {
   return await new Promise<StoredPrivateKey | null>((resolve, reject) => {
     const tx = db.transaction(STORE_NAME, 'readwrite');
     const store = tx.objectStore(STORE_NAME);
@@ -399,20 +373,12 @@ async function atomicKeyGeneration(
         resolve(null);
       };
       putReq.onerror = () => {
-        reject(
-          new Error(
-            `IndexedDB put failed: ${putReq.error?.message ?? 'unknown'}`,
-          ),
-        );
+        reject(new Error(`IndexedDB put failed: ${putReq.error?.message ?? 'unknown'}`));
       };
     };
 
     getReq.onerror = () => {
-      reject(
-        new Error(
-          `IndexedDB get failed: ${getReq.error?.message ?? 'unknown'}`,
-        ),
-      );
+      reject(new Error(`IndexedDB get failed: ${getReq.error?.message ?? 'unknown'}`));
     };
 
     tx.oncomplete = () => {
@@ -472,12 +438,7 @@ function handleEncrypt(
   }
 
   try {
-    const encrypted = encryptMessage(
-      plaintext,
-      recipientPublicKey,
-      conversationSalt,
-      keyEpoch,
-    );
+    const encrypted = encryptMessage(plaintext, recipientPublicKey, conversationSalt, keyEpoch);
     respond({ requestId, type: 'encrypted', ...encrypted });
   } catch (err: unknown) {
     respond({
@@ -553,10 +514,7 @@ function handleGetFingerprint(requestId: string): void {
  *
  * @see ADR-022
  */
-async function handleWrapPrivateKey(
-  requestId: string,
-  password: string,
-): Promise<void> {
+async function handleWrapPrivateKey(requestId: string, password: string): Promise<void> {
   if (privateKey === null) {
     respond({ requestId, type: 'error', message: 'No private key to wrap' });
     return;
@@ -596,8 +554,7 @@ async function handleWrapPrivateKey(
     respond({
       requestId,
       type: 'error',
-      message:
-        err instanceof Error ? err.message : 'Failed to wrap private key',
+      message: err instanceof Error ? err.message : 'Failed to wrap private key',
     });
   }
 }
@@ -663,18 +620,14 @@ async function handleUnwrapPrivateKey(
       fingerprint: computeFingerprint(recoveredPublicKeyB64),
     });
   } catch (err: unknown) {
-    const reason =
-      err instanceof Error ? err.message : 'Failed to unwrap private key';
+    const reason = err instanceof Error ? err.message : 'Failed to unwrap private key';
     // "invalid tag" from XChaCha20 = wrong password
     respond({ requestId, type: 'unwrapFailed', reason });
   }
 }
 
 /** Store a recovered/generated key in IndexedDB */
-async function storeKeyInDb(
-  key: Uint8Array,
-  publicKeyB64: string,
-): Promise<void> {
+async function storeKeyInDb(key: Uint8Array, publicKeyB64: string): Promise<void> {
   const db = await openDb();
   await new Promise<void>((resolve, reject) => {
     const tx = db.transaction(STORE_NAME, 'readwrite');
@@ -691,11 +644,7 @@ async function storeKeyInDb(
       resolve();
     };
     putReq.onerror = () => {
-      reject(
-        new Error(
-          `IndexedDB put failed: ${putReq.error?.message ?? 'unknown'}`,
-        ),
-      );
+      reject(new Error(`IndexedDB put failed: ${putReq.error?.message ?? 'unknown'}`));
     };
     tx.oncomplete = () => {
       db.close();

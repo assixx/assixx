@@ -53,9 +53,7 @@
   const ssrSuggestions = $derived<KvpSuggestion[]>(data.suggestions);
   const ssrStatistics = $derived<KvpStats | null>(data.statistics);
   const ssrCurrentUser = $derived<CurrentUser | null>(data.currentUser);
-  const ssrUserOrganizations = $derived<UserTeamWithAssets[]>(
-    data.userOrganizations,
-  );
+  const ssrUserOrganizations = $derived<UserTeamWithAssets[]>(data.userOrganizations);
   const permissionDenied = $derived<boolean>(data.permissionDenied);
   const showStats = $derived<boolean>(data.showStats);
 
@@ -205,21 +203,18 @@
           </div>
           <div class="card-stat__content">
             <div class="card-stat__value">
-              {kvpState.formattedStats.teamTotal} / {kvpState.formattedStats
-                .total}
+              {kvpState.formattedStats.teamTotal} / {kvpState.formattedStats.total}
             </div>
             <div class="card-stat__label">Team / Gesamt</div>
           </div>
         </div>
         <div
           class="card-stat"
-          class:card-stat--success={kvpState.formattedStats
-            .implementationRate >= 50}
-          class:card-stat--warning={kvpState.formattedStats
-            .implementationRate >= 25 &&
+          class:card-stat--success={kvpState.formattedStats.implementationRate >= 50}
+          class:card-stat--warning={kvpState.formattedStats.implementationRate >= 25 &&
             kvpState.formattedStats.implementationRate < 50}
-          class:card-stat--danger={kvpState.formattedStats.implementationRate >
-            0 && kvpState.formattedStats.implementationRate < 25}
+          class:card-stat--danger={kvpState.formattedStats.implementationRate > 0 &&
+            kvpState.formattedStats.implementationRate < 25}
         >
           <div class="card-stat__icon">
             <i class="fas fa-chart-line"></i>
@@ -242,8 +237,7 @@
         <div>
           <h2 class="card-title">KVP-Vorschläge</h2>
           <p class="text-secondary">
-            Kontinuierlicher Verbesserungsprozess - Ihre Ideen für bessere
-            Ablaeufe
+            Kontinuierlicher Verbesserungsprozess - Ihre Ideen für bessere Ablaeufe
           </p>
         </div>
       </div>
@@ -278,10 +272,7 @@
                 {suggestion}
                 {labels}
                 onclick={() => {
-                  viewSuggestion(
-                    suggestion.uuid,
-                    suggestion.isConfirmed === true,
-                  );
+                  viewSuggestion(suggestion.uuid, suggestion.isConfirmed === true);
                 }}
               />
             {/each}

@@ -29,7 +29,5 @@ export function up(pgm: MigrationBuilder): void {
 }
 
 export function down(pgm: MigrationBuilder): void {
-  pgm.sql(
-    `ALTER TABLE users DROP CONSTRAINT IF EXISTS chk_employee_no_full_access;`,
-  );
+  pgm.sql(`ALTER TABLE users DROP CONSTRAINT IF EXISTS chk_employee_no_full_access;`);
 }

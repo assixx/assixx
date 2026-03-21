@@ -1,8 +1,5 @@
 <script lang="ts">
-  import {
-    DEFAULT_HIERARCHY_LABELS,
-    type HierarchyLabels,
-  } from '$lib/types/hierarchy-labels';
+  import { DEFAULT_HIERARCHY_LABELS, type HierarchyLabels } from '$lib/types/hierarchy-labels';
 
   import {
     getEventLevelText,
@@ -45,9 +42,7 @@
 
   // Lookup names for assignments
   const areaName = $derived(areas.find((a) => a.id === event.areaId)?.name);
-  const departmentName = $derived(
-    departments.find((d) => d.id === event.departmentId)?.name,
-  );
+  const departmentName = $derived(departments.find((d) => d.id === event.departmentId)?.name);
   const teamName = $derived(teams.find((t) => t.id === event.teamId)?.name);
 </script>
 
@@ -128,8 +123,7 @@
           {#if departmentName}
             <div class="detail-item">
               <i class="fas fa-sitemap"></i>
-              <span><strong>{labels.department}:</strong> {departmentName}</span
-              >
+              <span><strong>{labels.department}:</strong> {departmentName}</span>
             </div>
           {/if}
           {#if teamName}
@@ -152,18 +146,15 @@
           <h4>Teilnehmer ({event.attendees.length})</h4>
           <div class="attendee-list">
             {#each event.attendees as attendee (attendee.userId)}
-              {@const fullName =
-                `${attendee.firstName ?? ''} ${attendee.lastName ?? ''}`.trim()}
-              {@const name =
-                fullName !== '' ? fullName : (attendee.username ?? 'Unbekannt')}
+              {@const fullName = `${attendee.firstName ?? ''} ${attendee.lastName ?? ''}`.trim()}
+              {@const name = fullName !== '' ? fullName : (attendee.username ?? 'Unbekannt')}
               <div class="attendee-item">
                 <span>{name}</span>
                 <span
                   class="attendee-status"
                   title={getResponseText(attendee.responseStatus)}
                 >
-                  <i class="fas {getResponseIconClass(attendee.responseStatus)}"
-                  ></i>
+                  <i class="fas {getResponseIconClass(attendee.responseStatus)}"></i>
                 </span>
               </div>
             {/each}
@@ -173,9 +164,7 @@
         {#if isPast}
           <div class="past-event-notice">
             <i class="fas fa-lock"></i>
-            <span
-              >Vergangene Termine können nicht bearbeitet oder gelöscht werden.</span
-            >
+            <span>Vergangene Termine können nicht bearbeitet oder gelöscht werden.</span>
           </div>
         {/if}
 
@@ -221,8 +210,7 @@
   #eventDetailContent h3 {
     margin-bottom: 20px;
     padding-bottom: 15px;
-    border-bottom: 2px solid
-      color-mix(in oklch, var(--color-white) 10%, transparent);
+    border-bottom: 2px solid color-mix(in oklch, var(--color-white) 10%, transparent);
     font-size: 1.5rem;
     font-weight: 600;
     color: var(--primary-color);
@@ -352,8 +340,7 @@
     justify-content: flex-end;
     margin-top: 30px;
     padding-top: 20px;
-    border-top: 1px solid
-      color-mix(in oklch, var(--color-white) 10%, transparent);
+    border-top: 1px solid color-mix(in oklch, var(--color-white) 10%, transparent);
   }
 
   .modal-actions :global(.btn) {

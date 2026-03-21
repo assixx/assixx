@@ -72,9 +72,7 @@ interface FetchResults {
 /**
  * Type guard: safely convert API string to AvailabilityStatus
  */
-function toAvailabilityStatus(
-  status: string | undefined,
-): AvailabilityStatus | undefined {
+function toAvailabilityStatus(status: string | undefined): AvailabilityStatus | undefined {
   if (status === undefined || status === '') {
     return undefined;
   }
@@ -128,9 +126,7 @@ function extractTeamLeaderId(
  */
 function processRawTeamMembers(raw: unknown): TeamMember[] {
   const members = asArray<TeamMemberApiResponse>(raw);
-  return members
-    .filter((m) => m.userRole === 'employee')
-    .map(convertTeamMember);
+  return members.filter((m) => m.userRole === 'employee').map(convertTeamMember);
 }
 
 /**
@@ -153,9 +149,7 @@ function processFetchResults(
   const teams = asArray<Team>(resultByLabel.get('teams'));
   const teamMembers = processRawTeamMembers(resultByLabel.get('teamMembers'));
   const favorites = asArray<ShiftFavorite>(resultByLabel.get('favorites'));
-  const staffingRules = asArray<StaffingRuleRaw>(
-    resultByLabel.get('staffingRules'),
-  );
+  const staffingRules = asArray<StaffingRuleRaw>(resultByLabel.get('staffingRules'));
   const teamLeaderId = extractTeamLeaderId(teams, hasTeam, primaryTeamId);
 
   return {
@@ -191,12 +185,10 @@ function buildEmployeeTeamInfo(
 
   return {
     teamId: primaryTeamId,
-    teamName:
-      userData.teamNames?.[0] ?? userData.teamName ?? 'Unbekanntes Team',
+    teamName: userData.teamNames?.[0] ?? userData.teamName ?? 'Unbekanntes Team',
     departmentId: userData.teamDepartmentId ?? 0,
     departmentName:
-      userData.teamDepartmentName ??
-      `Unbekannte ${DEFAULT_HIERARCHY_LABELS.department}`,
+      userData.teamDepartmentName ?? `Unbekannte ${DEFAULT_HIERARCHY_LABELS.department}`,
     areaId: userData.teamAreaId ?? 0,
     areaName: userData.teamAreaName ?? 'Unbekannter Bereich',
     teamLeaderId,
@@ -249,30 +241,20 @@ function prepareFetchPromises(
   if (hasTeam && primaryTeamId !== null) {
     const departmentId = userData.teamDepartmentId;
     if (departmentId !== undefined && departmentId !== null) {
-      promises.push(
-        apiFetch<Team[]>(`/teams?departmentId=${departmentId}`, token, fetchFn),
-      );
+      promises.push(apiFetch<Team[]>(`/teams?departmentId=${departmentId}`, token, fetchFn));
       labels.push('teams');
     }
     promises.push(
-      apiFetch<TeamMemberApiResponse[]>(
-        `/teams/${primaryTeamId}/members`,
-        token,
-        fetchFn,
-      ),
+      apiFetch<TeamMemberApiResponse[]>(`/teams/${primaryTeamId}/members`, token, fetchFn),
     );
     labels.push('teamMembers');
   }
 
   if (isAdminOrRoot) {
-    promises.push(
-      apiFetch<ShiftFavorite[]>('/shifts/favorites', token, fetchFn),
-    );
+    promises.push(apiFetch<ShiftFavorite[]>('/shifts/favorites', token, fetchFn));
     labels.push('favorites');
 
-    promises.push(
-      apiFetch<StaffingRuleRaw[]>('/vacation/staffing-rules', token, fetchFn),
-    );
+    promises.push(apiFetch<StaffingRuleRaw[]>('/vacation/staffing-rules', token, fetchFn));
     labels.push('staffingRules');
   }
 
@@ -306,11 +288,7 @@ function buildDeniedResponse(
 /**
  * Fetch and assemble all shift data for a given user
  */
-async function loadShiftsDataForUser(
-  token: string,
-  fetchFn: typeof fetch,
-  userData: User,
-) {
+async function loadShiftsDataForUser(token: string, fetchFn: typeof fetch, userData: User) {
   const isEmployee = userData.role === 'employee';
   const primaryTeamId = userData.teamIds?.[0] ?? userData.teamId ?? null;
   const hasTeam = isEmployee && primaryTeamId !== null;
@@ -323,12 +301,7 @@ async function loadShiftsDataForUser(
   );
 
   if (shiftTimesResult.permissionDenied) {
-    return buildDeniedResponse(
-      userData,
-      primaryTeamId,
-      isEmployee,
-      isAdminOrRoot,
-    );
+    return buildDeniedResponse(userData, primaryTeamId, isEmployee, isAdminOrRoot);
   }
 
   const { promises, labels } = prepareFetchPromises(
@@ -340,19 +313,13 @@ async function loadShiftsDataForUser(
     isAdminOrRoot,
   );
   const results = await Promise.all(promises);
-  const processed = processFetchResults(
-    results,
-    labels,
-    hasTeam,
-    primaryTeamId,
-  );
+  const processed = processFetchResults(results, labels, hasTeam, primaryTeamId);
 
   return {
     permissionDenied: false as const,
     user: buildUserResponse(userData, primaryTeamId),
     areas: processed.areas,
-    shiftTimes:
-      Array.isArray(shiftTimesResult.data) ? shiftTimesResult.data : [],
+    shiftTimes: Array.isArray(shiftTimesResult.data) ? shiftTimesResult.data : [],
     teams: processed.teams,
     teamMembers: processed.teamMembers,
     favorites: processed.favorites,

@@ -87,19 +87,13 @@ function renderVacationIndicators(): void {
     renderedCount++;
   });
 
-  log.debug(
-    { renderedCount, cachedCount: vacationsCache.size },
-    'Rendered vacation indicators',
-  );
+  log.debug({ renderedCount, cachedCount: vacationsCache.size }, 'Rendered vacation indicators');
 }
 
 /**
  * Fetch and cache vacations, then render indicators
  */
-async function fetchAndRenderVacations(
-  startStr: string,
-  endStr: string,
-): Promise<void> {
+async function fetchAndRenderVacations(startStr: string, endStr: string): Promise<void> {
   if (!showVacationsState) {
     vacationsCache.clear();
     return;

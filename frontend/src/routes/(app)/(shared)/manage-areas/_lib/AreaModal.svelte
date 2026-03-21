@@ -8,13 +8,7 @@
   } from './utils';
 
   import type { AreaMessages } from './constants';
-  import type {
-    FormIsActiveStatus,
-    AreaType,
-    AdminUser,
-    Department,
-    Hall,
-  } from './types';
+  import type { FormIsActiveStatus, AreaType, AdminUser, Department, Hall } from './types';
 
   // Props with bindable for two-way binding
   interface Props {
@@ -49,9 +43,7 @@
   let areaLeadDropdownOpen = $state(false);
 
   // Derived area lead display name
-  const areaLeadDisplayName = $derived(
-    getAreaLeadDisplayName(formAreaLeadId, areaLeads),
-  );
+  const areaLeadDisplayName = $derived(getAreaLeadDisplayName(formAreaLeadId, areaLeads));
 
   // =============================================================================
   // DROPDOWN HANDLERS
@@ -210,8 +202,8 @@
             </span>
             <div class="alert__content">
               <p class="alert__message">
-                Nur Admins/Root mit der Position &laquo;{messages.AREA_LEAD_POSITION}&raquo;
-                stehen zur Auswahl. Zuweisung über die
+                Nur Admins/Root mit der Position &laquo;{messages.AREA_LEAD_POSITION}&raquo; stehen
+                zur Auswahl. Zuweisung über die
                 <a href="/manage-admins">Admin-Verwaltung</a>.
               </p>
             </div>
@@ -442,9 +434,7 @@
                 </button>
               </div>
             </div>
-            <span
-              class="form-field__message mt-1 block text-(--color-text-secondary)"
-            >
+            <span class="form-field__message mt-1 block text-(--color-text-secondary)">
               {messages.STATUS_HINT}
             </span>
           </div>
@@ -462,8 +452,7 @@
           class="btn btn-primary"
           disabled={submitting}
         >
-          {#if submitting}<span class="spinner-ring spinner-ring--sm mr-2"
-            ></span>{/if}
+          {#if submitting}<span class="spinner-ring spinner-ring--sm mr-2"></span>{/if}
           {messages.BTN_SAVE}
         </button>
       </div>

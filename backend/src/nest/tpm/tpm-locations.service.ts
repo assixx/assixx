@@ -40,13 +40,9 @@ function mapLocationRowToApi(
     isActive: row.is_active,
     createdBy: row.created_by,
     createdAt:
-      typeof row.created_at === 'string' ?
-        row.created_at
-      : new Date(row.created_at).toISOString(),
+      typeof row.created_at === 'string' ? row.created_at : new Date(row.created_at).toISOString(),
     updatedAt:
-      typeof row.updated_at === 'string' ?
-        row.updated_at
-      : new Date(row.updated_at).toISOString(),
+      typeof row.updated_at === 'string' ? row.updated_at : new Date(row.updated_at).toISOString(),
   };
 
   if (row.plan_uuid !== undefined) {
@@ -69,10 +65,7 @@ export class TpmLocationsService {
   ) {}
 
   /** List all active locations for a plan, ordered by position_number */
-  async listLocations(
-    tenantId: number,
-    planUuid: string,
-  ): Promise<TpmLocation[]> {
+  async listLocations(tenantId: number, planUuid: string): Promise<TpmLocation[]> {
     type JoinRow = TpmLocationRow & {
       plan_uuid: string;
       created_by_name: string;
@@ -92,10 +85,7 @@ export class TpmLocationsService {
   }
 
   /** Get a single location by UUID */
-  async getLocation(
-    tenantId: number,
-    locationUuid: string,
-  ): Promise<TpmLocation> {
+  async getLocation(tenantId: number, locationUuid: string): Promise<TpmLocation> {
     type JoinRow = TpmLocationRow & {
       plan_uuid: string;
       created_by_name: string;
@@ -123,47 +113,43 @@ export class TpmLocationsService {
     userId: number,
     dto: CreateLocationDto,
   ): Promise<TpmLocation> {
-    this.logger.debug(
-      `Creating location #${dto.positionNumber} for plan ${dto.planUuid}`,
-    );
+    this.logger.debug(`Creating location #${dto.positionNumber} for plan ${dto.planUuid}`);
 
-    return await this.db.tenantTransaction(
-      async (client: PoolClient): Promise<TpmLocation> => {
-        const planId = await this.resolvePlanId(client, tenantId, dto.planUuid);
+    return await this.db.tenantTransaction(async (client: PoolClient): Promise<TpmLocation> => {
+      const planId = await this.resolvePlanId(client, tenantId, dto.planUuid);
 
-        const result = await client.query<TpmLocationRow>(
-          `INSERT INTO tpm_locations
+      const result = await client.query<TpmLocationRow>(
+        `INSERT INTO tpm_locations
              (uuid, tenant_id, plan_id, position_number, title, description, is_active, created_by)
            VALUES ($1, $2, $3, $4, $5, $6, 1, $7)
            RETURNING *`,
-          [
-            uuidv7(),
-            tenantId,
-            planId,
-            dto.positionNumber,
-            dto.title,
-            dto.description ?? null,
-            userId,
-          ],
-        );
-
-        const row = result.rows[0];
-        if (row === undefined) {
-          throw new Error('INSERT into tpm_locations returned no rows');
-        }
-
-        void this.activityLogger.logCreate(
+        [
+          uuidv7(),
           tenantId,
+          planId,
+          dto.positionNumber,
+          dto.title,
+          dto.description ?? null,
           userId,
-          'asset',
-          0,
-          `TPM-Standort erstellt: #${dto.positionNumber} ${dto.title}`,
-          { uuid: row.uuid.trim(), positionNumber: dto.positionNumber },
-        );
+        ],
+      );
 
-        return mapLocationRowToApi(row);
-      },
-    );
+      const row = result.rows[0];
+      if (row === undefined) {
+        throw new Error('INSERT into tpm_locations returned no rows');
+      }
+
+      void this.activityLogger.logCreate(
+        tenantId,
+        userId,
+        'asset',
+        0,
+        `TPM-Standort erstellt: #${dto.positionNumber} ${dto.title}`,
+        { uuid: row.uuid.trim(), positionNumber: dto.positionNumber },
+      );
+
+      return mapLocationRowToApi(row);
+    });
   }
 
   /** Update an existing location */
@@ -173,99 +159,85 @@ export class TpmLocationsService {
     locationUuid: string,
     dto: UpdateLocationDto,
   ): Promise<TpmLocation> {
-    return await this.db.tenantTransaction(
-      async (client: PoolClient): Promise<TpmLocation> => {
-        const existing = await this.lockLocationByUuid(
-          client,
-          tenantId,
-          locationUuid,
-        );
+    return await this.db.tenantTransaction(async (client: PoolClient): Promise<TpmLocation> => {
+      const existing = await this.lockLocationByUuid(client, tenantId, locationUuid);
 
-        const setClauses: string[] = [];
-        const params: unknown[] = [];
-        let idx = 1;
+      const setClauses: string[] = [];
+      const params: unknown[] = [];
+      let idx = 1;
 
-        if (dto.positionNumber !== undefined) {
-          setClauses.push(`position_number = $${idx++}`);
-          params.push(dto.positionNumber);
-        }
-        if (dto.title !== undefined) {
-          setClauses.push(`title = $${idx++}`);
-          params.push(dto.title);
-        }
-        if (dto.description !== undefined) {
-          setClauses.push(`description = $${idx++}`);
-          params.push(dto.description);
-        }
+      if (dto.positionNumber !== undefined) {
+        setClauses.push(`position_number = $${idx++}`);
+        params.push(dto.positionNumber);
+      }
+      if (dto.title !== undefined) {
+        setClauses.push(`title = $${idx++}`);
+        params.push(dto.title);
+      }
+      if (dto.description !== undefined) {
+        setClauses.push(`description = $${idx++}`);
+        params.push(dto.description);
+      }
 
-        if (setClauses.length === 0) {
-          return mapLocationRowToApi(existing);
-        }
+      if (setClauses.length === 0) {
+        return mapLocationRowToApi(existing);
+      }
 
-        params.push(locationUuid, tenantId);
-        const sql = `UPDATE tpm_locations
+      params.push(locationUuid, tenantId);
+      const sql = `UPDATE tpm_locations
                      SET ${setClauses.join(', ')}, updated_at = NOW()
                      WHERE uuid = $${idx} AND tenant_id = $${idx + 1} AND is_active = ${IS_ACTIVE.ACTIVE}
                      RETURNING *`;
 
-        const result = await client.query<TpmLocationRow>(sql, params);
-        const row = result.rows[0];
-        if (row === undefined) {
-          throw new Error('UPDATE tpm_locations returned no rows');
-        }
+      const result = await client.query<TpmLocationRow>(sql, params);
+      const row = result.rows[0];
+      if (row === undefined) {
+        throw new Error('UPDATE tpm_locations returned no rows');
+      }
 
-        void this.activityLogger.logUpdate(
-          tenantId,
-          userId,
-          'asset',
-          0,
-          `TPM-Standort aktualisiert: ${locationUuid}`,
-          undefined,
-          {
-            uuid: locationUuid,
-            positionNumber: dto.positionNumber,
-            title: dto.title,
-            description: dto.description,
-          },
-        );
+      void this.activityLogger.logUpdate(
+        tenantId,
+        userId,
+        'asset',
+        0,
+        `TPM-Standort aktualisiert: ${locationUuid}`,
+        undefined,
+        {
+          uuid: locationUuid,
+          positionNumber: dto.positionNumber,
+          title: dto.title,
+          description: dto.description,
+        },
+      );
 
-        return mapLocationRowToApi(row);
-      },
-    );
+      return mapLocationRowToApi(row);
+    });
   }
 
   /** Soft-delete a location (is_active = 4) */
-  async deleteLocation(
-    tenantId: number,
-    userId: number,
-    locationUuid: string,
-  ): Promise<void> {
-    await this.db.tenantTransaction(
-      async (client: PoolClient): Promise<void> => {
-        const result = await client.query<{ id: number }>(
-          `UPDATE tpm_locations
+  async deleteLocation(tenantId: number, userId: number, locationUuid: string): Promise<void> {
+    await this.db.tenantTransaction(async (client: PoolClient): Promise<void> => {
+      const result = await client.query<{ id: number }>(
+        `UPDATE tpm_locations
            SET is_active = ${IS_ACTIVE.DELETED}, updated_at = NOW()
            WHERE uuid = $1 AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}
            RETURNING id`,
-          [locationUuid, tenantId],
-        );
+        [locationUuid, tenantId],
+      );
 
-        if (result.rows[0] === undefined) {
-          throw new NotFoundException(
-            `Standort ${locationUuid} nicht gefunden`,
-          );
-        }
+      if (result.rows[0] === undefined) {
+        throw new NotFoundException(`Standort ${locationUuid} nicht gefunden`);
+      }
 
-        void this.activityLogger.logDelete(
-          tenantId,
-          userId,
-          'asset',
-          0,
-          `TPM-Standort gelöscht: ${locationUuid}`,
-          { uuid: locationUuid },
-        );
-      },
-    );
+      void this.activityLogger.logDelete(
+        tenantId,
+        userId,
+        'asset',
+        0,
+        `TPM-Standort gelöscht: ${locationUuid}`,
+        { uuid: locationUuid },
+      );
+    });
   }
 
   /** Set photo metadata on a location */
@@ -275,87 +247,68 @@ export class TpmLocationsService {
     locationUuid: string,
     photo: LocationPhotoData,
   ): Promise<TpmLocation> {
-    return await this.db.tenantTransaction(
-      async (client: PoolClient): Promise<TpmLocation> => {
-        await this.lockLocationByUuid(client, tenantId, locationUuid);
+    return await this.db.tenantTransaction(async (client: PoolClient): Promise<TpmLocation> => {
+      await this.lockLocationByUuid(client, tenantId, locationUuid);
 
-        const result = await client.query<TpmLocationRow>(
-          `UPDATE tpm_locations
+      const result = await client.query<TpmLocationRow>(
+        `UPDATE tpm_locations
            SET photo_path = $1, photo_file_name = $2, photo_file_size = $3,
                photo_mime_type = $4, updated_at = NOW()
            WHERE uuid = $5 AND tenant_id = $6 AND is_active = ${IS_ACTIVE.ACTIVE}
            RETURNING *`,
-          [
-            photo.filePath,
-            photo.fileName,
-            photo.fileSize,
-            photo.mimeType,
-            locationUuid,
-            tenantId,
-          ],
-        );
+        [photo.filePath, photo.fileName, photo.fileSize, photo.mimeType, locationUuid, tenantId],
+      );
 
-        const row = result.rows[0];
-        if (row === undefined) {
-          throw new NotFoundException(
-            `Standort ${locationUuid} nicht gefunden`,
-          );
-        }
+      const row = result.rows[0];
+      if (row === undefined) {
+        throw new NotFoundException(`Standort ${locationUuid} nicht gefunden`);
+      }
 
-        void this.activityLogger.logUpdate(
-          tenantId,
-          userId,
-          'asset',
-          0,
-          `TPM-Standort Foto aktualisiert: ${locationUuid}`,
-          undefined,
-          { uuid: locationUuid, fileName: photo.fileName },
-        );
+      void this.activityLogger.logUpdate(
+        tenantId,
+        userId,
+        'asset',
+        0,
+        `TPM-Standort Foto aktualisiert: ${locationUuid}`,
+        undefined,
+        { uuid: locationUuid, fileName: photo.fileName },
+      );
 
-        return mapLocationRowToApi(row);
-      },
-    );
+      return mapLocationRowToApi(row);
+    });
   }
 
   /** Remove photo from a location */
-  async removePhoto(
-    tenantId: number,
-    userId: number,
-    locationUuid: string,
-  ): Promise<TpmLocation> {
-    return await this.db.tenantTransaction(
-      async (client: PoolClient): Promise<TpmLocation> => {
-        await this.lockLocationByUuid(client, tenantId, locationUuid);
+  async removePhoto(tenantId: number, userId: number, locationUuid: string): Promise<TpmLocation> {
+    return await this.db.tenantTransaction(async (client: PoolClient): Promise<TpmLocation> => {
+      await this.lockLocationByUuid(client, tenantId, locationUuid);
 
-        const result = await client.query<TpmLocationRow>(
-          `UPDATE tpm_locations
+      const result = await client.query<TpmLocationRow>(
+        `UPDATE tpm_locations
            SET photo_path = NULL, photo_file_name = NULL, photo_file_size = NULL,
                photo_mime_type = NULL, updated_at = NOW()
            WHERE uuid = $1 AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}
            RETURNING *`,
-          [locationUuid, tenantId],
-        );
+        [locationUuid, tenantId],
+      );
 
-        const row = result.rows[0];
-        if (row === undefined) {
-          throw new NotFoundException(
-            `Standort ${locationUuid} nicht gefunden`,
-          );
-        }
+      const row = result.rows[0];
+      if (row === undefined) {
+        throw new NotFoundException(`Standort ${locationUuid} nicht gefunden`);
+      }
 
-        void this.activityLogger.logUpdate(
-          tenantId,
-          userId,
-          'asset',
-          0,
-          `TPM-Standort Foto entfernt: ${locationUuid}`,
-          undefined,
-          { uuid: locationUuid },
-        );
+      void this.activityLogger.logUpdate(
+        tenantId,
+        userId,
+        'asset',
+        0,
+        `TPM-Standort Foto entfernt: ${locationUuid}`,
+        undefined,
+        { uuid: locationUuid },
+      );
 
-        return mapLocationRowToApi(row);
-      },
-    );
+      return mapLocationRowToApi(row);
+    });
   }
 
   // ===========================================================================

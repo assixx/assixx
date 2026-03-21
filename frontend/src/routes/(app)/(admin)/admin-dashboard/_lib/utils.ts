@@ -10,13 +10,7 @@ import { goto } from '$app/navigation';
 
 import { PRIORITY_LABELS, type DashboardMessages } from './constants';
 
-import type {
-  User,
-  Priority,
-  OrgLevel,
-  BlackboardOrgLevel,
-  FormattedEventDate,
-} from './types';
+import type { User, Priority, OrgLevel, BlackboardOrgLevel, FormattedEventDate } from './types';
 
 /** Get display name for employee */
 export function getEmployeeName(user: User): string {
@@ -56,9 +50,7 @@ export function getBlackboardOrgLabel(
 }
 
 /** Format blackboard date (German locale, date only - no time) */
-export function formatBlackboardDate(
-  dateStr: string | null | undefined,
-): string {
+export function formatBlackboardDate(dateStr: string | null | undefined): string {
   if (dateStr === null || dateStr === undefined || dateStr === '') return '';
   const date = new Date(dateStr);
   if (Number.isNaN(date.getTime())) return '';

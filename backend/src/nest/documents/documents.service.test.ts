@@ -131,18 +131,14 @@ describe('DocumentsService', () => {
     it('should throw NotFoundException when document not found', async () => {
       mockDb.query.mockResolvedValueOnce([]);
 
-      await expect(service.getDocumentById(999, 42, 1)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.getDocumentById(999, 42, 1)).rejects.toThrow(NotFoundException);
     });
 
     it('should throw ForbiddenException when user has no access', async () => {
       mockDb.query.mockResolvedValueOnce([createDocRow()]);
       mockAccess.checkDocumentAccess.mockResolvedValueOnce(false);
 
-      await expect(service.getDocumentById(1, 42, 99)).rejects.toThrow(
-        ForbiddenException,
-      );
+      await expect(service.getDocumentById(1, 42, 99)).rejects.toThrow(ForbiddenException);
     });
 
     it('should return enriched document when user has access', async () => {
@@ -190,9 +186,7 @@ describe('DocumentsService', () => {
       // getDocumentRow → query returns empty
       mockDb.query.mockResolvedValueOnce([]);
 
-      await expect(service.deleteDocument(999, 42, 1)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.deleteDocument(999, 42, 1)).rejects.toThrow(NotFoundException);
     });
 
     it('should throw ForbiddenException for non-admin user', async () => {
@@ -201,9 +195,7 @@ describe('DocumentsService', () => {
       // getUserById → employee
       mockDb.query.mockResolvedValueOnce([{ role: 'employee' }]);
 
-      await expect(service.deleteDocument(1, 42, 3)).rejects.toThrow(
-        ForbiddenException,
-      );
+      await expect(service.deleteDocument(1, 42, 3)).rejects.toThrow(ForbiddenException);
     });
 
     it('should soft-delete for admin user', async () => {
@@ -230,9 +222,7 @@ describe('DocumentsService', () => {
     it('should throw ForbiddenException for employee', async () => {
       mockDb.query.mockResolvedValueOnce([{ role: 'employee' }]);
 
-      await expect(service.archiveDocument(1, 42, 3)).rejects.toThrow(
-        ForbiddenException,
-      );
+      await expect(service.archiveDocument(1, 42, 3)).rejects.toThrow(ForbiddenException);
     });
 
     it(`should set is_active = ${IS_ACTIVE.ARCHIVED} for admin`, async () => {
@@ -251,9 +241,7 @@ describe('DocumentsService', () => {
     it('should throw ForbiddenException for employee', async () => {
       mockDb.query.mockResolvedValueOnce([{ role: 'employee' }]);
 
-      await expect(service.unarchiveDocument(1, 42, 3)).rejects.toThrow(
-        ForbiddenException,
-      );
+      await expect(service.unarchiveDocument(1, 42, 3)).rejects.toThrow(ForbiddenException);
     });
 
     it(`should set is_active = ${IS_ACTIVE.ACTIVE} for root`, async () => {
@@ -276,9 +264,7 @@ describe('DocumentsService', () => {
     it('should throw NotFoundException when user not found', async () => {
       mockDb.query.mockResolvedValueOnce([]);
 
-      await expect(service.getDocumentStats(42, 999)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.getDocumentStats(42, 999)).rejects.toThrow(NotFoundException);
     });
 
     it('should include storage for admin', async () => {
@@ -360,9 +346,7 @@ describe('DocumentsService', () => {
       mockDb.query.mockResolvedValueOnce([createDocRow()]);
       mockAccess.checkDocumentAccess.mockResolvedValueOnce(false);
 
-      await expect(service.getDocumentContent(1, 42, 99)).rejects.toThrow(
-        ForbiddenException,
-      );
+      await expect(service.getDocumentContent(1, 42, 99)).rejects.toThrow(ForbiddenException);
     });
   });
 
@@ -374,9 +358,9 @@ describe('DocumentsService', () => {
     it('should throw NotFoundException for unknown UUID', async () => {
       mockDb.query.mockResolvedValueOnce([]);
 
-      await expect(
-        service.getDocumentByUuid('unknown-uuid', 42, 1),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.getDocumentByUuid('unknown-uuid', 42, 1)).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
@@ -389,9 +373,9 @@ describe('DocumentsService', () => {
       // getDocumentRow → empty
       mockDb.query.mockResolvedValueOnce([]);
 
-      await expect(
-        service.updateDocument(999, { filename: 'x' } as never, 42, 1),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.updateDocument(999, { filename: 'x' } as never, 42, 1)).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should throw NotFoundException when user not found', async () => {
@@ -399,9 +383,9 @@ describe('DocumentsService', () => {
       // getUserById → empty
       mockDb.query.mockResolvedValueOnce([]);
 
-      await expect(
-        service.updateDocument(1, { filename: 'x' } as never, 42, 999),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.updateDocument(1, { filename: 'x' } as never, 42, 999)).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should throw ForbiddenException for non-admin non-creator', async () => {
@@ -409,9 +393,9 @@ describe('DocumentsService', () => {
       // getUserById → employee (not creator)
       mockDb.query.mockResolvedValueOnce([{ role: 'employee' }]);
 
-      await expect(
-        service.updateDocument(1, { filename: 'x' } as never, 42, 99),
-      ).rejects.toThrow(ForbiddenException);
+      await expect(service.updateDocument(1, { filename: 'x' } as never, 42, 99)).rejects.toThrow(
+        ForbiddenException,
+      );
     });
 
     it('should allow admin to update any document', async () => {
@@ -420,12 +404,7 @@ describe('DocumentsService', () => {
       // UPDATE
       mockDb.query.mockResolvedValueOnce([]);
 
-      const result = await service.updateDocument(
-        1,
-        { filename: 'Updated.pdf' } as never,
-        42,
-        2,
-      );
+      const result = await service.updateDocument(1, { filename: 'Updated.pdf' } as never, 42, 2);
 
       expect(result.message).toBe('Document updated successfully');
     });
@@ -436,12 +415,7 @@ describe('DocumentsService', () => {
       // UPDATE
       mockDb.query.mockResolvedValueOnce([]);
 
-      const result = await service.updateDocument(
-        1,
-        { description: 'New desc' } as never,
-        42,
-        10,
-      );
+      const result = await service.updateDocument(1, { description: 'New desc' } as never, 42, 10);
 
       expect(result.message).toBe('Document updated successfully');
     });
@@ -525,9 +499,7 @@ describe('DocumentsService', () => {
     it('should throw NotFoundException when document missing', async () => {
       mockDb.query.mockResolvedValueOnce([]);
 
-      await expect(service.getDocumentContent(999, 42, 10)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.getDocumentContent(999, 42, 10)).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -576,14 +548,9 @@ describe('DocumentsService', () => {
       // getDocumentsCount → count query
       mockDb.query.mockResolvedValueOnce([{ count: '25' }]);
       // paginated query → 2 docs
-      mockDb.query.mockResolvedValueOnce([
-        createDocRow({ id: 1 }),
-        createDocRow({ id: 2 }),
-      ]);
+      mockDb.query.mockResolvedValueOnce([createDocRow({ id: 1 }), createDocRow({ id: 2 })]);
       // isDocumentRead for each doc
-      mockAccess.isDocumentRead
-        .mockResolvedValueOnce(true)
-        .mockResolvedValueOnce(false);
+      mockAccess.isDocumentRead.mockResolvedValueOnce(true).mockResolvedValueOnce(false);
 
       const result = await service.listDocuments(42, 1, {
         page: 1,
@@ -743,26 +710,20 @@ describe('DocumentsService', () => {
     it('archiveDocument should throw when user not found', async () => {
       mockDb.query.mockResolvedValueOnce([]);
 
-      await expect(service.archiveDocument(1, 42, 999)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.archiveDocument(1, 42, 999)).rejects.toThrow(NotFoundException);
     });
 
     it('unarchiveDocument should throw when user not found', async () => {
       mockDb.query.mockResolvedValueOnce([]);
 
-      await expect(service.unarchiveDocument(1, 42, 999)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.unarchiveDocument(1, 42, 999)).rejects.toThrow(NotFoundException);
     });
 
     it('deleteDocument should throw when user not found', async () => {
       mockDb.query.mockResolvedValueOnce([createDocRow()]);
       mockDb.query.mockResolvedValueOnce([]); // getUserById → empty
 
-      await expect(service.deleteDocument(1, 42, 999)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.deleteDocument(1, 42, 999)).rejects.toThrow(NotFoundException);
     });
   });
 

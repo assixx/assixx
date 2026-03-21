@@ -5,10 +5,7 @@
    */
   import RequestForm from './RequestForm.svelte';
 
-  import type {
-    CreateVacationRequestPayload,
-    VacationCapacityAnalysis,
-  } from './types';
+  import type { CreateVacationRequestPayload, VacationCapacityAnalysis } from './types';
 
   interface RequestFormRef {
     submitForm(): void;

@@ -11,11 +11,7 @@ import {
   mapDbUserToAdminUser,
   mapDbUserToRootUser,
 } from './root.helpers.js';
-import type {
-  DbRootLogRow,
-  DbUserRow,
-  UpdateUserRequest,
-} from './root.types.js';
+import type { DbRootLogRow, DbUserRow, UpdateUserRequest } from './root.types.js';
 
 // ============================================================================
 // MOCK DATA FACTORIES
@@ -65,9 +61,7 @@ describe('ERROR_CODES', () => {
     expect(ERROR_CODES.NOT_FOUND).toBe('NOT_FOUND');
     expect(ERROR_CODES.DUPLICATE_EMAIL).toBe('DUPLICATE_EMAIL');
     expect(ERROR_CODES.DUPLICATE_USERNAME).toBe('DUPLICATE_USERNAME');
-    expect(ERROR_CODES.DUPLICATE_EMPLOYEE_NUMBER).toBe(
-      'DUPLICATE_EMPLOYEE_NUMBER',
-    );
+    expect(ERROR_CODES.DUPLICATE_EMPLOYEE_NUMBER).toBe('DUPLICATE_EMPLOYEE_NUMBER');
     expect(ERROR_CODES.SELF_DELETE).toBe('SELF_DELETE');
     expect(ERROR_CODES.LAST_ROOT_USER).toBe('LAST_ROOT_USER');
     expect(ERROR_CODES.INSUFFICIENT_ROOT_USERS).toBe('INSUFFICIENT_ROOT_USERS');

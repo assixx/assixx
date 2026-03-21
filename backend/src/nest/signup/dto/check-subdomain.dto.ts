@@ -42,9 +42,7 @@ export const CheckSubdomainParamSchema = z.object({
 /**
  * DTO for subdomain check path parameter
  */
-export class CheckSubdomainParamDto extends createZodDto(
-  CheckSubdomainParamSchema,
-) {}
+export class CheckSubdomainParamDto extends createZodDto(CheckSubdomainParamSchema) {}
 
 // ========================================
 // RESPONSE TYPE

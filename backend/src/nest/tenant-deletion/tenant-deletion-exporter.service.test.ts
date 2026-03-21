@@ -14,14 +14,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { TenantDeletionExporter } from './tenant-deletion-exporter.service.js';
 import { getTablesWithTenantId } from './tenant-deletion.helpers.js';
 
-const { mockMkdir, mockWriteFile, mockStat, mockExecPromise } = vi.hoisted(
-  () => ({
-    mockMkdir: vi.fn().mockResolvedValue(undefined),
-    mockWriteFile: vi.fn().mockResolvedValue(undefined),
-    mockStat: vi.fn().mockResolvedValue({ size: 2048 }),
-    mockExecPromise: vi.fn().mockResolvedValue(undefined),
-  }),
-);
+const { mockMkdir, mockWriteFile, mockStat, mockExecPromise } = vi.hoisted(() => ({
+  mockMkdir: vi.fn().mockResolvedValue(undefined),
+  mockWriteFile: vi.fn().mockResolvedValue(undefined),
+  mockStat: vi.fn().mockResolvedValue({ size: 2048 }),
+  mockExecPromise: vi.fn().mockResolvedValue(undefined),
+}));
 
 vi.mock('fs/promises', () => ({
   default: {
@@ -49,18 +47,12 @@ const mockGetTables = vi.mocked(getTablesWithTenantId);
 type ExporterPrivate = {
   sanitizeCompanyName: (name: string) => string;
   formatSqlValue: (val: unknown) => string;
-  generateInsertStatement: (
-    table: string,
-    row: Record<string, unknown>,
-  ) => string;
+  generateInsertStatement: (table: string, row: Record<string, unknown>) => string;
   setupBackupPaths: (
     name: string,
     id: number,
   ) => { backupDir: string; dataDir: string; backupDirName: string };
-  fetchTenantInfo: (
-    id: number,
-    client: unknown,
-  ) => Promise<{ company_name: string } | undefined>;
+  fetchTenantInfo: (id: number, client: unknown) => Promise<{ company_name: string } | undefined>;
 };
 
 describe('TenantDeletionExporter', () => {
@@ -137,9 +129,7 @@ describe('TenantDeletionExporter', () => {
     });
 
     it('should return object as JSON with escaped quotes', () => {
-      expect(priv.formatSqlValue({ key: "val'ue" })).toBe(
-        '\'{"key":"val\'\'ue"}\'',
-      );
+      expect(priv.formatSqlValue({ key: "val'ue" })).toBe('\'{"key":"val\'\'ue"}\'');
     });
 
     it('should return NULL for undefined', () => {
@@ -162,9 +152,7 @@ describe('TenantDeletionExporter', () => {
         name: 'Test',
       });
 
-      expect(result).toBe(
-        'INSERT INTO "users" ("id", "name") VALUES (1, \'Test\');\n',
-      );
+      expect(result).toBe('INSERT INTO "users" ("id", "name") VALUES (1, \'Test\');\n');
     });
 
     it('should handle multiple column types', () => {
@@ -270,10 +258,7 @@ describe('TenantDeletionExporter', () => {
         .mockResolvedValueOnce({ rows: [], rowCount: 1 }) // INSERT backup
         .mockResolvedValueOnce({ rows: [], rowCount: 1 }); // INSERT export
 
-      const archivePath = await exporter.createTenantDataExport(
-        1,
-        mockClient as never,
-      );
+      const archivePath = await exporter.createTenantDataExport(1, mockClient as never);
 
       expect(archivePath).toContain('.tar.gz');
       expect(mockMkdir).toHaveBeenCalled();
@@ -298,10 +283,7 @@ describe('TenantDeletionExporter', () => {
         .mockResolvedValueOnce({ rows: [], rowCount: 1 })
         .mockResolvedValueOnce({ rows: [], rowCount: 1 });
 
-      const archivePath = await exporter.createTenantDataExport(
-        1,
-        mockClient as never,
-      );
+      const archivePath = await exporter.createTenantDataExport(1, mockClient as never);
 
       expect(archivePath).toContain('unknown');
     });
@@ -335,10 +317,7 @@ describe('TenantDeletionExporter', () => {
         .mockResolvedValueOnce({ rows: [], rowCount: 1 });
 
       // Should not throw — errors are logged/captured
-      const archivePath = await exporter.createTenantDataExport(
-        1,
-        mockClient as never,
-      );
+      const archivePath = await exporter.createTenantDataExport(1, mockClient as never);
 
       expect(archivePath).toContain('.tar.gz');
     });

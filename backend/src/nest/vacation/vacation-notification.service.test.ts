@@ -84,9 +84,7 @@ describe('VacationNotificationService', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockDb = createMockDb();
-    service = new VacationNotificationService(
-      mockDb as unknown as DatabaseService,
-    );
+    service = new VacationNotificationService(mockDb as unknown as DatabaseService);
   });
 
   // -----------------------------------------------------------
@@ -200,9 +198,7 @@ describe('VacationNotificationService', () => {
 
       expect(mockDb.query).toHaveBeenCalledWith(
         expect.any(String),
-        expect.arrayContaining([
-          expect.stringContaining('Grund: Kapazitätsengpass'),
-        ]),
+        expect.arrayContaining([expect.stringContaining('Grund: Kapazitätsengpass')]),
       );
     });
 
@@ -304,9 +300,7 @@ describe('VacationNotificationService', () => {
 
       expect(mockDb.query).toHaveBeenCalledWith(
         expect.any(String),
-        expect.arrayContaining([
-          expect.stringContaining('Grund: Projektänderung'),
-        ]),
+        expect.arrayContaining([expect.stringContaining('Grund: Projektänderung')]),
       );
     });
 

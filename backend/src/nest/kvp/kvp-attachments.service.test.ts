@@ -64,9 +64,7 @@ describe('KvpAttachmentsService', () => {
     });
 
     it('should handle null uploaded_at', async () => {
-      mockDb.query.mockResolvedValueOnce([
-        makeDbAttachment({ uploaded_at: null }),
-      ]);
+      mockDb.query.mockResolvedValueOnce([makeDbAttachment({ uploaded_at: null })]);
 
       const result = await service.getAttachments(42, 10);
 
@@ -119,9 +117,9 @@ describe('KvpAttachmentsService', () => {
     it('should throw NotFoundException when not found', async () => {
       mockDb.query.mockResolvedValueOnce([]);
 
-      await expect(
-        service.findAttachmentByUuid('missing-uuid', 10),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.findAttachmentByUuid('missing-uuid', 10)).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should return attachment with suggestion data', async () => {

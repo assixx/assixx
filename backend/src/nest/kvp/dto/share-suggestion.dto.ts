@@ -18,10 +18,7 @@ const OrgLevelSchema = z.enum(['company', 'department', 'area', 'team'], {
  */
 export const ShareSuggestionSchema = z.object({
   orgLevel: OrgLevelSchema,
-  orgId: z
-    .number()
-    .int()
-    .min(0, 'Organization ID must be a non-negative integer'),
+  orgId: z.number().int().min(0, 'Organization ID must be a non-negative integer'),
 });
 
 /**

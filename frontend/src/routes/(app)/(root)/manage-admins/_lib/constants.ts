@@ -2,10 +2,7 @@
 // MANAGE ADMINS - CONSTANTS
 // =============================================================================
 
-import {
-  DEFAULT_HIERARCHY_LABELS,
-  type HierarchyLabels,
-} from '$lib/types/hierarchy-labels';
+import { DEFAULT_HIERARCHY_LABELS, type HierarchyLabels } from '$lib/types/hierarchy-labels';
 
 import type { FormIsActiveStatus } from './types';
 
@@ -94,13 +91,7 @@ export const PASSWORD_STRENGTH_LABELS = [
 /**
  * Password crack time labels (German)
  */
-export const PASSWORD_CRACK_TIMES = [
-  'sofort',
-  'Minuten',
-  'Stunden',
-  'Tage',
-  'Jahre',
-] as const;
+export const PASSWORD_CRACK_TIMES = ['sofort', 'Minuten', 'Stunden', 'Tage', 'Jahre'] as const;
 
 /** Static messages that don't depend on hierarchy labels */
 const STATIC_MESSAGES = {
@@ -135,8 +126,7 @@ const STATIC_MESSAGES = {
   SEARCH_NO_RESULTS: 'Keine Administratoren gefunden für',
   SEARCH_MORE_RESULTS: 'weitere Ergebnisse in Tabelle',
   EMPTY_TITLE: 'Keine Administratoren gefunden',
-  EMPTY_DESCRIPTION:
-    'Erstellen Sie Ihren ersten Administrator, um das System zu verwalten.',
+  EMPTY_DESCRIPTION: 'Erstellen Sie Ihren ersten Administrator, um das System zu verwalten.',
   LOADING_ADMINS: 'Administratoren werden geladen...',
   SUCCESS_CREATED: 'Administrator erfolgreich erstellt',
   SUCCESS_UPDATED: 'Administrator erfolgreich aktualisiert',
@@ -151,13 +141,10 @@ const STATIC_MESSAGES = {
     'Min. 12 Zeichen, max. 72 Zeichen. Enthält 3 von 4: Großbuchstaben, Kleinbuchstaben, Zahlen, Sonderzeichen (!@#$%^&*)',
   HINT_EMPLOYEE_NUMBER: 'Max. 10 Zeichen (Buchstaben, Zahlen, Bindestrich)',
   HINT_MULTISELECT: 'Strg/Cmd + Klick für Mehrfachauswahl',
-  HINT_STATUS:
-    'Inaktive/Archivierte Administratoren können sich nicht anmelden',
+  HINT_STATUS: 'Inaktive/Archivierte Administratoren können sich nicht anmelden',
   DELETE_CONFIRM_MESSAGE: 'Möchten Sie diesen Administrator wirklich löschen?',
-  DELETE_FINAL_WARNING:
-    'ACHTUNG: Diese Aktion kann nicht rückgängig gemacht werden!',
-  DELETE_FINAL_INFO:
-    'Der Administrator wird unwiderruflich aus dem System entfernt.',
+  DELETE_FINAL_WARNING: 'ACHTUNG: Diese Aktion kann nicht rückgängig gemacht werden!',
+  DELETE_FINAL_INFO: 'Der Administrator wird unwiderruflich aus dem System entfernt.',
   BADGE_ALL: 'Alle',
   BADGE_NONE: 'Keine',
   BADGE_INHERITED: 'Vererbt',

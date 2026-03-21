@@ -57,9 +57,7 @@ function createMockDb() {
     queryOne: vi.fn(),
     query: vi.fn(),
     transaction: vi.fn(
-      async (
-        callback: (client: typeof mockClient) => Promise<void>,
-      ): Promise<void> => {
+      async (callback: (client: typeof mockClient) => Promise<void>): Promise<void> => {
         await callback(mockClient);
       },
     ),
@@ -113,9 +111,7 @@ describe('WorkOrderNotificationService', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockDb = createMockDb();
-    service = new WorkOrderNotificationService(
-      mockDb as unknown as DatabaseService,
-    );
+    service = new WorkOrderNotificationService(mockDb as unknown as DatabaseService);
   });
 
   // ===========================================================
@@ -146,8 +142,10 @@ describe('WorkOrderNotificationService', () => {
 
       await service.notifyAssigned(TENANT_ID, WO_UUID, customAssignees);
 
-      const payload = mockEventBus.emitWorkOrderAssigned.mock
-        .calls[0]?.[1] as Record<string, unknown>;
+      const payload = mockEventBus.emitWorkOrderAssigned.mock.calls[0]?.[1] as Record<
+        string,
+        unknown
+      >;
       expect(payload.assigneeUserIds).toEqual(customAssignees);
     });
 
@@ -168,12 +166,7 @@ describe('WorkOrderNotificationService', () => {
     it('should emit workorder.status.changed with overridden status', async () => {
       setupPayloadSuccess(mockDb);
 
-      await service.notifyStatusChanged(
-        TENANT_ID,
-        WO_UUID,
-        'in_progress',
-        CREATED_BY,
-      );
+      await service.notifyStatusChanged(TENANT_ID, WO_UUID, 'in_progress', CREATED_BY);
 
       expect(mockEventBus.emitWorkOrderStatusChanged).toHaveBeenCalledWith(
         TENANT_ID,
@@ -188,27 +181,19 @@ describe('WorkOrderNotificationService', () => {
     it('should override DB status with new status parameter', async () => {
       setupPayloadSuccess(mockDb);
 
-      await service.notifyStatusChanged(
-        TENANT_ID,
-        WO_UUID,
-        'completed',
-        CREATED_BY,
-      );
+      await service.notifyStatusChanged(TENANT_ID, WO_UUID, 'completed', CREATED_BY);
 
-      const payload = mockEventBus.emitWorkOrderStatusChanged.mock
-        .calls[0]?.[1] as Record<string, unknown>;
+      const payload = mockEventBus.emitWorkOrderStatusChanged.mock.calls[0]?.[1] as Record<
+        string,
+        unknown
+      >;
       expect(payload.status).toBe('completed');
     });
 
     it('should not emit when work order not found', async () => {
       setupPayloadNotFound(mockDb);
 
-      await service.notifyStatusChanged(
-        TENANT_ID,
-        WO_UUID,
-        'in_progress',
-        CREATED_BY,
-      );
+      await service.notifyStatusChanged(TENANT_ID, WO_UUID, 'in_progress', CREATED_BY);
 
       expect(mockEventBus.emitWorkOrderStatusChanged).not.toHaveBeenCalled();
     });
@@ -277,12 +262,7 @@ describe('WorkOrderNotificationService', () => {
     it('should call transaction with tenantId for RLS context', async () => {
       setupPayloadSuccess(mockDb);
 
-      await service.persistAssignedNotification(
-        TENANT_ID,
-        WO_UUID,
-        ASSIGNEE_IDS,
-        CREATED_BY,
-      );
+      await service.persistAssignedNotification(TENANT_ID, WO_UUID, ASSIGNEE_IDS, CREATED_BY);
 
       expect(mockDb.transaction).toHaveBeenCalledWith(expect.any(Function), {
         tenantId: TENANT_ID,
@@ -292,12 +272,7 @@ describe('WorkOrderNotificationService', () => {
     it('should INSERT notifications with correct title and message', async () => {
       setupPayloadSuccess(mockDb);
 
-      await service.persistAssignedNotification(
-        TENANT_ID,
-        WO_UUID,
-        [5],
-        CREATED_BY,
-      );
+      await service.persistAssignedNotification(TENANT_ID, WO_UUID, [5], CREATED_BY);
 
       const clientQuery = mockDb._mockClient.query;
       expect(clientQuery).toHaveBeenCalledTimes(1);
@@ -309,21 +284,14 @@ describe('WorkOrderNotificationService', () => {
       expect(params).toContain('work_orders');
       expect(params).toContain('Neuer Arbeitsauftrag: Ölwechsel Presse P17');
       expect(params).toEqual(
-        expect.arrayContaining([
-          expect.stringContaining('Ölwechsel Presse P17'),
-        ]),
+        expect.arrayContaining([expect.stringContaining('Ölwechsel Presse P17')]),
       );
     });
 
     it('should include tenant_id, type, recipient_id, created_by in params', async () => {
       setupPayloadSuccess(mockDb);
 
-      await service.persistAssignedNotification(
-        TENANT_ID,
-        WO_UUID,
-        [5],
-        CREATED_BY,
-      );
+      await service.persistAssignedNotification(TENANT_ID, WO_UUID, [5], CREATED_BY);
 
       const params = mockDb._mockClient.query.mock.calls[0]?.[1] as unknown[];
       expect(params).toContain(TENANT_ID);
@@ -335,12 +303,7 @@ describe('WorkOrderNotificationService', () => {
     it('should create one notification per assignee (batch INSERT)', async () => {
       setupPayloadSuccess(mockDb);
 
-      await service.persistAssignedNotification(
-        TENANT_ID,
-        WO_UUID,
-        [5, 8, 12],
-        CREATED_BY,
-      );
+      await service.persistAssignedNotification(TENANT_ID, WO_UUID, [5, 8, 12], CREATED_BY);
 
       const params = mockDb._mockClient.query.mock.calls[0]?.[1] as unknown[];
       // 3 users × 8 base params (incl. metadata) + 3 UUIDs = 27 params
@@ -350,12 +313,7 @@ describe('WorkOrderNotificationService', () => {
     it('should use UUIDv7 for notification uuid', async () => {
       setupPayloadSuccess(mockDb);
 
-      await service.persistAssignedNotification(
-        TENANT_ID,
-        WO_UUID,
-        [5],
-        CREATED_BY,
-      );
+      await service.persistAssignedNotification(TENANT_ID, WO_UUID, [5], CREATED_BY);
 
       const params = mockDb._mockClient.query.mock.calls[0]?.[1] as unknown[];
       expect(params).toContain('mock-uuid-v7-001');
@@ -364,12 +322,7 @@ describe('WorkOrderNotificationService', () => {
     it('should include metadata with entityUuid in params', async () => {
       setupPayloadSuccess(mockDb);
 
-      await service.persistAssignedNotification(
-        TENANT_ID,
-        WO_UUID,
-        [5],
-        CREATED_BY,
-      );
+      await service.persistAssignedNotification(TENANT_ID, WO_UUID, [5], CREATED_BY);
 
       const sql = mockDb._mockClient.query.mock.calls[0]?.[0] as string;
       expect(sql).toContain('metadata');
@@ -382,12 +335,7 @@ describe('WorkOrderNotificationService', () => {
     it('should skip when assigneeUserIds is empty', async () => {
       setupPayloadSuccess(mockDb);
 
-      await service.persistAssignedNotification(
-        TENANT_ID,
-        WO_UUID,
-        [],
-        CREATED_BY,
-      );
+      await service.persistAssignedNotification(TENANT_ID, WO_UUID, [], CREATED_BY);
 
       expect(mockDb.transaction).not.toHaveBeenCalled();
     });
@@ -396,12 +344,7 @@ describe('WorkOrderNotificationService', () => {
       setupPayloadNotFound(mockDb);
 
       await expect(
-        service.persistAssignedNotification(
-          TENANT_ID,
-          WO_UUID,
-          ASSIGNEE_IDS,
-          CREATED_BY,
-        ),
+        service.persistAssignedNotification(TENANT_ID, WO_UUID, ASSIGNEE_IDS, CREATED_BY),
       ).resolves.toBeUndefined();
 
       expect(mockDb.transaction).not.toHaveBeenCalled();
@@ -412,12 +355,7 @@ describe('WorkOrderNotificationService', () => {
       mockDb.transaction.mockRejectedValueOnce(new Error('DB down'));
 
       await expect(
-        service.persistAssignedNotification(
-          TENANT_ID,
-          WO_UUID,
-          ASSIGNEE_IDS,
-          CREATED_BY,
-        ),
+        service.persistAssignedNotification(TENANT_ID, WO_UUID, ASSIGNEE_IDS, CREATED_BY),
       ).resolves.toBeUndefined();
     });
   });
@@ -430,11 +368,7 @@ describe('WorkOrderNotificationService', () => {
     it('should call transaction with tenantId for RLS context', async () => {
       setupPayloadSuccess(mockDb);
 
-      await service.persistVerifiedNotification(
-        TENANT_ID,
-        WO_UUID,
-        VERIFIED_BY,
-      );
+      await service.persistVerifiedNotification(TENANT_ID, WO_UUID, VERIFIED_BY);
 
       expect(mockDb.transaction).toHaveBeenCalledWith(expect.any(Function), {
         tenantId: TENANT_ID,
@@ -444,11 +378,7 @@ describe('WorkOrderNotificationService', () => {
     it('should use assigneeUserIds from DB as recipients', async () => {
       setupPayloadSuccess(mockDb, createWorkOrderRow(), [5, 8]);
 
-      await service.persistVerifiedNotification(
-        TENANT_ID,
-        WO_UUID,
-        VERIFIED_BY,
-      );
+      await service.persistVerifiedNotification(TENANT_ID, WO_UUID, VERIFIED_BY);
 
       const params = mockDb._mockClient.query.mock.calls[0]?.[1] as unknown[];
       // 2 users → both user_ids in params
@@ -459,26 +389,16 @@ describe('WorkOrderNotificationService', () => {
     it('should include "verifiziert" in notification title', async () => {
       setupPayloadSuccess(mockDb);
 
-      await service.persistVerifiedNotification(
-        TENANT_ID,
-        WO_UUID,
-        VERIFIED_BY,
-      );
+      await service.persistVerifiedNotification(TENANT_ID, WO_UUID, VERIFIED_BY);
 
       const params = mockDb._mockClient.query.mock.calls[0]?.[1] as unknown[];
-      expect(params).toContain(
-        'Arbeitsauftrag verifiziert: Ölwechsel Presse P17',
-      );
+      expect(params).toContain('Arbeitsauftrag verifiziert: Ölwechsel Presse P17');
     });
 
     it('should include verifiedByUserId as created_by', async () => {
       setupPayloadSuccess(mockDb);
 
-      await service.persistVerifiedNotification(
-        TENANT_ID,
-        WO_UUID,
-        VERIFIED_BY,
-      );
+      await service.persistVerifiedNotification(TENANT_ID, WO_UUID, VERIFIED_BY);
 
       const params = mockDb._mockClient.query.mock.calls[0]?.[1] as unknown[];
       expect(params).toContain(VERIFIED_BY);
@@ -487,11 +407,7 @@ describe('WorkOrderNotificationService', () => {
     it('should skip when no assignees in DB', async () => {
       setupPayloadSuccess(mockDb, createWorkOrderRow(), []);
 
-      await service.persistVerifiedNotification(
-        TENANT_ID,
-        WO_UUID,
-        VERIFIED_BY,
-      );
+      await service.persistVerifiedNotification(TENANT_ID, WO_UUID, VERIFIED_BY);
 
       expect(mockDb.transaction).not.toHaveBeenCalled();
     });
@@ -549,8 +465,10 @@ describe('WorkOrderNotificationService', () => {
 
       await service.notifyAssigned(TENANT_ID, WO_UUID, ASSIGNEE_IDS);
 
-      const payload = mockEventBus.emitWorkOrderAssigned.mock
-        .calls[0]?.[1] as Record<string, unknown>;
+      const payload = mockEventBus.emitWorkOrderAssigned.mock.calls[0]?.[1] as Record<
+        string,
+        unknown
+      >;
       expect(payload.uuid).toBe(WO_UUID);
     });
 

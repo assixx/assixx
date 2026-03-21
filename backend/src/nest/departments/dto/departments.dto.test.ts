@@ -36,9 +36,7 @@ describe('CreateDepartmentSchema', () => {
   });
 
   it('should reject name longer than 100 characters', () => {
-    expect(
-      CreateDepartmentSchema.safeParse({ name: 'X'.repeat(101) }).success,
-    ).toBe(false);
+    expect(CreateDepartmentSchema.safeParse({ name: 'X'.repeat(101) }).success).toBe(false);
   });
 
   it('should reject description longer than 500 characters', () => {
@@ -51,9 +49,7 @@ describe('CreateDepartmentSchema', () => {
   });
 
   it('should reject isActive out of range', () => {
-    expect(
-      CreateDepartmentSchema.safeParse({ ...valid, isActive: '5' }).success,
-    ).toBe(false);
+    expect(CreateDepartmentSchema.safeParse({ ...valid, isActive: '5' }).success).toBe(false);
   });
 });
 

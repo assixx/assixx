@@ -43,9 +43,9 @@ beforeAll(async () => {
     headers: authOnly(auth.authToken),
   });
   const usersBody = (await usersRes.json()) as JsonBody;
-  const employee = (
-    usersBody.data as Array<{ email: string; uuid: string }>
-  ).find((u) => u.email === 'employee@apitest.de');
+  const employee = (usersBody.data as Array<{ email: string; uuid: string }>).find(
+    (u) => u.email === 'employee@apitest.de',
+  );
 
   if (!employee?.uuid) {
     throw new Error('Test employee not found or has no UUID');
@@ -131,9 +131,7 @@ describe('User Permissions: Tenant Feature Filtering', () => {
     });
     const body = (await res.json()) as JsonBody;
 
-    const categoryCodes = (body.data as Array<{ code: string }>).map(
-      (c) => c.code,
-    );
+    const categoryCodes = (body.data as Array<{ code: string }>).map((c) => c.code);
 
     // apitest tenant has all features enabled (via applyDbPrerequisites)
     // At minimum, blackboard should be present (always registered)
@@ -156,9 +154,7 @@ describe('User Permissions: Tenant Feature Filtering', () => {
 
     expect(blackboard).toBeDefined();
     expect(blackboard!.modules.length).toBeGreaterThan(0);
-    expect(Array.isArray(blackboard!.modules[0]!.allowedPermissions)).toBe(
-      true,
-    );
+    expect(Array.isArray(blackboard!.modules[0]!.allowedPermissions)).toBe(true);
   });
 });
 
@@ -205,9 +201,7 @@ describe('User Permissions: PUT + GET Roundtrip', () => {
         }>;
       }>
     ).find((c) => c.code === 'blackboard');
-    const posts = blackboard?.modules.find(
-      (m) => m.code === 'blackboard-posts',
-    );
+    const posts = blackboard?.modules.find((m) => m.code === 'blackboard-posts');
 
     expect(posts).toBeDefined();
     expect(posts!.canRead).toBe(true);
@@ -252,9 +246,7 @@ describe('User Permissions: PUT + GET Roundtrip', () => {
         }>;
       }>
     ).find((c) => c.code === 'blackboard');
-    const posts = blackboard?.modules.find(
-      (m) => m.code === 'blackboard-posts',
-    );
+    const posts = blackboard?.modules.find((m) => m.code === 'blackboard-posts');
 
     expect(posts!.canRead).toBe(false);
     expect(posts!.canWrite).toBe(false);

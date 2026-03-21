@@ -28,8 +28,7 @@ export const LEAD_POSITION_KEYS = {
   DEPUTY: 'deputy_lead',
 } as const;
 
-export type LeadPositionKey =
-  (typeof LEAD_POSITION_KEYS)[keyof typeof LEAD_POSITION_KEYS];
+export type LeadPositionKey = (typeof LEAD_POSITION_KEYS)[keyof typeof LEAD_POSITION_KEYS];
 
 /** Check if a position string is a system lead position key */
 export function isLeadPosition(position: string): position is LeadPositionKey {
@@ -37,10 +36,7 @@ export function isLeadPosition(position: string): position is LeadPositionKey {
 }
 
 /** Resolve a position to its display name — lead keys become `${label}-Leiter`, others pass through */
-export function resolvePositionDisplay(
-  position: string,
-  labels: HierarchyLabels,
-): string {
+export function resolvePositionDisplay(position: string, labels: HierarchyLabels): string {
   switch (position) {
     case LEAD_POSITION_KEYS.AREA:
       return `${labels.area}-Leiter`;

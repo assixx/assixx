@@ -5,11 +5,7 @@
 
   import { onClickOutsideDropdown } from '$lib/actions/click-outside';
   import PermissionDenied from '$lib/components/PermissionDenied.svelte';
-  import {
-    showSuccessAlert,
-    showErrorAlert,
-    showWarningAlert,
-  } from '$lib/utils';
+  import { showSuccessAlert, showErrorAlert, showWarningAlert } from '$lib/utils';
   import { createLogger } from '$lib/utils/logger';
 
   import ConfirmModal from '$design-system/components/confirm-modal/ConfirmModal.svelte';
@@ -116,10 +112,7 @@
   }
 
   /** Apply a single override change (reset or upsert) */
-  async function applyOverrideChange(
-    d: CustomizableDefault,
-    current: string,
-  ): Promise<boolean> {
+  async function applyOverrideChange(d: CustomizableDefault, current: string): Promise<boolean> {
     if (current === '' && d.isCustomized) {
       const ok = await deleteOverride(d.id);
       if (!ok) {
@@ -206,8 +199,7 @@
         name: newName.trim(),
         color: newColor,
         icon: newIcon,
-        description:
-          newDescription.trim() !== '' ? newDescription.trim() : undefined,
+        description: newDescription.trim() !== '' ? newDescription.trim() : undefined,
       });
 
       if (result !== null) {
@@ -274,9 +266,7 @@
       <div class="card">
         <div class="card__body">
           <div class="p-6 text-center">
-            <i
-              class="fas fa-exclamation-triangle mb-4 text-4xl text-(--color-danger)"
-            ></i>
+            <i class="fas fa-exclamation-triangle mb-4 text-4xl text-(--color-danger)"></i>
             <p class="text-(--color-text-secondary)">{data.error}</p>
             <button
               type="button"
@@ -319,8 +309,7 @@
                           class="inline-block h-3 w-3 rounded-full"
                           style="background-color: {defaultCat.color}"
                         ></span>
-                        <span class="font-medium">{defaultCat.defaultName}</span
-                        >
+                        <span class="font-medium">{defaultCat.defaultName}</span>
                       </div>
                     </td>
                     <td>
@@ -340,10 +329,7 @@
                           title={LABELS.BTN_RESET}
                           aria-label="Zurücksetzen"
                           onclick={() => {
-                            requestResetOverride(
-                              defaultCat.id,
-                              defaultCat.defaultName,
-                            );
+                            requestResetOverride(defaultCat.id, defaultCat.defaultName);
                           }}
                         >
                           <i class="fas fa-undo"></i>
@@ -387,10 +373,7 @@
               {LABELS.remaining(data.categories.remainingSlots)}
             </span>
             <span class="badge ml-2">
-              {LABELS.counter(
-                data.categories.totalCount,
-                data.categories.maxAllowed,
-              )}
+              {LABELS.counter(data.categories.totalCount, data.categories.maxAllowed)}
             </span>
           </p>
         </div>
@@ -426,9 +409,7 @@
                             class="inline-block h-4 w-4 rounded-full border border-gray-400"
                             style="background-color: {cat.color}"
                           ></span>
-                          <span class="text-sm text-(--color-text-secondary)"
-                            >{cat.color}</span
-                          >
+                          <span class="text-sm text-(--color-text-secondary)">{cat.color}</span>
                         </div>
                       </td>
                       <td>
@@ -471,9 +452,7 @@
                 <i class="fas fa-tags"></i>
               </div>
               <h3 class="empty-state__title">Keine eigenen Kategorien</h3>
-              <p class="empty-state__description">
-                Noch keine eigenen Kategorien erstellt.
-              </p>
+              <p class="empty-state__description">Noch keine eigenen Kategorien erstellt.</p>
             </div>
           {/if}
 
@@ -529,18 +508,12 @@
                           --cp-button-hover-color="#616161"
                           --picker-z-index="1060"
                         />
-                        <span class="text-sm text-(--color-text-secondary)"
-                          >{newColor}</span
-                        >
+                        <span class="text-sm text-(--color-text-secondary)">{newColor}</span>
                       </div>
                     </div>
 
                     <div class="form-field">
-                      <span
-                        class="form-field__label form-field__label--required"
-                      >
-                        Icon
-                      </span>
+                      <span class="form-field__label form-field__label--required"> Icon </span>
                       <div
                         class="dropdown mt-2"
                         data-dropdown="icon"
@@ -702,8 +675,8 @@
     }}
   >
     {#if resetTarget !== null}
-      Die eigene Bezeichnung für <strong>"{resetTarget.name}"</strong> wird entfernt
-      und der Standard-Name wiederhergestellt.
+      Die eigene Bezeichnung für <strong>"{resetTarget.name}"</strong> wird entfernt und der Standard-Name
+      wiederhergestellt.
     {/if}
   </ConfirmModal>
 

@@ -80,10 +80,7 @@ export class DashboardService {
    * the user has read permission for. No permission = count 0.
    * Root and admin with fullAccess bypass this check.
    */
-  async getCounts(
-    user: NestAuthUser,
-    tenantId: number,
-  ): Promise<DashboardCounts> {
+  async getCounts(user: NestAuthUser, tenantId: number): Promise<DashboardCounts> {
     // Determine which features the user can access (ADR-020)
     const canAccess = await this.buildAddonAccessCheck(user);
 
@@ -122,16 +119,8 @@ export class DashboardService {
    */
   private createGuard(
     canAccess: (code: string) => boolean,
-  ): <T>(
-    feature: string | null,
-    fetcher: () => Promise<T>,
-    fallback: T,
-  ) => Promise<T> {
-    return <T>(
-      feature: string | null,
-      fetcher: () => Promise<T>,
-      fallback: T,
-    ): Promise<T> => {
+  ): <T>(feature: string | null, fetcher: () => Promise<T>, fallback: T) => Promise<T> {
+    return <T>(feature: string | null, fetcher: () => Promise<T>, fallback: T): Promise<T> => {
       if (feature !== null && !canAccess(feature)) {
         return Promise.resolve(fallback);
       }
@@ -155,35 +144,15 @@ export class DashboardService {
     const uid: number = user.id;
     return await Promise.all([
       g('chat', () => this.fetchChatCounts(), EMPTY_CHAT),
-      g(
-        null,
-        () => this.fetchNotificationStats(uid, tenantId),
-        EMPTY_NOTIFICATIONS,
-      ),
-      g(
-        'blackboard',
-        () => this.fetchBlackboardCount(uid, tenantId),
-        EMPTY_COUNT,
-      ),
+      g(null, () => this.fetchNotificationStats(uid, tenantId), EMPTY_NOTIFICATIONS),
+      g('blackboard', () => this.fetchBlackboardCount(uid, tenantId), EMPTY_COUNT),
       g('calendar', () => this.fetchCalendarCount(user, tenantId), EMPTY_COUNT),
-      g(
-        'documents',
-        () => this.fetchDocumentsCount(user, tenantId),
-        EMPTY_COUNT,
-      ),
+      g('documents', () => this.fetchDocumentsCount(user, tenantId), EMPTY_COUNT),
       g('kvp', () => this.fetchKvpCount(uid, tenantId), EMPTY_COUNT),
-      g(
-        'surveys',
-        () => this.fetchSurveyPendingCount(uid, tenantId),
-        EMPTY_COUNT,
-      ),
+      g('surveys', () => this.fetchSurveyPendingCount(uid, tenantId), EMPTY_COUNT),
       g(null, () => this.fetchVacationCount(uid, tenantId), EMPTY_COUNT),
       g('tpm', () => this.fetchTpmCount(uid, tenantId), EMPTY_COUNT),
-      g(
-        'work_orders',
-        () => this.fetchWorkOrdersCount(uid, tenantId),
-        EMPTY_COUNT,
-      ),
+      g('work_orders', () => this.fetchWorkOrdersCount(uid, tenantId), EMPTY_COUNT),
     ]);
   }
 
@@ -192,9 +161,7 @@ export class DashboardService {
    * Root and admin with fullAccess bypass — all addons accessible.
    * Others: only addons with at least one can_read = true module.
    */
-  private async buildAddonAccessCheck(
-    user: NestAuthUser,
-  ): Promise<(addonCode: string) => boolean> {
+  private async buildAddonAccessCheck(user: NestAuthUser): Promise<(addonCode: string) => boolean> {
     // Root always has full access
     if (user.activeRole === 'root') {
       return () => true;
@@ -206,9 +173,7 @@ export class DashboardService {
     }
 
     // Query readable addon codes from DB (ADR-020)
-    const readable = await this.permissionsService.getReadableAddonCodes(
-      user.id,
-    );
+    const readable = await this.permissionsService.getReadableAddonCodes(user.id);
 
     return (addonCode: string) => readable.has(addonCode);
   }
@@ -242,10 +207,7 @@ export class DashboardService {
     userId: number,
     tenantId: number,
   ): Promise<NotificationStats> {
-    const stats = await this.notificationsService.getPersonalStats(
-      userId,
-      tenantId,
-    );
+    const stats = await this.notificationsService.getPersonalStats(userId, tenantId);
     return {
       total: stats.total,
       unread: stats.unread,
@@ -256,10 +218,7 @@ export class DashboardService {
   /**
    * Fetch blackboard unconfirmed count
    */
-  private async fetchBlackboardCount(
-    userId: number,
-    tenantId: number,
-  ): Promise<{ count: number }> {
+  private async fetchBlackboardCount(userId: number, tenantId: number): Promise<{ count: number }> {
     return await this.blackboardService.getUnconfirmedCount(userId, tenantId);
   }
 
@@ -272,12 +231,7 @@ export class DashboardService {
   ): Promise<{ count: number }> {
     const departmentId = user.departmentId ?? 0;
     const teamId = user.teamId ?? 0;
-    return await this.calendarService.getUpcomingCount(
-      tenantId,
-      user.id,
-      departmentId,
-      teamId,
-    );
+    return await this.calendarService.getUpcomingCount(tenantId, user.id, departmentId, teamId);
   }
 
   /**
@@ -287,20 +241,13 @@ export class DashboardService {
     user: NestAuthUser,
     tenantId: number,
   ): Promise<{ count: number }> {
-    return await this.documentsService.getUnreadCount(
-      tenantId,
-      user.id,
-      user.activeRole,
-    );
+    return await this.documentsService.getUnreadCount(tenantId, user.id, user.activeRole);
   }
 
   /**
    * Fetch KVP unconfirmed count (Pattern 2: Individual read tracking)
    */
-  private async fetchKvpCount(
-    userId: number,
-    tenantId: number,
-  ): Promise<{ count: number }> {
+  private async fetchKvpCount(userId: number, tenantId: number): Promise<{ count: number }> {
     return await this.kvpService.getUnconfirmedCount(userId, tenantId);
   }
 
@@ -320,10 +267,7 @@ export class DashboardService {
    * that have no entry in notification_read_status.
    * No permission gating — every user can have vacation notifications.
    */
-  private async fetchVacationCount(
-    userId: number,
-    tenantId: number,
-  ): Promise<{ count: number }> {
+  private async fetchVacationCount(userId: number, tenantId: number): Promise<{ count: number }> {
     const rows = await this.db.query<{ count: string }>(
       `SELECT COUNT(*) AS count
        FROM notifications n
@@ -344,10 +288,7 @@ export class DashboardService {
    * Counts notifications of type='tpm' targeted at the user
    * that have no entry in notification_read_status.
    */
-  private async fetchTpmCount(
-    userId: number,
-    tenantId: number,
-  ): Promise<{ count: number }> {
+  private async fetchTpmCount(userId: number, tenantId: number): Promise<{ count: number }> {
     const rows = await this.db.query<{ count: string }>(
       `SELECT COUNT(*) AS count
        FROM notifications n
@@ -368,10 +309,7 @@ export class DashboardService {
    * Counts notifications of type='work_orders' targeted at the user
    * that have no entry in notification_read_status.
    */
-  private async fetchWorkOrdersCount(
-    userId: number,
-    tenantId: number,
-  ): Promise<{ count: number }> {
+  private async fetchWorkOrdersCount(userId: number, tenantId: number): Promise<{ count: number }> {
     const rows = await this.db.query<{ count: string }>(
       `SELECT COUNT(*) AS count
        FROM notifications n

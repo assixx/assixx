@@ -79,21 +79,17 @@ describe('isLeadPosition', () => {
 describe('resolvePositionDisplay', () => {
   describe('with default labels', () => {
     it('should resolve area_lead to Bereiche-Leiter', () => {
-      expect(
-        resolvePositionDisplay('area_lead', DEFAULT_HIERARCHY_LABELS),
-      ).toBe('Bereiche-Leiter');
+      expect(resolvePositionDisplay('area_lead', DEFAULT_HIERARCHY_LABELS)).toBe('Bereiche-Leiter');
     });
 
     it('should resolve department_lead to Abteilungen-Leiter', () => {
-      expect(
-        resolvePositionDisplay('department_lead', DEFAULT_HIERARCHY_LABELS),
-      ).toBe('Abteilungen-Leiter');
+      expect(resolvePositionDisplay('department_lead', DEFAULT_HIERARCHY_LABELS)).toBe(
+        'Abteilungen-Leiter',
+      );
     });
 
     it('should resolve team_lead to Teams-Leiter', () => {
-      expect(
-        resolvePositionDisplay('team_lead', DEFAULT_HIERARCHY_LABELS),
-      ).toBe('Teams-Leiter');
+      expect(resolvePositionDisplay('team_lead', DEFAULT_HIERARCHY_LABELS)).toBe('Teams-Leiter');
     });
   });
 
@@ -107,29 +103,23 @@ describe('resolvePositionDisplay', () => {
     };
 
     it('should resolve area_lead using custom area label', () => {
-      expect(resolvePositionDisplay('area_lead', customLabels)).toBe(
-        'Hallen-Leiter',
-      );
+      expect(resolvePositionDisplay('area_lead', customLabels)).toBe('Hallen-Leiter');
     });
 
     it('should resolve department_lead using custom department label', () => {
-      expect(resolvePositionDisplay('department_lead', customLabels)).toBe(
-        'Segmente-Leiter',
-      );
+      expect(resolvePositionDisplay('department_lead', customLabels)).toBe('Segmente-Leiter');
     });
 
     it('should resolve team_lead using custom team label', () => {
-      expect(resolvePositionDisplay('team_lead', customLabels)).toBe(
-        'Crews-Leiter',
-      );
+      expect(resolvePositionDisplay('team_lead', customLabels)).toBe('Crews-Leiter');
     });
   });
 
   describe('pass-through for non-lead positions', () => {
     it('should return regular positions unchanged', () => {
-      expect(
-        resolvePositionDisplay('Personalleiter', DEFAULT_HIERARCHY_LABELS),
-      ).toBe('Personalleiter');
+      expect(resolvePositionDisplay('Personalleiter', DEFAULT_HIERARCHY_LABELS)).toBe(
+        'Personalleiter',
+      );
     });
 
     it('should return empty string unchanged', () => {
@@ -137,9 +127,9 @@ describe('resolvePositionDisplay', () => {
     });
 
     it('should return unknown positions unchanged', () => {
-      expect(
-        resolvePositionDisplay('CustomPosition', DEFAULT_HIERARCHY_LABELS),
-      ).toBe('CustomPosition');
+      expect(resolvePositionDisplay('CustomPosition', DEFAULT_HIERARCHY_LABELS)).toBe(
+        'CustomPosition',
+      );
     });
   });
 });

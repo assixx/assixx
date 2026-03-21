@@ -13,11 +13,7 @@ import { v7 as uuidv7 } from 'uuid';
 import { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import { DatabaseService } from '../database/database.service.js';
 import type { CreateTimeEstimateDto } from './dto/create-time-estimate.dto.js';
-import type {
-  TpmIntervalType,
-  TpmTimeEstimate,
-  TpmTimeEstimateRow,
-} from './tpm.types.js';
+import type { TpmIntervalType, TpmTimeEstimate, TpmTimeEstimateRow } from './tpm.types.js';
 
 /** Map DB row to API response (adds computed totalMinutes) */
 function mapEstimateRowToApi(row: TpmTimeEstimateRow): TpmTimeEstimate {
@@ -29,17 +25,12 @@ function mapEstimateRowToApi(row: TpmTimeEstimateRow): TpmTimeEstimate {
     preparationMinutes: row.preparation_minutes,
     executionMinutes: row.execution_minutes,
     followupMinutes: row.followup_minutes,
-    totalMinutes:
-      row.preparation_minutes + row.execution_minutes + row.followup_minutes,
+    totalMinutes: row.preparation_minutes + row.execution_minutes + row.followup_minutes,
     isActive: row.is_active,
     createdAt:
-      typeof row.created_at === 'string' ?
-        row.created_at
-      : new Date(row.created_at).toISOString(),
+      typeof row.created_at === 'string' ? row.created_at : new Date(row.created_at).toISOString(),
     updatedAt:
-      typeof row.updated_at === 'string' ?
-        row.updated_at
-      : new Date(row.updated_at).toISOString(),
+      typeof row.updated_at === 'string' ? row.updated_at : new Date(row.updated_at).toISOString(),
   };
 }
 
@@ -61,16 +52,13 @@ export class TpmTimeEstimatesService {
     userId: number,
     dto: CreateTimeEstimateDto,
   ): Promise<TpmTimeEstimate> {
-    this.logger.debug(
-      `Setting estimate for plan ${dto.planUuid} / ${dto.intervalType}`,
-    );
+    this.logger.debug(`Setting estimate for plan ${dto.planUuid} / ${dto.intervalType}`);
 
-    return await this.db.tenantTransaction(
-      async (client: PoolClient): Promise<TpmTimeEstimate> => {
-        const planId = await this.resolvePlanId(client, tenantId, dto.planUuid);
+    return await this.db.tenantTransaction(async (client: PoolClient): Promise<TpmTimeEstimate> => {
+      const planId = await this.resolvePlanId(client, tenantId, dto.planUuid);
 
-        const result = await client.query<TpmTimeEstimateRow>(
-          `INSERT INTO tpm_time_estimates
+      const result = await client.query<TpmTimeEstimateRow>(
+        `INSERT INTO tpm_time_estimates
              (uuid, tenant_id, plan_id, interval_type, staff_count,
               preparation_minutes, execution_minutes, followup_minutes, is_active)
            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 1)
@@ -82,45 +70,41 @@ export class TpmTimeEstimatesService {
              followup_minutes = EXCLUDED.followup_minutes,
              updated_at = NOW()
            RETURNING *`,
-          [
-            uuidv7(),
-            tenantId,
-            planId,
-            dto.intervalType,
-            dto.staffCount,
-            dto.preparationMinutes,
-            dto.executionMinutes,
-            dto.followupMinutes,
-          ],
-        );
-
-        const row = result.rows[0];
-        if (row === undefined) {
-          throw new Error('UPSERT tpm_time_estimates returned no rows');
-        }
-
-        const estimate = mapEstimateRowToApi(row);
-
-        void this.activityLogger.logUpdate(
+        [
+          uuidv7(),
           tenantId,
-          userId,
-          'tpm_time_estimate',
-          0,
-          `TPM-Zeitschätzung gesetzt: ${dto.planUuid} / ${dto.intervalType}`,
-          undefined,
-          { planUuid: dto.planUuid, intervalType: dto.intervalType },
-        );
+          planId,
+          dto.intervalType,
+          dto.staffCount,
+          dto.preparationMinutes,
+          dto.executionMinutes,
+          dto.followupMinutes,
+        ],
+      );
 
-        return estimate;
-      },
-    );
+      const row = result.rows[0];
+      if (row === undefined) {
+        throw new Error('UPSERT tpm_time_estimates returned no rows');
+      }
+
+      const estimate = mapEstimateRowToApi(row);
+
+      void this.activityLogger.logUpdate(
+        tenantId,
+        userId,
+        'tpm_time_estimate',
+        0,
+        `TPM-Zeitschätzung gesetzt: ${dto.planUuid} / ${dto.intervalType}`,
+        undefined,
+        { planUuid: dto.planUuid, intervalType: dto.intervalType },
+      );
+
+      return estimate;
+    });
   }
 
   /** Get all time estimates for a plan */
-  async getEstimatesForPlan(
-    tenantId: number,
-    planUuid: string,
-  ): Promise<TpmTimeEstimate[]> {
+  async getEstimatesForPlan(tenantId: number, planUuid: string): Promise<TpmTimeEstimate[]> {
     const rows = await this.db.query<TpmTimeEstimateRow>(
       `SELECT te.*
        FROM tpm_time_estimates te
@@ -154,37 +138,29 @@ export class TpmTimeEstimatesService {
   }
 
   /** Delete a time estimate (soft-delete: is_active = 4) */
-  async deleteEstimate(
-    tenantId: number,
-    userId: number,
-    estimateUuid: string,
-  ): Promise<void> {
-    await this.db.tenantTransaction(
-      async (client: PoolClient): Promise<void> => {
-        const result = await client.query<{ id: number }>(
-          `UPDATE tpm_time_estimates
+  async deleteEstimate(tenantId: number, userId: number, estimateUuid: string): Promise<void> {
+    await this.db.tenantTransaction(async (client: PoolClient): Promise<void> => {
+      const result = await client.query<{ id: number }>(
+        `UPDATE tpm_time_estimates
          SET is_active = ${IS_ACTIVE.DELETED}, updated_at = NOW()
          WHERE uuid = $1 AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}
          RETURNING id`,
-          [estimateUuid, tenantId],
-        );
+        [estimateUuid, tenantId],
+      );
 
-        if (result.rows[0] === undefined) {
-          throw new NotFoundException(
-            `Zeitschätzung ${estimateUuid} nicht gefunden`,
-          );
-        }
+      if (result.rows[0] === undefined) {
+        throw new NotFoundException(`Zeitschätzung ${estimateUuid} nicht gefunden`);
+      }
 
-        void this.activityLogger.logDelete(
-          tenantId,
-          userId,
-          'tpm_time_estimate',
-          0,
-          `TPM-Zeitschätzung gelöscht: ${estimateUuid}`,
-          { uuid: estimateUuid },
-        );
-      },
-    );
+      void this.activityLogger.logDelete(
+        tenantId,
+        userId,
+        'tpm_time_estimate',
+        0,
+        `TPM-Zeitschätzung gelöscht: ${estimateUuid}`,
+        { uuid: estimateUuid },
+      );
+    });
   }
 
   /** Resolve plan UUID → internal ID */

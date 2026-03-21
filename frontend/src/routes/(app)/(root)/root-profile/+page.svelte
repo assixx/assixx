@@ -33,11 +33,7 @@
   } from './_lib/utils';
 
   import type { PageData } from './$types';
-  import type {
-    ApprovalItem,
-    PasswordStrengthResult,
-    UserProfile,
-  } from './_lib/types';
+  import type { ApprovalItem, PasswordStrengthResult, UserProfile } from './_lib/types';
 
   // =============================================================================
   // SSR DATA - Level 3: $derived from props (single source of truth)
@@ -100,13 +96,9 @@
 
   const avatarColorClass = $derived(getAvatarColorClass(user.id));
   const initials = $derived(getInitials(user.firstName, user.lastName));
-  const hasProfilePicture = $derived(
-    profilePicture !== null && profilePicture !== '',
-  );
+  const hasProfilePicture = $derived(profilePicture !== null && profilePicture !== '');
   const hasPendingApprovals = $derived(pendingApprovals.length > 0);
-  const passwordsMatch = $derived(
-    doPasswordsMatch(newPassword, confirmPassword),
-  );
+  const passwordsMatch = $derived(doPasswordsMatch(newPassword, confirmPassword));
   const isPasswordValid = $derived(isPasswordLengthValid(newPassword));
 
   // =============================================================================
@@ -139,10 +131,7 @@
       // Level 3: Trigger SSR refetch - $derived(user) updates automatically
       await invalidateAll();
     } catch (err: unknown) {
-      showToast(
-        err instanceof Error ? err.message : MESSAGES.profileSaveError,
-        'error',
-      );
+      showToast(err instanceof Error ? err.message : MESSAGES.profileSaveError, 'error');
     } finally {
       profileSaving = false;
     }
@@ -204,8 +193,7 @@
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : '';
       if (msg === 'INVALID_TYPE') showToast(MESSAGES.invalidImageType, 'error');
-      else if (msg === 'FILE_TOO_LARGE')
-        showToast(MESSAGES.fileTooLarge, 'error');
+      else if (msg === 'FILE_TOO_LARGE') showToast(MESSAGES.fileTooLarge, 'error');
       else showToast(MESSAGES.pictureUploadError, 'error');
     } finally {
       pictureUploading = false;
@@ -325,9 +313,7 @@
 
     strengthLoading = true;
     try {
-      const userInputs = [formEmail, formFirstName, formLastName].filter(
-        Boolean,
-      );
+      const userInputs = [formEmail, formFirstName, formLastName].filter(Boolean);
       passwordStrength = await analyzePassword(newPassword, userInputs);
     } catch {
       // Ignore strength check errors
@@ -353,9 +339,7 @@
   // UI HELPERS
   // =============================================================================
 
-  function togglePasswordVisibility(
-    field: 'current' | 'new' | 'confirm',
-  ): void {
+  function togglePasswordVisibility(field: 'current' | 'new' | 'confirm'): void {
     if (field === 'current') showCurrentPassword = !showCurrentPassword;
     if (field === 'new') showNewPassword = !showNewPassword;
     if (field === 'confirm') showConfirmPassword = !showConfirmPassword;
@@ -403,8 +387,9 @@
             }}
             disabled={pictureUploading}
           >
-            {#if pictureUploading}<span class="spinner-ring spinner-ring--sm"
-              ></span>{:else}<i class="fas fa-camera"></i>{/if}
+            {#if pictureUploading}<span class="spinner-ring spinner-ring--sm"></span>{:else}<i
+                class="fas fa-camera"
+              ></i>{/if}
             Bild ändern
           </button>
           {#if hasProfilePicture}
@@ -483,8 +468,9 @@
           class="btn btn-primary"
           disabled={profileSaving}
         >
-          {#if profileSaving}<span class="spinner-ring spinner-ring--sm"
-            ></span>{:else}<i class="fas fa-save"></i>{/if}
+          {#if profileSaving}<span class="spinner-ring spinner-ring--sm"></span>{:else}<i
+              class="fas fa-save"
+            ></i>{/if}
           Änderungen speichern
         </button>
       </form>
@@ -523,8 +509,7 @@
                 togglePasswordVisibility('current');
               }}
             >
-              <i class="fas {showCurrentPassword ? 'fa-eye-slash' : 'fa-eye'}"
-              ></i>
+              <i class="fas {showCurrentPassword ? 'fa-eye-slash' : 'fa-eye'}"></i>
             </button>
           </div>
           {#if currentPasswordError}
@@ -624,8 +609,7 @@
                 togglePasswordVisibility('confirm');
               }}
             >
-              <i class="fas {showConfirmPassword ? 'fa-eye-slash' : 'fa-eye'}"
-              ></i>
+              <i class="fas {showConfirmPassword ? 'fa-eye-slash' : 'fa-eye'}"></i>
             </button>
           </div>
           {#if passwordMismatchError}
@@ -644,8 +628,9 @@
           class="btn btn-primary"
           disabled={passwordSaving}
         >
-          {#if passwordSaving}<span class="spinner-ring spinner-ring--sm"
-            ></span>{:else}<i class="fas fa-key"></i>{/if}
+          {#if passwordSaving}<span class="spinner-ring spinner-ring--sm"></span>{:else}<i
+              class="fas fa-key"
+            ></i>{/if}
           Passwort ändern
         </button>
       </form>

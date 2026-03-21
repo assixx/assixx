@@ -117,10 +117,7 @@ export class UserProfileService {
     newPassword: string,
   ): Promise<{ message: string }> {
     // SECURITY: Get password hash for ACTIVE users only (is_active = 1)
-    const passwordHash = await this.userRepository.getPasswordHash(
-      userId,
-      tenantId,
-    );
+    const passwordHash = await this.userRepository.getPasswordHash(userId, tenantId);
 
     if (passwordHash === null) {
       throw new NotFoundException(ERROR_MESSAGES.USER_NOT_FOUND);
@@ -148,9 +145,7 @@ export class UserProfileService {
       [userId, tenantId],
     );
     const revokedCount = Number.parseInt(result[0]?.count ?? '0', 10);
-    this.logger.log(
-      `Password changed for user ${userId}: revoked ${revokedCount} refresh tokens`,
-    );
+    this.logger.log(`Password changed for user ${userId}: revoked ${revokedCount} refresh tokens`);
 
     void this.activityLogger.logUpdate(
       tenantId,
@@ -170,10 +165,7 @@ export class UserProfileService {
   /**
    * Get profile picture path
    */
-  async getProfilePicturePath(
-    userId: number,
-    tenantId: number,
-  ): Promise<string> {
+  async getProfilePicturePath(userId: number, tenantId: number): Promise<string> {
     const user = await this.findUserById(userId, tenantId);
     if (user === null) {
       throw new NotFoundException(ERROR_MESSAGES.USER_NOT_FOUND);
@@ -236,10 +228,7 @@ export class UserProfileService {
   /**
    * Delete profile picture
    */
-  async deleteProfilePicture(
-    userId: number,
-    tenantId: number,
-  ): Promise<{ message: string }> {
+  async deleteProfilePicture(userId: number, tenantId: number): Promise<{ message: string }> {
     const user = await this.findUserById(userId, tenantId);
     if (user === null) {
       throw new NotFoundException(ERROR_MESSAGES.USER_NOT_FOUND);
@@ -314,10 +303,7 @@ export class UserProfileService {
    * Find user by ID
    * SECURITY: Only returns ACTIVE users (is_active = 1)
    */
-  private async findUserById(
-    userId: number,
-    tenantId: number,
-  ): Promise<UserRow | null> {
+  private async findUserById(userId: number, tenantId: number): Promise<UserRow | null> {
     const rows = await this.databaseService.query<UserRow>(
       `SELECT id, uuid, tenant_id, email, role, username, first_name, last_name,
               is_active, last_login, created_at, updated_at,

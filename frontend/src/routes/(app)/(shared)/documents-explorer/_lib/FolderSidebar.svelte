@@ -10,12 +10,7 @@
     onnavigate: (category: DocumentCategory) => void;
   }
 
-  const {
-    currentCategory,
-    categoryCounts,
-    chatFoldersTotalCount,
-    onnavigate,
-  }: Props = $props();
+  const { currentCategory, categoryCounts, chatFoldersTotalCount, onnavigate }: Props = $props();
 </script>
 
 <div class="w-64 border-r border-(--border-color) bg-(--background-secondary)">
@@ -26,9 +21,7 @@
     <ul class="space-y-1">
       {#each FOLDER_DEFINITIONS as folder (folder.category)}
         {@const count =
-          folder.category === 'chat' ?
-            chatFoldersTotalCount
-          : categoryCounts[folder.category]}
+          folder.category === 'chat' ? chatFoldersTotalCount : categoryCounts[folder.category]}
         {@const isActive = folder.category === currentCategory}
         <li>
           <button
@@ -43,15 +36,11 @@
               onnavigate(folder.category);
             }}
           >
-            <span
-              class={isActive ? 'text-primary-500' : 'text-content-secondary'}
-            >
+            <span class={isActive ? 'text-primary-500' : 'text-content-secondary'}>
               <!-- eslint-disable-next-line svelte/no-at-html-tags -- Safe: icon from hardcoded folder config -->
               {@html folder.icon}
             </span>
-            <span class="text-sm {isActive ? 'font-medium' : ''}"
-              >{folder.label}</span
-            >
+            <span class="text-sm {isActive ? 'font-medium' : ''}">{folder.label}</span>
             <span class="text-content-tertiary ml-auto text-xs">{count}</span>
           </button>
         </li>

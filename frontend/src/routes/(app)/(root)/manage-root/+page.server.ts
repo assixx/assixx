@@ -26,18 +26,12 @@ export const load: PageServerLoad = async ({ cookies, fetch, locals }) => {
   // Parallel fetch: root users + positions
   const [rootUsersData, positionsData] = await Promise.all([
     apiFetch<RootUser[]>('/users?role=root', token, fetch),
-    apiFetch<{ name: string; roleCategory: string }[]>(
-      '/organigram/positions',
-      token,
-      fetch,
-    ),
+    apiFetch<{ name: string; roleCategory: string }[]>('/organigram/positions', token, fetch),
   ]);
   const allRootUsers = Array.isArray(rootUsersData) ? rootUsersData : [];
 
   // Exclude current user - they edit themselves on /root-profile
-  const rootUsers = allRootUsers.filter(
-    (u: RootUser): boolean => u.id !== currentUserId,
-  );
+  const rootUsers = allRootUsers.filter((u: RootUser): boolean => u.id !== currentUserId);
 
   log.debug(
     {
@@ -53,8 +47,6 @@ export const load: PageServerLoad = async ({ cookies, fetch, locals }) => {
   return {
     rootUsers,
     positionOptions:
-      Array.isArray(positionsData) ?
-        positionsData.map((p: { name: string }) => p.name)
-      : [],
+      Array.isArray(positionsData) ? positionsData.map((p: { name: string }) => p.name) : [],
   };
 };

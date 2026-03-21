@@ -59,10 +59,7 @@ if (sentryDsn !== undefined && sentryDsn !== '') {
     ],
 
     // Before send hook - can modify or drop events
-    beforeSend(
-      event: Sentry.ErrorEvent,
-      hint: Sentry.EventHint,
-    ): Sentry.ErrorEvent | null {
+    beforeSend(event: Sentry.ErrorEvent, hint: Sentry.EventHint): Sentry.ErrorEvent | null {
       // Don't send events in test environment
       if (process.env['NODE_ENV'] === 'test') {
         return null;
@@ -73,8 +70,7 @@ if (sentryDsn !== undefined && sentryDsn !== '') {
       const error = hint.originalException;
       if (
         error instanceof Error &&
-        (error.message.includes('Not Found') ||
-          error.message.includes('Validation'))
+        (error.message.includes('Not Found') || error.message.includes('Validation'))
       ) {
         return null;
       }
@@ -94,9 +90,7 @@ if (sentryDsn !== undefined && sentryDsn !== '') {
 
   // Log successful initialization
   // Using console here because logger might not be initialized yet
-  console.log(
-    `[Sentry] Initialized for environment: ${process.env['NODE_ENV'] ?? 'development'}`,
-  );
+  console.log(`[Sentry] Initialized for environment: ${process.env['NODE_ENV'] ?? 'development'}`);
 } else {
   console.log('[Sentry] DSN not configured - Sentry disabled');
 }

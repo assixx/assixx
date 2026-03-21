@@ -39,8 +39,7 @@ export const RadioButtons = {
     },
   },
   render: (args) => {
-    const groupClass =
-      args.compact ? 'choice-group choice-group--compact' : 'choice-group';
+    const groupClass = args.compact ? 'choice-group choice-group--compact' : 'choice-group';
 
     const wrapper = document.createElement('div');
     wrapper.style.maxWidth = '500px';
@@ -103,8 +102,7 @@ export const Checkboxes = {
     },
   },
   render: (args) => {
-    const groupClass =
-      args.compact ? 'choice-group choice-group--compact' : 'choice-group';
+    const groupClass = args.compact ? 'choice-group choice-group--compact' : 'choice-group';
 
     const wrapper = document.createElement('div');
     wrapper.style.maxWidth = '500px';

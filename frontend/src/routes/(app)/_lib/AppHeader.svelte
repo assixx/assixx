@@ -8,10 +8,7 @@
 
   import RoleSwitch from '$lib/components/RoleSwitch.svelte';
   import ThemeToggle from '$lib/components/ThemeToggle.svelte';
-  import {
-    getAvatarColorClass,
-    getProfilePictureUrl,
-  } from '$lib/utils/avatar-helpers';
+  import { getAvatarColorClass, getProfilePictureUrl } from '$lib/utils/avatar-helpers';
 
   interface UserInfo {
     id?: number;

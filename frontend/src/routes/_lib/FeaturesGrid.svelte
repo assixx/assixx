@@ -14,8 +14,8 @@
         Organisation & Personal
       </h3>
       <p>
-        Mitarbeiter, Abteilungen, Teams und Organigramm — zentral verwaltet.
-        Unbegrenzte Nutzer inklusive.
+        Mitarbeiter, Abteilungen, Teams und Organigramm — zentral verwaltet. Unbegrenzte Nutzer
+        inklusive.
       </p>
     </div>
     <div class="module-card">
@@ -24,8 +24,8 @@
         Kommunikation
       </h3>
       <p>
-        Schwarzes Brett, Chat, Benachrichtigungen und Umfragen — alle
-        Mitarbeiter erreichen, vom Büro bis zur Produktion.
+        Schwarzes Brett, Chat, Benachrichtigungen und Umfragen — alle Mitarbeiter erreichen, vom
+        Büro bis zur Produktion.
       </p>
     </div>
     <div class="module-card">
@@ -34,8 +34,8 @@
         Planung & Verwaltung
       </h3>
       <p>
-        Kalender, Schichtplanung, Urlaubsverwaltung und Dokumentenmanagement —
-        Arbeitsabläufe digital organisiert.
+        Kalender, Schichtplanung, Urlaubsverwaltung und Dokumentenmanagement — Arbeitsabläufe
+        digital organisiert.
       </p>
     </div>
     <div class="module-card">
@@ -44,8 +44,8 @@
         Lean Management
       </h3>
       <p>
-        TPM-Wartung, KVP-Prozess, Arbeitsaufträge und Anlagenverwaltung —
-        Produktivität systematisch steigern.
+        TPM-Wartung, KVP-Prozess, Arbeitsaufträge und Anlagenverwaltung — Produktivität systematisch
+        steigern.
       </p>
     </div>
   </div>

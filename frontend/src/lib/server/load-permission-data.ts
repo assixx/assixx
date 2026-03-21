@@ -89,9 +89,7 @@ async function parseResponses(
 
   const userJson = (await userResponse.json()) as UserApiResponse;
   const permissions =
-    permResponse.ok ?
-      ((await permResponse.json()) as PermissionsApiResponse).data
-    : [];
+    permResponse.ok ? ((await permResponse.json()) as PermissionsApiResponse).data : [];
 
   if (!permResponse.ok) {
     log.error({ status: permResponse.status }, 'Failed to fetch permissions');

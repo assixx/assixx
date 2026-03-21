@@ -37,10 +37,7 @@ export class AuditMetadataService {
   /**
    * Extract all request metadata for audit logging.
    */
-  extractRequestMetadata(
-    request: FastifyRequest,
-    action: AuditAction,
-  ): AuditRequestMetadata {
+  extractRequestMetadata(request: FastifyRequest, action: AuditAction): AuditRequestMetadata {
     const path = request.url.split('?')[0] ?? request.url;
     const params = request.params as Record<string, string>;
 
@@ -130,9 +127,7 @@ export class AuditMetadataService {
 
       const row = rows[0] as Record<string, unknown>;
       const name = row[mapping.nameField];
-      return typeof name === 'string' && name.length > 0 ?
-          name.slice(0, 255)
-        : null;
+      return typeof name === 'string' && name.length > 0 ? name.slice(0, 255) : null;
     } catch {
       return null;
     }

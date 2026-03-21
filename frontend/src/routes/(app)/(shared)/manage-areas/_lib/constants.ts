@@ -44,8 +44,7 @@ const STATIC_MESSAGES = {
   DELETE_TITLE: 'Löschen',
   DELETE_CONFIRM_TITLE: 'Endgültig löschen?',
   DELETE_CONFIRM_WARNING: 'Diese Aktion kann nicht rückgängig gemacht werden!',
-  DELETE_CONFIRM_MESSAGE:
-    'Der Eintrag wird unwiderruflich aus dem System entfernt.',
+  DELETE_CONFIRM_MESSAGE: 'Der Eintrag wird unwiderruflich aus dem System entfernt.',
   FORCE_DELETE_TITLE: 'Abhängigkeiten vorhanden',
   FORCE_DELETE_DEFAULT_MESSAGE:
     'Dieser Eintrag wird von anderen Elementen verwendet. Möchten Sie ihn trotzdem löschen? Alle Zuordnungen werden entfernt.',

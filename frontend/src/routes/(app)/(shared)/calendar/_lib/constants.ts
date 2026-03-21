@@ -2,10 +2,7 @@
 // CALENDAR - CONSTANTS
 // =============================================================================
 
-import {
-  DEFAULT_HIERARCHY_LABELS,
-  type HierarchyLabels,
-} from '$lib/types/hierarchy-labels';
+import { DEFAULT_HIERARCHY_LABELS, type HierarchyLabels } from '$lib/types/hierarchy-labels';
 
 import type { OrgLevel, EventLevelInfo } from './types';
 
@@ -39,9 +36,7 @@ export const ORG_LEVEL_COLORS: Record<OrgLevel, string> = {
  * Factory: Event level info for UI display
  * Dynamic labels for department/team/area, static for company/personal.
  */
-export function createEventLevelInfo(
-  labels: HierarchyLabels,
-): Record<OrgLevel, EventLevelInfo> {
+export function createEventLevelInfo(labels: HierarchyLabels): Record<OrgLevel, EventLevelInfo> {
   return {
     company: { class: 'event-level-company', text: 'Firma', color: '#3498db' },
     department: {
@@ -101,9 +96,7 @@ interface FilterOption {
  * Factory: Filter options for organization level
  * Dynamic labels for department/team/area, static for company/personal.
  */
-export function createFilterOptions(
-  labels: HierarchyLabels,
-): readonly FilterOption[] {
+export function createFilterOptions(labels: HierarchyLabels): readonly FilterOption[] {
   return [
     { value: 'all', label: 'Gesamt', icon: 'fa-globe', title: 'Alle Termine' },
     {
@@ -140,9 +133,8 @@ export function createFilterOptions(
 }
 
 /** Default filter options — backward-compatible static export */
-export const FILTER_OPTIONS: readonly FilterOption[] = createFilterOptions(
-  DEFAULT_HIERARCHY_LABELS,
-);
+export const FILTER_OPTIONS: readonly FilterOption[] =
+  createFilterOptions(DEFAULT_HIERARCHY_LABELS);
 
 /** Org level option shape for form selects */
 interface OrgLevelOption {
@@ -155,9 +147,7 @@ interface OrgLevelOption {
  * Factory: Org level options for form
  * Dynamic labels for department/team/area, static for personal/company.
  */
-export function createOrgLevelOptions(
-  labels: HierarchyLabels,
-): readonly OrgLevelOption[] {
+export function createOrgLevelOptions(labels: HierarchyLabels): readonly OrgLevelOption[] {
   return [
     { value: 'personal', label: 'Persoenlich', icon: 'fa-user' },
     { value: 'company', label: 'Firma', icon: 'fa-building' },

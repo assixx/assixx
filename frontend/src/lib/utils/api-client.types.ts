@@ -146,9 +146,7 @@ export function getApiErrorMessage(err: unknown, fallback: string): string {
   }
 
   if (Array.isArray(err.details) && err.details.length > 0) {
-    const messages = err.details
-      .filter(isValidationDetail)
-      .map((d) => d.message);
+    const messages = err.details.filter(isValidationDetail).map((d) => d.message);
     if (messages.length > 0) return messages.join(', ');
   }
 

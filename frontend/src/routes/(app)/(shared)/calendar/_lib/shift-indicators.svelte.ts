@@ -62,19 +62,13 @@ function renderShiftIndicators(): void {
     renderedCount++;
   });
 
-  log.debug(
-    { renderedCount, cachedCount: shiftsCache.size },
-    'Rendered shift indicators',
-  );
+  log.debug({ renderedCount, cachedCount: shiftsCache.size }, 'Rendered shift indicators');
 }
 
 /**
  * Fetch and cache shifts, then render indicators
  */
-async function fetchAndRenderShifts(
-  startStr: string,
-  endStr: string,
-): Promise<void> {
+async function fetchAndRenderShifts(startStr: string, endStr: string): Promise<void> {
   if (!showShiftsState) {
     shiftsCache.clear();
     return;

@@ -13,12 +13,7 @@ import { RootService } from './root.service.js';
 @Module({
   imports: [TenantDeletionModule],
   controllers: [RootController],
-  providers: [
-    RootService,
-    RootAdminService,
-    RootTenantService,
-    RootDeletionService,
-  ],
+  providers: [RootService, RootAdminService, RootTenantService, RootDeletionService],
   exports: [RootService],
 })
 // eslint-disable-next-line @typescript-eslint/no-extraneous-class -- NestJS modules are decorator-configured

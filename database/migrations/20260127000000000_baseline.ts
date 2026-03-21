@@ -23,7 +23,5 @@ export function up(pgm: MigrationBuilder): void {
 }
 
 export function down(): void {
-  throw new Error(
-    'Cannot rollback baseline migration. Restore from pg_dump backup instead.',
-  );
+  throw new Error('Cannot rollback baseline migration. Restore from pg_dump backup instead.');
 }

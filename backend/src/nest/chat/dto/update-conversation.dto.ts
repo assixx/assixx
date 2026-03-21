@@ -17,11 +17,7 @@ export const UpdateConversationBodySchema = z.object({
     .optional(),
 });
 
-export class UpdateConversationDto extends createZodDto(
-  UpdateConversationBodySchema,
-) {}
+export class UpdateConversationDto extends createZodDto(UpdateConversationBodySchema) {}
 
 // Type export
-export type UpdateConversationBody = z.infer<
-  typeof UpdateConversationBodySchema
->;
+export type UpdateConversationBody = z.infer<typeof UpdateConversationBodySchema>;

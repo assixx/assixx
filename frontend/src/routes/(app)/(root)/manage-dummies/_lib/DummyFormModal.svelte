@@ -2,20 +2,10 @@
   import PasswordStrengthIndicator from '$lib/components/PasswordStrengthIndicator.svelte';
   import { analyzePassword } from '$lib/utils/password-strength';
 
-  import {
-    FORM_DEFAULTS,
-    IS_ACTIVE_LABELS,
-    MESSAGES,
-    MIN_PASSWORD_LENGTH,
-  } from './constants';
+  import { FORM_DEFAULTS, IS_ACTIVE_LABELS, MESSAGES, MIN_PASSWORD_LENGTH } from './constants';
 
   import type { PasswordStrengthResult } from '$lib/utils/password-strength';
-  import type {
-    DummyFormData,
-    DummyUser,
-    Team,
-    ValidationErrors,
-  } from './types';
+  import type { DummyFormData, DummyUser, Team, ValidationErrors } from './types';
 
   interface Props {
     show: boolean;
@@ -27,8 +17,7 @@
     onsave: (data: DummyFormData) => void;
   }
 
-  const { show, mode, dummy, teams, submitting, onclose, onsave }: Props =
-    $props();
+  const { show, mode, dummy, teams, submitting, onclose, onsave }: Props = $props();
 
   let formData = $state<DummyFormData>({ ...FORM_DEFAULTS });
   let errors = $state<ValidationErrors>({});
@@ -78,10 +67,7 @@
     const passwordRequired = mode === 'create' || formData.password !== '';
     if (mode === 'create' && formData.password === '') {
       newErrors.password = MESSAGES.VALIDATION_PASSWORD_REQUIRED;
-    } else if (
-      passwordRequired &&
-      formData.password.length < MIN_PASSWORD_LENGTH
-    ) {
+    } else if (passwordRequired && formData.password.length < MIN_PASSWORD_LENGTH) {
       newErrors.password = MESSAGES.VALIDATION_PASSWORD_TOO_SHORT;
     }
 
@@ -109,19 +95,17 @@
 
     strengthLoading = true;
     debounceTimer = setTimeout(() => {
-      void analyzePassword(formData.password).then(
-        (result: PasswordStrengthResult | null) => {
-          strengthResult = result;
-          strengthLoading = false;
-        },
-      );
+      void analyzePassword(formData.password).then((result: PasswordStrengthResult | null) => {
+        strengthResult = result;
+        strengthLoading = false;
+      });
     }, 300);
   }
 
   function handleTeamChange(e: Event): void {
     const select = e.target as HTMLSelectElement;
-    formData.teamIds = Array.from(select.selectedOptions).map(
-      (opt: HTMLOptionElement) => parseInt(opt.value, 10),
+    formData.teamIds = Array.from(select.selectedOptions).map((opt: HTMLOptionElement) =>
+      parseInt(opt.value, 10),
     );
   }
 </script>
@@ -203,9 +187,7 @@
               readonly
               disabled
             />
-            <span class="form-field__message text-(--color-text-secondary)">
-              Auto-generiert
-            </span>
+            <span class="form-field__message text-(--color-text-secondary)"> Auto-generiert </span>
           </div>
           <div class="form-field">
             <label
@@ -222,9 +204,7 @@
               readonly
               disabled
             />
-            <span class="form-field__message text-(--color-text-secondary)">
-              Auto-generiert
-            </span>
+            <span class="form-field__message text-(--color-text-secondary)"> Auto-generiert </span>
           </div>
         {/if}
 
@@ -260,9 +240,7 @@
             <button
               type="button"
               class="form-field__password-toggle"
-              aria-label={showPassword ? 'Passwort verbergen' : (
-                'Passwort anzeigen'
-              )}
+              aria-label={showPassword ? 'Passwort verbergen' : 'Passwort anzeigen'}
               onclick={() => {
                 showPassword = !showPassword;
               }}
@@ -302,8 +280,7 @@
               autocomplete="new-password"
               class="form-field__control"
               class:is-error={errors.passwordConfirm !== undefined}
-              class:is-success={formData.passwordConfirm !== '' &&
-                passwordMatch}
+              class:is-success={formData.passwordConfirm !== '' && passwordMatch}
               placeholder={MESSAGES.FORM_PASSWORD_CONFIRM_PH}
               required={mode === 'create'}
               bind:value={formData.passwordConfirm}
@@ -311,9 +288,7 @@
             <button
               type="button"
               class="form-field__password-toggle"
-              aria-label={showPassword ? 'Passwort verbergen' : (
-                'Passwort anzeigen'
-              )}
+              aria-label={showPassword ? 'Passwort verbergen' : 'Passwort anzeigen'}
               onclick={() => {
                 showPassword = !showPassword;
               }}
@@ -360,8 +335,7 @@
             </div>
             <div class="alert__content">
               <div class="alert__message">
-                Teams bestimmen, auf welchen TPM-Boards dieser Dummy-Benutzer
-                Inhalte sehen kann.
+                Teams bestimmen, auf welchen TPM-Boards dieser Dummy-Benutzer Inhalte sehen kann.
               </div>
             </div>
           </div>
@@ -386,9 +360,7 @@
                   value={team.id}
                   selected={formData.teamIds.includes(team.id)}
                 >
-                  {team.name}{team.departmentName !== null ?
-                    ` (${team.departmentName})`
-                  : ''}
+                  {team.name}{team.departmentName !== null ? ` (${team.departmentName})` : ''}
                 </option>
               {/each}
             </select>

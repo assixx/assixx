@@ -7,10 +7,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { DatabaseService } from './database.service.js';
-import {
-  type PartitionHealthResult,
-  PartitionHealthService,
-} from './partition-health.service.js';
+import { type PartitionHealthResult, PartitionHealthService } from './partition-health.service.js';
 
 function createMockDb() {
   return {
@@ -131,26 +128,20 @@ describe('PartitionHealthService', () => {
     });
 
     it('should fail when one table is not registered', async () => {
-      mockDb.queryOne.mockImplementation(
-        async (sql: string, params?: unknown[]) => {
-          if (sql.includes('pg_extension')) return { extversion: '5.4.3' };
-          if (sql.includes('part_config')) {
-            return (params?.[0] as string) === 'public.audit_trail' ?
-                { premake: 12 }
-              : null;
-          }
-          return null;
-        },
-      );
-      mockDb.query.mockImplementation(
-        async (sql: string, params?: unknown[]) => {
-          if (sql.includes('pg_inherits')) {
-            return buildPartitionNames(params?.[0] as string, 2026, 3, 13);
-          }
-          if (sql.includes('check_default')) return [];
-          return [];
-        },
-      );
+      mockDb.queryOne.mockImplementation(async (sql: string, params?: unknown[]) => {
+        if (sql.includes('pg_extension')) return { extversion: '5.4.3' };
+        if (sql.includes('part_config')) {
+          return (params?.[0] as string) === 'public.audit_trail' ? { premake: 12 } : null;
+        }
+        return null;
+      });
+      mockDb.query.mockImplementation(async (sql: string, params?: unknown[]) => {
+        if (sql.includes('pg_inherits')) {
+          return buildPartitionNames(params?.[0] as string, 2026, 3, 13);
+        }
+        if (sql.includes('check_default')) return [];
+        return [];
+      });
 
       const result = await service.check();
 
@@ -166,19 +157,17 @@ describe('PartitionHealthService', () => {
         if (sql.includes('part_config')) return { premake: 12 };
         return null;
       });
-      mockDb.query.mockImplementation(
-        async (sql: string, params?: unknown[]) => {
-          if (sql.includes('pg_inherits')) {
-            const tableName = params?.[0] as string;
-            if (tableName === 'audit_trail') {
-              return buildPartitionNames(tableName, 2026, 4, 12);
-            }
-            return buildPartitionNames(tableName, 2026, 3, 13);
+      mockDb.query.mockImplementation(async (sql: string, params?: unknown[]) => {
+        if (sql.includes('pg_inherits')) {
+          const tableName = params?.[0] as string;
+          if (tableName === 'audit_trail') {
+            return buildPartitionNames(tableName, 2026, 4, 12);
           }
-          if (sql.includes('check_default')) return [];
-          return [];
-        },
-      );
+          return buildPartitionNames(tableName, 2026, 3, 13);
+        }
+        if (sql.includes('check_default')) return [];
+        return [];
+      });
 
       const result = await service.check();
 
@@ -193,15 +182,13 @@ describe('PartitionHealthService', () => {
         if (sql.includes('part_config')) return { premake: 12 };
         return null;
       });
-      mockDb.query.mockImplementation(
-        async (sql: string, params?: unknown[]) => {
-          if (sql.includes('pg_inherits')) {
-            return buildPartitionNames(params?.[0] as string, 2026, 3, 7);
-          }
-          if (sql.includes('check_default')) return [];
-          return [];
-        },
-      );
+      mockDb.query.mockImplementation(async (sql: string, params?: unknown[]) => {
+        if (sql.includes('pg_inherits')) {
+          return buildPartitionNames(params?.[0] as string, 2026, 3, 7);
+        }
+        if (sql.includes('check_default')) return [];
+        return [];
+      });
 
       const result = await service.check();
 
@@ -231,17 +218,15 @@ describe('PartitionHealthService', () => {
         if (sql.includes('part_config')) return { premake: 12 };
         return null;
       });
-      mockDb.query.mockImplementation(
-        async (sql: string, params?: unknown[]) => {
-          if (sql.includes('pg_inherits')) {
-            return buildPartitionNames(params?.[0] as string, 2026, 3, 13);
-          }
-          if (sql.includes('check_default')) {
-            return [{ parent_table: 'public.audit_trail', count: '5' }];
-          }
-          return [];
-        },
-      );
+      mockDb.query.mockImplementation(async (sql: string, params?: unknown[]) => {
+        if (sql.includes('pg_inherits')) {
+          return buildPartitionNames(params?.[0] as string, 2026, 3, 13);
+        }
+        if (sql.includes('check_default')) {
+          return [{ parent_table: 'public.audit_trail', count: '5' }];
+        }
+        return [];
+      });
 
       const result = await service.check();
 
@@ -266,24 +251,20 @@ describe('PartitionHealthService', () => {
         if (sql.includes('part_config')) return { premake: 12 };
         return null;
       });
-      mockDb.query.mockImplementation(
-        async (sql: string, params?: unknown[]) => {
-          if (sql.includes('pg_inherits')) {
-            const tableName = params?.[0] as string;
-            const partitions = buildPartitionNames(tableName, 2026, 11, 13);
-            if (tableName === 'audit_trail') {
-              queriedNames.push(
-                ...partitions.map(
-                  (p: { partition_name: string }) => p.partition_name,
-                ),
-              );
-            }
-            return partitions;
+      mockDb.query.mockImplementation(async (sql: string, params?: unknown[]) => {
+        if (sql.includes('pg_inherits')) {
+          const tableName = params?.[0] as string;
+          const partitions = buildPartitionNames(tableName, 2026, 11, 13);
+          if (tableName === 'audit_trail') {
+            queriedNames.push(
+              ...partitions.map((p: { partition_name: string }) => p.partition_name),
+            );
           }
-          if (sql.includes('check_default')) return [];
-          return [];
-        },
-      );
+          return partitions;
+        }
+        if (sql.includes('check_default')) return [];
+        return [];
+      });
 
       const result = await service.check();
 
@@ -328,15 +309,13 @@ describe('PartitionHealthService', () => {
         if (sql.includes('part_config')) return { premake: 6 };
         return null;
       });
-      mockDb.query.mockImplementation(
-        async (sql: string, params?: unknown[]) => {
-          if (sql.includes('pg_inherits')) {
-            return buildPartitionNames(params?.[0] as string, 2026, 3, 7);
-          }
-          if (sql.includes('check_default')) return [];
-          return [];
-        },
-      );
+      mockDb.query.mockImplementation(async (sql: string, params?: unknown[]) => {
+        if (sql.includes('pg_inherits')) {
+          return buildPartitionNames(params?.[0] as string, 2026, 3, 7);
+        }
+        if (sql.includes('check_default')) return [];
+        return [];
+      });
 
       const result: PartitionHealthResult = await service.check();
 

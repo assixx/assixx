@@ -40,11 +40,7 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
   const currentYear = now.getFullYear();
   const currentMonth = now.getMonth() + 1;
 
-  const teamsResult = await apiFetchWithPermission<RawTeam[]>(
-    '/teams',
-    token,
-    fetch,
-  );
+  const teamsResult = await apiFetchWithPermission<RawTeam[]>('/teams', token, fetch);
 
   if (teamsResult.permissionDenied) {
     return {
@@ -56,18 +52,12 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
     };
   }
 
-  const blackoutsData = await apiFetch<RawBlackout[]>(
-    '/vacation/blackouts',
-    token,
-    fetch,
-  );
+  const blackoutsData = await apiFetch<RawBlackout[]>('/vacation/blackouts', token, fetch);
 
   const teams: TeamListItem[] =
     teamsResult.data
       ?.map((t: RawTeam) => ({ id: t.id, name: t.name }))
-      .sort((a: TeamListItem, b: TeamListItem) =>
-        a.name.localeCompare(b.name, 'de'),
-      ) ?? [];
+      .sort((a: TeamListItem, b: TeamListItem) => a.name.localeCompare(b.name, 'de')) ?? [];
 
   const blackouts: BlackoutPeriod[] =
     blackoutsData?.map((b: RawBlackout) => ({

@@ -27,8 +27,7 @@ async function fetchSourcePhotos(
 ): Promise<SourcePhoto[]> {
   const hasSourcePhotos =
     workOrder.sourceUuid !== null &&
-    (workOrder.sourceType === 'tpm_defect' ||
-      workOrder.sourceType === 'kvp_proposal');
+    (workOrder.sourceType === 'tpm_defect' || workOrder.sourceType === 'kvp_proposal');
   if (!hasSourcePhotos) return [];
   const result = await apiFetch<SourcePhoto[]>(
     `/work-orders/${uuid}/source-photos`,
@@ -38,9 +37,7 @@ async function fetchSourcePhotos(
   return Array.isArray(result) ? result : [];
 }
 
-function buildComments(
-  data: PaginatedResponse<WorkOrderComment> | null,
-): PaginatedComments {
+function buildComments(data: PaginatedResponse<WorkOrderComment> | null): PaginatedComments {
   const raw = data ?? { items: [] as WorkOrderComment[], total: 0 };
   return {
     comments: raw.items,
@@ -49,12 +46,7 @@ function buildComments(
   };
 }
 
-export const load: PageServerLoad = async ({
-  cookies,
-  fetch,
-  params,
-  parent,
-}) => {
+export const load: PageServerLoad = async ({ cookies, fetch, params, parent }) => {
   const token = cookies.get('accessToken');
   if (token === undefined || token === '') {
     redirect(302, '/login');

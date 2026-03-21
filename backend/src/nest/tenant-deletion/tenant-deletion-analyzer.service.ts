@@ -16,10 +16,7 @@ import type { PoolClient } from 'pg';
 
 import { getErrorMessage } from '../common/index.js';
 import { DatabaseService } from '../database/database.service.js';
-import {
-  getTablesWithTenantId,
-  validateTenantId,
-} from './tenant-deletion.helpers.js';
+import { getTablesWithTenantId, validateTenantId } from './tenant-deletion.helpers.js';
 import {
   CRITICAL_TABLES,
   type CountResult,
@@ -93,9 +90,7 @@ export class TenantDeletionAnalyzer {
           report.totalRecords += count;
           report.estimatedDuration += count * 0.001;
         } catch (error: unknown) {
-          report.warnings.push(
-            `Could not estimate ${tableName}: ${getErrorMessage(error)}`,
-          );
+          report.warnings.push(`Could not estimate ${tableName}: ${getErrorMessage(error)}`);
         }
       }
     });
@@ -111,10 +106,7 @@ export class TenantDeletionAnalyzer {
    * Called by facade AFTER executeDeletions within the same transaction.
    * @throws Error if data remains in non-critical tables
    */
-  async verifyCompleteDeletion(
-    tenantId: number,
-    client: PoolClient,
-  ): Promise<string[]> {
+  async verifyCompleteDeletion(tenantId: number, client: PoolClient): Promise<string[]> {
     const tables = await getTablesWithTenantId(client);
     const remainingData: string[] = [];
 
@@ -132,19 +124,13 @@ export class TenantDeletionAnalyzer {
 
       const firstResult = countResult.rows[0];
       if (firstResult !== undefined && Number(firstResult.count) > 0) {
-        remainingData.push(
-          `${tableName}: ${String(firstResult.count)} rows remaining`,
-        );
+        remainingData.push(`${tableName}: ${String(firstResult.count)} rows remaining`);
       }
     }
 
     if (remainingData.length > 0) {
-      this.logger.error(
-        `INCOMPLETE DELETION - Data remains: ${JSON.stringify(remainingData)}`,
-      );
-      throw new Error(
-        `Deletion incomplete: ${remainingData.length} tables still contain data`,
-      );
+      this.logger.error(`INCOMPLETE DELETION - Data remains: ${JSON.stringify(remainingData)}`);
+      throw new Error(`Deletion incomplete: ${remainingData.length} tables still contain data`);
     }
 
     this.logger.log('Deletion verified - all data removed successfully');

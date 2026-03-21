@@ -42,9 +42,7 @@ function createMockActivityLogger() {
   };
 }
 
-function createShareDto(
-  overrides?: Partial<ShareSuggestionDto>,
-): ShareSuggestionDto {
+function createShareDto(overrides?: Partial<ShareSuggestionDto>): ShareSuggestionDto {
   return {
     orgLevel: 'team',
     orgId: 5,
@@ -98,9 +96,9 @@ describe('KvpLifecycleService', () => {
     it('should throw NotFoundException when suggestion not found', async () => {
       mockDb.query.mockResolvedValueOnce([]);
 
-      await expect(
-        service.shareSuggestion(42, createShareDto(), 1, 100),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.shareSuggestion(42, createShareDto(), 1, 100)).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should use uuid column when id is UUID', async () => {
@@ -136,9 +134,7 @@ describe('KvpLifecycleService', () => {
     it('should throw NotFoundException when suggestion not found', async () => {
       mockDb.query.mockResolvedValueOnce([]);
 
-      await expect(service.unshareSuggestion(42, 1)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.unshareSuggestion(42, 1)).rejects.toThrow(NotFoundException);
     });
 
     it('should use org_id = team_id in the UPDATE query', async () => {
@@ -160,9 +156,7 @@ describe('KvpLifecycleService', () => {
   describe('archiveSuggestion()', () => {
     it('should archive suggestion and log activity', async () => {
       // Q1: findSuggestionOrThrow SELECT
-      mockDb.query.mockResolvedValueOnce([
-        { id: 42, title: 'Mein Vorschlag', status: 'open' },
-      ]);
+      mockDb.query.mockResolvedValueOnce([{ id: 42, title: 'Mein Vorschlag', status: 'open' }]);
       // Q2: UPDATE status='archived'
       mockDb.query.mockResolvedValueOnce([]);
 
@@ -188,25 +182,20 @@ describe('KvpLifecycleService', () => {
     it('should throw NotFoundException when suggestion not found', async () => {
       mockDb.query.mockResolvedValueOnce([]);
 
-      await expect(service.archiveSuggestion(42, 1, 100)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.archiveSuggestion(42, 1, 100)).rejects.toThrow(NotFoundException);
     });
 
     it('should use uuid column when id is UUID', async () => {
       mockIsUuid.mockReturnValueOnce(true);
-      mockDb.query.mockResolvedValueOnce([
-        { id: 42, title: 'Test', status: 'open' },
-      ]);
+      mockDb.query.mockResolvedValueOnce([{ id: 42, title: 'Test', status: 'open' }]);
       mockDb.query.mockResolvedValueOnce([]);
 
       await service.archiveSuggestion('abc-uuid', 1, 100);
 
-      expect(mockDb.query).toHaveBeenNthCalledWith(
+      expect(mockDb.query).toHaveBeenNthCalledWith(1, expect.stringContaining('uuid'), [
+        'abc-uuid',
         1,
-        expect.stringContaining('uuid'),
-        ['abc-uuid', 1],
-      );
+      ]);
     });
   });
 
@@ -217,9 +206,7 @@ describe('KvpLifecycleService', () => {
   describe('unarchiveSuggestion()', () => {
     it('should restore suggestion and log activity', async () => {
       // Q1: findSuggestionOrThrow SELECT
-      mockDb.query.mockResolvedValueOnce([
-        { id: 42, title: 'Mein Vorschlag', status: 'archived' },
-      ]);
+      mockDb.query.mockResolvedValueOnce([{ id: 42, title: 'Mein Vorschlag', status: 'archived' }]);
       // Q2: UPDATE status='restored'
       mockDb.query.mockResolvedValueOnce([]);
 
@@ -245,9 +232,7 @@ describe('KvpLifecycleService', () => {
     it('should throw NotFoundException when suggestion not found', async () => {
       mockDb.query.mockResolvedValueOnce([]);
 
-      await expect(service.unarchiveSuggestion(42, 1, 100)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.unarchiveSuggestion(42, 1, 100)).rejects.toThrow(NotFoundException);
     });
   });
 });

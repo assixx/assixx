@@ -6,11 +6,7 @@
  * resolveApprovers() uses a single UNION ALL query for all approver types.
  */
 import { IS_ACTIVE } from '@assixx/shared/constants';
-import {
-  ConflictException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import type { PoolClient } from 'pg';
 import { v7 as uuidv7 } from 'uuid';
 
@@ -167,22 +163,16 @@ export class ApprovalsConfigService {
   }
 
   /** Soft-delete a config entry */
-  async deleteConfig(
-    uuid: string,
-    tenantId: number,
-    deletedBy: number,
-  ): Promise<void> {
-    const affected = await this.db.tenantTransaction(
-      async (client: PoolClient) => {
-        const res = await client.query(
-          `UPDATE approval_configs
+  async deleteConfig(uuid: string, tenantId: number, deletedBy: number): Promise<void> {
+    const affected = await this.db.tenantTransaction(async (client: PoolClient) => {
+      const res = await client.query(
+        `UPDATE approval_configs
          SET is_active = ${IS_ACTIVE.DELETED}, updated_at = NOW()
          WHERE uuid = $1 AND is_active = ${IS_ACTIVE.ACTIVE}`,
-          [uuid],
-        );
-        return res.rowCount ?? 0;
-      },
-    );
+        [uuid],
+      );
+      return res.rowCount ?? 0;
+    });
 
     if (affected === 0) {
       throw new NotFoundException('Approval config not found');
@@ -202,15 +192,12 @@ export class ApprovalsConfigService {
    * Resolve all configured approvers for an addon.
    * Single UNION ALL query — 1 DB round-trip (5 branches incl. position).
    */
-  async resolveApprovers(
-    addonCode: string,
-    requestingUserId: number,
-  ): Promise<number[]> {
+  async resolveApprovers(addonCode: string, requestingUserId: number): Promise<number[]> {
     const rows = await this.db.tenantTransaction(async (client: PoolClient) => {
-      const result = await client.query<ResolvedApproverRow>(
-        RESOLVE_APPROVERS_QUERY,
-        [addonCode, requestingUserId],
-      );
+      const result = await client.query<ResolvedApproverRow>(RESOLVE_APPROVERS_QUERY, [
+        addonCode,
+        requestingUserId,
+      ]);
       return result.rows;
     });
 
@@ -241,9 +228,7 @@ export class ApprovalsConfigService {
     );
 
     if (existing.rows.length > 0) {
-      throw new ConflictException(
-        `Config exists for ${dto.addonCode} / ${dto.approverType}`,
-      );
+      throw new ConflictException(`Config exists for ${dto.addonCode} / ${dto.approverType}`);
     }
   }
 }

@@ -8,14 +8,7 @@ import {
   AVAILABILITY_OPTIONS,
 } from './availability.js';
 
-const ALL_STATUSES = [
-  'available',
-  'vacation',
-  'sick',
-  'unavailable',
-  'training',
-  'other',
-] as const;
+const ALL_STATUSES = ['available', 'vacation', 'sick', 'unavailable', 'training', 'other'] as const;
 
 describe('AVAILABILITY_LABELS', () => {
   it('should have a German label for every AvailabilityStatus', () => {

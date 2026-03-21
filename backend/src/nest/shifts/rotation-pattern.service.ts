@@ -20,10 +20,7 @@ import { ActivityLoggerService } from '../common/services/activity-logger.servic
 import { DatabaseService } from '../database/database.service.js';
 import type { CreateRotationPatternDto } from './dto/create-rotation-pattern.dto.js';
 import type { UpdateRotationPatternDto } from './dto/update-rotation-pattern.dto.js';
-import type {
-  DbPatternRow,
-  RotationPatternResponse,
-} from './rotation.types.js';
+import type { DbPatternRow, RotationPatternResponse } from './rotation.types.js';
 
 @Injectable()
 export class RotationPatternService {
@@ -41,9 +38,7 @@ export class RotationPatternService {
   /**
    * Parse pattern config from database (JSON string or object)
    */
-  private parsePatternConfig(
-    config: Record<string, unknown> | string,
-  ): Record<string, unknown> {
+  private parsePatternConfig(config: Record<string, unknown> | string): Record<string, unknown> {
     if (typeof config === 'string') {
       return JSON.parse(config) as Record<string, unknown>;
     }
@@ -111,13 +106,8 @@ export class RotationPatternService {
   /**
    * Get single rotation pattern by ID
    */
-  async getRotationPattern(
-    patternId: number,
-    tenantId: number,
-  ): Promise<RotationPatternResponse> {
-    this.logger.debug(
-      `Getting rotation pattern ${patternId} for tenant ${tenantId}`,
-    );
+  async getRotationPattern(patternId: number, tenantId: number): Promise<RotationPatternResponse> {
+    this.logger.debug(`Getting rotation pattern ${patternId} for tenant ${tenantId}`);
 
     const query = `
       SELECT
@@ -128,10 +118,7 @@ export class RotationPatternService {
       WHERE p.id = $1 AND p.tenant_id = $2
     `;
 
-    const rows = await this.databaseService.query<DbPatternRow>(query, [
-      patternId,
-      tenantId,
-    ]);
+    const rows = await this.databaseService.query<DbPatternRow>(query, [patternId, tenantId]);
 
     if (rows.length === 0 || rows[0] === undefined) {
       throw new NotFoundException(`Rotation pattern ${patternId} not found`);
@@ -143,18 +130,13 @@ export class RotationPatternService {
   /**
    * Ensures no active pattern with the same name exists
    */
-  private async ensureUniquePatternName(
-    name: string,
-    tenantId: number,
-  ): Promise<void> {
+  private async ensureUniquePatternName(name: string, tenantId: number): Promise<void> {
     const existing = await this.databaseService.query<{ id: number }>(
       `SELECT id FROM shift_rotation_patterns WHERE name = $1 AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}`,
       [name, tenantId],
     );
     if (existing.length > 0 && existing[0] !== undefined) {
-      throw new ConflictException(
-        `Ein Rotationsmuster mit dem Namen "${name}" existiert bereits.`,
-      );
+      throw new ConflictException(`Ein Rotationsmuster mit dem Namen "${name}" existiert bereits.`);
     }
   }
 
@@ -182,28 +164,23 @@ export class RotationPatternService {
       RETURNING id
     `;
 
-    const result = await this.databaseService.query<{ id: number }>(
-      insertQuery,
-      [
-        tenantId,
-        dto.teamId ?? null,
-        dto.name,
-        dto.description ?? null,
-        dto.patternType,
-        JSON.stringify(dto.patternConfig),
-        dto.cycleLengthWeeks,
-        dto.startsAt,
-        dto.endsAt ?? null,
-        isActiveValue,
-        userId,
-        patternUuid,
-      ],
-    );
+    const result = await this.databaseService.query<{ id: number }>(insertQuery, [
+      tenantId,
+      dto.teamId ?? null,
+      dto.name,
+      dto.description ?? null,
+      dto.patternType,
+      JSON.stringify(dto.patternConfig),
+      dto.cycleLengthWeeks,
+      dto.startsAt,
+      dto.endsAt ?? null,
+      isActiveValue,
+      userId,
+      patternUuid,
+    ]);
 
     if (result[0] === undefined) {
-      throw new InternalServerErrorException(
-        'Failed to create rotation pattern',
-      );
+      throw new InternalServerErrorException('Failed to create rotation pattern');
     }
 
     void this.activityLogger.logCreate(
@@ -231,9 +208,7 @@ export class RotationPatternService {
     tenantId: number,
     userId: number,
   ): Promise<RotationPatternResponse> {
-    this.logger.debug(
-      `Updating rotation pattern ${patternId} for tenant ${tenantId}`,
-    );
+    this.logger.debug(`Updating rotation pattern ${patternId} for tenant ${tenantId}`);
 
     // Check pattern exists
     await this.getRotationPattern(patternId, tenantId);
@@ -294,14 +269,8 @@ export class RotationPatternService {
   /**
    * Delete rotation pattern
    */
-  async deleteRotationPattern(
-    patternId: number,
-    tenantId: number,
-    userId: number,
-  ): Promise<void> {
-    this.logger.debug(
-      `Deleting rotation pattern ${patternId} for tenant ${tenantId}`,
-    );
+  async deleteRotationPattern(patternId: number, tenantId: number, userId: number): Promise<void> {
+    this.logger.debug(`Deleting rotation pattern ${patternId} for tenant ${tenantId}`);
 
     // Check pattern exists (and get data for audit log)
     const pattern = await this.getRotationPattern(patternId, tenantId);
@@ -329,18 +298,13 @@ export class RotationPatternService {
   /**
    * Resolve pattern UUID to internal ID
    */
-  private async resolvePatternIdByUuid(
-    uuid: string,
-    tenantId: number,
-  ): Promise<number> {
+  private async resolvePatternIdByUuid(uuid: string, tenantId: number): Promise<number> {
     const result = await this.databaseService.query<{ id: number }>(
       `SELECT id FROM shift_rotation_patterns WHERE uuid = $1 AND tenant_id = $2`,
       [uuid, tenantId],
     );
     if (result[0] === undefined) {
-      throw new NotFoundException(
-        `Rotation pattern with UUID ${uuid} not found`,
-      );
+      throw new NotFoundException(`Rotation pattern with UUID ${uuid} not found`);
     }
     return result[0].id;
   }
@@ -348,10 +312,7 @@ export class RotationPatternService {
   /**
    * Get rotation pattern by UUID
    */
-  async getRotationPatternByUuid(
-    uuid: string,
-    tenantId: number,
-  ): Promise<RotationPatternResponse> {
+  async getRotationPatternByUuid(uuid: string, tenantId: number): Promise<RotationPatternResponse> {
     const patternId = await this.resolvePatternIdByUuid(uuid, tenantId);
     return await this.getRotationPattern(patternId, tenantId);
   }
@@ -372,11 +333,7 @@ export class RotationPatternService {
   /**
    * Delete rotation pattern by UUID
    */
-  async deleteRotationPatternByUuid(
-    uuid: string,
-    tenantId: number,
-    userId: number,
-  ): Promise<void> {
+  async deleteRotationPatternByUuid(uuid: string, tenantId: number, userId: number): Promise<void> {
     const patternId = await this.resolvePatternIdByUuid(uuid, tenantId);
     await this.deleteRotationPattern(patternId, tenantId, userId);
   }

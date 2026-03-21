@@ -14,9 +14,7 @@ const BASE = '/kvp/categories';
 /** Fetch customizable categories (admin view) */
 export async function fetchCustomizable(): Promise<CustomizableCategoriesData | null> {
   try {
-    return await apiClient.get<CustomizableCategoriesData>(
-      `${BASE}/customizable`,
-    );
+    return await apiClient.get<CustomizableCategoriesData>(`${BASE}/customizable`);
   } catch (err: unknown) {
     log.error({ err }, 'Error fetching customizable categories');
     return null;
@@ -24,10 +22,7 @@ export async function fetchCustomizable(): Promise<CustomizableCategoriesData | 
 }
 
 /** Upsert a name override for a global default category */
-export async function upsertOverride(
-  categoryId: number,
-  customName: string,
-): Promise<boolean> {
+export async function upsertOverride(categoryId: number, customName: string): Promise<boolean> {
   try {
     await apiClient.put(`${BASE}/override/${categoryId}`, { customName });
     return true;
@@ -87,9 +82,7 @@ export async function deleteCustomCategory(
   id: number,
 ): Promise<{ affectedSuggestions: number } | null> {
   try {
-    return await apiClient.delete<{ affectedSuggestions: number }>(
-      `${BASE}/custom/${id}`,
-    );
+    return await apiClient.delete<{ affectedSuggestions: number }>(`${BASE}/custom/${id}`);
   } catch (err: unknown) {
     log.error({ err }, 'Error deleting custom category');
     return null;

@@ -48,10 +48,7 @@
     if (data.survey === null) return null;
     return {
       ...data.survey,
-      questions:
-        data.questions.length > 0 ?
-          data.questions
-        : (data.survey.questions ?? []),
+      questions: data.questions.length > 0 ? data.questions : (data.survey.questions ?? []),
     };
   });
   const statistics = $derived(data.statistics);
@@ -92,8 +89,7 @@
       }
     } catch (error: unknown) {
       log.error({ err: error }, 'Export error');
-      const message =
-        error instanceof Error ? error.message : 'Unbekannter Fehler';
+      const message = error instanceof Error ? error.message : 'Unbekannter Fehler';
       showErrorAlert(`Fehler beim Exportieren: ${message}`);
     } finally {
       isExporting = false;
@@ -126,9 +122,7 @@
   // ==========================================================================
 
   function getTextResponseCount(question: SurveyQuestion): number {
-    return (
-      question.responses?.filter((r) => r.answerText.trim() !== '').length ?? 0
-    );
+    return question.responses?.filter((r) => r.answerText.trim() !== '').length ?? 0;
   }
 
   /**
@@ -271,9 +265,7 @@
             </div>
             <div class="card-stat">
               <h3 class="mb-1 text-3xl font-bold text-blue-500">
-                {survey.status === 'active' ?
-                  'Aktiv'
-                : getStatusText(survey.status)}
+                {survey.status === 'active' ? 'Aktiv' : getStatusText(survey.status)}
               </h3>
               <p class="text-sm text-gray-400">Status</p>
             </div>
@@ -301,26 +293,20 @@
                       {#if question.options === undefined || question.options.length === 0}
                         <p>Keine Optionen verfügbar</p>
                       {:else}
-                        {@const totalResponses =
-                          calculateTotalResponses(question)}
+                        {@const totalResponses = calculateTotalResponses(question)}
                         {#each question.options as option (option.optionId ?? option.optionText)}
                           {@const count = option.count ?? 0}
-                          {@const percentage = calculateOptionPercentage(
-                            count,
-                            totalResponses,
-                          )}
+                          {@const percentage = calculateOptionPercentage(count, totalResponses)}
                           <div class="option-result">
                             <div class="option-header">
-                              <span class="option-text"
-                                >{option.optionText}</span
-                              >
+                              <span class="option-text">{option.optionText}</span>
                               <span class="option-count">{count} Stimmen</span>
                             </div>
                             <div class="progress progress--lg">
                               <div
-                                class="progress__bar {percentage === 0 ?
-                                  'progress__bar--empty'
-                                : ''}"
+                                class="progress__bar {percentage === 0 ? 'progress__bar--empty' : (
+                                  ''
+                                )}"
                                 style="width: {percentage}%"
                               >
                                 {percentage}%
@@ -354,8 +340,8 @@
                         <p class="text-info-message">
                           <i class="fas fa-info-circle"></i>
                           {#if responseCount > 0}
-                            {responseCount} Textantwort{responseCount > 1 ? 'en'
-                            : ''} - siehe unten bei "Individuelle Antworten"
+                            {responseCount} Textantwort{responseCount > 1 ? 'en' : ''} - siehe unten bei
+                            "Individuelle Antworten"
                           {:else}
                             Keine Textantworten vorhanden
                           {/if}
@@ -395,8 +381,8 @@
             {#if hasResponses && responsesData !== null}
               <div class="card responses-section">
                 <h3>
-                  <i class="fas fa-users"></i> Individuelle Antworten ({responsesData
-                    .responses.length})
+                  <i class="fas fa-users"></i> Individuelle Antworten ({responsesData.responses
+                    .length})
                 </h3>
                 <div class="accordion accordion--compact">
                   {#each responsesData.responses as response, index (response.id)}
@@ -418,13 +404,9 @@
                           {respondentName} &#8226; <i class="fas fa-clock"></i>
                           {completedDate}
                           {#if response.status === 'completed'}
-                            <span class="badge badge--success"
-                              >Abgeschlossen</span
-                            >
+                            <span class="badge badge--success">Abgeschlossen</span>
                           {:else}
-                            <span class="badge badge--warning"
-                              >In Bearbeitung</span
-                            >
+                            <span class="badge badge--warning">In Bearbeitung</span>
                           {/if}
                         </span>
                         <i class="fas fa-chevron-down accordion__icon"></i>
@@ -434,13 +416,9 @@
                           {#if statistics?.questions !== undefined}
                             {#each statistics.questions as question (question.id)}
                               {@const answer = response.answers?.find(
-                                (a: ResponseAnswer) =>
-                                  a.questionId === question.id,
+                                (a: ResponseAnswer) => a.questionId === question.id,
                               )}
-                              {@const answerText = getAnswerDisplayText(
-                                question,
-                                answer,
-                              )}
+                              {@const answerText = getAnswerDisplayText(question, answer)}
                               <div class="answer-item">
                                 <strong>{question.questionText}:</strong>
                                 <span>{answerText}</span>

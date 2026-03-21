@@ -16,16 +16,14 @@
     onsave: (userUuids: string[]) => void;
   }
 
-  const { show, workOrder, eligibleUsers, submitting, onclose, onsave }: Props =
-    $props();
+  const { show, workOrder, eligibleUsers, submitting, onclose, onsave }: Props = $props();
 
   let selectedUuids = $state<string[]>([]);
   let searchQuery = $state('');
 
   /** Filter out already-assigned users and apply search */
   const availableUsers = $derived.by((): EligibleUser[] => {
-    const assignedNames =
-      workOrder !== null ? workOrder.assigneeNames.toLowerCase() : '';
+    const assignedNames = workOrder !== null ? workOrder.assigneeNames.toLowerCase() : '';
     const query = searchQuery.toLowerCase().trim();
 
     return eligibleUsers.filter((user: EligibleUser) => {
@@ -39,8 +37,7 @@
       // Apply search filter
       if (query === '') return true;
       return (
-        fullName.includes(query) ||
-        user.employeeNumber?.toLowerCase().includes(query) === true
+        fullName.includes(query) || user.employeeNumber?.toLowerCase().includes(query) === true
       );
     });
   });

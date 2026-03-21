@@ -75,9 +75,7 @@ export class TpmLocationsController {
     @TenantId() tenantId: number,
   ): Promise<TpmLocation[]> {
     if (planUuid === undefined || planUuid === '') {
-      throw new BadRequestException(
-        'planUuid Query-Parameter ist erforderlich',
-      );
+      throw new BadRequestException('planUuid Query-Parameter ist erforderlich');
     }
     return await this.locationsService.listLocations(tenantId, planUuid);
   }
@@ -113,12 +111,7 @@ export class TpmLocationsController {
     @CurrentUser() user: NestAuthUser,
     @TenantId() tenantId: number,
   ): Promise<TpmLocation> {
-    return await this.locationsService.updateLocation(
-      tenantId,
-      user.id,
-      uuid,
-      dto,
-    );
+    return await this.locationsService.updateLocation(tenantId, user.id, uuid, dto);
   }
 
   /** DELETE /tpm/locations/:uuid — Soft-delete a location */
@@ -152,23 +145,14 @@ export class TpmLocationsController {
       throw new BadRequestException('Keine Datei hochgeladen');
     }
 
-    const storagePath = await writeLocationPhotoToDisk(
-      tenantId,
-      locationUuid,
-      file,
-    );
+    const storagePath = await writeLocationPhotoToDisk(tenantId, locationUuid, file);
 
-    return await this.locationsService.setPhoto(
-      tenantId,
-      user.id,
-      locationUuid,
-      {
-        filePath: storagePath,
-        fileName: file.originalname,
-        fileSize: file.size,
-        mimeType: file.mimetype,
-      },
-    );
+    return await this.locationsService.setPhoto(tenantId, user.id, locationUuid, {
+      filePath: storagePath,
+      fileName: file.originalname,
+      fileSize: file.size,
+      mimeType: file.mimetype,
+    });
   }
 
   /** DELETE /tpm/locations/:uuid/photo — Remove a location photo */
@@ -179,11 +163,7 @@ export class TpmLocationsController {
     @CurrentUser() user: NestAuthUser,
     @TenantId() tenantId: number,
   ): Promise<TpmLocation> {
-    return await this.locationsService.removePhoto(
-      tenantId,
-      user.id,
-      locationUuid,
-    );
+    return await this.locationsService.removePhoto(tenantId, user.id, locationUuid);
   }
 }
 

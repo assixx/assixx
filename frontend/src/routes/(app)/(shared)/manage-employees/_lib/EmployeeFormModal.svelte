@@ -12,16 +12,8 @@
     type HierarchyLabels,
   } from '$lib/types/hierarchy-labels';
 
-  import {
-    POSITION_OPTIONS,
-    MESSAGES,
-    type EmployeeMessages,
-  } from './constants';
-  import {
-    getStatusBadgeClass,
-    getStatusLabel,
-    calculatePasswordStrength,
-  } from './utils';
+  import { POSITION_OPTIONS, MESSAGES, type EmployeeMessages } from './constants';
+  import { getStatusBadgeClass, getStatusLabel, calculatePasswordStrength } from './utils';
 
   import type { Team, FormIsActiveStatus } from './types';
 
@@ -87,9 +79,7 @@
     const unique = [...new Set(raw)];
     const system = unique
       .filter((p: string) => isLeadPosition(p))
-      .sort(
-        (a: string, b: string) => LEAD_ORDER.indexOf(a) - LEAD_ORDER.indexOf(b),
-      );
+      .sort((a: string, b: string) => LEAD_ORDER.indexOf(a) - LEAD_ORDER.indexOf(b));
     const custom = unique.filter((p: string) => !isLeadPosition(p));
     return [...system, ...custom];
   });
@@ -116,9 +106,7 @@
   // =============================================================================
 
   const passwordMatch = $derived(
-    formPassword !== '' &&
-      formPasswordConfirm !== '' &&
-      formPassword === formPasswordConfirm,
+    formPassword !== '' && formPasswordConfirm !== '' && formPassword === formPasswordConfirm,
   );
 
   // =============================================================================
@@ -153,9 +141,7 @@
 
   function handleTeamChange(e: Event): void {
     const select = e.target as HTMLSelectElement;
-    formTeamIds = Array.from(select.selectedOptions).map((opt) =>
-      parseInt(opt.value, 10),
-    );
+    formTeamIds = Array.from(select.selectedOptions).map((opt) => parseInt(opt.value, 10));
   }
 
   // =============================================================================
@@ -176,10 +162,7 @@
   /**
    * Checks if a click occurred outside a dropdown element
    */
-  function isClickOutsideDropdown(
-    target: HTMLElement,
-    elementId: string,
-  ): boolean {
+  function isClickOutsideDropdown(target: HTMLElement, elementId: string): boolean {
     const el = document.getElementById(elementId);
     return el !== null && !el.contains(target);
   }
@@ -203,16 +186,10 @@
       const handleOutsideClick = (e: MouseEvent): void => {
         const target = e.target as HTMLElement;
 
-        if (
-          positionDropdownOpen &&
-          isClickOutsideDropdown(target, 'position-dropdown')
-        ) {
+        if (positionDropdownOpen && isClickOutsideDropdown(target, 'position-dropdown')) {
           positionDropdownOpen = false;
         }
-        if (
-          statusDropdownOpen &&
-          isClickOutsideDropdown(target, 'status-dropdown')
-        ) {
+        if (statusDropdownOpen && isClickOutsideDropdown(target, 'status-dropdown')) {
           statusDropdownOpen = false;
         }
       };
@@ -309,9 +286,7 @@
             bind:value={formEmail}
             oninput={onvalidateemails}
           />
-          <span class="form-field__message text-(--color-text-secondary)"
-            >{msg.EMAIL_HINT}</span
-          >
+          <span class="form-field__message text-(--color-text-secondary)">{msg.EMAIL_HINT}</span>
         </div>
 
         <div
@@ -335,9 +310,7 @@
             oninput={onvalidateemails}
           />
           {#if emailError}
-            <span class="form-field__message form-field__message--error"
-              >{msg.EMAIL_MISMATCH}</span
-            >
+            <span class="form-field__message form-field__message--error">{msg.EMAIL_MISMATCH}</span>
           {/if}
         </div>
 
@@ -399,9 +372,7 @@
             class="form-field__label"
             for="employee-password-confirm"
           >
-            Passwort bestätigen {#if !isEditMode}<span class="text-red-500"
-                >*</span
-              >{/if}
+            Passwort bestätigen {#if !isEditMode}<span class="text-red-500">*</span>{/if}
           </label>
           <div class="form-field__password-wrapper">
             <input
@@ -465,8 +436,7 @@
         <div class="form-field">
           <label
             class="form-field__label"
-            for="employee-position"
-            >Position <span class="text-red-500">*</span></label
+            for="employee-position">Position <span class="text-red-500">*</span></label
           >
           <div
             class="dropdown"
@@ -528,8 +498,7 @@
         <div class="form-field">
           <label
             class="form-field__label"
-            for="employee-number"
-            >Personalnummer <span class="text-red-500">*</span></label
+            for="employee-number">Personalnummer <span class="text-red-500">*</span></label
           >
           <input
             type="text"
@@ -594,10 +563,7 @@
                   value={team.id}
                   selected={formTeamIds.includes(team.id)}
                 >
-                  {team.name}{(
-                    team.departmentName !== undefined &&
-                    team.departmentName !== ''
-                  ) ?
+                  {team.name}{team.departmentName !== undefined && team.departmentName !== '' ?
                     ` (${team.departmentName})`
                   : ''}
                 </option>
@@ -673,9 +639,7 @@
                 </div>
               </div>
             </div>
-            <span
-              class="form-field__message mt-1 block text-(--color-text-secondary)"
-            >
+            <span class="form-field__message mt-1 block text-(--color-text-secondary)">
               {msg.STATUS_HINT}
             </span>
           </div>
@@ -756,8 +720,7 @@
           class="btn btn-primary"
           disabled={submitting}
         >
-          {#if submitting}<span class="spinner-ring spinner-ring--sm mr-2"
-            ></span>{/if}
+          {#if submitting}<span class="spinner-ring spinner-ring--sm mr-2"></span>{/if}
           Speichern
         </button>
       </div>

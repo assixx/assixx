@@ -12,6 +12,4 @@ export const TenantDeletionRequestSchema = z.object({
     .optional(),
 });
 
-export class TenantDeletionRequestDto extends createZodDto(
-  TenantDeletionRequestSchema,
-) {}
+export class TenantDeletionRequestDto extends createZodDto(TenantDeletionRequestSchema) {}

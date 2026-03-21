@@ -37,9 +37,7 @@ export const PRIORITY_LABELS: Readonly<Record<ApprovalPriority, string>> = {
   high: 'Hoch',
 };
 
-export const APPROVER_TYPE_LABELS: Readonly<
-  Record<ApprovalApproverType, string>
-> = {
+export const APPROVER_TYPE_LABELS: Readonly<Record<ApprovalApproverType, string>> = {
   user: 'Benutzer',
   team_lead: 'Team Lead',
   area_lead: 'Bereichsleiter',

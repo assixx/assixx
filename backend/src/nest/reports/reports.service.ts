@@ -298,9 +298,7 @@ export class ReportsService {
   /**
    * Get department metrics (current snapshot, not date-filtered)
    */
-  private async getDepartmentMetrics(
-    tenantId: number,
-  ): Promise<DepartmentMetrics> {
+  private async getDepartmentMetrics(tenantId: number): Promise<DepartmentMetrics> {
     const rows = await this.db.query<DbMetricsRow>(
       `
       SELECT
@@ -474,29 +472,20 @@ export class ReportsService {
   /**
    * Get company overview report with all KPIs aggregated
    */
-  async getOverviewReport(
-    tenantId: number,
-    dateFrom?: string,
-    dateTo?: string,
-  ): Promise<unknown> {
+  async getOverviewReport(tenantId: number, dateFrom?: string, dateTo?: string): Promise<unknown> {
     this.logger.debug(`Getting overview report for tenant ${tenantId}`);
 
     const from = dateFrom ?? this.getDefaultDateFrom();
     const to = dateTo ?? this.getDefaultDateTo();
 
-    const [
-      employeeMetrics,
-      departmentMetrics,
-      shiftMetrics,
-      kvpMetrics,
-      surveyMetrics,
-    ] = await Promise.all([
-      this.getEmployeeMetrics(tenantId),
-      this.getDepartmentMetrics(tenantId),
-      this.getShiftMetrics(tenantId, from, to),
-      this.getKvpMetrics(tenantId, from, to),
-      this.getSurveyMetrics(tenantId, from, to),
-    ]);
+    const [employeeMetrics, departmentMetrics, shiftMetrics, kvpMetrics, surveyMetrics] =
+      await Promise.all([
+        this.getEmployeeMetrics(tenantId),
+        this.getDepartmentMetrics(tenantId),
+        this.getShiftMetrics(tenantId, from, to),
+        this.getKvpMetrics(tenantId, from, to),
+        this.getSurveyMetrics(tenantId, from, to),
+      ]);
 
     return {
       period: { from, to },
@@ -549,9 +538,7 @@ export class ReportsService {
       period: { from, to },
       filters: { departmentId, teamId },
       headcount: {
-        trend: headcountTrend.map((row: DbHeadcountRow) =>
-          dbToApi(row as Record<string, unknown>),
-        ),
+        trend: headcountTrend.map((row: DbHeadcountRow) => dbToApi(row as Record<string, unknown>)),
       },
       performance: kvpParticipation,
     };
@@ -596,17 +583,15 @@ export class ReportsService {
       [from, to, tenantId],
     );
 
-    const result: DepartmentPerformanceData[] = rows.map(
-      (dept: DbDepartmentRow) => ({
-        departmentId: Number(dept.department_id),
-        departmentName: String(dept.department_name),
-        metrics: {
-          employees: this.parseIntOrZero(dept.employees),
-          teams: this.parseIntOrZero(dept.teams),
-          kvpSuggestions: this.parseIntOrZero(dept.kvp_suggestions),
-        },
-      }),
-    );
+    const result: DepartmentPerformanceData[] = rows.map((dept: DbDepartmentRow) => ({
+      departmentId: Number(dept.department_id),
+      departmentName: String(dept.department_name),
+      metrics: {
+        employees: this.parseIntOrZero(dept.employees),
+        teams: this.parseIntOrZero(dept.teams),
+        kvpSuggestions: this.parseIntOrZero(dept.kvp_suggestions),
+      },
+    }));
 
     return { departments: result };
   }
@@ -782,9 +767,7 @@ export class ReportsService {
     const conditions = [`k.tenant_id = $${paramIndex++}`];
     const params: (string | number)[] = [tenantId];
 
-    conditions.push(
-      `k.created_at BETWEEN $${paramIndex++} AND $${paramIndex++}`,
-    );
+    conditions.push(`k.created_at BETWEEN $${paramIndex++} AND $${paramIndex++}`);
     params.push(from, to);
 
     if (categoryId !== undefined && categoryId > 0) {
@@ -896,11 +879,7 @@ export class ReportsService {
           );
           break;
         case 'kvp':
-          data['kvp'] = await this.getKvpMetrics(
-            params.tenantId,
-            params.dateFrom,
-            params.dateTo,
-          );
+          data['kvp'] = await this.getKvpMetrics(params.tenantId, params.dateFrom, params.dateTo);
           break;
       }
     }
@@ -923,9 +902,7 @@ export class ReportsService {
   /**
    * Get report data by report type
    */
-  private async getReportDataByType(
-    params: ExportReportParams,
-  ): Promise<Record<string, unknown>> {
+  private async getReportDataByType(params: ExportReportParams): Promise<Record<string, unknown>> {
     const dateFrom = params.filters.dateFrom ?? this.getDefaultDateFrom();
     const dateTo = params.filters.dateTo ?? this.getDefaultDateTo();
     const { tenantId, filters } = params;
@@ -951,33 +928,21 @@ export class ReportsService {
   ): Promise<Record<string, unknown>> {
     switch (type) {
       case 'overview':
-        return (await this.getOverviewReport(tid, from, to)) as Record<
+        return (await this.getOverviewReport(tid, from, to)) as Record<string, unknown>;
+      case 'employees':
+        return (await this.getEmployeeReport(tid, from, to, deptId, teamId)) as Record<
           string,
           unknown
         >;
-      case 'employees':
-        return (await this.getEmployeeReport(
-          tid,
-          from,
-          to,
-          deptId,
-          teamId,
-        )) as Record<string, unknown>;
       case 'departments':
         return { departments: await this.getDepartmentReport(tid, from, to) };
       case 'shifts':
-        return (await this.getShiftReport(
-          tid,
-          from,
-          to,
-          deptId,
-          teamId,
-        )) as Record<string, unknown>;
-      case 'kvp':
-        return (await this.getKvpReport(tid, from, to)) as Record<
+        return (await this.getShiftReport(tid, from, to, deptId, teamId)) as Record<
           string,
           unknown
         >;
+      case 'kvp':
+        return (await this.getKvpReport(tid, from, to)) as Record<string, unknown>;
       default:
         throw new BadRequestException('Invalid report type');
     }
@@ -992,21 +957,12 @@ export class ReportsService {
     lines.push(`Generated: ${new Date().toISOString()}`);
     lines.push('');
 
-    const flattenObject = (
-      obj: Record<string, unknown>,
-      prefix: string = '',
-    ): string[] => {
+    const flattenObject = (obj: Record<string, unknown>, prefix: string = ''): string[] => {
       const rows: string[] = [];
       for (const [key, value] of Object.entries(obj)) {
         const fullKey = prefix !== '' ? `${prefix}.${key}` : key;
-        if (
-          typeof value === 'object' &&
-          value !== null &&
-          !Array.isArray(value)
-        ) {
-          rows.push(
-            ...flattenObject(value as Record<string, unknown>, fullKey),
-          );
+        if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+          rows.push(...flattenObject(value as Record<string, unknown>, fullKey));
         } else if (Array.isArray(value)) {
           rows.push(`"${fullKey}","${value.length} items"`);
         } else {

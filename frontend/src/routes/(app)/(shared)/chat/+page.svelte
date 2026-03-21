@@ -28,8 +28,7 @@
     getSsrUser: () => data.currentUser,
     getSsrConversations: () => data.conversations,
     getSsrTenantId: () =>
-      (data.currentUser as unknown as { tenantId?: number } | null)?.tenantId ??
-      0,
+      (data.currentUser as unknown as { tenantId?: number } | null)?.tenantId ?? 0,
   });
 
   onMount(() => {
@@ -111,9 +110,7 @@
 
           {#if state.typingUsers.length > 0}
             <div class="typing-indicator">
-              <span class="typing-dots"
-                ><span></span><span></span><span></span></span
-              >
+              <span class="typing-dots"><span></span><span></span><span></span></span>
               <span class="typing-text">{MESSAGES.labelTyping}</span>
             </div>
           {/if}

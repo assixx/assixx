@@ -15,11 +15,7 @@ import {
 } from './slot-assistant-helpers.js';
 
 import type { AssignmentCount } from './slot-assistant-helpers.js';
-import type {
-  IntervalType,
-  ProjectedSlot,
-  TpmPlanAssignment,
-} from '../../../_lib/types.js';
+import type { IntervalType, ProjectedSlot, TpmPlanAssignment } from '../../../_lib/types.js';
 
 // =============================================================================
 // Test Fixtures
@@ -47,9 +43,7 @@ function makeSlot(overrides: Partial<ProjectedSlot> = {}): ProjectedSlot {
   };
 }
 
-function makeAssignment(
-  overrides: Partial<TpmPlanAssignment> = {},
-): TpmPlanAssignment {
+function makeAssignment(overrides: Partial<TpmPlanAssignment> = {}): TpmPlanAssignment {
   return {
     uuid: 'assign-001',
     userId: 10,
@@ -116,9 +110,7 @@ describe('buildDateIntervalMap – basics', () => {
 
     const result = buildDateIntervalMap(slots, PLAN_UUID);
 
-    expect(result.get(DATE_A)).toEqual(
-      new Set(['monthly', 'quarterly', 'annual']),
-    );
+    expect(result.get(DATE_A)).toEqual(new Set(['monthly', 'quarterly', 'annual']));
   });
 
   it('should filter out slots from other plans', () => {
@@ -328,11 +320,7 @@ describe('buildPlanAssignmentCounts – sorting', () => {
 
     const result = buildPlanAssignmentCounts(items, idx);
 
-    expect(result.map((r: AssignmentCount) => r.lastName)).toEqual([
-      'Buffett',
-      'Dalio',
-      'Shakur',
-    ]);
+    expect(result.map((r: AssignmentCount) => r.lastName)).toEqual(['Buffett', 'Dalio', 'Shakur']);
   });
 });
 

@@ -6,11 +6,7 @@
  *        getPhotos (happy path, empty result),
  *        deletePhoto (happy path, photo not found).
  */
-import {
-  BadRequestException,
-  ForbiddenException,
-  NotFoundException,
-} from '@nestjs/common';
+import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { ActivityLoggerService } from '../common/services/activity-logger.service.js';
@@ -42,9 +38,7 @@ const mockActivityLogger = {
   logDelete: vi.fn().mockResolvedValue(undefined),
 };
 
-function makePhotoRow(
-  overrides: Partial<WorkOrderPhotoRow> = {},
-): WorkOrderPhotoRow {
+function makePhotoRow(overrides: Partial<WorkOrderPhotoRow> = {}): WorkOrderPhotoRow {
   return {
     id: 1,
     uuid: '019537a0-0000-7000-8000-000000000001',
@@ -116,9 +110,9 @@ describe('WorkOrderPhotosService', () => {
       // resolveWorkOrder returns null
       mockDb.queryOne.mockResolvedValueOnce(null);
 
-      await expect(
-        service.addPhoto(10, 5, 'missing-wo', MOCK_FILE),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.addPhoto(10, 5, 'missing-wo', MOCK_FILE)).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should throw BadRequestException when work order is completed', async () => {
@@ -128,9 +122,9 @@ describe('WorkOrderPhotosService', () => {
         status: 'completed',
       });
 
-      await expect(
-        service.addPhoto(10, 5, 'wo-uuid', MOCK_FILE),
-      ).rejects.toThrow(BadRequestException);
+      await expect(service.addPhoto(10, 5, 'wo-uuid', MOCK_FILE)).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('should throw BadRequestException when work order is verified', async () => {
@@ -140,9 +134,9 @@ describe('WorkOrderPhotosService', () => {
         status: 'verified',
       });
 
-      await expect(
-        service.addPhoto(10, 5, 'wo-uuid', MOCK_FILE),
-      ).rejects.toThrow(BadRequestException);
+      await expect(service.addPhoto(10, 5, 'wo-uuid', MOCK_FILE)).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('should accept application/pdf', async () => {
@@ -280,9 +274,9 @@ describe('WorkOrderPhotosService', () => {
       // enforcePhotoLimit — count >= 10
       mockDb.queryOne.mockResolvedValueOnce({ count: '10' });
 
-      await expect(
-        service.addPhoto(10, 5, 'wo-uuid', MOCK_FILE),
-      ).rejects.toThrow(BadRequestException);
+      await expect(service.addPhoto(10, 5, 'wo-uuid', MOCK_FILE)).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('should throw BadRequestException when INSERT returns null', async () => {
@@ -297,9 +291,9 @@ describe('WorkOrderPhotosService', () => {
       // INSERT returns null
       mockDb.queryOne.mockResolvedValueOnce(null);
 
-      await expect(
-        service.addPhoto(10, 5, 'wo-uuid', MOCK_FILE),
-      ).rejects.toThrow(BadRequestException);
+      await expect(service.addPhoto(10, 5, 'wo-uuid', MOCK_FILE)).rejects.toThrow(
+        BadRequestException,
+      );
     });
   });
 
@@ -486,9 +480,9 @@ describe('WorkOrderPhotosService', () => {
         wo_status: 'completed',
       });
 
-      await expect(
-        service.deletePhoto(10, 5, 'admin', 'photo-uuid'),
-      ).rejects.toThrow(BadRequestException);
+      await expect(service.deletePhoto(10, 5, 'admin', 'photo-uuid')).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('should throw BadRequestException when work order is verified', async () => {
@@ -500,9 +494,9 @@ describe('WorkOrderPhotosService', () => {
         wo_status: 'verified',
       });
 
-      await expect(
-        service.deletePhoto(10, 5, 'admin', 'photo-uuid'),
-      ).rejects.toThrow(BadRequestException);
+      await expect(service.deletePhoto(10, 5, 'admin', 'photo-uuid')).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('should throw ForbiddenException when employee deletes other photo', async () => {
@@ -514,17 +508,17 @@ describe('WorkOrderPhotosService', () => {
         wo_status: 'open',
       });
 
-      await expect(
-        service.deletePhoto(10, 5, 'employee', 'photo-uuid'),
-      ).rejects.toThrow(ForbiddenException);
+      await expect(service.deletePhoto(10, 5, 'employee', 'photo-uuid')).rejects.toThrow(
+        ForbiddenException,
+      );
     });
 
     it('should throw NotFoundException when photo does not exist', async () => {
       mockDb.queryOne.mockResolvedValueOnce(null);
 
-      await expect(
-        service.deletePhoto(10, 5, 'admin', 'missing-photo-uuid'),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.deletePhoto(10, 5, 'admin', 'missing-photo-uuid')).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 });

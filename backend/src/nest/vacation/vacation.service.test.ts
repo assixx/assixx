@@ -8,11 +8,7 @@
  * Pattern: tenantTransaction callback receives mockClient with query() mock.
  */
 import { IS_ACTIVE } from '@assixx/shared/constants';
-import {
-  ConflictException,
-  ForbiddenException,
-  NotFoundException,
-} from '@nestjs/common';
+import { ConflictException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { ActivityLoggerService } from '../common/services/activity-logger.service.js';
@@ -75,9 +71,7 @@ function createMockValidation() {
   };
 }
 
-function createMockRequestRow(
-  overrides?: Partial<VacationRequestRow>,
-): VacationRequestRow {
+function createMockRequestRow(overrides?: Partial<VacationRequestRow>): VacationRequestRow {
   return {
     id: 'req-001',
     tenant_id: 1,
@@ -303,9 +297,7 @@ describe('VacationService', () => {
         rows: [createMockRequestRow()],
       });
       mockClient.query.mockResolvedValueOnce({
-        rows: [
-          createMockRequestRow({ status: 'approved', is_special_leave: true }),
-        ],
+        rows: [createMockRequestRow({ status: 'approved', is_special_leave: true })],
       });
       mockClient.query.mockResolvedValueOnce({ rows: [] });
       mockClient.query.mockResolvedValueOnce({ rows: [] });
@@ -323,9 +315,7 @@ describe('VacationService', () => {
         rows: [createMockRequestRow({ vacation_type: 'unpaid' })],
       });
       mockClient.query.mockResolvedValueOnce({
-        rows: [
-          createMockRequestRow({ status: 'approved', vacation_type: 'unpaid' }),
-        ],
+        rows: [createMockRequestRow({ status: 'approved', vacation_type: 'unpaid' })],
       });
       mockClient.query.mockResolvedValueOnce({ rows: [] });
       mockClient.query.mockResolvedValueOnce({ rows: [] });
@@ -353,9 +343,7 @@ describe('VacationService', () => {
       mockClient.query.mockResolvedValueOnce({ rows: [] });
       mockClient.query.mockResolvedValueOnce({ rows: [] });
 
-      await expect(
-        service.withdrawRequest(5, 1, 'req-001'),
-      ).resolves.toBeUndefined();
+      await expect(service.withdrawRequest(5, 1, 'req-001')).resolves.toBeUndefined();
     });
 
     it('should withdraw own approved future request and deactivate availability', async () => {
@@ -378,13 +366,9 @@ describe('VacationService', () => {
       // deactivateAvailability
       mockClient.query.mockResolvedValueOnce({ rows: [] });
 
-      await expect(
-        service.withdrawRequest(5, 1, 'req-001'),
-      ).resolves.toBeUndefined();
+      await expect(service.withdrawRequest(5, 1, 'req-001')).resolves.toBeUndefined();
 
-      expect(mockValidation.guardFutureStartDate).toHaveBeenCalledWith(
-        futureStr,
-      );
+      expect(mockValidation.guardFutureStartDate).toHaveBeenCalledWith(futureStr);
     });
 
     it('should throw ConflictException when withdrawing denied request', async () => {
@@ -396,9 +380,7 @@ describe('VacationService', () => {
         rows: [{ first_name: 'Test', last_name: 'User' }],
       });
 
-      await expect(service.withdrawRequest(5, 1, 'req-001')).rejects.toThrow(
-        ConflictException,
-      );
+      await expect(service.withdrawRequest(5, 1, 'req-001')).rejects.toThrow(ConflictException);
     });
 
     it('should throw ForbiddenException when withdrawing others request', async () => {
@@ -406,9 +388,7 @@ describe('VacationService', () => {
         rows: [createMockRequestRow({ requester_id: 99 })],
       });
 
-      await expect(service.withdrawRequest(5, 1, 'req-001')).rejects.toThrow(
-        ForbiddenException,
-      );
+      await expect(service.withdrawRequest(5, 1, 'req-001')).rejects.toThrow(ForbiddenException);
     });
   });
 
@@ -448,9 +428,7 @@ describe('VacationService', () => {
       mockClient.query.mockResolvedValueOnce({ rows: [] });
       mockClient.query.mockResolvedValueOnce({ rows: [] });
 
-      await expect(
-        service.cancelRequest(1, 1, 'req-001', 'Override'),
-      ).resolves.toBeUndefined();
+      await expect(service.cancelRequest(1, 1, 'req-001', 'Override')).resolves.toBeUndefined();
     });
 
     it('should throw ForbiddenException when employee tries to cancel', async () => {
@@ -463,9 +441,9 @@ describe('VacationService', () => {
         rows: [createMockRequestRow({ status: 'approved' })],
       });
 
-      await expect(
-        service.cancelRequest(5, 1, 'req-001', 'I want to cancel'),
-      ).rejects.toThrow(ForbiddenException);
+      await expect(service.cancelRequest(5, 1, 'req-001', 'I want to cancel')).rejects.toThrow(
+        ForbiddenException,
+      );
     });
 
     it('should throw ConflictException when cancelling non-approved request', async () => {
@@ -476,9 +454,9 @@ describe('VacationService', () => {
         rows: [createMockRequestRow({ status: 'pending' })],
       });
 
-      await expect(
-        service.cancelRequest(20, 1, 'req-001', 'Reason'),
-      ).rejects.toThrow(ConflictException);
+      await expect(service.cancelRequest(20, 1, 'req-001', 'Reason')).rejects.toThrow(
+        ConflictException,
+      );
     });
   });
 

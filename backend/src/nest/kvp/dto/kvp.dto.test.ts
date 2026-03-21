@@ -29,10 +29,7 @@ describe('CreateSuggestionSchema', () => {
   it('should accept suggestion with customCategoryId instead', () => {
     const { categoryId: _cid, ...rest } = valid;
 
-    expect(
-      CreateSuggestionSchema.safeParse({ ...rest, customCategoryId: '5' })
-        .success,
-    ).toBe(true);
+    expect(CreateSuggestionSchema.safeParse({ ...rest, customCategoryId: '5' }).success).toBe(true);
   });
 
   it('should reject when neither categoryId nor customCategoryId provided', () => {
@@ -42,16 +39,13 @@ describe('CreateSuggestionSchema', () => {
   });
 
   it('should reject title shorter than 3 characters', () => {
-    expect(
-      CreateSuggestionSchema.safeParse({ ...valid, title: 'AB' }).success,
-    ).toBe(false);
+    expect(CreateSuggestionSchema.safeParse({ ...valid, title: 'AB' }).success).toBe(false);
   });
 
   it('should reject description shorter than 10 characters', () => {
-    expect(
-      CreateSuggestionSchema.safeParse({ ...valid, description: 'Short' })
-        .success,
-    ).toBe(false);
+    expect(CreateSuggestionSchema.safeParse({ ...valid, description: 'Short' }).success).toBe(
+      false,
+    );
   });
 
   it('should reject description longer than 5000 characters', () => {
@@ -66,20 +60,13 @@ describe('CreateSuggestionSchema', () => {
   it.each(['company', 'department', 'area', 'team'] as const)(
     'should accept orgLevel=%s',
     (orgLevel) => {
-      expect(
-        CreateSuggestionSchema.safeParse({ ...valid, orgLevel }).success,
-      ).toBe(true);
+      expect(CreateSuggestionSchema.safeParse({ ...valid, orgLevel }).success).toBe(true);
     },
   );
 
-  it.each(['low', 'normal', 'high', 'urgent'] as const)(
-    'should accept priority=%s',
-    (priority) => {
-      expect(
-        CreateSuggestionSchema.safeParse({ ...valid, priority }).success,
-      ).toBe(true);
-    },
-  );
+  it.each(['low', 'normal', 'high', 'urgent'] as const)('should accept priority=%s', (priority) => {
+    expect(CreateSuggestionSchema.safeParse({ ...valid, priority }).success).toBe(true);
+  });
 });
 
 // =============================================================
@@ -100,21 +87,15 @@ describe('UpdateSuggestionSchema', () => {
   });
 
   it('should reject negative actualSavings', () => {
-    expect(
-      UpdateSuggestionSchema.safeParse({ actualSavings: '-100' }).success,
-    ).toBe(false);
+    expect(UpdateSuggestionSchema.safeParse({ actualSavings: '-100' }).success).toBe(false);
   });
 
-  it.each([
-    'new',
-    'in_review',
-    'approved',
-    'implemented',
-    'rejected',
-    'archived',
-  ] as const)('should accept status=%s', (status) => {
-    expect(UpdateSuggestionSchema.safeParse({ status }).success).toBe(true);
-  });
+  it.each(['new', 'in_review', 'approved', 'implemented', 'rejected', 'archived'] as const)(
+    'should accept status=%s',
+    (status) => {
+      expect(UpdateSuggestionSchema.safeParse({ status }).success).toBe(true);
+    },
+  );
 });
 
 // =============================================================
@@ -133,9 +114,7 @@ describe('AddCommentSchema (KVP)', () => {
   });
 
   it('should reject comment longer than 2000 characters', () => {
-    expect(
-      AddCommentSchema.safeParse({ comment: 'C'.repeat(2001) }).success,
-    ).toBe(false);
+    expect(AddCommentSchema.safeParse({ comment: 'C'.repeat(2001) }).success).toBe(false);
   });
 });
 
@@ -145,24 +124,15 @@ describe('AddCommentSchema (KVP)', () => {
 
 describe('ShareSuggestionSchema', () => {
   it('should accept valid share data', () => {
-    expect(
-      ShareSuggestionSchema.safeParse({ orgLevel: 'company', orgId: 0 })
-        .success,
-    ).toBe(true);
+    expect(ShareSuggestionSchema.safeParse({ orgLevel: 'company', orgId: 0 }).success).toBe(true);
   });
 
   it('should reject negative orgId', () => {
-    expect(
-      ShareSuggestionSchema.safeParse({ orgLevel: 'company', orgId: -1 })
-        .success,
-    ).toBe(false);
+    expect(ShareSuggestionSchema.safeParse({ orgLevel: 'company', orgId: -1 }).success).toBe(false);
   });
 
   it('should reject invalid orgLevel', () => {
-    expect(
-      ShareSuggestionSchema.safeParse({ orgLevel: 'personal', orgId: 0 })
-        .success,
-    ).toBe(false);
+    expect(ShareSuggestionSchema.safeParse({ orgLevel: 'personal', orgId: 0 }).success).toBe(false);
   });
 });
 
@@ -182,36 +152,25 @@ describe('CreateCustomCategorySchema', () => {
   });
 
   it('should reject invalid hex color', () => {
-    expect(
-      CreateCustomCategorySchema.safeParse({ ...valid, color: 'red' }).success,
-    ).toBe(false);
+    expect(CreateCustomCategorySchema.safeParse({ ...valid, color: 'red' }).success).toBe(false);
   });
 
   it('should accept lowercase hex color', () => {
-    expect(
-      CreateCustomCategorySchema.safeParse({ ...valid, color: '#abcdef' })
-        .success,
-    ).toBe(true);
+    expect(CreateCustomCategorySchema.safeParse({ ...valid, color: '#abcdef' }).success).toBe(true);
   });
 
   it('should reject hex color without #', () => {
-    expect(
-      CreateCustomCategorySchema.safeParse({ ...valid, color: 'ff0000' })
-        .success,
-    ).toBe(false);
+    expect(CreateCustomCategorySchema.safeParse({ ...valid, color: 'ff0000' }).success).toBe(false);
   });
 
   it('should reject empty icon', () => {
-    expect(
-      CreateCustomCategorySchema.safeParse({ ...valid, icon: '' }).success,
-    ).toBe(false);
+    expect(CreateCustomCategorySchema.safeParse({ ...valid, icon: '' }).success).toBe(false);
   });
 
   it('should reject name longer than 50 characters', () => {
-    expect(
-      CreateCustomCategorySchema.safeParse({ ...valid, name: 'N'.repeat(51) })
-        .success,
-    ).toBe(false);
+    expect(CreateCustomCategorySchema.safeParse({ ...valid, name: 'N'.repeat(51) }).success).toBe(
+      false,
+    );
   });
 });
 
@@ -225,21 +184,15 @@ describe('ListSuggestionsQuerySchema', () => {
   });
 
   it('should reject search longer than 100 characters', () => {
-    expect(
-      ListSuggestionsQuerySchema.safeParse({ search: 'X'.repeat(101) }).success,
-    ).toBe(false);
+    expect(ListSuggestionsQuerySchema.safeParse({ search: 'X'.repeat(101) }).success).toBe(false);
   });
 
   it('should accept valid status filter', () => {
-    expect(
-      ListSuggestionsQuerySchema.safeParse({ status: 'approved' }).success,
-    ).toBe(true);
+    expect(ListSuggestionsQuerySchema.safeParse({ status: 'approved' }).success).toBe(true);
   });
 
   it('should reject invalid status', () => {
-    expect(
-      ListSuggestionsQuerySchema.safeParse({ status: 'pending' }).success,
-    ).toBe(false);
+    expect(ListSuggestionsQuerySchema.safeParse({ status: 'pending' }).success).toBe(false);
   });
 });
 
@@ -249,16 +202,11 @@ describe('ListSuggestionsQuerySchema', () => {
 
 describe('OverrideCategoryNameSchema', () => {
   it('should accept valid custom name', () => {
-    expect(
-      OverrideCategoryNameSchema.safeParse({ customName: 'My Category' })
-        .success,
-    ).toBe(true);
+    expect(OverrideCategoryNameSchema.safeParse({ customName: 'My Category' }).success).toBe(true);
   });
 
   it('should reject empty custom name', () => {
-    expect(
-      OverrideCategoryNameSchema.safeParse({ customName: '' }).success,
-    ).toBe(false);
+    expect(OverrideCategoryNameSchema.safeParse({ customName: '' }).success).toBe(false);
   });
 
   it('should reject name longer than 50 characters', () => {
@@ -276,39 +224,27 @@ describe('OverrideCategoryNameSchema', () => {
 
 describe('UpdateKvpSettingsSchema', () => {
   it('should accept dailyLimit = 1 (default)', () => {
-    expect(UpdateKvpSettingsSchema.safeParse({ dailyLimit: 1 }).success).toBe(
-      true,
-    );
+    expect(UpdateKvpSettingsSchema.safeParse({ dailyLimit: 1 }).success).toBe(true);
   });
 
   it('should accept dailyLimit = 0 (unlimited)', () => {
-    expect(UpdateKvpSettingsSchema.safeParse({ dailyLimit: 0 }).success).toBe(
-      true,
-    );
+    expect(UpdateKvpSettingsSchema.safeParse({ dailyLimit: 0 }).success).toBe(true);
   });
 
   it('should accept dailyLimit = 100 (max)', () => {
-    expect(UpdateKvpSettingsSchema.safeParse({ dailyLimit: 100 }).success).toBe(
-      true,
-    );
+    expect(UpdateKvpSettingsSchema.safeParse({ dailyLimit: 100 }).success).toBe(true);
   });
 
   it('should reject dailyLimit > 100', () => {
-    expect(UpdateKvpSettingsSchema.safeParse({ dailyLimit: 101 }).success).toBe(
-      false,
-    );
+    expect(UpdateKvpSettingsSchema.safeParse({ dailyLimit: 101 }).success).toBe(false);
   });
 
   it('should reject negative dailyLimit', () => {
-    expect(UpdateKvpSettingsSchema.safeParse({ dailyLimit: -1 }).success).toBe(
-      false,
-    );
+    expect(UpdateKvpSettingsSchema.safeParse({ dailyLimit: -1 }).success).toBe(false);
   });
 
   it('should reject non-integer dailyLimit', () => {
-    expect(UpdateKvpSettingsSchema.safeParse({ dailyLimit: 2.5 }).success).toBe(
-      false,
-    );
+    expect(UpdateKvpSettingsSchema.safeParse({ dailyLimit: 2.5 }).success).toBe(false);
   });
 
   it('should reject missing dailyLimit', () => {
@@ -316,8 +252,6 @@ describe('UpdateKvpSettingsSchema', () => {
   });
 
   it('should reject string dailyLimit', () => {
-    expect(UpdateKvpSettingsSchema.safeParse({ dailyLimit: '5' }).success).toBe(
-      false,
-    );
+    expect(UpdateKvpSettingsSchema.safeParse({ dailyLimit: '5' }).success).toBe(false);
   });
 });

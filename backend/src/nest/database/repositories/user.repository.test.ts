@@ -32,9 +32,7 @@ function createMockDb(): {
 }
 type MockDb = ReturnType<typeof createMockDb>;
 
-function createUserRow(
-  overrides?: Record<string, unknown>,
-): Record<string, unknown> {
+function createUserRow(overrides?: Record<string, unknown>): Record<string, unknown> {
   return {
     id: USER_ID,
     uuid: USER_UUID,
@@ -224,10 +222,7 @@ describe('UserRepository – safe methods', () => {
 
   describe('findMany()', () => {
     it('should return users with default options', async () => {
-      mockDb.query.mockResolvedValueOnce([
-        createUserRow(),
-        createUserRow({ id: 8 }),
-      ]);
+      mockDb.query.mockResolvedValueOnce([createUserRow(), createUserRow({ id: 8 })]);
 
       const result = await repo.findMany(TENANT_ID);
 

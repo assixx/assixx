@@ -6,10 +6,8 @@
    */
   import type { VacationBalance } from './types';
 
-  const {
-    balance,
-    compact = true,
-  }: { balance: VacationBalance | null; compact?: boolean } = $props();
+  const { balance, compact = true }: { balance: VacationBalance | null; compact?: boolean } =
+    $props();
 
   const remainingPercent = $derived(
     balance !== null && balance.availableDays > 0 ?
@@ -38,9 +36,7 @@
           >
             {balance.remainingDays} von {balance.availableDays} Tagen verbleibend
           </span>
-          <span
-            style="font-size: 0.875rem; font-weight: 600; color: {barColor};"
-          >
+          <span style="font-size: 0.875rem; font-weight: 600; color: {barColor};">
             {remainingPercent}%
           </span>
         </div>
@@ -72,9 +68,7 @@
               >
                 {balance.remainingDays} von {balance.availableDays} Tagen verbleibend
               </span>
-              <span
-                style="font-size: 0.875rem; font-weight: 600; color: {barColor};"
-              >
+              <span style="font-size: 0.875rem; font-weight: 600; color: {barColor};">
                 {remainingPercent}%
               </span>
             </div>

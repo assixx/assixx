@@ -3,10 +3,7 @@
    * CapacityIndicator — Shows capacity analysis result.
    * Displays overall status, team analysis, blackout conflicts, entitlement check.
    */
-  import {
-    DEFAULT_HIERARCHY_LABELS,
-    type HierarchyLabels,
-  } from '$lib/types/hierarchy-labels';
+  import { DEFAULT_HIERARCHY_LABELS, type HierarchyLabels } from '$lib/types/hierarchy-labels';
 
   import { CAPACITY_STATUS_CLASS, CAPACITY_STATUS_LABELS } from './constants';
 
@@ -22,13 +19,9 @@
     labels?: HierarchyLabels;
   } = $props();
 
-  const hasConflicts = $derived(
-    analysis !== null && analysis.blackoutConflicts.length > 0,
-  );
+  const hasConflicts = $derived(analysis !== null && analysis.blackoutConflicts.length > 0);
 
-  const insufficientBalance = $derived(
-    analysis !== null && !analysis.entitlementCheck.sufficient,
-  );
+  const insufficientBalance = $derived(analysis !== null && !analysis.entitlementCheck.sufficient);
 
   const hasAssetCritical = $derived(
     analysis?.assetAnalysis.some((m) => m.status === 'critical') ?? false,
@@ -80,8 +73,7 @@
       {:else}
         <div class="capacity-indicator__ok">
           <i class="fas fa-check-circle mr-1"></i>
-          {analysis.entitlementCheck.remainingAfterApproval} Tage verbleibend nach
-          Genehmigung
+          {analysis.entitlementCheck.remainingAfterApproval} Tage verbleibend nach Genehmigung
         </div>
       {/if}
     </div>
@@ -120,15 +112,8 @@
     gap: 0.5rem;
     padding: 0.75rem;
     border-radius: var(--radius-md, 0.5rem);
-    background: var(
-      --glass-bg,
-      color-mix(in oklch, var(--color-white) 5%, transparent)
-    );
-    border: 1px solid
-      var(
-        --glass-border,
-        color-mix(in oklch, var(--color-white) 10%, transparent)
-      );
+    background: var(--glass-bg, color-mix(in oklch, var(--color-white) 5%, transparent));
+    border: 1px solid var(--glass-border, color-mix(in oklch, var(--color-white) 10%, transparent));
   }
 
   .capacity-indicator--loading {

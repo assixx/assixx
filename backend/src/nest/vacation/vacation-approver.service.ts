@@ -13,11 +13,7 @@
  * All queries via db.tenantTransaction() (ADR-019).
  */
 import { IS_ACTIVE } from '@assixx/shared/constants';
-import {
-  BadRequestException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import type { PoolClient } from 'pg';
 
 import { DatabaseService } from '../database/database.service.js';
@@ -49,20 +45,17 @@ export class VacationApproverService {
 
   /** Determine the approver for a vacation request. */
   async getApprover(tenantId: number, userId: number): Promise<ApproverResult> {
-    return await this.db.tenantTransaction(
-      async (client: PoolClient): Promise<ApproverResult> => {
-        if (await this.isUserAreaLead(client, tenantId, userId)) {
-          return { approverId: null, autoApproved: true };
-        }
-        const user = await this.getUserRole(client, tenantId, userId);
-        if (user.role === 'root')
-          return { approverId: null, autoApproved: true };
-        if (user.role === 'admin') {
-          return await this.resolveAreaLeadOrAutoApprove(client, userId);
-        }
-        return await this.getApproverForEmployee(client, tenantId, userId);
-      },
-    );
+    return await this.db.tenantTransaction(async (client: PoolClient): Promise<ApproverResult> => {
+      if (await this.isUserAreaLead(client, tenantId, userId)) {
+        return { approverId: null, autoApproved: true };
+      }
+      const user = await this.getUserRole(client, tenantId, userId);
+      if (user.role === 'root') return { approverId: null, autoApproved: true };
+      if (user.role === 'admin') {
+        return await this.resolveAreaLeadOrAutoApprove(client, userId);
+      }
+      return await this.getApproverForEmployee(client, tenantId, userId);
+    });
   }
 
   // ==========================================================================
@@ -76,9 +69,7 @@ export class VacationApproverService {
   ): Promise<ApproverResult> {
     const teamInfo = await this.getUserTeamInfo(client, tenantId, userId);
     if (teamInfo.team_lead_id === null) {
-      throw new BadRequestException(
-        'Team has no lead assigned. Contact your administrator.',
-      );
+      throw new BadRequestException('Team has no lead assigned. Contact your administrator.');
     }
     if (teamInfo.team_lead_id === userId) {
       return await this.resolveAreaLeadOrAutoApprove(client, userId);
@@ -86,10 +77,7 @@ export class VacationApproverService {
     if (!(await this.isUserAbsent(client, teamInfo.team_lead_id))) {
       return { approverId: teamInfo.team_lead_id, autoApproved: false };
     }
-    if (
-      teamInfo.deputy_lead_id !== null &&
-      teamInfo.deputy_lead_id !== userId
-    ) {
+    if (teamInfo.deputy_lead_id !== null && teamInfo.deputy_lead_id !== userId) {
       return { approverId: teamInfo.deputy_lead_id, autoApproved: false };
     }
     return { approverId: teamInfo.team_lead_id, autoApproved: false };
@@ -125,10 +113,7 @@ export class VacationApproverService {
     return result.rows[0]?.found === true;
   }
 
-  private async isUserAbsent(
-    client: PoolClient,
-    userId: number,
-  ): Promise<boolean> {
+  private async isUserAbsent(client: PoolClient, userId: number): Promise<boolean> {
     const result = await client.query<{ found: boolean }>(
       `SELECT EXISTS (
         SELECT 1 FROM user_availability
@@ -175,8 +160,7 @@ export class VacationApproverService {
       [userId, tenantId],
     );
     const row = result.rows[0];
-    if (row === undefined)
-      throw new NotFoundException(`User ${String(userId)} not found`);
+    if (row === undefined) throw new NotFoundException(`User ${String(userId)} not found`);
     return row;
   }
 }

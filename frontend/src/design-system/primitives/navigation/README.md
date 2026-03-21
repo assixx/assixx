@@ -48,9 +48,7 @@ Page navigation for lists and tables
 
 ```html
 <nav class="pagination">
-  <button class="pagination__btn pagination__btn--prev" disabled>
-    Previous
-  </button>
+  <button class="pagination__btn pagination__btn--prev" disabled>Previous</button>
   <div class="pagination__pages">
     <button class="pagination__page pagination__page--active">1</button>
     <button class="pagination__page">2</button>
@@ -383,17 +381,12 @@ export function Breadcrumb({ items, separator = '/' }: BreadcrumbProps) {
     <nav className="breadcrumb">
       {items.map((item, index) => (
         <React.Fragment key={index}>
-          {index > 0 && (
-            <span className="breadcrumb__separator">{separator}</span>
-          )}
+          {index > 0 && <span className="breadcrumb__separator">{separator}</span>}
           {item.href ?
             <a href={item.href} className="breadcrumb__item">
               {item.label}
             </a>
-          : <span className="breadcrumb__item breadcrumb__item--active">
-              {item.label}
-            </span>
-          }
+          : <span className="breadcrumb__item breadcrumb__item--active">{item.label}</span>}
         </React.Fragment>
       ))}
     </nav>
@@ -410,11 +403,7 @@ interface TabsProps {
   defaultActive?: string;
 }
 
-export function Tabs({
-  variant = 'underline',
-  tabs,
-  defaultActive,
-}: TabsProps) {
+export function Tabs({ variant = 'underline', tabs, defaultActive }: TabsProps) {
   const [active, setActive] = useState(defaultActive || tabs[0].id);
 
   return (
@@ -423,10 +412,7 @@ export function Tabs({
         {tabs.map((tab) => (
           <button
             key={tab.id}
-            className={cn(
-              'tabs__tab',
-              active === tab.id && 'tabs__tab--active',
-            )}
+            className={cn('tabs__tab', active === tab.id && 'tabs__tab--active')}
             onClick={() => setActive(tab.id)}
           >
             {tab.label}
@@ -436,10 +422,7 @@ export function Tabs({
       {tabs.map((tab) => (
         <div
           key={tab.id}
-          className={cn(
-            'tabs__content',
-            active === tab.id && 'tabs__content--active',
-          )}
+          className={cn('tabs__content', active === tab.id && 'tabs__content--active')}
         >
           {tab.content}
         </div>
@@ -458,11 +441,7 @@ interface AccordionProps {
   alwaysOpen?: boolean;
 }
 
-export function Accordion({
-  items,
-  variant = 'default',
-  alwaysOpen,
-}: AccordionProps) {
+export function Accordion({ items, variant = 'default', alwaysOpen }: AccordionProps) {
   const [openItems, setOpenItems] = useState<Set<string>>(new Set());
 
   const toggle = (id: string) => {
@@ -481,10 +460,7 @@ export function Accordion({
       {items.map((item) => (
         <div
           key={item.id}
-          className={cn(
-            'accordion__item',
-            openItems.has(item.id) && 'accordion__item--active',
-          )}
+          className={cn('accordion__item', openItems.has(item.id) && 'accordion__item--active')}
         >
           <button className="accordion__header" onClick={() => toggle(item.id)}>
             <span className="accordion__title">{item.title}</span>

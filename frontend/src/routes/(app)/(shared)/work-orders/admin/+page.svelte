@@ -22,11 +22,7 @@
     uploadPhoto,
     logApiError,
   } from '../_lib/api';
-  import {
-    MESSAGES,
-    STATUS_FILTER_OPTIONS,
-    PRIORITY_FILTER_OPTIONS,
-  } from '../_lib/constants';
+  import { MESSAGES, STATUS_FILTER_OPTIONS, PRIORITY_FILTER_OPTIONS } from '../_lib/constants';
 
   import AdminWorkOrderTable from './_lib/AdminWorkOrderTable.svelte';
   import AssignUserModal from './_lib/AssignUserModal.svelte';
@@ -53,9 +49,7 @@
   // CLIENT STATE
   // =============================================================================
 
-  let clientWorkOrders = $state<PaginatedResponse<WorkOrderListItem> | null>(
-    null,
-  );
+  let clientWorkOrders = $state<PaginatedResponse<WorkOrderListItem> | null>(null);
   let clientStats = $state<WorkOrderStats | null>(null);
   let statusFilter = $state('');
   let priorityFilter = $state('');
@@ -80,9 +74,7 @@
   const workOrders = $derived(clientWorkOrders ?? data.workOrders);
   const stats = $derived(clientStats ?? data.stats);
   const eligibleUsers = $derived(data.eligibleUsers);
-  const totalPages = $derived(
-    Math.max(1, Math.ceil(workOrders.total / workOrders.pageSize)),
-  );
+  const totalPages = $derived(Math.max(1, Math.ceil(workOrders.total / workOrders.pageSize)));
   const hasWorkOrders = $derived(workOrders.items.length > 0);
 
   // =============================================================================
@@ -198,16 +190,11 @@
       let woUuid: string;
 
       if (editingItem !== null) {
-        await updateWorkOrder(
-          editingItem.uuid,
-          payload as UpdateWorkOrderPayload,
-        );
+        await updateWorkOrder(editingItem.uuid, payload as UpdateWorkOrderPayload);
         woUuid = editingItem.uuid;
         showSuccessAlert(MESSAGES.SUCCESS_UPDATED);
       } else {
-        const created = await createWorkOrder(
-          payload as CreateWorkOrderPayload,
-        );
+        const created = await createWorkOrder(payload as CreateWorkOrderPayload);
         woUuid = created.uuid;
         showSuccessAlert(MESSAGES.SUCCESS_CREATED);
       }
@@ -217,9 +204,7 @@
       await refreshAll();
     } catch (err: unknown) {
       logApiError('saveWorkOrder', err);
-      showErrorAlert(
-        editingItem !== null ? MESSAGES.ERROR_UPDATE : MESSAGES.ERROR_CREATE,
-      );
+      showErrorAlert(editingItem !== null ? MESSAGES.ERROR_UPDATE : MESSAGES.ERROR_CREATE);
     } finally {
       submitting = false;
     }

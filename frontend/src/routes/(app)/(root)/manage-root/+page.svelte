@@ -10,26 +10,20 @@
 
   import AvailabilityModal from '$lib/availability/AvailabilityModal.svelte';
   import SearchResultUser from '$lib/components/SearchResultUser.svelte';
-  import {
-    showSuccessAlert,
-    showWarningAlert,
-    showErrorAlert,
-  } from '$lib/stores/toast';
+  import { showSuccessAlert, showWarningAlert, showErrorAlert } from '$lib/stores/toast';
   import { resolvePositionDisplay } from '$lib/types/hierarchy-labels';
-  import { ApiError } from '$lib/utils/api-client';
   import { createLogger } from '$lib/utils/logger';
 
   const log = createLogger('ManageRootPage');
 
-  import {
-    saveRootUser as apiSaveRootUser,
-    deleteRootUser as apiDeleteRootUser,
-    buildRootUserPayload,
-    updateRootAvailability as apiUpdateAvailability,
-  } from './_lib/api';
   import { createRootMessages } from './_lib/constants';
   import DeleteModals from './_lib/DeleteModals.svelte';
   import { applyAllFilters } from './_lib/filters';
+  import {
+    executeSaveRootUser,
+    executeDeleteRootUser,
+    executeSaveAvailability,
+  } from './_lib/page-actions';
   import RootUserModal from './_lib/RootUserModal.svelte';
   import {
     getStatusBadgeClass,
@@ -43,8 +37,6 @@
     getAvailabilityBadge,
     getPlannedAvailability,
     getTruncatedNotes,
-    validateAvailabilityForm,
-    buildAvailabilityPayload,
   } from './_lib/utils';
 
   import type { PageData } from './$types';
@@ -122,9 +114,7 @@
   // =============================================================================
 
   const isEditMode = $derived(currentEditId !== null);
-  const modalTitle = $derived(
-    isEditMode ? messages.MODAL_TITLE_EDIT : messages.MODAL_TITLE_ADD,
-  );
+  const modalTitle = $derived(isEditMode ? messages.MODAL_TITLE_EDIT : messages.MODAL_TITLE_ADD);
 
   // Derived: Filtered users based on current filter/search state
   const filteredUsers = $derived(
@@ -162,99 +152,69 @@
   // API FUNCTIONS - Level 3: invalidateAll() after mutations
   // =============================================================================
 
-  /**
-   * Validate form before save
-   * @returns true if valid, false if validation failed (and state was updated)
-   */
-  function validateSaveForm(): boolean {
-    if (!validateEmailMatch(formEmail, formEmailConfirm)) {
-      emailError = true;
-      return false;
-    }
-    // New: both password fields required and must match
-    // Edit: if either field is filled, both must be filled and match
-    const eitherFilled = formPassword !== '' || formPasswordConfirm !== '';
-    const passwordInvalid =
-      !isEditMode ?
-        formPassword === '' ||
-        formPasswordConfirm === '' ||
-        formPassword !== formPasswordConfirm
-      : eitherFilled && formPassword !== formPasswordConfirm;
-    if (passwordInvalid) {
-      passwordError = true;
-      return false;
-    }
-    if (formPosition === '') {
-      showWarningAlert(messages.SELECT_POSITION_ERROR);
-      return false;
-    }
-    if (formEmployeeNumber.trim() === '') {
-      showWarningAlert(messages.EMPLOYEE_NUMBER_REQUIRED);
-      return false;
-    }
-    return true;
-  }
-
   async function saveUser(): Promise<void> {
     submitting = true;
-
     try {
-      if (!validateSaveForm()) {
-        submitting = false;
-        return;
-      }
-
-      const payload = buildRootUserPayload(
+      const result = await executeSaveRootUser(
         {
           firstName: formFirstName,
           lastName: formLastName,
           email: formEmail,
+          emailConfirm: formEmailConfirm,
+          password: formPassword,
+          passwordConfirm: formPasswordConfirm,
+          employeeNumber: formEmployeeNumber,
           position: formPosition,
           notes: formNotes,
-          employeeNumber: formEmployeeNumber,
           isActive: formIsActive,
-          password: formPassword,
         },
+        currentEditId,
         isEditMode,
+        log,
       );
 
-      const result = await apiSaveRootUser(payload, currentEditId);
+      if (result.validationError === 'email') {
+        emailError = true;
+        return;
+      }
+      if (result.validationError === 'password') {
+        passwordError = true;
+        return;
+      }
+      if (result.validationError === 'position') {
+        showWarningAlert(messages.SELECT_POSITION_ERROR);
+        return;
+      }
+      if (result.validationError === 'employee_number') {
+        showWarningAlert(messages.EMPLOYEE_NUMBER_REQUIRED);
+        return;
+      }
+
       if (result.success) {
-        showSuccessAlert(
-          isEditMode ? messages.SUCCESS_UPDATED : messages.SUCCESS_CREATED,
-        );
+        showSuccessAlert(isEditMode ? messages.SUCCESS_UPDATED : messages.SUCCESS_CREATED);
         closeRootModal();
         // Level 3: Trigger SSR refetch
         await invalidateAll();
       } else {
-        showErrorAlert(result.error ?? messages.ERROR_SAVING);
+        showErrorAlert(result.errorMessage ?? messages.ERROR_SAVING);
       }
-    } catch (err: unknown) {
-      log.error({ err }, 'Error saving user');
-      showErrorAlert(messages.ERROR_SAVING);
     } finally {
       submitting = false;
     }
   }
 
   async function deleteUser(): Promise<void> {
-    // Capture ID at start to avoid race condition (require-atomic-updates)
     const userIdToDelete = deleteUserId;
     if (userIdToDelete === null) return;
 
-    try {
-      const result = await apiDeleteRootUser(userIdToDelete);
-      if (result.success) {
-        showSuccessAlert(messages.SUCCESS_DELETED);
-        closeDeleteModal();
-        // Level 3: Trigger SSR refetch
-        await invalidateAll();
-      } else {
-        showErrorAlert(result.error ?? messages.ERROR_DELETING);
-      }
-    } catch (err: unknown) {
-      log.error({ err }, 'Error deleting user');
-      showErrorAlert(messages.ERROR_DELETING);
+    const result = await executeDeleteRootUser(userIdToDelete, log);
+    if (result.success) {
+      showSuccessAlert(messages.SUCCESS_DELETED);
+      closeDeleteModal();
+      // Level 3: Trigger SSR refetch
+      await invalidateAll();
+    } else {
+      showErrorAlert(result.errorMessage ?? messages.ERROR_DELETING);
     }
   }
 
@@ -289,38 +249,36 @@
   async function saveAvailability(): Promise<void> {
     if (availabilityUserId === null) return;
 
-    const formData = {
-      status: availabilityStatus,
-      start: availabilityStart,
-      end: availabilityEnd,
-      reason: availabilityReason,
-      notes: availabilityNotes,
-    };
-
-    const validationError = validateAvailabilityForm(formData);
-    if (validationError === 'dates_required') {
-      showErrorAlert('Von-Datum und Bis-Datum sind erforderlich.');
-      return;
-    }
-    if (validationError === 'end_before_start') {
-      showErrorAlert('Bis-Datum muss nach oder gleich Von-Datum sein.');
-      return;
-    }
-
     availabilitySubmitting = true;
     try {
-      const payload = buildAvailabilityPayload(formData);
-      await apiUpdateAvailability(availabilityUserId, payload);
-      closeAvailabilityModal();
-      await invalidateAll();
-      showSuccessAlert('Verfügbarkeit aktualisiert');
-    } catch (err: unknown) {
-      log.error({ err }, 'Error updating availability');
-      const message =
-        err instanceof ApiError ?
-          err.message
-        : 'Fehler beim Speichern der Verfügbarkeit';
-      showErrorAlert(message);
+      const result = await executeSaveAvailability(
+        availabilityUserId,
+        {
+          status: availabilityStatus,
+          start: availabilityStart,
+          end: availabilityEnd,
+          reason: availabilityReason,
+          notes: availabilityNotes,
+        },
+        log,
+      );
+
+      if (result.validationError === 'dates_required') {
+        showErrorAlert('Von-Datum und Bis-Datum sind erforderlich.');
+        return;
+      }
+      if (result.validationError === 'end_before_start') {
+        showErrorAlert('Bis-Datum muss nach oder gleich Von-Datum sein.');
+        return;
+      }
+
+      if (result.success) {
+        closeAvailabilityModal();
+        await invalidateAll();
+        showSuccessAlert('Verfügbarkeit aktualisiert');
+      } else {
+        showErrorAlert(result.errorMessage ?? 'Fehler beim Speichern der Verfügbarkeit');
+      }
     } finally {
       availabilitySubmitting = false;
     }
@@ -400,8 +358,7 @@
 
   function handleSearchResultClick(userId: number): void {
     openEditModal(userId);
-    searchOpen = false;
-    currentSearchQuery = '';
+    clearSearch();
   }
 
   function handleFormSubmit(e: Event): void {
@@ -544,9 +501,7 @@
                 />
               {/each}
               {#if filteredUsers.length > 5}
-                <div
-                  class="search-input__result-item search-input__result-more"
-                >
+                <div class="search-input__result-item search-input__result-more">
                   {messages.moreResults(filteredUsers.length - 5)}
                 </div>
               {/if}
@@ -567,9 +522,7 @@
 
       {#if error}
         <div class="p-6 text-center">
-          <i
-            class="fas fa-exclamation-triangle mb-4 text-4xl text-(--color-danger)"
-          ></i>
+          <i class="fas fa-exclamation-triangle mb-4 text-4xl text-(--color-danger)"></i>
           <p class="text-(--color-text-secondary)">{error}</p>
           <button
             type="button"
@@ -585,8 +538,7 @@
           <button
             type="button"
             class="btn btn-primary"
-            onclick={openAddModal}
-            ><i class="fas fa-plus"></i> Root-Benutzer hinzufügen</button
+            onclick={openAddModal}><i class="fas fa-plus"></i> Root-Benutzer hinzufügen</button
           >
         </div>
       {:else}
@@ -616,16 +568,8 @@
                   <td>{user.id}</td>
                   <td>
                     <div class="flex items-center gap-2">
-                      <div
-                        class="avatar avatar--sm avatar--color-{getAvatarColor(
-                          user.id,
-                        )}"
-                      >
-                        <span
-                          >{user.firstName.charAt(0)}{user.lastName.charAt(
-                            0,
-                          )}</span
-                        >
+                      <div class="avatar avatar--sm avatar--color-{getAvatarColor(user.id)}">
+                        <span>{user.firstName.charAt(0)}{user.lastName.charAt(0)}</span>
                       </div>
                       <span>{user.firstName} {user.lastName}</span>
                     </div>
@@ -644,8 +588,7 @@
                   </td>
                   <td>
                     <span class="badge {avBadge.class}">
-                      {#if avBadge.icon}<i class="fas {avBadge.icon} mr-1"
-                        ></i>{/if}
+                      {#if avBadge.icon}<i class="fas {avBadge.icon} mr-1"></i>{/if}
                       {avBadge.text}
                     </span>
                   </td>
@@ -693,8 +636,7 @@
               {messages.PROFILE_INFO}
               <a
                 href={resolve('/root-profile')}
-                class="text-blue-500 hover:underline"
-                >{messages.PROFILE_LINK_TEXT}</a
+                class="text-blue-500 hover:underline">{messages.PROFILE_LINK_TEXT}</a
               >.
             </div>
           </div>
@@ -708,8 +650,7 @@
   type="button"
   class="btn-float"
   onclick={openAddModal}
-  aria-label="Root-Benutzer hinzufügen"
-  ><i class="fas fa-user-shield"></i></button
+  aria-label="Root-Benutzer hinzufügen"><i class="fas fa-user-shield"></i></button
 >
 
 <RootUserModal

@@ -38,9 +38,7 @@ beforeAll(async () => {
   auth = await loginApitest();
 
   // Create own department + team (vacation requires team membership)
-  const { departmentId, teamId } = await createDepartmentAndTeam(
-    auth.authToken,
-  );
+  const { departmentId, teamId } = await createDepartmentAndTeam(auth.authToken);
   ownDepartmentId = departmentId;
   ownTeamId = teamId;
 });
@@ -346,13 +344,10 @@ describe('Vacation: List Staffing Rules', () => {
 describe('Vacation: Delete Staffing Rule', () => {
   it('should return 204 No Content', async () => {
     expect(staffingRuleId).toBeDefined();
-    const res = await fetch(
-      `${VACATION_URL}/staffing-rules/${staffingRuleId}`,
-      {
-        method: 'DELETE',
-        headers: authOnly(auth.authToken),
-      },
-    );
+    const res = await fetch(`${VACATION_URL}/staffing-rules/${staffingRuleId}`, {
+      method: 'DELETE',
+      headers: authOnly(auth.authToken),
+    });
 
     expect(res.status).toBe(204);
   });
@@ -415,8 +410,7 @@ describe('Vacation: Create Request (auto-approved for root)', () => {
     const daysLeft = Math.floor((yearEnd.getTime() - now.getTime()) / 86400000);
     const minOffset = Math.max(14, Math.floor(daysLeft * 0.15));
     const maxOffset = Math.floor(daysLeft * 0.45);
-    const randomOffset =
-      minOffset + Math.floor(Math.random() * (maxOffset - minOffset));
+    const randomOffset = minOffset + Math.floor(Math.random() * (maxOffset - minOffset));
     const startDate = new Date();
     startDate.setDate(startDate.getDate() + randomOffset);
     const endDate = new Date(startDate);
@@ -487,8 +481,7 @@ describe('Vacation: Create Request — Zod defaults applied for omitted fields',
     const daysLeft = Math.floor((yearEnd.getTime() - now.getTime()) / 86400000);
     const minOffset = Math.floor(daysLeft * 0.55);
     const maxOffset = Math.floor(daysLeft * 0.85);
-    const randomOffset =
-      minOffset + Math.floor(Math.random() * (maxOffset - minOffset));
+    const randomOffset = minOffset + Math.floor(Math.random() * (maxOffset - minOffset));
     const startDate = new Date();
     startDate.setDate(startDate.getDate() + randomOffset);
     const endDate = new Date(startDate);

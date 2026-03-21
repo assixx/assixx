@@ -28,10 +28,7 @@ export const ListTeamsQuerySchema = z.object({
     .min(1, 'Search term must be at least 1 character')
     .max(100, 'Search term must not exceed 100 characters')
     .optional(),
-  includeMembers: z.preprocess(
-    coerceToBooleanOrPassthrough,
-    z.boolean().optional(),
-  ),
+  includeMembers: z.preprocess(coerceToBooleanOrPassthrough, z.boolean().optional()),
 });
 
 /**

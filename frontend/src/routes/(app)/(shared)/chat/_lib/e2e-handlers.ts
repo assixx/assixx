@@ -110,12 +110,7 @@ async function resolveE2eParams(
     'resolveE2eParams — resolved other user key',
   );
 
-  const salt = computeConversationSalt(
-    tenantId,
-    conversationId,
-    currentUserId,
-    otherUserId,
-  );
+  const salt = computeConversationSalt(tenantId, conversationId, currentUserId, otherUserId);
   return { publicKey: otherKey.publicKey, salt };
 }
 
@@ -130,12 +125,7 @@ async function decryptSingleMessage(
   tenantId: number,
   conversations: Conversation[],
 ): Promise<string | null> {
-  const params = await resolveE2eParams(
-    msg.conversationId,
-    currentUserId,
-    tenantId,
-    conversations,
-  );
+  const params = await resolveE2eParams(msg.conversationId, currentUserId, tenantId, conversations);
   if (params === null) {
     log.warn(
       { messageId: msg.id, conversationId: msg.conversationId },
@@ -228,11 +218,7 @@ export async function prepareMessageForSending(params: {
       },
       'Sending plaintext (no E2E)',
     );
-    return buildSendMessage(
-      params.conversationId,
-      params.content,
-      params.attachmentIds,
-    );
+    return buildSendMessage(params.conversationId, params.content, params.attachmentIds);
   }
 
   // 1:1 with E2E ready → must encrypt, never silently fall back
@@ -262,10 +248,7 @@ async function encryptForRecipient(
       { recipientId },
       'BLOCKED: Recipient has no E2E key on server — message cannot be sent',
     );
-    throw new E2eError(
-      'Recipient has not set up encryption yet',
-      'no_recipient_key',
-    );
+    throw new E2eError('Recipient has not set up encryption yet', 'no_recipient_key');
   }
 
   log.info(
@@ -278,17 +261,8 @@ async function encryptForRecipient(
   );
 
   try {
-    const salt = computeConversationSalt(
-      tenantId,
-      conversationId,
-      currentUserId,
-      recipientId,
-    );
-    const encrypted = await cryptoBridge.encrypt(
-      content,
-      recipientKey.publicKey,
-      salt,
-    );
+    const salt = computeConversationSalt(tenantId, conversationId, currentUserId, recipientId);
+    const encrypted = await cryptoBridge.encrypt(content, recipientKey.publicKey, salt);
     log.info(
       { keyEpoch: encrypted.keyEpoch },
       'Message encrypted successfully — sending via WebSocket',
@@ -317,9 +291,7 @@ export async function decryptLoadedMessages(
     return loadedMessages;
   }
 
-  const e2eMessages = loadedMessages
-    .filter((m) => m.isE2e === true)
-    .filter(hasRequiredE2eFields);
+  const e2eMessages = loadedMessages.filter((m) => m.isE2e === true).filter(hasRequiredE2eFields);
   if (e2eMessages.length === 0) return loadedMessages;
 
   log.info(
@@ -333,12 +305,7 @@ export async function decryptLoadedMessages(
       try {
         results.set(
           msg.id,
-          await decryptSingleMessage(
-            msg,
-            currentUserId,
-            tenantId,
-            conversations,
-          ),
+          await decryptSingleMessage(msg, currentUserId, tenantId, conversations),
         );
       } catch (err: unknown) {
         log.error(

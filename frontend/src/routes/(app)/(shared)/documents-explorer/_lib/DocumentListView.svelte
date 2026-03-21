@@ -35,15 +35,11 @@
     onbackToFolders,
   }: Props = $props();
 
-  const placeholderRowCount = $derived(
-    Math.max(0, MIN_LIST_ROWS - documents.length),
-  );
+  const placeholderRowCount = $derived(Math.max(0, MIN_LIST_ROWS - documents.length));
 </script>
 
 <div class="overflow-x-auto">
-  <table
-    class="data-table data-table--striped data-table--hover data-table--bordered"
-  >
+  <table class="data-table data-table--striped data-table--hover data-table--bordered">
     <thead>
       <tr>
         <th>{MESSAGES.TH_NAME}</th>
@@ -135,9 +131,7 @@
                   >
                 {/each}
                 {#if doc.tags.length > 3}
-                  <span class="text-content-tertiary text-xs"
-                    >+{doc.tags.length - 3}</span
-                  >
+                  <span class="text-content-tertiary text-xs">+{doc.tags.length - 3}</span>
                 {/if}
               </div>
             {:else}

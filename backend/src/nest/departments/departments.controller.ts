@@ -68,10 +68,7 @@ export class DepartmentsController {
     @TenantId() tenantId: number,
   ): Promise<DepartmentResponse[]> {
     const includeExtended = query.includeExtended !== false;
-    return await this.departmentsService.listDepartments(
-      tenantId,
-      includeExtended,
-    );
+    return await this.departmentsService.listDepartments(tenantId, includeExtended);
   }
 
   /**
@@ -79,9 +76,7 @@ export class DepartmentsController {
    * Get department statistics for the tenant
    */
   @Get('stats')
-  async getDepartmentStats(
-    @TenantId() tenantId: number,
-  ): Promise<DepartmentStats> {
+  async getDepartmentStats(@TenantId() tenantId: number): Promise<DepartmentStats> {
     return await this.departmentsService.getDepartmentStats(tenantId);
   }
 
@@ -121,11 +116,7 @@ export class DepartmentsController {
     @CurrentUser() user: NestAuthUser,
     @TenantId() tenantId: number,
   ): Promise<DepartmentResponse> {
-    return await this.departmentsService.createDepartment(
-      dto,
-      user.id,
-      tenantId,
-    );
+    return await this.departmentsService.createDepartment(dto, user.id, tenantId);
   }
 
   /**
@@ -141,12 +132,7 @@ export class DepartmentsController {
     @CurrentUser() user: NestAuthUser,
     @TenantId() tenantId: number,
   ): Promise<DepartmentResponse> {
-    return await this.departmentsService.updateDepartment(
-      id,
-      dto,
-      user.id,
-      tenantId,
-    );
+    return await this.departmentsService.updateDepartment(id, dto, user.id, tenantId);
   }
 
   /**

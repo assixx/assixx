@@ -73,9 +73,7 @@ describe('TpmShiftAssignmentsService', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockDb = createMockDb();
-    service = new TpmShiftAssignmentsService(
-      mockDb as unknown as DatabaseService,
-    );
+    service = new TpmShiftAssignmentsService(mockDb as unknown as DatabaseService);
   });
 
   // =============================================================
@@ -86,11 +84,7 @@ describe('TpmShiftAssignmentsService', () => {
     it('should return empty array when no assignments exist', async () => {
       mockDb.query.mockResolvedValueOnce([]);
 
-      const result = await service.getShiftAssignments(
-        10,
-        '2026-03-01',
-        '2026-03-31',
-      );
+      const result = await service.getShiftAssignments(10, '2026-03-01', '2026-03-31');
 
       expect(result).toEqual([]);
       expect(mockDb.query).toHaveBeenCalledOnce();
@@ -136,11 +130,7 @@ describe('TpmShiftAssignmentsService', () => {
         }),
       ]);
 
-      const result = await service.getShiftAssignments(
-        10,
-        '2026-03-01',
-        '2026-03-31',
-      );
+      const result = await service.getShiftAssignments(10, '2026-03-01', '2026-03-31');
 
       expect(result).toHaveLength(2);
       expect(result[0]).toEqual({
@@ -164,15 +154,9 @@ describe('TpmShiftAssignmentsService', () => {
     });
 
     it('should trim plan_uuid (char(36) padding)', async () => {
-      mockDb.query.mockResolvedValueOnce([
-        makeAssignmentRow({ plan_uuid: 'abc-123   ' }),
-      ]);
+      mockDb.query.mockResolvedValueOnce([makeAssignmentRow({ plan_uuid: 'abc-123   ' })]);
 
-      const result = await service.getShiftAssignments(
-        10,
-        '2026-03-01',
-        '2026-03-31',
-      );
+      const result = await service.getShiftAssignments(10, '2026-03-01', '2026-03-31');
 
       expect(result[0]?.planUuid).toBe('abc-123');
     });
@@ -264,13 +248,7 @@ describe('TpmShiftAssignmentsService', () => {
         .mockResolvedValueOnce([])
         .mockResolvedValueOnce([]);
 
-      const result = await service.setAssignments(
-        10,
-        1,
-        'plan-uuid',
-        [],
-        '2026-03-15',
-      );
+      const result = await service.setAssignments(10, 1, 'plan-uuid', [], '2026-03-15');
 
       // call 0: resolve, call 1: deactivate, call 2: read-back (no upserts)
       expect(mockDb.query).toHaveBeenCalledTimes(3);
@@ -284,13 +262,7 @@ describe('TpmShiftAssignmentsService', () => {
         .mockResolvedValueOnce([])
         .mockResolvedValueOnce([makePlanAssignmentRow()]);
 
-      const result = await service.setAssignments(
-        10,
-        1,
-        'plan-uuid',
-        [5],
-        '2026-03-15',
-      );
+      const result = await service.setAssignments(10, 1, 'plan-uuid', [5], '2026-03-15');
 
       expect(result).toHaveLength(1);
       expect(result[0]).toEqual({
@@ -325,12 +297,7 @@ describe('TpmShiftAssignmentsService', () => {
     it('should pass correct parameters', async () => {
       mockDb.query.mockResolvedValueOnce([]);
 
-      await service.getAssignmentsForPlan(
-        10,
-        'plan-uuid',
-        '2026-03-01',
-        '2026-03-31',
-      );
+      await service.getAssignmentsForPlan(10, 'plan-uuid', '2026-03-01', '2026-03-31');
 
       expect(mockDb.query.mock.calls[0]?.[1]).toEqual([
         10,
@@ -343,12 +310,7 @@ describe('TpmShiftAssignmentsService', () => {
     it('should filter by active assignments and active plans', async () => {
       mockDb.query.mockResolvedValueOnce([]);
 
-      await service.getAssignmentsForPlan(
-        10,
-        'plan-uuid',
-        '2026-03-01',
-        '2026-03-31',
-      );
+      await service.getAssignmentsForPlan(10, 'plan-uuid', '2026-03-01', '2026-03-31');
 
       const sql = mockDb.query.mock.calls[0]?.[0] as string;
       expect(sql).toContain(`pa.is_active = ${IS_ACTIVE.ACTIVE}`);
@@ -383,9 +345,7 @@ describe('TpmShiftAssignmentsService', () => {
     });
 
     it('should trim uuid (char(36) padding)', async () => {
-      mockDb.query.mockResolvedValueOnce([
-        makePlanAssignmentRow({ uuid: 'abc-123   ' }),
-      ]);
+      mockDb.query.mockResolvedValueOnce([makePlanAssignmentRow({ uuid: 'abc-123   ' })]);
 
       const result = await service.getAssignmentsForPlan(
         10,
@@ -400,12 +360,7 @@ describe('TpmShiftAssignmentsService', () => {
     it('should join users table for name resolution', async () => {
       mockDb.query.mockResolvedValueOnce([]);
 
-      await service.getAssignmentsForPlan(
-        10,
-        'plan-uuid',
-        '2026-03-01',
-        '2026-03-31',
-      );
+      await service.getAssignmentsForPlan(10, 'plan-uuid', '2026-03-01', '2026-03-31');
 
       const sql = mockDb.query.mock.calls[0]?.[0] as string;
       expect(sql).toContain('JOIN users u');
@@ -423,13 +378,7 @@ describe('TpmShiftAssignmentsService', () => {
       // loadIntervalColors → empty
       mockDb.query.mockResolvedValueOnce([]);
 
-      const result = await service.getCalendarAssignments(
-        10,
-        5,
-        true,
-        '2026-03-01',
-        '2026-03-31',
-      );
+      const result = await service.getCalendarAssignments(10, 5, true, '2026-03-01', '2026-03-31');
 
       expect(result).toEqual([]);
     });
@@ -438,13 +387,7 @@ describe('TpmShiftAssignmentsService', () => {
       mockDb.query.mockResolvedValueOnce([]);
       mockDb.query.mockResolvedValueOnce([]);
 
-      await service.getCalendarAssignments(
-        10,
-        5,
-        true,
-        '2026-03-01',
-        '2026-03-31',
-      );
+      await service.getCalendarAssignments(10, 5, true, '2026-03-01', '2026-03-31');
 
       const params = mockDb.query.mock.calls[0]?.[1] as (number | string)[];
       expect(params[0]).toBe(10);
@@ -456,13 +399,7 @@ describe('TpmShiftAssignmentsService', () => {
       mockDb.query.mockResolvedValueOnce([]);
       mockDb.query.mockResolvedValueOnce([]);
 
-      await service.getCalendarAssignments(
-        10,
-        5,
-        true,
-        '2026-03-01',
-        '2026-03-31',
-      );
+      await service.getCalendarAssignments(10, 5, true, '2026-03-01', '2026-03-31');
 
       const sql = mockDb.query.mock.calls[0]?.[0] as string;
       expect(sql).not.toContain('pa.user_id = $4');
@@ -474,13 +411,7 @@ describe('TpmShiftAssignmentsService', () => {
       mockDb.query.mockResolvedValueOnce([]);
       mockDb.query.mockResolvedValueOnce([]);
 
-      await service.getCalendarAssignments(
-        10,
-        5,
-        false,
-        '2026-03-01',
-        '2026-03-31',
-      );
+      await service.getCalendarAssignments(10, 5, false, '2026-03-01', '2026-03-31');
 
       const sql = mockDb.query.mock.calls[0]?.[0] as string;
       expect(sql).toContain('pa.user_id = $4');
@@ -494,13 +425,7 @@ describe('TpmShiftAssignmentsService', () => {
       // loadIntervalColors → no tenant overrides
       mockDb.query.mockResolvedValueOnce([]);
 
-      const result = await service.getCalendarAssignments(
-        10,
-        5,
-        true,
-        '2026-03-01',
-        '2026-03-31',
-      );
+      const result = await service.getCalendarAssignments(10, 5, true, '2026-03-01', '2026-03-31');
 
       expect(result).toHaveLength(1);
       expect(result[0]).toEqual({
@@ -517,17 +442,9 @@ describe('TpmShiftAssignmentsService', () => {
     it('should use tenant-specific color when available', async () => {
       mockDb.query.mockResolvedValueOnce([makeCalendarRow()]);
       // loadIntervalColors → tenant overrides monthly color
-      mockDb.query.mockResolvedValueOnce([
-        { status_key: 'monthly', color_hex: '#FF0000' },
-      ]);
+      mockDb.query.mockResolvedValueOnce([{ status_key: 'monthly', color_hex: '#FF0000' }]);
 
-      const result = await service.getCalendarAssignments(
-        10,
-        5,
-        true,
-        '2026-03-01',
-        '2026-03-31',
-      );
+      const result = await service.getCalendarAssignments(10, 5, true, '2026-03-01', '2026-03-31');
 
       expect(result[0]?.colorHex).toBe('#FF0000');
     });
@@ -538,48 +455,26 @@ describe('TpmShiftAssignmentsService', () => {
       ]);
       mockDb.query.mockResolvedValueOnce([]);
 
-      const result = await service.getCalendarAssignments(
-        10,
-        5,
-        true,
-        '2026-03-01',
-        '2026-03-31',
-      );
+      const result = await service.getCalendarAssignments(10, 5, true, '2026-03-01', '2026-03-31');
 
       // annual (significance 1) should be picked → default color #c8b88a
       expect(result[0]?.colorHex).toBe('#c8b88a');
     });
 
     it('should fall back to #FF9800 for unknown interval types', async () => {
-      mockDb.query.mockResolvedValueOnce([
-        makeCalendarRow({ interval_types: ['unknown_type'] }),
-      ]);
+      mockDb.query.mockResolvedValueOnce([makeCalendarRow({ interval_types: ['unknown_type'] })]);
       mockDb.query.mockResolvedValueOnce([]);
 
-      const result = await service.getCalendarAssignments(
-        10,
-        5,
-        true,
-        '2026-03-01',
-        '2026-03-31',
-      );
+      const result = await service.getCalendarAssignments(10, 5, true, '2026-03-01', '2026-03-31');
 
       expect(result[0]?.colorHex).toBe('#FF9800');
     });
 
     it('should trim plan_uuid from calendar rows', async () => {
-      mockDb.query.mockResolvedValueOnce([
-        makeCalendarRow({ plan_uuid: 'uuid-padded   ' }),
-      ]);
+      mockDb.query.mockResolvedValueOnce([makeCalendarRow({ plan_uuid: 'uuid-padded   ' })]);
       mockDb.query.mockResolvedValueOnce([]);
 
-      const result = await service.getCalendarAssignments(
-        10,
-        5,
-        true,
-        '2026-03-01',
-        '2026-03-31',
-      );
+      const result = await service.getCalendarAssignments(10, 5, true, '2026-03-01', '2026-03-31');
 
       expect(result[0]?.planUuid).toBe('uuid-padded');
     });
@@ -588,13 +483,7 @@ describe('TpmShiftAssignmentsService', () => {
       mockDb.query.mockResolvedValueOnce([]);
       mockDb.query.mockResolvedValueOnce([]);
 
-      await service.getCalendarAssignments(
-        10,
-        5,
-        true,
-        '2026-03-01',
-        '2026-03-31',
-      );
+      await service.getCalendarAssignments(10, 5, true, '2026-03-01', '2026-03-31');
 
       const colorSQL = mockDb.query.mock.calls[1]?.[0] as string;
       expect(colorSQL).toContain('tpm_color_config');
@@ -614,13 +503,7 @@ describe('TpmShiftAssignmentsService', () => {
       ]);
       mockDb.query.mockResolvedValueOnce([]);
 
-      const result = await service.getCalendarAssignments(
-        10,
-        5,
-        true,
-        '2026-03-01',
-        '2026-03-31',
-      );
+      const result = await service.getCalendarAssignments(10, 5, true, '2026-03-01', '2026-03-31');
 
       expect(result).toHaveLength(2);
       expect(result[0]?.planName).toBe('Wartungsplan 1');

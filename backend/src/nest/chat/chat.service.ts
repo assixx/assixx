@@ -93,21 +93,13 @@ export class ChatService {
   /**
    * Get users available for chat based on role permissions
    */
-  async getChatUsers(
-    query: GetUsersQuery,
-  ): Promise<{ users: ChatUser[]; total: number }> {
+  async getChatUsers(query: GetUsersQuery): Promise<{ users: ChatUser[]; total: number }> {
     const tenantId = this.getTenantId();
     const userId = this.getUserId();
-    this.logger.debug(
-      `Getting chat users for tenant ${tenantId}, user ${userId}`,
-    );
+    this.logger.debug(`Getting chat users for tenant ${tenantId}, user ${userId}`);
 
     const currentUser = await this.getCurrentUserPermissions(tenantId, userId);
-    const users = await this.fetchChatUsersByPermissions(
-      tenantId,
-      userId,
-      currentUser,
-    );
+    const users = await this.fetchChatUsersByPermissions(tenantId, userId, currentUser);
     const filteredUsers = filterUsersBySearch(users, query.search);
     const onlineIds = this.presenceStore.getOnlineUserIds();
     const chatUsers = filteredUsers.map((user: ChatUserRow) => {
@@ -146,8 +138,7 @@ export class ChatService {
     currentUser: UserPermissions,
   ): Promise<ChatUserRow[]> {
     const baseQuery = this.getChatUsersBaseQuery();
-    const isPrivileged =
-      currentUser.role === 'admin' || currentUser.role === 'root';
+    const isPrivileged = currentUser.role === 'admin' || currentUser.role === 'root';
 
     if (isPrivileged) {
       return await this.databaseService.query<ChatUserRow>(
@@ -200,18 +191,14 @@ export class ChatService {
   /**
    * Get single conversation by ID
    */
-  async getConversation(
-    conversationId: number,
-  ): Promise<{ conversation: Conversation }> {
+  async getConversation(conversationId: number): Promise<{ conversation: Conversation }> {
     return await this.conversationsService.getConversation(conversationId);
   }
 
   /**
    * Create a new conversation
    */
-  async createConversation(
-    dto: CreateConversationBody,
-  ): Promise<{ conversation: Conversation }> {
+  async createConversation(dto: CreateConversationBody): Promise<{ conversation: Conversation }> {
     return await this.conversationsService.createConversation(
       dto,
       this.messagesService.insertMessage.bind(this.messagesService),
@@ -221,22 +208,14 @@ export class ChatService {
   /**
    * Update a conversation
    */
-  async updateConversation(
-    conversationId: number,
-    dto: UpdateConversationBody,
-  ): Promise<never> {
-    return await this.conversationsService.updateConversation(
-      conversationId,
-      dto,
-    );
+  async updateConversation(conversationId: number, dto: UpdateConversationBody): Promise<never> {
+    return await this.conversationsService.updateConversation(conversationId, dto);
   }
 
   /**
    * Delete conversation for current user
    */
-  async deleteConversation(
-    conversationId: number,
-  ): Promise<{ message: string }> {
+  async deleteConversation(conversationId: number): Promise<{ message: string }> {
     return await this.conversationsService.deleteConversation(conversationId);
   }
 
@@ -254,9 +233,7 @@ export class ChatService {
     return await this.messagesService.getMessages(
       conversationId,
       query,
-      this.conversationsService.verifyConversationAccess.bind(
-        this.conversationsService,
-      ),
+      this.conversationsService.verifyConversationAccess.bind(this.conversationsService),
     );
   }
 
@@ -271,15 +248,9 @@ export class ChatService {
     return await this.messagesService.sendMessage(
       conversationId,
       dto,
-      this.conversationsService.verifyConversationAccess.bind(
-        this.conversationsService,
-      ),
-      this.conversationsService.getConversationRecipientIds.bind(
-        this.conversationsService,
-      ),
-      this.conversationsService.updateConversationTimestamp.bind(
-        this.conversationsService,
-      ),
+      this.conversationsService.verifyConversationAccess.bind(this.conversationsService),
+      this.conversationsService.getConversationRecipientIds.bind(this.conversationsService),
+      this.conversationsService.updateConversationTimestamp.bind(this.conversationsService),
       attachment,
     );
   }
@@ -304,9 +275,7 @@ export class ChatService {
   async markAsRead(conversationId: number): Promise<{ markedCount: number }> {
     return await this.messagesService.markAsRead(
       conversationId,
-      this.conversationsService.verifyConversationAccess.bind(
-        this.conversationsService,
-      ),
+      this.conversationsService.verifyConversationAccess.bind(this.conversationsService),
     );
   }
 
@@ -332,10 +301,7 @@ export class ChatService {
    * Add participants to conversation
    */
   // eslint-disable-next-line @typescript-eslint/require-await -- Stub method
-  async addParticipants(
-    _conversationId: number,
-    _dto: AddParticipantsBody,
-  ): Promise<never> {
+  async addParticipants(_conversationId: number, _dto: AddParticipantsBody): Promise<never> {
     throw new BadRequestException(ERROR_FEATURE_NOT_IMPLEMENTED);
   }
 
@@ -343,10 +309,7 @@ export class ChatService {
    * Remove participant from conversation
    */
   // eslint-disable-next-line @typescript-eslint/require-await -- Stub method
-  async removeParticipant(
-    _conversationId: number,
-    _userId: number,
-  ): Promise<never> {
+  async removeParticipant(_conversationId: number, _userId: number): Promise<never> {
     throw new BadRequestException(ERROR_FEATURE_NOT_IMPLEMENTED);
   }
 
@@ -365,14 +328,10 @@ export class ChatService {
   /**
    * Create a scheduled message
    */
-  async createScheduledMessage(
-    dto: CreateScheduledMessageBody,
-  ): Promise<ScheduledMessage> {
+  async createScheduledMessage(dto: CreateScheduledMessageBody): Promise<ScheduledMessage> {
     return await this.scheduledService.createScheduledMessage(
       dto,
-      this.conversationsService.verifyConversationAccess.bind(
-        this.conversationsService,
-      ),
+      this.conversationsService.verifyConversationAccess.bind(this.conversationsService),
     );
   }
 
@@ -400,14 +359,10 @@ export class ChatService {
   /**
    * Get scheduled messages for a conversation
    */
-  async getConversationScheduledMessages(
-    conversationId: number,
-  ): Promise<ScheduledMessage[]> {
+  async getConversationScheduledMessages(conversationId: number): Promise<ScheduledMessage[]> {
     return await this.scheduledService.getConversationScheduledMessages(
       conversationId,
-      this.conversationsService.verifyConversationAccess.bind(
-        this.conversationsService,
-      ),
+      this.conversationsService.verifyConversationAccess.bind(this.conversationsService),
     );
   }
 }

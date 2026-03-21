@@ -32,38 +32,31 @@ describe('SECURITY: AdminIdParamSchema (admin-permissions)', () => {
 
 describe('SECURITY: AdminDepartmentParamSchema', () => {
   it('should accept valid params', () => {
-    expect(
-      AdminDepartmentParamSchema.safeParse({ adminId: 1, departmentId: 2 })
-        .success,
-    ).toBe(true);
+    expect(AdminDepartmentParamSchema.safeParse({ adminId: 1, departmentId: 2 }).success).toBe(
+      true,
+    );
   });
 
   it('should reject zero adminId', () => {
-    expect(
-      AdminDepartmentParamSchema.safeParse({ adminId: 0, departmentId: 1 })
-        .success,
-    ).toBe(false);
+    expect(AdminDepartmentParamSchema.safeParse({ adminId: 0, departmentId: 1 }).success).toBe(
+      false,
+    );
   });
 
   it('should reject zero departmentId', () => {
-    expect(
-      AdminDepartmentParamSchema.safeParse({ adminId: 1, departmentId: 0 })
-        .success,
-    ).toBe(false);
+    expect(AdminDepartmentParamSchema.safeParse({ adminId: 1, departmentId: 0 }).success).toBe(
+      false,
+    );
   });
 });
 
 describe('SECURITY: AdminGroupParamSchema', () => {
   it('should accept valid params', () => {
-    expect(
-      AdminGroupParamSchema.safeParse({ adminId: 1, groupId: 2 }).success,
-    ).toBe(true);
+    expect(AdminGroupParamSchema.safeParse({ adminId: 1, groupId: 2 }).success).toBe(true);
   });
 
   it('should reject zero groupId', () => {
-    expect(
-      AdminGroupParamSchema.safeParse({ adminId: 1, groupId: 0 }).success,
-    ).toBe(false);
+    expect(AdminGroupParamSchema.safeParse({ adminId: 1, groupId: 0 }).success).toBe(false);
   });
 });
 
@@ -74,9 +67,7 @@ describe('SECURITY: CheckAccessParamSchema', () => {
       departmentId: 2,
     });
     expect(result.success).toBe(true);
-    const data = (
-      result as { success: true; data: { permissionLevel: string } }
-    ).data;
+    const data = (result as { success: true; data: { permissionLevel: string } }).data;
     expect(data.permissionLevel).toBe('read');
   });
 
@@ -115,21 +106,15 @@ describe('SECURITY: UserIdParamSchema (admin-permissions)', () => {
 
 describe('SECURITY: UserAreaParamSchema', () => {
   it('should accept valid params', () => {
-    expect(
-      UserAreaParamSchema.safeParse({ userId: 1, areaId: 2 }).success,
-    ).toBe(true);
+    expect(UserAreaParamSchema.safeParse({ userId: 1, areaId: 2 }).success).toBe(true);
   });
 
   it('should reject zero userId', () => {
-    expect(
-      UserAreaParamSchema.safeParse({ userId: 0, areaId: 1 }).success,
-    ).toBe(false);
+    expect(UserAreaParamSchema.safeParse({ userId: 0, areaId: 1 }).success).toBe(false);
   });
 
   it('should reject zero areaId', () => {
-    expect(
-      UserAreaParamSchema.safeParse({ userId: 1, areaId: 0 }).success,
-    ).toBe(false);
+    expect(UserAreaParamSchema.safeParse({ userId: 1, areaId: 0 }).success).toBe(false);
   });
 });
 
@@ -139,21 +124,15 @@ describe('SECURITY: UserAreaParamSchema', () => {
 
 describe('SECURITY: SetFullAccessSchema', () => {
   it('should accept boolean true', () => {
-    expect(SetFullAccessSchema.safeParse({ hasFullAccess: true }).success).toBe(
-      true,
-    );
+    expect(SetFullAccessSchema.safeParse({ hasFullAccess: true }).success).toBe(true);
   });
 
   it('should accept boolean false', () => {
-    expect(
-      SetFullAccessSchema.safeParse({ hasFullAccess: false }).success,
-    ).toBe(true);
+    expect(SetFullAccessSchema.safeParse({ hasFullAccess: false }).success).toBe(true);
   });
 
   it('should reject non-boolean', () => {
-    expect(
-      SetFullAccessSchema.safeParse({ hasFullAccess: 'true' }).success,
-    ).toBe(false);
+    expect(SetFullAccessSchema.safeParse({ hasFullAccess: 'true' }).success).toBe(false);
   });
 
   it('should reject missing field', () => {
@@ -167,8 +146,7 @@ describe('SECURITY: SetPermissionsSchema', () => {
   it('should accept minimal data with defaults', () => {
     const result = SetPermissionsSchema.safeParse(valid);
     expect(result.success).toBe(true);
-    const data = (result as { success: true; data: Record<string, unknown> })
-      .data;
+    const data = (result as { success: true; data: Record<string, unknown> }).data;
     expect(data.departmentIds).toEqual([]);
     expect(data.groupIds).toEqual([]);
     expect(data.permissions).toEqual({
@@ -198,16 +176,13 @@ describe('SECURITY: SetPermissionsSchema', () => {
 
 describe('SECURITY: SetAreaPermissionsSchema', () => {
   it('should accept valid area IDs', () => {
-    expect(
-      SetAreaPermissionsSchema.safeParse({ areaIds: [1, 2, 3] }).success,
-    ).toBe(true);
+    expect(SetAreaPermissionsSchema.safeParse({ areaIds: [1, 2, 3] }).success).toBe(true);
   });
 
   it('should apply default permissions', () => {
     const result = SetAreaPermissionsSchema.safeParse({ areaIds: [1] });
     expect(result.success).toBe(true);
-    const data = (result as { success: true; data: Record<string, unknown> })
-      .data;
+    const data = (result as { success: true; data: Record<string, unknown> }).data;
     expect(data.permissions).toEqual({
       canRead: true,
       canWrite: false,
@@ -224,21 +199,18 @@ describe('SECURITY: BulkUpdatePermissionsSchema', () => {
   });
 
   it('should accept assign and remove operations', () => {
-    expect(
-      BulkUpdatePermissionsSchema.safeParse({ ...valid, operation: 'assign' })
-        .success,
-    ).toBe(true);
-    expect(
-      BulkUpdatePermissionsSchema.safeParse({ ...valid, operation: 'remove' })
-        .success,
-    ).toBe(true);
+    expect(BulkUpdatePermissionsSchema.safeParse({ ...valid, operation: 'assign' }).success).toBe(
+      true,
+    );
+    expect(BulkUpdatePermissionsSchema.safeParse({ ...valid, operation: 'remove' }).success).toBe(
+      true,
+    );
   });
 
   it('should reject invalid operation', () => {
-    expect(
-      BulkUpdatePermissionsSchema.safeParse({ ...valid, operation: 'update' })
-        .success,
-    ).toBe(false);
+    expect(BulkUpdatePermissionsSchema.safeParse({ ...valid, operation: 'update' }).success).toBe(
+      false,
+    );
   });
 
   it('should reject empty adminIds', () => {

@@ -5,12 +5,7 @@
   import PermissionDenied from '$lib/components/PermissionDenied.svelte';
 
   import AdminActions from './_lib/AdminActions.svelte';
-  import {
-    fetchAssignmentCounts,
-    fetchDepartments,
-    fetchAssets,
-    fetchTeams,
-  } from './_lib/api';
+  import { fetchAssignmentCounts, fetchDepartments, fetchAssets, fetchTeams } from './_lib/api';
   import CustomRotationModal from './_lib/CustomRotationModal.svelte';
   import { convertSSRTeamMembersToEmployees } from './_lib/data-loader';
   import {
@@ -86,14 +81,11 @@
   $effect(() => {
     const teamId = shiftsState.selectedContext.teamId;
     const week = shiftsState.currentWeek;
-    if (teamId === null || !shiftsState.showPlanningUI || !shiftsState.isAdmin)
-      return;
+    if (teamId === null || !shiftsState.showPlanningUI || !shiftsState.isAdmin) return;
     const refDate = formatDate(getWeekStart(week));
-    void fetchAssignmentCounts(teamId, refDate).then(
-      (result: AssignmentCount[]) => {
-        baseAssignmentCounts = result;
-      },
-    );
+    void fetchAssignmentCounts(teamId, refDate).then((result: AssignmentCount[]) => {
+      baseAssignmentCounts = result;
+    });
   });
 
   /** Count per-employee assignments from local weeklyShifts state */
@@ -144,9 +136,7 @@
         assetId: null,
         teamLeaderId: ssrEmployeeTeamInfo.teamLeaderId,
       });
-      shiftsState.setEmployees(
-        convertSSRTeamMembersToEmployees(ssrTeamMembers),
-      );
+      shiftsState.setEmployees(convertSSRTeamMembersToEmployees(ssrTeamMembers));
       shiftsState.setShowPlanningUI(true);
     }
 
@@ -163,11 +153,7 @@
 
   onMount(() => {
     document.addEventListener('click', handleClickOutside, true);
-    if (
-      ssrIsEmployee &&
-      ssrEmployeeTeamInfo !== null &&
-      ssrEmployeeTeamInfo.teamId !== 0
-    ) {
+    if (ssrIsEmployee && ssrEmployeeTeamInfo !== null && ssrEmployeeTeamInfo.teamId !== 0) {
       void loadShiftPlan();
     }
     return () => {
@@ -251,15 +237,9 @@
 
   // --- DERIVED VALUES ---
   const weekDates = $derived(getWeekDates(shiftsState.currentWeek));
-  const weekRangeText = $derived(
-    formatWeekRange(getWeekStart(shiftsState.currentWeek)),
-  );
-  const currentWeekStart = $derived(
-    formatDate(getWeekStart(shiftsState.currentWeek)),
-  );
-  const currentWeekEnd = $derived(
-    formatDate(getWeekEnd(shiftsState.currentWeek)),
-  );
+  const weekRangeText = $derived(formatWeekRange(getWeekStart(shiftsState.currentWeek)));
+  const currentWeekStart = $derived(formatDate(getWeekStart(shiftsState.currentWeek)));
+  const currentWeekEnd = $derived(formatDate(getWeekEnd(shiftsState.currentWeek)));
 
   /** Shift employees getter for template props */
   function getShiftEmployees(dateKey: string, shiftType: string): number[] {
@@ -290,9 +270,7 @@
         <h2 class="card__title">
           <i class="fas fa-calendar-alt mr-2"></i>Schichtplanung
         </h2>
-        <p class="mt-2 text-(--color-text-secondary)">
-          Schichten planen und verwalten
-        </p>
+        <p class="mt-2 text-(--color-text-secondary)">Schichten planen und verwalten</p>
 
         <!-- Loading Overlay (Design System) - ONLY during initial load, NOT during week changes -->
         {#if shiftsState.isLoading && !shiftsState.showPlanningUI}
@@ -310,24 +288,14 @@
             role="status"
           >
             <i class="fas fa-users text-(--color-text-secondary)"></i>
-            <span class="font-medium text-(--color-text-secondary)"
-              >Dein Team:</span
-            >
-            <span class="font-semibold text-blue-400"
-              >{shiftsState.employeeTeamInfo.teamName}</span
-            >
-            <span class="font-medium text-(--color-text-secondary)"
-              >{labels.department}:</span
-            >
+            <span class="font-medium text-(--color-text-secondary)">Dein Team:</span>
+            <span class="font-semibold text-blue-400">{shiftsState.employeeTeamInfo.teamName}</span>
+            <span class="font-medium text-(--color-text-secondary)">{labels.department}:</span>
             <span class="font-semibold text-blue-400"
               >{shiftsState.employeeTeamInfo.departmentName}</span
             >
-            <span class="font-medium text-(--color-text-secondary)"
-              >Bereich:</span
-            >
-            <span class="font-semibold text-blue-400"
-              >{shiftsState.employeeTeamInfo.areaName}</span
-            >
+            <span class="font-medium text-(--color-text-secondary)">Bereich:</span>
+            <span class="font-semibold text-blue-400">{shiftsState.employeeTeamInfo.areaName}</span>
           </div>
         {/if}
 
@@ -380,10 +348,7 @@
               <i class="fas fa-exclamation-triangle"></i>
             </div>
             <h3>Kein Team zugewiesen</h3>
-            <p>
-              Du bist noch keinem Team zugeordnet. Bitte wende dich an deinen
-              Administrator.
-            </p>
+            <p>Du bist noch keinem Team zugeordnet. Bitte wende dich an deinen Administrator.</p>
           </div>
         {/if}
 
@@ -435,10 +400,8 @@
               assetAvailabilityMap={shiftsState.assetAvailabilityMap}
               {getShiftEmployees}
               getEmployeeById={(id: number) => shiftsState.getEmployeeById(id)}
-              getShiftDetail={(key: string) =>
-                shiftsState.shiftDetails.get(key)}
-              hasRotationShift={(key: string) =>
-                shiftsState.rotationHistoryMap.has(key)}
+              getShiftDetail={(key: string) => shiftsState.shiftDetails.get(key)}
+              hasRotationShift={(key: string) => shiftsState.rotationHistoryMap.has(key)}
               ondragover={handleDragOver}
               ondragenter={handleDragEnter}
               ondragleave={handleDragLeave}

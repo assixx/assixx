@@ -40,9 +40,7 @@ function createMockScopeService() {
   };
 }
 
-function makeEntry(
-  overrides: Partial<DbBlackboardEntry> = {},
-): DbBlackboardEntry {
+function makeEntry(overrides: Partial<DbBlackboardEntry> = {}): DbBlackboardEntry {
   return {
     id: 1,
     tenant_id: 10,
@@ -133,18 +131,11 @@ describe('SECURITY: BlackboardAccessService', () => {
   // =============================================================
 
   describe('applyAccessControl', () => {
-    const baseQuery =
-      'SELECT * FROM blackboard_entries e WHERE e.tenant_id = $1';
+    const baseQuery = 'SELECT * FROM blackboard_entries e WHERE e.tenant_id = $1';
 
     it('should not modify query for root user', () => {
       const params = [10];
-      const result = service.applyAccessControl(
-        baseQuery,
-        [...params],
-        'root',
-        null,
-        null,
-      );
+      const result = service.applyAccessControl(baseQuery, [...params], 'root', null, null);
 
       expect(result.query).toBe(baseQuery);
       expect(result.params).toHaveLength(1);
@@ -167,14 +158,7 @@ describe('SECURITY: BlackboardAccessService', () => {
 
     it('should add admin SQL for admin users', () => {
       const params = [10];
-      const result = service.applyAccessControl(
-        baseQuery,
-        [...params],
-        'admin',
-        null,
-        null,
-        5,
-      );
+      const result = service.applyAccessControl(baseQuery, [...params], 'admin', null, null, 5);
 
       expect(result.query).toContain('admin_area_permissions');
       expect(result.params).toHaveLength(6); // 1 original + 5 userId refs
@@ -182,13 +166,7 @@ describe('SECURITY: BlackboardAccessService', () => {
 
     it('should add employee SQL for employee users', () => {
       const params = [10];
-      const result = service.applyAccessControl(
-        baseQuery,
-        [...params],
-        'employee',
-        3,
-        7,
-      );
+      const result = service.applyAccessControl(baseQuery, [...params], 'employee', 3, 7);
 
       expect(result.query).toContain('org_level');
       expect(result.params).toContain(3); // departmentId
@@ -197,13 +175,7 @@ describe('SECURITY: BlackboardAccessService', () => {
 
     it('should use 0 as fallback for null department/team', () => {
       const params = [10];
-      const result = service.applyAccessControl(
-        baseQuery,
-        [...params],
-        'employee',
-        null,
-        null,
-      );
+      const result = service.applyAccessControl(baseQuery, [...params], 'employee', null, null);
 
       expect(result.params).toContain(0); // departmentId ?? 0
       expect(result.params[1]).toBe(0);
@@ -217,29 +189,13 @@ describe('SECURITY: BlackboardAccessService', () => {
 
   describe('checkEntryAccess', () => {
     it('should always grant access for root', async () => {
-      const result = await service.checkEntryAccess(
-        makeEntry(),
-        'root',
-        false,
-        1,
-        10,
-        null,
-        null,
-      );
+      const result = await service.checkEntryAccess(makeEntry(), 'root', false, 1, 10, null, null);
 
       expect(result).toBe(true);
     });
 
     it('should always grant access for full-access user', async () => {
-      const result = await service.checkEntryAccess(
-        makeEntry(),
-        'admin',
-        true,
-        1,
-        10,
-        null,
-        null,
-      );
+      const result = await service.checkEntryAccess(makeEntry(), 'admin', true, 1, 10, null, null);
 
       expect(result).toBe(true);
     });
@@ -412,9 +368,7 @@ describe('SECURITY: BlackboardAccessService', () => {
 
   describe('validateOrgPermissions', () => {
     it('should pass with empty org arrays', async () => {
-      await expect(
-        service.validateOrgPermissions(1, 10),
-      ).resolves.toBeUndefined();
+      await expect(service.validateOrgPermissions(1, 10)).resolves.toBeUndefined();
     });
 
     it('should skip validation for full-scope user', async () => {
@@ -444,21 +398,19 @@ describe('SECURITY: BlackboardAccessService', () => {
     });
 
     it('should throw ForbiddenException for inaccessible area', async () => {
-      await expect(service.validateOrgPermissions(1, 10, [99])).rejects.toThrow(
+      await expect(service.validateOrgPermissions(1, 10, [99])).rejects.toThrow(ForbiddenException);
+    });
+
+    it('should throw ForbiddenException for inaccessible department', async () => {
+      await expect(service.validateOrgPermissions(1, 10, [], [42])).rejects.toThrow(
         ForbiddenException,
       );
     });
 
-    it('should throw ForbiddenException for inaccessible department', async () => {
-      await expect(
-        service.validateOrgPermissions(1, 10, [], [42]),
-      ).rejects.toThrow(ForbiddenException);
-    });
-
     it('should throw ForbiddenException for inaccessible team', async () => {
-      await expect(
-        service.validateOrgPermissions(1, 10, [], [], [77]),
-      ).rejects.toThrow(ForbiddenException);
+      await expect(service.validateOrgPermissions(1, 10, [], [], [77])).rejects.toThrow(
+        ForbiddenException,
+      );
     });
   });
 });

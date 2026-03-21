@@ -3,12 +3,7 @@
    * IncomingRequestCard — Shows a request pending approval.
    * Displays requester name, dates, type. Actions: approve, deny, view capacity.
    */
-  import {
-    HALF_DAY_LABELS,
-    STATUS_BADGE_CLASS,
-    STATUS_LABELS,
-    TYPE_LABELS,
-  } from './constants';
+  import { HALF_DAY_LABELS, STATUS_BADGE_CLASS, STATUS_LABELS, TYPE_LABELS } from './constants';
 
   import type { VacationRequest } from './types';
 
@@ -32,8 +27,7 @@
   const isPending = $derived(request.status === 'pending');
   const currentYear = new Date().getFullYear();
   const isRevokable = $derived(
-    request.status === 'approved' &&
-      new Date(request.startDate).getFullYear() === currentYear,
+    request.status === 'approved' && new Date(request.startDate).getFullYear() === currentYear,
   );
 
   function formatDate(iso: string): string {
@@ -105,8 +99,8 @@
         <div class="alert__content">
           <div class="alert__title">Schichtplan-Hinweis</div>
           <div class="alert__message">
-            Der Mitarbeiter könnte in diesem Zeitraum im Schichtplan eingeplant
-            sein. Bitte Schichtplan manuell überprüfen!
+            Der Mitarbeiter könnte in diesem Zeitraum im Schichtplan eingeplant sein. Bitte
+            Schichtplan manuell überprüfen!
           </div>
         </div>
       </div>
@@ -206,10 +200,7 @@
     color: var(--text-muted);
     padding: 0.375rem 0.5rem;
     border-radius: var(--radius-sm, 0.25rem);
-    background: var(
-      --glass-bg,
-      color-mix(in oklch, var(--color-white) 5%, transparent)
-    );
+    background: var(--glass-bg, color-mix(in oklch, var(--color-white) 5%, transparent));
   }
 
   .incoming-card__actions {

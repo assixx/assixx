@@ -11,26 +11,15 @@ import { IdSchema } from '../../../schemas/common.schema.js';
 /**
  * Survey status enum
  */
-const SurveyStatusSchema = z.enum(
-  ['draft', 'active', 'paused', 'completed', 'archived'],
-  {
-    message: 'Invalid status',
-  },
-);
+const SurveyStatusSchema = z.enum(['draft', 'active', 'paused', 'completed', 'archived'], {
+  message: 'Invalid status',
+});
 
 /**
  * Question type enum
  */
 const QuestionTypeSchema = z.enum(
-  [
-    'text',
-    'single_choice',
-    'multiple_choice',
-    'rating',
-    'yes_no',
-    'number',
-    'date',
-  ],
+  ['text', 'single_choice', 'multiple_choice', 'rating', 'yes_no', 'number', 'date'],
   {
     message: 'Invalid question type',
   },
@@ -39,12 +28,9 @@ const QuestionTypeSchema = z.enum(
 /**
  * Assignment type enum
  */
-const AssignmentTypeSchema = z.enum(
-  ['all_users', 'area', 'department', 'team', 'user'],
-  {
-    message: 'Invalid assignment type',
-  },
-);
+const AssignmentTypeSchema = z.enum(['all_users', 'area', 'department', 'team', 'user'], {
+  message: 'Invalid assignment type',
+});
 
 /**
  * Date validation that accepts null, undefined, or empty string
@@ -136,17 +122,11 @@ export const CreateSurveySchema = z
     isMandatory: z.boolean().optional(),
     startDate: NullableDateSchema,
     endDate: NullableDateSchema,
-    questions: z
-      .array(QuestionSchema)
-      .min(1, 'Questions must be a non-empty array')
-      .optional(),
+    questions: z.array(QuestionSchema).min(1, 'Questions must be a non-empty array').optional(),
     assignments: z.array(AssignmentSchema).optional(),
   })
   .refine(
-    (data: {
-      startDate?: string | null | undefined;
-      endDate?: string | null | undefined;
-    }) => {
+    (data: { startDate?: string | null | undefined; endDate?: string | null | undefined }) => {
       if (
         data.startDate !== undefined &&
         data.startDate !== null &&

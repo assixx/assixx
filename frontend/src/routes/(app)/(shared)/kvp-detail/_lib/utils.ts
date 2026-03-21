@@ -2,10 +2,7 @@
 // KVP-DETAIL - UTILITY FUNCTIONS
 // =============================================================================
 
-import {
-  DEFAULT_HIERARCHY_LABELS,
-  type HierarchyLabels,
-} from '$lib/types/hierarchy-labels';
+import { DEFAULT_HIERARCHY_LABELS, type HierarchyLabels } from '$lib/types/hierarchy-labels';
 
 import {
   STATUS_BADGE_CLASSES,
@@ -17,13 +14,7 @@ import {
   IMAGE_FILE_TYPES,
 } from './constants';
 
-import type {
-  KvpSuggestion,
-  KvpStatus,
-  KvpPriority,
-  OrgLevel,
-  Attachment,
-} from './types';
+import type { KvpSuggestion, KvpStatus, KvpPriority, OrgLevel, Attachment } from './types';
 
 /**
  * Get status badge CSS class
@@ -90,10 +81,7 @@ function getOrgLevelVisibility(
   const info = visibilityInfo[suggestion.orgLevel];
   let text = info.text;
 
-  if (
-    suggestion.orgLevel === 'department' &&
-    suggestion.departmentName !== ''
-  ) {
+  if (suggestion.orgLevel === 'department' && suggestion.departmentName !== '') {
     text = suggestion.departmentName;
   } else if (
     suggestion.orgLevel === 'area' &&
@@ -159,10 +147,8 @@ export function formatFileSize(bytes: number): string {
  * Check if suggestion has financial info
  */
 export function hasFinancialInfo(suggestion: KvpSuggestion): boolean {
-  const hasEstimatedCost =
-    suggestion.estimatedCost !== undefined && suggestion.estimatedCost !== 0;
-  const hasActualSavings =
-    suggestion.actualSavings !== undefined && suggestion.actualSavings !== 0;
+  const hasEstimatedCost = suggestion.estimatedCost !== undefined && suggestion.estimatedCost !== 0;
+  const hasActualSavings = suggestion.actualSavings !== undefined && suggestion.actualSavings !== 0;
   return hasEstimatedCost || hasActualSavings;
 }
 
@@ -188,9 +174,7 @@ export function isUserAdmin(role: string): boolean {
  * Check if attachment is an image
  */
 export function isImageAttachment(attachment: Attachment): boolean {
-  return IMAGE_FILE_TYPES.includes(
-    attachment.fileType as (typeof IMAGE_FILE_TYPES)[number],
-  );
+  return IMAGE_FILE_TYPES.includes(attachment.fileType as (typeof IMAGE_FILE_TYPES)[number]);
 }
 
 /**
@@ -210,10 +194,8 @@ export function splitAttachments(attachments: Attachment[]): {
  */
 export function getFileIconClass(fileType: string): string {
   if (fileType.includes('pdf')) return 'fa-file-pdf';
-  if (fileType.includes('word') || fileType.includes('document'))
-    return 'fa-file-word';
-  if (fileType.includes('excel') || fileType.includes('spreadsheet'))
-    return 'fa-file-excel';
+  if (fileType.includes('word') || fileType.includes('document')) return 'fa-file-word';
+  if (fileType.includes('excel') || fileType.includes('spreadsheet')) return 'fa-file-excel';
   if (fileType.includes('image')) return 'fa-file-image';
   return 'fa-file';
 }
@@ -253,8 +235,7 @@ export function canShareSuggestion(
   userRole: string,
   canManage = false,
 ): boolean {
-  const hasPermission =
-    userRole === 'admin' || userRole === 'root' || canManage;
+  const hasPermission = userRole === 'admin' || userRole === 'root' || canManage;
   return hasPermission && !suggestion.isShared;
 }
 
@@ -274,24 +255,14 @@ export function canUnshareSuggestion(
     return false;
   }
 
-  return (
-    userRole === 'admin' ||
-    userRole === 'root' ||
-    canManage ||
-    suggestion.sharedBy === userId
-  );
+  return userRole === 'admin' || userRole === 'root' || canManage || suggestion.sharedBy === userId;
 }
 
 /**
  * Check if user can archive suggestion (must have manage rights AND not already archived)
  */
-export function canArchiveSuggestion(
-  userRole: string,
-  status: string,
-  canManage = false,
-): boolean {
-  const hasPermission =
-    userRole === 'admin' || userRole === 'root' || canManage;
+export function canArchiveSuggestion(userRole: string, status: string, canManage = false): boolean {
+  const hasPermission = userRole === 'admin' || userRole === 'root' || canManage;
   return hasPermission && status !== 'archived';
 }
 
@@ -303,8 +274,7 @@ export function canUnarchiveSuggestion(
   status: string,
   canManage = false,
 ): boolean {
-  const hasPermission =
-    userRole === 'admin' || userRole === 'root' || canManage;
+  const hasPermission = userRole === 'admin' || userRole === 'root' || canManage;
   return hasPermission && status === 'archived';
 }
 

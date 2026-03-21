@@ -30,9 +30,7 @@
   // DERIVED
   // =========================================================================
 
-  const hasChanges = $derived(
-    dailyLimit !== (data.kvpSettings?.dailyLimit ?? 1),
-  );
+  const hasChanges = $derived(dailyLimit !== (data.kvpSettings?.dailyLimit ?? 1));
 
   const isFormValid = $derived(
     dailyLimit >= 0 && dailyLimit <= 100 && Number.isInteger(dailyLimit),
@@ -52,8 +50,7 @@
       });
       showSuccessAlert('KVP-Einstellungen gespeichert');
     } catch (err: unknown) {
-      const message =
-        err instanceof Error ? err.message : 'Fehler beim Speichern';
+      const message = err instanceof Error ? err.message : 'Fehler beim Speichern';
       showErrorAlert(message);
     } finally {
       saving = false; // eslint-disable-line require-atomic-updates -- guarded by early return on saving===true
@@ -86,9 +83,7 @@
           <div class="alert__icon">
             <i class="fas fa-exclamation-triangle"></i>
           </div>
-          <div class="alert__content">
-            KVP-Einstellungen konnten nicht geladen werden.
-          </div>
+          <div class="alert__content">KVP-Einstellungen konnten nicht geladen werden.</div>
         </div>
       {:else}
         <form
@@ -116,8 +111,8 @@
                 disabled={saving}
               />
               <p class="form-field__hint">
-                Maximale Anzahl KVP-Vorschläge pro Tag und Benutzer. 0 =
-                unbegrenzt. Gilt nicht für Root und Admins mit Vollzugriff.
+                Maximale Anzahl KVP-Vorschläge pro Tag und Benutzer. 0 = unbegrenzt. Gilt nicht für
+                Root und Admins mit Vollzugriff.
               </p>
             </div>
           </div>

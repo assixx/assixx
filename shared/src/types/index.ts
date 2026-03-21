@@ -5,11 +5,7 @@
 export type { UserRole, ExtendedUserRole } from './user-role.js';
 export { USER_ROLES, EXTENDED_USER_ROLES } from './user-role.js';
 
-export type {
-  IsActiveStatus,
-  FormIsActiveStatus,
-  StatusFilter,
-} from './is-active-status.js';
+export type { IsActiveStatus, FormIsActiveStatus, StatusFilter } from './is-active-status.js';
 
 export type {
   ApiSuccessResponse,

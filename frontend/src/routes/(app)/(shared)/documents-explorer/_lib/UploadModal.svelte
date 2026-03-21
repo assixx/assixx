@@ -1,14 +1,6 @@
 <script lang="ts">
-  import {
-    UPLOAD_CATEGORY_OPTIONS,
-    CATEGORY_MAPPINGS,
-    MESSAGES,
-  } from './constants';
-  import {
-    formatFileSize,
-    validateFile,
-    getFileTypeDisplayInfo,
-  } from './utils';
+  import { UPLOAD_CATEGORY_OPTIONS, CATEGORY_MAPPINGS, MESSAGES } from './constants';
+  import { formatFileSize, validateFile, getFileTypeDisplayInfo } from './utils';
 
   import type { UploadData } from './types';
 
@@ -161,9 +153,7 @@
             }}
             ondrop={handleFileDrop}
             onclick={() => document.getElementById('file-input')?.click()}
-            onkeydown={(e) =>
-              e.key === 'Enter' &&
-              document.getElementById('file-input')?.click()}
+            onkeydown={(e) => e.key === 'Enter' && document.getElementById('file-input')?.click()}
           >
             <input
               type="file"
@@ -180,12 +170,8 @@
                 <i class="fas fa-cloud-upload-alt"></i>
               </div>
               <div class="file-upload-zone__text">
-                <p class="file-upload-zone__title">
-                  Datei hier ablegen oder klicken zum Auswählen
-                </p>
-                <p class="file-upload-zone__subtitle">
-                  PDF, Word, Excel, JPG, PNG
-                </p>
+                <p class="file-upload-zone__title">Datei hier ablegen oder klicken zum Auswählen</p>
+                <p class="file-upload-zone__subtitle">PDF, Word, Excel, JPG, PNG</p>
               </div>
             </label>
             <p class="file-upload-zone__helper">
@@ -195,12 +181,8 @@
 
           <!-- Selected File Display -->
           {#if uploadFile}
-            {@const extension =
-              uploadFile.name.split('.').pop()?.toLowerCase() ?? ''}
-            {@const displayInfo = getFileTypeDisplayInfo(
-              uploadFile.type,
-              extension,
-            )}
+            {@const extension = uploadFile.name.split('.').pop()?.toLowerCase() ?? ''}
+            {@const displayInfo = getFileTypeDisplayInfo(uploadFile.type, extension)}
             <div
               id="selected-file"
               class="file-upload-list file-upload-list--compact"
@@ -249,13 +231,10 @@
               class="rounded-lg border border-(--color-border) bg-(--background-secondary) p-4"
             >
               <div class="mb-2 flex items-center justify-between">
-                <span class="text-sm text-(--color-text-primary)"
-                  >Hochladen...</span
-                >
+                <span class="text-sm text-(--color-text-primary)">Hochladen...</span>
                 <span
                   id="progress-text"
-                  class="text-sm text-(--color-text-secondary)"
-                  >{uploadProgress}%</span
+                  class="text-sm text-(--color-text-secondary)">{uploadProgress}%</span
                 >
               </div>
               <div class="progress h-2">
@@ -271,9 +250,7 @@
           <!-- Category Selection -->
           <div class="form-field">
             <!-- svelte-ignore a11y_label_has_associated_control -->
-            <label class="form-field__label form-field__label--required"
-              >Kategorie</label
-            >
+            <label class="form-field__label form-field__label--required">Kategorie</label>
             <div
               class="dropdown w-full"
               id="upload-category-dropdown"
@@ -290,9 +267,8 @@
                   <i class="fas fa-folder"></i>
                   <span>
                     {#if uploadCategory}
-                      {UPLOAD_CATEGORY_OPTIONS.find(
-                        (o) => o.value === uploadCategory,
-                      )?.label ?? MESSAGES.UPLOAD_CATEGORY_PLACEHOLDER}
+                      {UPLOAD_CATEGORY_OPTIONS.find((o) => o.value === uploadCategory)?.label ??
+                        MESSAGES.UPLOAD_CATEGORY_PLACEHOLDER}
                     {:else}
                       {MESSAGES.UPLOAD_CATEGORY_PLACEHOLDER}
                     {/if}
@@ -342,8 +318,7 @@
               bind:value={uploadDocName}
               required
             />
-            <small class="form-field__message"
-              >Der Name wird in der Dokumentenliste angezeigt</small
+            <small class="form-field__message">Der Name wird in der Dokumentenliste angezeigt</small
             >
           </div>
 
@@ -416,9 +391,7 @@
                   </select>
                 </div>
               </div>
-              <small class="form-field__message"
-                >Wird nur für Gehaltsabrechnungen benötigt</small
-              >
+              <small class="form-field__message">Wird nur für Gehaltsabrechnungen benötigt</small>
             </div>
           {/if}
 
@@ -436,9 +409,7 @@
               placeholder="z.B. vertrag, 2025, personal (kommagetrennt)"
               bind:value={uploadTags}
             />
-            <small class="form-field__message"
-              >Tags helfen beim späteren Suchen und Filtern</small
-            >
+            <small class="form-field__message">Tags helfen beim späteren Suchen und Filtern</small>
           </div>
         </div>
       </div>

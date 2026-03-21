@@ -12,12 +12,7 @@ From `manage-admins.html` Berechtigungen Modal - Radio button cards for permissi
 ```html
 <div class="choice-group">
   <label class="choice-card">
-    <input
-      type="radio|checkbox"
-      class="choice-card__input"
-      name="group"
-      value="option1"
-    />
+    <input type="radio|checkbox" class="choice-card__input" name="group" value="option1" />
     <span class="choice-card__text">Option 1</span>
   </label>
   <!-- More options... -->
@@ -31,31 +26,15 @@ From `manage-admins.html` Berechtigungen Modal - Radio button cards for permissi
 ```html
 <div class="choice-group">
   <label class="choice-card">
-    <input
-      type="radio"
-      class="choice-card__input"
-      name="permissions"
-      value="none"
-      checked
-    />
+    <input type="radio" class="choice-card__input" name="permissions" value="none" checked />
     <span class="choice-card__text">Keine Abteilungen</span>
   </label>
   <label class="choice-card">
-    <input
-      type="radio"
-      class="choice-card__input"
-      name="permissions"
-      value="specific"
-    />
+    <input type="radio" class="choice-card__input" name="permissions" value="specific" />
     <span class="choice-card__text">Spezifische Abteilungen</span>
   </label>
   <label class="choice-card">
-    <input
-      type="radio"
-      class="choice-card__input"
-      name="permissions"
-      value="all"
-    />
+    <input type="radio" class="choice-card__input" name="permissions" value="all" />
     <span class="choice-card__text">Alle Abteilungen</span>
   </label>
 </div>
@@ -66,31 +45,15 @@ From `manage-admins.html` Berechtigungen Modal - Radio button cards for permissi
 ```html
 <div class="choice-group">
   <label class="choice-card">
-    <input
-      type="checkbox"
-      class="choice-card__input"
-      name="features"
-      value="analytics"
-    />
+    <input type="checkbox" class="choice-card__input" name="features" value="analytics" />
     <span class="choice-card__text">Analytics Dashboard</span>
   </label>
   <label class="choice-card">
-    <input
-      type="checkbox"
-      class="choice-card__input"
-      name="features"
-      value="reports"
-      checked
-    />
+    <input type="checkbox" class="choice-card__input" name="features" value="reports" checked />
     <span class="choice-card__text">Advanced Reports</span>
   </label>
   <label class="choice-card">
-    <input
-      type="checkbox"
-      class="choice-card__input"
-      name="features"
-      value="api"
-    />
+    <input type="checkbox" class="choice-card__input" name="features" value="api" />
     <span class="choice-card__text">API Access</span>
   </label>
 </div>
@@ -125,23 +88,14 @@ From `manage-admins.html` Berechtigungen Modal - Radio button cards for permissi
     <input type="radio" class="choice-card__input" name="plan" value="basic" />
     <span class="choice-card__text">
       Basic Plan
-      <span class="choice-card__description"
-        >Perfect for small teams up to 10 users</span
-      >
+      <span class="choice-card__description">Perfect for small teams up to 10 users</span>
     </span>
   </label>
   <label class="choice-card choice-card--lg">
-    <input
-      type="radio"
-      class="choice-card__input"
-      name="plan"
-      value="enterprise"
-    />
+    <input type="radio" class="choice-card__input" name="plan" value="enterprise" />
     <span class="choice-card__text">
       Enterprise Plan
-      <span class="choice-card__description"
-        >Unlimited users with advanced features</span
-      >
+      <span class="choice-card__description">Unlimited users with advanced features</span>
     </span>
   </label>
 </div>
@@ -318,12 +272,7 @@ From `manage-admins.html` Berechtigungen Modal - Radio button cards for permissi
             <span class="choice-card__text">Spezifische Abteilungen</span>
           </label>
           <label class="choice-card">
-            <input
-              type="radio"
-              class="choice-card__input"
-              name="permission-type"
-              value="all"
-            />
+            <input type="radio" class="choice-card__input" name="permission-type" value="all" />
             <span class="choice-card__text">Alle Abteilungen</span>
           </label>
         </div>
@@ -354,13 +303,7 @@ From `manage-admins.html` Berechtigungen Modal - Radio button cards for permissi
       </span>
     </label>
     <label class="choice-card choice-card--lg">
-      <input
-        type="radio"
-        class="choice-card__input"
-        name="plan"
-        value="pro"
-        checked
-      />
+      <input type="radio" class="choice-card__input" name="plan" value="pro" checked />
       <span class="choice-card__text">
         <i class="fas fa-star"></i>
         Pro Plan
@@ -370,12 +313,7 @@ From `manage-admins.html` Berechtigungen Modal - Radio button cards for permissi
       </span>
     </label>
     <label class="choice-card choice-card--lg">
-      <input
-        type="radio"
-        class="choice-card__input"
-        name="plan"
-        value="enterprise"
-      />
+      <input type="radio" class="choice-card__input" name="plan" value="enterprise" />
       <span class="choice-card__text">
         <i class="fas fa-building"></i>
         Enterprise Plan
@@ -396,38 +334,21 @@ From `manage-admins.html` Berechtigungen Modal - Radio button cards for permissi
   <label class="form-field__label">Enable Features</label>
   <div class="choice-group choice-group--compact">
     <label class="choice-card">
-      <input
-        type="checkbox"
-        class="choice-card__input"
-        name="features"
-        value="analytics"
-        checked
-      />
+      <input type="checkbox" class="choice-card__input" name="features" value="analytics" checked />
       <span class="choice-card__text">
         <i class="fas fa-chart-line"></i>
         Analytics Dashboard
       </span>
     </label>
     <label class="choice-card">
-      <input
-        type="checkbox"
-        class="choice-card__input"
-        name="features"
-        value="api"
-        checked
-      />
+      <input type="checkbox" class="choice-card__input" name="features" value="api" checked />
       <span class="choice-card__text">
         <i class="fas fa-code"></i>
         API Access
       </span>
     </label>
     <label class="choice-card">
-      <input
-        type="checkbox"
-        class="choice-card__input"
-        name="features"
-        value="export"
-      />
+      <input type="checkbox" class="choice-card__input" name="features" value="export" />
       <span class="choice-card__text">
         <i class="fas fa-download"></i>
         Data Export
@@ -463,12 +384,7 @@ http://localhost:6006/?path=/docs/design-system-choicecards--docs
 ```html
 <div class="choice-group">
   <label class="choice-card">
-    <input
-      type="radio"
-      class="choice-card__input"
-      name="permission-type"
-      value="none"
-    />
+    <input type="radio" class="choice-card__input" name="permission-type" value="none" />
     <span class="choice-card__text">Keine Abteilungen</span>
   </label>
 </div>

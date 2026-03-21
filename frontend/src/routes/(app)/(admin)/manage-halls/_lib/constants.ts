@@ -2,10 +2,7 @@
 // MANAGE HALLS - CONSTANTS
 // =============================================================================
 
-import {
-  DEFAULT_HIERARCHY_LABELS,
-  type HierarchyLabels,
-} from '$lib/types/hierarchy-labels';
+import { DEFAULT_HIERARCHY_LABELS, type HierarchyLabels } from '$lib/types/hierarchy-labels';
 
 import type { FormIsActiveStatus } from './types';
 

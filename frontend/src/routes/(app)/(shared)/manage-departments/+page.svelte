@@ -9,11 +9,7 @@
 
   import HighlightText from '$lib/components/HighlightText.svelte';
   import PermissionDenied from '$lib/components/PermissionDenied.svelte';
-  import {
-    showWarningAlert,
-    showErrorAlert,
-    showSuccessAlert,
-  } from '$lib/stores/toast';
+  import { showWarningAlert, showErrorAlert, showSuccessAlert } from '$lib/stores/toast';
 
   import {
     buildDepartmentPayload,
@@ -108,9 +104,7 @@
   // =============================================================================
 
   const isEditMode = $derived(currentEditId !== null);
-  const modalTitle = $derived(
-    isEditMode ? messages.MODAL_TITLE_EDIT : messages.MODAL_TITLE_ADD,
-  );
+  const modalTitle = $derived(isEditMode ? messages.MODAL_TITLE_EDIT : messages.MODAL_TITLE_ADD);
 
   // Derived: Filtered departments based on current filter/search state
   const filteredDepartments = $derived(
@@ -140,15 +134,11 @@
       await apiAssignHalls(result.departmentId, formHallIds);
       closeDepartmentModal();
       await invalidateAll();
-      showSuccessAlert(
-        isEditMode ? 'Erfolgreich aktualisiert' : 'Erfolgreich erstellt',
-      );
+      showSuccessAlert(isEditMode ? 'Erfolgreich aktualisiert' : 'Erfolgreich erstellt');
     } else if (result.success) {
       closeDepartmentModal();
       await invalidateAll();
-      showSuccessAlert(
-        isEditMode ? 'Erfolgreich aktualisiert' : 'Erfolgreich erstellt',
-      );
+      showSuccessAlert(isEditMode ? 'Erfolgreich aktualisiert' : 'Erfolgreich erstellt');
     } else if (result.error !== null) {
       showErrorAlert(result.error);
     }
@@ -167,10 +157,7 @@
       // Level 3: Trigger SSR refetch
       await invalidateAll();
       showSuccessAlert('Erfolgreich gelöscht');
-    } else if (
-      result.hasDependencies === true &&
-      result.dependencyDetails !== undefined
-    ) {
+    } else if (result.hasDependencies === true && result.dependencyDetails !== undefined) {
       showForceDeleteWarning(result.dependencyDetails);
     } else if (result.error !== null) {
       showErrorAlert(result.error);
@@ -217,10 +204,7 @@
     const department = allDepartments.find((d) => d.id === departmentId);
     if (!department) return;
     currentEditId = departmentId;
-    const formData = populateFormFromDepartment(
-      department,
-      department.hallIds ?? [],
-    );
+    const formData = populateFormFromDepartment(department, department.hallIds ?? []);
     formName = formData.name;
     formDescription = formData.description;
     formAreaId = formData.areaId;
@@ -413,8 +397,7 @@
               />
               <button
                 class="search-input__clear"
-                class:search-input__clear--visible={currentSearchQuery.length >
-                  0}
+                class:search-input__clear--visible={currentSearchQuery.length > 0}
                 type="button"
                 aria-label="Suche löschen"
                 onclick={clearSearch}
@@ -469,9 +452,7 @@
       <div class="card__body">
         {#if error}
           <div class="p-6 text-center">
-            <i
-              class="fas fa-exclamation-triangle mb-4 text-4xl text-(--color-danger)"
-            ></i>
+            <i class="fas fa-exclamation-triangle mb-4 text-4xl text-(--color-danger)"></i>
             <p class="text-(--color-text-secondary)">{error}</p>
             <button
               type="button"

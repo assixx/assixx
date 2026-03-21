@@ -30,11 +30,7 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
     redirect(302, '/login');
   }
 
-  const configs = await apiFetch<ApprovalConfig[]>(
-    '/approvals/configs',
-    token,
-    fetch,
-  );
+  const configs = await apiFetch<ApprovalConfig[]>('/approvals/configs', token, fetch);
 
   return {
     configs: Array.isArray(configs) ? configs : [],

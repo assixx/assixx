@@ -50,11 +50,7 @@ describe('DocumentAccessService', () => {
     it('should return false when user not found', async () => {
       mockDb.query.mockResolvedValueOnce([]);
 
-      const result = await service.checkDocumentAccess(
-        makeDocument() as never,
-        999,
-        10,
-      );
+      const result = await service.checkDocumentAccess(makeDocument() as never, 999, 10);
 
       expect(result).toBe(false);
     });
@@ -74,11 +70,7 @@ describe('DocumentAccessService', () => {
     it('should allow root access to non-chat documents', async () => {
       mockDb.query.mockResolvedValueOnce([{ role: 'root' }]);
 
-      const result = await service.checkDocumentAccess(
-        makeDocument() as never,
-        1,
-        10,
-      );
+      const result = await service.checkDocumentAccess(makeDocument() as never, 1, 10);
 
       expect(result).toBe(true);
     });
@@ -266,26 +258,14 @@ describe('DocumentAccessService', () => {
     });
 
     it('should apply category filter', () => {
-      const result = service.buildDocumentQuery(
-        10,
-        1,
-        { category: 'report' },
-        true,
-        5,
-      );
+      const result = service.buildDocumentQuery(10, 1, { category: 'report' }, true, 5);
 
       expect(result.baseQuery).toContain('d.category');
       expect(result.params).toContain('report');
     });
 
     it('should apply search filter', () => {
-      const result = service.buildDocumentQuery(
-        10,
-        1,
-        { search: 'invoice' },
-        true,
-        5,
-      );
+      const result = service.buildDocumentQuery(10, 1, { search: 'invoice' }, true, 5);
 
       expect(result.baseQuery).toContain('ILIKE');
       expect(result.params).toContain('%invoice%');

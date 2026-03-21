@@ -108,8 +108,7 @@
 
   /* Spacing - consistent gap below toast when used inline (e.g., login form) */
   margin-bottom: var(--spacing-4); /* 16px */
-  box-shadow: 0 8px 32px
-    color-mix(in oklch, var(--color-black) 40%, transparent);
+  box-shadow: 0 8px 32px color-mix(in oklch, var(--color-black) 40%, transparent);
 
   /* Appearance */
   border: 1px solid var(--color-glass-border);

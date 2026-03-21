@@ -2,11 +2,7 @@
 // MANAGE HALLS - UTILITY FUNCTIONS
 // =============================================================================
 
-import {
-  STATUS_BADGE_CLASSES,
-  STATUS_LABELS,
-  FORM_DEFAULTS,
-} from './constants';
+import { STATUS_BADGE_CLASSES, STATUS_LABELS, FORM_DEFAULTS } from './constants';
 
 import type { Hall, Area, IsActiveStatus, FormIsActiveStatus } from './types';
 
@@ -22,10 +18,7 @@ export function getAreaDisplay(areaName: string | null | undefined): string {
   return areaName ?? 'Nicht zugewiesen';
 }
 
-export function getSelectedAreaName(
-  areaId: number | null,
-  areas: Area[],
-): string {
+export function getSelectedAreaName(areaId: number | null, areas: Area[]): string {
   if (areaId === null) return 'Nicht zugewiesen';
   const area = areas.find((a) => a.id === areaId);
   return area?.name ?? 'Nicht zugewiesen';

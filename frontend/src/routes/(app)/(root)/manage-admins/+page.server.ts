@@ -15,10 +15,7 @@ import type { Admin, AdminPermissions, Area, Department } from './_lib/types';
 /** Extract permission fields with safe defaults */
 function extractPermissions(
   raw: AdminPermissions | null | undefined,
-): Pick<
-  Admin,
-  'areas' | 'departments' | 'leadAreas' | 'leadDepartments' | 'hasFullAccess'
-> {
+): Pick<Admin, 'areas' | 'departments' | 'leadAreas' | 'leadDepartments' | 'hasFullAccess'> {
   const p = raw ?? {};
   return {
     areas: p.areas ?? [],
@@ -54,17 +51,12 @@ export const load: PageServerLoad = async ({ cookies, fetch }) => {
   }
 
   // Parallel fetch: admins + areas + departments + positions
-  const [adminsData, areasData, departmentsData, positionsData] =
-    await Promise.all([
-      apiFetch<Admin[]>('/users?role=admin', token, fetch),
-      apiFetch<Area[]>('/areas', token, fetch),
-      apiFetch<Department[]>('/departments', token, fetch),
-      apiFetch<{ name: string; roleCategory: string }[]>(
-        '/organigram/positions',
-        token,
-        fetch,
-      ),
-    ]);
+  const [adminsData, areasData, departmentsData, positionsData] = await Promise.all([
+    apiFetch<Admin[]>('/users?role=admin', token, fetch),
+    apiFetch<Area[]>('/areas', token, fetch),
+    apiFetch<Department[]>('/departments', token, fetch),
+    apiFetch<{ name: string; roleCategory: string }[]>('/organigram/positions', token, fetch),
+  ]);
 
   const rawAdmins = Array.isArray(adminsData) ? adminsData : [];
   const areas = Array.isArray(areasData) ? areasData : [];
@@ -80,8 +72,6 @@ export const load: PageServerLoad = async ({ cookies, fetch }) => {
     areas,
     departments,
     positionOptions:
-      Array.isArray(positionsData) ?
-        positionsData.map((p: { name: string }) => p.name)
-      : [],
+      Array.isArray(positionsData) ? positionsData.map((p: { name: string }) => p.name) : [],
   };
 };

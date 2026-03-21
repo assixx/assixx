@@ -93,10 +93,7 @@ export function buildAuditChanges(
 }
 
 /** Add changes for CREATE action (sanitized request body) */
-function addMutationChanges(
-  changes: AuditChanges,
-  request: FastifyRequest,
-): void {
+function addMutationChanges(changes: AuditChanges, request: FastifyRequest): void {
   const sanitized = sanitizeData(request.body);
   if (sanitized !== null) {
     changes.created = sanitized;
@@ -138,11 +135,7 @@ function addDeleteChanges(
 /** Add changes for list action (query parameters) */
 function addListChanges(changes: AuditChanges, request: FastifyRequest): void {
   const query = request.query;
-  if (
-    query !== null &&
-    typeof query === 'object' &&
-    Object.keys(query).length > 0
-  ) {
+  if (query !== null && typeof query === 'object' && Object.keys(query).length > 0) {
     changes.query = query as Record<string, unknown>;
   }
 }
@@ -219,10 +212,7 @@ export function getPathBasedAction(path: string): AuditAction | null {
 /**
  * Determine action for GET/HEAD requests.
  */
-function determineGetAction(
-  path: string,
-  request: FastifyRequest,
-): AuditAction {
+function determineGetAction(path: string, request: FastifyRequest): AuditAction {
   // Export endpoints - security-critical, always track data exports
   if (path.includes('/export')) {
     return 'export';
@@ -232,10 +222,7 @@ function determineGetAction(
     return 'view';
   }
   // GET with ID = viewing specific item, GET without ID = listing/page visit
-  const resourceId = extractResourceId(
-    path,
-    request.params as Record<string, string>,
-  );
+  const resourceId = extractResourceId(path, request.params as Record<string, string>);
   return resourceId !== null ? 'view' : 'list';
 }
 
@@ -244,9 +231,7 @@ function determineGetAction(
  */
 export function isCurrentUserEndpoint(path: string): boolean {
   const lowerPath = path.toLowerCase();
-  return CURRENT_USER_ENDPOINTS.some((endpoint: string) =>
-    lowerPath.endsWith(endpoint),
-  );
+  return CURRENT_USER_ENDPOINTS.some((endpoint: string) => lowerPath.endsWith(endpoint));
 }
 
 /**
@@ -254,9 +239,7 @@ export function isCurrentUserEndpoint(path: string): boolean {
  */
 export function isAuthEndpoint(path: string): boolean {
   return (
-    path.includes('/auth/login') ||
-    path.includes('/auth/logout') ||
-    path.includes('/auth/refresh')
+    path.includes('/auth/login') || path.includes('/auth/logout') || path.includes('/auth/refresh')
   );
 }
 
@@ -359,8 +342,7 @@ export function extractResourceType(url: string): string {
 }
 
 /** UUID v4/v7 pattern: 8-4-4-4-12 hex characters */
-const UUID_PATTERN =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
  * Extract numeric resource ID from URL or params.
@@ -381,9 +363,7 @@ export function extractResourceId(
 }
 
 /** Parse numeric ID from params['id'], skipping UUIDs */
-function parseNumericParam(
-  params: Record<string, string> | undefined,
-): number | null {
+function parseNumericParam(params: Record<string, string> | undefined): number | null {
   if (params === undefined) {
     return null;
   }
@@ -585,9 +565,7 @@ export function extractDetailedErrorMessage(error: unknown): string {
  * Extract message from NestJS HttpException.
  * Handles Zod validation errors and standard error responses.
  */
-function extractHttpExceptionMessage(httpError: {
-  getResponse: () => unknown;
-}): string {
+function extractHttpExceptionMessage(httpError: { getResponse: () => unknown }): string {
   const response = httpError.getResponse();
 
   if (typeof response !== 'object' || response === null) {
@@ -598,10 +576,7 @@ function extractHttpExceptionMessage(httpError: {
 
   // Zod validation errors from our custom ZodValidationPipe
   // Format: { message: 'Validation failed', code: 'VALIDATION_ERROR', details: [...] }
-  if (
-    responseObj['code'] === 'VALIDATION_ERROR' &&
-    Array.isArray(responseObj['details'])
-  ) {
+  if (responseObj['code'] === 'VALIDATION_ERROR' && Array.isArray(responseObj['details'])) {
     return formatZodValidationErrors(responseObj['details']);
   }
 

@@ -85,9 +85,7 @@ describe('getTablesWithTenantId', () => {
 
     expect(result).toHaveLength(2);
     expect(result[0]).toEqual({ TABLE_NAME: 'users' });
-    expect(mockClient.query).toHaveBeenCalledWith(
-      expect.stringContaining('tenant_id'),
-    );
+    expect(mockClient.query).toHaveBeenCalledWith(expect.stringContaining('tenant_id'));
   });
 
   it('should return empty array when no tables found', async () => {
@@ -108,9 +106,7 @@ describe('getTablesWithTenantId', () => {
 describe('getUserRelatedTables', () => {
   it('should query for user_id tables excluding critical tables', async () => {
     const mockClient = {
-      query: vi
-        .fn()
-        .mockResolvedValue({ rows: [{ TABLE_NAME: 'user_sessions' }] }),
+      query: vi.fn().mockResolvedValue({ rows: [{ TABLE_NAME: 'user_sessions' }] }),
     };
 
     const result = await getUserRelatedTables(mockClient as never);

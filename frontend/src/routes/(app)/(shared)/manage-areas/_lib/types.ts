@@ -2,24 +2,14 @@
 // MANAGE AREAS - TYPE DEFINITIONS
 // =============================================================================
 
-import type {
-  IsActiveStatus,
-  FormIsActiveStatus,
-  StatusFilter,
-} from '@assixx/shared';
+import type { IsActiveStatus, FormIsActiveStatus, StatusFilter } from '@assixx/shared';
 
 export type { IsActiveStatus, FormIsActiveStatus, StatusFilter };
 
 /**
  * Area type values
  */
-export type AreaType =
-  | 'building'
-  | 'warehouse'
-  | 'office'
-  | 'production'
-  | 'outdoor'
-  | 'other';
+export type AreaType = 'building' | 'warehouse' | 'office' | 'production' | 'outdoor' | 'other';
 
 /**
  * Area entity from API (camelCase to match NestJS response)

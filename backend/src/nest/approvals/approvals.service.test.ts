@@ -5,11 +5,7 @@
  * Mocked dependencies: DatabaseService (tenantTransaction), ActivityLoggerService.
  * Pattern: tenantTransaction callback receives mockClient with query() mock.
  */
-import {
-  BadRequestException,
-  ForbiddenException,
-  NotFoundException,
-} from '@nestjs/common';
+import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { ActivityLoggerService } from '../common/services/activity-logger.service.js';
@@ -71,9 +67,7 @@ function makeApprovalRow(overrides: Partial<ApprovalRow> = {}): ApprovalRow {
   };
 }
 
-function makeApprovalListRow(
-  overrides: Partial<ApprovalListRow> = {},
-): ApprovalListRow {
+function makeApprovalListRow(overrides: Partial<ApprovalListRow> = {}): ApprovalListRow {
   return {
     ...makeApprovalRow(),
     requested_by_name: 'Max Müller',
@@ -83,9 +77,7 @@ function makeApprovalListRow(
   };
 }
 
-function makeCreateDto(
-  overrides: Partial<CreateApprovalDto> = {},
-): CreateApprovalDto {
+function makeCreateDto(overrides: Partial<CreateApprovalDto> = {}): CreateApprovalDto {
   return {
     addonCode: 'kvp',
     sourceEntityType: 'suggestion',
@@ -115,9 +107,7 @@ describe('ApprovalsService', () => {
     mockClient = { query: vi.fn() };
 
     mockDb.tenantTransaction.mockImplementation(
-      async (
-        callback: (client: typeof mockClient) => Promise<unknown>,
-      ): Promise<unknown> => {
+      async (callback: (client: typeof mockClient) => Promise<unknown>): Promise<unknown> => {
         return await callback(mockClient);
       },
     );
@@ -370,9 +360,7 @@ describe('ApprovalsService', () => {
     it('should throw NotFoundException when UUID not found', async () => {
       mockClient.query.mockResolvedValueOnce({ rows: [] });
 
-      await expect(service.findById('nonexistent-uuid')).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.findById('nonexistent-uuid')).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -515,9 +503,7 @@ describe('ApprovalsService', () => {
     it('should throw NotFoundException for unknown UUID', async () => {
       mockClient.query.mockResolvedValueOnce({ rows: [] });
 
-      await expect(service.approve('nonexistent-uuid', 10, 20)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.approve('nonexistent-uuid', 10, 20)).rejects.toThrow(NotFoundException);
     });
 
     it('should throw BadRequestException for already decided approval', async () => {
@@ -527,9 +513,7 @@ describe('ApprovalsService', () => {
       });
       mockClient.query.mockResolvedValueOnce({ rows: [alreadyApproved] });
 
-      await expect(service.approve('test-uuid', 10, 20)).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(service.approve('test-uuid', 10, 20)).rejects.toThrow(BadRequestException);
     });
 
     it('should throw ForbiddenException for self-approval', async () => {
@@ -539,9 +523,7 @@ describe('ApprovalsService', () => {
       });
       mockClient.query.mockResolvedValueOnce({ rows: [pendingRow] });
 
-      await expect(service.approve('test-uuid', 10, 20)).rejects.toThrow(
-        ForbiddenException,
-      );
+      await expect(service.approve('test-uuid', 10, 20)).rejects.toThrow(ForbiddenException);
     });
 
     it('should include optional note', async () => {
@@ -637,12 +619,7 @@ describe('ApprovalsService', () => {
       mockClient.query.mockResolvedValueOnce({ rows: [], rowCount: 1 });
       mockClient.query.mockResolvedValueOnce({ rows: [rejectedRow] });
 
-      const result = await service.reject(
-        'test-uuid',
-        10,
-        20,
-        'Budget exceeded',
-      );
+      const result = await service.reject('test-uuid', 10, 20, 'Budget exceeded');
 
       expect(result.decisionNote).toBe('Budget exceeded');
 
@@ -657,17 +634,17 @@ describe('ApprovalsService', () => {
       });
       mockClient.query.mockResolvedValueOnce({ rows: [pendingRow] });
 
-      await expect(
-        service.reject('test-uuid', 10, 20, 'Reason'),
-      ).rejects.toThrow(ForbiddenException);
+      await expect(service.reject('test-uuid', 10, 20, 'Reason')).rejects.toThrow(
+        ForbiddenException,
+      );
     });
 
     it('should throw NotFoundException for unknown UUID', async () => {
       mockClient.query.mockResolvedValueOnce({ rows: [] });
 
-      await expect(
-        service.reject('nonexistent-uuid', 10, 20, 'Reason'),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.reject('nonexistent-uuid', 10, 20, 'Reason')).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should throw BadRequestException for already rejected approval', async () => {
@@ -677,9 +654,9 @@ describe('ApprovalsService', () => {
       });
       mockClient.query.mockResolvedValueOnce({ rows: [alreadyRejected] });
 
-      await expect(
-        service.reject('test-uuid', 10, 20, 'Duplicate rejection'),
-      ).rejects.toThrow(BadRequestException);
+      await expect(service.reject('test-uuid', 10, 20, 'Duplicate rejection')).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('should log activity after rejection', async () => {
@@ -821,9 +798,9 @@ describe('ApprovalsService', () => {
       });
       mockClient.query.mockResolvedValueOnce({ rows: [approvedRow] });
 
-      await expect(
-        service.reject('test-uuid', 10, 20, 'Too late'),
-      ).rejects.toThrow(BadRequestException);
+      await expect(service.reject('test-uuid', 10, 20, 'Too late')).rejects.toThrow(
+        BadRequestException,
+      );
     });
   });
 });

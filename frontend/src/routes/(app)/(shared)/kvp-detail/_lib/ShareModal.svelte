@@ -1,8 +1,5 @@
 <script lang="ts">
-  import {
-    DEFAULT_HIERARCHY_LABELS,
-    type HierarchyLabels,
-  } from '$lib/types/hierarchy-labels';
+  import { DEFAULT_HIERARCHY_LABELS, type HierarchyLabels } from '$lib/types/hierarchy-labels';
 
   import { kvpDetailState } from './state.svelte';
 
@@ -35,8 +32,7 @@
       </div>
       <div class="ds-modal__body">
         <p class="mb-6">
-          Wählen Sie die Organisationsebene aus, auf der Sie diesen Vorschlag
-          teilen möchten:
+          Wählen Sie die Organisationsebene aus, auf der Sie diesen Vorschlag teilen möchten:
         </p>
 
         <div class="choice-group">
@@ -54,8 +50,7 @@
             />
             <span class="choice-card__text">
               {labels.team}
-              <span class="choice-card__description"
-                >Für ein bestimmtes {labels.team} sichtbar</span
+              <span class="choice-card__description">Für ein bestimmtes {labels.team} sichtbar</span
               >
             </span>
             {#if kvpDetailState.selectedShareLevel === 'team'}
@@ -79,9 +74,8 @@
                 >
                   <span>
                     {kvpDetailState.selectedOrgId !== null ?
-                      (kvpDetailState.teams.find(
-                        (t) => t.id === kvpDetailState.selectedOrgId,
-                      )?.name ?? `${labels.team} auswählen...`)
+                      (kvpDetailState.teams.find((t) => t.id === kvpDetailState.selectedOrgId)
+                        ?.name ?? `${labels.team} auswählen...`)
                     : `${labels.team} auswählen...`}
                   </span>
                   <i class="fas fa-chevron-down"></i>
@@ -147,9 +141,8 @@
                 >
                   <span>
                     {kvpDetailState.selectedOrgId !== null ?
-                      (kvpDetailState.departments.find(
-                        (d) => d.id === kvpDetailState.selectedOrgId,
-                      )?.name ?? `${labels.department} auswählen...`)
+                      (kvpDetailState.departments.find((d) => d.id === kvpDetailState.selectedOrgId)
+                        ?.name ?? `${labels.department} auswählen...`)
                     : `${labels.department} auswählen...`}
                   </span>
                   <i class="fas fa-chevron-down"></i>
@@ -215,9 +208,8 @@
                 >
                   <span>
                     {kvpDetailState.selectedOrgId !== null ?
-                      (kvpDetailState.areas.find(
-                        (a) => a.id === kvpDetailState.selectedOrgId,
-                      )?.name ?? `${labels.area} auswählen...`)
+                      (kvpDetailState.areas.find((a) => a.id === kvpDetailState.selectedOrgId)
+                        ?.name ?? `${labels.area} auswählen...`)
                     : `${labels.area} auswählen...`}
                   </span>
                   <i class="fas fa-chevron-down"></i>
@@ -258,9 +250,7 @@
             />
             <span class="choice-card__text">
               Firma
-              <span class="choice-card__description"
-                >Für die gesamte Firma sichtbar</span
-              >
+              <span class="choice-card__description">Für die gesamte Firma sichtbar</span>
             </span>
           </label>
         </div>

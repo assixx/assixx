@@ -151,9 +151,7 @@ describe('UserProfileService', () => {
 
       const dto = { firstName: 'Ghost' } as unknown as UpdateProfileDto;
 
-      await expect(service.updateProfile(1, dto, 10)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.updateProfile(1, dto, 10)).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -165,18 +163,18 @@ describe('UserProfileService', () => {
     it('should throw NotFoundException when user not found', async () => {
       mockUserRepo.getPasswordHash.mockResolvedValueOnce(null);
 
-      await expect(
-        service.changePassword(999, 10, 'old', 'new'),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.changePassword(999, 10, 'old', 'new')).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should throw UnauthorizedException on wrong password', async () => {
       mockUserRepo.getPasswordHash.mockResolvedValueOnce('stored-hash');
       vi.mocked(bcryptjs.compare).mockResolvedValueOnce(false as never);
 
-      await expect(
-        service.changePassword(1, 10, 'wrong-password', 'new-password'),
-      ).rejects.toThrow(UnauthorizedException);
+      await expect(service.changePassword(1, 10, 'wrong-password', 'new-password')).rejects.toThrow(
+        UnauthorizedException,
+      );
     });
 
     it('should change password successfully', async () => {
@@ -186,12 +184,7 @@ describe('UserProfileService', () => {
       mockDb.query.mockResolvedValueOnce([]); // UPDATE users
       mockDb.query.mockResolvedValueOnce([{ count: '2' }]); // revoke refresh_tokens
 
-      const result = await service.changePassword(
-        1,
-        10,
-        'current-password',
-        'new-password',
-      );
+      const result = await service.changePassword(1, 10, 'current-password', 'new-password');
 
       expect(result.message).toBe('Password changed successfully');
       expect(mockDb.query).toHaveBeenCalledWith(
@@ -213,34 +206,24 @@ describe('UserProfileService', () => {
     it('should throw NotFoundException when user not found', async () => {
       mockDb.query.mockResolvedValueOnce([]);
 
-      await expect(service.getProfilePicturePath(999, 10)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.getProfilePicturePath(999, 10)).rejects.toThrow(NotFoundException);
     });
 
     it('should throw NotFoundException when no profile picture set', async () => {
       mockDb.query.mockResolvedValueOnce([makeUserRow()]);
 
-      await expect(service.getProfilePicturePath(1, 10)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.getProfilePicturePath(1, 10)).rejects.toThrow(NotFoundException);
     });
 
     it('should throw NotFoundException when file not on disk', async () => {
-      mockDb.query.mockResolvedValueOnce([
-        makeUserRow({ profile_picture: 'uploads/pic.jpg' }),
-      ]);
+      mockDb.query.mockResolvedValueOnce([makeUserRow({ profile_picture: 'uploads/pic.jpg' })]);
       vi.mocked(fs.access).mockRejectedValueOnce(new Error('ENOENT'));
 
-      await expect(service.getProfilePicturePath(1, 10)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.getProfilePicturePath(1, 10)).rejects.toThrow(NotFoundException);
     });
 
     it('should return file path when picture exists', async () => {
-      mockDb.query.mockResolvedValueOnce([
-        makeUserRow({ profile_picture: 'uploads/pic.jpg' }),
-      ]);
+      mockDb.query.mockResolvedValueOnce([makeUserRow({ profile_picture: 'uploads/pic.jpg' })]);
       // fs.access default resolves (mocked)
 
       const result = await service.getProfilePicturePath(1, 10);
@@ -257,23 +240,17 @@ describe('UserProfileService', () => {
     it('should throw NotFoundException when user not found', async () => {
       mockDb.query.mockResolvedValueOnce([]);
 
-      await expect(
-        service.updateProfilePicture(999, '/some/path.jpg', 10),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.updateProfilePicture(999, '/some/path.jpg', 10)).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should store relative path and return updated user', async () => {
       mockDb.query.mockResolvedValueOnce([makeUserRow()]); // findUserById
       mockDb.query.mockResolvedValueOnce([]); // UPDATE profile_picture
-      mockDb.query.mockResolvedValueOnce([
-        makeUserRow({ profile_picture: 'uploads/new.jpg' }),
-      ]); // findUserById after
+      mockDb.query.mockResolvedValueOnce([makeUserRow({ profile_picture: 'uploads/new.jpg' })]); // findUserById after
 
-      const result = await service.updateProfilePicture(
-        1,
-        `${process.cwd()}/uploads/new.jpg`,
-        10,
-      );
+      const result = await service.updateProfilePicture(1, `${process.cwd()}/uploads/new.jpg`, 10);
 
       expect(result).toBeDefined();
       const updateSql = mockDb.query.mock.calls[1]?.[0] as string;
@@ -299,33 +276,23 @@ describe('UserProfileService', () => {
     it('should throw NotFoundException when user not found', async () => {
       mockDb.query.mockResolvedValueOnce([]);
 
-      await expect(service.deleteProfilePicture(999, 10)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.deleteProfilePicture(999, 10)).rejects.toThrow(NotFoundException);
     });
 
     it('should throw NotFoundException when no picture to delete', async () => {
       mockDb.query.mockResolvedValueOnce([makeUserRow()]);
 
-      await expect(service.deleteProfilePicture(1, 10)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.deleteProfilePicture(1, 10)).rejects.toThrow(NotFoundException);
     });
 
     it('should throw BadRequestException on directory traversal', async () => {
-      mockDb.query.mockResolvedValueOnce([
-        makeUserRow({ profile_picture: '../../../etc/passwd' }),
-      ]);
+      mockDb.query.mockResolvedValueOnce([makeUserRow({ profile_picture: '../../../etc/passwd' })]);
 
-      await expect(service.deleteProfilePicture(1, 10)).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(service.deleteProfilePicture(1, 10)).rejects.toThrow(BadRequestException);
     });
 
     it('should delete file and clear DB field on success', async () => {
-      mockDb.query.mockResolvedValueOnce([
-        makeUserRow({ profile_picture: 'uploads/avatar.jpg' }),
-      ]);
+      mockDb.query.mockResolvedValueOnce([makeUserRow({ profile_picture: 'uploads/avatar.jpg' })]);
       // fs.unlink default resolves (mocked)
       mockDb.query.mockResolvedValueOnce([]); // UPDATE profile_picture = NULL
 
@@ -338,9 +305,7 @@ describe('UserProfileService', () => {
     });
 
     it('should continue when file deletion fails', async () => {
-      mockDb.query.mockResolvedValueOnce([
-        makeUserRow({ profile_picture: 'uploads/missing.jpg' }),
-      ]);
+      mockDb.query.mockResolvedValueOnce([makeUserRow({ profile_picture: 'uploads/missing.jpg' })]);
       vi.mocked(fs.unlink).mockRejectedValueOnce(new Error('ENOENT'));
       mockDb.query.mockResolvedValueOnce([]); // UPDATE profile_picture = NULL
 

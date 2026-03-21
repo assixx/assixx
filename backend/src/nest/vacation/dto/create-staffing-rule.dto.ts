@@ -9,12 +9,7 @@ import { z } from 'zod';
 
 export const CreateStaffingRuleSchema = z.object({
   assetId: z.number().int().positive('Asset ID is required'),
-  minStaffCount: z
-    .number()
-    .int()
-    .positive('Minimum staff count must be at least 1'),
+  minStaffCount: z.number().int().positive('Minimum staff count must be at least 1'),
 });
 
-export class CreateStaffingRuleDto extends createZodDto(
-  CreateStaffingRuleSchema,
-) {}
+export class CreateStaffingRuleDto extends createZodDto(CreateStaffingRuleSchema) {}

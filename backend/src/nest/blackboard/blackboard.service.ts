@@ -76,21 +76,12 @@ export class BlackboardService {
     comments: PaginatedBlackboardComments;
     attachments: Record<string, unknown>[];
   }> {
-    this.logger.debug(
-      `Getting full entry ${String(id)} for tenant ${tenantId}`,
-    );
+    this.logger.debug(`Getting full entry ${String(id)} for tenant ${tenantId}`);
 
     const entry = await this.entriesService.getEntryById(id, tenantId, userId);
     const numericId = (entry as Record<string, unknown>)['id'] as number;
-    const comments = await this.commentsService.getComments(
-      numericId,
-      tenantId,
-    );
-    const attachments = await this.attachmentsService.getAttachments(
-      numericId,
-      tenantId,
-      userId,
-    );
+    const comments = await this.commentsService.getComments(numericId, tenantId);
+    const attachments = await this.attachmentsService.getAttachments(numericId, tenantId, userId);
 
     return { entry, comments, attachments };
   }
@@ -118,12 +109,7 @@ export class BlackboardService {
     userId: number,
     userRole: string,
   ): Promise<{ message: string }> {
-    return await this.entriesService.deleteEntry(
-      id,
-      tenantId,
-      userId,
-      userRole,
-    );
+    return await this.entriesService.deleteEntry(id, tenantId, userId, userRole);
   }
 
   async archiveEntry(
@@ -151,28 +137,18 @@ export class BlackboardService {
     userId: number,
     limit: number = 3,
   ): Promise<BlackboardEntryResponse[]> {
-    return await this.entriesService.getDashboardEntries(
-      tenantId,
-      userId,
-      limit,
-    );
+    return await this.entriesService.getDashboardEntries(tenantId, userId, limit);
   }
 
   // ==========================================================================
   // CONFIRMATION OPERATIONS (delegated to BlackboardConfirmationsService)
   // ==========================================================================
 
-  async confirmEntry(
-    id: number | string,
-    userId: number,
-  ): Promise<{ message: string }> {
+  async confirmEntry(id: number | string, userId: number): Promise<{ message: string }> {
     return await this.confirmationsService.confirmEntry(id, userId);
   }
 
-  async unconfirmEntry(
-    id: number | string,
-    userId: number,
-  ): Promise<{ message: string }> {
+  async unconfirmEntry(id: number | string, userId: number): Promise<{ message: string }> {
     return await this.confirmationsService.unconfirmEntry(id, userId);
   }
 
@@ -183,14 +159,8 @@ export class BlackboardService {
     return await this.confirmationsService.getConfirmationStatus(id, tenantId);
   }
 
-  async getUnconfirmedCount(
-    userId: number,
-    tenantId: number,
-  ): Promise<{ count: number }> {
-    return await this.confirmationsService.getUnconfirmedCount(
-      userId,
-      tenantId,
-    );
+  async getUnconfirmedCount(userId: number, tenantId: number): Promise<{ count: number }> {
+    return await this.confirmationsService.getUnconfirmedCount(userId, tenantId);
   }
 
   // ==========================================================================
@@ -206,10 +176,7 @@ export class BlackboardService {
     return await this.commentsService.getComments(id, tenantId, limit, offset);
   }
 
-  async getReplies(
-    commentId: number,
-    tenantId: number,
-  ): Promise<BlackboardComment[]> {
+  async getReplies(commentId: number, tenantId: number): Promise<BlackboardComment[]> {
     return await this.commentsService.getReplies(commentId, tenantId);
   }
 
@@ -231,10 +198,7 @@ export class BlackboardService {
     );
   }
 
-  async deleteComment(
-    commentId: number,
-    tenantId: number,
-  ): Promise<{ message: string }> {
+  async deleteComment(commentId: number, tenantId: number): Promise<{ message: string }> {
     return await this.commentsService.deleteComment(commentId, tenantId);
   }
 
@@ -248,18 +212,9 @@ export class BlackboardService {
     tenantId: number,
     userId: number,
   ): Promise<Record<string, unknown>> {
-    const entry = await this.entriesService.getEntryById(
-      entryId,
-      tenantId,
-      userId,
-    );
+    const entry = await this.entriesService.getEntryById(entryId, tenantId, userId);
     const numericId = (entry as Record<string, unknown>)['id'] as number;
-    return await this.attachmentsService.uploadAttachment(
-      numericId,
-      file,
-      tenantId,
-      userId,
-    );
+    return await this.attachmentsService.uploadAttachment(numericId, file, tenantId, userId);
   }
 
   async getAttachments(
@@ -267,17 +222,9 @@ export class BlackboardService {
     tenantId: number,
     userId: number,
   ): Promise<Record<string, unknown>[]> {
-    const entry = await this.entriesService.getEntryById(
-      entryId,
-      tenantId,
-      userId,
-    );
+    const entry = await this.entriesService.getEntryById(entryId, tenantId, userId);
     const numericId = (entry as Record<string, unknown>)['id'] as number;
-    return await this.attachmentsService.getAttachments(
-      numericId,
-      tenantId,
-      userId,
-    );
+    return await this.attachmentsService.getAttachments(numericId, tenantId, userId);
   }
 
   async downloadAttachment(
@@ -290,11 +237,7 @@ export class BlackboardService {
     mimeType: string;
     fileSize: number;
   }> {
-    return await this.attachmentsService.downloadAttachment(
-      attachmentId,
-      userId,
-      tenantId,
-    );
+    return await this.attachmentsService.downloadAttachment(attachmentId, userId, tenantId);
   }
 
   async previewAttachment(
@@ -307,11 +250,7 @@ export class BlackboardService {
     mimeType: string;
     fileSize: number;
   }> {
-    return await this.attachmentsService.previewAttachment(
-      attachmentId,
-      userId,
-      tenantId,
-    );
+    return await this.attachmentsService.previewAttachment(attachmentId, userId, tenantId);
   }
 
   async downloadByFileUuid(
@@ -324,11 +263,7 @@ export class BlackboardService {
     mimeType: string;
     fileSize: number;
   }> {
-    return await this.attachmentsService.downloadByFileUuid(
-      fileUuid,
-      userId,
-      tenantId,
-    );
+    return await this.attachmentsService.downloadByFileUuid(fileUuid, userId, tenantId);
   }
 
   async deleteAttachment(
@@ -336,10 +271,6 @@ export class BlackboardService {
     userId: number,
     tenantId: number,
   ): Promise<{ message: string }> {
-    return await this.attachmentsService.deleteAttachment(
-      attachmentId,
-      userId,
-      tenantId,
-    );
+    return await this.attachmentsService.deleteAttachment(attachmentId, userId, tenantId);
   }
 }

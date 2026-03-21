@@ -20,9 +20,7 @@ export function getActionLabel(action: string): string {
 
 /** Get badge CSS class for action */
 export function getActionBadgeClass(action: string): string {
-  return Object.hasOwn(ACTION_BADGE_CLASSES, action) ?
-      ACTION_BADGE_CLASSES[action]
-    : 'info';
+  return Object.hasOwn(ACTION_BADGE_CLASSES, action) ? ACTION_BADGE_CLASSES[action] : 'info';
 }
 
 /** Get readable role label */
@@ -53,9 +51,7 @@ export function getDisplayName(
 export function isTemporaryEmployeeNumber(employeeNumber: string): boolean {
   if (employeeNumber === '') return true;
 
-  return EMPLOYEE_NUMBER.tempPrefixes.some((prefix) =>
-    employeeNumber.startsWith(prefix),
-  );
+  return EMPLOYEE_NUMBER.tempPrefixes.some((prefix) => employeeNumber.startsWith(prefix));
 }
 
 /** Filter invalid characters from employee number input */

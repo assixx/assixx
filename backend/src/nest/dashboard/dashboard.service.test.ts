@@ -27,9 +27,7 @@ function createMockChatService() {
   return {
     getUnreadCount: vi.fn().mockResolvedValue({
       totalUnread: 3,
-      conversations: [
-        { conversationId: 1, conversationName: 'General', unreadCount: 3 },
-      ],
+      conversations: [{ conversationId: 1, conversationName: 'General', unreadCount: 3 }],
     }),
   };
 }
@@ -92,14 +90,7 @@ function createMockPermissionsService() {
     getReadableAddonCodes: vi
       .fn()
       .mockResolvedValue(
-        new Set([
-          'blackboard',
-          'calendar',
-          'chat',
-          'documents',
-          'kvp',
-          'surveys',
-        ]),
+        new Set(['blackboard', 'calendar', 'chat', 'documents', 'kvp', 'surveys']),
       ),
     hasPermission: vi.fn().mockResolvedValue(true),
   };
@@ -187,9 +178,7 @@ describe('DashboardService', () => {
   describe('getCounts — permission filtering', () => {
     it('should return 0 counts for addons without permission', async () => {
       // Employee only has blackboard + chat readable
-      mockPermissions.getReadableAddonCodes.mockResolvedValue(
-        new Set(['blackboard', 'chat']),
-      );
+      mockPermissions.getReadableAddonCodes.mockResolvedValue(new Set(['blackboard', 'chat']));
 
       const result = await service.getCounts(makeUser(), 10);
 
@@ -255,17 +244,13 @@ describe('DashboardService', () => {
         activeRole: 'admin',
         hasFullAccess: false,
       });
-      mockPermissions.getReadableAddonCodes.mockResolvedValue(
-        new Set(['blackboard']),
-      );
+      mockPermissions.getReadableAddonCodes.mockResolvedValue(new Set(['blackboard']));
 
       const result = await service.getCounts(adminNoFull, 10);
 
       expect(result.blackboard.count).toBe(4);
       expect(result.kvp.count).toBe(0);
-      expect(mockPermissions.getReadableAddonCodes).toHaveBeenCalledWith(
-        adminNoFull.id,
-      );
+      expect(mockPermissions.getReadableAddonCodes).toHaveBeenCalledWith(adminNoFull.id);
     });
   });
 
@@ -284,9 +269,7 @@ describe('DashboardService', () => {
     });
 
     it('should use fallback when notifications fail', async () => {
-      mockNotifications.getPersonalStats.mockRejectedValueOnce(
-        new Error('Notifications down'),
-      );
+      mockNotifications.getPersonalStats.mockRejectedValueOnce(new Error('Notifications down'));
 
       const result = await service.getCounts(makeUser(), 10);
 
@@ -295,9 +278,7 @@ describe('DashboardService', () => {
     });
 
     it('should use fallback when blackboard fails', async () => {
-      mockBlackboard.getUnconfirmedCount.mockRejectedValueOnce(
-        new Error('BB down'),
-      );
+      mockBlackboard.getUnconfirmedCount.mockRejectedValueOnce(new Error('BB down'));
 
       const result = await service.getCounts(makeUser(), 10);
 

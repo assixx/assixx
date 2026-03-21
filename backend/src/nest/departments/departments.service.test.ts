@@ -125,10 +125,7 @@ describe('DepartmentsService', () => {
 
   describe('listDepartments', () => {
     it('should return mapped department responses', async () => {
-      mockDb.query.mockResolvedValueOnce([
-        makeDeptRow(),
-        makeDeptRow({ id: 2, name: 'QA' }),
-      ]);
+      mockDb.query.mockResolvedValueOnce([makeDeptRow(), makeDeptRow({ id: 2, name: 'QA' })]);
 
       const result = await service.listDepartments(10);
 
@@ -195,9 +192,7 @@ describe('DepartmentsService', () => {
     it('should throw NotFoundException when department not found', async () => {
       mockDb.query.mockResolvedValueOnce([]);
 
-      await expect(service.getDepartmentById(999, 10)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.getDepartmentById(999, 10)).rejects.toThrow(NotFoundException);
     });
 
     it('should return mapped response', async () => {
@@ -230,9 +225,7 @@ describe('DepartmentsService', () => {
       mockDb.query.mockRejectedValueOnce(new Error('CTE error'));
       mockDb.query.mockResolvedValueOnce([]);
 
-      await expect(service.getDepartmentById(999, 10)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.getDepartmentById(999, 10)).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -249,18 +242,14 @@ describe('DepartmentsService', () => {
         areaId: null,
       } as unknown as CreateDepartmentDto;
 
-      await expect(service.createDepartment(dto, 1, 10)).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(service.createDepartment(dto, 1, 10)).rejects.toThrow(BadRequestException);
     });
 
     it('should create department and log activity', async () => {
       // INSERT RETURNING id
       mockDb.query.mockResolvedValueOnce([{ id: 5 }]);
       // getDepartmentById for return
-      mockDb.query.mockResolvedValueOnce([
-        makeDeptRow({ id: 5, name: 'New Dept' }),
-      ]);
+      mockDb.query.mockResolvedValueOnce([makeDeptRow({ id: 5, name: 'New Dept' })]);
 
       const dto = {
         name: 'New Dept',
@@ -283,9 +272,7 @@ describe('DepartmentsService', () => {
       mockDb.query.mockResolvedValueOnce([]); // not assigned yet
       mockDb.query.mockResolvedValueOnce([]); // INSERT user_departments
       // getDepartmentById
-      mockDb.query.mockResolvedValueOnce([
-        makeDeptRow({ id: 5, department_lead_id: 42 }),
-      ]);
+      mockDb.query.mockResolvedValueOnce([makeDeptRow({ id: 5, department_lead_id: 42 })]);
 
       const dto = {
         name: 'Led Dept',
@@ -334,9 +321,7 @@ describe('DepartmentsService', () => {
       // ensureLeaderInDepartment: INSERT
       mockDb.query.mockResolvedValueOnce([]);
       // getDepartmentById
-      mockDb.query.mockResolvedValueOnce([
-        makeDeptRow({ id: 8, department_lead_id: 1 }),
-      ]);
+      mockDb.query.mockResolvedValueOnce([makeDeptRow({ id: 8, department_lead_id: 1 })]);
 
       const result = await service.createDepartment(dto, 1, 10);
 
@@ -354,9 +339,7 @@ describe('DepartmentsService', () => {
       // validateLeader: employee found — not admin/root
       mockDb.query.mockResolvedValueOnce([{ id: 99, role: 'employee' }]);
 
-      await expect(service.createDepartment(dto, 1, 10)).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(service.createDepartment(dto, 1, 10)).rejects.toThrow(BadRequestException);
     });
 
     it('should reject inactive user as department leader', async () => {
@@ -370,9 +353,7 @@ describe('DepartmentsService', () => {
       // validateLeader: no active user found
       mockDb.query.mockResolvedValueOnce([]);
 
-      await expect(service.createDepartment(dto, 1, 10)).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(service.createDepartment(dto, 1, 10)).rejects.toThrow(BadRequestException);
     });
 
     it('should reject non-existent user as department leader', async () => {
@@ -386,9 +367,7 @@ describe('DepartmentsService', () => {
       // validateLeader: no user found
       mockDb.query.mockResolvedValueOnce([]);
 
-      await expect(service.createDepartment(dto, 1, 10)).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(service.createDepartment(dto, 1, 10)).rejects.toThrow(BadRequestException);
     });
   });
 
@@ -402,9 +381,7 @@ describe('DepartmentsService', () => {
 
       const dto = { name: 'Updated' } as unknown as UpdateDepartmentDto;
 
-      await expect(service.updateDepartment(999, dto, 1, 10)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.updateDepartment(999, dto, 1, 10)).rejects.toThrow(NotFoundException);
     });
 
     it('should update fields and log activity', async () => {
@@ -465,9 +442,7 @@ describe('DepartmentsService', () => {
       // validateLeader: employee found
       mockDb.query.mockResolvedValueOnce([{ id: 99, role: 'employee' }]);
 
-      await expect(service.updateDepartment(1, dto, 1, 10)).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(service.updateDepartment(1, dto, 1, 10)).rejects.toThrow(BadRequestException);
     });
 
     it('should allow removing leader (null) on update', async () => {
@@ -475,16 +450,12 @@ describe('DepartmentsService', () => {
         departmentLeadId: null,
       } as unknown as UpdateDepartmentDto;
 
-      mockDb.query.mockResolvedValueOnce([
-        makeDeptRow({ department_lead_id: 42 }),
-      ]); // find existing
+      mockDb.query.mockResolvedValueOnce([makeDeptRow({ department_lead_id: 42 })]); // find existing
       // validateLeader: null → skip
       // UPDATE departments
       mockDb.query.mockResolvedValueOnce([]);
       // getDepartmentById (return updated)
-      mockDb.query.mockResolvedValueOnce([
-        makeDeptRow({ department_lead_id: null }),
-      ]);
+      mockDb.query.mockResolvedValueOnce([makeDeptRow({ department_lead_id: null })]);
 
       const result = await service.updateDepartment(1, dto, 1, 10);
 
@@ -500,9 +471,7 @@ describe('DepartmentsService', () => {
     it('should throw NotFoundException when department not found', async () => {
       mockDb.query.mockResolvedValueOnce([]);
 
-      await expect(service.deleteDepartment(999, 1, 10)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.deleteDepartment(999, 1, 10)).rejects.toThrow(NotFoundException);
     });
 
     it('should throw BadRequestException when has dependencies and force=false', async () => {
@@ -513,9 +482,7 @@ describe('DepartmentsService', () => {
         mockDb.query.mockResolvedValueOnce(i === 0 ? [{ id: 1 }] : []);
       }
 
-      await expect(service.deleteDepartment(1, 1, 10, false)).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(service.deleteDepartment(1, 1, 10, false)).rejects.toThrow(BadRequestException);
     });
 
     it('should delete department with force=true', async () => {
@@ -574,9 +541,7 @@ describe('DepartmentsService', () => {
     it('should throw NotFoundException when department not found', async () => {
       mockDb.query.mockResolvedValueOnce([]);
 
-      await expect(service.getDepartmentMembers(999, 10)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.getDepartmentMembers(999, 10)).rejects.toThrow(NotFoundException);
     });
 
     it('should return mapped members', async () => {
@@ -765,6 +730,89 @@ describe('DepartmentsService', () => {
     });
   });
 
+  // =============================================================
+  // assignHallsToDepartment
+  // =============================================================
+
+  describe('assignHallsToDepartment', () => {
+    it('should clear existing and insert new hall assignments', async () => {
+      // getDepartmentById → find department
+      mockDb.query.mockResolvedValueOnce([makeDeptRow()]);
+      // DELETE existing
+      mockDb.query.mockResolvedValueOnce([]);
+      // INSERT new halls
+      mockDb.query.mockResolvedValueOnce([]);
+
+      const result = await service.assignHallsToDepartment(1, [10, 20, 30], 10, 5);
+
+      expect(result.message).toBe('Halls assigned to department successfully');
+      // 3 queries: getDepartmentById(1) + DELETE(1) + INSERT(1)
+      expect(mockDb.query).toHaveBeenCalledTimes(3);
+
+      const insertSql = mockDb.query.mock.calls[2]?.[0] as string;
+      expect(insertSql).toContain('INSERT INTO department_halls');
+      // Verify parameterized values: [tenantId, departmentId, assignedBy, ...hallIds]
+      const insertParams = mockDb.query.mock.calls[2]?.[1] as unknown[];
+      expect(insertParams).toEqual([10, 1, 5, 10, 20, 30]);
+    });
+
+    it('should only clear halls when hallIds is empty', async () => {
+      mockDb.query.mockResolvedValueOnce([makeDeptRow()]); // getDepartmentById
+      mockDb.query.mockResolvedValueOnce([]); // DELETE existing
+
+      const result = await service.assignHallsToDepartment(1, [], 10, 5);
+
+      expect(result.message).toBe('Halls assigned to department successfully');
+      // Only 2 queries: getDepartmentById(1) + DELETE(1), no INSERT
+      expect(mockDb.query).toHaveBeenCalledTimes(2);
+    });
+
+    it('should throw NotFoundException when department does not exist', async () => {
+      mockDb.query.mockResolvedValueOnce([]); // getDepartmentById → not found
+
+      await expect(service.assignHallsToDepartment(999, [10], 10, 5)).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+
+    it('should assign a single hall correctly', async () => {
+      mockDb.query.mockResolvedValueOnce([makeDeptRow()]); // getDepartmentById
+      mockDb.query.mockResolvedValueOnce([]); // DELETE
+      mockDb.query.mockResolvedValueOnce([]); // INSERT
+
+      await service.assignHallsToDepartment(1, [42], 10, 5);
+
+      const insertSql = mockDb.query.mock.calls[2]?.[0] as string;
+      expect(insertSql).toContain('($1, $2, $4, $3, NOW())');
+      const insertParams = mockDb.query.mock.calls[2]?.[1] as unknown[];
+      expect(insertParams).toEqual([10, 1, 5, 42]);
+    });
+  });
+
+  // =============================================================
+  // getDepartmentHallIds
+  // =============================================================
+
+  describe('getDepartmentHallIds', () => {
+    it('should return hall IDs for a department', async () => {
+      mockDb.query.mockResolvedValueOnce([{ hall_id: 10 }, { hall_id: 20 }, { hall_id: 30 }]);
+
+      const result = await service.getDepartmentHallIds(1, 10);
+
+      expect(result).toEqual([10, 20, 30]);
+      const sql = mockDb.query.mock.calls[0]?.[0] as string;
+      expect(sql).toContain('SELECT hall_id FROM department_halls');
+    });
+
+    it('should return empty array when no halls assigned', async () => {
+      mockDb.query.mockResolvedValueOnce([]);
+
+      const result = await service.getDepartmentHallIds(1, 10);
+
+      expect(result).toEqual([]);
+    });
+  });
+
   describe('ensureLeaderInDepartment (private)', () => {
     it('should skip INSERT when leader already assigned', async () => {
       // check existing → found
@@ -791,9 +839,7 @@ describe('DepartmentsService', () => {
       mockDb.query.mockRejectedValueOnce(new Error('DB error'));
 
       // Should NOT throw
-      await expect(
-        service['ensureLeaderInDepartment'](42, 1, 10),
-      ).resolves.toBeUndefined();
+      await expect(service['ensureLeaderInDepartment'](42, 1, 10)).resolves.toBeUndefined();
     });
   });
 });

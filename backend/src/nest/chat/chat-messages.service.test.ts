@@ -84,12 +84,7 @@ describe('ChatMessagesService – pure helpers', () => {
     });
 
     it('adds search filter', () => {
-      const result = service['buildMessagesWhereClause'](
-        1,
-        1,
-        { search: 'hello' },
-        null,
-      );
+      const result = service['buildMessagesWhereClause'](1, 1, { search: 'hello' }, null);
 
       expect(result.whereClause).toContain('content LIKE $3');
       expect(result.params).toContain('%hello%');
@@ -108,12 +103,7 @@ describe('ChatMessagesService – pure helpers', () => {
     });
 
     it('adds hasAttachment filter', () => {
-      const result = service['buildMessagesWhereClause'](
-        1,
-        1,
-        { hasAttachment: true },
-        null,
-      );
+      const result = service['buildMessagesWhereClause'](1, 1, { hasAttachment: true }, null);
 
       expect(result.whereClause).toContain('attachment_path IS NOT NULL');
     });
@@ -160,9 +150,7 @@ describe('ChatMessagesService – stubs', () => {
           query: vi.fn().mockResolvedValue({ rows: [{ is_e2e: false }] }),
         }),
     );
-    await expect(result.service.editMessage(1, {} as never)).rejects.toThrow(
-      BadRequestException,
-    );
+    await expect(result.service.editMessage(1, {} as never)).rejects.toThrow(BadRequestException);
   });
 
   it('deleteMessage throws BadRequestException', async () => {
@@ -170,9 +158,7 @@ describe('ChatMessagesService – stubs', () => {
   });
 
   it('searchMessages throws BadRequestException', async () => {
-    await expect(service.searchMessages({} as never)).rejects.toThrow(
-      BadRequestException,
-    );
+    await expect(service.searchMessages({} as never)).rejects.toThrow(BadRequestException);
   });
 });
 

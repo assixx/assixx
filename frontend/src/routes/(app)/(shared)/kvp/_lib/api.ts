@@ -71,9 +71,9 @@ export async function loadCategories(): Promise<KvpCategory[]> {
  */
 export async function loadDepartments(): Promise<Department[]> {
   try {
-    const response = await apiClient.get<
-      PaginatedResponse<Department> | Department[]
-    >(API_ENDPOINTS.DEPARTMENTS);
+    const response = await apiClient.get<PaginatedResponse<Department> | Department[]>(
+      API_ENDPOINTS.DEPARTMENTS,
+    );
     return Array.isArray(response) ? response : response.data;
   } catch (err: unknown) {
     log.error({ err }, 'Error loading departments');
@@ -86,9 +86,7 @@ export async function loadDepartments(): Promise<Department[]> {
  */
 export async function loadTeams(): Promise<Team[]> {
   try {
-    const response = await apiClient.get<PaginatedResponse<Team> | Team[]>(
-      API_ENDPOINTS.TEAMS,
-    );
+    const response = await apiClient.get<PaginatedResponse<Team> | Team[]>(API_ENDPOINTS.TEAMS);
     return Array.isArray(response) ? response : response.data;
   } catch (err: unknown) {
     log.error({ err }, 'Error loading teams');
@@ -177,9 +175,7 @@ export async function fetchSuggestions(
       searchQuery,
     );
 
-    const response = await apiClient.get<SuggestionsResponse>(
-      `${API_ENDPOINTS.KVP}?${params}`,
-    );
+    const response = await apiClient.get<SuggestionsResponse>(`${API_ENDPOINTS.KVP}?${params}`);
 
     return response.suggestions;
   } catch (err: unknown) {
@@ -196,19 +192,13 @@ export async function createSuggestion(
   data: KvpFormData,
 ): Promise<{ success: boolean; id?: number; error?: string }> {
   try {
-    const response = await apiClient.post<{ id: number }>(
-      API_ENDPOINTS.KVP,
-      data,
-    );
+    const response = await apiClient.post<{ id: number }>(API_ENDPOINTS.KVP, data);
     return { success: true, id: response.id };
   } catch (err: unknown) {
     log.error({ err }, 'Error creating suggestion');
     checkSessionExpired(err);
 
-    const message =
-      err instanceof Error ?
-        err.message
-      : 'Fehler beim Erstellen des Vorschlags';
+    const message = err instanceof Error ? err.message : 'Fehler beim Erstellen des Vorschlags';
     return { success: false, error: message };
   }
 }
@@ -226,16 +216,12 @@ export async function uploadPhotos(
       formData.append('files', photo);
     });
 
-    await apiClient.upload(
-      API_ENDPOINTS.kvpAttachments(suggestionId),
-      formData,
-    );
+    await apiClient.upload(API_ENDPOINTS.kvpAttachments(suggestionId), formData);
 
     return { success: true };
   } catch (err: unknown) {
     log.error({ err }, 'Error uploading photos');
-    const message =
-      err instanceof Error ? err.message : 'Fehler beim Hochladen der Fotos';
+    const message = err instanceof Error ? err.message : 'Fehler beim Hochladen der Fotos';
     return { success: false, error: message };
   }
 }
@@ -243,9 +229,7 @@ export async function uploadPhotos(
 /**
  * Share suggestion company-wide
  */
-export async function shareSuggestion(
-  id: number,
-): Promise<{ success: boolean; error?: string }> {
+export async function shareSuggestion(id: number): Promise<{ success: boolean; error?: string }> {
   try {
     await apiClient.post(API_ENDPOINTS.kvpShare(id), {});
     return { success: true };
@@ -253,8 +237,7 @@ export async function shareSuggestion(
     log.error({ err }, 'Error sharing suggestion');
     checkSessionExpired(err);
 
-    const message =
-      err instanceof Error ? err.message : 'Fehler beim Teilen des Vorschlags';
+    const message = err instanceof Error ? err.message : 'Fehler beim Teilen des Vorschlags';
     return { success: false, error: message };
   }
 }
@@ -262,9 +245,7 @@ export async function shareSuggestion(
 /**
  * Unshare suggestion
  */
-export async function unshareSuggestion(
-  id: number,
-): Promise<{ success: boolean; error?: string }> {
+export async function unshareSuggestion(id: number): Promise<{ success: boolean; error?: string }> {
   try {
     await apiClient.post(API_ENDPOINTS.kvpUnshare(id), {});
     return { success: true };
@@ -272,8 +253,7 @@ export async function unshareSuggestion(
     log.error({ err }, 'Error unsharing suggestion');
     checkSessionExpired(err);
 
-    const message =
-      err instanceof Error ? err.message : 'Fehler beim rückgängigmachen';
+    const message = err instanceof Error ? err.message : 'Fehler beim rückgängigmachen';
     return { success: false, error: message };
   }
 }
@@ -304,9 +284,7 @@ export async function fetchStatistics(): Promise<KvpStats | null> {
  */
 export async function loadMyOrganizations(): Promise<UserTeamWithAssets[]> {
   try {
-    return await apiClient.get<UserTeamWithAssets[]>(
-      API_ENDPOINTS.KVP_MY_ORGANIZATIONS,
-    );
+    return await apiClient.get<UserTeamWithAssets[]>(API_ENDPOINTS.KVP_MY_ORGANIZATIONS);
   } catch (err: unknown) {
     log.error({ err }, 'Error loading user organizations');
     checkSessionExpired(err);
@@ -326,9 +304,7 @@ export async function findUserTeamAsLead(userId: number): Promise<Team | null> {
     const teams = await loadTeams();
     const userTeam = teams.find(
       (team) =>
-        team.team_lead_id === userId ||
-        team.teamLeadId === userId ||
-        team.leaderId === userId,
+        team.team_lead_id === userId || team.teamLeadId === userId || team.leaderId === userId,
     );
     return userTeam ?? null;
   } catch (err: unknown) {

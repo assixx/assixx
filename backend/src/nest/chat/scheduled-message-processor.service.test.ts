@@ -67,9 +67,7 @@ describe('ScheduledMessageProcessorService', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockDb = createMockDb();
-    service = new ScheduledMessageProcessorService(
-      mockDb as unknown as DatabaseService,
-    );
+    service = new ScheduledMessageProcessorService(mockDb as unknown as DatabaseService);
   });
 
   // =============================================================

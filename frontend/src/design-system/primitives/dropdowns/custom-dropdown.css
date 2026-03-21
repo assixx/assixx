@@ -20,8 +20,7 @@
     align-items: center;
     gap: var(--spacing-2); /* 8px gap between text and chevron icon */
     width: 100%;
-    transition:
-      var(--form-field-transition), var(--form-field-transition-shadow);
+    transition: var(--form-field-transition), var(--form-field-transition-shadow);
     cursor: pointer;
     border: var(--form-field-border);
     border-radius: var(--form-field-radius);
@@ -174,22 +173,16 @@
     width: 4px;
   }
 
-  .dropdown__menu:has(
-      > .dropdown__option:nth-child(5)
-    )::-webkit-scrollbar-track {
+  .dropdown__menu:has(> .dropdown__option:nth-child(5))::-webkit-scrollbar-track {
     background: var(--glass-bg);
   }
 
-  .dropdown__menu:has(
-      > .dropdown__option:nth-child(5)
-    )::-webkit-scrollbar-thumb {
+  .dropdown__menu:has(> .dropdown__option:nth-child(5))::-webkit-scrollbar-thumb {
     border-radius: 2px;
     background: var(--color-glass-border);
   }
 
-  .dropdown__menu:has(
-      > .dropdown__option:nth-child(5)
-    )::-webkit-scrollbar-thumb:hover {
+  .dropdown__menu:has(> .dropdown__option:nth-child(5))::-webkit-scrollbar-thumb:hover {
     background: var(--color-glass-border-hover);
   }
 }

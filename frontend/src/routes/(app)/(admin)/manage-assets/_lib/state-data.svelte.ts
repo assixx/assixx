@@ -2,10 +2,7 @@
 // MANAGE MACHINES - DATA STATE MODULE
 // =============================================================================
 
-import {
-  DEFAULT_HIERARCHY_LABELS,
-  type HierarchyLabels,
-} from '$lib/types/hierarchy-labels';
+import { DEFAULT_HIERARCHY_LABELS, type HierarchyLabels } from '$lib/types/hierarchy-labels';
 
 import type { Asset, Department, Area, Team } from './types';
 

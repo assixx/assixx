@@ -141,8 +141,7 @@ function createFolderItem(icon, label, count, isActive = false) {
  */
 function createSidebar() {
   const sidebar = document.createElement('aside');
-  sidebar.className =
-    'w-64 bg-surface-2 border-r border-border-subtle flex flex-col';
+  sidebar.className = 'w-64 bg-surface-2 border-r border-border-subtle flex flex-col';
   sidebar.innerHTML = `
     <div class="p-4 border-b border-border-subtle">
       <h2 class="text-lg font-semibold text-content-primary">Dokumente</h2>
@@ -166,9 +165,7 @@ function createSidebar() {
   const companyIcon =
     '<svg class="w-5 h-5 text-content-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>';
 
-  folderList.appendChild(
-    createFolderItem(allDocsIcon, 'Alle Dokumente', '156', true),
-  );
+  folderList.appendChild(createFolderItem(allDocsIcon, 'Alle Dokumente', '156', true));
   folderList.appendChild(createFolderItem(personalIcon, 'Persönlich', '42'));
   folderList.appendChild(createFolderItem(teamIcon, 'Team Dokumente', '38'));
   folderList.appendChild(createFolderItem(deptIcon, 'Abteilung', '51'));
@@ -412,14 +409,7 @@ export const EmployeeListView = {
 
     documents.forEach((doc) => {
       rowsContainer.appendChild(
-        createDocumentRow(
-          doc.name,
-          doc.category,
-          doc.date,
-          doc.size,
-          doc.isNew,
-          false,
-        ),
+        createDocumentRow(doc.name, doc.category, doc.date, doc.size, doc.isNew, false),
       );
     });
 
@@ -453,15 +443,9 @@ export const EmployeeGridView = {
     const gridContainer = document.createElement('div');
     gridContainer.className = 'flex-1 overflow-y-auto p-6';
     const grid = document.createElement('div');
-    grid.className =
-      'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4';
+    grid.className = 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4';
 
-    const categories = [
-      'Gehaltsabrechnung',
-      'Vertrag',
-      'Arbeitsnachweis',
-      'Sonstiges',
-    ];
+    const categories = ['Gehaltsabrechnung', 'Vertrag', 'Arbeitsnachweis', 'Sonstiges'];
     const months = ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni'];
 
     for (let i = 0; i < 12; i++) {
@@ -605,14 +589,7 @@ export const AdminListView = {
 
     documents.forEach((doc) => {
       rowsContainer.appendChild(
-        createDocumentRow(
-          doc.name,
-          doc.category,
-          doc.date,
-          doc.size,
-          doc.isNew,
-          true,
-        ),
+        createDocumentRow(doc.name, doc.category, doc.date, doc.size, doc.isNew, true),
       );
     });
 
@@ -646,15 +623,9 @@ export const AdminGridView = {
     const gridContainer = document.createElement('div');
     gridContainer.className = 'flex-1 overflow-y-auto p-6';
     const grid = document.createElement('div');
-    grid.className =
-      'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4';
+    grid.className = 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4';
 
-    const categories = [
-      'Gehaltsabrechnung',
-      'Vertrag',
-      'Arbeitsnachweis',
-      'Sonstiges',
-    ];
+    const categories = ['Gehaltsabrechnung', 'Vertrag', 'Arbeitsnachweis', 'Sonstiges'];
     const months = ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni'];
 
     for (let i = 0; i < 12; i++) {

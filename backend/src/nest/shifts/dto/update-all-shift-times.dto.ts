@@ -24,6 +24,4 @@ export const UpdateAllShiftTimesSchema = z.object({
     .max(3),
 });
 
-export class UpdateAllShiftTimesDto extends createZodDto(
-  UpdateAllShiftTimesSchema,
-) {}
+export class UpdateAllShiftTimesDto extends createZodDto(UpdateAllShiftTimesSchema) {}

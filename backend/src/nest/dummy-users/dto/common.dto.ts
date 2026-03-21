@@ -23,7 +23,4 @@ export const LimitSchema = z.coerce.number().int().min(1).max(100).default(20);
 export const IsActiveSchema = z.coerce
   .number()
   .int()
-  .refine(
-    (v: number) => [0, 1, 3].includes(v),
-    'isActive muss 0, 1, oder 3 sein',
-  );
+  .refine((v: number) => [0, 1, 3].includes(v), 'isActive muss 0, 1, oder 3 sein');

@@ -32,9 +32,7 @@ export const CurrentUser = createParamDecorator(
     data: keyof NestAuthUser | undefined,
     ctx: ExecutionContext,
   ): NestAuthUser | NestAuthUser[keyof NestAuthUser] => {
-    const request = ctx
-      .switchToHttp()
-      .getRequest<FastifyRequest & { user: NestAuthUser }>();
+    const request = ctx.switchToHttp().getRequest<FastifyRequest & { user: NestAuthUser }>();
     const user = request.user;
 
     if (data !== undefined) {

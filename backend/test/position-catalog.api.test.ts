@@ -50,9 +50,7 @@ describe('Position Catalog: List Positions', () => {
     expect(Array.isArray(body.data)).toBe(true);
 
     const positions = body.data as JsonBody[];
-    const systemPositions = positions.filter(
-      (p: JsonBody) => p.isSystem === true,
-    );
+    const systemPositions = positions.filter((p: JsonBody) => p.isSystem === true);
     expect(systemPositions.length).toBeGreaterThanOrEqual(3);
 
     const teamLead = positions.find((p: JsonBody) => p.name === 'team_lead') as
@@ -66,10 +64,9 @@ describe('Position Catalog: List Positions', () => {
   });
 
   it('should filter by roleCategory', async () => {
-    const res = await fetch(
-      `${BASE_URL}/organigram/positions?roleCategory=admin`,
-      { headers: authOnly(auth.authToken) },
-    );
+    const res = await fetch(`${BASE_URL}/organigram/positions?roleCategory=admin`, {
+      headers: authOnly(auth.authToken),
+    });
     const body = (await res.json()) as JsonBody;
 
     expect(res.status).toBe(200);
@@ -122,14 +119,11 @@ describe('Position Catalog: Create Position', () => {
 
 describe('Position Catalog: Update Position', () => {
   it('should rename a custom position', async () => {
-    const res = await fetch(
-      `${BASE_URL}/organigram/positions/${createdPositionId}`,
-      {
-        method: 'PUT',
-        headers: authHeaders(auth.authToken),
-        body: JSON.stringify({ name: 'Renamed-Position' }),
-      },
-    );
+    const res = await fetch(`${BASE_URL}/organigram/positions/${createdPositionId}`, {
+      method: 'PUT',
+      headers: authHeaders(auth.authToken),
+      body: JSON.stringify({ name: 'Renamed-Position' }),
+    });
     const body = (await res.json()) as JsonBody;
 
     expect(res.status).toBe(200);
@@ -138,14 +132,11 @@ describe('Position Catalog: Update Position', () => {
   });
 
   it('should block editing system positions', async () => {
-    const res = await fetch(
-      `${BASE_URL}/organigram/positions/${systemPositionId}`,
-      {
-        method: 'PUT',
-        headers: authHeaders(auth.authToken),
-        body: JSON.stringify({ name: 'Hacked' }),
-      },
-    );
+    const res = await fetch(`${BASE_URL}/organigram/positions/${systemPositionId}`, {
+      method: 'PUT',
+      headers: authHeaders(auth.authToken),
+      body: JSON.stringify({ name: 'Hacked' }),
+    });
 
     expect(res.status).toBe(403);
   });
@@ -155,14 +146,11 @@ describe('Position Catalog: Update Position', () => {
 
 describe('Position Catalog: User Position Assignment', () => {
   it('should assign position to user', async () => {
-    const res = await fetch(
-      `${BASE_URL}/users/${String(auth.userId)}/positions`,
-      {
-        method: 'POST',
-        headers: authHeaders(auth.authToken),
-        body: JSON.stringify({ positionId: createdPositionId }),
-      },
-    );
+    const res = await fetch(`${BASE_URL}/users/${String(auth.userId)}/positions`, {
+      method: 'POST',
+      headers: authHeaders(auth.authToken),
+      body: JSON.stringify({ positionId: createdPositionId }),
+    });
     const body = (await res.json()) as JsonBody;
 
     expect(res.status).toBe(201);
@@ -170,30 +158,24 @@ describe('Position Catalog: User Position Assignment', () => {
   });
 
   it('should list assigned positions', async () => {
-    const res = await fetch(
-      `${BASE_URL}/users/${String(auth.userId)}/positions`,
-      { headers: authOnly(auth.authToken) },
-    );
+    const res = await fetch(`${BASE_URL}/users/${String(auth.userId)}/positions`, {
+      headers: authOnly(auth.authToken),
+    });
     const body = (await res.json()) as JsonBody;
 
     expect(res.status).toBe(200);
     const positions = body.data as JsonBody[];
-    const assigned = positions.find(
-      (p: JsonBody) => p.positionId === createdPositionId,
-    );
+    const assigned = positions.find((p: JsonBody) => p.positionId === createdPositionId);
     expect(assigned).toBeDefined();
     expect(assigned?.positionName).toBe('Renamed-Position');
   });
 
   it('should be idempotent — second assign does not fail', async () => {
-    const res = await fetch(
-      `${BASE_URL}/users/${String(auth.userId)}/positions`,
-      {
-        method: 'POST',
-        headers: authHeaders(auth.authToken),
-        body: JSON.stringify({ positionId: createdPositionId }),
-      },
-    );
+    const res = await fetch(`${BASE_URL}/users/${String(auth.userId)}/positions`, {
+      method: 'POST',
+      headers: authHeaders(auth.authToken),
+      body: JSON.stringify({ positionId: createdPositionId }),
+    });
 
     expect(res.status).toBe(201);
   });
@@ -215,25 +197,19 @@ describe('Position Catalog: User Position Assignment', () => {
 
 describe('Position Catalog: Delete Position', () => {
   it('should block deleting system positions', async () => {
-    const res = await fetch(
-      `${BASE_URL}/organigram/positions/${systemPositionId}`,
-      {
-        method: 'DELETE',
-        headers: authOnly(auth.authToken),
-      },
-    );
+    const res = await fetch(`${BASE_URL}/organigram/positions/${systemPositionId}`, {
+      method: 'DELETE',
+      headers: authOnly(auth.authToken),
+    });
 
     expect(res.status).toBe(403);
   });
 
   it('should soft-delete a custom position', async () => {
-    const res = await fetch(
-      `${BASE_URL}/organigram/positions/${createdPositionId}`,
-      {
-        method: 'DELETE',
-        headers: authOnly(auth.authToken),
-      },
-    );
+    const res = await fetch(`${BASE_URL}/organigram/positions/${createdPositionId}`, {
+      method: 'DELETE',
+      headers: authOnly(auth.authToken),
+    });
 
     expect(res.status).toBe(204);
   });

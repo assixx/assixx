@@ -9,11 +9,7 @@
   } from '$lib/types/hierarchy-labels';
 
   import { POSITION_OPTIONS, type createRootMessages } from './constants';
-  import {
-    getStatusBadgeClass,
-    getStatusLabel,
-    calculatePasswordStrength,
-  } from './utils';
+  import { getStatusBadgeClass, getStatusLabel, calculatePasswordStrength } from './utils';
 
   import type { FormIsActiveStatus } from './types';
 
@@ -64,9 +60,7 @@
     const unique = [...new Set(raw)];
     const system = unique
       .filter((p: string) => isLeadPosition(p))
-      .sort(
-        (a: string, b: string) => LEAD_ORDER.indexOf(a) - LEAD_ORDER.indexOf(b),
-      );
+      .sort((a: string, b: string) => LEAD_ORDER.indexOf(a) - LEAD_ORDER.indexOf(b));
     const custom = unique.filter((p: string) => !isLeadPosition(p));
     return [...system, ...custom];
   });
@@ -173,8 +167,7 @@
         <div class="form-field">
           <label
             class="form-field__label"
-            for="root-first-name"
-            >Vorname <span class="text-red-500">*</span></label
+            for="root-first-name">Vorname <span class="text-red-500">*</span></label
           >
           <input
             type="text"
@@ -188,8 +181,7 @@
         <div class="form-field">
           <label
             class="form-field__label"
-            for="root-last-name"
-            >Nachname <span class="text-red-500">*</span></label
+            for="root-last-name">Nachname <span class="text-red-500">*</span></label
           >
           <input
             type="text"
@@ -222,8 +214,7 @@
         <div class="form-field">
           <label
             class="form-field__label"
-            for="root-email-confirm"
-            >E-Mail wiederholen <span class="text-red-500">*</span></label
+            for="root-email-confirm">E-Mail wiederholen <span class="text-red-500">*</span></label
           >
           <input
             type="email"
@@ -244,8 +235,7 @@
         <div class="form-field">
           <label
             class="form-field__label"
-            for="root-employee-number"
-            >Personalnummer <span class="text-red-500">*</span></label
+            for="root-employee-number">Personalnummer <span class="text-red-500">*</span></label
           >
           <input
             type="text"
@@ -269,8 +259,7 @@
                 class="tooltip__content tooltip__content--info tooltip__content--right"
                 role="tooltip"
               >
-                Min. 12 Zeichen, max. 72 Zeichen. 3 von 4: Groß, Klein, Zahlen,
-                Sonderzeichen
+                Min. 12 Zeichen, max. 72 Zeichen. 3 von 4: Groß, Klein, Zahlen, Sonderzeichen
               </span>
             </span>
           </label>
@@ -288,9 +277,7 @@
             <button
               type="button"
               class="form-field__password-toggle"
-              aria-label={showPassword ? 'Passwort verbergen' : (
-                'Passwort anzeigen'
-              )}
+              aria-label={showPassword ? 'Passwort verbergen' : 'Passwort anzeigen'}
               onclick={() => (showPassword = !showPassword)}
             >
               <i
@@ -310,9 +297,7 @@
             class="form-field__label"
             for="root-password-confirm"
           >
-            Passwort wiederholen {#if !isEditMode}<span class="text-red-500"
-                >*</span
-              >{/if}
+            Passwort wiederholen {#if !isEditMode}<span class="text-red-500">*</span>{/if}
           </label>
           <div class="form-field__password-wrapper">
             <input
@@ -329,9 +314,7 @@
             <button
               type="button"
               class="form-field__password-toggle"
-              aria-label={showPasswordConfirm ? 'Passwort verbergen' : (
-                'Passwort anzeigen'
-              )}
+              aria-label={showPasswordConfirm ? 'Passwort verbergen' : 'Passwort anzeigen'}
               onclick={() => (showPasswordConfirm = !showPasswordConfirm)}
             >
               <i
@@ -373,8 +356,7 @@
         <div class="form-field">
           <label
             class="form-field__label"
-            for="position-hidden"
-            >Position <span class="text-red-500">*</span></label
+            for="position-hidden">Position <span class="text-red-500">*</span></label
           >
           <input
             type="hidden"
@@ -450,8 +432,7 @@
           <div class="form-field">
             <label
               class="form-field__label"
-              for="status-hidden"
-              >Status <span class="text-red-500">*</span></label
+              for="status-hidden">Status <span class="text-red-500">*</span></label
             >
             <input
               type="hidden"
@@ -468,8 +449,7 @@
                 class:active={statusDropdownOpen}
                 onclick={toggleStatusDropdown}
               >
-                <span class="badge {getStatusBadgeClass(isActive)}"
-                  >{getStatusLabel(isActive)}</span
+                <span class="badge {getStatusBadgeClass(isActive)}">{getStatusLabel(isActive)}</span
                 >
                 <i class="fas fa-chevron-down"></i>
               </div>
@@ -506,8 +486,7 @@
                 </div>
               </div>
             </div>
-            <span
-              class="form-field__message mt-1 block text-(--color-text-secondary)"
+            <span class="form-field__message mt-1 block text-(--color-text-secondary)"
               >{messages.INACTIVE_HINT}</span
             >
           </div>
@@ -525,8 +504,7 @@
           class="btn btn-primary"
           disabled={submitting}
         >
-          {#if submitting}<span class="spinner-ring spinner-ring--sm mr-2"
-            ></span>{/if}
+          {#if submitting}<span class="spinner-ring spinner-ring--sm mr-2"></span>{/if}
           Speichern
         </button>
       </div>

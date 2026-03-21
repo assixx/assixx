@@ -34,9 +34,7 @@ export const AvailabilityHistoryQuerySchema = z.object({
     .optional(),
 });
 
-export class AvailabilityHistoryQueryDto extends createZodDto(
-  AvailabilityHistoryQuerySchema,
-) {}
+export class AvailabilityHistoryQueryDto extends createZodDto(AvailabilityHistoryQuerySchema) {}
 
 /**
  * Single availability history entry (response)

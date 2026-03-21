@@ -15,9 +15,7 @@ import {
 
 describe('toIsoString', () => {
   it('should pass through string values unchanged', () => {
-    expect(toIsoString('2026-03-01T10:00:00.000Z')).toBe(
-      '2026-03-01T10:00:00.000Z',
-    );
+    expect(toIsoString('2026-03-01T10:00:00.000Z')).toBe('2026-03-01T10:00:00.000Z');
   });
 
   it('should convert Date to ISO string', () => {
@@ -36,9 +34,7 @@ describe('toIsoStringOrNull', () => {
   });
 
   it('should pass through string values unchanged', () => {
-    expect(toIsoStringOrNull('2026-03-01T08:00:00.000Z')).toBe(
-      '2026-03-01T08:00:00.000Z',
-    );
+    expect(toIsoStringOrNull('2026-03-01T08:00:00.000Z')).toBe('2026-03-01T08:00:00.000Z');
   });
 
   it('should convert Date to ISO string', () => {
@@ -95,11 +91,7 @@ describe('parseStringAgg', () => {
   });
 
   it('should parse comma-separated values', () => {
-    expect(parseStringAgg('Alpha, Beta, Gamma')).toEqual([
-      'Alpha',
-      'Beta',
-      'Gamma',
-    ]);
+    expect(parseStringAgg('Alpha, Beta, Gamma')).toEqual(['Alpha', 'Beta', 'Gamma']);
   });
 
   it('should trim whitespace', () => {

@@ -4,11 +4,7 @@
 // Decomposed: notes | core state | operations | composition
 // =============================================================================
 
-import {
-  addAssignment,
-  createShiftDetail,
-  removeAssignment,
-} from './shift-operations';
+import { addAssignment, createShiftDetail, removeAssignment } from './shift-operations';
 
 import type { Employee, ShiftDetailData, WeeklyShiftsMap } from './types';
 
@@ -70,21 +66,11 @@ function createShiftOperations(core: ReturnType<typeof createCoreShiftState>) {
       return dayShifts === undefined ? [] : (dayShifts.get(shiftType) ?? []);
     },
 
-    addShiftAssignment: (
-      date: string,
-      shiftType: string,
-      employeeId: number,
-    ) => {
-      core.setWeeklyShifts(
-        addAssignment(core.weeklyShifts, date, shiftType, employeeId),
-      );
+    addShiftAssignment: (date: string, shiftType: string, employeeId: number) => {
+      core.setWeeklyShifts(addAssignment(core.weeklyShifts, date, shiftType, employeeId));
     },
 
-    removeShiftAssignment: (
-      date: string,
-      shiftType: string,
-      employeeId: number,
-    ) => {
+    removeShiftAssignment: (date: string, shiftType: string, employeeId: number) => {
       const result = removeAssignment(
         core.weeklyShifts,
         core.shiftDetails,
@@ -96,15 +82,8 @@ function createShiftOperations(core: ReturnType<typeof createCoreShiftState>) {
       core.setShiftDetails(result.shiftDetails);
     },
 
-    addShiftDetail: (
-      date: string,
-      shiftType: string,
-      employeeId: number,
-      employee: Employee,
-    ) => {
-      core.setShiftDetails(
-        createShiftDetail(core.shiftDetails, date, shiftType, employee),
-      );
+    addShiftDetail: (date: string, shiftType: string, employeeId: number, employee: Employee) => {
+      core.setShiftDetails(createShiftDetail(core.shiftDetails, date, shiftType, employee));
     },
   };
 }

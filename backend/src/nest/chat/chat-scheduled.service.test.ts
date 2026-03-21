@@ -6,11 +6,7 @@
  *        time validation, cancel state asset.
  */
 import { IS_ACTIVE } from '@assixx/shared/constants';
-import {
-  BadRequestException,
-  ForbiddenException,
-  NotFoundException,
-} from '@nestjs/common';
+import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { DatabaseService } from '../database/database.service.js';
@@ -90,10 +86,7 @@ describe('ChatScheduledService', () => {
     vi.clearAllMocks();
     mockCls = createMockCls();
     mockDb = createMockDb();
-    service = new ChatScheduledService(
-      mockCls as never,
-      mockDb as unknown as DatabaseService,
-    );
+    service = new ChatScheduledService(mockCls as never, mockDb as unknown as DatabaseService);
   });
 
   // =============================================================
@@ -104,9 +97,7 @@ describe('ChatScheduledService', () => {
     it('should throw ForbiddenException when tenantId is missing', async () => {
       mockCls.get.mockReturnValue(undefined);
 
-      await expect(service.getScheduledMessages()).rejects.toThrow(
-        ForbiddenException,
-      );
+      await expect(service.getScheduledMessages()).rejects.toThrow(ForbiddenException);
     });
 
     it('should throw ForbiddenException when userId is missing', async () => {
@@ -115,9 +106,7 @@ describe('ChatScheduledService', () => {
         return undefined;
       });
 
-      await expect(service.getScheduledMessages()).rejects.toThrow(
-        ForbiddenException,
-      );
+      await expect(service.getScheduledMessages()).rejects.toThrow(ForbiddenException);
     });
   });
 
@@ -180,10 +169,7 @@ describe('ChatScheduledService', () => {
 
   describe('getScheduledMessages', () => {
     it('should return mapped messages', async () => {
-      mockDb.query.mockResolvedValueOnce([
-        makeScheduledRow(),
-        makeScheduledRow({ id: '2' }),
-      ]);
+      mockDb.query.mockResolvedValueOnce([makeScheduledRow(), makeScheduledRow({ id: '2' })]);
 
       const result = await service.getScheduledMessages();
 
@@ -199,9 +185,7 @@ describe('ChatScheduledService', () => {
     it('should throw NotFoundException when not found', async () => {
       mockDb.query.mockResolvedValueOnce([]);
 
-      await expect(service.getScheduledMessage('999')).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.getScheduledMessage('999')).rejects.toThrow(NotFoundException);
     });
 
     it('should return mapped message', async () => {
@@ -221,29 +205,19 @@ describe('ChatScheduledService', () => {
     it('should throw NotFoundException when not found', async () => {
       mockDb.query.mockResolvedValueOnce([]);
 
-      await expect(service.cancelScheduledMessage('999')).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.cancelScheduledMessage('999')).rejects.toThrow(NotFoundException);
     });
 
     it('should throw BadRequestException when already sent', async () => {
-      mockDb.query.mockResolvedValueOnce([
-        makeScheduledRow({ is_active: IS_ACTIVE.DELETED }),
-      ]);
+      mockDb.query.mockResolvedValueOnce([makeScheduledRow({ is_active: IS_ACTIVE.DELETED })]);
 
-      await expect(service.cancelScheduledMessage('1')).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(service.cancelScheduledMessage('1')).rejects.toThrow(BadRequestException);
     });
 
     it('should throw BadRequestException when already cancelled', async () => {
-      mockDb.query.mockResolvedValueOnce([
-        makeScheduledRow({ is_active: IS_ACTIVE.INACTIVE }),
-      ]);
+      mockDb.query.mockResolvedValueOnce([makeScheduledRow({ is_active: IS_ACTIVE.INACTIVE })]);
 
-      await expect(service.cancelScheduledMessage('1')).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(service.cancelScheduledMessage('1')).rejects.toThrow(BadRequestException);
     });
 
     it('should cancel successfully', async () => {
@@ -265,10 +239,7 @@ describe('ChatScheduledService', () => {
       const verifyAccess = vi.fn().mockResolvedValue(undefined);
       mockDb.query.mockResolvedValueOnce([makeScheduledRow()]);
 
-      const result = await service.getConversationScheduledMessages(
-        1,
-        verifyAccess,
-      );
+      const result = await service.getConversationScheduledMessages(1, verifyAccess);
 
       expect(verifyAccess).toHaveBeenCalledWith(1, 5, 10);
       expect(result).toHaveLength(1);

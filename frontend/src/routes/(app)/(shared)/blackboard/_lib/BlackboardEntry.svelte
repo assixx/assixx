@@ -31,9 +31,7 @@
 
   // Derived values
   const isRead = $derived(entry.isConfirmed === true);
-  const isNew = $derived(
-    entry.firstSeenAt === null || entry.firstSeenAt === undefined,
-  );
+  const isNew = $derived(entry.firstSeenAt === null || entry.firstSeenAt === undefined);
 
   function handleClick(): void {
     if (onclick !== undefined) {

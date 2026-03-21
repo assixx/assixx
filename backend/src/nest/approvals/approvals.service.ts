@@ -135,16 +135,10 @@ export class ApprovalsService {
   }
 
   /** List approvals assigned to a specific user */
-  async findByAssignee(
-    userId: number,
-    filters: ApprovalFilters,
-  ): Promise<PaginatedApprovals> {
+  async findByAssignee(userId: number, filters: ApprovalFilters): Promise<PaginatedApprovals> {
     return await this.db.tenantTransaction(
       async (client: PoolClient): Promise<PaginatedApprovals> => {
-        const conditions: string[] = [
-          `a.is_active = ${IS_ACTIVE.ACTIVE}`,
-          `a.assigned_to = $1`,
-        ];
+        const conditions: string[] = [`a.is_active = ${IS_ACTIVE.ACTIVE}`, `a.assigned_to = $1`];
         const params: (string | number)[] = [userId];
         let paramIdx = 2;
 
@@ -199,11 +193,7 @@ export class ApprovalsService {
   }
 
   /** Create a new approval request */
-  async create(
-    dto: CreateApprovalDto,
-    tenantId: number,
-    requestedBy: number,
-  ): Promise<Approval> {
+  async create(dto: CreateApprovalDto, tenantId: number, requestedBy: number): Promise<Approval> {
     const row = await this.db.tenantTransaction(
       async (client: PoolClient): Promise<ApprovalListRow> => {
         const uuid = uuidv7();
@@ -269,52 +259,45 @@ export class ApprovalsService {
   }
 
   /** Reject an approval request (note mandatory) */
-  async reject(
-    uuid: string,
-    tenantId: number,
-    decidedBy: number,
-    note: string,
-  ): Promise<Approval> {
+  async reject(uuid: string, tenantId: number, decidedBy: number, note: string): Promise<Approval> {
     return await this.decide(uuid, tenantId, decidedBy, 'rejected', note);
   }
 
   /** Get approval statistics */
   async getStats(userId?: number): Promise<ApprovalStats> {
-    return await this.db.tenantTransaction(
-      async (client: PoolClient): Promise<ApprovalStats> => {
-        let whereExtra = '';
-        const params: number[] = [];
+    return await this.db.tenantTransaction(async (client: PoolClient): Promise<ApprovalStats> => {
+      let whereExtra = '';
+      const params: number[] = [];
 
-        if (userId !== undefined) {
-          whereExtra = ' AND assigned_to = $1';
-          params.push(userId);
-        }
+      if (userId !== undefined) {
+        whereExtra = ' AND assigned_to = $1';
+        params.push(userId);
+      }
 
-        const result = await client.query<{
-          pending: string;
-          approved: string;
-          rejected: string;
-          total: string;
-        }>(
-          `SELECT
+      const result = await client.query<{
+        pending: string;
+        approved: string;
+        rejected: string;
+        total: string;
+      }>(
+        `SELECT
              COUNT(*) FILTER (WHERE status = 'pending') AS pending,
              COUNT(*) FILTER (WHERE status = 'approved') AS approved,
              COUNT(*) FILTER (WHERE status = 'rejected') AS rejected,
              COUNT(*) AS total
            FROM approvals
            WHERE is_active = ${IS_ACTIVE.ACTIVE}${whereExtra}`,
-          params,
-        );
+        params,
+      );
 
-        const row = result.rows[0];
-        return {
-          pending: Number(row?.pending ?? 0),
-          approved: Number(row?.approved ?? 0),
-          rejected: Number(row?.rejected ?? 0),
-          total: Number(row?.total ?? 0),
-        };
-      },
-    );
+      const row = result.rows[0];
+      return {
+        pending: Number(row?.pending ?? 0),
+        approved: Number(row?.approved ?? 0),
+        rejected: Number(row?.rejected ?? 0),
+        total: Number(row?.total ?? 0),
+      };
+    });
   }
 
   /** Shared decide logic for approve/reject */
@@ -341,16 +324,12 @@ export class ApprovalsService {
         }
 
         if (approval.status !== 'pending') {
-          throw new BadRequestException(
-            `Approval already decided: ${approval.status}`,
-          );
+          throw new BadRequestException(`Approval already decided: ${approval.status}`);
         }
 
         // Self-approval prevention (R2)
         if (approval.requested_by === decidedBy) {
-          throw new ForbiddenException(
-            'Cannot approve/reject own approval request',
-          );
+          throw new ForbiddenException('Cannot approve/reject own approval request');
         }
 
         await client.query(
@@ -362,10 +341,9 @@ export class ApprovalsService {
         );
 
         // Re-fetch with JOINed names
-        const full = await client.query<ApprovalListRow>(
-          `${BASE_SELECT} WHERE a.id = $1`,
-          [approval.id],
-        );
+        const full = await client.query<ApprovalListRow>(`${BASE_SELECT} WHERE a.id = $1`, [
+          approval.id,
+        ]);
         const fullRow = full.rows[0];
         if (fullRow === undefined) {
           throw new Error('Re-fetch after update failed');

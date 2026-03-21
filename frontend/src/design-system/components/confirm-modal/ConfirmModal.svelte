@@ -93,11 +93,7 @@
       {#if extra}
         {@render extra()}
       {/if}
-      <div
-        class="confirm-modal__actions{centered ?
-          ' confirm-modal__actions--centered'
-        : ''}"
-      >
+      <div class="confirm-modal__actions{centered ? ' confirm-modal__actions--centered' : ''}">
         <button
           type="button"
           class="confirm-modal__btn confirm-modal__btn--cancel{centered ?
@@ -108,9 +104,7 @@
         >
         <button
           type="button"
-          class="confirm-modal__btn {btnVariantClass}{centered ?
-            ' confirm-modal__btn--wide'
-          : ''}"
+          class="confirm-modal__btn {btnVariantClass}{centered ? ' confirm-modal__btn--wide' : ''}"
           disabled={submitting || confirmDisabled}
           onclick={onconfirm}
         >

@@ -17,6 +17,4 @@ export const UpdateHierarchyLabelsSchema = z.object({
   }),
 });
 
-export class UpdateHierarchyLabelsDto extends createZodDto(
-  UpdateHierarchyLabelsSchema,
-) {}
+export class UpdateHierarchyLabelsDto extends createZodDto(UpdateHierarchyLabelsSchema) {}

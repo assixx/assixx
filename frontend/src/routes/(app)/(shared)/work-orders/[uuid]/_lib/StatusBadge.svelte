@@ -2,11 +2,7 @@
   /**
    * StatusBadge — Displays work order status as a styled badge.
    */
-  import {
-    STATUS_LABELS,
-    STATUS_BADGE_CLASSES,
-    STATUS_ICONS,
-  } from '../../_lib/constants';
+  import { STATUS_LABELS, STATUS_BADGE_CLASSES, STATUS_ICONS } from '../../_lib/constants';
 
   import type { WorkOrderStatus } from '../../_lib/types';
 

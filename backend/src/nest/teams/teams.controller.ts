@@ -142,12 +142,7 @@ export class TeamsController {
     @CurrentUser() user: NestAuthUser,
     @TenantId() tenantId: number,
   ): Promise<MessageResponse> {
-    return await this.teamsService.deleteTeam(
-      id,
-      user.id,
-      tenantId,
-      query.force ?? false,
-    );
+    return await this.teamsService.deleteTeam(id, user.id, tenantId, query.force ?? false);
   }
 
   /**
@@ -161,12 +156,7 @@ export class TeamsController {
     @Query() query: TeamMembersQueryDto,
     @TenantId() tenantId: number,
   ): Promise<TeamMember[]> {
-    return await this.teamsService.getTeamMembers(
-      id,
-      tenantId,
-      query.startDate,
-      query.endDate,
-    );
+    return await this.teamsService.getTeamMembers(id, tenantId, query.startDate, query.endDate);
   }
 
   /**
@@ -223,12 +213,7 @@ export class TeamsController {
     @TenantId() tenantId: number,
     @CurrentUser() user: NestAuthUser,
   ): Promise<AddAssetResponse> {
-    return await this.teamsService.addTeamAsset(
-      id,
-      dto.assetId,
-      tenantId,
-      user.id,
-    );
+    return await this.teamsService.addTeamAsset(id, dto.assetId, tenantId, user.id);
   }
 
   /**
@@ -257,11 +242,6 @@ export class TeamsController {
     @CurrentUser() user: NestAuthUser,
     @TenantId() tenantId: number,
   ): Promise<MessageResponse> {
-    return await this.teamsService.assignHallsToTeam(
-      id,
-      dto.hallIds,
-      tenantId,
-      user.id,
-    );
+    return await this.teamsService.assignHallsToTeam(id, dto.hallIds, tenantId, user.id);
   }
 }

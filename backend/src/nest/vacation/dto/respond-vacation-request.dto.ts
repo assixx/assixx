@@ -35,6 +35,4 @@ export const RespondVacationRequestSchema = BaseSchema.refine(
   },
 );
 
-export class RespondVacationRequestDto extends createZodDto(
-  RespondVacationRequestSchema,
-) {}
+export class RespondVacationRequestDto extends createZodDto(RespondVacationRequestSchema) {}

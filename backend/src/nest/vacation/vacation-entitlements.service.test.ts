@@ -62,9 +62,7 @@ function createMockSettingsService() {
   };
 }
 
-function createEntitlementRow(
-  overrides?: Partial<VacationEntitlementRow>,
-): VacationEntitlementRow {
+function createEntitlementRow(overrides?: Partial<VacationEntitlementRow>): VacationEntitlementRow {
   return {
     id: 'ent-001',
     tenant_id: 1,
@@ -514,9 +512,7 @@ describe('VacationEntitlementsService', () => {
     it('should throw NotFoundException when no entitlement exists', async () => {
       mockClient.query.mockResolvedValueOnce({ rows: [] });
 
-      await expect(service.addDays(1, 10, 5, 2026, 5)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.addDays(1, 10, 5, 2026, 5)).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -540,9 +536,9 @@ describe('VacationEntitlementsService', () => {
     it('should throw NotFoundException when entitlement not found', async () => {
       mockClient.query.mockResolvedValueOnce({ rows: [] });
 
-      await expect(
-        service.updateEntitlement(1, 'nonexistent', { totalDays: 25 }),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.updateEntitlement(1, 'nonexistent', { totalDays: 25 })).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should return existing entitlement when no fields to update', async () => {

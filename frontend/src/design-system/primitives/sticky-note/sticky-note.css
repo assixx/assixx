@@ -51,8 +51,7 @@
 
 .sticky-note:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px
-    color-mix(in oklch, var(--color-black) 15%, transparent);
+  box-shadow: 0 4px 12px color-mix(in oklch, var(--color-black) 15%, transparent);
 }
 
 /* ========================================
@@ -79,11 +78,7 @@
    ======================================== */
 
 .sticky-note--yellow {
-  background: linear-gradient(
-    135deg,
-    var(--color-note-yellow-start),
-    var(--color-note-yellow-end)
-  );
+  background: linear-gradient(135deg, var(--color-note-yellow-start), var(--color-note-yellow-end));
 }
 
 .sticky-note--blue {
@@ -135,8 +130,7 @@
   top: -5px;
   right: 15px;
   transform: rotate(-45deg);
-  box-shadow: 2px 2px 4px
-    color-mix(in oklch, var(--color-black) 30%, transparent);
+  box-shadow: 2px 2px 4px color-mix(in oklch, var(--color-black) 30%, transparent);
   border-radius: 50% 50% 50% 0;
 
   background: radial-gradient(
@@ -416,10 +410,7 @@
   border: none;
   border-radius: 50%;
 
-  background: var(
-    --color-white,
-    color-mix(in oklch, var(--color-white) 70%, transparent)
-  );
+  background: var(--color-white, color-mix(in oklch, var(--color-white) 70%, transparent));
   padding: 0;
 
   width: 28px;
@@ -431,10 +422,7 @@
 
 .sticky-note__action:hover {
   transform: scale(1.1);
-  background: var(
-    --color-white,
-    color-mix(in oklch, var(--color-white) 90%, transparent)
-  );
+  background: var(--color-white, color-mix(in oklch, var(--color-white) 90%, transparent));
 }
 
 .sticky-note__action--edit {

@@ -165,10 +165,7 @@ describe('AppConfigService', () => {
         ALLOWED_ORIGINS: 'http://a.com, http://b.com',
       });
 
-      expect(service.allowedOriginsArray).toEqual([
-        'http://a.com',
-        'http://b.com',
-      ]);
+      expect(service.allowedOriginsArray).toEqual(['http://a.com', 'http://b.com']);
     });
 
     it('should use default origins when not configured', () => {

@@ -45,20 +45,11 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent, url }) => {
   const [areasData, hallsData, adminsData, rootsData] = await Promise.all([
     apiFetch<Area[]>('/areas', token, fetch),
     apiFetch<Hall[]>('/halls', token, fetch),
-    apiFetch<AdminUser[]>(
-      '/users?role=admin&isActive=1&position=department_lead',
-      token,
-      fetch,
-    ),
-    apiFetch<AdminUser[]>(
-      '/users?role=root&isActive=1&position=department_lead',
-      token,
-      fetch,
-    ),
+    apiFetch<AdminUser[]>('/users?role=admin&isActive=1&position=department_lead', token, fetch),
+    apiFetch<AdminUser[]>('/users?role=root&isActive=1&position=department_lead', token, fetch),
   ]);
 
-  const departments =
-    Array.isArray(departmentsResult.data) ? departmentsResult.data : [];
+  const departments = Array.isArray(departmentsResult.data) ? departmentsResult.data : [];
   const areas = Array.isArray(areasData) ? areasData : [];
   const halls = Array.isArray(hallsData) ? hallsData : [];
   const admins = Array.isArray(adminsData) ? adminsData : [];

@@ -45,40 +45,29 @@ export class TenantAddonGuard implements CanActivate {
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     // Read class-level @RequireAddon() metadata (method-level override supported)
-    const addonCode = this.reflector.getAllAndOverride<string | undefined>(
-      REQUIRE_ADDON_KEY,
-      [context.getHandler(), context.getClass()],
-    );
+    const addonCode = this.reflector.getAllAndOverride<string | undefined>(REQUIRE_ADDON_KEY, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
 
     // No @RequireAddon decorator → pass through (core endpoints, auth, health, etc.)
     if (addonCode === undefined) {
       return true;
     }
 
-    const request = context
-      .switchToHttp()
-      .getRequest<FastifyRequest & { user?: TenantUser }>();
+    const request = context.switchToHttp().getRequest<FastifyRequest & { user?: TenantUser }>();
     const user = request.user;
 
     if (user?.tenantId === undefined) {
-      this.logger.warn(
-        `TenantAddonGuard: no user/tenantId on request for addon "${addonCode}"`,
-      );
+      this.logger.warn(`TenantAddonGuard: no user/tenantId on request for addon "${addonCode}"`);
       throw new ForbiddenException('No tenant context available');
     }
 
-    const hasAccess = await this.addonCheck.checkTenantAccess(
-      user.tenantId,
-      addonCode,
-    );
+    const hasAccess = await this.addonCheck.checkTenantAccess(user.tenantId, addonCode);
 
     if (!hasAccess) {
-      this.logger.warn(
-        `Tenant ${user.tenantId} does not have addon "${addonCode}" enabled`,
-      );
-      throw new ForbiddenException(
-        `${addonCode} addon is not enabled for this tenant`,
-      );
+      this.logger.warn(`Tenant ${user.tenantId} does not have addon "${addonCode}" enabled`);
+      throw new ForbiddenException(`${addonCode} addon is not enabled for this tenant`);
     }
 
     return true;

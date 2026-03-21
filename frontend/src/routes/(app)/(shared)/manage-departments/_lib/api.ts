@@ -7,10 +7,7 @@ import { resolve } from '$app/paths';
 
 import { getApiClient } from '$lib/utils/api-client';
 import { createLogger } from '$lib/utils/logger';
-import {
-  handleSessionExpired,
-  isSessionExpiredError,
-} from '$lib/utils/session-expired.js';
+import { handleSessionExpired, isSessionExpiredError } from '$lib/utils/session-expired.js';
 
 import { API_ENDPOINTS } from './constants';
 
@@ -55,9 +52,7 @@ function parseApiError(err: unknown): ParsedApiError {
   const message = typeof errObj.message === 'string' ? errObj.message : '';
   const detailsRaw = errObj.details;
   const details =
-    detailsRaw !== null && typeof detailsRaw === 'object' ?
-      (detailsRaw as DependencyDetails)
-    : {};
+    detailsRaw !== null && typeof detailsRaw === 'object' ? (detailsRaw as DependencyDetails) : {};
 
   return { code, message, details };
 }
@@ -116,9 +111,7 @@ export function buildDependencyMessage(
   const parts = deps
     .map(([key, label]) => {
       const count = details[key as keyof DependencyDetails];
-      return typeof count === 'number' && count > 0 ?
-          `${count} ${label}`
-        : null;
+      return typeof count === 'number' && count > 0 ? `${count} ${label}` : null;
     })
     .filter((msg): msg is string => msg !== null);
 
@@ -292,10 +285,7 @@ export async function saveDepartment(
       await apiClient.put(API_ENDPOINTS.department(editId), payload);
       return { success: true, error: null, departmentId: editId };
     }
-    const result: unknown = await apiClient.post(
-      API_ENDPOINTS.DEPARTMENTS,
-      payload,
-    );
+    const result: unknown = await apiClient.post(API_ENDPOINTS.DEPARTMENTS, payload);
     return {
       success: true,
       error: null,
@@ -314,9 +304,7 @@ export async function saveDepartment(
 /**
  * Delete department
  */
-export async function deleteDepartment(
-  departmentId: number,
-): Promise<DeleteDepartmentResult> {
+export async function deleteDepartment(departmentId: number): Promise<DeleteDepartmentResult> {
   try {
     await apiClient.delete(API_ENDPOINTS.department(departmentId));
     return { success: true, error: null };

@@ -15,10 +15,7 @@ import fs from 'fs/promises';
 import path from 'path';
 
 import { DatabaseService } from '../database/database.service.js';
-import type {
-  DbDocument,
-  DocumentContentResponse,
-} from './documents.service.js';
+import type { DbDocument, DocumentContentResponse } from './documents.service.js';
 
 @Injectable()
 export class DocumentStorageService {
@@ -29,9 +26,7 @@ export class DocumentStorageService {
    * Expects a pre-verified document (access already checked by facade).
    * Increments download count and resolves file content.
    */
-  async getDocumentContent(
-    document: DbDocument,
-  ): Promise<DocumentContentResponse> {
+  async getDocumentContent(document: DbDocument): Promise<DocumentContentResponse> {
     // Increment download count
     await this.databaseService.query(
       `UPDATE documents SET download_count = download_count + 1 WHERE id = $1 AND tenant_id = $2`,

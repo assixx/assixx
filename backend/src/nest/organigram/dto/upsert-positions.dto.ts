@@ -7,10 +7,7 @@ const OrgEntityTypeSchema = z.enum(['area', 'department', 'team', 'asset'], {
 
 const PositionItemSchema = z.object({
   entityType: OrgEntityTypeSchema,
-  entityUuid: z
-    .string()
-    .trim()
-    .length(36, 'entityUuid muss exakt 36 Zeichen haben'),
+  entityUuid: z.string().trim().length(36, 'entityUuid muss exakt 36 Zeichen haben'),
   positionX: z.number(),
   positionY: z.number(),
   width: z.number().positive('Breite muss positiv sein').max(2000),
@@ -50,10 +47,7 @@ export const UpsertPositionsSchema = z.object({
   hallConnectionAnchors: z.record(z.string(), PerimeterAnchorSchema).optional(),
   canvasBg: z
     .string()
-    .regex(
-      /^#[\da-f]{6,8}$/i,
-      'canvasBg muss ein Hex-Farbwert sein (#rrggbb oder #rrggbbaa)',
-    )
+    .regex(/^#[\da-f]{6,8}$/i, 'canvasBg muss ein Hex-Farbwert sein (#rrggbb oder #rrggbbaa)')
     .nullable()
     .optional(),
 });

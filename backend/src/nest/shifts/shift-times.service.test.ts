@@ -329,8 +329,7 @@ describe('ShiftTimesService', () => {
         .mocked(mockDb.query)
         .mock.calls.filter(
           (call: unknown[]) =>
-            typeof call[0] === 'string' &&
-            (call[0] as string).includes('INSERT'),
+            typeof call[0] === 'string' && (call[0] as string).includes('INSERT'),
         );
       for (const call of insertCalls) {
         expect(call[0]).toContain('ON CONFLICT');
@@ -348,8 +347,7 @@ describe('ShiftTimesService', () => {
         .mocked(mockDb.query)
         .mock.calls.filter(
           (call: unknown[]) =>
-            typeof call[0] === 'string' &&
-            (call[0] as string).includes('INSERT'),
+            typeof call[0] === 'string' && (call[0] as string).includes('INSERT'),
         );
       for (const call of insertCalls) {
         const params = call[1] as unknown[];

@@ -15,6 +15,4 @@ export const UpdateKvpSettingsSchema = z.object({
     .max(100, 'Tageslimit darf maximal 100 betragen'),
 });
 
-export class UpdateKvpSettingsDto extends createZodDto(
-  UpdateKvpSettingsSchema,
-) {}
+export class UpdateKvpSettingsDto extends createZodDto(UpdateKvpSettingsSchema) {}

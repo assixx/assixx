@@ -16,11 +16,7 @@ import { ApprovalsService } from './approvals.service.js';
 @Module({
   imports: [ScopeModule],
   controllers: [ApprovalsController],
-  providers: [
-    ApprovalsPermissionRegistrar,
-    ApprovalsConfigService,
-    ApprovalsService,
-  ],
+  providers: [ApprovalsPermissionRegistrar, ApprovalsConfigService, ApprovalsService],
   exports: [ApprovalsService, ApprovalsConfigService],
 })
 // eslint-disable-next-line @typescript-eslint/no-extraneous-class -- NestJS module pattern

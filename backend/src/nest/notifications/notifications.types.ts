@@ -128,10 +128,7 @@ export interface NotificationPreferencesResponse {
   emailNotifications: boolean;
   pushNotifications: boolean;
   smsNotifications: boolean;
-  notificationTypes: Record<
-    string,
-    { email: boolean; push: boolean; sms: boolean }
-  >;
+  notificationTypes: Record<string, { email: boolean; push: boolean; sms: boolean }>;
 }
 
 /** Notification statistics response */

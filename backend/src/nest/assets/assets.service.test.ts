@@ -112,9 +112,7 @@ describe('AssetsService – DB-mocked methods', () => {
     it('throws NotFoundException when asset not found', async () => {
       mockDb.queryOne.mockResolvedValueOnce(null);
 
-      await expect(service.getAssetById(999, 1)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.getAssetById(999, 1)).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -122,9 +120,9 @@ describe('AssetsService – DB-mocked methods', () => {
     it('throws BadRequestException for duplicate serial number', async () => {
       mockDb.queryOne.mockResolvedValueOnce({ id: 1 }); // existing found
 
-      await expect(
-        service['validateSerialNumberUnique']('SN-001', 1),
-      ).rejects.toThrow(BadRequestException);
+      await expect(service['validateSerialNumberUnique']('SN-001', 1)).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('returns early for empty serial number', async () => {
@@ -136,9 +134,7 @@ describe('AssetsService – DB-mocked methods', () => {
     it('passes when serial number is unique', async () => {
       mockDb.queryOne.mockResolvedValueOnce(null); // no existing
 
-      await expect(
-        service['validateSerialNumberUnique']('SN-NEW', 1),
-      ).resolves.toBeUndefined();
+      await expect(service['validateSerialNumberUnique']('SN-NEW', 1)).resolves.toBeUndefined();
     });
   });
 
@@ -147,9 +143,9 @@ describe('AssetsService – DB-mocked methods', () => {
       mockDb.queryOne.mockResolvedValueOnce(null); // validateSerialNumberUnique
       mockDb.query.mockResolvedValueOnce([]); // INSERT returns empty
 
-      await expect(
-        service.createAsset({ name: 'Test Asset' } as never, 1, 5),
-      ).rejects.toThrow(InternalServerErrorException);
+      await expect(service.createAsset({ name: 'Test Asset' } as never, 1, 5)).rejects.toThrow(
+        InternalServerErrorException,
+      );
     });
   });
 
@@ -157,9 +153,9 @@ describe('AssetsService – DB-mocked methods', () => {
     it('throws NotFoundException when UUID not found', async () => {
       mockDb.query.mockResolvedValueOnce([]);
 
-      await expect(
-        service['resolveAssetIdByUuid']('non-existent-uuid', 1),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service['resolveAssetIdByUuid']('non-existent-uuid', 1)).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('returns ID for valid UUID', async () => {
@@ -205,10 +201,7 @@ describe('AssetsService – DB-mocked methods', () => {
 
       const result = await service.getUpcomingMaintenance(1, 30);
 
-      expect(mockMaintenance.getUpcomingMaintenance).toHaveBeenCalledWith(
-        1,
-        30,
-      );
+      expect(mockMaintenance.getUpcomingMaintenance).toHaveBeenCalledWith(1, 30);
       expect(result).toEqual([]);
     });
   });
@@ -259,9 +252,7 @@ describe('AssetsService – DB-mocked methods', () => {
     it('throws NotFoundException when asset does not exist', async () => {
       mockDb.queryOne.mockResolvedValueOnce(null);
 
-      await expect(service.getAssetTeams(999, 1)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.getAssetTeams(999, 1)).rejects.toThrow(NotFoundException);
     });
   });
 });

@@ -48,13 +48,9 @@
 
   const isCreateMode = $derived(data.isCreateMode);
   const pageTitle = $derived(
-    isCreateMode ?
-      messages.PLAN_CREATE_PAGE_TITLE
-    : messages.PLAN_EDIT_PAGE_TITLE,
+    isCreateMode ? messages.PLAN_CREATE_PAGE_TITLE : messages.PLAN_EDIT_PAGE_TITLE,
   );
-  const heading = $derived(
-    isCreateMode ? messages.PLAN_CREATE_TITLE : messages.PLAN_EDIT_TITLE,
-  );
+  const heading = $derived(isCreateMode ? messages.PLAN_CREATE_TITLE : messages.PLAN_EDIT_TITLE);
 
   // =============================================================================
   // STATE
@@ -87,8 +83,7 @@
       await goto(resolve(`/lean-management/tpm/plan/${plan.uuid}`));
     } catch (err: unknown) {
       logApiError('handleCreate', err);
-      const msg =
-        err instanceof Error ? err.message : messages.ERROR_PLAN_CREATE;
+      const msg = err instanceof Error ? err.message : messages.ERROR_PLAN_CREATE;
       showErrorAlert(msg);
     } finally {
       submitting = false;
@@ -117,8 +112,7 @@
       await invalidateAll();
     } catch (err: unknown) {
       logApiError('handleUpdate', err);
-      const msg =
-        err instanceof Error ? err.message : messages.ERROR_PLAN_UPDATE;
+      const msg = err instanceof Error ? err.message : messages.ERROR_PLAN_UPDATE;
       showErrorAlert(msg);
     } finally {
       submitting = false;
@@ -177,9 +171,7 @@
           <i class="fas fa-arrow-left mr-2"></i>{messages.BTN_BACK_TO_OVERVIEW}
         </button>
       </div>
-      <h1
-        class="flex items-center gap-2 text-2xl font-bold text-(--color-text-primary)"
-      >
+      <h1 class="flex items-center gap-2 text-2xl font-bold text-(--color-text-primary)">
         <i class="fas fa-clipboard-list"></i>
         {heading}
       </h1>
@@ -199,10 +191,7 @@
           intervalColors={data.intervalColors}
           {previewWeekday}
           {previewRepeatEvery}
-          ondataload={(
-            slots: ProjectedSlot[],
-            assigns: TpmPlanAssignment[],
-          ) => {
+          ondataload={(slots: ProjectedSlot[], assigns: TpmPlanAssignment[]) => {
             projectionSlots = slots;
             planAssignments = assigns;
           }}
@@ -261,10 +250,7 @@
               onshiftplanchange={(val: boolean) => {
                 createShiftPlanRequired = val;
               }}
-              onschedulepreview={(
-                weekday: number | undefined,
-                repeatEvery: number | undefined,
-              ) => {
+              onschedulepreview={(weekday: number | undefined, repeatEvery: number | undefined) => {
                 previewWeekday = weekday;
                 previewRepeatEvery = repeatEvery;
               }}
@@ -280,8 +266,7 @@
           {#if isArchived}
             <div class="card">
               <div class="card__body p-4 text-center">
-                <i class="fas fa-archive mb-2 text-3xl text-(--color-warning)"
-                ></i>
+                <i class="fas fa-archive mb-2 text-3xl text-(--color-warning)"></i>
                 <p class="mb-4 text-(--color-text-secondary)">
                   {messages.ARCHIVED_NOTICE}
                 </p>

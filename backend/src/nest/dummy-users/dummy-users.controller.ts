@@ -66,10 +66,7 @@ export class DummyUsersController {
   /** GET /dummy-users/:uuid — Get single dummy user */
   @Get(':uuid')
   @RequirePermission(FEAT, MOD_MANAGE, 'canRead')
-  async getOne(
-    @Param('uuid') uuid: string,
-    @TenantId() tenantId: number,
-  ): Promise<DummyUser> {
+  async getOne(@Param('uuid') uuid: string, @TenantId() tenantId: number): Promise<DummyUser> {
     return await this.service.getByUuid(tenantId, uuid);
   }
 

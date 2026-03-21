@@ -74,47 +74,27 @@
 /* ========== COLOR VARIANTS ========== */
 
 .spinner--primary {
-  border-color: color-mix(
-    in oklch,
-    var(--color-primary) 20%,
-    transparent
-  ) !important;
+  border-color: color-mix(in oklch, var(--color-primary) 20%, transparent) !important;
   border-top-color: var(--color-primary) !important;
 }
 
 .spinner--success {
-  border-color: color-mix(
-    in oklch,
-    var(--color-success) 20%,
-    transparent
-  ) !important;
+  border-color: color-mix(in oklch, var(--color-success) 20%, transparent) !important;
   border-top-color: var(--color-success) !important;
 }
 
 .spinner--warning {
-  border-color: color-mix(
-    in oklch,
-    var(--color-warning) 20%,
-    transparent
-  ) !important;
+  border-color: color-mix(in oklch, var(--color-warning) 20%, transparent) !important;
   border-top-color: var(--color-warning) !important;
 }
 
 .spinner--danger {
-  border-color: color-mix(
-    in oklch,
-    var(--color-danger) 20%,
-    transparent
-  ) !important;
+  border-color: color-mix(in oklch, var(--color-danger) 20%, transparent) !important;
   border-top-color: var(--color-danger) !important;
 }
 
 .spinner--white {
-  border-color: color-mix(
-    in oklch,
-    var(--color-white) 20%,
-    transparent
-  ) !important;
+  border-color: color-mix(in oklch, var(--color-white) 20%, transparent) !important;
   border-top-color: var(--color-white) !important;
 }
 

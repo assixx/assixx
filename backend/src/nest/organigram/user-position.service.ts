@@ -32,10 +32,7 @@ export class UserPositionService {
     private readonly activityLogger: ActivityLoggerService,
   ) {}
 
-  async getByUser(
-    tenantId: number,
-    userId: number,
-  ): Promise<UserPositionEntry[]> {
+  async getByUser(tenantId: number, userId: number): Promise<UserPositionEntry[]> {
     const rows = await this.db.query<UserPositionDetailRow>(
       `SELECT up.*, pc.name AS position_name, pc.role_category
        FROM user_positions up
@@ -49,10 +46,7 @@ export class UserPositionService {
     return rows.map(mapUserPositionRowToApi);
   }
 
-  async getByPosition(
-    tenantId: number,
-    positionId: string,
-  ): Promise<UserWithPositionRow[]> {
+  async getByPosition(tenantId: number, positionId: string): Promise<UserWithPositionRow[]> {
     return await this.db.query<UserWithPositionRow>(
       `SELECT u.id AS user_id, u.first_name, u.last_name, u.username
        FROM user_positions up
@@ -63,11 +57,7 @@ export class UserPositionService {
     );
   }
 
-  async assign(
-    tenantId: number,
-    userId: number,
-    positionId: string,
-  ): Promise<void> {
+  async assign(tenantId: number, userId: number, positionId: string): Promise<void> {
     await this.assertPositionExists(tenantId, positionId);
 
     await this.db.query(
@@ -77,9 +67,7 @@ export class UserPositionService {
       [uuidv7(), tenantId, userId, positionId],
     );
 
-    this.logger.log(
-      `Position ${positionId} assigned to user ${String(userId)}`,
-    );
+    this.logger.log(`Position ${positionId} assigned to user ${String(userId)}`);
 
     const actingUserId = this.db.getUserId() ?? 0;
     void this.activityLogger.log({
@@ -91,11 +79,7 @@ export class UserPositionService {
     });
   }
 
-  async unassign(
-    tenantId: number,
-    userId: number,
-    positionId: string,
-  ): Promise<void> {
+  async unassign(tenantId: number, userId: number, positionId: string): Promise<void> {
     const result = await this.db.query(
       `DELETE FROM user_positions
        WHERE tenant_id = $1 AND user_id = $2 AND position_id = $3`,
@@ -103,14 +87,10 @@ export class UserPositionService {
     );
 
     if (result.length === 0) {
-      this.logger.warn(
-        `No assignment found: user=${String(userId)}, position=${positionId}`,
-      );
+      this.logger.warn(`No assignment found: user=${String(userId)}, position=${positionId}`);
     }
 
-    this.logger.log(
-      `Position ${positionId} unassigned from user ${String(userId)}`,
-    );
+    this.logger.log(`Position ${positionId} unassigned from user ${String(userId)}`);
 
     const actingUserId = this.db.getUserId() ?? 0;
     void this.activityLogger.log({
@@ -122,11 +102,7 @@ export class UserPositionService {
     });
   }
 
-  async hasPosition(
-    tenantId: number,
-    userId: number,
-    positionId: string,
-  ): Promise<boolean> {
+  async hasPosition(tenantId: number, userId: number, positionId: string): Promise<boolean> {
     const rows = await this.db.query<{ exists: boolean }>(
       `SELECT EXISTS(
         SELECT 1 FROM user_positions
@@ -138,10 +114,7 @@ export class UserPositionService {
     return rows[0]?.exists === true;
   }
 
-  private async assertPositionExists(
-    tenantId: number,
-    positionId: string,
-  ): Promise<void> {
+  private async assertPositionExists(tenantId: number, positionId: string): Promise<void> {
     const rows = await this.db.query<{ id: string }>(
       `SELECT id FROM position_catalog
        WHERE tenant_id = $1 AND id = $2 AND is_active = $3`,

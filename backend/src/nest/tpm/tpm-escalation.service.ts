@@ -22,10 +22,7 @@ import type { UpdateEscalationConfigDto } from './dto/update-escalation-config.d
 import { TpmCardStatusService } from './tpm-card-status.service.js';
 import type { TpmNotificationCard } from './tpm-notification.service.js';
 import { TpmNotificationService } from './tpm-notification.service.js';
-import type {
-  TpmEscalationConfig,
-  TpmEscalationConfigRow,
-} from './tpm.types.js';
+import type { TpmEscalationConfig, TpmEscalationConfigRow } from './tpm.types.js';
 
 /** Row shape returned by the overdue candidates query */
 interface OverdueCandidate {
@@ -151,9 +148,7 @@ export class TpmEscalationService implements OnModuleInit {
 
       if (candidates.length === 0) return;
 
-      this.logger.log(
-        `Found ${String(candidates.length)} overdue TPM card(s) to escalate`,
-      );
+      this.logger.log(`Found ${String(candidates.length)} overdue TPM card(s) to escalate`);
 
       for (const candidate of candidates) {
         await this.escalateCard(candidate);
@@ -212,11 +207,7 @@ export class TpmEscalationService implements OnModuleInit {
 
           if (result.rows[0] === undefined) return false;
 
-          await this.cardStatusService.markCardOverdue(
-            client,
-            candidate.tenant_id,
-            candidate.id,
-          );
+          await this.cardStatusService.markCardOverdue(client, candidate.tenant_id, candidate.id);
           return true;
         },
         { tenantId: candidate.tenant_id },
@@ -226,13 +217,9 @@ export class TpmEscalationService implements OnModuleInit {
 
       await this.notifyTeamLead(candidate);
 
-      this.logger.log(
-        `Escalated card ${candidate.card_code} (${candidate.uuid}) to overdue`,
-      );
+      this.logger.log(`Escalated card ${candidate.card_code} (${candidate.uuid}) to overdue`);
     } catch (error: unknown) {
-      this.logger.error(
-        `Failed to escalate card ${candidate.card_code}: ${String(error)}`,
-      );
+      this.logger.error(`Failed to escalate card ${candidate.card_code}: ${String(error)}`);
     }
   }
 
@@ -242,10 +229,7 @@ export class TpmEscalationService implements OnModuleInit {
 
   /** Resolve team lead for the card's asset and send notification */
   private async notifyTeamLead(candidate: OverdueCandidate): Promise<void> {
-    const teamLeadId = await this.resolveTeamLead(
-      candidate.tenant_id,
-      candidate.asset_id,
-    );
+    const teamLeadId = await this.resolveTeamLead(candidate.tenant_id, candidate.asset_id);
 
     if (teamLeadId === null) {
       this.logger.warn(
@@ -262,10 +246,7 @@ export class TpmEscalationService implements OnModuleInit {
   }
 
   /** Find the team lead responsible for a asset */
-  private async resolveTeamLead(
-    tenantId: number,
-    assetId: number,
-  ): Promise<number | null> {
+  private async resolveTeamLead(tenantId: number, assetId: number): Promise<number | null> {
     const result = await this.db.queryOne<{ team_lead_id: number }>(
       `SELECT DISTINCT t.team_lead_id
        FROM teams t
@@ -306,13 +287,9 @@ function mapConfigRowToApi(row: TpmEscalationConfigRow): TpmEscalationConfig {
     notifyTeamLead: row.notify_team_lead,
     notifyDepartmentLead: row.notify_department_lead,
     createdAt:
-      typeof row.created_at === 'string' ?
-        row.created_at
-      : new Date(row.created_at).toISOString(),
+      typeof row.created_at === 'string' ? row.created_at : new Date(row.created_at).toISOString(),
     updatedAt:
-      typeof row.updated_at === 'string' ?
-        row.updated_at
-      : new Date(row.updated_at).toISOString(),
+      typeof row.updated_at === 'string' ? row.updated_at : new Date(row.updated_at).toISOString(),
   };
 }
 

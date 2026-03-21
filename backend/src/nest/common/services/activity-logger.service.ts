@@ -219,12 +219,8 @@ export class ActivityLoggerService {
           params.entityType,
           params.entityId ?? null,
           params.details ?? null,
-          params.oldValues !== undefined ?
-            JSON.stringify(params.oldValues)
-          : null,
-          params.newValues !== undefined ?
-            JSON.stringify(params.newValues)
-          : null,
+          params.oldValues !== undefined ? JSON.stringify(params.oldValues) : null,
+          params.newValues !== undefined ? JSON.stringify(params.newValues) : null,
           params.ipAddress ?? null,
           params.userAgent ?? null,
           params.wasRoleSwitched ?? false,

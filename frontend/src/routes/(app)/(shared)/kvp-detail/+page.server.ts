@@ -38,11 +38,7 @@ const EMPTY_COMMENTS: PaginatedComments = {
 function deriveDepartments(teamList: Team[]): Department[] {
   const map = new Map<number, Department>();
   for (const t of teamList) {
-    if (
-      t.departmentId !== undefined &&
-      t.departmentId !== null &&
-      t.departmentName !== undefined
-    ) {
+    if (t.departmentId !== undefined && t.departmentId !== null && t.departmentName !== undefined) {
       map.set(t.departmentId, { id: t.departmentId, name: t.departmentName });
     }
   }
@@ -68,24 +64,15 @@ function deriveAreas(teamList: Team[]): Area[] {
 }
 
 /** Parallel fetch: comments, attachments, and org data for share modal */
-async function fetchPageData(
-  idOrUuid: string,
-  token: string,
-  fetchFn: typeof fetch,
-) {
-  const [commentsData, attachmentsData, depts, teams, areas, assets] =
-    await Promise.all([
-      apiFetch<PaginatedComments>(
-        `/kvp/${idOrUuid}/comments?limit=20&offset=0`,
-        token,
-        fetchFn,
-      ),
-      apiFetch<Attachment[]>(`/kvp/${idOrUuid}/attachments`, token, fetchFn),
-      apiFetch<Department[]>('/departments', token, fetchFn),
-      apiFetch<Team[]>('/teams', token, fetchFn),
-      apiFetch<Area[]>('/areas', token, fetchFn),
-      apiFetch<Asset[]>('/assets', token, fetchFn),
-    ]);
+async function fetchPageData(idOrUuid: string, token: string, fetchFn: typeof fetch) {
+  const [commentsData, attachmentsData, depts, teams, areas, assets] = await Promise.all([
+    apiFetch<PaginatedComments>(`/kvp/${idOrUuid}/comments?limit=20&offset=0`, token, fetchFn),
+    apiFetch<Attachment[]>(`/kvp/${idOrUuid}/attachments`, token, fetchFn),
+    apiFetch<Department[]>('/departments', token, fetchFn),
+    apiFetch<Team[]>('/teams', token, fetchFn),
+    apiFetch<Area[]>('/areas', token, fetchFn),
+    apiFetch<Asset[]>('/assets', token, fetchFn),
+  ]);
 
   const teamList = ensureArray(teams);
   const departmentList = ensureArray(depts);
@@ -94,8 +81,7 @@ async function fetchPageData(
   return {
     comments: commentsData ?? EMPTY_COMMENTS,
     attachments: ensureArray(attachmentsData),
-    departments:
-      departmentList.length > 0 ? departmentList : deriveDepartments(teamList),
+    departments: departmentList.length > 0 ? departmentList : deriveDepartments(teamList),
     teams: teamList,
     areas: areaList.length > 0 ? areaList : deriveAreas(teamList),
     assets: ensureArray(assets),
@@ -149,11 +135,7 @@ export const load: PageServerLoad = async ({ cookies, fetch, url, parent }) => {
   const parentData = await parent();
   requireAddon(parentData.activeAddons, 'kvp');
 
-  const kvpResult = await apiFetchWithPermission<KvpSuggestion>(
-    `/kvp/${idOrUuid}`,
-    token,
-    fetch,
-  );
+  const kvpResult = await apiFetchWithPermission<KvpSuggestion>(`/kvp/${idOrUuid}`, token, fetch);
 
   if (kvpResult.permissionDenied) {
     return {
@@ -180,8 +162,7 @@ export const load: PageServerLoad = async ({ cookies, fetch, url, parent }) => {
     fetchLinkedWorkOrders(suggestion.uuid, token, fetch),
   ]);
 
-  const isTeamLead =
-    (parentData.user as { position?: string } | null)?.position === 'team_lead';
+  const isTeamLead = (parentData.user as { position?: string } | null)?.position === 'team_lead';
 
   return {
     permissionDenied: false as const,

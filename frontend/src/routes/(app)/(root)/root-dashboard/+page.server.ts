@@ -45,15 +45,11 @@ function processLogsResponse(logsData: LogsApiResponse | null): ActivityLog[] {
 /**
  * Check if employee number modal should be shown
  */
-function shouldShowEmployeeModal(
-  employeeNumber: string | null | undefined,
-): boolean {
+function shouldShowEmployeeModal(employeeNumber: string | null | undefined): boolean {
   if (employeeNumber === null || employeeNumber === undefined) {
     return false;
   }
-  return (
-    employeeNumber.startsWith('TEMP-') || employeeNumber.startsWith('TEMP_')
-  );
+  return employeeNumber.startsWith('TEMP-') || employeeNumber.startsWith('TEMP_');
 }
 
 /**

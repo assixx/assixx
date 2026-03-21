@@ -14,8 +14,7 @@ export function cloneWeeklyShifts(
   const result = new SvelteMap<string, Map<string, number[]>>();
   for (const [d, dayShifts] of source.entries()) {
     const newDayShifts = new SvelteMap<string, number[]>();
-    for (const [shift, emps] of dayShifts.entries())
-      newDayShifts.set(shift, [...emps]);
+    for (const [shift, emps] of dayShifts.entries()) newDayShifts.set(shift, [...emps]);
     result.set(d, newDayShifts);
   }
   return result;

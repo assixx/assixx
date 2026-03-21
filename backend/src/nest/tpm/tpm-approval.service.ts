@@ -27,18 +27,11 @@ import { ActivityLoggerService } from '../common/services/activity-logger.servic
 import { DatabaseService } from '../database/database.service.js';
 import type { RespondExecutionDto } from './dto/respond-execution.dto.js';
 import { TpmCardStatusService } from './tpm-card-status.service.js';
-import {
-  type TpmExecutionJoinRow,
-  mapExecutionRowToApi,
-} from './tpm-executions.helpers.js';
+import { type TpmExecutionJoinRow, mapExecutionRowToApi } from './tpm-executions.helpers.js';
 import type { TpmNotificationCard } from './tpm-notification.service.js';
 import { TpmNotificationService } from './tpm-notification.service.js';
 import { TpmSchedulingService } from './tpm-scheduling.service.js';
-import type {
-  TpmApprovalStatus,
-  TpmCardExecution,
-  TpmCardExecutionRow,
-} from './tpm.types.js';
+import type { TpmApprovalStatus, TpmCardExecution, TpmCardExecutionRow } from './tpm.types.js';
 
 /** Card info resolved within the transaction for side effects */
 interface CardInfo {
@@ -65,63 +58,27 @@ export class TpmApprovalService {
     approverId: number,
     dto: RespondExecutionDto,
   ): Promise<TpmCardExecution> {
-    const { result, cardInfo } = await this.db.tenantTransaction(
-      async (client: PoolClient) => {
-        const execution = await this.lockPendingExecution(
-          client,
-          tenantId,
-          executionUuid,
-        );
-        await this.validateApprover(
-          client,
-          tenantId,
-          approverId,
-          execution.card_id,
-        );
-        const info = await this.resolveCardInfo(
-          client,
-          tenantId,
-          execution.card_id,
-        );
+    const { result, cardInfo } = await this.db.tenantTransaction(async (client: PoolClient) => {
+      const execution = await this.lockPendingExecution(client, tenantId, executionUuid);
+      await this.validateApprover(client, tenantId, approverId, execution.card_id);
+      const info = await this.resolveCardInfo(client, tenantId, execution.card_id);
 
-        await this.updateApprovalStatus(
-          client,
-          tenantId,
-          execution.id,
-          approverId,
-          'approved',
-          dto,
-        );
-        await this.cardStatusService.approveCard(
-          client,
-          tenantId,
-          execution.card_id,
-          execution.executed_by,
-        );
+      await this.updateApprovalStatus(client, tenantId, execution.id, approverId, 'approved', dto);
+      await this.cardStatusService.approveCard(
+        client,
+        tenantId,
+        execution.card_id,
+        execution.executed_by,
+      );
 
-        // Card is now green → advance to next scheduled date
-        await this.schedulingService.advanceSchedule(
-          client,
-          tenantId,
-          execution.card_id,
-        );
+      // Card is now green → advance to next scheduled date
+      await this.schedulingService.advanceSchedule(client, tenantId, execution.card_id);
 
-        const fetched = await this.fetchExecution(
-          client,
-          tenantId,
-          execution.id,
-        );
-        return { result: fetched, cardInfo: info };
-      },
-    );
+      const fetched = await this.fetchExecution(client, tenantId, execution.id);
+      return { result: fetched, cardInfo: info };
+    });
 
-    void this.fireApprovalEffects(
-      tenantId,
-      approverId,
-      cardInfo,
-      executionUuid,
-      result,
-    );
+    void this.fireApprovalEffects(tenantId, approverId, cardInfo, executionUuid, result);
 
     return result;
   }
@@ -133,66 +90,25 @@ export class TpmApprovalService {
     approverId: number,
     dto: RespondExecutionDto,
   ): Promise<TpmCardExecution> {
-    const { result, cardInfo } = await this.db.tenantTransaction(
-      async (client: PoolClient) => {
-        const execution = await this.lockPendingExecution(
-          client,
-          tenantId,
-          executionUuid,
-        );
-        await this.validateApprover(
-          client,
-          tenantId,
-          approverId,
-          execution.card_id,
-        );
-        const info = await this.resolveCardInfo(
-          client,
-          tenantId,
-          execution.card_id,
-        );
+    const { result, cardInfo } = await this.db.tenantTransaction(async (client: PoolClient) => {
+      const execution = await this.lockPendingExecution(client, tenantId, executionUuid);
+      await this.validateApprover(client, tenantId, approverId, execution.card_id);
+      const info = await this.resolveCardInfo(client, tenantId, execution.card_id);
 
-        await this.updateApprovalStatus(
-          client,
-          tenantId,
-          execution.id,
-          approverId,
-          'rejected',
-          dto,
-        );
-        await this.cardStatusService.rejectCard(
-          client,
-          tenantId,
-          execution.card_id,
-        );
+      await this.updateApprovalStatus(client, tenantId, execution.id, approverId, 'rejected', dto);
+      await this.cardStatusService.rejectCard(client, tenantId, execution.card_id);
 
-        const fetched = await this.fetchExecution(
-          client,
-          tenantId,
-          execution.id,
-        );
-        return { result: fetched, cardInfo: info };
-      },
-    );
+      const fetched = await this.fetchExecution(client, tenantId, execution.id);
+      return { result: fetched, cardInfo: info };
+    });
 
-    this.fireRejectionEffects(
-      tenantId,
-      approverId,
-      cardInfo,
-      executionUuid,
-      result,
-      dto,
-    );
+    this.fireRejectionEffects(tenantId, approverId, cardInfo, executionUuid, result, dto);
 
     return result;
   }
 
   /** Check if a user can approve executions for a given card */
-  async canUserApprove(
-    tenantId: number,
-    userId: number,
-    cardId: number,
-  ): Promise<boolean> {
+  async canUserApprove(tenantId: number, userId: number, cardId: number): Promise<boolean> {
     const result = await this.db.queryOne<{ can_approve: boolean }>(
       `SELECT EXISTS (
         SELECT 1 FROM teams t
@@ -321,9 +237,7 @@ export class TpmApprovalService {
 
     const row = result.rows[0];
     if (row === undefined) {
-      throw new NotFoundException(
-        `Durchführung ${executionUuid} nicht gefunden`,
-      );
+      throw new NotFoundException(`Durchführung ${executionUuid} nicht gefunden`);
     }
 
     if (row.approval_status !== 'pending') {
@@ -360,9 +274,7 @@ export class TpmApprovalService {
     );
 
     if (result.rows[0]?.can_approve !== true) {
-      throw new ForbiddenException(
-        'Keine Berechtigung zur Freigabe dieser Durchführung',
-      );
+      throw new ForbiddenException('Keine Berechtigung zur Freigabe dieser Durchführung');
     }
   }
 

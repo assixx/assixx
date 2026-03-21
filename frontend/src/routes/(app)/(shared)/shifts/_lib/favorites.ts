@@ -4,25 +4,12 @@
 // Adapted for Svelte 5 (no DOM manipulation)
 // =============================================================================
 
-import {
-  DEFAULT_HIERARCHY_LABELS,
-  type HierarchyLabels,
-} from '$lib/types/hierarchy-labels';
+import { DEFAULT_HIERARCHY_LABELS, type HierarchyLabels } from '$lib/types/hierarchy-labels';
 import { createLogger } from '$lib/utils/logger';
 
-import {
-  saveFavorite as apiSaveFavorite,
-  deleteFavorite as apiDeleteFavorite,
-} from './api';
+import { saveFavorite as apiSaveFavorite, deleteFavorite as apiDeleteFavorite } from './api';
 
-import type {
-  ShiftFavorite,
-  SelectedContext,
-  Area,
-  Department,
-  Asset,
-  Team,
-} from './types';
+import type { ShiftFavorite, SelectedContext, Area, Department, Asset, Team } from './types';
 
 const log = createLogger('ShiftsFavorites');
 
@@ -33,9 +20,7 @@ const log = createLogger('ShiftsFavorites');
 /**
  * Check if context is complete for creating a favorite
  */
-export function isContextCompleteForFavorite(
-  context: SelectedContext,
-): boolean {
+export function isContextCompleteForFavorite(context: SelectedContext): boolean {
   return (
     context.areaId !== null &&
     context.areaId !== 0 &&
@@ -51,10 +36,7 @@ export function isContextCompleteForFavorite(
 /**
  * Check if a team is already in favorites
  */
-export function isTeamAlreadyFavorited(
-  favorites: ShiftFavorite[],
-  teamId: number | null,
-): boolean {
+export function isTeamAlreadyFavorited(favorites: ShiftFavorite[], teamId: number | null): boolean {
   if (teamId === null) return false;
   return favorites.some((fav) => fav.teamId === teamId);
 }
@@ -110,12 +92,7 @@ export function getContextNames(
   const asset = assets.find((m) => m.id === context.assetId);
   const team = teams.find((t) => t.id === context.teamId);
 
-  if (
-    area === undefined ||
-    department === undefined ||
-    asset === undefined ||
-    team === undefined
-  ) {
+  if (area === undefined || department === undefined || asset === undefined || team === undefined) {
     return null;
   }
 
@@ -245,10 +222,7 @@ export async function addToFavorites(
     return {
       success: false,
       favorites,
-      error:
-        err instanceof Error ?
-          err.message
-        : 'Fehler beim Speichern des Favoriten',
+      error: err instanceof Error ? err.message : 'Fehler beim Speichern des Favoriten',
     };
   }
 }
@@ -260,9 +234,7 @@ export async function removeFavorite(
   favoriteId: string | number,
   favorites: ShiftFavorite[],
 ): Promise<{ success: boolean; favorites: ShiftFavorite[]; error?: string }> {
-  const favoriteToRemove = favorites.find(
-    (f) => String(f.id) === String(favoriteId),
-  );
+  const favoriteToRemove = favorites.find((f) => String(f.id) === String(favoriteId));
 
   // Check if favorite exists before attempting delete
   if (favoriteToRemove === undefined) {
@@ -277,9 +249,7 @@ export async function removeFavorite(
     await apiDeleteFavorite(favoriteId);
 
     // Update local favorites list
-    const updatedFavorites = favorites.filter(
-      (f) => String(f.id) !== String(favoriteId),
-    );
+    const updatedFavorites = favorites.filter((f) => String(f.id) !== String(favoriteId));
 
     return {
       success: true,
@@ -290,10 +260,7 @@ export async function removeFavorite(
     return {
       success: false,
       favorites,
-      error:
-        err instanceof Error ?
-          err.message
-        : 'Fehler beim Löschen des Favoriten',
+      error: err instanceof Error ? err.message : 'Fehler beim Löschen des Favoriten',
     };
   }
 }
@@ -312,10 +279,7 @@ export function getFavoriteTooltip(favorite: ShiftFavorite): string {
 /**
  * Check if a favorite is currently active
  */
-export function isFavoriteActive(
-  favorite: ShiftFavorite,
-  context: SelectedContext,
-): boolean {
+export function isFavoriteActive(favorite: ShiftFavorite, context: SelectedContext): boolean {
   return (
     favorite.areaId === context.areaId &&
     favorite.departmentId === context.departmentId &&

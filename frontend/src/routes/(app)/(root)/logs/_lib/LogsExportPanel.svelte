@@ -61,21 +61,14 @@
   const sourceDisplayText = $derived(
     getDropdownDisplayText(EXPORT_SOURCE_OPTIONS, exportSource, 'Alle Quellen'),
   );
-  const isRateLimited = $derived(
-    rateLimitedUntil !== null && rateLimitedUntil > new Date(),
-  );
+  const isRateLimited = $derived(rateLimitedUntil !== null && rateLimitedUntil > new Date());
   const rateLimitRemaining = $derived(() => {
     if (rateLimitedUntil === null) return 0;
-    const remaining = Math.ceil(
-      (rateLimitedUntil.getTime() - Date.now()) / 1000,
-    );
+    const remaining = Math.ceil((rateLimitedUntil.getTime() - Date.now()) / 1000);
     return remaining > 0 ? remaining : 0;
   });
   const canExport = $derived(
-    !exportLoading &&
-      !isRateLimited &&
-      exportDateFrom !== '' &&
-      exportDateTo !== '',
+    !exportLoading && !isRateLimited && exportDateFrom !== '' && exportDateTo !== '',
   );
 
   // =============================================================================
@@ -114,8 +107,7 @@
           exportError = '';
         }, err.retryAfter * 1000);
       } else {
-        exportError =
-          err instanceof Error ? err.message : MESSAGES.EXPORT_ERROR;
+        exportError = err instanceof Error ? err.message : MESSAGES.EXPORT_ERROR;
         log.error({ err }, 'Export failed');
       }
     } finally {

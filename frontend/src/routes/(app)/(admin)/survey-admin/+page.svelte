@@ -13,10 +13,7 @@
   // Extracted Components
   import ActiveSurveyCard from './_lib/ActiveSurveyCard.svelte';
   import CompletedSurveyCard from './_lib/CompletedSurveyCard.svelte';
-  import {
-    createAssignmentBadgeMap,
-    createSurveyMessages,
-  } from './_lib/constants';
+  import { createAssignmentBadgeMap, createSurveyMessages } from './_lib/constants';
   import DraftSurveyCard from './_lib/DraftSurveyCard.svelte';
   import {
     getSurveyId,
@@ -39,14 +36,7 @@
   } from './_lib/utils';
 
   import type { PageData } from './$types';
-  import type {
-    QuestionType,
-    Survey,
-    SurveyTemplate,
-    Department,
-    Team,
-    Area,
-  } from './_lib/types';
+  import type { QuestionType, Survey, SurveyTemplate, Department, Team, Area } from './_lib/types';
 
   // =============================================================================
   // SSR DATA - Level 3: $derived from props (single source of truth)
@@ -208,10 +198,7 @@
     formQuestions = formQuestions.filter((q) => q.id !== questionId);
   }
 
-  function handleQuestionTypeChange(
-    questionId: string,
-    type: QuestionType,
-  ): void {
+  function handleQuestionTypeChange(questionId: string, type: QuestionType): void {
     formQuestions = formQuestions.map((q) => {
       if (q.id === questionId) {
         const needsOptions = questionTypeNeedsOptions(type);
@@ -243,11 +230,7 @@
     });
   }
 
-  function updateOptionText(
-    questionId: string,
-    optionIndex: number,
-    text: string,
-  ): void {
+  function updateOptionText(questionId: string, optionIndex: number, text: string): void {
     formQuestions = formQuestions.map((q) => {
       if (q.id === questionId) {
         const newOptions = [...q.options];
@@ -263,12 +246,7 @@
   // =============================================================================
 
   async function handleSaveSurvey(status: 'draft' | 'active'): Promise<void> {
-    await saveSurveyWithInvalidate(
-      status,
-      getFormState(),
-      handleCloseModal,
-      invalidateAll,
-    );
+    await saveSurveyWithInvalidate(status, getFormState(), handleCloseModal, invalidateAll);
   }
 
   // =============================================================================
@@ -315,9 +293,7 @@
       <div class="card__header flex items-center justify-between">
         <div>
           <h4 class="card-title">Umfrage-Verwaltung</h4>
-          <p class="text-secondary">
-            Erstellen und verwalten Sie Mitarbeiterumfragen
-          </p>
+          <p class="text-secondary">Erstellen und verwalten Sie Mitarbeiterumfragen</p>
         </div>
       </div>
 
@@ -330,26 +306,18 @@
             </div>
             <h3 class="empty-state__title">Keine aktiven Umfragen</h3>
             <p class="empty-state__description">
-              Es gibt derzeit keine aktiven Umfragen. Erstellen Sie eine neue
-              oder aktivieren Sie einen Entwurf.
+              Es gibt derzeit keine aktiven Umfragen. Erstellen Sie eine neue oder aktivieren Sie
+              einen Entwurf.
             </p>
           </div>
         {:else}
-          <div
-            class="mb-8 grid grid-cols-[repeat(auto-fill,minmax(350px,1fr))] gap-6"
-          >
+          <div class="mb-8 grid grid-cols-[repeat(auto-fill,minmax(350px,1fr))] gap-6">
             {#each activeSurveys as survey (getSurveyId(survey))}
               <ActiveSurveyCard
                 {survey}
                 surveyId={getSurveyId(survey)}
                 canManage={survey.canManage ?? false}
-                assignmentBadges={getAssignmentBadges(
-                  survey,
-                  departments,
-                  teams,
-                  areas,
-                  badgeMap,
-                )}
+                assignmentBadges={getAssignmentBadges(survey, departments, teams, areas, badgeMap)}
                 onedit={handleEditSurvey}
                 onviewresults={handleViewResults}
                 ondelete={(id: number | string) =>
@@ -376,20 +344,13 @@
               </p>
             </div>
           {:else}
-            <div
-              class="mb-8 grid grid-cols-[repeat(auto-fill,minmax(350px,1fr))] gap-6"
-            >
+            <div class="mb-8 grid grid-cols-[repeat(auto-fill,minmax(350px,1fr))] gap-6">
               {#each completedSurveys as survey (getSurveyId(survey))}
                 <CompletedSurveyCard
                   {survey}
                   surveyId={getSurveyId(survey)}
                   canManage={survey.canManage ?? false}
-                  assignmentBadges={getAssignmentBadges(
-                    survey,
-                    departments,
-                    teams,
-                    areas,
-                  )}
+                  assignmentBadges={getAssignmentBadges(survey, departments, teams, areas)}
                   onviewresults={handleViewResults}
                   ondelete={(id: number | string) =>
                     handleDeleteSurveyWithInvalidate(id, invalidateAll)}
@@ -410,14 +371,12 @@
               </div>
               <h3 class="empty-state__title">Keine Entwürfe</h3>
               <p class="empty-state__description">
-                Sie haben keine Umfrage-Entwürfe. Erstellen Sie eine neue und
-                speichern Sie sie als Entwurf.
+                Sie haben keine Umfrage-Entwürfe. Erstellen Sie eine neue und speichern Sie sie als
+                Entwurf.
               </p>
             </div>
           {:else}
-            <div
-              class="mb-8 grid grid-cols-[repeat(auto-fill,minmax(350px,1fr))] gap-6"
-            >
+            <div class="mb-8 grid grid-cols-[repeat(auto-fill,minmax(350px,1fr))] gap-6">
               {#each draftSurveys as survey (getSurveyId(survey))}
                 <DraftSurveyCard
                   {survey}
@@ -443,14 +402,11 @@
               </div>
               <h3 class="empty-state__title">Keine Vorlagen verfügbar</h3>
               <p class="empty-state__description">
-                Es sind noch keine Umfragevorlagen vorhanden. Vorlagen werden
-                automatisch erstellt.
+                Es sind noch keine Umfragevorlagen vorhanden. Vorlagen werden automatisch erstellt.
               </p>
             </div>
           {:else}
-            <div
-              class="mb-8 grid grid-cols-[repeat(auto-fill,minmax(350px,1fr))] gap-6"
-            >
+            <div class="mb-8 grid grid-cols-[repeat(auto-fill,minmax(350px,1fr))] gap-6">
               {#each templates as template (template.id)}
                 <div
                   class="card card--clickable"
@@ -460,8 +416,7 @@
                     handleCreateFromTemplate(template.id);
                   }}
                   onkeydown={(e) => {
-                    if (e.key === 'Enter')
-                      handleCreateFromTemplate(template.id);
+                    if (e.key === 'Enter') handleCreateFromTemplate(template.id);
                   }}
                 >
                   <h4 class="text-primary mb-2 font-semibold">
@@ -703,8 +658,7 @@
   .drafts-section,
   .templates-section {
     margin-top: var(--spacing-8);
-    border-top: 1px solid
-      color-mix(in oklch, var(--color-white) 10%, transparent);
+    border-top: 1px solid color-mix(in oklch, var(--color-white) 10%, transparent);
     padding-top: var(--spacing-8);
   }
 

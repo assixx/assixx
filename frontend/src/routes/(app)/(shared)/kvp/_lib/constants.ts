@@ -2,10 +2,7 @@
 // KVP - CONSTANTS
 // =============================================================================
 
-import {
-  DEFAULT_HIERARCHY_LABELS,
-  type HierarchyLabels,
-} from '$lib/types/hierarchy-labels';
+import { DEFAULT_HIERARCHY_LABELS, type HierarchyLabels } from '$lib/types/hierarchy-labels';
 
 import type { KvpStatus, KvpPriority, OrgLevel, KvpFilter } from './types';
 
@@ -143,9 +140,7 @@ const STATIC_FILTER_OPTIONS_TAIL: FilterOption[] = [
 ];
 
 /** Factory: Filter toggle options with dynamic hierarchy labels */
-export function createFilterOptions(
-  labels: HierarchyLabels,
-): readonly FilterOption[] {
+export function createFilterOptions(labels: HierarchyLabels): readonly FilterOption[] {
   return [
     ...STATIC_FILTER_OPTIONS,
     {
@@ -167,9 +162,8 @@ export function createFilterOptions(
 }
 
 /** Backward-compatible static export */
-export const FILTER_OPTIONS: readonly FilterOption[] = createFilterOptions(
-  DEFAULT_HIERARCHY_LABELS,
-);
+export const FILTER_OPTIONS: readonly FilterOption[] =
+  createFilterOptions(DEFAULT_HIERARCHY_LABELS);
 
 /**
  * Status filter options for dropdown

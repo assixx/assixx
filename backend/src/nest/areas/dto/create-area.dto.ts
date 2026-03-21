@@ -13,8 +13,7 @@ import { z } from 'zod';
 export const AreaTypeSchema = z.enum(
   ['building', 'warehouse', 'office', 'production', 'outdoor', 'other'],
   {
-    message:
-      'Type must be one of: building, warehouse, office, production, outdoor, other',
+    message: 'Type must be one of: building, warehouse, office, production, outdoor, other',
   },
 );
 

@@ -199,10 +199,7 @@ export class SurveysController {
     @Headers('user-agent') userAgent: string,
   ): Promise<unknown> {
     const parsedId = this.surveysService.parseIdParam(id);
-    const surveyId = await this.surveysService.resolveToNumericId(
-      parsedId,
-      tenantId,
-    );
+    const surveyId = await this.surveysService.resolveToNumericId(parsedId, tenantId);
     return await this.surveysService.updateSurvey(
       surveyId,
       dto,
@@ -230,10 +227,7 @@ export class SurveysController {
     @Headers('user-agent') userAgent: string,
   ): Promise<MessageResponse> {
     const parsedId = this.surveysService.parseIdParam(id);
-    const surveyId = await this.surveysService.resolveToNumericId(
-      parsedId,
-      tenantId,
-    );
+    const surveyId = await this.surveysService.resolveToNumericId(parsedId, tenantId);
     return await this.surveysService.deleteSurvey(
       surveyId,
       tenantId,
@@ -258,12 +252,7 @@ export class SurveysController {
     @TenantId() tenantId: number,
   ): Promise<SurveyStatisticsResponse> {
     const surveyId = this.surveysService.parseIdParam(id);
-    return await this.surveysService.getStatistics(
-      surveyId,
-      tenantId,
-      user.id,
-      user.role,
-    );
+    return await this.surveysService.getStatistics(surveyId, tenantId, user.id, user.role);
   }
 
   /**
@@ -280,10 +269,7 @@ export class SurveysController {
     @TenantId() tenantId: number,
   ): Promise<{ responseId: number }> {
     const parsedId = this.surveysService.parseIdParam(id);
-    const surveyId = await this.surveysService.resolveToNumericId(
-      parsedId,
-      tenantId,
-    );
+    const surveyId = await this.surveysService.resolveToNumericId(parsedId, tenantId);
     const responseId = await this.surveysService.submitResponse(
       surveyId,
       user.id,
@@ -308,20 +294,11 @@ export class SurveysController {
     @TenantId() tenantId: number,
   ): Promise<PaginatedResponsesResult> {
     const parsedId = this.surveysService.parseIdParam(id);
-    const surveyId = await this.surveysService.resolveToNumericId(
-      parsedId,
-      tenantId,
-    );
-    return await this.surveysService.getAllResponses(
-      surveyId,
-      tenantId,
-      user.role,
-      user.id,
-      {
-        page: query.page,
-        limit: query.limit,
-      },
-    );
+    const surveyId = await this.surveysService.resolveToNumericId(parsedId, tenantId);
+    return await this.surveysService.getAllResponses(surveyId, tenantId, user.role, user.id, {
+      page: query.page,
+      limit: query.limit,
+    });
   }
 
   /**
@@ -336,10 +313,7 @@ export class SurveysController {
     @TenantId() tenantId: number,
   ): Promise<SurveyResponse | null> {
     const parsedId = this.surveysService.parseIdParam(id);
-    const surveyId = await this.surveysService.resolveToNumericId(
-      parsedId,
-      tenantId,
-    );
+    const surveyId = await this.surveysService.resolveToNumericId(parsedId, tenantId);
     return await this.surveysService.getMyResponse(surveyId, user.id, tenantId);
   }
 
@@ -359,10 +333,7 @@ export class SurveysController {
     @Res() reply: FastifyReply,
   ): Promise<void> {
     const parsedId = this.surveysService.parseIdParam(id);
-    const surveyId = await this.surveysService.resolveToNumericId(
-      parsedId,
-      tenantId,
-    );
+    const surveyId = await this.surveysService.resolveToNumericId(parsedId, tenantId);
 
     const format = query.format ?? 'csv';
     const buffer = await this.surveysService.exportResponses(
@@ -401,10 +372,7 @@ export class SurveysController {
     @TenantId() tenantId: number,
   ): Promise<SurveyResponse> {
     const parsedId = this.surveysService.parseIdParam(id);
-    const surveyId = await this.surveysService.resolveToNumericId(
-      parsedId,
-      tenantId,
-    );
+    const surveyId = await this.surveysService.resolveToNumericId(parsedId, tenantId);
     const numericResponseId = Number.parseInt(responseId, 10);
     return await this.surveysService.getResponseById(
       surveyId,
@@ -429,10 +397,7 @@ export class SurveysController {
     @TenantId() tenantId: number,
   ): Promise<MessageResponse> {
     const parsedId = this.surveysService.parseIdParam(id);
-    const surveyId = await this.surveysService.resolveToNumericId(
-      parsedId,
-      tenantId,
-    );
+    const surveyId = await this.surveysService.resolveToNumericId(parsedId, tenantId);
     const numericResponseId = Number.parseInt(responseId, 10);
     return await this.surveysService.updateResponse(
       surveyId,

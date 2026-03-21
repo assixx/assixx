@@ -97,9 +97,7 @@ export function showToast(toast: Omit<Toast, 'id'>): string {
 export function dismissToast(id: string): void {
   // First mark as dismissing for animation
   toasts.update((t: Toast[]) =>
-    t.map((toast: Toast) =>
-      toast.id === id ? { ...toast, dismissing: true } : toast,
-    ),
+    t.map((toast: Toast) => (toast.id === id ? { ...toast, dismissing: true } : toast)),
   );
 
   // Then remove after animation

@@ -13,8 +13,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 // Persistent mock refs via vi.hoisted (survive vi.resetModules)
 const { mockPino, mockChild } = vi.hoisted(() => {
   const child = vi.fn(
-    (bindings: Record<string, unknown>) =>
-      ({ _isChild: true, ...bindings }) as unknown,
+    (bindings: Record<string, unknown>) => ({ _isChild: true, ...bindings }) as unknown,
   );
   const pinoFn = vi.fn(() => ({
     child,
@@ -211,9 +210,7 @@ describe('logger', () => {
         targets: Array<{ target: string }>;
       };
       // pino-pretty + 2 Loki targets (cloud + local) = 3 targets
-      const lokiTargets = transport.targets.filter(
-        (t) => t.target === 'pino-loki',
-      );
+      const lokiTargets = transport.targets.filter((t) => t.target === 'pino-loki');
       expect(lokiTargets).toHaveLength(2);
     });
   });
@@ -283,9 +280,7 @@ describe('logger', () => {
           options: { host: string; basicAuth?: unknown };
         }>;
       };
-      const lokiTarget = transport.targets.find(
-        (t) => t.target === 'pino-loki',
-      );
+      const lokiTarget = transport.targets.find((t) => t.target === 'pino-loki');
       expect(lokiTarget).toBeDefined();
       expect(lokiTarget!.options.host).toBe('https://cloud.grafana.net');
       expect(lokiTarget!.options.basicAuth).toEqual({
@@ -307,9 +302,7 @@ describe('logger', () => {
           options: { labels: Record<string, string> };
         }>;
       };
-      const lokiTarget = transport.targets.find(
-        (t) => t.target === 'pino-loki',
-      );
+      const lokiTarget = transport.targets.find((t) => t.target === 'pino-loki');
       expect(lokiTarget!.options.labels.app).toBe('assixx');
       expect(lokiTarget!.options.labels.service).toBe('backend');
       expect(lokiTarget!.options.labels.loki_target).toBe('local');

@@ -83,16 +83,7 @@ export class WorkOrderPhotosService {
        SELECT i.*, u.first_name, u.last_name
        FROM inserted i
        JOIN users u ON i.uploaded_by = u.id`,
-      [
-        uuidv7(),
-        tenantId,
-        wo.id,
-        userId,
-        filePath,
-        file.originalname,
-        file.size,
-        file.mimetype,
-      ],
+      [uuidv7(), tenantId, wo.id, userId, filePath, file.originalname, file.size, file.mimetype],
     );
 
     if (row === null) {
@@ -113,10 +104,7 @@ export class WorkOrderPhotosService {
   }
 
   /** List all photos for a work order */
-  async getPhotos(
-    tenantId: number,
-    workOrderUuid: string,
-  ): Promise<WorkOrderPhoto[]> {
+  async getPhotos(tenantId: number, workOrderUuid: string): Promise<WorkOrderPhoto[]> {
     const rows = await this.db.query<WorkOrderPhotoWithNameRow>(
       `SELECT p.*, u.first_name, u.last_name
        FROM work_order_photos p
@@ -166,9 +154,7 @@ export class WorkOrderPhotosService {
       throw new ForbiddenException('Nur eigene Fotos können gelöscht werden');
     }
 
-    await this.db.query(`DELETE FROM work_order_photos WHERE id = $1`, [
-      photo.id,
-    ]);
+    await this.db.query(`DELETE FROM work_order_photos WHERE id = $1`, [photo.id]);
 
     void this.deleteFileFromDisk(photo.file_path);
 
@@ -213,10 +199,7 @@ export class WorkOrderPhotosService {
   }
 
   /** Get photos/attachments from the source entity (TPM defect or KVP suggestion) — read-only */
-  async getSourcePhotos(
-    tenantId: number,
-    workOrderUuid: string,
-  ): Promise<SourcePhoto[]> {
+  async getSourcePhotos(tenantId: number, workOrderUuid: string): Promise<SourcePhoto[]> {
     const wo = await this.db.queryOne<{
       source_type: string;
       source_uuid: string | null;
@@ -301,11 +284,7 @@ export class WorkOrderPhotosService {
   ): Promise<string> {
     const ext = path.extname(file.originalname);
     const fileName = `${uuidv7()}${ext}`;
-    const dir = path.join(
-      WORK_ORDER_UPLOAD_DIR,
-      String(tenantId),
-      workOrderUuid,
-    );
+    const dir = path.join(WORK_ORDER_UPLOAD_DIR, String(tenantId), workOrderUuid);
     await fs.mkdir(dir, { recursive: true });
     const filePath = path.join(dir, fileName);
     await fs.writeFile(filePath, file.buffer);

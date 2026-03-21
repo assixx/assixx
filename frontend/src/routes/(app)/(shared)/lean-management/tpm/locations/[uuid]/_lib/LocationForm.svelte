@@ -13,21 +13,11 @@
     location?: TpmLocation;
     nextPosition?: number;
     saving?: boolean;
-    onSave: (data: {
-      positionNumber: number;
-      title: string;
-      description: string | null;
-    }) => void;
+    onSave: (data: { positionNumber: number; title: string; description: string | null }) => void;
     onCancel: () => void;
   }
 
-  const {
-    location,
-    nextPosition = 1,
-    saving = false,
-    onSave,
-    onCancel,
-  }: Props = $props();
+  const { location, nextPosition = 1, saving = false, onSave, onCancel }: Props = $props();
 
   const isEdit = $derived(location !== undefined);
 

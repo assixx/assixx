@@ -31,9 +31,7 @@ export class NotificationStatisticsService {
    * Get notification statistics for a tenant (admin only).
    * Includes total, by-type, by-priority, read rate, and 30-day trends.
    */
-  async getStatistics(
-    tenantId: number,
-  ): Promise<NotificationStatisticsResponse> {
+  async getStatistics(tenantId: number): Promise<NotificationStatisticsResponse> {
     this.logger.debug(`Getting statistics for tenant ${tenantId}`);
 
     // Total count (PostgreSQL returns bigint as string)
@@ -55,10 +53,7 @@ export class NotificationStatisticsService {
       `SELECT priority, COUNT(*) as count FROM notifications WHERE tenant_id = $1 GROUP BY priority`,
       [tenantId],
     );
-    const byPriority = rowsToRecord(
-      byPriorityRows,
-      (r: DbPriorityCountRow) => r.priority,
-    );
+    const byPriority = rowsToRecord(byPriorityRows, (r: DbPriorityCountRow) => r.priority);
 
     // Read rate
     const readRateRows = await this.db.query<DbReadRateRow>(
@@ -70,16 +65,9 @@ export class NotificationStatisticsService {
       [tenantId],
     );
     const readRateData = readRateRows[0];
-    const totalNotifications = Number.parseInt(
-      readRateData?.total_notifications ?? '0',
-      10,
-    );
-    const readNotifications = Number.parseInt(
-      readRateData?.read_notifications ?? '0',
-      10,
-    );
-    const readRate =
-      totalNotifications > 0 ? readNotifications / totalNotifications : 0;
+    const totalNotifications = Number.parseInt(readRateData?.total_notifications ?? '0', 10);
+    const readNotifications = Number.parseInt(readRateData?.read_notifications ?? '0', 10);
+    const readRate = totalNotifications > 0 ? readNotifications / totalNotifications : 0;
 
     // Trends (last 30 days)
     const trendsRows = await this.db.query<DbDateCountRow>(
@@ -107,10 +95,7 @@ export class NotificationStatisticsService {
    * Get personal notification statistics for a user.
    * Includes total, unread count, and unread-by-type breakdown.
    */
-  async getPersonalStats(
-    userId: number,
-    tenantId: number,
-  ): Promise<PersonalStatsResponse> {
+  async getPersonalStats(userId: number, tenantId: number): Promise<PersonalStatsResponse> {
     // Total notifications for user
     const totalRows = await this.db.query<DbCountRow>(
       `SELECT COUNT(*) as total FROM notifications n

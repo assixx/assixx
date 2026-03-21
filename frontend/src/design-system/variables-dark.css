@@ -73,27 +73,21 @@ html.dark {
 
   /* Primary Button - Blue glow (stronger on dark surfaces + glass inset) */
   --shadow-btn-primary:
-    0 1px 4px oklch(65.82% 0.169 248.81 / 30%),
-    inset 0 1px 0 oklch(100% 0 0 / 20%);
+    0 1px 4px oklch(65.82% 0.169 248.81 / 30%), inset 0 1px 0 oklch(100% 0 0 / 20%);
   --shadow-btn-primary-hover:
-    0 6px 20px oklch(65.82% 0.169 248.81 / 40%),
-    inset 0 1px 0 oklch(100% 0 0 / 20%);
+    0 6px 20px oklch(65.82% 0.169 248.81 / 40%), inset 0 1px 0 oklch(100% 0 0 / 20%);
 
   /* Danger Button - Red glow */
   --shadow-btn-danger:
-    0 2px 4px oklch(57.71% 0.2152 27.33 / 20%),
-    inset 0 1px 0 oklch(100% 0 0 / 10%);
+    0 2px 4px oklch(57.71% 0.2152 27.33 / 20%), inset 0 1px 0 oklch(100% 0 0 / 10%);
   --shadow-btn-danger-hover:
-    0 4px 12px oklch(57.71% 0.2152 27.33 / 30%),
-    inset 0 1px 0 oklch(100% 0 0 / 15%);
+    0 4px 12px oklch(57.71% 0.2152 27.33 / 30%), inset 0 1px 0 oklch(100% 0 0 / 15%);
 
   /* Success Button - Green glow */
   --shadow-btn-success:
-    0 2px 4px oklch(67.31% 0.1624 144.21 / 20%),
-    inset 0 1px 0 oklch(100% 0 0 / 10%);
+    0 2px 4px oklch(67.31% 0.1624 144.21 / 20%), inset 0 1px 0 oklch(100% 0 0 / 10%);
   --shadow-btn-success-hover:
-    0 4px 12px oklch(67.31% 0.1624 144.21 / 30%),
-    inset 0 1px 0 oklch(100% 0 0 / 15%);
+    0 4px 12px oklch(67.31% 0.1624 144.21 / 30%), inset 0 1px 0 oklch(100% 0 0 / 15%);
 
   /* Status Active - Orange glow */
   --shadow-btn-status-active: 0 2px 4px oklch(70.49% 0.1867 47.6 / 15%);
@@ -101,34 +95,27 @@ html.dark {
 
   /* Status Inactive - Green glow */
   --shadow-btn-status-inactive: 0 2px 4px oklch(64.01% 0.1751 146.74 / 15%);
-  --shadow-btn-status-inactive-hover: 0 4px 12px
-    oklch(64.01% 0.1751 146.74 / 15%);
+  --shadow-btn-status-inactive-hover: 0 4px 12px oklch(64.01% 0.1751 146.74 / 15%);
 
   /* Warning Button - Orange glow */
   --shadow-btn-warning:
-    0 2px 4px oklch(77.03% 0.1741 64.05 / 20%),
-    inset 0 1px 0 oklch(100% 0 0 / 10%);
+    0 2px 4px oklch(77.03% 0.1741 64.05 / 20%), inset 0 1px 0 oklch(100% 0 0 / 10%);
   --shadow-btn-warning-hover:
-    0 4px 12px oklch(77.03% 0.1741 64.05 / 30%),
-    inset 0 1px 0 oklch(100% 0 0 / 15%);
+    0 4px 12px oklch(77.03% 0.1741 64.05 / 30%), inset 0 1px 0 oklch(100% 0 0 / 15%);
 
   /* Info Button - Cyan glow */
   --shadow-btn-info:
-    0 2px 4px oklch(72.91% 0.1265 210.82 / 20%),
-    inset 0 1px 0 oklch(100% 0 0 / 10%);
+    0 2px 4px oklch(72.91% 0.1265 210.82 / 20%), inset 0 1px 0 oklch(100% 0 0 / 10%);
   --shadow-btn-info-hover:
-    0 4px 12px oklch(72.91% 0.1265 210.82 / 30%),
-    inset 0 1px 0 oklch(100% 0 0 / 15%);
+    0 4px 12px oklch(72.91% 0.1265 210.82 / 30%), inset 0 1px 0 oklch(100% 0 0 / 15%);
 
   /* Light Button - Subtle shadow */
   --shadow-btn-light: 0 1px 3px oklch(0% 0 0 / 8%);
   --shadow-btn-light-hover: 0 2px 6px oklch(0% 0 0 / 12%);
 
   /* Dark Button - Strong shadow */
-  --shadow-btn-dark:
-    0 2px 4px oklch(0% 0 0 / 30%), inset 0 1px 0 oklch(100% 0 0 / 5%);
-  --shadow-btn-dark-hover:
-    0 4px 12px oklch(0% 0 0 / 40%), inset 0 1px 0 oklch(100% 0 0 / 10%);
+  --shadow-btn-dark: 0 2px 4px oklch(0% 0 0 / 30%), inset 0 1px 0 oklch(100% 0 0 / 5%);
+  --shadow-btn-dark-hover: 0 4px 12px oklch(0% 0 0 / 40%), inset 0 1px 0 oklch(100% 0 0 / 10%);
 
   /* Organigramm Connection Lines */
   --org-connection-stroke: oklch(100% 0 0);

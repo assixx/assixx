@@ -30,11 +30,7 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
   }
 
   // Fetch employee profile data
-  const profileData = await apiFetch<EmployeeProfile>(
-    '/users/me',
-    token,
-    fetch,
-  );
+  const profileData = await apiFetch<EmployeeProfile>('/users/me', token, fetch);
 
   return {
     profile: profileData,

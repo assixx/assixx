@@ -22,21 +22,10 @@
     totalCount?: number;
   }
 
-  const {
-    show,
-    attachment,
-    onclose,
-    onprev,
-    onnext,
-    currentIndex,
-    totalCount,
-  }: Props = $props();
+  const { show, attachment, onclose, onprev, onnext, currentIndex, totalCount }: Props = $props();
 
   const hasNavigation = $derived(
-    onprev !== undefined &&
-      onnext !== undefined &&
-      totalCount !== undefined &&
-      totalCount > 1,
+    onprev !== undefined && onnext !== undefined && totalCount !== undefined && totalCount > 1,
   );
 
   /** Open download URL in new tab */
@@ -79,9 +68,7 @@
       <div class="ds-modal__body p-0">
         {#if getPreviewFileType(attachment.mimeType) === 'pdf'}
           <iframe
-            src={buildDownloadUrl(
-              attachment.previewUrl ?? attachment.downloadUrl,
-            )}
+            src={buildDownloadUrl(attachment.previewUrl ?? attachment.downloadUrl)}
             title="PDF Vorschau"
             class="block h-[80vh] min-h-[600px] w-full border-none"
           ></iframe>
@@ -90,9 +77,7 @@
             class="flex h-[80vh] min-h-[600px] w-full items-center justify-center bg-(--surface-1)"
           >
             <img
-              src={buildDownloadUrl(
-                attachment.previewUrl ?? attachment.downloadUrl,
-              )}
+              src={buildDownloadUrl(attachment.previewUrl ?? attachment.downloadUrl)}
               alt={attachment.filename}
               class="max-h-full max-w-full object-contain"
             />
@@ -109,9 +94,7 @@
           </div>
         {/if}
         <div class="border-t border-(--border-subtle) bg-(--surface-2) p-4">
-          <div
-            class="flex items-center gap-6 text-sm text-(--color-text-secondary)"
-          >
+          <div class="flex items-center gap-6 text-sm text-(--color-text-secondary)">
             <span class="flex items-center gap-2"
               ><i class="fas fa-file-archive"></i>
               {formatFileSize(attachment.fileSize)}</span
@@ -132,8 +115,7 @@
         <button
           type="button"
           class="btn btn-primary"
-          onclick={downloadFile}
-          ><i class="fas fa-download mr-2"></i>Herunterladen</button
+          onclick={downloadFile}><i class="fas fa-download mr-2"></i>Herunterladen</button
         >
       </div>
     </div>

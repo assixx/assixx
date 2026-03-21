@@ -226,9 +226,7 @@ describe('filterMenuByAddons: empty parent containers', () => {
         id: 'parent-with-url',
         label: 'Parent',
         url: '/parent',
-        submenu: [
-          { id: 'child', label: 'Child', url: '/c', addonCode: 'blackboard' },
-        ],
+        submenu: [{ id: 'child', label: 'Child', url: '/c', addonCode: 'blackboard' }],
       },
     ];
     const result = filterMenuByAddons(menu, NO_ADDONS);
@@ -243,9 +241,7 @@ describe('filterMenuByAddons: empty parent containers', () => {
       {
         id: 'parent-no-url',
         label: 'Parent',
-        submenu: [
-          { id: 'child', label: 'Child', url: '/c', addonCode: 'blackboard' },
-        ],
+        submenu: [{ id: 'child', label: 'Child', url: '/c', addonCode: 'blackboard' }],
       },
     ];
 
@@ -344,9 +340,7 @@ describe('filterMenuByAddons: real adminMenuItems', () => {
     const addons = new Set(ALL_ADDON_CODES);
     addons.delete('shift_planning');
 
-    expect(
-      collectIds(filterMenuByAddons(adminMenuItems, addons)),
-    ).not.toContain('shifts');
+    expect(collectIds(filterMenuByAddons(adminMenuItems, addons))).not.toContain('shifts');
   });
 });
 
@@ -364,15 +358,11 @@ describe('filterMenuByAddons: real employeeMenuItems', () => {
     addons.delete('kvp');
     addons.delete('surveys');
 
-    expect(
-      collectIds(filterMenuByAddons(employeeMenuItems, addons)),
-    ).not.toContain(ID_LEAN);
+    expect(collectIds(filterMenuByAddons(employeeMenuItems, addons))).not.toContain(ID_LEAN);
   });
 
   it('should keep lean-management when only kvp is active', () => {
-    const ids = collectIds(
-      filterMenuByAddons(employeeMenuItems, new Set(['kvp'])),
-    );
+    const ids = collectIds(filterMenuByAddons(employeeMenuItems, new Set(['kvp'])));
 
     expect(ids).toContain(ID_LEAN);
     expect(ids).toContain('kvp');
@@ -398,26 +388,18 @@ describe('filterMenuByAddons: edge cases', () => {
           {
             id: 'l2',
             label: 'L2',
-            submenu: [
-              { id: 'l3', label: 'L3', url: '/deep', addonCode: 'kvp' },
-            ],
+            submenu: [{ id: 'l3', label: 'L3', url: '/deep', addonCode: 'kvp' }],
           },
         ],
       },
     ];
 
-    expect(collectIds(filterMenuByAddons(menu, new Set(['kvp'])))).toEqual([
-      'l1',
-      'l2',
-      'l3',
-    ]);
+    expect(collectIds(filterMenuByAddons(menu, new Set(['kvp'])))).toEqual(['l1', 'l2', 'l3']);
     expect(filterMenuByAddons(menu, NO_ADDONS)).toHaveLength(0);
   });
 
   it('should handle unknown addon codes gracefully', () => {
-    const menu: NavItem[] = [
-      { id: 'x', label: 'X', url: '/x', addonCode: 'nonexistent' },
-    ];
+    const menu: NavItem[] = [{ id: 'x', label: 'X', url: '/x', addonCode: 'nonexistent' }];
 
     expect(filterMenuByAddons(menu, ALL_ADDON_CODES)).toHaveLength(0);
   });
@@ -485,15 +467,11 @@ describe('filterMenuByAccess', () => {
   });
 
   it('should remove kvp-categories when hasFullAccess is false', () => {
-    expect(collectIds(filterMenuByAccess(rootMenuItems, false))).not.toContain(
-      'kvp-categories',
-    );
+    expect(collectIds(filterMenuByAccess(rootMenuItems, false))).not.toContain('kvp-categories');
   });
 
   it('should keep kvp-main when hasFullAccess is false', () => {
-    expect(collectIds(filterMenuByAccess(rootMenuItems, false))).toContain(
-      'kvp-main',
-    );
+    expect(collectIds(filterMenuByAccess(rootMenuItems, false))).toContain('kvp-main');
   });
 });
 
@@ -502,9 +480,7 @@ describe('filterMenuByAccess', () => {
 // =============================================================================
 
 /** Helper: create scope with specific lead flags */
-function scopeWith(
-  overrides: Partial<OrganizationalScope>,
-): OrganizationalScope {
+function scopeWith(overrides: Partial<OrganizationalScope>): OrganizationalScope {
   return { ...DEFAULT_ORG_SCOPE, ...overrides };
 }
 
@@ -608,21 +584,13 @@ describe('filterMenuByScope: employee department lead', () => {
 
 describe('filterMenuByScope: employee without lead', () => {
   it('should NOT inject approvals for regular employee', () => {
-    const result = filterMenuByScope(
-      employeeMenuItems,
-      DEFAULT_ORG_SCOPE,
-      'employee',
-    );
+    const result = filterMenuByScope(employeeMenuItems, DEFAULT_ORG_SCOPE, 'employee');
 
     expect(collectIds(result)).not.toContain('approvals');
   });
 
   it('should return items unchanged', () => {
-    const result = filterMenuByScope(
-      employeeMenuItems,
-      DEFAULT_ORG_SCOPE,
-      'employee',
-    );
+    const result = filterMenuByScope(employeeMenuItems, DEFAULT_ORG_SCOPE, 'employee');
 
     expect(result).toBe(employeeMenuItems);
   });
@@ -630,11 +598,7 @@ describe('filterMenuByScope: employee without lead', () => {
 
 describe('filterMenuByScope: dummy', () => {
   it('should NOT inject approvals for dummy users', () => {
-    const result = filterMenuByScope(
-      dummyMenuItems,
-      DEFAULT_ORG_SCOPE,
-      'dummy',
-    );
+    const result = filterMenuByScope(dummyMenuItems, DEFAULT_ORG_SCOPE, 'dummy');
 
     expect(collectIds(result)).not.toContain('approvals');
   });

@@ -61,25 +61,18 @@ describe('CheckUserRoleSchema', () => {
   });
 
   it('should reject non-positive userId', () => {
-    expect(CheckUserRoleSchema.safeParse({ ...valid, userId: 0 }).success).toBe(
-      false,
-    );
-    expect(
-      CheckUserRoleSchema.safeParse({ ...valid, userId: -1 }).success,
-    ).toBe(false);
+    expect(CheckUserRoleSchema.safeParse({ ...valid, userId: 0 }).success).toBe(false);
+    expect(CheckUserRoleSchema.safeParse({ ...valid, userId: -1 }).success).toBe(false);
   });
 
   it('should reject non-integer userId', () => {
-    expect(
-      CheckUserRoleSchema.safeParse({ ...valid, userId: 1.5 }).success,
-    ).toBe(false);
+    expect(CheckUserRoleSchema.safeParse({ ...valid, userId: 1.5 }).success).toBe(false);
   });
 
   it('should reject invalid requiredRole', () => {
-    expect(
-      CheckUserRoleSchema.safeParse({ ...valid, requiredRole: 'manager' })
-        .success,
-    ).toBe(false);
+    expect(CheckUserRoleSchema.safeParse({ ...valid, requiredRole: 'manager' }).success).toBe(
+      false,
+    );
   });
 
   it('should reject missing fields', () => {

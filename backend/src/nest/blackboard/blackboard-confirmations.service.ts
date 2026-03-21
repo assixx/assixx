@@ -5,12 +5,7 @@
  * Tracks which users have confirmed reading entries.
  */
 import { IS_ACTIVE } from '@assixx/shared/constants';
-import {
-  BadRequestException,
-  Injectable,
-  Logger,
-  NotFoundException,
-} from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 
 import { dbToApi } from '../../utils/field-mapper.js';
 import { ActivityLoggerService } from '../common/services/activity-logger.service.js';
@@ -31,10 +26,7 @@ export class BlackboardConfirmationsService {
    * Confirm reading a blackboard entry.
    * Uses UPSERT: first_seen_at is set only on first confirmation (never reset).
    */
-  async confirmEntry(
-    id: number | string,
-    userId: number,
-  ): Promise<{ message: string }> {
+  async confirmEntry(id: number | string, userId: number): Promise<{ message: string }> {
     this.logger.log(`Confirming entry ${String(id)} for user ${userId}`);
 
     // SECURITY: Get user's tenant - only for ACTIVE users (is_active = 1)
@@ -76,10 +68,7 @@ export class BlackboardConfirmationsService {
    * Remove confirmation (mark as unread).
    * Sets is_confirmed = false instead of deleting to preserve first_seen_at.
    */
-  async unconfirmEntry(
-    id: number | string,
-    userId: number,
-  ): Promise<{ message: string }> {
+  async unconfirmEntry(id: number | string, userId: number): Promise<{ message: string }> {
     this.logger.log(`Unconfirming entry ${String(id)} for user ${userId}`);
 
     // SECURITY: Get user's tenant - only for ACTIVE users (is_active = 1)
@@ -158,10 +147,7 @@ export class BlackboardConfirmationsService {
       queryParams.push(entry.org_id);
     }
 
-    const users = await this.db.query<DbConfirmationUser>(
-      usersQuery,
-      queryParams,
-    );
+    const users = await this.db.query<DbConfirmationUser>(usersQuery, queryParams);
     return users.map((user: DbConfirmationUser) =>
       dbToApi(user as unknown as Record<string, unknown>),
     );
@@ -171,10 +157,7 @@ export class BlackboardConfirmationsService {
    * Get count of unconfirmed entries for a user.
    * Used for notification badge in sidebar.
    */
-  async getUnconfirmedCount(
-    userId: number,
-    tenantId: number,
-  ): Promise<{ count: number }> {
+  async getUnconfirmedCount(userId: number, tenantId: number): Promise<{ count: number }> {
     // Get user info for visibility filtering
     const users = await this.db.query<{
       role: string;
@@ -227,10 +210,7 @@ export class BlackboardConfirmationsService {
   /**
    * Resolve entry ID (UUID or numeric) to numeric ID.
    */
-  private async resolveEntryId(
-    id: number | string,
-    tenantId: number,
-  ): Promise<number> {
+  private async resolveEntryId(id: number | string, tenantId: number): Promise<number> {
     const idColumn = typeof id === 'string' ? 'uuid' : 'id';
     const entries = await this.db.query<{ id: number }>(
       `SELECT id FROM blackboard_entries WHERE ${idColumn} = $1 AND tenant_id = $2`,

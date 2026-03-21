@@ -27,10 +27,7 @@
  */
 export function onClickOutsideDropdown(callback: () => void): () => void {
   function handler(event: MouseEvent): void {
-    if (
-      event.target instanceof HTMLElement &&
-      !event.target.closest('.dropdown')
-    ) {
+    if (event.target instanceof HTMLElement && !event.target.closest('.dropdown')) {
       callback();
     }
   }

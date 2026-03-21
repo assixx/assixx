@@ -132,10 +132,7 @@
         entries: detail.assignedTeams,
       },
     ];
-    return all.filter(
-      (s): s is SectionConfig =>
-        s.entries !== undefined && s.entries.length > 0,
-    );
+    return all.filter((s): s is SectionConfig => s.entries !== undefined && s.entries.length > 0);
   });
 </script>
 
@@ -216,9 +213,7 @@
               <h4 class="detail-section__title">
                 <i class="{section.icon} detail-section__icon"></i>
                 {section.title}
-                <span class="detail-section__count"
-                  >{section.entries.length}</span
-                >
+                <span class="detail-section__count">{section.entries.length}</span>
               </h4>
               <ul class="detail-section__list">
                 {#each section.entries as entry (entry.uuid)}

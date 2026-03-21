@@ -70,15 +70,11 @@ describe('buildTimestamp', () => {
   });
 
   it('should extract date part from ISO string', () => {
-    expect(buildTimestamp('2025-06-15T00:00:00Z', '09:00')).toBe(
-      '2025-06-15T09:00:00',
-    );
+    expect(buildTimestamp('2025-06-15T00:00:00Z', '09:00')).toBe('2025-06-15T09:00:00');
   });
 
   it('should use defaultTime when timeStr is empty', () => {
-    expect(buildTimestamp('2025-06-15', '', '08:00')).toBe(
-      '2025-06-15T08:00:00',
-    );
+    expect(buildTimestamp('2025-06-15', '', '08:00')).toBe('2025-06-15T08:00:00');
   });
 
   it('should return null when dateStr is not a string', () => {

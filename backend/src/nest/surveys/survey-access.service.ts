@@ -7,11 +7,7 @@
 import { ForbiddenException, Injectable, Logger } from '@nestjs/common';
 
 import { DatabaseService } from '../database/database.service.js';
-import type {
-  AssignmentInput,
-  DbSurvey,
-  DbSurveyAssignment,
-} from './surveys.types.js';
+import type { AssignmentInput, DbSurvey, DbSurveyAssignment } from './surveys.types.js';
 
 /** SQL queries to verify leadership permissions per assignment entity type */
 const LEADERSHIP_QUERIES: Record<string, string> = {
@@ -61,11 +57,7 @@ export class SurveyAccessService {
     userId: number,
     userRole: string,
   ): Promise<void> {
-    const hasUnrestrictedAccess = await this.checkUnrestrictedAccess(
-      userId,
-      tenantId,
-      userRole,
-    );
+    const hasUnrestrictedAccess = await this.checkUnrestrictedAccess(userId, tenantId, userRole);
     if (hasUnrestrictedAccess) return;
 
     const visibilityClause = this.buildVisibilityClause('$2', '$3');
@@ -90,11 +82,7 @@ export class SurveyAccessService {
     userId: number,
     userRole: string,
   ): Promise<void> {
-    const hasUnrestrictedAccess = await this.checkUnrestrictedAccess(
-      userId,
-      tenantId,
-      userRole,
-    );
+    const hasUnrestrictedAccess = await this.checkUnrestrictedAccess(userId, tenantId, userRole);
     if (hasUnrestrictedAccess) return;
 
     const managementClause = this.buildManagementVisibilityClause('$2', '$3');
@@ -124,29 +112,12 @@ export class SurveyAccessService {
     isManageMode: boolean,
   ): Promise<DbSurvey[]> {
     if (hasUnrestrictedAccess) {
-      return await this.getAllSurveysUnrestricted(
-        tenantId,
-        status,
-        limit,
-        offset,
-      );
+      return await this.getAllSurveysUnrestricted(tenantId, status, limit, offset);
     }
     if (isManageMode) {
-      return await this.getAllSurveysManageable(
-        tenantId,
-        userId,
-        status,
-        limit,
-        offset,
-      );
+      return await this.getAllSurveysManageable(tenantId, userId, status, limit, offset);
     }
-    return await this.getAllSurveysWithVisibility(
-      tenantId,
-      userId,
-      status,
-      limit,
-      offset,
-    );
+    return await this.getAllSurveysWithVisibility(tenantId, userId, status, limit, offset);
   }
 
   /**
@@ -160,15 +131,10 @@ export class SurveyAccessService {
   ): Promise<Set<number>> {
     if (surveyIds.length === 0) return new Set();
 
-    const placeholders = surveyIds
-      .map((_: number, idx: number) => `$${idx + 1}`)
-      .join(',');
+    const placeholders = surveyIds.map((_: number, idx: number) => `$${idx + 1}`).join(',');
     const tenantIdx = surveyIds.length + 1;
     const userIdx = surveyIds.length + 2;
-    const managementClause = this.buildManagementVisibilityClause(
-      `$${tenantIdx}`,
-      `$${userIdx}`,
-    );
+    const managementClause = this.buildManagementVisibilityClause(`$${tenantIdx}`, `$${userIdx}`);
 
     const rows = await this.db.query<{ id: number }>(
       `SELECT s.id FROM surveys s
@@ -180,20 +146,13 @@ export class SurveyAccessService {
   }
 
   /** Batch-loads assignments for a list of surveys */
-  async attachAssignmentsToSurveys(
-    surveys: DbSurvey[],
-    tenantId: number,
-  ): Promise<void> {
+  async attachAssignmentsToSurveys(surveys: DbSurvey[], tenantId: number): Promise<void> {
     if (surveys.length === 0) return;
     const surveyIds = surveys.map((s: DbSurvey) => s.id);
-    const placeholders = surveyIds
-      .map((_: number, idx: number) => `$${idx + 1}`)
-      .join(',');
+    const placeholders = surveyIds.map((_: number, idx: number) => `$${idx + 1}`).join(',');
     const tenantParamIndex = surveyIds.length + 1;
 
-    const assignmentRows = await this.db.query<
-      DbSurveyAssignment & { survey_id: number }
-    >(
+    const assignmentRows = await this.db.query<DbSurveyAssignment & { survey_id: number }>(
       `SELECT sa.*,
          a.name AS area_name,
          d.name AS department_name,
@@ -234,19 +193,11 @@ export class SurveyAccessService {
   ): Promise<void> {
     if (assignments.length === 0) return;
 
-    const hasUnrestrictedAccess = await this.checkUnrestrictedAccess(
-      userId,
-      tenantId,
-      userRole,
-    );
+    const hasUnrestrictedAccess = await this.checkUnrestrictedAccess(userId, tenantId, userRole);
     if (hasUnrestrictedAccess) return;
 
     for (const raw of assignments) {
-      await this.validateSingleAssignment(
-        raw as AssignmentInput,
-        userId,
-        tenantId,
-      );
+      await this.validateSingleAssignment(raw as AssignmentInput, userId, tenantId);
     }
   }
 
@@ -259,13 +210,8 @@ export class SurveyAccessService {
    * Used for notification badge in sidebar.
    * Counts active surveys assigned to the user where no completed response exists.
    */
-  async getPendingSurveyCount(
-    userId: number,
-    tenantId: number,
-  ): Promise<{ count: number }> {
-    this.logger.debug(
-      `Getting pending survey count for user ${userId}, tenant ${tenantId}`,
-    );
+  async getPendingSurveyCount(userId: number, tenantId: number): Promise<{ count: number }> {
+    this.logger.debug(`Getting pending survey count for user ${userId}, tenant ${tenantId}`);
 
     const visibilityClause = this.buildVisibilityClause('$1', '$2');
     const rows = await this.db.query<{ count: number }>(
@@ -293,10 +239,7 @@ export class SurveyAccessService {
    * Returns SQL fragment: (s.created_by = $X OR EXISTS(...))
    * Expects `s` as the survey table alias.
    */
-  private buildVisibilityClause(
-    tenantParam: string,
-    userParam: string,
-  ): string {
+  private buildVisibilityClause(tenantParam: string, userParam: string): string {
     return `(
       s.created_by = ${userParam}
       OR EXISTS (
@@ -346,10 +289,7 @@ export class SurveyAccessService {
    * Stricter than buildVisibilityClause(): only creator OR lead of assigned org unit.
    * Used for admin management operations (list/view/edit/delete in survey-admin).
    */
-  private buildManagementVisibilityClause(
-    tenantParam: string,
-    userParam: string,
-  ): string {
+  private buildManagementVisibilityClause(tenantParam: string, userParam: string): string {
     return `(
       s.created_by = ${userParam}
       OR EXISTS (
@@ -505,12 +445,7 @@ export class SurveyAccessService {
           'Only users with full access can assign to the entire company',
         );
       case 'area':
-        await this.validateLeadershipPermission(
-          'area',
-          assignment.areaId,
-          userId,
-          tenantId,
-        );
+        await this.validateLeadershipPermission('area', assignment.areaId, userId, tenantId);
         break;
       case 'department':
         await this.validateLeadershipPermission(
@@ -521,12 +456,7 @@ export class SurveyAccessService {
         );
         break;
       case 'team':
-        await this.validateLeadershipPermission(
-          'team',
-          assignment.teamId,
-          userId,
-          tenantId,
-        );
+        await this.validateLeadershipPermission('team', assignment.teamId, userId, tenantId);
         break;
       default:
         break;
@@ -545,15 +475,9 @@ export class SurveyAccessService {
     const query = LEADERSHIP_QUERIES[entityType];
     if (query === undefined) return;
 
-    const rows = await this.db.query<{ id: number }>(query, [
-      entityId,
-      userId,
-      tenantId,
-    ]);
+    const rows = await this.db.query<{ id: number }>(query, [entityId, userId, tenantId]);
     if (rows.length === 0) {
-      throw new ForbiddenException(
-        `No leadership permission for ${entityType} ${entityId}`,
-      );
+      throw new ForbiddenException(`No leadership permission for ${entityType} ${entityId}`);
     }
   }
 }

@@ -3,12 +3,7 @@
    * DetailModal — Read-only view of a vacation request.
    * Shows all request details in a structured grid layout.
    */
-  import {
-    HALF_DAY_LABELS,
-    STATUS_BADGE_CLASS,
-    STATUS_LABELS,
-    TYPE_LABELS,
-  } from './constants';
+  import { HALF_DAY_LABELS, STATUS_BADGE_CLASS, STATUS_LABELS, TYPE_LABELS } from './constants';
 
   import type { VacationRequest } from './types';
 
@@ -157,8 +152,8 @@
           <div class="alert__content">
             <div class="alert__title">Schichtplan-Hinweis</div>
             <div class="alert__message">
-              Der Mitarbeiter könnte in diesem Zeitraum im Schichtplan
-              eingeplant sein. Bitte Schichtplan manuell überprüfen!
+              Der Mitarbeiter könnte in diesem Zeitraum im Schichtplan eingeplant sein. Bitte
+              Schichtplan manuell überprüfen!
             </div>
           </div>
         </div>

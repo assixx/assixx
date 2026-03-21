@@ -47,11 +47,9 @@
 <div class="chat-header">
   <div class="chat-header-info">
     <div
-      class="avatar {(
-        getConversationAvatar(conversation, currentUserId) !== null
-      ) ?
-        ''
-      : getAvatarColorClass(partner?.id)}"
+      class="avatar {getConversationAvatar(conversation, currentUserId) !== null ? '' : (
+        getAvatarColorClass(partner?.id)
+      )}"
     >
       {#if getConversationAvatar(conversation, currentUserId)}
         <img

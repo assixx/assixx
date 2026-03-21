@@ -36,11 +36,7 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
 
   const [addonsData, summaryData] = await Promise.all([
     apiFetch<AddonWithTenantStatus[]>('/addons/my-addons', token, fetch),
-    apiFetch<TenantAddonsSummary>(
-      `/addons/tenant/${String(tenantId)}/summary`,
-      token,
-      fetch,
-    ),
+    apiFetch<TenantAddonsSummary>(`/addons/tenant/${String(tenantId)}/summary`, token, fetch),
   ]);
 
   return {

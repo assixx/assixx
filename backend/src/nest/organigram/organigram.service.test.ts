@@ -67,9 +67,7 @@ function setupTreeQueries(
   },
 ): void {
   mockDb.query.mockResolvedValueOnce(
-    data.tenant ?
-      [data.tenant]
-    : [{ company_name: 'Test GmbH', address: null }],
+    data.tenant ? [data.tenant] : [{ company_name: 'Test GmbH', address: null }],
   );
   mockDb.query.mockResolvedValueOnce(data.areas ?? []);
   mockDb.query.mockResolvedValueOnce(data.departments ?? []);
@@ -131,9 +129,7 @@ describe('OrganigramService', () => {
       mockDb.query.mockResolvedValueOnce([]); // deptHalls
       mockDb.query.mockResolvedValueOnce([]); // teamHalls
 
-      await expect(service.getOrgChartTree(999)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.getOrgChartTree(999)).rejects.toThrow(NotFoundException);
     });
 
     it('should return tree with correct company info', async () => {
@@ -297,9 +293,7 @@ describe('OrganigramService', () => {
     it('should include memberCount = 0 for teams', async () => {
       setupTreeQueries(mockDb, {
         areas: [{ uuid: AREA_1, name: 'Bereich A', lead_name: null }],
-        departments: [
-          { uuid: DEPT_1, name: 'Abt.', lead_name: null, area_uuid: AREA_1 },
-        ],
+        departments: [{ uuid: DEPT_1, name: 'Abt.', lead_name: null, area_uuid: AREA_1 }],
         teams: [
           {
             uuid: TEAM_1,

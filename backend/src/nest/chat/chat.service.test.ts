@@ -6,11 +6,7 @@
  *        user listing by permissions, delegation to sub-services,
  *        stub methods (BadRequestException).
  */
-import {
-  BadRequestException,
-  ForbiddenException,
-  NotFoundException,
-} from '@nestjs/common';
+import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { DatabaseService } from '../database/database.service.js';
@@ -25,15 +21,11 @@ import type { PresenceStore } from './presence.store.js';
 // =============================================================
 
 vi.mock('./chat.helpers.js', () => ({
-  filterUsersBySearch: vi.fn(
-    (users: { username: string }[], search: string | undefined) => {
-      if (search === undefined || search === '') return users;
-      const s = search.toLowerCase();
-      return users.filter((u: { username: string }) =>
-        u.username.toLowerCase().includes(s),
-      );
-    },
-  ),
+  filterUsersBySearch: vi.fn((users: { username: string }[], search: string | undefined) => {
+    if (search === undefined || search === '') return users;
+    const s = search.toLowerCase();
+    return users.filter((u: { username: string }) => u.username.toLowerCase().includes(s));
+  }),
   mapRowToChatUser: vi.fn((row: Record<string, unknown>) => ({
     id: row['id'],
     username: row['username'],
@@ -84,9 +76,7 @@ function createMockMessagesService() {
     editMessage: vi.fn().mockResolvedValue(undefined),
     deleteMessage: vi.fn().mockResolvedValue(undefined),
     markAsRead: vi.fn().mockResolvedValue({ markedCount: 0 }),
-    getUnreadCount: vi
-      .fn()
-      .mockResolvedValue({ totalUnread: 0, conversations: [] }),
+    getUnreadCount: vi.fn().mockResolvedValue({ totalUnread: 0, conversations: [] }),
     searchMessages: vi.fn().mockResolvedValue(undefined),
     insertMessage: vi.fn().mockResolvedValue(1),
   };
@@ -118,9 +108,7 @@ describe('ChatService', () => {
   let service: ChatService;
   let mockCls: ReturnType<typeof createMockCls>;
   let mockDb: ReturnType<typeof createMockDb>;
-  let mockConversationsService: ReturnType<
-    typeof createMockConversationsService
-  >;
+  let mockConversationsService: ReturnType<typeof createMockConversationsService>;
   let mockMessagesService: ReturnType<typeof createMockMessagesService>;
   let mockScheduledService: ReturnType<typeof createMockScheduledService>;
   let mockPresenceStore: ReturnType<typeof createMockPresenceStore>;
@@ -151,20 +139,18 @@ describe('ChatService', () => {
     it('should throw ForbiddenException when tenantId is missing', async () => {
       mockCls.get.mockReturnValue(undefined);
 
-      await expect(
-        service.getChatUsers({ search: undefined } as never),
-      ).rejects.toThrow(ForbiddenException);
+      await expect(service.getChatUsers({ search: undefined } as never)).rejects.toThrow(
+        ForbiddenException,
+      );
     });
 
     it('should throw ForbiddenException when userId is missing', async () => {
-      mockCls.get.mockImplementation((key: string) =>
-        key === 'tenantId' ? 10 : undefined,
-      );
+      mockCls.get.mockImplementation((key: string) => (key === 'tenantId' ? 10 : undefined));
       // getCurrentUserPermissions will run but userId check fires first
       // Actually: getTenantId passes, getUserId throws
-      await expect(
-        service.getChatUsers({ search: undefined } as never),
-      ).rejects.toThrow(ForbiddenException);
+      await expect(service.getChatUsers({ search: undefined } as never)).rejects.toThrow(
+        ForbiddenException,
+      );
     });
   });
 
@@ -175,9 +161,7 @@ describe('ChatService', () => {
   describe('getChatUsers — admin/root', () => {
     it('should return all active users for admin', async () => {
       // getCurrentUserPermissions
-      mockDb.query.mockResolvedValueOnce([
-        { role: 'admin', department_id: null },
-      ]);
+      mockDb.query.mockResolvedValueOnce([{ role: 'admin', department_id: null }]);
       // fetchChatUsersByPermissions → privileged query
       mockDb.query.mockResolvedValueOnce([
         {
@@ -212,9 +196,7 @@ describe('ChatService', () => {
   describe('getChatUsers — employee', () => {
     it('should return department-filtered users for employee', async () => {
       // getCurrentUserPermissions
-      mockDb.query.mockResolvedValueOnce([
-        { role: 'employee', department_id: 3 },
-      ]);
+      mockDb.query.mockResolvedValueOnce([{ role: 'employee', department_id: 3 }]);
       // fetchChatUsersByPermissions → restricted query
       mockDb.query.mockResolvedValueOnce([
         {
@@ -235,9 +217,9 @@ describe('ChatService', () => {
     it('should throw NotFoundException when current user not found', async () => {
       mockDb.query.mockResolvedValueOnce([]);
 
-      await expect(
-        service.getChatUsers({ search: undefined } as never),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.getChatUsers({ search: undefined } as never)).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
@@ -261,9 +243,7 @@ describe('ChatService', () => {
     it('should delegate to conversationsService', async () => {
       await service.deleteConversation(1);
 
-      expect(mockConversationsService.deleteConversation).toHaveBeenCalledWith(
-        1,
-      );
+      expect(mockConversationsService.deleteConversation).toHaveBeenCalledWith(1);
     });
   });
 
@@ -301,9 +281,7 @@ describe('ChatService', () => {
     it('should delegate to scheduledService', async () => {
       await service.cancelScheduledMessage('msg-1');
 
-      expect(mockScheduledService.cancelScheduledMessage).toHaveBeenCalledWith(
-        'msg-1',
-      );
+      expect(mockScheduledService.cancelScheduledMessage).toHaveBeenCalledWith('msg-1');
     });
   });
 
@@ -313,25 +291,21 @@ describe('ChatService', () => {
 
   describe('addParticipants', () => {
     it('should throw BadRequestException (not implemented)', async () => {
-      await expect(
-        service.addParticipants(1, { userIds: [2] } as never),
-      ).rejects.toThrow(BadRequestException);
+      await expect(service.addParticipants(1, { userIds: [2] } as never)).rejects.toThrow(
+        BadRequestException,
+      );
     });
   });
 
   describe('removeParticipant', () => {
     it('should throw BadRequestException (not implemented)', async () => {
-      await expect(service.removeParticipant(1, 2)).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(service.removeParticipant(1, 2)).rejects.toThrow(BadRequestException);
     });
   });
 
   describe('leaveConversation', () => {
     it('should throw BadRequestException (not implemented)', async () => {
-      await expect(service.leaveConversation(1)).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(service.leaveConversation(1)).rejects.toThrow(BadRequestException);
     });
   });
 });

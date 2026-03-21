@@ -18,14 +18,7 @@
   import { uploadAttachment } from './api';
   import BlackboardEntryModal from './BlackboardEntryModal.svelte';
 
-  import type {
-    BlackboardEntry,
-    Priority,
-    EntryColor,
-    Department,
-    Team,
-    Area,
-  } from './types';
+  import type { BlackboardEntry, Priority, EntryColor, Department, Team, Area } from './types';
 
   const log = createLogger('BlackboardEditModal');
   const apiClient = getApiClient();
@@ -62,13 +55,9 @@
   let formContent = $state(untrack(() => entry.content));
   let formPriority = $state<Priority>(untrack(() => entry.priority));
   let formColor = $state<EntryColor>(untrack(() => entry.color));
-  let formExpiresAt = $state(
-    untrack(() => fromIso8601ToDateInput(entry.expiresAt)),
-  );
+  let formExpiresAt = $state(untrack(() => fromIso8601ToDateInput(entry.expiresAt)));
   let formCompanyWide = $state(untrack(() => entry.orgLevel === 'company'));
-  let formDepartmentIds = $state<number[]>(
-    untrack(() => entry.departmentIds ?? []),
-  );
+  let formDepartmentIds = $state<number[]>(untrack(() => entry.departmentIds ?? []));
   let formTeamIds = $state<number[]>(untrack(() => entry.teamIds ?? []));
   let formAreaIds = $state<number[]>(untrack(() => entry.areaIds ?? []));
   let attachmentFiles = $state<File[] | null>(null);
@@ -170,9 +159,7 @@
       onclose();
     } catch (err: unknown) {
       log.error({ err }, 'Error saving entry');
-      showErrorAlert(
-        err instanceof Error ? err.message : 'Fehler beim Speichern',
-      );
+      showErrorAlert(err instanceof Error ? err.message : 'Fehler beim Speichern');
     }
   }
 

@@ -65,9 +65,7 @@
   const isClipped = $derived(isCollapsed && !isSectionExpanded && !isLast);
 
   /** Stacked = collapsed + not first + previous not expanded */
-  const isStacked = $derived(
-    isCollapsed && sectionIndex > 0 && !isPreviousExpanded,
-  );
+  const isStacked = $derived(isCollapsed && sectionIndex > 0 && !isPreviousExpanded);
 </script>
 
 <section
@@ -76,9 +74,7 @@
   class:kamishibai-section--stacked={isStacked}
   style:--section-z={isCollapsed ? sectionIndex + 1 : 0}
   style:filter={dimmed ? 'var(--section-dim-filter)' : undefined}
-  style:margin-top={isStacked ?
-    `calc(${overlapFactor} * var(--section-overlap))`
-  : undefined}
+  style:margin-top={isStacked ? `calc(${overlapFactor} * var(--section-overlap))` : undefined}
 >
   <button
     type="button"
@@ -163,9 +159,7 @@
         <div class="kamishibai-section__role-label">
           <i class="fas fa-wrench"></i>
           {CARD_ROLE_LABELS.maintenance}
-          <span class="kamishibai-section__count"
-            >{maintenanceCards.length}</span
-          >
+          <span class="kamishibai-section__count">{maintenanceCards.length}</span>
         </div>
         <div class="kamishibai-section__cards">
           {#each maintenanceCards as card (card.uuid)}
@@ -215,15 +209,12 @@
   }
 
   /* Any section with stacked cards: pop above all others on card hover */
-  .kamishibai-section:has(
-    .kamishibai-section__cards--stacked :global(.kamishibai-card:hover)
-  ) {
+  .kamishibai-section:has(.kamishibai-section__cards--stacked :global(.kamishibai-card:hover)) {
     z-index: 100;
     overflow: visible;
   }
 
-  :is(.kamishibai-section--clipped, .kamishibai-section--stacked)
-    .kamishibai-section__role-group {
+  :is(.kamishibai-section--clipped, .kamishibai-section--stacked) .kamishibai-section__role-group {
     background: var(--color-section-stacked-bg);
   }
 
@@ -239,11 +230,7 @@
     position: absolute;
     inset: auto 0 0;
     height: 60px;
-    background: linear-gradient(
-      to bottom,
-      transparent,
-      var(--color-section-stacked-bg)
-    );
+    background: linear-gradient(to bottom, transparent, var(--color-section-stacked-bg));
     border-radius: 0 0 var(--radius-lg) var(--radius-lg);
     pointer-events: none;
     opacity: 0%;
@@ -319,13 +306,11 @@
   @keyframes badge-pulse {
     0%,
     100% {
-      box-shadow: 0 0 0 0
-        color-mix(in srgb, var(--color-danger) 30%, transparent);
+      box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-danger) 30%, transparent);
     }
 
     50% {
-      box-shadow: 0 0 0 6px
-        color-mix(in srgb, var(--color-danger) 0%, transparent);
+      box-shadow: 0 0 0 6px color-mix(in srgb, var(--color-danger) 0%, transparent);
     }
   }
 
@@ -404,8 +389,7 @@
   .kamishibai-section__cards--stacked :global(.kamishibai-card:hover) {
     transform: translateY(-20px) scale(1.08);
     z-index: 50;
-    box-shadow: 0 12px 32px
-      color-mix(in oklch, var(--color-black) 50%, transparent);
+    box-shadow: 0 12px 32px color-mix(in oklch, var(--color-black) 50%, transparent);
   }
 
   .kamishibai-section__empty {

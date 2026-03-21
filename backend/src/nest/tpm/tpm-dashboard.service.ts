@@ -21,10 +21,7 @@ export class TpmDashboardService {
    * Queries persistent notifications of type='tpm' targeted at the user
    * that have not been marked as read (no entry in notification_read_status).
    */
-  async getUnreadCount(
-    userId: number,
-    tenantId: number,
-  ): Promise<{ count: number }> {
+  async getUnreadCount(userId: number, tenantId: number): Promise<{ count: number }> {
     const rows = await this.db.query<{ count: string }>(
       `SELECT COUNT(*) AS count
        FROM notifications n

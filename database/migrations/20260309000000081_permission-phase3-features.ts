@@ -26,13 +26,7 @@ const NEW_FEATURES: [string, string, string, string, number][] = [
     'premium',
     60,
   ],
-  [
-    'reports',
-    'Berichte & Auswertungen',
-    'Unternehmensberichte und Analytics',
-    'premium',
-    65,
-  ],
+  ['reports', 'Berichte & Auswertungen', 'Unternehmensberichte und Analytics', 'premium', 65],
   [
     'audit_trail',
     'Protokoll & Audit',
@@ -47,13 +41,7 @@ const NEW_FEATURES: [string, string, string, string, number][] = [
     'basic',
     75,
   ],
-  [
-    'dummy_users',
-    'Platzhalter-Benutzer',
-    'Anonyme Anzeige-Accounts für Bildschirme',
-    'core',
-    80,
-  ],
+  ['dummy_users', 'Platzhalter-Benutzer', 'Anonyme Anzeige-Accounts für Bildschirme', 'core', 80],
 ];
 
 /** Module definitions: [featureCode, moduleCode, canRead, canWrite, canDelete] */

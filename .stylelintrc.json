@@ -143,10 +143,7 @@
       }
     },
     {
-      "files": [
-        "**/design-system/primitives/**/*.css",
-        "**/styles/tailwind/utilities.css"
-      ],
+      "files": ["**/design-system/primitives/**/*.css", "**/styles/tailwind/utilities.css"],
       "rules": {
         "no-unknown-animations": null
       }

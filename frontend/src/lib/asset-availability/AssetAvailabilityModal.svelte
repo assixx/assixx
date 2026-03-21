@@ -98,10 +98,7 @@
   // OUTSIDE CLICK HANDLER
   // =============================================================================
 
-  function isClickOutsideDropdown(
-    target: HTMLElement,
-    elementId: string,
-  ): boolean {
+  function isClickOutsideDropdown(target: HTMLElement, elementId: string): boolean {
     const el = document.getElementById(elementId);
     return el !== null && !el.contains(target);
   }
@@ -116,9 +113,7 @@
     if (statusDropdownOpen) {
       const handleOutsideClick = (e: MouseEvent): void => {
         const target = e.target as HTMLElement;
-        if (
-          isClickOutsideDropdown(target, 'asset-availability-status-dropdown')
-        ) {
+        if (isClickOutsideDropdown(target, 'asset-availability-status-dropdown')) {
           statusDropdownOpen = false;
         }
       };
@@ -304,8 +299,7 @@
             class="btn btn-primary"
             disabled={submitting}
           >
-            {#if submitting}<span class="spinner-ring spinner-ring--sm mr-2"
-              ></span>{/if}
+            {#if submitting}<span class="spinner-ring spinner-ring--sm mr-2"></span>{/if}
             Speichern
           </button>
         </div>

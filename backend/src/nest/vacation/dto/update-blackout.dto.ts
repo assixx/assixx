@@ -18,11 +18,7 @@ const BaseSchema = z.object({
     .min(1, 'Name is required')
     .max(100, 'Name cannot exceed 100 characters')
     .optional(),
-  reason: z
-    .string()
-    .trim()
-    .max(255, 'Reason cannot exceed 255 characters')
-    .nullish(),
+  reason: z.string().trim().max(255, 'Reason cannot exceed 255 characters').nullish(),
   startDate: DateSchema.optional(),
   endDate: DateSchema.optional(),
   isGlobal: z.boolean().optional(),
@@ -44,8 +40,7 @@ export const UpdateBlackoutSchema = BaseSchema.refine(
 ).refine(
   (data: BaseInput) => {
     if (data.isGlobal === true) {
-      const hasDepts =
-        data.departmentIds !== undefined && data.departmentIds.length > 0;
+      const hasDepts = data.departmentIds !== undefined && data.departmentIds.length > 0;
       const hasTeams = data.teamIds !== undefined && data.teamIds.length > 0;
       const hasAreas = data.areaIds !== undefined && data.areaIds.length > 0;
       return !hasDepts && !hasTeams && !hasAreas;

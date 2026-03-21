@@ -14,9 +14,7 @@ import { type ZodError, z } from 'zod';
  */
 const EnvSchema = z.object({
   // Server
-  NODE_ENV: z
-    .enum(['development', 'production', 'test'])
-    .default('development'),
+  NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   PORT: z.coerce.number().int().positive().default(3000),
 
   // Database
@@ -39,9 +37,7 @@ const EnvSchema = z.object({
   REDIS_PASSWORD: z.string().optional(),
 
   // CORS
-  ALLOWED_ORIGINS: z
-    .string()
-    .default('http://localhost:3000,http://localhost:5173'),
+  ALLOWED_ORIGINS: z.string().default('http://localhost:3000,http://localhost:5173'),
 
   // Email (optional)
   SMTP_HOST: z.string().optional(),
@@ -82,10 +78,7 @@ export class AppConfigService {
 
     if (!result.success) {
       const errors = result.error.issues
-        .map(
-          (issue: ZodError['issues'][number]) =>
-            `${issue.path.join('.')}: ${issue.message}`,
-        )
+        .map((issue: ZodError['issues'][number]) => `${issue.path.join('.')}: ${issue.message}`)
         .join('\n');
       throw new Error(`Invalid environment configuration:\n${errors}`);
     }
@@ -178,10 +171,7 @@ export class AppConfigService {
   }
 
   get hasRedis(): boolean {
-    return (
-      this.config.REDIS_HOST !== undefined &&
-      this.config.REDIS_PORT !== undefined
-    );
+    return this.config.REDIS_HOST !== undefined && this.config.REDIS_PORT !== undefined;
   }
 
   // CORS
@@ -190,9 +180,7 @@ export class AppConfigService {
   }
 
   get allowedOriginsArray(): string[] {
-    return this.config.ALLOWED_ORIGINS.split(',').map((origin: string) =>
-      origin.trim(),
-    );
+    return this.config.ALLOWED_ORIGINS.split(',').map((origin: string) => origin.trim());
   }
 
   // Email
@@ -213,8 +201,6 @@ export class AppConfigService {
   }
 
   get hasSmtp(): boolean {
-    return (
-      this.config.SMTP_HOST !== undefined && this.config.SMTP_PORT !== undefined
-    );
+    return this.config.SMTP_HOST !== undefined && this.config.SMTP_PORT !== undefined;
   }
 }

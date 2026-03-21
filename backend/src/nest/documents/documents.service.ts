@@ -9,12 +9,7 @@
  * Pure functions live in documents.helpers.ts.
  */
 import { IS_ACTIVE } from '@assixx/shared/constants';
-import {
-  ForbiddenException,
-  Injectable,
-  Logger,
-  NotFoundException,
-} from '@nestjs/common';
+import { ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 
 import { eventBus } from '../../utils/event-bus.js';
 import { ActivityLoggerService } from '../common/services/activity-logger.service.js';
@@ -139,14 +134,7 @@ export interface DocumentCreateInput {
   fileContent: Buffer;
   mimeType: string;
   category: string;
-  accessScope:
-    | 'personal'
-    | 'team'
-    | 'department'
-    | 'company'
-    | 'payroll'
-    | 'blackboard'
-    | 'chat';
+  accessScope: 'personal' | 'team' | 'department' | 'company' | 'payroll' | 'blackboard' | 'chat';
   ownerUserId?: number;
   targetTeamId?: number;
   targetDepartmentId?: number;
@@ -226,32 +214,24 @@ export class DocumentsService {
     const isAdmin = user.role === 'admin' || user.role === 'root';
     const filters = buildDocumentFilters(query, isActive);
 
-    const { baseQuery, params, paramIndex } =
-      this.accessService.buildDocumentQuery(
-        tenantId,
-        isActive,
-        filters,
-        isAdmin,
-        userId,
-      );
-    const total = await getDocumentsCount(
-      this.databaseService,
-      baseQuery,
-      params,
+    const { baseQuery, params, paramIndex } = this.accessService.buildDocumentQuery(
+      tenantId,
+      isActive,
+      filters,
+      isAdmin,
+      userId,
     );
+    const total = await getDocumentsCount(this.databaseService, baseQuery, params);
 
     const paginatedQuery = `${baseQuery} ORDER BY d.uploaded_at DESC LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
-    const documents = await this.databaseService.query<DbDocument>(
-      paginatedQuery,
-      [...params, limit, offset],
-    );
+    const documents = await this.databaseService.query<DbDocument>(paginatedQuery, [
+      ...params,
+      limit,
+      offset,
+    ]);
     const apiDocuments = await Promise.all(
       documents.map(async (doc: DbDocument) => {
-        const isRead = await this.accessService.isDocumentRead(
-          doc.id,
-          userId,
-          tenantId,
-        );
+        const isRead = await this.accessService.isDocumentRead(doc.id, userId, tenantId);
         return enrichDocument(doc, isRead);
       }),
     );
@@ -284,11 +264,7 @@ export class DocumentsService {
     }
 
     // Check access
-    const hasAccess = await this.accessService.checkDocumentAccess(
-      document,
-      userId,
-      tenantId,
-    );
+    const hasAccess = await this.accessService.checkDocumentAccess(document, userId, tenantId);
     if (!hasAccess) {
       throw new ForbiddenException("You don't have access to this document");
     }
@@ -296,11 +272,7 @@ export class DocumentsService {
     // Mark as read
     await this.markDocumentAsRead(documentId, tenantId, userId);
 
-    const isRead = await this.accessService.isDocumentRead(
-      documentId,
-      userId,
-      tenantId,
-    );
+    const isRead = await this.accessService.isDocumentRead(documentId, userId, tenantId);
     return enrichDocument(document, isRead);
   }
 
@@ -326,20 +298,12 @@ export class DocumentsService {
     }
 
     // Check access
-    const hasAccess = await this.accessService.checkDocumentAccess(
-      document,
-      userId,
-      tenantId,
-    );
+    const hasAccess = await this.accessService.checkDocumentAccess(document, userId, tenantId);
     if (!hasAccess) {
       return null;
     }
 
-    const isRead = await this.accessService.isDocumentRead(
-      document.id,
-      userId,
-      tenantId,
-    );
+    const isRead = await this.accessService.isDocumentRead(document.id, userId, tenantId);
     return enrichDocument(document, isRead);
   }
 
@@ -352,11 +316,7 @@ export class DocumentsService {
   ): Promise<{ message: string }> {
     this.logger.log(`Updating document ${documentId}`);
 
-    const document = await getDocumentRow(
-      this.databaseService,
-      documentId,
-      tenantId,
-    );
+    const document = await getDocumentRow(this.databaseService, documentId, tenantId);
     if (document === null) {
       throw new NotFoundException(ERROR_DOCUMENT_NOT_FOUND);
     }
@@ -369,9 +329,7 @@ export class DocumentsService {
     const isAdmin = user.role === 'admin' || user.role === 'root';
     const isCreator = document.created_by === userId;
     if (!isAdmin && !isCreator) {
-      throw new ForbiddenException(
-        "You don't have permission to update this document",
-      );
+      throw new ForbiddenException("You don't have permission to update this document");
     }
 
     // Build and execute update
@@ -412,11 +370,7 @@ export class DocumentsService {
   ): Promise<{ message: string }> {
     this.logger.log(`Deleting document ${documentId}`);
 
-    const document = await getDocumentRow(
-      this.databaseService,
-      documentId,
-      tenantId,
-    );
+    const document = await getDocumentRow(this.databaseService, documentId, tenantId);
     if (document === null) {
       throw new NotFoundException(ERROR_DOCUMENT_NOT_FOUND);
     }
@@ -491,9 +445,7 @@ export class DocumentsService {
       throw new NotFoundException(ERROR_USER_NOT_FOUND);
     }
     if (user.role !== 'admin' && user.role !== 'root') {
-      throw new ForbiddenException(
-        'Only administrators can unarchive documents',
-      );
+      throw new ForbiddenException('Only administrators can unarchive documents');
     }
 
     await this.databaseService.query(
@@ -512,20 +464,12 @@ export class DocumentsService {
   ): Promise<DocumentContentResponse> {
     this.logger.debug(`Getting document content ${documentId}`);
 
-    const document = await getDocumentRow(
-      this.databaseService,
-      documentId,
-      tenantId,
-    );
+    const document = await getDocumentRow(this.databaseService, documentId, tenantId);
     if (document === null) {
       throw new NotFoundException(ERROR_DOCUMENT_NOT_FOUND);
     }
 
-    const hasAccess = await this.accessService.checkDocumentAccess(
-      document,
-      userId,
-      tenantId,
-    );
+    const hasAccess = await this.accessService.checkDocumentAccess(document, userId, tenantId);
     if (!hasAccess) {
       throw new ForbiddenException("You don't have access to this document");
     }
@@ -624,10 +568,7 @@ export class DocumentsService {
   }
 
   /** Get document statistics */
-  async getDocumentStats(
-    tenantId: number,
-    userId: number,
-  ): Promise<DocumentStatsResponse> {
+  async getDocumentStats(tenantId: number, userId: number): Promise<DocumentStatsResponse> {
     this.logger.debug(`Getting document stats for tenant ${tenantId}`);
 
     const user = await this.getUserById(userId, tenantId);
@@ -717,10 +658,7 @@ export class DocumentsService {
       params.push(userId);
     }
 
-    const result = await this.databaseService.query<{ count: string }>(
-      query,
-      params,
-    );
+    const result = await this.databaseService.query<{ count: string }>(query, params);
     const count = Number.parseInt(result[0]?.count ?? '0', 10);
 
     return { count };
@@ -766,23 +704,11 @@ export class DocumentsService {
     validateDocumentInput(data);
 
     if (data.storageType === 'filesystem' && data.filePath !== undefined) {
-      await this.storageService.writeFileToDisk(
-        data.filePath,
-        data.fileContent,
-      );
+      await this.storageService.writeFileToDisk(data.filePath, data.fileContent);
     }
 
-    const documentId = await insertDocumentRecord(
-      this.databaseService,
-      data,
-      userId,
-      tenantId,
-    );
-    const createdDocument = await this.getDocumentById(
-      documentId,
-      tenantId,
-      userId,
-    );
+    const documentId = await insertDocumentRecord(this.databaseService, data, userId, tenantId);
+    const createdDocument = await this.getDocumentById(documentId, tenantId, userId);
 
     eventBus.emitDocumentUploaded(tenantId, {
       id: documentId,
@@ -791,12 +717,7 @@ export class DocumentsService {
     });
 
     // Create persistent notification for ADR-004
-    this.notificationService.createUploadNotification(
-      data,
-      documentId,
-      tenantId,
-      userId,
-    );
+    this.notificationService.createUploadNotification(data, documentId, tenantId, userId);
 
     // Log activity to root_logs
     await this.activityLogger.logCreate(
@@ -823,10 +744,7 @@ export class DocumentsService {
    * Resolve document ID from UUID.
    * @throws NotFoundException if document not found
    */
-  private async resolveDocumentIdByUuid(
-    uuid: string,
-    tenantId: number,
-  ): Promise<number> {
+  private async resolveDocumentIdByUuid(uuid: string, tenantId: number): Promise<number> {
     const result = await this.databaseService.query<{ id: number }>(
       `SELECT id FROM documents WHERE uuid = $1 AND tenant_id = $2`,
       [uuid, tenantId],
@@ -842,10 +760,7 @@ export class DocumentsService {
    * Get user by ID.
    * SECURITY: Only returns data for ACTIVE users (is_active = 1).
    */
-  private async getUserById(
-    userId: number,
-    tenantId: number,
-  ): Promise<{ role: string } | null> {
+  private async getUserById(userId: number, tenantId: number): Promise<{ role: string } | null> {
     const rows = await this.databaseService.query<{ role: string }>(
       `SELECT role FROM users WHERE id = $1 AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}`,
       [userId, tenantId],

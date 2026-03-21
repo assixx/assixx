@@ -10,12 +10,9 @@ import { UpdateShiftTimeSchema } from './update-shift-time.dto.js';
 // =============================================================
 
 describe('ShiftKeySchema', () => {
-  it.each(['early', 'late', 'night'] as const)(
-    'should accept shift key=%s',
-    (key) => {
-      expect(ShiftKeySchema.safeParse(key).success).toBe(true);
-    },
-  );
+  it.each(['early', 'late', 'night'] as const)('should accept shift key=%s', (key) => {
+    expect(ShiftKeySchema.safeParse(key).success).toBe(true);
+  });
 
   it('should reject invalid shift key', () => {
     expect(ShiftKeySchema.safeParse('morning').success).toBe(false);
@@ -136,12 +133,8 @@ describe('UpdateShiftTimeSchema', () => {
   });
 
   it('should reject missing fields', () => {
-    expect(UpdateShiftTimeSchema.safeParse({ label: 'Test' }).success).toBe(
-      false,
-    );
-    expect(
-      UpdateShiftTimeSchema.safeParse({ startTime: '06:00' }).success,
-    ).toBe(false);
+    expect(UpdateShiftTimeSchema.safeParse({ label: 'Test' }).success).toBe(false);
+    expect(UpdateShiftTimeSchema.safeParse({ startTime: '06:00' }).success).toBe(false);
     expect(UpdateShiftTimeSchema.safeParse({}).success).toBe(false);
   });
 

@@ -49,9 +49,7 @@ export function validateSortDirection(sortDir: string): 'ASC' | 'DESC' {
  * Normalize filter values with defaults applied.
  * Converts optional/undefined values to concrete defaults.
  */
-export function normalizeEntryFilters(
-  filters: EntryFilters,
-): NormalizedFilters {
+export function normalizeEntryFilters(filters: EntryFilters): NormalizedFilters {
   return {
     isActive: filters.isActive ?? 1, // Default to active (1)
     filter: filters.filter ?? 'all',
@@ -80,11 +78,7 @@ export function processEntryContent(entry: DbBlackboardEntry): void {
   }
 
   const content = entry.content;
-  if (
-    typeof content === 'object' &&
-    'type' in content &&
-    Array.isArray(content.data)
-  ) {
+  if (typeof content === 'object' && 'type' in content && Array.isArray(content.data)) {
     entry.content = Buffer.from(content.data).toString('utf8');
   }
 }
@@ -97,9 +91,7 @@ export function processEntryContent(entry: DbBlackboardEntry): void {
  * Transform database entry to API response format.
  * Converts snake_case to camelCase and formats dates.
  */
-export function transformEntry(
-  entry: DbBlackboardEntry,
-): Record<string, unknown> {
+export function transformEntry(entry: DbBlackboardEntry): Record<string, unknown> {
   const transformed = dbToApi(entry as unknown as Record<string, unknown>);
 
   if (entry.author_full_name !== undefined && entry.author_full_name !== '') {
@@ -118,9 +110,7 @@ export function transformEntry(
 /**
  * Transform database comment to API response format.
  */
-export function transformComment(
-  comment: DbBlackboardComment,
-): BlackboardComment {
+export function transformComment(comment: DbBlackboardComment): BlackboardComment {
   const result: BlackboardComment = {
     id: comment.id,
     entryId: comment.entry_id,

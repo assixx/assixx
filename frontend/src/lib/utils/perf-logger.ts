@@ -84,11 +84,7 @@ export const perf = {
   /**
    * Time a sync operation. When disabled: just executes fn.
    */
-  timeSync<T>(
-    name: string,
-    fn: () => T,
-    metadata?: Record<string, unknown>,
-  ): T {
+  timeSync<T>(name: string, fn: () => T, metadata?: Record<string, unknown>): T {
     if (!isEnabled()) return fn();
 
     const end = this.start(name, metadata);
@@ -118,20 +114,14 @@ export function logPageLoadTiming(): void {
     return;
   }
 
-  const navEntries = performance.getEntriesByType(
-    'navigation',
-  ) as PerformanceNavigationTiming[];
+  const navEntries = performance.getEntriesByType('navigation') as PerformanceNavigationTiming[];
   if (navEntries.length === 0) return;
   const nav = navEntries[0];
 
   console.group('📄 Page Load Timing');
   console.log(`TTFB: ${formatDuration(nav.responseStart - nav.startTime)}`);
-  console.log(
-    `DOM Parsing: ${formatDuration(nav.domInteractive - nav.responseEnd)}`,
-  );
-  console.log(
-    `DOM Ready: ${formatDuration(nav.domContentLoadedEventEnd - nav.startTime)}`,
-  );
+  console.log(`DOM Parsing: ${formatDuration(nav.domInteractive - nav.responseEnd)}`);
+  console.log(`DOM Ready: ${formatDuration(nav.domContentLoadedEventEnd - nav.startTime)}`);
   console.log(`Page Load: ${formatDuration(nav.loadEventEnd - nav.startTime)}`);
   console.groupEnd();
 }
@@ -142,15 +132,11 @@ export function logPageLoadTiming(): void {
 export function logResourceTiming(filter?: string | RegExp): void {
   if (!browser || !isEnabled()) return;
 
-  const resources = performance.getEntriesByType(
-    'resource',
-  ) as PerformanceResourceTiming[];
+  const resources = performance.getEntriesByType('resource') as PerformanceResourceTiming[];
   const filtered =
     filter !== undefined ?
       resources.filter((r) =>
-        typeof filter === 'string' ?
-          r.name.includes(filter)
-        : filter.test(r.name),
+        typeof filter === 'string' ? r.name.includes(filter) : filter.test(r.name),
       )
     : resources;
 

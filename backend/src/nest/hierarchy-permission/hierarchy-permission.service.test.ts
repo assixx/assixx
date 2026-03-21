@@ -81,9 +81,7 @@ describe('SECURITY: hasAccess', () => {
   });
 
   it('should return false on error', async () => {
-    (mockDb.query as ReturnType<typeof vi.fn>).mockRejectedValueOnce(
-      new Error('DB down'),
-    );
+    (mockDb.query as ReturnType<typeof vi.fn>).mockRejectedValueOnce(new Error('DB down'));
 
     const result = await service.hasAccess(1, 1, 'area', 1);
 
@@ -279,13 +277,7 @@ describe('SECURITY: permission level enforcement', () => {
     mockUser('admin', false);
     mockQueryReturn([{ can_read: true, can_write: true, can_delete: true }]);
 
-    const result = await service.hasAccess(
-      1,
-      1,
-      'area',
-      10,
-      'unknown' as never,
-    );
+    const result = await service.hasAccess(1, 1, 'area', 10, 'unknown' as never);
 
     expect(result).toBe(false);
   });
@@ -806,11 +798,7 @@ describe('SECURITY: isEntityInScope', () => {
       isTeamLead: false,
       isAnyLead: false,
     };
-    const result = HierarchyPermissionService.isEntityInScope(
-      scope,
-      'unknown' as never,
-      1,
-    );
+    const result = HierarchyPermissionService.isEntityInScope(scope, 'unknown' as never, 1);
     expect(result).toBe(false);
   });
 
@@ -828,17 +816,9 @@ describe('SECURITY: isEntityInScope', () => {
       isTeamLead: false,
       isAnyLead: false,
     };
-    expect(HierarchyPermissionService.isEntityInScope(scope, 'area', 1)).toBe(
-      true,
-    );
-    expect(
-      HierarchyPermissionService.isEntityInScope(scope, 'department', 10),
-    ).toBe(true);
-    expect(HierarchyPermissionService.isEntityInScope(scope, 'team', 100)).toBe(
-      true,
-    );
-    expect(HierarchyPermissionService.isEntityInScope(scope, 'area', 10)).toBe(
-      false,
-    );
+    expect(HierarchyPermissionService.isEntityInScope(scope, 'area', 1)).toBe(true);
+    expect(HierarchyPermissionService.isEntityInScope(scope, 'department', 10)).toBe(true);
+    expect(HierarchyPermissionService.isEntityInScope(scope, 'team', 100)).toBe(true);
+    expect(HierarchyPermissionService.isEntityInScope(scope, 'area', 10)).toBe(false);
   });
 });

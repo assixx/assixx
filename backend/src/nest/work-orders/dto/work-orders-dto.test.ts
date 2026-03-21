@@ -66,12 +66,9 @@ describe('WorkOrderStatusSchema', () => {
 // =============================================================
 
 describe('WorkOrderPrioritySchema', () => {
-  it.each(['low', 'medium', 'high'] as const)(
-    'should accept priority=%s',
-    (value) => {
-      expect(WorkOrderPrioritySchema.safeParse(value).success).toBe(true);
-    },
-  );
+  it.each(['low', 'medium', 'high'] as const)('should accept priority=%s', (value) => {
+    expect(WorkOrderPrioritySchema.safeParse(value).success).toBe(true);
+  });
 
   it('should reject invalid priority', () => {
     expect(WorkOrderPrioritySchema.safeParse('critical').success).toBe(false);
@@ -125,9 +122,7 @@ describe('UuidParamSchema', () => {
   });
 
   it('should reject invalid UUID', () => {
-    expect(UuidParamSchema.safeParse({ uuid: 'not-a-uuid' }).success).toBe(
-      false,
-    );
+    expect(UuidParamSchema.safeParse({ uuid: 'not-a-uuid' }).success).toBe(false);
   });
 
   it('should reject missing uuid field', () => {
@@ -256,15 +251,11 @@ describe('CreateWorkOrderSchema', () => {
   // -----------------------------------------------------------
 
   it('should reject empty title', () => {
-    expect(
-      CreateWorkOrderSchema.safeParse({ ...validManual, title: '' }).success,
-    ).toBe(false);
+    expect(CreateWorkOrderSchema.safeParse({ ...validManual, title: '' }).success).toBe(false);
   });
 
   it('should reject whitespace-only title', () => {
-    expect(
-      CreateWorkOrderSchema.safeParse({ ...validManual, title: '   ' }).success,
-    ).toBe(false);
+    expect(CreateWorkOrderSchema.safeParse({ ...validManual, title: '   ' }).success).toBe(false);
   });
 
   it('should reject title longer than 500 chars', () => {
@@ -342,14 +333,9 @@ describe('CreateWorkOrderSchema', () => {
     expect(result.priority).toBe('medium');
   });
 
-  it.each(['low', 'medium', 'high'] as const)(
-    'should accept priority=%s',
-    (priority) => {
-      expect(
-        CreateWorkOrderSchema.safeParse({ ...validManual, priority }).success,
-      ).toBe(true);
-    },
-  );
+  it.each(['low', 'medium', 'high'] as const)('should accept priority=%s', (priority) => {
+    expect(CreateWorkOrderSchema.safeParse({ ...validManual, priority }).success).toBe(true);
+  });
 
   // -----------------------------------------------------------
   // sourceType + sourceUuid refinements
@@ -472,16 +458,11 @@ describe('CreateWorkOrderSchema', () => {
   });
 
   it('should reject null dueDate', () => {
-    expect(
-      CreateWorkOrderSchema.safeParse({ ...validManual, dueDate: null })
-        .success,
-    ).toBe(false);
+    expect(CreateWorkOrderSchema.safeParse({ ...validManual, dueDate: null }).success).toBe(false);
   });
 
   it('should reject missing dueDate', () => {
-    expect(CreateWorkOrderSchema.safeParse({ title: 'Test' }).success).toBe(
-      false,
-    );
+    expect(CreateWorkOrderSchema.safeParse({ title: 'Test' }).success).toBe(false);
   });
 
   it('should reject invalid date format', () => {
@@ -535,15 +516,11 @@ describe('UpdateWorkOrderSchema', () => {
   });
 
   it('should reject whitespace-only title', () => {
-    expect(UpdateWorkOrderSchema.safeParse({ title: '   ' }).success).toBe(
-      false,
-    );
+    expect(UpdateWorkOrderSchema.safeParse({ title: '   ' }).success).toBe(false);
   });
 
   it('should reject title longer than 500 chars', () => {
-    expect(
-      UpdateWorkOrderSchema.safeParse({ title: 'A'.repeat(501) }).success,
-    ).toBe(false);
+    expect(UpdateWorkOrderSchema.safeParse({ title: 'A'.repeat(501) }).success).toBe(false);
   });
 
   it('should trim whitespace from title', () => {
@@ -561,27 +538,19 @@ describe('UpdateWorkOrderSchema', () => {
   });
 
   it('should reject description longer than 5000 chars', () => {
-    expect(
-      UpdateWorkOrderSchema.safeParse({ description: 'A'.repeat(5001) })
-        .success,
-    ).toBe(false);
+    expect(UpdateWorkOrderSchema.safeParse({ description: 'A'.repeat(5001) }).success).toBe(false);
   });
 
   // -----------------------------------------------------------
   // priority validation
   // -----------------------------------------------------------
 
-  it.each(['low', 'medium', 'high'] as const)(
-    'should accept priority=%s',
-    (priority) => {
-      expect(UpdateWorkOrderSchema.safeParse({ priority }).success).toBe(true);
-    },
-  );
+  it.each(['low', 'medium', 'high'] as const)('should accept priority=%s', (priority) => {
+    expect(UpdateWorkOrderSchema.safeParse({ priority }).success).toBe(true);
+  });
 
   it('should reject invalid priority', () => {
-    expect(
-      UpdateWorkOrderSchema.safeParse({ priority: 'urgent' }).success,
-    ).toBe(false);
+    expect(UpdateWorkOrderSchema.safeParse({ priority: 'urgent' }).success).toBe(false);
   });
 
   // -----------------------------------------------------------
@@ -589,9 +558,7 @@ describe('UpdateWorkOrderSchema', () => {
   // -----------------------------------------------------------
 
   it('should reject null dueDate', () => {
-    expect(UpdateWorkOrderSchema.safeParse({ dueDate: null }).success).toBe(
-      false,
-    );
+    expect(UpdateWorkOrderSchema.safeParse({ dueDate: null }).success).toBe(false);
   });
 
   it('should accept valid dueDate', () => {
@@ -600,9 +567,7 @@ describe('UpdateWorkOrderSchema', () => {
   });
 
   it('should reject invalid date format', () => {
-    expect(
-      UpdateWorkOrderSchema.safeParse({ dueDate: '2026/03/10' }).success,
-    ).toBe(false);
+    expect(UpdateWorkOrderSchema.safeParse({ dueDate: '2026/03/10' }).success).toBe(false);
   });
 });
 
@@ -619,9 +584,7 @@ describe('UpdateStatusSchema', () => {
   );
 
   it('should reject invalid status', () => {
-    expect(UpdateStatusSchema.safeParse({ status: 'cancelled' }).success).toBe(
-      false,
-    );
+    expect(UpdateStatusSchema.safeParse({ status: 'cancelled' }).success).toBe(false);
   });
 
   it('should reject missing status', () => {
@@ -654,9 +617,7 @@ describe('AssignUsersSchema', () => {
     const uuids = Array.from({ length: 10 }, (_, i: number) =>
       VALID_UUID.replace(/f3$/, i.toString().padStart(2, '0')),
     );
-    expect(AssignUsersSchema.safeParse({ userUuids: uuids }).success).toBe(
-      true,
-    );
+    expect(AssignUsersSchema.safeParse({ userUuids: uuids }).success).toBe(true);
   });
 
   it('should reject empty array', () => {
@@ -667,15 +628,11 @@ describe('AssignUsersSchema', () => {
     const uuids = Array.from({ length: 11 }, (_, i: number) =>
       VALID_UUID.replace(/f3$/, i.toString().padStart(2, '0')),
     );
-    expect(AssignUsersSchema.safeParse({ userUuids: uuids }).success).toBe(
-      false,
-    );
+    expect(AssignUsersSchema.safeParse({ userUuids: uuids }).success).toBe(false);
   });
 
   it('should reject invalid UUID in array', () => {
-    expect(
-      AssignUsersSchema.safeParse({ userUuids: ['not-a-uuid'] }).success,
-    ).toBe(false);
+    expect(AssignUsersSchema.safeParse({ userUuids: ['not-a-uuid'] }).success).toBe(false);
   });
 
   it('should reject missing userUuids', () => {
@@ -683,9 +640,7 @@ describe('AssignUsersSchema', () => {
   });
 
   it('should reject non-array value', () => {
-    expect(AssignUsersSchema.safeParse({ userUuids: VALID_UUID }).success).toBe(
-      false,
-    );
+    expect(AssignUsersSchema.safeParse({ userUuids: VALID_UUID }).success).toBe(false);
   });
 });
 
@@ -706,21 +661,15 @@ describe('CreateCommentSchema', () => {
   });
 
   it('should reject whitespace-only content', () => {
-    expect(CreateCommentSchema.safeParse({ content: '   ' }).success).toBe(
-      false,
-    );
+    expect(CreateCommentSchema.safeParse({ content: '   ' }).success).toBe(false);
   });
 
   it('should reject content longer than 5000 chars', () => {
-    expect(
-      CreateCommentSchema.safeParse({ content: 'A'.repeat(5001) }).success,
-    ).toBe(false);
+    expect(CreateCommentSchema.safeParse({ content: 'A'.repeat(5001) }).success).toBe(false);
   });
 
   it('should accept content with exactly 5000 chars', () => {
-    expect(
-      CreateCommentSchema.safeParse({ content: 'A'.repeat(5000) }).success,
-    ).toBe(true);
+    expect(CreateCommentSchema.safeParse({ content: 'A'.repeat(5000) }).success).toBe(true);
   });
 
   it('should trim whitespace from content', () => {
@@ -758,21 +707,15 @@ describe('CreateCommentSchema', () => {
   });
 
   it('should reject parentId = 0', () => {
-    expect(
-      CreateCommentSchema.safeParse({ content: 'Test', parentId: 0 }).success,
-    ).toBe(false);
+    expect(CreateCommentSchema.safeParse({ content: 'Test', parentId: 0 }).success).toBe(false);
   });
 
   it('should reject negative parentId', () => {
-    expect(
-      CreateCommentSchema.safeParse({ content: 'Test', parentId: -1 }).success,
-    ).toBe(false);
+    expect(CreateCommentSchema.safeParse({ content: 'Test', parentId: -1 }).success).toBe(false);
   });
 
   it('should reject non-integer parentId', () => {
-    expect(
-      CreateCommentSchema.safeParse({ content: 'Test', parentId: 1.5 }).success,
-    ).toBe(false);
+    expect(CreateCommentSchema.safeParse({ content: 'Test', parentId: 1.5 }).success).toBe(false);
   });
 });
 
@@ -804,9 +747,7 @@ describe('ListWorkOrdersQuerySchema', () => {
   });
 
   it('should reject invalid sourceUuid', () => {
-    expect(
-      ListWorkOrdersQuerySchema.safeParse({ sourceUuid: 'not-a-uuid' }).success,
-    ).toBe(false);
+    expect(ListWorkOrdersQuerySchema.safeParse({ sourceUuid: 'not-a-uuid' }).success).toBe(false);
   });
 
   it('should accept full query with all filters', () => {
@@ -833,35 +774,24 @@ describe('ListWorkOrdersQuerySchema', () => {
   it.each(['open', 'in_progress', 'completed', 'verified'] as const)(
     'should accept status=%s',
     (status) => {
-      expect(ListWorkOrdersQuerySchema.safeParse({ status }).success).toBe(
-        true,
-      );
+      expect(ListWorkOrdersQuerySchema.safeParse({ status }).success).toBe(true);
     },
   );
 
   it('should reject invalid status filter', () => {
-    expect(
-      ListWorkOrdersQuerySchema.safeParse({ status: 'cancelled' }).success,
-    ).toBe(false);
+    expect(ListWorkOrdersQuerySchema.safeParse({ status: 'cancelled' }).success).toBe(false);
   });
 
   // -----------------------------------------------------------
   // priority filter
   // -----------------------------------------------------------
 
-  it.each(['low', 'medium', 'high'] as const)(
-    'should accept priority=%s',
-    (priority) => {
-      expect(ListWorkOrdersQuerySchema.safeParse({ priority }).success).toBe(
-        true,
-      );
-    },
-  );
+  it.each(['low', 'medium', 'high'] as const)('should accept priority=%s', (priority) => {
+    expect(ListWorkOrdersQuerySchema.safeParse({ priority }).success).toBe(true);
+  });
 
   it('should reject invalid priority filter', () => {
-    expect(
-      ListWorkOrdersQuerySchema.safeParse({ priority: 'critical' }).success,
-    ).toBe(false);
+    expect(ListWorkOrdersQuerySchema.safeParse({ priority: 'critical' }).success).toBe(false);
   });
 
   // -----------------------------------------------------------
@@ -871,16 +801,12 @@ describe('ListWorkOrdersQuerySchema', () => {
   it.each(['tpm_defect', 'kvp_proposal', 'manual'] as const)(
     'should accept sourceType=%s',
     (sourceType) => {
-      expect(ListWorkOrdersQuerySchema.safeParse({ sourceType }).success).toBe(
-        true,
-      );
+      expect(ListWorkOrdersQuerySchema.safeParse({ sourceType }).success).toBe(true);
     },
   );
 
   it('should reject invalid sourceType filter', () => {
-    expect(
-      ListWorkOrdersQuerySchema.safeParse({ sourceType: 'kvp' }).success,
-    ).toBe(false);
+    expect(ListWorkOrdersQuerySchema.safeParse({ sourceType: 'kvp' }).success).toBe(false);
   });
 
   // -----------------------------------------------------------
@@ -888,16 +814,11 @@ describe('ListWorkOrdersQuerySchema', () => {
   // -----------------------------------------------------------
 
   it('should accept valid assigneeUuid', () => {
-    expect(
-      ListWorkOrdersQuerySchema.safeParse({ assigneeUuid: VALID_UUID }).success,
-    ).toBe(true);
+    expect(ListWorkOrdersQuerySchema.safeParse({ assigneeUuid: VALID_UUID }).success).toBe(true);
   });
 
   it('should reject invalid assigneeUuid', () => {
-    expect(
-      ListWorkOrdersQuerySchema.safeParse({ assigneeUuid: 'not-a-uuid' })
-        .success,
-    ).toBe(false);
+    expect(ListWorkOrdersQuerySchema.safeParse({ assigneeUuid: 'not-a-uuid' }).success).toBe(false);
   });
 
   // -----------------------------------------------------------
@@ -915,15 +836,11 @@ describe('ListWorkOrdersQuerySchema', () => {
   });
 
   it('should reject page=0', () => {
-    expect(ListWorkOrdersQuerySchema.safeParse({ page: '0' }).success).toBe(
-      false,
-    );
+    expect(ListWorkOrdersQuerySchema.safeParse({ page: '0' }).success).toBe(false);
   });
 
   it('should reject limit=501', () => {
-    expect(ListWorkOrdersQuerySchema.safeParse({ limit: '501' }).success).toBe(
-      false,
-    );
+    expect(ListWorkOrdersQuerySchema.safeParse({ limit: '501' }).success).toBe(false);
   });
 });
 

@@ -18,6 +18,4 @@ export const AssetAvailabilityStatusSchema = z.enum([
   'other',
 ]);
 
-export type AssetAvailabilityStatus = z.infer<
-  typeof AssetAvailabilityStatusSchema
->;
+export type AssetAvailabilityStatus = z.infer<typeof AssetAvailabilityStatusSchema>;

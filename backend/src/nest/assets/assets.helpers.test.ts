@@ -66,9 +66,7 @@ function createMockAssetRow(overrides?: Partial<DbAssetRow>): DbAssetRow {
   };
 }
 
-function createMockMaintenanceRow(
-  overrides?: Partial<DbMaintenanceRow>,
-): DbMaintenanceRow {
+function createMockMaintenanceRow(overrides?: Partial<DbMaintenanceRow>): DbMaintenanceRow {
   return {
     id: 100,
     tenant_id: 10,
@@ -181,9 +179,7 @@ describe('buildAssetStringFields', () => {
 
   it('should include model when not null', () => {
     const row = createMockAssetRow({ model: 'XR-500' });
-    expect(buildAssetStringFields(row)).toEqual(
-      expect.objectContaining({ model: 'XR-500' }),
-    );
+    expect(buildAssetStringFields(row)).toEqual(expect.objectContaining({ model: 'XR-500' }));
   });
 
   it('should include all non-null string fields', () => {
@@ -548,9 +544,7 @@ describe('MACHINE_FIELD_MAPPINGS', () => {
   });
 
   it('should contain serialNumber → serial_number mapping', () => {
-    const mapping = MACHINE_FIELD_MAPPINGS.find(
-      ([api]) => api === 'serialNumber',
-    );
+    const mapping = MACHINE_FIELD_MAPPINGS.find(([api]) => api === 'serialNumber');
     expect(mapping).toEqual(['serialNumber', 'serial_number']);
   });
 });
@@ -561,9 +555,7 @@ describe('MACHINE_DATE_FIELD_MAPPINGS', () => {
   });
 
   it('should map purchaseDate → purchase_date', () => {
-    const mapping = MACHINE_DATE_FIELD_MAPPINGS.find(
-      ([api]) => api === 'purchaseDate',
-    );
+    const mapping = MACHINE_DATE_FIELD_MAPPINGS.find(([api]) => api === 'purchaseDate');
     expect(mapping).toEqual(['purchaseDate', 'purchase_date']);
   });
 });
@@ -592,9 +584,7 @@ describe('buildAssetUpdateFields', () => {
   it('should include date fields when provided', () => {
     const data: AssetUpdateRequest = { purchaseDate: '2024-06-01' };
     const result = buildAssetUpdateFields(data, 5);
-    const purchaseDateField = result.fields.find((f) =>
-      f.includes('purchase_date'),
-    );
+    const purchaseDateField = result.fields.find((f) => f.includes('purchase_date'));
     expect(purchaseDateField).toBeDefined();
     expect(result.params.some((p) => p instanceof Date)).toBe(true);
   });

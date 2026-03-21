@@ -23,11 +23,7 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent, url }) => {
   }
 
   // Permission check: first fetch detects 403 (ADR-020 pattern)
-  const empResult = await apiFetchWithPermission<Employee[]>(
-    '/users?role=employee',
-    token,
-    fetch,
-  );
+  const empResult = await apiFetchWithPermission<Employee[]>('/users?role=employee', token, fetch);
   if (empResult.permissionDenied) {
     return {
       permissionDenied: true as const,
@@ -57,8 +53,6 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent, url }) => {
     employees,
     teams: Array.isArray(teamsData) ? teamsData : [],
     positionOptions:
-      Array.isArray(positionsData) ?
-        positionsData.map((p: { name: string }) => p.name)
-      : [],
+      Array.isArray(positionsData) ? positionsData.map((p: { name: string }) => p.name) : [],
   };
 };

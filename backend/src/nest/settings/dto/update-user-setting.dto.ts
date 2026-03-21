@@ -4,11 +4,7 @@
 import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';
 
-import {
-  CategoryEnum,
-  SettingValueSchema,
-  ValueTypeEnum,
-} from './setting-schemas.js';
+import { CategoryEnum, SettingValueSchema, ValueTypeEnum } from './setting-schemas.js';
 
 export const UpdateUserSettingSchema = z.object({
   setting_value: SettingValueSchema,
@@ -17,6 +13,4 @@ export const UpdateUserSettingSchema = z.object({
   team_id: z.number().int().positive().nullable().optional(),
 });
 
-export class UpdateUserSettingDto extends createZodDto(
-  UpdateUserSettingSchema,
-) {}
+export class UpdateUserSettingDto extends createZodDto(UpdateUserSettingSchema) {}

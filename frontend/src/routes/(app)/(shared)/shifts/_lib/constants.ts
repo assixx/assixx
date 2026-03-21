@@ -3,10 +3,7 @@
 // Based on: frontend/src/scripts/shifts/constants.ts
 // =============================================================================
 
-import {
-  DEFAULT_HIERARCHY_LABELS,
-  type HierarchyLabels,
-} from '$lib/types/hierarchy-labels';
+import { DEFAULT_HIERARCHY_LABELS, type HierarchyLabels } from '$lib/types/hierarchy-labels';
 
 /**
  * Static error messages (label-independent)
@@ -119,24 +116,17 @@ export function createDropdownPlaceholders(labels: HierarchyLabels) {
 }
 
 /** Dropdown placeholders type for component props */
-export type ShiftDropdownPlaceholders = ReturnType<
-  typeof createDropdownPlaceholders
->;
+export type ShiftDropdownPlaceholders = ReturnType<typeof createDropdownPlaceholders>;
 
 /** Default dropdown placeholders (backward-compatible static export) */
-export const DROPDOWN_PLACEHOLDERS = createDropdownPlaceholders(
-  DEFAULT_HIERARCHY_LABELS,
-);
+export const DROPDOWN_PLACEHOLDERS = createDropdownPlaceholders(DEFAULT_HIERARCHY_LABELS);
 
 /**
  * Shift types array (for iteration)
  */
 export const SHIFT_TYPES = ['early', 'late', 'night'] as const;
 
-export {
-  AVAILABILITY_LABELS,
-  AVAILABILITY_ICONS,
-} from '@assixx/shared/constants';
+export { AVAILABILITY_LABELS, AVAILABILITY_ICONS } from '@assixx/shared/constants';
 export { AVAILABILITY_BADGE_CLASSES as AVAILABILITY_COLORS } from '@assixx/shared/constants';
 
 /**

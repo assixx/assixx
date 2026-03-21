@@ -15,9 +15,7 @@ import {
 import type { DummyUserWithTeamsRow } from './dummy-users.types.js';
 
 /** Minimal valid row with all required fields */
-function createMinimalRow(
-  overrides: Partial<DummyUserWithTeamsRow> = {},
-): DummyUserWithTeamsRow {
+function createMinimalRow(overrides: Partial<DummyUserWithTeamsRow> = {}): DummyUserWithTeamsRow {
   return {
     id: 1,
     uuid: '019c9547-9fc0-771a-b022-3767e233d6f3',
@@ -97,11 +95,7 @@ describe('mapDummyUserRowToApi', () => {
     const result = mapDummyUserRowToApi(row);
 
     expect(result.teamIds).toEqual([5, 12, 3]);
-    expect(result.teamNames).toEqual([
-      'Frühschicht',
-      'Spätschicht',
-      'Nachtschicht',
-    ]);
+    expect(result.teamNames).toEqual(['Frühschicht', 'Spätschicht', 'Nachtschicht']);
   });
 
   it('should parse departments and areas from STRING_AGG', () => {

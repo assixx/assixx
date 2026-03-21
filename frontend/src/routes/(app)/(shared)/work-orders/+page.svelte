@@ -9,19 +9,11 @@
   import PermissionDenied from '$lib/components/PermissionDenied.svelte';
 
   import { fetchMyWorkOrders, fetchMyStats, logApiError } from './_lib/api';
-  import {
-    MESSAGES,
-    STATUS_FILTER_OPTIONS,
-    PRIORITY_FILTER_OPTIONS,
-  } from './_lib/constants';
+  import { MESSAGES, STATUS_FILTER_OPTIONS, PRIORITY_FILTER_OPTIONS } from './_lib/constants';
   import WorkOrderTable from './_lib/WorkOrderTable.svelte';
 
   import type { PageData } from './$types';
-  import type {
-    PaginatedResponse,
-    WorkOrderListItem,
-    WorkOrderStats,
-  } from './_lib/types';
+  import type { PaginatedResponse, WorkOrderListItem, WorkOrderStats } from './_lib/types';
 
   // =============================================================================
   // SSR DATA
@@ -35,9 +27,7 @@
   // CLIENT STATE
   // =============================================================================
 
-  let clientWorkOrders = $state<PaginatedResponse<WorkOrderListItem> | null>(
-    null,
-  );
+  let clientWorkOrders = $state<PaginatedResponse<WorkOrderListItem> | null>(null);
   let clientStats = $state<WorkOrderStats | null>(null);
   let statusFilter = $state('');
   let priorityFilter = $state('');
@@ -50,9 +40,7 @@
 
   const workOrders = $derived(clientWorkOrders ?? data.workOrders);
   const stats = $derived(clientStats ?? data.stats);
-  const totalPages = $derived(
-    Math.max(1, Math.ceil(workOrders.total / workOrders.pageSize)),
-  );
+  const totalPages = $derived(Math.max(1, Math.ceil(workOrders.total / workOrders.pageSize)));
   const hasWorkOrders = $derived(workOrders.items.length > 0);
 
   // =============================================================================

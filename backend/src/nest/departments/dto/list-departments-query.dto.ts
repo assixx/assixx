@@ -19,15 +19,10 @@ function coerceToBooleanOrPassthrough(val: unknown): unknown {
  * List departments query parameters
  */
 export const ListDepartmentsQuerySchema = z.object({
-  includeExtended: z.preprocess(
-    coerceToBooleanOrPassthrough,
-    z.boolean().optional(),
-  ),
+  includeExtended: z.preprocess(coerceToBooleanOrPassthrough, z.boolean().optional()),
 });
 
 /**
  * List Departments Query DTO class
  */
-export class ListDepartmentsQueryDto extends createZodDto(
-  ListDepartmentsQuerySchema,
-) {}
+export class ListDepartmentsQueryDto extends createZodDto(ListDepartmentsQuerySchema) {}

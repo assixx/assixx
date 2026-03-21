@@ -1,7 +1,4 @@
-import {
-  DEFAULT_HIERARCHY_LABELS,
-  type HierarchyLabels,
-} from '$lib/types/hierarchy-labels';
+import { DEFAULT_HIERARCHY_LABELS, type HierarchyLabels } from '$lib/types/hierarchy-labels';
 
 import type { ApprovalApproverType } from './types.js';
 
@@ -33,8 +30,7 @@ export function createApproverTypeOptions(
 }
 
 /** Backward-compat: static export with default labels */
-export const APPROVER_TYPE_OPTIONS: readonly ApproverOption[] =
-  createApproverTypeOptions();
+export const APPROVER_TYPE_OPTIONS: readonly ApproverOption[] = createApproverTypeOptions();
 
 /** Addons that support approval workflows */
 export const APPROVABLE_ADDONS: readonly { code: string; label: string }[] = [

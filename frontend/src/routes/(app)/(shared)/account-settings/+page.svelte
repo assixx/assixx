@@ -14,12 +14,7 @@
   const log = createLogger('AccountSettingsPage');
 
   // Module imports
-  import {
-    getRootUserCount,
-    deleteTenant,
-    saveShiftTimes,
-    resetShiftTimes,
-  } from './_lib/api';
+  import { getRootUserCount, deleteTenant, saveShiftTimes, resetShiftTimes } from './_lib/api';
   import {
     DELETE_CONFIRMATION_TEXT,
     MIN_REASON_LENGTH,
@@ -40,9 +35,7 @@
   const { data }: { data: PageData } = $props();
 
   // SSR data via $derived - updates when invalidateAll() is called
-  const pendingDeletion = $derived<DeletionStatusData | null>(
-    data.pendingDeletion ?? null,
-  );
+  const pendingDeletion = $derived<DeletionStatusData | null>(data.pendingDeletion ?? null);
   const hasPendingDeletion = $derived(pendingDeletion !== null);
   const shiftPlanningEnabled = $derived<boolean>(data.shiftPlanningEnabled);
   const ssrShiftTimes = $derived<ShiftTimeData[]>(data.shiftTimes);
@@ -85,9 +78,7 @@
   // DERIVED STATE
   // =============================================================================
 
-  const isDeleteConfirmationValid = $derived(
-    deleteConfirmation === DELETE_CONFIRMATION_TEXT,
-  );
+  const isDeleteConfirmationValid = $derived(deleteConfirmation === DELETE_CONFIRMATION_TEXT);
   const isReasonValid = $derived(deleteReason.length >= MIN_REASON_LENGTH);
   const canDelete = $derived(isDeleteConfirmationValid && isReasonValid);
 
@@ -197,8 +188,7 @@
       await invalidateAll();
     } catch (err: unknown) {
       log.error({ err }, 'Error deleting tenant');
-      const message =
-        err instanceof Error ? err.message : MESSAGES.deletionError;
+      const message = err instanceof Error ? err.message : MESSAGES.deletionError;
       showToast(message, 'error');
     }
 
@@ -230,9 +220,7 @@
           <i class="fas fa-clock mr-2"></i>
           Schichtzeiten
         </h2>
-        <p class="mt-2 text-(--color-text-secondary)">
-          Schichtzeiten für die Schichtplanung.
-        </p>
+        <p class="mt-2 text-(--color-text-secondary)">Schichtzeiten für die Schichtplanung.</p>
       </div>
 
       <div class="card__body">
@@ -286,9 +274,7 @@
               type="button"
               class="btn btn-primary"
               onclick={handleSaveShiftTimes}
-              disabled={shiftSaving ||
-                !shiftTimesChanged() ||
-                !shiftTimesValid()}
+              disabled={shiftSaving || !shiftTimesChanged() || !shiftTimesValid()}
             >
               {#if shiftSaving}
                 <span class="spinner-ring spinner-ring--sm"></span>
@@ -332,9 +318,7 @@
         <i class="fas fa-database mr-2"></i>
         Speicherplatz
       </h2>
-      <p class="mt-2 text-(--color-text-secondary)">
-        Speicherverbrauch des Tenants.
-      </p>
+      <p class="mt-2 text-(--color-text-secondary)">Speicherverbrauch des Tenants.</p>
     </div>
     <div class="card__body">
       <div class="storage-bar">
@@ -376,8 +360,7 @@
           <div class="alert__content flex-1">
             <p class="alert__title">Löschanfrage aktiv</p>
             <p class="alert__message">
-              <strong>{getStatusLabel(pendingDeletion.status)}</strong> · Queue
-              #{pendingDeletion.queueId}
+              <strong>{getStatusLabel(pendingDeletion.status)}</strong> · Queue #{pendingDeletion.queueId}
               · Tenant #{pendingDeletion.tenantId} · Angefordert von {pendingDeletion.requestedByName ??
                 'Unbekannt'} am {formatDate(pendingDeletion.requestedAt)}
             </p>
@@ -397,12 +380,9 @@
           <i class="fas fa-exclamation-triangle"></i>
         </div>
         <div class="alert__content">
-          <p class="alert__title">
-            Achtung: Diese Aktion kann nicht rückgängig gemacht werden!
-          </p>
+          <p class="alert__title">Achtung: Diese Aktion kann nicht rückgängig gemacht werden!</p>
           <p class="alert__message">
-            Durch das Löschen Ihres Tenants werden <strong>ALLE</strong> Daten unwiderruflich
-            gelöscht:
+            Durch das Löschen Ihres Tenants werden <strong>ALLE</strong> Daten unwiderruflich gelöscht:
           </p>
           <ul class="mt-4 space-y-1 pl-5 text-sm">
             <li>Alle Administratoren und Mitarbeiter</li>
@@ -481,21 +461,18 @@
         <div class="alert alert--info mb-6">
           <div class="alert__icon"><i class="fas fa-shield-alt"></i></div>
           <div class="alert__content">
-            <div class="alert__title">
-              Zwei-Personen-Prinzip (4-Augen-Prinzip)
-            </div>
+            <div class="alert__title">Zwei-Personen-Prinzip (4-Augen-Prinzip)</div>
             <div class="alert__message">
               <p class="mb-2">
-                Die Löschung wird <strong>nicht sofort</strong> durchgeführt,
-                sondern muss zuerst von einem zweiten Root-Benutzer genehmigt
-                werden. Nach der Genehmigung beginnt eine
-                <strong>30-tägige Nachfrist</strong>, in der die Löschung noch
-                widerrufen werden kann.
+                Die Löschung wird <strong>nicht sofort</strong> durchgeführt, sondern muss zuerst
+                von einem zweiten Root-Benutzer genehmigt werden. Nach der Genehmigung beginnt eine
+                <strong>30-tägige Nachfrist</strong>, in der die Löschung noch widerrufen werden
+                kann.
               </p>
               <p class="text-sm">
                 <i class="fas fa-info-circle mr-1"></i>
-                Die tatsächliche Löschung erfolgt erst 30 Tage nach der Genehmigung
-                durch den zweiten Root-Benutzer.
+                Die tatsächliche Löschung erfolgt erst 30 Tage nach der Genehmigung durch den zweiten
+                Root-Benutzer.
               </p>
             </div>
           </div>
@@ -529,8 +506,7 @@
           <textarea
             id="deleteReason"
             class="form-field__control"
-            class:form-field__control--error={deleteReason.length > 0 &&
-              !isReasonValid}
+            class:form-field__control--error={deleteReason.length > 0 && !isReasonValid}
             rows="3"
             placeholder="Bitte geben Sie einen Grund an (min. {MIN_REASON_LENGTH} Zeichen)..."
             minlength={MIN_REASON_LENGTH}
@@ -635,11 +611,7 @@
   }
 
   .st-row.shift-late {
-    border-left-color: color-mix(
-      in oklch,
-      var(--color-primary) 70%,
-      transparent
-    );
+    border-left-color: color-mix(in oklch, var(--color-primary) 70%, transparent);
   }
 
   .st-row.shift-late .st-icon {
@@ -674,8 +646,7 @@
   .storage-bar__track {
     border-radius: 4px;
     background: color-mix(in oklch, var(--color-white) 8%, transparent);
-    box-shadow: inset 0 1px 3px
-      color-mix(in oklch, var(--color-black) 30%, transparent);
+    box-shadow: inset 0 1px 3px color-mix(in oklch, var(--color-black) 30%, transparent);
     height: 10px;
     overflow: hidden;
   }

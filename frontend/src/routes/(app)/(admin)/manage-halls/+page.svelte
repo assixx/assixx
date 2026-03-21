@@ -8,11 +8,7 @@
   import { invalidateAll } from '$app/navigation';
 
   import HighlightText from '$lib/components/HighlightText.svelte';
-  import {
-    showWarningAlert,
-    showErrorAlert,
-    showSuccessAlert,
-  } from '$lib/stores/toast';
+  import { showWarningAlert, showErrorAlert, showSuccessAlert } from '$lib/stores/toast';
 
   import {
     buildHallPayload,
@@ -74,9 +70,7 @@
   // =============================================================================
 
   const isEditMode = $derived(currentEditId !== null);
-  const modalTitle = $derived(
-    isEditMode ? messages.MODAL_TITLE_EDIT : messages.MODAL_TITLE_ADD,
-  );
+  const modalTitle = $derived(isEditMode ? messages.MODAL_TITLE_EDIT : messages.MODAL_TITLE_ADD);
 
   const filteredHalls = $derived(
     applyAllFilters(allHalls, currentStatusFilter, currentSearchQuery),
@@ -362,9 +356,7 @@
     <div class="card__body">
       {#if error}
         <div class="p-6 text-center">
-          <i
-            class="fas fa-exclamation-triangle mb-4 text-4xl text-(--color-danger)"
-          ></i>
+          <i class="fas fa-exclamation-triangle mb-4 text-4xl text-(--color-danger)"></i>
           <p class="text-(--color-text-secondary)">{error}</p>
           <button
             type="button"

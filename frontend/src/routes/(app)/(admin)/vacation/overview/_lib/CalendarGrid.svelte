@@ -3,12 +3,7 @@
    * CalendarGrid — Team vacation calendar with blackout markers
    * Reads all data from overviewState (no props needed).
    */
-  import {
-    HALF_DAY_LABELS,
-    TYPE_COLORS,
-    TYPE_LABELS,
-    WEEKDAY_SHORT,
-  } from './constants';
+  import { HALF_DAY_LABELS, TYPE_COLORS, TYPE_LABELS, WEEKDAY_SHORT } from './constants';
   import { overviewState } from './state.svelte';
 
   import type { CalendarDayCell } from './types';
@@ -20,16 +15,8 @@
   );
 
   function getWeekday(day: number): number {
-    if (
-      overviewState.selectedYear === null ||
-      overviewState.selectedMonth === null
-    )
-      return 0;
-    return new Date(
-      overviewState.selectedYear,
-      overviewState.selectedMonth - 1,
-      day,
-    ).getDay();
+    if (overviewState.selectedYear === null || overviewState.selectedMonth === null) return 0;
+    return new Date(overviewState.selectedYear, overviewState.selectedMonth - 1, day).getDay();
   }
 
   function isWeekend(day: number): boolean {
@@ -73,8 +60,7 @@
         </div>
         <h3 class="empty-state__title">Filter auswählen</h3>
         <p class="empty-state__description">
-          Wählen Sie oben Team, Jahr und Monat aus, um den Urlaubskalender
-          anzuzeigen.
+          Wählen Sie oben Team, Jahr und Monat aus, um den Urlaubskalender anzuzeigen.
         </p>
       </div>
     {:else if overviewState.isLoadingCalendar}
@@ -172,8 +158,7 @@
         </div>
         {#if overviewState.blackoutDays.size > 0}
           <div class="calendar-legend__item">
-            <span class="calendar-legend__dot calendar-legend__dot--blackout"
-            ></span>
+            <span class="calendar-legend__dot calendar-legend__dot--blackout"></span>
             <span class="calendar-legend__label">Urlaubssperre</span>
           </div>
         {/if}
@@ -290,8 +275,7 @@
     font-size: 0.625rem;
     font-weight: 700;
     color: var(--color-white);
-    text-shadow: 0 1px 2px
-      color-mix(in oklch, var(--color-black) 30%, transparent);
+    text-shadow: 0 1px 2px color-mix(in oklch, var(--color-black) 30%, transparent);
   }
 
   /* ─── Calendar Legend ──────── */

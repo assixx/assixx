@@ -57,10 +57,8 @@ export function mapDbUserToAdminUser(
 
   if (admin.notes !== null) result.notes = admin.notes;
   if (admin.position !== null) result.position = admin.position;
-  if (admin.employee_number !== '')
-    result.employeeNumber = admin.employee_number;
-  if (admin.profile_picture !== undefined)
-    result.profilePicture = admin.profile_picture;
+  if (admin.employee_number !== '') result.employeeNumber = admin.employee_number;
+  if (admin.profile_picture !== undefined) result.profilePicture = admin.profile_picture;
   if (admin.tenant_name !== undefined) result.tenantName = admin.tenant_name;
   if (admin.last_login !== null && admin.last_login !== undefined)
     result.lastLogin = admin.last_login;
@@ -173,9 +171,7 @@ export function buildUserUpdateFields(data: UpdateUserRequest): {
 /**
  * Type guard for PostgreSQL unique constraint violation (23505)
  */
-export function isPgUniqueViolation(
-  error: unknown,
-): error is { code: string; message: string } {
+export function isPgUniqueViolation(error: unknown): error is { code: string; message: string } {
   if (typeof error !== 'object' || error === null) return false;
   if (!('code' in error) || !('message' in error)) return false;
   return (error as Record<string, unknown>)['code'] === '23505';

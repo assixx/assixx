@@ -116,11 +116,7 @@ describe('AssetMaintenanceService', () => {
       mockDb.query.mockResolvedValueOnce([]);
 
       await expect(
-        service.addMaintenanceRecord(
-          { assetId: 1, performedDate: '2025-06-01' } as never,
-          10,
-          1,
-        ),
+        service.addMaintenanceRecord({ assetId: 1, performedDate: '2025-06-01' } as never, 10, 1),
       ).rejects.toThrow(InternalServerErrorException);
     });
 
@@ -150,9 +146,7 @@ describe('AssetMaintenanceService', () => {
 
   describe('getUpcomingMaintenance', () => {
     it('should return mapped assets needing maintenance', async () => {
-      mockDb.query.mockResolvedValueOnce([
-        { id: 1, name: 'CNC-001', status: 'operational' },
-      ]);
+      mockDb.query.mockResolvedValueOnce([{ id: 1, name: 'CNC-001', status: 'operational' }]);
 
       const result = await service.getUpcomingMaintenance(10, 30);
 

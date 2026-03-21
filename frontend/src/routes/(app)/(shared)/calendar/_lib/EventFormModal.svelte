@@ -1,10 +1,7 @@
 <script lang="ts">
   import AppDatePicker from '$lib/components/AppDatePicker.svelte';
   import AppTimePicker from '$lib/components/AppTimePicker.svelte';
-  import {
-    DEFAULT_HIERARCHY_LABELS,
-    type HierarchyLabels,
-  } from '$lib/types/hierarchy-labels';
+  import { DEFAULT_HIERARCHY_LABELS, type HierarchyLabels } from '$lib/types/hierarchy-labels';
   import {
     filterAvailableDepartments,
     filterDepartmentIdsByAreas,
@@ -14,13 +11,7 @@
 
   import { RECURRENCE_OPTIONS, RECURRENCE_END_OPTIONS } from './constants';
 
-  import type {
-    EventFormData,
-    CalendarEvent,
-    Department,
-    Team,
-    Area,
-  } from './types';
+  import type { EventFormData, CalendarEvent, Department, Team, Area } from './types';
 
   interface Props {
     formData: EventFormData;
@@ -71,12 +62,10 @@
 
   // Get display text for current selection
   const selectedRecurrenceText = $derived(
-    RECURRENCE_OPTIONS.find((o) => o.value === formData.recurrence)?.label ??
-      'Keine Wiederholung',
+    RECURRENCE_OPTIONS.find((o) => o.value === formData.recurrence)?.label ?? 'Keine Wiederholung',
   );
   const selectedRecurrenceEndText = $derived(
-    RECURRENCE_END_OPTIONS.find((o) => o.value === formData.recurrenceEndType)
-      ?.label ?? 'Nie',
+    RECURRENCE_END_OPTIONS.find((o) => o.value === formData.recurrenceEndType)?.label ?? 'Nie',
   );
 
   // Derived: Is company-wide event selected?
@@ -84,11 +73,7 @@
 
   // Filter departments based on selected areas (inheritance logic)
   const availableDepartments = $derived.by(() => {
-    return filterAvailableDepartments(
-      departments,
-      formData.areaIds,
-      isCompanyWide,
-    );
+    return filterAvailableDepartments(departments, formData.areaIds, isCompanyWide);
   });
 
   // All department IDs covered by selection (explicit + area-inherited)
@@ -110,9 +95,7 @@
    */
   function handleAreaChange(e: Event): void {
     const select = e.target as HTMLSelectElement;
-    const newAreaIds = Array.from(select.selectedOptions).map((o) =>
-      Number(o.value),
-    );
+    const newAreaIds = Array.from(select.selectedOptions).map((o) => Number(o.value));
     formData.areaIds = newAreaIds;
     // Remove departments that are now covered by selected areas
     formData.departmentIds = filterDepartmentIdsByAreas(
@@ -136,9 +119,7 @@
    */
   function handleDepartmentChange(e: Event): void {
     const select = e.target as HTMLSelectElement;
-    const newDeptIds = Array.from(select.selectedOptions).map((o) =>
-      Number(o.value),
-    );
+    const newDeptIds = Array.from(select.selectedOptions).map((o) => Number(o.value));
     formData.departmentIds = newDeptIds;
     // Remove teams whose department is now covered (explicit + area-inherited)
     const areaDeptIds = departments
@@ -304,8 +285,8 @@
             Sichtbarkeit
           </span>
           <p class="mb-2 text-sm text-(--color-text-secondary)">
-            wählen Sie keine Organisation für firmenweite Events oder
-            eine/mehrere spezifische Organisationen.
+            wählen Sie keine Organisation für firmenweite Events oder eine/mehrere spezifische
+            Organisationen.
           </p>
         </div>
 
@@ -317,10 +298,7 @@
               class="toggle-switch__input"
               checked={formData.orgLevel === 'company'}
               onchange={(e) => {
-                formData.orgLevel =
-                  (e.target as HTMLInputElement).checked ?
-                    'company'
-                  : 'personal';
+                formData.orgLevel = (e.target as HTMLInputElement).checked ? 'company' : 'personal';
               }}
             />
             <span class="toggle-switch__slider"></span>
@@ -360,9 +338,7 @@
                 value={area.id}
                 selected={formData.areaIds.includes(area.id)}
               >
-                {area.name}{(
-                  area.departmentCount !== undefined && area.departmentCount > 0
-                ) ?
+                {area.name}{area.departmentCount !== undefined && area.departmentCount > 0 ?
                   ` (${area.departmentCount} Abt.)`
                 : ''}
               </option>
@@ -370,8 +346,7 @@
           </select>
           <span class="form-field__message text-(--color-text-secondary)">
             <i class="fas fa-info-circle mr-1"></i>
-            Strg/Cmd + Klick für Mehrfachauswahl. {labels.area} vererben Zugriff auf
-            zugehörige
+            Strg/Cmd + Klick für Mehrfachauswahl. {labels.area} vererben Zugriff auf zugehörige
             {labels.department}.
           </span>
         </div>
@@ -400,9 +375,7 @@
                 value={dept.id}
                 selected={formData.departmentIds.includes(dept.id)}
               >
-                {dept.name}{(
-                  dept.areaName !== undefined && dept.areaName !== ''
-                ) ?
+                {dept.name}{dept.areaName !== undefined && dept.areaName !== '' ?
                   ` (${dept.areaName})`
                 : ''}
               </option>
@@ -410,8 +383,8 @@
           </select>
           <span class="form-field__message text-(--color-text-secondary)">
             <i class="fas fa-info-circle mr-1"></i>
-            Strg/Cmd + Klick für Mehrfachauswahl. Nur {labels.department} die nicht
-            bereits durch {labels.area} abgedeckt sind.
+            Strg/Cmd + Klick für Mehrfachauswahl. Nur {labels.department} die nicht bereits durch {labels.area}
+            abgedeckt sind.
           </span>
         </div>
 
@@ -481,11 +454,9 @@
               <button
                 type="button"
                 class="dropdown__option"
-                class:dropdown__option--selected={formData.recurrence ===
-                  option.value}
+                class:dropdown__option--selected={formData.recurrence === option.value}
                 onclick={() => {
-                  formData.recurrence =
-                    option.value as typeof formData.recurrence;
+                  formData.recurrence = option.value as typeof formData.recurrence;
                   recurrenceDropdownOpen = false;
                 }}
               >
@@ -521,11 +492,9 @@
                 <button
                   type="button"
                   class="dropdown__option"
-                  class:dropdown__option--selected={formData.recurrenceEndType ===
-                    option.value}
+                  class:dropdown__option--selected={formData.recurrenceEndType === option.value}
                   onclick={() => {
-                    formData.recurrenceEndType =
-                      option.value as typeof formData.recurrenceEndType;
+                    formData.recurrenceEndType = option.value as typeof formData.recurrenceEndType;
                     recurrenceEndDropdownOpen = false;
                   }}
                 >

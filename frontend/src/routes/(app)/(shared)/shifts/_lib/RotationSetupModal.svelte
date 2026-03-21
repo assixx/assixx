@@ -6,11 +6,7 @@
    */
   import { onClickOutsideDropdown } from '$lib/actions/click-outside';
   import AppDatePicker from '$lib/components/AppDatePicker.svelte';
-  import {
-    showSuccessAlert,
-    showErrorAlert,
-    showConfirmWarning,
-  } from '$lib/utils/alerts';
+  import { showSuccessAlert, showErrorAlert, showConfirmWarning } from '$lib/utils/alerts';
   import { getErrorMessage } from '$lib/utils/error';
   import { createLogger } from '$lib/utils/logger';
 
@@ -184,20 +180,14 @@
     };
   }
 
-  function removeFromAssignment(
-    employeeId: number,
-    shiftType: 'F' | 'S' | 'N',
-  ) {
+  function removeFromAssignment(employeeId: number, shiftType: 'F' | 'S' | 'N') {
     assignments = {
       ...assignments,
       [shiftType]: assignments[shiftType].filter((id) => id !== employeeId),
     };
   }
 
-  function calculateDefaultEndDate(
-    startDateStr: string,
-    weeks: number,
-  ): string {
+  function calculateDefaultEndDate(startDateStr: string, weeks: number): string {
     const startMs = new Date(startDateStr).getTime();
     const endMs = startMs + weeks * 7 * 24 * 60 * 60 * 1000;
     return new Date(endMs).toISOString().split('T')[0] ?? startDateStr;
@@ -230,9 +220,7 @@
    * Check for existing rotation pattern and handle overwrite confirmation.
    * Returns true if we can proceed with creation, false to abort.
    */
-  async function handleExistingPatternOverwrite(
-    teamId: number,
-  ): Promise<boolean> {
+  async function handleExistingPatternOverwrite(teamId: number): Promise<boolean> {
     const existing = await loadExistingPattern(teamId);
     if (existing === null) return true;
 
@@ -254,11 +242,7 @@
     shiftGroups: ShiftGroups,
     employeeAssignments: { userId: number; group: 'F' | 'S' | 'N' }[],
   ): Promise<void> {
-    const patternData = buildRotationPatternData(
-      teamId,
-      formValues,
-      shiftGroups,
-    );
+    const patternData = buildRotationPatternData(teamId, formValues, shiftGroups);
     const patternResult = await createRotationPattern(patternData);
 
     await assignRotation({
@@ -316,26 +300,17 @@
         collectEmployeeAssignments(assignments);
 
       if (employeeAssignments.length === 0) {
-        showErrorAlert(
-          'Bitte ziehen Sie mindestens einen Mitarbeiter in eine Schicht-Spalte',
-        );
+        showErrorAlert('Bitte ziehen Sie mindestens einen Mitarbeiter in eine Schicht-Spalte');
         return;
       }
 
       const canProceed = await handleExistingPatternOverwrite(teamId);
       if (!canProceed) return;
 
-      await executeRotationCreation(
-        teamId,
-        formValues,
-        shiftGroups,
-        employeeAssignments,
-      );
+      await executeRotationCreation(teamId, formValues, shiftGroups, employeeAssignments);
     } catch (error: unknown) {
       log.error({ err: error }, 'Rotation error');
-      showErrorAlert(
-        getErrorMessage(error, 'Fehler beim Speichern der Rotation'),
-      );
+      showErrorAlert(getErrorMessage(error, 'Fehler beim Speichern der Rotation'));
     } finally {
       resetSavingState();
     }
@@ -402,8 +377,7 @@
               tabindex="0"
               onclick={togglePatternDropdown}
               onkeydown={(e) => {
-                if (e.key === 'Enter')
-                  togglePatternDropdown(e as unknown as MouseEvent);
+                if (e.key === 'Enter') togglePatternDropdown(e as unknown as MouseEvent);
               }}
             >
               <span>{patternLabel}</span>
@@ -414,8 +388,7 @@
                 {#each ROTATION_PATTERNS as pattern (pattern.value)}
                   <div
                     class="dropdown__option"
-                    class:dropdown__option--selected={selectedPattern ===
-                      pattern.value}
+                    class:dropdown__option--selected={selectedPattern === pattern.value}
                     role="option"
                     tabindex="0"
                     aria-selected={selectedPattern === pattern.value}
@@ -423,8 +396,7 @@
                       selectPattern(pattern.value, pattern.label);
                     }}
                     onkeydown={(e) => {
-                      if (e.key === 'Enter')
-                        selectPattern(pattern.value, pattern.label);
+                      if (e.key === 'Enter') selectPattern(pattern.value, pattern.label);
                     }}
                   >
                     {pattern.label}
@@ -481,9 +453,7 @@
             <span class="toggle-switch__slider"></span>
             <span class="toggle-switch__label">
               Nachtschicht konstant
-              <small class="toggle-hint"
-                >N bleibt N (nur F ↔ S alternieren)</small
-              >
+              <small class="toggle-hint">N bleibt N (nur F ↔ S alternieren)</small>
             </span>
           </label>
         </div>
@@ -539,9 +509,7 @@
                   }}
                 >
                   <div class="employee-info">
-                    <span class="employee-name"
-                      >{getEmployeeDisplayName(employee)}</span
-                    >
+                    <span class="employee-name">{getEmployeeDisplayName(employee)}</span>
                   </div>
                 </div>
               {/each}
@@ -580,9 +548,7 @@
                     {@const emp = employees.find((e) => e.id === empId)}
                     {#if emp}
                       <div class="employee-item in-drop-zone">
-                        <span class="employee-name"
-                          >{getEmployeeDisplayName(emp)}</span
-                        >
+                        <span class="employee-name">{getEmployeeDisplayName(emp)}</span>
                         <button
                           type="button"
                           class="btn-remove-rotation"
@@ -608,8 +574,7 @@
             </div>
             <!-- eslint-enable @typescript-eslint/no-confusing-void-expression, sonarjs/no-use-of-empty-return-value -->
             <small class="form-field__hint mt-2 block">
-              Ziehen Sie Mitarbeiter in die entsprechende Spalte, um ihre
-              Startschicht festzulegen
+              Ziehen Sie Mitarbeiter in die entsprechende Spalte, um ihre Startschicht festzulegen
             </small>
           </div>
         </div>
@@ -788,10 +753,7 @@
 
   .toggle-hint {
     display: block;
-    color: var(
-      --color-text-muted,
-      color-mix(in oklch, var(--color-white) 50%, transparent)
-    );
+    color: var(--color-text-muted, color-mix(in oklch, var(--color-white) 50%, transparent));
     font-weight: 400;
     font-size: 11px;
   }

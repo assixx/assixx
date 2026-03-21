@@ -141,11 +141,7 @@
     width: 20px;
     height: 20px;
     border-radius: 50%;
-    background: linear-gradient(
-      145deg,
-      oklch(95.66% 0 0) 0%,
-      oklch(69.93% 0 0) 100%
-    );
+    background: linear-gradient(145deg, oklch(95.66% 0 0) 0%, oklch(69.93% 0 0) 100%);
     box-shadow:
       0 3px 7px color-mix(in oklch, var(--color-black) 55%, transparent),
       0 1px 3px color-mix(in oklch, var(--color-black) 30%, transparent),

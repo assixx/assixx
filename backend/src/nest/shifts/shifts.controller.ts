@@ -119,11 +119,7 @@ export class ShiftsController {
     @Body() dto: CreateSwapRequestDto,
   ): Promise<SwapRequestResponse> {
     this.logger.debug(`Creating swap request for user ${user.id}`);
-    return await this.shiftsService.createSwapRequest(
-      dto,
-      user.tenantId,
-      user.id,
-    );
+    return await this.shiftsService.createSwapRequest(dto, user.tenantId, user.id);
   }
 
   /** PUT /api/v2/shifts/swap-requests/:id/status */
@@ -136,12 +132,7 @@ export class ShiftsController {
     @Body() dto: UpdateSwapRequestStatusDto,
   ): Promise<{ message: string }> {
     this.logger.debug(`Updating swap request ${id} status`);
-    return await this.shiftsService.updateSwapRequestStatus(
-      id,
-      dto,
-      user.tenantId,
-      user.id,
-    );
+    return await this.shiftsService.updateSwapRequestStatus(id, dto, user.tenantId, user.id);
   }
 
   /** GET /api/v2/shifts/overtime */
@@ -163,9 +154,7 @@ export class ShiftsController {
   /** GET /api/v2/shifts/favorites */
   @Get('favorites')
   @RequirePermission(SHIFT_FEATURE, SHIFT_PLAN, 'canRead')
-  async listFavorites(
-    @CurrentUser() user: JwtPayload,
-  ): Promise<FavoriteResponse[]> {
+  async listFavorites(@CurrentUser() user: JwtPayload): Promise<FavoriteResponse[]> {
     this.logger.debug(`Listing favorites for user ${user.id}`);
     return await this.shiftsService.listFavorites(user.tenantId, user.id);
   }
@@ -279,11 +268,7 @@ export class ShiftsController {
     @Body() dto: CreateShiftPlanDto,
   ): Promise<ShiftPlanResponse> {
     this.logger.debug(`Creating shift plan for tenant ${user.tenantId}`);
-    return await this.shiftsService.createShiftPlan(
-      dto,
-      user.tenantId,
-      user.id,
-    );
+    return await this.shiftsService.createShiftPlan(dto, user.tenantId, user.id);
   }
 
   /** PUT /api/v2/shifts/plan/uuid/:uuid */
@@ -295,12 +280,7 @@ export class ShiftsController {
     @Body() dto: UpdateShiftPlanDto,
   ): Promise<ShiftPlanResponse> {
     this.logger.debug(`Updating shift plan ${uuid}`);
-    return await this.shiftsService.updateShiftPlanByUuid(
-      uuid,
-      dto,
-      user.tenantId,
-      user.id,
-    );
+    return await this.shiftsService.updateShiftPlanByUuid(uuid, dto, user.tenantId, user.id);
   }
 
   /**
@@ -315,12 +295,7 @@ export class ShiftsController {
     @Body() dto: UpdateShiftPlanDto,
   ): Promise<ShiftPlanResponse> {
     this.logger.debug(`Updating shift plan ${id}`);
-    return await this.shiftsService.updateShiftPlan(
-      id,
-      dto,
-      user.tenantId,
-      user.id,
-    );
+    return await this.shiftsService.updateShiftPlan(id, dto, user.tenantId, user.id);
   }
 
   /** DELETE /api/v2/shifts/plan/uuid/:uuid */
@@ -332,11 +307,7 @@ export class ShiftsController {
     @CurrentUser() user: JwtPayload,
   ): Promise<{ message: string }> {
     this.logger.debug(`Deleting shift plan ${uuid}`);
-    await this.shiftsService.deleteShiftPlanByUuid(
-      uuid,
-      user.tenantId,
-      user.id,
-    );
+    await this.shiftsService.deleteShiftPlanByUuid(uuid, user.tenantId, user.id);
     return { message: 'Shift plan deleted successfully' };
   }
 
@@ -390,12 +361,7 @@ export class ShiftsController {
     @Body() dto: UpdateShiftDto,
   ): Promise<ShiftResponse> {
     this.logger.debug(`Updating shift ${id}`);
-    return await this.shiftsService.updateShift(
-      id,
-      dto,
-      user.tenantId,
-      user.id,
-    );
+    return await this.shiftsService.updateShift(id, dto, user.tenantId, user.id);
   }
 
   /** DELETE /api/v2/shifts/week */
@@ -408,15 +374,8 @@ export class ShiftsController {
     @Query('endDate') endDate: string,
     @CurrentUser() user: JwtPayload,
   ): Promise<{ shiftsDeleted: number }> {
-    this.logger.debug(
-      `Deleting shifts for team ${teamId} from ${startDate} to ${endDate}`,
-    );
-    return await this.shiftsService.deleteShiftsByWeek(
-      teamId,
-      startDate,
-      endDate,
-      user.tenantId,
-    );
+    this.logger.debug(`Deleting shifts for team ${teamId} from ${startDate} to ${endDate}`);
+    return await this.shiftsService.deleteShiftsByWeek(teamId, startDate, endDate, user.tenantId);
   }
 
   /** DELETE /api/v2/shifts/team */

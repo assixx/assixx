@@ -42,5 +42,4 @@ export const RequirePermission = (
   addonCode: string,
   moduleCode: string,
   action: PermissionType,
-): ReturnType<typeof SetMetadata> =>
-  SetMetadata(PERMISSION_KEY, { addonCode, moduleCode, action });
+): ReturnType<typeof SetMetadata> => SetMetadata(PERMISSION_KEY, { addonCode, moduleCode, action });

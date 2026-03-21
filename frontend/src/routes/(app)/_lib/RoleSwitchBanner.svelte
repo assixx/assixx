@@ -13,10 +13,7 @@
 
   const { isVisible, userRole, activeRole, onDismiss }: Props = $props();
 
-  const roleDisplayNames: Record<
-    'root' | 'admin' | 'employee' | 'dummy',
-    string
-  > = {
+  const roleDisplayNames: Record<'root' | 'admin' | 'employee' | 'dummy', string> = {
     root: 'Root',
     admin: 'Administrator',
     employee: 'Mitarbeiter',
@@ -40,8 +37,8 @@
         <path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z" />
       </svg>
       <span>
-        Sie agieren derzeit als <strong>{roleDisplayNames[activeRole]}</strong>.
-        Ihre ursprüngliche Rolle ist
+        Sie agieren derzeit als <strong>{roleDisplayNames[activeRole]}</strong>. Ihre ursprüngliche
+        Rolle ist
         <strong>{roleDisplayNames[userRole]}</strong>.
       </span>
       <button
@@ -68,11 +65,7 @@
 <style>
   .role-switch-banner {
     z-index: 9999;
-    background: linear-gradient(
-      90deg,
-      oklch(22% 0.04 70 / 90%) 0%,
-      oklch(18% 0.03 70 / 50%) 100%
-    );
+    background: linear-gradient(90deg, oklch(22% 0.04 70 / 90%) 0%, oklch(18% 0.03 70 / 50%) 100%);
     border-bottom: 1px solid oklch(45% 0.1 70 / 30%);
     padding: 18px 24px;
     width: 100%;

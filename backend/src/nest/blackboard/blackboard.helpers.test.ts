@@ -13,10 +13,7 @@ import {
   validateSortColumn,
   validateSortDirection,
 } from './blackboard.helpers.js';
-import type {
-  DbBlackboardComment,
-  DbBlackboardEntry,
-} from './blackboard.types.js';
+import type { DbBlackboardComment, DbBlackboardEntry } from './blackboard.types.js';
 
 describe('blackboard.helpers', () => {
   it('validateSortColumn should return default for invalid column', () => {

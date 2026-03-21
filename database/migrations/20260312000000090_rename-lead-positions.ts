@@ -37,9 +37,7 @@ const REQUIRED_LEAD_KEYS: Record<string, readonly string[]> = {
 export function up(pgm: MigrationBuilder): void {
   // 1. Rename position values in users table
   for (const [oldVal, newVal] of RENAMES) {
-    pgm.sql(
-      `UPDATE users SET position = '${newVal}' WHERE position = '${oldVal}';`,
-    );
+    pgm.sql(`UPDATE users SET position = '${newVal}' WHERE position = '${oldVal}';`);
   }
 
   // 2. Rename position values inside tenants.settings.positionOptions JSONB
@@ -92,9 +90,7 @@ export function up(pgm: MigrationBuilder): void {
 export function down(pgm: MigrationBuilder): void {
   // Reverse: semantic keys → German compound words
   for (const [oldVal, newVal] of RENAMES) {
-    pgm.sql(
-      `UPDATE users SET position = '${oldVal}' WHERE position = '${newVal}';`,
-    );
+    pgm.sql(`UPDATE users SET position = '${oldVal}' WHERE position = '${newVal}';`);
   }
 
   for (const category of CATEGORIES) {

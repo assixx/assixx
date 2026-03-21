@@ -31,9 +31,7 @@ export class SurveyQuestionsService {
     );
     if (questions.length > 0) {
       const questionIds = questions.map((q: DbSurveyQuestion) => q.id);
-      const placeholders = questionIds
-        .map((_: number, idx: number) => `$${idx + 1}`)
-        .join(',');
+      const placeholders = questionIds.map((_: number, idx: number) => `$${idx + 1}`).join(',');
       const optionRows = await this.db.query<DbSurveyQuestionOption>(
         `SELECT id, question_id, option_text, order_position FROM survey_question_options
          WHERE question_id IN (${placeholders}) ORDER BY question_id, order_position`,
@@ -80,8 +78,7 @@ export class SurveyQuestionsService {
     questionId: number,
     questionData: { question_type: string; options?: string[] },
   ): Promise<void> {
-    if (questionData.options === undefined || questionData.options.length === 0)
-      return;
+    if (questionData.options === undefined || questionData.options.length === 0) return;
     const qType = questionData.question_type;
     if (qType !== 'single_choice' && qType !== 'multiple_choice') return;
     for (const [optIndex, optionText] of questionData.options.entries()) {

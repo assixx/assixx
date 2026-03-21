@@ -118,9 +118,6 @@ export function buildLimitedScope(row: ScopeQueryRow): OrganizationalScope {
     isAreaLead: leadAreaIds.length > 0,
     isDepartmentLead: leadDepartmentIds.length > 0,
     isTeamLead: leadTeamIds.length > 0,
-    isAnyLead:
-      leadAreaIds.length > 0 ||
-      leadDepartmentIds.length > 0 ||
-      leadTeamIds.length > 0,
+    isAnyLead: leadAreaIds.length > 0 || leadDepartmentIds.length > 0 || leadTeamIds.length > 0,
   };
 }

@@ -101,29 +101,17 @@ export class RootService {
   }
 
   /** Update admin user */
-  async updateAdmin(
-    id: number,
-    data: UpdateUserRequest,
-    tenantId: number,
-  ): Promise<void> {
+  async updateAdmin(id: number, data: UpdateUserRequest, tenantId: number): Promise<void> {
     await this.adminService.updateAdmin(id, data, tenantId);
   }
 
   /** Delete admin user */
-  async deleteAdmin(
-    id: number,
-    tenantId: number,
-    actingUserId: number,
-  ): Promise<void> {
+  async deleteAdmin(id: number, tenantId: number, actingUserId: number): Promise<void> {
     await this.adminService.deleteAdmin(id, tenantId, actingUserId);
   }
 
   /** Get admin logs */
-  async getAdminLogs(
-    adminId: number,
-    tenantId: number,
-    days?: number,
-  ): Promise<AdminLog[]> {
+  async getAdminLogs(adminId: number, tenantId: number, days?: number): Promise<AdminLog[]> {
     return await this.adminService.getAdminLogs(adminId, tenantId, days);
   }
 
@@ -167,10 +155,7 @@ export class RootService {
   /**
    * Get single root user
    */
-  async getRootUserById(
-    id: number,
-    tenantId: number,
-  ): Promise<RootUser | null> {
+  async getRootUserById(id: number, tenantId: number): Promise<RootUser | null> {
     this.logger.debug(`Getting root user ${id} for tenant ${tenantId}`);
 
     // SECURITY: Only return active root users (is_active = 1)
@@ -239,10 +224,7 @@ export class RootService {
 
       // Generate and update employee_id
       const employeeId = generateEmployeeId(subdomain, 'root', userId);
-      await this.db.query('UPDATE users SET employee_id = $1 WHERE id = $2', [
-        employeeId,
-        userId,
-      ]);
+      await this.db.query('UPDATE users SET employee_id = $1 WHERE id = $2', [employeeId, userId]);
 
       // Log activity
       await this.activityLogger.logCreate(
@@ -270,11 +252,7 @@ export class RootService {
   /**
    * Update root user
    */
-  async updateRootUser(
-    id: number,
-    data: UpdateUserRequest,
-    tenantId: number,
-  ): Promise<void> {
+  async updateRootUser(id: number, data: UpdateUserRequest, tenantId: number): Promise<void> {
     this.logger.log(`Updating root user ${id} for tenant ${tenantId}`);
 
     // Check if user exists
@@ -314,11 +292,7 @@ export class RootService {
   /**
    * Delete root user
    */
-  async deleteRootUser(
-    id: number,
-    tenantId: number,
-    currentUserId: number,
-  ): Promise<void> {
+  async deleteRootUser(id: number, tenantId: number, currentUserId: number): Promise<void> {
     this.logger.log(`Deleting root user ${id} for tenant ${tenantId}`);
 
     // Prevent self-deletion
@@ -367,24 +341,21 @@ export class RootService {
     );
 
     // Delete related data first (foreign key constraints)
-    await this.db.query(
-      'DELETE FROM oauth_tokens WHERE user_id = $1 AND tenant_id = $2',
-      [id, tenantId],
-    );
-    await this.db.query(
-      'DELETE FROM user_teams WHERE user_id = $1 AND tenant_id = $2',
-      [id, tenantId],
-    );
-    await this.db.query(
-      'DELETE FROM user_departments WHERE user_id = $1 AND tenant_id = $2',
-      [id, tenantId],
-    );
-
-    // Delete the user
-    await this.db.query('DELETE FROM users WHERE id = $1 AND tenant_id = $2', [
+    await this.db.query('DELETE FROM oauth_tokens WHERE user_id = $1 AND tenant_id = $2', [
       id,
       tenantId,
     ]);
+    await this.db.query('DELETE FROM user_teams WHERE user_id = $1 AND tenant_id = $2', [
+      id,
+      tenantId,
+    ]);
+    await this.db.query('DELETE FROM user_departments WHERE user_id = $1 AND tenant_id = $2', [
+      id,
+      tenantId,
+    ]);
+
+    // Delete the user
+    await this.db.query('DELETE FROM users WHERE id = $1 AND tenant_id = $2', [id, tenantId]);
   }
 
   // ==========================================================================
@@ -398,16 +369,13 @@ export class RootService {
     this.logger.debug(`Getting dashboard stats for tenant ${tenantId}`);
 
     // SECURITY: Use UserRepository for accurate active user counts (is_active = 1)
-    const [adminCount, employeeCount, totalUserCount, tenantCount, addons] =
-      await Promise.all([
-        this.userRepository.countByRole('admin', tenantId),
-        this.userRepository.countByRole('employee', tenantId),
-        this.userRepository.countAll(tenantId),
-        this.db.query<DbCountRow>(
-          "SELECT COUNT(*) as count FROM tenants WHERE status = 'active'",
-        ),
-        this.db.query<DbAddonCodeRow>(
-          `SELECT a.code FROM addons a
+    const [adminCount, employeeCount, totalUserCount, tenantCount, addons] = await Promise.all([
+      this.userRepository.countByRole('admin', tenantId),
+      this.userRepository.countByRole('employee', tenantId),
+      this.userRepository.countAll(tenantId),
+      this.db.query<DbCountRow>("SELECT COUNT(*) as count FROM tenants WHERE status = 'active'"),
+      this.db.query<DbAddonCodeRow>(
+        `SELECT a.code FROM addons a
          WHERE a.is_active = ${IS_ACTIVE.ACTIVE}
            AND (
              a.is_core = true
@@ -419,9 +387,9 @@ export class RootService {
                  AND ta.status IN ('active', 'trial')
              )
            )`,
-          [tenantId],
-        ),
-      ]);
+        [tenantId],
+      ),
+    ]);
 
     const tenantCountNum = Number(tenantCount[0]?.count ?? 0);
 
@@ -463,10 +431,7 @@ export class RootService {
     tenantId: number,
     currentUserId?: number,
   ): Promise<TenantDeletionStatus | null> {
-    return await this.deletionService.getDeletionStatus(
-      tenantId,
-      currentUserId,
-    );
+    return await this.deletionService.getDeletionStatus(tenantId, currentUserId);
   }
 
   /** Cancel deletion */
@@ -485,9 +450,7 @@ export class RootService {
   }
 
   /** Get pending approvals */
-  async getPendingApprovals(
-    currentUserId: number,
-  ): Promise<DeletionApproval[]> {
+  async getPendingApprovals(currentUserId: number): Promise<DeletionApproval[]> {
     return await this.deletionService.getPendingApprovals(currentUserId);
   }
 
@@ -499,21 +462,11 @@ export class RootService {
     password: string,
     comment?: string,
   ): Promise<void> {
-    await this.deletionService.approveDeletion(
-      queueId,
-      userId,
-      tenantId,
-      password,
-      comment,
-    );
+    await this.deletionService.approveDeletion(queueId, userId, tenantId, password, comment);
   }
 
   /** Reject deletion */
-  async rejectDeletion(
-    queueId: number,
-    userId: number,
-    reason: string,
-  ): Promise<void> {
+  async rejectDeletion(queueId: number, userId: number, reason: string): Promise<void> {
     await this.deletionService.rejectDeletion(queueId, userId, reason);
   }
 
@@ -530,10 +483,7 @@ export class RootService {
    * Check for duplicate email among ACTIVE users
    * SECURITY: Uses UserRepository which filters by is_active = 1
    */
-  private async checkDuplicateEmail(
-    email: string,
-    tenantId: number,
-  ): Promise<void> {
+  private async checkDuplicateEmail(email: string, tenantId: number): Promise<void> {
     const isTaken = await this.userRepository.isEmailTaken(email, tenantId);
 
     if (isTaken) {

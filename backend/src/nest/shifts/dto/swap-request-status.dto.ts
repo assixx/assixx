@@ -15,6 +15,4 @@ export const UpdateSwapRequestStatusSchema = z.object({
   }),
 });
 
-export class UpdateSwapRequestStatusDto extends createZodDto(
-  UpdateSwapRequestStatusSchema,
-) {}
+export class UpdateSwapRequestStatusDto extends createZodDto(UpdateSwapRequestStatusSchema) {}

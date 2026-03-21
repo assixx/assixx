@@ -3,10 +3,12 @@ import { describe, expect, it } from 'vitest';
 import {
   buildFilterConditions,
   buildStatusFilter,
+  buildSuggestionUpdateClause,
   buildVisibilityClause,
   hasExtendedOrgAccess,
   isUuid,
   mapTeamToRecipient,
+  transformSuggestion,
 } from './kvp.helpers.js';
 
 // Factory for ExtendedUserOrgInfo test data
@@ -234,19 +236,14 @@ describe('buildStatusFilter', () => {
 
 describe('buildFilterConditions', () => {
   it('should return status filter only for empty filters', () => {
-    const result = buildFilterConditions(
-      {} as Parameters<typeof buildFilterConditions>[0],
-      3,
-    );
+    const result = buildFilterConditions({} as Parameters<typeof buildFilterConditions>[0], 3);
 
     expect(result.clause).toContain("status != 'archived'");
     expect(result.params).toHaveLength(0);
   });
 
   it('should add category filter when categoryId provided', () => {
-    const filters = { categoryId: 5 } as Parameters<
-      typeof buildFilterConditions
-    >[0];
+    const filters = { categoryId: 5 } as Parameters<typeof buildFilterConditions>[0];
 
     const result = buildFilterConditions(filters, 3);
 
@@ -255,15 +252,224 @@ describe('buildFilterConditions', () => {
   });
 
   it('should add search filter with ILIKE', () => {
-    const filters = { search: 'test' } as Parameters<
-      typeof buildFilterConditions
-    >[0];
+    const filters = { search: 'test' } as Parameters<typeof buildFilterConditions>[0];
 
     const result = buildFilterConditions(filters, 3);
 
     expect(result.clause).toContain('title ILIKE');
     expect(result.clause).toContain('description ILIKE');
     expect(result.params).toContain('%test%');
+  });
+});
+
+// =============================================================
+// mapTeamToRecipient
+// =============================================================
+
+// =============================================================
+// buildFilterConditions — additional filter branches
+// =============================================================
+
+describe('buildFilterConditions (additional filters)', () => {
+  it('should add customCategoryId filter', () => {
+    const filters = { customCategoryId: 7 } as Parameters<typeof buildFilterConditions>[0];
+
+    const result = buildFilterConditions(filters, 3);
+
+    expect(result.clause).toContain('custom_category_id = $3');
+    expect(result.params).toContain(7);
+  });
+
+  it('should add priority filter', () => {
+    const filters = { priority: 'high' } as Parameters<typeof buildFilterConditions>[0];
+
+    const result = buildFilterConditions(filters, 3);
+
+    expect(result.clause).toContain('priority = $3');
+    expect(result.params).toContain('high');
+  });
+
+  it('should add orgLevel filter', () => {
+    const filters = { orgLevel: 'team' } as Parameters<typeof buildFilterConditions>[0];
+
+    const result = buildFilterConditions(filters, 3);
+
+    expect(result.clause).toContain('org_level = $3');
+    expect(result.params).toContain('team');
+  });
+
+  it('should add teamId filter', () => {
+    const filters = { teamId: 42 } as Parameters<typeof buildFilterConditions>[0];
+
+    const result = buildFilterConditions(filters, 3);
+
+    expect(result.clause).toContain('team_id = $3');
+    expect(result.params).toContain(42);
+  });
+
+  it('should combine multiple filters with correct indices', () => {
+    const filters = {
+      categoryId: 5,
+      customCategoryId: 7,
+      priority: 'urgent',
+      orgLevel: 'department',
+      teamId: 10,
+      search: 'test',
+    } as Parameters<typeof buildFilterConditions>[0];
+
+    const result = buildFilterConditions(filters, 3);
+
+    expect(result.params).toEqual([5, 7, 'urgent', 'department', 10, '%test%']);
+  });
+});
+
+// =============================================================
+// transformSuggestion — confirmation/firstSeen timestamps
+// =============================================================
+
+describe('transformSuggestion (confirmation timestamps)', () => {
+  /** Minimal DB suggestion for transform tests */
+  function makeDbSuggestion(
+    overrides: Record<string, unknown> = {},
+  ): Parameters<typeof transformSuggestion>[0] {
+    return {
+      id: 1,
+      uuid: 'test-uuid',
+      tenant_id: 42,
+      title: 'Test',
+      description: 'Desc',
+      category_id: 1,
+      custom_category_id: null,
+      org_level: 'team' as const,
+      org_id: 1,
+      department_id: null,
+      team_id: 1,
+      is_shared: false,
+      submitted_by: 3,
+      priority: 'normal' as const,
+      status: 'open',
+      created_at: new Date('2025-06-01'),
+      updated_at: new Date('2025-06-01'),
+      ...overrides,
+    };
+  }
+
+  it('should map confirmedAt when confirmed_at is present', () => {
+    const suggestion = makeDbSuggestion({
+      is_confirmed: true,
+      confirmed_at: '2025-06-15T10:00:00Z',
+    });
+
+    const result = transformSuggestion(suggestion);
+
+    expect(result.isConfirmed).toBe(true);
+    expect(result.confirmedAt).toBe(new Date('2025-06-15T10:00:00Z').toISOString());
+  });
+
+  it('should map firstSeenAt when first_seen_at is present', () => {
+    const suggestion = makeDbSuggestion({
+      first_seen_at: '2025-06-10T08:00:00Z',
+    });
+
+    const result = transformSuggestion(suggestion);
+
+    expect(result.firstSeenAt).toBe(new Date('2025-06-10T08:00:00Z').toISOString());
+  });
+
+  it('should not convert confirmedAt to ISO string when confirmed_at is null', () => {
+    const suggestion = makeDbSuggestion({
+      is_confirmed: false,
+      confirmed_at: null,
+    });
+
+    const result = transformSuggestion(suggestion);
+
+    expect(result.isConfirmed).toBe(false);
+    // dbToApi maps null → null (not converted to ISO string by attachConfirmationStatus)
+    expect(result.confirmedAt).toBeNull();
+  });
+
+  it('should not convert firstSeenAt to ISO string when first_seen_at is null', () => {
+    const suggestion = makeDbSuggestion({ first_seen_at: null });
+
+    const result = transformSuggestion(suggestion);
+
+    // dbToApi maps null → null (not converted to ISO string by attachConfirmationStatus)
+    expect(result.firstSeenAt).toBeNull();
+  });
+});
+
+// =============================================================
+// buildSuggestionUpdateClause — status-specific branches
+// =============================================================
+
+describe('buildSuggestionUpdateClause', () => {
+  it('should handle "rejected" status — set rejection_reason, clear implementation_date', () => {
+    const dto = {
+      status: 'rejected',
+      rejectionReason: 'Not feasible',
+    } as Parameters<typeof buildSuggestionUpdateClause>[0];
+
+    const result = buildSuggestionUpdateClause(dto, 5);
+
+    expect(result.updates).toContain('updated_at = NOW()');
+    expect(result.updates.join(' ')).toContain('status');
+    expect(result.updates.join(' ')).toContain('rejection_reason');
+    expect(result.updates.join(' ')).toContain('implementation_date');
+    expect(result.params).toContain('rejected');
+    expect(result.params).toContain('Not feasible');
+    // implementation_date cleared to null
+    expect(result.params[result.params.length - 1]).toBeNull();
+  });
+
+  it('should handle "implemented" status — set implementation_date, clear rejection_reason', () => {
+    const dto = {
+      status: 'implemented',
+    } as Parameters<typeof buildSuggestionUpdateClause>[0];
+
+    const result = buildSuggestionUpdateClause(dto, 5);
+
+    expect(result.updates.join(' ')).toContain('implementation_date = CURRENT_DATE');
+    expect(result.updates.join(' ')).toContain('rejection_reason');
+    // rejection_reason cleared to null
+    expect(result.params).toContain(null);
+  });
+
+  it('should handle other status — clear both rejection_reason and implementation_date', () => {
+    const dto = {
+      status: 'approved',
+    } as Parameters<typeof buildSuggestionUpdateClause>[0];
+
+    const result = buildSuggestionUpdateClause(dto, 5);
+
+    expect(result.updates.join(' ')).toContain('rejection_reason');
+    expect(result.updates.join(' ')).toContain('implementation_date');
+    // Both cleared to null (last two params)
+    const lastTwo = result.params.slice(-2);
+    expect(lastTwo).toEqual([null, null]);
+  });
+
+  it('should only update rejection_reason when no status change', () => {
+    const dto = {
+      rejectionReason: 'Updated reason',
+    } as Parameters<typeof buildSuggestionUpdateClause>[0];
+
+    const result = buildSuggestionUpdateClause(dto);
+
+    expect(result.updates.join(' ')).toContain('rejection_reason');
+    expect(result.updates.join(' ')).not.toContain('status');
+    expect(result.params).toContain('Updated reason');
+  });
+
+  it('should include assignedTo when status is set', () => {
+    const dto = {
+      status: 'in_progress',
+    } as Parameters<typeof buildSuggestionUpdateClause>[0];
+
+    const result = buildSuggestionUpdateClause(dto, 99);
+
+    expect(result.updates.join(' ')).toContain('assigned_to');
+    expect(result.params).toContain(99);
   });
 });
 

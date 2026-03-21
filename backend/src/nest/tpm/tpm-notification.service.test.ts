@@ -14,10 +14,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { DatabaseService } from '../database/database.service.js';
-import {
-  type TpmNotificationCard,
-  TpmNotificationService,
-} from './tpm-notification.service.js';
+import { type TpmNotificationCard, TpmNotificationService } from './tpm-notification.service.js';
 
 // =============================================================
 // Module-level mocks (vi.hoisted runs before vi.mock hoisting)
@@ -52,9 +49,7 @@ function createMockDb() {
 }
 type MockDb = ReturnType<typeof createMockDb>;
 
-function createTestCard(
-  overrides?: Partial<TpmNotificationCard>,
-): TpmNotificationCard {
+function createTestCard(overrides?: Partial<TpmNotificationCard>): TpmNotificationCard {
   return {
     uuid: 'card-uuid-001',
     cardCode: 'BW1',
@@ -336,9 +331,7 @@ describe('TpmNotificationService', () => {
       service.notifyMaintenanceDue(10, card, [7]);
 
       const params = mockDb.query.mock.calls[0]?.[1] as unknown[];
-      expect(params?.[6]).toBe(
-        JSON.stringify({ cardUuid: 'special-uuid-999' }),
-      );
+      expect(params?.[6]).toBe(JSON.stringify({ cardUuid: 'special-uuid-999' }));
     });
 
     it('should omit assetName from event payload when undefined', () => {
@@ -346,8 +339,10 @@ describe('TpmNotificationService', () => {
 
       service.notifyMaintenanceDue(10, card, [7]);
 
-      const eventPayload = mockEventBus.emitTpmMaintenanceDue.mock
-        .calls[0]?.[1] as Record<string, unknown>;
+      const eventPayload = mockEventBus.emitTpmMaintenanceDue.mock.calls[0]?.[1] as Record<
+        string,
+        unknown
+      >;
       expect(eventPayload).not.toHaveProperty('assetName');
     });
   });

@@ -36,8 +36,7 @@ export class CalendarCreationService {
     recurrenceRule: string | null,
   ): Promise<number> {
     const eventUuid = uuidv7();
-    const { orgLevel, departmentId, teamId, areaId } =
-      this.determineOrgTarget(dto);
+    const { orgLevel, departmentId, teamId, areaId } = this.determineOrgTarget(dto);
 
     const result = await this.databaseService.query<{ id: number }>(
       `INSERT INTO calendar_events
@@ -105,12 +104,7 @@ export class CalendarCreationService {
         parentEventId,
         null,
       );
-      await this.addAttendeesToEvent(
-        childEventId,
-        userId,
-        dto.attendeeIds,
-        tenantId,
-      );
+      await this.addAttendeesToEvent(childEventId, userId, dto.attendeeIds, tenantId);
     }
   }
 
@@ -134,11 +128,7 @@ export class CalendarCreationService {
   /**
    * Add single event attendee (idempotent)
    */
-  async addEventAttendee(
-    eventId: number,
-    userId: number,
-    tenantId: number,
-  ): Promise<void> {
+  async addEventAttendee(eventId: number, userId: number, tenantId: number): Promise<void> {
     // Check if already attendee
     const existing = await this.databaseService.query<{ user_id: number }>(
       `SELECT user_id FROM calendar_attendees WHERE event_id = $1 AND user_id = $2`,

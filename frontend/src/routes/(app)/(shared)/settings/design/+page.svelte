@@ -34,15 +34,11 @@
         class="flex items-center gap-20 rounded-lg border border-(--color-glass-border) bg-(--glass-bg) p-4 max-sm:flex-col max-sm:items-start"
       >
         <div class="flex flex-col gap-1">
-          <span class="font-semibold text-(--color-text-primary)">
-            Farbschema
-          </span>
+          <span class="font-semibold text-(--color-text-primary)"> Farbschema </span>
           <span class="text-sm text-(--color-text-secondary)">
             Wechsle zwischen hellem und dunklem Erscheinungsbild.
           </span>
-          <span
-            class="mt-1 flex items-center gap-1.5 text-xs text-(--color-text-muted)"
-          >
+          <span class="mt-1 flex items-center gap-1.5 text-xs text-(--color-text-muted)">
             <i class="fas fa-sync-alt text-[0.625rem]"></i>
             Wird auf allen Geräten synchronisiert.
           </span>

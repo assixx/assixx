@@ -168,11 +168,7 @@ export class RootAdminService {
   /**
    * Update admin user
    */
-  async updateAdmin(
-    id: number,
-    data: UpdateUserRequest,
-    tenantId: number,
-  ): Promise<void> {
+  async updateAdmin(id: number, data: UpdateUserRequest, tenantId: number): Promise<void> {
     this.logger.log(`Updating admin ${id} for tenant ${tenantId}`);
 
     // Check if admin exists
@@ -212,11 +208,7 @@ export class RootAdminService {
   /**
    * Delete admin user
    */
-  async deleteAdmin(
-    id: number,
-    tenantId: number,
-    actingUserId: number,
-  ): Promise<void> {
+  async deleteAdmin(id: number, tenantId: number, actingUserId: number): Promise<void> {
     this.logger.log(`Deleting admin ${id} for tenant ${tenantId}`);
 
     // Check if admin exists
@@ -243,20 +235,13 @@ export class RootAdminService {
       },
     );
 
-    await this.db.query('DELETE FROM users WHERE id = $1 AND tenant_id = $2', [
-      id,
-      tenantId,
-    ]);
+    await this.db.query('DELETE FROM users WHERE id = $1 AND tenant_id = $2', [id, tenantId]);
   }
 
   /**
    * Get admin logs
    */
-  async getAdminLogs(
-    adminId: number,
-    tenantId: number,
-    days?: number,
-  ): Promise<AdminLog[]> {
+  async getAdminLogs(adminId: number, tenantId: number, days?: number): Promise<AdminLog[]> {
     this.logger.debug(`Getting logs for admin ${adminId}`);
 
     // Verify admin exists
@@ -291,10 +276,7 @@ export class RootAdminService {
    * Check for duplicate email among ACTIVE users
    * SECURITY: Uses UserRepository which filters by is_active = 1
    */
-  private async checkDuplicateEmail(
-    email: string,
-    tenantId: number,
-  ): Promise<void> {
+  private async checkDuplicateEmail(email: string, tenantId: number): Promise<void> {
     const isTaken = await this.userRepository.isEmailTaken(email, tenantId);
 
     if (isTaken) {

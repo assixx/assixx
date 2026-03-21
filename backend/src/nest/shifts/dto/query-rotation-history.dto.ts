@@ -16,11 +16,7 @@ export const QueryRotationHistorySchema = z.object({
   teamId: z.coerce.number().int().positive().optional(),
   startDate: ShiftDateSchema.optional(),
   endDate: ShiftDateSchema.optional(),
-  status: z
-    .enum(['generated', 'confirmed', 'modified', 'cancelled'])
-    .optional(),
+  status: z.enum(['generated', 'confirmed', 'modified', 'cancelled']).optional(),
 });
 
-export class QueryRotationHistoryDto extends createZodDto(
-  QueryRotationHistorySchema,
-) {}
+export class QueryRotationHistoryDto extends createZodDto(QueryRotationHistorySchema) {}

@@ -21,19 +21,17 @@ vi.mock('uuid', () => ({
 }));
 
 vi.mock('./shifts.helpers.js', () => ({
-  buildTimestamp: vi.fn(
-    (dateStr: string, timeStr: string | undefined, defaultTime?: string) => {
-      if (typeof dateStr !== 'string' || dateStr === '') return null;
-      const datePart = dateStr.split('T')[0] ?? dateStr;
-      if (typeof timeStr === 'string' && timeStr !== '') {
-        return `${datePart}T${timeStr}:00`;
-      }
-      if (defaultTime !== undefined && defaultTime !== '') {
-        return `${datePart}T${defaultTime}:00`;
-      }
-      return null;
-    },
-  ),
+  buildTimestamp: vi.fn((dateStr: string, timeStr: string | undefined, defaultTime?: string) => {
+    if (typeof dateStr !== 'string' || dateStr === '') return null;
+    const datePart = dateStr.split('T')[0] ?? dateStr;
+    if (typeof timeStr === 'string' && timeStr !== '') {
+      return `${datePart}T${timeStr}:00`;
+    }
+    if (defaultTime !== undefined && defaultTime !== '') {
+      return `${datePart}T${defaultTime}:00`;
+    }
+    return null;
+  }),
 }));
 
 // =============================================================
@@ -187,9 +185,9 @@ describe('ShiftPlansService', () => {
     it('should throw NotFoundException when plan not found', async () => {
       mockDb.query.mockResolvedValueOnce([]);
 
-      await expect(
-        service.updateShiftPlan(999, { shifts: [] } as never, 10, 1),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.updateShiftPlan(999, { shifts: [] } as never, 10, 1)).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should update plan metadata and upsert shifts', async () => {
@@ -233,9 +231,9 @@ describe('ShiftPlansService', () => {
     it('should throw NotFoundException when UUID not found', async () => {
       mockDb.query.mockResolvedValueOnce([]);
 
-      await expect(
-        service.resolveShiftPlanIdByUuid('nonexistent-uuid', 10),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.resolveShiftPlanIdByUuid('nonexistent-uuid', 10)).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should return plan id', async () => {
@@ -255,9 +253,7 @@ describe('ShiftPlansService', () => {
     it('should throw NotFoundException when plan not found', async () => {
       mockDb.query.mockResolvedValueOnce([]);
 
-      await expect(service.deleteShiftPlan(999, 10, 1)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.deleteShiftPlan(999, 10, 1)).rejects.toThrow(NotFoundException);
     });
 
     it('should delete shifts then plan', async () => {

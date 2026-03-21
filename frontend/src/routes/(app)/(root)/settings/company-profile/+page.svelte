@@ -62,8 +62,7 @@
   const companyPhone = $derived(data.company?.phone ?? '');
 
   const selectedCountry = $derived(
-    ADDRESS_COUNTRIES.find((c) => c.iso === countryCode) ??
-      ADDRESS_COUNTRIES[0],
+    ADDRESS_COUNTRIES.find((c) => c.iso === countryCode) ?? ADDRESS_COUNTRIES[0],
   );
 
   const hasChanges = $derived(
@@ -113,8 +112,7 @@
       });
       showSuccessAlert('Firmendaten gespeichert');
     } catch (err: unknown) {
-      const message =
-        err instanceof Error ? err.message : 'Fehler beim Speichern';
+      const message = err instanceof Error ? err.message : 'Fehler beim Speichern';
       showErrorAlert(message);
     } finally {
       saving = false; // eslint-disable-line require-atomic-updates -- guarded by early return on saving===true
@@ -149,36 +147,22 @@
           <div class="alert__icon">
             <i class="fas fa-exclamation-triangle"></i>
           </div>
-          <div class="alert__content">
-            Firmendaten konnten nicht geladen werden.
-          </div>
+          <div class="alert__content">Firmendaten konnten nicht geladen werden.</div>
         </div>
       {:else}
         <div class="flex flex-col gap-3">
           <div class="flex items-baseline gap-4">
-            <span class="w-20 shrink-0 text-sm text-(--color-text-secondary)"
-              >Firma</span
-            >
-            <span class="font-medium text-(--color-text-primary)"
-              >{companyName}</span
-            >
+            <span class="w-20 shrink-0 text-sm text-(--color-text-secondary)">Firma</span>
+            <span class="font-medium text-(--color-text-primary)">{companyName}</span>
           </div>
           <div class="flex items-baseline gap-4">
-            <span class="w-20 shrink-0 text-sm text-(--color-text-secondary)"
-              >E-Mail</span
-            >
-            <span class="font-medium text-(--color-text-primary)"
-              >{companyEmail}</span
-            >
+            <span class="w-20 shrink-0 text-sm text-(--color-text-secondary)">E-Mail</span>
+            <span class="font-medium text-(--color-text-primary)">{companyEmail}</span>
           </div>
           {#if companyPhone}
             <div class="flex items-baseline gap-4">
-              <span class="w-20 shrink-0 text-sm text-(--color-text-secondary)"
-                >Telefon</span
-              >
-              <span class="font-medium text-(--color-text-primary)"
-                >{companyPhone}</span
-              >
+              <span class="w-20 shrink-0 text-sm text-(--color-text-secondary)">Telefon</span>
+              <span class="font-medium text-(--color-text-primary)">{companyPhone}</span>
             </div>
           {/if}
         </div>
@@ -196,9 +180,7 @@
           <i class="fas fa-map-marker-alt mr-2"></i>
           Adresse
         </h2>
-        <p class="mt-2 text-(--color-text-secondary)">
-          Firmenadresse bearbeiten.
-        </p>
+        <p class="mt-2 text-(--color-text-secondary)">Firmenadresse bearbeiten.</p>
       </div>
 
       <div class="card__body">
@@ -313,9 +295,7 @@
                       }}
                     >
                       <span>{country.flag} {country.name}</span>
-                      <span class="dropdown__option-secondary"
-                        >{country.iso}</span
-                      >
+                      <span class="dropdown__option-secondary">{country.iso}</span>
                     </button>
                   {/each}
                 </div>

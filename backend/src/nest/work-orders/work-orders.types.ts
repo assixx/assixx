@@ -68,15 +68,13 @@ export const SOURCE_TYPE_LABELS: Record<WorkOrderSourceType, string> = {
  * completed → in_progress (Admin: Zurück an Employee — nicht akzeptiert)
  * verified → completed    (Admin: Verifikation zurücknehmen)
  */
-export const VALID_STATUS_TRANSITIONS: ReadonlyMap<
-  WorkOrderStatus,
-  readonly WorkOrderStatus[]
-> = new Map([
-  ['open', ['in_progress', 'completed']],
-  ['in_progress', ['completed']],
-  ['completed', ['verified', 'in_progress']],
-  ['verified', ['completed']],
-]);
+export const VALID_STATUS_TRANSITIONS: ReadonlyMap<WorkOrderStatus, readonly WorkOrderStatus[]> =
+  new Map([
+    ['open', ['in_progress', 'completed']],
+    ['in_progress', ['completed']],
+    ['completed', ['verified', 'in_progress']],
+    ['verified', ['completed']],
+  ]);
 
 // ============================================================================
 // DB Row Types (snake_case — 1:1 with database columns)

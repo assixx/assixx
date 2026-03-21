@@ -2,10 +2,7 @@
 // KVP-DETAIL - CONSTANTS
 // =============================================================================
 
-import {
-  DEFAULT_HIERARCHY_LABELS,
-  type HierarchyLabels,
-} from '$lib/types/hierarchy-labels';
+import { DEFAULT_HIERARCHY_LABELS, type HierarchyLabels } from '$lib/types/hierarchy-labels';
 
 import type { KvpStatus, KvpPriority, OrgLevel } from './types';
 
@@ -21,8 +18,7 @@ export const API_ENDPOINTS = {
   kvpArchive: (id: string) => `/kvp/${id}/archive`,
   kvpUnarchive: (id: string) => `/kvp/${id}/unarchive`,
   kvpConfirm: (uuid: string) => `/kvp/${uuid}/confirm`,
-  attachmentDownload: (fileUuid: string) =>
-    `/kvp/attachments/${fileUuid}/download`,
+  attachmentDownload: (fileUuid: string) => `/kvp/attachments/${fileUuid}/download`,
   departments: '/departments',
   teams: '/teams',
   areas: '/areas',
@@ -108,9 +104,7 @@ export const VISIBILITY_INFO: Record<OrgLevel, { icon: string; text: string }> =
 /**
  * Factory: Share level text with dynamic hierarchy labels
  */
-export function createShareLevelText(
-  labels: HierarchyLabels,
-): Record<OrgLevel, string> {
+export function createShareLevelText(labels: HierarchyLabels): Record<OrgLevel, string> {
   return {
     company: 'Firmenebene',
     department: `${labels.department}-Ebene`,
@@ -121,9 +115,8 @@ export function createShareLevelText(
 }
 
 /** Backward-compatible static export */
-export const SHARE_LEVEL_TEXT: Record<OrgLevel, string> = createShareLevelText(
-  DEFAULT_HIERARCHY_LABELS,
-);
+export const SHARE_LEVEL_TEXT: Record<OrgLevel, string> =
+  createShareLevelText(DEFAULT_HIERARCHY_LABELS);
 
 /**
  * Status options for admin dropdown

@@ -51,11 +51,7 @@ function parseOptionalDate(dateStr: string | undefined): Date | null {
  * Check if a date falls within a date range [start, end] inclusive
  * Null boundaries are treated as unbounded (infinity)
  */
-function isDateInRange(
-  checkDate: Date,
-  start: Date | null,
-  end: Date | null,
-): boolean {
+function isDateInRange(checkDate: Date, start: Date | null, end: Date | null): boolean {
   const afterStart = start === null || checkDate >= start;
   const beforeEnd = end === null || checkDate <= end;
   return afterStart && beforeEnd;
@@ -68,10 +64,7 @@ function isDateInRange(
 /**
  * Find the availability status that blocks an employee on a given date
  */
-function findBlockingStatus(
-  employee: Employee,
-  dateString: string,
-): string | null {
+function findBlockingStatus(employee: Employee, dateString: string): string | null {
   const entries = employee.availabilities;
   if (entries === undefined || entries.length === 0) {
     return null;
@@ -99,15 +92,11 @@ function findBlockingStatus(
  * Validate employee availability for shift assignment.
  * Checks ALL availability entries for the given date.
  */
-export function validateEmployeeAvailability(
-  employee: Employee,
-  date: string,
-): ValidationResult {
+export function validateEmployeeAvailability(employee: Employee, date: string): ValidationResult {
   const blockingStatus = findBlockingStatus(employee, date);
 
   if (blockingStatus !== null) {
-    const fullName =
-      `${employee.firstName ?? ''} ${employee.lastName ?? ''}`.trim();
+    const fullName = `${employee.firstName ?? ''} ${employee.lastName ?? ''}`.trim();
     const employeeName = fullName !== '' ? fullName : employee.username;
 
     const statusMessages = new Map<string, string>([
@@ -163,8 +152,7 @@ export function checkDuplicateShiftAssignment(
 
     const employees = getShiftEmployees(date, shiftType);
     if (employees.includes(employee.id)) {
-      const fullName =
-        `${employee.firstName ?? ''} ${employee.lastName ?? ''}`.trim();
+      const fullName = `${employee.firstName ?? ''} ${employee.lastName ?? ''}`.trim();
       const employeeName = fullName !== '' ? fullName : employee.username;
       const shiftName = getShiftNameGerman(shiftType);
 

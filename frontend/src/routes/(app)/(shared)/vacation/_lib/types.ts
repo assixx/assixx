@@ -5,12 +5,7 @@
 
 // ─── Enums (string unions) ───────────────────────────────────────────
 
-export type VacationRequestStatus =
-  | 'pending'
-  | 'approved'
-  | 'denied'
-  | 'withdrawn'
-  | 'cancelled';
+export type VacationRequestStatus = 'pending' | 'approved' | 'denied' | 'withdrawn' | 'cancelled';
 
 export type VacationType = 'regular' | 'unpaid';
 

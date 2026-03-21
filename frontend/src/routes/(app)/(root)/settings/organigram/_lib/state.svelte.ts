@@ -199,17 +199,11 @@ function clearMultiHallOverrides(
   const areaHallCounts = new Map<string, number>();
   for (const hall of tree.halls) {
     if (hall.areaUuid !== null) {
-      areaHallCounts.set(
-        hall.areaUuid,
-        (areaHallCounts.get(hall.areaUuid) ?? 0) + 1,
-      );
+      areaHallCounts.set(hall.areaUuid, (areaHallCounts.get(hall.areaUuid) ?? 0) + 1);
     }
   }
   for (const hall of tree.halls) {
-    if (
-      hall.areaUuid !== null &&
-      (areaHallCounts.get(hall.areaUuid) ?? 0) > 1
-    ) {
+    if (hall.areaUuid !== null && (areaHallCounts.get(hall.areaUuid) ?? 0) > 1) {
       multiHallUuids.add(hall.uuid);
     }
   }
@@ -228,10 +222,7 @@ function getMultiHallAreaUuids(): Set<string> {
   const areaHallCounts = new Map<string, number>();
   for (const hall of tree.halls) {
     if (hall.areaUuid !== null) {
-      areaHallCounts.set(
-        hall.areaUuid,
-        (areaHallCounts.get(hall.areaUuid) ?? 0) + 1,
-      );
+      areaHallCounts.set(hall.areaUuid, (areaHallCounts.get(hall.areaUuid) ?? 0) + 1);
     }
   }
   const result = new Set<string>();
@@ -248,12 +239,8 @@ function overlaySavedPositions(
 ): void {
   for (const node of nodes) {
     // Skip saved positions for multi-hall areas (auto-layout is authoritative)
-    const isMultiHallArea =
-      node.entityType === 'area' && skipAreaUuids.has(node.entityUuid);
-    const isChildOfMultiHallArea = isNodeUnderMultiHallArea(
-      node,
-      skipAreaUuids,
-    );
+    const isMultiHallArea = node.entityType === 'area' && skipAreaUuids.has(node.entityUuid);
+    const isChildOfMultiHallArea = isNodeUnderMultiHallArea(node, skipAreaUuids);
 
     if (node.position !== null && !isMultiHallArea && !isChildOfMultiHallArea) {
       const key = makeKey(node.entityType, node.entityUuid);
@@ -270,10 +257,7 @@ function overlaySavedPositions(
 }
 
 /** Check if a node is a descendant of a multi-hall area */
-function isNodeUnderMultiHallArea(
-  node: OrgChartNode,
-  skipAreaUuids: Set<string>,
-): boolean {
+function isNodeUnderMultiHallArea(node: OrgChartNode, skipAreaUuids: Set<string>): boolean {
   if (node.entityType === 'area') return false;
 
   for (const topNode of tree.nodes) {
@@ -336,10 +320,7 @@ function isTeamInHall(teamUuid: string, hallUuid: string): boolean {
 }
 
 /** Filter a department's team children to only those assigned to a specific hall */
-function filterDeptChildrenByHall(
-  dept: OrgChartNode,
-  hallUuid: string,
-): OrgChartNode {
+function filterDeptChildrenByHall(dept: OrgChartNode, hallUuid: string): OrgChartNode {
   if (dept.entityType !== 'department') return dept;
   return {
     ...dept,
@@ -351,11 +332,7 @@ function filterDeptChildrenByHall(
 }
 
 /** Build a position key with optional suffix for ghost copies */
-function makeCtxKey(
-  ctx: LayoutCtx,
-  entityType: OrgEntityType,
-  entityUuid: string,
-): PositionKey {
+function makeCtxKey(ctx: LayoutCtx, entityType: OrgEntityType, entityUuid: string): PositionKey {
   return `${entityType}:${entityUuid}${ctx.keySuffix}` as PositionKey;
 }
 
@@ -377,8 +354,7 @@ function layoutNode(
   node: OrgChartNode,
   depth: number,
 ): { left: number; right: number } {
-  const headerOffset =
-    node.entityType === 'area' ? LAYOUT.AREA_HEADER_HEIGHT : 0;
+  const headerOffset = node.entityType === 'area' ? LAYOUT.AREA_HEADER_HEIGHT : 0;
   const pad = LAYOUT.CANVAS_PADDING;
   const y = pad + headerOffset + depth * (nodeHeight + LAYOUT.VERTICAL_GAP);
   const key = makeCtxKey(ctx, node.entityType, node.entityUuid);
@@ -407,9 +383,7 @@ function groupChildrenByHall(
   children: OrgChartNode[],
   hallUuids: string[],
 ): Map<string, OrgChartNode[]> {
-  const groups = new Map<string, OrgChartNode[]>(
-    hallUuids.map((id: string) => [id, []]),
-  );
+  const groups = new Map<string, OrgChartNode[]>(hallUuids.map((id: string) => [id, []]));
   const primaryHall = hallUuids[0] ?? '';
 
   for (const child of children) {
@@ -422,11 +396,7 @@ function groupChildrenByHall(
 }
 
 /** Determine which halls a child node belongs to */
-function findTargetHalls(
-  child: OrgChartNode,
-  hallUuids: string[],
-  primaryHall: string,
-): string[] {
+function findTargetHalls(child: OrgChartNode, hallUuids: string[], primaryHall: string): string[] {
   if (child.entityType !== 'department') return [primaryHall];
 
   const assigned = getDeptHallAssignments(child.entityUuid);
@@ -463,9 +433,7 @@ function layoutSingleHallGroup(
   ctx.keySuffix = isPrimary ? '' : suffix;
 
   // Filter team children by hall assignment (teams not in this hall are excluded)
-  const filteredDepts = depts.map((dept: OrgChartNode) =>
-    filterDeptChildrenByHall(dept, hallUuid),
-  );
+  const filteredDepts = depts.map((dept: OrgChartNode) => filterDeptChildrenByHall(dept, hallUuid));
 
   if (!isPrimary) {
     // Register area ghost for the secondary hall
@@ -529,13 +497,7 @@ function layoutHallGroups(
       continue;
     }
 
-    const extents = layoutSingleHallGroup(
-      ctx,
-      hallUuid,
-      depts,
-      isFirst,
-      areaNode,
-    );
+    const extents = layoutSingleHallGroup(ctx, hallUuid, depts, isFirst, areaNode);
 
     if (isFirst) {
       primaryLeft = extents.left;
@@ -561,24 +523,13 @@ function registerGhostSubtree(node: OrgChartNode, suffix: string): void {
 }
 
 /** Layout an area whose departments span multiple halls */
-function layoutAreaMultiHall(
-  ctx: LayoutCtx,
-  areaNode: OrgChartNode,
-  hallUuids: string[],
-): void {
+function layoutAreaMultiHall(ctx: LayoutCtx, areaNode: OrgChartNode, hallUuids: string[]): void {
   const areaY = LAYOUT.CANVAS_PADDING + LAYOUT.AREA_HEADER_HEIGHT;
   const groups = groupChildrenByHall(areaNode.children, hallUuids);
-  const { primaryLeft, primaryRight } = layoutHallGroups(
-    ctx,
-    groups,
-    areaNode.assets,
-    areaNode,
-  );
+  const { primaryLeft, primaryRight } = layoutHallGroups(ctx, groups, areaNode.assets, areaNode);
 
   const x =
-    primaryLeft === Infinity ?
-      ctx.nextLeafX
-    : (primaryLeft + primaryRight) / 2 - nodeWidth / 2;
+    primaryLeft === Infinity ? ctx.nextLeafX : (primaryLeft + primaryRight) / 2 - nodeWidth / 2;
 
   if (primaryLeft === Infinity) {
     ctx.nextLeafX += nodeWidth + LAYOUT.HORIZONTAL_GAP;
@@ -592,9 +543,7 @@ function layoutAreaMultiHall(
   };
 }
 
-function computeAutoLayout(
-  nodes: OrgChartNode[],
-): Record<string, NodePosition> {
+function computeAutoLayout(nodes: OrgChartNode[]): Record<string, NodePosition> {
   ghostEntries = [];
   const ctx: LayoutCtx = {
     result: {},
@@ -638,11 +587,7 @@ export function moveNodeOnly(
 }
 
 /** Move a node by its render key (supports ghost keys with #hallUuid suffix) */
-export function moveNodeByKey(
-  renderKey: string,
-  newX: number,
-  newY: number,
-): void {
+export function moveNodeByKey(renderKey: string, newX: number, newY: number): void {
   const key = renderKey as PositionKey;
   const oldPos = nodePositions[key];
   nodePositions[key] = {
@@ -655,11 +600,7 @@ export function moveNodeByKey(
 }
 
 /** Move all ghost nodes belonging to a specific hall by delta */
-export function moveGhostNodesByHall(
-  hallUuid: string,
-  dx: number,
-  dy: number,
-): void {
+export function moveGhostNodesByHall(hallUuid: string, dx: number, dy: number): void {
   const suffix = `#${hallUuid}`;
   for (const key of Object.keys(nodePositions)) {
     if (key.includes(suffix)) {
@@ -708,10 +649,7 @@ export function moveNodeWithChildren(
   dirty = true;
 }
 
-function findDescendantKeys(
-  entityType: OrgEntityType,
-  entityUuid: string,
-): PositionKey[] {
+function findDescendantKeys(entityType: OrgEntityType, entityUuid: string): PositionKey[] {
   const keys: PositionKey[] = [];
 
   function findNode(nodes: OrgChartNode[]): OrgChartNode | undefined {
@@ -765,10 +703,7 @@ export function setZoom(value: number): void {
  */
 export function zoomAt(delta: number, focalX: number, focalY: number): void {
   const oldZoom = zoom;
-  const newZoom = Math.max(
-    LAYOUT.MIN_ZOOM,
-    Math.min(LAYOUT.MAX_ZOOM, zoom + delta),
-  );
+  const newZoom = Math.max(LAYOUT.MIN_ZOOM, Math.min(LAYOUT.MAX_ZOOM, zoom + delta));
   if (newZoom === oldZoom) return;
 
   const ratio = newZoom / oldZoom;
@@ -846,18 +781,12 @@ export function getHallConnectionAnchors(): Record<string, PerimeterAnchor> {
   return hallConnectionAnchors;
 }
 
-export function setHallConnectionAnchor(
-  key: string,
-  anchor: PerimeterAnchor,
-): void {
+export function setHallConnectionAnchor(key: string, anchor: PerimeterAnchor): void {
   hallConnectionAnchors[key] = anchor;
   dirty = true;
 }
 
-export function getHallConnectionAnchorsForSave(): Record<
-  string,
-  PerimeterAnchor
-> {
+export function getHallConnectionAnchorsForSave(): Record<string, PerimeterAnchor> {
   return { ...hallConnectionAnchors };
 }
 
@@ -883,10 +812,7 @@ export function getPositionsForSave(): {
   return Object.entries(nodePositions)
     .filter(([key]) => !key.includes('#'))
     .map(([key, pos]) => {
-      const [entityType, entityUuid] = key.split(':') as [
-        OrgEntityType,
-        string,
-      ];
+      const [entityType, entityUuid] = key.split(':') as [OrgEntityType, string];
       return {
         entityType,
         entityUuid,
@@ -997,22 +923,14 @@ export function getConnections(): Connection[] {
   // Ghost connections (secondary hall copies)
   for (const ghost of ghostEntries) {
     const suffix = ghost.suffix;
-    const ghostKey =
-      `${ghost.node.entityType}:${ghost.node.entityUuid}${suffix}` as PositionKey;
+    const ghostKey = `${ghost.node.entityType}:${ghost.node.entityUuid}${suffix}` as PositionKey;
     if (!(ghostKey in nodePositions)) continue;
     const ghostPos = nodePositions[ghostKey];
 
     for (const child of [...ghost.node.children, ...ghost.node.assets]) {
-      const childGhostKey =
-        `${child.entityType}:${child.entityUuid}${suffix}` as PositionKey;
+      const childGhostKey = `${child.entityType}:${child.entityUuid}${suffix}` as PositionKey;
       if (!(childGhostKey in nodePositions)) continue;
-      addConnection(
-        connections,
-        ghostKey,
-        childGhostKey,
-        ghostPos,
-        nodePositions[childGhostKey],
-      );
+      addConnection(connections, ghostKey, childGhostKey, ghostPos, nodePositions[childGhostKey]);
     }
   }
 
@@ -1026,18 +944,12 @@ function isDepartmentInHall(deptUuid: string, hallUuid: string): boolean {
 }
 
 /** Collect rects for area children assigned to a specific hall */
-function collectHallFilteredRects(
-  areaNode: OrgChartNode,
-  hallUuid: string,
-): NodePosition[] {
+function collectHallFilteredRects(areaNode: OrgChartNode, hallUuid: string): NodePosition[] {
   const rects: NodePosition[] = [];
   const suffix = `#${hallUuid}`;
 
   for (const child of areaNode.children) {
-    if (
-      child.entityType === 'department' &&
-      !isDepartmentInHall(child.entityUuid, hallUuid)
-    ) {
+    if (child.entityType === 'department' && !isDepartmentInHall(child.entityUuid, hallUuid)) {
       continue;
     }
     // Filter team children by hall assignment before collecting rects
@@ -1054,13 +966,8 @@ function collectHallFilteredRects(
 }
 
 /** Collect rects using ghost-suffixed keys, falling back to normal keys */
-function collectRectsWithSuffix(
-  node: OrgChartNode,
-  suffix: string,
-  rects: NodePosition[],
-): void {
-  const ghostKey =
-    `${node.entityType}:${node.entityUuid}${suffix}` as PositionKey;
+function collectRectsWithSuffix(node: OrgChartNode, suffix: string, rects: NodePosition[]): void {
+  const ghostKey = `${node.entityType}:${node.entityUuid}${suffix}` as PositionKey;
   const normalKey = makeKey(node.entityType, node.entityUuid);
   const pos = nodePositions[ghostKey] ?? nodePositions[normalKey];
   rects.push(pos);
@@ -1071,10 +978,7 @@ function collectRectsWithSuffix(
 }
 
 /** Auto-computed content bounds für eine assigned Halle */
-function computeAssignedHallBounds(
-  hall: OrgTreeHall,
-  areaNode: OrgChartNode,
-): HallBounds {
+function computeAssignedHallBounds(hall: OrgTreeHall, areaNode: OrgChartNode): HallBounds {
   const PADDING = 24;
   const HEADER_HEIGHT = 32;
 
@@ -1167,9 +1071,7 @@ export function getHallBounds(): HallBounds[] {
     if (hall.areaUuid !== null) {
       const areaNode = areaMap.get(hall.areaUuid);
       if (areaNode !== undefined) {
-        bounds.push(
-          mergeWithOverride(computeAssignedHallBounds(hall, areaNode)),
-        );
+        bounds.push(mergeWithOverride(computeAssignedHallBounds(hall, areaNode)));
         continue;
       }
     }
@@ -1214,7 +1116,6 @@ export function isHallPrimary(hallId: string): boolean {
   return (
     hall?.areaUuid !== undefined &&
     hall.areaUuid !== null &&
-    tree.halls.find((h: OrgTreeHall) => h.areaUuid === hall.areaUuid)?.uuid ===
-      hallId
+    tree.halls.find((h: OrgTreeHall) => h.areaUuid === hall.areaUuid)?.uuid === hallId
   );
 }

@@ -77,18 +77,10 @@ function createMockConfirmations() {
 
 function createMockLifecycle() {
   return {
-    shareSuggestion: vi
-      .fn()
-      .mockResolvedValue({ message: 'Suggestion shared successfully' }),
-    unshareSuggestion: vi
-      .fn()
-      .mockResolvedValue({ message: 'Suggestion unshared successfully' }),
-    archiveSuggestion: vi
-      .fn()
-      .mockResolvedValue({ message: 'Suggestion archived successfully' }),
-    unarchiveSuggestion: vi
-      .fn()
-      .mockResolvedValue({ message: 'Suggestion restored successfully' }),
+    shareSuggestion: vi.fn().mockResolvedValue({ message: 'Suggestion shared successfully' }),
+    unshareSuggestion: vi.fn().mockResolvedValue({ message: 'Suggestion unshared successfully' }),
+    archiveSuggestion: vi.fn().mockResolvedValue({ message: 'Suggestion archived successfully' }),
+    unarchiveSuggestion: vi.fn().mockResolvedValue({ message: 'Suggestion restored successfully' }),
   };
 }
 
@@ -400,9 +392,7 @@ describe('KvpService', () => {
     });
 
     it('handles null assets gracefully', async () => {
-      mockDb.query.mockResolvedValueOnce([
-        { team_id: 5, team_name: 'Alpha', assets: null },
-      ]);
+      mockDb.query.mockResolvedValueOnce([{ team_id: 5, team_name: 'Alpha', assets: null }]);
 
       const result = await service.getMyOrganizations(3, 42);
 
@@ -535,9 +525,9 @@ describe('KvpService', () => {
     it('throws NotFoundException when suggestion not found', async () => {
       mockDb.query.mockResolvedValueOnce([]);
 
-      await expect(
-        service.getSuggestionById(999, 42, 3, 'admin'),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.getSuggestionById(999, 42, 3, 'admin')).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
@@ -798,9 +788,9 @@ describe('KvpService', () => {
       // Q2: todayCount → 1 (at limit)
       mockDb.query.mockResolvedValueOnce([{ count: '1' }]);
 
-      await expect(
-        service['assertDailyLimitNotReached'](42, 3, 'employee'),
-      ).rejects.toThrow(ForbiddenException);
+      await expect(service['assertDailyLimitNotReached'](42, 3, 'employee')).rejects.toThrow(
+        ForbiddenException,
+      );
     });
   });
 
@@ -833,13 +823,7 @@ describe('KvpService', () => {
       mockGetSuggestionByIdChain(mockDb, { submitted_by: 99 });
 
       await expect(
-        service.updateSuggestion(
-          1,
-          { title: 'Hack' } as never,
-          42,
-          3,
-          'employee',
-        ),
+        service.updateSuggestion(1, { title: 'Hack' } as never, 42, 3, 'employee'),
       ).rejects.toThrow(ForbiddenException);
     });
 
@@ -896,9 +880,9 @@ describe('KvpService', () => {
     it('should throw ForbiddenException for employee deleting others suggestion', async () => {
       mockGetSuggestionByIdChain(mockDb, { submitted_by: 99 });
 
-      await expect(
-        service.deleteSuggestion(1, 42, 3, 'employee'),
-      ).rejects.toThrow(ForbiddenException);
+      await expect(service.deleteSuggestion(1, 42, 3, 'employee')).rejects.toThrow(
+        ForbiddenException,
+      );
     });
 
     it('deletes own suggestion for employee', async () => {
@@ -1029,9 +1013,7 @@ describe('KvpService', () => {
       // Q1: count
       mockDb.query.mockResolvedValueOnce([{ total: 1 }]);
       // Q2: list
-      mockDb.query.mockResolvedValueOnce([
-        createMockDbSuggestion({ submitted_by: 3 }),
-      ]);
+      mockDb.query.mockResolvedValueOnce([createMockDbSuggestion({ submitted_by: 3 })]);
 
       const result = await service.listSuggestions(42, 3, 'employee', {
         page: 1,
@@ -1104,11 +1086,7 @@ describe('KvpService', () => {
     });
 
     it('archives by UUID', async () => {
-      const result = await service.archiveSuggestion(
-        '019450aa-bbbb-7ccc-dddd-eeeeeeeeeeee',
-        42,
-        1,
-      );
+      const result = await service.archiveSuggestion('019450aa-bbbb-7ccc-dddd-eeeeeeeeeeee', 42, 1);
 
       expect(result.message).toBe('Suggestion archived successfully');
       expect(mockLifecycle.archiveSuggestion).toHaveBeenCalledWith(
@@ -1147,12 +1125,7 @@ describe('KvpService', () => {
         org_id: 5,
       });
 
-      const result = await service.getAttachment(
-        'file-uuid',
-        42,
-        3,
-        'employee',
-      );
+      const result = await service.getAttachment('file-uuid', 42, 3, 'employee');
 
       expect(result).toEqual({
         filePath: '/uploads/file.pdf',
@@ -1170,12 +1143,7 @@ describe('KvpService', () => {
         org_id: 5,
       });
 
-      const result = await service.getAttachment(
-        'file-uuid',
-        42,
-        3,
-        'employee',
-      );
+      const result = await service.getAttachment('file-uuid', 42, 3, 'employee');
 
       expect(result.fileName).toBe('public.pdf');
     });
@@ -1204,9 +1172,9 @@ describe('KvpService', () => {
         isAnyLead: false,
       });
 
-      await expect(
-        service.getAttachment('file-uuid', 42, 3, 'employee'),
-      ).rejects.toThrow(ForbiddenException);
+      await expect(service.getAttachment('file-uuid', 42, 3, 'employee')).rejects.toThrow(
+        ForbiddenException,
+      );
     });
 
     it('allows access via org membership', async () => {
@@ -1233,12 +1201,7 @@ describe('KvpService', () => {
         isAnyLead: false,
       });
 
-      const result = await service.getAttachment(
-        'file-uuid',
-        42,
-        3,
-        'employee',
-      );
+      const result = await service.getAttachment('file-uuid', 42, 3, 'employee');
 
       expect(result.fileName).toBe('team.pdf');
     });
@@ -1257,21 +1220,13 @@ describe('KvpService', () => {
       const result = await service.getComments(1, 42, 3, 'admin');
 
       expect(result).toEqual(paginated);
-      expect(mockComments.getComments).toHaveBeenCalledWith(
-        1,
-        42,
-        'admin',
-        undefined,
-        undefined,
-      );
+      expect(mockComments.getComments).toHaveBeenCalledWith(1, 42, 'admin', undefined, undefined);
     });
   });
 
   describe('getReplies', () => {
     it('delegates to commentsService', async () => {
-      const mockReplies = [
-        { id: 10, suggestionId: 1, comment: 'Reply', parentId: 5 },
-      ];
+      const mockReplies = [{ id: 10, suggestionId: 1, comment: 'Reply', parentId: 5 }];
       mockComments.getReplies = vi.fn().mockResolvedValueOnce(mockReplies);
 
       const result = await service.getReplies(5, 42, 'admin');
@@ -1328,10 +1283,7 @@ describe('KvpService', () => {
 
       await service.addAttachment(1, attachmentData, 42, 3, 'admin');
 
-      expect(mockAttachments.addAttachment).toHaveBeenCalledWith(
-        1,
-        attachmentData,
-      );
+      expect(mockAttachments.addAttachment).toHaveBeenCalledWith(1, attachmentData);
     });
   });
 
@@ -1354,11 +1306,7 @@ describe('KvpService', () => {
       const result = await service.confirmSuggestion('test-uuid', 3, 42);
 
       expect(result).toEqual({ success: true });
-      expect(mockConfirmations.confirmSuggestion).toHaveBeenCalledWith(
-        'test-uuid',
-        3,
-        42,
-      );
+      expect(mockConfirmations.confirmSuggestion).toHaveBeenCalledWith('test-uuid', 3, 42);
     });
   });
 
@@ -1367,11 +1315,64 @@ describe('KvpService', () => {
       const result = await service.unconfirmSuggestion('test-uuid', 3, 42);
 
       expect(result).toEqual({ success: true });
-      expect(mockConfirmations.unconfirmSuggestion).toHaveBeenCalledWith(
-        'test-uuid',
-        3,
-        42,
-      );
+      expect(mockConfirmations.unconfirmSuggestion).toHaveBeenCalledWith('test-uuid', 3, 42);
+    });
+  });
+
+  // =============================================================
+  // getUserTeamId (private) — line 468
+  // =============================================================
+
+  describe('getUserTeamId (private)', () => {
+    it('should throw ForbiddenException when user has no team', async () => {
+      mockDb.query.mockResolvedValueOnce([]); // no team found
+
+      await expect(service['getUserTeamId'](3, 42)).rejects.toThrow(ForbiddenException);
+    });
+
+    it('should return team_id when user is assigned', async () => {
+      mockDb.query.mockResolvedValueOnce([{ team_id: 86 }]);
+
+      const teamId = await service['getUserTeamId'](3, 42);
+
+      expect(teamId).toBe(86);
+    });
+  });
+
+  // =============================================================
+  // getKvpSettings + updateKvpSettings — lines 535-558
+  // =============================================================
+
+  describe('getKvpSettings', () => {
+    it('should return daily limit from tenant addon settings', async () => {
+      mockDb.query.mockResolvedValueOnce([{ daily_limit: 5 }]);
+
+      const result = await service.getKvpSettings(42);
+
+      expect(result).toEqual({ dailyLimit: 5 });
+    });
+
+    it('should default to 1 when no addon config found', async () => {
+      mockDb.query.mockResolvedValueOnce([]);
+
+      const result = await service.getKvpSettings(42);
+
+      expect(result).toEqual({ dailyLimit: 1 });
+    });
+  });
+
+  describe('updateKvpSettings', () => {
+    it('should update daily limit and return new value', async () => {
+      mockDb.query.mockResolvedValueOnce([]); // UPDATE
+
+      const result = await service.updateKvpSettings(42, 10);
+
+      expect(result).toEqual({ dailyLimit: 10 });
+      const sql = mockDb.query.mock.calls[0]?.[0] as string;
+      expect(sql).toContain('UPDATE tenant_addons');
+      expect(sql).toContain('daily_limit');
+      const params = mockDb.query.mock.calls[0]?.[1] as unknown[];
+      expect(params).toEqual([10, 42]);
     });
   });
 });

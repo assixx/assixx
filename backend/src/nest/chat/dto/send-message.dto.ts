@@ -19,34 +19,20 @@ export const SendMessageBodySchema = z.object({
   /** Plaintext message content (for group/system messages) */
   message: z
     .string()
-    .max(
-      MAX_MESSAGE_LENGTH,
-      `Message cannot exceed ${MAX_MESSAGE_LENGTH} characters`,
-    )
+    .max(MAX_MESSAGE_LENGTH, `Message cannot exceed ${MAX_MESSAGE_LENGTH} characters`)
     .optional(),
 
   /** E2E: base64-encoded ciphertext */
-  encryptedContent: z
-    .string()
-    .max(MAX_ENCRYPTED_LENGTH, 'Encrypted content too large')
-    .optional(),
+  encryptedContent: z.string().max(MAX_ENCRYPTED_LENGTH, 'Encrypted content too large').optional(),
 
   /** E2E: base64-encoded 24-byte XChaCha20-Poly1305 nonce */
   e2eNonce: z.string().max(MAX_NONCE_LENGTH, 'Nonce too large').optional(),
 
   /** E2E: sender's key version at time of encryption */
-  e2eKeyVersion: z
-    .number()
-    .int()
-    .positive('Key version must be positive')
-    .optional(),
+  e2eKeyVersion: z.number().int().positive('Key version must be positive').optional(),
 
   /** E2E: HKDF epoch (Math.floor(Date.now() / 86_400_000)) for decryption key derivation */
-  e2eKeyEpoch: z
-    .number()
-    .int()
-    .nonnegative('Key epoch must be non-negative')
-    .optional(),
+  e2eKeyEpoch: z.number().int().nonnegative('Key epoch must be non-negative').optional(),
 });
 
 export class SendMessageDto extends createZodDto(SendMessageBodySchema) {}

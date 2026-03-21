@@ -7,12 +7,7 @@ import { escapeHtml, sanitizeHtml } from '$lib/utils/sanitize-html';
 
 import { FILE_SIZE_UNITS, MIME_TYPE_ICONS, MESSAGES } from './constants';
 
-import type {
-  Conversation,
-  Message,
-  ConversationParticipant,
-  UserStatus,
-} from './types';
+import type { Conversation, Message, ConversationParticipant, UserStatus } from './types';
 
 // =============================================================================
 // PERFORMANCE: CACHED REGEX & MEMOIZATION
@@ -98,8 +93,7 @@ const MIME_TYPE_MATCHERS: readonly {
     icon: MIME_TYPE_ICONS.excel,
   },
   {
-    test: (m) =>
-      m.includes('zip') || m.includes('rar') || m.includes('archive'),
+    test: (m) => m.includes('zip') || m.includes('rar') || m.includes('archive'),
     icon: MIME_TYPE_ICONS.archive,
   },
 ];
@@ -191,10 +185,7 @@ export function highlightSearchTerm(text: string, searchTerm: string): string {
  * Highlight search term with mark tag (for message search) (OPTIMIZED)
  * SECURITY: Escapes HTML BEFORE highlighting to prevent XSS
  */
-export function highlightSearchInMessage(
-  text: string,
-  searchTerm: string,
-): string {
+export function highlightSearchInMessage(text: string, searchTerm: string): string {
   // SECURITY FIX: Escape HTML first
   const escaped = escapeHtml(text);
   if (searchTerm.trim() === '') return escaped;
@@ -327,10 +318,7 @@ export function formatDateSeparator(dateStr: string): string {
  * Check if date separator should be shown between messages (OPTIMIZED)
  * Uses cached date strings instead of creating new Date objects
  */
-export function shouldShowDateSeparator(
-  prev: Message | undefined,
-  current: Message,
-): boolean {
+export function shouldShowDateSeparator(prev: Message | undefined, current: Message): boolean {
   if (!prev) return true;
 
   const prevDate = getDateString(prev.createdAt);
@@ -344,10 +332,7 @@ export function shouldShowDateSeparator(
 // =============================================================================
 
 /** Get display name for a conversation */
-export function getConversationDisplayName(
-  conv: Conversation,
-  currentUserId: number,
-): string {
+export function getConversationDisplayName(conv: Conversation, currentUserId: number): string {
   if (conv.name !== undefined && conv.name !== '') return conv.name;
   if (conv.isGroup) return MESSAGES.labelGroupConversation;
 
@@ -359,10 +344,7 @@ export function getConversationDisplayName(
 }
 
 /** Get avatar URL for a conversation */
-export function getConversationAvatar(
-  conv: Conversation,
-  currentUserId: number,
-): string | null {
+export function getConversationAvatar(conv: Conversation, currentUserId: number): string | null {
   if (conv.isGroup) return null;
 
   const partner = conv.participants.find((p) => p.id !== currentUserId);
@@ -430,17 +412,13 @@ export function getRoleBadgeClass(role: string | null | undefined): string {
 // =============================================================================
 
 /** Filter messages by search query */
-export function filterMessagesByQuery(
-  messages: Message[],
-  query: string,
-): Message[] {
+export function filterMessagesByQuery(messages: Message[], query: string): Message[] {
   if (query.trim() === '') return messages;
 
   const queryLower = query.toLowerCase();
   return messages.filter((m) => {
     // E2E messages: search decryptedContent (not ciphertext)
-    const searchable =
-      m.isE2e === true ? (m.decryptedContent ?? null) : (m.content ?? null);
+    const searchable = m.isE2e === true ? (m.decryptedContent ?? null) : (m.content ?? null);
     return searchable?.toLowerCase().includes(queryLower) === true;
   });
 }

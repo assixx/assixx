@@ -8,11 +8,7 @@ import { ForbiddenException, Injectable, Logger } from '@nestjs/common';
 
 import { DatabaseService } from '../database/database.service.js';
 import { ScopeService } from '../hierarchy-permission/scope.service.js';
-import type {
-  DbBlackboardEntry,
-  UserAccessInfo,
-  UserDepartmentTeam,
-} from './blackboard.types.js';
+import type { DbBlackboardEntry, UserAccessInfo, UserDepartmentTeam } from './blackboard.types.js';
 
 @Injectable()
 export class BlackboardAccessService {
@@ -174,11 +170,7 @@ export class BlackboardAccessService {
   /**
    * Check if admin has access to entry via permission tables.
    */
-  async checkAdminEntryAccess(
-    entryId: number,
-    userId: number,
-    tenantId: number,
-  ): Promise<boolean> {
+  async checkAdminEntryAccess(entryId: number, userId: number, tenantId: number): Promise<boolean> {
     // Check company-wide entries
     const noAssignments = await this.db.query<{ count: number }>(
       `SELECT 1 FROM blackboard_entries e
@@ -249,29 +241,21 @@ export class BlackboardAccessService {
     for (const areaId of areaIds) {
       if (!accessibleAreaSet.has(areaId)) {
         this.logger.warn(`Org permission denied: area ${areaId} not in scope`);
-        throw new ForbiddenException(
-          `No permission to create entries for area ${areaId}`,
-        );
+        throw new ForbiddenException(`No permission to create entries for area ${areaId}`);
       }
     }
 
     for (const deptId of departmentIds) {
       if (!accessibleDeptSet.has(deptId)) {
-        this.logger.warn(
-          `Org permission denied: department ${deptId} not in scope`,
-        );
-        throw new ForbiddenException(
-          `No permission to create entries for department ${deptId}`,
-        );
+        this.logger.warn(`Org permission denied: department ${deptId} not in scope`);
+        throw new ForbiddenException(`No permission to create entries for department ${deptId}`);
       }
     }
 
     for (const teamId of teamIds) {
       if (!accessibleTeamSet.has(teamId)) {
         this.logger.warn(`Org permission denied: team ${teamId} not in scope`);
-        throw new ForbiddenException(
-          `No permission to create entries for team ${teamId}`,
-        );
+        throw new ForbiddenException(`No permission to create entries for team ${teamId}`);
       }
     }
   }

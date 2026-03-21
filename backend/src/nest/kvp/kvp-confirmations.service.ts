@@ -31,9 +31,7 @@ export class KvpConfirmationsService {
     tenantId: number,
     orgInfo: ExtendedUserOrgInfo,
   ): Promise<{ count: number }> {
-    this.logger.debug(
-      `Getting unconfirmed count for user ${userId}, tenant ${tenantId}`,
-    );
+    this.logger.debug(`Getting unconfirmed count for user ${userId}, tenant ${tenantId}`);
 
     // Base query: count suggestions without confirmation (or is_confirmed = false)
     let query = `
@@ -47,11 +45,7 @@ export class KvpConfirmationsService {
 
     // Apply visibility restrictions for ALL users (not just employees!)
     // Only users with has_full_access=TRUE bypass this
-    const visibility = buildVisibilityClause(
-      orgInfo,
-      userId,
-      params.length + 1,
-    );
+    const visibility = buildVisibilityClause(orgInfo, userId, params.length + 1);
     query += visibility.clause;
     params.push(...visibility.params);
 

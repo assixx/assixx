@@ -42,8 +42,7 @@
 
   /** Active (non-verified) work order blocks new creation */
   const activeWorkOrder = $derived(
-    linkedWorkOrders.find((wo: LinkedWorkOrder) => wo.status !== 'verified') ??
-      null,
+    linkedWorkOrders.find((wo: LinkedWorkOrder) => wo.status !== 'verified') ?? null,
   );
 
   // Loading state for confirm/unconfirm
@@ -74,9 +73,7 @@
         <i class="fas fa-check-circle text-success"></i>
         <span>Bereits als gelesen markiert</span>
         {#if suggestion.confirmedAt}
-          <span class="text-muted text-sm"
-            >{formatDateTime(suggestion.confirmedAt)}</span
-          >
+          <span class="text-muted text-sm">{formatDateTime(suggestion.confirmedAt)}</span>
         {/if}
       </div>
       <button
@@ -177,8 +174,8 @@
         {#if activeWorkOrder !== null}
           <div class="alert alert--info alert--sm mb-0">
             <i class="fas fa-info-circle mr-2"></i>
-            Es existiert bereits ein aktiver Arbeitsauftrag. Erst nach Verifizierung
-            kann ein neuer erstellt werden.
+            Es existiert bereits ein aktiver Arbeitsauftrag. Erst nach Verifizierung kann ein neuer erstellt
+            werden.
           </div>
         {:else}
           <button

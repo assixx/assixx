@@ -3,11 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { BulkUpdateSettingsSchema } from './bulk-update.dto.js';
 import { CreateSystemSettingSchema } from './create-system-setting.dto.js';
 import { SettingKeyParamSchema } from './setting-key-param.dto.js';
-import {
-  CategoryEnum,
-  SettingValueSchema,
-  ValueTypeEnum,
-} from './setting-schemas.js';
+import { CategoryEnum, SettingValueSchema, ValueTypeEnum } from './setting-schemas.js';
 import { SettingsFilterQuerySchema } from './settings-filter-query.dto.js';
 import { UserIdParamSchema } from './user-id-param.dto.js';
 
@@ -60,9 +56,7 @@ describe('SettingValueSchema', () => {
   });
 
   it('should accept JSON object value', () => {
-    expect(
-      SettingValueSchema.safeParse({ theme: 'dark', fontSize: 14 }).success,
-    ).toBe(true);
+    expect(SettingValueSchema.safeParse({ theme: 'dark', fontSize: 14 }).success).toBe(true);
   });
 });
 
@@ -72,9 +66,7 @@ describe('SettingValueSchema', () => {
 
 describe('SettingKeyParamSchema', () => {
   it('should accept valid key', () => {
-    expect(SettingKeyParamSchema.safeParse({ key: 'theme.mode' }).success).toBe(
-      true,
-    );
+    expect(SettingKeyParamSchema.safeParse({ key: 'theme.mode' }).success).toBe(true);
   });
 
   it('should reject empty key', () => {
@@ -109,9 +101,7 @@ describe('CreateSystemSettingSchema', () => {
   });
 
   it('should reject missing setting_key', () => {
-    expect(
-      CreateSystemSettingSchema.safeParse({ setting_value: 'test' }).success,
-    ).toBe(false);
+    expect(CreateSystemSettingSchema.safeParse({ setting_value: 'test' }).success).toBe(false);
   });
 
   it('should reject empty setting_key', () => {
@@ -134,15 +124,11 @@ describe('SettingsFilterQuerySchema', () => {
   });
 
   it('should accept category filter', () => {
-    expect(
-      SettingsFilterQuerySchema.safeParse({ category: 'security' }).success,
-    ).toBe(true);
+    expect(SettingsFilterQuerySchema.safeParse({ category: 'security' }).success).toBe(true);
   });
 
   it('should accept search filter', () => {
-    expect(
-      SettingsFilterQuerySchema.safeParse({ search: 'theme' }).success,
-    ).toBe(true);
+    expect(SettingsFilterQuerySchema.safeParse({ search: 'theme' }).success).toBe(true);
   });
 });
 
@@ -182,14 +168,9 @@ describe('BulkUpdateSettingsSchema', () => {
     expect(BulkUpdateSettingsSchema.safeParse(valid).success).toBe(true);
   });
 
-  it.each(['system', 'tenant', 'user'] as const)(
-    'should accept type=%s',
-    (type) => {
-      expect(
-        BulkUpdateSettingsSchema.safeParse({ ...valid, type }).success,
-      ).toBe(true);
-    },
-  );
+  it.each(['system', 'tenant', 'user'] as const)('should accept type=%s', (type) => {
+    expect(BulkUpdateSettingsSchema.safeParse({ ...valid, type }).success).toBe(true);
+  });
 
   it('should reject empty settings array', () => {
     expect(
@@ -209,8 +190,6 @@ describe('BulkUpdateSettingsSchema', () => {
   });
 
   it('should reject invalid type', () => {
-    expect(
-      BulkUpdateSettingsSchema.safeParse({ ...valid, type: 'global' }).success,
-    ).toBe(false);
+    expect(BulkUpdateSettingsSchema.safeParse({ ...valid, type: 'global' }).success).toBe(false);
   });
 });

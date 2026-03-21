@@ -4,12 +4,7 @@
  * Transforms controller responses into standardized API format.
  * Wraps data in success: true, data: ... structure.
  */
-import {
-  CallHandler,
-  ExecutionContext,
-  Injectable,
-  NestInterceptor,
-} from '@nestjs/common';
+import { CallHandler, ExecutionContext, Injectable, NestInterceptor } from '@nestjs/common';
 import type { FastifyReply } from 'fastify';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
@@ -25,14 +20,8 @@ interface SuccessResponse<T> {
 }
 
 @Injectable()
-export class ResponseInterceptor<T> implements NestInterceptor<
-  T,
-  SuccessResponse<T>
-> {
-  intercept(
-    context: ExecutionContext,
-    next: CallHandler<T>,
-  ): Observable<SuccessResponse<T>> {
+export class ResponseInterceptor<T> implements NestInterceptor<T, SuccessResponse<T>> {
+  intercept(context: ExecutionContext, next: CallHandler<T>): Observable<SuccessResponse<T>> {
     return next.handle().pipe(
       map((data: T) => {
         // Skip wrapping for raw responses (strings, Buffers)
@@ -47,8 +36,7 @@ export class ResponseInterceptor<T> implements NestInterceptor<
         const rawContentType = response.getHeader('content-type');
         // getHeader returns string | number | string[] | undefined
         // We only care about string values for Content-Type
-        const contentType =
-          typeof rawContentType === 'string' ? rawContentType : '';
+        const contentType = typeof rawContentType === 'string' ? rawContentType : '';
         if (contentType !== '' && !contentType.includes('application/json')) {
           return data as unknown as SuccessResponse<T>;
         }
@@ -88,12 +76,9 @@ export class ResponseInterceptor<T> implements NestInterceptor<
 
   /** Extract items array from paginated response (supports items, entries, data) */
   private extractPaginatedItems(data: Record<string, unknown>): unknown[] {
-    if ('items' in data && Array.isArray(data['items']))
-      return data['items'] as unknown[];
-    if ('entries' in data && Array.isArray(data['entries']))
-      return data['entries'] as unknown[];
-    if ('data' in data && Array.isArray(data['data']))
-      return data['data'] as unknown[];
+    if ('items' in data && Array.isArray(data['items'])) return data['items'] as unknown[];
+    if ('entries' in data && Array.isArray(data['entries'])) return data['entries'] as unknown[];
+    if ('data' in data && Array.isArray(data['data'])) return data['data'] as unknown[];
     return [];
   }
 }

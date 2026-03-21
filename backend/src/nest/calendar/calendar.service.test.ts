@@ -209,9 +209,7 @@ describe('CalendarService – DB-mocked methods', () => {
     it('throws NotFoundException when event does not exist', async () => {
       mockDb.query.mockResolvedValueOnce([]); // SELECT event
 
-      await expect(service.getEventById(999, 1, 1)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.getEventById(999, 1, 1)).rejects.toThrow(NotFoundException);
     });
 
     it('throws NotFoundException when user has no access', async () => {
@@ -227,9 +225,7 @@ describe('CalendarService – DB-mocked methods', () => {
       ]);
       mockPermission.checkEventAccess.mockResolvedValueOnce(false);
 
-      await expect(service.getEventById(1, 1, 5)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.getEventById(1, 1, 5)).rejects.toThrow(NotFoundException);
     });
 
     it('returns event with attendees on happy path', async () => {
@@ -381,13 +377,7 @@ describe('CalendarService – DB-mocked methods', () => {
       mockPermission.getEventAttendees.mockResolvedValueOnce([]);
       mockActivityLogger.logUpdate.mockResolvedValueOnce(undefined);
 
-      const result = await service.updateEvent(
-        1,
-        { title: 'Updated' } as never,
-        1,
-        5,
-        'admin',
-      );
+      const result = await service.updateEvent(1, { title: 'Updated' } as never, 1, 5, 'admin');
 
       expect(result).toHaveProperty('title', 'Updated');
       expect(mockActivityLogger.logUpdate).toHaveBeenCalledWith(
@@ -406,9 +396,7 @@ describe('CalendarService – DB-mocked methods', () => {
     it('throws NotFoundException when event does not exist', async () => {
       mockDb.query.mockResolvedValueOnce([]); // SELECT
 
-      await expect(service.deleteEvent(999, 1, 1, 'admin')).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.deleteEvent(999, 1, 1, 'admin')).rejects.toThrow(NotFoundException);
     });
 
     it('throws ForbiddenException for non-owner non-admin', async () => {
@@ -426,9 +414,7 @@ describe('CalendarService – DB-mocked methods', () => {
         },
       ]);
 
-      await expect(service.deleteEvent(1, 1, 5, 'employee')).rejects.toThrow(
-        ForbiddenException,
-      );
+      await expect(service.deleteEvent(1, 1, 5, 'employee')).rejects.toThrow(ForbiddenException);
     });
 
     it('throws ForbiddenException when deleting past event', async () => {
@@ -446,9 +432,7 @@ describe('CalendarService – DB-mocked methods', () => {
         },
       ]);
 
-      await expect(service.deleteEvent(1, 1, 5, 'admin')).rejects.toThrow(
-        ForbiddenException,
-      );
+      await expect(service.deleteEvent(1, 1, 5, 'admin')).rejects.toThrow(ForbiddenException);
     });
 
     it('deletes future event and attendees for admin', async () => {
@@ -540,12 +524,7 @@ describe('CalendarService – DB-mocked methods', () => {
 
       expect(result).toHaveProperty('title', 'New Event');
       expect(mockCreation.insertEvent).toHaveBeenCalledOnce();
-      expect(mockCreation.addAttendeesToEvent).toHaveBeenCalledWith(
-        42,
-        5,
-        [10, 20],
-        1,
-      );
+      expect(mockCreation.addAttendeesToEvent).toHaveBeenCalledWith(42, 5, [10, 20], 1);
       expect(mockCreation.createChildEvents).toHaveBeenCalledOnce();
       expect(mockCreation.logEventCreated).toHaveBeenCalledOnce();
     });
@@ -555,9 +534,9 @@ describe('CalendarService – DB-mocked methods', () => {
     it('throws NotFoundException when UUID not found', async () => {
       mockDb.query.mockResolvedValueOnce([]);
 
-      await expect(
-        service['resolveEventIdByUuid']('non-existent-uuid', 1),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service['resolveEventIdByUuid']('non-existent-uuid', 1)).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('returns ID for valid UUID', async () => {
@@ -582,9 +561,7 @@ describe('CalendarService – DB-mocked methods', () => {
 
   describe('getRecentlyAddedEvents – delegation', () => {
     it('delegates to overview service', async () => {
-      mockOverview.getRecentlyAddedEvents.mockResolvedValueOnce([
-        { title: 'Recent' },
-      ]);
+      mockOverview.getRecentlyAddedEvents.mockResolvedValueOnce([{ title: 'Recent' }]);
 
       const result = await service.getRecentlyAddedEvents(1, 5, 3);
 
@@ -599,12 +576,7 @@ describe('CalendarService – DB-mocked methods', () => {
 
       const result = await service.getUpcomingCount(1, 5, null, null);
 
-      expect(mockOverview.getUpcomingCount).toHaveBeenCalledWith(
-        1,
-        5,
-        null,
-        null,
-      );
+      expect(mockOverview.getUpcomingCount).toHaveBeenCalledWith(1, 5, null, null);
       expect(result.count).toBe(7);
     });
   });
@@ -615,11 +587,7 @@ describe('CalendarService – DB-mocked methods', () => {
       const mockScope = {
         getScope: vi.fn().mockResolvedValue({ type: 'full' }),
       };
-      const {
-        service: svc,
-        mockDb: db,
-        mockPermission: perm,
-      } = createServiceWithMock();
+      const { service: svc, mockDb: db, mockPermission: perm } = createServiceWithMock();
       // Override scope mock
       Object.assign(svc, { scopeService: mockScope });
 
@@ -703,11 +671,7 @@ describe('CalendarService – DB-mocked methods', () => {
           teamIds: [3],
         }),
       };
-      const {
-        service: svc,
-        mockDb: db,
-        mockPermission: perm,
-      } = createServiceWithMock();
+      const { service: svc, mockDb: db, mockPermission: perm } = createServiceWithMock();
       Object.assign(svc, { scopeService: mockScope });
 
       perm.getUserMemberships.mockResolvedValueOnce({
@@ -928,12 +892,7 @@ describe('CalendarService – DB-mocked methods', () => {
       mockDb.query.mockResolvedValueOnce([]);
       mockActivityLogger.logDelete.mockResolvedValueOnce(undefined);
 
-      const result = await service.deleteEventByUuid(
-        'test-uuid',
-        1,
-        5,
-        'admin',
-      );
+      const result = await service.deleteEventByUuid('test-uuid', 1, 5, 'admin');
 
       expect(result.message).toBe('Event deleted successfully');
     });

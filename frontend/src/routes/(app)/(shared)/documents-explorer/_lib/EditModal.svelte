@@ -58,11 +58,7 @@
       };
       globalThis.document.addEventListener('click', handleOutsideClick, true);
       return () => {
-        globalThis.document.removeEventListener(
-          'click',
-          handleOutsideClick,
-          true,
-        );
+        globalThis.document.removeEventListener('click', handleOutsideClick, true);
       };
     }
   });
@@ -116,9 +112,7 @@
         <!-- Category Selection -->
         <div class="form-field">
           <!-- svelte-ignore a11y_label_has_associated_control -->
-          <label class="form-field__label form-field__label--required"
-            >Kategorie</label
-          >
+          <label class="form-field__label form-field__label--required">Kategorie</label>
           <div
             class="dropdown w-full"
             id="edit-category-dropdown"
@@ -209,9 +203,7 @@
             placeholder="z.B. vertrag, 2025, personal (kommagetrennt)"
             bind:value={editTags}
           />
-          <small class="form-field__message"
-            >Tags helfen beim späteren Suchen und Filtern</small
-          >
+          <small class="form-field__message">Tags helfen beim späteren Suchen und Filtern</small>
         </div>
 
         <!-- Info about current file -->

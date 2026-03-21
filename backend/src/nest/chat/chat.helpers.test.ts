@@ -193,11 +193,7 @@ describe('mapConversationToApiFormat', () => {
       },
     ];
 
-    const result = mapConversationToApiFormat(
-      baseConv,
-      participants,
-      new Map(),
-    );
+    const result = mapConversationToApiFormat(baseConv, participants, new Map());
 
     expect(result.participants[0]!.firstName).toBe('');
     expect(result.participants[0]!.lastName).toBe('');
@@ -297,14 +293,7 @@ describe('buildSentMessage', () => {
       size: 2048,
     };
 
-    const result = buildSentMessage(
-      42,
-      10,
-      5,
-      'See attached',
-      sender,
-      attachment,
-    );
+    const result = buildSentMessage(42, 10, 5, 'See attached', sender, attachment);
 
     expect(result.attachment).not.toBeNull();
     expect(result.attachment?.url).toBe('/uploads/file.pdf');
@@ -387,9 +376,7 @@ describe('mapDocumentAttachments', () => {
 // ============================================
 
 describe('mapScheduledMessage', () => {
-  function createMockScheduledRow(
-    overrides?: Partial<ScheduledMessageRow>,
-  ): ScheduledMessageRow {
+  function createMockScheduledRow(overrides?: Partial<ScheduledMessageRow>): ScheduledMessageRow {
     return {
       id: '1',
       tenant_id: 10,

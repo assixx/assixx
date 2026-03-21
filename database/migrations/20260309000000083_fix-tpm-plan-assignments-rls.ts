@@ -14,9 +14,7 @@ export const shorthands: ColumnDefinitions | undefined = undefined;
  * `tenant_id = NULL::integer` always evaluates to NULL/FALSE.
  */
 export async function up(pgm: MigrationBuilder): Promise<void> {
-  pgm.sql(
-    'DROP POLICY tpm_plan_assignments_tenant_isolation ON tpm_plan_assignments',
-  );
+  pgm.sql('DROP POLICY tpm_plan_assignments_tenant_isolation ON tpm_plan_assignments');
 
   pgm.sql('ALTER TABLE tpm_plan_assignments FORCE ROW LEVEL SECURITY');
 

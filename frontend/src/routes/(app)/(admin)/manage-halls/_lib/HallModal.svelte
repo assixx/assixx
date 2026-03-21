@@ -34,10 +34,7 @@
     statusDropdownOpen = false;
   }
 
-  function isClickOutsideElement(
-    target: HTMLElement,
-    elementId: string,
-  ): boolean {
+  function isClickOutsideElement(target: HTMLElement, elementId: string): boolean {
     const el = document.getElementById(elementId);
     return el?.contains(target) !== true;
   }
@@ -191,9 +188,7 @@
                 </button>
               </div>
             </div>
-            <span
-              class="form-field__message mt-1 block text-(--color-text-secondary)"
-            >
+            <span class="form-field__message mt-1 block text-(--color-text-secondary)">
               {messages.STATUS_HINT}
             </span>
           </div>
@@ -211,8 +206,7 @@
           class="btn btn-primary"
           disabled={submitting}
         >
-          {#if submitting}<span class="spinner-ring spinner-ring--sm mr-2"
-            ></span>{/if}
+          {#if submitting}<span class="spinner-ring spinner-ring--sm mr-2"></span>{/if}
           {messages.BTN_SAVE}
         </button>
       </div>

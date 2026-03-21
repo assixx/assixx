@@ -84,8 +84,7 @@
         name: editName.trim(),
         color: editColor,
         icon: editIcon,
-        description:
-          editDescription.trim() !== '' ? editDescription.trim() : undefined,
+        description: editDescription.trim() !== '' ? editDescription.trim() : undefined,
       });
 
       if (ok) {
@@ -198,9 +197,7 @@
               --cp-button-hover-color="#616161"
               --picker-z-index="1060"
             />
-            <span class="text-sm text-(--color-text-secondary)"
-              >{editColor}</span
-            >
+            <span class="text-sm text-(--color-text-secondary)">{editColor}</span>
           </div>
         </div>
 

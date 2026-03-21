@@ -118,18 +118,14 @@ function extractUserData(json: ApiResponse<UserData>): UserData | undefined {
 }
 
 /** Parse dashboard counts from response (graceful fallback to null) */
-async function parseDashboardCounts(
-  response: Response | null,
-): Promise<DashboardCounts | null> {
+async function parseDashboardCounts(response: Response | null): Promise<DashboardCounts | null> {
   if (response?.ok !== true) return null;
   const json = (await response.json()) as ApiResponse<DashboardCounts>;
   return json.data ?? null;
 }
 
 /** Parse theme setting from response (graceful fallback to null) */
-async function parseThemeSetting(
-  response: Response | null,
-): Promise<'dark' | 'light' | null> {
+async function parseThemeSetting(response: Response | null): Promise<'dark' | 'light' | null> {
   if (response?.ok !== true) return null;
   const json = (await response.json()) as ApiResponse<{ settingValue: string }>;
   const value = json.data?.settingValue;
@@ -154,18 +150,14 @@ async function parseActiveAddons(response: Response | null): Promise<string[]> {
   try {
     const json = (await response.json()) as ApiResponse<AddonWithTenantInfo[]>;
     const addons = json.data ?? [];
-    return addons
-      .filter((a) => a.tenantStatus?.isActive === true)
-      .map((a) => a.code);
+    return addons.filter((a) => a.tenantStatus?.isActive === true).map((a) => a.code);
   } catch {
     return [];
   }
 }
 
 /** Parse hierarchy labels from response (graceful fallback to defaults) */
-async function parseHierarchyLabels(
-  response: Response | null,
-): Promise<HierarchyLabels> {
+async function parseHierarchyLabels(response: Response | null): Promise<HierarchyLabels> {
   if (response?.ok !== true) return DEFAULT_HIERARCHY_LABELS;
   try {
     const json = (await response.json()) as ApiResponse<HierarchyLabels>;
@@ -187,9 +179,7 @@ async function parseHierarchyLabels(
 }
 
 /** Parse org scope from response (graceful fallback to default) */
-async function parseOrgScope(
-  response: Response | null,
-): Promise<OrganizationalScope> {
+async function parseOrgScope(response: Response | null): Promise<OrganizationalScope> {
   if (response?.ok !== true) return DEFAULT_ORG_SCOPE;
   try {
     const json = (await response.json()) as ApiResponse<OrganizationalScope>;
@@ -200,9 +190,7 @@ async function parseOrgScope(
 }
 
 /** Clear auth cookies and redirect to login */
-function clearAuthAndRedirect(
-  cookies: Parameters<LayoutServerLoad>[0]['cookies'],
-): never {
+function clearAuthAndRedirect(cookies: Parameters<LayoutServerLoad>[0]['cookies']): never {
   cookies.delete('accessToken', { path: '/' });
   cookies.delete('refreshToken', { path: '/api/v2/auth' });
   redirect(302, '/login');
@@ -252,21 +240,14 @@ async function fetchCountsThemeAddonsAndLabels(
   labelsResponse: Response | null;
   scopeResponse: Response | null;
 }> {
-  const [
-    countsResponse,
-    themeResponse,
-    addonsResponse,
-    labelsResponse,
-    scopeResponse,
-  ] = await Promise.all([
-    fetchFn(`${API_BASE}/dashboard/counts`, { headers }).catch(() => null),
-    fetchFn(`${API_BASE}/settings/user/theme`, { headers }).catch(() => null),
-    fetchFn(`${API_BASE}/addons/my-addons`, { headers }).catch(() => null),
-    fetchFn(`${API_BASE}/organigram/hierarchy-labels`, { headers }).catch(
-      () => null,
-    ),
-    fetchFn(`${API_BASE}/users/me/org-scope`, { headers }).catch(() => null),
-  ]);
+  const [countsResponse, themeResponse, addonsResponse, labelsResponse, scopeResponse] =
+    await Promise.all([
+      fetchFn(`${API_BASE}/dashboard/counts`, { headers }).catch(() => null),
+      fetchFn(`${API_BASE}/settings/user/theme`, { headers }).catch(() => null),
+      fetchFn(`${API_BASE}/addons/my-addons`, { headers }).catch(() => null),
+      fetchFn(`${API_BASE}/organigram/hierarchy-labels`, { headers }).catch(() => null),
+      fetchFn(`${API_BASE}/users/me/org-scope`, { headers }).catch(() => null),
+    ]);
   return {
     countsResponse,
     themeResponse,
@@ -300,9 +281,7 @@ async function fetchUserCountsThemeAddonsAndLabels(
     fetchFn(`${API_BASE}/dashboard/counts`, { headers }).catch(() => null),
     fetchFn(`${API_BASE}/settings/user/theme`, { headers }).catch(() => null),
     fetchFn(`${API_BASE}/addons/my-addons`, { headers }).catch(() => null),
-    fetchFn(`${API_BASE}/organigram/hierarchy-labels`, { headers }).catch(
-      () => null,
-    ),
+    fetchFn(`${API_BASE}/organigram/hierarchy-labels`, { headers }).catch(() => null),
     fetchFn(`${API_BASE}/users/me/org-scope`, { headers }).catch(() => null),
   ]);
   return {
@@ -326,12 +305,7 @@ async function fetchUserCountsThemeAddonsAndLabels(
  * - RBAC hook already fetches /users/me for role-protected routes
  * - Saves ~50-80ms by avoiding duplicate fetch
  */
-export const load: LayoutServerLoad = async ({
-  cookies,
-  fetch,
-  url,
-  locals,
-}) => {
+export const load: LayoutServerLoad = async ({ cookies, fetch, url, locals }) => {
   const startTime = performance.now();
   const token = cookies.get('accessToken');
   const hasToken = token !== undefined && token !== '';
@@ -356,13 +330,8 @@ export const load: LayoutServerLoad = async ({
   if (rbacUser !== undefined) {
     // FAST PATH: Reuse user from RBAC hook - fetch counts, theme, addons + labels in parallel
     const fetchStart = performance.now();
-    const {
-      countsResponse,
-      themeResponse,
-      addonsResponse,
-      labelsResponse,
-      scopeResponse,
-    } = await fetchCountsThemeAddonsAndLabels(fetch, headers);
+    const { countsResponse, themeResponse, addonsResponse, labelsResponse, scopeResponse } =
+      await fetchCountsThemeAddonsAndLabels(fetch, headers);
     const fetchTime = Math.round(performance.now() - fetchStart);
     const totalTime = Math.round(performance.now() - startTime);
 
@@ -382,17 +351,8 @@ export const load: LayoutServerLoad = async ({
   }
 
   // SLOW PATH: RBAC hook didn't set user - fetch both in parallel
-  log.warn(
-    { pathname: url.pathname },
-    '🐢 SLOW PATH: No RBAC user, fetching /users/me + /counts',
-  );
-  return await loadUserWithFetch(
-    cookies,
-    fetch,
-    headers,
-    startTime,
-    url.pathname,
-  );
+  log.warn({ pathname: url.pathname }, '🐢 SLOW PATH: No RBAC user, fetching /users/me + /counts');
+  return await loadUserWithFetch(cookies, fetch, headers, startTime, url.pathname);
 };
 
 /** Load user via API fetch (slow path when RBAC user not available) */

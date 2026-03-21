@@ -9,17 +9,8 @@
   import SearchResultUser from '$lib/components/SearchResultUser.svelte';
   import { showErrorAlert, showSuccessAlert } from '$lib/stores/toast';
 
-  import {
-    createConfig,
-    deleteConfig,
-    fetchConfigs,
-    fetchPositions,
-  } from './_lib/api';
-  import {
-    APPROVABLE_ADDONS,
-    createApproverTypeOptions,
-    MESSAGES,
-  } from './_lib/constants';
+  import { createConfig, deleteConfig, fetchConfigs, fetchPositions } from './_lib/api';
+  import { APPROVABLE_ADDONS, createApproverTypeOptions, MESSAGES } from './_lib/constants';
 
   import type { PageData } from './$types';
   import type {
@@ -83,36 +74,29 @@
   );
 
   const unconfiguredAddons = $derived(
-    APPROVABLE_ADDONS.filter(
-      (a) => (configsByAddon[a.code] ?? []).length === 0,
-    ),
+    APPROVABLE_ADDONS.filter((a) => (configsByAddon[a.code] ?? []).length === 0),
   );
 
   const selectedAddonLabel = $derived(
-    APPROVABLE_ADDONS.find((a) => a.code === selectedAddon)?.label ??
-      '— Modul wählen —',
+    APPROVABLE_ADDONS.find((a) => a.code === selectedAddon)?.label ?? '— Modul wählen —',
   );
 
   const selectedTypeLabel = $derived(
-    approverTypeOptions.find((o) => o.value === selectedType)?.label ??
-      selectedType,
+    approverTypeOptions.find((o) => o.value === selectedType)?.label ?? selectedType,
   );
 
   const selectedTypeIcon = $derived(
-    approverTypeOptions.find((o) => o.value === selectedType)?.icon ??
-      'fa-user',
+    approverTypeOptions.find((o) => o.value === selectedType)?.icon ?? 'fa-user',
   );
 
   const isUserType = $derived(selectedType === 'user');
   const isPositionType = $derived(selectedType === 'position');
 
-  const isLeadType = $derived(
-    selectedType !== 'user' && selectedType !== 'position',
-  );
+  const isLeadType = $derived(selectedType !== 'user' && selectedType !== 'position');
 
   const selectedPositionLabel = $derived(
-    positionOptions.find((p: PositionOption) => p.id === selectedPositionId)
-      ?.name ?? '— Position wählen —',
+    positionOptions.find((p: PositionOption) => p.id === selectedPositionId)?.name ??
+      '— Position wählen —',
   );
 
   const canAdd = $derived(
@@ -168,10 +152,7 @@
     if (!addonDropdownOpen && !typeDropdownOpen && !searchOpen) return;
     const handleOutsideClick = (e: MouseEvent): void => {
       const target = e.target as HTMLElement;
-      if (
-        !target.closest('.dropdown') &&
-        !target.closest('.search-input-wrapper')
-      ) {
+      if (!target.closest('.dropdown') && !target.closest('.search-input-wrapper')) {
         closeAllDropdowns();
       }
     };
@@ -205,15 +186,12 @@
   async function searchUsers(query: string): Promise<void> {
     userSearchLoading = true;
     try {
-      const res = await fetch(
-        `/api/v2/users?search=${encodeURIComponent(query)}&limit=10`,
-      );
+      const res = await fetch(`/api/v2/users?search=${encodeURIComponent(query)}&limit=10`);
       if (res.ok) {
         const body = (await res.json()) as {
           data: { items?: UserOption[] } | UserOption[];
         };
-        const items =
-          Array.isArray(body.data) ? body.data : (body.data.items ?? []);
+        const items = Array.isArray(body.data) ? body.data : (body.data.items ?? []);
         userSearchResults = items;
       }
     } catch {
@@ -241,10 +219,7 @@
   // CONFIG HANDLERS
   // =============================================================================
 
-  async function submitConfigs(
-    addon: string,
-    type: ApprovalApproverType,
-  ): Promise<boolean> {
+  async function submitConfigs(addon: string, type: ApprovalApproverType): Promise<boolean> {
     if (type === 'position') {
       const r = await createConfig(addon, type, null, selectedPositionId);
       return r !== null;
@@ -333,15 +308,14 @@
       {#if isLeadType}
         <div class="alert alert--info mb-4">
           <i class="fas fa-info-circle mr-2"></i>
-          Alle Benutzer mit dieser Lead-Position werden automatisch Freigabe-Master
-          für das gewählte Modul.
+          Alle Benutzer mit dieser Lead-Position werden automatisch Freigabe-Master für das gewählte Modul.
         </div>
       {/if}
       {#if isPositionType}
         <div class="alert alert--info mb-4">
           <i class="fas fa-info-circle mr-2"></i>
-          Alle Benutzer, denen diese Position zugewiesen ist, werden automatisch Freigabe-Master
-          für das gewählte Modul.
+          Alle Benutzer, denen diese Position zugewiesen ist, werden automatisch Freigabe-Master für das
+          gewählte Modul.
         </div>
       {/if}
 
@@ -391,10 +365,7 @@
               addonDropdownOpen = false;
             }}
           >
-            <span
-              ><i class="fas {selectedTypeIcon} mr-2"
-              ></i>{selectedTypeLabel}</span
-            >
+            <span><i class="fas {selectedTypeIcon} mr-2"></i>{selectedTypeLabel}</span>
             <i class="fas fa-chevron-down"></i>
           </button>
           <div
@@ -430,10 +401,7 @@
                 typeDropdownOpen = false;
               }}
             >
-              <span
-                ><i class="fas fa-id-badge mr-2"
-                ></i>{selectedPositionLabel}</span
-              >
+              <span><i class="fas fa-id-badge mr-2"></i>{selectedPositionLabel}</span>
               <i class="fas fa-chevron-down"></i>
             </button>
             <div
@@ -454,8 +422,7 @@
                     <button
                       type="button"
                       class="dropdown__option"
-                      class:dropdown__option--selected={selectedPositionId ===
-                        pos.id}
+                      class:dropdown__option--selected={selectedPositionId === pos.id}
                       onclick={() => {
                         selectedPositionId = pos.id;
                         positionDropdownOpen = false;
@@ -463,9 +430,7 @@
                     >
                       {pos.name}
                       {#if pos.isSystem}
-                        <span class="badge badge--primary badge--xs ml-2"
-                          >System</span
-                        >
+                        <span class="badge badge--primary badge--xs ml-2">System</span>
                       {/if}
                     </button>
                   {/each}
@@ -575,32 +540,22 @@
       <div class="card mt-6">
         <div class="card__header">
           <h3 class="card__title">{addon.label}</h3>
-          <span class="badge badge--primary badge--xs"
-            >{addonConfigs.length}</span
-          >
+          <span class="badge badge--primary badge--xs">{addonConfigs.length}</span>
         </div>
         <div class="card__body">
           <ul class="config-list">
             {#each addonConfigs as cfg (cfg.uuid)}
               <li class="config-item">
                 <div class="config-item__info">
-                  <i
-                    class="fas {getApproverIcon(
-                      cfg.approverType,
-                    )} config-item__icon"
-                  ></i>
+                  <i class="fas {getApproverIcon(cfg.approverType)} config-item__icon"></i>
                   <span class="config-item__label">
                     {getApproverLabel(cfg.approverType)}
                   </span>
                   {#if cfg.approverUserName !== null}
-                    <span class="config-item__user"
-                      >— {cfg.approverUserName}</span
-                    >
+                    <span class="config-item__user">— {cfg.approverUserName}</span>
                   {/if}
                   {#if cfg.approverPositionName !== null}
-                    <span class="config-item__user"
-                      >— {cfg.approverPositionName}</span
-                    >
+                    <span class="config-item__user">— {cfg.approverPositionName}</span>
                   {/if}
                 </div>
                 <button

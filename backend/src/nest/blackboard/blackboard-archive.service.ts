@@ -23,9 +23,7 @@ export class BlackboardArchiveService implements OnModuleInit {
    * Catches any entries that expired while server was down
    */
   async onModuleInit(): Promise<void> {
-    this.logger.log(
-      'Server startup: Checking for expired blackboard entries...',
-    );
+    this.logger.log('Server startup: Checking for expired blackboard entries...');
     await this.archiveExpiredEntries();
   }
 

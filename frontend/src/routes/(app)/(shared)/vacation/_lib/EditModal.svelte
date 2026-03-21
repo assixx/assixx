@@ -27,13 +27,7 @@
     ) => Promise<VacationCapacityAnalysis | null>;
   }
 
-  const {
-    request,
-    initialCapacity,
-    onclose,
-    onsubmit,
-    onCapacityCheck,
-  }: Props = $props();
+  const { request, initialCapacity, onclose, onsubmit, onCapacityCheck }: Props = $props();
 
   let formRef = $state<RequestFormRef | null>(null);
 </script>

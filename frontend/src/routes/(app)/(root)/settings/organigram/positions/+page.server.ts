@@ -27,9 +27,7 @@ interface ApiResponse<T> {
   data?: T;
 }
 
-function extractData(
-  json: ApiResponse<PositionCatalogEntry[]>,
-): PositionCatalogEntry[] {
+function extractData(json: ApiResponse<PositionCatalogEntry[]>): PositionCatalogEntry[] {
   if (json.success === true && json.data !== undefined) {
     return json.data;
   }

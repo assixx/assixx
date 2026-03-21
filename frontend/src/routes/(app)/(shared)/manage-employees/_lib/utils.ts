@@ -127,10 +127,7 @@ function extractTeamData(employee: Employee): TeamData | null {
  * Uses teamIds/teamNames from API response (flat arrays)
  * Falls back to legacy teams array if available
  */
-export function getTeamsBadge(
-  employee: Employee,
-  labels: HierarchyLabels,
-): BadgeInfo {
+export function getTeamsBadge(employee: Employee, labels: HierarchyLabels): BadgeInfo {
   const teamData = extractTeamData(employee);
 
   if (teamData === null) {
@@ -143,10 +140,7 @@ export function getTeamsBadge(
 
   return {
     class: INFO_BADGE_CLASS,
-    text:
-      teamData.count === 1 ?
-        teamData.firstName
-      : `${teamData.count} ${labels.team}`,
+    text: teamData.count === 1 ? teamData.firstName : `${teamData.count} ${labels.team}`,
     title: teamData.names,
   };
 }
@@ -209,10 +203,7 @@ export function getAvailabilityBadge(employee: Employee): BadgeInfo {
   }
 
   // For non-available statuses, check if date range is currently active
-  const isActive = isDateRangeActive(
-    employee.availabilityStart,
-    employee.availabilityEnd,
-  );
+  const isActive = isDateRangeActive(employee.availabilityStart, employee.availabilityEnd);
 
   if (isActive) {
     // Date range is active → show the actual status
@@ -241,9 +232,7 @@ export function getAvailabilityLabel(status: AvailabilityStatus): string {
 // =============================================================================
 
 /** Calculate password strength with score (0-4), label, and estimated crack time */
-export function calculatePasswordStrength(
-  password: string,
-): PasswordStrengthResult {
+export function calculatePasswordStrength(password: string): PasswordStrengthResult {
   if (password === '') {
     return { score: -1, label: '', time: '' };
   }
@@ -371,19 +360,13 @@ export function getDefaultFormValues(): {
 // =============================================================================
 
 /** Validate email match (true if emails match or confirmation is empty) */
-export function validateEmailMatch(
-  email: string,
-  emailConfirm: string,
-): boolean {
+export function validateEmailMatch(email: string, emailConfirm: string): boolean {
   if (emailConfirm === '') return true;
   return email.toLowerCase() === emailConfirm.toLowerCase();
 }
 
 /** Validate password match (both must be filled and equal) */
-export function validatePasswordMatch(
-  password: string,
-  passwordConfirm: string,
-): boolean {
+export function validatePasswordMatch(password: string, passwordConfirm: string): boolean {
   return password === passwordConfirm;
 }
 
@@ -393,15 +376,9 @@ export function validatePasswordMatch(
 export type SaveEmployeeValidationError = 'email' | 'password' | null;
 
 /** Check password fields: required for new, both-or-none + must match for edit */
-function hasPasswordError(
-  password: string,
-  passwordConfirm: string,
-  isEditMode: boolean,
-): boolean {
+function hasPasswordError(password: string, passwordConfirm: string, isEditMode: boolean): boolean {
   if (!isEditMode) {
-    return (
-      password === '' || passwordConfirm === '' || password !== passwordConfirm
-    );
+    return password === '' || passwordConfirm === '' || password !== passwordConfirm;
   }
   // Edit mode: if either field is filled, both must be filled and match
   const eitherFilled = password !== '' || passwordConfirm !== '';
@@ -502,10 +479,7 @@ function buildDirectAreasBadge(
  * Shows count with tooltip listing area names
  * BADGE-INHERITANCE-DISPLAY: Areas are inherited from teams→departments→areas for employees
  */
-export function getAreasBadge(
-  employee: Employee,
-  labels: HierarchyLabels,
-): BadgeInfo {
+export function getAreasBadge(employee: Employee, labels: HierarchyLabels): BadgeInfo {
   if (checkEmployeeFullAccess(employee)) {
     return {
       class: 'badge--primary',
@@ -532,16 +506,11 @@ export function getAreasBadge(
 /**
  * Build area badge showing inherited area name from team chain
  */
-function buildAreaInheritedBadge(
-  employee: Employee,
-  hasArray: boolean,
-): BadgeInfo {
+function buildAreaInheritedBadge(employee: Employee, hasArray: boolean): BadgeInfo {
   const { teamAreaName, teamDepartmentName } = employee;
   // Derive teamName from teamNames array if available, else use legacy teamName
   const teamName =
-    (employee.teamNames?.length ?? 0) > 0 ?
-      employee.teamNames?.[0]
-    : employee.teamName;
+    (employee.teamNames?.length ?? 0) > 0 ? employee.teamNames?.[0] : employee.teamName;
 
   if (teamAreaName !== undefined && teamAreaName !== '') {
     const tooltip = `${teamAreaName} (vererbt von: ${teamName ?? 'Team'} → ${teamDepartmentName ?? 'Abteilung'} → ${teamAreaName})`;
@@ -574,9 +543,7 @@ function buildDirectDeptsBadge(
 }
 
 /** Build badge for legacy departmentName */
-function buildLegacyDeptBadge(
-  departmentName: string | undefined,
-): BadgeInfo | null {
+function buildLegacyDeptBadge(departmentName: string | undefined): BadgeInfo | null {
   if (!isNonEmpty(departmentName)) return null;
 
   return {
@@ -591,10 +558,7 @@ function buildLegacyDeptBadge(
  * Shows count with tooltip listing department names
  * BADGE-INHERITANCE-DISPLAY: Departments are inherited from teams for employees
  */
-export function getDepartmentsBadge(
-  employee: Employee,
-  labels: HierarchyLabels,
-): BadgeInfo {
+export function getDepartmentsBadge(employee: Employee, labels: HierarchyLabels): BadgeInfo {
   if (checkEmployeeFullAccess(employee)) {
     return {
       class: 'badge--primary',
@@ -625,16 +589,11 @@ export function getDepartmentsBadge(
 /**
  * Build department badge showing inherited dept name from team
  */
-function buildDeptInheritedBadge(
-  employee: Employee,
-  hasArray: boolean,
-): BadgeInfo {
+function buildDeptInheritedBadge(employee: Employee, hasArray: boolean): BadgeInfo {
   const { teamDepartmentName } = employee;
   // Derive teamName from teamNames array if available, else use legacy teamName
   const teamName =
-    (employee.teamNames?.length ?? 0) > 0 ?
-      employee.teamNames?.[0]
-    : employee.teamName;
+    (employee.teamNames?.length ?? 0) > 0 ? employee.teamNames?.[0] : employee.teamName;
 
   if (teamDepartmentName !== undefined && teamDepartmentName !== '') {
     const tooltip = `${teamDepartmentName} (vererbt von Team: ${teamName ?? 'Team'})`;
@@ -716,15 +675,10 @@ export interface AvailabilityFormData {
 }
 
 /** Availability validation error types */
-export type AvailabilityValidationError =
-  | 'dates_required'
-  | 'end_before_start'
-  | null;
+export type AvailabilityValidationError = 'dates_required' | 'end_before_start' | null;
 
 /** Validate availability form data */
-export function validateAvailabilityForm(
-  data: AvailabilityFormData,
-): AvailabilityValidationError {
+export function validateAvailabilityForm(data: AvailabilityFormData): AvailabilityValidationError {
   // Dates required for non-available status
   if (data.status !== 'available' && (data.start === '' || data.end === '')) {
     return 'dates_required';
@@ -748,9 +702,7 @@ export interface AvailabilityPayload {
 }
 
 /** Build availability API payload from form data (converts empty strings to undefined) */
-export function buildAvailabilityPayload(
-  data: AvailabilityFormData,
-): AvailabilityPayload {
+export function buildAvailabilityPayload(data: AvailabilityFormData): AvailabilityPayload {
   return {
     availabilityStatus: data.status,
     availabilityStart: data.start !== '' ? data.start : undefined,

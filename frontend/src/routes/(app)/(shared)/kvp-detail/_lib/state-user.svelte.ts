@@ -8,10 +8,7 @@ import type { User } from './types';
 function resolveRole(user: User): string {
   if (typeof sessionStorage !== 'undefined') {
     const roleSwitch = sessionStorage.getItem('roleSwitch');
-    if (
-      (user.role === 'admin' || user.role === 'root') &&
-      roleSwitch === 'employee'
-    ) {
+    if ((user.role === 'admin' || user.role === 'root') && roleSwitch === 'employee') {
       return 'employee';
     }
   }
@@ -32,14 +29,11 @@ export function createUserState() {
   let effectiveRole = $state<string>('employee');
   let isTeamLead = $state(false);
 
-  const isAdmin = $derived(
-    effectiveRole === 'admin' || effectiveRole === 'root',
-  );
+  const isAdmin = $derived(effectiveRole === 'admin' || effectiveRole === 'root');
   const canManage = $derived(isAdmin || isTeamLead);
 
   function updateEffectiveRole() {
-    effectiveRole =
-      currentUser === null ? 'employee' : resolveRole(currentUser);
+    effectiveRole = currentUser === null ? 'employee' : resolveRole(currentUser);
   }
 
   return {

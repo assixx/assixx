@@ -3,11 +3,7 @@
   5 Zeilen (Halle, Bereich, Abteilung, Team, Anlage) mit je einem Label
 -->
 <script lang="ts">
-  import {
-    DEFAULT_HIERARCHY_LABELS,
-    ENTITY_COLORS,
-    HALL_COLOR,
-  } from './constants.js';
+  import { DEFAULT_HIERARCHY_LABELS, ENTITY_COLORS, HALL_COLOR } from './constants.js';
 
   import type { HierarchyLabels } from './types.js';
 
@@ -21,9 +17,7 @@
 
   const { show, labels, onclose, onsave, isSaving }: Props = $props();
 
-  let editLabels = $state<HierarchyLabels>(
-    structuredClone(DEFAULT_HIERARCHY_LABELS),
-  );
+  let editLabels = $state<HierarchyLabels>(structuredClone(DEFAULT_HIERARCHY_LABELS));
 
   interface LabelLevel {
     key: keyof HierarchyLabels;
@@ -126,8 +120,8 @@
 
       <div class="ds-modal__body">
         <p class="hint-text">
-          Benenne die Organisationsebenen passend für dein Unternehmen um. Die
-          Struktur bleibt identisch — nur die Anzeige-Labels ändern sich.
+          Benenne die Organisationsebenen passend für dein Unternehmen um. Die Struktur bleibt
+          identisch — nur die Anzeige-Labels ändern sich.
         </p>
 
         <div class="hierarchy-stepper">

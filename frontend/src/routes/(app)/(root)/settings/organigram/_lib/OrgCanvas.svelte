@@ -91,10 +91,7 @@
     showWarningAlert(LOCK_MSG);
   }
 
-  function clientToSvg(
-    clientX: number,
-    clientY: number,
-  ): { x: number; y: number } {
+  function clientToSvg(clientX: number, clientY: number): { x: number; y: number } {
     const rect = svgElement.getBoundingClientRect();
     return {
       x: (clientX - rect.left - panX) / zoom,
@@ -169,11 +166,7 @@
     (event.currentTarget as Element).setPointerCapture(event.pointerId);
   }
 
-  function startHallResize(
-    event: PointerEvent,
-    hall: HallBounds,
-    edge: ResizeEdge,
-  ): void {
+  function startHallResize(event: PointerEvent, hall: HallBounds, edge: ResizeEdge): void {
     event.stopPropagation();
     event.preventDefault();
     resizingHallUuid = hall.id;
@@ -189,17 +182,9 @@
   }
 
   const LEFT_EDGES: readonly ResizeEdge[] = ['left', 'top-left', 'bottom-left'];
-  const RIGHT_EDGES: readonly ResizeEdge[] = [
-    'right',
-    'top-right',
-    'bottom-right',
-  ];
+  const RIGHT_EDGES: readonly ResizeEdge[] = ['right', 'top-right', 'bottom-right'];
   const TOP_EDGES: readonly ResizeEdge[] = ['top', 'top-left', 'top-right'];
-  const BOTTOM_EDGES: readonly ResizeEdge[] = [
-    'bottom',
-    'bottom-left',
-    'bottom-right',
-  ];
+  const BOTTOM_EDGES: readonly ResizeEdge[] = ['bottom', 'bottom-left', 'bottom-right'];
 
   function applyResize(event: PointerEvent): void {
     const svg = clientToSvg(event.clientX, event.clientY);
@@ -256,14 +241,9 @@
 
   function applyAnchorDrag(event: PointerEvent): void {
     const svg = clientToSvg(event.clientX, event.clientY);
-    const hall = hallBounds.find(
-      (h: HallBounds) => h.id === draggingAnchorHallId,
-    );
+    const hall = hallBounds.find((h: HallBounds) => h.id === draggingAnchorHallId);
     if (hall !== undefined) {
-      setHallConnectionAnchor(
-        draggingAnchorKey,
-        nearestPerimeterAnchor(hall, svg.x, svg.y),
-      );
+      setHallConnectionAnchor(draggingAnchorKey, nearestPerimeterAnchor(hall, svg.x, svg.y));
     }
   }
 
@@ -372,10 +352,7 @@
   }
 
   /** PerimeterAnchor → absolute Koordinaten auf dem Hallenrand */
-  function anchorToPoint(
-    hall: HallBounds,
-    anchor: PerimeterAnchor,
-  ): { x: number; y: number } {
+  function anchorToPoint(hall: HallBounds, anchor: PerimeterAnchor): { x: number; y: number } {
     switch (anchor.side) {
       case 'top':
         return { x: hall.x + anchor.t * hall.width, y: hall.y };
@@ -395,14 +372,9 @@
   }
 
   /** Nächster Punkt auf dem Hallenrand zur Mausposition */
-  function nearestPerimeterAnchor(
-    hall: HallBounds,
-    mx: number,
-    my: number,
-  ): PerimeterAnchor {
+  function nearestPerimeterAnchor(hall: HallBounds, mx: number, my: number): PerimeterAnchor {
     const { x: hx, y: hy, width: hw, height: hh } = hall;
-    const cl = (v: number, lo: number, hi: number): number =>
-      Math.min(hi, Math.max(lo, v));
+    const cl = (v: number, lo: number, hi: number): number => Math.min(hi, Math.max(lo, v));
     const d2 = (ax: number, ay: number, bx: number, by: number): number =>
       (ax - bx) ** 2 + (ay - by) ** 2;
 
@@ -438,11 +410,7 @@
     return { side: candidates[0].side, t: candidates[0].t };
   }
 
-  function startAnchorDrag(
-    event: PointerEvent,
-    hallId: string,
-    anchorKey: string,
-  ): void {
+  function startAnchorDrag(event: PointerEvent, hallId: string, anchorKey: string): void {
     if (isLocked) {
       showLockWarning();
       return;
@@ -709,17 +677,9 @@
             const d1 = (svg.x - hc.x1) ** 2 + (svg.y - hc.y1) ** 2;
             const d2 = (svg.x - hc.x2) ** 2 + (svg.y - hc.y2) ** 2;
             if (d1 <= d2) {
-              startAnchorDrag(
-                e,
-                hc.hallIdA,
-                `${hc.hallIdA}\u2192${hc.hallIdB}`,
-              );
+              startAnchorDrag(e, hc.hallIdA, `${hc.hallIdA}\u2192${hc.hallIdB}`);
             } else {
-              startAnchorDrag(
-                e,
-                hc.hallIdB,
-                `${hc.hallIdB}\u2192${hc.hallIdA}`,
-              );
+              startAnchorDrag(e, hc.hallIdB, `${hc.hallIdB}\u2192${hc.hallIdA}`);
             }
           }}
         />

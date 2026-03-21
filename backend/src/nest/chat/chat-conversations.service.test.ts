@@ -5,11 +5,7 @@
  * Phase 14 B4: Deepened from 12 → 30 tests.
  * Uses ClsService mock for tenant/user context.
  */
-import {
-  BadRequestException,
-  ForbiddenException,
-  NotFoundException,
-} from '@nestjs/common';
+import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import type { ClsService } from 'nestjs-cls';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -162,9 +158,7 @@ describe('ChatConversationsService – DB-mocked methods', () => {
     it('throws NotFoundException when user is not participant', async () => {
       mockDb.query.mockResolvedValueOnce([]); // participant check
 
-      await expect(service.getConversation(999)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.getConversation(999)).rejects.toThrow(NotFoundException);
     });
 
     it('throws NotFoundException when conversation does not exist', async () => {
@@ -172,9 +166,7 @@ describe('ChatConversationsService – DB-mocked methods', () => {
         .mockResolvedValueOnce([{ user_id: 5 }]) // participant check OK
         .mockResolvedValueOnce([]); // conversation not found
 
-      await expect(service.getConversation(999)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.getConversation(999)).rejects.toThrow(NotFoundException);
     });
 
     it('should return conversation with participants', async () => {
@@ -221,9 +213,7 @@ describe('ChatConversationsService – DB-mocked methods', () => {
 
   describe('updateConversation', () => {
     it('throws BadRequestException (stub)', async () => {
-      await expect(service.updateConversation(1, {} as never)).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(service.updateConversation(1, {} as never)).rejects.toThrow(BadRequestException);
     });
   });
 
@@ -235,9 +225,7 @@ describe('ChatConversationsService – DB-mocked methods', () => {
     it('throws ForbiddenException when user is not participant', async () => {
       mockDb.query.mockResolvedValueOnce([]); // participant not found
 
-      await expect(service.deleteConversation(999)).rejects.toThrow(
-        ForbiddenException,
-      );
+      await expect(service.deleteConversation(999)).rejects.toThrow(ForbiddenException);
     });
 
     it('soft-deletes conversation for participant', async () => {
@@ -270,17 +258,13 @@ describe('ChatConversationsService – DB-mocked methods', () => {
     it('throws ForbiddenException when not participant', async () => {
       mockDb.query.mockResolvedValueOnce([]);
 
-      await expect(service.verifyConversationAccess(1, 5, 1)).rejects.toThrow(
-        ForbiddenException,
-      );
+      await expect(service.verifyConversationAccess(1, 5, 1)).rejects.toThrow(ForbiddenException);
     });
 
     it('succeeds when user is participant', async () => {
       mockDb.query.mockResolvedValueOnce([{ user_id: 5 }]);
 
-      await expect(
-        service.verifyConversationAccess(1, 5, 1),
-      ).resolves.toBeUndefined();
+      await expect(service.verifyConversationAccess(1, 5, 1)).resolves.toBeUndefined();
     });
   });
 
@@ -290,11 +274,7 @@ describe('ChatConversationsService – DB-mocked methods', () => {
 
   describe('getConversationRecipientIds', () => {
     it('returns participant IDs excluding sender', async () => {
-      mockDb.query.mockResolvedValueOnce([
-        { user_id: 1 },
-        { user_id: 5 },
-        { user_id: 10 },
-      ]);
+      mockDb.query.mockResolvedValueOnce([{ user_id: 1 }, { user_id: 5 }, { user_id: 10 }]);
 
       const result = await service.getConversationRecipientIds(1, 5);
 
@@ -377,17 +357,15 @@ describe('ChatConversationsService – DB-mocked methods', () => {
     it('should throw BadRequestException for invalid IDs', async () => {
       mockDb.query.mockResolvedValueOnce([{ id: 1 }]); // only 1 valid
 
-      await expect(
-        service['validateParticipantIds']([1, 99], 1),
-      ).rejects.toThrow(BadRequestException);
+      await expect(service['validateParticipantIds']([1, 99], 1)).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('should pass when all IDs are valid', async () => {
       mockDb.query.mockResolvedValueOnce([{ id: 1 }, { id: 2 }]);
 
-      await expect(
-        service['validateParticipantIds']([1, 2], 1),
-      ).resolves.toBeUndefined();
+      await expect(service['validateParticipantIds']([1, 2], 1)).resolves.toBeUndefined();
     });
   });
 
@@ -403,9 +381,9 @@ describe('ChatConversationsService – DB-mocked methods', () => {
     it('should throw BadRequestException when INSERT returns empty', async () => {
       mockDb.query.mockResolvedValueOnce([]);
 
-      await expect(
-        service['insertConversation'](1, undefined, false),
-      ).rejects.toThrow(BadRequestException);
+      await expect(service['insertConversation'](1, undefined, false)).rejects.toThrow(
+        BadRequestException,
+      );
     });
   });
 

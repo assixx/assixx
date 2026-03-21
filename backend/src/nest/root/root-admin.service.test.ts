@@ -150,9 +150,7 @@ describe('RootAdminService', () => {
       // admin row
       mockDb.query.mockResolvedValueOnce([makeAdminRow()]);
       // last login
-      mockDb.query.mockResolvedValueOnce([
-        { created_at: new Date('2025-06-01') },
-      ]);
+      mockDb.query.mockResolvedValueOnce([{ created_at: new Date('2025-06-01') }]);
 
       const result = await service.getAdminById(1, 10);
 
@@ -210,9 +208,7 @@ describe('RootAdminService', () => {
       // getAdminById → not found
       mockDb.query.mockResolvedValueOnce([]);
 
-      await expect(service.updateAdmin(999, {} as never, 10)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.updateAdmin(999, {} as never, 10)).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -224,9 +220,7 @@ describe('RootAdminService', () => {
     it('should throw NotFoundException when admin not found', async () => {
       mockDb.query.mockResolvedValueOnce([]);
 
-      await expect(service.deleteAdmin(999, 10, 1)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.deleteAdmin(999, 10, 1)).rejects.toThrow(NotFoundException);
     });
 
     it('should delete admin and log activity', async () => {
@@ -251,9 +245,7 @@ describe('RootAdminService', () => {
     it('should throw NotFoundException when admin not found', async () => {
       mockDb.query.mockResolvedValueOnce([]);
 
-      await expect(service.getAdminLogs(999, 10)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.getAdminLogs(999, 10)).rejects.toThrow(NotFoundException);
     });
 
     it('should return mapped logs', async () => {

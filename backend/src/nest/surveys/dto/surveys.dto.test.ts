@@ -20,9 +20,7 @@ describe('CreateSurveySchema', () => {
   });
 
   it('should reject title longer than 200 characters', () => {
-    expect(
-      CreateSurveySchema.safeParse({ title: 'T'.repeat(201) }).success,
-    ).toBe(false);
+    expect(CreateSurveySchema.safeParse({ title: 'T'.repeat(201) }).success).toBe(false);
   });
 
   it('should reject description longer than 1000 characters', () => {
@@ -143,21 +141,15 @@ describe('CreateSurveySchema', () => {
 
 describe('AnswerSchema', () => {
   it('should accept answer with questionId', () => {
-    expect(
-      AnswerSchema.safeParse({ questionId: '1', answerText: 'Yes' }).success,
-    ).toBe(true);
+    expect(AnswerSchema.safeParse({ questionId: '1', answerText: 'Yes' }).success).toBe(true);
   });
 
   it('should accept answer with question_id (snake_case)', () => {
-    expect(
-      AnswerSchema.safeParse({ question_id: '2', answerText: 'No' }).success,
-    ).toBe(true);
+    expect(AnswerSchema.safeParse({ question_id: '2', answerText: 'No' }).success).toBe(true);
   });
 
   it('should reject answer without any question ID (refinement)', () => {
-    expect(
-      AnswerSchema.safeParse({ answerText: 'Orphan answer' }).success,
-    ).toBe(false);
+    expect(AnswerSchema.safeParse({ answerText: 'Orphan answer' }).success).toBe(false);
   });
 
   it('should coerce answerNumber from string', () => {
@@ -198,8 +190,6 @@ describe('ExportResponsesQuerySchema', () => {
   });
 
   it('should reject invalid format', () => {
-    expect(
-      ExportResponsesQuerySchema.safeParse({ format: 'pdf' }).success,
-    ).toBe(false);
+    expect(ExportResponsesQuerySchema.safeParse({ format: 'pdf' }).success).toBe(false);
   });
 });

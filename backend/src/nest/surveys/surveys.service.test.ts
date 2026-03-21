@@ -207,21 +207,15 @@ describe('SurveysService', () => {
     });
 
     it('should throw BadRequestException for invalid string', () => {
-      expect(() => mocks.service.parseIdParam('not-a-number')).toThrow(
-        BadRequestException,
-      );
+      expect(() => mocks.service.parseIdParam('not-a-number')).toThrow(BadRequestException);
     });
 
     it('should throw BadRequestException for zero', () => {
-      expect(() => mocks.service.parseIdParam('0')).toThrow(
-        BadRequestException,
-      );
+      expect(() => mocks.service.parseIdParam('0')).toThrow(BadRequestException);
     });
 
     it('should throw BadRequestException for negative number', () => {
-      expect(() => mocks.service.parseIdParam('-5')).toThrow(
-        BadRequestException,
-      );
+      expect(() => mocks.service.parseIdParam('-5')).toThrow(BadRequestException);
     });
   });
 
@@ -231,33 +225,27 @@ describe('SurveysService', () => {
 
   describe('validateSurveyUpdate', () => {
     it('throws ForbiddenException for employee role', () => {
-      expect(() =>
-        mocks.service['validateSurveyUpdate']('employee', 'draft', 0),
-      ).toThrow(ForbiddenException);
+      expect(() => mocks.service['validateSurveyUpdate']('employee', 'draft', 0)).toThrow(
+        ForbiddenException,
+      );
     });
 
     it('throws ConflictException for active survey with responses', () => {
-      expect(() =>
-        mocks.service['validateSurveyUpdate']('admin', 'active', 5),
-      ).toThrow(ConflictException);
+      expect(() => mocks.service['validateSurveyUpdate']('admin', 'active', 5)).toThrow(
+        ConflictException,
+      );
     });
 
     it('does not throw for admin with draft survey', () => {
-      expect(() =>
-        mocks.service['validateSurveyUpdate']('admin', 'draft', 0),
-      ).not.toThrow();
+      expect(() => mocks.service['validateSurveyUpdate']('admin', 'draft', 0)).not.toThrow();
     });
 
     it('does not throw for admin with active survey and zero responses', () => {
-      expect(() =>
-        mocks.service['validateSurveyUpdate']('admin', 'active', 0),
-      ).not.toThrow();
+      expect(() => mocks.service['validateSurveyUpdate']('admin', 'active', 0)).not.toThrow();
     });
 
     it('does not throw for root role with draft survey', () => {
-      expect(() =>
-        mocks.service['validateSurveyUpdate']('root', 'draft', 10),
-      ).not.toThrow();
+      expect(() => mocks.service['validateSurveyUpdate']('root', 'draft', 10)).not.toThrow();
     });
   });
 
@@ -276,9 +264,9 @@ describe('SurveysService', () => {
     it('should throw NotFoundException for unknown UUID', async () => {
       mocks.mockDb.query.mockResolvedValueOnce([]);
 
-      await expect(
-        mocks.service.resolveToNumericId('unknown-uuid', 1),
-      ).rejects.toThrow(NotFoundException);
+      await expect(mocks.service.resolveToNumericId('unknown-uuid', 1)).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should resolve UUID to numeric ID', async () => {
@@ -302,17 +290,17 @@ describe('SurveysService', () => {
     it('should throw NotFoundException when survey not found by ID', async () => {
       mocks.mockDb.query.mockResolvedValueOnce([]);
 
-      await expect(
-        mocks.service.getSurveyById(999, 42, 1, 'admin'),
-      ).rejects.toThrow(NotFoundException);
+      await expect(mocks.service.getSurveyById(999, 42, 1, 'admin')).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should throw NotFoundException when survey not found by UUID', async () => {
       mocks.mockDb.query.mockResolvedValueOnce([]);
 
-      await expect(
-        mocks.service.getSurveyById('missing-uuid', 42, 1, 'admin'),
-      ).rejects.toThrow(NotFoundException);
+      await expect(mocks.service.getSurveyById('missing-uuid', 42, 1, 'admin')).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should return survey for numeric ID (found path)', async () => {
@@ -322,12 +310,7 @@ describe('SurveysService', () => {
       const result = await mocks.service.getSurveyById(1, 1, 5, 'admin');
 
       expect(result).toHaveProperty('title');
-      expect(mocks.mockAccessService.checkSurveyAccess).toHaveBeenCalledWith(
-        1,
-        1,
-        5,
-        'admin',
-      );
+      expect(mocks.mockAccessService.checkSurveyAccess).toHaveBeenCalledWith(1, 1, 5, 'admin');
     });
 
     it('should return survey for UUID (found path)', async () => {
@@ -350,9 +333,12 @@ describe('SurveysService', () => {
 
       await mocks.service.getSurveyById(1, 1, 5, 'admin', true);
 
-      expect(
-        mocks.mockAccessService.checkSurveyManagementAccess,
-      ).toHaveBeenCalledWith(1, 1, 5, 'admin');
+      expect(mocks.mockAccessService.checkSurveyManagementAccess).toHaveBeenCalledWith(
+        1,
+        1,
+        5,
+        'admin',
+      );
     });
   });
 
@@ -372,12 +358,10 @@ describe('SurveysService', () => {
     it('returns survey with loaded questions and assignments', async () => {
       const survey = createMockDbSurvey();
       mocks.mockDb.query.mockResolvedValueOnce([survey]);
-      mocks.mockQuestionsService.loadSurveyQuestionsAndAssignments.mockResolvedValueOnce(
-        {
-          questions: [{ id: 1, question_text: 'Q1' }],
-          assignments: [{ id: 1, scope: 'all' }],
-        },
-      );
+      mocks.mockQuestionsService.loadSurveyQuestionsAndAssignments.mockResolvedValueOnce({
+        questions: [{ id: 1, question_text: 'Q1' }],
+        assignments: [{ id: 1, scope: 'all' }],
+      });
 
       const result = await mocks.service['getSurveyByNumericId'](1, 1);
 
@@ -406,9 +390,7 @@ describe('SurveysService', () => {
       );
 
       expect(result).not.toBeNull();
-      expect(
-        mocks.mockQuestionsService.loadSurveyQuestionsAndAssignments,
-      ).toHaveBeenCalledWith(1);
+      expect(mocks.mockQuestionsService.loadSurveyQuestionsAndAssignments).toHaveBeenCalledWith(1);
     });
   });
 
@@ -431,10 +413,7 @@ describe('SurveysService', () => {
       const survey = createMockDbSurvey({ id: 42 });
       mocks.mockDb.query.mockResolvedValueOnce([survey]);
 
-      const result = await mocks.service['resolveSurveyOrThrow'](
-        'some-uuid',
-        1,
-      );
+      const result = await mocks.service['resolveSurveyOrThrow']('some-uuid', 1);
 
       expect(result.surveyId).toBe(42);
     });
@@ -442,9 +421,9 @@ describe('SurveysService', () => {
     it('throws NotFoundException when not found', async () => {
       mocks.mockDb.query.mockResolvedValueOnce([]);
 
-      await expect(
-        mocks.service['resolveSurveyOrThrow'](999, 1),
-      ).rejects.toThrow(NotFoundException);
+      await expect(mocks.service['resolveSurveyOrThrow'](999, 1)).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
@@ -457,11 +436,7 @@ describe('SurveysService', () => {
       mocks.mockDb.query.mockResolvedValueOnce([{ id: 42 }]);
 
       const dto = { title: 'New Survey', status: 'draft' };
-      const result = await mocks.service['insertSurveyRecord'](
-        dto as never,
-        1,
-        5,
-      );
+      const result = await mocks.service['insertSurveyRecord'](dto as never, 1, 5);
 
       expect(result).toBe(42);
       expect(mocks.mockDb.query).toHaveBeenCalledWith(
@@ -474,11 +449,7 @@ describe('SurveysService', () => {
       mocks.mockDb.query.mockResolvedValueOnce([]);
 
       const dto = { title: 'Survey' };
-      const result = await mocks.service['insertSurveyRecord'](
-        dto as never,
-        1,
-        5,
-      );
+      const result = await mocks.service['insertSurveyRecord'](dto as never, 1, 5);
 
       expect(result).toBe(0);
     });
@@ -547,78 +518,52 @@ describe('SurveysService', () => {
       mocks.mockDb.query.mockResolvedValue([]);
 
       const dto = { questions: [{ questionText: 'Q1', questionType: 'text' }] };
-      await mocks.service['updateSurveyRelations'](
-        1,
-        dto as never,
-        1,
-        5,
-        'admin',
-      );
+      await mocks.service['updateSurveyRelations'](1, dto as never, 1, 5, 'admin');
 
       expect(mocks.mockDb.query).toHaveBeenCalledWith(
         expect.stringContaining('DELETE FROM survey_questions'),
         [1],
       );
-      expect(
-        mocks.mockQuestionsService.insertSurveyQuestions,
-      ).toHaveBeenCalledWith(1, 1, dto.questions);
+      expect(mocks.mockQuestionsService.insertSurveyQuestions).toHaveBeenCalledWith(
+        1,
+        1,
+        dto.questions,
+      );
     });
 
     it('replaces assignments when provided', async () => {
       mocks.mockDb.query.mockResolvedValue([]);
 
       const dto = { assignments: [{ scope: 'all' }] };
-      await mocks.service['updateSurveyRelations'](
-        1,
-        dto as never,
-        1,
-        5,
-        'admin',
-      );
+      await mocks.service['updateSurveyRelations'](1, dto as never, 1, 5, 'admin');
 
-      expect(
-        mocks.mockAccessService.validateAssignmentPermissions,
-      ).toHaveBeenCalled();
+      expect(mocks.mockAccessService.validateAssignmentPermissions).toHaveBeenCalled();
       expect(mocks.mockDb.query).toHaveBeenCalledWith(
         expect.stringContaining('DELETE FROM survey_assignments'),
         [1],
       );
-      expect(
-        mocks.mockQuestionsService.insertSurveyAssignments,
-      ).toHaveBeenCalledWith(1, 1, dto.assignments);
+      expect(mocks.mockQuestionsService.insertSurveyAssignments).toHaveBeenCalledWith(
+        1,
+        1,
+        dto.assignments,
+      );
     });
 
     it('skips question/assignment updates when not in DTO', async () => {
       const dto = { title: 'Just title' };
-      await mocks.service['updateSurveyRelations'](
-        1,
-        dto as never,
-        1,
-        5,
-        'admin',
-      );
+      await mocks.service['updateSurveyRelations'](1, dto as never, 1, 5, 'admin');
 
       expect(mocks.mockDb.query).not.toHaveBeenCalled();
-      expect(
-        mocks.mockQuestionsService.insertSurveyQuestions,
-      ).not.toHaveBeenCalled();
+      expect(mocks.mockQuestionsService.insertSurveyQuestions).not.toHaveBeenCalled();
     });
 
     it('skips validateAssignmentPermissions for empty assignments', async () => {
       mocks.mockDb.query.mockResolvedValue([]);
 
       const dto = { assignments: [] };
-      await mocks.service['updateSurveyRelations'](
-        1,
-        dto as never,
-        1,
-        5,
-        'admin',
-      );
+      await mocks.service['updateSurveyRelations'](1, dto as never, 1, 5, 'admin');
 
-      expect(
-        mocks.mockAccessService.validateAssignmentPermissions,
-      ).not.toHaveBeenCalled();
+      expect(mocks.mockAccessService.validateAssignmentPermissions).not.toHaveBeenCalled();
     });
   });
 
@@ -630,9 +575,9 @@ describe('SurveysService', () => {
     it('should throw NotFoundException when template not found', async () => {
       mocks.mockDb.query.mockResolvedValueOnce([]);
 
-      await expect(
-        mocks.service.createFromTemplate(999, 42, 1, 'admin'),
-      ).rejects.toThrow(NotFoundException);
+      await expect(mocks.service.createFromTemplate(999, 42, 1, 'admin')).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('creates survey from template data', async () => {
@@ -656,9 +601,7 @@ describe('SurveysService', () => {
       const result = await mocks.service.createFromTemplate(1, 1, 5, 'admin');
 
       expect(result).toHaveProperty('title');
-      expect(
-        mocks.mockQuestionsService.insertSurveyQuestions,
-      ).toHaveBeenCalled();
+      expect(mocks.mockQuestionsService.insertSurveyQuestions).toHaveBeenCalled();
     });
   });
 
@@ -702,9 +645,7 @@ describe('SurveysService', () => {
   describe('listSurveys', () => {
     it('returns surveys with canManage flags', async () => {
       const survey = createMockDbSurvey({ id: 1 });
-      mocks.mockAccessService.fetchSurveysByAccessLevel.mockResolvedValueOnce([
-        survey,
-      ]);
+      mocks.mockAccessService.fetchSurveysByAccessLevel.mockResolvedValueOnce([survey]);
 
       const result = await mocks.service.listSurveys(1, 5, 'admin', {});
 
@@ -713,15 +654,11 @@ describe('SurveysService', () => {
     });
 
     it('applies pagination defaults', async () => {
-      mocks.mockAccessService.fetchSurveysByAccessLevel.mockResolvedValueOnce(
-        [],
-      );
+      mocks.mockAccessService.fetchSurveysByAccessLevel.mockResolvedValueOnce([]);
 
       await mocks.service.listSurveys(1, 5, 'admin', {});
 
-      expect(
-        mocks.mockAccessService.fetchSurveysByAccessLevel,
-      ).toHaveBeenCalledWith(
+      expect(mocks.mockAccessService.fetchSurveysByAccessLevel).toHaveBeenCalledWith(
         1,
         5,
         undefined, // status
@@ -733,9 +670,7 @@ describe('SurveysService', () => {
     });
 
     it('passes custom page and limit', async () => {
-      mocks.mockAccessService.fetchSurveysByAccessLevel.mockResolvedValueOnce(
-        [],
-      );
+      mocks.mockAccessService.fetchSurveysByAccessLevel.mockResolvedValueOnce([]);
 
       await mocks.service.listSurveys(1, 5, 'admin', {
         page: 3,
@@ -743,9 +678,7 @@ describe('SurveysService', () => {
         status: 'active',
       });
 
-      expect(
-        mocks.mockAccessService.fetchSurveysByAccessLevel,
-      ).toHaveBeenCalledWith(
+      expect(mocks.mockAccessService.fetchSurveysByAccessLevel).toHaveBeenCalledWith(
         1,
         5,
         'active',
@@ -758,29 +691,19 @@ describe('SurveysService', () => {
 
     it('uses getManageableSurveyIds when not unrestricted', async () => {
       const survey = createMockDbSurvey({ id: 1 });
-      mocks.mockAccessService.checkUnrestrictedAccess.mockResolvedValueOnce(
-        false,
-      );
-      mocks.mockAccessService.fetchSurveysByAccessLevel.mockResolvedValueOnce([
-        survey,
-      ]);
-      mocks.mockAccessService.getManageableSurveyIds.mockResolvedValueOnce(
-        new Set([1]),
-      );
+      mocks.mockAccessService.checkUnrestrictedAccess.mockResolvedValueOnce(false);
+      mocks.mockAccessService.fetchSurveysByAccessLevel.mockResolvedValueOnce([survey]);
+      mocks.mockAccessService.getManageableSurveyIds.mockResolvedValueOnce(new Set([1]));
 
       const result = await mocks.service.listSurveys(1, 5, 'employee', {});
 
-      expect(
-        mocks.mockAccessService.getManageableSurveyIds,
-      ).toHaveBeenCalledWith([1], 1, 5);
+      expect(mocks.mockAccessService.getManageableSurveyIds).toHaveBeenCalledWith([1], 1, 5);
       expect(result[0]).toHaveProperty('canManage', true);
     });
 
     it('sets canManage=true for all when manage=true', async () => {
       const survey = createMockDbSurvey({ id: 1 });
-      mocks.mockAccessService.fetchSurveysByAccessLevel.mockResolvedValueOnce([
-        survey,
-      ]);
+      mocks.mockAccessService.fetchSurveysByAccessLevel.mockResolvedValueOnce([survey]);
 
       const result = await mocks.service.listSurveys(1, 5, 'admin', {
         manage: true,
@@ -802,12 +725,7 @@ describe('SurveysService', () => {
         .mockResolvedValueOnce([createdSurvey]); // getSurveyById
 
       const dto = { title: 'New Survey', status: 'draft' };
-      const result = await mocks.service.createSurvey(
-        dto as never,
-        1,
-        5,
-        'admin',
-      );
+      const result = await mocks.service.createSurvey(dto as never, 1, 5, 'admin');
 
       expect(result).toHaveProperty('title');
       expect(mocks.mockActivityLogger.logCreate).toHaveBeenCalledWith(
@@ -822,9 +740,7 @@ describe('SurveysService', () => {
 
     it('inserts questions when provided', async () => {
       const createdSurvey = createMockDbSurvey({ id: 42 });
-      mocks.mockDb.query
-        .mockResolvedValueOnce([{ id: 42 }])
-        .mockResolvedValueOnce([createdSurvey]);
+      mocks.mockDb.query.mockResolvedValueOnce([{ id: 42 }]).mockResolvedValueOnce([createdSurvey]);
 
       const dto = {
         title: 'Survey with Q',
@@ -832,16 +748,16 @@ describe('SurveysService', () => {
       };
       await mocks.service.createSurvey(dto as never, 1, 5, 'admin');
 
-      expect(
-        mocks.mockQuestionsService.insertSurveyQuestions,
-      ).toHaveBeenCalledWith(1, 42, dto.questions);
+      expect(mocks.mockQuestionsService.insertSurveyQuestions).toHaveBeenCalledWith(
+        1,
+        42,
+        dto.questions,
+      );
     });
 
     it('inserts assignments and validates permissions', async () => {
       const createdSurvey = createMockDbSurvey({ id: 42 });
-      mocks.mockDb.query
-        .mockResolvedValueOnce([{ id: 42 }])
-        .mockResolvedValueOnce([createdSurvey]);
+      mocks.mockDb.query.mockResolvedValueOnce([{ id: 42 }]).mockResolvedValueOnce([createdSurvey]);
 
       const dto = {
         title: 'Survey with Assign',
@@ -849,12 +765,12 @@ describe('SurveysService', () => {
       };
       await mocks.service.createSurvey(dto as never, 1, 5, 'admin');
 
-      expect(
-        mocks.mockAccessService.validateAssignmentPermissions,
-      ).toHaveBeenCalled();
-      expect(
-        mocks.mockQuestionsService.insertSurveyAssignments,
-      ).toHaveBeenCalledWith(1, 42, dto.assignments);
+      expect(mocks.mockAccessService.validateAssignmentPermissions).toHaveBeenCalled();
+      expect(mocks.mockQuestionsService.insertSurveyAssignments).toHaveBeenCalledWith(
+        1,
+        42,
+        dto.assignments,
+      );
     });
   });
 
@@ -889,13 +805,7 @@ describe('SurveysService', () => {
       mocks.mockDb.query.mockResolvedValueOnce([existing]);
 
       await expect(
-        mocks.service.updateSurvey(
-          1,
-          { title: 'X' } as never,
-          1,
-          5,
-          'employee',
-        ),
+        mocks.service.updateSurvey(1, { title: 'X' } as never, 1, 5, 'employee'),
       ).rejects.toThrow(ForbiddenException);
     });
 
@@ -940,22 +850,21 @@ describe('SurveysService', () => {
       const survey = createMockDbSurvey({ response_count: 3 });
       mocks.mockDb.query.mockResolvedValueOnce([survey]);
 
-      await expect(
-        mocks.service.deleteSurvey(1, 1, 5, 'admin'),
-      ).rejects.toThrow(ConflictException);
+      await expect(mocks.service.deleteSurvey(1, 1, 5, 'admin')).rejects.toThrow(ConflictException);
     });
 
     it('calls checkSurveyManagementAccess', async () => {
       const survey = createMockDbSurvey();
-      mocks.mockDb.query
-        .mockResolvedValueOnce([survey])
-        .mockResolvedValueOnce([]);
+      mocks.mockDb.query.mockResolvedValueOnce([survey]).mockResolvedValueOnce([]);
 
       await mocks.service.deleteSurvey(1, 1, 5, 'admin');
 
-      expect(
-        mocks.mockAccessService.checkSurveyManagementAccess,
-      ).toHaveBeenCalledWith(1, 1, 5, 'admin');
+      expect(mocks.mockAccessService.checkSurveyManagementAccess).toHaveBeenCalledWith(
+        1,
+        1,
+        5,
+        'admin',
+      );
     });
   });
 
@@ -974,12 +883,13 @@ describe('SurveysService', () => {
       const result = await mocks.service.getStatistics(42, 1, 5, 'admin');
 
       expect(result).toEqual({ totalResponses: 10 });
-      expect(
-        mocks.mockStatisticsService.computeStatistics,
-      ).toHaveBeenCalledWith(42, 1, []);
-      expect(
-        mocks.mockAccessService.checkSurveyManagementAccess,
-      ).toHaveBeenCalledWith(42, 1, 5, 'admin');
+      expect(mocks.mockStatisticsService.computeStatistics).toHaveBeenCalledWith(42, 1, []);
+      expect(mocks.mockAccessService.checkSurveyManagementAccess).toHaveBeenCalledWith(
+        42,
+        1,
+        5,
+        'admin',
+      );
     });
 
     it('resolves UUID before computing statistics', async () => {
@@ -1007,21 +917,14 @@ describe('SurveysService', () => {
       const result = await mocks.service.submitResponse(1, 5, 1, []);
 
       expect(result).toBe(42);
-      expect(mocks.mockResponsesService.submitResponse).toHaveBeenCalledWith(
-        1,
-        5,
-        1,
-        [],
-      );
+      expect(mocks.mockResponsesService.submitResponse).toHaveBeenCalledWith(1, 5, 1, []);
     });
   });
 
   describe('getAllResponses', () => {
     it('checks management access and delegates', async () => {
       const paginatedResult = { responses: [], total: 0 };
-      mocks.mockResponsesService.getAllResponses.mockResolvedValueOnce(
-        paginatedResult,
-      );
+      mocks.mockResponsesService.getAllResponses.mockResolvedValueOnce(paginatedResult);
 
       const result = await mocks.service.getAllResponses(1, 1, 'admin', 5, {
         page: 1,
@@ -1029,9 +932,12 @@ describe('SurveysService', () => {
       });
 
       expect(result).toEqual(paginatedResult);
-      expect(
-        mocks.mockAccessService.checkSurveyManagementAccess,
-      ).toHaveBeenCalledWith(1, 1, 5, 'admin');
+      expect(mocks.mockAccessService.checkSurveyManagementAccess).toHaveBeenCalledWith(
+        1,
+        1,
+        5,
+        'admin',
+      );
     });
   });
 
@@ -1048,9 +954,7 @@ describe('SurveysService', () => {
   describe('getResponseById', () => {
     it('delegates to responsesService', async () => {
       const response = { id: 1, answers: [] };
-      mocks.mockResponsesService.getResponseById.mockResolvedValueOnce(
-        response,
-      );
+      mocks.mockResponsesService.getResponseById.mockResolvedValueOnce(response);
 
       const result = await mocks.service.getResponseById(1, 1, 1, 'admin', 5);
 
@@ -1075,18 +979,15 @@ describe('SurveysService', () => {
       const buffer = Buffer.from('csv-data');
       mocks.mockResponsesService.exportResponses.mockResolvedValueOnce(buffer);
 
-      const result = await mocks.service.exportResponses(
-        1,
-        1,
-        'admin',
-        5,
-        'csv',
-      );
+      const result = await mocks.service.exportResponses(1, 1, 'admin', 5, 'csv');
 
       expect(result).toEqual(buffer);
-      expect(
-        mocks.mockAccessService.checkSurveyManagementAccess,
-      ).toHaveBeenCalledWith(1, 1, 5, 'admin');
+      expect(mocks.mockAccessService.checkSurveyManagementAccess).toHaveBeenCalledWith(
+        1,
+        1,
+        5,
+        'admin',
+      );
     });
   });
 
@@ -1114,16 +1015,9 @@ describe('SurveysService', () => {
         endDate: '2024-12-31',
       };
 
-      await mocks.service['emitSurveyCreatedNotifications'](
-        dto as never,
-        42,
-        1,
-        5,
-      );
+      await mocks.service['emitSurveyCreatedNotifications'](dto as never, 42, 1, 5);
 
-      expect(
-        mocks.mockNotifications.createAddonNotification,
-      ).toHaveBeenCalled();
+      expect(mocks.mockNotifications.createAddonNotification).toHaveBeenCalled();
       expect(mocks.mockActivityLogger.logCreate).toHaveBeenCalledWith(
         1,
         5,
@@ -1137,16 +1031,9 @@ describe('SurveysService', () => {
     it('handles missing endDate', async () => {
       const dto = { title: 'No Deadline' };
 
-      await mocks.service['emitSurveyCreatedNotifications'](
-        dto as never,
-        42,
-        1,
-        5,
-      );
+      await mocks.service['emitSurveyCreatedNotifications'](dto as never, 42, 1, 5);
 
-      expect(
-        mocks.mockNotifications.createAddonNotification,
-      ).toHaveBeenCalled();
+      expect(mocks.mockNotifications.createAddonNotification).toHaveBeenCalled();
     });
   });
 
@@ -1164,13 +1051,7 @@ describe('SurveysService', () => {
         endDate: undefined,
       };
 
-      await mocks.service['emitSurveyUpdatedNotifications'](
-        42,
-        dto as never,
-        existing,
-        1,
-        5,
-      );
+      await mocks.service['emitSurveyUpdatedNotifications'](42, dto as never, existing, 1, 5);
 
       expect(mocks.mockActivityLogger.logUpdate).toHaveBeenCalledWith(
         1,

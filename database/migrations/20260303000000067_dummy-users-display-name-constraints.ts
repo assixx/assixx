@@ -53,11 +53,7 @@ export function up(pgm: MigrationBuilder): void {
 
 export function down(pgm: MigrationBuilder): void {
   pgm.sql(`DROP INDEX IF EXISTS idx_users_display_name;`);
-  pgm.sql(
-    `ALTER TABLE users DROP CONSTRAINT IF EXISTS chk_dummy_display_name;`,
-  );
-  pgm.sql(
-    `ALTER TABLE users DROP CONSTRAINT IF EXISTS chk_dummy_no_full_access;`,
-  );
+  pgm.sql(`ALTER TABLE users DROP CONSTRAINT IF EXISTS chk_dummy_display_name;`);
+  pgm.sql(`ALTER TABLE users DROP CONSTRAINT IF EXISTS chk_dummy_no_full_access;`);
   pgm.sql(`ALTER TABLE users DROP COLUMN IF EXISTS display_name;`);
 }

@@ -5,12 +5,7 @@
 
 import { QUESTION_TYPE_LABELS, STATUS_TEXT_MAP } from './constants';
 
-import type {
-  Survey,
-  SurveyQuestion,
-  SurveyResponse,
-  ResponseAnswer,
-} from './types';
+import type { Survey, SurveyQuestion, SurveyResponse, ResponseAnswer } from './types';
 
 /**
  * Format ISO date string to German format (DD.MM.YYYY HH:MM)
@@ -36,8 +31,7 @@ export function formatGermanDate(isoDate: string | null | undefined): string {
  * Format date for display (without time)
  */
 export function formatDate(dateString: string | null | undefined): string {
-  if (dateString === '' || dateString === null || dateString === undefined)
-    return 'N/A';
+  if (dateString === '' || dateString === null || dateString === undefined) return 'N/A';
 
   try {
     const date = new Date(dateString);
@@ -95,17 +89,13 @@ export function getStatusText(status: string): string {
 /**
  * Get respondent name
  */
-export function getRespondentName(
-  response: SurveyResponse,
-  index: number,
-): string {
+export function getRespondentName(response: SurveyResponse, index: number): string {
   const firstName = response.firstName ?? '';
   const lastName = response.lastName ?? '';
   const fullName = `${firstName} ${lastName}`.trim();
 
   if (fullName !== '') return fullName;
-  if (response.username !== undefined && response.username !== '')
-    return response.username;
+  if (response.username !== undefined && response.username !== '') return response.username;
   return `Teilnehmer #${index + 1}`;
 }
 
@@ -123,10 +113,7 @@ export function getCompletedDate(response: SurveyResponse): string {
 /**
  * Get option texts from option IDs
  */
-export function getOptionTexts(
-  question: SurveyQuestion,
-  optionIds: number[],
-): string {
+export function getOptionTexts(question: SurveyQuestion, optionIds: number[]): string {
   if (!question.options || question.options.length === 0) {
     return `Option-IDs: ${optionIds.join(', ')}`;
   }
@@ -192,10 +179,7 @@ export function calculateTotalResponses(question: SurveyQuestion): number {
 /**
  * Calculate percentage for choice option
  */
-export function calculateOptionPercentage(
-  count: number,
-  total: number,
-): number {
+export function calculateOptionPercentage(count: number, total: number): number {
   if (total === 0) return 0;
   return Math.round((count / total) * 100);
 }

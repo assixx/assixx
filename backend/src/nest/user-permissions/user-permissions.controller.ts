@@ -11,15 +11,7 @@
  * @see docs/FEAT_DELEGATED_PERMISSION_MANAGEMENT_MASTERPLAN.md
  * @see docs/infrastructure/adr/ADR-020-per-user-feature-permissions.md
  */
-import {
-  Body,
-  Controller,
-  ForbiddenException,
-  Get,
-  Logger,
-  Param,
-  Put,
-} from '@nestjs/common';
+import { Body, Controller, ForbiddenException, Get, Logger, Param, Put } from '@nestjs/common';
 
 import { CurrentUser } from '../common/decorators/current-user.decorator.js';
 import { Roles } from '../common/decorators/roles.decorator.js';
@@ -75,9 +67,7 @@ export class UserPermissionsController {
     await this.assertPermissionAccess(user, uuid, tenantId, 'canWrite');
 
     const delegatorScope =
-      this.isDelegatedAccess(user) ?
-        await this.scopeService.getScope()
-      : undefined;
+      this.isDelegatedAccess(user) ? await this.scopeService.getScope() : undefined;
 
     const result = await this.service.upsertPermissions(
       tenantId,
@@ -121,12 +111,8 @@ export class UserPermissionsController {
       action,
     );
     if (!hasManagePerms) {
-      this.logger.warn(
-        `Permission denied: user ${user.id} lacks manage-permissions.${action}`,
-      );
-      throw new ForbiddenException(
-        'Keine Berechtigung zum Verwalten von Benutzer-Permissions',
-      );
+      this.logger.warn(`Permission denied: user ${user.id} lacks manage-permissions.${action}`);
+      throw new ForbiddenException('Keine Berechtigung zum Verwalten von Benutzer-Permissions');
     }
 
     // Self-grant block (Regel 1)
@@ -144,12 +130,8 @@ export class UserPermissionsController {
   ): Promise<void> {
     const targetId = await this.service.resolveUserId(targetUuid, tenantId);
     if (targetId === currentUserId) {
-      this.logger.warn(
-        `Self-grant blocked: user ${currentUserId} tried to edit own permissions`,
-      );
-      throw new ForbiddenException(
-        'Eigene Berechtigungen können nicht selbst geändert werden',
-      );
+      this.logger.warn(`Self-grant blocked: user ${currentUserId} tried to edit own permissions`);
+      throw new ForbiddenException('Eigene Berechtigungen können nicht selbst geändert werden');
     }
   }
 
@@ -161,18 +143,13 @@ export class UserPermissionsController {
   ): Promise<void> {
     const scope = await this.scopeService.getScope();
     const targetId = await this.service.resolveUserId(targetUuid, tenantId);
-    const visibleIds = await this.hierarchyPermission.getVisibleUserIds(
-      scope,
-      tenantId,
-    );
+    const visibleIds = await this.hierarchyPermission.getVisibleUserIds(scope, tenantId);
 
     if (visibleIds !== 'all' && !visibleIds.includes(targetId)) {
       this.logger.warn(
         `Scope denied: user ${currentUserId} cannot access permissions of user ${targetId}`,
       );
-      throw new ForbiddenException(
-        'Benutzer liegt nicht in Ihrem Zuständigkeitsbereich',
-      );
+      throw new ForbiddenException('Benutzer liegt nicht in Ihrem Zuständigkeitsbereich');
     }
   }
 

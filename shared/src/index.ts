@@ -23,11 +23,7 @@ export type {
   AvailabilityStatus,
 } from './types/index.js';
 
-export {
-  USER_ROLES,
-  EXTENDED_USER_ROLES,
-  AVAILABILITY_STATUSES,
-} from './types/index.js';
+export { USER_ROLES, EXTENDED_USER_ROLES, AVAILABILITY_STATUSES } from './types/index.js';
 
 // Constants
 export {

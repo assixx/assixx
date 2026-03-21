@@ -33,9 +33,7 @@ type LocationJoinRow = TpmLocationRow & {
   created_by_name?: string;
 };
 
-function createLocationRow(
-  overrides?: Partial<LocationJoinRow>,
-): LocationJoinRow {
+function createLocationRow(overrides?: Partial<LocationJoinRow>): LocationJoinRow {
   return {
     id: 1,
     uuid: 'loc-uuid-001                           ',
@@ -182,9 +180,7 @@ describe('TpmLocationsService', () => {
       expect(result.uuid).toBe('loc-uuid-001');
       expect(result.title).toBe('Hydraulikstation A');
       expect(result.description).toBe('Prüfpunkt an der Hauptleitung');
-      expect(result.photoPath).toBe(
-        'uploads/tpm/locations/10/loc-uuid-001/photo.jpg',
-      );
+      expect(result.photoPath).toBe('uploads/tpm/locations/10/loc-uuid-001/photo.jpg');
       expect(result.photoFileName).toBe('photo.jpg');
       expect(result.photoFileSize).toBe(204800);
       expect(result.photoMimeType).toBe('image/jpeg');
@@ -195,9 +191,7 @@ describe('TpmLocationsService', () => {
     it('should throw NotFoundException when location not found', async () => {
       mockDb.queryOne.mockResolvedValueOnce(null);
 
-      await expect(service.getLocation(10, 'nonexistent')).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.getLocation(10, 'nonexistent')).rejects.toThrow(NotFoundException);
     });
 
     it('should map null photo fields correctly', async () => {
@@ -212,9 +206,7 @@ describe('TpmLocationsService', () => {
     });
 
     it('should map null description correctly', async () => {
-      mockDb.queryOne.mockResolvedValueOnce(
-        createLocationRow({ description: null }),
-      );
+      mockDb.queryOne.mockResolvedValueOnce(createLocationRow({ description: null }));
 
       const result = await service.getLocation(10, 'loc-uuid-001');
 
@@ -234,9 +226,7 @@ describe('TpmLocationsService', () => {
       });
       // INSERT RETURNING
       mockClient.query.mockResolvedValueOnce({
-        rows: [
-          createLocationRow({ position_number: 3, title: 'Neue Station' }),
-        ],
+        rows: [createLocationRow({ position_number: 3, title: 'Neue Station' })],
       });
 
       const result = await service.createLocation(10, 42, {
@@ -407,9 +397,9 @@ describe('TpmLocationsService', () => {
     it('should throw NotFoundException when location not found for update', async () => {
       mockClient.query.mockResolvedValueOnce({ rows: [] });
 
-      await expect(
-        service.updateLocation(10, 42, 'nonexistent', { title: 'X' }),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.updateLocation(10, 42, 'nonexistent', { title: 'X' })).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should call activityLogger.logUpdate', async () => {
@@ -446,9 +436,7 @@ describe('TpmLocationsService', () => {
         rows: [{ id: 1 }],
       });
 
-      await expect(
-        service.deleteLocation(10, 42, 'loc-uuid-001'),
-      ).resolves.toBeUndefined();
+      await expect(service.deleteLocation(10, 42, 'loc-uuid-001')).resolves.toBeUndefined();
 
       const sql = mockClient.query.mock.calls[0]?.[0] as string;
       expect(sql).toContain(`is_active = ${IS_ACTIVE.DELETED}`);
@@ -457,9 +445,9 @@ describe('TpmLocationsService', () => {
     it('should throw NotFoundException when location not found', async () => {
       mockClient.query.mockResolvedValueOnce({ rows: [] });
 
-      await expect(
-        service.deleteLocation(10, 42, 'nonexistent'),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.deleteLocation(10, 42, 'nonexistent')).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should call activityLogger.logDelete', async () => {
@@ -534,9 +522,9 @@ describe('TpmLocationsService', () => {
     it('should throw NotFoundException when location not found for photo', async () => {
       mockClient.query.mockResolvedValueOnce({ rows: [] });
 
-      await expect(
-        service.setPhoto(10, 42, 'nonexistent', photoData),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.setPhoto(10, 42, 'nonexistent', photoData)).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should throw when UPDATE returns no rows', async () => {
@@ -547,9 +535,9 @@ describe('TpmLocationsService', () => {
       // UPDATE returns nothing
       mockClient.query.mockResolvedValueOnce({ rows: [] });
 
-      await expect(
-        service.setPhoto(10, 42, 'loc-uuid-001', photoData),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.setPhoto(10, 42, 'loc-uuid-001', photoData)).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should call activityLogger.logUpdate for photo', async () => {
@@ -627,9 +615,7 @@ describe('TpmLocationsService', () => {
     it('should throw NotFoundException when location not found', async () => {
       mockClient.query.mockResolvedValueOnce({ rows: [] });
 
-      await expect(service.removePhoto(10, 42, 'nonexistent')).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.removePhoto(10, 42, 'nonexistent')).rejects.toThrow(NotFoundException);
     });
 
     it('should throw when UPDATE returns no rows', async () => {
@@ -638,9 +624,7 @@ describe('TpmLocationsService', () => {
       });
       mockClient.query.mockResolvedValueOnce({ rows: [] });
 
-      await expect(service.removePhoto(10, 42, 'loc-uuid-001')).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.removePhoto(10, 42, 'loc-uuid-001')).rejects.toThrow(NotFoundException);
     });
 
     it('should call activityLogger.logUpdate for photo removal', async () => {

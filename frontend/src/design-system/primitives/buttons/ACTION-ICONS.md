@@ -25,11 +25,7 @@ Icon-only action buttons with **color-coded hover states** for quick table actio
 ### Edit (Yellow Hover)
 
 ```html
-<button
-  class="action-icon action-icon--edit"
-  title="Bearbeiten"
-  aria-label="Eintrag bearbeiten"
->
+<button class="action-icon action-icon--edit" title="Bearbeiten" aria-label="Eintrag bearbeiten">
   <i class="fas fa-edit"></i>
 </button>
 ```
@@ -42,11 +38,7 @@ Icon-only action buttons with **color-coded hover states** for quick table actio
 ### Delete (Red Hover)
 
 ```html
-<button
-  class="action-icon action-icon--delete"
-  title="Löschen"
-  aria-label="Eintrag löschen"
->
+<button class="action-icon action-icon--delete" title="Löschen" aria-label="Eintrag löschen">
   <i class="fas fa-trash"></i>
 </button>
 ```
@@ -59,11 +51,7 @@ Icon-only action buttons with **color-coded hover states** for quick table actio
 ### View (Blue Hover)
 
 ```html
-<button
-  class="action-icon action-icon--view"
-  title="Ansehen"
-  aria-label="Details ansehen"
->
+<button class="action-icon action-icon--view" title="Ansehen" aria-label="Details ansehen">
   <i class="fas fa-eye"></i>
 </button>
 ```
@@ -76,11 +64,7 @@ Icon-only action buttons with **color-coded hover states** for quick table actio
 ### More (Neutral Hover)
 
 ```html
-<button
-  class="action-icon action-icon--more"
-  title="Mehr"
-  aria-label="Weitere Optionen"
->
+<button class="action-icon action-icon--more" title="Mehr" aria-label="Weitere Optionen">
   <i class="fas fa-ellipsis-v"></i>
 </button>
 ```

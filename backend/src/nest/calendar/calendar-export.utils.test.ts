@@ -1,18 +1,13 @@
 import { describe, expect, it } from 'vitest';
 
 import type { ExportableEvent } from './calendar-export.utils.js';
-import {
-  generateCsvExport,
-  generateIcsExport,
-} from './calendar-export.utils.js';
+import { generateCsvExport, generateIcsExport } from './calendar-export.utils.js';
 
 // ============================================================================
 // MOCK DATA
 // ============================================================================
 
-function createMockEvent(
-  overrides?: Partial<ExportableEvent>,
-): ExportableEvent {
+function createMockEvent(overrides?: Partial<ExportableEvent>): ExportableEvent {
   return {
     id: 1,
     title: 'Team Meeting',
@@ -44,10 +39,7 @@ describe('generateIcsExport', () => {
   });
 
   it('should include VEVENT block for each event', () => {
-    const events = [
-      createMockEvent(),
-      createMockEvent({ id: 2, title: 'Standup' }),
-    ];
+    const events = [createMockEvent(), createMockEvent({ id: 2, title: 'Standup' })];
     const result = generateIcsExport(events);
 
     const beginCount = (result.match(/BEGIN:VEVENT/g) ?? []).length;
@@ -69,16 +61,12 @@ describe('generateIcsExport', () => {
   });
 
   it('should include SUMMARY with event title', () => {
-    const result = generateIcsExport([
-      createMockEvent({ title: 'Board Meeting' }),
-    ]);
+    const result = generateIcsExport([createMockEvent({ title: 'Board Meeting' })]);
     expect(result).toContain('SUMMARY:Board Meeting');
   });
 
   it('should include DESCRIPTION when non-null and non-empty', () => {
-    const result = generateIcsExport([
-      createMockEvent({ description: 'Discuss Q3 goals' }),
-    ]);
+    const result = generateIcsExport([createMockEvent({ description: 'Discuss Q3 goals' })]);
     expect(result).toContain('DESCRIPTION:Discuss Q3 goals');
   });
 
@@ -93,9 +81,7 @@ describe('generateIcsExport', () => {
   });
 
   it('should include LOCATION when non-null and non-empty', () => {
-    const result = generateIcsExport([
-      createMockEvent({ location: 'Room 101' }),
-    ]);
+    const result = generateIcsExport([createMockEvent({ location: 'Room 101' })]);
     expect(result).toContain('LOCATION:Room 101');
   });
 
@@ -158,9 +144,7 @@ describe('generateCsvExport', () => {
   });
 
   it('should use actual status when provided', () => {
-    const result = generateCsvExport([
-      createMockEvent({ status: 'cancelled' }),
-    ]);
+    const result = generateCsvExport([createMockEvent({ status: 'cancelled' })]);
     expect(result).toContain('cancelled');
   });
 

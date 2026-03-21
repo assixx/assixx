@@ -229,9 +229,7 @@ export const States = {
 
     // Initialize JavaScript
     setTimeout(() => {
-      wrapper
-        .querySelectorAll('.search-input:not(.search-input--disabled)')
-        .forEach((el) => {});
+      wrapper.querySelectorAll('.search-input:not(.search-input--disabled)').forEach((el) => {});
     }, 0);
 
     return wrapper;
@@ -471,9 +469,7 @@ export const AllVariants = {
 
     // Initialize JavaScript
     setTimeout(() => {
-      wrapper
-        .querySelectorAll('.search-input:not(.search-input--disabled)')
-        .forEach((el) => {});
+      wrapper.querySelectorAll('.search-input:not(.search-input--disabled)').forEach((el) => {});
     }, 0);
 
     return wrapper;

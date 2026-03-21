@@ -143,9 +143,7 @@ export function truncateContent(content: string, maxLength = 150): string {
 }
 
 /** Format blackboard date for display */
-export function formatBlackboardDate(
-  dateStr: string | null | undefined,
-): string {
+export function formatBlackboardDate(dateStr: string | null | undefined): string {
   if (dateStr === null || dateStr === undefined || dateStr === '') return '';
   const date = new Date(dateStr);
   if (Number.isNaN(date.getTime())) return '';

@@ -23,8 +23,7 @@ import type {
 /** Check if a value is a valid UUID */
 export function isUuid(value: string | number): boolean {
   if (typeof value === 'number') return false;
-  const uuidRegex =
-    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   return uuidRegex.test(value);
 }
 
@@ -33,9 +32,7 @@ export function isUuid(value: string | number): boolean {
 // ============================================================================
 
 /** Transform database suggestion to API format */
-export function transformSuggestion(
-  suggestion: DbSuggestion,
-): KVPSuggestionResponse {
+export function transformSuggestion(suggestion: DbSuggestion): KVPSuggestionResponse {
   const base = dbToApi(
     suggestion as unknown as Record<string, unknown>,
   ) as unknown as KVPSuggestionResponse;
@@ -48,10 +45,7 @@ export function transformSuggestion(
 }
 
 /** Attach category object to response */
-function attachCategoryIfPresent(
-  base: KVPSuggestionResponse,
-  suggestion: DbSuggestion,
-): void {
+function attachCategoryIfPresent(base: KVPSuggestionResponse, suggestion: DbSuggestion): void {
   if (suggestion.category_name === undefined) return;
   const category: {
     id: number;
@@ -63,19 +57,14 @@ function attachCategoryIfPresent(
     id: suggestion.category_id,
     name: suggestion.category_name,
   };
-  if (suggestion.category_color !== undefined)
-    category.color = suggestion.category_color;
-  if (suggestion.category_icon !== undefined)
-    category.icon = suggestion.category_icon;
+  if (suggestion.category_color !== undefined) category.color = suggestion.category_color;
+  if (suggestion.category_icon !== undefined) category.icon = suggestion.category_icon;
   if (suggestion.category_is_deleted === true) category.isDeleted = true;
   base.category = category;
 }
 
 /** Attach submitter object to response */
-function attachSubmitterIfPresent(
-  base: KVPSuggestionResponse,
-  suggestion: DbSuggestion,
-): void {
+function attachSubmitterIfPresent(base: KVPSuggestionResponse, suggestion: DbSuggestion): void {
   if (suggestion.submitted_by_name === undefined) return;
   base.submitter = {
     firstName: suggestion.submitted_by_name,
@@ -84,26 +73,17 @@ function attachSubmitterIfPresent(
 }
 
 /** Attach read confirmation status to response */
-function attachConfirmationStatus(
-  base: KVPSuggestionResponse,
-  suggestion: DbSuggestion,
-): void {
+function attachConfirmationStatus(base: KVPSuggestionResponse, suggestion: DbSuggestion): void {
   // COALESCE(is_confirmed, false) ensures boolean, never null
   if (suggestion.is_confirmed !== undefined) {
     base.isConfirmed = suggestion.is_confirmed;
   }
   // Timestamps can be null from LEFT JOIN
-  if (
-    suggestion.confirmed_at !== undefined &&
-    suggestion.confirmed_at !== null
-  ) {
+  if (suggestion.confirmed_at !== undefined && suggestion.confirmed_at !== null) {
     base.confirmedAt = new Date(suggestion.confirmed_at).toISOString();
   }
   // firstSeenAt: only set if user has seen it (undefined = "Neu" badge)
-  if (
-    suggestion.first_seen_at !== undefined &&
-    suggestion.first_seen_at !== null
-  ) {
+  if (suggestion.first_seen_at !== undefined && suggestion.first_seen_at !== null) {
     base.firstSeenAt = new Date(suggestion.first_seen_at).toISOString();
   }
 }
@@ -225,9 +205,7 @@ export function hasExtendedOrgAccess(
 
   // Team level: member or lead
   if (orgLevel === 'team') {
-    return (
-      orgInfo.teamIds.includes(orgId) || orgInfo.teamLeadOf.includes(orgId)
-    );
+    return orgInfo.teamIds.includes(orgId) || orgInfo.teamLeadOf.includes(orgId);
   }
 
   // Department level: member, team in dept, or lead
@@ -487,9 +465,7 @@ export function mapTeamToRecipient(teamId: number): {
 }
 
 /** Map OrganizationalScope → ExtendedUserOrgInfo for helper compatibility */
-export function mapScopeToOrgInfo(
-  scope: OrganizationalScope,
-): ExtendedUserOrgInfo {
+export function mapScopeToOrgInfo(scope: OrganizationalScope): ExtendedUserOrgInfo {
   return {
     teamIds: scope.teamIds,
     departmentIds: scope.departmentIds,

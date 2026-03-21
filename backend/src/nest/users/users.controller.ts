@@ -88,12 +88,7 @@ interface MulterFile {
 }
 
 /** Allowed MIME types for profile pictures */
-const ALLOWED_IMAGE_MIMES = [
-  'image/jpeg',
-  'image/png',
-  'image/gif',
-  'image/webp',
-];
+const ALLOWED_IMAGE_MIMES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
 
 /** Profile pictures upload directory */
 const PROFILE_PICTURES_DIR = 'uploads/profile_pictures';
@@ -112,12 +107,7 @@ const profilePictureOptions = {
     if (ALLOWED_IMAGE_MIMES.includes(file.mimetype)) {
       cb(null, true);
     } else {
-      cb(
-        new BadRequestException(
-          'Only image files are allowed (JPEG, PNG, GIF, WebP)',
-        ),
-        false,
-      );
+      cb(new BadRequestException('Only image files are allowed (JPEG, PNG, GIF, WebP)'), false);
     }
   },
 };
@@ -155,9 +145,7 @@ export class UsersController {
 
   /** GET /users/me - Get current authenticated user */
   @Get('me')
-  async getCurrentUser(
-    @CurrentUser() user: NestAuthUser,
-  ): Promise<SafeUserResponse> {
+  async getCurrentUser(@CurrentUser() user: NestAuthUser): Promise<SafeUserResponse> {
     return await this.usersService.getUserById(user.id, user.tenantId);
   }
 
@@ -211,13 +199,7 @@ export class UsersController {
     @CurrentUser() user: NestAuthUser,
     @TenantId() tenantId: number,
   ): Promise<SafeUserResponse> {
-    return await this.usersService.updateUserByUuid(
-      uuid,
-      dto,
-      user.id,
-      user.role,
-      tenantId,
-    );
+    return await this.usersService.updateUserByUuid(uuid, dto, user.id, user.role, tenantId);
   }
 
   /**
@@ -234,13 +216,7 @@ export class UsersController {
     @CurrentUser() user: NestAuthUser,
     @TenantId() tenantId: number,
   ): Promise<SafeUserResponse> {
-    return await this.usersService.updateUser(
-      id,
-      dto,
-      user.id,
-      user.role,
-      tenantId,
-    );
+    return await this.usersService.updateUser(id, dto, user.id, user.role, tenantId);
   }
 
   /** PUT /users/me/profile - Update current user's profile (limited fields) */
@@ -249,11 +225,7 @@ export class UsersController {
     @Body() dto: UpdateProfileDto,
     @CurrentUser() user: NestAuthUser,
   ): Promise<SafeUserResponse> {
-    return await this.userProfileService.updateProfile(
-      user.id,
-      dto,
-      user.tenantId,
-    );
+    return await this.userProfileService.updateProfile(user.id, dto, user.tenantId);
   }
 
   /** PUT /users/me/password - Change current user's password */
@@ -353,12 +325,7 @@ export class UsersController {
     @CurrentUser() user: NestAuthUser,
     @TenantId() tenantId: number,
   ): Promise<MessageResponse> {
-    return await this.availabilityService.updateAvailabilityByUuid(
-      uuid,
-      dto,
-      tenantId,
-      user.id,
-    );
+    return await this.availabilityService.updateAvailabilityByUuid(uuid, dto, tenantId, user.id);
   }
 
   /**
@@ -374,12 +341,7 @@ export class UsersController {
     @CurrentUser() user: NestAuthUser,
     @TenantId() tenantId: number,
   ): Promise<MessageResponse> {
-    return await this.availabilityService.updateAvailability(
-      id,
-      dto,
-      tenantId,
-      user.id,
-    );
+    return await this.availabilityService.updateAvailability(id, dto, tenantId, user.id);
   }
 
   /**
@@ -394,16 +356,9 @@ export class UsersController {
     @Query() query: AvailabilityHistoryQueryDto,
     @TenantId() tenantId: number,
   ): Promise<AvailabilityHistoryResponse> {
-    const year =
-      query.year !== undefined ? Number.parseInt(query.year, 10) : undefined;
-    const month =
-      query.month !== undefined ? Number.parseInt(query.month, 10) : undefined;
-    return await this.availabilityService.getAvailabilityHistoryByUuid(
-      uuid,
-      tenantId,
-      year,
-      month,
-    );
+    const year = query.year !== undefined ? Number.parseInt(query.year, 10) : undefined;
+    const month = query.month !== undefined ? Number.parseInt(query.month, 10) : undefined;
+    return await this.availabilityService.getAvailabilityHistoryByUuid(uuid, tenantId, year, month);
   }
 
   /**
@@ -419,12 +374,7 @@ export class UsersController {
     @CurrentUser() user: NestAuthUser,
     @TenantId() tenantId: number,
   ): Promise<MessageResponse> {
-    return await this.availabilityService.updateAvailabilityEntry(
-      id,
-      dto,
-      tenantId,
-      user.id,
-    );
+    return await this.availabilityService.updateAvailabilityEntry(id, dto, tenantId, user.id);
   }
 
   /** DELETE /users/availability/:id - Delete a specific availability history entry (admin only) */
@@ -435,11 +385,7 @@ export class UsersController {
     @CurrentUser() user: NestAuthUser,
     @TenantId() tenantId: number,
   ): Promise<MessageResponse> {
-    return await this.availabilityService.deleteAvailabilityEntry(
-      id,
-      tenantId,
-      user.id,
-    );
+    return await this.availabilityService.deleteAvailabilityEntry(id, tenantId, user.id);
   }
 
   // ============================================
@@ -461,10 +407,7 @@ export class UsersController {
     @CurrentUser() user: NestAuthUser,
     @Res() reply: FastifyReply,
   ): Promise<void> {
-    const filePath = await this.userProfileService.getProfilePicturePath(
-      user.id,
-      user.tenantId,
-    );
+    const filePath = await this.userProfileService.getProfilePicturePath(user.id, user.tenantId);
 
     // Determine content type from extension
     const ext = path.extname(filePath).toLowerCase();
@@ -504,22 +447,13 @@ export class UsersController {
     // Write file to disk
     fs.writeFileSync(filePath, file.buffer);
 
-    return await this.userProfileService.updateProfilePicture(
-      user.id,
-      relativePath,
-      user.tenantId,
-    );
+    return await this.userProfileService.updateProfilePicture(user.id, relativePath, user.tenantId);
   }
 
   /** DELETE /users/me/profile-picture - Delete profile picture for current user */
   @Delete('me/profile-picture')
-  async deleteProfilePicture(
-    @CurrentUser() user: NestAuthUser,
-  ): Promise<MessageResponse> {
-    return await this.userProfileService.deleteProfilePicture(
-      user.id,
-      user.tenantId,
-    );
+  async deleteProfilePicture(@CurrentUser() user: NestAuthUser): Promise<MessageResponse> {
+    return await this.userProfileService.deleteProfilePicture(user.id, user.tenantId);
   }
 
   // ── User Position Assignment ─────────────────────────────

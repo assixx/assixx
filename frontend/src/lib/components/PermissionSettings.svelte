@@ -59,8 +59,7 @@
     backLabel: string;
   }
 
-  const { employee, permissionData, error, backUrl, backLabel }: Props =
-    $props();
+  const { employee, permissionData, error, backUrl, backLabel }: Props = $props();
 
   // =============================================================================
   // PERMISSION STATE (initialized from SSR data)
@@ -68,9 +67,7 @@
 
   // Intentional one-time clone: user edits this mutable copy, SSR data must NOT reset it
   // svelte-ignore state_referenced_locally
-  const categories = $state<PermissionCategory[]>(
-    structuredClone(permissionData),
-  );
+  const categories = $state<PermissionCategory[]>(structuredClone(permissionData));
 
   let isSaving = $state(false);
 
@@ -143,17 +140,14 @@
         }
       }
 
-      const response = await fetch(
-        `/api/v2/user-permissions/${employee.uuid}`,
-        {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ permissions }),
+      const response = await fetch(`/api/v2/user-permissions/${employee.uuid}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
         },
-      );
+        body: JSON.stringify({ permissions }),
+      });
 
       if (!response.ok) {
         const errorBody = await response.text();
@@ -162,8 +156,7 @@
 
       showSuccessAlert('Berechtigungen gespeichert');
     } catch (err: unknown) {
-      const errorMessage =
-        err instanceof Error ? err.message : 'Unbekannter Fehler';
+      const errorMessage = err instanceof Error ? err.message : 'Unbekannter Fehler';
       showErrorAlert(`Fehler beim Speichern: ${errorMessage}`);
     } finally {
       isSaving = false;
@@ -274,9 +267,7 @@
             <i class="fas fa-shield-alt"></i>
           </div>
           <h3 class="empty-state__title">Keine Berechtigungen</h3>
-          <p class="empty-state__description">
-            Keine Berechtigungs-Kategorien verfügbar.
-          </p>
+          <p class="empty-state__description">Keine Berechtigungs-Kategorien verfügbar.</p>
         </div>
       {:else}
         <!-- Permission Matrix -->
@@ -333,19 +324,14 @@
               >
                 <div class="perm-label perm-label--module">
                   {#if category.code === 'manage_hierarchy' && perm.code === 'manage-permissions'}
-                    <i
-                      class="fas fa-exclamation-triangle mr-2 text-(--color-danger)"
-                    ></i>
+                    <i class="fas fa-exclamation-triangle mr-2 text-(--color-danger)"></i>
                   {:else}
-                    <i
-                      class="fas {perm.icon} mr-2 text-(--color-text-secondary)"
-                    ></i>
+                    <i class="fas {perm.icon} mr-2 text-(--color-text-secondary)"></i>
                   {/if}
                   {perm.label}
                   {#if category.code === 'manage_hierarchy' && perm.code === 'manage-permissions'}
                     <span class="u-fs-11 ml-2 text-(--color-text-secondary)"
-                      >(Eigene Berechtigungen können nicht selbst bearbeitet
-                      werden)</span
+                      >(Eigene Berechtigungen können nicht selbst bearbeitet werden)</span
                     >
                   {/if}
                 </div>
@@ -393,9 +379,7 @@
         </div>
 
         <!-- Save Button -->
-        <div
-          class="mt-4 flex justify-end border-t border-(--color-glass-border) pt-3"
-        >
+        <div class="mt-4 flex justify-end border-t border-(--color-glass-border) pt-3">
           <button
             type="button"
             class="btn btn-primary"
@@ -608,8 +592,7 @@
   .perm-check input:checked + .perm-check__box {
     background: var(--color-primary);
     border-color: var(--color-primary);
-    box-shadow: 0 2px 8px
-      color-mix(in oklch, var(--color-primary) 30%, transparent);
+    box-shadow: 0 2px 8px color-mix(in oklch, var(--color-primary) 30%, transparent);
     border-radius: var(--radius-md);
   }
 
@@ -634,8 +617,7 @@
   .perm-row--danger .perm-check input:checked + .perm-check__box {
     background: var(--color-danger);
     border-color: var(--color-danger);
-    box-shadow: 0 2px 8px
-      color-mix(in oklch, var(--color-danger) 30%, transparent);
+    box-shadow: 0 2px 8px color-mix(in oklch, var(--color-danger) 30%, transparent);
   }
 
   .perm-row--danger .perm-check:hover .perm-check__box {

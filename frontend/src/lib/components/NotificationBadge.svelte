@@ -42,9 +42,9 @@
 
 {#if show}
   <span
-    class="notification-badge notification-badge--{position} {sizeClasses[
-      size
-    ]} {variantClasses[variant]}"
+    class="notification-badge notification-badge--{position} {sizeClasses[size]} {variantClasses[
+      variant
+    ]}"
     aria-label="{count} ungelesene Benachrichtigungen"
   >
     {displayCount}
@@ -60,8 +60,7 @@
     justify-content: center;
     color: var(--color-white);
     border-radius: 9999px;
-    box-shadow: 0 2px 4px
-      color-mix(in oklch, var(--color-black) 20%, transparent);
+    box-shadow: 0 2px 4px color-mix(in oklch, var(--color-black) 20%, transparent);
     z-index: 10;
   }
 
@@ -97,8 +96,7 @@
   @keyframes badge-pulse {
     0%,
     100% {
-      box-shadow: 0 2px 4px
-        color-mix(in oklch, var(--color-black) 20%, transparent);
+      box-shadow: 0 2px 4px color-mix(in oklch, var(--color-black) 20%, transparent);
     }
 
     50% {

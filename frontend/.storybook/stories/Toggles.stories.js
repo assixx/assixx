@@ -44,8 +44,7 @@ export const ViewModeToggle = {
     },
     defaultActive: {
       control: { type: 'range', min: 0, max: 2, step: 1 },
-      description:
-        'Default active button (0 = Aktive, 1 = Archiviert, 2 = Alle)',
+      description: 'Default active button (0 = Aktive, 1 = Archiviert, 2 = Alle)',
     },
     buttonCount: {
       control: { type: 'range', min: 2, max: 3, step: 1 },

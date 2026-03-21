@@ -5,13 +5,7 @@
  */
 import { beforeAll, describe, expect, it } from 'vitest';
 
-import {
-  APITEST_PASSWORD,
-  BASE_URL,
-  authHeaders,
-  authOnly,
-  loginApitest,
-} from './helpers.js';
+import { APITEST_PASSWORD, BASE_URL, authHeaders, authOnly, loginApitest } from './helpers.js';
 
 let rootToken: string;
 let rootUuid: string;
@@ -163,12 +157,9 @@ describe('Root → GET /user-permissions/nonexistent → 404', () => {
   let response: Response;
 
   beforeAll(async () => {
-    response = await fetch(
-      `${BASE_URL}/user-permissions/00000000-0000-0000-0000-000000000000`,
-      {
-        headers: authOnly(rootToken),
-      },
-    );
+    response = await fetch(`${BASE_URL}/user-permissions/00000000-0000-0000-0000-000000000000`, {
+      headers: authOnly(rootToken),
+    });
   });
 
   it('should return 404', () => {

@@ -88,11 +88,7 @@ describe('TpmScheduleProjectionService', () => {
   it('should return empty result for tenant with no plans', async () => {
     mockDb.query.mockResolvedValueOnce([]);
 
-    const result = await service.projectSchedules(
-      10,
-      '2026-03-01',
-      '2026-03-07',
-    );
+    const result = await service.projectSchedules(10, '2026-03-01', '2026-03-07');
 
     expect(result.slots).toHaveLength(0);
     expect(result.planCount).toBe(0);
@@ -130,11 +126,7 @@ describe('TpmScheduleProjectionService', () => {
       // Annual chain: Jan 5 → Jan 2027
       .mockReturnValueOnce(new Date('2027-01-05'));
 
-    const result = await service.projectSchedules(
-      10,
-      '2026-03-01',
-      '2026-03-03',
-    );
+    const result = await service.projectSchedules(10, '2026-03-01', '2026-03-03');
 
     // Only monthly's Mar 2 falls in range
     expect(result.planCount).toBe(1);
@@ -165,11 +157,7 @@ describe('TpmScheduleProjectionService', () => {
       .mockReturnValueOnce(new Date('2026-09-07')) // semi_annual next
       .mockReturnValueOnce(new Date('2027-03-02')); // annual next
 
-    const result = await service.projectSchedules(
-      10,
-      '2026-03-02',
-      '2026-03-02',
-    );
+    const result = await service.projectSchedules(10, '2026-03-02', '2026-03-02');
 
     // All 4 intervals land on Mar 2 → deduped into 1 slot
     expect(result.slots).toHaveLength(1);
@@ -188,9 +176,7 @@ describe('TpmScheduleProjectionService', () => {
 
   it('should use Nth weekday of creation month when still in future', async () => {
     // Plan created Jan 1, 1st Monday of Jan = Jan 5 (after Jan 1)
-    mockDb.query.mockResolvedValueOnce([
-      makeRow({ plan_created_at: '2026-01-01T00:00:00.000Z' }),
-    ]);
+    mockDb.query.mockResolvedValueOnce([makeRow({ plan_created_at: '2026-01-01T00:00:00.000Z' })]);
 
     const jan5 = new Date('2026-01-05');
     mockInterval.getNthWeekdayOfMonth.mockReturnValue(jan5);
@@ -201,21 +187,14 @@ describe('TpmScheduleProjectionService', () => {
     await service.projectSchedules(10, '2026-01-01', '2026-01-31');
 
     // First call: same month (Jan)
-    expect(mockInterval.getNthWeekdayOfMonth).toHaveBeenCalledWith(
-      2026,
-      0,
-      0,
-      1,
-    );
+    expect(mockInterval.getNthWeekdayOfMonth).toHaveBeenCalledWith(2026, 0, 0, 1);
     // Should only be called once (same month works)
     expect(mockInterval.getNthWeekdayOfMonth).toHaveBeenCalledTimes(1);
   });
 
   it('should use next month when Nth weekday already passed in creation month', async () => {
     // Plan created Jan 10, 1st Monday of Jan = Jan 5 (before Jan 10!)
-    mockDb.query.mockResolvedValueOnce([
-      makeRow({ plan_created_at: '2026-01-10T00:00:00.000Z' }),
-    ]);
+    mockDb.query.mockResolvedValueOnce([makeRow({ plan_created_at: '2026-01-10T00:00:00.000Z' })]);
 
     const jan5 = new Date('2026-01-05'); // before created → skip
     const feb2 = new Date('2026-02-02'); // next month's 1st Monday
@@ -230,18 +209,8 @@ describe('TpmScheduleProjectionService', () => {
 
     // Called twice: once for Jan (rejected), once for Feb (accepted)
     expect(mockInterval.getNthWeekdayOfMonth).toHaveBeenCalledTimes(2);
-    expect(mockInterval.getNthWeekdayOfMonth).toHaveBeenCalledWith(
-      2026,
-      0,
-      0,
-      1,
-    ); // Jan
-    expect(mockInterval.getNthWeekdayOfMonth).toHaveBeenCalledWith(
-      2026,
-      1,
-      0,
-      1,
-    ); // Feb
+    expect(mockInterval.getNthWeekdayOfMonth).toHaveBeenCalledWith(2026, 0, 0, 1); // Jan
+    expect(mockInterval.getNthWeekdayOfMonth).toHaveBeenCalledWith(2026, 1, 0, 1); // Feb
   });
 
   // =============================================================
@@ -249,19 +218,13 @@ describe('TpmScheduleProjectionService', () => {
   // =============================================================
 
   it('should calculate correct startTime/endTime from base_time + buffer_hours', async () => {
-    mockDb.query.mockResolvedValueOnce([
-      makeRow({ base_time: '09:00', buffer_hours: '5' }),
-    ]);
+    mockDb.query.mockResolvedValueOnce([makeRow({ base_time: '09:00', buffer_hours: '5' })]);
 
     const seed = new Date('2026-03-02');
     mockInterval.getNthWeekdayOfMonth.mockReturnValue(seed);
     mockInterval.calculateIntervalDate.mockReturnValue(new Date('2027-01-01'));
 
-    const result = await service.projectSchedules(
-      10,
-      '2026-03-02',
-      '2026-03-02',
-    );
+    const result = await service.projectSchedules(10, '2026-03-02', '2026-03-02');
 
     expect(result.slots.length).toBeGreaterThan(0);
     const slot = result.slots[0];
@@ -278,11 +241,7 @@ describe('TpmScheduleProjectionService', () => {
     mockInterval.getNthWeekdayOfMonth.mockReturnValue(seed);
     mockInterval.calculateIntervalDate.mockReturnValue(new Date('2027-01-01'));
 
-    const result = await service.projectSchedules(
-      10,
-      '2026-03-02',
-      '2026-03-02',
-    );
+    const result = await service.projectSchedules(10, '2026-03-02', '2026-03-02');
 
     const slot = result.slots[0];
     expect(slot?.startTime).toBeNull();
@@ -291,38 +250,26 @@ describe('TpmScheduleProjectionService', () => {
   });
 
   it('should handle buffer hours crossing midnight (22:00 + 4h → 02:00)', async () => {
-    mockDb.query.mockResolvedValueOnce([
-      makeRow({ base_time: '22:00', buffer_hours: '4' }),
-    ]);
+    mockDb.query.mockResolvedValueOnce([makeRow({ base_time: '22:00', buffer_hours: '4' })]);
 
     const seed = new Date('2026-03-02');
     mockInterval.getNthWeekdayOfMonth.mockReturnValue(seed);
     mockInterval.calculateIntervalDate.mockReturnValue(new Date('2027-01-01'));
 
-    const result = await service.projectSchedules(
-      10,
-      '2026-03-02',
-      '2026-03-02',
-    );
+    const result = await service.projectSchedules(10, '2026-03-02', '2026-03-02');
 
     expect(result.slots[0]?.startTime).toBe('22:00');
     expect(result.slots[0]?.endTime).toBe('02:00');
   });
 
   it('should handle fractional buffer hours (08:00 + 2.5h → 10:30)', async () => {
-    mockDb.query.mockResolvedValueOnce([
-      makeRow({ base_time: '08:00', buffer_hours: '2.5' }),
-    ]);
+    mockDb.query.mockResolvedValueOnce([makeRow({ base_time: '08:00', buffer_hours: '2.5' })]);
 
     const seed = new Date('2026-03-02');
     mockInterval.getNthWeekdayOfMonth.mockReturnValue(seed);
     mockInterval.calculateIntervalDate.mockReturnValue(new Date('2027-01-01'));
 
-    const result = await service.projectSchedules(
-      10,
-      '2026-03-02',
-      '2026-03-02',
-    );
+    const result = await service.projectSchedules(10, '2026-03-02', '2026-03-02');
 
     expect(result.slots[0]?.endTime).toBe('10:30');
   });
@@ -347,11 +294,7 @@ describe('TpmScheduleProjectionService', () => {
     // Each plan × 4 intervals: first call returns seed (in range), second goes out
     mockInterval.calculateIntervalDate.mockReturnValue(new Date('2027-01-01'));
 
-    const result = await service.projectSchedules(
-      10,
-      '2026-03-02',
-      '2026-03-02',
-    );
+    const result = await service.projectSchedules(10, '2026-03-02', '2026-03-02');
 
     expect(result.planCount).toBe(2);
     // Each plan has 4 intervals hitting seed date, deduped to 1 slot per plan
@@ -370,12 +313,7 @@ describe('TpmScheduleProjectionService', () => {
   it('should pass excludePlanUuid to the database query', async () => {
     mockDb.query.mockResolvedValueOnce([]);
 
-    await service.projectSchedules(
-      10,
-      '2026-03-01',
-      '2026-03-07',
-      'plan-to-exclude',
-    );
+    await service.projectSchedules(10, '2026-03-01', '2026-03-07', 'plan-to-exclude');
 
     expect(mockDb.query).toHaveBeenCalledTimes(1);
     const [sql, params] = mockDb.query.mock.calls[0] as [string, unknown[]];
@@ -423,11 +361,7 @@ describe('TpmScheduleProjectionService', () => {
     mockInterval.getNthWeekdayOfMonth.mockReturnValue(seed);
     mockInterval.calculateIntervalDate.mockReturnValue(new Date('2027-01-01'));
 
-    const result = await service.projectSchedules(
-      10,
-      '2026-03-02',
-      '2026-03-02',
-    );
+    const result = await service.projectSchedules(10, '2026-03-02', '2026-03-02');
 
     // 3 plans, each deduped to 1 slot, sorted by startTime
     expect(result.slots).toHaveLength(3);
@@ -456,11 +390,7 @@ describe('TpmScheduleProjectionService', () => {
     mockInterval.getNthWeekdayOfMonth.mockReturnValue(seed);
     mockInterval.calculateIntervalDate.mockReturnValue(new Date('2027-01-01'));
 
-    const result = await service.projectSchedules(
-      10,
-      '2026-03-02',
-      '2026-03-02',
-    );
+    const result = await service.projectSchedules(10, '2026-03-02', '2026-03-02');
 
     const slot = result.slots[0];
     expect(slot?.planUuid).toBe('uuid-abc');
@@ -483,11 +413,7 @@ describe('TpmScheduleProjectionService', () => {
     mockInterval.getNthWeekdayOfMonth.mockReturnValue(seed);
     mockInterval.calculateIntervalDate.mockReturnValue(new Date('2027-01-01'));
 
-    const result = await service.projectSchedules(
-      10,
-      '2026-03-01',
-      '2026-03-31',
-    );
+    const result = await service.projectSchedules(10, '2026-03-01', '2026-03-31');
 
     for (const slot of result.slots) {
       for (const it of slot.intervalTypes) {
@@ -516,11 +442,7 @@ describe('TpmScheduleProjectionService', () => {
     // All intervals converge on seed, then jump far out
     mockInterval.calculateIntervalDate.mockReturnValue(new Date('2027-01-01'));
 
-    const result = await service.projectSchedules(
-      10,
-      '2026-03-02',
-      '2026-03-02',
-    );
+    const result = await service.projectSchedules(10, '2026-03-02', '2026-03-02');
 
     // 2 plans × 4 intervals → deduped to 2 slots (1 per plan)
     expect(result.slots).toHaveLength(2);

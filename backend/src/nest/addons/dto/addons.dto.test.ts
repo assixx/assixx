@@ -18,9 +18,7 @@ describe('ActivateAddonSchema', () => {
   });
 
   it('should reject missing tenantId', () => {
-    expect(ActivateAddonSchema.safeParse({ addonCode: 'tpm' }).success).toBe(
-      false,
-    );
+    expect(ActivateAddonSchema.safeParse({ addonCode: 'tpm' }).success).toBe(false);
   });
 
   it('should reject missing addonCode', () => {
@@ -28,27 +26,19 @@ describe('ActivateAddonSchema', () => {
   });
 
   it('should reject tenantId of zero', () => {
-    expect(
-      ActivateAddonSchema.safeParse({ ...valid, tenantId: 0 }).success,
-    ).toBe(false);
+    expect(ActivateAddonSchema.safeParse({ ...valid, tenantId: 0 }).success).toBe(false);
   });
 
   it('should reject negative tenantId', () => {
-    expect(
-      ActivateAddonSchema.safeParse({ ...valid, tenantId: -5 }).success,
-    ).toBe(false);
+    expect(ActivateAddonSchema.safeParse({ ...valid, tenantId: -5 }).success).toBe(false);
   });
 
   it('should reject non-integer tenantId', () => {
-    expect(
-      ActivateAddonSchema.safeParse({ ...valid, tenantId: 1.5 }).success,
-    ).toBe(false);
+    expect(ActivateAddonSchema.safeParse({ ...valid, tenantId: 1.5 }).success).toBe(false);
   });
 
   it('should reject empty addonCode', () => {
-    expect(
-      ActivateAddonSchema.safeParse({ ...valid, addonCode: '' }).success,
-    ).toBe(false);
+    expect(ActivateAddonSchema.safeParse({ ...valid, addonCode: '' }).success).toBe(false);
   });
 });
 
@@ -64,39 +54,27 @@ describe('DeactivateAddonSchema', () => {
   });
 
   it('should reject missing tenantId', () => {
-    expect(DeactivateAddonSchema.safeParse({ addonCode: 'chat' }).success).toBe(
-      false,
-    );
+    expect(DeactivateAddonSchema.safeParse({ addonCode: 'chat' }).success).toBe(false);
   });
 
   it('should reject missing addonCode', () => {
-    expect(DeactivateAddonSchema.safeParse({ tenantId: 1 }).success).toBe(
-      false,
-    );
+    expect(DeactivateAddonSchema.safeParse({ tenantId: 1 }).success).toBe(false);
   });
 
   it('should reject tenantId of zero', () => {
-    expect(
-      DeactivateAddonSchema.safeParse({ ...valid, tenantId: 0 }).success,
-    ).toBe(false);
+    expect(DeactivateAddonSchema.safeParse({ ...valid, tenantId: 0 }).success).toBe(false);
   });
 
   it('should reject negative tenantId', () => {
-    expect(
-      DeactivateAddonSchema.safeParse({ ...valid, tenantId: -3 }).success,
-    ).toBe(false);
+    expect(DeactivateAddonSchema.safeParse({ ...valid, tenantId: -3 }).success).toBe(false);
   });
 
   it('should reject non-integer tenantId', () => {
-    expect(
-      DeactivateAddonSchema.safeParse({ ...valid, tenantId: 2.7 }).success,
-    ).toBe(false);
+    expect(DeactivateAddonSchema.safeParse({ ...valid, tenantId: 2.7 }).success).toBe(false);
   });
 
   it('should reject empty addonCode', () => {
-    expect(
-      DeactivateAddonSchema.safeParse({ ...valid, addonCode: '' }).success,
-    ).toBe(false);
+    expect(DeactivateAddonSchema.safeParse({ ...valid, addonCode: '' }).success).toBe(false);
   });
 });
 
@@ -160,35 +138,28 @@ describe('GetUsageStatsQuerySchema', () => {
   });
 
   it('should reject missing startDate', () => {
-    expect(
-      GetUsageStatsQuerySchema.safeParse({ endDate: '2026-03-11' }).success,
-    ).toBe(false);
+    expect(GetUsageStatsQuerySchema.safeParse({ endDate: '2026-03-11' }).success).toBe(false);
   });
 
   it('should reject missing endDate', () => {
-    expect(
-      GetUsageStatsQuerySchema.safeParse({ startDate: '2026-01-01' }).success,
-    ).toBe(false);
+    expect(GetUsageStatsQuerySchema.safeParse({ startDate: '2026-01-01' }).success).toBe(false);
   });
 
   it('should reject invalid startDate format', () => {
-    expect(
-      GetUsageStatsQuerySchema.safeParse({ ...valid, startDate: '01-01-2026' })
-        .success,
-    ).toBe(false);
+    expect(GetUsageStatsQuerySchema.safeParse({ ...valid, startDate: '01-01-2026' }).success).toBe(
+      false,
+    );
   });
 
   it('should reject invalid endDate format', () => {
-    expect(
-      GetUsageStatsQuerySchema.safeParse({ ...valid, endDate: '2026/03/11' })
-        .success,
-    ).toBe(false);
+    expect(GetUsageStatsQuerySchema.safeParse({ ...valid, endDate: '2026/03/11' }).success).toBe(
+      false,
+    );
   });
 
   it('should reject partial date string', () => {
-    expect(
-      GetUsageStatsQuerySchema.safeParse({ ...valid, startDate: '2026-01' })
-        .success,
-    ).toBe(false);
+    expect(GetUsageStatsQuerySchema.safeParse({ ...valid, startDate: '2026-01' }).success).toBe(
+      false,
+    );
   });
 });

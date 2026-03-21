@@ -1,9 +1,6 @@
 <script lang="ts">
   import { onClickOutsideDropdown } from '$lib/actions/click-outside';
-  import {
-    DEFAULT_HIERARCHY_LABELS,
-    type HierarchyLabels,
-  } from '$lib/types/hierarchy-labels';
+  import { DEFAULT_HIERARCHY_LABELS, type HierarchyLabels } from '$lib/types/hierarchy-labels';
 
   import { createMessages } from './constants';
   import {
@@ -16,14 +13,7 @@
     toggleIdInArray,
   } from './utils';
 
-  import type {
-    Department,
-    Admin,
-    TeamMember,
-    Asset,
-    Hall,
-    FormIsActiveStatus,
-  } from './types';
+  import type { Department, Admin, TeamMember, Asset, Hall, FormIsActiveStatus } from './types';
 
   interface Props {
     isEditMode: boolean;
@@ -297,13 +287,7 @@
             class:active={departmentDropdownOpen}
             onclick={toggleDepartmentDropdown}
           >
-            <span
-              >{getDepartmentDisplayText(
-                localDepartmentId,
-                allDepartments,
-                labels,
-              )}</span
-            >
+            <span>{getDepartmentDisplayText(localDepartmentId, allDepartments, labels)}</span>
             <i class="fas fa-chevron-down"></i>
           </button>
           <div
@@ -396,8 +380,8 @@
           </span>
           <div class="alert__content">
             <p class="alert__message">
-              Nur Mitarbeiter mit der Position &laquo;{messages.TEAM_LEAD_POSITION}&raquo;
-              stehen zur Auswahl. Zuweisung über die
+              Nur Mitarbeiter mit der Position &laquo;{messages.TEAM_LEAD_POSITION}&raquo; stehen
+              zur Auswahl. Zuweisung über die
               <a href="/manage-employees">Mitarbeiterverwaltung</a>.
             </p>
           </div>
@@ -461,9 +445,7 @@
             class:active={membersDropdownOpen}
             onclick={toggleMembersDropdown}
           >
-            <span
-              >{getMembersDisplayText(localMemberIds, availableEmployees)}</span
-            >
+            <span>{getMembersDisplayText(localMemberIds, availableEmployees)}</span>
             <i class="fas fa-chevron-down"></i>
           </button>
           <div
@@ -517,8 +499,7 @@
             class:active={assetsDropdownOpen}
             onclick={toggleAssetsDropdown}
           >
-            <span>{getAssetsDisplayText(localAssetIds, allAssets, labels)}</span
-            >
+            <span>{getAssetsDisplayText(localAssetIds, allAssets, labels)}</span>
             <i class="fas fa-chevron-down"></i>
           </button>
           <div
@@ -630,8 +611,7 @@
         class="btn btn-primary"
         disabled={submitting}
       >
-        {#if submitting}<span class="spinner-ring spinner-ring--sm mr-2"
-          ></span>{/if}
+        {#if submitting}<span class="spinner-ring spinner-ring--sm mr-2"></span>{/if}
         Speichern
       </button>
     </div>

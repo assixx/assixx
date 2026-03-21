@@ -80,9 +80,8 @@ describe('WorkOrderAssigneesService', () => {
     mockActivityLogger = createMockActivityLogger();
 
     mockDb.tenantTransaction.mockImplementation(
-      async (
-        callback: (client: typeof mockClient) => Promise<unknown>,
-      ): Promise<unknown> => await callback(mockClient),
+      async (callback: (client: typeof mockClient) => Promise<unknown>): Promise<unknown> =>
+        await callback(mockClient),
     );
 
     service = new WorkOrderAssigneesService(
@@ -110,12 +109,7 @@ describe('WorkOrderAssigneesService', () => {
         rows: [createAssigneeDbRow()],
       });
 
-      const result = await service.assignUsers(
-        1,
-        'wo-uuid-001',
-        ['user-uuid-a'],
-        5,
-      );
+      const result = await service.assignUsers(1, 'wo-uuid-001', ['user-uuid-a'], 5);
 
       expect(result).toHaveLength(1);
       expect(result[0]?.uuid).toBe('019c9547-bbbb-771a-b022-222222222222');
@@ -155,12 +149,7 @@ describe('WorkOrderAssigneesService', () => {
         ],
       });
 
-      const result = await service.assignUsers(
-        1,
-        'wo-uuid-001',
-        ['user-uuid-a', 'user-uuid-b'],
-        5,
-      );
+      const result = await service.assignUsers(1, 'wo-uuid-001', ['user-uuid-a', 'user-uuid-b'], 5);
 
       expect(result).toHaveLength(2);
       expect(result[0]?.userName).toBe('Anna Schmidt');
@@ -181,12 +170,7 @@ describe('WorkOrderAssigneesService', () => {
         rows: [],
       });
 
-      const result = await service.assignUsers(
-        1,
-        'wo-uuid-001',
-        ['dup-user'],
-        5,
-      );
+      const result = await service.assignUsers(1, 'wo-uuid-001', ['dup-user'], 5);
 
       expect(result).toHaveLength(0);
     });
@@ -201,9 +185,9 @@ describe('WorkOrderAssigneesService', () => {
         rows: [{ count: '9' }],
       });
 
-      await expect(
-        service.assignUsers(1, 'wo-uuid-001', ['user-1', 'user-2'], 5),
-      ).rejects.toThrow(BadRequestException);
+      await expect(service.assignUsers(1, 'wo-uuid-001', ['user-1', 'user-2'], 5)).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('should throw BadRequestException with correct message at exact boundary', async () => {
@@ -216,9 +200,9 @@ describe('WorkOrderAssigneesService', () => {
         rows: [{ count: '10' }],
       });
 
-      await expect(
-        service.assignUsers(1, 'wo-uuid-001', ['one-more'], 5),
-      ).rejects.toThrow('Maximal 10 Zuweisungen pro Auftrag');
+      await expect(service.assignUsers(1, 'wo-uuid-001', ['one-more'], 5)).rejects.toThrow(
+        'Maximal 10 Zuweisungen pro Auftrag',
+      );
     });
 
     it('should throw NotFoundException when work order not found', async () => {
@@ -227,9 +211,9 @@ describe('WorkOrderAssigneesService', () => {
         rows: [],
       });
 
-      await expect(
-        service.assignUsers(1, 'nonexistent-uuid', ['user-uuid-a'], 5),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.assignUsers(1, 'nonexistent-uuid', ['user-uuid-a'], 5)).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
@@ -270,9 +254,9 @@ describe('WorkOrderAssigneesService', () => {
         rowCount: 0,
       });
 
-      await expect(
-        service.removeAssignee(1, 'wo-uuid-001', 'ghost-uuid', 5),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.removeAssignee(1, 'wo-uuid-001', 'ghost-uuid', 5)).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should throw NotFoundException with correct message when assignee missing', async () => {
@@ -285,9 +269,9 @@ describe('WorkOrderAssigneesService', () => {
         rowCount: 0,
       });
 
-      await expect(
-        service.removeAssignee(1, 'wo-uuid-001', 'missing', 5),
-      ).rejects.toThrow('Zuweisung nicht gefunden');
+      await expect(service.removeAssignee(1, 'wo-uuid-001', 'missing', 5)).rejects.toThrow(
+        'Zuweisung nicht gefunden',
+      );
     });
 
     it('should throw NotFoundException when work order not found', async () => {
@@ -296,9 +280,9 @@ describe('WorkOrderAssigneesService', () => {
         rows: [],
       });
 
-      await expect(
-        service.removeAssignee(1, 'nonexistent-uuid', 'user-uuid-a', 5),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.removeAssignee(1, 'nonexistent-uuid', 'user-uuid-a', 5)).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
@@ -392,10 +376,7 @@ describe('WorkOrderAssigneesService', () => {
 
       await service.getEligibleUsers(1, 99);
 
-      expect(mockDb.query).toHaveBeenCalledExactlyOnceWith(
-        expect.any(String),
-        [99, 1],
-      );
+      expect(mockDb.query).toHaveBeenCalledExactlyOnceWith(expect.any(String), [99, 1]);
     });
 
     it('should return all employees when assetId is undefined', async () => {
@@ -416,10 +397,7 @@ describe('WorkOrderAssigneesService', () => {
 
       await service.getEligibleUsers(7);
 
-      expect(mockDb.query).toHaveBeenCalledExactlyOnceWith(
-        expect.any(String),
-        [7],
-      );
+      expect(mockDb.query).toHaveBeenCalledExactlyOnceWith(expect.any(String), [7]);
     });
 
     it('should return empty array when no eligible users exist', async () => {
@@ -431,9 +409,7 @@ describe('WorkOrderAssigneesService', () => {
     });
 
     it('should trim uuid whitespace in returned users', async () => {
-      mockDb.query.mockResolvedValueOnce([
-        { ...teamFilteredRow, uuid: '  spaced-uuid  ' },
-      ]);
+      mockDb.query.mockResolvedValueOnce([{ ...teamFilteredRow, uuid: '  spaced-uuid  ' }]);
 
       const result = await service.getEligibleUsers(1, 99);
 

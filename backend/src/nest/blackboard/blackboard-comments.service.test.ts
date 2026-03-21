@@ -81,9 +81,7 @@ describe('BlackboardCommentsService', () => {
       // count query
       mockDb.query.mockResolvedValueOnce([{ total: 1 }]);
       // comments query
-      mockDb.query.mockResolvedValueOnce([
-        { id: 1, comment: 'Hello', user_id: 5 },
-      ]);
+      mockDb.query.mockResolvedValueOnce([{ id: 1, comment: 'Hello', user_id: 5 }]);
 
       const result = await service.getComments(1, 10);
 
@@ -98,9 +96,7 @@ describe('BlackboardCommentsService', () => {
       // count query
       mockDb.query.mockResolvedValueOnce([{ total: 1 }]);
       // comments query
-      mockDb.query.mockResolvedValueOnce([
-        { id: 1, comment: 'Nice', user_id: 5 },
-      ]);
+      mockDb.query.mockResolvedValueOnce([{ id: 1, comment: 'Nice', user_id: 5 }]);
 
       const result = await service.getComments('uuid-123', 10);
 
@@ -116,9 +112,9 @@ describe('BlackboardCommentsService', () => {
     it('should throw NotFoundException when entry not found', async () => {
       mockDb.query.mockResolvedValueOnce([]); // resolveEntryId
 
-      await expect(
-        service.addComment('uuid-missing', 5, 10, 'text', false),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.addComment('uuid-missing', 5, 10, 'text', false)).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should add comment for numeric id', async () => {

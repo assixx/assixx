@@ -47,9 +47,7 @@ function mockOverviewQueries(
         ...overrides?.employees,
       },
     ])
-    .mockResolvedValueOnce([
-      { total: '5', avg_employees: '10', ...overrides?.departments },
-    ])
+    .mockResolvedValueOnce([{ total: '5', avg_employees: '10', ...overrides?.departments }])
     .mockResolvedValueOnce([{ total_scheduled: '120', ...overrides?.shifts }])
     .mockResolvedValueOnce([
       {
@@ -278,10 +276,7 @@ describe('ReportsService – private metrics methods', () => {
         },
       ]);
 
-      const result = (await service['getEmployeeMetrics'](1)) as Record<
-        string,
-        unknown
-      >;
+      const result = (await service['getEmployeeMetrics'](1)) as Record<string, unknown>;
 
       expect(result).toEqual({
         total: 50,
@@ -295,10 +290,7 @@ describe('ReportsService – private metrics methods', () => {
     it('defaults to zeros when row is empty', async () => {
       mockDb.query.mockResolvedValueOnce([{}]);
 
-      const result = (await service['getEmployeeMetrics'](1)) as Record<
-        string,
-        unknown
-      >;
+      const result = (await service['getEmployeeMetrics'](1)) as Record<string, unknown>;
 
       expect(result).toEqual({
         total: 0,
@@ -312,14 +304,9 @@ describe('ReportsService – private metrics methods', () => {
 
   describe('getDepartmentMetrics', () => {
     it('parses DB row into DepartmentMetrics', async () => {
-      mockDb.query.mockResolvedValueOnce([
-        { total: '8', avg_employees: '12.5' },
-      ]);
+      mockDb.query.mockResolvedValueOnce([{ total: '8', avg_employees: '12.5' }]);
 
-      const result = (await service['getDepartmentMetrics'](1)) as Record<
-        string,
-        unknown
-      >;
+      const result = (await service['getDepartmentMetrics'](1)) as Record<string, unknown>;
 
       expect(result).toEqual({ total: 8, avgEmployees: 12.5 });
     });
@@ -329,11 +316,10 @@ describe('ReportsService – private metrics methods', () => {
     it('parses DB row into ShiftMetrics', async () => {
       mockDb.query.mockResolvedValueOnce([{ total_scheduled: '200' }]);
 
-      const result = (await service['getShiftMetrics'](
-        1,
-        '2025-01-01',
-        '2025-06-30',
-      )) as Record<string, unknown>;
+      const result = (await service['getShiftMetrics'](1, '2025-01-01', '2025-06-30')) as Record<
+        string,
+        unknown
+      >;
 
       expect(result).toEqual({ totalScheduled: 200 });
     });
@@ -350,11 +336,10 @@ describe('ReportsService – private metrics methods', () => {
         },
       ]);
 
-      const result = (await service['getKvpMetrics'](
-        1,
-        '2025-01-01',
-        '2025-06-30',
-      )) as Record<string, unknown>;
+      const result = (await service['getKvpMetrics'](1, '2025-01-01', '2025-06-30')) as Record<
+        string,
+        unknown
+      >;
 
       expect(result).toEqual({
         totalSuggestions: 25,
@@ -367,15 +352,12 @@ describe('ReportsService – private metrics methods', () => {
 
   describe('getSurveyMetrics', () => {
     it('parses DB row into SurveyMetrics', async () => {
-      mockDb.query.mockResolvedValueOnce([
-        { active_surveys: '5', avg_response_rate: '0.82' },
-      ]);
+      mockDb.query.mockResolvedValueOnce([{ active_surveys: '5', avg_response_rate: '0.82' }]);
 
-      const result = (await service['getSurveyMetrics'](
-        1,
-        '2025-01-01',
-        '2025-06-30',
-      )) as Record<string, unknown>;
+      const result = (await service['getSurveyMetrics'](1, '2025-01-01', '2025-06-30')) as Record<
+        string,
+        unknown
+      >;
 
       expect(result).toEqual({ totalSurveys: 5, avgParticipation: 0.82 });
     });
@@ -383,9 +365,7 @@ describe('ReportsService – private metrics methods', () => {
 
   describe('getKvpParticipationMetrics', () => {
     it('calculates participation when employees exist', async () => {
-      mockDb.query.mockResolvedValueOnce([
-        { participants: '8', total_employees: '40' },
-      ]);
+      mockDb.query.mockResolvedValueOnce([{ participants: '8', total_employees: '40' }]);
 
       const result = (await service['getKvpParticipationMetrics'](
         1,
@@ -397,9 +377,7 @@ describe('ReportsService – private metrics methods', () => {
     });
 
     it('returns 0 participation when total_employees is 0', async () => {
-      mockDb.query.mockResolvedValueOnce([
-        { participants: '0', total_employees: '0' },
-      ]);
+      mockDb.query.mockResolvedValueOnce([{ participants: '0', total_employees: '0' }]);
 
       const result = (await service['getKvpParticipationMetrics'](
         1,
@@ -440,10 +418,7 @@ describe('ReportsService – DB-mocked methods', () => {
     it('returns aggregated overview with all metric sections', async () => {
       mockOverviewQueries(mockDb);
 
-      const result = (await service.getOverviewReport(1)) as Record<
-        string,
-        unknown
-      >;
+      const result = (await service.getOverviewReport(1)) as Record<string, unknown>;
 
       expect(result).toHaveProperty('period');
       expect(result).toHaveProperty('employees');
@@ -456,11 +431,10 @@ describe('ReportsService – DB-mocked methods', () => {
     it('uses explicit dateFrom/dateTo when provided', async () => {
       mockOverviewQueries(mockDb);
 
-      const result = (await service.getOverviewReport(
-        1,
-        '2025-03-01',
-        '2025-04-30',
-      )) as Record<string, unknown>;
+      const result = (await service.getOverviewReport(1, '2025-03-01', '2025-04-30')) as Record<
+        string,
+        unknown
+      >;
 
       const period = result['period'] as Record<string, string>;
       expect(period['from']).toBe('2025-03-01');
@@ -472,10 +446,7 @@ describe('ReportsService – DB-mocked methods', () => {
         employees: { total: '100', active: '95' },
       });
 
-      const result = (await service.getOverviewReport(1)) as Record<
-        string,
-        unknown
-      >;
+      const result = (await service.getOverviewReport(1)) as Record<string, unknown>;
 
       const employees = result['employees'] as Record<string, number>;
       expect(employees['total']).toBe(100);
@@ -495,14 +466,9 @@ describe('ReportsService – DB-mocked methods', () => {
         { date: '2025-06-02', count: '3' },
       ]);
       // Query 2: getKvpParticipationMetrics
-      mockDb.query.mockResolvedValueOnce([
-        { participants: '10', total_employees: '50' },
-      ]);
+      mockDb.query.mockResolvedValueOnce([{ participants: '10', total_employees: '50' }]);
 
-      const result = (await service.getEmployeeReport(1)) as Record<
-        string,
-        unknown
-      >;
+      const result = (await service.getEmployeeReport(1)) as Record<string, unknown>;
 
       expect(result).toHaveProperty('period');
       expect(result).toHaveProperty('headcount');
@@ -512,9 +478,7 @@ describe('ReportsService – DB-mocked methods', () => {
 
     it('includes filter values in response', async () => {
       mockDb.query.mockResolvedValueOnce([]);
-      mockDb.query.mockResolvedValueOnce([
-        { participants: '0', total_employees: '0' },
-      ]);
+      mockDb.query.mockResolvedValueOnce([{ participants: '0', total_employees: '0' }]);
 
       const result = (await service.getEmployeeReport(
         1,
@@ -531,14 +495,9 @@ describe('ReportsService – DB-mocked methods', () => {
 
     it('handles empty headcount trend', async () => {
       mockDb.query.mockResolvedValueOnce([]);
-      mockDb.query.mockResolvedValueOnce([
-        { participants: '0', total_employees: '10' },
-      ]);
+      mockDb.query.mockResolvedValueOnce([{ participants: '0', total_employees: '10' }]);
 
-      const result = (await service.getEmployeeReport(1)) as Record<
-        string,
-        unknown
-      >;
+      const result = (await service.getEmployeeReport(1)) as Record<string, unknown>;
 
       const headcount = result['headcount'] as Record<string, unknown[]>;
       expect(headcount['trend']).toEqual([]);
@@ -561,10 +520,7 @@ describe('ReportsService – DB-mocked methods', () => {
         },
       ]);
 
-      const result = (await service.getDepartmentReport(1)) as Record<
-        string,
-        unknown
-      >;
+      const result = (await service.getDepartmentReport(1)) as Record<string, unknown>;
 
       expect(result).toHaveProperty('departments');
     });
@@ -587,14 +543,9 @@ describe('ReportsService – DB-mocked methods', () => {
         },
       ]);
 
-      const result = (await service.getDepartmentReport(1)) as Record<
-        string,
-        unknown
-      >;
+      const result = (await service.getDepartmentReport(1)) as Record<string, unknown>;
 
-      const departments = result['departments'] as Array<
-        Record<string, unknown>
-      >;
+      const departments = result['departments'] as Array<Record<string, unknown>>;
       expect(departments).toHaveLength(2);
 
       expect(departments[0]).toEqual({
@@ -612,10 +563,7 @@ describe('ReportsService – DB-mocked methods', () => {
     it('returns empty array when no departments exist', async () => {
       mockDb.query.mockResolvedValueOnce([]);
 
-      const result = (await service.getDepartmentReport(1)) as Record<
-        string,
-        unknown
-      >;
+      const result = (await service.getDepartmentReport(1)) as Record<string, unknown>;
 
       const departments = result['departments'] as unknown[];
       expect(departments).toEqual([]);
@@ -629,9 +577,7 @@ describe('ReportsService – DB-mocked methods', () => {
   describe('getShiftReport', () => {
     it('returns summary with shift type breakdown', async () => {
       // Query 1: getShiftSummary
-      mockDb.query.mockResolvedValueOnce([
-        { total_shifts: '150', total_required: '200' },
-      ]);
+      mockDb.query.mockResolvedValueOnce([{ total_shifts: '150', total_required: '200' }]);
       // Query 2: getShiftsByType
       mockDb.query.mockResolvedValueOnce([
         { shift_type: 'early', count: '80' },
@@ -639,10 +585,7 @@ describe('ReportsService – DB-mocked methods', () => {
         { shift_type: 'night', count: '20' },
       ]);
 
-      const result = (await service.getShiftReport(1)) as Record<
-        string,
-        unknown
-      >;
+      const result = (await service.getShiftReport(1)) as Record<string, unknown>;
 
       expect(result).toHaveProperty('period');
       expect(result['totalShifts']).toBe(150);
@@ -653,15 +596,10 @@ describe('ReportsService – DB-mocked methods', () => {
     });
 
     it('handles empty shift type breakdown', async () => {
-      mockDb.query.mockResolvedValueOnce([
-        { total_shifts: '0', total_required: '0' },
-      ]);
+      mockDb.query.mockResolvedValueOnce([{ total_shifts: '0', total_required: '0' }]);
       mockDb.query.mockResolvedValueOnce([]);
 
-      const result = (await service.getShiftReport(1)) as Record<
-        string,
-        unknown
-      >;
+      const result = (await service.getShiftReport(1)) as Record<string, unknown>;
 
       expect(result['totalShifts']).toBe(0);
       const shiftsByType = result['shiftsByType'] as unknown[];
@@ -672,13 +610,10 @@ describe('ReportsService – DB-mocked methods', () => {
       mockDb.query.mockResolvedValueOnce([{ total_shifts: '10' }]);
       mockDb.query.mockResolvedValueOnce([]);
 
-      const result = (await service.getShiftReport(
-        1,
-        '2025-03-01',
-        '2025-03-31',
-        5,
-        10,
-      )) as Record<string, unknown>;
+      const result = (await service.getShiftReport(1, '2025-03-01', '2025-03-31', 5, 10)) as Record<
+        string,
+        unknown
+      >;
 
       const period = result['period'] as Record<string, string>;
       expect(period['from']).toBe('2025-03-01');
@@ -788,11 +723,10 @@ describe('ReportsService – DB-mocked methods', () => {
       mockDb.query.mockResolvedValueOnce([]);
       mockDb.query.mockResolvedValueOnce([]);
 
-      const result = (await service.getKvpReport(
-        1,
-        '2025-02-01',
-        '2025-04-30',
-      )) as Record<string, unknown>;
+      const result = (await service.getKvpReport(1, '2025-02-01', '2025-04-30')) as Record<
+        string,
+        unknown
+      >;
 
       const period = result['period'] as Record<string, string>;
       expect(period['from']).toBe('2025-02-01');
@@ -948,9 +882,7 @@ describe('ReportsService – DB-mocked methods', () => {
     it('exports employees report as CSV', async () => {
       // getEmployeeReport: headcount query + kvpParticipation query
       mockDb.query.mockResolvedValueOnce([{ date: '2025-06-10', count: '3' }]);
-      mockDb.query.mockResolvedValueOnce([
-        { participants: '5', total_employees: '20' },
-      ]);
+      mockDb.query.mockResolvedValueOnce([{ participants: '5', total_employees: '20' }]);
 
       const result = await service.exportReport({
         tenantId: 1,
@@ -990,9 +922,7 @@ describe('ReportsService – DB-mocked methods', () => {
     it('exports shifts report as CSV', async () => {
       // getShiftReport: summary + shiftsByType
       mockDb.query.mockResolvedValueOnce([{ total_shifts: '50' }]);
-      mockDb.query.mockResolvedValueOnce([
-        { shift_type: 'early', count: '30' },
-      ]);
+      mockDb.query.mockResolvedValueOnce([{ shift_type: 'early', count: '30' }]);
 
       const result = await service.exportReport({
         tenantId: 1,

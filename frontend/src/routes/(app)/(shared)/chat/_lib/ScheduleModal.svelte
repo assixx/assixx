@@ -24,15 +24,11 @@
   /* eslint-enable prefer-const */
 
   /** Today's date as YYYY-MM-DD for min attribute */
-  const minDate: string = $derived(
-    new Date().toISOString().split('T')[0] ?? '',
-  );
+  const minDate: string = $derived(new Date().toISOString().split('T')[0] ?? '');
 
   /** Max selectable date (today + 60 days) as YYYY-MM-DD */
   const maxDate: string = $derived(
-    new Date(Date.now() + SCHEDULE_CONSTRAINTS.maxFutureTime)
-      .toISOString()
-      .split('T')[0] ?? '',
+    new Date(Date.now() + SCHEDULE_CONSTRAINTS.maxFutureTime).toISOString().split('T')[0] ?? '',
   );
 </script>
 
@@ -155,11 +151,7 @@
 
   .form-field__control {
     padding: var(--spacing-2, 0.5rem) var(--spacing-3, 0.75rem);
-    border: 1px solid
-      var(
-        --border-color,
-        color-mix(in oklch, var(--color-white) 20%, transparent)
-      );
+    border: 1px solid var(--border-color, color-mix(in oklch, var(--color-white) 20%, transparent));
     border-radius: var(--radius-md, 8px);
     background: var(
       --background-secondary,

@@ -73,9 +73,7 @@
     const unique = [...new Set(raw)];
     const system = unique
       .filter((p: string) => isLeadPosition(p))
-      .sort(
-        (a: string, b: string) => LEAD_ORDER.indexOf(a) - LEAD_ORDER.indexOf(b),
-      );
+      .sort((a: string, b: string) => LEAD_ORDER.indexOf(a) - LEAD_ORDER.indexOf(b));
     const custom = unique.filter((p: string) => !isLeadPosition(p));
     return [...system, ...custom];
   });
@@ -94,9 +92,7 @@
   // =============================================================================
 
   const passwordMatch = $derived(
-    formPassword !== '' &&
-      formPasswordConfirm !== '' &&
-      formPassword === formPasswordConfirm,
+    formPassword !== '' && formPasswordConfirm !== '' && formPassword === formPasswordConfirm,
   );
 
   // =============================================================================
@@ -114,13 +110,11 @@
   }
 
   function validateEmails() {
-    emailError =
-      formEmailConfirm !== '' ? formEmail !== formEmailConfirm : false;
+    emailError = formEmailConfirm !== '' ? formEmail !== formEmailConfirm : false;
   }
 
   function validatePasswords() {
-    passwordError =
-      formPasswordConfirm !== '' ? formPassword !== formPasswordConfirm : false;
+    passwordError = formPasswordConfirm !== '' ? formPassword !== formPasswordConfirm : false;
   }
 
   function updatePasswordStrength() {
@@ -504,8 +498,7 @@
           class="btn btn-primary"
           disabled={submitting}
         >
-          {#if submitting}<span class="spinner-ring spinner-ring--sm mr-2"
-            ></span>{/if}
+          {#if submitting}<span class="spinner-ring spinner-ring--sm mr-2"></span>{/if}
           {MESSAGES.BTN_SAVE}
         </button>
       </div>

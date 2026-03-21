@@ -18,10 +18,7 @@ import { fileURLToPath } from 'node:url';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 export function up(pgm: MigrationBuilder): void {
-  const sql = readFileSync(
-    join(__dirname, 'archive', '004-audit-log-partitioning.sql'),
-    'utf-8',
-  );
+  const sql = readFileSync(join(__dirname, 'archive', '004-audit-log-partitioning.sql'), 'utf-8');
   pgm.sql(sql);
 }
 

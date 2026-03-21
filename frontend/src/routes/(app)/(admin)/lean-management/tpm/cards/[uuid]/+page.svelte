@@ -29,11 +29,7 @@
   import DuplicateWarning from './_lib/DuplicateWarning.svelte';
 
   import type { PageData } from './$types';
-  import type {
-    TpmCard,
-    CreateCardPayload,
-    UpdateCardPayload,
-  } from '../../_lib/types';
+  import type { TpmCard, CreateCardPayload, UpdateCardPayload } from '../../_lib/types';
 
   // ===========================================================================
   // SSR DATA
@@ -123,8 +119,7 @@
       await invalidateAll();
     } catch (err: unknown) {
       logApiError('createCard', err);
-      const msg =
-        err instanceof Error ? err.message : messages.ERROR_CARD_CREATE;
+      const msg = err instanceof Error ? err.message : messages.ERROR_CARD_CREATE;
       showErrorAlert(msg);
     } finally {
       submitting = false;
@@ -141,8 +136,7 @@
       await invalidateAll();
     } catch (err: unknown) {
       logApiError('updateCard', err);
-      const msg =
-        err instanceof Error ? err.message : messages.ERROR_CARD_UPDATE;
+      const msg = err instanceof Error ? err.message : messages.ERROR_CARD_UPDATE;
       showErrorAlert(msg);
     } finally {
       submitting = false;
@@ -170,8 +164,7 @@
       await invalidateAll();
     } catch (err: unknown) {
       logApiError('deleteCard', err);
-      const msg =
-        err instanceof Error ? err.message : messages.ERROR_CARD_DELETE;
+      const msg = err instanceof Error ? err.message : messages.ERROR_CARD_DELETE;
       showErrorAlert(msg);
     } finally {
       submitting = false;
@@ -227,9 +220,7 @@
       </div>
       <div class="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1
-            class="flex items-center gap-2 text-2xl font-bold text-(--color-text-primary)"
-          >
+          <h1 class="flex items-center gap-2 text-2xl font-bold text-(--color-text-primary)">
             <i class="fas fa-th"></i>
             {messages.CARD_PAGE_HEADING}
           </h1>

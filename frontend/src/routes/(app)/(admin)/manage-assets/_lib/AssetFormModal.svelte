@@ -163,9 +163,7 @@
             class="form-field__control"
             value={assetState.formManufacturer}
             oninput={(e) => {
-              assetState.setFormManufacturer(
-                (e.target as HTMLInputElement).value,
-              );
+              assetState.setFormManufacturer((e.target as HTMLInputElement).value);
             }}
           />
         </div>
@@ -182,9 +180,7 @@
             class="form-field__control"
             value={assetState.formSerialNumber}
             oninput={(e) => {
-              assetState.setFormSerialNumber(
-                (e.target as HTMLInputElement).value,
-              );
+              assetState.setFormSerialNumber((e.target as HTMLInputElement).value);
             }}
           />
         </div>
@@ -435,9 +431,7 @@
           class="btn btn-primary"
           disabled={assetState.submitting}
         >
-          {#if assetState.submitting}<span
-              class="spinner-ring spinner-ring--sm mr-2"
-            ></span>{/if}
+          {#if assetState.submitting}<span class="spinner-ring spinner-ring--sm mr-2"></span>{/if}
           {messages.BTN_SAVE}
         </button>
       </div>

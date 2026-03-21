@@ -16,9 +16,9 @@
 
 ## Changelog
 
-| Version | Date       | Change                                     |
-| ------- | ---------- | ------------------------------------------ |
-| 0.1.0   | 2026-03-21 | Initial Draft — Phases 1-6 planned         |
+| Version | Date       | Change                                                                  |
+| ------- | ---------- | ----------------------------------------------------------------------- |
+| 0.1.0   | 2026-03-21 | Initial Draft — Phases 1-6 planned                                      |
 | 0.2.0   | 2026-03-21 | Review fixes: trigger migrations, vacation.service.ts, position seeding |
 
 ---
@@ -39,29 +39,29 @@ Currently, only `teams` has a `deputy_lead_id` column (DB exists, no UI). This f
 
 ### Naming Convention
 
-| Entity     | Lead Column            | Deputy Column                | Position Key           | Display                              |
-| ---------- | ---------------------- | ---------------------------- | ---------------------- | ------------------------------------ |
-| Areas      | `area_lead_id`         | `area_deputy_lead_id`        | `area_deputy_lead`     | `${labels.area} Stellvertreter`      |
-| Departments| `department_lead_id`   | `department_deputy_lead_id`  | `department_deputy_lead` | `${labels.department} Stellvertreter`|
-| Teams      | `team_lead_id`         | `team_deputy_lead_id` (rename) | `team_deputy_lead` (rename) | `${labels.team} Stellvertreter` |
+| Entity      | Lead Column          | Deputy Column                  | Position Key                | Display                               |
+| ----------- | -------------------- | ------------------------------ | --------------------------- | ------------------------------------- |
+| Areas       | `area_lead_id`       | `area_deputy_lead_id`          | `area_deputy_lead`          | `${labels.area} Stellvertreter`       |
+| Departments | `department_lead_id` | `department_deputy_lead_id`    | `department_deputy_lead`    | `${labels.department} Stellvertreter` |
+| Teams       | `team_lead_id`       | `team_deputy_lead_id` (rename) | `team_deputy_lead` (rename) | `${labels.team} Stellvertreter`       |
 
 ### Permission Model: DEPUTY_EQUALS_LEAD
 
 Deputies have **identical** visibility and scope rights as their lead:
 
-| Scope Check                          | Current Pattern                              | New Pattern                                                       |
-| ------------------------------------ | -------------------------------------------- | ----------------------------------------------------------------- |
-| Area lead scope                      | `WHERE area_lead_id = $1`                    | `WHERE (area_lead_id = $1 OR area_deputy_lead_id = $1)`           |
-| Department lead scope                | `WHERE department_lead_id = $1`              | `WHERE (department_lead_id = $1 OR department_deputy_lead_id = $1)`|
-| Team lead scope                      | `WHERE (team_lead_id = $1 OR deputy_lead_id = $1)` | `WHERE (team_lead_id = $1 OR team_deputy_lead_id = $1)`      |
+| Scope Check           | Current Pattern                                    | New Pattern                                                         |
+| --------------------- | -------------------------------------------------- | ------------------------------------------------------------------- |
+| Area lead scope       | `WHERE area_lead_id = $1`                          | `WHERE (area_lead_id = $1 OR area_deputy_lead_id = $1)`             |
+| Department lead scope | `WHERE department_lead_id = $1`                    | `WHERE (department_lead_id = $1 OR department_deputy_lead_id = $1)` |
+| Team lead scope       | `WHERE (team_lead_id = $1 OR deputy_lead_id = $1)` | `WHERE (team_lead_id = $1 OR team_deputy_lead_id = $1)`             |
 
 ### Role Categories (Mirror Leads)
 
-| Position Key           | roleCategory | Selectable From            |
-| ---------------------- | ------------ | -------------------------- |
-| `area_deputy_lead`     | `admin`      | Admin/Root users           |
-| `department_deputy_lead` | `admin`    | Admin/Root users           |
-| `team_deputy_lead`     | `employee`   | Employees with position    |
+| Position Key             | roleCategory | Selectable From         |
+| ------------------------ | ------------ | ----------------------- |
+| `area_deputy_lead`       | `admin`      | Admin/Root users        |
+| `department_deputy_lead` | `admin`      | Admin/Root users        |
+| `team_deputy_lead`       | `employee`   | Employees with position |
 
 ---
 
@@ -77,48 +77,48 @@ Deputies have **identical** visibility and scope rights as their lead:
 
 ### 0.2 Risk Register
 
-| #   | Risk                                           | Impact | Probability | Mitigation                                                  | Verification                                         |
-| --- | ---------------------------------------------- | ------ | ----------- | ----------------------------------------------------------- | ---------------------------------------------------- |
-| R1  | Rename `deputy_lead_id` breaks 13 backend files | High   | High        | Single migration + systematic find-replace in one session    | Type-check + ESLint + all tests after rename          |
+| #   | Risk                                            | Impact | Probability | Mitigation                                                   | Verification                                                       |
+| --- | ----------------------------------------------- | ------ | ----------- | ------------------------------------------------------------ | ------------------------------------------------------------------ |
+| R1  | Rename `deputy_lead_id` breaks 13 backend files | High   | High        | Single migration + systematic find-replace in one session    | Type-check + ESLint + all tests after rename                       |
 | R2  | Position key rename breaks stored DB data       | High   | Medium      | Migration updates `position_catalog.name` + `user_positions` | Query: `SELECT * FROM position_catalog WHERE name LIKE '%deputy%'` |
-| R3  | Visibility queries miss a deputy check          | Medium | High        | Comprehensive audit (done — see Section 0.3)                 | Permission tests cover all 3 deputy levels            |
-| R4  | Survey/TPM/Approvals don't include deputies     | Medium | High        | Fix existing bugs as part of this feature                    | API tests for each affected module                   |
-| R5  | Frontend KVP deputy mismatch                   | Low    | High        | Fix frontend team matching to include deputy                 | Manual smoke test                                    |
+| R3  | Visibility queries miss a deputy check          | Medium | High        | Comprehensive audit (done — see Section 0.3)                 | Permission tests cover all 3 deputy levels                         |
+| R4  | Survey/TPM/Approvals don't include deputies     | Medium | High        | Fix existing bugs as part of this feature                    | API tests for each affected module                                 |
+| R5  | Frontend KVP deputy mismatch                    | Low    | High        | Fix frontend team matching to include deputy                 | Manual smoke test                                                  |
 
 ### 0.3 Ecosystem Integration Points — Full Audit
 
 Every file below uses `*_lead_id` in permission/visibility logic and MUST be updated:
 
-| File                                              | Current Pattern                                 | Change Required                               | Phase |
-| ------------------------------------------------- | ----------------------------------------------- | --------------------------------------------- | ----- |
-| `hierarchy-permission.service.ts`                 | `lead_areas`: area_lead only                    | Add `OR area_deputy_lead_id = $1`             | 3     |
-|                                                   | `lead_depts`: dept_lead only                    | Add `OR department_deputy_lead_id = $1`       | 3     |
-|                                                   | `lead_teams`: team + deputy (unified)           | Rename column reference                       | 3     |
-|                                                   | `UNNEST_SCOPE`: team + deputy                   | Rename column reference                       | 3     |
-| `teams.service.ts`                                | `deputy_lead_id` in SELECT/UPDATE/cleanup       | Rename all to `team_deputy_lead_id`           | 3     |
-| `areas.service.ts`                                | No deputy column                                | Add `area_deputy_lead_id` handling            | 3     |
-| `departments.service.ts`                          | No deputy column                                | Add `department_deputy_lead_id` handling      | 3     |
-| `kvp.helpers.ts`                                  | `deputy_lead_id` in unshared clause             | Rename + add area/dept deputy checks          | 3     |
-| `user-permissions.service.ts`                     | `is_any_lead` check — team deputy only          | Add area/dept deputy to `is_any_lead`         | 3     |
-| `survey-access.service.ts`                        | NO deputy check at all (**existing bug**)       | Add deputy to all 3 levels                    | 3     |
-| `approvals-config.service.ts`                     | Leads only, no deputies                         | Add deputy UNION ALL branches (3 new)         | 3     |
-| `vacation.service.ts`                             | `deputy_lead_id` in interface + SQL query       | Rename to `team_deputy_lead_id`               | 3     |
-| `vacation-approver.service.ts`                    | team deputy in approval chain                   | Rename + add area/dept deputy fallback        | 3     |
-| `tpm-approval.service.ts`                         | `team_lead_id` only (**existing bug**)          | Add `team_deputy_lead_id` OR check            | 3     |
-| `tpm-escalation.service.ts`                       | `team_lead_id` only (**existing bug**)          | Add `team_deputy_lead_id` OR check            | 3     |
-| `admin-permissions.service.ts`                    | area_lead + dept_lead only                      | Add deputy checks                             | 3     |
-| `organigram.service.ts`                           | LEFT JOINs for lead names                       | Add deputy LEFT JOINs + name mapping          | 3     |
-| `chat.service.ts`                                 | LEFT JOINs for lead detection                   | Add deputy LEFT JOINs                         | 3     |
-| `frontend kvp/_lib/api.ts`                        | `team_lead_id` only (**existing bug**)          | Add `team_deputy_lead_id` check               | 5     |
-| `hierarchy-labels.ts`                             | `deputy_lead` position key                      | Rename + add 2 new position keys              | 2     |
-| `position-catalog.types.ts`                       | `deputy_lead` system position                   | Rename + add 2 new system positions           | 2     |
-| `organizational-scope.types.ts`                   | `DEPUTY_EQUALS_LEAD` flag                       | Extend for all 3 levels                       | 2     |
-| `TeamFormModal.svelte`                            | No deputy dropdown                              | Add deputy leader dropdown                    | 5     |
-| `AreaModal.svelte`                                | No deputy field                                 | Add deputy leader dropdown                    | 5     |
-| `DepartmentModal.svelte`                          | No deputy field                                 | Add deputy leader dropdown                    | 5     |
-| `manage-teams types.ts`                           | `deputyLeaderId` field                          | Rename to match new column                    | 5     |
-| `manage-areas types.ts`                           | No deputy field                                 | Add `areaDeputyLeadId`                        | 5     |
-| `manage-departments types.ts`                     | No deputy field                                 | Add `departmentDeputyLeadId`                  | 5     |
+| File                              | Current Pattern                           | Change Required                          | Phase |
+| --------------------------------- | ----------------------------------------- | ---------------------------------------- | ----- |
+| `hierarchy-permission.service.ts` | `lead_areas`: area_lead only              | Add `OR area_deputy_lead_id = $1`        | 3     |
+|                                   | `lead_depts`: dept_lead only              | Add `OR department_deputy_lead_id = $1`  | 3     |
+|                                   | `lead_teams`: team + deputy (unified)     | Rename column reference                  | 3     |
+|                                   | `UNNEST_SCOPE`: team + deputy             | Rename column reference                  | 3     |
+| `teams.service.ts`                | `deputy_lead_id` in SELECT/UPDATE/cleanup | Rename all to `team_deputy_lead_id`      | 3     |
+| `areas.service.ts`                | No deputy column                          | Add `area_deputy_lead_id` handling       | 3     |
+| `departments.service.ts`          | No deputy column                          | Add `department_deputy_lead_id` handling | 3     |
+| `kvp.helpers.ts`                  | `deputy_lead_id` in unshared clause       | Rename + add area/dept deputy checks     | 3     |
+| `user-permissions.service.ts`     | `is_any_lead` check — team deputy only    | Add area/dept deputy to `is_any_lead`    | 3     |
+| `survey-access.service.ts`        | NO deputy check at all (**existing bug**) | Add deputy to all 3 levels               | 3     |
+| `approvals-config.service.ts`     | Leads only, no deputies                   | Add deputy UNION ALL branches (3 new)    | 3     |
+| `vacation.service.ts`             | `deputy_lead_id` in interface + SQL query | Rename to `team_deputy_lead_id`          | 3     |
+| `vacation-approver.service.ts`    | team deputy in approval chain             | Rename + add area/dept deputy fallback   | 3     |
+| `tpm-approval.service.ts`         | `team_lead_id` only (**existing bug**)    | Add `team_deputy_lead_id` OR check       | 3     |
+| `tpm-escalation.service.ts`       | `team_lead_id` only (**existing bug**)    | Add `team_deputy_lead_id` OR check       | 3     |
+| `admin-permissions.service.ts`    | area_lead + dept_lead only                | Add deputy checks                        | 3     |
+| `organigram.service.ts`           | LEFT JOINs for lead names                 | Add deputy LEFT JOINs + name mapping     | 3     |
+| `chat.service.ts`                 | LEFT JOINs for lead detection             | Add deputy LEFT JOINs                    | 3     |
+| `frontend kvp/_lib/api.ts`        | `team_lead_id` only (**existing bug**)    | Add `team_deputy_lead_id` check          | 5     |
+| `hierarchy-labels.ts`             | `deputy_lead` position key                | Rename + add 2 new position keys         | 2     |
+| `position-catalog.types.ts`       | `deputy_lead` system position             | Rename + add 2 new system positions      | 2     |
+| `organizational-scope.types.ts`   | `DEPUTY_EQUALS_LEAD` flag                 | Extend for all 3 levels                  | 2     |
+| `TeamFormModal.svelte`            | No deputy dropdown                        | Add deputy leader dropdown               | 5     |
+| `AreaModal.svelte`                | No deputy field                           | Add deputy leader dropdown               | 5     |
+| `DepartmentModal.svelte`          | No deputy field                           | Add deputy leader dropdown               | 5     |
+| `manage-teams types.ts`           | `deputyLeaderId` field                    | Rename to match new column               | 5     |
+| `manage-areas types.ts`           | No deputy field                           | Add `areaDeputyLeadId`                   | 5     |
+| `manage-departments types.ts`     | No deputy field                           | Add `departmentDeputyLeadId`             | 5     |
 
 ---
 
@@ -345,6 +345,7 @@ DELETE FROM position_catalog WHERE name IN ('area_deputy_lead', 'department_depu
 **File:** `backend/src/nest/teams/teams.service.ts`
 
 **Changes:** Systematic find-replace `deputy_lead_id` → `team_deputy_lead_id` in:
+
 - `FIND_ALL_TEAMS_QUERY` (SELECT + LEFT JOIN)
 - `buildUpdateFields()` mapping: `['deputyLeaderId', 'team_deputy_lead_id']`
 - `cleanupLeadPermissions()` WHERE clause
@@ -513,6 +514,7 @@ WHERE ac.addon_code = $1 AND ac.approver_type = 'department_lead'
 ### Step 3.10: TPM Services — Fix Missing Deputy Checks [PENDING]
 
 **Files:**
+
 - `backend/src/nest/tpm/tpm-approval.service.ts`
 - `backend/src/nest/tpm/tpm-escalation.service.ts`
 
@@ -594,6 +596,7 @@ WHERE ac.addon_code = $1 AND ac.approver_type = 'department_lead'
 ### Step 4.4: Update Vacation Tests [PENDING]
 
 **Files:**
+
 - `backend/src/nest/vacation/vacation.service.test.ts`
 - `backend/src/nest/vacation/vacation-approver.service.test.ts`
 
@@ -614,6 +617,7 @@ WHERE ac.addon_code = $1 AND ac.approver_type = 'department_lead'
 ### Step 5.1: Update manage-teams Types + API + Modal [PENDING]
 
 **Files:**
+
 - `frontend/src/routes/(app)/(shared)/manage-teams/_lib/types.ts`
 - `frontend/src/routes/(app)/(shared)/manage-teams/_lib/api.ts`
 - `frontend/src/routes/(app)/(shared)/manage-teams/_lib/TeamFormModal.svelte`
@@ -629,6 +633,7 @@ WHERE ac.addon_code = $1 AND ac.approver_type = 'department_lead'
 ### Step 5.2: Update manage-areas Types + API + Modal [PENDING]
 
 **Files:**
+
 - `frontend/src/routes/(app)/(shared)/manage-areas/_lib/types.ts`
 - `frontend/src/routes/(app)/(shared)/manage-areas/_lib/api.ts`
 - `frontend/src/routes/(app)/(shared)/manage-areas/_lib/AreaModal.svelte`
@@ -645,6 +650,7 @@ WHERE ac.addon_code = $1 AND ac.approver_type = 'department_lead'
 ### Step 5.3: Update manage-departments Types + API + Modal [PENDING]
 
 **Files:**
+
 - `frontend/src/routes/(app)/(shared)/manage-departments/_lib/types.ts`
 - `frontend/src/routes/(app)/(shared)/manage-departments/_lib/api.ts`
 - `frontend/src/routes/(app)/(shared)/manage-departments/_lib/DepartmentModal.svelte`
@@ -665,12 +671,13 @@ WHERE ac.addon_code = $1 AND ac.approver_type = 'department_lead'
 **Changes (line ~329):**
 
 ```typescript
-userTeam = teams.find((team) =>
-  team.team_lead_id === userId ||
-  team.teamLeadId === userId ||
-  team.leaderId === userId ||
-  team.teamDeputyLeadId === userId  // <-- ADD
-)
+userTeam = teams.find(
+  (team) =>
+    team.team_lead_id === userId ||
+    team.teamLeadId === userId ||
+    team.leaderId === userId ||
+    team.teamDeputyLeadId === userId, // <-- ADD
+);
 ```
 
 ### Step 5.5: Update Organigram NodeDetailModal [PENDING]
@@ -694,17 +701,18 @@ userTeam = teams.find((team) =>
 ```typescript
 const LEAD_ORDER = [
   'area_lead',
-  'area_deputy_lead',      // NEW
+  'area_deputy_lead', // NEW
   'department_lead',
   'department_deputy_lead', // NEW
   'team_lead',
-  'team_deputy_lead',       // RENAMED from 'deputy_lead'
+  'team_deputy_lead', // RENAMED from 'deputy_lead'
 ];
 ```
 
 2. `displayName()` already calls `resolvePositionDisplay()` for system positions — no change needed there (auto-resolves via updated `LEAD_POSITION_KEYS`)
 
 **Result:** The positions list will show 6 system positions:
+
 - Bereiche-Leiter (System)
 - Bereiche Stellvertreter (System)
 - Abteilungen-Leiter (System)
@@ -781,13 +789,13 @@ Update the V2.3 section to reflect 3 deputy positions instead of 1.
 | Session | Phase | Description                                         | Status | Date |
 | ------- | ----- | --------------------------------------------------- | ------ | ---- |
 | 1       | 1     | DB Migrations: 3 new migration files                |        |      |
-| 2       | 2     | Backend types + position catalog + hierarchy labels  |        |      |
-| 3       | 3     | Backend services: teams rename + areas/depts extend  |        |      |
-| 4       | 3     | Backend services: hierarchy-perm + kvp + surveys     |        |      |
-| 5       | 3     | Backend services: approvals + vacation + TPM + chat  |        |      |
-| 6       | 4     | Backend tests: update existing + add new             |        |      |
-| 7       | 5     | Frontend: all 3 modals + types + API + KVP fix       |        |      |
-| 8       | 6     | Integration + ADR updates + smoke tests              |        |      |
+| 2       | 2     | Backend types + position catalog + hierarchy labels |        |      |
+| 3       | 3     | Backend services: teams rename + areas/depts extend |        |      |
+| 4       | 3     | Backend services: hierarchy-perm + kvp + surveys    |        |      |
+| 5       | 3     | Backend services: approvals + vacation + TPM + chat |        |      |
+| 6       | 4     | Backend tests: update existing + add new            |        |      |
+| 7       | 5     | Frontend: all 3 modals + types + API + KVP fix      |        |      |
+| 8       | 6     | Integration + ADR updates + smoke tests             |        |      |
 
 ---
 
@@ -795,57 +803,57 @@ Update the V2.3 section to reflect 3 deputy positions instead of 1.
 
 ### Database (new — 5 files)
 
-| File                                                    | Purpose                          |
-| ------------------------------------------------------- | -------------------------------- |
-| `database/migrations/{ts}_add-area-deputy-lead.ts`      | Add column to areas              |
-| `database/migrations/{ts}_add-department-deputy-lead.ts` | Add column to departments       |
-| `database/migrations/{ts}_rename-teams-deputy-lead.ts`  | Rename column in teams + position catalog |
-| `database/migrations/{ts}_update-deputy-lead-triggers.ts` | Fix triggers referencing old column name |
-| `database/migrations/{ts}_seed-deputy-positions.ts`     | Seed new system positions for existing tenants |
+| File                                                      | Purpose                                        |
+| --------------------------------------------------------- | ---------------------------------------------- |
+| `database/migrations/{ts}_add-area-deputy-lead.ts`        | Add column to areas                            |
+| `database/migrations/{ts}_add-department-deputy-lead.ts`  | Add column to departments                      |
+| `database/migrations/{ts}_rename-teams-deputy-lead.ts`    | Rename column in teams + position catalog      |
+| `database/migrations/{ts}_update-deputy-lead-triggers.ts` | Fix triggers referencing old column name       |
+| `database/migrations/{ts}_seed-deputy-positions.ts`       | Seed new system positions for existing tenants |
 
 ### Backend (modified — ~16 files)
 
-| File                                        | Change                                  |
-| ------------------------------------------- | --------------------------------------- |
-| `position-catalog.types.ts`                 | 3 new system positions                  |
-| `organizational-scope.types.ts`             | Extend DEPUTY_EQUALS_LEAD              |
-| `teams.service.ts`                          | Rename column references               |
-| `areas.service.ts`                          | Add deputy CRUD                        |
-| `departments.service.ts`                    | Add deputy CRUD                        |
-| `hierarchy-permission.service.ts`           | Unify all 3 levels                     |
-| `kvp.helpers.ts`                            | Rename column                          |
-| `user-permissions.service.ts`               | Extend is_any_lead                     |
-| `survey-access.service.ts`                  | Fix missing deputy checks (bug)        |
-| `approvals-config.service.ts`              | Add 3 deputy UNION branches            |
-| `vacation.service.ts`                       | Rename column references               |
-| `vacation-approver.service.ts`              | Rename + extend                        |
-| `tpm-approval.service.ts`                   | Fix missing deputy check (bug)         |
-| `tpm-escalation.service.ts`                 | Fix missing deputy check (bug)         |
-| `admin-permissions.service.ts`              | Add deputy checks                      |
-| `organigram.service.ts`                     | Add deputy JOINs                       |
-| `chat.service.ts`                           | Add deputy JOINs                       |
+| File                              | Change                          |
+| --------------------------------- | ------------------------------- |
+| `position-catalog.types.ts`       | 3 new system positions          |
+| `organizational-scope.types.ts`   | Extend DEPUTY_EQUALS_LEAD       |
+| `teams.service.ts`                | Rename column references        |
+| `areas.service.ts`                | Add deputy CRUD                 |
+| `departments.service.ts`          | Add deputy CRUD                 |
+| `hierarchy-permission.service.ts` | Unify all 3 levels              |
+| `kvp.helpers.ts`                  | Rename column                   |
+| `user-permissions.service.ts`     | Extend is_any_lead              |
+| `survey-access.service.ts`        | Fix missing deputy checks (bug) |
+| `approvals-config.service.ts`     | Add 3 deputy UNION branches     |
+| `vacation.service.ts`             | Rename column references        |
+| `vacation-approver.service.ts`    | Rename + extend                 |
+| `tpm-approval.service.ts`         | Fix missing deputy check (bug)  |
+| `tpm-escalation.service.ts`       | Fix missing deputy check (bug)  |
+| `admin-permissions.service.ts`    | Add deputy checks               |
+| `organigram.service.ts`           | Add deputy JOINs                |
+| `chat.service.ts`                 | Add deputy JOINs                |
 
 ### Frontend (modified — ~15 files)
 
-| File                                        | Change                                  |
-| ------------------------------------------- | --------------------------------------- |
-| `hierarchy-labels.ts`                       | 3 new position keys + display           |
-| `manage-teams/_lib/*`                       | Rename + add dropdown                   |
-| `manage-areas/_lib/*`                       | Add deputy field + dropdown             |
-| `manage-departments/_lib/*`                 | Add deputy field + dropdown             |
-| `kvp/_lib/api.ts`                           | Fix deputy visibility (bug)             |
-| `organigram/_lib/types.ts`                  | Add deputy types                        |
-| `organigram/_lib/NodeDetailModal.svelte`    | Add deputy display                      |
-| `organigram/positions/+page.svelte`        | Update LEAD_ORDER (6 system positions)  |
+| File                                     | Change                                 |
+| ---------------------------------------- | -------------------------------------- |
+| `hierarchy-labels.ts`                    | 3 new position keys + display          |
+| `manage-teams/_lib/*`                    | Rename + add dropdown                  |
+| `manage-areas/_lib/*`                    | Add deputy field + dropdown            |
+| `manage-departments/_lib/*`              | Add deputy field + dropdown            |
+| `kvp/_lib/api.ts`                        | Fix deputy visibility (bug)            |
+| `organigram/_lib/types.ts`               | Add deputy types                       |
+| `organigram/_lib/NodeDetailModal.svelte` | Add deputy display                     |
+| `organigram/positions/+page.svelte`      | Update LEAD_ORDER (6 system positions) |
 
 ---
 
 ## Spec Deviations
 
-| #   | Original Spec                              | Actual Implementation               | Decision                                   |
-| --- | ------------------------------------------ | ------------------------------------ | ------------------------------------------ |
-| D1  | `deputy_lead` is a single position key     | Split into 3: area/dept/team         | Required for 3 hierarchy levels            |
-| D2  | Teams `deputy_lead_id` column name kept    | Renamed to `team_deputy_lead_id`     | Consistency with `{entity}_*_lead_id` pattern |
+| #   | Original Spec                           | Actual Implementation            | Decision                                      |
+| --- | --------------------------------------- | -------------------------------- | --------------------------------------------- |
+| D1  | `deputy_lead` is a single position key  | Split into 3: area/dept/team     | Required for 3 hierarchy levels               |
+| D2  | Teams `deputy_lead_id` column name kept | Renamed to `team_deputy_lead_id` | Consistency with `{entity}_*_lead_id` pattern |
 
 ---
 

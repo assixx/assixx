@@ -29,9 +29,9 @@ import {
  * Fake ciphertext — server stores opaque base64, never decrypts.
  * Content does not need to be real ciphertext for REST API tests.
  */
-const FAKE_CIPHERTEXT = Buffer.from(
-  'test-encrypted-content-for-api-integration',
-).toString('base64');
+const FAKE_CIPHERTEXT = Buffer.from('test-encrypted-content-for-api-integration').toString(
+  'base64',
+);
 
 /** Fake 24-byte XChaCha20-Poly1305 nonce (base64) */
 const FAKE_NONCE = Buffer.from(new Uint8Array(24).fill(42)).toString('base64');
@@ -90,14 +90,11 @@ describe('E2E Messages: Send Plaintext Message', () => {
   it('should send plaintext message with isE2e=false', async () => {
     expect(conversationId).toBeDefined();
 
-    const res = await fetch(
-      `${BASE_URL}/chat/conversations/${conversationId}/messages`,
-      {
-        method: 'POST',
-        headers: authHeaders(auth.authToken),
-        body: JSON.stringify({ message: 'Hello plaintext' }),
-      },
-    );
+    const res = await fetch(`${BASE_URL}/chat/conversations/${conversationId}/messages`, {
+      method: 'POST',
+      headers: authHeaders(auth.authToken),
+      body: JSON.stringify({ message: 'Hello plaintext' }),
+    });
     const body = (await res.json()) as JsonBody;
 
     expect(res.status).toBe(201);
@@ -117,19 +114,16 @@ describe('E2E Messages: Send Encrypted Message', () => {
   it('should store ciphertext with content=null', async () => {
     expect(conversationId).toBeDefined();
 
-    const res = await fetch(
-      `${BASE_URL}/chat/conversations/${conversationId}/messages`,
-      {
-        method: 'POST',
-        headers: authHeaders(auth.authToken),
-        body: JSON.stringify({
-          encryptedContent: FAKE_CIPHERTEXT,
-          e2eNonce: FAKE_NONCE,
-          e2eKeyVersion: keyVersion,
-          e2eKeyEpoch: CURRENT_EPOCH,
-        }),
-      },
-    );
+    const res = await fetch(`${BASE_URL}/chat/conversations/${conversationId}/messages`, {
+      method: 'POST',
+      headers: authHeaders(auth.authToken),
+      body: JSON.stringify({
+        encryptedContent: FAKE_CIPHERTEXT,
+        e2eNonce: FAKE_NONCE,
+        e2eKeyVersion: keyVersion,
+        e2eKeyEpoch: CURRENT_EPOCH,
+      }),
+    });
     const body = (await res.json()) as JsonBody;
 
     expect(res.status).toBe(201);
@@ -147,19 +141,16 @@ describe('E2E Messages: Send Encrypted Message', () => {
   it('should return correct sender info on E2E message', async () => {
     expect(conversationId).toBeDefined();
 
-    const res = await fetch(
-      `${BASE_URL}/chat/conversations/${conversationId}/messages`,
-      {
-        method: 'POST',
-        headers: authHeaders(auth.authToken),
-        body: JSON.stringify({
-          encryptedContent: FAKE_CIPHERTEXT,
-          e2eNonce: FAKE_NONCE,
-          e2eKeyVersion: keyVersion,
-          e2eKeyEpoch: CURRENT_EPOCH,
-        }),
-      },
-    );
+    const res = await fetch(`${BASE_URL}/chat/conversations/${conversationId}/messages`, {
+      method: 'POST',
+      headers: authHeaders(auth.authToken),
+      body: JSON.stringify({
+        encryptedContent: FAKE_CIPHERTEXT,
+        e2eNonce: FAKE_NONCE,
+        e2eKeyVersion: keyVersion,
+        e2eKeyEpoch: CURRENT_EPOCH,
+      }),
+    });
     const body = (await res.json()) as JsonBody;
 
     expect(res.status).toBe(201);
@@ -177,19 +168,16 @@ describe('E2E Messages: Key Version Validation', () => {
   it('should reject message with mismatched key version (422)', async () => {
     expect(conversationId).toBeDefined();
 
-    const res = await fetch(
-      `${BASE_URL}/chat/conversations/${conversationId}/messages`,
-      {
-        method: 'POST',
-        headers: authHeaders(auth.authToken),
-        body: JSON.stringify({
-          encryptedContent: FAKE_CIPHERTEXT,
-          e2eNonce: FAKE_NONCE,
-          e2eKeyVersion: 999, // Wrong version — server has v1
-          e2eKeyEpoch: CURRENT_EPOCH,
-        }),
-      },
-    );
+    const res = await fetch(`${BASE_URL}/chat/conversations/${conversationId}/messages`, {
+      method: 'POST',
+      headers: authHeaders(auth.authToken),
+      body: JSON.stringify({
+        encryptedContent: FAKE_CIPHERTEXT,
+        e2eNonce: FAKE_NONCE,
+        e2eKeyVersion: 999, // Wrong version — server has v1
+        e2eKeyEpoch: CURRENT_EPOCH,
+      }),
+    });
 
     expect(res.status).toBe(422);
   });
@@ -197,19 +185,16 @@ describe('E2E Messages: Key Version Validation', () => {
   it('should include descriptive error on key version mismatch', async () => {
     expect(conversationId).toBeDefined();
 
-    const res = await fetch(
-      `${BASE_URL}/chat/conversations/${conversationId}/messages`,
-      {
-        method: 'POST',
-        headers: authHeaders(auth.authToken),
-        body: JSON.stringify({
-          encryptedContent: FAKE_CIPHERTEXT,
-          e2eNonce: FAKE_NONCE,
-          e2eKeyVersion: 999,
-          e2eKeyEpoch: CURRENT_EPOCH,
-        }),
-      },
-    );
+    const res = await fetch(`${BASE_URL}/chat/conversations/${conversationId}/messages`, {
+      method: 'POST',
+      headers: authHeaders(auth.authToken),
+      body: JSON.stringify({
+        encryptedContent: FAKE_CIPHERTEXT,
+        e2eNonce: FAKE_NONCE,
+        e2eKeyVersion: 999,
+        e2eKeyEpoch: CURRENT_EPOCH,
+      }),
+    });
     const body = (await res.json()) as JsonBody;
 
     expect(res.status).toBe(422);
@@ -224,12 +209,9 @@ describe('E2E Messages: GET Messages Returns E2E Fields', () => {
   it('should return both plaintext and E2E messages with correct fields', async () => {
     expect(conversationId).toBeDefined();
 
-    const res = await fetch(
-      `${BASE_URL}/chat/conversations/${conversationId}/messages?limit=100`,
-      {
-        headers: authOnly(auth.authToken),
-      },
-    );
+    const res = await fetch(`${BASE_URL}/chat/conversations/${conversationId}/messages?limit=100`, {
+      headers: authOnly(auth.authToken),
+    });
     const body = (await res.json()) as JsonBody;
 
     expect(res.status).toBe(200);
@@ -241,9 +223,7 @@ describe('E2E Messages: GET Messages Returns E2E Fields', () => {
     expect(messages.length).toBeGreaterThanOrEqual(2);
 
     // Find a plaintext message
-    const plaintextMsg = messages.find(
-      (m: Record<string, unknown>) => m.isE2e === false,
-    );
+    const plaintextMsg = messages.find((m: Record<string, unknown>) => m.isE2e === false);
     expect(plaintextMsg).toBeDefined();
     expect(plaintextMsg!.content).not.toBeNull();
     expect(plaintextMsg!.encryptedContent).toBeNull();
@@ -254,8 +234,7 @@ describe('E2E Messages: GET Messages Returns E2E Fields', () => {
       .slice()
       .reverse()
       .find(
-        (m: Record<string, unknown>) =>
-          m.isE2e === true && m.encryptedContent === FAKE_CIPHERTEXT,
+        (m: Record<string, unknown>) => m.isE2e === true && m.encryptedContent === FAKE_CIPHERTEXT,
       );
     expect(e2eMsg).toBeDefined();
     expect(e2eMsg!.content).toBeNull();
@@ -268,12 +247,9 @@ describe('E2E Messages: GET Messages Returns E2E Fields', () => {
   it('should include pagination metadata', async () => {
     expect(conversationId).toBeDefined();
 
-    const res = await fetch(
-      `${BASE_URL}/chat/conversations/${conversationId}/messages?limit=100`,
-      {
-        headers: authOnly(auth.authToken),
-      },
-    );
+    const res = await fetch(`${BASE_URL}/chat/conversations/${conversationId}/messages?limit=100`, {
+      headers: authOnly(auth.authToken),
+    });
     const body = (await res.json()) as JsonBody;
 
     expect(res.status).toBe(200);
@@ -334,9 +310,7 @@ describe('E2E Messages: Search Excludes E2E Messages', () => {
     const messages = body.data as Array<Record<string, unknown>>;
 
     // No E2E messages should appear in search results
-    const e2eMessages = messages.filter(
-      (m: Record<string, unknown>) => m.isE2e === true,
-    );
+    const e2eMessages = messages.filter((m: Record<string, unknown>) => m.isE2e === true);
     expect(e2eMessages.length).toBe(0);
   });
 });
@@ -347,19 +321,16 @@ describe('E2E Messages: DTO Validation', () => {
   it('should reject negative e2eKeyEpoch', async () => {
     expect(conversationId).toBeDefined();
 
-    const res = await fetch(
-      `${BASE_URL}/chat/conversations/${conversationId}/messages`,
-      {
-        method: 'POST',
-        headers: authHeaders(auth.authToken),
-        body: JSON.stringify({
-          encryptedContent: FAKE_CIPHERTEXT,
-          e2eNonce: FAKE_NONCE,
-          e2eKeyVersion: keyVersion,
-          e2eKeyEpoch: -1,
-        }),
-      },
-    );
+    const res = await fetch(`${BASE_URL}/chat/conversations/${conversationId}/messages`, {
+      method: 'POST',
+      headers: authHeaders(auth.authToken),
+      body: JSON.stringify({
+        encryptedContent: FAKE_CIPHERTEXT,
+        e2eNonce: FAKE_NONCE,
+        e2eKeyVersion: keyVersion,
+        e2eKeyEpoch: -1,
+      }),
+    });
 
     // Zod: e2eKeyEpoch must be non-negative
     expect(res.status).toBeGreaterThanOrEqual(400);
@@ -369,19 +340,16 @@ describe('E2E Messages: DTO Validation', () => {
   it('should reject non-positive e2eKeyVersion', async () => {
     expect(conversationId).toBeDefined();
 
-    const res = await fetch(
-      `${BASE_URL}/chat/conversations/${conversationId}/messages`,
-      {
-        method: 'POST',
-        headers: authHeaders(auth.authToken),
-        body: JSON.stringify({
-          encryptedContent: FAKE_CIPHERTEXT,
-          e2eNonce: FAKE_NONCE,
-          e2eKeyVersion: 0,
-          e2eKeyEpoch: CURRENT_EPOCH,
-        }),
-      },
-    );
+    const res = await fetch(`${BASE_URL}/chat/conversations/${conversationId}/messages`, {
+      method: 'POST',
+      headers: authHeaders(auth.authToken),
+      body: JSON.stringify({
+        encryptedContent: FAKE_CIPHERTEXT,
+        e2eNonce: FAKE_NONCE,
+        e2eKeyVersion: 0,
+        e2eKeyEpoch: CURRENT_EPOCH,
+      }),
+    });
 
     // Zod: e2eKeyVersion must be positive (> 0)
     expect(res.status).toBeGreaterThanOrEqual(400);
@@ -391,19 +359,16 @@ describe('E2E Messages: DTO Validation', () => {
   it('should reject excessively long encrypted content', async () => {
     expect(conversationId).toBeDefined();
 
-    const res = await fetch(
-      `${BASE_URL}/chat/conversations/${conversationId}/messages`,
-      {
-        method: 'POST',
-        headers: authHeaders(auth.authToken),
-        body: JSON.stringify({
-          encryptedContent: 'A'.repeat(100_001), // Exceeds MAX_ENCRYPTED_LENGTH
-          e2eNonce: FAKE_NONCE,
-          e2eKeyVersion: keyVersion,
-          e2eKeyEpoch: CURRENT_EPOCH,
-        }),
-      },
-    );
+    const res = await fetch(`${BASE_URL}/chat/conversations/${conversationId}/messages`, {
+      method: 'POST',
+      headers: authHeaders(auth.authToken),
+      body: JSON.stringify({
+        encryptedContent: 'A'.repeat(100_001), // Exceeds MAX_ENCRYPTED_LENGTH
+        e2eNonce: FAKE_NONCE,
+        e2eKeyVersion: keyVersion,
+        e2eKeyEpoch: CURRENT_EPOCH,
+      }),
+    });
 
     expect(res.status).toBeGreaterThanOrEqual(400);
     expect(res.status).toBeLessThan(500);
@@ -420,31 +385,25 @@ describe('E2E Messages: Edit Blocked for E2E', () => {
     if (conversationId === undefined) throw new Error('conversationId not set');
 
     // Send an E2E message and capture its ID
-    const e2eRes = await fetch(
-      `${BASE_URL}/chat/conversations/${conversationId}/messages`,
-      {
-        method: 'POST',
-        headers: authHeaders(auth.authToken),
-        body: JSON.stringify({
-          encryptedContent: FAKE_CIPHERTEXT,
-          e2eNonce: FAKE_NONCE,
-          e2eKeyVersion: keyVersion,
-          e2eKeyEpoch: CURRENT_EPOCH,
-        }),
-      },
-    );
+    const e2eRes = await fetch(`${BASE_URL}/chat/conversations/${conversationId}/messages`, {
+      method: 'POST',
+      headers: authHeaders(auth.authToken),
+      body: JSON.stringify({
+        encryptedContent: FAKE_CIPHERTEXT,
+        e2eNonce: FAKE_NONCE,
+        e2eKeyVersion: keyVersion,
+        e2eKeyEpoch: CURRENT_EPOCH,
+      }),
+    });
     const e2eBody = (await e2eRes.json()) as JsonBody;
     e2eMessageId = e2eBody.data?.message?.id as number | undefined;
 
     // Send a plaintext message and capture its ID
-    const ptRes = await fetch(
-      `${BASE_URL}/chat/conversations/${conversationId}/messages`,
-      {
-        method: 'POST',
-        headers: authHeaders(auth.authToken),
-        body: JSON.stringify({ message: 'edit-test-plaintext' }),
-      },
-    );
+    const ptRes = await fetch(`${BASE_URL}/chat/conversations/${conversationId}/messages`, {
+      method: 'POST',
+      headers: authHeaders(auth.authToken),
+      body: JSON.stringify({ message: 'edit-test-plaintext' }),
+    });
     const ptBody = (await ptRes.json()) as JsonBody;
     plaintextMessageId = ptBody.data?.message?.id as number | undefined;
   });
@@ -492,19 +451,16 @@ describe('E2E Messages: Auth Required', () => {
   it('should return 401 for sending message without auth', async () => {
     expect(conversationId).toBeDefined();
 
-    const res = await fetch(
-      `${BASE_URL}/chat/conversations/${conversationId}/messages`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          encryptedContent: FAKE_CIPHERTEXT,
-          e2eNonce: FAKE_NONCE,
-          e2eKeyVersion: 1,
-          e2eKeyEpoch: CURRENT_EPOCH,
-        }),
-      },
-    );
+    const res = await fetch(`${BASE_URL}/chat/conversations/${conversationId}/messages`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        encryptedContent: FAKE_CIPHERTEXT,
+        e2eNonce: FAKE_NONCE,
+        e2eKeyVersion: 1,
+        e2eKeyEpoch: CURRENT_EPOCH,
+      }),
+    });
 
     expect(res.status).toBe(401);
   });
@@ -512,9 +468,7 @@ describe('E2E Messages: Auth Required', () => {
   it('should return 401 for getting messages without auth', async () => {
     expect(conversationId).toBeDefined();
 
-    const res = await fetch(
-      `${BASE_URL}/chat/conversations/${conversationId}/messages`,
-    );
+    const res = await fetch(`${BASE_URL}/chat/conversations/${conversationId}/messages`);
 
     expect(res.status).toBe(401);
   });

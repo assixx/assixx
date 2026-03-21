@@ -71,10 +71,7 @@
     { value: 'surveys', label: 'Umfragen' },
   ] as const;
 
-  const STATUS_BADGE: Record<
-    string,
-    { label: string; cssClass: string; icon: string }
-  > = {
+  const STATUS_BADGE: Record<string, { label: string; cssClass: string; icon: string }> = {
     pending: { label: 'Offen', cssClass: 'badge--warning', icon: 'fa-clock' },
     approved: {
       label: 'Genehmigt',
@@ -129,16 +126,13 @@
     if (activeApproval === null) return;
     submitting = true;
     try {
-      const res = await fetch(
-        `/api/v2/approvals/${activeApproval.uuid}/approve`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            decisionNote: approveNote !== '' ? approveNote : null,
-          }),
-        },
-      );
+      const res = await fetch(`/api/v2/approvals/${activeApproval.uuid}/approve`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          decisionNote: approveNote !== '' ? approveNote : null,
+        }),
+      });
       if (res.ok) {
         showSuccessAlert('Freigabe genehmigt');
         showApproveModal = false;
@@ -159,14 +153,11 @@
     if (activeApproval === null || rejectNote.trim() === '') return;
     submitting = true;
     try {
-      const res = await fetch(
-        `/api/v2/approvals/${activeApproval.uuid}/reject`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ decisionNote: rejectNote }),
-        },
-      );
+      const res = await fetch(`/api/v2/approvals/${activeApproval.uuid}/reject`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ decisionNote: rejectNote }),
+      });
       if (res.ok) {
         showSuccessAlert('Freigabe abgelehnt');
         showRejectModal = false;
@@ -267,9 +258,7 @@
             <i class="fas fa-check-double"></i>
           </div>
           <h3 class="empty-state__title">Keine Freigaben vorhanden</h3>
-          <p class="empty-state__description">
-            Es liegen aktuell keine Freigabe-Anfragen vor.
-          </p>
+          <p class="empty-state__description">Es liegen aktuell keine Freigabe-Anfragen vor.</p>
         </div>
       {:else}
         <div class="table-responsive">
@@ -287,19 +276,15 @@
             </thead>
             <tbody>
               {#each filteredItems as approval (approval.uuid)}
-                {@const badge =
-                  STATUS_BADGE[approval.status] ?? STATUS_BADGE.pending}
+                {@const badge = STATUS_BADGE[approval.status] ?? STATUS_BADGE.pending}
                 <tr>
                   <td class="td--title">{approval.title}</td>
                   <td>
-                    <span class="badge badge--outline"
-                      >{approval.addonCode}</span
-                    >
+                    <span class="badge badge--outline">{approval.addonCode}</span>
                   </td>
                   <td>{approval.requestedByName}</td>
                   <td>
-                    <span class="badge badge--outline">{approval.priority}</span
-                    >
+                    <span class="badge badge--outline">{approval.priority}</span>
                   </td>
                   <td>
                     <span class="badge {badge.cssClass}">
@@ -307,11 +292,7 @@
                       {badge.label}
                     </span>
                   </td>
-                  <td
-                    >{new Date(approval.createdAt).toLocaleDateString(
-                      'de-DE',
-                    )}</td
-                  >
+                  <td>{new Date(approval.createdAt).toLocaleDateString('de-DE')}</td>
                   <td>
                     <div class="action-icons">
                       {#if approval.status === 'pending'}

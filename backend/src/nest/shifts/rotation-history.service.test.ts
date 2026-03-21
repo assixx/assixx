@@ -156,9 +156,7 @@ describe('RotationHistoryService', () => {
       // ROLLBACK should be called
       mockDb.query.mockResolvedValueOnce([]);
 
-      await expect(service.deleteRotationHistory(10, 5, 1)).rejects.toThrow(
-        'DB error',
-      );
+      await expect(service.deleteRotationHistory(10, 5, 1)).rejects.toThrow('DB error');
     });
   });
 
@@ -192,9 +190,9 @@ describe('RotationHistoryService', () => {
     it('should throw NotFoundException when entry not found', async () => {
       mockDb.query.mockResolvedValueOnce([{ count: '0' }]);
 
-      await expect(
-        service.deleteRotationHistoryEntry(999, 10, 1),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.deleteRotationHistoryEntry(999, 10, 1)).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should delete single entry', async () => {

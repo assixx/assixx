@@ -45,10 +45,7 @@ describe('AuditMetadataService', () => {
   beforeEach(() => {
     mockDb = createMockDb();
     mockCls = createMockCls();
-    service = new AuditMetadataService(
-      mockDb as unknown as DatabaseService,
-      mockCls as never,
-    );
+    service = new AuditMetadataService(mockDb as unknown as DatabaseService, mockCls as never);
   });
 
   // =============================================================
@@ -96,46 +93,26 @@ describe('AuditMetadataService', () => {
 
   describe('fetchResourceBeforeMutation', () => {
     it('should return null when both resourceId and resourceUuid are null', async () => {
-      const result = await service.fetchResourceBeforeMutation(
-        'user',
-        null,
-        null,
-        1,
-      );
+      const result = await service.fetchResourceBeforeMutation('user', null, null, 1);
 
       expect(result).toBeNull();
       expect(mockDb.query).not.toHaveBeenCalled();
     });
 
     it('should return null when resourceType has no table mapping', async () => {
-      const result = await service.fetchResourceBeforeMutation(
-        'unknown-type',
-        42,
-        null,
-        1,
-      );
+      const result = await service.fetchResourceBeforeMutation('unknown-type', 42, null, 1);
 
       expect(result).toBeNull();
       expect(mockDb.query).not.toHaveBeenCalled();
     });
 
     it('should return sanitized data when resource is found by numeric ID', async () => {
-      mockDb.query.mockResolvedValueOnce([
-        { id: 42, name: 'Test User', password: 'secret' },
-      ]);
+      mockDb.query.mockResolvedValueOnce([{ id: 42, name: 'Test User', password: 'secret' }]);
 
-      const result = await service.fetchResourceBeforeMutation(
-        'user',
-        42,
-        null,
-        1,
-      );
+      const result = await service.fetchResourceBeforeMutation('user', 42, null, 1);
 
       expect(result).not.toBeNull();
-      expect(mockDb.query).toHaveBeenCalledWith(
-        expect.stringContaining('WHERE id = $1'),
-        [42, 1],
-      );
+      expect(mockDb.query).toHaveBeenCalledWith(expect.stringContaining('WHERE id = $1'), [42, 1]);
     });
 
     it('should return sanitized data when resource is found by UUID', async () => {
@@ -155,21 +132,16 @@ describe('AuditMetadataService', () => {
       );
 
       expect(result).not.toBeNull();
-      expect(mockDb.query).toHaveBeenCalledWith(
-        expect.stringContaining('WHERE uuid = $1'),
-        ['019c9088-c3da-751f-ad4f-06ef7c086342', 1],
-      );
+      expect(mockDb.query).toHaveBeenCalledWith(expect.stringContaining('WHERE uuid = $1'), [
+        '019c9088-c3da-751f-ad4f-06ef7c086342',
+        1,
+      ]);
     });
 
     it('should return null when resource is not found', async () => {
       mockDb.query.mockResolvedValueOnce([]);
 
-      const result = await service.fetchResourceBeforeMutation(
-        'user',
-        999,
-        null,
-        1,
-      );
+      const result = await service.fetchResourceBeforeMutation('user', 999, null, 1);
 
       expect(result).toBeNull();
     });
@@ -177,12 +149,98 @@ describe('AuditMetadataService', () => {
     it('should return null and not throw when DB query fails', async () => {
       mockDb.query.mockRejectedValueOnce(new Error('Connection refused'));
 
-      const result = await service.fetchResourceBeforeMutation(
-        'user',
-        42,
+      const result = await service.fetchResourceBeforeMutation('user', 42, null, 1);
+
+      expect(result).toBeNull();
+    });
+  });
+
+  // =============================================================
+  // fetchResourceName
+  // =============================================================
+
+  describe('fetchResourceName', () => {
+    it('should return null when both resourceId and resourceUuid are null', async () => {
+      const result = await service.fetchResourceName('user', null, null, 1);
+
+      expect(result).toBeNull();
+      expect(mockDb.query).not.toHaveBeenCalled();
+    });
+
+    it('should return null when resourceType has no table mapping', async () => {
+      const result = await service.fetchResourceName('unknown-type', 42, null, 1);
+
+      expect(result).toBeNull();
+      expect(mockDb.query).not.toHaveBeenCalled();
+    });
+
+    it('should return the name when resource is found by numeric ID', async () => {
+      mockDb.query.mockResolvedValueOnce([{ username: 'john.doe' }]);
+
+      const result = await service.fetchResourceName('user', 42, null, 1);
+
+      expect(result).toBe('john.doe');
+      expect(mockDb.query).toHaveBeenCalledWith(
+        expect.stringContaining('SELECT username FROM users'),
+        [42, 1],
+      );
+    });
+
+    it('should return the name when resource is found by UUID', async () => {
+      mockDb.query.mockResolvedValueOnce([{ name: 'Weekly Check' }]);
+
+      const result = await service.fetchResourceName(
+        'tpm-plan',
         null,
+        '019c9088-c3da-751f-ad4f-06ef7c086342',
         1,
       );
+
+      expect(result).toBe('Weekly Check');
+      expect(mockDb.query).toHaveBeenCalledWith(expect.stringContaining('WHERE uuid = $1'), [
+        '019c9088-c3da-751f-ad4f-06ef7c086342',
+        1,
+      ]);
+    });
+
+    it('should return null when no rows are returned', async () => {
+      mockDb.query.mockResolvedValueOnce([]);
+
+      const result = await service.fetchResourceName('user', 999, null, 1);
+
+      expect(result).toBeNull();
+    });
+
+    it('should return null when the name field is not a string', async () => {
+      mockDb.query.mockResolvedValueOnce([{ username: 12345 }]);
+
+      const result = await service.fetchResourceName('user', 42, null, 1);
+
+      expect(result).toBeNull();
+    });
+
+    it('should return null when the name field is an empty string', async () => {
+      mockDb.query.mockResolvedValueOnce([{ username: '' }]);
+
+      const result = await service.fetchResourceName('user', 42, null, 1);
+
+      expect(result).toBeNull();
+    });
+
+    it('should truncate names longer than 255 characters', async () => {
+      const longName = 'A'.repeat(300);
+      mockDb.query.mockResolvedValueOnce([{ username: longName }]);
+
+      const result = await service.fetchResourceName('user', 42, null, 1);
+
+      expect(result).toHaveLength(255);
+      expect(result).toBe('A'.repeat(255));
+    });
+
+    it('should return null and not throw when DB query fails', async () => {
+      mockDb.query.mockRejectedValueOnce(new Error('Connection refused'));
+
+      const result = await service.fetchResourceName('user', 42, null, 1);
 
       expect(result).toBeNull();
     });

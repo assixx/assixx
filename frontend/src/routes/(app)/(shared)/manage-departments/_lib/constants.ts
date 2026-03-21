@@ -16,9 +16,7 @@ export { STATUS_BADGE_CLASSES, STATUS_LABELS } from '@assixx/shared/constants';
  * Dependency labels for force delete message.
  * Teams and assets use dynamic hierarchy labels.
  */
-export function createDependencyLabels(
-  labels: HierarchyLabels,
-): Record<string, string> {
+export function createDependencyLabels(labels: HierarchyLabels): Record<string, string> {
   return {
     users: 'Benutzer',
     teams: labels.team,
@@ -34,9 +32,7 @@ export function createDependencyLabels(
 }
 
 /** Default dependency labels for non-Svelte contexts */
-export const DEPENDENCY_LABELS = createDependencyLabels(
-  DEFAULT_HIERARCHY_LABELS,
-);
+export const DEPENDENCY_LABELS = createDependencyLabels(DEFAULT_HIERARCHY_LABELS);
 
 /** Static messages that don't depend on hierarchy labels */
 const STATIC_MESSAGES = {

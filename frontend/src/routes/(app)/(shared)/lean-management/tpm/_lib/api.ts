@@ -75,13 +75,8 @@ function extractArray<T>(result: unknown): T[] {
 // =============================================================================
 
 /** Fetch paginated list of maintenance plans */
-export async function fetchPlans(
-  page = 1,
-  limit = 50,
-): Promise<PaginatedResponse<TpmPlan>> {
-  const result: unknown = await apiClient.get(
-    `/tpm/plans?page=${page}&limit=${limit}`,
-  );
+export async function fetchPlans(page = 1, limit = 50): Promise<PaginatedResponse<TpmPlan>> {
+  const result: unknown = await apiClient.get(`/tpm/plans?page=${page}&limit=${limit}`);
   return extractPaginated<TpmPlan>(result);
 }
 
@@ -155,9 +150,7 @@ export async function fetchShiftAssignments(
 // =============================================================================
 
 /** Fetch interval color configuration */
-export async function fetchIntervalColors(): Promise<
-  IntervalColorConfigEntry[]
-> {
+export async function fetchIntervalColors(): Promise<IntervalColorConfigEntry[]> {
   const result: unknown = await apiClient.get('/tpm/config/interval-colors');
   return extractArray<IntervalColorConfigEntry>(result);
 }
@@ -167,9 +160,7 @@ export async function fetchIntervalColors(): Promise<
 // =============================================================================
 
 /** Create an execution (mark card as done) */
-export async function createExecution(
-  payload: CreateExecutionPayload,
-): Promise<TpmExecution> {
+export async function createExecution(payload: CreateExecutionPayload): Promise<TpmExecution> {
   return await apiClient.post('/tpm/executions', payload);
 }
 
@@ -198,9 +189,7 @@ export async function fetchCardDefects(
 }
 
 /** Get a single execution */
-export async function fetchExecution(
-  executionUuid: string,
-): Promise<TpmExecution> {
+export async function fetchExecution(executionUuid: string): Promise<TpmExecution> {
   return await apiClient.get(`/tpm/executions/${executionUuid}`);
 }
 
@@ -220,10 +209,7 @@ export async function respondToExecution(
   executionUuid: string,
   payload: RespondExecutionPayload,
 ): Promise<TpmExecution> {
-  return await apiClient.post(
-    `/tpm/executions/${executionUuid}/respond`,
-    payload,
-  );
+  return await apiClient.post(`/tpm/executions/${executionUuid}/respond`, payload);
 }
 
 // =============================================================================
@@ -231,25 +217,15 @@ export async function respondToExecution(
 // =============================================================================
 
 /** Upload a photo to an execution */
-export async function uploadPhoto(
-  executionUuid: string,
-  file: File,
-): Promise<TpmExecutionPhoto> {
+export async function uploadPhoto(executionUuid: string, file: File): Promise<TpmExecutionPhoto> {
   const formData = new FormData();
   formData.append('file', file);
-  return await apiClient.post(
-    `/tpm/executions/${executionUuid}/photos`,
-    formData,
-  );
+  return await apiClient.post(`/tpm/executions/${executionUuid}/photos`, formData);
 }
 
 /** Fetch photos for an execution */
-export async function fetchPhotos(
-  executionUuid: string,
-): Promise<TpmExecutionPhoto[]> {
-  const result: unknown = await apiClient.get(
-    `/tpm/executions/${executionUuid}/photos`,
-  );
+export async function fetchPhotos(executionUuid: string): Promise<TpmExecutionPhoto[]> {
+  const result: unknown = await apiClient.get(`/tpm/executions/${executionUuid}/photos`);
   return extractArray<TpmExecutionPhoto>(result);
 }
 
@@ -258,25 +234,15 @@ export async function fetchPhotos(
 // =============================================================================
 
 /** Upload a photo to a defect */
-export async function uploadDefectPhoto(
-  defectUuid: string,
-  file: File,
-): Promise<TpmDefectPhoto> {
+export async function uploadDefectPhoto(defectUuid: string, file: File): Promise<TpmDefectPhoto> {
   const formData = new FormData();
   formData.append('file', file);
-  return await apiClient.post(
-    `/tpm/executions/defects/${defectUuid}/photos`,
-    formData,
-  );
+  return await apiClient.post(`/tpm/executions/defects/${defectUuid}/photos`, formData);
 }
 
 /** Fetch photos for a defect */
-export async function fetchDefectPhotos(
-  defectUuid: string,
-): Promise<TpmDefectPhoto[]> {
-  const result: unknown = await apiClient.get(
-    `/tpm/executions/defects/${defectUuid}/photos`,
-  );
+export async function fetchDefectPhotos(defectUuid: string): Promise<TpmDefectPhoto[]> {
+  const result: unknown = await apiClient.get(`/tpm/executions/defects/${defectUuid}/photos`);
   return extractArray<TpmDefectPhoto>(result);
 }
 
@@ -285,10 +251,7 @@ export async function updateDefect(
   defectUuid: string,
   payload: { title?: string; description?: string | null },
 ): Promise<TpmExecutionDefect> {
-  return await apiClient.patch(
-    `/tpm/executions/defects/${defectUuid}`,
-    payload,
-  );
+  return await apiClient.patch(`/tpm/executions/defects/${defectUuid}`, payload);
 }
 
 // =============================================================================
@@ -296,12 +259,8 @@ export async function updateDefect(
 // =============================================================================
 
 /** Fetch time estimates for a plan */
-export async function fetchTimeEstimates(
-  planUuid: string,
-): Promise<TpmTimeEstimate[]> {
-  const result: unknown = await apiClient.get(
-    `/tpm/plans/${planUuid}/time-estimates`,
-  );
+export async function fetchTimeEstimates(planUuid: string): Promise<TpmTimeEstimate[]> {
+  const result: unknown = await apiClient.get(`/tpm/plans/${planUuid}/time-estimates`);
   return extractArray<TpmTimeEstimate>(result);
 }
 
@@ -311,23 +270,17 @@ export async function fetchTimeEstimates(
 
 /** Fetch all active locations for a plan */
 export async function fetchLocations(planUuid: string): Promise<TpmLocation[]> {
-  const result: unknown = await apiClient.get(
-    `/tpm/locations?planUuid=${planUuid}`,
-  );
+  const result: unknown = await apiClient.get(`/tpm/locations?planUuid=${planUuid}`);
   return extractArray<TpmLocation>(result);
 }
 
 /** Get a single location by UUID */
-export async function fetchLocation(
-  locationUuid: string,
-): Promise<TpmLocation> {
+export async function fetchLocation(locationUuid: string): Promise<TpmLocation> {
   return await apiClient.get(`/tpm/locations/${locationUuid}`);
 }
 
 /** Create a new location */
-export async function createLocation(
-  payload: CreateLocationPayload,
-): Promise<TpmLocation> {
+export async function createLocation(payload: CreateLocationPayload): Promise<TpmLocation> {
   return await apiClient.post('/tpm/locations', payload);
 }
 
@@ -345,19 +298,14 @@ export async function deleteLocation(locationUuid: string): Promise<void> {
 }
 
 /** Upload a photo to a location */
-export async function uploadLocationPhoto(
-  locationUuid: string,
-  file: File,
-): Promise<TpmLocation> {
+export async function uploadLocationPhoto(locationUuid: string, file: File): Promise<TpmLocation> {
   const formData = new FormData();
   formData.append('file', file);
   return await apiClient.post(`/tpm/locations/${locationUuid}/photo`, formData);
 }
 
 /** Remove a photo from a location */
-export async function removeLocationPhoto(
-  locationUuid: string,
-): Promise<TpmLocation> {
+export async function removeLocationPhoto(locationUuid: string): Promise<TpmLocation> {
   return await apiClient.delete(`/tpm/locations/${locationUuid}/photo`);
 }
 

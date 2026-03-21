@@ -63,9 +63,7 @@ export class OrganigramController {
   }
 
   @Get('hierarchy-labels')
-  async getHierarchyLabels(
-    @TenantId() tenantId: number,
-  ): Promise<HierarchyLabels> {
+  async getHierarchyLabels(@TenantId() tenantId: number): Promise<HierarchyLabels> {
     return await this.settingsService.getHierarchyLabels(tenantId);
   }
 
@@ -108,10 +106,7 @@ export class OrganigramController {
       await this.settingsService.saveHallOverrides(tenantId, dto.hallOverrides);
     }
     if (dto.hallConnectionAnchors !== undefined) {
-      await this.settingsService.saveHallConnectionAnchors(
-        tenantId,
-        dto.hallConnectionAnchors,
-      );
+      await this.settingsService.saveHallConnectionAnchors(tenantId, dto.hallConnectionAnchors);
     }
     if (dto.canvasBg !== undefined) {
       await this.settingsService.saveCanvasBg(tenantId, dto.canvasBg);

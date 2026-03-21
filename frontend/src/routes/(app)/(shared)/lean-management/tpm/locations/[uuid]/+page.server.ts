@@ -21,12 +21,7 @@ function extractArray<T>(raw: unknown): T[] {
   return [];
 }
 
-export const load: PageServerLoad = async ({
-  cookies,
-  fetch,
-  parent,
-  params,
-}) => {
+export const load: PageServerLoad = async ({ cookies, fetch, parent, params }) => {
   const token = cookies.get('accessToken');
   if (token === undefined || token === '') redirect(302, '/login');
 

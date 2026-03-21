@@ -5,12 +5,7 @@
  * Status: 0=inactive, 1=active, 3=archived, 4=deleted
  */
 import { IS_ACTIVE } from '@assixx/shared/constants';
-import {
-  BadRequestException,
-  Injectable,
-  Logger,
-  NotFoundException,
-} from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { v7 as uuidv7 } from 'uuid';
 
 import { getErrorMessage } from '../common/index.js';
@@ -174,10 +169,7 @@ export class DepartmentsService {
   /**
    * Map database row to API response
    */
-  private mapToResponse(
-    dept: DepartmentRow,
-    includeExtended: boolean,
-  ): DepartmentResponse {
+  private mapToResponse(dept: DepartmentRow, includeExtended: boolean): DepartmentResponse {
     const response: DepartmentResponse = {
       id: dept.id,
       name: dept.name,
@@ -224,17 +216,12 @@ export class DepartmentsService {
     this.logger.debug(`Fetching departments for tenant ${tenantId}`);
 
     const scope = await this.scopeService.getScope();
-    if (
-      scope.type === 'none' ||
-      (scope.type === 'limited' && scope.departmentIds.length === 0)
-    ) {
+    if (scope.type === 'none' || (scope.type === 'limited' && scope.departmentIds.length === 0)) {
       return [];
     }
 
-    const scopeFilter =
-      scope.type === 'limited' ? ` AND d.id = ANY($3::int[])` : '';
-    const scopeParams: unknown[] =
-      scope.type === 'limited' ? [scope.departmentIds] : [];
+    const scopeFilter = scope.type === 'limited' ? ` AND d.id = ANY($3::int[])` : '';
+    const scopeParams: unknown[] = scope.type === 'limited' ? [scope.departmentIds] : [];
 
     try {
       const rows = await this.db.query<DepartmentRow>(
@@ -242,16 +229,11 @@ export class DepartmentsService {
         [tenantId, tenantId, ...scopeParams],
       );
 
-      return rows.map((dept: DepartmentRow) =>
-        this.mapToResponse(dept, includeExtended),
-      );
+      return rows.map((dept: DepartmentRow) => this.mapToResponse(dept, includeExtended));
     } catch (error: unknown) {
-      this.logger.warn(
-        `Extended query failed, using simple query: ${getErrorMessage(error)}`,
-      );
+      this.logger.warn(`Extended query failed, using simple query: ${getErrorMessage(error)}`);
 
-      const simpleScope =
-        scope.type === 'limited' ? ` AND id = ANY($2::int[])` : '';
+      const simpleScope = scope.type === 'limited' ? ` AND id = ANY($2::int[])` : '';
       const rows = await this.db.query<DepartmentRow>(
         `SELECT * FROM departments WHERE tenant_id = $1 AND is_active IN (${IS_ACTIVE.INACTIVE}, ${IS_ACTIVE.ACTIVE}, ${IS_ACTIVE.ARCHIVED})${simpleScope} ORDER BY name`,
         [tenantId, ...scopeParams],
@@ -305,17 +287,15 @@ export class DepartmentsService {
    * Get a single department by ID
    * Note: Does NOT filter by is_active to allow fetching inactive/archived departments
    */
-  async getDepartmentById(
-    id: number,
-    tenantId: number,
-  ): Promise<DepartmentResponse> {
+  async getDepartmentById(id: number, tenantId: number): Promise<DepartmentResponse> {
     this.logger.debug(`Fetching department ${id} for tenant ${tenantId}`);
 
     try {
-      const rows = await this.db.query<DepartmentRow>(
-        this.FIND_DEPARTMENT_BY_ID_QUERY,
-        [tenantId, id, tenantId],
-      );
+      const rows = await this.db.query<DepartmentRow>(this.FIND_DEPARTMENT_BY_ID_QUERY, [
+        tenantId,
+        id,
+        tenantId,
+      ]);
 
       if (rows.length === 0 || rows[0] === undefined) {
         throw new NotFoundException(ERROR_DEPARTMENT_NOT_FOUND);
@@ -326,9 +306,7 @@ export class DepartmentsService {
       if (error instanceof NotFoundException) {
         throw error;
       }
-      this.logger.warn(
-        `Extended query failed, using simple query: ${getErrorMessage(error)}`,
-      );
+      this.logger.warn(`Extended query failed, using simple query: ${getErrorMessage(error)}`);
 
       const rows = await this.db.query<DepartmentRow>(
         'SELECT * FROM departments WHERE id = $1 AND tenant_id = $2',
@@ -358,9 +336,7 @@ export class DepartmentsService {
       );
 
       if (existing.length > 0) {
-        this.logger.log(
-          `Leader ${leaderId} already assigned to department ${departmentId}`,
-        );
+        this.logger.log(`Leader ${leaderId} already assigned to department ${departmentId}`);
         return;
       }
 
@@ -371,9 +347,7 @@ export class DepartmentsService {
       );
       this.logger.log(`Added leader ${leaderId} to department ${departmentId}`);
     } catch (error: unknown) {
-      this.logger.error(
-        `Error ensuring leader in department: ${getErrorMessage(error)}`,
-      );
+      this.logger.error(`Error ensuring leader in department: ${getErrorMessage(error)}`);
     }
   }
 
@@ -398,9 +372,7 @@ export class DepartmentsService {
 
     const user = rows[0];
     if (user?.role !== 'admin' && user?.role !== 'root') {
-      throw new BadRequestException(
-        'Department leader must have role "admin" or "root"',
-      );
+      throw new BadRequestException('Department leader must have role "admin" or "root"');
     }
   }
 
@@ -445,11 +417,7 @@ export class DepartmentsService {
     const departmentId = rows[0].id;
 
     if (dto.departmentLeadId !== undefined && dto.departmentLeadId !== null) {
-      await this.ensureLeaderInDepartment(
-        dto.departmentLeadId,
-        departmentId,
-        tenantId,
-      );
+      await this.ensureLeaderInDepartment(dto.departmentLeadId, departmentId, tenantId);
     }
 
     const result = await this.getDepartmentById(departmentId, tenantId);
@@ -603,9 +571,7 @@ export class DepartmentsService {
     ];
 
     const counts = await Promise.all(
-      tables.map((table: string) =>
-        this.countDependencies(table, id, tenantId),
-      ),
+      tables.map((table: string) => this.countDependencies(table, id, tenantId)),
     );
 
     return {
@@ -639,10 +605,10 @@ export class DepartmentsService {
         [departmentId, tenantId],
       );
     } else {
-      await this.db.query(
-        `DELETE FROM ${tableName} WHERE department_id = $1 AND tenant_id = $2`,
-        [departmentId, tenantId],
-      );
+      await this.db.query(`DELETE FROM ${tableName} WHERE department_id = $1 AND tenant_id = $2`, [
+        departmentId,
+        tenantId,
+      ]);
     }
   }
 
@@ -779,10 +745,7 @@ export class DepartmentsService {
   /**
    * Get department members
    */
-  async getDepartmentMembers(
-    id: number,
-    tenantId: number,
-  ): Promise<DepartmentMember[]> {
+  async getDepartmentMembers(id: number, tenantId: number): Promise<DepartmentMember[]> {
     this.logger.debug(`Fetching members for department ${id}`);
 
     const existing = await this.db.query<DepartmentRow>(
@@ -836,9 +799,7 @@ export class DepartmentsService {
     tenantId: number,
     assignedBy: number,
   ): Promise<{ message: string }> {
-    this.logger.log(
-      `Assigning ${hallIds.length} halls to department ${departmentId}`,
-    );
+    this.logger.log(`Assigning ${hallIds.length} halls to department ${departmentId}`);
 
     await this.getDepartmentById(departmentId, tenantId);
 
@@ -869,10 +830,7 @@ export class DepartmentsService {
   /**
    * Get hall IDs assigned to a department
    */
-  async getDepartmentHallIds(
-    departmentId: number,
-    tenantId: number,
-  ): Promise<number[]> {
+  async getDepartmentHallIds(departmentId: number, tenantId: number): Promise<number[]> {
     const rows = await this.db.query<{ hall_id: number }>(
       `SELECT hall_id FROM department_halls WHERE department_id = $1 AND tenant_id = $2`,
       [departmentId, tenantId],
@@ -891,14 +849,12 @@ export class DepartmentsService {
     }
 
     const [deptRows, teamRows] = await Promise.all([
-      this.db.query<CountResult>(
-        'SELECT COUNT(*) as count FROM departments WHERE tenant_id = $1',
-        [tenantId],
-      ),
-      this.db.query<CountResult>(
-        'SELECT COUNT(*) as count FROM teams WHERE tenant_id = $1',
-        [tenantId],
-      ),
+      this.db.query<CountResult>('SELECT COUNT(*) as count FROM departments WHERE tenant_id = $1', [
+        tenantId,
+      ]),
+      this.db.query<CountResult>('SELECT COUNT(*) as count FROM teams WHERE tenant_id = $1', [
+        tenantId,
+      ]),
     ]);
 
     return {

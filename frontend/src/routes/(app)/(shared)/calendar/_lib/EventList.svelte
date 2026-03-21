@@ -1,8 +1,5 @@
 <script lang="ts">
-  import {
-    DEFAULT_HIERARCHY_LABELS,
-    type HierarchyLabels,
-  } from '$lib/types/hierarchy-labels';
+  import { DEFAULT_HIERARCHY_LABELS, type HierarchyLabels } from '$lib/types/hierarchy-labels';
 
   import { getUpcomingEventTimeStr, getEventLevelInfo } from './utils';
 
@@ -51,8 +48,7 @@
         {#each events as event (event.id)}
           {@const levelInfo = getEventLevelInfo(event.orgLevel)}
           {@const hasArea = event.areaId !== null && event.areaId !== undefined}
-          {@const hasDept =
-            event.departmentId !== null && event.departmentId !== undefined}
+          {@const hasDept = event.departmentId !== null && event.departmentId !== undefined}
           {@const hasTeam = event.teamId !== null && event.teamId !== undefined}
           <button
             type="button"
@@ -62,9 +58,7 @@
             }}
           >
             <div class="event-date">
-              <span class="event-day"
-                >{new Date(event.startTime).getDate()}</span
-              >
+              <span class="event-day">{new Date(event.startTime).getDate()}</span>
               <span class="event-month">
                 {new Date(event.startTime).toLocaleDateString('de-DE', {
                   month: 'short',
@@ -82,22 +76,16 @@
               {/if}
               <div class="event-badges">
                 {#if hasArea}
-                  <span class="event-level event-level-area">{labels.area}</span
-                  >
+                  <span class="event-level event-level-area">{labels.area}</span>
                 {/if}
                 {#if hasDept}
-                  <span class="event-level event-level-department"
-                    >{labels.department}</span
-                  >
+                  <span class="event-level event-level-department">{labels.department}</span>
                 {/if}
                 {#if hasTeam}
-                  <span class="event-level event-level-team">{labels.team}</span
-                  >
+                  <span class="event-level event-level-team">{labels.team}</span>
                 {/if}
                 {#if !hasArea && !hasDept && !hasTeam}
-                  <span class="event-level {levelInfo.class}"
-                    >{levelInfo.text}</span
-                  >
+                  <span class="event-level {levelInfo.class}">{levelInfo.text}</span>
                 {/if}
               </div>
             </div>

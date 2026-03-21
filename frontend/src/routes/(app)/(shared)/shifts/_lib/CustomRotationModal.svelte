@@ -37,9 +37,7 @@
   let shiftBlockLength = $state(10);
   let freeDays = $state(2);
   let startShift = $state<'early' | 'late' | 'night'>('early');
-  let shiftSequence = $state<'early-late-night' | 'night-late-early'>(
-    'early-late-night',
-  );
+  let shiftSequence = $state<'early-late-night' | 'night-late-early'>('early-late-night');
   let nthWeekdayFree = $state(false);
   let nthValue = $state(4);
   let weekdayValue = $state(0);
@@ -187,8 +185,8 @@
     </div>
     <div class="ds-modal__body">
       <p class="mb-4 text-(--color-text-secondary)">
-        Wählen Sie ein vordefiniertes Muster oder erstellen Sie ein eigenes. Das
-        gewählte Muster wird automatisch für den gewählten Zeitraum wiederholt.
+        Wählen Sie ein vordefiniertes Muster oder erstellen Sie ein eigenes. Das gewählte Muster
+        wird automatisch für den gewählten Zeitraum wiederholt.
       </p>
 
       <!-- Section 1: Zeitraum festlegen -->
@@ -228,8 +226,7 @@
         </div>
         <p class="mt-2 text-xs text-(--color-text-tertiary)">
           <i class="fas fa-info-circle mr-1"></i>
-          Tipp: Wählen Sie Enddatum bis zum Ende der ersten KW des Folgejahres für
-          nahtlosen Übergang.
+          Tipp: Wählen Sie Enddatum bis zum Ende der ersten KW des Folgejahres für nahtlosen Übergang.
         </p>
       </div>
 
@@ -249,14 +246,13 @@
             >
               Schichtblock-Länge (Tage)
               <span class="tooltip ml-1">
-                <i class="fa-info-circle fas cursor-help text-sm text-blue-400"
-                ></i>
+                <i class="fa-info-circle fas cursor-help text-sm text-blue-400"></i>
                 <span
                   class="tooltip__content tooltip__content--info tooltip__content--right"
                   role="tooltip"
                 >
-                  Legt fest, wie viele Tage durchgehend in einer Schicht
-                  gearbeitet wird. Beispiel: 10 Tage Frühschicht, dann Freitage.
+                  Legt fest, wie viele Tage durchgehend in einer Schicht gearbeitet wird. Beispiel:
+                  10 Tage Frühschicht, dann Freitage.
                 </span>
               </span>
             </label>
@@ -374,8 +370,7 @@
                   <button
                     type="button"
                     class="dropdown__option"
-                    class:dropdown__option--selected={shiftSequence ===
-                      'early-late-night'}
+                    class:dropdown__option--selected={shiftSequence === 'early-late-night'}
                     onclick={() => {
                       shiftSequence = 'early-late-night';
                       shiftSequenceOpen = false;
@@ -386,8 +381,7 @@
                   <button
                     type="button"
                     class="dropdown__option"
-                    class:dropdown__option--selected={shiftSequence ===
-                      'night-late-early'}
+                    class:dropdown__option--selected={shiftSequence === 'night-late-early'}
                     onclick={() => {
                       shiftSequence = 'night-late-early';
                       shiftSequenceOpen = false;
@@ -517,9 +511,7 @@
                   }}
                   role="listitem"
                 >
-                  <span class="employee-name"
-                    >{getEmployeeDisplayName(employee)}</span
-                  >
+                  <span class="employee-name">{getEmployeeDisplayName(employee)}</span>
                 </div>
               {/each}
             {/if}
@@ -551,9 +543,7 @@
                   {@const emp = getEmployeeById(empId)}
                   {#if emp}
                     <div class="employee-item in-drop-zone">
-                      <span class="employee-name"
-                        >{getEmployeeDisplayName(emp)}</span
-                      >
+                      <span class="employee-name">{getEmployeeDisplayName(emp)}</span>
                       <button
                         type="button"
                         class="btn-remove-rotation"
@@ -579,8 +569,7 @@
           </div>
           <!-- eslint-enable @typescript-eslint/no-confusing-void-expression, sonarjs/no-use-of-empty-return-value -->
           <small class="form-field__hint mt-2 block">
-            Ziehen Sie Mitarbeiter in die entsprechende Spalte, um ihre
-            Startschicht festzulegen
+            Ziehen Sie Mitarbeiter in die entsprechende Spalte, um ihre Startschicht festzulegen
           </small>
         </div>
       </div>

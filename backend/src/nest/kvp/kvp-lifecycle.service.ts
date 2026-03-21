@@ -35,9 +35,7 @@ export class KvpLifecycleService {
     tenantId: number,
     userId: number,
   ): Promise<{ message: string }> {
-    this.logger.log(
-      `Sharing suggestion ${String(id)} at ${dto.orgLevel} level`,
-    );
+    this.logger.log(`Sharing suggestion ${String(id)} at ${dto.orgLevel} level`);
 
     const idColumn = isUuid(id) ? 'uuid' : 'id';
     const rows = await this.db.query<{ id: number }>(
@@ -57,10 +55,7 @@ export class KvpLifecycleService {
   }
 
   /** Unshare a suggestion (reset to team level — uses team_id from creation) */
-  async unshareSuggestion(
-    id: number | string,
-    tenantId: number,
-  ): Promise<{ message: string }> {
+  async unshareSuggestion(id: number | string, tenantId: number): Promise<{ message: string }> {
     this.logger.log(`Unsharing suggestion ${String(id)}`);
 
     const idColumn = isUuid(id) ? 'uuid' : 'id';
@@ -93,10 +88,7 @@ export class KvpLifecycleService {
   ): Promise<{ message: string }> {
     this.logger.log(`Archiving suggestion ${String(id)}`);
 
-    const { suggestion, idColumn } = await this.findSuggestionOrThrow(
-      id,
-      tenantId,
-    );
+    const { suggestion, idColumn } = await this.findSuggestionOrThrow(id, tenantId);
 
     await this.db.query(
       `UPDATE kvp_suggestions SET status = 'archived', updated_at = NOW() WHERE ${idColumn} = $1 AND tenant_id = $2`,
@@ -124,10 +116,7 @@ export class KvpLifecycleService {
   ): Promise<{ message: string }> {
     this.logger.log(`Unarchiving suggestion ${String(id)}`);
 
-    const { suggestion, idColumn } = await this.findSuggestionOrThrow(
-      id,
-      tenantId,
-    );
+    const { suggestion, idColumn } = await this.findSuggestionOrThrow(id, tenantId);
 
     await this.db.query(
       `UPDATE kvp_suggestions SET status = 'restored', updated_at = NOW() WHERE ${idColumn} = $1 AND tenant_id = $2`,
@@ -165,10 +154,10 @@ export class KvpLifecycleService {
       id: number;
       title: string;
       status: string;
-    }>(
-      `SELECT id, title, status FROM kvp_suggestions WHERE ${idColumn} = $1 AND tenant_id = $2`,
-      [id, tenantId],
-    );
+    }>(`SELECT id, title, status FROM kvp_suggestions WHERE ${idColumn} = $1 AND tenant_id = $2`, [
+      id,
+      tenantId,
+    ]);
 
     const suggestion = rows[0];
     if (suggestion === undefined) {

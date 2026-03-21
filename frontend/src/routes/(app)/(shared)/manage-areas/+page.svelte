@@ -100,18 +100,12 @@
   // =============================================================================
 
   const isEditMode = $derived(editingAreaId !== null);
-  const modalTitle = $derived(
-    isEditMode ? messages.MODAL_TITLE_EDIT : messages.MODAL_TITLE_ADD,
-  );
+  const modalTitle = $derived(isEditMode ? messages.MODAL_TITLE_EDIT : messages.MODAL_TITLE_ADD);
   // Filter areas by status
-  const statusFilteredAreas = $derived.by(() =>
-    filterByStatus(areas, statusFilter),
-  );
+  const statusFilteredAreas = $derived.by(() => filterByStatus(areas, statusFilter));
 
   // Filter by search query
-  const filteredAreas = $derived.by(() =>
-    filterBySearch(statusFilteredAreas, searchQuery),
-  );
+  const filteredAreas = $derived.by(() => filterBySearch(statusFilteredAreas, searchQuery));
 
   // Search results (max 5)
   const searchResults = $derived(filteredAreas.slice(0, 5));
@@ -213,16 +207,12 @@
           assignHallsToArea(result.areaId, formHallIds),
         ]);
 
-        showSuccessAlert(
-          isEditMode ? messages.SUCCESS_UPDATED : messages.SUCCESS_CREATED,
-        );
+        showSuccessAlert(isEditMode ? messages.SUCCESS_UPDATED : messages.SUCCESS_CREATED);
         closeAreaModal();
         await invalidateAll();
       } else if (result.success) {
         // Fallback: area saved but no ID returned (shouldn't happen)
-        showSuccessAlert(
-          isEditMode ? messages.SUCCESS_UPDATED : messages.SUCCESS_CREATED,
-        );
+        showSuccessAlert(isEditMode ? messages.SUCCESS_UPDATED : messages.SUCCESS_CREATED);
         closeAreaModal();
         await invalidateAll();
       } else if (result.error !== null) {
@@ -245,8 +235,7 @@
       // Level 3: Trigger SSR refetch
       await invalidateAll();
     } else if (result.hasDependencies === true) {
-      forceDeleteMessage =
-        result.dependencyMessage ?? messages.FORCE_DELETE_DEFAULT_MESSAGE;
+      forceDeleteMessage = result.dependencyMessage ?? messages.FORCE_DELETE_DEFAULT_MESSAGE;
       showDeleteModal = false;
       showForceDeleteModal = true;
     } else if (result.error !== null) {
@@ -446,8 +435,7 @@
                           {getTypeLabel(area.type)}
                         </div>
                         <div class="search-result-item__meta">
-                          <span
-                            class="badge {getStatusBadgeClass(area.isActive)}"
+                          <span class="badge {getStatusBadgeClass(area.isActive)}"
                             >{getStatusLabel(area.isActive)}</span
                           >
                         </div>
@@ -522,9 +510,7 @@
                       </div>
                     </td>
                     <td>
-                      <span class="badge badge--info"
-                        >{getTypeLabel(area.type)}</span
-                      >
+                      <span class="badge badge--info">{getTypeLabel(area.type)}</span>
                     </td>
                     <td class="text-center">{area.capacity ?? '-'}</td>
                     <td>
@@ -537,9 +523,7 @@
                         <span class="badge badge--info">
                           {getHallIdsForArea(area.id, allHalls).length === 1 ?
                             messages.ONE_HALL
-                          : messages.multipleHalls(
-                              getHallIdsForArea(area.id, allHalls).length,
-                            )}
+                          : messages.multipleHalls(getHallIdsForArea(area.id, allHalls).length)}
                         </span>
                       {/if}
                     </td>
@@ -547,17 +531,14 @@
                       {#if Number(area.departmentCount ?? 0) === 0}
                         <span
                           class="badge badge--secondary"
-                          title="Keine zugeordnet"
-                          >{messages.NO_DEPARTMENTS}</span
+                          title="Keine zugeordnet">{messages.NO_DEPARTMENTS}</span
                         >
                       {:else}
                         <span
                           class="badge badge--info"
                           title={area.departmentNames ?? ''}
                         >
-                          {messages.multipleDepartments(
-                            Number(area.departmentCount ?? 0),
-                          )}
+                          {messages.multipleDepartments(Number(area.departmentCount ?? 0))}
                         </span>
                       {/if}
                     </td>

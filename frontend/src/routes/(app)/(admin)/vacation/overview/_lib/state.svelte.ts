@@ -65,8 +65,7 @@ const daysInMonth = $derived(
  */
 const blackoutDays = $derived.by((): Map<number, string> => {
   const result = new Map<number, string>();
-  if (blackouts.length === 0 || selectedYear === null || selectedMonth === null)
-    return result;
+  if (blackouts.length === 0 || selectedYear === null || selectedMonth === null) return result;
 
   const monthStartDate = new Date(selectedYear, selectedMonth - 1, 1);
   const monthEndDate = new Date(selectedYear, selectedMonth - 1, daysInMonth);
@@ -98,13 +97,9 @@ const selectedTeamName = $derived.by(() => {
 
 /** Transform calendar entries into a grid structure for rendering */
 const calendarGrid = $derived.by((): CalendarUserRow[] => {
-  if (calendarData === null || selectedYear === null || selectedMonth === null)
-    return [];
+  if (calendarData === null || selectedYear === null || selectedMonth === null) return [];
 
-  const userMap = new Map<
-    number,
-    { userName: string; entries: TeamCalendarEntry[] }
-  >();
+  const userMap = new Map<number, { userName: string; entries: TeamCalendarEntry[] }>();
 
   for (const entry of calendarData.entries) {
     const existing = userMap.get(entry.userId);
@@ -138,9 +133,7 @@ const calendarGrid = $derived.by((): CalendarUserRow[] => {
 // ─── Year overview derived ───────────────────────────────────────
 
 /** Whether the year overview is active (year selected, no month) */
-const showYearOverview = $derived(
-  selectedYear !== null && selectedMonth === null,
-);
+const showYearOverview = $derived(selectedYear !== null && selectedMonth === null);
 
 /** Transform 12 months of calendar data into a year grid for rendering */
 const yearGrid = $derived.by((): YearUserRow[] => {
@@ -164,9 +157,7 @@ interface YearUserMapEntry {
 }
 
 /** Build a user map from 12 months of calendar data. */
-function buildYearUserMap(
-  data: TeamCalendarData[],
-): Map<number, YearUserMapEntry> {
+function buildYearUserMap(data: TeamCalendarData[]): Map<number, YearUserMapEntry> {
   const userMap = new Map<number, YearUserMapEntry>();
 
   for (const monthData of data) {
@@ -188,11 +179,7 @@ function processMonthEntries(
       userMap.set(entry.userId, user);
     }
 
-    const dayCount = countEntryDaysInMonth(
-      entry,
-      monthData.year,
-      monthData.month,
-    );
+    const dayCount = countEntryDaysInMonth(entry, monthData.year, monthData.month);
     if (dayCount === 0) continue;
 
     addToYearMonthCell(user.months, monthData.month, {
@@ -219,10 +206,7 @@ function buildYearRows(userMap: Map<number, YearUserMapEntry>): YearUserRow[] {
 }
 
 /** Build a map of months (1-12) → blackout name for a given year. */
-function buildYearBlackoutMap(
-  periods: BlackoutPeriod[],
-  year: number,
-): Map<number, string> {
+function buildYearBlackoutMap(periods: BlackoutPeriod[], year: number): Map<number, string> {
   const result = new Map<number, string>();
 
   for (const bo of periods) {
@@ -254,11 +238,7 @@ function fillBlackoutMonths(
 // ─── Year overview helpers (entry-level) ────────────────────────
 
 /** Count how many days an entry occupies within a specific month. */
-function countEntryDaysInMonth(
-  entry: TeamCalendarEntry,
-  year: number,
-  month: number,
-): number {
+function countEntryDaysInMonth(entry: TeamCalendarEntry, year: number, month: number): number {
   const entryStart = new Date(entry.startDate + 'T00:00:00');
   const entryEnd = new Date(entry.endDate + 'T00:00:00');
   const monthStart = new Date(year, month - 1, 1);
@@ -286,9 +266,7 @@ function addToYearMonthCell(
 ): void {
   const existing = months.get(month);
   if (existing !== undefined) {
-    const sameType = existing.entries.find(
-      (e) => e.vacationType === summary.vacationType,
-    );
+    const sameType = existing.entries.find((e) => e.vacationType === summary.vacationType);
     if (sameType !== undefined) {
       sameType.days += summary.days;
     } else {
@@ -306,10 +284,7 @@ function addToYearMonthCell(
 // ─── Helpers ────────────────────────────────────────────────────────
 
 /** Fill day cells from a single calendar entry, clipped to the selected month. */
-function fillDaysFromEntry(
-  days: Map<number, CalendarDayCell>,
-  entry: TeamCalendarEntry,
-): void {
+function fillDaysFromEntry(days: Map<number, CalendarDayCell>, entry: TeamCalendarEntry): void {
   if (selectedYear === null || selectedMonth === null) return;
 
   const entryStart = new Date(entry.startDate + 'T00:00:00');

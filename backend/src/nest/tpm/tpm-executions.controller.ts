@@ -94,11 +94,7 @@ export class TpmExecutionsController {
     @Query() query: ListExecutionsQueryDto,
     @TenantId() tenantId: number,
   ): Promise<PaginatedExecutions> {
-    return await this.executionsService.listPendingApprovals(
-      tenantId,
-      query.page,
-      query.limit,
-    );
+    return await this.executionsService.listPendingApprovals(tenantId, query.page, query.limit);
   }
 
   /**
@@ -109,9 +105,7 @@ export class TpmExecutionsController {
    */
   @Get('eligible-participants')
   @RequirePermission(FEAT, MOD_EXEC, 'canRead')
-  async getEligibleParticipants(
-    @TenantId() tenantId: number,
-  ): Promise<EligibleParticipant[]> {
+  async getEligibleParticipants(@TenantId() tenantId: number): Promise<EligibleParticipant[]> {
     return await this.executionsService.getEligibleParticipants(tenantId);
   }
 
@@ -134,23 +128,14 @@ export class TpmExecutionsController {
       throw new BadRequestException('Keine Datei hochgeladen');
     }
 
-    const storagePath = await writeDefectPhotoToDisk(
-      tenantId,
-      defectUuid,
-      file,
-    );
+    const storagePath = await writeDefectPhotoToDisk(tenantId, defectUuid, file);
 
-    return await this.executionsService.addDefectPhoto(
-      tenantId,
-      defectUuid,
-      user.id,
-      {
-        filePath: storagePath,
-        fileName: file.originalname,
-        fileSize: file.size,
-        mimeType: file.mimetype,
-      },
-    );
+    return await this.executionsService.addDefectPhoto(tenantId, defectUuid, user.id, {
+      filePath: storagePath,
+      fileName: file.originalname,
+      fileSize: file.size,
+      mimeType: file.mimetype,
+    });
   }
 
   /** GET /tpm/executions/defects/:uuid/photos — List photos for a defect */
@@ -172,12 +157,10 @@ export class TpmExecutionsController {
     @CurrentUser() user: NestAuthUser,
     @TenantId() tenantId: number,
   ): Promise<TpmExecutionDefect> {
-    return await this.executionsService.updateDefect(
-      tenantId,
-      defectUuid,
-      user.id,
-      { title: dto.title, description: dto.description },
-    );
+    return await this.executionsService.updateDefect(tenantId, defectUuid, user.id, {
+      title: dto.title,
+      description: dto.description,
+    });
   }
 
   // ============================================================================
@@ -193,21 +176,16 @@ export class TpmExecutionsController {
     @CurrentUser() user: NestAuthUser,
     @TenantId() tenantId: number,
   ): Promise<TpmCardExecution> {
-    return await this.executionsService.createExecution(
-      tenantId,
-      dto.cardUuid,
-      user.id,
-      {
-        executionDate: dto.executionDate,
-        noIssuesFound: dto.noIssuesFound,
-        actualDurationMinutes: dto.actualDurationMinutes,
-        actualStaffCount: dto.actualStaffCount,
-        documentation: dto.documentation,
-        customData: dto.customData,
-        participantUuids: dto.participantUuids,
-        defects: dto.defects,
-      },
-    );
+    return await this.executionsService.createExecution(tenantId, dto.cardUuid, user.id, {
+      executionDate: dto.executionDate,
+      noIssuesFound: dto.noIssuesFound,
+      actualDurationMinutes: dto.actualDurationMinutes,
+      actualStaffCount: dto.actualStaffCount,
+      documentation: dto.documentation,
+      customData: dto.customData,
+      participantUuids: dto.participantUuids,
+      defects: dto.defects,
+    });
   }
 
   /** GET /tpm/executions/:uuid — Get single execution */
@@ -235,20 +213,10 @@ export class TpmExecutionsController {
     @TenantId() tenantId: number,
   ): Promise<TpmCardExecution> {
     if (dto.action === 'approved') {
-      return await this.approvalService.approveExecution(
-        tenantId,
-        executionUuid,
-        user.id,
-        dto,
-      );
+      return await this.approvalService.approveExecution(tenantId, executionUuid, user.id, dto);
     }
 
-    return await this.approvalService.rejectExecution(
-      tenantId,
-      executionUuid,
-      user.id,
-      dto,
-    );
+    return await this.approvalService.rejectExecution(tenantId, executionUuid, user.id, dto);
   }
 
   // ============================================================================
@@ -272,17 +240,12 @@ export class TpmExecutionsController {
 
     const storagePath = await writePhotoToDisk(tenantId, executionUuid, file);
 
-    return await this.executionsService.addPhoto(
-      tenantId,
-      executionUuid,
-      user.id,
-      {
-        filePath: storagePath,
-        fileName: file.originalname,
-        fileSize: file.size,
-        mimeType: file.mimetype,
-      },
-    );
+    return await this.executionsService.addPhoto(tenantId, executionUuid, user.id, {
+      filePath: storagePath,
+      fileName: file.originalname,
+      fileSize: file.size,
+      mimeType: file.mimetype,
+    });
   }
 
   /** GET /tpm/executions/:uuid/photos — List photos for execution */

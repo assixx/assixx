@@ -3,11 +3,7 @@
 // Based on: frontend/src/scripts/survey/employee/ui.ts
 // =============================================================================
 
-import {
-  STATUS_TEXT_MAP,
-  STATUS_BADGE_CLASS_MAP,
-  ASSIGNMENT_BADGE_MAP,
-} from './constants';
+import { STATUS_TEXT_MAP, STATUS_BADGE_CLASS_MAP, ASSIGNMENT_BADGE_MAP } from './constants';
 
 import type {
   AssignmentType,
@@ -69,9 +65,7 @@ export function toBool(value: unknown): boolean {
 /**
  * Check if a question is required
  */
-export function isQuestionRequired(
-  required: boolean | number | string | undefined,
-): boolean {
+export function isQuestionRequired(required: boolean | number | string | undefined): boolean {
   if (required === undefined) return false;
   if (typeof required === 'boolean') return required;
   if (typeof required === 'number') return required !== 0;
@@ -82,9 +76,7 @@ export function isQuestionRequired(
 /**
  * Format date for display (German format DD.MM.YYYY)
  */
-export function formatSurveyDate(
-  dateStr: string | Date | null | undefined,
-): string {
+export function formatSurveyDate(dateStr: string | Date | null | undefined): string {
   if (dateStr === null || dateStr === undefined || dateStr === '') return '';
 
   const date = new Date(dateStr);
@@ -203,10 +195,7 @@ function resolveAssignmentText(
   if (assignmentType === 'team' && assignment.teamName !== undefined) {
     return assignment.teamName;
   }
-  if (
-    assignmentType === 'department' &&
-    assignment.departmentName !== undefined
-  ) {
+  if (assignmentType === 'department' && assignment.departmentName !== undefined) {
     return assignment.departmentName;
   }
   if (assignmentType === 'area' && assignment.areaName !== undefined) {
@@ -226,18 +215,13 @@ export function getAssignmentBadges(
 
   const badges: AssignmentBadgeInfo[] = [];
   for (const assignment of assignments) {
-    const assignmentType: AssignmentType | undefined =
-      assignment.assignmentType ?? assignment.type;
+    const assignmentType: AssignmentType | undefined = assignment.assignmentType ?? assignment.type;
     if (assignmentType === undefined) continue;
 
     const badgeMeta = ASSIGNMENT_BADGE_MAP[assignmentType];
     if (badgeMeta === undefined) continue;
 
-    const text: string = resolveAssignmentText(
-      assignmentType,
-      assignment,
-      badgeMeta.label,
-    );
+    const text: string = resolveAssignmentText(assignmentType, assignment, badgeMeta.label);
     badges.push({
       badgeClass: badgeMeta.badgeClass,
       icon: badgeMeta.icon,

@@ -50,9 +50,7 @@
   // DERIVED VALUES
   // =============================================================================
 
-  const activePlanCount = $derived(
-    allPlans.filter((p: TpmPlan) => p.isActive === 1).length,
-  );
+  const activePlanCount = $derived(allPlans.filter((p: TpmPlan) => p.isActive === 1).length);
 
   // =============================================================================
   // HANDLERS
@@ -87,9 +85,7 @@
       await invalidateAll();
     } catch (err: unknown) {
       logApiError('confirmDelete', err);
-      showErrorAlert(
-        err instanceof Error ? err.message : messages.ERROR_DELETE_FAILED,
-      );
+      showErrorAlert(err instanceof Error ? err.message : messages.ERROR_DELETE_FAILED);
     } finally {
       tpmState.setSubmitting(false);
     }

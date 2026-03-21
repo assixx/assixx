@@ -49,9 +49,7 @@ export async function fetchUserData(): Promise<User | null> {
 // SUGGESTION
 // =============================================================================
 
-export async function fetchSuggestion(
-  idOrUuid: string,
-): Promise<KvpSuggestion | null> {
+export async function fetchSuggestion(idOrUuid: string): Promise<KvpSuggestion | null> {
   try {
     return await apiClient.get<KvpSuggestion>(API_ENDPOINTS.kvpById(idOrUuid));
   } catch (err: unknown) {
@@ -73,18 +71,12 @@ export async function updateSuggestionStatus(
     }
 
     // API client returns the suggestion directly (already unwrapped from { success, data } envelope)
-    const suggestion = await apiClient.put<KvpSuggestion>(
-      API_ENDPOINTS.kvpById(idOrUuid),
-      data,
-    );
+    const suggestion = await apiClient.put<KvpSuggestion>(API_ENDPOINTS.kvpById(idOrUuid), data);
     return { success: true, suggestion };
   } catch (err: unknown) {
     log.error({ err }, 'Error updating status');
     checkSessionExpired(err);
-    const message =
-      err instanceof Error ?
-        err.message
-      : 'Fehler beim Aktualisieren des Status';
+    const message = err instanceof Error ? err.message : 'Fehler beim Aktualisieren des Status';
     return { success: false, error: message };
   }
 }
@@ -98,8 +90,7 @@ export async function archiveSuggestion(
   } catch (err: unknown) {
     log.error({ err }, 'Error archiving suggestion');
     checkSessionExpired(err);
-    const message =
-      err instanceof Error ? err.message : 'Fehler beim Archivieren';
+    const message = err instanceof Error ? err.message : 'Fehler beim Archivieren';
     return { success: false, error: message };
   }
 }
@@ -116,8 +107,7 @@ export async function unarchiveSuggestion(
   } catch (err: unknown) {
     log.error({ err }, 'Error unarchiving suggestion');
     checkSessionExpired(err);
-    const message =
-      err instanceof Error ? err.message : 'Fehler beim Wiederherstellen';
+    const message = err instanceof Error ? err.message : 'Fehler beim Wiederherstellen';
     return { success: false, error: message };
   }
 }
@@ -151,8 +141,7 @@ export async function unshareSuggestion(
   } catch (err: unknown) {
     log.error({ err }, 'Error unsharing suggestion');
     checkSessionExpired(err);
-    const message =
-      err instanceof Error ? err.message : 'Fehler beim rückgängigmachen';
+    const message = err instanceof Error ? err.message : 'Fehler beim rückgängigmachen';
     return { success: false, error: message };
   }
 }
@@ -203,10 +192,7 @@ export async function addComment(
   } catch (err: unknown) {
     log.error({ err }, 'Error adding comment');
     checkSessionExpired(err);
-    const message =
-      err instanceof Error ?
-        err.message
-      : 'Fehler beim Hinzufügen des Kommentars';
+    const message = err instanceof Error ? err.message : 'Fehler beim Hinzufügen des Kommentars';
     return { success: false, error: message };
   }
 }
@@ -215,13 +201,9 @@ export async function addComment(
 // ATTACHMENTS
 // =============================================================================
 
-export async function fetchAttachments(
-  idOrUuid: string,
-): Promise<Attachment[]> {
+export async function fetchAttachments(idOrUuid: string): Promise<Attachment[]> {
   try {
-    return await apiClient.get<Attachment[]>(
-      API_ENDPOINTS.kvpAttachments(idOrUuid),
-    );
+    return await apiClient.get<Attachment[]>(API_ENDPOINTS.kvpAttachments(idOrUuid));
   } catch (err: unknown) {
     log.error({ err }, 'Error fetching attachments');
     return [];
@@ -256,8 +238,7 @@ export async function confirmSuggestion(
   } catch (err: unknown) {
     log.error({ err }, 'Error confirming suggestion');
     checkSessionExpired(err);
-    const message =
-      err instanceof Error ? err.message : 'Fehler beim Markieren als gelesen';
+    const message = err instanceof Error ? err.message : 'Fehler beim Markieren als gelesen';
     return { success: false, error: message };
   }
 }
@@ -274,10 +255,7 @@ export async function unconfirmSuggestion(
   } catch (err: unknown) {
     log.error({ err }, 'Error unconfirming suggestion');
     checkSessionExpired(err);
-    const message =
-      err instanceof Error ?
-        err.message
-      : 'Fehler beim Markieren als ungelesen';
+    const message = err instanceof Error ? err.message : 'Fehler beim Markieren als ungelesen';
     return { success: false, error: message };
   }
 }
@@ -288,9 +266,7 @@ export async function unconfirmSuggestion(
 
 export async function fetchDepartments(): Promise<Department[]> {
   try {
-    const departments = await apiClient.get<Department[]>(
-      API_ENDPOINTS.departments,
-    );
+    const departments = await apiClient.get<Department[]>(API_ENDPOINTS.departments);
     return Array.isArray(departments) ? departments : [];
   } catch (err: unknown) {
     log.error({ err }, 'Error fetching departments');

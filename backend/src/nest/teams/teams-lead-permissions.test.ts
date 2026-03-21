@@ -87,9 +87,7 @@ describe('SECURITY: Seed permissions on deputy lead assignment', () => {
 
     await service.updateTeam(1, { deputyLeaderId: 200 }, 1, 3);
 
-    const inserts = sqls().filter((s: string) =>
-      s.includes('manage_hierarchy'),
-    );
+    const inserts = sqls().filter((s: string) => s.includes('manage_hierarchy'));
     expect(inserts).toHaveLength(2);
   });
 });
@@ -112,9 +110,7 @@ describe('SECURITY: Cleanup permissions on lead removal', () => {
 
     await service.updateTeam(1, { leaderId: null }, 1, 3);
 
-    const deletes = sqls().filter((s: string) =>
-      s.includes('DELETE FROM user_addon_permissions'),
-    );
+    const deletes = sqls().filter((s: string) => s.includes('DELETE FROM user_addon_permissions'));
     expect(deletes).toHaveLength(1);
   });
 
@@ -126,9 +122,7 @@ describe('SECURITY: Cleanup permissions on lead removal', () => {
 
     await service.updateTeam(1, { leaderId: null }, 1, 3);
 
-    const deletes = sqls().filter((s: string) =>
-      s.includes('DELETE FROM user_addon_permissions'),
-    );
+    const deletes = sqls().filter((s: string) => s.includes('DELETE FROM user_addon_permissions'));
     expect(deletes).toHaveLength(0);
   });
 });
@@ -149,8 +143,7 @@ describe('SECURITY: No permission changes when leads unchanged', () => {
     await service.updateTeam(1, { description: 'New' }, 1, 3);
 
     const permCalls = sqls().filter(
-      (s: string) =>
-        s.includes('manage_hierarchy') || s.includes('user_addon_permissions'),
+      (s: string) => s.includes('manage_hierarchy') || s.includes('user_addon_permissions'),
     );
     expect(permCalls).toHaveLength(0);
   });

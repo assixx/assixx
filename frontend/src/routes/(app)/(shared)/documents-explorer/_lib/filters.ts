@@ -2,21 +2,13 @@
 // DOCUMENTS EXPLORER - FILTER FUNCTIONS (Pure Functions)
 // =============================================================================
 
-import type {
-  Document,
-  DocumentCategory,
-  SortOption,
-  CategoryCounts,
-} from './types';
+import type { Document, DocumentCategory, SortOption, CategoryCounts } from './types';
 
 /**
  * Filter documents by category
  * Direct 1:1 mapping with accessScope
  */
-export function filterByCategory(
-  documents: Document[],
-  category: DocumentCategory,
-): Document[] {
+export function filterByCategory(documents: Document[], category: DocumentCategory): Document[] {
   if (category === 'all') {
     return documents;
   }
@@ -62,10 +54,7 @@ function getSearchScore(doc: Document, query: string): number {
  * Searches in: filename, category, uploader
  * Results are sorted by relevance score
  */
-export function filterBySearch(
-  documents: Document[],
-  query: string,
-): Document[] {
+export function filterBySearch(documents: Document[], query: string): Document[] {
   const term = query.toLowerCase().trim();
   if (!term) return documents;
 
@@ -86,24 +75,15 @@ export function filterBySearch(
 /**
  * Sort documents by specified option
  */
-export function sortDocuments(
-  documents: Document[],
-  sortOption: SortOption,
-): Document[] {
+export function sortDocuments(documents: Document[], sortOption: SortOption): Document[] {
   const sorted = [...documents];
 
   switch (sortOption) {
     case 'newest':
-      sorted.sort(
-        (a, b) =>
-          new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime(),
-      );
+      sorted.sort((a, b) => new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime());
       break;
     case 'oldest':
-      sorted.sort(
-        (a, b) =>
-          new Date(a.uploadedAt).getTime() - new Date(b.uploadedAt).getTime(),
-      );
+      sorted.sort((a, b) => new Date(a.uploadedAt).getTime() - new Date(b.uploadedAt).getTime());
       break;
     case 'name':
       sorted.sort((a, b) => a.filename.localeCompare(b.filename, 'de'));

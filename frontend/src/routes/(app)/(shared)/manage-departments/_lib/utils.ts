@@ -2,19 +2,9 @@
 // MANAGE DEPARTMENTS - UTILITY FUNCTIONS
 // =============================================================================
 
-import {
-  STATUS_BADGE_CLASSES,
-  STATUS_LABELS,
-  FORM_DEFAULTS,
-} from './constants';
+import { STATUS_BADGE_CLASSES, STATUS_LABELS, FORM_DEFAULTS } from './constants';
 
-import type {
-  Department,
-  AdminUser,
-  Area,
-  IsActiveStatus,
-  FormIsActiveStatus,
-} from './types';
+import type { Department, AdminUser, Area, IsActiveStatus, FormIsActiveStatus } from './types';
 
 // =============================================================================
 // STATUS HELPERS
@@ -54,20 +44,14 @@ export function getTeamCountText(count: number, teamLabel: string): string {
 // =============================================================================
 
 /** Get selected area name for dropdown trigger */
-export function getSelectedAreaName(
-  areaId: number | null,
-  areas: Area[],
-): string {
+export function getSelectedAreaName(areaId: number | null, areas: Area[]): string {
   if (areaId === null) return 'Keine Zuordnung';
   const area = areas.find((a) => a.id === areaId);
   return area?.name ?? 'Keine Zuordnung';
 }
 
 /** Get selected lead name for dropdown trigger */
-export function getSelectedLeadName(
-  leadId: number | null,
-  leads: AdminUser[],
-): string {
+export function getSelectedLeadName(leadId: number | null, leads: AdminUser[]): string {
   if (leadId === null) return 'Kein Leiter';
   const lead = leads.find((l) => l.id === leadId);
   if (!lead) return 'Kein Leiter';
@@ -102,9 +86,7 @@ export function populateFormFromDepartment(
     areaId: department.areaId ?? null,
     departmentLeadId: department.departmentLeadId ?? null,
     hallIds,
-    isActive: (department.isActive === 4 ?
-      0
-    : department.isActive) as FormIsActiveStatus,
+    isActive: (department.isActive === 4 ? 0 : department.isActive) as FormIsActiveStatus,
   };
 }
 

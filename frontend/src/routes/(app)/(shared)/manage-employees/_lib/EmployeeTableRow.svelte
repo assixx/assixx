@@ -1,8 +1,5 @@
 <script lang="ts">
-  import {
-    DEFAULT_HIERARCHY_LABELS,
-    resolvePositionDisplay,
-  } from '$lib/types/hierarchy-labels';
+  import { DEFAULT_HIERARCHY_LABELS, resolvePositionDisplay } from '$lib/types/hierarchy-labels';
 
   import {
     getStatusBadgeClass,
@@ -65,9 +62,7 @@
   <td><code class="text-muted">{employee.id}</code></td>
   <td>
     <div class="flex items-center gap-2">
-      <div
-        class="avatar avatar--sm avatar--color-{getAvatarColor(employee.id)}"
-      >
+      <div class="avatar avatar--sm avatar--color-{getAvatarColor(employee.id)}">
         <span>{employee.firstName.charAt(0)}{employee.lastName.charAt(0)}</span>
       </div>
       <span>{employee.firstName} {employee.lastName}</span>
@@ -109,8 +104,7 @@
   </td>
   <td>
     <span class="badge {availabilityBadge.class}">
-      {#if availabilityBadge.icon}<i class="fas {availabilityBadge.icon} mr-1"
-        ></i>{/if}
+      {#if availabilityBadge.icon}<i class="fas {availabilityBadge.icon} mr-1"></i>{/if}
       {availabilityBadge.text}
     </span>
   </td>

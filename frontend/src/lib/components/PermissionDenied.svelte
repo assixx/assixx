@@ -15,8 +15,8 @@
         </div>
         <h3 class="empty-state__title">Keine Berechtigung</h3>
         <p class="empty-state__description">
-          Sie haben keine Berechtigung für {addonName}. Bitte wenden Sie sich an
-          Ihren Administrator.
+          Sie haben keine Berechtigung für {addonName}. Bitte wenden Sie sich an Ihren
+          Administrator.
         </p>
       </div>
     </div>

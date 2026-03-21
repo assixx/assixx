@@ -2,12 +2,7 @@
 // Gesamtansicht - Matrix Utility Functions
 // =============================================================================
 
-import type {
-  TpmPlan,
-  ProjectedSlot,
-  IntervalType,
-  TpmShiftAssignment,
-} from '../../_lib/types';
+import type { TpmPlan, ProjectedSlot, IntervalType, TpmShiftAssignment } from '../../_lib/types';
 
 /** One row in the matrix: plan + sorted dates per interval type */
 export interface MatrixRow {
@@ -84,10 +79,7 @@ export function formatDate(dateStr: string): string {
 }
 
 /** Format plan time range for display: "09:00 – 14:00" */
-export function formatTimeRange(
-  baseTime: string | null,
-  bufferHours: number,
-): string {
+export function formatTimeRange(baseTime: string | null, bufferHours: number): string {
   if (baseTime === null || baseTime.trim().length === 0) return '';
   const start = baseTime.substring(0, 5);
   const [h, m] = start.split(':').map(Number);
@@ -107,9 +99,7 @@ export function isFullDay(baseTime: string | null): boolean {
 // =============================================================================
 
 /** Index projected schedule: "planUuid:date" → interval types */
-export function buildDateIndex(
-  rows: MatrixRow[],
-): Map<string, Set<IntervalType>> {
+export function buildDateIndex(rows: MatrixRow[]): Map<string, Set<IntervalType>> {
   const index = new Map<string, Set<IntervalType>>();
   for (const row of rows) {
     for (const col of INTERVAL_COLUMNS) {
@@ -238,10 +228,7 @@ export function buildAssignmentCounts(
       seen.add(key);
 
       const entry = getOrCreateEntry(map, a);
-      entry.perInterval.set(
-        interval,
-        (entry.perInterval.get(interval) ?? 0) + 1,
-      );
+      entry.perInterval.set(interval, (entry.perInterval.get(interval) ?? 0) + 1);
       entry.total++;
     }
   }
@@ -250,9 +237,7 @@ export function buildAssignmentCounts(
 }
 
 /** Convert internal map to sorted TpmAssignmentCount array */
-function toSortedCounts(
-  map: Map<number, CountAccumulator>,
-): TpmAssignmentCount[] {
+function toSortedCounts(map: Map<number, CountAccumulator>): TpmAssignmentCount[] {
   const result: TpmAssignmentCount[] = [];
   for (const [userId, d] of map) {
     const counts: Partial<Record<IntervalType, number>> = {};
@@ -269,9 +254,6 @@ function toSortedCounts(
     });
   }
   return result.sort((a: TpmAssignmentCount, b: TpmAssignmentCount): number =>
-    `${a.lastName}, ${a.firstName}`.localeCompare(
-      `${b.lastName}, ${b.firstName}`,
-      'de',
-    ),
+    `${a.lastName}, ${a.firstName}`.localeCompare(`${b.lastName}, ${b.firstName}`, 'de'),
   );
 }

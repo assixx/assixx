@@ -21,18 +21,9 @@ import {
   findExistingConversation,
   buildNewConversation,
 } from './api';
-import {
-  WEBSOCKET_CONFIG,
-  SCHEDULE_CONSTRAINTS,
-  MESSAGES,
-  WS_MESSAGE_TYPES,
-} from './constants';
+import { WEBSOCKET_CONFIG, SCHEDULE_CONSTRAINTS, MESSAGES, WS_MESSAGE_TYPES } from './constants';
 import { decryptIncomingMessage } from './e2e-handlers';
-import {
-  isImageFile,
-  validateScheduleTime,
-  getMinScheduleDateTime,
-} from './utils';
+import { isImageFile, validateScheduleTime, getMinScheduleDateTime } from './utils';
 import {
   buildWebSocketUrl,
   transformRawMessage,
@@ -100,9 +91,7 @@ export interface ChatHandlers {
   getDefaultScheduleDateTime: () => { date: string; time: string };
 
   // WebSocket
-  connectWebSocket: (
-    callbacks: WebSocketCallbacks,
-  ) => Promise<WebSocket | null>;
+  connectWebSocket: (callbacks: WebSocketCallbacks) => Promise<WebSocket | null>;
   handleWebSocketMessage: (
     message: { type: string; data: unknown },
     callbacks: WebSocketCallbacks,
@@ -223,9 +212,7 @@ export async function persistPendingConversation(
   };
 }
 
-export async function deleteConversation(
-  conversationId: number,
-): Promise<void> {
+export async function deleteConversation(conversationId: number): Promise<void> {
   await apiDeleteConversation(conversationId);
 }
 
@@ -412,18 +399,12 @@ export function restorePresenceCallbacks(): void {
 }
 
 /** Parse raw WebSocket MessageEvent and dispatch to handler */
-function handleRawMessage(
-  event: MessageEvent,
-  callbacks: WebSocketCallbacks,
-): void {
+function handleRawMessage(event: MessageEvent, callbacks: WebSocketCallbacks): void {
   try {
     // MessageEvent.data is typed as 'any' in DOM lib - explicitly type it
     const rawData: unknown = event.data;
     if (typeof rawData !== 'string') {
-      log.error(
-        { rawDataType: typeof rawData },
-        'Unexpected WebSocket message type',
-      );
+      log.error({ rawDataType: typeof rawData }, 'Unexpected WebSocket message type');
       return;
     }
     const message = JSON.parse(rawData) as { type: string; data: unknown };
@@ -438,9 +419,7 @@ function handleRawMessage(
  * SECURITY: Fetches short-lived ticket instead of using JWT to prevent token leakage in logs
  * @see docs/TOKEN-SECURITY-REFACTORING-PLAN.md
  */
-export async function connectWebSocket(
-  callbacks: WebSocketCallbacks,
-): Promise<WebSocket | null> {
+export async function connectWebSocket(callbacks: WebSocketCallbacks): Promise<WebSocket | null> {
   if (!browser) return null;
 
   // IMPORTANT: Only set activeCallbacks if not already upgraded by chat page.
@@ -477,10 +456,7 @@ export async function connectWebSocket(
 
     newWs.onopen = () => {
       const hasConvs = activeCallbacks?.getConversations().length ?? 0;
-      log.info(
-        { hasConvs },
-        'WebSocket onopen — calling activeCallbacks.onConnected',
-      );
+      log.info({ hasConvs }, 'WebSocket onopen — calling activeCallbacks.onConnected');
       activeCallbacks?.onConnected(newWs);
     };
 
@@ -525,10 +501,7 @@ export async function connectWebSocket(
 // Individual message handlers to reduce complexity
 type MessageHandler = (data: unknown, callbacks: WebSocketCallbacks) => void;
 
-function handleConnectionEstablished(
-  _data: unknown,
-  callbacks: WebSocketCallbacks,
-): void {
+function handleConnectionEstablished(_data: unknown, callbacks: WebSocketCallbacks): void {
   // Reset reconnection state on successful connection
   reconnectAttempts = 0;
   if (reconnectTimeoutId !== null) {
@@ -582,10 +555,7 @@ function handleUserStatus(data: unknown, callbacks: WebSocketCallbacks): void {
 }
 
 /** Handle initial presence snapshot — marks conversation partners as online */
-function handleInitialPresence(
-  data: unknown,
-  callbacks: WebSocketCallbacks,
-): void {
+function handleInitialPresence(data: unknown, callbacks: WebSocketCallbacks): void {
   const presenceData = data as { onlineUserIds?: number[] };
   const onlineIds = presenceData.onlineUserIds;
   log.info({ onlineIds }, 'initial_presence received');
@@ -623,10 +593,7 @@ const messageHandlers: Record<string, MessageHandler> = {
 };
 
 // No-op types (acknowledged but no action needed)
-const noopMessageTypes = new Set<string>([
-  WS_MESSAGE_TYPES.PONG,
-  WS_MESSAGE_TYPES.MESSAGE_SENT,
-]);
+const noopMessageTypes = new Set<string>([WS_MESSAGE_TYPES.PONG, WS_MESSAGE_TYPES.MESSAGE_SENT]);
 
 export function handleWebSocketMessage(
   message: { type: string; data: unknown },
@@ -643,10 +610,7 @@ export function handleWebSocketMessage(
   }
 }
 
-export function sendWebSocketMessage(message: {
-  type: string;
-  data: unknown;
-}): boolean {
+export function sendWebSocketMessage(message: { type: string; data: unknown }): boolean {
   if (ws?.readyState !== WebSocket.OPEN) {
     return false;
   }
@@ -736,20 +700,14 @@ function scheduleReconnect(): void {
   if (reconnectTimeoutId !== null) return; // Already scheduled
 
   if (!shouldReconnect(reconnectAttempts)) {
-    log.error(
-      { reconnectAttempts },
-      'Max reconnection attempts reached, giving up',
-    );
+    log.error({ reconnectAttempts }, 'Max reconnection attempts reached, giving up');
     originalCallbacks.onDisconnect(true);
     return;
   }
 
   reconnectAttempts++;
   const delay = calculateReconnectDelay(reconnectAttempts);
-  log.info(
-    { attempt: reconnectAttempts, delay },
-    'Scheduling WebSocket reconnect',
-  );
+  log.info({ attempt: reconnectAttempts, delay }, 'Scheduling WebSocket reconnect');
 
   reconnectTimeoutId = window.setTimeout(() => {
     reconnectTimeoutId = null;

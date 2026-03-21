@@ -16,9 +16,7 @@ export type PositionRoleCategory = 'employee' | 'admin' | 'root';
 // CONSTANTS
 // =============================================================================
 
-export const ROLE_CATEGORY_LABELS: Readonly<
-  Record<PositionRoleCategory, string>
-> = {
+export const ROLE_CATEGORY_LABELS: Readonly<Record<PositionRoleCategory, string>> = {
   employee: 'Mitarbeiter',
   admin: 'Admin',
   root: 'Root',
@@ -114,9 +112,7 @@ export interface UserPositionEntry {
 // MAPPERS
 // =============================================================================
 
-export function mapPositionRowToApi(
-  row: PositionCatalogRow,
-): PositionCatalogEntry {
+export function mapPositionRowToApi(row: PositionCatalogRow): PositionCatalogEntry {
   return {
     id: row.id,
     name: row.name,
@@ -126,9 +122,7 @@ export function mapPositionRowToApi(
   };
 }
 
-export function mapUserPositionRowToApi(
-  row: UserPositionDetailRow,
-): UserPositionEntry {
+export function mapUserPositionRowToApi(row: UserPositionDetailRow): UserPositionEntry {
   return {
     id: row.id,
     userId: row.user_id,

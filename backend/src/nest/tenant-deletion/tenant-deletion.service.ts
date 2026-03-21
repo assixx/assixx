@@ -74,23 +74,11 @@ export class TenantDeletionService implements OnModuleDestroy {
     return await this.db.transaction(async (client: PoolClient) => {
       try {
         await this.audit.checkLegalHolds(tenantId, client);
-        const exportPath = await this.exporter.createTenantDataExport(
-          tenantId,
-          client,
-        );
+        const exportPath = await this.exporter.createTenantDataExport(tenantId, client);
         this.logger.log(`GDPR export created: ${exportPath}`);
-        await this.audit.createDeletionAuditTrail(
-          tenantId,
-          requestedBy,
-          reason,
-          ipAddress,
-          client,
-        );
+        await this.audit.createDeletionAuditTrail(tenantId, requestedBy, reason, ipAddress, client);
 
-        const deletionLog = await this.executor.executeDeletions(
-          tenantId,
-          client,
-        );
+        const deletionLog = await this.executor.executeDeletions(tenantId, client);
 
         await client.query(
           'UPDATE tenant_deletion_queue SET status = $1, completed_at = NOW() WHERE id = $2',
@@ -100,9 +88,7 @@ export class TenantDeletionService implements OnModuleDestroy {
         await this.analyzer.verifyCompleteDeletion(tenantId, client);
         return this.logAndReturnResult(tenantId, deletionLog, exportPath);
       } catch (error: unknown) {
-        this.logger.error(
-          `DELETION FAILED for tenant ${tenantId}: ${getErrorMessage(error)}`,
-        );
+        this.logger.error(`DELETION FAILED for tenant ${tenantId}: ${getErrorMessage(error)}`);
 
         try {
           await client.query(
@@ -110,9 +96,7 @@ export class TenantDeletionService implements OnModuleDestroy {
             ['failed', getErrorMessage(error), queueId],
           );
         } catch (updateError: unknown) {
-          this.logger.debug(
-            `Could not update queue status: ${getErrorMessage(updateError)}`,
-          );
+          this.logger.debug(`Could not update queue status: ${getErrorMessage(updateError)}`);
         }
         throw error;
       }
@@ -153,9 +137,7 @@ export class TenantDeletionService implements OnModuleDestroy {
 
     // Create queue entry
     const scheduledDate = new Date();
-    scheduledDate.setTime(
-      scheduledDate.getTime() + GRACE_PERIOD_MINUTES * 60 * 1000,
-    );
+    scheduledDate.setTime(scheduledDate.getTime() + GRACE_PERIOD_MINUTES * 60 * 1000);
 
     const rows = await this.db.query<{ id: number }>(
       `INSERT INTO tenant_deletion_queue
@@ -168,23 +150,16 @@ export class TenantDeletionService implements OnModuleDestroy {
     const queueId = rows[0]?.id ?? 0;
 
     // Update tenant status
-    await this.db.query(
-      'UPDATE tenants SET deletion_status = $1 WHERE id = $2',
-      ['marked_for_deletion', tenantId],
-    );
+    await this.db.query('UPDATE tenants SET deletion_status = $1 WHERE id = $2', [
+      'marked_for_deletion',
+      tenantId,
+    ]);
 
     // Send warning emails & create audit trail
     await this.audit.sendDeletionWarningEmails(tenantId, scheduledDate);
-    await this.audit.createDeletionAuditTrail(
-      tenantId,
-      requestedBy,
-      reason,
-      ipAddress,
-    );
+    await this.audit.createDeletionAuditTrail(tenantId, requestedBy, reason, ipAddress);
 
-    this.logger.log(
-      `Tenant deletion requested: ${tenantId}, Queue ID: ${queueId}`,
-    );
+    this.logger.log(`Tenant deletion requested: ${tenantId}, Queue ID: ${queueId}`);
     return queueId;
   }
 
@@ -203,9 +178,7 @@ export class TenantDeletionService implements OnModuleDestroy {
     );
 
     if (queue.length === 0) {
-      throw new Error(
-        'No active deletion found (must be pending_approval or queued)',
-      );
+      throw new Error('No active deletion found (must be pending_approval or queued)');
     }
 
     const firstQueueItem = queue[0];
@@ -232,15 +205,10 @@ export class TenantDeletionService implements OnModuleDestroy {
         "UPDATE tenant_deletion_queue SET status = 'cancelled', completed_at = NOW() WHERE id = $1",
         [firstQueueItem.id],
       );
-      this.logger.log(
-        `Deletion cancelled for tenant ${tenantId} by user ${cancelledBy}`,
-      );
+      this.logger.log(`Deletion cancelled for tenant ${tenantId} by user ${cancelledBy}`);
     }
 
-    await this.db.query(
-      'UPDATE tenants SET deletion_status = NULL WHERE id = $1',
-      [tenantId],
-    );
+    await this.db.query('UPDATE tenants SET deletion_status = NULL WHERE id = $1', [tenantId]);
   }
 
   /**
@@ -308,16 +276,9 @@ export class TenantDeletionService implements OnModuleDestroy {
     reason?: string,
     ipAddress?: string,
   ): Promise<{ queueId: number; scheduledDate: Date }> {
-    const queueId = await this.requestDeletion(
-      tenantId,
-      requestedBy,
-      reason,
-      ipAddress,
-    );
+    const queueId = await this.requestDeletion(tenantId, requestedBy, reason, ipAddress);
     const scheduledDate = new Date();
-    scheduledDate.setTime(
-      scheduledDate.getTime() + GRACE_PERIOD_MINUTES * 60 * 1000,
-    );
+    scheduledDate.setTime(scheduledDate.getTime() + GRACE_PERIOD_MINUTES * 60 * 1000);
     return { queueId, scheduledDate };
   }
 
@@ -325,11 +286,7 @@ export class TenantDeletionService implements OnModuleDestroy {
    * Approve a deletion request (process it immediately).
    * NOTE: approved_by column does not exist in DB schema — using second_approver_id instead
    */
-  async approveDeletion(
-    queueId: number,
-    approvedBy: number,
-    _comment?: string,
-  ): Promise<void> {
+  async approveDeletion(queueId: number, approvedBy: number, _comment?: string): Promise<void> {
     await this.db.query(
       `UPDATE tenant_deletion_queue
        SET approval_status = 'approved',
@@ -343,11 +300,7 @@ export class TenantDeletionService implements OnModuleDestroy {
     await this.processQueue();
   }
 
-  async rejectDeletion(
-    queueId: number,
-    rejectedBy: number,
-    _reason?: string,
-  ): Promise<void> {
+  async rejectDeletion(queueId: number, rejectedBy: number, _reason?: string): Promise<void> {
     const queueRows = await this.db.query<QueueRow>(
       'SELECT tenant_id FROM tenant_deletion_queue WHERE id = $1',
       [queueId],
@@ -372,10 +325,7 @@ export class TenantDeletionService implements OnModuleDestroy {
   /**
    * Trigger emergency stop (alias)
    */
-  async triggerEmergencyStop(
-    tenantId: number,
-    stoppedBy: number,
-  ): Promise<void> {
+  async triggerEmergencyStop(tenantId: number, stoppedBy: number): Promise<void> {
     await this.emergencyStop(tenantId, stoppedBy);
   }
 
@@ -443,17 +393,12 @@ export class TenantDeletionService implements OnModuleDestroy {
    */
   private getRedis(): Redis {
     if (this.redisClient === null) {
-      const redisPassword =
-        this.configService.get<string>('REDIS_PASSWORD') ?? undefined;
+      const redisPassword = this.configService.get<string>('REDIS_PASSWORD') ?? undefined;
       this.redisClient = new Redis({
         host: this.configService.get<string>('REDIS_HOST') ?? 'redis',
-        port: Number.parseInt(
-          this.configService.get<string>('REDIS_PORT') ?? '6379',
-          10,
-        ),
+        port: Number.parseInt(this.configService.get<string>('REDIS_PORT') ?? '6379', 10),
         // SECURITY: Redis authentication — only include password if configured
-        ...(redisPassword !== undefined &&
-          redisPassword !== '' && { password: redisPassword }),
+        ...(redisPassword !== undefined && redisPassword !== '' && { password: redisPassword }),
         keyPrefix: 'tenant-deletion:',
         lazyConnect: true,
         maxRetriesPerRequest: 3,

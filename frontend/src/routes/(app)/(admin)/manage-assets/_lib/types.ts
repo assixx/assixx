@@ -65,12 +65,7 @@ export type AssetType =
 /**
  * Asset status options
  */
-export type AssetStatus =
-  | 'operational'
-  | 'maintenance'
-  | 'repair'
-  | 'standby'
-  | 'decommissioned';
+export type AssetStatus = 'operational' | 'maintenance' | 'repair' | 'standby' | 'decommissioned';
 
 /**
  * Department entity

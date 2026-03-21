@@ -70,9 +70,7 @@
   const messages = $derived(createMessages(labels));
 
   // Lead-View: Employees can Read+Edit but NOT Create/Delete
-  const canMutate = $derived(
-    data.user?.role === 'root' || data.user?.role === 'admin',
-  );
+  const canMutate = $derived(data.user?.role === 'root' || data.user?.role === 'admin');
 
   // =============================================================================
   // UI STATE - Filtering and form state (client-side only)
@@ -116,9 +114,7 @@
   // =============================================================================
 
   const isEditMode = $derived(currentEditId !== null);
-  const modalTitle = $derived(
-    isEditMode ? messages.MODAL_TITLE_EDIT : messages.MODAL_TITLE_ADD,
-  );
+  const modalTitle = $derived(isEditMode ? messages.MODAL_TITLE_EDIT : messages.MODAL_TITLE_ADD);
 
   // Derived: Filtered teams based on current filter/search state
   const filteredTeams = $derived(
@@ -153,26 +149,17 @@
       const teamId = await apiSaveTeam(payload, currentEditId);
 
       if (teamId) {
-        await updateTeamRelations(
-          teamId,
-          formData.memberIds,
-          formData.assetIds,
-          isEditMode,
-        );
+        await updateTeamRelations(teamId, formData.memberIds, formData.assetIds, isEditMode);
         await assignTeamHall(teamId, formData.hallId);
       }
 
       closeTeamModal();
       // Level 3: Trigger SSR refetch
       await invalidateAll();
-      showSuccessAlert(
-        isEditMode ? messages.SUCCESS_UPDATED : messages.SUCCESS_CREATED,
-      );
+      showSuccessAlert(isEditMode ? messages.SUCCESS_UPDATED : messages.SUCCESS_CREATED);
     } catch (err: unknown) {
       log.error({ err }, 'Error saving team');
-      showErrorAlert(
-        err instanceof Error ? err.message : messages.ERROR_SAVING,
-      );
+      showErrorAlert(err instanceof Error ? err.message : messages.ERROR_SAVING);
     } finally {
       submitting = false;
     }
@@ -254,10 +241,7 @@
     formDescription = team.description ?? '';
     formDepartmentId = team.departmentId ?? null;
     formLeaderId = team.leaderId ?? null;
-    formIsActive = (
-      team.isActive === 4 ?
-        0
-      : team.isActive) as FormIsActiveStatus;
+    formIsActive = (team.isActive === 4 ? 0 : team.isActive) as FormIsActiveStatus;
 
     // Set member and asset IDs from fetched data
     formMemberIds = members.map((m) => m.id);
@@ -448,8 +432,7 @@
               />
               <button
                 class="search-input__clear"
-                class:search-input__clear--visible={currentSearchQuery.length >
-                  0}
+                class:search-input__clear--visible={currentSearchQuery.length > 0}
                 type="button"
                 aria-label="Suche löschen"
                 onclick={clearSearch}
@@ -497,9 +480,7 @@
       <div class="card__body">
         {#if error}
           <div class="p-6 text-center">
-            <i
-              class="fas fa-exclamation-triangle mb-4 text-4xl text-(--color-danger)"
-            ></i>
+            <i class="fas fa-exclamation-triangle mb-4 text-4xl text-(--color-danger)"></i>
             <p class="text-(--color-text-secondary)">{error}</p>
             <button
               type="button"
@@ -552,11 +533,7 @@
                 </thead>
                 <tbody>
                   {#each filteredTeams as team (team.id)}
-                    {@const deptBadge = getDepartmentBadge(
-                      team,
-                      allDepartments,
-                      labels,
-                    )}
+                    {@const deptBadge = getDepartmentBadge(team, allDepartments, labels)}
                     {@const membersBadge = getMembersBadge(team)}
                     {@const assetsBadge = getAssetsBadge(team, labels)}
                     <tr>
@@ -581,8 +558,7 @@
                             class="badge badge--info"
                             title={team.departmentAreaName}
                           >
-                            <i class="fas fa-sitemap mr-1"
-                            ></i>{team.departmentAreaName}
+                            <i class="fas fa-sitemap mr-1"></i>{team.departmentAreaName}
                           </span>
                         {:else}
                           <span

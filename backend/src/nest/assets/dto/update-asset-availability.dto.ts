@@ -22,13 +22,7 @@ export const UpdateAssetAvailabilitySchema = z.object({
     .trim()
     .max(255, 'Reason must not exceed 255 characters')
     .optional(),
-  availabilityNotes: z
-    .string()
-    .trim()
-    .max(500, 'Notes must not exceed 500 characters')
-    .optional(),
+  availabilityNotes: z.string().trim().max(500, 'Notes must not exceed 500 characters').optional(),
 });
 
-export class UpdateAssetAvailabilityDto extends createZodDto(
-  UpdateAssetAvailabilitySchema,
-) {}
+export class UpdateAssetAvailabilityDto extends createZodDto(UpdateAssetAvailabilitySchema) {}

@@ -155,8 +155,7 @@ describe('OrganigramLayoutService', () => {
     beforeEach(() => {
       mockClient = { query: vi.fn() };
       mockDb.tenantTransaction.mockImplementation(
-        async (fn: (client: typeof mockClient) => Promise<void>) =>
-          fn(mockClient),
+        async (fn: (client: typeof mockClient) => Promise<void>) => fn(mockClient),
       );
     });
 
@@ -269,8 +268,7 @@ describe('OrganigramLayoutService', () => {
     beforeEach(() => {
       mockClient = { query: vi.fn() };
       mockDb.tenantTransaction.mockImplementation(
-        async (fn: (client: typeof mockClient) => Promise<void>) =>
-          fn(mockClient),
+        async (fn: (client: typeof mockClient) => Promise<void>) => fn(mockClient),
       );
     });
 

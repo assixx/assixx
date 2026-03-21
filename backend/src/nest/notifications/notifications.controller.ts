@@ -238,9 +238,7 @@ function createVacationHandler(
     if (eventData.tenantId !== tenantId || request === undefined) return;
 
     const recipientId =
-      REQUESTER_IS_RECIPIENT.has(messageType) ?
-        request.requesterId
-      : request.approverId;
+      REQUESTER_IS_RECIPIENT.has(messageType) ? request.requesterId : request.approverId;
 
     if (recipientId !== userId) return;
 
@@ -302,11 +300,7 @@ function registerVacationHandlers(
   ] as const;
 
   for (const { event, type } of vacationEvents) {
-    registerHandler(
-      handlers,
-      event,
-      createVacationHandler(type, userId, tenantId, eventSubject),
-    );
+    registerHandler(handlers, event, createVacationHandler(type, userId, tenantId, eventSubject));
   }
 }
 
@@ -395,11 +389,7 @@ function registerTpmHandlers(
   ] as const;
 
   for (const { event, type } of tpmEvents) {
-    registerHandler(
-      handlers,
-      event,
-      createSSEHandler(type, 'card', tenantId, eventSubject),
-    );
+    registerHandler(handlers, event, createSSEHandler(type, 'card', tenantId, eventSubject));
   }
 }
 
@@ -410,23 +400,11 @@ function registerSurveyHandlers(
   make: (type: string, key: string) => (e: NotificationEventData) => void,
 ): void {
   if (role === 'employee') {
-    registerHandler(
-      handlers,
-      SSE_EVENTS.SURVEY_CREATED,
-      make('NEW_SURVEY', 'survey'),
-    );
-    registerHandler(
-      handlers,
-      SSE_EVENTS.SURVEY_UPDATED,
-      make('SURVEY_UPDATED', 'survey'),
-    );
+    registerHandler(handlers, SSE_EVENTS.SURVEY_CREATED, make('NEW_SURVEY', 'survey'));
+    registerHandler(handlers, SSE_EVENTS.SURVEY_UPDATED, make('SURVEY_UPDATED', 'survey'));
   }
   if (role === 'admin' || role === 'root') {
-    registerHandler(
-      handlers,
-      SSE_EVENTS.SURVEY_CREATED,
-      make('NEW_SURVEY_CREATED', 'survey'),
-    );
+    registerHandler(handlers, SSE_EVENTS.SURVEY_CREATED, make('NEW_SURVEY_CREATED', 'survey'));
   }
 }
 
@@ -484,21 +462,14 @@ function registerSSEHandlers(
   readableFeatures: Set<string> | null,
 ): EventHandler[] {
   const handlers: EventHandler[] = [];
-  const make = (
-    type: string,
-    key: string,
-  ): ((e: NotificationEventData) => void) =>
+  const make = (type: string, key: string): ((e: NotificationEventData) => void) =>
     createSSEHandler(type, key, tenantId, eventSubject);
   const canAccess = (code: string): boolean =>
     readableFeatures === null || readableFeatures.has(code);
   const isAdmin = role === 'admin' || role === 'root';
 
   if (canAccess('documents')) {
-    registerHandler(
-      handlers,
-      SSE_EVENTS.DOCUMENT_UPLOADED,
-      make('NEW_DOCUMENT', 'document'),
-    );
+    registerHandler(handlers, SSE_EVENTS.DOCUMENT_UPLOADED, make('NEW_DOCUMENT', 'document'));
   }
   if (canAccess('chat')) {
     registerHandler(
@@ -556,17 +527,13 @@ export class NotificationsController {
     @CurrentUser() user: NestAuthUser,
     @TenantId() tenantId: number,
   ): Promise<PaginatedNotificationsResult> {
-    return await this.notificationsService.listNotifications(
-      user.id,
-      tenantId,
-      {
-        type: query.type,
-        priority: query.priority,
-        unread: query.unread,
-        page: query.page,
-        limit: query.limit,
-      },
-    );
+    return await this.notificationsService.listNotifications(user.id, tenantId, {
+      type: query.type,
+      priority: query.priority,
+      unread: query.unread,
+      page: query.page,
+      limit: query.limit,
+    });
   }
 
   /**
@@ -603,10 +570,7 @@ export class NotificationsController {
     @CurrentUser() user: NestAuthUser,
     @TenantId() tenantId: number,
   ): Promise<{ preferences: unknown }> {
-    const preferences = await this.notificationsService.getPreferences(
-      user.id,
-      tenantId,
-    );
+    const preferences = await this.notificationsService.getPreferences(user.id, tenantId);
     return { preferences };
   }
 
@@ -622,13 +586,7 @@ export class NotificationsController {
     @Ip() ipAddress: string,
     @Headers('user-agent') userAgent: string,
   ): Promise<MessageResponse> {
-    await this.notificationsService.updatePreferences(
-      user.id,
-      tenantId,
-      dto,
-      ipAddress,
-      userAgent,
-    );
+    await this.notificationsService.updatePreferences(user.id, tenantId, dto, ipAddress, userAgent);
     return { message: 'Preferences updated successfully' };
   }
 
@@ -670,14 +628,7 @@ export class NotificationsController {
     @TenantId() tenantId: number,
   ): Promise<{ marked: number; message: string }> {
     // Validate type
-    const validTypes = [
-      'survey',
-      'document',
-      'kvp',
-      'vacation',
-      'tpm',
-      'work_orders',
-    ];
+    const validTypes = ['survey', 'document', 'kvp', 'vacation', 'tpm', 'work_orders'];
     if (!validTypes.includes(type)) {
       throw new BadRequestException(
         `Invalid type: ${type}. Must be one of: ${validTypes.join(', ')}`,
@@ -685,13 +636,7 @@ export class NotificationsController {
     }
 
     const marked = await this.notificationsService.markAddonTypeAsRead(
-      type as
-        | 'survey'
-        | 'document'
-        | 'kvp'
-        | 'vacation'
-        | 'tpm'
-        | 'work_orders',
+      type as 'survey' | 'document' | 'kvp' | 'vacation' | 'tpm' | 'work_orders',
       user.id,
       tenantId,
     );
@@ -772,11 +717,7 @@ export class NotificationsController {
     @TenantId() tenantId: number,
   ): Promise<MessageResponse> {
     const notificationId = Number.parseInt(id, 10);
-    await this.notificationsService.markAsRead(
-      notificationId,
-      user.id,
-      tenantId,
-    );
+    await this.notificationsService.markAsRead(notificationId, user.id, tenantId);
     return { message: 'Notification marked as read' };
   }
 
@@ -864,13 +805,7 @@ export class NotificationsController {
 
     // Register handlers asynchronously after permission check
     void readableAddonsPromise.then((readableAddons: Set<string> | null) => {
-      const handlers = registerSSEHandlers(
-        role,
-        tenantId,
-        userId,
-        eventSubject,
-        readableAddons,
-      );
+      const handlers = registerSSEHandlers(role, tenantId, userId, eventSubject, readableAddons);
       eventSubject.pipe(takeUntil(destroy$)).subscribe({
         complete: (): void => {
           cleanupSSEHandlers(handlers);
@@ -896,9 +831,7 @@ export class NotificationsController {
    * Root and admin with fullAccess: null (all addons accessible).
    * Others: Set of addon codes with can_read = true.
    */
-  private async resolveReadableAddons(
-    user: NestAuthUser,
-  ): Promise<Set<string> | null> {
+  private async resolveReadableAddons(user: NestAuthUser): Promise<Set<string> | null> {
     if (user.activeRole === 'root') return null;
     if (user.activeRole === 'admin' && user.hasFullAccess) return null;
     return await this.permissionsService.getReadableAddonCodes(user.id);

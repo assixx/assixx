@@ -11,18 +11,9 @@ import { apiFetch, apiFetchWithPermission } from '$lib/server/api-fetch';
 import { assertTeamLevelAccess } from '$lib/server/manage-page-access';
 
 import type { PageServerLoad } from './$types';
-import type {
-  Team,
-  Department,
-  Admin,
-  TeamMember,
-  Asset,
-  Hall,
-} from './_lib/types';
+import type { Team, Department, Admin, TeamMember, Asset, Hall } from './_lib/types';
 
-function toArray<T>(
-  data: T | null,
-): T extends readonly (infer U)[] ? U[] : T[] {
+function toArray<T>(data: T | null): T extends readonly (infer U)[] ? U[] : T[] {
   // eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-explicit-any -- generic array normalization
   return (Array.isArray(data) ? data : []) as any;
 }
@@ -37,11 +28,7 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent, url }) => {
   }
 
   // Permission check: first fetch detects 403 (ADR-020 pattern)
-  const teamsResult = await apiFetchWithPermission<Team[]>(
-    '/teams',
-    token,
-    fetch,
-  );
+  const teamsResult = await apiFetchWithPermission<Team[]>('/teams', token, fetch);
   if (teamsResult.permissionDenied) {
     return {
       permissionDenied: true as const,
@@ -55,19 +42,14 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent, url }) => {
   }
 
   // Parallel fetch remaining data (permission confirmed)
-  const [
-    departmentsData,
-    leaderCandidatesData,
-    employeesData,
-    assetsData,
-    hallsData,
-  ] = await Promise.all([
-    apiFetch<Department[]>('/departments', token, fetch),
-    apiFetch<Admin[]>('/users?isActive=1&position=team_lead', token, fetch),
-    apiFetch<TeamMember[]>('/users?role=employee', token, fetch),
-    apiFetch<Asset[]>('/assets', token, fetch),
-    apiFetch<Hall[]>('/halls', token, fetch),
-  ]);
+  const [departmentsData, leaderCandidatesData, employeesData, assetsData, hallsData] =
+    await Promise.all([
+      apiFetch<Department[]>('/departments', token, fetch),
+      apiFetch<Admin[]>('/users?isActive=1&position=team_lead', token, fetch),
+      apiFetch<TeamMember[]>('/users?role=employee', token, fetch),
+      apiFetch<Asset[]>('/assets', token, fetch),
+      apiFetch<Hall[]>('/halls', token, fetch),
+    ]);
 
   return {
     permissionDenied: false as const,

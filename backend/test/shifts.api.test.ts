@@ -204,13 +204,10 @@ describe('Shifts: Delete Rotation History (Cleanup)', () => {
   let body: JsonBody;
 
   beforeAll(async () => {
-    res = await fetch(
-      `${BASE_URL}/shifts/rotation/history?teamId=${shiftsTeamId}`,
-      {
-        method: 'DELETE',
-        headers: authOnly(auth.authToken),
-      },
-    );
+    res = await fetch(`${BASE_URL}/shifts/rotation/history?teamId=${shiftsTeamId}`, {
+      method: 'DELETE',
+      headers: authOnly(auth.authToken),
+    });
     body = (await res.json()) as JsonBody;
   });
 

@@ -5,8 +5,8 @@
 > **Status:** DRAFT — Phase 0 (Planning)
 > **Branch:** `refactor/KVP`
 > **ADR:** [ADR-037](./infrastructure/adr/ADR-037-approvals-architecture.md) (Approvals), [ADR-038](./infrastructure/adr/ADR-038-position-catalog-architecture.md) (Position Catalog), [ADR-004](./infrastructure/adr/ADR-004-persistent-notification-counts.md) (Persistent Notifications), [ADR-018](./infrastructure/adr/ADR-018-testing-strategy.md) (Testing Strategy)
-> **Depends on:** Approvals System (Phase 1-4 DONE), Position Catalog (All Phases DONE)
-> **Related Plans:** [FEAT_APPROVALS_SYSTEM_MASTERPLAN.md](./FEAT_APPROVALS_SYSTEM_MASTERPLAN.md) (Phase 5 = this plan), [FEAT_POSITION_CATALOG_MASTERPLAN.md](./FEAT_POSITION_CATALOG_MASTERPLAN.md) (Position-based approval masters)
+> **Depends on:** Approvals System (Phase 1-4 DONE), Position Catalog (All Phases DONE), Deputy Leads Feature ([FEAT_DEPUTY_LEADS_MASTERPLAN.md](./FEAT_DEPUTY_LEADS_MASTERPLAN.md) — MUST be done first)
+> **Related Plans:** [FEAT_APPROVALS_SYSTEM_MASTERPLAN.md](./FEAT_APPROVALS_SYSTEM_MASTERPLAN.md) (Phase 5 = this plan), [FEAT_POSITION_CATALOG_MASTERPLAN.md](./FEAT_POSITION_CATALOG_MASTERPLAN.md) (Position-based approval masters), [FEAT_DEPUTY_LEADS_MASTERPLAN.md](./FEAT_DEPUTY_LEADS_MASTERPLAN.md) (Deputy Lead permissions — prerequisite)
 > **Author:** SCS Technik (Senior Engineer)
 > **Estimated Sessions:** 4
 > **Actual Sessions:** 0 / 4
@@ -15,12 +15,14 @@
 
 ## Changelog
 
-| Version | Date       | Change                                        |
-| ------- | ---------- | --------------------------------------------- |
-| 0.1.0   | 2026-03-20 | Initial Draft — 4 phases, 4 sessions planned  |
-| 0.1.1   | 2026-03-20 | Added: ADR-004 persistent notifications (Step 1.5), ADR-018 test reference, Related Documents section, linked parent masterplans |
-| 0.2.0   | 2026-03-21 | Real-Life Workflow documented, TBD resolved: dynamic dropdown rules, CRON archives BOTH rejected+implemented, `status='archived'` (no is_active on kvp_suggestions) |
-| 0.3.0   | 2026-03-21 | Validation pass: fixed permission codes (kvp-suggestions.canRead/canWrite), EventBus payload shape (nested, sourceUuid missing), added Step 1.6 backend enforcement, button only for status=new, notification_type ENUM doesn't exist note |
+| Version | Date       | Change                                                                                                                                                                                                                                                                         |
+| ------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 0.1.0   | 2026-03-20 | Initial Draft — 4 phases, 4 sessions planned                                                                                                                                                                                                                                   |
+| 0.1.1   | 2026-03-20 | Added: ADR-004 persistent notifications (Step 1.5), ADR-018 test reference, Related Documents section, linked parent masterplans                                                                                                                                               |
+| 0.2.0   | 2026-03-21 | Real-Life Workflow documented, TBD resolved: dynamic dropdown rules, CRON archives BOTH rejected+implemented, `status='archived'` (no is_active on kvp_suggestions)                                                                                                            |
+| 0.3.0   | 2026-03-21 | Validation pass: fixed permission codes (kvp-suggestions.canRead/canWrite), EventBus payload shape (nested, sourceUuid missing), added Step 1.6 backend enforcement, button only for status=new, notification_type ENUM doesn't exist note                                     |
+| 0.4.0   | 2026-03-21 | Review fixes: C1 `restored` status. C2 type `'kvp'`. C3 `addonEntityId: number`. M1 `:id`. M2 Deputy Lead. M3 camelCase. M4 backup CRON. M5 raw SQL side effects                                                                                                               |
+| 0.5.0   | 2026-03-21 | Deputy Lead = prerequisite (FEAT_DEPUTY_LEADS_MASTERPLAN.md), not implemented here. Modularity: `+page.svelte` 927 lines (>850 limit) → extract `StatusDropdown.svelte`. `kvp.service.ts` 963 lines (>900 limit) → validation in `kvp.helpers.ts`. ESLint max-lines compliance |
 
 ---
 
@@ -39,6 +41,7 @@ The Approvals System (ADR-037) and Position Catalog (ADR-038) were built specifi
 **Setup:** KVP "Lichtschranke" (UUID `019ceec8-...`), submitted by John Doe (Team Linie 99). KVP Master: Jürgen Schmitz (User 30), configured via `/settings/approvals` for addon `kvp`.
 
 **Actors:**
+
 - **John Doe** — Team member, submitted the KVP suggestion
 - **Corc Öztürk** — Team Lead of Linie 99, sees the KVP on `/kvp-detail`
 - **Jürgen Schmitz** — KVP Master (approval master), sees pending approvals on `/manage-approvals`
@@ -87,13 +90,14 @@ The Approvals System (ADR-037) and Position Catalog (ADR-038) were built specifi
 
 ### Dynamic Dropdown Rules (when approval config exists for KVP)
 
-| Current Status | Dropdown Options | "Freigabe anfordern" Button | Rationale |
-| --- | --- | --- | --- |
-| `new` (offen) | `abgelehnt` only | visible | Team Lead curates: reject bad, request approval for good |
-| `in_review` (in Prüfung) | LOCKED | hidden | Waiting for master decision — no manual override |
-| `approved` (genehmigt) | `umgesetzt` only | hidden | Master approved — Team Lead confirms implementation |
-| `rejected` (abgelehnt) | LOCKED | hidden | Final — no re-submission, CRON archives after 30 days |
-| `implemented` (umgesetzt) | LOCKED | hidden | Final — CRON archives after 30 days |
+| Current Status                 | Dropdown Options | "Freigabe anfordern" Button | Rationale                                                |
+| ------------------------------ | ---------------- | --------------------------- | -------------------------------------------------------- |
+| `new` (offen)                  | `abgelehnt` only | visible                     | Team Lead curates: reject bad, request approval for good |
+| `in_review` (in Prüfung)       | LOCKED           | hidden                      | Waiting for master decision — no manual override         |
+| `approved` (genehmigt)         | `umgesetzt` only | hidden                      | Master approved — Team Lead confirms implementation      |
+| `rejected` (abgelehnt)         | LOCKED           | hidden                      | Final — no re-submission, CRON archives after 30 days    |
+| `implemented` (umgesetzt)      | LOCKED           | hidden                      | Final — CRON archives after 30 days                      |
+| `restored` (wiederhergestellt) | `abgelehnt` only | visible                     | Behaves like `new` — restored KVP can be re-curated      |
 
 > **Without approval config:** Old behavior — all status options available in dropdown, no "Freigabe anfordern" button.
 
@@ -109,35 +113,36 @@ The Approvals System (ADR-037) and Position Catalog (ADR-038) were built specifi
 - [ ] Position Catalog fully functional (All 5 phases DONE)
 - [ ] `approval_approver_type` ENUM contains `'position'` value
 - [ ] `position_catalog` table exists with system positions seeded
+- [ ] Deputy Leads feature complete (`FEAT_DEPUTY_LEADS_MASTERPLAN.md` — deputy can act as team lead)
 - [ ] Branch checked out
 - [ ] No pending migrations
 
 ### 0.2 Risk Register
 
-| #   | Risk                                       | Impact | Probability | Mitigation                                                       | Verification                                                     |
-| --- | ------------------------------------------ | ------ | ----------- | ---------------------------------------------------------------- | ---------------------------------------------------------------- |
-| R1  | EventBus event missed (server restart)     | High   | Low         | Startup reconciliation: check in_review KVPs against approvals   | Unit test: simulate missed event → reconcile catches it          |
-| R2  | Double approval request for same KVP       | Medium | Medium      | DB query: EXISTS check before creating                           | API test: second request → 409 ConflictException                 |
-| R3  | KVP status out of sync with approval       | High   | Low         | EventBus + startup reconciliation + idempotent status sync       | E2E test: approve → verify KVP status = 'approved'               |
-| R4  | No approval config for 'kvp' → button UX   | Low    | High        | Hide button when no approval config exists for addon 'kvp'       | Frontend check: button hidden when hasApprovalConfig = false     |
-| R5  | CRON archives KVP with pending approval    | High   | Low         | CRON only targets `status IN ('rejected', 'implemented')`        | Unit test: pending/in_review/approved KVP not touched by CRON    |
-| R6  | Self-approval (Team Lead is also KVP Master)| Medium | Medium     | Already enforced by ApprovalsService: `requested_by !== decided_by` | Existing unit test covers this                                  |
+| #   | Risk                                         | Impact | Probability | Mitigation                                                          | Verification                                                  |
+| --- | -------------------------------------------- | ------ | ----------- | ------------------------------------------------------------------- | ------------------------------------------------------------- |
+| R1  | EventBus event missed (server restart)       | High   | Low         | Startup reconciliation: check in_review KVPs against approvals      | Unit test: simulate missed event → reconcile catches it       |
+| R2  | Double approval request for same KVP         | Medium | Medium      | DB query: EXISTS check before creating                              | API test: second request → 409 ConflictException              |
+| R3  | KVP status out of sync with approval         | High   | Low         | EventBus + startup reconciliation + idempotent status sync          | E2E test: approve → verify KVP status = 'approved'            |
+| R4  | No approval config for 'kvp' → button UX     | Low    | High        | Hide button when no approval config exists for addon 'kvp'          | Frontend check: button hidden when hasApprovalConfig = false  |
+| R5  | CRON archives KVP with pending approval      | High   | Low         | CRON only targets `status IN ('rejected', 'implemented')`           | Unit test: pending/in_review/approved KVP not touched by CRON |
+| R6  | Self-approval (Team Lead is also KVP Master) | Medium | Medium      | Already enforced by ApprovalsService: `requested_by !== decided_by` | Existing unit test covers this                                |
 
 ### 0.3 Ecosystem Integration Points
 
-| Existing System              | Integration Type                                                    | Phase |
-| ---------------------------- | ------------------------------------------------------------------- | ----- |
-| `ApprovalsService`           | `create()` — create approval request from KVP                      | 1     |
-| `ApprovalsConfigService`     | `resolveApprovers('kvp', userId)` — check if config exists          | 1     |
-| EventBus `approval.decided`  | Subscribe → sync KVP status on approval decision                   | 1     |
-| KVP status lifecycle         | `in_review` → `approved` / `rejected` (auto-sync)                  | 1     |
-| `@nestjs/schedule`           | New CRON: archive rejected KVPs after 30 days                      | 1     |
-| KVP Detail Sidebar           | "Freigabe anfordern" button for Team Lead                          | 3     |
-| KVP Detail Page              | Approval status badge (pending/approved/rejected)                  | 3     |
-| KVP Detail `+page.server.ts` | Fetch approval data alongside suggestion                           | 3     |
+| Existing System              | Integration Type                                                                 | Phase |
+| ---------------------------- | -------------------------------------------------------------------------------- | ----- |
+| `ApprovalsService`           | `create()` — create approval request from KVP                                    | 1     |
+| `ApprovalsConfigService`     | `resolveApprovers('kvp', userId)` — check if config exists                       | 1     |
+| EventBus `approval.decided`  | Subscribe → sync KVP status on approval decision                                 | 1     |
+| KVP status lifecycle         | `in_review` → `approved` / `rejected` (auto-sync)                                | 1     |
+| `@nestjs/schedule`           | New CRON: archive rejected KVPs after 30 days                                    | 1     |
+| KVP Detail Sidebar           | "Freigabe anfordern" button for Team Lead                                        | 3     |
+| KVP Detail Page              | Approval status badge (pending/approved/rejected)                                | 3     |
+| KVP Detail `+page.server.ts` | Fetch approval data alongside suggestion                                         | 3     |
 | SSE Notifications            | Already handled by Approvals SSE events (`approval.created`, `approval.decided`) | —     |
-| Persistent Notifications     | DB notifications for offline users (ADR-004 dual-pattern)          | 1     |
-| `NotificationsService`       | `createAddonNotification()` for KVP approval masters + requester   | 1     |
+| Persistent Notifications     | DB notifications for offline users (ADR-004 dual-pattern)                        | 1     |
+| `NotificationsService`       | `createAddonNotification()` for KVP approval masters + requester                 | 1     |
 
 ---
 
@@ -158,7 +163,7 @@ The Approvals System (ADR-037) and Position Catalog (ADR-038) were built specifi
   - Validates: suggestion exists, is active, status allows approval request
   - Checks: no existing approval for this KVP (ANY status — no re-submission)
   - Resolves approvers via `ApprovalsConfigService.resolveApprovers('kvp', requestedBy)`
-  - Creates approval via `ApprovalsService.create()` with `addon_code='kvp'`, `source_entity_type='kvp_suggestion'`
+  - Creates approval via `ApprovalsService.create()` with `addonCode: 'kvp'`, `sourceEntityType: 'kvp_suggestion'`, `sourceUuid: suggestion.uuid`
   - Updates KVP status to `'in_review'`
   - Returns created approval
 
@@ -179,6 +184,10 @@ The Approvals System (ADR-037) and Position Catalog (ADR-038) were built specifi
   - Step 4: If `status === 'rejected'`: update KVP status to `'rejected'`, set `rejection_reason = decisionNote`
   - Idempotent: no-op if KVP already has matching status
   - **Uses direct DB update** — bypasses `assertCanUpdateStatus()` (system action, not user action)
+  - **Must replicate `buildSuggestionUpdateClause` side effects in raw SQL:**
+    - For `approved`: `SET status = 'approved', rejection_reason = NULL, implementation_date = NULL`
+    - For `rejected`: `SET status = 'rejected', rejection_reason = $decisionNote, implementation_date = NULL`
+    - These side effects are normally handled by `buildSuggestionUpdateClause` in `kvp.helpers.ts` but since we bypass the normal update flow, the raw UPDATE must include them explicitly
 
 - `reconcilePendingApprovals()` — Startup recovery
   - Find KVPs with `status = 'in_review'` that have a decided approval
@@ -193,22 +202,27 @@ The Approvals System (ADR-037) and Position Catalog (ADR-038) were built specifi
 
 **Modified file:** `backend/src/nest/kvp/kvp.controller.ts`
 
-| Method | Route                          | Permission           | Description                |
-| ------ | ------------------------------ | -------------------- | -------------------------- |
-| POST   | `/kvp/:uuid/request-approval`  | kvp-suggestions.canWrite  | Request approval from master |
-| GET    | `/kvp/:uuid/approval`          | kvp-suggestions.canRead          | Get linked approval status |
-| GET    | `/kvp/approval-config-status`  | kvp-suggestions.canRead          | Check if approval config exists |
+| Method | Route                         | Permission               | Description                     |
+| ------ | ----------------------------- | ------------------------ | ------------------------------- |
+| POST   | `/kvp/:id/request-approval`   | kvp-suggestions.canWrite | Request approval from master    |
+| GET    | `/kvp/:id/approval`           | kvp-suggestions.canRead  | Get linked approval status      |
+| GET    | `/kvp/approval-config-status` | kvp-suggestions.canRead  | Check if approval config exists |
 
-**POST /kvp/:uuid/request-approval:**
-- Only Team Lead / Admin / Root
+> **Route param `:id`** — consistent with ALL existing KVP routes (`:id`, not `:uuid`). The KVP service handles both numeric ID and UUID transparently via `isUuid()` helper.
+
+**POST /kvp/:id/request-approval:**
+
+- Only Team Lead / Deputy Lead / Admin / Root
 - Validates: no pending/decided approval exists for this KVP
 - Returns 201 + approval object
 
-**GET /kvp/:uuid/approval:**
+**GET /kvp/:id/approval:**
+
 - Returns approval object or `{ approval: null }` if none exists
 - Includes: status, requestedBy, decidedBy, decisionNote, timestamps
 
 **GET /kvp/approval-config-status:**
+
 - Returns `{ hasConfig: boolean }`
 - Used by frontend to show/hide "Freigabe anfordern" button
 - Static route BEFORE `/:uuid` routes (Fastify route ordering)
@@ -261,8 +275,17 @@ constructor(/* deps */) {
 **Pattern:** Follows blackboard-archive.service.ts
 
 ```typescript
-@Cron('1 0 * * *', { name: 'kvp-final-archive', timeZone: 'Europe/Berlin' })
-async archiveFinalKvps(): Promise<void> {
+@Cron('1 0 * * *', { name: 'kvp-final-archive-midnight', timeZone: 'Europe/Berlin' })
+async archiveAtMidnight(): Promise<void> {
+  await this.archiveFinalKvps();
+}
+
+@Cron('0 */6 * * *', { name: 'kvp-final-archive-backup', timeZone: 'Europe/Berlin' })
+async archiveBackup(): Promise<void> {
+  await this.archiveFinalKvps();
+}
+
+private async archiveFinalKvps(): Promise<void> {
   // UPDATE kvp_suggestions SET status = 'archived'
   // WHERE status IN ('rejected', 'implemented')
   //   AND updated_at < NOW() - INTERVAL '30 days'
@@ -273,8 +296,10 @@ async archiveFinalKvps(): Promise<void> {
 > Archival uses `status = 'archived'` — consistent with existing KVP status enum.
 > The Blackboard pattern uses `is_active` because blackboard_entries HAS that column.
 
-**Schedules:**
+**Schedules (follows blackboard-archive pattern):**
+
 - Primary: Daily at 00:01 (Europe/Berlin)
+- Backup: Every 6 hours (fallback if primary fails)
 - Startup: `onModuleInit()` recovery
 
 **Both `rejected` AND `implemented`** KVPs are archived after 30 days.
@@ -286,46 +311,68 @@ async archiveFinalKvps(): Promise<void> {
 **ADR-004 Dual-Pattern:** EventBus = real-time SSE (online users). DB notifications = persistent storage (offline users, badge counts on page load). Both are needed.
 
 **When approval is REQUESTED (Team Lead → KVP Masters):**
+
 - SSE: Already emitted by `ApprovalsService` via `approval.created` event
 - Persistent: Create DB notification for each resolved approver via `NotificationsService.createAddonNotification()`
-- Type: `'approval'` (or extend `notification_type` ENUM if needed)
+- Type: `'kvp'` (NOT `'approval'` — the union only accepts `'survey' | 'document' | 'kvp' | 'vacation'`)
+- `addonEntityId`: `kvp_suggestions.id` (numeric, NOT UUID — method signature requires `number`)
 - Message: "Neue Freigabe-Anfrage: {KVP title}"
-- Badge: Approvals badge count incremented for KVP masters
+- Badge: KVP badge count incremented for KVP masters
 
 **When approval is DECIDED (KVP Master → Team Lead):**
+
 - SSE: Already emitted by `ApprovalsService` via `approval.decided` event
 - Persistent: Create DB notification for the requesting Team Lead
+- Type: `'kvp'` (same reason as above)
+- `addonEntityId`: `kvp_suggestions.id` (numeric)
 - Message (approved): "Freigabe erteilt: {KVP title}"
 - Message (rejected): "Freigabe abgelehnt: {KVP title} — {reason}"
-- Badge: Approvals badge count incremented for Team Lead
+- Badge: KVP badge count incremented for Team Lead
 
-**Check:** Verify if `ApprovalsService` already creates persistent notifications. If yes, this step may be reduced to just verifying the flow. If not, add notification creation in `KvpApprovalService`.
+**Verified:** `ApprovalsService.create()` does NOT create persistent notifications (only logs to root_logs). Persistent notification creation MUST happen in `KvpApprovalService`.
 
-**Note:** `notification_type` ENUM does NOT exist in the DB (verified). The notifications table may use a VARCHAR or a different pattern. Check actual `notifications` table schema before implementing.
+**Note:** `notifications.type` is `VARCHAR(50)` in the DB (NOT an ENUM). The TypeScript union `'survey' | 'document' | 'kvp' | 'vacation'` is the compile-time constraint.
 
 ### Step 1.6: Backend Status Enforcement [PENDING]
 
-**Modified file:** `backend/src/nest/kvp/kvp.service.ts`
-
 **Problem:** The frontend restricts dropdown options, but `PUT /kvp/:id` with `{ status: 'approved' }` could bypass the approval workflow. Backend must also enforce the rules.
 
-**Changes to `updateSuggestion()` (or add pre-check):**
+**IMPORTANT — File size constraints:**
 
-When approval config exists for `kvp`:
-- Block `status → 'approved'` via manual update (only the EventBus handler can set this)
+- `kvp.service.ts` is **963 lines** (OVER 900-line ESLint limit!)
+- `validateStatusTransition()` must NOT be added to `kvp.service.ts`
+- Pure validation logic → belongs in `kvp.helpers.ts` (504 lines, plenty of room)
+- `kvp.service.ts` calls the helper before proceeding with the update
+
+**New pure function in `kvp.helpers.ts`:**
+
+```typescript
+export function validateApprovalStatusTransition(
+  currentStatus: string,
+  newStatus: string,
+  hasApprovalConfig: boolean,
+): { allowed: boolean; reason?: string };
+```
+
+**Transition rules** (when `hasApprovalConfig = true`):
+
+- Block `status → 'approved'` via manual update (only EventBus handler can set this)
 - Block `status → 'in_review'` via manual update (only `requestApproval()` can set this)
-- Allow `status → 'rejected'` only when current status is `'new'` (direct reject by Team Lead)
+- Allow `status → 'rejected'` only when current status is `'new'` or `'restored'` (direct reject)
 - Allow `status → 'implemented'` only when current status is `'approved'`
 - Block ALL status changes when current status is `'in_review'` (waiting for master)
+- `restored` behaves like `new` — same transition rules apply
 
-**Implementation:** Add a `validateStatusTransition(currentStatus, newStatus, hasApprovalConfig)` check before the existing `assertCanUpdateStatus()`.
+**Modified file:** `backend/src/nest/kvp/kvp.service.ts` — add call to `validateApprovalStatusTransition()` in `updateSuggestion()` (1-2 lines, no file growth concern)
+
+**Modified file:** `backend/src/nest/kvp/kvp.helpers.ts` — new pure function (~30 lines)
 
 ### Phase 1 — Definition of Done
 
 - [ ] `KvpApprovalService` with requestApproval + getApproval + handleDecision + reconcile
 - [ ] `kvp.module.ts` imports `ApprovalsModule`
-- [ ] `POST /kvp/:uuid/request-approval` endpoint functional
-- [ ] `GET /kvp/:uuid/approval` endpoint functional
+- [ ] `POST /kvp/:id/request-approval` endpoint functional
+- [ ] `GET /kvp/:id/approval` endpoint functional
 - [ ] `GET /kvp/approval-config-status` endpoint functional
 - [ ] EventBus subscription to `approval.decided` (filtered by `addon_code='kvp'`)
 - [ ] Startup reconciliation for missed events
@@ -372,6 +419,8 @@ When approval config exists for `kvp`:
 - [ ] Status transition: in_review → any (BLOCKED, waiting for master)
 - [ ] Status transition: approved → implemented (allowed)
 - [ ] Status transition: approved → rejected (BLOCKED)
+- [ ] Status transition: restored → rejected (allowed, like new)
+- [ ] Status transition: restored → request-approval (allowed, like new)
 - [ ] CRON: rejected KVP older than 30 days → status = 'archived'
 - [ ] CRON: implemented KVP older than 30 days → status = 'archived'
 - [ ] CRON: rejected/implemented KVP younger than 30 days → untouched
@@ -384,18 +433,18 @@ When approval config exists for `kvp`:
 **Scenarios (>= 12 assertions):**
 
 - [ ] Unauthenticated → 401
-- [ ] POST /kvp/:uuid/request-approval → 201 (happy path)
+- [ ] POST /kvp/:id/request-approval → 201 (happy path)
 - [ ] POST duplicate request → 409
 - [ ] POST for non-existent KVP → 404
-- [ ] GET /kvp/:uuid/approval → approval object
-- [ ] GET /kvp/:uuid/approval (no approval) → `{ approval: null }`
+- [ ] GET /kvp/:id/approval → approval object
+- [ ] GET /kvp/:id/approval (no approval) → `{ approval: null }`
 - [ ] GET /kvp/approval-config-status → `{ hasConfig: boolean }`
 - [ ] Employee cannot request approval → 403
 
 ### Phase 2 — Definition of Done
 
-- [ ] >= 16 unit tests
-- [ ] >= 8 API integration tests
+- [ ] > = 16 unit tests
+- [ ] > = 8 API integration tests
 - [ ] All tests green
 - [ ] Coverage: all public methods have at least 1 test
 
@@ -410,7 +459,8 @@ When approval config exists for `kvp`:
 **Modified file:** `frontend/src/routes/(app)/(shared)/kvp-detail/+page.server.ts`
 
 **Changes:**
-- Fetch approval status: `GET /kvp/:uuid/approval`
+
+- Fetch approval status: `GET /kvp/:id/approval`
 - Fetch config status: `GET /kvp/approval-config-status`
 - Pass `approval` and `hasApprovalConfig` to page component via `data`
 
@@ -424,11 +474,18 @@ When approval config exists for `kvp`:
 **Modified file:** `frontend/src/routes/(app)/(shared)/kvp-detail/_lib/DetailSidebar.svelte`
 
 **New button in admin actions section:**
+
 - Label: "Freigabe anfordern"
 - Icon: `fa-check-double` (consistent with approvals sidebar icon)
-- Visible when: `canManage && hasApprovalConfig && !existingApproval && suggestion.status === 'new'`
-- Only status `'new'` allows approval request — all other statuses either have an approval or are terminal
-- Calls: `POST /kvp/:uuid/request-approval`
+- Visible when: `canManage && hasApprovalConfig && !existingApproval && (suggestion.status === 'new' || suggestion.status === 'restored')`
+- Only statuses `'new'` and `'restored'` allow approval request — all other statuses either have an approval or are terminal
+
+**Deputy Lead:** Can also request approval (e.g. when Team Lead is on vacation).
+
+- **NOT implemented in this plan** — provided by `FEAT_DEPUTY_LEADS_MASTERPLAN.md` (prerequisite)
+- This plan assumes `canManage` already includes deputy leads after the Deputy Leads feature is complete
+- No additional changes needed here — just verify deputy lead works in E2E testing (Phase 4)
+- Calls: `POST /kvp/:id/request-approval`
 - On success: `invalidateAll()` + success toast
 - On error: error toast with message
 
@@ -437,6 +494,7 @@ When approval config exists for `kvp`:
 **Modified file:** `frontend/src/routes/(app)/(shared)/kvp-detail/_lib/DetailSidebar.svelte` (or new component)
 
 **New section "Freigabe-Status" in sidebar (shown when approval exists):**
+
 - Pending: yellow badge "Freigabe ausstehend" + requester name + date
 - Approved: green badge "Freigabe erteilt" + approver name + date
 - Rejected: red badge "Freigabe abgelehnt" + rejector name + reason + date
@@ -445,23 +503,37 @@ When approval config exists for `kvp`:
 
 **RESOLVED** — Dropdown options depend on current status + approval config existence.
 
+**IMPORTANT — File size constraint:**
+
+- `+page.svelte` is **927 lines** (OVER 850-line ESLint limit for Svelte files!)
+- The status dropdown (lines 604-642) MUST be extracted into a separate component
+- This extraction is a necessary prerequisite, not optional refactoring
+
+**New file:** `frontend/src/routes/(app)/(shared)/kvp-detail/_lib/StatusDropdown.svelte`
+
+- Extract the existing status dropdown from `+page.svelte` lines 604-642
+- Add approval-aware logic (dynamic options based on config + status)
+- Props: `suggestion`, `hasApprovalConfig`, `canUpdateStatus`, `onStatusChange`
+
 **Modified files:**
-- `frontend/src/routes/(app)/(shared)/kvp-detail/+page.svelte` (status dropdown logic)
-- `frontend/src/routes/(app)/(shared)/kvp-detail/_lib/constants.ts` (dropdown option sets)
+
+- `frontend/src/routes/(app)/(shared)/kvp-detail/+page.svelte` — replace inline dropdown with `<StatusDropdown />` component (reduces file by ~40 lines)
+- `frontend/src/routes/(app)/(shared)/kvp-detail/_lib/constants.ts` — add `getApprovalStatusOptions(currentStatus): StatusOption[]` function
 
 **Logic (when approval config exists for addon 'kvp'):**
 
-| Current Status | Dropdown Options | "Freigabe anfordern" | Rationale |
-| --- | --- | --- | --- |
-| `new` | `abgelehnt` only | visible | Curate: reject bad, request approval for good |
-| `in_review` | LOCKED (disabled) | hidden | Waiting for master — no manual override |
-| `approved` | `umgesetzt` only | hidden | Master approved — confirm implementation |
-| `rejected` | LOCKED (disabled) | hidden | Final state |
-| `implemented` | LOCKED (disabled) | hidden | Final state |
+| Current Status | Dropdown Options  | "Freigabe anfordern" | Rationale                                     |
+| -------------- | ----------------- | -------------------- | --------------------------------------------- |
+| `new`          | `abgelehnt` only  | visible              | Curate: reject bad, request approval for good |
+| `in_review`    | LOCKED (disabled) | hidden               | Waiting for master — no manual override       |
+| `approved`     | `umgesetzt` only  | hidden               | Master approved — confirm implementation      |
+| `rejected`     | LOCKED (disabled) | hidden               | Final state                                   |
+| `implemented`  | LOCKED (disabled) | hidden               | Final state                                   |
+| `restored`     | `abgelehnt` only  | visible              | Behaves like `new` after unarchive            |
 
 **Without approval config:** Old behavior — all status options available, no "Freigabe anfordern" button. Backward compatible.
 
-**Implementation:** Conditional rendering based on `hasApprovalConfig` prop from `+page.server.ts`. When true, filter `STATUS_OPTIONS` array based on current status. When `in_review`/`rejected`/`implemented`, disable dropdown entirely.
+**Implementation:** `StatusDropdown.svelte` receives `hasApprovalConfig` prop. When true, calls `getApprovalStatusOptions(currentStatus)` from constants.ts to filter options. When status is `in_review`/`rejected`/`implemented`, renders as disabled badge instead of dropdown.
 
 ### Phase 3 — Definition of Done
 
@@ -498,6 +570,7 @@ When approval config exists for `kvp`:
 9. Wait 30 days (or manually trigger CRON) → verify `status = 'archived'`
 
 **Edge case verification:**
+
 - [ ] No approval config → button not visible
 - [ ] Second approval request for same KVP → blocked
 - [ ] Self-approval → blocked (existing guard)
@@ -522,12 +595,12 @@ When approval config exists for `kvp`:
 
 ## Session Tracking
 
-| Session | Phase | Description                                          | Status | Date |
-| ------- | ----- | ---------------------------------------------------- | ------ | ---- |
-| 1       | 1     | KvpApprovalService + endpoints + EventBus + CRON     |        |      |
-| 2       | 2     | Unit tests + API integration tests                   |        |      |
-| 3       | 3     | Frontend: button + badge + data loading              |        |      |
-| 4       | 4     | E2E verification + dynamic dropdown + documentation   |        |      |
+| Session | Phase | Description                                         | Status | Date |
+| ------- | ----- | --------------------------------------------------- | ------ | ---- |
+| 1       | 1     | KvpApprovalService + endpoints + EventBus + CRON    |        |      |
+| 2       | 2     | Unit tests + API integration tests                  |        |      |
+| 3       | 3     | Frontend: button + badge + data loading             |        |      |
+| 4       | 4     | E2E verification + dynamic dropdown + documentation |        |      |
 
 ---
 
@@ -546,50 +619,54 @@ When approval config exists for `kvp`:
 
 ### Backend (new)
 
-| File                                                     | Purpose                       |
-| -------------------------------------------------------- | ----------------------------- |
-| `backend/src/nest/kvp/kvp-approval.service.ts`           | Approval bridge service       |
-| `backend/src/nest/kvp/kvp-approval-archive-cron.service.ts` | 30-day CRON archival       |
-| `backend/src/nest/kvp/kvp-approval.service.test.ts`      | Unit tests                    |
-| `backend/test/kvp-approval.api.test.ts`                  | API integration tests         |
+| File                                                                       | Purpose                                      |
+| -------------------------------------------------------------------------- | -------------------------------------------- |
+| `backend/src/nest/kvp/kvp-approval.service.ts`                             | Approval bridge service                      |
+| `backend/src/nest/kvp/kvp-approval-archive-cron.service.ts`                | 30-day CRON archival                         |
+| `backend/src/nest/kvp/kvp-approval.service.test.ts`                        | Unit tests                                   |
+| `backend/test/kvp-approval.api.test.ts`                                    | API integration tests                        |
+| `frontend/src/routes/(app)/(shared)/kvp-detail/_lib/StatusDropdown.svelte` | Extracted status dropdown (ESLint max-lines) |
 
 ### Backend (modified)
 
-| File                                            | Change                              |
-| ----------------------------------------------- | ----------------------------------- |
-| `backend/src/nest/kvp/kvp.module.ts`            | Import ApprovalsModule, new providers |
-| `backend/src/nest/kvp/kvp.controller.ts`        | 3 new endpoints                     |
+| File                                     | Change                                |
+| ---------------------------------------- | ------------------------------------- |
+| `backend/src/nest/kvp/kvp.module.ts`     | Import ApprovalsModule, new providers |
+| `backend/src/nest/kvp/kvp.controller.ts` | 3 new endpoints                       |
 
 ### Frontend (modified)
 
-| File                                                                          | Change                       |
-| ----------------------------------------------------------------------------- | ---------------------------- |
-| `frontend/src/routes/(app)/(shared)/kvp-detail/+page.server.ts`              | Fetch approval data          |
-| `frontend/src/routes/(app)/(shared)/kvp-detail/+page.svelte`                 | Pass approval to sidebar     |
-| `frontend/src/routes/(app)/(shared)/kvp-detail/_lib/DetailSidebar.svelte`    | Button + badge               |
-| `frontend/src/routes/(app)/(shared)/kvp-detail/_lib/types.ts`                | ApprovalInfo type            |
-| `frontend/src/routes/(app)/(shared)/kvp-detail/_lib/api.ts`                  | requestApproval() function   |
-| `frontend/src/routes/(app)/(shared)/kvp-detail/_lib/constants.ts`            | Dynamic STATUS_OPTIONS       |
+| File                                                                       | Change                                                   |
+| -------------------------------------------------------------------------- | -------------------------------------------------------- |
+| `frontend/src/routes/(app)/(shared)/kvp-detail/+page.server.ts`            | Fetch approval data                                      |
+| `frontend/src/routes/(app)/(shared)/kvp-detail/+page.svelte`               | Pass approval to sidebar                                 |
+| `frontend/src/routes/(app)/(shared)/kvp-detail/_lib/DetailSidebar.svelte`  | Button + badge                                           |
+| `frontend/src/routes/(app)/(shared)/kvp-detail/_lib/types.ts`              | ApprovalInfo type                                        |
+| `frontend/src/routes/(app)/(shared)/kvp-detail/_lib/api.ts`                | requestApproval() function                               |
+| `frontend/src/routes/(app)/(shared)/kvp-detail/_lib/constants.ts`          | getApprovalStatusOptions()                               |
+| `frontend/src/routes/(app)/(shared)/kvp-detail/_lib/StatusDropdown.svelte` | **NEW** — extracted from +page.svelte (ESLint max-lines) |
 
 ### Backend (modified — additional)
 
-| File                                            | Change                                    |
-| ----------------------------------------------- | ----------------------------------------- |
-| `backend/src/nest/kvp/kvp.service.ts`           | Status transition enforcement (Step 1.6)  |
+| File                                  | Change                                                       |
+| ------------------------------------- | ------------------------------------------------------------ |
+| `backend/src/nest/kvp/kvp.service.ts` | 1-2 line call to validateApprovalStatusTransition()          |
+| `backend/src/nest/kvp/kvp.helpers.ts` | validateApprovalStatusTransition() pure function (~30 lines) |
 
 ---
 
 ## Related Documents
 
-| Document | Relevance |
-| -------- | --------- |
-| [FEAT_APPROVALS_SYSTEM_MASTERPLAN.md](./FEAT_APPROVALS_SYSTEM_MASTERPLAN.md) | Parent plan — this is Phase 5 (KVP Integration) |
-| [FEAT_POSITION_CATALOG_MASTERPLAN.md](./FEAT_POSITION_CATALOG_MASTERPLAN.md) | Position-based approval masters (approver_type='position') |
-| [ADR-037](./infrastructure/adr/ADR-037-approvals-architecture.md) | Approvals architecture (UNION ALL resolver, 5 approver types) |
-| [ADR-038](./infrastructure/adr/ADR-038-position-catalog-architecture.md) | Position catalog (enables "Qualitätsmanager as KVP Master") |
-| [ADR-004](./infrastructure/adr/ADR-004-persistent-notification-counts.md) | Dual-pattern: EventBus (SSE) + DB notifications (persistent badges) |
-| [ADR-018](./infrastructure/adr/ADR-018-testing-strategy.md) | Two-Tier Testing: unit (`vi.mock()`) + API (`fetch()`, `authHeaders()`) |
-| [HOW-TO-TEST-WITH-VITEST.md](./HOW-TO-TEST-WITH-VITEST.md) | API test patterns, One-Request-per-Describe, `flushThrottleKeys()` |
+| Document                                                                     | Relevance                                                                |
+| ---------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| [FEAT_APPROVALS_SYSTEM_MASTERPLAN.md](./FEAT_APPROVALS_SYSTEM_MASTERPLAN.md) | Parent plan — this is Phase 5 (KVP Integration)                          |
+| [FEAT_POSITION_CATALOG_MASTERPLAN.md](./FEAT_POSITION_CATALOG_MASTERPLAN.md) | Position-based approval masters (approver_type='position')               |
+| [ADR-037](./infrastructure/adr/ADR-037-approvals-architecture.md)            | Approvals architecture (UNION ALL resolver, 5 approver types)            |
+| [ADR-038](./infrastructure/adr/ADR-038-position-catalog-architecture.md)     | Position catalog (enables "Qualitätsmanager as KVP Master")              |
+| [ADR-004](./infrastructure/adr/ADR-004-persistent-notification-counts.md)    | Dual-pattern: EventBus (SSE) + DB notifications (persistent badges)      |
+| [ADR-018](./infrastructure/adr/ADR-018-testing-strategy.md)                  | Two-Tier Testing: unit (`vi.mock()`) + API (`fetch()`, `authHeaders()`)  |
+| [HOW-TO-TEST-WITH-VITEST.md](./HOW-TO-TEST-WITH-VITEST.md)                   | API test patterns, One-Request-per-Describe, `flushThrottleKeys()`       |
+| [FEAT_DEPUTY_LEADS_MASTERPLAN.md](./FEAT_DEPUTY_LEADS_MASTERPLAN.md)         | **Prerequisite** — Deputy Lead can act as Team Lead (must be done first) |
 
 ---
 

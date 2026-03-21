@@ -38,17 +38,15 @@ export class OrganigramSettingsService {
     mergedSettings: Record<string, unknown>,
   ): Promise<void> {
     await this.db.tenantTransaction(async (client: PoolClient) => {
-      await client.query(
-        'UPDATE tenants SET settings = $1::jsonb WHERE id = $2',
-        [JSON.stringify(mergedSettings), tenantId],
-      );
+      await client.query('UPDATE tenants SET settings = $1::jsonb WHERE id = $2', [
+        JSON.stringify(mergedSettings),
+        tenantId,
+      ]);
     });
   }
 
   async getViewport(tenantId: number): Promise<OrgViewport> {
-    const rows = await this.db.query<TenantSettingsRow>(SELECT_SETTINGS, [
-      tenantId,
-    ]);
+    const rows = await this.db.query<TenantSettingsRow>(SELECT_SETTINGS, [tenantId]);
 
     if (rows.length === 0 || rows[0] === undefined) {
       return { ...DEFAULT_VIEWPORT };
@@ -74,19 +72,13 @@ export class OrganigramSettingsService {
     };
   }
 
-  async getHallOverrides(
-    tenantId: number,
-  ): Promise<Record<string, HallOverride>> {
-    const rows = await this.db.query<TenantSettingsRow>(SELECT_SETTINGS, [
-      tenantId,
-    ]);
+  async getHallOverrides(tenantId: number): Promise<Record<string, HallOverride>> {
+    const rows = await this.db.query<TenantSettingsRow>(SELECT_SETTINGS, [tenantId]);
 
     const settings = rows[0]?.settings;
     if (settings === null || settings === undefined) return {};
 
-    const stored = settings['orgHallOverrides'] as
-      | Record<string, HallOverride>
-      | undefined;
+    const stored = settings['orgHallOverrides'] as Record<string, HallOverride> | undefined;
     return stored ?? {};
   }
 
@@ -94,10 +86,7 @@ export class OrganigramSettingsService {
     tenantId: number,
     overrides: Record<string, HallOverride>,
   ): Promise<void> {
-    const settingsRows = await this.db.query<TenantSettingsRow>(
-      SELECT_SETTINGS,
-      [tenantId],
-    );
+    const settingsRows = await this.db.query<TenantSettingsRow>(SELECT_SETTINGS, [tenantId]);
 
     const currentSettings =
       settingsRows.length > 0 && settingsRows[0] !== undefined ?
@@ -112,12 +101,8 @@ export class OrganigramSettingsService {
     await this.persistSettings(tenantId, mergedSettings);
   }
 
-  async getHallConnectionAnchors(
-    tenantId: number,
-  ): Promise<Record<string, PerimeterAnchor>> {
-    const rows = await this.db.query<TenantSettingsRow>(SELECT_SETTINGS, [
-      tenantId,
-    ]);
+  async getHallConnectionAnchors(tenantId: number): Promise<Record<string, PerimeterAnchor>> {
+    const rows = await this.db.query<TenantSettingsRow>(SELECT_SETTINGS, [tenantId]);
 
     const settings = rows[0]?.settings;
     if (settings === null || settings === undefined) return {};
@@ -132,10 +117,7 @@ export class OrganigramSettingsService {
     tenantId: number,
     anchors: Record<string, PerimeterAnchor>,
   ): Promise<void> {
-    const settingsRows = await this.db.query<TenantSettingsRow>(
-      SELECT_SETTINGS,
-      [tenantId],
-    );
+    const settingsRows = await this.db.query<TenantSettingsRow>(SELECT_SETTINGS, [tenantId]);
 
     const currentSettings =
       settingsRows.length > 0 && settingsRows[0] !== undefined ?
@@ -151,10 +133,7 @@ export class OrganigramSettingsService {
   }
 
   async saveViewport(tenantId: number, viewport: OrgViewport): Promise<void> {
-    const settingsRows = await this.db.query<TenantSettingsRow>(
-      SELECT_SETTINGS,
-      [tenantId],
-    );
+    const settingsRows = await this.db.query<TenantSettingsRow>(SELECT_SETTINGS, [tenantId]);
 
     const currentSettings =
       settingsRows.length > 0 && settingsRows[0] !== undefined ?
@@ -170,9 +149,7 @@ export class OrganigramSettingsService {
   }
 
   async getCanvasBg(tenantId: number): Promise<string | null> {
-    const rows = await this.db.query<TenantSettingsRow>(SELECT_SETTINGS, [
-      tenantId,
-    ]);
+    const rows = await this.db.query<TenantSettingsRow>(SELECT_SETTINGS, [tenantId]);
 
     const settings = rows[0]?.settings;
     if (settings === null || settings === undefined) return null;
@@ -182,10 +159,7 @@ export class OrganigramSettingsService {
   }
 
   async saveCanvasBg(tenantId: number, canvasBg: string | null): Promise<void> {
-    const settingsRows = await this.db.query<TenantSettingsRow>(
-      SELECT_SETTINGS,
-      [tenantId],
-    );
+    const settingsRows = await this.db.query<TenantSettingsRow>(SELECT_SETTINGS, [tenantId]);
 
     const currentSettings =
       settingsRows.length > 0 && settingsRows[0] !== undefined ?
@@ -201,9 +175,7 @@ export class OrganigramSettingsService {
   }
 
   async getHierarchyLabels(tenantId: number): Promise<HierarchyLabels> {
-    const rows = await this.db.query<TenantSettingsRow>(SELECT_SETTINGS, [
-      tenantId,
-    ]);
+    const rows = await this.db.query<TenantSettingsRow>(SELECT_SETTINGS, [tenantId]);
 
     if (rows.length === 0 || rows[0] === undefined) {
       return { ...DEFAULT_HIERARCHY_LABELS };
@@ -214,9 +186,7 @@ export class OrganigramSettingsService {
       return { ...DEFAULT_HIERARCHY_LABELS };
     }
 
-    const orgHierarchy = settings['orgHierarchy'] as
-      | OrgHierarchySettings
-      | undefined;
+    const orgHierarchy = settings['orgHierarchy'] as OrgHierarchySettings | undefined;
     if (orgHierarchy?.levels === undefined) {
       return { ...DEFAULT_HIERARCHY_LABELS };
     }
@@ -224,8 +194,7 @@ export class OrganigramSettingsService {
     return {
       hall: orgHierarchy.levels.hall ?? DEFAULT_HIERARCHY_LABELS.hall,
       area: orgHierarchy.levels.area ?? DEFAULT_HIERARCHY_LABELS.area,
-      department:
-        orgHierarchy.levels.department ?? DEFAULT_HIERARCHY_LABELS.department,
+      department: orgHierarchy.levels.department ?? DEFAULT_HIERARCHY_LABELS.department,
       team: orgHierarchy.levels.team ?? DEFAULT_HIERARCHY_LABELS.team,
       asset: orgHierarchy.levels.asset ?? DEFAULT_HIERARCHY_LABELS.asset,
     };
@@ -246,10 +215,7 @@ export class OrganigramSettingsService {
     };
 
     // Read-Merge-Write: read current settings, deep merge, write back
-    const settingsRows = await this.db.query<TenantSettingsRow>(
-      SELECT_SETTINGS,
-      [tenantId],
-    );
+    const settingsRows = await this.db.query<TenantSettingsRow>(SELECT_SETTINGS, [tenantId]);
 
     const currentSettings =
       settingsRows.length > 0 && settingsRows[0] !== undefined ?

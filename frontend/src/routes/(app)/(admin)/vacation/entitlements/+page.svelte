@@ -22,10 +22,7 @@
   import { entitlementsState } from './_lib/state.svelte';
 
   import type { PageData } from './$types';
-  import type {
-    CreateEntitlementPayload,
-    EmployeeListItem,
-  } from './_lib/types';
+  import type { CreateEntitlementPayload, EmployeeListItem } from './_lib/types';
 
   const log = createLogger('VacationEntitlements');
 
@@ -56,10 +53,7 @@
   async function loadBalance(employee: EmployeeListItem): Promise<void> {
     entitlementsState.setLoadingBalance(true);
     try {
-      const bal = await api.getUserBalance(
-        employee.id,
-        entitlementsState.selectedYear,
-      );
+      const bal = await api.getUserBalance(employee.id, entitlementsState.selectedYear);
       entitlementsState.setBalance(bal);
     } catch (err: unknown) {
       log.error({ err, userId: employee.id }, 'Balance load failed');
@@ -161,10 +155,7 @@
   let isSavingEntitlement = $state(false);
 
   $effect(() => {
-    if (
-      entitlementsState.showEntitlementForm &&
-      entitlementsState.balance !== null
-    ) {
+    if (entitlementsState.showEntitlementForm && entitlementsState.balance !== null) {
       const bal = entitlementsState.balance;
       formTotalDays = bal.totalDays;
       formCarriedOver = bal.carriedOverDays;
@@ -321,8 +312,7 @@
               />
               <button
                 class="search-input__clear"
-                class:search-input__clear--visible={currentSearchQuery.length >
-                  0}
+                class:search-input__clear--visible={currentSearchQuery.length > 0}
                 type="button"
                 aria-label="Suche löschen"
                 onclick={clearSearch}
@@ -354,8 +344,7 @@
                 <button
                   type="button"
                   class="employee-list__item"
-                  class:active={entitlementsState.selectedEmployee?.id ===
-                    emp.id}
+                  class:active={entitlementsState.selectedEmployee?.id === emp.id}
                   onclick={() => {
                     handleSelectEmployee(emp);
                   }}
@@ -391,8 +380,7 @@
                 </div>
                 <h3 class="empty-state__title">Mitarbeiter auswählen</h3>
                 <p class="empty-state__description">
-                  Waehlen Sie links einen Mitarbeiter aus, um dessen
-                  Urlaubskonto zu sehen.
+                  Waehlen Sie links einen Mitarbeiter aus, um dessen Urlaubskonto zu sehen.
                 </p>
               </div>
             </div>
@@ -468,10 +456,8 @@
                       <span class="balance-grid__label">{label}</span>
                       <span
                         class="balance-grid__value"
-                        class:text-success={key === 'remainingDays' &&
-                          value > 0}
-                        class:text-danger={key === 'remainingDays' &&
-                          value <= 0}
+                        class:text-success={key === 'remainingDays' && value > 0}
+                        class:text-danger={key === 'remainingDays' && value <= 0}
                         class:text-warning={key === 'pendingDays' && value > 0}
                       >
                         {value}
@@ -486,9 +472,7 @@
             <div class="card">
               <div class="card__body">
                 <div class="empty-state empty-state--in-card">
-                  <p class="empty-state__description">
-                    Urlaubskonto konnte nicht geladen werden.
-                  </p>
+                  <p class="empty-state__description">Urlaubskonto konnte nicht geladen werden.</p>
                 </div>
               </div>
             </div>

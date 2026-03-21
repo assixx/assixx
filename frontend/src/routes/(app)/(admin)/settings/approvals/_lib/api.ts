@@ -1,8 +1,4 @@
-import type {
-  ApprovalApproverType,
-  ApprovalConfig,
-  PositionOption,
-} from './types.js';
+import type { ApprovalApproverType, ApprovalConfig, PositionOption } from './types.js';
 
 const API_BASE = '/api/v2/approvals';
 

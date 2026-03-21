@@ -40,8 +40,7 @@
 
   const available = $derived(
     catalog.filter(
-      (p: PositionEntry) =>
-        !assigned.some((a: UserPosition) => a.positionId === p.id),
+      (p: PositionEntry) => !assigned.some((a: UserPosition) => a.positionId === p.id),
     ),
   );
 
@@ -91,13 +90,10 @@
     if (busy) return;
     busy = true;
     try {
-      await apiClient.request(
-        `/users/${String(userId)}/positions/${positionId}`,
-        { method: 'DELETE' },
-      );
-      assigned = assigned.filter(
-        (a: UserPosition) => a.positionId !== positionId,
-      );
+      await apiClient.request(`/users/${String(userId)}/positions/${positionId}`, {
+        method: 'DELETE',
+      });
+      assigned = assigned.filter((a: UserPosition) => a.positionId !== positionId);
       showSuccessAlert('Position entfernt');
     } catch {
       showErrorAlert('Fehler beim Entfernen');
@@ -158,9 +154,7 @@
                 >
                   {pos.name}
                   {#if pos.isSystem}
-                    <span class="badge badge--primary badge--xs ml-1"
-                      >System</span
-                    >
+                    <span class="badge badge--primary badge--xs ml-1">System</span>
                   {/if}
                 </button>
               {/each}
@@ -202,11 +196,7 @@
     gap: 0.25rem;
     padding: 0.25rem 0.625rem;
     border-radius: var(--radius-xl, 9999px);
-    background: color-mix(
-      in oklch,
-      var(--color-primary, #3b82f6) 15%,
-      transparent
-    );
+    background: color-mix(in oklch, var(--color-primary, #3b82f6) 15%, transparent);
     color: var(--color-primary, #3b82f6);
     font-size: 0.8125rem;
     font-weight: 500;

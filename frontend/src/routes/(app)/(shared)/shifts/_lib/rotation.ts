@@ -68,9 +68,7 @@ export interface ShiftGroups {
  * Backend GET /patterns does not support team_id filter,
  * so we delegate to loadExistingPattern which filters client-side.
  */
-export async function checkRotationPatternExists(
-  teamId: number | null,
-): Promise<boolean> {
+export async function checkRotationPatternExists(teamId: number | null): Promise<boolean> {
   if (teamId === null || teamId === 0) return false;
 
   const existing = await loadExistingPattern(teamId);
@@ -82,17 +80,12 @@ export async function checkRotationPatternExists(
  * Backend GET /patterns does not support team_id filter,
  * so we fetch all active patterns and filter client-side.
  */
-export async function loadExistingPattern(
-  teamId: number,
-): Promise<RotationPattern | null> {
+export async function loadExistingPattern(teamId: number): Promise<RotationPattern | null> {
   try {
     const response = await apiClient.get<{ patterns?: RotationPattern[] }>(
       '/shifts/rotation/patterns',
     );
-    return (
-      response.patterns?.find((p: RotationPattern) => p.teamId === teamId) ??
-      null
-    );
+    return response.patterns?.find((p: RotationPattern) => p.teamId === teamId) ?? null;
   } catch (err: unknown) {
     log.error({ err, teamId }, 'Error loading existing pattern');
     return null;
@@ -102,9 +95,7 @@ export async function loadExistingPattern(
 /**
  * Load a specific pattern by ID
  */
-export async function loadPatternById(
-  patternId: number,
-): Promise<RotationPattern | null> {
+export async function loadPatternById(patternId: number): Promise<RotationPattern | null> {
   try {
     const response = await apiClient.get<{ pattern?: RotationPattern }>(
       `/shifts/rotation/patterns/${patternId}`,
@@ -147,9 +138,7 @@ export async function loadRotationHistory(
 /**
  * Map pattern type to API value
  */
-export function mapPatternTypeToAPI(
-  selectValue: string,
-): 'alternate_fs' | 'fixed_n' {
+export function mapPatternTypeToAPI(selectValue: string): 'alternate_fs' | 'fixed_n' {
   const patternTypeMap = new Map<string, 'alternate_fs' | 'fixed_n'>([
     ['weekly', 'alternate_fs'],
     ['biweekly', 'fixed_n'],
@@ -235,10 +224,7 @@ export function getSecondFridayAfter(date: Date): Date {
 /**
  * Calculate default end date by adding weeks to start date
  */
-export function calculateDefaultEndDate(
-  startDate: string,
-  weeks: number,
-): string {
+export function calculateDefaultEndDate(startDate: string, weeks: number): string {
   const start = new Date(startDate);
   start.setDate(start.getDate() + weeks * 7);
   return start.toISOString().split('T')[0] ?? startDate;
@@ -456,11 +442,7 @@ export const WEEKDAY_NAMES = [
 
 /** Build algorithm config from custom rotation config */
 export function buildAlgorithmConfig(config: CustomRotationConfig) {
-  const sequenceArray = config.shiftSequence.split('-') as (
-    | 'early'
-    | 'late'
-    | 'night'
-  )[];
+  const sequenceArray = config.shiftSequence.split('-') as ('early' | 'late' | 'night')[];
   const specialRules =
     config.nthWeekdayFree ?
       [

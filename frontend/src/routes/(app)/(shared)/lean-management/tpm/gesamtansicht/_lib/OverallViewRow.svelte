@@ -6,12 +6,7 @@
    * One schedule row: Anlage | Uhrzeit | date cells per interval.
    * Each date in its own <td>, padded to maxDates.
    */
-  import {
-    INTERVAL_COLUMNS,
-    formatDate,
-    formatTimeRange,
-    isFullDay,
-  } from './overall-view-utils';
+  import { INTERVAL_COLUMNS, formatDate, formatTimeRange, isFullDay } from './overall-view-utils';
 
   import type { MatrixRow } from './overall-view-utils';
 

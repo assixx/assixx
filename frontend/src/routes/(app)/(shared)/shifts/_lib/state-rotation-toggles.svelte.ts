@@ -86,11 +86,7 @@ type ModalState = ReturnType<typeof createRotationModalState>;
 type HistoryState = ReturnType<typeof createRotationHistoryState>;
 
 /** Creates coordinated setters that manage toggle/modal interactions */
-function createCoordinatedSetters(
-  toggles: ToggleState,
-  modals: ModalState,
-  history: HistoryState,
-) {
+function createCoordinatedSetters(toggles: ToggleState, modals: ModalState, history: HistoryState) {
   return {
     setStandardRotationEnabled: (enabled: boolean) => {
       toggles.setStandardEnabledRaw(enabled);
@@ -158,6 +154,4 @@ export function createRotationTogglesState() {
   };
 }
 
-export type RotationTogglesState = ReturnType<
-  typeof createRotationTogglesState
->;
+export type RotationTogglesState = ReturnType<typeof createRotationTogglesState>;

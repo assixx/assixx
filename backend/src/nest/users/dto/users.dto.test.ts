@@ -67,9 +67,7 @@ describe('ChangePasswordSchema', () => {
   });
 
   it('should reject empty currentPassword', () => {
-    expect(
-      ChangePasswordSchema.safeParse({ ...valid, currentPassword: '' }).success,
-    ).toBe(false);
+    expect(ChangePasswordSchema.safeParse({ ...valid, currentPassword: '' }).success).toBe(false);
   });
 });
 
@@ -105,27 +103,19 @@ describe('UpdateProfileSchema', () => {
   });
 
   it('should reject phone without leading +', () => {
-    expect(
-      UpdateProfileSchema.safeParse({ phone: '491234567890' }).success,
-    ).toBe(false);
+    expect(UpdateProfileSchema.safeParse({ phone: '491234567890' }).success).toBe(false);
   });
 
   it('should accept valid employee number', () => {
-    expect(
-      UpdateProfileSchema.safeParse({ employeeNumber: 'EMP-123' }).success,
-    ).toBe(true);
+    expect(UpdateProfileSchema.safeParse({ employeeNumber: 'EMP-123' }).success).toBe(true);
   });
 
   it('should reject employee number longer than 10 characters', () => {
-    expect(
-      UpdateProfileSchema.safeParse({ employeeNumber: 'EMP-12345678' }).success,
-    ).toBe(false);
+    expect(UpdateProfileSchema.safeParse({ employeeNumber: 'EMP-12345678' }).success).toBe(false);
   });
 
   it('should reject empty firstName when provided', () => {
-    expect(UpdateProfileSchema.safeParse({ firstName: '' }).success).toBe(
-      false,
-    );
+    expect(UpdateProfileSchema.safeParse({ firstName: '' }).success).toBe(false);
   });
 });
 
@@ -182,21 +172,17 @@ describe('CreateUserSchema', () => {
     ).toBe(false);
   });
 
-  it.each([
-    'available',
-    'vacation',
-    'sick',
-    'unavailable',
-    'training',
-    'other',
-  ] as const)('should accept availabilityStatus=%s', (status) => {
-    expect(
-      CreateUserSchema.safeParse({
-        ...valid,
-        availabilityStatus: status,
-      }).success,
-    ).toBe(true);
-  });
+  it.each(['available', 'vacation', 'sick', 'unavailable', 'training', 'other'] as const)(
+    'should accept availabilityStatus=%s',
+    (status) => {
+      expect(
+        CreateUserSchema.safeParse({
+          ...valid,
+          availabilityStatus: status,
+        }).success,
+      ).toBe(true);
+    },
+  );
 });
 
 // =============================================================
@@ -219,10 +205,7 @@ describe('UpdateUserSchema', () => {
   });
 
   it('should reject availabilityReason longer than 255 characters', () => {
-    expect(
-      UpdateUserSchema.safeParse({ availabilityReason: 'R'.repeat(256) })
-        .success,
-    ).toBe(false);
+    expect(UpdateUserSchema.safeParse({ availabilityReason: 'R'.repeat(256) }).success).toBe(false);
   });
 });
 
@@ -244,9 +227,7 @@ describe('ListUsersQuerySchema', () => {
   });
 
   it('should reject isActive > 4', () => {
-    expect(ListUsersQuerySchema.safeParse({ isActive: '5' }).success).toBe(
-      false,
-    );
+    expect(ListUsersQuerySchema.safeParse({ isActive: '5' }).success).toBe(false);
   });
 
   it.each(['firstName', 'lastName', 'email', 'createdAt', 'lastLogin'])(
@@ -257,9 +238,7 @@ describe('ListUsersQuerySchema', () => {
   );
 
   it('should reject invalid sortBy', () => {
-    expect(ListUsersQuerySchema.safeParse({ sortBy: 'id' }).success).toBe(
-      false,
-    );
+    expect(ListUsersQuerySchema.safeParse({ sortBy: 'id' }).success).toBe(false);
   });
 });
 
@@ -285,10 +264,9 @@ describe('UpdateAvailabilitySchema', () => {
   });
 
   it('should reject invalid status', () => {
-    expect(
-      UpdateAvailabilitySchema.safeParse({ availabilityStatus: 'holiday' })
-        .success,
-    ).toBe(false);
+    expect(UpdateAvailabilitySchema.safeParse({ availabilityStatus: 'holiday' }).success).toBe(
+      false,
+    );
   });
 
   it('should reject reason longer than 255 characters', () => {
@@ -354,27 +332,20 @@ describe('AvailabilityHistoryQuerySchema', () => {
   });
 
   it('should accept valid year and month', () => {
-    expect(
-      AvailabilityHistoryQuerySchema.safeParse({ year: '2025', month: '06' })
-        .success,
-    ).toBe(true);
+    expect(AvailabilityHistoryQuerySchema.safeParse({ year: '2025', month: '06' }).success).toBe(
+      true,
+    );
   });
 
   it('should reject year with less than 4 digits', () => {
-    expect(
-      AvailabilityHistoryQuerySchema.safeParse({ year: '25' }).success,
-    ).toBe(false);
+    expect(AvailabilityHistoryQuerySchema.safeParse({ year: '25' }).success).toBe(false);
   });
 
   it('should reject month outside 01-12', () => {
-    expect(
-      AvailabilityHistoryQuerySchema.safeParse({ month: '13' }).success,
-    ).toBe(false);
+    expect(AvailabilityHistoryQuerySchema.safeParse({ month: '13' }).success).toBe(false);
   });
 
   it('should reject month "00"', () => {
-    expect(
-      AvailabilityHistoryQuerySchema.safeParse({ month: '00' }).success,
-    ).toBe(false);
+    expect(AvailabilityHistoryQuerySchema.safeParse({ month: '00' }).success).toBe(false);
   });
 });

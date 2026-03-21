@@ -75,10 +75,7 @@ describe('parseTags', () => {
   });
 
   it('should filter non-string elements from array', () => {
-    expect(parseTags(['valid', 42, null, 'also-valid'])).toEqual([
-      'valid',
-      'also-valid',
-    ]);
+    expect(parseTags(['valid', 42, null, 'also-valid'])).toEqual(['valid', 'also-valid']);
   });
 
   it('should return empty for non-array JSON parse result', () => {
@@ -148,9 +145,7 @@ describe('enrichDocument', () => {
 describe('buildDocumentFilters', () => {
   it('should pass through query params with isActive', () => {
     const result = buildDocumentFilters(
-      { category: 'contract', search: 'test' } as Parameters<
-        typeof buildDocumentFilters
-      >[0],
+      { category: 'contract', search: 'test' } as Parameters<typeof buildDocumentFilters>[0],
       1,
     );
 
@@ -160,10 +155,7 @@ describe('buildDocumentFilters', () => {
   });
 
   it('should handle empty query (all undefined)', () => {
-    const result = buildDocumentFilters(
-      {} as Parameters<typeof buildDocumentFilters>[0],
-      0,
-    );
+    const result = buildDocumentFilters({} as Parameters<typeof buildDocumentFilters>[0], 0);
 
     expect(result.isActive).toBe(0);
     expect(result.category).toBeUndefined();
@@ -336,9 +328,9 @@ describe('insertDocumentRecord', () => {
       accessScope: 'company',
     } as DocumentCreateInput;
 
-    await expect(
-      insertDocumentRecord(mockDb as never, data, 5, 10),
-    ).rejects.toThrow('Failed to create document');
+    await expect(insertDocumentRecord(mockDb as never, data, 5, 10)).rejects.toThrow(
+      'Failed to create document',
+    );
   });
 });
 

@@ -52,25 +52,21 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
     },
   });
 
-  pgm.addConstraint(
-    'tpm_plan_assignments',
-    'chk_tpm_plan_assignments_is_active',
-    { check: 'is_active IN (0, 1, 3, 4)' },
-  );
+  pgm.addConstraint('tpm_plan_assignments', 'chk_tpm_plan_assignments_is_active', {
+    check: 'is_active IN (0, 1, 3, 4)',
+  });
 
   // One row per plan + user + date (allows clean ON CONFLICT upsert)
-  pgm.createIndex(
-    'tpm_plan_assignments',
-    ['plan_id', 'user_id', 'scheduled_date'],
-    { unique: true, name: 'idx_tpm_plan_assignments_unique' },
-  );
+  pgm.createIndex('tpm_plan_assignments', ['plan_id', 'user_id', 'scheduled_date'], {
+    unique: true,
+    name: 'idx_tpm_plan_assignments_unique',
+  });
 
   // Lookup: plan + date range (plan-specific assignment view)
-  pgm.createIndex(
-    'tpm_plan_assignments',
-    ['tenant_id', 'plan_id', 'scheduled_date'],
-    { name: 'idx_tpm_plan_assignments_plan_date', where: 'is_active = 1' },
-  );
+  pgm.createIndex('tpm_plan_assignments', ['tenant_id', 'plan_id', 'scheduled_date'], {
+    name: 'idx_tpm_plan_assignments_plan_date',
+    where: 'is_active = 1',
+  });
 
   // Lookup: tenant + date range (Gesamtansicht cross-plan view)
   pgm.createIndex('tpm_plan_assignments', ['tenant_id', 'scheduled_date'], {
@@ -91,17 +87,11 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
   `);
 
   // Grants
-  pgm.sql(
-    'GRANT SELECT, INSERT, UPDATE, DELETE ON tpm_plan_assignments TO app_user',
-  );
-  pgm.sql(
-    'GRANT USAGE, SELECT ON SEQUENCE tpm_plan_assignments_id_seq TO app_user',
-  );
+  pgm.sql('GRANT SELECT, INSERT, UPDATE, DELETE ON tpm_plan_assignments TO app_user');
+  pgm.sql('GRANT USAGE, SELECT ON SEQUENCE tpm_plan_assignments_id_seq TO app_user');
 }
 
 export async function down(pgm: MigrationBuilder): Promise<void> {
-  pgm.sql(
-    'DROP POLICY IF EXISTS tpm_plan_assignments_tenant_isolation ON tpm_plan_assignments',
-  );
+  pgm.sql('DROP POLICY IF EXISTS tpm_plan_assignments_tenant_isolation ON tpm_plan_assignments');
   pgm.dropTable('tpm_plan_assignments');
 }

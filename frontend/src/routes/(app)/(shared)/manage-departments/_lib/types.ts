@@ -2,11 +2,7 @@
 // MANAGE DEPARTMENTS - TYPE DEFINITIONS
 // =============================================================================
 
-import type {
-  IsActiveStatus,
-  FormIsActiveStatus,
-  StatusFilter,
-} from '@assixx/shared';
+import type { IsActiveStatus, FormIsActiveStatus, StatusFilter } from '@assixx/shared';
 
 export type { IsActiveStatus, FormIsActiveStatus, StatusFilter };
 

@@ -95,18 +95,11 @@ export function hasFullAccess(admin: Admin): boolean {
  * ADR-035: Department permission → READ-ONLY context on parent area
  */
 function getInheritedAreaNames(admin: Admin): string[] {
-  const allDepts: Department[] = [
-    ...(admin.departments ?? []),
-    ...(admin.leadDepartments ?? []),
-  ];
+  const allDepts: Department[] = [...(admin.departments ?? []), ...(admin.leadDepartments ?? [])];
   const seen = new Set<number>();
   const names: string[] = [];
   for (const dept of allDepts) {
-    if (
-      dept.areaName !== undefined &&
-      dept.areaId !== undefined &&
-      !seen.has(dept.areaId)
-    ) {
+    if (dept.areaName !== undefined && dept.areaId !== undefined && !seen.has(dept.areaId)) {
       seen.add(dept.areaId);
       names.push(dept.areaName);
     }
@@ -118,10 +111,7 @@ function getInheritedAreaNames(admin: Admin): string[] {
  * Get badge info for areas column
  * Decision tree: Full Access → Direct/Lead count → Inherited from Depts → Keine
  */
-export function getAreasBadge(
-  admin: Admin,
-  labels: HierarchyLabels,
-): BadgeInfo {
+export function getAreasBadge(admin: Admin, labels: HierarchyLabels): BadgeInfo {
   if (hasFullAccess(admin)) {
     return {
       class: BADGE_CLASS.PRIMARY,
@@ -164,9 +154,7 @@ export function getAreasBadge(
  * Get total department count (explicit permissions + lead positions)
  */
 function getDepartmentCount(admin: Admin): number {
-  return (
-    (admin.departments?.length ?? 0) + (admin.leadDepartments?.length ?? 0)
-  );
+  return (admin.departments?.length ?? 0) + (admin.leadDepartments?.length ?? 0);
 }
 
 /**
@@ -180,11 +168,8 @@ function getAreaCount(admin: Admin): number {
  * Get comma-separated department names (explicit + lead with suffix)
  */
 function getDepartmentNames(admin: Admin): string {
-  const explicit =
-    admin.departments?.map((d: { name: string }) => d.name) ?? [];
-  const lead =
-    admin.leadDepartments?.map((d: { name: string }) => `${d.name} (Lead)`) ??
-    [];
+  const explicit = admin.departments?.map((d: { name: string }) => d.name) ?? [];
+  const lead = admin.leadDepartments?.map((d: { name: string }) => `${d.name} (Lead)`) ?? [];
   return [...explicit, ...lead].join(', ');
 }
 
@@ -193,18 +178,14 @@ function getDepartmentNames(admin: Admin): string {
  */
 function getAreaNames(admin: Admin): string {
   const explicit = admin.areas?.map((a: { name: string }) => a.name) ?? [];
-  const lead =
-    admin.leadAreas?.map((a: { name: string }) => `${a.name} (Lead)`) ?? [];
+  const lead = admin.leadAreas?.map((a: { name: string }) => `${a.name} (Lead)`) ?? [];
   return [...explicit, ...lead].join(', ');
 }
 
 /**
  * Get badge info for departments column
  */
-export function getDepartmentsBadge(
-  admin: Admin,
-  labels: HierarchyLabels,
-): BadgeInfo {
+export function getDepartmentsBadge(admin: Admin, labels: HierarchyLabels): BadgeInfo {
   if (hasFullAccess(admin)) {
     return {
       class: BADGE_CLASS.PRIMARY,
@@ -252,10 +233,7 @@ export function getDepartmentsBadge(
 /**
  * Build inheritance description for teams badge
  */
-function buildTeamsInheritanceTitle(
-  admin: Admin,
-  labels: HierarchyLabels,
-): string {
+function buildTeamsInheritanceTitle(admin: Admin, labels: HierarchyLabels): string {
   const parts: string[] = [];
   const areaNames = getAreaNames(admin);
   const deptNames = getDepartmentNames(admin);
@@ -273,10 +251,7 @@ function buildTeamsInheritanceTitle(
 /**
  * Get badge info for teams column (inherited via Area/Department)
  */
-export function getTeamsBadge(
-  admin: Admin,
-  labels: HierarchyLabels,
-): BadgeInfo {
+export function getTeamsBadge(admin: Admin, labels: HierarchyLabels): BadgeInfo {
   if (hasFullAccess(admin)) {
     return {
       class: BADGE_CLASS.PRIMARY,
@@ -316,9 +291,7 @@ export interface PasswordStrengthResult {
 }
 
 /** Calculate password strength */
-export function calculatePasswordStrength(
-  password: string,
-): PasswordStrengthResult {
+export function calculatePasswordStrength(password: string): PasswordStrengthResult {
   if (!password) {
     return { score: -1, label: '', crackTime: '' };
   }
@@ -346,20 +319,14 @@ export function calculatePasswordStrength(
 /**
  * Check if two email addresses match
  */
-export function validateEmailsMatch(
-  email: string,
-  emailConfirm: string,
-): boolean {
+export function validateEmailsMatch(email: string, emailConfirm: string): boolean {
   return email === emailConfirm;
 }
 
 /**
  * Check if two passwords match
  */
-export function validatePasswordsMatch(
-  password: string,
-  passwordConfirm: string,
-): boolean {
+export function validatePasswordsMatch(password: string, passwordConfirm: string): boolean {
   return password === passwordConfirm;
 }
 
@@ -384,10 +351,7 @@ export interface FormState {
 /**
  * Build AdminFormData from form state
  */
-export function buildAdminFormData(
-  form: FormState,
-  isEditMode: boolean,
-): AdminFormData {
+export function buildAdminFormData(form: FormState, isEditMode: boolean): AdminFormData {
   const data: AdminFormData = {
     firstName: form.firstName,
     lastName: form.lastName,
@@ -503,10 +467,7 @@ export function getAvailabilityBadge(admin: Admin): BadgeInfo {
     };
   }
 
-  const isActive = isDateRangeActive(
-    admin.availabilityStart,
-    admin.availabilityEnd,
-  );
+  const isActive = isDateRangeActive(admin.availabilityStart, admin.availabilityEnd);
 
   if (isActive) {
     return {
@@ -589,17 +550,12 @@ export interface AvailabilityFormData {
 }
 
 /** Availability validation error types */
-export type AvailabilityValidationError =
-  | 'dates_required'
-  | 'end_before_start'
-  | null;
+export type AvailabilityValidationError = 'dates_required' | 'end_before_start' | null;
 
 /**
  * Validate availability form data
  */
-export function validateAvailabilityForm(
-  data: AvailabilityFormData,
-): AvailabilityValidationError {
+export function validateAvailabilityForm(data: AvailabilityFormData): AvailabilityValidationError {
   if (data.status !== 'available' && (data.start === '' || data.end === '')) {
     return 'dates_required';
   }
@@ -621,9 +577,7 @@ export interface AvailabilityPayload {
 /**
  * Build availability API payload from form data
  */
-export function buildAvailabilityPayload(
-  data: AvailabilityFormData,
-): AvailabilityPayload {
+export function buildAvailabilityPayload(data: AvailabilityFormData): AvailabilityPayload {
   return {
     availabilityStatus: data.status,
     availabilityStart: data.start !== '' ? data.start : undefined,

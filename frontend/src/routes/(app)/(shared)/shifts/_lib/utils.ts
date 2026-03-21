@@ -3,11 +3,7 @@
 // Based on: frontend/src/scripts/shifts/utils.ts
 // =============================================================================
 
-import {
-  DEFAULT_SHIFT_TIMES,
-  SHIFT_TYPE_TO_API,
-  SHIFT_TYPE_FROM_API,
-} from './constants';
+import { DEFAULT_SHIFT_TIMES, SHIFT_TYPE_TO_API, SHIFT_TYPE_FROM_API } from './constants';
 
 import type {
   AvailabilityEntry,
@@ -75,9 +71,7 @@ export function formatDateShort(date: Date): string {
  * Get the ISO week number for a date
  */
 export function getWeekNumber(date: Date): number {
-  const d = new Date(
-    Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()),
-  );
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
   const dayNum = d.getUTCDay() === 0 ? 7 : d.getUTCDay();
   d.setUTCDate(d.getUTCDate() + 4 - dayNum);
   const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
@@ -166,9 +160,7 @@ export function parseDate(dateString: string): Date {
  * Creates entries for both canonical keys (early/late/night) AND
  * legacy API keys (F/S/N) for backwards compatibility.
  */
-export function buildShiftTimesMap(
-  apiResponse: ShiftTimeApiResponse[],
-): ShiftTimesMap {
+export function buildShiftTimesMap(apiResponse: ShiftTimeApiResponse[]): ShiftTimesMap {
   const map: ShiftTimesMap = {};
   const keyToLegacy: Partial<Record<string, string>> = {
     early: 'F',
@@ -219,30 +211,21 @@ export function getShiftTimeInfo(
 /**
  * Get the start time for a shift type
  */
-export function getShiftStartTime(
-  shiftType: string,
-  shiftTimesMap?: ShiftTimesMap,
-): string {
+export function getShiftStartTime(shiftType: string, shiftTimesMap?: ShiftTimesMap): string {
   return getShiftTimeInfo(shiftType, shiftTimesMap).start;
 }
 
 /**
  * Get the end time for a shift type
  */
-export function getShiftEndTime(
-  shiftType: string,
-  shiftTimesMap?: ShiftTimesMap,
-): string {
+export function getShiftEndTime(shiftType: string, shiftTimesMap?: ShiftTimesMap): string {
   return getShiftTimeInfo(shiftType, shiftTimesMap).end;
 }
 
 /**
  * Get the display string for a shift time (e.g., "06:00 - 14:00")
  */
-export function getShiftTimeDisplay(
-  shiftType: string,
-  shiftTimesMap?: ShiftTimesMap,
-): string {
+export function getShiftTimeDisplay(shiftType: string, shiftTimesMap?: ShiftTimesMap): string {
   const info = getShiftTimeInfo(shiftType, shiftTimesMap);
   return `${info.start} - ${info.end}`;
 }
@@ -250,10 +233,7 @@ export function getShiftTimeDisplay(
 /**
  * Get shift label by type
  */
-export function getShiftLabel(
-  shiftType: string,
-  shiftTimesMap?: ShiftTimesMap,
-): string {
+export function getShiftLabel(shiftType: string, shiftTimesMap?: ShiftTimesMap): string {
   return getShiftTimeInfo(shiftType, shiftTimesMap).label;
 }
 
@@ -272,9 +252,7 @@ export function convertShiftTypeForAPI(frontendType: string): string {
  */
 export function convertShiftTypeFromDB(dbShiftType: string): ShiftType {
   if (dbShiftType in SHIFT_TYPE_FROM_API) {
-    return SHIFT_TYPE_FROM_API[
-      dbShiftType as keyof typeof SHIFT_TYPE_FROM_API
-    ] as ShiftType;
+    return SHIFT_TYPE_FROM_API[dbShiftType as keyof typeof SHIFT_TYPE_FROM_API] as ShiftType;
   }
   return dbShiftType as ShiftType;
 }
@@ -296,10 +274,7 @@ export function getEmployeeDisplayName(employee: Employee): string {
 /**
  * Check if a single availability entry covers a given date
  */
-function isDateInAvailabilityEntry(
-  entry: AvailabilityEntry,
-  date: Date,
-): boolean {
+function isDateInAvailabilityEntry(entry: AvailabilityEntry, date: Date): boolean {
   if (entry.startDate === undefined || entry.endDate === undefined) {
     return true; // No dates = status applies indefinitely
   }
@@ -320,10 +295,7 @@ function isDateInAvailabilityEntry(
  * Get effective availability status for an employee on a specific date.
  * Checks ALL availability entries — returns the first matching non-available status.
  */
-export function getEffectiveAvailability(
-  employee: Employee,
-  date: Date,
-): AvailabilityStatus {
+export function getEffectiveAvailability(employee: Employee, date: Date): AvailabilityStatus {
   const entries = employee.availabilities;
   if (entries === undefined || entries.length === 0) {
     return 'available';
@@ -342,10 +314,7 @@ export function getEffectiveAvailability(
  * Format availability period as "DD.MM.YYYY - DD.MM.YYYY"
  * Returns null if no dates are set
  */
-export function formatAvailabilityPeriod(
-  startDate?: string,
-  endDate?: string,
-): string | null {
+export function formatAvailabilityPeriod(startDate?: string, endDate?: string): string | null {
   if (startDate === undefined && endDate === undefined) return null;
 
   const formatStr = (dateStr?: string): string => {

@@ -67,9 +67,7 @@ describe('ResponseInterceptor', () => {
       );
 
       const response = result as { timestamp: string };
-      expect(response.timestamp).toMatch(
-        /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/,
-      );
+      expect(response.timestamp).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
     });
 
     it('should wrap array data', async () => {

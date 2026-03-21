@@ -48,20 +48,11 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
     };
   }
 
-  const [colorsData, intervalColorsData, categoryColorsData] =
-    await Promise.all([
-      apiFetch<TpmColorConfigEntry[]>('/tpm/config/colors', token, fetch),
-      apiFetch<IntervalColorConfigEntry[]>(
-        '/tpm/config/interval-colors',
-        token,
-        fetch,
-      ),
-      apiFetch<CategoryColorConfigEntry[]>(
-        '/tpm/config/category-colors',
-        token,
-        fetch,
-      ),
-    ]);
+  const [colorsData, intervalColorsData, categoryColorsData] = await Promise.all([
+    apiFetch<TpmColorConfigEntry[]>('/tpm/config/colors', token, fetch),
+    apiFetch<IntervalColorConfigEntry[]>('/tpm/config/interval-colors', token, fetch),
+    apiFetch<CategoryColorConfigEntry[]>('/tpm/config/category-colors', token, fetch),
+  ]);
 
   return {
     permissionDenied: false as const,

@@ -10,12 +10,7 @@
  * - RLS enforced via `db.tenantTransaction()` (ADR-019)
  */
 import { IS_ACTIVE } from '@assixx/shared/constants';
-import {
-  ConflictException,
-  Injectable,
-  Logger,
-  NotFoundException,
-} from '@nestjs/common';
+import { ConflictException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import type { PoolClient } from 'pg';
 import { v7 as uuidv7 } from 'uuid';
 
@@ -23,11 +18,7 @@ import { ActivityLoggerService } from '../common/services/activity-logger.servic
 import { DatabaseService } from '../database/database.service.js';
 import type { CreateHolidayDto } from './dto/create-holiday.dto.js';
 import type { UpdateHolidayDto } from './dto/update-holiday.dto.js';
-import type {
-  VacationHalfDay,
-  VacationHoliday,
-  VacationHolidayRow,
-} from './vacation.types.js';
+import type { VacationHalfDay, VacationHoliday, VacationHolidayRow } from './vacation.types.js';
 
 @Injectable()
 export class VacationHolidaysService {
@@ -42,10 +33,7 @@ export class VacationHolidaysService {
    * Get all active holidays for a tenant, optionally filtered by year.
    * Recurring holidays are included regardless of year (matched by month+day).
    */
-  async getHolidays(
-    tenantId: number,
-    year?: number,
-  ): Promise<VacationHoliday[]> {
+  async getHolidays(tenantId: number, year?: number): Promise<VacationHoliday[]> {
     return await this.db.tenantTransaction(
       async (client: PoolClient): Promise<VacationHoliday[]> => {
         let sql: string = `
@@ -65,9 +53,7 @@ export class VacationHolidaysService {
         sql += ` ORDER BY holiday_date ASC`;
 
         const result = await client.query<VacationHolidayRow>(sql, params);
-        return result.rows.map((row: VacationHolidayRow) =>
-          this.mapRowToHoliday(row),
-        );
+        return result.rows.map((row: VacationHolidayRow) => this.mapRowToHoliday(row));
       },
     );
   }
@@ -81,54 +67,48 @@ export class VacationHolidaysService {
     userId: number,
     dto: CreateHolidayDto,
   ): Promise<VacationHoliday> {
-    return await this.db.tenantTransaction(
-      async (client: PoolClient): Promise<VacationHoliday> => {
-        const id: string = uuidv7();
+    return await this.db.tenantTransaction(async (client: PoolClient): Promise<VacationHoliday> => {
+      const id: string = uuidv7();
 
-        try {
-          const result = await client.query<VacationHolidayRow>(
-            `INSERT INTO vacation_holidays
+      try {
+        const result = await client.query<VacationHolidayRow>(
+          `INSERT INTO vacation_holidays
                (id, tenant_id, holiday_date, name, recurring, created_by)
              VALUES ($1, $2, $3, $4, $5, $6)
              RETURNING id, tenant_id, holiday_date, name, recurring,
                        created_by, created_at, updated_at`,
-            [id, tenantId, dto.holidayDate, dto.name, dto.recurring, userId],
-          );
+          [id, tenantId, dto.holidayDate, dto.name, dto.recurring, userId],
+        );
 
-          const row: VacationHolidayRow | undefined = result.rows[0];
-          if (row === undefined) {
-            throw new Error('INSERT into vacation_holidays returned no rows');
-          }
-
-          this.logger.log(
-            `Holiday created: ${dto.name} on ${dto.holidayDate} (tenant ${tenantId})`,
-          );
-
-          void this.activityLogger.log({
-            tenantId,
-            userId,
-            action: 'create',
-            entityType: 'vacation_holiday',
-            details: `Feiertag erstellt: "${dto.name}" am ${dto.holidayDate}`,
-            newValues: {
-              holidayId: id,
-              name: dto.name,
-              holidayDate: dto.holidayDate,
-              recurring: dto.recurring,
-            },
-          });
-
-          return this.mapRowToHoliday(row);
-        } catch (error: unknown) {
-          if (this.isUniqueViolation(error)) {
-            throw new ConflictException(
-              `A holiday already exists for date ${dto.holidayDate}`,
-            );
-          }
-          throw error;
+        const row: VacationHolidayRow | undefined = result.rows[0];
+        if (row === undefined) {
+          throw new Error('INSERT into vacation_holidays returned no rows');
         }
-      },
-    );
+
+        this.logger.log(`Holiday created: ${dto.name} on ${dto.holidayDate} (tenant ${tenantId})`);
+
+        void this.activityLogger.log({
+          tenantId,
+          userId,
+          action: 'create',
+          entityType: 'vacation_holiday',
+          details: `Feiertag erstellt: "${dto.name}" am ${dto.holidayDate}`,
+          newValues: {
+            holidayId: id,
+            name: dto.name,
+            holidayDate: dto.holidayDate,
+            recurring: dto.recurring,
+          },
+        });
+
+        return this.mapRowToHoliday(row);
+      } catch (error: unknown) {
+        if (this.isUniqueViolation(error)) {
+          throw new ConflictException(`A holiday already exists for date ${dto.holidayDate}`);
+        }
+        throw error;
+      }
+    });
   }
 
   /**
@@ -142,103 +122,95 @@ export class VacationHolidaysService {
     id: string,
     dto: UpdateHolidayDto,
   ): Promise<VacationHoliday> {
-    return await this.db.tenantTransaction(
-      async (client: PoolClient): Promise<VacationHoliday> => {
-        const { setClauses, params } = this.buildHolidaySetClauses(dto);
+    return await this.db.tenantTransaction(async (client: PoolClient): Promise<VacationHoliday> => {
+      const { setClauses, params } = this.buildHolidaySetClauses(dto);
 
-        if (setClauses.length === 0) {
-          return await this.getHolidayById(client, tenantId, id);
-        }
+      if (setClauses.length === 0) {
+        return await this.getHolidayById(client, tenantId, id);
+      }
 
-        setClauses.push(`updated_at = NOW()`);
-        const idParam: number = params.length + 1;
-        params.push(id);
-        const tenantParam: number = params.length + 1;
-        params.push(tenantId);
+      setClauses.push(`updated_at = NOW()`);
+      const idParam: number = params.length + 1;
+      params.push(id);
+      const tenantParam: number = params.length + 1;
+      params.push(tenantId);
 
-        try {
-          const result = await client.query<VacationHolidayRow>(
-            `UPDATE vacation_holidays
+      try {
+        const result = await client.query<VacationHolidayRow>(
+          `UPDATE vacation_holidays
              SET ${setClauses.join(', ')}
              WHERE id = $${idParam} AND tenant_id = $${tenantParam} AND is_active = ${IS_ACTIVE.ACTIVE}
              RETURNING id, tenant_id, holiday_date, name, recurring,
                        created_by, created_at, updated_at`,
-            params,
-          );
+          params,
+        );
 
-          const row: VacationHolidayRow | undefined = result.rows[0];
-          if (row === undefined) {
-            throw new NotFoundException(`Holiday ${id} not found`);
-          }
+        const row: VacationHolidayRow | undefined = result.rows[0];
+        if (row === undefined) {
+          throw new NotFoundException(`Holiday ${id} not found`);
+        }
 
-          const holiday = this.mapRowToHoliday(row);
+        const holiday = this.mapRowToHoliday(row);
 
-          void this.activityLogger.log({
-            tenantId,
-            userId,
-            action: 'update',
-            entityType: 'vacation_holiday',
-            details: `Feiertag aktualisiert: "${holiday.name}" (${id})`,
-            newValues: {
-              holidayId: id,
-              name: dto.name,
-              holidayDate: dto.holidayDate,
-              recurring: dto.recurring,
-            },
-          });
+        void this.activityLogger.log({
+          tenantId,
+          userId,
+          action: 'update',
+          entityType: 'vacation_holiday',
+          details: `Feiertag aktualisiert: "${holiday.name}" (${id})`,
+          newValues: {
+            holidayId: id,
+            name: dto.name,
+            holidayDate: dto.holidayDate,
+            recurring: dto.recurring,
+          },
+        });
 
-          return holiday;
-        } catch (error: unknown) {
-          if (error instanceof NotFoundException) {
-            throw error;
-          }
-          if (this.isUniqueViolation(error)) {
-            throw new ConflictException(
-              `A holiday already exists for date ${dto.holidayDate ?? '(unchanged)'}`,
-            );
-          }
+        return holiday;
+      } catch (error: unknown) {
+        if (error instanceof NotFoundException) {
           throw error;
         }
-      },
-    );
+        if (this.isUniqueViolation(error)) {
+          throw new ConflictException(
+            `A holiday already exists for date ${dto.holidayDate ?? '(unchanged)'}`,
+          );
+        }
+        throw error;
+      }
+    });
   }
 
   /**
    * Soft-delete a holiday (is_active = 4).
    * Throws NotFoundException if not found.
    */
-  async deleteHoliday(
-    tenantId: number,
-    userId: number,
-    id: string,
-  ): Promise<void> {
-    await this.db.tenantTransaction(
-      async (client: PoolClient): Promise<void> => {
-        const result = await client.query<{ id: string; name: string }>(
-          `UPDATE vacation_holidays
+  async deleteHoliday(tenantId: number, userId: number, id: string): Promise<void> {
+    await this.db.tenantTransaction(async (client: PoolClient): Promise<void> => {
+      const result = await client.query<{ id: string; name: string }>(
+        `UPDATE vacation_holidays
            SET is_active = ${IS_ACTIVE.DELETED}, updated_at = NOW()
            WHERE id = $1 AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}
            RETURNING id, name`,
-          [id, tenantId],
-        );
+        [id, tenantId],
+      );
 
-        const deleted = result.rows[0];
-        if (deleted === undefined) {
-          throw new NotFoundException(`Holiday ${id} not found`);
-        }
+      const deleted = result.rows[0];
+      if (deleted === undefined) {
+        throw new NotFoundException(`Holiday ${id} not found`);
+      }
 
-        this.logger.log(`Holiday soft-deleted: ${id} (tenant ${tenantId})`);
+      this.logger.log(`Holiday soft-deleted: ${id} (tenant ${tenantId})`);
 
-        void this.activityLogger.log({
-          tenantId,
-          userId,
-          action: 'delete',
-          entityType: 'vacation_holiday',
-          details: `Feiertag gelöscht: "${deleted.name}" (${id})`,
-          oldValues: { holidayId: id, name: deleted.name },
-        });
-      },
-    );
+      void this.activityLogger.log({
+        tenantId,
+        userId,
+        action: 'delete',
+        entityType: 'vacation_holiday',
+        details: `Feiertag gelöscht: "${deleted.name}" (${id})`,
+        oldValues: { holidayId: id, name: deleted.name },
+      });
+    });
   }
 
   /**
@@ -246,14 +218,13 @@ export class VacationHolidaysService {
    * Handles recurring holidays by matching month+day.
    */
   async isHoliday(tenantId: number, date: Date): Promise<boolean> {
-    return await this.db.tenantTransaction(
-      async (client: PoolClient): Promise<boolean> => {
-        const dateStr: string = this.formatDate(date);
-        const month: number = date.getMonth() + 1;
-        const day: number = date.getDate();
+    return await this.db.tenantTransaction(async (client: PoolClient): Promise<boolean> => {
+      const dateStr: string = this.formatDate(date);
+      const month: number = date.getMonth() + 1;
+      const day: number = date.getDate();
 
-        const result = await client.query<{ found: boolean }>(
-          `SELECT EXISTS (
+      const result = await client.query<{ found: boolean }>(
+        `SELECT EXISTS (
             SELECT 1 FROM vacation_holidays
             WHERE tenant_id = $1
               AND is_active = ${IS_ACTIVE.ACTIVE}
@@ -263,12 +234,11 @@ export class VacationHolidaysService {
                     AND EXTRACT(DAY FROM holiday_date) = $4)
               )
           ) AS found`,
-          [tenantId, dateStr, month, day],
-        );
+        [tenantId, dateStr, month, day],
+      );
 
-        return result.rows[0]?.found === true;
-      },
-    );
+      return result.rows[0]?.found === true;
+    });
   }
 
   /**
@@ -288,47 +258,38 @@ export class VacationHolidaysService {
     halfDayStart: VacationHalfDay = 'none',
     halfDayEnd: VacationHalfDay = 'none',
   ): Promise<number> {
-    return await this.db.tenantTransaction(
-      async (client: PoolClient): Promise<number> => {
-        const start: Date = new Date(startDate);
-        const end: Date = new Date(endDate);
+    return await this.db.tenantTransaction(async (client: PoolClient): Promise<number> => {
+      const start: Date = new Date(startDate);
+      const end: Date = new Date(endDate);
 
-        // Load all holidays for the date range in ONE query (avoid N+1)
-        const holidaySet: Set<string> = await this.loadHolidaySet(
-          client,
-          tenantId,
-          start,
-          end,
-        );
+      // Load all holidays for the date range in ONE query (avoid N+1)
+      const holidaySet: Set<string> = await this.loadHolidaySet(client, tenantId, start, end);
 
-        const isSingleDay: boolean = start.getTime() === end.getTime();
-        let totalDays: number = 0;
+      const isSingleDay: boolean = start.getTime() === end.getTime();
+      let totalDays: number = 0;
 
-        const current: Date = new Date(start);
-        while (current <= end) {
-          const dayOfWeek: number = current.getDay();
-          const isWeekend: boolean = dayOfWeek === 0 || dayOfWeek === 6;
-          const isHolidayDate: boolean = holidaySet.has(
-            this.formatDate(current),
+      const current: Date = new Date(start);
+      while (current <= end) {
+        const dayOfWeek: number = current.getDay();
+        const isWeekend: boolean = dayOfWeek === 0 || dayOfWeek === 6;
+        const isHolidayDate: boolean = holidaySet.has(this.formatDate(current));
+
+        if (!isWeekend && !isHolidayDate) {
+          totalDays += this.calculateDayValue(
+            current,
+            start,
+            end,
+            isSingleDay,
+            halfDayStart,
+            halfDayEnd,
           );
-
-          if (!isWeekend && !isHolidayDate) {
-            totalDays += this.calculateDayValue(
-              current,
-              start,
-              end,
-              isSingleDay,
-              halfDayStart,
-              halfDayEnd,
-            );
-          }
-
-          current.setDate(current.getDate() + 1);
         }
 
-        return totalDays;
-      },
-    );
+        current.setDate(current.getDate() + 1);
+      }
+
+      return totalDays;
+    });
   }
 
   // ==========================================================================
@@ -349,9 +310,7 @@ export class VacationHolidaysService {
     const endStr: string = this.formatDate(endDate);
 
     // Get non-recurring holidays in range + all recurring holidays
-    const result = await client.query<
-      Pick<VacationHolidayRow, 'holiday_date' | 'recurring'>
-    >(
+    const result = await client.query<Pick<VacationHolidayRow, 'holiday_date' | 'recurring'>>(
       `SELECT holiday_date, recurring
        FROM vacation_holidays
        WHERE tenant_id = $1
@@ -367,12 +326,7 @@ export class VacationHolidaysService {
 
     for (const row of result.rows) {
       if (row.recurring) {
-        this.projectRecurringHoliday(
-          row.holiday_date,
-          startDate,
-          endDate,
-          holidaySet,
-        );
+        this.projectRecurringHoliday(row.holiday_date, startDate, endDate, holidaySet);
       } else {
         holidaySet.add(this.formatDate(new Date(row.holiday_date)));
       }
@@ -445,11 +399,7 @@ export class VacationHolidaysService {
     const hMonth: number = date.getMonth();
     const hDay: number = date.getDate();
 
-    for (
-      let year: number = startDate.getFullYear();
-      year <= endDate.getFullYear();
-      year++
-    ) {
+    for (let year: number = startDate.getFullYear(); year <= endDate.getFullYear(); year++) {
       const projected: Date = new Date(year, hMonth, hDay);
       if (projected >= startDate && projected <= endDate) {
         holidaySet.add(this.formatDate(projected));

@@ -17,11 +17,7 @@
     STATUS_LABELS as WO_STATUS_LABELS,
     STATUS_BADGE_CLASSES as WO_STATUS_BADGE_CLASSES,
   } from '../../../../../work-orders/_lib/constants';
-  import {
-    fetchDefectPhotos,
-    updateDefect,
-    logApiError,
-  } from '../../../_lib/api';
+  import { fetchDefectPhotos, updateDefect, logApiError } from '../../../_lib/api';
   import {
     INTERVAL_LABELS,
     CARD_STATUS_LABELS,
@@ -173,18 +169,12 @@
 
   function handlePreviewPrev(): void {
     if (previewPhotoIndex === null || previewPhotos.length <= 1) return;
-    previewPhotoIndex =
-      previewPhotoIndex === 0 ?
-        previewPhotos.length - 1
-      : previewPhotoIndex - 1;
+    previewPhotoIndex = previewPhotoIndex === 0 ? previewPhotos.length - 1 : previewPhotoIndex - 1;
   }
 
   function handlePreviewNext(): void {
     if (previewPhotoIndex === null || previewPhotos.length <= 1) return;
-    previewPhotoIndex =
-      previewPhotoIndex === previewPhotos.length - 1 ?
-        0
-      : previewPhotoIndex + 1;
+    previewPhotoIndex = previewPhotoIndex === previewPhotos.length - 1 ? 0 : previewPhotoIndex + 1;
   }
 
   function handleKeydown(e: KeyboardEvent): void {
@@ -197,10 +187,7 @@
   // WORK ORDER MODAL (admin only)
   // ===========================================================================
 
-  function openCreateWoModal(
-    defectItem: DefectWithContext,
-    event: MouseEvent,
-  ): void {
+  function openCreateWoModal(defectItem: DefectWithContext, event: MouseEvent): void {
     event.stopPropagation();
     woDefect = defectItem;
     showWoModal = true;
@@ -221,10 +208,7 @@
   // EDIT DEFECT MODAL (admin only)
   // ===========================================================================
 
-  function openEditModal(
-    defectItem: DefectWithContext,
-    event: MouseEvent,
-  ): void {
+  function openEditModal(defectItem: DefectWithContext, event: MouseEvent): void {
     event.stopPropagation();
     editDefect = defectItem;
     editTitle = defectItem.title;
@@ -339,9 +323,7 @@
             type="button"
             class="btn btn-primary"
             onclick={() => {
-              void goto(
-                resolve(`/lean-management/tpm/card/${card.uuid}/history`),
-              );
+              void goto(resolve(`/lean-management/tpm/card/${card.uuid}/history`));
             }}
           >
             <i class="fas fa-history mr-2"></i>{MESSAGES.HISTORY_HEADING}
@@ -352,9 +334,7 @@
       <div class="card__body">
         {#if error !== null}
           <div class="p-6 text-center">
-            <i
-              class="fas fa-exclamation-triangle mb-4 text-4xl text-(--color-danger)"
-            ></i>
+            <i class="fas fa-exclamation-triangle mb-4 text-4xl text-(--color-danger)"></i>
             <p class="text-(--color-text-secondary)">{error}</p>
           </div>
         {:else if defects.length === 0}
@@ -412,8 +392,7 @@
                     <td>
                       {#if defect.photoCount > 0}
                         <span class="flex items-center gap-1 text-sm">
-                          <i class="fas fa-camera text-(--color-text-muted)"
-                          ></i>
+                          <i class="fas fa-camera text-(--color-text-muted)"></i>
                           {defect.photoCount}
                         </span>
                       {:else}
@@ -440,22 +419,16 @@
                                   defect.workOrderStatus as WorkOrderStatus
                                 ]}"
                               >
-                                {WO_STATUS_LABELS[
-                                  defect.workOrderStatus as WorkOrderStatus
-                                ]}
+                                {WO_STATUS_LABELS[defect.workOrderStatus as WorkOrderStatus]}
                               </span>
                               {#if defect.workOrderAssigneeNames.length > 0}
                                 <span class="wo-info__assignees">
-                                  <i
-                                    class="fas fa-user text-(--color-text-muted)"
-                                  ></i>
+                                  <i class="fas fa-user text-(--color-text-muted)"></i>
                                   {defect.workOrderAssigneeNames.join(', ')}
                                 </span>
                               {/if}
                               <a
-                                href={resolve(
-                                  `/work-orders/${defect.workOrderUuid}`,
-                                )}
+                                href={resolve(`/work-orders/${defect.workOrderUuid}`)}
                                 class="btn btn-sm btn-ghost"
                                 onclick={(e: MouseEvent) => {
                                   e.stopPropagation();
@@ -499,9 +472,7 @@
                               </p>
                             </div>
                           {:else}
-                            <p
-                              class="defect-detail__text defect-detail__text--empty"
-                            >
+                            <p class="defect-detail__text defect-detail__text--empty">
                               {MESSAGES.DEFECTS_NO_DESC}
                             </p>
                           {/if}
@@ -512,9 +483,7 @@
                               <h4 class="defect-detail__label">
                                 <i class="fas fa-camera"></i>
                                 {MESSAGES.PHOTO_HEADING}
-                                <span
-                                  class="text-xs font-normal text-(--color-text-muted)"
-                                >
+                                <span class="text-xs font-normal text-(--color-text-muted)">
                                   ({defect.photoCount})
                                 </span>
                               </h4>
@@ -540,10 +509,7 @@
                                       role="button"
                                       tabindex="0"
                                       onclick={() => {
-                                        openPhotoPreview(
-                                          loadedPhotos[defect.uuid] ?? [],
-                                          photoIdx,
-                                        );
+                                        openPhotoPreview(loadedPhotos[defect.uuid] ?? [], photoIdx);
                                       }}
                                       onkeydown={(e) => {
                                         if (e.key === 'Enter')
@@ -560,9 +526,7 @@
                                         loading="lazy"
                                       />
                                       {#if photoIdx === 0 && (loadedPhotos[defect.uuid]?.length ?? 0) > 1}
-                                        <span
-                                          class="defect-detail__photo-count"
-                                        >
+                                        <span class="defect-detail__photo-count">
                                           {loadedPhotos[defect.uuid]?.length} Fotos
                                         </span>
                                       {/if}
@@ -755,9 +719,7 @@
             />
           </div>
           <div class="border-t border-(--border-subtle) bg-(--surface-2) p-4">
-            <div
-              class="flex items-center gap-6 text-sm text-(--color-text-secondary)"
-            >
+            <div class="flex items-center gap-6 text-sm text-(--color-text-secondary)">
               <span class="flex items-center gap-2">
                 <i class="fas fa-file-archive"></i>
                 {formatFileSize(previewPhoto.fileSize)}
@@ -769,8 +731,7 @@
           <button
             type="button"
             class="btn btn-cancel"
-            onclick={closePhotoPreview}
-            ><i class="fas fa-times mr-2"></i>Schließen</button
+            onclick={closePhotoPreview}><i class="fas fa-times mr-2"></i>Schließen</button
           >
           <button
             type="button"

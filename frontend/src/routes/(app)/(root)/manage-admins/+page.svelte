@@ -1,89 +1,50 @@
 <script lang="ts">
   /**
    * Manage Admins - Page Component
-   * @module manage-admins/+page
-   *
    * Level 3 SSR: $derived for SSR data, invalidateAll() after mutations.
    */
   import { goto, invalidateAll } from '$app/navigation';
 
   import AvailabilityModal from '$lib/availability/AvailabilityModal.svelte';
-  import {
-    showSuccessAlert,
-    showWarningAlert,
-    showErrorAlert,
-    showToast,
-  } from '$lib/stores/toast';
-  import { ApiError, getApiErrorMessage } from '$lib/utils/api-client';
+  import { showSuccessAlert, showWarningAlert, showErrorAlert, showToast } from '$lib/stores/toast';
   import { createLogger } from '$lib/utils/logger';
-
-  const log = createLogger('ManageAdminsPage');
 
   import AdminFormModal from './_lib/AdminFormModal.svelte';
   import AdminTableRow from './_lib/AdminTableRow.svelte';
-  import {
-    saveAdminWithPermissions,
-    deleteAdmin as apiDeleteAdmin,
-    upgradeToRoot as apiUpgradeToRoot,
-    downgradeToEmployee as apiDowngradeToEmployee,
-    updateAdminAvailability as apiUpdateAvailability,
-  } from './_lib/api';
   import { createMessages, FORM_DEFAULTS } from './_lib/constants';
   import DeleteModals from './_lib/DeleteModals.svelte';
   import { applyAllFilters } from './_lib/filters';
+  import {
+    executeFullAdminSave,
+    executeFullAvailabilitySave,
+    executeUpgradeToRoot,
+    executeDowngradeToEmployee,
+    executeDeleteAdmin,
+  } from './_lib/page-actions';
   import RoleChangeModals from './_lib/RoleChangeModals.svelte';
   import SearchResults from './_lib/SearchResults.svelte';
-  import {
-    buildAdminFormData,
-    populateFormFromAdmin,
-    validateAvailabilityForm,
-    buildAvailabilityPayload,
-  } from './_lib/utils';
+  import { populateFormFromAdmin } from './_lib/utils';
 
   import type { PageData } from './$types';
-  import type {
-    Admin,
-    Area,
-    Department,
-    StatusFilter,
-    FormIsActiveStatus,
-    AvailabilityStatus,
-  } from './_lib/types';
+  import type { StatusFilter, FormIsActiveStatus, AvailabilityStatus } from './_lib/types';
 
-  // =============================================================================
-  // SSR DATA - Level 3: $derived from props (single source of truth)
-  // =============================================================================
+  const log = createLogger('ManageAdminsPage');
 
+  // --- SSR DATA ---
   const { data }: { data: PageData } = $props();
-
-  // SSR data via $derived - updates when invalidateAll() is called
-  const allAdmins = $derived<Admin[]>(data.admins);
-  const allAreas = $derived<Area[]>(data.areas);
-  const allDepartments = $derived<Department[]>(data.departments);
-  const positionOptions = $derived<string[]>(data.positionOptions);
-
-  // Hierarchy labels from layout data inheritance (A6)
+  const allAdmins = $derived(data.admins);
+  const allAreas = $derived(data.areas);
+  const allDepartments = $derived(data.departments);
+  const positionOptions = $derived(data.positionOptions);
   const labels = $derived(data.hierarchyLabels);
   const messages = $derived(createMessages(labels));
-
-  // Permission: Only root may upgrade admin → root
   const canUpgrade = $derived(data.user !== null && data.user.role === 'root');
 
-  // =============================================================================
-  // UI STATE - Filtering and form state (client-side only)
-  // =============================================================================
-
-  // Error state
+  // --- UI STATE ---
   const error = $state<string | null>(null);
-
-  // Filter State
   let currentStatusFilter = $state<StatusFilter>('active');
   let currentSearchQuery = $state('');
-
-  // Search State
   let searchOpen = $state(false);
-
-  // Modal States
   let showAdminModal = $state(false);
   let showDeleteModal = $state(false);
   let showUpgradeConfirmModal = $state(false);
@@ -93,8 +54,6 @@
   let downgradeAdminId = $state<number | null>(null);
   let downgradeLoading = $state(false);
   let showAvailabilityModal = $state(false);
-
-  // Availability Modal State
   let availabilityAdminId = $state<number | null>(null);
   let availabilityStatus = $state<AvailabilityStatus>('available');
   let availabilityStart = $state('');
@@ -102,12 +61,8 @@
   let availabilityReason = $state('');
   let availabilityNotes = $state('');
   let availabilitySubmitting = $state(false);
-
-  // Edit State
   let currentEditId = $state<number | null>(null);
   let deleteAdminId = $state<number | null>(null);
-
-  // Form Fields
   let formFirstName = $state('');
   let formLastName = $state('');
   let formEmail = $state('');
@@ -118,113 +73,72 @@
   let formPosition = $state('');
   let formNotes = $state('');
   let formIsActive = $state<FormIsActiveStatus>(1);
-
-  // N:M Organization Assignment
   let formHasFullAccess = $state(false);
   let formAreaIds = $state<number[]>([]);
   let formDepartmentIds = $state<number[]>([]);
-
-  // Form Submit Loading
   let submitting = $state(false);
 
-  // =============================================================================
-  // DERIVED VALUES
-  // =============================================================================
-
+  // --- DERIVED ---
   const isEditMode = $derived(currentEditId !== null);
-  const modalTitle = $derived(
-    isEditMode ? messages.MODAL_EDIT_TITLE : messages.MODAL_ADD_TITLE,
-  );
-
-  // Derived: Filtered admins based on current filter/search state
+  const modalTitle = $derived(isEditMode ? messages.MODAL_EDIT_TITLE : messages.MODAL_ADD_TITLE);
   const filteredAdmins = $derived(
     applyAllFilters(allAdmins, currentStatusFilter, currentSearchQuery),
   );
-
-  // Derived: Current admin for availability modal
   const availabilityAdmin = $derived(
     availabilityAdminId !== null ?
       (allAdmins.find((a) => a.id === availabilityAdminId) ?? null)
     : null,
   );
 
-  // =============================================================================
-  // VALIDATION HELPERS
-  // =============================================================================
-
-  /** Check password fields: required for new, optional for edit (both-or-none + must match) */
-  function hasPasswordError(): boolean {
-    if (!isEditMode) {
-      return (
-        formPassword === '' ||
-        formPasswordConfirm === '' ||
-        formPassword !== formPasswordConfirm
-      );
-    }
-    // Edit mode: if either field is filled, both must be filled and match
-    const eitherFilled = formPassword !== '' || formPasswordConfirm !== '';
-    return eitherFilled && formPassword !== formPasswordConfirm;
+  // --- FORM HELPERS ---
+  function applyFormState(s: typeof FORM_DEFAULTS): void {
+    formFirstName = s.firstName;
+    formLastName = s.lastName;
+    formEmail = s.email;
+    formEmailConfirm = s.emailConfirm;
+    formPassword = s.password;
+    formPasswordConfirm = s.passwordConfirm;
+    formEmployeeNumber = s.employeeNumber;
+    formPosition = s.position;
+    formNotes = s.notes;
+    formIsActive = s.isActive;
+    formHasFullAccess = s.hasFullAccess;
+    formAreaIds = [...s.areaIds];
+    formDepartmentIds = [...s.departmentIds];
   }
 
-  /** Validates admin form fields */
-  function validateAdminForm(): string | null {
-    if (formEmail !== formEmailConfirm) {
-      return messages.ERROR_EMAIL_MISMATCH;
-    }
-
-    if (hasPasswordError()) {
-      return messages.ERROR_PASSWORD_MISMATCH;
-    }
-
-    if (!formPosition) {
-      return messages.ERROR_POSITION_REQUIRED;
-    }
-
-    if (!formEmployeeNumber) {
-      return messages.ERROR_EMPLOYEE_NUMBER_REQUIRED;
-    }
-
-    return null;
-  }
-
-  // =============================================================================
-  // API FUNCTIONS - Level 3: invalidateAll() after mutations
-  // =============================================================================
-
-  async function saveAdmin() {
+  // --- API HANDLERS ---
+  async function saveAdmin(): Promise<void> {
     submitting = true;
-
-    try {
-      const validationError = validateAdminForm();
-      if (validationError !== null) {
-        showWarningAlert(validationError);
-        submitting = false;
-        return;
-      }
-
-      // Build form data using utility function
-      const formData = buildAdminFormData(
-        {
-          firstName: formFirstName,
-          lastName: formLastName,
-          email: formEmail,
-          password: formPassword,
-          position: formPosition,
-          notes: formNotes,
-          isActive: formIsActive,
-          employeeNumber: formEmployeeNumber,
-          hasFullAccess: formHasFullAccess,
-          areaIds: formAreaIds,
-          departmentIds: formDepartmentIds,
-        },
-        isEditMode,
-      );
-
-      const result = await saveAdminWithPermissions(formData, currentEditId);
-
+    const result = await executeFullAdminSave(
+      {
+        firstName: formFirstName,
+        lastName: formLastName,
+        email: formEmail,
+        emailConfirm: formEmailConfirm,
+        password: formPassword,
+        passwordConfirm: formPasswordConfirm,
+        employeeNumber: formEmployeeNumber,
+        position: formPosition,
+        notes: formNotes,
+        isActive: formIsActive,
+        hasFullAccess: formHasFullAccess,
+        areaIds: formAreaIds,
+        departmentIds: formDepartmentIds,
+      },
+      currentEditId,
+      isEditMode,
+      log,
+      messages,
+    );
+    if (result.validationError !== undefined) {
+      showWarningAlert(result.validationError);
+      submitting = false;
+      return;
+    }
+    if (result.success) {
       closeAdminModal();
       await invalidateAll();
-
       if (!isEditMode && result.uuid !== null) {
         showToast({
           type: 'success',
@@ -237,19 +151,14 @@
           },
         });
       } else {
-        showSuccessAlert(
-          isEditMode ? messages.SUCCESS_UPDATED : messages.SUCCESS_CREATED,
-        );
+        showSuccessAlert(isEditMode ? messages.SUCCESS_UPDATED : messages.SUCCESS_CREATED);
       }
-    } catch (err: unknown) {
-      log.error({ err }, 'Error saving admin');
-      showErrorAlert(getApiErrorMessage(err, messages.ERROR_SAVE_FAILED));
-    } finally {
-      submitting = false;
+    } else {
+      showErrorAlert(result.errorMessage ?? messages.ERROR_SAVE_FAILED);
     }
+    submitting = false;
   }
 
-  /** Step 1: Inline confirm clicked → open warning modal */
   function upgradeAdmin(): void {
     if (currentEditId === null) return;
     if (!canUpgrade) {
@@ -261,7 +170,6 @@
     showUpgradeConfirmModal = true;
   }
 
-  /** Step 2: Warning modal confirmed → PUT role change */
   async function confirmUpgradeAdmin(): Promise<void> {
     if (upgradeAdminId === null) return;
     if (!canUpgrade) {
@@ -272,27 +180,16 @@
     showUpgradeConfirmModal = false;
     upgradeAdminId = null;
     upgradeLoading = true;
-
-    try {
-      await apiUpgradeToRoot(adminId);
+    const result = await executeUpgradeToRoot(adminId, log);
+    if (result.success) {
       await invalidateAll();
       showSuccessAlert(messages.UPGRADE_SUCCESS);
-    } catch (err: unknown) {
-      log.error({ err }, 'Error upgrading admin to root');
-      showErrorAlert(
-        err instanceof Error ? err.message : messages.UPGRADE_ERROR,
-      );
-    } finally {
-      upgradeLoading = false;
+    } else {
+      showErrorAlert(result.errorMessage ?? messages.UPGRADE_ERROR);
     }
+    upgradeLoading = false;
   }
 
-  function closeUpgradeConfirmModal(): void {
-    showUpgradeConfirmModal = false;
-    upgradeAdminId = null;
-  }
-
-  /** Step 1: Inline downgrade confirm clicked → open warning modal */
   function downgradeAdmin(): void {
     if (currentEditId === null) return;
     if (!canUpgrade) {
@@ -304,7 +201,6 @@
     showDowngradeConfirmModal = true;
   }
 
-  /** Step 2: Warning modal confirmed → PUT role change to employee */
   async function confirmDowngradeAdmin(): Promise<void> {
     if (downgradeAdminId === null) return;
     if (!canUpgrade) {
@@ -315,231 +211,97 @@
     showDowngradeConfirmModal = false;
     downgradeAdminId = null;
     downgradeLoading = true;
-
-    try {
-      await apiDowngradeToEmployee(adminId);
+    const result = await executeDowngradeToEmployee(adminId, log);
+    if (result.success) {
       await invalidateAll();
       showSuccessAlert(messages.DOWNGRADE_SUCCESS);
-    } catch (err: unknown) {
-      log.error({ err }, 'Error downgrading admin to employee');
-      showErrorAlert(
-        err instanceof Error ? err.message : messages.DOWNGRADE_ERROR,
-      );
-    } finally {
-      downgradeLoading = false;
+    } else {
+      showErrorAlert(result.errorMessage ?? messages.DOWNGRADE_ERROR);
     }
+    downgradeLoading = false;
   }
 
-  function closeDowngradeConfirmModal(): void {
-    showDowngradeConfirmModal = false;
-    downgradeAdminId = null;
-  }
-
-  async function deleteAdmin() {
+  async function deleteAdmin(): Promise<void> {
     const adminId = deleteAdminId;
     if (adminId === null) return;
-
-    // Reset state before async operations to avoid race conditions
     showDeleteModal = false;
     deleteAdminId = null;
-
-    try {
-      await apiDeleteAdmin(adminId);
+    const result = await executeDeleteAdmin(adminId, log);
+    if (result.success) {
       showSuccessAlert(messages.SUCCESS_DELETED);
-      // Level 3: Trigger SSR refetch
       await invalidateAll();
-    } catch (err: unknown) {
-      log.error({ err }, 'Error deleting admin');
+    } else {
       showErrorAlert(messages.ERROR_DELETE_FAILED);
     }
   }
 
-  // =============================================================================
-  // AVAILABILITY MODAL HANDLERS
-  // NOTE: Modal is CREATE-only. PUT/UPDATE is on history page.
-  // =============================================================================
-
-  function openAvailabilityModal(adminId: number): void {
-    const admin = allAdmins.find((a) => a.id === adminId);
-    if (!admin) return;
-
-    availabilityAdminId = adminId;
+  // --- AVAILABILITY ---
+  function resetAvailabilityFields(): void {
     availabilityStatus = 'available';
     availabilityStart = '';
     availabilityEnd = '';
     availabilityReason = '';
     availabilityNotes = '';
+  }
+
+  function openAvailabilityModal(adminId: number): void {
+    if (!allAdmins.some((a) => a.id === adminId)) return;
+    availabilityAdminId = adminId;
+    resetAvailabilityFields();
     showAvailabilityModal = true;
   }
 
   function closeAvailabilityModal(): void {
     showAvailabilityModal = false;
     availabilityAdminId = null;
-    availabilityStatus = 'available';
-    availabilityStart = '';
-    availabilityEnd = '';
-    availabilityReason = '';
-    availabilityNotes = '';
+    resetAvailabilityFields();
   }
 
   async function saveAvailability(): Promise<void> {
     if (availabilityAdminId === null) return;
-
-    const formData = {
-      status: availabilityStatus,
-      start: availabilityStart,
-      end: availabilityEnd,
-      reason: availabilityReason,
-      notes: availabilityNotes,
-    };
-
-    const validationError = validateAvailabilityForm(formData);
-    if (validationError === 'dates_required') {
-      showErrorAlert('Von-Datum und Bis-Datum sind erforderlich.');
-      return;
-    }
-    if (validationError === 'end_before_start') {
-      showErrorAlert('Bis-Datum muss nach oder gleich Von-Datum sein.');
-      return;
-    }
-
     availabilitySubmitting = true;
-    try {
-      const payload = buildAvailabilityPayload(formData);
-      await apiUpdateAvailability(availabilityAdminId, payload);
+    const result = await executeFullAvailabilitySave(
+      availabilityAdminId,
+      {
+        status: availabilityStatus,
+        start: availabilityStart,
+        end: availabilityEnd,
+        reason: availabilityReason,
+        notes: availabilityNotes,
+      },
+      log,
+    );
+    if (result.validationError === 'dates_required') {
+      showErrorAlert('Von-Datum und Bis-Datum sind erforderlich.');
+    } else if (result.validationError === 'end_before_start') {
+      showErrorAlert('Bis-Datum muss nach oder gleich Von-Datum sein.');
+    } else if (result.success) {
       closeAvailabilityModal();
       await invalidateAll();
       showSuccessAlert('Verfügbarkeit aktualisiert');
-    } catch (err: unknown) {
-      log.error({ err }, 'Error updating availability');
-      const message =
-        err instanceof ApiError ?
-          err.message
-        : 'Fehler beim Speichern der Verfügbarkeit';
-      showErrorAlert(message);
-    } finally {
-      availabilitySubmitting = false;
+    } else {
+      showErrorAlert(result.errorMessage ?? 'Fehler beim Speichern der Verfügbarkeit');
     }
+    availabilitySubmitting = false;
   }
 
-  function navigateToAvailabilityPage(uuid: string): void {
-    closeAvailabilityModal();
-    void goto(`/manage-admins/availability/${uuid}`);
-  }
-
-  // =============================================================================
-  // MODAL HANDLERS
-  // =============================================================================
-
-  function openAddModal() {
-    currentEditId = null;
-    resetForm();
-    showAdminModal = true;
-  }
-
-  function openEditModal(adminId: number) {
+  // --- MODAL HANDLERS ---
+  function openEditModal(adminId: number): void {
     const admin = allAdmins.find((a) => a.id === adminId);
     if (!admin) return;
-
     currentEditId = adminId;
-    const formState = populateFormFromAdmin(admin);
-    formFirstName = formState.firstName;
-    formLastName = formState.lastName;
-    formEmail = formState.email;
-    formEmailConfirm = formState.email;
-    formPassword = '';
-    formPasswordConfirm = '';
-    formEmployeeNumber = formState.employeeNumber;
-    formPosition = formState.position;
-    formNotes = formState.notes;
-    formIsActive = formState.isActive;
-    formHasFullAccess = formState.hasFullAccess;
-    formAreaIds = formState.areaIds;
-    formDepartmentIds = formState.departmentIds;
+    const s = populateFormFromAdmin(admin);
+    applyFormState({ ...s, emailConfirm: s.email, passwordConfirm: '' });
     showAdminModal = true;
   }
 
-  function openDeleteModal(adminId: number) {
-    deleteAdminId = adminId;
-    showDeleteModal = true;
-  }
-
-  function closeAdminModal() {
+  function closeAdminModal(): void {
     showAdminModal = false;
     currentEditId = null;
-    resetForm();
+    applyFormState(FORM_DEFAULTS);
   }
 
-  function closeDeleteModal() {
-    showDeleteModal = false;
-    deleteAdminId = null;
-  }
-
-  function resetForm() {
-    formFirstName = FORM_DEFAULTS.firstName;
-    formLastName = FORM_DEFAULTS.lastName;
-    formEmail = FORM_DEFAULTS.email;
-    formEmailConfirm = FORM_DEFAULTS.emailConfirm;
-    formPassword = FORM_DEFAULTS.password;
-    formPasswordConfirm = FORM_DEFAULTS.passwordConfirm;
-    formEmployeeNumber = FORM_DEFAULTS.employeeNumber;
-    formPosition = FORM_DEFAULTS.position;
-    formNotes = FORM_DEFAULTS.notes;
-    formIsActive = FORM_DEFAULTS.isActive;
-    formHasFullAccess = FORM_DEFAULTS.hasFullAccess;
-    formAreaIds = [...FORM_DEFAULTS.areaIds];
-    formDepartmentIds = [...FORM_DEFAULTS.departmentIds];
-  }
-
-  // =============================================================================
-  // STATUS TOGGLE HANDLER
-  // =============================================================================
-
-  function navigateToPermissionPage(uuid: string): void {
-    void goto(`/manage-admins/permission/${uuid}`);
-  }
-
-  function handleStatusToggle(status: StatusFilter) {
-    currentStatusFilter = status;
-    // filteredAdmins is $derived - automatically updates when filter changes
-  }
-
-  // =============================================================================
-  // SEARCH HANDLERS
-  // =============================================================================
-
-  function handleSearchInput(e: Event) {
-    const input = e.target as HTMLInputElement;
-    currentSearchQuery = input.value;
-    searchOpen = currentSearchQuery.trim().length > 0;
-    // filteredAdmins is $derived - automatically updates when search changes
-  }
-
-  function clearSearch() {
-    currentSearchQuery = '';
-    searchOpen = false;
-    // filteredAdmins is $derived - automatically updates
-  }
-
-  function handleSearchResultClick(adminId: number) {
-    openEditModal(adminId);
-    searchOpen = false;
-    currentSearchQuery = '';
-  }
-
-  // =============================================================================
-  // FORM SUBMIT HANDLER
-  // =============================================================================
-
-  function handleFormSubmit(e: Event) {
-    e.preventDefault();
-    void saveAdmin();
-  }
-
-  // =============================================================================
-  // OUTSIDE CLICK FOR SEARCH
-  // =============================================================================
-
+  // --- SEARCH ---
   $effect(() => {
     if (searchOpen) {
       const handleOutsideClick = (e: MouseEvent) => {
@@ -582,7 +344,7 @@
             class:active={currentStatusFilter === 'active'}
             title="Aktive Administratoren"
             onclick={() => {
-              handleStatusToggle('active');
+              currentStatusFilter = 'active';
             }}
           >
             <i class="fas fa-user-check"></i>
@@ -594,7 +356,7 @@
             class:active={currentStatusFilter === 'inactive'}
             title="Inaktive Administratoren"
             onclick={() => {
-              handleStatusToggle('inactive');
+              currentStatusFilter = 'inactive';
             }}
           >
             <i class="fas fa-user-times"></i>
@@ -606,7 +368,7 @@
             class:active={currentStatusFilter === 'archived'}
             title="Archivierte Administratoren"
             onclick={() => {
-              handleStatusToggle('archived');
+              currentStatusFilter = 'archived';
             }}
           >
             <i class="fas fa-archive"></i>
@@ -618,7 +380,7 @@
             class:active={currentStatusFilter === 'all'}
             title="Alle Administratoren"
             onclick={() => {
-              handleStatusToggle('all');
+              currentStatusFilter = 'all';
             }}
           >
             <i class="fas fa-users"></i>
@@ -643,14 +405,20 @@
               placeholder={messages.SEARCH_PLACEHOLDER}
               autocomplete="off"
               value={currentSearchQuery}
-              oninput={handleSearchInput}
+              oninput={(e: Event) => {
+                currentSearchQuery = (e.target as HTMLInputElement).value;
+                searchOpen = currentSearchQuery.trim().length > 0;
+              }}
             />
             <button
               class="search-input__clear"
               class:search-input__clear--visible={currentSearchQuery.length > 0}
               type="button"
               aria-label="Suche löschen"
-              onclick={clearSearch}
+              onclick={() => {
+                currentSearchQuery = '';
+                searchOpen = false;
+              }}
             >
               <i class="fas fa-times"></i>
             </button>
@@ -663,7 +431,11 @@
               searchQuery={currentSearchQuery}
               {filteredAdmins}
               {labels}
-              onresultClick={handleSearchResultClick}
+              onresultClick={(adminId: number) => {
+                openEditModal(adminId);
+                searchOpen = false;
+                currentSearchQuery = '';
+              }}
             />
           </div>
         </div>
@@ -673,9 +445,7 @@
     <div class="card__body">
       {#if error}
         <div class="p-6 text-center">
-          <i
-            class="fas fa-exclamation-triangle mb-4 text-4xl text-(--color-danger)"
-          ></i>
+          <i class="fas fa-exclamation-triangle mb-4 text-4xl text-(--color-danger)"></i>
           <p class="text-(--color-text-secondary)">{error}</p>
           <button
             type="button"
@@ -696,7 +466,11 @@
           <button
             type="button"
             class="btn btn-primary"
-            onclick={openAddModal}
+            onclick={() => {
+              currentEditId = null;
+              applyFormState(FORM_DEFAULTS);
+              showAdminModal = true;
+            }}
           >
             <i class="fas fa-plus"></i>
             {messages.BTN_ADD_ADMIN}
@@ -734,8 +508,13 @@
                     currentUserId={data.user?.id ?? 0}
                     onedit={openEditModal}
                     onavailability={openAvailabilityModal}
-                    onpermission={navigateToPermissionPage}
-                    ondelete={openDeleteModal}
+                    onpermission={(uuid: string) => {
+                      void goto(`/manage-admins/permission/${uuid}`);
+                    }}
+                    ondelete={(adminId: number) => {
+                      deleteAdminId = adminId;
+                      showDeleteModal = true;
+                    }}
                   />
                 {/each}
               </tbody>
@@ -751,7 +530,11 @@
 <button
   type="button"
   class="btn-float"
-  onclick={openAddModal}
+  onclick={() => {
+    currentEditId = null;
+    applyFormState(FORM_DEFAULTS);
+    showAdminModal = true;
+  }}
   aria-label="Administrator hinzufügen"
 >
   <i class="fas fa-user-plus"></i>
@@ -783,7 +566,10 @@
   bind:formAreaIds
   bind:formDepartmentIds
   onclose={closeAdminModal}
-  onsubmit={handleFormSubmit}
+  onsubmit={(e: Event) => {
+    e.preventDefault();
+    void saveAdmin();
+  }}
   onupgrade={canUpgrade ? upgradeAdmin : undefined}
   ondowngrade={canUpgrade ? downgradeAdmin : undefined}
 />
@@ -800,13 +586,19 @@
   bind:availabilityNotes
   onclose={closeAvailabilityModal}
   onsave={saveAvailability}
-  onmanage={navigateToAvailabilityPage}
+  onmanage={(uuid: string) => {
+    closeAvailabilityModal();
+    void goto(`/manage-admins/availability/${uuid}`);
+  }}
 />
 
 <!-- Delete Modals Component -->
 <DeleteModals
   show={showDeleteModal}
-  oncancel={closeDeleteModal}
+  oncancel={() => {
+    showDeleteModal = false;
+    deleteAdminId = null;
+  }}
   onconfirm={deleteAdmin}
 />
 
@@ -816,8 +608,18 @@
   showDowngradeModal={showDowngradeConfirmModal}
   {upgradeLoading}
   {downgradeLoading}
-  oncloseUpgrade={closeUpgradeConfirmModal}
-  oncloseDowngrade={closeDowngradeConfirmModal}
-  onconfirmUpgrade={() => void confirmUpgradeAdmin()}
-  onconfirmDowngrade={() => void confirmDowngradeAdmin()}
+  oncloseUpgrade={() => {
+    showUpgradeConfirmModal = false;
+    upgradeAdminId = null;
+  }}
+  oncloseDowngrade={() => {
+    showDowngradeConfirmModal = false;
+    downgradeAdminId = null;
+  }}
+  onconfirmUpgrade={() => {
+    void confirmUpgradeAdmin();
+  }}
+  onconfirmDowngrade={() => {
+    void confirmDowngradeAdmin();
+  }}
 />

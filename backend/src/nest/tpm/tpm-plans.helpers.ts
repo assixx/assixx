@@ -40,10 +40,8 @@ export function mapPlanRowToApi(row: TpmPlanJoinRow): TpmPlan {
   // Optional properties: only set when JOIN data is present
   if (row.asset_uuid !== undefined) plan.assetUuid = row.asset_uuid.trim();
   if (row.asset_name !== undefined) plan.assetName = row.asset_name;
-  if (row.department_name !== undefined)
-    plan.departmentName = row.department_name;
-  if (row.created_by_name !== undefined)
-    plan.createdByName = row.created_by_name;
+  if (row.department_name !== undefined) plan.departmentName = row.department_name;
+  if (row.created_by_name !== undefined) plan.createdByName = row.created_by_name;
 
   return plan;
 }
@@ -60,8 +58,6 @@ const PLAN_UPDATE_MAPPINGS: readonly FieldMapping[] = [
 ];
 
 /** Build SET clause for plan update — only includes provided fields */
-export function buildPlanUpdateFields(
-  dto: Record<string, unknown>,
-): SetClauseResult {
+export function buildPlanUpdateFields(dto: Record<string, unknown>): SetClauseResult {
   return buildSetClause(dto, PLAN_UPDATE_MAPPINGS);
 }

@@ -63,39 +63,22 @@
   // =========================================================================
 
   let cardRole = $state<CardRole>(untrack(() => card?.cardRole ?? 'operator'));
-  let intervalType = $state<IntervalType>(
-    untrack(() => card?.intervalType ?? 'daily'),
-  );
+  let intervalType = $state<IntervalType>(untrack(() => card?.intervalType ?? 'daily'));
   let title = $state(untrack(() => card?.title ?? ''));
   let description = $state(untrack(() => card?.description ?? ''));
-  let locationDescription = $state(
-    untrack(() => card?.locationDescription ?? ''),
-  );
+  let locationDescription = $state(untrack(() => card?.locationDescription ?? ''));
   let requiresApproval = $state(untrack(() => card?.requiresApproval ?? false));
-  let customIntervalDays = $state(
-    untrack(() => card?.customIntervalDays ?? 30),
-  );
+  let customIntervalDays = $state(untrack(() => card?.customIntervalDays ?? 30));
   let weekdayOverrideEnabled = $state(
-    untrack(
-      () =>
-        card?.weekdayOverride !== null && card?.weekdayOverride !== undefined,
-    ),
+    untrack(() => card?.weekdayOverride !== null && card?.weekdayOverride !== undefined),
   );
-  let weekdayOverride = $state(
-    untrack(() => card?.weekdayOverride ?? planBaseWeekday),
-  );
+  let weekdayOverride = $state(untrack(() => card?.weekdayOverride ?? planBaseWeekday));
   let estimatedExecutionMinutes = $state<number | null>(
     untrack(() => card?.estimatedExecutionMinutes ?? null),
   );
-  let cardCategories = $state<CardCategory[]>(
-    untrack(() => card?.cardCategories ?? []),
-  );
+  let cardCategories = $state<CardCategory[]>(untrack(() => card?.cardCategories ?? []));
 
-  const CATEGORY_OPTIONS: CardCategory[] = [
-    'reinigung',
-    'wartung',
-    'inspektion',
-  ];
+  const CATEGORY_OPTIONS: CardCategory[] = ['reinigung', 'wartung', 'inspektion'];
 
   function toggleCategory(cat: CardCategory): void {
     cardCategories = cardCategories.includes(cat) ? [] : [cat];
@@ -127,10 +110,7 @@
 
   $effect(() => {
     const anyOpen =
-      roleDropdownOpen ||
-      intervalDropdownOpen ||
-      weekdayDropdownOpen ||
-      locationDropdownOpen;
+      roleDropdownOpen || intervalDropdownOpen || weekdayDropdownOpen || locationDropdownOpen;
     if (!anyOpen) return;
 
     function handleClickOutside(event: MouseEvent): void {
@@ -152,9 +132,7 @@
 
   const selectedLocation = $derived(
     locationDescription.trim().length > 0 ?
-      (locations.find(
-        (l: LocationOption) => l.title === locationDescription.trim(),
-      ) ?? null)
+      (locations.find((l: LocationOption) => l.title === locationDescription.trim()) ?? null)
     : null,
   );
 
@@ -178,12 +156,8 @@
 
   const selectedRoleText = $derived(CARD_ROLE_LABELS[cardRole]);
   const selectedIntervalText = $derived(INTERVAL_LABELS[intervalType]);
-  const planWeekdayLabel = $derived(
-    WEEKDAY_LABELS[planBaseWeekday] ?? 'Montag',
-  );
-  const selectedWeekdayText = $derived(
-    WEEKDAY_LABELS[weekdayOverride] ?? 'Montag',
-  );
+  const planWeekdayLabel = $derived(WEEKDAY_LABELS[planBaseWeekday] ?? 'Montag');
+  const selectedWeekdayText = $derived(WEEKDAY_LABELS[weekdayOverride] ?? 'Montag');
 
   // =========================================================================
   // CONSTANTS
@@ -213,11 +187,9 @@
     if (!canSubmit) return;
 
     const descValue = description.trim().length > 0 ? description.trim() : null;
-    const locValue =
-      locationDescription.trim().length > 0 ? locationDescription.trim() : null;
+    const locValue = locationDescription.trim().length > 0 ? locationDescription.trim() : null;
     const customDays = isCustomInterval ? customIntervalDays : null;
-    const weekdayOvr =
-      isWeeklyInterval && weekdayOverrideEnabled ? weekdayOverride : null;
+    const weekdayOvr = isWeeklyInterval && weekdayOverrideEnabled ? weekdayOverride : null;
 
     if (isCreateMode) {
       oncreate({
@@ -404,9 +376,7 @@
           disabled={submitting}
         />
         <span class="toggle-switch__slider"></span>
-        <span class="toggle-switch__label"
-          >{MESSAGES.LABEL_WEEKDAY_OVERRIDE}</span
-        >
+        <span class="toggle-switch__label">{MESSAGES.LABEL_WEEKDAY_OVERRIDE}</span>
       </label>
     </div>
 
@@ -533,8 +503,7 @@
             <button
               type="button"
               class="dropdown__option"
-              class:dropdown__option--selected={locationDescription ===
-                loc.title}
+              class:dropdown__option--selected={locationDescription === loc.title}
               onclick={() => {
                 locationDescription = loc.title;
                 locationDropdownOpen = false;
@@ -610,9 +579,7 @@
         disabled={submitting}
       />
       <span class="toggle-switch__slider"></span>
-      <span class="toggle-switch__label"
-        >{MESSAGES.LABEL_REQUIRES_APPROVAL}</span
-      >
+      <span class="toggle-switch__label">{MESSAGES.LABEL_REQUIRES_APPROVAL}</span>
     </label>
     <span class="form-field__message">{MESSAGES.HELP_REQUIRES_APPROVAL}</span>
   </div>
@@ -689,8 +656,7 @@
         <button
           type="button"
           class="btn btn-cancel"
-          onclick={closePhotoPreview}
-          ><i class="fas fa-times mr-2"></i>Schließen</button
+          onclick={closePhotoPreview}><i class="fas fa-times mr-2"></i>Schließen</button
         >
       </div>
     </div>
@@ -735,8 +701,7 @@
     gap: 0.75rem;
     padding: 0.875rem 1rem;
     background: var(--color-glass-bg, oklch(62.31% 0.1881 259.82 / 8%));
-    border: 1px solid
-      var(--color-info-border, oklch(62.31% 0.1881 259.82 / 25%));
+    border: 1px solid var(--color-info-border, oklch(62.31% 0.1881 259.82 / 25%));
     border-radius: 0.5rem;
   }
 

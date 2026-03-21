@@ -2,11 +2,7 @@
   /**
    * ResponseModal — Displays a user's completed survey response (read-only).
    */
-  import {
-    getTextFromBuffer,
-    formatDateTimeGerman,
-    formatSurveyDate,
-  } from './utils';
+  import { getTextFromBuffer, formatDateTimeGerman, formatSurveyDate } from './utils';
 
   import type { Survey, SurveyResponse } from './types';
 

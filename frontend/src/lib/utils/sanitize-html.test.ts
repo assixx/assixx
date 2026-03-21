@@ -14,9 +14,7 @@ describe('sanitize-html', () => {
     expect(escapeHtml('<script>alert("xss")</script>')).toBe(
       '&lt;script&gt;alert(&quot;xss&quot;)&lt;/script&gt;',
     );
-    expect(escapeHtml("it's a test & more")).toBe(
-      'it&#039;s a test &amp; more',
-    );
+    expect(escapeHtml("it's a test & more")).toBe('it&#039;s a test &amp; more');
     expect(escapeHtml(null)).toBe('');
     expect(escapeHtml(undefined)).toBe('');
     expect(escapeHtml('')).toBe('');

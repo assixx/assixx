@@ -118,9 +118,7 @@ describe('AddonsService', () => {
     });
 
     it('should use addon-specific trial_days when defined', async () => {
-      mockDb.queryOne.mockResolvedValueOnce(
-        purchasableAddonRow({ trial_days: 14 }),
-      );
+      mockDb.queryOne.mockResolvedValueOnce(purchasableAddonRow({ trial_days: 14 }));
       mockDb.query.mockResolvedValueOnce([]);
       mockDb.query.mockResolvedValueOnce([]);
 
@@ -132,9 +130,7 @@ describe('AddonsService', () => {
     });
 
     it('should default to 30 days when addon.trial_days is null', async () => {
-      mockDb.queryOne.mockResolvedValueOnce(
-        purchasableAddonRow({ trial_days: null }),
-      );
+      mockDb.queryOne.mockResolvedValueOnce(purchasableAddonRow({ trial_days: null }));
       mockDb.query.mockResolvedValueOnce([]);
       mockDb.query.mockResolvedValueOnce([]);
 
@@ -146,17 +142,13 @@ describe('AddonsService', () => {
     it('should throw BadRequestException for core addon', async () => {
       mockDb.queryOne.mockResolvedValueOnce(coreAddonRow());
 
-      await expect(service.activateAddon(10, 'dashboard', 1)).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(service.activateAddon(10, 'dashboard', 1)).rejects.toThrow(BadRequestException);
     });
 
     it('should throw NotFoundException for unknown addon code', async () => {
       mockDb.queryOne.mockResolvedValueOnce(null);
 
-      await expect(service.activateAddon(10, 'nonexistent', 1)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.activateAddon(10, 'nonexistent', 1)).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -196,9 +188,7 @@ describe('AddonsService', () => {
       mockDb.queryOne.mockResolvedValueOnce(purchasableAddonRow());
       mockDb.query.mockResolvedValueOnce([]); // RETURNING id → 0 rows
 
-      await expect(service.deactivateAddon(10, 'tpm', 1)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.deactivateAddon(10, 'tpm', 1)).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -209,9 +199,7 @@ describe('AddonsService', () => {
   describe('reactivation', () => {
     it('should reactivate from cancelled with new trial period', async () => {
       mockDb.queryOne.mockResolvedValueOnce(purchasableAddonRow());
-      mockDb.query.mockResolvedValueOnce([
-        { id: 'uuid-existing', status: 'cancelled' },
-      ]);
+      mockDb.query.mockResolvedValueOnce([{ id: 'uuid-existing', status: 'cancelled' }]);
       mockDb.query.mockResolvedValueOnce([]); // UPDATE
 
       const result = await service.activateAddon(10, 'tpm', 1);
@@ -222,9 +210,7 @@ describe('AddonsService', () => {
 
     it('should reactivate from expired with new trial period', async () => {
       mockDb.queryOne.mockResolvedValueOnce(purchasableAddonRow());
-      mockDb.query.mockResolvedValueOnce([
-        { id: 'uuid-existing', status: 'expired' },
-      ]);
+      mockDb.query.mockResolvedValueOnce([{ id: 'uuid-existing', status: 'expired' }]);
       mockDb.query.mockResolvedValueOnce([]);
 
       const result = await service.activateAddon(10, 'tpm', 1);
@@ -235,9 +221,7 @@ describe('AddonsService', () => {
 
     it('should keep active status when reactivating already active addon', async () => {
       mockDb.queryOne.mockResolvedValueOnce(purchasableAddonRow());
-      mockDb.query.mockResolvedValueOnce([
-        { id: 'uuid-existing', status: 'active' },
-      ]);
+      mockDb.query.mockResolvedValueOnce([{ id: 'uuid-existing', status: 'active' }]);
       mockDb.query.mockResolvedValueOnce([]);
 
       const result = await service.activateAddon(10, 'tpm', 1);
@@ -383,10 +367,7 @@ describe('AddonsService', () => {
 
   describe('getAllAddons', () => {
     it('should return mapped addons with correct field names', async () => {
-      mockDb.query.mockResolvedValueOnce([
-        coreAddonRow(),
-        purchasableAddonRow(),
-      ]);
+      mockDb.query.mockResolvedValueOnce([coreAddonRow(), purchasableAddonRow()]);
 
       const result = await service.getAllAddons();
 
@@ -529,9 +510,7 @@ describe('AddonsService', () => {
       expect(result[0]?.tenantStatus?.status).toBe('trial');
       expect(result[0]?.tenantStatus?.isActive).toBe(true);
       expect(result[0]?.tenantStatus?.trialEndsAt).toBe(trialEnd.toISOString());
-      expect(result[0]?.tenantStatus?.activatedAt).toBe(
-        activatedAt.toISOString(),
-      );
+      expect(result[0]?.tenantStatus?.activatedAt).toBe(activatedAt.toISOString());
     });
 
     it('should return cancelled addon as inactive', async () => {
@@ -552,9 +531,7 @@ describe('AddonsService', () => {
     });
 
     it('should map priceMonthly and trialDays from join row', async () => {
-      mockDb.query.mockResolvedValueOnce([
-        joinRow({ price_monthly: '25.50', trial_days: 14 }),
-      ]);
+      mockDb.query.mockResolvedValueOnce([joinRow({ price_monthly: '25.50', trial_days: 14 })]);
 
       const result = await service.getAvailableAddons(10);
 
@@ -563,9 +540,7 @@ describe('AddonsService', () => {
     });
 
     it('should omit priceMonthly and trialDays when null', async () => {
-      mockDb.query.mockResolvedValueOnce([
-        joinRow({ price_monthly: null, trial_days: null }),
-      ]);
+      mockDb.query.mockResolvedValueOnce([joinRow({ price_monthly: null, trial_days: null })]);
 
       const result = await service.getAvailableAddons(10);
 
@@ -595,12 +570,7 @@ describe('AddonsService', () => {
         { date: new Date('2026-03-11'), usage_count: 22, unique_users: 8 },
       ]);
 
-      const result = await service.getUsageStats(
-        10,
-        'tpm',
-        '2026-03-10',
-        '2026-03-11',
-      );
+      const result = await service.getUsageStats(10, 'tpm', '2026-03-10', '2026-03-11');
 
       expect(result).toHaveLength(2);
       expect(result[0]?.date).toBe('2026-03-10');
@@ -622,12 +592,7 @@ describe('AddonsService', () => {
       mockDb.queryOne.mockResolvedValueOnce(purchasableAddonRow());
       mockDb.query.mockResolvedValueOnce([]);
 
-      const result = await service.getUsageStats(
-        10,
-        'tpm',
-        '2026-03-01',
-        '2026-03-02',
-      );
+      const result = await service.getUsageStats(10, 'tpm', '2026-03-01', '2026-03-02');
 
       expect(result).toEqual([]);
     });
@@ -795,9 +760,7 @@ describe('AddonsService', () => {
     });
 
     it('should handle not_activated addons (no tenant entry)', async () => {
-      mockDb.query.mockResolvedValueOnce([
-        joinRowForSummary({ addon_id: 5, addon_code: 'tpm' }),
-      ]);
+      mockDb.query.mockResolvedValueOnce([joinRowForSummary({ addon_id: 5, addon_code: 'tpm' })]);
 
       const result = await service.getTenantAddonsSummary(10);
 

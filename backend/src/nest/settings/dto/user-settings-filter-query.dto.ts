@@ -12,6 +12,4 @@ export const UserSettingsFilterQuerySchema = SettingsFilterQuerySchema.extend({
   team_id: z.coerce.number().int().positive().optional(),
 });
 
-export class UserSettingsFilterQueryDto extends createZodDto(
-  UserSettingsFilterQuerySchema,
-) {}
+export class UserSettingsFilterQueryDto extends createZodDto(UserSettingsFilterQuerySchema) {}

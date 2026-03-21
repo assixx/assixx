@@ -82,22 +82,13 @@ export async function fetchEntries(
 /**
  * Fetch single entry by UUID
  */
-export async function fetchEntryByUuid(
-  uuid: string,
-): Promise<BlackboardEntry | null> {
+export async function fetchEntryByUuid(uuid: string): Promise<BlackboardEntry | null> {
   try {
     // Backend returns entry directly (no wrapper)
-    return await apiClient.get<BlackboardEntry>(
-      `/blackboard/entries/${encodeURIComponent(uuid)}`,
-    );
+    return await apiClient.get<BlackboardEntry>(`/blackboard/entries/${encodeURIComponent(uuid)}`);
   } catch (err: unknown) {
     // Return null for 404
-    if (
-      err !== null &&
-      typeof err === 'object' &&
-      'status' in err &&
-      err.status === 404
-    ) {
+    if (err !== null && typeof err === 'object' && 'status' in err && err.status === 404) {
       return null;
     }
     throw err;
@@ -107,19 +98,14 @@ export async function fetchEntryByUuid(
 /**
  * Create new entry
  */
-export async function createEntry(
-  data: CreateEntryData,
-): Promise<BlackboardEntry> {
+export async function createEntry(data: CreateEntryData): Promise<BlackboardEntry> {
   return await apiClient.post<BlackboardEntry>('/blackboard', data);
 }
 
 /**
  * Update existing entry
  */
-export async function updateEntry(
-  id: number,
-  data: UpdateEntryData,
-): Promise<BlackboardEntry> {
+export async function updateEntry(id: number, data: UpdateEntryData): Promise<BlackboardEntry> {
   return await apiClient.put<BlackboardEntry>(`/blackboard/${id}`, data);
 }
 
@@ -150,17 +136,11 @@ export async function confirmEntry(uuid: string): Promise<boolean> {
 /**
  * Upload attachment to entry
  */
-export async function uploadAttachment(
-  entryId: number,
-  file: File,
-): Promise<void> {
+export async function uploadAttachment(entryId: number, file: File): Promise<void> {
   const formData = new FormData();
   formData.append('attachment', file); // Backend expects 'attachment' field name
 
-  await apiClient.upload(
-    `/blackboard/entries/${entryId}/attachments`,
-    formData,
-  );
+  await apiClient.upload(`/blackboard/entries/${entryId}/attachments`, formData);
 }
 
 /**
@@ -178,9 +158,7 @@ export async function deleteAttachment(attachmentId: number): Promise<void> {
  * Fetch departments
  */
 export async function fetchDepartments(): Promise<Department[]> {
-  const data = await apiClient.get<{ data?: Department[] } | Department[]>(
-    '/departments',
-  );
+  const data = await apiClient.get<{ data?: Department[] } | Department[]>('/departments');
   return Array.isArray(data) ? data : (data.data ?? []);
 }
 

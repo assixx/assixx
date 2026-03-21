@@ -14,9 +14,7 @@ import { ScopeService } from './scope.service.js';
 function createMockCls() {
   const store = new Map<string, unknown>();
   return {
-    get: vi.fn(
-      <T>(key: string): T | undefined => store.get(key) as T | undefined,
-    ),
+    get: vi.fn(<T>(key: string): T | undefined => store.get(key) as T | undefined),
     set: vi.fn((key: string, value: unknown) => {
       store.set(key, value);
     }),
@@ -85,18 +83,14 @@ describe('ScopeService', () => {
     // No userId in CLS → background job context
     mockCls._store.set('tenantId', 3);
 
-    await expect(service.getScope()).rejects.toThrow(
-      'ScopeService requires CLS context',
-    );
+    await expect(service.getScope()).rejects.toThrow('ScopeService requires CLS context');
   });
 
   it('should throw Error when tenantId is missing (background job)', async () => {
     mockCls._store.set('userId', 1);
     // No tenantId
 
-    await expect(service.getScope()).rejects.toThrow(
-      'ScopeService requires CLS context',
-    );
+    await expect(service.getScope()).rejects.toThrow('ScopeService requires CLS context');
   });
 
   it('should throw Error when both userId and tenantId are missing', async () => {

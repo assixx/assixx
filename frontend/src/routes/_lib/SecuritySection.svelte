@@ -14,32 +14,27 @@
   <div class="security-section__container">
     <h2 class="security-section__title">Ihre Daten sind bei uns sicher</h2>
     <p class="security-section__subtitle">
-      Datenschutz und Sicherheit haben bei uns höchste Priorität. Ihre sensiblen
-      Unternehmensdaten sind durch modernste Verschlüsselung und strikte
-      Sicherheitsmaßnahmen geschützt.
+      Datenschutz und Sicherheit haben bei uns höchste Priorität. Ihre sensiblen Unternehmensdaten
+      sind durch modernste Verschlüsselung und strikte Sicherheitsmaßnahmen geschützt.
     </p>
 
     <div class="security-features-grid">
       <!-- Security Feature Cards -->
       <div class="feature-card u-text-center">
         <div class="u-fs-3xl u-mb-md">🇩🇪</div>
-        <h3 class="u-color-primary u-mb-md u-text-center">
-          100% Deutsche Server
-        </h3>
+        <h3 class="u-color-primary u-mb-md u-text-center">100% Deutsche Server</h3>
         <p>
-          Alle Daten werden ausschließlich auf Servern in Deutschland
-          gespeichert. Kein Datentransfer ins Ausland.
+          Alle Daten werden ausschließlich auf Servern in Deutschland gespeichert. Kein
+          Datentransfer ins Ausland.
         </p>
       </div>
 
       <div class="feature-card u-text-center">
         <div class="u-fs-3xl u-mb-md">🔐</div>
-        <h3 class="u-color-primary u-mb-md u-text-center">
-          Ende-zu-Ende Verschlüsselung
-        </h3>
+        <h3 class="u-color-primary u-mb-md u-text-center">Ende-zu-Ende Verschlüsselung</h3>
         <p>
-          Militärgrade AES-256 Verschlüsselung für alle Daten - sowohl bei der
-          Übertragung als auch bei der Speicherung.
+          Militärgrade AES-256 Verschlüsselung für alle Daten - sowohl bei der Übertragung als auch
+          bei der Speicherung.
         </p>
       </div>
 
@@ -47,41 +42,34 @@
         <div class="u-fs-3xl u-mb-md">📋</div>
         <h3 class="u-color-primary u-mb-md u-text-center">DSGVO-konform</h3>
         <p>
-          Vollständige Compliance mit allen deutschen und europäischen
-          Datenschutzgesetzen. Regelmäßige Audits garantiert.
+          Vollständige Compliance mit allen deutschen und europäischen Datenschutzgesetzen.
+          Regelmäßige Audits garantiert.
         </p>
       </div>
 
       <div class="feature-card u-text-center">
         <div class="u-fs-3xl u-mb-md">🔍</div>
-        <h3 class="u-color-primary u-mb-md u-text-center">
-          Transparente Datenverarbeitung
-        </h3>
+        <h3 class="u-color-primary u-mb-md u-text-center">Transparente Datenverarbeitung</h3>
         <p>
-          Sie behalten jederzeit die volle Kontrolle über Ihre Daten. Einsicht,
-          Export und Löschung auf Knopfdruck.
+          Sie behalten jederzeit die volle Kontrolle über Ihre Daten. Einsicht, Export und Löschung
+          auf Knopfdruck.
         </p>
       </div>
 
       <div class="feature-card u-text-center">
         <div class="u-fs-3xl u-mb-md">🛡️</div>
-        <h3 class="u-color-primary u-mb-md u-text-center">
-          ISO 27001 zertifiziert
-        </h3>
+        <h3 class="u-color-primary u-mb-md u-text-center">ISO 27001 zertifiziert</h3>
         <p>
-          Unsere Sicherheitsprozesse entsprechen den höchsten internationalen
-          Standards für Informationssicherheit.
+          Unsere Sicherheitsprozesse entsprechen den höchsten internationalen Standards für
+          Informationssicherheit.
         </p>
       </div>
 
       <div class="feature-card u-text-center">
         <div class="u-fs-3xl u-mb-md">🚫</div>
-        <h3 class="u-color-primary u-mb-md u-text-center">
-          Keine Datenweitergabe
-        </h3>
+        <h3 class="u-color-primary u-mb-md u-text-center">Keine Datenweitergabe</h3>
         <p>
-          Ihre Daten gehören nur Ihnen. Keine Weitergabe an Dritte, keine
-          Werbung, kein Tracking.
+          Ihre Daten gehören nur Ihnen. Keine Weitergabe an Dritte, keine Werbung, kein Tracking.
         </p>
       </div>
     </div>
@@ -90,25 +78,20 @@
     <div class="enterprise-box">
       <h3 class="enterprise-box__title">🏢 Enterprise On-Premise Lösung</h3>
       <p class="enterprise-box__description">
-        Für Unternehmen mit besonderen Sicherheitsanforderungen bieten wir die
-        Möglichkeit, Assixx vollständig auf Ihren eigenen Servern zu betreiben.
-        <strong>100% Ihrer Daten bleiben in Ihrer eigenen Infrastruktur.</strong
-        >
+        Für Unternehmen mit besonderen Sicherheitsanforderungen bieten wir die Möglichkeit, Assixx
+        vollständig auf Ihren eigenen Servern zu betreiben.
+        <strong>100% Ihrer Daten bleiben in Ihrer eigenen Infrastruktur.</strong>
       </p>
       <div class="enterprise-features-grid">
         <div>
           <div class="u-fs-xl u-mb-sm">✅</div>
           <p class="u-fw-600">Eigene Server</p>
-          <p class="u-fs-09rem u-opacity-80">
-            Installation in Ihrem Rechenzentrum
-          </p>
+          <p class="u-fs-09rem u-opacity-80">Installation in Ihrem Rechenzentrum</p>
         </div>
         <div>
           <div class="u-fs-xl u-mb-sm">✅</div>
           <p class="u-fw-600">Volle Kontrolle</p>
-          <p class="u-fs-09rem u-opacity-80">
-            Sie behalten alle Zugriffsrechte
-          </p>
+          <p class="u-fs-09rem u-opacity-80">Sie behalten alle Zugriffsrechte</p>
         </div>
         <div>
           <div class="u-fs-xl u-mb-sm">✅</div>
@@ -124,17 +107,14 @@
       <!-- eslint-disable svelte/no-navigation-without-resolve -- dynamic query string -->
       <a
         href={`${resolve('/signup', {})}?plan=enterprise`}
-        class="btn btn-index enterprise-box__button"
-        >Enterprise-Beratung anfragen</a
+        class="btn btn-index enterprise-box__button">Enterprise-Beratung anfragen</a
       >
       <!-- eslint-enable svelte/no-navigation-without-resolve -->
     </div>
 
     <!-- Trust Badges -->
     <div class="trust-badges">
-      <p class="trust-badges__label">
-        Vertraut von führenden Industrieunternehmen
-      </p>
+      <p class="trust-badges__label">Vertraut von führenden Industrieunternehmen</p>
       <div class="trust-badges__list">
         <div class="u-fs-09rem">SSL-verschlüsselt</div>
         <div class="u-fs-09rem">✅ DSGVO-konform</div>

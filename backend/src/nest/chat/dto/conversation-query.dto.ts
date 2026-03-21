@@ -7,11 +7,7 @@ import { z } from 'zod';
 const MAX_SEARCH_LENGTH = 200;
 const MAX_PAGE_LIMIT = 100;
 
-const PageSchema = z.coerce
-  .number()
-  .int()
-  .min(1, 'Invalid page number')
-  .optional();
+const PageSchema = z.coerce.number().int().min(1, 'Invalid page number').optional();
 
 const LimitSchema = z.coerce
   .number()
@@ -23,10 +19,7 @@ const LimitSchema = z.coerce
 const SearchSchema = z.string().max(MAX_SEARCH_LENGTH).optional();
 
 const BooleanQuerySchema = z
-  .union([
-    z.boolean(),
-    z.string().transform((val: string): boolean => val === 'true'),
-  ])
+  .union([z.boolean(), z.string().transform((val: string): boolean => val === 'true')])
   .optional();
 
 export const GetConversationsQuerySchema = z.object({
@@ -37,9 +30,7 @@ export const GetConversationsQuerySchema = z.object({
   hasUnread: BooleanQuerySchema,
 });
 
-export class GetConversationsQueryDto extends createZodDto(
-  GetConversationsQuerySchema,
-) {}
+export class GetConversationsQueryDto extends createZodDto(GetConversationsQuerySchema) {}
 
 // Type exports
 export type GetConversationsQuery = z.infer<typeof GetConversationsQuerySchema>;

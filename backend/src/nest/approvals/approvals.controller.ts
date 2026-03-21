@@ -25,12 +25,7 @@ import { TenantId } from '../common/decorators/tenant.decorator.js';
 import type { NestAuthUser } from '../common/interfaces/auth.interface.js';
 import { ApprovalsConfigService } from './approvals-config.service.js';
 import { ApprovalsService } from './approvals.service.js';
-import type {
-  Approval,
-  ApprovalConfig,
-  ApprovalStats,
-  ApprovalStatus,
-} from './approvals.types.js';
+import type { Approval, ApprovalConfig, ApprovalStats, ApprovalStatus } from './approvals.types.js';
 import {
   ApproveApprovalDto,
   CreateApprovalDto,
@@ -105,9 +100,7 @@ export class ApprovalsController {
   @Get('stats')
   @RequirePermission(FEAT, MOD_MANAGE, 'canRead')
   async getStats(@Query('userId') userId?: string): Promise<ApprovalStats> {
-    return await this.approvalsService.getStats(
-      userId !== undefined ? Number(userId) : undefined,
-    );
+    return await this.approvalsService.getStats(userId !== undefined ? Number(userId) : undefined);
   }
 
   // ==========================================================================
@@ -153,12 +146,7 @@ export class ApprovalsController {
     @TenantId() tenantId: number,
     @CurrentUser() user: NestAuthUser,
   ): Promise<Approval> {
-    return await this.approvalsService.approve(
-      uuid,
-      tenantId,
-      user.id,
-      dto.decisionNote ?? null,
-    );
+    return await this.approvalsService.approve(uuid, tenantId, user.id, dto.decisionNote ?? null);
   }
 
   @Post(':uuid/reject')
@@ -169,12 +157,7 @@ export class ApprovalsController {
     @TenantId() tenantId: number,
     @CurrentUser() user: NestAuthUser,
   ): Promise<Approval> {
-    return await this.approvalsService.reject(
-      uuid,
-      tenantId,
-      user.id,
-      dto.decisionNote,
-    );
+    return await this.approvalsService.reject(uuid, tenantId, user.id, dto.decisionNote);
   }
 
   // ==========================================================================

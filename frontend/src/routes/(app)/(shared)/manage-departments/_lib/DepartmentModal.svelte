@@ -41,9 +41,7 @@
 
   // Derived dropdown display names
   const selectedAreaName = $derived(getSelectedAreaName(formAreaId, allAreas));
-  const selectedLeadName = $derived(
-    getSelectedLeadName(formDepartmentLeadId, allDepartmentLeads),
-  );
+  const selectedLeadName = $derived(getSelectedLeadName(formDepartmentLeadId, allDepartmentLeads));
 
   // =============================================================================
   // DROPDOWN HANDLERS
@@ -88,10 +86,7 @@
   /**
    * Checks if click target is outside the specified element
    */
-  function isClickOutsideElement(
-    target: HTMLElement,
-    elementId: string,
-  ): boolean {
+  function isClickOutsideElement(target: HTMLElement, elementId: string): boolean {
     const el = document.getElementById(elementId);
     return el?.contains(target) !== true;
   }
@@ -107,8 +102,7 @@
 
   // Close dropdowns on outside click
   $effect(() => {
-    const anyDropdownOpen =
-      areaDropdownOpen || leadDropdownOpen || statusDropdownOpen;
+    const anyDropdownOpen = areaDropdownOpen || leadDropdownOpen || statusDropdownOpen;
     if (!anyDropdownOpen) return;
 
     const handleClick = (e: MouseEvent): void => {
@@ -119,10 +113,7 @@
       if (leadDropdownOpen && isClickOutsideElement(target, 'lead-dropdown')) {
         leadDropdownOpen = false;
       }
-      if (
-        statusDropdownOpen &&
-        isClickOutsideElement(target, 'status-dropdown')
-      ) {
+      if (statusDropdownOpen && isClickOutsideElement(target, 'status-dropdown')) {
         statusDropdownOpen = false;
       }
     };
@@ -409,9 +400,7 @@
                 </button>
               </div>
             </div>
-            <span
-              class="form-field__message mt-1 block text-(--color-text-secondary)"
-            >
+            <span class="form-field__message mt-1 block text-(--color-text-secondary)">
               {messages.STATUS_HINT}
             </span>
           </div>
@@ -429,8 +418,7 @@
           class="btn btn-primary"
           disabled={submitting}
         >
-          {#if submitting}<span class="spinner-ring spinner-ring--sm mr-2"
-            ></span>{/if}
+          {#if submitting}<span class="spinner-ring spinner-ring--sm mr-2"></span>{/if}
           {messages.BTN_SAVE}
         </button>
       </div>

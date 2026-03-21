@@ -13,17 +13,11 @@ import type { UIState } from './state-ui.svelte';
  * Creates derived values from composed state modules
  */
 // eslint-disable-next-line max-lines-per-function -- Svelte 5 derived factory: all $derived values must be in same function scope for reactivity
-export function createDerivedState(
-  data: DataState,
-  ui: UIState,
-  form: FormState,
-) {
+export function createDerivedState(data: DataState, ui: UIState, form: FormState) {
   const messages = $derived(createMessages(data.labels));
 
   const isEditMode = $derived(ui.currentEditId !== null);
-  const modalTitle = $derived(
-    isEditMode ? messages.MODAL_EDIT_TITLE : messages.MODAL_ADD_TITLE,
-  );
+  const modalTitle = $derived(isEditMode ? messages.MODAL_EDIT_TITLE : messages.MODAL_ADD_TITLE);
 
   const selectedDepartmentName = $derived.by(() => {
     if (form.formDepartmentId === null) return messages.PLACEHOLDER_DEPARTMENT;
@@ -35,10 +29,7 @@ export function createDerivedState(
 
   const selectedAreaName = $derived.by(() => {
     if (form.formAreaId === null) return messages.PLACEHOLDER_AREA;
-    return (
-      data.allAreas.find((a) => a.id === form.formAreaId)?.name ??
-      messages.PLACEHOLDER_AREA
-    );
+    return data.allAreas.find((a) => a.id === form.formAreaId)?.name ?? messages.PLACEHOLDER_AREA;
   });
 
   const selectedTypeLabel = $derived.by(() => {
@@ -60,8 +51,7 @@ export function createDerivedState(
   });
 
   const teamsDisplayText = $derived.by(() => {
-    if (form.formDepartmentId === null)
-      return messages.PLACEHOLDER_SELECT_DEPT_FIRST;
+    if (form.formDepartmentId === null) return messages.PLACEHOLDER_SELECT_DEPT_FIRST;
     if (form.formTeamIds.length === 0) return messages.PLACEHOLDER_TEAMS;
     if (form.formTeamIds.length <= 2) {
       return data.allTeams

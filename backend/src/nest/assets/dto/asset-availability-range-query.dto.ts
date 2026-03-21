@@ -10,9 +10,7 @@ import { z } from 'zod';
 const DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
 
 export const AssetAvailabilityRangeQuerySchema = z.object({
-  startDate: z
-    .string()
-    .regex(DATE_REGEX, 'startDate must be YYYY-MM-DD format'),
+  startDate: z.string().regex(DATE_REGEX, 'startDate must be YYYY-MM-DD format'),
   endDate: z.string().regex(DATE_REGEX, 'endDate must be YYYY-MM-DD format'),
 });
 

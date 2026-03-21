@@ -31,11 +31,7 @@ export class DocumentAccessService {
     // Chat is ALWAYS private — check BEFORE admin bypass
     if (document.access_scope === 'chat') {
       if (document.conversation_id === null) return false;
-      return await this.isConversationParticipant(
-        userId,
-        document.conversation_id,
-        tenantId,
-      );
+      return await this.isConversationParticipant(userId, document.conversation_id, tenantId);
     }
 
     // Admins can access all non-chat documents
@@ -76,11 +72,7 @@ export class DocumentAccessService {
   }
 
   /** Check if a document has been read by a user */
-  async isDocumentRead(
-    documentId: number,
-    userId: number,
-    tenantId: number,
-  ): Promise<boolean> {
+  async isDocumentRead(documentId: number, userId: number, tenantId: number): Promise<boolean> {
     const rows = await this.databaseService.query<{ read_at: Date }>(
       `SELECT read_at FROM document_read_status
        WHERE document_id = $1 AND user_id = $2 AND tenant_id = $3`,
@@ -109,12 +101,7 @@ export class DocumentAccessService {
     const params: unknown[] = [tenantId, isActive];
     let paramIndex = 3;
 
-    const filterResult = this.applyDocumentFilters(
-      baseQuery,
-      params,
-      paramIndex,
-      filters,
-    );
+    const filterResult = this.applyDocumentFilters(baseQuery, params, paramIndex, filters);
     baseQuery = filterResult.baseQuery;
     paramIndex = filterResult.paramIndex;
 
@@ -195,10 +182,7 @@ export class DocumentAccessService {
    * Get user role by ID.
    * SECURITY: Only returns data for ACTIVE users (is_active = 1).
    */
-  private async getUserRole(
-    userId: number,
-    tenantId: number,
-  ): Promise<{ role: string } | null> {
+  private async getUserRole(userId: number, tenantId: number): Promise<{ role: string } | null> {
     const rows = await this.databaseService.query<{ role: string }>(
       `SELECT role FROM users WHERE id = $1 AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}`,
       [userId, tenantId],

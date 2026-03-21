@@ -135,8 +135,7 @@ SemanticVariants.storyName = '3. Semantic Variants';
  */
 export const SizeVariants = () => {
   const container = document.createElement('div');
-  container.style.cssText =
-    'padding: 100px; display: flex; gap: 30px; justify-content: center;';
+  container.style.cssText = 'padding: 100px; display: flex; gap: 30px; justify-content: center;';
 
   const sizes = [
     { text: 'Small', tooltip: 'Small tooltip', size: 'sm' },
@@ -229,14 +228,12 @@ export const OnIconsAndInputs = () => {
   emailGroup.style.cssText = 'margin-bottom: 16px;';
 
   const emailLabel = document.createElement('label');
-  emailLabel.style.cssText =
-    'display: flex; align-items: center; gap: 8px; margin-bottom: 8px;';
+  emailLabel.style.cssText = 'display: flex; align-items: center; gap: 8px; margin-bottom: 8px;';
   emailLabel.textContent = 'Email Address ';
 
   const emailIcon = document.createElement('i');
   emailIcon.className = 'fas fa-question-circle';
-  emailIcon.style.cssText =
-    'font-size: 14px; color: var(--color-text-muted); cursor: help;';
+  emailIcon.style.cssText = 'font-size: 14px; color: var(--color-text-muted); cursor: help;';
   emailIcon.setAttribute('data-tooltip', 'Your work email address');
   emailIcon.setAttribute('data-tooltip-position', 'right');
   emailLabel.appendChild(emailIcon);
@@ -255,14 +252,12 @@ export const OnIconsAndInputs = () => {
   passwordGroup.className = 'form-group';
 
   const passwordLabel = document.createElement('label');
-  passwordLabel.style.cssText =
-    'display: flex; align-items: center; gap: 8px; margin-bottom: 8px;';
+  passwordLabel.style.cssText = 'display: flex; align-items: center; gap: 8px; margin-bottom: 8px;';
   passwordLabel.textContent = 'Password ';
 
   const passwordIcon = document.createElement('i');
   passwordIcon.className = 'fas fa-question-circle';
-  passwordIcon.style.cssText =
-    'font-size: 14px; color: var(--color-text-muted); cursor: help;';
+  passwordIcon.style.cssText = 'font-size: 14px; color: var(--color-text-muted); cursor: help;';
   passwordIcon.setAttribute(
     'data-tooltip',
     'Must be at least 8 characters with uppercase, lowercase, and numbers',
@@ -322,8 +317,7 @@ export const ManualHTML = () => {
   button2.textContent = 'Success tooltip';
 
   const content2 = document.createElement('div');
-  content2.className =
-    'tooltip__content tooltip__content--bottom tooltip__content--success';
+  content2.className = 'tooltip__content tooltip__content--bottom tooltip__content--success';
   content2.setAttribute('role', 'tooltip');
   content2.textContent = 'This works with pure CSS!';
 
@@ -352,8 +346,7 @@ export const JavaScriptAPI = () => {
 
   // Create control buttons
   const controls = document.createElement('div');
-  controls.style.cssText =
-    'margin-top: 20px; display: flex; gap: 10px; justify-content: center;';
+  controls.style.cssText = 'margin-top: 20px; display: flex; gap: 10px; justify-content: center;';
 
   const showBtn = document.createElement('button');
   showBtn.className = 'btn btn-cancel btn-sm';
@@ -431,8 +424,7 @@ export const FormValidation = () => {
   container.style.cssText = 'padding: 100px; max-width: 400px; margin: 0 auto;';
 
   const title = document.createElement('h3');
-  title.style.cssText =
-    'margin-bottom: 24px; color: var(--color-text-primary);';
+  title.style.cssText = 'margin-bottom: 24px; color: var(--color-text-primary);';
   title.textContent = 'Form with Validation Tooltips';
   container.appendChild(title);
 
@@ -447,8 +439,7 @@ export const FormValidation = () => {
   usernameGroup.appendChild(usernameLabel);
 
   const usernameDiv = document.createElement('div');
-  usernameDiv.style.cssText =
-    'position: relative; display: flex; align-items: center; gap: 8px;';
+  usernameDiv.style.cssText = 'position: relative; display: flex; align-items: center; gap: 8px;';
 
   const usernameInput = document.createElement('input');
   usernameInput.type = 'text';
@@ -460,10 +451,7 @@ export const FormValidation = () => {
   const usernameIcon = document.createElement('i');
   usernameIcon.className = 'fas fa-exclamation-circle';
   usernameIcon.style.cssText = 'color: var(--color-red-400); cursor: help;';
-  usernameIcon.setAttribute(
-    'data-tooltip',
-    'Username must be at least 3 characters',
-  );
+  usernameIcon.setAttribute('data-tooltip', 'Username must be at least 3 characters');
   usernameIcon.setAttribute('data-tooltip-variant', 'error');
   usernameIcon.setAttribute('data-tooltip-position', 'right');
   usernameDiv.appendChild(usernameIcon);
@@ -482,8 +470,7 @@ export const FormValidation = () => {
   emailGroup.appendChild(emailLabel);
 
   const emailDiv = document.createElement('div');
-  emailDiv.style.cssText =
-    'position: relative; display: flex; align-items: center; gap: 8px;';
+  emailDiv.style.cssText = 'position: relative; display: flex; align-items: center; gap: 8px;';
 
   const emailInput = document.createElement('input');
   emailInput.type = 'email';
@@ -513,8 +500,7 @@ export const FormValidation = () => {
   phoneGroup.appendChild(phoneLabel);
 
   const phoneDiv = document.createElement('div');
-  phoneDiv.style.cssText =
-    'position: relative; display: flex; align-items: center; gap: 8px;';
+  phoneDiv.style.cssText = 'position: relative; display: flex; align-items: center; gap: 8px;';
 
   const phoneInput = document.createElement('input');
   phoneInput.type = 'tel';
@@ -557,8 +543,7 @@ export const AllVariants = () => {
     const section = document.createElement('div');
     section.style.cssText = `margin-bottom: ${marginBottom};`;
     const h3 = document.createElement('h3');
-    h3.style.cssText =
-      'margin-bottom: 20px; color: var(--color-text-secondary);';
+    h3.style.cssText = 'margin-bottom: 20px; color: var(--color-text-secondary);';
     h3.textContent = heading;
     section.appendChild(h3);
     return section;

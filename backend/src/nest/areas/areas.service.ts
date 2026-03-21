@@ -9,12 +9,7 @@
  * whose approver was the old area_lead get cascaded to the new lead.
  */
 import { IS_ACTIVE } from '@assixx/shared/constants';
-import {
-  BadRequestException,
-  Injectable,
-  Logger,
-  NotFoundException,
-} from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { v7 as uuidv7 } from 'uuid';
 
 import { ActivityLoggerService } from '../common/services/activity-logger.service.js';
@@ -33,13 +28,7 @@ export interface AreaRow {
   name: string;
   description: string | null;
   area_lead_id: number | null;
-  type:
-    | 'building'
-    | 'warehouse'
-    | 'office'
-    | 'production'
-    | 'outdoor'
-    | 'other';
+  type: 'building' | 'warehouse' | 'office' | 'production' | 'outdoor' | 'other';
   capacity: number | null;
   address: string | null;
   is_active: number;
@@ -168,15 +157,12 @@ export class AreasService {
     }
 
     if (query.search !== undefined && query.search !== '') {
-      conditions.push(
-        `(a.name ILIKE $${paramIndex} OR a.description ILIKE $${paramIndex + 1})`,
-      );
+      conditions.push(`(a.name ILIKE $${paramIndex} OR a.description ILIKE $${paramIndex + 1})`);
       params.push(`%${query.search}%`, `%${query.search}%`);
       paramIndex += 2;
     }
 
-    const whereClause =
-      conditions.length > 0 ? ` AND ${conditions.join(' AND ')}` : '';
+    const whereClause = conditions.length > 0 ? ` AND ${conditions.join(' AND ')}` : '';
 
     return { whereClause, params, paramIndex };
   }
@@ -184,17 +170,11 @@ export class AreasService {
   /**
    * List all areas for a tenant
    */
-  async listAreas(
-    tenantId: number,
-    query: ListAreasQueryDto,
-  ): Promise<AreaResponse[]> {
+  async listAreas(tenantId: number, query: ListAreasQueryDto): Promise<AreaResponse[]> {
     this.logger.debug(`Fetching areas for tenant ${tenantId}`);
 
     const scope = await this.scopeService.getScope();
-    if (
-      scope.type === 'none' ||
-      (scope.type === 'limited' && scope.areaIds.length === 0)
-    ) {
+    if (scope.type === 'none' || (scope.type === 'limited' && scope.areaIds.length === 0)) {
       return [];
     }
 
@@ -302,20 +282,14 @@ export class AreasService {
 
     const user = rows[0];
     if (user?.role !== 'admin' && user?.role !== 'root') {
-      throw new BadRequestException(
-        'Area leader must have role "admin" or "root"',
-      );
+      throw new BadRequestException('Area leader must have role "admin" or "root"');
     }
   }
 
   /**
    * Create a new area
    */
-  async createArea(
-    dto: CreateAreaDto,
-    tenantId: number,
-    userId: number,
-  ): Promise<AreaResponse> {
+  async createArea(dto: CreateAreaDto, tenantId: number, userId: number): Promise<AreaResponse> {
     this.logger.log(`Creating area: ${dto.name}`);
 
     if (dto.name.trim() === '') {
@@ -470,18 +444,8 @@ export class AreasService {
   /**
    * Check area dependencies
    */
-  private async checkAreaDependencies(
-    id: number,
-    tenantId: number,
-  ): Promise<AreaDependencies> {
-    const tables = [
-      'departments',
-      'halls',
-      'assets',
-      'shifts',
-      'shift_plans',
-      'shift_favorites',
-    ];
+  private async checkAreaDependencies(id: number, tenantId: number): Promise<AreaDependencies> {
+    const tables = ['departments', 'halls', 'assets', 'shifts', 'shift_plans', 'shift_favorites'];
 
     const counts = await Promise.all(
       tables.map(async (table: string) => {
@@ -545,10 +509,10 @@ export class AreasService {
               [id, tenantId],
             );
           } else {
-            await this.db.query(
-              `DELETE FROM ${s.table} WHERE area_id = $1 AND tenant_id = $2`,
-              [id, tenantId],
-            );
+            await this.db.query(`DELETE FROM ${s.table} WHERE area_id = $1 AND tenant_id = $2`, [
+              id,
+              tenantId,
+            ]);
           }
         }),
     );
@@ -591,10 +555,7 @@ export class AreasService {
       await this.removeAreaDependencies(id, tenantId, deps);
     }
 
-    await this.db.query('DELETE FROM areas WHERE id = $1 AND tenant_id = $2', [
-      id,
-      tenantId,
-    ]);
+    await this.db.query('DELETE FROM areas WHERE id = $1 AND tenant_id = $2', [id, tenantId]);
 
     await this.activityLogger.logDelete(
       tenantId,
@@ -622,9 +583,7 @@ export class AreasService {
     departmentIds: number[],
     tenantId: number,
   ): Promise<{ message: string }> {
-    this.logger.log(
-      `Assigning ${departmentIds.length} departments to area ${areaId}`,
-    );
+    this.logger.log(`Assigning ${departmentIds.length} departments to area ${areaId}`);
 
     // Check if area exists
     await this.getAreaById(areaId, tenantId);
@@ -637,9 +596,7 @@ export class AreasService {
 
     // Assign selected departments (if any)
     if (departmentIds.length > 0) {
-      const placeholders = departmentIds
-        .map((_: number, i: number) => `$${i + 3}`)
-        .join(', ');
+      const placeholders = departmentIds.map((_: number, i: number) => `$${i + 3}`).join(', ');
       await this.db.query(
         `UPDATE departments SET area_id = $1 WHERE tenant_id = $2 AND id IN (${placeholders})`,
         [areaId, tenantId, ...departmentIds],
@@ -661,15 +618,13 @@ export class AreasService {
 
     await this.getAreaById(areaId, tenantId);
 
-    await this.db.query(
-      `UPDATE halls SET area_id = NULL WHERE tenant_id = $1 AND area_id = $2`,
-      [tenantId, areaId],
-    );
+    await this.db.query(`UPDATE halls SET area_id = NULL WHERE tenant_id = $1 AND area_id = $2`, [
+      tenantId,
+      areaId,
+    ]);
 
     if (hallIds.length > 0) {
-      const placeholders = hallIds
-        .map((_: number, i: number) => `$${i + 3}`)
-        .join(', ');
+      const placeholders = hallIds.map((_: number, i: number) => `$${i + 3}`).join(', ');
       await this.db.query(
         `UPDATE halls SET area_id = $1 WHERE tenant_id = $2 AND id IN (${placeholders})`,
         [areaId, tenantId, ...hallIds],

@@ -6,12 +6,7 @@
  */
 
 /** Tenant-specific addon status from backend */
-export type TenantAddonStatusValue =
-  | 'trial'
-  | 'active'
-  | 'expired'
-  | 'cancelled'
-  | 'not_activated';
+export type TenantAddonStatusValue = 'trial' | 'active' | 'expired' | 'cancelled' | 'not_activated';
 
 /** Single addon from GET /addons/my-addons */
 export interface AddonWithTenantStatus {

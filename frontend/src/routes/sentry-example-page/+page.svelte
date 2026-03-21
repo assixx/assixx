@@ -48,9 +48,7 @@
   <div class="w-full max-w-md rounded-lg bg-white p-8 shadow-lg">
     <h1 class="mb-4 text-2xl font-bold text-gray-800">Sentry Test Page</h1>
 
-    <p class="mb-6 text-gray-600">
-      Click the button below to trigger test errors. This will:
-    </p>
+    <p class="mb-6 text-gray-600">Click the button below to trigger test errors. This will:</p>
 
     <ul class="mb-6 list-inside list-disc space-y-1 text-gray-600">
       <li>Call an API route (server-side error)</li>
@@ -86,8 +84,7 @@
       </p>
 
       <p class="mt-2 text-xs text-gray-400">
-        Note: Errors from browser DevTools console are sandboxed and won't be
-        captured.
+        Note: Errors from browser DevTools console are sandboxed and won't be captured.
       </p>
     </div>
   </div>

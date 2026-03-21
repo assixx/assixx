@@ -6,12 +6,7 @@
 <script lang="ts">
   import { createLogger } from '$lib/utils/logger';
 
-  import {
-    formatDate,
-    getStatusClass,
-    getStatusIcon,
-    getStatusText,
-  } from './helpers';
+  import { formatDate, getStatusClass, getStatusIcon, getStatusText } from './helpers';
 
   const log = createLogger('AssetDeleteConfirmationModal');
 
@@ -164,8 +159,7 @@
             void handleDelete();
           }}
         >
-          {#if submitting}<span class="spinner-ring spinner-ring--sm mr-2"
-            ></span>{/if}
+          {#if submitting}<span class="spinner-ring spinner-ring--sm mr-2"></span>{/if}
           Löschen
         </button>
       </div>

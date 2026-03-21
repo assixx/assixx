@@ -10,12 +10,7 @@
  * Dependencies: TpmCardStatusService (status transitions), DatabaseService
  */
 import { IS_ACTIVE } from '@assixx/shared/constants';
-import {
-  BadRequestException,
-  Injectable,
-  Logger,
-  NotFoundException,
-} from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import type { PoolClient } from 'pg';
 import { v7 as uuidv7 } from 'uuid';
 
@@ -48,10 +43,7 @@ import type {
   TpmExecutionParticipant,
   TpmExecutionPhoto,
 } from './tpm.types.js';
-import {
-  MAX_PHOTOS_PER_DEFECT,
-  MAX_PHOTOS_PER_EXECUTION,
-} from './tpm.types.js';
+import { MAX_PHOTOS_PER_DEFECT, MAX_PHOTOS_PER_EXECUTION } from './tpm.types.js';
 
 /** Base SELECT for execution reads with JOINs */
 const EXECUTION_SELECT = `
@@ -209,55 +201,38 @@ export class TpmExecutionsService {
     userId: number,
     dto: CompleteCardDto,
   ): Promise<TpmCardExecution> {
-    this.logger.debug(
-      `Creating execution for card ${cardUuid} by user ${userId}`,
-    );
+    this.logger.debug(`Creating execution for card ${cardUuid} by user ${userId}`);
 
-    const { execution, card } = await this.db.tenantTransaction(
-      async (client: PoolClient) => {
-        const lockedCard = await this.lockCardByUuid(
-          client,
-          tenantId,
-          cardUuid,
-        );
+    const { execution, card } = await this.db.tenantTransaction(async (client: PoolClient) => {
+      const lockedCard = await this.lockCardByUuid(client, tenantId, cardUuid);
 
-        this.validateDocumentation(
-          lockedCard,
-          dto.documentation,
-          dto.noIssuesFound,
-        );
+      this.validateDocumentation(lockedCard, dto.documentation, dto.noIssuesFound);
 
-        const completionResult = await this.cardStatusService.markCardCompleted(
-          client,
-          tenantId,
-          lockedCard.id,
-          userId,
-        );
+      const completionResult = await this.cardStatusService.markCardCompleted(
+        client,
+        tenantId,
+        lockedCard.id,
+        userId,
+      );
 
-        // Flow A (no approval): card is green → advance to next scheduled date
-        if (!completionResult.requiresApproval) {
-          await this.schedulingService.advanceSchedule(
-            client,
-            tenantId,
-            lockedCard.id,
-          );
-        }
+      // Flow A (no approval): card is green → advance to next scheduled date
+      if (!completionResult.requiresApproval) {
+        await this.schedulingService.advanceSchedule(client, tenantId, lockedCard.id);
+      }
 
-        const approvalStatus =
-          completionResult.requiresApproval ? 'pending' : 'none';
+      const approvalStatus = completionResult.requiresApproval ? 'pending' : 'none';
 
-        const result = await this.insertExecution(
-          client,
-          tenantId,
-          lockedCard.id,
-          userId,
-          dto,
-          approvalStatus,
-        );
+      const result = await this.insertExecution(
+        client,
+        tenantId,
+        lockedCard.id,
+        userId,
+        dto,
+        approvalStatus,
+      );
 
-        return { execution: result, card: lockedCard };
-      },
-    );
+      return { execution: result, card: lockedCard };
+    });
 
     void this.activityLogger.logCreate(
       tenantId,
@@ -274,10 +249,7 @@ export class TpmExecutionsService {
   }
 
   /** Get a single execution by UUID */
-  async getExecution(
-    tenantId: number,
-    executionUuid: string,
-  ): Promise<TpmCardExecution> {
+  async getExecution(tenantId: number, executionUuid: string): Promise<TpmCardExecution> {
     const row = await this.db.queryOne<TpmExecutionJoinRow>(
       `${EXECUTION_SELECT}
        WHERE e.uuid = $1 AND e.tenant_id = $2`,
@@ -285,9 +257,7 @@ export class TpmExecutionsService {
     );
 
     if (row === null) {
-      throw new NotFoundException(
-        `Durchführung ${executionUuid} nicht gefunden`,
-      );
+      throw new NotFoundException(`Durchführung ${executionUuid} nicht gefunden`);
     }
 
     return mapExecutionRowToApi(row);
@@ -370,22 +340,12 @@ export class TpmExecutionsService {
     userId: number,
     fileData: PhotoFileData,
   ): Promise<TpmExecutionPhoto> {
-    this.logger.debug(
-      `Adding photo to execution ${executionUuid}: ${fileData.fileName}`,
-    );
+    this.logger.debug(`Adding photo to execution ${executionUuid}: ${fileData.fileName}`);
 
     return await this.db.tenantTransaction(async (client: PoolClient) => {
-      const execution = await this.lockExecutionByUuid(
-        client,
-        tenantId,
-        executionUuid,
-      );
+      const execution = await this.lockExecutionByUuid(client, tenantId, executionUuid);
 
-      const photoCount = await this.getPhotoCount(
-        client,
-        tenantId,
-        execution.id,
-      );
+      const photoCount = await this.getPhotoCount(client, tenantId, execution.id);
       if (photoCount >= MAX_PHOTOS_PER_EXECUTION) {
         throw new BadRequestException(
           `Maximal ${MAX_PHOTOS_PER_EXECUTION} Fotos pro Durchführung erlaubt`,
@@ -432,10 +392,7 @@ export class TpmExecutionsService {
   }
 
   /** Get all photos for an execution, ordered by sort_order */
-  async getPhotos(
-    tenantId: number,
-    executionUuid: string,
-  ): Promise<TpmExecutionPhoto[]> {
+  async getPhotos(tenantId: number, executionUuid: string): Promise<TpmExecutionPhoto[]> {
     const rows = await this.db.query<TpmCardExecutionPhotoRow>(
       `SELECT p.*
        FROM tpm_card_execution_photos p
@@ -459,22 +416,14 @@ export class TpmExecutionsService {
     userId: number,
     fileData: PhotoFileData,
   ): Promise<TpmDefectPhoto> {
-    this.logger.debug(
-      `Adding photo to defect ${defectUuid}: ${fileData.fileName}`,
-    );
+    this.logger.debug(`Adding photo to defect ${defectUuid}: ${fileData.fileName}`);
 
     return await this.db.tenantTransaction(async (client: PoolClient) => {
       const defect = await this.lockDefectByUuid(client, tenantId, defectUuid);
 
-      const photoCount = await this.getDefectPhotoCount(
-        client,
-        tenantId,
-        defect.id,
-      );
+      const photoCount = await this.getDefectPhotoCount(client, tenantId, defect.id);
       if (photoCount >= MAX_PHOTOS_PER_DEFECT) {
-        throw new BadRequestException(
-          `Maximal ${MAX_PHOTOS_PER_DEFECT} Fotos pro Mangel erlaubt`,
-        );
+        throw new BadRequestException(`Maximal ${MAX_PHOTOS_PER_DEFECT} Fotos pro Mangel erlaubt`);
       }
 
       const photoUuid = uuidv7();
@@ -516,10 +465,7 @@ export class TpmExecutionsService {
   }
 
   /** Get all photos for a defect, ordered by sort_order */
-  async getDefectPhotos(
-    tenantId: number,
-    defectUuid: string,
-  ): Promise<TpmDefectPhoto[]> {
+  async getDefectPhotos(tenantId: number, defectUuid: string): Promise<TpmDefectPhoto[]> {
     const rows = await this.db.query<TpmDefectPhotoRow>(
       `SELECT dp.*
        FROM tpm_defect_photos dp
@@ -678,9 +624,7 @@ export class TpmExecutionsService {
     );
     const row = result.rows[0];
     if (row === undefined) {
-      throw new NotFoundException(
-        `Durchführung ${executionUuid} nicht gefunden`,
-      );
+      throw new NotFoundException(`Durchführung ${executionUuid} nicht gefunden`);
     }
     return row;
   }
@@ -747,9 +691,7 @@ export class TpmExecutionsService {
   ): void {
     if (card.requires_approval && !noIssuesFound) {
       const hasDocumentation =
-        documentation !== undefined &&
-        documentation !== null &&
-        documentation.trim().length > 0;
+        documentation !== undefined && documentation !== null && documentation.trim().length > 0;
 
       if (!hasDocumentation) {
         throw new BadRequestException(
@@ -769,8 +711,7 @@ export class TpmExecutionsService {
     approvalStatus: string,
   ): Promise<TpmCardExecution> {
     const executionUuid = uuidv7();
-    const executionDate =
-      dto.executionDate ?? new Date().toISOString().slice(0, 10);
+    const executionDate = dto.executionDate ?? new Date().toISOString().slice(0, 10);
 
     const result = await client.query<TpmExecutionJoinRow>(
       `INSERT INTO tpm_card_executions
@@ -815,12 +756,7 @@ export class TpmExecutionsService {
 
     const defects = dto.defects;
     if (defects.length > 0) {
-      execution.defects = await this.insertDefects(
-        client,
-        tenantId,
-        row.id,
-        defects,
-      );
+      execution.defects = await this.insertDefects(client, tenantId, row.id, defects);
       execution.defectCount = defects.length;
     }
 
@@ -862,13 +798,11 @@ export class TpmExecutionsService {
       values,
     );
 
-    return usersResult.rows.map(
-      (u: { uuid: string; first_name: string; last_name: string }) => ({
-        uuid: u.uuid.trim(),
-        firstName: u.first_name,
-        lastName: u.last_name,
-      }),
-    );
+    return usersResult.rows.map((u: { uuid: string; first_name: string; last_name: string }) => ({
+      uuid: u.uuid.trim(),
+      firstName: u.first_name,
+      lastName: u.last_name,
+    }));
   }
 
   /** Insert defect entries for an execution within transaction */
@@ -888,14 +822,7 @@ export class TpmExecutionsService {
       placeholders.push(
         `($${idx}, $${idx + 1}, $${idx + 2}, $${idx + 3}, $${idx + 4}, $${idx + 5})`,
       );
-      values.push(
-        uuidv7(),
-        tenantId,
-        executionId,
-        entry.title,
-        entry.description ?? null,
-        pos + 1,
-      );
+      values.push(uuidv7(), tenantId, executionId, entry.title, entry.description ?? null, pos + 1);
       idx += 6;
     }
 
@@ -907,9 +834,7 @@ export class TpmExecutionsService {
       values,
     );
 
-    return rows.rows.map((row: TpmExecutionDefectRow) =>
-      mapDefectRowToApi(row),
-    );
+    return rows.rows.map((row: TpmExecutionDefectRow) => mapDefectRowToApi(row));
   }
 
   /**
@@ -926,10 +851,7 @@ export class TpmExecutionsService {
       const notificationCard = cardRowToNotification(card);
 
       if (execution.approvalStatus === 'pending') {
-        const approverIds = await this.resolveApproverIds(
-          tenantId,
-          card.asset_id,
-        );
+        const approverIds = await this.resolveApproverIds(tenantId, card.asset_id);
         this.notificationService.notifyApprovalRequired(
           tenantId,
           notificationCard,
@@ -937,11 +859,7 @@ export class TpmExecutionsService {
           approverIds,
         );
       } else {
-        this.notificationService.notifyMaintenanceCompleted(
-          tenantId,
-          notificationCard,
-          userId,
-        );
+        this.notificationService.notifyMaintenanceCompleted(tenantId, notificationCard, userId);
       }
     } catch (error: unknown) {
       this.logger.warn(
@@ -952,9 +870,7 @@ export class TpmExecutionsService {
   }
 
   /** List active employees eligible as execution participants */
-  async getEligibleParticipants(
-    tenantId: number,
-  ): Promise<EligibleParticipant[]> {
+  async getEligibleParticipants(tenantId: number): Promise<EligibleParticipant[]> {
     const rows = await this.db.query<{
       id: number;
       uuid: string;
@@ -985,10 +901,7 @@ export class TpmExecutionsService {
   }
 
   /** Resolve team leads + admins who can approve for a asset */
-  private async resolveApproverIds(
-    tenantId: number,
-    assetId: number,
-  ): Promise<number[]> {
+  private async resolveApproverIds(tenantId: number, assetId: number): Promise<number[]> {
     const rows = await this.db.query<{ user_id: number }>(
       `SELECT DISTINCT t.team_lead_id AS user_id
        FROM teams t
@@ -1005,14 +918,10 @@ export class TpmExecutionsService {
 }
 
 /** Map defect-with-context DB row to API response (module-level helper) */
-function mapDefectWithContextToApi(
-  row: DefectWithContextRow,
-): DefectWithContext {
+function mapDefectWithContextToApi(row: DefectWithContextRow): DefectWithContext {
   const assigneeNamesRaw = row.work_order_assignee_names;
   const assigneeNames =
-    assigneeNamesRaw !== null && assigneeNamesRaw !== '' ?
-      assigneeNamesRaw.split(', ')
-    : [];
+    assigneeNamesRaw !== null && assigneeNamesRaw !== '' ? assigneeNamesRaw.split(', ') : [];
 
   return {
     uuid: row.uuid.trim(),
@@ -1030,9 +939,7 @@ function mapDefectWithContextToApi(
     workOrderPriority: row.work_order_priority,
     workOrderAssigneeNames: assigneeNames,
     workOrderCreatedAt:
-      row.work_order_created_at !== null ?
-        toIsoString(row.work_order_created_at)
-      : null,
+      row.work_order_created_at !== null ? toIsoString(row.work_order_created_at) : null,
   };
 }
 

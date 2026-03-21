@@ -199,11 +199,7 @@
     }
 
     .ec-day:hover {
-      background-color: color-mix(
-        in oklch,
-        var(--color-primary) 5%,
-        transparent
-      ) !important;
+      background-color: color-mix(in oklch, var(--color-primary) 5%, transparent) !important;
     }
 
     .ec-today {
@@ -315,8 +311,7 @@
       font-size: 12px;
       font-weight: 700;
       background: var(--glass-bg-active);
-      box-shadow: 0 1px 3px
-        color-mix(in oklch, var(--color-black) 30%, transparent);
+      box-shadow: 0 1px 3px color-mix(in oklch, var(--color-black) 30%, transparent);
     }
 
     .shift-indicator.shift-F {
@@ -344,8 +339,7 @@
       font-weight: 700;
       color: var(--color-teal-400);
       background: var(--glass-bg-active);
-      box-shadow: 0 1px 3px
-        color-mix(in oklch, var(--color-black) 30%, transparent);
+      box-shadow: 0 1px 3px color-mix(in oklch, var(--color-black) 30%, transparent);
     }
 
     /* FULLSCREEN MODE */

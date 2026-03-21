@@ -134,9 +134,7 @@ describe('TpmCardsService', () => {
     it('should throw NotFoundException when card not found', async () => {
       mockDb.queryOne.mockResolvedValueOnce(null);
 
-      await expect(service.getCard(10, 'nonexistent')).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.getCard(10, 'nonexistent')).rejects.toThrow(NotFoundException);
     });
 
     it('should not set optional fields when JOIN columns are missing', async () => {
@@ -281,9 +279,7 @@ describe('TpmCardsService', () => {
     it('should resolve plan IDs, generate card code, and INSERT', async () => {
       // resolvePlanContext
       mockClient.query.mockResolvedValueOnce({
-        rows: [
-          { id: 100, asset_id: 42, base_weekday: 0, base_repeat_every: 1 },
-        ],
+        rows: [{ id: 100, asset_id: 42, base_weekday: 0, base_repeat_every: 1 }],
       });
       // assertCardLimitNotReached (COUNT)
       mockClient.query.mockResolvedValueOnce({ rows: [{ count: '0' }] });
@@ -349,9 +345,7 @@ describe('TpmCardsService', () => {
 
     it('should generate BW prefix for operator+weekly', async () => {
       mockClient.query.mockResolvedValueOnce({
-        rows: [
-          { id: 100, asset_id: 42, base_weekday: 0, base_repeat_every: 1 },
-        ],
+        rows: [{ id: 100, asset_id: 42, base_weekday: 0, base_repeat_every: 1 }],
       });
       // assertCardLimitNotReached
       mockClient.query.mockResolvedValueOnce({ rows: [{ count: '0' }] });
@@ -380,9 +374,7 @@ describe('TpmCardsService', () => {
 
     it('should generate IM prefix for maintenance+monthly', async () => {
       mockClient.query.mockResolvedValueOnce({
-        rows: [
-          { id: 100, asset_id: 42, base_weekday: 0, base_repeat_every: 1 },
-        ],
+        rows: [{ id: 100, asset_id: 42, base_weekday: 0, base_repeat_every: 1 }],
       });
       // assertCardLimitNotReached
       mockClient.query.mockResolvedValueOnce({ rows: [{ count: '0' }] });
@@ -410,18 +402,14 @@ describe('TpmCardsService', () => {
 
     it('should auto-set interval_order from INTERVAL_ORDER_MAP', async () => {
       mockClient.query.mockResolvedValueOnce({
-        rows: [
-          { id: 100, asset_id: 42, base_weekday: 0, base_repeat_every: 1 },
-        ],
+        rows: [{ id: 100, asset_id: 42, base_weekday: 0, base_repeat_every: 1 }],
       });
       // assertCardLimitNotReached
       mockClient.query.mockResolvedValueOnce({ rows: [{ count: '0' }] });
       mockClient.query.mockResolvedValueOnce({ rows: [{ count: '0' }] });
       mockClient.query.mockResolvedValueOnce({ rows: [{ max_sort: '0' }] });
       mockClient.query.mockResolvedValueOnce({
-        rows: [
-          createCardRow({ interval_type: 'quarterly', interval_order: 4 }),
-        ],
+        rows: [createCardRow({ interval_type: 'quarterly', interval_order: 4 })],
       });
 
       await service.createCard(
@@ -443,9 +431,7 @@ describe('TpmCardsService', () => {
 
     it('should auto-increment sort_order per plan', async () => {
       mockClient.query.mockResolvedValueOnce({
-        rows: [
-          { id: 100, asset_id: 42, base_weekday: 0, base_repeat_every: 1 },
-        ],
+        rows: [{ id: 100, asset_id: 42, base_weekday: 0, base_repeat_every: 1 }],
       });
       // assertCardLimitNotReached
       mockClient.query.mockResolvedValueOnce({ rows: [{ count: '0' }] });
@@ -492,9 +478,7 @@ describe('TpmCardsService', () => {
 
     it('should throw when INSERT returns no rows', async () => {
       mockClient.query.mockResolvedValueOnce({
-        rows: [
-          { id: 100, asset_id: 42, base_weekday: 0, base_repeat_every: 1 },
-        ],
+        rows: [{ id: 100, asset_id: 42, base_weekday: 0, base_repeat_every: 1 }],
       });
       // assertCardLimitNotReached
       mockClient.query.mockResolvedValueOnce({ rows: [{ count: '0' }] });
@@ -519,9 +503,7 @@ describe('TpmCardsService', () => {
 
     it('should pass null for optional fields when not provided', async () => {
       mockClient.query.mockResolvedValueOnce({
-        rows: [
-          { id: 100, asset_id: 42, base_weekday: 0, base_repeat_every: 1 },
-        ],
+        rows: [{ id: 100, asset_id: 42, base_weekday: 0, base_repeat_every: 1 }],
       });
       // assertCardLimitNotReached
       mockClient.query.mockResolvedValueOnce({ rows: [{ count: '0' }] });
@@ -561,9 +543,7 @@ describe('TpmCardsService', () => {
 
     it('should pass estimatedExecutionMinutes to INSERT when provided', async () => {
       mockClient.query.mockResolvedValueOnce({
-        rows: [
-          { id: 100, asset_id: 42, base_weekday: 0, base_repeat_every: 1 },
-        ],
+        rows: [{ id: 100, asset_id: 42, base_weekday: 0, base_repeat_every: 1 }],
       });
       // assertCardLimitNotReached
       mockClient.query.mockResolvedValueOnce({ rows: [{ count: '0' }] });
@@ -594,9 +574,7 @@ describe('TpmCardsService', () => {
 
     it('should call activity logger after successful creation', async () => {
       mockClient.query.mockResolvedValueOnce({
-        rows: [
-          { id: 100, asset_id: 42, base_weekday: 0, base_repeat_every: 1 },
-        ],
+        rows: [{ id: 100, asset_id: 42, base_weekday: 0, base_repeat_every: 1 }],
       });
       // assertCardLimitNotReached
       mockClient.query.mockResolvedValueOnce({ rows: [{ count: '0' }] });
@@ -711,9 +689,9 @@ describe('TpmCardsService', () => {
     it('should throw NotFoundException when card not found', async () => {
       mockClient.query.mockResolvedValueOnce({ rows: [] });
 
-      await expect(
-        service.updateCard(10, 5, 'nonexistent', { title: 'X' }),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.updateCard(10, 5, 'nonexistent', { title: 'X' })).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should call activity logger after successful update', async () => {
@@ -749,9 +727,7 @@ describe('TpmCardsService', () => {
       });
       mockClient.query.mockResolvedValueOnce({ rows: [] });
 
-      await expect(
-        service.deleteCard(10, 5, 'card-uuid-001'),
-      ).resolves.toBeUndefined();
+      await expect(service.deleteCard(10, 5, 'card-uuid-001')).resolves.toBeUndefined();
 
       const deleteSql = mockClient.query.mock.calls[1]?.[0] as string;
       expect(deleteSql).toContain(`is_active = ${IS_ACTIVE.DELETED}`);
@@ -760,9 +736,7 @@ describe('TpmCardsService', () => {
     it('should throw NotFoundException when card not found', async () => {
       mockClient.query.mockResolvedValueOnce({ rows: [] });
 
-      await expect(service.deleteCard(10, 5, 'nonexistent')).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.deleteCard(10, 5, 'nonexistent')).rejects.toThrow(NotFoundException);
     });
 
     it('should call activity logger after successful deletion', async () => {

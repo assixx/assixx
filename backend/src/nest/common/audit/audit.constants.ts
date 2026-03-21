@@ -70,10 +70,7 @@ export const SENSITIVE_FIELDS: readonly string[] = [
  * Resource type to database table mapping for DELETE pre-fetch.
  * Maps the extracted resource type to the actual table name and name field.
  */
-export const RESOURCE_TABLE_MAP: Record<
-  string,
-  { table: string; nameField: string }
-> = {
+export const RESOURCE_TABLE_MAP: Record<string, { table: string; nameField: string }> = {
   user: { table: 'users', nameField: 'username' },
   department: { table: 'departments', nameField: 'name' },
   team: { table: 'teams', nameField: 'name' },
@@ -183,11 +180,7 @@ export const SKIPPED_GET_SUFFIXES: readonly string[] = [
  * Endpoints that represent "current user/session" info.
  * These are logged as 'view' (not 'list') and can be throttled.
  */
-export const CURRENT_USER_ENDPOINTS: readonly string[] = [
-  '/users/me',
-  '/auth/me',
-  '/me',
-] as const;
+export const CURRENT_USER_ENDPOINTS: readonly string[] = ['/users/me', '/auth/me', '/me'] as const;
 
 /**
  * Reference data endpoints to COMPLETELY skip.

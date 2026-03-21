@@ -12,11 +12,7 @@ import type { ActivityLoggerService } from '../common/services/activity-logger.s
 import type { DatabaseService } from '../database/database.service.js';
 import type { BlackboardAccessService } from './blackboard-access.service.js';
 import { BlackboardEntriesService } from './blackboard-entries.service.js';
-import type {
-  DbBlackboardEntry,
-  NormalizedFilters,
-  UserAccessInfo,
-} from './blackboard.types.js';
+import type { DbBlackboardEntry, NormalizedFilters, UserAccessInfo } from './blackboard.types.js';
 
 // ============================================================
 // Mock uuid
@@ -60,9 +56,7 @@ function createServiceWithMock(): {
 }
 
 /** Standard mock DB entry with all optional fields set to null/values */
-function createMockDbEntry(
-  overrides: Partial<DbBlackboardEntry> = {},
-): DbBlackboardEntry {
+function createMockDbEntry(overrides: Partial<DbBlackboardEntry> = {}): DbBlackboardEntry {
   return {
     id: 1,
     uuid: '0194a1b2-c3d4-7e5f-8a9b-c0d1e2f3a4b5',
@@ -280,12 +274,7 @@ describe('BlackboardEntriesService – private helpers', () => {
         priority: undefined,
       };
 
-      const result = service['buildEntryListQuery'](
-        5,
-        1,
-        filters,
-        DEFAULT_USER_ACCESS,
-      );
+      const result = service['buildEntryListQuery'](5, 1, filters, DEFAULT_USER_ACCESS);
 
       // Base params: [userId, tenantId, isActive]
       expect(result.params).toEqual([5, 1, 1]);
@@ -310,12 +299,7 @@ describe('BlackboardEntriesService – private helpers', () => {
         priority: undefined,
       };
 
-      const result = service['buildEntryListQuery'](
-        5,
-        1,
-        filters,
-        DEFAULT_USER_ACCESS,
-      );
+      const result = service['buildEntryListQuery'](5, 1, filters, DEFAULT_USER_ACCESS);
 
       expect(result.query).toContain('e.org_level = $4');
       expect(result.params).toContain('department');
@@ -337,12 +321,7 @@ describe('BlackboardEntriesService – private helpers', () => {
         priority: undefined,
       };
 
-      const result = service['buildEntryListQuery'](
-        5,
-        1,
-        filters,
-        DEFAULT_USER_ACCESS,
-      );
+      const result = service['buildEntryListQuery'](5, 1, filters, DEFAULT_USER_ACCESS);
 
       expect(result.query).toContain('e.title LIKE');
       expect(result.query).toContain('e.content LIKE');
@@ -365,12 +344,7 @@ describe('BlackboardEntriesService – private helpers', () => {
         priority: 'high',
       };
 
-      const result = service['buildEntryListQuery'](
-        5,
-        1,
-        filters,
-        DEFAULT_USER_ACCESS,
-      );
+      const result = service['buildEntryListQuery'](5, 1, filters, DEFAULT_USER_ACCESS);
 
       expect(result.query).toContain('e.priority = $');
       expect(result.params).toContain('high');
@@ -392,12 +366,7 @@ describe('BlackboardEntriesService – private helpers', () => {
         priority: 'urgent',
       };
 
-      const result = service['buildEntryListQuery'](
-        5,
-        1,
-        filters,
-        DEFAULT_USER_ACCESS,
-      );
+      const result = service['buildEntryListQuery'](5, 1, filters, DEFAULT_USER_ACCESS);
 
       expect(result.params).toContain('team');
       expect(result.params).toContain('%test%');
@@ -420,12 +389,7 @@ describe('BlackboardEntriesService – private helpers', () => {
         priority: '',
       };
 
-      const result = service['buildEntryListQuery'](
-        5,
-        1,
-        filters,
-        DEFAULT_USER_ACCESS,
-      );
+      const result = service['buildEntryListQuery'](5, 1, filters, DEFAULT_USER_ACCESS);
 
       expect(result.query).not.toContain('e.priority =');
     });
@@ -439,22 +403,17 @@ describe('BlackboardEntriesService – private helpers', () => {
     it('returns total from count query', async () => {
       mockDb.query.mockResolvedValueOnce([{ total: 42 }]);
 
-      const baseQuery =
-        'SELECT e.id, e.uuid FROM blackboard_entries e WHERE e.tenant_id = $1';
+      const baseQuery = 'SELECT e.id, e.uuid FROM blackboard_entries e WHERE e.tenant_id = $1';
       const result = await service['countEntries'](baseQuery, [1]);
 
       expect(result).toBe(42);
-      expect(mockDb.query).toHaveBeenCalledWith(
-        expect.stringContaining('COUNT(*)'),
-        [1],
-      );
+      expect(mockDb.query).toHaveBeenCalledWith(expect.stringContaining('COUNT(*)'), [1]);
     });
 
     it('returns 0 when no rows returned', async () => {
       mockDb.query.mockResolvedValueOnce([]);
 
-      const baseQuery =
-        'SELECT e.id, e.uuid FROM blackboard_entries e WHERE e.tenant_id = $1';
+      const baseQuery = 'SELECT e.id, e.uuid FROM blackboard_entries e WHERE e.tenant_id = $1';
       const result = await service['countEntries'](baseQuery, [1]);
 
       expect(result).toBe(0);
@@ -535,14 +494,7 @@ describe('BlackboardEntriesService – private helpers', () => {
         expiresAt: '2024-12-31',
       };
 
-      const result = await service['insertEntry'](
-        dto as never,
-        1,
-        5,
-        'company',
-        null,
-        null,
-      );
+      const result = await service['insertEntry'](dto as never, 1, 5, 'company', null, null);
 
       expect(result).toBe(42);
       expect(mockDb.query).toHaveBeenCalledWith(
@@ -635,24 +587,21 @@ describe('BlackboardEntriesService – private helpers', () => {
     it('resolves UUID to numeric ID', async () => {
       mockDb.query.mockResolvedValueOnce([{ id: 42 }]);
 
-      const result = await service['resolveNumericEntryId'](
-        'some-uuid-string',
-        1,
-      );
+      const result = await service['resolveNumericEntryId']('some-uuid-string', 1);
 
       expect(result).toBe(42);
-      expect(mockDb.query).toHaveBeenCalledWith(
-        expect.stringContaining('WHERE uuid = $1'),
-        ['some-uuid-string', 1],
-      );
+      expect(mockDb.query).toHaveBeenCalledWith(expect.stringContaining('WHERE uuid = $1'), [
+        'some-uuid-string',
+        1,
+      ]);
     });
 
     it('throws NotFoundException for unknown UUID', async () => {
       mockDb.query.mockResolvedValueOnce([]);
 
-      await expect(
-        service['resolveNumericEntryId']('unknown-uuid', 1),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service['resolveNumericEntryId']('unknown-uuid', 1)).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
@@ -819,12 +768,7 @@ describe('BlackboardEntriesService – private helpers', () => {
     it('builds update query for UUID', () => {
       const dto = { title: 'Updated' };
 
-      const result = service['buildUpdateQuery'](
-        'some-uuid',
-        1,
-        dto as never,
-        false,
-      );
+      const result = service['buildUpdateQuery']('some-uuid', 1, dto as never, false);
 
       expect(result.query).toContain('WHERE uuid = $');
     });
@@ -942,9 +886,7 @@ describe('BlackboardEntriesService – public methods', () => {
   describe('getEntryById', () => {
     it('returns transformed entry for numeric ID', async () => {
       const entry = createMockDbEntry();
-      mockAccessService.getUserAccessInfo.mockResolvedValue(
-        DEFAULT_USER_ACCESS,
-      );
+      mockAccessService.getUserAccessInfo.mockResolvedValue(DEFAULT_USER_ACCESS);
       mockDb.query.mockResolvedValueOnce([entry]);
       mockAccessService.checkEntryAccess.mockResolvedValue(true);
 
@@ -959,42 +901,33 @@ describe('BlackboardEntriesService – public methods', () => {
 
     it('uses uuid column for string ID', async () => {
       const entry = createMockDbEntry();
-      mockAccessService.getUserAccessInfo.mockResolvedValue(
-        DEFAULT_USER_ACCESS,
-      );
+      mockAccessService.getUserAccessInfo.mockResolvedValue(DEFAULT_USER_ACCESS);
       mockDb.query.mockResolvedValueOnce([entry]);
       mockAccessService.checkEntryAccess.mockResolvedValue(true);
 
       await service.getEntryById('some-uuid', 1, 5);
 
-      expect(mockDb.query).toHaveBeenCalledWith(
-        expect.stringContaining('WHERE e.uuid = $2'),
-        [5, 'some-uuid', 1],
-      );
+      expect(mockDb.query).toHaveBeenCalledWith(expect.stringContaining('WHERE e.uuid = $2'), [
+        5,
+        'some-uuid',
+        1,
+      ]);
     });
 
     it('throws NotFoundException when entry not found', async () => {
-      mockAccessService.getUserAccessInfo.mockResolvedValue(
-        DEFAULT_USER_ACCESS,
-      );
+      mockAccessService.getUserAccessInfo.mockResolvedValue(DEFAULT_USER_ACCESS);
       mockDb.query.mockResolvedValueOnce([]);
 
-      await expect(service.getEntryById(999, 1, 5)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.getEntryById(999, 1, 5)).rejects.toThrow(NotFoundException);
     });
 
     it('throws NotFoundException when access denied', async () => {
       const entry = createMockDbEntry();
-      mockAccessService.getUserAccessInfo.mockResolvedValue(
-        DEFAULT_USER_ACCESS,
-      );
+      mockAccessService.getUserAccessInfo.mockResolvedValue(DEFAULT_USER_ACCESS);
       mockDb.query.mockResolvedValueOnce([entry]);
       mockAccessService.checkEntryAccess.mockResolvedValue(false);
 
-      await expect(service.getEntryById(1, 1, 5)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.getEntryById(1, 1, 5)).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -1005,9 +938,7 @@ describe('BlackboardEntriesService – public methods', () => {
   describe('listEntries', () => {
     it('returns paginated entries with correct structure', async () => {
       const entry = createMockDbEntry();
-      mockAccessService.getUserAccessInfo.mockResolvedValue(
-        DEFAULT_USER_ACCESS,
-      );
+      mockAccessService.getUserAccessInfo.mockResolvedValue(DEFAULT_USER_ACCESS);
       mockAccessService.applyAccessControl.mockImplementation((q: string) => ({
         query: q,
       }));
@@ -1036,15 +967,11 @@ describe('BlackboardEntriesService – public methods', () => {
     });
 
     it('calculates totalPages correctly', async () => {
-      mockAccessService.getUserAccessInfo.mockResolvedValue(
-        DEFAULT_USER_ACCESS,
-      );
+      mockAccessService.getUserAccessInfo.mockResolvedValue(DEFAULT_USER_ACCESS);
       mockAccessService.applyAccessControl.mockImplementation((q: string) => ({
         query: q,
       }));
-      mockDb.query
-        .mockResolvedValueOnce([{ total: 25 }])
-        .mockResolvedValueOnce([]);
+      mockDb.query.mockResolvedValueOnce([{ total: 25 }]).mockResolvedValueOnce([]);
 
       const result = await service.listEntries(1, 5, {
         isActive: 1,
@@ -1062,15 +989,11 @@ describe('BlackboardEntriesService – public methods', () => {
     });
 
     it('returns empty entries when count is 0', async () => {
-      mockAccessService.getUserAccessInfo.mockResolvedValue(
-        DEFAULT_USER_ACCESS,
-      );
+      mockAccessService.getUserAccessInfo.mockResolvedValue(DEFAULT_USER_ACCESS);
       mockAccessService.applyAccessControl.mockImplementation((q: string) => ({
         query: q,
       }));
-      mockDb.query
-        .mockResolvedValueOnce([{ total: 0 }])
-        .mockResolvedValueOnce([]);
+      mockDb.query.mockResolvedValueOnce([{ total: 0 }]).mockResolvedValueOnce([]);
 
       const result = await service.listEntries(1, 5, {
         isActive: 1,
@@ -1098,9 +1021,7 @@ describe('BlackboardEntriesService – public methods', () => {
       mockDb.query
         .mockResolvedValueOnce([{ id: 42 }]) // insertEntry
         .mockResolvedValueOnce([createdEntry]); // getEntryById → db.query
-      mockAccessService.getUserAccessInfo.mockResolvedValue(
-        DEFAULT_USER_ACCESS,
-      );
+      mockAccessService.getUserAccessInfo.mockResolvedValue(DEFAULT_USER_ACCESS);
       mockAccessService.checkEntryAccess.mockResolvedValue(true);
 
       const dto = {
@@ -1135,9 +1056,7 @@ describe('BlackboardEntriesService – public methods', () => {
         .mockResolvedValueOnce([]) // sync INSERT dept 1
         .mockResolvedValueOnce([]) // sync INSERT dept 2
         .mockResolvedValueOnce([createdEntry]); // getEntryById → db.query
-      mockAccessService.getUserAccessInfo.mockResolvedValue(
-        DEFAULT_USER_ACCESS,
-      );
+      mockAccessService.getUserAccessInfo.mockResolvedValue(DEFAULT_USER_ACCESS);
       mockAccessService.validateOrgPermissions.mockResolvedValue(undefined);
       mockAccessService.checkEntryAccess.mockResolvedValue(true);
 
@@ -1150,9 +1069,7 @@ describe('BlackboardEntriesService – public methods', () => {
       };
 
       // Just verify it doesn't throw – the mock chain is complex
-      await expect(
-        service.createEntry(dto as never, 1, 5),
-      ).resolves.toBeDefined();
+      await expect(service.createEntry(dto as never, 1, 5)).resolves.toBeDefined();
       expect(mockAccessService.validateOrgPermissions).toHaveBeenCalled();
     });
   });
@@ -1165,9 +1082,7 @@ describe('BlackboardEntriesService – public methods', () => {
     /** Helper to set up getEntryById mocks (called internally by deleteEntry) */
     function setupGetEntryMocks(authorId: number): void {
       const entry = createMockDbEntry({ author_id: authorId });
-      mockAccessService.getUserAccessInfo.mockResolvedValue(
-        DEFAULT_USER_ACCESS,
-      );
+      mockAccessService.getUserAccessInfo.mockResolvedValue(DEFAULT_USER_ACCESS);
       mockDb.query
         .mockResolvedValueOnce([entry]) // getEntryById internal query
         .mockResolvedValueOnce([]); // DELETE query
@@ -1224,16 +1139,12 @@ describe('BlackboardEntriesService – public methods', () => {
       mockDb.query.mockResolvedValueOnce([entry]);
       mockAccessService.checkEntryAccess.mockResolvedValue(true);
 
-      await expect(service.deleteEntry(1, 1, 5, 'employee')).rejects.toThrow(
-        ForbiddenException,
-      );
+      await expect(service.deleteEntry(1, 1, 5, 'employee')).rejects.toThrow(ForbiddenException);
     });
 
     it('uses uuid column for string ID delete', async () => {
       const entry = createMockDbEntry({ author_id: 5 });
-      mockAccessService.getUserAccessInfo.mockResolvedValue(
-        DEFAULT_USER_ACCESS,
-      );
+      mockAccessService.getUserAccessInfo.mockResolvedValue(DEFAULT_USER_ACCESS);
       mockDb.query
         .mockResolvedValueOnce([entry]) // getEntryById
         .mockResolvedValueOnce([]); // DELETE
@@ -1255,9 +1166,7 @@ describe('BlackboardEntriesService – public methods', () => {
     it('delegates to updateEntry with isActive=3', async () => {
       // Mock the full updateEntry chain
       const entry = createMockDbEntry();
-      mockAccessService.getUserAccessInfo.mockResolvedValue(
-        DEFAULT_USER_ACCESS,
-      );
+      mockAccessService.getUserAccessInfo.mockResolvedValue(DEFAULT_USER_ACCESS);
       mockAccessService.checkEntryAccess.mockResolvedValue(true);
       mockDb.query
         .mockResolvedValueOnce([entry]) // getEntryById (existing) in updateEntry
@@ -1276,9 +1185,7 @@ describe('BlackboardEntriesService – public methods', () => {
   describe('unarchiveEntry', () => {
     it('delegates to updateEntry with isActive=1', async () => {
       const entry = createMockDbEntry({ is_active: IS_ACTIVE.ARCHIVED });
-      mockAccessService.getUserAccessInfo.mockResolvedValue(
-        DEFAULT_USER_ACCESS,
-      );
+      mockAccessService.getUserAccessInfo.mockResolvedValue(DEFAULT_USER_ACCESS);
       mockAccessService.checkEntryAccess.mockResolvedValue(true);
       mockDb.query
         .mockResolvedValueOnce([entry]) // getEntryById (existing)
@@ -1406,21 +1313,14 @@ describe('BlackboardEntriesService – public methods', () => {
       const existingEntry = createMockDbEntry();
       const updatedEntry = createMockDbEntry({ title: 'Updated Title' });
 
-      mockAccessService.getUserAccessInfo.mockResolvedValue(
-        DEFAULT_USER_ACCESS,
-      );
+      mockAccessService.getUserAccessInfo.mockResolvedValue(DEFAULT_USER_ACCESS);
       mockAccessService.checkEntryAccess.mockResolvedValue(true);
       mockDb.query
         .mockResolvedValueOnce([existingEntry]) // getEntryById (existing)
         .mockResolvedValueOnce([]) // UPDATE query
         .mockResolvedValueOnce([updatedEntry]); // getEntryById (updated)
 
-      const result = await service.updateEntry(
-        1,
-        { title: 'Updated Title' } as never,
-        1,
-        5,
-      );
+      const result = await service.updateEntry(1, { title: 'Updated Title' } as never, 1, 5);
 
       expect(result).toHaveProperty('title');
       expect(mockActivityLogger.logUpdate).toHaveBeenCalled();
@@ -1428,9 +1328,7 @@ describe('BlackboardEntriesService – public methods', () => {
 
     it('uses UUID for string ID', async () => {
       const entry = createMockDbEntry();
-      mockAccessService.getUserAccessInfo.mockResolvedValue(
-        DEFAULT_USER_ACCESS,
-      );
+      mockAccessService.getUserAccessInfo.mockResolvedValue(DEFAULT_USER_ACCESS);
       mockAccessService.checkEntryAccess.mockResolvedValue(true);
       mockDb.query
         .mockResolvedValueOnce([entry]) // getEntryById (existing, uses uuid column)
@@ -1445,9 +1343,7 @@ describe('BlackboardEntriesService – public methods', () => {
 
     it('syncs organizations when multi-org provided', async () => {
       const entry = createMockDbEntry();
-      mockAccessService.getUserAccessInfo.mockResolvedValue(
-        DEFAULT_USER_ACCESS,
-      );
+      mockAccessService.getUserAccessInfo.mockResolvedValue(DEFAULT_USER_ACCESS);
       mockAccessService.checkEntryAccess.mockResolvedValue(true);
       mockAccessService.validateOrgPermissions.mockResolvedValue(undefined);
       mockDb.query
@@ -1458,12 +1354,7 @@ describe('BlackboardEntriesService – public methods', () => {
         .mockResolvedValueOnce([entry]); // getEntryById (updated)
 
       await expect(
-        service.updateEntry(
-          1,
-          { title: 'X', departmentIds: [1] } as never,
-          1,
-          5,
-        ),
+        service.updateEntry(1, { title: 'X', departmentIds: [1] } as never, 1, 5),
       ).resolves.toBeDefined();
       expect(mockAccessService.validateOrgPermissions).toHaveBeenCalled();
     });

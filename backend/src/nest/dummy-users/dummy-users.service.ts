@@ -9,12 +9,7 @@
  * Returns raw data — ResponseInterceptor wraps automatically (ADR-007).
  */
 import { IS_ACTIVE } from '@assixx/shared/constants';
-import {
-  BadRequestException,
-  Injectable,
-  Logger,
-  NotFoundException,
-} from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import bcryptjs from 'bcryptjs';
 import { v7 as uuidv7 } from 'uuid';
 
@@ -25,11 +20,7 @@ import {
   buildDummyEmployeeNumber,
   mapDummyUserRowToApi,
 } from './dummy-users.helpers.js';
-import type {
-  DummyUser,
-  DummyUserWithTeamsRow,
-  PaginatedDummyUsers,
-} from './dummy-users.types.js';
+import type { DummyUser, DummyUserWithTeamsRow, PaginatedDummyUsers } from './dummy-users.types.js';
 import { DUMMY_PERMISSIONS } from './dummy-users.types.js';
 
 // ============================================================================
@@ -123,10 +114,7 @@ export class DummyUsersService {
     actingUserId: number,
   ): Promise<DummyUser> {
     const uuid = uuidv7();
-    const hashedPassword = await bcryptjs.hash(
-      dto.password,
-      BCRYPT_SALT_ROUNDS,
-    );
+    const hashedPassword = await bcryptjs.hash(dto.password, BCRYPT_SALT_ROUNDS);
 
     const email = await this.generateEmail(tenantId);
     const employeeNumber = await this.generateEmployeeNumber(tenantId);
@@ -141,9 +129,7 @@ export class DummyUsersService {
     );
 
     if (rows[0] === undefined) {
-      throw new BadRequestException(
-        'Dummy-Benutzer konnte nicht erstellt werden',
-      );
+      throw new BadRequestException('Dummy-Benutzer konnte nicht erstellt werden');
     }
     const userId = rows[0].id;
 
@@ -298,11 +284,7 @@ export class DummyUsersService {
   // DELETE (soft-delete: is_active = 4)
   // ==========================================================================
 
-  async delete(
-    tenantId: number,
-    uuid: string,
-    actingUserId: number,
-  ): Promise<void> {
+  async delete(tenantId: number, uuid: string, actingUserId: number): Promise<void> {
     const rows = await this.db.query<{ id: number }>(
       `UPDATE users SET is_active = ${IS_ACTIVE.DELETED}, updated_at = NOW()
        WHERE tenant_id = $1 AND uuid = $2 AND role = 'dummy' AND is_active != ${IS_ACTIVE.DELETED}
@@ -372,11 +354,7 @@ export class DummyUsersService {
   // PRIVATE: Team sync
   // ==========================================================================
 
-  private async syncTeams(
-    tenantId: number,
-    userId: number,
-    teamIds: number[],
-  ): Promise<void> {
+  private async syncTeams(tenantId: number, userId: number, teamIds: number[]): Promise<void> {
     // Delete existing assignments
     await this.db.query(`DELETE FROM user_teams WHERE user_id = $1`, [userId]);
 

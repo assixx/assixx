@@ -14,12 +14,7 @@
  * Used by: Capacity service (asset availability analysis)
  */
 import { IS_ACTIVE } from '@assixx/shared/constants';
-import {
-  ConflictException,
-  Injectable,
-  Logger,
-  NotFoundException,
-} from '@nestjs/common';
+import { ConflictException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import type { PoolClient } from 'pg';
 import { v7 as uuidv7 } from 'uuid';
 
@@ -27,10 +22,7 @@ import { ActivityLoggerService } from '../common/services/activity-logger.servic
 import { DatabaseService } from '../database/database.service.js';
 import type { CreateStaffingRuleDto } from './dto/create-staffing-rule.dto.js';
 import type { UpdateStaffingRuleDto } from './dto/update-staffing-rule.dto.js';
-import type {
-  VacationStaffingRule,
-  VacationStaffingRuleRow,
-} from './vacation.types.js';
+import type { VacationStaffingRule, VacationStaffingRuleRow } from './vacation.types.js';
 
 /** Row shape for staffing rule query with asset name JOIN */
 interface StaffingRuleWithAssetRow extends VacationStaffingRuleRow {
@@ -39,9 +31,7 @@ interface StaffingRuleWithAssetRow extends VacationStaffingRuleRow {
 
 @Injectable()
 export class VacationStaffingRulesService {
-  private readonly logger: Logger = new Logger(
-    VacationStaffingRulesService.name,
-  );
+  private readonly logger: Logger = new Logger(VacationStaffingRulesService.name);
 
   constructor(
     private readonly db: DatabaseService,
@@ -66,9 +56,7 @@ export class VacationStaffingRulesService {
           [tenantId],
         );
 
-        return result.rows.map((row: StaffingRuleWithAssetRow) =>
-          this.mapRowToStaffingRule(row),
-        );
+        return result.rows.map((row: StaffingRuleWithAssetRow) => this.mapRowToStaffingRule(row));
       },
     );
   }
@@ -104,9 +92,7 @@ export class VacationStaffingRulesService {
 
           const row: StaffingRuleWithAssetRow | undefined = result.rows[0];
           if (row === undefined) {
-            throw new Error(
-              'INSERT into vacation_staffing_rules returned no rows',
-            );
+            throw new Error('INSERT into vacation_staffing_rules returned no rows');
           }
 
           this.logger.log(
@@ -129,9 +115,7 @@ export class VacationStaffingRulesService {
           return this.mapRowToStaffingRule(row);
         } catch (error: unknown) {
           if (this.isUniqueViolation(error)) {
-            throw new ConflictException(
-              `A staffing rule already exists for asset ${dto.assetId}`,
-            );
+            throw new ConflictException(`A staffing rule already exists for asset ${dto.assetId}`);
           }
           throw error;
         }
@@ -197,48 +181,40 @@ export class VacationStaffingRulesService {
    * Soft-delete a staffing rule (is_active = 4).
    * Throws NotFoundException if not found.
    */
-  async deleteStaffingRule(
-    tenantId: number,
-    userId: number,
-    id: string,
-  ): Promise<void> {
-    await this.db.tenantTransaction(
-      async (client: PoolClient): Promise<void> => {
-        const result = await client.query<{
-          id: string;
-          asset_id: number;
-          min_staff_count: number;
-        }>(
-          `UPDATE vacation_staffing_rules
+  async deleteStaffingRule(tenantId: number, userId: number, id: string): Promise<void> {
+    await this.db.tenantTransaction(async (client: PoolClient): Promise<void> => {
+      const result = await client.query<{
+        id: string;
+        asset_id: number;
+        min_staff_count: number;
+      }>(
+        `UPDATE vacation_staffing_rules
            SET is_active = ${IS_ACTIVE.DELETED}, updated_at = NOW()
            WHERE id = $1 AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}
            RETURNING id, asset_id, min_staff_count`,
-          [id, tenantId],
-        );
+        [id, tenantId],
+      );
 
-        const deleted = result.rows[0];
-        if (deleted === undefined) {
-          throw new NotFoundException(`Staffing rule ${id} not found`);
-        }
+      const deleted = result.rows[0];
+      if (deleted === undefined) {
+        throw new NotFoundException(`Staffing rule ${id} not found`);
+      }
 
-        this.logger.log(
-          `Staffing rule soft-deleted: ${id} (tenant ${tenantId})`,
-        );
+      this.logger.log(`Staffing rule soft-deleted: ${id} (tenant ${tenantId})`);
 
-        void this.activityLogger.log({
-          tenantId,
-          userId,
-          action: 'delete',
-          entityType: 'vacation_staffing_rule',
-          details: `Besetzungsregel gelöscht: Anlage ${String(deleted.asset_id)} (${id})`,
-          oldValues: {
-            ruleId: id,
-            assetId: deleted.asset_id,
-            minStaffCount: deleted.min_staff_count,
-          },
-        });
-      },
-    );
+      void this.activityLogger.log({
+        tenantId,
+        userId,
+        action: 'delete',
+        entityType: 'vacation_staffing_rule',
+        details: `Besetzungsregel gelöscht: Anlage ${String(deleted.asset_id)} (${id})`,
+        oldValues: {
+          ruleId: id,
+          assetId: deleted.asset_id,
+          minStaffCount: deleted.min_staff_count,
+        },
+      });
+    });
   }
 
   /**
@@ -248,10 +224,7 @@ export class VacationStaffingRulesService {
    * Used by the capacity service to check all assets in one query
    * instead of N+1 queries per asset.
    */
-  async getForAssets(
-    tenantId: number,
-    assetIds: number[],
-  ): Promise<Map<number, number>> {
+  async getForAssets(tenantId: number, assetIds: number[]): Promise<Map<number, number>> {
     if (assetIds.length === 0) {
       return new Map<number, number>();
     }
@@ -259,9 +232,7 @@ export class VacationStaffingRulesService {
     return await this.db.tenantTransaction(
       async (client: PoolClient): Promise<Map<number, number>> => {
         // Build parameterized IN clause: $2, $3, $4, ...
-        const placeholders: string = assetIds
-          .map((_: number, i: number) => `$${i + 2}`)
-          .join(', ');
+        const placeholders: string = assetIds.map((_: number, i: number) => `$${i + 2}`).join(', ');
 
         const result = await client.query<
           Pick<VacationStaffingRuleRow, 'asset_id' | 'min_staff_count'>
@@ -289,9 +260,7 @@ export class VacationStaffingRulesService {
   // ==========================================================================
 
   /** Map DB row to API response type (snake_case → camelCase). */
-  private mapRowToStaffingRule(
-    row: StaffingRuleWithAssetRow,
-  ): VacationStaffingRule {
+  private mapRowToStaffingRule(row: StaffingRuleWithAssetRow): VacationStaffingRule {
     const base: VacationStaffingRule = {
       id: row.id,
       assetId: row.asset_id,

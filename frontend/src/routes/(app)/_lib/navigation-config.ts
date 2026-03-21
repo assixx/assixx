@@ -3,10 +3,7 @@
  * Extracted from +layout.svelte for maintainability
  * @module (app)/_lib/navigation-config
  */
-import {
-  DEFAULT_HIERARCHY_LABELS,
-  type HierarchyLabels,
-} from '$lib/types/hierarchy-labels';
+import { DEFAULT_HIERARCHY_LABELS, type HierarchyLabels } from '$lib/types/hierarchy-labels';
 
 import type { OrganizationalScope } from '$lib/types/organizational-scope';
 
@@ -650,10 +647,7 @@ export function getMenuItemsForRole(
  * Removes items requiring has_full_access (e.g. KVP category management).
  * Root users always pass. Recursive for nested submenus.
  */
-export function filterMenuByAccess(
-  items: NavItem[],
-  hasFullAccess: boolean,
-): NavItem[] {
+export function filterMenuByAccess(items: NavItem[], hasFullAccess: boolean): NavItem[] {
   if (hasFullAccess) return items;
 
   return items.reduce<NavItem[]>((acc, item) => {
@@ -678,10 +672,7 @@ export function filterMenuByAccess(
  * Recursive for nested submenus — removes empty parent containers (e.g., LEAN-Management
  * disappears when both kvp and surveys are disabled).
  */
-export function filterMenuByAddons(
-  items: NavItem[],
-  activeAddons: ReadonlySet<string>,
-): NavItem[] {
+export function filterMenuByAddons(items: NavItem[], activeAddons: ReadonlySet<string>): NavItem[] {
   return items.reduce<NavItem[]>((acc, item) => {
     // Item has addonCode and addon is NOT active → skip entirely
     if (item.addonCode !== undefined && !activeAddons.has(item.addonCode)) {
@@ -713,10 +704,7 @@ function buildAdminScopeItems(labels: HierarchyLabels): NavItem[] {
 }
 
 /** Inject scope items into admin "Verwalten" submenu (after employees-list) */
-function injectAdminScopeItems(
-  items: NavItem[],
-  labels: HierarchyLabels,
-): NavItem[] {
+function injectAdminScopeItems(items: NavItem[], labels: HierarchyLabels): NavItem[] {
   const verwaltenIdx = items.findIndex((i: NavItem) => i.id === 'verwalten');
   if (verwaltenIdx < 0) return items;
   const verwalten = items[verwaltenIdx];
@@ -724,11 +712,7 @@ function injectAdminScopeItems(
   const empIdx = sub.findIndex((i: NavItem) => i.id === 'employees-list');
   const insertAt = empIdx >= 0 ? empIdx + 1 : sub.length;
   const scopeItems = buildAdminScopeItems(labels);
-  const updatedSub = [
-    ...sub.slice(0, insertAt),
-    ...scopeItems,
-    ...sub.slice(insertAt),
-  ];
+  const updatedSub = [...sub.slice(0, insertAt), ...scopeItems, ...sub.slice(insertAt)];
   const result = [...items];
   result[verwaltenIdx] = { ...verwalten, submenu: updatedSub };
   return result;
@@ -796,10 +780,7 @@ export function filterMenuByScope(
     return injectBeforeProfile(withLeadItems, APPROVALS_NAV_ITEM);
   }
 
-  if (
-    role === 'employee' &&
-    (orgScope.isAreaLead || orgScope.isDepartmentLead)
-  ) {
+  if (role === 'employee' && (orgScope.isAreaLead || orgScope.isDepartmentLead)) {
     return injectBeforeProfile(items, APPROVALS_NAV_ITEM);
   }
 

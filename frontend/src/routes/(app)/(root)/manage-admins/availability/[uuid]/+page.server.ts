@@ -10,15 +10,14 @@ import {
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async (event) => {
-  const { entity, ...rest } =
-    await loadAvailabilityHistory<UserAvailabilityEntity>(
-      {
-        loggerName: 'AdminAvailabilityHistory',
-        apiPathSegment: 'users',
-        entityKey: 'employee',
-        errorMessage: 'Fehler beim Laden der Verfügbarkeitshistorie',
-      },
-      event,
-    );
+  const { entity, ...rest } = await loadAvailabilityHistory<UserAvailabilityEntity>(
+    {
+      loggerName: 'AdminAvailabilityHistory',
+      apiPathSegment: 'users',
+      entityKey: 'employee',
+      errorMessage: 'Fehler beim Laden der Verfügbarkeitshistorie',
+    },
+    event,
+  );
   return { employee: entity, ...rest };
 };

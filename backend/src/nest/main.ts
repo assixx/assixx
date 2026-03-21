@@ -19,10 +19,7 @@ import fastifyHelmet from '@fastify/helmet';
 import fastifyStatic from '@fastify/static';
 import { Logger as NestLogger } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
-import {
-  FastifyAdapter,
-  NestFastifyApplication,
-} from '@nestjs/platform-fastify';
+import { FastifyAdapter, NestFastifyApplication } from '@nestjs/platform-fastify';
 import type { FastifyInstance } from 'fastify';
 import { Logger } from 'nestjs-pino';
 import path from 'path';
@@ -31,10 +28,7 @@ import 'reflect-metadata';
 import { ChatWebSocketServer } from '../websocket.js';
 import { AppModule } from './app.module.js';
 import { PresenceStore } from './chat/presence.store.js';
-import {
-  REDACTED_VALUE,
-  REDACT_PATHS,
-} from './common/logger/logger.constants.js';
+import { REDACTED_VALUE, REDACT_PATHS } from './common/logger/logger.constants.js';
 import { ZodValidationPipe } from './common/pipes/zod-validation.pipe.js';
 import { getErrorMessage } from './common/utils/error.utils.js';
 import { DatabaseService } from './database/database.service.js';
@@ -46,10 +40,7 @@ function getUploadsPath(): string {
 }
 
 /** Setup health check endpoints for Docker health checks and monitoring */
-function setupHealthCheck(
-  fastify: FastifyInstance,
-  partitionHealth: PartitionHealthService,
-): void {
+function setupHealthCheck(fastify: FastifyInstance, partitionHealth: PartitionHealthService): void {
   fastify.get('/health', () => ({
     status: 'ok',
     timestamp: new Date().toISOString(),
@@ -109,8 +100,7 @@ async function setupSecurity(app: NestFastifyApplication): Promise<void> {
 
   // CORS - supports multiple origins from ALLOWED_ORIGINS env var (comma-separated)
   const allowedOrigins = (
-    process.env['ALLOWED_ORIGINS'] ??
-    'http://localhost:3000,http://localhost:5173'
+    process.env['ALLOWED_ORIGINS'] ?? 'http://localhost:3000,http://localhost:5173'
   )
     .split(',')
     .map((origin: string) => origin.trim());
@@ -255,18 +245,12 @@ async function bootstrap(): Promise<void> {
   const httpServer = app.getHttpServer();
   const dbService = app.get(DatabaseService);
   const presenceStore = app.get(PresenceStore);
-  chatWsInstance = new ChatWebSocketServer(
-    httpServer,
-    dbService,
-    presenceStore,
-  );
+  chatWsInstance = new ChatWebSocketServer(httpServer, dbService, presenceStore);
   chatWsInstance.startHeartbeat();
   bootstrapLogger.log('WebSocket server started on /chat-ws');
 
   bootstrapLogger.log(`NestJS+Fastify application running on port ${port}`);
-  bootstrapLogger.log(
-    `Environment: ${process.env['NODE_ENV'] ?? 'development'}`,
-  );
+  bootstrapLogger.log(`Environment: ${process.env['NODE_ENV'] ?? 'development'}`);
 }
 
 bootstrap().catch((error: unknown) => {

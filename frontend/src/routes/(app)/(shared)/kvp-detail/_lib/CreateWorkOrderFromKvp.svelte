@@ -10,10 +10,7 @@
   import { showSuccessAlert, showErrorAlert } from '$lib/stores/toast';
 
   import { createWorkOrder, logApiError } from '../../work-orders/_lib/api';
-  import {
-    PRIORITY_LABELS,
-    MESSAGES as WO_MESSAGES,
-  } from '../../work-orders/_lib/constants';
+  import { PRIORITY_LABELS, MESSAGES as WO_MESSAGES } from '../../work-orders/_lib/constants';
 
   import type { KvpSuggestion } from './types';
   import type {
@@ -30,13 +27,7 @@
     onsaved: () => void;
   }
 
-  const {
-    show,
-    suggestion,
-    preloadedUsers = null,
-    onclose,
-    onsaved,
-  }: Props = $props();
+  const { show, suggestion, preloadedUsers = null, onclose, onsaved }: Props = $props();
 
   // ---------------------------------------------------------------------------
   // FORM STATE
@@ -114,13 +105,7 @@
     assigneeTouched = true;
     dueDateTouched = true;
     const trimmedTitle = formTitle.trim();
-    if (
-      trimmedTitle === '' ||
-      suggestion === null ||
-      !hasAssignees ||
-      !hasDueDate
-    )
-      return;
+    if (trimmedTitle === '' || suggestion === null || !hasAssignees || !hasDueDate) return;
 
     submitting = true;
     errorMessage = null;
@@ -246,8 +231,7 @@
               role="button"
               tabindex="0"
               onkeydown={(e: KeyboardEvent) => {
-                if (e.key === 'Enter')
-                  priorityDropdownOpen = !priorityDropdownOpen;
+                if (e.key === 'Enter') priorityDropdownOpen = !priorityDropdownOpen;
               }}
             >
               <span>{priorityLabel}</span>
@@ -262,8 +246,7 @@
                       setPriority(value as WorkOrderPriority);
                     }}
                     onkeydown={(e: KeyboardEvent) => {
-                      if (e.key === 'Enter')
-                        setPriority(value as WorkOrderPriority);
+                      if (e.key === 'Enter') setPriority(value as WorkOrderPriority);
                     }}
                     role="option"
                     tabindex="0"

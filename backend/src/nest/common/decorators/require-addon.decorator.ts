@@ -22,6 +22,5 @@ export const REQUIRE_ADDON_KEY = 'requireAddon';
  *
  * @param addonCode - Addon code from the `addons` table (e.g., 'vacation', 'blackboard')
  */
-export const RequireAddon = (
-  addonCode: string,
-): ReturnType<typeof SetMetadata> => SetMetadata(REQUIRE_ADDON_KEY, addonCode);
+export const RequireAddon = (addonCode: string): ReturnType<typeof SetMetadata> =>
+  SetMetadata(REQUIRE_ADDON_KEY, addonCode);

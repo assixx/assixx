@@ -15,22 +15,11 @@
     totalCount?: number;
   }
 
-  const {
-    show,
-    document,
-    onclose,
-    ondownload,
-    onprev,
-    onnext,
-    currentIndex,
-    totalCount,
-  }: Props = $props();
+  const { show, document, onclose, ondownload, onprev, onnext, currentIndex, totalCount }: Props =
+    $props();
 
   const hasNavigation = $derived(
-    onprev !== undefined &&
-      onnext !== undefined &&
-      totalCount !== undefined &&
-      totalCount > 1,
+    onprev !== undefined && onnext !== undefined && totalCount !== undefined && totalCount > 1,
   );
 
   // Cookie-based auth: accessToken cookie sent automatically on same-origin request

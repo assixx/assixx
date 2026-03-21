@@ -193,9 +193,7 @@ describe('VacationApproverService', () => {
       // getUserTeamInfo → no team
       mockClient.query.mockResolvedValueOnce({ rows: [] });
 
-      await expect(service.getApprover(1, 5)).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(service.getApprover(1, 5)).rejects.toThrow(BadRequestException);
     });
 
     it('should throw BadRequestException when team has no lead', async () => {
@@ -216,9 +214,7 @@ describe('VacationApproverService', () => {
         ],
       });
 
-      await expect(service.getApprover(1, 5)).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(service.getApprover(1, 5)).rejects.toThrow(BadRequestException);
     });
 
     it('should fall back to lead when lead absent and no deputy', async () => {

@@ -71,10 +71,7 @@ describe('requireAddon: addon missing (redirect)', () => {
       requireAddon(['calendar'], 'blackboard');
     }).toThrow();
 
-    expect(mockRedirect).toHaveBeenCalledWith(
-      302,
-      '/addon-unavailable?addon=blackboard',
-    );
+    expect(mockRedirect).toHaveBeenCalledWith(302, '/addon-unavailable?addon=blackboard');
   });
 
   it('should redirect with correct addon code in query param', () => {
@@ -84,10 +81,7 @@ describe('requireAddon: addon missing (redirect)', () => {
       requireAddon([], 'vacation');
     }).toThrow();
 
-    expect(mockRedirect).toHaveBeenCalledWith(
-      302,
-      '/addon-unavailable?addon=vacation',
-    );
+    expect(mockRedirect).toHaveBeenCalledWith(302, '/addon-unavailable?addon=vacation');
   });
 
   it('should use HTTP 302 status code', () => {
@@ -114,10 +108,7 @@ describe('requireAddon: empty activeAddons', () => {
         requireAddon([], code);
       }).toThrow();
 
-      expect(mockRedirect).toHaveBeenCalledWith(
-        302,
-        `/addon-unavailable?addon=${code}`,
-      );
+      expect(mockRedirect).toHaveBeenCalledWith(302, `/addon-unavailable?addon=${code}`);
     }
   });
 });
@@ -133,21 +124,15 @@ describe('requireAddon: all 8 addon codes', () => {
     }).not.toThrow();
   });
 
-  it.each(ADDON_CODES)(
-    'should redirect when "%s" is NOT in activeAddons',
-    (code) => {
-      mockRedirect.mockClear();
+  it.each(ADDON_CODES)('should redirect when "%s" is NOT in activeAddons', (code) => {
+    mockRedirect.mockClear();
 
-      expect(() => {
-        requireAddon([], code);
-      }).toThrow();
+    expect(() => {
+      requireAddon([], code);
+    }).toThrow();
 
-      expect(mockRedirect).toHaveBeenCalledWith(
-        302,
-        `/addon-unavailable?addon=${code}`,
-      );
-    },
-  );
+    expect(mockRedirect).toHaveBeenCalledWith(302, `/addon-unavailable?addon=${code}`);
+  });
 });
 
 // =============================================================================

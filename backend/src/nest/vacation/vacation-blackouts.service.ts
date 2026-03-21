@@ -44,10 +44,7 @@ export class VacationBlackoutsService {
    * Optionally filters by year (blackout overlaps with the given year).
    * Loads scope arrays from junction table.
    */
-  async getBlackouts(
-    tenantId: number,
-    year?: number,
-  ): Promise<VacationBlackout[]> {
+  async getBlackouts(tenantId: number, year?: number): Promise<VacationBlackout[]> {
     return await this.db.tenantTransaction(
       async (client: PoolClient): Promise<VacationBlackout[]> => {
         let sql: string = `
@@ -71,11 +68,11 @@ export class VacationBlackoutsService {
           return [];
         }
 
-        const blackoutIds: string[] = result.rows.map(
-          (row: VacationBlackoutRow) => row.id,
+        const blackoutIds: string[] = result.rows.map((row: VacationBlackoutRow) => row.id);
+        const scopeMap: Map<string, VacationBlackoutScopeRow[]> = await this.loadScopesForBlackouts(
+          client,
+          blackoutIds,
         );
-        const scopeMap: Map<string, VacationBlackoutScopeRow[]> =
-          await this.loadScopesForBlackouts(client, blackoutIds);
 
         return result.rows.map((row: VacationBlackoutRow) =>
           this.mapRowToBlackout(row, scopeMap.get(row.id) ?? []),
@@ -118,13 +115,7 @@ export class VacationBlackoutsService {
           throw new Error('INSERT into vacation_blackouts returned no rows');
         }
         if (!dto.isGlobal) {
-          await this.syncBlackoutScopes(
-            client,
-            id,
-            dto.departmentIds,
-            dto.teamIds,
-            dto.areaIds,
-          );
+          await this.syncBlackoutScopes(client, id, dto.departmentIds, dto.teamIds, dto.areaIds);
         }
         const scopes: VacationBlackoutScopeRow[] =
           dto.isGlobal ? [] : await this.loadScopes(client, id);
@@ -215,38 +206,32 @@ export class VacationBlackoutsService {
    * Soft-delete a blackout period (is_active = 4).
    * Throws NotFoundException if not found.
    */
-  async deleteBlackout(
-    tenantId: number,
-    userId: number,
-    id: string,
-  ): Promise<void> {
-    await this.db.tenantTransaction(
-      async (client: PoolClient): Promise<void> => {
-        const result = await client.query<{ id: string; name: string }>(
-          `UPDATE vacation_blackouts
+  async deleteBlackout(tenantId: number, userId: number, id: string): Promise<void> {
+    await this.db.tenantTransaction(async (client: PoolClient): Promise<void> => {
+      const result = await client.query<{ id: string; name: string }>(
+        `UPDATE vacation_blackouts
            SET is_active = ${IS_ACTIVE.DELETED}, updated_at = NOW()
            WHERE id = $1 AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}
            RETURNING id, name`,
-          [id, tenantId],
-        );
+        [id, tenantId],
+      );
 
-        const deleted = result.rows[0];
-        if (deleted === undefined) {
-          throw new NotFoundException(`Blackout ${id} not found`);
-        }
+      const deleted = result.rows[0];
+      if (deleted === undefined) {
+        throw new NotFoundException(`Blackout ${id} not found`);
+      }
 
-        this.logger.log(`Blackout soft-deleted: ${id} (tenant ${tenantId})`);
+      this.logger.log(`Blackout soft-deleted: ${id} (tenant ${tenantId})`);
 
-        void this.activityLogger.log({
-          tenantId,
-          userId,
-          action: 'delete',
-          entityType: 'vacation_blackout',
-          details: `Urlaubssperre gelöscht: "${deleted.name}" (${id})`,
-          oldValues: { blackoutId: id, name: deleted.name },
-        });
-      },
-    );
+      void this.activityLogger.log({
+        tenantId,
+        userId,
+        action: 'delete',
+        entityType: 'vacation_blackout',
+        details: `Urlaubssperre gelöscht: "${deleted.name}" (${id})`,
+        oldValues: { blackoutId: id, name: deleted.name },
+      });
+    });
   }
 
   /**
@@ -268,10 +253,7 @@ export class VacationBlackoutsService {
     return await this.db.tenantTransaction(
       async (client: PoolClient): Promise<BlackoutConflict[]> => {
         const result = await client.query<
-          Pick<
-            VacationBlackoutRow,
-            'id' | 'name' | 'start_date' | 'end_date' | 'is_global'
-          >
+          Pick<VacationBlackoutRow, 'id' | 'name' | 'start_date' | 'end_date' | 'is_global'>
         >(
           `SELECT vb.id, vb.name, vb.start_date, vb.end_date, vb.is_global
            FROM vacation_blackouts vb
@@ -294,13 +276,7 @@ export class VacationBlackoutsService {
                )
              )
            ORDER BY vb.start_date ASC`,
-          [
-            tenantId,
-            startDate,
-            endDate,
-            userTeamId ?? null,
-            userDeptId ?? null,
-          ],
+          [tenantId, startDate, endDate, userTeamId ?? null, userDeptId ?? null],
         );
 
         type ConflictRow = Pick<
@@ -334,10 +310,7 @@ export class VacationBlackoutsService {
     teamIds: number[],
     areaIds: number[],
   ): Promise<void> {
-    await client.query(
-      'DELETE FROM vacation_blackout_scopes WHERE blackout_id = $1',
-      [blackoutId],
-    );
+    await client.query('DELETE FROM vacation_blackout_scopes WHERE blackout_id = $1', [blackoutId]);
 
     for (const orgId of departmentIds) {
       await client.query(
@@ -385,9 +358,7 @@ export class VacationBlackoutsService {
       return new Map();
     }
 
-    const placeholders: string = blackoutIds
-      .map((_: string, i: number) => `$${i + 1}`)
-      .join(', ');
+    const placeholders: string = blackoutIds.map((_: string, i: number) => `$${i + 1}`).join(', ');
     const result = await client.query<VacationBlackoutScopeRow>(
       `SELECT id, blackout_id, org_type, org_id, created_at
        FROM vacation_blackout_scopes
@@ -398,8 +369,7 @@ export class VacationBlackoutsService {
 
     const map = new Map<string, VacationBlackoutScopeRow[]>();
     for (const row of result.rows) {
-      const existing: VacationBlackoutScopeRow[] =
-        map.get(row.blackout_id) ?? [];
+      const existing: VacationBlackoutScopeRow[] = map.get(row.blackout_id) ?? [];
       existing.push(row);
       map.set(row.blackout_id, existing);
     }
@@ -425,19 +395,12 @@ export class VacationBlackoutsService {
       throw new NotFoundException(`Blackout ${id} not found`);
     }
 
-    const scopes: VacationBlackoutScopeRow[] = await this.loadScopes(
-      client,
-      id,
-    );
+    const scopes: VacationBlackoutScopeRow[] = await this.loadScopes(client, id);
     return this.mapRowToBlackout(row, scopes);
   }
 
   /** Log activity for blackout creation. */
-  private logBlackoutCreated(
-    tenantId: number,
-    userId: number,
-    dto: CreateBlackoutDto,
-  ): void {
+  private logBlackoutCreated(tenantId: number, userId: number, dto: CreateBlackoutDto): void {
     void this.activityLogger.log({
       tenantId,
       userId,
@@ -484,9 +447,7 @@ export class VacationBlackoutsService {
   /** Check if the DTO contains scope array changes. */
   private hasScopeChanges(dto: UpdateBlackoutDto): boolean {
     return (
-      dto.departmentIds !== undefined ||
-      dto.teamIds !== undefined ||
-      dto.areaIds !== undefined
+      dto.departmentIds !== undefined || dto.teamIds !== undefined || dto.areaIds !== undefined
     );
   }
 
@@ -524,10 +485,7 @@ export class VacationBlackoutsService {
   }
 
   /** Extract org IDs of a specific type from scope rows. */
-  private extractOrgIds(
-    scopes: VacationBlackoutScopeRow[],
-    orgType: BlackoutOrgType,
-  ): number[] {
+  private extractOrgIds(scopes: VacationBlackoutScopeRow[], orgType: BlackoutOrgType): number[] {
     return scopes
       .filter((s: VacationBlackoutScopeRow) => s.org_type === orgType)
       .map((s: VacationBlackoutScopeRow) => s.org_id);

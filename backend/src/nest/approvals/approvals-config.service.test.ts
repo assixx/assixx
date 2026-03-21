@@ -47,9 +47,7 @@ type ConfigRowWithName = ApprovalConfigRow & {
 };
 
 /** Standard config row — matches DB shape */
-function makeConfigRow(
-  overrides: Partial<ConfigRowWithName> = {},
-): ConfigRowWithName {
+function makeConfigRow(overrides: Partial<ConfigRowWithName> = {}): ConfigRowWithName {
   return {
     id: 1,
     uuid: 'cfg-uuid-001',
@@ -209,9 +207,7 @@ describe('ApprovalsConfigService', () => {
         rows: [{ uuid: 'existing-uuid' }],
       });
 
-      await expect(service.createConfig(baseDto, 10, 1)).rejects.toThrow(
-        ConflictException,
-      );
+      await expect(service.createConfig(baseDto, 10, 1)).rejects.toThrow(ConflictException);
     });
 
     it('should include addon_code and approver_type in ConflictException message', async () => {
@@ -219,9 +215,7 @@ describe('ApprovalsConfigService', () => {
         rows: [{ uuid: 'existing-uuid' }],
       });
 
-      await expect(service.createConfig(baseDto, 10, 1)).rejects.toThrow(
-        ConflictException,
-      );
+      await expect(service.createConfig(baseDto, 10, 1)).rejects.toThrow(ConflictException);
     });
 
     it('should create config with approverUserId for user type', async () => {
@@ -305,9 +299,7 @@ describe('ApprovalsConfigService', () => {
       mockClient.query.mockResolvedValueOnce({ rows: [] });
       mockClient.query.mockResolvedValueOnce({ rows: [] });
 
-      await expect(service.createConfig(baseDto, 10, 1)).rejects.toThrow(
-        'Insert returned no rows',
-      );
+      await expect(service.createConfig(baseDto, 10, 1)).rejects.toThrow('Insert returned no rows');
     });
 
     it('should generate uuid via uuidv7', async () => {
@@ -332,33 +324,29 @@ describe('ApprovalsConfigService', () => {
     it('should soft-delete successfully', async () => {
       mockClient.query.mockResolvedValueOnce({ rowCount: 1 });
 
-      await expect(
-        service.deleteConfig('cfg-uuid-001', 10, 1),
-      ).resolves.toBeUndefined();
+      await expect(service.deleteConfig('cfg-uuid-001', 10, 1)).resolves.toBeUndefined();
     });
 
     it('should throw NotFoundException when config not found', async () => {
       mockClient.query.mockResolvedValueOnce({ rowCount: 0 });
 
-      await expect(
-        service.deleteConfig('nonexistent-uuid', 10, 1),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.deleteConfig('nonexistent-uuid', 10, 1)).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should throw NotFoundException with descriptive message', async () => {
       mockClient.query.mockResolvedValueOnce({ rowCount: 0 });
 
-      await expect(
-        service.deleteConfig('nonexistent-uuid', 10, 1),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.deleteConfig('nonexistent-uuid', 10, 1)).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should handle null rowCount as 0', async () => {
       mockClient.query.mockResolvedValueOnce({ rowCount: null });
 
-      await expect(service.deleteConfig('cfg-uuid-001', 10, 1)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.deleteConfig('cfg-uuid-001', 10, 1)).rejects.toThrow(NotFoundException);
     });
 
     it('should log activity after successful deletion', async () => {

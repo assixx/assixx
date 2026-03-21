@@ -12,12 +12,7 @@
   import { onClickOutsideDropdown } from '$lib/actions/click-outside';
   import PermissionDenied from '$lib/components/PermissionDenied.svelte';
   import { notificationStore } from '$lib/stores/notification.store.svelte';
-  import {
-    showConfirm,
-    showErrorAlert,
-    showSuccessAlert,
-    showWarningAlert,
-  } from '$lib/utils';
+  import { showConfirm, showErrorAlert, showSuccessAlert, showWarningAlert } from '$lib/utils';
 
   import { filterState } from '../kvp/_lib/state-filters.svelte';
   import { isFaIcon } from '../kvp/_lib/utils';
@@ -123,11 +118,7 @@
     // Check localStorage for activeRole
     if (typeof localStorage !== 'undefined') {
       const activeRole = localStorage.getItem('activeRole');
-      if (
-        activeRole !== null &&
-        activeRole !== '' &&
-        activeRole !== currentUser.role
-      ) {
+      if (activeRole !== null && activeRole !== '' && activeRole !== currentUser.role) {
         return activeRole;
       }
     }
@@ -181,11 +172,7 @@
       });
       kvpDetailState.setTeamLead(data.isTeamLead ?? false);
       kvpDetailState.setSuggestion(suggestion);
-      kvpDetailState.setComments(
-        comments.comments,
-        comments.total,
-        comments.hasMore,
-      );
+      kvpDetailState.setComments(comments.comments, comments.total, comments.hasMore);
       kvpDetailState.setAttachments(attachments);
       kvpDetailState.setDepartments(departments);
       kvpDetailState.setTeams(teams);
@@ -204,9 +191,7 @@
   // ==========================================================================
 
   function openPreview(att: Attachment): void {
-    const idx = attachments.findIndex(
-      (a: Attachment) => a.fileUuid === att.fileUuid,
-    );
+    const idx = attachments.findIndex((a: Attachment) => a.fileUuid === att.fileUuid);
     if (idx === -1) return;
     previewIndex = idx;
     showPreviewModal = true;
@@ -219,14 +204,12 @@
 
   function handlePreviewPrev(): void {
     if (previewIndex === null || attachments.length <= 1) return;
-    previewIndex =
-      previewIndex === 0 ? attachments.length - 1 : previewIndex - 1;
+    previewIndex = previewIndex === 0 ? attachments.length - 1 : previewIndex - 1;
   }
 
   function handlePreviewNext(): void {
     if (previewIndex === null || attachments.length <= 1) return;
-    previewIndex =
-      previewIndex === attachments.length - 1 ? 0 : previewIndex + 1;
+    previewIndex = previewIndex === attachments.length - 1 ? 0 : previewIndex + 1;
   }
 
   // ==========================================================================
@@ -246,8 +229,7 @@
 
   async function handleAddComment() {
     if (commentsSectionRef === undefined) return;
-    const textarea: HTMLTextAreaElement | undefined =
-      commentsSectionRef.getCommentInput();
+    const textarea: HTMLTextAreaElement | undefined = commentsSectionRef.getCommentInput();
     if (textarea === undefined) return;
     const comment = textarea.value.trim();
     if (comment === '') return;
@@ -313,11 +295,7 @@
     if (suggestion === null) return;
     kvpDetailState.setUpdatingStatus(true);
 
-    const result = await updateSuggestionStatus(
-      suggestion.uuid,
-      newStatus,
-      reason,
-    );
+    const result = await updateSuggestionStatus(suggestion.uuid, newStatus, reason);
     if (result.success) {
       showSuccessAlert(`Status geändert zu: ${getStatusText(newStatus)}`);
       await invalidateAll();
@@ -361,9 +339,7 @@
 
     const result = await shareSuggestion(suggestion.uuid, level, orgId);
     if (result.success) {
-      showSuccessAlert(
-        `Vorschlag wurde auf ${getShareLevelText(level)} geteilt`,
-      );
+      showSuccessAlert(`Vorschlag wurde auf ${getShareLevelText(level)} geteilt`);
       await invalidateAll();
     } else {
       showErrorAlert(result.error ?? 'Fehler beim Teilen');
@@ -373,9 +349,7 @@
   }
 
   async function handleUnshare() {
-    const confirmed = await showConfirm(
-      'Möchten Sie das Teilen wirklich rückgängig machen?',
-    );
+    const confirmed = await showConfirm('Möchten Sie das Teilen wirklich rückgängig machen?');
     if (!confirmed || suggestion === null) return;
 
     const result = await unshareSuggestion(suggestion.uuid);
@@ -420,9 +394,7 @@
   // ==========================================================================
 
   async function handleArchive() {
-    const confirmed = await showConfirm(
-      'Möchten Sie diesen Vorschlag wirklich archivieren?',
-    );
+    const confirmed = await showConfirm('Möchten Sie diesen Vorschlag wirklich archivieren?');
     if (!confirmed || suggestion === null) return;
 
     const result = await archiveSuggestion(suggestion.uuid);
@@ -439,9 +411,7 @@
   // ==========================================================================
 
   async function handleUnarchive() {
-    const confirmed = await showConfirm(
-      'Möchten Sie diesen Vorschlag wirklich wiederherstellen?',
-    );
+    const confirmed = await showConfirm('Möchten Sie diesen Vorschlag wirklich wiederherstellen?');
     if (!confirmed || suggestion === null) return;
 
     const result = await unarchiveSuggestion(suggestion.uuid);
@@ -467,9 +437,7 @@
       showWoModal = true;
     } catch (err: unknown) {
       const is403 =
-        err instanceof Error &&
-        'status' in err &&
-        (err as { status: number }).status === 403;
+        err instanceof Error && 'status' in err && (err as { status: number }).status === 403;
       if (is403) {
         showWarningAlert(
           'Keine Berechtigung für Arbeitsaufträge. Bitte Administrator kontaktieren.',
@@ -558,13 +526,9 @@
             {#if suggestion.isShared}
               <div class="share-info">
                 <i class="fas fa-share-alt"></i>
-                <span
-                  class="badge {getVisibilityBadgeClass(suggestion.orgLevel)}"
-                >
+                <span class="badge {getVisibilityBadgeClass(suggestion.orgLevel)}">
                   <i class="fas {visibilityInfo?.icon}"></i>
-                  <span
-                    >{visibilityInfo?.text}{getSharedByInfo(suggestion)}</span
-                  >
+                  <span>{visibilityInfo?.text}{getSharedByInfo(suggestion)}</span>
                 </span>
               </div>
             {/if}
@@ -583,8 +547,7 @@
               <span class="data-list__value">
                 <div
                   class="category-tag"
-                  class:category-tag--deleted={suggestion.categoryIsDeleted ===
-                    true}
+                  class:category-tag--deleted={suggestion.categoryIsDeleted === true}
                   style:background="{suggestion.categoryColor}20"
                   style:color={suggestion.categoryColor}
                   style:border="1px solid {suggestion.categoryColor}"
@@ -636,16 +599,13 @@
                   </div>
                 </div>
               {:else}
-                <span class="data-list__value"
-                  >{getStatusText(suggestion.status)}</span
-                >
+                <span class="data-list__value">{getStatusText(suggestion.status)}</span>
               {/if}
             </div>
             {#if suggestion.assignedToName !== undefined}
               <div class="data-list__item">
                 <span class="data-list__label">Zugewiesen an</span>
-                <span class="data-list__value">{suggestion.assignedToName}</span
-                >
+                <span class="data-list__value">{suggestion.assignedToName}</span>
               </div>
             {/if}
             {#if hasImplementationDate(suggestion)}
@@ -659,9 +619,7 @@
             {#if suggestion.status === 'rejected' && suggestion.rejectionReason !== undefined && suggestion.rejectionReason !== ''}
               <div class="data-list__item">
                 <span class="data-list__label">Ablehnungsgrund</span>
-                <span class="data-list__value"
-                  >{suggestion.rejectionReason}</span
-                >
+                <span class="data-list__value">{suggestion.rejectionReason}</span>
               </div>
             {/if}
           </div>
@@ -718,19 +676,13 @@
               {#if suggestion.estimatedCost !== undefined && suggestion.estimatedCost !== 0}
                 <div class="data-list__item">
                   <span class="data-list__label">Geschätzte Kosten</span>
-                  <span class="data-list__value"
-                    >{formatCurrency(suggestion.estimatedCost)}</span
-                  >
+                  <span class="data-list__value">{formatCurrency(suggestion.estimatedCost)}</span>
                 </div>
               {/if}
               {#if suggestion.actualSavings !== undefined && suggestion.actualSavings !== 0}
                 <div class="data-list__item">
-                  <span class="data-list__label"
-                    >Tatsaechliche Einsparungen</span
-                  >
-                  <span class="data-list__value"
-                    >{formatCurrency(suggestion.actualSavings)}</span
-                  >
+                  <span class="data-list__label">Tatsaechliche Einsparungen</span>
+                  <span class="data-list__value">{formatCurrency(suggestion.actualSavings)}</span>
                 </div>
               {/if}
             </div>

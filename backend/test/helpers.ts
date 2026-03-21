@@ -58,9 +58,7 @@ async function _performLogin(attempt = 1): Promise<AuthState> {
   // Rate limited -- wait and retry
   if (res.status === 429 && attempt < MAX_RETRIES) {
     _authPromise = null;
-    await new Promise((resolve) =>
-      setTimeout(resolve, RETRY_DELAY_MS * attempt),
-    );
+    await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS * attempt));
     return _performLogin(attempt + 1);
   }
 
@@ -172,10 +170,7 @@ export async function ensureTestEmployee(token: string): Promise<number> {
  * Each asset gets a unique name to avoid conflicts.
  * Caller is responsible for cleanup via deleteAssets().
  */
-export async function createAssets(
-  token: string,
-  count: number,
-): Promise<string[]> {
+export async function createAssets(token: string, count: number): Promise<string[]> {
   const uuids: string[] = [];
 
   for (let i = 0; i < count; i++) {
@@ -206,10 +201,7 @@ export async function createAssets(
 /**
  * Delete assets by UUID. Silently ignores 404/409 errors.
  */
-export async function deleteAssets(
-  token: string,
-  uuids: string[],
-): Promise<void> {
+export async function deleteAssets(token: string, uuids: string[]): Promise<void> {
   for (const uuid of uuids) {
     await fetch(`${BASE_URL}/assets/${uuid}`, {
       method: 'DELETE',
@@ -268,9 +260,7 @@ export async function createDepartmentAndTeam(
  * Idempotent: checks GET /e2e/keys/me first, registers only if absent.
  * Returns { keyVersion } for use in encrypted message tests.
  */
-export async function ensureE2eKey(
-  token: string,
-): Promise<{ keyVersion: number }> {
+export async function ensureE2eKey(token: string): Promise<{ keyVersion: number }> {
   // Check if key already exists
   const checkRes = await fetch(`${BASE_URL}/e2e/keys/me`, {
     headers: authOnly(token),
@@ -299,9 +289,7 @@ export async function ensureE2eKey(
   }
 
   if (!registerRes.ok) {
-    throw new Error(
-      `E2E key registration failed: ${registerRes.status} ${registerRes.statusText}`,
-    );
+    throw new Error(`E2E key registration failed: ${registerRes.status} ${registerRes.statusText}`);
   }
 
   const registerBody = (await registerRes.json()) as JsonBody;

@@ -97,8 +97,7 @@ describe('StoreEscrowSchema', () => {
       const result = StoreEscrowSchema.safeParse(payload);
       expect(result.success).toBe(true);
       expect(
-        (result as { success: true; data: { encryptedBlob: string } }).data
-          .encryptedBlob,
+        (result as { success: true; data: { encryptedBlob: string } }).data.encryptedBlob,
       ).toBe(blob);
     });
   });

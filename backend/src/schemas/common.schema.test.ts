@@ -173,12 +173,9 @@ describe('UsernameSchema', () => {
 // =============================================================
 
 describe('RoleSchema', () => {
-  it.each(['admin', 'employee', 'root'])(
-    'should accept valid role "%s"',
-    (role) => {
-      expect(RoleSchema.safeParse(role).success).toBe(true);
-    },
-  );
+  it.each(['admin', 'employee', 'root'])('should accept valid role "%s"', (role) => {
+    expect(RoleSchema.safeParse(role).success).toBe(true);
+  });
 
   it('should fail for invalid role', () => {
     expect(RoleSchema.safeParse('superadmin').success).toBe(false);
@@ -265,9 +262,7 @@ describe('SearchQuerySchema', () => {
   });
 
   it('should fail for invalid sortOrder', () => {
-    expect(SearchQuerySchema.safeParse({ sortOrder: 'random' }).success).toBe(
-      false,
-    );
+    expect(SearchQuerySchema.safeParse({ sortOrder: 'random' }).success).toBe(false);
   });
 });
 

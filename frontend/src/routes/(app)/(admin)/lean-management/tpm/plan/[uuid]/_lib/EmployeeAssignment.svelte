@@ -38,11 +38,7 @@
     planAssignments?: TpmPlanAssignment[];
   }
 
-  const {
-    planUuid,
-    projectionSlots = [],
-    planAssignments = [],
-  }: Props = $props();
+  const { planUuid, projectionSlots = [], planAssignments = [] }: Props = $props();
 
   // =========================================================================
   // CONSTANTS
@@ -68,9 +64,7 @@
 
   const teams = $derived(teamData?.teams ?? []);
   const members = $derived(teamData?.members ?? []);
-  const availableCount = $derived(
-    members.filter((m: TeamMemberStatus) => m.isAvailable).length,
-  );
+  const availableCount = $derived(members.filter((m: TeamMemberStatus) => m.isAvailable).length);
 
   // =========================================================================
   // ASSIGNMENT COUNTS (derived from SlotAssistant data)
@@ -113,9 +107,7 @@
   }
 
   function avatarColorClass(member: TeamMemberStatus): string {
-    return hasProfilePic(member.profilePicture) ? '' : (
-        getAvatarColorClass(member.userId)
-      );
+    return hasProfilePic(member.profilePicture) ? '' : getAvatarColorClass(member.userId);
   }
 </script>
 
@@ -131,9 +123,7 @@
   </div>
   <div class="card__body">
     {#if loading}
-      <div
-        class="flex items-center justify-center gap-2 p-6 text-sm text-(--color-text-muted)"
-      >
+      <div class="flex items-center justify-center gap-2 p-6 text-sm text-(--color-text-muted)">
         <i class="fas fa-spinner fa-spin"></i>
         {MESSAGES.EMPLOYEE_LOADING}
       </div>
@@ -195,11 +185,7 @@
                   {member.unavailabilityReason}
                 </span>
               {:else}
-                <span
-                  class="member-item__status member-item__status--available"
-                >
-                  Verfügbar
-                </span>
+                <span class="member-item__status member-item__status--available"> Verfügbar </span>
               {/if}
             </div>
             <span
@@ -238,8 +224,7 @@
             </div>
             {#each assignmentCounts as entry (entry.userId)}
               <div class="tpm-counts__row">
-                <span class="col-name">{entry.lastName}, {entry.firstName}</span
-                >
+                <span class="col-name">{entry.lastName}, {entry.firstName}</span>
                 {#each COUNT_INTERVAL_COLUMNS as col (col)}
                   {@const val = entry.counts[col] ?? 0}
                   <span

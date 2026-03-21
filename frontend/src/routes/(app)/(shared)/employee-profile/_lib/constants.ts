@@ -35,15 +35,13 @@ export const MESSAGES = {
   confirmRemovePicture: 'Möchten Sie Ihr Profilbild wirklich entfernen?',
 
   // Password
-  passwordChanged:
-    'Passwort erfolgreich geändert. Sie werden aus Sicherheitsgründen abgemeldet...',
+  passwordChanged: 'Passwort erfolgreich geändert. Sie werden aus Sicherheitsgründen abgemeldet...',
   passwordChangeError: 'Fehler beim Ändern des Passworts',
   currentPasswordWrong: 'Aktuelles Passwort ist falsch',
   passwordMismatch: 'Passwörter stimmen nicht überein',
   passwordRequirements:
     'Min. 12 Zeichen, 3 von 4: Großbuchstaben, Kleinbuchstaben, Zahlen, Sonderzeichen (!@#$%^&*)',
-  passwordTooWeak:
-    'Passwort ist zu schwach - bitte wählen Sie ein sichereres Passwort',
+  passwordTooWeak: 'Passwort ist zu schwach - bitte wählen Sie ein sichereres Passwort',
 } as const;
 
 /** Picture upload error code to message mapping */

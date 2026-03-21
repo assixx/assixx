@@ -32,9 +32,7 @@ function createMockPermissionService() {
   };
 }
 
-function createMockExecutionContext(
-  user?: Partial<NestAuthUser>,
-): ExecutionContext {
+function createMockExecutionContext(user?: Partial<NestAuthUser>): ExecutionContext {
   const mockRequest = {
     user:
       user !== undefined ?
@@ -122,18 +120,14 @@ describe('SECURITY: PermissionGuard', () => {
         action: 'canRead',
       });
       // Pass undefined to signal no user on request
-      const context = createMockExecutionContext(
-        undefined as unknown as Partial<NestAuthUser>,
-      );
+      const context = createMockExecutionContext(undefined as unknown as Partial<NestAuthUser>);
       // Manually set user to undefined
       const request = context.switchToHttp().getRequest() as {
         user?: NestAuthUser;
       };
       request.user = undefined;
 
-      await expect(guard.canActivate(context)).rejects.toThrow(
-        ForbiddenException,
-      );
+      await expect(guard.canActivate(context)).rejects.toThrow(ForbiddenException);
     });
   });
 
@@ -244,9 +238,7 @@ describe('SECURITY: PermissionGuard', () => {
         hasFullAccess: false,
       });
 
-      await expect(guard.canActivate(context)).rejects.toThrow(
-        ForbiddenException,
-      );
+      await expect(guard.canActivate(context)).rejects.toThrow(ForbiddenException);
     });
 
     it('should check DB for user with hasFullAccess=false even if role is root', async () => {
@@ -261,9 +253,7 @@ describe('SECURITY: PermissionGuard', () => {
         hasFullAccess: false,
       });
 
-      await expect(guard.canActivate(context)).rejects.toThrow(
-        ForbiddenException,
-      );
+      await expect(guard.canActivate(context)).rejects.toThrow(ForbiddenException);
     });
   });
 
@@ -299,9 +289,7 @@ describe('SECURITY: PermissionGuard', () => {
         activeRole: 'employee',
       });
 
-      await expect(guard.canActivate(context)).rejects.toThrow(
-        ForbiddenException,
-      );
+      await expect(guard.canActivate(context)).rejects.toThrow(ForbiddenException);
     });
 
     it('should call hasPermission with correct params', async () => {
@@ -346,9 +334,7 @@ describe('SECURITY: PermissionGuard', () => {
         hasFullAccess: false,
       });
 
-      await expect(guard.canActivate(context)).rejects.toThrow(
-        ForbiddenException,
-      );
+      await expect(guard.canActivate(context)).rejects.toThrow(ForbiddenException);
     });
 
     it('should pass for role-switched admin without hasFullAccess when DB grants', async () => {
@@ -389,17 +375,11 @@ describe('SECURITY: PermissionGuard', () => {
         activeRole: 'employee',
       });
 
-      await expect(guard.canActivate(context)).rejects.toThrow(
-        ForbiddenException,
-      );
+      await expect(guard.canActivate(context)).rejects.toThrow(ForbiddenException);
 
       expect(debugSpy).toHaveBeenCalledWith(expect.stringContaining('42'));
-      expect(debugSpy).toHaveBeenCalledWith(
-        expect.stringContaining('employee'),
-      );
-      expect(debugSpy).toHaveBeenCalledWith(
-        expect.stringContaining('blackboard'),
-      );
+      expect(debugSpy).toHaveBeenCalledWith(expect.stringContaining('employee'));
+      expect(debugSpy).toHaveBeenCalledWith(expect.stringContaining('blackboard'));
     });
   });
 
@@ -414,10 +394,10 @@ describe('SECURITY: PermissionGuard', () => {
 
       await guard.canActivate(context);
 
-      expect(mockReflector.getAllAndOverride).toHaveBeenCalledWith(
-        PERMISSION_KEY,
-        [context.getHandler(), context.getClass()],
-      );
+      expect(mockReflector.getAllAndOverride).toHaveBeenCalledWith(PERMISSION_KEY, [
+        context.getHandler(),
+        context.getClass(),
+      ]);
     });
 
     it('should pass RequiredPermission interface shape to hasPermission', async () => {

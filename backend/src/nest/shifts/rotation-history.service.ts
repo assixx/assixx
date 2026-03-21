@@ -86,20 +86,12 @@ export class RotationHistoryService {
     const rows = await this.databaseService.query<DbHistoryRow>(query, params);
     return rows.map(
       (row: DbHistoryRow) =>
-        dbToApi(
-          row as unknown as Record<string, unknown>,
-        ) as RotationHistoryResponse,
+        dbToApi(row as unknown as Record<string, unknown>) as RotationHistoryResponse,
     );
   }
 
-  private async executeDeleteWithCount(
-    query: string,
-    params: unknown[],
-  ): Promise<number> {
-    const result = await this.databaseService.query<{ count: string }>(
-      query,
-      params,
-    );
+  private async executeDeleteWithCount(query: string, params: unknown[]): Promise<number> {
+    const result = await this.databaseService.query<{ count: string }>(query, params);
     return Number.parseInt(result[0]?.count ?? '0', 10);
   }
 
@@ -130,8 +122,7 @@ export class RotationHistoryService {
     await this.databaseService.query('BEGIN', []);
 
     try {
-      const params =
-        hasPatternId ? [tenantId, teamId, patternId] : [tenantId, teamId];
+      const params = hasPatternId ? [tenantId, teamId, patternId] : [tenantId, teamId];
       const patternCond = hasPatternId ? 'AND pattern_id = $3' : '';
 
       // Delete in order: shifts -> history -> assignments -> patterns -> plans
@@ -230,9 +221,7 @@ export class RotationHistoryService {
     tenantId: number,
     userId: number,
   ): Promise<void> {
-    this.logger.debug(
-      `Deleting rotation history entry ${historyId} for tenant ${tenantId}`,
-    );
+    this.logger.debug(`Deleting rotation history entry ${historyId} for tenant ${tenantId}`);
 
     const result = await this.databaseService.query<{ count: string }>(
       `WITH deleted AS (
@@ -244,9 +233,7 @@ export class RotationHistoryService {
     const deletedCount = Number.parseInt(result[0]?.count ?? '0', 10);
 
     if (deletedCount === 0) {
-      throw new NotFoundException(
-        `Rotation history entry ${historyId} not found`,
-      );
+      throw new NotFoundException(`Rotation history entry ${historyId} not found`);
     }
 
     void this.activityLogger.logDelete(

@@ -51,9 +51,9 @@ describe('ZodValidationPipe', () => {
     it('should throw BadRequestException for invalid data', () => {
       const pipe = new ZodValidationPipe(TestSchema);
 
-      expect(() =>
-        pipe.transform({ name: '', age: -1 }, { type: 'body' }),
-      ).toThrow(BadRequestException);
+      expect(() => pipe.transform({ name: '', age: -1 }, { type: 'body' })).toThrow(
+        BadRequestException,
+      );
     });
 
     it('should include VALIDATION_ERROR code in thrown exception', () => {
@@ -229,9 +229,7 @@ describe('ZodValidationPipe', () => {
       });
       const pipe = new ZodValidationPipe(faultySchema);
 
-      expect(() => pipe.transform('valid-string', { type: 'body' })).toThrow(
-        TypeError,
-      );
+      expect(() => pipe.transform('valid-string', { type: 'body' })).toThrow(TypeError);
     });
   });
 
@@ -252,9 +250,7 @@ describe('ZodValidationPipe', () => {
     it('should reject invalid data via the factory-created pipe', () => {
       const pipe = zodPipe(z.object({ id: z.number().positive() }));
 
-      expect(() => pipe.transform({ id: -1 }, { type: 'param' })).toThrow(
-        BadRequestException,
-      );
+      expect(() => pipe.transform({ id: -1 }, { type: 'param' })).toThrow(BadRequestException);
     });
   });
 });

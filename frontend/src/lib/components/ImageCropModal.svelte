@@ -51,20 +51,14 @@
   /**
    * Handle crop complete event from Cropper
    */
-  function handleCropComplete(event: {
-    pixels: CropArea;
-    percent: CropArea;
-  }): void {
+  function handleCropComplete(event: { pixels: CropArea; percent: CropArea }): void {
     croppedAreaPixels = event.pixels;
   }
 
   /**
    * Create cropped image from source and crop area
    */
-  async function createCroppedImage(
-    src: string,
-    pixelCrop: CropArea,
-  ): Promise<Blob> {
+  async function createCroppedImage(src: string, pixelCrop: CropArea): Promise<Blob> {
     const image = new Image();
     image.crossOrigin = 'anonymous';
 
@@ -262,8 +256,7 @@
     gap: var(--spacing-3, 12px);
     padding: var(--spacing-4, 16px) var(--spacing-6, 24px);
     background: color-mix(in oklch, var(--color-black) 20%, transparent);
-    border-top: 1px solid
-      color-mix(in oklch, var(--color-white) 8%, transparent);
+    border-top: 1px solid color-mix(in oklch, var(--color-white) 8%, transparent);
   }
 
   .zoom-label {

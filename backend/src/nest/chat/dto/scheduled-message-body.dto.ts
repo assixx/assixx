@@ -48,9 +48,7 @@ const ScheduledMessageBaseSchema = z.object({
     .refine(
       (dateStr: string): boolean => {
         const scheduledDate = new Date(dateStr);
-        const maxTime = new Date(
-          Date.now() + MAX_SCHEDULE_DAYS * 24 * 60 * 60 * 1000,
-        );
+        const maxTime = new Date(Date.now() + MAX_SCHEDULE_DAYS * 24 * 60 * 60 * 1000);
         return scheduledDate <= maxTime;
       },
       {
@@ -64,57 +62,36 @@ const ScheduledMessageBaseSchema = z.object({
   attachmentSize: z.number().int().nonnegative().optional(),
 
   /** E2E: base64-encoded ciphertext */
-  encryptedContent: z
-    .string()
-    .max(MAX_ENCRYPTED_LENGTH, 'Encrypted content too large')
-    .optional(),
+  encryptedContent: z.string().max(MAX_ENCRYPTED_LENGTH, 'Encrypted content too large').optional(),
 
   /** E2E: base64-encoded 24-byte XChaCha20-Poly1305 nonce */
   e2eNonce: z.string().max(MAX_NONCE_LENGTH, 'Nonce too large').optional(),
 
   /** E2E: sender's key version at time of encryption */
-  e2eKeyVersion: z
-    .number()
-    .int()
-    .positive('Key version must be positive')
-    .optional(),
+  e2eKeyVersion: z.number().int().positive('Key version must be positive').optional(),
 
   /** E2E: HKDF epoch (Math.floor(Date.now() / 86_400_000)) for decryption key derivation */
-  e2eKeyEpoch: z
-    .number()
-    .int()
-    .nonnegative('Key epoch must be non-negative')
-    .optional(),
+  e2eKeyEpoch: z.number().int().nonnegative('Key epoch must be non-negative').optional(),
 });
 
 /** Inferred type for refine callback */
 type ScheduledMessageBase = z.infer<typeof ScheduledMessageBaseSchema>;
 
 /** Schema with validation: requires either content OR encryptedContent OR attachment */
-export const CreateScheduledMessageBodySchema =
-  ScheduledMessageBaseSchema.refine(
-    (data: ScheduledMessageBase): boolean => {
-      const hasContent =
-        typeof data.content === 'string' && data.content.trim().length > 0;
-      const hasAttachment =
-        typeof data.attachmentPath === 'string' &&
-        data.attachmentPath.length > 0;
-      const hasEncryptedContent =
-        typeof data.encryptedContent === 'string' &&
-        data.encryptedContent.length > 0;
-      return hasContent || hasAttachment || hasEncryptedContent;
-    },
-    {
-      message:
-        'Either message content, encrypted content, or attachment is required',
-    },
-  );
+export const CreateScheduledMessageBodySchema = ScheduledMessageBaseSchema.refine(
+  (data: ScheduledMessageBase): boolean => {
+    const hasContent = typeof data.content === 'string' && data.content.trim().length > 0;
+    const hasAttachment = typeof data.attachmentPath === 'string' && data.attachmentPath.length > 0;
+    const hasEncryptedContent =
+      typeof data.encryptedContent === 'string' && data.encryptedContent.length > 0;
+    return hasContent || hasAttachment || hasEncryptedContent;
+  },
+  {
+    message: 'Either message content, encrypted content, or attachment is required',
+  },
+);
 
-export class CreateScheduledMessageDto extends createZodDto(
-  CreateScheduledMessageBodySchema,
-) {}
+export class CreateScheduledMessageDto extends createZodDto(CreateScheduledMessageBodySchema) {}
 
 // Type exports
-export type CreateScheduledMessageBody = z.infer<
-  typeof CreateScheduledMessageBodySchema
->;
+export type CreateScheduledMessageBody = z.infer<typeof CreateScheduledMessageBodySchema>;

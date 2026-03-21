@@ -10,10 +10,7 @@ import { z } from 'zod';
  * Add member request body
  */
 export const AddMemberSchema = z.object({
-  userId: z.coerce
-    .number()
-    .int()
-    .positive('User ID must be a positive integer'),
+  userId: z.coerce.number().int().positive('User ID must be a positive integer'),
 });
 
 /**

@@ -4,10 +4,7 @@
 
 import { getApiClient } from '$lib/utils/api-client';
 import { createLogger } from '$lib/utils/logger';
-import {
-  handleSessionExpired,
-  isSessionExpiredError,
-} from '$lib/utils/session-expired.js';
+import { handleSessionExpired, isSessionExpiredError } from '$lib/utils/session-expired.js';
 
 import { API_ENDPOINTS } from './constants';
 
@@ -90,9 +87,7 @@ export async function loadAreas(): Promise<{
   try {
     const data: unknown = await apiClient.get(API_ENDPOINTS.AREAS);
     const areas: Area[] =
-      Array.isArray(data) ?
-        (data as Area[])
-      : ((data as { data?: Area[] }).data ?? []);
+      Array.isArray(data) ? (data as Area[]) : ((data as { data?: Area[] }).data ?? []);
     return { areas, error: null };
   } catch (err: unknown) {
     log.error({ err }, 'Error loading areas');
@@ -151,9 +146,7 @@ export async function loadDepartments(): Promise<{
   try {
     const data: unknown = await apiClient.get(API_ENDPOINTS.DEPARTMENTS);
     const departments: Department[] =
-      Array.isArray(data) ?
-        (data as Department[])
-      : ((data as { data?: Department[] }).data ?? []);
+      Array.isArray(data) ? (data as Department[]) : ((data as { data?: Department[] }).data ?? []);
     return { departments, error: null };
   } catch (err: unknown) {
     log.error({ err }, 'Error loading departments');
@@ -174,9 +167,7 @@ export async function loadHalls(): Promise<{
   try {
     const data: unknown = await apiClient.get(API_ENDPOINTS.HALLS);
     const halls: Hall[] =
-      Array.isArray(data) ?
-        (data as Hall[])
-      : ((data as { data?: Hall[] }).data ?? []);
+      Array.isArray(data) ? (data as Hall[]) : ((data as { data?: Hall[] }).data ?? []);
     return { halls, error: null };
   } catch (err: unknown) {
     log.error({ err }, 'Error loading halls');
@@ -265,10 +256,7 @@ export async function assignDepartmentsToArea(
 /**
  * Assign halls to an area
  */
-export async function assignHallsToArea(
-  areaId: number,
-  hallIds: number[],
-): Promise<void> {
+export async function assignHallsToArea(areaId: number, hallIds: number[]): Promise<void> {
   await apiClient.post(API_ENDPOINTS.areaHalls(areaId), { hallIds });
 }
 

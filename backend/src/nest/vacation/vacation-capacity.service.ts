@@ -127,9 +127,7 @@ export class VacationCapacityService {
    * Returns a comprehensive analysis covering team, assets,
    * blackouts, entitlements, and substitute availability.
    */
-  async analyzeCapacity(
-    params: CapacityAnalysisParams,
-  ): Promise<VacationCapacityAnalysis> {
+  async analyzeCapacity(params: CapacityAnalysisParams): Promise<VacationCapacityAnalysis> {
     const { tenantId, startDate, endDate, requesterId } = params;
 
     // Phase 1: Gather team context (single transaction)
@@ -154,12 +152,7 @@ export class VacationCapacityService {
     );
 
     // Phase 4-6: Checks + final assembly
-    return await this.assembleResult(
-      params,
-      subServiceData,
-      teamAnalysis,
-      assetAnalysis,
-    );
+    return await this.assembleResult(params, subServiceData, teamAnalysis, assetAnalysis);
   }
 
   /** Run parallel sub-service queries (workdays, blackouts, staffing). */
@@ -171,24 +164,12 @@ export class VacationCapacityService {
     blackoutConflicts: BlackoutConflict[];
     staffingMap: Map<number, number>;
   }> {
-    const {
-      tenantId,
-      startDate,
-      endDate,
-      halfDayStart = 'none',
-      halfDayEnd = 'none',
-    } = params;
+    const { tenantId, startDate, endDate, halfDayStart = 'none', halfDayEnd = 'none' } = params;
 
     const assetIds: number[] = ctx.assets.map((m: TeamAssetRow) => m.asset_id);
 
     const [workdays, blackoutConflicts, staffingMap] = await Promise.all([
-      this.holidaysService.countWorkdays(
-        tenantId,
-        startDate,
-        endDate,
-        halfDayStart,
-        halfDayEnd,
-      ),
+      this.holidaysService.countWorkdays(tenantId, startDate, endDate, halfDayStart, halfDayEnd),
       this.blackoutsService.getConflicts(
         tenantId,
         startDate,
@@ -214,20 +195,11 @@ export class VacationCapacityService {
     teamAnalysis: TeamCapacityItem[];
     assetAnalysis: AssetCapacityItem[];
   }> {
-    const workdayDates: Date[] = await this.getWorkdayDates(
-      tenantId,
-      startDate,
-      endDate,
-    );
+    const workdayDates: Date[] = await this.getWorkdayDates(tenantId, startDate, endDate);
 
     return {
       teamAnalysis: this.computeTeamCapacity(ctx, workdayDates, requesterId),
-      assetAnalysis: this.computeAssetCapacity(
-        ctx,
-        workdayDates,
-        requesterId,
-        staffingMap,
-      ),
+      assetAnalysis: this.computeAssetCapacity(ctx, workdayDates, requesterId, staffingMap),
     };
   }
 
@@ -244,17 +216,15 @@ export class VacationCapacityService {
     const { tenantId, startDate, endDate, requesterId } = params;
     const { workdays, blackoutConflicts } = subServiceData;
 
-    const entitlementCheck: EntitlementCheckResult =
-      await this.checkEntitlement(tenantId, requesterId, workdays);
+    const entitlementCheck: EntitlementCheckResult = await this.checkEntitlement(
+      tenantId,
+      requesterId,
+      workdays,
+    );
 
     const substituteCheck: SubstituteCheckResult | undefined =
       params.substituteId !== undefined ?
-        await this.checkSubstitute(
-          tenantId,
-          params.substituteId,
-          startDate,
-          endDate,
-        )
+        await this.checkSubstitute(tenantId, params.substituteId, startDate, endDate)
       : undefined;
 
     const overallStatus: OverallCapacityStatus = this.determineOverallStatus(
@@ -297,59 +267,38 @@ export class VacationCapacityService {
     startDate: string,
     endDate: string,
   ): Promise<CapacityContext> {
-    return await this.db.tenantTransaction(
-      async (client: PoolClient): Promise<CapacityContext> => {
-        // 1. Find requester's team
-        const teamRow:
-          | {
-              team_id: number;
-              team_name: string;
-              department_id: number | null;
-            }
-          | undefined = await this.findRequesterTeam(
-          client,
-          tenantId,
-          requesterId,
-        );
+    return await this.db.tenantTransaction(async (client: PoolClient): Promise<CapacityContext> => {
+      // 1. Find requester's team
+      const teamRow:
+        | {
+            team_id: number;
+            team_name: string;
+            department_id: number | null;
+          }
+        | undefined = await this.findRequesterTeam(client, tenantId, requesterId);
 
-        if (teamRow === undefined) {
-          throw new BadRequestException(
-            'Requester is not assigned to any team',
-          );
-        }
+      if (teamRow === undefined) {
+        throw new BadRequestException('Requester is not assigned to any team');
+      }
 
-        // 2-5. Parallel queries within the same transaction
-        const [members, assets, approvedAbsences, availabilityAbsences] =
-          await Promise.all([
-            this.loadTeamMembers(client, tenantId, teamRow.team_id),
-            this.loadTeamAssets(client, tenantId, teamRow.team_id),
-            this.loadApprovedAbsences(
-              client,
-              tenantId,
-              teamRow.team_id,
-              startDate,
-              endDate,
-            ),
-            this.loadAvailabilityAbsences(
-              client,
-              tenantId,
-              teamRow.team_id,
-              startDate,
-              endDate,
-            ),
-          ]);
+      // 2-5. Parallel queries within the same transaction
+      const [members, assets, approvedAbsences, availabilityAbsences] = await Promise.all([
+        this.loadTeamMembers(client, tenantId, teamRow.team_id),
+        this.loadTeamAssets(client, tenantId, teamRow.team_id),
+        this.loadApprovedAbsences(client, tenantId, teamRow.team_id, startDate, endDate),
+        this.loadAvailabilityAbsences(client, tenantId, teamRow.team_id, startDate, endDate),
+      ]);
 
-        return {
-          teamId: teamRow.team_id,
-          teamName: teamRow.team_name,
-          departmentId: teamRow.department_id,
-          members,
-          assets,
-          approvedAbsences,
-          availabilityAbsences,
-        };
-      },
-    );
+      return {
+        teamId: teamRow.team_id,
+        teamName: teamRow.team_name,
+        departmentId: teamRow.department_id,
+        members,
+        assets,
+        approvedAbsences,
+        availabilityAbsences,
+      };
+    });
   }
 
   /** Find the requester's team via user_teams. */
@@ -357,10 +306,7 @@ export class VacationCapacityService {
     client: PoolClient,
     tenantId: number,
     requesterId: number,
-  ): Promise<
-    | { team_id: number; team_name: string; department_id: number | null }
-    | undefined
-  > {
+  ): Promise<{ team_id: number; team_name: string; department_id: number | null } | undefined> {
     const result = await client.query<{
       team_id: number;
       team_name: string;
@@ -470,54 +416,47 @@ export class VacationCapacityService {
     startDate: string,
     endDate: string,
   ): Promise<Date[]> {
-    return await this.db.tenantTransaction(
-      async (client: PoolClient): Promise<Date[]> => {
-        const start: Date = new Date(startDate);
-        const end: Date = new Date(endDate);
+    return await this.db.tenantTransaction(async (client: PoolClient): Promise<Date[]> => {
+      const start: Date = new Date(startDate);
+      const end: Date = new Date(endDate);
 
-        // Load holiday set for O(1) lookup
-        const holidayResult = await client.query<{
-          holiday_date: string;
-          recurring: boolean;
-        }>(
-          `SELECT holiday_date, recurring
+      // Load holiday set for O(1) lookup
+      const holidayResult = await client.query<{
+        holiday_date: string;
+        recurring: boolean;
+      }>(
+        `SELECT holiday_date, recurring
            FROM vacation_holidays
            WHERE tenant_id = $1 AND is_active = ${IS_ACTIVE.ACTIVE}
              AND (
                (recurring = false AND holiday_date >= $2 AND holiday_date <= $3)
                OR recurring = true
              )`,
-          [tenantId, startDate, endDate],
-        );
+        [tenantId, startDate, endDate],
+      );
 
-        const holidaySet: Set<string> = new Set<string>();
-        for (const row of holidayResult.rows) {
-          if (row.recurring) {
-            this.projectRecurringHoliday(
-              row.holiday_date,
-              start,
-              end,
-              holidaySet,
-            );
-          } else {
-            holidaySet.add(this.formatDate(new Date(row.holiday_date)));
-          }
+      const holidaySet: Set<string> = new Set<string>();
+      for (const row of holidayResult.rows) {
+        if (row.recurring) {
+          this.projectRecurringHoliday(row.holiday_date, start, end, holidaySet);
+        } else {
+          holidaySet.add(this.formatDate(new Date(row.holiday_date)));
         }
+      }
 
-        const workdays: Date[] = [];
-        const current: Date = new Date(start);
-        while (current <= end) {
-          const dayOfWeek: number = current.getDay();
-          const isWeekend: boolean = dayOfWeek === 0 || dayOfWeek === 6;
-          if (!isWeekend && !holidaySet.has(this.formatDate(current))) {
-            workdays.push(new Date(current));
-          }
-          current.setDate(current.getDate() + 1);
+      const workdays: Date[] = [];
+      const current: Date = new Date(start);
+      while (current <= end) {
+        const dayOfWeek: number = current.getDay();
+        const isWeekend: boolean = dayOfWeek === 0 || dayOfWeek === 6;
+        if (!isWeekend && !holidaySet.has(this.formatDate(current))) {
+          workdays.push(new Date(current));
         }
+        current.setDate(current.getDate() + 1);
+      }
 
-        return workdays;
-      },
-    );
+      return workdays;
+    });
   }
 
   // ==========================================================================
@@ -537,11 +476,7 @@ export class VacationCapacityService {
     let worstAbsent: number = 0;
 
     for (const day of workdayDates) {
-      const snapshot: DaySnapshot = this.computeDaySnapshot(
-        ctx,
-        day,
-        requesterId,
-      );
+      const snapshot: DaySnapshot = this.computeDaySnapshot(ctx, day, requesterId);
       if (snapshot.absentMemberIds.size > worstAbsent) {
         worstAbsent = snapshot.absentMemberIds.size;
       }
@@ -599,11 +534,7 @@ export class VacationCapacityService {
     const absentUserIds: Set<number> = new Set<number>();
 
     for (const day of workdayDates) {
-      const snapshot: DaySnapshot = this.computeDaySnapshot(
-        ctx,
-        day,
-        requesterId,
-      );
+      const snapshot: DaySnapshot = this.computeDaySnapshot(ctx, day, requesterId);
       const currentAvailable: number = snapshot.availableCount;
       const afterApproval: number = currentAvailable - 1;
 
@@ -616,10 +547,7 @@ export class VacationCapacityService {
       }
     }
 
-    const absentMembers: AbsentMemberInfo[] = this.buildAbsentMemberInfo(
-      ctx,
-      absentUserIds,
-    );
+    const absentMembers: AbsentMemberInfo[] = this.buildAbsentMemberInfo(ctx, absentUserIds);
 
     const availableAfterApproval: number = Math.max(0, worstAvailableAfter);
 
@@ -638,31 +566,15 @@ export class VacationCapacityService {
    * Compute a day-level snapshot: who is absent and how many are available.
    * Checks both approved vacation requests and user_availability records.
    */
-  private computeDaySnapshot(
-    ctx: CapacityContext,
-    day: Date,
-    requesterId: number,
-  ): DaySnapshot {
+  private computeDaySnapshot(ctx: CapacityContext, day: Date, requesterId: number): DaySnapshot {
     const dayStr: string = this.formatDate(day);
     const memberIds: Set<number> = new Set<number>(
       ctx.members.map((m: TeamMemberRow) => m.user_id),
     );
 
     const absentMemberIds: Set<number> = new Set<number>();
-    this.collectAbsentFromVacations(
-      ctx,
-      dayStr,
-      requesterId,
-      memberIds,
-      absentMemberIds,
-    );
-    this.collectAbsentFromAvailability(
-      ctx,
-      dayStr,
-      requesterId,
-      memberIds,
-      absentMemberIds,
-    );
+    this.collectAbsentFromVacations(ctx, dayStr, requesterId, memberIds, absentMemberIds);
+    this.collectAbsentFromAvailability(ctx, dayStr, requesterId, memberIds, absentMemberIds);
 
     const totalMembers: number = ctx.members.length;
     return {
@@ -728,13 +640,9 @@ export class VacationCapacityService {
     requesterId: number,
     requestedDays: number,
   ): Promise<EntitlementCheckResult> {
-    const balance = await this.entitlementsService.getBalance(
-      tenantId,
-      requesterId,
-    );
+    const balance = await this.entitlementsService.getBalance(tenantId, requesterId);
 
-    const remainingAfterApproval: number =
-      balance.remainingDays - requestedDays;
+    const remainingAfterApproval: number = balance.remainingDays - requestedDays;
 
     return {
       sufficient: remainingAfterApproval >= 0,
@@ -844,13 +752,9 @@ export class VacationCapacityService {
     rangeEnd: string | Date,
   ): boolean {
     const start: string =
-      typeof rangeStart === 'string' ?
-        rangeStart.slice(0, 10)
-      : this.formatDate(rangeStart);
+      typeof rangeStart === 'string' ? rangeStart.slice(0, 10) : this.formatDate(rangeStart);
     const end: string =
-      typeof rangeEnd === 'string' ?
-        rangeEnd.slice(0, 10)
-      : this.formatDate(rangeEnd);
+      typeof rangeEnd === 'string' ? rangeEnd.slice(0, 10) : this.formatDate(rangeEnd);
 
     return dayStr >= start && dayStr <= end;
   }
@@ -875,17 +779,13 @@ export class VacationCapacityService {
 
     for (const absence of ctx.approvedAbsences) {
       if (absence.requester_id === userId) {
-        ranges.push(
-          `${this.sliceDate(absence.start_date)}–${this.sliceDate(absence.end_date)}`,
-        );
+        ranges.push(`${this.sliceDate(absence.start_date)}–${this.sliceDate(absence.end_date)}`);
       }
     }
 
     for (const avail of ctx.availabilityAbsences) {
       if (avail.user_id === userId) {
-        ranges.push(
-          `${this.sliceDate(avail.start_date)}–${this.sliceDate(avail.end_date)}`,
-        );
+        ranges.push(`${this.sliceDate(avail.start_date)}–${this.sliceDate(avail.end_date)}`);
       }
     }
 
@@ -893,10 +793,7 @@ export class VacationCapacityService {
   }
 
   /** Compute team capacity status based on available percentage. */
-  private computeTeamStatus(
-    totalMembers: number,
-    availableAfterApproval: number,
-  ): CapacityStatus {
+  private computeTeamStatus(totalMembers: number, availableAfterApproval: number): CapacityStatus {
     if (totalMembers === 0) {
       return 'ok';
     }
@@ -935,11 +832,7 @@ export class VacationCapacityService {
     const hMonth: number = date.getMonth();
     const hDay: number = date.getDate();
 
-    for (
-      let year: number = startDate.getFullYear();
-      year <= endDate.getFullYear();
-      year++
-    ) {
+    for (let year: number = startDate.getFullYear(); year <= endDate.getFullYear(); year++) {
       const projected: Date = new Date(year, hMonth, hDay);
       if (projected >= startDate && projected <= endDate) {
         holidaySet.add(this.formatDate(projected));

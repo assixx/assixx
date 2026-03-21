@@ -43,11 +43,9 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
     uuid_created_at: { type: 'timestamptz', notNull: true },
   });
 
-  pgm.addConstraint(
-    'org_chart_positions',
-    'chk_org_chart_positions_is_active',
-    { check: 'is_active IN (0, 1, 3, 4)' },
-  );
+  pgm.addConstraint('org_chart_positions', 'chk_org_chart_positions_is_active', {
+    check: 'is_active IN (0, 1, 3, 4)',
+  });
 
   // One position per entity per tenant
   pgm.addConstraint('org_chart_positions', 'uq_org_chart_positions_entity', {
@@ -76,12 +74,8 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
       )
   `);
 
-  pgm.sql(
-    'GRANT SELECT, INSERT, UPDATE, DELETE ON org_chart_positions TO app_user',
-  );
-  pgm.sql(
-    'GRANT USAGE, SELECT ON SEQUENCE org_chart_positions_id_seq TO app_user',
-  );
+  pgm.sql('GRANT SELECT, INSERT, UPDATE, DELETE ON org_chart_positions TO app_user');
+  pgm.sql('GRANT USAGE, SELECT ON SEQUENCE org_chart_positions_id_seq TO app_user');
 }
 
 export async function down(pgm: MigrationBuilder): Promise<void> {

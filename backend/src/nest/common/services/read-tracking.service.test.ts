@@ -8,10 +8,7 @@ import { NotFoundException } from '@nestjs/common';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { DatabaseService } from '../../database/database.service.js';
-import {
-  type ReadTrackingConfig,
-  ReadTrackingService,
-} from './read-tracking.service.js';
+import { type ReadTrackingConfig, ReadTrackingService } from './read-tracking.service.js';
 
 // =============================================================
 // Constants
@@ -116,10 +113,11 @@ describe('ReadTrackingService', () => {
         expect.stringContaining(`SELECT id FROM ${CONFIG.entityTable}`),
         [ENTITY_UUID, TENANT_ID],
       );
-      expect(mockDb.query).toHaveBeenCalledExactlyOnceWith(
-        expect.stringContaining('INSERT INTO'),
-        [ENTITY_ID, USER_ID, TENANT_ID],
-      );
+      expect(mockDb.query).toHaveBeenCalledExactlyOnceWith(expect.stringContaining('INSERT INTO'), [
+        ENTITY_ID,
+        USER_ID,
+        TENANT_ID,
+      ]);
     });
 
     it('should use correct UUID column in lookup query', async () => {

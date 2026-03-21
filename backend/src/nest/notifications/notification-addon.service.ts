@@ -56,14 +56,10 @@ export class NotificationAddonService {
           notificationUuid,
         ],
       );
-      this.logger.log(
-        `Created ${type} notification for entity ${addonEntityId}`,
-      );
+      this.logger.log(`Created ${type} notification for entity ${addonEntityId}`);
     } catch (error: unknown) {
       // Log but don't fail - notification is secondary to addon action
-      this.logger.error(
-        `Failed to create ${type} notification: ${String(error)}`,
-      );
+      this.logger.error(`Failed to create ${type} notification: ${String(error)}`);
     }
   }
 
@@ -116,9 +112,7 @@ export class NotificationAddonService {
     userId: number,
     tenantId: number,
   ): Promise<number> {
-    this.logger.log(
-      `Marking all ${type} notifications as read for user ${userId}`,
-    );
+    this.logger.log(`Marking all ${type} notifications as read for user ${userId}`);
 
     const result = await this.db.query<{ id: number }>(
       `WITH unread_notifications AS (

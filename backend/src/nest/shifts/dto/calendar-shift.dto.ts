@@ -16,6 +16,4 @@ export const QueryMyCalendarShiftsSchema = z.object({
   endDate: ShiftDateSchema,
 });
 
-export class QueryMyCalendarShiftsDto extends createZodDto(
-  QueryMyCalendarShiftsSchema,
-) {}
+export class QueryMyCalendarShiftsDto extends createZodDto(QueryMyCalendarShiftsSchema) {}

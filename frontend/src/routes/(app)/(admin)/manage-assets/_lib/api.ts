@@ -5,14 +5,7 @@
 import { getApiClient } from '$lib/utils/api-client';
 import { createLogger } from '$lib/utils/logger';
 
-import type {
-  Asset,
-  Department,
-  Area,
-  Team,
-  AssetTeam,
-  AssetFormData,
-} from './types';
+import type { Asset, Department, Area, Team, AssetTeam, AssetFormData } from './types';
 
 const log = createLogger('ManageAssetsApi');
 const apiClient = getApiClient();
@@ -48,10 +41,7 @@ function extractArrayFromResponse<T>(result: unknown): T[] {
  * Load all assets from API
  * Supports filtering by status and search term
  */
-export async function loadAssets(
-  statusFilter?: string,
-  searchTerm?: string,
-): Promise<Asset[]> {
+export async function loadAssets(statusFilter?: string, searchTerm?: string): Promise<Asset[]> {
   const params = new URLSearchParams();
 
   if (statusFilter !== undefined && statusFilter !== 'all') {
@@ -63,8 +53,7 @@ export async function loadAssets(
   }
 
   const queryString = params.toString();
-  const endpoint =
-    queryString.length > 0 ? `/assets?${queryString}` : '/assets';
+  const endpoint = queryString.length > 0 ? `/assets?${queryString}` : '/assets';
 
   const result: unknown = await apiClient.get(endpoint);
   return extractArrayFromResponse<Asset>(result);
@@ -122,10 +111,7 @@ export async function getAssetTeams(assetId: number): Promise<AssetTeam[]> {
 /**
  * Set teams for a asset (bulk operation - replaces all existing)
  */
-export async function setAssetTeams(
-  assetId: number,
-  teamIds: number[],
-): Promise<AssetTeam[]> {
+export async function setAssetTeams(assetId: number, teamIds: number[]): Promise<AssetTeam[]> {
   const result: unknown = await apiClient.put(`/assets/${assetId}/teams`, {
     teamIds,
   });
@@ -146,10 +132,7 @@ export async function createAsset(assetData: AssetFormData): Promise<Asset> {
 /**
  * Update existing asset
  */
-export async function updateAsset(
-  assetId: number,
-  assetData: AssetFormData,
-): Promise<Asset> {
+export async function updateAsset(assetId: number, assetData: AssetFormData): Promise<Asset> {
   return await apiClient.put(`/assets/${assetId}`, assetData);
 }
 
@@ -157,10 +140,7 @@ export async function updateAsset(
  * Save asset (create or update)
  * Returns the asset ID
  */
-export async function saveAsset(
-  formData: AssetFormData,
-  editId: number | null,
-): Promise<number> {
+export async function saveAsset(formData: AssetFormData, editId: number | null): Promise<number> {
   if (editId !== null) {
     const result = await updateAsset(editId, formData);
     return result.id;

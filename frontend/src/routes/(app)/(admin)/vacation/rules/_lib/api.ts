@@ -22,14 +22,10 @@ const apiClient = getApiClient();
 
 export async function getBlackouts(year?: number): Promise<VacationBlackout[]> {
   const params = year !== undefined ? `?year=${year}` : '';
-  return await apiClient.get<VacationBlackout[]>(
-    `/vacation/blackouts${params}`,
-  );
+  return await apiClient.get<VacationBlackout[]>(`/vacation/blackouts${params}`);
 }
 
-export async function createBlackout(
-  payload: CreateBlackoutPayload,
-): Promise<VacationBlackout> {
+export async function createBlackout(payload: CreateBlackoutPayload): Promise<VacationBlackout> {
   return await apiClient.post<VacationBlackout>('/vacation/blackouts', payload);
 }
 
@@ -37,10 +33,7 @@ export async function updateBlackout(
   id: string,
   payload: UpdateBlackoutPayload,
 ): Promise<VacationBlackout> {
-  return await apiClient.put<VacationBlackout>(
-    `/vacation/blackouts/${id}`,
-    payload,
-  );
+  return await apiClient.put<VacationBlackout>(`/vacation/blackouts/${id}`, payload);
 }
 
 export async function deleteBlackout(id: string): Promise<void> {
@@ -50,28 +43,20 @@ export async function deleteBlackout(id: string): Promise<void> {
 // ─── Staffing Rules ─────────────────────────────────────────────────
 
 export async function getStaffingRules(): Promise<VacationStaffingRule[]> {
-  return await apiClient.get<VacationStaffingRule[]>(
-    '/vacation/staffing-rules',
-  );
+  return await apiClient.get<VacationStaffingRule[]>('/vacation/staffing-rules');
 }
 
 export async function createStaffingRule(
   payload: CreateStaffingRulePayload,
 ): Promise<VacationStaffingRule> {
-  return await apiClient.post<VacationStaffingRule>(
-    '/vacation/staffing-rules',
-    payload,
-  );
+  return await apiClient.post<VacationStaffingRule>('/vacation/staffing-rules', payload);
 }
 
 export async function updateStaffingRule(
   id: string,
   payload: UpdateStaffingRulePayload,
 ): Promise<VacationStaffingRule> {
-  return await apiClient.put<VacationStaffingRule>(
-    `/vacation/staffing-rules/${id}`,
-    payload,
-  );
+  return await apiClient.put<VacationStaffingRule>(`/vacation/staffing-rules/${id}`, payload);
 }
 
 export async function deleteStaffingRule(id: string): Promise<void> {
@@ -81,9 +66,7 @@ export async function deleteStaffingRule(id: string): Promise<void> {
 // ─── Organization Hierarchy (for cascade dropdowns) ─────────────────
 
 /** Fetch assets filtered by department (for staffing rule creation cascade). */
-export async function fetchAssetsByDepartment(
-  departmentId: number,
-): Promise<OrgAsset[]> {
+export async function fetchAssetsByDepartment(departmentId: number): Promise<OrgAsset[]> {
   const response = await apiClient.get<OrgAsset[] | { data: OrgAsset[] }>(
     `/assets?departmentId=${departmentId}`,
   );
@@ -97,8 +80,6 @@ export async function getSettings(): Promise<VacationSettings> {
   return await apiClient.get<VacationSettings>('/vacation/settings');
 }
 
-export async function updateSettings(
-  payload: UpdateSettingsPayload,
-): Promise<VacationSettings> {
+export async function updateSettings(payload: UpdateSettingsPayload): Promise<VacationSettings> {
   return await apiClient.put<VacationSettings>('/vacation/settings', payload);
 }

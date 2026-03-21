@@ -22,21 +22,10 @@
     totalCount?: number;
   }
 
-  const {
-    show,
-    attachment,
-    onclose,
-    onprev,
-    onnext,
-    currentIndex,
-    totalCount,
-  }: Props = $props();
+  const { show, attachment, onclose, onprev, onnext, currentIndex, totalCount }: Props = $props();
 
   const hasNavigation = $derived(
-    onprev !== undefined &&
-      onnext !== undefined &&
-      totalCount !== undefined &&
-      totalCount > 1,
+    onprev !== undefined && onnext !== undefined && totalCount !== undefined && totalCount > 1,
   );
 
   function handleDownload(): void {
@@ -104,9 +93,7 @@
           </div>
         {/if}
         <div class="border-t border-(--border-subtle) bg-(--surface-2) p-4">
-          <div
-            class="flex items-center gap-6 text-sm text-(--color-text-secondary)"
-          >
+          <div class="flex items-center gap-6 text-sm text-(--color-text-secondary)">
             <span class="flex items-center gap-2">
               <i class="fas fa-file-archive"></i>
               {formatFileSize(attachment.fileSize)}
@@ -129,8 +116,7 @@
         <button
           type="button"
           class="btn btn-primary"
-          onclick={handleDownload}
-          ><i class="fas fa-download mr-2"></i>Herunterladen</button
+          onclick={handleDownload}><i class="fas fa-download mr-2"></i>Herunterladen</button
         >
       </div>
     </div>

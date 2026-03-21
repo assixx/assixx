@@ -30,8 +30,7 @@ import {
 } from './position-catalog.types.js';
 
 const ERROR_POSITION_NOT_FOUND = 'Position nicht gefunden';
-const ERROR_SYSTEM_POSITION =
-  'System-Positionen können nicht bearbeitet werden';
+const ERROR_SYSTEM_POSITION = 'System-Positionen können nicht bearbeitet werden';
 
 @Injectable()
 export class PositionCatalogService {
@@ -65,10 +64,7 @@ export class PositionCatalogService {
     return rows.map(mapPositionRowToApi);
   }
 
-  async create(
-    tenantId: number,
-    dto: CreatePositionDto,
-  ): Promise<PositionCatalogEntry> {
+  async create(tenantId: number, dto: CreatePositionDto): Promise<PositionCatalogEntry> {
     await this.assertNameUnique(tenantId, dto.name, dto.roleCategory);
 
     const uuid = uuidv7();
@@ -83,9 +79,7 @@ export class PositionCatalogService {
       throw new Error('INSERT returned no rows');
     }
 
-    this.logger.log(
-      `Position "${dto.name}" created for tenant ${String(tenantId)}`,
-    );
+    this.logger.log(`Position "${dto.name}" created for tenant ${String(tenantId)}`);
 
     const userId = this.db.getUserId() ?? 0;
     void this.activityLogger.log({
@@ -111,18 +105,10 @@ export class PositionCatalogService {
     }
 
     if (dto.name !== undefined) {
-      await this.assertNameUnique(
-        tenantId,
-        dto.name,
-        position.role_category,
-        positionId,
-      );
+      await this.assertNameUnique(tenantId, dto.name, position.role_category, positionId);
     }
 
-    const { setClauses, params } = this.buildUpdateParams(dto, [
-      tenantId,
-      positionId,
-    ]);
+    const { setClauses, params } = this.buildUpdateParams(dto, [tenantId, positionId]);
 
     if (setClauses.length === 0) {
       return mapPositionRowToApi(position);
@@ -139,9 +125,7 @@ export class PositionCatalogService {
       throw new NotFoundException(ERROR_POSITION_NOT_FOUND);
     }
 
-    this.logger.log(
-      `Position "${rows[0].name}" updated for tenant ${String(tenantId)}`,
-    );
+    this.logger.log(`Position "${rows[0].name}" updated for tenant ${String(tenantId)}`);
 
     const userId = this.db.getUserId() ?? 0;
     void this.activityLogger.log({
@@ -171,15 +155,11 @@ export class PositionCatalogService {
         [IS_ACTIVE.DELETED, tenantId, positionId, IS_ACTIVE.ACTIVE],
       );
     } catch (error: unknown) {
-      this.logger.error(
-        `Failed to delete position ${positionId}: ${getErrorMessage(error)}`,
-      );
+      this.logger.error(`Failed to delete position ${positionId}: ${getErrorMessage(error)}`);
       throw error;
     }
 
-    this.logger.log(
-      `Position "${position.name}" soft-deleted for tenant ${String(tenantId)}`,
-    );
+    this.logger.log(`Position "${position.name}" soft-deleted for tenant ${String(tenantId)}`);
 
     const userId = this.db.getUserId() ?? 0;
     void this.activityLogger.log({
@@ -222,12 +202,7 @@ export class PositionCatalogService {
     roleCategory: PositionRoleCategory,
     excludeId?: string,
   ): Promise<void> {
-    const params: (number | string)[] = [
-      tenantId,
-      name,
-      roleCategory,
-      IS_ACTIVE.ACTIVE,
-    ];
+    const params: (number | string)[] = [tenantId, name, roleCategory, IS_ACTIVE.ACTIVE];
     let query = `SELECT id FROM position_catalog
       WHERE tenant_id = $1 AND name = $2 AND role_category = $3 AND is_active = $4`;
 
@@ -266,10 +241,7 @@ export class PositionCatalogService {
     return { setClauses, params };
   }
 
-  private async findOneOrFail(
-    tenantId: number,
-    positionId: string,
-  ): Promise<PositionCatalogRow> {
+  private async findOneOrFail(tenantId: number, positionId: string): Promise<PositionCatalogRow> {
     const rows = await this.db.query<PositionCatalogRow>(
       `SELECT * FROM position_catalog
        WHERE tenant_id = $1 AND id = $2 AND is_active = $3`,

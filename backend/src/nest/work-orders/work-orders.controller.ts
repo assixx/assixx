@@ -179,11 +179,7 @@ export class WorkOrdersController {
       (a: WorkOrder['assignees'][number]): number => a.userId,
     );
     if (assigneeUserIds.length > 0) {
-      void this.notifications.notifyAssigned(
-        tenantId,
-        result.uuid,
-        assigneeUserIds,
-      );
+      void this.notifications.notifyAssigned(tenantId, result.uuid, assigneeUserIds);
       void this.notifications.persistAssignedNotification(
         tenantId,
         result.uuid,
@@ -203,12 +199,7 @@ export class WorkOrdersController {
     @CurrentUser() user: NestAuthUser,
     @TenantId() tenantId: number,
   ): Promise<{ success: boolean }> {
-    await this.readTracking.markAsReadByUuid(
-      WORK_ORDER_READ_CONFIG,
-      uuid,
-      user.id,
-      tenantId,
-    );
+    await this.readTracking.markAsReadByUuid(WORK_ORDER_READ_CONFIG, uuid, user.id, tenantId);
 
     void this.activityLogger.logCreate(
       tenantId,
@@ -223,10 +214,7 @@ export class WorkOrdersController {
 
   @Get(':uuid')
   @RequirePermission(FEAT, MOD_EXEC, 'canRead')
-  async getOne(
-    @Param('uuid') uuid: string,
-    @TenantId() tenantId: number,
-  ): Promise<WorkOrder> {
+  async getOne(@Param('uuid') uuid: string, @TenantId() tenantId: number): Promise<WorkOrder> {
     return await this.service.getWorkOrder(tenantId, uuid);
   }
 
@@ -280,18 +268,9 @@ export class WorkOrdersController {
     // Fire-and-forget: SSE + persistent notification
     if (dto.status === 'verified') {
       void this.notifications.notifyVerified(tenantId, uuid, user.id);
-      void this.notifications.persistVerifiedNotification(
-        tenantId,
-        uuid,
-        user.id,
-      );
+      void this.notifications.persistVerifiedNotification(tenantId, uuid, user.id);
     } else {
-      void this.notifications.notifyStatusChanged(
-        tenantId,
-        uuid,
-        dto.status,
-        user.id,
-      );
+      void this.notifications.notifyStatusChanged(tenantId, uuid, dto.status, user.id);
     }
   }
 
@@ -308,24 +287,12 @@ export class WorkOrdersController {
     @CurrentUser() user: NestAuthUser,
     @TenantId() tenantId: number,
   ): Promise<WorkOrderAssignee[]> {
-    const result = await this.assigneesService.assignUsers(
-      tenantId,
-      uuid,
-      dto.userUuids,
-      user.id,
-    );
+    const result = await this.assigneesService.assignUsers(tenantId, uuid, dto.userUuids, user.id);
 
     // Fire-and-forget: SSE + persistent notification for new assignees
-    const assigneeUserIds = result.map(
-      (a: WorkOrderAssignee): number => a.userId,
-    );
+    const assigneeUserIds = result.map((a: WorkOrderAssignee): number => a.userId);
     void this.notifications.notifyAssigned(tenantId, uuid, assigneeUserIds);
-    void this.notifications.persistAssignedNotification(
-      tenantId,
-      uuid,
-      assigneeUserIds,
-      user.id,
-    );
+    void this.notifications.persistAssignedNotification(tenantId, uuid, assigneeUserIds, user.id);
 
     return result;
   }
@@ -339,12 +306,7 @@ export class WorkOrdersController {
     @CurrentUser() user: NestAuthUser,
     @TenantId() tenantId: number,
   ): Promise<void> {
-    await this.assigneesService.removeAssignee(
-      tenantId,
-      uuid,
-      userUuid,
-      user.id,
-    );
+    await this.assigneesService.removeAssignee(tenantId, uuid, userUuid, user.id);
   }
 
   // ==========================================================================
@@ -392,11 +354,7 @@ export class WorkOrdersController {
     @Param('commentId') commentId: string,
     @TenantId() tenantId: number,
   ): Promise<WorkOrderComment[]> {
-    return await this.commentsService.listReplies(
-      tenantId,
-      uuid,
-      Number(commentId),
-    );
+    return await this.commentsService.listReplies(tenantId, uuid, Number(commentId));
   }
 
   // ==========================================================================
@@ -445,20 +403,13 @@ export class WorkOrdersController {
     @TenantId() tenantId: number,
     @Res() reply: FastifyReply,
   ): Promise<void> {
-    const photo = await this.photosService.getPhotoFile(
-      tenantId,
-      uuid,
-      photoUuid,
-    );
+    const photo = await this.photosService.getPhotoFile(tenantId, uuid, photoUuid);
     const headers = reply
       .header('Content-Type', photo.mimeType)
       .header('Cache-Control', 'private, max-age=3600');
 
     if (photo.mimeType === 'application/pdf') {
-      headers.header(
-        'Content-Disposition',
-        `inline; filename="${photo.fileName}"`,
-      );
+      headers.header('Content-Disposition', `inline; filename="${photo.fileName}"`);
     }
 
     await headers.send(createReadStream(photo.filePath));
@@ -472,11 +423,6 @@ export class WorkOrdersController {
     @CurrentUser() user: NestAuthUser,
     @TenantId() tenantId: number,
   ): Promise<void> {
-    await this.photosService.deletePhoto(
-      tenantId,
-      user.id,
-      user.role,
-      photoUuid,
-    );
+    await this.photosService.deletePhoto(tenantId, user.id, user.role, photoUuid);
   }
 }

@@ -98,21 +98,12 @@ describe('SECURITY: Delegated Permission Management', () => {
     it('should allow root to get permissions for any user', async () => {
       const user = createUser({ id: 1, activeRole: 'root', role: 'root' });
       await controller.getPermissions(1, 'target-uuid', user);
-      expect(mockService.getPermissions).toHaveBeenCalledWith(
-        1,
-        'target-uuid',
-        undefined,
-      );
+      expect(mockService.getPermissions).toHaveBeenCalledWith(1, 'target-uuid', undefined);
     });
 
     it('should allow root to upsert permissions for any user', async () => {
       const user = createUser({ id: 1, activeRole: 'root', role: 'root' });
-      await controller.upsertPermissions(
-        1,
-        'target-uuid',
-        { permissions: [] },
-        user,
-      );
+      await controller.upsertPermissions(1, 'target-uuid', { permissions: [] }, user);
       expect(mockService.upsertPermissions).toHaveBeenCalled();
     });
   });
@@ -142,18 +133,18 @@ describe('SECURITY: Delegated Permission Management', () => {
         hasFullAccess: true,
       });
       mockService.resolveUserId.mockResolvedValue(10); // same user!
-      await expect(
-        controller.getPermissions(1, 'self-uuid', user),
-      ).rejects.toThrow(ForbiddenException);
+      await expect(controller.getPermissions(1, 'self-uuid', user)).rejects.toThrow(
+        ForbiddenException,
+      );
     });
 
     it('should deny employee lead editing own permissions', async () => {
       const user = createUser({ id: 42, activeRole: 'employee' });
       mockService.hasPermission.mockResolvedValue(true);
       mockService.resolveUserId.mockResolvedValue(42); // same user!
-      await expect(
-        controller.getPermissions(1, 'self-uuid', user),
-      ).rejects.toThrow(ForbiddenException);
+      await expect(controller.getPermissions(1, 'self-uuid', user)).rejects.toThrow(
+        ForbiddenException,
+      );
     });
   });
 
@@ -167,11 +158,7 @@ describe('SECURITY: Delegated Permission Management', () => {
 
       await controller.getPermissions(1, 'member-uuid', user);
 
-      expect(mockService.getPermissions).toHaveBeenCalledWith(
-        1,
-        'member-uuid',
-        42,
-      );
+      expect(mockService.getPermissions).toHaveBeenCalledWith(1, 'member-uuid', 42);
     });
   });
 
@@ -180,9 +167,9 @@ describe('SECURITY: Delegated Permission Management', () => {
     it('should deny employee without manage-permissions', async () => {
       const user = createUser({ id: 42 });
       mockService.hasPermission.mockResolvedValue(false); // no manage-permissions
-      await expect(
-        controller.getPermissions(1, 'member-uuid', user),
-      ).rejects.toThrow(ForbiddenException);
+      await expect(controller.getPermissions(1, 'member-uuid', user)).rejects.toThrow(
+        ForbiddenException,
+      );
     });
   });
 
@@ -194,9 +181,9 @@ describe('SECURITY: Delegated Permission Management', () => {
       mockService.resolveUserId.mockResolvedValue(999); // not in scope
       mockHierarchy.getVisibleUserIds.mockResolvedValue([99, 100]); // 999 NOT included
 
-      await expect(
-        controller.getPermissions(1, 'out-of-scope-uuid', user),
-      ).rejects.toThrow(ForbiddenException);
+      await expect(controller.getPermissions(1, 'out-of-scope-uuid', user)).rejects.toThrow(
+        ForbiddenException,
+      );
     });
   });
 
@@ -208,12 +195,7 @@ describe('SECURITY: Delegated Permission Management', () => {
       mockService.resolveUserId.mockResolvedValue(99);
       mockHierarchy.getVisibleUserIds.mockResolvedValue([99]);
 
-      await controller.upsertPermissions(
-        1,
-        'member-uuid',
-        { permissions: [] },
-        user,
-      );
+      await controller.upsertPermissions(1, 'member-uuid', { permissions: [] }, user);
 
       expect(mockService.upsertPermissions).toHaveBeenCalledWith(
         1,
@@ -226,12 +208,7 @@ describe('SECURITY: Delegated Permission Management', () => {
 
     it('should NOT pass delegatorScope for root', async () => {
       const user = createUser({ id: 1, activeRole: 'root', role: 'root' });
-      await controller.upsertPermissions(
-        1,
-        'target-uuid',
-        { permissions: [] },
-        user,
-      );
+      await controller.upsertPermissions(1, 'target-uuid', { permissions: [] }, user);
 
       expect(mockService.upsertPermissions).toHaveBeenCalledWith(
         1,
@@ -253,21 +230,13 @@ describe('SECURITY: Delegated Permission Management', () => {
 
       await controller.getPermissions(1, 'member-uuid', user);
 
-      expect(mockService.getPermissions).toHaveBeenCalledWith(
-        1,
-        'member-uuid',
-        42,
-      );
+      expect(mockService.getPermissions).toHaveBeenCalledWith(1, 'member-uuid', 42);
     });
 
     it('should NOT filter for root', async () => {
       const user = createUser({ id: 1, activeRole: 'root', role: 'root' });
       await controller.getPermissions(1, 'target-uuid', user);
-      expect(mockService.getPermissions).toHaveBeenCalledWith(
-        1,
-        'target-uuid',
-        undefined,
-      );
+      expect(mockService.getPermissions).toHaveBeenCalledWith(1, 'target-uuid', undefined);
     });
 
     it('should NOT filter for admin with full access', async () => {
@@ -278,11 +247,7 @@ describe('SECURITY: Delegated Permission Management', () => {
       });
       mockService.resolveUserId.mockResolvedValue(99);
       await controller.getPermissions(1, 'target-uuid', user);
-      expect(mockService.getPermissions).toHaveBeenCalledWith(
-        1,
-        'target-uuid',
-        undefined,
-      );
+      expect(mockService.getPermissions).toHaveBeenCalledWith(1, 'target-uuid', undefined);
     });
   });
 });

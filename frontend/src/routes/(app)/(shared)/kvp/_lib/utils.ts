@@ -2,10 +2,7 @@
 // KVP - UTILITY FUNCTIONS
 // =============================================================================
 
-import {
-  DEFAULT_HIERARCHY_LABELS,
-  type HierarchyLabels,
-} from '$lib/types/hierarchy-labels';
+import { DEFAULT_HIERARCHY_LABELS, type HierarchyLabels } from '$lib/types/hierarchy-labels';
 
 import {
   STATUS_BADGE_CLASSES,
@@ -84,10 +81,7 @@ function getOrgLevelVisibility(
   const info = visibilityInfo[suggestion.orgLevel];
   let text = info.text;
 
-  if (
-    suggestion.orgLevel === 'department' &&
-    suggestion.departmentName !== ''
-  ) {
+  if (suggestion.orgLevel === 'department' && suggestion.departmentName !== '') {
     text = suggestion.departmentName;
   } else if (
     suggestion.orgLevel === 'area' &&
@@ -211,13 +205,9 @@ export function debounce<T extends (...args: unknown[]) => void>(
 /**
  * Check if user can share suggestion (admin only, department level)
  */
-export function canShareSuggestion(
-  suggestion: KvpSuggestion,
-  effectiveRole: string,
-): boolean {
+export function canShareSuggestion(suggestion: KvpSuggestion, effectiveRole: string): boolean {
   return (
-    (effectiveRole === 'admin' || effectiveRole === 'root') &&
-    suggestion.orgLevel === 'department'
+    (effectiveRole === 'admin' || effectiveRole === 'root') && suggestion.orgLevel === 'department'
   );
 }
 
@@ -239,9 +229,7 @@ export function canUnshareSuggestion(
 
   // Admin/Root can always unshare, or the person who shared it
   return (
-    effectiveRole === 'admin' ||
-    effectiveRole === 'root' ||
-    suggestion.sharedBy === currentUserId
+    effectiveRole === 'admin' || effectiveRole === 'root' || suggestion.sharedBy === currentUserId
   );
 }
 

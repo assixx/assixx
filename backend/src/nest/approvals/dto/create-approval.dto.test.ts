@@ -23,8 +23,7 @@ describe('CreateApprovalSchema', () => {
       assignedTo: 42,
     });
     expect(result.success).toBe(true);
-    const data = (result as { success: true; data: Record<string, unknown> })
-      .data;
+    const data = (result as { success: true; data: Record<string, unknown> }).data;
     expect(data.priority).toBe('high');
     expect(data.assignedTo).toBe(42);
   });
@@ -32,8 +31,7 @@ describe('CreateApprovalSchema', () => {
   it('should default priority to medium', () => {
     const result = CreateApprovalSchema.safeParse(validInput);
     expect(result.success).toBe(true);
-    const data = (result as { success: true; data: Record<string, unknown> })
-      .data;
+    const data = (result as { success: true; data: Record<string, unknown> }).data;
     expect(data.priority).toBe('medium');
   });
 
@@ -129,8 +127,7 @@ describe('CreateApprovalSchema', () => {
   it('should accept omitted description', () => {
     const result = CreateApprovalSchema.safeParse(validInput);
     expect(result.success).toBe(true);
-    const data = (result as { success: true; data: Record<string, unknown> })
-      .data;
+    const data = (result as { success: true; data: Record<string, unknown> }).data;
     expect(data.description).toBeUndefined();
   });
 

@@ -11,11 +11,7 @@
   import { showSuccessAlert, showErrorAlert } from '$lib/stores/toast';
   import { createLogger } from '$lib/utils/logger.js';
 
-  import {
-    fetchNodeDetails,
-    savePositions,
-    updateHierarchyLabels,
-  } from './_lib/api.js';
+  import { fetchNodeDetails, savePositions, updateHierarchyLabels } from './_lib/api.js';
   import HierarchyLabelsModal from './_lib/HierarchyLabelsModal.svelte';
   import NodeDetailModal from './_lib/NodeDetailModal.svelte';
   import OrgCanvas from './_lib/OrgCanvas.svelte';
@@ -49,11 +45,7 @@
   } from './_lib/state.svelte.js';
 
   import type { PageData } from './$types';
-  import type {
-    HierarchyLabels,
-    OrgEntityType,
-    OrgNodeDetail,
-  } from './_lib/types.js';
+  import type { HierarchyLabels, OrgEntityType, OrgNodeDetail } from './_lib/types.js';
 
   const log = createLogger('Organigram:Page');
 
@@ -78,10 +70,7 @@
   let showDetailModal = $state(false);
   let isDetailLoading = $state(false);
 
-  async function handleNodeDblClick(
-    entityType: OrgEntityType,
-    entityUuid: string,
-  ): Promise<void> {
+  async function handleNodeDblClick(entityType: OrgEntityType, entityUuid: string): Promise<void> {
     showDetailModal = true;
     isDetailLoading = true;
     detailData = null;
@@ -280,9 +269,7 @@
       style:--org-canvas-bg={currentCanvasBg ?? 'transparent'}
     >
       {#if data.loadError}
-        <div
-          class="flex flex-col items-center justify-center py-16 text-center"
-        >
+        <div class="flex flex-col items-center justify-center py-16 text-center">
           <i
             class="fas fa-exclamation-triangle mb-6 text-7xl text-(--color-text-secondary) opacity-40"
           ></i>
@@ -294,12 +281,8 @@
           </p>
         </div>
       {:else if data.tree.nodes.length === 0}
-        <div
-          class="flex flex-col items-center justify-center py-16 text-center"
-        >
-          <i
-            class="fas fa-sitemap mb-6 text-7xl text-(--color-text-secondary) opacity-40"
-          ></i>
+        <div class="flex flex-col items-center justify-center py-16 text-center">
+          <i class="fas fa-sitemap mb-6 text-7xl text-(--color-text-secondary) opacity-40"></i>
           <p class="text-xl text-(--color-text-secondary)">
             Keine Organisationseinheiten vorhanden
           </p>
