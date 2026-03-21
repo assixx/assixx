@@ -27,9 +27,9 @@ export default defineConfig({
     },
 
     // Coverage configuration (unit tests only via include patterns)
+    // For faster local runs: pnpm vitest run --coverage --coverage.changed=main
     coverage: {
       provider: 'v8',
-      changed: 'main',
       reporter: ['text', 'json', 'html', 'lcov'],
       reportsDirectory: './coverage',
       include: ['backend/src/**/*.ts', 'shared/src/**/*.ts'],

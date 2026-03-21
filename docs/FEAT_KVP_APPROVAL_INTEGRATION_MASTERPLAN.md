@@ -20,6 +20,7 @@
 | 0.1.0   | 2026-03-20 | Initial Draft — 4 phases, 4 sessions planned  |
 | 0.1.1   | 2026-03-20 | Added: ADR-004 persistent notifications (Step 1.5), ADR-018 test reference, Related Documents section, linked parent masterplans |
 | 0.2.0   | 2026-03-21 | Real-Life Workflow documented, TBD resolved: dynamic dropdown rules, CRON archives BOTH rejected+implemented, `status='archived'` (no is_active on kvp_suggestions) |
+| 0.3.0   | 2026-03-21 | Validation pass: fixed permission codes (kvp-suggestions.canRead/canWrite), EventBus payload shape (nested, sourceUuid missing), added Step 1.6 backend enforcement, button only for status=new, notification_type ENUM doesn't exist note |
 
 ---
 
@@ -59,7 +60,7 @@ The Approvals System (ADR-037) and Position Catalog (ADR-038) were built specifi
 3a. BAD KVP → Corc sets status directly to "abgelehnt" via dropdown
    → No approval needed for rejection
    → Status: "abgelehnt" → LOCKED (no further changes)
-   → After 30 days: CRON archives (is_active = 4)
+   → After 30 days: CRON archives (status = 'archived')
 
 3b. GOOD KVP → Corc clicks "Freigabe anfordern"
    → Status auto-changes to "in Prüfung" (in_review)
@@ -75,13 +76,13 @@ The Approvals System (ADR-037) and Position Catalog (ADR-038) were built specifi
       → Corc Öztürk receives notification
       → Dropdown unlocks: only "umgesetzt" available
       → Corc sets to "umgesetzt" when implementation is complete
-      → After 30 days: CRON archives (is_active = 4)
+      → After 30 days: CRON archives (status = 'archived')
 
    4b. REJECT → Status auto-syncs to "abgelehnt" (rejected) with reason
       → Corc Öztürk receives notification with rejection reason
       → LOCKED — no re-submission allowed
       → John Doe must create a new KVP if desired
-      → After 30 days: CRON archives (is_active = 4)
+      → After 30 days: CRON archives (status = 'archived')
 ```
 
 ### Dynamic Dropdown Rules (when approval config exists for KVP)
@@ -166,14 +167,18 @@ The Approvals System (ADR-037) and Position Catalog (ADR-038) were built specifi
   - Returns approval object or `null`
 
 - `hasApprovalConfig(tenantId)` — Check if approval master configured for KVP
-  - Calls `ApprovalsConfigService.resolveApprovers('kvp', 0)` or direct config check
+  - Direct DB query: `SELECT COUNT(*) FROM approval_configs WHERE addon_code = 'kvp' AND tenant_id = $1 AND is_active = 1`
   - Returns `boolean` — used by frontend to show/hide button
+  - **Cannot use `resolveApprovers()`** — that method requires a real `userId` for org-based resolution
 
-- `handleApprovalDecision(addonCode, sourceUuid, status, decisionNote, tenantId)` — Sync KVP status
+- `handleApprovalDecision(tenantId, approvalData)` — Sync KVP status
   - Called by EventBus listener (Step 1.3)
-  - If `status === 'approved'`: update KVP status to `'approved'`
-  - If `status === 'rejected'`: update KVP status to `'rejected'`, set `rejection_reason = decisionNote`
+  - Step 1: Fetch `source_uuid` from `approvals` table using `approvalData.uuid`
+  - Step 2: Find KVP suggestion by `source_uuid`
+  - Step 3: If `status === 'approved'`: update KVP status to `'approved'`
+  - Step 4: If `status === 'rejected'`: update KVP status to `'rejected'`, set `rejection_reason = decisionNote`
   - Idempotent: no-op if KVP already has matching status
+  - **Uses direct DB update** — bypasses `assertCanUpdateStatus()` (system action, not user action)
 
 - `reconcilePendingApprovals()` — Startup recovery
   - Find KVPs with `status = 'in_review'` that have a decided approval
@@ -190,9 +195,9 @@ The Approvals System (ADR-037) and Position Catalog (ADR-038) were built specifi
 
 | Method | Route                          | Permission           | Description                |
 | ------ | ------------------------------ | -------------------- | -------------------------- |
-| POST   | `/kvp/:uuid/request-approval`  | kvp-manage.canWrite  | Request approval from master |
-| GET    | `/kvp/:uuid/approval`          | kvp.canRead          | Get linked approval status |
-| GET    | `/kvp/approval-config-status`  | kvp.canRead          | Check if approval config exists |
+| POST   | `/kvp/:uuid/request-approval`  | kvp-suggestions.canWrite  | Request approval from master |
+| GET    | `/kvp/:uuid/approval`          | kvp-suggestions.canRead          | Get linked approval status |
+| GET    | `/kvp/approval-config-status`  | kvp-suggestions.canRead          | Check if approval config exists |
 
 **POST /kvp/:uuid/request-approval:**
 - Only Team Lead / Admin / Root
@@ -212,15 +217,36 @@ The Approvals System (ADR-037) and Position Catalog (ADR-038) were built specifi
 
 **Modified file:** `backend/src/nest/kvp/kvp-approval.service.ts`
 
-**Pattern:** Subscribe in constructor (same as existing SSE handlers):
+**Pattern:** Subscribe in constructor (same as existing SSE handlers).
+
+**IMPORTANT:** The `approval.decided` event payload is nested (verified in `event-bus.ts`):
+
+```typescript
+// ApprovalEvent payload shape (from event-bus.ts):
+{
+  tenantId: number;
+  approval: {
+    uuid: string;          // approval UUID — NOT the KVP suggestion UUID!
+    title: string;
+    addonCode: string;     // 'kvp'
+    status: string;        // 'approved' | 'rejected'
+    requestedByName: string;
+    decidedByName?: string;
+    decisionNote?: string | null;
+  };
+  approverUserIds: number[];
+  requestedByUserId: number;
+}
+```
+
+**Critical:** `sourceUuid` (KVP suggestion UUID) is NOT in the event payload. The listener must look up the approval by `approval.uuid` to get `source_uuid` from the `approvals` table.
 
 ```typescript
 constructor(/* deps */) {
-  eventBus.on('approval.decided', (data) => {
-    if (data.addonCode === 'kvp') {
-      void this.handleApprovalDecision(
-        data.addonCode, data.sourceUuid, data.status, data.decisionNote, data.tenantId,
-      );
+  eventBus.on('approval.decided', (data: ApprovalEvent) => {
+    if (data.approval.addonCode === 'kvp') {
+      // Must fetch source_uuid from approvals table using data.approval.uuid
+      void this.handleApprovalDecision(data.tenantId, data.approval);
     }
   });
 }
@@ -275,6 +301,25 @@ async archiveFinalKvps(): Promise<void> {
 
 **Check:** Verify if `ApprovalsService` already creates persistent notifications. If yes, this step may be reduced to just verifying the flow. If not, add notification creation in `KvpApprovalService`.
 
+**Note:** `notification_type` ENUM does NOT exist in the DB (verified). The notifications table may use a VARCHAR or a different pattern. Check actual `notifications` table schema before implementing.
+
+### Step 1.6: Backend Status Enforcement [PENDING]
+
+**Modified file:** `backend/src/nest/kvp/kvp.service.ts`
+
+**Problem:** The frontend restricts dropdown options, but `PUT /kvp/:id` with `{ status: 'approved' }` could bypass the approval workflow. Backend must also enforce the rules.
+
+**Changes to `updateSuggestion()` (or add pre-check):**
+
+When approval config exists for `kvp`:
+- Block `status → 'approved'` via manual update (only the EventBus handler can set this)
+- Block `status → 'in_review'` via manual update (only `requestApproval()` can set this)
+- Allow `status → 'rejected'` only when current status is `'new'` (direct reject by Team Lead)
+- Allow `status → 'implemented'` only when current status is `'approved'`
+- Block ALL status changes when current status is `'in_review'` (waiting for master)
+
+**Implementation:** Add a `validateStatusTransition(currentStatus, newStatus, hasApprovalConfig)` check before the existing `assertCanUpdateStatus()`.
+
 ### Phase 1 — Definition of Done
 
 - [ ] `KvpApprovalService` with requestApproval + getApproval + handleDecision + reconcile
@@ -284,9 +329,10 @@ async archiveFinalKvps(): Promise<void> {
 - [ ] `GET /kvp/approval-config-status` endpoint functional
 - [ ] EventBus subscription to `approval.decided` (filtered by `addon_code='kvp'`)
 - [ ] Startup reconciliation for missed events
-- [ ] CRON job: rejected KVPs → `is_active = 4` after 30 days
+- [ ] CRON job: rejected + implemented KVPs → `status = 'archived'` after 30 days
 - [ ] KvpApprovalService registered as provider in `kvp.module.ts`
 - [ ] KvpApprovalArchiveCronService registered as provider in `kvp.module.ts`
+- [ ] Backend status transition enforcement (Step 1.6) — cannot bypass approval via PUT
 - [ ] Persistent DB notifications for offline users (ADR-004 dual-pattern)
 - [ ] Badge counts correct on page load (not just during SSE session)
 - [ ] ESLint 0 errors
@@ -321,6 +367,11 @@ async archiveFinalKvps(): Promise<void> {
 - [ ] hasApprovalConfig: no config → false
 - [ ] Persistent notification created for KVP masters on request
 - [ ] Persistent notification created for Team Lead on decision
+- [ ] Status transition: new → rejected (allowed, direct reject)
+- [ ] Status transition: new → approved (BLOCKED when config exists)
+- [ ] Status transition: in_review → any (BLOCKED, waiting for master)
+- [ ] Status transition: approved → implemented (allowed)
+- [ ] Status transition: approved → rejected (BLOCKED)
 - [ ] CRON: rejected KVP older than 30 days → status = 'archived'
 - [ ] CRON: implemented KVP older than 30 days → status = 'archived'
 - [ ] CRON: rejected/implemented KVP younger than 30 days → untouched
@@ -375,8 +426,8 @@ async archiveFinalKvps(): Promise<void> {
 **New button in admin actions section:**
 - Label: "Freigabe anfordern"
 - Icon: `fa-check-double` (consistent with approvals sidebar icon)
-- Visible when: `canManage && hasApprovalConfig && !existingApproval && statusAllowsApproval`
-- Status allows: `'new'` or `'in_review'` (not already approved/rejected/implemented)
+- Visible when: `canManage && hasApprovalConfig && !existingApproval && suggestion.status === 'new'`
+- Only status `'new'` allows approval request — all other statuses either have an approval or are terminal
 - Calls: `POST /kvp/:uuid/request-approval`
 - On success: `invalidateAll()` + success toast
 - On error: error toast with message
@@ -444,7 +495,7 @@ async archiveFinalKvps(): Promise<void> {
 6. Verify: KVP status auto-synced to `approved`
 7. Repeat steps 2-4, but reject this time
 8. Verify: KVP status = `rejected`, rejection reason shown
-9. Wait 30 days (or manually trigger CRON) → verify `is_active = 4`
+9. Wait 30 days (or manually trigger CRON) → verify `status = 'archived'`
 
 **Edge case verification:**
 - [ ] No approval config → button not visible
@@ -476,7 +527,7 @@ async archiveFinalKvps(): Promise<void> {
 | 1       | 1     | KvpApprovalService + endpoints + EventBus + CRON     |        |      |
 | 2       | 2     | Unit tests + API integration tests                   |        |      |
 | 3       | 3     | Frontend: button + badge + data loading              |        |      |
-| 4       | 4     | E2E verification + TBD blocking + documentation      |        |      |
+| 4       | 4     | E2E verification + dynamic dropdown + documentation   |        |      |
 
 ---
 
@@ -518,8 +569,13 @@ async archiveFinalKvps(): Promise<void> {
 | `frontend/src/routes/(app)/(shared)/kvp-detail/_lib/DetailSidebar.svelte`    | Button + badge               |
 | `frontend/src/routes/(app)/(shared)/kvp-detail/_lib/types.ts`                | ApprovalInfo type            |
 | `frontend/src/routes/(app)/(shared)/kvp-detail/_lib/api.ts`                  | requestApproval() function   |
+| `frontend/src/routes/(app)/(shared)/kvp-detail/_lib/constants.ts`            | Dynamic STATUS_OPTIONS       |
 
----
+### Backend (modified — additional)
+
+| File                                            | Change                                    |
+| ----------------------------------------------- | ----------------------------------------- |
+| `backend/src/nest/kvp/kvp.service.ts`           | Status transition enforcement (Step 1.6)  |
 
 ---
 
