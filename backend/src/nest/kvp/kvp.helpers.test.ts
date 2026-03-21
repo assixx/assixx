@@ -151,10 +151,10 @@ describe('buildVisibilityClause', () => {
     const orgInfo = createOrgInfo({ teamIds: [1, 2, 3] });
     const result = buildVisibilityClause(orgInfo, 42, 3);
 
-    // Unshared branch uses team_lead_id/deputy_lead_id only, NOT user_teams
+    // Unshared branch uses team_lead_id/team_deputy_lead_id only, NOT user_teams
     expect(result.clause).toContain('s.is_shared = false');
     expect(result.clause).toContain('t.team_lead_id =');
-    expect(result.clause).toContain('t.deputy_lead_id =');
+    expect(result.clause).toContain('t.team_deputy_lead_id =');
     // Extract only the unshared block (between is_shared = false and is_shared = true)
     const unsharedBlock = result.clause.split('s.is_shared = true')[0] ?? '';
     expect(unsharedBlock).not.toContain('user_teams');
@@ -164,9 +164,9 @@ describe('buildVisibilityClause', () => {
     const orgInfo = createOrgInfo();
     const result = buildVisibilityClause(orgInfo, 1, 3);
 
-    // Unshared branch checks team_lead_id and deputy_lead_id
+    // Unshared branch checks team_lead_id and team_deputy_lead_id
     expect(result.clause).toContain('t.team_lead_id =');
-    expect(result.clause).toContain('t.deputy_lead_id =');
+    expect(result.clause).toContain('t.team_deputy_lead_id =');
   });
 
   it('should use scope-based ANY() checks for shared KVPs', () => {

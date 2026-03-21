@@ -171,7 +171,9 @@ export class ChatService {
       LEFT JOIN departments dep_admin ON adp.department_id = dep_admin.id
       LEFT JOIN areas area_via_dep ON dep_admin.area_id = area_via_dep.id
       LEFT JOIN areas area_lead ON u.id = area_lead.area_lead_id AND area_lead.tenant_id = u.tenant_id
+      LEFT JOIN areas area_deputy ON u.id = area_deputy.area_deputy_lead_id AND area_deputy.tenant_id = u.tenant_id
       LEFT JOIN departments dept_lead ON u.id = dept_lead.department_lead_id AND dept_lead.tenant_id = u.tenant_id
+      LEFT JOIN departments dept_deputy ON u.id = dept_deputy.department_deputy_lead_id AND dept_deputy.tenant_id = u.tenant_id
       LEFT JOIN areas area_via_dept_lead ON dept_lead.area_id = area_via_dept_lead.id`;
   }
 

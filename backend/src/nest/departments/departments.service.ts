@@ -23,12 +23,14 @@ export interface DepartmentRow {
   name: string;
   description: string | null;
   department_lead_id: number | null;
+  department_deputy_lead_id: number | null;
   area_id: number | null;
   is_active: number;
   tenant_id: number;
   created_at: Date;
   updated_at: Date;
   department_lead_name: string | undefined;
+  department_deputy_lead_name: string | undefined;
   areaName: string | undefined;
   employee_count: number | undefined;
   employee_names: string | undefined;
@@ -47,12 +49,14 @@ export interface DepartmentResponse {
   name: string;
   description: string | undefined;
   departmentLeadId: number | undefined;
+  departmentDeputyLeadId: number | undefined;
   areaId: number | undefined;
   isActive: number;
   tenantId: number;
   createdAt: string | undefined;
   updatedAt: string | undefined;
   departmentLeadName: string | undefined;
+  departmentDeputyLeadName: string | undefined;
   areaName: string | undefined;
   employeeCount: number | undefined;
   employeeNames: string | undefined;
@@ -153,12 +157,16 @@ export class DepartmentsService {
       WHERE dh.tenant_id = $1
       GROUP BY dh.department_id
     )
-    SELECT d.*, CONCAT(COALESCE(u.first_name, ''), ' ', COALESCE(u.last_name, '')) as department_lead_name, a.name as "areaName",
+    SELECT d.*,
+      CONCAT(COALESCE(u.first_name, ''), ' ', COALESCE(u.last_name, '')) as department_lead_name,
+      NULLIF(TRIM(CONCAT(COALESCE(du.first_name, ''), ' ', COALESCE(du.last_name, ''))), '') as department_deputy_lead_name,
+      a.name as "areaName",
       COALESCE(ec.count, 0) as employee_count, COALESCE(ec.names, '') as employee_names,
       COALESCE(tc.count, 0) as team_count, COALESCE(tc.names, '') as team_names,
       ha.hall_ids, COALESCE(ha.count, 0) as hall_count, COALESCE(ha.names, '') as hall_names
     FROM departments d
     LEFT JOIN users u ON d.department_lead_id = u.id
+    LEFT JOIN users du ON d.department_deputy_lead_id = du.id
     LEFT JOIN areas a ON d.area_id = a.id
     LEFT JOIN employee_counts ec ON ec.department_id = d.id
     LEFT JOIN team_counts tc ON tc.department_id = d.id
@@ -175,12 +183,14 @@ export class DepartmentsService {
       name: dept.name,
       description: dept.description ?? undefined,
       departmentLeadId: dept.department_lead_id ?? undefined,
+      departmentDeputyLeadId: dept.department_deputy_lead_id ?? undefined,
       areaId: dept.area_id ?? undefined,
       isActive: dept.is_active,
       tenantId: dept.tenant_id,
       createdAt: dept.created_at.toISOString(),
       updatedAt: dept.updated_at.toISOString(),
       departmentLeadName: undefined,
+      departmentDeputyLeadName: undefined,
       areaName: undefined,
       employeeCount: undefined,
       employeeNames: undefined,
@@ -193,6 +203,7 @@ export class DepartmentsService {
 
     if (includeExtended) {
       response.departmentLeadName = dept.department_lead_name;
+      response.departmentDeputyLeadName = dept.department_deputy_lead_name;
       response.areaName = dept.areaName;
       response.employeeCount = dept.employee_count;
       response.employeeNames = dept.employee_names;
@@ -271,12 +282,16 @@ export class DepartmentsService {
       WHERE dh.tenant_id = $1
       GROUP BY dh.department_id
     )
-    SELECT d.*, CONCAT(COALESCE(u.first_name, ''), ' ', COALESCE(u.last_name, '')) as department_lead_name, a.name as "areaName",
+    SELECT d.*,
+      CONCAT(COALESCE(u.first_name, ''), ' ', COALESCE(u.last_name, '')) as department_lead_name,
+      NULLIF(TRIM(CONCAT(COALESCE(du.first_name, ''), ' ', COALESCE(du.last_name, ''))), '') as department_deputy_lead_name,
+      a.name as "areaName",
       COALESCE(ec.count, 0) as employee_count, COALESCE(ec.names, '') as employee_names,
       COALESCE(tc.count, 0) as team_count, COALESCE(tc.names, '') as team_names,
       ha.hall_ids, COALESCE(ha.count, 0) as hall_count, COALESCE(ha.names, '') as hall_names
     FROM departments d
     LEFT JOIN users u ON d.department_lead_id = u.id
+    LEFT JOIN users du ON d.department_deputy_lead_id = du.id
     LEFT JOIN areas a ON d.area_id = a.id
     LEFT JOIN employee_counts ec ON ec.department_id = d.id
     LEFT JOIN team_counts tc ON tc.department_id = d.id
@@ -391,18 +406,20 @@ export class DepartmentsService {
     }
 
     await this.validateLeader(dto.departmentLeadId, tenantId);
+    await this.validateLeader(dto.departmentDeputyLeadId, tenantId);
 
     const isActive = dto.isActive ?? 1;
 
     const departmentUuid = uuidv7();
     const rows = await this.db.query<{ id: number }>(
-      `INSERT INTO departments (name, description, department_lead_id, area_id, is_active, tenant_id, uuid, uuid_created_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
+      `INSERT INTO departments (name, description, department_lead_id, department_deputy_lead_id, area_id, is_active, tenant_id, uuid, uuid_created_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
        RETURNING id`,
       [
         dto.name,
         dto.description,
         dto.departmentLeadId,
+        dto.departmentDeputyLeadId ?? null,
         dto.areaId,
         isActive,
         tenantId,
@@ -432,6 +449,7 @@ export class DepartmentsService {
         name: dto.name,
         description: dto.description,
         departmentLeadId: dto.departmentLeadId,
+        departmentDeputyLeadId: dto.departmentDeputyLeadId,
         areaId: dto.areaId,
       },
     );
@@ -453,6 +471,7 @@ export class DepartmentsService {
       ['name', 'name'],
       ['description', 'description'],
       ['departmentLeadId', 'department_lead_id'],
+      ['departmentDeputyLeadId', 'department_deputy_lead_id'],
       ['areaId', 'area_id'],
       ['isActive', 'is_active'],
     ];
@@ -493,11 +512,13 @@ export class DepartmentsService {
       name: existingDept?.name,
       description: existingDept?.description,
       departmentLeadId: existingDept?.department_lead_id,
+      departmentDeputyLeadId: existingDept?.department_deputy_lead_id,
       areaId: existingDept?.area_id,
       isActive: existingDept?.is_active,
     };
 
     await this.validateLeader(dto.departmentLeadId, tenantId);
+    await this.validateLeader(dto.departmentDeputyLeadId, tenantId);
 
     const { fields, values } = this.buildUpdateFields(dto);
     if (fields.length > 0) {
@@ -517,6 +538,7 @@ export class DepartmentsService {
       name: dto.name,
       description: dto.description,
       departmentLeadId: dto.departmentLeadId,
+      departmentDeputyLeadId: dto.departmentDeputyLeadId,
       areaId: dto.areaId,
       isActive: dto.isActive,
     };

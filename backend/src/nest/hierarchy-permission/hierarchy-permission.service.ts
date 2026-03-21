@@ -89,7 +89,7 @@ interface TeamIdRow extends QueryResultRow {
  * Admin-Permissions + Lead-Positions + Kaskade (Area→Dept→Team)
  *
  * Parameters: $1 = userId, $2 = tenantId
- * D4: deputy_lead_id = team_lead_id (DEPUTY_EQUALS_LEAD Flag für V2)
+ * D4: Deputies have equal scope rights as their leads at ALL 3 levels (DEPUTY_EQUALS_LEAD)
  */
 const UNIFIED_SCOPE_CTE = `
 WITH
@@ -100,7 +100,8 @@ perm_areas AS (
 ),
 lead_areas AS (
   SELECT id FROM areas
-  WHERE area_lead_id = $1 AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}
+  WHERE (area_lead_id = $1 OR area_deputy_lead_id = $1)
+    AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}
 ),
 all_areas AS (
   SELECT id FROM perm_areas UNION SELECT id FROM lead_areas
@@ -112,7 +113,8 @@ perm_depts AS (
 ),
 lead_depts AS (
   SELECT id FROM departments
-  WHERE department_lead_id = $1 AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}
+  WHERE (department_lead_id = $1 OR department_deputy_lead_id = $1)
+    AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}
 ),
 inherited_depts AS (
   SELECT d.id FROM departments d
@@ -126,7 +128,7 @@ all_depts AS (
 ),
 lead_teams AS (
   SELECT id FROM teams
-  WHERE (team_lead_id = $1 OR deputy_lead_id = $1)
+  WHERE (team_lead_id = $1 OR team_deputy_lead_id = $1)
     AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}
 ),
 inherited_teams AS (
@@ -158,7 +160,7 @@ WHERE u.tenant_id = $1 AND u.is_active != ${IS_ACTIVE.DELETED} AND (
   OR EXISTS (SELECT 1 FROM user_teams ut
              WHERE ut.user_id = u.id AND ut.team_id = ANY($3::int[]))
   OR EXISTS (SELECT 1 FROM teams t
-             WHERE (t.team_lead_id = u.id OR t.deputy_lead_id = u.id)
+             WHERE (t.team_lead_id = u.id OR t.team_deputy_lead_id = u.id)
                AND t.id = ANY($3::int[]) AND t.is_active = ${IS_ACTIVE.ACTIVE})
 )
 `;

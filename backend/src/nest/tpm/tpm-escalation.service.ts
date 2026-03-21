@@ -245,19 +245,23 @@ export class TpmEscalationService implements OnModuleInit {
     );
   }
 
-  /** Find the team lead responsible for a asset */
+  /** Find the team lead (or deputy) responsible for a asset */
   private async resolveTeamLead(tenantId: number, assetId: number): Promise<number | null> {
-    const result = await this.db.queryOne<{ team_lead_id: number }>(
-      `SELECT DISTINCT t.team_lead_id
+    const result = await this.db.queryOne<{
+      team_lead_id: number | null;
+      team_deputy_lead_id: number | null;
+    }>(
+      `SELECT DISTINCT t.team_lead_id, t.team_deputy_lead_id
        FROM teams t
        JOIN asset_teams mt
          ON t.id = mt.team_id AND t.tenant_id = mt.tenant_id
        WHERE mt.asset_id = $1 AND mt.tenant_id = $2
-         AND t.is_active = ${IS_ACTIVE.ACTIVE} AND t.team_lead_id IS NOT NULL
+         AND t.is_active = ${IS_ACTIVE.ACTIVE}
+         AND (t.team_lead_id IS NOT NULL OR t.team_deputy_lead_id IS NOT NULL)
        LIMIT 1`,
       [assetId, tenantId],
     );
-    return result?.team_lead_id ?? null;
+    return result?.team_lead_id ?? result?.team_deputy_lead_id ?? null;
   }
 
   /** Map a candidate row to the notification card interface */

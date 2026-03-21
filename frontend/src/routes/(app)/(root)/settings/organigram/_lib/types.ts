@@ -128,7 +128,9 @@ export interface OrgNodeDetail {
   assetStatus?: string;
   assetType?: string;
   lead?: OrgNodeDetailPerson;
-  deputyLead?: OrgNodeDetailPerson;
+  teamDeputyLead?: OrgNodeDetailPerson;
+  areaDeputyLead?: OrgNodeDetailPerson;
+  departmentDeputyLead?: OrgNodeDetailPerson;
   parentArea?: OrgNodeDetailEntry;
   parentDepartment?: OrgNodeDetailEntry;
   halls?: OrgNodeDetailEntry[];

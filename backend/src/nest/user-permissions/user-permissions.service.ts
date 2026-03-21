@@ -516,9 +516,9 @@ export class UserPermissionsService {
       is_any_lead: boolean;
     }>(
       `SELECT u.id, u.role,
-        (EXISTS (SELECT 1 FROM teams t WHERE (t.team_lead_id = u.id OR t.deputy_lead_id = u.id) AND t.is_active = ${IS_ACTIVE.ACTIVE})
-         OR EXISTS (SELECT 1 FROM departments d WHERE d.department_lead_id = u.id AND d.is_active = ${IS_ACTIVE.ACTIVE})
-         OR EXISTS (SELECT 1 FROM areas a WHERE a.area_lead_id = u.id AND a.is_active = ${IS_ACTIVE.ACTIVE})
+        (EXISTS (SELECT 1 FROM teams t WHERE (t.team_lead_id = u.id OR t.team_deputy_lead_id = u.id) AND t.is_active = ${IS_ACTIVE.ACTIVE})
+         OR EXISTS (SELECT 1 FROM departments d WHERE (d.department_lead_id = u.id OR d.department_deputy_lead_id = u.id) AND d.is_active = ${IS_ACTIVE.ACTIVE})
+         OR EXISTS (SELECT 1 FROM areas a WHERE (a.area_lead_id = u.id OR a.area_deputy_lead_id = u.id) AND a.is_active = ${IS_ACTIVE.ACTIVE})
         ) AS is_any_lead
        FROM users u WHERE u.uuid = $1 AND u.tenant_id = $2 AND u.is_active = ${IS_ACTIVE.ACTIVE}`,
       [userUuid, tenantId],

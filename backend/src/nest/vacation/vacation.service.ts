@@ -60,7 +60,7 @@ interface UserTeamInfoRow {
   team_id: number;
   team_name: string;
   team_lead_id: number | null;
-  deputy_lead_id: number | null;
+  team_deputy_lead_id: number | null;
   department_id: number | null;
 }
 
@@ -503,7 +503,7 @@ export class VacationService {
   ): Promise<UserTeamInfoRow> {
     const result = await client.query<UserTeamInfoRow>(
       `SELECT t.id AS team_id, t.name AS team_name,
-              t.team_lead_id, t.deputy_lead_id, t.department_id
+              t.team_lead_id, t.team_deputy_lead_id, t.department_id
        FROM teams t JOIN user_teams ut ON t.id = ut.team_id
        WHERE ut.user_id = $1 AND t.tenant_id = $2 AND t.is_active = ${IS_ACTIVE.ACTIVE}`,
       [userId, tenantId],

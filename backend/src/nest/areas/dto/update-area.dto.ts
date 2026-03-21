@@ -31,6 +31,12 @@ export const UpdateAreaSchema = z.object({
     .positive('Area lead ID must be a positive integer')
     .nullable()
     .optional(),
+  areaDeputyLeadId: z.coerce
+    .number()
+    .int()
+    .positive('Area deputy lead ID must be a positive integer')
+    .nullable()
+    .optional(),
   type: AreaTypeSchema.optional(),
   capacity: z.coerce
     .number()

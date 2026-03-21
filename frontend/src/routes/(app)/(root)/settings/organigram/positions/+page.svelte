@@ -47,7 +47,14 @@
   let editingValue = $state('');
   let busy = $state(false);
 
-  const LEAD_ORDER = ['area_lead', 'department_lead', 'team_lead', 'deputy_lead'];
+  const LEAD_ORDER = [
+    'area_lead',
+    'area_deputy_lead',
+    'department_lead',
+    'department_deputy_lead',
+    'team_lead',
+    'team_deputy_lead',
+  ];
 
   const systemPositions = $derived(
     positions

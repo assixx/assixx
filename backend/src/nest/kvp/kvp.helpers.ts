@@ -107,7 +107,7 @@ function buildUnsharedClause(h: OrgPlaceholders): string {
   return `(s.is_shared = false AND (
     s.org_level = 'team' AND s.org_id IN (
       SELECT t.id FROM teams t
-      WHERE (t.team_lead_id = ${h.userId} OR t.deputy_lead_id = ${h.userId}) AND t.tenant_id = s.tenant_id
+      WHERE (t.team_lead_id = ${h.userId} OR t.team_deputy_lead_id = ${h.userId}) AND t.tenant_id = s.tenant_id
     )
   ))`;
 }

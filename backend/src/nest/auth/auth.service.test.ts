@@ -440,6 +440,17 @@ describe('SECURITY: AuthService', () => {
 
       expect(result).toEqual({ tokensRevoked: 0 });
     });
+
+    it('should forward ipAddress and userAgent to logout audit', async () => {
+      mockDb.query.mockResolvedValueOnce([{ count: '1' }]); // revoke
+      mockDb.query.mockResolvedValueOnce([]); // logLogoutAudit
+
+      await service.logout(createAuthUser(), '10.0.0.1', 'Chrome/120');
+
+      const auditParams = mockDb.query.mock.calls[1]?.[1] as unknown[];
+      expect(auditParams?.[7]).toBe('10.0.0.1');
+      expect(auditParams?.[8]).toBe('Chrome/120');
+    });
   });
 
   // =============================================================

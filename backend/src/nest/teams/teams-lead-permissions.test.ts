@@ -47,7 +47,7 @@ function team(overrides: Record<string, unknown> = {}) {
     description: null,
     department_id: 10,
     team_lead_id: null,
-    deputy_lead_id: null,
+    team_deputy_lead_id: null,
     is_active: 1,
     tenant_id: 3,
     created_at: new Date(),
@@ -55,7 +55,7 @@ function team(overrides: Record<string, unknown> = {}) {
     department_name: 'P',
     department_area_name: 'H',
     team_lead_name: null,
-    deputy_lead_name: null,
+    team_deputy_lead_name: null,
     member_count: 5,
     asset_count: 2,
     member_names: null,
@@ -76,16 +76,16 @@ function sqls(): string[] {
 
 describe('SECURITY: Seed permissions on deputy lead assignment', () => {
   it('should INSERT manage_hierarchy rows when deputy assigned', async () => {
-    // DTO: { deputyLeaderId: 200 }  Old: deputy_lead_id=null
+    // DTO: { teamDeputyLeadId: 200 }  Old: team_deputy_lead_id=null
     // Query sequence:
     q([team()]); // FIND_TEAM_BY_ID (existing)
     q([{ id: 200, position: 'team_lead' }]); // validateLeader(200)
-    q([]); // UPDATE teams SET deputy_lead_id=$1
+    q([]); // UPDATE teams SET team_deputy_lead_id=$1
     q([]); // seedLeadPermissions: INSERT manage-teams
     q([]); // seedLeadPermissions: INSERT manage-employees
-    q([team({ deputy_lead_id: 200 })]); // FIND_TEAM_BY_ID (getTeamById result)
+    q([team({ team_deputy_lead_id: 200 })]); // FIND_TEAM_BY_ID (getTeamById result)
 
-    await service.updateTeam(1, { deputyLeaderId: 200 }, 1, 3);
+    await service.updateTeam(1, { teamDeputyLeadId: 200 }, 1, 3);
 
     const inserts = sqls().filter((s: string) => s.includes('manage_hierarchy'));
     expect(inserts).toHaveLength(2);

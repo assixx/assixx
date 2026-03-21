@@ -82,8 +82,8 @@ export interface Team {
   departmentId?: number;
   departmentName?: string;
   departmentAreaName?: string;
-  deputyLeaderId?: number | null;
-  deputyLeaderName?: string;
+  teamDeputyLeadId?: number | null;
+  teamDeputyLeadName?: string;
   memberCount?: number | string;
   memberNames?: string;
   assetCount?: number | string;
@@ -120,6 +120,7 @@ export interface TeamPayload {
   description?: string;
   departmentId?: number | null;
   leaderId?: number | null;
+  teamDeputyLeadId?: number | null;
   isActive: FormIsActiveStatus;
 }
 

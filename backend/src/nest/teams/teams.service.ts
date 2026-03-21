@@ -38,7 +38,7 @@ export interface TeamRow {
   description: string | null;
   department_id: number | null;
   team_lead_id: number | null;
-  deputy_lead_id: number | null;
+  team_deputy_lead_id: number | null;
   is_active: number;
   tenant_id: number;
   created_at: Date;
@@ -47,7 +47,7 @@ export interface TeamRow {
   department_area_id: number | null;
   department_area_name: string | undefined;
   team_lead_name: string | undefined;
-  deputy_lead_name: string | undefined;
+  team_deputy_lead_name: string | undefined;
   member_count: number | undefined;
   asset_count: number | undefined;
   member_names: string | null;
@@ -66,7 +66,7 @@ export interface TeamResponse {
   description: string | null;
   departmentId: number | null;
   leaderId: number | null;
-  deputyLeaderId: number | null;
+  teamDeputyLeadId: number | null;
   isActive: number;
   status: 'active' | 'inactive';
   tenantId: number;
@@ -76,7 +76,7 @@ export interface TeamResponse {
   departmentAreaId: number | null;
   departmentAreaName: string | undefined;
   leaderName: string | undefined;
-  deputyLeaderName: string | undefined;
+  teamDeputyLeadName: string | undefined;
   memberCount: number | undefined;
   assetCount: number | undefined;
   memberNames: string | undefined;
@@ -205,7 +205,7 @@ export class TeamsService {
       d.area_id as department_area_id,
       a.name as department_area_name,
       CONCAT(COALESCE(u.first_name, ''), ' ', COALESCE(u.last_name, '')) as team_lead_name,
-      CONCAT(COALESCE(du.first_name, ''), ' ', COALESCE(du.last_name, '')) as deputy_lead_name,
+      CONCAT(COALESCE(du.first_name, ''), ' ', COALESCE(du.last_name, '')) as team_deputy_lead_name,
       (SELECT COUNT(*) FROM user_teams ut WHERE ut.team_id = t.id) as member_count,
       (SELECT COUNT(*) FROM asset_teams mt WHERE mt.team_id = t.id) as asset_count,
       (SELECT STRING_AGG(CONCAT(COALESCE(mu.first_name, ''), ' ', COALESCE(mu.last_name, '')), ', ' ORDER BY mu.last_name)
@@ -223,7 +223,7 @@ export class TeamsService {
     LEFT JOIN departments d ON t.department_id = d.id
     LEFT JOIN areas a ON d.area_id = a.id
     LEFT JOIN users u ON t.team_lead_id = u.id
-    LEFT JOIN users du ON t.deputy_lead_id = du.id
+    LEFT JOIN users du ON t.team_deputy_lead_id = du.id
     LEFT JOIN hall_assignments ha ON ha.team_id = t.id
     WHERE t.tenant_id = $1 AND t.is_active != ${IS_ACTIVE.DELETED}
     ORDER BY t.name`;
@@ -238,7 +238,7 @@ export class TeamsService {
       description: team.description,
       departmentId: team.department_id,
       leaderId: team.team_lead_id,
-      deputyLeaderId: team.deputy_lead_id,
+      teamDeputyLeadId: team.team_deputy_lead_id,
       isActive: team.is_active,
       status: team.is_active === 1 ? 'active' : 'inactive',
       tenantId: team.tenant_id,
@@ -248,7 +248,7 @@ export class TeamsService {
       departmentAreaId: team.department_area_id,
       departmentAreaName: team.department_area_name,
       leaderName: team.team_lead_name,
-      deputyLeaderName: team.deputy_lead_name ?? undefined,
+      teamDeputyLeadName: team.team_deputy_lead_name ?? undefined,
       memberCount: team.member_count,
       assetCount: team.asset_count,
       memberNames: team.member_names ?? undefined,
@@ -498,7 +498,7 @@ export class TeamsService {
       ['description', 'description'],
       ['departmentId', 'department_id'],
       ['leaderId', 'team_lead_id'],
-      ['deputyLeaderId', 'deputy_lead_id'],
+      ['teamDeputyLeadId', 'team_deputy_lead_id'],
       ['isActive', 'is_active'],
     ];
 
@@ -536,7 +536,7 @@ export class TeamsService {
   private async cleanupLeadPermissions(userId: number, tenantId: number): Promise<void> {
     const remaining = await this.db.query<{ count: string }>(
       `SELECT COUNT(*) AS count FROM teams
-       WHERE (team_lead_id = $1 OR deputy_lead_id = $1)
+       WHERE (team_lead_id = $1 OR team_deputy_lead_id = $1)
          AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}`,
       [userId, tenantId],
     );
@@ -572,8 +572,8 @@ export class TeamsService {
   ): Promise<void> {
     await this.syncLeadPermission(dto.leaderId, oldTeam.team_lead_id, tenantId, actingUserId);
     await this.syncLeadPermission(
-      dto.deputyLeaderId,
-      oldTeam.deputy_lead_id,
+      dto.teamDeputyLeadId,
+      oldTeam.team_deputy_lead_id,
       tenantId,
       actingUserId,
     );
@@ -619,7 +619,7 @@ export class TeamsService {
 
     await this.validateDepartment(dto.departmentId, tenantId);
     await this.validateLeader(dto.leaderId, tenantId);
-    await this.validateLeader(dto.deputyLeaderId, tenantId);
+    await this.validateLeader(dto.teamDeputyLeadId, tenantId);
     if (dto.name !== undefined) await this.checkDuplicateName(dto.name, tenantId, id);
 
     const { fields, values } = this.buildUpdateFields(dto);
@@ -645,13 +645,13 @@ export class TeamsService {
         name: old.name,
         departmentId: old.department_id,
         leaderId: old.team_lead_id,
-        deputyLeaderId: old.deputy_lead_id,
+        teamDeputyLeadId: old.team_deputy_lead_id,
       },
       {
         name: dto.name,
         departmentId: dto.departmentId,
         leaderId: dto.leaderId,
-        deputyLeaderId: dto.deputyLeaderId,
+        teamDeputyLeadId: dto.teamDeputyLeadId,
       },
     );
 

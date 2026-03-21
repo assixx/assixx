@@ -47,9 +47,10 @@ export interface OrganizationalScope {
 // ============================================================================
 
 /**
- * V1: Deputy hat identische Rechte wie Team-Lead.
+ * Deputies have identical scope rights as their corresponding leads.
+ * Applies to ALL 3 hierarchy levels: area, department, team.
  * V2-Erweiterung: Per-Tenant-Setting (ADR-036 Known Limitations #10).
- * Wenn false → deputy_lead_id aus CTE-Query entfernen.
+ * Wenn false → *_deputy_lead_id aus CTE-Queries entfernen.
  */
 export const DEPUTY_EQUALS_LEAD = true;
 

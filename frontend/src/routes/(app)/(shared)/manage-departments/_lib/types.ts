@@ -15,6 +15,8 @@ export interface Department {
   description?: string | null;
   departmentLeadId?: number | null;
   departmentLeadName?: string | null;
+  departmentDeputyLeadId?: number | null;
+  departmentDeputyLeadName?: string | null;
   areaId?: number | null;
   areaName?: string | null;
   parentId?: number | null;
@@ -76,6 +78,7 @@ export interface DepartmentPayload {
   description?: string | null;
   areaId?: number | null;
   departmentLeadId?: number | null;
+  departmentDeputyLeadId?: number | null;
   isActive: FormIsActiveStatus;
 }
 

@@ -909,6 +909,12 @@ export class TpmExecutionsService {
        WHERE mt.asset_id = $1 AND mt.tenant_id = $2
          AND t.team_lead_id IS NOT NULL AND t.is_active = ${IS_ACTIVE.ACTIVE}
        UNION
+       SELECT DISTINCT t2.team_deputy_lead_id AS user_id
+       FROM teams t2
+       JOIN asset_teams mt2 ON t2.id = mt2.team_id AND mt2.tenant_id = t2.tenant_id
+       WHERE mt2.asset_id = $1 AND mt2.tenant_id = $2
+         AND t2.team_deputy_lead_id IS NOT NULL AND t2.is_active = ${IS_ACTIVE.ACTIVE}
+       UNION
        SELECT id AS user_id FROM users
        WHERE tenant_id = $2 AND has_full_access = true AND is_active = ${IS_ACTIVE.ACTIVE}`,
       [assetId, tenantId],

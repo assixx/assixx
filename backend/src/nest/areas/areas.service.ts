@@ -28,6 +28,7 @@ export interface AreaRow {
   name: string;
   description: string | null;
   area_lead_id: number | null;
+  area_deputy_lead_id: number | null;
   type: 'building' | 'warehouse' | 'office' | 'production' | 'outdoor' | 'other';
   capacity: number | null;
   address: string | null;
@@ -36,6 +37,7 @@ export interface AreaRow {
   created_at: Date;
   updated_at: Date;
   area_lead_name: string | null;
+  area_deputy_lead_name: string | null;
   employee_count: number;
   department_count: number;
   department_names: string | null;
@@ -51,6 +53,8 @@ export interface AreaResponse {
   description: string | undefined;
   areaLeadId: number | undefined;
   areaLeadName: string | undefined;
+  areaDeputyLeadId: number | undefined;
+  areaDeputyLeadName: string | undefined;
   type: string;
   capacity: number | undefined;
   address: string | undefined;
@@ -104,11 +108,13 @@ export class AreasService {
     SELECT
       a.*,
       NULLIF(TRIM(CONCAT(COALESCE(MAX(area_lead.first_name), ''), ' ', COALESCE(MAX(area_lead.last_name), ''))), '') as area_lead_name,
+      NULLIF(TRIM(CONCAT(COALESCE(MAX(area_deputy.first_name), ''), ' ', COALESCE(MAX(area_deputy.last_name), ''))), '') as area_deputy_lead_name,
       COUNT(DISTINCT e.id) as employee_count,
       COUNT(DISTINCT d.id) as department_count,
       STRING_AGG(DISTINCT d.name, ', ' ORDER BY d.name) as department_names
     FROM areas a
     LEFT JOIN users area_lead ON a.area_lead_id = area_lead.id
+    LEFT JOIN users area_deputy ON a.area_deputy_lead_id = area_deputy.id
     LEFT JOIN users e ON e.tenant_id = a.tenant_id AND e.role = 'employee'
     LEFT JOIN departments d ON d.area_id = a.id AND d.tenant_id = a.tenant_id
     WHERE a.tenant_id = $1 AND a.is_active != ${IS_ACTIVE.DELETED}
@@ -125,6 +131,8 @@ export class AreasService {
       description: row.description ?? undefined,
       areaLeadId: row.area_lead_id ?? undefined,
       areaLeadName: row.area_lead_name ?? undefined,
+      areaDeputyLeadId: row.area_deputy_lead_id ?? undefined,
+      areaDeputyLeadName: row.area_deputy_lead_name ?? undefined,
       type: row.type,
       capacity: row.capacity ?? undefined,
       address: row.address ?? undefined,
@@ -297,19 +305,21 @@ export class AreasService {
     }
 
     await this.validateLeader(dto.areaLeadId, tenantId);
+    await this.validateLeader(dto.areaDeputyLeadId, tenantId);
 
     const areaUuid = uuidv7();
     const rows = await this.db.query<{ id: number }>(
       `INSERT INTO areas (
-        tenant_id, name, description, area_lead_id, type, capacity,
+        tenant_id, name, description, area_lead_id, area_deputy_lead_id, type, capacity,
         address, created_by, is_active, uuid, uuid_created_at
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW())
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW())
       RETURNING id`,
       [
         tenantId,
         dto.name,
         dto.description ?? null,
         dto.areaLeadId ?? null,
+        dto.areaDeputyLeadId ?? null,
         dto.type,
         dto.capacity ?? null,
         dto.address ?? null,
@@ -337,6 +347,7 @@ export class AreasService {
         description: dto.description,
         type: dto.type,
         areaLeadId: dto.areaLeadId,
+        areaDeputyLeadId: dto.areaDeputyLeadId,
         capacity: dto.capacity,
         address: dto.address,
       },
@@ -359,6 +370,7 @@ export class AreasService {
       ['name', 'name'],
       ['description', 'description'],
       ['areaLeadId', 'area_lead_id'],
+      ['areaDeputyLeadId', 'area_deputy_lead_id'],
       ['type', 'type'],
       ['capacity', 'capacity'],
       ['address', 'address'],
@@ -393,12 +405,14 @@ export class AreasService {
       description: existingArea.description,
       type: existingArea.type,
       areaLeadId: existingArea.areaLeadId,
+      areaDeputyLeadId: existingArea.areaDeputyLeadId,
       capacity: existingArea.capacity,
       address: existingArea.address,
       isActive: existingArea.isActive,
     };
 
     await this.validateLeader(dto.areaLeadId, tenantId);
+    await this.validateLeader(dto.areaDeputyLeadId, tenantId);
 
     const { fields, values } = this.buildUpdateFields(dto);
     if (fields.length > 0) {
@@ -423,6 +437,7 @@ export class AreasService {
       description: dto.description,
       type: dto.type,
       areaLeadId: dto.areaLeadId,
+      areaDeputyLeadId: dto.areaDeputyLeadId,
       capacity: dto.capacity,
       address: dto.address,
       isActive: dto.isActive,

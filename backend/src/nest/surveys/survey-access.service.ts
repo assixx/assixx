@@ -11,16 +11,16 @@ import type { AssignmentInput, DbSurvey, DbSurveyAssignment } from './surveys.ty
 
 /** SQL queries to verify leadership permissions per assignment entity type */
 const LEADERSHIP_QUERIES: Record<string, string> = {
-  area: `SELECT id FROM areas WHERE id = $1 AND area_lead_id = $2 AND tenant_id = $3`,
+  area: `SELECT id FROM areas WHERE id = $1 AND (area_lead_id = $2 OR area_deputy_lead_id = $2) AND tenant_id = $3`,
   department: `SELECT d.id FROM departments d
     LEFT JOIN areas a ON d.area_id = a.id
     WHERE d.id = $1 AND d.tenant_id = $3
-      AND (d.department_lead_id = $2 OR a.area_lead_id = $2)`,
+      AND (d.department_lead_id = $2 OR d.department_deputy_lead_id = $2 OR a.area_lead_id = $2 OR a.area_deputy_lead_id = $2)`,
   team: `SELECT t.id FROM teams t
     LEFT JOIN departments d ON t.department_id = d.id
     LEFT JOIN areas a ON d.area_id = a.id
     WHERE t.id = $1 AND t.tenant_id = $3
-      AND (d.department_lead_id = $2 OR a.area_lead_id = $2)`,
+      AND (t.team_lead_id = $2 OR t.team_deputy_lead_id = $2 OR d.department_lead_id = $2 OR d.department_deputy_lead_id = $2 OR a.area_lead_id = $2 OR a.area_deputy_lead_id = $2)`,
 };
 
 @Injectable()
@@ -269,7 +269,7 @@ export class SurveyAccessService {
             EXISTS (SELECT 1 FROM user_teams ut
                     WHERE ut.user_id = ${userParam} AND ut.team_id = sa.team_id AND ut.tenant_id = ${tenantParam})
             OR EXISTS (SELECT 1 FROM teams t
-                       WHERE t.id = sa.team_id AND t.team_lead_id = ${userParam} AND t.tenant_id = ${tenantParam})
+                       WHERE t.id = sa.team_id AND (t.team_lead_id = ${userParam} OR t.team_deputy_lead_id = ${userParam}) AND t.tenant_id = ${tenantParam})
             OR EXISTS (SELECT 1 FROM teams t
                        JOIN admin_department_permissions adp ON adp.department_id = t.department_id
                        WHERE t.id = sa.team_id AND adp.admin_user_id = ${userParam} AND adp.tenant_id = ${tenantParam})
@@ -296,25 +296,25 @@ export class SurveyAccessService {
         SELECT 1 FROM survey_assignments sa WHERE sa.survey_id = s.id AND (
           (sa.assignment_type = 'area' AND EXISTS (
             SELECT 1 FROM areas a
-            WHERE a.id = sa.area_id AND a.area_lead_id = ${userParam} AND a.tenant_id = ${tenantParam}
+            WHERE a.id = sa.area_id AND (a.area_lead_id = ${userParam} OR a.area_deputy_lead_id = ${userParam}) AND a.tenant_id = ${tenantParam}
           ))
           OR (sa.assignment_type = 'department' AND (
             EXISTS (SELECT 1 FROM departments d
-                    WHERE d.id = sa.department_id AND d.department_lead_id = ${userParam} AND d.tenant_id = ${tenantParam})
+                    WHERE d.id = sa.department_id AND (d.department_lead_id = ${userParam} OR d.department_deputy_lead_id = ${userParam}) AND d.tenant_id = ${tenantParam})
             OR EXISTS (SELECT 1 FROM departments d
                        JOIN areas a ON d.area_id = a.id
-                       WHERE d.id = sa.department_id AND a.area_lead_id = ${userParam} AND a.tenant_id = ${tenantParam})
+                       WHERE d.id = sa.department_id AND (a.area_lead_id = ${userParam} OR a.area_deputy_lead_id = ${userParam}) AND a.tenant_id = ${tenantParam})
           ))
           OR (sa.assignment_type = 'team' AND (
             EXISTS (SELECT 1 FROM teams t
-                    WHERE t.id = sa.team_id AND t.team_lead_id = ${userParam} AND t.tenant_id = ${tenantParam})
+                    WHERE t.id = sa.team_id AND (t.team_lead_id = ${userParam} OR t.team_deputy_lead_id = ${userParam}) AND t.tenant_id = ${tenantParam})
             OR EXISTS (SELECT 1 FROM teams t
                        JOIN departments d ON t.department_id = d.id
-                       WHERE t.id = sa.team_id AND d.department_lead_id = ${userParam} AND d.tenant_id = ${tenantParam})
+                       WHERE t.id = sa.team_id AND (d.department_lead_id = ${userParam} OR d.department_deputy_lead_id = ${userParam}) AND d.tenant_id = ${tenantParam})
             OR EXISTS (SELECT 1 FROM teams t
                        JOIN departments d ON t.department_id = d.id
                        JOIN areas a ON d.area_id = a.id
-                       WHERE t.id = sa.team_id AND a.area_lead_id = ${userParam} AND a.tenant_id = ${tenantParam})
+                       WHERE t.id = sa.team_id AND (a.area_lead_id = ${userParam} OR a.area_deputy_lead_id = ${userParam}) AND a.tenant_id = ${tenantParam})
           ))
         )
       )

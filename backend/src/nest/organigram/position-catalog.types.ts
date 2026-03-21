@@ -27,10 +27,12 @@ export const SYSTEM_POSITIONS: readonly {
   name: string;
   roleCategory: PositionRoleCategory;
 }[] = [
-  { name: 'team_lead', roleCategory: 'employee' },
-  { name: 'deputy_lead', roleCategory: 'employee' },
   { name: 'area_lead', roleCategory: 'admin' },
+  { name: 'area_deputy_lead', roleCategory: 'admin' },
   { name: 'department_lead', roleCategory: 'admin' },
+  { name: 'department_deputy_lead', roleCategory: 'admin' },
+  { name: 'team_lead', roleCategory: 'employee' },
+  { name: 'team_deputy_lead', roleCategory: 'employee' },
 ];
 
 /** Default custom positions seeded per tenant on first access (editable, deletable) */

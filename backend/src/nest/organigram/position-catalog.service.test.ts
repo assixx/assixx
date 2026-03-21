@@ -79,19 +79,23 @@ describe('PositionCatalogService', () => {
 
       await service.ensureSystemPositions(10);
 
-      // 4 system + 18 defaults = 22
-      expect(mockDb.query).toHaveBeenCalledTimes(22);
+      // 6 system + 18 defaults = 24
+      expect(mockDb.query).toHaveBeenCalledTimes(24);
       const calls = mockDb.query.mock.calls;
       // All use ON CONFLICT with partial index predicate
       expect(calls[0]?.[0]).toContain('ON CONFLICT');
       expect(calls[0]?.[0]).toContain('WHERE is_active = 1');
-      // System positions first (is_system = true)
-      expect(calls[0]?.[1]).toEqual(expect.arrayContaining([10, 'team_lead', 'employee']));
-      expect(calls[1]?.[1]).toEqual(expect.arrayContaining([10, 'deputy_lead', 'employee']));
-      expect(calls[2]?.[1]).toEqual(expect.arrayContaining([10, 'area_lead', 'admin']));
-      expect(calls[3]?.[1]).toEqual(expect.arrayContaining([10, 'department_lead', 'admin']));
+      // System positions first (is_system = true) — ordered: area, area_deputy, dept, dept_deputy, team, team_deputy
+      expect(calls[0]?.[1]).toEqual(expect.arrayContaining([10, 'area_lead', 'admin']));
+      expect(calls[1]?.[1]).toEqual(expect.arrayContaining([10, 'area_deputy_lead', 'admin']));
+      expect(calls[2]?.[1]).toEqual(expect.arrayContaining([10, 'department_lead', 'admin']));
+      expect(calls[3]?.[1]).toEqual(
+        expect.arrayContaining([10, 'department_deputy_lead', 'admin']),
+      );
+      expect(calls[4]?.[1]).toEqual(expect.arrayContaining([10, 'team_lead', 'employee']));
+      expect(calls[5]?.[1]).toEqual(expect.arrayContaining([10, 'team_deputy_lead', 'employee']));
       // Default positions after (is_system = false)
-      expect(calls[4]?.[1]).toEqual(
+      expect(calls[6]?.[1]).toEqual(
         expect.arrayContaining([10, 'Produktionsmitarbeiter', 'employee']),
       );
     });
@@ -102,10 +106,10 @@ describe('PositionCatalogService', () => {
   // =============================================================
 
   describe('getAll', () => {
-    /** Mock 21 seed queries + 1 SELECT */
+    /** Mock 24 seed queries + 1 SELECT */
     function mockSeedThenSelect(selectResult: PositionCatalogRow[]): void {
-      // 22 seed queries return empty (ON CONFLICT DO NOTHING)
-      for (let i = 0; i < 22; i++) {
+      // 24 seed queries return empty (ON CONFLICT DO NOTHING) — 6 system + 18 defaults
+      for (let i = 0; i < 24; i++) {
         mockDb.query.mockResolvedValueOnce([]);
       }
       // Final SELECT
@@ -117,7 +121,7 @@ describe('PositionCatalogService', () => {
 
       const result = await service.getAll(10);
 
-      expect(mockDb.query).toHaveBeenCalledTimes(23);
+      expect(mockDb.query).toHaveBeenCalledTimes(25);
       expect(result).toHaveLength(1);
       expect(result[0]?.name).toBe('Qualitätsmanager');
       expect(result[0]?.roleCategory).toBe('employee');
@@ -128,7 +132,7 @@ describe('PositionCatalogService', () => {
 
       await service.getAll(10, 'admin');
 
-      const selectCall = mockDb.query.mock.calls[22];
+      const selectCall = mockDb.query.mock.calls[24];
       expect(selectCall?.[0]).toContain('AND role_category = $3');
       expect(selectCall?.[1]).toContain('admin');
     });

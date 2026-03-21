@@ -433,6 +433,19 @@ describe('ApprovalsService', () => {
       expect(result.total).toBe(0);
     });
 
+    it('should respect explicit page and limit', async () => {
+      mockClient.query.mockResolvedValueOnce({ rows: [{ count: '5' }] });
+      mockClient.query.mockResolvedValueOnce({ rows: [makeApprovalListRow({ assigned_to: 20 })] });
+
+      const result = await service.findByAssignee(20, { page: 2, limit: 10 });
+
+      expect(result.page).toBe(2);
+      expect(result.pageSize).toBe(10);
+      const dataCall = mockClient.query.mock.calls[1] as [string, unknown[]];
+      expect(dataCall[1]).toContain(10); // limit
+      expect(dataCall[1]).toContain(10); // offset = (2-1)*10
+    });
+
     it('should apply status filter for assignee', async () => {
       mockClient.query.mockResolvedValueOnce({ rows: [{ count: '1' }] });
       mockClient.query.mockResolvedValueOnce({

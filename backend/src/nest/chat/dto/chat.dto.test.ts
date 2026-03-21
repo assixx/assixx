@@ -16,6 +16,7 @@ import { EditMessageBodySchema } from './edit-message.dto.js';
 import { GetMessagesQuerySchema } from './get-messages-query.dto.js';
 import { MessageIdParamSchema } from './message-id-param.dto.js';
 import { RemoveParticipantParamsSchema } from './remove-participant-param.dto.js';
+import { CreateScheduledMessageBodySchema } from './scheduled-message-body.dto.js';
 import { ScheduledMessageIdParamSchema } from './scheduled-message-id-param.dto.js';
 import { SearchMessagesQuerySchema } from './search-messages-query.dto.js';
 import { SendMessageBodySchema } from './send-message.dto.js';
@@ -360,5 +361,73 @@ describe('AddParticipantsBodySchema', () => {
 
   it('should reject invalid participant ids', () => {
     expect(AddParticipantsBodySchema.safeParse({ participantIds: [0] }).success).toBe(false);
+  });
+});
+
+// =============================================================
+// CreateScheduledMessageBodySchema
+// =============================================================
+
+describe('CreateScheduledMessageBodySchema', () => {
+  const futureDate = new Date(Date.now() + 30 * 60 * 1000).toISOString();
+
+  it('should accept valid plaintext scheduled message', () => {
+    const result = CreateScheduledMessageBodySchema.safeParse({
+      conversationId: 1,
+      content: 'Hello later!',
+      scheduledFor: futureDate,
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it('should accept valid E2E encrypted scheduled message', () => {
+    const result = CreateScheduledMessageBodySchema.safeParse({
+      conversationId: 1,
+      encryptedContent: 'base64ciphertext',
+      e2eNonce: 'base64nonce',
+      e2eKeyVersion: 1,
+      e2eKeyEpoch: 20000,
+      scheduledFor: futureDate,
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it('should accept valid attachment scheduled message', () => {
+    const result = CreateScheduledMessageBodySchema.safeParse({
+      conversationId: 1,
+      attachmentPath: '/uploads/file.pdf',
+      attachmentName: 'file.pdf',
+      attachmentType: 'application/pdf',
+      attachmentSize: 1024,
+      scheduledFor: futureDate,
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it('should reject when no content, encrypted content, or attachment', () => {
+    const result = CreateScheduledMessageBodySchema.safeParse({
+      conversationId: 1,
+      scheduledFor: futureDate,
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('should reject invalid conversationId', () => {
+    const result = CreateScheduledMessageBodySchema.safeParse({
+      conversationId: -1,
+      content: 'Hello',
+      scheduledFor: futureDate,
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('should reject scheduledFor in the past', () => {
+    const pastDate = new Date(Date.now() - 60 * 1000).toISOString();
+    const result = CreateScheduledMessageBodySchema.safeParse({
+      conversationId: 1,
+      content: 'Hello',
+      scheduledFor: pastDate,
+    });
+    expect(result.success).toBe(false);
   });
 });

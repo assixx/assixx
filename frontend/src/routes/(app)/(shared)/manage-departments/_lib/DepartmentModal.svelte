@@ -19,6 +19,7 @@
     formDescription: string;
     formAreaId: number | null;
     formDepartmentLeadId: number | null;
+    formDepartmentDeputyLeadId: number | null;
     formHallIds: number[];
     formIsActive: FormIsActiveStatus;
     allAreas: Area[];
@@ -31,17 +32,21 @@
 
   /* eslint-disable prefer-const, @typescript-eslint/no-useless-default-assignment -- Svelte $bindable() requires let and is not a useless default */
   // prettier-ignore
-  let { show, isEditMode, modalTitle, messages, formName = $bindable(), formDescription = $bindable(), formAreaId = $bindable(), formDepartmentLeadId = $bindable(), formHallIds = $bindable(), formIsActive = $bindable(), allAreas, allHalls, allDepartmentLeads, submitting, onclose, onsubmit }: Props = $props();
+  let { show, isEditMode, modalTitle, messages, formName = $bindable(), formDescription = $bindable(), formAreaId = $bindable(), formDepartmentLeadId = $bindable(), formDepartmentDeputyLeadId = $bindable(), formHallIds = $bindable(), formIsActive = $bindable(), allAreas, allHalls, allDepartmentLeads, submitting, onclose, onsubmit }: Props = $props();
   /* eslint-enable prefer-const, @typescript-eslint/no-useless-default-assignment */
 
   // Local dropdown states
   let areaDropdownOpen = $state(false);
   let leadDropdownOpen = $state(false);
+  let deputyLeadDropdownOpen = $state(false);
   let statusDropdownOpen = $state(false);
 
   // Derived dropdown display names
   const selectedAreaName = $derived(getSelectedAreaName(formAreaId, allAreas));
   const selectedLeadName = $derived(getSelectedLeadName(formDepartmentLeadId, allDepartmentLeads));
+  const selectedDeputyLeadName = $derived(
+    getSelectedLeadName(formDepartmentDeputyLeadId, allDepartmentLeads),
+  );
 
   // =============================================================================
   // DROPDOWN HANDLERS
@@ -50,6 +55,7 @@
   function toggleAreaDropdown(e: MouseEvent): void {
     e.stopPropagation();
     leadDropdownOpen = false;
+    deputyLeadDropdownOpen = false;
     statusDropdownOpen = false;
     areaDropdownOpen = !areaDropdownOpen;
   }
@@ -62,6 +68,7 @@
   function toggleLeadDropdown(e: MouseEvent): void {
     e.stopPropagation();
     areaDropdownOpen = false;
+    deputyLeadDropdownOpen = false;
     statusDropdownOpen = false;
     leadDropdownOpen = !leadDropdownOpen;
   }
@@ -71,10 +78,24 @@
     leadDropdownOpen = false;
   }
 
+  function toggleDeputyLeadDropdown(e: MouseEvent): void {
+    e.stopPropagation();
+    areaDropdownOpen = false;
+    leadDropdownOpen = false;
+    statusDropdownOpen = false;
+    deputyLeadDropdownOpen = !deputyLeadDropdownOpen;
+  }
+
+  function selectDeputyLead(leadId: number | null): void {
+    formDepartmentDeputyLeadId = leadId;
+    deputyLeadDropdownOpen = false;
+  }
+
   function toggleStatusDropdown(e: MouseEvent): void {
     e.stopPropagation();
     areaDropdownOpen = false;
     leadDropdownOpen = false;
+    deputyLeadDropdownOpen = false;
     statusDropdownOpen = !statusDropdownOpen;
   }
 
@@ -96,13 +117,15 @@
     if (show) {
       areaDropdownOpen = false;
       leadDropdownOpen = false;
+      deputyLeadDropdownOpen = false;
       statusDropdownOpen = false;
     }
   });
 
   // Close dropdowns on outside click
   $effect(() => {
-    const anyDropdownOpen = areaDropdownOpen || leadDropdownOpen || statusDropdownOpen;
+    const anyDropdownOpen =
+      areaDropdownOpen || leadDropdownOpen || deputyLeadDropdownOpen || statusDropdownOpen;
     if (!anyDropdownOpen) return;
 
     const handleClick = (e: MouseEvent): void => {
@@ -112,6 +135,9 @@
       }
       if (leadDropdownOpen && isClickOutsideElement(target, 'lead-dropdown')) {
         leadDropdownOpen = false;
+      }
+      if (deputyLeadDropdownOpen && isClickOutsideElement(target, 'deputy-lead-dropdown')) {
+        deputyLeadDropdownOpen = false;
       }
       if (statusDropdownOpen && isClickOutsideElement(target, 'status-dropdown')) {
         statusDropdownOpen = false;
@@ -299,6 +325,63 @@
                     class="dropdown__option"
                     onclick={() => {
                       selectLead(lead.id);
+                    }}
+                  >
+                    {lead.firstName}
+                    {lead.lastName} ({lead.role === 'root' ? 'Root' : 'Admin'})
+                  </button>
+                {/each}
+              </div>
+            </div>
+          {/if}
+        </div>
+
+        <div class="form-field">
+          <label
+            class="form-field__label"
+            for="deputy-lead-hidden"
+          >
+            <i class="fas fa-user-shield mr-1"></i>
+            Stellvertreter
+          </label>
+          <input
+            type="hidden"
+            id="deputy-lead-hidden"
+            value={formDepartmentDeputyLeadId ?? ''}
+          />
+          {#if allDepartmentLeads.length > 0}
+            <div
+              class="dropdown"
+              id="deputy-lead-dropdown"
+            >
+              <button
+                type="button"
+                class="dropdown__trigger"
+                class:active={deputyLeadDropdownOpen}
+                onclick={toggleDeputyLeadDropdown}
+              >
+                <span>{selectedDeputyLeadName}</span>
+                <i class="fas fa-chevron-down"></i>
+              </button>
+              <div
+                class="dropdown__menu"
+                class:active={deputyLeadDropdownOpen}
+              >
+                <button
+                  type="button"
+                  class="dropdown__option"
+                  onclick={() => {
+                    selectDeputyLead(null);
+                  }}
+                >
+                  {messages.NO_DEPARTMENT_LEAD}
+                </button>
+                {#each allDepartmentLeads as lead (lead.id)}
+                  <button
+                    type="button"
+                    class="dropdown__option"
+                    onclick={() => {
+                      selectDeputyLead(lead.id);
                     }}
                   >
                     {lead.firstName}

@@ -45,6 +45,18 @@ const RESOLVE_APPROVERS_QUERY = `
 
     UNION ALL
 
+    SELECT t2.team_deputy_lead_id AS approver_id
+    FROM approval_configs ac
+    INNER JOIN user_teams ut2 ON ut2.user_id = $2
+    INNER JOIN teams t2 ON t2.id = ut2.team_id
+      AND t2.team_deputy_lead_id IS NOT NULL
+      AND t2.is_active = 1
+    WHERE ac.addon_code = $1
+      AND ac.approver_type = 'team_lead'
+      AND ac.is_active = 1
+
+    UNION ALL
+
     SELECT a.area_lead_id AS approver_id
     FROM approval_configs ac
     INNER JOIN user_departments ud ON ud.user_id = $2
@@ -58,12 +70,37 @@ const RESOLVE_APPROVERS_QUERY = `
 
     UNION ALL
 
+    SELECT a2.area_deputy_lead_id AS approver_id
+    FROM approval_configs ac
+    INNER JOIN user_departments ud3 ON ud3.user_id = $2
+    INNER JOIN departments d3 ON d3.id = ud3.department_id
+    INNER JOIN areas a2 ON a2.id = d3.area_id
+      AND a2.area_deputy_lead_id IS NOT NULL
+      AND a2.is_active = 1
+    WHERE ac.addon_code = $1
+      AND ac.approver_type = 'area_lead'
+      AND ac.is_active = 1
+
+    UNION ALL
+
     SELECT d2.department_lead_id AS approver_id
     FROM approval_configs ac
     INNER JOIN user_departments ud2 ON ud2.user_id = $2
     INNER JOIN departments d2 ON d2.id = ud2.department_id
       AND d2.department_lead_id IS NOT NULL
       AND d2.is_active = 1
+    WHERE ac.addon_code = $1
+      AND ac.approver_type = 'department_lead'
+      AND ac.is_active = 1
+
+    UNION ALL
+
+    SELECT d4.department_deputy_lead_id AS approver_id
+    FROM approval_configs ac
+    INNER JOIN user_departments ud4 ON ud4.user_id = $2
+    INNER JOIN departments d4 ON d4.id = ud4.department_id
+      AND d4.department_deputy_lead_id IS NOT NULL
+      AND d4.is_active = 1
     WHERE ac.addon_code = $1
       AND ac.approver_type = 'department_lead'
       AND ac.is_active = 1

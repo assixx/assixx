@@ -23,6 +23,7 @@
     formDescription: string;
     formDepartmentId: number | null;
     formLeaderId: number | null;
+    formDeputyLeaderId: number | null;
     formMemberIds: number[];
     formAssetIds: number[];
     formHallId: number | null;
@@ -39,6 +40,7 @@
       description: string;
       departmentId: number | null;
       leaderId: number | null;
+      deputyLeaderId: number | null;
       memberIds: number[];
       assetIds: number[];
       hallId: number | null;
@@ -55,6 +57,7 @@
     formDescription,
     formDepartmentId,
     formLeaderId,
+    formDeputyLeaderId,
     formMemberIds,
     formAssetIds,
     formHallId,
@@ -76,6 +79,7 @@
   let localDescription = $state('');
   let localDepartmentId = $state<number | null>(null);
   let localLeaderId = $state<number | null>(null);
+  let localDeputyLeaderId = $state<number | null>(null);
   let localMemberIds = $state<number[]>([]);
   let localAssetIds = $state<number[]>([]);
   let localHallId = $state<number | null>(null);
@@ -87,6 +91,7 @@
     localDescription = formDescription;
     localDepartmentId = formDepartmentId;
     localLeaderId = formLeaderId;
+    localDeputyLeaderId = formDeputyLeaderId;
     localMemberIds = [...formMemberIds];
     localAssetIds = [...formAssetIds];
     localHallId = formHallId;
@@ -97,6 +102,7 @@
   let departmentDropdownOpen = $state(false);
   let hallDropdownOpen = $state(false);
   let leaderDropdownOpen = $state(false);
+  let deputyLeaderDropdownOpen = $state(false);
   let membersDropdownOpen = $state(false);
   let assetsDropdownOpen = $state(false);
   let statusDropdownOpen = $state(false);
@@ -110,6 +116,7 @@
     if (except !== 'department') departmentDropdownOpen = false;
     if (except !== 'hall') hallDropdownOpen = false;
     if (except !== 'leader') leaderDropdownOpen = false;
+    if (except !== 'deputyLeader') deputyLeaderDropdownOpen = false;
     if (except !== 'members') membersDropdownOpen = false;
     if (except !== 'assets') assetsDropdownOpen = false;
     if (except !== 'status') statusDropdownOpen = false;
@@ -154,6 +161,17 @@
     leaderDropdownOpen = false;
   }
 
+  function toggleDeputyLeaderDropdown(e: MouseEvent): void {
+    e.stopPropagation();
+    closeOtherDropdowns('deputyLeader');
+    deputyLeaderDropdownOpen = !deputyLeaderDropdownOpen;
+  }
+
+  function selectDeputyLeader(id: number | null): void {
+    localDeputyLeaderId = id;
+    deputyLeaderDropdownOpen = false;
+  }
+
   function toggleMembersDropdown(e: MouseEvent): void {
     e.stopPropagation();
     closeOtherDropdowns('members');
@@ -192,6 +210,7 @@
       description: localDescription,
       departmentId: localDepartmentId,
       leaderId: localLeaderId,
+      deputyLeaderId: localDeputyLeaderId,
       memberIds: localMemberIds,
       assetIds: localAssetIds,
       hallId: localHallId,
@@ -205,6 +224,7 @@
       departmentDropdownOpen = false;
       hallDropdownOpen = false;
       leaderDropdownOpen = false;
+      deputyLeaderDropdownOpen = false;
       membersDropdownOpen = false;
       assetsDropdownOpen = false;
       statusDropdownOpen = false;
@@ -419,6 +439,58 @@
                   class="dropdown__option"
                   onclick={() => {
                     selectLeader(leader.id);
+                  }}
+                >
+                  {leader.firstName}
+                  {leader.lastName}
+                </button>
+              {/each}
+            </div>
+          </div>
+        {/if}
+      </div>
+
+      <div class="form-field">
+        <label
+          class="form-field__label"
+          for="team-deputy-lead"
+        >
+          <i class="fas fa-user-shield mr-1"></i>
+          Stellvertreter
+        </label>
+        {#if allLeaders.length > 0}
+          <div
+            class="dropdown"
+            id="team-deputy-lead-dropdown"
+          >
+            <button
+              type="button"
+              class="dropdown__trigger"
+              class:active={deputyLeaderDropdownOpen}
+              onclick={toggleDeputyLeaderDropdown}
+            >
+              <span>{getLeaderDisplayText(localDeputyLeaderId, allLeaders)}</span>
+              <i class="fas fa-chevron-down"></i>
+            </button>
+            <div
+              class="dropdown__menu"
+              class:active={deputyLeaderDropdownOpen}
+            >
+              <button
+                type="button"
+                class="dropdown__option"
+                onclick={() => {
+                  selectDeputyLeader(null);
+                }}
+              >
+                — Kein Stellvertreter —
+              </button>
+              {#each allLeaders as leader (leader.id)}
+                <button
+                  type="button"
+                  class="dropdown__option"
+                  onclick={() => {
+                    selectDeputyLeader(leader.id);
                   }}
                 >
                   {leader.firstName}

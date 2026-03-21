@@ -93,6 +93,7 @@
   let formDescription = $state('');
   let formAreaId: number | null = $state(null);
   let formDepartmentLeadId: number | null = $state(null);
+  let formDepartmentDeputyLeadId: number | null = $state(null);
   let formHallIds: number[] = $state([]);
   let formIsActive: FormIsActiveStatus = $state(1);
 
@@ -127,6 +128,7 @@
       description: formDescription,
       areaId: formAreaId,
       departmentLeadId: formDepartmentLeadId,
+      departmentDeputyLeadId: formDepartmentDeputyLeadId,
       isActive: formIsActive,
     });
     const result = await apiSaveDepartment(payload, currentEditId);
@@ -209,6 +211,7 @@
     formDescription = formData.description;
     formAreaId = formData.areaId;
     formDepartmentLeadId = formData.departmentLeadId;
+    formDepartmentDeputyLeadId = formData.departmentDeputyLeadId;
     formHallIds = formData.hallIds;
     formIsActive = formData.isActive;
     showDepartmentModal = true;
@@ -242,6 +245,7 @@
     formDescription = defaults.description;
     formAreaId = defaults.areaId;
     formDepartmentLeadId = defaults.departmentLeadId;
+    formDepartmentDeputyLeadId = defaults.departmentDeputyLeadId;
     formHallIds = defaults.hallIds;
     formIsActive = defaults.isActive;
   }
@@ -614,6 +618,7 @@
     bind:formDescription
     bind:formAreaId
     bind:formDepartmentLeadId
+    bind:formDepartmentDeputyLeadId
     bind:formHallIds
     bind:formIsActive
     {allAreas}

@@ -747,7 +747,7 @@ export class AdminPermissionsService {
         COUNT(DISTINCT d.id) as department_count
       FROM areas a
       LEFT JOIN departments d ON d.area_id = a.id AND d.tenant_id = a.tenant_id
-      WHERE a.area_lead_id = $1
+      WHERE (a.area_lead_id = $1 OR a.area_deputy_lead_id = $1)
         AND a.tenant_id = $2
         AND a.is_active = ${IS_ACTIVE.ACTIVE}
         AND NOT EXISTS (
@@ -784,7 +784,7 @@ export class AdminPermissionsService {
       `SELECT d.id, d.name, d.description, d.area_id, a.name AS area_name
       FROM departments d
       LEFT JOIN areas a ON d.area_id = a.id
-      WHERE d.department_lead_id = $1
+      WHERE (d.department_lead_id = $1 OR d.department_deputy_lead_id = $1)
         AND d.tenant_id = $2
         AND d.is_active = ${IS_ACTIVE.ACTIVE}
         AND NOT EXISTS (

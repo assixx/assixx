@@ -313,6 +313,7 @@ export function buildTeamPayload(formData: {
   description: string;
   departmentId: number | null;
   leaderId: number | null;
+  teamDeputyLeadId: number | null;
   isActive: 0 | 1 | 3;
 }): TeamPayload {
   return {
@@ -320,6 +321,7 @@ export function buildTeamPayload(formData: {
     description: formData.description.length > 0 ? formData.description : undefined,
     departmentId: formData.departmentId,
     leaderId: formData.leaderId,
+    teamDeputyLeadId: formData.teamDeputyLeadId,
     isActive: formData.isActive,
   };
 }

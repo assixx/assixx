@@ -4,7 +4,12 @@
  * Tests for pure helper methods + DB-mocked public methods.
  * Uses ClsService mock for tenant/user context.
  */
-import { BadRequestException, ForbiddenException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  NotFoundException,
+  UnprocessableEntityException,
+} from '@nestjs/common';
 import type { ClsService } from 'nestjs-cls';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -141,9 +146,32 @@ describe('ChatMessagesService – stubs', () => {
     service = result.service;
   });
 
-  it('editMessage throws BadRequestException', async () => {
+  it('editMessage throws NotFoundException when message not found', async () => {
     const result = createServiceWithMock();
-    // tenantTransaction must return a non-e2e row so editMessage reaches the stub throw
+    result.mockDb.tenantTransaction.mockImplementation(
+      async (callback: (client: unknown) => unknown) =>
+        callback({
+          query: vi.fn().mockResolvedValue({ rows: [] }),
+        }),
+    );
+    await expect(result.service.editMessage(999, {} as never)).rejects.toThrow(NotFoundException);
+  });
+
+  it('editMessage throws UnprocessableEntityException for E2E messages', async () => {
+    const result = createServiceWithMock();
+    result.mockDb.tenantTransaction.mockImplementation(
+      async (callback: (client: unknown) => unknown) =>
+        callback({
+          query: vi.fn().mockResolvedValue({ rows: [{ is_e2e: true }] }),
+        }),
+    );
+    await expect(result.service.editMessage(1, {} as never)).rejects.toThrow(
+      UnprocessableEntityException,
+    );
+  });
+
+  it('editMessage throws BadRequestException for non-E2E messages (stub)', async () => {
+    const result = createServiceWithMock();
     result.mockDb.tenantTransaction.mockImplementation(
       async (callback: (client: unknown) => unknown) =>
         callback({

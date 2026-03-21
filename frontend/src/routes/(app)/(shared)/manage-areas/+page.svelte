@@ -88,6 +88,7 @@
   let formName = $state('');
   let formDescription = $state('');
   let formAreaLeadId: number | null = $state(null);
+  let formAreaDeputyLeadId = $state<number | null>(null);
   let formType: AreaType = $state('other');
   let formCapacity: number | null = $state(null);
   let formAddress = $state('');
@@ -130,6 +131,7 @@
     formName = formData.name;
     formDescription = formData.description;
     formAreaLeadId = formData.areaLeadId;
+    formAreaDeputyLeadId = area.areaDeputyLeadId ?? null;
     formType = formData.type;
     formCapacity = formData.capacity;
     formAddress = formData.address;
@@ -150,6 +152,7 @@
     formName = defaults.name;
     formDescription = defaults.description;
     formAreaLeadId = defaults.areaLeadId;
+    formAreaDeputyLeadId = null;
     formType = defaults.type;
     formCapacity = defaults.capacity;
     formAddress = defaults.address;
@@ -190,6 +193,7 @@
         name: formName,
         description: formDescription,
         areaLeadId: formAreaLeadId,
+        areaDeputyLeadId: formAreaDeputyLeadId,
         type: formType,
         capacity: formCapacity,
         address: formAddress,
@@ -602,6 +606,7 @@
     bind:formName
     bind:formDescription
     bind:formAreaLeadId
+    bind:formAreaDeputyLeadId
     bind:formType
     bind:formCapacity
     bind:formDepartmentIds

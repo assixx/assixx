@@ -235,7 +235,7 @@ async getHierarchyLabels(@Req() req): Promise<HierarchyLabelsResponse> {
 - **Kein Live-Update**: Label-Änderungen werden erst nach Navigation/Reload sichtbar, nicht in Echtzeit
 - **~~7 Module nicht propagiert~~ (V2.1 RESOLVED)**: employee-dashboard, documents-explorer, calendar, shifts, kvp, kvp-detail, blackboard — alle ~110 Stellen in V2.1 nachpropagiert
 - **~~Sidebar User Card nicht propagiert~~ (V2.2 RESOLVED)**: `SidebarUserCard` zeigte Lead-Positionen (`team_lead`, `area_lead`, `department_lead`) als rohe DB-Werte statt `resolvePositionDisplay()` zu nutzen — behoben durch Prop-Threading von `hierarchyLabels` über Layout → AppSidebar → SidebarUserCard
-- **~~Deputy Lead nicht als Position~~ (V2.3 RESOLVED via ADR-038)**: `deputy_lead` wurde als 4. System-Position in den Position Catalog aufgenommen. Display: `${labels.team} Stellvertreter` — dynamisch aus Team-Label abgeleitet, kein eigenes HierarchyLabels-Feld nötig
+- **~~Deputy Lead nicht als Position~~ (V2.3 RESOLVED via ADR-038, expanded V2.4)**: Deputies auf allen 3 Ebenen als System-Positionen: `area_deputy_lead` → `${labels.area} Stellvertreter`, `department_deputy_lead` → `${labels.department} Stellvertreter`, `team_deputy_lead` → `${labels.team} Stellvertreter`. 6 System-Positionen total, kein eigenes HierarchyLabels-Feld nötig — Display wird aus bestehenden Labels abgeleitet
 - **Keine E-Mail/PDF-Propagation**: Backend-generierte Texte (Notifications, Exports) nutzen weiterhin Default-Labels
 - **`hall` ist kein OrgEntityType**: Hall hat keine eigene Org-Chart-Farbe in `ENTITY_COLORS`, sondern eine separate `HALL_COLOR`-Konstante im Organigram-Modal
 

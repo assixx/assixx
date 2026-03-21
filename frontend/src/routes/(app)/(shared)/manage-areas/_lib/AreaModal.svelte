@@ -19,6 +19,7 @@
     formName: string;
     formDescription: string;
     formAreaLeadId: number | null;
+    formAreaDeputyLeadId: number | null;
     formType: AreaType;
     formCapacity: number | null;
     formDepartmentIds: number[];
@@ -34,16 +35,20 @@
 
   /* eslint-disable prefer-const, @typescript-eslint/no-useless-default-assignment -- Svelte $bindable() requires let and is not a useless default */
   // prettier-ignore
-  let { show, isEditMode, modalTitle, messages, formName = $bindable(), formDescription = $bindable(), formAreaLeadId = $bindable(), formType = $bindable(), formCapacity = $bindable(), formDepartmentIds = $bindable(), formHallIds = $bindable(), formIsActive = $bindable(), areaLeads, allDepartments, allHalls, submitting, onclose, onsubmit }: Props = $props();
+  let { show, isEditMode, modalTitle, messages, formName = $bindable(), formDescription = $bindable(), formAreaLeadId = $bindable(), formAreaDeputyLeadId = $bindable(), formType = $bindable(), formCapacity = $bindable(), formDepartmentIds = $bindable(), formHallIds = $bindable(), formIsActive = $bindable(), areaLeads, allDepartments, allHalls, submitting, onclose, onsubmit }: Props = $props();
   /* eslint-enable prefer-const, @typescript-eslint/no-useless-default-assignment */
 
   // Local dropdown states
   let typeDropdownOpen = $state(false);
   let statusDropdownOpen = $state(false);
   let areaLeadDropdownOpen = $state(false);
+  let areaDeputyLeadDropdownOpen = $state(false);
 
   // Derived area lead display name
   const areaLeadDisplayName = $derived(getAreaLeadDisplayName(formAreaLeadId, areaLeads));
+  const areaDeputyLeadDisplayName = $derived(
+    getAreaLeadDisplayName(formAreaDeputyLeadId, areaLeads),
+  );
 
   // =============================================================================
   // DROPDOWN HANDLERS
@@ -53,6 +58,7 @@
     e.stopPropagation();
     statusDropdownOpen = false;
     areaLeadDropdownOpen = false;
+    areaDeputyLeadDropdownOpen = false;
     typeDropdownOpen = !typeDropdownOpen;
   }
 
@@ -65,6 +71,7 @@
     e.stopPropagation();
     typeDropdownOpen = false;
     areaLeadDropdownOpen = false;
+    areaDeputyLeadDropdownOpen = false;
     statusDropdownOpen = !statusDropdownOpen;
   }
 
@@ -77,6 +84,7 @@
     e.stopPropagation();
     typeDropdownOpen = false;
     statusDropdownOpen = false;
+    areaDeputyLeadDropdownOpen = false;
     areaLeadDropdownOpen = !areaLeadDropdownOpen;
   }
 
@@ -85,18 +93,37 @@
     areaLeadDropdownOpen = false;
   }
 
+  function toggleAreaDeputyLeadDropdown(e: MouseEvent): void {
+    e.stopPropagation();
+    typeDropdownOpen = false;
+    statusDropdownOpen = false;
+    areaLeadDropdownOpen = false;
+    areaDeputyLeadDropdownOpen = !areaDeputyLeadDropdownOpen;
+  }
+
+  function selectAreaDeputyLead(id: number | null): void {
+    formAreaDeputyLeadId = id;
+    areaDeputyLeadDropdownOpen = false;
+  }
+
   // Reset local UI state when modal opens
   $effect(() => {
     if (show) {
       typeDropdownOpen = false;
       statusDropdownOpen = false;
       areaLeadDropdownOpen = false;
+      areaDeputyLeadDropdownOpen = false;
     }
   });
 
   // Close dropdowns on outside click
   $effect(() => {
-    if (typeDropdownOpen || statusDropdownOpen || areaLeadDropdownOpen) {
+    if (
+      typeDropdownOpen ||
+      statusDropdownOpen ||
+      areaLeadDropdownOpen ||
+      areaDeputyLeadDropdownOpen
+    ) {
       const handleClick = (e: MouseEvent): void => {
         const target = e.target as HTMLElement;
         if (typeDropdownOpen && !target.closest('#type-dropdown')) {
@@ -107,6 +134,9 @@
         }
         if (areaLeadDropdownOpen && !target.closest('#area-lead-dropdown')) {
           areaLeadDropdownOpen = false;
+        }
+        if (areaDeputyLeadDropdownOpen && !target.closest('#area-deputy-lead-dropdown')) {
+          areaDeputyLeadDropdownOpen = false;
         }
       };
       document.addEventListener('click', handleClick, true);
@@ -246,6 +276,65 @@
                     class="dropdown__option"
                     onclick={() => {
                       selectAreaLead(user.id);
+                    }}
+                  >
+                    {user.firstName}
+                    {user.lastName}
+                    {user.role === 'root' ? '(Root)' : '(Admin)'}
+                  </button>
+                {/each}
+              </div>
+            </div>
+          {/if}
+        </div>
+
+        <!-- Area Deputy Lead Dropdown -->
+        <div class="form-field">
+          <label
+            class="form-field__label"
+            for="area-deputy-lead-hidden"
+          >
+            <i class="fas fa-user-shield mr-1"></i>
+            Stellvertreter
+          </label>
+          <input
+            type="hidden"
+            id="area-deputy-lead-hidden"
+            value={formAreaDeputyLeadId ?? ''}
+          />
+          {#if areaLeads.length > 0}
+            <div
+              class="dropdown"
+              id="area-deputy-lead-dropdown"
+            >
+              <button
+                type="button"
+                class="dropdown__trigger"
+                class:active={areaDeputyLeadDropdownOpen}
+                onclick={toggleAreaDeputyLeadDropdown}
+              >
+                <span>{areaDeputyLeadDisplayName}</span>
+                <i class="fas fa-chevron-down"></i>
+              </button>
+              <div
+                class="dropdown__menu"
+                class:active={areaDeputyLeadDropdownOpen}
+              >
+                <button
+                  type="button"
+                  class="dropdown__option"
+                  onclick={() => {
+                    selectAreaDeputyLead(null);
+                  }}
+                >
+                  — Kein Stellvertreter —
+                </button>
+                {#each areaLeads as user (user.id)}
+                  <button
+                    type="button"
+                    class="dropdown__option"
+                    onclick={() => {
+                      selectAreaDeputyLead(user.id);
                     }}
                   >
                     {user.firstName}

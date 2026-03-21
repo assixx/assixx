@@ -10,6 +10,7 @@
     OrgEntityType,
     OrgNodeDetail,
     OrgNodeDetailEntry,
+    OrgNodeDetailPerson,
   } from './types.js';
 
   interface Props {
@@ -50,55 +51,41 @@
     return '';
   }
 
+  function resolveDeputyLead(d: OrgNodeDetail): OrgNodeDetailPerson | undefined {
+    return d.areaDeputyLead ?? d.departmentDeputyLead ?? d.teamDeputyLead;
+  }
+
   const fields = $derived.by((): FieldConfig[] => {
     if (detail === null) return [];
-    const result: FieldConfig[] = [];
-    if (detail.lead !== undefined) {
-      result.push({
-        label: 'Leiter',
-        icon: 'fas fa-user-tie',
-        value: detail.lead.name,
-      });
-    }
-    if (detail.deputyLead !== undefined) {
-      result.push({
-        label: 'Stellvertreter',
-        icon: 'fas fa-user-shield',
-        value: detail.deputyLead.name,
-      });
-    }
-    if (detail.areaType !== undefined) {
-      result.push({ label: 'Typ', icon: 'fas fa-tag', value: detail.areaType });
-    }
-    if (detail.assetStatus !== undefined) {
-      result.push({
-        label: 'Status',
-        icon: 'fas fa-info-circle',
-        value: detail.assetStatus,
-      });
-    }
-    if (detail.assetType !== undefined) {
-      result.push({
-        label: 'Anlagentyp',
-        icon: 'fas fa-cogs',
-        value: detail.assetType,
-      });
-    }
-    if (detail.parentArea !== undefined) {
-      result.push({
-        label: labels.area,
-        icon: 'fas fa-building',
-        value: detail.parentArea.name,
-      });
-    }
-    if (detail.parentDepartment !== undefined) {
-      result.push({
-        label: labels.department,
-        icon: 'fas fa-layer-group',
-        value: detail.parentDepartment.name,
-      });
-    }
-    return result;
+    const deputy = resolveDeputyLead(detail);
+    const candidates: (FieldConfig | undefined)[] = [
+      detail.lead !== undefined ?
+        { label: 'Leiter', icon: 'fas fa-user-tie', value: detail.lead.name }
+      : undefined,
+      deputy !== undefined ?
+        { label: 'Stellvertreter', icon: 'fas fa-user-shield', value: deputy.name }
+      : undefined,
+      detail.areaType !== undefined ?
+        { label: 'Typ', icon: 'fas fa-tag', value: detail.areaType }
+      : undefined,
+      detail.assetStatus !== undefined ?
+        { label: 'Status', icon: 'fas fa-info-circle', value: detail.assetStatus }
+      : undefined,
+      detail.assetType !== undefined ?
+        { label: 'Anlagentyp', icon: 'fas fa-cogs', value: detail.assetType }
+      : undefined,
+      detail.parentArea !== undefined ?
+        { label: labels.area, icon: 'fas fa-building', value: detail.parentArea.name }
+      : undefined,
+      detail.parentDepartment !== undefined ?
+        {
+          label: labels.department,
+          icon: 'fas fa-layer-group',
+          value: detail.parentDepartment.name,
+        }
+      : undefined,
+    ];
+    return candidates.filter((c): c is FieldConfig => c !== undefined);
   });
 
   const sections = $derived.by((): SectionConfig[] => {

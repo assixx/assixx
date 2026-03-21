@@ -386,6 +386,35 @@ describe('AssetAvailabilityService – DB-mocked methods', () => {
     });
   });
 
+  describe('updateAvailability – operational status (no dates)', () => {
+    it('skips insert when operational status has no dates', async () => {
+      mockDb.query.mockResolvedValueOnce([{ id: 42 }]); // assetExists
+
+      const result = await service.updateAvailability(
+        42,
+        { availabilityStatus: 'operational' } as never,
+        1,
+      );
+
+      expect(result.message).toBe('Asset availability updated successfully');
+      expect(mockDb.query).toHaveBeenCalledTimes(1); // only assetExists, no insert
+    });
+  });
+
+  describe('createFromTpmPlan', () => {
+    it('inserts maintenance availability entry', async () => {
+      mockDb.query.mockResolvedValueOnce([]); // INSERT
+
+      await service.createFromTpmPlan(1, 42, '2026-04-01', '2026-04-02', 'TPM Wartung', 10);
+
+      expect(mockDb.query).toHaveBeenCalledOnce();
+      const sql = mockDb.query.mock.calls[0]?.[0] as string;
+      expect(sql).toContain('INSERT INTO asset_availability');
+      const params = mockDb.query.mock.calls[0]?.[1] as unknown[];
+      expect(params).toEqual([1, 42, '2026-04-01', '2026-04-02', 'TPM Wartung', 10]);
+    });
+  });
+
   describe('updateAvailabilityByUuid', () => {
     it('throws NotFoundException when UUID not found', async () => {
       mockDb.query.mockResolvedValueOnce([]); // resolveAssetIdByUuid

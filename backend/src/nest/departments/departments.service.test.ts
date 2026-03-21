@@ -76,17 +76,22 @@ function makeDeptRow(overrides: Partial<DepartmentRow> = {}): DepartmentRow {
     name: 'Engineering',
     description: null,
     department_lead_id: null,
+    department_deputy_lead_id: null,
     area_id: null,
     is_active: IS_ACTIVE.ACTIVE,
     tenant_id: 10,
     created_at: new Date('2025-01-01'),
     updated_at: new Date('2025-01-01'),
     department_lead_name: undefined,
+    department_deputy_lead_name: undefined,
     areaName: undefined,
     employee_count: undefined,
     employee_names: undefined,
     team_count: undefined,
     team_names: undefined,
+    hall_ids: undefined,
+    hall_names: undefined,
+    hall_count: undefined,
     ...overrides,
   };
 }
@@ -354,6 +359,35 @@ describe('DepartmentsService', () => {
       mockDb.query.mockResolvedValueOnce([]);
 
       await expect(service.createDepartment(dto, 1, 10)).rejects.toThrow(BadRequestException);
+    });
+
+    it('should validate deputy lead when provided', async () => {
+      // validateLeader for lead
+      mockDb.query.mockResolvedValueOnce([{ id: 42, role: 'admin' }]);
+      // validateLeader for deputy lead
+      mockDb.query.mockResolvedValueOnce([{ id: 43, role: 'admin' }]);
+      // INSERT RETURNING id
+      mockDb.query.mockResolvedValueOnce([{ id: 9 }]);
+      // ensureLeaderInDepartment: check existing
+      mockDb.query.mockResolvedValueOnce([]);
+      // ensureLeaderInDepartment: INSERT
+      mockDb.query.mockResolvedValueOnce([]);
+      // getDepartmentById
+      mockDb.query.mockResolvedValueOnce([
+        makeDeptRow({ id: 9, department_lead_id: 42, department_deputy_lead_id: 43 }),
+      ]);
+
+      const dto = {
+        name: 'With Deputy',
+        description: null,
+        departmentLeadId: 42,
+        departmentDeputyLeadId: 43,
+        areaId: null,
+      } as unknown as CreateDepartmentDto;
+
+      const result = await service.createDepartment(dto, 1, 10);
+
+      expect(result.departmentDeputyLeadId).toBe(43);
     });
 
     it('should reject non-existent user as department leader', async () => {
@@ -662,6 +696,18 @@ describe('DepartmentsService', () => {
       const row = makeDeptRow({ description: null });
       const result = service['mapToResponse'](row, false);
       expect(result.description).toBeUndefined();
+    });
+
+    it('should map non-null deputy lead fields', () => {
+      const row = makeDeptRow({
+        department_deputy_lead_id: 99,
+        department_deputy_lead_name: 'Deputy Dan',
+      });
+
+      const result = service['mapToResponse'](row, true);
+
+      expect(result.departmentDeputyLeadId).toBe(99);
+      expect(result.departmentDeputyLeadName).toBe('Deputy Dan');
     });
   });
 

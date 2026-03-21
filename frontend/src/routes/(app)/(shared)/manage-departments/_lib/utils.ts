@@ -77,6 +77,7 @@ export function populateFormFromDepartment(
   description: string;
   areaId: number | null;
   departmentLeadId: number | null;
+  departmentDeputyLeadId: number | null;
   hallIds: number[];
   isActive: FormIsActiveStatus;
 } {
@@ -85,6 +86,7 @@ export function populateFormFromDepartment(
     description: department.description ?? '',
     areaId: department.areaId ?? null,
     departmentLeadId: department.departmentLeadId ?? null,
+    departmentDeputyLeadId: department.departmentDeputyLeadId ?? null,
     hallIds,
     isActive: (department.isActive === 4 ? 0 : department.isActive) as FormIsActiveStatus,
   };

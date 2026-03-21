@@ -555,8 +555,8 @@ describe('SECURITY: getScope', () => {
     expect(scope.isAnyLead).toBe(true);
   });
 
-  // Scenario 10: Employee as deputy_lead (same behavior as team_lead, D4)
-  it('should return limited scope for employee deputy lead', async () => {
+  // Scenario 10: Employee as team_deputy_lead (same behavior as team_lead, DEPUTY_EQUALS_LEAD)
+  it('should return limited scope for employee team deputy lead', async () => {
     mockUser('employee', false);
     mockScopeCte({ team_ids: [268], lead_team_ids: [268] });
 
@@ -565,6 +565,37 @@ describe('SECURITY: getScope', () => {
     expect(scope.type).toBe('limited');
     expect(scope.teamIds).toEqual([268]);
     expect(scope.isTeamLead).toBe(true);
+  });
+
+  // Scenario 10b: Admin as area_deputy_lead (DEPUTY_EQUALS_LEAD — CTE includes area via OR clause)
+  it('should return limited scope for admin area deputy lead', async () => {
+    mockUser('admin', false);
+    mockScopeCte({
+      area_ids: [5],
+      lead_area_ids: [5],
+      department_ids: [10, 11],
+      team_ids: [20, 21],
+    });
+
+    const scope = await service.getScope(42, 3);
+
+    expect(scope.type).toBe('limited');
+    expect(scope.areaIds).toEqual([5]);
+    expect(scope.isAreaLead).toBe(true);
+    expect(scope.departmentIds).toEqual([10, 11]);
+  });
+
+  // Scenario 10c: Admin as department_deputy_lead (DEPUTY_EQUALS_LEAD)
+  it('should return limited scope for admin department deputy lead', async () => {
+    mockUser('admin', false);
+    mockScopeCte({ department_ids: [15], lead_department_ids: [15], team_ids: [30] });
+
+    const scope = await service.getScope(55, 3);
+
+    expect(scope.type).toBe('limited');
+    expect(scope.departmentIds).toEqual([15]);
+    expect(scope.isDepartmentLead).toBe(true);
+    expect(scope.teamIds).toEqual([30]);
   });
 
   // Scenario 11: Employee without lead position

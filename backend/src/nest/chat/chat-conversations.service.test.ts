@@ -387,6 +387,190 @@ describe('ChatConversationsService – DB-mocked methods', () => {
     });
   });
 
+  // ============================================================
+  // createConversation
+  // ============================================================
+
+  describe('createConversation', () => {
+    it('creates a new group conversation', async () => {
+      const sendInitialMessage = vi.fn();
+
+      // validateParticipantIds
+      mockDb.query.mockResolvedValueOnce([{ id: 2 }, { id: 3 }]);
+      // insertConversation
+      mockDb.query.mockResolvedValueOnce([{ id: 42 }]);
+      // addConversationParticipants: creator
+      mockDb.query.mockResolvedValueOnce([]);
+      // addConversationParticipants: participant 2
+      mockDb.query.mockResolvedValueOnce([]);
+      // addConversationParticipants: participant 3
+      mockDb.query.mockResolvedValueOnce([]);
+      // getConversation -> participant check
+      mockDb.query.mockResolvedValueOnce([{ user_id: 5 }]);
+      // getConversation -> conversation
+      mockDb.query.mockResolvedValueOnce([
+        {
+          id: 42,
+          uuid: 'mock-uuid-v7',
+          name: 'Group',
+          is_group: true,
+          created_at: new Date(),
+          updated_at: new Date(),
+        },
+      ]);
+      // getConversation -> participants
+      mockDb.query.mockResolvedValueOnce([
+        {
+          conversation_id: 42,
+          user_id: 5,
+          joined_at: new Date(),
+          is_admin: true,
+          username: 'creator',
+          first_name: 'C',
+          last_name: 'R',
+          profile_picture: null,
+        },
+      ]);
+
+      const result = await service.createConversation(
+        { participantIds: [2, 3], isGroup: true, name: 'Group' },
+        sendInitialMessage,
+      );
+
+      expect(result.conversation.id).toBe(42);
+      expect(sendInitialMessage).not.toHaveBeenCalled();
+    });
+
+    it('returns existing 1:1 conversation when found', async () => {
+      const sendInitialMessage = vi.fn();
+
+      // findExisting1to1 -> found
+      mockDb.query.mockResolvedValueOnce([{ id: 99 }]);
+      // reset soft-delete
+      mockDb.query.mockResolvedValueOnce([]);
+      // getConversation -> participant check
+      mockDb.query.mockResolvedValueOnce([{ user_id: 5 }]);
+      // getConversation -> conversation
+      mockDb.query.mockResolvedValueOnce([
+        {
+          id: 99,
+          uuid: 'existing-uuid',
+          name: null,
+          is_group: false,
+          created_at: new Date(),
+          updated_at: new Date(),
+        },
+      ]);
+      // getConversation -> participants
+      mockDb.query.mockResolvedValueOnce([
+        {
+          conversation_id: 99,
+          user_id: 5,
+          joined_at: new Date(),
+          is_admin: false,
+          username: 'me',
+          first_name: 'M',
+          last_name: 'E',
+          profile_picture: null,
+        },
+      ]);
+
+      const result = await service.createConversation({ participantIds: [10] }, sendInitialMessage);
+
+      expect(result.conversation.id).toBe(99);
+    });
+
+    it('sends initial message when provided on new conversation', async () => {
+      const sendInitialMessage = vi.fn().mockResolvedValueOnce(undefined);
+
+      // findExisting1to1 (1:1 with single participant -> checks existing)
+      mockDb.query.mockResolvedValueOnce([]);
+      // validateParticipantIds
+      mockDb.query.mockResolvedValueOnce([{ id: 2 }]);
+      // insertConversation
+      mockDb.query.mockResolvedValueOnce([{ id: 50 }]);
+      // addConversationParticipants: creator + 1 participant
+      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.query.mockResolvedValueOnce([]);
+      // sendInitialMessage called here
+      // getConversation -> participant check
+      mockDb.query.mockResolvedValueOnce([{ user_id: 5 }]);
+      // getConversation -> conversation
+      mockDb.query.mockResolvedValueOnce([
+        {
+          id: 50,
+          uuid: 'new-uuid',
+          name: null,
+          is_group: false,
+          created_at: new Date(),
+          updated_at: new Date(),
+        },
+      ]);
+      // getConversation -> participants
+      mockDb.query.mockResolvedValueOnce([
+        {
+          conversation_id: 50,
+          user_id: 5,
+          joined_at: new Date(),
+          is_admin: true,
+          username: 'me',
+          first_name: 'M',
+          last_name: 'E',
+          profile_picture: null,
+        },
+      ]);
+
+      await service.createConversation(
+        { participantIds: [2], initialMessage: 'Hello!' },
+        sendInitialMessage,
+      );
+
+      expect(sendInitialMessage).toHaveBeenCalledWith(1, 50, 5, 'Hello!');
+    });
+
+    it('sends initial message on existing 1:1 conversation', async () => {
+      const sendInitialMessage = vi.fn().mockResolvedValueOnce(undefined);
+
+      // findExisting1to1 -> found
+      mockDb.query.mockResolvedValueOnce([{ id: 77 }]);
+      // reset soft-delete
+      mockDb.query.mockResolvedValueOnce([]);
+      // getConversation -> participant check
+      mockDb.query.mockResolvedValueOnce([{ user_id: 5 }]);
+      // getConversation -> conversation
+      mockDb.query.mockResolvedValueOnce([
+        {
+          id: 77,
+          uuid: 'existing-uuid',
+          name: null,
+          is_group: false,
+          created_at: new Date(),
+          updated_at: new Date(),
+        },
+      ]);
+      // getConversation -> participants
+      mockDb.query.mockResolvedValueOnce([
+        {
+          conversation_id: 77,
+          user_id: 5,
+          joined_at: new Date(),
+          is_admin: false,
+          username: 'me',
+          first_name: 'M',
+          last_name: 'E',
+          profile_picture: null,
+        },
+      ]);
+
+      await service.createConversation(
+        { participantIds: [10], initialMessage: 'Hi again!' },
+        sendInitialMessage,
+      );
+
+      expect(sendInitialMessage).toHaveBeenCalledWith(1, 77, 5, 'Hi again!');
+    });
+  });
+
   describe('findExisting1to1 (private)', () => {
     it('should return conversation ID when found', async () => {
       mockDb.query.mockResolvedValueOnce([{ id: 99 }]);

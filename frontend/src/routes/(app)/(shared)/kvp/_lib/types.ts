@@ -130,6 +130,7 @@ export interface Team {
   teamLeadId?: number;
   team_lead_id?: number;
   leaderId?: number;
+  teamDeputyLeadId?: number;
 }
 
 /**

@@ -24,6 +24,12 @@ export const UpdateDepartmentSchema = z.object({
     .positive('Department lead ID must be a positive integer')
     .nullable()
     .optional(),
+  departmentDeputyLeadId: z.coerce
+    .number()
+    .int()
+    .positive('Department deputy lead ID must be a positive integer')
+    .nullable()
+    .optional(),
   areaId: z.coerce
     .number()
     .int()

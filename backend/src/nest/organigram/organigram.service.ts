@@ -71,6 +71,8 @@ interface AreaDetailRow {
   area_type: string;
   lead_uuid: string | null;
   lead_name: string | null;
+  deputy_uuid: string | null;
+  deputy_name: string | null;
 }
 
 interface DeptDetailRow {
@@ -78,6 +80,8 @@ interface DeptDetailRow {
   name: string;
   lead_uuid: string | null;
   lead_name: string | null;
+  deputy_uuid: string | null;
+  deputy_name: string | null;
   area_uuid: string | null;
   area_name: string | null;
 }
@@ -463,9 +467,12 @@ export class OrganigramService {
       this.db.query<AreaDetailRow>(
         `SELECT a.uuid, a.name, a.type::text AS area_type,
                 u.uuid AS lead_uuid,
-                TRIM(CONCAT(u.first_name, ' ', u.last_name)) AS lead_name
+                TRIM(CONCAT(u.first_name, ' ', u.last_name)) AS lead_name,
+                du.uuid AS deputy_uuid,
+                TRIM(CONCAT(du.first_name, ' ', du.last_name)) AS deputy_name
          FROM areas a
          LEFT JOIN users u ON a.area_lead_id = u.id
+         LEFT JOIN users du ON a.area_deputy_lead_id = du.id
          WHERE a.tenant_id = $1 AND a.uuid = $2 AND a.is_active = 1`,
         [tenantId, uuid],
       ),
@@ -501,6 +508,7 @@ export class OrganigramService {
     if (base === undefined) throw new NotFoundException('Area nicht gefunden');
 
     const lead = this.toPerson(base.lead_uuid, base.lead_name);
+    const areaDeputyLead = this.toPerson(base.deputy_uuid, base.deputy_name);
     const departments = this.mapChildren(deptRows);
     const assets = this.mapChildren(assetRows);
     const halls = this.mapChildren(hallRows);
@@ -511,6 +519,7 @@ export class OrganigramService {
       name: base.name,
       areaType: base.area_type,
       ...(lead !== undefined && { lead }),
+      ...(areaDeputyLead !== undefined && { areaDeputyLead }),
       ...(departments !== undefined && { departments }),
       ...(assets !== undefined && { assets }),
       ...(halls !== undefined && { halls }),
@@ -523,9 +532,12 @@ export class OrganigramService {
       this.db.query<DeptDetailRow>(
         `SELECT d.uuid, d.name, u.uuid AS lead_uuid,
                 TRIM(CONCAT(u.first_name, ' ', u.last_name)) AS lead_name,
+                du.uuid AS deputy_uuid,
+                TRIM(CONCAT(du.first_name, ' ', du.last_name)) AS deputy_name,
                 pa.uuid AS area_uuid, pa.name AS area_name
          FROM departments d
          LEFT JOIN users u ON d.department_lead_id = u.id
+         LEFT JOIN users du ON d.department_deputy_lead_id = du.id
          LEFT JOIN areas pa ON d.area_id = pa.id
          WHERE d.tenant_id = $1 AND d.uuid = $2 AND d.is_active = 1`,
         [tenantId, uuid],
@@ -558,6 +570,7 @@ export class OrganigramService {
     const base = baseRows[0];
     if (base === undefined) throw new NotFoundException('Abteilung nicht gefunden');
     const lead = this.toPerson(base.lead_uuid, base.lead_name);
+    const departmentDeputyLead = this.toPerson(base.deputy_uuid, base.deputy_name);
     const parentArea = this.toParent(base.area_uuid, base.area_name);
     const m = (rows: DetailChildRow[]): OrgNodeDetailEntry[] =>
       rows.map((r: DetailChildRow) => this.toDetailEntry(r));
@@ -567,6 +580,7 @@ export class OrganigramService {
       entityUuid: base.uuid.trim(),
       name: base.name,
       ...(lead !== undefined && { lead }),
+      ...(departmentDeputyLead !== undefined && { departmentDeputyLead }),
       ...(parentArea !== undefined && { parentArea }),
       ...(teamRows.length > 0 && { teams: m(teamRows) }),
       ...(empRows.length > 0 && { employees: m(empRows) }),
@@ -586,7 +600,7 @@ export class OrganigramService {
                 pa.uuid AS area_uuid, pa.name AS area_name
          FROM teams t
          LEFT JOIN users lu ON t.team_lead_id = lu.id
-         LEFT JOIN users du ON t.deputy_lead_id = du.id
+         LEFT JOIN users du ON t.team_deputy_lead_id = du.id
          LEFT JOIN departments pd ON t.department_id = pd.id
          LEFT JOIN areas pa ON pd.area_id = pa.id
          WHERE t.tenant_id = $1 AND t.uuid = $2 AND t.is_active = 1`,

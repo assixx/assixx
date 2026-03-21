@@ -116,7 +116,7 @@ export class TpmApprovalService {
         JOIN tpm_cards c ON c.asset_id = mt.asset_id AND c.tenant_id = mt.tenant_id
         WHERE c.id = $1
           AND c.tenant_id = $2
-          AND t.team_lead_id = $3
+          AND (t.team_lead_id = $3 OR t.team_deputy_lead_id = $3)
           AND t.is_active = ${IS_ACTIVE.ACTIVE}
       ) OR EXISTS (
         SELECT 1 FROM users
@@ -263,7 +263,7 @@ export class TpmApprovalService {
         JOIN tpm_cards c ON c.asset_id = mt.asset_id AND c.tenant_id = mt.tenant_id
         WHERE c.id = $1
           AND c.tenant_id = $2
-          AND t.team_lead_id = $3
+          AND (t.team_lead_id = $3 OR t.team_deputy_lead_id = $3)
           AND t.is_active = ${IS_ACTIVE.ACTIVE}
       ) OR EXISTS (
         SELECT 1 FROM users

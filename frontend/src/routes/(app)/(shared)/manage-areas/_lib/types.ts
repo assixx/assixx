@@ -20,6 +20,8 @@ export interface Area {
   description?: string | null;
   areaLeadId?: number | null;
   areaLeadName?: string | null;
+  areaDeputyLeadId?: number | null;
+  areaDeputyLeadName?: string;
   type: AreaType;
   capacity?: number | null;
   address?: string | null;
@@ -67,6 +69,7 @@ export interface AreaPayload {
   name: string;
   description?: string | null;
   areaLeadId?: number | null;
+  areaDeputyLeadId?: number | null;
   type: AreaType;
   capacity?: number | null;
   address?: string | null;

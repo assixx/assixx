@@ -101,6 +101,7 @@
   let formDescription = $state('');
   let formDepartmentId = $state<number | null>(null);
   let formLeaderId = $state<number | null>(null);
+  let formDeputyLeaderId = $state<number | null>(null);
   let formMemberIds = $state<number[]>([]);
   let formAssetIds = $state<number[]>([]);
   let formHallId = $state<number | null>(null);
@@ -130,6 +131,7 @@
     description: string;
     departmentId: number | null;
     leaderId: number | null;
+    deputyLeaderId: number | null;
     memberIds: number[];
     assetIds: number[];
     hallId: number | null;
@@ -143,6 +145,7 @@
         description: formData.description,
         departmentId: formData.departmentId,
         leaderId: formData.leaderId,
+        teamDeputyLeadId: formData.deputyLeaderId,
         isActive: formData.isActive,
       });
 
@@ -241,6 +244,7 @@
     formDescription = team.description ?? '';
     formDepartmentId = team.departmentId ?? null;
     formLeaderId = team.leaderId ?? null;
+    formDeputyLeaderId = team.teamDeputyLeadId ?? null;
     formIsActive = (team.isActive === 4 ? 0 : team.isActive) as FormIsActiveStatus;
 
     // Set member and asset IDs from fetched data
@@ -279,6 +283,7 @@
     formDescription = defaults.description;
     formDepartmentId = defaults.departmentId;
     formLeaderId = defaults.leaderId;
+    formDeputyLeaderId = null;
     formMemberIds = defaults.memberIds;
     formAssetIds = defaults.assetIds;
     formHallId = null;
@@ -663,6 +668,7 @@
       {formDescription}
       {formDepartmentId}
       {formLeaderId}
+      {formDeputyLeaderId}
       {formMemberIds}
       {formAssetIds}
       {formHallId}

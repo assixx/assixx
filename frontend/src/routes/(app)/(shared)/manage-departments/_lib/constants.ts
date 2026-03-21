@@ -145,6 +145,7 @@ export const FORM_DEFAULTS: {
   description: string;
   areaId: number | null;
   departmentLeadId: number | null;
+  departmentDeputyLeadId: number | null;
   hallIds: number[];
   isActive: FormIsActiveStatus;
 } = {
@@ -152,6 +153,7 @@ export const FORM_DEFAULTS: {
   description: '',
   areaId: null,
   departmentLeadId: null,
+  departmentDeputyLeadId: null,
   hallIds: [],
   isActive: 1,
 };

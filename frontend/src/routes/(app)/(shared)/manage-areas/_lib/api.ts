@@ -185,6 +185,7 @@ export function buildAreaPayload(formData: {
   name: string;
   description: string;
   areaLeadId: number | null;
+  areaDeputyLeadId?: number | null;
   type: AreaType;
   capacity: number | null;
   address: string;
@@ -196,6 +197,7 @@ export function buildAreaPayload(formData: {
     name: formData.name,
     description: formData.description || null,
     areaLeadId: formData.areaLeadId,
+    areaDeputyLeadId: formData.areaDeputyLeadId ?? null,
     type: formData.type,
     capacity: formData.capacity,
     address: formData.address || null,

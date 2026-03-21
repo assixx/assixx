@@ -713,6 +713,33 @@ describe('SECURITY: AdminPermissionsService', () => {
       expect(result.departments[0]?.description).toBe('Main assembly line');
       expect(result.hasFullAccess).toBe(true);
     });
+
+    it('should omit areaId and areaName when null', async () => {
+      mockDb.query.mockResolvedValueOnce([{ role: 'admin', has_full_access: false }]);
+      mockDb.query.mockResolvedValueOnce([]); // areas
+      mockDb.query.mockResolvedValueOnce([
+        {
+          id: 10,
+          name: 'Standalone',
+          description: null,
+          area_id: null,
+          area_name: null,
+          can_read: true,
+          can_write: false,
+          can_delete: false,
+        },
+      ]);
+      mockDb.query.mockResolvedValueOnce([]); // getLeadAreas
+      mockDb.query.mockResolvedValueOnce([]); // getLeadDepartments
+      mockDb.query.mockResolvedValueOnce([{ total: '0' }]);
+      mockDb.query.mockResolvedValueOnce([{ total: '1' }]);
+
+      const result = await service.getAdminPermissions(1, 10);
+
+      expect(result.departments[0]?.areaId).toBeUndefined();
+      expect(result.departments[0]?.areaName).toBeUndefined();
+      expect(result.departments[0]?.description).toBeUndefined();
+    });
   });
 
   // =============================================================

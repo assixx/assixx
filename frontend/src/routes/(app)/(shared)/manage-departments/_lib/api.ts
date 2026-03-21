@@ -241,6 +241,7 @@ export function buildDepartmentPayload(formData: {
   description: string;
   areaId: number | null;
   departmentLeadId: number | null;
+  departmentDeputyLeadId: number | null;
   isActive: FormIsActiveStatus;
 }): DepartmentPayload {
   return {
@@ -248,6 +249,7 @@ export function buildDepartmentPayload(formData: {
     description: formData.description.trim() || null,
     areaId: formData.areaId,
     departmentLeadId: formData.departmentLeadId,
+    departmentDeputyLeadId: formData.departmentDeputyLeadId,
     isActive: formData.isActive,
   };
 }

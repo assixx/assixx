@@ -304,7 +304,10 @@ export async function findUserTeamAsLead(userId: number): Promise<Team | null> {
     const teams = await loadTeams();
     const userTeam = teams.find(
       (team) =>
-        team.team_lead_id === userId || team.teamLeadId === userId || team.leaderId === userId,
+        team.team_lead_id === userId ||
+        team.teamLeadId === userId ||
+        team.leaderId === userId ||
+        team.teamDeputyLeadId === userId,
     );
     return userTeam ?? null;
   } catch (err: unknown) {
