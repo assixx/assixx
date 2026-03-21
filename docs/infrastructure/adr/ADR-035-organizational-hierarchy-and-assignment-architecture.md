@@ -1051,11 +1051,11 @@ frontend/src/
 
 Lead-Positionen und Deputies auf allen 3 Ebenen (seit Deputy Leads Feature, 2026-03-21):
 
-| Tabelle       | Lead-Spalte            | Deputy-Spalte                 |
-| ------------- | ---------------------- | ----------------------------- |
-| `areas`       | `area_lead_id`         | `area_deputy_lead_id`         |
-| `departments` | `department_lead_id`   | `department_deputy_lead_id`   |
-| `teams`       | `team_lead_id`         | `team_deputy_lead_id`         |
+| Tabelle       | Lead-Spalte          | Deputy-Spalte               |
+| ------------- | -------------------- | --------------------------- |
+| `areas`       | `area_lead_id`       | `area_deputy_lead_id`       |
+| `departments` | `department_lead_id` | `department_deputy_lead_id` |
+| `teams`       | `team_lead_id`       | `team_deputy_lead_id`       |
 
 Deputies haben identische Scope-Rechte wie ihre Leads (DEPUTY_EQUALS_LEAD):
 
@@ -1064,7 +1064,7 @@ Deputies haben identische Scope-Rechte wie ihre Leads (DEPUTY_EQUALS_LEAD):
 3. **DB-Trigger:** `trg_enforce_manage_permissions_target_is_lead` — `manage-permissions` kann NUR an Users mit Lead- oder Deputy-Position vergeben werden
 4. **DB-Trigger:** `trg_validate_team_lead_position` — `team_lead_id`/`team_deputy_lead_id` muss `position='team_lead'` haben
 5. **DB-Trigger:** `trg_validate_area_deputy_lead` / `trg_validate_dept_deputy_lead` — Deputies müssen admin/root Rolle haben
-5. **DB-Trigger:** `trg_validate_dept_lead` / `trg_validate_area_lead` — Dept/Area-Leads müssen admin/root sein
+6. **DB-Trigger:** `trg_validate_dept_lead` / `trg_validate_area_lead` — Dept/Area-Leads müssen admin/root sein
 
 **Konsequenz:** Lead-Entfernung (SET NULL) entfernt Scope-Zugang + Delegationsrechte. Auto-Cleanup in `TeamsService.cleanupLeadPermissions()`.
 

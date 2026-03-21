@@ -15,17 +15,18 @@
 
 Seit dem Deputy Leads Feature (2026-03-21) haben Deputies auf allen 3 Hierarchie-Ebenen **identische** Scope-Rechte wie ihre Leads (`DEPUTY_EQUALS_LEAD = true` — hardcoded Konstante). Jede Firma hat jedoch andere Anforderungen:
 
-| Firma-Typ                  | Gewünschtes Verhalten                                                    |
-| -------------------------- | ------------------------------------------------------------------------ |
-| **Streng hierarchisch**    | Deputy ist nur ein Titel — kein erweiterter Scope, reine Vertretungsrolle |
-| **Flache Hierarchie**      | Deputy hat volle Lead-Rechte — kann alles sehen und verwalten             |
-| **Hybrid**                 | Deputy genehmigt Urlaubsanfragen, sieht aber keine Manage-Seiten          |
+| Firma-Typ               | Gewünschtes Verhalten                                                     |
+| ----------------------- | ------------------------------------------------------------------------- |
+| **Streng hierarchisch** | Deputy ist nur ein Titel — kein erweiterter Scope, reine Vertretungsrolle |
+| **Flache Hierarchie**   | Deputy hat volle Lead-Rechte — kann alles sehen und verwalten             |
+| **Hybrid**              | Deputy genehmigt Urlaubsanfragen, sieht aber keine Manage-Seiten          |
 
 Aktuell gibt es keine Möglichkeit, dieses Verhalten pro Tenant zu konfigurieren.
 
 ### Referenz
 
 ADR-036 (Organizational Scope Access Control), Known Limitation #10:
+
 > "V2-Erweiterung: Per-Tenant-Setting. Wenn false → `*_deputy_lead_id` aus CTE-Queries entfernen."
 
 ---
@@ -66,6 +67,7 @@ deputy_has_lead_scope BOOLEAN NOT NULL DEFAULT false
 ```
 
 **Warum auf der Positions-Seite?**
+
 - Logischer Ort: Deputies sind System-Positionen, das Setting betrifft ihre Berechtigung
 - Root-only: Positions-Seite ist bereits `(root)` Route Group geschützt
 - Kein neuer Endpoint nötig: Setting kann über bestehenden Organigram-Endpoint gespeichert werden
@@ -80,9 +82,7 @@ deputy_has_lead_scope BOOLEAN NOT NULL DEFAULT false
 
 ```typescript
 // hierarchy-permission.service.ts
-const deputyClause = deputyHasLeadScope
-  ? 'OR area_deputy_lead_id = $1'
-  : '';
+const deputyClause = deputyHasLeadScope ? 'OR area_deputy_lead_id = $1' : '';
 
 const LEAD_AREAS_CTE = `
   SELECT id FROM areas
@@ -108,15 +108,15 @@ const cte = deputyHasLeadScope ? CTE_WITH_DEPUTIES : CTE_WITHOUT_DEPUTIES;
 
 ### 4. Verhalten bei `deputy_has_lead_scope = false`
 
-| Feature              | Deputy mit Scope (ON)        | Deputy ohne Scope (OFF)        |
-| -------------------- | ---------------------------- | ------------------------------ |
-| Manage-Seiten        | Sieht alle Entities im Scope | Sieht nichts (kein Scope)      |
-| KVP unshared         | Sieht Team-KVPs              | Sieht nur eigene               |
-| Survey Visibility    | Sieht zugewiesene Surveys    | Sieht nur persönlich zugewiesene |
-| Vacation Approval    | Kann genehmigen              | **Kann trotzdem genehmigen**   |
-| TPM Approval         | Kann genehmigen              | **Kann trotzdem genehmigen**   |
-| Approvals (generisch)| Ist Genehmiger               | **Ist trotzdem Genehmiger**    |
-| Position Display     | "Bereiche Stellvertreter"    | "Bereiche Stellvertreter"      |
+| Feature               | Deputy mit Scope (ON)        | Deputy ohne Scope (OFF)          |
+| --------------------- | ---------------------------- | -------------------------------- |
+| Manage-Seiten         | Sieht alle Entities im Scope | Sieht nichts (kein Scope)        |
+| KVP unshared          | Sieht Team-KVPs              | Sieht nur eigene                 |
+| Survey Visibility     | Sieht zugewiesene Surveys    | Sieht nur persönlich zugewiesene |
+| Vacation Approval     | Kann genehmigen              | **Kann trotzdem genehmigen**     |
+| TPM Approval          | Kann genehmigen              | **Kann trotzdem genehmigen**     |
+| Approvals (generisch) | Ist Genehmiger               | **Ist trotzdem Genehmiger**      |
+| Position Display      | "Bereiche Stellvertreter"    | "Bereiche Stellvertreter"        |
 
 **Wichtig:** Vacation/Approval-Logik ist **immer aktiv** — unabhängig vom Scope-Toggle. Deputies können immer Urlaubsanfragen genehmigen. Das Toggle betrifft nur die **Sichtbarkeit** (welche Entities sie sehen), nicht die **Genehmigungskette**.
 
@@ -131,6 +131,7 @@ ALTER TABLE organigram_trees ADD COLUMN deputy_has_lead_scope BOOLEAN NOT NULL D
 ```
 
 **Warum `organigram_trees`?**
+
 - Tabelle existiert bereits mit Tenant-Isolation (RLS)
 - Wird bereits beim App-Layout-Load gefetcht (parallel mit `hierarchy-labels`)
 - Kein neues API-Endpoint nötig — PATCH `/organigram/settings` existiert
@@ -175,13 +176,13 @@ ALTER TABLE organigram_trees ADD COLUMN deputy_has_lead_scope BOOLEAN NOT NULL D
 
 ## Implementation Estimate
 
-| Phase | Scope                                                     | Sessions |
-| ----- | --------------------------------------------------------- | -------- |
-| 1     | DB: Column + Migration                                    | 0.5      |
+| Phase | Scope                                                              | Sessions |
+| ----- | ------------------------------------------------------------------ | -------- |
+| 1     | DB: Column + Migration                                             | 0.5      |
 | 2     | Backend: Setting laden, an HierarchyPermissionService durchreichen | 0.5      |
-| 3     | Backend: Alle 15+ Queries konditional machen              | 1        |
-| 4     | Frontend: Checkbox + API-Call                             | 0.5      |
-| 5     | Tests: ON/OFF Varianten                                   | 0.5      |
+| 3     | Backend: Alle 15+ Queries konditional machen                       | 1        |
+| 4     | Frontend: Checkbox + API-Call                                      | 0.5      |
+| 5     | Tests: ON/OFF Varianten                                            | 0.5      |
 
 **Total:** ~3 Sessions
 
