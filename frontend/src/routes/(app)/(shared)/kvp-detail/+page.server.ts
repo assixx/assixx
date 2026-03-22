@@ -12,6 +12,7 @@ import { requireAddon } from '$lib/utils/addon-guard';
 import type { PageServerLoad } from './$types';
 import type {
   KvpSuggestion,
+  ApprovalInfo,
   Attachment,
   Department,
   Team,
@@ -121,6 +122,39 @@ async function fetchLinkedWorkOrders(
   }));
 }
 
+/** Fetch approval data for a suggestion in parallel */
+async function fetchApprovalInfo(
+  idOrUuid: string,
+  token: string,
+  fetchFn: typeof fetch,
+): Promise<{ approval: ApprovalInfo | null; hasApprovalConfig: boolean }> {
+  const [approvalData, configStatus] = await Promise.all([
+    apiFetch<{ approval: ApprovalInfo | null }>(`/kvp/${idOrUuid}/approval`, token, fetchFn),
+    apiFetch<{ hasConfig: boolean }>('/kvp/approval-config-status', token, fetchFn),
+  ]);
+
+  return {
+    approval: approvalData?.approval ?? null,
+    hasApprovalConfig: configStatus?.hasConfig ?? false,
+  };
+}
+
+/** Load suggestion and all related data */
+async function loadSuggestionData(
+  idOrUuid: string,
+  suggestion: KvpSuggestion,
+  token: string,
+  fetchFn: typeof fetch,
+) {
+  const [pageData, linkedWorkOrders, approvalInfo] = await Promise.all([
+    fetchPageData(idOrUuid, token, fetchFn),
+    fetchLinkedWorkOrders(suggestion.uuid, token, fetchFn),
+    fetchApprovalInfo(idOrUuid, token, fetchFn),
+  ]);
+
+  return { ...pageData, linkedWorkOrders, ...approvalInfo };
+}
+
 export const load: PageServerLoad = async ({ cookies, fetch, url, parent }) => {
   const token = cookies.get('accessToken');
   if (token === undefined || token === '') {
@@ -148,6 +182,8 @@ export const load: PageServerLoad = async ({ cookies, fetch, url, parent }) => {
       areas: [] as Area[],
       assets: [] as Asset[],
       linkedWorkOrders: [] as LinkedWorkOrder[],
+      approval: null as ApprovalInfo | null,
+      hasApprovalConfig: false,
       currentUser: parentData.user,
     };
   }
@@ -157,18 +193,13 @@ export const load: PageServerLoad = async ({ cookies, fetch, url, parent }) => {
     error(404, 'Vorschlag nicht gefunden');
   }
 
-  const [pageData, linkedWorkOrders] = await Promise.all([
-    fetchPageData(idOrUuid, token, fetch),
-    fetchLinkedWorkOrders(suggestion.uuid, token, fetch),
-  ]);
-
+  const allData = await loadSuggestionData(idOrUuid, suggestion, token, fetch);
   const isTeamLead = (parentData.user as { position?: string } | null)?.position === 'team_lead';
 
   return {
     permissionDenied: false as const,
     suggestion,
-    ...pageData,
-    linkedWorkOrders,
+    ...allData,
     currentUser: parentData.user,
     isTeamLead,
   };

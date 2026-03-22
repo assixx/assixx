@@ -307,6 +307,16 @@ describe('ApprovalsService', () => {
       expect(result.total).toBe(0);
     });
 
+    it('should default total to 0 when COUNT returns no rows', async () => {
+      mockClient.query.mockResolvedValueOnce({ rows: [] }); // COUNT → empty
+      mockClient.query.mockResolvedValueOnce({ rows: [] }); // DATA → empty
+
+      const result = await service.findAll({});
+
+      expect(result.total).toBe(0);
+      expect(result.items).toHaveLength(0);
+    });
+
     it('should respect page and limit', async () => {
       mockClient.query.mockResolvedValueOnce({ rows: [{ count: '50' }] });
       mockClient.query.mockResolvedValueOnce({
@@ -431,6 +441,16 @@ describe('ApprovalsService', () => {
 
       expect(result.items).toHaveLength(0);
       expect(result.total).toBe(0);
+    });
+
+    it('should default total to 0 when COUNT returns no rows', async () => {
+      mockClient.query.mockResolvedValueOnce({ rows: [] }); // COUNT → empty
+      mockClient.query.mockResolvedValueOnce({ rows: [] }); // DATA → empty
+
+      const result = await service.findByAssignee(20, {});
+
+      expect(result.total).toBe(0);
+      expect(result.items).toHaveLength(0);
     });
 
     it('should respect explicit page and limit', async () => {

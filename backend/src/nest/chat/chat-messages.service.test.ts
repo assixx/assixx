@@ -17,6 +17,13 @@ import type { DatabaseService } from '../database/database.service.js';
 import type { E2eKeysService } from '../e2e-keys/e2e-keys.service.js';
 import { ChatMessagesService } from './chat-messages.service.js';
 
+vi.mock('../../utils/event-bus.js', () => ({
+  eventBus: {
+    emitMessagesRead: vi.fn(),
+    emitNewMessage: vi.fn(),
+  },
+}));
+
 // ============================================================
 // Setup
 // ============================================================
@@ -257,6 +264,30 @@ describe('ChatMessagesService – DB-mocked methods', () => {
 
       expect(result.markedCount).toBe(42);
       expect(verifyAccess).toHaveBeenCalledOnce();
+    });
+
+    it('emits messagesRead event when unread messages exist', async () => {
+      const { eventBus } = await import('../../utils/event-bus.js');
+      const verifyAccess = vi.fn().mockResolvedValue(undefined);
+      mockDb.query
+        .mockResolvedValueOnce([{ last_read_message_id: 10 }]) // getUnreadMessageEntries → last_read
+        .mockResolvedValueOnce([
+          { messageId: 11, senderId: 2 },
+          { messageId: 12, senderId: 3 },
+        ]) // unread messages found
+        .mockResolvedValueOnce([{ max_id: 12 }]) // MAX message id
+        .mockResolvedValueOnce([]); // UPDATE last_read
+
+      const result = await service.markAsRead(1, verifyAccess);
+
+      expect(result.markedCount).toBe(12);
+      expect(eventBus.emitMessagesRead).toHaveBeenCalledWith({
+        readByUserId: 5,
+        entries: [
+          { messageId: 11, senderId: 2 },
+          { messageId: 12, senderId: 3 },
+        ],
+      });
     });
   });
 });

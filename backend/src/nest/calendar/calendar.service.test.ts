@@ -435,6 +435,30 @@ describe('CalendarService – DB-mocked methods', () => {
       await expect(service.deleteEvent(1, 1, 5, 'admin')).rejects.toThrow(ForbiddenException);
     });
 
+    it('allows root user to delete event owned by another user', async () => {
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+
+      mockDb.query
+        .mockResolvedValueOnce([
+          {
+            id: 1,
+            title: 'Other User Event',
+            user_id: 99, // owned by another user
+            tenant_id: 1,
+            start_date: new Date(),
+            end_date: tomorrow,
+          },
+        ])
+        .mockResolvedValueOnce([]) // DELETE attendees
+        .mockResolvedValueOnce([]); // DELETE event
+      mockActivityLogger.logDelete.mockResolvedValueOnce(undefined);
+
+      const result = await service.deleteEvent(1, 1, 5, 'root');
+
+      expect(result.message).toBe('Event deleted successfully');
+    });
+
     it('deletes future event and attendees for admin', async () => {
       const tomorrow = new Date();
       tomorrow.setDate(tomorrow.getDate() + 1);
@@ -527,6 +551,16 @@ describe('CalendarService – DB-mocked methods', () => {
       expect(mockCreation.addAttendeesToEvent).toHaveBeenCalledWith(42, 5, [10, 20], 1);
       expect(mockCreation.createChildEvents).toHaveBeenCalledOnce();
       expect(mockCreation.logEventCreated).toHaveBeenCalledOnce();
+    });
+  });
+
+  describe('countEvents (private)', () => {
+    it('should default to 0 when COUNT returns no rows', async () => {
+      mockDb.query.mockResolvedValueOnce([]);
+
+      const result = await service['countEvents']('SELECT COUNT(*) as count FROM x', []);
+
+      expect(result).toBe(0);
     });
   });
 

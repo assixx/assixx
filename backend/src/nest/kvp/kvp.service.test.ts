@@ -14,6 +14,7 @@ import type { ActivityLoggerService } from '../common/services/activity-logger.s
 import type { DatabaseService } from '../database/database.service.js';
 import type { ScopeService } from '../hierarchy-permission/scope.service.js';
 import type { NotificationsService } from '../notifications/notifications.service.js';
+import type { KvpApprovalService } from './kvp-approval.service.js';
 import type { KvpAttachmentsService } from './kvp-attachments.service.js';
 import type { KvpCommentsService } from './kvp-comments.service.js';
 import type { KvpConfirmationsService } from './kvp-confirmations.service.js';
@@ -171,6 +172,7 @@ function createService(): ServiceMocks {
   const mockComments = createMockComments();
   const mockAttachments = createMockAttachments();
   const mockConfirmations = createMockConfirmations();
+  const mockKvpApproval = { hasApprovalConfig: vi.fn().mockResolvedValue(false) };
   const mockLifecycle = createMockLifecycle();
   const mockScope = createMockScope();
   const mockCls = createMockCls();
@@ -182,6 +184,7 @@ function createService(): ServiceMocks {
     mockComments as unknown as KvpCommentsService,
     mockAttachments as unknown as KvpAttachmentsService,
     mockConfirmations as unknown as KvpConfirmationsService,
+    mockKvpApproval as unknown as KvpApprovalService,
     mockLifecycle as unknown as KvpLifecycleService,
     mockScope as unknown as ScopeService,
     mockCls as unknown as ClsService,

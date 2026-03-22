@@ -28,16 +28,17 @@
     getShareLevelText,
     confirmSuggestion,
     unconfirmSuggestion,
+    requestApproval,
   } from './_lib/api';
   import AttachmentPreviewModal from './_lib/AttachmentPreviewModal.svelte';
   import CommentsSection from './_lib/CommentsSection.svelte';
-  import { STATUS_OPTIONS } from './_lib/constants';
   import CreateWorkOrderFromKvp from './_lib/CreateWorkOrderFromKvp.svelte';
   import DetailSidebar from './_lib/DetailSidebar.svelte';
   import PhotoGallery from './_lib/PhotoGallery.svelte';
   import RejectionModal from './_lib/RejectionModal.svelte';
   import ShareModal from './_lib/ShareModal.svelte';
   import { kvpDetailState } from './_lib/state.svelte';
+  import StatusDropdown from './_lib/StatusDropdown.svelte';
   import {
     getStatusBadgeClass,
     getStatusText,
@@ -49,7 +50,6 @@
     formatCurrency,
     hasFinancialInfo,
     hasImplementationDate,
-    canUpdateStatus,
     getSharedByInfo,
     isImageAttachment,
   } from './_lib/utils';
@@ -86,6 +86,8 @@
   const assets = $derived(data.assets);
   const currentUser = $derived(data.currentUser);
   const linkedWorkOrders = $derived(data.linkedWorkOrders);
+  const approval = $derived(data.approval);
+  const hasApprovalConfig = $derived(data.hasApprovalConfig);
 
   // Derived: Photo attachments (uses IMAGE_FILE_TYPES from constants via util)
   const photoAttachments = $derived(
@@ -97,34 +99,7 @@
     suggestion !== null ? getVisibilityInfo(suggestion, labels) : null,
   );
 
-  // Derived: Effective role (with role switch support)
-  const effectiveRole = $derived.by(() => {
-    // Guard: Protected route, but handle null gracefully
-    if (currentUser === null) {
-      return 'employee';
-    }
-
-    // Check sessionStorage for role switch
-    if (typeof sessionStorage !== 'undefined') {
-      const roleSwitch = sessionStorage.getItem('roleSwitch');
-      if (
-        (currentUser.role === 'admin' || currentUser.role === 'root') &&
-        roleSwitch === 'employee'
-      ) {
-        return 'employee';
-      }
-    }
-
-    // Check localStorage for activeRole
-    if (typeof localStorage !== 'undefined') {
-      const activeRole = localStorage.getItem('activeRole');
-      if (activeRole !== null && activeRole !== '' && activeRole !== currentUser.role) {
-        return activeRole;
-      }
-    }
-
-    return currentUser.role;
-  });
+  // effectiveRole logic moved to StatusDropdown.svelte (reads from kvpDetailState.effectiveRole)
 
   // ==========================================================================
   // UI STATE (local only)
@@ -424,6 +399,22 @@
   }
 
   // ==========================================================================
+  // APPROVAL HANDLER
+  // ==========================================================================
+
+  async function handleRequestApproval(): Promise<void> {
+    if (suggestion === null) return;
+
+    const result = await requestApproval(suggestion.uuid);
+    if (result.success) {
+      showSuccessAlert('Freigabe wurde angefordert');
+      await invalidateAll();
+    } else {
+      showErrorAlert(result.error ?? 'Fehler beim Anfordern der Freigabe');
+    }
+  }
+
+  // ==========================================================================
   // WORK ORDER MODAL HANDLERS
   // ==========================================================================
 
@@ -566,41 +557,11 @@
             </div>
             <div class="data-list__item">
               <span class="data-list__label">Status</span>
-              {#if canUpdateStatus(effectiveRole, kvpDetailState.canManage)}
-                <!-- Admin Status Dropdown -->
-                <div
-                  class="dropdown"
-                  data-dropdown="status"
-                >
-                  <button
-                    type="button"
-                    class="dropdown__trigger"
-                    class:active={kvpDetailState.activeDropdown === 'status'}
-                    onclick={() => {
-                      kvpDetailState.toggleDropdown('status');
-                    }}
-                  >
-                    <span>{getStatusText(suggestion.status)}</span>
-                    <i class="fas fa-chevron-down"></i>
-                  </button>
-                  <div
-                    class="dropdown__menu"
-                    class:active={kvpDetailState.activeDropdown === 'status'}
-                  >
-                    {#each STATUS_OPTIONS as option (option.value)}
-                      <button
-                        type="button"
-                        class="dropdown__option"
-                        onclick={() => handleStatusChange(option.value)}
-                      >
-                        {option.label}
-                      </button>
-                    {/each}
-                  </div>
-                </div>
-              {:else}
-                <span class="data-list__value">{getStatusText(suggestion.status)}</span>
-              {/if}
+              <StatusDropdown
+                {suggestion}
+                {hasApprovalConfig}
+                onstatuschange={handleStatusChange}
+              />
             </div>
             {#if suggestion.assignedToName !== undefined}
               <div class="data-list__item">
@@ -700,6 +661,8 @@
       <DetailSidebar
         {suggestion}
         {linkedWorkOrders}
+        {approval}
+        {hasApprovalConfig}
         onopensharemodal={handleOpenShareModal}
         onunshare={handleUnshare}
         onarchive={handleArchive}
@@ -708,6 +671,7 @@
         onunconfirm={handleUnconfirm}
         onopenpreview={openPreview}
         onopenworkordermodal={handleOpenWoModal}
+        onrequestapproval={handleRequestApproval}
       />
     </div>
   </div>

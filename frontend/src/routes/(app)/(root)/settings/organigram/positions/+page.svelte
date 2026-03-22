@@ -46,7 +46,7 @@
   let editingId = $state<string | null>(null);
   let editingValue = $state('');
   let busy = $state(false);
-  let deputyHasLeadScope = $state((data.deputyHasLeadScope as boolean | undefined) ?? false);
+  const deputyHasLeadScope = $derived((data.deputyHasLeadScope as boolean | undefined) ?? false);
 
   const LEAD_ORDER = [
     'area_lead',
@@ -81,17 +81,17 @@
     return p.name;
   }
 
-  async function toggleDeputyScope(): Promise<void> {
+  async function toggleDeputyScope(enabled: boolean): Promise<void> {
     busy = true;
     try {
-      await apiClient.patch('/organigram/deputy-scope', { enabled: deputyHasLeadScope });
+      await apiClient.patch('/organigram/deputy-scope', { enabled });
       showSuccessAlert(
-        deputyHasLeadScope ?
+        enabled ?
           'Stellvertreter haben jetzt gleiche Rechte wie Leiter'
         : 'Stellvertreter-Rechte deaktiviert',
       );
+      await invalidateAll();
     } catch {
-      deputyHasLeadScope = !deputyHasLeadScope;
       showErrorAlert('Einstellung konnte nicht gespeichert werden');
     } finally {
       busy = false;
@@ -315,9 +315,9 @@
         <label class="deputy-scope-toggle mt-4">
           <input
             type="checkbox"
-            bind:checked={deputyHasLeadScope}
-            onchange={() => {
-              void toggleDeputyScope();
+            checked={deputyHasLeadScope}
+            onchange={(e: Event) => {
+              void toggleDeputyScope((e.currentTarget as HTMLInputElement).checked);
             }}
             disabled={busy}
           />

@@ -138,6 +138,32 @@ describe('AssetMaintenanceService', () => {
 
       expect(result.id).toBe(5);
     });
+
+    it('should set repair status when statusAfter is needs_repair', async () => {
+      mockDb.query.mockResolvedValueOnce([{ id: 6 }]); // INSERT
+      mockDb.query.mockResolvedValueOnce([]); // UPDATE asset
+      mockDb.query.mockResolvedValueOnce([
+        { id: 6, maintenance_type: 'corrective', performed_date: '2025-07-01' },
+      ]); // history
+
+      const result = await service.addMaintenanceRecord(
+        {
+          assetId: 2,
+          performedDate: '2025-07-01',
+          maintenanceType: 'corrective',
+          statusAfter: 'needs_repair',
+          nextMaintenanceDate: '2025-08-01',
+        } as never,
+        10,
+        1,
+      );
+
+      expect(result.id).toBe(6);
+      // UPDATE asset called with 'repair' status and nextDate
+      const updateCall = mockDb.query.mock.calls[1] as [string, unknown[]];
+      expect(updateCall[1]?.[2]).toBe('repair');
+      expect(updateCall[1]?.[1]).toEqual(new Date('2025-08-01'));
+    });
   });
 
   // =============================================================
@@ -209,6 +235,26 @@ describe('AssetMaintenanceService', () => {
       expect(result).toHaveLength(1);
       expect(result[0]?.name).toBe('CNC Assets');
       expect(result[0]?.description).toBe('Computer numerically controlled');
+    });
+
+    it('should omit description and icon when null', async () => {
+      mockDb.query.mockResolvedValueOnce([
+        {
+          id: 2,
+          name: 'Pumps',
+          sort_order: 2,
+          is_active: IS_ACTIVE.ACTIVE,
+          description: null,
+          icon: null,
+        },
+      ]);
+
+      const result = await service.getCategories();
+
+      expect(result).toHaveLength(1);
+      expect(result[0]?.name).toBe('Pumps');
+      expect(result[0]).not.toHaveProperty('description');
+      expect(result[0]).not.toHaveProperty('icon');
     });
   });
 });

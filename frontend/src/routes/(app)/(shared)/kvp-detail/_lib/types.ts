@@ -174,6 +174,22 @@ export interface LinkedWorkOrder {
 }
 
 /**
+ * Approval info linked to a KVP suggestion (from approvals system)
+ */
+export interface ApprovalInfo {
+  uuid: string;
+  status: 'pending' | 'approved' | 'rejected';
+  title: string;
+  requestedBy: number;
+  requestedByName: string;
+  decidedBy: number | null;
+  decidedByName: string | null;
+  decidedAt: string | null;
+  decisionNote: string | null;
+  createdAt: string;
+}
+
+/**
  * Share request data
  */
 export interface ShareRequest {

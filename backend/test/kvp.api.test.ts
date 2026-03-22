@@ -11,6 +11,7 @@ import {
   type JsonBody,
   authHeaders,
   authOnly,
+  createDepartmentAndTeam,
   loginApitest,
 } from './helpers.js';
 
@@ -21,8 +22,47 @@ let kvpId: number | undefined;
 let _existingKvpId: number;
 let _createdKvpId: number;
 
+// Team setup — KVP requires team assignment
+let testTeamId: number;
+let testDepartmentId: number;
+
 beforeAll(async () => {
   auth = await loginApitest();
+
+  // KVP requires the user to be assigned to a team
+  const { departmentId, teamId } = await createDepartmentAndTeam(auth.authToken);
+  testDepartmentId = departmentId;
+  testTeamId = teamId;
+
+  // Assign test user to team
+  const assignRes = await fetch(`${BASE_URL}/teams/${testTeamId}/members`, {
+    method: 'POST',
+    headers: authHeaders(auth.authToken),
+    body: JSON.stringify({ userId: auth.userId }),
+  });
+  if (assignRes.status !== 201 && assignRes.status !== 409) {
+    throw new Error(`Team member assignment failed: ${assignRes.status}`);
+  }
+});
+
+afterAll(async () => {
+  if (!auth) return;
+
+  // Remove user from team
+  await fetch(`${BASE_URL}/teams/${testTeamId}/members/${auth.userId}`, {
+    method: 'DELETE',
+    headers: authOnly(auth.authToken),
+  });
+
+  // Delete team (force) and department
+  await fetch(`${BASE_URL}/teams/${testTeamId}?force=true`, {
+    method: 'DELETE',
+    headers: authOnly(auth.authToken),
+  });
+  await fetch(`${BASE_URL}/departments/${testDepartmentId}?force=true`, {
+    method: 'DELETE',
+    headers: authOnly(auth.authToken),
+  });
 });
 
 // ---- seq: 0 -- KVP Settings (root-only) ------------------------------------
@@ -176,8 +216,6 @@ describe('KVP: Create Suggestion', () => {
         title: `API Test ${Date.now()}`,
         description: 'Created via API test - will be deleted after testing',
         categoryId: 1,
-        orgLevel: 'company',
-        orgId: 1,
         priority: 'normal',
         expectedBenefit: 'Test benefit for automation testing',
       }),

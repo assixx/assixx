@@ -386,7 +386,7 @@ Replace placeholder data in existing `/manage-approvals` page with real `apiFetc
 > **Dependency:** Phase 2 complete
 > **CRITICAL:** Without a real consumer, the approval system is untestable in context.
 
-### Step 5.1: KVP → Approval Trigger [PENDING]
+### Step 5.1: KVP → Approval Trigger [✅ DONE — 2026-03-22]
 
 When a Team Lead finds a KVP suggestion good and wants it approved by a higher authority:
 
@@ -394,7 +394,7 @@ When a Team Lead finds a KVP suggestion good and wants it approved by a higher a
 - Button calls `POST /approvals` with `addon_code='kvp'`, `source_entity_type='kvp_suggestion'`, `source_uuid={suggestion.uuid}`
 - Approval request appears in `/manage-approvals` for configured masters
 
-### Step 5.2: Approval Status in KVP [PENDING]
+### Step 5.2: Approval Status in KVP [✅ DONE — 2026-03-22]
 
 - KVP detail page shows approval status badge (if approval exists)
 - Approved → KVP suggestion gets status update (optional, depends on KVP workflow)
@@ -435,15 +435,15 @@ When a Team Lead finds a KVP suggestion good and wants it approved by a higher a
 
 ## Session Tracking
 
-| Session | Phase | Description                                               | Status   | Date       |
-| ------- | ----- | --------------------------------------------------------- | -------- | ---------- |
-| 1       | 1     | Migration: approvals tables + UI shell + ADR + sidebar    | DONE     | 2026-03-17 |
-| 2       | 1+2   | Priority ENUM fix + ApprovalsModule skeleton + types      | DONE     | 2026-03-17 |
-| 3       | 2     | ConfigService (UNION ALL) + ApprovalsService + Controller | DONE     | 2026-03-17 |
-| 4       | 3     | Unit tests (104) + API tests (24)                         | DONE     | 2026-03-17 |
-| 5       | 4     | Frontend: /settings/approvals + /manage-approvals connect | DONE     | 2026-03-17 |
-| 6       | 5     | KVP integration: first consumer                           | DEFERRED | —          |
-| 7       | 6     | SSE notifications + docs + polish                         | DONE     | 2026-03-17 |
+| Session | Phase | Description                                               | Status | Date       |
+| ------- | ----- | --------------------------------------------------------- | ------ | ---------- |
+| 1       | 1     | Migration: approvals tables + UI shell + ADR + sidebar    | DONE   | 2026-03-17 |
+| 2       | 1+2   | Priority ENUM fix + ApprovalsModule skeleton + types      | DONE   | 2026-03-17 |
+| 3       | 2     | ConfigService (UNION ALL) + ApprovalsService + Controller | DONE   | 2026-03-17 |
+| 4       | 3     | Unit tests (104) + API tests (24)                         | DONE   | 2026-03-17 |
+| 5       | 4     | Frontend: /settings/approvals + /manage-approvals connect | DONE   | 2026-03-17 |
+| 6       | 5     | KVP integration: first consumer                           | DONE   | 2026-03-22 |
+| 7       | 6     | SSE notifications + docs + polish                         | DONE   | 2026-03-17 |
 
 ### Session 1 — 2026-03-17
 

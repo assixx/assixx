@@ -25,6 +25,7 @@ import { NotificationsService } from '../notifications/notifications.service.js'
 import type { CreateSuggestionDto } from './dto/create-suggestion.dto.js';
 import type { ShareSuggestionDto } from './dto/share-suggestion.dto.js';
 import type { UpdateSuggestionDto } from './dto/update-suggestion.dto.js';
+import { KvpApprovalService } from './kvp-approval.service.js';
 import { KvpAttachmentsService } from './kvp-attachments.service.js';
 import { KvpCommentsService } from './kvp-comments.service.js';
 import { KvpConfirmationsService } from './kvp-confirmations.service.js';
@@ -42,6 +43,7 @@ import {
   mapScopeToOrgInfo,
   mapTeamToRecipient,
   transformSuggestion,
+  validateApprovalStatusTransition,
 } from './kvp.helpers.js';
 import type {
   CategoryOption,
@@ -82,6 +84,7 @@ export class KvpService {
     private readonly commentsService: KvpCommentsService,
     private readonly attachmentsService: KvpAttachmentsService,
     private readonly confirmationsService: KvpConfirmationsService,
+    private readonly kvpApprovalService: KvpApprovalService,
     private readonly lifecycleService: KvpLifecycleService,
     private readonly scopeService: ScopeService,
     private readonly cls: ClsService,
@@ -534,6 +537,19 @@ export class KvpService {
     );
   }
 
+  /** Enforce approval workflow transition rules (delegates to pure helper) */
+  private async enforceApprovalTransition(
+    currentStatus: string,
+    newStatus: string,
+    tenantId: number,
+  ): Promise<void> {
+    const hasConfig = await this.kvpApprovalService.hasApprovalConfig(tenantId);
+    const result = validateApprovalStatusTransition(currentStatus, newStatus, hasConfig);
+    if (!result.allowed) {
+      throw new ForbiddenException(result.reason ?? 'Statusübergang nicht erlaubt');
+    }
+  }
+
   /** Log activity and emit notifications for newly created KVP suggestion */
   private async logAndNotifyKvpCreated(
     suggestionId: number,
@@ -594,6 +610,7 @@ export class KvpService {
     }
     if (dto.status !== undefined) {
       await this.assertCanUpdateStatus(existing, userId, tenantId, userRole);
+      await this.enforceApprovalTransition(existing.status, dto.status, tenantId);
     }
 
     const oldValues = {

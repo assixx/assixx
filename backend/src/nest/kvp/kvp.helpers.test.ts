@@ -9,6 +9,7 @@ import {
   isUuid,
   mapTeamToRecipient,
   transformSuggestion,
+  validateApprovalStatusTransition,
 } from './kvp.helpers.js';
 
 // Factory for ExtendedUserOrgInfo test data
@@ -480,5 +481,66 @@ describe('buildSuggestionUpdateClause', () => {
 describe('mapTeamToRecipient', () => {
   it('should return team recipient with given teamId', () => {
     expect(mapTeamToRecipient(5)).toEqual({ type: 'team', id: 5 });
+  });
+});
+
+// =============================================================
+// validateApprovalStatusTransition
+// =============================================================
+
+describe('validateApprovalStatusTransition', () => {
+  describe('without approval config', () => {
+    it('should allow all transitions', () => {
+      expect(validateApprovalStatusTransition('new', 'approved', false).allowed).toBe(true);
+      expect(validateApprovalStatusTransition('new', 'rejected', false).allowed).toBe(true);
+      expect(validateApprovalStatusTransition('in_review', 'approved', false).allowed).toBe(true);
+    });
+  });
+
+  describe('with approval config', () => {
+    it('should allow new → rejected (direct reject)', () => {
+      expect(validateApprovalStatusTransition('new', 'rejected', true).allowed).toBe(true);
+    });
+
+    it('should allow restored → rejected (like new)', () => {
+      expect(validateApprovalStatusTransition('restored', 'rejected', true).allowed).toBe(true);
+    });
+
+    it('should allow approved → implemented', () => {
+      expect(validateApprovalStatusTransition('approved', 'implemented', true).allowed).toBe(true);
+    });
+
+    it('should BLOCK new → approved (only via approval master)', () => {
+      const result = validateApprovalStatusTransition('new', 'approved', true);
+      expect(result.allowed).toBe(false);
+      expect(result.reason).toContain('Freigabe-Master');
+    });
+
+    it('should BLOCK new → in_review (only via requestApproval)', () => {
+      const result = validateApprovalStatusTransition('new', 'in_review', true);
+      expect(result.allowed).toBe(false);
+      expect(result.reason).toContain('automatisch');
+    });
+
+    it('should BLOCK in_review → any (waiting for master)', () => {
+      const result = validateApprovalStatusTransition('in_review', 'rejected', true);
+      expect(result.allowed).toBe(false);
+      expect(result.reason).toContain('gesperrt');
+    });
+
+    it('should BLOCK rejected → any (final state)', () => {
+      const result = validateApprovalStatusTransition('rejected', 'new', true);
+      expect(result.allowed).toBe(false);
+    });
+
+    it('should BLOCK implemented → any (final state)', () => {
+      const result = validateApprovalStatusTransition('implemented', 'new', true);
+      expect(result.allowed).toBe(false);
+    });
+
+    it('should BLOCK approved → rejected', () => {
+      const result = validateApprovalStatusTransition('approved', 'rejected', true);
+      expect(result.allowed).toBe(false);
+    });
   });
 });

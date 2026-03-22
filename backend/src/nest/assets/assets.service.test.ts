@@ -206,6 +206,90 @@ describe('AssetsService – DB-mocked methods', () => {
     });
   });
 
+  describe('deactivateAsset', () => {
+    it('should set is_active to INACTIVE', async () => {
+      mockDb.queryOne.mockResolvedValueOnce({
+        id: 1,
+        uuid: 'u',
+        name: 'A',
+        tenant_id: 1,
+        model: null,
+        manufacturer: null,
+        serial_number: null,
+        asset_number: null,
+        department_id: null,
+        area_id: null,
+        location: null,
+        asset_type: 'cnc',
+        status: 'operational',
+        is_active: IS_ACTIVE.ACTIVE,
+        created_at: new Date(),
+        updated_at: new Date(),
+        created_by: null,
+        updated_by: null,
+        purchase_date: null,
+        installation_date: null,
+        warranty_until: null,
+        last_maintenance: null,
+        next_maintenance: null,
+        operating_hours: null,
+        production_capacity: null,
+        energy_consumption: null,
+        manual_url: null,
+        qr_code: null,
+        notes: null,
+      });
+      mockDb.query.mockResolvedValueOnce([]);
+
+      await service.deactivateAsset(1, 1, 5);
+
+      const sql = mockDb.query.mock.calls[0]?.[0] as string;
+      expect(sql).toContain('is_active');
+    });
+  });
+
+  describe('activateAsset', () => {
+    it('should set is_active to ACTIVE', async () => {
+      mockDb.queryOne.mockResolvedValueOnce({
+        id: 1,
+        uuid: 'u',
+        name: 'A',
+        tenant_id: 1,
+        model: null,
+        manufacturer: null,
+        serial_number: null,
+        asset_number: null,
+        department_id: null,
+        area_id: null,
+        location: null,
+        asset_type: 'cnc',
+        status: 'operational',
+        is_active: IS_ACTIVE.INACTIVE,
+        created_at: new Date(),
+        updated_at: new Date(),
+        created_by: null,
+        updated_by: null,
+        purchase_date: null,
+        installation_date: null,
+        warranty_until: null,
+        last_maintenance: null,
+        next_maintenance: null,
+        operating_hours: null,
+        production_capacity: null,
+        energy_consumption: null,
+        manual_url: null,
+        qr_code: null,
+        notes: null,
+      });
+      mockDb.query.mockResolvedValueOnce([]);
+
+      await service.activateAsset(1, 1, 5);
+
+      const sql = mockDb.query.mock.calls[0]?.[0] as string;
+      expect(sql).toContain('is_active');
+    });
+  });
+
   describe('getAssetTeams – delegation', () => {
     it('verifies asset exists and delegates to teams sub-service', async () => {
       // getAssetById succeeds — needs full row for mapDbAssetToApi

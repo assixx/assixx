@@ -677,3 +677,47 @@ describe('SECURITY: AuthService', () => {
     });
   });
 });
+
+// =============================================================
+// getJwtSecrets — module-level validation (separate describe,
+// uses vi.resetModules + dynamic import to trigger re-evaluation)
+// =============================================================
+
+describe('SECURITY: getJwtSecrets validation', () => {
+  afterEach(() => {
+    process.env['JWT_SECRET'] =
+      'test-access-secret-for-vitest-unit-tests-minimum-32-characters-long';
+    process.env['JWT_REFRESH_SECRET'] =
+      'test-refresh-secret-for-vitest-unit-tests-minimum-32-characters-long';
+    vi.resetModules();
+  });
+
+  it('should throw when JWT_SECRET is empty', async () => {
+    vi.resetModules();
+    process.env['JWT_SECRET'] = '';
+
+    await expect(import('./auth.service.js')).rejects.toThrow(
+      'SECURITY ERROR: JWT_SECRET must be set',
+    );
+  });
+
+  it('should throw when JWT_REFRESH_SECRET is empty', async () => {
+    vi.resetModules();
+    process.env['JWT_REFRESH_SECRET'] = '';
+
+    await expect(import('./auth.service.js')).rejects.toThrow(
+      'SECURITY ERROR: JWT_REFRESH_SECRET must be set',
+    );
+  });
+
+  it('should throw when both secrets are identical', async () => {
+    vi.resetModules();
+    const same = 'identical-secret-that-is-long-enough-for-the-32-char-minimum-requirement';
+    process.env['JWT_SECRET'] = same;
+    process.env['JWT_REFRESH_SECRET'] = same;
+
+    await expect(import('./auth.service.js')).rejects.toThrow(
+      'JWT_REFRESH_SECRET must be different from JWT_SECRET',
+    );
+  });
+});

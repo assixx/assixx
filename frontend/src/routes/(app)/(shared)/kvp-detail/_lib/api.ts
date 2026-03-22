@@ -96,6 +96,23 @@ export async function archiveSuggestion(
 }
 
 /**
+ * Request approval from configured KVP masters
+ */
+export async function requestApproval(
+  idOrUuid: string,
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    await apiClient.post(API_ENDPOINTS.kvpRequestApproval(idOrUuid), {});
+    return { success: true };
+  } catch (err: unknown) {
+    log.error({ err }, 'Error requesting approval');
+    checkSessionExpired(err);
+    const message = err instanceof Error ? err.message : 'Fehler beim Anfordern der Freigabe';
+    return { success: false, error: message };
+  }
+}
+
+/**
  * Unarchive (restore) a suggestion
  */
 export async function unarchiveSuggestion(

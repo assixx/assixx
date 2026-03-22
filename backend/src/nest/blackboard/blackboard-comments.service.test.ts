@@ -102,6 +102,35 @@ describe('BlackboardCommentsService', () => {
 
       expect(result.comments).toHaveLength(1);
     });
+
+    it('should default total to 0 when COUNT returns no rows', async () => {
+      mockDb.query.mockResolvedValueOnce([]); // count → empty
+      mockDb.query.mockResolvedValueOnce([]); // comments → empty
+
+      const result = await service.getComments(1, 10);
+
+      expect(result.total).toBe(0);
+      expect(result.hasMore).toBe(false);
+    });
+  });
+
+  // =============================================================
+  // getReplies
+  // =============================================================
+
+  describe('getReplies', () => {
+    it('should return mapped replies', async () => {
+      mockDb.query.mockResolvedValueOnce([
+        { id: 10, comment: 'Reply 1', user_id: 3 },
+        { id: 11, comment: 'Reply 2', user_id: 4 },
+      ]);
+
+      const result = await service.getReplies(1, 10);
+
+      expect(result).toHaveLength(2);
+      const sql = mockDb.query.mock.calls[0]?.[0] as string;
+      expect(sql).toContain('parent_id = $1');
+    });
   });
 
   // =============================================================

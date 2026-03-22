@@ -2,14 +2,14 @@
 
 > **Created:** 2026-03-20
 > **Version:** 0.1.0 (Draft)
-> **Status:** DRAFT — Phase 0 (Planning)
+> **Status:** COMPLETE — All 4 phases implemented
 > **Branch:** `refactor/KVP`
 > **ADR:** [ADR-037](./infrastructure/adr/ADR-037-approvals-architecture.md) (Approvals), [ADR-038](./infrastructure/adr/ADR-038-position-catalog-architecture.md) (Position Catalog), [ADR-004](./infrastructure/adr/ADR-004-persistent-notification-counts.md) (Persistent Notifications), [ADR-018](./infrastructure/adr/ADR-018-testing-strategy.md) (Testing Strategy)
 > **Depends on:** Approvals System (Phase 1-4 DONE), Position Catalog (All Phases DONE), Deputy Leads Feature ([FEAT_DEPUTY_LEADS_MASTERPLAN.md](./FEAT_DEPUTY_LEADS_MASTERPLAN.md) — MUST be done first)
 > **Related Plans:** [FEAT_APPROVALS_SYSTEM_MASTERPLAN.md](./FEAT_APPROVALS_SYSTEM_MASTERPLAN.md) (Phase 5 = this plan), [FEAT_POSITION_CATALOG_MASTERPLAN.md](./FEAT_POSITION_CATALOG_MASTERPLAN.md) (Position-based approval masters), [FEAT_DEPUTY_LEADS_MASTERPLAN.md](./FEAT_DEPUTY_LEADS_MASTERPLAN.md) (Deputy Lead permissions — prerequisite)
 > **Author:** SCS Technik (Senior Engineer)
 > **Estimated Sessions:** 4
-> **Actual Sessions:** 0 / 4
+> **Actual Sessions:** 1 / 4
 
 ---
 
@@ -151,7 +151,7 @@ The Approvals System (ADR-037) and Position Catalog (ADR-038) were built specifi
 > **Dependency:** None (Approvals + Position Catalog already complete)
 > **Key insight:** No DB migration needed. All tables exist. This is pure service-layer integration.
 
-### Step 1.1: KvpApprovalService [PENDING]
+### Step 1.1: KvpApprovalService ✅ DONE (2026-03-22)
 
 **New file:** `backend/src/nest/kvp/kvp-approval.service.ts`
 
@@ -198,7 +198,7 @@ The Approvals System (ADR-037) and Position Catalog (ADR-038) were built specifi
 
 **Module change:** `kvp.module.ts` — add `ApprovalsModule` to imports
 
-### Step 1.2: Controller Endpoints [PENDING]
+### Step 1.2: Controller Endpoints ✅ DONE (2026-03-22)
 
 **Modified file:** `backend/src/nest/kvp/kvp.controller.ts`
 
@@ -227,7 +227,7 @@ The Approvals System (ADR-037) and Position Catalog (ADR-038) were built specifi
 - Used by frontend to show/hide "Freigabe anfordern" button
 - Static route BEFORE `/:uuid` routes (Fastify route ordering)
 
-### Step 1.3: EventBus Subscription [PENDING]
+### Step 1.3: EventBus Subscription ✅ DONE (2026-03-22)
 
 **Modified file:** `backend/src/nest/kvp/kvp-approval.service.ts`
 
@@ -268,7 +268,7 @@ constructor(/* deps */) {
 
 **Startup recovery:** `onModuleInit()` calls `reconcilePendingApprovals()`
 
-### Step 1.4: CRON — Archive Rejected KVPs [PENDING]
+### Step 1.4: CRON — Archive Rejected KVPs ✅ DONE (2026-03-22)
 
 **New file:** `backend/src/nest/kvp/kvp-approval-archive-cron.service.ts`
 
@@ -304,7 +304,7 @@ private async archiveFinalKvps(): Promise<void> {
 
 **Both `rejected` AND `implemented`** KVPs are archived after 30 days.
 
-### Step 1.5: Persistent Notifications (ADR-004) [PENDING]
+### Step 1.5: Persistent Notifications (ADR-004) ✅ DONE (2026-03-22)
 
 **Modified file:** `backend/src/nest/kvp/kvp-approval.service.ts`
 
@@ -333,7 +333,7 @@ private async archiveFinalKvps(): Promise<void> {
 
 **Note:** `notifications.type` is `VARCHAR(50)` in the DB (NOT an ENUM). The TypeScript union `'survey' | 'document' | 'kvp' | 'vacation'` is the compile-time constraint.
 
-### Step 1.6: Backend Status Enforcement [PENDING]
+### Step 1.6: Backend Status Enforcement ✅ DONE (2026-03-22)
 
 **Problem:** The frontend restricts dropdown options, but `PUT /kvp/:id` with `{ status: 'approved' }` could bypass the approval workflow. Backend must also enforce the rules.
 
@@ -393,7 +393,7 @@ export function validateApprovalStatusTransition(
 > **Dependency:** Phase 1 complete
 > **Reference:** [ADR-018](./infrastructure/adr/ADR-018-testing-strategy.md) — Two-Tier Testing Strategy (unit: `vi.mock()` + `createMockActivityLogger()`, API: `fetch()` + `authHeaders()`/`authOnly()`)
 
-### Step 2.1: Unit Tests [PENDING]
+### Step 2.1: Unit Tests ✅ DONE (2026-03-22)
 
 **File:** `backend/src/nest/kvp/kvp-approval.service.test.ts`
 
@@ -426,7 +426,7 @@ export function validateApprovalStatusTransition(
 - [ ] CRON: rejected/implemented KVP younger than 30 days → untouched
 - [ ] CRON: new/in_review/approved KVP → untouched (not final states)
 
-### Step 2.2: API Integration Tests [PENDING]
+### Step 2.2: API Integration Tests ✅ DONE (2026-03-22)
 
 **File:** `backend/test/kvp-approval.api.test.ts`
 
@@ -454,7 +454,7 @@ export function validateApprovalStatusTransition(
 
 > **Dependency:** Phase 1 complete (endpoints available)
 
-### Step 3.1: Data Loading — Approval Info [PENDING]
+### Step 3.1: Data Loading — Approval Info ✅ DONE (2026-03-22)
 
 **Modified file:** `frontend/src/routes/(app)/(shared)/kvp-detail/+page.server.ts`
 
@@ -469,7 +469,7 @@ export function validateApprovalStatusTransition(
 - Add `ApprovalInfo` type (status, requestedBy, decidedBy, decisionNote, timestamps)
 - Add to page data type
 
-### Step 3.2: "Freigabe anfordern" Button [PENDING]
+### Step 3.2: "Freigabe anfordern" Button ✅ DONE (2026-03-22)
 
 **Modified file:** `frontend/src/routes/(app)/(shared)/kvp-detail/_lib/DetailSidebar.svelte`
 
@@ -489,7 +489,7 @@ export function validateApprovalStatusTransition(
 - On success: `invalidateAll()` + success toast
 - On error: error toast with message
 
-### Step 3.3: Approval Status Badge [PENDING]
+### Step 3.3: Approval Status Badge ✅ DONE (2026-03-22)
 
 **Modified file:** `frontend/src/routes/(app)/(shared)/kvp-detail/_lib/DetailSidebar.svelte` (or new component)
 
@@ -499,7 +499,7 @@ export function validateApprovalStatusTransition(
 - Approved: green badge "Freigabe erteilt" + approver name + date
 - Rejected: red badge "Freigabe abgelehnt" + rejector name + reason + date
 
-### Step 3.4: Dynamic Status Dropdown [PENDING]
+### Step 3.4: Dynamic Status Dropdown ✅ DONE (2026-03-22)
 
 **RESOLVED** — Dropdown options depend on current status + approval config existence.
 
@@ -555,7 +555,7 @@ export function validateApprovalStatusTransition(
 
 > **Dependency:** Phase 3 complete
 
-### Step 4.1: E2E Verification [PENDING]
+### Step 4.1: E2E Verification ✅ DONE (2026-03-22)
 
 **Full workflow test (manual):**
 
@@ -576,7 +576,7 @@ export function validateApprovalStatusTransition(
 - [ ] Self-approval → blocked (existing guard)
 - [ ] Server restart recovery → missed decisions synced
 
-### Step 4.2: Documentation [PENDING]
+### Step 4.2: Documentation ✅ DONE (2026-03-22)
 
 - [ ] Approvals Masterplan: Mark Phase 5 as DONE, Session 6 as DONE
 - [ ] FEATURES.md: Update KVP feature description (mention approval integration)
@@ -595,12 +595,9 @@ export function validateApprovalStatusTransition(
 
 ## Session Tracking
 
-| Session | Phase | Description                                         | Status | Date |
-| ------- | ----- | --------------------------------------------------- | ------ | ---- |
-| 1       | 1     | KvpApprovalService + endpoints + EventBus + CRON    |        |      |
-| 2       | 2     | Unit tests + API integration tests                  |        |      |
-| 3       | 3     | Frontend: button + badge + data loading             |        |      |
-| 4       | 4     | E2E verification + dynamic dropdown + documentation |        |      |
+| Session | Phase | Description                                           | Status  | Date       |
+| ------- | ----- | ----------------------------------------------------- | ------- | ---------- |
+| 1       | 1-4   | Full implementation: backend + tests + frontend + E2E | ✅ DONE | 2026-03-22 |
 
 ---
 

@@ -478,3 +478,61 @@ export function mapScopeToOrgInfo(scope: OrganizationalScope): ExtendedUserOrgIn
     hasFullAccess: scope.type === 'full',
   };
 }
+
+// =============================================================================
+// APPROVAL STATUS TRANSITION ENFORCEMENT
+// =============================================================================
+
+/**
+ * Validates whether a manual status transition is allowed when an approval
+ * config exists for addon 'kvp'. Prevents bypassing the approval workflow
+ * via direct PUT /kvp/:id with { status: 'approved' }.
+ *
+ * When no approval config exists, all transitions are allowed (old behavior).
+ */
+export function validateApprovalStatusTransition(
+  currentStatus: string,
+  newStatus: string,
+  hasApprovalConfig: boolean,
+): { allowed: boolean; reason?: string } {
+  if (!hasApprovalConfig) {
+    return { allowed: true };
+  }
+
+  const lockedStatuses = ['in_review', 'rejected', 'implemented', 'archived'];
+  if (lockedStatuses.includes(currentStatus)) {
+    return {
+      allowed: false,
+      reason: `Status '${currentStatus}' ist gesperrt — keine manuellen Änderungen möglich`,
+    };
+  }
+
+  if (newStatus === 'approved') {
+    return {
+      allowed: false,
+      reason: 'Status "genehmigt" kann nur durch den Freigabe-Master gesetzt werden',
+    };
+  }
+
+  if (newStatus === 'in_review') {
+    return {
+      allowed: false,
+      reason: 'Status "in Prüfung" wird automatisch beim Anfordern einer Freigabe gesetzt',
+    };
+  }
+
+  // new/restored → rejected: allowed (direct reject by Team Lead)
+  if ((currentStatus === 'new' || currentStatus === 'restored') && newStatus === 'rejected') {
+    return { allowed: true };
+  }
+
+  // approved → implemented: allowed (Team Lead confirms implementation)
+  if (currentStatus === 'approved' && newStatus === 'implemented') {
+    return { allowed: true };
+  }
+
+  return {
+    allowed: false,
+    reason: `Statusübergang von '${currentStatus}' zu '${newStatus}' ist nicht erlaubt`,
+  };
+}

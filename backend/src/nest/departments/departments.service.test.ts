@@ -187,6 +187,98 @@ describe('DepartmentsService', () => {
       expect(result[0]?.employeeCount).toBeUndefined();
       expect(result[0]?.teamCount).toBeUndefined();
     });
+
+    it('should return empty array when scope is "limited" with empty departmentIds', async () => {
+      const mockScope = createMockScope();
+      mockScope.getScope.mockResolvedValueOnce({
+        type: 'limited',
+        departmentIds: [],
+        areaIds: [],
+        teamIds: [],
+        leadAreaIds: [],
+        leadDepartmentIds: [],
+        leadTeamIds: [],
+        isAreaLead: false,
+        isDepartmentLead: false,
+        isTeamLead: false,
+        isAnyLead: false,
+      });
+      const scopedService = new DepartmentsService(
+        mockActivityLogger as unknown as ActivityLoggerService,
+        mockDb as unknown as DatabaseService,
+        mockScope as unknown as ScopeService,
+      );
+
+      const result = await scopedService.listDepartments(10);
+
+      expect(result).toEqual([]);
+      expect(mockDb.query).not.toHaveBeenCalled();
+    });
+
+    it('should apply scope filter when scope is "limited" with departmentIds', async () => {
+      const mockScope = createMockScope();
+      mockScope.getScope.mockResolvedValueOnce({
+        type: 'limited',
+        departmentIds: [1, 2],
+        areaIds: [],
+        teamIds: [],
+        leadAreaIds: [],
+        leadDepartmentIds: [],
+        leadTeamIds: [],
+        isAreaLead: false,
+        isDepartmentLead: false,
+        isTeamLead: false,
+        isAnyLead: false,
+      });
+      const scopedService = new DepartmentsService(
+        mockActivityLogger as unknown as ActivityLoggerService,
+        mockDb as unknown as DatabaseService,
+        mockScope as unknown as ScopeService,
+      );
+
+      mockDb.query.mockResolvedValueOnce([makeDeptRow()]);
+
+      const result = await scopedService.listDepartments(10);
+
+      expect(result).toHaveLength(1);
+      const sql = mockDb.query.mock.calls[0]?.[0] as string;
+      expect(sql).toContain('AND d.id = ANY($3::int[])');
+      const params = mockDb.query.mock.calls[0]?.[1] as unknown[];
+      expect(params).toEqual([10, 10, [1, 2]]);
+    });
+
+    it('should apply scope filter in fallback when scope is "limited"', async () => {
+      const mockScope = createMockScope();
+      mockScope.getScope.mockResolvedValueOnce({
+        type: 'limited',
+        departmentIds: [3],
+        areaIds: [],
+        teamIds: [],
+        leadAreaIds: [],
+        leadDepartmentIds: [],
+        leadTeamIds: [],
+        isAreaLead: false,
+        isDepartmentLead: false,
+        isTeamLead: false,
+        isAnyLead: false,
+      });
+      const scopedService = new DepartmentsService(
+        mockActivityLogger as unknown as ActivityLoggerService,
+        mockDb as unknown as DatabaseService,
+        mockScope as unknown as ScopeService,
+      );
+
+      mockDb.query.mockRejectedValueOnce(new Error('Complex query failed'));
+      mockDb.query.mockResolvedValueOnce([makeDeptRow()]);
+
+      const result = await scopedService.listDepartments(10);
+
+      expect(result).toHaveLength(1);
+      const sql = mockDb.query.mock.calls[1]?.[0] as string;
+      expect(sql).toContain('AND id = ANY($2::int[])');
+      const params = mockDb.query.mock.calls[1]?.[1] as unknown[];
+      expect(params).toEqual([10, [3]]);
+    });
   });
 
   // =============================================================
@@ -564,6 +656,42 @@ describe('DepartmentsService', () => {
       expect(result.message).toBe('Department deleted successfully');
       // No removeDependencies calls — total = find(1) + deps(11) + delete(1) = 13
       expect(mockDb.query).toHaveBeenCalledTimes(13);
+    });
+
+    it('should include all dependency types in error details', async () => {
+      mockDb.query.mockResolvedValueOnce([makeDeptRow()]);
+      // 0=userDepartments, 1=teams, 2=assets, 3=shifts, 4=shiftPlans, 5-10=empty
+      const depResponses: { id: number }[][] = [
+        [{ id: 1 }],
+        [{ id: 2 }, { id: 3 }],
+        [{ id: 4 }],
+        [{ id: 5 }],
+        [{ id: 6 }],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+      ];
+      for (const rows of depResponses) {
+        mockDb.query.mockResolvedValueOnce(rows);
+      }
+
+      const error = (await service
+        .deleteDepartment(1, 1, 10, false)
+        .catch((e: unknown) => e)) as BadRequestException;
+
+      expect(error).toBeInstanceOf(BadRequestException);
+      const response = error.getResponse() as { details: Record<string, number> };
+      expect(response.details).toMatchObject({
+        totalDependencies: 6,
+        userDepartments: 1,
+        teams: 2,
+        assets: 1,
+        shifts: 1,
+        shiftPlans: 1,
+      });
     });
   });
 

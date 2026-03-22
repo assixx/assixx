@@ -18,6 +18,7 @@ export const API_ENDPOINTS = {
   kvpArchive: (id: string) => `/kvp/${id}/archive`,
   kvpUnarchive: (id: string) => `/kvp/${id}/unarchive`,
   kvpConfirm: (uuid: string) => `/kvp/${uuid}/confirm`,
+  kvpRequestApproval: (id: string) => `/kvp/${id}/request-approval`,
   attachmentDownload: (fileUuid: string) => `/kvp/attachments/${fileUuid}/download`,
   departments: '/departments',
   teams: '/teams',
@@ -128,6 +129,31 @@ export const STATUS_OPTIONS: { value: KvpStatus; label: string }[] = [
   { value: 'implemented', label: 'Umgesetzt' },
   { value: 'rejected', label: 'Abgelehnt' },
 ] as const;
+
+/**
+ * Get filtered status options when approval config exists for KVP.
+ * Returns available transitions based on current status + approval workflow rules.
+ * Without approval config: returns all STATUS_OPTIONS (backward compat).
+ */
+export function getApprovalStatusOptions(
+  currentStatus: KvpStatus,
+  hasApprovalConfig: boolean,
+): { value: KvpStatus; label: string }[] {
+  if (!hasApprovalConfig) {
+    return [...STATUS_OPTIONS];
+  }
+
+  switch (currentStatus) {
+    case 'new':
+    case 'restored':
+      return [{ value: 'rejected', label: 'Abgelehnt' }];
+    case 'approved':
+      return [{ value: 'implemented', label: 'Umgesetzt' }];
+    default:
+      // in_review, rejected, implemented, archived → LOCKED
+      return [];
+  }
+}
 
 /**
  * Image file types for photo gallery

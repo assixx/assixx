@@ -25,6 +25,9 @@
  * - GET    /kvp/:id/attachments   - Get attachments
  * - POST   /kvp/:id/attachments   - Upload attachments
  * - GET    /kvp/attachments/:fileUuid/download - Download attachment
+ * - GET    /kvp/approval-config-status        - Check if approval config exists
+ * - POST   /kvp/:id/request-approval          - Request approval from KVP master
+ * - GET    /kvp/:id/approval                  - Get linked approval status
  */
 import {
   BadRequestException,
@@ -52,6 +55,7 @@ import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 import { v7 as uuidv7 } from 'uuid';
 
+import type { Approval } from '../approvals/approvals.types.js';
 import { CurrentUser } from '../common/decorators/current-user.decorator.js';
 import { RequireAddon } from '../common/decorators/require-addon.decorator.js';
 import { RequirePermission } from '../common/decorators/require-permission.decorator.js';
@@ -71,6 +75,7 @@ import {
   UpdateKvpSettingsDto,
   UpdateSuggestionDto,
 } from './dto/index.js';
+import { KvpApprovalService } from './kvp-approval.service.js';
 import type { CustomizableCategoriesResponse } from './kvp-categories.service.js';
 import { KvpCategoriesService } from './kvp-categories.service.js';
 import type {
@@ -117,6 +122,7 @@ export class KvpController {
   constructor(
     private readonly kvpService: KvpService,
     private readonly categoriesService: KvpCategoriesService,
+    private readonly kvpApprovalService: KvpApprovalService,
   ) {}
 
   // ==========================================================================
@@ -336,6 +342,22 @@ export class KvpController {
     return await this.kvpService.getMyOrganizations(user.id, tenantId);
   }
 
+  // ==========================================================================
+  // APPROVAL INTEGRATION (ADR-037)
+  // ==========================================================================
+
+  /**
+   * GET /kvp/approval-config-status
+   * Check if an approval master is configured for addon 'kvp'
+   * Static route — MUST be before parameterized /:id routes (Fastify ordering)
+   */
+  @Get('approval-config-status')
+  @RequirePermission(KVP_FEATURE, KVP_SUGGESTIONS, 'canRead')
+  async getApprovalConfigStatus(@TenantId() tenantId: number): Promise<{ hasConfig: boolean }> {
+    const hasConfig = await this.kvpApprovalService.hasApprovalConfig(tenantId);
+    return { hasConfig };
+  }
+
   /**
    * POST /kvp/:uuid/confirm
    * Mark a suggestion as read (confirmed) by current user
@@ -519,6 +541,39 @@ export class KvpController {
   ): Promise<MessageResponse> {
     const suggestionId = this.parseIdParam(id);
     return await this.kvpService.unarchiveSuggestion(suggestionId, tenantId, user.id);
+  }
+
+  /**
+   * POST /kvp/:id/request-approval
+   * Request approval from configured KVP masters
+   */
+  @Post(':id/request-approval')
+  @UseGuards(RolesGuard)
+  @Roles('admin', 'root')
+  @RequirePermission(KVP_FEATURE, KVP_SUGGESTIONS, 'canWrite')
+  @HttpCode(HttpStatus.CREATED)
+  async requestApproval(
+    @Param('id') id: string,
+    @CurrentUser() user: NestAuthUser,
+    @TenantId() tenantId: number,
+  ): Promise<Approval> {
+    const suggestionId = this.parseIdParam(id);
+    return await this.kvpApprovalService.requestApproval(tenantId, suggestionId, user.id);
+  }
+
+  /**
+   * GET /kvp/:id/approval
+   * Get approval status linked to a KVP suggestion
+   */
+  @Get(':id/approval')
+  @RequirePermission(KVP_FEATURE, KVP_SUGGESTIONS, 'canRead')
+  async getApproval(
+    @Param('id') id: string,
+    @TenantId() tenantId: number,
+  ): Promise<{ approval: Approval | null }> {
+    const suggestionId = this.parseIdParam(id);
+    const approval = await this.kvpApprovalService.getApprovalForSuggestion(tenantId, suggestionId);
+    return { approval };
   }
 
   /**
