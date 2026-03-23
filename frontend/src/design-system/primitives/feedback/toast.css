@@ -272,6 +272,7 @@
 
 /* Success */
 .toast--success {
+  border: 1px solid color-mix(in oklch, var(--color-success) 60%, transparent);
   background: linear-gradient(
     135deg,
     color-mix(in oklch, var(--color-success) 40%, transparent) 0%,
@@ -289,6 +290,7 @@
 
 /* Warning */
 .toast--warning {
+  border: 1px solid color-mix(in oklch, var(--color-warning) 60%, transparent);
   background: linear-gradient(
     135deg,
     color-mix(in oklch, var(--color-warning) 40%, transparent) 0%,
@@ -307,6 +309,7 @@
 /* Error/Danger */
 .toast--error,
 .toast--danger {
+  border: 1px solid color-mix(in oklch, var(--color-danger) 60%, transparent);
   background: linear-gradient(
     135deg,
     color-mix(in oklch, var(--color-danger) 40%, transparent) 0%,
@@ -326,6 +329,7 @@
 
 /* Info */
 .toast--info {
+  border: 1px solid color-mix(in oklch, var(--color-primary) 60%, transparent);
   background: linear-gradient(
     135deg,
     color-mix(in oklch, var(--color-primary) 40%, transparent) 0%,
@@ -477,6 +481,7 @@ html.dark .toast {
 
 /* Variant backgrounds must match html.dark specificity to override the base */
 html.dark .toast--success {
+  border-color: color-mix(in oklch, var(--color-success) 24%, transparent);
   background: linear-gradient(
     135deg,
     color-mix(in oklch, var(--color-success) 25%, transparent) 0%,
@@ -485,6 +490,7 @@ html.dark .toast--success {
 }
 
 html.dark .toast--warning {
+  border-color: color-mix(in oklch, var(--color-warning) 24%, transparent);
   background: linear-gradient(
     135deg,
     color-mix(in oklch, var(--color-warning) 25%, transparent) 0%,
@@ -494,6 +500,7 @@ html.dark .toast--warning {
 
 html.dark .toast--error,
 html.dark .toast--danger {
+  border-color: color-mix(in oklch, var(--color-danger) 24%, transparent);
   background: linear-gradient(
     135deg,
     color-mix(in oklch, var(--color-danger) 25%, transparent) 0%,
@@ -502,6 +509,7 @@ html.dark .toast--danger {
 }
 
 html.dark .toast--info {
+  border-color: color-mix(in oklch, var(--color-primary) 24%, transparent);
   background: linear-gradient(
     135deg,
     color-mix(in oklch, var(--color-primary) 25%, transparent) 0%,

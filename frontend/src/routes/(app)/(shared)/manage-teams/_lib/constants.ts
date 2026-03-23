@@ -61,6 +61,9 @@ export function createMessages(labels: HierarchyLabels) {
     TH_ASSETS: labels.asset,
     LABEL_DEPARTMENT: labels.department,
     LABEL_ASSETS: `Zugewiesene ${labels.asset}`,
+    HALL_INFO_NO_DEPARTMENT: `${labels.hall}-Auswahl benötigt ${labels.department}-Zuordnung.`,
+    HALL_INFO_NO_HALLS: `Keine ${labels.hall}-Zuordnung im gewählten Eintrag.`,
+    HALL_INFO_AUTO_ASSIGNED: 'Automatisch zugewiesen.',
   };
 }
 

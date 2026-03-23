@@ -68,6 +68,7 @@ export interface Hall {
   id: number;
   name: string;
   areaId?: number;
+  departmentIds?: number[];
 }
 
 /**

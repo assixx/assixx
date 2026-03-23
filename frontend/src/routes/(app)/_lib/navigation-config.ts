@@ -221,7 +221,7 @@ const ORGANIGRAM_SUBMENU: NavItem[] = [
   },
 ];
 
-/** System settings submenu (root only) */
+/** System settings submenu (root only) — ordered: identity → structure → config → workflow → appearance */
 const SYSTEM_SUBMENU: NavItem[] = [
   {
     id: 'company-profile',
@@ -229,26 +229,21 @@ const SYSTEM_SUBMENU: NavItem[] = [
     url: '/settings/company-profile',
   },
   {
-    id: 'addon-settings',
-    label: 'Addon-Einstellungen',
-    url: '/settings/company',
-  },
-  { id: 'design', label: 'Design', url: '/settings/design' },
-  {
-    id: 'approval-settings',
-    label: 'Freigabe-Master',
-    url: '/settings/approvals',
-  },
-  {
     id: 'organigram',
     label: 'Organigramm',
     submenu: ORGANIGRAM_SUBMENU,
   },
   {
-    id: 'account-settings',
-    label: 'Kontoeinstellungen',
-    url: '/account-settings',
+    id: 'addon-settings',
+    label: 'Modul-Konfiguration',
+    url: '/settings/company',
   },
+  {
+    id: 'approval-settings',
+    label: 'Freigabe-Master',
+    url: '/settings/approvals',
+  },
+  { id: 'design', label: 'Design', url: '/settings/design' },
 ];
 
 /** Static root menu items before "Verwalten" group */
@@ -326,7 +321,10 @@ const ROOT_STATIC_BOTTOM: NavItem[] = [
     id: 'profile',
     icon: ICONS.user,
     label: 'Mein Profil',
-    url: '/root-profile',
+    submenu: [
+      { id: 'profile-page', label: 'Profil', url: '/root-profile' },
+      { id: 'account-settings', label: 'Kontoeinstellungen', url: '/account-settings' },
+    ],
   },
   {
     id: 'system',

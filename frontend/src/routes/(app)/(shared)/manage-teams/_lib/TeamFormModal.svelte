@@ -112,6 +112,34 @@
     allEmployees.filter((e: TeamMember) => e.id !== localLeaderId),
   );
 
+  // Filtered halls: only halls assigned to the selected department
+  const departmentHalls = $derived.by((): Hall[] => {
+    const deptId = localDepartmentId;
+    if (deptId === null) return [];
+    return allHalls.filter((h: Hall) => h.departmentIds?.includes(deptId) === true);
+  });
+
+  const hallDropdownDisabled = $derived(localDepartmentId === null || departmentHalls.length <= 1);
+
+  const hallInfoMessage = $derived.by((): string => {
+    if (localDepartmentId === null) return messages.HALL_INFO_NO_DEPARTMENT;
+    if (departmentHalls.length === 0) return messages.HALL_INFO_NO_HALLS;
+    if (departmentHalls.length === 1) return messages.HALL_INFO_AUTO_ASSIGNED;
+    return '';
+  });
+
+  // Auto-assign hall when department has exactly 1 hall; validate existing selection
+  $effect(() => {
+    const halls = departmentHalls;
+    if (halls.length === 1) {
+      localHallId = halls[0].id;
+    } else if (halls.length === 0) {
+      localHallId = null;
+    } else if (localHallId !== null && !halls.some((h: Hall) => h.id === localHallId)) {
+      localHallId = null;
+    }
+  });
+
   function closeOtherDropdowns(except: string): void {
     if (except !== 'department') departmentDropdownOpen = false;
     if (except !== 'hall') hallDropdownOpen = false;
@@ -135,6 +163,7 @@
 
   function toggleHallDropdown(e: MouseEvent): void {
     e.stopPropagation();
+    if (hallDropdownDisabled) return;
     closeOtherDropdowns('hall');
     hallDropdownOpen = !hallDropdownOpen;
   }
@@ -344,6 +373,21 @@
             class="form-field__label"
             for="team-hall">{labels.hall}</label
           >
+          {#if hallDropdownDisabled && hallInfoMessage.length > 0}
+            <div
+              class="alert alert--info alert--sm"
+              role="status"
+              id="hall-info"
+              style="margin-bottom: var(--spacing-3);"
+            >
+              <span class="alert__icon">
+                <i class="fas fa-info-circle"></i>
+              </span>
+              <div class="alert__content">
+                <p class="alert__message">{hallInfoMessage}</p>
+              </div>
+            </div>
+          {/if}
           <div
             class="dropdown"
             id="hall-dropdown"
@@ -352,36 +396,40 @@
               type="button"
               class="dropdown__trigger"
               class:active={hallDropdownOpen}
+              disabled={hallDropdownDisabled}
+              aria-describedby={hallDropdownDisabled ? 'hall-info' : undefined}
               onclick={toggleHallDropdown}
             >
               <span>{getHallDisplayText()}</span>
               <i class="fas fa-chevron-down"></i>
             </button>
-            <div
-              class="dropdown__menu"
-              class:active={hallDropdownOpen}
-            >
-              <button
-                type="button"
-                class="dropdown__option"
-                onclick={() => {
-                  selectHall(null);
-                }}
+            {#if !hallDropdownDisabled}
+              <div
+                class="dropdown__menu"
+                class:active={hallDropdownOpen}
               >
-                — Keine Zuordnung —
-              </button>
-              {#each allHalls as hall (hall.id)}
                 <button
                   type="button"
                   class="dropdown__option"
                   onclick={() => {
-                    selectHall(hall.id);
+                    selectHall(null);
                   }}
                 >
-                  {hall.name}
+                  — Keine Zuordnung —
                 </button>
-              {/each}
-            </div>
+                {#each departmentHalls as hall (hall.id)}
+                  <button
+                    type="button"
+                    class="dropdown__option"
+                    onclick={() => {
+                      selectHall(hall.id);
+                    }}
+                  >
+                    {hall.name}
+                  </button>
+                {/each}
+              </div>
+            {/if}
           </div>
         </div>
       {/if}
