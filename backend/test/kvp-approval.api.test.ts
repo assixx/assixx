@@ -5,6 +5,7 @@
  * Tests the approval integration endpoints for KVP.
  */
 import {
+  APITEST_PASSWORD,
   type AuthState,
   BASE_URL,
   type JsonBody,
@@ -14,9 +15,19 @@ import {
 } from './helpers.js';
 
 let auth: AuthState;
+let employeeToken: string;
 
 beforeAll(async () => {
   auth = await loginApitest();
+
+  // Login as employee (no canWrite for kvp-suggestions)
+  const empRes = await fetch(`${BASE_URL}/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email: 'employee@apitest.de', password: APITEST_PASSWORD }),
+  });
+  const empBody = (await empRes.json()) as JsonBody;
+  employeeToken = empBody.data.accessToken as string;
 });
 
 // ---- seq: 0 -- Approval Config Status ------------------------------------
@@ -108,5 +119,67 @@ describe('KVP Approval: Request for non-existent KVP', () => {
 
   it('should return 404 Not Found', () => {
     expect(res.status).toBe(404);
+  });
+});
+
+// ---- seq: 4 -- Employee without canWrite cannot request approval ----------
+
+describe('KVP Approval: Employee without canWrite gets 403', () => {
+  let res: Response;
+  let body: JsonBody;
+
+  beforeAll(async () => {
+    res = await fetch(`${BASE_URL}/kvp/99999/request-approval`, {
+      method: 'POST',
+      headers: authHeaders(employeeToken),
+      body: JSON.stringify({}),
+    });
+    body = (await res.json()) as JsonBody;
+  });
+
+  it('should return 403 Forbidden', () => {
+    expect(res.status).toBe(403);
+  });
+
+  it('should be permission-based denial (not role-based)', () => {
+    expect(body.error.message).toContain('canWrite');
+  });
+});
+
+// ---- seq: 5 -- Approval configs include scope fields ----------------------
+
+describe('KVP Approval: Config scope fields', () => {
+  let res: Response;
+  let body: JsonBody;
+
+  beforeAll(async () => {
+    res = await fetch(`${BASE_URL}/approvals/configs`, {
+      headers: authOnly(auth.authToken),
+    });
+    body = (await res.json()) as JsonBody;
+  });
+
+  it('should return 200 OK with configs array', () => {
+    expect(res.status).toBe(200);
+    expect(Array.isArray(body.data)).toBe(true);
+  });
+
+  it('should include scope fields in config response', () => {
+    const configs = body.data as JsonBody[];
+    if (configs.length === 0) return; // no configs in apitest tenant
+    const first = configs[0] as JsonBody;
+    expect(first).toHaveProperty('scopeAreaIds');
+    expect(first).toHaveProperty('scopeDepartmentIds');
+    expect(first).toHaveProperty('scopeTeamIds');
+  });
+
+  it('should have null scope for existing configs (backward compat)', () => {
+    const configs = body.data as JsonBody[];
+    if (configs.length === 0) return;
+    const first = configs[0] as JsonBody;
+    // Existing configs have no scope = null (whole tenant)
+    expect(first.scopeAreaIds).toBeNull();
+    expect(first.scopeDepartmentIds).toBeNull();
+    expect(first.scopeTeamIds).toBeNull();
   });
 });

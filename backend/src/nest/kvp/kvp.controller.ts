@@ -548,8 +548,6 @@ export class KvpController {
    * Request approval from configured KVP masters
    */
   @Post(':id/request-approval')
-  @UseGuards(RolesGuard)
-  @Roles('admin', 'root')
   @RequirePermission(KVP_FEATURE, KVP_SUGGESTIONS, 'canWrite')
   @HttpCode(HttpStatus.CREATED)
   async requestApproval(

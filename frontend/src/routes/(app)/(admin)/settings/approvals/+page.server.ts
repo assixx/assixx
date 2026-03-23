@@ -11,7 +11,7 @@ import { apiFetch } from '$lib/server/api-fetch';
 import { createLogger } from '$lib/utils/logger';
 
 import type { PageServerLoad } from './$types';
-import type { ApprovalConfig } from './_lib/types';
+import type { ApprovalConfig, Area, Department, Team } from './_lib/types';
 
 const log = createLogger('Settings:Approvals');
 
@@ -30,9 +30,17 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
     redirect(302, '/login');
   }
 
-  const configs = await apiFetch<ApprovalConfig[]>('/approvals/configs', token, fetch);
+  const [configs, areas, departments, teams] = await Promise.all([
+    apiFetch<ApprovalConfig[]>('/approvals/configs', token, fetch),
+    apiFetch<Area[]>('/areas', token, fetch),
+    apiFetch<Department[]>('/departments', token, fetch),
+    apiFetch<Team[]>('/teams', token, fetch),
+  ]);
 
   return {
     configs: Array.isArray(configs) ? configs : [],
+    areas: Array.isArray(areas) ? areas : [],
+    departments: Array.isArray(departments) ? departments : [],
+    teams: Array.isArray(teams) ? teams : [],
   };
 };

@@ -715,10 +715,44 @@ describe('KvpService', () => {
       ).resolves.toBeUndefined();
     });
 
-    it('throws for employee role', async () => {
+    it('throws for employee without team lead position', async () => {
+      mockScope.getScope.mockResolvedValueOnce({
+        type: 'limited',
+        areaIds: [],
+        departmentIds: [],
+        teamIds: [5],
+        leadAreaIds: [],
+        leadDepartmentIds: [],
+        leadTeamIds: [],
+        isAreaLead: false,
+        isDepartmentLead: false,
+        isTeamLead: false,
+        isAnyLead: false,
+      });
+
       await expect(
         service['assertCanUpdateStatus'](mockSuggestion, 3, 42, 'employee'),
       ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('passes for employee team lead of KVP team', async () => {
+      mockScope.getScope.mockResolvedValueOnce({
+        type: 'limited',
+        areaIds: [],
+        departmentIds: [],
+        teamIds: [5],
+        leadAreaIds: [],
+        leadDepartmentIds: [],
+        leadTeamIds: [5],
+        isAreaLead: false,
+        isDepartmentLead: false,
+        isTeamLead: true,
+        isAnyLead: true,
+      });
+
+      await expect(
+        service['assertCanUpdateStatus'](mockSuggestion, 3, 42, 'employee'),
+      ).resolves.toBeUndefined();
     });
 
     it('passes for admin with full access', async () => {

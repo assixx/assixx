@@ -60,4 +60,74 @@ describe('UpsertApprovalConfigSchema', () => {
     });
     expect(result.success).toBe(false);
   });
+
+  // ---- Scope validation ----
+
+  it('should accept user config with scope arrays', () => {
+    const result = UpsertApprovalConfigSchema.safeParse({
+      addonCode: 'kvp',
+      approverType: 'user',
+      approverUserId: 42,
+      scopeAreaIds: [1, 3],
+      scopeDepartmentIds: null,
+      scopeTeamIds: [],
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it('should accept user config without scope (whole tenant)', () => {
+    const result = UpsertApprovalConfigSchema.safeParse({
+      addonCode: 'kvp',
+      approverType: 'user',
+      approverUserId: 42,
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it('should accept position config with scope arrays', () => {
+    const result = UpsertApprovalConfigSchema.safeParse({
+      addonCode: 'kvp',
+      approverType: 'position',
+      approverPositionId: '550e8400-e29b-41d4-a716-446655440000',
+      scopeAreaIds: [1],
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it('should reject team_lead with non-empty scope', () => {
+    const result = UpsertApprovalConfigSchema.safeParse({
+      addonCode: 'kvp',
+      approverType: 'team_lead',
+      scopeAreaIds: [1],
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('should reject area_lead with non-empty scope', () => {
+    const result = UpsertApprovalConfigSchema.safeParse({
+      addonCode: 'kvp',
+      approverType: 'area_lead',
+      scopeDepartmentIds: [5],
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('should reject department_lead with non-empty scope', () => {
+    const result = UpsertApprovalConfigSchema.safeParse({
+      addonCode: 'kvp',
+      approverType: 'department_lead',
+      scopeTeamIds: [99],
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('should accept team_lead with null/empty scope', () => {
+    const result = UpsertApprovalConfigSchema.safeParse({
+      addonCode: 'kvp',
+      approverType: 'team_lead',
+      scopeAreaIds: null,
+      scopeDepartmentIds: [],
+    });
+    expect(result.success).toBe(true);
+  });
 });

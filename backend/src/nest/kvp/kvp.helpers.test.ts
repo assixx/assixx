@@ -194,6 +194,28 @@ describe('buildVisibilityClause', () => {
     // Last param is userId
     expect(result.params[7]).toBe(42);
   });
+
+  it('should include approval master visibility clause', () => {
+    const orgInfo = createOrgInfo();
+    const result = buildVisibilityClause(orgInfo, 1, 3);
+
+    expect(result.clause).toContain('approval_configs');
+    expect(result.clause).toContain("ac.addon_code = 'kvp'");
+    expect(result.clause).toContain('ac.approver_user_id');
+    expect(result.clause).toContain('ac.approver_position_id');
+  });
+
+  it('should include scope matching in approval master clause', () => {
+    const orgInfo = createOrgInfo();
+    const result = buildVisibilityClause(orgInfo, 1, 3);
+
+    expect(result.clause).toContain('ac.scope_area_ids IS NULL');
+    expect(result.clause).toContain('ac.scope_department_ids IS NULL');
+    expect(result.clause).toContain('ac.scope_team_ids IS NULL');
+    expect(result.clause).toContain('ANY(ac.scope_area_ids)');
+    expect(result.clause).toContain('ANY(ac.scope_department_ids)');
+    expect(result.clause).toContain('ANY(ac.scope_team_ids)');
+  });
 });
 
 // =============================================================

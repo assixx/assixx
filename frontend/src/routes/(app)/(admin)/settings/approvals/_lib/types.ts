@@ -13,7 +13,28 @@ export interface ApprovalConfig {
   approverUserName: string | null;
   approverPositionId: string | null;
   approverPositionName: string | null;
+  scopeAreaIds: number[] | null;
+  scopeDepartmentIds: number[] | null;
+  scopeTeamIds: number[] | null;
   createdAt: string;
+}
+
+export interface OrgItem {
+  id: number;
+  name: string;
+}
+
+export interface Area extends OrgItem {
+  departmentCount?: number;
+}
+
+export interface Department extends OrgItem {
+  areaId?: number;
+  areaName?: string;
+}
+
+export interface Team extends OrgItem {
+  departmentId?: number;
 }
 
 export interface PositionOption {

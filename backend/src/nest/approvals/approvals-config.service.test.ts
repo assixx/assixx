@@ -44,6 +44,7 @@ function createMockActivityLogger() {
 
 type ConfigRowWithName = ApprovalConfigRow & {
   approver_user_name: string | null;
+  approver_position_name: string | null;
 };
 
 /** Standard config row — matches DB shape */
@@ -55,7 +56,12 @@ function makeConfigRow(overrides: Partial<ConfigRowWithName> = {}): ConfigRowWit
     addon_code: 'vacation',
     approver_type: 'team_lead',
     approver_user_id: null,
+    approver_position_id: null,
     approver_user_name: null,
+    approver_position_name: null,
+    scope_area_ids: null,
+    scope_department_ids: null,
+    scope_team_ids: null,
     is_active: 1,
     created_at: '2026-01-15T10:00:00Z',
     updated_at: '2026-01-15T10:00:00Z',
@@ -439,18 +445,33 @@ describe('ApprovalsConfigService', () => {
       expect(mockDb.tenantTransaction).toHaveBeenCalledTimes(1);
     });
 
-    it('should use UNION ALL query with all four approver type subqueries', async () => {
+    it('should use CTE + UNION ALL query with all five approver type subqueries', async () => {
       mockClient.query.mockResolvedValueOnce({ rows: [] });
 
       await service.resolveApprovers('vacation', 5);
 
       const queryCall = mockClient.query.mock.calls[0] as [string, unknown[]];
       const sql = queryCall[0];
+      expect(sql).toContain('WITH requester_org AS');
       expect(sql).toContain('UNION ALL');
       expect(sql).toContain("approver_type = 'user'");
       expect(sql).toContain("approver_type = 'team_lead'");
       expect(sql).toContain("approver_type = 'area_lead'");
       expect(sql).toContain("approver_type = 'department_lead'");
+      expect(sql).toContain("approver_type = 'position'");
+    });
+
+    it('should include scope filter in user and position branches', async () => {
+      mockClient.query.mockResolvedValueOnce({ rows: [] });
+
+      await service.resolveApprovers('kvp', 5);
+
+      const queryCall = mockClient.query.mock.calls[0] as [string, unknown[]];
+      const sql = queryCall[0];
+      expect(sql).toContain('scope_area_ids IS NULL');
+      expect(sql).toContain('scope_department_ids IS NULL');
+      expect(sql).toContain('scope_team_ids IS NULL');
+      expect(sql).toContain('requester_org ro');
     });
 
     it('should filter out NULL approver_ids via WHERE clause', async () => {
@@ -461,6 +482,91 @@ describe('ApprovalsConfigService', () => {
       const queryCall = mockClient.query.mock.calls[0] as [string, unknown[]];
       const sql = queryCall[0];
       expect(sql).toContain('WHERE approver_id IS NOT NULL');
+    });
+  });
+
+  // =============================================================
+  // createConfig — scope handling
+  // =============================================================
+
+  describe('createConfig scope', () => {
+    it('should pass sorted scope arrays in INSERT params', async () => {
+      mockClient.query.mockResolvedValueOnce({ rows: [] }); // duplicate check
+      mockClient.query.mockResolvedValueOnce({
+        rows: [
+          makeConfigRow({ uuid: 'mock-uuid-v7', approver_type: 'user', approver_user_id: 42 }),
+        ],
+      });
+
+      await service.createConfig(
+        {
+          addonCode: 'kvp',
+          approverType: 'user',
+          approverUserId: 42,
+          scopeAreaIds: [3, 1, 2],
+          scopeDepartmentIds: null,
+          scopeTeamIds: [],
+        },
+        10,
+        1,
+      );
+
+      const insertCall = mockClient.query.mock.calls[1] as [string, unknown[]];
+      const params = insertCall[1];
+      // $7 = scopeAreaIds (sorted), $8 = scopeDeptIds (null), $9 = scopeTeamIds (empty → null)
+      expect(params[6]).toEqual([1, 2, 3]);
+      expect(params[7]).toBeNull();
+      expect(params[8]).toBeNull();
+    });
+
+    it('should normalize empty scope arrays to null', async () => {
+      mockClient.query.mockResolvedValueOnce({ rows: [] });
+      mockClient.query.mockResolvedValueOnce({
+        rows: [
+          makeConfigRow({ uuid: 'mock-uuid-v7', approver_type: 'user', approver_user_id: 42 }),
+        ],
+      });
+
+      await service.createConfig(
+        {
+          addonCode: 'kvp',
+          approverType: 'user',
+          approverUserId: 42,
+          scopeAreaIds: [],
+          scopeDepartmentIds: [],
+          scopeTeamIds: [],
+        },
+        10,
+        1,
+      );
+
+      const insertCall = mockClient.query.mock.calls[1] as [string, unknown[]];
+      const params = insertCall[1];
+      expect(params[6]).toBeNull();
+      expect(params[7]).toBeNull();
+      expect(params[8]).toBeNull();
+    });
+
+    it('should include scope in duplicate check query', async () => {
+      mockClient.query.mockResolvedValueOnce({ rows: [] });
+      mockClient.query.mockResolvedValueOnce({
+        rows: [
+          makeConfigRow({ uuid: 'mock-uuid-v7', approver_type: 'user', approver_user_id: 42 }),
+        ],
+      });
+
+      await service.createConfig(
+        { addonCode: 'kvp', approverType: 'user', approverUserId: 42, scopeAreaIds: [1] },
+        10,
+        1,
+      );
+
+      const dupeCheck = mockClient.query.mock.calls[0] as [string, unknown[]];
+      const sql = dupeCheck[0];
+      expect(sql).toContain('immutable_int_array_text');
+      expect(sql).toContain('scope_area_ids');
+      expect(sql).toContain('scope_department_ids');
+      expect(sql).toContain('scope_team_ids');
     });
   });
 });

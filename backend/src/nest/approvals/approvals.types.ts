@@ -57,6 +57,9 @@ export interface ApprovalConfigRow {
   approver_type: ApprovalApproverType;
   approver_user_id: number | null;
   approver_position_id: string | null;
+  scope_area_ids: number[] | null;
+  scope_department_ids: number[] | null;
+  scope_team_ids: number[] | null;
   is_active: number;
   created_at: string;
   updated_at: string;
@@ -102,6 +105,9 @@ export interface ApprovalConfig {
   approverUserName: string | null;
   approverPositionId: string | null;
   approverPositionName: string | null;
+  scopeAreaIds: number[] | null;
+  scopeDepartmentIds: number[] | null;
+  scopeTeamIds: number[] | null;
   createdAt: string;
 }
 
@@ -150,6 +156,9 @@ export function mapConfigRowToApi(
     approverUserName: row.approver_user_name ?? null,
     approverPositionId: row.approver_position_id,
     approverPositionName: row.approver_position_name ?? null,
+    scopeAreaIds: row.scope_area_ids ?? null,
+    scopeDepartmentIds: row.scope_department_ids ?? null,
+    scopeTeamIds: row.scope_team_ids ?? null,
     createdAt: row.created_at,
   };
 }

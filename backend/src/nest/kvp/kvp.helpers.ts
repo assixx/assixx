@@ -133,6 +133,35 @@ function buildSharedClause(h: OrgPlaceholders): string {
   ))`;
 }
 
+/**
+ * Approval master visibility: user sees KVPs if they are configured as
+ * approval master (user or position type) and the KVP falls within their scope.
+ * Uses approval_configs.scope_area_ids/scope_department_ids/scope_team_ids.
+ * NULL scope = whole tenant. dep_kvp JOIN derives area_id from department_id.
+ */
+function buildApprovalMasterClause(h: OrgPlaceholders): string {
+  return `EXISTS (
+    SELECT 1 FROM approval_configs ac
+    LEFT JOIN departments dep_kvp ON dep_kvp.id = s.department_id
+    WHERE ac.addon_code = 'kvp'
+      AND ac.tenant_id = s.tenant_id
+      AND ac.is_active = 1
+      AND (
+        ac.approver_user_id = ${h.userId}
+        OR ac.approver_position_id IN (
+          SELECT up.position_id FROM user_positions up
+          WHERE up.user_id = ${h.userId} AND up.tenant_id = s.tenant_id
+        )
+      )
+      AND (
+        (ac.scope_area_ids IS NULL AND ac.scope_department_ids IS NULL AND ac.scope_team_ids IS NULL)
+        OR dep_kvp.area_id = ANY(ac.scope_area_ids)
+        OR s.department_id = ANY(ac.scope_department_ids)
+        OR s.team_id = ANY(ac.scope_team_ids)
+      )
+  )`;
+}
+
 /** KVP Visibility — see KVP-SHARING-VISIBILITY.md for full rules */
 export function buildVisibilityClause(
   orgInfo: ExtendedUserOrgInfo,
@@ -151,6 +180,7 @@ export function buildVisibilityClause(
     OR s.org_level = 'company'
     OR ${buildUnsharedClause(h)}
     OR ${buildSharedClause(h)}
+    OR ${buildApprovalMasterClause(h)}
   )`;
 
   return { clause, params };

@@ -19,6 +19,9 @@ export async function createConfig(
   approverType: ApprovalApproverType,
   approverUserId: number | null,
   approverPositionId: string | null = null,
+  scopeAreaIds: number[] | null = null,
+  scopeDepartmentIds: number[] | null = null,
+  scopeTeamIds: number[] | null = null,
 ): Promise<ApprovalConfig | null> {
   const res = await fetch(`${API_BASE}/configs`, {
     method: 'PUT',
@@ -28,6 +31,9 @@ export async function createConfig(
       approverType,
       approverUserId,
       approverPositionId,
+      scopeAreaIds,
+      scopeDepartmentIds,
+      scopeTeamIds,
     }),
   });
   if (!res.ok) return null;

@@ -16,7 +16,10 @@
   import type {
     ApprovalApproverType,
     ApprovalConfig,
+    Area,
+    Department,
     PositionOption,
+    Team,
     UserOption,
   } from './_lib/types';
 
@@ -60,6 +63,44 @@
   let positionDropdownOpen = $state(false);
   let selectedPositionId = $state<string | null>(null);
 
+  // Scope state (Blackboard pattern — "Ganze Firma" toggle + Area/Dept/Team multiselect)
+  let scopeCompanyWide = $state(true);
+  let scopeAreaIds = $state<number[]>([]);
+  let scopeDeptIds = $state<number[]>([]);
+  let scopeTeamIds = $state<number[]>([]);
+
+  // =============================================================================
+  // ORG DATA (from SSR)
+  // =============================================================================
+
+  const areas: Area[] = $derived(data.areas);
+  const departments: Department[] = $derived(data.departments);
+  const teams: Team[] = $derived(data.teams);
+
+  // Scope cascade: departments not already covered by selected areas
+  const availableDepartments = $derived.by((): Department[] => {
+    if (scopeCompanyWide) return [];
+    return departments.filter(
+      (d: Department) => d.areaId === undefined || !scopeAreaIds.includes(d.areaId),
+    );
+  });
+
+  // All department IDs covered (explicit + inherited from areas)
+  const coveredDeptIds = $derived.by((): number[] => {
+    const inherited = departments
+      .filter((d: Department) => d.areaId !== undefined && scopeAreaIds.includes(d.areaId))
+      .map((d: Department) => d.id);
+    return [...scopeDeptIds, ...inherited];
+  });
+
+  // Scope cascade: teams not already covered by selected departments
+  const availableTeams = $derived.by((): Team[] => {
+    if (scopeCompanyWide) return [];
+    return teams.filter(
+      (t: Team) => t.departmentId === undefined || !coveredDeptIds.includes(t.departmentId),
+    );
+  });
+
   // =============================================================================
   // DERIVED
   // =============================================================================
@@ -93,6 +134,7 @@
   const isPositionType = $derived(selectedType === 'position');
 
   const isLeadType = $derived(selectedType !== 'user' && selectedType !== 'position');
+  const showScopeControls = $derived(isUserType || isPositionType);
 
   const selectedPositionLabel = $derived(
     positionOptions.find((p: PositionOption) => p.id === selectedPositionId)?.name ??
@@ -134,6 +176,57 @@
 
   async function loadPositions(): Promise<void> {
     positionOptions = await fetchPositions();
+  }
+
+  function handleScopeAreaChange(newAreaIds: number[]): void {
+    scopeAreaIds = newAreaIds;
+    // Remove departments now covered by areas
+    scopeDeptIds = scopeDeptIds.filter(
+      (dId: number) =>
+        !departments.some(
+          (d: Department) =>
+            d.id === dId && d.areaId !== undefined && newAreaIds.includes(d.areaId),
+        ),
+    );
+    // Remove teams whose department is now covered
+    const areaDeptIds = departments
+      .filter((d: Department) => d.areaId !== undefined && newAreaIds.includes(d.areaId))
+      .map((d: Department) => d.id);
+    const allCoveredDepts = [...scopeDeptIds, ...areaDeptIds];
+    scopeTeamIds = scopeTeamIds.filter(
+      (tId: number) =>
+        !teams.some(
+          (t: Team) =>
+            t.id === tId &&
+            t.departmentId !== undefined &&
+            allCoveredDepts.includes(t.departmentId),
+        ),
+    );
+  }
+
+  function handleScopeDeptChange(newDeptIds: number[]): void {
+    scopeDeptIds = newDeptIds;
+    // Remove teams whose department is now covered
+    const areaDeptIds = departments
+      .filter((d: Department) => d.areaId !== undefined && scopeAreaIds.includes(d.areaId))
+      .map((d: Department) => d.id);
+    const allCoveredDepts = [...newDeptIds, ...areaDeptIds];
+    scopeTeamIds = scopeTeamIds.filter(
+      (tId: number) =>
+        !teams.some(
+          (t: Team) =>
+            t.id === tId &&
+            t.departmentId !== undefined &&
+            allCoveredDepts.includes(t.departmentId),
+        ),
+    );
+  }
+
+  function resetScope(): void {
+    scopeCompanyWide = true;
+    scopeAreaIds = [];
+    scopeDeptIds = [];
+    scopeTeamIds = [];
   }
 
   function closeAllDropdowns(): void {
@@ -219,21 +312,35 @@
   // CONFIG HANDLERS
   // =============================================================================
 
+  /** Normalize scope arrays: null for "Ganze Firma" or hierarchy types, non-empty arrays otherwise */
+  function getScopeForSubmit(): { a: number[] | null; d: number[] | null; t: number[] | null } {
+    if (scopeCompanyWide || !showScopeControls) {
+      return { a: null, d: null, t: null };
+    }
+    return {
+      a: scopeAreaIds.length > 0 ? scopeAreaIds : null,
+      d: scopeDeptIds.length > 0 ? scopeDeptIds : null,
+      t: scopeTeamIds.length > 0 ? scopeTeamIds : null,
+    };
+  }
+
   async function submitConfigs(addon: string, type: ApprovalApproverType): Promise<boolean> {
+    const scope = getScopeForSubmit();
     if (type === 'position') {
-      const r = await createConfig(addon, type, null, selectedPositionId);
-      return r !== null;
+      return (
+        (await createConfig(addon, type, null, selectedPositionId, scope.a, scope.d, scope.t)) !==
+        null
+      );
     }
     if (type === 'user') {
       let ok = false;
       for (const user of selectedUsers) {
-        const r = await createConfig(addon, type, user.id);
+        const r = await createConfig(addon, type, user.id, null, scope.a, scope.d, scope.t);
         if (r !== null) ok = true;
       }
       return ok;
     }
-    const r = await createConfig(addon, type, null);
-    return r !== null;
+    return (await createConfig(addon, type, null)) !== null;
   }
 
   async function handleAddConfig(): Promise<void> {
@@ -246,6 +353,7 @@
         selectedAddon = ''; // eslint-disable-line require-atomic-updates -- Svelte single-threaded
         selectedUsers = [];
         selectedPositionId = null;
+        resetScope();
         showSuccessAlert(MESSAGES.SAVE_SUCCESS);
       } else {
         showErrorAlert(MESSAGES.SAVE_ERROR);
@@ -440,6 +548,125 @@
           </div>
         {/if}
 
+        <!-- Scope Controls (only for user/position types) -->
+        {#if showScopeControls}
+          <div class="scope-controls">
+            <label class="toggle-switch toggle-switch--danger">
+              <input
+                type="checkbox"
+                class="toggle-switch__input"
+                checked={scopeCompanyWide}
+                onchange={(e) => {
+                  scopeCompanyWide = (e.target as HTMLInputElement).checked;
+                  if (scopeCompanyWide) {
+                    scopeAreaIds = [];
+                    scopeDeptIds = [];
+                    scopeTeamIds = [];
+                  }
+                }}
+              />
+              <span class="toggle-switch__slider"></span>
+              <span class="toggle-switch__label"
+                ><i class="fas fa-building mr-2"></i>Ganze Firma</span
+              >
+            </label>
+
+            {#if !scopeCompanyWide}
+              <div class="scope-selects">
+                <div class="form-field">
+                  <label
+                    for="scope-area-select"
+                    class="form-field__label"
+                  >
+                    <i class="fas fa-layer-group mr-1"></i>{labels.area}
+                  </label>
+                  <select
+                    id="scope-area-select"
+                    multiple
+                    class="multi-select"
+                    value={scopeAreaIds}
+                    onchange={(e) => {
+                      const select = e.target as HTMLSelectElement;
+                      handleScopeAreaChange(
+                        Array.from(select.selectedOptions).map((o) => Number(o.value)),
+                      );
+                    }}
+                  >
+                    {#each areas as area (area.id)}
+                      <option value={area.id}>
+                        {area.name}{area.departmentCount !== undefined && area.departmentCount > 0 ?
+                          ` (${area.departmentCount} Abt.)`
+                        : ''}
+                      </option>
+                    {/each}
+                  </select>
+                  <span class="form-field__message text-(--color-text-secondary)">
+                    <i class="fas fa-info-circle mr-1"></i>Strg/Cmd + Klick für Mehrfachauswahl
+                  </span>
+                </div>
+
+                {#if availableDepartments.length > 0}
+                  <div class="form-field">
+                    <label
+                      for="scope-dept-select"
+                      class="form-field__label"
+                    >
+                      <i class="fas fa-sitemap mr-1"></i>Zusätzliche {labels.department}
+                    </label>
+                    <select
+                      id="scope-dept-select"
+                      multiple
+                      class="multi-select"
+                      value={scopeDeptIds}
+                      onchange={(e) => {
+                        const select = e.target as HTMLSelectElement;
+                        handleScopeDeptChange(
+                          Array.from(select.selectedOptions).map((o) => Number(o.value)),
+                        );
+                      }}
+                    >
+                      {#each availableDepartments as dept (dept.id)}
+                        <option value={dept.id}>
+                          {dept.name}{dept.areaName !== undefined && dept.areaName !== '' ?
+                            ` (${dept.areaName})`
+                          : ''}
+                        </option>
+                      {/each}
+                    </select>
+                  </div>
+                {/if}
+
+                {#if availableTeams.length > 0}
+                  <div class="form-field">
+                    <label
+                      for="scope-team-select"
+                      class="form-field__label"
+                    >
+                      <i class="fas fa-users mr-1"></i>{labels.team}
+                    </label>
+                    <select
+                      id="scope-team-select"
+                      multiple
+                      class="multi-select"
+                      value={scopeTeamIds}
+                      onchange={(e) => {
+                        const select = e.target as HTMLSelectElement;
+                        scopeTeamIds = Array.from(select.selectedOptions).map((o) =>
+                          Number(o.value),
+                        );
+                      }}
+                    >
+                      {#each availableTeams as team (team.id)}
+                        <option value={team.id}>{team.name}</option>
+                      {/each}
+                    </select>
+                  </div>
+                {/if}
+              </div>
+            {/if}
+          </div>
+        {/if}
+
         <!-- User Search (always visible) -->
         <div class="search-input-wrapper">
           {#if selectedUsers.length > 0}
@@ -556,6 +783,27 @@
                   {/if}
                   {#if cfg.approverPositionName !== null}
                     <span class="config-item__user">— {cfg.approverPositionName}</span>
+                  {/if}
+                  {#if cfg.scopeAreaIds === null && cfg.scopeDepartmentIds === null && cfg.scopeTeamIds === null}
+                    <span class="badge badge--info badge--xs ml-2">Ganze Firma</span>
+                  {:else}
+                    <span class="config-item__scope ml-2">
+                      {#if cfg.scopeAreaIds !== null && cfg.scopeAreaIds.length > 0}
+                        <span class="badge badge--warning badge--xs"
+                          >{cfg.scopeAreaIds.length} {labels.area}</span
+                        >
+                      {/if}
+                      {#if cfg.scopeDepartmentIds !== null && cfg.scopeDepartmentIds.length > 0}
+                        <span class="badge badge--warning badge--xs"
+                          >{cfg.scopeDepartmentIds.length} Abt.</span
+                        >
+                      {/if}
+                      {#if cfg.scopeTeamIds !== null && cfg.scopeTeamIds.length > 0}
+                        <span class="badge badge--warning badge--xs"
+                          >{cfg.scopeTeamIds.length} {labels.team}</span
+                        >
+                      {/if}
+                    </span>
                   {/if}
                 </div>
                 <button
@@ -743,5 +991,42 @@
     letter-spacing: 0.05em;
     color: var(--color-text-muted);
     pointer-events: none;
+  }
+
+  .scope-controls {
+    width: 100%;
+    padding: 0.75rem;
+    border-radius: var(--radius-sm);
+    background: color-mix(in oklch, var(--color-warning) 5%, transparent);
+    border: 1px solid color-mix(in oklch, var(--color-warning) 20%, transparent);
+  }
+
+  .scope-selects {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-top: 0.75rem;
+  }
+
+  .scope-selects .form-field {
+    flex: 1;
+    min-width: 180px;
+  }
+
+  .multi-select {
+    width: 100%;
+    min-height: 80px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    padding: 0.25rem;
+    font-size: 0.875rem;
+    background: var(--color-surface);
+    color: var(--color-text);
+  }
+
+  .config-item__scope {
+    display: inline-flex;
+    gap: 0.25rem;
+    flex-wrap: wrap;
   }
 </style>

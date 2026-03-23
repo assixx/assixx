@@ -170,15 +170,15 @@ source_uuid        CHAR(36)      -- Referenz auf Quell-Entity
 
 ### Migration 099: `approvals-core-tables`
 
-| Tabelle            | Spalten | RLS | Zweck                                  |
-| ------------------ | ------- | --- | -------------------------------------- |
-| `approval_configs` | 10      | Ja  | Konfiguration: wer darf was genehmigen |
-| `approvals`        | 18      | Ja  | Eigentliche Freigabe-Anfragen          |
+| Tabelle            | Spalten | RLS | Zweck                                                |
+| ------------------ | ------- | --- | ---------------------------------------------------- |
+| `approval_configs` | 13      | Ja  | Konfiguration: wer darf was genehmigen (inkl. Scope) |
+| `approvals`        | 18      | Ja  | Eigentliche Freigabe-Anfragen                        |
 
 ### Neue ENUMs
 
 - `approval_status`: `pending`, `approved`, `rejected`
-- `approval_approver_type`: `user`, `team_lead`, `area_lead`, `department_lead`
+- `approval_approver_type`: `user`, `team_lead`, `area_lead`, `department_lead`, `position`
 
 ### Schema: `approval_configs`
 
@@ -190,7 +190,10 @@ CREATE TABLE approval_configs (
     addon_code VARCHAR(50) NOT NULL,
     approver_type approval_approver_type NOT NULL DEFAULT 'user',
     approver_user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-    role_label VARCHAR(100),
+    approver_position_id UUID REFERENCES position_catalog(id) ON DELETE RESTRICT,
+    scope_area_ids INTEGER[] DEFAULT NULL,
+    scope_department_ids INTEGER[] DEFAULT NULL,
+    scope_team_ids INTEGER[] DEFAULT NULL,
     is_active SMALLINT NOT NULL DEFAULT 1,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -445,6 +448,42 @@ Status-Lifecycle: pending → approved/rejected/revision_requested → resubmitt
 
 ---
 
+## Amendment: Organizational Scope (2026-03-23)
+
+### Problem
+
+`approval_configs` was flat per tenant + addon — no concept of organizational scope. When `approver_type = 'user'` or `'position'`, the configured approver handled ALL approval requests for the entire tenant. Real-world requirement: different approval masters per area, department, or team.
+
+### Changes
+
+**3 new INTEGER[] columns on `approval_configs`:**
+
+- `scope_area_ids` — NULL = whole tenant, `{1,3}` = only Areas 1 and 3
+- `scope_department_ids` — additional departments not covered by area cascade
+- `scope_team_ids` — additional teams not covered by department cascade
+
+**Scope semantics:** All three NULL = whole tenant (backward compatible). If ANY column is non-NULL, it acts as an OR filter. Hierarchy-based types (`team_lead`, `area_lead`, `department_lead`) have implicit scope via org membership — scope columns are ignored for them.
+
+**`resolveApprovers()` enhanced:** CTE `requester_org` resolves the requesting user's organizational context (area_id, department_id, team_id). The `user` and `position` branches filter by scope matching. Hierarchy branches remain unchanged.
+
+**KVP visibility extended:** `buildVisibilityClause()` in `kvp.helpers.ts` includes an approval-master visibility path — users configured as KVP approval masters see KVPs in their approval scope, regardless of their normal org scope.
+
+**Frontend:** `/settings/approvals` page includes "Ganze Firma" toggle + Area/Department/Team multiselect (Blackboard pattern) for `user` and `position` approver types. Cascade logic auto-removes redundant selections.
+
+### Schema corrections (pre-existing inaccuracies)
+
+- Removed `role_label VARCHAR(100)` from documented schema (never existed in DB)
+- Added `position` to `approval_approver_type` enum documentation (existed in DB since ADR-038)
+- Added `approver_position_id UUID` to documented schema (existed in DB since ADR-038)
+- Updated column count from 10 to 13
+
+### Related
+
+- [FEAT_APPROVAL_SCOPE_MASTERPLAN.md](../../FEAT_APPROVAL_SCOPE_MASTERPLAN.md) — Execution plan
+- [ADR-038: Position Catalog](./ADR-038-position-catalog-architecture.md) — Position-based approval masters
+
+---
+
 ## References
 
 - [ADR-009: User Role Assignment & Permissions](./ADR-009-user-role-assignment-permissions.md) — Org-Hierarchie, Lead-Positionen, Zugangs-Matrix
@@ -453,3 +492,4 @@ Status-Lifecycle: pending → approved/rejected/revision_requested → resubmitt
 - [ADR-028: Work Orders Architecture](./ADR-028-work-orders-architecture.md) — Polymorphe Source-Referenz Pattern, Abgrenzung
 - [ADR-033: Addon-basiertes SaaS-Modell](./ADR-033-addon-based-saas-model.md) — Core-Addon Definition
 - [ADR-035: Organizational Hierarchy & Assignment Architecture](./ADR-035-organizational-hierarchy-and-assignment-architecture.md) — Lead-Positionen für dynamische Approver-Auflösung
+- [ADR-038: Position Catalog Architecture](./ADR-038-position-catalog-architecture.md) — Position-basierte Approval Masters
