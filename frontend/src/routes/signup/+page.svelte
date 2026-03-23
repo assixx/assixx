@@ -3,7 +3,7 @@
   import { resolve } from '$app/paths';
 
   import PasswordStrengthIndicator from '$lib/components/PasswordStrengthIndicator.svelte';
-  import { showWarningAlert, showErrorAlert, showSuccessAlert } from '$lib/stores/toast';
+  import { showWarningAlert, showErrorAlert, showToast } from '$lib/stores/toast';
   import { analyzePassword, type PasswordStrengthResult } from '$lib/utils/password-strength';
 
   import { registerUser, createRegisterPayload } from './_lib/api';
@@ -134,10 +134,13 @@
 
       await registerUser(payload);
 
-      showSuccessAlert(
-        'Erfolgreich registriert! Sie werden zur Anmeldung weitergeleitet...',
-        SUCCESS_REDIRECT_DELAY,
-      );
+      showToast({
+        type: 'success',
+        title: 'Erfolg',
+        message: 'Erfolgreich registriert! Sie werden zur Anmeldung weitergeleitet...',
+        duration: SUCCESS_REDIRECT_DELAY,
+        showProgress: true,
+      });
 
       setTimeout(() => {
         void goto(resolve('/login'));

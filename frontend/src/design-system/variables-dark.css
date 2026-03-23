@@ -120,6 +120,19 @@ html.dark {
   /* Organigramm Connection Lines */
   --org-connection-stroke: oklch(100% 0 0);
 
+  /* Role-Switch Warning Banner (dark mode: dark amber overlay) */
+  --banner-warning-bg: linear-gradient(
+    90deg,
+    oklch(22% 0.04 70 / 90%) 0%,
+    oklch(18% 0.03 70 / 50%) 100%
+  );
+  --banner-warning-border: oklch(45% 0.1 70 / 30%);
+  --banner-warning-text: oklch(75% 0.08 75);
+  --banner-warning-text-strong: oklch(85% 0.1 75);
+  --banner-warning-icon: oklch(80% 0.16 85);
+  --banner-warning-close: oklch(65% 0.06 75);
+  --banner-warning-close-hover: oklch(85% 0.1 75);
+
   /* Navigation-specific (dark mode) */
   --nav-hover-bg: oklch(86.39% 0.0576 237.64 / 28%);
   --nav-active-submenu-bg: oklch(63.24% 0 0 / 12%);

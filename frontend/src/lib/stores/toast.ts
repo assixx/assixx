@@ -28,6 +28,7 @@ export interface Toast {
   duration?: number;
   dismissing?: boolean;
   action?: ToastAction;
+  showProgress?: boolean;
 }
 
 // =============================================================================
@@ -77,6 +78,7 @@ export function showToast(toast: Omit<Toast, 'id'>): string {
     duration,
     dismissing: false,
     action: toast.action,
+    showProgress: toast.showProgress,
   };
 
   toasts.update((t: Toast[]) => [...t, fullToast]);

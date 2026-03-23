@@ -64,10 +64,10 @@
 
 <style>
   .role-switch-banner {
-    z-index: 9999;
-    background: linear-gradient(90deg, oklch(22% 0.04 70 / 90%) 0%, oklch(18% 0.03 70 / 50%) 100%);
-    border-bottom: 1px solid oklch(45% 0.1 70 / 30%);
-    padding: 18px 24px;
+    z-index: var(--z-notification);
+    background: var(--banner-warning-bg);
+    border-bottom: 1px solid var(--banner-warning-border);
+    padding: var(--spacing-5) var(--spacing-6);
     width: 100%;
   }
 
@@ -76,20 +76,20 @@
     position: relative;
     justify-content: center;
     align-items: center;
-    gap: 8px;
-    color: oklch(75% 0.08 75);
-    font-size: 13px;
-    line-height: 1;
+    gap: var(--spacing-2);
+    color: var(--banner-warning-text);
+    font-size: var(--font-size-sm);
+    line-height: var(--line-height-none);
   }
 
   .role-switch-banner-content strong {
-    color: oklch(85% 0.1 75);
-    font-weight: 600;
+    color: var(--banner-warning-text-strong);
+    font-weight: var(--font-weight-semibold);
   }
 
   .banner-icon {
     flex-shrink: 0;
-    color: oklch(80% 0.16 85);
+    color: var(--banner-warning-icon);
   }
 
   .role-switch-banner-close {
@@ -99,14 +99,14 @@
     align-items: center;
     cursor: pointer;
     border: none;
-    border-radius: 4px;
+    border-radius: var(--radius);
     background: none;
-    padding: 4px;
-    color: oklch(65% 0.06 75);
+    padding: var(--spacing-1);
+    color: var(--banner-warning-close);
     transition: color 0.15s;
   }
 
   .role-switch-banner-close:hover {
-    color: oklch(85% 0.1 75);
+    color: var(--banner-warning-close-hover);
   }
 </style>

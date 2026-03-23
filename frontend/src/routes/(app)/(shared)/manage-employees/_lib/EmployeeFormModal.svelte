@@ -63,11 +63,14 @@
   // LOCAL STATE
   // =============================================================================
 
-  /** Hierarchie-Reihenfolge: area → department → team */
+  /** Hierarchie-Reihenfolge: area → department → team (jeweils Leiter + Stellvertreter) */
   const LEAD_ORDER: string[] = [
     LEAD_POSITION_KEYS.AREA,
+    LEAD_POSITION_KEYS.AREA_DEPUTY,
     LEAD_POSITION_KEYS.DEPARTMENT,
+    LEAD_POSITION_KEYS.DEPARTMENT_DEPUTY,
     LEAD_POSITION_KEYS.TEAM,
+    LEAD_POSITION_KEYS.TEAM_DEPUTY,
   ];
 
   /** System positions first (sorted by hierarchy), then custom */
