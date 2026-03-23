@@ -293,6 +293,17 @@ describe('AllExceptionsFilter', () => {
       expect(body.error).not.toHaveProperty('details');
     });
 
+    it('should fallback to exception.message when response is non-string non-object', () => {
+      const exception = new HttpException('Original message', HttpStatus.BAD_REQUEST);
+      vi.spyOn(exception, 'getResponse').mockReturnValue(undefined as never);
+      const host = createMockHost();
+
+      catchException(filter, exception, host);
+
+      const { body } = getSentResponse(host);
+      expect(body.error.message).toBe('Original message');
+    });
+
     it('should not report 4xx HttpExceptions to Sentry', () => {
       const exception = new HttpException('Bad', HttpStatus.BAD_REQUEST);
       const host = createMockHost();

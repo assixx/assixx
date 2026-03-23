@@ -333,6 +333,17 @@ describe('ResponseInterceptor', () => {
     });
   });
 
+  describe('extractPaginatedItems (private)', () => {
+    it('should return empty array when no items/entries/data key present', () => {
+      const result = interceptor['extractPaginatedItems']({
+        pagination: { total: 0 },
+        results: ['unknown-key'],
+      });
+
+      expect(result).toEqual([]);
+    });
+  });
+
   describe('isPaginatedResponse edge cases', () => {
     it('should not treat response without pagination key as paginated', async () => {
       const context = createMockContext();

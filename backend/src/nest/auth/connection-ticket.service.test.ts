@@ -22,7 +22,7 @@ const { mockRedisInstance, mockRedisConstructor } = vi.hoisted(() => {
     quit: vi.fn().mockResolvedValue('OK'),
     on: vi.fn(),
   };
-   
+
   const ctor = vi.fn(function FakeRedis() {
     return instance;
   });
