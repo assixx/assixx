@@ -569,6 +569,43 @@ describe('AssetAvailabilityService – DB-mocked methods', () => {
       vi.useRealTimers();
     });
 
+    it('allows editing entry with null end_date (open-ended)', async () => {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date('2026-03-15T12:00:00Z'));
+
+      mockDb.query
+        .mockResolvedValueOnce([
+          {
+            id: 1,
+            asset_id: 42,
+            status: 'standby',
+            start_date: new Date('2026-01-01'),
+            end_date: null,
+            reason: null,
+            notes: null,
+            created_by: null,
+            created_at: null,
+            updated_at: null,
+          },
+        ])
+        .mockResolvedValueOnce([]); // UPDATE
+
+      const result = await service.updateAvailabilityEntry(
+        1,
+        {
+          status: 'repair',
+          startDate: '2026-03-01',
+          endDate: '2026-03-20',
+        } as never,
+        1,
+        10,
+      );
+
+      expect(result.message).toBe('Asset availability entry updated successfully');
+
+      vi.useRealTimers();
+    });
+
     it('updates entry and logs activity for current/future entries', async () => {
       vi.useFakeTimers();
       vi.setSystemTime(new Date('2026-03-01T12:00:00Z'));

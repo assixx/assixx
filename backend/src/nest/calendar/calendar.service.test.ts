@@ -164,6 +164,14 @@ describe('CalendarService – pure helpers', () => {
       expect(result.params).toEqual(['New Title']);
     });
 
+    it('applies transform function when field has one', () => {
+      const dto = { allDay: true };
+      const result = service['buildEventUpdateQuery'](dto as never);
+
+      expect(result.updates).toContain('all_day = $1');
+      expect(result.params).toEqual([1]);
+    });
+
     it('builds query with assignment fields', () => {
       mockCreation.determineOrgTarget.mockReturnValue({
         orgLevel: 'department',
@@ -694,6 +702,43 @@ describe('CalendarService – DB-mocked methods', () => {
       expect(result.events).toHaveLength(2);
       expect(result.pagination.total).toBe(2);
       expect(result.pagination.page).toBe(1);
+    });
+
+    it('falls back to start_date for unknown sortBy value', async () => {
+      const mockScopeOverride = {
+        getScope: vi.fn().mockResolvedValue({ type: 'full' }),
+      };
+      const { service: svc, mockDb: db, mockPermission: perm } = createServiceWithMock();
+      Object.assign(svc, { scopeService: mockScopeOverride });
+
+      perm.getUserMemberships.mockResolvedValueOnce({
+        departmentIds: [],
+        teamIds: [],
+      });
+      perm.buildAdminOrgLevelFilter.mockReturnValueOnce({
+        clause: '',
+        newParams: [],
+        newIndex: 3,
+      });
+
+      db.query.mockResolvedValueOnce([{ count: '0' }]);
+      db.query.mockResolvedValueOnce([]);
+
+      const result = await svc.listEvents(1, 5, null, null, {
+        status: undefined,
+        filter: undefined,
+        search: undefined,
+        startDate: undefined,
+        endDate: undefined,
+        page: 1,
+        limit: 20,
+        sortBy: 'nonExistentColumn',
+        sortOrder: undefined,
+      });
+
+      expect(result.events).toHaveLength(0);
+      const selectCall = db.query.mock.calls[1]?.[0] as string;
+      expect(selectCall).toContain('ORDER BY e.start_date');
     });
 
     it('uses permission-based filter for non-full scope', async () => {

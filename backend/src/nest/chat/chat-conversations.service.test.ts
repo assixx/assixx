@@ -148,6 +148,43 @@ describe('ChatConversationsService – DB-mocked methods', () => {
       expect(result.data).toHaveLength(1);
       expect(result.data[0]?.id).toBe(10);
     });
+
+    it('sets participant status to online when user is present', async () => {
+      vi.mocked(mockPresenceStore.getOnlineUserIds).mockReturnValueOnce(new Set([5]));
+
+      const convRow = {
+        id: 10,
+        uuid: 'conv-uuid',
+        name: 'Online Test',
+        is_group: false,
+        created_at: new Date('2025-01-01'),
+        updated_at: new Date('2025-01-02'),
+        last_message_content: null,
+        last_message_time: null,
+        last_message_is_e2e: false,
+      };
+
+      mockDb.query
+        .mockResolvedValueOnce([{ count: '1' }])
+        .mockResolvedValueOnce([convRow])
+        .mockResolvedValueOnce([
+          {
+            conversation_id: 10,
+            user_id: 5,
+            joined_at: new Date(),
+            is_admin: true,
+            username: 'me',
+            first_name: 'My',
+            last_name: 'Self',
+            profile_picture: null,
+          },
+        ])
+        .mockResolvedValueOnce([]);
+
+      const result = await service.getConversations({});
+
+      expect(result.data[0]?.participants[0]?.status).toBe('online');
+    });
   });
 
   // ============================================================
@@ -204,6 +241,39 @@ describe('ChatConversationsService – DB-mocked methods', () => {
       expect(result.conversation.participants).toHaveLength(1);
       expect(result.conversation.participants[0]?.firstName).toBe('Max');
       expect(result.conversation.unreadCount).toBe(0);
+    });
+
+    it('sets participant status to online when user is present', async () => {
+      vi.mocked(mockPresenceStore.getOnlineUserIds).mockReturnValueOnce(new Set([5]));
+
+      mockDb.query
+        .mockResolvedValueOnce([{ user_id: 5 }])
+        .mockResolvedValueOnce([
+          {
+            id: 10,
+            uuid: 'conv-uuid',
+            name: 'Test',
+            is_group: false,
+            created_at: new Date('2025-01-01'),
+            updated_at: new Date('2025-01-02'),
+          },
+        ])
+        .mockResolvedValueOnce([
+          {
+            conversation_id: 10,
+            user_id: 5,
+            joined_at: new Date(),
+            is_admin: true,
+            username: 'maxm',
+            first_name: 'Max',
+            last_name: 'M',
+            profile_picture: null,
+          },
+        ]);
+
+      const result = await service.getConversation(10);
+
+      expect(result.conversation.participants[0]?.status).toBe('online');
     });
   });
 
@@ -653,6 +723,23 @@ describe('ChatConversationsService – DB-mocked methods', () => {
       );
 
       expect(sendInitialMessage).toHaveBeenCalledWith(1, 77, 5, 'Hi again!');
+    });
+  });
+
+  describe('tryGetExisting1to1Conversation (private)', () => {
+    it('throws BadRequestException when participantIds[0] is undefined', async () => {
+      const sparseIds: number[] = [];
+      sparseIds.length = 1;
+
+      await expect(
+        service['tryGetExisting1to1Conversation'](
+          1,
+          5,
+          { participantIds: sparseIds } as never,
+          false,
+          vi.fn(),
+        ),
+      ).rejects.toThrow(BadRequestException);
     });
   });
 

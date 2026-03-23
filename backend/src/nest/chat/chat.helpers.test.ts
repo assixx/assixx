@@ -233,6 +233,19 @@ describe('transformMessage', () => {
     expect(result.readAt).toBeNull();
   });
 
+  it('should default attachment size to 0 when not a number', () => {
+    const msg = createMockMessageRow({
+      attachment_path: 'files/doc.pdf',
+      attachment_name: 'doc.pdf',
+      attachment_type: 'application/pdf',
+      attachment_size: null,
+    });
+
+    const result = transformMessage(msg);
+
+    expect(result.attachment?.size).toBe(0);
+  });
+
   it('should default senderName to Unknown when names are empty', () => {
     const msg = createMockMessageRow({
       sender_first_name: null,

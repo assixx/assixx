@@ -147,6 +147,45 @@ describe('ChatScheduledService', () => {
       ).rejects.toThrow(BadRequestException);
     });
 
+    it('should throw BadRequestException when scheduled time is invalid', async () => {
+      const { validateScheduledTime } = await import('./chat.helpers.js');
+      vi.mocked(validateScheduledTime).mockReturnValueOnce(
+        'Must be at least 5 minutes in the future',
+      );
+
+      await expect(
+        service.createScheduledMessage(
+          {
+            conversationId: 1,
+            content: 'Hello',
+            scheduledFor: '2025-06-15T10:00:00Z',
+          } as never,
+          verifyAccess,
+        ),
+      ).rejects.toThrow('Must be at least 5 minutes in the future');
+    });
+
+    it('should set isE2e true when encryptedContent is provided', async () => {
+      const row = makeScheduledRow();
+      mockDb.query.mockResolvedValueOnce([row]);
+
+      await service.createScheduledMessage(
+        {
+          conversationId: 1,
+          content: 'plaintext',
+          encryptedContent: 'encrypted-data',
+          e2eNonce: 'nonce-123',
+          scheduledFor: '2025-06-15T10:00:00Z',
+        } as never,
+        verifyAccess,
+      );
+
+      const insertParams = mockDb.query.mock.calls[0]?.[1] as unknown[];
+      expect(insertParams?.[3]).toBeNull(); // content = null (isE2e)
+      expect(insertParams?.[9]).toBe('encrypted-data');
+      expect(insertParams?.[11]).toBe(true); // isE2e
+    });
+
     it('should throw BadRequestException when insert fails', async () => {
       mockDb.query.mockResolvedValueOnce([]);
 

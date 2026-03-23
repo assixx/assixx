@@ -57,6 +57,16 @@ describe('blackboard.helpers', () => {
     expect(entry.content).toBe('Hello World');
   });
 
+  it('processEntryContent should convert JSON-serialized Buffer to string', () => {
+    const entry = {
+      content: { type: 'Buffer', data: [...Buffer.from('Hallo Welt', 'utf8')] },
+    } as unknown as DbBlackboardEntry;
+
+    processEntryContent(entry);
+
+    expect(entry.content).toBe('Hallo Welt');
+  });
+
   it('transformEntry should convert snake_case to camelCase and include author fields', () => {
     const entry = {
       id: 1,

@@ -155,6 +155,17 @@ describe('BlackboardCommentsService', () => {
       expect(result.message).toBe('Comment added successfully');
     });
 
+    it('should pass isInternal as 1 when true', async () => {
+      mockDb.query.mockResolvedValueOnce([{ id: 77 }]); // INSERT
+
+      const result = await service.addComment(1, 5, 10, 'Internal note', true);
+
+      expect(result.id).toBe(77);
+      const insertParams = mockDb.query.mock.calls[0]?.[1] as unknown[];
+      expect(insertParams?.[4]).toBe(1);
+      expect(insertParams?.[5]).toBeNull();
+    });
+
     it('should throw BadRequestException when parent comment not found', async () => {
       mockDb.query.mockResolvedValueOnce([]); // parent lookup
 

@@ -441,6 +441,15 @@ describe('SECURITY: AuthService', () => {
       expect(result).toEqual({ tokensRevoked: 0 });
     });
 
+    it('should default to 0 when revokeAllUserTokens returns empty result', async () => {
+      mockDb.query.mockResolvedValueOnce([]); // empty result from CTE
+      mockDb.query.mockResolvedValueOnce([]); // audit
+
+      const result = await service.logout(createAuthUser());
+
+      expect(result).toEqual({ tokensRevoked: 0 });
+    });
+
     it('should forward ipAddress and userAgent to logout audit', async () => {
       mockDb.query.mockResolvedValueOnce([{ count: '1' }]); // revoke
       mockDb.query.mockResolvedValueOnce([]); // logLogoutAudit
@@ -535,6 +544,16 @@ describe('SECURITY: AuthService', () => {
       expect(mockDb.query).toHaveBeenCalledWith(
         expect.stringContaining('UPDATE refresh_tokens SET is_revoked = true'),
         ['family-xyz-789'],
+      );
+    });
+
+    it('should default to 0 when revokeTokenFamily returns empty result', async () => {
+      mockJwt.verify.mockReturnValueOnce(validDecodedPayload);
+      mockDb.query.mockResolvedValueOnce([{ used_at: new Date() }]); // token already used
+      mockDb.query.mockResolvedValueOnce([]); // revokeTokenFamily returns empty
+
+      await expect(service.refresh({ refreshToken: fakeRefreshToken })).rejects.toThrow(
+        UnauthorizedException,
       );
     });
 
