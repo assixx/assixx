@@ -247,6 +247,15 @@ describe('transaction', () => {
 // ============================================
 
 describe('tenantTransaction', () => {
+  it('should warn when tenantId is undefined in CLS', async () => {
+    const cls = createMockCls({ userId: 5 }); // no tenantId
+    const { service } = createService(undefined, cls);
+
+    await service.tenantTransaction(async () => 'ok');
+
+    expect(cls.get).toHaveBeenCalledWith('tenantId');
+  });
+
   it('should read tenantId and userId from CLS', async () => {
     const cls = createMockCls({ tenantId: 10, userId: 5 });
     const { service, pool } = createService(undefined, cls);

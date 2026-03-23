@@ -5,7 +5,7 @@
  * Focus: Get/add/delete comments, UUID resolution,
  *        NotFoundException for missing entries.
  */
-import { NotFoundException } from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { ActivityLoggerService } from '../common/services/activity-logger.service.js';
@@ -153,6 +153,32 @@ describe('BlackboardCommentsService', () => {
 
       expect(result.id).toBe(99);
       expect(result.message).toBe('Comment added successfully');
+    });
+
+    it('should throw BadRequestException when parent comment not found', async () => {
+      mockDb.query.mockResolvedValueOnce([]); // parent lookup
+
+      await expect(service.addComment(1, 5, 10, 'Reply', false, 999)).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it('should throw BadRequestException when parent belongs to different entry', async () => {
+      mockDb.query.mockResolvedValueOnce([{ entry_id: 42 }]); // parent belongs to entry 42, not 1
+
+      await expect(service.addComment(1, 5, 10, 'Reply', false, 5)).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it('should throw when INSERT returns no rows', async () => {
+      mockDb.query
+        .mockResolvedValueOnce([{ entry_id: 1 }]) // parent valid
+        .mockResolvedValueOnce([]); // INSERT fails
+
+      await expect(service.addComment(1, 5, 10, 'Reply', false, 5)).rejects.toThrow(
+        'Failed to add comment',
+      );
     });
   });
 

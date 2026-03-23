@@ -206,6 +206,138 @@ describe('AssetsService – DB-mocked methods', () => {
     });
   });
 
+  describe('addMaintenanceRecord – pre-check + delegation', () => {
+    it('throws NotFoundException when asset does not exist', async () => {
+      mockDb.queryOne.mockResolvedValueOnce(null); // getAssetById
+
+      await expect(service.addMaintenanceRecord({ assetId: 999 } as never, 1, 5)).rejects.toThrow(
+        NotFoundException,
+      );
+      expect(mockMaintenance.addMaintenanceRecord).not.toHaveBeenCalled();
+    });
+
+    it('delegates to maintenance sub-service after verifying asset', async () => {
+      const expected = { id: 1, type: 'repair' };
+      mockDb.queryOne.mockResolvedValueOnce({
+        id: 1,
+        uuid: 'u',
+        name: 'A',
+        tenant_id: 1,
+        model: null,
+        manufacturer: null,
+        serial_number: null,
+        asset_number: null,
+        department_id: null,
+        area_id: null,
+        location: null,
+        asset_type: 'cnc',
+        status: 'operational',
+        is_active: IS_ACTIVE.ACTIVE,
+        created_at: new Date(),
+        updated_at: new Date(),
+        created_by: null,
+        updated_by: null,
+        purchase_date: null,
+        installation_date: null,
+        warranty_until: null,
+        last_maintenance: null,
+        next_maintenance: null,
+        operating_hours: null,
+        production_capacity: null,
+        energy_consumption: null,
+        manual_url: null,
+        qr_code: null,
+        notes: null,
+      }); // getAssetById
+      mockMaintenance.addMaintenanceRecord.mockResolvedValueOnce(expected);
+
+      const result = await service.addMaintenanceRecord({ assetId: 1 } as never, 1, 5);
+
+      expect(mockMaintenance.addMaintenanceRecord).toHaveBeenCalledWith({ assetId: 1 }, 1, 5);
+      expect(result).toBe(expected);
+    });
+  });
+
+  const existingAsset = {
+    id: 1,
+    uuid: 'u',
+    name: 'CNC-1',
+    tenant_id: 1,
+    model: null,
+    manufacturer: null,
+    serial_number: null,
+    serialNumber: null,
+    asset_number: null,
+    department_id: null,
+    area_id: null,
+    location: null,
+    asset_type: 'cnc',
+    status: 'operational',
+    is_active: IS_ACTIVE.ACTIVE,
+    created_at: new Date(),
+    updated_at: new Date(),
+    created_by: null,
+    updated_by: null,
+    purchase_date: null,
+    installation_date: null,
+    warranty_until: null,
+    last_maintenance: null,
+    next_maintenance: null,
+    operating_hours: null,
+    production_capacity: null,
+    energy_consumption: null,
+    manual_url: null,
+    qr_code: null,
+    notes: null,
+  };
+
+  describe('updateAsset', () => {
+    it('validates serial number uniqueness when serial number changes', async () => {
+      mockDb.queryOne
+        .mockResolvedValueOnce(existingAsset) // getAssetById
+        .mockResolvedValueOnce({ id: 99 }); // validateSerialNumberUnique finds duplicate
+
+      await expect(
+        service.updateAsset(1, { serialNumber: 'SN-NEW' } as never, 1, 5),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('skips serial number validation when unchanged', async () => {
+      const assetWithSerial = { ...existingAsset, serial_number: 'SN-001', serialNumber: 'SN-001' };
+      mockDb.queryOne.mockResolvedValueOnce(assetWithSerial); // getAssetById
+      mockDb.query.mockResolvedValueOnce([]); // UPDATE
+      mockDb.queryOne.mockResolvedValueOnce(assetWithSerial); // getAssetById (return updated)
+
+      await service.updateAsset(1, { serialNumber: 'SN-001' } as never, 1, 5);
+
+      // validateSerialNumberUnique uses queryOne — only getAssetById calls should exist
+      expect(mockDb.queryOne).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  describe('deleteAsset', () => {
+    it('throws NotFoundException when asset does not exist', async () => {
+      mockDb.queryOne.mockResolvedValueOnce(null); // getAssetById
+
+      await expect(service.deleteAsset(999, 1, 5)).rejects.toThrow(NotFoundException);
+    });
+
+    it('deletes asset and logs activity', async () => {
+      mockDb.queryOne.mockResolvedValueOnce({
+        ...existingAsset,
+        serial_number: 'SN-001',
+        serialNumber: 'SN-001',
+      }); // getAssetById
+      mockDb.query.mockResolvedValueOnce([]); // DELETE
+
+      await service.deleteAsset(1, 1, 5);
+
+      const sql = mockDb.query.mock.calls[0]?.[0] as string;
+      expect(sql).toContain('DELETE FROM assets');
+      expect(mockDb.query.mock.calls[0]?.[1]).toEqual([1, 1]);
+    });
+  });
+
   describe('deactivateAsset', () => {
     it('should set is_active to INACTIVE', async () => {
       mockDb.queryOne.mockResolvedValueOnce({
@@ -337,6 +469,91 @@ describe('AssetsService – DB-mocked methods', () => {
       mockDb.queryOne.mockResolvedValueOnce(null);
 
       await expect(service.getAssetTeams(999, 1)).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  // ==========================================================================
+  // UUID Wrapper Delegation Tests
+  // ==========================================================================
+
+  describe('updateAssetByUuid', () => {
+    it('resolves UUID and delegates to updateAsset', async () => {
+      mockDb.query.mockResolvedValueOnce([{ id: 42 }]); // resolveAssetIdByUuid
+      mockDb.queryOne.mockResolvedValueOnce(existingAsset); // getAssetById (inside updateAsset)
+      mockDb.query.mockResolvedValueOnce([]); // UPDATE
+      mockDb.queryOne.mockResolvedValueOnce(existingAsset); // getAssetById (return updated)
+
+      await service.updateAssetByUuid('valid-uuid', { name: 'New' } as never, 1, 5);
+
+      expect(mockDb.query.mock.calls[0]?.[1]).toContain('valid-uuid');
+    });
+
+    it('throws NotFoundException for unknown UUID', async () => {
+      mockDb.query.mockResolvedValueOnce([]); // resolveAssetIdByUuid
+
+      await expect(service.updateAssetByUuid('bad-uuid', {} as never, 1, 5)).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+  });
+
+  describe('deleteAssetByUuid', () => {
+    it('resolves UUID and delegates to deleteAsset', async () => {
+      mockDb.query.mockResolvedValueOnce([{ id: 42 }]); // resolveAssetIdByUuid
+      mockDb.queryOne.mockResolvedValueOnce(existingAsset); // getAssetById
+      mockDb.query.mockResolvedValueOnce([]); // DELETE
+
+      await service.deleteAssetByUuid('valid-uuid', 1, 5);
+
+      expect(mockDb.query.mock.calls[1]?.[0]).toContain('DELETE FROM assets');
+    });
+
+    it('throws NotFoundException for unknown UUID', async () => {
+      mockDb.query.mockResolvedValueOnce([]);
+
+      await expect(service.deleteAssetByUuid('bad-uuid', 1, 5)).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('deactivateAssetByUuid', () => {
+    it('resolves UUID and delegates to deactivateAsset', async () => {
+      mockDb.query.mockResolvedValueOnce([{ id: 42 }]); // resolveAssetIdByUuid
+      mockDb.queryOne.mockResolvedValueOnce({ ...existingAsset, is_active: IS_ACTIVE.ACTIVE }); // getAssetById
+      mockDb.query.mockResolvedValueOnce([]); // UPDATE is_active
+
+      await service.deactivateAssetByUuid('valid-uuid', 1, 5);
+
+      const sql = mockDb.query.mock.calls[1]?.[0] as string;
+      expect(sql).toContain('is_active');
+    });
+
+    it('throws NotFoundException for unknown UUID', async () => {
+      mockDb.query.mockResolvedValueOnce([]);
+
+      await expect(service.deactivateAssetByUuid('bad-uuid', 1, 5)).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+  });
+
+  describe('activateAssetByUuid', () => {
+    it('resolves UUID and delegates to activateAsset', async () => {
+      mockDb.query.mockResolvedValueOnce([{ id: 42 }]); // resolveAssetIdByUuid
+      mockDb.queryOne.mockResolvedValueOnce({ ...existingAsset, is_active: IS_ACTIVE.INACTIVE }); // getAssetById
+      mockDb.query.mockResolvedValueOnce([]); // UPDATE is_active
+
+      await service.activateAssetByUuid('valid-uuid', 1, 5);
+
+      const sql = mockDb.query.mock.calls[1]?.[0] as string;
+      expect(sql).toContain('is_active');
+    });
+
+    it('throws NotFoundException for unknown UUID', async () => {
+      mockDb.query.mockResolvedValueOnce([]);
+
+      await expect(service.activateAssetByUuid('bad-uuid', 1, 5)).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 });

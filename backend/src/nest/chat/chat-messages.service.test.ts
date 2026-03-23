@@ -35,6 +35,7 @@ function createServiceWithMock(): {
     tenantTransaction: ReturnType<typeof vi.fn>;
   };
   mockCls: { get: ReturnType<typeof vi.fn> };
+  mockE2eKeys: { validateKeyVersion: ReturnType<typeof vi.fn> };
 } {
   const mockDb = {
     query: vi.fn(),
@@ -61,7 +62,7 @@ function createServiceWithMock(): {
     mockE2eKeys as unknown as E2eKeysService,
   );
 
-  return { service, mockDb, mockCls };
+  return { service, mockDb, mockCls, mockE2eKeys };
 }
 
 // ============================================================
@@ -139,6 +140,19 @@ describe('ChatMessagesService – context helpers', () => {
 
     expect(() => service['getTenantId']()).toThrow(ForbiddenException);
   });
+
+  it('throws ForbiddenException when userId is undefined', () => {
+    const mockDb = { query: vi.fn(), tenantTransaction: vi.fn() };
+    const mockCls = { get: vi.fn().mockReturnValue(undefined) };
+    const mockE2eKeys = { validateKeyVersion: vi.fn() };
+    const service = new ChatMessagesService(
+      mockCls as unknown as ClsService,
+      mockDb as unknown as DatabaseService,
+      mockE2eKeys as unknown as E2eKeysService,
+    );
+
+    expect(() => service['getUserId']()).toThrow(ForbiddenException);
+  });
 });
 
 // ============================================================
@@ -211,6 +225,24 @@ describe('ChatMessagesService – DB-mocked methods', () => {
     mockDb = result.mockDb;
   });
 
+  describe('getMessagesCount', () => {
+    it('returns parsed count from query result', async () => {
+      mockDb.query.mockResolvedValueOnce([{ count: '42' }]);
+
+      const count = await service['getMessagesCount']('WHERE m.conversation_id = $1', [1]);
+
+      expect(count).toBe(42);
+    });
+
+    it('returns 0 when no results', async () => {
+      mockDb.query.mockResolvedValueOnce([]);
+
+      const count = await service['getMessagesCount']('WHERE m.conversation_id = $1', [1]);
+
+      expect(count).toBe(0);
+    });
+  });
+
   describe('insertMessage', () => {
     it('inserts message and updates conversation timestamp', async () => {
       mockDb.query
@@ -220,6 +252,61 @@ describe('ChatMessagesService – DB-mocked methods', () => {
       await service.insertMessage(1, 10, 5, 'Hello');
 
       expect(mockDb.query).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  describe('attachDocumentsToMessages', () => {
+    it('skips query when messages array is empty', async () => {
+      await service['attachDocumentsToMessages']([], 1);
+
+      expect(mockDb.query).not.toHaveBeenCalled();
+    });
+
+    it('attaches documents to matching messages', async () => {
+      const messages = [
+        { id: 10, attachments: [] },
+        { id: 20, attachments: [] },
+      ] as never[];
+      mockDb.query.mockResolvedValueOnce([
+        {
+          id: 1,
+          message_id: 10,
+          file_uuid: 'uuid-1',
+          filename: 'f.pdf',
+          original_name: 'f.pdf',
+          file_size: 100,
+          mime_type: 'application/pdf',
+          uploaded_at: null,
+        },
+      ]);
+
+      await service['attachDocumentsToMessages'](messages, 1);
+
+      expect(mockDb.query).toHaveBeenCalledOnce();
+      expect((messages[0] as { attachments: unknown[] }).attachments).toHaveLength(1);
+      expect((messages[1] as { attachments: unknown[] }).attachments).toHaveLength(0);
+    });
+  });
+
+  describe('fetchSenderInfo', () => {
+    it('returns sender info for active user', async () => {
+      const sender = {
+        username: 'john',
+        first_name: 'John',
+        last_name: 'Doe',
+        profile_picture: null,
+      };
+      mockDb.query.mockResolvedValueOnce([sender]);
+
+      const result = await service['fetchSenderInfo'](5, 1);
+
+      expect(result).toEqual(sender);
+    });
+
+    it('throws NotFoundException when sender not found or inactive', async () => {
+      mockDb.query.mockResolvedValueOnce([]);
+
+      await expect(service['fetchSenderInfo'](999, 1)).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -288,6 +375,36 @@ describe('ChatMessagesService – DB-mocked methods', () => {
           { messageId: 12, senderId: 3 },
         ],
       });
+    });
+  });
+
+  describe('sendMessage', () => {
+    it('propagates verifyAccess rejection', async () => {
+      const verifyAccess = vi.fn().mockRejectedValue(new ForbiddenException('No access'));
+
+      await expect(
+        service.sendMessage(10, { message: 'Hi' } as never, verifyAccess, vi.fn(), vi.fn()),
+      ).rejects.toThrow(ForbiddenException);
+      expect(verifyAccess).toHaveBeenCalledWith(10, 5, 1);
+    });
+
+    it('throws BadRequestException when content resolution fails', async () => {
+      const verifyAccess = vi.fn().mockResolvedValue(undefined);
+
+      await expect(
+        service.sendMessage(10, {} as never, verifyAccess, vi.fn(), vi.fn()),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('throws UnprocessableEntityException on stale E2E key version', async () => {
+      const result = createServiceWithMock();
+      result.mockE2eKeys.validateKeyVersion.mockResolvedValue(false);
+      const verifyAccess = vi.fn().mockResolvedValue(undefined);
+      const dto = { encryptedContent: 'enc', e2eNonce: 'nonce', e2eKeyVersion: 1, e2eKeyEpoch: 1 };
+
+      await expect(
+        result.service.sendMessage(10, dto as never, verifyAccess, vi.fn(), vi.fn()),
+      ).rejects.toThrow(UnprocessableEntityException);
     });
   });
 });

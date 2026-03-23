@@ -123,6 +123,20 @@ describe('BlackboardAttachmentsService', () => {
   });
 
   // =============================================================
+  // previewAttachment
+  // =============================================================
+
+  describe('previewAttachment', () => {
+    it('should delegate to documentsService.getDocumentContent', async () => {
+      const result = await service.previewAttachment(1, 5, 10);
+
+      expect(result.originalName).toBe('test.pdf');
+      expect(result.mimeType).toBe('application/pdf');
+      expect(mockDocs.getDocumentContent).toHaveBeenCalledWith(1, 5, 10);
+    });
+  });
+
+  // =============================================================
   // downloadByFileUuid
   // =============================================================
 

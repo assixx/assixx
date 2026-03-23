@@ -330,6 +330,69 @@ describe('AssetAvailabilityService – DB-mocked methods', () => {
     });
   });
 
+  describe('resolveAssetIdByUuid', () => {
+    it('returns asset ID for valid UUID', async () => {
+      mockDb.query.mockResolvedValueOnce([{ id: 42 }]);
+
+      const result = await service['resolveAssetIdByUuid']('valid-uuid', 1);
+
+      expect(result).toBe(42);
+    });
+
+    it('throws NotFoundException when UUID not found', async () => {
+      mockDb.query.mockResolvedValueOnce([]);
+
+      await expect(service['resolveAssetIdByUuid']('bad-uuid', 1)).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+  });
+
+  describe('getAssetAvailabilityForDateRange', () => {
+    it('returns mapped entries for overlapping date range', async () => {
+      mockDb.query.mockResolvedValueOnce([
+        {
+          id: 1,
+          asset_id: 42,
+          status: 'maintenance',
+          start_date: new Date('2026-03-01'),
+          end_date: new Date('2026-03-15'),
+          reason: 'Wartung',
+          notes: null,
+          created_by: 10,
+          created_by_name: 'Admin',
+          created_at: new Date('2026-02-28'),
+          updated_at: new Date('2026-02-28'),
+        },
+      ]);
+
+      const result = await service.getAssetAvailabilityForDateRange(
+        42,
+        1,
+        '2026-03-01',
+        '2026-03-31',
+      );
+
+      expect(result).toHaveLength(1);
+      expect(result[0]?.status).toBe('maintenance');
+      expect(result[0]?.assetId).toBe(42);
+      expect(result[0]?.startDate).toBe('2026-03-01');
+    });
+
+    it('returns empty array when no overlapping entries', async () => {
+      mockDb.query.mockResolvedValueOnce([]);
+
+      const result = await service.getAssetAvailabilityForDateRange(
+        42,
+        1,
+        '2026-06-01',
+        '2026-06-30',
+      );
+
+      expect(result).toEqual([]);
+    });
+  });
+
   describe('updateAvailability', () => {
     it('throws NotFoundException when asset does not exist', async () => {
       mockDb.query.mockResolvedValueOnce([]); // assetExists returns false
@@ -430,6 +493,26 @@ describe('AssetAvailabilityService – DB-mocked methods', () => {
           1,
         ),
       ).rejects.toThrow(NotFoundException);
+    });
+
+    it('resolves UUID and delegates to updateAvailability', async () => {
+      mockDb.query
+        .mockResolvedValueOnce([{ id: 42 }]) // resolveAssetIdByUuid
+        .mockResolvedValueOnce([{ id: 42 }]) // assetExists (inside updateAvailability)
+        .mockResolvedValueOnce([]) // no overlapping
+        .mockResolvedValueOnce([]); // INSERT
+
+      const result = await service.updateAvailabilityByUuid(
+        'valid-uuid',
+        {
+          availabilityStatus: 'maintenance',
+          availabilityStart: '2026-03-01',
+          availabilityEnd: '2026-03-15',
+        } as never,
+        1,
+      );
+
+      expect(result.message).toBe('Asset availability updated successfully');
     });
   });
 
@@ -555,7 +638,18 @@ describe('AssetAvailabilityService – DB-mocked methods', () => {
 
       expect(result.message).toBe('Asset availability entry deleted successfully');
       expect(mockDb.query).toHaveBeenCalledTimes(2);
-      expect(mockActivityLogger.logDelete).toHaveBeenCalledOnce();
+      expect(mockActivityLogger.logDelete).toHaveBeenCalledWith(
+        1,
+        10,
+        'asset_availability',
+        1,
+        'Anlagenverfügbarkeit gelöscht: maintenance (2026-03-01 - 2026-03-15)',
+        expect.objectContaining({
+          status: 'maintenance',
+          startDate: '2026-03-01',
+          endDate: '2026-03-15',
+        }),
+      );
     });
   });
 

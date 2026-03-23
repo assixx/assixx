@@ -224,6 +224,40 @@ describe('ChatService', () => {
   });
 
   // =============================================================
+  // getChatUsers — online status enrichment
+  // =============================================================
+
+  describe('getChatUsers — online status', () => {
+    it('should set status to online for users in presenceStore', async () => {
+      mockDb.query.mockResolvedValueOnce([{ role: 'admin', department_id: null }]);
+      mockDb.query.mockResolvedValueOnce([
+        {
+          id: 1,
+          username: 'online-user',
+          email: 'o@t.com',
+          first_name: 'O',
+          last_name: 'U',
+          role: 'employee',
+        },
+        {
+          id: 2,
+          username: 'offline-user',
+          email: 'f@t.com',
+          first_name: 'F',
+          last_name: 'U',
+          role: 'employee',
+        },
+      ]);
+      mockPresenceStore.getOnlineUserIds.mockReturnValue(new Set([1]));
+
+      const result = await service.getChatUsers({ search: undefined } as never);
+
+      expect(result.users[0]?.status).toBe('online');
+      expect(result.users[1]?.status).toBe('offline');
+    });
+  });
+
+  // =============================================================
   // Conversation delegation
   // =============================================================
 
@@ -239,6 +273,44 @@ describe('ChatService', () => {
     });
   });
 
+  describe('getConversation', () => {
+    it('should delegate to conversationsService', async () => {
+      const expected = { conversation: { id: 1 } };
+      mockConversationsService.getConversation.mockResolvedValueOnce(expected);
+
+      const result = await service.getConversation(1);
+
+      expect(result).toBe(expected);
+      expect(mockConversationsService.getConversation).toHaveBeenCalledWith(1);
+    });
+  });
+
+  describe('createConversation', () => {
+    it('should delegate to conversationsService with insertMessage binding', async () => {
+      const expected = { conversation: { id: 1 } };
+      mockConversationsService.createConversation.mockResolvedValueOnce(expected);
+
+      const result = await service.createConversation({ name: 'Test' } as never);
+
+      expect(result).toBe(expected);
+      expect(mockConversationsService.createConversation).toHaveBeenCalledWith(
+        { name: 'Test' },
+        expect.any(Function),
+      );
+    });
+  });
+
+  describe('updateConversation', () => {
+    it('should delegate to conversationsService', async () => {
+      mockConversationsService.updateConversation.mockRejectedValueOnce(
+        new BadRequestException('not implemented'),
+      );
+
+      await expect(service.updateConversation(1, {} as never)).rejects.toThrow(BadRequestException);
+      expect(mockConversationsService.updateConversation).toHaveBeenCalledWith(1, {});
+    });
+  });
+
   describe('deleteConversation', () => {
     it('should delegate to conversationsService', async () => {
       await service.deleteConversation(1);
@@ -250,6 +322,82 @@ describe('ChatService', () => {
   // =============================================================
   // Message delegation
   // =============================================================
+
+  describe('getMessages', () => {
+    it('should delegate to messagesService with verifyAccess binding', async () => {
+      const expected = { data: [], pagination: {} };
+      mockMessagesService.getMessages.mockResolvedValueOnce(expected);
+
+      const result = await service.getMessages(1, {} as never);
+
+      expect(result).toBe(expected);
+      expect(mockMessagesService.getMessages).toHaveBeenCalledWith(1, {}, expect.any(Function));
+    });
+  });
+
+  describe('sendMessage', () => {
+    it('should delegate to messagesService with conversation callbacks', async () => {
+      const expected = { message: { id: 1 } };
+      mockMessagesService.sendMessage.mockResolvedValueOnce(expected);
+
+      const result = await service.sendMessage(1, { message: 'Hi' } as never);
+
+      expect(result).toBe(expected);
+      expect(mockMessagesService.sendMessage).toHaveBeenCalledWith(
+        1,
+        { message: 'Hi' },
+        expect.any(Function),
+        expect.any(Function),
+        expect.any(Function),
+        undefined,
+      );
+    });
+  });
+
+  describe('editMessage', () => {
+    it('should delegate to messagesService', async () => {
+      mockMessagesService.editMessage.mockRejectedValueOnce(
+        new BadRequestException('not implemented'),
+      );
+
+      await expect(service.editMessage(1, {} as never)).rejects.toThrow(BadRequestException);
+      expect(mockMessagesService.editMessage).toHaveBeenCalledWith(1, {});
+    });
+  });
+
+  describe('deleteMessage', () => {
+    it('should delegate to messagesService', async () => {
+      mockMessagesService.deleteMessage.mockRejectedValueOnce(
+        new BadRequestException('not implemented'),
+      );
+
+      await expect(service.deleteMessage(1)).rejects.toThrow(BadRequestException);
+      expect(mockMessagesService.deleteMessage).toHaveBeenCalledWith(1);
+    });
+  });
+
+  describe('markAsRead', () => {
+    it('should delegate to messagesService with verifyAccess binding', async () => {
+      const expected = { markedCount: 5 };
+      mockMessagesService.markAsRead.mockResolvedValueOnce(expected);
+
+      const result = await service.markAsRead(1);
+
+      expect(result).toBe(expected);
+      expect(mockMessagesService.markAsRead).toHaveBeenCalledWith(1, expect.any(Function));
+    });
+  });
+
+  describe('searchMessages', () => {
+    it('should delegate to messagesService', async () => {
+      mockMessagesService.searchMessages.mockRejectedValueOnce(
+        new BadRequestException('not implemented'),
+      );
+
+      await expect(service.searchMessages({} as never)).rejects.toThrow(BadRequestException);
+      expect(mockMessagesService.searchMessages).toHaveBeenCalledWith({});
+    });
+  });
 
   describe('getUnreadCount', () => {
     it('should delegate to messagesService', async () => {
@@ -277,11 +425,52 @@ describe('ChatService', () => {
     });
   });
 
+  describe('createScheduledMessage', () => {
+    it('should delegate to scheduledService with verifyAccess binding', async () => {
+      const expected = { id: '1' };
+      mockScheduledService.createScheduledMessage.mockResolvedValueOnce(expected);
+
+      const result = await service.createScheduledMessage({ conversationId: 1 } as never);
+
+      expect(result).toBe(expected);
+      expect(mockScheduledService.createScheduledMessage).toHaveBeenCalledWith(
+        { conversationId: 1 },
+        expect.any(Function),
+      );
+    });
+  });
+
+  describe('getScheduledMessage', () => {
+    it('should delegate to scheduledService', async () => {
+      const expected = { id: '1' };
+      mockScheduledService.getScheduledMessage.mockResolvedValueOnce(expected);
+
+      const result = await service.getScheduledMessage('1');
+
+      expect(result).toBe(expected);
+      expect(mockScheduledService.getScheduledMessage).toHaveBeenCalledWith('1');
+    });
+  });
+
   describe('cancelScheduledMessage', () => {
     it('should delegate to scheduledService', async () => {
       await service.cancelScheduledMessage('msg-1');
 
       expect(mockScheduledService.cancelScheduledMessage).toHaveBeenCalledWith('msg-1');
+    });
+  });
+
+  describe('getConversationScheduledMessages', () => {
+    it('should delegate to scheduledService with verifyAccess binding', async () => {
+      mockScheduledService.getConversationScheduledMessages.mockResolvedValueOnce([]);
+
+      const result = await service.getConversationScheduledMessages(1);
+
+      expect(result).toEqual([]);
+      expect(mockScheduledService.getConversationScheduledMessages).toHaveBeenCalledWith(
+        1,
+        expect.any(Function),
+      );
     });
   });
 

@@ -82,6 +82,40 @@ describe('CalendarCreationService', () => {
       expect(mockDb.query).toHaveBeenCalledTimes(1);
     });
 
+    it('should pass description as null when undefined', async () => {
+      mockDb.query.mockResolvedValueOnce([{ id: 1 }]);
+
+      await service.insertEvent(
+        makeCreateDto({ description: undefined }) as never,
+        10,
+        5,
+        new Date('2025-06-15T10:00:00Z'),
+        new Date('2025-06-15T11:00:00Z'),
+        null,
+        null,
+      );
+
+      const params = mockDb.query.mock.calls[0]?.[1] as unknown[];
+      expect(params[4]).toBeNull();
+    });
+
+    it('should convert allDay boolean to integer', async () => {
+      mockDb.query.mockResolvedValueOnce([{ id: 1 }]);
+
+      await service.insertEvent(
+        makeCreateDto({ allDay: true }) as never,
+        10,
+        5,
+        new Date('2025-06-15T10:00:00Z'),
+        new Date('2025-06-15T11:00:00Z'),
+        null,
+        null,
+      );
+
+      const params = mockDb.query.mock.calls[0]?.[1] as unknown[];
+      expect(params[8]).toBe(1);
+    });
+
     it('should throw when insert returns no id', async () => {
       mockDb.query.mockResolvedValueOnce([]);
 
@@ -140,6 +174,53 @@ describe('CalendarCreationService', () => {
       await service.addAttendeesToEvent(42, 5, [8], 10);
 
       expect(mockDb.query).toHaveBeenCalledTimes(4);
+    });
+  });
+
+  // =============================================================
+  // createChildEvents
+  // =============================================================
+
+  describe('createChildEvents', () => {
+    it('should skip index 0 and create child events for remaining dates', async () => {
+      const dates = [
+        new Date('2025-06-15T10:00:00Z'),
+        new Date('2025-06-22T10:00:00Z'),
+        new Date('2025-06-29T10:00:00Z'),
+      ];
+      const durationMs = 3600000; // 1h
+
+      // For each child (2 children): insertEvent + addAttendeesToEvent (creator check + insert)
+      mockDb.query
+        .mockResolvedValueOnce([{ id: 100 }]) // child 1 insertEvent
+        .mockResolvedValueOnce([]) // child 1 attendee check
+        .mockResolvedValueOnce([]) // child 1 attendee insert
+        .mockResolvedValueOnce([{ id: 101 }]) // child 2 insertEvent
+        .mockResolvedValueOnce([]) // child 2 attendee check
+        .mockResolvedValueOnce([]); // child 2 attendee insert
+
+      await service.createChildEvents(dates, makeCreateDto() as never, 10, 5, durationMs, 1);
+
+      // 2 insertEvent calls (index 1 and 2, skipping index 0)
+      const insertCalls = mockDb.query.mock.calls.filter(
+        (call: unknown[]) =>
+          typeof call[0] === 'string' &&
+          (call[0] as string).includes('INSERT INTO calendar_events'),
+      );
+      expect(insertCalls).toHaveLength(2);
+    });
+
+    it('should create no children for single-date array', async () => {
+      await service.createChildEvents(
+        [new Date('2025-06-15T10:00:00Z')],
+        makeCreateDto() as never,
+        10,
+        5,
+        3600000,
+        1,
+      );
+
+      expect(mockDb.query).not.toHaveBeenCalled();
     });
   });
 
