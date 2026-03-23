@@ -308,7 +308,7 @@ export default defineConfig({
         '**/index.ts',
         '**/types/**',
       ],
-      thresholds: { lines: 83, functions: 83, branches: 76, statements: 83 },
+      thresholds: { lines: 86, functions: 87, branches: 80, statements: 86 },
     },
     projects: [
       // Tier 1: Unit Tests (backend + shared)
@@ -433,16 +433,16 @@ TOTAL: 5568 Unit + 430 Permission (subset) + 399 Frontend + 558 API = 6955 Tests
 ──────────────────────────────────────────────────────────────────────
 ```
 
-### Coverage Thresholds (raised 2026-03-10 after Phase 10)
+### Coverage Thresholds (raised 2026-03-23)
 
-| Metric     | Current (Phase 10) | Threshold (Floor) | Long-term Goal |
-| ---------- | ------------------ | ----------------- | -------------- |
-| Lines      | **87.57%**         | **83%**           | 90%            |
-| Branches   | **81.45%**         | **76%**           | 85%            |
-| Functions  | **88.89%**         | **83%**           | 90%            |
-| Statements | **87.52%**         | **83%**           | 90%            |
+| Metric     | Current (2026-03-23) | Threshold (Floor) | Long-term Goal |
+| ---------- | -------------------- | ----------------- | -------------- |
+| Lines      | **91.07%**           | **86%**           | 93%            |
+| Branches   | **85.56%**           | **80%**           | 88%            |
+| Functions  | **92.36%**           | **87%**           | 93%            |
+| Statements | **91.35%**           | **86%**           | 93%            |
 
-> **Phase 11 added scope/hierarchy-permission tests (ADR-036).** Coverage remains above thresholds. Thresholds remain at 83%/76% (floor).
+> **2026-03-23:** Thresholds von 83/76/83/83 auf 86/80/87/86 erhöht (~5% Puffer). Bisherige Long-term Goals (90/85/90/90) erreicht und übertroffen — neue Goals: 93/88/93/93. 6455 Unit+Frontend Tests (255 Dateien).
 
 ### Coverage Ignore Comments (v8 Provider)
 
@@ -615,4 +615,4 @@ Settings → Branches → main:
 
 ---
 
-_Last Updated: 2026-03-14 (v9 - Phase 11: Org Scope + Hierarchy (ADR-036). Added org-scope + org-scope-manage API modules. Permission project expanded with roles.guard, jwt-auth.guard, document-access.service tests. Fixed dummy-users 429 with flushThrottleKeys(). 35 API modules (558 tests), 5568 unit tests, 399 frontend tests, 430 permission tests. Total: 6955 tests)_
+_Last Updated: 2026-03-23 (v10 - Coverage thresholds raised: 83/76/83/83 → 86/80/87/86. Long-term goals updated: 93/88/93/93. Current coverage: Lines 91.07%, Branches 85.56%, Functions 92.36%, Statements 91.35%. 6455 unit+frontend tests across 255 files.)_

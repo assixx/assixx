@@ -73,10 +73,10 @@ export default defineConfig({
         'backend/src/workers/deletion-worker.ts',
       ],
       thresholds: {
-        lines: 83,
-        functions: 83,
-        branches: 76,
-        statements: 83,
+        lines: 86,
+        functions: 87,
+        branches: 80,
+        statements: 86,
       },
     },
 
