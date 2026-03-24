@@ -55,8 +55,8 @@ function createRotationModalState() {
 
 /** Creates rotation history and pending deletions state */
 function createRotationHistoryState() {
-  let rotationHistoryMap = $state<Map<string, number>>(new Map());
-  let pendingRotationDeletions = $state<Set<number>>(new Set());
+  let rotationHistoryMap = $state(new Map());
+  let pendingRotationDeletions = $state(new Set());
 
   return {
     get rotationHistoryMap() {

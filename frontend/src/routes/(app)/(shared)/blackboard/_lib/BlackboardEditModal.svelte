@@ -57,9 +57,9 @@
   let formColor = $state<EntryColor>(untrack(() => entry.color));
   let formExpiresAt = $state(untrack(() => fromIso8601ToDateInput(entry.expiresAt)));
   let formCompanyWide = $state(untrack(() => entry.orgLevel === 'company'));
-  let formDepartmentIds = $state<number[]>(untrack(() => entry.departmentIds ?? []));
-  let formTeamIds = $state<number[]>(untrack(() => entry.teamIds ?? []));
-  let formAreaIds = $state<number[]>(untrack(() => entry.areaIds ?? []));
+  let formDepartmentIds = $state(untrack(() => entry.departmentIds ?? []));
+  let formTeamIds = $state(untrack(() => entry.teamIds ?? []));
+  let formAreaIds = $state(untrack(() => entry.areaIds ?? []));
   let attachmentFiles = $state<File[] | null>(null);
 
   // =============================================================================

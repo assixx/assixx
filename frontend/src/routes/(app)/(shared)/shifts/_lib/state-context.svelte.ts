@@ -42,7 +42,7 @@ function buildAvailabilityDateMap(entries: AssetAvailabilityEntry[]): Map<string
 
 /** Asset availability sub-state (date-to-status map for shift cell marking) */
 function createAssetAvailabilityState() {
-  let assetAvailabilityMap = $state<Map<string, string>>(new Map());
+  let assetAvailabilityMap = $state(new Map());
 
   return {
     get assetAvailabilityMap() {
@@ -94,7 +94,7 @@ function createPlanState() {
 }
 
 function createContextState() {
-  let selectedContext = $state<SelectedContext>({ ...DEFAULT_CONTEXT });
+  let selectedContext = $state({ ...DEFAULT_CONTEXT });
   const plan = createPlanState();
   const assetAvail = createAssetAvailabilityState();
 

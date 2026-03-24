@@ -45,7 +45,7 @@
 
   import type { AssetAvailabilityStatus } from '$lib/asset-availability/constants';
   import type { PageData } from './$types';
-  import type { Asset, AssetStatusFilter } from './_lib/types';
+  import type { AssetStatusFilter } from './_lib/types';
 
   // =============================================================================
   // SSR DATA - Level 3: $derived from props (single source of truth)
@@ -58,7 +58,7 @@
   const messages = $derived(createMessages(labels));
 
   // SSR data via $derived - updates when invalidateAll() is called
-  const allAssets = $derived<Asset[]>(data.assets);
+  const allAssets = $derived(data.assets);
 
   // Sync SSR data + labels to state store for child components
   $effect(() => {

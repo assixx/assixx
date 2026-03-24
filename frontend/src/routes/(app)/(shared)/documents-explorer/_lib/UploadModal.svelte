@@ -18,8 +18,8 @@
   let uploadDocName = $state('');
   let uploadDescription = $state('');
   let uploadTags = $state('');
-  let uploadSalaryYear = $state<number>(new Date().getFullYear());
-  let uploadSalaryMonth = $state<number>(new Date().getMonth() + 1);
+  let uploadSalaryYear = $state(new Date().getFullYear());
+  let uploadSalaryMonth = $state(new Date().getMonth() + 1);
   const uploadSubmitting = false; // Progress not tracked internally, upload happens in parent
   let uploadProgress = $state(0);
   let categoryDropdownOpen = $state(false);

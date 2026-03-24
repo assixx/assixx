@@ -173,7 +173,7 @@
   const toggleIcon = $derived(globalCollapsed ? 'fa-layer-group' : 'fa-th-large');
 
   /** Zoom — same pattern as Gesamtansicht (OverallViewTable) */
-  let zoomLevel = $state<number>(ZOOM_CONFIG.DEFAULT);
+  let zoomLevel: number = $state(ZOOM_CONFIG.DEFAULT);
 
   function zoomIn(): void {
     if (zoomLevel < ZOOM_CONFIG.MAX) zoomLevel += ZOOM_CONFIG.STEP;

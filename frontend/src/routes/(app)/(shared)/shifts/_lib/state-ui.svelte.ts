@@ -8,7 +8,7 @@ let isDragging = $state(false);
 let isEditMode = $state(false);
 let isPlanLocked = $state(false);
 let showPlanningUI = $state(false);
-let currentWeek = $state<Date>(new Date());
+let currentWeek = $state(new Date());
 
 /** Reset all UI flags to their default values */
 function resetUiDefaults(): void {

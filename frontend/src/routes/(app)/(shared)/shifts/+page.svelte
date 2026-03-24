@@ -52,7 +52,12 @@
   import WeekNavigation from './_lib/WeekNavigation.svelte';
 
   import type { PageData } from './$types';
-  import type { AssignmentCount, ShiftTimesMap } from './_lib/types';
+  import type {
+    AssignmentCount,
+    ShiftDetailData,
+    ShiftTimesMap,
+    WeeklyShiftsMap,
+  } from './_lib/types';
 
   // --- SSR DATA ---
   const { data }: { data: PageData } = $props();
@@ -90,15 +95,16 @@
 
   /** Count per-employee assignments from local weeklyShifts state */
   function countLocalWeek(): Record<number, number> {
-    const counts: Record<number, number> = {};
-    for (const [, shiftMap] of shiftsState.weeklyShifts) {
+    const counts: Partial<Record<number, number>> = {};
+    const shifts: WeeklyShiftsMap = shiftsState.weeklyShifts;
+    for (const [, shiftMap] of shifts) {
       for (const [, empIds] of shiftMap) {
         for (const id of empIds) {
           counts[id] = (counts[id] ?? 0) + 1;
         }
       }
     }
-    return counts;
+    return counts as Record<number, number>;
   }
 
   /** Merged counts: DB base adjusted by live local week state.
@@ -400,7 +406,8 @@
               assetAvailabilityMap={shiftsState.assetAvailabilityMap}
               {getShiftEmployees}
               getEmployeeById={(id: number) => shiftsState.getEmployeeById(id)}
-              getShiftDetail={(key: string) => shiftsState.shiftDetails.get(key)}
+              getShiftDetail={(key: string): ShiftDetailData | undefined =>
+                shiftsState.shiftDetails.get(key)}
               hasRotationShift={(key: string) => shiftsState.rotationHistoryMap.has(key)}
               ondragover={handleDragOver}
               ondragenter={handleDragEnter}

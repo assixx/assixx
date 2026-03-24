@@ -28,7 +28,7 @@
   } from './_lib/utils';
 
   import type { PageData } from './$types';
-  import type { QuestionOption, SurveyWithStatus } from './_lib/types';
+  import type { QuestionOption } from './_lib/types';
 
   // =============================================================================
   // SSR DATA - Level 3: $derived from props (single source of truth)
@@ -36,10 +36,10 @@
 
   const { data }: { data: PageData } = $props();
 
-  const permissionDenied = $derived<boolean>(data.permissionDenied);
+  const permissionDenied = $derived(data.permissionDenied);
 
   // SSR data via $derived - updates when invalidateAll() is called
-  const allSurveys = $derived<SurveyWithStatus[]>(data.surveys);
+  const allSurveys = $derived(data.surveys);
 
   // One-time initialization flag (prevents re-running on every SSR change)
   let initialized = $state(false);

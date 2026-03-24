@@ -17,7 +17,7 @@
 
   const { show, labels, onclose, onsave, isSaving }: Props = $props();
 
-  let editLabels = $state<HierarchyLabels>(structuredClone(DEFAULT_HIERARCHY_LABELS));
+  let editLabels = $state(structuredClone(DEFAULT_HIERARCHY_LABELS));
 
   interface LabelLevel {
     key: keyof HierarchyLabels;

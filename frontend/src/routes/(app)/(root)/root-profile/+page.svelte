@@ -33,7 +33,7 @@
   } from './_lib/utils';
 
   import type { PageData } from './$types';
-  import type { ApprovalItem, PasswordStrengthResult, UserProfile } from './_lib/types';
+  import type { PasswordStrengthResult } from './_lib/types';
 
   // =============================================================================
   // SSR DATA - Level 3: $derived from props (single source of truth)
@@ -43,8 +43,8 @@
 
   // SSR data via $derived - updates when invalidateAll() is called
   // profile is guaranteed by server (redirect if missing)
-  const user = $derived<UserProfile>(data.profile);
-  const pendingApprovals = $derived<ApprovalItem[]>(data.pendingApprovals);
+  const user = $derived(data.profile);
+  const pendingApprovals = $derived(data.pendingApprovals);
 
   // Initialize form values from SSR data (user guaranteed by server)
   $effect(() => {

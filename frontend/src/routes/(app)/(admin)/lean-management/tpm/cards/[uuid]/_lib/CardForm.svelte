@@ -73,10 +73,8 @@
     untrack(() => card?.weekdayOverride !== null && card?.weekdayOverride !== undefined),
   );
   let weekdayOverride = $state(untrack(() => card?.weekdayOverride ?? planBaseWeekday));
-  let estimatedExecutionMinutes = $state<number | null>(
-    untrack(() => card?.estimatedExecutionMinutes ?? null),
-  );
-  let cardCategories = $state<CardCategory[]>(untrack(() => card?.cardCategories ?? []));
+  let estimatedExecutionMinutes = $state(untrack(() => card?.estimatedExecutionMinutes ?? null));
+  let cardCategories = $state(untrack(() => card?.cardCategories ?? []));
 
   const CATEGORY_OPTIONS: CardCategory[] = ['reinigung', 'wartung', 'inspektion'];
 

@@ -23,16 +23,8 @@
   import KvpSuggestionCard from './_lib/KvpSuggestionCard.svelte';
   import { kvpState } from './_lib/state.svelte';
 
-  import type { HierarchyLabels } from '$lib/types/hierarchy-labels';
   import type { PageData } from './$types';
-  import type {
-    KvpCategory,
-    Department,
-    KvpSuggestion,
-    KvpStats,
-    CurrentUser,
-    UserTeamWithAssets,
-  } from './_lib/types';
+  import type { CurrentUser } from './_lib/types';
 
   const log = createLogger('KvpPage');
   const apiClient = getApiClient();
@@ -44,18 +36,18 @@
   const { data }: { data: PageData } = $props();
 
   // Hierarchy labels from layout data inheritance
-  const labels = $derived<HierarchyLabels>(data.hierarchyLabels);
+  const labels = $derived(data.hierarchyLabels);
 
   // SSR data via $derived - updates when invalidateAll() is called
   // PageData is always defined from $props(), and server guarantees array values
-  const ssrCategories = $derived<KvpCategory[]>(data.categories);
-  const ssrDepartments = $derived<Department[]>(data.departments);
-  const ssrSuggestions = $derived<KvpSuggestion[]>(data.suggestions);
-  const ssrStatistics = $derived<KvpStats | null>(data.statistics);
+  const ssrCategories = $derived(data.categories);
+  const ssrDepartments = $derived(data.departments);
+  const ssrSuggestions = $derived(data.suggestions);
+  const ssrStatistics = $derived(data.statistics);
   const ssrCurrentUser = $derived<CurrentUser | null>(data.currentUser);
-  const ssrUserOrganizations = $derived<UserTeamWithAssets[]>(data.userOrganizations);
-  const permissionDenied = $derived<boolean>(data.permissionDenied);
-  const showStats = $derived<boolean>(data.showStats);
+  const ssrUserOrganizations = $derived(data.userOrganizations);
+  const permissionDenied = $derived(data.permissionDenied);
+  const showStats = $derived(data.showStats);
 
   // Sync SSR data to state store (for UI components that depend on it)
   // IMPORTANT: Use untrack to prevent infinite loop - setUser calls updateEffectiveRole

@@ -40,12 +40,7 @@
   } from './_lib/utils';
 
   import type { PageData } from './$types';
-  import type {
-    RootUser,
-    StatusFilter,
-    FormIsActiveStatus,
-    AvailabilityStatus,
-  } from './_lib/types';
+  import type { StatusFilter, FormIsActiveStatus, AvailabilityStatus } from './_lib/types';
 
   // =============================================================================
   // SSR DATA - Level 3: $derived from props (single source of truth)
@@ -58,8 +53,8 @@
   const messages = $derived(createRootMessages(labels));
 
   // SSR data via $derived - updates when invalidateAll() is called
-  const allRootUsers = $derived<RootUser[]>(data.rootUsers);
-  const positionOptions = $derived<string[]>(data.positionOptions);
+  const allRootUsers = $derived(data.rootUsers);
+  const positionOptions = $derived(data.positionOptions);
 
   // =============================================================================
   // UI STATE - Filtering and form state (client-side only)

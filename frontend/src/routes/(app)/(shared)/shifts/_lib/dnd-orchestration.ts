@@ -110,7 +110,7 @@ function executeAutofill(
     const shifts = shiftsState.weeklyShifts;
     let dayShifts = shifts.get(date);
     if (dayShifts === undefined) {
-      dayShifts = new Map();
+      dayShifts = new Map<string, number[]>();
       shifts.set(date, dayShifts);
     }
     let empsInShift = dayShifts.get(shift);

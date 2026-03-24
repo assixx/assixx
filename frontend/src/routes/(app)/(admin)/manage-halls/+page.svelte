@@ -28,7 +28,7 @@
   } from './_lib/utils';
 
   import type { PageData } from './$types';
-  import type { Hall, StatusFilter, FormIsActiveStatus } from './_lib/types';
+  import type { StatusFilter, FormIsActiveStatus } from './_lib/types';
 
   // =============================================================================
   // SSR DATA
@@ -36,7 +36,7 @@
 
   const { data }: { data: PageData } = $props();
 
-  const allHalls = $derived<Hall[]>(data.halls);
+  const allHalls = $derived(data.halls);
 
   // Hierarchy labels from layout data inheritance (A6)
   const labels = $derived(data.hierarchyLabels);

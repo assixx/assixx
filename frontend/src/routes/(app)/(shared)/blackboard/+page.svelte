@@ -47,7 +47,7 @@
   );
 
   // Permission check
-  const permissionDenied = $derived<boolean>(data.permissionDenied);
+  const permissionDenied = $derived(data.permissionDenied);
 
   // SSR data as derived - updates automatically when data changes
   const entries = $derived(data.entries);
@@ -86,7 +86,7 @@
   // =============================================================================
 
   // Zoom State
-  let zoomLevel = $state<number>(ZOOM_CONFIG.DEFAULT);
+  let zoomLevel: number = $state(ZOOM_CONFIG.DEFAULT);
   let filterExpanded = $state(false);
 
   // Loading state for mutations
@@ -245,11 +245,9 @@
         entryId = editingEntryId;
         showSuccessAlert('Eintrag aktualisiert');
       } else {
-        const response = await apiClient.post<{
-          data?: { id: number };
-          id?: number;
-        }>('/blackboard/entries', payload);
-        entryId = response.data?.id ?? response.id ?? null;
+        const response = await apiClient.post('/blackboard/entries', payload);
+        const body = response as { data?: { id: number }; id?: number };
+        entryId = body.data?.id ?? body.id ?? null;
         showSuccessAlert('Eintrag erstellt');
       }
 

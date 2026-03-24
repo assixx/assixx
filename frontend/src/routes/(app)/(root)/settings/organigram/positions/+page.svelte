@@ -39,7 +39,7 @@
 
   const labels = $derived(data.hierarchyLabels);
 
-  let positions = $derived<PositionEntry[]>([...(data.positions as PositionEntry[])]);
+  let positions = $derived([...(data.positions as PositionEntry[])]);
 
   let activeTab = $state<Tab>('employee');
   let newPosition = $state('');

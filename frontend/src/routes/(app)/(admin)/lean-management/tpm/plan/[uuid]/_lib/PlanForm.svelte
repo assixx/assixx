@@ -89,7 +89,7 @@
   }
 
   let showTimeEstimates = $state(untrack(() => timeEstimates.length > 0));
-  const estimateMap = $state<Record<string, EstimateFields>>(
+  const estimateMap = $state(
     untrack(() => {
       const map: Record<string, EstimateFields> = {};
       for (const intv of ESTIMATE_INTERVALS) {
@@ -149,13 +149,15 @@
   });
 
   // Schedule preview toggle (only sends values when active)
-  let showPreview = $state<boolean>(false);
+  let showPreview: boolean = $state(false);
 
   $effect(() => {
+    /* eslint-disable @typescript-eslint/no-unnecessary-condition -- showPreview is mutated via template bind:checked, ESLint cannot track Svelte template mutations */
     onschedulepreview?.(
       showPreview ? baseWeekday : undefined,
       showPreview ? baseRepeatEvery : undefined,
     );
+    /* eslint-enable @typescript-eslint/no-unnecessary-condition */
   });
 
   // =========================================================================

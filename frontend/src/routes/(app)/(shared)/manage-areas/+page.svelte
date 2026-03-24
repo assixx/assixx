@@ -37,15 +37,7 @@
   } from './_lib/utils';
 
   import type { PageData } from './$types';
-  import type {
-    Area,
-    AdminUser,
-    Department,
-    Hall,
-    StatusFilter,
-    AreaType,
-    FormIsActiveStatus,
-  } from './_lib/types';
+  import type { StatusFilter, AreaType, FormIsActiveStatus } from './_lib/types';
 
   // =============================================================================
   // SSR DATA - Level 3: $derived from props (single source of truth)
@@ -54,10 +46,10 @@
   const { data }: { data: PageData } = $props();
 
   // SSR data via $derived - updates when invalidateAll() is called
-  const areas = $derived<Area[]>(data.areas);
-  const areaLeads = $derived<AdminUser[]>(data.areaLeads);
-  const allDepartments = $derived<Department[]>(data.departments);
-  const allHalls = $derived<Hall[]>(data.halls);
+  const areas = $derived(data.areas);
+  const areaLeads = $derived(data.areaLeads);
+  const allDepartments = $derived(data.departments);
+  const allHalls = $derived(data.halls);
 
   // Hierarchy labels from layout data inheritance (A6)
   const labels = $derived(data.hierarchyLabels);

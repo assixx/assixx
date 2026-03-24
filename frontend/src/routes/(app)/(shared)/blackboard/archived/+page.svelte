@@ -27,7 +27,7 @@
       DEFAULT_HIERARCHY_LABELS,
   );
 
-  const permissionDenied = $derived<boolean>(data.permissionDenied);
+  const permissionDenied = $derived(data.permissionDenied);
 
   const entries = $derived(data.entries);
   const error = $derived(data.error);

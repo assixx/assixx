@@ -53,7 +53,7 @@
 
   const { data }: { data: PageData } = $props();
 
-  const permissionDenied = $derived<boolean>(data.permissionDenied);
+  const permissionDenied = $derived(data.permissionDenied);
 
   const workOrder = $derived(data.workOrder);
   const comments = $derived(data.comments);

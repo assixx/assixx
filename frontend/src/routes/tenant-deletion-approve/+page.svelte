@@ -20,21 +20,12 @@
   // TYPES
   // =============================================================================
 
-  interface DeletionStatusData {
-    queueId: number;
-    tenantId: number;
-    status: string;
-    requestedBy: number;
-    requestedByName?: string;
-    canApprove: boolean;
-  }
-
   // =============================================================================
   // SSR DATA (via $derived - single source of truth)
   // =============================================================================
 
-  const queueId = $derived<number | null>(data.queueId ?? null);
-  const queueData = $derived<DeletionStatusData | null>(data.queueData ?? null);
+  const queueId = $derived(data.queueId ?? null);
+  const queueData = $derived(data.queueData ?? null);
 
   // =============================================================================
   // UI STATE (client-side only)
@@ -45,7 +36,7 @@
   let success = $state(false);
 
   // Initialize from SSR error (intentionally capturing initial value, not tracking)
-  let errorMessage = $state<string | null>(untrack(() => data.error));
+  let errorMessage = $state(untrack(() => data.error));
 
   // Form inputs
   let confirmationInput = $state('');

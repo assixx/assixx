@@ -54,7 +54,6 @@
     isImageAttachment,
   } from './_lib/utils';
 
-  import type { HierarchyLabels } from '$lib/types/hierarchy-labels';
   import type { PageData } from './$types';
   import type { Attachment, KvpStatus } from './_lib/types';
   import type { EligibleUser } from '../work-orders/_lib/types';
@@ -74,7 +73,7 @@
   const permissionDenied = $derived(data.permissionDenied);
 
   // Hierarchy labels from layout data inheritance
-  const labels = $derived<HierarchyLabels>(data.hierarchyLabels);
+  const labels = $derived(data.hierarchyLabels);
 
   // Derived from SSR data (server guarantees non-null values)
   const suggestion = $derived(data.suggestion);

@@ -67,7 +67,7 @@
 
   // Intentional one-time clone: user edits this mutable copy, SSR data must NOT reset it
   // svelte-ignore state_referenced_locally
-  const categories = $state<PermissionCategory[]>(structuredClone(permissionData));
+  const categories = $state(structuredClone(permissionData));
 
   let isSaving = $state(false);
 

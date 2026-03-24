@@ -47,9 +47,9 @@
 
   // Form state
   let executionDate = $state(new Date().toISOString().slice(0, 10));
-  let noIssuesFound = $state<boolean>(true);
-  let actualDurationMinutes = $state<string>('');
-  let actualStaffCount = $state<string>('');
+  let noIssuesFound = $state(true);
+  let actualDurationMinutes = $state('');
+  let actualStaffCount = $state('');
   let documentation = $state('');
   let submitting = $state(false);
   let error = $state<string | null>(null);
@@ -68,7 +68,7 @@
       stagedPhotos: [],
     };
   }
-  let defects = $state<DefectEntry[]>([createEmptyDefect()]);
+  let defects = $state([createEmptyDefect()]);
 
   // Employee search state
   let employeeQuery = $state('');
@@ -130,6 +130,7 @@
 
   // Clear defects + documentation when user checks "no issues" back on
   $effect(() => {
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- noIssuesFound is mutated via template bind:checked, ESLint cannot track Svelte template mutations
     if (noIssuesFound) {
       documentation = '';
       defects = [createEmptyDefect()];

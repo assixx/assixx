@@ -32,7 +32,7 @@
 
   const { data }: { data: PageData } = $props();
 
-  const permissionDenied = $derived<boolean>(data.permissionDenied);
+  const permissionDenied = $derived(data.permissionDenied);
   const myRequests = $derived(data.myRequests);
   const incomingRequests = $derived(data.incomingRequests);
   const balance = $derived(data.balance);

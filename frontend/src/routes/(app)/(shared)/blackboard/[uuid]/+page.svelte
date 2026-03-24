@@ -58,7 +58,7 @@
   const { data }: { data: PageData } = $props();
 
   // Permission check
-  const permissionDenied = $derived<boolean>(data.permissionDenied);
+  const permissionDenied = $derived(data.permissionDenied);
 
   // Hierarchy labels from layout (SSR)
   const labels = $derived(

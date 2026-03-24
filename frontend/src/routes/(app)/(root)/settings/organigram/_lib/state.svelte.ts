@@ -66,8 +66,8 @@ let locked = $state(true);
 let hallOverrides = $state<Record<string, HallOverride>>({});
 let hallConnectionAnchors = $state<Record<string, PerimeterAnchor>>({});
 let canvasBg = $state<string | null>(null);
-let nodeWidth = $state<number>(LAYOUT.NODE_WIDTH);
-let nodeHeight = $state<number>(LAYOUT.NODE_HEIGHT);
+let nodeWidth: number = $state(LAYOUT.NODE_WIDTH);
+let nodeHeight: number = $state(LAYOUT.NODE_HEIGHT);
 
 // --- Getters ---
 

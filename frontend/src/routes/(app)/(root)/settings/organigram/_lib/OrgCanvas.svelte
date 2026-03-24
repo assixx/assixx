@@ -57,7 +57,7 @@
   const hallFontSize = $derived(getFontSize());
   const hallSubFontSize = $derived(Math.max(8, hallFontSize - 2));
 
-  let svgElement = $state<SVGSVGElement>(undefined as unknown as SVGSVGElement);
+  let svgElement = $state(undefined as unknown as SVGSVGElement);
   let isPanning = $state(false);
   let panStartX = $state(0);
   let panStartY = $state(0);

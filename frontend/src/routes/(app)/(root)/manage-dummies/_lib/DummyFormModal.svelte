@@ -19,7 +19,7 @@
 
   const { show, mode, dummy, teams, submitting, onclose, onsave }: Props = $props();
 
-  let formData = $state<DummyFormData>({ ...FORM_DEFAULTS });
+  let formData = $state({ ...FORM_DEFAULTS });
   let errors = $state<ValidationErrors>({});
   let showPassword = $state(false);
   let strengthResult = $state<PasswordStrengthResult | null>(null);

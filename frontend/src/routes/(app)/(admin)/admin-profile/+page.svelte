@@ -34,7 +34,7 @@
   } from './_lib/utils';
 
   import type { PageData } from './$types';
-  import type { AdminProfile, PasswordStrengthResult } from './_lib/types';
+  import type { PasswordStrengthResult } from './_lib/types';
 
   // =============================================================================
   // SSR DATA - Level 3: $derived from props (single source of truth)
@@ -43,11 +43,11 @@
   const { data }: { data: PageData } = $props();
 
   // SSR data via $derived - updates when invalidateAll() is called
-  const user = $derived<AdminProfile | null>(data.profile ?? null);
+  const user = $derived(data.profile ?? null);
   const hierarchyLabels = $derived(data.hierarchyLabels);
 
   // Tenant company name from SSR (from tenant_id, not user profile)
-  const tenantCompanyName = $derived<string | null>(data.tenantCompanyName ?? null);
+  const tenantCompanyName = $derived(data.tenantCompanyName ?? null);
 
   // Initialize form values from SSR data
   $effect(() => {

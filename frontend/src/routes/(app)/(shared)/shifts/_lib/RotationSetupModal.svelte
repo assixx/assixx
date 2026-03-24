@@ -56,7 +56,7 @@
   // =============================================================================
 
   let patternDropdownOpen = $state(false);
-  let selectedPattern = $state<string>('');
+  let selectedPattern = $state('');
   let patternLabel = $state('Muster wählen...');
 
   let assignments = $state<{ F: number[]; S: number[]; N: number[] }>({

@@ -91,9 +91,7 @@
 
   const stats = $derived(data.stats);
   const approvals = $derived(data.approvals);
-  const items = $derived<ApprovalItem[]>(
-    'items' in approvals ? (approvals.items as ApprovalItem[]) : [],
-  );
+  const items = $derived('items' in approvals ? (approvals.items as ApprovalItem[]) : []);
 
   /** Client-side filtering (SSR already filtered, this is for quick toggling) */
   const filteredItems = $derived(

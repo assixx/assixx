@@ -33,8 +33,8 @@ function createNotesState() {
 }
 
 function createCoreShiftState() {
-  let weeklyShifts = $state<WeeklyShiftsMap>(new Map());
-  let shiftDetails = $state<Map<string, ShiftDetailData>>(new Map());
+  let weeklyShifts = $state(new Map<string, Map<string, number[]>>());
+  let shiftDetails = $state(new Map<string, ShiftDetailData>());
 
   return {
     get weeklyShifts() {
@@ -53,8 +53,8 @@ function createCoreShiftState() {
       shiftDetails = details;
     },
     clear: () => {
-      weeklyShifts = new Map();
-      shiftDetails = new Map();
+      weeklyShifts = new Map<string, Map<string, number[]>>();
+      shiftDetails = new Map<string, ShiftDetailData>();
     },
   };
 }

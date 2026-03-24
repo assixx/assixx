@@ -36,7 +36,7 @@
   } from './_lib/utils';
 
   import type { PageData } from './$types';
-  import type { QuestionType, Survey, SurveyTemplate, Department, Team, Area } from './_lib/types';
+  import type { QuestionType } from './_lib/types';
 
   // =============================================================================
   // SSR DATA - Level 3: $derived from props (single source of truth)
@@ -51,11 +51,11 @@
   const badgeMap = $derived(createAssignmentBadgeMap(labels));
 
   // SSR data as derived - updates automatically when invalidateAll() is called
-  const surveys = $derived<Survey[]>(data.surveys);
-  const templates = $derived<SurveyTemplate[]>(data.templates);
-  const departments = $derived<Department[]>(data.departments);
-  const teams = $derived<Team[]>(data.teams);
-  const areas = $derived<Area[]>(data.areas);
+  const surveys = $derived(data.surveys);
+  const templates = $derived(data.templates);
+  const departments = $derived(data.departments);
+  const teams = $derived(data.teams);
+  const areas = $derived(data.areas);
 
   // Permission-filtered org data for the assignment form
   const filteredOrgData = $derived(

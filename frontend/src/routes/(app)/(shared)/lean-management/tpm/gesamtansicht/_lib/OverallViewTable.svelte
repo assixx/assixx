@@ -60,10 +60,10 @@
   let loading = $state(true);
   let plans = $state<TpmPlan[]>([]);
   let slots = $state<ProjectedSlot[]>([]);
-  let estimatesByPlan = $state<Map<string, TpmTimeEstimate[]>>(new Map());
+  let estimatesByPlan = $state(new Map<string, TpmTimeEstimate[]>());
   let intervalColorEntries = $state<IntervalColorConfigEntry[]>([]);
   let assignments = $state<TpmShiftAssignment[]>([]);
-  let zoomLevel = $state<number>(ZOOM_CONFIG.DEFAULT);
+  let zoomLevel: number = $state(ZOOM_CONFIG.DEFAULT);
 
   // =========================================================================
   // DERIVED

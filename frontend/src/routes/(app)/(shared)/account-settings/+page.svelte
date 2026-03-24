@@ -26,7 +26,7 @@
   import { formatDate, getStatusLabel, showToast } from './_lib/utils';
 
   import type { PageData } from './$types';
-  import type { DeletionStatusData, ShiftTimeData } from './_lib/types';
+  import type { ShiftTimeData } from './_lib/types';
 
   // =============================================================================
   // SSR DATA - Level 3: $derived from props (single source of truth)
@@ -35,10 +35,10 @@
   const { data }: { data: PageData } = $props();
 
   // SSR data via $derived - updates when invalidateAll() is called
-  const pendingDeletion = $derived<DeletionStatusData | null>(data.pendingDeletion ?? null);
+  const pendingDeletion = $derived(data.pendingDeletion ?? null);
   const hasPendingDeletion = $derived(pendingDeletion !== null);
-  const shiftPlanningEnabled = $derived<boolean>(data.shiftPlanningEnabled);
-  const ssrShiftTimes = $derived<ShiftTimeData[]>(data.shiftTimes);
+  const shiftPlanningEnabled = $derived(data.shiftPlanningEnabled);
+  const ssrShiftTimes = $derived(data.shiftTimes);
 
   // =============================================================================
   // UI STATE - Client-side only

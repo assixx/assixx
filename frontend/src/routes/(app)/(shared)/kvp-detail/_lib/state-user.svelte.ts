@@ -26,7 +26,7 @@ function resolveRole(user: User): string {
 /** Creates user-related state (currentUser, effectiveRole, canManage) */
 export function createUserState() {
   let currentUser = $state<User | null>(null);
-  let effectiveRole = $state<string>('employee');
+  let effectiveRole = $state('employee');
   let isTeamLead = $state(false);
 
   const isAdmin = $derived(effectiveRole === 'admin' || effectiveRole === 'root');

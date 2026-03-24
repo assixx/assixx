@@ -41,7 +41,6 @@
     filterMenuByAddons,
     filterMenuByScope,
     getMenuItemsForRole,
-    type NavItem,
   } from './_lib/navigation-config';
   import RoleSwitchBanner from './_lib/RoleSwitchBanner.svelte';
 
@@ -207,7 +206,7 @@
   // Navigation menu items - filtered by access level and tenant addon activation
   const hasFullAccess = $derived(data.user?.role === 'root' || Boolean(data.user?.hasFullAccess));
   const activeAddonsSet = $derived(new Set(data.activeAddons));
-  const menuItems = $derived<NavItem[]>(
+  const menuItems = $derived(
     filterMenuByAddons(
       filterMenuByScope(
         filterMenuByAccess(getMenuItemsForRole(currentRole, hierarchyLabels), hasFullAccess),

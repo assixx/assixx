@@ -63,7 +63,7 @@
   const areas = $derived(data.areas);
   const users = $derived(data.users);
   const currentUser = $derived(data.currentUser);
-  const permissionDenied = $derived<boolean>(data.permissionDenied);
+  const permissionDenied = $derived(data.permissionDenied);
 
   // ==========================================================================
   // UI STATE (local only)

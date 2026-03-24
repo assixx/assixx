@@ -39,7 +39,7 @@
   } from './_lib/utils';
 
   import type { PageData } from './$types';
-  import type { EmployeeProfile, PasswordStrengthResult } from './_lib/types';
+  import type { PasswordStrengthResult } from './_lib/types';
 
   // =============================================================================
   // SSR DATA - Level 3: $derived from props (single source of truth)
@@ -48,7 +48,7 @@
   const { data }: { data: PageData } = $props();
 
   // SSR data via $derived - updates when invalidateAll() is called
-  const user = $derived<EmployeeProfile | null>(data.profile ?? null);
+  const user = $derived(data.profile ?? null);
   const hierarchyLabels = $derived(data.hierarchyLabels);
 
   // Initialize form values from SSR data

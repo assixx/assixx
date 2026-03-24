@@ -46,13 +46,7 @@
   // Extracted Components
 
   import type { PageData } from './$types';
-  import type {
-    Employee,
-    Team,
-    StatusFilter,
-    FormIsActiveStatus,
-    AvailabilityStatus,
-  } from './_lib/types';
+  import type { StatusFilter, FormIsActiveStatus, AvailabilityStatus } from './_lib/types';
 
   // =============================================================================
   // SSR DATA - Level 3: $derived from props (single source of truth)
@@ -61,9 +55,9 @@
   const { data }: { data: PageData } = $props();
 
   // SSR data via $derived - updates when invalidateAll() is called
-  const allEmployees = $derived<Employee[]>(data.employees);
-  const allTeams = $derived<Team[]>(data.teams);
-  const positionOptions = $derived<string[]>(data.positionOptions);
+  const allEmployees = $derived(data.employees);
+  const allTeams = $derived(data.teams);
+  const positionOptions = $derived(data.positionOptions);
 
   // Hierarchy labels (propagated from layout)
   const labels = $derived(data.hierarchyLabels);

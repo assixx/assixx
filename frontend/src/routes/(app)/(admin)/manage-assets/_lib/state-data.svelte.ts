@@ -15,7 +15,7 @@ export function createDataState() {
   let allDepartments = $state<Department[]>([]);
   let allAreas = $state<Area[]>([]);
   let allTeams = $state<Team[]>([]);
-  let labels = $state<HierarchyLabels>(DEFAULT_HIERARCHY_LABELS);
+  let labels = $state(DEFAULT_HIERARCHY_LABELS);
 
   return {
     get allAssets() {
