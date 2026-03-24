@@ -249,8 +249,8 @@ export class UsersService {
         `INSERT INTO users (
           tenant_id, email, password, username, first_name, last_name, role,
           position, phone, address, employee_number, date_of_birth,
-          is_active, has_full_access, uuid, uuid_created_at, created_at, updated_at
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, NOW(), NOW(), NOW())
+          is_active, has_full_access, notes, uuid, uuid_created_at, created_at, updated_at
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, NOW(), NOW(), NOW())
         RETURNING id`,
         [
           tenantId,
@@ -267,6 +267,7 @@ export class UsersService {
           userData.dateOfBirth ?? null,
           1,
           hasFullAccess === true ? 1 : 0,
+          userData.notes ?? null,
           userUuid,
         ],
       );
@@ -660,7 +661,7 @@ export class UsersService {
       `SELECT id, uuid, tenant_id, email, role, username, first_name, last_name,
               is_active, last_login, created_at, updated_at,
               phone, address, position, employee_number, profile_picture,
-              emergency_contact, date_of_birth, has_full_access
+              emergency_contact, date_of_birth, has_full_access, notes
        FROM users
        WHERE ${whereClause}
        ORDER BY ${sortBy} ${sortOrder}

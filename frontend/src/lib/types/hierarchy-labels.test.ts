@@ -76,60 +76,93 @@ describe('isLeadPosition', () => {
 // resolvePositionDisplay
 // =============================================================================
 
-describe('resolvePositionDisplay', () => {
-  describe('with default labels', () => {
-    it('should resolve area_lead to Bereiche-Leiter', () => {
-      expect(resolvePositionDisplay('area_lead', DEFAULT_HIERARCHY_LABELS)).toBe('Bereiche-Leiter');
-    });
-
-    it('should resolve department_lead to Abteilungen-Leiter', () => {
-      expect(resolvePositionDisplay('department_lead', DEFAULT_HIERARCHY_LABELS)).toBe(
-        'Abteilungen-Leiter',
-      );
-    });
-
-    it('should resolve team_lead to Teams-Leiter', () => {
-      expect(resolvePositionDisplay('team_lead', DEFAULT_HIERARCHY_LABELS)).toBe('Teams-Leiter');
-    });
+describe('resolvePositionDisplay — default labels', () => {
+  it('should resolve area_lead using prefix', () => {
+    expect(resolvePositionDisplay('area_lead', DEFAULT_HIERARCHY_LABELS)).toBe('Bereichsleiter');
   });
 
-  describe('with custom labels (ADR-034 propagation)', () => {
-    const customLabels: HierarchyLabels = {
-      hall: 'Gebäude',
-      area: 'Hallen',
-      department: 'Segmente',
-      team: 'Crews',
-      asset: 'Maschinen',
-    };
-
-    it('should resolve area_lead using custom area label', () => {
-      expect(resolvePositionDisplay('area_lead', customLabels)).toBe('Hallen-Leiter');
-    });
-
-    it('should resolve department_lead using custom department label', () => {
-      expect(resolvePositionDisplay('department_lead', customLabels)).toBe('Segmente-Leiter');
-    });
-
-    it('should resolve team_lead using custom team label', () => {
-      expect(resolvePositionDisplay('team_lead', customLabels)).toBe('Crews-Leiter');
-    });
+  it('should resolve area_deputy_lead using prefix', () => {
+    expect(resolvePositionDisplay('area_deputy_lead', DEFAULT_HIERARCHY_LABELS)).toBe(
+      'Stellv. Bereichsleiter',
+    );
   });
 
-  describe('pass-through for non-lead positions', () => {
-    it('should return regular positions unchanged', () => {
-      expect(resolvePositionDisplay('Personalleiter', DEFAULT_HIERARCHY_LABELS)).toBe(
-        'Personalleiter',
-      );
-    });
+  it('should resolve department_lead using prefix', () => {
+    expect(resolvePositionDisplay('department_lead', DEFAULT_HIERARCHY_LABELS)).toBe(
+      'Abteilungsleiter',
+    );
+  });
 
-    it('should return empty string unchanged', () => {
-      expect(resolvePositionDisplay('', DEFAULT_HIERARCHY_LABELS)).toBe('');
-    });
+  it('should resolve department_deputy_lead using prefix', () => {
+    expect(resolvePositionDisplay('department_deputy_lead', DEFAULT_HIERARCHY_LABELS)).toBe(
+      'Stellv. Abteilungsleiter',
+    );
+  });
 
-    it('should return unknown positions unchanged', () => {
-      expect(resolvePositionDisplay('CustomPosition', DEFAULT_HIERARCHY_LABELS)).toBe(
-        'CustomPosition',
-      );
-    });
+  it('should resolve team_lead using prefix', () => {
+    expect(resolvePositionDisplay('team_lead', DEFAULT_HIERARCHY_LABELS)).toBe('Teamleiter');
+  });
+
+  it('should resolve team_deputy_lead using prefix', () => {
+    expect(resolvePositionDisplay('team_deputy_lead', DEFAULT_HIERARCHY_LABELS)).toBe(
+      'Stellv. Teamleiter',
+    );
+  });
+});
+
+describe('resolvePositionDisplay — custom labels (ADR-034)', () => {
+  const customLabels: HierarchyLabels = {
+    hall: 'Gebäude',
+    area: 'Hallen',
+    areaLeadPrefix: 'Hallen',
+    department: 'Segmente',
+    departmentLeadPrefix: 'Segment',
+    team: 'Crews',
+    teamLeadPrefix: 'Crew',
+    asset: 'Maschinen',
+  };
+
+  it('should resolve area_lead using custom prefix', () => {
+    expect(resolvePositionDisplay('area_lead', customLabels)).toBe('Hallenleiter');
+  });
+
+  it('should resolve area_deputy_lead using custom prefix', () => {
+    expect(resolvePositionDisplay('area_deputy_lead', customLabels)).toBe('Stellv. Hallenleiter');
+  });
+
+  it('should resolve department_lead using custom prefix', () => {
+    expect(resolvePositionDisplay('department_lead', customLabels)).toBe('Segmentleiter');
+  });
+
+  it('should resolve department_deputy_lead using custom prefix', () => {
+    expect(resolvePositionDisplay('department_deputy_lead', customLabels)).toBe(
+      'Stellv. Segmentleiter',
+    );
+  });
+
+  it('should resolve team_lead using custom prefix', () => {
+    expect(resolvePositionDisplay('team_lead', customLabels)).toBe('Crewleiter');
+  });
+
+  it('should resolve team_deputy_lead using custom prefix', () => {
+    expect(resolvePositionDisplay('team_deputy_lead', customLabels)).toBe('Stellv. Crewleiter');
+  });
+});
+
+describe('resolvePositionDisplay — pass-through', () => {
+  it('should return regular positions unchanged', () => {
+    expect(resolvePositionDisplay('Personalleiter', DEFAULT_HIERARCHY_LABELS)).toBe(
+      'Personalleiter',
+    );
+  });
+
+  it('should return empty string unchanged', () => {
+    expect(resolvePositionDisplay('', DEFAULT_HIERARCHY_LABELS)).toBe('');
+  });
+
+  it('should return unknown positions unchanged', () => {
+    expect(resolvePositionDisplay('CustomPosition', DEFAULT_HIERARCHY_LABELS)).toBe(
+      'CustomPosition',
+    );
   });
 });

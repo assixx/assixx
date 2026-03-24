@@ -7,8 +7,11 @@ import type { HierarchyLabels, OrgEntityType } from './types.js';
 export const DEFAULT_HIERARCHY_LABELS: HierarchyLabels = {
   hall: 'Hallen',
   area: 'Bereiche',
+  areaLeadPrefix: 'Bereichs',
   department: 'Abteilungen',
+  departmentLeadPrefix: 'Abteilungs',
   team: 'Teams',
+  teamLeadPrefix: 'Team',
   asset: 'Anlagen',
 };
 

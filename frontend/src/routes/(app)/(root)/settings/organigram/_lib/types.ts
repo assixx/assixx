@@ -9,8 +9,11 @@ export type OrgEntityType = 'area' | 'department' | 'team' | 'asset';
 export interface HierarchyLabels {
   hall: string;
   area: string;
+  areaLeadPrefix: string;
   department: string;
+  departmentLeadPrefix: string;
   team: string;
+  teamLeadPrefix: string;
   asset: string;
 }
 

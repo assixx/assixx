@@ -286,6 +286,7 @@ interface EmployeeFormData {
   position: string;
   phone: string;
   dateOfBirth: string;
+  notes: string;
   isActive: FormIsActiveStatus;
   teamIds: number[];
   availabilityStatus: AvailabilityStatus;
@@ -307,6 +308,7 @@ export function populateFormFromEmployee(employee: Employee): EmployeeFormData {
     position: employee.position ?? '',
     phone: employee.phone ?? '',
     dateOfBirth: employee.dateOfBirth ?? '',
+    notes: employee.notes ?? '',
     isActive: toFormStatus(employee.isActive),
     teamIds: extractTeamIds(employee),
     availabilityStatus: employee.availabilityStatus ?? 'available',
@@ -328,6 +330,7 @@ export function getDefaultFormValues(): {
   position: string;
   phone: string;
   dateOfBirth: string;
+  notes: string;
   isActive: FormIsActiveStatus;
   teamIds: number[];
   availabilityStatus: AvailabilityStatus;
@@ -346,6 +349,7 @@ export function getDefaultFormValues(): {
     position: '',
     phone: '',
     dateOfBirth: '',
+    notes: '',
     isActive: 1,
     teamIds: [],
     availabilityStatus: 'available',

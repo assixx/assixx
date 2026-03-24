@@ -444,8 +444,11 @@ describe('getMenuItemsForRole', () => {
     const customLabels = {
       hall: 'Gebäude',
       area: 'Werke',
+      areaLeadPrefix: 'Werks',
       department: 'Segmente',
+      departmentLeadPrefix: 'Segment',
       team: 'Crews',
+      teamLeadPrefix: 'Crew',
       asset: 'Maschinen',
     };
     const items = getMenuItemsForRole('root', customLabels);

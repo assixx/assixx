@@ -2,7 +2,11 @@
 // MANAGE ROOT - CONSTANTS
 // =============================================================================
 
-import { DEFAULT_HIERARCHY_LABELS, type HierarchyLabels } from '$lib/types/hierarchy-labels';
+import {
+  DEFAULT_HIERARCHY_LABELS,
+  type HierarchyLabels,
+  type PositionOption,
+} from '$lib/types/hierarchy-labels';
 
 import type { FormIsActiveStatus } from './types';
 
@@ -20,13 +24,13 @@ export {
 /**
  * Position options for root users
  */
-export const POSITION_OPTIONS = [
-  'CEO',
-  'CTO',
-  'CFO',
-  'Geschäftsführer',
-  'IT-Administrator',
-  'Systemadministrator',
+export const POSITION_OPTIONS: readonly PositionOption[] = [
+  { name: 'CEO', roleCategory: 'root' },
+  { name: 'CTO', roleCategory: 'root' },
+  { name: 'CFO', roleCategory: 'root' },
+  { name: 'Geschäftsführer', roleCategory: 'root' },
+  { name: 'IT-Administrator', roleCategory: 'root' },
+  { name: 'Systemadministrator', roleCategory: 'root' },
 ] as const;
 
 /**
@@ -95,7 +99,8 @@ const BASE_MESSAGES = {
   // Table headers - Availability
   TH_AVAILABILITY: 'Verfügbarkeit',
   TH_PLANNED: 'Geplant',
-  TH_NOTES: 'Notizen',
+  TH_ADDITIONAL_INFO: 'Zusätzliche Infos',
+  TH_ABSENCE_NOTES: 'Abwesenheitsnotiz',
 
   // API errors
   ERROR_LOADING: 'Ein Fehler ist aufgetreten',

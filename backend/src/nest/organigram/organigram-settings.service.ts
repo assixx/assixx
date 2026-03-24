@@ -194,8 +194,12 @@ export class OrganigramSettingsService {
     return {
       hall: orgHierarchy.levels.hall ?? DEFAULT_HIERARCHY_LABELS.hall,
       area: orgHierarchy.levels.area ?? DEFAULT_HIERARCHY_LABELS.area,
+      areaLeadPrefix: orgHierarchy.levels.areaLeadPrefix ?? DEFAULT_HIERARCHY_LABELS.areaLeadPrefix,
       department: orgHierarchy.levels.department ?? DEFAULT_HIERARCHY_LABELS.department,
+      departmentLeadPrefix:
+        orgHierarchy.levels.departmentLeadPrefix ?? DEFAULT_HIERARCHY_LABELS.departmentLeadPrefix,
       team: orgHierarchy.levels.team ?? DEFAULT_HIERARCHY_LABELS.team,
+      teamLeadPrefix: orgHierarchy.levels.teamLeadPrefix ?? DEFAULT_HIERARCHY_LABELS.teamLeadPrefix,
       asset: orgHierarchy.levels.asset ?? DEFAULT_HIERARCHY_LABELS.asset,
     };
   }
@@ -209,8 +213,11 @@ export class OrganigramSettingsService {
     const mergedLabels: HierarchyLabels = {
       hall: dto.levels.hall ?? currentLabels.hall,
       area: dto.levels.area ?? currentLabels.area,
+      areaLeadPrefix: dto.levels.areaLeadPrefix ?? currentLabels.areaLeadPrefix,
       department: dto.levels.department ?? currentLabels.department,
+      departmentLeadPrefix: dto.levels.departmentLeadPrefix ?? currentLabels.departmentLeadPrefix,
       team: dto.levels.team ?? currentLabels.team,
+      teamLeadPrefix: dto.levels.teamLeadPrefix ?? currentLabels.teamLeadPrefix,
       asset: dto.levels.asset ?? currentLabels.asset,
     };
 

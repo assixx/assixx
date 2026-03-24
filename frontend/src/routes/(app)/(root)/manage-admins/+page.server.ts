@@ -72,6 +72,13 @@ export const load: PageServerLoad = async ({ cookies, fetch }) => {
     areas,
     departments,
     positionOptions:
-      Array.isArray(positionsData) ? positionsData.map((p: { name: string }) => p.name) : [],
+      Array.isArray(positionsData) ?
+        positionsData
+          .filter((p: { roleCategory: string }) => p.roleCategory !== 'root')
+          .map((p: { name: string; roleCategory: string }) => ({
+            name: p.name,
+            roleCategory: p.roleCategory,
+          }))
+      : [],
   };
 };

@@ -10,6 +10,7 @@
     LEAD_POSITION_KEYS,
     resolvePositionDisplay,
     type HierarchyLabels,
+    type PositionOption,
   } from '$lib/types/hierarchy-labels';
 
   import { POSITION_OPTIONS, MESSAGES, type EmployeeMessages } from './constants';
@@ -39,6 +40,7 @@
     formPosition: string;
     formPhone: string;
     formDateOfBirth: string;
+    formNotes: string;
     formIsActive: FormIsActiveStatus;
     formTeamIds: number[];
     emailError: boolean;
@@ -48,7 +50,7 @@
     onsubmit: (e: Event) => void;
     onvalidateemails: () => void;
     onvalidatepasswords: () => void;
-    positionOptions?: string[];
+    positionOptions?: PositionOption[];
     labels?: HierarchyLabels;
     editUserId?: number | null;
     onupgrade?: () => void;
@@ -56,7 +58,7 @@
 
   /* eslint-disable prefer-const, @typescript-eslint/no-useless-default-assignment -- Svelte $bindable() requires let and is not a useless default */
   // prettier-ignore
-  let { show, isEditMode, modalTitle, allTeams, submitting, messages: msg = MESSAGES, positionOptions, labels: lbl = DEFAULT_HIERARCHY_LABELS, editUserId, formFirstName = $bindable(), formLastName = $bindable(), formEmail = $bindable(), formEmailConfirm = $bindable(), formPassword = $bindable(), formPasswordConfirm = $bindable(), formEmployeeNumber = $bindable(), formPosition = $bindable(), formPhone = $bindable(), formDateOfBirth = $bindable(), formIsActive = $bindable(), formTeamIds = $bindable(), emailError = $bindable(), passwordError = $bindable(), onclose, onsubmit, onvalidateemails, onvalidatepasswords, onupgrade }: Props = $props();
+  let { show, isEditMode, modalTitle, allTeams, submitting, messages: msg = MESSAGES, positionOptions, labels: lbl = DEFAULT_HIERARCHY_LABELS, editUserId, formFirstName = $bindable(), formLastName = $bindable(), formEmail = $bindable(), formEmailConfirm = $bindable(), formPassword = $bindable(), formPasswordConfirm = $bindable(), formEmployeeNumber = $bindable(), formPosition = $bindable(), formPhone = $bindable(), formDateOfBirth = $bindable(), formNotes = $bindable(), formIsActive = $bindable(), formTeamIds = $bindable(), emailError = $bindable(), passwordError = $bindable(), onclose, onsubmit, onvalidateemails, onvalidatepasswords, onupgrade }: Props = $props();
   /* eslint-enable prefer-const, @typescript-eslint/no-useless-default-assignment */
 
   // =============================================================================
@@ -74,16 +76,22 @@
   ];
 
   /** System positions first (sorted by hierarchy), then custom */
-  const effectivePositions = $derived.by(() => {
-    const raw =
+  const effectivePositions = $derived.by((): PositionOption[] => {
+    const raw: readonly PositionOption[] =
       positionOptions !== undefined && positionOptions.length > 0 ?
         positionOptions
       : POSITION_OPTIONS;
-    const unique = [...new Set(raw)];
+    const unique = raw.filter(
+      (p: PositionOption, i: number, arr: readonly PositionOption[]) =>
+        arr.findIndex((x: PositionOption) => x.name === p.name) === i,
+    );
     const system = unique
-      .filter((p: string) => isLeadPosition(p))
-      .sort((a: string, b: string) => LEAD_ORDER.indexOf(a) - LEAD_ORDER.indexOf(b));
-    const custom = unique.filter((p: string) => !isLeadPosition(p));
+      .filter((p: PositionOption) => isLeadPosition(p.name))
+      .sort(
+        (a: PositionOption, b: PositionOption) =>
+          LEAD_ORDER.indexOf(a.name) - LEAD_ORDER.indexOf(b.name),
+      );
+    const custom = unique.filter((p: PositionOption) => !isLeadPosition(p.name));
     return [...system, ...custom];
   });
 
@@ -463,16 +471,16 @@
               class="dropdown__menu"
               class:active={positionDropdownOpen}
             >
-              {#each effectivePositions as position (position)}
+              {#each effectivePositions as pos (pos.name)}
                 <!-- svelte-ignore a11y_click_events_have_key_events -->
                 <!-- svelte-ignore a11y_no_static_element_interactions -->
                 <div
                   class="dropdown__option"
                   onclick={() => {
-                    selectPosition(position);
+                    selectPosition(pos.name);
                   }}
                 >
-                  {resolvePositionDisplay(position, lbl)}
+                  {resolvePositionDisplay(pos.name, lbl)}
                 </div>
               {/each}
             </div>
@@ -494,6 +502,7 @@
             <UserPositionChips
               userId={editUserId}
               roleFilter="employee"
+              hierarchyLabels={lbl}
             />
           {/if}
         </div>
@@ -523,6 +532,20 @@
             for="employee-dateOfBirth">Geburtsdatum</label
           >
           <AppDatePicker bind:value={formDateOfBirth} />
+        </div>
+
+        <div class="form-field">
+          <label
+            class="form-field__label"
+            for="employee-notes">Zusätzliche Infos</label
+          >
+          <textarea
+            id="employee-notes"
+            name="notes"
+            class="form-field__control"
+            rows="3"
+            bind:value={formNotes}
+          ></textarea>
         </div>
 
         <!-- Team Assignment Section -->

@@ -20,26 +20,29 @@ describe('getPositionDisplay', () => {
   const customLabels: HierarchyLabels = {
     hall: 'Gebäude',
     area: 'Hallen',
+    areaLeadPrefix: 'Hallen',
     department: 'Segmente',
+    departmentLeadPrefix: 'Segment',
     team: 'Crews',
+    teamLeadPrefix: 'Crew',
     asset: 'Maschinen',
   };
 
   it('should resolve area_lead with default labels', () => {
-    expect(getPositionDisplay('area_lead')).toBe('Bereiche-Leiter');
+    expect(getPositionDisplay('area_lead')).toBe('Bereichsleiter');
   });
 
   it('should resolve department_lead with default labels', () => {
-    expect(getPositionDisplay('department_lead')).toBe('Abteilungen-Leiter');
+    expect(getPositionDisplay('department_lead')).toBe('Abteilungsleiter');
   });
 
   it('should resolve team_lead with default labels', () => {
-    expect(getPositionDisplay('team_lead')).toBe('Teams-Leiter');
+    expect(getPositionDisplay('team_lead')).toBe('Teamleiter');
   });
 
   it('should resolve lead keys with custom labels', () => {
-    expect(getPositionDisplay('area_lead', customLabels)).toBe('Hallen-Leiter');
-    expect(getPositionDisplay('department_lead', customLabels)).toBe('Segmente-Leiter');
+    expect(getPositionDisplay('area_lead', customLabels)).toBe('Hallenleiter');
+    expect(getPositionDisplay('department_lead', customLabels)).toBe('Segmentleiter');
   });
 
   it('should fall through to POSITION_DISPLAY_MAP for known non-lead positions', () => {

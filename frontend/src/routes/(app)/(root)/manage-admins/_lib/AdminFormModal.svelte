@@ -5,12 +5,15 @@
     DEFAULT_HIERARCHY_LABELS,
     isLeadPosition,
     LEAD_POSITION_KEYS,
+    ROLE_CATEGORY_LABELS,
+    resolvePositionDisplay,
     type HierarchyLabels,
+    type PositionOption,
   } from '$lib/types/hierarchy-labels';
 
   import AdminOrganizationSection from './AdminOrganizationSection.svelte';
   import { POSITION_OPTIONS, MESSAGES, type AdminMessages } from './constants';
-  import { calculatePasswordStrength, getPositionDisplay } from './utils';
+  import { calculatePasswordStrength } from './utils';
 
   import type { Area, Department, FormIsActiveStatus } from './types';
 
@@ -44,7 +47,7 @@
     onclose: () => void;
     onsubmit: (e: Event) => void;
     onupgrade?: () => void;
-    positionOptions?: string[];
+    positionOptions?: PositionOption[];
     editUserId?: number | null;
     ondowngrade?: () => void;
     labels?: HierarchyLabels;
@@ -68,18 +71,31 @@
     LEAD_POSITION_KEYS.TEAM_DEPUTY,
   ];
 
-  const effectivePositions = $derived.by(() => {
-    const raw =
+  const effectivePositions = $derived.by((): PositionOption[] => {
+    const raw: readonly PositionOption[] =
       positionOptions !== undefined && positionOptions.length > 0 ?
         positionOptions
       : POSITION_OPTIONS;
-    const unique = [...new Set(raw)];
+    const unique = raw.filter(
+      (p: PositionOption, i: number, arr: readonly PositionOption[]) =>
+        arr.findIndex((x: PositionOption) => x.name === p.name) === i,
+    );
     const system = unique
-      .filter((p: string) => isLeadPosition(p))
-      .sort((a: string, b: string) => LEAD_ORDER.indexOf(a) - LEAD_ORDER.indexOf(b));
-    const custom = unique.filter((p: string) => !isLeadPosition(p));
+      .filter((p: PositionOption) => isLeadPosition(p.name))
+      .sort(
+        (a: PositionOption, b: PositionOption) =>
+          LEAD_ORDER.indexOf(a.name) - LEAD_ORDER.indexOf(b.name),
+      );
+    const custom = unique.filter((p: PositionOption) => !isLeadPosition(p.name));
     return [...system, ...custom];
   });
+
+  const roleCategories = ['employee', 'admin'] as const;
+  const grouped = $derived(
+    effectivePositions.some(
+      (p: PositionOption) => p.roleCategory !== effectivePositions[0]?.roleCategory,
+    ),
+  );
 
   let positionDropdownOpen = $state(false);
   let showPassword = $state(false);
@@ -420,27 +436,52 @@
             >
               <span
                 >{formPosition !== '' ?
-                  getPositionDisplay(formPosition, lbl)
+                  resolvePositionDisplay(formPosition, lbl)
                 : 'Bitte wählen...'}</span
               >
               <i class="fas fa-chevron-down"></i>
             </div>
             <div
-              class="dropdown__menu"
+              class="dropdown__menu dropdown__menu--tall"
               class:active={positionDropdownOpen}
             >
-              {#each effectivePositions as position (position)}
-                <!-- svelte-ignore a11y_click_events_have_key_events -->
-                <!-- svelte-ignore a11y_no_static_element_interactions -->
-                <div
-                  class="dropdown__option"
-                  onclick={() => {
-                    selectPosition(position);
-                  }}
-                >
-                  {getPositionDisplay(position, lbl)}
-                </div>
-              {/each}
+              {#if grouped}
+                {#each roleCategories as category (category)}
+                  {@const catPositions = effectivePositions.filter(
+                    (p: PositionOption) => p.roleCategory === category,
+                  )}
+                  {#if catPositions.length > 0}
+                    <div class="dropdown__group-label">
+                      {ROLE_CATEGORY_LABELS[category]}
+                    </div>
+                    {#each catPositions as pos (pos.name)}
+                      <!-- svelte-ignore a11y_click_events_have_key_events -->
+                      <!-- svelte-ignore a11y_no_static_element_interactions -->
+                      <div
+                        class="dropdown__option"
+                        onclick={() => {
+                          selectPosition(pos.name);
+                        }}
+                      >
+                        {resolvePositionDisplay(pos.name, lbl)}
+                      </div>
+                    {/each}
+                  {/if}
+                {/each}
+              {:else}
+                {#each effectivePositions as pos (pos.name)}
+                  <!-- svelte-ignore a11y_click_events_have_key_events -->
+                  <!-- svelte-ignore a11y_no_static_element_interactions -->
+                  <div
+                    class="dropdown__option"
+                    onclick={() => {
+                      selectPosition(pos.name);
+                    }}
+                  >
+                    {resolvePositionDisplay(pos.name, lbl)}
+                  </div>
+                {/each}
+              {/if}
             </div>
           </div>
           <div class="alert alert--info alert--sm mt-2">
@@ -457,7 +498,10 @@
             </div>
           </div>
           {#if isEditMode && editUserId !== undefined && editUserId !== null}
-            <UserPositionChips userId={editUserId} />
+            <UserPositionChips
+              userId={editUserId}
+              hierarchyLabels={lbl}
+            />
           {/if}
         </div>
 

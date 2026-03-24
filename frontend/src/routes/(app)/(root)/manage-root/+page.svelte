@@ -549,7 +549,8 @@
                 <th>Status</th>
                 <th>{messages.TH_AVAILABILITY}</th>
                 <th>{messages.TH_PLANNED}</th>
-                <th>{messages.TH_NOTES}</th>
+                <th>{messages.TH_ADDITIONAL_INFO}</th>
+                <th>{messages.TH_ABSENCE_NOTES}</th>
                 <th>Erstellt am</th>
                 <th>Aktionen</th>
               </tr>
@@ -558,7 +559,8 @@
               {#each filteredUsers as user (user.id)}
                 {@const avBadge = getAvailabilityBadge(user)}
                 {@const planned = getPlannedAvailability(user)}
-                {@const userNotes = getTruncatedNotes(user.availabilityNotes)}
+                {@const additionalInfo = getTruncatedNotes(user.notes)}
+                {@const absenceNotes = getTruncatedNotes(user.availabilityNotes)}
                 <tr>
                   <td>{user.id}</td>
                   <td>
@@ -588,7 +590,8 @@
                     </span>
                   </td>
                   <td>{planned}</td>
-                  <td title={userNotes.title}>{userNotes.text}</td>
+                  <td title={additionalInfo.title}>{additionalInfo.text}</td>
+                  <td title={absenceNotes.title}>{absenceNotes.text}</td>
                   <td>{formatDate(user.createdAt)}</td>
                   <td>
                     <div class="flex gap-2">

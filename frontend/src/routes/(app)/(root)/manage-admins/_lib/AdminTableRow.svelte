@@ -58,7 +58,8 @@
   const teamsBadge = $derived(getTeamsBadge(admin, labels));
   const availabilityBadge = $derived(getAvailabilityBadge(admin));
   const plannedAvailability = $derived(getPlannedAvailability(admin));
-  const notes = $derived(getTruncatedNotes(admin.availabilityNotes));
+  const additionalInfo = $derived(getTruncatedNotes(admin.notes));
+  const absenceNotes = $derived(getTruncatedNotes(admin.availabilityNotes));
 </script>
 
 <tr>
@@ -125,7 +126,8 @@
     </span>
   </td>
   <td>{plannedAvailability}</td>
-  <td title={notes.title}>{notes.text}</td>
+  <td title={additionalInfo.title}>{additionalInfo.text}</td>
+  <td title={absenceNotes.title}>{absenceNotes.text}</td>
   <td>
     {#if isSelf}
       <div class="u-text-center">

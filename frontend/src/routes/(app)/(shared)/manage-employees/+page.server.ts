@@ -29,7 +29,7 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent, url }) => {
       permissionDenied: true as const,
       employees: [] as Employee[],
       teams: [] as Team[],
-      positionOptions: [] as string[],
+      positionOptions: [] as { name: string; roleCategory: string }[],
     };
   }
 
@@ -53,6 +53,11 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent, url }) => {
     employees,
     teams: Array.isArray(teamsData) ? teamsData : [],
     positionOptions:
-      Array.isArray(positionsData) ? positionsData.map((p: { name: string }) => p.name) : [],
+      Array.isArray(positionsData) ?
+        positionsData.map((p: { name: string; roleCategory: string }) => ({
+          name: p.name,
+          roleCategory: p.roleCategory,
+        }))
+      : [],
   };
 };

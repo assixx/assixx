@@ -497,8 +497,11 @@ describe('OrganigramSettingsService', () => {
       const custom = {
         hall: 'Gebäude',
         area: 'Werke',
+        areaLeadPrefix: 'Werks',
         department: 'Einheiten',
+        departmentLeadPrefix: 'Einheits',
         team: 'Gruppen',
+        teamLeadPrefix: 'Gruppen',
         asset: 'Maschinen',
       };
       mockDb.query.mockResolvedValueOnce([
@@ -510,6 +513,25 @@ describe('OrganigramSettingsService', () => {
       const result = await service.getHierarchyLabels(1);
 
       expect(result).toEqual(custom);
+    });
+
+    it('should fill prefix defaults when DB has no prefix fields', async () => {
+      mockDb.query.mockResolvedValueOnce([
+        {
+          settings: {
+            orgHierarchy: {
+              levels: { area: 'Werke', hall: 'H', department: 'D', team: 'T', asset: 'A' },
+            },
+          },
+        },
+      ]);
+
+      const result = await service.getHierarchyLabels(1);
+
+      expect(result.area).toBe('Werke');
+      expect(result.areaLeadPrefix).toBe(DEFAULT_HIERARCHY_LABELS.areaLeadPrefix);
+      expect(result.departmentLeadPrefix).toBe(DEFAULT_HIERARCHY_LABELS.departmentLeadPrefix);
+      expect(result.teamLeadPrefix).toBe(DEFAULT_HIERARCHY_LABELS.teamLeadPrefix);
     });
 
     it('should query with correct tenant_id', async () => {
@@ -628,8 +650,11 @@ describe('OrganigramSettingsService', () => {
           levels: {
             hall: DEFAULT_HIERARCHY_LABELS.hall,
             area: 'Werke',
+            areaLeadPrefix: DEFAULT_HIERARCHY_LABELS.areaLeadPrefix,
             department: DEFAULT_HIERARCHY_LABELS.department,
+            departmentLeadPrefix: DEFAULT_HIERARCHY_LABELS.departmentLeadPrefix,
             team: DEFAULT_HIERARCHY_LABELS.team,
+            teamLeadPrefix: DEFAULT_HIERARCHY_LABELS.teamLeadPrefix,
             asset: DEFAULT_HIERARCHY_LABELS.asset,
           },
         },
@@ -652,8 +677,11 @@ describe('OrganigramSettingsService', () => {
       expect(result).toEqual({
         hall: DEFAULT_HIERARCHY_LABELS.hall,
         area: 'As',
+        areaLeadPrefix: DEFAULT_HIERARCHY_LABELS.areaLeadPrefix,
         department: 'Bs',
+        departmentLeadPrefix: DEFAULT_HIERARCHY_LABELS.departmentLeadPrefix,
         team: 'Cs',
+        teamLeadPrefix: DEFAULT_HIERARCHY_LABELS.teamLeadPrefix,
         asset: 'Ds',
       });
     });

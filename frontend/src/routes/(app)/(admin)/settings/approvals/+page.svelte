@@ -8,6 +8,7 @@
    */
   import SearchResultUser from '$lib/components/SearchResultUser.svelte';
   import { showErrorAlert, showSuccessAlert } from '$lib/stores/toast';
+  import { resolvePositionDisplay } from '$lib/types/hierarchy-labels';
 
   import { createConfig, deleteConfig, fetchConfigs, fetchPositions } from './_lib/api';
   import { APPROVABLE_ADDONS, createApproverTypeOptions, MESSAGES } from './_lib/constants';
@@ -136,10 +137,11 @@
   const isLeadType = $derived(selectedType !== 'user' && selectedType !== 'position');
   const showScopeControls = $derived(isUserType || isPositionType);
 
-  const selectedPositionLabel = $derived(
-    positionOptions.find((p: PositionOption) => p.id === selectedPositionId)?.name ??
-      '— Position wählen —',
-  );
+  const selectedPositionLabel = $derived.by(() => {
+    const name = positionOptions.find((p: PositionOption) => p.id === selectedPositionId)?.name;
+    if (name === undefined) return '— Position wählen —';
+    return resolvePositionDisplay(name, labels);
+  });
 
   const canAdd = $derived(
     selectedAddon !== '' &&
@@ -536,7 +538,7 @@
                         positionDropdownOpen = false;
                       }}
                     >
-                      {pos.name}
+                      {resolvePositionDisplay(pos.name, labels)}
                       {#if pos.isSystem}
                         <span class="badge badge--primary badge--xs ml-2">System</span>
                       {/if}
@@ -978,20 +980,7 @@
     color: var(--color-error);
   }
 
-  :global(.dropdown__menu--tall) {
-    max-height: 300px;
-    overflow-y: auto;
-  }
-
-  :global(.dropdown__group-label) {
-    padding: 0.375rem 0.75rem;
-    font-size: 0.6875rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: var(--color-text-muted);
-    pointer-events: none;
-  }
+  /* dropdown__menu--tall and dropdown__group-label are in design-system/primitives/dropdowns/custom-dropdown.css */
 
   .scope-controls {
     width: 100%;

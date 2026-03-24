@@ -496,7 +496,8 @@
                   <th scope="col">{messages.TH_TEAMS}</th>
                   <th scope="col">{messages.TH_AVAILABILITY}</th>
                   <th scope="col">{messages.TH_PLANNED}</th>
-                  <th scope="col">{messages.TH_NOTES}</th>
+                  <th scope="col">{messages.TH_ADDITIONAL_INFO}</th>
+                  <th scope="col">{messages.TH_ABSENCE_NOTES}</th>
                   <th scope="col">{messages.TH_ACTIONS}</th>
                 </tr>
               </thead>

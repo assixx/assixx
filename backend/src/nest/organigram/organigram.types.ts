@@ -5,8 +5,11 @@ export type OrgEntityType = 'area' | 'department' | 'team' | 'asset';
 export interface HierarchyLabels {
   hall: string;
   area: string;
+  areaLeadPrefix: string;
   department: string;
+  departmentLeadPrefix: string;
   team: string;
+  teamLeadPrefix: string;
   asset: string;
 }
 
@@ -152,7 +155,10 @@ export interface OrgNodeDetail {
 export const DEFAULT_HIERARCHY_LABELS: HierarchyLabels = {
   hall: 'Hallen',
   area: 'Bereiche',
+  areaLeadPrefix: 'Bereichs',
   department: 'Abteilungen',
+  departmentLeadPrefix: 'Abteilungs',
   team: 'Teams',
+  teamLeadPrefix: 'Team',
   asset: 'Anlagen',
 };

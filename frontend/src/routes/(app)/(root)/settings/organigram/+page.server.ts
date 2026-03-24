@@ -15,8 +15,11 @@ const EMPTY_TREE: OrgChartTree = {
   hierarchyLabels: {
     hall: 'Hallen',
     area: 'Bereiche',
+    areaLeadPrefix: 'Bereichs',
     department: 'Abteilungen',
+    departmentLeadPrefix: 'Abteilungs',
     team: 'Teams',
+    teamLeadPrefix: 'Team',
     asset: 'Anlagen',
   },
   viewport: { zoom: 1, panX: 0, panY: 0, fontSize: 13 },

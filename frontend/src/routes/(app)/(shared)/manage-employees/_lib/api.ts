@@ -243,6 +243,7 @@ export function buildEmployeePayload(
     position: string;
     phone: string;
     dateOfBirth: string;
+    notes: string;
     employeeNumber: string;
     isActive: 0 | 1 | 3;
   },
@@ -256,6 +257,7 @@ export function buildEmployeePayload(
     position: toOptional(formData.position),
     phone: toOptional(formData.phone),
     dateOfBirth: toOptional(formData.dateOfBirth),
+    notes: toOptional(formData.notes),
     employeeNumber: formData.employeeNumber !== '' ? formData.employeeNumber : `EMP${Date.now()}`,
     isActive: formData.isActive,
     role: 'employee',

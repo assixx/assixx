@@ -100,6 +100,7 @@ export function buildUpdateFields(
     address: 'address',
     employeeNumber: 'employee_number',
     dateOfBirth: 'date_of_birth',
+    notes: 'notes',
   };
 
   const updates: string[] = ['updated_at = NOW()'];

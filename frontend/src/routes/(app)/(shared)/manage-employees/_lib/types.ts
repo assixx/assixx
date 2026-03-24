@@ -80,6 +80,9 @@ export interface Employee {
   // Full access flag
   hasFullAccess?: boolean | 1 | 0;
 
+  // Additional info
+  notes?: string;
+
   // Availability
   availabilityStatus?: AvailabilityStatus;
   availabilityStart?: string;
@@ -113,6 +116,7 @@ export interface EmployeeFormData {
   position: string;
   phone: string;
   dateOfBirth: string;
+  notes: string;
   isActive: FormIsActiveStatus;
   teamIds: number[];
   availabilityStatus: AvailabilityStatus;
@@ -132,6 +136,7 @@ export interface EmployeePayload {
   position?: string;
   phone?: string;
   dateOfBirth?: string;
+  notes?: string;
   employeeNumber: string;
   isActive: FormIsActiveStatus;
   role: 'employee';

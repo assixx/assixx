@@ -55,7 +55,8 @@
   const departmentsBadge = $derived(getDepartmentsBadge(employee, labels));
   const availabilityBadge = $derived(getAvailabilityBadge(employee));
   const plannedAvailability = $derived(getPlannedAvailability(employee));
-  const notes = $derived(getTruncatedNotes(employee.availabilityNotes));
+  const additionalInfo = $derived(getTruncatedNotes(employee.notes));
+  const absenceNotes = $derived(getTruncatedNotes(employee.availabilityNotes));
 </script>
 
 <tr>
@@ -109,7 +110,8 @@
     </span>
   </td>
   <td>{plannedAvailability}</td>
-  <td title={notes.title}>{notes.text}</td>
+  <td title={additionalInfo.title}>{additionalInfo.text}</td>
+  <td title={absenceNotes.title}>{absenceNotes.text}</td>
   <td>
     {#if isSelf}
       <div class="u-text-center">

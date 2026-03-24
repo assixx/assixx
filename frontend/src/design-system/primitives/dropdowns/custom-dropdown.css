@@ -162,6 +162,29 @@
     z-index: 10;
   }
 
+  /* Tall variant for grouped position lists */
+  .dropdown__menu--tall {
+    max-height: 300px;
+    overflow-y: auto;
+  }
+
+  /* Group label for categorized dropdown items */
+  .dropdown__group-label {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-text-muted);
+    pointer-events: none;
+  }
+
+  .dropdown__group-label:not(:first-child) {
+    margin-top: 0.25rem;
+    border-top: 1px solid var(--color-glass-border);
+    padding-top: 0.5rem;
+  }
+
   /* Auto-scroll when 5+ options — no manual class needed */
   .dropdown__menu:has(> .dropdown__option:nth-child(5)) {
     max-height: 211px;

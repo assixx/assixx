@@ -69,6 +69,7 @@ export const UpdateUserSchema = z.object({
     .max(255, 'Reason must not exceed 255 characters')
     .optional(),
   availabilityNotes: z.string().trim().max(500, 'Notes must not exceed 500 characters').optional(),
+  notes: z.string().trim().max(500, 'Notes must not exceed 500 characters').optional(),
 });
 
 /**

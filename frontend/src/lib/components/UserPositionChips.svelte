@@ -5,6 +5,11 @@
 -->
 <script lang="ts">
   import { showErrorAlert, showSuccessAlert } from '$lib/stores/toast';
+  import {
+    DEFAULT_HIERARCHY_LABELS,
+    resolvePositionDisplay,
+    type HierarchyLabels,
+  } from '$lib/types/hierarchy-labels';
   import { getApiClient } from '$lib/utils/api-client';
 
   interface PositionEntry {
@@ -26,9 +31,10 @@
   interface Props {
     userId: number;
     roleFilter?: 'employee' | 'admin' | 'root';
+    hierarchyLabels?: HierarchyLabels;
   }
 
-  const { userId, roleFilter }: Props = $props();
+  const { userId, roleFilter, hierarchyLabels: hl = DEFAULT_HIERARCHY_LABELS }: Props = $props();
 
   const apiClient = getApiClient();
 
@@ -42,6 +48,19 @@
     catalog.filter(
       (p: PositionEntry) => !assigned.some((a: UserPosition) => a.positionId === p.id),
     ),
+  );
+
+  const ROLE_CATEGORY_LABELS: Record<string, string> = {
+    employee: 'Mitarbeiter',
+    admin: 'Admin',
+    root: 'Root',
+  };
+
+  const roleCategories = ['employee', 'admin', 'root'] as const;
+
+  const grouped = $derived(
+    roleFilter === undefined &&
+      available.some((p: PositionEntry) => p.roleCategory !== available[0]?.roleCategory),
   );
 
   $effect(() => {
@@ -113,7 +132,7 @@
     <div class="pos-chips__list">
       {#each assigned as ap (ap.id)}
         <span class="pos-chip">
-          {ap.positionName}
+          {resolvePositionDisplay(ap.positionName, hl)}
           <button
             type="button"
             class="pos-chip__remove"
@@ -143,21 +162,51 @@
             <i class="fas fa-plus"></i>
           </button>
           {#if dropdownOpen}
-            <div class="pos-add-menu">
-              {#each available as pos (pos.id)}
-                <button
-                  type="button"
-                  class="pos-add-option"
-                  onclick={() => {
-                    void assign(pos.id);
-                  }}
-                >
-                  {pos.name}
-                  {#if pos.isSystem}
-                    <span class="badge badge--primary badge--xs ml-1">System</span>
+            <div
+              class="pos-add-menu"
+              class:pos-add-menu--tall={grouped}
+            >
+              {#if grouped}
+                {#each roleCategories as category (category)}
+                  {@const catPositions = available.filter(
+                    (p: PositionEntry) => p.roleCategory === category,
+                  )}
+                  {#if catPositions.length > 0}
+                    <div class="pos-add-group-label">
+                      {ROLE_CATEGORY_LABELS[category]}
+                    </div>
+                    {#each catPositions as pos (pos.id)}
+                      <button
+                        type="button"
+                        class="pos-add-option"
+                        onclick={() => {
+                          void assign(pos.id);
+                        }}
+                      >
+                        {resolvePositionDisplay(pos.name, hl)}
+                        {#if pos.isSystem}
+                          <span class="badge badge--primary badge--xs ml-1">System</span>
+                        {/if}
+                      </button>
+                    {/each}
                   {/if}
-                </button>
-              {/each}
+                {/each}
+              {:else}
+                {#each available as pos (pos.id)}
+                  <button
+                    type="button"
+                    class="pos-add-option"
+                    onclick={() => {
+                      void assign(pos.id);
+                    }}
+                  >
+                    {resolvePositionDisplay(pos.name, hl)}
+                    {#if pos.isSystem}
+                      <span class="badge badge--primary badge--xs ml-1">System</span>
+                    {/if}
+                  </button>
+                {/each}
+              {/if}
             </div>
           {/if}
         </div>
@@ -280,6 +329,25 @@
     cursor: pointer;
     text-align: left;
     transition: background 0.15s;
+  }
+
+  .pos-add-menu--tall {
+    max-height: 320px;
+  }
+
+  .pos-add-group-label {
+    padding: 0.375rem 0.625rem 0.25rem;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--color-text-muted);
+  }
+
+  .pos-add-group-label:not(:first-child) {
+    margin-top: 0.25rem;
+    border-top: 1px solid var(--color-border, rgb(255 255 255 / 8%));
+    padding-top: 0.5rem;
   }
 
   .pos-add-option:hover {

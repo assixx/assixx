@@ -63,6 +63,7 @@ export const CreateUserSchema = z.object({
   availabilityStart: z.string().nullable().optional(),
   availabilityEnd: z.string().nullable().optional(),
   availabilityNotes: z.string().trim().max(500, 'Notes must not exceed 500 characters').optional(),
+  notes: z.string().trim().max(500, 'Notes must not exceed 500 characters').optional(),
 });
 
 /**

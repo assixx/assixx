@@ -105,19 +105,31 @@ describe('Organigram: Get Hierarchy Labels', () => {
     expect(body.success).toBe(true);
     expect(body.data).toHaveProperty('hall');
     expect(body.data).toHaveProperty('area');
+    expect(body.data).toHaveProperty('areaLeadPrefix');
     expect(body.data).toHaveProperty('department');
+    expect(body.data).toHaveProperty('departmentLeadPrefix');
     expect(body.data).toHaveProperty('team');
+    expect(body.data).toHaveProperty('teamLeadPrefix');
     expect(body.data).toHaveProperty('asset');
   });
 
-  it('should return a string for each level', async () => {
+  it('should return a string for each level and prefix', async () => {
     const res = await fetch(`${BASE_URL}/organigram/hierarchy-labels`, {
       headers: authOnly(auth.authToken),
     });
     const body = (await res.json()) as JsonBody;
 
-    for (const level of ['hall', 'area', 'department', 'team', 'asset']) {
-      expect(body.data[level]).toBeTypeOf('string');
+    for (const key of [
+      'hall',
+      'area',
+      'areaLeadPrefix',
+      'department',
+      'departmentLeadPrefix',
+      'team',
+      'teamLeadPrefix',
+      'asset',
+    ]) {
+      expect(body.data[key]).toBeTypeOf('string');
     }
   });
 });

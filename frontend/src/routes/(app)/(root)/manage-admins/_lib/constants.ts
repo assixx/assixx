@@ -2,7 +2,11 @@
 // MANAGE ADMINS - CONSTANTS
 // =============================================================================
 
-import { DEFAULT_HIERARCHY_LABELS, type HierarchyLabels } from '$lib/types/hierarchy-labels';
+import {
+  DEFAULT_HIERARCHY_LABELS,
+  type HierarchyLabels,
+  type PositionOption,
+} from '$lib/types/hierarchy-labels';
 
 import type { FormIsActiveStatus } from './types';
 
@@ -20,17 +24,17 @@ export {
 /**
  * Position options for admin selection dropdown
  */
-export const POSITION_OPTIONS = [
-  'area_lead',
-  'department_lead',
-  'Personalleiter',
-  'Geschäftsführer',
-  'Werksleiter',
-  'Produktionsleiter',
-  'Qualitätsleiter',
-  'IT-Leiter',
-  'Vertriebsleiter',
-  'Mitarbeiter',
+export const POSITION_OPTIONS: readonly PositionOption[] = [
+  { name: 'area_lead', roleCategory: 'admin' },
+  { name: 'department_lead', roleCategory: 'admin' },
+  { name: 'Personalleiter', roleCategory: 'admin' },
+  { name: 'Geschäftsführer', roleCategory: 'admin' },
+  { name: 'Werksleiter', roleCategory: 'admin' },
+  { name: 'Produktionsleiter', roleCategory: 'admin' },
+  { name: 'Qualitätsleiter', roleCategory: 'admin' },
+  { name: 'IT-Leiter', roleCategory: 'admin' },
+  { name: 'Vertriebsleiter', roleCategory: 'admin' },
+  { name: 'Mitarbeiter', roleCategory: 'admin' },
 ] as const;
 
 /**
@@ -110,7 +114,7 @@ const STATIC_MESSAGES = {
   LABEL_PASSWORD_CONFIRM: 'Passwort wiederholen',
   LABEL_EMPLOYEE_NUMBER: 'Personalnummer',
   LABEL_POSITION: 'Position',
-  LABEL_NOTES: 'Notizen',
+  LABEL_NOTES: 'Zusätzliche Infos',
   LABEL_STATUS: 'Status',
   BTN_SAVE: 'Speichern',
   BTN_CANCEL: 'Abbrechen',
@@ -176,7 +180,8 @@ const STATIC_MESSAGES = {
   TH_STATUS: 'Status',
   TH_AVAILABILITY: 'Verfügbarkeit',
   TH_PLANNED: 'Geplant',
-  TH_NOTES: 'Notizen',
+  TH_ADDITIONAL_INFO: 'Zusätzliche Infos',
+  TH_ABSENCE_NOTES: 'Abwesenheitsnotiz',
   TH_ACTIONS: 'Aktionen',
 };
 

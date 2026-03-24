@@ -122,6 +122,7 @@
   let formPosition = $state('');
   let formPhone = $state('');
   let formDateOfBirth = $state('');
+  let formNotes = $state('');
   let formIsActive = $state<FormIsActiveStatus>(1);
   let formTeamIds = $state<number[]>([]);
 
@@ -194,6 +195,7 @@
           position: formPosition,
           phone: formPhone,
           dateOfBirth: formDateOfBirth,
+          notes: formNotes,
           employeeNumber: formEmployeeNumber,
           isActive: formIsActive,
         },
@@ -315,6 +317,7 @@
     formPosition = formData.position;
     formPhone = formData.phone;
     formDateOfBirth = formData.dateOfBirth;
+    formNotes = formData.notes;
     formIsActive = formData.isActive;
     formTeamIds = formData.teamIds;
     // Store original team IDs for diff calculation on save
@@ -426,6 +429,7 @@
     formPosition = defaults.position;
     formPhone = defaults.phone;
     formDateOfBirth = defaults.dateOfBirth;
+    formNotes = defaults.notes;
     formIsActive = defaults.isActive;
     formTeamIds = defaults.teamIds;
     originalTeamIds = []; // Reset original teams for diff calculation
@@ -663,7 +667,8 @@
                     <th scope="col">{messages.TH_TEAMS}</th>
                     <th scope="col">Verfügbarkeit</th>
                     <th scope="col">Geplant</th>
-                    <th scope="col">Notizen</th>
+                    <th scope="col">Zusätzliche Infos</th>
+                    <th scope="col">Abwesenheitsnotiz</th>
                     <th scope="col">Aktionen</th>
                   </tr>
                 </thead>
@@ -723,6 +728,7 @@
     bind:formPosition
     bind:formPhone
     bind:formDateOfBirth
+    bind:formNotes
     bind:formIsActive
     bind:formTeamIds
     bind:emailError

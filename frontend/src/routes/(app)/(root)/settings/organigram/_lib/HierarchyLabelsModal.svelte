@@ -21,6 +21,7 @@
 
   interface LabelLevel {
     key: keyof HierarchyLabels;
+    prefixKey?: keyof HierarchyLabels;
     icon: string;
     color: string;
     defaultLabel: string;
@@ -35,18 +36,21 @@
     },
     {
       key: 'area',
+      prefixKey: 'areaLeadPrefix',
       icon: ENTITY_COLORS.area.icon,
       color: ENTITY_COLORS.area.border,
       defaultLabel: 'Bereiche',
     },
     {
       key: 'department',
+      prefixKey: 'departmentLeadPrefix',
       icon: ENTITY_COLORS.department.icon,
       color: ENTITY_COLORS.department.border,
       defaultLabel: 'Abteilungen',
     },
     {
       key: 'team',
+      prefixKey: 'teamLeadPrefix',
       icon: ENTITY_COLORS.team.icon,
       color: ENTITY_COLORS.team.border,
       defaultLabel: 'Teams',
@@ -67,13 +71,16 @@
     }
   });
 
+  function isLabelValid(value: string): boolean {
+    return value.trim() !== '' && value.length <= 50;
+  }
+
   function validateLabels(): boolean {
-    for (const level of LEVELS) {
-      const label = editLabels[level.key];
-      if (label.trim() === '') return false;
-      if (label.length > 50) return false;
-    }
-    return true;
+    return LEVELS.every((level: LabelLevel) => {
+      if (!isLabelValid(editLabels[level.key])) return false;
+      if (level.prefixKey !== undefined && !isLabelValid(editLabels[level.prefixKey])) return false;
+      return true;
+    });
   }
 
   function restoreDefaults(): void {
@@ -158,6 +165,26 @@
                   required
                   bind:value={editLabels[level.key]}
                 />
+                {#if level.prefixKey}
+                  <div class="prefix-field">
+                    <label class="prefix-field__label">
+                      Positionsvorsilbe
+                      <input
+                        type="text"
+                        class="form-field__control form-field__control--sm"
+                        placeholder={DEFAULT_HIERARCHY_LABELS[level.prefixKey]}
+                        maxlength="50"
+                        required
+                        bind:value={editLabels[level.prefixKey]}
+                      />
+                    </label>
+                    <span class="prefix-field__preview">
+                      {editLabels[level.prefixKey]}leiter · Stellv. {editLabels[
+                        level.prefixKey
+                      ]}leiter
+                    </span>
+                  </div>
+                {/if}
               </div>
             </div>
           {/each}
@@ -273,5 +300,25 @@
   .footer-actions {
     display: flex;
     gap: 0.75rem;
+  }
+
+  .prefix-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    margin-top: 0.25rem;
+  }
+
+  .prefix-field__label {
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+    font-weight: 500;
+  }
+
+  .prefix-field__preview {
+    font-size: 0.7rem;
+    color: var(--color-text-secondary);
+    font-style: italic;
+    padding-left: 0.25rem;
   }
 </style>

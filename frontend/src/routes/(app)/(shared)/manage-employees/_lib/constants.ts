@@ -2,7 +2,11 @@
 // MANAGE EMPLOYEES - CONSTANTS
 // =============================================================================
 
-import { DEFAULT_HIERARCHY_LABELS, type HierarchyLabels } from '$lib/types/hierarchy-labels';
+import {
+  DEFAULT_HIERARCHY_LABELS,
+  type HierarchyLabels,
+  type PositionOption,
+} from '$lib/types/hierarchy-labels';
 
 import type { AvailabilityOption } from './types';
 
@@ -35,15 +39,15 @@ export const INHERITED_BADGE_CLASS = 'badge--warning';
 /**
  * Position options for employees
  */
-export const POSITION_OPTIONS: readonly string[] = [
-  'Produktionsmitarbeiter',
-  'Anlagenbediener',
-  'Lagerarbeiter',
-  'Qualitätsprüfer',
-  'Schichtleiter',
-  'team_lead',
-  'Wartungstechniker',
-  'Sonstiges',
+export const POSITION_OPTIONS: readonly PositionOption[] = [
+  { name: 'Produktionsmitarbeiter', roleCategory: 'employee' },
+  { name: 'Anlagenbediener', roleCategory: 'employee' },
+  { name: 'Lagerarbeiter', roleCategory: 'employee' },
+  { name: 'Qualitätsprüfer', roleCategory: 'employee' },
+  { name: 'Schichtleiter', roleCategory: 'employee' },
+  { name: 'team_lead', roleCategory: 'employee' },
+  { name: 'Wartungstechniker', roleCategory: 'employee' },
+  { name: 'Sonstiges', roleCategory: 'employee' },
 ] as const;
 
 /**
