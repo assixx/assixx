@@ -9,7 +9,7 @@
     "npm": "please-use-pnpm",
     "yarn": "please-use-pnpm"
   },
-  "packageManager": "pnpm@10.32.1",
+  "packageManager": "pnpm@10.33.0",
   "pnpm": {
     "onlyBuiltDependencies": [],
     "overrides": {
@@ -138,9 +138,9 @@
     "@tailwindcss/vite": "^4.2.2",
     "@trivago/prettier-plugin-sort-imports": "^6.0.2",
     "@types/node": "^24.12.0",
-    "@vitest/coverage-v8": "4.1.0",
+    "@vitest/coverage-v8": "^4.1.1",
     "@vitest/eslint-plugin": "^1.6.13",
-    "@vitest/ui": "4.1.0",
+    "@vitest/ui": "^4.1.1",
     "concurrently": "^9.2.1",
     "eslint": "^10.1.0",
     "eslint-config-prettier": "^10.1.8",
@@ -150,7 +150,7 @@
     "eslint-plugin-sonarjs": "^4.0.2",
     "eslint-plugin-storybook": "^10.3.3",
     "husky": "9.1.7",
-    "knip": "^6.0.3",
+    "knip": "^6.0.5",
     "markdownlint-cli": "^0.48.0",
     "node-pg-migrate": "8.0.4",
     "nodemon": "^3.1.14",
@@ -167,8 +167,8 @@
     "stylelint-prettier": "^5.0.3",
     "tsx": "^4.21.0",
     "typescript": "5.9.3",
-    "typescript-eslint": "^8.57.1",
+    "typescript-eslint": "^8.57.2",
     "vite": "^8.0.2",
-    "vitest": "^4.1.0"
+    "vitest": "^4.1.1"
   }
 }

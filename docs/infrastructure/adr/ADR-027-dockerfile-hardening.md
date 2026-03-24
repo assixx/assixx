@@ -24,7 +24,7 @@ The production Dockerfile (`docker/Dockerfile`) had a **broken RUN instruction**
 | **Broken Build**      | Production Dockerfile line 64-65 syntactically broken — `dumb-init` not installed, `addgroup` missing, `adduser` malformed | CRITICAL |
 | **BuildKit**          | Production Dockerfile missing `# syntax=docker/dockerfile:1` directive                                                     | CRITICAL |
 | **Signal Handling**   | `dumb-init` referenced in CMD but not installed (broken RUN); frontend had no signal forwarding at all                     | CRITICAL |
-| **Version Drift**     | npm `11.9.0` vs `11.8.0`, pnpm `10.30.2` vs `10.32.1` across files                                                         | HIGH     |
+| **Version Drift**     | npm `11.9.0` vs `11.8.0`, pnpm `10.30.2` vs `10.33.0` across files                                                         | HIGH     |
 | **Cache Performance** | Production Dockerfile lacked `--mount=type=cache` for pnpm store (dev + frontend had it)                                   | HIGH     |
 | **Layer Caching**     | Production Dockerfile lacked `COPY --link` for `--from=builder` copies                                                     | HIGH     |
 | **Image Bloat**       | `tsconfig.json`, `tsconfig.base.json`, source `.ts` files, entire `shared/` dir copied to production                       | HIGH     |
@@ -61,7 +61,7 @@ RUN npm install -g npm@11.9.0 pnpm@10.30.2 && \
 **After** (correct):
 
 ```dockerfile
-ARG PNPM_VERSION=10.32.1
+ARG PNPM_VERSION=10.33.0
 RUN apk add --no-cache dumb-init && \
     npm install -g npm@11.9.0 "pnpm@${PNPM_VERSION}" && \
     addgroup -g 1001 -S nodejs && \
@@ -125,7 +125,7 @@ COPY --link --from=builder --chown=1001:1001 /app/backend/dist ./backend/dist
 | Component | Before                                                    | After                        |
 | --------- | --------------------------------------------------------- | ---------------------------- |
 | npm       | `11.9.0` (prod), `11.8.0` (dev, frontend)                 | `11.9.0` everywhere          |
-| pnpm      | `10.30.2` (prod hardcoded), `10.32.1` (dev, frontend ARG) | `10.32.1` via ARG everywhere |
+| pnpm      | `10.30.2` (prod hardcoded), `10.33.0` (dev, frontend ARG) | `10.33.0` via ARG everywhere |
 
 **Rationale**: CVE-2025-64756 requires npm >= 11.1.0. Using the latest (`11.9.0`) everywhere eliminates version drift. pnpm parameterized via `ARG PNPM_VERSION` for consistency with ADR-008.
 
