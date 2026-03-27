@@ -10,7 +10,11 @@
   import { isLeadPosition, resolvePositionDisplay } from '$lib/types/hierarchy-labels';
   import { getApiClient } from '$lib/utils/api-client';
 
+  import { updateHierarchyLabels } from '../_lib/api.js';
+  import { DEFAULT_HIERARCHY_LABELS, ENTITY_COLORS, HALL_COLOR } from '../_lib/constants.js';
+
   import type { PageData } from './$types';
+  import type { HierarchyLabels } from '../_lib/types.js';
 
   interface PositionEntry {
     id: string;
@@ -22,7 +26,7 @@
 
   type Category = 'employee' | 'admin' | 'root';
 
-  type Tab = Category | 'leads';
+  type Tab = Category | 'leads' | 'labels';
 
   const CATEGORIES: Category[] = ['employee', 'admin', 'root'];
 
@@ -31,6 +35,7 @@
     admin: 'Administratoren',
     root: 'Root-Benutzer',
     leads: 'Leitende Positionen',
+    labels: 'Hierarchie-Ebenen',
   };
 
   const { data }: { data: PageData } = $props();
@@ -47,6 +52,87 @@
   let editingValue = $state('');
   let busy = $state(false);
   const deputyHasLeadScope = $derived((data.deputyHasLeadScope as boolean | undefined) ?? false);
+
+  // --- Hierarchy Labels ---
+  interface LabelLevel {
+    key: keyof HierarchyLabels;
+    prefixKey?: keyof HierarchyLabels;
+    icon: string;
+    color: string;
+    defaultLabel: string;
+  }
+
+  const LEVELS: LabelLevel[] = [
+    { key: 'hall', icon: HALL_COLOR.icon, color: HALL_COLOR.border, defaultLabel: 'Hallen' },
+    {
+      key: 'area',
+      prefixKey: 'areaLeadPrefix',
+      icon: ENTITY_COLORS.area.icon,
+      color: ENTITY_COLORS.area.border,
+      defaultLabel: 'Bereiche',
+    },
+    {
+      key: 'department',
+      prefixKey: 'departmentLeadPrefix',
+      icon: ENTITY_COLORS.department.icon,
+      color: ENTITY_COLORS.department.border,
+      defaultLabel: 'Abteilungen',
+    },
+    {
+      key: 'team',
+      prefixKey: 'teamLeadPrefix',
+      icon: ENTITY_COLORS.team.icon,
+      color: ENTITY_COLORS.team.border,
+      defaultLabel: 'Teams',
+    },
+    {
+      key: 'asset',
+      icon: ENTITY_COLORS.asset.icon,
+      color: ENTITY_COLORS.asset.border,
+      defaultLabel: 'Anlagen',
+    },
+  ];
+
+  let editLabels: HierarchyLabels = $state(structuredClone(DEFAULT_HIERARCHY_LABELS));
+  let isLabelsSaving = $state(false);
+
+  function isLabelValid(value: string): boolean {
+    return value.trim() !== '' && value.length <= 50;
+  }
+
+  const isLabelsValid = $derived(
+    LEVELS.every((level: LabelLevel) => {
+      if (!isLabelValid(editLabels[level.key])) return false;
+      if (level.prefixKey !== undefined && !isLabelValid(editLabels[level.prefixKey])) return false;
+      return true;
+    }),
+  );
+
+  $effect(() => {
+    if (activeTab === 'labels') {
+      editLabels = $state.snapshot(labels);
+    }
+  });
+
+  function restoreDefaults(): void {
+    editLabels = structuredClone(DEFAULT_HIERARCHY_LABELS);
+  }
+
+  async function handleSaveLabels(event: SubmitEvent): Promise<void> {
+    event.preventDefault();
+    if (!isLabelsValid || isLabelsSaving) return;
+
+    isLabelsSaving = true;
+    try {
+      await updateHierarchyLabels({ levels: editLabels });
+      await invalidateAll();
+      showSuccessAlert('Hierarchie-Ebenen gespeichert');
+    } catch {
+      showErrorAlert('Fehler beim Speichern der Hierarchie-Ebenen');
+    } finally {
+      isLabelsSaving = false; // eslint-disable-line require-atomic-updates -- Svelte single-threaded
+    }
+  }
 
   const LEAD_ORDER = [
     'area_lead',
@@ -276,6 +362,19 @@
           {TAB_LABELS.leads}
           <span class="tab-count">{systemPositions.length}</span>
         </button>
+        <button
+          type="button"
+          class="tab"
+          class:active={activeTab === 'labels'}
+          onclick={() => {
+            activeTab = 'labels';
+            cancelEdit();
+            newPosition = '';
+          }}
+        >
+          <i class="fas fa-tags mr-1"></i>
+          {TAB_LABELS.labels}
+        </button>
       </div>
     </div>
 
@@ -290,14 +389,17 @@
                 {displayName(position)}
                 <span class="badge badge--primary badge--xs system-badge">System</span>
               </span>
-              <a
-                href="/settings/organigram?editLabels"
+              <button
+                type="button"
                 class="system-hint-link"
                 title="Bezeichnungen bearbeiten"
+                onclick={() => {
+                  activeTab = 'labels';
+                }}
               >
                 <i class="fas fa-pen-to-square"></i>
                 Bezeichnung ändern
-              </a>
+              </button>
             </li>
           {/each}
         </ul>
@@ -306,8 +408,14 @@
           <div class="alert__content">
             <div class="alert__message">
               Leitende Positionen werden automatisch vergeben und können nicht bearbeitet werden.
-              Die Bezeichnungen können über die
-              <a href="/settings/organigram?editLabels">Hierarchie-Labels</a> angepasst werden.
+              Die Bezeichnungen können über den Tab
+              <button
+                type="button"
+                class="inline-link-btn"
+                onclick={() => {
+                  activeTab = 'labels';
+                }}>Hierarchie-Ebenen</button
+              > angepasst werden.
             </div>
           </div>
         </div>
@@ -326,6 +434,100 @@
             <span class="deputy-scope-hint">(Scope & Sichtbarkeit auf Verwaltungsseiten)</span>
           </span>
         </label>
+      {:else if activeTab === 'labels'}
+        <!-- Hierarchie-Ebenen (inline) -->
+        <form
+          id="hierarchy-labels-form"
+          onsubmit={handleSaveLabels}
+        >
+          <p class="hint-text">
+            Benenne die Organisationsebenen passend für dein Unternehmen um. Die Struktur bleibt
+            identisch — nur die Anzeige-Labels ändern sich.
+          </p>
+
+          <div class="hierarchy-stepper">
+            {#each LEVELS as level, idx (level.key)}
+              {@const color = level.color}
+              <div class="step">
+                <div class="step__indicator">
+                  <span
+                    class="step__number"
+                    style="background: {color}">{idx + 1}</span
+                  >
+                  {#if idx < LEVELS.length - 1}
+                    <div class="step__connector"></div>
+                  {/if}
+                </div>
+                <div class="step__content">
+                  <span
+                    class="step__label"
+                    style="color: {color}"
+                  >
+                    <i class={level.icon}></i>
+                    {level.defaultLabel}
+                    {#if idx === 0}
+                      <span class="step__hint">Höchste Ebene</span>
+                    {:else if idx === LEVELS.length - 1}
+                      <span class="step__hint">Niedrigste Ebene</span>
+                    {/if}
+                  </span>
+                  <input
+                    type="text"
+                    class="form-field__control"
+                    placeholder={level.defaultLabel}
+                    maxlength="50"
+                    required
+                    bind:value={editLabels[level.key]}
+                  />
+                  {#if level.prefixKey}
+                    <div class="prefix-field">
+                      <label class="prefix-field__label">
+                        Positionsvorsilbe
+                        <input
+                          type="text"
+                          class="form-field__control form-field__control--sm"
+                          placeholder={DEFAULT_HIERARCHY_LABELS[level.prefixKey]}
+                          maxlength="50"
+                          required
+                          bind:value={editLabels[level.prefixKey]}
+                        />
+                      </label>
+                      <span class="prefix-field__preview">
+                        {editLabels[level.prefixKey]}leiter · Stellv. {editLabels[
+                          level.prefixKey
+                        ]}leiter
+                      </span>
+                    </div>
+                  {/if}
+                </div>
+              </div>
+            {/each}
+          </div>
+
+          <div class="labels-actions">
+            <button
+              type="button"
+              class="btn btn-danger"
+              onclick={restoreDefaults}
+              disabled={isLabelsSaving}
+            >
+              <i class="fas fa-undo"></i>
+              Standard wiederherstellen
+            </button>
+            <button
+              type="submit"
+              class="btn btn-primary"
+              disabled={!isLabelsValid || isLabelsSaving}
+            >
+              {#if isLabelsSaving}
+                <span class="spinner-ring spinner-ring--sm"></span>
+              {:else}
+                <i class="fas fa-check"></i>
+              {/if}
+              Speichern
+            </button>
+          </div>
+        </form>
       {:else}
         <!-- Add new -->
         <div class="add-row">
@@ -674,5 +876,117 @@
     font-weight: 400;
     color: var(--color-text-secondary);
     margin-top: 0.125rem;
+  }
+
+  /* Inline link button (styled as text link) */
+  .inline-link-btn {
+    background: none;
+    border: none;
+    color: var(--color-primary, #3b82f6);
+    cursor: pointer;
+    font: inherit;
+    padding: 0;
+    text-decoration: underline;
+  }
+
+  .inline-link-btn:hover {
+    opacity: 80%;
+  }
+
+  /* Hierarchy Labels — Stepper */
+  .hint-text {
+    font-size: 0.85rem;
+    color: var(--color-text-secondary);
+    line-height: 1.5;
+    margin-bottom: 0.5rem;
+  }
+
+  .hierarchy-stepper {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .step {
+    display: flex;
+    gap: 0.75rem;
+  }
+
+  .step__indicator {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex-shrink: 0;
+  }
+
+  .step__number {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-white, #fff);
+    font-weight: 700;
+    font-size: 0.75rem;
+    flex-shrink: 0;
+  }
+
+  .step__connector {
+    width: 2px;
+    flex: 1;
+    min-height: 8px;
+    background: var(--glass-border, rgb(255 255 255 / 12%));
+  }
+
+  .step__content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+    padding-bottom: 0.75rem;
+  }
+
+  .step__label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+  }
+
+  .step__hint {
+    font-size: 0.7rem;
+    font-weight: 400;
+    opacity: 60%;
+    margin-left: auto;
+  }
+
+  .prefix-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    margin-top: 0.25rem;
+  }
+
+  .prefix-field__label {
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+    font-weight: 500;
+  }
+
+  .prefix-field__preview {
+    font-size: 0.7rem;
+    color: var(--color-text-secondary);
+    font-style: italic;
+    padding-left: 0.25rem;
+  }
+
+  .labels-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--color-border, rgb(255 255 255 / 10%));
   }
 </style>

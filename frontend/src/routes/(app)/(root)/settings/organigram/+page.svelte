@@ -5,14 +5,10 @@
 <script lang="ts">
   import { untrack } from 'svelte';
 
-  import { invalidateAll, replaceState } from '$app/navigation';
-  import { page } from '$app/state';
-
   import { showSuccessAlert, showErrorAlert } from '$lib/stores/toast';
   import { createLogger } from '$lib/utils/logger.js';
 
-  import { fetchNodeDetails, savePositions, updateHierarchyLabels } from './_lib/api.js';
-  import HierarchyLabelsModal from './_lib/HierarchyLabelsModal.svelte';
+  import { fetchNodeDetails, savePositions } from './_lib/api.js';
   import NodeDetailModal from './_lib/NodeDetailModal.svelte';
   import OrgCanvas from './_lib/OrgCanvas.svelte';
   import OrgToolbar from './_lib/OrgToolbar.svelte';
@@ -41,11 +37,10 @@
     setFontSize,
     setSaving,
     toggleLock,
-    updateTreeLabels,
   } from './_lib/state.svelte.js';
 
   import type { PageData } from './$types';
-  import type { HierarchyLabels, OrgEntityType, OrgNodeDetail } from './_lib/types.js';
+  import type { OrgEntityType, OrgNodeDetail } from './_lib/types.js';
 
   const log = createLogger('Organigram:Page');
 
@@ -62,9 +57,6 @@
 
   /** Single Source of Truth: Layout-Data (A7) */
   const labels = $derived(data.tree.hierarchyLabels);
-
-  let showLabelsModal = $state(false);
-  let isLabelsSaving = $state(false);
 
   let detailData = $state<OrgNodeDetail | null>(null);
   let showDetailModal = $state(false);
@@ -89,14 +81,6 @@
     showDetailModal = false;
     detailData = null;
   }
-
-  /** Auto-open modal when navigated with ?editLabels */
-  $effect(() => {
-    if (page.url.searchParams.has('editLabels')) {
-      showLabelsModal = true;
-      replaceState(page.url.pathname, {});
-    }
-  });
 
   async function toggleFullscreen(): Promise<void> {
     try {
@@ -136,22 +120,6 @@
       log.error({ err }, 'Positionen speichern fehlgeschlagen');
       showErrorAlert('Fehler beim Speichern des Organigramms');
       setSaving(false);
-    }
-  }
-
-  async function handleSaveLabels(newLabels: HierarchyLabels): Promise<void> {
-    isLabelsSaving = true;
-    try {
-      const saved = await updateHierarchyLabels({ levels: newLabels });
-      updateTreeLabels(saved);
-      showLabelsModal = false;
-      await invalidateAll();
-      showSuccessAlert('Hierarchie-Ebenen gespeichert');
-    } catch (err: unknown) {
-      log.error({ err }, 'Hierarchie-Labels speichern fehlgeschlagen');
-      showErrorAlert('Fehler beim Speichern der Hierarchie-Ebenen');
-    } finally {
-      isLabelsSaving = false;
     }
   }
 </script>
@@ -255,9 +223,6 @@
       onautolayout={recomputeAutoLayout}
       onsave={handleSavePositions}
       onreset={resetToSaved}
-      onopenlabels={() => {
-        showLabelsModal = true;
-      }}
       ontogglelock={toggleLock}
       onfullscreen={toggleFullscreen}
       oncanvasbg={setCanvasBg}
@@ -301,16 +266,6 @@
   isLoading={isDetailLoading}
   {labels}
   onclose={closeDetail}
-/>
-
-<HierarchyLabelsModal
-  show={showLabelsModal}
-  {labels}
-  isSaving={isLabelsSaving}
-  onclose={() => {
-    showLabelsModal = false;
-  }}
-  onsave={handleSaveLabels}
 />
 
 <style>

@@ -80,7 +80,7 @@
 
   // Scope cascade: departments not already covered by selected areas
   const availableDepartments = $derived.by((): Department[] => {
-    if (scopeCompanyWide) return [];
+    if (scopeCompanyWide) return departments;
     return departments.filter(
       (d: Department) => d.areaId === undefined || !scopeAreaIds.includes(d.areaId),
     );
@@ -96,7 +96,7 @@
 
   // Scope cascade: teams not already covered by selected departments
   const availableTeams = $derived.by((): Team[] => {
-    if (scopeCompanyWide) return [];
+    if (scopeCompanyWide) return teams;
     return teams.filter(
       (t: Team) => t.departmentId === undefined || !coveredDeptIds.includes(t.departmentId),
     );
@@ -550,126 +550,7 @@
           </div>
         {/if}
 
-        <!-- Scope Controls (only for user/position types) -->
-        {#if showScopeControls}
-          <div class="scope-controls">
-            <label class="toggle-switch toggle-switch--danger">
-              <input
-                type="checkbox"
-                class="toggle-switch__input"
-                checked={scopeCompanyWide}
-                onchange={(e) => {
-                  scopeCompanyWide = (e.target as HTMLInputElement).checked;
-                  if (scopeCompanyWide) {
-                    scopeAreaIds = [];
-                    scopeDeptIds = [];
-                    scopeTeamIds = [];
-                  }
-                }}
-              />
-              <span class="toggle-switch__slider"></span>
-              <span class="toggle-switch__label"
-                ><i class="fas fa-building mr-2"></i>Ganze Firma</span
-              >
-            </label>
-
-            {#if !scopeCompanyWide}
-              <div class="scope-selects">
-                <div class="form-field">
-                  <label
-                    for="scope-area-select"
-                    class="form-field__label"
-                  >
-                    <i class="fas fa-layer-group mr-1"></i>{labels.area}
-                  </label>
-                  <select
-                    id="scope-area-select"
-                    multiple
-                    class="multi-select"
-                    value={scopeAreaIds}
-                    onchange={(e) => {
-                      const select = e.target as HTMLSelectElement;
-                      handleScopeAreaChange(
-                        Array.from(select.selectedOptions).map((o) => Number(o.value)),
-                      );
-                    }}
-                  >
-                    {#each areas as area (area.id)}
-                      <option value={area.id}>
-                        {area.name}{area.departmentCount !== undefined && area.departmentCount > 0 ?
-                          ` (${area.departmentCount} Abt.)`
-                        : ''}
-                      </option>
-                    {/each}
-                  </select>
-                  <span class="form-field__message text-(--color-text-secondary)">
-                    <i class="fas fa-info-circle mr-1"></i>Strg/Cmd + Klick für Mehrfachauswahl
-                  </span>
-                </div>
-
-                {#if availableDepartments.length > 0}
-                  <div class="form-field">
-                    <label
-                      for="scope-dept-select"
-                      class="form-field__label"
-                    >
-                      <i class="fas fa-sitemap mr-1"></i>Zusätzliche {labels.department}
-                    </label>
-                    <select
-                      id="scope-dept-select"
-                      multiple
-                      class="multi-select"
-                      value={scopeDeptIds}
-                      onchange={(e) => {
-                        const select = e.target as HTMLSelectElement;
-                        handleScopeDeptChange(
-                          Array.from(select.selectedOptions).map((o) => Number(o.value)),
-                        );
-                      }}
-                    >
-                      {#each availableDepartments as dept (dept.id)}
-                        <option value={dept.id}>
-                          {dept.name}{dept.areaName !== undefined && dept.areaName !== '' ?
-                            ` (${dept.areaName})`
-                          : ''}
-                        </option>
-                      {/each}
-                    </select>
-                  </div>
-                {/if}
-
-                {#if availableTeams.length > 0}
-                  <div class="form-field">
-                    <label
-                      for="scope-team-select"
-                      class="form-field__label"
-                    >
-                      <i class="fas fa-users mr-1"></i>{labels.team}
-                    </label>
-                    <select
-                      id="scope-team-select"
-                      multiple
-                      class="multi-select"
-                      value={scopeTeamIds}
-                      onchange={(e) => {
-                        const select = e.target as HTMLSelectElement;
-                        scopeTeamIds = Array.from(select.selectedOptions).map((o) =>
-                          Number(o.value),
-                        );
-                      }}
-                    >
-                      {#each availableTeams as team (team.id)}
-                        <option value={team.id}>{team.name}</option>
-                      {/each}
-                    </select>
-                  </div>
-                {/if}
-              </div>
-            {/if}
-          </div>
-        {/if}
-
-        <!-- User Search (always visible) -->
+        <!-- User Search -->
         <div class="search-input-wrapper">
           {#if selectedUsers.length > 0}
             <div class="user-chips">
@@ -758,6 +639,150 @@
           <i class="fas fa-plus mr-2"></i>
           Hinzufügen
         </button>
+
+        <!-- Scope Controls (only for user/position types) — Calendar/Blackboard pattern -->
+        {#if showScopeControls}
+          <div class="form-field scope-toggle-field">
+            <label class="toggle-switch toggle-switch--danger">
+              <input
+                type="checkbox"
+                class="toggle-switch__input"
+                checked={scopeCompanyWide}
+                onchange={(e) => {
+                  scopeCompanyWide = (e.target as HTMLInputElement).checked;
+                  if (scopeCompanyWide) {
+                    scopeAreaIds = [];
+                    scopeDeptIds = [];
+                    scopeTeamIds = [];
+                  }
+                }}
+              />
+              <span class="toggle-switch__slider"></span>
+              <span class="toggle-switch__label">
+                <i class="fas fa-building mr-2"></i>
+                Ganze Firma (Alle Mitarbeiter)
+              </span>
+            </label>
+            <span class="form-field__message text-(--color-danger)">
+              <i class="fas fa-exclamation-triangle mr-1"></i>
+              Wenn aktiviert, gilt die Freigabe für ALLE Mitarbeiter der Firma
+            </span>
+          </div>
+
+          <!-- Area Selection -->
+          <div
+            class="form-field"
+            class:opacity-50={scopeCompanyWide}
+          >
+            <label
+              class="form-field__label"
+              for="scope-area-select"
+            >
+              <i class="fas fa-layer-group mr-1"></i>
+              {labels.area}
+            </label>
+            <select
+              id="scope-area-select"
+              multiple
+              class="multi-select multi-select--compact"
+              value={scopeAreaIds}
+              disabled={scopeCompanyWide}
+              onchange={(e) => {
+                const select = e.target as HTMLSelectElement;
+                handleScopeAreaChange(
+                  Array.from(select.selectedOptions).map((o) => Number(o.value)),
+                );
+              }}
+            >
+              {#each areas as area (area.id)}
+                <option value={area.id}>
+                  {area.name}{area.departmentCount !== undefined && area.departmentCount > 0 ?
+                    ` (${area.departmentCount} Abt.)`
+                  : ''}
+                </option>
+              {/each}
+            </select>
+            <span class="form-field__message text-(--color-text-secondary)">
+              <i class="fas fa-info-circle mr-1"></i>
+              Strg/Cmd + Klick für Mehrfachauswahl. {labels.area} vererben Zugriff auf zugehörige
+              {labels.department}.
+            </span>
+          </div>
+
+          <!-- Department Selection -->
+          <div
+            class="form-field"
+            class:opacity-50={scopeCompanyWide}
+          >
+            <label
+              class="form-field__label"
+              for="scope-dept-select"
+            >
+              <i class="fas fa-sitemap mr-1"></i>
+              Zusätzliche {labels.department}
+            </label>
+            <select
+              id="scope-dept-select"
+              multiple
+              class="multi-select multi-select--compact"
+              value={scopeDeptIds}
+              disabled={scopeCompanyWide}
+              onchange={(e) => {
+                const select = e.target as HTMLSelectElement;
+                handleScopeDeptChange(
+                  Array.from(select.selectedOptions).map((o) => Number(o.value)),
+                );
+              }}
+            >
+              {#each availableDepartments as dept (dept.id)}
+                <option value={dept.id}>
+                  {dept.name}{dept.areaName !== undefined && dept.areaName !== '' ?
+                    ` (${dept.areaName})`
+                  : ''}
+                </option>
+              {/each}
+            </select>
+            <span class="form-field__message text-(--color-text-secondary)">
+              <i class="fas fa-info-circle mr-1"></i>
+              Strg/Cmd + Klick für Mehrfachauswahl. Nur {labels.department} die nicht bereits durch
+              {labels.area} abgedeckt sind.
+            </span>
+          </div>
+
+          <!-- Team Selection -->
+          <div
+            class="form-field"
+            class:opacity-50={scopeCompanyWide}
+          >
+            <label
+              class="form-field__label"
+              for="scope-team-select"
+            >
+              <i class="fas fa-users mr-1"></i>
+              {labels.team}
+            </label>
+            <select
+              id="scope-team-select"
+              multiple
+              class="multi-select multi-select--compact"
+              value={scopeTeamIds}
+              disabled={scopeCompanyWide}
+              onchange={(e) => {
+                const select = e.target as HTMLSelectElement;
+                scopeTeamIds = Array.from(select.selectedOptions).map((o) => Number(o.value));
+              }}
+            >
+              {#each availableTeams as team (team.id)}
+                <option value={team.id}>{team.name}</option>
+              {/each}
+            </select>
+            <span class="form-field__message text-(--color-text-secondary)">
+              <i class="fas fa-info-circle mr-1"></i>
+              {labels.team} werden automatisch vererbt: {labels.area}-/{labels.department}-Auswahl
+              blendet zugehörige {labels.team} aus.
+            </span>
+          </div>
+        {/if}
       </div>
     </div>
   </div>
@@ -982,35 +1007,12 @@
 
   /* dropdown__menu--tall and dropdown__group-label are in design-system/primitives/dropdowns/custom-dropdown.css */
 
-  .scope-controls {
+  .scope-toggle-field {
     width: 100%;
-    padding: 0.75rem;
-    border-radius: var(--radius-sm);
-    background: color-mix(in oklch, var(--color-warning) 5%, transparent);
-    border: 1px solid color-mix(in oklch, var(--color-warning) 20%, transparent);
   }
 
-  .scope-selects {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.75rem;
-    margin-top: 0.75rem;
-  }
-
-  .scope-selects .form-field {
-    flex: 1;
-    min-width: 180px;
-  }
-
-  .multi-select {
+  .add-row > :global(.form-field) {
     width: 100%;
-    min-height: 80px;
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-sm);
-    padding: 0.25rem;
-    font-size: 0.875rem;
-    background: var(--color-surface);
-    color: var(--color-text);
   }
 
   .config-item__scope {
