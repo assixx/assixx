@@ -155,6 +155,12 @@ describe('addTeamInfo', () => {
         team_department_name: 'Engineering',
         team_area_id: 5,
         team_area_name: 'Produktion',
+        team_lead_name: 'Max Müller',
+        team_deputy_lead_name: null,
+        department_lead_name: 'Anna Schmidt',
+        department_deputy_lead_name: 'Lisa Weber',
+        area_lead_name: 'Jürgen Schmitz',
+        area_deputy_lead_name: null,
       },
       {
         user_id: 1,
@@ -164,6 +170,12 @@ describe('addTeamInfo', () => {
         team_department_name: 'QA',
         team_area_id: null,
         team_area_name: null,
+        team_lead_name: null,
+        team_deputy_lead_name: null,
+        department_lead_name: null,
+        department_deputy_lead_name: null,
+        area_lead_name: null,
+        area_deputy_lead_name: null,
       },
     ];
 
@@ -176,6 +188,13 @@ describe('addTeamInfo', () => {
     expect(response.teamDepartmentName).toBe('Engineering');
     expect(response.teamAreaId).toBe(5);
     expect(response.teamAreaName).toBe('Produktion');
+    // Lead/Deputy names from primary team's chain
+    expect(response.teamLeadName).toBe('Max Müller');
+    expect(response.teamDeputyLeadName).toBeNull();
+    expect(response.departmentLeadName).toBe('Anna Schmidt');
+    expect(response.departmentDeputyLeadName).toBe('Lisa Weber');
+    expect(response.areaLeadName).toBe('Jürgen Schmitz');
+    expect(response.areaDeputyLeadName).toBeNull();
   });
 
   it('does not set inheritance fields for empty teams', () => {

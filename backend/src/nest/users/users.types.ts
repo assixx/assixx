@@ -57,6 +57,13 @@ export interface UserTeamRow {
   team_department_name: string | null;
   team_area_id: number | null;
   team_area_name: string | null;
+  // Lead/Deputy names per org level
+  team_lead_name: string | null;
+  team_deputy_lead_name: string | null;
+  department_lead_name: string | null;
+  department_deputy_lead_name: string | null;
+  area_lead_name: string | null;
+  area_deputy_lead_name: string | null;
 }
 
 /**
@@ -129,5 +136,12 @@ export interface SafeUserResponse {
   teamDepartmentName?: string | null;
   teamAreaId?: number | null;
   teamAreaName?: string | null;
+  // Lead/Deputy names per org level (from primary team's chain)
+  teamLeadName?: string | null;
+  teamDeputyLeadName?: string | null;
+  departmentLeadName?: string | null;
+  departmentDeputyLeadName?: string | null;
+  areaLeadName?: string | null;
+  areaDeputyLeadName?: string | null;
   tenant?: TenantInfo;
 }

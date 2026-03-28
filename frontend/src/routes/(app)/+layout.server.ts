@@ -42,6 +42,13 @@ interface UserData {
   teamDepartmentName?: string | null;
   teamAreaId?: number | null;
   teamAreaName?: string | null;
+  // Lead/Deputy names per org level (from primary team's chain)
+  teamLeadName?: string | null;
+  teamDeputyLeadName?: string | null;
+  departmentLeadName?: string | null;
+  departmentDeputyLeadName?: string | null;
+  areaLeadName?: string | null;
+  areaDeputyLeadName?: string | null;
 }
 
 /** Tenant data included in user response */
@@ -106,6 +113,12 @@ function mapUserData(userData: UserData) {
     teamDepartmentName: userData.teamDepartmentName,
     teamAreaId: userData.teamAreaId,
     teamAreaName: userData.teamAreaName,
+    teamLeadName: userData.teamLeadName,
+    teamDeputyLeadName: userData.teamDeputyLeadName,
+    departmentLeadName: userData.departmentLeadName,
+    departmentDeputyLeadName: userData.departmentDeputyLeadName,
+    areaLeadName: userData.areaLeadName,
+    areaDeputyLeadName: userData.areaDeputyLeadName,
   };
 }
 
