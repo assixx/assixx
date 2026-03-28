@@ -122,20 +122,45 @@ async function fetchLinkedWorkOrders(
   }));
 }
 
+interface ApprovalConfigItem {
+  approverUserId: number | null;
+  addonCode: string;
+}
+
 /** Fetch approval data for a suggestion in parallel */
 async function fetchApprovalInfo(
   idOrUuid: string,
   token: string,
   fetchFn: typeof fetch,
-): Promise<{ approval: ApprovalInfo | null; hasApprovalConfig: boolean }> {
-  const [approvalData, configStatus] = await Promise.all([
+  currentUserId: number,
+): Promise<{
+  approval: ApprovalInfo | null;
+  hasApprovalConfig: boolean;
+  isApprovalMaster: boolean;
+  rewardTiers: { id: number; amount: number; sortOrder: number }[];
+}> {
+  const [approvalData, configStatus, configs, rewardTiersData] = await Promise.all([
     apiFetch<{ approval: ApprovalInfo | null }>(`/kvp/${idOrUuid}/approval`, token, fetchFn),
     apiFetch<{ hasConfig: boolean }>('/kvp/approval-config-status', token, fetchFn),
+    apiFetch<ApprovalConfigItem[]>('/approvals/configs', token, fetchFn),
+    apiFetch<{ id: number; amount: number; sortOrder: number }[]>(
+      '/kvp/reward-tiers',
+      token,
+      fetchFn,
+    ),
   ]);
+
+  const kvpConfigs =
+    Array.isArray(configs) ? configs.filter((c: ApprovalConfigItem) => c.addonCode === 'kvp') : [];
+  const isApprovalMaster = kvpConfigs.some(
+    (c: ApprovalConfigItem) => c.approverUserId === currentUserId,
+  );
 
   return {
     approval: approvalData?.approval ?? null,
     hasApprovalConfig: configStatus?.hasConfig ?? false,
+    isApprovalMaster,
+    rewardTiers: Array.isArray(rewardTiersData) ? rewardTiersData : [],
   };
 }
 
@@ -145,11 +170,12 @@ async function loadSuggestionData(
   suggestion: KvpSuggestion,
   token: string,
   fetchFn: typeof fetch,
+  currentUserId: number,
 ) {
   const [pageData, linkedWorkOrders, approvalInfo] = await Promise.all([
     fetchPageData(idOrUuid, token, fetchFn),
     fetchLinkedWorkOrders(suggestion.uuid, token, fetchFn),
-    fetchApprovalInfo(idOrUuid, token, fetchFn),
+    fetchApprovalInfo(idOrUuid, token, fetchFn, currentUserId),
   ]);
 
   return { ...pageData, linkedWorkOrders, ...approvalInfo };
@@ -184,6 +210,7 @@ export const load: PageServerLoad = async ({ cookies, fetch, url, parent }) => {
       linkedWorkOrders: [] as LinkedWorkOrder[],
       approval: null as ApprovalInfo | null,
       hasApprovalConfig: false,
+      isApprovalMaster: false,
       currentUser: parentData.user,
     };
   }
@@ -193,7 +220,8 @@ export const load: PageServerLoad = async ({ cookies, fetch, url, parent }) => {
     error(404, 'Vorschlag nicht gefunden');
   }
 
-  const allData = await loadSuggestionData(idOrUuid, suggestion, token, fetch);
+  const currentUserId = (parentData.user as { id: number }).id;
+  const allData = await loadSuggestionData(idOrUuid, suggestion, token, fetch, currentUserId);
   const isTeamLead = (parentData.user as { position?: string } | null)?.position === 'team_lead';
 
   return {

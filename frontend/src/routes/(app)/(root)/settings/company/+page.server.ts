@@ -16,9 +16,19 @@ interface KvpSettings {
   dailyLimit: number;
 }
 
-interface ApiResponse {
-  success?: boolean;
-  data?: KvpSettings;
+interface RewardTier {
+  id: number;
+  amount: number;
+  sortOrder: number;
+}
+
+async function fetchJson<T>(url: string, token: string, fetchFn: typeof fetch): Promise<T | null> {
+  const res = await fetchFn(url, {
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+  });
+  if (!res.ok) return null;
+  const json = (await res.json()) as { success?: boolean; data?: T };
+  return json.data ?? (json as unknown as T);
 }
 
 export const load: PageServerLoad = async ({ cookies, fetch }) => {
@@ -28,24 +38,18 @@ export const load: PageServerLoad = async ({ cookies, fetch }) => {
   }
 
   try {
-    const response = await fetch(`${API_BASE}/kvp/settings`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-    });
+    const [settingsJson, tiersJson] = await Promise.all([
+      fetchJson<KvpSettings>(`${API_BASE}/kvp/settings`, token, fetch),
+      fetchJson<RewardTier[]>(`${API_BASE}/kvp/reward-tiers`, token, fetch),
+    ]);
 
-    if (!response.ok) {
-      log.error({ status: response.status }, 'Failed to load KVP settings');
-      return { kvpSettings: null, loadError: true };
-    }
-
-    const json = (await response.json()) as ApiResponse;
-    const data = json.data ?? (json as unknown as KvpSettings);
-
-    return { kvpSettings: data, loadError: false };
+    return {
+      kvpSettings: settingsJson,
+      rewardTiers: Array.isArray(tiersJson) ? tiersJson : [],
+      loadError: settingsJson === null,
+    };
   } catch (err: unknown) {
     log.error({ err }, 'Fetch error');
-    return { kvpSettings: null, loadError: true };
+    return { kvpSettings: null, rewardTiers: [] as RewardTier[], loadError: true };
   }
 };

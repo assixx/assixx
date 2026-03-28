@@ -164,7 +164,13 @@ export class ApprovalsController {
     @TenantId() tenantId: number,
     @CurrentUser() user: NestAuthUser,
   ): Promise<Approval> {
-    return await this.approvalsService.approve(uuid, tenantId, user.id, dto.decisionNote ?? null);
+    return await this.approvalsService.approve(
+      uuid,
+      tenantId,
+      user.id,
+      dto.decisionNote ?? null,
+      dto.rewardAmount ?? null,
+    );
   }
 
   @Post(':uuid/reject')

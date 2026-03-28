@@ -413,7 +413,7 @@ html.dark .confirm-modal--success .confirm-modal__title {
 /* ========== INPUT GROUP (for prompt modals) ========== */
 
 .confirm-modal__input-group {
-  margin: 0 0 25px;
+  margin: 15px 0 25px;
 }
 
 .confirm-modal__input {

@@ -17,6 +17,12 @@
 
   const apiClient = getApiClient();
 
+  interface RewardTier {
+    id: number;
+    amount: number;
+    sortOrder: number;
+  }
+
   // =========================================================================
   // FORM STATE
   // =========================================================================
@@ -25,6 +31,11 @@
 
   let dailyLimit = $state(initial?.dailyLimit ?? 1);
   let saving = $state(false);
+
+  // Reward Tiers
+  let rewardTiers = $state(untrack(() => [...data.rewardTiers]));
+  let newRewardAmount = $state('');
+  let savingReward = $state(false);
 
   // =========================================================================
   // DERIVED
@@ -54,6 +65,43 @@
       showErrorAlert(message);
     } finally {
       saving = false; // eslint-disable-line require-atomic-updates -- guarded by early return on saving===true
+    }
+  }
+
+  // =========================================================================
+  // REWARD TIER HANDLERS
+  // =========================================================================
+
+  async function handleAddRewardTier(): Promise<void> {
+    const amount = parseFloat(newRewardAmount);
+    if (Number.isNaN(amount) || amount <= 0) return;
+    savingReward = true;
+    try {
+      const result = await apiClient.post<RewardTier>('/kvp/reward-tiers', { amount });
+      rewardTiers = [...rewardTiers, result].sort(
+        (a: RewardTier, b: RewardTier) => a.amount - b.amount,
+      );
+      newRewardAmount = ''; // eslint-disable-line require-atomic-updates -- input disabled via savingReward guard
+      showSuccessAlert(`Prämie ${String(amount)}€ hinzugefügt`);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Fehler beim Hinzufügen';
+      showErrorAlert(message);
+    } finally {
+      savingReward = false;
+    }
+  }
+
+  async function handleDeleteRewardTier(tierId: number, amount: number): Promise<void> {
+    savingReward = true;
+    try {
+      await apiClient.delete(`/kvp/reward-tiers/${String(tierId)}`);
+      rewardTiers = rewardTiers.filter((t: { id: number }) => t.id !== tierId);
+      showSuccessAlert(`Prämie ${String(amount)}€ entfernt`);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Fehler beim Entfernen';
+      showErrorAlert(message);
+    } finally {
+      savingReward = false;
     }
   }
 </script>
@@ -136,4 +184,129 @@
       {/if}
     </div>
   </div>
+
+  <!-- ================================================================= -->
+  <!-- SECTION: KVP Reward Tiers                                          -->
+  <!-- ================================================================= -->
+  <div class="card mt-6">
+    <div class="card__header">
+      <h2 class="card__title">
+        <i class="fas fa-trophy mr-2"></i>
+        KVP Prämien
+      </h2>
+      <p class="mt-2 text-(--color-text-secondary)">
+        Vordefinierte Prämienbeträge für genehmigte KVP-Vorschläge. Der Freigabe-Master wählt beim
+        Genehmigen einen Betrag aus.
+      </p>
+    </div>
+
+    <div class="card__body">
+      <!-- Existing tiers -->
+      {#if rewardTiers.length > 0}
+        <div class="reward-tiers-list">
+          {#each rewardTiers as tier (tier.id)}
+            <div class="reward-tier-item">
+              <span class="reward-tier-amount">{tier.amount.toFixed(2)} €</span>
+              <button
+                type="button"
+                class="reward-tier-delete"
+                title="Entfernen"
+                disabled={savingReward}
+                onclick={() => void handleDeleteRewardTier(tier.id, tier.amount)}
+              >
+                <i class="fas fa-times"></i>
+              </button>
+            </div>
+          {/each}
+        </div>
+      {:else}
+        <p class="mb-4 text-(--color-text-secondary)">Noch keine Prämienbeträge definiert.</p>
+      {/if}
+
+      <!-- Add new tier -->
+      <div class="reward-tier-add">
+        <input
+          type="number"
+          class="form-field__control reward-tier-input"
+          placeholder="Betrag in €"
+          min="0.01"
+          step="0.01"
+          bind:value={newRewardAmount}
+          disabled={savingReward}
+          onkeydown={(e: KeyboardEvent) => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              void handleAddRewardTier();
+            }
+          }}
+        />
+        <button
+          type="button"
+          class="btn btn-success"
+          disabled={savingReward || newRewardAmount === '' || parseFloat(newRewardAmount) <= 0}
+          onclick={() => void handleAddRewardTier()}
+        >
+          {#if savingReward}
+            <span class="spinner-ring spinner-ring--sm"></span>
+          {:else}
+            <i class="fas fa-plus"></i>
+          {/if}
+          Hinzufügen
+        </button>
+      </div>
+    </div>
+  </div>
 </div>
+
+<style>
+  .reward-tiers-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-2);
+    margin-bottom: var(--spacing-4);
+  }
+
+  .reward-tier-item {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-2);
+    padding: var(--spacing-2) var(--spacing-3);
+    border: 1px solid var(--color-glass-border);
+    border-radius: var(--radius-xl);
+    background: var(--glass-bg);
+  }
+
+  .reward-tier-amount {
+    font-weight: 600;
+    font-size: 0.95rem;
+  }
+
+  .reward-tier-delete {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border: none;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .reward-tier-delete:hover {
+    background: var(--color-danger);
+    color: var(--color-white);
+  }
+
+  .reward-tier-add {
+    display: flex;
+    gap: var(--spacing-3);
+    align-items: center;
+  }
+
+  .reward-tier-input {
+    max-width: 150px;
+  }
+</style>

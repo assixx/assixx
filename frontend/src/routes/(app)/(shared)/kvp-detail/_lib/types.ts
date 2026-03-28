@@ -186,6 +186,7 @@ export interface ApprovalInfo {
   decidedByName: string | null;
   decidedAt: string | null;
   decisionNote: string | null;
+  rewardAmount: number | null;
   createdAt: string;
 }
 

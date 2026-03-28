@@ -283,14 +283,15 @@ export class ApprovalsService {
     return mapped;
   }
 
-  /** Approve an approval request */
+  /** Approve an approval request (optionally with reward amount) */
   async approve(
     uuid: string,
     tenantId: number,
     decidedBy: number,
     note: string | null = null,
+    rewardAmount: number | null = null,
   ): Promise<Approval> {
-    return await this.decide(uuid, tenantId, decidedBy, 'approved', note);
+    return await this.decide(uuid, tenantId, decidedBy, 'approved', note, rewardAmount);
   }
 
   /** Reject an approval request (note mandatory) */
@@ -342,6 +343,7 @@ export class ApprovalsService {
     decidedBy: number,
     newStatus: 'approved' | 'rejected',
     note: string | null,
+    rewardAmount: number | null = null,
   ): Promise<Approval> {
     const row = await this.db.tenantTransaction(
       async (client: PoolClient): Promise<ApprovalListRow> => {
@@ -370,9 +372,9 @@ export class ApprovalsService {
         await client.query(
           `UPDATE approvals
            SET status = $1, decided_by = $2, decided_at = NOW(),
-               decision_note = $3, updated_at = NOW()
-           WHERE id = $4`,
-          [newStatus, decidedBy, note, approval.id],
+               decision_note = $3, reward_amount = $4, updated_at = NOW()
+           WHERE id = $5`,
+          [newStatus, decidedBy, note, rewardAmount, approval.id],
         );
 
         // Re-fetch with JOINed names

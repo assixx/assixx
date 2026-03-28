@@ -443,7 +443,7 @@ export class KvpApprovalService implements OnModuleInit {
         'user',
         requestedByUserId,
         tenantId,
-        0, // system action
+        requestedByUserId,
       );
     } catch (error: unknown) {
       this.logger.error(`Failed to create decision notification: ${getErrorMessage(error)}`);

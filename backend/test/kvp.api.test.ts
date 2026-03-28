@@ -167,6 +167,110 @@ describe('KVP: Settings Validation', () => {
   });
 });
 
+// ---- seq: 0b -- KVP Reward Tiers (root-only CRUD) ----------------------------
+
+let createdTierId: number | undefined;
+
+describe('KVP: List Reward Tiers (initially)', () => {
+  let res: Response;
+  let body: JsonBody;
+
+  beforeAll(async () => {
+    res = await fetch(`${BASE_URL}/kvp/reward-tiers`, {
+      headers: authOnly(auth.authToken),
+    });
+    body = (await res.json()) as JsonBody;
+  });
+
+  it('should return 200 OK', () => {
+    expect(res.status).toBe(200);
+    expect(body.success).toBe(true);
+  });
+
+  it('should return an array', () => {
+    expect(Array.isArray(body.data)).toBe(true);
+  });
+});
+
+describe('KVP: Create Reward Tier', () => {
+  let res: Response;
+  let body: JsonBody;
+
+  beforeAll(async () => {
+    res = await fetch(`${BASE_URL}/kvp/reward-tiers`, {
+      method: 'POST',
+      headers: authHeaders(auth.authToken),
+      body: JSON.stringify({ amount: 77.77 }),
+    });
+    body = (await res.json()) as JsonBody;
+    if (res.status === 201 && body.data?.id) {
+      createdTierId = body.data.id as number;
+    }
+  });
+
+  it('should return 201 Created', () => {
+    expect(res.status).toBe(201);
+    expect(body.success).toBe(true);
+  });
+
+  it('should return tier with id, amount, sortOrder', () => {
+    expect(body.data).toHaveProperty('id');
+    expect(body.data.amount).toBe(77.77);
+    expect(typeof body.data.sortOrder).toBe('number');
+  });
+});
+
+describe('KVP: Create Duplicate Reward Tier', () => {
+  it('should return 409 Conflict for duplicate amount', async () => {
+    const res = await fetch(`${BASE_URL}/kvp/reward-tiers`, {
+      method: 'POST',
+      headers: authHeaders(auth.authToken),
+      body: JSON.stringify({ amount: 77.77 }),
+    });
+    expect(res.status).toBe(409);
+  });
+});
+
+describe('KVP: Verify Reward Tier in List', () => {
+  let res: Response;
+  let body: JsonBody;
+
+  beforeAll(async () => {
+    res = await fetch(`${BASE_URL}/kvp/reward-tiers`, {
+      headers: authOnly(auth.authToken),
+    });
+    body = (await res.json()) as JsonBody;
+  });
+
+  it('should contain the created tier', () => {
+    expect(res.status).toBe(200);
+    const tiers = body.data as Array<{ id: number; amount: number }>;
+    const found = tiers.find((t: { id: number }) => t.id === createdTierId);
+    expect(found).toBeDefined();
+    expect(found?.amount).toBe(77.77);
+  });
+});
+
+describe('KVP: Delete Reward Tier', () => {
+  it('should return 204 No Content', async () => {
+    if (createdTierId === undefined) return;
+    const res = await fetch(`${BASE_URL}/kvp/reward-tiers/${createdTierId}`, {
+      method: 'DELETE',
+      headers: authOnly(auth.authToken),
+    });
+    expect(res.status).toBe(204);
+  });
+
+  it('should return 404 when deleting again', async () => {
+    if (createdTierId === undefined) return;
+    const res = await fetch(`${BASE_URL}/kvp/reward-tiers/${createdTierId}`, {
+      method: 'DELETE',
+      headers: authOnly(auth.authToken),
+    });
+    expect(res.status).toBe(404);
+  });
+});
+
 // ---- seq: 1 -- List KVP Suggestions -----------------------------------------
 
 describe('KVP: List Suggestions', () => {

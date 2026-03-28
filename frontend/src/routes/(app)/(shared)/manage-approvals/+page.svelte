@@ -27,12 +27,15 @@
   interface ApprovalItem {
     uuid: string;
     addonCode: string;
+    sourceEntityType: string;
+    sourceUuid: string;
     title: string;
     requestedByName: string;
     status: 'pending' | 'approved' | 'rejected';
     priority: string;
     decidedByName: string | null;
     decisionNote: string | null;
+    rewardAmount: number | null;
     isRead: boolean;
     createdAt: string;
   }
@@ -45,12 +48,16 @@
   let addonFilter = $state('');
   let submitting = $state(false);
 
+  /** Tracks UUIDs marked as read client-side — survives invalidateAll() */
+  const locallyRead: Record<string, boolean> = $state({});
+
   // Modal state
   let showApproveModal = $state(false);
   let showRejectModal = $state(false);
   let activeApproval = $state<ApprovalItem | null>(null);
   let rejectNote = $state('');
   let approveNote = $state('');
+  let selectedRewardAmount = $state<number | null>(null);
 
   // =============================================================================
   // CONSTANTS
@@ -98,6 +105,18 @@
     surveys: { cssClass: 'badge--success', label: 'Umfragen' },
   };
 
+  /** Resolves the detail page URL for a given approval source, or null if no deep-link exists */
+  function resolveSourceUrl(addonCode: string, sourceUuid: string): string | null {
+    switch (addonCode) {
+      case 'kvp':
+        return `/kvp-detail?uuid=${sourceUuid}`;
+      case 'blackboard':
+        return `/blackboard/${sourceUuid}`;
+      default:
+        return null;
+    }
+  }
+
   // =============================================================================
   // DERIVED
   // =============================================================================
@@ -105,6 +124,7 @@
   const stats = $derived(data.stats);
   const approvals = $derived(data.approvals);
   const items = $derived('items' in approvals ? (approvals.items as ApprovalItem[]) : []);
+  const rewardTiers = $derived(data.rewardTiers);
 
   /** Client-side filtering (SSR already filtered, this is for quick toggling) */
   const filteredItems = $derived(
@@ -121,9 +141,13 @@
   // HANDLERS
   // =============================================================================
 
+  function isUnread(approval: ApprovalItem): boolean {
+    return !approval.isRead && !locallyRead[approval.uuid];
+  }
+
   function markAsRead(approval: ApprovalItem): void {
-    if (approval.isRead) return;
-    approval.isRead = true;
+    if (approval.isRead || locallyRead[approval.uuid]) return;
+    locallyRead[approval.uuid] = true;
     void fetch(`/api/v2/approvals/${approval.uuid}/read`, { method: 'POST' });
   }
 
@@ -131,6 +155,7 @@
     markAsRead(approval);
     activeApproval = approval;
     approveNote = '';
+    selectedRewardAmount = null;
     showApproveModal = true;
   }
 
@@ -150,6 +175,7 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           decisionNote: approveNote !== '' ? approveNote : null,
+          rewardAmount: selectedRewardAmount,
         }),
       });
       if (res.ok) {
@@ -290,6 +316,7 @@
                 <th scope="col">Angefragt von</th>
                 <th scope="col">Priorität</th>
                 <th scope="col">Status</th>
+                <th scope="col">Prämie</th>
                 <th scope="col">Datum</th>
                 <th scope="col">Aktionen</th>
               </tr>
@@ -300,10 +327,22 @@
                 {@const addonBadge = ADDON_BADGE[approval.addonCode]}
                 {@const priorityCss = PRIORITY_BADGE[approval.priority] ?? 'badge--outline'}
                 {@const priorityLabel = PRIORITY_LABEL[approval.priority] ?? approval.priority}
-                <tr>
+                {@const sourceUrl = resolveSourceUrl(approval.addonCode, approval.sourceUuid)}
+                <tr
+                  onclick={() => {
+                    markAsRead(approval);
+                  }}
+                >
                   <td class="td--title">
-                    {approval.title}
-                    {#if !approval.isRead}
+                    {#if sourceUrl !== null}
+                      <a
+                        href={sourceUrl}
+                        class="source-link">{approval.title}</a
+                      >
+                    {:else}
+                      {approval.title}
+                    {/if}
+                    {#if isUnread(approval)}
                       <span class="badge badge--sm badge--success ml-2">Neu</span>
                     {/if}
                   </td>
@@ -323,6 +362,13 @@
                       <i class="fas {statusBadge.icon}"></i>
                       {statusBadge.label}
                     </span>
+                  </td>
+                  <td>
+                    {#if approval.rewardAmount !== null}
+                      <span class="badge badge--success">{approval.rewardAmount.toFixed(0)} €</span>
+                    {:else}
+                      <span class="text-(--color-text-secondary)">—</span>
+                    {/if}
                   </td>
                   <td>{new Date(approval.createdAt).toLocaleDateString('de-DE')}</td>
                   <td>
@@ -372,6 +418,7 @@
 <ConfirmModal
   show={showApproveModal && activeApproval !== null}
   id="approve-modal"
+  wide
   title="Freigabe genehmigen"
   variant="success"
   icon="fa-check"
@@ -384,18 +431,50 @@
   }}
 >
   {#if activeApproval !== null}
-    <p><strong>{activeApproval.title}</strong></p>
+    {@const approveSourceUrl = resolveSourceUrl(
+      activeApproval.addonCode,
+      activeApproval.sourceUuid,
+    )}
+    <p>
+      <strong>
+        {#if approveSourceUrl !== null}
+          <a
+            href={approveSourceUrl}
+            class="source-link"
+            target="_blank"
+            rel="noopener noreferrer">{activeApproval.title}</a
+          >
+        {:else}
+          {activeApproval.title}
+        {/if}
+      </strong>
+    </p>
     <p>
       Modul: {activeApproval.addonCode} | Angefragt von: {activeApproval.requestedByName}
     </p>
-    <div class="form-group mt-4">
-      <label
-        class="form-label"
-        for="approve-note">Kommentar (optional)</label
-      >
+    {#if activeApproval.addonCode === 'kvp' && rewardTiers.length > 0}
+      <div class="reward-select">
+        <p class="reward-select__label">Prämie (optional):</p>
+        <div class="toggle-group">
+          {#each rewardTiers as tier (tier.id)}
+            <button
+              type="button"
+              class="toggle-group__btn"
+              class:active={selectedRewardAmount === tier.amount}
+              onclick={() => {
+                selectedRewardAmount = selectedRewardAmount === tier.amount ? null : tier.amount;
+              }}
+            >
+              {tier.amount.toFixed(0)} €
+            </button>
+          {/each}
+        </div>
+      </div>
+    {/if}
+    <div class="confirm-modal__input-group">
       <textarea
         id="approve-note"
-        class="form-textarea"
+        class="confirm-modal__input"
         rows="3"
         bind:value={approveNote}
         placeholder="Optionaler Kommentar zur Genehmigung..."
@@ -408,6 +487,7 @@
 <ConfirmModal
   show={showRejectModal && activeApproval !== null}
   id="reject-modal"
+  wide
   title="Freigabe ablehnen"
   variant="danger"
   icon="fa-times"
@@ -421,18 +501,28 @@
   }}
 >
   {#if activeApproval !== null}
-    <p><strong>{activeApproval.title}</strong></p>
+    {@const rejectSourceUrl = resolveSourceUrl(activeApproval.addonCode, activeApproval.sourceUuid)}
+    <p>
+      <strong>
+        {#if rejectSourceUrl !== null}
+          <a
+            href={rejectSourceUrl}
+            class="source-link"
+            target="_blank"
+            rel="noopener noreferrer">{activeApproval.title}</a
+          >
+        {:else}
+          {activeApproval.title}
+        {/if}
+      </strong>
+    </p>
     <p>
       Modul: {activeApproval.addonCode} | Angefragt von: {activeApproval.requestedByName}
     </p>
-    <div class="form-group mt-4">
-      <label
-        class="form-label"
-        for="reject-note">Begründung (Pflicht)</label
-      >
+    <div class="confirm-modal__input-group">
       <textarea
         id="reject-note"
-        class="form-textarea"
+        class="confirm-modal__input"
         rows="3"
         bind:value={rejectNote}
         placeholder="Begründung für die Ablehnung..."
@@ -459,6 +549,10 @@
     display: flex;
     gap: var(--spacing-4);
     flex-wrap: wrap;
+  }
+
+  tr {
+    cursor: pointer;
   }
 
   .td--title {
@@ -503,31 +597,25 @@
     cursor: help;
   }
 
-  .form-group {
-    margin-bottom: 0;
+  .source-link {
+    color: var(--color-primary);
+    text-decoration: none;
+    transition: color 0.2s ease;
   }
 
-  .form-label {
-    display: block;
-    margin-bottom: var(--spacing-2);
+  .source-link:hover {
+    color: var(--color-primary-hover);
+    text-decoration: underline;
+  }
+
+  .reward-select {
+    margin: var(--spacing-3) 0;
+  }
+
+  .reward-select__label {
+    margin: 0 0 var(--spacing-2);
+    font-size: 0.85rem;
     font-weight: 600;
-    font-size: 0.875rem;
-  }
-
-  .form-textarea {
-    width: 100%;
-    padding: var(--spacing-2) var(--spacing-3);
-    border: 1px solid var(--color-glass-border);
-    border-radius: var(--radius-lg);
-    background: var(--glass-bg);
-    color: inherit;
-    font-size: 0.875rem;
-    resize: vertical;
-    transition: border-color 0.2s ease;
-  }
-
-  .form-textarea:focus {
-    border-color: var(--color-primary);
-    outline: none;
+    color: var(--color-text-secondary);
   }
 </style>

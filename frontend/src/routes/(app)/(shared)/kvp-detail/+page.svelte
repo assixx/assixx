@@ -14,6 +14,8 @@
   import { notificationStore } from '$lib/stores/notification.store.svelte';
   import { showConfirm, showErrorAlert, showSuccessAlert, showWarningAlert } from '$lib/utils';
 
+  import ConfirmModal from '$design-system/components/confirm-modal/ConfirmModal.svelte';
+
   import { filterState } from '../kvp/_lib/state-filters.svelte';
   import { isFaIcon } from '../kvp/_lib/utils';
   import { fetchEligibleUsers } from '../work-orders/_lib/api';
@@ -87,6 +89,7 @@
   const linkedWorkOrders = $derived(data.linkedWorkOrders);
   const approval = $derived(data.approval);
   const hasApprovalConfig = $derived(data.hasApprovalConfig);
+  const isApprovalMaster = $derived(data.isApprovalMaster);
 
   // Derived: Photo attachments (uses IMAGE_FILE_TYPES from constants via util)
   const photoAttachments = $derived(
@@ -420,6 +423,13 @@
   let showWoModal = $state(false);
   let woPreloadedUsers = $state<EligibleUser[] | null>(null);
 
+  // Approval approve/reject from detail page (for KVP approval masters)
+  let showApproveApprovalModal = $state(false);
+  let showRejectApprovalModal = $state(false);
+  let approvalNote = $state('');
+  let approvalRejectNote = $state('');
+  let approvalSubmitting = $state(false);
+
   async function handleOpenWoModal(): Promise<void> {
     try {
       const users = await fetchEligibleUsers();
@@ -445,6 +455,68 @@
   function handleWoSaved(): void {
     showWoModal = false;
     void invalidateAll();
+  }
+
+  // ==========================================================================
+  // APPROVAL APPROVE/REJECT FROM DETAIL (KVP Approval Master)
+  // ==========================================================================
+
+  function openApproveApprovalModal(): void {
+    approvalNote = '';
+    showApproveApprovalModal = true;
+  }
+
+  function openRejectApprovalModal(): void {
+    approvalRejectNote = '';
+    showRejectApprovalModal = true;
+  }
+
+  async function handleApproveApproval(): Promise<void> {
+    if (approval === null) return;
+    approvalSubmitting = true;
+    try {
+      const res = await fetch(`/api/v2/approvals/${approval.uuid}/approve`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ decisionNote: approvalNote !== '' ? approvalNote : null }),
+      });
+      if (res.ok) {
+        showSuccessAlert('Freigabe genehmigt');
+        showApproveApprovalModal = false;
+        await invalidateAll();
+      } else {
+        const body = (await res.json()) as { error?: { message?: string } };
+        showErrorAlert(body.error?.message ?? 'Fehler beim Genehmigen');
+      }
+    } catch {
+      showErrorAlert('Fehler beim Genehmigen');
+    } finally {
+      approvalSubmitting = false;
+    }
+  }
+
+  async function handleRejectApproval(): Promise<void> {
+    if (approval === null || approvalRejectNote.trim() === '') return;
+    approvalSubmitting = true;
+    try {
+      const res = await fetch(`/api/v2/approvals/${approval.uuid}/reject`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ decisionNote: approvalRejectNote }),
+      });
+      if (res.ok) {
+        showSuccessAlert('Freigabe abgelehnt');
+        showRejectApprovalModal = false;
+        await invalidateAll();
+      } else {
+        const body = (await res.json()) as { error?: { message?: string } };
+        showErrorAlert(body.error?.message ?? 'Fehler beim Ablehnen');
+      }
+    } catch {
+      showErrorAlert('Fehler beim Ablehnen');
+    } finally {
+      approvalSubmitting = false;
+    }
   }
 
   // ==========================================================================
@@ -662,6 +734,7 @@
         {linkedWorkOrders}
         {approval}
         {hasApprovalConfig}
+        {isApprovalMaster}
         onopensharemodal={handleOpenShareModal}
         onunshare={handleUnshare}
         onarchive={handleArchive}
@@ -671,6 +744,8 @@
         onopenpreview={openPreview}
         onopenworkordermodal={handleOpenWoModal}
         onrequestapproval={handleRequestApproval}
+        onapprove={openApproveApprovalModal}
+        onreject={openRejectApprovalModal}
       />
     </div>
   </div>
@@ -703,6 +778,67 @@
     currentIndex={previewIndex ?? undefined}
     totalCount={attachments.length}
   />
+
+  <!-- Approval Approve Modal (KVP Approval Master) -->
+  <ConfirmModal
+    show={showApproveApprovalModal && approval !== null}
+    id="kvp-approve-approval-modal"
+    wide
+    title="Freigabe genehmigen"
+    variant="success"
+    icon="fa-check"
+    confirmLabel="Genehmigen"
+    submitting={approvalSubmitting}
+    onconfirm={() => void handleApproveApproval()}
+    oncancel={() => {
+      showApproveApprovalModal = false;
+    }}
+  >
+    {#if approval !== null}
+      <p><strong>{suggestion.title}</strong></p>
+      <p>Angefragt von: {approval.requestedByName}</p>
+      <div class="confirm-modal__input-group">
+        <textarea
+          id="kvp-approve-note"
+          class="confirm-modal__input"
+          rows="3"
+          bind:value={approvalNote}
+          placeholder="Optionaler Kommentar zur Genehmigung..."
+        ></textarea>
+      </div>
+    {/if}
+  </ConfirmModal>
+
+  <!-- Approval Reject Modal (KVP Approval Master) -->
+  <ConfirmModal
+    show={showRejectApprovalModal && approval !== null}
+    id="kvp-reject-approval-modal"
+    wide
+    title="Freigabe ablehnen"
+    variant="danger"
+    icon="fa-times"
+    confirmLabel="Ablehnen"
+    submitting={approvalSubmitting}
+    onconfirm={() => void handleRejectApproval()}
+    oncancel={() => {
+      showRejectApprovalModal = false;
+    }}
+  >
+    {#if approval !== null}
+      <p><strong>{suggestion.title}</strong></p>
+      <p>Angefragt von: {approval.requestedByName}</p>
+      <div class="confirm-modal__input-group">
+        <textarea
+          id="kvp-reject-note"
+          class="confirm-modal__input"
+          rows="3"
+          bind:value={approvalRejectNote}
+          placeholder="Begründung für die Ablehnung..."
+          required
+        ></textarea>
+      </div>
+    {/if}
+  </ConfirmModal>
 {/if}
 
 <style>

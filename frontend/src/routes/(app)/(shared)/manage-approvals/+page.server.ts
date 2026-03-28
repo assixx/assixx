@@ -32,6 +32,7 @@ interface ApprovalListItem {
   decidedByName: string | null;
   decidedAt: string | null;
   decisionNote: string | null;
+  rewardAmount: number | null;
   isRead: boolean;
   createdAt: string;
 }
@@ -98,13 +99,19 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent, url }) => {
     total: 0,
   };
 
-  const [approvalsData, statsData] = await Promise.all([
+  const [approvalsData, statsData, rewardTiersData] = await Promise.all([
     apiFetch<PaginatedApprovals>('/approvals?page=1&limit=20', token, fetch),
     apiFetch<ApprovalStats>('/approvals/stats', token, fetch),
+    apiFetch<{ id: number; amount: number; sortOrder: number }[]>(
+      '/kvp/reward-tiers',
+      token,
+      fetch,
+    ),
   ]);
 
   return {
     approvals: approvalsData ?? emptyPage,
     stats: statsData ?? emptyStats,
+    rewardTiers: Array.isArray(rewardTiersData) ? rewardTiersData : [],
   };
 };

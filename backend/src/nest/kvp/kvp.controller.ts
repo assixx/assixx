@@ -79,6 +79,8 @@ import {
 import { KvpApprovalService } from './kvp-approval.service.js';
 import type { CustomizableCategoriesResponse } from './kvp-categories.service.js';
 import { KvpCategoriesService } from './kvp-categories.service.js';
+import type { RewardTier } from './kvp-reward-tiers.service.js';
+import { KvpRewardTiersService } from './kvp-reward-tiers.service.js';
 import type {
   CategoryOption,
   DashboardStats,
@@ -124,6 +126,7 @@ export class KvpController {
     private readonly kvpService: KvpService,
     private readonly categoriesService: KvpCategoriesService,
     private readonly kvpApprovalService: KvpApprovalService,
+    private readonly rewardTiersService: KvpRewardTiersService,
   ) {}
 
   // ==========================================================================
@@ -153,6 +156,38 @@ export class KvpController {
     @TenantId() tenantId: number,
   ): Promise<{ dailyLimit: number }> {
     return await this.kvpService.updateKvpSettings(tenantId, dto.dailyLimit);
+  }
+
+  // ==========================================================================
+  // REWARD TIERS (root only)
+  // ==========================================================================
+
+  /** GET /kvp/reward-tiers — List active reward tiers */
+  @Get('reward-tiers')
+  @RequirePermission(KVP_FEATURE, KVP_SUGGESTIONS, 'canRead')
+  async getRewardTiers(@TenantId() tenantId: number): Promise<RewardTier[]> {
+    return await this.rewardTiersService.findAll(tenantId);
+  }
+
+  /** POST /kvp/reward-tiers — Create a new reward tier (root only) */
+  @Post('reward-tiers')
+  @UseGuards(RolesGuard)
+  @Roles('root')
+  @HttpCode(HttpStatus.CREATED)
+  async createRewardTier(
+    @TenantId() tenantId: number,
+    @Body() body: { amount: number },
+  ): Promise<RewardTier> {
+    return await this.rewardTiersService.create(tenantId, body.amount);
+  }
+
+  /** DELETE /kvp/reward-tiers/:id — Soft-delete a reward tier (root only) */
+  @Delete('reward-tiers/:id')
+  @UseGuards(RolesGuard)
+  @Roles('root')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async deleteRewardTier(@Param('id') id: string, @TenantId() tenantId: number): Promise<void> {
+    await this.rewardTiersService.remove(tenantId, Number(id));
   }
 
   // ==========================================================================

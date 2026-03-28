@@ -81,6 +81,7 @@ export interface ApprovalRow {
   decided_by: number | null;
   decided_at: string | null;
   decision_note: string | null;
+  reward_amount: string | null;
   is_active: number;
   created_at: string;
   updated_at: string;
@@ -129,6 +130,7 @@ export interface Approval {
   decidedByName: string | null;
   decidedAt: string | null;
   decisionNote: string | null;
+  rewardAmount: number | null;
   isRead: boolean;
   createdAt: string;
 }
@@ -183,6 +185,7 @@ export function mapApprovalRowToApi(row: ApprovalListRow): Approval {
     decidedByName: row.decided_by_name ?? null,
     decidedAt: row.decided_at,
     decisionNote: row.decision_note,
+    rewardAmount: row.reward_amount !== null ? Number(row.reward_amount) : null,
     isRead: row.read_at !== undefined && row.read_at !== null,
     createdAt: row.created_at,
   };

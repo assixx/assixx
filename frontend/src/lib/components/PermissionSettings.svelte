@@ -911,7 +911,7 @@
     width: 18px;
     height: 18px;
     border-radius: var(--radius-md);
-    border: 2px solid var(--color-glass-border);
+    border: var(--glass-border);
     display: flex;
     align-items: center;
     justify-content: center;

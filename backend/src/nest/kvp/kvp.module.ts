@@ -25,6 +25,7 @@ import { KvpCommentsService } from './kvp-comments.service.js';
 import { KvpConfirmationsService } from './kvp-confirmations.service.js';
 import { KvpLifecycleService } from './kvp-lifecycle.service.js';
 import { KvpPermissionRegistrar } from './kvp-permission.registrar.js';
+import { KvpRewardTiersService } from './kvp-reward-tiers.service.js';
 import { KvpController } from './kvp.controller.js';
 import { KvpService } from './kvp.service.js';
 
@@ -40,6 +41,7 @@ import { KvpService } from './kvp.service.js';
     KvpApprovalService,
     KvpApprovalArchiveCronService,
     KvpLifecycleService,
+    KvpRewardTiersService,
     // Permission registration (ADR-020)
     KvpPermissionRegistrar,
   ],

@@ -38,6 +38,8 @@
     confirmDisabled?: boolean;
     /** Center-align action buttons with min-width */
     centered?: boolean;
+    /** Wider modal (700px) for forms with textareas */
+    wide?: boolean;
     id?: string;
     onconfirm: () => void;
     oncancel: () => void;
@@ -55,6 +57,7 @@
     submitting = false,
     confirmDisabled = false,
     centered = false,
+    wide = false,
     id = 'confirm-modal',
     onconfirm,
     oncancel,
@@ -77,7 +80,10 @@
     aria-labelledby="{id}-title"
     tabindex="-1"
   >
-    <div class="confirm-modal confirm-modal--{variant}">
+    <div
+      class="confirm-modal confirm-modal--{variant}"
+      style={wide ? 'width: 100%; max-width: 560px' : ''}
+    >
       <div class="confirm-modal__icon">
         <i class="fas {icon}"></i>
       </div>
