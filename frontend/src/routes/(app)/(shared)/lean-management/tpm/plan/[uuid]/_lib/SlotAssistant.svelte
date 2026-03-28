@@ -67,7 +67,6 @@
   interface Props {
     planUuid?: string;
     assetUuid?: string;
-    shiftPlanRequired?: boolean;
     cardsHref?: string;
     intervalColors?: IntervalColorConfigEntry[];
     previewWeekday?: number;
@@ -78,7 +77,6 @@
   const {
     planUuid,
     assetUuid,
-    shiftPlanRequired,
     cardsHref,
     intervalColors = [],
     previewWeekday,
@@ -287,12 +285,7 @@
       return await fetchAvailableSlots(planUuid, startDate, slotEndDate);
     }
     if (assetUuid !== undefined) {
-      return await fetchAvailableSlotsByAsset(
-        assetUuid,
-        startDate,
-        slotEndDate,
-        shiftPlanRequired ?? false,
-      );
+      return await fetchAvailableSlotsByAsset(assetUuid, startDate, slotEndDate);
     }
     return null;
   }
@@ -301,7 +294,6 @@
   $effect(() => {
     void planUuid;
     void assetUuid;
-    void shiftPlanRequired;
     void loadData();
   });
 </script>

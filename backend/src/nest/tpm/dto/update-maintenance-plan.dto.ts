@@ -30,7 +30,6 @@ export const UpdateMaintenancePlanSchema = z.object({
     .max(24, 'Puffer darf maximal 24 Stunden sein')
     .multipleOf(0.5, 'Puffer muss in 0.5er-Schritten angegeben werden')
     .optional(),
-  shiftPlanRequired: z.boolean().optional(),
   notes: z.string().trim().max(5000, 'Notizen dürfen maximal 5000 Zeichen lang sein').nullish(),
 });
 

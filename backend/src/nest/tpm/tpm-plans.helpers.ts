@@ -29,7 +29,6 @@ export function mapPlanRowToApi(row: TpmPlanJoinRow): TpmPlan {
     baseRepeatEvery: row.base_repeat_every,
     baseTime: row.base_time,
     bufferHours: Number(row.buffer_hours),
-    shiftPlanRequired: row.shift_plan_required,
     notes: row.notes,
     createdBy: row.created_by,
     isActive: row.is_active,
@@ -53,7 +52,6 @@ const PLAN_UPDATE_MAPPINGS: readonly FieldMapping[] = [
   ['baseRepeatEvery', 'base_repeat_every'],
   ['baseTime', 'base_time'],
   ['bufferHours', 'buffer_hours'],
-  ['shiftPlanRequired', 'shift_plan_required'],
   ['notes', 'notes'],
 ];
 

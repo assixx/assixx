@@ -59,9 +59,8 @@
   const isArchived = $derived(data.plan !== null && data.plan.isActive === 3);
   let submitting = $state(false);
 
-  // Create mode: track asset + shiftPlanRequired for SlotAssistant
+  // Create mode: track asset for SlotAssistant
   let createAssetUuid = $state('');
-  let createShiftPlanRequired = $state(false);
 
   // Schedule preview: track weekday + repeat for SlotAssistant grid preview
   let previewWeekday = $state<number | undefined>(undefined);
@@ -201,7 +200,6 @@
       <div class="mb-6">
         <SlotAssistant
           assetUuid={createAssetUuid}
-          shiftPlanRequired={createShiftPlanRequired}
           intervalColors={data.intervalColors}
           {previewWeekday}
           {previewRepeatEvery}
@@ -246,9 +244,6 @@
               oncancel={handleCancel}
               onassetchange={(uuid: string) => {
                 createAssetUuid = uuid;
-              }}
-              onshiftplanchange={(val: boolean) => {
-                createShiftPlanRequired = val;
               }}
               onschedulepreview={(weekday: number | undefined, repeatEvery: number | undefined) => {
                 previewWeekday = weekday;

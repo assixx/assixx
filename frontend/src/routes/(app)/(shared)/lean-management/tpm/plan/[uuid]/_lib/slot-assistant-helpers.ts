@@ -81,14 +81,12 @@ export function formatDayMonth(dateStr: string, withYear: boolean): string {
 // =========================================================================
 
 export function getConflictLabel(type: string): string {
-  if (type === 'no_shift_plan') return MESSAGES.SLOT_NO_SHIFT;
   if (type === 'existing_tpm') return MESSAGES.SLOT_TPM_EXISTING;
   if (type === 'tpm_schedule') return MESSAGES.SLOT_TPM_SCHEDULE;
   return type;
 }
 
 export function getConflictIcon(type: string): string {
-  if (type === 'no_shift_plan') return 'fa-calendar-xmark';
   if (type === 'existing_tpm') return 'fa-clipboard-check';
   if (type === 'tpm_schedule') return 'fa-clock';
   return 'fa-exclamation';

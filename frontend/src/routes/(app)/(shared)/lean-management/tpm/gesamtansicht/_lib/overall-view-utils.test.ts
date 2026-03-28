@@ -38,7 +38,6 @@ function makePlan(overrides: Partial<TpmPlan> = {}): TpmPlan {
     baseRepeatEvery: 1,
     baseTime: '08:00:00',
     bufferHours: 2,
-    shiftPlanRequired: false,
     notes: null,
     createdBy: 1,
     isActive: 1,

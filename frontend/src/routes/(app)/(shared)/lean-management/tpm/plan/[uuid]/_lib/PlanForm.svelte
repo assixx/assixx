@@ -4,8 +4,7 @@
    * @module plan/[uuid]/_lib/PlanForm
    *
    * Handles both create and edit mode for maintenance plans.
-   * Fields: Asset, Name, Weekday, RepeatEvery, Time, TimeEstimates,
-   * ShiftPlanRequired, Notes.
+   * Fields: Asset, Name, Weekday, RepeatEvery, Time, TimeEstimates, Notes.
    */
   import { untrack } from 'svelte';
 
@@ -41,7 +40,6 @@
     onupdate: (payload: UpdatePlanPayload, estimates: CreateTimeEstimatePayload[]) => void;
     oncancel: () => void;
     onassetchange?: (assetUuid: string) => void;
-    onshiftplanchange?: (shiftPlanRequired: boolean) => void;
     onschedulepreview?: (weekday: number | undefined, repeatEvery: number | undefined) => void;
   }
 
@@ -59,7 +57,6 @@
     onupdate,
     oncancel,
     onassetchange,
-    onshiftplanchange,
     onschedulepreview,
   }: Props = $props();
 
@@ -75,7 +72,6 @@
   let baseTime = $state(untrack(() => (plan?.baseTime ?? '').slice(0, 5)));
   let isAllDay = $state(untrack(() => (plan?.baseTime ?? '').trim().length === 0));
   let bufferHours = $state(untrack(() => plan?.bufferHours ?? 4));
-  let shiftPlanRequired = $state(untrack(() => plan?.shiftPlanRequired ?? false));
   let notes = $state(untrack(() => plan?.notes ?? ''));
 
   // =========================================================================
@@ -142,11 +138,6 @@
       baseTime = '09:00';
     }
   }
-
-  // Notify parent when shiftPlanRequired changes
-  $effect(() => {
-    onshiftplanchange?.(shiftPlanRequired);
-  });
 
   // Schedule preview toggle (only sends values when active)
   let showPreview: boolean = $state(false);
@@ -243,7 +234,6 @@
         baseRepeatEvery,
         baseTime: timeValue,
         bufferHours,
-        shiftPlanRequired,
         notes: notesValue,
       });
     } else {
@@ -255,7 +245,6 @@
           baseRepeatEvery,
           baseTime: timeValue,
           bufferHours,
-          shiftPlanRequired,
           notes: notesValue,
         },
         estimates,
@@ -450,21 +439,6 @@
       showTimeEstimates = val;
     }}
   />
-
-  <!-- Shift plan required toggle -->
-  <div class="form-field">
-    <label class="toggle-switch">
-      <input
-        type="checkbox"
-        class="toggle-switch__input"
-        bind:checked={shiftPlanRequired}
-        disabled={submitting}
-      />
-      <span class="toggle-switch__slider"></span>
-      <span class="toggle-switch__label">{messages.LABEL_SHIFT_REQUIRED}</span>
-    </label>
-    <span class="form-field__message">{messages.HELP_SHIFT_REQUIRED}</span>
-  </div>
 
   <!-- Notes -->
   <div class="form-field">

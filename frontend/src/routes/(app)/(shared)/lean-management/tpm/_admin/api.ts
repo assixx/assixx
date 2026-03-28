@@ -186,15 +186,9 @@ export async function fetchAvailableSlotsByAsset(
   assetUuid: string,
   startDate: string,
   endDate: string,
-  shiftPlanRequired: boolean,
 ): Promise<SlotAvailabilityResult | null> {
   try {
-    const params = new URLSearchParams({
-      assetUuid,
-      startDate,
-      endDate,
-      shiftPlanRequired: String(shiftPlanRequired),
-    });
+    const params = new URLSearchParams({ assetUuid, startDate, endDate });
     return await apiClient.get<SlotAvailabilityResult>(
       `/tpm/plans/available-slots?${params.toString()}`,
     );

@@ -47,7 +47,6 @@ export interface TpmMaintenancePlanRow {
   base_repeat_every: number;
   base_time: string | null;
   buffer_hours: string; // NUMERIC(4,1) → pg returns string
-  shift_plan_required: boolean;
   notes: string | null;
   created_by: number;
   is_active: number;
@@ -231,7 +230,6 @@ export interface TpmPlan {
   baseRepeatEvery: number;
   baseTime: string | null;
   bufferHours: number;
-  shiftPlanRequired: boolean;
   notes: string | null;
   createdBy: number;
   createdByName?: string;

@@ -66,7 +66,6 @@ function createPlanRow(overrides?: Partial<TpmPlanJoinRow>): TpmPlanJoinRow {
     base_weekday: 3,
     base_repeat_every: 1,
     base_time: '09:15',
-    shift_plan_required: true,
     notes: 'Wöchentliche Kontrolle',
     created_by: 5,
     is_active: IS_ACTIVE.ACTIVE,
@@ -125,7 +124,6 @@ describe('TpmPlansService', () => {
       expect(result.baseWeekday).toBe(3);
       expect(result.baseRepeatEvery).toBe(1);
       expect(result.baseTime).toBe('09:15');
-      expect(result.shiftPlanRequired).toBe(true);
       expect(result.assetName).toBe('CNC-001');
       expect(result.createdByName).toBe('admin');
     });
@@ -256,7 +254,6 @@ describe('TpmPlansService', () => {
         name: 'Wartungsplan P17',
         baseWeekday: 3,
         baseRepeatEvery: 1,
-        shiftPlanRequired: true,
       });
 
       expect(result.name).toBe('Wartungsplan P17');
@@ -272,7 +269,6 @@ describe('TpmPlansService', () => {
           name: 'Test Plan',
           baseWeekday: 0,
           baseRepeatEvery: 1,
-          shiftPlanRequired: true,
         }),
       ).rejects.toThrow(NotFoundException);
     });
@@ -293,7 +289,6 @@ describe('TpmPlansService', () => {
           name: 'Duplicate Plan',
           baseWeekday: 0,
           baseRepeatEvery: 1,
-          shiftPlanRequired: true,
         }),
       ).rejects.toThrow(ConflictException);
     });
@@ -310,7 +305,6 @@ describe('TpmPlansService', () => {
         name: 'Minimal Plan',
         baseWeekday: 0,
         baseRepeatEvery: 1,
-        shiftPlanRequired: false,
       });
 
       expect(result.baseTime).toBeNull();
@@ -329,7 +323,6 @@ describe('TpmPlansService', () => {
         name: 'Wartungsplan P17',
         baseWeekday: 3,
         baseRepeatEvery: 1,
-        shiftPlanRequired: true,
       });
 
       expect(mockActivityLogger.logCreate).toHaveBeenCalledWith(
@@ -353,7 +346,6 @@ describe('TpmPlansService', () => {
           name: 'Broken Plan',
           baseWeekday: 0,
           baseRepeatEvery: 1,
-          shiftPlanRequired: true,
         }),
       ).rejects.toThrow('INSERT into tpm_maintenance_plans returned no rows');
     });
@@ -370,7 +362,6 @@ describe('TpmPlansService', () => {
         name: 'Test Plan',
         baseWeekday: 0,
         baseRepeatEvery: 1,
-        shiftPlanRequired: true,
       });
 
       // INSERT is the 3rd query call — params[0] is the uuid

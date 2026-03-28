@@ -199,7 +199,6 @@ const BASE_MESSAGES = {
   LABEL_ALL_DAY: 'Ganztägig',
   LABEL_BUFFER_HOURS: 'Wartungsdauer (Puffer)',
   LABEL_TIME_WINDOW: 'Berechnetes Zeitfenster',
-  LABEL_SHIFT_REQUIRED: 'Schichtplan erforderlich',
   LABEL_NOTES: 'Notizen',
 
   // Plan form placeholders
@@ -214,7 +213,6 @@ const BASE_MESSAGES = {
   HELP_REPEAT: 'Der wievielte Wochentag im Monat (1 = erster, 2 = zweiter, 3 = dritter)',
   HELP_BUFFER_HOURS: 'Wie lange dauert die Wartung? Definiert das Zeitfenster ab der Startzeit.',
   HELP_BUFFER_FULL_DAY: 'Ganztägig (keine feste Uhrzeit)',
-  HELP_SHIFT_REQUIRED: 'Prüft ob ein Schichtplan für den Wartungszeitraum existiert',
 
   // Plan form buttons
   BTN_SAVE: 'Speichern',
@@ -248,7 +246,6 @@ const BASE_MESSAGES = {
   SLOT_AVAILABLE: 'Verfügbar',
   SLOT_UNAVAILABLE: 'Belegt',
   SLOT_SCHEDULED: 'Geplanter TPM-Termin',
-  SLOT_NO_SHIFT: 'Kein Schichtplan',
   SLOT_TPM_EXISTING: 'Bestehende Wartung',
   SLOT_TPM_SCHEDULE: 'Geplante Wartung',
   SLOT_LOADING: 'Verfügbarkeit wird geprüft...',

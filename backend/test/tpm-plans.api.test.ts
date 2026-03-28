@@ -64,7 +64,6 @@ describe('TPM: Create Plan', () => {
         baseWeekday: 1,
         baseRepeatEvery: 1,
         baseTime: '08:00',
-        shiftPlanRequired: false,
         notes: 'Created via API test',
       }),
     });
@@ -89,7 +88,6 @@ describe('TPM: Create Plan', () => {
     expect(body.data.baseWeekday).toBe(1);
     expect(body.data.baseRepeatEvery).toBe(1);
     expect(body.data.baseTime).toBe('08:00:00');
-    expect(body.data.shiftPlanRequired).toBe(false);
     expect(body.data.assetId).toBeDefined();
     expect(body.data.isActive).toBe(1);
   });

@@ -163,7 +163,6 @@ export class TpmPlansController {
       assetId,
       query.startDate,
       query.endDate,
-      query.shiftPlanRequired,
     );
   }
 
@@ -315,7 +314,6 @@ export class TpmPlansController {
       plan.assetId,
       query.startDate,
       query.endDate,
-      plan.shiftPlanRequired,
     );
   }
 

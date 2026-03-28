@@ -36,7 +36,6 @@ export interface TpmPlan {
   baseRepeatEvery: number;
   baseTime: string | null;
   bufferHours: number;
-  shiftPlanRequired: boolean;
   notes: string | null;
   createdBy: number;
   createdByName?: string;
