@@ -112,6 +112,8 @@ interface ApprovalEvent {
   approverUserIds: number[];
   /** User ID of the requester (for decision notifications) */
   requestedByUserId: number;
+  /** User ID of the approval master who decided */
+  decidedByUserId?: number;
 }
 
 class NotificationEventBus extends EventEmitter {
@@ -278,6 +280,7 @@ class NotificationEventBus extends EventEmitter {
     tenantId: number,
     approval: ApprovalEvent['approval'],
     requestedByUserId: number,
+    decidedByUserId: number,
   ): void {
     logger.info(`[EventBus] Emitting approval.decided for tenant ${tenantId}`);
     this.emit('approval.decided', {
@@ -285,6 +288,7 @@ class NotificationEventBus extends EventEmitter {
       approval,
       approverUserIds: [],
       requestedByUserId,
+      decidedByUserId,
     });
   }
 
