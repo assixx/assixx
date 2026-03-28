@@ -72,6 +72,31 @@ describe('SECURITY: SurveyAccessService – pure clause builders', () => {
       expect(clause).toContain('aap.tenant_id = $5');
       expect(clause).toContain('aap.admin_user_id = $6');
     });
+
+    // ==========================================================
+    // REGRESSION: Deputy lead visibility at ALL org levels
+    // These tests prevent accidental removal of deputy checks.
+    // If any deputy_lead_id check is removed from the SQL,
+    // the corresponding test will fail immediately.
+    // ==========================================================
+
+    it('REGRESSION: includes area_deputy_lead_id for area-assigned surveys', () => {
+      const clause = service['buildVisibilityClause']('$1', '$2');
+
+      expect(clause).toContain('area_deputy_lead_id');
+    });
+
+    it('REGRESSION: includes department_deputy_lead_id for dept-assigned surveys', () => {
+      const clause = service['buildVisibilityClause']('$1', '$2');
+
+      expect(clause).toContain('department_deputy_lead_id');
+    });
+
+    it('REGRESSION: includes team_deputy_lead_id for team-assigned surveys', () => {
+      const clause = service['buildVisibilityClause']('$1', '$2');
+
+      expect(clause).toContain('team_deputy_lead_id');
+    });
   });
 
   describe('buildManagementVisibilityClause', () => {
@@ -92,6 +117,28 @@ describe('SECURITY: SurveyAccessService – pure clause builders', () => {
       expect(clause).toContain('s.created_by = $4');
       expect(clause).toContain('a.tenant_id = $3');
       expect(clause).toContain('a.area_lead_id = $4');
+    });
+
+    // ==========================================================
+    // REGRESSION: Deputy lead management at ALL org levels
+    // ==========================================================
+
+    it('REGRESSION: includes area_deputy_lead_id for area management', () => {
+      const clause = service['buildManagementVisibilityClause']('$1', '$2');
+
+      expect(clause).toContain('area_deputy_lead_id');
+    });
+
+    it('REGRESSION: includes department_deputy_lead_id for dept management', () => {
+      const clause = service['buildManagementVisibilityClause']('$1', '$2');
+
+      expect(clause).toContain('department_deputy_lead_id');
+    });
+
+    it('REGRESSION: includes team_deputy_lead_id for team management', () => {
+      const clause = service['buildManagementVisibilityClause']('$1', '$2');
+
+      expect(clause).toContain('team_deputy_lead_id');
     });
   });
 });
@@ -711,6 +758,70 @@ describe('SECURITY: SurveyAccessService – DB-mocked methods', () => {
   // ============================================================
   // validateLeadershipPermission (private)
   // ============================================================
+
+  // ==========================================================
+  // REGRESSION: LEADERSHIP_QUERIES include deputy checks
+  // These tests verify that the static SQL constants at the
+  // top of survey-access.service.ts include deputy_lead_id
+  // checks for ALL org levels. If a deputy check is removed,
+  // the corresponding test fails.
+  // ==========================================================
+
+  describe('REGRESSION: LEADERSHIP_QUERIES include deputy checks', () => {
+    it('area query includes area_deputy_lead_id', async () => {
+      mockDb.query.mockResolvedValueOnce([{ id: 5 }]);
+
+      await service['validateLeadershipPermission']('area', 5, 1, 1);
+
+      const sql = mockDb.query.mock.calls[0]?.[0] as string;
+      expect(sql).toContain('area_deputy_lead_id');
+    });
+
+    it('department query includes department_deputy_lead_id', async () => {
+      mockDb.query.mockResolvedValueOnce([{ id: 3 }]);
+
+      await service['validateLeadershipPermission']('department', 3, 1, 1);
+
+      const sql = mockDb.query.mock.calls[0]?.[0] as string;
+      expect(sql).toContain('department_deputy_lead_id');
+    });
+
+    it('department query includes area_deputy_lead_id (inherited)', async () => {
+      mockDb.query.mockResolvedValueOnce([{ id: 3 }]);
+
+      await service['validateLeadershipPermission']('department', 3, 1, 1);
+
+      const sql = mockDb.query.mock.calls[0]?.[0] as string;
+      expect(sql).toContain('area_deputy_lead_id');
+    });
+
+    it('team query includes team_deputy_lead_id', async () => {
+      mockDb.query.mockResolvedValueOnce([{ id: 8 }]);
+
+      await service['validateLeadershipPermission']('team', 8, 1, 1);
+
+      const sql = mockDb.query.mock.calls[0]?.[0] as string;
+      expect(sql).toContain('team_deputy_lead_id');
+    });
+
+    it('team query includes department_deputy_lead_id (inherited)', async () => {
+      mockDb.query.mockResolvedValueOnce([{ id: 8 }]);
+
+      await service['validateLeadershipPermission']('team', 8, 1, 1);
+
+      const sql = mockDb.query.mock.calls[0]?.[0] as string;
+      expect(sql).toContain('department_deputy_lead_id');
+    });
+
+    it('team query includes area_deputy_lead_id (inherited)', async () => {
+      mockDb.query.mockResolvedValueOnce([{ id: 8 }]);
+
+      await service['validateLeadershipPermission']('team', 8, 1, 1);
+
+      const sql = mockDb.query.mock.calls[0]?.[0] as string;
+      expect(sql).toContain('area_deputy_lead_id');
+    });
+  });
 
   describe('validateLeadershipPermission (private)', () => {
     it('returns early when entityId is undefined', async () => {

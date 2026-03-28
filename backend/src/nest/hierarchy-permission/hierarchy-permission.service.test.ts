@@ -700,6 +700,49 @@ describe('SECURITY: getScope', () => {
     expect(scope.areaIds).toEqual([5]);
     expect(scope.isAreaLead).toBe(true);
   });
+
+  // ===========================================================================
+  // REGRESSION: Toggle must always be queried (never cached/hardcoded)
+  // ===========================================================================
+
+  // Scenario 19: getScope must call getDeputyHasLeadScope for every invocation
+  it('REGRESSION: getScope always queries toggle — never hardcoded', async () => {
+    mockUser('admin', false);
+    mockScopeCte({});
+
+    await service.getScope(1, 3);
+
+    expect(mockOrgSettings.getDeputyHasLeadScope).toHaveBeenCalledWith(3);
+  });
+
+  // Scenario 20: Toggle ON — CTE includes deputy in ALL 3 lead CTEs (area, dept, team)
+  it('REGRESSION: toggle ON includes deputy in lead_areas, lead_depts, AND lead_teams', async () => {
+    (mockOrgSettings.getDeputyHasLeadScope as ReturnType<typeof vi.fn>).mockResolvedValue(true);
+    mockUser('employee', false);
+    mockScopeCte({ team_ids: [1], lead_team_ids: [1] });
+
+    await service.getScope(1, 3);
+
+    const sql = (mockDb.query as ReturnType<typeof vi.fn>).mock.calls[1]?.[0] as string;
+    // Each deputy check must appear in its respective CTE section
+    expect(sql).toContain('OR area_deputy_lead_id = $1');
+    expect(sql).toContain('OR department_deputy_lead_id = $1');
+    expect(sql).toContain('OR team_deputy_lead_id = $1');
+  });
+
+  // Scenario 21: Toggle OFF — CTE must NOT have any deputy OR clause
+  it('REGRESSION: toggle OFF excludes ALL deputy OR clauses from CTE', async () => {
+    (mockOrgSettings.getDeputyHasLeadScope as ReturnType<typeof vi.fn>).mockResolvedValue(false);
+    mockUser('employee', false);
+    mockScopeCte({});
+
+    await service.getScope(1, 3);
+
+    const sql = (mockDb.query as ReturnType<typeof vi.fn>).mock.calls[1]?.[0] as string;
+    expect(sql).not.toContain('OR area_deputy_lead_id');
+    expect(sql).not.toContain('OR department_deputy_lead_id');
+    expect(sql).not.toContain('OR team_deputy_lead_id');
+  });
 });
 
 // ============================================
@@ -839,6 +882,30 @@ describe('SECURITY: getVisibleUserIds', () => {
 
     const sql = (mockDb.query as ReturnType<typeof vi.fn>).mock.calls[0]?.[0] as string;
     expect(sql).not.toContain('team_deputy_lead_id');
+  });
+
+  // REGRESSION: getVisibleUserIds must call getDeputyHasLeadScope independently
+  it('REGRESSION: getVisibleUserIds always queries toggle — never hardcoded', async () => {
+    mockQueryReturn([{ id: 10 }]);
+
+    await service.getVisibleUserIds(
+      {
+        type: 'limited',
+        areaIds: [],
+        departmentIds: [5],
+        teamIds: [100],
+        leadAreaIds: [],
+        leadDepartmentIds: [],
+        leadTeamIds: [],
+        isAreaLead: false,
+        isDepartmentLead: false,
+        isTeamLead: false,
+        isAnyLead: false,
+      },
+      7,
+    );
+
+    expect(mockOrgSettings.getDeputyHasLeadScope).toHaveBeenCalledWith(7);
   });
 });
 

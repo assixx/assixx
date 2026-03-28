@@ -249,7 +249,7 @@ export class SurveyAccessService {
             EXISTS (SELECT 1 FROM admin_area_permissions aap
                     WHERE aap.admin_user_id = ${userParam} AND aap.area_id = sa.area_id AND aap.tenant_id = ${tenantParam})
             OR EXISTS (SELECT 1 FROM areas a
-                       WHERE a.id = sa.area_id AND a.area_lead_id = ${userParam} AND a.tenant_id = ${tenantParam})
+                       WHERE a.id = sa.area_id AND (a.area_lead_id = ${userParam} OR a.area_deputy_lead_id = ${userParam}) AND a.tenant_id = ${tenantParam})
             OR EXISTS (SELECT 1 FROM user_departments ud
                        JOIN departments d ON ud.department_id = d.id
                        WHERE ud.user_id = ${userParam} AND ud.tenant_id = ${tenantParam} AND d.area_id = sa.area_id)
@@ -258,7 +258,7 @@ export class SurveyAccessService {
             EXISTS (SELECT 1 FROM admin_department_permissions adp
                     WHERE adp.admin_user_id = ${userParam} AND adp.department_id = sa.department_id AND adp.tenant_id = ${tenantParam})
             OR EXISTS (SELECT 1 FROM departments d
-                       WHERE d.id = sa.department_id AND d.department_lead_id = ${userParam} AND d.tenant_id = ${tenantParam})
+                       WHERE d.id = sa.department_id AND (d.department_lead_id = ${userParam} OR d.department_deputy_lead_id = ${userParam}) AND d.tenant_id = ${tenantParam})
             OR EXISTS (SELECT 1 FROM user_departments ud
                        WHERE ud.user_id = ${userParam} AND ud.department_id = sa.department_id AND ud.tenant_id = ${tenantParam})
             OR EXISTS (SELECT 1 FROM departments d
