@@ -1,5 +1,11 @@
 # @assixx/shared
 
+## 0.4.7
+
+### Patch Changes
+
+- feat: add position master
+
 ## 0.4.6
 
 ### Minor Changes

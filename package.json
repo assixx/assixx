@@ -1,6 +1,6 @@
 {
   "name": "assixx",
-  "version": "0.4.6",
+  "version": "0.4.7",
   "type": "module",
   "main": "backend/dist/nest/main.js",
   "engines": {
@@ -151,7 +151,7 @@
     "eslint-plugin-sonarjs": "^4.0.2",
     "eslint-plugin-storybook": "^10.3.3",
     "husky": "9.1.7",
-    "knip": "^6.0.6",
+    "knip": "^6.1.0",
     "markdownlint-cli": "^0.48.0",
     "node-pg-migrate": "8.0.4",
     "nodemon": "^3.1.14",
@@ -159,6 +159,7 @@
     "prettier": "^3.8.1",
     "prettier-plugin-css-order": "^2.2.0",
     "prettier-plugin-svelte": "^3.5.1",
+    "prettier-plugin-tailwindcss": "^0.7.2",
     "purgecss": "8.0.0",
     "storybook": "^10.3.3",
     "stylelint": "^17.6.0",
