@@ -64,6 +64,7 @@ function setupTreeQueries(
     halls?: Record<string, unknown>[];
     deptHalls?: Record<string, unknown>[];
     teamHalls?: Record<string, unknown>[];
+    assetTeams?: Record<string, unknown>[];
   },
 ): void {
   mockDb.query.mockResolvedValueOnce(
@@ -76,6 +77,7 @@ function setupTreeQueries(
   mockDb.query.mockResolvedValueOnce(data.halls ?? []);
   mockDb.query.mockResolvedValueOnce(data.deptHalls ?? []);
   mockDb.query.mockResolvedValueOnce(data.teamHalls ?? []);
+  mockDb.query.mockResolvedValueOnce(data.assetTeams ?? []);
 }
 
 // =============================================================
@@ -128,6 +130,7 @@ describe('OrganigramService', () => {
       mockDb.query.mockResolvedValueOnce([]); // halls
       mockDb.query.mockResolvedValueOnce([]); // deptHalls
       mockDb.query.mockResolvedValueOnce([]); // teamHalls
+      mockDb.query.mockResolvedValueOnce([]); // assetTeams
 
       await expect(service.getOrgChartTree(999)).rejects.toThrow(NotFoundException);
     });
@@ -421,8 +424,8 @@ describe('OrganigramService', () => {
 
       await service.getOrgChartTree(1);
 
-      // 8 DB queries + 3 settings + 1 layout = 12 parallel calls
-      expect(mockDb.query).toHaveBeenCalledTimes(8);
+      // 9 DB queries + 3 settings + 1 layout = 13 parallel calls
+      expect(mockDb.query).toHaveBeenCalledTimes(9);
       expect(mockSettings.getHierarchyLabels).toHaveBeenCalledOnce();
       expect(mockSettings.getViewport).toHaveBeenCalledOnce();
       expect(mockSettings.getHallOverrides).toHaveBeenCalledOnce();

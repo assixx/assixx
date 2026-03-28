@@ -129,6 +129,11 @@ const dynamicRoutes: DynamicRoute[] = [
     icon: 'fa-map-marker-alt',
   },
   {
+    pattern: /^\/lean-management\/tpm\/plan\/[^/]+\/revisions$/,
+    label: 'Versionshistorie',
+    icon: 'fa-history',
+  },
+  {
     pattern: /^\/work-orders\/[0-9a-f-]+$/,
     label: 'Auftragsdetail',
     icon: ICON_INFO,
@@ -300,6 +305,12 @@ const staticDynamicIntermediates: DynamicIntermediate[] = [
   },
   {
     pattern: /^\/lean-management\/tpm\/cards\/[^/]+$/,
+    label: 'TPM Wartung',
+    href: '/lean-management/tpm',
+    icon: ICON_TOOLS,
+  },
+  {
+    pattern: /^\/lean-management\/tpm\/plan\/[^/]+\/revisions$/,
     label: 'TPM Wartung',
     href: '/lean-management/tpm',
     icon: ICON_TOOLS,

@@ -73,6 +73,7 @@
   let isAllDay = $state(untrack(() => (plan?.baseTime ?? '').trim().length === 0));
   let bufferHours = $state(untrack(() => plan?.bufferHours ?? 4));
   let notes = $state(untrack(() => plan?.notes ?? ''));
+  let changeReason = $state('');
 
   // =========================================================================
   // TIME ESTIMATE STATE
@@ -238,6 +239,7 @@
       });
     } else {
       const estimates = showTimeEstimates && plan !== null ? buildEstimatePayloads(plan.uuid) : [];
+      const reasonValue = changeReason.trim().length > 0 ? changeReason.trim() : undefined;
       onupdate(
         {
           name: name.trim(),
@@ -246,6 +248,7 @@
           baseTime: timeValue,
           bufferHours,
           notes: notesValue,
+          changeReason: reasonValue,
         },
         estimates,
       );
@@ -275,6 +278,18 @@
         <i class="fas fa-cog"></i>
         {plan.assetName ?? '—'}
       </div>
+    </div>
+
+    <!-- Version Badge + Revisions Link (edit mode only) -->
+    <div class="revision-info">
+      <span class="revision-badge">v{plan.revisionNumber}</span>
+      <a
+        href="/lean-management/tpm/plan/{plan.uuid}/revisions"
+        class="revision-link"
+      >
+        <i class="fas fa-history"></i>
+        Versionshistorie
+      </a>
     </div>
   {/if}
 
@@ -457,6 +472,27 @@
     ></textarea>
   </div>
 
+  <!-- Change Reason (edit mode only) -->
+  {#if !isCreateMode}
+    <div class="form-field">
+      <label
+        class="form-field__label"
+        for="changeReason"
+      >
+        Änderungsgrund
+        <span class="form-field__hint">(empfohlen)</span>
+      </label>
+      <textarea
+        id="changeReason"
+        class="form-textarea"
+        bind:value={changeReason}
+        placeholder="Warum wurde der Plan geändert? (z.B. Schichtwechsel, neue Vorgaben)"
+        rows={2}
+        maxlength={500}
+      ></textarea>
+    </div>
+  {/if}
+
   <!-- Actions -->
   <div class="form-actions">
     <button
@@ -534,6 +570,44 @@
   .form-input-group .plan-form__narrow {
     width: 80px;
     text-align: center;
+  }
+
+  .revision-info {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .revision-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.125rem 0.5rem;
+    background: var(--color-primary);
+    color: var(--color-white);
+    border-radius: var(--radius-full, 9999px);
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+
+  .revision-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    font-size: 0.8125rem;
+    color: var(--color-primary);
+    text-decoration: none;
+    transition: opacity 0.15s;
+  }
+
+  .revision-link:hover {
+    opacity: 80%;
+    text-decoration: underline;
+  }
+
+  .form-field__hint {
+    font-size: 0.75rem;
+    font-weight: 400;
+    color: var(--color-text-muted);
   }
 
   .form-actions {

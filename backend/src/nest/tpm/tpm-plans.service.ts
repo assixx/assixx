@@ -19,6 +19,8 @@ import type { UpdateMaintenancePlanDto } from './dto/update-maintenance-plan.dto
 import {
   type TpmPlanJoinRow,
   buildPlanUpdateFields,
+  detectChangedFields,
+  insertRevisionSnapshot,
   mapPlanRowToApi,
 } from './tpm-plans.helpers.js';
 import type {
@@ -397,6 +399,9 @@ export class TpmPlansService {
         throw new Error('INSERT into tpm_maintenance_plans returned no rows');
       }
 
+      // Create v1 revision snapshot (initial baseline)
+      await insertRevisionSnapshot(client, tenantId, row, 1, userId, 'Initial version', []);
+
       return mapPlanRowToApi(row);
     });
 
@@ -405,7 +410,7 @@ export class TpmPlansService {
       userId,
       'tpm_plan',
       plan.assetId,
-      `TPM-Wartungsplan erstellt: ${plan.name}`,
+      `TPM-Wartungsplan erstellt (v1): ${plan.name}`,
       { planUuid: plan.uuid, assetName: plan.assetName },
     );
 
@@ -432,11 +437,24 @@ export class TpmPlansService {
         return mapPlanRowToApi(existing);
       }
 
-      // Append WHERE params
+      // Detect which fields actually changed (values differ, not just provided)
+      const changedFields = detectChangedFields(existing, dto as Record<string, unknown>);
+
+      if (changedFields.length === 0) {
+        // Fields provided but values identical → no revision needed
+        return mapPlanRowToApi(existing);
+      }
+
+      const newRevision = existing.revision_number + 1;
+
+      // Append revision_number + WHERE params
+      setClauses.push(`revision_number = $${nextParamIndex}`);
+      params.push(newRevision);
+      const whereIdx = nextParamIndex + 1;
       params.push(planUuid, tenantId);
       const sql = `UPDATE tpm_maintenance_plans
                      SET ${setClauses.join(', ')}, updated_at = NOW()
-                     WHERE uuid = $${nextParamIndex} AND tenant_id = $${nextParamIndex + 1} AND is_active = ${IS_ACTIVE.ACTIVE}
+                     WHERE uuid = $${whereIdx} AND tenant_id = $${whereIdx + 1} AND is_active = ${IS_ACTIVE.ACTIVE}
                      RETURNING *`;
 
       const result = await client.query<TpmPlanJoinRow>(sql, params);
@@ -444,6 +462,17 @@ export class TpmPlansService {
       if (row === undefined) {
         throw new Error('UPDATE tpm_maintenance_plans returned no rows');
       }
+
+      // Create revision snapshot of NEW state
+      await insertRevisionSnapshot(
+        client,
+        tenantId,
+        row,
+        newRevision,
+        userId,
+        dto.changeReason ?? null,
+        changedFields,
+      );
 
       return mapPlanRowToApi(row);
     });
@@ -453,8 +482,8 @@ export class TpmPlansService {
       userId,
       'tpm_plan',
       plan.assetId,
-      `TPM-Wartungsplan aktualisiert: ${plan.name}`,
-      { planUuid },
+      `TPM-Wartungsplan aktualisiert (v${plan.revisionNumber}): ${plan.name}`,
+      { planUuid, changedFields: dto },
       dto as Record<string, unknown>,
     );
 

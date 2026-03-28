@@ -164,38 +164,38 @@ backend/src/nest/tpm/
 
 ### 5. Integration Points
 
-| Integration                      | Pattern                                   | Status   |
-| -------------------------------- | ----------------------------------------- | -------- |
-| SSE Notifications                | EventBus (ADR-003) + persistent DB        | Active   |
-| Dashboard Badge                  | `/dashboard/counts` includes TPM count    | Active   |
-| Audit Logging                    | ActivityLoggerService on all mutations    | Active   |
-| Machine History Bridge           | Direct DB insert on approved execution    | Active   |
-| Shift Grid TPM Overlay           | Frontend calculates dates from plan data  | Active   |
-| Permission System                | ADR-020 per-user feature permissions      | Active   |
-| Feature Gating                   | ADR-024 tenant-level feature flag         | Active   |
-| Execution History                | SSR page per card with lazy photo loading | Active   |
-| Photo Upload (Staged)            | Client-side staging → sequential upload   | Active   |
-| Schedule Projection              | Cross-plan time window conflict detection | Active   |
-| Work Orders (Arbeitsaufträge)    | TPM-Defekt → Arbeitsauftrag (ADR-028)     | Active   |
-| Machine Availability Auto-Status | Infrastructure ready (V2 wiring)          | Deferred |
+| Integration                      | Pattern                                                                    | Status   |
+| -------------------------------- | -------------------------------------------------------------------------- | -------- |
+| SSE Notifications                | EventBus (ADR-003) + persistent DB                                         | Active   |
+| Dashboard Badge                  | `/dashboard/counts` includes TPM count                                     | Active   |
+| Audit Logging                    | ActivityLoggerService on all mutations                                     | Active   |
+| Machine History Bridge           | Direct DB insert on approved execution                                     | Active   |
+| Shift Grid TPM Overlay           | Frontend calculates dates from plan data                                   | Active   |
+| Permission System                | ADR-020 per-user feature permissions                                       | Active   |
+| Feature Gating                   | ADR-024 tenant-level feature flag                                          | Active   |
+| Execution History                | SSR page per card with lazy photo loading                                  | Active   |
+| Photo Upload (Staged)            | Client-side staging → sequential upload                                    | Active   |
+| Schedule Projection              | Cross-plan time window conflict detection                                  | Active   |
+| Work Orders (Arbeitsaufträge)    | TPM-Defekt → Arbeitsauftrag (ADR-028)                                      | Active   |
+| Plan Revision History            | ISO 9001 §7.5.3 — immutable plan snapshots on every change (v1, v2, v3...) | Active   |
+| Machine Availability Auto-Status | Infrastructure ready (V2 wiring)                                           | Deferred |
 
 ### 6. Database Schema
 
-5 migrations, 9 core tables:
+6 migrations, 10 core tables:
 
 ```
-tpm_plans                  — maintenance plan definitions (+buffer_hours NUMERIC(4,1) for time windows)
+tpm_plans                  — maintenance plan definitions (+buffer_hours, +revision_number)
+tpm_plan_revisions         — immutable plan version snapshots (ISO 9001 §7.5.3, INSERT+SELECT only)
 tpm_cards                  — individual maintenance cards (generated from plans)
 tpm_card_executions        — execution records (employee marks card as done)
 tpm_card_execution_photos  — photo attachments per execution (max 5)
-tpm_card_templates         — reusable card templates (JSONB custom fields)
 tpm_time_estimates         — estimated duration per interval type per plan
 tpm_color_config           — per-tenant color customization
 tpm_escalation_config      — per-tenant escalation threshold
-tpm_notification_config    — notification preferences (reserved for V2)
 ```
 
-All tables have: `tenant_id` (RLS), `is_active` (soft delete: 0/1/3/4, use `IS_ACTIVE` constants from `@assixx/shared/constants`), `created_at`, `updated_at`.
+All tables have: `tenant_id` (RLS), `is_active` (soft delete: 0/1/3/4, use `IS_ACTIVE` constants from `@assixx/shared/constants`), `created_at`, `updated_at`. Exception: `tpm_plan_revisions` has no `is_active` or `updated_at` (immutable).
 
 ### 7. Employee Frontend (Kamishibai Board)
 

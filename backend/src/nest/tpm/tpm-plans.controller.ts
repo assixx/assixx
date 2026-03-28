@@ -44,12 +44,14 @@ import { BoardQueryDto } from './dto/board-query.dto.js';
 import { CreateMaintenancePlanDto } from './dto/create-maintenance-plan.dto.js';
 import { CreateTimeEstimateDto } from './dto/create-time-estimate.dto.js';
 import { ListPlansQueryDto } from './dto/list-plans-query.dto.js';
+import { ListRevisionsQueryDto } from './dto/list-revisions-query.dto.js';
 import { ScheduleProjectionQueryDto } from './dto/schedule-projection-query.dto.js';
 import { SetPlanAssignmentsDto } from './dto/set-plan-assignments.dto.js';
 import { ShiftAssignmentsQueryDto } from './dto/shift-assignments-query.dto.js';
 import { UpdateMaintenancePlanDto } from './dto/update-maintenance-plan.dto.js';
 import type { CardListFilter, PaginatedCards } from './tpm-cards.service.js';
 import { TpmCardsService } from './tpm-cards.service.js';
+import { TpmPlanRevisionsService } from './tpm-plan-revisions.service.js';
 import type { IntervalMatrixEntry, PaginatedPlans } from './tpm-plans.service.js';
 import { TpmPlansService } from './tpm-plans.service.js';
 import { TpmScheduleProjectionService } from './tpm-schedule-projection.service.js';
@@ -72,6 +74,8 @@ import type {
   TpmIntervalType,
   TpmMyPermissions,
   TpmPlan,
+  TpmPlanRevision,
+  TpmPlanRevisionList,
   TpmScopedOrgData,
   TpmTimeEstimate,
 } from './tpm.types.js';
@@ -90,6 +94,7 @@ export class TpmPlansController {
     private readonly slotAssistantService: TpmSlotAssistantService,
     private readonly scheduleProjectionService: TpmScheduleProjectionService,
     private readonly shiftAssignmentsService: TpmShiftAssignmentsService,
+    private readonly revisionsService: TpmPlanRevisionsService,
   ) {}
 
   // ============================================================================
@@ -392,6 +397,31 @@ export class TpmPlansController {
       query.limit,
       filters,
     );
+  }
+
+  // ============================================================================
+  // REVISIONS (ISO 9001 plan version history)
+  // ============================================================================
+
+  /** GET /tpm/plans/:uuid/revisions — List all revisions for a plan */
+  @Get(':uuid/revisions')
+  @RequirePermission(FEAT, MOD_PLANS, 'canRead')
+  async listRevisions(
+    @Param('uuid') planUuid: string,
+    @Query() query: ListRevisionsQueryDto,
+    @TenantId() tenantId: number,
+  ): Promise<TpmPlanRevisionList> {
+    return await this.revisionsService.listRevisions(tenantId, planUuid, query.page, query.limit);
+  }
+
+  /** GET /tpm/plans/:uuid/revisions/:revisionUuid — Get single revision */
+  @Get(':uuid/revisions/:revisionUuid')
+  @RequirePermission(FEAT, MOD_PLANS, 'canRead')
+  async getRevision(
+    @Param('revisionUuid') revisionUuid: string,
+    @TenantId() tenantId: number,
+  ): Promise<TpmPlanRevision> {
+    return await this.revisionsService.getRevision(tenantId, revisionUuid);
   }
 }
 

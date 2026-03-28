@@ -9,29 +9,20 @@
 
 .btn-danger {
   box-shadow: var(--shadow-btn-danger);
-  border: 1px solid oklch(56.43% 0.1893 26.98); /* Solid red border - avatar style */
-
-  /* ========== VISUAL ========== */
+  border: 1px solid oklch(59.87% 0.2417 29.41);
   background: linear-gradient(
-    145deg,
-    var(--color-gradient-danger-btn),
-    oklch(22.99% 0.0968 26.96 / 81%)
+    135deg,
+    oklch(65.4% 0.191 28.82 / 15%),
+    oklch(57.67% 0.1764 32.97 / 80%)
   );
-
-  /* Padding - Standard size */
-  padding: var(--spacing-2) var(--spacing-4); /* 8px 16px */
-
-  color: var(--color-white);
+  padding: var(--spacing-2) var(--spacing-4);
+  color: var(--color-text-primary);
 }
 
-/* Hover state - Brighten the gradient */
+/* Hover — slightly brighter */
 .btn-danger:hover:not(:disabled) {
   box-shadow: var(--shadow-btn-danger-hover);
-  background: linear-gradient(
-    145deg,
-    oklch(44.45% 0.1865 28.01 / 87%),
-    oklch(49.88% 0.2157 27.68 / 84%)
-  );
+  background: linear-gradient(135deg, oklch(65.4% 0.191 28.82 / 25%), oklch(60% 0.19 32.97 / 85%));
 }
 
 /* Focus state - Red focus ring */

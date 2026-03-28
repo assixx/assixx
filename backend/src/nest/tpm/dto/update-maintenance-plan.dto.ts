@@ -31,6 +31,11 @@ export const UpdateMaintenancePlanSchema = z.object({
     .multipleOf(0.5, 'Puffer muss in 0.5er-Schritten angegeben werden')
     .optional(),
   notes: z.string().trim().max(5000, 'Notizen dürfen maximal 5000 Zeichen lang sein').nullish(),
+  changeReason: z
+    .string()
+    .trim()
+    .max(500, 'Änderungsgrund darf maximal 500 Zeichen lang sein')
+    .optional(),
 });
 
 export class UpdateMaintenancePlanDto extends createZodDto(UpdateMaintenancePlanSchema) {}

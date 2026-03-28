@@ -43,6 +43,7 @@ export interface TpmPlan {
   baseTime: string | null;
   bufferHours: number;
   notes: string | null;
+  revisionNumber: number;
   createdBy: number;
   createdByName?: string;
   isActive: number;
@@ -283,6 +284,7 @@ export interface UpdatePlanPayload {
   baseTime?: string | null;
   bufferHours?: number;
   notes?: string | null;
+  changeReason?: string;
 }
 
 /** Payload for setting a time estimate */

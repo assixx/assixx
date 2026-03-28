@@ -31,6 +31,7 @@ export { CheckDuplicateDto, CheckDuplicateSchema } from './check-duplicate.dto.j
 export { ListCardsQueryDto, ListCardsQuerySchema } from './list-cards-query.dto.js';
 export { ListExecutionsQueryDto, ListExecutionsQuerySchema } from './list-executions-query.dto.js';
 export { ListPlansQueryDto, ListPlansQuerySchema } from './list-plans-query.dto.js';
+export { ListRevisionsQueryDto, ListRevisionsQuerySchema } from './list-revisions-query.dto.js';
 export { AssetSlotsQueryDto, AssetSlotsQuerySchema } from './asset-slots-query.dto.js';
 
 // Common schemas (for reuse in services/controllers/tests)

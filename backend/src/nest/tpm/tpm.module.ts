@@ -30,6 +30,7 @@ import { TpmExecutionsService } from './tpm-executions.service.js';
 import { TpmLocationsModule } from './tpm-locations.module.js';
 import { TpmNotificationService } from './tpm-notification.service.js';
 import { TpmPermissionRegistrar } from './tpm-permission.registrar.js';
+import { TpmPlanRevisionsService } from './tpm-plan-revisions.service.js';
 import { TpmPlansIntervalService } from './tpm-plans-interval.service.js';
 import { TpmPlansController } from './tpm-plans.controller.js';
 import { TpmPlansService } from './tpm-plans.service.js';
@@ -53,6 +54,7 @@ import { TpmSlotAssistantService } from './tpm-slot-assistant.service.js';
     // Plan management (Session 6)
     TpmPlansService,
     TpmPlansIntervalService,
+    TpmPlanRevisionsService,
 
     // Card services (Session 8)
     TpmCardsService,

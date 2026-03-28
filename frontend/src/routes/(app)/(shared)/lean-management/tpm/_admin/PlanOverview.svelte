@@ -88,6 +88,14 @@
     annual: 'J',
   };
 
+  function formatShortDate(dateStr: string): string {
+    return new Date(dateStr).toLocaleDateString('de-DE', {
+      day: '2-digit',
+      month: '2-digit',
+      year: '2-digit',
+    });
+  }
+
   function filterPlans(items: TpmPlan[], status: PlanStatusFilter, query: string): TpmPlan[] {
     let result = items;
 
@@ -216,6 +224,8 @@
           <th scope="col">{messages.TH_PLAN_NAME}</th>
           <th scope="col">{messages.TH_WEEKDAY}</th>
           <th scope="col">{messages.TH_STATUS}</th>
+          <th scope="col">Version</th>
+          <th scope="col">Geändert</th>
           {#each intervalColumns as col (col)}
             <th
               scope="col"
@@ -245,7 +255,13 @@
             <td>{plan.name}</td>
             <td>{WEEKDAY_LABELS[plan.baseWeekday] ?? '—'}</td>
             <td>
-              <span class="badge {badge.cls} badge--sm">{badge.label}</span>
+              <span class="badge {badge.cls}">{badge.label}</span>
+            </td>
+            <td>
+              <span class="badge badge--primary">v{plan.revisionNumber}</span>
+            </td>
+            <td class="text-nowrap">
+              {formatShortDate(plan.updatedAt)}
             </td>
             {#each intervalColumns as col (col)}
               {@const entry = getMatrixEntry(plan.uuid, col)}
@@ -291,6 +307,14 @@
                   aria-label="Karten verwalten"
                 >
                   <i class="fas fa-clone"></i>
+                </a>
+                <a
+                  href={resolve(`/lean-management/tpm/plan/${plan.uuid}/revisions`)}
+                  class="action-icon"
+                  title="Versionshistorie"
+                  aria-label="Versionshistorie"
+                >
+                  <i class="fas fa-history"></i>
                 </a>
                 <a
                   href={resolve(`/lean-management/tpm/plan/${plan.uuid}`)}

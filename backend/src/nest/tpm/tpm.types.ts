@@ -48,10 +48,31 @@ export interface TpmMaintenancePlanRow {
   base_time: string | null;
   buffer_hours: string; // NUMERIC(4,1) → pg returns string
   notes: string | null;
+  revision_number: number;
   created_by: number;
   is_active: number;
   created_at: string;
   updated_at: string;
+}
+
+/** Row type for `tpm_plan_revisions` table (immutable snapshot) */
+export interface TpmPlanRevisionRow {
+  id: number;
+  uuid: string;
+  tenant_id: number;
+  plan_id: number;
+  revision_number: number;
+  name: string;
+  asset_id: number;
+  base_weekday: number;
+  base_repeat_every: number;
+  base_time: string | null;
+  buffer_hours: string; // NUMERIC(4,1) → pg returns string
+  notes: string | null;
+  changed_by: number;
+  change_reason: string | null;
+  changed_fields: string[];
+  created_at: string;
 }
 
 /** Row type for `tpm_time_estimates` table (migration 041) */
@@ -231,11 +252,39 @@ export interface TpmPlan {
   baseTime: string | null;
   bufferHours: number;
   notes: string | null;
+  revisionNumber: number;
   createdBy: number;
   createdByName?: string;
   isActive: number;
   createdAt: string;
   updatedAt: string;
+}
+
+/** Plan revision as returned by the API */
+export interface TpmPlanRevision {
+  uuid: string;
+  revisionNumber: number;
+  name: string;
+  assetId: number;
+  baseWeekday: number;
+  baseRepeatEvery: number;
+  baseTime: string | null;
+  bufferHours: number;
+  notes: string | null;
+  changedBy: number;
+  changedByName: string;
+  changeReason: string | null;
+  changedFields: string[];
+  createdAt: string;
+}
+
+/** Paginated revision list response */
+export interface TpmPlanRevisionList {
+  currentVersion: number;
+  planName: string;
+  assetName: string;
+  revisions: TpmPlanRevision[];
+  total: number;
 }
 
 /** Time estimate as returned by the API */

@@ -3,6 +3,9 @@
  *
  * Stateless helper functions. No DI, no DB calls, no side effects.
  */
+import type { PoolClient } from 'pg';
+import { v7 as uuidv7 } from 'uuid';
+
 import {
   type FieldMapping,
   type SetClauseResult,
@@ -30,6 +33,7 @@ export function mapPlanRowToApi(row: TpmPlanJoinRow): TpmPlan {
     baseTime: row.base_time,
     bufferHours: Number(row.buffer_hours),
     notes: row.notes,
+    revisionNumber: row.revision_number,
     createdBy: row.created_by,
     isActive: row.is_active,
     createdAt: toIsoString(row.created_at),
@@ -46,7 +50,7 @@ export function mapPlanRowToApi(row: TpmPlanJoinRow): TpmPlan {
 }
 
 /** Field mappings for plan update: [apiField, dbColumn] */
-const PLAN_UPDATE_MAPPINGS: readonly FieldMapping[] = [
+export const PLAN_UPDATE_MAPPINGS: readonly FieldMapping[] = [
   ['name', 'name'],
   ['baseWeekday', 'base_weekday'],
   ['baseRepeatEvery', 'base_repeat_every'],
@@ -58,4 +62,83 @@ const PLAN_UPDATE_MAPPINGS: readonly FieldMapping[] = [
 /** Build SET clause for plan update — only includes provided fields */
 export function buildPlanUpdateFields(dto: Record<string, unknown>): SetClauseResult {
   return buildSetClause(dto, PLAN_UPDATE_MAPPINGS);
+}
+
+/** Normalize values for comparison: TIME '14:00:00' → '14:00', NUMERIC '4.0' → 4 */
+function normalizeForComparison(val: unknown): unknown {
+  if (val === null) return null;
+  // TIME: PostgreSQL returns 'HH:MM:SS', DTO sends 'HH:MM'
+  if (typeof val === 'string' && /^\d{2}:\d{2}:\d{2}$/.test(val)) {
+    return val.slice(0, 5);
+  }
+  // NUMERIC: pg returns string '4.0', DTO sends number 4
+  if (typeof val === 'string' && /^-?\d+(\.\d+)?$/.test(val)) {
+    return Number(val);
+  }
+  return val;
+}
+
+/**
+ * Detect which plan fields actually changed between old DB state and new DTO values.
+ * Returns snake_case DB column names (e.g. ['base_weekday', 'base_time']).
+ * Uses PLAN_UPDATE_MAPPINGS to bridge camelCase DTO ↔ snake_case DB.
+ */
+export function detectChangedFields(
+  oldState: TpmMaintenancePlanRow,
+  newValues: Record<string, unknown>,
+): string[] {
+  const changed: string[] = [];
+
+  for (const [apiField, dbColumn] of PLAN_UPDATE_MAPPINGS) {
+    if (!(apiField in newValues)) continue;
+
+    const oldVal = oldState[dbColumn as keyof TpmMaintenancePlanRow];
+    const newVal = newValues[apiField];
+
+    // Normalize: treat null/undefined as equivalent
+    const oldNorm = normalizeForComparison(oldVal ?? null);
+    const newNorm = normalizeForComparison(newVal ?? null);
+
+    if (JSON.stringify(oldNorm) !== JSON.stringify(newNorm)) {
+      changed.push(dbColumn);
+    }
+  }
+
+  return changed;
+}
+
+/** Insert a revision snapshot into tpm_plan_revisions within an existing transaction */
+export async function insertRevisionSnapshot(
+  client: PoolClient,
+  tenantId: number,
+  row: TpmMaintenancePlanRow,
+  revisionNumber: number,
+  changedBy: number,
+  changeReason: string | null,
+  changedFields: string[],
+): Promise<void> {
+  await client.query(
+    `INSERT INTO tpm_plan_revisions
+       (uuid, tenant_id, plan_id, revision_number,
+        name, asset_id, base_weekday, base_repeat_every, base_time,
+        buffer_hours, notes,
+        changed_by, change_reason, changed_fields)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)`,
+    [
+      uuidv7(),
+      tenantId,
+      row.id,
+      revisionNumber,
+      row.name,
+      row.asset_id,
+      row.base_weekday,
+      row.base_repeat_every,
+      row.base_time,
+      row.buffer_hours,
+      row.notes,
+      changedBy,
+      changeReason,
+      changedFields,
+    ],
+  );
 }
