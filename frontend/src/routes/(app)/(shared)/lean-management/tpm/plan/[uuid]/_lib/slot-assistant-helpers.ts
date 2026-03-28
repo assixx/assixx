@@ -396,6 +396,47 @@ export function buildPlanAssignmentCounts(
 // COMPOSITE COMPUTATIONS
 // =========================================================================
 
+/** Build default interval refs from first preview date (create mode — no projection data yet) */
+function buildDefaultIntervalRefs(firstDate: string): Map<IntervalType, number> {
+  const refMonth = new Date(firstDate).getMonth();
+  const refs = new Map<IntervalType, number>();
+  refs.set('monthly', refMonth);
+  refs.set('quarterly', refMonth);
+  refs.set('semi_annual', refMonth);
+  refs.set('annual', refMonth);
+  return refs;
+}
+
+/** Filter days matching the weekday + occurrence-in-month pattern */
+function collectPreviewDates(
+  days: DayAvailability[],
+  weekday: number,
+  repeatEvery: number,
+): string[] {
+  const result: string[] = [];
+  for (const day of days) {
+    if (isoWeekday(day.date) === weekday && weekOfMonth(day.date) === repeatEvery) {
+      result.push(day.date);
+    }
+  }
+  return result;
+}
+
+/** Resolve interval reference months: from projection (edit) or first preview date (create) */
+function resolveIntervalRefs(
+  projData: ScheduleProjectionResult | null,
+  planUuid: string | undefined,
+  matchingDates: string[],
+): Map<IntervalType, number> {
+  if (projData !== null && planUuid !== undefined) {
+    return extractIntervalRefs(projData, planUuid);
+  }
+  if (matchingDates.length > 0) {
+    return buildDefaultIntervalRefs(matchingDates[0]);
+  }
+  return new Map<IntervalType, number>();
+}
+
 /** Compute preview dates + their interval badges for a given weekday/repeat pattern */
 export function computePreviewData(
   previewWeekday: number | undefined,
@@ -404,28 +445,19 @@ export function computePreviewData(
   projData: ScheduleProjectionResult | null,
   planUuid: string | undefined,
 ): { dates: Set<string>; intervals: Map<string, IntervalType[]> } {
-  const dates = new Set<string>();
+  if (previewWeekday === undefined || previewRepeatEvery === undefined) {
+    return { dates: new Set<string>(), intervals: new Map<string, IntervalType[]>() };
+  }
+
+  const matchingDates = collectPreviewDates(days, previewWeekday, previewRepeatEvery);
+  const refs = resolveIntervalRefs(projData, planUuid, matchingDates);
   const intervals = new Map<string, IntervalType[]>();
 
-  if (previewWeekday === undefined || previewRepeatEvery === undefined) {
-    return { dates, intervals };
-  }
-
-  const refs =
-    projData !== null && planUuid !== undefined ?
-      extractIntervalRefs(projData, planUuid)
-    : new Map<IntervalType, number>();
-
-  for (const day of days) {
-    if (isoWeekday(day.date) !== previewWeekday || weekOfMonth(day.date) !== previewRepeatEvery) {
-      continue;
-    }
-    dates.add(day.date);
+  for (const dateStr of matchingDates) {
     if (refs.size > 0) {
-      const month = new Date(day.date).getMonth();
-      intervals.set(day.date, computeIntervalsForMonth(month, refs));
+      intervals.set(dateStr, computeIntervalsForMonth(new Date(dateStr).getMonth(), refs));
     }
   }
 
-  return { dates, intervals };
+  return { dates: new Set(matchingDates), intervals };
 }

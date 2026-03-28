@@ -615,5 +615,4 @@ describe('TpmSlotAssistantService', () => {
       expect(result.totalCount).toBe(2);
     });
   });
-
 });
