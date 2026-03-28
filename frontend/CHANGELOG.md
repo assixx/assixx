@@ -1,5 +1,13 @@
 # assixx-frontend
 
+## 0.4.8
+
+### Patch Changes
+
+- feat: add position master
+- Updated dependencies
+  - @assixx/shared@0.4.8
+
 ## 0.4.6
 
 ### Minor Changes
