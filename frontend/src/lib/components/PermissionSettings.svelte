@@ -46,6 +46,22 @@
   // PROPS
   // =============================================================================
 
+  interface PermissionTriple {
+    canRead: boolean;
+    canWrite: boolean;
+    canDelete: boolean;
+  }
+
+  interface HistoryEntry {
+    createdAt: string;
+    userName: string;
+    firstName: string;
+    lastName: string;
+    details: string;
+    oldValues: Record<string, PermissionTriple>;
+    newValues: Record<string, PermissionTriple>;
+  }
+
   interface Props {
     /** Employee/Admin/Root user data */
     employee: Employee | null;
@@ -57,9 +73,24 @@
     backUrl: string;
     /** Label for the back button */
     backLabel: string;
+    /** Permission change history entries */
+    history: HistoryEntry[];
+    /** Total history entries available */
+    historyTotal: number;
+    /** Whether more history entries can be loaded */
+    historyHasMore: boolean;
   }
 
-  const { employee, permissionData, error, backUrl, backLabel }: Props = $props();
+  const {
+    employee,
+    permissionData,
+    error,
+    backUrl,
+    backLabel,
+    history: initialHistory,
+    historyTotal: initialHistoryTotal,
+    historyHasMore: initialHistoryHasMore,
+  }: Props = $props();
 
   // =============================================================================
   // PERMISSION STATE (initialized from SSR data)
@@ -68,6 +99,10 @@
   // Intentional one-time clone: user edits this mutable copy, SSR data must NOT reset it
   // svelte-ignore state_referenced_locally
   const categories = $state(structuredClone(permissionData));
+
+  // Snapshot of last-saved state for unsaved-changes detection (avoids mutating props)
+  // svelte-ignore state_referenced_locally
+  let savedSnapshot = $state(structuredClone(permissionData));
 
   let isSaving = $state(false);
 
@@ -102,6 +137,188 @@
   ];
 
   // =============================================================================
+  // UNSAVED CHANGES DETECTION
+  // =============================================================================
+
+  interface PermissionChange {
+    moduleLabel: string;
+    categoryLabel: string;
+    permType: 'Lesen' | 'Schreiben' | 'Löschen';
+    granted: boolean;
+  }
+
+  const PERM_KEY_TO_LABEL: Record<PermType, 'Lesen' | 'Schreiben' | 'Löschen'> = {
+    canRead: 'Lesen',
+    canWrite: 'Schreiben',
+    canDelete: 'Löschen',
+  };
+
+  function diffModulePermissions(
+    mod: ModulePermission,
+    origMod: ModulePermission,
+    categoryLabel: string,
+  ): PermissionChange[] {
+    const result: PermissionChange[] = [];
+    for (const col of PERMISSION_COLUMNS) {
+      if (mod[col.key] !== origMod[col.key]) {
+        result.push({
+          moduleLabel: mod.label,
+          categoryLabel,
+          permType: PERM_KEY_TO_LABEL[col.key],
+          granted: mod[col.key],
+        });
+      }
+    }
+    return result;
+  }
+
+  const unsavedChanges: PermissionChange[] = $derived.by(() => {
+    const changes: PermissionChange[] = [];
+    for (let catIdx = 0; catIdx < categories.length; catIdx++) {
+      const cat = categories[catIdx];
+      const origCat = savedSnapshot[catIdx];
+
+      for (let modIdx = 0; modIdx < cat.modules.length; modIdx++) {
+        changes.push(
+          ...diffModulePermissions(cat.modules[modIdx], origCat.modules[modIdx], cat.label),
+        );
+      }
+    }
+    return changes;
+  });
+
+  const hasUnsavedChanges: boolean = $derived(unsavedChanges.length > 0);
+
+  // =============================================================================
+  // PERMISSION HISTORY
+  // =============================================================================
+
+  // Intentional one-time capture: history state managed independently from SSR props
+  // svelte-ignore state_referenced_locally
+  let historyEntries = $state(structuredClone(initialHistory));
+  // svelte-ignore state_referenced_locally
+  let historyTotal = $state(initialHistoryTotal);
+  // svelte-ignore state_referenced_locally
+  let historyHasMore = $state(initialHistoryHasMore);
+  let isLoadingMore = $state(false);
+  let historyOpen = $state(false);
+
+  function getAuthToken(): string {
+    return (
+      document.cookie
+        .split('; ')
+        .find((row: string) => row.startsWith('accessToken='))
+        ?.split('=')[1] ?? ''
+    );
+  }
+
+  async function fetchHistoryPage(
+    uuid: string,
+    offset: number,
+  ): Promise<{ entries: HistoryEntry[]; total: number; hasMore: boolean } | null> {
+    const response = await fetch(
+      `/api/v2/user-permissions/${uuid}/history?limit=20&offset=${offset}`,
+      { headers: { Authorization: `Bearer ${getAuthToken()}` } },
+    );
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+    const json = (await response.json()) as {
+      success: boolean;
+      data: { entries: HistoryEntry[]; total: number; hasMore: boolean };
+    };
+    return json.data;
+  }
+
+  async function loadMoreHistory(): Promise<void> {
+    if (employee === null || isLoadingMore) return;
+
+    isLoadingMore = true;
+    try {
+      const data = await fetchHistoryPage(employee.uuid, historyEntries.length);
+      if (data !== null) {
+        historyEntries = [...historyEntries, ...data.entries];
+        historyTotal = data.total;
+        historyHasMore = data.hasMore;
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Unbekannter Fehler';
+      showErrorAlert(`Fehler beim Laden der Historie: ${msg}`);
+    }
+    // eslint-disable-next-line require-atomic-updates -- Svelte $state is component-local + single-threaded, no race condition
+    isLoadingMore = false;
+  }
+
+  async function reloadHistory(): Promise<void> {
+    if (employee === null) return;
+
+    try {
+      const response = await fetch(
+        `/api/v2/user-permissions/${employee.uuid}/history?limit=20&offset=0`,
+        { headers: { Authorization: `Bearer ${getAuthToken()}` } },
+      );
+      if (!response.ok) return;
+
+      const json = (await response.json()) as {
+        success: boolean;
+        data: { entries: HistoryEntry[]; total: number; hasMore: boolean };
+      };
+
+      historyEntries = json.data.entries;
+      historyTotal = json.data.total;
+      historyHasMore = json.data.hasMore;
+    } catch {
+      // Silent fail — history reload is non-critical
+    }
+  }
+
+  function formatDate(isoString: string): string {
+    return new Date(isoString).toLocaleDateString('de-DE', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    });
+  }
+
+  function formatTime(isoString: string): string {
+    return new Date(isoString).toLocaleTimeString('de-DE', {
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  }
+
+  interface HistoryDiffEntry {
+    moduleKey: string;
+    permType: 'Lesen' | 'Schreiben' | 'Löschen';
+    granted: boolean;
+  }
+
+  function diffHistoryEntry(entry: HistoryEntry): HistoryDiffEntry[] {
+    const diffs: HistoryDiffEntry[] = [];
+    const allKeys = new Set([...Object.keys(entry.oldValues), ...Object.keys(entry.newValues)]);
+
+    for (const key of allKeys) {
+      const oldV = entry.oldValues[key] ?? { canRead: false, canWrite: false, canDelete: false };
+      const newV = entry.newValues[key] ?? { canRead: false, canWrite: false, canDelete: false };
+
+      if (oldV.canRead !== newV.canRead) {
+        diffs.push({ moduleKey: key, permType: 'Lesen', granted: newV.canRead });
+      }
+      if (oldV.canWrite !== newV.canWrite) {
+        diffs.push({ moduleKey: key, permType: 'Schreiben', granted: newV.canWrite });
+      }
+      if (oldV.canDelete !== newV.canDelete) {
+        diffs.push({ moduleKey: key, permType: 'Löschen', granted: newV.canDelete });
+      }
+    }
+    return diffs;
+  }
+
+  function moduleKeyToLabel(key: string): string {
+    const parts = key.split(':');
+    return parts[1] ?? key;
+  }
+
+  // =============================================================================
   // HANDLERS
   // =============================================================================
 
@@ -114,12 +331,6 @@
 
     isSaving = true;
     try {
-      const token =
-        document.cookie
-          .split('; ')
-          .find((row: string) => row.startsWith('accessToken='))
-          ?.split('=')[1] ?? '';
-
       const permissions: {
         addonCode: string;
         moduleCode: string;
@@ -144,7 +355,7 @@
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
+          Authorization: `Bearer ${getAuthToken()}`,
         },
         body: JSON.stringify({ permissions }),
       });
@@ -154,7 +365,14 @@
         throw new Error(`Save failed (${response.status}): ${errorBody}`);
       }
 
+      // Update saved snapshot so unsaved-banner clears
+      // $state.snapshot() strips Svelte proxy — structuredClone can't handle proxies
+      savedSnapshot = $state.snapshot(categories);
+
       showSuccessAlert('Berechtigungen gespeichert');
+
+      // Reload history to show the new entry
+      void reloadHistory();
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Unbekannter Fehler';
       showErrorAlert(`Fehler beim Speichern: ${errorMessage}`);
@@ -378,6 +596,39 @@
           {/each}
         </div>
 
+        <!-- Unsaved Changes Banner -->
+        {#if hasUnsavedChanges}
+          <div class="alert alert--warning perm-unsaved-banner mt-4">
+            <div class="alert__icon">
+              <i class="fas fa-exclamation-triangle"></i>
+            </div>
+            <div class="alert__content">
+              <div class="alert__title">
+                {unsavedChanges.length} ungespeicherte Änderung{unsavedChanges.length > 1 ?
+                  'en'
+                : ''}
+              </div>
+              <ul class="perm-changes-list">
+                {#each unsavedChanges as change (`${change.categoryLabel}:${change.moduleLabel}:${change.permType}`)}
+                  <li class="perm-change-item">
+                    {#if change.granted}
+                      <i class="fas fa-plus-circle perm-change-icon perm-change-icon--grant"></i>
+                    {:else}
+                      <i class="fas fa-minus-circle perm-change-icon perm-change-icon--revoke"></i>
+                    {/if}
+                    <span>
+                      {change.permType}
+                      {change.granted ? 'erteilt' : 'entzogen'} für
+                      <strong>{change.moduleLabel}</strong>
+                      ({change.categoryLabel})
+                    </span>
+                  </li>
+                {/each}
+              </ul>
+            </div>
+          </div>
+        {/if}
+
         <!-- Save Button -->
         <div class="mt-4 flex justify-end border-t border-(--color-glass-border) pt-3">
           <button
@@ -395,6 +646,94 @@
             {/if}
           </button>
         </div>
+
+        <!-- Permission History Accordion -->
+        {#if historyEntries.length > 0}
+          <div class="perm-history mt-6">
+            <div class="accordion">
+              <div
+                class="accordion__item"
+                class:accordion__item--active={historyOpen}
+              >
+                <button
+                  type="button"
+                  class="accordion__header"
+                  onclick={() => {
+                    historyOpen = !historyOpen;
+                  }}
+                  aria-expanded={historyOpen}
+                >
+                  <span class="accordion__title">
+                    <i class="fas fa-history mr-2"></i>
+                    Änderungshistorie
+                  </span>
+                  <span class="accordion__badge">{historyTotal}</span>
+                  <i class="fas fa-chevron-down accordion__icon ml-2"></i>
+                </button>
+                <div class="accordion__content">
+                  <div class="accordion__body">
+                    {#each historyEntries as entry, idx (`${entry.createdAt}-${idx}`)}
+                      <div class="perm-history-entry">
+                        <div class="perm-history-meta">
+                          <strong>
+                            {entry.firstName !== '' ?
+                              `${entry.firstName} ${entry.lastName}`
+                            : entry.userName}
+                          </strong>
+                          <span class="perm-history-date">
+                            {formatDate(entry.createdAt)} um {formatTime(entry.createdAt)}
+                          </span>
+                        </div>
+                        <ul class="perm-changes-list">
+                          {#each diffHistoryEntry(entry) as diff (`${entry.createdAt}-${diff.moduleKey}-${diff.permType}`)}
+                            <li class="perm-change-item">
+                              {#if diff.granted}
+                                <i
+                                  class="fas fa-plus-circle perm-change-icon perm-change-icon--grant"
+                                ></i>
+                              {:else}
+                                <i
+                                  class="fas fa-minus-circle perm-change-icon perm-change-icon--revoke"
+                                ></i>
+                              {/if}
+                              <span>
+                                {diff.permType}
+                                {diff.granted ? 'erteilt' : 'entzogen'} für
+                                <strong>{moduleKeyToLabel(diff.moduleKey)}</strong>
+                              </span>
+                            </li>
+                          {/each}
+                        </ul>
+                      </div>
+                      {#if idx < historyEntries.length - 1}
+                        <div class="perm-hdivider perm-hdivider--light"></div>
+                      {/if}
+                    {/each}
+
+                    {#if historyHasMore}
+                      <div class="mt-3 flex justify-center">
+                        <button
+                          type="button"
+                          class="btn btn-light btn--sm"
+                          onclick={loadMoreHistory}
+                          disabled={isLoadingMore}
+                        >
+                          {#if isLoadingMore}
+                            <span class="spinner-ring spinner-ring--sm mr-2"></span>
+                            Laden...
+                          {:else}
+                            <i class="fas fa-arrow-down mr-1"></i>
+                            Mehr laden
+                          {/if}
+                        </button>
+                      </div>
+                    {/if}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        {/if}
       {/if}
     </div>
   </div>
@@ -627,6 +966,76 @@
 
   .perm-row--danger .perm-check input:focus-visible + .perm-check__box {
     outline-color: var(--color-danger);
+  }
+
+  /* ================================================================
+     Unsaved Changes Banner
+     ================================================================ */
+  .perm-unsaved-banner {
+    animation: perm-fade-in 0.3s ease;
+  }
+
+  .perm-changes-list {
+    list-style: none;
+    padding: 0;
+    margin: 6px 0 0;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  .perm-change-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.8125rem;
+    color: var(--color-text-primary);
+  }
+
+  .perm-change-icon {
+    font-size: 0.75rem;
+    flex-shrink: 0;
+  }
+
+  .perm-change-icon--grant {
+    color: var(--color-success);
+  }
+
+  .perm-change-icon--revoke {
+    color: var(--color-danger);
+  }
+
+  @keyframes perm-fade-in {
+    from {
+      opacity: 0%;
+      transform: translateY(-8px);
+    }
+
+    to {
+      opacity: 100%;
+      transform: translateY(0);
+    }
+  }
+
+  /* ================================================================
+     Permission History
+     ================================================================ */
+  .perm-history-entry {
+    padding: 10px 0;
+  }
+
+  .perm-history-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.8125rem;
+    color: var(--color-text-primary);
+    margin-bottom: 4px;
+  }
+
+  .perm-history-date {
+    color: var(--color-text-secondary);
+    font-size: 0.75rem;
   }
 
   /* ================================================================

@@ -10,6 +10,7 @@ import {
   NameSchema,
   NotesSchema,
   PasswordSchema,
+  PositionIdsSchema,
   PositionSchema,
   UsernameSchema,
 } from './admin.schemas.js';
@@ -23,6 +24,7 @@ export const CreateAdminSchema = z.object({
   notes: NotesSchema,
   employeeNumber: EmployeeNumberSchema,
   position: PositionSchema,
+  positionIds: PositionIdsSchema,
 });
 
 export class CreateAdminDto extends createZodDto(CreateAdminSchema) {}

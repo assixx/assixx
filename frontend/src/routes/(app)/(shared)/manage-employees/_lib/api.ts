@@ -240,7 +240,7 @@ export function buildEmployeePayload(
     lastName: string;
     email: string;
     password: string;
-    position: string;
+    positionIds: string[];
     phone: string;
     dateOfBirth: string;
     notes: string;
@@ -254,7 +254,7 @@ export function buildEmployeePayload(
     lastName: formData.lastName,
     email: formData.email.toLowerCase().trim(),
     username: generateUsernameFromEmail(formData.email),
-    position: toOptional(formData.position),
+    positionIds: formData.positionIds,
     phone: toOptional(formData.phone),
     dateOfBirth: toOptional(formData.dateOfBirth),
     notes: toOptional(formData.notes),

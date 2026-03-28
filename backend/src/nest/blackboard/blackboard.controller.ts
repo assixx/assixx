@@ -48,6 +48,7 @@ import { FileInterceptor } from '@webundsoehne/nest-fastify-file-upload';
 import type { FastifyReply } from 'fastify';
 import multer from 'fastify-multer';
 
+import { attachmentHeader, inlineHeader } from '../../utils/content-disposition.js';
 import { CurrentUser } from '../common/decorators/current-user.decorator.js';
 import { RequireAddon } from '../common/decorators/require-addon.decorator.js';
 import { RequirePermission } from '../common/decorators/require-permission.decorator.js';
@@ -475,7 +476,7 @@ export class BlackboardController {
 
     await reply
       .header('Content-Type', result.mimeType)
-      .header('Content-Disposition', `attachment; filename="${result.originalName}"`)
+      .header('Content-Disposition', attachmentHeader(result.originalName))
       .header('Content-Length', result.fileSize.toString())
       .header('Cache-Control', 'private, max-age=3600')
       .send(result.content);
@@ -501,7 +502,7 @@ export class BlackboardController {
 
     await reply
       .header('Content-Type', result.mimeType)
-      .header('Content-Disposition', `inline; filename="${result.originalName}"`)
+      .header('Content-Disposition', inlineHeader(result.originalName))
       .header('Content-Length', result.fileSize.toString())
       .header('Cache-Control', 'private, max-age=3600')
       .send(result.content);
@@ -527,7 +528,7 @@ export class BlackboardController {
 
     await reply
       .header('Content-Type', result.mimeType)
-      .header('Content-Disposition', `attachment; filename="${result.originalName}"`)
+      .header('Content-Disposition', attachmentHeader(result.originalName))
       .header('Content-Length', result.fileSize.toString())
       .header('Cache-Control', 'private, max-age=3600')
       .send(result.content);

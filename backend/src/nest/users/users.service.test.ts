@@ -22,6 +22,7 @@ import type { DatabaseService } from '../database/database.service.js';
 import type { UserRepository } from '../database/repositories/user.repository.js';
 import type { HierarchyPermissionService } from '../hierarchy-permission/hierarchy-permission.service.js';
 import type { ScopeService } from '../hierarchy-permission/scope.service.js';
+import type { UserPositionService } from '../organigram/user-position.service.js';
 import type { CreateUserDto } from './dto/create-user.dto.js';
 import type { ListUsersQueryDto } from './dto/list-users-query.dto.js';
 import type { UpdateUserDto } from './dto/update-user.dto.js';
@@ -49,7 +50,34 @@ vi.mock('uuid', () => ({
 // =============================================================
 
 function createMockDb() {
-  return { query: vi.fn() };
+  const db = {
+    query: vi.fn(),
+    tenantTransaction: vi.fn(),
+  };
+  /**
+   * Transaction callback receives a PoolClient-like object.
+   * PoolClient.query() returns { rows: T[] } (pg QueryResult).
+   * DatabaseService.query() returns T[] (rows only).
+   * The client proxy wraps the shared mock queue so existing
+   * mockResolvedValueOnce setups work in the correct call order.
+   */
+  const clientQuery = vi.fn(async (...args: unknown[]) => {
+    const rows: unknown = await db.query(...args);
+    return { rows: rows ?? [] };
+  });
+  db.tenantTransaction.mockImplementation(
+    (callback: (client: { query: typeof clientQuery }) => Promise<unknown>) =>
+      callback({ query: clientQuery }),
+  );
+  return db;
+}
+
+function createMockUserPositionService() {
+  return {
+    syncPositions: vi.fn().mockResolvedValue(undefined),
+    getPositionsForUser: vi.fn().mockResolvedValue([]),
+    getPositionsForUsers: vi.fn().mockResolvedValue(new Map()),
+  };
 }
 
 function createMockActivityLogger() {
@@ -150,6 +178,7 @@ describe('UsersService', () => {
     mockAvailability = createMockAvailabilityService();
     const mockScope = createMockScope();
     const mockHierarchyPermission = createMockHierarchyPermission();
+    const mockUserPositions = createMockUserPositionService();
     service = new UsersService(
       mockDb as unknown as DatabaseService,
       mockActivityLogger as unknown as ActivityLoggerService,
@@ -157,6 +186,7 @@ describe('UsersService', () => {
       mockAvailability as unknown as UserAvailabilityService,
       mockScope as unknown as ScopeService,
       mockHierarchyPermission as unknown as HierarchyPermissionService,
+      mockUserPositions as unknown as UserPositionService,
     );
   });
 

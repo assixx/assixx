@@ -55,7 +55,11 @@ export const load: PageServerLoad = async ({ cookies, fetch }) => {
     apiFetch<Admin[]>('/users?role=admin', token, fetch),
     apiFetch<Area[]>('/areas', token, fetch),
     apiFetch<Department[]>('/departments', token, fetch),
-    apiFetch<{ name: string; roleCategory: string }[]>('/organigram/positions', token, fetch),
+    apiFetch<{ id: string; name: string; roleCategory: string }[]>(
+      '/organigram/positions',
+      token,
+      fetch,
+    ),
   ]);
 
   const rawAdmins = Array.isArray(adminsData) ? adminsData : [];
@@ -74,8 +78,9 @@ export const load: PageServerLoad = async ({ cookies, fetch }) => {
     positionOptions:
       Array.isArray(positionsData) ?
         positionsData
-          .filter((p: { roleCategory: string }) => p.roleCategory !== 'root')
-          .map((p: { name: string; roleCategory: string }) => ({
+          .filter((p: { id: string; roleCategory: string }) => p.roleCategory !== 'root')
+          .map((p: { id: string; name: string; roleCategory: string }) => ({
+            id: p.id,
             name: p.name,
             roleCategory: p.roleCategory,
           }))

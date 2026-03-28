@@ -25,6 +25,7 @@ import {
   authOnly,
   ensureTestEmployee,
   fetchWithRetry,
+  getPositionIdsByName,
   loginApitest,
 } from './helpers.js';
 
@@ -375,7 +376,63 @@ describe('User Permissions: Employee Access Denied', () => {
   });
 });
 
-// ─── REGRESSION: prevent_manage_permissions_self_grant trigger (seq: 8) ──────
+// ─── GET Permission History (seq: 8) ─────────────────────────────────────────
+
+describe('User Permissions: GET Permission History', () => {
+  it('should return 200 with history structure', async () => {
+    const res = await fetch(
+      `${BASE_URL}/user-permissions/${employeeUuid}/history?limit=20&offset=0`,
+      { headers: authOnly(auth.authToken) },
+    );
+    const body = (await res.json()) as JsonBody;
+
+    expect(res.status).toBe(200);
+    expect(body.success).toBe(true);
+    expect(body.data).toHaveProperty('entries');
+    expect(body.data).toHaveProperty('total');
+    expect(body.data).toHaveProperty('hasMore');
+    expect(Array.isArray(body.data.entries)).toBe(true);
+  });
+
+  it('should contain entries from prior PUT operations', async () => {
+    const res = await fetch(
+      `${BASE_URL}/user-permissions/${employeeUuid}/history?limit=20&offset=0`,
+      { headers: authOnly(auth.authToken) },
+    );
+    const body = (await res.json()) as JsonBody;
+
+    // Prior tests in seq 3 did 2 PUTs → at least 2 history entries
+    expect(body.data.total).toBeGreaterThanOrEqual(2);
+  });
+
+  it('should return entries with correct fields', async () => {
+    const res = await fetch(
+      `${BASE_URL}/user-permissions/${employeeUuid}/history?limit=1&offset=0`,
+      { headers: authOnly(auth.authToken) },
+    );
+    const body = (await res.json()) as JsonBody;
+
+    const entry = body.data.entries[0];
+    expect(entry).toHaveProperty('createdAt');
+    expect(entry).toHaveProperty('userName');
+    expect(entry).toHaveProperty('firstName');
+    expect(entry).toHaveProperty('lastName');
+    expect(entry).toHaveProperty('details');
+    expect(entry).toHaveProperty('oldValues');
+    expect(entry).toHaveProperty('newValues');
+  });
+
+  it('should return 403 for employee', async () => {
+    const res = await fetch(
+      `${BASE_URL}/user-permissions/${employeeUuid}/history?limit=20&offset=0`,
+      { headers: authOnly(employeeToken) },
+    );
+
+    expect(res.status).toBe(403);
+  });
+});
+
+// ─── REGRESSION: prevent_manage_permissions_self_grant trigger (seq: 9) ──────
 //
 // Bug: Trigger referenced `t.deputy_lead_id` (old column, renamed to
 // `t.team_deputy_lead_id`). Crashed with 500 on ANY manage-permissions
@@ -445,14 +502,15 @@ describe('REGRESSION: manage-permissions self-grant trigger with deputy columns'
         departmentId: dept.data.id,
       });
 
-      // 2. Two employees with position 'team_lead'
+      // 2. Two employees — both need 'team_lead' position (validateLeader checks it for lead AND deputy)
+      const teamLeadPositionIds = await getPositionIdsByName(token, 'team_lead');
       const lead = await postJson(`${BASE_URL}/users`, token, {
         email: leadEmail,
         password: APITEST_PASSWORD,
         firstName: 'TriggerLead',
         lastName: 'Test',
         role: 'employee',
-        position: 'team_lead',
+        positionIds: teamLeadPositionIds,
       });
       const deputy = await postJson(`${BASE_URL}/users`, token, {
         email: `trigger-deputy-${uniqueSuffix}@apitest.de`,
@@ -460,7 +518,7 @@ describe('REGRESSION: manage-permissions self-grant trigger with deputy columns'
         firstName: 'TriggerDeputy',
         lastName: 'Test',
         role: 'employee',
-        position: 'team_lead',
+        positionIds: teamLeadPositionIds,
       });
       deputyUuid = deputy.data.uuid as string;
 

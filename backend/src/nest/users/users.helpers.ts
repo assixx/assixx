@@ -95,7 +95,6 @@ export function buildUpdateFields(
     firstName: 'first_name',
     lastName: 'last_name',
     role: 'role',
-    position: 'position',
     phone: 'phone',
     address: 'address',
     employeeNumber: 'employee_number',

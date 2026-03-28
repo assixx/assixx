@@ -54,7 +54,7 @@ function validateRootUserForm(
   if (hasPasswordError(fields.password, fields.passwordConfirm, isEditMode)) {
     return 'password';
   }
-  if (fields.position === '') {
+  if (fields.positionIds.length === 0) {
     return 'position';
   }
   if (fields.employeeNumber.trim() === '') {
@@ -82,7 +82,7 @@ export async function executeSaveRootUser(
       firstName: fields.firstName,
       lastName: fields.lastName,
       email: fields.email,
-      position: fields.position,
+      positionIds: fields.positionIds,
       notes: fields.notes,
       employeeNumber: fields.employeeNumber,
       isActive: fields.isActive,

@@ -129,6 +129,7 @@ describe('CreateUserSchema', () => {
     firstName: 'Jane',
     lastName: 'Smith',
     password: 'TestPass123!',
+    positionIds: ['019579a0-0000-7000-8000-000000000001'],
   };
 
   it('should accept valid minimal user', () => {

@@ -5,7 +5,14 @@
  */
 import { beforeAll, describe, expect, it } from 'vitest';
 
-import { APITEST_PASSWORD, BASE_URL, authHeaders, authOnly, loginApitest } from './helpers.js';
+import {
+  APITEST_PASSWORD,
+  BASE_URL,
+  authHeaders,
+  authOnly,
+  getDefaultPositionIds,
+  loginApitest,
+} from './helpers.js';
 
 let rootToken: string;
 let rootUuid: string;
@@ -25,6 +32,7 @@ beforeAll(async () => {
   rootUuid = meBody.data?.uuid ?? '';
 
   // Create test employee
+  const positionIds = await getDefaultPositionIds(rootToken);
   const createRes = await fetch(`${BASE_URL}/users`, {
     method: 'POST',
     headers: authHeaders(rootToken),
@@ -34,6 +42,7 @@ beforeAll(async () => {
       firstName: 'PermAPI',
       lastName: 'Test',
       role: 'employee',
+      positionIds,
     }),
   });
   if (createRes.ok) {

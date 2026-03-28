@@ -11,7 +11,7 @@
   import PermissionDenied from '$lib/components/PermissionDenied.svelte';
   import { showToast } from '$lib/stores/toast';
   import { showSuccessAlert, showErrorAlert, showWarningAlert } from '$lib/utils';
-  import { ApiError, getApiErrorMessage } from '$lib/utils/api-client';
+  import { ApiError, getApiClient, getApiErrorMessage } from '$lib/utils/api-client';
   import { createLogger } from '$lib/utils/logger';
 
   const log = createLogger('ManageEmployeesPage');
@@ -62,6 +62,20 @@
   // Hierarchy labels (propagated from layout)
   const labels = $derived(data.hierarchyLabels);
   const messages = $derived(createMessages(labels));
+
+  const apiClient = getApiClient();
+
+  /** Load N:M position assignments for edit mode */
+  async function loadUserPositions(userId: number): Promise<void> {
+    try {
+      const positions = await apiClient.request<{ positionId: string }[]>(
+        `/users/${String(userId)}/positions`,
+      );
+      formPositionIds = positions.map((p: { positionId: string }) => p.positionId);
+    } catch {
+      formPositionIds = [];
+    }
+  }
 
   // Lead-View: Employees can Read+Edit but NOT Create/Delete
   const canMutate = $derived(data.user?.role === 'root' || data.user?.role === 'admin');
@@ -119,7 +133,7 @@
   let formPassword = $state('');
   let formPasswordConfirm = $state('');
   let formEmployeeNumber = $state('');
-  let formPosition = $state('');
+  let formPositionIds = $state<string[]>([]);
   let formPhone = $state('');
   let formDateOfBirth = $state('');
   let formNotes = $state('');
@@ -158,8 +172,8 @@
     submitting = true;
 
     // Validate required fields (client-side toast instead of native browser tooltip)
-    if (formPosition === '') {
-      showWarningAlert('Bitte wählen Sie eine Position aus');
+    if (formPositionIds.length === 0) {
+      showWarningAlert('Bitte wählen Sie mindestens eine Position aus');
       submitting = false;
       return;
     }
@@ -192,7 +206,7 @@
           lastName: formLastName,
           email: formEmail,
           password: formPassword,
-          position: formPosition,
+          positionIds: formPositionIds,
           phone: formPhone,
           dateOfBirth: formDateOfBirth,
           notes: formNotes,
@@ -314,8 +328,10 @@
     formPassword = formData.password;
     formPasswordConfirm = formData.passwordConfirm;
     formEmployeeNumber = formData.employeeNumber;
-    formPosition = formData.position;
     formPhone = formData.phone;
+
+    // Load N:M positions from API
+    void loadUserPositions(employeeId);
     formDateOfBirth = formData.dateOfBirth;
     formNotes = formData.notes;
     formIsActive = formData.isActive;
@@ -426,7 +442,7 @@
     formPassword = defaults.password;
     formPasswordConfirm = defaults.passwordConfirm;
     formEmployeeNumber = defaults.employeeNumber;
-    formPosition = defaults.position;
+    formPositionIds = [];
     formPhone = defaults.phone;
     formDateOfBirth = defaults.dateOfBirth;
     formNotes = defaults.notes;
@@ -717,7 +733,6 @@
     {messages}
     {positionOptions}
     {labels}
-    editUserId={currentEditId}
     bind:formFirstName
     bind:formLastName
     bind:formEmail
@@ -725,7 +740,7 @@
     bind:formPassword
     bind:formPasswordConfirm
     bind:formEmployeeNumber
-    bind:formPosition
+    bind:formPositionIds
     bind:formPhone
     bind:formDateOfBirth
     bind:formNotes

@@ -55,6 +55,7 @@ import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 import { v7 as uuidv7 } from 'uuid';
 
+import { attachmentHeader } from '../../utils/content-disposition.js';
 import type { Approval } from '../approvals/approvals.types.js';
 import { CurrentUser } from '../common/decorators/current-user.decorator.js';
 import { RequireAddon } from '../common/decorators/require-addon.decorator.js';
@@ -734,7 +735,7 @@ export class KvpController {
     const attachment = await this.kvpService.getAttachment(fileUuid, tenantId, user.id, user.role);
     await reply
       .header('Content-Type', 'application/octet-stream')
-      .header('Content-Disposition', `attachment; filename="${attachment.fileName}"`)
+      .header('Content-Disposition', attachmentHeader(attachment.fileName))
       .send(createReadStream(attachment.filePath));
   }
 

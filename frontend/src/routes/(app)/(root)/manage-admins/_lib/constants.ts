@@ -25,16 +25,16 @@ export {
  * Position options for admin selection dropdown
  */
 export const POSITION_OPTIONS: readonly PositionOption[] = [
-  { name: 'area_lead', roleCategory: 'admin' },
-  { name: 'department_lead', roleCategory: 'admin' },
-  { name: 'Personalleiter', roleCategory: 'admin' },
-  { name: 'Geschäftsführer', roleCategory: 'admin' },
-  { name: 'Werksleiter', roleCategory: 'admin' },
-  { name: 'Produktionsleiter', roleCategory: 'admin' },
-  { name: 'Qualitätsleiter', roleCategory: 'admin' },
-  { name: 'IT-Leiter', roleCategory: 'admin' },
-  { name: 'Vertriebsleiter', roleCategory: 'admin' },
-  { name: 'Mitarbeiter', roleCategory: 'admin' },
+  { id: '', name: 'area_lead', roleCategory: 'admin' },
+  { id: '', name: 'department_lead', roleCategory: 'admin' },
+  { id: '', name: 'Personalleiter', roleCategory: 'admin' },
+  { id: '', name: 'Geschäftsführer', roleCategory: 'admin' },
+  { id: '', name: 'Werksleiter', roleCategory: 'admin' },
+  { id: '', name: 'Produktionsleiter', roleCategory: 'admin' },
+  { id: '', name: 'Qualitätsleiter', roleCategory: 'admin' },
+  { id: '', name: 'IT-Leiter', roleCategory: 'admin' },
+  { id: '', name: 'Vertriebsleiter', roleCategory: 'admin' },
+  { id: '', name: 'Mitarbeiter', roleCategory: 'admin' },
 ] as const;
 
 /**
@@ -226,7 +226,7 @@ export const FORM_DEFAULTS = {
   password: '',
   passwordConfirm: '',
   employeeNumber: '',
-  position: '',
+  positionIds: [] as string[],
   notes: '',
   isActive: 1 as FormIsActiveStatus,
   hasFullAccess: false,

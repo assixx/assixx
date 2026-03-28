@@ -39,6 +39,7 @@ import crypto from 'node:crypto';
 import * as path from 'node:path';
 import { v7 as uuidv7 } from 'uuid';
 
+import { attachmentHeader, inlineHeader } from '../../utils/content-disposition.js';
 import { CurrentUser } from '../common/decorators/current-user.decorator.js';
 import { RequireAddon } from '../common/decorators/require-addon.decorator.js';
 import { RequirePermission } from '../common/decorators/require-permission.decorator.js';
@@ -418,7 +419,7 @@ export class DocumentsController {
 
     await reply
       .header('Content-Type', content.mimeType)
-      .header('Content-Disposition', `attachment; filename="${content.originalName}"`)
+      .header('Content-Disposition', attachmentHeader(content.originalName))
       .header('Content-Length', content.fileSize.toString())
       .header('Cache-Control', 'private, max-age=3600')
       .send(content.content);
@@ -441,7 +442,7 @@ export class DocumentsController {
 
     await reply
       .header('Content-Type', content.mimeType)
-      .header('Content-Disposition', `attachment; filename="${content.originalName}"`)
+      .header('Content-Disposition', attachmentHeader(content.originalName))
       .header('Content-Length', content.fileSize.toString())
       .header('Cache-Control', 'private, max-age=3600')
       .send(content.content);
@@ -470,7 +471,7 @@ export class DocumentsController {
 
     await reply
       .header('Content-Type', content.mimeType)
-      .header('Content-Disposition', `inline; filename="${content.originalName}"`)
+      .header('Content-Disposition', inlineHeader(content.originalName))
       .header('Content-Length', content.fileSize.toString())
       .header('Accept-Ranges', 'bytes')
       .header('Cache-Control', 'private, max-age=3600')
@@ -497,7 +498,7 @@ export class DocumentsController {
 
     await reply
       .header('Content-Type', content.mimeType)
-      .header('Content-Disposition', `inline; filename="${content.originalName}"`)
+      .header('Content-Disposition', inlineHeader(content.originalName))
       .header('Content-Length', content.fileSize.toString())
       .header('Accept-Ranges', 'bytes')
       .header('Cache-Control', 'private, max-age=3600')

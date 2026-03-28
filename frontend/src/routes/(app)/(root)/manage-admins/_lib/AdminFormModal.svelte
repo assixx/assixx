@@ -5,8 +5,6 @@
     DEFAULT_HIERARCHY_LABELS,
     isLeadPosition,
     LEAD_POSITION_KEYS,
-    ROLE_CATEGORY_LABELS,
-    resolvePositionDisplay,
     type HierarchyLabels,
     type PositionOption,
   } from '$lib/types/hierarchy-labels';
@@ -37,7 +35,7 @@
     formPassword: string;
     formPasswordConfirm: string;
     formEmployeeNumber: string;
-    formPosition: string;
+    formPositionIds: string[];
     formNotes: string;
     formIsActive: FormIsActiveStatus;
     formHasFullAccess: boolean;
@@ -48,14 +46,13 @@
     onsubmit: (e: Event) => void;
     onupgrade?: () => void;
     positionOptions?: PositionOption[];
-    editUserId?: number | null;
     ondowngrade?: () => void;
     labels?: HierarchyLabels;
   }
 
   /* eslint-disable prefer-const, @typescript-eslint/no-useless-default-assignment -- Svelte $bindable() requires let and is not a useless default */
   // prettier-ignore
-  let { show, isEditMode, modalTitle, allAreas, allDepartments, submitting, messages: msg = MESSAGES, positionOptions, editUserId, labels: lbl = DEFAULT_HIERARCHY_LABELS, formFirstName = $bindable(), formLastName = $bindable(), formEmail = $bindable(), formEmailConfirm = $bindable(), formPassword = $bindable(), formPasswordConfirm = $bindable(), formEmployeeNumber = $bindable(), formPosition = $bindable(), formNotes = $bindable(), formIsActive = $bindable(), formHasFullAccess = $bindable(), formAreaIds = $bindable(), formDepartmentIds = $bindable(), onclose, onsubmit, onupgrade, ondowngrade }: Props = $props();
+  let { show, isEditMode, modalTitle, allAreas, allDepartments, submitting, messages: msg = MESSAGES, positionOptions, labels: lbl = DEFAULT_HIERARCHY_LABELS, formFirstName = $bindable(), formLastName = $bindable(), formEmail = $bindable(), formEmailConfirm = $bindable(), formPassword = $bindable(), formPasswordConfirm = $bindable(), formEmployeeNumber = $bindable(), formPositionIds = $bindable(), formNotes = $bindable(), formIsActive = $bindable(), formHasFullAccess = $bindable(), formAreaIds = $bindable(), formDepartmentIds = $bindable(), onclose, onsubmit, onupgrade, ondowngrade }: Props = $props();
   /* eslint-enable prefer-const, @typescript-eslint/no-useless-default-assignment */
 
   // =============================================================================
@@ -90,14 +87,6 @@
     return [...system, ...custom];
   });
 
-  const roleCategories = ['employee', 'admin'] as const;
-  const grouped = $derived(
-    effectivePositions.some(
-      (p: PositionOption) => p.roleCategory !== effectivePositions[0]?.roleCategory,
-    ),
-  );
-
-  let positionDropdownOpen = $state(false);
   let showPassword = $state(false);
   let showPasswordConfirm = $state(false);
   let emailError = $state(false);
@@ -117,16 +106,6 @@
   // =============================================================================
   // HANDLERS
   // =============================================================================
-
-  function togglePositionDropdown(e: MouseEvent) {
-    e.stopPropagation();
-    positionDropdownOpen = !positionDropdownOpen;
-  }
-
-  function selectPosition(position: string) {
-    formPosition = position;
-    positionDropdownOpen = false;
-  }
 
   function validateEmails() {
     emailError = formEmailConfirm !== '' ? formEmail !== formEmailConfirm : false;
@@ -150,7 +129,6 @@
   // Reset local UI state when modal opens
   $effect(() => {
     if (show) {
-      positionDropdownOpen = false;
       showPassword = false;
       showPasswordConfirm = false;
       emailError = false;
@@ -158,21 +136,6 @@
       passwordScore = -1;
       passwordLabel = '';
       passwordTime = '';
-    }
-  });
-
-  // Outside click handler for position dropdown
-  $effect(() => {
-    if (positionDropdownOpen) {
-      const handleOutsideClick = (e: MouseEvent) => {
-        const target = e.target as HTMLElement;
-        const el = document.getElementById('position-dropdown');
-        if (el && !el.contains(target)) positionDropdownOpen = false;
-      };
-      document.addEventListener('click', handleOutsideClick, true);
-      return () => {
-        document.removeEventListener('click', handleOutsideClick, true);
-      };
     }
   });
 </script>
@@ -417,73 +380,11 @@
         </div>
 
         <div class="form-field">
-          <label
-            class="form-field__label"
-            for="admin-position"
-          >
-            {MESSAGES.LABEL_POSITION} <span class="text-red-500">*</span>
-          </label>
-          <div
-            class="dropdown"
-            id="position-dropdown"
-          >
-            <!-- svelte-ignore a11y_click_events_have_key_events -->
-            <!-- svelte-ignore a11y_no_static_element_interactions -->
-            <div
-              class="dropdown__trigger"
-              class:active={positionDropdownOpen}
-              onclick={togglePositionDropdown}
-            >
-              <span
-                >{formPosition !== '' ?
-                  resolvePositionDisplay(formPosition, lbl)
-                : 'Bitte wählen...'}</span
-              >
-              <i class="fas fa-chevron-down"></i>
-            </div>
-            <div
-              class="dropdown__menu dropdown__menu--tall"
-              class:active={positionDropdownOpen}
-            >
-              {#if grouped}
-                {#each roleCategories as category (category)}
-                  {@const catPositions = effectivePositions.filter(
-                    (p: PositionOption) => p.roleCategory === category,
-                  )}
-                  {#if catPositions.length > 0}
-                    <div class="dropdown__group-label">
-                      {ROLE_CATEGORY_LABELS[category]}
-                    </div>
-                    {#each catPositions as pos (pos.name)}
-                      <!-- svelte-ignore a11y_click_events_have_key_events -->
-                      <!-- svelte-ignore a11y_no_static_element_interactions -->
-                      <div
-                        class="dropdown__option"
-                        onclick={() => {
-                          selectPosition(pos.name);
-                        }}
-                      >
-                        {resolvePositionDisplay(pos.name, lbl)}
-                      </div>
-                    {/each}
-                  {/if}
-                {/each}
-              {:else}
-                {#each effectivePositions as pos (pos.name)}
-                  <!-- svelte-ignore a11y_click_events_have_key_events -->
-                  <!-- svelte-ignore a11y_no_static_element_interactions -->
-                  <div
-                    class="dropdown__option"
-                    onclick={() => {
-                      selectPosition(pos.name);
-                    }}
-                  >
-                    {resolvePositionDisplay(pos.name, lbl)}
-                  </div>
-                {/each}
-              {/if}
-            </div>
-          </div>
+          <UserPositionChips
+            catalog={effectivePositions}
+            bind:selectedIds={formPositionIds}
+            hierarchyLabels={lbl}
+          />
           <div class="alert alert--info alert--sm mt-2">
             <div class="alert__icon"><i class="fas fa-id-badge"></i></div>
             <div class="alert__content">
@@ -497,12 +398,6 @@
               </div>
             </div>
           </div>
-          {#if isEditMode && editUserId !== undefined && editUserId !== null}
-            <UserPositionChips
-              userId={editUserId}
-              hierarchyLabels={lbl}
-            />
-          {/if}
         </div>
 
         <div class="form-field">

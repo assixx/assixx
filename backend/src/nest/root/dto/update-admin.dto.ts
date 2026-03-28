@@ -10,6 +10,7 @@ import {
   NameSchema,
   NotesSchema,
   PasswordSchema,
+  PositionIdsSchema,
   PositionSchema,
   UsernameSchema,
 } from './admin.schemas.js';
@@ -24,6 +25,7 @@ export const UpdateAdminSchema = z.object({
   isActive: z.coerce.number().int().min(0).max(4).optional(),
   employeeNumber: EmployeeNumberSchema,
   position: PositionSchema,
+  positionIds: PositionIdsSchema.optional(),
   role: z.enum(['admin', 'root']).optional(),
 });
 

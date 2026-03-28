@@ -8,7 +8,6 @@
     DEFAULT_HIERARCHY_LABELS,
     isLeadPosition,
     LEAD_POSITION_KEYS,
-    resolvePositionDisplay,
     type HierarchyLabels,
     type PositionOption,
   } from '$lib/types/hierarchy-labels';
@@ -37,7 +36,7 @@
     formPassword: string;
     formPasswordConfirm: string;
     formEmployeeNumber: string;
-    formPosition: string;
+    formPositionIds: string[];
     formPhone: string;
     formDateOfBirth: string;
     formNotes: string;
@@ -52,13 +51,12 @@
     onvalidatepasswords: () => void;
     positionOptions?: PositionOption[];
     labels?: HierarchyLabels;
-    editUserId?: number | null;
     onupgrade?: () => void;
   }
 
   /* eslint-disable prefer-const, @typescript-eslint/no-useless-default-assignment -- Svelte $bindable() requires let and is not a useless default */
   // prettier-ignore
-  let { show, isEditMode, modalTitle, allTeams, submitting, messages: msg = MESSAGES, positionOptions, labels: lbl = DEFAULT_HIERARCHY_LABELS, editUserId, formFirstName = $bindable(), formLastName = $bindable(), formEmail = $bindable(), formEmailConfirm = $bindable(), formPassword = $bindable(), formPasswordConfirm = $bindable(), formEmployeeNumber = $bindable(), formPosition = $bindable(), formPhone = $bindable(), formDateOfBirth = $bindable(), formNotes = $bindable(), formIsActive = $bindable(), formTeamIds = $bindable(), emailError = $bindable(), passwordError = $bindable(), onclose, onsubmit, onvalidateemails, onvalidatepasswords, onupgrade }: Props = $props();
+  let { show, isEditMode, modalTitle, allTeams, submitting, messages: msg = MESSAGES, positionOptions, labels: lbl = DEFAULT_HIERARCHY_LABELS, formFirstName = $bindable(), formLastName = $bindable(), formEmail = $bindable(), formEmailConfirm = $bindable(), formPassword = $bindable(), formPasswordConfirm = $bindable(), formEmployeeNumber = $bindable(), formPositionIds = $bindable(), formPhone = $bindable(), formDateOfBirth = $bindable(), formNotes = $bindable(), formIsActive = $bindable(), formTeamIds = $bindable(), emailError = $bindable(), passwordError = $bindable(), onclose, onsubmit, onvalidateemails, onvalidatepasswords, onupgrade }: Props = $props();
   /* eslint-enable prefer-const, @typescript-eslint/no-useless-default-assignment */
 
   // =============================================================================
@@ -96,7 +94,6 @@
   });
 
   // Dropdown States
-  let positionDropdownOpen = $state(false);
   let statusDropdownOpen = $state(false);
 
   // Upgrade confirmation state
@@ -124,20 +121,8 @@
   // DROPDOWN HANDLERS
   // =============================================================================
 
-  function togglePositionDropdown(e: MouseEvent): void {
-    e.stopPropagation();
-    statusDropdownOpen = false;
-    positionDropdownOpen = !positionDropdownOpen;
-  }
-
-  function selectPosition(position: string): void {
-    formPosition = position;
-    positionDropdownOpen = false;
-  }
-
   function toggleStatusDropdown(e: MouseEvent): void {
     e.stopPropagation();
-    positionDropdownOpen = false;
     statusDropdownOpen = !statusDropdownOpen;
   }
 
@@ -181,7 +166,6 @@
   // Reset local UI state when modal opens
   $effect(() => {
     if (show) {
-      positionDropdownOpen = false;
       statusDropdownOpen = false;
       upgradeConfirmActive = false;
       showPassword = false;
@@ -193,13 +177,10 @@
   });
 
   $effect(() => {
-    if (positionDropdownOpen || statusDropdownOpen) {
+    if (statusDropdownOpen) {
       const handleOutsideClick = (e: MouseEvent): void => {
         const target = e.target as HTMLElement;
 
-        if (positionDropdownOpen && isClickOutsideDropdown(target, 'position-dropdown')) {
-          positionDropdownOpen = false;
-        }
         if (statusDropdownOpen && isClickOutsideDropdown(target, 'status-dropdown')) {
           statusDropdownOpen = false;
         }
@@ -445,46 +426,11 @@
         </div>
 
         <div class="form-field">
-          <label
-            class="form-field__label"
-            for="employee-position">Position <span class="text-red-500">*</span></label
-          >
-          <div
-            class="dropdown"
-            id="position-dropdown"
-          >
-            <!-- svelte-ignore a11y_click_events_have_key_events -->
-            <!-- svelte-ignore a11y_no_static_element_interactions -->
-            <div
-              class="dropdown__trigger"
-              class:active={positionDropdownOpen}
-              onclick={togglePositionDropdown}
-            >
-              <span
-                >{formPosition !== '' ?
-                  resolvePositionDisplay(formPosition, lbl)
-                : 'Bitte wählen...'}</span
-              >
-              <i class="fas fa-chevron-down"></i>
-            </div>
-            <div
-              class="dropdown__menu"
-              class:active={positionDropdownOpen}
-            >
-              {#each effectivePositions as pos (pos.name)}
-                <!-- svelte-ignore a11y_click_events_have_key_events -->
-                <!-- svelte-ignore a11y_no_static_element_interactions -->
-                <div
-                  class="dropdown__option"
-                  onclick={() => {
-                    selectPosition(pos.name);
-                  }}
-                >
-                  {resolvePositionDisplay(pos.name, lbl)}
-                </div>
-              {/each}
-            </div>
-          </div>
+          <UserPositionChips
+            catalog={effectivePositions}
+            bind:selectedIds={formPositionIds}
+            hierarchyLabels={lbl}
+          />
           <div class="alert alert--info alert--sm mt-2">
             <div class="alert__icon"><i class="fas fa-id-badge"></i></div>
             <div class="alert__content">
@@ -498,13 +444,6 @@
               </div>
             </div>
           </div>
-          {#if isEditMode && editUserId !== undefined && editUserId !== null}
-            <UserPositionChips
-              userId={editUserId}
-              roleFilter="employee"
-              hierarchyLabels={lbl}
-            />
-          {/if}
         </div>
 
         <div class="form-field">

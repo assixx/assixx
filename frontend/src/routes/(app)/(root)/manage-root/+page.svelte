@@ -12,7 +12,21 @@
   import SearchResultUser from '$lib/components/SearchResultUser.svelte';
   import { showSuccessAlert, showWarningAlert, showErrorAlert } from '$lib/stores/toast';
   import { resolvePositionDisplay } from '$lib/types/hierarchy-labels';
+  import { getApiClient } from '$lib/utils/api-client';
   import { createLogger } from '$lib/utils/logger';
+
+  const apiClient = getApiClient();
+
+  async function loadUserPositions(userId: number): Promise<void> {
+    try {
+      const positions = await apiClient.request<{ positionId: string }[]>(
+        `/users/${String(userId)}/positions`,
+      );
+      formPositionIds = positions.map((p: { positionId: string }) => p.positionId);
+    } catch {
+      formPositionIds = [];
+    }
+  }
 
   const log = createLogger('ManageRootPage');
 
@@ -96,7 +110,7 @@
   let formPassword = $state('');
   let formPasswordConfirm = $state('');
   let formEmployeeNumber = $state('');
-  let formPosition = $state('');
+  let formPositionIds = $state<string[]>([]);
   let formNotes = $state('');
   let formIsActive = $state<FormIsActiveStatus>(1);
 
@@ -136,7 +150,7 @@
     formPassword = d.password;
     formPasswordConfirm = d.passwordConfirm;
     formEmployeeNumber = d.employeeNumber;
-    formPosition = d.position;
+    formPositionIds = [];
     formNotes = d.notes;
     formIsActive = d.isActive;
     emailError = false;
@@ -159,7 +173,7 @@
           password: formPassword,
           passwordConfirm: formPasswordConfirm,
           employeeNumber: formEmployeeNumber,
-          position: formPosition,
+          positionIds: formPositionIds,
           notes: formNotes,
           isActive: formIsActive,
         },
@@ -306,7 +320,8 @@
     formPassword = f.password;
     formPasswordConfirm = f.passwordConfirm;
     formEmployeeNumber = f.employeeNumber;
-    formPosition = f.position;
+    formPositionIds = [];
+    void loadUserPositions(userId);
     formNotes = f.notes;
     formIsActive = f.isActive;
     emailError = false;
@@ -657,7 +672,6 @@
   {isEditMode}
   {modalTitle}
   {positionOptions}
-  editUserId={currentEditId}
   hierarchyLabels={labels}
   bind:firstName={formFirstName}
   bind:lastName={formLastName}
@@ -666,7 +680,7 @@
   bind:password={formPassword}
   bind:passwordConfirm={formPasswordConfirm}
   bind:employeeNumber={formEmployeeNumber}
-  bind:position={formPosition}
+  bind:positionIds={formPositionIds}
   bind:notes={formNotes}
   bind:isActive={formIsActive}
   {emailError}

@@ -1,54 +1,34 @@
 <!--
-  UserPositionChips — Shared component for managing user_positions N:M assignments.
-  Shows assigned positions as removable chips + add dropdown from position_catalog.
-  Only renders in edit mode (when userId is provided).
+  UserPositionChips — Form-controlled position selector.
+  Shows selected positions as removable chips + add dropdown from catalog.
+  No API calls — parent owns state via bind:selectedIds.
 -->
 <script lang="ts">
-  import { showErrorAlert, showSuccessAlert } from '$lib/stores/toast';
   import {
-    DEFAULT_HIERARCHY_LABELS,
+    isLeadPosition,
     resolvePositionDisplay,
     type HierarchyLabels,
+    DEFAULT_HIERARCHY_LABELS,
+    type PositionOption,
   } from '$lib/types/hierarchy-labels';
-  import { getApiClient } from '$lib/utils/api-client';
-
-  interface PositionEntry {
-    id: string;
-    name: string;
-    roleCategory: 'employee' | 'admin' | 'root';
-    sortOrder: number;
-    isSystem: boolean;
-  }
-
-  interface UserPosition {
-    id: string;
-    userId: number;
-    positionId: string;
-    positionName: string;
-    roleCategory: 'employee' | 'admin' | 'root';
-  }
 
   interface Props {
-    userId: number;
-    roleFilter?: 'employee' | 'admin' | 'root';
+    /** Full position catalog (all available positions) */
+    catalog: PositionOption[];
+    /** Currently selected position IDs (bindable) */
+    selectedIds?: string[];
+    /** Hierarchy labels for display */
     hierarchyLabels?: HierarchyLabels;
   }
 
-  const { userId, roleFilter, hierarchyLabels: hl = DEFAULT_HIERARCHY_LABELS }: Props = $props();
+  /* eslint-disable prefer-const -- $bindable() is a Svelte semantic marker */
+  let {
+    catalog,
+    selectedIds = $bindable([]),
+    hierarchyLabels: hl = DEFAULT_HIERARCHY_LABELS,
+  }: Props = $props();
 
-  const apiClient = getApiClient();
-
-  let assigned = $state<UserPosition[]>([]);
-  let catalog = $state<PositionEntry[]>([]);
   let dropdownOpen = $state(false);
-  let busy = $state(false);
-  let loaded = $state(false);
-
-  const available = $derived(
-    catalog.filter(
-      (p: PositionEntry) => !assigned.some((a: UserPosition) => a.positionId === p.id),
-    ),
-  );
 
   const ROLE_CATEGORY_LABELS: Record<string, string> = {
     employee: 'Mitarbeiter',
@@ -58,178 +38,149 @@
 
   const roleCategories = ['employee', 'admin', 'root'] as const;
 
-  const grouped = $derived(
-    roleFilter === undefined &&
-      available.some((p: PositionEntry) => p.roleCategory !== available[0]?.roleCategory),
+  /** Positions not yet selected */
+  const available = $derived(catalog.filter((p: PositionOption) => !selectedIds.includes(p.id)));
+
+  /** Selected positions with metadata from catalog */
+  const selected = $derived(
+    selectedIds
+      .map((id: string) => catalog.find((p: PositionOption) => p.id === id))
+      .filter((p: PositionOption | undefined): p is PositionOption => p !== undefined),
   );
 
+  /** Show grouped dropdown when multiple role categories present */
+  const grouped = $derived(
+    available.length > 0 &&
+      available.some((p: PositionOption) => p.roleCategory !== available[0]?.roleCategory),
+  );
+
+  function toggleDropdown(e: MouseEvent): void {
+    e.stopPropagation();
+    dropdownOpen = !dropdownOpen;
+  }
+
+  function addPosition(id: string): void {
+    if (!selectedIds.includes(id)) {
+      selectedIds = [...selectedIds, id];
+    }
+    dropdownOpen = false;
+  }
+
+  function removePosition(id: string): void {
+    selectedIds = selectedIds.filter((sid: string) => sid !== id);
+  }
+
+  // Close dropdown on outside click
   $effect(() => {
-    if (userId > 0 && !loaded) {
-      void loadData();
+    if (dropdownOpen) {
+      const handleClick = (e: MouseEvent): void => {
+        const target = e.target as HTMLElement;
+        const el = document.getElementById('pos-chips-dropdown');
+        if (el && !el.contains(target)) dropdownOpen = false;
+      };
+      document.addEventListener('click', handleClick, true);
+      return () => {
+        document.removeEventListener('click', handleClick, true);
+      };
     }
   });
-
-  async function loadData(): Promise<void> {
-    try {
-      const [userPos, allPos] = await Promise.all([
-        apiClient.request<UserPosition[]>(`/users/${String(userId)}/positions`),
-        apiClient.request<PositionEntry[]>(
-          roleFilter !== undefined ?
-            `/organigram/positions?roleCategory=${roleFilter}`
-          : '/organigram/positions',
-        ),
-      ]);
-      assigned = userPos;
-      catalog = allPos;
-      loaded = true;
-    } catch {
-      showErrorAlert('Positionen konnten nicht geladen werden');
-    }
-  }
-
-  async function assign(positionId: string): Promise<void> {
-    if (busy) return;
-    busy = true;
-    dropdownOpen = false;
-    try {
-      await apiClient.request(`/users/${String(userId)}/positions`, {
-        method: 'POST',
-        body: JSON.stringify({ positionId }),
-      });
-      await loadData();
-      showSuccessAlert('Position zugewiesen');
-    } catch {
-      showErrorAlert('Fehler beim Zuweisen');
-    } finally {
-      busy = false; // eslint-disable-line require-atomic-updates -- Svelte single-threaded
-    }
-  }
-
-  async function unassign(positionId: string): Promise<void> {
-    if (busy) return;
-    busy = true;
-    try {
-      await apiClient.request(`/users/${String(userId)}/positions/${positionId}`, {
-        method: 'DELETE',
-      });
-      assigned = assigned.filter((a: UserPosition) => a.positionId !== positionId);
-      showSuccessAlert('Position entfernt');
-    } catch {
-      showErrorAlert('Fehler beim Entfernen');
-    } finally {
-      busy = false; // eslint-disable-line require-atomic-updates -- Svelte single-threaded
-    }
-  }
 </script>
 
-{#if loaded}
-  <div class="pos-chips">
-    <span class="pos-chips__label">
-      <i class="fas fa-id-badge mr-1"></i>
-      Katalog-Positionen
-    </span>
+<div class="pos-chips">
+  <span class="form-field__label">
+    <i class="fas fa-id-badge mr-1"></i>
+    Positionen <span class="text-red-500">*</span>
+  </span>
 
-    <div class="pos-chips__list">
-      {#each assigned as ap (ap.id)}
-        <span class="pos-chip">
-          {resolvePositionDisplay(ap.positionName, hl)}
-          <button
-            type="button"
-            class="pos-chip__remove"
-            aria-label="Entfernen"
-            disabled={busy}
-            onclick={() => {
-              void unassign(ap.positionId);
-            }}
-          >
-            <i class="fas fa-times"></i>
-          </button>
-        </span>
-      {/each}
+  <div class="pos-chips__list">
+    {#each selected as pos (pos.id)}
+      <span class="pos-chip">
+        {resolvePositionDisplay(pos.name, hl)}
+        <button
+          type="button"
+          class="pos-chip__remove"
+          aria-label="Entfernen"
+          onclick={() => {
+            removePosition(pos.id);
+          }}
+        >
+          <i class="fas fa-times"></i>
+        </button>
+      </span>
+    {/each}
 
-      {#if available.length > 0}
-        <div class="pos-add-dropdown">
-          <button
-            type="button"
-            class="pos-add-btn"
-            aria-label="Position hinzufügen"
-            disabled={busy}
-            onclick={(e) => {
-              e.stopPropagation();
-              dropdownOpen = !dropdownOpen;
-            }}
-          >
-            <i class="fas fa-plus"></i>
-          </button>
-          {#if dropdownOpen}
-            <div
-              class="pos-add-menu"
-              class:pos-add-menu--tall={grouped}
-            >
-              {#if grouped}
-                {#each roleCategories as category (category)}
-                  {@const catPositions = available.filter(
-                    (p: PositionEntry) => p.roleCategory === category,
-                  )}
-                  {#if catPositions.length > 0}
-                    <div class="pos-add-group-label">
-                      {ROLE_CATEGORY_LABELS[category]}
-                    </div>
-                    {#each catPositions as pos (pos.id)}
-                      <button
-                        type="button"
-                        class="pos-add-option"
-                        onclick={() => {
-                          void assign(pos.id);
-                        }}
-                      >
-                        {resolvePositionDisplay(pos.name, hl)}
-                        {#if pos.isSystem}
-                          <span class="badge badge--primary badge--xs ml-1">System</span>
-                        {/if}
-                      </button>
-                    {/each}
-                  {/if}
-                {/each}
-              {:else}
-                {#each available as pos (pos.id)}
+    {#if available.length > 0}
+      <div
+        class="pos-add-dropdown"
+        id="pos-chips-dropdown"
+      >
+        <button
+          type="button"
+          class="pos-add-btn"
+          aria-label="Position hinzufügen"
+          onclick={toggleDropdown}
+        >
+          <i class="fas fa-plus"></i>
+        </button>
+        <div
+          class="dropdown__menu"
+          class:dropdown__menu--tall={grouped}
+          class:active={dropdownOpen}
+        >
+          {#if grouped}
+            {#each roleCategories as category (category)}
+              {@const catPositions = available.filter(
+                (p: PositionOption) => p.roleCategory === category,
+              )}
+              {#if catPositions.length > 0}
+                <div class="dropdown__group-label">
+                  {ROLE_CATEGORY_LABELS[category]}
+                </div>
+                {#each catPositions as pos (pos.id)}
                   <button
                     type="button"
-                    class="pos-add-option"
+                    class="dropdown__option"
                     onclick={() => {
-                      void assign(pos.id);
+                      addPosition(pos.id);
                     }}
                   >
                     {resolvePositionDisplay(pos.name, hl)}
-                    {#if pos.isSystem}
-                      <span class="badge badge--primary badge--xs ml-1">System</span>
+                    {#if isLeadPosition(pos.name)}
+                      <span class="badge badge--primary badge--xs ml-2">System</span>
                     {/if}
                   </button>
                 {/each}
               {/if}
-            </div>
+            {/each}
+          {:else}
+            {#each available as pos (pos.id)}
+              <button
+                type="button"
+                class="dropdown__option"
+                onclick={() => {
+                  addPosition(pos.id);
+                }}
+              >
+                {resolvePositionDisplay(pos.name, hl)}
+                {#if isLeadPosition(pos.name)}
+                  <span class="badge badge--primary badge--xs ml-2">System</span>
+                {/if}
+              </button>
+            {/each}
           {/if}
         </div>
-      {/if}
-    </div>
-
-    {#if assigned.length === 0}
-      <span class="pos-chips__empty">Keine Positionen zugewiesen</span>
+      </div>
     {/if}
   </div>
-{/if}
+
+  {#if selected.length === 0 && available.length === 0}
+    <span class="pos-chips__empty">Keine Positionen verfügbar</span>
+  {/if}
+</div>
 
 <style>
   .pos-chips {
-    margin-top: 0.75rem;
-  }
-
-  .pos-chips__label {
-    display: block;
-    font-size: 0.8125rem;
-    font-weight: 600;
-    color: var(--color-text-secondary);
-    margin-bottom: 0.375rem;
+    margin-top: 0.25rem;
   }
 
   .pos-chips__list {
@@ -237,6 +188,8 @@
     flex-wrap: wrap;
     gap: 0.375rem;
     align-items: center;
+    margin-top: 0.5rem;
+    margin-bottom: 0.5rem;
   }
 
   .pos-chip {
@@ -271,10 +224,6 @@
     opacity: 100%;
   }
 
-  .pos-chip__remove:disabled {
-    cursor: not-allowed;
-  }
-
   .pos-add-dropdown {
     position: relative;
   }
@@ -283,75 +232,26 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 28px;
-    height: 28px;
+    width: 34px;
+    height: 34px;
     border: 1px dashed var(--color-border, rgb(255 255 255 / 15%));
     border-radius: var(--radius-sm, 6px);
     background: transparent;
     color: var(--color-text-secondary);
     cursor: pointer;
-    font-size: 0.75rem;
+    font-size: 0.875rem;
     transition: all 0.15s;
   }
 
-  .pos-add-btn:hover:not(:disabled) {
+  .pos-add-btn:hover {
     border-color: var(--color-primary, #3b82f6);
     color: var(--color-primary, #3b82f6);
   }
 
-  .pos-add-menu {
-    position: absolute;
-    top: 100%;
-    left: 0;
-    z-index: 50;
-    min-width: 200px;
-    max-height: 200px;
-    overflow-y: auto;
-    margin-top: 0.25rem;
-    padding: 0.25rem;
-    border-radius: var(--radius-md, 8px);
-    background: var(--color-surface, #1e293b);
-    border: 1px solid var(--color-border, rgb(255 255 255 / 10%));
-    box-shadow: 0 4px 12px rgb(0 0 0 / 30%);
-  }
-
-  .pos-add-option {
-    display: flex;
-    align-items: center;
-    gap: 0.25rem;
-    width: 100%;
-    padding: 0.5rem 0.625rem;
-    border: none;
-    border-radius: var(--radius-sm, 6px);
-    background: transparent;
-    color: var(--color-text-primary);
-    font-size: 0.8125rem;
-    cursor: pointer;
-    text-align: left;
-    transition: background 0.15s;
-  }
-
-  .pos-add-menu--tall {
-    max-height: 320px;
-  }
-
-  .pos-add-group-label {
-    padding: 0.375rem 0.625rem 0.25rem;
-    font-size: 0.6875rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: var(--color-text-muted);
-  }
-
-  .pos-add-group-label:not(:first-child) {
-    margin-top: 0.25rem;
-    border-top: 1px solid var(--color-border, rgb(255 255 255 / 8%));
-    padding-top: 0.5rem;
-  }
-
-  .pos-add-option:hover {
-    background: var(--color-surface-hover, rgb(255 255 255 / 6%));
+  /* Override global .dropdown__menu sizing — parent is only 28px wide */
+  .pos-add-dropdown :global(.dropdown__menu) {
+    right: auto;
+    min-width: 280px;
   }
 
   .pos-chips__empty {

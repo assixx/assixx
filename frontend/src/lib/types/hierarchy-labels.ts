@@ -40,6 +40,7 @@ export type LeadPositionKey = (typeof LEAD_POSITION_KEYS)[keyof typeof LEAD_POSI
 
 /** Position option with role category — used in form modal dropdowns */
 export interface PositionOption {
+  id: string;
   name: string;
   roleCategory: string;
 }

@@ -40,14 +40,14 @@ export const INHERITED_BADGE_CLASS = 'badge--warning';
  * Position options for employees
  */
 export const POSITION_OPTIONS: readonly PositionOption[] = [
-  { name: 'Produktionsmitarbeiter', roleCategory: 'employee' },
-  { name: 'Anlagenbediener', roleCategory: 'employee' },
-  { name: 'Lagerarbeiter', roleCategory: 'employee' },
-  { name: 'Qualitätsprüfer', roleCategory: 'employee' },
-  { name: 'Schichtleiter', roleCategory: 'employee' },
-  { name: 'team_lead', roleCategory: 'employee' },
-  { name: 'Wartungstechniker', roleCategory: 'employee' },
-  { name: 'Sonstiges', roleCategory: 'employee' },
+  { id: '', name: 'Produktionsmitarbeiter', roleCategory: 'employee' },
+  { id: '', name: 'Anlagenbediener', roleCategory: 'employee' },
+  { id: '', name: 'Lagerarbeiter', roleCategory: 'employee' },
+  { id: '', name: 'Qualitätsprüfer', roleCategory: 'employee' },
+  { id: '', name: 'Schichtleiter', roleCategory: 'employee' },
+  { id: '', name: 'team_lead', roleCategory: 'employee' },
+  { id: '', name: 'Wartungstechniker', roleCategory: 'employee' },
+  { id: '', name: 'Sonstiges', roleCategory: 'employee' },
 ] as const;
 
 /**

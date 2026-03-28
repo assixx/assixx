@@ -26,6 +26,7 @@ import {
 } from '@nestjs/common';
 import type { FastifyReply } from 'fastify';
 
+import { attachmentHeader } from '../../utils/content-disposition.js';
 import { CurrentUser } from '../common/decorators/current-user.decorator.js';
 import { RequireAddon } from '../common/decorators/require-addon.decorator.js';
 import { RequirePermission } from '../common/decorators/require-permission.decorator.js';
@@ -142,7 +143,7 @@ export class CalendarController {
 
     await reply
       .header('Content-Type', contentType)
-      .header('Content-Disposition', `attachment; filename="${filename}"`)
+      .header('Content-Disposition', attachmentHeader(filename))
       .send(data);
   }
 

@@ -28,6 +28,7 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import { v7 as uuidv7 } from 'uuid';
 
+import { attachmentHeader, inlineHeader } from '../../utils/content-disposition.js';
 import { getUploadDirectory, sanitizeFilename, validatePath } from '../../utils/path-security.js';
 import { CurrentUser } from '../common/decorators/current-user.decorator.js';
 import { RequireAddon } from '../common/decorators/require-addon.decorator.js';
@@ -313,10 +314,10 @@ export class ChatController {
       throw new NotFoundException('File not found');
     }
 
-    const disposition = query.download === true ? 'attachment' : 'inline';
+    const filename = path.basename(params.filename);
     void reply.header(
       'Content-Disposition',
-      `${disposition}; filename="${path.basename(params.filename)}"`,
+      query.download === true ? attachmentHeader(filename) : inlineHeader(filename),
     );
 
     const fileBuffer = await fs.readFile(filePath);
@@ -472,11 +473,14 @@ export class ChatController {
 
     const documentId = document['id'] as number;
     const content = await this.documentsService.getDocumentContent(documentId, user.id, tenantId);
-    const disposition = query.inline === true ? 'inline' : 'attachment';
-
     await reply
       .header('Content-Type', content.mimeType)
-      .header('Content-Disposition', `${disposition}; filename="${content.originalName}"`)
+      .header(
+        'Content-Disposition',
+        query.inline === true ?
+          inlineHeader(content.originalName)
+        : attachmentHeader(content.originalName),
+      )
       .header('Content-Length', content.fileSize.toString())
       .header('Cache-Control', 'private, max-age=3600')
       .send(content.content);

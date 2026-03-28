@@ -11,7 +11,16 @@
  * @see docs/FEAT_DELEGATED_PERMISSION_MANAGEMENT_MASTERPLAN.md
  * @see docs/infrastructure/adr/ADR-020-per-user-feature-permissions.md
  */
-import { Body, Controller, ForbiddenException, Get, Logger, Param, Put } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  ForbiddenException,
+  Get,
+  Logger,
+  Param,
+  Put,
+  Query,
+} from '@nestjs/common';
 
 import { CurrentUser } from '../common/decorators/current-user.decorator.js';
 import { Roles } from '../common/decorators/roles.decorator.js';
@@ -19,8 +28,11 @@ import { TenantId } from '../common/decorators/tenant.decorator.js';
 import type { NestAuthUser } from '../common/interfaces/auth.interface.js';
 import { HierarchyPermissionService } from '../hierarchy-permission/hierarchy-permission.service.js';
 import { ScopeService } from '../hierarchy-permission/scope.service.js';
-import { UpsertUserPermissionsDto } from './dto/index.js';
-import type { PermissionCategoryResponse } from './user-permissions.service.js';
+import { PermissionHistoryQueryDto, UpsertUserPermissionsDto } from './dto/index.js';
+import type {
+  PermissionCategoryResponse,
+  PermissionHistoryResponse,
+} from './user-permissions.service.js';
 import { UserPermissionsService } from './user-permissions.service.js';
 
 @Controller('user-permissions')
@@ -33,6 +45,21 @@ export class UserPermissionsController {
     private readonly scopeService: ScopeService,
     private readonly hierarchyPermission: HierarchyPermissionService,
   ) {}
+
+  /**
+   * Get permission change history for a user.
+   * Access: same rules as GET permissions (read access required).
+   */
+  @Get(':uuid/history')
+  async getPermissionHistory(
+    @TenantId() tenantId: number,
+    @Param('uuid') uuid: string,
+    @Query() query: PermissionHistoryQueryDto,
+    @CurrentUser() user: NestAuthUser,
+  ): Promise<PermissionHistoryResponse> {
+    await this.assertPermissionAccess(user, uuid, tenantId, 'canRead');
+    return await this.service.getPermissionHistory(tenantId, uuid, query.limit, query.offset);
+  }
 
   /**
    * Get permission tree for a user.

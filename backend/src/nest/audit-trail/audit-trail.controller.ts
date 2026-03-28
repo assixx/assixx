@@ -17,6 +17,7 @@ import {
 } from '@nestjs/common';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 
+import { attachmentHeader } from '../../utils/content-disposition.js';
 import { RequirePermission } from '../common/decorators/require-permission.decorator.js';
 import { CurrentUser, Roles } from '../common/index.js';
 import type { NestAuthUser } from '../common/index.js';
@@ -201,7 +202,7 @@ export class AuditTrailController {
       const csv = this.auditTrailService.generateCSV(result.entries);
       await reply
         .header('Content-Type', 'text/csv')
-        .header('Content-Disposition', 'attachment; filename=audit-trail-export.csv')
+        .header('Content-Disposition', attachmentHeader('audit-trail-export.csv'))
         .send(csv);
     } else {
       await reply.send({

@@ -26,7 +26,11 @@ export const load: PageServerLoad = async ({ cookies, fetch, locals }) => {
   // Parallel fetch: root users + positions
   const [rootUsersData, positionsData] = await Promise.all([
     apiFetch<RootUser[]>('/users?role=root', token, fetch),
-    apiFetch<{ name: string; roleCategory: string }[]>('/organigram/positions', token, fetch),
+    apiFetch<{ id: string; name: string; roleCategory: string }[]>(
+      '/organigram/positions',
+      token,
+      fetch,
+    ),
   ]);
   const allRootUsers = Array.isArray(rootUsersData) ? rootUsersData : [];
 
@@ -48,7 +52,8 @@ export const load: PageServerLoad = async ({ cookies, fetch, locals }) => {
     rootUsers,
     positionOptions:
       Array.isArray(positionsData) ?
-        positionsData.map((p: { name: string; roleCategory: string }) => ({
+        positionsData.map((p: { id: string; name: string; roleCategory: string }) => ({
+          id: p.id,
           name: p.name,
           roleCategory: p.roleCategory,
         }))

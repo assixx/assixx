@@ -268,6 +268,7 @@ export interface CreateAdminRequest {
   notes?: string | undefined;
   employeeNumber?: string | undefined;
   position?: string | undefined;
+  positionIds?: string[] | undefined;
 }
 
 export interface UpdateUserRequest {
@@ -279,6 +280,7 @@ export interface UpdateUserRequest {
   isActive?: number | undefined;
   employeeNumber?: string | undefined;
   position?: string | undefined;
+  positionIds?: string[] | undefined;
   role?: string | undefined;
 }
 
@@ -288,6 +290,7 @@ export interface CreateRootUserRequest {
   firstName: string;
   lastName: string;
   position?: string | undefined;
+  positionIds?: string[] | undefined;
   notes?: string | undefined;
   employeeNumber?: string | undefined;
   isActive?: number | undefined;

@@ -33,6 +33,7 @@
     priority: string;
     decidedByName: string | null;
     decisionNote: string | null;
+    isRead: boolean;
     createdAt: string;
   }
 
@@ -72,17 +73,29 @@
   ] as const;
 
   const STATUS_BADGE: Record<string, { label: string; cssClass: string; icon: string }> = {
-    pending: { label: 'Offen', cssClass: 'badge--warning', icon: 'fa-clock' },
-    approved: {
-      label: 'Genehmigt',
-      cssClass: 'badge--success',
-      icon: 'fa-check',
-    },
-    rejected: {
-      label: 'Abgelehnt',
-      cssClass: 'badge--error',
-      icon: 'fa-times',
-    },
+    pending: { label: 'Offen', cssClass: 'badge--pending', icon: 'fa-clock' },
+    approved: { label: 'Genehmigt', cssClass: 'badge--approved', icon: 'fa-check' },
+    rejected: { label: 'Abgelehnt', cssClass: 'badge--failed', icon: 'fa-times' },
+  };
+
+  const PRIORITY_BADGE: Record<string, string> = {
+    low: 'badge--priority-low',
+    medium: 'badge--priority-normal',
+    high: 'badge--priority-high',
+  };
+
+  const PRIORITY_LABEL: Record<string, string> = {
+    low: 'Niedrig',
+    medium: 'Mittel',
+    high: 'Hoch',
+  };
+
+  const ADDON_BADGE: Record<string, { cssClass: string; label: string }> = {
+    kvp: { cssClass: 'badge--info', label: 'KVP' },
+    vacation: { cssClass: 'badge--primary', label: 'Urlaub' },
+    blackboard: { cssClass: 'badge--secondary', label: 'Schwarzes Brett' },
+    calendar: { cssClass: 'badge--warning', label: 'Kalender' },
+    surveys: { cssClass: 'badge--success', label: 'Umfragen' },
   };
 
   // =============================================================================
@@ -108,13 +121,21 @@
   // HANDLERS
   // =============================================================================
 
+  function markAsRead(approval: ApprovalItem): void {
+    if (approval.isRead) return;
+    approval.isRead = true;
+    void fetch(`/api/v2/approvals/${approval.uuid}/read`, { method: 'POST' });
+  }
+
   function openApproveModal(approval: ApprovalItem): void {
+    markAsRead(approval);
     activeApproval = approval;
     approveNote = '';
     showApproveModal = true;
   }
 
   function openRejectModal(approval: ApprovalItem): void {
+    markAsRead(approval);
     activeApproval = approval;
     rejectNote = '';
     showRejectModal = true;
@@ -186,22 +207,23 @@
         <i class="fas fa-check-double mr-2"></i>
         Eingehende Freigaben
       </h2>
+      <p class="mt-2 text-(--color-text-secondary)">Freigabe-Anfragen prüfen und bearbeiten</p>
     </div>
   </div>
 
   <!-- Stats Cards -->
   <div class="stats-grid mb-6">
-    <div class="card-stat card-stat--sm">
+    <div class="card-stat card-stat--sm card-stat--warning">
       <div class="card-stat__icon"><i class="fas fa-clock"></i></div>
       <span class="card-stat__value">{stats.pending}</span>
       <span class="card-stat__label">Offen</span>
     </div>
-    <div class="card-stat card-stat--sm">
+    <div class="card-stat card-stat--sm card-stat--success">
       <div class="card-stat__icon"><i class="fas fa-check"></i></div>
       <span class="card-stat__value">{stats.approved}</span>
       <span class="card-stat__label">Genehmigt</span>
     </div>
-    <div class="card-stat card-stat--sm">
+    <div class="card-stat card-stat--sm card-stat--danger">
       <div class="card-stat__icon"><i class="fas fa-times"></i></div>
       <span class="card-stat__value">{stats.rejected}</span>
       <span class="card-stat__label">Abgelehnt</span>
@@ -260,34 +282,46 @@
         </div>
       {:else}
         <div class="table-responsive">
-          <table class="table">
+          <table class="data-table data-table--hover">
             <thead>
               <tr>
-                <th>Titel</th>
-                <th>Modul</th>
-                <th>Angefragt von</th>
-                <th>Priorität</th>
-                <th>Status</th>
-                <th>Datum</th>
-                <th>Aktionen</th>
+                <th scope="col">Titel</th>
+                <th scope="col">Modul</th>
+                <th scope="col">Angefragt von</th>
+                <th scope="col">Priorität</th>
+                <th scope="col">Status</th>
+                <th scope="col">Datum</th>
+                <th scope="col">Aktionen</th>
               </tr>
             </thead>
             <tbody>
               {#each filteredItems as approval (approval.uuid)}
-                {@const badge = STATUS_BADGE[approval.status] ?? STATUS_BADGE.pending}
+                {@const statusBadge = STATUS_BADGE[approval.status] ?? STATUS_BADGE.pending}
+                {@const addonBadge = ADDON_BADGE[approval.addonCode]}
+                {@const priorityCss = PRIORITY_BADGE[approval.priority] ?? 'badge--outline'}
+                {@const priorityLabel = PRIORITY_LABEL[approval.priority] ?? approval.priority}
                 <tr>
-                  <td class="td--title">{approval.title}</td>
+                  <td class="td--title">
+                    {approval.title}
+                    {#if !approval.isRead}
+                      <span class="badge badge--sm badge--success ml-2">Neu</span>
+                    {/if}
+                  </td>
                   <td>
-                    <span class="badge badge--outline">{approval.addonCode}</span>
+                    {#if addonBadge}
+                      <span class="badge {addonBadge.cssClass}">{addonBadge.label}</span>
+                    {:else}
+                      <span class="badge badge--outline">{approval.addonCode}</span>
+                    {/if}
                   </td>
                   <td>{approval.requestedByName}</td>
                   <td>
-                    <span class="badge badge--outline">{approval.priority}</span>
+                    <span class="badge {priorityCss}">{priorityLabel}</span>
                   </td>
                   <td>
-                    <span class="badge {badge.cssClass}">
-                      <i class="fas {badge.icon}"></i>
-                      {badge.label}
+                    <span class="badge {statusBadge.cssClass}">
+                      <i class="fas {statusBadge.icon}"></i>
+                      {statusBadge.label}
                     </span>
                   </td>
                   <td>{new Date(approval.createdAt).toLocaleDateString('de-DE')}</td>
@@ -316,7 +350,7 @@
                         </button>
                       {:else if approval.decisionNote !== null}
                         <span
-                          class="text-muted"
+                          class="decision-note-icon"
                           title={approval.decisionNote}
                         >
                           <i class="fas fa-comment"></i>
@@ -412,7 +446,7 @@
   .stats-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    gap: 0.75rem;
+    gap: var(--spacing-3);
   }
 
   @media (width <= 768px) {
@@ -423,7 +457,7 @@
 
   .filter-bar {
     display: flex;
-    gap: 1rem;
+    gap: var(--spacing-4);
     flex-wrap: wrap;
   }
 
@@ -437,7 +471,7 @@
 
   .action-icons {
     display: flex;
-    gap: 0.5rem;
+    gap: var(--spacing-2);
     align-items: center;
   }
 
@@ -445,26 +479,28 @@
     background: none;
     border: none;
     cursor: pointer;
-    padding: 0.25rem 0.5rem;
-    border-radius: 4px;
-    color: var(--text-secondary);
+    padding: var(--spacing-1) var(--spacing-2);
+    border-radius: var(--radius-sm);
+    color: var(--color-text-secondary);
     transition: all 0.2s ease;
   }
 
   .action-icon:hover {
-    background: var(--bg-hover, rgb(255 255 255 / 10%));
+    background: var(--glass-bg-hover);
   }
 
   .action-icon--success:hover {
-    color: var(--color-success, #2ecc71);
+    color: var(--color-success);
   }
 
   .action-icon--danger:hover {
-    color: var(--color-danger, #e74c3c);
+    color: var(--color-danger);
   }
 
-  .text-muted {
-    opacity: 50%;
+  .decision-note-icon {
+    color: var(--color-text-secondary);
+    opacity: 60%;
+    cursor: help;
   }
 
   .form-group {
@@ -473,19 +509,25 @@
 
   .form-label {
     display: block;
-    margin-bottom: 0.5rem;
+    margin-bottom: var(--spacing-2);
     font-weight: 600;
     font-size: 0.875rem;
   }
 
   .form-textarea {
     width: 100%;
-    padding: 0.5rem 0.75rem;
-    border: 1px solid var(--border-color, rgb(255 255 255 / 10%));
-    border-radius: 8px;
-    background: var(--bg-input, rgb(255 255 255 / 5%));
+    padding: var(--spacing-2) var(--spacing-3);
+    border: 1px solid var(--color-glass-border);
+    border-radius: var(--radius-lg);
+    background: var(--glass-bg);
     color: inherit;
     font-size: 0.875rem;
     resize: vertical;
+    transition: border-color 0.2s ease;
+  }
+
+  .form-textarea:focus {
+    border-color: var(--color-primary);
+    outline: none;
   }
 </style>

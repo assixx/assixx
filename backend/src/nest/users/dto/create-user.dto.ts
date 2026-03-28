@@ -55,6 +55,9 @@ export const CreateUserSchema = z.object({
   teamIds: z.array(z.number().int().positive()).optional(),
   hasFullAccess: z.boolean().optional(),
   position: z.string().trim().optional(),
+  positionIds: z
+    .array(z.uuid('Jede positionId muss eine gültige UUID sein'))
+    .min(1, 'Mindestens eine Position erforderlich'),
   phone: PhoneSchema,
   address: z.string().trim().optional(),
   employeeNumber: EmployeeNumberSchema,

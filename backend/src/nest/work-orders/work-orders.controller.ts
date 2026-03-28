@@ -29,6 +29,7 @@ import type { FastifyReply } from 'fastify';
 import multer from 'fastify-multer';
 import { createReadStream } from 'node:fs';
 
+import { inlineHeader } from '../../utils/content-disposition.js';
 import { CurrentUser } from '../common/decorators/current-user.decorator.js';
 import { RequireAddon } from '../common/decorators/require-addon.decorator.js';
 import { RequirePermission } from '../common/decorators/require-permission.decorator.js';
@@ -409,7 +410,7 @@ export class WorkOrdersController {
       .header('Cache-Control', 'private, max-age=3600');
 
     if (photo.mimeType === 'application/pdf') {
-      headers.header('Content-Disposition', `inline; filename="${photo.fileName}"`);
+      headers.header('Content-Disposition', inlineHeader(photo.fileName));
     }
 
     await headers.send(createReadStream(photo.filePath));

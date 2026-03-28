@@ -228,6 +228,9 @@ importers:
       bcryptjs:
         specifier: 3.0.3
         version: 3.0.3
+      content-disposition:
+        specifier: 1.0.1
+        version: 1.0.1
       dotenv:
         specifier: ~17.3.1
         version: 17.3.1
@@ -301,6 +304,9 @@ importers:
       '@noble/hashes':
         specifier: 2.0.1
         version: 2.0.1
+      '@types/content-disposition':
+        specifier: 0.5.9
+        version: 0.5.9
       '@types/jsonwebtoken':
         specifier: ^9.0.10
         version: 9.0.10
@@ -2410,6 +2416,9 @@ packages:
 
   '@types/connect@3.4.38':
     resolution: {integrity: sha512-K6uROf1LD88uDQqJCktA4yzL1YYAK6NgfsI0v/mTgyPKWsX1CnJ0XPSDhViejru1GcRkLWb8RlzFYJRqGUbaug==}
+
+  '@types/content-disposition@0.5.9':
+    resolution: {integrity: sha512-8uYXI3Gw35MhiVYhG3s295oihrxRyytcRHjSjqnqZVDDy/xcGBRny7+Xj1Wgfhv5QzRtN2hB2dVRBUX9XW3UcQ==}
 
   '@types/cookie@0.6.0':
     resolution: {integrity: sha512-4Kh9a6B2bQciAhf7FSuMRRkUWecJgJu9nPnx3yzpsfXX/c50REIqpHY4C82bXP90qrLtXtkDxTZosYO3UpOwlA==}
@@ -7578,6 +7587,8 @@ snapshots:
   '@types/connect@3.4.38':
     dependencies:
       '@types/node': 24.12.0
+
+  '@types/content-disposition@0.5.9': {}
 
   '@types/cookie@0.6.0': {}
 

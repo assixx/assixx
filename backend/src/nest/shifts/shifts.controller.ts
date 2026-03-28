@@ -22,6 +22,7 @@ import {
 } from '@nestjs/common';
 import type { FastifyReply } from 'fastify';
 
+import { attachmentHeader } from '../../utils/content-disposition.js';
 import { CurrentUser } from '../common/decorators/current-user.decorator.js';
 import { RequireAddon } from '../common/decorators/require-addon.decorator.js';
 import { RequirePermission } from '../common/decorators/require-permission.decorator.js';
@@ -242,7 +243,7 @@ export class ShiftsController {
       .header('Content-Type', 'text/csv')
       .header(
         'Content-Disposition',
-        `attachment; filename="shifts_${query.startDate}_${query.endDate}.csv"`,
+        attachmentHeader(`shifts_${query.startDate}_${query.endDate}.csv`),
       )
       .send(csvData);
   }

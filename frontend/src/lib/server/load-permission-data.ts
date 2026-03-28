@@ -48,6 +48,31 @@ interface PermissionsApiResponse {
   data: PermissionCategory[];
 }
 
+interface PermissionTriple {
+  canRead: boolean;
+  canWrite: boolean;
+  canDelete: boolean;
+}
+
+export interface PermissionHistoryEntry {
+  createdAt: string;
+  userName: string;
+  firstName: string;
+  lastName: string;
+  details: string;
+  oldValues: Record<string, PermissionTriple>;
+  newValues: Record<string, PermissionTriple>;
+}
+
+interface PermissionHistoryApiResponse {
+  success: boolean;
+  data: {
+    entries: PermissionHistoryEntry[];
+    total: number;
+    hasMore: boolean;
+  };
+}
+
 interface PermissionPageData {
   employee: {
     id: number;
@@ -59,6 +84,9 @@ interface PermissionPageData {
   permissions: PermissionCategory[];
   error: string | null;
   permissionDenied: boolean;
+  history: PermissionHistoryEntry[];
+  historyTotal: number;
+  historyHasMore: boolean;
 }
 
 interface LoadParams {
@@ -72,12 +100,16 @@ const EMPTY_RESULT: PermissionPageData = {
   permissions: [],
   error: null,
   permissionDenied: false,
+  history: [],
+  historyTotal: 0,
+  historyHasMore: false,
 };
 
 /** Parse permission responses into page data */
 async function parseResponses(
   userResponse: Response,
   permResponse: Response,
+  historyResponse: Response,
 ): Promise<PermissionPageData> {
   if (userResponse.status === 403 || permResponse.status === 403) {
     return { ...EMPTY_RESULT, permissionDenied: true };
@@ -95,6 +127,19 @@ async function parseResponses(
     log.error({ status: permResponse.status }, 'Failed to fetch permissions');
   }
 
+  let history: PermissionHistoryEntry[] = [];
+  let historyTotal = 0;
+  let historyHasMore = false;
+
+  if (historyResponse.ok) {
+    const historyJson = (await historyResponse.json()) as PermissionHistoryApiResponse;
+    history = historyJson.data.entries;
+    historyTotal = historyJson.data.total;
+    historyHasMore = historyJson.data.hasMore;
+  } else {
+    log.error({ status: historyResponse.status }, 'Failed to fetch permission history');
+  }
+
   return {
     employee: {
       id: userJson.data.id,
@@ -106,6 +151,9 @@ async function parseResponses(
     permissions,
     error: null,
     permissionDenied: false,
+    history,
+    historyTotal,
+    historyHasMore,
   };
 }
 
@@ -127,11 +175,12 @@ export async function loadPermissionData({
   };
 
   try {
-    const [userResponse, permResponse] = await Promise.all([
+    const [userResponse, permResponse, historyResponse] = await Promise.all([
       fetch(`${API_BASE}/users/uuid/${params.uuid}`, { headers }),
       fetch(`${API_BASE}/user-permissions/${params.uuid}`, { headers }),
+      fetch(`${API_BASE}/user-permissions/${params.uuid}/history?limit=20&offset=0`, { headers }),
     ]);
-    return await parseResponses(userResponse, permResponse);
+    return await parseResponses(userResponse, permResponse, historyResponse);
   } catch (err: unknown) {
     log.error({ err }, 'Error fetching data for permission page');
     return { ...EMPTY_RESULT, error: 'Verbindungsfehler' };

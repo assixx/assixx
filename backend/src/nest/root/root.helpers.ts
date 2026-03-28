@@ -140,10 +140,6 @@ export function buildUserUpdateFields(data: UpdateUserRequest): {
     fields.push(`last_name = $${paramIndex++}`);
     values.push(data.lastName);
   }
-  if (data.position !== undefined) {
-    fields.push(`position = $${paramIndex++}`);
-    values.push(data.position);
-  }
   if (data.notes !== undefined) {
     fields.push(`notes = $${paramIndex++}`);
     values.push(data.notes);

@@ -12,6 +12,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import type { DatabaseService } from '../database/database.service.js';
 import type { UserRepository } from '../database/repositories/user.repository.js';
+import type { UserPositionService } from '../organigram/user-position.service.js';
 import { RootAdminService } from './root-admin.service.js';
 
 // =============================================================
@@ -59,7 +60,27 @@ vi.mock('./root.helpers.js', () => ({
 // =============================================================
 
 function createMockDb() {
-  return { query: vi.fn() };
+  const db = {
+    query: vi.fn(),
+    tenantTransaction: vi.fn(),
+  };
+  const clientQuery = vi.fn(async (...args: unknown[]) => {
+    const rows: unknown = await db.query(...args);
+    return { rows: rows ?? [] };
+  });
+  db.tenantTransaction.mockImplementation(
+    (callback: (client: { query: typeof clientQuery }) => Promise<unknown>) =>
+      callback({ query: clientQuery }),
+  );
+  return db;
+}
+
+function createMockUserPositionService() {
+  return {
+    syncPositions: vi.fn().mockResolvedValue(undefined),
+    getPositionsForUser: vi.fn().mockResolvedValue([]),
+    getPositionsForUsers: vi.fn().mockResolvedValue(new Map()),
+  };
 }
 
 function createMockActivityLogger() {
@@ -111,10 +132,12 @@ describe('RootAdminService', () => {
     mockDb = createMockDb();
     mockActivityLogger = createMockActivityLogger();
     mockUserRepo = createMockUserRepo();
+    const mockUserPositions = createMockUserPositionService();
     service = new RootAdminService(
       mockDb as unknown as DatabaseService,
       mockActivityLogger as unknown as ActivityLoggerService,
       mockUserRepo as unknown as UserRepository,
+      mockUserPositions as unknown as UserPositionService,
     );
   });
 

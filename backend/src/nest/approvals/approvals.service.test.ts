@@ -10,6 +10,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import type { DatabaseService } from '../database/database.service.js';
+import type { ApprovalsConfigService } from './approvals-config.service.js';
 import { ApprovalsService } from './approvals.service.js';
 import type { ApprovalListRow, ApprovalRow } from './approvals.types.js';
 import type { CreateApprovalDto } from './dto/index.js';
@@ -38,6 +39,13 @@ function createMockActivityLogger() {
   };
 }
 type MockLogger = ReturnType<typeof createMockActivityLogger>;
+
+function createMockConfigService() {
+  return {
+    resolveApprovers: vi.fn().mockResolvedValue([]),
+  };
+}
+type MockConfigService = ReturnType<typeof createMockConfigService>;
 
 // =============================================================
 // Test Data Factories
@@ -98,12 +106,14 @@ describe('ApprovalsService', () => {
   let service: ApprovalsService;
   let mockDb: MockDb;
   let mockLogger: MockLogger;
+  let mockConfigService: MockConfigService;
   let mockClient: { query: ReturnType<typeof vi.fn> };
 
   beforeEach(() => {
     vi.clearAllMocks();
     mockDb = createMockDb();
     mockLogger = createMockActivityLogger();
+    mockConfigService = createMockConfigService();
     mockClient = { query: vi.fn() };
 
     mockDb.tenantTransaction.mockImplementation(
@@ -115,6 +125,7 @@ describe('ApprovalsService', () => {
     service = new ApprovalsService(
       mockDb as unknown as DatabaseService,
       mockLogger as unknown as ActivityLoggerService,
+      mockConfigService as unknown as ApprovalsConfigService,
     );
   });
 
@@ -246,7 +257,7 @@ describe('ApprovalsService', () => {
       // SELECT data
       mockClient.query.mockResolvedValueOnce({ rows: [row1, row2] });
 
-      const result = await service.findAll({});
+      const result = await service.findAll({}, 5, 10);
 
       expect(result.items).toHaveLength(2);
       expect(result.total).toBe(2);
@@ -260,7 +271,7 @@ describe('ApprovalsService', () => {
         rows: [makeApprovalListRow({ status: 'approved' })],
       });
 
-      const result = await service.findAll({ status: 'approved' });
+      const result = await service.findAll({ status: 'approved' }, 5, 10);
 
       expect(result.items).toHaveLength(1);
       expect(result.items[0]?.status).toBe('approved');
@@ -276,7 +287,7 @@ describe('ApprovalsService', () => {
         rows: [makeApprovalListRow({ addon_code: 'tpm' })],
       });
 
-      const result = await service.findAll({ addonCode: 'tpm' });
+      const result = await service.findAll({ addonCode: 'tpm' }, 5, 10);
 
       expect(result.items).toHaveLength(1);
       expect(result.items[0]?.addonCode).toBe('tpm');
@@ -291,7 +302,7 @@ describe('ApprovalsService', () => {
         rows: [makeApprovalListRow({ priority: 'high' })],
       });
 
-      const result = await service.findAll({ priority: 'high' });
+      const result = await service.findAll({ priority: 'high' }, 5, 10);
 
       expect(result.items).toHaveLength(1);
       expect(result.items[0]?.priority).toBe('high');
@@ -301,7 +312,7 @@ describe('ApprovalsService', () => {
       mockClient.query.mockResolvedValueOnce({ rows: [{ count: '0' }] });
       mockClient.query.mockResolvedValueOnce({ rows: [] });
 
-      const result = await service.findAll({});
+      const result = await service.findAll({}, 5, 10);
 
       expect(result.items).toHaveLength(0);
       expect(result.total).toBe(0);
@@ -311,7 +322,7 @@ describe('ApprovalsService', () => {
       mockClient.query.mockResolvedValueOnce({ rows: [] }); // COUNT → empty
       mockClient.query.mockResolvedValueOnce({ rows: [] }); // DATA → empty
 
-      const result = await service.findAll({});
+      const result = await service.findAll({}, 5, 10);
 
       expect(result.total).toBe(0);
       expect(result.items).toHaveLength(0);
@@ -323,7 +334,7 @@ describe('ApprovalsService', () => {
         rows: [makeApprovalListRow()],
       });
 
-      const result = await service.findAll({ page: 3, limit: 10 });
+      const result = await service.findAll({ page: 3, limit: 10 }, 5, 10);
 
       expect(result.page).toBe(3);
       expect(result.pageSize).toBe(10);
@@ -340,11 +351,15 @@ describe('ApprovalsService', () => {
         rows: [makeApprovalListRow()],
       });
 
-      await service.findAll({
-        status: 'pending',
-        addonCode: 'kvp',
-        priority: 'high',
-      });
+      await service.findAll(
+        {
+          status: 'pending',
+          addonCode: 'kvp',
+          priority: 'high',
+        },
+        5,
+        10,
+      );
 
       const countCall = mockClient.query.mock.calls[0] as [string, unknown[]];
       expect(countCall[1]).toEqual(['pending', 'kvp', 'high']);
@@ -426,7 +441,7 @@ describe('ApprovalsService', () => {
       // DATA
       mockClient.query.mockResolvedValueOnce({ rows: [row] });
 
-      const result = await service.findByAssignee(20, {});
+      const result = await service.findByAssignee(20, 10, {});
 
       expect(result.items).toHaveLength(1);
       expect(result.items[0]?.assignedTo).toBe(20);
@@ -437,7 +452,7 @@ describe('ApprovalsService', () => {
       mockClient.query.mockResolvedValueOnce({ rows: [{ count: '0' }] });
       mockClient.query.mockResolvedValueOnce({ rows: [] });
 
-      const result = await service.findByAssignee(999, {});
+      const result = await service.findByAssignee(999, 10, {});
 
       expect(result.items).toHaveLength(0);
       expect(result.total).toBe(0);
@@ -447,7 +462,7 @@ describe('ApprovalsService', () => {
       mockClient.query.mockResolvedValueOnce({ rows: [] }); // COUNT → empty
       mockClient.query.mockResolvedValueOnce({ rows: [] }); // DATA → empty
 
-      const result = await service.findByAssignee(20, {});
+      const result = await service.findByAssignee(20, 10, {});
 
       expect(result.total).toBe(0);
       expect(result.items).toHaveLength(0);
@@ -457,7 +472,7 @@ describe('ApprovalsService', () => {
       mockClient.query.mockResolvedValueOnce({ rows: [{ count: '5' }] });
       mockClient.query.mockResolvedValueOnce({ rows: [makeApprovalListRow({ assigned_to: 20 })] });
 
-      const result = await service.findByAssignee(20, { page: 2, limit: 10 });
+      const result = await service.findByAssignee(20, 10, { page: 2, limit: 10 });
 
       expect(result.page).toBe(2);
       expect(result.pageSize).toBe(10);
@@ -472,7 +487,7 @@ describe('ApprovalsService', () => {
         rows: [makeApprovalListRow({ assigned_to: 20, status: 'pending' })],
       });
 
-      const result = await service.findByAssignee(20, { status: 'pending' });
+      const result = await service.findByAssignee(20, 10, { status: 'pending' });
 
       expect(result.items).toHaveLength(1);
       const countCall = mockClient.query.mock.calls[0] as [string, unknown[]];

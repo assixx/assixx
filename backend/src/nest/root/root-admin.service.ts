@@ -13,11 +13,13 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import bcrypt from 'bcryptjs';
+import type { PoolClient } from 'pg';
 import { v7 as uuidv7 } from 'uuid';
 
 import { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import { DatabaseService } from '../database/database.service.js';
 import { UserRepository } from '../database/repositories/user.repository.js';
+import { UserPositionService } from '../organigram/user-position.service.js';
 import {
   ERROR_CODES,
   buildUserUpdateFields,
@@ -43,6 +45,7 @@ export class RootAdminService {
     private readonly db: DatabaseService,
     private readonly activityLogger: ActivityLoggerService,
     private readonly userRepository: UserRepository,
+    private readonly userPositionService: UserPositionService,
   ) {}
 
   /**
@@ -111,39 +114,15 @@ export class RootAdminService {
     this.logger.log(`Creating admin for tenant ${tenantId}`);
 
     const normalizedEmail = data.email.toLowerCase().trim();
-
-    // Check for duplicate email
     await this.checkDuplicateEmail(normalizedEmail, tenantId);
-
-    // Hash password
     const hashedPassword = await bcrypt.hash(data.password, 12);
 
     try {
-      const userUuid = uuidv7();
-      const rows = await this.db.query<DbIdRow>(
-        `INSERT INTO users (username, email, password, first_name, last_name, role, position, notes, employee_number, is_active, tenant_id, uuid, uuid_created_at)
-         VALUES ($1, $2, $3, $4, $5, 'admin', $6, $7, $8, 1, $9, $10, NOW())
-         RETURNING id`,
-        [
-          normalizedEmail,
-          normalizedEmail,
-          hashedPassword,
-          data.firstName ?? '',
-          data.lastName ?? '',
-          data.position ?? null,
-          data.notes ?? null,
-          data.employeeNumber ?? '',
-          tenantId,
-          userUuid,
-        ],
+      const userId = await this.db.tenantTransaction(
+        async (client: PoolClient) =>
+          await this.insertAdminRecord(client, data, normalizedEmail, hashedPassword, tenantId),
       );
 
-      const userId = rows[0]?.id;
-      if (userId === undefined) {
-        throw new BadRequestException('Failed to create admin');
-      }
-
-      // Log activity
       await this.activityLogger.logCreate(
         tenantId,
         actingUserId,
@@ -165,6 +144,43 @@ export class RootAdminService {
     }
   }
 
+  /** Insert admin record and sync positions within transaction */
+  private async insertAdminRecord(
+    client: PoolClient,
+    data: CreateAdminRequest,
+    email: string,
+    hashedPassword: string,
+    tenantId: number,
+  ): Promise<number> {
+    const result = await client.query<DbIdRow>(
+      `INSERT INTO users (username, email, password, first_name, last_name, role, position, notes, employee_number, is_active, tenant_id, uuid, uuid_created_at)
+       VALUES ($1, $2, $3, $4, $5, 'admin', NULL, $6, $7, 1, $8, $9, NOW())
+       RETURNING id`,
+      [
+        email,
+        email,
+        hashedPassword,
+        data.firstName ?? '',
+        data.lastName ?? '',
+        data.notes ?? null,
+        data.employeeNumber ?? '',
+        tenantId,
+        uuidv7(),
+      ],
+    );
+
+    const userId = result.rows[0]?.id;
+    if (userId === undefined) {
+      throw new BadRequestException('Failed to create admin');
+    }
+
+    if (data.positionIds !== undefined && data.positionIds.length > 0) {
+      await this.userPositionService.syncPositions(client, userId, tenantId, data.positionIds);
+    }
+
+    return userId;
+  }
+
   /**
    * Update admin user
    */
@@ -180,29 +196,33 @@ export class RootAdminService {
       });
     }
 
-    const { fields, values, nextIndex } = buildUserUpdateFields(data);
-    let paramIndex = nextIndex;
+    await this.db.tenantTransaction(async (client: PoolClient) => {
+      const { fields, values, nextIndex } = buildUserUpdateFields(data);
+      let paramIndex = nextIndex;
 
-    // Hash password if provided
-    if (data.password !== undefined && data.password !== '') {
-      const hashedPassword = await bcrypt.hash(data.password, 12);
-      fields.push(`password = $${paramIndex++}`);
-      values.push(hashedPassword);
-    }
+      // Hash password if provided
+      if (data.password !== undefined && data.password !== '') {
+        const hashedPassword = await bcrypt.hash(data.password, 12);
+        fields.push(`password = $${paramIndex++}`);
+        values.push(hashedPassword);
+      }
 
-    if (fields.length === 0) {
-      return; // Nothing to update
-    }
+      if (fields.length > 0) {
+        fields.push('updated_at = NOW()');
+        const idParam = paramIndex++;
+        const tenantParam = paramIndex;
+        values.push(id, tenantId);
 
-    fields.push('updated_at = NOW()');
-    const idParam = paramIndex++;
-    const tenantParam = paramIndex;
-    values.push(id, tenantId);
+        await client.query(
+          `UPDATE users SET ${fields.join(', ')} WHERE id = $${idParam} AND tenant_id = $${tenantParam}`,
+          values,
+        );
+      }
 
-    await this.db.query(
-      `UPDATE users SET ${fields.join(', ')} WHERE id = $${idParam} AND tenant_id = $${tenantParam}`,
-      values,
-    );
+      if (data.positionIds !== undefined) {
+        await this.userPositionService.syncPositions(client, id, tenantId, data.positionIds);
+      }
+    });
   }
 
   /**

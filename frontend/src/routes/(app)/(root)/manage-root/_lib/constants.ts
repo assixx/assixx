@@ -25,12 +25,12 @@ export {
  * Position options for root users
  */
 export const POSITION_OPTIONS: readonly PositionOption[] = [
-  { name: 'CEO', roleCategory: 'root' },
-  { name: 'CTO', roleCategory: 'root' },
-  { name: 'CFO', roleCategory: 'root' },
-  { name: 'Geschäftsführer', roleCategory: 'root' },
-  { name: 'IT-Administrator', roleCategory: 'root' },
-  { name: 'Systemadministrator', roleCategory: 'root' },
+  { id: '', name: 'CEO', roleCategory: 'root' },
+  { id: '', name: 'CTO', roleCategory: 'root' },
+  { id: '', name: 'CFO', roleCategory: 'root' },
+  { id: '', name: 'Geschäftsführer', roleCategory: 'root' },
+  { id: '', name: 'IT-Administrator', roleCategory: 'root' },
+  { id: '', name: 'Systemadministrator', roleCategory: 'root' },
 ] as const;
 
 /**
@@ -162,7 +162,7 @@ export const FORM_DEFAULTS: {
   password: string;
   passwordConfirm: string;
   employeeNumber: string;
-  position: string;
+  positionIds: string[];
   notes: string;
   isActive: FormIsActiveStatus;
 } = {
@@ -173,7 +173,7 @@ export const FORM_DEFAULTS: {
   password: '',
   passwordConfirm: '',
   employeeNumber: '',
-  position: '',
+  positionIds: [],
   notes: '',
   isActive: 1,
 };

@@ -46,6 +46,31 @@ interface AppliedPermission {
   canDelete: boolean;
 }
 
+/** Permission value triple (used in history diff) */
+interface PermissionTriple {
+  canRead: boolean;
+  canWrite: boolean;
+  canDelete: boolean;
+}
+
+/** Single permission history entry from root_logs */
+export interface PermissionHistoryEntry {
+  createdAt: string;
+  userName: string;
+  firstName: string;
+  lastName: string;
+  details: string;
+  oldValues: Record<string, PermissionTriple>;
+  newValues: Record<string, PermissionTriple>;
+}
+
+/** Paginated history response */
+export interface PermissionHistoryResponse {
+  entries: PermissionHistoryEntry[];
+  total: number;
+  hasMore: boolean;
+}
+
 /** Response shape: category with current permission values */
 export interface PermissionCategoryResponse {
   code: string;
@@ -431,6 +456,85 @@ export class UserPermissionsService {
       : 'Keine Änderungen';
 
     return { changes, summary, oldValues, newValues };
+  }
+
+  /**
+   * Get paginated permission change history for a user from root_logs.
+   * Reads existing audit data — no new table needed.
+   */
+  async getPermissionHistory(
+    tenantId: number,
+    userUuid: string,
+    limit: number,
+    offset: number,
+  ): Promise<PermissionHistoryResponse> {
+    const userId = await this.resolveUserIdFromUuid(userUuid, tenantId);
+
+    return await this.db.tenantTransaction(
+      async (client: PoolClient): Promise<PermissionHistoryResponse> => {
+        const countResult = await client.query<{ count: string }>(
+          `SELECT COUNT(*)::text AS count
+           FROM root_logs
+           WHERE entity_type = 'user_addon_permission'
+             AND entity_id = $1`,
+          [userId],
+        );
+        const total = parseInt(countResult.rows[0]?.count ?? '0', 10);
+
+        const result = await client.query<{
+          created_at: string;
+          user_name: string;
+          first_name: string;
+          last_name: string;
+          details: string;
+          old_values: string | null;
+          new_values: string | null;
+        }>(
+          `SELECT created_at, user_name, first_name, last_name,
+                  details, old_values, new_values
+           FROM root_logs
+           WHERE entity_type = 'user_addon_permission'
+             AND entity_id = $1
+           ORDER BY created_at DESC
+           LIMIT $2 OFFSET $3`,
+          [userId, limit, offset],
+        );
+
+        const entries: PermissionHistoryEntry[] = result.rows.map(
+          (row: {
+            created_at: string;
+            user_name: string;
+            first_name: string;
+            last_name: string;
+            details: string;
+            old_values: string | null;
+            new_values: string | null;
+          }) => ({
+            createdAt: row.created_at,
+            userName: row.user_name,
+            firstName: row.first_name,
+            lastName: row.last_name,
+            details: row.details,
+            oldValues: this.parsePermissionJson(row.old_values),
+            newValues: this.parsePermissionJson(row.new_values),
+          }),
+        );
+
+        return { entries, total, hasMore: offset + limit < total };
+      },
+    );
+  }
+
+  /** Safely parse JSONB permission values from root_logs */
+  private parsePermissionJson(raw: string | null): Record<string, PermissionTriple> {
+    if (raw === null) return {};
+    try {
+      const parsed: unknown = typeof raw === 'string' ? JSON.parse(raw) : raw;
+      if (typeof parsed !== 'object' || parsed === null) return {};
+      return parsed as Record<string, PermissionTriple>;
+    } catch {
+      return {};
+    }
   }
 
   /**

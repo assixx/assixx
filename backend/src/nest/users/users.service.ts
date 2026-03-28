@@ -20,6 +20,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import bcryptjs from 'bcryptjs';
+import type { PoolClient } from 'pg';
 import { v7 as uuidv7 } from 'uuid';
 
 import { ActivityLoggerService } from '../common/services/activity-logger.service.js';
@@ -28,6 +29,7 @@ import { UserRepository } from '../database/repositories/user.repository.js';
 import { HierarchyPermissionService } from '../hierarchy-permission/hierarchy-permission.service.js';
 import type { OrganizationalScope } from '../hierarchy-permission/organizational-scope.types.js';
 import { ScopeService } from '../hierarchy-permission/scope.service.js';
+import { UserPositionService } from '../organigram/user-position.service.js';
 import type { CreateUserDto } from './dto/create-user.dto.js';
 import type { ListUsersQueryDto } from './dto/list-users-query.dto.js';
 import type { UpdateUserDto } from './dto/update-user.dto.js';
@@ -84,6 +86,7 @@ export class UsersService {
     private readonly availabilityService: UserAvailabilityService,
     private readonly scopeService: ScopeService,
     private readonly hierarchyPermission: HierarchyPermissionService,
+    private readonly userPositionService: UserPositionService,
   ) {}
 
   // ============================================
@@ -190,16 +193,20 @@ export class UsersService {
       throw new ConflictException('Email already exists');
     }
 
-    const { departmentIds, teamIds, hasFullAccess, ...userData } = dto;
+    const { departmentIds, teamIds, hasFullAccess, positionIds, ...userData } = dto;
     void teamIds;
 
     // SECURITY: Employees MUST NOT have has_full_access=true
     const safeFullAccess = this.enforceEmployeeNoFullAccess(userData.role, hasFullAccess);
 
-    const userId = await this.insertUserRecord(userData, safeFullAccess, tenantId);
-    if (Array.isArray(departmentIds) && departmentIds.length > 0) {
-      await this.assignUserDepartments(userId, departmentIds, tenantId);
-    }
+    const userId = await this.databaseService.tenantTransaction(async (client: PoolClient) => {
+      const newUserId = await this.insertUserRecord(client, userData, safeFullAccess, tenantId);
+      if (Array.isArray(departmentIds) && departmentIds.length > 0) {
+        await this.assignUserDepartments(client, newUserId, departmentIds, tenantId);
+      }
+      await this.userPositionService.syncPositions(client, newUserId, tenantId, positionIds);
+      return newUserId;
+    });
 
     const response = await this.fetchUserWithDepartments(userId, tenantId);
 
@@ -236,7 +243,8 @@ export class UsersService {
 
   /** Insert user record into database (availability now via user_availability table) */
   private async insertUserRecord(
-    userData: Omit<CreateUserDto, 'departmentIds' | 'teamIds' | 'hasFullAccess'>,
+    client: PoolClient,
+    userData: Omit<CreateUserDto, 'departmentIds' | 'teamIds' | 'hasFullAccess' | 'positionIds'>,
     hasFullAccess: boolean | undefined,
     tenantId: number,
   ): Promise<number> {
@@ -245,7 +253,7 @@ export class UsersService {
     const userUuid = uuidv7();
 
     try {
-      const result = await this.databaseService.query<{ id: number }>(
+      const result = await client.query<{ id: number }>(
         `INSERT INTO users (
           tenant_id, email, password, username, first_name, last_name, role,
           position, phone, address, employee_number, date_of_birth,
@@ -272,7 +280,7 @@ export class UsersService {
         ],
       );
 
-      const userId = result[0]?.id;
+      const userId = result.rows[0]?.id;
       if (userId === undefined) {
         throw new InternalServerErrorException('Failed to create user');
       }
@@ -320,7 +328,7 @@ export class UsersService {
 
     await this.validateEmailUniqueness(dto.email, existingUser.email, tenantId);
 
-    const { departmentIds, teamIds, hasFullAccess, password, ...updateData } = dto;
+    const { departmentIds, teamIds, hasFullAccess, password, positionIds, ...updateData } = dto;
     void teamIds; // Reserved for future use
 
     // SECURITY: Employees MUST NOT have has_full_access=true (defense-in-depth)
@@ -329,8 +337,13 @@ export class UsersService {
       hasFullAccess ?? existingUser.has_full_access === 1,
     );
 
-    await this.executeUserUpdate(userId, tenantId, updateData, hasFullAccess, password);
-    await this.updateDepartmentAssignments(userId, tenantId, departmentIds);
+    await this.databaseService.tenantTransaction(async (client: PoolClient) => {
+      await this.executeUserUpdate(client, userId, tenantId, updateData, hasFullAccess, password);
+      await this.updateDepartmentAssignments(client, userId, tenantId, departmentIds);
+      if (positionIds !== undefined) {
+        await this.userPositionService.syncPositions(client, userId, tenantId, positionIds);
+      }
+    });
 
     // Insert into availability history if availability fields were updated
     await this.availabilityService.insertAvailabilityHistoryIfNeeded(
@@ -394,6 +407,7 @@ export class UsersService {
 
   /** Execute user record update with dynamic fields */
   private async executeUserUpdate(
+    client: PoolClient,
     userId: number,
     tenantId: number,
     updateData: Record<string, unknown>,
@@ -414,7 +428,7 @@ export class UsersService {
 
     params.push(userId, tenantId);
     try {
-      await this.databaseService.query(
+      await client.query(
         `UPDATE users SET ${updates.join(', ')} WHERE id = $${currentIndex} AND tenant_id = $${currentIndex + 1}`,
         params,
       );
@@ -432,15 +446,16 @@ export class UsersService {
 
   /** Update department assignments if provided */
   private async updateDepartmentAssignments(
+    client: PoolClient,
     userId: number,
     tenantId: number,
     departmentIds: number[] | undefined,
   ): Promise<void> {
     if (!Array.isArray(departmentIds)) return;
 
-    await this.removeUserDepartments(userId, tenantId);
+    await this.removeUserDepartments(client, userId, tenantId);
     if (departmentIds.length > 0) {
-      await this.assignUserDepartments(userId, departmentIds, tenantId);
+      await this.assignUserDepartments(client, userId, departmentIds, tenantId);
     }
   }
 
@@ -795,6 +810,7 @@ export class UsersService {
 
   /** Assign user to departments */
   private async assignUserDepartments(
+    client: PoolClient,
     userId: number,
     departmentIds: number[],
     tenantId: number,
@@ -802,7 +818,7 @@ export class UsersService {
     const primaryDeptId = departmentIds[0];
     for (const deptId of departmentIds) {
       const isPrimary = deptId === primaryDeptId;
-      await this.databaseService.query(
+      await client.query(
         `INSERT INTO user_departments (user_id, department_id, tenant_id, is_primary)
          VALUES ($1, $2, $3, $4)
          ON CONFLICT (user_id, department_id) DO UPDATE SET is_primary = $4`,
@@ -812,11 +828,15 @@ export class UsersService {
   }
 
   /** Remove all user department assignments */
-  private async removeUserDepartments(userId: number, tenantId: number): Promise<void> {
-    await this.databaseService.query(
-      `DELETE FROM user_departments WHERE user_id = $1 AND tenant_id = $2`,
-      [userId, tenantId],
-    );
+  private async removeUserDepartments(
+    client: PoolClient,
+    userId: number,
+    tenantId: number,
+  ): Promise<void> {
+    await client.query(`DELETE FROM user_departments WHERE user_id = $1 AND tenant_id = $2`, [
+      userId,
+      tenantId,
+    ]);
   }
 
   // ============================================

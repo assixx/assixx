@@ -47,7 +47,7 @@ export interface RootUserFormData {
   password: string;
   passwordConfirm: string;
   employeeNumber: string;
-  position: string;
+  positionIds: string[];
   notes: string;
   isActive: FormIsActiveStatus;
 }
@@ -59,7 +59,7 @@ export interface RootUserPayload {
   firstName: string;
   lastName: string;
   email: string;
-  position: string;
+  positionIds: string[];
   notes?: string;
   employeeNumber?: string;
   isActive: FormIsActiveStatus;

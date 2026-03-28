@@ -339,7 +339,7 @@ export interface FormState {
   lastName: string;
   email: string;
   password: string;
-  position: string;
+  positionIds: string[];
   notes: string;
   isActive: FormIsActiveStatus;
   employeeNumber: string;
@@ -357,7 +357,7 @@ export function buildAdminFormData(form: FormState, isEditMode: boolean): AdminF
     lastName: form.lastName,
     email: form.email.toLowerCase().trim(),
     username: form.email.toLowerCase().trim(),
-    position: form.position,
+    positionIds: form.positionIds,
     notes: form.notes,
     isActive: form.isActive,
     employeeNumber: form.employeeNumber,
@@ -407,7 +407,7 @@ export function populateFormFromAdmin(admin: Admin): FormState {
     lastName: admin.lastName,
     email: admin.email.toLowerCase(),
     password: '',
-    position: admin.position ?? '',
+    positionIds: [],
     notes: admin.notes ?? '',
     isActive: normalizeIsActiveForForm(admin.isActive),
     employeeNumber: admin.employeeNumber ?? '',

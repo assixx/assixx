@@ -3,6 +3,7 @@
  */
 import { Module } from '@nestjs/common';
 
+import { OrganigramModule } from '../organigram/organigram.module.js';
 import { TenantDeletionModule } from '../tenant-deletion/tenant-deletion.module.js';
 import { RootAdminService } from './root-admin.service.js';
 import { RootDeletionService } from './root-deletion.service.js';
@@ -11,7 +12,7 @@ import { RootController } from './root.controller.js';
 import { RootService } from './root.service.js';
 
 @Module({
-  imports: [TenantDeletionModule],
+  imports: [OrganigramModule, TenantDeletionModule],
   controllers: [RootController],
   providers: [RootService, RootAdminService, RootTenantService, RootDeletionService],
   exports: [RootService],

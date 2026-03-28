@@ -23,6 +23,8 @@ import { CurrentUser } from '../common/decorators/current-user.decorator.js';
 import { RequirePermission } from '../common/decorators/require-permission.decorator.js';
 import { TenantId } from '../common/decorators/tenant.decorator.js';
 import type { NestAuthUser } from '../common/interfaces/auth.interface.js';
+import type { ReadTrackingConfig } from '../common/services/read-tracking.service.js';
+import { ReadTrackingService } from '../common/services/read-tracking.service.js';
 import { ApprovalsConfigService } from './approvals-config.service.js';
 import { ApprovalsService } from './approvals.service.js';
 import type { Approval, ApprovalConfig, ApprovalStats, ApprovalStatus } from './approvals.types.js';
@@ -38,6 +40,14 @@ const FEAT = 'approvals';
 const MOD_MANAGE = 'approvals-manage';
 const MOD_REQUEST = 'approvals-request';
 
+/** Read-tracking config for approvals (ADR-031 pattern) */
+const APPROVAL_READ_CONFIG: ReadTrackingConfig = {
+  tableName: 'approval_read_status',
+  entityColumn: 'approval_id',
+  entityTable: 'approvals',
+  entityUuidColumn: 'uuid',
+};
+
 /** Query DTO for list endpoints */
 interface ListApprovalsQuery {
   status?: ApprovalStatus;
@@ -52,6 +62,7 @@ export class ApprovalsController {
   constructor(
     private readonly configService: ApprovalsConfigService,
     private readonly approvalsService: ApprovalsService,
+    private readonly readTracking: ReadTrackingService,
   ) {}
 
   // ==========================================================================
@@ -88,9 +99,10 @@ export class ApprovalsController {
   @RequirePermission(FEAT, MOD_MANAGE, 'canRead')
   async getAssigned(
     @CurrentUser() user: NestAuthUser,
+    @TenantId() tenantId: number,
     @Query() query: ListApprovalsQuery,
   ): Promise<ReturnType<ApprovalsService['findByAssignee']>> {
-    return await this.approvalsService.findByAssignee(user.id, {
+    return await this.approvalsService.findByAssignee(user.id, tenantId, {
       status: query.status,
       page: query.page !== undefined ? Number(query.page) : undefined,
       limit: query.limit !== undefined ? Number(query.limit) : undefined,
@@ -110,15 +122,21 @@ export class ApprovalsController {
   @Get()
   @RequirePermission(FEAT, MOD_MANAGE, 'canRead')
   async listAll(
+    @CurrentUser() user: NestAuthUser,
+    @TenantId() tenantId: number,
     @Query() query: ListApprovalsQuery,
   ): Promise<ReturnType<ApprovalsService['findAll']>> {
-    return await this.approvalsService.findAll({
-      status: query.status,
-      addonCode: query.addonCode,
-      priority: query.priority,
-      page: query.page !== undefined ? Number(query.page) : undefined,
-      limit: query.limit !== undefined ? Number(query.limit) : undefined,
-    });
+    return await this.approvalsService.findAll(
+      {
+        status: query.status,
+        addonCode: query.addonCode,
+        priority: query.priority,
+        page: query.page !== undefined ? Number(query.page) : undefined,
+        limit: query.limit !== undefined ? Number(query.limit) : undefined,
+      },
+      user.id,
+      tenantId,
+    );
   }
 
   @Post()
@@ -158,6 +176,22 @@ export class ApprovalsController {
     @CurrentUser() user: NestAuthUser,
   ): Promise<Approval> {
     return await this.approvalsService.reject(uuid, tenantId, user.id, dto.decisionNote);
+  }
+
+  // ==========================================================================
+  // Read-tracking (ADR-031)
+  // ==========================================================================
+
+  @Post(':uuid/read')
+  @HttpCode(HttpStatus.OK)
+  @RequirePermission(FEAT, MOD_MANAGE, 'canRead')
+  async markAsRead(
+    @Param('uuid') uuid: string,
+    @CurrentUser() user: NestAuthUser,
+    @TenantId() tenantId: number,
+  ): Promise<{ success: boolean }> {
+    await this.readTracking.markAsReadByUuid(APPROVAL_READ_CONFIG, uuid, user.id, tenantId);
+    return { success: true };
   }
 
   // ==========================================================================

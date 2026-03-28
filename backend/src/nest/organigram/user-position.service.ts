@@ -6,6 +6,7 @@
  */
 import { IS_ACTIVE } from '@assixx/shared/constants';
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import type { PoolClient } from 'pg';
 import { v7 as uuidv7 } from 'uuid';
 
 import { ActivityLoggerService } from '../common/services/activity-logger.service.js';
@@ -55,6 +56,46 @@ export class UserPositionService {
        ORDER BY u.last_name, u.first_name`,
       [IS_ACTIVE.ACTIVE, tenantId, positionId],
     );
+  }
+
+  /**
+   * Replace all user positions atomically.
+   * Runs inside an existing transaction (receives PoolClient).
+   * Also syncs users.position VARCHAR for display backward compat.
+   */
+  async syncPositions(
+    client: PoolClient,
+    userId: number,
+    tenantId: number,
+    positionIds: string[],
+  ): Promise<void> {
+    await client.query('DELETE FROM user_positions WHERE user_id = $1 AND tenant_id = $2', [
+      userId,
+      tenantId,
+    ]);
+
+    for (const positionId of positionIds) {
+      await client.query(
+        `INSERT INTO user_positions (id, tenant_id, user_id, position_id)
+         VALUES ($1, $2, $3, $4)
+         ON CONFLICT (tenant_id, user_id, position_id) DO NOTHING`,
+        [uuidv7(), tenantId, userId, positionId],
+      );
+    }
+
+    if (positionIds.length > 0) {
+      await client.query(
+        `UPDATE users SET position = (
+          SELECT pc.name FROM position_catalog pc WHERE pc.id = $1 AND pc.tenant_id = $2
+        ) WHERE id = $3 AND tenant_id = $2`,
+        [positionIds[0], tenantId, userId],
+      );
+    } else {
+      await client.query('UPDATE users SET position = NULL WHERE id = $1 AND tenant_id = $2', [
+        userId,
+        tenantId,
+      ]);
+    }
   }
 
   async assign(tenantId: number, userId: number, positionId: string): Promise<void> {

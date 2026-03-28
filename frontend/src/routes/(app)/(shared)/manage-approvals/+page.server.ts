@@ -32,6 +32,7 @@ interface ApprovalListItem {
   decidedByName: string | null;
   decidedAt: string | null;
   decisionNote: string | null;
+  isRead: boolean;
   createdAt: string;
 }
 

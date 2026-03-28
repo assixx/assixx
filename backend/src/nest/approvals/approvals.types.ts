@@ -86,11 +86,12 @@ export interface ApprovalRow {
   updated_at: string;
 }
 
-/** Extended row with JOINed user names */
+/** Extended row with JOINed user names + read-tracking */
 export interface ApprovalListRow extends ApprovalRow {
   requested_by_name: string;
   decided_by_name: string | null;
   assigned_to_name: string | null;
+  read_at?: string | null;
 }
 
 // =============================================================================
@@ -128,6 +129,7 @@ export interface Approval {
   decidedByName: string | null;
   decidedAt: string | null;
   decisionNote: string | null;
+  isRead: boolean;
   createdAt: string;
 }
 
@@ -181,6 +183,7 @@ export function mapApprovalRowToApi(row: ApprovalListRow): Approval {
     decidedByName: row.decided_by_name ?? null,
     decidedAt: row.decided_at,
     decisionNote: row.decision_note,
+    isRead: row.read_at !== undefined && row.read_at !== null,
     createdAt: row.created_at,
   };
 }

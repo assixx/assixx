@@ -85,7 +85,7 @@ export interface AdminFormData {
   lastName: string;
   email: string;
   username: string;
-  position: string;
+  positionIds: string[];
   notes: string;
   isActive: FormIsActiveStatus;
   employeeNumber: string;

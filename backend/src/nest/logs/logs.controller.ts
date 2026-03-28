@@ -23,6 +23,7 @@ import {
 } from '@nestjs/common';
 import type { FastifyReply } from 'fastify';
 
+import { attachmentHeader } from '../../utils/content-disposition.js';
 import { CurrentUser } from '../common/decorators/current-user.decorator.js';
 import { Roles } from '../common/decorators/roles.decorator.js';
 import { ExportThrottle } from '../common/decorators/throttle.decorators.js';
@@ -155,7 +156,7 @@ export class LogsController {
 
     // Set headers and send response
     void reply.header('Content-Type', contentTypeMap[dto.format]);
-    void reply.header('Content-Disposition', `attachment; filename="${filename}"`);
+    void reply.header('Content-Disposition', attachmentHeader(filename));
 
     return await reply.send(content);
   }

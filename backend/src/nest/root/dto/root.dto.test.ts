@@ -221,6 +221,7 @@ describe('CreateRootUserSchema', () => {
     password: 'StrongPass1!',
     firstName: 'Root',
     lastName: 'User',
+    positionIds: ['019579a0-0000-7000-8000-000000000001'],
   };
 
   it('should accept valid data', () => {
@@ -243,6 +244,7 @@ describe('CreateAdminSchema', () => {
   const valid = {
     email: 'admin@example.com',
     password: 'StrongPass1!',
+    positionIds: ['019579a0-0000-7000-8000-000000000001'],
   };
 
   it('should accept valid data with optional names', () => {

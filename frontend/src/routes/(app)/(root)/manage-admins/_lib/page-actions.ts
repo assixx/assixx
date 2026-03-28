@@ -49,7 +49,7 @@ interface AdminValidationParams {
   emailConfirm: string;
   password: string;
   passwordConfirm: string;
-  position: string;
+  positionIds: string[];
   employeeNumber: string;
 }
 
@@ -85,7 +85,7 @@ function validateAdminForm(
   if (hasPasswordError(params.password, params.passwordConfirm, isEditMode)) {
     return messages.ERROR_PASSWORD_MISMATCH;
   }
-  if (!params.position) {
+  if (params.positionIds.length === 0) {
     return messages.ERROR_POSITION_REQUIRED;
   }
   if (!params.employeeNumber) {

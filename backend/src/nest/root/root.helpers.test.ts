@@ -240,8 +240,8 @@ describe('buildUserUpdateFields', () => {
 
   it('should build all simple fields', () => {
     const data: UpdateUserRequest = {
+      firstName: 'Jane',
       lastName: 'Doe',
-      position: 'Manager',
       notes: 'Updated',
       employeeNumber: 'EMP002',
       isActive: 0,

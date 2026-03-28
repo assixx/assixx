@@ -103,7 +103,7 @@ export function populateFormFromUser(user: RootUser): {
   password: string;
   passwordConfirm: string;
   employeeNumber: string;
-  position: string;
+  positionIds: string[];
   notes: string;
   isActive: FormIsActiveStatus;
 } {
@@ -115,7 +115,7 @@ export function populateFormFromUser(user: RootUser): {
     password: '',
     passwordConfirm: '',
     employeeNumber: user.employeeNumber ?? '',
-    position: user.position ?? '',
+    positionIds: [],
     notes: user.notes ?? '',
     isActive: (user.isActive === 4 ? 0 : user.isActive) as FormIsActiveStatus,
   };

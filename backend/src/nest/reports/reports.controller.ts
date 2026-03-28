@@ -13,6 +13,7 @@
 import { Body, Controller, Get, Param, Post, Query, Res } from '@nestjs/common';
 import type { FastifyReply } from 'fastify';
 
+import { attachmentHeader } from '../../utils/content-disposition.js';
 import { RequirePermission } from '../common/decorators/require-permission.decorator.js';
 import { Roles } from '../common/decorators/roles.decorator.js';
 import { TenantId } from '../common/decorators/tenant.decorator.js';
@@ -139,7 +140,7 @@ export class ReportsController {
 
     await reply
       .header('Content-Type', result.mimeType)
-      .header('Content-Disposition', `attachment; filename="${result.filename}"`)
+      .header('Content-Disposition', attachmentHeader(result.filename))
       .send(result.content);
   }
 }

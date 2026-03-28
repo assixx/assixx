@@ -7,7 +7,21 @@
 
   import AvailabilityModal from '$lib/availability/AvailabilityModal.svelte';
   import { showSuccessAlert, showWarningAlert, showErrorAlert, showToast } from '$lib/stores/toast';
+  import { getApiClient } from '$lib/utils/api-client';
   import { createLogger } from '$lib/utils/logger';
+
+  const apiClient = getApiClient();
+
+  async function loadUserPositions(userId: number): Promise<void> {
+    try {
+      const positions = await apiClient.request<{ positionId: string }[]>(
+        `/users/${String(userId)}/positions`,
+      );
+      formPositionIds = positions.map((p: { positionId: string }) => p.positionId);
+    } catch {
+      formPositionIds = [];
+    }
+  }
 
   import AdminFormModal from './_lib/AdminFormModal.svelte';
   import AdminTableRow from './_lib/AdminTableRow.svelte';
@@ -70,7 +84,7 @@
   let formPassword = $state('');
   let formPasswordConfirm = $state('');
   let formEmployeeNumber = $state('');
-  let formPosition = $state('');
+  let formPositionIds = $state<string[]>([]);
   let formNotes = $state('');
   let formIsActive = $state<FormIsActiveStatus>(1);
   let formHasFullAccess = $state(false);
@@ -99,7 +113,7 @@
     formPassword = s.password;
     formPasswordConfirm = s.passwordConfirm;
     formEmployeeNumber = s.employeeNumber;
-    formPosition = s.position;
+    formPositionIds = [];
     formNotes = s.notes;
     formIsActive = s.isActive;
     formHasFullAccess = s.hasFullAccess;
@@ -119,7 +133,7 @@
         password: formPassword,
         passwordConfirm: formPasswordConfirm,
         employeeNumber: formEmployeeNumber,
-        position: formPosition,
+        positionIds: formPositionIds,
         notes: formNotes,
         isActive: formIsActive,
         hasFullAccess: formHasFullAccess,
@@ -292,6 +306,7 @@
     currentEditId = adminId;
     const s = populateFormFromAdmin(admin);
     applyFormState({ ...s, emailConfirm: s.email, passwordConfirm: '' });
+    void loadUserPositions(adminId);
     showAdminModal = true;
   }
 
@@ -551,7 +566,6 @@
   {submitting}
   {messages}
   {positionOptions}
-  editUserId={currentEditId}
   {labels}
   bind:formFirstName
   bind:formLastName
@@ -560,7 +574,7 @@
   bind:formPassword
   bind:formPasswordConfirm
   bind:formEmployeeNumber
-  bind:formPosition
+  bind:formPositionIds
   bind:formNotes
   bind:formIsActive
   bind:formHasFullAccess

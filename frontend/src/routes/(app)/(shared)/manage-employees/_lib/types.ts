@@ -133,7 +133,7 @@ export interface EmployeePayload {
   lastName: string;
   email: string;
   username: string;
-  position?: string;
+  positionIds?: string[];
   phone?: string;
   dateOfBirth?: string;
   notes?: string;

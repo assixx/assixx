@@ -12,6 +12,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import type { DatabaseService } from '../database/database.service.js';
 import type { UserRepository } from '../database/repositories/user.repository.js';
+import type { UserPositionService } from '../organigram/user-position.service.js';
 import type { RootAdminService } from './root-admin.service.js';
 import type { RootDeletionService } from './root-deletion.service.js';
 import type { RootTenantService } from './root-tenant.service.js';
@@ -41,7 +42,27 @@ vi.mock('../../utils/employee-id-generator.js', () => ({
 // =============================================================
 
 function createMockDb() {
-  return { query: vi.fn() };
+  const db = {
+    query: vi.fn(),
+    tenantTransaction: vi.fn(),
+  };
+  const clientQuery = vi.fn(async (...args: unknown[]) => {
+    const rows: unknown = await db.query(...args);
+    return { rows: rows ?? [] };
+  });
+  db.tenantTransaction.mockImplementation(
+    (callback: (client: { query: typeof clientQuery }) => Promise<unknown>) =>
+      callback({ query: clientQuery }),
+  );
+  return db;
+}
+
+function createMockUserPositionService() {
+  return {
+    syncPositions: vi.fn().mockResolvedValue(undefined),
+    getPositionsForUser: vi.fn().mockResolvedValue([]),
+    getPositionsForUsers: vi.fn().mockResolvedValue(new Map()),
+  };
 }
 
 function createMockActivityLogger() {
@@ -136,6 +157,7 @@ describe('RootService', () => {
     mockAdminService = createMockAdminService();
     mockTenantService = createMockTenantService();
     mockDeletionService = createMockDeletionService();
+    const mockUserPositions = createMockUserPositionService();
     service = new RootService(
       mockDb as unknown as DatabaseService,
       mockActivityLogger as unknown as ActivityLoggerService,
@@ -143,6 +165,7 @@ describe('RootService', () => {
       mockAdminService as unknown as RootAdminService,
       mockTenantService as unknown as RootTenantService,
       mockDeletionService as unknown as RootDeletionService,
+      mockUserPositions as unknown as UserPositionService,
     );
   });
 

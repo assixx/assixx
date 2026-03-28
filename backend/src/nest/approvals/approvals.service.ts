@@ -15,8 +15,10 @@ import {
 import type { PoolClient } from 'pg';
 import { v7 as uuidv7 } from 'uuid';
 
+import { eventBus } from '../../utils/event-bus.js';
 import { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import { DatabaseService } from '../database/database.service.js';
+import { ApprovalsConfigService } from './approvals-config.service.js';
 import type {
   Approval,
   ApprovalListRow,
@@ -44,7 +46,7 @@ interface PaginatedApprovals {
   pageSize: number;
 }
 
-/** Base SELECT with JOINed user names */
+/** Base SELECT with JOINed user names (no read-tracking) */
 const BASE_SELECT = `
   SELECT a.*,
     req.first_name || ' ' || req.last_name AS requested_by_name,
@@ -56,15 +58,37 @@ const BASE_SELECT = `
   LEFT JOIN users asg ON asg.id = a.assigned_to
 `;
 
+/** Base SELECT with read-tracking (needs $userIdx and $tenantIdx params appended) */
+function baseSelectWithRead(userParamIdx: number, tenantParamIdx: number): string {
+  return `
+  SELECT a.*,
+    req.first_name || ' ' || req.last_name AS requested_by_name,
+    dec.first_name || ' ' || dec.last_name AS decided_by_name,
+    asg.first_name || ' ' || asg.last_name AS assigned_to_name,
+    rs.read_at
+  FROM approvals a
+  INNER JOIN users req ON req.id = a.requested_by
+  LEFT JOIN users dec ON dec.id = a.decided_by
+  LEFT JOIN users asg ON asg.id = a.assigned_to
+  LEFT JOIN approval_read_status rs
+    ON rs.approval_id = a.id AND rs.user_id = $${String(userParamIdx)} AND rs.tenant_id = $${String(tenantParamIdx)}
+  `;
+}
+
 @Injectable()
 export class ApprovalsService {
   constructor(
     private readonly db: DatabaseService,
     private readonly activityLogger: ActivityLoggerService,
+    private readonly configService: ApprovalsConfigService,
   ) {}
 
-  /** List all approvals with optional filters + pagination */
-  async findAll(filters: ApprovalFilters): Promise<PaginatedApprovals> {
+  /** List all approvals with optional filters + pagination + read-tracking */
+  async findAll(
+    filters: ApprovalFilters,
+    userId: number,
+    tenantId: number,
+  ): Promise<PaginatedApprovals> {
     return await this.db.tenantTransaction(
       async (client: PoolClient): Promise<PaginatedApprovals> => {
         const conditions: string[] = [`a.is_active = ${IS_ACTIVE.ACTIVE}`];
@@ -98,11 +122,14 @@ export class ApprovalsService {
         );
         const total = Number(countResult.rows[0]?.count ?? 0);
 
+        // Read-tracking params appended after filter + pagination params
+        const readUserIdx = paramIdx + 2;
+        const readTenantIdx = paramIdx + 3;
         const dataResult = await client.query<ApprovalListRow>(
-          `${BASE_SELECT} WHERE ${where}
+          `${baseSelectWithRead(readUserIdx, readTenantIdx)} WHERE ${where}
            ORDER BY a.created_at DESC
            LIMIT $${String(paramIdx)} OFFSET $${String(paramIdx + 1)}`,
-          [...params, limit, offset],
+          [...params, limit, offset, userId, tenantId],
         );
 
         return {
@@ -134,8 +161,12 @@ export class ApprovalsService {
     return mapApprovalRowToApi(row);
   }
 
-  /** List approvals assigned to a specific user */
-  async findByAssignee(userId: number, filters: ApprovalFilters): Promise<PaginatedApprovals> {
+  /** List approvals assigned to a specific user (with read-tracking) */
+  async findByAssignee(
+    userId: number,
+    tenantId: number,
+    filters: ApprovalFilters,
+  ): Promise<PaginatedApprovals> {
     return await this.db.tenantTransaction(
       async (client: PoolClient): Promise<PaginatedApprovals> => {
         const conditions: string[] = [`a.is_active = ${IS_ACTIVE.ACTIVE}`, `a.assigned_to = $1`];
@@ -159,11 +190,13 @@ export class ApprovalsService {
         );
         const total = Number(countResult.rows[0]?.count ?? 0);
 
+        const readUserIdx = paramIdx + 2;
+        const readTenantIdx = paramIdx + 3;
         const dataResult = await client.query<ApprovalListRow>(
-          `${BASE_SELECT} WHERE ${where}
+          `${baseSelectWithRead(readUserIdx, readTenantIdx)} WHERE ${where}
            ORDER BY a.created_at DESC
            LIMIT $${String(paramIdx)} OFFSET $${String(paramIdx + 1)}`,
-          [...params, limit, offset],
+          [...params, limit, offset, userId, tenantId],
         );
 
         return {
@@ -245,7 +278,9 @@ export class ApprovalsService {
       { addonCode: dto.addonCode, sourceUuid: dto.sourceUuid },
     );
 
-    return mapApprovalRowToApi(row);
+    const mapped = mapApprovalRowToApi(row);
+    void this.emitCreatedEvent(tenantId, mapped, requestedBy);
+    return mapped;
   }
 
   /** Approve an approval request */
@@ -362,6 +397,55 @@ export class ApprovalsService {
       { status: newStatus, decisionNote: note },
     );
 
-    return mapApprovalRowToApi(row);
+    const mapped = mapApprovalRowToApi(row);
+    this.emitDecidedEvent(tenantId, mapped, row.requested_by);
+    return mapped;
+  }
+
+  /** SSE: resolve approval masters and notify them about a new request */
+  private async emitCreatedEvent(
+    tenantId: number,
+    approval: Approval,
+    requestedBy: number,
+  ): Promise<void> {
+    const approverIds = await this.configService.resolveApprovers(approval.addonCode, requestedBy);
+    eventBus.emitApprovalCreated(
+      tenantId,
+      {
+        uuid: approval.uuid,
+        title: approval.title,
+        addonCode: approval.addonCode,
+        status: approval.status,
+        requestedByName: approval.requestedByName,
+      },
+      approverIds,
+      requestedBy,
+    );
+  }
+
+  /** SSE: notify the requester about the decision */
+  private emitDecidedEvent(tenantId: number, approval: Approval, requestedByUserId: number): void {
+    const payload: {
+      uuid: string;
+      title: string;
+      addonCode: string;
+      status: string;
+      requestedByName: string;
+      decidedByName?: string;
+      decisionNote?: string | null;
+    } = {
+      uuid: approval.uuid,
+      title: approval.title,
+      addonCode: approval.addonCode,
+      status: approval.status,
+      requestedByName: approval.requestedByName,
+    };
+    if (approval.decidedByName !== null) {
+      payload.decidedByName = approval.decidedByName;
+    }
+    if (approval.decisionNote !== null) {
+      payload.decisionNote = approval.decisionNote;
+    }
+    eventBus.emitApprovalDecided(tenantId, payload, requestedByUserId);
   }
 }

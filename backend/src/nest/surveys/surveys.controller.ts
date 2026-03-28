@@ -35,6 +35,7 @@ import {
 } from '@nestjs/common';
 import type { FastifyReply } from 'fastify';
 
+import { attachmentHeader } from '../../utils/content-disposition.js';
 import { CurrentUser } from '../common/decorators/current-user.decorator.js';
 import { RequireAddon } from '../common/decorators/require-addon.decorator.js';
 import { RequirePermission } from '../common/decorators/require-permission.decorator.js';
@@ -352,10 +353,7 @@ export class SurveysController {
 
     await reply
       .header('Content-Type', mimeType)
-      .header(
-        'Content-Disposition',
-        `attachment; filename="survey-${surveyId}-responses.${extension}"`,
-      )
+      .header('Content-Disposition', attachmentHeader(`survey-${surveyId}-responses.${extension}`))
       .send(buffer);
   }
 

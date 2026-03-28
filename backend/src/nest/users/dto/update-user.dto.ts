@@ -55,6 +55,10 @@ export const UpdateUserSchema = z.object({
   teamIds: z.array(z.number().int().positive()).optional(),
   hasFullAccess: z.boolean().optional(),
   position: z.string().trim().optional(),
+  positionIds: z
+    .array(z.uuid('Jede positionId muss eine gültige UUID sein'))
+    .min(1, 'Mindestens eine Position erforderlich')
+    .optional(),
   phone: PhoneSchema,
   address: z.string().trim().optional(),
   isActive: z.union([z.literal(0), z.literal(1), z.literal(3)]).optional(), // 0=inactive, 1=active, 3=archived
