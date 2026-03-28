@@ -53,7 +53,7 @@
 
   const { data }: { data: PageData } = $props();
 
-  const permissionDenied = $derived<boolean>(data.permissionDenied);
+  const permissionDenied = $derived(data.permissionDenied);
 
   const workOrder = $derived(data.workOrder);
   const comments = $derived(data.comments);
@@ -82,13 +82,8 @@
 
   function handleSourceKeydown(event: KeyboardEvent): void {
     if (!showSourcePreview) return;
-    if (event.key === 'Escape') closeSourcePreview();
-    if (event.key === 'ArrowLeft' && sourcePreviewIndex > 0)
-      sourcePreviewIndex--;
-    if (
-      event.key === 'ArrowRight' &&
-      sourcePreviewIndex < sourcePhotos.length - 1
-    )
+    if (event.key === 'ArrowLeft' && sourcePreviewIndex > 0) sourcePreviewIndex--;
+    if (event.key === 'ArrowRight' && sourcePreviewIndex < sourcePhotos.length - 1)
       sourcePreviewIndex++;
   }
 
@@ -98,9 +93,7 @@
     void markWorkOrderAsRead(workOrder.uuid);
   });
 
-  const statusLogs = $derived(
-    comments.comments.filter((c: WorkOrderComment) => c.isStatusChange),
-  );
+  const statusLogs = $derived(comments.comments.filter((c: WorkOrderComment) => c.isStatusChange));
   const regularComments = $derived(
     comments.comments.filter((c: WorkOrderComment) => !c.isStatusChange),
   );
@@ -223,9 +216,7 @@
                 {workOrder.sourceType === 'kvp_proposal' ?
                   'Quell-Anhänge (KVP-Vorschlag)'
                 : 'Quell-Fotos (TPM-Mangel)'}
-                <span class="badge badge--count ml-2"
-                  >{sourcePhotos.length}</span
-                >
+                <span class="badge badge--count ml-2">{sourcePhotos.length}</span>
               </h3>
             </div>
             <div class="card__body">
@@ -375,8 +366,7 @@
           class="absolute top-1/2 right-6 z-10 flex h-12 w-12 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border-none bg-white/15 text-xl text-white transition-colors hover:bg-white/30"
           onclick={(e: MouseEvent) => {
             e.stopPropagation();
-            if (sourcePreviewIndex < sourcePhotos.length - 1)
-              sourcePreviewIndex++;
+            if (sourcePreviewIndex < sourcePhotos.length - 1) sourcePreviewIndex++;
           }}
           aria-label="Nächstes Foto"
         >

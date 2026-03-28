@@ -79,9 +79,7 @@ export class RoleSyncManager {
 
   // Bound handlers for proper cleanup
   private boundStorageHandler: ((event: StorageEvent) => void) | null = null;
-  private boundBroadcastHandler:
-    | ((event: MessageEvent<RoleSwitchMessage>) => void)
-    | null = null;
+  private boundBroadcastHandler: ((event: MessageEvent<RoleSwitchMessage>) => void) | null = null;
 
   private constructor() {
     // Private constructor for singleton pattern
@@ -160,10 +158,7 @@ export class RoleSyncManager {
     this.boundStorageHandler = (event: StorageEvent) => {
       // Only react to activeRole changes
       if (event.key === 'activeRole' && event.newValue !== event.oldValue) {
-        log.info(
-          { newRole: event.newValue },
-          'Storage Event: activeRole changed',
-        );
+        log.info({ newRole: event.newValue }, 'Storage Event: activeRole changed');
 
         // Debounce to prevent multiple rapid redirects
         if (this.redirectTimeout) {
@@ -172,11 +167,7 @@ export class RoleSyncManager {
 
         this.redirectTimeout = setTimeout(() => {
           const newRole = event.newValue;
-          if (
-            newRole === 'root' ||
-            newRole === 'admin' ||
-            newRole === 'employee'
-          ) {
+          if (newRole === 'root' || newRole === 'admin' || newRole === 'employee') {
             this.handleRoleChange(newRole);
           }
         }, this.REDIRECT_DEBOUNCE_MS);
@@ -204,10 +195,7 @@ export class RoleSyncManager {
     // Check if user has permission for the target role
     const userRole = localStorage.getItem('userRole');
     if (newRole === 'root' && userRole !== 'root') {
-      log.warn(
-        { newRole, userRole },
-        'User does not have root permission, ignoring',
-      );
+      log.warn({ newRole, userRole }, 'User does not have root permission, ignoring');
       return;
     }
 
@@ -300,9 +288,6 @@ export function getRoleSyncManager(): RoleSyncManager {
  * Convenience function to broadcast a role switch
  * Use this in RoleSwitch.svelte after successful API call
  */
-export function broadcastRoleSwitch(
-  newRole: 'root' | 'admin' | 'employee',
-  token?: string,
-): void {
+export function broadcastRoleSwitch(newRole: 'root' | 'admin' | 'employee', token?: string): void {
   getRoleSyncManager().broadcast(newRole, token);
 }

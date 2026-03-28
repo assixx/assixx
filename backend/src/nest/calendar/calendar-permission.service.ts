@@ -9,11 +9,7 @@ import { Injectable } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service.js';
 import type { OrganizationalScope } from '../hierarchy-permission/organizational-scope.types.js';
 import { buildVisibilityClause } from './calendar.helpers.js';
-import type {
-  CalendarMemberships,
-  DbCalendarEvent,
-  DbEventAttendee,
-} from './calendar.types.js';
+import type { CalendarMemberships, DbCalendarEvent, DbEventAttendee } from './calendar.types.js';
 
 @Injectable()
 export class CalendarPermissionService {
@@ -23,10 +19,7 @@ export class CalendarPermissionService {
    * Get user's organizational memberships (departments + teams).
    * Separate from OrganizationalScope (manage-page access) — see R7 in masterplan.
    */
-  async getUserMemberships(
-    userId: number,
-    tenantId: number,
-  ): Promise<CalendarMemberships> {
+  async getUserMemberships(userId: number, tenantId: number): Promise<CalendarMemberships> {
     const rows = await this.databaseService.query<{
       department_ids: number[] | null;
       team_ids: number[] | null;
@@ -66,9 +59,7 @@ export class CalendarPermissionService {
     if (event.org_level === 'company') return true;
 
     // Merge scope + memberships for visibility
-    const deptIds = [
-      ...new Set([...scope.departmentIds, ...memberships.departmentIds]),
-    ];
+    const deptIds = [...new Set([...scope.departmentIds, ...memberships.departmentIds])];
     const teamIds = [...new Set([...scope.teamIds, ...memberships.teamIds])];
 
     if (
@@ -87,11 +78,7 @@ export class CalendarPermissionService {
       return true;
     }
 
-    if (
-      event.org_level === 'team' &&
-      event.team_id !== null &&
-      teamIds.includes(event.team_id)
-    ) {
+    if (event.org_level === 'team' && event.team_id !== null && teamIds.includes(event.team_id)) {
       return true;
     }
 
@@ -106,10 +93,7 @@ export class CalendarPermissionService {
   /**
    * Get event attendees
    */
-  async getEventAttendees(
-    eventId: number,
-    tenantId: number,
-  ): Promise<DbEventAttendee[]> {
+  async getEventAttendees(eventId: number, tenantId: number): Promise<DbEventAttendee[]> {
     return await this.databaseService.query<DbEventAttendee>(
       `SELECT a.user_id, u.username, u.first_name, u.last_name, u.email, u.profile_picture
        FROM calendar_attendees a

@@ -3,10 +3,7 @@
    * AssigneeList — Displays assigned employees for a work order.
    * Read-only in employee view. Admin add/remove in Step 5.4.
    */
-  import {
-    getAvatarColorClass,
-    getProfilePictureUrl,
-  } from '$lib/utils/avatar-helpers';
+  import { getAvatarColorClass, getProfilePictureUrl } from '$lib/utils/avatar-helpers';
 
   import { MESSAGES } from '../../_lib/constants';
 
@@ -40,9 +37,7 @@
   }
 
   function avatarColorClass(assignee: WorkOrderAssignee): string {
-    return hasProfilePic(assignee.profilePicture) ? '' : (
-        getAvatarColorClass(assignee.userId)
-      );
+    return hasProfilePic(assignee.profilePicture) ? '' : getAvatarColorClass(assignee.userId);
   }
 </script>
 

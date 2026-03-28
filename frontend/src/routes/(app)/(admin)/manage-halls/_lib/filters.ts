@@ -27,19 +27,11 @@ export function filterBySearch(halls: Hall[], query: string): Hall[] {
     const description = (h.description ?? '').toLowerCase();
     const areaName = (h.areaName ?? '').toLowerCase();
 
-    return (
-      name.includes(term) ||
-      description.includes(term) ||
-      areaName.includes(term)
-    );
+    return name.includes(term) || description.includes(term) || areaName.includes(term);
   });
 }
 
-export function applyAllFilters(
-  halls: Hall[],
-  status: StatusFilter,
-  searchQuery: string,
-): Hall[] {
+export function applyAllFilters(halls: Hall[], status: StatusFilter, searchQuery: string): Hall[] {
   let result = filterByStatus(halls, status);
   result = filterBySearch(result, searchQuery);
   return result;

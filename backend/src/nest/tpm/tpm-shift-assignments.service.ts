@@ -154,16 +154,9 @@ export class TpmShiftAssignmentsService {
       );
     }
 
-    this.logger.debug(
-      `Set ${userIds.length} assignments for plan ${planUuid} on ${scheduledDate}`,
-    );
+    this.logger.debug(`Set ${userIds.length} assignments for plan ${planUuid} on ${scheduledDate}`);
 
-    return await this.getAssignmentsForPlan(
-      tenantId,
-      planUuid,
-      scheduledDate,
-      scheduledDate,
-    );
+    return await this.getAssignmentsForPlan(tenantId, planUuid, scheduledDate, scheduledDate);
   }
 
   // ==========================================================================
@@ -222,9 +215,7 @@ export class TpmShiftAssignmentsService {
     startDate: string,
     endDate: string,
   ): Promise<TpmShiftAssignment[]> {
-    this.logger.debug(
-      `Fetching TPM assignments for tenant ${tenantId}: ${startDate} – ${endDate}`,
-    );
+    this.logger.debug(`Fetching TPM assignments for tenant ${tenantId}: ${startDate} – ${endDate}`);
 
     const rows = await this.db.query<DbShiftAssignmentRow>(
       `SELECT DISTINCT
@@ -323,9 +314,7 @@ export class TpmShiftAssignmentsService {
     );
 
     const tenantColors = await this.loadIntervalColors(tenantId);
-    return rows.map((row: DbCalendarAssignmentRow) =>
-      mapCalendarRow(row, tenantColors),
-    );
+    return rows.map((row: DbCalendarAssignmentRow) => mapCalendarRow(row, tenantColors));
   }
 
   // ==========================================================================
@@ -333,10 +322,7 @@ export class TpmShiftAssignmentsService {
   // ==========================================================================
 
   /** Resolve plan UUID to internal ID (with existence check) */
-  private async resolvePlanId(
-    tenantId: number,
-    planUuid: string,
-  ): Promise<DbPlanIdRow> {
+  private async resolvePlanId(tenantId: number, planUuid: string): Promise<DbPlanIdRow> {
     const rows = await this.db.query<DbPlanIdRow>(
       `SELECT id, asset_id
        FROM tpm_maintenance_plans
@@ -351,9 +337,7 @@ export class TpmShiftAssignmentsService {
   }
 
   /** Load tenant-specific interval colors (fallback handled by caller) */
-  private async loadIntervalColors(
-    tenantId: number,
-  ): Promise<Map<string, string>> {
+  private async loadIntervalColors(tenantId: number): Promise<Map<string, string>> {
     const rows = await this.db.query<{
       status_key: string;
       color_hex: string;
@@ -364,10 +348,7 @@ export class TpmShiftAssignmentsService {
       [tenantId],
     );
     return new Map(
-      rows.map((r: { status_key: string; color_hex: string }) => [
-        r.status_key,
-        r.color_hex,
-      ]),
+      rows.map((r: { status_key: string; color_hex: string }) => [r.status_key, r.color_hex]),
     );
   }
 }
@@ -382,14 +363,12 @@ function mapCalendarRow(
   tenantColors: Map<string, string>,
 ): CalendarTpmAssignment {
   const sorted = [...row.interval_types].sort(
-    (a: string, b: string) =>
-      (INTERVAL_SIGNIFICANCE[a] ?? 99) - (INTERVAL_SIGNIFICANCE[b] ?? 99),
+    (a: string, b: string) => (INTERVAL_SIGNIFICANCE[a] ?? 99) - (INTERVAL_SIGNIFICANCE[b] ?? 99),
   );
   const primary: string = sorted[0] ?? 'monthly';
   const colorHex =
     tenantColors.get(primary) ??
-    (DEFAULT_INTERVAL_COLORS as Record<string, { hex: string }>)[primary]
-      ?.hex ??
+    (DEFAULT_INTERVAL_COLORS as Record<string, { hex: string }>)[primary]?.hex ??
     '#FF9800';
 
   return {

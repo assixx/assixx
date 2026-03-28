@@ -7,7 +7,7 @@
 -- ADR-033: Addon-based SaaS model (replaces plan-tier system).
 -- =============================================================================
 
--- Addons (21 entries)
+-- Addons (22 entries)
 -- is_core=true: always active, no subscription needed
 -- is_core=false: purchasable, 30-day trial
 INSERT INTO public.addons (id, code, name, description, price_monthly, is_active, requires_setup, setup_instructions, icon, sort_order, created_at, updated_at, is_core, trial_days) VALUES (1, 'dashboard', 'Dashboard', 'Dashboard mit Übersicht', NULL, 1, false, NULL, NULL, 0, '2025-07-23 09:56:05+02', '2026-03-11 10:29:57.086152+01', true, NULL) ON CONFLICT (id) DO NOTHING;
@@ -31,6 +31,7 @@ INSERT INTO public.addons (id, code, name, description, price_monthly, is_active
 INSERT INTO public.addons (id, code, name, description, price_monthly, is_active, requires_setup, setup_instructions, icon, sort_order, created_at, updated_at, is_core, trial_days) VALUES (19, 'notifications', 'Benachrichtigungen', 'Benachrichtigungsverwaltung und SSE-Streaming', NULL, 1, false, NULL, NULL, 75, '2026-03-09 17:19:58.544799+01', '2026-03-11 10:29:57.086152+01', true, NULL) ON CONFLICT (id) DO NOTHING;
 INSERT INTO public.addons (id, code, name, description, price_monthly, is_active, requires_setup, setup_instructions, icon, sort_order, created_at, updated_at, is_core, trial_days) VALUES (20, 'dummy_users', 'Platzhalter-Benutzer', 'Anonyme Anzeige-Accounts für Bildschirme', 10.00, 1, false, NULL, NULL, 80, '2026-03-09 17:19:58.544799+01', '2026-03-11 10:29:57.086152+01', false, 30) ON CONFLICT (id) DO NOTHING;
 INSERT INTO public.addons (id, code, name, description, price_monthly, is_active, requires_setup, setup_instructions, icon, sort_order, created_at, updated_at, is_core, trial_days) VALUES (21, 'manage_hierarchy', 'Organisationsstruktur', 'Verwaltung von Bereichen, Abteilungen, Teams und Mitarbeitern', 0.00, 1, false, NULL, 'fa-sitemap', 50, '2026-03-13 20:27:32.394728+01', '2026-03-13 20:27:32.394728+01', true, 30) ON CONFLICT (id) DO NOTHING;
+INSERT INTO public.addons (id, code, name, description, price_monthly, is_active, requires_setup, setup_instructions, icon, sort_order, created_at, updated_at, is_core, trial_days) VALUES (22, 'approvals', 'Freigaben', 'Zentrales Freigabe-System — Genehmigungsworkflow für KVP, Urlaub, Kalender und weitere Module', NULL, 1, false, NULL, 'fa-check-double', 10, '2026-03-17 10:45:48.485791+01', '2026-03-17 10:45:48.485791+01', true, NULL) ON CONFLICT (id) DO NOTHING;
 
 -- KVP Categories (6 entries)
 INSERT INTO public.kvp_categories (id, name, description, color, icon, created_at) VALUES (1, 'Sicherheit', 'Verbesserungen zur Arbeitssicherheit', '#e74c3c', '🛡️', '2025-11-13 22:07:17+01') ON CONFLICT (id) DO NOTHING;
@@ -54,6 +55,6 @@ INSERT INTO public.asset_categories (id, name, description, icon, sort_order, is
 INSERT INTO public.asset_categories (id, name, description, icon, sort_order, is_active) VALUES (11, 'Test Category', 'Test Category Description', 'fa-test', 99, 1) ON CONFLICT (id) DO NOTHING;
 
 -- Sync sequences to max values
-SELECT pg_catalog.setval('public.addons_id_seq', GREATEST((SELECT MAX(id) FROM public.addons), 21), true);
+SELECT pg_catalog.setval('public.addons_id_seq', GREATEST((SELECT MAX(id) FROM public.addons), 22), true);
 SELECT pg_catalog.setval('public.kvp_categories_id_seq', GREATEST((SELECT MAX(id) FROM public.kvp_categories), 6), true);
 SELECT pg_catalog.setval('public.asset_categories_id_seq', GREATEST((SELECT MAX(id) FROM public.asset_categories), 11), true);

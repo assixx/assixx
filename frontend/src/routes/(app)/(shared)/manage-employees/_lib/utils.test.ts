@@ -6,11 +6,7 @@
  */
 import { describe, expect, it } from 'vitest';
 
-import {
-  validateEmailMatch,
-  validatePasswordMatch,
-  validateSaveEmployeeForm,
-} from './utils.js';
+import { validateEmailMatch, validatePasswordMatch, validateSaveEmployeeForm } from './utils.js';
 
 // Shared test constants
 const E = 'test@example.de';
@@ -82,15 +78,11 @@ describe('validateSaveEmployeeForm — create mode', () => {
   });
 
   it('should return "email" when emails differ (checked first)', () => {
-    expect(validateSaveEmployeeForm('a@t.de', 'b@t.de', P, P, false)).toBe(
-      'email',
-    );
+    expect(validateSaveEmployeeForm('a@t.de', 'b@t.de', P, P, false)).toBe('email');
   });
 
   it('should return "email" even when passwords also invalid', () => {
-    expect(validateSaveEmployeeForm('a@t.de', 'b@t.de', '', '', false)).toBe(
-      'email',
-    );
+    expect(validateSaveEmployeeForm('a@t.de', 'b@t.de', '', '', false)).toBe('email');
   });
 });
 
@@ -120,9 +112,7 @@ describe('validateSaveEmployeeForm — edit mode', () => {
   });
 
   it('should return "email" when emails differ (checked first)', () => {
-    expect(validateSaveEmployeeForm('a@t.de', 'b@t.de', '', '', true)).toBe(
-      'email',
-    );
+    expect(validateSaveEmployeeForm('a@t.de', 'b@t.de', '', '', true)).toBe('email');
   });
 });
 
@@ -132,14 +122,10 @@ describe('validateSaveEmployeeForm — edit mode', () => {
 
 describe('validateSaveEmployeeForm — autofill defense', () => {
   it('should reject autofill: password filled, confirm empty (edit)', () => {
-    expect(validateSaveEmployeeForm(E, E, 'autofilled', '', true)).toBe(
-      'password',
-    );
+    expect(validateSaveEmployeeForm(E, E, 'autofilled', '', true)).toBe('password');
   });
 
   it('should reject autofill: password filled, confirm empty (create)', () => {
-    expect(validateSaveEmployeeForm(E, E, 'autofilled', '', false)).toBe(
-      'password',
-    );
+    expect(validateSaveEmployeeForm(E, E, 'autofilled', '', false)).toBe('password');
   });
 });

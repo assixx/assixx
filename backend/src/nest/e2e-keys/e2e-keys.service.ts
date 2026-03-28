@@ -8,22 +8,13 @@
  * Fingerprints are computed server-side as SHA-256 hex of the raw public key bytes.
  */
 import { IS_ACTIVE } from '@assixx/shared/constants';
-import {
-  ConflictException,
-  Injectable,
-  Logger,
-  NotFoundException,
-} from '@nestjs/common';
+import { ConflictException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { createHash } from 'node:crypto';
 import type { PoolClient } from 'pg';
 import { v7 as uuidv7 } from 'uuid';
 
 import { DatabaseService } from '../database/database.service.js';
-import type {
-  E2eKeyResponse,
-  E2ePublicKeyResponse,
-  E2eUserKeyRow,
-} from './e2e-keys.types.js';
+import type { E2eKeyResponse, E2ePublicKeyResponse, E2eUserKeyRow } from './e2e-keys.types.js';
 
 @Injectable()
 export class E2eKeysService {
@@ -35,66 +26,55 @@ export class E2eKeysService {
    * Register a new public key for the current user.
    * Returns 409 Conflict if an active key already exists (multi-tab race protection).
    */
-  async registerKeys(
-    publicKey: string,
-    tenantId: number,
-    userId: number,
-  ): Promise<E2eKeyResponse> {
-    return await this.db.tenantTransaction(
-      async (client: PoolClient): Promise<E2eKeyResponse> => {
-        // Check if an active key already exists
-        const existing = await client.query<{ id: string }>(
-          `SELECT id FROM e2e_user_keys
+  async registerKeys(publicKey: string, tenantId: number, userId: number): Promise<E2eKeyResponse> {
+    return await this.db.tenantTransaction(async (client: PoolClient): Promise<E2eKeyResponse> => {
+      // Check if an active key already exists
+      const existing = await client.query<{ id: string }>(
+        `SELECT id FROM e2e_user_keys
            WHERE tenant_id = $1 AND user_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}`,
-          [tenantId, userId],
+        [tenantId, userId],
+      );
+
+      if (existing.rows[0] !== undefined) {
+        throw new ConflictException(
+          'Active E2E key already exists. Use GET /e2e/keys/me to retrieve it.',
         );
+      }
 
-        if (existing.rows[0] !== undefined) {
-          throw new ConflictException(
-            'Active E2E key already exists. Use GET /e2e/keys/me to retrieve it.',
-          );
-        }
+      const id = uuidv7();
+      const fingerprint = this.computeFingerprint(publicKey);
 
-        const id = uuidv7();
-        const fingerprint = this.computeFingerprint(publicKey);
-
-        const result = await client.query<E2eUserKeyRow>(
-          `INSERT INTO e2e_user_keys (id, tenant_id, user_id, public_key, fingerprint, key_version, is_active)
+      const result = await client.query<E2eUserKeyRow>(
+        `INSERT INTO e2e_user_keys (id, tenant_id, user_id, public_key, fingerprint, key_version, is_active)
            VALUES ($1, $2, $3, $4, $5, 1, 1)
            RETURNING id, public_key, fingerprint, key_version, created_at`,
-          [id, tenantId, userId, publicKey, fingerprint],
-        );
+        [id, tenantId, userId, publicKey, fingerprint],
+      );
 
-        const row = result.rows[0];
-        if (row === undefined) {
-          throw new Error(
-            'Failed to insert E2E key — RETURNING yielded no rows',
-          );
-        }
+      const row = result.rows[0];
+      if (row === undefined) {
+        throw new Error('Failed to insert E2E key — RETURNING yielded no rows');
+      }
 
-        this.logger.log(
-          `Registered E2E key for user ${userId} in tenant ${tenantId} (fingerprint: ${fingerprint.slice(0, 16)}...)`,
-        );
+      this.logger.log(
+        `Registered E2E key for user ${userId} in tenant ${tenantId} (fingerprint: ${fingerprint.slice(0, 16)}...)`,
+      );
 
-        return {
-          id: row.id,
-          publicKey: row.public_key,
-          fingerprint: row.fingerprint,
-          keyVersion: row.key_version,
-          createdAt: row.created_at.toISOString(),
-        };
-      },
-    );
+      return {
+        id: row.id,
+        publicKey: row.public_key,
+        fingerprint: row.fingerprint,
+        keyVersion: row.key_version,
+        createdAt: row.created_at.toISOString(),
+      };
+    });
   }
 
   /**
    * Get the current user's own active key data.
    * Returns null if no active key exists.
    */
-  async getOwnKeys(
-    tenantId: number,
-    userId: number,
-  ): Promise<E2eKeyResponse | null> {
+  async getOwnKeys(tenantId: number, userId: number): Promise<E2eKeyResponse | null> {
     return await this.db.tenantTransaction(
       async (client: PoolClient): Promise<E2eKeyResponse | null> => {
         const result = await client.query<E2eUserKeyRow>(
@@ -124,10 +104,7 @@ export class E2eKeysService {
    * Get another user's public key (for encryption).
    * Returns null if the user has no active key.
    */
-  async getPublicKey(
-    tenantId: number,
-    userId: number,
-  ): Promise<E2ePublicKeyResponse | null> {
+  async getPublicKey(tenantId: number, userId: number): Promise<E2ePublicKeyResponse | null> {
     return await this.db.tenantTransaction(
       async (client: PoolClient): Promise<E2ePublicKeyResponse | null> => {
         const result = await client.query<E2eUserKeyRow>(
@@ -155,19 +132,17 @@ export class E2eKeysService {
    * Check if a user has an active E2E key.
    */
   async hasKeys(tenantId: number, userId: number): Promise<boolean> {
-    return await this.db.tenantTransaction(
-      async (client: PoolClient): Promise<boolean> => {
-        const result = await client.query<{ exists: boolean }>(
-          `SELECT EXISTS(
+    return await this.db.tenantTransaction(async (client: PoolClient): Promise<boolean> => {
+      const result = await client.query<{ exists: boolean }>(
+        `SELECT EXISTS(
              SELECT 1 FROM e2e_user_keys
              WHERE tenant_id = $1 AND user_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}
            ) AS exists`,
-          [tenantId, userId],
-        );
+        [tenantId, userId],
+      );
 
-        return result.rows[0]?.exists ?? false;
-      },
-    );
+      return result.rows[0]?.exists ?? false;
+    });
   }
 
   /**
@@ -179,22 +154,20 @@ export class E2eKeysService {
     userId: number,
     claimedVersion: number,
   ): Promise<boolean> {
-    return await this.db.tenantTransaction(
-      async (client: PoolClient): Promise<boolean> => {
-        const result = await client.query<{ key_version: number }>(
-          `SELECT key_version FROM e2e_user_keys
+    return await this.db.tenantTransaction(async (client: PoolClient): Promise<boolean> => {
+      const result = await client.query<{ key_version: number }>(
+        `SELECT key_version FROM e2e_user_keys
            WHERE tenant_id = $1 AND user_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}`,
-          [tenantId, userId],
-        );
+        [tenantId, userId],
+      );
 
-        const row = result.rows[0];
-        if (row === undefined) {
-          return false;
-        }
+      const row = result.rows[0];
+      if (row === undefined) {
+        return false;
+      }
 
-        return row.key_version === claimedVersion;
-      },
-    );
+      return row.key_version === claimedVersion;
+    });
   }
 
   /**
@@ -202,87 +175,65 @@ export class E2eKeysService {
    * Used when client detects a key mismatch (e.g., container browser cleared IndexedDB).
    * Atomic: both operations happen in a single transaction.
    */
-  async rotateOwnKey(
-    publicKey: string,
-    tenantId: number,
-    userId: number,
-  ): Promise<E2eKeyResponse> {
-    return await this.db.tenantTransaction(
-      async (client: PoolClient): Promise<E2eKeyResponse> => {
-        // Deactivate any existing active key
-        await client.query(
-          `UPDATE e2e_user_keys
+  async rotateOwnKey(publicKey: string, tenantId: number, userId: number): Promise<E2eKeyResponse> {
+    return await this.db.tenantTransaction(async (client: PoolClient): Promise<E2eKeyResponse> => {
+      // Deactivate any existing active key
+      await client.query(
+        `UPDATE e2e_user_keys
            SET is_active = ${IS_ACTIVE.INACTIVE}
            WHERE tenant_id = $1 AND user_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}`,
-          [tenantId, userId],
-        );
+        [tenantId, userId],
+      );
 
-        const id = uuidv7();
-        const fingerprint = this.computeFingerprint(publicKey);
-        const nextVersion = await this.getNextKeyVersion(
-          client,
-          tenantId,
-          userId,
-        );
+      const id = uuidv7();
+      const fingerprint = this.computeFingerprint(publicKey);
+      const nextVersion = await this.getNextKeyVersion(client, tenantId, userId);
 
-        const result = await client.query<E2eUserKeyRow>(
-          `INSERT INTO e2e_user_keys (id, tenant_id, user_id, public_key, fingerprint, key_version, is_active)
+      const result = await client.query<E2eUserKeyRow>(
+        `INSERT INTO e2e_user_keys (id, tenant_id, user_id, public_key, fingerprint, key_version, is_active)
            VALUES ($1, $2, $3, $4, $5, $6, 1)
            RETURNING id, public_key, fingerprint, key_version, created_at`,
-          [id, tenantId, userId, publicKey, fingerprint, nextVersion],
-        );
+        [id, tenantId, userId, publicKey, fingerprint, nextVersion],
+      );
 
-        const row = result.rows[0];
-        if (row === undefined) {
-          throw new Error(
-            'Failed to insert rotated E2E key — RETURNING yielded no rows',
-          );
-        }
+      const row = result.rows[0];
+      if (row === undefined) {
+        throw new Error('Failed to insert rotated E2E key — RETURNING yielded no rows');
+      }
 
-        this.logger.warn(
-          `User ${userId} rotated E2E key in tenant ${tenantId} (v${nextVersion}, fingerprint: ${fingerprint.slice(0, 16)}...)`,
-        );
+      this.logger.warn(
+        `User ${userId} rotated E2E key in tenant ${tenantId} (v${nextVersion}, fingerprint: ${fingerprint.slice(0, 16)}...)`,
+      );
 
-        return {
-          id: row.id,
-          publicKey: row.public_key,
-          fingerprint: row.fingerprint,
-          keyVersion: row.key_version,
-          createdAt: row.created_at.toISOString(),
-        };
-      },
-    );
+      return {
+        id: row.id,
+        publicKey: row.public_key,
+        fingerprint: row.fingerprint,
+        keyVersion: row.key_version,
+        createdAt: row.created_at.toISOString(),
+      };
+    });
   }
 
   /**
    * Admin-only: Reset a user's key by marking current active key as deleted (is_active=4).
    * User must regenerate keys on next login.
    */
-  async resetKeys(
-    tenantId: number,
-    userId: number,
-    adminId: number,
-  ): Promise<void> {
-    await this.db.tenantTransaction(
-      async (client: PoolClient): Promise<void> => {
-        const result = await client.query(
-          `UPDATE e2e_user_keys
+  async resetKeys(tenantId: number, userId: number, adminId: number): Promise<void> {
+    await this.db.tenantTransaction(async (client: PoolClient): Promise<void> => {
+      const result = await client.query(
+        `UPDATE e2e_user_keys
            SET is_active = ${IS_ACTIVE.DELETED}
            WHERE tenant_id = $1 AND user_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}`,
-          [tenantId, userId],
-        );
+        [tenantId, userId],
+      );
 
-        if (result.rowCount === 0) {
-          throw new NotFoundException(
-            `No active E2E key found for user ${userId}`,
-          );
-        }
+      if (result.rowCount === 0) {
+        throw new NotFoundException(`No active E2E key found for user ${userId}`);
+      }
 
-        this.logger.warn(
-          `Admin ${adminId} reset E2E key for user ${userId} in tenant ${tenantId}`,
-        );
-      },
-    );
+      this.logger.warn(`Admin ${adminId} reset E2E key for user ${userId} in tenant ${tenantId}`);
+    });
   }
 
   /**

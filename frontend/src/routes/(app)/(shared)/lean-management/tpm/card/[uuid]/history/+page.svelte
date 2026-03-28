@@ -161,24 +161,17 @@
 
   function handlePreviewPrev(): void {
     if (previewPhotoIndex === null || previewPhotos.length <= 1) return;
-    previewPhotoIndex =
-      previewPhotoIndex === 0 ?
-        previewPhotos.length - 1
-      : previewPhotoIndex - 1;
+    previewPhotoIndex = previewPhotoIndex === 0 ? previewPhotos.length - 1 : previewPhotoIndex - 1;
   }
 
   function handlePreviewNext(): void {
     if (previewPhotoIndex === null || previewPhotos.length <= 1) return;
-    previewPhotoIndex =
-      previewPhotoIndex === previewPhotos.length - 1 ?
-        0
-      : previewPhotoIndex + 1;
+    previewPhotoIndex = previewPhotoIndex === previewPhotos.length - 1 ? 0 : previewPhotoIndex + 1;
   }
 
   function handleKeydown(e: KeyboardEvent): void {
     if (!showPhotoPreview) return;
-    if (e.key === 'Escape') closePhotoPreview();
-    else if (e.key === 'ArrowLeft') handlePreviewPrev();
+    if (e.key === 'ArrowLeft') handlePreviewPrev();
     else if (e.key === 'ArrowRight') handlePreviewNext();
   }
 
@@ -255,13 +248,10 @@
             type="button"
             class="btn btn-primary"
             onclick={() => {
-              void goto(
-                resolve(`/lean-management/tpm/card/${card.uuid}/defects`),
-              );
+              void goto(resolve(`/lean-management/tpm/card/${card.uuid}/defects`));
             }}
           >
-            <i class="fas fa-exclamation-triangle mr-2"
-            ></i>{MESSAGES.BTN_DEFECTS}
+            <i class="fas fa-exclamation-triangle mr-2"></i>{MESSAGES.BTN_DEFECTS}
           </button>
         {/if}
       </div>
@@ -269,9 +259,7 @@
       <div class="card__body">
         {#if error !== null}
           <div class="p-6 text-center">
-            <i
-              class="fas fa-exclamation-triangle mb-4 text-4xl text-(--color-danger)"
-            ></i>
+            <i class="fas fa-exclamation-triangle mb-4 text-4xl text-(--color-danger)"></i>
             <p class="text-(--color-text-secondary)">{error}</p>
           </div>
         {:else if executions.length === 0}
@@ -309,8 +297,7 @@
                   <!-- Row -->
                   <tr
                     class="history-row"
-                    class:history-row--expanded={expandedUuid ===
-                      execution.uuid}
+                    class:history-row--expanded={expandedUuid === execution.uuid}
                     onclick={() => {
                       toggleExpand(execution.uuid);
                     }}
@@ -330,19 +317,14 @@
                     </td>
                     <td>{execution.executedByName ?? '-'}</td>
                     <td>
-                      <span
-                        class="badge {getApprovalBadgeClass(
-                          execution.approvalStatus,
-                        )}"
-                      >
+                      <span class="badge {getApprovalBadgeClass(execution.approvalStatus)}">
                         {getApprovalLabel(execution.approvalStatus)}
                       </span>
                     </td>
                     <td>
                       {#if (execution.photoCount ?? 0) > 0}
                         <span class="flex items-center gap-1 text-sm">
-                          <i class="fas fa-camera text-(--color-text-muted)"
-                          ></i>
+                          <i class="fas fa-camera text-(--color-text-muted)"></i>
                           {execution.photoCount}
                         </span>
                       {:else}
@@ -414,9 +396,7 @@
                               </h4>
                               <div class="history-detail__participants">
                                 {#each execution.participants as participant (participant.uuid)}
-                                  <span
-                                    class="history-detail__participant-chip"
-                                  >
+                                  <span class="history-detail__participant-chip">
                                     {participant.firstName}
                                     {participant.lastName}
                                   </span>
@@ -436,9 +416,7 @@
                                 {execution.documentation}
                               </p>
                             {:else}
-                              <p
-                                class="history-detail__text history-detail__text--empty"
-                              >
+                              <p class="history-detail__text history-detail__text--empty">
                                 {MESSAGES.HISTORY_NO_DOCUMENTATION}
                               </p>
                             {/if}
@@ -450,9 +428,7 @@
                               <h4 class="history-detail__label">
                                 <i class="fas fa-camera"></i>
                                 {MESSAGES.PHOTO_HEADING}
-                                <span
-                                  class="text-xs font-normal text-(--color-text-muted)"
-                                >
+                                <span class="text-xs font-normal text-(--color-text-muted)">
                                   ({execution.photoCount})
                                 </span>
                               </h4>
@@ -498,9 +474,7 @@
                                         loading="lazy"
                                       />
                                       {#if photoIdx === 0 && (loadedPhotos[execution.uuid]?.length ?? 0) > 1}
-                                        <span
-                                          class="history-detail__photo-count"
-                                        >
+                                        <span class="history-detail__photo-count">
                                           {loadedPhotos[execution.uuid]?.length} Fotos
                                         </span>
                                       {/if}
@@ -520,33 +494,25 @@
                               </h4>
                               <div class="history-detail__approval">
                                 <span
-                                  class="badge {getApprovalBadgeClass(
-                                    execution.approvalStatus,
-                                  )}"
+                                  class="badge {getApprovalBadgeClass(execution.approvalStatus)}"
                                 >
                                   {getApprovalLabel(execution.approvalStatus)}
                                 </span>
                                 {#if execution.approvedByName !== undefined}
-                                  <span
-                                    class="text-sm text-(--color-text-secondary)"
-                                  >
+                                  <span class="text-sm text-(--color-text-secondary)">
                                     {MESSAGES.HISTORY_APPROVAL_BY}
                                     {execution.approvedByName}
                                   </span>
                                 {/if}
                                 {#if execution.approvedAt !== null}
-                                  <span
-                                    class="text-sm text-(--color-text-muted)"
-                                  >
+                                  <span class="text-sm text-(--color-text-muted)">
                                     {formatDateTime(execution.approvedAt)}
                                   </span>
                                 {/if}
                               </div>
                               {#if execution.approvalNote !== null && execution.approvalNote.trim().length > 0}
                                 <div class="mt-2">
-                                  <span
-                                    class="text-xs font-semibold text-(--color-text-muted)"
-                                  >
+                                  <span class="text-xs font-semibold text-(--color-text-muted)">
                                     {MESSAGES.HISTORY_APPROVAL_NOTE}:
                                   </span>
                                   <p class="history-detail__text">
@@ -575,7 +541,7 @@
       id="tpm-history-photo-preview-modal"
       class="modal-overlay modal-overlay--active"
       onclick={closePhotoPreview}
-      onkeydown={(e) => {
+      onkeydown={(e: KeyboardEvent) => {
         if (e.key === 'Escape') closePhotoPreview();
       }}
       role="dialog"
@@ -617,9 +583,7 @@
             />
           </div>
           <div class="border-t border-(--border-subtle) bg-(--surface-2) p-4">
-            <div
-              class="flex items-center gap-6 text-sm text-(--color-text-secondary)"
-            >
+            <div class="flex items-center gap-6 text-sm text-(--color-text-secondary)">
               <span class="flex items-center gap-2">
                 <i class="fas fa-file-archive"></i>
                 {formatFileSize(previewPhoto.fileSize)}
@@ -631,8 +595,7 @@
           <button
             type="button"
             class="btn btn-cancel"
-            onclick={closePhotoPreview}
-            ><i class="fas fa-times mr-2"></i>Schließen</button
+            onclick={closePhotoPreview}><i class="fas fa-times mr-2"></i>Schließen</button
           >
           <button
             type="button"

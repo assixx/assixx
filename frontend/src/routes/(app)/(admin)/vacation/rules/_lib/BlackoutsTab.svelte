@@ -7,10 +7,7 @@
   import { invalidateAll } from '$app/navigation';
 
   import AppDatePicker from '$lib/components/AppDatePicker.svelte';
-  import {
-    DEFAULT_HIERARCHY_LABELS,
-    type HierarchyLabels,
-  } from '$lib/types/hierarchy-labels';
+  import { DEFAULT_HIERARCHY_LABELS, type HierarchyLabels } from '$lib/types/hierarchy-labels';
   import { showSuccessAlert, showErrorAlert } from '$lib/utils';
   import { createLogger } from '$lib/utils/logger';
 
@@ -75,16 +72,11 @@
     if (isGlobal) return rulesState.teams;
 
     return rulesState.teams.filter((t) => {
-      if (
-        t.departmentId !== undefined &&
-        departmentIds.includes(t.departmentId)
-      ) {
+      if (t.departmentId !== undefined && departmentIds.includes(t.departmentId)) {
         return false;
       }
       if (t.departmentId !== undefined) {
-        const dept = rulesState.departments.find(
-          (d) => d.id === t.departmentId,
-        );
+        const dept = rulesState.departments.find((d) => d.id === t.departmentId);
         if (dept?.areaId !== undefined && areaIds.includes(dept.areaId)) {
           return false;
         }
@@ -105,9 +97,7 @@
     teamIds = teamIds.filter((tId) => {
       const team = rulesState.teams.find((t) => t.id === tId);
       if (team?.departmentId === undefined) return true;
-      const dept = rulesState.departments.find(
-        (d) => d.id === team.departmentId,
-      );
+      const dept = rulesState.departments.find((d) => d.id === team.departmentId);
       return dept?.areaId === undefined || !selectedIds.includes(dept.areaId);
     });
   }
@@ -118,10 +108,7 @@
     // Remove teams that are now covered by selected departments
     teamIds = teamIds.filter((tId) => {
       const team = rulesState.teams.find((t) => t.id === tId);
-      return (
-        team?.departmentId === undefined ||
-        !selectedIds.includes(team.departmentId)
-      );
+      return team?.departmentId === undefined || !selectedIds.includes(team.departmentId);
     });
   }
 
@@ -154,10 +141,7 @@
       blackoutStartDate !== '' &&
       blackoutEndDate !== '' &&
       blackoutEndDate >= blackoutStartDate &&
-      (isGlobal ||
-        areaIds.length > 0 ||
-        departmentIds.length > 0 ||
-        teamIds.length > 0),
+      (isGlobal || areaIds.length > 0 || departmentIds.length > 0 || teamIds.length > 0),
   );
 
   // ==========================================================================
@@ -297,39 +281,28 @@
               <div class="blackout-card__date">
                 <i class="fas fa-calendar-alt"></i>
                 <span>
-                  {formatDate(blackout.startDate)} — {formatDate(
-                    blackout.endDate,
-                  )}
+                  {formatDate(blackout.startDate)} — {formatDate(blackout.endDate)}
                 </span>
               </div>
 
               {#if !blackout.isGlobal}
                 <div class="blackout-card__scopes">
                   {#each blackout.areaIds as areaId (areaId)}
-                    {@const area = rulesState.areas.find(
-                      (a) => a.id === areaId,
-                    )}
+                    {@const area = rulesState.areas.find((a) => a.id === areaId)}
                     <span class="badge badge--info badge--sm">
-                      <i class="fas fa-layer-group mr-1"></i>{area?.name ??
-                        `#${areaId}`}
+                      <i class="fas fa-layer-group mr-1"></i>{area?.name ?? `#${areaId}`}
                     </span>
                   {/each}
                   {#each blackout.departmentIds as deptId (deptId)}
-                    {@const dept = rulesState.departments.find(
-                      (d) => d.id === deptId,
-                    )}
+                    {@const dept = rulesState.departments.find((d) => d.id === deptId)}
                     <span class="badge badge--info badge--sm">
-                      <i class="fas fa-sitemap mr-1"></i>{dept?.name ??
-                        `#${deptId}`}
+                      <i class="fas fa-sitemap mr-1"></i>{dept?.name ?? `#${deptId}`}
                     </span>
                   {/each}
                   {#each blackout.teamIds as teamId (teamId)}
-                    {@const team = rulesState.teams.find(
-                      (t) => t.id === teamId,
-                    )}
+                    {@const team = rulesState.teams.find((t) => t.id === teamId)}
                     <span class="badge badge--info badge--sm">
-                      <i class="fas fa-users mr-1"></i>{team?.name ??
-                        `#${teamId}`}
+                      <i class="fas fa-users mr-1"></i>{team?.name ?? `#${teamId}`}
                     </span>
                   {/each}
                 </div>
@@ -384,9 +357,7 @@
       <div class="ds-modal__header">
         <h3 class="ds-modal__title">
           <i class="fas fa-ban mr-2"></i>
-          {rulesState.editingBlackout !== null ?
-            'Sperrzeit bearbeiten'
-          : 'Neue Sperrzeit'}
+          {rulesState.editingBlackout !== null ? 'Sperrzeit bearbeiten' : 'Neue Sperrzeit'}
         </h3>
         <button
           type="button"
@@ -518,16 +489,12 @@
             disabled={isGlobal}
             onchange={(e) => {
               const select = e.target as HTMLSelectElement;
-              handleAreaChange(
-                Array.from(select.selectedOptions).map((o) => Number(o.value)),
-              );
+              handleAreaChange(Array.from(select.selectedOptions).map((o) => Number(o.value)));
             }}
           >
             {#each rulesState.areas as area (area.id)}
               <option value={area.id}>
-                {area.name}{(
-                  area.departmentCount !== undefined && area.departmentCount > 0
-                ) ?
+                {area.name}{area.departmentCount !== undefined && area.departmentCount > 0 ?
                   ` (${area.departmentCount} ${labels.department})`
                 : ''}
               </option>
@@ -535,8 +502,7 @@
           </select>
           <span class="form-field__message text-(--color-text-secondary)">
             <i class="fas fa-info-circle mr-1"></i>
-            Strg/Cmd + Klick fuer Mehrfachauswahl. {labels.area} vererben Zugriff
-            auf zugehörige
+            Strg/Cmd + Klick fuer Mehrfachauswahl. {labels.area} vererben Zugriff auf zugehörige
             {labels.department}.
           </span>
         </div>
@@ -566,9 +532,7 @@
           >
             {#each availableDepartments as dept (dept.id)}
               <option value={dept.id}>
-                {dept.name}{(
-                  dept.areaName !== undefined && dept.areaName !== ''
-                ) ?
+                {dept.name}{dept.areaName !== undefined && dept.areaName !== '' ?
                   ` (${dept.areaName})`
                 : ''}
               </option>
@@ -576,8 +540,8 @@
           </select>
           <span class="form-field__message text-(--color-text-secondary)">
             <i class="fas fa-info-circle mr-1"></i>
-            Strg/Cmd + Klick fuer Mehrfachauswahl. Nur {labels.department} die nicht
-            bereits durch {labels.area} abgedeckt sind.
+            Strg/Cmd + Klick fuer Mehrfachauswahl. Nur {labels.department} die nicht bereits durch {labels.area}
+            abgedeckt sind.
           </span>
         </div>
 
@@ -599,9 +563,7 @@
             disabled={isGlobal}
             onchange={(e) => {
               const select = e.target as HTMLSelectElement;
-              teamIds = Array.from(select.selectedOptions).map((o) =>
-                Number(o.value),
-              );
+              teamIds = Array.from(select.selectedOptions).map((o) => Number(o.value));
             }}
           >
             {#each availableTeams as team (team.id)}
@@ -610,8 +572,8 @@
           </select>
           <span class="form-field__message text-(--color-text-secondary)">
             <i class="fas fa-info-circle mr-1"></i>
-            {labels.team} werden automatisch vererbt: Übergeordnete Auswahl blendet
-            zugehörige {labels.team} aus.
+            {labels.team} werden automatisch vererbt: Übergeordnete Auswahl blendet zugehörige {labels.team}
+            aus.
           </span>
         </div>
       </div>

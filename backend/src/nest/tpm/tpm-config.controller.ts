@@ -71,9 +71,7 @@ export class TpmConfigController {
   /** GET /tpm/config/escalation — Get escalation config */
   @Get('escalation')
   @RequirePermission(FEAT, MOD_CONFIG, 'canRead')
-  async getEscalationConfig(
-    @TenantId() tenantId: number,
-  ): Promise<TpmEscalationConfig> {
+  async getEscalationConfig(@TenantId() tenantId: number): Promise<TpmEscalationConfig> {
     return await this.escalationService.getConfig(tenantId);
   }
 
@@ -95,9 +93,7 @@ export class TpmConfigController {
   /** GET /tpm/config/colors — Get all status colors */
   @Get('colors')
   @RequirePermission(FEAT, MOD_CONFIG, 'canRead')
-  async getColors(
-    @TenantId() tenantId: number,
-  ): Promise<TpmColorConfigEntry[]> {
+  async getColors(@TenantId() tenantId: number): Promise<TpmColorConfigEntry[]> {
     return await this.colorConfigService.getColors(tenantId);
   }
 
@@ -135,11 +131,7 @@ export class TpmConfigController {
     if (!parsed.success) {
       throw new BadRequestException('Ungültiger Status-Key');
     }
-    return await this.colorConfigService.resetSingleColor(
-      tenantId,
-      user.id,
-      parsed.data,
-    );
+    return await this.colorConfigService.resetSingleColor(tenantId, user.id, parsed.data);
   }
 
   // ============================================================================
@@ -149,9 +141,7 @@ export class TpmConfigController {
   /** GET /tpm/config/interval-colors — Get all interval type colors */
   @Get('interval-colors')
   @RequirePermission(FEAT, MOD_CONFIG, 'canRead')
-  async getIntervalColors(
-    @TenantId() tenantId: number,
-  ): Promise<TpmColorConfigEntry[]> {
+  async getIntervalColors(@TenantId() tenantId: number): Promise<TpmColorConfigEntry[]> {
     return await this.colorConfigService.getIntervalColors(tenantId);
   }
 
@@ -163,11 +153,7 @@ export class TpmConfigController {
     @CurrentUser() user: NestAuthUser,
     @TenantId() tenantId: number,
   ): Promise<TpmColorConfigEntry> {
-    return await this.colorConfigService.updateIntervalColor(
-      tenantId,
-      user.id,
-      dto,
-    );
+    return await this.colorConfigService.updateIntervalColor(tenantId, user.id, dto);
   }
 
   /** POST /tpm/config/interval-colors/reset — Reset interval colors to defaults */
@@ -178,10 +164,7 @@ export class TpmConfigController {
     @CurrentUser() user: NestAuthUser,
     @TenantId() tenantId: number,
   ): Promise<TpmColorConfigEntry[]> {
-    return await this.colorConfigService.resetIntervalColorsToDefaults(
-      tenantId,
-      user.id,
-    );
+    return await this.colorConfigService.resetIntervalColorsToDefaults(tenantId, user.id);
   }
 
   /** DELETE /tpm/config/interval-colors/:intervalKey — Reset single interval color */
@@ -196,11 +179,7 @@ export class TpmConfigController {
     if (!parsed.success) {
       throw new BadRequestException('Ungültiger Intervall-Key');
     }
-    return await this.colorConfigService.resetSingleIntervalColor(
-      tenantId,
-      user.id,
-      parsed.data,
-    );
+    return await this.colorConfigService.resetSingleIntervalColor(tenantId, user.id, parsed.data);
   }
 
   // ============================================================================
@@ -210,9 +189,7 @@ export class TpmConfigController {
   /** GET /tpm/config/category-colors — Get all category colors */
   @Get('category-colors')
   @RequirePermission(FEAT, MOD_CONFIG, 'canRead')
-  async getCategoryColors(
-    @TenantId() tenantId: number,
-  ): Promise<TpmCategoryColorConfigEntry[]> {
+  async getCategoryColors(@TenantId() tenantId: number): Promise<TpmCategoryColorConfigEntry[]> {
     return await this.colorConfigService.getCategoryColors(tenantId);
   }
 
@@ -224,11 +201,7 @@ export class TpmConfigController {
     @CurrentUser() user: NestAuthUser,
     @TenantId() tenantId: number,
   ): Promise<TpmCategoryColorConfigEntry> {
-    return await this.colorConfigService.updateCategoryColor(
-      tenantId,
-      user.id,
-      dto,
-    );
+    return await this.colorConfigService.updateCategoryColor(tenantId, user.id, dto);
   }
 
   /** POST /tpm/config/category-colors/reset — Remove all custom category colors */
@@ -254,10 +227,6 @@ export class TpmConfigController {
     if (!parsed.success) {
       throw new BadRequestException('Ungültiger Kategorie-Key');
     }
-    return await this.colorConfigService.resetSingleCategoryColor(
-      tenantId,
-      user.id,
-      parsed.data,
-    );
+    return await this.colorConfigService.resetSingleCategoryColor(tenantId, user.id, parsed.data);
   }
 }

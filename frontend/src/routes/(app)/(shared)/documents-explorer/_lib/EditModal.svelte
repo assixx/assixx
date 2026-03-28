@@ -30,10 +30,6 @@
     }
   });
 
-  function handleOverlayClick(e: MouseEvent) {
-    if (e.target === e.currentTarget) onclose();
-  }
-
   function selectCategory(category: string) {
     editCategory = category;
     categoryDropdownOpen = false;
@@ -62,31 +58,20 @@
       };
       globalThis.document.addEventListener('click', handleOutsideClick, true);
       return () => {
-        globalThis.document.removeEventListener(
-          'click',
-          handleOutsideClick,
-          true,
-        );
+        globalThis.document.removeEventListener('click', handleOutsideClick, true);
       };
     }
   });
 </script>
 
 {#if show && document}
-  <!-- svelte-ignore a11y_click_events_have_key_events -->
-  <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div
     id="edit-modal"
     class="modal-overlay modal-overlay--active"
-    onclick={handleOverlayClick}
   >
-    <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
     <form
       id="edit-form"
       class="ds-modal ds-modal--md"
-      onclick={(e) => {
-        e.stopPropagation();
-      }}
       onsubmit={(e) => {
         e.preventDefault();
         handleSubmit();
@@ -127,9 +112,7 @@
         <!-- Category Selection -->
         <div class="form-field">
           <!-- svelte-ignore a11y_label_has_associated_control -->
-          <label class="form-field__label form-field__label--required"
-            >Kategorie</label
-          >
+          <label class="form-field__label form-field__label--required">Kategorie</label>
           <div
             class="dropdown w-full"
             id="edit-category-dropdown"
@@ -220,9 +203,7 @@
             placeholder="z.B. vertrag, 2025, personal (kommagetrennt)"
             bind:value={editTags}
           />
-          <small class="form-field__message"
-            >Tags helfen beim späteren Suchen und Filtern</small
-          >
+          <small class="form-field__message">Tags helfen beim späteren Suchen und Filtern</small>
         </div>
 
         <!-- Info about current file -->

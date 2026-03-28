@@ -16,23 +16,14 @@
  *
  * @see ADR-009 Central Audit Logging
  */
-import {
-  CallHandler,
-  ExecutionContext,
-  Injectable,
-  type NestInterceptor,
-} from '@nestjs/common';
+import { CallHandler, ExecutionContext, Injectable, type NestInterceptor } from '@nestjs/common';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { Observable, catchError, from, mergeMap, tap, throwError } from 'rxjs';
 
 import { AuditLoggingService } from '../audit/audit-logging.service.js';
 import { AuditMetadataService } from '../audit/audit-metadata.service.js';
 import { AuditRequestFilterService } from '../audit/audit-request-filter.service.js';
-import {
-  determineAction,
-  isAuthEndpoint,
-  shouldExclude,
-} from '../audit/audit.helpers.js';
+import { determineAction, isAuthEndpoint, shouldExclude } from '../audit/audit.helpers.js';
 import type { NestAuthUser } from '../interfaces/auth.interface.js';
 
 @Injectable()
@@ -45,9 +36,7 @@ export class AuditTrailInterceptor implements NestInterceptor {
 
   /** Main intercept method - delegates to specialized handlers */
   intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
-    const request = context
-      .switchToHttp()
-      .getRequest<FastifyRequest & { user?: NestAuthUser }>();
+    const request = context.switchToHttp().getRequest<FastifyRequest & { user?: NestAuthUser }>();
     const response = context.switchToHttp().getResponse<FastifyReply>();
     const path = request.url.split('?')[0] ?? request.url;
     const method = request.method.toUpperCase();
@@ -66,18 +55,9 @@ export class AuditTrailInterceptor implements NestInterceptor {
     // Extract metadata and check for throttling
     const startTime = Date.now();
     const action = determineAction(method, path, request);
-    const metadata = this.metadataService.extractRequestMetadata(
-      request,
-      action,
-    );
+    const metadata = this.metadataService.extractRequestMetadata(request, action);
 
-    if (
-      this.requestFilter.shouldThrottleListOrView(
-        action,
-        user,
-        metadata.endpoint,
-      )
-    ) {
+    if (this.requestFilter.shouldThrottleListOrView(action, user, metadata.endpoint)) {
       return next.handle();
     }
 
@@ -87,38 +67,15 @@ export class AuditTrailInterceptor implements NestInterceptor {
       (metadata.resourceId !== null || metadata.resourceUuid !== null);
 
     if (needsPreFetch && user !== undefined) {
-      return this.handleMutationWithPreFetch(
-        user,
-        metadata,
-        startTime,
-        request,
-        response,
-        next,
-      );
+      return this.handleMutationWithPreFetch(user, metadata, startTime, request, response, next);
     }
 
-    return this.handleStandardLogging(
-      user,
-      metadata,
-      startTime,
-      request,
-      response,
-      next,
-    );
+    return this.handleStandardLogging(user, metadata, startTime, request, response, next);
   }
 
-  private shouldSkipLogging(
-    method: string,
-    path: string,
-    user: NestAuthUser | undefined,
-  ): boolean {
+  private shouldSkipLogging(method: string, path: string, user: NestAuthUser | undefined): boolean {
     const isAuthEndpointFlag = isAuthEndpoint(path);
-    return this.requestFilter.shouldSkipRequest(
-      method,
-      path,
-      isAuthEndpointFlag,
-      user,
-    );
+    return this.requestFilter.shouldSkipRequest(method, path, isAuthEndpointFlag, user);
   }
 
   /** Handle standard request logging (no pre-fetch needed) */
@@ -132,25 +89,10 @@ export class AuditTrailInterceptor implements NestInterceptor {
   ): Observable<unknown> {
     return next.handle().pipe(
       tap(() => {
-        this.loggingService.logSuccess(
-          user,
-          metadata,
-          startTime,
-          request,
-          response,
-          null,
-        );
+        this.loggingService.logSuccess(user, metadata, startTime, request, response, null);
       }),
       catchError((error: unknown) => {
-        this.loggingService.logFailure(
-          user,
-          metadata,
-          startTime,
-          request,
-          response,
-          error,
-          null,
-        );
+        this.loggingService.logFailure(user, metadata, startTime, request, response, error, null);
         return throwError(() => error);
       }),
     );

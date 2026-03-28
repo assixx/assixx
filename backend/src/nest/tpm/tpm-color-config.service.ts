@@ -42,13 +42,9 @@ function mapColorRowToApi(row: TpmColorConfigRow): TpmColorConfigEntry {
     label: row.label,
     includeInCard: row.include_in_card,
     createdAt:
-      typeof row.created_at === 'string' ?
-        row.created_at
-      : new Date(row.created_at).toISOString(),
+      typeof row.created_at === 'string' ? row.created_at : new Date(row.created_at).toISOString(),
     updatedAt:
-      typeof row.updated_at === 'string' ?
-        row.updated_at
-      : new Date(row.updated_at).toISOString(),
+      typeof row.updated_at === 'string' ? row.updated_at : new Date(row.updated_at).toISOString(),
   };
 }
 
@@ -67,9 +63,7 @@ function buildDefaultEntry(statusKey: TpmCardStatus): TpmColorConfigEntry {
 }
 
 /** Build default color entry for interval type */
-function buildDefaultIntervalEntry(
-  intervalKey: TpmIntervalType,
-): TpmColorConfigEntry {
+function buildDefaultIntervalEntry(intervalKey: TpmIntervalType): TpmColorConfigEntry {
   const def = DEFAULT_INTERVAL_COLORS[intervalKey];
   const now = new Date().toISOString();
   return {
@@ -112,9 +106,7 @@ export class TpmColorConfigService {
 
     // Merge with defaults: tenant override wins, fallback to default
     const statusKeys: TpmCardStatus[] = ['green', 'red', 'yellow', 'overdue'];
-    return statusKeys.map(
-      (key: TpmCardStatus) => overrides.get(key) ?? buildDefaultEntry(key),
-    );
+    return statusKeys.map((key: TpmCardStatus) => overrides.get(key) ?? buildDefaultEntry(key));
   }
 
   /**
@@ -166,23 +158,18 @@ export class TpmColorConfigService {
    * Reset all status colors to defaults.
    * Deletes tenant-specific card status overrides only (not interval colors).
    */
-  async resetToDefaults(
-    tenantId: number,
-    userId: number,
-  ): Promise<TpmColorConfigEntry[]> {
+  async resetToDefaults(tenantId: number, userId: number): Promise<TpmColorConfigEntry[]> {
     this.logger.debug(`Resetting card status colors for tenant ${tenantId}`);
 
     const statusKeys: TpmCardStatus[] = ['green', 'red', 'yellow', 'overdue'];
 
-    await this.db.tenantTransaction(
-      async (client: PoolClient): Promise<void> => {
-        await client.query(
-          `DELETE FROM tpm_color_config
+    await this.db.tenantTransaction(async (client: PoolClient): Promise<void> => {
+      await client.query(
+        `DELETE FROM tpm_color_config
            WHERE tenant_id = $1 AND status_key = ANY($2)`,
-          [tenantId, statusKeys],
-        );
-      },
-    );
+        [tenantId, statusKeys],
+      );
+    });
 
     void this.activityLogger.logUpdate(
       tenantId,
@@ -204,19 +191,15 @@ export class TpmColorConfigService {
     userId: number,
     statusKey: TpmCardStatus,
   ): Promise<TpmColorConfigEntry> {
-    this.logger.debug(
-      `Resetting single color "${statusKey}" for tenant ${tenantId}`,
-    );
+    this.logger.debug(`Resetting single color "${statusKey}" for tenant ${tenantId}`);
 
-    await this.db.tenantTransaction(
-      async (client: PoolClient): Promise<void> => {
-        await client.query(
-          `DELETE FROM tpm_color_config
+    await this.db.tenantTransaction(async (client: PoolClient): Promise<void> => {
+      await client.query(
+        `DELETE FROM tpm_color_config
            WHERE tenant_id = $1 AND status_key = $2`,
-          [tenantId, statusKey],
-        );
-      },
-    );
+        [tenantId, statusKey],
+      );
+    });
 
     void this.activityLogger.logUpdate(
       tenantId,
@@ -253,8 +236,7 @@ export class TpmColorConfigService {
     }
 
     return INTERVAL_TYPES_ORDERED.map(
-      (key: TpmIntervalType) =>
-        overrides.get(key) ?? buildDefaultIntervalEntry(key),
+      (key: TpmIntervalType) => overrides.get(key) ?? buildDefaultIntervalEntry(key),
     );
   }
 
@@ -322,15 +304,13 @@ export class TpmColorConfigService {
 
     const intervalKeys: readonly string[] = INTERVAL_TYPES_ORDERED;
 
-    await this.db.tenantTransaction(
-      async (client: PoolClient): Promise<void> => {
-        await client.query(
-          `DELETE FROM tpm_color_config
+    await this.db.tenantTransaction(async (client: PoolClient): Promise<void> => {
+      await client.query(
+        `DELETE FROM tpm_color_config
            WHERE tenant_id = $1 AND status_key = ANY($2)`,
-          [tenantId, intervalKeys],
-        );
-      },
-    );
+        [tenantId, intervalKeys],
+      );
+    });
 
     void this.activityLogger.logUpdate(
       tenantId,
@@ -352,19 +332,15 @@ export class TpmColorConfigService {
     userId: number,
     intervalKey: TpmIntervalType,
   ): Promise<TpmColorConfigEntry> {
-    this.logger.debug(
-      `Resetting single interval color "${intervalKey}" for tenant ${tenantId}`,
-    );
+    this.logger.debug(`Resetting single interval color "${intervalKey}" for tenant ${tenantId}`);
 
-    await this.db.tenantTransaction(
-      async (client: PoolClient): Promise<void> => {
-        await client.query(
-          `DELETE FROM tpm_color_config
+    await this.db.tenantTransaction(async (client: PoolClient): Promise<void> => {
+      await client.query(
+        `DELETE FROM tpm_color_config
            WHERE tenant_id = $1 AND status_key = $2`,
-          [tenantId, intervalKey],
-        );
-      },
-    );
+        [tenantId, intervalKey],
+      );
+    });
 
     void this.activityLogger.logUpdate(
       tenantId,
@@ -385,9 +361,7 @@ export class TpmColorConfigService {
    * Get all category colors for a tenant.
    * Returns all 3 categories — colorHex is null when no custom color is set.
    */
-  async getCategoryColors(
-    tenantId: number,
-  ): Promise<TpmCategoryColorConfigEntry[]> {
+  async getCategoryColors(tenantId: number): Promise<TpmCategoryColorConfigEntry[]> {
     const categoryKeys: readonly string[] = CATEGORY_KEYS_ORDERED;
 
     const rows = await this.db.query<TpmColorConfigRow>(
@@ -402,34 +376,32 @@ export class TpmColorConfigService {
       overrides.set(row.status_key, row);
     }
 
-    return CATEGORY_KEYS_ORDERED.map(
-      (key: TpmCardCategory): TpmCategoryColorConfigEntry => {
-        const row = overrides.get(key);
-        if (row !== undefined) {
-          return {
-            categoryKey: key,
-            colorHex: row.color_hex,
-            label: row.label,
-            createdAt:
-              typeof row.created_at === 'string' ?
-                row.created_at
-              : new Date(row.created_at).toISOString(),
-            updatedAt:
-              typeof row.updated_at === 'string' ?
-                row.updated_at
-              : new Date(row.updated_at).toISOString(),
-          };
-        }
-        const now = new Date().toISOString();
+    return CATEGORY_KEYS_ORDERED.map((key: TpmCardCategory): TpmCategoryColorConfigEntry => {
+      const row = overrides.get(key);
+      if (row !== undefined) {
         return {
           categoryKey: key,
-          colorHex: null,
-          label: CATEGORY_LABELS[key],
-          createdAt: now,
-          updatedAt: now,
+          colorHex: row.color_hex,
+          label: row.label,
+          createdAt:
+            typeof row.created_at === 'string' ?
+              row.created_at
+            : new Date(row.created_at).toISOString(),
+          updatedAt:
+            typeof row.updated_at === 'string' ?
+              row.updated_at
+            : new Date(row.updated_at).toISOString(),
         };
-      },
-    );
+      }
+      const now = new Date().toISOString();
+      return {
+        categoryKey: key,
+        colorHex: null,
+        label: CATEGORY_LABELS[key],
+        createdAt: now,
+        updatedAt: now,
+      };
+    });
   }
 
   /**
@@ -501,15 +473,13 @@ export class TpmColorConfigService {
 
     const categoryKeys: readonly string[] = CATEGORY_KEYS_ORDERED;
 
-    await this.db.tenantTransaction(
-      async (client: PoolClient): Promise<void> => {
-        await client.query(
-          `DELETE FROM tpm_color_config
+    await this.db.tenantTransaction(async (client: PoolClient): Promise<void> => {
+      await client.query(
+        `DELETE FROM tpm_color_config
            WHERE tenant_id = $1 AND status_key = ANY($2)`,
-          [tenantId, categoryKeys],
-        );
-      },
-    );
+        [tenantId, categoryKeys],
+      );
+    });
 
     void this.activityLogger.logUpdate(
       tenantId,
@@ -540,19 +510,15 @@ export class TpmColorConfigService {
     userId: number,
     categoryKey: TpmCardCategory,
   ): Promise<TpmCategoryColorConfigEntry> {
-    this.logger.debug(
-      `Resetting single category color "${categoryKey}" for tenant ${tenantId}`,
-    );
+    this.logger.debug(`Resetting single category color "${categoryKey}" for tenant ${tenantId}`);
 
-    await this.db.tenantTransaction(
-      async (client: PoolClient): Promise<void> => {
-        await client.query(
-          `DELETE FROM tpm_color_config
+    await this.db.tenantTransaction(async (client: PoolClient): Promise<void> => {
+      await client.query(
+        `DELETE FROM tpm_color_config
            WHERE tenant_id = $1 AND status_key = $2`,
-          [tenantId, categoryKey],
-        );
-      },
-    );
+        [tenantId, categoryKey],
+      );
+    });
 
     void this.activityLogger.logUpdate(
       tenantId,

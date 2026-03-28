@@ -34,12 +34,7 @@ function extractExecutions(raw: unknown): {
   };
 }
 
-export const load: PageServerLoad = async ({
-  cookies,
-  fetch,
-  parent,
-  params,
-}) => {
+export const load: PageServerLoad = async ({ cookies, fetch, parent, params }) => {
   const token = cookies.get('accessToken');
   if (token === undefined || token === '') redirect(302, '/login');
 
@@ -50,11 +45,7 @@ export const load: PageServerLoad = async ({
 
   const [cardResult, executionsRaw] = await Promise.all([
     apiFetchWithPermission<TpmCard>(`/tpm/cards/${cardUuid}`, token, fetch),
-    apiFetch<unknown>(
-      `/tpm/cards/${cardUuid}/executions?page=1&limit=50`,
-      token,
-      fetch,
-    ),
+    apiFetch<unknown>(`/tpm/cards/${cardUuid}/executions?page=1&limit=50`, token, fetch),
   ]);
 
   if (cardResult.permissionDenied) {

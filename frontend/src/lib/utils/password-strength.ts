@@ -13,9 +13,7 @@ import type { ZxcvbnResult } from '@zxcvbn-ts/core';
 const log = createLogger('PasswordStrength');
 
 // Module state - lazy loaded
-let zxcvbnInstance:
-  | ((password: string, userInputs?: string[]) => ZxcvbnResult)
-  | null = null;
+let zxcvbnInstance: ((password: string, userInputs?: string[]) => ZxcvbnResult) | null = null;
 let loadPromise: Promise<void> | null = null;
 
 /**
@@ -39,12 +37,11 @@ async function initPasswordStrength(): Promise<void> {
   loadPromise = (async () => {
     try {
       // Dynamic imports for code splitting
-      const [{ zxcvbn, zxcvbnOptions }, zxcvbnCommonPackage, zxcvbnDePackage] =
-        await Promise.all([
-          import('@zxcvbn-ts/core'),
-          import('@zxcvbn-ts/language-common'),
-          import('@zxcvbn-ts/language-de'),
-        ]);
+      const [{ zxcvbn, zxcvbnOptions }, zxcvbnCommonPackage, zxcvbnDePackage] = await Promise.all([
+        import('@zxcvbn-ts/core'),
+        import('@zxcvbn-ts/language-common'),
+        import('@zxcvbn-ts/language-de'),
+      ]);
 
       // Configure German language
       const options = {
@@ -202,9 +199,7 @@ export async function analyzePassword(
     label: getStrengthLabel(result.score),
     color: getStrengthColor(result.score),
     className: getStrengthClass(result.score),
-    crackTime: formatCrackTime(
-      result.crackTimesDisplay.offlineSlowHashing1e4PerSecond,
-    ),
+    crackTime: formatCrackTime(result.crackTimesDisplay.offlineSlowHashing1e4PerSecond),
     feedback: {
       warning: result.feedback.warning ?? '',
       suggestions: result.feedback.suggestions,

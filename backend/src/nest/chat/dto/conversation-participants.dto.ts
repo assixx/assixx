@@ -10,9 +10,7 @@ export const AddParticipantsBodySchema = z.object({
     .min(1, 'At least one participant is required'),
 });
 
-export class AddParticipantsDto extends createZodDto(
-  AddParticipantsBodySchema,
-) {}
+export class AddParticipantsDto extends createZodDto(AddParticipantsBodySchema) {}
 
 // Type exports
 export type AddParticipantsBody = z.infer<typeof AddParticipantsBodySchema>;

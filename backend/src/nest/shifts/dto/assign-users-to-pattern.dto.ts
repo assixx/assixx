@@ -20,14 +20,10 @@ const AssignmentItemSchema = z.object({
  */
 export const AssignUsersToPatternSchema = z.object({
   patternId: z.number().int().positive('Pattern ID is required'),
-  assignments: z
-    .array(AssignmentItemSchema)
-    .min(1, 'At least one assignment is required'),
+  assignments: z.array(AssignmentItemSchema).min(1, 'At least one assignment is required'),
   teamId: z.number().int().positive().nullable().optional(),
   startsAt: ShiftDateSchema,
   endsAt: ShiftDateSchema.optional(),
 });
 
-export class AssignUsersToPatternDto extends createZodDto(
-  AssignUsersToPatternSchema,
-) {}
+export class AssignUsersToPatternDto extends createZodDto(AssignUsersToPatternSchema) {}

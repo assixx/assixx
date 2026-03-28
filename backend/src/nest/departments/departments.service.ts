@@ -5,12 +5,7 @@
  * Status: 0=inactive, 1=active, 3=archived, 4=deleted
  */
 import { IS_ACTIVE } from '@assixx/shared/constants';
-import {
-  BadRequestException,
-  Injectable,
-  Logger,
-  NotFoundException,
-} from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { v7 as uuidv7 } from 'uuid';
 
 import { getErrorMessage } from '../common/index.js';
@@ -28,17 +23,22 @@ export interface DepartmentRow {
   name: string;
   description: string | null;
   department_lead_id: number | null;
+  department_deputy_lead_id: number | null;
   area_id: number | null;
   is_active: number;
   tenant_id: number;
   created_at: Date;
   updated_at: Date;
   department_lead_name: string | undefined;
+  department_deputy_lead_name: string | undefined;
   areaName: string | undefined;
   employee_count: number | undefined;
   employee_names: string | undefined;
   team_count: number | undefined;
   team_names: string | undefined;
+  hall_ids: number[] | undefined;
+  hall_names: string | undefined;
+  hall_count: number | undefined;
 }
 
 /**
@@ -49,17 +49,22 @@ export interface DepartmentResponse {
   name: string;
   description: string | undefined;
   departmentLeadId: number | undefined;
+  departmentDeputyLeadId: number | undefined;
   areaId: number | undefined;
   isActive: number;
   tenantId: number;
   createdAt: string | undefined;
   updatedAt: string | undefined;
   departmentLeadName: string | undefined;
+  departmentDeputyLeadName: string | undefined;
   areaName: string | undefined;
   employeeCount: number | undefined;
   employeeNames: string | undefined;
   teamCount: number | undefined;
   teamNames: string | undefined;
+  hallIds: number[] | undefined;
+  hallNames: string | undefined;
+  hallCount: number | undefined;
 }
 
 /**
@@ -141,50 +146,72 @@ export class DepartmentsService {
       SELECT department_id, COUNT(*) as count,
         STRING_AGG(name, E'\\n' ORDER BY name) as names
       FROM teams GROUP BY department_id
+    ),
+    hall_assignments AS (
+      SELECT dh.department_id,
+        ARRAY_AGG(dh.hall_id ORDER BY h.name) as hall_ids,
+        COUNT(*) as count,
+        STRING_AGG(h.name, E'\\n' ORDER BY h.name) as names
+      FROM department_halls dh
+      JOIN halls h ON dh.hall_id = h.id
+      WHERE dh.tenant_id = $1
+      GROUP BY dh.department_id
     )
-    SELECT d.*, CONCAT(COALESCE(u.first_name, ''), ' ', COALESCE(u.last_name, '')) as department_lead_name, a.name as "areaName",
+    SELECT d.*,
+      CONCAT(COALESCE(u.first_name, ''), ' ', COALESCE(u.last_name, '')) as department_lead_name,
+      NULLIF(TRIM(CONCAT(COALESCE(du.first_name, ''), ' ', COALESCE(du.last_name, ''))), '') as department_deputy_lead_name,
+      a.name as "areaName",
       COALESCE(ec.count, 0) as employee_count, COALESCE(ec.names, '') as employee_names,
-      COALESCE(tc.count, 0) as team_count, COALESCE(tc.names, '') as team_names
+      COALESCE(tc.count, 0) as team_count, COALESCE(tc.names, '') as team_names,
+      ha.hall_ids, COALESCE(ha.count, 0) as hall_count, COALESCE(ha.names, '') as hall_names
     FROM departments d
     LEFT JOIN users u ON d.department_lead_id = u.id
+    LEFT JOIN users du ON d.department_deputy_lead_id = du.id
     LEFT JOIN areas a ON d.area_id = a.id
     LEFT JOIN employee_counts ec ON ec.department_id = d.id
     LEFT JOIN team_counts tc ON tc.department_id = d.id
+    LEFT JOIN hall_assignments ha ON ha.department_id = d.id
     WHERE d.tenant_id = $2 AND d.is_active IN (${IS_ACTIVE.INACTIVE}, ${IS_ACTIVE.ACTIVE}, ${IS_ACTIVE.ARCHIVED})
     ORDER BY d.name`;
 
   /**
    * Map database row to API response
    */
-  private mapToResponse(
-    dept: DepartmentRow,
-    includeExtended: boolean,
-  ): DepartmentResponse {
+  private mapToResponse(dept: DepartmentRow, includeExtended: boolean): DepartmentResponse {
     const response: DepartmentResponse = {
       id: dept.id,
       name: dept.name,
       description: dept.description ?? undefined,
       departmentLeadId: dept.department_lead_id ?? undefined,
+      departmentDeputyLeadId: dept.department_deputy_lead_id ?? undefined,
       areaId: dept.area_id ?? undefined,
       isActive: dept.is_active,
       tenantId: dept.tenant_id,
       createdAt: dept.created_at.toISOString(),
       updatedAt: dept.updated_at.toISOString(),
       departmentLeadName: undefined,
+      departmentDeputyLeadName: undefined,
       areaName: undefined,
       employeeCount: undefined,
       employeeNames: undefined,
       teamCount: undefined,
       teamNames: undefined,
+      hallIds: undefined,
+      hallNames: undefined,
+      hallCount: undefined,
     };
 
     if (includeExtended) {
       response.departmentLeadName = dept.department_lead_name;
+      response.departmentDeputyLeadName = dept.department_deputy_lead_name;
       response.areaName = dept.areaName;
       response.employeeCount = dept.employee_count;
       response.employeeNames = dept.employee_names;
       response.teamCount = dept.team_count;
       response.teamNames = dept.team_names;
+      response.hallIds = dept.hall_ids ?? [];
+      response.hallNames = dept.hall_names;
+      response.hallCount = dept.hall_count;
     }
 
     return response;
@@ -200,17 +227,12 @@ export class DepartmentsService {
     this.logger.debug(`Fetching departments for tenant ${tenantId}`);
 
     const scope = await this.scopeService.getScope();
-    if (
-      scope.type === 'none' ||
-      (scope.type === 'limited' && scope.departmentIds.length === 0)
-    ) {
+    if (scope.type === 'none' || (scope.type === 'limited' && scope.departmentIds.length === 0)) {
       return [];
     }
 
-    const scopeFilter =
-      scope.type === 'limited' ? ` AND d.id = ANY($3::int[])` : '';
-    const scopeParams: unknown[] =
-      scope.type === 'limited' ? [scope.departmentIds] : [];
+    const scopeFilter = scope.type === 'limited' ? ` AND d.id = ANY($3::int[])` : '';
+    const scopeParams: unknown[] = scope.type === 'limited' ? [scope.departmentIds] : [];
 
     try {
       const rows = await this.db.query<DepartmentRow>(
@@ -218,16 +240,11 @@ export class DepartmentsService {
         [tenantId, tenantId, ...scopeParams],
       );
 
-      return rows.map((dept: DepartmentRow) =>
-        this.mapToResponse(dept, includeExtended),
-      );
+      return rows.map((dept: DepartmentRow) => this.mapToResponse(dept, includeExtended));
     } catch (error: unknown) {
-      this.logger.warn(
-        `Extended query failed, using simple query: ${getErrorMessage(error)}`,
-      );
+      this.logger.warn(`Extended query failed, using simple query: ${getErrorMessage(error)}`);
 
-      const simpleScope =
-        scope.type === 'limited' ? ` AND id = ANY($2::int[])` : '';
+      const simpleScope = scope.type === 'limited' ? ` AND id = ANY($2::int[])` : '';
       const rows = await this.db.query<DepartmentRow>(
         `SELECT * FROM departments WHERE tenant_id = $1 AND is_active IN (${IS_ACTIVE.INACTIVE}, ${IS_ACTIVE.ACTIVE}, ${IS_ACTIVE.ARCHIVED})${simpleScope} ORDER BY name`,
         [tenantId, ...scopeParams],
@@ -254,32 +271,46 @@ export class DepartmentsService {
       SELECT department_id, COUNT(*) as count,
         STRING_AGG(name, E'\\n' ORDER BY name) as names
       FROM teams GROUP BY department_id
+    ),
+    hall_assignments AS (
+      SELECT dh.department_id,
+        ARRAY_AGG(dh.hall_id ORDER BY h.name) as hall_ids,
+        COUNT(*) as count,
+        STRING_AGG(h.name, E'\\n' ORDER BY h.name) as names
+      FROM department_halls dh
+      JOIN halls h ON dh.hall_id = h.id
+      WHERE dh.tenant_id = $1
+      GROUP BY dh.department_id
     )
-    SELECT d.*, CONCAT(COALESCE(u.first_name, ''), ' ', COALESCE(u.last_name, '')) as department_lead_name, a.name as "areaName",
+    SELECT d.*,
+      CONCAT(COALESCE(u.first_name, ''), ' ', COALESCE(u.last_name, '')) as department_lead_name,
+      NULLIF(TRIM(CONCAT(COALESCE(du.first_name, ''), ' ', COALESCE(du.last_name, ''))), '') as department_deputy_lead_name,
+      a.name as "areaName",
       COALESCE(ec.count, 0) as employee_count, COALESCE(ec.names, '') as employee_names,
-      COALESCE(tc.count, 0) as team_count, COALESCE(tc.names, '') as team_names
+      COALESCE(tc.count, 0) as team_count, COALESCE(tc.names, '') as team_names,
+      ha.hall_ids, COALESCE(ha.count, 0) as hall_count, COALESCE(ha.names, '') as hall_names
     FROM departments d
     LEFT JOIN users u ON d.department_lead_id = u.id
+    LEFT JOIN users du ON d.department_deputy_lead_id = du.id
     LEFT JOIN areas a ON d.area_id = a.id
     LEFT JOIN employee_counts ec ON ec.department_id = d.id
     LEFT JOIN team_counts tc ON tc.department_id = d.id
+    LEFT JOIN hall_assignments ha ON ha.department_id = d.id
     WHERE d.id = $2 AND d.tenant_id = $3`;
 
   /**
    * Get a single department by ID
    * Note: Does NOT filter by is_active to allow fetching inactive/archived departments
    */
-  async getDepartmentById(
-    id: number,
-    tenantId: number,
-  ): Promise<DepartmentResponse> {
+  async getDepartmentById(id: number, tenantId: number): Promise<DepartmentResponse> {
     this.logger.debug(`Fetching department ${id} for tenant ${tenantId}`);
 
     try {
-      const rows = await this.db.query<DepartmentRow>(
-        this.FIND_DEPARTMENT_BY_ID_QUERY,
-        [tenantId, id, tenantId],
-      );
+      const rows = await this.db.query<DepartmentRow>(this.FIND_DEPARTMENT_BY_ID_QUERY, [
+        tenantId,
+        id,
+        tenantId,
+      ]);
 
       if (rows.length === 0 || rows[0] === undefined) {
         throw new NotFoundException(ERROR_DEPARTMENT_NOT_FOUND);
@@ -290,9 +321,7 @@ export class DepartmentsService {
       if (error instanceof NotFoundException) {
         throw error;
       }
-      this.logger.warn(
-        `Extended query failed, using simple query: ${getErrorMessage(error)}`,
-      );
+      this.logger.warn(`Extended query failed, using simple query: ${getErrorMessage(error)}`);
 
       const rows = await this.db.query<DepartmentRow>(
         'SELECT * FROM departments WHERE id = $1 AND tenant_id = $2',
@@ -322,9 +351,7 @@ export class DepartmentsService {
       );
 
       if (existing.length > 0) {
-        this.logger.log(
-          `Leader ${leaderId} already assigned to department ${departmentId}`,
-        );
+        this.logger.log(`Leader ${leaderId} already assigned to department ${departmentId}`);
         return;
       }
 
@@ -335,9 +362,7 @@ export class DepartmentsService {
       );
       this.logger.log(`Added leader ${leaderId} to department ${departmentId}`);
     } catch (error: unknown) {
-      this.logger.error(
-        `Error ensuring leader in department: ${getErrorMessage(error)}`,
-      );
+      this.logger.error(`Error ensuring leader in department: ${getErrorMessage(error)}`);
     }
   }
 
@@ -362,9 +387,7 @@ export class DepartmentsService {
 
     const user = rows[0];
     if (user?.role !== 'admin' && user?.role !== 'root') {
-      throw new BadRequestException(
-        'Department leader must have role "admin" or "root"',
-      );
+      throw new BadRequestException('Department leader must have role "admin" or "root"');
     }
   }
 
@@ -383,18 +406,20 @@ export class DepartmentsService {
     }
 
     await this.validateLeader(dto.departmentLeadId, tenantId);
+    await this.validateLeader(dto.departmentDeputyLeadId, tenantId);
 
     const isActive = dto.isActive ?? 1;
 
     const departmentUuid = uuidv7();
     const rows = await this.db.query<{ id: number }>(
-      `INSERT INTO departments (name, description, department_lead_id, area_id, is_active, tenant_id, uuid, uuid_created_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
+      `INSERT INTO departments (name, description, department_lead_id, department_deputy_lead_id, area_id, is_active, tenant_id, uuid, uuid_created_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
        RETURNING id`,
       [
         dto.name,
         dto.description,
         dto.departmentLeadId,
+        dto.departmentDeputyLeadId ?? null,
         dto.areaId,
         isActive,
         tenantId,
@@ -409,11 +434,7 @@ export class DepartmentsService {
     const departmentId = rows[0].id;
 
     if (dto.departmentLeadId !== undefined && dto.departmentLeadId !== null) {
-      await this.ensureLeaderInDepartment(
-        dto.departmentLeadId,
-        departmentId,
-        tenantId,
-      );
+      await this.ensureLeaderInDepartment(dto.departmentLeadId, departmentId, tenantId);
     }
 
     const result = await this.getDepartmentById(departmentId, tenantId);
@@ -428,6 +449,7 @@ export class DepartmentsService {
         name: dto.name,
         description: dto.description,
         departmentLeadId: dto.departmentLeadId,
+        departmentDeputyLeadId: dto.departmentDeputyLeadId,
         areaId: dto.areaId,
       },
     );
@@ -449,6 +471,7 @@ export class DepartmentsService {
       ['name', 'name'],
       ['description', 'description'],
       ['departmentLeadId', 'department_lead_id'],
+      ['departmentDeputyLeadId', 'department_deputy_lead_id'],
       ['areaId', 'area_id'],
       ['isActive', 'is_active'],
     ];
@@ -489,11 +512,13 @@ export class DepartmentsService {
       name: existingDept?.name,
       description: existingDept?.description,
       departmentLeadId: existingDept?.department_lead_id,
+      departmentDeputyLeadId: existingDept?.department_deputy_lead_id,
       areaId: existingDept?.area_id,
       isActive: existingDept?.is_active,
     };
 
     await this.validateLeader(dto.departmentLeadId, tenantId);
+    await this.validateLeader(dto.departmentDeputyLeadId, tenantId);
 
     const { fields, values } = this.buildUpdateFields(dto);
     if (fields.length > 0) {
@@ -513,6 +538,7 @@ export class DepartmentsService {
       name: dto.name,
       description: dto.description,
       departmentLeadId: dto.departmentLeadId,
+      departmentDeputyLeadId: dto.departmentDeputyLeadId,
       areaId: dto.areaId,
       isActive: dto.isActive,
     };
@@ -567,9 +593,7 @@ export class DepartmentsService {
     ];
 
     const counts = await Promise.all(
-      tables.map((table: string) =>
-        this.countDependencies(table, id, tenantId),
-      ),
+      tables.map((table: string) => this.countDependencies(table, id, tenantId)),
     );
 
     return {
@@ -603,10 +627,10 @@ export class DepartmentsService {
         [departmentId, tenantId],
       );
     } else {
-      await this.db.query(
-        `DELETE FROM ${tableName} WHERE department_id = $1 AND tenant_id = $2`,
-        [departmentId, tenantId],
-      );
+      await this.db.query(`DELETE FROM ${tableName} WHERE department_id = $1 AND tenant_id = $2`, [
+        departmentId,
+        tenantId,
+      ]);
     }
   }
 
@@ -743,10 +767,7 @@ export class DepartmentsService {
   /**
    * Get department members
    */
-  async getDepartmentMembers(
-    id: number,
-    tenantId: number,
-  ): Promise<DepartmentMember[]> {
+  async getDepartmentMembers(id: number, tenantId: number): Promise<DepartmentMember[]> {
     this.logger.debug(`Fetching members for department ${id}`);
 
     const existing = await this.db.query<DepartmentRow>(
@@ -792,6 +813,54 @@ export class DepartmentsService {
   }
 
   /**
+   * Assign halls to a department (clear-then-reassign)
+   */
+  async assignHallsToDepartment(
+    departmentId: number,
+    hallIds: number[],
+    tenantId: number,
+    assignedBy: number,
+  ): Promise<{ message: string }> {
+    this.logger.log(`Assigning ${hallIds.length} halls to department ${departmentId}`);
+
+    await this.getDepartmentById(departmentId, tenantId);
+
+    await this.db.query(
+      `DELETE FROM department_halls WHERE tenant_id = $1 AND department_id = $2`,
+      [tenantId, departmentId],
+    );
+
+    if (hallIds.length > 0) {
+      const values: unknown[] = [tenantId, departmentId, assignedBy];
+      const rows = hallIds
+        .map((_: number, i: number) => {
+          values.push(hallIds[i]);
+          return `($1, $2, $${i + 4}, $3, NOW())`;
+        })
+        .join(', ');
+
+      await this.db.query(
+        `INSERT INTO department_halls (tenant_id, department_id, hall_id, assigned_by, assigned_at)
+         VALUES ${rows}`,
+        values,
+      );
+    }
+
+    return { message: 'Halls assigned to department successfully' };
+  }
+
+  /**
+   * Get hall IDs assigned to a department
+   */
+  async getDepartmentHallIds(departmentId: number, tenantId: number): Promise<number[]> {
+    const rows = await this.db.query<{ hall_id: number }>(
+      `SELECT hall_id FROM department_halls WHERE department_id = $1 AND tenant_id = $2`,
+      [departmentId, tenantId],
+    );
+    return rows.map((r: { hall_id: number }) => r.hall_id);
+  }
+
+  /**
    * Get department statistics
    */
   async getDepartmentStats(tenantId: number): Promise<DepartmentStats> {
@@ -802,14 +871,12 @@ export class DepartmentsService {
     }
 
     const [deptRows, teamRows] = await Promise.all([
-      this.db.query<CountResult>(
-        'SELECT COUNT(*) as count FROM departments WHERE tenant_id = $1',
-        [tenantId],
-      ),
-      this.db.query<CountResult>(
-        'SELECT COUNT(*) as count FROM teams WHERE tenant_id = $1',
-        [tenantId],
-      ),
+      this.db.query<CountResult>('SELECT COUNT(*) as count FROM departments WHERE tenant_id = $1', [
+        tenantId,
+      ]),
+      this.db.query<CountResult>('SELECT COUNT(*) as count FROM teams WHERE tenant_id = $1', [
+        tenantId,
+      ]),
     ]);
 
     return {

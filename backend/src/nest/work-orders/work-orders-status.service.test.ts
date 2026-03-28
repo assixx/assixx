@@ -287,18 +287,18 @@ describe('WorkOrderStatusService', () => {
         rows: [createWorkOrderRow({ status: 'open' })],
       });
 
-      await expect(
-        service.updateStatus(TENANT_ID, USER_ID, WO_UUID, 'verified'),
-      ).rejects.toThrow(BadRequestException);
+      await expect(service.updateStatus(TENANT_ID, USER_ID, WO_UUID, 'verified')).rejects.toThrow(
+        BadRequestException,
+      );
 
       // Reset for message check
       mockClient.query.mockResolvedValueOnce({
         rows: [createWorkOrderRow({ status: 'open' })],
       });
 
-      await expect(
-        service.updateStatus(TENANT_ID, USER_ID, WO_UUID, 'verified'),
-      ).rejects.toThrow('Ungültiger Statusübergang');
+      await expect(service.updateStatus(TENANT_ID, USER_ID, WO_UUID, 'verified')).rejects.toThrow(
+        'Ungültiger Statusübergang',
+      );
     });
 
     it('should throw BadRequestException for in_progress → open (invalid)', async () => {
@@ -306,9 +306,9 @@ describe('WorkOrderStatusService', () => {
         rows: [createWorkOrderRow({ status: 'in_progress' })],
       });
 
-      await expect(
-        service.updateStatus(TENANT_ID, USER_ID, WO_UUID, 'open'),
-      ).rejects.toThrow(BadRequestException);
+      await expect(service.updateStatus(TENANT_ID, USER_ID, WO_UUID, 'open')).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('should throw BadRequestException for in_progress → verified (invalid)', async () => {
@@ -316,9 +316,9 @@ describe('WorkOrderStatusService', () => {
         rows: [createWorkOrderRow({ status: 'in_progress' })],
       });
 
-      await expect(
-        service.updateStatus(TENANT_ID, USER_ID, WO_UUID, 'verified'),
-      ).rejects.toThrow(BadRequestException);
+      await expect(service.updateStatus(TENANT_ID, USER_ID, WO_UUID, 'verified')).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('should throw BadRequestException for verified → open (invalid)', async () => {
@@ -326,9 +326,9 @@ describe('WorkOrderStatusService', () => {
         rows: [createWorkOrderRow({ status: 'verified' })],
       });
 
-      await expect(
-        service.updateStatus(TENANT_ID, USER_ID, WO_UUID, 'open'),
-      ).rejects.toThrow(BadRequestException);
+      await expect(service.updateStatus(TENANT_ID, USER_ID, WO_UUID, 'open')).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('should throw BadRequestException for verified → in_progress (invalid)', async () => {
@@ -359,9 +359,9 @@ describe('WorkOrderStatusService', () => {
         rows: [createWorkOrderRow({ status: 'open' })],
       });
 
-      await expect(
-        service.updateStatus(TENANT_ID, USER_ID, WO_UUID, 'verified'),
-      ).rejects.toThrow(BadRequestException);
+      await expect(service.updateStatus(TENANT_ID, USER_ID, WO_UUID, 'verified')).rejects.toThrow(
+        BadRequestException,
+      );
 
       // Only the lock query should have been called
       expect(mockClient.query).toHaveBeenCalledTimes(1);
@@ -378,9 +378,7 @@ describe('WorkOrderStatusService', () => {
     it('should verify a completed work order', async () => {
       // 1. lockAndValidate (SELECT FOR UPDATE)
       mockClient.query.mockResolvedValueOnce({
-        rows: [
-          createWorkOrderRow({ status: 'completed', title: 'Leckage beheben' }),
-        ],
+        rows: [createWorkOrderRow({ status: 'completed', title: 'Leckage beheben' })],
       });
       // 2. Direct UPDATE (status, verified_at, verified_by)
       mockClient.query.mockResolvedValueOnce({ rows: [] });
@@ -394,9 +392,7 @@ describe('WorkOrderStatusService', () => {
 
     it('should set verified_at and verified_by in the UPDATE query', async () => {
       mockClient.query.mockResolvedValueOnce({
-        rows: [
-          createWorkOrderRow({ status: 'completed', title: 'Leckage beheben' }),
-        ],
+        rows: [createWorkOrderRow({ status: 'completed', title: 'Leckage beheben' })],
       });
       mockClient.query.mockResolvedValueOnce({ rows: [] });
       mockClient.query.mockResolvedValueOnce({ rows: [] });
@@ -437,9 +433,7 @@ describe('WorkOrderStatusService', () => {
 
     it('should call activityLogger.logUpdate with verification details', async () => {
       mockClient.query.mockResolvedValueOnce({
-        rows: [
-          createWorkOrderRow({ status: 'completed', title: 'Leckage beheben' }),
-        ],
+        rows: [createWorkOrderRow({ status: 'completed', title: 'Leckage beheben' })],
       });
       mockClient.query.mockResolvedValueOnce({ rows: [] });
       mockClient.query.mockResolvedValueOnce({ rows: [] });
@@ -462,9 +456,9 @@ describe('WorkOrderStatusService', () => {
     it('should throw NotFoundException when work order not found', async () => {
       mockClient.query.mockResolvedValueOnce({ rows: [] });
 
-      await expect(
-        service.verifyWorkOrder(TENANT_ID, ADMIN_USER_ID, WO_UUID),
-      ).rejects.toThrow('Arbeitsauftrag nicht gefunden');
+      await expect(service.verifyWorkOrder(TENANT_ID, ADMIN_USER_ID, WO_UUID)).rejects.toThrow(
+        'Arbeitsauftrag nicht gefunden',
+      );
     });
 
     // ---- BadRequestException when not completed --------------------
@@ -474,17 +468,17 @@ describe('WorkOrderStatusService', () => {
         rows: [createWorkOrderRow({ status: 'open' })],
       });
 
-      await expect(
-        service.verifyWorkOrder(TENANT_ID, ADMIN_USER_ID, WO_UUID),
-      ).rejects.toThrow(BadRequestException);
+      await expect(service.verifyWorkOrder(TENANT_ID, ADMIN_USER_ID, WO_UUID)).rejects.toThrow(
+        BadRequestException,
+      );
 
       mockClient.query.mockResolvedValueOnce({
         rows: [createWorkOrderRow({ status: 'open' })],
       });
 
-      await expect(
-        service.verifyWorkOrder(TENANT_ID, ADMIN_USER_ID, WO_UUID),
-      ).rejects.toThrow('Ungültiger Statusübergang');
+      await expect(service.verifyWorkOrder(TENANT_ID, ADMIN_USER_ID, WO_UUID)).rejects.toThrow(
+        'Ungültiger Statusübergang',
+      );
     });
 
     it('should throw BadRequestException when status is in_progress', async () => {
@@ -492,9 +486,9 @@ describe('WorkOrderStatusService', () => {
         rows: [createWorkOrderRow({ status: 'in_progress' })],
       });
 
-      await expect(
-        service.verifyWorkOrder(TENANT_ID, ADMIN_USER_ID, WO_UUID),
-      ).rejects.toThrow(BadRequestException);
+      await expect(service.verifyWorkOrder(TENANT_ID, ADMIN_USER_ID, WO_UUID)).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('should throw BadRequestException when status is already verified', async () => {
@@ -503,9 +497,9 @@ describe('WorkOrderStatusService', () => {
       });
 
       // verified → verified is not a valid transition
-      await expect(
-        service.verifyWorkOrder(TENANT_ID, ADMIN_USER_ID, WO_UUID),
-      ).rejects.toThrow(BadRequestException);
+      await expect(service.verifyWorkOrder(TENANT_ID, ADMIN_USER_ID, WO_UUID)).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     // ---- No side effects on error ----------------------------------
@@ -513,9 +507,9 @@ describe('WorkOrderStatusService', () => {
     it('should not execute UPDATE or comment INSERT when WO not found', async () => {
       mockClient.query.mockResolvedValueOnce({ rows: [] });
 
-      await expect(
-        service.verifyWorkOrder(TENANT_ID, ADMIN_USER_ID, WO_UUID),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.verifyWorkOrder(TENANT_ID, ADMIN_USER_ID, WO_UUID)).rejects.toThrow(
+        NotFoundException,
+      );
 
       expect(mockClient.query).toHaveBeenCalledTimes(1);
     });
@@ -525,9 +519,9 @@ describe('WorkOrderStatusService', () => {
         rows: [createWorkOrderRow({ status: 'open' })],
       });
 
-      await expect(
-        service.verifyWorkOrder(TENANT_ID, ADMIN_USER_ID, WO_UUID),
-      ).rejects.toThrow(BadRequestException);
+      await expect(service.verifyWorkOrder(TENANT_ID, ADMIN_USER_ID, WO_UUID)).rejects.toThrow(
+        BadRequestException,
+      );
 
       expect(mockClient.query).toHaveBeenCalledTimes(1);
     });

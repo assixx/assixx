@@ -7,12 +7,7 @@
  * IMPORTANT: Uses PostgreSQL $1, $2, $3 placeholders (NOT MySQL's ?)
  */
 import { IS_ACTIVE } from '@assixx/shared/constants';
-import {
-  BadRequestException,
-  ConflictException,
-  Injectable,
-  Logger,
-} from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, Logger } from '@nestjs/common';
 import bcrypt from 'bcryptjs';
 import { randomBytes } from 'crypto';
 import type { PoolClient, QueryResultRow } from 'pg';
@@ -20,11 +15,7 @@ import { v7 as uuidv7 } from 'uuid';
 
 import { AppConfigService } from '../config/config.service.js';
 import { DatabaseService } from '../database/database.service.js';
-import type {
-  SignupDto,
-  SignupResponseData,
-  SubdomainCheckResponseData,
-} from './dto/index.js';
+import type { SignupDto, SignupResponseData, SubdomainCheckResponseData } from './dto/index.js';
 
 // ============================================================================
 // CONSTANTS
@@ -37,16 +28,7 @@ const ERROR_CODES = {
   CHECK_FAILED: 'CHECK_FAILED',
 } as const;
 
-const RESERVED_SUBDOMAINS = [
-  'www',
-  'api',
-  'admin',
-  'app',
-  'mail',
-  'ftp',
-  'test',
-  'dev',
-];
+const RESERVED_SUBDOMAINS = ['www', 'api', 'admin', 'app', 'mail', 'ftp', 'test', 'dev'];
 const TRIAL_DAYS = 14;
 
 // ============================================================================
@@ -215,9 +197,7 @@ export class SignupService {
   /**
    * Check if a subdomain is available for registration
    */
-  async checkSubdomainAvailability(
-    subdomain: string,
-  ): Promise<SubdomainCheckResponseData> {
+  async checkSubdomainAvailability(subdomain: string): Promise<SubdomainCheckResponseData> {
     // Validate subdomain format first
     const validation = this.validateSubdomain(subdomain);
     if (!validation.valid) {
@@ -282,10 +262,9 @@ export class SignupService {
    * Check if subdomain is available in database
    */
   private async isSubdomainAvailable(subdomain: string): Promise<boolean> {
-    const rows = await this.db.query<DbIdResult>(
-      'SELECT id FROM tenants WHERE subdomain = $1',
-      [subdomain],
-    );
+    const rows = await this.db.query<DbIdResult>('SELECT id FROM tenants WHERE subdomain = $1', [
+      subdomain,
+    ]);
     return rows.length === 0;
   }
 
@@ -325,10 +304,7 @@ export class SignupService {
 
     // Generate employee_id
     const employeeId = this.generateEmployeeId(dto.subdomain, 'root', userId);
-    await client.query('UPDATE users SET employee_id = $1 WHERE id = $2', [
-      employeeId,
-      userId,
-    ]);
+    await client.query('UPDATE users SET employee_id = $1 WHERE id = $2', [employeeId, userId]);
 
     return userId;
   }
@@ -339,10 +315,7 @@ export class SignupService {
    * Dev mode: activate ALL purchasable addons for convenience.
    * Production: no auto-activation — admin activates via addon store.
    */
-  private async activateTrialAddons(
-    client: PoolClient,
-    tenantId: number,
-  ): Promise<void> {
+  private async activateTrialAddons(client: PoolClient, tenantId: number): Promise<void> {
     if (!this.config.isDevelopment) {
       return;
     }
@@ -389,11 +362,7 @@ export class SignupService {
   /**
    * Generate employee ID
    */
-  private generateEmployeeId(
-    subdomain: string,
-    role: string,
-    userId: number,
-  ): string {
+  private generateEmployeeId(subdomain: string, role: string, userId: number): string {
     const prefix = subdomain.substring(0, 3).toUpperCase();
     const rolePrefix =
       role === 'root' ? 'R'

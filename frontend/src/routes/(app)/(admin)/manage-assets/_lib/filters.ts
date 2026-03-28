@@ -5,10 +5,7 @@
 import type { Asset, AssetStatusFilter } from './types';
 
 /** Filter assets by status */
-export function filterByStatus(
-  assets: Asset[],
-  status: AssetStatusFilter,
-): Asset[] {
+export function filterByStatus(assets: Asset[], status: AssetStatusFilter): Asset[] {
   if (status === 'all') {
     return assets;
   }

@@ -14,22 +14,24 @@ import type { ConnectionTicketData } from './connection-ticket.service.js';
 // Module mocks
 // =============================================================
 
-const { mockRedisInstance } = vi.hoisted(() => ({
-  mockRedisInstance: {
+const { mockRedisInstance, mockRedisConstructor } = vi.hoisted(() => {
+  const instance = {
     setex: vi.fn().mockResolvedValue('OK'),
     eval: vi.fn().mockResolvedValue(null),
     exists: vi.fn().mockResolvedValue(0),
     quit: vi.fn().mockResolvedValue('OK'),
     on: vi.fn(),
-  },
-}));
+  };
 
-vi.mock('ioredis', () => {
-  const FakeRedis = vi.fn(function FakeRedis() {
-    return mockRedisInstance;
+  const ctor = vi.fn(function FakeRedis() {
+    return instance;
   });
-  return { Redis: FakeRedis };
+  return { mockRedisInstance: instance, mockRedisConstructor: ctor };
 });
+
+vi.mock('ioredis', () => ({
+  Redis: mockRedisConstructor,
+}));
 
 // =============================================================
 // Mock factories
@@ -70,6 +72,30 @@ describe('ConnectionTicketService', () => {
     vi.clearAllMocks();
     const mockConfig = createMockConfigService();
     service = new ConnectionTicketService(mockConfig as never);
+  });
+
+  // =============================================================
+  // constructor – Redis password
+  // =============================================================
+
+  describe('constructor', () => {
+    it('passes password to Redis when REDIS_PASSWORD is set', () => {
+      mockRedisConstructor.mockClear();
+      const mockConfig = {
+        get: vi.fn((key: string, defaultValue?: unknown) => {
+          if (key === 'REDIS_HOST') return 'localhost';
+          if (key === 'REDIS_PORT') return 6379;
+          if (key === 'REDIS_PASSWORD') return 'my-secret-pw';
+          return defaultValue;
+        }),
+      };
+
+      new ConnectionTicketService(mockConfig as never);
+
+      expect(mockRedisConstructor).toHaveBeenCalledWith(
+        expect.objectContaining({ password: 'my-secret-pw' }),
+      );
+    });
   });
 
   // =============================================================

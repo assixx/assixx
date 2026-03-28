@@ -13,6 +13,4 @@ export const SettingsFilterQuerySchema = z.object({
   search: z.string().optional(),
 });
 
-export class SettingsFilterQueryDto extends createZodDto(
-  SettingsFilterQuerySchema,
-) {}
+export class SettingsFilterQueryDto extends createZodDto(SettingsFilterQuerySchema) {}

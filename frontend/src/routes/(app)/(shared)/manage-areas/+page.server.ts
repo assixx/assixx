@@ -26,11 +26,7 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent, url }) => {
   }
 
   // Permission check: first fetch detects 403 (ADR-020 pattern)
-  const areasResult = await apiFetchWithPermission<Area[]>(
-    '/areas',
-    token,
-    fetch,
-  );
+  const areasResult = await apiFetchWithPermission<Area[]>('/areas', token, fetch);
   if (areasResult.permissionDenied) {
     return {
       permissionDenied: true as const,
@@ -42,22 +38,12 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent, url }) => {
   }
 
   // Parallel fetch remaining data (permission confirmed)
-  const [departmentsData, hallsData, adminsData, rootsData] = await Promise.all(
-    [
-      apiFetch<Department[]>('/departments', token, fetch),
-      apiFetch<Hall[]>('/halls', token, fetch),
-      apiFetch<AdminUser[]>(
-        '/users?role=admin&isActive=1&position=area_lead',
-        token,
-        fetch,
-      ),
-      apiFetch<AdminUser[]>(
-        '/users?role=root&isActive=1&position=area_lead',
-        token,
-        fetch,
-      ),
-    ],
-  );
+  const [departmentsData, hallsData, adminsData, rootsData] = await Promise.all([
+    apiFetch<Department[]>('/departments', token, fetch),
+    apiFetch<Hall[]>('/halls', token, fetch),
+    apiFetch<AdminUser[]>('/users?role=admin&isActive=1&position=area_lead', token, fetch),
+    apiFetch<AdminUser[]>('/users?role=root&isActive=1&position=area_lead', token, fetch),
+  ]);
 
   const areas = Array.isArray(areasResult.data) ? areasResult.data : [];
   const departments = Array.isArray(departmentsData) ? departmentsData : [];

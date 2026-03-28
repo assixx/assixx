@@ -7,12 +7,7 @@
 <script lang="ts">
   import { createLogger } from '$lib/utils/logger';
 
-  import {
-    formatDate,
-    getStatusClass,
-    getStatusIcon,
-    getStatusText,
-  } from './helpers';
+  import { formatDate, getStatusClass, getStatusIcon, getStatusText } from './helpers';
 
   const log = createLogger('DeleteConfirmationModal');
 
@@ -100,13 +95,6 @@
     role="dialog"
     aria-modal="true"
     aria-labelledby="delete-modal-title"
-    tabindex="-1"
-    onclick={(e) => {
-      if (e.target === e.currentTarget) handleClose();
-    }}
-    onkeydown={(e) => {
-      if (e.key === 'Escape') handleClose();
-    }}
   >
     <div
       class="ds-modal"
@@ -172,8 +160,7 @@
             void handleDelete();
           }}
         >
-          {#if submitting}<span class="spinner-ring spinner-ring--sm mr-2"
-            ></span>{/if}
+          {#if submitting}<span class="spinner-ring spinner-ring--sm mr-2"></span>{/if}
           Löschen
         </button>
       </div>

@@ -5,8 +5,11 @@ export type OrgEntityType = 'area' | 'department' | 'team' | 'asset';
 export interface HierarchyLabels {
   hall: string;
   area: string;
+  areaLeadPrefix: string;
   department: string;
+  departmentLeadPrefix: string;
   team: string;
+  teamLeadPrefix: string;
   asset: string;
 }
 
@@ -65,6 +68,15 @@ export interface HallOverride {
   height: number;
 }
 
+/** Seite eines Rechtecks für Ankerpunkte */
+export type AnchorSide = 'top' | 'right' | 'bottom' | 'left';
+
+/** Ankerpunkt auf dem Rand einer Halle — side + t (0–1 entlang der Kante) */
+export interface PerimeterAnchor {
+  side: AnchorSide;
+  t: number;
+}
+
 /** Halle im Organigramm (mit oder ohne Area-Zuweisung) */
 export interface OrgTreeHall {
   uuid: string;
@@ -78,9 +90,14 @@ export interface OrgChartTree {
   hierarchyLabels: HierarchyLabels;
   viewport: OrgViewport;
   hallOverrides: Record<string, HallOverride>;
+  hallConnectionAnchors: Record<string, PerimeterAnchor>;
   canvasBg: string | null;
   nodes: OrgChartNode[];
   halls: OrgTreeHall[];
+  /** Maps department UUID → assigned hall UUIDs (from department_halls) */
+  departmentHallMap: Record<string, string[]>;
+  /** Maps team UUID → assigned hall UUIDs (from team_halls) */
+  teamHallMap: Record<string, string[]>;
 }
 
 /** DB row type for org_chart_positions table */
@@ -138,51 +155,10 @@ export interface OrgNodeDetail {
 export const DEFAULT_HIERARCHY_LABELS: HierarchyLabels = {
   hall: 'Hallen',
   area: 'Bereiche',
+  areaLeadPrefix: 'Bereichs',
   department: 'Abteilungen',
+  departmentLeadPrefix: 'Abteilungs',
   team: 'Teams',
+  teamLeadPrefix: 'Team',
   asset: 'Anlagen',
-};
-
-/** Kategorien für Position-Optionen — mapped auf users_role (ohne dummy) */
-export type PositionCategory = 'employee' | 'admin' | 'root';
-
-/** Position-Optionen pro Kategorie */
-export interface PositionOptions {
-  employee: string[];
-  admin: string[];
-  root: string[];
-}
-
-/** Default-Positionen wenn tenants.settings.positionOptions nicht gesetzt */
-export const DEFAULT_POSITION_OPTIONS: PositionOptions = {
-  employee: [
-    'Produktionsmitarbeiter',
-    'Anlagenbediener',
-    'Lagerarbeiter',
-    'Qualitätsprüfer',
-    'Schichtleiter',
-    'team_lead',
-    'Wartungstechniker',
-    'Sonstiges',
-  ],
-  admin: [
-    'area_lead',
-    'department_lead',
-    'Personalleiter',
-    'Geschäftsführer',
-    'Werksleiter',
-    'Produktionsleiter',
-    'Qualitätsleiter',
-    'IT-Leiter',
-    'Vertriebsleiter',
-    'Mitarbeiter',
-  ],
-  root: [
-    'CEO',
-    'CTO',
-    'CFO',
-    'Geschäftsführer',
-    'IT-Administrator',
-    'Systemadministrator',
-  ],
 };

@@ -6,5 +6,7 @@
   "verbose": true,
   "decamelize": true,
   "migration-filename-format": "utc",
-  "migration-file-language": "ts"
+  "migration-file-language": "ts",
+  "template-file-name": "database/migrations/template.ts",
+  "ignore-pattern": "template\\.ts"
 }

@@ -52,9 +52,7 @@ function createMockActivityLogger(): ActivityLoggerService {
   } as unknown as ActivityLoggerService;
 }
 
-function createCategory(
-  overrides?: Partial<PermissionCategoryDef>,
-): PermissionCategoryDef {
+function createCategory(overrides?: Partial<PermissionCategoryDef>): PermissionCategoryDef {
   return {
     code: 'blackboard',
     label: 'Schwarzes Brett',
@@ -218,9 +216,7 @@ describe('SECURITY: UserPermissionsService', () => {
 
         expect(modules).toHaveLength(3);
         // mod-a: has DB row
-        expect(modules?.[0]).toEqual(
-          expect.objectContaining({ code: 'mod-a', canRead: true }),
-        );
+        expect(modules?.[0]).toEqual(expect.objectContaining({ code: 'mod-a', canRead: true }));
         // mod-b: no DB row → defaults
         expect(modules?.[1]).toEqual(
           expect.objectContaining({
@@ -315,9 +311,7 @@ describe('SECURITY: UserPermissionsService', () => {
       });
 
       it('should return empty tree when no categories match tenant addons', async () => {
-        mockRegistry.getAll.mockReturnValue([
-          createCategory({ code: 'blackboard' }),
-        ]);
+        mockRegistry.getAll.mockReturnValue([createCategory({ code: 'blackboard' })]);
         mockDb.queryOne.mockResolvedValue({ id: 42 });
 
         // Tenant has calendar addon, but registry only knows blackboard
@@ -407,11 +401,7 @@ describe('SECURITY: UserPermissionsService', () => {
         const result = await service.getPermissions(1, 'user-uuid-1');
         const mod = result[0]?.modules[0];
 
-        expect(mod?.allowedPermissions).toEqual([
-          'canRead',
-          'canWrite',
-          'canDelete',
-        ]);
+        expect(mod?.allowedPermissions).toEqual(['canRead', 'canWrite', 'canDelete']);
         expect(mod).toHaveProperty('canRead');
         expect(mod).toHaveProperty('canWrite');
         expect(mod).toHaveProperty('canDelete');
@@ -422,9 +412,9 @@ describe('SECURITY: UserPermissionsService', () => {
       it('should throw NotFoundException when UUID does not resolve to a user', async () => {
         mockDb.queryOne.mockResolvedValue(null);
 
-        await expect(
-          service.getPermissions(1, 'nonexistent-uuid'),
-        ).rejects.toThrow(NotFoundException);
+        await expect(service.getPermissions(1, 'nonexistent-uuid')).rejects.toThrow(
+          NotFoundException,
+        );
       });
 
       it('should use tenantTransaction (not db.query) for tenant-scoped access', async () => {
@@ -488,11 +478,7 @@ describe('SECURITY: UserPermissionsService', () => {
       it('should execute UPSERT SQL with ON CONFLICT', async () => {
         mockDb.queryOne.mockResolvedValue({ id: 42 });
         mockRegistry.isValidModule.mockReturnValue(true);
-        mockRegistry.getAllowedPermissions.mockReturnValue([
-          'canRead',
-          'canWrite',
-          'canDelete',
-        ]);
+        mockRegistry.getAllowedPermissions.mockReturnValue(['canRead', 'canWrite', 'canDelete']);
         mockClient.query.mockResolvedValue({ rows: [] });
 
         await service.upsertPermissions(
@@ -519,11 +505,7 @@ describe('SECURITY: UserPermissionsService', () => {
       it('should pass correct values to UPSERT', async () => {
         mockDb.queryOne.mockResolvedValue({ id: 42 });
         mockRegistry.isValidModule.mockReturnValue(true);
-        mockRegistry.getAllowedPermissions.mockReturnValue([
-          'canRead',
-          'canWrite',
-          'canDelete',
-        ]);
+        mockRegistry.getAllowedPermissions.mockReturnValue(['canRead', 'canWrite', 'canDelete']);
         mockClient.query.mockResolvedValue({ rows: [] });
 
         await service.upsertPermissions(
@@ -554,11 +536,7 @@ describe('SECURITY: UserPermissionsService', () => {
       it('should set assignedBy from caller', async () => {
         mockDb.queryOne.mockResolvedValue({ id: 42 });
         mockRegistry.isValidModule.mockReturnValue(true);
-        mockRegistry.getAllowedPermissions.mockReturnValue([
-          'canRead',
-          'canWrite',
-          'canDelete',
-        ]);
+        mockRegistry.getAllowedPermissions.mockReturnValue(['canRead', 'canWrite', 'canDelete']);
         mockClient.query.mockResolvedValue({ rows: [] });
 
         await service.upsertPermissions(
@@ -585,11 +563,7 @@ describe('SECURITY: UserPermissionsService', () => {
       it('should handle multiple permissions in one call', async () => {
         mockDb.queryOne.mockResolvedValue({ id: 42 });
         mockRegistry.isValidModule.mockReturnValue(true);
-        mockRegistry.getAllowedPermissions.mockReturnValue([
-          'canRead',
-          'canWrite',
-          'canDelete',
-        ]);
+        mockRegistry.getAllowedPermissions.mockReturnValue(['canRead', 'canWrite', 'canDelete']);
         mockClient.query.mockResolvedValue({ rows: [] });
 
         await service.upsertPermissions(
@@ -638,11 +612,7 @@ describe('SECURITY: UserPermissionsService', () => {
       it('should capture existing permission state before upserting', async () => {
         mockDb.queryOne.mockResolvedValue({ id: 42 });
         mockRegistry.isValidModule.mockReturnValue(true);
-        mockRegistry.getAllowedPermissions.mockReturnValue([
-          'canRead',
-          'canWrite',
-          'canDelete',
-        ]);
+        mockRegistry.getAllowedPermissions.mockReturnValue(['canRead', 'canWrite', 'canDelete']);
 
         // capturePermissionState returns existing rows
         mockClient.query.mockResolvedValueOnce({
@@ -684,11 +654,7 @@ describe('SECURITY: UserPermissionsService', () => {
       it('should not log when upserted permissions are identical to existing state', async () => {
         mockDb.queryOne.mockResolvedValue({ id: 42 });
         mockRegistry.isValidModule.mockReturnValue(true);
-        mockRegistry.getAllowedPermissions.mockReturnValue([
-          'canRead',
-          'canWrite',
-          'canDelete',
-        ]);
+        mockRegistry.getAllowedPermissions.mockReturnValue(['canRead', 'canWrite', 'canDelete']);
 
         // Old state matches new values exactly → no diff
         mockClient.query.mockResolvedValueOnce({
@@ -757,10 +723,7 @@ describe('SECURITY: UserPermissionsService', () => {
       it('should force canDelete to false when not in allowedPermissions', async () => {
         mockDb.queryOne.mockResolvedValue({ id: 42 });
         mockRegistry.isValidModule.mockReturnValue(true);
-        mockRegistry.getAllowedPermissions.mockReturnValue([
-          'canRead',
-          'canWrite',
-        ]);
+        mockRegistry.getAllowedPermissions.mockReturnValue(['canRead', 'canWrite']);
         mockClient.query.mockResolvedValue({ rows: [] });
 
         await service.upsertPermissions(
@@ -815,11 +778,7 @@ describe('SECURITY: UserPermissionsService', () => {
       it('should keep all permissions when all are allowed', async () => {
         mockDb.queryOne.mockResolvedValue({ id: 42 });
         mockRegistry.isValidModule.mockReturnValue(true);
-        mockRegistry.getAllowedPermissions.mockReturnValue([
-          'canRead',
-          'canWrite',
-          'canDelete',
-        ]);
+        mockRegistry.getAllowedPermissions.mockReturnValue(['canRead', 'canWrite', 'canDelete']);
         mockClient.query.mockResolvedValue({ rows: [] });
 
         await service.upsertPermissions(
@@ -899,11 +858,7 @@ describe('SECURITY: UserPermissionsService', () => {
           .mockReturnValueOnce(true)
           .mockReturnValueOnce(false)
           .mockReturnValueOnce(true);
-        mockRegistry.getAllowedPermissions.mockReturnValue([
-          'canRead',
-          'canWrite',
-          'canDelete',
-        ]);
+        mockRegistry.getAllowedPermissions.mockReturnValue(['canRead', 'canWrite', 'canDelete']);
         mockClient.query.mockResolvedValue({ rows: [] });
 
         await expect(
@@ -968,11 +923,7 @@ describe('SECURITY: UserPermissionsService', () => {
       it('should use tenantTransaction (not db.query)', async () => {
         mockDb.queryOne.mockResolvedValue({ id: 42 });
         mockRegistry.isValidModule.mockReturnValue(true);
-        mockRegistry.getAllowedPermissions.mockReturnValue([
-          'canRead',
-          'canWrite',
-          'canDelete',
-        ]);
+        mockRegistry.getAllowedPermissions.mockReturnValue(['canRead', 'canWrite', 'canDelete']);
         mockClient.query.mockResolvedValue({ rows: [] });
 
         await service.upsertPermissions(
@@ -1106,12 +1057,7 @@ describe('SECURITY: UserPermissionsService', () => {
           rows: [{ can_read: true, can_write: false, can_delete: false }],
         });
 
-        const result = await service.hasPermission(
-          42,
-          'blackboard',
-          'blackboard-posts',
-          'canRead',
-        );
+        const result = await service.hasPermission(42, 'blackboard', 'blackboard-posts', 'canRead');
 
         expect(result).toBe(true);
       });
@@ -1151,12 +1097,7 @@ describe('SECURITY: UserPermissionsService', () => {
           rows: [{ can_read: false, can_write: true, can_delete: true }],
         });
 
-        const result = await service.hasPermission(
-          42,
-          'blackboard',
-          'blackboard-posts',
-          'canRead',
-        );
+        const result = await service.hasPermission(42, 'blackboard', 'blackboard-posts', 'canRead');
 
         expect(result).toBe(false);
       });
@@ -1196,12 +1137,7 @@ describe('SECURITY: UserPermissionsService', () => {
       it('should return false when no permission row exists', async () => {
         mockClient.query.mockResolvedValue({ rows: [] });
 
-        const result = await service.hasPermission(
-          42,
-          'blackboard',
-          'blackboard-posts',
-          'canRead',
-        );
+        const result = await service.hasPermission(42, 'blackboard', 'blackboard-posts', 'canRead');
 
         expect(result).toBe(false);
       });
@@ -1274,9 +1210,8 @@ describe('SECURITY: UserPermissionsService', () => {
 
       const result = await service.getPermissions(1, 'employee-uuid');
 
-      const allModuleCodes = result.flatMap(
-        (cat: { modules: { code: string }[] }) =>
-          cat.modules.map((m: { code: string }) => m.code),
+      const allModuleCodes = result.flatMap((cat: { modules: { code: string }[] }) =>
+        cat.modules.map((m: { code: string }) => m.code),
       );
       expect(allModuleCodes).not.toContain('manage-permissions');
       expect(allModuleCodes).toContain('manage-teams');
@@ -1296,9 +1231,8 @@ describe('SECURITY: UserPermissionsService', () => {
 
       const result = await service.getPermissions(1, 'lead-uuid');
 
-      const allModuleCodes = result.flatMap(
-        (cat: { modules: { code: string }[] }) =>
-          cat.modules.map((m: { code: string }) => m.code),
+      const allModuleCodes = result.flatMap((cat: { modules: { code: string }[] }) =>
+        cat.modules.map((m: { code: string }) => m.code),
       );
       expect(allModuleCodes).toContain('manage-permissions');
       expect(allModuleCodes).toContain('manage-teams');
@@ -1318,9 +1252,8 @@ describe('SECURITY: UserPermissionsService', () => {
 
       const result = await service.getPermissions(1, 'admin-uuid');
 
-      const allModuleCodes = result.flatMap(
-        (cat: { modules: { code: string }[] }) =>
-          cat.modules.map((m: { code: string }) => m.code),
+      const allModuleCodes = result.flatMap((cat: { modules: { code: string }[] }) =>
+        cat.modules.map((m: { code: string }) => m.code),
       );
       expect(allModuleCodes).not.toContain('manage-permissions');
       expect(allModuleCodes).toContain('manage-teams');
@@ -1340,9 +1273,8 @@ describe('SECURITY: UserPermissionsService', () => {
 
       const result = await service.getPermissions(1, 'admin-lead-uuid');
 
-      const allModuleCodes = result.flatMap(
-        (cat: { modules: { code: string }[] }) =>
-          cat.modules.map((m: { code: string }) => m.code),
+      const allModuleCodes = result.flatMap((cat: { modules: { code: string }[] }) =>
+        cat.modules.map((m: { code: string }) => m.code),
       );
       expect(allModuleCodes).toContain('manage-permissions');
     });

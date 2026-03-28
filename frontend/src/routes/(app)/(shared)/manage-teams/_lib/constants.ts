@@ -61,6 +61,9 @@ export function createMessages(labels: HierarchyLabels) {
     TH_ASSETS: labels.asset,
     LABEL_DEPARTMENT: labels.department,
     LABEL_ASSETS: `Zugewiesene ${labels.asset}`,
+    HALL_INFO_NO_DEPARTMENT: `${labels.hall}-Auswahl benötigt ${labels.department}-Zuordnung.`,
+    HALL_INFO_NO_HALLS: `Keine ${labels.hall}-Zuordnung im gewählten Eintrag.`,
+    HALL_INFO_AUTO_ASSIGNED: 'Automatisch zugewiesen.',
   };
 }
 
@@ -77,11 +80,9 @@ export const API_ENDPOINTS = {
   TEAMS: '/teams',
   team: (id: number) => `/teams/${id}`,
   teamMembers: (teamId: number) => `/teams/${teamId}/members`,
-  teamMember: (teamId: number, userId: number) =>
-    `/teams/${teamId}/members/${userId}`,
+  teamMember: (teamId: number, userId: number) => `/teams/${teamId}/members/${userId}`,
   teamAssets: (teamId: number) => `/teams/${teamId}/assets`,
-  teamAsset: (teamId: number, assetId: number) =>
-    `/teams/${teamId}/assets/${assetId}`,
+  teamAsset: (teamId: number, assetId: number) => `/teams/${teamId}/assets/${assetId}`,
   DEPARTMENTS: '/departments',
   LEADER_CANDIDATES: '/users?isActive=1&position=team_lead',
   EMPLOYEES: '/users?role=employee',

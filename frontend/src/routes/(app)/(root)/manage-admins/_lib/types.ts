@@ -9,12 +9,7 @@ import type {
   AvailabilityStatus,
 } from '@assixx/shared';
 
-export type {
-  IsActiveStatus,
-  FormIsActiveStatus,
-  StatusFilter,
-  AvailabilityStatus,
-};
+export type { IsActiveStatus, FormIsActiveStatus, StatusFilter, AvailabilityStatus };
 
 /**
  * Area entity - Organizational unit containing departments
@@ -57,6 +52,10 @@ export interface Admin {
   lastLogin?: string;
   areas?: Area[];
   departments?: Department[];
+  /** Areas where admin is area_lead (implicit permission, not in admin_area_permissions) */
+  leadAreas?: Area[];
+  /** Departments where admin is department_lead (implicit permission) */
+  leadDepartments?: Department[];
   areaIds?: number[];
   departmentIds?: number[];
   hasFullAccess?: boolean | number;
@@ -86,7 +85,7 @@ export interface AdminFormData {
   lastName: string;
   email: string;
   username: string;
-  position: string;
+  positionIds: string[];
   notes: string;
   isActive: FormIsActiveStatus;
   employeeNumber: string;
@@ -103,6 +102,8 @@ export interface AdminFormData {
 export interface AdminPermissions {
   areas?: Area[];
   departments?: Department[];
+  leadAreas?: Area[];
+  leadDepartments?: Department[];
   hasFullAccess?: boolean;
 }
 

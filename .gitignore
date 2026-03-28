@@ -55,6 +55,7 @@ dist/
 CLAUDE.local.md
 CLAUDE-KAIZEN-MANIFEST.md
 TODO.md
+docs/superpowers/
 
 # OS
 .DS_Store

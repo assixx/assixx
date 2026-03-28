@@ -209,9 +209,7 @@ export function sanitizeHtml(html: string | null | undefined): string {
  * @example
  * {@html sanitizeWithLineBreaks(entry.content)}
  */
-export function sanitizeWithLineBreaks(
-  text: string | null | undefined,
-): string {
+export function sanitizeWithLineBreaks(text: string | null | undefined): string {
   if (text === null || text === undefined || text === '') {
     return '';
   }

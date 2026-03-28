@@ -29,36 +29,26 @@ describe('UpdateColorConfigSchema', () => {
   it.each(['green', 'red', 'yellow', 'overdue'] as const)(
     'should accept statusKey=%s',
     (statusKey) => {
-      expect(
-        UpdateColorConfigSchema.safeParse({ ...valid, statusKey }).success,
-      ).toBe(true);
+      expect(UpdateColorConfigSchema.safeParse({ ...valid, statusKey }).success).toBe(true);
     },
   );
 
   it('should reject invalid statusKey', () => {
-    expect(
-      UpdateColorConfigSchema.safeParse({ ...valid, statusKey: 'blue' })
-        .success,
-    ).toBe(false);
+    expect(UpdateColorConfigSchema.safeParse({ ...valid, statusKey: 'blue' }).success).toBe(false);
   });
 
   it('should reject invalid hex color', () => {
-    expect(
-      UpdateColorConfigSchema.safeParse({ ...valid, colorHex: 'red' }).success,
-    ).toBe(false);
+    expect(UpdateColorConfigSchema.safeParse({ ...valid, colorHex: 'red' }).success).toBe(false);
   });
 
   it('should reject empty label', () => {
-    expect(
-      UpdateColorConfigSchema.safeParse({ ...valid, label: '' }).success,
-    ).toBe(false);
+    expect(UpdateColorConfigSchema.safeParse({ ...valid, label: '' }).success).toBe(false);
   });
 
   it('should reject label longer than 50 chars', () => {
-    expect(
-      UpdateColorConfigSchema.safeParse({ ...valid, label: 'A'.repeat(51) })
-        .success,
-    ).toBe(false);
+    expect(UpdateColorConfigSchema.safeParse({ ...valid, label: 'A'.repeat(51) }).success).toBe(
+      false,
+    );
   });
 
   it('should trim whitespace from colorHex', () => {
@@ -119,20 +109,14 @@ describe('UpdateIntervalColorConfigSchema', () => {
   // intervalKey validation
   // -----------------------------------------------------------
 
-  it.each([
-    'daily',
-    'weekly',
-    'monthly',
-    'quarterly',
-    'semi_annual',
-    'annual',
-    'custom',
-  ] as const)('should accept intervalKey=%s', (intervalKey) => {
-    expect(
-      UpdateIntervalColorConfigSchema.safeParse({ ...valid, intervalKey })
-        .success,
-    ).toBe(true);
-  });
+  it.each(['daily', 'weekly', 'monthly', 'quarterly', 'semi_annual', 'annual', 'custom'] as const)(
+    'should accept intervalKey=%s',
+    (intervalKey) => {
+      expect(UpdateIntervalColorConfigSchema.safeParse({ ...valid, intervalKey }).success).toBe(
+        true,
+      );
+    },
+  );
 
   it('should reject invalid intervalKey', () => {
     expect(
@@ -157,10 +141,9 @@ describe('UpdateIntervalColorConfigSchema', () => {
   });
 
   it('should reject 3-digit hex shorthand', () => {
-    expect(
-      UpdateIntervalColorConfigSchema.safeParse({ ...valid, colorHex: '#abc' })
-        .success,
-    ).toBe(false);
+    expect(UpdateIntervalColorConfigSchema.safeParse({ ...valid, colorHex: '#abc' }).success).toBe(
+      false,
+    );
   });
 
   it('should accept lowercase hex', () => {
@@ -186,17 +169,13 @@ describe('UpdateIntervalColorConfigSchema', () => {
   // -----------------------------------------------------------
 
   it('should reject empty label', () => {
-    expect(
-      UpdateIntervalColorConfigSchema.safeParse({ ...valid, label: '' })
-        .success,
-    ).toBe(false);
+    expect(UpdateIntervalColorConfigSchema.safeParse({ ...valid, label: '' }).success).toBe(false);
   });
 
   it('should reject whitespace-only label', () => {
-    expect(
-      UpdateIntervalColorConfigSchema.safeParse({ ...valid, label: '   ' })
-        .success,
-    ).toBe(false);
+    expect(UpdateIntervalColorConfigSchema.safeParse({ ...valid, label: '   ' }).success).toBe(
+      false,
+    );
   });
 
   it('should reject label longer than 50 chars', () => {
@@ -284,10 +263,9 @@ describe('UpdateCategoryColorConfigSchema', () => {
   it.each(['reinigung', 'wartung', 'inspektion'] as const)(
     'should accept categoryKey=%s',
     (categoryKey) => {
-      expect(
-        UpdateCategoryColorConfigSchema.safeParse({ ...valid, categoryKey })
-          .success,
-      ).toBe(true);
+      expect(UpdateCategoryColorConfigSchema.safeParse({ ...valid, categoryKey }).success).toBe(
+        true,
+      );
     },
   );
 
@@ -310,10 +288,9 @@ describe('UpdateCategoryColorConfigSchema', () => {
   });
 
   it('should reject empty categoryKey', () => {
-    expect(
-      UpdateCategoryColorConfigSchema.safeParse({ ...valid, categoryKey: '' })
-        .success,
-    ).toBe(false);
+    expect(UpdateCategoryColorConfigSchema.safeParse({ ...valid, categoryKey: '' }).success).toBe(
+      false,
+    );
   });
 
   // -----------------------------------------------------------
@@ -330,10 +307,9 @@ describe('UpdateCategoryColorConfigSchema', () => {
   });
 
   it('should reject 3-digit hex shorthand', () => {
-    expect(
-      UpdateCategoryColorConfigSchema.safeParse({ ...valid, colorHex: '#abc' })
-        .success,
-    ).toBe(false);
+    expect(UpdateCategoryColorConfigSchema.safeParse({ ...valid, colorHex: '#abc' }).success).toBe(
+      false,
+    );
   });
 
   it('should accept lowercase hex', () => {
@@ -359,17 +335,13 @@ describe('UpdateCategoryColorConfigSchema', () => {
   // -----------------------------------------------------------
 
   it('should reject empty label', () => {
-    expect(
-      UpdateCategoryColorConfigSchema.safeParse({ ...valid, label: '' })
-        .success,
-    ).toBe(false);
+    expect(UpdateCategoryColorConfigSchema.safeParse({ ...valid, label: '' }).success).toBe(false);
   });
 
   it('should reject whitespace-only label', () => {
-    expect(
-      UpdateCategoryColorConfigSchema.safeParse({ ...valid, label: '   ' })
-        .success,
-    ).toBe(false);
+    expect(UpdateCategoryColorConfigSchema.safeParse({ ...valid, label: '   ' }).success).toBe(
+      false,
+    );
   });
 
   it('should reject label longer than 50 chars', () => {

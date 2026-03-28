@@ -142,12 +142,8 @@ Display when no data is available
 <div class="empty-state">
   <div class="empty-state__icon">👥</div>
   <div class="empty-state__title">Keine Mitarbeiter gefunden</div>
-  <div class="empty-state__description">
-    Fügen Sie Ihren ersten Mitarbeiter hinzu
-  </div>
-  <button class="btn btn-primary empty-state__action">
-    Mitarbeiter hinzufügen
-  </button>
+  <div class="empty-state__description">Fügen Sie Ihren ersten Mitarbeiter hinzu</div>
+  <button class="btn btn-primary empty-state__action">Mitarbeiter hinzufügen</button>
 </div>
 ```
 
@@ -167,11 +163,7 @@ Display when no data is available
 
 ```html
 <div class="empty-state">
-  <img
-    src="/illustrations/no-data.svg"
-    class="empty-state__illustration"
-    alt=""
-  />
+  <img src="/illustrations/no-data.svg" class="empty-state__illustration" alt="" />
   <div class="empty-state__title">No data yet</div>
   <div class="empty-state__description">Start by creating your first entry</div>
 </div>
@@ -437,14 +429,7 @@ interface DataTableProps {
   bordered?: boolean;
 }
 
-export function DataTable({
-  columns,
-  data,
-  striped,
-  hover,
-  compact,
-  bordered,
-}: DataTableProps) {
+export function DataTable({ columns, data, striped, hover, compact, bordered }: DataTableProps) {
   const className = cn(
     'data-table',
     striped && 'data-table--striped',
@@ -489,13 +474,7 @@ interface EmptyStateProps {
   size?: 'sm' | 'md' | 'lg';
 }
 
-export function EmptyState({
-  icon,
-  title,
-  description,
-  action,
-  size = 'md',
-}: EmptyStateProps) {
+export function EmptyState({ icon, title, description, action, size = 'md' }: EmptyStateProps) {
   const className = cn(
     'empty-state',
     size === 'sm' && 'empty-state--sm',
@@ -506,9 +485,7 @@ export function EmptyState({
     <div className={className}>
       <div className="empty-state__icon">{icon}</div>
       <div className="empty-state__title">{title}</div>
-      {description && (
-        <div className="empty-state__description">{description}</div>
-      )}
+      {description && <div className="empty-state__description">{description}</div>}
       {action && <div className="empty-state__action">{action}</div>}
     </div>
   );
@@ -524,11 +501,7 @@ interface DataListProps {
   borderless?: boolean;
 }
 
-export function DataList({
-  items,
-  layout = 'default',
-  borderless,
-}: DataListProps) {
+export function DataList({ items, layout = 'default', borderless }: DataListProps) {
   const className = cn(
     'data-list',
     layout !== 'default' && `data-list--${layout}`,

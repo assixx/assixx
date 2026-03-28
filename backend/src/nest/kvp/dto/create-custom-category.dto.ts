@@ -13,14 +13,8 @@ export const CreateCustomCategorySchema = z.object({
     .trim()
     .min(1, 'Category name is required')
     .max(50, 'Category name must not exceed 50 characters'),
-  description: z
-    .string()
-    .trim()
-    .max(500, 'Description must not exceed 500 characters')
-    .optional(),
-  color: z
-    .string()
-    .regex(/^#[0-9a-f]{6}$/i, 'Color must be a valid hex color (e.g. #ff0000)'),
+  description: z.string().trim().max(500, 'Description must not exceed 500 characters').optional(),
+  color: z.string().regex(/^#[0-9a-f]{6}$/i, 'Color must be a valid hex color (e.g. #ff0000)'),
   icon: z
     .string()
     .trim()
@@ -28,6 +22,4 @@ export const CreateCustomCategorySchema = z.object({
     .max(50, 'Icon name must not exceed 50 characters'),
 });
 
-export class CreateCustomCategoryDto extends createZodDto(
-  CreateCustomCategorySchema,
-) {}
+export class CreateCustomCategoryDto extends createZodDto(CreateCustomCategorySchema) {}

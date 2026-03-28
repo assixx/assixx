@@ -86,17 +86,6 @@ export interface KvpSuggestion {
   isConfirmed?: boolean;
   /** When the user confirmed (read) this suggestion */
   confirmedAt?: string;
-  /** Organization assignments from junction table (teams and/or assets) */
-  organizations?: KvpOrgAssignment[];
-}
-
-/** Organization assignment on a KVP suggestion */
-export interface KvpOrgAssignment {
-  orgType: 'team' | 'asset';
-  orgId: number;
-  orgName?: string;
-  /** For assets: team IDs that own this asset (from asset_teams) */
-  relatedTeamIds?: number[];
 }
 
 /**
@@ -151,6 +140,10 @@ export interface Department {
 export interface Team {
   id: number;
   name: string;
+  departmentId?: number | null;
+  departmentName?: string;
+  departmentAreaId?: number | null;
+  departmentAreaName?: string;
 }
 
 /**
@@ -177,6 +170,23 @@ export interface LinkedWorkOrder {
   title: string;
   status: string;
   createdByName: string;
+  createdAt: string;
+}
+
+/**
+ * Approval info linked to a KVP suggestion (from approvals system)
+ */
+export interface ApprovalInfo {
+  uuid: string;
+  status: 'pending' | 'approved' | 'rejected';
+  title: string;
+  requestedBy: number;
+  requestedByName: string;
+  decidedBy: number | null;
+  decidedByName: string | null;
+  decidedAt: string | null;
+  decisionNote: string | null;
+  rewardAmount: number | null;
   createdAt: string;
 }
 

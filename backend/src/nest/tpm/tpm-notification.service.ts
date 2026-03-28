@@ -61,11 +61,7 @@ export class TpmNotificationService {
    * Notify that a maintenance card is overdue (escalation).
    * Recipient: team lead responsible for the asset.
    */
-  notifyMaintenanceOverdue(
-    tenantId: number,
-    card: TpmNotificationCard,
-    teamLeadId: number,
-  ): void {
+  notifyMaintenanceOverdue(tenantId: number, card: TpmNotificationCard, teamLeadId: number): void {
     this.logger.log(
       `TPM card overdue: ${card.cardCode} (${card.uuid}) — escalating to lead ${String(teamLeadId)}`,
     );
@@ -93,11 +89,7 @@ export class TpmNotificationService {
     this.logger.log(
       `TPM card completed: ${card.cardCode} (${card.uuid}) by user ${String(executedBy)}`,
     );
-    eventBus.emitTpmMaintenanceCompleted(
-      tenantId,
-      this.toEventPayload(card),
-      executedBy,
-    );
+    eventBus.emitTpmMaintenanceCompleted(tenantId, this.toEventPayload(card), executedBy);
   }
 
   /**
@@ -113,11 +105,7 @@ export class TpmNotificationService {
     this.logger.log(
       `TPM approval required: ${card.cardCode} (${card.uuid}), execution ${executionUuid}`,
     );
-    eventBus.emitTpmApprovalRequired(
-      tenantId,
-      this.toEventPayload(card),
-      executionUuid,
-    );
+    eventBus.emitTpmApprovalRequired(tenantId, this.toEventPayload(card), executionUuid);
 
     for (const approverId of approverIds) {
       void this.createPersistentNotification(
@@ -146,12 +134,7 @@ export class TpmNotificationService {
     this.logger.log(
       `TPM approval ${statusLabel}: ${card.cardCode} (${card.uuid}), execution ${executionUuid}`,
     );
-    eventBus.emitTpmApprovalResult(
-      tenantId,
-      this.toEventPayload(card),
-      executionUuid,
-      approved,
-    );
+    eventBus.emitTpmApprovalResult(tenantId, this.toEventPayload(card), executionUuid, approved);
 
     void this.createPersistentNotification(
       tenantId,
@@ -214,9 +197,7 @@ export class TpmNotificationService {
         ],
       );
     } catch (error: unknown) {
-      this.logger.error(
-        `Failed to create persistent TPM notification: ${String(error)}`,
-      );
+      this.logger.error(`Failed to create persistent TPM notification: ${String(error)}`);
     }
   }
 }

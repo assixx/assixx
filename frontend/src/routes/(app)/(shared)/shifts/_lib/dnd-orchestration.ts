@@ -3,11 +3,7 @@
 // Extracted from +page.svelte for modularity
 // =============================================================================
 
-import {
-  showSuccessAlert,
-  showErrorAlert,
-  showWarningAlert,
-} from '$lib/utils/alerts';
+import { showSuccessAlert, showErrorAlert, showWarningAlert } from '$lib/utils/alerts';
 import { createLogger } from '$lib/utils/logger';
 
 import { performAutofill } from './autofill';
@@ -39,8 +35,7 @@ export function handleDragStart(event: DragEvent, employeeId: number): void {
   handleDragStartEvent(
     event,
     employeeId,
-    !shiftsState.canEditShifts ||
-      (shiftsState.currentPlanId !== null && !shiftsState.isEditMode),
+    !shiftsState.canEditShifts || (shiftsState.currentPlanId !== null && !shiftsState.isEditMode),
     () => {
       shiftsState.setIsDragging(true);
     },
@@ -115,7 +110,7 @@ function executeAutofill(
     const shifts = shiftsState.weeklyShifts;
     let dayShifts = shifts.get(date);
     if (dayShifts === undefined) {
-      dayShifts = new Map();
+      dayShifts = new Map<string, number[]>();
       shifts.set(date, dayShifts);
     }
     let empsInShift = dayShifts.get(shift);
@@ -128,10 +123,7 @@ function executeAutofill(
     const emp = shiftsState.getEmployeeById(empId);
     if (emp !== undefined) {
       const details = new Map(shiftsState.shiftDetails);
-      details.set(
-        `${date}_${shift}_${empId}`,
-        buildShiftDetail(emp, date, shift),
-      );
+      details.set(`${date}_${shift}_${empId}`, buildShiftDetail(emp, date, shift));
       shiftsState.setShiftDetails(details);
     }
   };
@@ -163,11 +155,7 @@ function executeAutofill(
 // =============================================================================
 
 /** Handle drop event - validate and assign employee to shift */
-export function handleDrop(
-  event: DragEvent,
-  dateKey: string,
-  shiftType: string,
-): void {
+export function handleDrop(event: DragEvent, dateKey: string, shiftType: string): void {
   event.preventDefault();
   shiftsState.setIsDragging(false);
 
@@ -207,13 +195,7 @@ export function handleDrop(
 
   const dayName = shiftCell?.dataset.day;
   if (dayName !== undefined && shiftsState.autofillConfig.enabled) {
-    executeAutofill(
-      employeeId,
-      employee,
-      dayName,
-      shiftType as ShiftType,
-      shiftLabel,
-    );
+    executeAutofill(employeeId, employee, dayName, shiftType as ShiftType, shiftLabel);
   }
 }
 

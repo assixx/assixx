@@ -33,10 +33,7 @@ export const MACHINE_AVAILABILITY_STATUS_OPTIONS: {
 /**
  * Asset availability status badge classes
  */
-export const MACHINE_AVAILABILITY_BADGE_CLASSES: Record<
-  AssetAvailabilityStatus,
-  string
-> = {
+export const MACHINE_AVAILABILITY_BADGE_CLASSES: Record<AssetAvailabilityStatus, string> = {
   operational: 'badge--avail-operational',
   maintenance: 'badge--avail-maintenance',
   repair: 'badge--avail-repair',
@@ -48,10 +45,7 @@ export const MACHINE_AVAILABILITY_BADGE_CLASSES: Record<
 /**
  * Asset availability status icons (FontAwesome classes)
  */
-export const MACHINE_AVAILABILITY_ICONS: Record<
-  AssetAvailabilityStatus,
-  string
-> = {
+export const MACHINE_AVAILABILITY_ICONS: Record<AssetAvailabilityStatus, string> = {
   operational: 'fa-check-circle',
   maintenance: 'fa-wrench',
   repair: 'fa-tools',
@@ -63,10 +57,7 @@ export const MACHINE_AVAILABILITY_ICONS: Record<
 /**
  * Asset availability status labels (German)
  */
-export const MACHINE_AVAILABILITY_LABELS: Record<
-  AssetAvailabilityStatus,
-  string
-> = {
+export const MACHINE_AVAILABILITY_LABELS: Record<AssetAvailabilityStatus, string> = {
   operational: 'Betriebsbereit',
   maintenance: 'Wartung',
   repair: 'Reparatur',

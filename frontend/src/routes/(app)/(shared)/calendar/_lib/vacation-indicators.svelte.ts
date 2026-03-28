@@ -18,7 +18,7 @@ const log = createLogger('VacationIndicators');
 let showVacationsState = $state(
   browser ? localStorage.getItem('showVacationsInCalendar') === 'true' : false,
 );
-const vacationsCache = $state<Map<string, { vacationType: string }>>(new Map());
+const vacationsCache = $state(new Map<string, { vacationType: string }>());
 
 /**
  * Expand date ranges into individual days (YYYY-MM-DD keys).
@@ -74,7 +74,7 @@ function renderVacationIndicators(): void {
     if (dateAttr === null) return;
 
     const vacation = vacationsCache.get(dateAttr);
-    if (!vacation) return;
+    if (vacation === undefined) return;
 
     // Create vacation indicator
     const indicator = document.createElement('div');
@@ -87,19 +87,13 @@ function renderVacationIndicators(): void {
     renderedCount++;
   });
 
-  log.debug(
-    { renderedCount, cachedCount: vacationsCache.size },
-    'Rendered vacation indicators',
-  );
+  log.debug({ renderedCount, cachedCount: vacationsCache.size }, 'Rendered vacation indicators');
 }
 
 /**
  * Fetch and cache vacations, then render indicators
  */
-async function fetchAndRenderVacations(
-  startStr: string,
-  endStr: string,
-): Promise<void> {
+async function fetchAndRenderVacations(startStr: string, endStr: string): Promise<void> {
   if (!showVacationsState) {
     vacationsCache.clear();
     return;

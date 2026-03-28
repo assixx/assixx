@@ -50,9 +50,7 @@
   // DERIVED VALUES
   // =============================================================================
 
-  const activePlanCount = $derived(
-    allPlans.filter((p: TpmPlan) => p.isActive === 1).length,
-  );
+  const activePlanCount = $derived(allPlans.filter((p: TpmPlan) => p.isActive === 1).length);
 
   // =============================================================================
   // HANDLERS
@@ -87,17 +85,9 @@
       await invalidateAll();
     } catch (err: unknown) {
       logApiError('confirmDelete', err);
-      showErrorAlert(
-        err instanceof Error ? err.message : messages.ERROR_DELETE_FAILED,
-      );
+      showErrorAlert(err instanceof Error ? err.message : messages.ERROR_DELETE_FAILED);
     } finally {
       tpmState.setSubmitting(false);
-    }
-  }
-
-  function handleKeydown(e: KeyboardEvent): void {
-    if (e.key === 'Escape' && tpmState.showDeleteModal) {
-      tpmState.closeDeleteModal();
     }
   }
 </script>
@@ -105,8 +95,6 @@
 <svelte:head>
   <title>{messages.PAGE_TITLE}</title>
 </svelte:head>
-
-<svelte:window onkeydown={handleKeydown} />
 
 {#if permissionDenied}
   <PermissionDenied addonName="das TPM-System" />

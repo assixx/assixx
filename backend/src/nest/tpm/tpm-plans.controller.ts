@@ -50,10 +50,7 @@ import { ShiftAssignmentsQueryDto } from './dto/shift-assignments-query.dto.js';
 import { UpdateMaintenancePlanDto } from './dto/update-maintenance-plan.dto.js';
 import type { CardListFilter, PaginatedCards } from './tpm-cards.service.js';
 import { TpmCardsService } from './tpm-cards.service.js';
-import type {
-  IntervalMatrixEntry,
-  PaginatedPlans,
-} from './tpm-plans.service.js';
+import type { IntervalMatrixEntry, PaginatedPlans } from './tpm-plans.service.js';
 import { TpmPlansService } from './tpm-plans.service.js';
 import { TpmScheduleProjectionService } from './tpm-schedule-projection.service.js';
 import type {
@@ -122,9 +119,7 @@ export class TpmPlansController {
   /** GET /tpm/plans/interval-matrix — Card counts per plan × interval type */
   @Get('interval-matrix')
   @RequirePermission(FEAT, MOD_PLANS, 'canRead')
-  async getIntervalMatrix(
-    @TenantId() tenantId: number,
-  ): Promise<IntervalMatrixEntry[]> {
+  async getIntervalMatrix(@TenantId() tenantId: number): Promise<IntervalMatrixEntry[]> {
     return await this.plansService.getIntervalMatrix(tenantId);
   }
 
@@ -135,10 +130,7 @@ export class TpmPlansController {
     @Query() query: AssetSlotsQueryDto,
     @TenantId() tenantId: number,
   ): Promise<SlotAvailabilityResult> {
-    const assetId = await this.slotAssistantService.resolveAssetIdByUuid(
-      tenantId,
-      query.assetUuid,
-    );
+    const assetId = await this.slotAssistantService.resolveAssetIdByUuid(tenantId, query.assetUuid);
     return await this.slotAssistantService.getAvailableSlots(
       tenantId,
       assetId,
@@ -224,10 +216,7 @@ export class TpmPlansController {
   /** GET /tpm/plans/:uuid — Get single plan by UUID */
   @Get(':uuid')
   @RequirePermission(FEAT, MOD_PLANS, 'canRead')
-  async getPlan(
-    @Param('uuid') uuid: string,
-    @TenantId() tenantId: number,
-  ): Promise<TpmPlan> {
+  async getPlan(@Param('uuid') uuid: string, @TenantId() tenantId: number): Promise<TpmPlan> {
     return await this.plansService.getPlan(tenantId, uuid);
   }
 
@@ -266,10 +255,7 @@ export class TpmPlansController {
     @Param('uuid') planUuid: string,
     @TenantId() tenantId: number,
   ): Promise<TpmTimeEstimate[]> {
-    return await this.timeEstimatesService.getEstimatesForPlan(
-      tenantId,
-      planUuid,
-    );
+    return await this.timeEstimatesService.getEstimatesForPlan(tenantId, planUuid);
   }
 
   /** POST /tpm/plans/:uuid/time-estimates — Set (upsert) a time estimate */
@@ -319,11 +305,7 @@ export class TpmPlansController {
   ): Promise<AssetTeamAvailabilityResult> {
     const plan = await this.plansService.getPlan(tenantId, planUuid);
     const today = new Date().toISOString().slice(0, 10);
-    return await this.slotAssistantService.getAssetTeamAvailability(
-      tenantId,
-      plan.assetId,
-      today,
-    );
+    return await this.slotAssistantService.getAssetTeamAvailability(tenantId, plan.assetId, today);
   }
 
   // ============================================================================
@@ -400,8 +382,7 @@ function buildFilters(source: {
 }): CardListFilter {
   const filters: CardListFilter = {};
   if (source.status !== undefined) filters.status = source.status;
-  if (source.intervalType !== undefined)
-    filters.intervalType = source.intervalType;
+  if (source.intervalType !== undefined) filters.intervalType = source.intervalType;
   if (source.cardRole !== undefined) filters.cardRole = source.cardRole;
   return filters;
 }

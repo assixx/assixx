@@ -24,10 +24,7 @@ interface AccessContext {
 }
 
 /** Access check for manage-teams + manage-employees (Employee-Leads allowed) */
-export function assertTeamLevelAccess(
-  orgScope: OrganizationalScope,
-  ctx: AccessContext,
-): void {
+export function assertTeamLevelAccess(orgScope: OrganizationalScope, ctx: AccessContext): void {
   if (ctx.role === 'root') return;
 
   if (ctx.role === 'admin') {
@@ -40,10 +37,7 @@ export function assertTeamLevelAccess(
 
   if (ctx.role === 'employee') {
     if (!orgScope.isTeamLead) {
-      log.warn(
-        { pathname: ctx.pathname },
-        'Scope denied: employee without lead',
-      );
+      log.warn({ pathname: ctx.pathname }, 'Scope denied: employee without lead');
       redirect(302, DENIED);
     }
     return;
@@ -53,10 +47,7 @@ export function assertTeamLevelAccess(
 }
 
 /** Access check for manage-areas + manage-departments (NO Employee access, D1=NEIN) */
-export function assertAdminLevelAccess(
-  orgScope: OrganizationalScope,
-  ctx: AccessContext,
-): void {
+export function assertAdminLevelAccess(orgScope: OrganizationalScope, ctx: AccessContext): void {
   if (ctx.role === 'root') return;
 
   if (ctx.role === 'admin') {
@@ -67,9 +58,6 @@ export function assertAdminLevelAccess(
     return;
   }
 
-  log.warn(
-    { pathname: ctx.pathname, role: ctx.role },
-    'Scope denied: not admin/root',
-  );
+  log.warn({ pathname: ctx.pathname, role: ctx.role }, 'Scope denied: not admin/root');
   redirect(302, DENIED);
 }

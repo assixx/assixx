@@ -251,9 +251,9 @@ describe('TPM Config: Reset Colors', () => {
   });
 
   it('should restore green default hex', () => {
-    const green = (
-      body.data as Array<{ statusKey: string; colorHex: string }>
-    ).find((c: { statusKey: string }) => c.statusKey === 'green');
+    const green = (body.data as Array<{ statusKey: string; colorHex: string }>).find(
+      (c: { statusKey: string }) => c.statusKey === 'green',
+    );
     expect(green).toBeDefined();
     expect(green?.colorHex).toBe('#22c55e');
   });
@@ -465,12 +465,9 @@ describe('TPM Exec: Pending Approvals', () => {
   let body: JsonBody;
 
   beforeAll(async () => {
-    res = await fetch(
-      `${BASE_URL}/tpm/executions/pending-approvals?page=1&limit=10`,
-      {
-        headers: authOnly(auth.authToken),
-      },
-    );
+    res = await fetch(`${BASE_URL}/tpm/executions/pending-approvals?page=1&limit=10`, {
+      headers: authOnly(auth.authToken),
+    });
     body = (await res.json()) as JsonBody;
   });
 
@@ -491,12 +488,9 @@ describe('TPM Exec: Not Found', () => {
   let res: Response;
 
   beforeAll(async () => {
-    res = await fetch(
-      `${BASE_URL}/tpm/executions/019fffff-ffff-7fff-bfff-ffffffffffff`,
-      {
-        headers: authOnly(auth.authToken),
-      },
-    );
+    res = await fetch(`${BASE_URL}/tpm/executions/019fffff-ffff-7fff-bfff-ffffffffffff`, {
+      headers: authOnly(auth.authToken),
+    });
   });
 
   it('should return 404 for non-existent execution', () => {
@@ -511,16 +505,13 @@ describe('TPM Exec: Reject Without Note', () => {
   let body: JsonBody;
 
   beforeAll(async () => {
-    res = await fetch(
-      `${BASE_URL}/tpm/executions/019fffff-ffff-7fff-bfff-ffffffffffff/respond`,
-      {
-        method: 'POST',
-        headers: authHeaders(auth.authToken),
-        body: JSON.stringify({
-          action: 'rejected',
-        }),
-      },
-    );
+    res = await fetch(`${BASE_URL}/tpm/executions/019fffff-ffff-7fff-bfff-ffffffffffff/respond`, {
+      method: 'POST',
+      headers: authHeaders(auth.authToken),
+      body: JSON.stringify({
+        action: 'rejected',
+      }),
+    });
     body = (await res.json()) as JsonBody;
   });
 
@@ -540,12 +531,9 @@ describe('TPM Exec: Photos Empty', () => {
   let body: JsonBody;
 
   beforeAll(async () => {
-    res = await fetch(
-      `${BASE_URL}/tpm/executions/019fffff-ffff-7fff-bfff-ffffffffffff/photos`,
-      {
-        headers: authOnly(auth.authToken),
-      },
-    );
+    res = await fetch(`${BASE_URL}/tpm/executions/019fffff-ffff-7fff-bfff-ffffffffffff/photos`, {
+      headers: authOnly(auth.authToken),
+    });
     body = (await res.json()) as JsonBody;
   });
 
@@ -582,9 +570,7 @@ describe('TPM Defect Photos: Create Execution With Defect', () => {
         cardUuid,
         noIssuesFound: false,
         documentation: 'Mangel festgestellt bei Sichtprüfung',
-        defects: [
-          { title: 'Riss am Gehäuse', description: 'Haarriss Position 3' },
-        ],
+        defects: [{ title: 'Riss am Gehäuse', description: 'Haarriss Position 3' }],
       }),
     });
     body = (await res.json()) as JsonBody;
@@ -612,10 +598,9 @@ describe('TPM Defect Photos: Get Empty', () => {
   let body: JsonBody;
 
   beforeAll(async () => {
-    res = await fetch(
-      `${BASE_URL}/tpm/executions/defects/${defectUuid}/photos`,
-      { headers: authOnly(auth.authToken) },
-    );
+    res = await fetch(`${BASE_URL}/tpm/executions/defects/${defectUuid}/photos`, {
+      headers: authOnly(auth.authToken),
+    });
     body = (await res.json()) as JsonBody;
   });
 
@@ -638,19 +623,13 @@ describe('TPM Defect Photos: Upload', () => {
   beforeAll(async () => {
     const formData = new FormData();
     const jpegBytes = new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 0xff, 0xd9]);
-    formData.append(
-      'file',
-      new File([jpegBytes], 'riss.jpg', { type: 'image/jpeg' }),
-    );
+    formData.append('file', new File([jpegBytes], 'riss.jpg', { type: 'image/jpeg' }));
 
-    res = await fetch(
-      `${BASE_URL}/tpm/executions/defects/${defectUuid}/photos`,
-      {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${auth.authToken}` },
-        body: formData,
-      },
-    );
+    res = await fetch(`${BASE_URL}/tpm/executions/defects/${defectUuid}/photos`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${auth.authToken}` },
+      body: formData,
+    });
     body = (await res.json()) as JsonBody;
   });
 
@@ -675,10 +654,9 @@ describe('TPM Defect Photos: Get After Upload', () => {
   let body: JsonBody;
 
   beforeAll(async () => {
-    res = await fetch(
-      `${BASE_URL}/tpm/executions/defects/${defectUuid}/photos`,
-      { headers: authOnly(auth.authToken) },
-    );
+    res = await fetch(`${BASE_URL}/tpm/executions/defects/${defectUuid}/photos`, {
+      headers: authOnly(auth.authToken),
+    });
     body = (await res.json()) as JsonBody;
   });
 
@@ -733,10 +711,9 @@ describe('TPM Defects: List For Card', () => {
   let body: JsonBody;
 
   beforeAll(async () => {
-    res = await fetch(
-      `${BASE_URL}/tpm/cards/${cardUuid}/defects?page=1&limit=50`,
-      { headers: authOnly(auth.authToken) },
-    );
+    res = await fetch(`${BASE_URL}/tpm/cards/${cardUuid}/defects?page=1&limit=50`, {
+      headers: authOnly(auth.authToken),
+    });
     body = (await res.json()) as JsonBody;
   });
 
@@ -858,14 +835,11 @@ describe('TPM Defects: Update Non-Existent', () => {
   let res: Response;
 
   beforeAll(async () => {
-    res = await fetch(
-      `${BASE_URL}/tpm/executions/defects/019fffff-ffff-7fff-bfff-ffffffffffff`,
-      {
-        method: 'PATCH',
-        headers: authHeaders(auth.authToken),
-        body: JSON.stringify({ title: 'Sollte fehlschlagen' }),
-      },
-    );
+    res = await fetch(`${BASE_URL}/tpm/executions/defects/019fffff-ffff-7fff-bfff-ffffffffffff`, {
+      method: 'PATCH',
+      headers: authHeaders(auth.authToken),
+      body: JSON.stringify({ title: 'Sollte fehlschlagen' }),
+    });
   });
 
   it('should return 404 for non-existent defect', () => {

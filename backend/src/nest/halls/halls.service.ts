@@ -5,12 +5,7 @@
  * Halls are physical production halls assigned to areas.
  */
 import { IS_ACTIVE } from '@assixx/shared/constants';
-import {
-  BadRequestException,
-  Injectable,
-  Logger,
-  NotFoundException,
-} from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { v7 as uuidv7 } from 'uuid';
 
 import { getErrorMessage } from '../common/index.js';
@@ -30,6 +25,9 @@ export interface HallRow {
   created_at: Date;
   updated_at: Date;
   area_name: string | undefined;
+  department_ids: number[] | undefined;
+  department_names: string | undefined;
+  department_count: number | undefined;
 }
 
 export interface HallResponse {
@@ -42,6 +40,9 @@ export interface HallResponse {
   createdAt: string | undefined;
   updatedAt: string | undefined;
   areaName: string | undefined;
+  departmentIds: number[] | undefined;
+  departmentNames: string | undefined;
+  departmentCount: number | undefined;
 }
 
 export interface HallStats {
@@ -60,9 +61,22 @@ export class HallsService {
   ) {}
 
   private readonly FIND_ALL_HALLS_QUERY = `
-    SELECT h.*, a.name as area_name
+    WITH dept_assignments AS (
+      SELECT dh.hall_id,
+        ARRAY_AGG(dh.department_id ORDER BY d.name) as department_ids,
+        COUNT(*) as count,
+        STRING_AGG(d.name, E'\\n' ORDER BY d.name) as names
+      FROM department_halls dh
+      JOIN departments d ON dh.department_id = d.id
+      WHERE dh.tenant_id = $1
+      GROUP BY dh.hall_id
+    )
+    SELECT h.*, a.name as area_name,
+      da.department_ids, COALESCE(da.count, 0) as department_count,
+      COALESCE(da.names, '') as department_names
     FROM halls h
     LEFT JOIN areas a ON h.area_id = a.id
+    LEFT JOIN dept_assignments da ON da.hall_id = h.id
     WHERE h.tenant_id = $1
       AND h.is_active IN (${IS_ACTIVE.INACTIVE}, ${IS_ACTIVE.ACTIVE}, ${IS_ACTIVE.ARCHIVED})
     ORDER BY h.name`;
@@ -78,27 +92,21 @@ export class HallsService {
       createdAt: hall.created_at.toISOString(),
       updatedAt: hall.updated_at.toISOString(),
       areaName: includeExtended ? hall.area_name : undefined,
+      departmentIds: includeExtended ? (hall.department_ids ?? []) : undefined,
+      departmentNames: includeExtended ? hall.department_names : undefined,
+      departmentCount: includeExtended ? hall.department_count : undefined,
     };
   }
 
-  async listHalls(
-    tenantId: number,
-    includeExtended: boolean = true,
-  ): Promise<HallResponse[]> {
+  async listHalls(tenantId: number, includeExtended: boolean = true): Promise<HallResponse[]> {
     this.logger.debug(`Fetching halls for tenant ${tenantId}`);
 
     try {
-      const rows = await this.db.query<HallRow>(this.FIND_ALL_HALLS_QUERY, [
-        tenantId,
-      ]);
+      const rows = await this.db.query<HallRow>(this.FIND_ALL_HALLS_QUERY, [tenantId]);
 
-      return rows.map((hall: HallRow) =>
-        this.mapToResponse(hall, includeExtended),
-      );
+      return rows.map((hall: HallRow) => this.mapToResponse(hall, includeExtended));
     } catch (error: unknown) {
-      this.logger.warn(
-        `Extended query failed, using simple query: ${getErrorMessage(error)}`,
-      );
+      this.logger.warn(`Extended query failed, using simple query: ${getErrorMessage(error)}`);
 
       const rows = await this.db.query<HallRow>(
         `SELECT * FROM halls WHERE tenant_id = $1 AND is_active IN (${IS_ACTIVE.INACTIVE}, ${IS_ACTIVE.ACTIVE}, ${IS_ACTIVE.ARCHIVED}) ORDER BY name`,
@@ -130,9 +138,7 @@ export class HallsService {
       if (error instanceof NotFoundException) {
         throw error;
       }
-      this.logger.warn(
-        `Extended query failed, using simple query: ${getErrorMessage(error)}`,
-      );
+      this.logger.warn(`Extended query failed, using simple query: ${getErrorMessage(error)}`);
 
       const rows = await this.db.query<HallRow>(
         'SELECT * FROM halls WHERE id = $1 AND tenant_id = $2',
@@ -165,15 +171,7 @@ export class HallsService {
       `INSERT INTO halls (name, description, area_id, is_active, tenant_id, created_by, uuid, uuid_created_at)
        VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
        RETURNING id`,
-      [
-        dto.name,
-        dto.description,
-        dto.areaId,
-        isActive,
-        tenantId,
-        actingUserId,
-        hallUuid,
-      ],
+      [dto.name, dto.description, dto.areaId, isActive, tenantId, actingUserId, hallUuid],
     );
 
     if (rows.length === 0 || rows[0] === undefined) {

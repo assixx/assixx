@@ -115,9 +115,7 @@ const ASSIGNMENT_COUNTS_SQL = `
   GROUP BY te.user_id, u.first_name, u.last_name
   ORDER BY u.last_name, u.first_name`;
 
-function mapAssignmentCountRow(
-  r: DbAssignmentCountRow,
-): AssignmentCountResponse {
+function mapAssignmentCountRow(r: DbAssignmentCountRow): AssignmentCountResponse {
   return {
     employeeId: r.user_id,
     firstName: r.first_name,
@@ -176,9 +174,7 @@ export class ShiftsService {
         key === 'startDate' ? '>='
         : key === 'endDate' ? '<='
         : '=';
-      conditions.push(
-        isDate === true ? `${column} = $${idx}` : `${column} ${op} $${idx}`,
-      );
+      conditions.push(isDate === true ? `${column} = $${idx}` : `${column} ${op} $${idx}`);
 
       params.push(filters[key]);
       idx++;
@@ -187,10 +183,7 @@ export class ShiftsService {
     return { conditions: conditions.join(' AND '), params, nextIndex: idx };
   }
 
-  async listShifts(
-    tenantId: number,
-    filters: ShiftFilters,
-  ): Promise<ShiftResponse[]> {
+  async listShifts(tenantId: number, filters: ShiftFilters): Promise<ShiftResponse[]> {
     this.logger.debug(`Listing shifts for tenant ${tenantId}`);
 
     const baseQuery = `
@@ -222,8 +215,7 @@ export class ShiftsService {
       type: 's.type',
     };
     const sortColumn = SORT_COLUMN_MAP[filters.sortBy] ?? 's.date';
-    const sortDirection =
-      filters.sortOrder.toUpperCase() === 'DESC' ? 'DESC' : 'ASC';
+    const sortDirection = filters.sortOrder.toUpperCase() === 'DESC' ? 'DESC' : 'ASC';
     const orderClause = ` ORDER BY ${sortColumn} ${sortDirection}`;
     const limitClause = ` LIMIT $${nextIndex} OFFSET $${nextIndex + 1}`;
     params.push(filters.limit, (filters.page - 1) * filters.limit);
@@ -256,14 +248,8 @@ export class ShiftsService {
     return dbShiftToApi(shift);
   }
 
-  async createShift(
-    dto: CreateShiftDto,
-    tenantId: number,
-    userId: number,
-  ): Promise<ShiftResponse> {
-    this.logger.debug(
-      `Creating shift for tenant ${tenantId} by user ${userId}`,
-    );
+  async createShift(dto: CreateShiftDto, tenantId: number, userId: number): Promise<ShiftResponse> {
+    this.logger.debug(`Creating shift for tenant ${tenantId} by user ${userId}`);
 
     const dbData = apiToDb(dto as unknown as Record<string, unknown>);
 
@@ -332,10 +318,8 @@ export class ShiftsService {
 
     // Determine the date for timestamp construction (new date or existing)
     const rawDate = dbData['date'];
-    const existingDate =
-      typeof existingShift.date === 'string' ? existingShift.date : '';
-    const dateForTimestamp =
-      typeof rawDate === 'string' ? rawDate : existingDate;
+    const existingDate = typeof existingShift.date === 'string' ? existingShift.date : '';
+    const dateForTimestamp = typeof rawDate === 'string' ? rawDate : existingDate;
 
     // Convert time-only fields to full timestamps
     convertTimeFieldsToTimestamps(dbData, dateForTimestamp);
@@ -384,18 +368,14 @@ export class ShiftsService {
     return await this.getShiftById(id, tenantId);
   }
 
-  async deleteShift(
-    id: number,
-    tenantId: number,
-    userId: number,
-  ): Promise<{ message: string }> {
+  async deleteShift(id: number, tenantId: number, userId: number): Promise<{ message: string }> {
     this.logger.debug(`Deleting shift ${id} for tenant ${tenantId}`);
 
     const existingShift = await this.getShiftById(id, tenantId);
-    await this.databaseService.query(
-      `DELETE FROM shifts WHERE id = $1 AND tenant_id = $2`,
-      [id, tenantId],
-    );
+    await this.databaseService.query(`DELETE FROM shifts WHERE id = $1 AND tenant_id = $2`, [
+      id,
+      tenantId,
+    ]);
 
     await this.activityLogger.logDelete(
       tenantId,
@@ -422,9 +402,7 @@ export class ShiftsService {
     endDate: string,
     tenantId: number,
   ): Promise<{ shiftsDeleted: number }> {
-    this.logger.debug(
-      `Deleting shifts for team ${teamId} from ${startDate} to ${endDate}`,
-    );
+    this.logger.debug(`Deleting shifts for team ${teamId} from ${startDate} to ${endDate}`);
 
     const result = await this.databaseService.query<{ count: string }>(
       `WITH deleted AS (
@@ -444,10 +422,7 @@ export class ShiftsService {
   /**
    * Delete ALL shifts for a team (no date range)
    */
-  async deleteShiftsByTeam(
-    teamId: number,
-    tenantId: number,
-  ): Promise<{ shiftsDeleted: number }> {
+  async deleteShiftsByTeam(teamId: number, tenantId: number): Promise<{ shiftsDeleted: number }> {
     this.logger.debug(`Deleting ALL shifts for team ${teamId}`);
 
     const result = await this.databaseService.query<{ count: string }>(
@@ -494,10 +469,7 @@ export class ShiftsService {
     });
 
     return {
-      plan:
-        plan !== undefined ?
-          dbToApi(plan as unknown as Record<string, unknown>)
-        : undefined,
+      plan: plan !== undefined ? dbToApi(plan as unknown as Record<string, unknown>) : undefined,
       shifts,
       notes: [],
     };
@@ -517,12 +489,7 @@ export class ShiftsService {
     tenantId: number,
     userId: number,
   ): Promise<ShiftPlanResponse> {
-    return await this.shiftPlansService.updateShiftPlan(
-      planId,
-      dto,
-      tenantId,
-      userId,
-    );
+    return await this.shiftPlansService.updateShiftPlan(planId, dto, tenantId, userId);
   }
 
   async updateShiftPlanByUuid(
@@ -531,27 +498,14 @@ export class ShiftsService {
     tenantId: number,
     userId: number,
   ): Promise<ShiftPlanResponse> {
-    return await this.shiftPlansService.updateShiftPlanByUuid(
-      uuid,
-      dto,
-      tenantId,
-      userId,
-    );
+    return await this.shiftPlansService.updateShiftPlanByUuid(uuid, dto, tenantId, userId);
   }
 
-  async deleteShiftPlanByUuid(
-    uuid: string,
-    tenantId: number,
-    userId: number,
-  ): Promise<void> {
+  async deleteShiftPlanByUuid(uuid: string, tenantId: number, userId: number): Promise<void> {
     await this.shiftPlansService.deleteShiftPlanByUuid(uuid, tenantId, userId);
   }
 
-  async deleteShiftPlan(
-    planId: number,
-    tenantId: number,
-    userId: number,
-  ): Promise<void> {
+  async deleteShiftPlan(planId: number, tenantId: number, userId: number): Promise<void> {
     await this.shiftPlansService.deleteShiftPlan(planId, tenantId, userId);
   }
 
@@ -577,9 +531,7 @@ export class ShiftsService {
     // Verify shift exists and belongs to user (cross-domain coordination)
     const shift = await this.getShiftById(dto.shiftId, tenantId);
     if (shift.userId !== userId) {
-      throw new ForbiddenException(
-        'You can only request swaps for your own shifts',
-      );
+      throw new ForbiddenException('You can only request swaps for your own shifts');
     }
 
     return await this.shiftSwapService.createSwapRequest(dto, tenantId, userId);
@@ -591,12 +543,7 @@ export class ShiftsService {
     tenantId: number,
     userId: number,
   ): Promise<{ message: string }> {
-    return await this.shiftSwapService.updateSwapRequestStatus(
-      id,
-      dto,
-      tenantId,
-      userId,
-    );
+    return await this.shiftSwapService.updateSwapRequestStatus(id, dto, tenantId, userId);
   }
 
   // ============================================================
@@ -692,9 +639,7 @@ export class ShiftsService {
 
     return [
       headers.join(','),
-      ...rows.map((row: unknown[]) =>
-        row.map((cell: unknown) => `"${String(cell)}"`).join(','),
-      ),
+      ...rows.map((row: unknown[]) => row.map((cell: unknown) => `"${String(cell)}"`).join(',')),
     ].join('\n');
   }
 
@@ -708,9 +653,7 @@ export class ShiftsService {
     startDate: string,
     endDate: string,
   ): Promise<CalendarShiftResponse[]> {
-    this.logger.debug(
-      `Getting calendar shifts for user ${userId} in tenant ${tenantId}`,
-    );
+    this.logger.debug(`Getting calendar shifts for user ${userId} in tenant ${tenantId}`);
 
     const rows = await this.databaseService.query<{
       date: string;
@@ -727,16 +670,7 @@ export class ShiftsService {
         WHERE user_id = $5 AND tenant_id = $6 AND shift_date BETWEEN $7 AND $8
       ) AS combined_shifts
       ORDER BY date ASC`,
-      [
-        userId,
-        tenantId,
-        startDate,
-        endDate,
-        userId,
-        tenantId,
-        startDate,
-        endDate,
-      ],
+      [userId, tenantId, startDate, endDate, userId, tenantId, startDate, endDate],
     );
 
     return rows.map((row: { date: string; type: string }) => ({
@@ -762,14 +696,13 @@ export class ShiftsService {
     teamId: number,
     referenceDate: string,
   ): Promise<AssignmentCountResponse[]> {
-    this.logger.debug(
-      `Getting assignment counts for team ${teamId}, ref ${referenceDate}`,
-    );
+    this.logger.debug(`Getting assignment counts for team ${teamId}, ref ${referenceDate}`);
 
-    const rows = await this.databaseService.query<DbAssignmentCountRow>(
-      ASSIGNMENT_COUNTS_SQL,
-      [tenantId, teamId, referenceDate],
-    );
+    const rows = await this.databaseService.query<DbAssignmentCountRow>(ASSIGNMENT_COUNTS_SQL, [
+      tenantId,
+      teamId,
+      referenceDate,
+    ]);
 
     return rows.map((r: DbAssignmentCountRow) => mapAssignmentCountRow(r));
   }
@@ -778,13 +711,8 @@ export class ShiftsService {
   // FAVORITES
   // ============================================================
 
-  async listFavorites(
-    tenantId: number,
-    userId: number,
-  ): Promise<FavoriteResponse[]> {
-    this.logger.debug(
-      `Listing favorites for user ${userId} in tenant ${tenantId}`,
-    );
+  async listFavorites(tenantId: number, userId: number): Promise<FavoriteResponse[]> {
+    this.logger.debug(`Listing favorites for user ${userId} in tenant ${tenantId}`);
 
     const favorites = await this.databaseService.query<DbFavoriteRow>(
       `SELECT * FROM shift_favorites WHERE tenant_id = $1 AND user_id = $2 ORDER BY created_at DESC`,
@@ -792,8 +720,7 @@ export class ShiftsService {
     );
 
     return favorites.map(
-      (f: DbFavoriteRow) =>
-        dbToApi(f as unknown as Record<string, unknown>) as FavoriteResponse,
+      (f: DbFavoriteRow) => dbToApi(f as unknown as Record<string, unknown>) as FavoriteResponse,
     );
   }
 
@@ -802,9 +729,7 @@ export class ShiftsService {
     tenantId: number,
     userId: number,
   ): Promise<FavoriteResponse> {
-    this.logger.debug(
-      `Creating favorite for user ${userId} in tenant ${tenantId}`,
-    );
+    this.logger.debug(`Creating favorite for user ${userId} in tenant ${tenantId}`);
 
     let result: { id: number }[];
     try {
@@ -836,9 +761,7 @@ export class ShiftsService {
         'code' in error &&
         (error as { code: string }).code === '23505'
       ) {
-        throw new ConflictException(
-          `A favorite with the name "${dto.name}" already exists`,
-        );
+        throw new ConflictException(`A favorite with the name "${dto.name}" already exists`);
       }
       throw error;
     }
@@ -849,19 +772,11 @@ export class ShiftsService {
       [favoriteId, tenantId],
     );
 
-    return dbToApi(
-      favorites[0] as unknown as Record<string, unknown>,
-    ) as FavoriteResponse;
+    return dbToApi(favorites[0] as unknown as Record<string, unknown>) as FavoriteResponse;
   }
 
-  async deleteFavorite(
-    favoriteId: number,
-    tenantId: number,
-    userId: number,
-  ): Promise<void> {
-    this.logger.debug(
-      `Deleting favorite ${favoriteId} for user ${userId} in tenant ${tenantId}`,
-    );
+  async deleteFavorite(favoriteId: number, tenantId: number, userId: number): Promise<void> {
+    this.logger.debug(`Deleting favorite ${favoriteId} for user ${userId} in tenant ${tenantId}`);
 
     const favorites = await this.databaseService.query<DbFavoriteRow>(
       `SELECT * FROM shift_favorites WHERE id = $1 AND tenant_id = $2 AND user_id = $3`,

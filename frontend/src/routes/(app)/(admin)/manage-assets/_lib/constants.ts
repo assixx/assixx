@@ -2,10 +2,7 @@
 // MANAGE MACHINES - CONSTANTS
 // =============================================================================
 
-import {
-  DEFAULT_HIERARCHY_LABELS,
-  type HierarchyLabels,
-} from '$lib/types/hierarchy-labels';
+import { DEFAULT_HIERARCHY_LABELS, type HierarchyLabels } from '$lib/types/hierarchy-labels';
 
 import type { AssetStatus, AssetType } from './types';
 
@@ -120,8 +117,7 @@ const STATIC_MESSAGES = {
 
   // Delete confirmation (neutralized)
   DELETE_CONFIRM_MESSAGE: 'Möchten Sie diesen Eintrag wirklich löschen?',
-  DELETE_FINAL_WARNING:
-    'ACHTUNG: Diese Aktion kann nicht rückgängig gemacht werden!',
+  DELETE_FINAL_WARNING: 'ACHTUNG: Diese Aktion kann nicht rückgängig gemacht werden!',
   DELETE_FINAL_INFO: 'Der Eintrag wird unwiderruflich aus dem System entfernt.',
 
   // Success messages (neutralized)
@@ -190,8 +186,7 @@ export function createMessages(labels: HierarchyLabels) {
     TH_TEAMS: labels.team,
 
     // Teams display
-    teamsSelected: (count: number) =>
-      count <= 2 ? '' : `${count} ${labels.team} ausgewählt`,
+    teamsSelected: (count: number) => (count <= 2 ? '' : `${count} ${labels.team} ausgewählt`),
   };
 }
 

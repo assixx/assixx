@@ -27,8 +27,7 @@
   /** URL to the original source entity (only for linked source types with known URL pattern) */
   const sourceUrl = $derived.by((): string | null => {
     if (workOrder.sourceUuid === null) return null;
-    if (workOrder.sourceType === 'kvp_proposal')
-      return `/kvp-detail?uuid=${workOrder.sourceUuid}`;
+    if (workOrder.sourceType === 'kvp_proposal') return `/kvp-detail?uuid=${workOrder.sourceUuid}`;
     return null;
   });
 

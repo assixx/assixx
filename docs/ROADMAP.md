@@ -266,4 +266,4 @@ Pflicht fuer Cloud/SaaS-Betrieb. On-Premise kann ohne Stripe laufen.
 - [FEATURES.md](./FEATURES.md) -- Feature-Details und Preismodelle
 - [DATABASE-MIGRATION-GUIDE.md](./DATABASE-MIGRATION-GUIDE.md) -- PostgreSQL + RLS
 - [ADR Index](./infrastructure/adr/README.md) -- 20 Architecture Decision Records
-- [HOW-TO-TEST-WITH-VITEST.md](./HOW-TO-TEST-WITH-VITEST.md) -- Testing Guide
+- [HOW-TO-TEST-WITH-VITEST.md](./how-to/HOW-TO-TEST-WITH-VITEST.md) -- Testing Guide

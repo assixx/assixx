@@ -2,10 +2,7 @@
 // MANAGE HALLS - CONSTANTS
 // =============================================================================
 
-import {
-  DEFAULT_HIERARCHY_LABELS,
-  type HierarchyLabels,
-} from '$lib/types/hierarchy-labels';
+import { DEFAULT_HIERARCHY_LABELS, type HierarchyLabels } from '$lib/types/hierarchy-labels';
 
 import type { FormIsActiveStatus } from './types';
 
@@ -62,6 +59,7 @@ export function createMessages(labels: HierarchyLabels) {
     LABEL_AREA: labels.area,
     NO_AREA: 'Nicht zugewiesen',
     TH_AREA: labels.area,
+    TH_DEPARTMENTS: labels.department,
   };
 }
 

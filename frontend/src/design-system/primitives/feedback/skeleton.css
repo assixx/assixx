@@ -298,12 +298,7 @@
   animation: skeleton-wave 1.5s ease-in-out infinite;
   inset: 0;
 
-  background: linear-gradient(
-    90deg,
-    transparent,
-    var(--glass-bg-active),
-    transparent
-  );
+  background: linear-gradient(90deg, transparent, var(--glass-bg-active), transparent);
   content: '';
 }
 

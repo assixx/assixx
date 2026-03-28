@@ -30,10 +30,7 @@ export const IdSchema = z.preprocess((val: unknown) => {
 export const EmailSchema = z
   .string()
   .min(1, 'Email is required')
-  .regex(
-    /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
-    'Invalid email address',
-  )
+  .regex(/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/, 'Invalid email address')
   .toLowerCase()
   .trim();
 
@@ -65,8 +62,7 @@ export const PasswordSchema = z
       if (/\d/.test(password)) categoriesPresent++;
 
       // Category 4: Special characters (common set)
-      if (/[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(password))
-        categoriesPresent++;
+      if (/[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(password)) categoriesPresent++;
 
       // Require at least 3 out of 4 categories
       return categoriesPresent >= 3;

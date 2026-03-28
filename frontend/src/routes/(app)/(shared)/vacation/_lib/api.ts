@@ -34,9 +34,7 @@ export async function getMyRequests(
   if (year !== undefined) params.append('year', String(year));
   if (status !== undefined) params.append('status', status);
 
-  return await apiClient.get<PaginatedResult<VacationRequest>>(
-    `/vacation/requests?${params}`,
-  );
+  return await apiClient.get<PaginatedResult<VacationRequest>>(`/vacation/requests?${params}`);
 }
 
 export async function getIncomingRequests(
@@ -67,10 +65,7 @@ export async function editRequest(
   id: string,
   payload: Partial<CreateVacationRequestPayload>,
 ): Promise<VacationRequest> {
-  return await apiClient.patch<VacationRequest>(
-    `/vacation/requests/${id}`,
-    payload,
-  );
+  return await apiClient.patch<VacationRequest>(`/vacation/requests/${id}`, payload);
 }
 
 /** Map UI action verbs to backend status values */
@@ -83,13 +78,10 @@ export async function respondToRequest(
   id: string,
   payload: RespondPayload,
 ): Promise<VacationRequest> {
-  return await apiClient.patch<VacationRequest>(
-    `/vacation/requests/${id}/respond`,
-    {
-      ...payload,
-      action: ACTION_TO_STATUS[payload.action],
-    },
-  );
+  return await apiClient.patch<VacationRequest>(`/vacation/requests/${id}/respond`, {
+    ...payload,
+    action: ACTION_TO_STATUS[payload.action],
+  });
 }
 
 export async function withdrawRequest(id: string): Promise<void> {
@@ -102,12 +94,8 @@ export async function cancelRequest(id: string, reason: string): Promise<void> {
   });
 }
 
-export async function getStatusLog(
-  id: string,
-): Promise<VacationStatusLogEntry[]> {
-  return await apiClient.get<VacationStatusLogEntry[]>(
-    `/vacation/requests/${id}/status-log`,
-  );
+export async function getStatusLog(id: string): Promise<VacationStatusLogEntry[]> {
+  return await apiClient.get<VacationStatusLogEntry[]>(`/vacation/requests/${id}/status-log`);
 }
 
 // ─── Capacity ────────────────────────────────────────────────────────
@@ -122,16 +110,12 @@ export async function analyzeCapacity(
     params.append('requesterId', String(requesterId));
   }
 
-  return await apiClient.get<VacationCapacityAnalysis>(
-    `/vacation/capacity?${params}`,
-  );
+  return await apiClient.get<VacationCapacityAnalysis>(`/vacation/capacity?${params}`);
 }
 
 // ─── Entitlements ────────────────────────────────────────────────────
 
 export async function getMyBalance(year?: number): Promise<VacationBalance> {
   const params = year !== undefined ? `?year=${year}` : '';
-  return await apiClient.get<VacationBalance>(
-    `/vacation/entitlements/me${params}`,
-  );
+  return await apiClient.get<VacationBalance>(`/vacation/entitlements/me${params}`);
 }

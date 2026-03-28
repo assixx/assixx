@@ -74,8 +74,7 @@ Default.args = {
 Default.parameters = {
   docs: {
     description: {
-      story:
-        'Standard confirmation modal for neutral actions. Uses blue gradient.',
+      story: 'Standard confirmation modal for neutral actions. Uses blue gradient.',
     },
   },
 };
@@ -286,8 +285,7 @@ export const AllVariants = () => {
   // Helper function to create a variant
   const createVariant = (variant, icon, title, message, confirmText) => {
     const modal = document.createElement('div');
-    modal.className =
-      variant ? `confirm-modal confirm-modal--${variant}` : 'confirm-modal';
+    modal.className = variant ? `confirm-modal confirm-modal--${variant}` : 'confirm-modal';
 
     const iconDiv = document.createElement('div');
     iconDiv.className = 'confirm-modal__icon';
@@ -325,51 +323,25 @@ export const AllVariants = () => {
 
   // Default
   grid.appendChild(
-    createVariant(
-      '',
-      'fa-question-circle',
-      'Default',
-      'Standard confirmation',
-      'Confirm',
-    ),
+    createVariant('', 'fa-question-circle', 'Default', 'Standard confirmation', 'Confirm'),
   );
 
   // Warning
   grid.appendChild(
-    createVariant(
-      'warning',
-      'fa-exclamation-triangle',
-      'Warning',
-      'Caution required',
-      'Proceed',
-    ),
+    createVariant('warning', 'fa-exclamation-triangle', 'Warning', 'Caution required', 'Proceed'),
   );
 
   // Danger
   grid.appendChild(
-    createVariant(
-      'danger',
-      'fa-trash-alt',
-      'Danger',
-      'Destructive action',
-      'Delete',
-    ),
+    createVariant('danger', 'fa-trash-alt', 'Danger', 'Destructive action', 'Delete'),
   );
 
   // Info
-  grid.appendChild(
-    createVariant('info', 'fa-info-circle', 'Info', 'Informational', 'Confirm'),
-  );
+  grid.appendChild(createVariant('info', 'fa-info-circle', 'Info', 'Informational', 'Confirm'));
 
   // Success
   grid.appendChild(
-    createVariant(
-      'success',
-      'fa-check-circle',
-      'Success',
-      'Positive action',
-      'Confirm',
-    ),
+    createVariant('success', 'fa-check-circle', 'Success', 'Positive action', 'Confirm'),
   );
 
   return grid;

@@ -73,8 +73,7 @@ export async function loadProfile(): Promise<{
     log.error({ err }, 'Error loading profile');
     return {
       user: null,
-      error:
-        err instanceof Error ? err.message : 'Fehler beim Laden des Profils',
+      error: err instanceof Error ? err.message : 'Fehler beim Laden des Profils',
     };
   }
 }
@@ -94,9 +93,7 @@ export function loadProfilePicture(userPicture?: string): string | null {
 /** Load pending tenant deletion approvals */
 export async function loadPendingApprovals(): Promise<ApprovalItem[]> {
   try {
-    const result: unknown = await apiClient.get(
-      '/root/deletion-approvals/pending',
-    );
+    const result: unknown = await apiClient.get('/root/deletion-approvals/pending');
     return extractArrayFromResponse<ApprovalItem>(result, 'approvals');
   } catch (err: unknown) {
     log.warn({ err }, 'Could not load approvals');
@@ -105,9 +102,7 @@ export async function loadPendingApprovals(): Promise<ApprovalItem[]> {
 }
 
 /** Save profile changes */
-export async function saveProfile(
-  payload: ProfileUpdatePayload,
-): Promise<void> {
+export async function saveProfile(payload: ProfileUpdatePayload): Promise<void> {
   await apiClient.put('/users/me', payload);
 }
 
@@ -126,10 +121,7 @@ export async function uploadProfilePicture(file: File): Promise<string | null> {
   const formData = new FormData();
   formData.append('profilePicture', file);
 
-  const result: unknown = await apiClient.upload(
-    '/users/me/profile-picture',
-    formData,
-  );
+  const result: unknown = await apiClient.upload('/users/me/profile-picture', formData);
 
   let newUrl: string | null = null;
 
@@ -153,9 +145,7 @@ export async function removeProfilePicture(): Promise<void> {
 }
 
 /** Change user password */
-export async function changePassword(
-  payload: PasswordChangePayload,
-): Promise<void> {
+export async function changePassword(payload: PasswordChangePayload): Promise<void> {
   await apiClient.put('/users/me/password', payload);
 }
 

@@ -3,10 +3,7 @@
  * @module admin-dashboard/_lib/constants
  */
 
-import {
-  DEFAULT_HIERARCHY_LABELS,
-  type HierarchyLabels,
-} from '$lib/types/hierarchy-labels';
+import { DEFAULT_HIERARCHY_LABELS, type HierarchyLabels } from '$lib/types/hierarchy-labels';
 
 import type { Priority, OrgLevel, BlackboardOrgLevel } from './types';
 
@@ -45,8 +42,7 @@ const STATIC_MESSAGES = {
   noDocuments: 'Keine neuen Dokumente',
   noEvents: 'Keine anstehenden Termine',
   noBlackboard: 'Keine aktuellen Einträge',
-  noBlackboardDescription:
-    'Es gibt derzeit keine Neuigkeiten am Schwarzen Brett.',
+  noBlackboardDescription: 'Es gibt derzeit keine Neuigkeiten am Schwarzen Brett.',
   loadingEntries: 'Lade Einträge...',
   upcomingEvents: 'Nächste Termine',
   allDay: 'Ganztägig',

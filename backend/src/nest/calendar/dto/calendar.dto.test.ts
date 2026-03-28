@@ -46,61 +46,42 @@ describe('CreateEventSchema', () => {
   });
 
   it('should reject empty title', () => {
-    expect(CreateEventSchema.safeParse({ ...valid, title: '' }).success).toBe(
-      false,
-    );
+    expect(CreateEventSchema.safeParse({ ...valid, title: '' }).success).toBe(false);
   });
 
   it('should accept valid hex color', () => {
-    expect(
-      CreateEventSchema.safeParse({ ...valid, color: '#FF5733' }).success,
-    ).toBe(true);
+    expect(CreateEventSchema.safeParse({ ...valid, color: '#FF5733' }).success).toBe(true);
   });
 
   it('should reject invalid hex color', () => {
-    expect(
-      CreateEventSchema.safeParse({ ...valid, color: 'red' }).success,
-    ).toBe(false);
+    expect(CreateEventSchema.safeParse({ ...valid, color: 'red' }).success).toBe(false);
   });
 
   it('should accept lowercase hex color', () => {
-    expect(
-      CreateEventSchema.safeParse({ ...valid, color: '#ff5733' }).success,
-    ).toBe(true);
+    expect(CreateEventSchema.safeParse({ ...valid, color: '#ff5733' }).success).toBe(true);
   });
 
   it.each(['daily', 'weekly', 'monthly', 'yearly'] as const)(
     'should accept recurrence=%s',
     (recurrence) => {
-      expect(
-        CreateEventSchema.safeParse({ ...valid, recurrence }).success,
-      ).toBe(true);
+      expect(CreateEventSchema.safeParse({ ...valid, recurrence }).success).toBe(true);
     },
   );
 
   it('should reject invalid recurrence', () => {
-    expect(
-      CreateEventSchema.safeParse({ ...valid, recurrence: 'hourly' }).success,
-    ).toBe(false);
+    expect(CreateEventSchema.safeParse({ ...valid, recurrence: 'hourly' }).success).toBe(false);
   });
 
   it('should accept recurrenceCount within range', () => {
-    expect(
-      CreateEventSchema.safeParse({ ...valid, recurrenceCount: 52 }).success,
-    ).toBe(true);
+    expect(CreateEventSchema.safeParse({ ...valid, recurrenceCount: 52 }).success).toBe(true);
   });
 
   it('should reject recurrenceCount > 365', () => {
-    expect(
-      CreateEventSchema.safeParse({ ...valid, recurrenceCount: 366 }).success,
-    ).toBe(false);
+    expect(CreateEventSchema.safeParse({ ...valid, recurrenceCount: 366 }).success).toBe(false);
   });
 
   it('should reject invalid datetime format', () => {
-    expect(
-      CreateEventSchema.safeParse({ ...valid, startTime: '2025-06-15' })
-        .success,
-    ).toBe(false);
+    expect(CreateEventSchema.safeParse({ ...valid, startTime: '2025-06-15' }).success).toBe(false);
   });
 });
 
@@ -136,12 +117,9 @@ describe('UpdateEventSchema', () => {
     expect(result.success).toBe(true);
   });
 
-  it.each(['tentative', 'confirmed', 'cancelled'] as const)(
-    'should accept status=%s',
-    (status) => {
-      expect(UpdateEventSchema.safeParse({ status }).success).toBe(true);
-    },
-  );
+  it.each(['tentative', 'confirmed', 'cancelled'] as const)('should accept status=%s', (status) => {
+    expect(UpdateEventSchema.safeParse({ status }).success).toBe(true);
+  });
 });
 
 // =============================================================
@@ -166,25 +144,19 @@ describe('ListEventsQuerySchema', () => {
   });
 
   it('should reject limit > 100', () => {
-    expect(ListEventsQuerySchema.safeParse({ limit: '101' }).success).toBe(
-      false,
-    );
+    expect(ListEventsQuerySchema.safeParse({ limit: '101' }).success).toBe(false);
   });
 
   it('should reject page < 1', () => {
     expect(ListEventsQuerySchema.safeParse({ page: '0' }).success).toBe(false);
   });
 
-  it.each([
-    'all',
-    'company',
-    'department',
-    'team',
-    'area',
-    'personal',
-  ] as const)('should accept filter=%s', (filter) => {
-    expect(ListEventsQuerySchema.safeParse({ filter }).success).toBe(true);
-  });
+  it.each(['all', 'company', 'department', 'team', 'area', 'personal'] as const)(
+    'should accept filter=%s',
+    (filter) => {
+      expect(ListEventsQuerySchema.safeParse({ filter }).success).toBe(true);
+    },
+  );
 });
 
 // =============================================================
@@ -203,15 +175,11 @@ describe('DashboardEventsQuerySchema', () => {
   });
 
   it('should reject days > 365', () => {
-    expect(DashboardEventsQuerySchema.safeParse({ days: '366' }).success).toBe(
-      false,
-    );
+    expect(DashboardEventsQuerySchema.safeParse({ days: '366' }).success).toBe(false);
   });
 
   it('should reject limit > 50', () => {
-    expect(DashboardEventsQuerySchema.safeParse({ limit: '51' }).success).toBe(
-      false,
-    );
+    expect(DashboardEventsQuerySchema.safeParse({ limit: '51' }).success).toBe(false);
   });
 });
 
@@ -225,9 +193,7 @@ describe('ExportEventsQuerySchema', () => {
   });
 
   it('should reject invalid format', () => {
-    expect(ExportEventsQuerySchema.safeParse({ format: 'pdf' }).success).toBe(
-      false,
-    );
+    expect(ExportEventsQuerySchema.safeParse({ format: 'pdf' }).success).toBe(false);
   });
 
   it('should reject missing format', () => {

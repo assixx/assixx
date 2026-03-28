@@ -37,9 +37,7 @@ describe('NotificationAddonService', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockDb = createMockDb();
-    service = new NotificationAddonService(
-      mockDb as unknown as DatabaseService,
-    );
+    service = new NotificationAddonService(mockDb as unknown as DatabaseService);
   });
 
   // =============================================================
@@ -72,16 +70,7 @@ describe('NotificationAddonService', () => {
       mockDb.query.mockRejectedValueOnce(new Error('DB down'));
 
       await expect(
-        service.createAddonNotification(
-          'document',
-          1,
-          'New Doc',
-          'Check it',
-          'user',
-          5,
-          10,
-          1,
-        ),
+        service.createAddonNotification('document', 1, 'New Doc', 'Check it', 'user', 5, 10, 1),
       ).resolves.toBeUndefined();
     });
   });

@@ -3,22 +3,11 @@
   import { resolve } from '$app/paths';
 
   import PasswordStrengthIndicator from '$lib/components/PasswordStrengthIndicator.svelte';
-  import {
-    showWarningAlert,
-    showErrorAlert,
-    showSuccessAlert,
-  } from '$lib/stores/toast';
-  import {
-    analyzePassword,
-    type PasswordStrengthResult,
-  } from '$lib/utils/password-strength';
+  import { showWarningAlert, showErrorAlert, showToast } from '$lib/stores/toast';
+  import { analyzePassword, type PasswordStrengthResult } from '$lib/utils/password-strength';
 
   import { registerUser, createRegisterPayload } from './_lib/api';
-  import {
-    DEFAULT_COUNTRY,
-    SUCCESS_REDIRECT_DELAY,
-    ERROR_MESSAGES,
-  } from './_lib/constants';
+  import { DEFAULT_COUNTRY, SUCCESS_REDIRECT_DELAY, ERROR_MESSAGES } from './_lib/constants';
   import CountryPhoneInput from './_lib/CountryPhoneInput.svelte';
   import SignupNav from './_lib/SignupNav.svelte';
   import SubdomainInput from './_lib/SubdomainInput.svelte';
@@ -89,8 +78,7 @@
   // =========================================================================
 
   function handleEmailConfirmInput(): void {
-    emailMatchError =
-      emailConfirm !== '' && !emailMatch ? ERROR_MESSAGES.emailMismatch : null;
+    emailMatchError = emailConfirm !== '' && !emailMatch ? ERROR_MESSAGES.emailMismatch : null;
   }
 
   const MIN_STRENGTH_CHECK = 4;
@@ -103,9 +91,7 @@
 
     strengthLoading = true;
     try {
-      const userInputs = [email, firstName, lastName, companyName].filter(
-        Boolean,
-      );
+      const userInputs = [email, firstName, lastName, companyName].filter(Boolean);
       passwordStrength = await analyzePassword(password, userInputs);
     } catch {
       // Ignore strength check errors
@@ -116,9 +102,7 @@
 
   function handlePasswordConfirmInput(): void {
     passwordMatchError =
-      passwordConfirm !== '' && !passwordMatch ?
-        ERROR_MESSAGES.passwordMismatch
-      : null;
+      passwordConfirm !== '' && !passwordMatch ? ERROR_MESSAGES.passwordMismatch : null;
   }
 
   function togglePasswordVisibility(field: 'password' | 'confirm'): void {
@@ -150,17 +134,19 @@
 
       await registerUser(payload);
 
-      showSuccessAlert(
-        'Erfolgreich registriert! Sie werden zur Anmeldung weitergeleitet...',
-        SUCCESS_REDIRECT_DELAY,
-      );
+      showToast({
+        type: 'success',
+        title: 'Erfolg',
+        message: 'Erfolgreich registriert! Sie werden zur Anmeldung weitergeleitet...',
+        duration: SUCCESS_REDIRECT_DELAY,
+        showProgress: true,
+      });
 
       setTimeout(() => {
         void goto(resolve('/login'));
       }, SUCCESS_REDIRECT_DELAY);
     } catch (err: unknown) {
-      const message =
-        err instanceof Error ? err.message : ERROR_MESSAGES.unknownError;
+      const message = err instanceof Error ? err.message : ERROR_MESSAGES.unknownError;
       showErrorAlert(message);
     } finally {
       loading = false;
@@ -186,8 +172,7 @@
       />
       <h1 class="signup-hero__title">Enterprise 2.0 für Industriefirmen</h1>
       <p class="signup-hero__subtitle">
-        Wissensmanagement, Kommunikation und Kollaboration — von der Produktion
-        bis zur Verwaltung.
+        Wissensmanagement, Kommunikation und Kollaboration — von der Produktion bis zur Verwaltung.
       </p>
     </div>
   </div>
@@ -196,9 +181,7 @@
   <div class="signup-form-side">
     <div class="signup-card">
       <h2 class="signup-title">Konto erstellen</h2>
-      <p class="signup-subtitle">
-        30 Tage kostenlos testen — keine Kreditkarte nötig
-      </p>
+      <p class="signup-subtitle">30 Tage kostenlos testen — keine Kreditkarte nötig</p>
 
       <!-- Signup Form -->
       <form
@@ -335,9 +318,8 @@
                   class="tooltip__content tooltip__content--info tooltip__content--right"
                   role="tooltip"
                 >
-                  Min. 12 Zeichen, max. 72 Zeichen. Enthält 3 von 4:
-                  Großbuchstaben, Kleinbuchstaben, Zahlen, Sonderzeichen
-                  (!@#$%^&*)
+                  Min. 12 Zeichen, max. 72 Zeichen. Enthält 3 von 4: Großbuchstaben,
+                  Kleinbuchstaben, Zahlen, Sonderzeichen (!@#$%^&*)
                 </span>
               </span>
             </label>
@@ -400,8 +382,7 @@
                   togglePasswordVisibility('confirm');
                 }}
               >
-                <i class="fas {showPasswordConfirm ? 'fa-eye-slash' : 'fa-eye'}"
-                ></i>
+                <i class="fas {showPasswordConfirm ? 'fa-eye-slash' : 'fa-eye'}"></i>
               </button>
             </div>
             {#if passwordMatchError}
@@ -528,8 +509,7 @@
     font-size: 2.75rem;
     line-height: 1.2;
     margin-bottom: 20px;
-    text-shadow: 0 2px 8px
-      color-mix(in oklch, var(--color-black) 30%, transparent);
+    text-shadow: 0 2px 8px color-mix(in oklch, var(--color-black) 30%, transparent);
   }
 
   .signup-hero__subtitle {
@@ -601,8 +581,7 @@
 
   .section-divider {
     margin: 0;
-    border-top: 1px solid
-      color-mix(in oklch, var(--color-white) 8%, transparent);
+    border-top: 1px solid color-mix(in oklch, var(--color-white) 8%, transparent);
   }
 
   /* --- Terms, submit, login link --- */

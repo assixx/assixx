@@ -41,9 +41,7 @@
   let isFlipped = $state(false);
 
   function getColor(status: CardStatus): string {
-    const found = colors.find(
-      (c: TpmColorConfigEntry) => c.statusKey === status,
-    );
+    const found = colors.find((c: TpmColorConfigEntry) => c.statusKey === status);
     return found !== undefined ? found.colorHex : DEFAULT_COLORS[status];
   }
 
@@ -54,8 +52,7 @@
     }
     for (const cat of card.cardCategories) {
       const entry = categoryColors.find(
-        (cc: CategoryColorConfigEntry) =>
-          cc.categoryKey === cat && cc.colorHex !== null,
+        (cc: CategoryColorConfigEntry) => cc.categoryKey === cat && cc.colorHex !== null,
       );
       if (entry !== undefined) return entry.colorHex;
     }
@@ -69,8 +66,7 @@
       if (catColor !== null) return catColor;
 
       const interval = intervalColors.find(
-        (ic: IntervalColorConfigEntry) =>
-          ic.statusKey === card.intervalType && ic.includeInCard,
+        (ic: IntervalColorConfigEntry) => ic.statusKey === card.intervalType && ic.includeInCard,
       );
       if (interval !== undefined) return interval.colorHex;
     }
@@ -88,8 +84,7 @@
   const intervalDotColor = $derived.by((): string | null => {
     if (card.status === 'green') return null;
     const interval = intervalColors.find(
-      (ic: IntervalColorConfigEntry) =>
-        ic.statusKey === card.intervalType && ic.includeInCard,
+      (ic: IntervalColorConfigEntry) => ic.statusKey === card.intervalType && ic.includeInCard,
     );
     return interval !== undefined ? interval.colorHex : null;
   });
@@ -216,9 +211,7 @@
         {#if card.description !== null}
           <p class="kamishibai-card__desc">{card.description}</p>
         {:else}
-          <p class="kamishibai-card__desc kamishibai-card__desc--empty">
-            Keine Beschreibung
-          </p>
+          <p class="kamishibai-card__desc kamishibai-card__desc--empty">Keine Beschreibung</p>
         {/if}
         {#if card.locationDescription !== null}
           <div class="kamishibai-card__location">
@@ -301,19 +294,14 @@
 
   /* Locate pulse — draws the eye to the clicked card after section expansion */
   .kamishibai-card--highlighted {
-    outline: 2px solid
-      color-mix(in srgb, var(--color-text-primary) 60%, transparent);
+    outline: 2px solid color-mix(in srgb, var(--color-text-primary) 60%, transparent);
     outline-offset: 3px;
     animation: card-locate 6.5s ease-out forwards;
   }
 
   @keyframes card-locate {
     0% {
-      outline-color: color-mix(
-        in srgb,
-        var(--color-text-primary) 60%,
-        transparent
-      );
+      outline-color: color-mix(in srgb, var(--color-text-primary) 60%, transparent);
       transform: rotate(0deg);
     }
 
@@ -350,11 +338,7 @@
     }
 
     40% {
-      outline-color: color-mix(
-        in srgb,
-        var(--color-text-primary) 60%,
-        transparent
-      );
+      outline-color: color-mix(in srgb, var(--color-text-primary) 60%, transparent);
     }
 
     100% {
@@ -381,14 +365,10 @@
     border-radius: var(--card-radius);
 
     /* Simulated card edges — light top/left, dark bottom/right */
-    border-top: 1px solid
-      color-mix(in oklch, var(--color-white) 22%, transparent);
-    border-left: 1px solid
-      color-mix(in oklch, var(--color-white) 10%, transparent);
-    border-right: 1px solid
-      color-mix(in oklch, var(--color-black) 10%, transparent);
-    border-bottom: var(--card-edge) solid
-      color-mix(in oklch, var(--color-black) 30%, transparent);
+    border-top: 1px solid color-mix(in oklch, var(--color-white) 22%, transparent);
+    border-left: 1px solid color-mix(in oklch, var(--color-white) 10%, transparent);
+    border-right: 1px solid color-mix(in oklch, var(--color-black) 10%, transparent);
+    border-bottom: var(--card-edge) solid color-mix(in oklch, var(--color-black) 30%, transparent);
 
     /* Embossed inner edges for thickness illusion */
     box-shadow:
@@ -428,8 +408,7 @@
     align-items: center;
     gap: 0.375rem;
     padding-bottom: 0.375rem;
-    border-bottom: 1px solid
-      color-mix(in oklch, var(--color-black) 15%, transparent);
+    border-bottom: 1px solid color-mix(in oklch, var(--color-black) 15%, transparent);
   }
 
   .kamishibai-card__code {
@@ -479,8 +458,7 @@
     justify-content: space-between;
     gap: 0.25rem;
     padding-top: 0.375rem;
-    border-top: 1px solid
-      color-mix(in oklch, var(--color-black) 15%, transparent);
+    border-top: 1px solid color-mix(in oklch, var(--color-black) 15%, transparent);
   }
 
   .kamishibai-card__time {
@@ -524,14 +502,10 @@
     padding: 0.75rem;
     background: var(--color-gray-800, #1f2937);
     border-radius: var(--card-radius);
-    border-top: 1px solid
-      color-mix(in oklch, var(--color-white) 10%, transparent);
-    border-left: 1px solid
-      color-mix(in oklch, var(--color-white) 5%, transparent);
-    border-right: 1px solid
-      color-mix(in oklch, var(--color-black) 10%, transparent);
-    border-bottom: var(--card-edge) solid
-      color-mix(in oklch, var(--color-black) 35%, transparent);
+    border-top: 1px solid color-mix(in oklch, var(--color-white) 10%, transparent);
+    border-left: 1px solid color-mix(in oklch, var(--color-white) 5%, transparent);
+    border-right: 1px solid color-mix(in oklch, var(--color-black) 10%, transparent);
+    border-bottom: var(--card-edge) solid color-mix(in oklch, var(--color-black) 35%, transparent);
     box-shadow:
       inset 0 1px 0 color-mix(in oklch, var(--color-white) 10%, transparent),
       inset 0 -1px 0 color-mix(in oklch, var(--color-black) 20%, transparent);

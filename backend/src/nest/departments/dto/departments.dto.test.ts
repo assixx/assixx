@@ -1,10 +1,43 @@
 import { describe, expect, it } from 'vitest';
 
+import { AssignHallsSchema } from './assign-halls.dto.js';
 import { CreateDepartmentSchema } from './create-department.dto.js';
 import { DeleteDepartmentQuerySchema } from './delete-department.dto.js';
 import { DepartmentIdParamSchema } from './department-id-param.dto.js';
 import { ListDepartmentsQuerySchema } from './list-departments-query.dto.js';
 import { UpdateDepartmentSchema } from './update-department.dto.js';
+
+// =============================================================
+// AssignHallsSchema
+// =============================================================
+
+describe('AssignHallsSchema', () => {
+  it('should accept valid hall IDs array', () => {
+    const data = AssignHallsSchema.parse({ hallIds: [1, 2, 3] });
+
+    expect(data.hallIds).toEqual([1, 2, 3]);
+  });
+
+  it('should accept empty array', () => {
+    const data = AssignHallsSchema.parse({ hallIds: [] });
+
+    expect(data.hallIds).toEqual([]);
+  });
+
+  it('should coerce string IDs to numbers', () => {
+    const data = AssignHallsSchema.parse({ hallIds: ['1', '2'] });
+
+    expect(data.hallIds).toEqual([1, 2]);
+  });
+
+  it('should reject negative hall IDs', () => {
+    expect(AssignHallsSchema.safeParse({ hallIds: [-1] }).success).toBe(false);
+  });
+
+  it('should reject missing hallIds', () => {
+    expect(AssignHallsSchema.safeParse({}).success).toBe(false);
+  });
+});
 
 // =============================================================
 // CreateDepartmentSchema
@@ -36,9 +69,7 @@ describe('CreateDepartmentSchema', () => {
   });
 
   it('should reject name longer than 100 characters', () => {
-    expect(
-      CreateDepartmentSchema.safeParse({ name: 'X'.repeat(101) }).success,
-    ).toBe(false);
+    expect(CreateDepartmentSchema.safeParse({ name: 'X'.repeat(101) }).success).toBe(false);
   });
 
   it('should reject description longer than 500 characters', () => {
@@ -51,9 +82,7 @@ describe('CreateDepartmentSchema', () => {
   });
 
   it('should reject isActive out of range', () => {
-    expect(
-      CreateDepartmentSchema.safeParse({ ...valid, isActive: '5' }).success,
-    ).toBe(false);
+    expect(CreateDepartmentSchema.safeParse({ ...valid, isActive: '5' }).success).toBe(false);
   });
 });
 

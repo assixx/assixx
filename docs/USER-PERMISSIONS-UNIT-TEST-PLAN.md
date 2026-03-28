@@ -3,7 +3,7 @@
 > **Bezieht sich auf:** [`docs/USER-PERMISSIONS-PLAN.md`](./USER-PERMISSIONS-PLAN.md) (Phase 6)
 > **Runner:** Vitest (`vitest run --project unit`)
 > **Muster:** Existierende Test-Patterns aus `auth.service.test.ts`, `auth.dto.test.ts`, `documents.service.test.ts`
-> **Quellen:** `ADR-018` (Vitest Single Runner), `docs/HOW-TO-TEST-WITH-VITEST.md`
+> **Quellen:** `ADR-018` (Vitest Single Runner), `docs/how-to/HOW-TO-TEST-WITH-VITEST.md`
 > **Update 2026-02-07:** Erweitert um Phase 5b (Enforcement) — `hasPermission()`, `PermissionGuard`, `@RequirePermission()`
 > **Update 2026-02-07:** Erweitert um Phase 9 (Notification Coupling) — `getReadableAddonCodes()`, Dashboard permission filtering
 

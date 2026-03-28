@@ -152,10 +152,7 @@ describe('query', () => {
 
     await service.query('SELECT * FROM users WHERE id = $1', [5]);
 
-    expect(pool.query).toHaveBeenCalledWith(
-      'SELECT * FROM users WHERE id = $1',
-      [5],
-    );
+    expect(pool.query).toHaveBeenCalledWith('SELECT * FROM users WHERE id = $1', [5]);
   });
 });
 
@@ -164,10 +161,7 @@ describe('queryOne', () => {
     const { service, pool } = createService();
     pool.query.mockResolvedValue({ rows: [{ id: 1, name: 'test' }] });
 
-    const result = await service.queryOne(
-      'SELECT * FROM users WHERE id = $1',
-      [1],
-    );
+    const result = await service.queryOne('SELECT * FROM users WHERE id = $1', [1]);
 
     expect(result).toEqual({ id: 1, name: 'test' });
   });
@@ -176,10 +170,7 @@ describe('queryOne', () => {
     const { service, pool } = createService();
     pool.query.mockResolvedValue({ rows: [] });
 
-    const result = await service.queryOne(
-      'SELECT * FROM users WHERE id = $1',
-      [999],
-    );
+    const result = await service.queryOne('SELECT * FROM users WHERE id = $1', [999]);
 
     expect(result).toBeNull();
   });
@@ -235,10 +226,9 @@ describe('transaction', () => {
 
     await service.transaction(async () => 'ok', { tenantId: 42 });
 
-    expect(pool.mockClient.query).toHaveBeenCalledWith(
-      expect.stringContaining('app.tenant_id'),
-      ['42'],
-    );
+    expect(pool.mockClient.query).toHaveBeenCalledWith(expect.stringContaining('app.tenant_id'), [
+      '42',
+    ]);
   });
 
   it('should set user context when userId provided', async () => {
@@ -246,10 +236,9 @@ describe('transaction', () => {
 
     await service.transaction(async () => 'ok', { userId: 7 });
 
-    expect(pool.mockClient.query).toHaveBeenCalledWith(
-      expect.stringContaining('app.user_id'),
-      ['7'],
-    );
+    expect(pool.mockClient.query).toHaveBeenCalledWith(expect.stringContaining('app.user_id'), [
+      '7',
+    ]);
   });
 });
 
@@ -258,6 +247,15 @@ describe('transaction', () => {
 // ============================================
 
 describe('tenantTransaction', () => {
+  it('should warn when tenantId is undefined in CLS', async () => {
+    const cls = createMockCls({ userId: 5 }); // no tenantId
+    const { service } = createService(undefined, cls);
+
+    await service.tenantTransaction(async () => 'ok');
+
+    expect(cls.get).toHaveBeenCalledWith('tenantId');
+  });
+
   it('should read tenantId and userId from CLS', async () => {
     const cls = createMockCls({ tenantId: 10, userId: 5 });
     const { service, pool } = createService(undefined, cls);
@@ -266,10 +264,9 @@ describe('tenantTransaction', () => {
 
     expect(cls.get).toHaveBeenCalledWith('tenantId');
     expect(cls.get).toHaveBeenCalledWith('userId');
-    expect(pool.mockClient.query).toHaveBeenCalledWith(
-      expect.stringContaining('app.tenant_id'),
-      ['10'],
-    );
+    expect(pool.mockClient.query).toHaveBeenCalledWith(expect.stringContaining('app.tenant_id'), [
+      '10',
+    ]);
   });
 });
 

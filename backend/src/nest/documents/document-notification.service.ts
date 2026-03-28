@@ -48,13 +48,9 @@ export class DocumentNotificationService {
   } | null {
     switch (data.accessScope) {
       case 'personal':
-        return data.ownerUserId !== undefined ?
-            { type: 'user', id: data.ownerUserId }
-          : null;
+        return data.ownerUserId !== undefined ? { type: 'user', id: data.ownerUserId } : null;
       case 'team':
-        return data.targetTeamId !== undefined ?
-            { type: 'team', id: data.targetTeamId }
-          : null;
+        return data.targetTeamId !== undefined ? { type: 'team', id: data.targetTeamId } : null;
       case 'department':
         return data.targetDepartmentId !== undefined ?
             { type: 'department', id: data.targetDepartmentId }

@@ -31,13 +31,7 @@ export const UpdateMaintenancePlanSchema = z.object({
     .multipleOf(0.5, 'Puffer muss in 0.5er-Schritten angegeben werden')
     .optional(),
   shiftPlanRequired: z.boolean().optional(),
-  notes: z
-    .string()
-    .trim()
-    .max(5000, 'Notizen dürfen maximal 5000 Zeichen lang sein')
-    .nullish(),
+  notes: z.string().trim().max(5000, 'Notizen dürfen maximal 5000 Zeichen lang sein').nullish(),
 });
 
-export class UpdateMaintenancePlanDto extends createZodDto(
-  UpdateMaintenancePlanSchema,
-) {}
+export class UpdateMaintenancePlanDto extends createZodDto(UpdateMaintenancePlanSchema) {}

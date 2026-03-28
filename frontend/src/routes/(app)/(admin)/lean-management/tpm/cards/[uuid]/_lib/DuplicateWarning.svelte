@@ -8,11 +8,7 @@
    */
   import ConfirmModal from '$design-system/components/confirm-modal/ConfirmModal.svelte';
 
-  import {
-    INTERVAL_LABELS,
-    CARD_ROLE_LABELS,
-    type TpmMessages,
-  } from '../../../_lib/constants';
+  import { INTERVAL_LABELS, CARD_ROLE_LABELS, type TpmMessages } from '../../../_lib/constants';
 
   import type { TpmCard } from '../../../_lib/types';
 
@@ -44,9 +40,7 @@
           <span class="dup-item__code">{card.cardCode}</span>
           <span class="dup-item__title">{card.title}</span>
           <span class="dup-item__meta">
-            {CARD_ROLE_LABELS[card.cardRole]} — {INTERVAL_LABELS[
-              card.intervalType
-            ]}
+            {CARD_ROLE_LABELS[card.cardRole]} — {INTERVAL_LABELS[card.intervalType]}
           </span>
         </li>
       {/each}

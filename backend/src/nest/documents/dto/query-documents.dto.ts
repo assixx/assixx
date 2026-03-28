@@ -36,6 +36,4 @@ const listDocumentsQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(100).optional().default(20),
 });
 
-export class ListDocumentsQueryDto extends createZodDto(
-  listDocumentsQuerySchema,
-) {}
+export class ListDocumentsQueryDto extends createZodDto(listDocumentsQuerySchema) {}

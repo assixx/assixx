@@ -1613,11 +1613,11 @@ services:
 
 ### 9.4 ~~Secrets Management (Vault/Doppler)~~ → ✅ DOPPLER IMPLEMENTIERT
 
-| Aspekt     | Details                                               |
-| ---------- | ----------------------------------------------------- |
-| **Status** | ✅ COMPLETE (14. Januar 2026)                         |
-| **System** | Doppler + .env + .locklock (3-Pillar Approach)        |
-| **Guide**  | [HOW-TO-DOPPLER-GUIDE.md](../HOW-TO-DOPPLER-GUIDE.md) |
+| Aspekt     | Details                                                      |
+| ---------- | ------------------------------------------------------------ |
+| **Status** | ✅ COMPLETE (14. Januar 2026)                                |
+| **System** | Doppler + .env + .locklock (3-Pillar Approach)               |
+| **Guide**  | [HOW-TO-DOPPLER-GUIDE.md](../how-to/HOW-TO-DOPPLER-GUIDE.md) |
 
 **Implementiertes 3-Säulen-System:**
 
@@ -1729,7 +1729,7 @@ doppler run --config prd -- docker-compose --profile production up -d
 > 📄 **Phase 2 Details:** Vitest 4.0.16, Jest komplett entfernt
 > 📄 **Phase 3 Details:** [docs/SVELTEKIT-MIGRATION-PLAN.md](./SVELTEKIT-MIGRATION-PLAN.md) - 34/34 Seiten
 > 📄 **Phase 4 Details:** [docs/adr/ADR-002-alerting-monitoring.md](./adr/ADR-002-alerting-monitoring.md) - Pino, Sentry, Loki, Grafana
-> 📄 **Phase 4.5 Details:** [HOW-TO-DOPPLER-GUIDE.md](../HOW-TO-DOPPLER-GUIDE.md) - Doppler 3-Pillar Secrets
+> 📄 **Phase 4.5 Details:** [HOW-TO-DOPPLER-GUIDE.md](../how-to/HOW-TO-DOPPLER-GUIDE.md) - Doppler 3-Pillar Secrets
 > ⚠️ **Phase 5 (SOC2):** NUR wenn in Production + echter Umsatz generiert wird!
 
 ### 10.3 WAS SICH NICHT ÄNDERT

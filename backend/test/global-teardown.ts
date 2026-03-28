@@ -137,8 +137,6 @@ export function teardown(): void {
       timeout: 30_000,
     });
   } catch {
-    console.warn(
-      '[global-teardown] Tenant cleanup failed — data will be cleaned on next run',
-    );
+    console.warn('[global-teardown] Tenant cleanup failed — data will be cleaned on next run');
   }
 }

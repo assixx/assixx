@@ -76,12 +76,7 @@ describe('BlackboardAttachmentsService', () => {
 
   describe('uploadAttachment', () => {
     it('should delegate to documentsService.createDocument', async () => {
-      const result = await service.uploadAttachment(
-        1,
-        makeFile() as never,
-        10,
-        5,
-      );
+      const result = await service.uploadAttachment(1, makeFile() as never, 10, 5);
 
       expect(result).toBeDefined();
       expect(mockDocs.createDocument).toHaveBeenCalledWith(
@@ -128,6 +123,20 @@ describe('BlackboardAttachmentsService', () => {
   });
 
   // =============================================================
+  // previewAttachment
+  // =============================================================
+
+  describe('previewAttachment', () => {
+    it('should delegate to documentsService.getDocumentContent', async () => {
+      const result = await service.previewAttachment(1, 5, 10);
+
+      expect(result.originalName).toBe('test.pdf');
+      expect(result.mimeType).toBe('application/pdf');
+      expect(mockDocs.getDocumentContent).toHaveBeenCalledWith(1, 5, 10);
+    });
+  });
+
+  // =============================================================
   // downloadByFileUuid
   // =============================================================
 
@@ -135,9 +144,9 @@ describe('BlackboardAttachmentsService', () => {
     it('should throw NotFoundException when doc not found', async () => {
       mockDb.query.mockResolvedValueOnce([]);
 
-      await expect(
-        service.downloadByFileUuid('some-uuid', 5, 10),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.downloadByFileUuid('some-uuid', 5, 10)).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should download by file UUID', async () => {

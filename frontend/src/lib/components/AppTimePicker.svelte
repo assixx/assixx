@@ -100,17 +100,12 @@
 
   /** Focus the minutes segment (auto-advance after hours input) */
   function focusMinutes(): void {
-    const el = document.querySelector<HTMLElement>(
-      '.app-time-picker__segment--minutes',
-    );
+    const el = document.querySelector<HTMLElement>('.app-time-picker__segment--minutes');
     el?.focus();
   }
 
   /** Handle arrow key increment/decrement */
-  function handleArrowKey(
-    segment: 'hours' | 'minutes',
-    direction: 1 | -1,
-  ): void {
+  function handleArrowKey(segment: 'hours' | 'minutes', direction: 1 | -1): void {
     const maxVal = segment === 'hours' ? 23 : 59;
     const currentVal = segment === 'hours' ? parsed.hours : parsed.minutes;
     const stepVal = segment === 'minutes' ? step : 1;
@@ -310,8 +305,7 @@
 
   .app-time-picker__field:focus-within {
     outline: none;
-    box-shadow: 0 0 0 3px
-      color-mix(in oklch, var(--color-primary) 10%, transparent);
+    box-shadow: 0 0 0 3px color-mix(in oklch, var(--color-primary) 10%, transparent);
     border-color: var(--color-primary);
     background: var(--glass-bg-active);
   }
@@ -427,8 +421,7 @@
   }
 
   .app-time-picker--error .app-time-picker__field:focus-within {
-    box-shadow: 0 0 0 3px
-      color-mix(in oklch, var(--color-danger) 10%, transparent);
+    box-shadow: 0 0 0 3px color-mix(in oklch, var(--color-danger) 10%, transparent);
     border-color: var(--color-danger);
   }
 
@@ -442,8 +435,7 @@
   }
 
   .app-time-picker--success .app-time-picker__field:focus-within {
-    box-shadow: 0 0 0 3px
-      color-mix(in oklch, var(--color-success) 10%, transparent);
+    box-shadow: 0 0 0 3px color-mix(in oklch, var(--color-success) 10%, transparent);
     border-color: var(--color-success);
   }
 
@@ -457,8 +449,7 @@
   }
 
   .app-time-picker--warning .app-time-picker__field:focus-within {
-    box-shadow: 0 0 0 3px
-      color-mix(in oklch, var(--color-warning) 10%, transparent);
+    box-shadow: 0 0 0 3px color-mix(in oklch, var(--color-warning) 10%, transparent);
     border-color: var(--color-warning);
   }
 

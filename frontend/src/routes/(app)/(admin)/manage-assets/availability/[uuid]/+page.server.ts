@@ -10,15 +10,14 @@ import {
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async (event) => {
-  const { entity, ...rest } =
-    await loadAvailabilityHistory<AssetAvailabilityEntity>(
-      {
-        loggerName: 'AssetAvailabilityHistory',
-        apiPathSegment: 'assets',
-        entityKey: 'asset',
-        errorMessage: 'Fehler beim Laden der Anlagenverfügbarkeitshistorie',
-      },
-      event,
-    );
+  const { entity, ...rest } = await loadAvailabilityHistory<AssetAvailabilityEntity>(
+    {
+      loggerName: 'AssetAvailabilityHistory',
+      apiPathSegment: 'assets',
+      entityKey: 'asset',
+      errorMessage: 'Fehler beim Laden der Anlagenverfügbarkeitshistorie',
+    },
+    event,
+  );
   return { asset: entity, ...rest };
 };

@@ -18,11 +18,7 @@
 
   "files": [],
 
-  "references": [
-    { "path": "./shared" },
-    { "path": "./backend" },
-    { "path": "./frontend" }
-  ],
+  "references": [{ "path": "./shared" }, { "path": "./backend" }, { "path": "./frontend" }],
 
   // ============================================================
   // EXCLUDE (for tooling like ESLint)

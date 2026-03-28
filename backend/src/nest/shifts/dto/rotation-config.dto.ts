@@ -38,15 +38,11 @@ const ShiftBlockConfigSchema = z.object({
  */
 export const GenerateRotationFromConfigSchema = z.object({
   config: ShiftBlockConfigSchema,
-  assignments: z
-    .array(EmployeeAssignmentSchema)
-    .min(1, 'At least one assignment is required'),
+  assignments: z.array(EmployeeAssignmentSchema).min(1, 'At least one assignment is required'),
   startDate: ShiftDateSchema,
   endDate: ShiftDateSchema,
   teamId: z.number().int().positive().optional(),
   departmentId: z.number().int().positive().optional(),
 });
 
-export class GenerateRotationFromConfigDto extends createZodDto(
-  GenerateRotationFromConfigSchema,
-) {}
+export class GenerateRotationFromConfigDto extends createZodDto(GenerateRotationFromConfigSchema) {}

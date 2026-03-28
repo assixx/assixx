@@ -17,21 +17,7 @@
   /** Determine if the file is a PDF based on mimeType */
   const isPdf = $derived(image?.mimeType === 'application/pdf');
   /** Determine if the file is an image based on mimeType or default behavior */
-  const isImage = $derived(
-    image?.mimeType === undefined || image.mimeType.startsWith('image/'),
-  );
-
-  function handleOverlayClick(e: MouseEvent): void {
-    if (e.target === e.currentTarget) {
-      onclose();
-    }
-  }
-
-  function handleKeydown(e: KeyboardEvent): void {
-    if (e.key === 'Escape') {
-      onclose();
-    }
-  }
+  const isImage = $derived(image?.mimeType === undefined || image.mimeType.startsWith('image/'));
 
   function handleDownload(): void {
     if (image === null) return;
@@ -43,22 +29,12 @@
   }
 </script>
 
-<svelte:window onkeydown={handleKeydown} />
-
 {#if show && image !== null}
-  <!-- svelte-ignore a11y_click_events_have_key_events -->
-  <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div
     id="chat-image-preview-modal"
     class="modal-overlay modal-overlay--active"
-    onclick={handleOverlayClick}
   >
-    <div
-      class="ds-modal ds-modal--lg"
-      onclick={(e) => {
-        e.stopPropagation();
-      }}
-    >
+    <div class="ds-modal ds-modal--lg">
       <div class="ds-modal__header">
         <h3 class="ds-modal__title">
           {#if isPdf}
@@ -85,9 +61,7 @@
             title="Dokumentenvorschau"
           ></iframe>
         {:else if isImage}
-          <div
-            class="bg-surface-1 flex h-[70vh] min-h-[600px] w-full items-center justify-center"
-          >
+          <div class="bg-surface-1 flex h-[70vh] min-h-[600px] w-full items-center justify-center">
             <img
               src={image.src}
               class="max-h-full max-w-full object-contain"
@@ -95,15 +69,11 @@
             />
           </div>
         {:else}
-          <div
-            class="bg-surface-1 flex h-[70vh] min-h-[600px] w-full items-center justify-center"
-          >
+          <div class="bg-surface-1 flex h-[70vh] min-h-[600px] w-full items-center justify-center">
             <div class="text-content-secondary text-center">
               <i class="fas fa-file-alt mb-4 text-6xl"></i>
               <p class="text-lg">Keine Vorschau verfügbar</p>
-              <p class="mt-2 text-sm">
-                Bitte laden Sie die Datei herunter, um sie anzuzeigen.
-              </p>
+              <p class="mt-2 text-sm">Bitte laden Sie die Datei herunter, um sie anzuzeigen.</p>
             </div>
           </div>
         {/if}

@@ -5,11 +5,7 @@
  * list assignees, and get eligible users (team-filtered).
  */
 import { IS_ACTIVE } from '@assixx/shared/constants';
-import {
-  BadRequestException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import type { PoolClient } from 'pg';
 import { v7 as uuidv7 } from 'uuid';
 
@@ -108,10 +104,7 @@ export class WorkOrderAssigneesService {
   }
 
   /** List all assignees for a work order */
-  async getAssignees(
-    tenantId: number,
-    workOrderUuid: string,
-  ): Promise<WorkOrderAssignee[]> {
+  async getAssignees(tenantId: number, workOrderUuid: string): Promise<WorkOrderAssignee[]> {
     const rows = await this.db.query<WorkOrderAssigneeWithNameRow>(
       `SELECT a.*, u.first_name, u.last_name, u.profile_picture
        FROM work_order_assignees a
@@ -124,10 +117,7 @@ export class WorkOrderAssigneesService {
   }
 
   /** Get eligible users for assignment, optionally filtered by asset teams */
-  async getEligibleUsers(
-    tenantId: number,
-    assetId?: number,
-  ): Promise<EligibleUser[]> {
+  async getEligibleUsers(tenantId: number, assetId?: number): Promise<EligibleUser[]> {
     if (assetId !== undefined) {
       return await this.fetchTeamFilteredUsers(tenantId, assetId);
     }
@@ -155,10 +145,7 @@ export class WorkOrderAssigneesService {
     return result.rows[0];
   }
 
-  private async countAssignees(
-    client: PoolClient,
-    workOrderId: number,
-  ): Promise<number> {
+  private async countAssignees(client: PoolClient, workOrderId: number): Promise<number> {
     const result = await client.query<{ count: string }>(
       `SELECT COUNT(*) AS count FROM work_order_assignees
        WHERE work_order_id = $1`,
@@ -194,10 +181,7 @@ export class WorkOrderAssigneesService {
   }
 
   /** Team-filtered: only employees belonging to teams assigned to the asset */
-  private async fetchTeamFilteredUsers(
-    tenantId: number,
-    assetId: number,
-  ): Promise<EligibleUser[]> {
+  private async fetchTeamFilteredUsers(tenantId: number, assetId: number): Promise<EligibleUser[]> {
     const rows = await this.db.query<{
       id: number;
       uuid: string;

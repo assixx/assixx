@@ -25,9 +25,7 @@ function createMockReflector() {
   };
 }
 
-function createMockExecutionContext(
-  user?: Partial<NestAuthUser>,
-): ExecutionContext {
+function createMockExecutionContext(user?: Partial<NestAuthUser>): ExecutionContext {
   const mockRequest = {
     user:
       user !== undefined ?
@@ -66,9 +64,7 @@ describe('SECURITY: RolesGuard', () => {
 
   beforeEach(() => {
     mockReflector = createMockReflector();
-    guard = new RolesGuard(
-      mockReflector as unknown as import('@nestjs/core').Reflector,
-    );
+    guard = new RolesGuard(mockReflector as unknown as import('@nestjs/core').Reflector);
   });
 
   // -----------------------------------------------------------
@@ -102,9 +98,7 @@ describe('SECURITY: RolesGuard', () => {
   describe('Authentication Check', () => {
     it('should throw ForbiddenException when user is undefined', () => {
       mockReflector.getAllAndOverride.mockReturnValue(['admin']);
-      const context = createMockExecutionContext(
-        undefined as unknown as Partial<NestAuthUser>,
-      );
+      const context = createMockExecutionContext(undefined as unknown as Partial<NestAuthUser>);
       // Manually set user to undefined
       const request = context.switchToHttp().getRequest() as {
         user?: NestAuthUser;

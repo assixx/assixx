@@ -5,10 +5,7 @@
 import type { RootUser, StatusFilter } from './types';
 
 /** Filter users by status */
-export function filterByStatus(
-  users: RootUser[],
-  status: StatusFilter,
-): RootUser[] {
+export function filterByStatus(users: RootUser[], status: StatusFilter): RootUser[] {
   switch (status) {
     case 'active':
       return users.filter((u) => u.isActive === 1);

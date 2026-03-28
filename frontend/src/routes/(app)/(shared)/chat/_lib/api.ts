@@ -53,13 +53,9 @@ export async function loadConversations(): Promise<Conversation[]> {
  * Fetch a single conversation by ID (with participants and metadata).
  * Used when a WebSocket message arrives for a conversation not yet in the sidebar.
  */
-export async function fetchConversationById(
-  conversationId: number,
-): Promise<Conversation | null> {
+export async function fetchConversationById(conversationId: number): Promise<Conversation | null> {
   try {
-    const response = await apiClient.get(
-      `${API_ENDPOINTS.conversations}/${conversationId}`,
-    );
+    const response = await apiClient.get(`${API_ENDPOINTS.conversations}/${conversationId}`);
 
     if (response !== null && typeof response === 'object') {
       const obj = response as Record<string, unknown>;
@@ -67,8 +63,7 @@ export async function fetchConversationById(
         const conv = obj.conversation as Conversation;
         return {
           ...conv,
-          participants:
-            Array.isArray(conv.participants) ? conv.participants : [],
+          participants: Array.isArray(conv.participants) ? conv.participants : [],
         };
       }
     }
@@ -101,9 +96,7 @@ export async function createConversation(
 }
 
 /** Delete a conversation */
-export async function deleteConversation(
-  conversationId: number,
-): Promise<void> {
+export async function deleteConversation(conversationId: number): Promise<void> {
   await apiClient.delete(API_ENDPOINTS.deleteConversation(conversationId));
 }
 
@@ -130,9 +123,7 @@ export async function loadMessages(conversationId: number): Promise<Message[]> {
 }
 
 /** Mark a conversation as read */
-export async function markConversationAsRead(
-  conversationId: number,
-): Promise<void> {
+export async function markConversationAsRead(conversationId: number): Promise<void> {
   await apiClient.post(API_ENDPOINTS.markRead(conversationId), {});
 }
 
@@ -141,12 +132,8 @@ export async function markConversationAsRead(
 // =============================================================================
 
 /** Load scheduled messages for a conversation */
-export async function loadScheduledMessages(
-  conversationId: number,
-): Promise<ScheduledMessage[]> {
-  const response = await apiClient.get(
-    API_ENDPOINTS.scheduledMessages(conversationId),
-  );
+export async function loadScheduledMessages(conversationId: number): Promise<ScheduledMessage[]> {
+  const response = await apiClient.get(API_ENDPOINTS.scheduledMessages(conversationId));
 
   // Handle different API response formats
   if (Array.isArray(response)) {
@@ -206,9 +193,7 @@ export async function createScheduledMessage(
 }
 
 /** Cancel/delete a scheduled message */
-export async function cancelScheduledMessage(
-  scheduledId: string,
-): Promise<void> {
+export async function cancelScheduledMessage(scheduledId: string): Promise<void> {
   await apiClient.delete(API_ENDPOINTS.deleteScheduled(scheduledId));
 }
 
@@ -240,8 +225,7 @@ export async function searchUsers(query: string): Promise<ChatUser[]> {
   const searchLower = query.toLowerCase();
 
   return users.filter((user: ChatUser) => {
-    const fullName =
-      `${user.firstName ?? ''} ${user.lastName ?? ''}`.toLowerCase();
+    const fullName = `${user.firstName ?? ''} ${user.lastName ?? ''}`.toLowerCase();
     return (
       user.username.toLowerCase().includes(searchLower) ||
       fullName.includes(searchLower) ||
@@ -263,10 +247,7 @@ export async function uploadAttachment(
   const formData = new FormData();
   formData.append('file', file);
 
-  return await apiClient.upload(
-    API_ENDPOINTS.attachments(conversationId),
-    formData,
-  );
+  return await apiClient.upload(API_ENDPOINTS.attachments(conversationId), formData);
 }
 
 // =============================================================================
@@ -279,9 +260,8 @@ export function findExistingConversation(
   userId: number,
 ): Conversation | null {
   return (
-    conversations.find(
-      (conv) => !conv.isGroup && conv.participants.some((p) => p.id === userId),
-    ) ?? null
+    conversations.find((conv) => !conv.isGroup && conv.participants.some((p) => p.id === userId)) ??
+    null
   );
 }
 

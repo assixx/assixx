@@ -249,9 +249,7 @@ describe('SettingsService – DB-mocked methods', () => {
 
   describe('getSystemSettings', () => {
     it('throws ForbiddenException for non-root users', async () => {
-      await expect(service.getSystemSettings({}, 'admin')).rejects.toThrow(
-        ForbiddenException,
-      );
+      await expect(service.getSystemSettings({}, 'admin')).rejects.toThrow(ForbiddenException);
     });
 
     it('returns parsed settings for root user', async () => {
@@ -281,9 +279,9 @@ describe('SettingsService – DB-mocked methods', () => {
     it('throws NotFoundException when setting does not exist', async () => {
       mockDb.query.mockResolvedValueOnce([]);
 
-      await expect(
-        service.getSystemSetting('missing.key', 'root'),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.getSystemSetting('missing.key', 'root')).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('throws ForbiddenException for non-admin on private setting', async () => {
@@ -301,9 +299,9 @@ describe('SettingsService – DB-mocked methods', () => {
         },
       ]);
 
-      await expect(
-        service.getSystemSetting('secret.key', 'employee'),
-      ).rejects.toThrow(ForbiddenException);
+      await expect(service.getSystemSetting('secret.key', 'employee')).rejects.toThrow(
+        ForbiddenException,
+      );
     });
   });
 
@@ -311,9 +309,7 @@ describe('SettingsService – DB-mocked methods', () => {
     it('throws NotFoundException when setting does not exist', async () => {
       mockDb.query.mockResolvedValueOnce([]);
 
-      await expect(service.getTenantSetting('missing.key', 1)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.getTenantSetting('missing.key', 1)).rejects.toThrow(NotFoundException);
     });
 
     it('returns parsed tenant setting', async () => {
@@ -341,9 +337,7 @@ describe('SettingsService – DB-mocked methods', () => {
     it('throws NotFoundException when setting does not exist', async () => {
       mockDb.query.mockResolvedValueOnce([]);
 
-      await expect(service.deleteUserSetting('missing.key', 1)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.deleteUserSetting('missing.key', 1)).rejects.toThrow(NotFoundException);
     });
 
     it('deletes existing setting', async () => {
@@ -361,21 +355,16 @@ describe('SettingsService – DB-mocked methods', () => {
   describe('upsertSystemSetting', () => {
     it('throws ForbiddenException for non-root', async () => {
       await expect(
-        service.upsertSystemSetting(
-          { setting_key: 'test', setting_value: 'val' },
-          1,
-          1,
-          'admin',
-        ),
+        service.upsertSystemSetting({ setting_key: 'test', setting_value: 'val' }, 1, 1, 'admin'),
       ).rejects.toThrow(ForbiddenException);
     });
   });
 
   describe('deleteSystemSetting', () => {
     it('throws ForbiddenException for non-root', async () => {
-      await expect(
-        service.deleteSystemSetting('test', 1, 1, 'admin'),
-      ).rejects.toThrow(ForbiddenException);
+      await expect(service.deleteSystemSetting('test', 1, 1, 'admin')).rejects.toThrow(
+        ForbiddenException,
+      );
     });
   });
 
@@ -394,25 +383,25 @@ describe('SettingsService – DB-mocked methods', () => {
 
   describe('deleteTenantSetting', () => {
     it('throws ForbiddenException for employee role', async () => {
-      await expect(
-        service.deleteTenantSetting('test', 1, 1, 'employee'),
-      ).rejects.toThrow(ForbiddenException);
+      await expect(service.deleteTenantSetting('test', 1, 1, 'employee')).rejects.toThrow(
+        ForbiddenException,
+      );
     });
   });
 
   describe('getAdminUserSettings', () => {
     it('throws ForbiddenException for employee role', async () => {
-      await expect(
-        service.getAdminUserSettings(1, 1, 'employee'),
-      ).rejects.toThrow(ForbiddenException);
+      await expect(service.getAdminUserSettings(1, 1, 'employee')).rejects.toThrow(
+        ForbiddenException,
+      );
     });
 
     it('throws NotFoundException for inactive user', async () => {
       mockDb.query.mockResolvedValueOnce([]); // no active user
 
-      await expect(
-        service.getAdminUserSettings(999, 1, 'admin'),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.getAdminUserSettings(999, 1, 'admin')).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 });

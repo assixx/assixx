@@ -6,11 +6,7 @@
   Displays storage plans and allows upgrades
 -->
 <script lang="ts">
-  import {
-    showSuccessAlert,
-    showErrorAlert,
-    showConfirmWarning,
-  } from '$lib/utils/alerts';
+  import { showSuccessAlert, showErrorAlert, showConfirmWarning } from '$lib/utils/alerts';
   import { getApiClient } from '$lib/utils/api-client';
   import { createLogger } from '$lib/utils/logger';
 
@@ -187,15 +183,11 @@
       const apiClient = getApiClient();
       await apiClient.put('/plans/upgrade', { planId });
 
-      showSuccessAlert(
-        'Plan erfolgreich aktualisiert! Die Änderungen werden in Kürze wirksam.',
-      );
+      showSuccessAlert('Plan erfolgreich aktualisiert! Die Änderungen werden in Kürze wirksam.');
       await loadStorageInfo();
     } catch (err: unknown) {
       log.error({ err }, 'Error upgrading plan');
-      showErrorAlert(
-        'Fehler beim Plan-Upgrade. Bitte kontaktieren Sie unseren Support.',
-      );
+      showErrorAlert('Fehler beim Plan-Upgrade. Bitte kontaktieren Sie unseren Support.');
     } finally {
       isLoading = false;
     }
@@ -205,8 +197,7 @@
    * Open email to contact sales
    */
   function contactSales(): void {
-    window.location.href =
-      'mailto:sales@assixx.com?subject=Individueller Speicherplatz Anfrage';
+    window.location.href = 'mailto:sales@assixx.com?subject=Individueller Speicherplatz Anfrage';
   }
 </script>
 
@@ -349,8 +340,8 @@
     </div>
     <div class="custom-storage-content">
       <p class="custom-storage-description">
-        Benötigen Sie mehr als 100 GB Speicherplatz? Kontaktieren Sie uns für
-        ein individuelles Angebot.
+        Benötigen Sie mehr als 100 GB Speicherplatz? Kontaktieren Sie uns für ein individuelles
+        Angebot.
       </p>
       <button
         type="button"
@@ -368,33 +359,27 @@
     <h2 class="mb-6 text-center">Häufig gestellte Fragen</h2>
 
     <div class="faq-item">
-      <div class="faq-question">
-        Was passiert, wenn ich meinen Speicherplatz überschreite?
-      </div>
+      <div class="faq-question">Was passiert, wenn ich meinen Speicherplatz überschreite?</div>
       <div class="faq-answer">
-        Sie erhalten rechtzeitig eine Benachrichtigung, wenn Sie 90% Ihres
-        Speichers erreichen. Bei Überschreitung können keine neuen Dateien
-        hochgeladen werden, bis Sie entweder Speicher freigeben oder upgraden.
+        Sie erhalten rechtzeitig eine Benachrichtigung, wenn Sie 90% Ihres Speichers erreichen. Bei
+        Überschreitung können keine neuen Dateien hochgeladen werden, bis Sie entweder Speicher
+        freigeben oder upgraden.
       </div>
     </div>
 
     <div class="faq-item">
-      <div class="faq-question">
-        Kann ich meinen Speicherplan jederzeit ändern?
-      </div>
+      <div class="faq-question">Kann ich meinen Speicherplan jederzeit ändern?</div>
       <div class="faq-answer">
-        Ja, Sie können jederzeit auf einen größeren Speicherplan upgraden.
-        Downgrades sind zum Ende des Abrechnungszeitraums möglich.
+        Ja, Sie können jederzeit auf einen größeren Speicherplan upgraden. Downgrades sind zum Ende
+        des Abrechnungszeitraums möglich.
       </div>
     </div>
 
     <div class="faq-item">
-      <div class="faq-question">
-        Werden meine Daten beim Upgrade beeinflusst?
-      </div>
+      <div class="faq-question">Werden meine Daten beim Upgrade beeinflusst?</div>
       <div class="faq-answer">
-        Nein, alle Ihre Daten bleiben beim Upgrade unverändert. Der zusätzliche
-        Speicher wird sofort nach der Bestätigung verfügbar.
+        Nein, alle Ihre Daten bleiben beim Upgrade unverändert. Der zusätzliche Speicher wird sofort
+        nach der Bestätigung verfügbar.
       </div>
     </div>
   </div>
@@ -446,8 +431,7 @@
     font-size: 3rem;
     font-weight: 700;
     color: var(--primary-color);
-    text-shadow: 0 0 10px
-      color-mix(in oklch, var(--color-primary) 50%, transparent);
+    text-shadow: 0 0 10px color-mix(in oklch, var(--color-primary) 50%, transparent);
   }
 
   .storage-price {
@@ -525,8 +509,7 @@
     border-radius: 10px;
 
     background: var(--accent-color);
-    box-shadow: inset 0 1px 3px
-      color-mix(in oklch, var(--color-black) 30%, transparent);
+    box-shadow: inset 0 1px 3px color-mix(in oklch, var(--color-black) 30%, transparent);
   }
 
   .usage-progress-bar {

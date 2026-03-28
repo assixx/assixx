@@ -102,19 +102,13 @@ describe('TenantDeletionService', () => {
 
   describe('deleteTenant', () => {
     it('should orchestrate full deletion flow', async () => {
-      mockDb.transaction.mockImplementation(
-        async (cb: (client: unknown) => Promise<unknown>) => {
-          return await cb(mockClient);
-        },
-      );
+      mockDb.transaction.mockImplementation(async (cb: (client: unknown) => Promise<unknown>) => {
+        return await cb(mockClient);
+      });
       mockAudit.checkLegalHolds.mockResolvedValue(undefined);
-      mockExporter.createTenantDataExport.mockResolvedValue(
-        '/backup/path.tar.gz',
-      );
+      mockExporter.createTenantDataExport.mockResolvedValue('/backup/path.tar.gz');
       mockAudit.createDeletionAuditTrail.mockResolvedValue(undefined);
-      mockExecutor.executeDeletions.mockResolvedValue([
-        { table: 'users', deleted: 5 },
-      ]);
+      mockExecutor.executeDeletions.mockResolvedValue([{ table: 'users', deleted: 5 }]);
       mockAnalyzer.verifyCompleteDeletion.mockResolvedValue([]);
 
       const result = await service.deleteTenant(1, 100, 10, 'test', '1.2.3.4');
@@ -130,24 +124,16 @@ describe('TenantDeletionService', () => {
         throw new Error('INVALID TENANT_ID');
       });
 
-      await expect(service.deleteTenant(-1, 1, 1)).rejects.toThrow(
-        'INVALID TENANT_ID',
-      );
+      await expect(service.deleteTenant(-1, 1, 1)).rejects.toThrow('INVALID TENANT_ID');
     });
 
     it('should update queue status on failure', async () => {
-      mockDb.transaction.mockImplementation(
-        async (cb: (client: unknown) => Promise<unknown>) => {
-          return await cb(mockClient);
-        },
-      );
-      mockAudit.checkLegalHolds.mockRejectedValue(
-        new Error('Legal hold active'),
-      );
+      mockDb.transaction.mockImplementation(async (cb: (client: unknown) => Promise<unknown>) => {
+        return await cb(mockClient);
+      });
+      mockAudit.checkLegalHolds.mockRejectedValue(new Error('Legal hold active'));
 
-      await expect(service.deleteTenant(1, 100, 10)).rejects.toThrow(
-        'Legal hold active',
-      );
+      await expect(service.deleteTenant(1, 100, 10)).rejects.toThrow('Legal hold active');
 
       // Should have tried to update queue to 'failed' (status is in params)
       const queryCalls = mockClient.query.mock.calls;
@@ -159,11 +145,9 @@ describe('TenantDeletionService', () => {
     });
 
     it('should clear Redis cache after deletion', async () => {
-      mockDb.transaction.mockImplementation(
-        async (cb: (client: unknown) => Promise<unknown>) => {
-          return await cb(mockClient);
-        },
-      );
+      mockDb.transaction.mockImplementation(async (cb: (client: unknown) => Promise<unknown>) => {
+        return await cb(mockClient);
+      });
       mockAudit.checkLegalHolds.mockResolvedValue(undefined);
       mockExporter.createTenantDataExport.mockResolvedValue('/path');
       mockAudit.createDeletionAuditTrail.mockResolvedValue(undefined);
@@ -176,11 +160,9 @@ describe('TenantDeletionService', () => {
     });
 
     it('should delete Redis keys when they exist', async () => {
-      mockDb.transaction.mockImplementation(
-        async (cb: (client: unknown) => Promise<unknown>) => {
-          return await cb(mockClient);
-        },
-      );
+      mockDb.transaction.mockImplementation(async (cb: (client: unknown) => Promise<unknown>) => {
+        return await cb(mockClient);
+      });
       mockAudit.checkLegalHolds.mockResolvedValue(undefined);
       mockExporter.createTenantDataExport.mockResolvedValue('/path');
       mockAudit.createDeletionAuditTrail.mockResolvedValue(undefined);
@@ -194,11 +176,9 @@ describe('TenantDeletionService', () => {
     });
 
     it('should handle queue status update failure gracefully', async () => {
-      mockDb.transaction.mockImplementation(
-        async (cb: (client: unknown) => Promise<unknown>) => {
-          return await cb(mockClient);
-        },
-      );
+      mockDb.transaction.mockImplementation(async (cb: (client: unknown) => Promise<unknown>) => {
+        return await cb(mockClient);
+      });
       mockAudit.checkLegalHolds.mockRejectedValue(new Error('hold'));
       // Queue update also fails
       mockClient.query.mockRejectedValueOnce(new Error('queue update fail'));
@@ -229,13 +209,9 @@ describe('TenantDeletionService', () => {
     });
 
     it('should throw when deletion already requested', async () => {
-      mockDb.query.mockResolvedValueOnce([
-        { id: 1, tenant_id: 1, status: 'pending_approval' },
-      ]);
+      mockDb.query.mockResolvedValueOnce([{ id: 1, tenant_id: 1, status: 'pending_approval' }]);
 
-      await expect(service.requestDeletion(1, 10)).rejects.toThrow(
-        'Deletion already requested',
-      );
+      await expect(service.requestDeletion(1, 10)).rejects.toThrow('Deletion already requested');
     });
 
     it('should throw when legal holds exist', async () => {
@@ -259,10 +235,7 @@ describe('TenantDeletionService', () => {
 
       await service.requestDeletion(1, 10);
 
-      expect(mockAudit.sendDeletionWarningEmails).toHaveBeenCalledWith(
-        1,
-        expect.any(Date),
-      );
+      expect(mockAudit.sendDeletionWarningEmails).toHaveBeenCalledWith(1, expect.any(Date));
       expect(mockAudit.createDeletionAuditTrail).toHaveBeenCalled();
     });
   });
@@ -274,18 +247,13 @@ describe('TenantDeletionService', () => {
   describe('cancelDeletion', () => {
     it('should cancel pending deletion', async () => {
       mockDb.query
-        .mockResolvedValueOnce([
-          { id: 50, tenant_id: 1, status: 'pending_approval' },
-        ])
+        .mockResolvedValueOnce([{ id: 50, tenant_id: 1, status: 'pending_approval' }])
         .mockResolvedValueOnce([]) // UPDATE queue to cancelled
         .mockResolvedValueOnce([]); // UPDATE tenants
 
       await service.cancelDeletion(1, 5);
 
-      expect(mockDb.query).toHaveBeenCalledWith(
-        expect.stringContaining("'cancelled'"),
-        [50],
-      );
+      expect(mockDb.query).toHaveBeenCalledWith(expect.stringContaining("'cancelled'"), [50]);
     });
 
     it('should handle emergency stop', async () => {
@@ -296,18 +264,13 @@ describe('TenantDeletionService', () => {
 
       await service.cancelDeletion(1, 5, true);
 
-      expect(mockDb.query).toHaveBeenCalledWith(
-        expect.stringContaining('emergency_stop'),
-        [5, 50],
-      );
+      expect(mockDb.query).toHaveBeenCalledWith(expect.stringContaining('emergency_stop'), [5, 50]);
     });
 
     it('should throw when no active deletion found', async () => {
       mockDb.query.mockResolvedValueOnce([]);
 
-      await expect(service.cancelDeletion(1, 5)).rejects.toThrow(
-        'No active deletion found',
-      );
+      await expect(service.cancelDeletion(1, 5)).rejects.toThrow('No active deletion found');
     });
 
     it('should throw when firstQueueItem is falsy', async () => {
@@ -316,9 +279,7 @@ describe('TenantDeletionService', () => {
       Object.defineProperty(sparseArray, 'length', { value: 1 });
       mockDb.query.mockResolvedValueOnce(sparseArray);
 
-      await expect(service.cancelDeletion(1, 5)).rejects.toThrow(
-        'No pending deletion found',
-      );
+      await expect(service.cancelDeletion(1, 5)).rejects.toThrow('No pending deletion found');
     });
   });
 
@@ -341,11 +302,9 @@ describe('TenantDeletionService', () => {
       ]);
 
       // deleteTenant will be called — set up its mocks
-      mockDb.transaction.mockImplementation(
-        async (cb: (client: unknown) => Promise<unknown>) => {
-          return await cb(mockClient);
-        },
-      );
+      mockDb.transaction.mockImplementation(async (cb: (client: unknown) => Promise<unknown>) => {
+        return await cb(mockClient);
+      });
       mockAudit.checkLegalHolds.mockResolvedValue(undefined);
       mockExporter.createTenantDataExport.mockResolvedValue('/p');
       mockAudit.createDeletionAuditTrail.mockResolvedValue(undefined);
@@ -492,10 +451,7 @@ describe('TenantDeletionService', () => {
 
       await service.approveDeletion(10, 5, 'approved');
 
-      expect(mockDb.query).toHaveBeenCalledWith(
-        expect.stringContaining('approved'),
-        [5, 10],
-      );
+      expect(mockDb.query).toHaveBeenCalledWith(expect.stringContaining('approved'), [5, 10]);
     });
   });
 
@@ -505,9 +461,7 @@ describe('TenantDeletionService', () => {
       mockDb.query.mockResolvedValueOnce([{ tenant_id: 1 }]);
 
       // cancelDeletion queries for active deletion
-      mockDb.query.mockResolvedValueOnce([
-        { id: 50, tenant_id: 1, status: 'pending_approval' },
-      ]);
+      mockDb.query.mockResolvedValueOnce([{ id: 50, tenant_id: 1, status: 'pending_approval' }]);
       mockDb.query
         .mockResolvedValueOnce([]) // UPDATE cancelled
         .mockResolvedValueOnce([]); // UPDATE tenants
@@ -567,10 +521,7 @@ describe('TenantDeletionService', () => {
 
       await service.retryDeletion(10);
 
-      expect(mockDb.query).toHaveBeenCalledWith(
-        expect.stringContaining('retry_count'),
-        [10],
-      );
+      expect(mockDb.query).toHaveBeenCalledWith(expect.stringContaining('retry_count'), [10]);
     });
   });
 
@@ -581,11 +532,9 @@ describe('TenantDeletionService', () => {
   describe('onModuleDestroy', () => {
     it('should quit Redis if initialized', async () => {
       // Trigger Redis initialization by calling a method that uses it
-      mockDb.transaction.mockImplementation(
-        async (cb: (client: unknown) => Promise<unknown>) => {
-          return await cb(mockClient);
-        },
-      );
+      mockDb.transaction.mockImplementation(async (cb: (client: unknown) => Promise<unknown>) => {
+        return await cb(mockClient);
+      });
       mockAudit.checkLegalHolds.mockResolvedValue(undefined);
       mockExporter.createTenantDataExport.mockResolvedValue('/p');
       mockAudit.createDeletionAuditTrail.mockResolvedValue(undefined);

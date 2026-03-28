@@ -151,10 +151,7 @@
   }
 
   /** Scroll sidebar to reveal newly opened submenu — starts on next frame, parallel to CSS */
-  function scrollSubmenuIntoView(
-    target: EventTarget | null | undefined,
-    itemId: string,
-  ): void {
+  function scrollSubmenuIntoView(target: EventTarget | null | undefined, itemId: string): void {
     if (!(target instanceof HTMLElement)) return;
     const nav = target.closest('.sidebar-nav');
     const li = target.closest('li');
@@ -163,14 +160,12 @@
     submenuScrollPositions.set(itemId, nav.scrollTop);
 
     requestAnimationFrame(() => {
-      const submenuUl = li.querySelector(
-        ':scope > .submenu-wrapper > .submenu',
-      );
+      const submenuUl = li.querySelector(':scope > .submenu-wrapper > .submenu');
       if (!(submenuUl instanceof HTMLElement)) return;
 
       const navRect = nav.getBoundingClientRect();
       const buttonBottom = target.getBoundingClientRect().bottom;
-      const finalBottom = buttonBottom + submenuUl.scrollHeight + 16;
+      const finalBottom = buttonBottom + submenuUl.scrollHeight + 40;
 
       if (finalBottom > navRect.bottom) {
         smoothScrollNav(nav, nav.scrollTop + (finalBottom - navRect.bottom));
@@ -179,10 +174,7 @@
   }
 
   /** Scroll back to saved position BEFORE collapsing. Returns true if scroll started. */
-  function scrollSubmenuBack(
-    target: EventTarget | null | undefined,
-    itemId: string,
-  ): boolean {
+  function scrollSubmenuBack(target: EventTarget | null | undefined, itemId: string): boolean {
     if (!(target instanceof HTMLElement)) return false;
     const nav = target.closest('.sidebar-nav');
     if (!(nav instanceof HTMLElement)) return false;
@@ -353,9 +345,7 @@
                                 <span>{nestedItem.label}</span>
                                 {#if nestedItem.badgeType && openSubSubmenus.has(subItem.id)}
                                   <NotificationBadge
-                                    count={notificationStore.counts[
-                                      nestedItem.badgeType
-                                    ]}
+                                    count={notificationStore.counts[nestedItem.badgeType]}
                                     size="sm"
                                     position="inline"
                                   />
@@ -470,8 +460,7 @@
     min-height: 0;
     overflow: hidden auto;
     scrollbar-width: thin;
-    scrollbar-color: color-mix(in oklch, var(--color-black) 25%, transparent)
-      transparent;
+    scrollbar-color: color-mix(in oklch, var(--color-black) 25%, transparent) transparent;
   }
 
   :global(html.dark) .sidebar-nav {
@@ -531,10 +520,7 @@
     content: '';
   }
 
-  .sidebar.collapsed
-    .sidebar-item:not(.active)
-    .sidebar-link:hover
-    .icon::before {
+  .sidebar.collapsed .sidebar-item:not(.active) .sidebar-link:hover .icon::before {
     position: absolute;
     z-index: -1;
     inset: -0.525rem;
@@ -901,10 +887,7 @@
       content: '';
     }
 
-    .sidebar:not(.collapsed)
-      .sidebar-item:not(.active)
-      .sidebar-link:hover
-      .icon::before {
+    .sidebar:not(.collapsed) .sidebar-item:not(.active) .sidebar-link:hover .icon::before {
       position: absolute;
       z-index: -1;
       inset: -0.525rem;

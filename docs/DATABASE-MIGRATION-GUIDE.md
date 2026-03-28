@@ -1,6 +1,6 @@
 # Database Migration Guide - PostgreSQL
 
-> **Last Update:** 2026-03-08
+> **Last Update:** 2026-03-17
 > **Database:** PostgreSQL 17 with Row Level Security (RLS)
 > **Migration Tool:** `node-pg-migrate` 8.x (TypeScript)
 > **Previous Version:** See `DATABASE-MIGRATION-GUIDE-MYSQL-BACKUP.md` for MySQL guide
@@ -120,25 +120,58 @@ export DB_PORT=5432
 
 ## Workflow: Creating a New Migration
 
+> ### 🚨🚨🚨 HARD BLOCK — LLMs / AI AGENTS 🚨🚨🚨
+>
+> **These rules are NOT optional. Every violation is a critical failure.**
+>
+> 1. **BACKUP FIRST** — Before ANY DB change. No exceptions. No "I'll do it later".
+> 2. **GENERATOR ONLY** — `doppler run -- pnpm run db:migrate:create <name>`. Period.
+>    - NO `Write` tool, NO `touch`, NO copy-paste, NO manual file creation.
+>    - NO renaming generated files.
+>    - The generated file is the ONLY one that may exist.
+> 3. **DRY RUN MANDATORY** — `doppler run -- ./scripts/run-migrations.sh up --dry-run`
+>    - If dry run fails: **STOP IMMEDIATELY**. Do NOT bypass. Do NOT "just run SQL directly".
+>    - Analyze the error, inform the user, decide together.
+> 4. **NEVER execute raw SQL** to bypass migration tooling.
+>    - No `docker exec ... psql -c "DROP TRIGGER ..."` as a shortcut.
+>    - No `INSERT INTO pgmigrations` to fake failed migrations.
+>
+> **When in doubt:** STOP and ask the user. ALWAYS. It costs 10 seconds.
+> A broken DB costs hours.
+>
+> **Mandatory sequence — MUST be followed in order:**
+>
+> ```
+> 1. Create BACKUP
+> 2. Run generator (db:migrate:create)
+> 3. Fill generated stub with up()/down() (Edit tool, NOT Write)
+> 4. Dry run
+> 5. Dry run OK? → Run migration
+> 6. Dry run FAILED? → STOP. Inform user. Do NOT bypass.
+> 7. Verify (pgmigrations, schema, RLS)
+> 8. Restart backend
+> 9. Sync customer fresh-install
+> ```
+
 ### 1. Generate Migration File
 
-> **⚠️ KRITISCH — NIEMALS Migrationsdateien manuell erstellen!**
+> **⚠️ CRITICAL — NEVER create migration files manually!**
 >
-> Migrationsdateien **AUSSCHLIESSLICH** mit dem Generator erstellen:
+> Migration files must be created **EXCLUSIVELY** with the generator:
 >
 > ```bash
 > doppler run -- pnpm run db:migrate:create <name>
 > ```
 >
-> **Warum:** Die Config (`migrationFilenameFormat: "utc"`) erwartet Timestamps im Format `YYYYMMDDHHmmss`.
-> Manuell erstellte Dateien (z.B. per `Write`-Tool, `touch`, oder Copy-Paste) verwenden
-> oft Unix-Millisekunden-Timestamps (`1773429974779_...`) oder erfundene Nummern —
-> `node-pg-migrate` kann diese nicht parsen und bricht mit `Can't determine timestamp` ab.
+> **Why:** The config (`migrationFilenameFormat: "utc"`) expects timestamps in the format `YYYYMMDDHHmmss`.
+> Manually created files (e.g. via `Write` tool, `touch`, or copy-paste) often use
+> Unix millisecond timestamps (`1773429974779_...`) or fabricated numbers —
+> `node-pg-migrate` cannot parse these and aborts with `Can't determine timestamp`.
 >
-> **Auch Claude/AI-Agenten dürfen KEINE Migrationsdateien manuell erstellen.**
-> Immer erst den Generator ausführen, dann den generierten Stub befüllen.
+> **Claude/AI agents are also NOT allowed to create migration files manually.**
+> Always run the generator first, then fill in the generated stub.
 >
-> **Workflow:** Generator → Datei öffnen → `up()` und `down()` implementieren → fertig.
+> **Workflow:** Generator → open file → implement `up()` and `down()` → done.
 
 ```bash
 doppler run -- pnpm run db:migrate:create add-employee-skills
@@ -281,11 +314,11 @@ truncated or converted first.
 
 Seeds are **global configuration data** without tenant_id:
 
-| Table              | Rows | Description                                             |
-| ------------------ | ---- | ------------------------------------------------------- |
-| `addons`           | 20   | Available addons (8 core + 12 purchasable, see ADR-033) |
-| `kvp_categories`   | 6    | KVP proposal categories                                 |
-| `asset_categories` | 11   | Asset categories (Anlagen)                              |
+| Table              | Rows | Description                                              |
+| ------------------ | ---- | -------------------------------------------------------- |
+| `addons`           | 22   | Available addons (10 core + 12 purchasable, see ADR-033) |
+| `kvp_categories`   | 6    | KVP proposal categories                                  |
+| `asset_categories` | 11   | Asset categories (equipment/installations)               |
 
 ```bash
 # Apply seeds (idempotent — safe to run multiple times)
@@ -326,23 +359,28 @@ doppler run -- pnpm run db:seed
 
 ## Migration Files Overview
 
-| File                                                       | Content                                                |
-| ---------------------------------------------------------- | ------------------------------------------------------ |
-| `20260127000000_baseline.ts`                               | Complete schema (baseline, 89 RLS at time of creation) |
-| `20260127000001_drop-unused-tables.ts`                     | 16 unused tables removed                               |
-| `20260127000002_feature-visits.ts`                         | Feature visit tracking with RLS                        |
-| `20260127000003_notification-feature-id.ts`                | ADR-004 notification feature_id                        |
-| `20260127000004_audit-log-partitioning.ts`                 | Monthly partitioning                                   |
-| `20260127000005_blackboard-status-to-is-active.ts`         | ENUM to INTEGER migration                              |
-| `20260127000006_chat-per-user-soft-delete.ts`              | WhatsApp-style "Delete for me"                         |
-| `20260127000007_audit-trail-request-id.ts`                 | UUID request correlation                               |
-| `20260127000008_kvp-comments-admin-only-trigger.ts`        | Admin-only comment trigger                             |
-| `20260127000009_kvp-daily-limit-trigger.ts`                | Rate limiting trigger                                  |
-| `20260127000010_kvp-confirmations.ts`                      | Read tracking with RLS                                 |
-| `20260127000011_blackboard-confirmations-first-seen.ts`    | New badge vs. read status                              |
-| `20260127000012_kvp-confirmations-first-seen.ts`           | Same pattern for KVP                                   |
-| `20260127000013_kvp-status-restored.ts`                    | ENUM value "restored" added                            |
-| `20260127000014_remove-deprecated-availability-columns.ts` | Data migration + column drop                           |
+| File (17-digit UTC format)                                    | Content                                                |
+| ------------------------------------------------------------- | ------------------------------------------------------ |
+| `20260127000000000_baseline.ts`                               | Complete schema (baseline, 89 RLS at time of creation) |
+| `20260127000000001_drop-unused-tables.ts`                     | 16 unused tables removed                               |
+| `20260127000000002_feature-visits.ts`                         | Feature visit tracking with RLS                        |
+| `20260127000000003_notification-feature-id.ts`                | ADR-004 notification feature_id                        |
+| `20260127000000004_audit-log-partitioning.ts`                 | Monthly partitioning                                   |
+| `20260127000000005_blackboard-status-to-is-active.ts`         | ENUM to INTEGER migration                              |
+| `20260127000000006_chat-per-user-soft-delete.ts`              | WhatsApp-style "Delete for me"                         |
+| `20260127000000007_audit-trail-request-id.ts`                 | UUID request correlation                               |
+| `20260127000000008_kvp-comments-admin-only-trigger.ts`        | Admin-only comment trigger                             |
+| `20260127000000009_kvp-daily-limit-trigger.ts`                | Rate limiting trigger                                  |
+| `20260127000000010_kvp-confirmations.ts`                      | Read tracking with RLS                                 |
+| `20260127000000011_blackboard-confirmations-first-seen.ts`    | New badge vs. read status                              |
+| `20260127000000012_kvp-confirmations-first-seen.ts`           | Same pattern for KVP                                   |
+| `20260127000000013_kvp-status-restored.ts`                    | ENUM value "restored" added                            |
+| `20260127000000014_remove-deprecated-availability-columns.ts` | Data migration + column drop                           |
+| `...` (seq 015–098)                                           | Further migrations, see filesystem                     |
+
+> **Filename convention:** All migrations use 17-digit UTC timestamps.
+> Historical migrations (seq 000–098) use `YYYYMMDD000000NNN` (date + millisecond sequence).
+> New migrations from the generator use real UTC timestamps: `YYYYMMDDHHmmssSSS`.
 
 ---
 
@@ -352,16 +390,62 @@ doppler run -- pnpm run db:seed
 
 ```json
 {
-  "migrationsDir": "database/migrations",
-  "migrationsTable": "pgmigrations",
+  "migrations-dir": "database/migrations",
+  "migrations-table": "pgmigrations",
   "schema": "public",
-  "checkOrder": true,
+  "check-order": true,
   "verbose": true,
   "decamelize": true,
-  "migrationFilenameFormat": "utc",
-  "migrationFileLanguage": "ts"
+  "migration-filename-format": "utc",
+  "migration-file-language": "ts",
+  "template-file-name": "database/migrations/template.ts",
+  "ignore-pattern": "template\\.ts"
 }
 ```
+
+> **Note on keys:** node-pg-migrate v8 uses **kebab-case** for JSON config keys
+> (identical to the CLI arguments). camelCase (e.g. `migrationsDir`) does NOT work.
+
+### Timestamp Format (CRITICAL)
+
+> **node-pg-migrate v8 recognizes ONLY two formats:**
+>
+> | Length        | Format                      | Example                | Created by                                 |
+> | ------------- | --------------------------- | ---------------------- | ------------------------------------------ |
+> | **17 digits** | UTC: `YYYYMMDDHHmmssSSS`    | `20260317153045123`    | `db:migrate:create` (Generator) ✅         |
+> | **13 digits** | Epoch (ms): `1591343909074` | —                      | Not used                                   |
+> | **Other**     | ❌ INVALID                  | `20260127000000` (14!) | Produces `Can't determine timestamp` error |
+>
+> **NEVER use manually crafted 14-digit timestamps!**
+> The generator automatically creates correct 17-digit UTC timestamps.
+>
+> **Why 17 digits?** `new Date().toISOString().replace(/\D/g, "")` produces
+> `"20260317153045123"` — Year(4) + Month(2) + Day(2) + Hour(2) + Minute(2) + Second(2) + Millisecond(3) = **17 digits**.
+>
+> **What happens with the wrong length?** `check-order: true` compares migration order
+> (files sorted by timestamp) with the DB order (pgmigrations).
+> Wrong timestamps → wrong sorting → `checkOrder` error → migration blocked.
+
+### Custom Template
+
+`database/migrations/template.ts` — automatically used by the generator.
+
+```typescript
+import type { MigrationBuilder } from 'node-pg-migrate';
+
+export function up(pgm: MigrationBuilder): void {
+  pgm.sql(`-- TODO`);
+}
+
+export function down(pgm: MigrationBuilder): void {
+  pgm.sql(`-- TODO`);
+}
+```
+
+> **Why a custom template?** The default template of node-pg-migrate v8 imports
+> `ColumnDefinitions` as a runtime value — but this export only exists as a TypeScript type,
+> not at runtime. This causes `SyntaxError: does not provide an export named 'ColumnDefinitions'`.
+> Our template uses `import type { MigrationBuilder }` (type-only, correct).
 
 ### `scripts/run-migrations.sh`
 
@@ -425,46 +509,46 @@ Password: see docker/.env
 
 ---
 
-## Migration Quality Standards (Verbindlich)
+## Migration Quality Standards (Mandatory)
 
-> **Jede neue Migration MUSS diese Regeln einhalten. Verstöße blockieren den PR.**
+> **Every new migration MUST comply with these rules. Violations block the PR.**
 
-### Verbotene Patterns (NEVER)
+### Forbidden Patterns (NEVER)
 
-| Pattern                                        | Warum verboten                                                   | Richtige Alternative                                                                    |
-| ---------------------------------------------- | ---------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
-| `TRUNCATE` in Migrations                       | Löscht Produktionsdaten unwiderruflich                           | `UPDATE ... SET` zum Remappen, oder separate Data-Migration                             |
-| `IF NOT EXISTS` im `up()`                      | Maskiert fehlgeschlagene Partial-Applies statt laut zu scheitern | Nur `CREATE TABLE` / `ADD COLUMN` ohne Guard — Migration-Runner garantiert Einmaligkeit |
-| Stille Data-Fixes (`UPDATE` vor Schema-Change) | Versteckt Datenprobleme statt sie zu lösen                       | `RAISE EXCEPTION` wenn Daten nicht passen (Vorbild: Migration 028)                      |
-| `RAISE NOTICE` bei Datenverlust                | Warnt aber löscht trotzdem — schlimmer als nichts                | `RAISE EXCEPTION` — Migration MUSS abbrechen                                            |
-| Schema + Data in einer Migration               | Partial Failure zerstört Daten ohne Rollback-Möglichkeit         | Separate Migrations: (1) Schema-DDL, (2) Data-Backfill, (3) Cleanup                     |
-| Hardcoded Year-Ranges (Partitionen)            | Zeitbombe — INSERTs scheitern nach Ablauf                        | Mindestens 5 Jahre voraus + Kommentar wann nächste Erweiterung nötig                    |
-| `ON CONFLICT DO NOTHING` ohne Kommentar        | Schluckt Duplikate still — maskiert Korruptionsrisiko            | Expliziter Kommentar WARUM, oder `ON CONFLICT DO UPDATE`                                |
-| MySQL-Legacy-Namen (`idx_19037_*`, `_ibfk_*`)  | Fragile OID-basierte Namen brechen in anderen Umgebungen         | Aussagekräftige Namen: `idx_tablename_column`                                           |
-| Manuell erstellte Migrationsdateien            | Falsches Timestamp-Format → `Can't determine timestamp` Fehler   | **IMMER** `doppler run -- pnpm run db:migrate:create <name>` benutzen                   |
+| Pattern                                           | Why forbidden                                              | Correct alternative                                                                        |
+| ------------------------------------------------- | ---------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| `TRUNCATE` in Migrations                          | Irreversibly deletes production data                       | `UPDATE ... SET` for remapping, or separate data migration                                 |
+| `IF NOT EXISTS` in `up()`                         | Masks failed partial applies instead of failing loudly     | Plain `CREATE TABLE` / `ADD COLUMN` without guard — migration runner guarantees single-run |
+| Silent data fixes (`UPDATE` before schema change) | Hides data problems instead of solving them                | `RAISE EXCEPTION` when data doesn't match (reference: Migration 028)                       |
+| `RAISE NOTICE` on data loss                       | Warns but deletes anyway — worse than nothing              | `RAISE EXCEPTION` — migration MUST abort                                                   |
+| Schema + data in one migration                    | Partial failure destroys data with no rollback option      | Separate migrations: (1) Schema-DDL, (2) Data-Backfill, (3) Cleanup                        |
+| Hardcoded year ranges (partitions)                | Time bomb — INSERTs fail after expiration                  | At least 5 years ahead + comment when next extension is needed                             |
+| `ON CONFLICT DO NOTHING` without comment          | Silently swallows duplicates — masks corruption risk       | Explicit comment WHY, or `ON CONFLICT DO UPDATE`                                           |
+| MySQL legacy names (`idx_19037_*`, `_ibfk_*`)     | Fragile OID-based names break in other environments        | Descriptive names: `idx_tablename_column`                                                  |
+| Manually created migration files                  | Wrong timestamp format → `Can't determine timestamp` error | **ALWAYS** use `doppler run -- pnpm run db:migrate:create <name>`                          |
 
-### Pflicht-Patterns (ALWAYS)
+### Required Patterns (ALWAYS)
 
-- **FAIL LOUD**: Wenn bestehende Daten die Migration blockieren könnten → `DO $$ ... RAISE EXCEPTION` Pre-Check (Vorbild: Migration 028 `teams-deputy-lead`)
-- **`IF EXISTS` nur in `down()`**: Rollbacks dürfen defensiv sein, `up()` nicht
-- **Enum-Addition**: `ADD VALUE IF NOT EXISTS` ist erlaubt (PostgreSQL Enum-Sonderfall, keine Transaktion möglich)
-- **Feature-Flag-Inserts**: `ON CONFLICT (code) DO NOTHING` ist erlaubt für Seed-Daten — mit Kommentar
-- **Lossy Rollback dokumentieren**: Wenn `down()` Daten nicht wiederherstellen kann → Kommentar im Header: `WARNING: One-way migration. Rollback does NOT restore converted data.`
-- **Partitionen**: Bei Erstellung immer ≥5 Jahre voraus + Kommentar: `Next action required: Before YYYY, create migration for YYYY-YYYY+4`
+- **FAIL LOUD**: If existing data could block the migration → `DO $$ ... RAISE EXCEPTION` pre-check (reference: Migration 028 `teams-deputy-lead`)
+- **`IF EXISTS` only in `down()`**: Rollbacks may be defensive, `up()` must not
+- **Enum addition**: `ADD VALUE IF NOT EXISTS` is allowed (PostgreSQL enum special case, no transaction possible)
+- **Feature flag inserts**: `ON CONFLICT (code) DO NOTHING` is allowed for seed data — with comment
+- **Document lossy rollback**: If `down()` cannot restore data → comment in header: `WARNING: One-way migration. Rollback does NOT restore converted data.`
+- **Partitions**: Always create ≥5 years ahead + comment: `Next action required: Before YYYY, create migration for YYYY-YYYY+4`
 
-### Pre-Commit Checklist für neue Migrations
+### Pre-Commit Checklist for New Migrations
 
 ```
-- [ ] Kein TRUNCATE
-- [ ] Kein IF NOT EXISTS im up() (außer ENUM ADD VALUE)
-- [ ] Kein stiller UPDATE vor Schema-Change (RAISE EXCEPTION stattdessen)
-- [ ] Schema und Data sind getrennte Migrations (wenn beides nötig)
-- [ ] down() dokumentiert wenn lossy
-- [ ] Keine hardcoded IDs, OIDs, oder environment-spezifische Werte
-- [ ] Keine MySQL-Legacy-Namen (idx_NNNNN_*, _ibfk_*)
-- [ ] RLS Policy + GRANTs vorhanden (für tenant-isolierte Tabellen)
-- [ ] Kein IF EXISTS im up() (Ausnahme: DROP vor REPLACE bei Triggern)
-- [ ] Datei wurde mit `db:migrate:create` generiert (NICHT manuell erstellt)
+- [ ] No TRUNCATE
+- [ ] No IF NOT EXISTS in up() (except ENUM ADD VALUE)
+- [ ] No silent UPDATE before schema change (use RAISE EXCEPTION instead)
+- [ ] Schema and data are separate migrations (when both are needed)
+- [ ] down() documented if lossy
+- [ ] No hardcoded IDs, OIDs, or environment-specific values
+- [ ] No MySQL legacy names (idx_NNNNN_*, _ibfk_*)
+- [ ] RLS policy + GRANTs present (for tenant-isolated tables)
+- [ ] No IF EXISTS in up() (exception: DROP before REPLACE for triggers)
+- [ ] File was generated with `db:migrate:create` (NOT manually created)
 ```
 
 ---
@@ -837,49 +921,49 @@ ORDER BY calls DESC LIMIT 10;
 
 ## Partition Management (pg_partman)
 
-Partitionen für `audit_trail` und `root_logs` werden automatisch von pg_partman v5.4.3 verwaltet.
+Partitions for `audit_trail` and `root_logs` are managed automatically by pg_partman v5.4.3.
 
-**KEINE manuellen Partition-Migrations mehr nötig.**
+**No manual partition migrations needed anymore.**
 
-pg_partman Background Worker läuft täglich und erstellt fehlende Partitionen 12 Monate im Voraus.
+pg_partman Background Worker runs daily and creates missing partitions 12 months in advance.
 
 ### Monitoring
 
 ```bash
-# pg_partman Config prüfen
+# Check pg_partman config
 docker exec assixx-postgres psql -U assixx_user -d assixx \
   -c "SELECT parent_table, premake, retention FROM partman.part_config;"
 
-# DEFAULT Partitionen prüfen (sollten leer sein)
+# Check DEFAULT partitions (should be empty)
 docker exec assixx-postgres psql -U assixx_user -d assixx \
   -c "SELECT * FROM partman.check_default(p_exact_count := true);"
 
-# Maintenance manuell auslösen (normalerweise automatisch via BGW)
+# Trigger maintenance manually (normally automatic via BGW)
 docker exec assixx-postgres psql -U assixx_user -d assixx \
   -c "CALL partman.run_maintenance_proc();"
 
-# Lücken prüfen
+# Check for gaps
 docker exec assixx-postgres psql -U assixx_user -d assixx \
   -c "SELECT * FROM partman.partition_gap_fill('public.audit_trail');"
 ```
 
-### Konfiguration
+### Configuration
 
-| Parameter            | Wert            | Beschreibung                      |
-| -------------------- | --------------- | --------------------------------- |
-| `p_interval`         | `1 month`       | Monatliche Partitionen            |
-| `p_premake`          | `12`            | 12 Monate im Voraus               |
-| `p_default_table`    | `true`          | Catch-all für unerwartete Daten   |
-| `inherit_privileges` | `true`          | GRANTs werden automatisch vererbt |
-| BGW Interval         | `86400` (1 Tag) | Maintenance-Frequenz              |
+| Parameter            | Value           | Description                        |
+| -------------------- | --------------- | ---------------------------------- |
+| `p_interval`         | `1 month`       | Monthly partitions                 |
+| `p_premake`          | `12`            | 12 months in advance               |
+| `p_default_table`    | `true`          | Catch-all for unexpected data      |
+| `inherit_privileges` | `true`          | GRANTs are automatically inherited |
+| BGW Interval         | `86400` (1 day) | Maintenance frequency              |
 
-### Voraussetzungen
+### Prerequisites
 
 - Custom Docker Image: `docker/Dockerfile.pg-partman` (PostgreSQL 17 + pg_partman)
-- `shared_preload_libraries` muss `pg_partman_bgw` enthalten
-- `max_locks_per_transaction=128` empfohlen
+- `shared_preload_libraries` must include `pg_partman_bgw`
+- `max_locks_per_transaction=128` recommended
 
-Siehe ADR-029 für Architekturentscheidungen.
+See ADR-029 for architecture decisions.
 
 ---
 
@@ -898,17 +982,17 @@ Soft-delete status system used across all tenant-scoped tables.
 
 ### Usage — Single Source of Truth
 
-Constants, Types und Labels leben in `@assixx/shared`:
+Constants, types, and labels live in `@assixx/shared`:
 
 ```typescript
-// Constants — IMMER diese verwenden, NIEMALS Magic Numbers
+// Constants — ALWAYS use these, NEVER magic numbers
 import { IS_ACTIVE } from '@assixx/shared/constants';
 
-// ✅ Korrekt
+// ✅ Correct
 WHERE is_active = ${IS_ACTIVE.ACTIVE}
 WHERE is_active != ${IS_ACTIVE.DELETED}
 
-// ❌ Verboten — Architectural Tests blocken das
+// ❌ Forbidden — Architectural tests block this
 WHERE is_active = 1
 WHERE is_active != 4
 ```
@@ -917,13 +1001,13 @@ WHERE is_active != 4
 // Types
 import type { FormIsActiveStatus, IsActiveStatus } from '@assixx/shared/types';
 
-IsActiveStatus; // 0 | 1 | 3 | 4 — alle DB-Werte
-FormIsActiveStatus; // 0 | 1 | 3     — ohne "deleted" (nie via Formular setzbar)
-StatusFilter; // 'active' | 'inactive' | 'archived' | 'all' — UI-Dropdowns
+IsActiveStatus; // 0 | 1 | 3 | 4 — all DB values
+FormIsActiveStatus; // 0 | 1 | 3     — without "deleted" (never settable via form)
+StatusFilter; // 'active' | 'inactive' | 'archived' | 'all' — UI dropdowns
 ```
 
 ```typescript
-// UI-Helfer für Labels und Badge-Klassen
+// UI helpers for labels and badge classes
 import { FORM_STATUS_OPTIONS, STATUS_BADGE_CLASSES, STATUS_LABELS } from '@assixx/shared/constants';
 
 STATUS_LABELS[IS_ACTIVE.ACTIVE]; // → 'Aktiv'
@@ -932,19 +1016,19 @@ STATUS_BADGE_CLASSES[IS_ACTIVE.DELETED]; // → 'badge--error'
 
 ### Enforcement
 
-Architectural Tests in `shared/src/architectural.test.ts` verhindern:
+Architectural tests in `shared/src/architectural.test.ts` prevent:
 
-- Hardcoded `is_active = 0/1/3/4` in Production-Code
-- Hardcoded `is_active != N` und `is_active IN (N, ...)`
-- Lokale `const IS_ACTIVE = ...` Definitionen (Import aus `@assixx/shared` erzwungen)
+- Hardcoded `is_active = 0/1/3/4` in production code
+- Hardcoded `is_active != N` and `is_active IN (N, ...)`
+- Local `const IS_ACTIVE = ...` definitions (import from `@assixx/shared` enforced)
 
-### Dateien
+### Files
 
-| Datei                                  | Inhalt                                                                      |
+| File                                   | Content                                                                     |
 | -------------------------------------- | --------------------------------------------------------------------------- |
 | `shared/src/types/is-active-status.ts` | `IsActiveStatus`, `FormIsActiveStatus`, `StatusFilter`                      |
 | `shared/src/constants/is-active.ts`    | `IS_ACTIVE`, `STATUS_LABELS`, `STATUS_BADGE_CLASSES`, `FORM_STATUS_OPTIONS` |
-| `shared/src/architectural.test.ts`     | Magic-Number-Prevention Tests                                               |
+| `shared/src/architectural.test.ts`     | Magic number prevention tests                                               |
 
 ---
 
@@ -962,8 +1046,9 @@ Architectural Tests in `shared/src/architectural.test.ts` verhindern:
 
 ## Changelog
 
-| Version | Datum      | Änderung                                                                                                                  |
-| ------- | ---------- | ------------------------------------------------------------------------------------------------------------------------- |
-| 1.0     | 2026-01-27 | Initiale Version — PostgreSQL-Migration von MySQL, kompletter Guide                                                       |
-| 1.1     | 2026-03-08 | Best-Practice-Hinweis: Migrationen IMMER via `db:migrate:create` generieren (kein manuelles Anlegen)                      |
-| 1.2     | 2026-03-11 | ADR-033 Addon-Refactor: Seeds-Tabelle aktualisiert (plans/features/plan_features → addons), Protected Tables aktualisiert |
+| Version | Date       | Change                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| ------- | ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1.0     | 2026-01-27 | Initial version — PostgreSQL migration from MySQL, complete guide                                                                                                                                                                                                                                                                                                                                                                      |
+| 1.1     | 2026-03-08 | Best practice note: migrations MUST ALWAYS be generated via `db:migrate:create` (no manual creation)                                                                                                                                                                                                                                                                                                                                   |
+| 1.2     | 2026-03-11 | ADR-033 Addon refactor: seeds table updated (plans/features/plan_features → addons), protected tables updated                                                                                                                                                                                                                                                                                                                          |
+| 1.3     | 2026-03-17 | **CRITICAL FIX:** All 99 migrations renamed from 14-digit to 17-digit UTC timestamps. node-pg-migrate v8 recognizes ONLY 13 or 17 digits — 14-digit timestamps fell into the Number() fallback, which when mixed with correct 17-digit timestamps caused wrong sorting and `checkOrder` errors. Custom template introduced (default template has broken `ColumnDefinitions` import). Config key documentation corrected to kebab-case. |

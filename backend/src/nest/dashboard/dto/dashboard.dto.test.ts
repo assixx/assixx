@@ -45,9 +45,7 @@ describe('ChatCountsSchema', () => {
   it('should accept with conversations array', () => {
     const data = {
       totalUnread: 3,
-      conversations: [
-        { conversationId: 1, conversationName: 'Team', unreadCount: 2 },
-      ],
+      conversations: [{ conversationId: 1, conversationName: 'Team', unreadCount: 2 }],
     };
     expect(ChatCountsSchema.safeParse(data).success).toBe(true);
   });
@@ -77,16 +75,13 @@ describe('NotificationStatsSchema', () => {
   });
 
   it('should accept empty byType', () => {
-    expect(
-      NotificationStatsSchema.safeParse({ total: 0, unread: 0, byType: {} })
-        .success,
-    ).toBe(true);
+    expect(NotificationStatsSchema.safeParse({ total: 0, unread: 0, byType: {} }).success).toBe(
+      true,
+    );
   });
 
   it('should reject negative values', () => {
-    expect(
-      NotificationStatsSchema.safeParse({ ...valid, unread: -1 }).success,
-    ).toBe(false);
+    expect(NotificationStatsSchema.safeParse({ ...valid, unread: -1 }).success).toBe(false);
   });
 
   it('should reject missing fields', () => {

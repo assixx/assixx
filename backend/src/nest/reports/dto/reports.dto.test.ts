@@ -43,15 +43,11 @@ describe('ExportFormatSchema (reports)', () => {
 
 describe('ReportTypeParamSchema', () => {
   it('should accept valid report type', () => {
-    expect(ReportTypeParamSchema.safeParse({ type: 'overview' }).success).toBe(
-      true,
-    );
+    expect(ReportTypeParamSchema.safeParse({ type: 'overview' }).success).toBe(true);
   });
 
   it('should reject invalid type', () => {
-    expect(ReportTypeParamSchema.safeParse({ type: 'invalid' }).success).toBe(
-      false,
-    );
+    expect(ReportTypeParamSchema.safeParse({ type: 'invalid' }).success).toBe(false);
   });
 
   it('should reject missing type', () => {
@@ -78,9 +74,7 @@ describe('DateRangeQuerySchema', () => {
   });
 
   it('should reject invalid date format', () => {
-    expect(
-      DateRangeQuerySchema.safeParse({ dateFrom: '01/01/2025' }).success,
-    ).toBe(false);
+    expect(DateRangeQuerySchema.safeParse({ dateFrom: '01/01/2025' }).success).toBe(false);
   });
 });
 
@@ -128,15 +122,11 @@ describe('EmployeeReportQuerySchema', () => {
 
 describe('ExportReportQuerySchema', () => {
   it('should accept valid export query', () => {
-    expect(ExportReportQuerySchema.safeParse({ format: 'csv' }).success).toBe(
-      true,
-    );
+    expect(ExportReportQuerySchema.safeParse({ format: 'csv' }).success).toBe(true);
   });
 
   it('should reject invalid format', () => {
-    expect(ExportReportQuerySchema.safeParse({ format: 'pdf' }).success).toBe(
-      false,
-    );
+    expect(ExportReportQuerySchema.safeParse({ format: 'pdf' }).success).toBe(false);
   });
 
   it('should reject missing format', () => {
@@ -179,38 +169,28 @@ describe('CustomReportBodySchema', () => {
       'attendance',
       'compliance',
     ]) {
-      expect(
-        CustomReportBodySchema.safeParse({ ...valid, metrics: [metric] })
-          .success,
-      ).toBe(true);
+      expect(CustomReportBodySchema.safeParse({ ...valid, metrics: [metric] }).success).toBe(true);
     }
   });
 
   it('should accept all valid groupBy values', () => {
     for (const group of ['department', 'team', 'week', 'month']) {
-      expect(
-        CustomReportBodySchema.safeParse({ ...valid, groupBy: group }).success,
-      ).toBe(true);
+      expect(CustomReportBodySchema.safeParse({ ...valid, groupBy: group }).success).toBe(true);
     }
   });
 
   it('should reject empty metrics array', () => {
-    expect(
-      CustomReportBodySchema.safeParse({ ...valid, metrics: [] }).success,
-    ).toBe(false);
+    expect(CustomReportBodySchema.safeParse({ ...valid, metrics: [] }).success).toBe(false);
   });
 
   it('should reject name under 3 chars', () => {
-    expect(
-      CustomReportBodySchema.safeParse({ ...valid, name: 'AB' }).success,
-    ).toBe(false);
+    expect(CustomReportBodySchema.safeParse({ ...valid, name: 'AB' }).success).toBe(false);
   });
 
   it('should reject name over 100 chars', () => {
-    expect(
-      CustomReportBodySchema.safeParse({ ...valid, name: 'a'.repeat(101) })
-        .success,
-    ).toBe(false);
+    expect(CustomReportBodySchema.safeParse({ ...valid, name: 'a'.repeat(101) }).success).toBe(
+      false,
+    );
   });
 
   it('should reject dateTo before dateFrom (cross-field refinement)', () => {
@@ -223,9 +203,8 @@ describe('CustomReportBodySchema', () => {
   });
 
   it('should reject invalid metric', () => {
-    expect(
-      CustomReportBodySchema.safeParse({ ...valid, metrics: ['invalid'] })
-        .success,
-    ).toBe(false);
+    expect(CustomReportBodySchema.safeParse({ ...valid, metrics: ['invalid'] }).success).toBe(
+      false,
+    );
   });
 });

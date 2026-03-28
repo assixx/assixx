@@ -1,10 +1,10 @@
 <script lang="ts">
   /**
-   * Company Settings Page
+   * Addon Settings Page
    * @module settings/company/+page
    *
-   * Root-only page for company address and contact information.
-   * Two cards: readonly company info + editable address form.
+   * Root-only page for addon configuration.
+   * Currently supports KVP daily suggestion limit.
    */
   import { untrack } from 'svelte';
 
@@ -17,129 +17,111 @@
 
   const apiClient = getApiClient();
 
-  // =========================================================================
-  // CONSTANTS
-  // =========================================================================
-
-  const ADDRESS_COUNTRIES = [
-    { iso: 'DE', name: 'Deutschland', flag: '🇩🇪' },
-    { iso: 'AT', name: 'Österreich', flag: '🇦🇹' },
-    { iso: 'CH', name: 'Schweiz', flag: '🇨🇭' },
-    { iso: 'FR', name: 'Frankreich', flag: '🇫🇷' },
-    { iso: 'IT', name: 'Italien', flag: '🇮🇹' },
-    { iso: 'ES', name: 'Spanien', flag: '🇪🇸' },
-    { iso: 'NL', name: 'Niederlande', flag: '🇳🇱' },
-    { iso: 'BE', name: 'Belgien', flag: '🇧🇪' },
-    { iso: 'LU', name: 'Luxemburg', flag: '🇱🇺' },
-    { iso: 'PL', name: 'Polen', flag: '🇵🇱' },
-    { iso: 'CZ', name: 'Tschechien', flag: '🇨🇿' },
-    { iso: 'US', name: 'USA', flag: '🇺🇸' },
-    { iso: 'GB', name: 'Großbritannien', flag: '🇬🇧' },
-  ] as const;
+  interface RewardTier {
+    id: number;
+    amount: number;
+    sortOrder: number;
+  }
 
   // =========================================================================
   // FORM STATE
   // =========================================================================
 
-  // Intentionally capture initial server values — form fields must NOT
-  // reactively update when data is invalidated (user edits would be lost)
-  const initial = untrack(() => data.company);
+  const initial = untrack(() => data.kvpSettings);
 
-  let street = $state(initial?.street ?? '');
-  let houseNumber = $state(initial?.houseNumber ?? '');
-  let postalCode = $state(initial?.postalCode ?? '');
-  let city = $state(initial?.city ?? '');
-  let countryCode = $state(initial?.countryCode ?? 'DE');
+  let dailyLimit = $state(initial?.dailyLimit ?? 1);
   let saving = $state(false);
-  let countryDropdownOpen = $state(false);
+
+  // Reward Tiers
+  let rewardTiers = $state(untrack(() => [...data.rewardTiers]));
+  let newRewardAmount = $state('');
+  let savingReward = $state(false);
 
   // =========================================================================
   // DERIVED
   // =========================================================================
 
-  const companyName = $derived(data.company?.companyName ?? '');
-  const companyEmail = $derived(data.company?.email ?? '');
-  const companyPhone = $derived(data.company?.phone ?? '');
-
-  const selectedCountry = $derived(
-    ADDRESS_COUNTRIES.find((c) => c.iso === countryCode) ??
-      ADDRESS_COUNTRIES[0],
-  );
-
-  const hasChanges = $derived(
-    street !== (data.company?.street ?? '') ||
-      houseNumber !== (data.company?.houseNumber ?? '') ||
-      postalCode !== (data.company?.postalCode ?? '') ||
-      city !== (data.company?.city ?? '') ||
-      countryCode !== (data.company?.countryCode ?? 'DE'),
-  );
+  const hasChanges = $derived(dailyLimit !== (data.kvpSettings?.dailyLimit ?? 1));
 
   const isFormValid = $derived(
-    street.trim() !== '' &&
-      houseNumber.trim() !== '' &&
-      postalCode.trim() !== '' &&
-      city.trim() !== '',
+    dailyLimit >= 0 && dailyLimit <= 100 && Number.isInteger(dailyLimit),
   );
 
   // =========================================================================
   // HANDLERS
   // =========================================================================
 
-  function toggleCountryDropdown(e: MouseEvent): void {
-    e.stopPropagation();
-    countryDropdownOpen = !countryDropdownOpen;
-  }
-
-  function selectCountry(iso: string): void {
-    countryCode = iso;
-    countryDropdownOpen = false;
-  }
-
-  function handleWindowClick(): void {
-    countryDropdownOpen = false;
-  }
-
   async function handleSave(): Promise<void> {
     if (!isFormValid || saving) return;
 
     saving = true;
     try {
-      await apiClient.patch('/company', {
-        street: street.trim(),
-        houseNumber: houseNumber.trim(),
-        postalCode: postalCode.trim(),
-        city: city.trim(),
-        countryCode,
+      await apiClient.put('/kvp/settings', {
+        dailyLimit,
       });
-      showSuccessAlert('Firmendaten gespeichert');
+      showSuccessAlert('KVP-Einstellungen gespeichert');
     } catch (err: unknown) {
-      const message =
-        err instanceof Error ? err.message : 'Fehler beim Speichern';
+      const message = err instanceof Error ? err.message : 'Fehler beim Speichern';
       showErrorAlert(message);
     } finally {
       saving = false; // eslint-disable-line require-atomic-updates -- guarded by early return on saving===true
     }
   }
+
+  // =========================================================================
+  // REWARD TIER HANDLERS
+  // =========================================================================
+
+  async function handleAddRewardTier(): Promise<void> {
+    const amount = parseFloat(newRewardAmount);
+    if (Number.isNaN(amount) || amount <= 0) return;
+    savingReward = true;
+    try {
+      const result = await apiClient.post<RewardTier>('/kvp/reward-tiers', { amount });
+      rewardTiers = [...rewardTiers, result].sort(
+        (a: RewardTier, b: RewardTier) => a.amount - b.amount,
+      );
+      newRewardAmount = ''; // eslint-disable-line require-atomic-updates -- input disabled via savingReward guard
+      showSuccessAlert(`Prämie ${String(amount)}€ hinzugefügt`);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Fehler beim Hinzufügen';
+      showErrorAlert(message);
+    } finally {
+      savingReward = false;
+    }
+  }
+
+  async function handleDeleteRewardTier(tierId: number, amount: number): Promise<void> {
+    savingReward = true;
+    try {
+      await apiClient.delete(`/kvp/reward-tiers/${String(tierId)}`);
+      rewardTiers = rewardTiers.filter((t: { id: number }) => t.id !== tierId);
+      showSuccessAlert(`Prämie ${String(amount)}€ entfernt`);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Fehler beim Entfernen';
+      showErrorAlert(message);
+    } finally {
+      savingReward = false;
+    }
+  }
 </script>
 
-<svelte:window onclick={handleWindowClick} />
-
 <svelte:head>
-  <title>Firmendaten - Einstellungen | Assixx</title>
+  <title>Addon-Einstellungen | Assixx</title>
 </svelte:head>
 
 <div class="container">
   <!-- ================================================================= -->
-  <!-- SECTION 1: Company Info (readonly)                                 -->
+  <!-- SECTION: KVP Addon Settings                                        -->
   <!-- ================================================================= -->
-  <div class="card mb-8">
+  <div class="card">
     <div class="card__header">
       <h2 class="card__title">
-        <i class="fas fa-building mr-2"></i>
-        Firmendaten
+        <i class="fas fa-lightbulb mr-2"></i>
+        KVP Addon
       </h2>
       <p class="mt-2 text-(--color-text-secondary)">
-        Grundlegende Informationen Ihres Unternehmens.
+        Einstellungen für das Kontinuierliche Verbesserungsprozess (KVP) Modul.
       </p>
     </div>
 
@@ -149,59 +131,9 @@
           <div class="alert__icon">
             <i class="fas fa-exclamation-triangle"></i>
           </div>
-          <div class="alert__content">
-            Firmendaten konnten nicht geladen werden.
-          </div>
+          <div class="alert__content">KVP-Einstellungen konnten nicht geladen werden.</div>
         </div>
       {:else}
-        <div class="flex flex-col gap-3">
-          <div class="flex items-baseline gap-4">
-            <span class="w-20 shrink-0 text-sm text-(--color-text-secondary)"
-              >Firma</span
-            >
-            <span class="font-medium text-(--color-text-primary)"
-              >{companyName}</span
-            >
-          </div>
-          <div class="flex items-baseline gap-4">
-            <span class="w-20 shrink-0 text-sm text-(--color-text-secondary)"
-              >E-Mail</span
-            >
-            <span class="font-medium text-(--color-text-primary)"
-              >{companyEmail}</span
-            >
-          </div>
-          {#if companyPhone}
-            <div class="flex items-baseline gap-4">
-              <span class="w-20 shrink-0 text-sm text-(--color-text-secondary)"
-                >Telefon</span
-              >
-              <span class="font-medium text-(--color-text-primary)"
-                >{companyPhone}</span
-              >
-            </div>
-          {/if}
-        </div>
-      {/if}
-    </div>
-  </div>
-
-  <!-- ================================================================= -->
-  <!-- SECTION 2: Address (editable)                                      -->
-  <!-- ================================================================= -->
-  {#if !data.loadError}
-    <div class="card">
-      <div class="card__header">
-        <h2 class="card__title">
-          <i class="fas fa-map-marker-alt mr-2"></i>
-          Adresse
-        </h2>
-        <p class="mt-2 text-(--color-text-secondary)">
-          Firmenadresse bearbeiten.
-        </p>
-      </div>
-
-      <div class="card__body">
         <form
           onsubmit={(e: Event) => {
             e.preventDefault();
@@ -209,117 +141,27 @@
           }}
         >
           <div class="grid grid-cols-2 gap-4 max-sm:grid-cols-1">
-            <div class="form-field col-span-2 max-sm:col-span-1">
-              <label
-                class="form-field__label form-field__label--required"
-                for="street"
-              >
-                Straße
-              </label>
-              <input
-                type="text"
-                id="street"
-                class="form-field__control"
-                placeholder="Musterstraße"
-                autocomplete="address-line1"
-                bind:value={street}
-                disabled={saving}
-              />
-            </div>
-
             <div class="form-field">
               <label
                 class="form-field__label form-field__label--required"
-                for="house_number"
+                for="daily_limit"
               >
-                Hausnummer
+                Tageslimit pro Benutzer
               </label>
               <input
-                type="text"
-                id="house_number"
+                type="number"
+                id="daily_limit"
                 class="form-field__control"
-                placeholder="42"
-                autocomplete="address-line2"
-                bind:value={houseNumber}
+                min="0"
+                max="100"
+                step="1"
+                bind:value={dailyLimit}
                 disabled={saving}
               />
-            </div>
-
-            <div class="form-field">
-              <label
-                class="form-field__label form-field__label--required"
-                for="postal_code"
-              >
-                PLZ
-              </label>
-              <input
-                type="text"
-                id="postal_code"
-                class="form-field__control"
-                placeholder="10115"
-                autocomplete="postal-code"
-                bind:value={postalCode}
-                disabled={saving}
-              />
-            </div>
-
-            <div class="form-field">
-              <label
-                class="form-field__label form-field__label--required"
-                for="city"
-              >
-                Stadt
-              </label>
-              <input
-                type="text"
-                id="city"
-                class="form-field__control"
-                placeholder="Berlin"
-                autocomplete="address-level2"
-                bind:value={city}
-                disabled={saving}
-              />
-            </div>
-
-            <div class="form-field">
-              <label
-                class="form-field__label"
-                for="country_code"
-              >
-                Land
-              </label>
-              <div class="dropdown">
-                <button
-                  type="button"
-                  id="country_code"
-                  class="dropdown__trigger"
-                  class:active={countryDropdownOpen}
-                  onclick={toggleCountryDropdown}
-                  disabled={saving}
-                >
-                  <span>{selectedCountry.flag} {selectedCountry.name}</span>
-                  <i class="fas fa-chevron-down"></i>
-                </button>
-                <div
-                  class="dropdown__menu"
-                  class:active={countryDropdownOpen}
-                >
-                  {#each ADDRESS_COUNTRIES as country (country.iso)}
-                    <button
-                      type="button"
-                      class="dropdown__option"
-                      onclick={() => {
-                        selectCountry(country.iso);
-                      }}
-                    >
-                      <span>{country.flag} {country.name}</span>
-                      <span class="dropdown__option-secondary"
-                        >{country.iso}</span
-                      >
-                    </button>
-                  {/each}
-                </div>
-              </div>
+              <p class="form-field__hint">
+                Maximale Anzahl KVP-Vorschläge pro Tag und Benutzer. 0 = unbegrenzt. Gilt nicht für
+                Root und Admins mit Vollzugriff.
+              </p>
             </div>
           </div>
 
@@ -339,7 +181,132 @@
             </button>
           </div>
         </form>
+      {/if}
+    </div>
+  </div>
+
+  <!-- ================================================================= -->
+  <!-- SECTION: KVP Reward Tiers                                          -->
+  <!-- ================================================================= -->
+  <div class="card mt-6">
+    <div class="card__header">
+      <h2 class="card__title">
+        <i class="fas fa-trophy mr-2"></i>
+        KVP Prämien
+      </h2>
+      <p class="mt-2 text-(--color-text-secondary)">
+        Vordefinierte Prämienbeträge für genehmigte KVP-Vorschläge. Der Freigabe-Master wählt beim
+        Genehmigen einen Betrag aus.
+      </p>
+    </div>
+
+    <div class="card__body">
+      <!-- Existing tiers -->
+      {#if rewardTiers.length > 0}
+        <div class="reward-tiers-list">
+          {#each rewardTiers as tier (tier.id)}
+            <div class="reward-tier-item">
+              <span class="reward-tier-amount">{tier.amount.toFixed(2)} €</span>
+              <button
+                type="button"
+                class="reward-tier-delete"
+                title="Entfernen"
+                disabled={savingReward}
+                onclick={() => void handleDeleteRewardTier(tier.id, tier.amount)}
+              >
+                <i class="fas fa-times"></i>
+              </button>
+            </div>
+          {/each}
+        </div>
+      {:else}
+        <p class="mb-4 text-(--color-text-secondary)">Noch keine Prämienbeträge definiert.</p>
+      {/if}
+
+      <!-- Add new tier -->
+      <div class="reward-tier-add">
+        <input
+          type="number"
+          class="form-field__control reward-tier-input"
+          placeholder="Betrag in €"
+          min="0.01"
+          step="0.01"
+          bind:value={newRewardAmount}
+          disabled={savingReward}
+          onkeydown={(e: KeyboardEvent) => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              void handleAddRewardTier();
+            }
+          }}
+        />
+        <button
+          type="button"
+          class="btn btn-success"
+          disabled={savingReward || newRewardAmount === '' || parseFloat(newRewardAmount) <= 0}
+          onclick={() => void handleAddRewardTier()}
+        >
+          {#if savingReward}
+            <span class="spinner-ring spinner-ring--sm"></span>
+          {:else}
+            <i class="fas fa-plus"></i>
+          {/if}
+          Hinzufügen
+        </button>
       </div>
     </div>
-  {/if}
+  </div>
 </div>
+
+<style>
+  .reward-tiers-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-2);
+    margin-bottom: var(--spacing-4);
+  }
+
+  .reward-tier-item {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-2);
+    padding: var(--spacing-2) var(--spacing-3);
+    border: 1px solid var(--color-glass-border);
+    border-radius: var(--radius-xl);
+    background: var(--glass-bg);
+  }
+
+  .reward-tier-amount {
+    font-weight: 600;
+    font-size: 0.95rem;
+  }
+
+  .reward-tier-delete {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border: none;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .reward-tier-delete:hover {
+    background: var(--color-danger);
+    color: var(--color-white);
+  }
+
+  .reward-tier-add {
+    display: flex;
+    gap: var(--spacing-3);
+    align-items: center;
+  }
+
+  .reward-tier-input {
+    max-width: 150px;
+  }
+</style>

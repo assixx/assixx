@@ -37,9 +37,7 @@
   const locations = $derived(data.locations);
 
   /** Only root/admin can create/edit/delete locations */
-  const canWrite = $derived(
-    data.userRole === 'root' || data.userRole === 'admin',
-  );
+  const canWrite = $derived(data.userRole === 'root' || data.userRole === 'admin');
 
   // =========================================================================
   // STATE
@@ -67,9 +65,7 @@
   const isEditing = $derived(editingLocation !== undefined);
 
   const nextPosition = $derived(
-    locations.length > 0 ?
-      Math.max(...locations.map((l: TpmLocation) => l.positionNumber)) + 1
-    : 1,
+    locations.length > 0 ? Math.max(...locations.map((l: TpmLocation) => l.positionNumber)) + 1 : 1,
   );
 
   // =========================================================================
@@ -202,10 +198,6 @@
     previewLocation = null;
   }
 
-  function handlePreviewKeydown(e: KeyboardEvent): void {
-    if (e.key === 'Escape') closePreview();
-  }
-
   function stopPropagation(e: Event): void {
     e.stopPropagation();
   }
@@ -315,8 +307,7 @@
             {#if !isEditing}
               <div class="alert alert--info alert--sm mb-6">
                 <i class="fas fa-info-circle"></i>
-                Bilder können zum Standort erst nach Erstellung des Standorts hinzugefügt
-                werden.
+                Bilder können zum Standort erst nach Erstellung des Standorts hinzugefügt werden.
               </div>
             {/if}
             <!-- Create/Edit Form Section -->
@@ -392,8 +383,7 @@
                 <div class="loc-info__row">
                   <span class="loc-info__label">Mit Foto</span>
                   <span class="loc-info__value">
-                    {locations.filter((l: TpmLocation) => l.photoPath !== null)
-                      .length}
+                    {locations.filter((l: TpmLocation) => l.photoPath !== null).length}
                   </span>
                 </div>
               </div>
@@ -408,9 +398,9 @@
                 Hinweis
               </h3>
               <p class="loc-hint">
-                Standorte beschreiben Positionen an der Anlage, die bei der
-                Wartung relevant sind. Jeder Standort kann mit einem Foto
-                dokumentiert werden, das zeigt, wo sich die Stelle befindet.
+                Standorte beschreiben Positionen an der Anlage, die bei der Wartung relevant sind.
+                Jeder Standort kann mit einem Foto dokumentiert werden, das zeigt, wo sich die
+                Stelle befindet.
               </p>
             </div>
           </div>
@@ -441,9 +431,7 @@
             </div>
             <div class="ds-modal__body">
               <p>
-                Standort <strong
-                  >#{confirmDelete.positionNumber} {confirmDelete.title}</strong
-                >
+                Standort <strong>#{confirmDelete.positionNumber} {confirmDelete.title}</strong>
                 wird unwiderruflich gelöscht.
               </p>
             </div>
@@ -482,7 +470,9 @@
       id="tpm-location-photo-preview-modal"
       class="modal-overlay modal-overlay--active"
       onclick={closePreview}
-      onkeydown={handlePreviewKeydown}
+      onkeydown={(e: KeyboardEvent) => {
+        if (e.key === 'Escape') closePreview();
+      }}
       role="dialog"
       aria-modal="true"
       tabindex="-1"
@@ -518,9 +508,7 @@
             />
           </div>
           <div class="border-t border-(--border-subtle) bg-(--surface-2) p-4">
-            <div
-              class="flex items-center gap-6 text-sm text-(--color-text-secondary)"
-            >
+            <div class="flex items-center gap-6 text-sm text-(--color-text-secondary)">
               {#if previewLocation.photoFileSize !== null}
                 <span class="flex items-center gap-2">
                   <i class="fas fa-file-archive"></i>
@@ -539,8 +527,7 @@
           <button
             type="button"
             class="btn btn-cancel"
-            onclick={closePreview}
-            ><i class="fas fa-times mr-2"></i>Schließen</button
+            onclick={closePreview}><i class="fas fa-times mr-2"></i>Schließen</button
           >
         </div>
       </div>

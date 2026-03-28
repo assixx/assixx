@@ -6,16 +6,13 @@
  *        dashboard stats, delegation to sub-services.
  */
 import { IS_ACTIVE } from '@assixx/shared/constants';
-import {
-  BadRequestException,
-  ConflictException,
-  NotFoundException,
-} from '@nestjs/common';
+import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import type { DatabaseService } from '../database/database.service.js';
 import type { UserRepository } from '../database/repositories/user.repository.js';
+import type { UserPositionService } from '../organigram/user-position.service.js';
 import type { RootAdminService } from './root-admin.service.js';
 import type { RootDeletionService } from './root-deletion.service.js';
 import type { RootTenantService } from './root-tenant.service.js';
@@ -45,7 +42,27 @@ vi.mock('../../utils/employee-id-generator.js', () => ({
 // =============================================================
 
 function createMockDb() {
-  return { query: vi.fn() };
+  const db = {
+    query: vi.fn(),
+    tenantTransaction: vi.fn(),
+  };
+  const clientQuery = vi.fn(async (...args: unknown[]) => {
+    const rows: unknown = await db.query(...args);
+    return { rows: rows ?? [] };
+  });
+  db.tenantTransaction.mockImplementation(
+    (callback: (client: { query: typeof clientQuery }) => Promise<unknown>) =>
+      callback({ query: clientQuery }),
+  );
+  return db;
+}
+
+function createMockUserPositionService() {
+  return {
+    syncPositions: vi.fn().mockResolvedValue(undefined),
+    getPositionsForUser: vi.fn().mockResolvedValue([]),
+    getPositionsForUsers: vi.fn().mockResolvedValue(new Map()),
+  };
 }
 
 function createMockActivityLogger() {
@@ -140,6 +157,7 @@ describe('RootService', () => {
     mockAdminService = createMockAdminService();
     mockTenantService = createMockTenantService();
     mockDeletionService = createMockDeletionService();
+    const mockUserPositions = createMockUserPositionService();
     service = new RootService(
       mockDb as unknown as DatabaseService,
       mockActivityLogger as unknown as ActivityLoggerService,
@@ -147,6 +165,7 @@ describe('RootService', () => {
       mockAdminService as unknown as RootAdminService,
       mockTenantService as unknown as RootTenantService,
       mockDeletionService as unknown as RootDeletionService,
+      mockUserPositions as unknown as UserPositionService,
     );
   });
 
@@ -295,9 +314,9 @@ describe('RootService', () => {
       // getRootUserById → empty
       mockDb.query.mockResolvedValueOnce([]);
 
-      await expect(
-        service.updateRootUser(999, { firstName: 'Updated' }, 10),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.updateRootUser(999, { firstName: 'Updated' }, 10)).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
@@ -307,18 +326,14 @@ describe('RootService', () => {
 
   describe('deleteRootUser', () => {
     it('should throw BadRequestException on self-delete', async () => {
-      await expect(service.deleteRootUser(1, 10, 1)).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(service.deleteRootUser(1, 10, 1)).rejects.toThrow(BadRequestException);
     });
 
     it('should throw NotFoundException when user not found', async () => {
       // getRootUserById → empty
       mockDb.query.mockResolvedValueOnce([]);
 
-      await expect(service.deleteRootUser(99, 10, 1)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.deleteRootUser(99, 10, 1)).rejects.toThrow(NotFoundException);
     });
 
     it('should throw BadRequestException when last root user', async () => {
@@ -327,9 +342,7 @@ describe('RootService', () => {
       // COUNT root users (excluding this one) → 0
       mockDb.query.mockResolvedValueOnce([{ count: '0' }]);
 
-      await expect(service.deleteRootUser(2, 10, 1)).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(service.deleteRootUser(2, 10, 1)).rejects.toThrow(BadRequestException);
     });
 
     it('should delete root user when not last', async () => {
@@ -366,10 +379,7 @@ describe('RootService', () => {
       // tenant count
       mockDb.query.mockResolvedValueOnce([{ count: '2' }]);
       // addons
-      mockDb.query.mockResolvedValueOnce([
-        { code: 'chat' },
-        { code: 'documents' },
-      ]);
+      mockDb.query.mockResolvedValueOnce([{ code: 'chat' }, { code: 'documents' }]);
 
       const result = await service.getDashboardStats(10);
 

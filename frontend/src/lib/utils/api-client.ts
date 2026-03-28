@@ -134,10 +134,7 @@ export class ApiClient {
     return `Bearer ${token}`;
   }
 
-  private buildHeaders(
-    options: RequestInit,
-    config: ApiConfig,
-  ): Record<string, string> {
+  private buildHeaders(options: RequestInit, config: ApiConfig): Record<string, string> {
     const headers: Record<string, string> = {};
 
     // Copy existing headers
@@ -262,8 +259,7 @@ export class ApiClient {
 
     // Create timeout signal (default 30s, configurable via config.timeout)
     const timeoutMs = config.timeout ?? DEFAULT_TIMEOUT_MS;
-    const { signal: timeoutSignal, cleanup: cleanupTimeout } =
-      createTimeoutSignal(timeoutMs);
+    const { signal: timeoutSignal, cleanup: cleanupTimeout } = createTimeoutSignal(timeoutMs);
 
     // Combine user signal (if provided) with timeout signal
     const combinedSignal = combineSignals(config.signal, timeoutSignal);
@@ -316,18 +312,10 @@ export class ApiClient {
   /**
    * Handle errors from fetch requests
    */
-  private handleRequestError(
-    error: unknown,
-    timeoutMs: number,
-    silent?: boolean,
-  ): never {
+  private handleRequestError(error: unknown, timeoutMs: number, silent?: boolean): never {
     if (error instanceof Error) {
       if (isTimeoutError(error)) {
-        throw new ApiError(
-          `Request timeout after ${timeoutMs}ms`,
-          'TIMEOUT',
-          0,
-        );
+        throw new ApiError(`Request timeout after ${timeoutMs}ms`, 'TIMEOUT', 0);
       }
 
       // Don't log abort errors (expected during navigation)
@@ -391,10 +379,7 @@ export class ApiClient {
     }
   }
 
-  private handleV2Response(
-    response: Response,
-    data: Record<string, unknown>,
-  ): unknown {
+  private handleV2Response(response: Response, data: Record<string, unknown>): unknown {
     if ('success' in data && typeof data.success === 'boolean') {
       const apiResponse = data as unknown as ApiResponseWrapper;
 
@@ -498,8 +483,7 @@ export class ApiClient {
   // =============================================================================
 
   async get<T = unknown>(endpoint: string, config?: ApiConfig): Promise<T> {
-    const useCache =
-      config?.skipCache !== true && this.apiCache.shouldCache(endpoint);
+    const useCache = config?.skipCache !== true && this.apiCache.shouldCache(endpoint);
 
     // PERFORMANCE: Check cache first for GET requests
     if (useCache) {
@@ -512,10 +496,7 @@ export class ApiClient {
       // PERFORMANCE: Deduplicate concurrent requests for same endpoint
       const pending = this.apiCache.getPending(endpoint);
       if (pending !== undefined) {
-        log.debug(
-          { endpoint, source: 'dedup' },
-          `⚡ Request DEDUP: ${endpoint}`,
-        );
+        log.debug({ endpoint, source: 'dedup' }, `⚡ Request DEDUP: ${endpoint}`);
         return await (pending as Promise<T>);
       }
     }
@@ -544,11 +525,7 @@ export class ApiClient {
     }
   }
 
-  async post<T = unknown>(
-    endpoint: string,
-    data?: unknown,
-    config?: ApiConfig,
-  ): Promise<T> {
+  async post<T = unknown>(endpoint: string, data?: unknown, config?: ApiConfig): Promise<T> {
     let body: FormData | string | null = null;
     if (data instanceof FormData) {
       body = data;
@@ -556,11 +533,7 @@ export class ApiClient {
       body = JSON.stringify(data);
     }
 
-    const result = await this.request<T>(
-      endpoint,
-      { method: 'POST', body },
-      config,
-    );
+    const result = await this.request<T>(endpoint, { method: 'POST', body }, config);
 
     // Invalidate related cache entries after successful POST
     this.apiCache.invalidate(endpoint);
@@ -568,11 +541,7 @@ export class ApiClient {
     return result;
   }
 
-  async put<T = unknown>(
-    endpoint: string,
-    data?: unknown,
-    config?: ApiConfig,
-  ): Promise<T> {
+  async put<T = unknown>(endpoint: string, data?: unknown, config?: ApiConfig): Promise<T> {
     const result = await this.request<T>(
       endpoint,
       {
@@ -588,11 +557,7 @@ export class ApiClient {
     return result;
   }
 
-  async patch<T = unknown>(
-    endpoint: string,
-    data?: unknown,
-    config?: ApiConfig,
-  ): Promise<T> {
+  async patch<T = unknown>(endpoint: string, data?: unknown, config?: ApiConfig): Promise<T> {
     const result = await this.request<T>(
       endpoint,
       {
@@ -608,11 +573,7 @@ export class ApiClient {
     return result;
   }
 
-  async delete<T = unknown>(
-    endpoint: string,
-    data?: unknown,
-    config?: ApiConfig,
-  ): Promise<T> {
+  async delete<T = unknown>(endpoint: string, data?: unknown, config?: ApiConfig): Promise<T> {
     const result = await this.request<T>(
       endpoint,
       {
@@ -628,11 +589,7 @@ export class ApiClient {
     return result;
   }
 
-  async upload<T = unknown>(
-    endpoint: string,
-    formData: FormData,
-    config?: ApiConfig,
-  ): Promise<T> {
+  async upload<T = unknown>(endpoint: string, formData: FormData, config?: ApiConfig): Promise<T> {
     return await this.request<T>(
       endpoint,
       { method: 'POST', body: formData },

@@ -92,13 +92,7 @@ describe('TpmCardCascadeService', () => {
         rows: [{ count: '12' }],
       });
 
-      const result = await service.triggerCascade(
-        mockClient,
-        10,
-        42,
-        3,
-        new Date('2026-03-01'),
-      );
+      const result = await service.triggerCascade(mockClient, 10, 42, 3, new Date('2026-03-01'));
 
       expect(result.affectedCount).toBe(12);
       expect(result.triggerIntervalOrder).toBe(3);
@@ -110,13 +104,7 @@ describe('TpmCardCascadeService', () => {
         rows: [{ count: '0' }],
       });
 
-      const result = await service.triggerCascade(
-        mockClient,
-        10,
-        42,
-        5,
-        new Date('2026-04-15'),
-      );
+      const result = await service.triggerCascade(mockClient, 10, 42, 5, new Date('2026-04-15'));
 
       expect(result.affectedCount).toBe(0);
     });
@@ -126,13 +114,7 @@ describe('TpmCardCascadeService', () => {
         rows: [{ count: '3' }],
       });
 
-      await service.triggerCascade(
-        mockClient,
-        10,
-        42,
-        2,
-        new Date('2026-12-25T14:30:00.000Z'),
-      );
+      await service.triggerCascade(mockClient, 10, 42, 2, new Date('2026-12-25T14:30:00.000Z'));
 
       const params = mockClient.query.mock.calls[0]?.[1] as unknown[];
       expect(params?.[3]).toBe('2026-12-25');
@@ -143,13 +125,7 @@ describe('TpmCardCascadeService', () => {
         rows: [{ count: '5' }],
       });
 
-      await service.triggerCascade(
-        mockClient,
-        10,
-        42,
-        4,
-        new Date('2026-06-01'),
-      );
+      await service.triggerCascade(mockClient, 10, 42, 4, new Date('2026-06-01'));
 
       const params = mockClient.query.mock.calls[0]?.[1] as unknown[];
       expect(params?.[0]).toBe(42); // assetId
@@ -163,13 +139,7 @@ describe('TpmCardCascadeService', () => {
         rows: [{ count: '1' }],
       });
 
-      await service.triggerCascade(
-        mockClient,
-        10,
-        42,
-        1,
-        new Date('2026-01-01'),
-      );
+      await service.triggerCascade(mockClient, 10, 42, 1, new Date('2026-01-01'));
 
       const sql = mockClient.query.mock.calls[0]?.[0] as string;
       expect(sql).toContain('WITH updated AS');
@@ -182,13 +152,7 @@ describe('TpmCardCascadeService', () => {
         rows: [{ count: '0' }],
       });
 
-      await service.triggerCascade(
-        mockClient,
-        10,
-        42,
-        3,
-        new Date('2026-03-01'),
-      );
+      await service.triggerCascade(mockClient, 10, 42, 3, new Date('2026-03-01'));
 
       const sql = mockClient.query.mock.calls[0]?.[0] as string;
       expect(sql).toContain("status = 'green'");
@@ -201,13 +165,7 @@ describe('TpmCardCascadeService', () => {
         rows: [{ count: undefined }],
       });
 
-      const result = await service.triggerCascade(
-        mockClient,
-        10,
-        42,
-        1,
-        new Date('2026-01-01'),
-      );
+      const result = await service.triggerCascade(mockClient, 10, 42, 1, new Date('2026-01-01'));
 
       expect(result.affectedCount).toBe(0);
     });
@@ -322,13 +280,7 @@ describe('TpmCardCascadeService', () => {
       });
 
       const start = Date.now();
-      const result = await service.triggerCascade(
-        mockClient,
-        10,
-        42,
-        6,
-        new Date('2026-06-01'),
-      );
+      const result = await service.triggerCascade(mockClient, 10, 42, 6, new Date('2026-06-01'));
       const elapsed = Date.now() - start;
 
       expect(result.affectedCount).toBe(2400);
@@ -348,10 +300,8 @@ describe('TpmCardCascadeService', () => {
     });
 
     it('should use single query for preview of 2400 cards', async () => {
-      const manyCards: TpmCardRow[] = Array.from(
-        { length: 100 },
-        (_: unknown, i: number) =>
-          createCardRow({ id: i + 1, card_code: `BT${i + 1}` }),
+      const manyCards: TpmCardRow[] = Array.from({ length: 100 }, (_: unknown, i: number) =>
+        createCardRow({ id: i + 1, card_code: `BT${i + 1}` }),
       );
       mockDb.query.mockResolvedValueOnce(manyCards);
 

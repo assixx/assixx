@@ -168,10 +168,10 @@ export async function loadThemeFromApi(): Promise<void> {
 
   try {
     const api = getApiClient();
-    const result = await api.get<{ settingValue: string }>(
-      '/settings/user/theme',
-      { skipCache: true, silent: true },
-    );
+    const result = await api.get<{ settingValue: string }>('/settings/user/theme', {
+      skipCache: true,
+      silent: true,
+    });
 
     const apiTheme = result.settingValue;
 

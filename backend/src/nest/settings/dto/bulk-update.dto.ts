@@ -42,11 +42,7 @@ export type BulkSettingItem = z.infer<typeof BulkSettingItemSchema>;
 
 export const BulkUpdateSettingsSchema = z.object({
   type: SettingTypeEnum,
-  settings: z
-    .array(BulkSettingItemSchema)
-    .min(1, 'At least one setting is required'),
+  settings: z.array(BulkSettingItemSchema).min(1, 'At least one setting is required'),
 });
 
-export class BulkUpdateSettingsDto extends createZodDto(
-  BulkUpdateSettingsSchema,
-) {}
+export class BulkUpdateSettingsDto extends createZodDto(BulkUpdateSettingsSchema) {}

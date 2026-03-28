@@ -52,9 +52,7 @@
           onclick={handleReloadPage}
         >
           <img
-            src={isDark() ?
-              '/images/logo_darkmode.png'
-            : '/images/logo_lightmode.png'}
+            src={isDark() ? '/images/logo_darkmode.png' : '/images/logo_lightmode.png'}
             alt="Assixx Logo"
             class="logo"
           />
@@ -78,8 +76,8 @@
   <section class="hero">
     <h1>Enterprise 2.0 für Industriefirmen</h1>
     <p>
-      Wissensmanagement, Kommunikation und Kollaboration - von der Produktion
-      bis zur Verwaltung. Alles in einer Plattform.
+      Wissensmanagement, Kommunikation und Kollaboration - von der Produktion bis zur Verwaltung.
+      Alles in einer Plattform.
     </p>
     <a
       href={resolve('/signup', {})}
@@ -115,9 +113,7 @@
     <div class="modal-content">
       <h2>Jetzt kostenlos testen</h2>
       <p>30 Tage kostenlos testen - keine Kreditkarte erforderlich</p>
-      <p class="u-mb-md">
-        Bitte nutzen Sie unser vollständiges Registrierungsformular:
-      </p>
+      <p class="u-mb-md">Bitte nutzen Sie unser vollständiges Registrierungsformular:</p>
       <a
         href={resolve('/signup', {})}
         class="btn btn-index u-w-full">Zur Registrierung</a
@@ -236,8 +232,7 @@
     color: var(--color-white);
     font-weight: 700;
     font-size: 3rem;
-    text-shadow: 0 2px 4px
-      color-mix(in oklch, var(--color-black) 30%, transparent);
+    text-shadow: 0 2px 4px color-mix(in oklch, var(--color-black) 30%, transparent);
   }
 
   .hero p {
@@ -245,8 +240,7 @@
     color: color-mix(in oklch, var(--color-white) 85%, transparent);
     font-size: 1.25rem;
     line-height: 1.6;
-    text-shadow: 0 1px 2px
-      color-mix(in oklch, var(--color-black) 20%, transparent);
+    text-shadow: 0 1px 2px color-mix(in oklch, var(--color-black) 20%, transparent);
   }
 
   /* Hero CTA button: always white text (sits on dark image overlay in both modes) */
@@ -257,8 +251,7 @@
   /* Footer */
   .footer {
     backdrop-filter: blur(20px);
-    box-shadow: 0 -8px 32px
-      color-mix(in oklch, var(--color-black) 20%, transparent);
+    box-shadow: 0 -8px 32px color-mix(in oklch, var(--color-black) 20%, transparent);
     border-top: 1px solid var(--color-glass-border);
     background: var(--glass-bg);
     padding: var(--spacing-6) 5%;

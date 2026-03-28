@@ -17,6 +17,7 @@ import {
 } from '@nestjs/common';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 
+import { attachmentHeader } from '../../utils/content-disposition.js';
 import { RequirePermission } from '../common/decorators/require-permission.decorator.js';
 import { CurrentUser, Roles } from '../common/index.js';
 import type { NestAuthUser } from '../common/index.js';
@@ -164,14 +165,9 @@ export class AuditTrailController {
     @Body(new ZodValidationPipe(GenerateReportBodySchema))
     dto: GenerateReportBodyDto,
   ): Promise<GenerateReportApiResponse> {
-    this.logger.log(
-      `[generateReport] User: ${currentUser.id}, Type: ${dto.reportType}`,
-    );
+    this.logger.log(`[generateReport] User: ${currentUser.id}, Type: ${dto.reportType}`);
 
-    const report = await this.auditTrailService.generateReport(
-      currentUser,
-      dto,
-    );
+    const report = await this.auditTrailService.generateReport(currentUser, dto);
 
     return {
       success: true,
@@ -193,9 +189,7 @@ export class AuditTrailController {
     @Req() req: FastifyRequest,
     @Res() reply: FastifyReply,
   ): Promise<void> {
-    this.logger.log(
-      `[exportEntries] User: ${currentUser.id}, Format: ${dto.format ?? 'json'}`,
-    );
+    this.logger.log(`[exportEntries] User: ${currentUser.id}, Format: ${dto.format ?? 'json'}`);
 
     const result = await this.auditTrailService.exportEntries(
       currentUser,
@@ -208,10 +202,7 @@ export class AuditTrailController {
       const csv = this.auditTrailService.generateCSV(result.entries);
       await reply
         .header('Content-Type', 'text/csv')
-        .header(
-          'Content-Disposition',
-          'attachment; filename=audit-trail-export.csv',
-        )
+        .header('Content-Disposition', attachmentHeader('audit-trail-export.csv'))
         .send(csv);
     } else {
       await reply.send({
@@ -234,9 +225,7 @@ export class AuditTrailController {
     dto: DeleteOldEntriesBodyDto,
     @Req() req: FastifyRequest,
   ): Promise<DeleteOldEntriesApiResponse> {
-    this.logger.log(
-      `[deleteOldEntries] User: ${currentUser.id}, Days: ${dto.olderThanDays}`,
-    );
+    this.logger.log(`[deleteOldEntries] User: ${currentUser.id}, Days: ${dto.olderThanDays}`);
 
     const result = await this.auditTrailService.deleteOldEntries(
       currentUser,
@@ -262,10 +251,7 @@ export class AuditTrailController {
   ): Promise<GetEntryApiResponse> {
     this.logger.log(`[getEntry] User: ${currentUser.id}, Entry: ${params.id}`);
 
-    const entry = await this.auditTrailService.getEntryById(
-      currentUser,
-      params.id,
-    );
+    const entry = await this.auditTrailService.getEntryById(currentUser, params.id);
 
     return {
       success: true,

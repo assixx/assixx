@@ -41,10 +41,7 @@ import type { DuplicateCheckResult } from './tpm-card-duplicate.service.js';
 import { TpmCardDuplicateService } from './tpm-card-duplicate.service.js';
 import type { CardListFilter, PaginatedCards } from './tpm-cards.service.js';
 import { TpmCardsService } from './tpm-cards.service.js';
-import type {
-  PaginatedDefects,
-  PaginatedExecutions,
-} from './tpm-executions.service.js';
+import type { PaginatedDefects, PaginatedExecutions } from './tpm-executions.service.js';
 import { TpmExecutionsService } from './tpm-executions.service.js';
 import { TpmPlansService } from './tpm-plans.service.js';
 import type {
@@ -145,9 +142,7 @@ export class TpmCardsController {
       );
     }
 
-    throw new BadRequestException(
-      'assetUuid, planUuid oder status muss angegeben werden',
-    );
+    throw new BadRequestException('assetUuid, planUuid oder status muss angegeben werden');
   }
 
   /** GET /tpm/cards/:uuid/executions — Execution history for a card */
@@ -185,10 +180,7 @@ export class TpmCardsController {
   /** GET /tpm/cards/:uuid — Get single card by UUID */
   @Get(':uuid')
   @RequirePermission(FEAT, MOD_CARDS, 'canRead')
-  async getCard(
-    @Param('uuid') uuid: string,
-    @TenantId() tenantId: number,
-  ): Promise<TpmCard> {
+  async getCard(@Param('uuid') uuid: string, @TenantId() tenantId: number): Promise<TpmCard> {
     return await this.cardsService.getCard(tenantId, uuid);
   }
 
@@ -230,10 +222,8 @@ function buildFilters(source: {
 }): CardListFilter {
   const filters: CardListFilter = {};
   if (source.status !== undefined) filters.status = source.status;
-  if (source.intervalType !== undefined)
-    filters.intervalType = source.intervalType;
+  if (source.intervalType !== undefined) filters.intervalType = source.intervalType;
   if (source.cardRole !== undefined) filters.cardRole = source.cardRole;
-  if (source.cardCategory !== undefined)
-    filters.cardCategory = source.cardCategory;
+  if (source.cardCategory !== undefined) filters.cardCategory = source.cardCategory;
   return filters;
 }

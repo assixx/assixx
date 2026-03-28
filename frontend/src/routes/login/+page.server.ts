@@ -189,11 +189,7 @@ function isSuccessfulLogin(
 }
 
 /** Get error response for failed login based on status */
-function getLoginErrorResponse(
-  response: Response,
-  result: LoginResponse,
-  email: string,
-) {
+function getLoginErrorResponse(response: Response, result: LoginResponse, email: string) {
   if (response.status === 429) {
     return fail(429, {
       error: 'Zu viele Anmeldeversuche. Bitte warten Sie.',

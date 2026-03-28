@@ -8,8 +8,4 @@
 /**
  * Reason for logout - determines redirect behavior and messaging
  */
-export type LogoutReason =
-  | 'logout'
-  | 'inactivity_timeout'
-  | 'token_expired'
-  | 'refresh_failed';
+export type LogoutReason = 'logout' | 'inactivity_timeout' | 'token_expired' | 'refresh_failed';

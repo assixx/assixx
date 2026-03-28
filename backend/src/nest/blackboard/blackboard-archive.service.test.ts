@@ -29,9 +29,7 @@ describe('BlackboardArchiveService', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockDb = createMockDb();
-    service = new BlackboardArchiveService(
-      mockDb as unknown as DatabaseService,
-    );
+    service = new BlackboardArchiveService(mockDb as unknown as DatabaseService);
   });
 
   // =============================================================

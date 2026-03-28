@@ -25,11 +25,7 @@ import { Injectable } from '@nestjs/common';
 
 import { DatabaseService } from '../database/database.service.js';
 import { TpmPlansIntervalService } from './tpm-plans-interval.service.js';
-import type {
-  ProjectedSlot,
-  ScheduleProjectionResult,
-  TpmIntervalType,
-} from './tpm.types.js';
+import type { ProjectedSlot, ScheduleProjectionResult, TpmIntervalType } from './tpm.types.js';
 
 /** DB row from the active plans query (no card data) */
 interface PlanRow {
@@ -113,10 +109,7 @@ export class TpmScheduleProjectionService {
   }
 
   /** Load all active plans (plan config only, no card JOIN) */
-  private async fetchActivePlans(
-    tenantId: number,
-    excludePlanUuid?: string,
-  ): Promise<PlanRow[]> {
+  private async fetchActivePlans(tenantId: number, excludePlanUuid?: string): Promise<PlanRow[]> {
     const params: unknown[] = [tenantId];
     let excludeClause = '';
 
@@ -240,12 +233,7 @@ export class TpmScheduleProjectionService {
         dates.push(new Date(current));
       }
 
-      current = this.intervalService.calculateIntervalDate(
-        current,
-        intervalType,
-        null,
-        anchor,
-      );
+      current = this.intervalService.calculateIntervalDate(current, intervalType, null, anchor);
 
       iterations++;
     }
@@ -264,10 +252,7 @@ function createSlot(
   intervalType: TpmIntervalType,
   date: Date,
 ): ProjectedSlot {
-  const { startTime, endTime } = calculateTimeWindow(
-    plan.baseTime,
-    plan.bufferHours,
-  );
+  const { startTime, endTime } = calculateTimeWindow(plan.baseTime, plan.bufferHours);
   return {
     planUuid: plan.planUuid,
     planName: plan.planName,
@@ -304,10 +289,7 @@ function deduplicateSlots(slots: ProjectedSlot[]): ProjectedSlot[] {
 }
 
 /** Merge source interval types into target (no duplicates) */
-function mergeIntervalTypes(
-  target: TpmIntervalType[],
-  source: readonly TpmIntervalType[],
-): void {
+function mergeIntervalTypes(target: TpmIntervalType[], source: readonly TpmIntervalType[]): void {
   for (const it of source) {
     if (!target.includes(it)) {
       target.push(it);

@@ -27,32 +27,17 @@ export class TenantDeletionExporter {
    * Create complete tenant backup before deletion.
    * Includes: SQL dump + JSON exports + metadata + tar.gz archive.
    */
-  async createTenantDataExport(
-    tenantId: number,
-    client: PoolClient,
-  ): Promise<string> {
+  async createTenantDataExport(tenantId: number, client: PoolClient): Promise<string> {
     const tenant = await this.fetchTenantInfo(tenantId, client);
     const companyName = tenant?.company_name ?? 'unknown';
 
-    const { backupDir, dataDir, backupDirName } = this.setupBackupPaths(
-      companyName,
-      tenantId,
-    );
+    const { backupDir, dataDir, backupDirName } = this.setupBackupPaths(companyName, tenantId);
 
     await fs.mkdir(dataDir, { recursive: true });
     this.logger.log(`Creating tenant backup in ${backupDir}`);
 
-    await this.createSqlBackup(
-      tenantId,
-      companyName,
-      `${backupDir}/backup.sql`,
-      client,
-    );
-    const { tables, totalRecords } = await this.exportTablesToJson(
-      tenantId,
-      dataDir,
-      client,
-    );
+    await this.createSqlBackup(tenantId, companyName, `${backupDir}/backup.sql`, client);
+    const { tables, totalRecords } = await this.exportTablesToJson(tenantId, dataDir, client);
     await this.writeBackupMetadata(
       backupDir,
       tenantId,
@@ -62,12 +47,7 @@ export class TenantDeletionExporter {
       totalRecords,
     );
 
-    return await this.createArchiveAndStore(
-      tenantId,
-      backupDir,
-      backupDirName,
-      client,
-    );
+    return await this.createArchiveAndStore(tenantId, backupDir, backupDirName, client);
   }
 
   /**
@@ -92,10 +72,7 @@ export class TenantDeletionExporter {
     tenantId: number,
   ): { backupDir: string; dataDir: string; backupDirName: string } {
     const sanitizedName = this.sanitizeCompanyName(companyName);
-    const timestamp = new Date()
-      .toISOString()
-      .replace(/[:.]/g, '-')
-      .substring(0, 19);
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').substring(0, 19);
     const backupDirName = `${sanitizedName}_${tenantId}_${timestamp}`;
     const backupDir = `/backups/tenant_deletions/${backupDirName}`;
     return { backupDir, dataDir: `${backupDir}/data`, backupDirName };
@@ -132,18 +109,14 @@ export class TenantDeletionExporter {
 
     for (const tableName of tableNames) {
       try {
-        const result = await client.query(
-          `SELECT * FROM "${tableName}" WHERE tenant_id = $1`,
-          [tenantId],
-        );
+        const result = await client.query(`SELECT * FROM "${tableName}" WHERE tenant_id = $1`, [
+          tenantId,
+        ]);
         const data = result.rows;
         if (data.length > 0) {
           sqlContent += `-- Table: ${tableName} (${data.length} rows)\n`;
           for (const row of data) {
-            sqlContent += this.generateInsertStatement(
-              tableName,
-              row as Record<string, unknown>,
-            );
+            sqlContent += this.generateInsertStatement(tableName, row as Record<string, unknown>);
           }
           sqlContent += '\n';
         }
@@ -170,10 +143,9 @@ export class TenantDeletionExporter {
     for (const tableRow of tables) {
       const tableName = tableRow.TABLE_NAME;
       try {
-        const result = await client.query(
-          `SELECT * FROM "${tableName}" WHERE tenant_id = $1`,
-          [tenantId],
-        );
+        const result = await client.query(`SELECT * FROM "${tableName}" WHERE tenant_id = $1`, [
+          tenantId,
+        ]);
         const data = result.rows;
         if (data.length > 0) {
           const jsonPath = path.join(dataDir, `${tableName}.json`);
@@ -182,9 +154,7 @@ export class TenantDeletionExporter {
           this.logger.log(`Exported ${data.length} records from ${tableName}`);
         }
       } catch (error: unknown) {
-        this.logger.warn(
-          `Could not export ${tableName}: ${getErrorMessage(error)}`,
-        );
+        this.logger.warn(`Could not export ${tableName}: ${getErrorMessage(error)}`);
       }
     }
 
@@ -214,10 +184,7 @@ export class TenantDeletionExporter {
       backupType: 'pre_deletion',
       version: '1.0',
     };
-    await fs.writeFile(
-      `${backupDir}/metadata.json`,
-      JSON.stringify(metadata, null, 2),
-    );
+    await fs.writeFile(`${backupDir}/metadata.json`, JSON.stringify(metadata, null, 2));
   }
 
   /**
@@ -246,24 +213,17 @@ export class TenantDeletionExporter {
       [tenantId, archivePath, archiveStats.size],
     );
 
-    this.logger.log(
-      `Backup complete: ${archivePath} (${Math.round(archiveStats.size / 1024)} KB)`,
-    );
+    this.logger.log(`Backup complete: ${archivePath} (${Math.round(archiveStats.size / 1024)} KB)`);
     return archivePath;
   }
 
   /**
    * Generate SQL INSERT statement for a single row
    */
-  private generateInsertStatement(
-    tableName: string,
-    row: Record<string, unknown>,
-  ): string {
+  private generateInsertStatement(tableName: string, row: Record<string, unknown>): string {
     const entries = Object.entries(row);
     const columns = entries.map(([col]: [string, unknown]) => `"${col}"`);
-    const values = entries.map(([, val]: [string, unknown]) =>
-      this.formatSqlValue(val),
-    );
+    const values = entries.map(([, val]: [string, unknown]) => this.formatSqlValue(val));
     return `INSERT INTO "${tableName}" (${columns.join(', ')}) VALUES (${values.join(', ')});\n`;
   }
 
@@ -276,8 +236,7 @@ export class TenantDeletionExporter {
     if (typeof val === 'boolean') return val ? 'TRUE' : 'FALSE';
     if (val instanceof Date) return `'${val.toISOString()}'`;
     if (typeof val === 'string') return `'${val.replace(/'/g, "''")}'`;
-    if (typeof val === 'object')
-      return `'${JSON.stringify(val).replace(/'/g, "''")}'`;
+    if (typeof val === 'object') return `'${JSON.stringify(val).replace(/'/g, "''")}'`;
     return 'NULL';
   }
 }

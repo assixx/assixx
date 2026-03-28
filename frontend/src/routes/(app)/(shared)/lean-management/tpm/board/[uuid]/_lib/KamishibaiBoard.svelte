@@ -6,11 +6,7 @@
    */
   import { SvelteMap, SvelteSet } from 'svelte/reactivity';
 
-  import {
-    INTERVAL_LABELS,
-    MESSAGES,
-    ZOOM_CONFIG,
-  } from '../../../_lib/constants';
+  import { INTERVAL_LABELS, MESSAGES, ZOOM_CONFIG } from '../../../_lib/constants';
 
   import KamishibaiSection from './KamishibaiSection.svelte';
 
@@ -49,18 +45,10 @@
     categoryColors?: CategoryColorConfigEntry[];
   }
 
-  const {
-    allCards,
-    filteredCards,
-    colors,
-    intervalColors,
-    categoryColors = [],
-  }: Props = $props();
+  const { allCards, filteredCards, colors, intervalColors, categoryColors = [] }: Props = $props();
 
   function countOpen(sectionCards: TpmCard[]): number {
-    return sectionCards.filter(
-      (c: TpmCard) => c.status === 'red' || c.status === 'overdue',
-    ).length;
+    return sectionCards.filter((c: TpmCard) => c.status === 'red' || c.status === 'overdue').length;
   }
 
   function buildSections(all: TpmCard[], filtered: TpmCard[]): SectionData[] {
@@ -73,25 +61,17 @@
 
     const filteredUuids = new Set(filtered.map((c: TpmCard) => c.uuid));
 
-    return INTERVAL_ORDER.filter((it: IntervalType) => grouped.has(it)).map(
-      (it: IntervalType) => {
-        const sectionAll = grouped.get(it) ?? [];
-        const sectionFiltered = sectionAll.filter((c: TpmCard) =>
-          filteredUuids.has(c.uuid),
-        );
-        return {
-          intervalType: it,
-          label: INTERVAL_LABELS[it],
-          operatorCards: sectionFiltered.filter(
-            (c: TpmCard) => c.cardRole === 'operator',
-          ),
-          maintenanceCards: sectionFiltered.filter(
-            (c: TpmCard) => c.cardRole === 'maintenance',
-          ),
-          totalOpen: countOpen(sectionAll),
-        };
-      },
-    );
+    return INTERVAL_ORDER.filter((it: IntervalType) => grouped.has(it)).map((it: IntervalType) => {
+      const sectionAll = grouped.get(it) ?? [];
+      const sectionFiltered = sectionAll.filter((c: TpmCard) => filteredUuids.has(c.uuid));
+      return {
+        intervalType: it,
+        label: INTERVAL_LABELS[it],
+        operatorCards: sectionFiltered.filter((c: TpmCard) => c.cardRole === 'operator'),
+        maintenanceCards: sectionFiltered.filter((c: TpmCard) => c.cardRole === 'maintenance'),
+        totalOpen: countOpen(sectionAll),
+      };
+    });
   }
 
   const sections = $derived(buildSections(allCards, filteredCards));
@@ -105,9 +85,7 @@
   }
 
   const visibleSections = $derived(
-    globalCollapsed ?
-      sections.filter((s: SectionData) => sectionHasCards(s))
-    : sections,
+    globalCollapsed ? sections.filter((s: SectionData) => sectionHasCards(s)) : sections,
   );
 
   /** Tracks which cards are currently flipped — drives section expansion */
@@ -130,9 +108,7 @@
   }
 
   function handleSectionHeaderClick(intervalType: IntervalType): void {
-    const section = visibleSections.find(
-      (s: SectionData) => s.intervalType === intervalType,
-    );
+    const section = visibleSections.find((s: SectionData) => s.intervalType === intervalType);
     const isExpanded =
       expandedSections.has(intervalType) ||
       (section !== undefined && sectionHasFlippedCards(section));
@@ -140,10 +116,7 @@
     if (isExpanded) {
       expandedSections.delete(intervalType);
       if (section !== undefined) {
-        for (const c of [
-          ...section.operatorCards,
-          ...section.maintenanceCards,
-        ]) {
+        for (const c of [...section.operatorCards, ...section.maintenanceCards]) {
           flippedCards.delete(c.uuid);
           locateCards.delete(c.uuid);
         }
@@ -156,9 +129,7 @@
   function handleCardFlip(uuid: string, isFlipped: boolean): void {
     if (isFlipped) {
       const section = sections.find((s: SectionData) =>
-        [...s.operatorCards, ...s.maintenanceCards].some(
-          (c: TpmCard) => c.uuid === uuid,
-        ),
+        [...s.operatorCards, ...s.maintenanceCards].some((c: TpmCard) => c.uuid === uuid),
       );
 
       /** Flipped from stacked mode → locate animation + scroll */
@@ -183,8 +154,8 @@
 
   /** Section is expanded if any of its cards are currently flipped */
   function sectionHasFlippedCards(section: SectionData): boolean {
-    return [...section.operatorCards, ...section.maintenanceCards].some(
-      (c: TpmCard) => flippedCards.has(c.uuid),
+    return [...section.operatorCards, ...section.maintenanceCards].some((c: TpmCard) =>
+      flippedCards.has(c.uuid),
     );
   }
 
@@ -199,12 +170,10 @@
   const toggleLabel = $derived(
     globalCollapsed ? MESSAGES.BTN_BOARD_STACKED : MESSAGES.BTN_BOARD_EXPANDED,
   );
-  const toggleIcon = $derived(
-    globalCollapsed ? 'fa-layer-group' : 'fa-th-large',
-  );
+  const toggleIcon = $derived(globalCollapsed ? 'fa-layer-group' : 'fa-th-large');
 
   /** Zoom — same pattern as Gesamtansicht (OverallViewTable) */
-  let zoomLevel = $state<number>(ZOOM_CONFIG.DEFAULT);
+  let zoomLevel: number = $state(ZOOM_CONFIG.DEFAULT);
 
   function zoomIn(): void {
     if (zoomLevel < ZOOM_CONFIG.MAX) zoomLevel += ZOOM_CONFIG.STEP;
@@ -251,9 +220,7 @@
         class="toggle-group__btn"
         class:active={globalCollapsed}
         aria-pressed={globalCollapsed}
-        aria-label={globalCollapsed ?
-          'Sections aufklappen'
-        : 'Sections stapeln'}
+        aria-label={globalCollapsed ? 'Sections aufklappen' : 'Sections stapeln'}
         onclick={handleToggle}
       >
         <i class="fas {toggleIcon}"></i>

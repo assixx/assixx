@@ -7,15 +7,11 @@
 import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';
 
-const DateStringSchema = z
-  .string()
-  .regex(/^\d{4}-\d{2}-\d{2}$/, 'Ungültiges Datum (YYYY-MM-DD)');
+const DateStringSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Ungültiges Datum (YYYY-MM-DD)');
 
 export const CalendarWorkOrdersQuerySchema = z.object({
   startDate: DateStringSchema,
   endDate: DateStringSchema,
 });
 
-export class CalendarWorkOrdersQueryDto extends createZodDto(
-  CalendarWorkOrdersQuerySchema,
-) {}
+export class CalendarWorkOrdersQueryDto extends createZodDto(CalendarWorkOrdersQuerySchema) {}

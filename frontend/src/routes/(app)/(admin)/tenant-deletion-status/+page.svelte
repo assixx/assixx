@@ -145,8 +145,7 @@
       await invalidateAll();
     } catch (err: unknown) {
       log.error({ err }, 'Error in modal action');
-      const errorMessage =
-        err instanceof Error ? err.message : MESSAGES.genericError;
+      const errorMessage = err instanceof Error ? err.message : MESSAGES.genericError;
       showToast(errorMessage, 'error');
       resetLoading();
     }
@@ -223,13 +222,10 @@
                   <p>Beantragt am: {formatDate(new Date(item.requestedAt))}</p>
                   <p><strong>Aktueller User ID:</strong> {currentUserId}</p>
                   <p>
-                    <strong>Status Info:</strong> canApprove={item.canApprove},
-                    canCancel={item.canCancel}
+                    <strong>Status Info:</strong> canApprove={item.canApprove}, canCancel={item.canCancel}
                   </p>
                 </div>
-                <span
-                  class="badge badge--uppercase {getBadgeClass(item.status)}"
-                >
+                <span class="badge badge--uppercase {getBadgeClass(item.status)}">
                   {getStatusText(item.status)}
                 </span>
               </div>
@@ -241,12 +237,10 @@
                     <i class="fas fa-info-circle"></i>
                   </div>
                   <div class="alert__content">
-                    <div class="alert__title">
-                      Sie sind der Ersteller dieser Löschanfrage.
-                    </div>
+                    <div class="alert__title">Sie sind der Ersteller dieser Löschanfrage.</div>
                     <div class="alert__message">
-                      Das Zwei-Personen-Prinzip erfordert, dass ein anderer
-                      Root-Benutzer die Löschung genehmigt.
+                      Das Zwei-Personen-Prinzip erfordert, dass ein anderer Root-Benutzer die
+                      Löschung genehmigt.
                     </div>
                   </div>
                 </div>
@@ -260,8 +254,7 @@
                       Sie können diese Löschanfrage genehmigen oder ablehnen.
                     </div>
                     <div class="alert__message">
-                      Die Anfrage wurde von einem anderen Root-Benutzer
-                      erstellt.
+                      Die Anfrage wurde von einem anderen Root-Benutzer erstellt.
                     </div>
                   </div>
                 </div>
@@ -273,11 +266,9 @@
                   <i class="fas fa-clock"></i>
                   <div>
                     <strong>Cooling-off Periode aktiv</strong><br />
-                    Noch {Math.ceil(coolingOffRemaining)} Stunden bis zur Genehmigung
-                    möglich<br />
+                    Noch {Math.ceil(coolingOffRemaining)} Stunden bis zur Genehmigung möglich<br />
                     <small class="text-muted"
-                      >Für Entwicklung: Cooling-off kann in der DB auf 0 gesetzt
-                      werden</small
+                      >Für Entwicklung: Cooling-off kann in der DB auf 0 gesetzt werden</small
                     >
                   </div>
                 </div>
@@ -297,16 +288,14 @@
                         {formatDateOnly(item.scheduledFor)}
                       </p>
                       <p class="mb-2">
-                        Der Tenant kann innerhalb von 30 Tagen noch reaktiviert
-                        werden.
+                        Der Tenant kann innerhalb von 30 Tagen noch reaktiviert werden.
                       </p>
                       <p class="mb-2">
-                        Nach Ablauf der Grace Period erfolgt die automatische,
-                        unwiderrufliche Löschung.
+                        Nach Ablauf der Grace Period erfolgt die automatische, unwiderrufliche
+                        Löschung.
                       </p>
                       <small class="text-muted"
-                        >Deletion Worker prüft alle 30 Sekunden nach
-                        abgelaufenen Grace Periods.</small
+                        >Deletion Worker prüft alle 30 Sekunden nach abgelaufenen Grace Periods.</small
                       >
                     </div>
                   </div>
@@ -347,9 +336,7 @@
                       <i class="fas fa-times mr-2"></i> Ablehnen
                     </button>
                     <a
-                      href={resolve(
-                        `/tenant-deletion-approve?queueId=${item.queueId}`,
-                      )}
+                      href={resolve(`/tenant-deletion-approve?queueId=${item.queueId}`)}
                       class="btn btn-success"
                       data-sveltekit-reload
                     >

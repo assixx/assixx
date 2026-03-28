@@ -26,9 +26,7 @@ describe('ShiftDateSchema', () => {
   });
 
   it('should accept ISO 8601 datetime format', () => {
-    expect(ShiftDateSchema.safeParse('2025-06-15T08:00:00Z').success).toBe(
-      true,
-    );
+    expect(ShiftDateSchema.safeParse('2025-06-15T08:00:00Z').success).toBe(true);
   });
 
   it('should reject invalid date format', () => {
@@ -41,15 +39,12 @@ describe('ShiftDateSchema', () => {
 });
 
 describe('ShiftStatusSchema', () => {
-  it.each([
-    'planned',
-    'confirmed',
-    'in_progress',
-    'completed',
-    'cancelled',
-  ] as const)('should accept status=%s', (status) => {
-    expect(ShiftStatusSchema.safeParse(status).success).toBe(true);
-  });
+  it.each(['planned', 'confirmed', 'in_progress', 'completed', 'cancelled'] as const)(
+    'should accept status=%s',
+    (status) => {
+      expect(ShiftStatusSchema.safeParse(status).success).toBe(true);
+    },
+  );
 
   it('should reject invalid status', () => {
     expect(ShiftStatusSchema.safeParse('active').success).toBe(false);
@@ -118,16 +113,12 @@ describe('TimeWithSecondsSchema', () => {
 });
 
 describe('SortBySchema', () => {
-  it.each([
-    'date',
-    'startTime',
-    'endTime',
-    'userId',
-    'status',
-    'type',
-  ] as const)('should accept sortBy=%s', (field) => {
-    expect(SortBySchema.safeParse(field).success).toBe(true);
-  });
+  it.each(['date', 'startTime', 'endTime', 'userId', 'status', 'type'] as const)(
+    'should accept sortBy=%s',
+    (field) => {
+      expect(SortBySchema.safeParse(field).success).toBe(true);
+    },
+  );
 });
 
 describe('SortOrderSchema', () => {
@@ -170,9 +161,7 @@ describe('QueryShiftsSchema', () => {
   });
 
   it('should accept valid date filter', () => {
-    expect(QueryShiftsSchema.safeParse({ date: '2025-06-15' }).success).toBe(
-      true,
-    );
+    expect(QueryShiftsSchema.safeParse({ date: '2025-06-15' }).success).toBe(true);
   });
 });
 
@@ -206,28 +195,19 @@ describe('CreateShiftSchema', () => {
   });
 
   it('should reject invalid time format', () => {
-    expect(
-      CreateShiftSchema.safeParse({ ...valid, startTime: '8:00' }).success,
-    ).toBe(false);
+    expect(CreateShiftSchema.safeParse({ ...valid, startTime: '8:00' }).success).toBe(false);
   });
 
   it('should reject title longer than 200 characters', () => {
-    expect(
-      CreateShiftSchema.safeParse({ ...valid, title: 'T'.repeat(201) }).success,
-    ).toBe(false);
+    expect(CreateShiftSchema.safeParse({ ...valid, title: 'T'.repeat(201) }).success).toBe(false);
   });
 
   it('should reject notes longer than 1000 characters', () => {
-    expect(
-      CreateShiftSchema.safeParse({ ...valid, notes: 'N'.repeat(1001) })
-        .success,
-    ).toBe(false);
+    expect(CreateShiftSchema.safeParse({ ...valid, notes: 'N'.repeat(1001) }).success).toBe(false);
   });
 
   it('should reject negative breakMinutes', () => {
-    expect(
-      CreateShiftSchema.safeParse({ ...valid, breakMinutes: -1 }).success,
-    ).toBe(false);
+    expect(CreateShiftSchema.safeParse({ ...valid, breakMinutes: -1 }).success).toBe(false);
   });
 });
 
@@ -245,15 +225,11 @@ describe('ExportShiftsSchema', () => {
   });
 
   it.each(['csv', 'excel'] as const)('should accept format=%s', (format) => {
-    expect(ExportShiftsSchema.safeParse({ ...valid, format }).success).toBe(
-      true,
-    );
+    expect(ExportShiftsSchema.safeParse({ ...valid, format }).success).toBe(true);
   });
 
   it('should reject missing startDate', () => {
-    expect(
-      ExportShiftsSchema.safeParse({ endDate: '2025-06-30' }).success,
-    ).toBe(false);
+    expect(ExportShiftsSchema.safeParse({ endDate: '2025-06-30' }).success).toBe(false);
   });
 });
 
@@ -263,9 +239,7 @@ describe('ExportShiftsSchema', () => {
 
 describe('CreateSwapRequestSchema', () => {
   it('should accept valid swap request', () => {
-    expect(CreateSwapRequestSchema.safeParse({ shiftId: 1 }).success).toBe(
-      true,
-    );
+    expect(CreateSwapRequestSchema.safeParse({ shiftId: 1 }).success).toBe(true);
   });
 
   it('should reject missing shiftId', () => {
@@ -302,9 +276,7 @@ describe('DeleteRotationHistoryByDateRangeSchema', () => {
   it('should reject missing teamId', () => {
     const { teamId: _tid, ...noTeamId } = valid;
 
-    expect(
-      DeleteRotationHistoryByDateRangeSchema.safeParse(noTeamId).success,
-    ).toBe(false);
+    expect(DeleteRotationHistoryByDateRangeSchema.safeParse(noTeamId).success).toBe(false);
   });
 
   it('should reject invalid date format', () => {

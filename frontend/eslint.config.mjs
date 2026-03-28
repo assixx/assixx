@@ -1,7 +1,7 @@
 // ESLint Configuration for SvelteKit Frontend (Svelte 5 with Runes)
 // ENTERPRISE Configuration - matches root config strictness + Svelte 5 support
 // Based on: https://sveltejs.github.io/eslint-plugin-svelte/user-guide/
-// Last Updated: 2026-01-08
+// Last Updated: 2026-03-21
 
 import js from '@eslint/js';
 import importPlugin from 'eslint-plugin-import-x';
@@ -104,12 +104,7 @@ export default ts.config(
   // =============================================================================
   {
     files: ['src/**/*.svelte', 'src/**/*.ts', 'src/**/*.js'],
-    ignores: [
-      '**/*.server.ts',
-      '**/*.server.js',
-      '**/+*.server.ts',
-      '**/+*.server.js',
-    ],
+    ignores: ['**/*.server.ts', '**/*.server.js', '**/+*.server.ts', '**/+*.server.js'],
     languageOptions: {
       globals: {
         ...globals.browser,
@@ -216,23 +211,12 @@ export default ts.config(
       'import-x/no-duplicates': 'error',
       'import-x/no-self-import': 'error',
       'import-x/no-useless-path-segments': 'error',
-      'import-x/max-dependencies': [
-        'error',
-        { max: 25, ignoreTypeImports: true },
-      ],
+      'import-x/max-dependencies': ['error', { max: 25, ignoreTypeImports: true }],
       // Import sorting for team consistency (auto-fixable)
       'import-x/order': [
         'error',
         {
-          groups: [
-            'builtin',
-            'external',
-            'internal',
-            'parent',
-            'sibling',
-            'index',
-            'type',
-          ],
+          groups: ['builtin', 'external', 'internal', 'parent', 'sibling', 'index', 'type'],
           'newlines-between': 'always',
           alphabetize: { order: 'asc', caseInsensitive: true },
           pathGroups: [
@@ -442,15 +426,22 @@ export default ts.config(
 
   // =============================================================================
   // SVELTE COMPONENT SIZE LIMITS (separate for .svelte only)
-  // User requested: Keep at 700 lines
+  // ESLint core max-lines disabled for .svelte — it counts Style lines which
+  // add zero complexity. svelte/max-lines-per-block limits Script + Template
+  // independently, Style is intentionally unlimited.
   // =============================================================================
   {
     files: ['src/**/*.svelte'],
     rules: {
-      'max-lines': [
+      // Core max-lines OFF — cannot exclude <style> block, penalizes CSS unfairly
+      'max-lines': 'off',
+      // Per-block limits: only logic (script) and markup (template) count
+      'svelte/max-lines-per-block': [
         'error',
         {
-          max: 850,
+          script: 400,
+          template: 800,
+          // style: intentionally omitted — CSS adds no complexity
           skipBlankLines: true,
           skipComments: true,
         },

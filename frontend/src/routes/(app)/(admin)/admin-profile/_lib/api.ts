@@ -62,9 +62,7 @@ export async function removeProfilePicture(): Promise<void> {
 }
 
 /** Change user password */
-export async function changePassword(
-  payload: PasswordChangePayload,
-): Promise<void> {
+export async function changePassword(payload: PasswordChangePayload): Promise<void> {
   await apiClient.put('/users/me/password', payload);
 }
 

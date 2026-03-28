@@ -87,8 +87,7 @@
 /* Focus state */
 .time-picker__input:focus {
   outline: none;
-  box-shadow: 0 0 0 3px
-    color-mix(in oklch, var(--color-primary) 10%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in oklch, var(--color-primary) 10%, transparent);
   border-color: var(--color-primary);
   background: var(--glass-bg-active);
 }
@@ -156,8 +155,7 @@
 }
 
 .time-picker--error .time-picker__input:focus {
-  box-shadow: 0 0 0 3px
-    color-mix(in oklch, var(--color-danger) 10%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in oklch, var(--color-danger) 10%, transparent);
   border-color: var(--color-danger);
 }
 
@@ -172,8 +170,7 @@
 }
 
 .time-picker--success .time-picker__input:focus {
-  box-shadow: 0 0 0 3px
-    color-mix(in oklch, var(--color-success) 10%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in oklch, var(--color-success) 10%, transparent);
   border-color: var(--color-success);
 }
 
@@ -188,8 +185,7 @@
 }
 
 .time-picker--warning .time-picker__input:focus {
-  box-shadow: 0 0 0 3px
-    color-mix(in oklch, var(--color-warning) 10%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in oklch, var(--color-warning) 10%, transparent);
   border-color: var(--color-warning);
 }
 

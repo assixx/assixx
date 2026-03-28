@@ -46,9 +46,7 @@ function createMinimalPattern(
   } as RotationPatternResponse;
 }
 
-function createMockAssignment(
-  overrides?: Record<string, unknown>,
-): Record<string, unknown> {
+function createMockAssignment(overrides?: Record<string, unknown>): Record<string, unknown> {
   return {
     id: 1,
     user_id: 42,
@@ -58,9 +56,7 @@ function createMockAssignment(
   };
 }
 
-function createConfigDto(
-  overrides?: Record<string, unknown>,
-): GenerateRotationFromConfigDto {
+function createConfigDto(overrides?: Record<string, unknown>): GenerateRotationFromConfigDto {
   return {
     config: {
       shiftBlockLength: 2,
@@ -217,9 +213,7 @@ describe('RotationGeneratorService', () => {
         const pattern = createMinimalPattern({
           patternConfig: { nightShiftStatic: true },
         });
-        mockDb.query.mockResolvedValueOnce([
-          createMockAssignment({ shift_group: 'N' }),
-        ]);
+        mockDb.query.mockResolvedValueOnce([createMockAssignment({ shift_group: 'N' })]);
 
         const result = await service.generateRotationShifts(
           pattern,
@@ -238,9 +232,7 @@ describe('RotationGeneratorService', () => {
 
       it('should return N for all shifts when pattern is fixed_n', async () => {
         const pattern = createMinimalPattern({ patternType: 'fixed_n' });
-        mockDb.query.mockResolvedValueOnce([
-          createMockAssignment({ shift_group: 'F' }),
-        ]);
+        mockDb.query.mockResolvedValueOnce([createMockAssignment({ shift_group: 'F' })]);
 
         const result = await service.generateRotationShifts(
           pattern,
@@ -308,9 +300,7 @@ describe('RotationGeneratorService', () => {
         const pattern = createMinimalPattern({
           patternConfig: { nightShiftStatic: true },
         });
-        mockDb.query.mockResolvedValueOnce([
-          createMockAssignment({ shift_group: 'F' }),
-        ]);
+        mockDb.query.mockResolvedValueOnce([createMockAssignment({ shift_group: 'F' })]);
 
         const result = await service.generateRotationShifts(
           pattern,
@@ -334,9 +324,7 @@ describe('RotationGeneratorService', () => {
         const pattern = createMinimalPattern({
           patternConfig: { nightShiftStatic: true },
         });
-        mockDb.query.mockResolvedValueOnce([
-          createMockAssignment({ shift_group: 'S' }),
-        ]);
+        mockDb.query.mockResolvedValueOnce([createMockAssignment({ shift_group: 'S' })]);
 
         const result = await service.generateRotationShifts(
           pattern,
@@ -373,9 +361,7 @@ describe('RotationGeneratorService', () => {
         );
 
         const week0 = result.shifts.filter((s) => s.date < '2026-02-09');
-        const week1 = result.shifts.filter(
-          (s) => s.date >= '2026-02-09' && s.date < '2026-02-16',
-        );
+        const week1 = result.shifts.filter((s) => s.date >= '2026-02-09' && s.date < '2026-02-16');
         const week2 = result.shifts.filter((s) => s.date >= '2026-02-16');
         expect(week0.every((s) => s.shiftType === 'F')).toBe(true);
         expect(week1.every((s) => s.shiftType === 'S')).toBe(true);
@@ -407,9 +393,7 @@ describe('RotationGeneratorService', () => {
           patternType: 'custom',
           patternConfig: { cycleWeeks: 4 },
         });
-        mockDb.query.mockResolvedValueOnce([
-          createMockAssignment({ shift_group: 'S' }),
-        ]);
+        mockDb.query.mockResolvedValueOnce([createMockAssignment({ shift_group: 'S' })]);
 
         const result = await service.generateRotationShifts(
           pattern,
@@ -431,9 +415,7 @@ describe('RotationGeneratorService', () => {
           patternType: 'custom',
           patternConfig: { cycleWeeks: 1, nightShiftStatic: true },
         });
-        mockDb.query.mockResolvedValueOnce([
-          createMockAssignment({ shift_group: 'F' }),
-        ]);
+        mockDb.query.mockResolvedValueOnce([createMockAssignment({ shift_group: 'F' })]);
 
         const result = await service.generateRotationShifts(
           pattern,
@@ -457,9 +439,7 @@ describe('RotationGeneratorService', () => {
         const pattern = createMinimalPattern({
           patternConfig: { ignoreNightShift: true },
         });
-        mockDb.query.mockResolvedValueOnce([
-          createMockAssignment({ shift_group: 'N' }),
-        ]);
+        mockDb.query.mockResolvedValueOnce([createMockAssignment({ shift_group: 'N' })]);
 
         const result = await service.generateRotationShifts(
           pattern,
@@ -482,9 +462,7 @@ describe('RotationGeneratorService', () => {
           startsAt: '2026-01-26',
           patternConfig: { nightShiftStatic: true },
         });
-        mockDb.query.mockResolvedValueOnce([
-          createMockAssignment({ shift_group: 'F' }),
-        ]);
+        mockDb.query.mockResolvedValueOnce([createMockAssignment({ shift_group: 'F' })]);
 
         const result = await service.generateRotationShifts(
           pattern,
@@ -633,8 +611,7 @@ describe('RotationGeneratorService', () => {
           ),
         ).rejects.toThrow('DB write error');
 
-        const lastCall =
-          mockDb.query.mock.calls[mockDb.query.mock.calls.length - 1];
+        const lastCall = mockDb.query.mock.calls[mockDb.query.mock.calls.length - 1];
         expect(lastCall?.[0]).toBe('ROLLBACK');
       });
 
@@ -693,11 +670,7 @@ describe('RotationGeneratorService', () => {
     it('should create pattern, assignment, and history in transaction', async () => {
       setupConfigDbMock(mockDb);
 
-      const result = await service.generateRotationFromConfig(
-        createConfigDto(),
-        1,
-        5,
-      );
+      const result = await service.generateRotationFromConfig(createConfigDto(), 1, 5);
 
       expect(result).toEqual({
         success: true,
@@ -715,12 +688,11 @@ describe('RotationGeneratorService', () => {
         .mockRejectedValueOnce(new Error('Insert failed')) // INSERT pattern
         .mockResolvedValueOnce([]); // ROLLBACK
 
-      await expect(
-        service.generateRotationFromConfig(createConfigDto(), 1, 5),
-      ).rejects.toThrow(InternalServerErrorException);
+      await expect(service.generateRotationFromConfig(createConfigDto(), 1, 5)).rejects.toThrow(
+        InternalServerErrorException,
+      );
 
-      const lastCall =
-        mockDb.query.mock.calls[mockDb.query.mock.calls.length - 1];
+      const lastCall = mockDb.query.mock.calls[mockDb.query.mock.calls.length - 1];
       expect(lastCall?.[0]).toBe('ROLLBACK');
     });
 

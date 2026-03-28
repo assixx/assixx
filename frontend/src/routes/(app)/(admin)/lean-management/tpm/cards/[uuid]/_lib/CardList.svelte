@@ -15,12 +15,7 @@
     MESSAGES,
   } from '../../../_lib/constants';
 
-  import type {
-    TpmCard,
-    CardStatus,
-    IntervalType,
-    CardRole,
-  } from '../../../_lib/types';
+  import type { TpmCard, CardStatus, IntervalType, CardRole } from '../../../_lib/types';
 
   interface Props {
     cards: TpmCard[];
@@ -47,8 +42,7 @@
   const filteredCards = $derived(
     cards.filter((card: TpmCard) => {
       if (statusFilter !== '' && card.status !== statusFilter) return false;
-      if (intervalFilter !== '' && card.intervalType !== intervalFilter)
-        return false;
+      if (intervalFilter !== '' && card.intervalType !== intervalFilter) return false;
       if (roleFilter !== '' && card.cardRole !== roleFilter) return false;
       return true;
     }),
@@ -73,8 +67,7 @@
   }
 
   $effect(() => {
-    const anyOpen =
-      statusDropdownOpen || intervalDropdownOpen || roleDropdownOpen;
+    const anyOpen = statusDropdownOpen || intervalDropdownOpen || roleDropdownOpen;
     if (!anyOpen) return;
 
     function handleClickOutside(event: MouseEvent): void {
@@ -95,19 +88,13 @@
   // =========================================================================
 
   const selectedStatusText = $derived(
-    statusFilter === '' ?
-      MESSAGES.FILTER_ALL_STATUS
-    : CARD_STATUS_LABELS[statusFilter],
+    statusFilter === '' ? MESSAGES.FILTER_ALL_STATUS : CARD_STATUS_LABELS[statusFilter],
   );
   const selectedIntervalText = $derived(
-    intervalFilter === '' ?
-      MESSAGES.FILTER_ALL_INTERVALS
-    : INTERVAL_LABELS[intervalFilter],
+    intervalFilter === '' ? MESSAGES.FILTER_ALL_INTERVALS : INTERVAL_LABELS[intervalFilter],
   );
   const selectedRoleText = $derived(
-    roleFilter === '' ?
-      MESSAGES.FILTER_ALL_ROLES
-    : CARD_ROLE_LABELS[roleFilter],
+    roleFilter === '' ? MESSAGES.FILTER_ALL_ROLES : CARD_ROLE_LABELS[roleFilter],
   );
 
   // =========================================================================
@@ -315,9 +302,7 @@
 
 <!-- Table -->
 {#if loading}
-  <div
-    class="flex items-center justify-center gap-2 p-12 text-(--color-text-muted)"
-  >
+  <div class="flex items-center justify-center gap-2 p-12 text-(--color-text-muted)">
     <i class="fas fa-spinner fa-spin"></i>
     {MESSAGES.LOADING}
   </div>
@@ -327,9 +312,7 @@
       <i class="fas fa-clipboard"></i>
     </div>
     <h3 class="empty-state__title">
-      {hasActiveFilters ?
-        MESSAGES.CARD_LIST_EMPTY_FILTER
-      : MESSAGES.CARD_LIST_EMPTY}
+      {hasActiveFilters ? MESSAGES.CARD_LIST_EMPTY_FILTER : MESSAGES.CARD_LIST_EMPTY}
     </h3>
   </div>
 {:else}
@@ -357,9 +340,7 @@
               </code>
             </td>
             <td>
-              <span class="font-medium text-(--color-text-primary)"
-                >{card.title}</span
-              >
+              <span class="font-medium text-(--color-text-primary)">{card.title}</span>
               {#if card.locationDescription !== null}
                 <span class="mt-0.5 block text-xs text-(--color-text-muted)">
                   <i class="fas fa-map-marker-alt mr-1"></i>
@@ -378,17 +359,14 @@
             </td>
             <td>{INTERVAL_LABELS[card.intervalType]}</td>
             <td>
-              <span
-                class="badge badge--sm {CARD_STATUS_BADGE_CLASSES[card.status]}"
-              >
+              <span class="badge badge--sm {CARD_STATUS_BADGE_CLASSES[card.status]}">
                 {CARD_STATUS_LABELS[card.status]}
               </span>
             </td>
             <td>{formatDate(card.currentDueDate)}</td>
             <td>
               {#if card.estimatedExecutionMinutes !== null}
-                <span class="text-sm">{card.estimatedExecutionMinutes} min</span
-                >
+                <span class="text-sm">{card.estimatedExecutionMinutes} min</span>
               {:else}
                 <span class="text-(--color-text-muted)">—</span>
               {/if}

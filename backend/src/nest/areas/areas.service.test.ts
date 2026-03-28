@@ -229,9 +229,7 @@ describe('AreasService', () => {
     it('should throw NotFoundException when area not found', async () => {
       mockDb.query.mockResolvedValueOnce([]);
 
-      await expect(service.getAreaById(999, 10)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.getAreaById(999, 10)).rejects.toThrow(NotFoundException);
     });
 
     it('should return mapped area response', async () => {
@@ -298,18 +296,14 @@ describe('AreasService', () => {
         type: 'building',
       } as unknown as CreateAreaDto;
 
-      await expect(service.createArea(dto, 10, 1)).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(service.createArea(dto, 10, 1)).rejects.toThrow(BadRequestException);
     });
 
     it('should create area and log activity', async () => {
       // INSERT RETURNING id
       mockDb.query.mockResolvedValueOnce([{ id: 5 }]);
       // getAreaById for return
-      mockDb.query.mockResolvedValueOnce([
-        makeAreaRow({ id: 5, name: 'New Area' }),
-      ]);
+      mockDb.query.mockResolvedValueOnce([makeAreaRow({ id: 5, name: 'New Area' })]);
 
       const dto = {
         name: 'New Area',
@@ -330,9 +324,7 @@ describe('AreasService', () => {
         type: 'office',
       } as unknown as CreateAreaDto;
 
-      await expect(service.createArea(dto, 10, 1)).rejects.toThrow(
-        'Failed to create area',
-      );
+      await expect(service.createArea(dto, 10, 1)).rejects.toThrow('Failed to create area');
     });
 
     it('should create area with admin leader', async () => {
@@ -369,9 +361,7 @@ describe('AreasService', () => {
       // INSERT RETURNING id
       mockDb.query.mockResolvedValueOnce([{ id: 9 }]);
       // getAreaById
-      mockDb.query.mockResolvedValueOnce([
-        makeAreaRow({ id: 9, area_lead_id: 1 }),
-      ]);
+      mockDb.query.mockResolvedValueOnce([makeAreaRow({ id: 9, area_lead_id: 1 })]);
 
       const result = await service.createArea(dto, 10, 1);
 
@@ -388,9 +378,7 @@ describe('AreasService', () => {
       // validateLeader: employee found — not admin/root
       mockDb.query.mockResolvedValueOnce([{ id: 99, role: 'employee' }]);
 
-      await expect(service.createArea(dto, 10, 1)).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(service.createArea(dto, 10, 1)).rejects.toThrow(BadRequestException);
     });
 
     it('should reject inactive user as area leader', async () => {
@@ -403,9 +391,7 @@ describe('AreasService', () => {
       // validateLeader: no active user found
       mockDb.query.mockResolvedValueOnce([]);
 
-      await expect(service.createArea(dto, 10, 1)).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(service.createArea(dto, 10, 1)).rejects.toThrow(BadRequestException);
     });
 
     it('should reject non-existent user as area leader', async () => {
@@ -418,9 +404,7 @@ describe('AreasService', () => {
       // validateLeader: no user found
       mockDb.query.mockResolvedValueOnce([]);
 
-      await expect(service.createArea(dto, 10, 1)).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(service.createArea(dto, 10, 1)).rejects.toThrow(BadRequestException);
     });
   });
 
@@ -435,9 +419,7 @@ describe('AreasService', () => {
       // UPDATE areas
       mockDb.query.mockResolvedValueOnce([]);
       // getAreaById (return updated)
-      mockDb.query.mockResolvedValueOnce([
-        makeAreaRow({ name: 'Updated Building' }),
-      ]);
+      mockDb.query.mockResolvedValueOnce([makeAreaRow({ name: 'Updated Building' })]);
 
       const dto = { name: 'Updated Building' } as UpdateAreaDto;
       const result = await service.updateArea(1, dto, 1, 10);
@@ -466,9 +448,7 @@ describe('AreasService', () => {
 
       const dto = { name: 'X' } as UpdateAreaDto;
 
-      await expect(service.updateArea(999, dto, 1, 10)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.updateArea(999, dto, 1, 10)).rejects.toThrow(NotFoundException);
     });
 
     it('should validate leader on update with admin', async () => {
@@ -496,9 +476,7 @@ describe('AreasService', () => {
       // validateLeader: employee found
       mockDb.query.mockResolvedValueOnce([{ id: 99, role: 'employee' }]);
 
-      await expect(service.updateArea(1, dto, 1, 10)).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(service.updateArea(1, dto, 1, 10)).rejects.toThrow(BadRequestException);
     });
 
     it('should cascade vacation approver when leader changes and requests exist', async () => {
@@ -547,9 +525,7 @@ describe('AreasService', () => {
     it('should throw NotFoundException when area not found', async () => {
       mockDb.query.mockResolvedValueOnce([]);
 
-      await expect(service.deleteArea(999, 1, 10)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.deleteArea(999, 1, 10)).rejects.toThrow(NotFoundException);
     });
 
     it('should throw BadRequestException when has dependencies and force=false', async () => {
@@ -560,9 +536,7 @@ describe('AreasService', () => {
         mockDb.query.mockResolvedValueOnce(i === 0 ? [{ id: 1 }] : []);
       }
 
-      await expect(service.deleteArea(1, 1, 10, false)).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(service.deleteArea(1, 1, 10, false)).rejects.toThrow(BadRequestException);
     });
 
     it('should delete area with no dependencies', async () => {
@@ -630,9 +604,9 @@ describe('AreasService', () => {
     it('should throw NotFoundException for unknown area', async () => {
       mockDb.query.mockResolvedValueOnce([]);
 
-      await expect(
-        service.assignDepartmentsToArea(999, [1, 2], 10),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.assignDepartmentsToArea(999, [1, 2], 10)).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should assign departments to area', async () => {
@@ -671,9 +645,7 @@ describe('AreasService', () => {
     it('should throw NotFoundException for unknown area', async () => {
       mockDb.query.mockResolvedValueOnce([]);
 
-      await expect(service.assignHallsToArea(999, [1, 2], 10)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.assignHallsToArea(999, [1, 2], 10)).rejects.toThrow(NotFoundException);
     });
 
     it('should assign halls to area', async () => {

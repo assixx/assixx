@@ -2,10 +2,9 @@
  * Unit tests for KvpCommentsService
  *
  * Phase 11: Service tests — mocked dependencies.
- * Focus: Employee visibility filter, admin-only addComment,
- *        ForbiddenException for non-admin, field mapping.
+ * Focus: Employee visibility filter, permission-based addComment,
+ *        isInternal enforcement for non-admin, field mapping.
  */
-import { ForbiddenException } from '@nestjs/common';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { ActivityLoggerService } from '../common/services/activity-logger.service.js';
@@ -109,27 +108,49 @@ describe('KvpCommentsService', () => {
   });
 
   // =============================================================
+  // getReplies
+  // =============================================================
+
+  describe('getReplies', () => {
+    it('should return replies for admin (including internal)', async () => {
+      mockDb.query.mockResolvedValueOnce([makeDbComment({ id: 10, comment: 'Reply 1' })]);
+
+      const result = await service.getReplies(1, 10, 'admin');
+
+      expect(result).toHaveLength(1);
+      expect(result[0]?.comment).toBe('Reply 1');
+      const sql = mockDb.query.mock.calls[0]?.[0] as string;
+      expect(sql).not.toContain('is_internal = FALSE');
+    });
+
+    it('should filter internal replies for employee', async () => {
+      mockDb.query.mockResolvedValueOnce([]);
+
+      await service.getReplies(1, 10, 'employee');
+
+      const sql = mockDb.query.mock.calls[0]?.[0] as string;
+      expect(sql).toContain('is_internal = FALSE');
+    });
+  });
+
+  // =============================================================
   // addComment
   // =============================================================
 
   describe('addComment', () => {
-    it('should throw ForbiddenException for employee', async () => {
-      await expect(
-        service.addComment(42, 5, 10, 'Comment', false, 'employee'),
-      ).rejects.toThrow(ForbiddenException);
+    it('should allow employee to comment with isInternal forced to false', async () => {
+      mockDb.query.mockResolvedValueOnce([{ id: 101 }]);
+
+      const result = await service.addComment(42, 5, 10, 'Employee comment', true, 'employee');
+
+      expect(result.id).toBe(101);
+      expect(result.isInternal).toBe(false);
     });
 
     it('should add comment for admin', async () => {
       mockDb.query.mockResolvedValueOnce([{ id: 99 }]);
 
-      const result = await service.addComment(
-        42,
-        5,
-        10,
-        'Admin feedback',
-        true,
-        'admin',
-      );
+      const result = await service.addComment(42, 5, 10, 'Admin feedback', true, 'admin');
 
       expect(result.id).toBe(99);
       expect(result.isInternal).toBe(true);
@@ -138,14 +159,7 @@ describe('KvpCommentsService', () => {
     it('should add comment for root', async () => {
       mockDb.query.mockResolvedValueOnce([{ id: 100 }]);
 
-      const result = await service.addComment(
-        42,
-        1,
-        10,
-        'Root note',
-        false,
-        'root',
-      );
+      const result = await service.addComment(42, 1, 10, 'Root note', false, 'root');
 
       expect(result.id).toBe(100);
     });
@@ -153,9 +167,37 @@ describe('KvpCommentsService', () => {
     it('should throw when insert fails', async () => {
       mockDb.query.mockResolvedValueOnce([]);
 
-      await expect(
-        service.addComment(42, 5, 10, 'Comment', false, 'admin'),
-      ).rejects.toThrow('Failed to add comment');
+      await expect(service.addComment(42, 5, 10, 'Comment', false, 'admin')).rejects.toThrow(
+        'Failed to add comment',
+      );
+    });
+
+    it('should validate parentId belongs to same suggestion', async () => {
+      // Parent lookup returns matching suggestion
+      mockDb.query.mockResolvedValueOnce([{ suggestion_id: 42 }]);
+      // Insert
+      mockDb.query.mockResolvedValueOnce([{ id: 200 }]);
+
+      const result = await service.addComment(42, 5, 10, 'Reply', false, 'admin', 7);
+
+      expect(result.id).toBe(200);
+      expect(result.parentId).toBe(7);
+    });
+
+    it('should throw when parent comment not found', async () => {
+      mockDb.query.mockResolvedValueOnce([]);
+
+      await expect(service.addComment(42, 5, 10, 'Reply', false, 'admin', 999)).rejects.toThrow(
+        'Parent comment not found',
+      );
+    });
+
+    it('should throw when parent belongs to different suggestion', async () => {
+      mockDb.query.mockResolvedValueOnce([{ suggestion_id: 99 }]);
+
+      await expect(service.addComment(42, 5, 10, 'Reply', false, 'admin', 7)).rejects.toThrow(
+        'Parent comment does not belong to this suggestion',
+      );
     });
   });
 });

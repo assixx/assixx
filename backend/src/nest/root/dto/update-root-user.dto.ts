@@ -10,6 +10,7 @@ import {
   NameSchema,
   NotesSchema,
   PasswordSchema,
+  PositionIdsSchema,
   PositionSchema,
 } from './admin.schemas.js';
 
@@ -19,6 +20,7 @@ export const UpdateRootUserSchema = z.object({
   email: EmailSchema.optional(),
   password: PasswordSchema.optional(),
   position: PositionSchema,
+  positionIds: PositionIdsSchema.optional(),
   notes: NotesSchema,
   employeeNumber: EmployeeNumberSchema,
   isActive: z.coerce.number().int().min(0).max(4).optional(),

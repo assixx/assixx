@@ -5,12 +5,7 @@
    * Accepts and emits YYYY-MM-DD strings while using bits-ui's
    * CalendarDate internally. Styled with the glassmorphism design system.
    */
-  import {
-    CalendarDate,
-    type DateValue,
-    today,
-    getLocalTimeZone,
-  } from '@internationalized/date';
+  import { CalendarDate, type DateValue, today, getLocalTimeZone } from '@internationalized/date';
   import { DatePicker } from 'bits-ui';
 
   interface Props {
@@ -262,8 +257,7 @@
 
   .app-date-picker__field:focus-within {
     outline: none;
-    box-shadow: 0 0 0 3px
-      color-mix(in oklch, var(--color-primary) 10%, transparent);
+    box-shadow: 0 0 0 3px color-mix(in oklch, var(--color-primary) 10%, transparent);
     border-color: var(--color-primary);
     background: var(--glass-bg-active);
   }
@@ -335,8 +329,7 @@
     background: color-mix(in oklch, var(--color-white) 95%, transparent);
     border: 1px solid var(--color-glass-border);
     border-radius: var(--radius-2xl);
-    box-shadow: 0 2px 4px
-      color-mix(in oklch, var(--color-black) 50%, transparent);
+    box-shadow: 0 2px 4px color-mix(in oklch, var(--color-black) 50%, transparent);
     padding: var(--spacing-4);
     min-width: 280px;
   }
@@ -512,8 +505,7 @@
   }
 
   .app-date-picker--error .app-date-picker__field:focus-within {
-    box-shadow: 0 0 0 3px
-      color-mix(in oklch, var(--color-danger) 10%, transparent);
+    box-shadow: 0 0 0 3px color-mix(in oklch, var(--color-danger) 10%, transparent);
     border-color: var(--color-danger);
   }
 
@@ -527,8 +519,7 @@
   }
 
   .app-date-picker--success .app-date-picker__field:focus-within {
-    box-shadow: 0 0 0 3px
-      color-mix(in oklch, var(--color-success) 10%, transparent);
+    box-shadow: 0 0 0 3px color-mix(in oklch, var(--color-success) 10%, transparent);
     border-color: var(--color-success);
   }
 
@@ -542,8 +533,7 @@
   }
 
   .app-date-picker--warning .app-date-picker__field:focus-within {
-    box-shadow: 0 0 0 3px
-      color-mix(in oklch, var(--color-warning) 10%, transparent);
+    box-shadow: 0 0 0 3px color-mix(in oklch, var(--color-warning) 10%, transparent);
     border-color: var(--color-warning);
   }
 

@@ -11,17 +11,13 @@ import { z } from 'zod';
  */
 export const DeleteOldEntriesBodySchema = z.object({
   olderThanDays: z.number().int().min(90, 'Must specify days (minimum 90)'),
-  confirmPassword: z
-    .string()
-    .min(1, 'Password confirmation required for this action'),
+  confirmPassword: z.string().min(1, 'Password confirmation required for this action'),
 });
 
 /**
  * DTO for delete old entries request body
  */
-export class DeleteOldEntriesBodyDto extends createZodDto(
-  DeleteOldEntriesBodySchema,
-) {}
+export class DeleteOldEntriesBodyDto extends createZodDto(DeleteOldEntriesBodySchema) {}
 
 /**
  * Response type for delete old entries

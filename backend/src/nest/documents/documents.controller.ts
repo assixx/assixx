@@ -39,6 +39,7 @@ import crypto from 'node:crypto';
 import * as path from 'node:path';
 import { v7 as uuidv7 } from 'uuid';
 
+import { attachmentHeader, inlineHeader } from '../../utils/content-disposition.js';
 import { CurrentUser } from '../common/decorators/current-user.decorator.js';
 import { RequireAddon } from '../common/decorators/require-addon.decorator.js';
 import { RequirePermission } from '../common/decorators/require-permission.decorator.js';
@@ -71,15 +72,7 @@ const documentUploadOptions = {
 };
 
 /** Valid document categories */
-const VALID_CATEGORIES = [
-  'general',
-  'personal',
-  'work',
-  'training',
-  'hr',
-  'salary',
-  'blackboard',
-];
+const VALID_CATEGORIES = ['general', 'personal', 'work', 'training', 'hr', 'salary', 'blackboard'];
 
 /** Valid access scopes */
 type AccessScope =
@@ -92,11 +85,7 @@ type AccessScope =
   | 'chat';
 
 /** Build storage path for document */
-function buildStoragePath(
-  tenantId: number,
-  fileUuid: string,
-  extension: string,
-): string {
+function buildStoragePath(tenantId: number, fileUuid: string, extension: string): string {
   const now = new Date();
   const year = now.getFullYear();
   const month = String(now.getMonth() + 1).padStart(2, '0');
@@ -126,20 +115,14 @@ function buildDocumentCreateInput(
 ): DocumentCreateInput {
   const fileUuid = uuidv7();
   const extension = path.extname(file.originalname).toLowerCase();
-  const checksum = crypto
-    .createHash('sha256')
-    .update(file.buffer)
-    .digest('hex');
+  const checksum = crypto.createHash('sha256').update(file.buffer).digest('hex');
 
   const category = body['category'] ?? 'general';
-  const finalCategory =
-    VALID_CATEGORIES.includes(category) ? category : 'general';
+  const finalCategory = VALID_CATEGORIES.includes(category) ? category : 'general';
 
   const trimmedDocName = body['documentName']?.trim();
   const displayName =
-    trimmedDocName !== undefined && trimmedDocName !== '' ?
-      trimmedDocName
-    : file.originalname;
+    trimmedDocName !== undefined && trimmedDocName !== '' ? trimmedDocName : file.originalname;
 
   return {
     filename: displayName,
@@ -233,11 +216,7 @@ export class DocumentsController {
     @CurrentUser() user: NestAuthUser,
     @TenantId() tenantId: number,
   ): Promise<UnreadCountResponse> {
-    return await this.documentsService.getUnreadCount(
-      tenantId,
-      user.id,
-      user.activeRole,
-    );
+    return await this.documentsService.getUnreadCount(tenantId, user.id, user.activeRole);
   }
 
   /** GET /documents/chat-folders */
@@ -261,11 +240,7 @@ export class DocumentsController {
     @CurrentUser() user: NestAuthUser,
     @TenantId() tenantId: number,
   ): Promise<DocumentResponse> {
-    return await this.documentsService.getDocumentByUuid(
-      uuid,
-      tenantId,
-      user.id,
-    );
+    return await this.documentsService.getDocumentByUuid(uuid, tenantId, user.id);
   }
 
   /**
@@ -303,11 +278,7 @@ export class DocumentsController {
 
     const documentData = buildDocumentCreateInput(file, body, tenantId);
 
-    return await this.documentsService.createDocument(
-      documentData,
-      user.id,
-      tenantId,
-    );
+    return await this.documentsService.createDocument(documentData, user.id, tenantId);
   }
 
   /**
@@ -322,12 +293,7 @@ export class DocumentsController {
     @CurrentUser() user: NestAuthUser,
     @TenantId() tenantId: number,
   ): Promise<MessageResponse> {
-    return await this.documentsService.updateDocumentByUuid(
-      uuid,
-      dto,
-      tenantId,
-      user.id,
-    );
+    return await this.documentsService.updateDocumentByUuid(uuid, dto, tenantId, user.id);
   }
 
   /**
@@ -343,12 +309,7 @@ export class DocumentsController {
     @CurrentUser() user: NestAuthUser,
     @TenantId() tenantId: number,
   ): Promise<MessageResponse> {
-    return await this.documentsService.updateDocument(
-      id,
-      dto,
-      tenantId,
-      user.id,
-    );
+    return await this.documentsService.updateDocument(id, dto, tenantId, user.id);
   }
 
   /**
@@ -362,11 +323,7 @@ export class DocumentsController {
     @CurrentUser() user: NestAuthUser,
     @TenantId() tenantId: number,
   ): Promise<MessageResponse> {
-    return await this.documentsService.deleteDocumentByUuid(
-      uuid,
-      tenantId,
-      user.id,
-    );
+    return await this.documentsService.deleteDocumentByUuid(uuid, tenantId, user.id);
   }
 
   /**
@@ -395,11 +352,7 @@ export class DocumentsController {
     @CurrentUser() user: NestAuthUser,
     @TenantId() tenantId: number,
   ): Promise<MessageResponse> {
-    return await this.documentsService.archiveDocumentByUuid(
-      uuid,
-      tenantId,
-      user.id,
-    );
+    return await this.documentsService.archiveDocumentByUuid(uuid, tenantId, user.id);
   }
 
   /**
@@ -428,11 +381,7 @@ export class DocumentsController {
     @CurrentUser() user: NestAuthUser,
     @TenantId() tenantId: number,
   ): Promise<MessageResponse> {
-    return await this.documentsService.unarchiveDocumentByUuid(
-      uuid,
-      tenantId,
-      user.id,
-    );
+    return await this.documentsService.unarchiveDocumentByUuid(uuid, tenantId, user.id);
   }
 
   /**
@@ -462,19 +411,15 @@ export class DocumentsController {
     @TenantId() tenantId: number,
     @Res() reply: FastifyReply,
   ): Promise<void> {
-    const content: DocumentContentResponse =
-      await this.documentsService.getDocumentContentByUuid(
-        uuid,
-        tenantId,
-        user.id,
-      );
+    const content: DocumentContentResponse = await this.documentsService.getDocumentContentByUuid(
+      uuid,
+      tenantId,
+      user.id,
+    );
 
     await reply
       .header('Content-Type', content.mimeType)
-      .header(
-        'Content-Disposition',
-        `attachment; filename="${content.originalName}"`,
-      )
+      .header('Content-Disposition', attachmentHeader(content.originalName))
       .header('Content-Length', content.fileSize.toString())
       .header('Cache-Control', 'private, max-age=3600')
       .send(content.content);
@@ -493,18 +438,11 @@ export class DocumentsController {
     @TenantId() tenantId: number,
     @Res() reply: FastifyReply,
   ): Promise<void> {
-    const content = await this.documentsService.getDocumentContent(
-      id,
-      tenantId,
-      user.id,
-    );
+    const content = await this.documentsService.getDocumentContent(id, tenantId, user.id);
 
     await reply
       .header('Content-Type', content.mimeType)
-      .header(
-        'Content-Disposition',
-        `attachment; filename="${content.originalName}"`,
-      )
+      .header('Content-Disposition', attachmentHeader(content.originalName))
       .header('Content-Length', content.fileSize.toString())
       .header('Cache-Control', 'private, max-age=3600')
       .send(content.content);
@@ -522,26 +460,18 @@ export class DocumentsController {
     @TenantId() tenantId: number,
     @Res() reply: FastifyReply,
   ): Promise<void> {
-    const content: DocumentContentResponse =
-      await this.documentsService.getDocumentContentByUuid(
-        uuid,
-        tenantId,
-        user.id,
-      );
-
-    // Mark as read (non-blocking)
-    void this.documentsService.markDocumentAsReadByUuid(
+    const content: DocumentContentResponse = await this.documentsService.getDocumentContentByUuid(
       uuid,
       tenantId,
       user.id,
     );
 
+    // Mark as read (non-blocking)
+    void this.documentsService.markDocumentAsReadByUuid(uuid, tenantId, user.id);
+
     await reply
       .header('Content-Type', content.mimeType)
-      .header(
-        'Content-Disposition',
-        `inline; filename="${content.originalName}"`,
-      )
+      .header('Content-Disposition', inlineHeader(content.originalName))
       .header('Content-Length', content.fileSize.toString())
       .header('Accept-Ranges', 'bytes')
       .header('Cache-Control', 'private, max-age=3600')
@@ -561,21 +491,14 @@ export class DocumentsController {
     @TenantId() tenantId: number,
     @Res() reply: FastifyReply,
   ): Promise<void> {
-    const content = await this.documentsService.getDocumentContent(
-      id,
-      tenantId,
-      user.id,
-    );
+    const content = await this.documentsService.getDocumentContent(id, tenantId, user.id);
 
     // Mark as read (non-blocking)
     void this.documentsService.markDocumentAsRead(id, tenantId, user.id);
 
     await reply
       .header('Content-Type', content.mimeType)
-      .header(
-        'Content-Disposition',
-        `inline; filename="${content.originalName}"`,
-      )
+      .header('Content-Disposition', inlineHeader(content.originalName))
       .header('Content-Length', content.fileSize.toString())
       .header('Accept-Ranges', 'bytes')
       .header('Cache-Control', 'private, max-age=3600')
@@ -593,11 +516,7 @@ export class DocumentsController {
     @CurrentUser() user: NestAuthUser,
     @TenantId() tenantId: number,
   ): Promise<SuccessResponse> {
-    return await this.documentsService.markDocumentAsReadByUuid(
-      uuid,
-      tenantId,
-      user.id,
-    );
+    return await this.documentsService.markDocumentAsReadByUuid(uuid, tenantId, user.id);
   }
 
   /**
@@ -612,10 +531,6 @@ export class DocumentsController {
     @CurrentUser() user: NestAuthUser,
     @TenantId() tenantId: number,
   ): Promise<SuccessResponse> {
-    return await this.documentsService.markDocumentAsRead(
-      id,
-      tenantId,
-      user.id,
-    );
+    return await this.documentsService.markDocumentAsRead(id, tenantId, user.id);
   }
 }

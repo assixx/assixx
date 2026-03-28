@@ -11,11 +11,7 @@
 
   import AppTimePicker from '$lib/components/AppTimePicker.svelte';
 
-  import {
-    ESTIMATE_INTERVALS,
-    WEEKDAY_LABELS,
-    type TpmMessages,
-  } from '../../../_lib/constants';
+  import { ESTIMATE_INTERVALS, WEEKDAY_LABELS, type TpmMessages } from '../../../_lib/constants';
 
   import AssetCascadeSelector from './AssetCascadeSelector.svelte';
   import TimeEstimateEditor from './TimeEstimateEditor.svelte';
@@ -42,17 +38,11 @@
     isCreateMode: boolean;
     submitting: boolean;
     oncreate: (payload: CreatePlanPayload) => void;
-    onupdate: (
-      payload: UpdatePlanPayload,
-      estimates: CreateTimeEstimatePayload[],
-    ) => void;
+    onupdate: (payload: UpdatePlanPayload, estimates: CreateTimeEstimatePayload[]) => void;
     oncancel: () => void;
     onassetchange?: (assetUuid: string) => void;
     onshiftplanchange?: (shiftPlanRequired: boolean) => void;
-    onschedulepreview?: (
-      weekday: number | undefined,
-      repeatEvery: number | undefined,
-    ) => void;
+    onschedulepreview?: (weekday: number | undefined, repeatEvery: number | undefined) => void;
   }
 
   const {
@@ -83,13 +73,9 @@
   let baseWeekday = $state(untrack(() => plan?.baseWeekday ?? 0));
   let baseRepeatEvery = $state(untrack(() => plan?.baseRepeatEvery ?? 1));
   let baseTime = $state(untrack(() => (plan?.baseTime ?? '').slice(0, 5)));
-  let isAllDay = $state(
-    untrack(() => (plan?.baseTime ?? '').trim().length === 0),
-  );
+  let isAllDay = $state(untrack(() => (plan?.baseTime ?? '').trim().length === 0));
   let bufferHours = $state(untrack(() => plan?.bufferHours ?? 4));
-  let shiftPlanRequired = $state(
-    untrack(() => plan?.shiftPlanRequired ?? false),
-  );
+  let shiftPlanRequired = $state(untrack(() => plan?.shiftPlanRequired ?? false));
   let notes = $state(untrack(() => plan?.notes ?? ''));
 
   // =========================================================================
@@ -103,13 +89,11 @@
   }
 
   let showTimeEstimates = $state(untrack(() => timeEstimates.length > 0));
-  const estimateMap = $state<Record<string, EstimateFields>>(
+  const estimateMap = $state(
     untrack(() => {
       const map: Record<string, EstimateFields> = {};
       for (const intv of ESTIMATE_INTERVALS) {
-        const existing = timeEstimates.find(
-          (e: TpmTimeEstimate) => e.intervalType === intv,
-        );
+        const existing = timeEstimates.find((e: TpmTimeEstimate) => e.intervalType === intv);
         map[intv] =
           existing !== undefined ?
             {
@@ -130,16 +114,12 @@
   );
 
   /** Build array of changed estimates for API submission */
-  function buildEstimatePayloads(
-    planUuid: string,
-  ): CreateTimeEstimatePayload[] {
+  function buildEstimatePayloads(planUuid: string): CreateTimeEstimatePayload[] {
     const payloads: CreateTimeEstimatePayload[] = [];
     for (const intv of ESTIMATE_INTERVALS) {
       const fields = estimateMap[intv];
       const hasValues =
-        fields.preparationMinutes > 0 ||
-        fields.executionMinutes > 0 ||
-        fields.followupMinutes > 0;
+        fields.preparationMinutes > 0 || fields.executionMinutes > 0 || fields.followupMinutes > 0;
       if (!hasValues) continue;
       payloads.push({
         planUuid,
@@ -169,13 +149,15 @@
   });
 
   // Schedule preview toggle (only sends values when active)
-  let showPreview = $state<boolean>(false);
+  let showPreview: boolean = $state(false);
 
   $effect(() => {
+    /* eslint-disable @typescript-eslint/no-unnecessary-condition -- showPreview is mutated via template bind:checked, ESLint cannot track Svelte template mutations */
     onschedulepreview?.(
       showPreview ? baseWeekday : undefined,
       showPreview ? baseRepeatEvery : undefined,
     );
+    /* eslint-enable @typescript-eslint/no-unnecessary-condition */
   });
 
   // =========================================================================
@@ -234,8 +216,7 @@
     if (parts.length < 2) return messages.HELP_BUFFER_FULL_DAY;
     const h = Number(parts[0]);
     const m = Number(parts[1]);
-    if (Number.isNaN(h) || Number.isNaN(m))
-      return messages.HELP_BUFFER_FULL_DAY;
+    if (Number.isNaN(h) || Number.isNaN(m)) return messages.HELP_BUFFER_FULL_DAY;
     const totalMinutes = h * 60 + m + bufferHours * 60;
     const endH = Math.floor(totalMinutes / 60) % 24;
     const endM = Math.round(totalMinutes % 60);
@@ -266,10 +247,7 @@
         notes: notesValue,
       });
     } else {
-      const estimates =
-        showTimeEstimates && plan !== null ?
-          buildEstimatePayloads(plan.uuid)
-        : [];
+      const estimates = showTimeEstimates && plan !== null ? buildEstimatePayloads(plan.uuid) : [];
       onupdate(
         {
           name: name.trim(),
@@ -384,8 +362,7 @@
           min={1}
           max={4}
         />
-        <span class="form-input-group__suffix"
-          >. {WEEKDAY_LABELS[baseWeekday] ?? '—'} im Monat</span
+        <span class="form-input-group__suffix">. {WEEKDAY_LABELS[baseWeekday] ?? '—'} im Monat</span
         >
       </div>
       <span class="form-field__message">{messages.HELP_REPEAT}</span>

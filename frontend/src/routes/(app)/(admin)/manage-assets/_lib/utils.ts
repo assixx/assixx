@@ -2,10 +2,7 @@
 // MANAGE MACHINES - UTILITY FUNCTIONS
 // =============================================================================
 
-import {
-  DEFAULT_HIERARCHY_LABELS,
-  type HierarchyLabels,
-} from '$lib/types/hierarchy-labels';
+import { DEFAULT_HIERARCHY_LABELS, type HierarchyLabels } from '$lib/types/hierarchy-labels';
 
 import {
   STATUS_BADGE_CLASSES,
@@ -15,13 +12,7 @@ import {
   type AssetMessages,
 } from './constants';
 
-import type {
-  Asset,
-  AssetFormData,
-  AssetStatus,
-  AssetStatusFilter,
-  AssetTeamInfo,
-} from './types';
+import type { Asset, AssetFormData, AssetStatus, AssetStatusFilter, AssetTeamInfo } from './types';
 
 // =============================================================================
 // BADGE DATA TYPES

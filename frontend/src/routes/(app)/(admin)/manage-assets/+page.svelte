@@ -45,7 +45,7 @@
 
   import type { AssetAvailabilityStatus } from '$lib/asset-availability/constants';
   import type { PageData } from './$types';
-  import type { Asset, AssetStatusFilter } from './_lib/types';
+  import type { AssetStatusFilter } from './_lib/types';
 
   // =============================================================================
   // SSR DATA - Level 3: $derived from props (single source of truth)
@@ -58,7 +58,7 @@
   const messages = $derived(createMessages(labels));
 
   // SSR data via $derived - updates when invalidateAll() is called
-  const allAssets = $derived<Asset[]>(data.assets);
+  const allAssets = $derived(data.assets);
 
   // Sync SSR data + labels to state store for child components
   $effect(() => {
@@ -79,16 +79,10 @@
 
   // Derived: Filtered assets based on current filter/search state
   const filteredAssets = $derived(
-    applyAllFilters(
-      allAssets,
-      assetState.currentStatusFilter,
-      assetState.currentSearchQuery,
-    ),
+    applyAllFilters(allAssets, assetState.currentStatusFilter, assetState.currentSearchQuery),
   );
 
-  const emptyStateTitle = $derived(
-    getEmptyStateTitle(assetState.currentStatusFilter, messages),
-  );
+  const emptyStateTitle = $derived(getEmptyStateTitle(assetState.currentStatusFilter, messages));
   const emptyStateDescription = $derived(
     getEmptyStateDescription(assetState.currentStatusFilter, messages),
   );
@@ -128,29 +122,20 @@
       const savedId = await apiSaveAsset(formData, assetState.currentEditId);
 
       const teamsChanged =
-        assetState.formTeamIds.length !==
-          assetState.currentAssetTeamIds.length ||
-        assetState.formTeamIds.some(
-          (id) => !assetState.currentAssetTeamIds.includes(id),
-        );
+        assetState.formTeamIds.length !== assetState.currentAssetTeamIds.length ||
+        assetState.formTeamIds.some((id) => !assetState.currentAssetTeamIds.includes(id));
 
       if (teamsChanged) {
         await apiSetAssetTeams(savedId, assetState.formTeamIds);
       }
 
-      showSuccessAlert(
-        assetState.isEditMode ?
-          messages.SUCCESS_UPDATED
-        : messages.SUCCESS_CREATED,
-      );
+      showSuccessAlert(assetState.isEditMode ? messages.SUCCESS_UPDATED : messages.SUCCESS_CREATED);
       assetState.closeAssetModal();
       // Level 3: Trigger SSR refetch
       await invalidateAll();
     } catch (err: unknown) {
       log.error({ err }, 'Error saving asset');
-      showErrorAlert(
-        err instanceof Error ? err.message : messages.ERROR_SAVE_FAILED,
-      );
+      showErrorAlert(err instanceof Error ? err.message : messages.ERROR_SAVE_FAILED);
     } finally {
       assetState.setSubmitting(false);
     }
@@ -278,9 +263,7 @@
 
   function navigateToAvailabilityHistory(uuid: string): void {
     closeAvailabilityModal();
-    void goto(
-      resolve('/(app)/(admin)/manage-assets/availability/[uuid]', { uuid }),
-    );
+    void goto(resolve('/(app)/(admin)/manage-assets/availability/[uuid]', { uuid }));
   }
 
   /** Validate availability form, returns error message or null */
@@ -318,8 +301,7 @@
       await invalidateAll();
     } catch (err: unknown) {
       log.error({ err }, 'Error saving asset availability');
-      const errorMsg =
-        err instanceof Error ? err.message : 'Fehler beim Speichern';
+      const errorMsg = err instanceof Error ? err.message : 'Fehler beim Speichern';
       showErrorAlert(errorMsg);
     } finally {
       availabilitySubmitting = false;
@@ -392,7 +374,7 @@
   });
 
   // =============================================================================
-  // ESCAPE KEY HANDLER
+  // HELPERS
   // =============================================================================
 
   /** Format ISO date string to German locale (dd.mm.yyyy) */
@@ -400,21 +382,11 @@
     const [year, month, day] = isoDate.split('-');
     return `${day}.${month}.${year}`;
   }
-
-  function handleKeydown(e: KeyboardEvent) {
-    if (e.key === 'Escape') {
-      if (showAvailabilityModal) closeAvailabilityModal();
-      else if (assetState.showDeleteModal) assetState.closeDeleteModal();
-      else if (assetState.showAssetModal) assetState.closeAssetModal();
-    }
-  }
 </script>
 
 <svelte:head>
   <title>{messages.PAGE_TITLE}</title>
 </svelte:head>
-
-<svelte:window onkeydown={handleKeydown} />
 
 <div class="container">
   <div class="card">
@@ -431,9 +403,8 @@
         <div class="alert__icon"><i class="fas fa-info-circle"></i></div>
         <div class="alert__content">
           <div class="alert__message">
-            TPM-Wartungspläne werden hier nicht angezeigt. Diese Übersicht dient
-            primär für außerordentliche Zustände wie ungeplante Reparaturen oder
-            Stillstände.
+            TPM-Wartungspläne werden hier nicht angezeigt. Diese Übersicht dient primär für
+            außerordentliche Zustände wie ungeplante Reparaturen oder Stillstände.
           </div>
         </div>
       </div>
@@ -544,8 +515,7 @@
             />
             <button
               class="search-input__clear"
-              class:search-input__clear--visible={assetState.currentSearchQuery
-                .length > 0}
+              class:search-input__clear--visible={assetState.currentSearchQuery.length > 0}
               type="button"
               aria-label="Suche löschen"
               onclick={clearSearch}
@@ -610,9 +580,7 @@
     <div class="card__body">
       {#if assetState.error}
         <div class="p-6 text-center">
-          <i
-            class="fas fa-exclamation-triangle mb-4 text-4xl text-(--color-danger)"
-          ></i>
+          <i class="fas fa-exclamation-triangle mb-4 text-4xl text-(--color-danger)"></i>
           <p class="text-(--color-text-secondary)">{assetState.error}</p>
           <button
             type="button"
@@ -664,10 +632,7 @@
               <tbody>
                 {#each filteredAssets as asset (asset.id)}
                   {@const areaBadge = getAreaBadgeData(asset.areaName, labels)}
-                  {@const deptBadge = getDepartmentBadgeData(
-                    asset.departmentName,
-                    labels,
-                  )}
+                  {@const deptBadge = getDepartmentBadgeData(asset.departmentName, labels)}
                   {@const teamsBadge = getTeamsBadgeData(asset.teams, labels)}
                   <tr>
                     <td><code class="text-muted">{asset.id}</code></td>
@@ -700,12 +665,9 @@
                     </td>
                     <td>
                       {#if asset.availabilityStatus !== undefined && asset.availabilityStatus !== 'operational' && asset.availabilityStart !== undefined}
-                        {@const statusKey =
-                          asset.availabilityStatus as AssetAvailabilityStatus}
+                        {@const statusKey = asset.availabilityStatus as AssetAvailabilityStatus}
                         <span
-                          class="badge {MACHINE_AVAILABILITY_BADGE_CLASSES[
-                            statusKey
-                          ]}"
+                          class="badge {MACHINE_AVAILABILITY_BADGE_CLASSES[statusKey]}"
                           title={asset.availabilityNotes ?? ''}
                         >
                           {formatDate(asset.availabilityStart)}

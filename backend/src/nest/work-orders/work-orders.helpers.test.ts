@@ -105,9 +105,7 @@ function createCommentRow(
   };
 }
 
-function createPhotoRow(
-  overrides: Partial<WorkOrderPhotoRow> = {},
-): WorkOrderPhotoRow {
+function createPhotoRow(overrides: Partial<WorkOrderPhotoRow> = {}): WorkOrderPhotoRow {
   return {
     id: 30,
     uuid: '019c9547-dddd-771a-b022-444444444444',
@@ -151,9 +149,7 @@ describe('toIsoStringOrNull', () => {
   });
 
   it('should return string value as-is', () => {
-    expect(toIsoStringOrNull('2026-03-01T08:00:00.000Z')).toBe(
-      '2026-03-01T08:00:00.000Z',
-    );
+    expect(toIsoStringOrNull('2026-03-01T08:00:00.000Z')).toBe('2026-03-01T08:00:00.000Z');
   });
 
   it('should convert Date to ISO string', () => {
@@ -540,32 +536,21 @@ describe('mapCalendarWorkOrderRow', () => {
   });
 
   it('should pass through all status values', () => {
-    for (const status of [
-      'open',
-      'in_progress',
-      'completed',
-      'verified',
-    ] as const) {
-      const result = mapCalendarWorkOrderRow(
-        createCalendarWorkOrderRow({ status }),
-      );
+    for (const status of ['open', 'in_progress', 'completed', 'verified'] as const) {
+      const result = mapCalendarWorkOrderRow(createCalendarWorkOrderRow({ status }));
       expect(result.status).toBe(status);
     }
   });
 
   it('should pass through all priority values', () => {
     for (const priority of ['low', 'medium', 'high'] as const) {
-      const result = mapCalendarWorkOrderRow(
-        createCalendarWorkOrderRow({ priority }),
-      );
+      const result = mapCalendarWorkOrderRow(createCalendarWorkOrderRow({ priority }));
       expect(result.priority).toBe(priority);
     }
   });
 
   it('should handle manual source type', () => {
-    const result = mapCalendarWorkOrderRow(
-      createCalendarWorkOrderRow({ source_type: 'manual' }),
-    );
+    const result = mapCalendarWorkOrderRow(createCalendarWorkOrderRow({ source_type: 'manual' }));
     expect(result.sourceType).toBe('manual');
   });
 });
@@ -612,8 +597,6 @@ describe('isValidStatusTransition', () => {
   }
 
   it('should return false for unknown source status', () => {
-    expect(isValidStatusTransition('unknown' as WorkOrderStatus, 'open')).toBe(
-      false,
-    );
+    expect(isValidStatusTransition('unknown' as WorkOrderStatus, 'open')).toBe(false);
   });
 });

@@ -14,10 +14,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { DatabaseService } from '../database/database.service.js';
 import { TenantDeletionAnalyzer } from './tenant-deletion-analyzer.service.js';
-import {
-  getTablesWithTenantId,
-  validateTenantId,
-} from './tenant-deletion.helpers.js';
+import { getTablesWithTenantId, validateTenantId } from './tenant-deletion.helpers.js';
 import { CRITICAL_TABLES } from './tenant-deletion.types.js';
 
 vi.mock('./tenant-deletion.helpers.js', () => ({
@@ -53,19 +50,15 @@ describe('TenantDeletionAnalyzer', () => {
         throw new Error('INVALID TENANT_ID: -1');
       });
 
-      await expect(analyzer.performDryRun(-1)).rejects.toThrow(
-        'INVALID TENANT_ID',
-      );
+      await expect(analyzer.performDryRun(-1)).rejects.toThrow('INVALID TENANT_ID');
       expect(mockValidate).toHaveBeenCalledWith(-1);
     });
 
     it('should return report with correct structure when no records', async () => {
       mockDb.query.mockResolvedValueOnce([]);
-      mockDb.transaction.mockImplementation(
-        async (cb: (client: PoolClient) => Promise<void>) => {
-          await cb(mockClient as unknown as PoolClient);
-        },
-      );
+      mockDb.transaction.mockImplementation(async (cb: (client: PoolClient) => Promise<void>) => {
+        await cb(mockClient as unknown as PoolClient);
+      });
       mockGetTables.mockResolvedValue([]);
 
       const report = await analyzer.performDryRun(1);
@@ -81,14 +74,10 @@ describe('TenantDeletionAnalyzer', () => {
     });
 
     it('should add legal holds to blockers', async () => {
-      mockDb.query.mockResolvedValueOnce([
-        { reason: 'GDPR investigation', active: 1 },
-      ]);
-      mockDb.transaction.mockImplementation(
-        async (cb: (client: PoolClient) => Promise<void>) => {
-          await cb(mockClient as unknown as PoolClient);
-        },
-      );
+      mockDb.query.mockResolvedValueOnce([{ reason: 'GDPR investigation', active: 1 }]);
+      mockDb.transaction.mockImplementation(async (cb: (client: PoolClient) => Promise<void>) => {
+        await cb(mockClient as unknown as PoolClient);
+      });
       mockGetTables.mockResolvedValue([]);
 
       const report = await analyzer.performDryRun(1);
@@ -102,11 +91,9 @@ describe('TenantDeletionAnalyzer', () => {
       const sparseArray: unknown[] = [];
       Object.defineProperty(sparseArray, 'length', { value: 1 });
       mockDb.query.mockResolvedValueOnce(sparseArray);
-      mockDb.transaction.mockImplementation(
-        async (cb: (client: PoolClient) => Promise<void>) => {
-          await cb(mockClient as unknown as PoolClient);
-        },
-      );
+      mockDb.transaction.mockImplementation(async (cb: (client: PoolClient) => Promise<void>) => {
+        await cb(mockClient as unknown as PoolClient);
+      });
       mockGetTables.mockResolvedValue([]);
 
       const report = await analyzer.performDryRun(1);
@@ -117,11 +104,9 @@ describe('TenantDeletionAnalyzer', () => {
 
     it('should count records across tenant tables', async () => {
       mockDb.query.mockResolvedValueOnce([]);
-      mockDb.transaction.mockImplementation(
-        async (cb: (client: PoolClient) => Promise<void>) => {
-          await cb(mockClient as unknown as PoolClient);
-        },
-      );
+      mockDb.transaction.mockImplementation(async (cb: (client: PoolClient) => Promise<void>) => {
+        await cb(mockClient as unknown as PoolClient);
+      });
       mockGetTables.mockResolvedValue([
         { TABLE_NAME: 'users' },
         { TABLE_NAME: 'documents' },
@@ -139,11 +124,9 @@ describe('TenantDeletionAnalyzer', () => {
 
     it('should estimate duration in minutes using Math.ceil', async () => {
       mockDb.query.mockResolvedValueOnce([]);
-      mockDb.transaction.mockImplementation(
-        async (cb: (client: PoolClient) => Promise<void>) => {
-          await cb(mockClient as unknown as PoolClient);
-        },
-      );
+      mockDb.transaction.mockImplementation(async (cb: (client: PoolClient) => Promise<void>) => {
+        await cb(mockClient as unknown as PoolClient);
+      });
       mockGetTables.mockResolvedValue([{ TABLE_NAME: 'big_table' }] as never);
       // 120000 records x 0.001 = 120 seconds -> 120/60 = 2 minutes
       mockClient.query.mockResolvedValueOnce({ rows: [{ count: '120000' }] });
@@ -155,11 +138,9 @@ describe('TenantDeletionAnalyzer', () => {
 
     it('should ceil fractional duration to next minute', async () => {
       mockDb.query.mockResolvedValueOnce([]);
-      mockDb.transaction.mockImplementation(
-        async (cb: (client: PoolClient) => Promise<void>) => {
-          await cb(mockClient as unknown as PoolClient);
-        },
-      );
+      mockDb.transaction.mockImplementation(async (cb: (client: PoolClient) => Promise<void>) => {
+        await cb(mockClient as unknown as PoolClient);
+      });
       mockGetTables.mockResolvedValue([{ TABLE_NAME: 'table_a' }] as never);
       // 1000 x 0.001 = 1 sec -> 1/60 ~ 0.017 -> ceil = 1
       mockClient.query.mockResolvedValueOnce({ rows: [{ count: '1000' }] });
@@ -171,17 +152,11 @@ describe('TenantDeletionAnalyzer', () => {
 
     it('should add warnings when count query fails', async () => {
       mockDb.query.mockResolvedValueOnce([]);
-      mockDb.transaction.mockImplementation(
-        async (cb: (client: PoolClient) => Promise<void>) => {
-          await cb(mockClient as unknown as PoolClient);
-        },
-      );
-      mockGetTables.mockResolvedValue([
-        { TABLE_NAME: 'broken_table' },
-      ] as never);
-      mockClient.query.mockRejectedValueOnce(
-        new Error('relation does not exist'),
-      );
+      mockDb.transaction.mockImplementation(async (cb: (client: PoolClient) => Promise<void>) => {
+        await cb(mockClient as unknown as PoolClient);
+      });
+      mockGetTables.mockResolvedValue([{ TABLE_NAME: 'broken_table' }] as never);
+      mockClient.query.mockRejectedValueOnce(new Error('relation does not exist'));
 
       const report = await analyzer.performDryRun(1);
 
@@ -192,14 +167,10 @@ describe('TenantDeletionAnalyzer', () => {
 
     it('should handle non-Error thrown in count query', async () => {
       mockDb.query.mockResolvedValueOnce([]);
-      mockDb.transaction.mockImplementation(
-        async (cb: (client: PoolClient) => Promise<void>) => {
-          await cb(mockClient as unknown as PoolClient);
-        },
-      );
-      mockGetTables.mockResolvedValue([
-        { TABLE_NAME: 'failing_table' },
-      ] as never);
+      mockDb.transaction.mockImplementation(async (cb: (client: PoolClient) => Promise<void>) => {
+        await cb(mockClient as unknown as PoolClient);
+      });
+      mockGetTables.mockResolvedValue([{ TABLE_NAME: 'failing_table' }] as never);
       mockClient.query.mockRejectedValueOnce('string error');
 
       const report = await analyzer.performDryRun(1);
@@ -210,11 +181,9 @@ describe('TenantDeletionAnalyzer', () => {
 
     it('should handle count as number type (not just string)', async () => {
       mockDb.query.mockResolvedValueOnce([]);
-      mockDb.transaction.mockImplementation(
-        async (cb: (client: PoolClient) => Promise<void>) => {
-          await cb(mockClient as unknown as PoolClient);
-        },
-      );
+      mockDb.transaction.mockImplementation(async (cb: (client: PoolClient) => Promise<void>) => {
+        await cb(mockClient as unknown as PoolClient);
+      });
       mockGetTables.mockResolvedValue([{ TABLE_NAME: 'table_a' }] as never);
       mockClient.query.mockResolvedValueOnce({ rows: [{ count: 42 }] });
 
@@ -226,11 +195,9 @@ describe('TenantDeletionAnalyzer', () => {
 
     it('should handle empty count result gracefully', async () => {
       mockDb.query.mockResolvedValueOnce([]);
-      mockDb.transaction.mockImplementation(
-        async (cb: (client: PoolClient) => Promise<void>) => {
-          await cb(mockClient as unknown as PoolClient);
-        },
-      );
+      mockDb.transaction.mockImplementation(async (cb: (client: PoolClient) => Promise<void>) => {
+        await cb(mockClient as unknown as PoolClient);
+      });
       mockGetTables.mockResolvedValue([{ TABLE_NAME: 'empty_table' }] as never);
       mockClient.query.mockResolvedValueOnce({ rows: [] });
 
@@ -255,10 +222,7 @@ describe('TenantDeletionAnalyzer', () => {
         .mockResolvedValueOnce({ rows: [{ count: '0' }] })
         .mockResolvedValueOnce({ rows: [{ count: '0' }] });
 
-      const result = await analyzer.verifyCompleteDeletion(
-        1,
-        mockClient as unknown as PoolClient,
-      );
+      const result = await analyzer.verifyCompleteDeletion(1, mockClient as unknown as PoolClient);
 
       expect(result).toHaveLength(0);
     });
@@ -268,10 +232,7 @@ describe('TenantDeletionAnalyzer', () => {
         CRITICAL_TABLES.map((name) => ({ TABLE_NAME: name })) as never,
       );
 
-      const result = await analyzer.verifyCompleteDeletion(
-        1,
-        mockClient as unknown as PoolClient,
-      );
+      const result = await analyzer.verifyCompleteDeletion(1, mockClient as unknown as PoolClient);
 
       expect(result).toHaveLength(0);
       expect(mockClient.query).not.toHaveBeenCalled();
@@ -293,10 +254,7 @@ describe('TenantDeletionAnalyzer', () => {
       ] as never);
       mockClient.query.mockResolvedValueOnce({ rows: [{ count: '0' }] });
 
-      const result = await analyzer.verifyCompleteDeletion(
-        1,
-        mockClient as unknown as PoolClient,
-      );
+      const result = await analyzer.verifyCompleteDeletion(1, mockClient as unknown as PoolClient);
 
       expect(result).toHaveLength(0);
       expect(mockClient.query).toHaveBeenCalledTimes(1);
@@ -306,10 +264,7 @@ describe('TenantDeletionAnalyzer', () => {
       mockGetTables.mockResolvedValue([{ TABLE_NAME: 'some_table' }] as never);
       mockClient.query.mockResolvedValueOnce({ rows: [] }); // empty -> firstResult undefined
 
-      const result = await analyzer.verifyCompleteDeletion(
-        1,
-        mockClient as unknown as PoolClient,
-      );
+      const result = await analyzer.verifyCompleteDeletion(1, mockClient as unknown as PoolClient);
 
       expect(result).toHaveLength(0);
     });

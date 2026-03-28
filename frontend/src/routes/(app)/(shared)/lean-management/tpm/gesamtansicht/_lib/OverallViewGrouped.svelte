@@ -19,11 +19,7 @@
   } from './overall-view-utils';
 
   import type { MatrixRow } from './overall-view-utils';
-  import type {
-    IntervalType,
-    TpmShiftAssignment,
-    TpmTimeEstimate,
-  } from '../../_lib/types';
+  import type { IntervalType, TpmShiftAssignment, TpmTimeEstimate } from '../../_lib/types';
 
   interface Props {
     matrixRows: MatrixRow[];
@@ -33,22 +29,13 @@
     assignments: TpmShiftAssignment[];
   }
 
-  const {
-    matrixRows,
-    maxDates,
-    estColSpans,
-    estimatesByPlan,
-    assignments,
-  }: Props = $props();
+  const { matrixRows, maxDates, estColSpans, estimatesByPlan, assignments }: Props = $props();
 
   // =========================================================================
   // ESTIMATE LOOKUP
   // =========================================================================
 
-  function getEstimate(
-    planUuid: string,
-    intv: IntervalType,
-  ): TpmTimeEstimate | undefined {
+  function getEstimate(planUuid: string, intv: IntervalType): TpmTimeEstimate | undefined {
     const list = estimatesByPlan.get(planUuid);
     return list?.find((e: TpmTimeEstimate) => e.intervalType === intv);
   }

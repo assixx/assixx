@@ -34,10 +34,7 @@ function removeDangerousTags(html: string): string {
   let sanitized = html;
   for (let i = 0; i < 3; i++) {
     dangerousTags.forEach((tag: string) => {
-      const fullTagRegex = new RegExp(
-        `<${tag}[^>]*>[\\s\\S]*?</${tag}[^>]*>`,
-        'gi',
-      );
+      const fullTagRegex = new RegExp(`<${tag}[^>]*>[\\s\\S]*?</${tag}[^>]*>`, 'gi');
       sanitized = sanitized.replace(fullTagRegex, '');
       const singleTagRegex = new RegExp(`<${tag}[^>]*>`, 'gi');
       sanitized = sanitized.replace(singleTagRegex, '');
@@ -96,36 +93,28 @@ function sanitizeUrls(html: string): string {
 }
 
 function sanitizeStyles(html: string): string {
-  return html.replace(
-    /style\s*=\s*["']([^"']*)["']/gi,
-    (_match: string, styleContent: string) => {
-      let cleanedStyle = styleContent;
-      const dangerousCSS = [
-        /expression\s*\([^)]*\)/gi,
-        /javascript\s*:/gi,
-        /vbscript\s*:/gi,
-        /-moz-binding\s*:/gi,
-        /behavior\s*:/gi,
-        /@import/gi,
-        /import\s*\(/gi,
-      ];
-      dangerousCSS.forEach((pattern: RegExp) => {
-        cleanedStyle = cleanedStyle.replace(pattern, '');
-      });
-      cleanedStyle = cleanedStyle.replace(
-        /url\s*\([^)]*\)/gi,
-        (urlMatch: string) => {
-          if (
-            /url\s*\(\s*["']?(javascript|vbscript|data:text)/i.test(urlMatch)
-          ) {
-            return '';
-          }
-          return urlMatch;
-        },
-      );
-      return cleanedStyle.trim() !== '' ? `style="${cleanedStyle}"` : '';
-    },
-  );
+  return html.replace(/style\s*=\s*["']([^"']*)["']/gi, (_match: string, styleContent: string) => {
+    let cleanedStyle = styleContent;
+    const dangerousCSS = [
+      /expression\s*\([^)]*\)/gi,
+      /javascript\s*:/gi,
+      /vbscript\s*:/gi,
+      /-moz-binding\s*:/gi,
+      /behavior\s*:/gi,
+      /@import/gi,
+      /import\s*\(/gi,
+    ];
+    dangerousCSS.forEach((pattern: RegExp) => {
+      cleanedStyle = cleanedStyle.replace(pattern, '');
+    });
+    cleanedStyle = cleanedStyle.replace(/url\s*\([^)]*\)/gi, (urlMatch: string) => {
+      if (/url\s*\(\s*["']?(javascript|vbscript|data:text)/i.test(urlMatch)) {
+        return '';
+      }
+      return urlMatch;
+    });
+    return cleanedStyle.trim() !== '' ? `style="${cleanedStyle}"` : '';
+  });
 }
 
 /**
@@ -271,10 +260,7 @@ function escapeHtmlTemplate(str: string): string {
     "'": '&#39;',
   };
 
-  return str.replace(
-    /["&'<>]/g,
-    (match: string) => htmlEscapes[match] ?? match,
-  );
+  return str.replace(/["&'<>]/g, (match: string) => htmlEscapes[match] ?? match);
 }
 
 /**
@@ -286,11 +272,7 @@ async function loadTemplate(
   replacements: TemplateReplacements = {},
 ): Promise<string> {
   try {
-    const templatePath = path.join(
-      process.cwd(),
-      'templates/email',
-      `${templateName}.html`,
-    );
+    const templatePath = path.join(process.cwd(), 'templates/email', `${templateName}.html`);
     let templateContent = await fs.promises.readFile(templatePath, 'utf8');
 
     // Platzhalter ersetzen (Format: {{variable}})
@@ -310,9 +292,7 @@ async function loadTemplate(
       `Fehler beim Laden des E-Mail-Templates '${templateName}': ${getErrorMessage(error)}`,
     );
     // Fallback-Template
-    const safeMessage = escapeHtmlTemplate(
-      replacements['message'] ?? 'Keine Nachricht verfügbar',
-    );
+    const safeMessage = escapeHtmlTemplate(replacements['message'] ?? 'Keine Nachricht verfügbar');
     return `
       <html>
         <body>
@@ -338,8 +318,7 @@ async function sendEmail(options: EmailOptions): Promise<EmailResult> {
 
   try {
     // E-Mail-Absender aus Umgebungsvariablen oder Fallback
-    const from: string =
-      options.from ?? process.env['EMAIL_FROM'] ?? 'Assixx <noreply@assixx.de>';
+    const from: string = options.from ?? process.env['EMAIL_FROM'] ?? 'Assixx <noreply@assixx.de>';
 
     // HTML-Sanitization
     let sanitizedHtml: string | undefined = options.html;
@@ -355,12 +334,9 @@ async function sendEmail(options: EmailOptions): Promise<EmailResult> {
 
       if (
         sanitizedHtml !== '' &&
-        (scriptPattern.test(sanitizedHtml) ||
-          eventHandlerPattern.test(sanitizedHtml))
+        (scriptPattern.test(sanitizedHtml) || eventHandlerPattern.test(sanitizedHtml))
       ) {
-        logger.warn(
-          'Potenziell gefährlicher HTML-Inhalt nach Sanitization erkannt',
-        );
+        logger.warn('Potenziell gefährlicher HTML-Inhalt nach Sanitization erkannt');
         return {
           success: false,
           error: 'E-Mail enthält nicht erlaubte HTML-Elemente',
@@ -410,9 +386,7 @@ async function sendEmail(options: EmailOptions): Promise<EmailResult> {
 
 function addToQueue(emailOptions: EmailOptions): void {
   emailQueue.push(emailOptions);
-  logger.info(
-    `E-Mail zur Queue hinzugefügt. Queue-Länge: ${emailQueue.length}`,
-  );
+  logger.info(`E-Mail zur Queue hinzugefügt. Queue-Länge: ${emailQueue.length}`);
 
   // Starte die Queue-Verarbeitung, falls sie nicht bereits läuft
   if (!isProcessingQueue) {
@@ -438,39 +412,28 @@ async function processQueue(): Promise<void> {
 
       // E-Mails parallel senden, aber mit Limit
       const results: EmailResult[] = await Promise.all(
-        batch.map(
-          async (emailOptions: EmailOptions) => await sendEmail(emailOptions),
-        ),
+        batch.map(async (emailOptions: EmailOptions) => await sendEmail(emailOptions)),
       );
 
       const successful = results.filter((r: EmailResult) => r.success).length;
       const failed = results.filter((r: EmailResult) => !r.success).length;
 
-      logger.info(
-        `Batch verarbeitet: ${successful} erfolgreich, ${failed} fehlgeschlagen`,
-      );
+      logger.info(`Batch verarbeitet: ${successful} erfolgreich, ${failed} fehlgeschlagen`);
 
       // Kurze Pause zwischen Batches, um SMTP-Limits einzuhalten
       if (emailQueue.length > 0) {
-        await new Promise<void>((resolve: () => void) =>
-          global.setTimeout(resolve, 1000),
-        );
+        await new Promise<void>((resolve: () => void) => global.setTimeout(resolve, 1000));
       }
     }
   } catch (error: unknown) {
-    logger.error(
-      `Fehler bei der Verarbeitung der E-Mail-Queue: ${getErrorMessage(error)}`,
-    );
+    logger.error(`Fehler bei der Verarbeitung der E-Mail-Queue: ${getErrorMessage(error)}`);
   } finally {
     isProcessingQueue = false;
     logger.info('E-Mail-Queue-Verarbeitung abgeschlossen');
   }
 }
 
-async function sendNewDocumentNotification(
-  user: User,
-  document: Document,
-): Promise<EmailResult> {
+async function sendNewDocumentNotification(user: User, document: Document): Promise<EmailResult> {
   try {
     if (user.email === '') {
       return {
@@ -480,10 +443,7 @@ async function sendNewDocumentNotification(
     }
 
     // Unsubscribe-Link generieren
-    const unsubscribeUrl: string = generateUnsubscribeLink(
-      user.email,
-      'documents',
-    );
+    const unsubscribeUrl: string = generateUnsubscribeLink(user.email, 'documents');
 
     const userName = `${user.first_name} ${user.last_name}`;
     const documentName = document.file_name;
@@ -505,9 +465,7 @@ async function sendNewDocumentNotification(
       text: `Hallo ${userName},\n\nEin neues Dokument "${documentName}" wurde für Sie hochgeladen. Sie können es in Ihrem Dashboard einsehen.\n\nMit freundlichen Grüßen,\nIhr Assixx-Team`,
     });
   } catch (error: unknown) {
-    logger.error(
-      `Fehler beim Senden der Dokumentenbenachrichtigung: ${getErrorMessage(error)}`,
-    );
+    logger.error(`Fehler beim Senden der Dokumentenbenachrichtigung: ${getErrorMessage(error)}`);
     return { success: false, error: getErrorMessage(error) };
   }
 }
@@ -537,9 +495,7 @@ async function sendWelcomeEmail(user: User): Promise<EmailResult> {
       text: `Hallo ${userName},\n\nWillkommen bei Assixx! Ihr Konto wurde erfolgreich erstellt. Sie können sich jetzt mit Ihren Anmeldedaten einloggen.\n\nMit freundlichen Grüßen,\nIhr Assixx-Team`,
     });
   } catch (error: unknown) {
-    logger.error(
-      `Fehler beim Senden der Willkommens-E-Mail: ${getErrorMessage(error)}`,
-    );
+    logger.error(`Fehler beim Senden der Willkommens-E-Mail: ${getErrorMessage(error)}`);
     return { success: false, error: getErrorMessage(error) };
   }
 }
@@ -556,15 +512,8 @@ function checkBulkEmailFeature(
   return null;
 }
 
-function queueUserEmail(
-  user: User,
-  html: string,
-  options: BulkMessageOptions,
-): void {
-  const unsubscribeUrl = generateUnsubscribeLink(
-    user.email,
-    options.notificationType ?? 'all',
-  );
+function queueUserEmail(user: User, html: string, options: BulkMessageOptions): void {
+  const unsubscribeUrl = generateUnsubscribeLink(user.email, options.notificationType ?? 'all');
   const personalizedHtml = html
     .replace(/{{userName}}/g, `${user.first_name} ${user.last_name}`)
     .replace(/{{unsubscribeUrl}}/g, unsubscribeUrl);
@@ -575,8 +524,7 @@ function queueUserEmail(
     html: personalizedHtml,
   };
   if (options.text !== undefined) emailOptions.text = options.text;
-  if (options.attachments !== undefined)
-    emailOptions.attachments = options.attachments;
+  if (options.attachments !== undefined) emailOptions.attachments = options.attachments;
   addToQueue(emailOptions);
 }
 
@@ -597,14 +545,8 @@ async function sendBulkNotification(
     }
 
     let html = messageOptions.html ?? '';
-    if (
-      messageOptions.templateName != null &&
-      messageOptions.templateName !== ''
-    ) {
-      html = await loadTemplate(
-        messageOptions.templateName,
-        messageOptions.replacements ?? {},
-      );
+    if (messageOptions.templateName != null && messageOptions.templateName !== '') {
+      html = await loadTemplate(messageOptions.templateName, messageOptions.replacements ?? {});
     }
 
     for (const user of validUsers) {
@@ -616,9 +558,7 @@ async function sendBulkNotification(
       messageId: `${validUsers.length} E-Mails zur Versandwarteschlange hinzugefügt`,
     };
   } catch (error: unknown) {
-    logger.error(
-      `Fehler beim Hinzufügen von Massen-E-Mails zur Queue: ${getErrorMessage(error)}`,
-    );
+    logger.error(`Fehler beim Hinzufügen von Massen-E-Mails zur Queue: ${getErrorMessage(error)}`);
     return { success: false, error: getErrorMessage(error) };
   }
 }

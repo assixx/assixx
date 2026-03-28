@@ -25,6 +25,7 @@ import {
   authOnly,
   ensureTestEmployee,
   fetchWithRetry,
+  getPositionIdsByName,
   loginApitest,
 } from './helpers.js';
 
@@ -43,9 +44,9 @@ beforeAll(async () => {
     headers: authOnly(auth.authToken),
   });
   const usersBody = (await usersRes.json()) as JsonBody;
-  const employee = (
-    usersBody.data as Array<{ email: string; uuid: string }>
-  ).find((u) => u.email === 'employee@apitest.de');
+  const employee = (usersBody.data as Array<{ email: string; uuid: string }>).find(
+    (u) => u.email === 'employee@apitest.de',
+  );
 
   if (!employee?.uuid) {
     throw new Error('Test employee not found or has no UUID');
@@ -131,9 +132,7 @@ describe('User Permissions: Tenant Feature Filtering', () => {
     });
     const body = (await res.json()) as JsonBody;
 
-    const categoryCodes = (body.data as Array<{ code: string }>).map(
-      (c) => c.code,
-    );
+    const categoryCodes = (body.data as Array<{ code: string }>).map((c) => c.code);
 
     // apitest tenant has all features enabled (via applyDbPrerequisites)
     // At minimum, blackboard should be present (always registered)
@@ -156,9 +155,7 @@ describe('User Permissions: Tenant Feature Filtering', () => {
 
     expect(blackboard).toBeDefined();
     expect(blackboard!.modules.length).toBeGreaterThan(0);
-    expect(Array.isArray(blackboard!.modules[0]!.allowedPermissions)).toBe(
-      true,
-    );
+    expect(Array.isArray(blackboard!.modules[0]!.allowedPermissions)).toBe(true);
   });
 });
 
@@ -205,9 +202,7 @@ describe('User Permissions: PUT + GET Roundtrip', () => {
         }>;
       }>
     ).find((c) => c.code === 'blackboard');
-    const posts = blackboard?.modules.find(
-      (m) => m.code === 'blackboard-posts',
-    );
+    const posts = blackboard?.modules.find((m) => m.code === 'blackboard-posts');
 
     expect(posts).toBeDefined();
     expect(posts!.canRead).toBe(true);
@@ -252,9 +247,7 @@ describe('User Permissions: PUT + GET Roundtrip', () => {
         }>;
       }>
     ).find((c) => c.code === 'blackboard');
-    const posts = blackboard?.modules.find(
-      (m) => m.code === 'blackboard-posts',
-    );
+    const posts = blackboard?.modules.find((m) => m.code === 'blackboard-posts');
 
     expect(posts!.canRead).toBe(false);
     expect(posts!.canWrite).toBe(false);
@@ -380,5 +373,224 @@ describe('User Permissions: Employee Access Denied', () => {
     });
 
     expect(res.status).toBe(403);
+  });
+});
+
+// ─── GET Permission History (seq: 8) ─────────────────────────────────────────
+
+describe('User Permissions: GET Permission History', () => {
+  it('should return 200 with history structure', async () => {
+    const res = await fetch(
+      `${BASE_URL}/user-permissions/${employeeUuid}/history?limit=20&offset=0`,
+      { headers: authOnly(auth.authToken) },
+    );
+    const body = (await res.json()) as JsonBody;
+
+    expect(res.status).toBe(200);
+    expect(body.success).toBe(true);
+    expect(body.data).toHaveProperty('entries');
+    expect(body.data).toHaveProperty('total');
+    expect(body.data).toHaveProperty('hasMore');
+    expect(Array.isArray(body.data.entries)).toBe(true);
+  });
+
+  it('should contain entries from prior PUT operations', async () => {
+    const res = await fetch(
+      `${BASE_URL}/user-permissions/${employeeUuid}/history?limit=20&offset=0`,
+      { headers: authOnly(auth.authToken) },
+    );
+    const body = (await res.json()) as JsonBody;
+
+    // Prior tests in seq 3 did 2 PUTs → at least 2 history entries
+    expect(body.data.total).toBeGreaterThanOrEqual(2);
+  });
+
+  it('should return entries with correct fields', async () => {
+    const res = await fetch(
+      `${BASE_URL}/user-permissions/${employeeUuid}/history?limit=1&offset=0`,
+      { headers: authOnly(auth.authToken) },
+    );
+    const body = (await res.json()) as JsonBody;
+
+    const entry = body.data.entries[0];
+    expect(entry).toHaveProperty('createdAt');
+    expect(entry).toHaveProperty('userName');
+    expect(entry).toHaveProperty('firstName');
+    expect(entry).toHaveProperty('lastName');
+    expect(entry).toHaveProperty('details');
+    expect(entry).toHaveProperty('oldValues');
+    expect(entry).toHaveProperty('newValues');
+  });
+
+  it('should return 403 for employee', async () => {
+    const res = await fetch(
+      `${BASE_URL}/user-permissions/${employeeUuid}/history?limit=20&offset=0`,
+      { headers: authOnly(employeeToken) },
+    );
+
+    expect(res.status).toBe(403);
+  });
+});
+
+// ─── REGRESSION: prevent_manage_permissions_self_grant trigger (seq: 9) ──────
+//
+// Bug: Trigger referenced `t.deputy_lead_id` (old column, renamed to
+// `t.team_deputy_lead_id`). Crashed with 500 on ANY manage-permissions
+// canWrite grant by a non-root user.
+//
+// This test exercises the exact bug path:
+//   1. Root sets up hierarchy + team lead + deputy
+//   2. Root grants manage-permissions.canWrite to team lead
+//   3. Team lead (non-root!) grants manage-permissions to deputy
+//   4. Trigger fires → assigned_by is team lead → query hits teams table
+//
+// @see Migration 20260323212817346_fix-self-grant-trigger-deputy-columns
+
+/** Helper: POST JSON and return parsed body. Throws on non-ok status. */
+async function postJson(
+  url: string,
+  token: string,
+  payload: Record<string, unknown>,
+): Promise<JsonBody> {
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: authHeaders(token),
+    body: JSON.stringify(payload),
+  });
+  const body = (await res.json()) as JsonBody;
+  if (!res.ok) throw new Error(`POST ${url} → ${res.status}`);
+  return body;
+}
+
+/** Helper: PUT JSON and return parsed body. Throws on non-ok status. */
+async function putJson(
+  url: string,
+  token: string,
+  payload: Record<string, unknown>,
+): Promise<JsonBody> {
+  const res = await fetch(url, {
+    method: 'PUT',
+    headers: authHeaders(token),
+    body: JSON.stringify(payload),
+  });
+  const body = (await res.json()) as JsonBody;
+  if (!res.ok) throw new Error(`PUT ${url} → ${res.status}`);
+  return body;
+}
+
+describe('REGRESSION: manage-permissions self-grant trigger with deputy columns', () => {
+  const uniqueSuffix = Date.now();
+  let teamLeadToken = '';
+  let deputyUuid = '';
+  let setupOk = false;
+
+  beforeAll(async () => {
+    try {
+      const token = auth.authToken;
+      const leadEmail = `trigger-lead-${uniqueSuffix}@apitest.de`;
+
+      // 1. Hierarchy: Area → Department → Team
+      const area = await postJson(`${BASE_URL}/areas`, token, {
+        name: `TriggerTest Area ${uniqueSuffix}`,
+      });
+      const dept = await postJson(`${BASE_URL}/departments`, token, {
+        name: `TriggerTest Dept ${uniqueSuffix}`,
+        areaId: area.data.id,
+      });
+      const team = await postJson(`${BASE_URL}/teams`, token, {
+        name: `TriggerTest Team ${uniqueSuffix}`,
+        departmentId: dept.data.id,
+      });
+
+      // 2. Two employees — both need 'team_lead' position (validateLeader checks it for lead AND deputy)
+      const teamLeadPositionIds = await getPositionIdsByName(token, 'team_lead');
+      const lead = await postJson(`${BASE_URL}/users`, token, {
+        email: leadEmail,
+        password: APITEST_PASSWORD,
+        firstName: 'TriggerLead',
+        lastName: 'Test',
+        role: 'employee',
+        positionIds: teamLeadPositionIds,
+      });
+      const deputy = await postJson(`${BASE_URL}/users`, token, {
+        email: `trigger-deputy-${uniqueSuffix}@apitest.de`,
+        password: APITEST_PASSWORD,
+        firstName: 'TriggerDeputy',
+        lastName: 'Test',
+        role: 'employee',
+        positionIds: teamLeadPositionIds,
+      });
+      deputyUuid = deputy.data.uuid as string;
+
+      // 3. Add as team members + assign lead/deputy
+      await postJson(`${BASE_URL}/teams/${team.data.id}/members`, token, {
+        userId: lead.data.id,
+      });
+      await postJson(`${BASE_URL}/teams/${team.data.id}/members`, token, {
+        userId: deputy.data.id,
+      });
+      await putJson(`${BASE_URL}/teams/${team.data.id}`, token, {
+        leaderId: lead.data.id,
+        teamDeputyLeadId: deputy.data.id,
+      });
+
+      // 4. Root grants manage-permissions to team lead
+      await putJson(`${BASE_URL}/user-permissions/${lead.data.uuid}`, token, {
+        permissions: [
+          {
+            addonCode: 'manage_hierarchy',
+            moduleCode: 'manage-permissions',
+            canRead: true,
+            canWrite: true,
+            canDelete: false,
+          },
+        ],
+      });
+
+      // 5. Login as team lead
+      const loginRes = await fetchWithRetry(`${BASE_URL}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: leadEmail, password: APITEST_PASSWORD }),
+      });
+      const loginBody = (await loginRes.json()) as JsonBody;
+      teamLeadToken = loginBody.data.accessToken as string;
+
+      setupOk = true;
+    } catch {
+      // Setup failure — test will fail with clear assertion below
+    }
+  });
+
+  it('should allow team lead to grant manage-permissions to deputy (200, not 500)', async () => {
+    // Precondition: setup must have completed (hierarchy + lead login)
+    expect(setupOk, 'Test setup incomplete — hierarchy or user creation failed').toBe(true);
+
+    // Team lead grants manage-permissions.canWrite to deputy.
+    // This fires prevent_manage_permissions_self_grant with assigned_by = team_lead (not root!).
+    // Before the fix: 500 (column t.deputy_lead_id does not exist)
+    // After the fix: 200 (trigger uses t.team_deputy_lead_id)
+    const res = await fetch(`${BASE_URL}/user-permissions/${deputyUuid}`, {
+      method: 'PUT',
+      headers: authHeaders(teamLeadToken),
+      body: JSON.stringify({
+        permissions: [
+          {
+            addonCode: 'manage_hierarchy',
+            moduleCode: 'manage-permissions',
+            canRead: true,
+            canWrite: true,
+            canDelete: false,
+          },
+        ],
+      }),
+    });
+    const body = (await res.json()) as JsonBody;
+
+    expect(
+      res.status,
+      `Expected 200 but got ${res.status}: ${body.error?.message ?? 'no error'}`,
+    ).toBe(200);
+    expect(body.success).toBe(true);
   });
 });

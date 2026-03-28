@@ -10,12 +10,8 @@
   import AvailabilityModal from '$lib/availability/AvailabilityModal.svelte';
   import PermissionDenied from '$lib/components/PermissionDenied.svelte';
   import { showToast } from '$lib/stores/toast';
-  import {
-    showSuccessAlert,
-    showErrorAlert,
-    showWarningAlert,
-  } from '$lib/utils';
-  import { ApiError, getApiErrorMessage } from '$lib/utils/api-client';
+  import { showSuccessAlert, showErrorAlert, showWarningAlert } from '$lib/utils';
+  import { ApiError, getApiClient, getApiErrorMessage } from '$lib/utils/api-client';
   import { createLogger } from '$lib/utils/logger';
 
   const log = createLogger('ManageEmployeesPage');
@@ -50,13 +46,7 @@
   // Extracted Components
 
   import type { PageData } from './$types';
-  import type {
-    Employee,
-    Team,
-    StatusFilter,
-    FormIsActiveStatus,
-    AvailabilityStatus,
-  } from './_lib/types';
+  import type { StatusFilter, FormIsActiveStatus, AvailabilityStatus } from './_lib/types';
 
   // =============================================================================
   // SSR DATA - Level 3: $derived from props (single source of truth)
@@ -65,18 +55,30 @@
   const { data }: { data: PageData } = $props();
 
   // SSR data via $derived - updates when invalidateAll() is called
-  const allEmployees = $derived<Employee[]>(data.employees);
-  const allTeams = $derived<Team[]>(data.teams);
-  const positionOptions = $derived<string[]>(data.positionOptions);
+  const allEmployees = $derived(data.employees);
+  const allTeams = $derived(data.teams);
+  const positionOptions = $derived(data.positionOptions);
 
   // Hierarchy labels (propagated from layout)
   const labels = $derived(data.hierarchyLabels);
   const messages = $derived(createMessages(labels));
 
+  const apiClient = getApiClient();
+
+  /** Load N:M position assignments for edit mode */
+  async function loadUserPositions(userId: number): Promise<void> {
+    try {
+      const positions = await apiClient.request<{ positionId: string }[]>(
+        `/users/${String(userId)}/positions`,
+      );
+      formPositionIds = positions.map((p: { positionId: string }) => p.positionId);
+    } catch {
+      formPositionIds = [];
+    }
+  }
+
   // Lead-View: Employees can Read+Edit but NOT Create/Delete
-  const canMutate = $derived(
-    data.user?.role === 'root' || data.user?.role === 'admin',
-  );
+  const canMutate = $derived(data.user?.role === 'root' || data.user?.role === 'admin');
 
   // Permission delegation: show shield button (backend checks actual permission)
   const canManagePermissions = $derived(canMutate || data.orgScope.isAnyLead);
@@ -84,8 +86,7 @@
   // Permission: Only root or admin with has_full_access may upgrade roles
   const canUpgrade = $derived(
     data.user !== null &&
-      (data.user.role === 'root' ||
-        (data.user.role === 'admin' && data.user.hasFullAccess)),
+      (data.user.role === 'root' || (data.user.role === 'admin' && data.user.hasFullAccess)),
   );
 
   // =============================================================================
@@ -132,9 +133,10 @@
   let formPassword = $state('');
   let formPasswordConfirm = $state('');
   let formEmployeeNumber = $state('');
-  let formPosition = $state('');
+  let formPositionIds = $state<string[]>([]);
   let formPhone = $state('');
   let formDateOfBirth = $state('');
+  let formNotes = $state('');
   let formIsActive = $state<FormIsActiveStatus>(1);
   let formTeamIds = $state<number[]>([]);
 
@@ -148,9 +150,7 @@
   // =============================================================================
 
   const isEditMode = $derived(currentEditId !== null);
-  const modalTitle = $derived(
-    isEditMode ? messages.MODAL_TITLE_EDIT : messages.MODAL_TITLE_ADD,
-  );
+  const modalTitle = $derived(isEditMode ? messages.MODAL_TITLE_EDIT : messages.MODAL_TITLE_ADD);
 
   // Derived: Filtered employees based on current filter/search state
   const filteredEmployees = $derived(
@@ -172,8 +172,8 @@
     submitting = true;
 
     // Validate required fields (client-side toast instead of native browser tooltip)
-    if (formPosition === '') {
-      showWarningAlert('Bitte wählen Sie eine Position aus');
+    if (formPositionIds.length === 0) {
+      showWarningAlert('Bitte wählen Sie mindestens eine Position aus');
       submitting = false;
       return;
     }
@@ -206,9 +206,10 @@
           lastName: formLastName,
           email: formEmail,
           password: formPassword,
-          position: formPosition,
+          positionIds: formPositionIds,
           phone: formPhone,
           dateOfBirth: formDateOfBirth,
+          notes: formNotes,
           employeeNumber: formEmployeeNumber,
           isActive: formIsActive,
         },
@@ -216,12 +217,7 @@
       );
 
       const result = await apiSaveEmployee(payload, currentEditId);
-      await syncTeamMemberships(
-        result.id,
-        formTeamIds,
-        originalTeamIds,
-        isEditMode,
-      );
+      await syncTeamMemberships(result.id, formTeamIds, originalTeamIds, isEditMode);
 
       closeEmployeeModal();
       await invalidateAll();
@@ -238,9 +234,7 @@
           },
         });
       } else {
-        showSuccessAlert(
-          isEditMode ? 'Mitarbeiter aktualisiert' : 'Mitarbeiter erstellt',
-        );
+        showSuccessAlert(isEditMode ? 'Mitarbeiter aktualisiert' : 'Mitarbeiter erstellt');
       }
     } catch (err: unknown) {
       log.error({ err }, 'Error saving employee');
@@ -280,9 +274,7 @@
       showSuccessAlert(messages.UPGRADE_SUCCESS);
     } catch (err: unknown) {
       log.error({ err }, 'Error upgrading employee to admin');
-      showErrorAlert(
-        err instanceof Error ? err.message : messages.UPGRADE_ERROR,
-      );
+      showErrorAlert(err instanceof Error ? err.message : messages.UPGRADE_ERROR);
     } finally {
       upgradeLoading = false;
     }
@@ -336,9 +328,12 @@
     formPassword = formData.password;
     formPasswordConfirm = formData.passwordConfirm;
     formEmployeeNumber = formData.employeeNumber;
-    formPosition = formData.position;
     formPhone = formData.phone;
+
+    // Load N:M positions from API
+    void loadUserPositions(employeeId);
     formDateOfBirth = formData.dateOfBirth;
+    formNotes = formData.notes;
     formIsActive = formData.isActive;
     formTeamIds = formData.teamIds;
     // Store original team IDs for diff calculation on save
@@ -421,9 +416,7 @@
     } catch (err: unknown) {
       log.error({ err }, 'Error updating availability');
       const message =
-        err instanceof ApiError ?
-          err.message
-        : 'Fehler beim Speichern der Verfügbarkeit';
+        err instanceof ApiError ? err.message : 'Fehler beim Speichern der Verfügbarkeit';
       showErrorAlert(message);
     } finally {
       availabilitySubmitting = false;
@@ -449,9 +442,10 @@
     formPassword = defaults.password;
     formPasswordConfirm = defaults.passwordConfirm;
     formEmployeeNumber = defaults.employeeNumber;
-    formPosition = defaults.position;
+    formPositionIds = [];
     formPhone = defaults.phone;
     formDateOfBirth = defaults.dateOfBirth;
+    formNotes = defaults.notes;
     formIsActive = defaults.isActive;
     formTeamIds = defaults.teamIds;
     originalTeamIds = []; // Reset original teams for diff calculation
@@ -504,14 +498,6 @@
     void saveEmployee();
   }
 
-  function handleKeydown(e: KeyboardEvent): void {
-    if (e.key === 'Escape') {
-      if (showUpgradeConfirmModal) closeUpgradeConfirmModal();
-      else if (showDeleteModal) closeDeleteModal();
-      else if (showEmployeeModal) closeEmployeeModal();
-    }
-  }
-
   // =============================================================================
   // OUTSIDE CLICK HANDLER
   // =============================================================================
@@ -535,8 +521,6 @@
   <title>Mitarbeiterverwaltung - Assixx</title>
 </svelte:head>
 
-<svelte:window onkeydown={handleKeydown} />
-
 {#if data.permissionDenied}
   <PermissionDenied addonName="die Mitarbeiterverwaltung" />
 {:else}
@@ -547,9 +531,7 @@
           <i class="fas fa-users mr-2"></i>
           Mitarbeiterverwaltung
         </h2>
-        <p class="mt-2 text-(--color-text-secondary)">
-          Mitarbeiter erstellen und verwalten
-        </p>
+        <p class="mt-2 text-(--color-text-secondary)">Mitarbeiter erstellen und verwalten</p>
 
         <div
           class="mt-6 flex flex-col items-stretch gap-4 md:flex-row md:items-center md:justify-between"
@@ -630,8 +612,7 @@
               />
               <button
                 class="search-input__clear"
-                class:search-input__clear--visible={currentSearchQuery.length >
-                  0}
+                class:search-input__clear--visible={currentSearchQuery.length > 0}
                 type="button"
                 aria-label="Suche löschen"
                 onclick={clearSearch}
@@ -651,9 +632,7 @@
       <div class="card__body">
         {#if error}
           <div class="p-6 text-center">
-            <i
-              class="fas fa-exclamation-triangle mb-4 text-4xl text-(--color-danger)"
-            ></i>
+            <i class="fas fa-exclamation-triangle mb-4 text-4xl text-(--color-danger)"></i>
             <p class="text-(--color-text-secondary)">{error}</p>
             <button
               type="button"
@@ -704,7 +683,8 @@
                     <th scope="col">{messages.TH_TEAMS}</th>
                     <th scope="col">Verfügbarkeit</th>
                     <th scope="col">Geplant</th>
-                    <th scope="col">Notizen</th>
+                    <th scope="col">Zusätzliche Infos</th>
+                    <th scope="col">Abwesenheitsnotiz</th>
                     <th scope="col">Aktionen</th>
                   </tr>
                 </thead>
@@ -713,6 +693,7 @@
                     <EmployeeTableRow
                       {employee}
                       {labels}
+                      currentUserId={data.user?.id ?? 0}
                       {canManagePermissions}
                       {canMutate}
                       onedit={openEditModal}
@@ -759,9 +740,10 @@
     bind:formPassword
     bind:formPasswordConfirm
     bind:formEmployeeNumber
-    bind:formPosition
+    bind:formPositionIds
     bind:formPhone
     bind:formDateOfBirth
+    bind:formNotes
     bind:formIsActive
     bind:formTeamIds
     bind:emailError

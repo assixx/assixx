@@ -19,21 +19,15 @@ import { UpdateAssetAvailabilitySchema } from './update-asset-availability.dto.j
 // =============================================================
 
 describe('AssetAvailabilityStatusSchema', () => {
-  it.each([
-    'operational',
-    'maintenance',
-    'repair',
-    'standby',
-    'cleaning',
-    'other',
-  ] as const)('should accept status=%s', (status) => {
-    expect(AssetAvailabilityStatusSchema.safeParse(status).success).toBe(true);
-  });
+  it.each(['operational', 'maintenance', 'repair', 'standby', 'cleaning', 'other'] as const)(
+    'should accept status=%s',
+    (status) => {
+      expect(AssetAvailabilityStatusSchema.safeParse(status).success).toBe(true);
+    },
+  );
 
   it('should reject invalid status', () => {
-    expect(AssetAvailabilityStatusSchema.safeParse('invalid').success).toBe(
-      false,
-    );
+    expect(AssetAvailabilityStatusSchema.safeParse('invalid').success).toBe(false);
   });
 
   it('should reject empty string', () => {
@@ -147,25 +141,19 @@ describe('UpdateAssetAvailabilityEntrySchema', () => {
   it('should reject missing status', () => {
     const { status: _s, ...noStatus } = valid;
 
-    expect(UpdateAssetAvailabilityEntrySchema.safeParse(noStatus).success).toBe(
-      false,
-    );
+    expect(UpdateAssetAvailabilityEntrySchema.safeParse(noStatus).success).toBe(false);
   });
 
   it('should reject missing startDate', () => {
     const { startDate: _sd, ...noStart } = valid;
 
-    expect(UpdateAssetAvailabilityEntrySchema.safeParse(noStart).success).toBe(
-      false,
-    );
+    expect(UpdateAssetAvailabilityEntrySchema.safeParse(noStart).success).toBe(false);
   });
 
   it('should reject missing endDate', () => {
     const { endDate: _ed, ...noEnd } = valid;
 
-    expect(UpdateAssetAvailabilityEntrySchema.safeParse(noEnd).success).toBe(
-      false,
-    );
+    expect(UpdateAssetAvailabilityEntrySchema.safeParse(noEnd).success).toBe(false);
   });
 
   it('should reject invalid date format (not YYYY-MM-DD)', () => {
@@ -220,9 +208,7 @@ describe('UpdateAssetAvailabilityEntrySchema', () => {
 
 describe('AssetAvailabilityHistoryQuerySchema', () => {
   it('should accept empty object (no filters)', () => {
-    expect(AssetAvailabilityHistoryQuerySchema.safeParse({}).success).toBe(
-      true,
-    );
+    expect(AssetAvailabilityHistoryQuerySchema.safeParse({}).success).toBe(true);
   });
 
   it('should accept valid year', () => {
@@ -252,51 +238,29 @@ describe('AssetAvailabilityHistoryQuerySchema', () => {
   });
 
   it('should reject 3-digit year', () => {
-    expect(
-      AssetAvailabilityHistoryQuerySchema.safeParse({ year: '202' }).success,
-    ).toBe(false);
+    expect(AssetAvailabilityHistoryQuerySchema.safeParse({ year: '202' }).success).toBe(false);
   });
 
   it('should reject 5-digit year', () => {
-    expect(
-      AssetAvailabilityHistoryQuerySchema.safeParse({ year: '20260' }).success,
-    ).toBe(false);
+    expect(AssetAvailabilityHistoryQuerySchema.safeParse({ year: '20260' }).success).toBe(false);
   });
 
   it('should reject month 00', () => {
-    expect(
-      AssetAvailabilityHistoryQuerySchema.safeParse({ month: '00' }).success,
-    ).toBe(false);
+    expect(AssetAvailabilityHistoryQuerySchema.safeParse({ month: '00' }).success).toBe(false);
   });
 
   it('should reject month 13', () => {
-    expect(
-      AssetAvailabilityHistoryQuerySchema.safeParse({ month: '13' }).success,
-    ).toBe(false);
+    expect(AssetAvailabilityHistoryQuerySchema.safeParse({ month: '13' }).success).toBe(false);
   });
 
   it('should reject single-digit month', () => {
-    expect(
-      AssetAvailabilityHistoryQuerySchema.safeParse({ month: '3' }).success,
-    ).toBe(false);
+    expect(AssetAvailabilityHistoryQuerySchema.safeParse({ month: '3' }).success).toBe(false);
   });
 
-  it.each([
-    '01',
-    '02',
-    '03',
-    '04',
-    '05',
-    '06',
-    '07',
-    '08',
-    '09',
-    '10',
-    '11',
-    '12',
-  ])('should accept month=%s', (month) => {
-    expect(
-      AssetAvailabilityHistoryQuerySchema.safeParse({ month }).success,
-    ).toBe(true);
-  });
+  it.each(['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12'])(
+    'should accept month=%s',
+    (month) => {
+      expect(AssetAvailabilityHistoryQuerySchema.safeParse({ month }).success).toBe(true);
+    },
+  );
 });

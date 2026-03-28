@@ -15,9 +15,7 @@ import type { PermissionCategoryDef } from './permission.types.js';
 // Factories
 // =============================================================
 
-function createCategory(
-  overrides?: Partial<PermissionCategoryDef>,
-): PermissionCategoryDef {
+function createCategory(overrides?: Partial<PermissionCategoryDef>): PermissionCategoryDef {
   return {
     code: 'blackboard',
     label: 'Schwarzes Brett',
@@ -70,9 +68,9 @@ describe('SECURITY: PermissionRegistryService', () => {
     it('should throw Error on duplicate code', () => {
       service.register(createCategory({ code: 'blackboard' }));
 
-      expect(() =>
-        service.register(createCategory({ code: 'blackboard' })),
-      ).toThrow('Permission category "blackboard" already registered');
+      expect(() => service.register(createCategory({ code: 'blackboard' }))).toThrow(
+        'Permission category "blackboard" already registered',
+      );
     });
 
     it('should not modify registry when duplicate throws', () => {
@@ -164,9 +162,7 @@ describe('SECURITY: PermissionRegistryService', () => {
     });
 
     it('should return true for valid addon+module combination', () => {
-      expect(service.isValidModule('blackboard', 'blackboard-posts')).toBe(
-        true,
-      );
+      expect(service.isValidModule('blackboard', 'blackboard-posts')).toBe(true);
     });
 
     it('should return false for unknown addonCode', () => {
@@ -190,9 +186,11 @@ describe('SECURITY: PermissionRegistryService', () => {
     it('should return correct permissions for known module', () => {
       service.register(createCategory());
 
-      expect(
-        service.getAllowedPermissions('blackboard', 'blackboard-posts'),
-      ).toEqual(['canRead', 'canWrite', 'canDelete']);
+      expect(service.getAllowedPermissions('blackboard', 'blackboard-posts')).toEqual([
+        'canRead',
+        'canWrite',
+        'canDelete',
+      ]);
     });
 
     it('should return limited permissions for read-only module', () => {
@@ -210,9 +208,7 @@ describe('SECURITY: PermissionRegistryService', () => {
         }),
       );
 
-      expect(
-        service.getAllowedPermissions('readonly-addon', 'readonly-mod'),
-      ).toEqual(['canRead']);
+      expect(service.getAllowedPermissions('readonly-addon', 'readonly-mod')).toEqual(['canRead']);
     });
 
     it('should return empty array for unknown addonCode', () => {
@@ -224,9 +220,7 @@ describe('SECURITY: PermissionRegistryService', () => {
     it('should return empty array for unknown moduleCode', () => {
       service.register(createCategory());
 
-      expect(service.getAllowedPermissions('blackboard', 'unknown')).toEqual(
-        [],
-      );
+      expect(service.getAllowedPermissions('blackboard', 'unknown')).toEqual([]);
     });
   });
 

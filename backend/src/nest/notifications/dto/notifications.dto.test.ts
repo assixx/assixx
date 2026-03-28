@@ -66,24 +66,18 @@ describe('CreateNotificationSchema', () => {
   it.each(['system', 'task', 'message', 'announcement', 'reminder'] as const)(
     'should accept type=%s',
     (type) => {
-      expect(
-        CreateNotificationSchema.safeParse({ ...valid, type }).success,
-      ).toBe(true);
+      expect(CreateNotificationSchema.safeParse({ ...valid, type }).success).toBe(true);
     },
   );
 
   it('should reject invalid type', () => {
-    expect(
-      CreateNotificationSchema.safeParse({ ...valid, type: 'email' }).success,
-    ).toBe(false);
+    expect(CreateNotificationSchema.safeParse({ ...valid, type: 'email' }).success).toBe(false);
   });
 
   it.each(['low', 'normal', 'medium', 'high', 'urgent'] as const)(
     'should accept priority=%s',
     (priority) => {
-      expect(
-        CreateNotificationSchema.safeParse({ ...valid, priority }).success,
-      ).toBe(true);
+      expect(CreateNotificationSchema.safeParse({ ...valid, priority }).success).toBe(true);
     },
   );
 });
@@ -110,15 +104,11 @@ describe('ListNotificationsQuerySchema', () => {
   });
 
   it('should accept valid type filter', () => {
-    expect(
-      ListNotificationsQuerySchema.safeParse({ type: 'system' }).success,
-    ).toBe(true);
+    expect(ListNotificationsQuerySchema.safeParse({ type: 'system' }).success).toBe(true);
   });
 
   it('should reject invalid priority filter', () => {
-    expect(
-      ListNotificationsQuerySchema.safeParse({ priority: 'critical' }).success,
-    ).toBe(false);
+    expect(ListNotificationsQuerySchema.safeParse({ priority: 'critical' }).success).toBe(false);
   });
 });
 

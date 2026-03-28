@@ -82,9 +82,7 @@ export class TpmDueDateCronService implements OnModuleInit {
       const groups = await this.findDueCardGroups();
       if (groups.length === 0) return;
 
-      this.logger.log(
-        `Found ${String(groups.length)} asset(s) with due TPM cards`,
-      );
+      this.logger.log(`Found ${String(groups.length)} asset(s) with due TPM cards`);
 
       for (const group of groups) {
         await this.triggerGroupCascade(group);
@@ -137,9 +135,7 @@ export class TpmDueDateCronService implements OnModuleInit {
         { tenantId: group.tenant_id },
       );
     } catch (error: unknown) {
-      this.logger.error(
-        `Cascade failed for asset ${String(group.asset_id)}: ${String(error)}`,
-      );
+      this.logger.error(`Cascade failed for asset ${String(group.asset_id)}: ${String(error)}`);
     }
   }
 }

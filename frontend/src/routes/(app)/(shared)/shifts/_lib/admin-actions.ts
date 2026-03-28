@@ -46,9 +46,7 @@ export interface SaveScheduleResult {
   error?: string;
 }
 
-export async function saveSchedule(
-  params: SaveScheduleParams,
-): Promise<SaveScheduleResult> {
+export async function saveSchedule(params: SaveScheduleParams): Promise<SaveScheduleResult> {
   const {
     weeklyShifts,
     weeklyNotes,
@@ -63,8 +61,7 @@ export async function saveSchedule(
   const shifts = buildShiftSaveData(weeklyShifts, effectiveShiftTimes);
   const weekStart = getWeekStart(currentWeek);
   const weekEnd = new Date(weekStart.getTime() + 6 * 24 * 60 * 60 * 1000);
-  const teamName =
-    teams.find((t) => t.id === selectedContext.teamId)?.name ?? 'Team';
+  const teamName = teams.find((t) => t.id === selectedContext.teamId)?.name ?? 'Team';
 
   const planData = {
     teamId: selectedContext.teamId ?? 0,
@@ -102,9 +99,7 @@ export interface DiscardWeekResult {
   error?: string;
 }
 
-export async function discardWeek(
-  params: DiscardWeekParams,
-): Promise<DiscardWeekResult> {
+export async function discardWeek(params: DiscardWeekParams): Promise<DiscardWeekResult> {
   const { teamId, currentWeek } = params;
 
   const weekStart = getWeekStart(currentWeek);
@@ -235,9 +230,7 @@ interface FavoriteEntities {
  * Finds and validates all required entities for a favorite
  * Returns null if required IDs are missing or entities not found
  */
-function findFavoriteEntities(
-  params: AddFavoriteParams,
-): FavoriteEntities | null {
+function findFavoriteEntities(params: AddFavoriteParams): FavoriteEntities | null {
   const { selectedContext, areas, departments, assets, teams } = params;
   const { areaId, departmentId, assetId, teamId } = selectedContext;
 
@@ -253,22 +246,17 @@ function findFavoriteEntities(
     return null;
   }
 
-  const asset =
-    assetId !== null ? assets.find((m) => m.id === assetId) : undefined;
+  const asset = assetId !== null ? assets.find((m) => m.id === assetId) : undefined;
   return { area, dept, asset, team, areaId, departmentId, assetId, teamId };
 }
 
-export async function addToFavorites(
-  params: AddFavoriteParams,
-): Promise<ShiftFavorite | null> {
+export async function addToFavorites(params: AddFavoriteParams): Promise<ShiftFavorite | null> {
   const entities = findFavoriteEntities(params);
   if (entities === null) return null;
 
-  const { area, dept, asset, team, areaId, departmentId, assetId, teamId } =
-    entities;
+  const { area, dept, asset, team, areaId, departmentId, assetId, teamId } = entities;
 
-  const favoriteName =
-    asset !== undefined ? `${team.name} - ${asset.name}` : team.name;
+  const favoriteName = asset !== undefined ? `${team.name} - ${asset.name}` : team.name;
 
   return await apiSaveFavorite({
     name: favoriteName,

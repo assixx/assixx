@@ -5,6 +5,7 @@
  * Provides CRUD operations for improvement suggestions with tenant isolation.
  *
  * Sub-services:
+ * - KvpApprovalService — Approval bridge (ADR-037 integration, EventBus listener)
  * - KvpCategoriesService — Category customization (kvp_categories_custom table)
  * - KvpCommentsService — Comment CRUD (kvp_comments table)
  * - KvpAttachmentsService — Attachment CRUD (kvp_attachments table)
@@ -13,19 +14,23 @@
  */
 import { Module } from '@nestjs/common';
 
+import { ApprovalsModule } from '../approvals/approvals.module.js';
 import { ScopeModule } from '../hierarchy-permission/scope.module.js';
 import { NotificationsModule } from '../notifications/notifications.module.js';
+import { KvpApprovalArchiveCronService } from './kvp-approval-archive-cron.service.js';
+import { KvpApprovalService } from './kvp-approval.service.js';
 import { KvpAttachmentsService } from './kvp-attachments.service.js';
 import { KvpCategoriesService } from './kvp-categories.service.js';
 import { KvpCommentsService } from './kvp-comments.service.js';
 import { KvpConfirmationsService } from './kvp-confirmations.service.js';
 import { KvpLifecycleService } from './kvp-lifecycle.service.js';
 import { KvpPermissionRegistrar } from './kvp-permission.registrar.js';
+import { KvpRewardTiersService } from './kvp-reward-tiers.service.js';
 import { KvpController } from './kvp.controller.js';
 import { KvpService } from './kvp.service.js';
 
 @Module({
-  imports: [NotificationsModule, ScopeModule],
+  imports: [ApprovalsModule, NotificationsModule, ScopeModule],
   controllers: [KvpController],
   providers: [
     KvpService,
@@ -33,7 +38,10 @@ import { KvpService } from './kvp.service.js';
     KvpCommentsService,
     KvpAttachmentsService,
     KvpConfirmationsService,
+    KvpApprovalService,
+    KvpApprovalArchiveCronService,
     KvpLifecycleService,
+    KvpRewardTiersService,
     // Permission registration (ADR-020)
     KvpPermissionRegistrar,
   ],

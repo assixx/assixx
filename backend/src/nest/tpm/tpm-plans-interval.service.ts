@@ -46,11 +46,7 @@ export class TpmPlansIntervalService {
    * getNextOccurrence(3, 2, new Date('2026-02-18'))
    * // → next 2nd Thursday from 2026-02-18
    */
-  getNextOccurrence(
-    weekday: number,
-    repeatEvery: number,
-    fromDate: Date,
-  ): Date {
+  getNextOccurrence(weekday: number, repeatEvery: number, fromDate: Date): Date {
     const result = new Date(fromDate);
     result.setUTCHours(0, 0, 0, 0);
 
@@ -85,12 +81,7 @@ export class TpmPlansIntervalService {
    * @param weekday - TPM weekday (0=Mo ... 6=So)
    * @param nth - Which occurrence (1=first, 2=second, ...)
    */
-  getNthWeekdayOfMonth(
-    year: number,
-    month: number,
-    weekday: number,
-    nth: number,
-  ): Date {
+  getNthWeekdayOfMonth(year: number, month: number, weekday: number, nth: number): Date {
     const jsWeekday = (weekday + 1) % 7;
     const firstOfMonth = new Date(Date.UTC(year, month, 1));
     firstOfMonth.setUTCHours(0, 0, 0, 0);
@@ -137,11 +128,7 @@ export class TpmPlansIntervalService {
   }
 
   /** Weekday-anchored calculation: find Nth weekday in the target month */
-  private anchoredIntervalDate(
-    baseDate: Date,
-    monthsToAdd: number,
-    anchor: WeekdayAnchor,
-  ): Date {
+  private anchoredIntervalDate(baseDate: Date, monthsToAdd: number, anchor: WeekdayAnchor): Date {
     const target = new Date(baseDate);
     target.setUTCHours(0, 0, 0, 0);
     target.setUTCMonth(target.getUTCMonth() + monthsToAdd);
@@ -236,19 +223,10 @@ export class TpmPlansIntervalService {
 
       if (intervalType === 'weekly') {
         // Weekly uses the plan's base weekday and repeat frequency
-        dueDate = this.getNextOccurrence(
-          baseWeekday,
-          baseRepeatEvery,
-          fromDate,
-        );
+        dueDate = this.getNextOccurrence(baseWeekday, baseRepeatEvery, fromDate);
       } else {
         // Monthly+ intervals anchor to Nth weekday of target month
-        dueDate = this.calculateIntervalDate(
-          fromDate,
-          intervalType,
-          customDays,
-          anchor,
-        );
+        dueDate = this.calculateIntervalDate(fromDate, intervalType, customDays, anchor);
       }
 
       results.push({ intervalType, dueDate });
@@ -256,8 +234,7 @@ export class TpmPlansIntervalService {
 
     // Sort by due date ascending (nearest first)
     results.sort(
-      (a: IntervalDueDate, b: IntervalDueDate) =>
-        a.dueDate.getTime() - b.dueDate.getTime(),
+      (a: IntervalDueDate, b: IntervalDueDate) => a.dueDate.getTime() - b.dueDate.getTime(),
     );
 
     return results;

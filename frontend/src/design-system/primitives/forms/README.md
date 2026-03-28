@@ -32,15 +32,8 @@ Einheitliche Eingabekomponenten für Inline-Formulare (siehe CLAUDE.md: „keine
 
 ```html
 <div class="form-field">
-  <label class="form-field__label form-field__label--required" for="firstName"
-    >Vorname</label
-  >
-  <input
-    class="form-field__control"
-    id="firstName"
-    name="firstName"
-    placeholder="Max"
-  />
+  <label class="form-field__label form-field__label--required" for="firstName">Vorname</label>
+  <input class="form-field__control" id="firstName" name="firstName" placeholder="Max" />
   <p class="form-field__message">Wird auf allen Dokumenten angezeigt.</p>
 </div>
 ```

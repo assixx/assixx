@@ -22,10 +22,8 @@ export const UpdateDefectSchema = z
       .nullish(),
   })
   .refine(
-    (data: {
-      title?: string | undefined;
-      description?: string | null | undefined;
-    }) => data.title !== undefined || data.description !== undefined,
+    (data: { title?: string | undefined; description?: string | null | undefined }) =>
+      data.title !== undefined || data.description !== undefined,
     { message: 'Mindestens ein Feld (title oder description) erforderlich' },
   );
 

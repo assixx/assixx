@@ -31,9 +31,7 @@ const inflight = new Map<number, Promise<CachedPublicKey | null>>();
  * Returns null if the user has no active E2E key.
  * Deduplicates concurrent requests for the same userId (thundering herd protection).
  */
-export async function getPublicKey(
-  userId: number,
-): Promise<CachedPublicKey | null> {
+export async function getPublicKey(userId: number): Promise<CachedPublicKey | null> {
   const cached = cache.get(userId);
   if (cached !== undefined) {
     log.debug({ userId }, 'Public key cache HIT');
@@ -59,15 +57,11 @@ export async function getPublicKey(
 }
 
 /** Fetch a user's public key from the API and cache it */
-async function fetchAndCachePublicKey(
-  userId: number,
-): Promise<CachedPublicKey | null> {
+async function fetchAndCachePublicKey(userId: number): Promise<CachedPublicKey | null> {
   const apiClient = getApiClient();
 
   // apiClient.get() already unwraps { success, data } → returns data directly (ADR-007)
-  const keyData = await apiClient.get<CachedPublicKey | null>(
-    `/e2e/keys/${userId}`,
-  );
+  const keyData = await apiClient.get<CachedPublicKey | null>(`/e2e/keys/${userId}`);
 
   if (keyData === null) {
     log.warn({ userId }, 'API returned NULL — user has no E2E key on server');

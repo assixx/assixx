@@ -2,10 +2,7 @@
 // KVP - UTILITY FUNCTIONS
 // =============================================================================
 
-import {
-  DEFAULT_HIERARCHY_LABELS,
-  type HierarchyLabels,
-} from '$lib/types/hierarchy-labels';
+import { DEFAULT_HIERARCHY_LABELS, type HierarchyLabels } from '$lib/types/hierarchy-labels';
 
 import {
   STATUS_BADGE_CLASSES,
@@ -65,49 +62,11 @@ export function getVisibilityInfo(
   icon: string;
   text: string;
 } {
-  // Junction table organizations take priority (new multi-team/asset flow)
-  if (
-    suggestion.organizations !== undefined &&
-    suggestion.organizations.length > 0
-  ) {
-    return getOrganizationsVisibility(suggestion, labels);
-  }
-
-  // Legacy fallback: single orgLevel/orgId
-  return getLegacyVisibility(suggestion, labels);
+  return getOrgLevelVisibility(suggestion, labels);
 }
 
-/** Visibility from junction table organizations */
-function getOrganizationsVisibility(
-  suggestion: KvpSuggestion,
-  labels: HierarchyLabels,
-): {
-  icon: string;
-  text: string;
-} {
-  const orgs = suggestion.organizations ?? [];
-  const teams = orgs.filter((o) => o.orgType === 'team');
-  const assets = orgs.filter((o) => o.orgType === 'asset');
-
-  const parts: string[] = [];
-  for (const t of teams) {
-    parts.push(t.orgName ?? `Team ${t.orgId}`);
-  }
-  for (const m of assets) {
-    parts.push(m.orgName ?? `${labels.asset} ${m.orgId}`);
-  }
-
-  if (parts.length > 0) {
-    const icon =
-      assets.length > 0 && teams.length === 0 ? 'fa-cog' : 'fa-users';
-    return { icon, text: parts.join(', ') };
-  }
-
-  return { icon: 'fa-lock', text: 'Keine Zuordnung' };
-}
-
-/** Legacy visibility from single orgLevel field */
-function getLegacyVisibility(
+/** Visibility from orgLevel + orgId on the main record */
+function getOrgLevelVisibility(
   suggestion: KvpSuggestion,
   labels: HierarchyLabels,
 ): {
@@ -122,10 +81,7 @@ function getLegacyVisibility(
   const info = visibilityInfo[suggestion.orgLevel];
   let text = info.text;
 
-  if (
-    suggestion.orgLevel === 'department' &&
-    suggestion.departmentName !== ''
-  ) {
+  if (suggestion.orgLevel === 'department' && suggestion.departmentName !== '') {
     text = suggestion.departmentName;
   } else if (
     suggestion.orgLevel === 'area' &&
@@ -249,13 +205,9 @@ export function debounce<T extends (...args: unknown[]) => void>(
 /**
  * Check if user can share suggestion (admin only, department level)
  */
-export function canShareSuggestion(
-  suggestion: KvpSuggestion,
-  effectiveRole: string,
-): boolean {
+export function canShareSuggestion(suggestion: KvpSuggestion, effectiveRole: string): boolean {
   return (
-    (effectiveRole === 'admin' || effectiveRole === 'root') &&
-    suggestion.orgLevel === 'department'
+    (effectiveRole === 'admin' || effectiveRole === 'root') && suggestion.orgLevel === 'department'
   );
 }
 
@@ -277,9 +229,7 @@ export function canUnshareSuggestion(
 
   // Admin/Root can always unshare, or the person who shared it
   return (
-    effectiveRole === 'admin' ||
-    effectiveRole === 'root' ||
-    suggestion.sharedBy === currentUserId
+    effectiveRole === 'admin' || effectiveRole === 'root' || suggestion.sharedBy === currentUserId
   );
 }
 

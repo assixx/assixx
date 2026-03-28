@@ -11,11 +11,7 @@ import { apiFetch, apiFetchWithPermission } from '$lib/server/api-fetch';
 import { requireAddon } from '$lib/utils/addon-guard';
 
 import type { PageServerLoad } from './$types';
-import type {
-  PaginatedResult,
-  VacationBalance,
-  VacationRequest,
-} from './_lib/types';
+import type { PaginatedResult, VacationBalance, VacationRequest } from './_lib/types';
 
 /** Empty paginated result fallback */
 function emptyPage<T>(): PaginatedResult<T> {
@@ -23,11 +19,7 @@ function emptyPage<T>(): PaginatedResult<T> {
 }
 
 /** Fetch all vacation data in parallel */
-async function fetchVacationData(
-  token: string,
-  fetchFn: typeof fetch,
-  currentYear: number,
-) {
+async function fetchVacationData(token: string, fetchFn: typeof fetch, currentYear: number) {
   const queryParams = `?page=1&limit=10&year=${currentYear}`;
   return await Promise.all([
     apiFetchWithPermission<PaginatedResult<VacationRequest>>(
@@ -40,11 +32,7 @@ async function fetchVacationData(
       token,
       fetchFn,
     ),
-    apiFetch<VacationBalance>(
-      `/vacation/entitlements/me?year=${currentYear}`,
-      token,
-      fetchFn,
-    ),
+    apiFetch<VacationBalance>(`/vacation/entitlements/me?year=${currentYear}`, token, fetchFn),
     apiFetch<string[]>('/vacation/notifications/unread-ids', token, fetchFn),
   ]);
 }
@@ -83,8 +71,7 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
 
   const myRequests = myRequestsResult.data ?? emptyPage<VacationRequest>();
   const incomingRequests = incomingRequestsData ?? emptyPage<VacationRequest>();
-  const canApprove =
-    user.role === 'admin' || user.role === 'root' || incomingRequests.total > 0;
+  const canApprove = user.role === 'admin' || user.role === 'root' || incomingRequests.total > 0;
 
   return {
     permissionDenied: false as const,

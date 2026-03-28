@@ -66,7 +66,7 @@ describe('VacationApproverService', () => {
             team_id: 1,
             team_name: 'Team A',
             team_lead_id: 10,
-            deputy_lead_id: 11,
+            team_deputy_lead_id: 11,
             department_id: 1,
           },
         ],
@@ -91,13 +91,15 @@ describe('VacationApproverService', () => {
             team_id: 1,
             team_name: 'Team A',
             team_lead_id: 10,
-            deputy_lead_id: 11,
+            team_deputy_lead_id: 11,
             department_id: 1,
           },
         ],
       });
       // lead IS absent
       mockClient.query.mockResolvedValueOnce({ rows: [{ found: true }] });
+      // deputy is NOT absent
+      mockClient.query.mockResolvedValueOnce({ rows: [{ found: false }] });
 
       const result = await service.getApprover(1, 5);
 
@@ -105,31 +107,28 @@ describe('VacationApproverService', () => {
       expect(result.autoApproved).toBe(false);
     });
 
-    it('should escalate to area_lead when employee IS team_lead (self-approval prevention)', async () => {
+    it('should assign deputy when employee IS team_lead (self-approval prevention)', async () => {
       mockClient.query.mockResolvedValueOnce({ rows: [{ found: false }] });
       mockClient.query.mockResolvedValueOnce({
         rows: [{ id: 10, role: 'employee' }],
       });
-      // getUserTeamInfo → requester IS the team_lead
+      // getUserTeamInfo → requester IS the team_lead, deputy exists
       mockClient.query.mockResolvedValueOnce({
         rows: [
           {
             team_id: 1,
             team_name: 'Team A',
             team_lead_id: 10,
-            deputy_lead_id: 11,
+            team_deputy_lead_id: 11,
             department_id: 1,
           },
         ],
       });
-      // resolveAreaLeadOrAutoApprove → area lead exists
-      mockClient.query.mockResolvedValueOnce({
-        rows: [{ area_lead_id: 99 }],
-      });
 
       const result = await service.getApprover(1, 10);
 
-      expect(result.approverId).toBe(99);
+      // Deputy approves (lead cannot self-approve)
+      expect(result.approverId).toBe(11);
       expect(result.autoApproved).toBe(false);
     });
 
@@ -193,9 +192,7 @@ describe('VacationApproverService', () => {
       // getUserTeamInfo → no team
       mockClient.query.mockResolvedValueOnce({ rows: [] });
 
-      await expect(service.getApprover(1, 5)).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(service.getApprover(1, 5)).rejects.toThrow(BadRequestException);
     });
 
     it('should throw BadRequestException when team has no lead', async () => {
@@ -210,18 +207,16 @@ describe('VacationApproverService', () => {
             team_id: 1,
             team_name: 'Team A',
             team_lead_id: null,
-            deputy_lead_id: null,
+            team_deputy_lead_id: null,
             department_id: 1,
           },
         ],
       });
 
-      await expect(service.getApprover(1, 5)).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(service.getApprover(1, 5)).rejects.toThrow(BadRequestException);
     });
 
-    it('should fall back to lead when lead absent and no deputy', async () => {
+    it('should escalate to area lead when lead absent and no deputy', async () => {
       mockClient.query.mockResolvedValueOnce({ rows: [{ found: false }] });
       mockClient.query.mockResolvedValueOnce({
         rows: [{ id: 5, role: 'employee' }],
@@ -232,22 +227,26 @@ describe('VacationApproverService', () => {
             team_id: 1,
             team_name: 'Team A',
             team_lead_id: 10,
-            deputy_lead_id: null,
+            team_deputy_lead_id: null,
             department_id: 1,
           },
         ],
       });
       // lead absent
       mockClient.query.mockResolvedValueOnce({ rows: [{ found: true }] });
+      // resolveAreaLeadOrAutoApprove → area lead exists
+      mockClient.query.mockResolvedValueOnce({
+        rows: [{ area_lead_id: 99, area_deputy_lead_id: null }],
+      });
 
       const result = await service.getApprover(1, 5);
 
-      // Falls back to lead since no deputy
-      expect(result.approverId).toBe(10);
+      // Both absent, no deputy → escalate to area lead
+      expect(result.approverId).toBe(99);
       expect(result.autoApproved).toBe(false);
     });
 
-    it('should not assign deputy when deputy IS the requester', async () => {
+    it('should assign lead when deputy IS the requester (self-approval prevention)', async () => {
       mockClient.query.mockResolvedValueOnce({ rows: [{ found: false }] });
       mockClient.query.mockResolvedValueOnce({
         rows: [{ id: 11, role: 'employee' }],
@@ -258,18 +257,17 @@ describe('VacationApproverService', () => {
             team_id: 1,
             team_name: 'Team A',
             team_lead_id: 10,
-            deputy_lead_id: 11, // requester IS the deputy
+            team_deputy_lead_id: 11, // requester IS the deputy
             department_id: 1,
           },
         ],
       });
-      // lead absent
-      mockClient.query.mockResolvedValueOnce({ rows: [{ found: true }] });
 
       const result = await service.getApprover(1, 11);
 
-      // Falls back to lead (can't self-approve via deputy)
+      // Lead approves (deputy cannot self-approve)
       expect(result.approverId).toBe(10);
+      expect(result.autoApproved).toBe(false);
     });
   });
 });

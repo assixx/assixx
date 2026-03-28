@@ -42,9 +42,7 @@ export async function fetchFullEntry(uuid: string): Promise<{
   attachments: Attachment[];
 } | null> {
   try {
-    const result = await apiClient.get<FullEntryResponse>(
-      `/blackboard/entries/${uuid}/full`,
-    );
+    const result = await apiClient.get<FullEntryResponse>(`/blackboard/entries/${uuid}/full`);
 
     if (!result.success) {
       throw new Error(result.error?.message ?? 'Fehler beim Laden');
@@ -133,9 +131,7 @@ export async function fetchComments(
  */
 export async function fetchReplies(commentId: number): Promise<Comment[]> {
   try {
-    return await apiClient.get<Comment[]>(
-      `/blackboard/comments/${commentId}/replies`,
-    );
+    return await apiClient.get<Comment[]>(`/blackboard/comments/${commentId}/replies`);
   } catch {
     return [];
   }
@@ -202,8 +198,7 @@ export async function deleteEntry(
     await apiClient.delete(`/blackboard/entries/${uuid}`);
     return { success: true };
   } catch (err: unknown) {
-    const errorMessage =
-      err instanceof Error ? err.message : 'Fehler beim Löschen des Eintrags';
+    const errorMessage = err instanceof Error ? err.message : 'Fehler beim Löschen des Eintrags';
     return { success: false, error: errorMessage };
   }
 }

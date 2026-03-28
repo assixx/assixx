@@ -55,10 +55,7 @@ const FEATURE_LABELS: Record<string, string> = {
  */
 export function humanizePermissionError(message: string): string | null {
   // Pattern 1: Permission Guard — "Permission denied: {action} access required for {feature}/{module}"
-  const permMatch =
-    /^Permission denied:\s*(can\w+)\s+access required for\s+(\S+)$/.exec(
-      message,
-    );
+  const permMatch = /^Permission denied:\s*(can\w+)\s+access required for\s+(\S+)$/.exec(message);
   if (permMatch !== null) {
     const [, action, featurePath] = permMatch;
     const parts = featurePath.split('/');
@@ -92,10 +89,7 @@ export function humanizePermissionError(message: string): string | null {
   if (message.includes('only delete your own')) {
     return 'Sie können nur Ihre eigene Einträge löschen.';
   }
-  if (
-    message.includes("don't have access") ||
-    message.includes('do not have access')
-  ) {
+  if (message.includes("don't have access") || message.includes('do not have access')) {
     return (
       'Sie haben keinen Zugriff auf diese Ressource. ' +
       'Bitte kontaktieren Sie Ihren Vorgesetzten oder Administrator.'
@@ -117,9 +111,7 @@ export function humanizePermissionError(message: string): string | null {
  * Combine multiple AbortSignals into one.
  * The combined signal aborts when ANY of the input signals abort.
  */
-export function combineSignals(
-  ...signals: (AbortSignal | undefined)[]
-): AbortSignal {
+export function combineSignals(...signals: (AbortSignal | undefined)[]): AbortSignal {
   const controller = new AbortController();
   const validSignals = signals.filter((s): s is AbortSignal => s !== undefined);
 
@@ -189,9 +181,7 @@ export function isAbortError(error: Error): boolean {
   if (error.name === 'AbortError') {
     return true;
   }
-  return (
-    error.message.includes('NetworkError') || error.message.includes('aborted')
-  );
+  return error.message.includes('NetworkError') || error.message.includes('aborted');
 }
 
 /**
@@ -216,10 +206,7 @@ export function wrapError(error: unknown): Error {
 /**
  * Determine the Content-Type header value for a request
  */
-export function getContentType(
-  options: RequestInit,
-  config: ApiConfig,
-): string | null {
+export function getContentType(options: RequestInit, config: ApiConfig): string | null {
   const hasBody = options.body !== undefined && options.body !== null;
   if (!hasBody) {
     return null;
@@ -247,9 +234,7 @@ export function getContentType(
 export function getCredentialsMode(endpoint: string): RequestCredentials {
   // Auth endpoints need cookies for HttpOnly refresh token
   const authEndpoints = ['/auth/login', '/auth/logout', '/auth/refresh'];
-  const isAuthEndpoint = authEndpoints.some((auth) =>
-    endpoint.startsWith(auth),
-  );
+  const isAuthEndpoint = authEndpoints.some((auth) => endpoint.startsWith(auth));
   return isAuthEndpoint ? 'include' : 'omit';
 }
 
@@ -260,9 +245,7 @@ export function extractErrorMessage(data: Record<string, unknown>): {
   message: string;
   details: string;
 } {
-  const error = data.error as
-    | { message?: string; details?: string }
-    | undefined;
+  const error = data.error as { message?: string; details?: string } | undefined;
 
   const message =
     typeof error?.message === 'string' ? error.message
@@ -281,13 +264,8 @@ export function extractErrorMessage(data: Record<string, unknown>): {
 /**
  * Create an ApiError from a non-V2 response
  */
-export function createApiError(
-  response: Response,
-  data: Record<string, unknown>,
-): ApiError {
-  const error = data.error as
-    | { message?: string; code?: string; details?: unknown }
-    | undefined;
+export function createApiError(response: Response, data: Record<string, unknown>): ApiError {
+  const error = data.error as { message?: string; code?: string; details?: unknown } | undefined;
 
   const message =
     typeof error?.message === 'string' ? error.message

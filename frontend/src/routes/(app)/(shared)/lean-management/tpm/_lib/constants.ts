@@ -2,10 +2,7 @@
 // TPM Employee View — CONSTANTS
 // =============================================================================
 
-import {
-  DEFAULT_HIERARCHY_LABELS,
-  type HierarchyLabels,
-} from '$lib/types/hierarchy-labels';
+import { DEFAULT_HIERARCHY_LABELS, type HierarchyLabels } from '$lib/types/hierarchy-labels';
 
 import type { CardCategory, CardStatus, IntervalType } from './types';
 
@@ -118,8 +115,7 @@ const BASE_MESSAGES = {
 
   // Empty state
   EMPTY_TITLE: 'Keine Wartungsaufgaben',
-  EMPTY_DESCRIPTION:
-    'Ihnen sind aktuell keine Anlagen mit TPM-Wartungsplänen zugewiesen.',
+  EMPTY_DESCRIPTION: 'Ihnen sind aktuell keine Anlagen mit TPM-Wartungsplänen zugewiesen.',
 
   // Loading
   LOADING: 'Wartungsdaten werden geladen...',
@@ -152,14 +148,12 @@ const BASE_MESSAGES = {
   EXEC_SOLL: 'SOLL',
   EXEC_DOCUMENTATION: 'Bemerkungen / Auffälligkeiten',
   EXEC_DOCUMENTATION_PH: 'Vorkommnisse, Auffälligkeiten, Anmerkungen...',
-  EXEC_DOCUMENTATION_HINT:
-    'Bei Beanstandungen ist die Dokumentation erforderlich.',
+  EXEC_DOCUMENTATION_HINT: 'Bei Beanstandungen ist die Dokumentation erforderlich.',
   EXEC_SUBMIT: 'Als erledigt melden',
   EXEC_SUBMITTING: 'Wird gemeldet...',
   EXEC_SUCCESS: 'Wartung erfolgreich gemeldet',
   EXEC_ERROR: 'Fehler beim Melden der Wartung',
-  EXEC_CARD_NOT_DUE:
-    'Diese Karte ist nicht fällig und kann nicht erledigt werden.',
+  EXEC_CARD_NOT_DUE: 'Diese Karte ist nicht fällig und kann nicht erledigt werden.',
 
   // Approval Panel
   APPROVAL_HEADING: 'Freigabe',
@@ -198,8 +192,7 @@ const BASE_MESSAGES = {
   HISTORY_COL_PHOTOS: 'Fotos',
   HISTORY_COL_DEFECTS: 'Mängel',
   HISTORY_EMPTY_TITLE: 'Keine Durchführungen',
-  HISTORY_EMPTY_DESC:
-    'Für diese Karte wurden noch keine Wartungen dokumentiert.',
+  HISTORY_EMPTY_DESC: 'Für diese Karte wurden noch keine Wartungen dokumentiert.',
   HISTORY_ERROR: 'Fehler beim Laden des Wartungsverlaufs',
   HISTORY_DOCUMENTATION: 'Dokumentation',
   HISTORY_NO_DOCUMENTATION: 'Keine Bemerkungen',
@@ -241,11 +234,9 @@ const BASE_MESSAGES = {
   // Locations
   LOCATIONS_PAGE_TITLE: 'TPM Standorte - Assixx',
   LOCATIONS_HEADING: 'Standorte',
-  LOCATIONS_DESCRIPTION:
-    'Strukturierte Standortbeschreibungen für diesen Wartungsplan',
+  LOCATIONS_DESCRIPTION: 'Strukturierte Standortbeschreibungen für diesen Wartungsplan',
   LOCATIONS_EMPTY_TITLE: 'Keine Standorte',
-  LOCATIONS_EMPTY_DESC:
-    'Es wurden noch keine Standorte für diesen Wartungsplan angelegt.',
+  LOCATIONS_EMPTY_DESC: 'Es wurden noch keine Standorte für diesen Wartungsplan angelegt.',
   LOCATIONS_ADD: 'Standort hinzufügen',
   LOCATIONS_EDIT: 'Bearbeiten',
   LOCATIONS_DELETE: 'Löschen',
@@ -257,8 +248,7 @@ const BASE_MESSAGES = {
   LOCATIONS_PHOTO: 'Foto',
   LOCATIONS_PHOTO_UPLOAD: 'Foto hochladen',
   LOCATIONS_PHOTO_REMOVE: 'Foto entfernen',
-  LOCATIONS_PHOTO_HINT:
-    'Zeigt wo sich der Standort an der Anlage befindet (max. 5 MB)',
+  LOCATIONS_PHOTO_HINT: 'Zeigt wo sich der Standort an der Anlage befindet (max. 5 MB)',
   LOCATIONS_SAVE: 'Speichern',
   LOCATIONS_SAVING: 'Wird gespeichert...',
   LOCATIONS_SUCCESS_CREATE: 'Standort erfolgreich erstellt',

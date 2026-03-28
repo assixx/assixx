@@ -3,11 +3,7 @@
   import { getAvatarColorClass, getInitials } from '$lib/utils';
 
   import { MESSAGES } from './constants';
-  import {
-    formatConversationTime,
-    getConversationAvatar,
-    getChatPartnerName,
-  } from './utils';
+  import { formatConversationTime, getConversationAvatar, getChatPartnerName } from './utils';
 
   import type { ChatUser, Conversation } from './types';
 
@@ -150,9 +146,9 @@
           }}
         >
           <div
-            class="avatar {getConversationAvatar(conv, currentUserId) !== null ?
-              ''
-            : getAvatarColorClass(partner?.id)}"
+            class="avatar {getConversationAvatar(conv, currentUserId) !== null ? '' : (
+              getAvatarColorClass(partner?.id)
+            )}"
           >
             {#if getConversationAvatar(conv, currentUserId)}
               <img
@@ -166,10 +162,7 @@
               </span>
             {/if}
             {#if !conv.isGroup && partner}
-              <span
-                class="avatar__status avatar__status--{partner.status ??
-                  'offline'}"
-              ></span>
+              <span class="avatar__status avatar__status--{partner.status ?? 'offline'}"></span>
             {/if}
           </div>
           <div class="conversation-info">
@@ -270,8 +263,7 @@
   }
 
   .conversation-item.active {
-    box-shadow: 0 2px 10px
-      color-mix(in oklch, var(--color-primary) 20%, transparent);
+    box-shadow: 0 2px 10px color-mix(in oklch, var(--color-primary) 20%, transparent);
     border-color: color-mix(in oklch, var(--color-primary) 30%, transparent);
     background: color-mix(in oklch, var(--color-primary) 15%, transparent);
   }

@@ -67,9 +67,7 @@ describe('ScheduledMessageProcessorService', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockDb = createMockDb();
-    service = new ScheduledMessageProcessorService(
-      mockDb as unknown as DatabaseService,
-    );
+    service = new ScheduledMessageProcessorService(mockDb as unknown as DatabaseService);
   });
 
   // =============================================================
@@ -108,8 +106,35 @@ describe('ScheduledMessageProcessorService', () => {
           conversationId: 1,
           senderId: 5,
           recipientIds: [8, 9],
+          preview: 'Hello scheduled',
         }),
       );
+    });
+
+    it('should use empty preview for E2E messages', async () => {
+      const scheduled = makeScheduledRow({ is_e2e: true, content: null });
+      mockDb.query.mockResolvedValueOnce([scheduled]); // getDueMessages
+      mockDb.query.mockResolvedValueOnce([{ id: 200 }]); // INSERT
+      mockDb.query.mockResolvedValueOnce([]); // UPDATE conversation
+      mockDb.query.mockResolvedValueOnce([]); // UPDATE scheduled (mark sent)
+      mockDb.query.mockResolvedValueOnce([{ user_id: 8 }]); // recipients
+
+      await service.processAtMinute();
+
+      expect(mockEmitNewMessage).toHaveBeenCalledWith(10, expect.objectContaining({ preview: '' }));
+    });
+
+    it('should fallback to empty preview when content is null and not E2E', async () => {
+      const scheduled = makeScheduledRow({ content: null, is_e2e: false });
+      mockDb.query.mockResolvedValueOnce([scheduled]); // getDueMessages
+      mockDb.query.mockResolvedValueOnce([{ id: 201 }]); // INSERT
+      mockDb.query.mockResolvedValueOnce([]); // UPDATE conversation
+      mockDb.query.mockResolvedValueOnce([]); // UPDATE scheduled (mark sent)
+      mockDb.query.mockResolvedValueOnce([{ user_id: 8 }]); // recipients
+
+      await service.processAtMinute();
+
+      expect(mockEmitNewMessage).toHaveBeenCalledWith(10, expect.objectContaining({ preview: '' }));
     });
 
     it('should handle send failure gracefully (per-message catch)', async () => {

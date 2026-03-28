@@ -16,9 +16,7 @@ export { STATUS_BADGE_CLASSES, STATUS_LABELS } from '@assixx/shared/constants';
  * Dependency labels for force delete message.
  * Teams and assets use dynamic hierarchy labels.
  */
-export function createDependencyLabels(
-  labels: HierarchyLabels,
-): Record<string, string> {
+export function createDependencyLabels(labels: HierarchyLabels): Record<string, string> {
   return {
     users: 'Benutzer',
     teams: labels.team,
@@ -34,9 +32,7 @@ export function createDependencyLabels(
 }
 
 /** Default dependency labels for non-Svelte contexts */
-export const DEPENDENCY_LABELS = createDependencyLabels(
-  DEFAULT_HIERARCHY_LABELS,
-);
+export const DEPENDENCY_LABELS = createDependencyLabels(DEFAULT_HIERARCHY_LABELS);
 
 /** Static messages that don't depend on hierarchy labels */
 const STATIC_MESSAGES = {
@@ -105,6 +101,9 @@ export function createMessages(labels: HierarchyLabels) {
     STATUS_HINT: `Inaktive/Archivierte ${labels.department} werden nicht angezeigt`,
     TH_AREA: labels.area,
     TH_TEAMS: labels.team,
+    LABEL_HALLS: `${labels.hall} zuweisen`,
+    HALLS_HINT: `Strg/Cmd + Klick für Mehrfachauswahl. Ausgewählte ${labels.hall} werden zugeordnet.`,
+    TH_HALLS: labels.hall,
     FILTER_ACTIVE_TITLE: `Aktive ${labels.department}`,
     FILTER_INACTIVE_TITLE: `Inaktive ${labels.department}`,
     FILTER_ARCHIVED_TITLE: `Archivierte ${labels.department}`,
@@ -129,7 +128,11 @@ export const API_ENDPOINTS = {
   departmentForceDelete(id: number): string {
     return `/departments/${id}?force=true`;
   },
+  departmentHalls(id: number): string {
+    return `/departments/${id}/halls`;
+  },
   AREAS: '/areas',
+  HALLS: '/halls',
   USERS_ADMIN: '/users?role=admin&isActive=1&position=department_lead',
   USERS_ROOT: '/users?role=root&isActive=1&position=department_lead',
 } as const;
@@ -142,11 +145,15 @@ export const FORM_DEFAULTS: {
   description: string;
   areaId: number | null;
   departmentLeadId: number | null;
+  departmentDeputyLeadId: number | null;
+  hallIds: number[];
   isActive: FormIsActiveStatus;
 } = {
   name: '',
   description: '',
   areaId: null,
   departmentLeadId: null,
+  departmentDeputyLeadId: null,
+  hallIds: [],
   isActive: 1,
 };

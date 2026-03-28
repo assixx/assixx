@@ -83,11 +83,7 @@
 .card-title::before {
   border-radius: 2px;
 
-  background: linear-gradient(
-    180deg,
-    var(--color-primary),
-    var(--color-primary-light)
-  );
+  background: linear-gradient(180deg, var(--color-primary), var(--color-primary-light));
 
   width: 4px;
   height: 24px;
@@ -131,38 +127,22 @@
 
 /* Info card (blue accent) */
 .card--info .card__title::before {
-  background: linear-gradient(
-    180deg,
-    var(--color-info),
-    var(--color-info-hover)
-  );
+  background: linear-gradient(180deg, var(--color-info), var(--color-info-hover));
 }
 
 /* Success card (green accent) */
 .card--success .card__title::before {
-  background: linear-gradient(
-    180deg,
-    var(--color-mint),
-    var(--color-action-green)
-  );
+  background: linear-gradient(180deg, var(--color-mint), var(--color-action-green));
 }
 
 /* Warning card (orange accent) */
 .card--warning .card__title::before {
-  background: linear-gradient(
-    180deg,
-    var(--color-orange-accent),
-    var(--color-action-orange)
-  );
+  background: linear-gradient(180deg, var(--color-orange-accent), var(--color-action-orange));
 }
 
 /* Danger card (red accent) */
 .card--danger .card__title::before {
-  background: linear-gradient(
-    180deg,
-    var(--color-coral),
-    var(--color-coral-hover)
-  );
+  background: linear-gradient(180deg, var(--color-coral), var(--color-coral-hover));
 }
 
 /* ========================================

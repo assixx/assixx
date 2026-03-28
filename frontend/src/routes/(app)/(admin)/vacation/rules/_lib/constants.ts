@@ -20,11 +20,12 @@ export const MONTH_LABELS: Record<number, string> = {
 };
 
 /** Dropdown options for carry-over deadline month */
-export const MONTH_DROPDOWN_OPTIONS: { value: number; label: string }[] =
-  Object.entries(MONTH_LABELS).map(([num, name]) => ({
-    value: Number(num),
-    label: name,
-  }));
+export const MONTH_DROPDOWN_OPTIONS: { value: number; label: string }[] = Object.entries(
+  MONTH_LABELS,
+).map(([num, name]) => ({
+  value: Number(num),
+  label: name,
+}));
 
 // ─── Tab navigation ─────────────────────────────────────────────────
 

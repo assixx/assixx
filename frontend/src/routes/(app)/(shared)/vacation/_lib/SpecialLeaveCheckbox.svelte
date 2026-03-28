@@ -25,9 +25,7 @@
     <i class="fas fa-star mr-1"></i>
     Als Sonderurlaub genehmigen
   </span>
-  <span class="special-leave-checkbox__hint">
-    (Wird nicht vom Urlaubskonto abgezogen)
-  </span>
+  <span class="special-leave-checkbox__hint"> (Wird nicht vom Urlaubskonto abgezogen) </span>
 </label>
 
 <style>
@@ -39,10 +37,7 @@
     cursor: pointer;
     padding: 0.5rem;
     border-radius: var(--radius-sm, 0.25rem);
-    background: var(
-      --glass-bg,
-      color-mix(in oklch, var(--color-white) 5%, transparent)
-    );
+    background: var(--glass-bg, color-mix(in oklch, var(--color-white) 5%, transparent));
   }
 
   .special-leave-checkbox__label {

@@ -154,12 +154,8 @@
 
   :global(.rules-list__item:hover) {
     border-color: var(--color-glass-border-hover, var(--color-glass-border));
-    background: var(
-      --glass-bg-hover,
-      color-mix(in oklch, var(--color-black) 8%, transparent)
-    );
-    box-shadow: 0 2px 8px
-      color-mix(in oklch, var(--color-black) 8%, transparent);
+    background: var(--glass-bg-hover, color-mix(in oklch, var(--color-black) 8%, transparent));
+    box-shadow: 0 2px 8px color-mix(in oklch, var(--color-black) 8%, transparent);
   }
 
   :global(.rules-list__info) {
@@ -205,12 +201,8 @@
 
   :global(.blackout-card:hover) {
     border-color: var(--color-glass-border-hover, var(--color-glass-border));
-    background: var(
-      --glass-bg-hover,
-      color-mix(in oklch, var(--color-black) 8%, transparent)
-    );
-    box-shadow: 0 2px 8px
-      color-mix(in oklch, var(--color-black) 8%, transparent);
+    background: var(--glass-bg-hover, color-mix(in oklch, var(--color-black) 8%, transparent));
+    box-shadow: 0 2px 8px color-mix(in oklch, var(--color-black) 8%, transparent);
   }
 
   :global(.blackout-card__header) {

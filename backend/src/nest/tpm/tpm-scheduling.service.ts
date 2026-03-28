@@ -55,12 +55,10 @@ export class TpmSchedulingService {
     }
 
     // Monthly+ intervals: anchor to Nth weekday of target month
-    return this.intervalService.calculateIntervalDate(
-      today,
-      intervalType,
-      customDays,
-      { weekday: config.baseWeekday, nth: config.baseRepeatEvery },
-    );
+    return this.intervalService.calculateIntervalDate(today, intervalType, customDays, {
+      weekday: config.baseWeekday,
+      nth: config.baseRepeatEvery,
+    });
   }
 
   /**
@@ -75,18 +73,9 @@ export class TpmSchedulingService {
     config: PlanSchedulingConfig,
     customDays: number | null,
   ): Promise<void> {
-    const firstDate = this.calculateInitialDueDate(
-      intervalType,
-      config,
-      customDays,
-    );
+    const firstDate = this.calculateInitialDueDate(intervalType, config, customDays);
 
-    const dates = this.buildYearDates(
-      firstDate,
-      intervalType,
-      config,
-      customDays,
-    );
+    const dates = this.buildYearDates(firstDate, intervalType, config, customDays);
 
     if (dates.length > 0) {
       await this.insertScheduledDates(client, tenantId, cardId, dates);
@@ -121,9 +110,7 @@ export class TpmSchedulingService {
     );
 
     if (nextDate === null) {
-      this.logger.warn(
-        `Card ${String(cardId)}: schedule exhausted, no next date`,
-      );
+      this.logger.warn(`Card ${String(cardId)}: schedule exhausted, no next date`);
     }
 
     return nextDate;
@@ -170,12 +157,10 @@ export class TpmSchedulingService {
       );
     }
     // Monthly+ intervals: anchor to Nth weekday of target month
-    return this.intervalService.calculateIntervalDate(
-      from,
-      intervalType,
-      customDays,
-      { weekday: config.baseWeekday, nth: config.baseRepeatEvery },
-    );
+    return this.intervalService.calculateIntervalDate(from, intervalType, customDays, {
+      weekday: config.baseWeekday,
+      nth: config.baseRepeatEvery,
+    });
   }
 
   // ============================================================================
@@ -241,9 +226,7 @@ export class TpmSchedulingService {
     if (row === undefined) return null;
 
     const raw = row.scheduled_date;
-    return typeof raw === 'string' ?
-        raw.slice(0, 10)
-      : new Date(raw).toISOString().slice(0, 10);
+    return typeof raw === 'string' ? raw.slice(0, 10) : new Date(raw).toISOString().slice(0, 10);
   }
 
   /** Set a card's current_due_date directly */

@@ -123,17 +123,13 @@ export class AssetsController {
 
     // Enrich with availability data (batch query for efficiency)
     const assetIds = assets.map((m: AssetResponse) => m.id);
-    const availabilityMap =
-      await this.assetAvailabilityService.getAssetAvailabilityBatch(
-        assetIds,
-        tenantId,
-      );
+    const availabilityMap = await this.assetAvailabilityService.getAssetAvailabilityBatch(
+      assetIds,
+      tenantId,
+    );
 
     for (const asset of assets) {
-      this.assetAvailabilityService.addAvailabilityInfo(
-        asset,
-        availabilityMap.get(asset.id),
-      );
+      this.assetAvailabilityService.addAvailabilityInfo(asset, availabilityMap.get(asset.id));
     }
 
     return assets;
@@ -154,10 +150,7 @@ export class AssetsController {
     @Query() query: UpcomingMaintenanceQueryDto,
     @TenantId() tenantId: number,
   ): Promise<AssetResponse[]> {
-    return await this.assetsService.getUpcomingMaintenance(
-      tenantId,
-      query.days,
-    );
+    return await this.assetsService.getUpcomingMaintenance(tenantId, query.days);
   }
 
   @Post('maintenance')
@@ -192,13 +185,7 @@ export class AssetsController {
       }),
       ...(dto.reportUrl !== undefined && { reportUrl: dto.reportUrl }),
     };
-    return await this.assetsService.addMaintenanceRecord(
-      data,
-      tenantId,
-      user.id,
-      ip,
-      userAgent,
-    );
+    return await this.assetsService.addMaintenanceRecord(data, tenantId, user.id, ip, userAgent);
   }
 
   // ============================================
@@ -236,10 +223,8 @@ export class AssetsController {
     @Query() query: AssetAvailabilityHistoryQueryDto,
     @TenantId() tenantId: number,
   ): Promise<AssetAvailabilityHistoryResponse> {
-    const year =
-      query.year !== undefined ? Number.parseInt(query.year, 10) : undefined;
-    const month =
-      query.month !== undefined ? Number.parseInt(query.month, 10) : undefined;
+    const year = query.year !== undefined ? Number.parseInt(query.year, 10) : undefined;
+    const month = query.month !== undefined ? Number.parseInt(query.month, 10) : undefined;
     return await this.assetAvailabilityService.getAvailabilityHistoryByUuid(
       uuid,
       tenantId,
@@ -261,12 +246,7 @@ export class AssetsController {
     @CurrentUser() user: JwtPayload,
     @TenantId() tenantId: number,
   ): Promise<MessageResponse> {
-    return await this.assetAvailabilityService.updateAvailabilityEntry(
-      id,
-      dto,
-      tenantId,
-      user.id,
-    );
+    return await this.assetAvailabilityService.updateAvailabilityEntry(id, dto, tenantId, user.id);
   }
 
   /**
@@ -281,11 +261,7 @@ export class AssetsController {
     @CurrentUser() user: JwtPayload,
     @TenantId() tenantId: number,
   ): Promise<MessageResponse> {
-    return await this.assetAvailabilityService.deleteAvailabilityEntry(
-      id,
-      tenantId,
-      user.id,
-    );
+    return await this.assetAvailabilityService.deleteAvailabilityEntry(id, tenantId, user.id);
   }
 
   /**
@@ -360,12 +336,7 @@ export class AssetsController {
     @CurrentUser() user: JwtPayload,
     @TenantId() tenantId: number,
   ): Promise<AssetTeamResponse[]> {
-    return await this.assetsService.setAssetTeams(
-      id,
-      dto.teamIds,
-      tenantId,
-      user.id,
-    );
+    return await this.assetsService.setAssetTeams(id, dto.teamIds, tenantId, user.id);
   }
 
   @Post()
@@ -403,13 +374,7 @@ export class AssetsController {
         notes: dto.notes,
       }),
     } as AssetCreateRequest;
-    return await this.assetsService.createAsset(
-      data,
-      tenantId,
-      user.id,
-      ip,
-      userAgent,
-    );
+    return await this.assetsService.createAsset(data, tenantId, user.id, ip, userAgent);
   }
 
   /**
@@ -449,12 +414,7 @@ export class AssetsController {
       notes: dto.notes,
       isActive: dto.isActive,
     }) as AssetUpdateRequest;
-    return await this.assetsService.updateAssetByUuid(
-      uuid,
-      data,
-      tenantId,
-      user.id,
-    );
+    return await this.assetsService.updateAssetByUuid(uuid, data, tenantId, user.id);
   }
 
   /**
@@ -496,14 +456,7 @@ export class AssetsController {
       notes: dto.notes,
       isActive: dto.isActive,
     }) as AssetUpdateRequest;
-    return await this.assetsService.updateAsset(
-      id,
-      data,
-      tenantId,
-      user.id,
-      ip,
-      userAgent,
-    );
+    return await this.assetsService.updateAsset(id, data, tenantId, user.id, ip, userAgent);
   }
 
   /**
@@ -550,13 +503,7 @@ export class AssetsController {
     @Ip() ip: string,
     @Headers(HEADER_USER_AGENT) userAgent: string,
   ): Promise<MessageResponse> {
-    await this.assetsService.deactivateAsset(
-      id,
-      tenantId,
-      user.id,
-      ip,
-      userAgent,
-    );
+    await this.assetsService.deactivateAsset(id, tenantId, user.id, ip, userAgent);
     return { message: 'Asset deactivated successfully' };
   }
 
@@ -570,13 +517,7 @@ export class AssetsController {
     @Ip() ip: string,
     @Headers(HEADER_USER_AGENT) userAgent: string,
   ): Promise<MessageResponse> {
-    await this.assetsService.activateAsset(
-      id,
-      tenantId,
-      user.id,
-      ip,
-      userAgent,
-    );
+    await this.assetsService.activateAsset(id, tenantId, user.id, ip, userAgent);
     return { message: 'Asset activated successfully' };
   }
 }

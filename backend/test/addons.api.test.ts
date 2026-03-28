@@ -353,9 +353,7 @@ describe('Addons: Guarded endpoint returns 403 when addon disabled', () => {
   });
 
   it('should return correct error message', () => {
-    expect(body.error.message).toContain(
-      'vacation addon is not enabled for this tenant',
-    );
+    expect(body.error.message).toContain('vacation addon is not enabled for this tenant');
   });
 });
 

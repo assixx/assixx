@@ -46,18 +46,12 @@ const BaseSchema = z.object({
     .max(3650, 'Benutzerdefiniertes Intervall darf maximal 3650 Tage sein')
     .nullish(),
   weekdayOverride: WeekdaySchema.nullish(),
-  cardCategories: z
-    .array(TpmCardCategorySchema)
-    .max(1, 'Nur eine Kategorie erlaubt')
-    .optional(),
+  cardCategories: z.array(TpmCardCategorySchema).max(1, 'Nur eine Kategorie erlaubt').optional(),
   estimatedExecutionMinutes: z
     .number()
     .int()
     .min(1, 'Geschätzte Durchführungszeit muss mindestens 1 Minute sein')
-    .max(
-      10080,
-      'Geschätzte Durchführungszeit darf maximal 10.080 Min. (1 Woche) sein',
-    )
+    .max(10080, 'Geschätzte Durchführungszeit darf maximal 10.080 Min. (1 Woche) sein')
     .nullish(),
 });
 
@@ -71,8 +65,7 @@ export const UpdateCardSchema = BaseSchema.refine(
     return true;
   },
   {
-    message:
-      'customIntervalDays ist erforderlich wenn intervalType "custom" ist',
+    message: 'customIntervalDays ist erforderlich wenn intervalType "custom" ist',
     path: ['customIntervalDays'],
   },
 )
@@ -84,8 +77,7 @@ export const UpdateCardSchema = BaseSchema.refine(
         data.customIntervalDays != null
       ),
     {
-      message:
-        'customIntervalDays darf nur bei intervalType "custom" gesetzt werden',
+      message: 'customIntervalDays darf nur bei intervalType "custom" gesetzt werden',
       path: ['customIntervalDays'],
     },
   )
@@ -97,8 +89,7 @@ export const UpdateCardSchema = BaseSchema.refine(
         data.weekdayOverride != null
       ),
     {
-      message:
-        'weekdayOverride darf nur bei intervalType "weekly" gesetzt werden',
+      message: 'weekdayOverride darf nur bei intervalType "weekly" gesetzt werden',
       path: ['weekdayOverride'],
     },
   );

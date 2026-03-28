@@ -38,27 +38,18 @@ export function isCurrentPasswordError(errorMsg: string): boolean {
 }
 
 /** Validate password length */
-export function isPasswordLengthValid(
-  password: string,
-  minLength = 12,
-  maxLength = 72,
-): boolean {
+export function isPasswordLengthValid(password: string, minLength = 12, maxLength = 72): boolean {
   return password.length >= minLength && password.length <= maxLength;
 }
 
 /** Check if passwords match */
-export function doPasswordsMatch(
-  password: string,
-  confirmPassword: string,
-): boolean {
+export function doPasswordsMatch(password: string, confirmPassword: string): boolean {
   return password === confirmPassword;
 }
 
 /** Get display department name */
 export function getDisplayDepartment(departmentName?: string): string {
-  return departmentName !== undefined && departmentName !== '' ?
-      departmentName
-    : '-';
+  return departmentName !== undefined && departmentName !== '' ? departmentName : '-';
 }
 
 /** Get user initials from name */

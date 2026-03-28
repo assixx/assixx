@@ -20,6 +20,4 @@ export const UpdateIntervalColorConfigSchema = z.object({
   includeInCard: z.boolean().optional(),
 });
 
-export class UpdateIntervalColorConfigDto extends createZodDto(
-  UpdateIntervalColorConfigSchema,
-) {}
+export class UpdateIntervalColorConfigDto extends createZodDto(UpdateIntervalColorConfigSchema) {}

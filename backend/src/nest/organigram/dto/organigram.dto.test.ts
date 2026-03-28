@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
 import { UpdateHierarchyLabelsSchema } from './update-hierarchy-labels.dto.js';
-import { UpdatePositionOptionsSchema } from './update-position-options.dto.js';
 import { UpsertPositionsSchema } from './upsert-positions.dto.js';
 
 // =============================================================
@@ -56,9 +55,7 @@ describe('UpsertPositionsSchema', () => {
   });
 
   it('should reject empty positions array', () => {
-    expect(UpsertPositionsSchema.safeParse({ positions: [] }).success).toBe(
-      false,
-    );
+    expect(UpsertPositionsSchema.safeParse({ positions: [] }).success).toBe(false);
   });
 
   it('should reject more than 500 positions', () => {
@@ -255,9 +252,7 @@ describe('UpdateHierarchyLabelsSchema', () => {
   });
 
   it('should accept empty levels object (all optional)', () => {
-    expect(UpdateHierarchyLabelsSchema.safeParse({ levels: {} }).success).toBe(
-      true,
-    );
+    expect(UpdateHierarchyLabelsSchema.safeParse({ levels: {} }).success).toBe(true);
   });
 
   it('should reject missing levels key', () => {
@@ -311,118 +306,4 @@ describe('UpdateHierarchyLabelsSchema', () => {
       expect(UpdateHierarchyLabelsSchema.safeParse(data).success).toBe(true);
     },
   );
-});
-
-// =============================================================
-// UpdatePositionOptionsSchema
-// =============================================================
-
-describe('UpdatePositionOptionsSchema', () => {
-  const valid = {
-    employee: ['Produktionsmitarbeiter', 'Schichtleiter'],
-    admin: ['Bereichsleiter', 'IT-Leiter'],
-    root: ['CEO', 'CTO'],
-  };
-
-  it('should accept all three categories', () => {
-    expect(UpdatePositionOptionsSchema.safeParse(valid).success).toBe(true);
-  });
-
-  it('should accept empty object (all categories optional)', () => {
-    expect(UpdatePositionOptionsSchema.safeParse({}).success).toBe(true);
-  });
-
-  it.each(['employee', 'admin', 'root'] as const)(
-    'should accept only %s category',
-    (category: string) => {
-      const data = { [category]: ['Position A', 'Position B'] };
-
-      expect(UpdatePositionOptionsSchema.safeParse(data).success).toBe(true);
-    },
-  );
-
-  it('should accept empty arrays', () => {
-    const data = { employee: [], admin: [], root: [] };
-
-    expect(UpdatePositionOptionsSchema.safeParse(data).success).toBe(true);
-  });
-
-  it('should accept single-character position name', () => {
-    const data = { employee: ['X'] };
-
-    expect(UpdatePositionOptionsSchema.safeParse(data).success).toBe(true);
-  });
-
-  it('should accept position name with exactly 100 characters', () => {
-    const data = { admin: ['A'.repeat(100)] };
-
-    expect(UpdatePositionOptionsSchema.safeParse(data).success).toBe(true);
-  });
-
-  it('should reject position name exceeding 100 characters', () => {
-    const data = { admin: ['A'.repeat(101)] };
-
-    expect(UpdatePositionOptionsSchema.safeParse(data).success).toBe(false);
-  });
-
-  it('should reject empty string position name', () => {
-    const data = { employee: [''] };
-
-    expect(UpdatePositionOptionsSchema.safeParse(data).success).toBe(false);
-  });
-
-  it('should reject whitespace-only position name (trimmed to empty)', () => {
-    const data = { root: ['   '] };
-
-    expect(UpdatePositionOptionsSchema.safeParse(data).success).toBe(false);
-  });
-
-  it('should trim whitespace from position names', () => {
-    const data = { employee: ['  Schichtleiter  '] };
-    const result = UpdatePositionOptionsSchema.parse(data);
-
-    expect(result.employee?.[0]).toBe('Schichtleiter');
-  });
-
-  it('should accept array with exactly 50 items', () => {
-    const positions = Array.from(
-      { length: 50 },
-      (_: unknown, i: number) => `Position ${String(i)}`,
-    );
-    const data = { employee: positions };
-
-    expect(UpdatePositionOptionsSchema.safeParse(data).success).toBe(true);
-  });
-
-  it('should reject array exceeding 50 items', () => {
-    const positions = Array.from(
-      { length: 51 },
-      (_: unknown, i: number) => `Position ${String(i)}`,
-    );
-    const data = { employee: positions };
-
-    expect(UpdatePositionOptionsSchema.safeParse(data).success).toBe(false);
-  });
-
-  it('should reject non-string values in array', () => {
-    const data = { admin: [123, true] };
-
-    expect(UpdatePositionOptionsSchema.safeParse(data).success).toBe(false);
-  });
-
-  it('should accept German special characters (ä, ö, ü, ß)', () => {
-    const data = {
-      employee: ['Qualitätsprüfer', 'Bürofachkraft', 'Straßenbauer'],
-    };
-
-    expect(UpdatePositionOptionsSchema.safeParse(data).success).toBe(true);
-  });
-
-  it('should strip unknown keys', () => {
-    const data = { employee: ['Test'], unknownKey: ['Nope'] };
-    const result = UpdatePositionOptionsSchema.parse(data);
-
-    expect(result).not.toHaveProperty('unknownKey');
-    expect(result.employee).toEqual(['Test']);
-  });
 });

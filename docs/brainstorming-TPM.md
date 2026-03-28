@@ -640,8 +640,8 @@ routes/(app)/
 
 ## Referenzen
 
-- [HOW-TO-INTEGRATE-FEATURE.md](./HOW-TO-INTEGRATE-FEATURE.md) — Feature-Integration-Checkliste
-- [HOW-TO-PLAN-SAMPLE.md](./HOW-TO-PLAN-SAMPLE.md) — Masterplan-Template
+- [HOW-TO-INTEGRATE-FEATURE.md](./how-to/HOW-TO-INTEGRATE-FEATURE.md) — Feature-Integration-Checkliste
+- [HOW-TO-PLAN-SAMPLE.md](./how-to/HOW-TO-PLAN-SAMPLE.md) — Masterplan-Template
 - [FEAT_TPM_MASTERPLAN.md](./FEAT_TPM_MASTERPLAN.md) — **TPM Execution Masterplan (28 Sessions, 6 Phasen)**
 - [FEAT_VACCATION_MASTERPLAN.md](./FEAT_VACCATION_MASTERPLAN.md) — Referenz-Implementation (24 Sessions)
 - [TPM-ECOSYSTEM-CONTEXT.md](./TPM-ECOSYSTEM-CONTEXT.md) — Domänenwissen TPM, Kamishibai, Kanban

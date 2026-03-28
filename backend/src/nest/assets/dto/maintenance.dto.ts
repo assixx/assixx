@@ -13,11 +13,7 @@ const MaintenanceTypeEnum = z.enum([
   'other',
 ]);
 
-const StatusAfterEnum = z.enum([
-  'operational',
-  'needs_repair',
-  'decommissioned',
-]);
+const StatusAfterEnum = z.enum(['operational', 'needs_repair', 'decommissioned']);
 
 export const AddMaintenanceRecordSchema = z.object({
   assetId: z.number().int().positive('Asset ID is required'),
@@ -34,6 +30,4 @@ export const AddMaintenanceRecordSchema = z.object({
   reportUrl: z.url().optional(),
 });
 
-export class AddMaintenanceRecordDto extends createZodDto(
-  AddMaintenanceRecordSchema,
-) {}
+export class AddMaintenanceRecordDto extends createZodDto(AddMaintenanceRecordSchema) {}

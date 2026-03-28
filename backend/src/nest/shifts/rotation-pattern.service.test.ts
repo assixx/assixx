@@ -106,9 +106,7 @@ describe('RotationPatternService', () => {
     });
 
     it(`should map is_active = ${IS_ACTIVE.INACTIVE} to isActive=false`, async () => {
-      mockDb.query.mockResolvedValueOnce([
-        createPatternRow({ is_active: IS_ACTIVE.INACTIVE }),
-      ]);
+      mockDb.query.mockResolvedValueOnce([createPatternRow({ is_active: IS_ACTIVE.INACTIVE })]);
 
       const result = await service.getRotationPattern(1, 42);
 
@@ -140,9 +138,7 @@ describe('RotationPatternService', () => {
     it('should throw NotFoundException when no rows returned', async () => {
       mockDb.query.mockResolvedValueOnce([]);
 
-      await expect(service.getRotationPattern(999, 42)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.getRotationPattern(999, 42)).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -327,16 +323,9 @@ describe('RotationPatternService', () => {
       // UPDATE query
       mockDb.query.mockResolvedValueOnce([]);
       // getRotationPattern (re-fetch)
-      mockDb.query.mockResolvedValueOnce([
-        createPatternRow({ name: 'Updated' }),
-      ]);
+      mockDb.query.mockResolvedValueOnce([createPatternRow({ name: 'Updated' })]);
 
-      await service.updateRotationPattern(
-        1,
-        { name: 'Updated', cycleLengthWeeks: 3 },
-        42,
-        1,
-      );
+      await service.updateRotationPattern(1, { name: 'Updated', cycleLengthWeeks: 3 }, 42, 1);
 
       const updateSql = mockDb.query.mock.calls[1]?.[0] as string;
       expect(updateSql).toContain('name');
@@ -370,9 +359,7 @@ describe('RotationPatternService', () => {
     it('should throw NotFoundException for non-existent pattern', async () => {
       mockDb.query.mockResolvedValueOnce([]); // pattern not found
 
-      await expect(service.deleteRotationPattern(999, 42, 1)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.deleteRotationPattern(999, 42, 1)).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -398,9 +385,9 @@ describe('RotationPatternService', () => {
     it('should throw NotFoundException for unknown UUID', async () => {
       mockDb.query.mockResolvedValueOnce([]); // UUID not found
 
-      await expect(
-        service.getRotationPatternByUuid('unknown-uuid', 42),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.getRotationPatternByUuid('unknown-uuid', 42)).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 });

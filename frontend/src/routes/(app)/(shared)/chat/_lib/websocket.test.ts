@@ -53,9 +53,7 @@ function createMockParticipant(
   };
 }
 
-function createMockConversation(
-  overrides: Partial<Conversation> = {},
-): Conversation {
+function createMockConversation(overrides: Partial<Conversation> = {}): Conversation {
   return {
     id: 1,
     uuid: 'conv-uuid-1',
@@ -117,18 +115,15 @@ describe('buildWebSocketUrl', () => {
   });
 
   it('should build ws URL for http protocol', () => {
-    (
-      globalThis.window as { location: { protocol: string; host: string } }
-    ).location.protocol = 'http:';
+    (globalThis.window as { location: { protocol: string; host: string } }).location.protocol =
+      'http:';
     const url = buildWebSocketUrl('my-ticket');
     expect(url).toBe('ws://example.com/chat-ws?ticket=my-ticket');
   });
 
   it('should encode ticket parameter', () => {
     const url = buildWebSocketUrl('ticket with spaces&special=chars');
-    expect(url).toContain(
-      encodeURIComponent('ticket with spaces&special=chars'),
-    );
+    expect(url).toContain(encodeURIComponent('ticket with spaces&special=chars'));
   });
 });
 
@@ -485,9 +480,7 @@ describe('updateConversationWithMessage - E2E preview', () => {
     });
 
     const result = updateConversationWithMessage(convs, 1, msg, false, 1);
-    expect(result[0].lastMessage?.content).toContain(
-      'Verschlüsselte Nachricht',
-    );
+    expect(result[0].lastMessage?.content).toContain('Verschlüsselte Nachricht');
   });
 });
 
@@ -541,9 +534,7 @@ describe('buildPingMessage', () => {
 
     const msg = buildPingMessage();
     expect(msg.type).toBe(WS_MESSAGE_TYPES.PING);
-    expect((msg.data as { timestamp: string }).timestamp).toBe(
-      '2026-03-01T08:00:00.000Z',
-    );
+    expect((msg.data as { timestamp: string }).timestamp).toBe('2026-03-01T08:00:00.000Z');
 
     vi.useRealTimers();
   });
@@ -556,12 +547,8 @@ describe('buildPingMessage', () => {
 describe('calculateReconnectDelay', () => {
   it('should return base delay * attempt', () => {
     expect(calculateReconnectDelay(1)).toBe(WEBSOCKET_CONFIG.reconnectDelay);
-    expect(calculateReconnectDelay(2)).toBe(
-      WEBSOCKET_CONFIG.reconnectDelay * 2,
-    );
-    expect(calculateReconnectDelay(5)).toBe(
-      WEBSOCKET_CONFIG.reconnectDelay * 5,
-    );
+    expect(calculateReconnectDelay(2)).toBe(WEBSOCKET_CONFIG.reconnectDelay * 2);
+    expect(calculateReconnectDelay(5)).toBe(WEBSOCKET_CONFIG.reconnectDelay * 5);
   });
 });
 
@@ -574,9 +561,7 @@ describe('shouldReconnect', () => {
 
   it('should return false when attempts at or above max', () => {
     expect(shouldReconnect(WEBSOCKET_CONFIG.maxReconnectAttempts)).toBe(false);
-    expect(shouldReconnect(WEBSOCKET_CONFIG.maxReconnectAttempts + 1)).toBe(
-      false,
-    );
+    expect(shouldReconnect(WEBSOCKET_CONFIG.maxReconnectAttempts + 1)).toBe(false);
   });
 });
 
@@ -607,9 +592,7 @@ describe('isTypingStartMessage', () => {
 
   it('should return false for typing stop types', () => {
     expect(isTypingStartMessage(WS_MESSAGE_TYPES.TYPING_STOP)).toBe(false);
-    expect(isTypingStartMessage(WS_MESSAGE_TYPES.USER_STOPPED_TYPING)).toBe(
-      false,
-    );
+    expect(isTypingStartMessage(WS_MESSAGE_TYPES.USER_STOPPED_TYPING)).toBe(false);
   });
 });
 

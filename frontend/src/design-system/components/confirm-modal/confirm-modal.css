@@ -200,9 +200,7 @@ html.dark .confirm-modal--warning {
     oklch(76.73% 0.1516 55.43 / 20%),
     oklch(71.98% 0.1714 45.77 / 20%)
   );
-  color: var(
-    --color-modal-warning-text
-  ); /* orange-700 — mehr Kontrast auf hellem Bg */
+  color: var(--color-modal-warning-text); /* orange-700 — mehr Kontrast auf hellem Bg */
 }
 
 .confirm-modal--warning .confirm-modal__title {
@@ -261,9 +259,7 @@ html.dark .confirm-modal--danger {
     oklch(62.77% 0.2092 22.18 / 20%),
     oklch(55.58% 0.2019 21.59 / 20%)
   );
-  color: var(
-    --color-modal-danger-text
-  ); /* red-700 — mehr Kontrast auf hellem Bg */
+  color: var(--color-modal-danger-text); /* red-700 — mehr Kontrast auf hellem Bg */
 }
 
 .confirm-modal--danger .confirm-modal__title {
@@ -322,9 +318,7 @@ html.dark .confirm-modal--info {
     oklch(62.31% 0.1626 259.57 / 20%),
     oklch(54.61% 0.1854 264.05 / 20%)
   );
-  color: var(
-    --color-modal-info-text
-  ); /* blue-700 — mehr Kontrast auf hellem Bg */
+  color: var(--color-modal-info-text); /* blue-700 — mehr Kontrast auf hellem Bg */
 }
 
 .confirm-modal--info .confirm-modal__title {
@@ -383,9 +377,7 @@ html.dark .confirm-modal--success {
     oklch(72.27% 0.1715 149.58 / 20%),
     oklch(62.72% 0.1598 148.43 / 20%)
   );
-  color: var(
-    --color-modal-success-text
-  ); /* green-700 — mehr Kontrast auf hellem Bg */
+  color: var(--color-modal-success-text); /* green-700 — mehr Kontrast auf hellem Bg */
 }
 
 .confirm-modal--success .confirm-modal__title {
@@ -421,7 +413,7 @@ html.dark .confirm-modal--success .confirm-modal__title {
 /* ========== INPUT GROUP (for prompt modals) ========== */
 
 .confirm-modal__input-group {
-  margin: 0 0 25px;
+  margin: 15px 0 25px;
 }
 
 .confirm-modal__input {

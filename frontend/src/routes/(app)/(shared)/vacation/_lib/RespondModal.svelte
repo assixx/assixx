@@ -6,10 +6,7 @@
    */
   import { onMount } from 'svelte';
 
-  import {
-    DEFAULT_HIERARCHY_LABELS,
-    type HierarchyLabels,
-  } from '$lib/types/hierarchy-labels';
+  import { DEFAULT_HIERARCHY_LABELS, type HierarchyLabels } from '$lib/types/hierarchy-labels';
   import { showErrorAlert } from '$lib/utils';
   import { createLogger } from '$lib/utils/logger';
 
@@ -17,11 +14,7 @@
   import CapacityIndicator from './CapacityIndicator.svelte';
   import SpecialLeaveCheckbox from './SpecialLeaveCheckbox.svelte';
 
-  import type {
-    RespondPayload,
-    VacationCapacityAnalysis,
-    VacationRequest,
-  } from './types';
+  import type { RespondPayload, VacationCapacityAnalysis, VacationRequest } from './types';
 
   const log = createLogger('RespondModal');
 
@@ -33,13 +26,7 @@
     onsubmit: (payload: RespondPayload) => Promise<void>;
   }
 
-  const {
-    request,
-    action,
-    labels = DEFAULT_HIERARCHY_LABELS,
-    onclose,
-    onsubmit,
-  }: Props = $props();
+  const { request, action, labels = DEFAULT_HIERARCHY_LABELS, onclose, onsubmit }: Props = $props();
 
   let responseNote = $state('');
   let isSpecialLeave = $state(false);
@@ -75,8 +62,7 @@
 
     await onsubmit({
       action,
-      responseNote:
-        responseNote.trim() !== '' ? responseNote.trim() : undefined,
+      responseNote: responseNote.trim() !== '' ? responseNote.trim() : undefined,
       isSpecialLeave: action === 'approve' ? isSpecialLeave : undefined,
     });
   }
@@ -88,20 +74,9 @@
   role="dialog"
   aria-modal="true"
   tabindex="-1"
-  onclick={onclose}
-  onkeydown={(e) => {
-    if (e.key === 'Escape') onclose();
-  }}
 >
-  <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
   <form
     class="ds-modal"
-    onclick={(e) => {
-      e.stopPropagation();
-    }}
-    onkeydown={(e) => {
-      e.stopPropagation();
-    }}
     onsubmit={(e) => {
       e.preventDefault();
       void handleSubmit();

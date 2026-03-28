@@ -3,10 +3,7 @@
  * Labels, Options, and Configuration values
  */
 
-import {
-  DEFAULT_HIERARCHY_LABELS,
-  type HierarchyLabels,
-} from '$lib/types/hierarchy-labels';
+import { DEFAULT_HIERARCHY_LABELS, type HierarchyLabels } from '$lib/types/hierarchy-labels';
 
 import type { Priority, OrgLevel, EntryColor } from './types';
 
@@ -62,9 +59,7 @@ export const PRIORITY_OPTIONS: PriorityOption[] = [
 // ============================================================================
 
 /** Factory: org level labels from dynamic hierarchy labels */
-export function createOrgLevelLabels(
-  labels: HierarchyLabels,
-): Record<OrgLevel, string> {
+export function createOrgLevelLabels(labels: HierarchyLabels): Record<OrgLevel, string> {
   return {
     company: 'Firma',
     department: labels.department,
@@ -74,9 +69,8 @@ export function createOrgLevelLabels(
 }
 
 /** Default org level labels (backward-compatible) */
-export const ORG_LEVEL_LABELS: Record<OrgLevel, string> = createOrgLevelLabels(
-  DEFAULT_HIERARCHY_LABELS,
-);
+export const ORG_LEVEL_LABELS: Record<OrgLevel, string> =
+  createOrgLevelLabels(DEFAULT_HIERARCHY_LABELS);
 
 export const ORG_LEVEL_BADGE_CLASSES: Record<OrgLevel, string> = {
   company: 'sticky-note__badge--org-company',
@@ -128,9 +122,7 @@ export interface LevelFilterOption {
 }
 
 /** Factory: level filter options from dynamic hierarchy labels */
-export function createLevelFilterOptions(
-  labels: HierarchyLabels,
-): LevelFilterOption[] {
+export function createLevelFilterOptions(labels: HierarchyLabels): LevelFilterOption[] {
   return [
     { value: 'all', label: 'Alle', icon: 'fa-globe' },
     { value: 'company', label: 'Firma', icon: 'fa-building' },
@@ -173,8 +165,7 @@ export const MESSAGES = {
   SAVE_ERROR: 'Fehler beim Speichern',
   DELETE_ERROR: 'Fehler beim Löschen',
   MULTI_SELECT_HINT: 'Strg/Cmd + Klick für Mehrfachauswahl',
-  COMPANY_WIDE_WARNING:
-    'Wenn aktiviert, sehen ALLE Mitarbeiter der Firma diesen Eintrag',
+  COMPANY_WIDE_WARNING: 'Wenn aktiviert, sehen ALLE Mitarbeiter der Firma diesen Eintrag',
 } as const;
 
 // ============================================================================
@@ -185,10 +176,5 @@ export const FILE_UPLOAD_CONFIG = {
   MAX_FILES: 5,
   MAX_SIZE_MB: 10,
   ACCEPTED_TYPES: '.pdf,.jpg,.jpeg,.png,.gif',
-  ACCEPTED_MIME_TYPES: [
-    'application/pdf',
-    'image/jpeg',
-    'image/png',
-    'image/gif',
-  ],
+  ACCEPTED_MIME_TYPES: ['application/pdf', 'image/jpeg', 'image/png', 'image/gif'],
 } as const;

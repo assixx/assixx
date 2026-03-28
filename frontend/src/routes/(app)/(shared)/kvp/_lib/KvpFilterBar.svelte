@@ -7,10 +7,7 @@
   import { SvelteSet } from 'svelte/reactivity';
 
   import { onClickOutsideDropdown } from '$lib/actions/click-outside';
-  import {
-    DEFAULT_HIERARCHY_LABELS,
-    type HierarchyLabels,
-  } from '$lib/types/hierarchy-labels';
+  import { DEFAULT_HIERARCHY_LABELS, type HierarchyLabels } from '$lib/types/hierarchy-labels';
 
   import { createFilterOptions, STATUS_FILTER_OPTIONS } from './constants';
   import { kvpState } from './state.svelte';
@@ -24,11 +21,7 @@
     labels?: HierarchyLabels;
   }
 
-  const {
-    userOrganizations,
-    onfilterchange,
-    labels = DEFAULT_HIERARCHY_LABELS,
-  }: Props = $props();
+  const { userOrganizations, onfilterchange, labels = DEFAULT_HIERARCHY_LABELS }: Props = $props();
 
   const filterOptions = $derived(createFilterOptions(labels));
 
@@ -44,9 +37,7 @@
   let assetDisplayText = $state<string | null>(null);
 
   /** Show selected name or dynamic default */
-  const departmentDisplay = $derived(
-    departmentDisplayText ?? `Alle ${labels.department}`,
-  );
+  const departmentDisplay = $derived(departmentDisplayText ?? `Alle ${labels.department}`);
   const teamDisplay = $derived(teamDisplayText ?? `Alle ${labels.team}`);
   const assetDisplay = $derived(assetDisplayText ?? `Alle ${labels.asset}`);
 
@@ -244,10 +235,7 @@
                 data-action="select-category"
                 data-value={`${category.source}:${String(category.id)}`}
                 onclick={() => {
-                  handleCategorySelect(
-                    `${category.source}:${category.id}`,
-                    category.name,
-                  );
+                  handleCategorySelect(`${category.source}:${category.id}`, category.name);
                 }}
               >
                 {category.name}

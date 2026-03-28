@@ -50,18 +50,13 @@
     onsearch,
   }: Props = $props();
 
-  const totalPages = $derived(
-    Math.max(1, Math.ceil(totalPlans / DEFAULT_PAGE_SIZE)),
-  );
+  const totalPages = $derived(Math.max(1, Math.ceil(totalPlans / DEFAULT_PAGE_SIZE)));
 
   const filteredPlans = $derived(filterPlans(plans, statusFilter, searchQuery));
 
   /** Lookup: planUuid → intervalType → full matrix entry */
   const matrixLookup = $derived.by(() => {
-    const map = new SvelteMap<
-      string,
-      SvelteMap<IntervalType, IntervalMatrixEntry>
-    >();
+    const map = new SvelteMap<string, SvelteMap<IntervalType, IntervalMatrixEntry>>();
     for (const entry of intervalMatrix) {
       let planMap = map.get(entry.planUuid);
       if (planMap === undefined) {
@@ -93,11 +88,7 @@
     annual: 'J',
   };
 
-  function filterPlans(
-    items: TpmPlan[],
-    status: PlanStatusFilter,
-    query: string,
-  ): TpmPlan[] {
+  function filterPlans(items: TpmPlan[], status: PlanStatusFilter, query: string): TpmPlan[] {
     let result = items;
 
     if (status === 'active') {
@@ -118,10 +109,7 @@
     return result;
   }
 
-  function getMatrixEntry(
-    planUuid: string,
-    interval: IntervalType,
-  ): IntervalMatrixEntry | null {
+  function getMatrixEntry(planUuid: string, interval: IntervalType): IntervalMatrixEntry | null {
     return matrixLookup.get(planUuid)?.get(interval) ?? null;
   }
 
@@ -134,15 +122,10 @@
   }
 
   /** Build tooltip with status breakdown */
-  function getStatusTooltip(
-    entry: IntervalMatrixEntry,
-    intervalLabel: string,
-  ): string {
+  function getStatusTooltip(entry: IntervalMatrixEntry, intervalLabel: string): string {
     const parts: string[] = [];
-    if (entry.greenCount > 0)
-      parts.push(`${String(entry.greenCount)} ${CARD_STATUS_LABELS.green}`);
-    if (entry.redCount > 0)
-      parts.push(`${String(entry.redCount)} ${CARD_STATUS_LABELS.red}`);
+    if (entry.greenCount > 0) parts.push(`${String(entry.greenCount)} ${CARD_STATUS_LABELS.green}`);
+    if (entry.redCount > 0) parts.push(`${String(entry.redCount)} ${CARD_STATUS_LABELS.red}`);
     if (entry.yellowCount > 0)
       parts.push(`${String(entry.yellowCount)} ${CARD_STATUS_LABELS.yellow}`);
     if (entry.overdueCount > 0)
@@ -210,9 +193,7 @@
 
 <!-- Plan table -->
 {#if loading}
-  <div
-    class="flex items-center justify-center gap-2 p-12 text-(--color-text-muted)"
-  >
+  <div class="flex items-center justify-center gap-2 p-12 text-(--color-text-muted)">
     <i class="fas fa-spinner fa-spin"></i>
     {messages.LOADING}
   </div>
@@ -223,9 +204,7 @@
     </div>
     <h3 class="empty-state__title">{messages.EMPTY_TITLE}</h3>
     <p class="empty-state__description">
-      {statusFilter === 'all' ?
-        messages.EMPTY_DESCRIPTION
-      : messages.EMPTY_FILTER_DESC}
+      {statusFilter === 'all' ? messages.EMPTY_DESCRIPTION : messages.EMPTY_FILTER_DESC}
     </p>
   </div>
 {:else}
@@ -274,9 +253,7 @@
                 {#if entry !== null}
                   {@const worstStatus = getWorstStatus(entry)}
                   <span
-                    class="badge {CARD_STATUS_BADGE_CLASSES[
-                      worstStatus
-                    ]} badge--sm"
+                    class="badge {CARD_STATUS_BADGE_CLASSES[worstStatus]} badge--sm"
                     title={getStatusTooltip(entry, INTERVAL_LABELS[col])}
                   >
                     {entry.cardCount}

@@ -66,9 +66,7 @@ export function parseTags(tags: unknown): string[] {
     try {
       const parsed: unknown = JSON.parse(tags);
       if (Array.isArray(parsed)) {
-        return parsed.filter(
-          (t: unknown): t is string => typeof t === 'string',
-        );
+        return parsed.filter((t: unknown): t is string => typeof t === 'string');
       }
       return [];
     } catch {
@@ -83,10 +81,7 @@ export function parseTags(tags: unknown): string[] {
  * Enrich a database document row into an API response.
  * Pure transform — caller must provide isRead status.
  */
-export function enrichDocument(
-  doc: DbDocument,
-  isRead: boolean,
-): DocumentResponse {
+export function enrichDocument(doc: DbDocument, isRead: boolean): DocumentResponse {
   const tags = parseTags(doc.tags);
 
   // Get extension from original_name for storedFilename construction
@@ -234,9 +229,7 @@ export async function insertDocumentRecord(
       data.category,
       data.accessScope,
       data.ownerUserId ??
-        (data.accessScope === 'personal' || data.accessScope === 'payroll' ?
-          userId
-        : null),
+        (data.accessScope === 'personal' || data.accessScope === 'payroll' ? userId : null),
       data.targetTeamId ?? null,
       data.targetDepartmentId ?? null,
       data.description ?? null,

@@ -13,11 +13,7 @@
  * All queries via db.tenantTransaction() (ADR-019).
  */
 import { IS_ACTIVE } from '@assixx/shared/constants';
-import {
-  BadRequestException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import type { PoolClient } from 'pg';
 
 import { DatabaseService } from '../database/database.service.js';
@@ -34,7 +30,7 @@ interface UserTeamInfoRow {
   team_id: number;
   team_name: string;
   team_lead_id: number | null;
-  deputy_lead_id: number | null;
+  team_deputy_lead_id: number | null;
   department_id: number | null;
 }
 
@@ -49,25 +45,28 @@ export class VacationApproverService {
 
   /** Determine the approver for a vacation request. */
   async getApprover(tenantId: number, userId: number): Promise<ApproverResult> {
-    return await this.db.tenantTransaction(
-      async (client: PoolClient): Promise<ApproverResult> => {
-        if (await this.isUserAreaLead(client, tenantId, userId)) {
-          return { approverId: null, autoApproved: true };
-        }
-        const user = await this.getUserRole(client, tenantId, userId);
-        if (user.role === 'root')
-          return { approverId: null, autoApproved: true };
-        if (user.role === 'admin') {
-          return await this.resolveAreaLeadOrAutoApprove(client, userId);
-        }
-        return await this.getApproverForEmployee(client, tenantId, userId);
-      },
-    );
+    return await this.db.tenantTransaction(async (client: PoolClient): Promise<ApproverResult> => {
+      if (await this.isUserAreaLead(client, tenantId, userId)) {
+        return { approverId: null, autoApproved: true };
+      }
+      const user = await this.getUserRole(client, tenantId, userId);
+      if (user.role === 'root') return { approverId: null, autoApproved: true };
+      if (user.role === 'admin') {
+        return await this.resolveAreaLeadOrAutoApprove(client, userId);
+      }
+      return await this.getApproverForEmployee(client, tenantId, userId);
+    });
   }
 
   // ==========================================================================
   // Private — Approver determination
   // ==========================================================================
+
+  /** When requester is lead or deputy, the other one approves — else escalate */
+  private resolveCounterpartOrEscalate(counterpartId: number | null): ApproverResult | null {
+    if (counterpartId !== null) return { approverId: counterpartId, autoApproved: false };
+    return null;
+  }
 
   private async getApproverForEmployee(
     client: PoolClient,
@@ -75,40 +74,70 @@ export class VacationApproverService {
     userId: number,
   ): Promise<ApproverResult> {
     const teamInfo = await this.getUserTeamInfo(client, tenantId, userId);
-    if (teamInfo.team_lead_id === null) {
-      throw new BadRequestException(
-        'Team has no lead assigned. Contact your administrator.',
+    const leadId = teamInfo.team_lead_id;
+    const deputyId = teamInfo.team_deputy_lead_id;
+
+    if (leadId === null && deputyId === null) {
+      throw new BadRequestException('Team has no lead assigned. Contact your administrator.');
+    }
+
+    // Requester IS lead or deputy → counterpart approves, else escalate
+    if (leadId === userId) {
+      return (
+        this.resolveCounterpartOrEscalate(deputyId) ??
+        (await this.resolveAreaLeadOrAutoApprove(client, userId))
       );
     }
-    if (teamInfo.team_lead_id === userId) {
-      return await this.resolveAreaLeadOrAutoApprove(client, userId);
+    if (deputyId === userId) {
+      return (
+        this.resolveCounterpartOrEscalate(leadId) ??
+        (await this.resolveAreaLeadOrAutoApprove(client, userId))
+      );
     }
-    if (!(await this.isUserAbsent(client, teamInfo.team_lead_id))) {
-      return { approverId: teamInfo.team_lead_id, autoApproved: false };
+
+    // Regular employee → first available (lead preferred)
+    return await this.resolveFirstAvailable(client, userId, leadId, deputyId);
+  }
+
+  /** Try lead, then deputy — escalate if both absent */
+  private async resolveFirstAvailable(
+    client: PoolClient,
+    userId: number,
+    leadId: number | null,
+    deputyId: number | null,
+  ): Promise<ApproverResult> {
+    if (leadId !== null && !(await this.isUserAbsent(client, leadId))) {
+      return { approverId: leadId, autoApproved: false };
     }
-    if (
-      teamInfo.deputy_lead_id !== null &&
-      teamInfo.deputy_lead_id !== userId
-    ) {
-      return { approverId: teamInfo.deputy_lead_id, autoApproved: false };
+    if (deputyId !== null && !(await this.isUserAbsent(client, deputyId))) {
+      return { approverId: deputyId, autoApproved: false };
     }
-    return { approverId: teamInfo.team_lead_id, autoApproved: false };
+    return await this.resolveAreaLeadOrAutoApprove(client, userId);
   }
 
   private async resolveAreaLeadOrAutoApprove(
     client: PoolClient,
     userId: number,
   ): Promise<ApproverResult> {
-    const result = await client.query<AreaLeadRow>(
-      `SELECT a.area_lead_id FROM areas a
+    const result = await client.query<AreaLeadRow & { area_deputy_lead_id: number | null }>(
+      `SELECT a.area_lead_id, a.area_deputy_lead_id FROM areas a
        JOIN departments d ON a.id = d.area_id
        JOIN user_departments ud ON d.id = ud.department_id
        WHERE ud.user_id = $1 AND ud.is_primary = true`,
       [userId],
     );
-    const areaLeadId = result.rows[0]?.area_lead_id;
-    if (areaLeadId !== undefined && areaLeadId !== null) {
+    const row = result.rows[0];
+    const areaLeadId = row?.area_lead_id;
+    if (areaLeadId !== undefined && areaLeadId !== null && areaLeadId !== userId) {
       return { approverId: areaLeadId, autoApproved: false };
+    }
+    const areaDeputyLeadId = row?.area_deputy_lead_id;
+    if (
+      areaDeputyLeadId !== undefined &&
+      areaDeputyLeadId !== null &&
+      areaDeputyLeadId !== userId
+    ) {
+      return { approverId: areaDeputyLeadId, autoApproved: false };
     }
     return { approverId: null, autoApproved: true };
   }
@@ -125,10 +154,7 @@ export class VacationApproverService {
     return result.rows[0]?.found === true;
   }
 
-  private async isUserAbsent(
-    client: PoolClient,
-    userId: number,
-  ): Promise<boolean> {
+  private async isUserAbsent(client: PoolClient, userId: number): Promise<boolean> {
     const result = await client.query<{ found: boolean }>(
       `SELECT EXISTS (
         SELECT 1 FROM user_availability
@@ -151,7 +177,7 @@ export class VacationApproverService {
   ): Promise<UserTeamInfoRow> {
     const result = await client.query<UserTeamInfoRow>(
       `SELECT t.id AS team_id, t.name AS team_name,
-              t.team_lead_id, t.deputy_lead_id, t.department_id
+              t.team_lead_id, t.team_deputy_lead_id, t.department_id
        FROM teams t JOIN user_teams ut ON t.id = ut.team_id
        WHERE ut.user_id = $1 AND t.tenant_id = $2 AND t.is_active = ${IS_ACTIVE.ACTIVE}`,
       [userId, tenantId],
@@ -175,8 +201,7 @@ export class VacationApproverService {
       [userId, tenantId],
     );
     const row = result.rows[0];
-    if (row === undefined)
-      throw new NotFoundException(`User ${String(userId)} not found`);
+    if (row === undefined) throw new NotFoundException(`User ${String(userId)} not found`);
     return row;
   }
 }

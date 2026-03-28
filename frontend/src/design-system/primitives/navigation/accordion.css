@@ -191,8 +191,7 @@
 }
 
 .accordion--bordered .accordion__item--active {
-  box-shadow: 0 0 0 3px
-    color-mix(in oklch, var(--color-primary) 10%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in oklch, var(--color-primary) 10%, transparent);
   border-color: var(--color-primary);
 }
 

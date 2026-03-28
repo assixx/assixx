@@ -11,10 +11,7 @@
 
   import PermissionDenied from '$lib/components/PermissionDenied.svelte';
   import { notificationStore } from '$lib/stores/notification.store.svelte';
-  import {
-    DEFAULT_HIERARCHY_LABELS,
-    type HierarchyLabels,
-  } from '$lib/types/hierarchy-labels';
+  import { DEFAULT_HIERARCHY_LABELS, type HierarchyLabels } from '$lib/types/hierarchy-labels';
   import {
     sanitizeWithLineBreaks,
     showConfirm,
@@ -61,13 +58,12 @@
   const { data }: { data: PageData } = $props();
 
   // Permission check
-  const permissionDenied = $derived<boolean>(data.permissionDenied);
+  const permissionDenied = $derived(data.permissionDenied);
 
   // Hierarchy labels from layout (SSR)
   const labels = $derived(
-    ((data as Record<string, unknown>).hierarchyLabels as
-      | HierarchyLabels
-      | undefined) ?? DEFAULT_HIERARCHY_LABELS,
+    ((data as Record<string, unknown>).hierarchyLabels as HierarchyLabels | undefined) ??
+      DEFAULT_HIERARCHY_LABELS,
   );
 
   // Derived from SSR data
@@ -97,9 +93,7 @@
   });
 
   const isAdmin = $derived.by(
-    () =>
-      currentUser !== null &&
-      (currentUser.role === 'admin' || currentUser.role === 'root'),
+    () => currentUser !== null && (currentUser.role === 'admin' || currentUser.role === 'root'),
   );
   const isConfirmed = $derived(entry?.isConfirmed === true);
   /** Entry is archived (is_active = 3) - hide edit/delete/archive actions */
@@ -173,9 +167,7 @@
   }
 
   async function archiveEntry(): Promise<void> {
-    const confirmed = await showConfirm(
-      'Möchten Sie diesen Eintrag wirklich archivieren?',
-    );
+    const confirmed = await showConfirm('Möchten Sie diesen Eintrag wirklich archivieren?');
     if (!confirmed) return;
     const success = await archiveApi(uuid);
     if (success) {
@@ -187,9 +179,7 @@
   }
 
   async function restoreEntry(): Promise<void> {
-    const confirmed = await showConfirm(
-      'Möchten Sie diesen Eintrag wiederherstellen?',
-    );
+    const confirmed = await showConfirm('Möchten Sie diesen Eintrag wiederherstellen?');
     if (!confirmed) return;
     const success = await unarchiveApi(uuid);
     if (success) {
@@ -241,14 +231,12 @@
 
   function handlePreviewPrev(): void {
     if (previewIndex === null || attachments.length <= 1) return;
-    previewIndex =
-      previewIndex === 0 ? attachments.length - 1 : previewIndex - 1;
+    previewIndex = previewIndex === 0 ? attachments.length - 1 : previewIndex - 1;
   }
 
   function handlePreviewNext(): void {
     if (previewIndex === null || attachments.length <= 1) return;
-    previewIndex =
-      previewIndex === attachments.length - 1 ? 0 : previewIndex + 1;
+    previewIndex = previewIndex === attachments.length - 1 ? 0 : previewIndex + 1;
   }
 
   function cancelDelete(): void {
@@ -264,11 +252,7 @@
   // =============================================================================
 
   function handleKeydown(e: KeyboardEvent): void {
-    if (e.key === 'Escape') {
-      if (showDeleteModal) cancelDelete();
-      else if (showEditModal) showEditModal = false;
-      else if (showPreviewModal) closePreview();
-    } else if (showPreviewModal) {
+    if (showPreviewModal) {
       if (e.key === 'ArrowLeft') handlePreviewPrev();
       else if (e.key === 'ArrowRight') handlePreviewNext();
     }
@@ -315,12 +299,8 @@
               {#if entry.expiresAt}
                 <span
                   class="detail-meta__expires"
-                  class:detail-meta__expires--expired={isExpired(
-                    entry.expiresAt,
-                  )}
-                  title={isExpired(entry.expiresAt) ? 'Abgelaufen' : (
-                    'Gültig bis'
-                  )}
+                  class:detail-meta__expires--expired={isExpired(entry.expiresAt)}
+                  title={isExpired(entry.expiresAt) ? 'Abgelaufen' : 'Gültig bis'}
                 >
                   <i class="fas fa-clock"></i>
                   {formatDate(entry.expiresAt)}
@@ -351,8 +331,7 @@
               <div class="data-list__item">
                 <span class="data-list__label">Tags</span>
                 <span class="data-list__value">
-                  {#each entry.tags as tag (tag)}<span
-                      class="badge badge--tag mr-1">{tag}</span
+                  {#each entry.tags as tag (tag)}<span class="badge badge--tag mr-1">{tag}</span
                     >{/each}
                 </span>
               </div>
@@ -399,8 +378,8 @@
                       <i class="fas fa-image"></i>
                     </div>
                   {/if}
-                  {#if index === 0 && photos.length > 1}<span
-                      class="photo-count">{photos.length} Fotos</span
+                  {#if index === 0 && photos.length > 1}<span class="photo-count"
+                      >{photos.length} Fotos</span
                     >{/if}
                 </div>
               {/each}
@@ -440,8 +419,9 @@
                 onclick={unconfirmEntry}
                 disabled={confirming}
               >
-                {#if confirming}<span class="spinner-ring spinner-ring--sm mr-2"
-                  ></span>{:else}<i class="fas fa-undo mr-2"></i>{/if}
+                {#if confirming}<span class="spinner-ring spinner-ring--sm mr-2"></span>{:else}<i
+                    class="fas fa-undo mr-2"
+                  ></i>{/if}
                 Als ungelesen markieren
               </button>
             {:else}
@@ -451,8 +431,9 @@
                 onclick={confirmEntry}
                 disabled={confirming}
               >
-                {#if confirming}<span class="spinner-ring spinner-ring--sm mr-2"
-                  ></span>{:else}<i class="fas fa-check mr-2"></i>{/if}
+                {#if confirming}<span class="spinner-ring spinner-ring--sm mr-2"></span>{:else}<i
+                    class="fas fa-check mr-2"
+                  ></i>{/if}
                 Als gelesen markieren
               </button>
             {/if}
@@ -500,8 +481,7 @@
                 <button
                   type="button"
                   class="btn btn-light"
-                  onclick={openEditModal}
-                  ><i class="fas fa-edit mr-2"></i>Bearbeiten</button
+                  onclick={openEditModal}><i class="fas fa-edit mr-2"></i>Bearbeiten</button
                 >
                 <button
                   type="button"
@@ -514,8 +494,7 @@
                 <button
                   type="button"
                   class="btn btn-light"
-                  onclick={archiveEntry}
-                  ><i class="fas fa-archive mr-2"></i>Archivieren</button
+                  onclick={archiveEntry}><i class="fas fa-archive mr-2"></i>Archivieren</button
                 >
               {/if}
             </div>
@@ -523,11 +502,8 @@
         {:else if isArchived}
           <div class="sidebar-card card">
             <div class="p-4 text-center">
-              <i class="fas fa-archive mb-2 text-3xl text-(--color-warning)"
-              ></i>
-              <p class="mb-4 text-(--color-text-secondary)">
-                Dieser Eintrag ist archiviert
-              </p>
+              <i class="fas fa-archive mb-2 text-3xl text-(--color-warning)"></i>
+              <p class="mb-4 text-(--color-text-secondary)">Dieser Eintrag ist archiviert</p>
               <button
                 type="button"
                 class="btn btn-light"

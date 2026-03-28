@@ -29,10 +29,7 @@ function isNonNullObject(value: unknown): value is Record<string, unknown> {
 /**
  * Attempts to extract array from object by key, or from 'data' property
  */
-function extractArrayFromObject(
-  obj: Record<string, unknown>,
-  key?: string,
-): unknown[] | null {
+function extractArrayFromObject(obj: Record<string, unknown>, key?: string): unknown[] | null {
   // { [key]: T[] } - e.g. { admins: Admin[] }
   if (key !== undefined) {
     const keyValue = obj[key];
@@ -91,9 +88,7 @@ export async function loadAdmins(): Promise<Admin[]> {
   // Load permissions for each admin
   for (const admin of loadedAdmins) {
     try {
-      const permsData: AdminPermissions = await apiClient.get(
-        `/admin-permissions/${admin.id}`,
-      );
+      const permsData: AdminPermissions = await apiClient.get(`/admin-permissions/${admin.id}`);
       admin.areas = permsData.areas ?? [];
       admin.departments = permsData.departments ?? [];
       admin.hasFullAccess = permsData.hasFullAccess ?? false;
@@ -130,29 +125,21 @@ export async function loadDepartments(): Promise<Department[]> {
 /**
  * Create a new admin
  */
-export async function createAdmin(
-  data: AdminFormData,
-): Promise<AdminApiResponse> {
+export async function createAdmin(data: AdminFormData): Promise<AdminApiResponse> {
   return await apiClient.post('/root/admins', data);
 }
 
 /**
  * Update an existing admin
  */
-export async function updateAdmin(
-  adminId: number,
-  data: AdminFormData,
-): Promise<AdminApiResponse> {
+export async function updateAdmin(adminId: number, data: AdminFormData): Promise<AdminApiResponse> {
   return await apiClient.put(`/root/admins/${adminId}`, data);
 }
 
 /**
  * Set full access permission for an admin
  */
-export async function setFullAccess(
-  adminId: number,
-  hasFullAccess: boolean,
-): Promise<void> {
+export async function setFullAccess(adminId: number, hasFullAccess: boolean): Promise<void> {
   await apiClient.patch(`/admin-permissions/${adminId}/full-access`, {
     hasFullAccess,
   });
@@ -161,10 +148,7 @@ export async function setFullAccess(
 /**
  * Update area permissions for an admin
  */
-export async function updateAreaPermissions(
-  adminId: number,
-  areaIds: number[],
-): Promise<void> {
+export async function updateAreaPermissions(adminId: number, areaIds: number[]): Promise<void> {
   await apiClient.post(`/admin-permissions/${adminId}/areas`, {
     areaIds,
     permissions: { canRead: true, canWrite: false, canDelete: false },
@@ -192,10 +176,7 @@ export interface SaveAdminResult {
 }
 
 /** Apply permission settings for an admin */
-async function applyPermissions(
-  adminId: number,
-  data: AdminFormData,
-): Promise<void> {
+async function applyPermissions(adminId: number, data: AdminFormData): Promise<void> {
   await setFullAccess(adminId, data.hasFullAccess);
 
   if (!data.hasFullAccess) {
@@ -205,12 +186,8 @@ async function applyPermissions(
 }
 
 /** Extract id + uuid from API response */
-function extractAdminResult(
-  response: AdminApiResponse,
-  editId: number | null,
-): SaveAdminResult {
-  const id =
-    editId ?? response.adminId ?? response.id ?? response.data?.id ?? null;
+function extractAdminResult(response: AdminApiResponse, editId: number | null): SaveAdminResult {
+  const id = editId ?? response.adminId ?? response.id ?? response.data?.id ?? null;
   const uuid = response.uuid ?? response.data?.uuid ?? null;
   return { id, uuid };
 }
@@ -222,8 +199,7 @@ export async function saveAdminWithPermissions(
   data: AdminFormData,
   editId: number | null,
 ): Promise<SaveAdminResult> {
-  const response =
-    editId !== null ? await updateAdmin(editId, data) : await createAdmin(data);
+  const response = editId !== null ? await updateAdmin(editId, data) : await createAdmin(data);
 
   const result = extractAdminResult(response, editId);
 

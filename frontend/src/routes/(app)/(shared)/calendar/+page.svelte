@@ -14,10 +14,7 @@
 
   import PermissionDenied from '$lib/components/PermissionDenied.svelte';
   import { notificationStore } from '$lib/stores/notification.store.svelte';
-  import {
-    DEFAULT_HIERARCHY_LABELS,
-    type HierarchyLabels,
-  } from '$lib/types/hierarchy-labels';
+  import { DEFAULT_HIERARCHY_LABELS, type HierarchyLabels } from '$lib/types/hierarchy-labels';
   import { showSuccessAlert, showErrorAlert } from '$lib/utils';
   import { createLogger } from '$lib/utils/logger';
 
@@ -54,9 +51,8 @@
 
   // Hierarchy labels from layout (SSR)
   const labels = $derived(
-    ((data as Record<string, unknown>).hierarchyLabels as
-      | HierarchyLabels
-      | undefined) ?? DEFAULT_HIERARCHY_LABELS,
+    ((data as Record<string, unknown>).hierarchyLabels as HierarchyLabels | undefined) ??
+      DEFAULT_HIERARCHY_LABELS,
   );
   const filterOptions = $derived(createFilterOptions(labels));
 
@@ -67,7 +63,7 @@
   const areas = $derived(data.areas);
   const users = $derived(data.users);
   const currentUser = $derived(data.currentUser);
-  const permissionDenied = $derived<boolean>(data.permissionDenied);
+  const permissionDenied = $derived(data.permissionDenied);
 
   // ==========================================================================
   // UI STATE (local only)
@@ -75,9 +71,7 @@
 
   let isFullscreen = $state(false);
   let showWorkOrders = $state(
-    browser ?
-      localStorage.getItem('showWorkOrdersInCalendar') === 'true'
-    : false,
+    browser ? localStorage.getItem('showWorkOrdersInCalendar') === 'true' : false,
   );
 
   function toggleWorkOrders(): boolean {
@@ -233,16 +227,10 @@
     try {
       // Fetch shifts + vacations in parallel (for DOM rendering later)
       if (shiftIndicators.showShifts) {
-        void shiftIndicators.fetchAndRenderShifts(
-          fetchInfo.startStr,
-          fetchInfo.endStr,
-        );
+        void shiftIndicators.fetchAndRenderShifts(fetchInfo.startStr, fetchInfo.endStr);
       }
       if (vacationIndicators.showVacations) {
-        void vacationIndicators.fetchAndRenderVacations(
-          fetchInfo.startStr,
-          fetchInfo.endStr,
-        );
+        void vacationIndicators.fetchAndRenderVacations(fetchInfo.startStr, fetchInfo.endStr);
       }
 
       // Fetch calendar events + work orders + TPM assignments in parallel
@@ -257,10 +245,7 @@
           api.loadWorkOrdersForCalendar(fetchInfo.startStr, fetchInfo.endStr)
         : Promise.resolve([]),
         showTpmAssignments ?
-          api.loadTpmAssignmentsForCalendar(
-            fetchInfo.startStr,
-            fetchInfo.endStr,
-          )
+          api.loadTpmAssignmentsForCalendar(fetchInfo.startStr, fetchInfo.endStr)
         : Promise.resolve([]),
       ]);
 
@@ -271,10 +256,7 @@
     }
   }
 
-  function handleCalendarEventClick(info: {
-    event: { id: string };
-    jsEvent: MouseEvent;
-  }): void {
+  function handleCalendarEventClick(info: { event: { id: string }; jsEvent: MouseEvent }): void {
     info.jsEvent.preventDefault();
 
     // Work order events: navigate to detail page
@@ -303,11 +285,7 @@
     handleDateClick(info.date, info.allDay);
   }
 
-  function handleCalendarSelect(info: {
-    start: Date;
-    end: Date;
-    allDay: boolean;
-  }) {
+  function handleCalendarSelect(info: { start: Date; end: Date; allDay: boolean }) {
     if (isFullscreen) return;
     handleDateSelect(info.start, info.end, info.allDay);
   }
@@ -338,11 +316,7 @@
   // EVENT FORM
   // ==========================================================================
 
-  function openEventForm(
-    startDate?: Date,
-    endDate?: Date,
-    allDay: boolean = false,
-  ): void {
+  function openEventForm(startDate?: Date, endDate?: Date, allDay: boolean = false): void {
     log.debug({ startDate, endDate, allDay }, 'Opening event form');
     const now = startDate ?? new Date();
     const later = endDate ?? new Date(now.getTime() + 60 * 60 * 1000);

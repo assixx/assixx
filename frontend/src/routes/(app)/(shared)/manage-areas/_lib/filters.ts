@@ -44,11 +44,7 @@ export function filterBySearch(areas: Area[], query: string): Area[] {
 }
 
 /** Apply all filters to areas */
-export function applyAllFilters(
-  areas: Area[],
-  status: StatusFilter,
-  searchQuery: string,
-): Area[] {
+export function applyAllFilters(areas: Area[], status: StatusFilter, searchQuery: string): Area[] {
   let result = filterByStatus(areas, status);
   result = filterBySearch(result, searchQuery);
   return result;

@@ -11,12 +11,9 @@ import { PaginationSchema } from '../../../schemas/common.schema.js';
 /**
  * Survey status enum
  */
-const SurveyStatusSchema = z.enum(
-  ['draft', 'active', 'paused', 'completed', 'archived'],
-  {
-    message: 'Invalid status',
-  },
-);
+const SurveyStatusSchema = z.enum(['draft', 'active', 'paused', 'completed', 'archived'], {
+  message: 'Invalid status',
+});
 
 /**
  * List surveys query parameters schema

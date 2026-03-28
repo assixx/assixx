@@ -77,14 +77,10 @@ export class VacationQueriesService {
   constructor(private readonly db: DatabaseService) {}
 
   /** Get a single vacation request by ID with resolved names. */
-  async getRequestById(
-    tenantId: number,
-    requestId: string,
-  ): Promise<VacationRequest> {
-    return await this.db.tenantTransaction(
-      async (client: PoolClient): Promise<VacationRequest> => {
-        const result = await client.query<RequestWithNamesRow>(
-          `SELECT vr.*,
+  async getRequestById(tenantId: number, requestId: string): Promise<VacationRequest> {
+    return await this.db.tenantTransaction(async (client: PoolClient): Promise<VacationRequest> => {
+      const result = await client.query<RequestWithNamesRow>(
+        `SELECT vr.*,
                   CONCAT(req.first_name, ' ', req.last_name) AS requester_name,
                   CONCAT(app.first_name, ' ', app.last_name) AS approver_name,
                   CONCAT(sub.first_name, ' ', sub.last_name) AS substitute_name
@@ -93,15 +89,14 @@ export class VacationQueriesService {
            LEFT JOIN users app ON vr.approver_id = app.id
            LEFT JOIN users sub ON vr.substitute_id = sub.id
            WHERE vr.id = $1 AND vr.tenant_id = $2 AND vr.is_active = ${IS_ACTIVE.ACTIVE}`,
-          [requestId, tenantId],
-        );
-        const row = result.rows[0];
-        if (row === undefined) {
-          throw new NotFoundException(`Request ${requestId} not found`);
-        }
-        return this.mapRowToRequestWithNames(row);
-      },
-    );
+        [requestId, tenantId],
+      );
+      const row = result.rows[0];
+      if (row === undefined) {
+        throw new NotFoundException(`Request ${requestId} not found`);
+      }
+      return this.mapRowToRequestWithNames(row);
+    });
   }
 
   /** Get own vacation requests (paginated). */
@@ -114,13 +109,7 @@ export class VacationQueriesService {
       const { whereClauses, params } = this.buildFilters(tenantId, query);
       whereClauses.push(`vr.requester_id = $${params.length + 1}`);
       params.push(userId);
-      return await this.paginatedQuery(
-        client,
-        whereClauses,
-        params,
-        query.page,
-        query.limit,
-      );
+      return await this.paginatedQuery(client, whereClauses, params, query.page, query.limit);
     });
   }
 
@@ -134,21 +123,12 @@ export class VacationQueriesService {
       const { whereClauses, params } = this.buildFilters(tenantId, query);
       whereClauses.push(`vr.approver_id = $${params.length + 1}`);
       params.push(approverId);
-      return await this.paginatedQuery(
-        client,
-        whereClauses,
-        params,
-        query.page,
-        query.limit,
-      );
+      return await this.paginatedQuery(client, whereClauses, params, query.page, query.limit);
     });
   }
 
   /** Get status history log for a request. */
-  async getStatusLog(
-    tenantId: number,
-    requestId: string,
-  ): Promise<VacationStatusLogEntry[]> {
+  async getStatusLog(tenantId: number, requestId: string): Promise<VacationStatusLogEntry[]> {
     return await this.db.tenantTransaction(
       async (client: PoolClient): Promise<VacationStatusLogEntry[]> => {
         const result = await client.query<StatusLogRow>(
@@ -161,9 +141,7 @@ export class VacationQueriesService {
            ORDER BY sl.created_at ASC`,
           [requestId, tenantId],
         );
-        return result.rows.map((row: StatusLogRow) =>
-          this.mapStatusLogRow(row),
-        );
+        return result.rows.map((row: StatusLogRow) => this.mapStatusLogRow(row));
       },
     );
   }
@@ -217,10 +195,8 @@ export class VacationQueriesService {
           (row: CalVacRow): CalendarVacationEntry => ({
             startDate: this.fmtDate(row.start_date),
             endDate: this.fmtDate(row.end_date),
-            vacationType:
-              row.vacation_type as CalendarVacationEntry['vacationType'],
-            halfDayStart:
-              row.half_day_start as CalendarVacationEntry['halfDayStart'],
+            vacationType: row.vacation_type as CalendarVacationEntry['vacationType'],
+            halfDayStart: row.half_day_start as CalendarVacationEntry['halfDayStart'],
             halfDayEnd: row.half_day_end as CalendarVacationEntry['halfDayEnd'],
           }),
         );
@@ -233,14 +209,10 @@ export class VacationQueriesService {
    * Used by the frontend to show "Neu" badges on request cards.
    * Queries: notifications WHERE type='vacation' + LEFT JOIN notification_read_status.
    */
-  async getUnreadNotificationRequestIds(
-    tenantId: number,
-    userId: number,
-  ): Promise<string[]> {
-    return await this.db.tenantTransaction(
-      async (client: PoolClient): Promise<string[]> => {
-        const result = await client.query<{ request_id: string }>(
-          `SELECT DISTINCT n.metadata->>'requestId' AS request_id
+  async getUnreadNotificationRequestIds(tenantId: number, userId: number): Promise<string[]> {
+    return await this.db.tenantTransaction(async (client: PoolClient): Promise<string[]> => {
+      const result = await client.query<{ request_id: string }>(
+        `SELECT DISTINCT n.metadata->>'requestId' AS request_id
            FROM notifications n
            LEFT JOIN notification_read_status nrs
              ON n.id = nrs.notification_id AND nrs.user_id = $2
@@ -250,13 +222,10 @@ export class VacationQueriesService {
              AND n.recipient_id = $2
              AND nrs.id IS NULL
              AND n.metadata->>'requestId' IS NOT NULL`,
-          [tenantId, userId],
-        );
-        return result.rows.map(
-          (row: { request_id: string }): string => row.request_id,
-        );
-      },
-    );
+        [tenantId, userId],
+      );
+      return result.rows.map((row: { request_id: string }): string => row.request_id);
+    });
   }
 
   // ==========================================================================
@@ -267,15 +236,10 @@ export class VacationQueriesService {
     tenantId: number,
     query: VacationQueryDto,
   ): { whereClauses: string[]; params: unknown[] } {
-    const whereClauses: string[] = [
-      `vr.tenant_id = $1`,
-      `vr.is_active = ${IS_ACTIVE.ACTIVE}`,
-    ];
+    const whereClauses: string[] = [`vr.tenant_id = $1`, `vr.is_active = ${IS_ACTIVE.ACTIVE}`];
     const params: unknown[] = [tenantId];
     if (query.year !== undefined) {
-      whereClauses.push(
-        `EXTRACT(YEAR FROM vr.start_date) = $${params.length + 1}`,
-      );
+      whereClauses.push(`EXTRACT(YEAR FROM vr.start_date) = $${params.length + 1}`);
       params.push(query.year);
     }
     if (query.status !== undefined) {
@@ -320,17 +284,11 @@ export class VacationQueriesService {
        WHERE ${whereSQL} ORDER BY vr.created_at DESC OFFSET $${oIdx} LIMIT $${lIdx}`,
       params,
     );
-    const data = result.rows.map((row: RequestWithNamesRow) =>
-      this.mapRowToRequestWithNames(row),
-    );
+    const data = result.rows.map((row: RequestWithNamesRow) => this.mapRowToRequestWithNames(row));
     return { data, total, page, limit, totalPages };
   }
 
-  private async getTeamName(
-    client: PoolClient,
-    tenantId: number,
-    teamId: number,
-  ): Promise<string> {
+  private async getTeamName(client: PoolClient, tenantId: number, teamId: number): Promise<string> {
     const result = await client.query<{ name: string }>(
       `SELECT name FROM teams WHERE id = $1 AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}`,
       [teamId, tenantId],
@@ -342,10 +300,7 @@ export class VacationQueriesService {
     return row.name;
   }
 
-  private getMonthBounds(
-    year: number,
-    month: number,
-  ): { monthStart: string; monthEnd: string } {
+  private getMonthBounds(year: number, month: number): { monthStart: string; monthEnd: string } {
     const m = String(month).padStart(2, '0');
     const lastDay = new Date(year, month, 0).getDate();
     return {

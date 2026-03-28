@@ -16,8 +16,7 @@ const IsActiveSchema = z.coerce
   .number()
   .int()
   .refine((val: number) => [0, 1, 3, 4].includes(val), {
-    message:
-      'isActive must be 0 (inactive), 1 (active), 3 (archive), or 4 (deleted)',
+    message: 'isActive must be 0 (inactive), 1 (active), 3 (archive), or 4 (deleted)',
   });
 
 /**
@@ -37,12 +36,9 @@ const PrioritySchema = z.enum(['low', 'medium', 'high', 'urgent'], {
 /**
  * Sort field enum
  */
-const SortBySchema = z.enum(
-  ['created_at', 'updated_at', 'title', 'priority', 'expires_at'],
-  {
-    message: 'Invalid sort field',
-  },
-);
+const SortBySchema = z.enum(['created_at', 'updated_at', 'title', 'priority', 'expires_at'], {
+  message: 'Invalid sort field',
+});
 
 /**
  * Sort direction enum
@@ -57,11 +53,7 @@ const SortDirSchema = z.enum(['ASC', 'DESC'], {
 export const ListEntriesQuerySchema = PaginationSchema.extend({
   isActive: IsActiveSchema.optional(),
   filter: FilterSchema.optional(),
-  search: z
-    .string()
-    .trim()
-    .max(100, 'Search term cannot exceed 100 characters')
-    .optional(),
+  search: z.string().trim().max(100, 'Search term cannot exceed 100 characters').optional(),
   sortBy: SortBySchema.optional(),
   sortDir: SortDirSchema.optional(),
   priority: PrioritySchema.optional(),

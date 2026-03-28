@@ -21,7 +21,7 @@ export function buildRootUserPayload(
     firstName: string;
     lastName: string;
     email: string;
-    position: string;
+    positionIds: string[];
     notes: string;
     employeeNumber: string;
     isActive: FormIsActiveStatus;
@@ -33,7 +33,7 @@ export function buildRootUserPayload(
     firstName: formData.firstName,
     lastName: formData.lastName,
     email: formData.email.toLowerCase().trim(),
-    position: formData.position,
+    positionIds: formData.positionIds,
     notes: formData.notes !== '' ? formData.notes : undefined,
     isActive: formData.isActive,
   };

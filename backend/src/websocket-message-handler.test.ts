@@ -20,18 +20,14 @@ function createHandlerWithMock(): {
   mockDb: { query: ReturnType<typeof vi.fn> };
 } {
   const mockDb = { query: vi.fn() };
-  const handler = new WebSocketMessageHandler(
-    mockDb as unknown as DatabaseService,
-  );
+  const handler = new WebSocketMessageHandler(mockDb as unknown as DatabaseService);
   return { handler, mockDb };
 }
 
 const TENANT_ID = 42;
 const USER_ID = 5;
 
-function createSenderRow(
-  overrides?: Record<string, unknown>,
-): Record<string, unknown> {
+function createSenderRow(overrides?: Record<string, unknown>): Record<string, unknown> {
   return {
     id: USER_ID,
     username: 'jdoe',
@@ -68,11 +64,7 @@ describe('WebSocketMessageHandler – conversation queries', () => {
 
   describe('verifyConversationAccess', () => {
     it('should return participant user IDs', async () => {
-      mockDb.query.mockResolvedValueOnce([
-        { user_id: 5 },
-        { user_id: 10 },
-        { user_id: 15 },
-      ]);
+      mockDb.query.mockResolvedValueOnce([{ user_id: 5 }, { user_id: 10 }, { user_id: 15 }]);
 
       const result = await handler.verifyConversationAccess(1, TENANT_ID);
 
@@ -95,11 +87,7 @@ describe('WebSocketMessageHandler – conversation queries', () => {
     it('should exclude the given user', async () => {
       mockDb.query.mockResolvedValueOnce([{ user_id: 10 }, { user_id: 15 }]);
 
-      const result = await handler.getOtherParticipantIds(
-        1,
-        TENANT_ID,
-        USER_ID,
-      );
+      const result = await handler.getOtherParticipantIds(1, TENANT_ID, USER_ID);
 
       expect(result).toEqual([10, 15]);
       const [, params] = mockDb.query.mock.calls[0] as [string, unknown[]];
@@ -109,11 +97,7 @@ describe('WebSocketMessageHandler – conversation queries', () => {
     it('should return empty when user is only participant', async () => {
       mockDb.query.mockResolvedValueOnce([]);
 
-      const result = await handler.getOtherParticipantIds(
-        1,
-        TENANT_ID,
-        USER_ID,
-      );
+      const result = await handler.getOtherParticipantIds(1, TENANT_ID, USER_ID);
 
       expect(result).toEqual([]);
     });
@@ -123,10 +107,7 @@ describe('WebSocketMessageHandler – conversation queries', () => {
     it('should return distinct partner IDs', async () => {
       mockDb.query.mockResolvedValueOnce([{ user_id: 10 }, { user_id: 20 }]);
 
-      const result = await handler.getConversationPartnerIds(
-        USER_ID,
-        TENANT_ID,
-      );
+      const result = await handler.getConversationPartnerIds(USER_ID, TENANT_ID);
 
       expect(result).toEqual([10, 20]);
       const [query, params] = mockDb.query.mock.calls[0] as [string, unknown[]];
@@ -284,13 +265,7 @@ describe('WebSocketMessageHandler – processMessage', () => {
     // Q3: getSenderInfo
     mockDb.query.mockResolvedValueOnce([createSenderRow()]);
 
-    const result = await handler.processMessage(
-      USER_ID,
-      TENANT_ID,
-      1,
-      'Hello World',
-      [],
-    );
+    const result = await handler.processMessage(USER_ID, TENANT_ID, 1, 'Hello World', []);
 
     expect(result.messageId).toBe(100);
     expect(result.messageUuid).toBe('019539a0-0000-7000-8000-000000000001');
@@ -314,14 +289,7 @@ describe('WebSocketMessageHandler – processMessage', () => {
     // Q2: getSenderInfo
     mockDb.query.mockResolvedValueOnce([createSenderRow()]);
 
-    const result = await handler.processMessage(
-      USER_ID,
-      TENANT_ID,
-      1,
-      null,
-      [],
-      e2e,
-    );
+    const result = await handler.processMessage(USER_ID, TENANT_ID, 1, null, [], e2e);
 
     expect(result.messageId).toBe(200);
     expect(result.preview).toBe('');
@@ -354,13 +322,7 @@ describe('WebSocketMessageHandler – processMessage', () => {
     // Q4: getSenderInfo
     mockDb.query.mockResolvedValueOnce([createSenderRow()]);
 
-    const result = await handler.processMessage(
-      USER_ID,
-      TENANT_ID,
-      1,
-      'See attached',
-      [50],
-    );
+    const result = await handler.processMessage(USER_ID, TENANT_ID, 1, 'See attached', [50]);
 
     expect(result.messageId).toBe(300);
     expect(result.preview).toBe('See attached');
@@ -369,9 +331,7 @@ describe('WebSocketMessageHandler – processMessage', () => {
     const attachments = messageData['attachments'] as Record<string, unknown>[];
     expect(attachments).toHaveLength(1);
     expect(attachments[0]?.['id']).toBe(50);
-    expect(attachments[0]?.['downloadUrl']).toBe(
-      '/api/v2/documents/50/download',
-    );
+    expect(attachments[0]?.['downloadUrl']).toBe('/api/v2/documents/50/download');
 
     expect(mockDb.query).toHaveBeenCalledTimes(4);
   });
@@ -381,13 +341,7 @@ describe('WebSocketMessageHandler – processMessage', () => {
     mockDb.query.mockResolvedValueOnce([{ id: 400 }]);
     mockDb.query.mockResolvedValueOnce([createSenderRow()]);
 
-    const result = await handler.processMessage(
-      USER_ID,
-      TENANT_ID,
-      1,
-      longContent,
-      [],
-    );
+    const result = await handler.processMessage(USER_ID, TENANT_ID, 1, longContent, []);
 
     expect(result.preview).toHaveLength(50);
   });
@@ -396,13 +350,7 @@ describe('WebSocketMessageHandler – processMessage', () => {
     mockDb.query.mockResolvedValueOnce([{ id: 500 }]);
     mockDb.query.mockResolvedValueOnce([createSenderRow()]);
 
-    const result = await handler.processMessage(
-      USER_ID,
-      TENANT_ID,
-      1,
-      null,
-      [],
-    );
+    const result = await handler.processMessage(USER_ID, TENANT_ID, 1, null, []);
 
     expect(result.preview).toBe('');
   });
@@ -410,22 +358,16 @@ describe('WebSocketMessageHandler – processMessage', () => {
   it('should throw when INSERT returns no row', async () => {
     mockDb.query.mockResolvedValueOnce([]);
 
-    await expect(
-      handler.processMessage(USER_ID, TENANT_ID, 1, 'text', []),
-    ).rejects.toThrow('Failed to insert message - no row returned');
+    await expect(handler.processMessage(USER_ID, TENANT_ID, 1, 'text', [])).rejects.toThrow(
+      'Failed to insert message - no row returned',
+    );
   });
 
   it('should use fallback name when sender not found', async () => {
     mockDb.query.mockResolvedValueOnce([{ id: 600 }]);
     mockDb.query.mockResolvedValueOnce([]); // no sender
 
-    const result = await handler.processMessage(
-      USER_ID,
-      TENANT_ID,
-      1,
-      'hello',
-      [],
-    );
+    const result = await handler.processMessage(USER_ID, TENANT_ID, 1, 'hello', []);
 
     const messageData = result.messageData as Record<string, unknown>;
     expect(messageData['senderName']).toBe('Unbekannter Benutzer');
@@ -434,17 +376,9 @@ describe('WebSocketMessageHandler – processMessage', () => {
 
   it('should use username when first/last name are empty', async () => {
     mockDb.query.mockResolvedValueOnce([{ id: 700 }]);
-    mockDb.query.mockResolvedValueOnce([
-      createSenderRow({ first_name: null, last_name: null }),
-    ]);
+    mockDb.query.mockResolvedValueOnce([createSenderRow({ first_name: null, last_name: null })]);
 
-    const result = await handler.processMessage(
-      USER_ID,
-      TENANT_ID,
-      1,
-      'hi',
-      [],
-    );
+    const result = await handler.processMessage(USER_ID, TENANT_ID, 1, 'hi', []);
 
     const messageData = result.messageData as Record<string, unknown>;
     expect(messageData['senderName']).toBe('jdoe');
@@ -452,17 +386,9 @@ describe('WebSocketMessageHandler – processMessage', () => {
 
   it('should use first name only when last name is null', async () => {
     mockDb.query.mockResolvedValueOnce([{ id: 800 }]);
-    mockDb.query.mockResolvedValueOnce([
-      createSenderRow({ first_name: 'Alice', last_name: null }),
-    ]);
+    mockDb.query.mockResolvedValueOnce([createSenderRow({ first_name: 'Alice', last_name: null })]);
 
-    const result = await handler.processMessage(
-      USER_ID,
-      TENANT_ID,
-      1,
-      'hi',
-      [],
-    );
+    const result = await handler.processMessage(USER_ID, TENANT_ID, 1, 'hi', []);
 
     const messageData = result.messageData as Record<string, unknown>;
     expect(messageData['senderName']).toBe('Alice');
@@ -478,13 +404,7 @@ describe('WebSocketMessageHandler – processMessage', () => {
       }),
     ]);
 
-    const result = await handler.processMessage(
-      USER_ID,
-      TENANT_ID,
-      1,
-      'hi',
-      [],
-    );
+    const result = await handler.processMessage(USER_ID, TENANT_ID, 1, 'hi', []);
 
     const messageData = result.messageData as Record<string, unknown>;
     expect(messageData['senderName']).toBe('Unbekannter Benutzer');

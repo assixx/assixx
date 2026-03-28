@@ -84,14 +84,7 @@ describe('E2eEscrowService', () => {
         rows: [SAMPLE_ROW],
       });
 
-      const result = await service.storeEscrow(
-        1,
-        42,
-        'AAAA',
-        'BBBB',
-        'CCCC',
-        SAMPLE_PARAMS,
-      );
+      const result = await service.storeEscrow(1, 42, 'AAAA', 'BBBB', 'CCCC', SAMPLE_PARAMS);
 
       expect(result.encryptedBlob).toBe('AAAA');
       expect(result.argon2Salt).toBe('BBBB');
@@ -169,10 +162,7 @@ describe('E2eEscrowService', () => {
 
       await service.getEscrow(7, 99);
 
-      const [sql, params] = mockClient.query.mock.calls[0] as [
-        string,
-        unknown[],
-      ];
+      const [sql, params] = mockClient.query.mock.calls[0] as [string, unknown[]];
       expect(sql).toContain(`is_active = ${IS_ACTIVE.ACTIVE}`);
       expect(params).toEqual([7, 99]);
     });
@@ -205,14 +195,7 @@ describe('E2eEscrowService', () => {
     it('should return null when no active escrow exists to update', async () => {
       mockClient.query.mockResolvedValueOnce({ rows: [] });
 
-      const result = await service.updateEscrow(
-        1,
-        42,
-        'AAAA',
-        'BBBB',
-        'CCCC',
-        SAMPLE_PARAMS,
-      );
+      const result = await service.updateEscrow(1, 42, 'AAAA', 'BBBB', 'CCCC', SAMPLE_PARAMS);
 
       expect(result).toBeNull();
     });
@@ -221,19 +204,9 @@ describe('E2eEscrowService', () => {
       const updatedRow = { ...SAMPLE_ROW, blob_version: 2 };
       mockClient.query.mockResolvedValueOnce({ rows: [updatedRow] });
 
-      await service.updateEscrow(
-        1,
-        42,
-        'new-blob',
-        'new-salt',
-        'new-nonce',
-        SAMPLE_PARAMS,
-      );
+      await service.updateEscrow(1, 42, 'new-blob', 'new-salt', 'new-nonce', SAMPLE_PARAMS);
 
-      const [sql, params] = mockClient.query.mock.calls[0] as [
-        string,
-        unknown[],
-      ];
+      const [sql, params] = mockClient.query.mock.calls[0] as [string, unknown[]];
       expect(sql).toContain('blob_version = blob_version + 1');
       expect(params[0]).toBe(1); // tenantId
       expect(params[1]).toBe(42); // userId

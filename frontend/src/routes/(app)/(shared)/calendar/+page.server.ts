@@ -47,27 +47,15 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
   // Parallel fetch: upcoming events + organization data
   // Note: /users only for admin/root (employees get 403)
   // apiFetchWithPermission for /calendar/dashboard to detect 403 (permission denied vs empty data)
-  const [
-    dashboardResult,
-    recentlyAddedData,
-    departmentsData,
-    teamsData,
-    areasData,
-    usersData,
-  ] = await Promise.all([
-    apiFetchWithPermission<CalendarEvent[]>(
-      '/calendar/dashboard',
-      token,
-      fetch,
-    ),
-    apiFetch<CalendarEvent[]>('/calendar/recently-added', token, fetch),
-    apiFetch<Department[]>('/departments', token, fetch),
-    apiFetch<Team[]>('/teams', token, fetch),
-    apiFetch<Area[]>('/areas', token, fetch),
-    canFetchUsers ?
-      apiFetch<User[]>('/users', token, fetch)
-    : Promise.resolve(null),
-  ]);
+  const [dashboardResult, recentlyAddedData, departmentsData, teamsData, areasData, usersData] =
+    await Promise.all([
+      apiFetchWithPermission<CalendarEvent[]>('/calendar/dashboard', token, fetch),
+      apiFetch<CalendarEvent[]>('/calendar/recently-added', token, fetch),
+      apiFetch<Department[]>('/departments', token, fetch),
+      apiFetch<Team[]>('/teams', token, fetch),
+      apiFetch<Area[]>('/areas', token, fetch),
+      canFetchUsers ? apiFetch<User[]>('/users', token, fetch) : Promise.resolve(null),
+    ]);
 
   if (dashboardResult.permissionDenied) {
     return {

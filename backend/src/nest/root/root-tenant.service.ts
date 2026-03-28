@@ -32,10 +32,9 @@ export class RootTenantService {
     this.logger.debug(`Getting tenants for tenant ${tenantId}`);
 
     // Only return user's own tenant (multi-tenant isolation)
-    const tenants = await this.db.query<DbTenantRow>(
-      'SELECT * FROM tenants WHERE id = $1',
-      [tenantId],
-    );
+    const tenants = await this.db.query<DbTenantRow>('SELECT * FROM tenants WHERE id = $1', [
+      tenantId,
+    ]);
 
     if (tenants.length === 0) {
       return [];
@@ -105,8 +104,7 @@ export class RootTenantService {
     const attachments = Number(attachmentsSize[0]?.total ?? 0);
     const logs = Number(logsSize[0]?.total ?? 0);
     const usedStorage = documents + attachments + logs;
-    const percentage =
-      totalStorage > 0 ? Math.round((usedStorage / totalStorage) * 100) : 0;
+    const percentage = totalStorage > 0 ? Math.round((usedStorage / totalStorage) * 100) : 0;
 
     return {
       used: usedStorage,

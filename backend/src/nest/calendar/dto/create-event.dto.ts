@@ -11,12 +11,9 @@ import { IdSchema } from '../../../schemas/common.schema.js';
 /**
  * Organization level enum for event visibility
  */
-const OrgLevelSchema = z.enum(
-  ['company', 'department', 'team', 'area', 'personal'],
-  {
-    message: 'Valid organization level is required',
-  },
-);
+const OrgLevelSchema = z.enum(['company', 'department', 'team', 'area', 'personal'], {
+  message: 'Valid organization level is required',
+});
 
 /**
  * Hex color validation
@@ -29,9 +26,7 @@ const HexColorSchema = z
 /**
  * Recurrence type enum
  */
-const RecurrenceSchema = z
-  .enum(['daily', 'weekly', 'monthly', 'yearly'])
-  .optional();
+const RecurrenceSchema = z.enum(['daily', 'weekly', 'monthly', 'yearly']).optional();
 
 /**
  * Recurrence end type enum

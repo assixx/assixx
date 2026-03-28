@@ -26,11 +26,7 @@ export class AddonVisitsService {
   constructor(private readonly db: DatabaseService) {}
 
   /** Mark an addon as visited (upsert: last_visited_at = NOW()) */
-  async markVisited(
-    tenantId: number,
-    userId: number,
-    addon: VisitableAddon,
-  ): Promise<void> {
+  async markVisited(tenantId: number, userId: number, addon: VisitableAddon): Promise<void> {
     this.logger.debug(`Marking ${addon} as visited for user ${userId}`);
 
     await this.db.query(
@@ -58,10 +54,7 @@ export class AddonVisitsService {
   }
 
   /** Get all addon visits for a user. */
-  async getAllVisits(
-    tenantId: number,
-    userId: number,
-  ): Promise<Map<VisitableAddon, Date>> {
+  async getAllVisits(tenantId: number, userId: number): Promise<Map<VisitableAddon, Date>> {
     const rows = await this.db.query<AddonVisitRow>(
       `SELECT addon, last_visited_at FROM addon_visits
        WHERE tenant_id = $1 AND user_id = $2`,

@@ -88,8 +88,7 @@ export class RolesService {
     employee: {
       id: 'employee',
       name: 'Employee',
-      description:
-        'Regular employee with limited access to their own data and assigned features.',
+      description: 'Regular employee with limited access to their own data and assigned features.',
       level: 10,
       permissions: [
         'profile.view.own',
@@ -159,11 +158,7 @@ export class RolesService {
 
     switch (currentUserRole) {
       case 'root':
-        return [
-          RolesService.ROLES.admin,
-          RolesService.ROLES.employee,
-          RolesService.ROLES.root,
-        ];
+        return [RolesService.ROLES.admin, RolesService.ROLES.employee, RolesService.ROLES.root];
       case 'admin':
         return [RolesService.ROLES.employee];
       case 'employee':
@@ -181,9 +176,7 @@ export class RolesService {
     tenantId: number,
     requiredRole: RoleName,
   ): Promise<RoleCheckResult> {
-    this.logger.log(
-      `Checking role for user ${userId}, required: ${requiredRole}`,
-    );
+    this.logger.log(`Checking role for user ${userId}, required: ${requiredRole}`);
 
     // SECURITY: Only check roles for ACTIVE users (is_active = 1)
     const rows = await this.db.query<UserRoleRow>(

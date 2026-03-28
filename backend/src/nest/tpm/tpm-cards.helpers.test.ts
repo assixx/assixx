@@ -12,9 +12,7 @@ import type { TpmCardJoinRow } from './tpm-cards.helpers.js';
 import { buildCardUpdateFields, mapCardRowToApi } from './tpm-cards.helpers.js';
 
 /** Minimal valid row with all required fields */
-function createMinimalRow(
-  overrides: Partial<TpmCardJoinRow> = {},
-): TpmCardJoinRow {
+function createMinimalRow(overrides: Partial<TpmCardJoinRow> = {}): TpmCardJoinRow {
   return {
     id: 1,
     uuid: '019c9547-9fc0-771a-b022-3767e233d6f3',
@@ -70,11 +68,7 @@ describe('mapCardRowToApi — cardCategories (JS array)', () => {
       card_categories: ['reinigung', 'wartung', 'inspektion'],
     });
     const result = mapCardRowToApi(row);
-    expect(result.cardCategories).toEqual([
-      'reinigung',
-      'wartung',
-      'inspektion',
-    ]);
+    expect(result.cardCategories).toEqual(['reinigung', 'wartung', 'inspektion']);
   });
 
   it('should preserve category order', () => {
@@ -113,11 +107,7 @@ describe('mapCardRowToApi — parsePgCategoryArray (pg string)', () => {
       card_categories: '{reinigung,wartung,inspektion}' as unknown as string[],
     });
     const result = mapCardRowToApi(row);
-    expect(result.cardCategories).toEqual([
-      'reinigung',
-      'wartung',
-      'inspektion',
-    ]);
+    expect(result.cardCategories).toEqual(['reinigung', 'wartung', 'inspektion']);
   });
 
   it('should parse empty pg array string to empty array', () => {
@@ -196,9 +186,7 @@ describe('buildCardUpdateFields — cardCategories', () => {
     const { setClauses, params } = buildCardUpdateFields({
       title: 'Neuer Titel',
     });
-    const hasCategories = setClauses.some((clause: string) =>
-      clause.includes('card_categories'),
-    );
+    const hasCategories = setClauses.some((clause: string) => clause.includes('card_categories'));
     expect(hasCategories).toBe(false);
     expect(params).toEqual(['Neuer Titel']);
   });

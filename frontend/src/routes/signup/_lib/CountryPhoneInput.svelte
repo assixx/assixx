@@ -11,19 +11,14 @@
   }
 
   /* eslint-disable prefer-const, @typescript-eslint/no-useless-default-assignment -- $bindable() is a Svelte semantic marker, not a JS default */
-  let {
-    phone = $bindable(),
-    countryCode = $bindable(),
-    disabled = false,
-  }: Props = $props();
+  let { phone = $bindable(), countryCode = $bindable(), disabled = false }: Props = $props();
   /* eslint-enable prefer-const, @typescript-eslint/no-useless-default-assignment */
 
   let dropdownOpen = $state(false);
   let phoneError: string | null = $state(null);
 
   const selectedFlag = $derived(
-    COUNTRIES.find((c: Country) => c.code === countryCode)?.flag ??
-      DEFAULT_COUNTRY.flag,
+    COUNTRIES.find((c: Country) => c.code === countryCode)?.flag ?? DEFAULT_COUNTRY.flag,
   );
 
   function selectCountry(country: Country): void {
@@ -36,8 +31,7 @@
   }
 
   function handlePhoneInput(): void {
-    phoneError =
-      phone !== '' && !isPhoneValid(phone) ? ERROR_MESSAGES.phoneInvalid : null;
+    phoneError = phone !== '' && !isPhoneValid(phone) ? ERROR_MESSAGES.phoneInvalid : null;
   }
 
   $effect(() => {
@@ -156,8 +150,7 @@
     align-items: center;
     gap: 4px;
     backdrop-filter: var(--glass-form-backdrop);
-    transition:
-      var(--form-field-transition), var(--form-field-transition-shadow);
+    transition: var(--form-field-transition), var(--form-field-transition-shadow);
     cursor: pointer;
     border: var(--form-field-border);
     border-radius: var(--form-field-radius);
@@ -207,8 +200,7 @@
 
   .country-option {
     cursor: pointer;
-    border-bottom: 1px solid
-      color-mix(in oklch, var(--color-white) 5%, transparent);
+    border-bottom: 1px solid color-mix(in oklch, var(--color-white) 5%, transparent);
     padding: 10px 12px;
     color: var(--text-primary);
     font-size: 13px;

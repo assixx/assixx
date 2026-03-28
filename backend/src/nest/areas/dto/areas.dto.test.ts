@@ -13,14 +13,7 @@ import { UpdateAreaSchema } from './update-area.dto.js';
 // =============================================================
 
 describe('AreaTypeSchema', () => {
-  const validTypes = [
-    'building',
-    'warehouse',
-    'office',
-    'production',
-    'outdoor',
-    'other',
-  ];
+  const validTypes = ['building', 'warehouse', 'office', 'production', 'outdoor', 'other'];
 
   it('should accept all valid area types', () => {
     for (const type of validTypes) {
@@ -46,8 +39,7 @@ describe('AreaIdParamSchema', () => {
   it('should coerce string', () => {
     const result = AreaIdParamSchema.safeParse({ id: '5' });
     expect(result.success).toBe(true);
-    const data = (result as { success: true; data: Record<string, unknown> })
-      .data;
+    const data = (result as { success: true; data: Record<string, unknown> }).data;
     expect(data.id).toBe(5);
   });
 
@@ -70,8 +62,7 @@ describe('CreateAreaSchema', () => {
   it('should default type to other', () => {
     const result = CreateAreaSchema.safeParse(valid);
     expect(result.success).toBe(true);
-    const data = (result as { success: true; data: Record<string, unknown> })
-      .data;
+    const data = (result as { success: true; data: Record<string, unknown> }).data;
     expect(data.type).toBe('other');
   });
 
@@ -92,27 +83,19 @@ describe('CreateAreaSchema', () => {
   });
 
   it('should reject name over 255 chars', () => {
-    expect(CreateAreaSchema.safeParse({ name: 'a'.repeat(256) }).success).toBe(
-      false,
-    );
+    expect(CreateAreaSchema.safeParse({ name: 'a'.repeat(256) }).success).toBe(false);
   });
 
   it('should accept null description', () => {
-    expect(
-      CreateAreaSchema.safeParse({ ...valid, description: null }).success,
-    ).toBe(true);
+    expect(CreateAreaSchema.safeParse({ ...valid, description: null }).success).toBe(true);
   });
 
   it('should accept null areaLeadId', () => {
-    expect(
-      CreateAreaSchema.safeParse({ ...valid, areaLeadId: null }).success,
-    ).toBe(true);
+    expect(CreateAreaSchema.safeParse({ ...valid, areaLeadId: null }).success).toBe(true);
   });
 
   it('should reject negative capacity', () => {
-    expect(CreateAreaSchema.safeParse({ ...valid, capacity: -1 }).success).toBe(
-      false,
-    );
+    expect(CreateAreaSchema.safeParse({ ...valid, capacity: -1 }).success).toBe(false);
   });
 });
 
@@ -126,9 +109,7 @@ describe('UpdateAreaSchema', () => {
   });
 
   it('should accept partial update', () => {
-    expect(UpdateAreaSchema.safeParse({ name: 'Updated Name' }).success).toBe(
-      true,
-    );
+    expect(UpdateAreaSchema.safeParse({ name: 'Updated Name' }).success).toBe(true);
   });
 
   it('should accept isActive 0-4', () => {
@@ -150,24 +131,21 @@ describe('DeleteAreaQuerySchema', () => {
   it('should accept empty query', () => {
     const result = DeleteAreaQuerySchema.safeParse({});
     expect(result.success).toBe(true);
-    const data = (result as { success: true; data: Record<string, unknown> })
-      .data;
+    const data = (result as { success: true; data: Record<string, unknown> }).data;
     expect(data.force).toBe(false);
   });
 
   it('should transform "true" string to boolean', () => {
     const result = DeleteAreaQuerySchema.safeParse({ force: 'true' });
     expect(result.success).toBe(true);
-    const data = (result as { success: true; data: Record<string, unknown> })
-      .data;
+    const data = (result as { success: true; data: Record<string, unknown> }).data;
     expect(data.force).toBe(true);
   });
 
   it('should transform boolean true', () => {
     const result = DeleteAreaQuerySchema.safeParse({ force: true });
     expect(result.success).toBe(true);
-    const data = (result as { success: true; data: Record<string, unknown> })
-      .data;
+    const data = (result as { success: true; data: Record<string, unknown> }).data;
     expect(data.force).toBe(true);
   });
 });
@@ -182,23 +160,18 @@ describe('ListAreasQuerySchema', () => {
   });
 
   it('should accept type filter', () => {
-    expect(ListAreasQuerySchema.safeParse({ type: 'office' }).success).toBe(
-      true,
-    );
+    expect(ListAreasQuerySchema.safeParse({ type: 'office' }).success).toBe(true);
   });
 
   it('should transform isActive string to number', () => {
     const result = ListAreasQuerySchema.safeParse({ isActive: '1' });
     expect(result.success).toBe(true);
-    const data = (result as { success: true; data: Record<string, unknown> })
-      .data;
+    const data = (result as { success: true; data: Record<string, unknown> }).data;
     expect(data.isActive).toBe(1);
   });
 
   it('should reject search over 100 chars', () => {
-    expect(
-      ListAreasQuerySchema.safeParse({ search: 'a'.repeat(101) }).success,
-    ).toBe(false);
+    expect(ListAreasQuerySchema.safeParse({ search: 'a'.repeat(101) }).success).toBe(false);
   });
 });
 
@@ -208,15 +181,11 @@ describe('ListAreasQuerySchema', () => {
 
 describe('AssignDepartmentsSchema', () => {
   it('should accept valid department IDs', () => {
-    expect(
-      AssignDepartmentsSchema.safeParse({ departmentIds: [1, 2, 3] }).success,
-    ).toBe(true);
+    expect(AssignDepartmentsSchema.safeParse({ departmentIds: [1, 2, 3] }).success).toBe(true);
   });
 
   it('should accept empty array', () => {
-    expect(
-      AssignDepartmentsSchema.safeParse({ departmentIds: [] }).success,
-    ).toBe(true);
+    expect(AssignDepartmentsSchema.safeParse({ departmentIds: [] }).success).toBe(true);
   });
 
   it('should reject missing departmentIds', () => {
@@ -230,9 +199,7 @@ describe('AssignDepartmentsSchema', () => {
 
 describe('AssignHallsSchema', () => {
   it('should accept valid hall IDs', () => {
-    expect(AssignHallsSchema.safeParse({ hallIds: [1, 2, 3] }).success).toBe(
-      true,
-    );
+    expect(AssignHallsSchema.safeParse({ hallIds: [1, 2, 3] }).success).toBe(true);
   });
 
   it('should accept empty array', () => {
@@ -242,8 +209,7 @@ describe('AssignHallsSchema', () => {
   it('should coerce string IDs to numbers', () => {
     const result = AssignHallsSchema.safeParse({ hallIds: ['1', '5'] });
     expect(result.success).toBe(true);
-    const data = (result as { success: true; data: { hallIds: number[] } })
-      .data;
+    const data = (result as { success: true; data: { hallIds: number[] } }).data;
     expect(data.hallIds).toEqual([1, 5]);
   });
 

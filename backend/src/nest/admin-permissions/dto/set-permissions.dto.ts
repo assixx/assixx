@@ -6,10 +6,7 @@
 import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';
 
-import {
-  DefaultPermissions,
-  PermissionSetSchema,
-} from './permission-set.schema.js';
+import { DefaultPermissions, PermissionSetSchema } from './permission-set.schema.js';
 
 export const SetPermissionsSchema = z.object({
   adminId: z.number().int().positive('Admin ID must be a positive integer'),

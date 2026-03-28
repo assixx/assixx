@@ -24,6 +24,7 @@ function createMockSettings() {
     getHierarchyLabels: vi.fn(),
     getViewport: vi.fn(),
     getHallOverrides: vi.fn(),
+    getHallConnectionAnchors: vi.fn(),
     getCanvasBg: vi.fn(),
   };
 }
@@ -61,18 +62,20 @@ function setupTreeQueries(
     teams?: Record<string, unknown>[];
     assets?: Record<string, unknown>[];
     halls?: Record<string, unknown>[];
+    deptHalls?: Record<string, unknown>[];
+    teamHalls?: Record<string, unknown>[];
   },
 ): void {
   mockDb.query.mockResolvedValueOnce(
-    data.tenant ?
-      [data.tenant]
-    : [{ company_name: 'Test GmbH', address: null }],
+    data.tenant ? [data.tenant] : [{ company_name: 'Test GmbH', address: null }],
   );
   mockDb.query.mockResolvedValueOnce(data.areas ?? []);
   mockDb.query.mockResolvedValueOnce(data.departments ?? []);
   mockDb.query.mockResolvedValueOnce(data.teams ?? []);
   mockDb.query.mockResolvedValueOnce(data.assets ?? []);
   mockDb.query.mockResolvedValueOnce(data.halls ?? []);
+  mockDb.query.mockResolvedValueOnce(data.deptHalls ?? []);
+  mockDb.query.mockResolvedValueOnce(data.teamHalls ?? []);
 }
 
 // =============================================================
@@ -102,6 +105,7 @@ describe('OrganigramService', () => {
     });
     mockSettings.getViewport.mockResolvedValue({ ...DEFAULT_VIEWPORT });
     mockSettings.getHallOverrides.mockResolvedValue({});
+    mockSettings.getHallConnectionAnchors.mockResolvedValue({});
     mockSettings.getCanvasBg.mockResolvedValue(null);
     mockLayout.getPositions.mockResolvedValue([]);
   });
@@ -122,10 +126,10 @@ describe('OrganigramService', () => {
       mockDb.query.mockResolvedValueOnce([]); // teams
       mockDb.query.mockResolvedValueOnce([]); // assets
       mockDb.query.mockResolvedValueOnce([]); // halls
+      mockDb.query.mockResolvedValueOnce([]); // deptHalls
+      mockDb.query.mockResolvedValueOnce([]); // teamHalls
 
-      await expect(service.getOrgChartTree(999)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.getOrgChartTree(999)).rejects.toThrow(NotFoundException);
     });
 
     it('should return tree with correct company info', async () => {
@@ -289,9 +293,7 @@ describe('OrganigramService', () => {
     it('should include memberCount = 0 for teams', async () => {
       setupTreeQueries(mockDb, {
         areas: [{ uuid: AREA_1, name: 'Bereich A', lead_name: null }],
-        departments: [
-          { uuid: DEPT_1, name: 'Abt.', lead_name: null, area_uuid: AREA_1 },
-        ],
+        departments: [{ uuid: DEPT_1, name: 'Abt.', lead_name: null, area_uuid: AREA_1 }],
         teams: [
           {
             uuid: TEAM_1,
@@ -419,8 +421,8 @@ describe('OrganigramService', () => {
 
       await service.getOrgChartTree(1);
 
-      // 6 DB queries + 3 settings + 1 layout = 10 parallel calls
-      expect(mockDb.query).toHaveBeenCalledTimes(6);
+      // 8 DB queries + 3 settings + 1 layout = 12 parallel calls
+      expect(mockDb.query).toHaveBeenCalledTimes(8);
       expect(mockSettings.getHierarchyLabels).toHaveBeenCalledOnce();
       expect(mockSettings.getViewport).toHaveBeenCalledOnce();
       expect(mockSettings.getHallOverrides).toHaveBeenCalledOnce();

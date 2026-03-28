@@ -28,9 +28,7 @@ export function parseTimeFromDateTime(
 /**
  * Formats a Date value to YYYY-MM-DD string
  */
-export function parseDateToString(
-  dateValue: string | Date | undefined,
-): string | undefined {
+export function parseDateToString(dateValue: string | Date | undefined): string | undefined {
   if (dateValue === undefined) return undefined;
   try {
     const date = new Date(dateValue);
@@ -88,9 +86,7 @@ export function convertTimeFieldsToTimestamps(
  * Converts a DB shift row to API response format
  */
 export function dbShiftToApi(dbShift: DbShiftRow): ShiftResponse {
-  const apiShift = dbToApi(
-    dbShift as unknown as Record<string, unknown>,
-  ) as ShiftResponse;
+  const apiShift = dbToApi(dbShift as unknown as Record<string, unknown>) as ShiftResponse;
   const startTime = parseTimeFromDateTime(dbShift.start_time);
   if (startTime !== undefined && startTime !== '') {
     apiShift.startTime = startTime;
@@ -117,11 +113,7 @@ export function dbShiftToApi(dbShift: DbShiftRow): ShiftResponse {
 /**
  * Calculates total working hours from start/end time minus breaks
  */
-export function calculateHours(
-  startTime: string,
-  endTime: string,
-  breakMinutes?: number,
-): number {
+export function calculateHours(startTime: string, endTime: string, breakMinutes?: number): number {
   const start = new Date(`2000-01-01T${startTime}`);
   const end = new Date(`2000-01-01T${endTime}`);
   const diffMs = end.getTime() - start.getTime();

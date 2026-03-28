@@ -15,9 +15,7 @@
  * getAvatarColor(123) // returns 3
  * getAvatarColor('john@example.com') // returns consistent hash-based index
  */
-export function getAvatarColor(
-  identifier: number | string | undefined | null,
-): number {
+export function getAvatarColor(identifier: number | string | undefined | null): number {
   if (identifier === undefined || identifier === null) return 0;
 
   // If number, simple modulo
@@ -40,9 +38,7 @@ export function getAvatarColor(
  * @example
  * <div class="avatar avatar--sm {getAvatarColorClass(user.id)}">
  */
-export function getAvatarColorClass(
-  identifier: number | string | undefined | null,
-): string {
+export function getAvatarColorClass(identifier: number | string | undefined | null): string {
   return `avatar--color-${getAvatarColor(identifier)}`;
 }
 
@@ -72,9 +68,7 @@ export function getInitials(
  * getProfilePictureUrl('/uploads/profile_pictures/abc.jpg') // returns '/uploads/profile_pictures/abc.jpg'
  * getProfilePictureUrl(null) // returns null
  */
-export function getProfilePictureUrl(
-  path: string | null | undefined,
-): string | null {
+export function getProfilePictureUrl(path: string | null | undefined): string | null {
   if (path === null || path === undefined || path === '') return null;
   // Already absolute or external URL
   if (path.startsWith('/') || path.startsWith('http')) {

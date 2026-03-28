@@ -11,10 +11,7 @@ import { Injectable, Logger } from '@nestjs/common';
 
 import { DatabaseService } from '../database/database.service.js';
 import { parseDbCount } from './surveys.helpers.js';
-import type {
-  DbSurveyQuestion,
-  SurveyStatisticsResponse,
-} from './surveys.types.js';
+import type { DbSurveyQuestion, SurveyStatisticsResponse } from './surveys.types.js';
 
 @Injectable()
 export class SurveyStatisticsService {
@@ -55,21 +52,13 @@ export class SurveyStatisticsService {
       totalResponses,
       completedResponses,
       completionRate:
-        totalResponses > 0 ?
-          Math.round((completedResponses / totalResponses) * 100)
-        : 0,
+        totalResponses > 0 ? Math.round((completedResponses / totalResponses) * 100) : 0,
       questions: await this.buildQuestionStats(questions),
     };
-    if (
-      statsRow?.first_response !== null &&
-      statsRow?.first_response !== undefined
-    ) {
+    if (statsRow?.first_response !== null && statsRow?.first_response !== undefined) {
       response.firstResponse = statsRow.first_response;
     }
-    if (
-      statsRow?.last_response !== null &&
-      statsRow?.last_response !== undefined
-    ) {
+    if (statsRow?.last_response !== null && statsRow?.last_response !== undefined) {
       response.lastResponse = statsRow.last_response;
     }
     return response;
@@ -101,11 +90,7 @@ export class SurveyStatisticsService {
       questionType: question.question_type,
     };
     const qType = question.question_type as string;
-    if (
-      qType === 'single_choice' ||
-      qType === 'multiple_choice' ||
-      qType === 'yes_no'
-    ) {
+    if (qType === 'single_choice' || qType === 'multiple_choice' || qType === 'yes_no') {
       stat.options = await this.getChoiceQuestionStats(question);
     } else if (qType === 'text') {
       stat.responses = await this.getTextQuestionResponses(question.id);
@@ -234,10 +219,7 @@ export class SurveyStatisticsService {
       [questionId],
     );
     return dateRows.map(
-      (
-        row: { answer_date: Date | string; count: number | string },
-        index: number,
-      ) => {
+      (row: { answer_date: Date | string; count: number | string }, index: number) => {
         const dateText =
           row.answer_date instanceof Date ?
             row.answer_date.toISOString().split('T')[0]
@@ -245,10 +227,7 @@ export class SurveyStatisticsService {
         return {
           optionId: index + 1,
           optionText: dateText ?? '',
-          count:
-            typeof row.count === 'string' ?
-              Number.parseInt(row.count, 10)
-            : row.count,
+          count: typeof row.count === 'string' ? Number.parseInt(row.count, 10) : row.count,
         };
       },
     );

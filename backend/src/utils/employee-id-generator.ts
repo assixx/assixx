@@ -33,11 +33,7 @@ function getDateTimeString(): string {
  * @param role - User role ('root' | 'admin' | 'employee')
  * @returns Formatted employee ID (e.g., SCSRT10120620251752)
  */
-export function generateEmployeeId(
-  subdomain: string,
-  role: string,
-  userId: number,
-): string {
+export function generateEmployeeId(subdomain: string, role: string, userId: number): string {
   const domain = subdomain.toUpperCase().slice(0, 10);
   const roleCode = getRoleAbbreviation(role);
   const dateTime = getDateTimeString();

@@ -3,10 +3,7 @@
    * KVP Suggestion Card - Single suggestion card in the grid
    * Extracted from +page.svelte for modularity (max-lines rule)
    */
-  import {
-    DEFAULT_HIERARCHY_LABELS,
-    type HierarchyLabels,
-  } from '$lib/types/hierarchy-labels';
+  import { DEFAULT_HIERARCHY_LABELS, type HierarchyLabels } from '$lib/types/hierarchy-labels';
 
   import {
     getStatusBadgeClass,
@@ -29,17 +26,11 @@
     labels?: HierarchyLabels;
   }
 
-  const {
-    suggestion,
-    onclick,
-    labels = DEFAULT_HIERARCHY_LABELS,
-  }: Props = $props();
+  const { suggestion, onclick, labels = DEFAULT_HIERARCHY_LABELS }: Props = $props();
 
   const visibilityInfo = $derived(getVisibilityInfo(suggestion, labels));
   const isRead = $derived(suggestion.isConfirmed === true);
-  const isNew = $derived(
-    suggestion.firstSeenAt === null || suggestion.firstSeenAt === undefined,
-  );
+  const isNew = $derived(suggestion.firstSeenAt === null || suggestion.firstSeenAt === undefined);
 </script>
 
 <div
@@ -92,13 +83,15 @@
         </span>
       {/if}
     </div>
-    <div class="share-info">
-      <i class="fas fa-share-alt"></i>
-      <span class="badge {getVisibilityBadgeClass(suggestion.orgLevel)}">
-        <i class="fas {visibilityInfo.icon}"></i>
-        <span>{visibilityInfo.text}{getSharedByInfo(suggestion)}</span>
-      </span>
-    </div>
+    {#if suggestion.isShared}
+      <div class="share-info">
+        <i class="fas fa-share-alt"></i>
+        <span class="badge {getVisibilityBadgeClass(suggestion.orgLevel)}">
+          <i class="fas {visibilityInfo.icon}"></i>
+          <span>{visibilityInfo.text}{getSharedByInfo(suggestion)}</span>
+        </span>
+      </div>
+    {/if}
   </div>
 
   <div class="suggestion-description">{suggestion.description}</div>

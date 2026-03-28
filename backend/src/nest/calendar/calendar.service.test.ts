@@ -164,6 +164,14 @@ describe('CalendarService – pure helpers', () => {
       expect(result.params).toEqual(['New Title']);
     });
 
+    it('applies transform function when field has one', () => {
+      const dto = { allDay: true };
+      const result = service['buildEventUpdateQuery'](dto as never);
+
+      expect(result.updates).toContain('all_day = $1');
+      expect(result.params).toEqual([1]);
+    });
+
     it('builds query with assignment fields', () => {
       mockCreation.determineOrgTarget.mockReturnValue({
         orgLevel: 'department',
@@ -209,9 +217,7 @@ describe('CalendarService – DB-mocked methods', () => {
     it('throws NotFoundException when event does not exist', async () => {
       mockDb.query.mockResolvedValueOnce([]); // SELECT event
 
-      await expect(service.getEventById(999, 1, 1)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.getEventById(999, 1, 1)).rejects.toThrow(NotFoundException);
     });
 
     it('throws NotFoundException when user has no access', async () => {
@@ -227,9 +233,7 @@ describe('CalendarService – DB-mocked methods', () => {
       ]);
       mockPermission.checkEventAccess.mockResolvedValueOnce(false);
 
-      await expect(service.getEventById(1, 1, 5)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.getEventById(1, 1, 5)).rejects.toThrow(NotFoundException);
     });
 
     it('returns event with attendees on happy path', async () => {
@@ -381,13 +385,7 @@ describe('CalendarService – DB-mocked methods', () => {
       mockPermission.getEventAttendees.mockResolvedValueOnce([]);
       mockActivityLogger.logUpdate.mockResolvedValueOnce(undefined);
 
-      const result = await service.updateEvent(
-        1,
-        { title: 'Updated' } as never,
-        1,
-        5,
-        'admin',
-      );
+      const result = await service.updateEvent(1, { title: 'Updated' } as never, 1, 5, 'admin');
 
       expect(result).toHaveProperty('title', 'Updated');
       expect(mockActivityLogger.logUpdate).toHaveBeenCalledWith(
@@ -406,9 +404,7 @@ describe('CalendarService – DB-mocked methods', () => {
     it('throws NotFoundException when event does not exist', async () => {
       mockDb.query.mockResolvedValueOnce([]); // SELECT
 
-      await expect(service.deleteEvent(999, 1, 1, 'admin')).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.deleteEvent(999, 1, 1, 'admin')).rejects.toThrow(NotFoundException);
     });
 
     it('throws ForbiddenException for non-owner non-admin', async () => {
@@ -426,9 +422,7 @@ describe('CalendarService – DB-mocked methods', () => {
         },
       ]);
 
-      await expect(service.deleteEvent(1, 1, 5, 'employee')).rejects.toThrow(
-        ForbiddenException,
-      );
+      await expect(service.deleteEvent(1, 1, 5, 'employee')).rejects.toThrow(ForbiddenException);
     });
 
     it('throws ForbiddenException when deleting past event', async () => {
@@ -446,9 +440,31 @@ describe('CalendarService – DB-mocked methods', () => {
         },
       ]);
 
-      await expect(service.deleteEvent(1, 1, 5, 'admin')).rejects.toThrow(
-        ForbiddenException,
-      );
+      await expect(service.deleteEvent(1, 1, 5, 'admin')).rejects.toThrow(ForbiddenException);
+    });
+
+    it('allows root user to delete event owned by another user', async () => {
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+
+      mockDb.query
+        .mockResolvedValueOnce([
+          {
+            id: 1,
+            title: 'Other User Event',
+            user_id: 99, // owned by another user
+            tenant_id: 1,
+            start_date: new Date(),
+            end_date: tomorrow,
+          },
+        ])
+        .mockResolvedValueOnce([]) // DELETE attendees
+        .mockResolvedValueOnce([]); // DELETE event
+      mockActivityLogger.logDelete.mockResolvedValueOnce(undefined);
+
+      const result = await service.deleteEvent(1, 1, 5, 'root');
+
+      expect(result.message).toBe('Event deleted successfully');
     });
 
     it('deletes future event and attendees for admin', async () => {
@@ -540,14 +556,19 @@ describe('CalendarService – DB-mocked methods', () => {
 
       expect(result).toHaveProperty('title', 'New Event');
       expect(mockCreation.insertEvent).toHaveBeenCalledOnce();
-      expect(mockCreation.addAttendeesToEvent).toHaveBeenCalledWith(
-        42,
-        5,
-        [10, 20],
-        1,
-      );
+      expect(mockCreation.addAttendeesToEvent).toHaveBeenCalledWith(42, 5, [10, 20], 1);
       expect(mockCreation.createChildEvents).toHaveBeenCalledOnce();
       expect(mockCreation.logEventCreated).toHaveBeenCalledOnce();
+    });
+  });
+
+  describe('countEvents (private)', () => {
+    it('should default to 0 when COUNT returns no rows', async () => {
+      mockDb.query.mockResolvedValueOnce([]);
+
+      const result = await service['countEvents']('SELECT COUNT(*) as count FROM x', []);
+
+      expect(result).toBe(0);
     });
   });
 
@@ -555,9 +576,9 @@ describe('CalendarService – DB-mocked methods', () => {
     it('throws NotFoundException when UUID not found', async () => {
       mockDb.query.mockResolvedValueOnce([]);
 
-      await expect(
-        service['resolveEventIdByUuid']('non-existent-uuid', 1),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service['resolveEventIdByUuid']('non-existent-uuid', 1)).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('returns ID for valid UUID', async () => {
@@ -582,9 +603,7 @@ describe('CalendarService – DB-mocked methods', () => {
 
   describe('getRecentlyAddedEvents – delegation', () => {
     it('delegates to overview service', async () => {
-      mockOverview.getRecentlyAddedEvents.mockResolvedValueOnce([
-        { title: 'Recent' },
-      ]);
+      mockOverview.getRecentlyAddedEvents.mockResolvedValueOnce([{ title: 'Recent' }]);
 
       const result = await service.getRecentlyAddedEvents(1, 5, 3);
 
@@ -599,12 +618,7 @@ describe('CalendarService – DB-mocked methods', () => {
 
       const result = await service.getUpcomingCount(1, 5, null, null);
 
-      expect(mockOverview.getUpcomingCount).toHaveBeenCalledWith(
-        1,
-        5,
-        null,
-        null,
-      );
+      expect(mockOverview.getUpcomingCount).toHaveBeenCalledWith(1, 5, null, null);
       expect(result.count).toBe(7);
     });
   });
@@ -615,11 +629,7 @@ describe('CalendarService – DB-mocked methods', () => {
       const mockScope = {
         getScope: vi.fn().mockResolvedValue({ type: 'full' }),
       };
-      const {
-        service: svc,
-        mockDb: db,
-        mockPermission: perm,
-      } = createServiceWithMock();
+      const { service: svc, mockDb: db, mockPermission: perm } = createServiceWithMock();
       // Override scope mock
       Object.assign(svc, { scopeService: mockScope });
 
@@ -694,6 +704,43 @@ describe('CalendarService – DB-mocked methods', () => {
       expect(result.pagination.page).toBe(1);
     });
 
+    it('falls back to start_date for unknown sortBy value', async () => {
+      const mockScopeOverride = {
+        getScope: vi.fn().mockResolvedValue({ type: 'full' }),
+      };
+      const { service: svc, mockDb: db, mockPermission: perm } = createServiceWithMock();
+      Object.assign(svc, { scopeService: mockScopeOverride });
+
+      perm.getUserMemberships.mockResolvedValueOnce({
+        departmentIds: [],
+        teamIds: [],
+      });
+      perm.buildAdminOrgLevelFilter.mockReturnValueOnce({
+        clause: '',
+        newParams: [],
+        newIndex: 3,
+      });
+
+      db.query.mockResolvedValueOnce([{ count: '0' }]);
+      db.query.mockResolvedValueOnce([]);
+
+      const result = await svc.listEvents(1, 5, null, null, {
+        status: undefined,
+        filter: undefined,
+        search: undefined,
+        startDate: undefined,
+        endDate: undefined,
+        page: 1,
+        limit: 20,
+        sortBy: 'nonExistentColumn',
+        sortOrder: undefined,
+      });
+
+      expect(result.events).toHaveLength(0);
+      const selectCall = db.query.mock.calls[1]?.[0] as string;
+      expect(selectCall).toContain('ORDER BY e.start_date');
+    });
+
     it('uses permission-based filter for non-full scope', async () => {
       const mockScope = {
         getScope: vi.fn().mockResolvedValue({
@@ -703,11 +750,7 @@ describe('CalendarService – DB-mocked methods', () => {
           teamIds: [3],
         }),
       };
-      const {
-        service: svc,
-        mockDb: db,
-        mockPermission: perm,
-      } = createServiceWithMock();
+      const { service: svc, mockDb: db, mockPermission: perm } = createServiceWithMock();
       Object.assign(svc, { scopeService: mockScope });
 
       perm.getUserMemberships.mockResolvedValueOnce({
@@ -928,12 +971,7 @@ describe('CalendarService – DB-mocked methods', () => {
       mockDb.query.mockResolvedValueOnce([]);
       mockActivityLogger.logDelete.mockResolvedValueOnce(undefined);
 
-      const result = await service.deleteEventByUuid(
-        'test-uuid',
-        1,
-        5,
-        'admin',
-      );
+      const result = await service.deleteEventByUuid('test-uuid', 1, 5, 'admin');
 
       expect(result.message).toBe('Event deleted successfully');
     });

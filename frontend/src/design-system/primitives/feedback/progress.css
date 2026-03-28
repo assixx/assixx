@@ -51,11 +51,7 @@
   border-radius: var(--radius-xl);
 
   /* Default primary color */
-  background: linear-gradient(
-    90deg,
-    var(--color-primary) 0%,
-    oklch(53.14% 0.1513 252.42) 100%
-  );
+  background: linear-gradient(90deg, var(--color-primary) 0%, oklch(53.14% 0.1513 252.42) 100%);
 
   width: 0%; /* Set via inline style or JavaScript */
 
@@ -130,38 +126,22 @@
 
 /* Primary (default - already defined above) */
 .progress__bar--primary {
-  background: linear-gradient(
-    90deg,
-    var(--color-primary) 0%,
-    oklch(53.14% 0.1513 252.42) 100%
-  );
+  background: linear-gradient(90deg, var(--color-primary) 0%, oklch(53.14% 0.1513 252.42) 100%);
 }
 
 /* Success */
 .progress__bar--success {
-  background: linear-gradient(
-    90deg,
-    var(--color-success) 0%,
-    oklch(55.27% 0.1273 143.29) 100%
-  );
+  background: linear-gradient(90deg, var(--color-success) 0%, oklch(55.27% 0.1273 143.29) 100%);
 }
 
 /* Warning */
 .progress__bar--warning {
-  background: linear-gradient(
-    90deg,
-    var(--color-warning) 0%,
-    oklch(68.99% 0.1716 48.1) 100%
-  );
+  background: linear-gradient(90deg, var(--color-warning) 0%, oklch(68.99% 0.1716 48.1) 100%);
 }
 
 /* Danger */
 .progress__bar--danger {
-  background: linear-gradient(
-    90deg,
-    var(--color-danger) 0%,
-    oklch(52.62% 0.1873 26.77) 100%
-  );
+  background: linear-gradient(90deg, var(--color-danger) 0%, oklch(52.62% 0.1873 26.77) 100%);
 }
 
 /* Info */

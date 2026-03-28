@@ -75,7 +75,10 @@ export type ActivityEntityType =
   | 'work_order_photo'
   | 'dummy_user'
   | 'user_addon_permission'
-  | 'hall';
+  | 'hall'
+  | 'approval'
+  | 'approval_config'
+  | 'position_catalog';
 
 /**
  * Parameters for logging an activity
@@ -216,12 +219,8 @@ export class ActivityLoggerService {
           params.entityType,
           params.entityId ?? null,
           params.details ?? null,
-          params.oldValues !== undefined ?
-            JSON.stringify(params.oldValues)
-          : null,
-          params.newValues !== undefined ?
-            JSON.stringify(params.newValues)
-          : null,
+          params.oldValues !== undefined ? JSON.stringify(params.oldValues) : null,
+          params.newValues !== undefined ? JSON.stringify(params.newValues) : null,
           params.ipAddress ?? null,
           params.userAgent ?? null,
           params.wasRoleSwitched ?? false,

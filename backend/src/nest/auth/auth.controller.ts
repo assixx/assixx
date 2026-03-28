@@ -30,17 +30,8 @@ import { CustomThrottlerGuard } from '../common/guards/throttler.guard.js';
 import type { NestAuthUser } from '../common/interfaces/auth.interface.js';
 import { AuthService } from './auth.service.js';
 import { ConnectionTicketService } from './connection-ticket.service.js';
-import {
-  ConnectionTicketDto,
-  LoginDto,
-  RefreshDto,
-  RegisterDto,
-} from './dto/index.js';
-import type {
-  ConnectionTicketResponse,
-  LoginResponse,
-  RefreshResponse,
-} from './dto/index.js';
+import { ConnectionTicketDto, LoginDto, RefreshDto, RegisterDto } from './dto/index.js';
+import type { ConnectionTicketResponse, LoginResponse, RefreshResponse } from './dto/index.js';
 
 /**
  * Cookie configuration for SSR support
@@ -167,11 +158,7 @@ export class AuthController {
 
     // Set httpOnly cookies for SSR support
     reply.setCookie('accessToken', result.accessToken, COOKIE_OPTIONS);
-    reply.setCookie(
-      'refreshToken',
-      result.refreshToken,
-      REFRESH_COOKIE_OPTIONS,
-    );
+    reply.setCookie('refreshToken', result.refreshToken, REFRESH_COOKIE_OPTIONS);
 
     return result;
   }
@@ -253,24 +240,14 @@ export class AuthController {
     // Support cookie-based refresh for SSR: use cookie if body is empty
     // Explicit empty string check for strict-boolean-expressions compliance
     const refreshToken =
-      dto.refreshToken !== '' ?
-        dto.refreshToken
-      : (req.cookies['refreshToken'] ?? '');
+      dto.refreshToken !== '' ? dto.refreshToken : (req.cookies['refreshToken'] ?? '');
     const effectiveDto: RefreshDto = { refreshToken };
 
-    const result = await this.authService.refresh(
-      effectiveDto,
-      ipAddress,
-      userAgent,
-    );
+    const result = await this.authService.refresh(effectiveDto, ipAddress, userAgent);
 
     // Update httpOnly cookies with new tokens
     reply.setCookie('accessToken', result.accessToken, COOKIE_OPTIONS);
-    reply.setCookie(
-      'refreshToken',
-      result.refreshToken,
-      REFRESH_COOKIE_OPTIONS,
-    );
+    reply.setCookie('refreshToken', result.refreshToken, REFRESH_COOKIE_OPTIONS);
 
     return result;
   }
@@ -291,9 +268,7 @@ export class AuthController {
    */
   @Get('me')
   @HttpCode(HttpStatus.OK)
-  async getCurrentUser(
-    @CurrentUser() user: NestAuthUser,
-  ): Promise<CurrentUserResponse> {
+  async getCurrentUser(@CurrentUser() user: NestAuthUser): Promise<CurrentUserResponse> {
     const foundUser = await this.authService.getCurrentUser(user);
 
     // Return safe user data (exclude password, reset_token, etc.)

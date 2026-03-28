@@ -3,11 +3,7 @@
 // Selected context (hierarchy selection), plan management, and asset availability
 // =============================================================================
 
-import type {
-  AssetAvailabilityEntry,
-  SelectedContext,
-  RotationPatternType,
-} from './types';
+import type { AssetAvailabilityEntry, SelectedContext, RotationPatternType } from './types';
 
 const DEFAULT_CONTEXT: SelectedContext = {
   areaId: null,
@@ -22,9 +18,7 @@ const DEFAULT_CONTEXT: SelectedContext = {
  * For each day covered by an entry, stores the status string.
  * If multiple entries overlap the same day, the first (earliest start_date) wins.
  */
-function buildAvailabilityDateMap(
-  entries: AssetAvailabilityEntry[],
-): Map<string, string> {
+function buildAvailabilityDateMap(entries: AssetAvailabilityEntry[]): Map<string, string> {
   const dateMap = new Map<string, string>();
 
   for (const entry of entries) {
@@ -48,7 +42,7 @@ function buildAvailabilityDateMap(
 
 /** Asset availability sub-state (date-to-status map for shift cell marking) */
 function createAssetAvailabilityState() {
-  let assetAvailabilityMap = $state<Map<string, string>>(new Map());
+  let assetAvailabilityMap = $state(new Map());
 
   return {
     get assetAvailabilityMap() {
@@ -100,7 +94,7 @@ function createPlanState() {
 }
 
 function createContextState() {
-  let selectedContext = $state<SelectedContext>({ ...DEFAULT_CONTEXT });
+  let selectedContext = $state({ ...DEFAULT_CONTEXT });
   const plan = createPlanState();
   const assetAvail = createAssetAvailabilityState();
 

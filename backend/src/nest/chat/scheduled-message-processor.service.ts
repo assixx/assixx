@@ -125,9 +125,7 @@ export class ScheduledMessageProcessorService implements OnModuleInit {
         return;
       }
 
-      this.logger.log(
-        `Processing ${dueMessages.length} scheduled message(s)...`,
-      );
+      this.logger.log(`Processing ${dueMessages.length} scheduled message(s)...`);
 
       let successCount = 0;
       let errorCount = 0;
@@ -159,9 +157,7 @@ export class ScheduledMessageProcessorService implements OnModuleInit {
    * Send a single scheduled message
    * Creates the actual message in messages table and marks scheduled as sent
    */
-  private async sendScheduledMessage(
-    scheduled: ScheduledMessageRow,
-  ): Promise<void> {
+  private async sendScheduledMessage(scheduled: ScheduledMessageRow): Promise<void> {
     const messageUuid = uuidv7();
 
     // 1. Insert the message into the messages table (with E2E fields if encrypted)
@@ -243,8 +239,7 @@ export class ScheduledMessageProcessorService implements OnModuleInit {
         conversationId: scheduled.conversation_id,
         senderId: scheduled.sender_id,
         recipientIds,
-        preview:
-          scheduled.is_e2e ? '' : (scheduled.content ?? '').substring(0, 50),
+        preview: scheduled.is_e2e ? '' : (scheduled.content ?? '').substring(0, 50),
       });
     } catch (error: unknown) {
       // Non-critical - log but don't fail the message send

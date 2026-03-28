@@ -5,7 +5,7 @@
  * Focus: Get/add/delete comments, UUID resolution,
  *        NotFoundException for missing entries.
  */
-import { NotFoundException } from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { ActivityLoggerService } from '../common/services/activity-logger.service.js';
@@ -81,9 +81,7 @@ describe('BlackboardCommentsService', () => {
       // count query
       mockDb.query.mockResolvedValueOnce([{ total: 1 }]);
       // comments query
-      mockDb.query.mockResolvedValueOnce([
-        { id: 1, comment: 'Hello', user_id: 5 },
-      ]);
+      mockDb.query.mockResolvedValueOnce([{ id: 1, comment: 'Hello', user_id: 5 }]);
 
       const result = await service.getComments(1, 10);
 
@@ -98,13 +96,40 @@ describe('BlackboardCommentsService', () => {
       // count query
       mockDb.query.mockResolvedValueOnce([{ total: 1 }]);
       // comments query
-      mockDb.query.mockResolvedValueOnce([
-        { id: 1, comment: 'Nice', user_id: 5 },
-      ]);
+      mockDb.query.mockResolvedValueOnce([{ id: 1, comment: 'Nice', user_id: 5 }]);
 
       const result = await service.getComments('uuid-123', 10);
 
       expect(result.comments).toHaveLength(1);
+    });
+
+    it('should default total to 0 when COUNT returns no rows', async () => {
+      mockDb.query.mockResolvedValueOnce([]); // count → empty
+      mockDb.query.mockResolvedValueOnce([]); // comments → empty
+
+      const result = await service.getComments(1, 10);
+
+      expect(result.total).toBe(0);
+      expect(result.hasMore).toBe(false);
+    });
+  });
+
+  // =============================================================
+  // getReplies
+  // =============================================================
+
+  describe('getReplies', () => {
+    it('should return mapped replies', async () => {
+      mockDb.query.mockResolvedValueOnce([
+        { id: 10, comment: 'Reply 1', user_id: 3 },
+        { id: 11, comment: 'Reply 2', user_id: 4 },
+      ]);
+
+      const result = await service.getReplies(1, 10);
+
+      expect(result).toHaveLength(2);
+      const sql = mockDb.query.mock.calls[0]?.[0] as string;
+      expect(sql).toContain('parent_id = $1');
     });
   });
 
@@ -116,9 +141,9 @@ describe('BlackboardCommentsService', () => {
     it('should throw NotFoundException when entry not found', async () => {
       mockDb.query.mockResolvedValueOnce([]); // resolveEntryId
 
-      await expect(
-        service.addComment('uuid-missing', 5, 10, 'text', false),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.addComment('uuid-missing', 5, 10, 'text', false)).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should add comment for numeric id', async () => {
@@ -128,6 +153,43 @@ describe('BlackboardCommentsService', () => {
 
       expect(result.id).toBe(99);
       expect(result.message).toBe('Comment added successfully');
+    });
+
+    it('should pass isInternal as 1 when true', async () => {
+      mockDb.query.mockResolvedValueOnce([{ id: 77 }]); // INSERT
+
+      const result = await service.addComment(1, 5, 10, 'Internal note', true);
+
+      expect(result.id).toBe(77);
+      const insertParams = mockDb.query.mock.calls[0]?.[1] as unknown[];
+      expect(insertParams?.[4]).toBe(1);
+      expect(insertParams?.[5]).toBeNull();
+    });
+
+    it('should throw BadRequestException when parent comment not found', async () => {
+      mockDb.query.mockResolvedValueOnce([]); // parent lookup
+
+      await expect(service.addComment(1, 5, 10, 'Reply', false, 999)).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it('should throw BadRequestException when parent belongs to different entry', async () => {
+      mockDb.query.mockResolvedValueOnce([{ entry_id: 42 }]); // parent belongs to entry 42, not 1
+
+      await expect(service.addComment(1, 5, 10, 'Reply', false, 5)).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it('should throw when INSERT returns no rows', async () => {
+      mockDb.query
+        .mockResolvedValueOnce([{ entry_id: 1 }]) // parent valid
+        .mockResolvedValueOnce([]); // INSERT fails
+
+      await expect(service.addComment(1, 5, 10, 'Reply', false, 5)).rejects.toThrow(
+        'Failed to add comment',
+      );
     });
   });
 

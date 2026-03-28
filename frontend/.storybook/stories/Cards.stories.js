@@ -145,8 +145,7 @@ export const StatCards = {
     const container = document.createElement('div');
     container.style.maxWidth = '300px';
 
-    const variantClass =
-      args.variant !== 'default' ? `card-stat--${args.variant}` : '';
+    const variantClass = args.variant !== 'default' ? `card-stat--${args.variant}` : '';
     const icons = {
       default: 'fa-users',
       success: 'fa-check-circle',
@@ -220,8 +219,7 @@ export const AccentCards = {
     const container = document.createElement('div');
     container.style.maxWidth = '350px';
 
-    const variantClass =
-      args.variant !== 'default' ? `card-accent--${args.variant}` : '';
+    const variantClass = args.variant !== 'default' ? `card-accent--${args.variant}` : '';
     const staticClass = args.isStatic ? 'card-accent--static' : '';
 
     container.innerHTML = `

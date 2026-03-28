@@ -8,7 +8,7 @@ import type { VacationHoliday } from './types';
 // ─── Data ───────────────────────────────────────────────────────────
 
 let holidays = $state<VacationHoliday[]>([]);
-let selectedYear = $state<number>(new Date().getFullYear());
+let selectedYear = $state(new Date().getFullYear());
 
 // ─── UI ─────────────────────────────────────────────────────────────
 

@@ -70,10 +70,7 @@ beforeAll(async () => {
   auth = await loginApitest();
   const headers = authOnly(auth.authToken);
 
-  const storeJson = async (
-    url: string,
-    target: StoredResponse,
-  ): Promise<void> => {
+  const storeJson = async (url: string, target: StoredResponse): Promise<void> => {
     flushThrottleKeys();
     const res = await fetch(url, { headers });
     target.status = res.status;
@@ -82,10 +79,7 @@ beforeAll(async () => {
     target.body = (await res.json()) as JsonBody;
   };
 
-  const storeText = async (
-    url: string,
-    target: StoredResponse,
-  ): Promise<void> => {
+  const storeText = async (url: string, target: StoredResponse): Promise<void> => {
     flushThrottleKeys();
     const res = await fetch(url, { headers });
     target.status = res.status;

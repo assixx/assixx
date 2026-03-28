@@ -71,9 +71,7 @@
   });
 
   /** Whether a profile image is available */
-  const hasImage = $derived(
-    imageUrl !== undefined && imageUrl !== null && imageUrl !== '',
-  );
+  const hasImage = $derived(imageUrl !== undefined && imageUrl !== null && imageUrl !== '');
 
   /** Role label mapping */
   const ROLE_LABELS: Record<string, string> = {

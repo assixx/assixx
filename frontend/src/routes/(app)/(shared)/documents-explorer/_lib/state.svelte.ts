@@ -5,11 +5,7 @@
 
 import { invalidateAll } from '$app/navigation';
 
-import {
-  showSuccessAlert,
-  showErrorAlert,
-  showWarningAlert,
-} from '$lib/stores/toast';
+import { showSuccessAlert, showErrorAlert, showWarningAlert } from '$lib/stores/toast';
 import { createLogger } from '$lib/utils/logger';
 
 import {
@@ -74,9 +70,7 @@ function navigatePreviewNext(): void {
 function handleDeleteDocument(doc: Document, e: MouseEvent): void {
   e.stopPropagation();
   if (!canDeleteDocument(doc, dataState.currentUser)) {
-    showWarningAlert(
-      'Sie haben keine Berechtigung, dieses Dokument zu löschen',
-    );
+    showWarningAlert('Sie haben keine Berechtigung, dieses Dokument zu löschen');
     return;
   }
   uiState.openDeleteModal(doc);
@@ -98,9 +92,7 @@ async function confirmDeleteDocument(): Promise<void> {
     await dataState.loadDocuments();
   } catch (err: unknown) {
     log.error({ err }, 'Delete failed');
-    showErrorAlert(
-      err instanceof Error ? err.message : 'Löschen fehlgeschlagen',
-    );
+    showErrorAlert(err instanceof Error ? err.message : 'Löschen fehlgeschlagen');
   } finally {
     uiState.setDeleteSubmitting(false);
   }
@@ -112,9 +104,7 @@ async function confirmDeleteDocument(): Promise<void> {
 function handleEditClick(doc: Document, e: MouseEvent): void {
   e.stopPropagation();
   if (!canEditDocument(doc, dataState.currentUser)) {
-    showWarningAlert(
-      'Sie haben keine Berechtigung, dieses Dokument zu bearbeiten',
-    );
+    showWarningAlert('Sie haben keine Berechtigung, dieses Dokument zu bearbeiten');
     return;
   }
   uiState.openEditModal(doc);
@@ -139,9 +129,7 @@ async function handleEditSubmit(data: EditData): Promise<void> {
     await dataState.loadDocuments();
   } catch (err: unknown) {
     log.error({ err }, 'Update failed');
-    showErrorAlert(
-      err instanceof Error ? err.message : 'Aktualisieren fehlgeschlagen',
-    );
+    showErrorAlert(err instanceof Error ? err.message : 'Aktualisieren fehlgeschlagen');
   } finally {
     uiState.setEditSubmitting(false);
   }
@@ -194,9 +182,7 @@ async function handleUploadSubmit(data: UploadData): Promise<void> {
     await dataState.loadDocuments();
   } catch (err: unknown) {
     log.error({ err }, 'Upload failed');
-    showErrorAlert(
-      err instanceof Error ? err.message : MESSAGES.ERROR_UPLOAD_FAILED,
-    );
+    showErrorAlert(err instanceof Error ? err.message : MESSAGES.ERROR_UPLOAD_FAILED);
   }
 }
 

@@ -10,10 +10,7 @@
   import { resolve } from '$app/paths';
 
   import PermissionDenied from '$lib/components/PermissionDenied.svelte';
-  import {
-    DEFAULT_HIERARCHY_LABELS,
-    type HierarchyLabels,
-  } from '$lib/types/hierarchy-labels';
+  import { DEFAULT_HIERARCHY_LABELS, type HierarchyLabels } from '$lib/types/hierarchy-labels';
 
   import { createOrgLevelLabels } from '../_lib/constants';
 
@@ -26,12 +23,11 @@
   const { data }: { data: PageData } = $props();
 
   const labels = $derived(
-    ((data as Record<string, unknown>).hierarchyLabels as
-      | HierarchyLabels
-      | undefined) ?? DEFAULT_HIERARCHY_LABELS,
+    ((data as Record<string, unknown>).hierarchyLabels as HierarchyLabels | undefined) ??
+      DEFAULT_HIERARCHY_LABELS,
   );
 
-  const permissionDenied = $derived<boolean>(data.permissionDenied);
+  const permissionDenied = $derived(data.permissionDenied);
 
   const entries = $derived(data.entries);
   const error = $derived(data.error);
@@ -131,9 +127,7 @@
       <div class="card__body">
         {#if error}
           <div class="p-6 text-center">
-            <i
-              class="fas fa-exclamation-triangle mb-4 text-4xl text-(--color-danger)"
-            ></i>
+            <i class="fas fa-exclamation-triangle mb-4 text-4xl text-(--color-danger)"></i>
             <p class="text-(--color-text-secondary)">{error}</p>
           </div>
         {:else if entries.length === 0}
@@ -142,9 +136,7 @@
               <i class="fas fa-archive"></i>
             </div>
             <h3 class="empty-state__title">Keine archivierten Einträge</h3>
-            <p class="empty-state__description">
-              Es wurden noch keine Einträge archiviert.
-            </p>
+            <p class="empty-state__description">Es wurden noch keine Einträge archiviert.</p>
             <button
               type="button"
               class="btn btn-primary mt-4"
@@ -185,17 +177,12 @@
                         {truncateText(entry.title, 50)}
                       </div>
                       <div class="text-sm text-(--color-text-secondary)">
-                        {truncateText(
-                          entry.content.replace(/<[^>]*>/g, ''),
-                          60,
-                        )}
+                        {truncateText(entry.content.replace(/<[^>]*>/g, ''), 60)}
                       </div>
                     </td>
                     <td>{entry.authorFullName ?? entry.authorName ?? '-'}</td>
                     <td>
-                      <span class="badge badge--secondary"
-                        >{getOrgLevelText(entry.orgLevel)}</span
-                      >
+                      <span class="badge badge--secondary">{getOrgLevelText(entry.orgLevel)}</span>
                     </td>
                     <td>
                       <span class="badge {getPriorityClass(entry.priority)}">

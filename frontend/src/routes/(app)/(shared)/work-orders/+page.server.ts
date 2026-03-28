@@ -11,11 +11,7 @@ import { apiFetch, apiFetchWithPermission } from '$lib/server/api-fetch';
 import { requireAddon } from '$lib/utils/addon-guard';
 
 import type { PageServerLoad } from './$types';
-import type {
-  PaginatedResponse,
-  WorkOrderListItem,
-  WorkOrderStats,
-} from './_lib/types';
+import type { PaginatedResponse, WorkOrderListItem, WorkOrderStats } from './_lib/types';
 
 /** Empty paginated result fallback */
 function emptyPage(): PaginatedResponse<WorkOrderListItem> {

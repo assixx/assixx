@@ -11,10 +11,7 @@ import type { AddonStatus } from './types';
 const apiClient = getApiClient();
 
 /** Activate an addon (starts trial or reactivates) */
-export async function activateAddon(
-  tenantId: number,
-  addonCode: string,
-): Promise<AddonStatus> {
+export async function activateAddon(tenantId: number, addonCode: string): Promise<AddonStatus> {
   return await apiClient.post<AddonStatus>('/addons/activate', {
     tenantId,
     addonCode,

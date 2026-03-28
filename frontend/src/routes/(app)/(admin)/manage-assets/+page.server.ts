@@ -18,14 +18,12 @@ export const load: PageServerLoad = async ({ cookies, fetch }) => {
   }
 
   // Parallel fetch: assets + reference data
-  const [assetsData, departmentsData, areasData, teamsData] = await Promise.all(
-    [
-      apiFetch<Asset[]>('/assets', token, fetch),
-      apiFetch<Department[]>('/departments', token, fetch),
-      apiFetch<Area[]>('/areas', token, fetch),
-      apiFetch<Team[]>('/teams', token, fetch),
-    ],
-  );
+  const [assetsData, departmentsData, areasData, teamsData] = await Promise.all([
+    apiFetch<Asset[]>('/assets', token, fetch),
+    apiFetch<Department[]>('/departments', token, fetch),
+    apiFetch<Area[]>('/areas', token, fetch),
+    apiFetch<Team[]>('/teams', token, fetch),
+  ]);
 
   const assets = Array.isArray(assetsData) ? assetsData : [];
   const departments = Array.isArray(departmentsData) ? departmentsData : [];

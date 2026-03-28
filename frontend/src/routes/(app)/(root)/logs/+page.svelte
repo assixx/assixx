@@ -106,12 +106,7 @@
   );
 
   const hasActiveFilters = $derived(
-    checkHasActiveFilters(
-      filterUser,
-      filterAction,
-      filterEntity,
-      filterTimerange,
-    ),
+    checkHasActiveFilters(filterUser, filterAction, filterEntity, filterTimerange),
   );
 
   const canDelete = $derived(filtersApplied);
@@ -226,9 +221,7 @@
         <i class="fas fa-list-alt mr-2"></i>
         System-Logs
       </h2>
-      <p class="mt-2 text-(--color-text-secondary)">
-        Übersicht aller Systemaktivitäten
-      </p>
+      <p class="mt-2 text-(--color-text-secondary)">Übersicht aller Systemaktivitäten</p>
     </div>
 
     <div class="card__body">
@@ -400,17 +393,14 @@
                   <td>
                     <div class="user-info">
                       <span class="user-name">{getDisplayName(entry)}</span>
-                      <span
-                        class="badge badge--sm {getRoleBadgeClass(
-                          entry.userRole,
-                        )}">{getRoleLabel(entry.userRole)}</span
+                      <span class="badge badge--sm {getRoleBadgeClass(entry.userRole)}"
+                        >{getRoleLabel(entry.userRole)}</span
                       >
                     </div>
                   </td>
                   <td class="text-muted">{entry.employeeNumber ?? '-'}</td>
                   <td>
-                    <span
-                      class="action-label action-{entry.action.toLowerCase()}"
+                    <span class="action-label action-{entry.action.toLowerCase()}"
                       >{getActionLabel(entry.action)}</span
                     >
                   </td>

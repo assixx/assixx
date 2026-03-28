@@ -52,11 +52,7 @@
     onquestiontypechange: (questionId: string, type: QuestionType) => void;
     onaddoption: (questionId: string) => void;
     onremoveoption: (questionId: string, optionIndex: number) => void;
-    onupdateoption: (
-      questionId: string,
-      optionIndex: number,
-      text: string,
-    ) => void;
+    onupdateoption: (questionId: string, optionIndex: number, text: string) => void;
   }
 
   /* eslint-disable prefer-const, @typescript-eslint/no-useless-default-assignment -- Svelte $bindable() requires let and is not a useless default */
@@ -77,11 +73,7 @@
 
   /** Filter departments based on selected areas (inheritance logic) */
   const availableDepartments = $derived.by(() => {
-    return filterAvailableDepartments(
-      departments,
-      formSelectedAreas,
-      formCompanyWide,
-    );
+    return filterAvailableDepartments(departments, formSelectedAreas, formCompanyWide);
   });
 
   /** All department IDs covered by selection (explicit + area-inherited) */
@@ -103,9 +95,7 @@
    */
   function handleAreaChange(e: Event): void {
     const select = e.target as HTMLSelectElement;
-    const newAreaIds = Array.from(select.selectedOptions).map((o) =>
-      Number(o.value),
-    );
+    const newAreaIds = Array.from(select.selectedOptions).map((o) => Number(o.value));
     formSelectedAreas = newAreaIds;
     formSelectedDepartments = filterDepartmentIdsByAreas(
       formSelectedDepartments,
@@ -128,9 +118,7 @@
    */
   function handleDepartmentChange(e: Event): void {
     const select = e.target as HTMLSelectElement;
-    const newDeptIds = Array.from(select.selectedOptions).map((o) =>
-      Number(o.value),
-    );
+    const newDeptIds = Array.from(select.selectedOptions).map((o) => Number(o.value));
     formSelectedDepartments = newDeptIds;
     const areaDeptIds = departments
       .filter((d) => formSelectedAreas.includes(d.areaId ?? -1))
@@ -262,8 +250,8 @@
           </div>
           <p class="text-secondary mt-3 text-sm">
             <i class="fas fa-info-circle"></i>
-            Bei anonymen Umfragen werden keine Benutzerdaten gespeichert. Sie können
-            nicht sehen, wer geantwortet hat.
+            Bei anonymen Umfragen werden keine Benutzerdaten gespeichert. Sie können nicht sehen, wer
+            geantwortet hat.
           </p>
         </div>
 
@@ -325,8 +313,8 @@
             Sichtbarkeit
           </span>
           <p class="mb-2 text-sm text-(--color-text-secondary)">
-            wählen Sie keine Organisation für firmenweite Umfragen oder
-            eine/mehrere spezifische Organisationen.
+            wählen Sie keine Organisation für firmenweite Umfragen oder eine/mehrere spezifische
+            Organisationen.
           </p>
         </div>
 
@@ -377,9 +365,7 @@
                 value={area.id}
                 selected={formSelectedAreas.includes(area.id)}
               >
-                {area.name}{(
-                  area.departmentCount !== undefined && area.departmentCount > 0
-                ) ?
+                {area.name}{area.departmentCount !== undefined && area.departmentCount > 0 ?
                   ` (${area.departmentCount} Abt.)`
                 : ''}
               </option>
@@ -416,9 +402,7 @@
                 value={dept.id}
                 selected={formSelectedDepartments.includes(dept.id)}
               >
-                {dept.name}{(
-                  dept.areaName !== undefined && dept.areaName !== ''
-                ) ?
+                {dept.name}{dept.areaName !== undefined && dept.areaName !== '' ?
                   ` (${dept.areaName})`
                 : ''}
               </option>

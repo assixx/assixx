@@ -132,10 +132,7 @@ export async function loadAvailabilityHistory<TEntity>(
 
     const json = (await response.json()) as ApiResponse;
     const entries = json.data.entries ?? [];
-    log.info(
-      { count: entries.length },
-      `${config.entityKey} availability history loaded`,
-    );
+    log.info({ count: entries.length }, `${config.entityKey} availability history loaded`);
 
     return {
       entity: (json.data[config.entityKey] ?? null) as TEntity | null,
@@ -145,10 +142,7 @@ export async function loadAvailabilityHistory<TEntity>(
       currentMonth: month,
     };
   } catch (err: unknown) {
-    log.error(
-      { err },
-      `Error fetching ${config.entityKey} availability history`,
-    );
+    log.error({ err }, `Error fetching ${config.entityKey} availability history`);
     return {
       entity: null,
       entries: [],

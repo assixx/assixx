@@ -7,9 +7,7 @@
     "contact": { "name": "SCS-Technik", "email": "support@scs-technik.de" },
     "license": { "name": "Proprietary", "url": "https://assixx.com/license" }
   },
-  "servers": [
-    { "url": "https://api.assixx.com/api", "description": "Production Server" }
-  ],
+  "servers": [{ "url": "https://api.assixx.com/api", "description": "Production Server" }],
   "components": {
     "securitySchemes": {
       "bearerAuth": {
@@ -201,14 +199,7 @@
           },
           "category": {
             "type": "string",
-            "enum": [
-              "Sicherheit",
-              "Produktivität",
-              "Qualität",
-              "Kosten",
-              "Umwelt",
-              "Sonstiges"
-            ],
+            "enum": ["Sicherheit", "Produktivität", "Qualität", "Kosten", "Umwelt", "Sonstiges"],
             "description": "Suggestion category"
           },
           "status": {
@@ -247,15 +238,7 @@
             "description": "Number of attachments"
           }
         },
-        "required": [
-          "id",
-          "title",
-          "description",
-          "category",
-          "status",
-          "created_by",
-          "tenant_id"
-        ]
+        "required": ["id", "title", "description", "category", "status", "created_by", "tenant_id"]
       },
       "CalendarEvent": {
         "type": "object",
@@ -423,15 +406,7 @@
           "created_at": { "type": "string", "format": "date-time" },
           "updated_at": { "type": "string", "format": "date-time" }
         },
-        "required": [
-          "id",
-          "name",
-          "start_date",
-          "end_date",
-          "status",
-          "tenant_id",
-          "created_by"
-        ]
+        "required": ["id", "name", "start_date", "end_date", "status", "tenant_id", "created_by"]
       },
       "Survey": {
         "type": "object",
@@ -620,13 +595,7 @@
             "description": "Number of unread messages for current user"
           }
         },
-        "required": [
-          "id",
-          "is_group",
-          "created_by",
-          "created_at",
-          "participants"
-        ]
+        "required": ["id", "is_group", "created_by", "created_at", "participants"]
       },
       "ChatMessage": {
         "type": "object",
@@ -3366,13 +3335,7 @@
                   },
                   "category": {
                     "type": "string",
-                    "enum": [
-                      "personal",
-                      "company",
-                      "department",
-                      "team",
-                      "payroll"
-                    ],
+                    "enum": ["personal", "company", "department", "team", "payroll"],
                     "description": "Document category"
                   },
                   "userId": {

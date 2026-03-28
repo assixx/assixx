@@ -44,25 +44,14 @@
 
   <!-- Survey properties badges -->
   <div class="mb-4 flex flex-wrap items-center gap-2">
-    <span
-      class="badge badge--sm {toBool(survey.isAnonymous) ? 'badge--info' : (
-        'badge--secondary'
-      )}"
-    >
-      <i class="fas {toBool(survey.isAnonymous) ? 'fa-user-secret' : 'fa-user'}"
-      ></i>
+    <span class="badge badge--sm {toBool(survey.isAnonymous) ? 'badge--info' : 'badge--secondary'}">
+      <i class="fas {toBool(survey.isAnonymous) ? 'fa-user-secret' : 'fa-user'}"></i>
       {toBool(survey.isAnonymous) ? 'Anonym' : 'Nicht anonym'}
     </span>
     <span
-      class="badge badge--sm {toBool(survey.isMandatory) ? 'badge--warning' : (
-        'badge--success'
-      )}"
+      class="badge badge--sm {toBool(survey.isMandatory) ? 'badge--warning' : 'badge--success'}"
     >
-      <i
-        class="fas {toBool(survey.isMandatory) ?
-          'fa-exclamation-circle'
-        : 'fa-check-circle'}"
-      ></i>
+      <i class="fas {toBool(survey.isMandatory) ? 'fa-exclamation-circle' : 'fa-check-circle'}"></i>
       {toBool(survey.isMandatory) ? 'Verpflichtend' : 'Freiwillig'}
     </span>
   </div>

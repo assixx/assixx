@@ -5,10 +5,7 @@
 import type { Employee, StatusFilter } from './types';
 
 /** Filter employees by status */
-export function filterByStatus(
-  employees: Employee[],
-  status: StatusFilter,
-): Employee[] {
+export function filterByStatus(employees: Employee[], status: StatusFilter): Employee[] {
   switch (status) {
     case 'active':
       return employees.filter((e) => e.isActive === 1);
@@ -24,10 +21,7 @@ export function filterByStatus(
 }
 
 /** Filter employees by search query (searches in: firstName, lastName, email, position, employeeNumber) */
-export function filterBySearch(
-  employees: Employee[],
-  query: string,
-): Employee[] {
+export function filterBySearch(employees: Employee[], query: string): Employee[] {
   const term = query.toLowerCase().trim();
   if (term === '') return employees;
 

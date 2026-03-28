@@ -11,12 +11,7 @@
  *   - sort_order is auto-incremented per plan
  */
 import { IS_ACTIVE } from '@assixx/shared/constants';
-import {
-  ConflictException,
-  Injectable,
-  Logger,
-  NotFoundException,
-} from '@nestjs/common';
+import { ConflictException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import type { PoolClient } from 'pg';
 import { v7 as uuidv7 } from 'uuid';
 
@@ -152,12 +147,7 @@ export class TpmCardsService {
   ): Promise<PaginatedCards> {
     const fullWhere = `c.tenant_id = $1 AND c.is_active = ${IS_ACTIVE.ACTIVE} AND c.status = $2`;
 
-    return await this.executePaginatedQuery(
-      fullWhere,
-      [tenantId, status],
-      page,
-      pageSize,
-    );
+    return await this.executePaginatedQuery(fullWhere, [tenantId, status], page, pageSize);
   }
 
   // ============================================================================
@@ -165,11 +155,7 @@ export class TpmCardsService {
   // ============================================================================
 
   /** Create a new maintenance card */
-  async createCard(
-    tenantId: number,
-    dto: CreateCardDto,
-    createdBy: number,
-  ): Promise<TpmCard> {
+  async createCard(tenantId: number, dto: CreateCardDto, createdBy: number): Promise<TpmCard> {
     this.logger.debug(`Creating card "${dto.title}" for plan ${dto.planUuid}`);
 
     const card = await this.db.tenantTransaction(
@@ -196,44 +182,39 @@ export class TpmCardsService {
     cardUuid: string,
     dto: UpdateCardDto,
   ): Promise<TpmCard> {
-    const card = await this.db.tenantTransaction(
-      async (client: PoolClient): Promise<TpmCard> => {
-        const existing = await this.lockCardByUuid(client, tenantId, cardUuid);
+    const card = await this.db.tenantTransaction(async (client: PoolClient): Promise<TpmCard> => {
+      const existing = await this.lockCardByUuid(client, tenantId, cardUuid);
 
-        const { setClauses, params, nextParamIndex } = buildCardUpdateFields(
-          dto as Record<string, unknown>,
-        );
+      const { setClauses, params, nextParamIndex } = buildCardUpdateFields(
+        dto as Record<string, unknown>,
+      );
 
-        // Recalculate interval_order when intervalType changes
-        let paramIdx = nextParamIndex;
-        if (
-          dto.intervalType !== undefined &&
-          dto.intervalType !== existing.interval_type
-        ) {
-          setClauses.push(`interval_order = $${paramIdx}`);
-          params.push(INTERVAL_ORDER_MAP[dto.intervalType]);
-          paramIdx++;
-        }
+      // Recalculate interval_order when intervalType changes
+      let paramIdx = nextParamIndex;
+      if (dto.intervalType !== undefined && dto.intervalType !== existing.interval_type) {
+        setClauses.push(`interval_order = $${paramIdx}`);
+        params.push(INTERVAL_ORDER_MAP[dto.intervalType]);
+        paramIdx++;
+      }
 
-        if (setClauses.length === 0) {
-          return mapCardRowToApi(existing as TpmCardJoinRow);
-        }
+      if (setClauses.length === 0) {
+        return mapCardRowToApi(existing as TpmCardJoinRow);
+      }
 
-        params.push(cardUuid, tenantId);
-        const sql = `UPDATE tpm_cards
+      params.push(cardUuid, tenantId);
+      const sql = `UPDATE tpm_cards
                      SET ${setClauses.join(', ')}, updated_at = NOW()
                      WHERE uuid = $${paramIdx} AND tenant_id = $${paramIdx + 1} AND is_active = ${IS_ACTIVE.ACTIVE}
                      RETURNING *`;
 
-        const result = await client.query<TpmCardJoinRow>(sql, params);
-        const row = result.rows[0];
-        if (row === undefined) {
-          throw new Error('UPDATE tpm_cards returned no rows');
-        }
+      const result = await client.query<TpmCardJoinRow>(sql, params);
+      const row = result.rows[0];
+      if (row === undefined) {
+        throw new Error('UPDATE tpm_cards returned no rows');
+      }
 
-        return mapCardRowToApi(row);
-      },
-    );
+      return mapCardRowToApi(row);
+    });
 
     void this.activityLogger.logUpdate(
       tenantId,
@@ -249,25 +230,19 @@ export class TpmCardsService {
   }
 
   /** Soft-delete a card (is_active = 4) */
-  async deleteCard(
-    tenantId: number,
-    userId: number,
-    cardUuid: string,
-  ): Promise<void> {
-    const card = await this.db.tenantTransaction(
-      async (client: PoolClient): Promise<TpmCard> => {
-        const existing = await this.lockCardByUuid(client, tenantId, cardUuid);
+  async deleteCard(tenantId: number, userId: number, cardUuid: string): Promise<void> {
+    const card = await this.db.tenantTransaction(async (client: PoolClient): Promise<TpmCard> => {
+      const existing = await this.lockCardByUuid(client, tenantId, cardUuid);
 
-        await client.query(
-          `UPDATE tpm_cards
+      await client.query(
+        `UPDATE tpm_cards
            SET is_active = ${IS_ACTIVE.DELETED}, updated_at = NOW()
            WHERE uuid = $1 AND tenant_id = $2`,
-          [cardUuid, tenantId],
-        );
+        [cardUuid, tenantId],
+      );
 
-        return mapCardRowToApi(existing as TpmCardJoinRow);
-      },
-    );
+      return mapCardRowToApi(existing as TpmCardJoinRow);
+    });
 
     void this.activityLogger.logDelete(
       tenantId,
@@ -290,18 +265,9 @@ export class TpmCardsService {
     dto: CreateCardDto,
     createdBy: number,
   ): Promise<TpmCard> {
-    const planCtx = await this.resolvePlanContext(
-      client,
-      tenantId,
-      dto.planUuid,
-    );
+    const planCtx = await this.resolvePlanContext(client, tenantId, dto.planUuid);
 
-    await this.assertCardLimitNotReached(
-      client,
-      tenantId,
-      planCtx.planId,
-      dto.intervalType,
-    );
+    await this.assertCardLimitNotReached(client, tenantId, planCtx.planId, dto.intervalType);
 
     const cardCode = await this.generateCardCode(
       client,
@@ -310,11 +276,7 @@ export class TpmCardsService {
       dto.cardRole,
       dto.intervalType,
     );
-    const sortOrder = await this.getNextSortOrder(
-      client,
-      tenantId,
-      planCtx.planId,
-    );
+    const sortOrder = await this.getNextSortOrder(client, tenantId, planCtx.planId);
 
     const insertData = buildCardInsertData(dto, planCtx, {
       tenantId,
@@ -322,10 +284,7 @@ export class TpmCardsService {
       sortOrder,
       createdBy,
     });
-    const { id: cardId, card } = await this.executeCardInsert(
-      client,
-      insertData,
-    );
+    const { id: cardId, card } = await this.executeCardInsert(client, insertData);
 
     const effectiveWeekday =
       dto.intervalType === 'weekly' && dto.weekdayOverride != null ?
@@ -607,12 +566,9 @@ function buildFilterClauses(
   if (filters.intervalType !== undefined) {
     addFilter('c.interval_type', filters.intervalType);
   }
-  if (filters.cardRole !== undefined)
-    addFilter('c.card_role', filters.cardRole);
+  if (filters.cardRole !== undefined) addFilter('c.card_role', filters.cardRole);
   if (filters.cardCategory !== undefined) {
-    whereClauses.push(
-      `c.card_categories @> ARRAY[$${idx}]::tpm_card_category[]`,
-    );
+    whereClauses.push(`c.card_categories @> ARRAY[$${idx}]::tpm_card_category[]`);
     params.push(filters.cardCategory);
     idx++;
   }

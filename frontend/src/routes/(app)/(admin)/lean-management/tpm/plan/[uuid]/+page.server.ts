@@ -35,9 +35,7 @@ function extractAssetUuids(plansData: PlanListData | null): string[] {
   return (
     plansData?.data
       .map((p: TpmPlan) => p.assetUuid)
-      .filter(
-        (uuid: string | undefined): uuid is string => uuid !== undefined,
-      ) ?? []
+      .filter((uuid: string | undefined): uuid is string => uuid !== undefined) ?? []
   );
 }
 
@@ -69,11 +67,7 @@ async function loadOrgData(
     apiFetch<Asset[]>('/assets', token, fetchFn),
     apiFetch<TpmArea[]>('/areas', token, fetchFn),
     apiFetch<TpmDepartment[]>('/departments', token, fetchFn),
-    apiFetch<IntervalColorConfigEntry[]>(
-      '/tpm/config/interval-colors',
-      token,
-      fetchFn,
-    ),
+    apiFetch<IntervalColorConfigEntry[]>('/tpm/config/interval-colors', token, fetchFn),
   ]);
   return {
     assets: safeArray(a),
@@ -83,12 +77,7 @@ async function loadOrgData(
   };
 }
 
-export const load: PageServerLoad = async ({
-  params,
-  cookies,
-  fetch,
-  parent,
-}) => {
+export const load: PageServerLoad = async ({ params, cookies, fetch, parent }) => {
   const token = cookies.get('accessToken');
   if (token === undefined || token === '') {
     redirect(302, '/login');
@@ -100,23 +89,14 @@ export const load: PageServerLoad = async ({
   const isCreateMode = params.uuid === 'new';
 
   // Permission check: use plans list for create, plan detail for edit
-  const permEndpoint =
-    isCreateMode ? '/tpm/plans?page=1&limit=1' : `/tpm/plans/${params.uuid}`;
-  const permResult = await apiFetchWithPermission<unknown>(
-    permEndpoint,
-    token,
-    fetch,
-  );
+  const permEndpoint = isCreateMode ? '/tpm/plans?page=1&limit=1' : `/tpm/plans/${params.uuid}`;
+  const permResult = await apiFetchWithPermission<unknown>(permEndpoint, token, fetch);
   if (permResult.permissionDenied) return buildDeniedResult();
 
   const shared = await loadOrgData(token, fetch);
 
   if (isCreateMode) {
-    const plansData = await apiFetch<PlanListData>(
-      '/tpm/plans?page=1&limit=500',
-      token,
-      fetch,
-    );
+    const plansData = await apiFetch<PlanListData>('/tpm/plans?page=1&limit=500', token, fetch);
     return {
       permissionDenied: false as const,
       isCreateMode: true,

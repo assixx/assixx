@@ -27,15 +27,11 @@ describe('SetPlanAssignmentsSchema', () => {
   });
 
   it('should accept empty userIds array (remove all)', () => {
-    expect(
-      SetPlanAssignmentsSchema.safeParse({ ...valid, userIds: [] }).success,
-    ).toBe(true);
+    expect(SetPlanAssignmentsSchema.safeParse({ ...valid, userIds: [] }).success).toBe(true);
   });
 
   it('should accept single userId', () => {
-    expect(
-      SetPlanAssignmentsSchema.safeParse({ ...valid, userIds: [42] }).success,
-    ).toBe(true);
+    expect(SetPlanAssignmentsSchema.safeParse({ ...valid, userIds: [42] }).success).toBe(true);
   });
 
   // -----------------------------------------------------------
@@ -43,52 +39,33 @@ describe('SetPlanAssignmentsSchema', () => {
   // -----------------------------------------------------------
 
   it('should reject missing userIds', () => {
-    expect(
-      SetPlanAssignmentsSchema.safeParse({ scheduledDate: '2026-03-15' })
-        .success,
-    ).toBe(false);
+    expect(SetPlanAssignmentsSchema.safeParse({ scheduledDate: '2026-03-15' }).success).toBe(false);
   });
 
   it('should reject non-array userIds', () => {
-    expect(
-      SetPlanAssignmentsSchema.safeParse({ ...valid, userIds: 42 }).success,
-    ).toBe(false);
+    expect(SetPlanAssignmentsSchema.safeParse({ ...valid, userIds: 42 }).success).toBe(false);
   });
 
   it('should reject non-integer userIds', () => {
-    expect(
-      SetPlanAssignmentsSchema.safeParse({ ...valid, userIds: [1.5] }).success,
-    ).toBe(false);
+    expect(SetPlanAssignmentsSchema.safeParse({ ...valid, userIds: [1.5] }).success).toBe(false);
   });
 
   it('should reject negative userIds', () => {
-    expect(
-      SetPlanAssignmentsSchema.safeParse({ ...valid, userIds: [-1] }).success,
-    ).toBe(false);
+    expect(SetPlanAssignmentsSchema.safeParse({ ...valid, userIds: [-1] }).success).toBe(false);
   });
 
   it('should reject zero userId', () => {
-    expect(
-      SetPlanAssignmentsSchema.safeParse({ ...valid, userIds: [0] }).success,
-    ).toBe(false);
+    expect(SetPlanAssignmentsSchema.safeParse({ ...valid, userIds: [0] }).success).toBe(false);
   });
 
   it('should reject more than 50 userIds', () => {
-    const tooMany = Array.from(
-      { length: 51 },
-      (_: unknown, i: number) => i + 1,
-    );
-    expect(
-      SetPlanAssignmentsSchema.safeParse({ ...valid, userIds: tooMany })
-        .success,
-    ).toBe(false);
+    const tooMany = Array.from({ length: 51 }, (_: unknown, i: number) => i + 1);
+    expect(SetPlanAssignmentsSchema.safeParse({ ...valid, userIds: tooMany }).success).toBe(false);
   });
 
   it('should accept exactly 50 userIds', () => {
     const max = Array.from({ length: 50 }, (_: unknown, i: number) => i + 1);
-    expect(
-      SetPlanAssignmentsSchema.safeParse({ ...valid, userIds: max }).success,
-    ).toBe(true);
+    expect(SetPlanAssignmentsSchema.safeParse({ ...valid, userIds: max }).success).toBe(true);
   });
 
   // -----------------------------------------------------------
@@ -96,9 +73,7 @@ describe('SetPlanAssignmentsSchema', () => {
   // -----------------------------------------------------------
 
   it('should reject missing scheduledDate', () => {
-    expect(SetPlanAssignmentsSchema.safeParse({ userIds: [1] }).success).toBe(
-      false,
-    );
+    expect(SetPlanAssignmentsSchema.safeParse({ userIds: [1] }).success).toBe(false);
   });
 
   it('should reject invalid date format (DD-MM-YYYY)', () => {

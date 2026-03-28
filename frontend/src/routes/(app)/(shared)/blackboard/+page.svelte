@@ -16,10 +16,7 @@
   import PermissionDenied from '$lib/components/PermissionDenied.svelte';
   import { notificationStore } from '$lib/stores/notification.store.svelte';
   import { showErrorAlert, showSuccessAlert } from '$lib/stores/toast';
-  import {
-    DEFAULT_HIERARCHY_LABELS,
-    type HierarchyLabels,
-  } from '$lib/types/hierarchy-labels';
+  import { DEFAULT_HIERARCHY_LABELS, type HierarchyLabels } from '$lib/types/hierarchy-labels';
   import { getApiClient } from '$lib/utils/api-client';
   import { createLogger } from '$lib/utils/logger';
 
@@ -35,12 +32,7 @@
   import { getSortLabel } from './_lib/utils';
 
   import type { PageData } from './$types';
-  import type {
-    BlackboardEntry,
-    Priority,
-    EntryColor,
-    FormMode,
-  } from './_lib/types';
+  import type { BlackboardEntry, Priority, EntryColor, FormMode } from './_lib/types';
 
   // =============================================================================
   // SSR DATA - All via $derived (Level 3: Single Source of Truth)
@@ -50,13 +42,12 @@
 
   // Hierarchy labels from layout (SSR)
   const labels = $derived(
-    ((data as Record<string, unknown>).hierarchyLabels as
-      | HierarchyLabels
-      | undefined) ?? DEFAULT_HIERARCHY_LABELS,
+    ((data as Record<string, unknown>).hierarchyLabels as HierarchyLabels | undefined) ??
+      DEFAULT_HIERARCHY_LABELS,
   );
 
   // Permission check
-  const permissionDenied = $derived<boolean>(data.permissionDenied);
+  const permissionDenied = $derived(data.permissionDenied);
 
   // SSR data as derived - updates automatically when data changes
   const entries = $derived(data.entries);
@@ -73,13 +64,9 @@
   // =============================================================================
 
   // Read current filter state from URL
-  const currentPage = $derived(
-    Number($page.url.searchParams.get('page') ?? '1'),
-  );
+  const currentPage = $derived(Number($page.url.searchParams.get('page') ?? '1'));
   const sortBy = $derived($page.url.searchParams.get('sortBy') ?? 'created_at');
-  const sortDir = $derived(
-    ($page.url.searchParams.get('sortDir') ?? 'DESC') as 'ASC' | 'DESC',
-  );
+  const sortDir = $derived(($page.url.searchParams.get('sortDir') ?? 'DESC') as 'ASC' | 'DESC');
   const levelFilter = $derived(
     ($page.url.searchParams.get('filter') ?? 'all') as
       | 'all'
@@ -99,7 +86,7 @@
   // =============================================================================
 
   // Zoom State
-  let zoomLevel = $state<number>(ZOOM_CONFIG.DEFAULT);
+  let zoomLevel: number = $state(ZOOM_CONFIG.DEFAULT);
   let filterExpanded = $state(false);
 
   // Loading state for mutations
@@ -138,9 +125,7 @@
   // URL NAVIGATION HELPERS (Level 3: goto() instead of fetchEntries())
   // =============================================================================
 
-  function buildUrl(
-    params: Record<string, string | number | undefined>,
-  ): string {
+  function buildUrl(params: Record<string, string | number | undefined>): string {
     const url = new URL($page.url);
     Object.entries(params).forEach(([key, value]) => {
       if (value !== undefined && value !== '' && value !== 'all') {
@@ -152,9 +137,7 @@
     return url.pathname + url.search;
   }
 
-  async function navigateWithParams(
-    params: Record<string, string | number | undefined>,
-  ) {
+  async function navigateWithParams(params: Record<string, string | number | undefined>) {
     await goto(buildUrl(params), { replaceState: true, noScroll: true });
   }
 
@@ -262,11 +245,9 @@
         entryId = editingEntryId;
         showSuccessAlert('Eintrag aktualisiert');
       } else {
-        const response = await apiClient.post<{
-          data?: { id: number };
-          id?: number;
-        }>('/blackboard/entries', payload);
-        entryId = response.data?.id ?? response.id ?? null;
+        const response = await apiClient.post('/blackboard/entries', payload);
+        const body = response as { data?: { id: number }; id?: number };
+        entryId = body.data?.id ?? body.id ?? null;
         showSuccessAlert('Eintrag erstellt');
       }
 
@@ -299,9 +280,7 @@
       await invalidateAll(); // Level 3: Server refetches data
     } catch (err: unknown) {
       log.error({ err }, 'Error deleting entry');
-      showErrorAlert(
-        err instanceof Error ? err.message : MESSAGES.DELETE_ERROR,
-      );
+      showErrorAlert(err instanceof Error ? err.message : MESSAGES.DELETE_ERROR);
     } finally {
       loading = false;
     }
@@ -422,8 +401,7 @@
   $effect(() => {
     if (!mounted) {
       mounted = true;
-      userRole =
-        localStorage.getItem('activeRole') ?? localStorage.getItem('userRole');
+      userRole = localStorage.getItem('activeRole') ?? localStorage.getItem('userRole');
     }
   });
 
@@ -456,20 +434,12 @@
       lastEditUuid = '';
     }
   });
-
-  function handleKeyDown(e: KeyboardEvent): void {
-    if (e.key === 'Escape') {
-      if (showDeleteModal) showDeleteModal = false;
-      else if (showEntryModal) closeEntryModal();
-    }
-  }
 </script>
 
 <svelte:head>
   <title>Schwarzes Brett - Assixx</title>
 </svelte:head>
 
-<svelte:window onkeydown={handleKeyDown} />
 <svelte:document onfullscreenchange={handleFullscreenChange} />
 
 {#if permissionDenied}
@@ -512,8 +482,7 @@
             type="button"
             class="btn btn-icon btn-secondary"
             title="Zoom zurücksetzen"
-            onclick={zoomReset}
-            ><i class="fas fa-compress-arrows-alt"></i></button
+            onclick={zoomReset}><i class="fas fa-compress-arrows-alt"></i></button
           >
           <button
             type="button"
@@ -527,8 +496,7 @@
             type="button"
             class="btn btn-primary"
             onclick={openCreateModal}
-            disabled={loading}
-            ><i class="fas fa-plus mr-2"></i>Neuer Eintrag</button
+            disabled={loading}><i class="fas fa-plus mr-2"></i>Neuer Eintrag</button
           >
         {/if}
       </div>
@@ -548,9 +516,7 @@
         </div>
       {:else if error}
         <div class="p-5 text-center">
-          <i
-            class="fas fa-exclamation-triangle mb-4 text-4xl text-(--color-danger)"
-          ></i>
+          <i class="fas fa-exclamation-triangle mb-4 text-4xl text-(--color-danger)"></i>
           <p class="text-(--color-text-secondary)">{error}</p>
           <button
             type="button"
@@ -559,11 +525,8 @@
           >
         </div>
       {:else if entries.length === 0}
-        <div
-          class="flex flex-col items-center justify-center py-16 text-center"
-        >
-          <i
-            class="fas fa-clipboard-list mb-6 text-7xl text-(--color-text-secondary) opacity-40"
+        <div class="flex flex-col items-center justify-center py-16 text-center">
+          <i class="fas fa-clipboard-list mb-6 text-7xl text-(--color-text-secondary) opacity-40"
           ></i>
           <p class="text-xl text-(--color-text-secondary)">
             {MESSAGES.NO_ENTRIES}
@@ -595,8 +558,7 @@
             class="pagination__btn"
             disabled={currentPage === 1}
             onclick={() => goToPage(currentPage - 1)}
-            aria-label="Vorherige Seite"
-            ><i class="fas fa-chevron-left"></i></button
+            aria-label="Vorherige Seite"><i class="fas fa-chevron-left"></i></button
           >
           {#each Array(totalPages) as _, i (i)}
             <button
@@ -611,8 +573,7 @@
             class="pagination__btn"
             disabled={currentPage === totalPages}
             onclick={() => goToPage(currentPage + 1)}
-            aria-label="Nächste Seite"
-            ><i class="fas fa-chevron-right"></i></button
+            aria-label="Nächste Seite"><i class="fas fa-chevron-right"></i></button
           >
         </div>
       </div>

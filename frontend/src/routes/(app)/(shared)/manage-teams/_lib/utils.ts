@@ -2,18 +2,10 @@
 // MANAGE TEAMS - UTILITY FUNCTIONS
 // =============================================================================
 
-import {
-  DEFAULT_HIERARCHY_LABELS,
-  type HierarchyLabels,
-} from '$lib/types/hierarchy-labels';
+import { DEFAULT_HIERARCHY_LABELS, type HierarchyLabels } from '$lib/types/hierarchy-labels';
 import { escapeHtml } from '$lib/utils/sanitize-html';
 
-import {
-  STATUS_BADGE_CLASSES,
-  STATUS_LABELS,
-  MESSAGES,
-  FORM_DEFAULTS,
-} from './constants';
+import { STATUS_BADGE_CLASSES, STATUS_LABELS, MESSAGES, FORM_DEFAULTS } from './constants';
 
 import type {
   Team,
@@ -165,10 +157,7 @@ export function formatDate(dateStr: string): string {
 // =============================================================================
 
 /** Get selected members display text for dropdown */
-export function getMembersDisplayText(
-  memberIds: number[],
-  allEmployees: TeamMember[],
-): string {
+export function getMembersDisplayText(memberIds: number[], allEmployees: TeamMember[]): string {
   if (memberIds.length === 0) return MESSAGES.NO_MEMBERS;
 
   const names = memberIds
@@ -214,10 +203,7 @@ export function getDepartmentDisplayText(
 }
 
 /** Get leader display text */
-export function getLeaderDisplayText(
-  leaderId: number | null,
-  allLeaders: Admin[],
-): string {
+export function getLeaderDisplayText(leaderId: number | null, allLeaders: Admin[]): string {
   if (leaderId === null) return MESSAGES.NO_LEADER;
   const leader = allLeaders.find((u) => u.id === leaderId);
   return leader ? `${leader.firstName} ${leader.lastName}` : MESSAGES.NO_LEADER;

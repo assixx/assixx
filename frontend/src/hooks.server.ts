@@ -34,22 +34,10 @@ const log = createLogger('hooks.server');
 const API_BASE = process.env.API_URL ?? 'http://localhost:3000/api/v2';
 
 /** Public routes - no authentication required */
-const PUBLIC_ROUTES = [
-  '/',
-  '/login',
-  '/signup',
-  '/tenant-deletion-approve',
-  '/rate-limit',
-];
+const PUBLIC_ROUTES = ['/', '/login', '/signup', '/tenant-deletion-approve', '/rate-limit'];
 
 /** Routes to skip authentication check (internal, assets, API proxy) */
-const SKIP_ROUTES_PREFIXES = [
-  '/_app/',
-  '/favicon',
-  '/api/',
-  '/sentry-tunnel',
-  '/health',
-];
+const SKIP_ROUTES_PREFIXES = ['/_app/', '/favicon', '/api/', '/sentry-tunnel', '/health'];
 
 /** User data structure from API */
 interface UserData {
@@ -80,11 +68,7 @@ function shouldSkipAuth(pathname: string): boolean {
   if (SKIP_ROUTES_PREFIXES.some((prefix) => pathname.startsWith(prefix))) {
     return true;
   }
-  if (
-    PUBLIC_ROUTES.some(
-      (route) => pathname === route || pathname.startsWith(route + '/'),
-    )
-  ) {
+  if (PUBLIC_ROUTES.some((route) => pathname === route || pathname.startsWith(route + '/'))) {
     return true;
   }
   return false;
@@ -177,28 +161,18 @@ const authHandle: Handle = async ({ event, resolve }) => {
 
     // Dummy-User Whitelist — restrict to read-only display pages
     if (userData.role === 'dummy') {
-      const DUMMY_ALLOWED_PREFIXES = [
-        '/blackboard',
-        '/calendar',
-        '/lean-management/tpm',
-      ] as const;
+      const DUMMY_ALLOWED_PREFIXES = ['/blackboard', '/calendar', '/lean-management/tpm'] as const;
 
       const isAllowed = DUMMY_ALLOWED_PREFIXES.some((prefix: string) =>
         pathname.startsWith(prefix),
       );
       if (!isAllowed) {
-        log.warn(
-          { pathname },
-          'Auth: Dummy blocked, redirecting to /blackboard',
-        );
+        log.warn({ pathname }, 'Auth: Dummy blocked, redirecting to /blackboard');
         redirect(302, '/blackboard');
       }
     }
 
-    log.debug(
-      { pathname, userRole: userData.role },
-      'Auth: User authenticated',
-    );
+    log.debug({ pathname, userRole: userData.role }, 'Auth: User authenticated');
   } catch (err: unknown) {
     if (isRedirectError(err)) {
       throw err;
@@ -249,10 +223,7 @@ const requestLoggingHandle: Handle = async ({ event, resolve }) => {
     return response;
   } catch (err: unknown) {
     const duration = Date.now() - start;
-    log.error(
-      { method, pathname, duration, err },
-      `${method} ${pathname} ERROR ${duration}ms`,
-    );
+    log.error({ method, pathname, duration, err }, `${method} ${pathname} ERROR ${duration}ms`);
     throw err;
   }
 };

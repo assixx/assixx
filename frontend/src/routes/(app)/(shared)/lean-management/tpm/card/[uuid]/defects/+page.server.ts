@@ -34,13 +34,7 @@ function extractDefects(raw: unknown): {
   };
 }
 
-export const load: PageServerLoad = async ({
-  cookies,
-  fetch,
-  parent,
-  params,
-  url,
-}) => {
+export const load: PageServerLoad = async ({ cookies, fetch, parent, params, url }) => {
   const token = cookies.get('accessToken');
   if (token === undefined || token === '') redirect(302, '/login');
 
@@ -51,11 +45,7 @@ export const load: PageServerLoad = async ({
 
   const [cardResult, defectsRaw] = await Promise.all([
     apiFetchWithPermission<TpmCard>(`/tpm/cards/${cardUuid}`, token, fetch),
-    apiFetch<unknown>(
-      `/tpm/cards/${cardUuid}/defects?page=1&limit=50`,
-      token,
-      fetch,
-    ),
+    apiFetch<unknown>(`/tpm/cards/${cardUuid}/defects?page=1&limit=50`, token, fetch),
   ]);
 
   if (cardResult.permissionDenied) {

@@ -1,148 +1,243 @@
 <!--
   Positionen-Verwaltung — Sub-Seite von Organigramm (Root only)
-  Verwaltet Position-Optionen pro Kategorie (Mitarbeiter/Admin/Root)
-  die in den jeweiligen Dropdowns der User-Modals angezeigt werden.
+  Verwaltet Position-Katalog-Einträge pro Kategorie (Mitarbeiter/Admin/Root).
+  Jede Aktion (Erstellen/Bearbeiten/Löschen) wird sofort per API persistiert (ADR-038).
 -->
 <script lang="ts">
+  import { invalidateAll } from '$app/navigation';
+
   import { showSuccessAlert, showErrorAlert } from '$lib/stores/toast';
-  import {
-    isLeadPosition,
-    LEAD_POSITION_KEYS,
-    resolvePositionDisplay,
-  } from '$lib/types/hierarchy-labels';
+  import { isLeadPosition, resolvePositionDisplay } from '$lib/types/hierarchy-labels';
   import { getApiClient } from '$lib/utils/api-client';
 
-  import type { PageData } from './$types';
+  import { updateHierarchyLabels } from '../_lib/api.js';
+  import { DEFAULT_HIERARCHY_LABELS, ENTITY_COLORS, HALL_COLOR } from '../_lib/constants.js';
 
-  interface PositionOptions {
-    employee: string[];
-    admin: string[];
-    root: string[];
+  import type { PageData } from './$types';
+  import type { HierarchyLabels } from '../_lib/types.js';
+
+  interface PositionEntry {
+    id: string;
+    name: string;
+    roleCategory: 'employee' | 'admin' | 'root';
+    sortOrder: number;
+    isSystem: boolean;
   }
 
   type Category = 'employee' | 'admin' | 'root';
 
-  const CATEGORY_LABELS: Record<Category, string> = {
+  type Tab = Category | 'leads' | 'labels';
+
+  const CATEGORIES: Category[] = ['employee', 'admin', 'root'];
+
+  const TAB_LABELS: Record<Tab, string> = {
     employee: 'Mitarbeiter',
     admin: 'Administratoren',
     root: 'Root-Benutzer',
+    leads: 'Leitende Positionen',
+    labels: 'Hierarchie-Ebenen',
   };
-
-  const CATEGORIES: Category[] = ['employee', 'admin', 'root'];
 
   const { data }: { data: PageData } = $props();
 
   const apiClient = getApiClient();
 
-  /** Hierarchy labels from parent layout (ADR-034) */
   const labels = $derived(data.hierarchyLabels);
 
-  const serverPositions = $derived(data.positions);
+  let positions = $derived([...(data.positions as PositionEntry[])]);
 
-  let positions = $state<PositionOptions>({
-    employee: [],
-    admin: [],
-    root: [],
-  });
+  let activeTab = $state<Tab>('employee');
+  let newPosition = $state('');
+  let editingId = $state<string | null>(null);
+  let editingValue = $state('');
+  let busy = $state(false);
+  const deputyHasLeadScope = $derived((data.deputyHasLeadScope as boolean | undefined) ?? false);
 
-  /** Hierarchie-Reihenfolge: area → department → team (oben nach unten) */
-  const LEAD_ORDER: string[] = [
-    LEAD_POSITION_KEYS.AREA,
-    LEAD_POSITION_KEYS.DEPARTMENT,
-    LEAD_POSITION_KEYS.TEAM,
+  // --- Hierarchy Labels ---
+  interface LabelLevel {
+    key: keyof HierarchyLabels;
+    prefixKey?: keyof HierarchyLabels;
+    icon: string;
+    color: string;
+    defaultLabel: string;
+  }
+
+  const LEVELS: LabelLevel[] = [
+    { key: 'hall', icon: HALL_COLOR.icon, color: HALL_COLOR.border, defaultLabel: 'Hallen' },
+    {
+      key: 'area',
+      prefixKey: 'areaLeadPrefix',
+      icon: ENTITY_COLORS.area.icon,
+      color: ENTITY_COLORS.area.border,
+      defaultLabel: 'Bereiche',
+    },
+    {
+      key: 'department',
+      prefixKey: 'departmentLeadPrefix',
+      icon: ENTITY_COLORS.department.icon,
+      color: ENTITY_COLORS.department.border,
+      defaultLabel: 'Abteilungen',
+    },
+    {
+      key: 'team',
+      prefixKey: 'teamLeadPrefix',
+      icon: ENTITY_COLORS.team.icon,
+      color: ENTITY_COLORS.team.border,
+      defaultLabel: 'Teams',
+    },
+    {
+      key: 'asset',
+      icon: ENTITY_COLORS.asset.icon,
+      color: ENTITY_COLORS.asset.border,
+      defaultLabel: 'Anlagen',
+    },
   ];
 
-  /** System positions always first, sorted by hierarchy level */
-  function sortSystemFirst(list: string[]): string[] {
-    const system = list
-      .filter((p: string) => isLeadPosition(p))
-      .sort(
-        (a: string, b: string) => LEAD_ORDER.indexOf(a) - LEAD_ORDER.indexOf(b),
-      );
-    const custom = list.filter((p: string) => !isLeadPosition(p));
-    return [...system, ...custom];
+  let editLabels: HierarchyLabels = $state(structuredClone(DEFAULT_HIERARCHY_LABELS));
+  let isLabelsSaving = $state(false);
+
+  function isLabelValid(value: string): boolean {
+    return value.trim() !== '' && value.length <= 50;
   }
 
-  /** Inject missing lead keys + sort system first */
-  function ensureLeadPositions(list: string[]): string[] {
-    const missing = LEAD_ORDER.filter((key: string) => !list.includes(key));
-    return sortSystemFirst([...missing, ...list]);
-  }
+  const isLabelsValid = $derived(
+    LEVELS.every((level: LabelLevel) => {
+      if (!isLabelValid(editLabels[level.key])) return false;
+      if (level.prefixKey !== undefined && !isLabelValid(editLabels[level.prefixKey])) return false;
+      return true;
+    }),
+  );
 
-  /** Sync editable copy from server data (mount + after save via data mutation) */
   $effect(() => {
-    const src = serverPositions;
-    positions = {
-      employee: sortSystemFirst([...src.employee]),
-      admin: ensureLeadPositions([...src.admin]),
-      root: ensureLeadPositions([...src.root]),
-    };
-  });
-
-  let activeTab = $state<Category>('employee');
-  let newPosition = $state('');
-  let editingIndex = $state<number | null>(null);
-  let editingValue = $state('');
-  let saving = $state(false);
-
-  const currentList = $derived(positions[activeTab]);
-  /** Compare only custom positions (lead keys are auto-injected) */
-  const hasChanges = $derived.by(() => {
-    for (const cat of CATEGORIES) {
-      const cur = positions[cat].filter((p: string) => !isLeadPosition(p));
-      const srv = serverPositions[cat].filter(
-        (p: string) => !isLeadPosition(p),
-      );
-      if (cur.length !== srv.length) return true;
-      if (cur.some((p: string, i: number) => p !== srv[i])) return true;
+    if (activeTab === 'labels') {
+      editLabels = $state.snapshot(labels);
     }
-    return false;
   });
 
-  function addPosition(): void {
+  function restoreDefaults(): void {
+    editLabels = structuredClone(DEFAULT_HIERARCHY_LABELS);
+  }
+
+  async function handleSaveLabels(event: SubmitEvent): Promise<void> {
+    event.preventDefault();
+    if (!isLabelsValid || isLabelsSaving) return;
+
+    isLabelsSaving = true;
+    try {
+      await updateHierarchyLabels({ levels: editLabels });
+      await invalidateAll();
+      showSuccessAlert('Hierarchie-Ebenen gespeichert');
+    } catch {
+      showErrorAlert('Fehler beim Speichern der Hierarchie-Ebenen');
+    } finally {
+      isLabelsSaving = false; // eslint-disable-line require-atomic-updates -- Svelte single-threaded
+    }
+  }
+
+  const LEAD_ORDER = [
+    'area_lead',
+    'area_deputy_lead',
+    'department_lead',
+    'department_deputy_lead',
+    'team_lead',
+    'team_deputy_lead',
+  ];
+
+  const systemPositions = $derived(
+    positions
+      .filter((p: PositionEntry) => p.isSystem)
+      .sort(
+        (a: PositionEntry, b: PositionEntry) =>
+          LEAD_ORDER.indexOf(a.name) - LEAD_ORDER.indexOf(b.name),
+      ),
+  );
+
+  const currentList = $derived(
+    positions.filter((p: PositionEntry) => p.roleCategory === activeTab && !p.isSystem),
+  );
+
+  function countByCategory(cat: Category): number {
+    return positions.filter((p: PositionEntry) => p.roleCategory === cat && !p.isSystem).length;
+  }
+
+  function displayName(p: PositionEntry): string {
+    if (p.isSystem && isLeadPosition(p.name)) {
+      return resolvePositionDisplay(p.name, labels);
+    }
+    return p.name;
+  }
+
+  async function toggleDeputyScope(enabled: boolean): Promise<void> {
+    busy = true;
+    try {
+      await apiClient.patch('/organigram/deputy-scope', { enabled });
+      showSuccessAlert(
+        enabled ?
+          'Stellvertreter haben jetzt gleiche Rechte wie Leiter'
+        : 'Stellvertreter-Rechte deaktiviert',
+      );
+      await invalidateAll();
+    } catch {
+      showErrorAlert('Einstellung konnte nicht gespeichert werden');
+    } finally {
+      busy = false;
+    }
+  }
+
+  async function addPosition(): Promise<void> {
     const trimmed = newPosition.trim();
-    if (trimmed === '') return;
+    if (trimmed === '' || busy) return;
 
-    if (isLeadPosition(trimmed)) {
-      showErrorAlert(
-        'System-Positionen können nicht manuell hinzugefügt werden.',
-      );
-      return;
+    busy = true;
+    try {
+      const created = await apiClient.request<PositionEntry>('/organigram/positions', {
+        method: 'POST',
+        body: JSON.stringify({
+          name: trimmed,
+          roleCategory: activeTab,
+          sortOrder: currentList.length,
+        }),
+      });
+      positions = [...positions, created];
+      newPosition = ''; // eslint-disable-line require-atomic-updates -- Svelte single-threaded
+      showSuccessAlert(`Position "${trimmed}" erstellt`);
+    } catch {
+      showErrorAlert('Fehler beim Erstellen der Position');
+    } finally {
+      busy = false; // eslint-disable-line require-atomic-updates -- Svelte single-threaded
     }
-
-    const list = positions[activeTab];
-    const duplicate = list.some(
-      (p: string) => p.toLowerCase() === trimmed.toLowerCase(),
-    );
-    if (duplicate) {
-      showErrorAlert('Diese Position existiert bereits.');
-      return;
-    }
-
-    positions[activeTab] = [...list, trimmed];
-    newPosition = '';
   }
 
-  function removePosition(index: number): void {
-    if (isLeadPosition(positions[activeTab][index])) return;
-    positions[activeTab] = positions[activeTab].filter(
-      (_: string, i: number) => i !== index,
-    );
+  async function deletePosition(p: PositionEntry): Promise<void> {
+    if (p.isSystem || busy) return;
+
+    busy = true;
+    try {
+      await apiClient.request(`/organigram/positions/${p.id}`, {
+        method: 'DELETE',
+      });
+      positions = positions.filter((x: PositionEntry) => x.id !== p.id);
+      showSuccessAlert(`Position "${p.name}" gelöscht`);
+    } catch {
+      showErrorAlert('Fehler beim Löschen');
+    } finally {
+      busy = false; // eslint-disable-line require-atomic-updates -- Svelte single-threaded
+    }
   }
 
-  function startEdit(index: number): void {
-    if (isLeadPosition(positions[activeTab][index])) return;
-    editingIndex = index;
-    editingValue = positions[activeTab][index] ?? '';
+  function startEdit(p: PositionEntry): void {
+    if (p.isSystem) return;
+    editingId = p.id;
+    editingValue = p.name;
   }
 
   function cancelEdit(): void {
-    editingIndex = null;
+    editingId = null;
     editingValue = '';
   }
 
-  function confirmEdit(): void {
-    if (editingIndex === null) return;
+  async function confirmEdit(): Promise<void> {
+    if (editingId === null || busy) return;
 
     const trimmed = editingValue.trim();
     if (trimmed === '') {
@@ -150,84 +245,60 @@
       return;
     }
 
-    const list = positions[activeTab];
-    const duplicate = list.some(
-      (p: string, i: number) =>
-        i !== editingIndex && p.toLowerCase() === trimmed.toLowerCase(),
-    );
-    if (duplicate) {
-      showErrorAlert('Diese Position existiert bereits.');
-      return;
-    }
-
-    const updated = [...list];
-    updated[editingIndex] = trimmed;
-    positions[activeTab] = updated;
-    cancelEdit();
-  }
-
-  function moveUp(index: number): void {
-    if (index === 0) return;
-    const list = [...positions[activeTab]];
-    if (isLeadPosition(list[index - 1] ?? '')) return;
-    const temp = list[index - 1];
-    list[index - 1] = list[index];
-    list[index] = temp;
-    positions[activeTab] = list;
-  }
-
-  function moveDown(index: number): void {
-    const list = [...positions[activeTab]];
-    if (index >= list.length - 1) return;
-    const temp = list[index];
-    list[index] = list[index + 1];
-    list[index + 1] = temp;
-    positions[activeTab] = list;
-  }
-
-  function buildPayload(): PositionOptions {
-    return {
-      employee: [...positions.employee],
-      admin: [...positions.admin],
-      root: [...positions.root],
-    };
-  }
-
-  async function saveAll(): Promise<void> {
-    saving = true;
-    const payload = buildPayload();
+    busy = true;
     try {
-      const result = await apiClient.request<PositionOptions>(
-        '/organigram/position-options',
-        {
-          method: 'PUT',
-          body: JSON.stringify(payload),
-        },
-      );
-
-      data.positions = { ...result };
-      positions = {
-        employee: [...result.employee],
-        admin: [...result.admin],
-        root: [...result.root],
-      };
-      showSuccessAlert('Positionen gespeichert');
+      const updated = await apiClient.request<PositionEntry>(`/organigram/positions/${editingId}`, {
+        method: 'PUT',
+        body: JSON.stringify({ name: trimmed }),
+      });
+      positions = positions.map((p: PositionEntry) => (p.id === editingId ? updated : p));
+      cancelEdit();
+      showSuccessAlert('Position umbenannt');
     } catch {
-      showErrorAlert('Fehler beim Speichern der Positionen');
+      showErrorAlert('Fehler beim Umbenennen');
     } finally {
-      saving = false;
+      busy = false; // eslint-disable-line require-atomic-updates -- Svelte single-threaded
+    }
+  }
+
+  async function movePosition(p: PositionEntry, direction: 'up' | 'down'): Promise<void> {
+    if (p.isSystem || busy) return;
+
+    const list = currentList;
+    const idx = list.findIndex((x: PositionEntry) => x.id === p.id);
+    const swapIdx = direction === 'up' ? idx - 1 : idx + 1;
+
+    if (swapIdx < 0 || swapIdx >= list.length) return;
+    const neighbor = list[swapIdx];
+    if (neighbor.isSystem) return;
+
+    busy = true;
+    try {
+      await apiClient.request<PositionEntry>(`/organigram/positions/${p.id}`, {
+        method: 'PUT',
+        body: JSON.stringify({ sortOrder: neighbor.sortOrder }),
+      });
+      await apiClient.request<PositionEntry>(`/organigram/positions/${neighbor.id}`, {
+        method: 'PUT',
+        body: JSON.stringify({ sortOrder: p.sortOrder }),
+      });
+      await invalidateAll();
+    } catch {
+      showErrorAlert('Fehler beim Verschieben');
+    } finally {
+      busy = false; // eslint-disable-line require-atomic-updates -- Svelte single-threaded
     }
   }
 
   function handleKeydown(event: KeyboardEvent): void {
     if (event.key === 'Enter') {
-      if (editingIndex !== null) {
-        confirmEdit();
+      if (editingId !== null) {
+        void confirmEdit();
       } else {
-        addPosition();
+        void addPosition();
       }
     }
-    if (event.key === 'Escape' && editingIndex !== null) {
+    if (event.key === 'Escape' && editingId !== null) {
       cancelEdit();
     }
   }
@@ -247,9 +318,8 @@
             Positionen verwalten
           </h2>
           <p class="mt-2 text-(--color-text-secondary)">
-            Definiere die verfügbaren Positionen pro Benutzerrolle. Diese
-            erscheinen in den Dropdown-Menüs beim Erstellen und Bearbeiten von
-            Benutzern.
+            Definiere die verfügbaren Positionen pro Benutzerrolle. Diese erscheinen in den
+            Dropdown-Menüs beim Erstellen und Bearbeiten von Benutzern.
           </p>
         </div>
         <a
@@ -274,122 +344,271 @@
               newPosition = '';
             }}
           >
-            {CATEGORY_LABELS[category]}
-            <span class="tab-count">{positions[category].length}</span>
+            {TAB_LABELS[category]}
+            <span class="tab-count">{countByCategory(category)}</span>
           </button>
         {/each}
+        <button
+          type="button"
+          class="tab"
+          class:active={activeTab === 'leads'}
+          onclick={() => {
+            activeTab = 'leads';
+            cancelEdit();
+            newPosition = '';
+          }}
+        >
+          <i class="fas fa-shield-halved mr-1"></i>
+          {TAB_LABELS.leads}
+          <span class="tab-count">{systemPositions.length}</span>
+        </button>
+        <button
+          type="button"
+          class="tab"
+          class:active={activeTab === 'labels'}
+          onclick={() => {
+            activeTab = 'labels';
+            cancelEdit();
+            newPosition = '';
+          }}
+        >
+          <i class="fas fa-tags mr-1"></i>
+          {TAB_LABELS.labels}
+        </button>
       </div>
     </div>
 
     <div class="card__body">
-      <!-- Add new + Save -->
-      <div class="add-row">
-        <input
-          type="text"
-          class="form-field__control"
-          placeholder="Neue Position hinzufügen..."
-          maxlength="100"
-          bind:value={newPosition}
-          onkeydown={handleKeydown}
-        />
-        <button
-          type="button"
-          class="btn btn-primary"
-          disabled={newPosition.trim() === ''}
-          onclick={addPosition}
-        >
-          <i class="fas fa-plus"></i>
-          Hinzufügen
-        </button>
-        <button
-          type="button"
-          class="btn btn-success"
-          disabled={!hasChanges || saving}
-          onclick={saveAll}
-        >
-          {#if saving}
-            <span class="spinner-ring spinner-ring--sm"></span>
-            Speichern...
-          {:else}
-            <i class="fas fa-save"></i>
-            Speichern
-          {/if}
-        </button>
-      </div>
-
-      <!-- List -->
-      {#if currentList.length === 0}
-        <div class="empty-state">
-          <i class="fas fa-inbox"></i>
-          <p>Keine Positionen für {CATEGORY_LABELS[activeTab]} definiert.</p>
-        </div>
-      {:else}
+      {#if activeTab === 'leads'}
+        <!-- Leitende Positionen (System) -->
         <ul class="position-list">
-          {#each currentList as position, index (activeTab + '-' + String(index))}
-            {@const isSystem = isLeadPosition(position)}
-            <li
-              class="position-item"
-              class:position-item--system={isSystem}
-            >
-              {#if editingIndex === index && !isSystem}
-                <input
-                  type="text"
-                  class="form-field__control edit-input"
-                  maxlength="100"
-                  bind:value={editingValue}
-                  onkeydown={handleKeydown}
-                />
-                <div class="item-actions">
-                  <button
-                    type="button"
-                    class="btn-icon btn-icon--success"
-                    title="Bestätigen"
-                    onclick={confirmEdit}
+          {#each systemPositions as position (position.id)}
+            <li class="position-item position-item--system">
+              <span class="position-name">
+                <i class="fas fa-lock system-lock-icon"></i>
+                {displayName(position)}
+                <span class="badge badge--primary badge--xs system-badge">System</span>
+              </span>
+              <button
+                type="button"
+                class="system-hint-link"
+                title="Bezeichnungen bearbeiten"
+                onclick={() => {
+                  activeTab = 'labels';
+                }}
+              >
+                <i class="fas fa-pen-to-square"></i>
+                Bezeichnung ändern
+              </button>
+            </li>
+          {/each}
+        </ul>
+        <div class="alert alert--warning alert--sm mt-4">
+          <div class="alert__icon"><i class="fas fa-info-circle"></i></div>
+          <div class="alert__content">
+            <div class="alert__message">
+              Leitende Positionen werden automatisch vergeben und können nicht bearbeitet werden.
+              Die Bezeichnungen können über den Tab
+              <button
+                type="button"
+                class="inline-link-btn"
+                onclick={() => {
+                  activeTab = 'labels';
+                }}>Hierarchie-Ebenen</button
+              > angepasst werden.
+            </div>
+          </div>
+        </div>
+
+        <label class="deputy-scope-toggle mt-4">
+          <input
+            type="checkbox"
+            checked={deputyHasLeadScope}
+            onchange={(e: Event) => {
+              void toggleDeputyScope((e.currentTarget as HTMLInputElement).checked);
+            }}
+            disabled={busy}
+          />
+          <span class="deputy-scope-label">
+            Stellvertreter haben gleiche Rechte wie ihre Leiter
+            <span class="deputy-scope-hint">(Scope & Sichtbarkeit auf Verwaltungsseiten)</span>
+          </span>
+        </label>
+      {:else if activeTab === 'labels'}
+        <!-- Hierarchie-Ebenen (inline) -->
+        <form
+          id="hierarchy-labels-form"
+          onsubmit={handleSaveLabels}
+        >
+          <p class="hint-text">
+            Benenne die Organisationsebenen passend für dein Unternehmen um. Die Struktur bleibt
+            identisch — nur die Anzeige-Labels ändern sich.
+          </p>
+
+          <div class="hierarchy-stepper">
+            {#each LEVELS as level, idx (level.key)}
+              {@const color = level.color}
+              <div class="step">
+                <div class="step__indicator">
+                  <span
+                    class="step__number"
+                    style="background: {color}">{idx + 1}</span
                   >
-                    <i class="fas fa-check"></i>
-                  </button>
-                  <button
-                    type="button"
-                    class="btn-icon btn-icon--secondary"
-                    title="Abbrechen"
-                    onclick={cancelEdit}
-                  >
-                    <i class="fas fa-times"></i>
-                  </button>
+                  {#if idx < LEVELS.length - 1}
+                    <div class="step__connector"></div>
+                  {/if}
                 </div>
-              {:else}
-                <span class="position-name">
-                  {#if isSystem}
-                    <i class="fas fa-lock system-lock-icon"></i>
-                  {/if}
-                  {isSystem ?
-                    resolvePositionDisplay(position, labels)
-                  : position}
-                  {#if isSystem}
-                    <span class="badge badge--primary badge--xs system-badge"
-                      >System</span
-                    >
-                  {/if}
-                </span>
-                {#if isSystem}
-                  <a
-                    href="/settings/organigram?editLabels"
-                    class="system-hint-link"
-                    title="Bezeichnungen bearbeiten"
+                <div class="step__content">
+                  <span
+                    class="step__label"
+                    style="color: {color}"
                   >
-                    <i class="fas fa-pen-to-square"></i>
-                    Bezeichnung ändern
-                  </a>
+                    <i class={level.icon}></i>
+                    {level.defaultLabel}
+                    {#if idx === 0}
+                      <span class="step__hint">Höchste Ebene</span>
+                    {:else if idx === LEVELS.length - 1}
+                      <span class="step__hint">Niedrigste Ebene</span>
+                    {/if}
+                  </span>
+                  <input
+                    type="text"
+                    class="form-field__control"
+                    placeholder={level.defaultLabel}
+                    maxlength="50"
+                    required
+                    bind:value={editLabels[level.key]}
+                  />
+                  {#if level.prefixKey}
+                    <div class="prefix-field">
+                      <label class="prefix-field__label">
+                        Positionsvorsilbe
+                        <input
+                          type="text"
+                          class="form-field__control form-field__control--sm"
+                          placeholder={DEFAULT_HIERARCHY_LABELS[level.prefixKey]}
+                          maxlength="50"
+                          required
+                          bind:value={editLabels[level.prefixKey]}
+                        />
+                      </label>
+                      <span class="prefix-field__preview">
+                        {editLabels[level.prefixKey]}leiter · Stellv. {editLabels[
+                          level.prefixKey
+                        ]}leiter
+                      </span>
+                    </div>
+                  {/if}
+                </div>
+              </div>
+            {/each}
+          </div>
+
+          <div class="labels-actions">
+            <button
+              type="button"
+              class="btn btn-danger"
+              onclick={restoreDefaults}
+              disabled={isLabelsSaving}
+            >
+              <i class="fas fa-undo"></i>
+              Standard wiederherstellen
+            </button>
+            <button
+              type="submit"
+              class="btn btn-primary"
+              disabled={!isLabelsValid || isLabelsSaving}
+            >
+              {#if isLabelsSaving}
+                <span class="spinner-ring spinner-ring--sm"></span>
+              {:else}
+                <i class="fas fa-check"></i>
+              {/if}
+              Speichern
+            </button>
+          </div>
+        </form>
+      {:else}
+        <!-- Add new -->
+        <div class="add-row">
+          <input
+            type="text"
+            class="form-field__control"
+            placeholder="Neue Position hinzufügen..."
+            maxlength="100"
+            bind:value={newPosition}
+            onkeydown={handleKeydown}
+            disabled={busy}
+          />
+          <button
+            type="button"
+            class="btn btn-primary"
+            disabled={newPosition.trim() === '' || busy}
+            onclick={() => {
+              void addPosition();
+            }}
+          >
+            {#if busy}
+              <span class="spinner-ring spinner-ring--sm"></span>
+            {:else}
+              <i class="fas fa-plus"></i>
+            {/if}
+            Hinzufügen
+          </button>
+        </div>
+
+        <!-- List -->
+        {#if currentList.length === 0}
+          <div class="empty-state">
+            <i class="fas fa-inbox"></i>
+            <p>Keine Positionen für {TAB_LABELS[activeTab]} definiert.</p>
+          </div>
+        {:else}
+          <ul class="position-list">
+            {#each currentList as position, index (position.id)}
+              <li class="position-item">
+                {#if editingId === position.id}
+                  <input
+                    type="text"
+                    class="form-field__control edit-input"
+                    maxlength="100"
+                    bind:value={editingValue}
+                    onkeydown={handleKeydown}
+                    disabled={busy}
+                  />
+                  <div class="item-actions">
+                    <button
+                      type="button"
+                      class="btn-icon btn-icon--success"
+                      title="Bestätigen"
+                      disabled={busy}
+                      onclick={() => {
+                        void confirmEdit();
+                      }}
+                    >
+                      <i class="fas fa-check"></i>
+                    </button>
+                    <button
+                      type="button"
+                      class="btn-icon btn-icon--secondary"
+                      title="Abbrechen"
+                      onclick={cancelEdit}
+                    >
+                      <i class="fas fa-times"></i>
+                    </button>
+                  </div>
                 {:else}
+                  <span class="position-name">
+                    {displayName(position)}
+                  </span>
                   <div class="item-actions">
                     <button
                       type="button"
                       class="btn-icon"
                       title="Nach oben"
-                      disabled={index === 0 ||
-                        isLeadPosition(currentList[index - 1] ?? '')}
+                      disabled={index === 0 || busy}
                       onclick={() => {
-                        moveUp(index);
+                        void movePosition(position, 'up');
                       }}
                     >
                       <i class="fas fa-chevron-up"></i>
@@ -398,9 +617,9 @@
                       type="button"
                       class="btn-icon"
                       title="Nach unten"
-                      disabled={index === currentList.length - 1}
+                      disabled={index === currentList.length - 1 || busy}
                       onclick={() => {
-                        moveDown(index);
+                        void movePosition(position, 'down');
                       }}
                     >
                       <i class="fas fa-chevron-down"></i>
@@ -409,8 +628,9 @@
                       type="button"
                       class="btn-icon"
                       title="Bearbeiten"
+                      disabled={busy}
                       onclick={() => {
-                        startEdit(index);
+                        startEdit(position);
                       }}
                     >
                       <i class="fas fa-pen"></i>
@@ -419,29 +639,22 @@
                       type="button"
                       class="btn-icon btn-icon--danger"
                       title="Löschen"
+                      disabled={busy}
                       onclick={() => {
-                        removePosition(index);
+                        void deletePosition(position);
                       }}
                     >
                       <i class="fas fa-trash"></i>
                     </button>
                   </div>
                 {/if}
-              {/if}
-            </li>
-          {/each}
-        </ul>
+              </li>
+            {/each}
+          </ul>
+        {/if}
       {/if}
     </div>
   </div>
-
-  <!-- Unsaved indicator -->
-  {#if hasChanges}
-    <div class="unsaved-hint">
-      <i class="fas fa-exclamation-circle"></i>
-      Ungespeicherte Änderungen
-    </div>
-  {/if}
 </div>
 
 <style>
@@ -485,11 +698,7 @@
   }
 
   .tab.active .tab-count {
-    background: color-mix(
-      in oklch,
-      var(--color-primary, #3b82f6) 20%,
-      transparent
-    );
+    background: color-mix(in oklch, var(--color-primary, #3b82f6) 20%, transparent);
     color: var(--color-primary, #3b82f6);
   }
 
@@ -529,22 +738,13 @@
   }
 
   .position-item--system {
-    background: color-mix(
-      in oklch,
-      var(--color-primary, #3b82f6) 8%,
-      transparent
-    );
-    border: 1px solid
-      color-mix(in oklch, var(--color-primary, #3b82f6) 20%, transparent);
+    background: color-mix(in oklch, var(--color-primary, #3b82f6) 8%, transparent);
+    border: 1px solid color-mix(in oklch, var(--color-primary, #3b82f6) 20%, transparent);
     cursor: default;
   }
 
   .position-item--system:hover {
-    background: color-mix(
-      in oklch,
-      var(--color-primary, #3b82f6) 12%,
-      transparent
-    );
+    background: color-mix(in oklch, var(--color-primary, #3b82f6) 12%, transparent);
   }
 
   .system-lock-icon {
@@ -620,20 +820,12 @@
   }
 
   .btn-icon--danger:hover:not(:disabled) {
-    background: color-mix(
-      in oklch,
-      var(--color-error, #ef4444) 15%,
-      transparent
-    );
+    background: color-mix(in oklch, var(--color-error, #ef4444) 15%, transparent);
     color: var(--color-error, #ef4444);
   }
 
   .btn-icon--success:hover:not(:disabled) {
-    background: color-mix(
-      in oklch,
-      var(--color-success, #22c55e) 15%,
-      transparent
-    );
+    background: color-mix(in oklch, var(--color-success, #22c55e) 15%, transparent);
     color: var(--color-success, #22c55e);
   }
 
@@ -656,19 +848,145 @@
     font-size: 2rem;
   }
 
-  /* Unsaved Hint */
-  .unsaved-hint {
+  .deputy-scope-toggle {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.625rem;
+    padding: 0.75rem 1rem;
+    border-radius: 0.5rem;
+    background: color-mix(in oklch, var(--color-info, #3b82f6) 8%, transparent);
+    border: 1px solid color-mix(in oklch, var(--color-info, #3b82f6) 20%, transparent);
+    cursor: pointer;
+  }
+
+  .deputy-scope-toggle input[type='checkbox'] {
+    margin-top: 0.125rem;
+    accent-color: var(--color-primary, #3b82f6);
+  }
+
+  .deputy-scope-label {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--color-text-primary);
+  }
+
+  .deputy-scope-hint {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 400;
+    color: var(--color-text-secondary);
+    margin-top: 0.125rem;
+  }
+
+  /* Inline link button (styled as text link) */
+  .inline-link-btn {
+    background: none;
+    border: none;
+    color: var(--color-primary, #3b82f6);
+    cursor: pointer;
+    font: inherit;
+    padding: 0;
+    text-decoration: underline;
+  }
+
+  .inline-link-btn:hover {
+    opacity: 80%;
+  }
+
+  /* Hierarchy Labels — Stepper */
+  .hint-text {
+    font-size: 0.85rem;
+    color: var(--color-text-secondary);
+    line-height: 1.5;
+    margin-bottom: 0.5rem;
+  }
+
+  .hierarchy-stepper {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .step {
+    display: flex;
+    gap: 0.75rem;
+  }
+
+  .step__indicator {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex-shrink: 0;
+  }
+
+  .step__number {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-white, #fff);
+    font-weight: 700;
+    font-size: 0.75rem;
+    flex-shrink: 0;
+  }
+
+  .step__connector {
+    width: 2px;
+    flex: 1;
+    min-height: 8px;
+    background: var(--glass-border, rgb(255 255 255 / 12%));
+  }
+
+  .step__content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+    padding-bottom: 0.75rem;
+  }
+
+  .step__label {
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    padding: 0.5rem 0.75rem;
-    font-size: 0.8rem;
-    color: var(--color-warning, #f59e0b);
-    border-radius: var(--radius-md, 8px);
-    background: color-mix(
-      in oklch,
-      var(--color-warning, #f59e0b) 10%,
-      transparent
-    );
+    font-size: 0.85rem;
+    font-weight: 600;
+  }
+
+  .step__hint {
+    font-size: 0.7rem;
+    font-weight: 400;
+    opacity: 60%;
+    margin-left: auto;
+  }
+
+  .prefix-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    margin-top: 0.25rem;
+  }
+
+  .prefix-field__label {
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+    font-weight: 500;
+  }
+
+  .prefix-field__preview {
+    font-size: 0.7rem;
+    color: var(--color-text-secondary);
+    font-style: italic;
+    padding-left: 0.25rem;
+  }
+
+  .labels-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--color-border, rgb(255 255 255 / 10%));
   }
 </style>

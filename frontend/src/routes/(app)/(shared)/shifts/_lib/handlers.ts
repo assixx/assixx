@@ -4,11 +4,7 @@
 // Adapted for Svelte 5 (pure functions for use in components)
 // =============================================================================
 
-import {
-  performAutofill,
-  type AutofillConfig,
-  type AutofillResult,
-} from './autofill';
+import { performAutofill, type AutofillConfig, type AutofillResult } from './autofill';
 import { getDropTargetData, getEmployeeIdFromDrag } from './drag-drop';
 import {
   validateEmployeeAvailability,
@@ -48,12 +44,7 @@ export function validateShiftAssignment(
   }
 
   // Check if already assigned to this shift
-  const alreadyAssigned = checkAlreadyAssigned(
-    employeeId,
-    date,
-    shiftType,
-    getShiftEmployees,
-  );
+  const alreadyAssigned = checkAlreadyAssigned(employeeId, date, shiftType, getShiftEmployees);
   if (!alreadyAssigned.valid) {
     return { valid: false, error: alreadyAssigned.message };
   }
@@ -65,12 +56,7 @@ export function validateShiftAssignment(
   }
 
   // Check for duplicate shift on same day
-  const duplicate = checkDuplicateShiftAssignment(
-    employee,
-    date,
-    shiftType,
-    getShiftEmployees,
-  );
+  const duplicate = checkDuplicateShiftAssignment(employee, date, shiftType, getShiftEmployees);
   if (!duplicate.valid) {
     return { valid: false, error: duplicate.message };
   }

@@ -108,12 +108,10 @@
 
   /* Spacing - consistent gap below toast when used inline (e.g., login form) */
   margin-bottom: var(--spacing-4); /* 16px */
-  box-shadow: 0 8px 32px
-    color-mix(in oklch, var(--color-black) 40%, transparent);
+  box-shadow: 0 8px 32px color-mix(in oklch, var(--color-black) 40%, transparent);
 
   /* Appearance */
   border: 1px solid var(--color-glass-border);
-  border-bottom: none; /* Progress bar replaces bottom border */
   border-radius: var(--radius-xl);
 
   /* Glassmorphism - light mode */
@@ -274,11 +272,11 @@
 
 /* Success */
 .toast--success {
-  border-left: 4px solid var(--color-success);
+  border: 1px solid color-mix(in oklch, var(--color-success) 60%, transparent);
   background: linear-gradient(
     135deg,
-    color-mix(in oklch, var(--color-success) 15%, transparent) 0%,
-    oklch(56.82% 0.1273 145.09 / 10%) 100%
+    color-mix(in oklch, var(--color-success) 40%, transparent) 0%,
+    oklch(56.82% 0.1273 145.09 / 28%) 100%
   );
 }
 
@@ -292,11 +290,11 @@
 
 /* Warning */
 .toast--warning {
-  border-left: 4px solid var(--color-warning);
+  border: 1px solid color-mix(in oklch, var(--color-warning) 60%, transparent);
   background: linear-gradient(
     135deg,
-    color-mix(in oklch, var(--color-warning) 15%, transparent) 0%,
-    oklch(68.89% 0.1607 47.39 / 10%) 100%
+    color-mix(in oklch, var(--color-warning) 40%, transparent) 0%,
+    oklch(68.89% 0.1607 47.39 / 28%) 100%
   );
 }
 
@@ -311,11 +309,11 @@
 /* Error/Danger */
 .toast--error,
 .toast--danger {
-  border-left: 4px solid var(--color-danger);
+  border: 1px solid color-mix(in oklch, var(--color-danger) 60%, transparent);
   background: linear-gradient(
     135deg,
-    color-mix(in oklch, var(--color-danger) 15%, transparent) 0%,
-    oklch(53.65% 0.1901 22.38 / 10%) 100%
+    color-mix(in oklch, var(--color-danger) 40%, transparent) 0%,
+    oklch(53.65% 0.1901 22.38 / 28%) 100%
   );
 }
 
@@ -331,11 +329,11 @@
 
 /* Info */
 .toast--info {
-  border-left: 4px solid var(--color-primary);
+  border: 1px solid color-mix(in oklch, var(--color-primary) 60%, transparent);
   background: linear-gradient(
     135deg,
-    color-mix(in oklch, var(--color-primary) 15%, transparent) 0%,
-    oklch(55.57% 0.1345 252.18 / 10%) 100%
+    color-mix(in oklch, var(--color-primary) 40%, transparent) 0%,
+    oklch(55.57% 0.1345 252.18 / 28%) 100%
   );
 }
 
@@ -345,17 +343,6 @@
 
 .toast--info .toast__progress-bar {
   background: var(--color-primary);
-}
-
-/* Progress bar extension for variants with border-left */
-/* Extends under the 4px border so clip-path clips it at the outer rounded corner */
-.toast--success .toast__progress,
-.toast--warning .toast__progress,
-.toast--error .toast__progress,
-.toast--danger .toast__progress,
-.toast--info .toast__progress {
-  left: -4px;
-  width: calc(100% + 4px);
 }
 
 /* ========== ANIMATION STATES ========== */
@@ -494,34 +481,38 @@ html.dark .toast {
 
 /* Variant backgrounds must match html.dark specificity to override the base */
 html.dark .toast--success {
+  border-color: color-mix(in oklch, var(--color-success) 24%, transparent);
   background: linear-gradient(
     135deg,
-    color-mix(in oklch, var(--color-success) 15%, transparent) 0%,
-    oklch(56.82% 0.1273 145.09 / 10%) 100%
+    color-mix(in oklch, var(--color-success) 25%, transparent) 0%,
+    oklch(56.82% 0.1273 145.09 / 15%) 100%
   );
 }
 
 html.dark .toast--warning {
+  border-color: color-mix(in oklch, var(--color-warning) 24%, transparent);
   background: linear-gradient(
     135deg,
-    color-mix(in oklch, var(--color-warning) 15%, transparent) 0%,
-    oklch(68.89% 0.1607 47.39 / 10%) 100%
+    color-mix(in oklch, var(--color-warning) 25%, transparent) 0%,
+    oklch(68.89% 0.1607 47.39 / 15%) 100%
   );
 }
 
 html.dark .toast--error,
 html.dark .toast--danger {
+  border-color: color-mix(in oklch, var(--color-danger) 24%, transparent);
   background: linear-gradient(
     135deg,
-    color-mix(in oklch, var(--color-danger) 15%, transparent) 0%,
-    oklch(53.65% 0.1901 22.38 / 10%) 100%
+    color-mix(in oklch, var(--color-danger) 25%, transparent) 0%,
+    oklch(53.65% 0.1901 22.38 / 15%) 100%
   );
 }
 
 html.dark .toast--info {
+  border-color: color-mix(in oklch, var(--color-primary) 24%, transparent);
   background: linear-gradient(
     135deg,
-    color-mix(in oklch, var(--color-primary) 15%, transparent) 0%,
-    oklch(55.57% 0.1345 252.18 / 10%) 100%
+    color-mix(in oklch, var(--color-primary) 25%, transparent) 0%,
+    oklch(55.57% 0.1345 252.18 / 15%) 100%
   );
 }

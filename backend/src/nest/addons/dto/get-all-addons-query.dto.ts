@@ -12,6 +12,4 @@ export const GetAllAddonsQuerySchema = z.object({
     .default(false),
 });
 
-export class GetAllAddonsQueryDto extends createZodDto(
-  GetAllAddonsQuerySchema,
-) {}
+export class GetAllAddonsQueryDto extends createZodDto(GetAllAddonsQuerySchema) {}

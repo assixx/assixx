@@ -4,10 +4,7 @@
  * Handles Error instances, strings, and arbitrary thrown values.
  * Frontend equivalent of backend's error.utils.ts.
  */
-export function getErrorMessage(
-  error: unknown,
-  fallback: string = 'Unknown error',
-): string {
+export function getErrorMessage(error: unknown, fallback: string = 'Unknown error'): string {
   if (error instanceof Error) {
     return error.message;
   }

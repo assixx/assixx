@@ -1,15 +1,17 @@
 <script lang="ts">
   import PasswordStrengthIndicator from '$lib/components/PasswordStrengthIndicator.svelte';
+  import UserPositionChips from '$lib/components/UserPositionChips.svelte';
   import {
     DEFAULT_HIERARCHY_LABELS,
     isLeadPosition,
     LEAD_POSITION_KEYS,
     type HierarchyLabels,
+    type PositionOption,
   } from '$lib/types/hierarchy-labels';
 
   import AdminOrganizationSection from './AdminOrganizationSection.svelte';
   import { POSITION_OPTIONS, MESSAGES, type AdminMessages } from './constants';
-  import { calculatePasswordStrength, getPositionDisplay } from './utils';
+  import { calculatePasswordStrength } from './utils';
 
   import type { Area, Department, FormIsActiveStatus } from './types';
 
@@ -33,7 +35,7 @@
     formPassword: string;
     formPasswordConfirm: string;
     formEmployeeNumber: string;
-    formPosition: string;
+    formPositionIds: string[];
     formNotes: string;
     formIsActive: FormIsActiveStatus;
     formHasFullAccess: boolean;
@@ -43,14 +45,14 @@
     onclose: () => void;
     onsubmit: (e: Event) => void;
     onupgrade?: () => void;
-    positionOptions?: string[];
+    positionOptions?: PositionOption[];
     ondowngrade?: () => void;
     labels?: HierarchyLabels;
   }
 
   /* eslint-disable prefer-const, @typescript-eslint/no-useless-default-assignment -- Svelte $bindable() requires let and is not a useless default */
   // prettier-ignore
-  let { show, isEditMode, modalTitle, allAreas, allDepartments, submitting, messages: msg = MESSAGES, positionOptions, labels: lbl = DEFAULT_HIERARCHY_LABELS, formFirstName = $bindable(), formLastName = $bindable(), formEmail = $bindable(), formEmailConfirm = $bindable(), formPassword = $bindable(), formPasswordConfirm = $bindable(), formEmployeeNumber = $bindable(), formPosition = $bindable(), formNotes = $bindable(), formIsActive = $bindable(), formHasFullAccess = $bindable(), formAreaIds = $bindable(), formDepartmentIds = $bindable(), onclose, onsubmit, onupgrade, ondowngrade }: Props = $props();
+  let { show, isEditMode, modalTitle, allAreas, allDepartments, submitting, messages: msg = MESSAGES, positionOptions, labels: lbl = DEFAULT_HIERARCHY_LABELS, formFirstName = $bindable(), formLastName = $bindable(), formEmail = $bindable(), formEmailConfirm = $bindable(), formPassword = $bindable(), formPasswordConfirm = $bindable(), formEmployeeNumber = $bindable(), formPositionIds = $bindable(), formNotes = $bindable(), formIsActive = $bindable(), formHasFullAccess = $bindable(), formAreaIds = $bindable(), formDepartmentIds = $bindable(), onclose, onsubmit, onupgrade, ondowngrade }: Props = $props();
   /* eslint-enable prefer-const, @typescript-eslint/no-useless-default-assignment */
 
   // =============================================================================
@@ -59,25 +61,32 @@
 
   const LEAD_ORDER: string[] = [
     LEAD_POSITION_KEYS.AREA,
+    LEAD_POSITION_KEYS.AREA_DEPUTY,
     LEAD_POSITION_KEYS.DEPARTMENT,
+    LEAD_POSITION_KEYS.DEPARTMENT_DEPUTY,
     LEAD_POSITION_KEYS.TEAM,
+    LEAD_POSITION_KEYS.TEAM_DEPUTY,
   ];
 
-  const effectivePositions = $derived.by(() => {
-    const raw =
+  const effectivePositions = $derived.by((): PositionOption[] => {
+    const raw: readonly PositionOption[] =
       positionOptions !== undefined && positionOptions.length > 0 ?
         positionOptions
       : POSITION_OPTIONS;
-    const system = raw
-      .filter((p: string) => isLeadPosition(p))
+    const unique = raw.filter(
+      (p: PositionOption, i: number, arr: readonly PositionOption[]) =>
+        arr.findIndex((x: PositionOption) => x.name === p.name) === i,
+    );
+    const system = unique
+      .filter((p: PositionOption) => isLeadPosition(p.name))
       .sort(
-        (a: string, b: string) => LEAD_ORDER.indexOf(a) - LEAD_ORDER.indexOf(b),
+        (a: PositionOption, b: PositionOption) =>
+          LEAD_ORDER.indexOf(a.name) - LEAD_ORDER.indexOf(b.name),
       );
-    const custom = raw.filter((p: string) => !isLeadPosition(p));
+    const custom = unique.filter((p: PositionOption) => !isLeadPosition(p.name));
     return [...system, ...custom];
   });
 
-  let positionDropdownOpen = $state(false);
   let showPassword = $state(false);
   let showPasswordConfirm = $state(false);
   let emailError = $state(false);
@@ -91,37 +100,19 @@
   // =============================================================================
 
   const passwordMatch = $derived(
-    formPassword !== '' &&
-      formPasswordConfirm !== '' &&
-      formPassword === formPasswordConfirm,
+    formPassword !== '' && formPasswordConfirm !== '' && formPassword === formPasswordConfirm,
   );
 
   // =============================================================================
   // HANDLERS
   // =============================================================================
 
-  function handleOverlayClick(e: MouseEvent) {
-    if (e.target === e.currentTarget) onclose();
-  }
-
-  function togglePositionDropdown(e: MouseEvent) {
-    e.stopPropagation();
-    positionDropdownOpen = !positionDropdownOpen;
-  }
-
-  function selectPosition(position: string) {
-    formPosition = position;
-    positionDropdownOpen = false;
-  }
-
   function validateEmails() {
-    emailError =
-      formEmailConfirm !== '' ? formEmail !== formEmailConfirm : false;
+    emailError = formEmailConfirm !== '' ? formEmail !== formEmailConfirm : false;
   }
 
   function validatePasswords() {
-    passwordError =
-      formPasswordConfirm !== '' ? formPassword !== formPasswordConfirm : false;
+    passwordError = formPasswordConfirm !== '' ? formPassword !== formPasswordConfirm : false;
   }
 
   function updatePasswordStrength() {
@@ -138,7 +129,6 @@
   // Reset local UI state when modal opens
   $effect(() => {
     if (show) {
-      positionDropdownOpen = false;
       showPassword = false;
       showPasswordConfirm = false;
       emailError = false;
@@ -146,21 +136,6 @@
       passwordScore = -1;
       passwordLabel = '';
       passwordTime = '';
-    }
-  });
-
-  // Outside click handler for position dropdown
-  $effect(() => {
-    if (positionDropdownOpen) {
-      const handleOutsideClick = (e: MouseEvent) => {
-        const target = e.target as HTMLElement;
-        const el = document.getElementById('position-dropdown');
-        if (el && !el.contains(target)) positionDropdownOpen = false;
-      };
-      document.addEventListener('click', handleOutsideClick, true);
-      return () => {
-        document.removeEventListener('click', handleOutsideClick, true);
-      };
     }
   });
 </script>
@@ -173,21 +148,10 @@
     aria-modal="true"
     aria-labelledby="admin-modal-title"
     tabindex="-1"
-    onclick={handleOverlayClick}
-    onkeydown={(e) => {
-      if (e.key === 'Escape') onclose();
-    }}
   >
-    <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
     <form
       id="admin-form"
       class="ds-modal"
-      onclick={(e) => {
-        e.stopPropagation();
-      }}
-      onkeydown={(e) => {
-        e.stopPropagation();
-      }}
       {onsubmit}
     >
       <div class="ds-modal__header">
@@ -416,46 +380,22 @@
         </div>
 
         <div class="form-field">
-          <label
-            class="form-field__label"
-            for="admin-position"
-          >
-            {MESSAGES.LABEL_POSITION} <span class="text-red-500">*</span>
-          </label>
-          <div
-            class="dropdown"
-            id="position-dropdown"
-          >
-            <!-- svelte-ignore a11y_click_events_have_key_events -->
-            <!-- svelte-ignore a11y_no_static_element_interactions -->
-            <div
-              class="dropdown__trigger"
-              class:active={positionDropdownOpen}
-              onclick={togglePositionDropdown}
-            >
-              <span
-                >{formPosition !== '' ?
-                  getPositionDisplay(formPosition, lbl)
-                : 'Bitte wählen...'}</span
-              >
-              <i class="fas fa-chevron-down"></i>
-            </div>
-            <div
-              class="dropdown__menu"
-              class:active={positionDropdownOpen}
-            >
-              {#each effectivePositions as position (position)}
-                <!-- svelte-ignore a11y_click_events_have_key_events -->
-                <!-- svelte-ignore a11y_no_static_element_interactions -->
-                <div
-                  class="dropdown__option"
-                  onclick={() => {
-                    selectPosition(position);
-                  }}
+          <UserPositionChips
+            catalog={effectivePositions}
+            bind:selectedIds={formPositionIds}
+            hierarchyLabels={lbl}
+          />
+          <div class="alert alert--info alert--sm mt-2">
+            <div class="alert__icon"><i class="fas fa-id-badge"></i></div>
+            <div class="alert__content">
+              <div class="alert__title">Position nicht dabei?</div>
+              <div class="alert__message">
+                <a
+                  href="/settings/organigram/positions"
+                  target="_blank">Neue Position anlegen</a
                 >
-                  {getPositionDisplay(position, lbl)}
-                </div>
-              {/each}
+                — oder bestehende Positionen bearbeiten.
+              </div>
             </div>
           </div>
         </div>
@@ -500,8 +440,7 @@
           class="btn btn-primary"
           disabled={submitting}
         >
-          {#if submitting}<span class="spinner-ring spinner-ring--sm mr-2"
-            ></span>{/if}
+          {#if submitting}<span class="spinner-ring spinner-ring--sm mr-2"></span>{/if}
           {MESSAGES.BTN_SAVE}
         </button>
       </div>

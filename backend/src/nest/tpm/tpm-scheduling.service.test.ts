@@ -49,11 +49,7 @@ describe('TpmSchedulingService', () => {
 
   describe('calculateInitialDueDate()', () => {
     it('should return today for daily interval', () => {
-      const result = service.calculateInitialDueDate(
-        'daily',
-        defaultConfig,
-        null,
-      );
+      const result = service.calculateInitialDueDate('daily', defaultConfig, null);
 
       const today = new Date();
       today.setUTCHours(0, 0, 0, 0);
@@ -94,11 +90,7 @@ describe('TpmSchedulingService', () => {
     });
 
     it('should return 1st Monday 3 months ahead for quarterly interval', () => {
-      const result = service.calculateInitialDueDate(
-        'quarterly',
-        defaultConfig,
-        null,
-      );
+      const result = service.calculateInitialDueDate('quarterly', defaultConfig, null);
 
       const today = new Date();
       today.setUTCHours(0, 0, 0, 0);
@@ -112,11 +104,7 @@ describe('TpmSchedulingService', () => {
     });
 
     it('should use custom days for custom interval', () => {
-      const result = service.calculateInitialDueDate(
-        'custom',
-        defaultConfig,
-        14,
-      );
+      const result = service.calculateInitialDueDate('custom', defaultConfig, 14);
 
       const today = new Date();
       today.setUTCHours(0, 0, 0, 0);
@@ -243,22 +231,14 @@ describe('TpmSchedulingService', () => {
       expect(mockClient.query).toHaveBeenCalledTimes(3);
 
       // Mark past dates completed
-      expect(mockClient.query.mock.calls[0][0]).toContain(
-        'UPDATE tpm_scheduled_dates',
-      );
-      expect(mockClient.query.mock.calls[0][0]).toContain(
-        'is_completed = true',
-      );
+      expect(mockClient.query.mock.calls[0][0]).toContain('UPDATE tpm_scheduled_dates');
+      expect(mockClient.query.mock.calls[0][0]).toContain('is_completed = true');
 
       // Get next scheduled date
-      expect(mockClient.query.mock.calls[1][0]).toContain(
-        'SELECT scheduled_date',
-      );
+      expect(mockClient.query.mock.calls[1][0]).toContain('SELECT scheduled_date');
 
       // Update card due date
-      expect(mockClient.query.mock.calls[2][0]).toContain(
-        'UPDATE tpm_cards SET current_due_date',
-      );
+      expect(mockClient.query.mock.calls[2][0]).toContain('UPDATE tpm_cards SET current_due_date');
     });
 
     it('should return null when schedule is exhausted', async () => {

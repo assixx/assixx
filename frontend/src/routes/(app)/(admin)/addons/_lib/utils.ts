@@ -20,9 +20,7 @@ export function getTrialDaysRemaining(trialEndsAt: string): number {
 export function canActivate(addon: AddonWithTenantStatus): boolean {
   if (addon.isCore) return false;
   const status = addon.tenantStatus?.status ?? 'not_activated';
-  return (
-    status === 'not_activated' || status === 'cancelled' || status === 'expired'
-  );
+  return status === 'not_activated' || status === 'cancelled' || status === 'expired';
 }
 
 /** Whether the addon can be deactivated (active or trial) */

@@ -11,12 +11,13 @@ export const UpdateHierarchyLabelsSchema = z.object({
   levels: z.object({
     hall: LabelSchema.optional(),
     area: LabelSchema.optional(),
+    areaLeadPrefix: LabelSchema.optional(),
     department: LabelSchema.optional(),
+    departmentLeadPrefix: LabelSchema.optional(),
     team: LabelSchema.optional(),
+    teamLeadPrefix: LabelSchema.optional(),
     asset: LabelSchema.optional(),
   }),
 });
 
-export class UpdateHierarchyLabelsDto extends createZodDto(
-  UpdateHierarchyLabelsSchema,
-) {}
+export class UpdateHierarchyLabelsDto extends createZodDto(UpdateHierarchyLabelsSchema) {}

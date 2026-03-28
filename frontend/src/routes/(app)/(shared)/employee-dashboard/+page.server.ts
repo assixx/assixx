@@ -36,9 +36,7 @@ function buildCalendarDateRange(): {
 /**
  * Extract documents array from API response
  */
-function extractDocuments(
-  rawDocs: { documents?: Document[] } | Document[] | null,
-): Document[] {
+function extractDocuments(rawDocs: { documents?: Document[] } | Document[] | null): Document[] {
   if (rawDocs === null) return [];
   if ('documents' in rawDocs) return rawDocs.documents ?? [];
   if (Array.isArray(rawDocs)) return rawDocs;
@@ -71,10 +69,7 @@ function extractUpcomingEvents(
         return false;
       }
     })
-    .sort(
-      (a, b) =>
-        new Date(a.startTime).getTime() - new Date(b.startTime).getTime(),
-    )
+    .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime())
     .slice(0, LIST_LIMITS.upcomingEvents);
 }
 
@@ -102,11 +97,7 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
   // 3. Build date range and fetch dashboard data in PARALLEL
   const { startISO, endISO, today } = buildCalendarDateRange();
   const [documentsData, eventsData, blackboardData] = await Promise.all([
-    apiFetch<{ documents?: Document[] } | Document[]>(
-      '/documents',
-      token,
-      fetch,
-    ),
+    apiFetch<{ documents?: Document[] } | Document[]>('/documents', token, fetch),
     apiFetch<{ events?: CalendarEvent[] } | CalendarEvent[]>(
       `/calendar/events?startDate=${encodeURIComponent(startISO)}&endDate=${encodeURIComponent(endISO)}&filter=all&limit=10`,
       token,

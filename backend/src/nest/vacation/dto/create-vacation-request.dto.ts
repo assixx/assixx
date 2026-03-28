@@ -7,11 +7,7 @@
 import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';
 
-import {
-  DateSchema,
-  VacationHalfDaySchema,
-  VacationTypeSchema,
-} from './common.dto.js';
+import { DateSchema, VacationHalfDaySchema, VacationTypeSchema } from './common.dto.js';
 
 const BaseSchema = z.object({
   startDate: DateSchema,
@@ -20,11 +16,7 @@ const BaseSchema = z.object({
   halfDayEnd: VacationHalfDaySchema.default('none'),
   vacationType: VacationTypeSchema.default('regular'),
   substituteId: z.number().int().positive().optional(),
-  requestNote: z
-    .string()
-    .trim()
-    .max(1000, 'Request note cannot exceed 1000 characters')
-    .optional(),
+  requestNote: z.string().trim().max(1000, 'Request note cannot exceed 1000 characters').optional(),
 });
 
 type BaseInput = z.infer<typeof BaseSchema>;
@@ -60,6 +52,4 @@ export const CreateVacationRequestSchema = BaseSchema.refine(
     },
   );
 
-export class CreateVacationRequestDto extends createZodDto(
-  CreateVacationRequestSchema,
-) {}
+export class CreateVacationRequestDto extends createZodDto(CreateVacationRequestSchema) {}

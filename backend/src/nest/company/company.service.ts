@@ -65,10 +65,7 @@ export class CompanyService {
   /**
    * Update company address data for the current tenant
    */
-  async updateCompanyData(
-    tenantId: number,
-    dto: UpdateCompanyDto,
-  ): Promise<CompanyData> {
+  async updateCompanyData(tenantId: number, dto: UpdateCompanyDto): Promise<CompanyData> {
     const setClauses: string[] = [];
     const values: (string | null)[] = [];
     let paramIndex = 1;

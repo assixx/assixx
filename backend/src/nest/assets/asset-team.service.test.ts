@@ -109,9 +109,7 @@ describe('AssetTeamService', () => {
       // Validation query returns fewer rows than requested
       mockDb.query.mockResolvedValueOnce([{ id: 1 }]); // only 1 valid, but 2 requested
 
-      await expect(service.setAssetTeams(42, [1, 999], 1, 1)).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(service.setAssetTeams(42, [1, 999], 1, 1)).rejects.toThrow(BadRequestException);
     });
 
     it('should skip validation and delete when teamIds is empty', async () => {

@@ -81,16 +81,9 @@ describe('TpmCardDuplicateService', () => {
 
   describe('checkDuplicate()', () => {
     it('should detect duplicate when similar card exists', async () => {
-      mockDb.query.mockResolvedValueOnce([
-        createCardRow({ title: 'Sichtprüfung' }),
-      ]);
+      mockDb.query.mockResolvedValueOnce([createCardRow({ title: 'Sichtprüfung' })]);
 
-      const result = await service.checkDuplicate(
-        10,
-        42,
-        'Sichtprüfung',
-        'weekly',
-      );
+      const result = await service.checkDuplicate(10, 42, 'Sichtprüfung', 'weekly');
 
       expect(result.hasDuplicate).toBe(true);
       expect(result.existingCards).toHaveLength(1);
@@ -100,12 +93,7 @@ describe('TpmCardDuplicateService', () => {
     it('should return no duplicate when no match found', async () => {
       mockDb.query.mockResolvedValueOnce([]);
 
-      const result = await service.checkDuplicate(
-        10,
-        42,
-        'Completely unique task',
-        'monthly',
-      );
+      const result = await service.checkDuplicate(10, 42, 'Completely unique task', 'monthly');
 
       expect(result.hasDuplicate).toBe(false);
       expect(result.existingCards).toHaveLength(0);
@@ -159,12 +147,7 @@ describe('TpmCardDuplicateService', () => {
         }),
       ]);
 
-      const result = await service.checkDuplicate(
-        10,
-        42,
-        'Sichtprüfung',
-        'monthly',
-      );
+      const result = await service.checkDuplicate(10, 42, 'Sichtprüfung', 'monthly');
 
       expect(result.hasDuplicate).toBe(true);
       expect(result.existingCards).toHaveLength(2);

@@ -18,6 +18,5 @@
   {onconfirm}
   oncancel={onclose}
 >
-  Möchten Sie diesen Termin wirklich Löschen? Diese Aktion kann nicht rückgängig
-  gemacht werden.
+  Möchten Sie diesen Termin wirklich Löschen? Diese Aktion kann nicht rückgängig gemacht werden.
 </ConfirmModal>

@@ -4,16 +4,9 @@
  * Stateless helper functions. No DI, no DB calls, no side effects.
  * Maps DB Row types (snake_case) to API types (camelCase).
  */
-import {
-  parseStringAgg,
-  parseStringAggNumbers,
-  toIsoString,
-} from '../../utils/db-helpers.js';
+import { parseStringAgg, parseStringAggNumbers, toIsoString } from '../../utils/db-helpers.js';
 import type { DummyUser, DummyUserWithTeamsRow } from './dummy-users.types.js';
-import {
-  DUMMY_EMAIL_DOMAIN,
-  DUMMY_EMPLOYEE_PREFIX,
-} from './dummy-users.types.js';
+import { DUMMY_EMAIL_DOMAIN, DUMMY_EMPLOYEE_PREFIX } from './dummy-users.types.js';
 
 /** Map dummy user DB row (with JOINs) to API response */
 export function mapDummyUserRowToApi(row: DummyUserWithTeamsRow): DummyUser {

@@ -6,10 +6,7 @@
 
 import { notificationStore } from '$lib/stores/notification.store.svelte';
 import { createLogger } from '$lib/utils/logger';
-import {
-  handleSessionExpired,
-  isSessionExpiredError,
-} from '$lib/utils/session-expired.js';
+import { handleSessionExpired, isSessionExpiredError } from '$lib/utils/session-expired.js';
 
 import {
   fetchDocuments as apiFetchDocuments,
@@ -19,20 +16,10 @@ import {
   getCurrentUser as apiGetCurrentUser,
 } from './api';
 import { SORT_LABELS, CATEGORY_LABELS, MESSAGES } from './constants';
-import {
-  applyAllFilters,
-  calculateCategoryCounts,
-  calculateStats,
-} from './filters';
+import { applyAllFilters, calculateCategoryCounts, calculateStats } from './filters';
 import { canUpload, canSeeActions } from './utils';
 
-import type {
-  Document,
-  DocumentCategory,
-  SortOption,
-  ChatFolder,
-  CurrentUser,
-} from './types';
+import type { Document, DocumentCategory, SortOption, ChatFolder, CurrentUser } from './types';
 
 const log = createLogger('DocExplorerDataState');
 
@@ -82,13 +69,9 @@ function createDocExplorerDataState() {
   );
   const selectedChatFolderName = $derived.by(() => {
     if (selectedConversationId === null) return null;
-    const folder = chatFolders.find(
-      (f) => f.conversationId === selectedConversationId,
-    );
+    const folder = chatFolders.find((f) => f.conversationId === selectedConversationId);
     if (folder === undefined) return null;
-    return folder.isGroup && folder.groupName !== null ?
-        folder.groupName
-      : folder.participantName;
+    return folder.isGroup && folder.groupName !== null ? folder.groupName : folder.participantName;
   });
 
   // ---------------------------------------------------------------------------
@@ -96,10 +79,7 @@ function createDocExplorerDataState() {
   // ---------------------------------------------------------------------------
 
   /** Build breadcrumb path string for logging */
-  function buildBreadcrumbPath(
-    category: DocumentCategory,
-    conversationId: number | null,
-  ): string {
+  function buildBreadcrumbPath(category: DocumentCategory, conversationId: number | null): string {
     if (category === 'all') return '/Alle Dokumente';
     const categoryLabel = CATEGORY_LABELS[category];
     if (conversationId === null) return `/Alle Dokumente/${categoryLabel}`;
@@ -142,12 +122,7 @@ function createDocExplorerDataState() {
   }
 
   function applyFilters(): void {
-    filteredDocuments = applyAllFilters(
-      allDocuments,
-      currentCategory,
-      searchQuery,
-      sortOption,
-    );
+    filteredDocuments = applyAllFilters(allDocuments, currentCategory, searchQuery, sortOption);
   }
 
   async function loadDocuments(): Promise<void> {
@@ -179,10 +154,7 @@ function createDocExplorerDataState() {
   }
 
   async function loadChatAttachments(conversationId: number): Promise<void> {
-    const previousPath = buildBreadcrumbPath(
-      currentCategory,
-      selectedConversationId,
-    );
+    const previousPath = buildBreadcrumbPath(currentCategory, selectedConversationId);
     const folder = chatFolders.find((f) => f.conversationId === conversationId);
     const folderName =
       folder !== undefined ?
@@ -248,24 +220,17 @@ function createDocExplorerDataState() {
   function navigateToCategory(category: DocumentCategory): void {
     const previousCategory = currentCategory;
     const previousConversationId = selectedConversationId;
-    const previousPath = buildBreadcrumbPath(
-      previousCategory,
-      previousConversationId,
-    );
+    const previousPath = buildBreadcrumbPath(previousCategory, previousConversationId);
 
     if (currentCategory === category && selectedConversationId === null) {
-      log.debug(
-        { category, path: previousPath },
-        '[NAV] Category unchanged, ignoring click',
-      );
+      log.debug({ category, path: previousPath }, '[NAV] Category unchanged, ignoring click');
       return;
     }
 
     // CRITICAL: If leaving chat category OR leaving a chat conversation,
     // restore allDocuments from SSR baseline because loadChatAttachments()
     // replaced allDocuments with only chat attachments
-    const leavingChatCategory =
-      previousCategory === 'chat' && category !== 'chat';
+    const leavingChatCategory = previousCategory === 'chat' && category !== 'chat';
     const wasInChatConversation = previousConversationId !== null;
     if (leavingChatCategory || wasInChatConversation) {
       log.debug(
@@ -308,10 +273,7 @@ function createDocExplorerDataState() {
   }
 
   function backToFolders(): void {
-    const previousPath = buildBreadcrumbPath(
-      currentCategory,
-      selectedConversationId,
-    );
+    const previousPath = buildBreadcrumbPath(currentCategory, selectedConversationId);
     const newPath = buildBreadcrumbPath(currentCategory, null);
 
     log.debug(

@@ -38,10 +38,7 @@ export const CompleteCardSchema = z.object({
     .max(10_000, 'Dokumentation darf maximal 10.000 Zeichen lang sein')
     .nullish(),
   customData: z.record(z.string(), z.unknown()).default({}),
-  participantUuids: z
-    .array(z.uuid())
-    .max(10, 'Maximal 10 Teilnehmer')
-    .optional(),
+  participantUuids: z.array(z.uuid()).max(10, 'Maximal 10 Teilnehmer').optional(),
   defects: TpmDefectsArraySchema,
 });
 

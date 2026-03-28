@@ -29,17 +29,13 @@ export async function getTeamCalendarYear(
   year: number,
 ): Promise<TeamCalendarData[]> {
   const months = Array.from({ length: 12 }, (_, i) => i + 1);
-  return await Promise.all(
-    months.map((month) => getTeamCalendar(teamId, month, year)),
-  );
+  return await Promise.all(months.map((month) => getTeamCalendar(teamId, month, year)));
 }
 
 // ─── Own Balance (overview) ──────────────────────────────────────
 
 /** Fetch own vacation balance for a given year. */
-export async function getOverviewBalance(
-  year?: number,
-): Promise<VacationBalance> {
+export async function getOverviewBalance(year?: number): Promise<VacationBalance> {
   const params = year !== undefined ? `?year=${year}` : '';
   return await apiClient.get<VacationBalance>(`/vacation/overview${params}`);
 }

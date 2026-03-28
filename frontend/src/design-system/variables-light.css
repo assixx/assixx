@@ -32,8 +32,7 @@
 
   /* Typography Families */
   --font-primary:
-    'Outfit', -apple-system, blinkmacsystemfont, 'Segoe UI', roboto, arial,
-    sans-serif;
+    'Outfit', -apple-system, blinkmacsystemfont, 'Segoe UI', roboto, arial, sans-serif;
 
   /* Status Colors (theme-independent) */
   --success-color: oklch(67.31% 0.1624 144.21);
@@ -102,7 +101,7 @@
   --glass-bg: oklch(0% 0 0 / 2%);
   --glass-bg-hover: oklch(0% 0 0 / 5%);
   --glass-bg-active: oklch(0% 0 0 / 6%);
-  --glass-border: 1px solid oklch(0% 0 0 / 20%);
+  --glass-border: 1px solid oklch(0% 0 0 / 30%);
   --glass-border-sidebar-tree: 1px solid oklch(0% 0 0 / 35%);
 
   /* Borders (theme-dependent — from colors.css refactor) */
@@ -146,8 +145,7 @@
 
   /* Status Inactive - Green glow */
   --shadow-btn-status-inactive: 0 2px 4px oklch(64.01% 0.1751 146.74 / 10%);
-  --shadow-btn-status-inactive-hover: 0 4px 12px
-    oklch(64.01% 0.1751 146.74 / 15%);
+  --shadow-btn-status-inactive-hover: 0 4px 12px oklch(64.01% 0.1751 146.74 / 15%);
 
   /* Warning Button - Orange glow */
   --shadow-btn-warning: 0 2px 4px oklch(77.03% 0.1741 64.05 / 12%);
@@ -167,6 +165,19 @@
 
   /* Organigramm Connection Lines */
   --org-connection-stroke: oklch(0% 0 0);
+
+  /* Role-Switch Warning Banner (light mode: warm amber on cream) */
+  --banner-warning-bg: linear-gradient(
+    90deg,
+    oklch(88% 0.08 85 / 95%) 0%,
+    oklch(94% 0.04 85 / 50%) 100%
+  );
+  --banner-warning-border: oklch(75% 0.14 70 / 40%);
+  --banner-warning-text: oklch(40% 0.06 70);
+  --banner-warning-text-strong: oklch(30% 0.08 65);
+  --banner-warning-icon: oklch(70% 0.16 85);
+  --banner-warning-close: oklch(50% 0.06 70);
+  --banner-warning-close-hover: oklch(30% 0.08 65);
 
   /* Navigation-specific (light mode) */
   --nav-hover-bg: oklch(65.82% 0.169 248.81 / 10%);

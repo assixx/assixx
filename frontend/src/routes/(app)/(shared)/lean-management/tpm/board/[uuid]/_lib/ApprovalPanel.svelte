@@ -6,11 +6,7 @@
    */
   import { showSuccessAlert, showErrorAlert } from '$lib/stores/toast';
 
-  import {
-    respondToExecution,
-    fetchPendingApprovals,
-    logApiError,
-  } from '../../../_lib/api';
+  import { respondToExecution, fetchPendingApprovals, logApiError } from '../../../_lib/api';
   import { MESSAGES } from '../../../_lib/constants';
 
   import type { TpmCard, TpmExecution } from '../../../_lib/types';
@@ -35,9 +31,7 @@
     loading = true;
     try {
       const result = await fetchPendingApprovals(1, 100);
-      pendingExecution =
-        result.items.find((e: TpmExecution) => e.cardUuid === card.uuid) ??
-        null;
+      pendingExecution = result.items.find((e: TpmExecution) => e.cardUuid === card.uuid) ?? null;
     } catch (err: unknown) {
       logApiError('fetchPendingApprovals', err);
     } finally {
@@ -53,8 +47,7 @@
     try {
       const result = await respondToExecution(pendingExecution.uuid, {
         action: 'approved',
-        approvalNote:
-          approvalNote.trim().length > 0 ? approvalNote.trim() : null,
+        approvalNote: approvalNote.trim().length > 0 ? approvalNote.trim() : null,
       });
       // eslint-disable-next-line require-atomic-updates -- Single-threaded UI; button disabled prevents concurrent calls
       submitting = false;
@@ -121,36 +114,26 @@
       Wird geladen...
     </div>
   {:else if pendingExecution === null}
-    <p class="m-0 text-sm text-(--color-text-muted) italic">
-      Keine ausstehende Freigabe gefunden.
-    </p>
+    <p class="m-0 text-sm text-(--color-text-muted) italic">Keine ausstehende Freigabe gefunden.</p>
   {:else}
     <!-- Execution info -->
     <div class="approval-panel__info">
       <div class="approval-panel__row">
-        <span class="approval-panel__label"
-          >{MESSAGES.APPROVAL_EXECUTED_BY}</span
-        >
+        <span class="approval-panel__label">{MESSAGES.APPROVAL_EXECUTED_BY}</span>
         <span class="approval-panel__value">
           {pendingExecution.executedByName ?? '—'}
         </span>
       </div>
       <div class="approval-panel__row">
-        <span class="approval-panel__label"
-          >{MESSAGES.APPROVAL_EXECUTED_ON}</span
-        >
+        <span class="approval-panel__label">{MESSAGES.APPROVAL_EXECUTED_ON}</span>
         <span class="approval-panel__value">
           {formatDate(pendingExecution.executionDate)}
         </span>
       </div>
       {#if pendingExecution.documentation !== null}
         <div class="mt-1 flex flex-col gap-1">
-          <span class="approval-panel__label"
-            >{MESSAGES.APPROVAL_DOCUMENTATION}</span
-          >
-          <p
-            class="m-0 text-sm leading-relaxed whitespace-pre-wrap text-(--color-text-secondary)"
-          >
+          <span class="approval-panel__label">{MESSAGES.APPROVAL_DOCUMENTATION}</span>
+          <p class="m-0 text-sm leading-relaxed whitespace-pre-wrap text-(--color-text-secondary)">
             {pendingExecution.documentation}
           </p>
         </div>

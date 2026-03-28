@@ -6,10 +6,7 @@
    */
   import { invalidateAll } from '$app/navigation';
 
-  import {
-    DEFAULT_HIERARCHY_LABELS,
-    type HierarchyLabels,
-  } from '$lib/types/hierarchy-labels';
+  import { DEFAULT_HIERARCHY_LABELS, type HierarchyLabels } from '$lib/types/hierarchy-labels';
   import { showSuccessAlert, showErrorAlert } from '$lib/utils';
   import { createLogger } from '$lib/utils/logger';
 
@@ -68,9 +65,7 @@
     }
   });
 
-  const canSubmit = $derived(
-    selectedAssetId !== null && Number(ruleMinStaff) >= 1,
-  );
+  const canSubmit = $derived(selectedAssetId !== null && Number(ruleMinStaff) >= 1);
 
   // ==========================================================================
   // SEARCH / FILTER
@@ -110,8 +105,7 @@
   function getSelectedAreaName(): string {
     if (selectedAreaId === null) return `${labels.area} wählen...`;
     return (
-      rulesState.areas.find((a) => a.id === selectedAreaId)?.name ??
-      `${labels.area} wählen...`
+      rulesState.areas.find((a) => a.id === selectedAreaId)?.name ?? `${labels.area} wählen...`
     );
   }
 
@@ -125,14 +119,10 @@
   }
 
   function getSelectedAssetName(): string {
-    if (selectedDepartmentId === null)
-      return `Erst ${labels.department} wählen...`;
+    if (selectedDepartmentId === null) return `Erst ${labels.department} wählen...`;
     if (isLoadingAssets) return 'Laden...';
     if (selectedAssetId === null) return `${labels.asset} wählen...`;
-    return (
-      cascadeAssets.find((m) => m.id === selectedAssetId)?.name ??
-      `${labels.asset} wählen...`
-    );
+    return cascadeAssets.find((m) => m.id === selectedAssetId)?.name ?? `${labels.asset} wählen...`;
   }
 
   // ==========================================================================
@@ -522,8 +512,7 @@
             <span class="form-field__label">{labels.asset}</span>
             <div
               class="dropdown"
-              class:dropdown--disabled={selectedDepartmentId === null ||
-                isLoadingAssets}
+              class:dropdown--disabled={selectedDepartmentId === null || isLoadingAssets}
             >
               <div
                 class="dropdown__trigger"
@@ -537,11 +526,7 @@
                   }
                 }}
                 onkeydown={(e) => {
-                  if (
-                    e.key === 'Enter' &&
-                    selectedDepartmentId !== null &&
-                    !isLoadingAssets
-                  ) {
+                  if (e.key === 'Enter' && selectedDepartmentId !== null && !isLoadingAssets) {
                     const wasOpen = assetDropdownOpen;
                     closeAllDropdowns();
                     if (!wasOpen) assetDropdownOpen = true;
@@ -623,9 +608,7 @@
           disabled={!canSubmit || isSaving}
         >
           <i class="fas fa-save mr-1"></i>
-          {rulesState.editingStaffingRule !== null ?
-            'Aktualisieren'
-          : 'Erstellen'}
+          {rulesState.editingStaffingRule !== null ? 'Aktualisieren' : 'Erstellen'}
         </button>
       </div>
     </form>

@@ -23,11 +23,7 @@
     getTrialDaysRemaining,
   } from './_lib/utils';
 
-  import type {
-    AddonFilter,
-    AddonWithTenantStatus,
-    TenantAddonsSummary,
-  } from './_lib/types';
+  import type { AddonFilter, AddonWithTenantStatus, TenantAddonsSummary } from './_lib/types';
 
   const log = createLogger('AddonManagement');
 
@@ -67,11 +63,7 @@
       if (currentFilter === 'active') {
         return status === 'active' || status === 'trial';
       }
-      return (
-        status === 'not_activated' ||
-        status === 'cancelled' ||
-        status === 'expired'
-      );
+      return status === 'not_activated' || status === 'cancelled' || status === 'expired';
     }),
   );
 
@@ -84,9 +76,7 @@
     try {
       const result = await activateAddon(tenantId, addonCode);
       const days = result.daysRemaining ?? 30;
-      showSuccessAlert(
-        `Modul aktiviert — ${String(days)} Tage Testphase gestartet`,
-      );
+      showSuccessAlert(`Modul aktiviert — ${String(days)} Tage Testphase gestartet`);
       await invalidateAll();
     } catch (err: unknown) {
       log.error({ err }, 'Error activating addon');
@@ -136,9 +126,7 @@
         <i class="fas fa-puzzle-piece mr-2"></i>
         Addon-Verwaltung
       </h1>
-      <p class="mt-2 text-(--color-text-secondary)">
-        Module für Ihre Organisation verwalten
-      </p>
+      <p class="mt-2 text-(--color-text-secondary)">Module für Ihre Organisation verwalten</p>
     </div>
     <div class="card__body">
       <div class="summary-stats">
@@ -147,9 +135,7 @@
           <span class="stat-item__label">Kern-Module</span>
         </div>
         <div class="stat-item">
-          <span class="stat-item__value"
-            >{summary.activeAddons + summary.trialAddons}</span
-          >
+          <span class="stat-item__value">{summary.activeAddons + summary.trialAddons}</span>
           <span class="stat-item__label">Aktive Zusatz-Module</span>
         </div>
         <div class="stat-item">
@@ -157,8 +143,7 @@
           <span class="stat-item__label">In Testphase</span>
         </div>
         <div class="stat-item">
-          <span class="stat-item__value">{summary.monthlyCost.toFixed(0)}€</span
-          >
+          <span class="stat-item__value">{summary.monthlyCost.toFixed(0)}€</span>
           <span class="stat-item__label">Monatliche Kosten</span>
         </div>
       </div>
@@ -172,9 +157,7 @@
         <i class="fas fa-shield-alt mr-2"></i>
         Kern-Module
       </h2>
-      <p class="mt-2 text-(--color-text-secondary)">
-        Immer aktiv — im Basispaket enthalten
-      </p>
+      <p class="mt-2 text-(--color-text-secondary)">Immer aktiv — im Basispaket enthalten</p>
     </div>
     <div class="card__body">
       <div class="core-grid">
@@ -264,15 +247,13 @@
             {@const isProcessing = processingAddon === addon.code}
             <div
               class="addon-card"
-              class:addon-card--active={status === 'active' ||
-                status === 'trial'}
+              class:addon-card--active={status === 'active' || status === 'trial'}
             >
               <!-- Header: Icon + Status Badge -->
               <div class="addon-card__header">
                 <div
                   class="addon-card__icon"
-                  class:addon-card__icon--active={status === 'active' ||
-                    status === 'trial'}
+                  class:addon-card__icon--active={status === 'active' || status === 'trial'}
                 >
                   <i class={ADDON_ICONS[addon.code] ?? 'fas fa-cube'}></i>
                 </div>
@@ -292,9 +273,7 @@
 
               <!-- Trial countdown -->
               {#if status === 'trial' && addon.tenantStatus?.trialEndsAt}
-                {@const daysLeft = getTrialDaysRemaining(
-                  addon.tenantStatus.trialEndsAt,
-                )}
+                {@const daysLeft = getTrialDaysRemaining(addon.tenantStatus.trialEndsAt)}
                 <div class="addon-card__trial">
                   <i class="fas fa-hourglass-half"></i>
                   {daysLeft}

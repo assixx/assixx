@@ -21,20 +21,11 @@
     ondelete: (doc: Document, e: MouseEvent) => void;
   }
 
-  const {
-    documents,
-    currentUser,
-    showActions,
-    onpreview,
-    ondownload,
-    onedit,
-    ondelete,
-  }: Props = $props();
+  const { documents, currentUser, showActions, onpreview, ondownload, onedit, ondelete }: Props =
+    $props();
 </script>
 
-<div
-  class="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
->
+<div class="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
   {#each documents as doc (doc.id)}
     {@const isNew = isDocumentNew(doc)}
     <!-- svelte-ignore a11y_click_events_have_key_events -->
@@ -52,14 +43,12 @@
           <i class="fas fa-file-alt text-primary-500 text-3xl"></i>
           <div class="flex flex-col gap-1">
             {#if isNew}
-              <span
-                class="bg-success-100 text-success-700 rounded px-2 py-0.5 text-xs font-medium"
+              <span class="bg-success-100 text-success-700 rounded px-2 py-0.5 text-xs font-medium"
                 >Neu</span
               >
             {/if}
             {#if !doc.isRead}
-              <span
-                class="bg-primary-100 text-primary-700 rounded px-2 py-0.5 text-xs font-medium"
+              <span class="bg-primary-100 text-primary-700 rounded px-2 py-0.5 text-xs font-medium"
                 >Ungelesen</span
               >
             {/if}
@@ -121,9 +110,7 @@
       </div>
       <div class="mb-4">
         <h3
-          class="text-content-primary mb-1 truncate text-sm font-medium {(
-            !doc.isRead
-          ) ?
+          class="text-content-primary mb-1 truncate text-sm font-medium {!doc.isRead ?
             'font-semibold'
           : ''}"
           title={getDisplayName(doc)}
@@ -132,9 +119,7 @@
         </h3>
         <p class="text-content-secondary text-xs">{doc.category}</p>
       </div>
-      <div
-        class="text-content-tertiary flex items-center justify-between text-xs"
-      >
+      <div class="text-content-tertiary flex items-center justify-between text-xs">
         <span>{formatFileSize(doc.size)}</span>
         <span>{formatRelativeDate(doc.uploadedAt)}</span>
       </div>

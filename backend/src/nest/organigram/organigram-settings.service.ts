@@ -3,18 +3,14 @@ import type { PoolClient } from 'pg';
 
 import { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import { DatabaseService } from '../database/database.service.js';
-import type {
-  UpdateHierarchyLabelsDto,
-  UpdatePositionOptionsDto,
-} from './dto/index.js';
+import type { UpdateHierarchyLabelsDto } from './dto/index.js';
 import {
   DEFAULT_HIERARCHY_LABELS,
-  DEFAULT_POSITION_OPTIONS,
   DEFAULT_VIEWPORT,
   type HallOverride,
   type HierarchyLabels,
   type OrgViewport,
-  type PositionOptions,
+  type PerimeterAnchor,
 } from './organigram.types.js';
 
 interface TenantSettingsRow {
@@ -23,12 +19,6 @@ interface TenantSettingsRow {
 
 interface OrgHierarchySettings {
   levels?: Partial<HierarchyLabels>;
-}
-
-interface PositionOptionsSettings {
-  employee?: string[];
-  admin?: string[];
-  root?: string[];
 }
 
 const SELECT_SETTINGS = 'SELECT settings FROM tenants WHERE id = $1';
@@ -48,17 +38,15 @@ export class OrganigramSettingsService {
     mergedSettings: Record<string, unknown>,
   ): Promise<void> {
     await this.db.tenantTransaction(async (client: PoolClient) => {
-      await client.query(
-        'UPDATE tenants SET settings = $1::jsonb WHERE id = $2',
-        [JSON.stringify(mergedSettings), tenantId],
-      );
+      await client.query('UPDATE tenants SET settings = $1::jsonb WHERE id = $2', [
+        JSON.stringify(mergedSettings),
+        tenantId,
+      ]);
     });
   }
 
   async getViewport(tenantId: number): Promise<OrgViewport> {
-    const rows = await this.db.query<TenantSettingsRow>(SELECT_SETTINGS, [
-      tenantId,
-    ]);
+    const rows = await this.db.query<TenantSettingsRow>(SELECT_SETTINGS, [tenantId]);
 
     if (rows.length === 0 || rows[0] === undefined) {
       return { ...DEFAULT_VIEWPORT };
@@ -84,19 +72,13 @@ export class OrganigramSettingsService {
     };
   }
 
-  async getHallOverrides(
-    tenantId: number,
-  ): Promise<Record<string, HallOverride>> {
-    const rows = await this.db.query<TenantSettingsRow>(SELECT_SETTINGS, [
-      tenantId,
-    ]);
+  async getHallOverrides(tenantId: number): Promise<Record<string, HallOverride>> {
+    const rows = await this.db.query<TenantSettingsRow>(SELECT_SETTINGS, [tenantId]);
 
     const settings = rows[0]?.settings;
     if (settings === null || settings === undefined) return {};
 
-    const stored = settings['orgHallOverrides'] as
-      | Record<string, HallOverride>
-      | undefined;
+    const stored = settings['orgHallOverrides'] as Record<string, HallOverride> | undefined;
     return stored ?? {};
   }
 
@@ -104,10 +86,7 @@ export class OrganigramSettingsService {
     tenantId: number,
     overrides: Record<string, HallOverride>,
   ): Promise<void> {
-    const settingsRows = await this.db.query<TenantSettingsRow>(
-      SELECT_SETTINGS,
-      [tenantId],
-    );
+    const settingsRows = await this.db.query<TenantSettingsRow>(SELECT_SETTINGS, [tenantId]);
 
     const currentSettings =
       settingsRows.length > 0 && settingsRows[0] !== undefined ?
@@ -122,11 +101,39 @@ export class OrganigramSettingsService {
     await this.persistSettings(tenantId, mergedSettings);
   }
 
+  async getHallConnectionAnchors(tenantId: number): Promise<Record<string, PerimeterAnchor>> {
+    const rows = await this.db.query<TenantSettingsRow>(SELECT_SETTINGS, [tenantId]);
+
+    const settings = rows[0]?.settings;
+    if (settings === null || settings === undefined) return {};
+
+    const stored = settings['orgHallConnectionAnchors'] as
+      | Record<string, PerimeterAnchor>
+      | undefined;
+    return stored ?? {};
+  }
+
+  async saveHallConnectionAnchors(
+    tenantId: number,
+    anchors: Record<string, PerimeterAnchor>,
+  ): Promise<void> {
+    const settingsRows = await this.db.query<TenantSettingsRow>(SELECT_SETTINGS, [tenantId]);
+
+    const currentSettings =
+      settingsRows.length > 0 && settingsRows[0] !== undefined ?
+        (settingsRows[0].settings ?? {})
+      : {};
+
+    const mergedSettings = {
+      ...currentSettings,
+      orgHallConnectionAnchors: anchors,
+    };
+
+    await this.persistSettings(tenantId, mergedSettings);
+  }
+
   async saveViewport(tenantId: number, viewport: OrgViewport): Promise<void> {
-    const settingsRows = await this.db.query<TenantSettingsRow>(
-      SELECT_SETTINGS,
-      [tenantId],
-    );
+    const settingsRows = await this.db.query<TenantSettingsRow>(SELECT_SETTINGS, [tenantId]);
 
     const currentSettings =
       settingsRows.length > 0 && settingsRows[0] !== undefined ?
@@ -142,9 +149,7 @@ export class OrganigramSettingsService {
   }
 
   async getCanvasBg(tenantId: number): Promise<string | null> {
-    const rows = await this.db.query<TenantSettingsRow>(SELECT_SETTINGS, [
-      tenantId,
-    ]);
+    const rows = await this.db.query<TenantSettingsRow>(SELECT_SETTINGS, [tenantId]);
 
     const settings = rows[0]?.settings;
     if (settings === null || settings === undefined) return null;
@@ -154,10 +159,7 @@ export class OrganigramSettingsService {
   }
 
   async saveCanvasBg(tenantId: number, canvasBg: string | null): Promise<void> {
-    const settingsRows = await this.db.query<TenantSettingsRow>(
-      SELECT_SETTINGS,
-      [tenantId],
-    );
+    const settingsRows = await this.db.query<TenantSettingsRow>(SELECT_SETTINGS, [tenantId]);
 
     const currentSettings =
       settingsRows.length > 0 && settingsRows[0] !== undefined ?
@@ -173,9 +175,7 @@ export class OrganigramSettingsService {
   }
 
   async getHierarchyLabels(tenantId: number): Promise<HierarchyLabels> {
-    const rows = await this.db.query<TenantSettingsRow>(SELECT_SETTINGS, [
-      tenantId,
-    ]);
+    const rows = await this.db.query<TenantSettingsRow>(SELECT_SETTINGS, [tenantId]);
 
     if (rows.length === 0 || rows[0] === undefined) {
       return { ...DEFAULT_HIERARCHY_LABELS };
@@ -186,9 +186,7 @@ export class OrganigramSettingsService {
       return { ...DEFAULT_HIERARCHY_LABELS };
     }
 
-    const orgHierarchy = settings['orgHierarchy'] as
-      | OrgHierarchySettings
-      | undefined;
+    const orgHierarchy = settings['orgHierarchy'] as OrgHierarchySettings | undefined;
     if (orgHierarchy?.levels === undefined) {
       return { ...DEFAULT_HIERARCHY_LABELS };
     }
@@ -196,9 +194,12 @@ export class OrganigramSettingsService {
     return {
       hall: orgHierarchy.levels.hall ?? DEFAULT_HIERARCHY_LABELS.hall,
       area: orgHierarchy.levels.area ?? DEFAULT_HIERARCHY_LABELS.area,
-      department:
-        orgHierarchy.levels.department ?? DEFAULT_HIERARCHY_LABELS.department,
+      areaLeadPrefix: orgHierarchy.levels.areaLeadPrefix ?? DEFAULT_HIERARCHY_LABELS.areaLeadPrefix,
+      department: orgHierarchy.levels.department ?? DEFAULT_HIERARCHY_LABELS.department,
+      departmentLeadPrefix:
+        orgHierarchy.levels.departmentLeadPrefix ?? DEFAULT_HIERARCHY_LABELS.departmentLeadPrefix,
       team: orgHierarchy.levels.team ?? DEFAULT_HIERARCHY_LABELS.team,
+      teamLeadPrefix: orgHierarchy.levels.teamLeadPrefix ?? DEFAULT_HIERARCHY_LABELS.teamLeadPrefix,
       asset: orgHierarchy.levels.asset ?? DEFAULT_HIERARCHY_LABELS.asset,
     };
   }
@@ -212,16 +213,16 @@ export class OrganigramSettingsService {
     const mergedLabels: HierarchyLabels = {
       hall: dto.levels.hall ?? currentLabels.hall,
       area: dto.levels.area ?? currentLabels.area,
+      areaLeadPrefix: dto.levels.areaLeadPrefix ?? currentLabels.areaLeadPrefix,
       department: dto.levels.department ?? currentLabels.department,
+      departmentLeadPrefix: dto.levels.departmentLeadPrefix ?? currentLabels.departmentLeadPrefix,
       team: dto.levels.team ?? currentLabels.team,
+      teamLeadPrefix: dto.levels.teamLeadPrefix ?? currentLabels.teamLeadPrefix,
       asset: dto.levels.asset ?? currentLabels.asset,
     };
 
     // Read-Merge-Write: read current settings, deep merge, write back
-    const settingsRows = await this.db.query<TenantSettingsRow>(
-      SELECT_SETTINGS,
-      [tenantId],
-    );
+    const settingsRows = await this.db.query<TenantSettingsRow>(SELECT_SETTINGS, [tenantId]);
 
     const currentSettings =
       settingsRows.length > 0 && settingsRows[0] !== undefined ?
@@ -251,76 +252,30 @@ export class OrganigramSettingsService {
     return mergedLabels;
   }
 
-  async getPositionOptions(tenantId: number): Promise<PositionOptions> {
-    const rows = await this.db.query<TenantSettingsRow>(SELECT_SETTINGS, [
-      tenantId,
-    ]);
+  // ==========================================================================
+  // Deputy Scope Toggle (ADR-039)
+  // ==========================================================================
 
-    if (rows.length === 0 || rows[0] === undefined) {
-      return { ...DEFAULT_POSITION_OPTIONS };
-    }
-
-    const settings = rows[0].settings;
-    if (settings === null) {
-      return { ...DEFAULT_POSITION_OPTIONS };
-    }
-
-    const stored = settings['positionOptions'] as
-      | PositionOptionsSettings
-      | undefined;
-    if (stored === undefined) {
-      return { ...DEFAULT_POSITION_OPTIONS };
-    }
-
-    return {
-      employee: stored.employee ?? [...DEFAULT_POSITION_OPTIONS.employee],
-      admin: stored.admin ?? [...DEFAULT_POSITION_OPTIONS.admin],
-      root: stored.root ?? [...DEFAULT_POSITION_OPTIONS.root],
-    };
+  /** Read the per-tenant flag: do deputies have equal scope rights as their leads? */
+  async getDeputyHasLeadScope(tenantId: number): Promise<boolean> {
+    const rows = await this.db.query<TenantSettingsRow>(SELECT_SETTINGS, [tenantId]);
+    const settings = rows[0]?.settings;
+    if (settings === null || settings === undefined) return false;
+    return (settings['deputyHasLeadScope'] as boolean | undefined) ?? false;
   }
 
-  async updatePositionOptions(
-    tenantId: number,
-    dto: UpdatePositionOptionsDto,
-  ): Promise<PositionOptions> {
-    const current = await this.getPositionOptions(tenantId);
-
-    const merged: PositionOptions = {
-      employee: dto.employee ?? current.employee,
-      admin: dto.admin ?? current.admin,
-      root: dto.root ?? current.root,
-    };
-
-    const settingsRows = await this.db.query<TenantSettingsRow>(
-      SELECT_SETTINGS,
-      [tenantId],
-    );
-
+  /** Update the per-tenant deputy scope toggle */
+  async updateDeputyHasLeadScope(tenantId: number, enabled: boolean): Promise<boolean> {
+    const settingsRows = await this.db.query<TenantSettingsRow>(SELECT_SETTINGS, [tenantId]);
     const currentSettings =
       settingsRows.length > 0 && settingsRows[0] !== undefined ?
         (settingsRows[0].settings ?? {})
       : {};
 
-    const mergedSettings = {
-      ...currentSettings,
-      positionOptions: merged,
-    };
-
+    const mergedSettings = { ...currentSettings, deputyHasLeadScope: enabled };
     await this.persistSettings(tenantId, mergedSettings);
 
-    this.logger.log(`Position options updated for tenant ${String(tenantId)}`);
-
-    const userId = this.db.getUserId() ?? 0;
-    void this.activityLogger.logUpdate(
-      tenantId,
-      userId,
-      'settings',
-      tenantId,
-      'Position-Optionen aktualisiert',
-      current as unknown as Record<string, unknown>,
-      merged as unknown as Record<string, unknown>,
-    );
-
-    return merged;
+    this.logger.log(`Deputy scope toggle set to ${String(enabled)} for tenant ${String(tenantId)}`);
+    return enabled;
   }
 }

@@ -43,9 +43,7 @@
 
   const responseCount = $derived(survey.responseCount ?? 0);
   const completedCount = $derived(survey.completedCount ?? 0);
-  const responseRate = $derived(
-    calculateResponseRate(responseCount, completedCount),
-  );
+  const responseRate = $derived(calculateResponseRate(responseCount, completedCount));
   const startDate = $derived(formatSurveyDate(survey.startDate));
   const endDate = $derived(formatSurveyDate(survey.endDate));
   const title = $derived(getTextFromBuffer(survey.title));
@@ -61,30 +59,19 @@
 {#snippet cardContent()}
   <div class="mb-4 flex items-start justify-between">
     <h3 class="text-primary m-0 text-xl font-semibold">{title}</h3>
-    <span
-      class="badge {getStatusBadgeClass(
-        survey.status ?? 'active',
-      )} badge--uppercase"
-    >
+    <span class="badge {getStatusBadgeClass(survey.status ?? 'active')} badge--uppercase">
       {getStatusText(survey.status ?? 'active')}
     </span>
   </div>
 
   <!-- Survey properties badges -->
   <div class="mb-4 flex flex-wrap items-center gap-2">
-    <span
-      class="badge badge--sm {isAnonymous ? 'badge--info' : 'badge--secondary'}"
-    >
+    <span class="badge badge--sm {isAnonymous ? 'badge--info' : 'badge--secondary'}">
       <i class="fas {isAnonymous ? 'fa-user-secret' : 'fa-user'}"></i>
       {isAnonymous ? 'Anonym' : 'Nicht anonym'}
     </span>
-    <span
-      class="badge badge--sm {isMandatory ? 'badge--warning' : (
-        'badge--success'
-      )}"
-    >
-      <i class="fas {isMandatory ? 'fa-exclamation-circle' : 'fa-check-circle'}"
-      ></i>
+    <span class="badge badge--sm {isMandatory ? 'badge--warning' : 'badge--success'}">
+      <i class="fas {isMandatory ? 'fa-exclamation-circle' : 'fa-check-circle'}"></i>
       {isMandatory ? 'Verpflichtend' : 'Freiwillig'}
     </span>
   </div>

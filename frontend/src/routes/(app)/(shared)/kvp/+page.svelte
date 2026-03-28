@@ -23,16 +23,8 @@
   import KvpSuggestionCard from './_lib/KvpSuggestionCard.svelte';
   import { kvpState } from './_lib/state.svelte';
 
-  import type { HierarchyLabels } from '$lib/types/hierarchy-labels';
   import type { PageData } from './$types';
-  import type {
-    KvpCategory,
-    Department,
-    KvpSuggestion,
-    KvpStats,
-    CurrentUser,
-    UserTeamWithAssets,
-  } from './_lib/types';
+  import type { CurrentUser } from './_lib/types';
 
   const log = createLogger('KvpPage');
   const apiClient = getApiClient();
@@ -44,19 +36,18 @@
   const { data }: { data: PageData } = $props();
 
   // Hierarchy labels from layout data inheritance
-  const labels = $derived<HierarchyLabels>(data.hierarchyLabels);
+  const labels = $derived(data.hierarchyLabels);
 
   // SSR data via $derived - updates when invalidateAll() is called
   // PageData is always defined from $props(), and server guarantees array values
-  const ssrCategories = $derived<KvpCategory[]>(data.categories);
-  const ssrDepartments = $derived<Department[]>(data.departments);
-  const ssrSuggestions = $derived<KvpSuggestion[]>(data.suggestions);
-  const ssrStatistics = $derived<KvpStats | null>(data.statistics);
+  const ssrCategories = $derived(data.categories);
+  const ssrDepartments = $derived(data.departments);
+  const ssrSuggestions = $derived(data.suggestions);
+  const ssrStatistics = $derived(data.statistics);
   const ssrCurrentUser = $derived<CurrentUser | null>(data.currentUser);
-  const ssrUserOrganizations = $derived<UserTeamWithAssets[]>(
-    data.userOrganizations,
-  );
-  const permissionDenied = $derived<boolean>(data.permissionDenied);
+  const ssrUserOrganizations = $derived(data.userOrganizations);
+  const permissionDenied = $derived(data.permissionDenied);
+  const showStats = $derived(data.showStats);
 
   // Sync SSR data to state store (for UI components that depend on it)
   // IMPORTANT: Use untrack to prevent infinite loop - setUser calls updateEffectiveRole
@@ -153,8 +144,8 @@
   <PermissionDenied addonName="das KVP-Modul" />
 {:else}
   <div class="container">
-    <!-- Statistics Overview (Admin only) -->
-    {#if kvpState.isAdmin}
+    <!-- Statistics Overview (Admin, Root, Team Lead) -->
+    {#if showStats}
       <div class="mb-6 grid grid-cols-1 gap-6 md:grid-cols-3">
         <div class="card-stat">
           <div class="card-stat__icon">
@@ -204,21 +195,18 @@
           </div>
           <div class="card-stat__content">
             <div class="card-stat__value">
-              {kvpState.formattedStats.teamTotal} / {kvpState.formattedStats
-                .total}
+              {kvpState.formattedStats.teamTotal} / {kvpState.formattedStats.total}
             </div>
             <div class="card-stat__label">Team / Gesamt</div>
           </div>
         </div>
         <div
           class="card-stat"
-          class:card-stat--success={kvpState.formattedStats
-            .implementationRate >= 50}
-          class:card-stat--warning={kvpState.formattedStats
-            .implementationRate >= 25 &&
+          class:card-stat--success={kvpState.formattedStats.implementationRate >= 50}
+          class:card-stat--warning={kvpState.formattedStats.implementationRate >= 25 &&
             kvpState.formattedStats.implementationRate < 50}
-          class:card-stat--danger={kvpState.formattedStats.implementationRate >
-            0 && kvpState.formattedStats.implementationRate < 25}
+          class:card-stat--danger={kvpState.formattedStats.implementationRate > 0 &&
+            kvpState.formattedStats.implementationRate < 25}
         >
           <div class="card-stat__icon">
             <i class="fas fa-chart-line"></i>
@@ -241,8 +229,7 @@
         <div>
           <h2 class="card-title">KVP-Vorschläge</h2>
           <p class="text-secondary">
-            Kontinuierlicher Verbesserungsprozess - Ihre Ideen für bessere
-            Ablaeufe
+            Kontinuierlicher Verbesserungsprozess - Ihre Ideen für bessere Ablaeufe
           </p>
         </div>
       </div>
@@ -277,10 +264,7 @@
                 {suggestion}
                 {labels}
                 onclick={() => {
-                  viewSuggestion(
-                    suggestion.uuid,
-                    suggestion.isConfirmed === true,
-                  );
+                  viewSuggestion(suggestion.uuid, suggestion.isConfirmed === true);
                 }}
               />
             {/each}
@@ -303,8 +287,6 @@
   <!-- Create KVP Modal -->
   {#if kvpState.showCreateModal}
     <KvpCreateModal
-      userOrganizations={ssrUserOrganizations}
-      {labels}
       onclose={handleCloseCreateModal}
       onsuccess={handleModalSuccess}
     />

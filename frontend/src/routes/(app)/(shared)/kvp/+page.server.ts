@@ -22,22 +22,16 @@ import type {
 /**
  * Possible API response formats for suggestions endpoint
  */
-type SuggestionsApiResponse =
-  | KvpSuggestion[]
-  | { data: KvpSuggestion[] }
-  | SuggestionsResponse;
+type SuggestionsApiResponse = KvpSuggestion[] | { data: KvpSuggestion[] } | SuggestionsResponse;
 
 /**
  * Parses suggestions from various API response formats
  */
-function parseSuggestionsResponse(
-  data: SuggestionsApiResponse | null,
-): KvpSuggestion[] {
+function parseSuggestionsResponse(data: SuggestionsApiResponse | null): KvpSuggestion[] {
   if (data === null) return [];
   if (Array.isArray(data)) return data;
   if ('data' in data && Array.isArray(data.data)) return data.data;
-  if ('suggestions' in data && Array.isArray(data.suggestions))
-    return data.suggestions;
+  if ('suggestions' in data && Array.isArray(data.suggestions)) return data.suggestions;
   return [];
 }
 
@@ -47,6 +41,7 @@ function parseSuggestionsResponse(
 interface ParentUser {
   id: number;
   role: 'root' | 'admin' | 'employee';
+  position?: string;
   tenantId: number;
   teamIds?: number[];
   teamDepartmentId?: number | null;
@@ -70,22 +65,15 @@ function mapParentUserToCurrentUser(parentUser: ParentUser | null) {
 /**
  * Fetches all KVP data in parallel
  */
-async function fetchKvpData(
-  token: string,
-  fetchFn: typeof fetch,
-  isAdmin: boolean,
-) {
+async function fetchKvpData(token: string, fetchFn: typeof fetch, isAdmin: boolean) {
   // apiFetchWithPermission for /kvp to detect 403 (permission denied vs empty data)
-  const [kvpResult, categoriesData, departmentsData, orgsData, statsData] =
-    await Promise.all([
-      apiFetchWithPermission<SuggestionsApiResponse>('/kvp', token, fetchFn),
-      apiFetch<KvpCategory[]>('/kvp/categories', token, fetchFn),
-      apiFetch<Department[]>('/departments', token, fetchFn),
-      apiFetch<UserTeamWithAssets[]>('/kvp/my-organizations', token, fetchFn),
-      isAdmin ?
-        apiFetch<KvpStats>('/kvp/dashboard/stats', token, fetchFn)
-      : Promise.resolve(null),
-    ]);
+  const [kvpResult, categoriesData, departmentsData, orgsData, statsData] = await Promise.all([
+    apiFetchWithPermission<SuggestionsApiResponse>('/kvp', token, fetchFn),
+    apiFetch<KvpCategory[]>('/kvp/categories', token, fetchFn),
+    apiFetch<Department[]>('/departments', token, fetchFn),
+    apiFetch<UserTeamWithAssets[]>('/kvp/my-organizations', token, fetchFn),
+    isAdmin ? apiFetch<KvpStats>('/kvp/dashboard/stats', token, fetchFn) : Promise.resolve(null),
+  ]);
 
   if (kvpResult.permissionDenied) {
     return {
@@ -116,15 +104,15 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
 
   const parentData = await parent();
   requireAddon(parentData.activeAddons, 'kvp');
-  const isAdmin =
-    parentData.user?.role === 'admin' || parentData.user?.role === 'root';
+  const isAdmin = parentData.user?.role === 'admin' || parentData.user?.role === 'root';
+  const isTeamLead = (parentData.user as ParentUser | null)?.position === 'team_lead';
+  const showStats = isAdmin || isTeamLead;
 
-  const kvpData = await fetchKvpData(token, fetch, isAdmin);
+  const kvpData = await fetchKvpData(token, fetch, showStats);
 
   return {
     ...kvpData,
-    currentUser: mapParentUserToCurrentUser(
-      parentData.user as ParentUser | null,
-    ),
+    showStats,
+    currentUser: mapParentUserToCurrentUser(parentData.user as ParentUser | null),
   };
 };

@@ -17,8 +17,7 @@ import type { QueryResultRow } from 'pg';
  * For testing: Set TENANT_DELETION_GRACE_MINUTES=5 in .env
  */
 const parsedGracePeriod = Number(process.env['TENANT_DELETION_GRACE_MINUTES']);
-export const GRACE_PERIOD_MINUTES: number =
-  parsedGracePeriod > 0 ? parsedGracePeriod : 43200;
+export const GRACE_PERIOD_MINUTES: number = parsedGracePeriod > 0 ? parsedGracePeriod : 43200;
 
 /**
  * Tables excluded from normal tenant deletion.

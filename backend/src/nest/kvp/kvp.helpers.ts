@@ -6,7 +6,7 @@
 import { IS_ACTIVE } from '@assixx/shared/constants';
 
 import { dbToApi } from '../../utils/field-mapper.js';
-import type { CreateSuggestionDto } from './dto/create-suggestion.dto.js';
+import type { OrganizationalScope } from '../hierarchy-permission/organizational-scope.types.js';
 import type { UpdateSuggestionDto } from './dto/update-suggestion.dto.js';
 import type {
   DbSuggestion,
@@ -23,8 +23,7 @@ import type {
 /** Check if a value is a valid UUID */
 export function isUuid(value: string | number): boolean {
   if (typeof value === 'number') return false;
-  const uuidRegex =
-    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   return uuidRegex.test(value);
 }
 
@@ -33,9 +32,7 @@ export function isUuid(value: string | number): boolean {
 // ============================================================================
 
 /** Transform database suggestion to API format */
-export function transformSuggestion(
-  suggestion: DbSuggestion,
-): KVPSuggestionResponse {
+export function transformSuggestion(suggestion: DbSuggestion): KVPSuggestionResponse {
   const base = dbToApi(
     suggestion as unknown as Record<string, unknown>,
   ) as unknown as KVPSuggestionResponse;
@@ -48,10 +45,7 @@ export function transformSuggestion(
 }
 
 /** Attach category object to response */
-function attachCategoryIfPresent(
-  base: KVPSuggestionResponse,
-  suggestion: DbSuggestion,
-): void {
+function attachCategoryIfPresent(base: KVPSuggestionResponse, suggestion: DbSuggestion): void {
   if (suggestion.category_name === undefined) return;
   const category: {
     id: number;
@@ -63,19 +57,14 @@ function attachCategoryIfPresent(
     id: suggestion.category_id,
     name: suggestion.category_name,
   };
-  if (suggestion.category_color !== undefined)
-    category.color = suggestion.category_color;
-  if (suggestion.category_icon !== undefined)
-    category.icon = suggestion.category_icon;
+  if (suggestion.category_color !== undefined) category.color = suggestion.category_color;
+  if (suggestion.category_icon !== undefined) category.icon = suggestion.category_icon;
   if (suggestion.category_is_deleted === true) category.isDeleted = true;
   base.category = category;
 }
 
 /** Attach submitter object to response */
-function attachSubmitterIfPresent(
-  base: KVPSuggestionResponse,
-  suggestion: DbSuggestion,
-): void {
+function attachSubmitterIfPresent(base: KVPSuggestionResponse, suggestion: DbSuggestion): void {
   if (suggestion.submitted_by_name === undefined) return;
   base.submitter = {
     firstName: suggestion.submitted_by_name,
@@ -84,26 +73,17 @@ function attachSubmitterIfPresent(
 }
 
 /** Attach read confirmation status to response */
-function attachConfirmationStatus(
-  base: KVPSuggestionResponse,
-  suggestion: DbSuggestion,
-): void {
+function attachConfirmationStatus(base: KVPSuggestionResponse, suggestion: DbSuggestion): void {
   // COALESCE(is_confirmed, false) ensures boolean, never null
   if (suggestion.is_confirmed !== undefined) {
     base.isConfirmed = suggestion.is_confirmed;
   }
   // Timestamps can be null from LEFT JOIN
-  if (
-    suggestion.confirmed_at !== undefined &&
-    suggestion.confirmed_at !== null
-  ) {
+  if (suggestion.confirmed_at !== undefined && suggestion.confirmed_at !== null) {
     base.confirmedAt = new Date(suggestion.confirmed_at).toISOString();
   }
   // firstSeenAt: only set if user has seen it (undefined = "Neu" badge)
-  if (
-    suggestion.first_seen_at !== undefined &&
-    suggestion.first_seen_at !== null
-  ) {
+  if (suggestion.first_seen_at !== undefined && suggestion.first_seen_at !== null) {
     base.firstSeenAt = new Date(suggestion.first_seen_at).toISOString();
   }
 }
@@ -115,12 +95,74 @@ function attachConfirmationStatus(
 /**
  * Build visibility clause for KVP queries
  *
- * Implements the 4-tier visibility model:
- * - Stufe 1: Team (creator, team members, team lead)
- * - Stufe 2: Department (+ dept members via teams, dept lead)
- * - Stufe 3: Area (+ area members via depts, area lead)
- * - Stufe 4: Company (all users in tenant)
+ * Two-phase visibility model:
+ * - Unshared (is_shared=false): Strict team scope — only creator, direct team members
+ *   (user_teams), team_lead/deputy_lead. Admins without has_full_access cannot see.
+ * - Shared (is_shared=true): Full org-scope visibility via admin permissions + lead
+ *   positions + hierarchy cascade (dept/area/company).
+ * - Always visible: creator's own, implemented, company-level
  */
+/** L0: Not shared — creator + team lead/deputy of assigned team */
+function buildUnsharedClause(h: OrgPlaceholders): string {
+  return `(s.is_shared = false AND (
+    s.org_level = 'team' AND s.org_id IN (
+      SELECT t.id FROM teams t
+      WHERE (t.team_lead_id = ${h.userId} OR t.team_deputy_lead_id = ${h.userId}) AND t.tenant_id = s.tenant_id
+    )
+  ))`;
+}
+
+/**
+ * L1-L4: Shared — cascading visibility via user_teams membership.
+ * Team-level uses user_teams JOIN (NOT cascaded scope) — see KVP-SHARING-VISIBILITY.md
+ */
+function buildSharedClause(h: OrgPlaceholders): string {
+  return `(s.is_shared = true AND (
+    (s.org_level = 'team' AND (
+      s.org_id = ANY(${h.teamLeadOf})
+      OR EXISTS (SELECT 1 FROM user_teams ut WHERE ut.user_id = ${h.userId} AND ut.team_id = s.org_id)
+    ))
+    OR (s.org_level = 'department' AND (
+      s.org_id = ANY(${h.deptIds}) OR s.org_id = ANY(${h.teamsDeptIds}) OR s.org_id = ANY(${h.deptLeadOf})
+      OR EXISTS (SELECT 1 FROM user_teams ut JOIN teams t ON ut.team_id = t.id WHERE ut.user_id = ${h.userId} AND t.department_id = s.org_id)
+    ))
+    OR (s.org_level = 'area' AND (
+      s.org_id = ANY(${h.areaIds}) OR s.org_id = ANY(${h.deptsAreaIds}) OR s.org_id = ANY(${h.areaLeadOf})
+      OR EXISTS (SELECT 1 FROM user_teams ut JOIN teams t ON ut.team_id = t.id JOIN departments d ON t.department_id = d.id WHERE ut.user_id = ${h.userId} AND d.area_id = s.org_id)
+    ))
+  ))`;
+}
+
+/**
+ * Approval master visibility: user sees KVPs if they are configured as
+ * approval master (user or position type) and the KVP falls within their scope.
+ * Uses approval_configs.scope_area_ids/scope_department_ids/scope_team_ids.
+ * NULL scope = whole tenant. dep_kvp JOIN derives area_id from department_id.
+ */
+function buildApprovalMasterClause(h: OrgPlaceholders): string {
+  return `EXISTS (
+    SELECT 1 FROM approval_configs ac
+    LEFT JOIN departments dep_kvp ON dep_kvp.id = s.department_id
+    WHERE ac.addon_code = 'kvp'
+      AND ac.tenant_id = s.tenant_id
+      AND ac.is_active = 1
+      AND (
+        ac.approver_user_id = ${h.userId}
+        OR ac.approver_position_id IN (
+          SELECT up.position_id FROM user_positions up
+          WHERE up.user_id = ${h.userId} AND up.tenant_id = s.tenant_id
+        )
+      )
+      AND (
+        (ac.scope_area_ids IS NULL AND ac.scope_department_ids IS NULL AND ac.scope_team_ids IS NULL)
+        OR dep_kvp.area_id = ANY(ac.scope_area_ids)
+        OR s.department_id = ANY(ac.scope_department_ids)
+        OR s.team_id = ANY(ac.scope_team_ids)
+      )
+  )`;
+}
+
+/** KVP Visibility — see KVP-SHARING-VISIBILITY.md for full rules */
 export function buildVisibilityClause(
   orgInfo: ExtendedUserOrgInfo,
   userId: number,
@@ -133,21 +175,12 @@ export function buildVisibilityClause(
   const { params, placeholders: h } = buildOrgParams(orgInfo, userId, startIdx);
 
   const clause = ` AND (
-    s.submitted_by = ${h.userId} OR s.status = 'implemented'
-    OR (s.org_level = 'team' AND (s.org_id = ANY(${h.teamIds}) OR s.org_id = ANY(${h.teamLeadOf})))
-    OR (s.org_level = 'department' AND (s.org_id = ANY(${h.deptIds}) OR s.org_id = ANY(${h.teamsDeptIds}) OR s.org_id = ANY(${h.deptLeadOf})))
-    OR (s.org_level = 'area' AND (s.org_id = ANY(${h.areaIds}) OR s.org_id = ANY(${h.deptsAreaIds}) OR s.org_id = ANY(${h.areaLeadOf})))
+    s.submitted_by = ${h.userId}
+    OR s.status = 'implemented'
     OR s.org_level = 'company'
-    OR (s.org_level = 'asset' AND EXISTS (
-      SELECT 1 FROM kvp_suggestion_organizations kso
-      JOIN asset_teams mt ON kso.org_type = 'asset' AND kso.org_id = mt.asset_id
-      WHERE kso.suggestion_id = s.id AND mt.team_id = ANY(${h.teamIds})
-    ))
-    OR EXISTS (
-      SELECT 1 FROM kvp_suggestion_organizations kso
-      WHERE kso.suggestion_id = s.id AND kso.org_type = 'team'
-        AND kso.org_id = ANY(${h.teamIds})
-    )
+    OR ${buildUnsharedClause(h)}
+    OR ${buildSharedClause(h)}
+    OR ${buildApprovalMasterClause(h)}
   )`;
 
   return { clause, params };
@@ -163,7 +196,6 @@ export function buildOrgParams(
   let idx = startIdx;
 
   const params: unknown[] = [
-    toArray(orgInfo.teamIds),
     toArray(orgInfo.teamLeadOf),
     toArray(orgInfo.departmentIds),
     toArray(orgInfo.teamsDepartmentIds),
@@ -175,7 +207,6 @@ export function buildOrgParams(
   ];
 
   const placeholders: OrgPlaceholders = {
-    teamIds: `$${idx++}`,
     teamLeadOf: `$${idx++}`,
     deptIds: `$${idx++}`,
     teamsDeptIds: `$${idx++}`,
@@ -204,9 +235,7 @@ export function hasExtendedOrgAccess(
 
   // Team level: member or lead
   if (orgLevel === 'team') {
-    return (
-      orgInfo.teamIds.includes(orgId) || orgInfo.teamLeadOf.includes(orgId)
-    );
+    return orgInfo.teamIds.includes(orgId) || orgInfo.teamLeadOf.includes(orgId);
   }
 
   // Department level: member, team in dept, or lead
@@ -226,12 +255,6 @@ export function hasExtendedOrgAccess(
       orgInfo.areaLeadOf.includes(orgId)
     );
   }
-
-  // Asset level: visible via junction table check (handled at query level)
-  // For single-check scenarios, asset KVPs are visible if user is in any
-  // team that has this asset assigned — but we can't check asset_teams
-  // from a pure function. Return true and let the query-level check handle it.
-  if (orgLevel === 'asset') return true;
 
   return false;
 }
@@ -374,18 +397,8 @@ export function buildFilterConditions(
     params.push(filters.orgLevel);
   }
   if (filters.teamId !== undefined) {
-    clause += ` AND EXISTS (
-      SELECT 1 FROM kvp_suggestion_organizations kso
-      WHERE kso.suggestion_id = s.id AND kso.org_type = 'team' AND kso.org_id = $${idx++}
-    )`;
+    clause += ` AND s.team_id = $${idx++}`;
     params.push(filters.teamId);
-  }
-  if (filters.assetId !== undefined) {
-    clause += ` AND EXISTS (
-      SELECT 1 FROM kvp_suggestion_organizations kso
-      WHERE kso.suggestion_id = s.id AND kso.org_type = 'asset' AND kso.org_id = $${idx++}
-    )`;
-    params.push(filters.assetId);
   }
   if (isNonEmptyString(filters.search)) {
     clause += ` AND (s.title ILIKE $${idx} OR s.description ILIKE $${idx})`;
@@ -473,64 +486,83 @@ export function buildSuggestionUpdateClause(
   return { updates, params };
 }
 
-/** Derive orgLevel, orgId, and teamId from DTO fields */
-export function deriveOrgFields(dto: CreateSuggestionDto): {
-  orgLevel: string;
-  orgId: number;
-  teamId: number | null;
+/** Map team ID to notification recipient */
+export function mapTeamToRecipient(teamId: number): {
+  type: 'team';
+  id: number;
 } {
-  const teamIds = dto.teamIds;
-  const assetIds = dto.assetIds;
-  const hasTeams = teamIds.length > 0;
-  const hasAssets = assetIds.length > 0;
-  const orgLevel =
-    dto.orgLevel ??
-    (hasTeams ? 'team'
-    : hasAssets ? 'asset'
-    : 'team');
-  const orgId =
-    dto.orgId ??
-    (hasTeams ? (teamIds[0] ?? 0)
-    : hasAssets ? (assetIds[0] ?? 0)
-    : 0);
-  const teamId = orgLevel === 'team' ? orgId : null;
-
-  return { orgLevel, orgId, teamId };
+  return { type: 'team', id: teamId };
 }
 
-/** Map organization level to notification recipient */
-export function mapOrgLevelToRecipient(dto: CreateSuggestionDto): {
-  type: 'user' | 'department' | 'team' | 'all';
-  id: number | null;
-} {
-  // New teamIds/assetIds flow: notify first team or fall back to 'all'
-  const teamIds = dto.teamIds;
-  const assetIds = dto.assetIds;
-  if (teamIds.length > 0) {
-    return { type: 'team', id: teamIds[0] ?? null };
-  }
-  if (assetIds.length > 0) {
-    // Asset-level: no direct team notification, use 'all' for the tenant
-    return { type: 'all', id: null };
+/** Map OrganizationalScope → ExtendedUserOrgInfo for helper compatibility */
+export function mapScopeToOrgInfo(scope: OrganizationalScope): ExtendedUserOrgInfo {
+  return {
+    teamIds: scope.teamIds,
+    departmentIds: scope.departmentIds,
+    areaIds: scope.areaIds,
+    teamLeadOf: scope.leadTeamIds,
+    departmentLeadOf: scope.leadDepartmentIds,
+    areaLeadOf: scope.leadAreaIds,
+    teamsDepartmentIds: [],
+    departmentsAreaIds: [],
+    hasFullAccess: scope.type === 'full',
+  };
+}
+
+// =============================================================================
+// APPROVAL STATUS TRANSITION ENFORCEMENT
+// =============================================================================
+
+/**
+ * Validates whether a manual status transition is allowed when an approval
+ * config exists for addon 'kvp'. Prevents bypassing the approval workflow
+ * via direct PUT /kvp/:id with { status: 'approved' }.
+ *
+ * When no approval config exists, all transitions are allowed (old behavior).
+ */
+export function validateApprovalStatusTransition(
+  currentStatus: string,
+  newStatus: string,
+  hasApprovalConfig: boolean,
+): { allowed: boolean; reason?: string } {
+  if (!hasApprovalConfig) {
+    return { allowed: true };
   }
 
-  // Legacy fallback for orgLevel/orgId
-  switch (dto.orgLevel) {
-    case 'team':
-      return { type: 'team', id: dto.orgId ?? null };
-    case 'department':
-      return {
-        type: 'department',
-        id: dto.departmentId ?? dto.orgId ?? null,
-      };
-    case 'area':
-      return dto.departmentId !== undefined && dto.departmentId !== null ?
-          { type: 'department', id: dto.departmentId }
-        : { type: 'all', id: null };
-    case 'asset':
-      return { type: 'all', id: null };
-    case 'company':
-    default:
-      return { type: 'all', id: null };
+  const lockedStatuses = ['in_review', 'rejected', 'implemented', 'archived'];
+  if (lockedStatuses.includes(currentStatus)) {
+    return {
+      allowed: false,
+      reason: `Status '${currentStatus}' ist gesperrt — keine manuellen Änderungen möglich`,
+    };
   }
+
+  if (newStatus === 'approved') {
+    return {
+      allowed: false,
+      reason: 'Status "genehmigt" kann nur durch den Freigabe-Master gesetzt werden',
+    };
+  }
+
+  if (newStatus === 'in_review') {
+    return {
+      allowed: false,
+      reason: 'Status "in Prüfung" wird automatisch beim Anfordern einer Freigabe gesetzt',
+    };
+  }
+
+  // new/restored → rejected: allowed (direct reject by Team Lead)
+  if ((currentStatus === 'new' || currentStatus === 'restored') && newStatus === 'rejected') {
+    return { allowed: true };
+  }
+
+  // approved → implemented: allowed (Team Lead confirms implementation)
+  if (currentStatus === 'approved' && newStatus === 'implemented') {
+    return { allowed: true };
+  }
+
+  return {
+    allowed: false,
+    reason: `Statusübergang von '${currentStatus}' zu '${newStatus}' ist nicht erlaubt`,
+  };
 }

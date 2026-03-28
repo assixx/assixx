@@ -133,10 +133,9 @@ describe('Work Orders: Get By UUID', () => {
   });
 
   it('should return 404 for unknown UUID', async () => {
-    const res = await fetch(
-      `${BASE_URL}/work-orders/00000000-0000-0000-0000-000000000000`,
-      { headers: authOnly(auth.authToken) },
-    );
+    const res = await fetch(`${BASE_URL}/work-orders/00000000-0000-0000-0000-000000000000`, {
+      headers: authOnly(auth.authToken),
+    });
 
     expect(res.status).toBe(404);
   });
@@ -297,13 +296,10 @@ describe('Work Orders: Serve Photo File', () => {
 describe('Work Orders: Delete Photo (204)', () => {
   let res: Response;
   beforeAll(async () => {
-    res = await fetch(
-      `${BASE_URL}/work-orders/${photoWorkOrderUuid}/photos/${uploadedPhotoUuid}`,
-      {
-        method: 'DELETE',
-        headers: authOnly(auth.authToken),
-      },
-    );
+    res = await fetch(`${BASE_URL}/work-orders/${photoWorkOrderUuid}/photos/${uploadedPhotoUuid}`, {
+      method: 'DELETE',
+      headers: authOnly(auth.authToken),
+    });
   });
 
   it('should return 204', () => {
@@ -313,14 +309,11 @@ describe('Work Orders: Delete Photo (204)', () => {
 
 describe('Work Orders: Photo Test Cleanup', () => {
   it('should archive the photo test work order (204)', async () => {
-    const res = await fetch(
-      `${BASE_URL}/work-orders/${photoWorkOrderUuid}/archive`,
-      {
-        method: 'PATCH',
-        headers: authHeaders(auth.authToken),
-        body: JSON.stringify({}),
-      },
-    );
+    const res = await fetch(`${BASE_URL}/work-orders/${photoWorkOrderUuid}/archive`, {
+      method: 'PATCH',
+      headers: authHeaders(auth.authToken),
+      body: JSON.stringify({}),
+    });
     expect(res.status).toBe(204);
   });
 });
@@ -380,14 +373,11 @@ let topLevelCommentId: number;
 
 describe('Work Orders: Comments', () => {
   it('should add a comment (201) with threading fields', async () => {
-    const res = await fetch(
-      `${BASE_URL}/work-orders/${workOrderUuid}/comments`,
-      {
-        method: 'POST',
-        headers: authHeaders(auth.authToken),
-        body: JSON.stringify({ content: 'Test-Kommentar vom API-Test' }),
-      },
-    );
+    const res = await fetch(`${BASE_URL}/work-orders/${workOrderUuid}/comments`, {
+      method: 'POST',
+      headers: authHeaders(auth.authToken),
+      body: JSON.stringify({ content: 'Test-Kommentar vom API-Test' }),
+    });
     const body = (await res.json()) as JsonBody;
 
     expect(res.status).toBe(201);
@@ -403,17 +393,14 @@ describe('Work Orders: Comments', () => {
   });
 
   it('should add a reply to a comment (201)', async () => {
-    const res = await fetch(
-      `${BASE_URL}/work-orders/${workOrderUuid}/comments`,
-      {
-        method: 'POST',
-        headers: authHeaders(auth.authToken),
-        body: JSON.stringify({
-          content: 'Antwort auf Kommentar',
-          parentId: topLevelCommentId,
-        }),
-      },
-    );
+    const res = await fetch(`${BASE_URL}/work-orders/${workOrderUuid}/comments`, {
+      method: 'POST',
+      headers: authHeaders(auth.authToken),
+      body: JSON.stringify({
+        content: 'Antwort auf Kommentar',
+        parentId: topLevelCommentId,
+      }),
+    });
     const body = (await res.json()) as JsonBody;
 
     expect(res.status).toBe(201);
@@ -422,10 +409,9 @@ describe('Work Orders: Comments', () => {
   });
 
   it('should list top-level comments with pagination', async () => {
-    const res = await fetch(
-      `${BASE_URL}/work-orders/${workOrderUuid}/comments?page=1&limit=20`,
-      { headers: authOnly(auth.authToken) },
-    );
+    const res = await fetch(`${BASE_URL}/work-orders/${workOrderUuid}/comments?page=1&limit=20`, {
+      headers: authOnly(auth.authToken),
+    });
     const body = (await res.json()) as JsonBody;
 
     expect(res.status).toBe(200);
@@ -522,10 +508,9 @@ describe('Work Orders: Calendar', () => {
   let body: JsonBody;
 
   beforeAll(async () => {
-    res = await fetch(
-      `${BASE_URL}/work-orders/calendar?startDate=2000-01-01&endDate=2099-12-31`,
-      { headers: authOnly(auth.authToken) },
-    );
+    res = await fetch(`${BASE_URL}/work-orders/calendar?startDate=2000-01-01&endDate=2099-12-31`, {
+      headers: authOnly(auth.authToken),
+    });
     body = (await res.json()) as JsonBody;
   });
 
@@ -559,14 +544,11 @@ describe('Work Orders: Calendar', () => {
 
 describe('Work Orders: Archive', () => {
   it('should archive the work order (204)', async () => {
-    const res = await fetch(
-      `${BASE_URL}/work-orders/${workOrderUuid}/archive`,
-      {
-        method: 'PATCH',
-        headers: authHeaders(auth.authToken),
-        body: JSON.stringify({}),
-      },
-    );
+    const res = await fetch(`${BASE_URL}/work-orders/${workOrderUuid}/archive`, {
+      method: 'PATCH',
+      headers: authHeaders(auth.authToken),
+      body: JSON.stringify({}),
+    });
 
     expect(res.status).toBe(204);
   });

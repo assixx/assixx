@@ -11,10 +11,7 @@ import { DatabaseService } from '../database/database.service.js';
 import { ScopeService } from '../hierarchy-permission/scope.service.js';
 import { CalendarPermissionService } from './calendar-permission.service.js';
 import { buildVisibilityClause, dbToApiEvent } from './calendar.helpers.js';
-import type {
-  CalendarEventResponse,
-  DbCalendarEvent,
-} from './calendar.types.js';
+import type { CalendarEventResponse, DbCalendarEvent } from './calendar.types.js';
 
 @Injectable()
 export class CalendarOverviewService {
@@ -36,23 +33,13 @@ export class CalendarOverviewService {
   ): Promise<CalendarEventResponse[]> {
     const today = new Date();
     // End of current month
-    const endOfMonth = new Date(
-      today.getFullYear(),
-      today.getMonth() + 1,
-      0,
-      23,
-      59,
-      59,
-    );
+    const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0, 23, 59, 59);
 
     const todayStr = today.toISOString().split('T')[0];
     const endOfMonthStr = endOfMonth.toISOString().split('T')[0];
 
     const scope = await this.scopeService.getScope();
-    const memberships = await this.permissionService.getUserMemberships(
-      userId,
-      tenantId,
-    );
+    const memberships = await this.permissionService.getUserMemberships(userId, tenantId);
 
     let query = `
       SELECT e.*, u.username as creator_name
@@ -68,12 +55,7 @@ export class CalendarOverviewService {
       query += ` AND (e.org_level != 'personal' OR e.user_id = $4)`;
       params.push(userId);
     } else {
-      const { clause, params: visParams } = buildVisibilityClause(
-        scope,
-        memberships,
-        userId,
-        4,
-      );
+      const { clause, params: visParams } = buildVisibilityClause(scope, memberships, userId, 4);
       query += ` AND ${clause}`;
       params.push(...visParams);
     }
@@ -82,10 +64,7 @@ export class CalendarOverviewService {
     query += ` ORDER BY e.start_date ASC LIMIT $${limitIndex}`;
     params.push(limit);
 
-    const events = await this.databaseService.query<DbCalendarEvent>(
-      query,
-      params,
-    );
+    const events = await this.databaseService.query<DbCalendarEvent>(query, params);
     return events.map((e: DbCalendarEvent) => dbToApiEvent(e));
   }
 
@@ -99,10 +78,7 @@ export class CalendarOverviewService {
     limit: number = 3,
   ): Promise<CalendarEventResponse[]> {
     const scope = await this.scopeService.getScope();
-    const memberships = await this.permissionService.getUserMemberships(
-      userId,
-      tenantId,
-    );
+    const memberships = await this.permissionService.getUserMemberships(userId, tenantId);
 
     let query = `
       SELECT e.*, u.username as creator_name
@@ -117,12 +93,7 @@ export class CalendarOverviewService {
       query += ` AND (e.org_level != 'personal' OR e.user_id = $2)`;
       params.push(userId);
     } else {
-      const { clause, params: visParams } = buildVisibilityClause(
-        scope,
-        memberships,
-        userId,
-        2,
-      );
+      const { clause, params: visParams } = buildVisibilityClause(scope, memberships, userId, 2);
       query += ` AND ${clause}`;
       params.push(...visParams);
     }
@@ -131,10 +102,7 @@ export class CalendarOverviewService {
     query += ` ORDER BY e.created_at DESC LIMIT $${limitIndex}`;
     params.push(limit);
 
-    const events = await this.databaseService.query<DbCalendarEvent>(
-      query,
-      params,
-    );
+    const events = await this.databaseService.query<DbCalendarEvent>(query, params);
     return events.map((e: DbCalendarEvent) => dbToApiEvent(e));
   }
 
@@ -150,18 +118,10 @@ export class CalendarOverviewService {
     _userTeamId: number | null,
   ): Promise<{ count: number }> {
     const scope = await this.scopeService.getScope();
-    const lastVisited = await this.addonVisitsService.getLastVisited(
-      tenantId,
-      userId,
-      'calendar',
-    );
+    const lastVisited = await this.addonVisitsService.getLastVisited(tenantId, userId, 'calendar');
 
     const now = new Date();
-    const startOfDay = new Date(
-      now.getFullYear(),
-      now.getMonth(),
-      now.getDate(),
-    );
+    const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const endOfWeek = new Date(startOfDay);
     endOfWeek.setDate(endOfWeek.getDate() + 7);
 
@@ -231,10 +191,7 @@ export class CalendarOverviewService {
     lastVisited: Date,
   ): Promise<number> {
     const scope = await this.scopeService.getScope();
-    const memberships = await this.permissionService.getUserMemberships(
-      userId,
-      tenantId,
-    );
+    const memberships = await this.permissionService.getUserMemberships(userId, tenantId);
 
     if (
       scope.type === 'none' &&
@@ -244,12 +201,7 @@ export class CalendarOverviewService {
       return 0;
     }
 
-    const { clause, params: visParams } = buildVisibilityClause(
-      scope,
-      memberships,
-      userId,
-      6,
-    );
+    const { clause, params: visParams } = buildVisibilityClause(scope, memberships, userId, 6);
 
     const query = `
       SELECT COUNT(DISTINCT e.id) as count

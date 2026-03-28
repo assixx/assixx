@@ -52,9 +52,7 @@ export function syncRotationToggles(): void {
   const hasShiftData = shiftsState.weeklyShifts.size > 0;
 
   // Standard toggle ON when: hasShiftData AND (alternate_fs OR fixed_n)
-  const isStandard =
-    hasShiftData &&
-    (patternType === 'alternate_fs' || patternType === 'fixed_n');
+  const isStandard = hasShiftData && (patternType === 'alternate_fs' || patternType === 'fixed_n');
   // Custom toggle ON when: hasShiftData AND custom
   const isCustom = hasShiftData && patternType === 'custom';
 
@@ -75,11 +73,7 @@ async function fetchAndProcessShiftData(startDate: string, endDate: string) {
       areaId: shiftsState.selectedContext.areaId,
       assetId: shiftsState.selectedContext.assetId,
     }),
-    fetchRotationHistory(
-      startDate,
-      endDate,
-      shiftsState.selectedContext.teamId,
-    ),
+    fetchRotationHistory(startDate, endDate, shiftsState.selectedContext.teamId),
   ]);
 
   const planData = processShiftPlanResponse(planResponse);
@@ -153,13 +147,10 @@ export async function loadShiftPlan(): Promise<void> {
     const [members, shiftResult, assetAvail] = await Promise.all([
       fetchTeamMembers(teamId, startDate, endDate),
       fetchAndProcessShiftData(startDate, endDate),
-      hasAsset ?
-        fetchAssetAvailability(assetId, startDate, endDate)
-      : Promise.resolve(null),
+      hasAsset ? fetchAssetAvailability(assetId, startDate, endDate) : Promise.resolve(null),
     ]);
 
-    const { planResponse, rotationHistory, planData, rotationData } =
-      shiftResult;
+    const { planResponse, rotationHistory, planData, rotationData } = shiftResult;
 
     // Pattern detection depends on rotationHistory — must be sequential
     const { patternId, patternType } = await loadPatternFromHistory(

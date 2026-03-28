@@ -48,9 +48,7 @@ describe('GetStatsQuerySchema', () => {
   });
 
   it('should reject invalid date format', () => {
-    expect(
-      GetStatsQuerySchema.safeParse({ dateFrom: '2025-01-01' }).success,
-    ).toBe(false);
+    expect(GetStatsQuerySchema.safeParse({ dateFrom: '2025-01-01' }).success).toBe(false);
   });
 });
 
@@ -78,37 +76,25 @@ describe('GetEntriesQuerySchema', () => {
   });
 
   it('should reject invalid status enum', () => {
-    expect(GetEntriesQuerySchema.safeParse({ status: 'pending' }).success).toBe(
-      false,
-    );
+    expect(GetEntriesQuerySchema.safeParse({ status: 'pending' }).success).toBe(false);
   });
 
   it('should reject invalid sortBy enum', () => {
-    expect(
-      GetEntriesQuerySchema.safeParse({ sortBy: 'invalid_field' }).success,
-    ).toBe(false);
+    expect(GetEntriesQuerySchema.safeParse({ sortBy: 'invalid_field' }).success).toBe(false);
   });
 
   it('should reject invalid sortOrder enum', () => {
-    expect(
-      GetEntriesQuerySchema.safeParse({ sortOrder: 'random' }).success,
-    ).toBe(false);
+    expect(GetEntriesQuerySchema.safeParse({ sortOrder: 'random' }).success).toBe(false);
   });
 
   it('should accept valid status values', () => {
-    expect(GetEntriesQuerySchema.safeParse({ status: 'success' }).success).toBe(
-      true,
-    );
-    expect(GetEntriesQuerySchema.safeParse({ status: 'failure' }).success).toBe(
-      true,
-    );
+    expect(GetEntriesQuerySchema.safeParse({ status: 'success' }).success).toBe(true);
+    expect(GetEntriesQuerySchema.safeParse({ status: 'failure' }).success).toBe(true);
   });
 
   it('should accept all valid sortBy values', () => {
     for (const field of ['created_at', 'action', 'user_id', 'resource_type']) {
-      expect(GetEntriesQuerySchema.safeParse({ sortBy: field }).success).toBe(
-        true,
-      );
+      expect(GetEntriesQuerySchema.safeParse({ sortBy: field }).success).toBe(true);
     }
   });
 });
@@ -123,21 +109,15 @@ describe('ExportEntriesQuerySchema', () => {
   });
 
   it('should accept json format', () => {
-    expect(ExportEntriesQuerySchema.safeParse({ format: 'json' }).success).toBe(
-      true,
-    );
+    expect(ExportEntriesQuerySchema.safeParse({ format: 'json' }).success).toBe(true);
   });
 
   it('should accept csv format', () => {
-    expect(ExportEntriesQuerySchema.safeParse({ format: 'csv' }).success).toBe(
-      true,
-    );
+    expect(ExportEntriesQuerySchema.safeParse({ format: 'csv' }).success).toBe(true);
   });
 
   it('should reject invalid format', () => {
-    expect(ExportEntriesQuerySchema.safeParse({ format: 'xml' }).success).toBe(
-      false,
-    );
+    expect(ExportEntriesQuerySchema.safeParse({ format: 'xml' }).success).toBe(false);
   });
 });
 
@@ -153,34 +133,28 @@ describe('DeleteOldEntriesBodySchema', () => {
   });
 
   it('should accept days greater than 90', () => {
-    expect(
-      DeleteOldEntriesBodySchema.safeParse({ ...valid, olderThanDays: 365 })
-        .success,
-    ).toBe(true);
+    expect(DeleteOldEntriesBodySchema.safeParse({ ...valid, olderThanDays: 365 }).success).toBe(
+      true,
+    );
   });
 
   it('should reject olderThanDays below 90', () => {
-    expect(
-      DeleteOldEntriesBodySchema.safeParse({ ...valid, olderThanDays: 89 })
-        .success,
-    ).toBe(false);
-    expect(
-      DeleteOldEntriesBodySchema.safeParse({ ...valid, olderThanDays: 30 })
-        .success,
-    ).toBe(false);
+    expect(DeleteOldEntriesBodySchema.safeParse({ ...valid, olderThanDays: 89 }).success).toBe(
+      false,
+    );
+    expect(DeleteOldEntriesBodySchema.safeParse({ ...valid, olderThanDays: 30 }).success).toBe(
+      false,
+    );
   });
 
   it('should reject missing confirmPassword', () => {
-    expect(
-      DeleteOldEntriesBodySchema.safeParse({ olderThanDays: 90 }).success,
-    ).toBe(false);
+    expect(DeleteOldEntriesBodySchema.safeParse({ olderThanDays: 90 }).success).toBe(false);
   });
 
   it('should reject empty confirmPassword', () => {
-    expect(
-      DeleteOldEntriesBodySchema.safeParse({ ...valid, confirmPassword: '' })
-        .success,
-    ).toBe(false);
+    expect(DeleteOldEntriesBodySchema.safeParse({ ...valid, confirmPassword: '' }).success).toBe(
+      false,
+    );
   });
 });
 
@@ -200,24 +174,15 @@ describe('GenerateReportBodySchema', () => {
   });
 
   it('should accept all report types', () => {
-    for (const type of [
-      'gdpr',
-      'data_access',
-      'data_changes',
-      'user_activity',
-    ]) {
-      expect(
-        GenerateReportBodySchema.safeParse({ ...valid, reportType: type })
-          .success,
-      ).toBe(true);
+    for (const type of ['gdpr', 'data_access', 'data_changes', 'user_activity']) {
+      expect(GenerateReportBodySchema.safeParse({ ...valid, reportType: type }).success).toBe(true);
     }
   });
 
   it('should reject invalid report type', () => {
-    expect(
-      GenerateReportBodySchema.safeParse({ ...valid, reportType: 'custom' })
-        .success,
-    ).toBe(false);
+    expect(GenerateReportBodySchema.safeParse({ ...valid, reportType: 'custom' }).success).toBe(
+      false,
+    );
   });
 
   it('should reject dateTo before dateFrom (cross-field refinement)', () => {
@@ -249,8 +214,6 @@ describe('GenerateReportBodySchema', () => {
 
   it('should reject missing fields', () => {
     expect(GenerateReportBodySchema.safeParse({}).success).toBe(false);
-    expect(
-      GenerateReportBodySchema.safeParse({ reportType: 'gdpr' }).success,
-    ).toBe(false);
+    expect(GenerateReportBodySchema.safeParse({ reportType: 'gdpr' }).success).toBe(false);
   });
 });

@@ -52,13 +52,7 @@ Two date pickers for start/end selection
   </label>
   <div class="date-picker">
     <i class="date-picker__icon fas fa-calendar"></i>
-    <input
-      type="date"
-      id="birth-date"
-      name="birth_date"
-      class="date-picker__input"
-      required
-    />
+    <input type="date" id="birth-date" name="birth_date" class="date-picker__input" required />
   </div>
 </div>
 ```
@@ -170,9 +164,7 @@ All pickers support 3 sizes:
   <i class="date-picker__icon fas fa-calendar"></i>
   <input type="date" class="date-picker__input" />
 </div>
-<span class="form-field__message form-field__message--success">
-  Datum gültig
-</span>
+<span class="form-field__message form-field__message--success"> Datum gültig </span>
 ```
 
 ### Warning State
@@ -246,17 +238,9 @@ All pickers support 3 sizes:
   </label>
   <div class="date-picker">
     <i class="date-picker__icon fas fa-calendar"></i>
-    <input
-      type="date"
-      id="shift-date"
-      name="shift_date"
-      class="date-picker__input"
-      required
-    />
+    <input type="date" id="shift-date" name="shift_date" class="date-picker__input" required />
   </div>
-  <span class="form-field__hint">
-    Wählen Sie das Datum für die neue Schicht
-  </span>
+  <span class="form-field__hint"> Wählen Sie das Datum für die neue Schicht </span>
 </div>
 
 <div class="form-field">
@@ -281,33 +265,19 @@ All pickers support 3 sizes:
 
 ```html
 <div class="form-field">
-  <label class="form-field__label">
-    Aktivierungszeitraum <span class="required">*</span>
-  </label>
+  <label class="form-field__label"> Aktivierungszeitraum <span class="required">*</span> </label>
   <div class="date-range">
     <div class="date-picker">
       <i class="date-picker__icon fas fa-calendar"></i>
-      <input
-        type="date"
-        name="activation_start"
-        class="date-picker__input"
-        required
-      />
+      <input type="date" name="activation_start" class="date-picker__input" required />
     </div>
     <span class="date-range__separator">bis</span>
     <div class="date-picker">
       <i class="date-picker__icon fas fa-calendar"></i>
-      <input
-        type="date"
-        name="activation_end"
-        class="date-picker__input"
-        required
-      />
+      <input type="date" name="activation_end" class="date-picker__input" required />
     </div>
   </div>
-  <span class="form-field__hint">
-    Feature wird nur in diesem Zeitraum verfügbar sein
-  </span>
+  <span class="form-field__hint"> Feature wird nur in diesem Zeitraum verfügbar sein </span>
 </div>
 ```
 
@@ -319,12 +289,7 @@ All pickers support 3 sizes:
   <div style="display: flex; gap: var(--spacing-3);">
     <div class="date-picker" style="flex: 2;">
       <i class="date-picker__icon fas fa-calendar"></i>
-      <input
-        type="date"
-        class="date-picker__input"
-        name="event_start_date"
-        required
-      />
+      <input type="date" class="date-picker__input" name="event_start_date" required />
     </div>
     <div class="time-picker" style="flex: 1;">
       <i class="time-picker__icon fas fa-clock"></i>
@@ -512,22 +477,12 @@ export function DatePicker({
   <div class="date-range" id="vacation-range">
     <div class="date-picker">
       <i class="date-picker__icon fas fa-calendar"></i>
-      <input
-        type="date"
-        class="date-picker__input"
-        name="vacation_start"
-        id="vacation-start"
-      />
+      <input type="date" class="date-picker__input" name="vacation_start" id="vacation-start" />
     </div>
     <span class="date-range__separator">bis</span>
     <div class="date-picker">
       <i class="date-picker__icon fas fa-calendar"></i>
-      <input
-        type="date"
-        class="date-picker__input"
-        name="vacation_end"
-        id="vacation-end"
-      />
+      <input type="date" class="date-picker__input" name="vacation_end" id="vacation-end" />
     </div>
   </div>
   <span
@@ -568,23 +523,13 @@ export function DatePicker({
 
 ```html
 <!-- Birth date (adults only) -->
-<input
-  type="date"
-  class="date-picker__input"
-  min="1900-01-01"
-  max="2007-01-01"
-/>
+<input type="date" class="date-picker__input" min="1900-01-01" max="2007-01-01" />
 
 <!-- Future dates only (event scheduling) -->
 <input type="date" class="date-picker__input" min="2025-01-01" />
 
 <!-- Current year only -->
-<input
-  type="date"
-  class="date-picker__input"
-  min="2025-01-01"
-  max="2025-12-31"
-/>
+<input type="date" class="date-picker__input" min="2025-01-01" max="2025-12-31" />
 ```
 
 ### 5. Provide Default Values When Appropriate

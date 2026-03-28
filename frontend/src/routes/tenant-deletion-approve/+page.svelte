@@ -20,21 +20,12 @@
   // TYPES
   // =============================================================================
 
-  interface DeletionStatusData {
-    queueId: number;
-    tenantId: number;
-    status: string;
-    requestedBy: number;
-    requestedByName?: string;
-    canApprove: boolean;
-  }
-
   // =============================================================================
   // SSR DATA (via $derived - single source of truth)
   // =============================================================================
 
-  const queueId = $derived<number | null>(data.queueId ?? null);
-  const queueData = $derived<DeletionStatusData | null>(data.queueData ?? null);
+  const queueId = $derived(data.queueId ?? null);
+  const queueData = $derived(data.queueData ?? null);
 
   // =============================================================================
   // UI STATE (client-side only)
@@ -45,7 +36,7 @@
   let success = $state(false);
 
   // Initialize from SSR error (intentionally capturing initial value, not tracking)
-  let errorMessage = $state<string | null>(untrack(() => data.error));
+  let errorMessage = $state(untrack(() => data.error));
 
   // Form inputs
   let confirmationInput = $state('');
@@ -57,9 +48,7 @@
 
   const isConfirmationValid = $derived(confirmationInput === 'LÖSCHEN');
   const isPasswordValid = $derived(passwordInput.length > 0);
-  const canSubmit = $derived(
-    isConfirmationValid && isPasswordValid && !submitting,
-  );
+  const canSubmit = $derived(isConfirmationValid && isPasswordValid && !submitting);
 
   // =============================================================================
   // API FUNCTIONS
@@ -94,8 +83,7 @@
       }, 2000);
     } catch (err: unknown) {
       log.error({ err }, 'Error approving');
-      errorMessage =
-        err instanceof Error ? err.message : 'Fehler bei der Genehmigung';
+      errorMessage = err instanceof Error ? err.message : 'Fehler bei der Genehmigung';
       submitting = false;
     }
   }
@@ -117,9 +105,7 @@
       >
         <i class="fas fa-exclamation-triangle"></i>
       </div>
-      <h1 class="mb-4 text-[28px] font-bold text-(--color-text-primary)">
-        Fehler
-      </h1>
+      <h1 class="mb-4 text-[28px] font-bold text-(--color-text-primary)">Fehler</h1>
       <div class="alert alert--danger mb-6">
         <div class="alert__content">
           <p class="alert__message">{errorMessage}</p>
@@ -170,8 +156,8 @@
       </h1>
 
       <p class="mb-6 text-base leading-relaxed text-(--color-text-secondary)">
-        Sie sind dabei, die Löschung eines Tenants als zweiter Root-Benutzer zu
-        genehmigen. Nach der Genehmigung beginnt die
+        Sie sind dabei, die Löschung eines Tenants als zweiter Root-Benutzer zu genehmigen. Nach der
+        Genehmigung beginnt die
         <strong>30-tägige Grace Period</strong>.
       </p>
 
@@ -179,26 +165,20 @@
       <div
         class="mb-6 rounded-(--radius-lg) border border-[oklch(63.24%_0.1562_249.76/20%)] bg-[oklch(63.24%_0.1562_249.76/5%)] p-4"
       >
-        <div
-          class="flex justify-between border-b border-[oklch(100%_0_0/5%)] py-2"
-        >
+        <div class="flex justify-between border-b border-[oklch(100%_0_0/5%)] py-2">
           <span class="text-sm text-(--color-text-secondary)">Queue ID:</span>
           <span class="text-sm font-semibold text-(--color-text-primary)">
             {queueData.queueId}
           </span>
         </div>
-        <div
-          class="flex justify-between border-b border-[oklch(100%_0_0/5%)] py-2"
-        >
+        <div class="flex justify-between border-b border-[oklch(100%_0_0/5%)] py-2">
           <span class="text-sm text-(--color-text-secondary)">Tenant ID:</span>
           <span class="text-sm font-semibold text-(--color-text-primary)">
             {queueData.tenantId}
           </span>
         </div>
         <div class="flex justify-between py-2">
-          <span class="text-sm text-(--color-text-secondary)"
-            >Angefordert von:</span
-          >
+          <span class="text-sm text-(--color-text-secondary)">Angefordert von:</span>
           <span class="text-sm font-semibold text-(--color-text-primary)">
             {queueData.requestedByName ?? `User ${queueData.requestedBy}`}
           </span>
@@ -213,8 +193,7 @@
         <div class="alert__content">
           <p class="alert__title">LETZTE WARNUNG!</p>
           <p class="alert__message">
-            Nach der Genehmigung werden nach 30 Tagen ALLE Daten unwiderruflich
-            gelöscht!
+            Nach der Genehmigung werden nach 30 Tagen ALLE Daten unwiderruflich gelöscht!
           </p>
         </div>
       </div>
@@ -230,9 +209,7 @@
             class="form-field__label"
             for="confirmationInput"
           >
-            Geben Sie zur Bestätigung <strong class="text-red-500"
-              >LÖSCHEN</strong
-            > ein:
+            Geben Sie zur Bestätigung <strong class="text-red-500">LÖSCHEN</strong> ein:
           </label>
           <input
             type="text"

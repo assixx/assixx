@@ -29,13 +29,7 @@
     uuid: string;
   }
 
-  const {
-    comments,
-    total,
-    hasMore: propHasMore,
-    isArchived,
-    uuid,
-  }: Props = $props();
+  const { comments, total, hasMore: propHasMore, isArchived, uuid }: Props = $props();
 
   // ── State ──────────────────────────────────────────────────────────
 
@@ -169,14 +163,8 @@
 
   // ── Helpers ────────────────────────────────────────────────────────
 
-  function avatarColorClass(
-    profilePicture: string | null | undefined,
-    userId: number,
-  ): string {
-    const has =
-      profilePicture !== null &&
-      profilePicture !== undefined &&
-      profilePicture !== '';
+  function avatarColorClass(profilePicture: string | null | undefined, userId: number): string {
+    const has = profilePicture !== null && profilePicture !== undefined && profilePicture !== '';
     return has ? '' : `avatar--color-${getAvatarColor(userId)}`;
   }
 
@@ -238,10 +226,7 @@
         >
           <div class="thread-item__main">
             <div
-              class="avatar avatar--sm {avatarColorClass(
-                comment.profilePicture,
-                comment.userId,
-              )}"
+              class="avatar avatar--sm {avatarColorClass(comment.profilePicture, comment.userId)}"
             >
               {#if hasProfilePic(comment.profilePicture)}
                 <img
@@ -261,9 +246,7 @@
                   {comment.firstName ?? 'Unbekannt'}
                   {comment.lastName ?? ''}
                 </span>
-                <span class="thread-item__date"
-                  >{formatDateTime(comment.createdAt)}</span
-                >
+                <span class="thread-item__date">{formatDateTime(comment.createdAt)}</span>
                 {#if comment.isInternal}
                   <span class="internal-badge">Intern</span>
                 {/if}
@@ -372,9 +355,7 @@
                           {reply.firstName ?? 'Unbekannt'}
                           {reply.lastName ?? ''}
                         </span>
-                        <span class="thread-item__date"
-                          >{formatDateTime(reply.createdAt)}</span
-                        >
+                        <span class="thread-item__date">{formatDateTime(reply.createdAt)}</span>
                         {#if reply.isInternal}
                           <span class="internal-badge">Intern</span>
                         {/if}

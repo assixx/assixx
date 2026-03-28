@@ -46,3 +46,7 @@ export const PositionSchema = z
   .max(100, 'Position too long')
   .optional()
   .transform((val: string | undefined) => val?.trim());
+
+export const PositionIdsSchema = z
+  .array(z.uuid('Jede positionId muss eine gültige UUID sein'))
+  .min(1, 'Mindestens eine Position erforderlich');

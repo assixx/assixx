@@ -2,17 +2,9 @@
 // DOCUMENTS EXPLORER - CONSTANTS
 // =============================================================================
 
-import {
-  DEFAULT_HIERARCHY_LABELS,
-  type HierarchyLabels,
-} from '$lib/types/hierarchy-labels';
+import { DEFAULT_HIERARCHY_LABELS, type HierarchyLabels } from '$lib/types/hierarchy-labels';
 
-import type {
-  DocumentCategory,
-  SortOption,
-  CategoryMapping,
-  AccessScope,
-} from './types';
+import type { DocumentCategory, SortOption, CategoryMapping, AccessScope } from './types';
 
 /** SVG icons for folder categories */
 const FOLDER_ICONS: Record<DocumentCategory, string> = {
@@ -45,16 +37,7 @@ export function createFolderDefinitions(labels: HierarchyLabels) {
   } as Record<DocumentCategory, string>;
 
   return (
-    [
-      'all',
-      'personal',
-      'team',
-      'department',
-      'company',
-      'payroll',
-      'blackboard',
-      'chat',
-    ] as const
+    ['all', 'personal', 'team', 'department', 'company', 'payroll', 'blackboard', 'chat'] as const
   ).map((cat: DocumentCategory) => ({
     category: cat,
     label: dynamicLabels[cat],
@@ -63,9 +46,7 @@ export function createFolderDefinitions(labels: HierarchyLabels) {
 }
 
 /** Backward-compatible static export */
-export const FOLDER_DEFINITIONS = createFolderDefinitions(
-  DEFAULT_HIERARCHY_LABELS,
-);
+export const FOLDER_DEFINITIONS = createFolderDefinitions(DEFAULT_HIERARCHY_LABELS);
 
 /**
  * Sort options for toolbar dropdown
@@ -88,9 +69,7 @@ export const SORT_LABELS: Record<SortOption, string> = {
 };
 
 /** Factory: category labels with dynamic hierarchy labels */
-export function createCategoryLabels(
-  labels: HierarchyLabels,
-): Record<DocumentCategory, string> {
+export function createCategoryLabels(labels: HierarchyLabels): Record<DocumentCategory, string> {
   return {
     all: 'Alle Dokumente',
     personal: 'Persönliche Dokumente',
@@ -164,9 +143,7 @@ export function createUploadCategoryOptions(labels: HierarchyLabels): {
 }
 
 /** Backward-compatible static export */
-export const UPLOAD_CATEGORY_OPTIONS = createUploadCategoryOptions(
-  DEFAULT_HIERARCHY_LABELS,
-);
+export const UPLOAD_CATEGORY_OPTIONS = createUploadCategoryOptions(DEFAULT_HIERARCHY_LABELS);
 
 /**
  * Allowed file types for upload
@@ -219,14 +196,11 @@ const BASE_MESSAGES = {
   UPLOAD_NO_FILE: 'Bitte wählen Sie eine Datei aus!',
   UPLOAD_NO_CATEGORY: 'Bitte wählen Sie eine Kategorie aus!',
   UPLOAD_FILE_TOO_LARGE: 'Datei ist zu groß! Maximale Größe: 5 MB',
-  UPLOAD_INVALID_TYPE:
-    'Nur PDF, Word, Excel, JPG und PNG Dateien sind erlaubt!',
-  UPLOAD_NO_TEAM:
-    'Sie müssen einem Team zugeordnet sein, um Team-Dokumente hochzuladen!',
+  UPLOAD_INVALID_TYPE: 'Nur PDF, Word, Excel, JPG und PNG Dateien sind erlaubt!',
+  UPLOAD_NO_TEAM: 'Sie müssen einem Team zugeordnet sein, um Team-Dokumente hochzuladen!',
   UPLOAD_NO_DEPARTMENT:
     'Sie müssen einer Abteilung zugeordnet sein, um Abteilungs-Dokumente hochzuladen!',
-  UPLOAD_SELECT_PAYROLL_PERIOD:
-    'Bitte wählen Sie Jahr und Monat für die Gehaltsabrechnung!',
+  UPLOAD_SELECT_PAYROLL_PERIOD: 'Bitte wählen Sie Jahr und Monat für die Gehaltsabrechnung!',
 
   // Preview modal
   PREVIEW_TITLE: 'Vorschau',
@@ -261,8 +235,7 @@ const BASE_MESSAGES = {
 
   // Auth
   AUTH_NOT_LOGGED_IN: 'Nicht angemeldet',
-  AUTH_REDIRECT_MESSAGE:
-    'Sie werden in 3 Sekunden zur Login-Seite weitergeleitet...',
+  AUTH_REDIRECT_MESSAGE: 'Sie werden in 3 Sekunden zur Login-Seite weitergeleitet...',
 } as const;
 
 /** Factory: documents messages with dynamic hierarchy labels */

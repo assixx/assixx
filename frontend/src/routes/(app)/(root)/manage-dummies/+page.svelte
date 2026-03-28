@@ -1,13 +1,7 @@
 <script lang="ts">
   import { showSuccessAlert, showErrorAlert } from '$lib/utils';
 
-  import {
-    createDummy,
-    deleteDummy,
-    listDummies,
-    logApiError,
-    updateDummy,
-  } from './_lib/api';
+  import { createDummy, deleteDummy, listDummies, logApiError, updateDummy } from './_lib/api';
   import { createDummyMessages } from './_lib/constants';
   import DeleteConfirmModal from './_lib/DeleteConfirmModal.svelte';
   import DummyFormModal from './_lib/DummyFormModal.svelte';

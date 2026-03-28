@@ -10,12 +10,7 @@ import {
   mapSortField,
   toSafeUserResponse,
 } from './users.helpers.js';
-import type {
-  SafeUserResponse,
-  UserDepartmentRow,
-  UserRow,
-  UserTeamRow,
-} from './users.types.js';
+import type { SafeUserResponse, UserDepartmentRow, UserRow, UserTeamRow } from './users.types.js';
 
 // =============================================================
 // Test Fixtures
@@ -306,9 +301,7 @@ describe('buildUserListWhereClause', () => {
   });
 
   it('should filter by role when provided', () => {
-    const query = { role: 'admin' } as Parameters<
-      typeof buildUserListWhereClause
-    >[1];
+    const query = { role: 'admin' } as Parameters<typeof buildUserListWhereClause>[1];
 
     const { whereClause, params } = buildUserListWhereClause(1, query);
 
@@ -317,9 +310,7 @@ describe('buildUserListWhereClause', () => {
   });
 
   it('should use explicit isActive filter instead of default exclusion', () => {
-    const query = { isActive: 0 } as Parameters<
-      typeof buildUserListWhereClause
-    >[1];
+    const query = { isActive: 0 } as Parameters<typeof buildUserListWhereClause>[1];
 
     const { whereClause } = buildUserListWhereClause(1, query);
 
@@ -328,9 +319,7 @@ describe('buildUserListWhereClause', () => {
   });
 
   it('should filter by position when provided', () => {
-    const query = { position: 'Schichtleiter' } as Parameters<
-      typeof buildUserListWhereClause
-    >[1];
+    const query = { position: 'Schichtleiter' } as Parameters<typeof buildUserListWhereClause>[1];
 
     const { whereClause, params } = buildUserListWhereClause(1, query);
 
@@ -339,9 +328,7 @@ describe('buildUserListWhereClause', () => {
   });
 
   it('should ignore empty position string', () => {
-    const query = { position: '' } as Parameters<
-      typeof buildUserListWhereClause
-    >[1];
+    const query = { position: '' } as Parameters<typeof buildUserListWhereClause>[1];
 
     const { whereClause } = buildUserListWhereClause(1, query);
 
@@ -349,9 +336,7 @@ describe('buildUserListWhereClause', () => {
   });
 
   it('should add ILIKE search across name and email', () => {
-    const query = { search: 'john' } as Parameters<
-      typeof buildUserListWhereClause
-    >[1];
+    const query = { search: 'john' } as Parameters<typeof buildUserListWhereClause>[1];
 
     const { whereClause, params } = buildUserListWhereClause(1, query);
 

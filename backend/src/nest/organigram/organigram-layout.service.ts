@@ -4,10 +4,7 @@ import { v7 as uuidv7 } from 'uuid';
 
 import { DatabaseService } from '../database/database.service.js';
 import type { UpsertPositionsDto } from './dto/index.js';
-import type {
-  OrgChartPosition,
-  OrgChartPositionRow,
-} from './organigram.types.js';
+import type { OrgChartPosition, OrgChartPositionRow } from './organigram.types.js';
 
 @Injectable()
 export class OrganigramLayoutService {
@@ -27,10 +24,7 @@ export class OrganigramLayoutService {
     return rows.map((row: OrgChartPositionRow) => this.mapToPosition(row));
   }
 
-  async upsertPositions(
-    tenantId: number,
-    dto: UpsertPositionsDto,
-  ): Promise<void> {
+  async upsertPositions(tenantId: number, dto: UpsertPositionsDto): Promise<void> {
     await this.db.tenantTransaction(async (client: PoolClient) => {
       for (const pos of dto.positions) {
         const posUuid = uuidv7();
@@ -66,11 +60,7 @@ export class OrganigramLayoutService {
     );
   }
 
-  async deletePosition(
-    tenantId: number,
-    entityType: string,
-    entityUuid: string,
-  ): Promise<void> {
+  async deletePosition(tenantId: number, entityType: string, entityUuid: string): Promise<void> {
     await this.db.tenantTransaction(async (client: PoolClient) => {
       await client.query(
         `UPDATE org_chart_positions

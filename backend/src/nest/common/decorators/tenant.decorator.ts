@@ -20,11 +20,7 @@ import type { NestAuthUser } from '../interfaces/auth.interface.js';
  * }
  * ```
  */
-export const TenantId = createParamDecorator(
-  (_data: unknown, ctx: ExecutionContext): number => {
-    const request = ctx
-      .switchToHttp()
-      .getRequest<FastifyRequest & { user: NestAuthUser }>();
-    return request.user.tenantId;
-  },
-);
+export const TenantId = createParamDecorator((_data: unknown, ctx: ExecutionContext): number => {
+  const request = ctx.switchToHttp().getRequest<FastifyRequest & { user: NestAuthUser }>();
+  return request.user.tenantId;
+});

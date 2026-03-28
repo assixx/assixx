@@ -3,11 +3,7 @@
 // =============================================================================
 // Used by availability history pages across manage-employees, manage-admins, manage-root
 
-import {
-  AVAILABILITY_BADGE_CLASSES,
-  AVAILABILITY_ICONS,
-  AVAILABILITY_LABELS,
-} from './constants';
+import { AVAILABILITY_BADGE_CLASSES, AVAILABILITY_ICONS, AVAILABILITY_LABELS } from './constants';
 
 import type { AvailabilityStatus } from '@assixx/shared';
 
@@ -66,10 +62,7 @@ export function getStatusIcon(status: string): string {
 }
 
 /** Truncate long text with ellipsis */
-export function truncateText(
-  text: string | null,
-  maxLength: number = 50,
-): string {
+export function truncateText(text: string | null, maxLength: number = 50): string {
   if (text === null || text === '') return '-';
   if (text.length <= maxLength) return text;
   return text.substring(0, maxLength) + '...';

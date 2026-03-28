@@ -26,15 +26,7 @@ export const StatusBadges = {
   argTypes: {
     variant: {
       control: 'select',
-      options: [
-        'success',
-        'warning',
-        'danger',
-        'error',
-        'info',
-        'primary',
-        'dark',
-      ],
+      options: ['success', 'warning', 'danger', 'error', 'info', 'primary', 'dark'],
       description: 'Badge color variant',
     },
     label: {
@@ -211,8 +203,7 @@ export const SizeComparison = {
       row.style.gap = '16px';
 
       const badge = document.createElement('span');
-      badge.className =
-        size ? `badge badge--${size} badge--success` : 'badge badge--success';
+      badge.className = size ? `badge badge--${size} badge--success` : 'badge badge--success';
       badge.textContent = label;
 
       const desc = document.createElement('span');

@@ -24,8 +24,7 @@ function scrollToShowMenu(
   modal: HTMLElement | null,
   menu: HTMLElement,
 ): boolean {
-  const overflow =
-    menu.getBoundingClientRect().bottom - body.getBoundingClientRect().bottom;
+  const overflow = menu.getBoundingClientRect().bottom - body.getBoundingClientRect().bottom;
   if (overflow <= 0) return false;
 
   const extraSpace = overflow + SCROLL_PADDING;
@@ -81,10 +80,7 @@ function onDropdownClassChange(menu: HTMLElement): void {
 if (browser) {
   const observer = new MutationObserver((mutations: MutationRecord[]) => {
     for (const m of mutations) {
-      if (
-        m.target instanceof HTMLElement &&
-        m.target.classList.contains('dropdown__menu')
-      ) {
+      if (m.target instanceof HTMLElement && m.target.classList.contains('dropdown__menu')) {
         onDropdownClassChange(m.target);
       }
     }

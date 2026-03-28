@@ -2,10 +2,7 @@
 // TPM (Total Productive Maintenance) - CONSTANTS
 // =============================================================================
 
-import {
-  DEFAULT_HIERARCHY_LABELS,
-  type HierarchyLabels,
-} from '$lib/types/hierarchy-labels';
+import { DEFAULT_HIERARCHY_LABELS, type HierarchyLabels } from '$lib/types/hierarchy-labels';
 
 import type { CardCategory, CardStatus, IntervalType } from './types';
 
@@ -157,8 +154,7 @@ const BASE_MESSAGES = {
 
   // Empty state
   EMPTY_TITLE: 'Keine Wartungspläne vorhanden',
-  EMPTY_DESCRIPTION:
-    'Erstellen Sie einen neuen Wartungsplan, um die TPM-Überwachung zu starten.',
+  EMPTY_DESCRIPTION: 'Erstellen Sie einen neuen Wartungsplan, um die TPM-Überwachung zu starten.',
   EMPTY_FILTER_DESC: 'Es gibt aktuell keine Wartungspläne in dieser Kategorie.',
 
   // Loading
@@ -215,13 +211,10 @@ const BASE_MESSAGES = {
 
   // Plan form help text
   HELP_WEEKDAY: 'An welchem Wochentag soll die Wartung stattfinden?',
-  HELP_REPEAT:
-    'Der wievielte Wochentag im Monat (1 = erster, 2 = zweiter, 3 = dritter)',
-  HELP_BUFFER_HOURS:
-    'Wie lange dauert die Wartung? Definiert das Zeitfenster ab der Startzeit.',
+  HELP_REPEAT: 'Der wievielte Wochentag im Monat (1 = erster, 2 = zweiter, 3 = dritter)',
+  HELP_BUFFER_HOURS: 'Wie lange dauert die Wartung? Definiert das Zeitfenster ab der Startzeit.',
   HELP_BUFFER_FULL_DAY: 'Ganztägig (keine feste Uhrzeit)',
-  HELP_SHIFT_REQUIRED:
-    'Prüft ob ein Schichtplan für den Wartungszeitraum existiert',
+  HELP_SHIFT_REQUIRED: 'Prüft ob ein Schichtplan für den Wartungszeitraum existiert',
 
   // Plan form buttons
   BTN_SAVE: 'Speichern',
@@ -251,8 +244,7 @@ const BASE_MESSAGES = {
 
   // Slot assistant
   SLOT_TITLE: 'Verfügbare Zeitfenster',
-  SLOT_DESCRIPTION:
-    'Zeigt freie und belegte Tage für die Anlage (bis 365 Tage)',
+  SLOT_DESCRIPTION: 'Zeigt freie und belegte Tage für die Anlage (bis 365 Tage)',
   SLOT_AVAILABLE: 'Verfügbar',
   SLOT_UNAVAILABLE: 'Belegt',
   SLOT_SCHEDULED: 'Geplanter TPM-Termin',
@@ -262,8 +254,7 @@ const BASE_MESSAGES = {
   SLOT_LOADING: 'Verfügbarkeit wird geprüft...',
   SLOT_STATS: 'verfügbare Tage von',
   SLOT_RANGE_FULL: 'Max. 365 Tage',
-  SLOT_RANGE_DETAIL_HINT:
-    'Details für die ersten 90 Tage, darüber hinaus nur geplante Termine',
+  SLOT_RANGE_DETAIL_HINT: 'Details für die ersten 90 Tage, darüber hinaus nur geplante Termine',
   SLOT_SHOW_WEEKENDS: 'Wochenende anzeigen',
   SLOT_SHOW_ONLY_SCHEDULED: 'Nur geplante Termine',
 
@@ -285,8 +276,7 @@ const BASE_MESSAGES = {
   // Time estimates (Plan Form)
   LABEL_TIME_ESTIMATES: 'Zeitschätzungen',
   HELP_TIME_ESTIMATES: 'SOLL-Zeiten pro Wartungsintervall definieren',
-  TIME_EST_CREATE_HINT:
-    'Zeitschätzungen können nach dem Erstellen des Plans definiert werden',
+  TIME_EST_CREATE_HINT: 'Zeitschätzungen können nach dem Erstellen des Plans definiert werden',
   TIME_EST_TITLE: 'Zeitschätzungen',
   TIME_EST_STAFF: 'Mitarbeiter',
   TIME_EST_PREP: 'Vorbereitung',
@@ -319,16 +309,12 @@ const BASE_MESSAGES = {
   PH_CUSTOM_DAYS: 'Tage',
 
   // Card form help text
-  HELP_CARD_ROLE:
-    'Bediener = tägliche Prüfungen, Instandhaltung = technische Wartung',
-  HELP_REQUIRES_APPROVAL:
-    'Karte muss nach Erledigung von einem Vorgesetzten freigegeben werden',
-  HELP_CUSTOM_INTERVAL:
-    'Nur bei benutzerdefiniertem Intervall: Anzahl Tage zwischen Wartungen',
+  HELP_CARD_ROLE: 'Bediener = tägliche Prüfungen, Instandhaltung = technische Wartung',
+  HELP_REQUIRES_APPROVAL: 'Karte muss nach Erledigung von einem Vorgesetzten freigegeben werden',
+  HELP_CUSTOM_INTERVAL: 'Nur bei benutzerdefiniertem Intervall: Anzahl Tage zwischen Wartungen',
   LABEL_WEEKDAY_OVERRIDE: 'Wochentag (optional)',
   HELP_WEEKDAY_DEFAULT: 'Der Wartungsplan beginnt standardmäßig am',
-  HELP_WEEKDAY_OVERRIDE:
-    'Optional: Wählen Sie einen anderen Tag für diese wöchentliche Aufgabe.',
+  HELP_WEEKDAY_OVERRIDE: 'Optional: Wählen Sie einen anderen Tag für diese wöchentliche Aufgabe.',
 
   // Card categories
   LABEL_CARD_CATEGORIES: 'Kategorie',
@@ -336,8 +322,7 @@ const BASE_MESSAGES = {
 
   // Per-card execution estimate
   LABEL_CARD_EST_EXEC: 'Geschätzte Durchführungszeit',
-  HELP_CARD_EST_EXEC:
-    'Optional: Wie lange dauert diese Wartungsaufgabe? (in Minuten)',
+  HELP_CARD_EST_EXEC: 'Optional: Wie lange dauert diese Wartungsaufgabe? (in Minuten)',
 
   // Time estimate in card form (legacy labels kept for Employee view)
   LABEL_TIME_ESTIMATE: 'Zeitschätzung',
@@ -416,19 +401,15 @@ const BASE_MESSAGES = {
 
   // Interval color config
   INTERVAL_COLOR_TITLE: 'Intervall-Farben',
-  INTERVAL_COLOR_DESCRIPTION:
-    'Farben für die Wartungsintervalle im Kalender und Board anpassen',
+  INTERVAL_COLOR_DESCRIPTION: 'Farben für die Wartungsintervalle im Kalender und Board anpassen',
   INTERVAL_COLOR_RESET: 'Zurücksetzen',
-  INTERVAL_COLOR_RESET_CONFIRM:
-    'Alle Intervall-Farben auf die Standardwerte zurücksetzen?',
+  INTERVAL_COLOR_RESET_CONFIRM: 'Alle Intervall-Farben auf die Standardwerte zurücksetzen?',
   SUCCESS_INTERVAL_COLOR_UPDATED: 'Intervall-Farbe aktualisiert',
   SUCCESS_INTERVAL_COLORS_RESET: 'Intervall-Farben auf Standard zurückgesetzt',
-  SUCCESS_SINGLE_INTERVAL_COLOR_RESET:
-    'Intervall-Farbe auf Standard zurückgesetzt',
+  SUCCESS_SINGLE_INTERVAL_COLOR_RESET: 'Intervall-Farbe auf Standard zurückgesetzt',
   ERROR_INTERVAL_COLOR_UPDATE: 'Fehler beim Aktualisieren der Intervall-Farbe',
   ERROR_INTERVAL_COLOR_RESET: 'Fehler beim Zurücksetzen der Intervall-Farben',
-  ERROR_SINGLE_INTERVAL_COLOR_RESET:
-    'Fehler beim Zurücksetzen der Intervall-Farbe',
+  ERROR_SINGLE_INTERVAL_COLOR_RESET: 'Fehler beim Zurücksetzen der Intervall-Farbe',
 
   // Category color config
   CATEGORY_COLOR_TITLE: 'Kategorie-Farben',
@@ -443,21 +424,18 @@ const BASE_MESSAGES = {
   SUCCESS_SINGLE_CATEGORY_COLOR_RESET: 'Kategorie-Farbe zurückgesetzt',
   ERROR_CATEGORY_COLOR_UPDATE: 'Fehler beim Aktualisieren der Kategorie-Farbe',
   ERROR_CATEGORY_COLOR_RESET: 'Fehler beim Zurücksetzen der Kategorie-Farben',
-  ERROR_SINGLE_CATEGORY_COLOR_RESET:
-    'Fehler beim Zurücksetzen der Kategorie-Farbe',
+  ERROR_SINGLE_CATEGORY_COLOR_RESET: 'Fehler beim Zurücksetzen der Kategorie-Farbe',
 
   // Escalation config
   ESCALATION_TITLE: 'Eskalation',
-  ESCALATION_DESCRIPTION:
-    'Nach wie vielen Stunden werden überfällige Wartungen eskaliert?',
+  ESCALATION_DESCRIPTION: 'Nach wie vielen Stunden werden überfällige Wartungen eskaliert?',
   ESCALATION_HOURS: 'Eskalation nach (Stunden)',
   ESCALATION_HOURS_HELP: 'Wert zwischen 1 und 720 (30 Tage)',
   ESCALATION_NOTIFY_TEAM: 'Teamleiter benachrichtigen',
   ESCALATION_NOTIFY_DEPT: 'Abteilungsleiter benachrichtigen',
   ESCALATION_SAVE: 'Eskalation speichern',
   SUCCESS_ESCALATION_UPDATED: 'Eskalations-Konfiguration aktualisiert',
-  ERROR_ESCALATION_UPDATE:
-    'Fehler beim Aktualisieren der Eskalations-Konfiguration',
+  ERROR_ESCALATION_UPDATE: 'Fehler beim Aktualisieren der Eskalations-Konfiguration',
   ERROR_ESCALATION_HOURS_RANGE: 'Stunden müssen zwischen 1 und 720 liegen',
 
   // Gesamtansicht (matrix overview)

@@ -22,10 +22,7 @@ import { v7 as uuidv7 } from 'uuid';
 import { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import { DatabaseService } from '../database/database.service.js';
 import type { UpdateSettingsDto } from './dto/update-settings.dto.js';
-import type {
-  VacationSettings,
-  VacationSettingsRow,
-} from './vacation.types.js';
+import type { VacationSettings, VacationSettingsRow } from './vacation.types.js';
 
 @Injectable()
 export class VacationSettingsService {
@@ -43,10 +40,7 @@ export class VacationSettingsService {
   async getSettings(tenantId: number): Promise<VacationSettings> {
     return await this.db.tenantTransaction(
       async (client: PoolClient): Promise<VacationSettings> => {
-        const row: VacationSettingsRow | undefined = await this.findSettings(
-          client,
-          tenantId,
-        );
+        const row: VacationSettingsRow | undefined = await this.findSettings(client, tenantId);
 
         if (row !== undefined) {
           return this.mapRowToSettings(row);
@@ -69,8 +63,7 @@ export class VacationSettingsService {
   ): Promise<VacationSettings> {
     const result = await this.db.tenantTransaction(
       async (client: PoolClient): Promise<VacationSettings> => {
-        const existing: VacationSettingsRow | undefined =
-          await this.findSettings(client, tenantId);
+        const existing: VacationSettingsRow | undefined = await this.findSettings(client, tenantId);
 
         if (existing === undefined) {
           await this.ensureDefaults(client, tenantId, userId);
@@ -144,15 +137,10 @@ export class VacationSettingsService {
     );
 
     // Re-fetch to get the actual row (might have been created by concurrent call)
-    const row: VacationSettingsRow | undefined = await this.findSettings(
-      client,
-      tenantId,
-    );
+    const row: VacationSettingsRow | undefined = await this.findSettings(client, tenantId);
 
     if (row === undefined) {
-      throw new Error(
-        `Failed to create default vacation settings for tenant ${tenantId}`,
-      );
+      throw new Error(`Failed to create default vacation settings for tenant ${tenantId}`);
     }
 
     this.logger.log(`Default settings created for tenant ${tenantId}`);
@@ -169,10 +157,7 @@ export class VacationSettingsService {
     const { setClauses, params } = this.buildSetClauses(dto, userId);
 
     if (setClauses.length === 0) {
-      const row: VacationSettingsRow | undefined = await this.findSettings(
-        client,
-        tenantId,
-      );
+      const row: VacationSettingsRow | undefined = await this.findSettings(client, tenantId);
       if (row === undefined) {
         throw new Error(`Settings not found for tenant ${tenantId}`);
       }
@@ -196,9 +181,7 @@ export class VacationSettingsService {
 
     const row: VacationSettingsRow | undefined = result.rows[0];
     if (row === undefined) {
-      throw new Error(
-        `Settings update returned no rows for tenant ${tenantId}`,
-      );
+      throw new Error(`Settings update returned no rows for tenant ${tenantId}`);
     }
 
     this.logger.log(`Settings updated for tenant ${tenantId}`);

@@ -24,7 +24,6 @@
     onautolayout: () => void;
     onsave: () => void;
     onreset: () => void;
-    onopenlabels: () => void;
     ontogglelock: () => void;
     onfullscreen: () => void;
     oncanvasbg: (color: string | null) => void;
@@ -49,7 +48,6 @@
     onautolayout,
     onsave,
     onreset,
-    onopenlabels,
     ontogglelock,
     onfullscreen,
     oncanvasbg,
@@ -59,9 +57,17 @@
 
   let pickerHex = $state<string | null>(null);
   let showPicker = $state(false);
+  let colorPickerEl: HTMLDivElement;
 
   /** Track last known value to detect actual user interaction */
   let lastPickerHex: string | null = null;
+
+  /** Schließe Picker bei Klick außerhalb */
+  function handleClickOutside(e: PointerEvent) {
+    if (showPicker && !colorPickerEl.contains(e.target as Node)) {
+      showPicker = false;
+    }
+  }
 
   /** Sync picker wenn canvasBg sich von außen ändert (z.B. Reset) */
   $effect(() => {
@@ -77,6 +83,8 @@
     }
   });
 </script>
+
+<svelte:window onpointerdown={handleClickOutside} />
 
 <div class="toolbar-wrapper">
   <div
@@ -195,13 +203,20 @@
     <div class="toolbar-divider"></div>
 
     <!-- Canvas Background Color Picker -->
-    <div class="color-picker-wrapper">
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
+    <div
+      class="color-picker-wrapper"
+      bind:this={colorPickerEl}
+      onpointerdown={(e: PointerEvent) => {
+        e.stopPropagation();
+      }}
+    >
       <button
         type="button"
         class="btn btn-icon btn-secondary"
         title="Hintergrundfarbe"
-        onmousedown={(e: MouseEvent) => {
-          e.stopPropagation();
+        disabled={isLocked}
+        onclick={() => {
           showPicker = !showPicker;
         }}
       >
@@ -247,15 +262,14 @@
         <span class="toolbar-label">Auto-Layout</span>
       </button>
 
-      <button
-        type="button"
+      <a
+        href="/settings/organigram/positions"
         class="btn btn-secondary"
-        title="Hierarchie-Ebenen anpassen"
-        onclick={onopenlabels}
+        title="Positionen & Hierarchie-Ebenen verwalten"
       >
-        <i class="fas fa-tags"></i>
-        <span class="toolbar-label">Hierarchie-Ebenen</span>
-      </button>
+        <i class="fas fa-id-badge"></i>
+        <span class="toolbar-label">Positionen</span>
+      </a>
     </div>
 
     <div class="toolbar-spacer"></div>

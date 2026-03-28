@@ -9,8 +9,11 @@ export type OrgEntityType = 'area' | 'department' | 'team' | 'asset';
 export interface HierarchyLabels {
   hall: string;
   area: string;
+  areaLeadPrefix: string;
   department: string;
+  departmentLeadPrefix: string;
   team: string;
+  teamLeadPrefix: string;
   asset: string;
 }
 
@@ -52,6 +55,15 @@ export interface HallOverride {
   height: number;
 }
 
+/** Seite eines Rechtecks für Ankerpunkte */
+export type AnchorSide = 'top' | 'right' | 'bottom' | 'left';
+
+/** Ankerpunkt auf dem Rand einer Halle — side + t (0–1 entlang der Kante) */
+export interface PerimeterAnchor {
+  side: AnchorSide;
+  t: number;
+}
+
 export type ResizeEdge =
   | 'top'
   | 'bottom'
@@ -75,9 +87,14 @@ export interface OrgChartTree {
   hierarchyLabels: HierarchyLabels;
   viewport: OrgViewport;
   hallOverrides: Record<string, HallOverride>;
+  hallConnectionAnchors: Record<string, PerimeterAnchor>;
   canvasBg: string | null;
   nodes: OrgChartNode[];
   halls: OrgTreeHall[];
+  /** Maps department UUID → assigned hall UUIDs (from department_halls) */
+  departmentHallMap: Record<string, string[]>;
+  /** Maps team UUID → assigned hall UUIDs (from team_halls) */
+  teamHallMap: Record<string, string[]>;
 }
 
 export interface PositionPayload {
@@ -114,7 +131,9 @@ export interface OrgNodeDetail {
   assetStatus?: string;
   assetType?: string;
   lead?: OrgNodeDetailPerson;
-  deputyLead?: OrgNodeDetailPerson;
+  teamDeputyLead?: OrgNodeDetailPerson;
+  areaDeputyLead?: OrgNodeDetailPerson;
+  departmentDeputyLead?: OrgNodeDetailPerson;
   parentArea?: OrgNodeDetailEntry;
   parentDepartment?: OrgNodeDetailEntry;
   halls?: OrgNodeDetailEntry[];
@@ -128,6 +147,8 @@ export interface OrgNodeDetail {
 
 /** Flattened node with resolved position for rendering */
 export interface RenderNode {
+  /** Unique key for Svelte {#each} — differs for ghost copies */
+  renderKey: string;
   entityType: OrgEntityType;
   entityUuid: string;
   name: string;
@@ -137,6 +158,8 @@ export interface RenderNode {
   height: number;
   leadName?: string;
   memberCount?: number;
+  /** Ghost copies in secondary halls are read-only (no drag, no interaction) */
+  isGhost?: boolean;
 }
 
 /** Connection line between parent and child */

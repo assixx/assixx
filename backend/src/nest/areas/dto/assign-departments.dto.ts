@@ -11,18 +11,11 @@ import { z } from 'zod';
  */
 export const AssignDepartmentsSchema = z.object({
   departmentIds: z
-    .array(
-      z.coerce
-        .number()
-        .int()
-        .positive('Department ID must be a positive integer'),
-    )
+    .array(z.coerce.number().int().positive('Department ID must be a positive integer'))
     .min(0, 'Department IDs must be an array'),
 });
 
 /**
  * Assign Departments DTO class
  */
-export class AssignDepartmentsDto extends createZodDto(
-  AssignDepartmentsSchema,
-) {}
+export class AssignDepartmentsDto extends createZodDto(AssignDepartmentsSchema) {}

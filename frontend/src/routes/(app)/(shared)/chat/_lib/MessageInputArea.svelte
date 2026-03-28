@@ -33,9 +33,7 @@
   /* eslint-enable prefer-const */
 
   const hasSchedule = $derived(scheduledFor !== null);
-  const canSend = $derived(
-    messageInput.trim() !== '' || selectedFiles.length > 0,
-  );
+  const canSend = $derived(messageInput.trim() !== '' || selectedFiles.length > 0);
 </script>
 
 <div class="message-input-container">
@@ -99,9 +97,7 @@
       {#if hasSchedule && scheduledFor}
         <div class="schedule-badge">
           <i class="far fa-clock"></i>
-          <span class="schedule-badge__time"
-            >{formatScheduleTime(scheduledFor)}</span
-          >
+          <span class="schedule-badge__time">{formatScheduleTime(scheduledFor)}</span>
           <button
             type="button"
             class="schedule-badge__clear"
@@ -167,8 +163,7 @@
   }
 
   .message-input-wrapper:focus-within {
-    box-shadow: 0 0 0 2px
-      color-mix(in oklch, var(--color-primary) 10%, transparent);
+    box-shadow: 0 0 0 2px color-mix(in oklch, var(--color-primary) 10%, transparent);
     border-color: var(--primary-color);
   }
 

@@ -27,9 +27,8 @@ const mockDb = {
   tenantTransaction: vi
     .fn()
     .mockImplementation(
-      async (
-        callback: (client: typeof mockClient) => Promise<unknown>,
-      ): Promise<unknown> => await callback(mockClient),
+      async (callback: (client: typeof mockClient) => Promise<unknown>): Promise<unknown> =>
+        await callback(mockClient),
     ),
 };
 
@@ -427,9 +426,7 @@ describe('listWorkOrders', () => {
     await service.listWorkOrders(1, 5, { isActive: 'all' });
 
     const countSql = mockDb.queryOne.mock.calls[0]?.[0] as string;
-    expect(countSql).toContain(
-      `is_active IN (${IS_ACTIVE.ACTIVE}, ${IS_ACTIVE.ARCHIVED})`,
-    );
+    expect(countSql).toContain(`is_active IN (${IS_ACTIVE.ACTIVE}, ${IS_ACTIVE.ARCHIVED})`);
   });
 });
 
@@ -505,9 +502,9 @@ describe('updateWorkOrder', () => {
   it('should throw NotFoundException when work order not found', async () => {
     mockClient.query.mockResolvedValueOnce({ rows: [] });
 
-    await expect(
-      service.updateWorkOrder(1, 5, 'unknown', { title: 'New' }),
-    ).rejects.toThrow('Arbeitsauftrag nicht gefunden');
+    await expect(service.updateWorkOrder(1, 5, 'unknown', { title: 'New' })).rejects.toThrow(
+      'Arbeitsauftrag nicht gefunden',
+    );
   });
 
   it('should update multiple fields at once', async () => {
@@ -535,9 +532,7 @@ describe('updateWorkOrder', () => {
       rows: [{ id: 1, title: 'Test', priority: 'medium' }],
     });
     mockClient.query.mockResolvedValueOnce({ rowCount: 1 });
-    mockDb.queryOne.mockResolvedValueOnce(
-      createWorkOrderRow({ due_date: '2026-06-01' }),
-    );
+    mockDb.queryOne.mockResolvedValueOnce(createWorkOrderRow({ due_date: '2026-06-01' }));
     mockDb.query.mockResolvedValueOnce([]);
 
     const result = await service.updateWorkOrder(1, 5, 'test-uuid', {
@@ -688,9 +683,7 @@ describe('getStats', () => {
 // getCalendarWorkOrders
 // ============================================================================
 
-function createCalendarRow(
-  overrides: Partial<CalendarWorkOrderRow> = {},
-): CalendarWorkOrderRow {
+function createCalendarRow(overrides: Partial<CalendarWorkOrderRow> = {}): CalendarWorkOrderRow {
   return {
     uuid: '019c9547-9fc0-771a-b022-3767e233d6f3',
     title: 'Wartung Anlage 3',
@@ -706,13 +699,7 @@ describe('getCalendarWorkOrders', () => {
   it('should return mapped calendar work orders for admin', async () => {
     mockDb.query.mockResolvedValueOnce([createCalendarRow()]);
 
-    const result = await service.getCalendarWorkOrders(
-      1,
-      5,
-      true,
-      '2026-03-01',
-      '2026-03-31',
-    );
+    const result = await service.getCalendarWorkOrders(1, 5, true, '2026-03-01', '2026-03-31');
 
     expect(result).toHaveLength(1);
     expect(result[0]?.uuid).toBe('019c9547-9fc0-771a-b022-3767e233d6f3');
@@ -723,13 +710,7 @@ describe('getCalendarWorkOrders', () => {
   it('should add user filter for non-admin', async () => {
     mockDb.query.mockResolvedValueOnce([]);
 
-    await service.getCalendarWorkOrders(
-      1,
-      42,
-      false,
-      '2026-03-01',
-      '2026-03-31',
-    );
+    await service.getCalendarWorkOrders(1, 42, false, '2026-03-01', '2026-03-31');
 
     const sql = mockDb.query.mock.calls[0]?.[0] as string;
     expect(sql).toContain('woa2.user_id = $4');
@@ -749,13 +730,7 @@ describe('getCalendarWorkOrders', () => {
   it('should return empty array when no results', async () => {
     mockDb.query.mockResolvedValueOnce([]);
 
-    const result = await service.getCalendarWorkOrders(
-      1,
-      5,
-      true,
-      '2026-03-01',
-      '2026-03-31',
-    );
+    const result = await service.getCalendarWorkOrders(1, 5, true, '2026-03-01', '2026-03-31');
 
     expect(result).toEqual([]);
   });

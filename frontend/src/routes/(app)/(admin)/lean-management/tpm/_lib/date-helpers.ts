@@ -26,9 +26,7 @@ export function getISOWeek(dateStr: string): number {
   const dayNum = target.getUTCDay() || 7;
   target.setUTCDate(target.getUTCDate() + 4 - dayNum);
   const yearStart = new Date(Date.UTC(target.getUTCFullYear(), 0, 1));
-  return Math.ceil(
-    ((target.getTime() - yearStart.getTime()) / 86400000 + 1) / 7,
-  );
+  return Math.ceil(((target.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
 }
 
 /** Nth occurrence of this weekday in its month (1–5) */

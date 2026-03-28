@@ -7,10 +7,7 @@ import { z } from 'zod';
  * Uses z.coerce — converts string route params to numbers.
  * Single source of truth for all `*-param.dto.ts` files.
  */
-export const idField = z.coerce
-  .number()
-  .int()
-  .positive('ID must be a positive integer');
+export const idField = z.coerce.number().int().positive('ID must be a positive integer');
 
 /** Shared UUID field for route params */
 export const uuidField = z.uuid('Must be a valid UUID');
@@ -33,9 +30,7 @@ export class UuidIdParamDto extends createZodDto(UuidIdParamSchema) {}
 export function createIdParamSchema<K extends string>(
   paramName: K,
 ): z.ZodObject<Record<K, typeof idField>> {
-  return z.object({ [paramName]: idField }) as z.ZodObject<
-    Record<K, typeof idField>
-  >;
+  return z.object({ [paramName]: idField }) as z.ZodObject<Record<K, typeof idField>>;
 }
 
 /**
@@ -48,7 +43,5 @@ export function createIdParamSchema<K extends string>(
 export function createUuidParamSchema<K extends string>(
   paramName: K,
 ): z.ZodObject<Record<K, typeof uuidField>> {
-  return z.object({ [paramName]: uuidField }) as z.ZodObject<
-    Record<K, typeof uuidField>
-  >;
+  return z.object({ [paramName]: uuidField }) as z.ZodObject<Record<K, typeof uuidField>>;
 }

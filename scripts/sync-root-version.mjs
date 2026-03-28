@@ -15,10 +15,7 @@ if (root.version !== backend.version) {
 }
 
 const readme = readFileSync('README.md', 'utf8');
-const updated = readme.replace(
-  /Version-[\d.]+(-[\w.]+)?-blue/,
-  `Version-${backend.version}-blue`,
-);
+const updated = readme.replace(/Version-[\d.]+(-[\w.]+)?-blue/, `Version-${backend.version}-blue`);
 
 if (readme !== updated) {
   writeFileSync('README.md', updated);

@@ -91,12 +91,10 @@
   const hasActiveFilter = $derived(selectedYear !== '' || selectedMonth !== '');
 
   const yearLabel = $derived(
-    yearOptions.find((opt) => opt.value === selectedYear)?.label ??
-      'Alle Jahre',
+    yearOptions.find((opt) => opt.value === selectedYear)?.label ?? 'Alle Jahre',
   );
   const monthLabel = $derived(
-    monthOptions.find((opt) => opt.value === selectedMonth)?.label ??
-      'Alle Monate',
+    monthOptions.find((opt) => opt.value === selectedMonth)?.label ?? 'Alle Monate',
   );
 
   // =============================================================================
@@ -201,8 +199,6 @@
     if (e.key === 'Escape') {
       yearDropdownOpen = false;
       monthDropdownOpen = false;
-      if (showEditModal) closeEditModal();
-      if (showDeleteModal) closeDeleteModal();
     }
   }
 
@@ -368,9 +364,7 @@
     <div class="card__body">
       {#if error}
         <div class="p-6 text-center">
-          <i
-            class="fas fa-exclamation-triangle mb-4 text-4xl text-(--color-danger)"
-          ></i>
+          <i class="fas fa-exclamation-triangle mb-4 text-4xl text-(--color-danger)"></i>
           <p class="text-(--color-text-secondary)">{error}</p>
         </div>
       {:else if entries.length === 0}
@@ -381,8 +375,7 @@
           <h3 class="empty-state__title">Keine Einträge gefunden</h3>
           <p class="empty-state__description">
             {#if hasActiveFilter}
-              Für den ausgewählten Zeitraum gibt es keine
-              Verfügbarkeitseinträge.
+              Für den ausgewählten Zeitraum gibt es keine Verfügbarkeitseinträge.
             {:else}
               Es wurden noch keine Verfügbarkeitseinträge erfasst.
             {/if}

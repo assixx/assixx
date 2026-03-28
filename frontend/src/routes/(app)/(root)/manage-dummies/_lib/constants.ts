@@ -4,10 +4,7 @@
 
 import { IS_ACTIVE, STATUS_LABELS } from '@assixx/shared/constants';
 
-import {
-  DEFAULT_HIERARCHY_LABELS,
-  type HierarchyLabels,
-} from '$lib/types/hierarchy-labels';
+import { DEFAULT_HIERARCHY_LABELS, type HierarchyLabels } from '$lib/types/hierarchy-labels';
 
 import type { DummyFormData } from './types';
 

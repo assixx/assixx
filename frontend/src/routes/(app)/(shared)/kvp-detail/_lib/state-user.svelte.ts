@@ -4,47 +4,36 @@
 
 import type { User } from './types';
 
-/** Creates user-related state (currentUser, effectiveRole) */
+/** Resolve effective role from storage overrides */
+function resolveRole(user: User): string {
+  if (typeof sessionStorage !== 'undefined') {
+    const roleSwitch = sessionStorage.getItem('roleSwitch');
+    if ((user.role === 'admin' || user.role === 'root') && roleSwitch === 'employee') {
+      return 'employee';
+    }
+  }
+
+  if (typeof localStorage !== 'undefined') {
+    const activeRole = localStorage.getItem('activeRole');
+    if (activeRole !== null && activeRole !== '' && activeRole !== user.role) {
+      return activeRole;
+    }
+  }
+
+  return user.role;
+}
+
+/** Creates user-related state (currentUser, effectiveRole, canManage) */
 export function createUserState() {
   let currentUser = $state<User | null>(null);
-  let effectiveRole = $state<string>('employee');
+  let effectiveRole = $state('employee');
+  let isTeamLead = $state(false);
 
-  const isAdmin = $derived(
-    effectiveRole === 'admin' || effectiveRole === 'root',
-  );
+  const isAdmin = $derived(effectiveRole === 'admin' || effectiveRole === 'root');
+  const canManage = $derived(isAdmin || isTeamLead);
 
   function updateEffectiveRole() {
-    if (currentUser === null) {
-      effectiveRole = 'employee';
-      return;
-    }
-
-    // Check sessionStorage for role switch
-    if (typeof sessionStorage !== 'undefined') {
-      const roleSwitch = sessionStorage.getItem('roleSwitch');
-      if (
-        (currentUser.role === 'admin' || currentUser.role === 'root') &&
-        roleSwitch === 'employee'
-      ) {
-        effectiveRole = 'employee';
-        return;
-      }
-    }
-
-    // Check localStorage for activeRole
-    if (typeof localStorage !== 'undefined') {
-      const activeRole = localStorage.getItem('activeRole');
-      if (
-        activeRole !== null &&
-        activeRole !== '' &&
-        activeRole !== currentUser.role
-      ) {
-        effectiveRole = activeRole;
-        return;
-      }
-    }
-
-    effectiveRole = currentUser.role;
+    effectiveRole = currentUser === null ? 'employee' : resolveRole(currentUser);
   }
 
   return {
@@ -57,9 +46,18 @@ export function createUserState() {
     get isAdmin() {
       return isAdmin;
     },
+    get isTeamLead() {
+      return isTeamLead;
+    },
+    get canManage() {
+      return canManage;
+    },
     setUser: (user: User | null) => {
       currentUser = user;
       updateEffectiveRole();
+    },
+    setTeamLead: (value: boolean) => {
+      isTeamLead = value;
     },
     updateEffectiveRole,
   };

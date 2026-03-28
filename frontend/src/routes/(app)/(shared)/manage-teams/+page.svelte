@@ -23,6 +23,7 @@
     buildTeamPayload,
     fetchTeamMembers,
     fetchTeamAssets,
+    assignTeamHall,
   } from './_lib/api';
   import { createMessages } from './_lib/constants';
   import { applyAllFilters } from './_lib/filters';
@@ -39,15 +40,7 @@
   } from './_lib/utils';
 
   import type { PageData } from './$types';
-  import type {
-    Team,
-    Department,
-    Admin,
-    TeamMember,
-    Asset,
-    StatusFilter,
-    FormIsActiveStatus,
-  } from './_lib/types';
+  import type { StatusFilter, FormIsActiveStatus } from './_lib/types';
 
   // =============================================================================
   // SSR DATA - Level 3: $derived from props (single source of truth)
@@ -56,20 +49,19 @@
   const { data }: { data: PageData } = $props();
 
   // SSR data via $derived - updates when invalidateAll() is called
-  const allTeams = $derived<Team[]>(data.teams);
-  const allDepartments = $derived<Department[]>(data.departments);
-  const allLeaders = $derived<Admin[]>(data.leaders);
-  const allEmployees = $derived<TeamMember[]>(data.employees);
-  const allAssets = $derived<Asset[]>(data.assets);
+  const allTeams = $derived(data.teams);
+  const allDepartments = $derived(data.departments);
+  const allLeaders = $derived(data.leaders);
+  const allEmployees = $derived(data.employees);
+  const allAssets = $derived(data.assets);
+  const allHalls = $derived(data.halls);
 
   // Hierarchy labels from layout data inheritance (A6)
   const labels = $derived(data.hierarchyLabels);
   const messages = $derived(createMessages(labels));
 
   // Lead-View: Employees can Read+Edit but NOT Create/Delete
-  const canMutate = $derived(
-    data.user?.role === 'root' || data.user?.role === 'admin',
-  );
+  const canMutate = $derived(data.user?.role === 'root' || data.user?.role === 'admin');
 
   // =============================================================================
   // UI STATE - Filtering and form state (client-side only)
@@ -100,8 +92,10 @@
   let formDescription = $state('');
   let formDepartmentId = $state<number | null>(null);
   let formLeaderId = $state<number | null>(null);
+  let formDeputyLeaderId = $state<number | null>(null);
   let formMemberIds = $state<number[]>([]);
   let formAssetIds = $state<number[]>([]);
+  let formHallId = $state<number | null>(null);
   let formIsActive = $state<FormIsActiveStatus>(1);
 
   // Form Submit Loading
@@ -112,9 +106,7 @@
   // =============================================================================
 
   const isEditMode = $derived(currentEditId !== null);
-  const modalTitle = $derived(
-    isEditMode ? messages.MODAL_TITLE_EDIT : messages.MODAL_TITLE_ADD,
-  );
+  const modalTitle = $derived(isEditMode ? messages.MODAL_TITLE_EDIT : messages.MODAL_TITLE_ADD);
 
   // Derived: Filtered teams based on current filter/search state
   const filteredTeams = $derived(
@@ -130,8 +122,10 @@
     description: string;
     departmentId: number | null;
     leaderId: number | null;
+    deputyLeaderId: number | null;
     memberIds: number[];
     assetIds: number[];
+    hallId: number | null;
     isActive: FormIsActiveStatus;
   }): Promise<void> {
     submitting = true;
@@ -142,31 +136,24 @@
         description: formData.description,
         departmentId: formData.departmentId,
         leaderId: formData.leaderId,
+        teamDeputyLeadId: formData.deputyLeaderId,
         isActive: formData.isActive,
       });
 
       const teamId = await apiSaveTeam(payload, currentEditId);
 
       if (teamId) {
-        await updateTeamRelations(
-          teamId,
-          formData.memberIds,
-          formData.assetIds,
-          isEditMode,
-        );
+        await updateTeamRelations(teamId, formData.memberIds, formData.assetIds, isEditMode);
+        await assignTeamHall(teamId, formData.hallId);
       }
 
       closeTeamModal();
       // Level 3: Trigger SSR refetch
       await invalidateAll();
-      showSuccessAlert(
-        isEditMode ? messages.SUCCESS_UPDATED : messages.SUCCESS_CREATED,
-      );
+      showSuccessAlert(isEditMode ? messages.SUCCESS_UPDATED : messages.SUCCESS_CREATED);
     } catch (err: unknown) {
       log.error({ err }, 'Error saving team');
-      showErrorAlert(
-        err instanceof Error ? err.message : messages.ERROR_SAVING,
-      );
+      showErrorAlert(err instanceof Error ? err.message : messages.ERROR_SAVING);
     } finally {
       submitting = false;
     }
@@ -248,14 +235,13 @@
     formDescription = team.description ?? '';
     formDepartmentId = team.departmentId ?? null;
     formLeaderId = team.leaderId ?? null;
-    formIsActive = (
-      team.isActive === 4 ?
-        0
-      : team.isActive) as FormIsActiveStatus;
+    formDeputyLeaderId = team.teamDeputyLeadId ?? null;
+    formIsActive = (team.isActive === 4 ? 0 : team.isActive) as FormIsActiveStatus;
 
     // Set member and asset IDs from fetched data
     formMemberIds = members.map((m) => m.id);
     formAssetIds = assets.map((m) => m.id);
+    formHallId = team.hallIds?.[0] ?? null;
 
     showTeamModal = true;
   }
@@ -288,8 +274,10 @@
     formDescription = defaults.description;
     formDepartmentId = defaults.departmentId;
     formLeaderId = defaults.leaderId;
+    formDeputyLeaderId = null;
     formMemberIds = defaults.memberIds;
     formAssetIds = defaults.assetIds;
+    formHallId = null;
     formIsActive = defaults.isActive;
   }
 
@@ -343,25 +331,11 @@
       };
     }
   });
-
-  // =============================================================================
-  // ESCAPE KEY HANDLER
-  // =============================================================================
-
-  function handleKeydown(e: KeyboardEvent): void {
-    if (e.key === 'Escape') {
-      if (showForceDeleteModal) closeForceDeleteModal();
-      else if (showDeleteModal) closeDeleteModal();
-      else if (showTeamModal) closeTeamModal();
-    }
-  }
 </script>
 
 <svelte:head>
   <title>{messages.PAGE_TITLE} - Assixx</title>
 </svelte:head>
-
-<svelte:window onkeydown={handleKeydown} />
 
 {#if data.permissionDenied}
   <PermissionDenied addonName="die Teamverwaltung" />
@@ -454,8 +428,7 @@
               />
               <button
                 class="search-input__clear"
-                class:search-input__clear--visible={currentSearchQuery.length >
-                  0}
+                class:search-input__clear--visible={currentSearchQuery.length > 0}
                 type="button"
                 aria-label="Suche löschen"
                 onclick={clearSearch}
@@ -503,9 +476,7 @@
       <div class="card__body">
         {#if error}
           <div class="p-6 text-center">
-            <i
-              class="fas fa-exclamation-triangle mb-4 text-4xl text-(--color-danger)"
-            ></i>
+            <i class="fas fa-exclamation-triangle mb-4 text-4xl text-(--color-danger)"></i>
             <p class="text-(--color-text-secondary)">{error}</p>
             <button
               type="button"
@@ -546,9 +517,11 @@
                     <th scope="col">ID</th>
                     <th scope="col">Name</th>
                     <th scope="col">{messages.TH_DEPARTMENT}</th>
+                    <th scope="col">{labels.area}</th>
                     <th scope="col">Leiter</th>
                     <th scope="col">Mitglieder</th>
                     <th scope="col">{messages.TH_ASSETS}</th>
+                    <th scope="col">{labels.hall}</th>
                     <th scope="col">Status</th>
                     <th scope="col">Erstellt am</th>
                     <th scope="col">Aktionen</th>
@@ -556,11 +529,7 @@
                 </thead>
                 <tbody>
                   {#each filteredTeams as team (team.id)}
-                    {@const deptBadge = getDepartmentBadge(
-                      team,
-                      allDepartments,
-                      labels,
-                    )}
+                    {@const deptBadge = getDepartmentBadge(team, allDepartments, labels)}
                     {@const membersBadge = getMembersBadge(team)}
                     {@const assetsBadge = getAssetsBadge(team, labels)}
                     <tr>
@@ -578,6 +547,21 @@
                           <!-- eslint-disable-next-line svelte/no-at-html-tags -- Safe: internal badge, no user input -->
                           {@html deptBadge.text}
                         </span>
+                      </td>
+                      <td>
+                        {#if team.departmentAreaName}
+                          <span
+                            class="badge badge--info"
+                            title={team.departmentAreaName}
+                          >
+                            <i class="fas fa-sitemap mr-1"></i>{team.departmentAreaName}
+                          </span>
+                        {:else}
+                          <span
+                            class="badge badge--secondary"
+                            title="Keine Zuordnung">Keine Zuordnung</span
+                          >
+                        {/if}
                       </td>
                       <td>{team.leaderName ?? '-'}</td>
                       <td>
@@ -597,6 +581,18 @@
                           <!-- eslint-disable-next-line svelte/no-at-html-tags -- Safe: internal badge, no user input -->
                           {@html assetsBadge.text}
                         </span>
+                      </td>
+                      <td>
+                        {#if team.hallNames}
+                          <span
+                            class="badge badge--info"
+                            title={team.hallNames}
+                          >
+                            {team.hallNames}
+                          </span>
+                        {:else}
+                          <span class="badge badge--secondary">—</span>
+                        {/if}
                       </td>
                       <td>
                         <span class="badge {getStatusBadgeClass(team.isActive)}"
@@ -663,13 +659,16 @@
       {formDescription}
       {formDepartmentId}
       {formLeaderId}
+      {formDeputyLeaderId}
       {formMemberIds}
       {formAssetIds}
+      {formHallId}
       {formIsActive}
       {allDepartments}
       {allLeaders}
       {allEmployees}
       {allAssets}
+      {allHalls}
       {submitting}
       onclose={closeTeamModal}
       onsubmit={handleFormSubmit}

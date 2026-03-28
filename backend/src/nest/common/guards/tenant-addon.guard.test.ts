@@ -38,9 +38,7 @@ function createMockAddonCheck() {
   };
 }
 
-function createMockExecutionContext(user?: {
-  tenantId?: number;
-}): ExecutionContext {
+function createMockExecutionContext(user?: { tenantId?: number }): ExecutionContext {
   const mockRequest = {
     user:
       user !== undefined ?
@@ -131,10 +129,7 @@ describe('SECURITY: TenantAddonGuard', () => {
 
       await guard.canActivate(context);
 
-      expect(mockAddonCheck.checkTenantAccess).toHaveBeenCalledWith(
-        42,
-        'vacation',
-      );
+      expect(mockAddonCheck.checkTenantAccess).toHaveBeenCalledWith(42, 'vacation');
     });
   });
 
@@ -148,9 +143,7 @@ describe('SECURITY: TenantAddonGuard', () => {
       mockAddonCheck.checkTenantAccess.mockResolvedValue(false);
       const context = createMockExecutionContext({ tenantId: 10 });
 
-      await expect(guard.canActivate(context)).rejects.toThrow(
-        ForbiddenException,
-      );
+      await expect(guard.canActivate(context)).rejects.toThrow(ForbiddenException);
     });
 
     it('should include addon name in error message', async () => {
@@ -169,9 +162,7 @@ describe('SECURITY: TenantAddonGuard', () => {
       mockAddonCheck.checkTenantAccess.mockResolvedValue(false);
       const context = createMockExecutionContext({ tenantId: 99 });
 
-      await expect(guard.canActivate(context)).rejects.toThrow(
-        ForbiddenException,
-      );
+      await expect(guard.canActivate(context)).rejects.toThrow(ForbiddenException);
 
       expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('99'));
       expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('calendar'));
@@ -191,12 +182,8 @@ describe('SECURITY: TenantAddonGuard', () => {
       };
       request.user = undefined;
 
-      await expect(guard.canActivate(context)).rejects.toThrow(
-        ForbiddenException,
-      );
-      await expect(guard.canActivate(context)).rejects.toThrow(
-        'No tenant context available',
-      );
+      await expect(guard.canActivate(context)).rejects.toThrow(ForbiddenException);
+      await expect(guard.canActivate(context)).rejects.toThrow('No tenant context available');
     });
 
     it('should throw ForbiddenException when tenantId is missing', async () => {
@@ -205,9 +192,7 @@ describe('SECURITY: TenantAddonGuard', () => {
         tenantId: undefined as unknown as number,
       });
 
-      await expect(guard.canActivate(context)).rejects.toThrow(
-        ForbiddenException,
-      );
+      await expect(guard.canActivate(context)).rejects.toThrow(ForbiddenException);
     });
 
     it('should not call checkTenantAccess when user is missing', async () => {
@@ -238,13 +223,8 @@ describe('SECURITY: TenantAddonGuard', () => {
       mockAddonCheck.checkTenantAccess.mockResolvedValue(false);
       const context = createMockExecutionContext({ tenantId: 10 });
 
-      await expect(guard.canActivate(context)).rejects.toThrow(
-        ForbiddenException,
-      );
-      expect(mockAddonCheck.checkTenantAccess).toHaveBeenCalledWith(
-        10,
-        'vacation',
-      );
+      await expect(guard.canActivate(context)).rejects.toThrow(ForbiddenException);
+      expect(mockAddonCheck.checkTenantAccess).toHaveBeenCalledWith(10, 'vacation');
     });
 
     it('should check DB even for admin users', async () => {
@@ -252,9 +232,7 @@ describe('SECURITY: TenantAddonGuard', () => {
       mockAddonCheck.checkTenantAccess.mockResolvedValue(false);
       const context = createMockExecutionContext({ tenantId: 10 });
 
-      await expect(guard.canActivate(context)).rejects.toThrow(
-        ForbiddenException,
-      );
+      await expect(guard.canActivate(context)).rejects.toThrow(ForbiddenException);
     });
   });
 
@@ -284,9 +262,7 @@ describe('SECURITY: TenantAddonGuard', () => {
         mockAddonCheck.checkTenantAccess.mockResolvedValue(false);
         const context = createMockExecutionContext({ tenantId: 10 });
 
-        await expect(guard.canActivate(context)).rejects.toThrow(
-          ForbiddenException,
-        );
+        await expect(guard.canActivate(context)).rejects.toThrow(ForbiddenException);
         await expect(guard.canActivate(context)).rejects.toThrow(
           `${code} addon is not enabled for this tenant`,
         );
@@ -315,10 +291,10 @@ describe('SECURITY: TenantAddonGuard', () => {
 
       await guard.canActivate(context);
 
-      expect(mockReflector.getAllAndOverride).toHaveBeenCalledWith(
-        REQUIRE_ADDON_KEY,
-        [context.getHandler(), context.getClass()],
-      );
+      expect(mockReflector.getAllAndOverride).toHaveBeenCalledWith(REQUIRE_ADDON_KEY, [
+        context.getHandler(),
+        context.getClass(),
+      ]);
     });
   });
 

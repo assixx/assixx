@@ -69,9 +69,7 @@ function extractArray<T>(result: unknown): T[] {
 // =============================================================================
 
 /** Create a new work order */
-export async function createWorkOrder(
-  payload: CreateWorkOrderPayload,
-): Promise<WorkOrder> {
+export async function createWorkOrder(payload: CreateWorkOrderPayload): Promise<WorkOrder> {
   return await apiClient.post<WorkOrder>('/work-orders', payload);
 }
 
@@ -81,10 +79,7 @@ export async function fetchWorkOrder(uuid: string): Promise<WorkOrder> {
 }
 
 /** Append non-empty filter values to URLSearchParams */
-function applyFilters(
-  params: URLSearchParams,
-  filters: Record<string, string | undefined>,
-): void {
+function applyFilters(params: URLSearchParams, filters: Record<string, string | undefined>): void {
   for (const [key, val] of Object.entries(filters)) {
     if (val !== undefined && val !== '') {
       params.set(key, val);
@@ -109,9 +104,7 @@ export async function fetchWorkOrders(
   params.set('limit', String(limit));
   applyFilters(params, filters);
 
-  const result: unknown = await apiClient.get(
-    `/work-orders?${params.toString()}`,
-  );
+  const result: unknown = await apiClient.get(`/work-orders?${params.toString()}`);
   return extractPaginated<WorkOrderListItem>(result);
 }
 
@@ -129,9 +122,7 @@ export async function fetchMyWorkOrders(
   params.set('limit', String(limit));
   applyFilters(params, filters);
 
-  const result: unknown = await apiClient.get(
-    `/work-orders/my?${params.toString()}`,
-  );
+  const result: unknown = await apiClient.get(`/work-orders/my?${params.toString()}`);
   return extractPaginated<WorkOrderListItem>(result);
 }
 
@@ -171,10 +162,7 @@ export async function markWorkOrderAsRead(uuid: string): Promise<void> {
 // =============================================================================
 
 /** Update work order status (employee + admin) */
-export async function updateStatus(
-  uuid: string,
-  payload: UpdateStatusPayload,
-): Promise<void> {
+export async function updateStatus(uuid: string, payload: UpdateStatusPayload): Promise<void> {
   await apiClient.patch(`/work-orders/${uuid}/status`, payload);
 }
 
@@ -187,24 +175,16 @@ export async function assignUsers(
   uuid: string,
   payload: AssignUsersPayload,
 ): Promise<WorkOrderAssignee[]> {
-  return await apiClient.post<WorkOrderAssignee[]>(
-    `/work-orders/${uuid}/assignees`,
-    payload,
-  );
+  return await apiClient.post<WorkOrderAssignee[]>(`/work-orders/${uuid}/assignees`, payload);
 }
 
 /** Remove an assignee from a work order (admin only) */
-export async function removeAssignee(
-  uuid: string,
-  userUuid: string,
-): Promise<void> {
+export async function removeAssignee(uuid: string, userUuid: string): Promise<void> {
   await apiClient.delete(`/work-orders/${uuid}/assignees/${userUuid}`);
 }
 
 /** Fetch eligible users for assignment (team-filtered if assetId given) */
-export async function fetchEligibleUsers(
-  assetId?: number,
-): Promise<EligibleUser[]> {
+export async function fetchEligibleUsers(assetId?: number): Promise<EligibleUser[]> {
   const url =
     assetId !== undefined ?
       `/work-orders/eligible-users?assetId=${assetId}`
@@ -254,13 +234,8 @@ export async function fetchComments(
 }
 
 /** Fetch all replies for a specific comment */
-export async function fetchReplies(
-  uuid: string,
-  commentId: number,
-): Promise<WorkOrderComment[]> {
-  const result: unknown = await apiClient.get(
-    `/work-orders/${uuid}/comments/${commentId}/replies`,
-  );
+export async function fetchReplies(uuid: string, commentId: number): Promise<WorkOrderComment[]> {
+  const result: unknown = await apiClient.get(`/work-orders/${uuid}/comments/${commentId}/replies`);
   return extractArray<WorkOrderComment>(result);
 }
 
@@ -269,16 +244,10 @@ export async function fetchReplies(
 // =============================================================================
 
 /** Upload a photo to a work order */
-export async function uploadPhoto(
-  uuid: string,
-  file: File,
-): Promise<WorkOrderPhoto> {
+export async function uploadPhoto(uuid: string, file: File): Promise<WorkOrderPhoto> {
   const formData = new FormData();
   formData.append('file', file);
-  return await apiClient.post<WorkOrderPhoto>(
-    `/work-orders/${uuid}/photos`,
-    formData,
-  );
+  return await apiClient.post<WorkOrderPhoto>(`/work-orders/${uuid}/photos`, formData);
 }
 
 /** Fetch photos for a work order */
@@ -288,10 +257,7 @@ export async function fetchPhotos(uuid: string): Promise<WorkOrderPhoto[]> {
 }
 
 /** Delete a photo from a work order */
-export async function deletePhoto(
-  uuid: string,
-  photoUuid: string,
-): Promise<void> {
+export async function deletePhoto(uuid: string, photoUuid: string): Promise<void> {
   await apiClient.delete(`/work-orders/${uuid}/photos/${photoUuid}`);
 }
 

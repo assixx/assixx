@@ -4,15 +4,7 @@
  * REST API endpoints for tenant-configurable shift time definitions.
  * Admin+Root write access — managed via /account-settings in the frontend.
  */
-import {
-  Body,
-  Controller,
-  Get,
-  Logger,
-  Param,
-  Post,
-  Put,
-} from '@nestjs/common';
+import { Body, Controller, Get, Logger, Param, Post, Put } from '@nestjs/common';
 
 import { CurrentUser } from '../common/decorators/current-user.decorator.js';
 import { RequireAddon } from '../common/decorators/require-addon.decorator.js';
@@ -40,9 +32,7 @@ export class ShiftTimesController {
   @Get()
   @Roles('root', 'admin', 'employee')
   @RequirePermission(FEAT, MOD, 'canRead')
-  async getShiftTimes(
-    @CurrentUser() user: JwtPayload,
-  ): Promise<ShiftTimeResponse[]> {
+  async getShiftTimes(@CurrentUser() user: JwtPayload): Promise<ShiftTimeResponse[]> {
     return await this.shiftTimesService.getByTenant(user.tenantId);
   }
 
@@ -72,19 +62,14 @@ export class ShiftTimesController {
     @Body() dto: UpdateAllShiftTimesDto,
   ): Promise<ShiftTimeResponse[]> {
     this.logger.log(`User ${user.id} bulk-updating shift times`);
-    return await this.shiftTimesService.updateAll(
-      user.tenantId,
-      dto.shiftTimes,
-    );
+    return await this.shiftTimesService.updateAll(user.tenantId, dto.shiftTimes);
   }
 
   /** Reset all shift times to system defaults */
   @Post('reset')
   @Roles('root', 'admin')
   @RequirePermission(FEAT, MOD, 'canWrite')
-  async resetToDefaults(
-    @CurrentUser() user: JwtPayload,
-  ): Promise<ShiftTimeResponse[]> {
+  async resetToDefaults(@CurrentUser() user: JwtPayload): Promise<ShiftTimeResponse[]> {
     this.logger.log(`User ${user.id} resetting shift times to defaults`);
     return await this.shiftTimesService.resetToDefaults(user.tenantId);
   }

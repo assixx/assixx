@@ -176,17 +176,15 @@ describe('VacationStaffingRulesService', () => {
         rows: [{ id: 'sr-001', asset_id: 100, min_staff_count: 2 }],
       });
 
-      await expect(
-        service.deleteStaffingRule(1, 10, 'sr-001'),
-      ).resolves.toBeUndefined();
+      await expect(service.deleteStaffingRule(1, 10, 'sr-001')).resolves.toBeUndefined();
     });
 
     it('should throw NotFoundException when rule not found', async () => {
       mockClient.query.mockResolvedValueOnce({ rows: [] });
 
-      await expect(
-        service.deleteStaffingRule(1, 10, 'nonexistent'),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.deleteStaffingRule(1, 10, 'nonexistent')).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 

@@ -139,8 +139,7 @@
 
 /* Active (current) step */
 .stepper__step--active .stepper__indicator {
-  box-shadow: 0 0 0 4px
-    color-mix(in oklch, var(--color-primary) 10%, transparent);
+  box-shadow: 0 0 0 4px color-mix(in oklch, var(--color-primary) 10%, transparent);
   border-color: var(--color-primary);
   background: color-mix(in oklch, var(--color-primary) 10%, transparent);
   color: var(--color-primary);
@@ -189,16 +188,12 @@
   cursor: pointer;
 }
 
-.stepper--clickable
-  .stepper__step:not(.stepper__step--active):hover
-  .stepper__indicator {
+.stepper--clickable .stepper__step:not(.stepper__step--active):hover .stepper__indicator {
   border-color: var(--color-primary);
   background: var(--glass-bg-active);
 }
 
-.stepper--clickable
-  .stepper__step:not(.stepper__step--active):hover
-  .stepper__label {
+.stepper--clickable .stepper__step:not(.stepper__step--active):hover .stepper__label {
   color: var(--color-primary);
 }
 

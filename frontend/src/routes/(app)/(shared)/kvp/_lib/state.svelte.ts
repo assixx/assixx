@@ -7,13 +7,11 @@ import { computeBadgeCounts, filterState } from './state-filters.svelte';
 import { uiState } from './state-ui.svelte';
 import { userState } from './state-user.svelte';
 
-import type { BadgeCounts } from './types';
-
 // Re-export sub-states for direct access
 export { dataState, filterState, uiState, userState };
 
 /** Badge counts derived from data and user state */
-const badgeCounts = $derived<BadgeCounts>(
+const badgeCounts = $derived(
   computeBadgeCounts(dataState.suggestions, userState.currentUser?.id ?? null),
 );
 

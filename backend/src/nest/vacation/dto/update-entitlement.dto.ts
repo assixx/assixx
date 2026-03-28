@@ -18,6 +18,4 @@ export const UpdateEntitlementSchema = z.object({
     .nullish(),
 });
 
-export class UpdateEntitlementDto extends createZodDto(
-  UpdateEntitlementSchema,
-) {}
+export class UpdateEntitlementDto extends createZodDto(UpdateEntitlementSchema) {}

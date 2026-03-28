@@ -3,10 +3,7 @@
  * Extracted from +layout.svelte for maintainability
  * @module (app)/_lib/navigation-config
  */
-import {
-  DEFAULT_HIERARCHY_LABELS,
-  type HierarchyLabels,
-} from '$lib/types/hierarchy-labels';
+import { DEFAULT_HIERARCHY_LABELS, type HierarchyLabels } from '$lib/types/hierarchy-labels';
 
 import type { OrganizationalScope } from '$lib/types/organizational-scope';
 
@@ -36,7 +33,8 @@ export interface NavItem {
     | 'calendar'
     | 'vacation'
     | 'tpm'
-    | 'workOrders';
+    | 'workOrders'
+    | 'approvals';
   /** Tenant addon code — items with this field are hidden when addon is not active */
   addonCode?: string;
 }
@@ -51,6 +49,7 @@ export const ICONS: Record<string, string> = {
   calendar: '<i class="fas fa-calendar-alt"></i>',
   lean: '<i class="fas fa-chart-line"></i>',
   'clipboard-check': '<i class="fas fa-clipboard-check"></i>',
+  'check-double': '<i class="fas fa-check-double"></i>',
   clock: '<i class="fas fa-clock"></i>',
   vacation: '<i class="fas fa-umbrella-beach"></i>',
   chat: '<i class="fas fa-comments"></i>',
@@ -64,6 +63,7 @@ export const ICONS: Record<string, string> = {
   logs: '<i class="fas fa-list-alt"></i>',
   desktop: '<i class="fas fa-desktop"></i>',
   warehouse: '<i class="fas fa-warehouse"></i>',
+  tasks: '<i class="fas fa-tasks"></i>',
 };
 
 /** Shared blackboard submenu (root + admin) */
@@ -211,17 +211,6 @@ const VACATION_ROOT_SUBMENU: NavItem[] = [
   },
 ];
 
-/** Admins submenu (root view) */
-const ADMINS_SUBMENU: NavItem[] = [
-  { id: 'admins-list', label: 'Administratoren', url: '/manage-admins' },
-  {
-    id: 'dummy-users',
-    icon: ICONS.desktop,
-    label: 'Dummy-Benutzer',
-    url: '/manage-dummies',
-  },
-];
-
 /** Organigram submenu (root only) */
 const ORGANIGRAM_SUBMENU: NavItem[] = [
   { id: 'organigram-chart', label: 'Übersicht', url: '/settings/organigram' },
@@ -232,24 +221,33 @@ const ORGANIGRAM_SUBMENU: NavItem[] = [
   },
 ];
 
-/** System settings submenu (root only) */
+/** System settings submenu (root only) — ordered: identity → structure → config → workflow → appearance */
 const SYSTEM_SUBMENU: NavItem[] = [
-  { id: 'company', label: 'Firmendaten', url: '/settings/company' },
-  { id: 'design', label: 'Design', url: '/settings/design' },
+  {
+    id: 'company-profile',
+    label: 'Firmenprofil',
+    url: '/settings/company-profile',
+  },
   {
     id: 'organigram',
     label: 'Organigramm',
     submenu: ORGANIGRAM_SUBMENU,
   },
   {
-    id: 'account-settings',
-    label: 'Kontoeinstellungen',
-    url: '/account-settings',
+    id: 'addon-settings',
+    label: 'Modul-Konfiguration',
+    url: '/settings/company',
   },
+  {
+    id: 'approval-settings',
+    label: 'Freigabe-Master',
+    url: '/settings/approvals',
+  },
+  { id: 'design', label: 'Design', url: '/settings/design' },
 ];
 
-/** Static root menu items that don't depend on hierarchy labels */
-const ROOT_STATIC_ITEMS: NavItem[] = [
+/** Static root menu items before "Verwalten" group */
+const ROOT_STATIC_TOP: NavItem[] = [
   {
     id: 'dashboard',
     icon: ICONS.home,
@@ -263,21 +261,9 @@ const ROOT_STATIC_ITEMS: NavItem[] = [
     addonCode: 'blackboard',
     submenu: BLACKBOARD_SUBMENU,
   },
-  {
-    id: 'root-users',
-    icon: ICONS['user-shield'],
-    label: 'Root Benutzer',
-    url: '/manage-root',
-  },
-  {
-    id: 'admins',
-    icon: ICONS.admin,
-    label: 'Administratoren',
-    submenu: ADMINS_SUBMENU,
-  },
 ];
 
-/** Static root menu items after dynamic labels */
+/** Static root menu items after "Verwalten" group */
 const ROOT_STATIC_BOTTOM: NavItem[] = [
   {
     id: 'calendar',
@@ -315,6 +301,13 @@ const ROOT_STATIC_BOTTOM: NavItem[] = [
     submenu: WORK_ORDERS_ADMIN_SUBMENU,
   },
   {
+    id: 'approvals',
+    icon: ICONS['check-double'],
+    label: 'Freigaben',
+    url: '/manage-approvals',
+    badgeType: 'approvals',
+  },
+  {
     id: 'chat',
     icon: ICONS.chat,
     label: 'Chat',
@@ -328,7 +321,10 @@ const ROOT_STATIC_BOTTOM: NavItem[] = [
     id: 'profile',
     icon: ICONS.user,
     label: 'Mein Profil',
-    url: '/root-profile',
+    submenu: [
+      { id: 'profile-page', label: 'Profil', url: '/root-profile' },
+      { id: 'account-settings', label: 'Kontoeinstellungen', url: '/account-settings' },
+    ],
   },
   {
     id: 'system',
@@ -340,48 +336,42 @@ const ROOT_STATIC_BOTTOM: NavItem[] = [
 
 function buildRootMenuItems(labels: HierarchyLabels): NavItem[] {
   return [
-    ...ROOT_STATIC_ITEMS,
+    ...ROOT_STATIC_TOP,
     {
-      id: 'areas',
-      icon: ICONS.sitemap,
-      label: labels.area,
-      url: '/manage-areas',
-    },
-    {
-      id: 'departments',
-      icon: ICONS.building,
-      label: labels.department,
-      url: '/manage-departments',
-    },
-    { id: 'teams', icon: ICONS.team, label: labels.team, url: '/manage-teams' },
-    {
-      id: 'employees',
-      icon: ICONS.users,
-      label: 'Mitarbeiter',
-      url: '/manage-employees',
-    },
-    {
-      id: 'halls',
-      icon: ICONS.warehouse,
-      label: labels.hall,
-      url: '/manage-halls',
+      id: 'verwalten',
+      icon: ICONS.tasks,
+      label: 'Verwalten',
+      submenu: [
+        { id: 'root-users', label: 'Root Benutzer', url: '/manage-root' },
+        { id: 'admins-list', label: 'Administratoren', url: '/manage-admins' },
+        { id: 'employees', label: 'Mitarbeiter', url: '/manage-employees' },
+        { id: 'dummy-users', label: 'Dummy-Benutzer', url: '/manage-dummies' },
+        { id: 'areas', label: labels.area, url: '/manage-areas' },
+        {
+          id: 'departments',
+          label: labels.department,
+          url: '/manage-departments',
+        },
+        { id: 'teams', label: labels.team, url: '/manage-teams' },
+        { id: 'halls', label: labels.hall, url: '/manage-halls' },
+      ],
     },
     ...ROOT_STATIC_BOTTOM,
   ];
 }
 
-/** Employees submenu (admin view — manage-dummies moved to root, D7) */
-const EMPLOYEES_SUBMENU: NavItem[] = [
-  { id: 'employees-list', label: 'Mitarbeiter', url: '/manage-employees' },
-];
-
 /** Admin settings submenu */
 const ADMIN_SETTINGS_SUBMENU: NavItem[] = [
   { id: 'design', label: 'Design', url: '/settings/design' },
+  {
+    id: 'approval-settings',
+    label: 'Freigabe-Master',
+    url: '/settings/approvals',
+  },
 ];
 
-/** Static admin menu items that don't depend on hierarchy labels */
-const ADMIN_STATIC_ITEMS: NavItem[] = [
+/** Static admin menu items before "Verwalten" group */
+const ADMIN_STATIC_TOP: NavItem[] = [
   {
     id: 'dashboard',
     icon: ICONS.home,
@@ -395,15 +385,9 @@ const ADMIN_STATIC_ITEMS: NavItem[] = [
     addonCode: 'blackboard',
     submenu: BLACKBOARD_SUBMENU,
   },
-  {
-    id: 'employees',
-    icon: ICONS.users,
-    label: 'Mitarbeiter',
-    submenu: EMPLOYEES_SUBMENU,
-  },
 ];
 
-/** Static admin menu items after dynamic labels */
+/** Static admin menu items after "Verwalten" group */
 const ADMIN_STATIC_BOTTOM: NavItem[] = [
   {
     id: 'documents',
@@ -441,6 +425,13 @@ const ADMIN_STATIC_BOTTOM: NavItem[] = [
     submenu: WORK_ORDERS_ADMIN_SUBMENU,
   },
   {
+    id: 'approvals',
+    icon: ICONS['check-double'],
+    label: 'Freigaben',
+    url: '/manage-approvals',
+    badgeType: 'approvals',
+  },
+  {
     id: 'shifts',
     icon: ICONS.clock,
     label: 'Schichtplanung',
@@ -471,18 +462,20 @@ const ADMIN_STATIC_BOTTOM: NavItem[] = [
 
 function buildAdminMenuItems(labels: HierarchyLabels): NavItem[] {
   return [
-    ...ADMIN_STATIC_ITEMS,
+    ...ADMIN_STATIC_TOP,
     {
-      id: 'assets',
-      icon: ICONS.generator,
-      label: labels.asset,
-      url: '/manage-assets',
-    },
-    {
-      id: 'halls',
-      icon: ICONS.warehouse,
-      label: labels.hall,
-      url: '/manage-halls',
+      id: 'verwalten',
+      icon: ICONS.tasks,
+      label: 'Verwalten',
+      submenu: [
+        {
+          id: 'employees-list',
+          label: 'Mitarbeiter',
+          url: '/manage-employees',
+        },
+        { id: 'assets', label: labels.asset, url: '/manage-assets' },
+        { id: 'halls', label: labels.hall, url: '/manage-halls' },
+      ],
     },
     ...ADMIN_STATIC_BOTTOM,
   ];
@@ -652,10 +645,7 @@ export function getMenuItemsForRole(
  * Removes items requiring has_full_access (e.g. KVP category management).
  * Root users always pass. Recursive for nested submenus.
  */
-export function filterMenuByAccess(
-  items: NavItem[],
-  hasFullAccess: boolean,
-): NavItem[] {
+export function filterMenuByAccess(items: NavItem[], hasFullAccess: boolean): NavItem[] {
   if (hasFullAccess) return items;
 
   return items.reduce<NavItem[]>((acc, item) => {
@@ -680,10 +670,7 @@ export function filterMenuByAccess(
  * Recursive for nested submenus — removes empty parent containers (e.g., LEAN-Management
  * disappears when both kvp and surveys are disabled).
  */
-export function filterMenuByAddons(
-  items: NavItem[],
-  activeAddons: ReadonlySet<string>,
-): NavItem[] {
+export function filterMenuByAddons(items: NavItem[], activeAddons: ReadonlySet<string>): NavItem[] {
   return items.reduce<NavItem[]>((acc, item) => {
     // Item has addonCode and addon is NOT active → skip entirely
     if (item.addonCode !== undefined && !activeAddons.has(item.addonCode)) {
@@ -705,38 +692,74 @@ export function filterMenuByAddons(
   }, []);
 }
 
-/** Manage items to inject for admins (not in default admin menu, only root has them) */
+/** Manage items to inject for admins into the "Verwalten" submenu */
 function buildAdminScopeItems(labels: HierarchyLabels): NavItem[] {
   return [
-    {
-      id: 'areas',
-      icon: ICONS.sitemap,
-      label: labels.area,
-      url: '/manage-areas',
-    },
-    {
-      id: 'departments',
-      icon: ICONS.building,
-      label: labels.department,
-      url: '/manage-departments',
-    },
-    { id: 'teams', icon: ICONS.team, label: labels.team, url: '/manage-teams' },
+    { id: 'areas', label: labels.area, url: '/manage-areas' },
+    { id: 'departments', label: labels.department, url: '/manage-departments' },
+    { id: 'teams', label: labels.team, url: '/manage-teams' },
   ];
 }
 
-/** Find insertion point after employees submenu in admin menu */
-function findAdminInsertPoint(items: NavItem[]): number {
-  const idx = items.findIndex((i: NavItem) => i.id === 'employees');
-  return idx >= 0 ? idx + 1 : 2;
+/** Inject scope items into admin "Verwalten" submenu (after employees-list) */
+function injectAdminScopeItems(items: NavItem[], labels: HierarchyLabels): NavItem[] {
+  const verwaltenIdx = items.findIndex((i: NavItem) => i.id === 'verwalten');
+  if (verwaltenIdx < 0) return items;
+  const verwalten = items[verwaltenIdx];
+  const sub = verwalten.submenu ?? [];
+  const empIdx = sub.findIndex((i: NavItem) => i.id === 'employees-list');
+  const insertAt = empIdx >= 0 ? empIdx + 1 : sub.length;
+  const scopeItems = buildAdminScopeItems(labels);
+  const updatedSub = [...sub.slice(0, insertAt), ...scopeItems, ...sub.slice(insertAt)];
+  const result = [...items];
+  result[verwaltenIdx] = { ...verwalten, submenu: updatedSub };
+  return result;
+}
+
+/** Approvals menu item for leads (Core addon — always visible for authorized users) */
+const APPROVALS_NAV_ITEM: NavItem = {
+  id: 'approvals',
+  icon: ICONS['check-double'],
+  label: 'Freigaben',
+  url: '/manage-approvals',
+  badgeType: 'approvals',
+};
+
+/** Insert an item before 'profile' in a menu array, or at the end */
+function injectBeforeProfile(items: NavItem[], item: NavItem): NavItem[] {
+  const result = [...items];
+  const profileIdx = result.findIndex((i: NavItem) => i.id === 'profile');
+  if (profileIdx >= 0) {
+    result.splice(profileIdx, 0, item);
+  } else {
+    result.push(item);
+  }
+  return result;
+}
+
+/** Inject team management items for employee-leads after dashboard */
+function injectLeadItems(items: NavItem[], labels: HierarchyLabels): NavItem[] {
+  const dashboardIdx = items.findIndex((i: NavItem) => i.id === 'dashboard');
+  const insertAt = dashboardIdx >= 0 ? dashboardIdx + 1 : 0;
+  const leadItems: NavItem[] = [
+    { id: 'teams', icon: ICONS.team, label: labels.team, url: '/manage-teams' },
+    {
+      id: 'employees',
+      icon: ICONS.users,
+      label: 'Mitarbeiter',
+      url: '/manage-employees',
+    },
+  ];
+  return [...items.slice(0, insertAt), ...leadItems, ...items.slice(insertAt)];
 }
 
 /**
  * Filter/inject menu items based on organizational scope.
- * - Root: pass through (already has all manage items)
- * - Admin (full/limited): inject manage-areas/departments/teams (not in default admin menu)
- * - Admin (none): no injection (no manage_hierarchy permission)
- * - Employee-Lead: inject manage-teams + manage-employees
- * - Employee without lead / Dummy: pass through
+ * - Root: pass through (already has all manage items + approvals)
+ * - Admin (full/limited): inject manage-areas/departments/teams
+ * - Employee-Lead: inject manage-teams + manage-employees + approvals
+ * - Employee (area/department lead only): inject approvals
+ * - Others: pass through
  */
 export function filterMenuByScope(
   items: NavItem[],
@@ -746,40 +769,17 @@ export function filterMenuByScope(
 ): NavItem[] {
   if (role === 'root') return items;
 
-  // Admin: inject areas/departments/teams (missing from default admin menu)
   if (role === 'admin' && orgScope.type !== 'none') {
-    const insertAt = findAdminInsertPoint(items);
-    const manageItems = buildAdminScopeItems(labels);
-    return [
-      ...items.slice(0, insertAt),
-      ...manageItems,
-      ...items.slice(insertAt),
-    ];
+    return injectAdminScopeItems(items, labels);
   }
 
-  // Employee-Lead: inject manage-teams + manage-employees
   if (role === 'employee' && orgScope.isTeamLead) {
-    const dashboardIdx = items.findIndex((i: NavItem) => i.id === 'dashboard');
-    const insertAt = dashboardIdx >= 0 ? dashboardIdx + 1 : 0;
-    const leadItems: NavItem[] = [
-      {
-        id: 'teams',
-        icon: ICONS.team,
-        label: labels.team,
-        url: '/manage-teams',
-      },
-      {
-        id: 'employees',
-        icon: ICONS.users,
-        label: 'Mitarbeiter',
-        url: '/manage-employees',
-      },
-    ];
-    return [
-      ...items.slice(0, insertAt),
-      ...leadItems,
-      ...items.slice(insertAt),
-    ];
+    const withLeadItems = injectLeadItems(items, labels);
+    return injectBeforeProfile(withLeadItems, APPROVALS_NAV_ITEM);
+  }
+
+  if (role === 'employee' && (orgScope.isAreaLead || orgScope.isDepartmentLead)) {
+    return injectBeforeProfile(items, APPROVALS_NAV_ITEM);
   }
 
   return items;

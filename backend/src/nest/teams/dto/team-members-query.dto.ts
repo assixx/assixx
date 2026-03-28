@@ -17,14 +17,8 @@ const isoDateRegex = /^\d{4}-\d{2}-\d{2}$/;
  * Team members query parameters
  */
 export const TeamMembersQuerySchema = z.object({
-  startDate: z
-    .string()
-    .regex(isoDateRegex, 'startDate must be in YYYY-MM-DD format')
-    .optional(),
-  endDate: z
-    .string()
-    .regex(isoDateRegex, 'endDate must be in YYYY-MM-DD format')
-    .optional(),
+  startDate: z.string().regex(isoDateRegex, 'startDate must be in YYYY-MM-DD format').optional(),
+  endDate: z.string().regex(isoDateRegex, 'endDate must be in YYYY-MM-DD format').optional(),
 });
 
 /**

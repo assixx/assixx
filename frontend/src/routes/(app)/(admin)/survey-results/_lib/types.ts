@@ -62,13 +62,7 @@ export interface SurveyQuestion {
 /**
  * Survey status
  */
-export type SurveyStatus =
-  | 'draft'
-  | 'active'
-  | 'paused'
-  | 'completed'
-  | 'archived'
-  | 'closed';
+export type SurveyStatus = 'draft' | 'active' | 'paused' | 'completed' | 'archived' | 'closed';
 
 /**
  * Survey

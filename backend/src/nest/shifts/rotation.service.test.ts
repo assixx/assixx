@@ -50,9 +50,7 @@ function createMockHistoryService() {
   return {
     getRotationHistory: vi.fn().mockResolvedValue([]),
     deleteRotationHistory: vi.fn().mockResolvedValue({ deletedCount: 0 }),
-    deleteRotationHistoryByDateRange: vi
-      .fn()
-      .mockResolvedValue({ deletedCount: 0 }),
+    deleteRotationHistoryByDateRange: vi.fn().mockResolvedValue({ deletedCount: 0 }),
     deleteRotationHistoryEntry: vi.fn().mockResolvedValue(undefined),
   };
 }
@@ -88,9 +86,9 @@ describe('RotationService', () => {
 
   describe('admin role guard', () => {
     it('should throw ForbiddenException for employee on create', async () => {
-      await expect(
-        service.createRotationPattern({} as never, 10, 1, 'employee'),
-      ).rejects.toThrow(ForbiddenException);
+      await expect(service.createRotationPattern({} as never, 10, 1, 'employee')).rejects.toThrow(
+        ForbiddenException,
+      );
     });
 
     it('should allow admin on create', async () => {
@@ -114,10 +112,7 @@ describe('RotationService', () => {
     it('should delegate to patternService', async () => {
       await service.getRotationPatterns(10);
 
-      expect(mockPatternService.getRotationPatterns).toHaveBeenCalledWith(
-        10,
-        true,
-      );
+      expect(mockPatternService.getRotationPatterns).toHaveBeenCalledWith(10, true);
     });
   });
 
@@ -125,11 +120,7 @@ describe('RotationService', () => {
     it('should check admin role then delegate', async () => {
       await service.deleteRotationPattern(1, 10, 'admin', 5);
 
-      expect(mockPatternService.deleteRotationPattern).toHaveBeenCalledWith(
-        1,
-        10,
-        5,
-      );
+      expect(mockPatternService.deleteRotationPattern).toHaveBeenCalledWith(1, 10, 5);
     });
   });
 
@@ -141,10 +132,7 @@ describe('RotationService', () => {
     it('should delegate to patternService', async () => {
       await service.getRotationPatternByUuid('uuid-1', 10);
 
-      expect(mockPatternService.getRotationPatternByUuid).toHaveBeenCalledWith(
-        'uuid-1',
-        10,
-      );
+      expect(mockPatternService.getRotationPatternByUuid).toHaveBeenCalledWith('uuid-1', 10);
     });
   });
 
@@ -166,12 +154,7 @@ describe('RotationService', () => {
 
   describe('generateRotationShifts', () => {
     it('should resolve pattern then generate', async () => {
-      await service.generateRotationShifts(
-        { patternId: 1 } as never,
-        10,
-        1,
-        'admin',
-      );
+      await service.generateRotationShifts({ patternId: 1 } as never, 10, 1, 'admin');
 
       expect(mockPatternService.getRotationPattern).toHaveBeenCalledWith(1, 10);
       expect(mockGeneratorService.generateRotationShifts).toHaveBeenCalled();
@@ -186,10 +169,7 @@ describe('RotationService', () => {
     it('should delegate to historyService', async () => {
       await service.getRotationHistory(10, {});
 
-      expect(mockHistoryService.getRotationHistory).toHaveBeenCalledWith(
-        10,
-        {},
-      );
+      expect(mockHistoryService.getRotationHistory).toHaveBeenCalledWith(10, {});
     });
   });
 
@@ -197,12 +177,7 @@ describe('RotationService', () => {
     it('should check admin role then delegate', async () => {
       await service.deleteRotationHistory(10, 5, 'admin', 1);
 
-      expect(mockHistoryService.deleteRotationHistory).toHaveBeenCalledWith(
-        10,
-        5,
-        1,
-        undefined,
-      );
+      expect(mockHistoryService.deleteRotationHistory).toHaveBeenCalledWith(10, 5, 1, undefined);
     });
   });
 });

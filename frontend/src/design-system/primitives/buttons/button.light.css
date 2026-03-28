@@ -20,7 +20,7 @@
     --shadow-btn-light,
     0 1px 3px color-mix(in oklch, var(--color-black) 8%, transparent)
   );
-  border: 1px solid oklch(79.84% 0 0);
+  border: var(--glass-border);
 
   background: linear-gradient(
     145deg,

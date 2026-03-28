@@ -2,11 +2,7 @@ import { goto } from '$app/navigation';
 import { resolve } from '$app/paths';
 
 import { notificationStore } from '$lib/stores/notification.store.svelte';
-import {
-  showConfirmDanger,
-  showErrorAlert,
-  showSuccessAlert,
-} from '$lib/utils';
+import { showConfirmDanger, showErrorAlert, showSuccessAlert } from '$lib/utils';
 import { createLogger } from '$lib/utils/logger';
 
 import {
@@ -82,8 +78,7 @@ export function getSurveyId(survey: Survey): string {
 }
 
 export function getOptionsFromQuestion(question: SurveyQuestion): string[] {
-  if (question.options === undefined || question.options.length === 0)
-    return [];
+  if (question.options === undefined || question.options.length === 0) return [];
   return question.options.map((opt) => {
     if (typeof opt === 'string') return opt;
     return opt.optionText;
@@ -122,10 +117,7 @@ function resolveAssignmentText(
   fallback: string,
 ): string {
   const nameMap: Partial<
-    Record<
-      string,
-      { name?: string; id?: number; list: { id: number; name: string }[] }
-    >
+    Record<string, { name?: string; id?: number; list: { id: number; name: string }[] }>
   > = {
     team: { name: assignment.teamName, id: assignment.teamId, list: teams },
     department: {
@@ -138,12 +130,7 @@ function resolveAssignmentText(
   const entry = nameMap[type];
   if (entry === undefined) return fallback;
   return (
-    entry.name ??
-    resolveEntityText(
-      entry.id,
-      (id) => entry.list.find((e) => e.id === id),
-      fallback,
-    )
+    entry.name ?? resolveEntityText(entry.id, (id) => entry.list.find((e) => e.id === id), fallback)
   );
 }
 
@@ -163,14 +150,7 @@ function buildBadgeFromAssignment(
   const badge = badgeMap[type];
   if (badge === undefined) return null;
 
-  const text = resolveAssignmentText(
-    assignment,
-    type,
-    departments,
-    teams,
-    areas,
-    badge.label,
-  );
+  const text = resolveAssignmentText(assignment, type, departments, teams, areas, badge.label);
   return { badgeClass: badge.badgeClass, icon: badge.icon, text };
 }
 
@@ -185,18 +165,11 @@ export function getAssignmentBadges(
   areas: { id: number; name: string }[],
   badgeMap: AssignmentBadgeMap = ASSIGNMENT_BADGE_MAP,
 ): AssignmentBadgeInfo[] {
-  if (survey.assignments === undefined || survey.assignments.length === 0)
-    return [];
+  if (survey.assignments === undefined || survey.assignments.length === 0) return [];
 
   const badges: AssignmentBadgeInfo[] = [];
   for (const assignment of survey.assignments) {
-    const badge = buildBadgeFromAssignment(
-      assignment,
-      departments,
-      teams,
-      areas,
-      badgeMap,
-    );
+    const badge = buildBadgeFromAssignment(assignment, departments, teams, areas, badgeMap);
     if (badge !== null) {
       badges.push(badge);
     }
@@ -209,9 +182,7 @@ export function getAssignmentBadges(
 // =============================================================================
 
 /** Check if a date value from the API is usable (not null, undefined, or empty) */
-function isValidDateValue(
-  value: string | Date | null | undefined,
-): value is string | Date {
+function isValidDateValue(value: string | Date | null | undefined): value is string | Date {
   if (value === undefined || value === null) return false;
   if (typeof value === 'string' && value === '') return false;
   const date = new Date(value);
@@ -220,10 +191,7 @@ function isValidDateValue(
 
 function populateDates(
   survey: Survey,
-): Pick<
-  FormState,
-  'formStartDate' | 'formStartTime' | 'formEndDate' | 'formEndTime'
-> {
+): Pick<FormState, 'formStartDate' | 'formStartTime' | 'formEndDate' | 'formEndTime'> {
   const result = {
     formStartDate: '',
     formStartTime: '00:00',
@@ -249,10 +217,7 @@ function populateDates(
  */
 function extractAssignmentIds(
   assignments: SurveyAssignment[],
-): Pick<
-  FormState,
-  'formSelectedAreas' | 'formSelectedDepartments' | 'formSelectedTeams'
-> {
+): Pick<FormState, 'formSelectedAreas' | 'formSelectedDepartments' | 'formSelectedTeams'> {
   const formSelectedAreas: number[] = [];
   const formSelectedDepartments: number[] = [];
   const formSelectedTeams: number[] = [];
@@ -275,10 +240,7 @@ function populateAssignments(
   survey: Survey,
 ): Pick<
   FormState,
-  | 'formCompanyWide'
-  | 'formSelectedAreas'
-  | 'formSelectedDepartments'
-  | 'formSelectedTeams'
+  'formCompanyWide' | 'formSelectedAreas' | 'formSelectedDepartments' | 'formSelectedTeams'
 > {
   const defaults = {
     formCompanyWide: false,
@@ -305,8 +267,7 @@ function populateAssignments(
 }
 
 function populateQuestions(survey: Survey): FormState['formQuestions'] {
-  if (survey.questions === undefined || survey.questions.length === 0)
-    return [];
+  if (survey.questions === undefined || survey.questions.length === 0) return [];
   return survey.questions.map((q) => ({
     id: `question_${surveyAdminState.incrementQuestionCounter()}`,
     text: getTextFromBuffer(q.questionText),
@@ -371,9 +332,7 @@ export function buildAssignments(
 // FORM VALIDATION HELPERS
 // =============================================================================
 
-function validateQuestions(
-  formQuestions: FormState['formQuestions'],
-): string | null {
+function validateQuestions(formQuestions: FormState['formQuestions']): string | null {
   for (const [index, question] of formQuestions.entries()) {
     if (question.text.trim() === '') {
       return `Frage ${index + 1} hat keinen Text`;
@@ -398,10 +357,8 @@ function validateDateRange(
   const startDateTime = new Date(`${formStartDate}T${formStartTime}:00Z`);
   const endDateTime = new Date(`${formEndDate}T${formEndTime}:00Z`);
 
-  if (startDateTime >= endDateTime)
-    return 'Das Enddatum muss nach dem Startdatum liegen';
-  if (endDateTime <= new Date())
-    return 'Das Enddatum muss in der Zukunft liegen';
+  if (startDateTime >= endDateTime) return 'Das Enddatum muss nach dem Startdatum liegen';
+  if (endDateTime <= new Date()) return 'Das Enddatum muss in der Zukunft liegen';
   return null;
 }
 
@@ -434,12 +391,7 @@ export function validateSurveyForm(
   }
 
   if (status === 'active') {
-    const dateError = validateDateRange(
-      formStartDate,
-      formStartTime,
-      formEndDate,
-      formEndTime,
-    );
+    const dateError = validateDateRange(formStartDate, formStartTime, formEndDate, formEndTime);
     if (dateError !== null) {
       showErrorAlert(dateError);
       return false;
@@ -476,9 +428,7 @@ function buildSurveyData(
       isRequired: q.isOptional ? 0 : 1,
       orderIndex: index + 1,
       options:
-        questionTypeNeedsOptions(q.type) ?
-          q.options.filter((o) => o.trim() !== '')
-        : undefined,
+        questionTypeNeedsOptions(q.type) ? q.options.filter((o) => o.trim() !== '') : undefined,
     })),
     assignments,
   };
@@ -603,9 +553,7 @@ export async function handleCompleteSurveyWithInvalidate(
 // DELETE SURVEY
 // =============================================================================
 
-export async function handleDeleteSurvey(
-  surveyId: number | string,
-): Promise<void> {
+export async function handleDeleteSurvey(surveyId: number | string): Promise<void> {
   const confirmed = await showConfirmDanger(
     'Diese Aktion kann nicht rückgängig gemacht werden. Alle Antworten werden ebenfalls gelöscht.',
     'Umfrage löschen?',
@@ -656,9 +604,7 @@ export function handleViewResults(surveyId: string): void {
 // EDIT SURVEY
 // =============================================================================
 
-export async function loadSurveyForEdit(
-  surveyId: number | string,
-): Promise<FormState | null> {
+export async function loadSurveyForEdit(surveyId: number | string): Promise<FormState | null> {
   surveyAdminState.setLoading(true);
   try {
     const survey = await loadSurveyById(surveyId);

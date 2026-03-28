@@ -1,6 +1,8 @@
 /**
  * Positionen-Verwaltung — Server-Side Data Loading
  * Root-only: RBAC enforced by (root) layout group
+ *
+ * Loads positions from position_catalog API (ADR-038).
  */
 import { redirect } from '@sveltejs/kit';
 
@@ -12,10 +14,12 @@ const log = createLogger('Organigram:Positions');
 
 const API_BASE = process.env.API_URL ?? 'http://localhost:3000/api/v2';
 
-interface PositionOptions {
-  employee: string[];
-  admin: string[];
-  root: string[];
+interface PositionCatalogEntry {
+  id: string;
+  name: string;
+  roleCategory: 'employee' | 'admin' | 'root';
+  sortOrder: number;
+  isSystem: boolean;
 }
 
 interface ApiResponse<T> {
@@ -23,20 +27,11 @@ interface ApiResponse<T> {
   data?: T;
 }
 
-const DEFAULT_OPTIONS: PositionOptions = {
-  employee: [],
-  admin: [],
-  root: [],
-};
-
-function extractData(json: ApiResponse<PositionOptions>): PositionOptions {
-  if ('success' in json && json.success === true) {
-    return json.data ?? DEFAULT_OPTIONS;
-  }
-  if ('data' in json && json.data !== undefined) {
+function extractData(json: ApiResponse<PositionCatalogEntry[]>): PositionCatalogEntry[] {
+  if (json.success === true && json.data !== undefined) {
     return json.data;
   }
-  return json as unknown as PositionOptions;
+  return [];
 }
 
 export const load: PageServerLoad = async ({ cookies, fetch }) => {
@@ -45,23 +40,36 @@ export const load: PageServerLoad = async ({ cookies, fetch }) => {
     redirect(302, '/login');
   }
 
-  try {
-    const response = await fetch(`${API_BASE}/organigram/position-options`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-    });
+  const headers = {
+    Authorization: `Bearer ${token}`,
+    'Content-Type': 'application/json',
+  };
 
-    if (!response.ok) {
-      log.error({ status: response.status }, 'API error loading positions');
-      return { positions: DEFAULT_OPTIONS, loadError: true };
+  try {
+    const [positionsRes, deputyScopeRes] = await Promise.all([
+      fetch(`${API_BASE}/organigram/positions`, { headers }),
+      fetch(`${API_BASE}/organigram/deputy-scope`, { headers }).catch(() => null),
+    ]);
+
+    if (!positionsRes.ok) {
+      log.error({ status: positionsRes.status }, 'API error loading positions');
+      return {
+        positions: [] as PositionCatalogEntry[],
+        loadError: true,
+        deputyHasLeadScope: false,
+      };
     }
 
-    const json = (await response.json()) as ApiResponse<PositionOptions>;
-    return { positions: extractData(json), loadError: false };
+    const json = (await positionsRes.json()) as ApiResponse<PositionCatalogEntry[]>;
+    let deputyScope = false;
+    if (deputyScopeRes?.ok === true) {
+      const body = (await deputyScopeRes.json()) as { data?: { deputyHasLeadScope: boolean } };
+      deputyScope = body.data?.deputyHasLeadScope ?? false;
+    }
+
+    return { positions: extractData(json), loadError: false, deputyHasLeadScope: deputyScope };
   } catch (err: unknown) {
     log.error({ err }, 'Fetch error loading positions');
-    return { positions: DEFAULT_OPTIONS, loadError: true };
+    return { positions: [] as PositionCatalogEntry[], loadError: true, deputyHasLeadScope: false };
   }
 };

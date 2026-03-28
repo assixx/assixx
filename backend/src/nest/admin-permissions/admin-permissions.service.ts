@@ -7,12 +7,7 @@
  * IMPORTANT: Uses PostgreSQL $1, $2, $3 placeholders (NOT MySQL's ?)
  */
 import { IS_ACTIVE } from '@assixx/shared/constants';
-import {
-  BadRequestException,
-  Injectable,
-  Logger,
-  NotFoundException,
-} from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import type { QueryResultRow } from 'pg';
 
 import { ActivityLoggerService } from '../common/services/activity-logger.service.js';
@@ -48,6 +43,8 @@ export interface AdminDepartment {
   id: number;
   name: string;
   description?: string | undefined;
+  areaId?: number | undefined;
+  areaName?: string | undefined;
   canRead: boolean;
   canWrite: boolean;
   canDelete: boolean;
@@ -74,6 +71,10 @@ export interface AdminPermissionsResponse {
   totalDepartments: number;
   assignedAreas: number;
   assignedDepartments: number;
+  /** Areas where user is area_lead (excludes those already in areas) */
+  leadAreas: AdminArea[];
+  /** Departments where user is department_lead (excludes those already in departments) */
+  leadDepartments: AdminDepartment[];
 }
 
 /** Result of a permission check */
@@ -98,6 +99,8 @@ interface DbDepartmentPermissionRow extends QueryResultRow {
   id: number;
   name: string;
   description: string | null;
+  area_id: number | null;
+  area_name: string | null;
   can_read: boolean;
   can_write: boolean;
   can_delete: boolean;
@@ -132,6 +135,21 @@ interface DbAffectedRows extends QueryResultRow {
   affected_rows?: number;
 }
 
+interface DbLeadAreaRow extends QueryResultRow {
+  id: number;
+  name: string;
+  description: string | null;
+  department_count: number | string;
+}
+
+interface DbLeadDepartmentRow extends QueryResultRow {
+  id: number;
+  name: string;
+  description: string | null;
+  area_id: number | null;
+  area_name: string | null;
+}
+
 // ============================================================================
 // SERVICE IMPLEMENTATION
 // ============================================================================
@@ -152,20 +170,20 @@ export class AdminPermissionsService {
   /**
    * Get permissions for a specific admin/user
    */
-  async getAdminPermissions(
-    userId: number,
-    tenantId: number,
-  ): Promise<AdminPermissionsResponse> {
-    this.logger.debug(
-      `Getting permissions for user ${userId}, tenant ${tenantId}`,
-    );
+  async getAdminPermissions(userId: number, tenantId: number): Promise<AdminPermissionsResponse> {
+    this.logger.debug(`Getting permissions for user ${userId}, tenant ${tenantId}`);
 
     const { hasFullAccess } = await this.getUserRoleInfo(userId, tenantId);
-    const areas = await this.getAreaPermissions(userId, tenantId);
-    const departments = await this.getDepartmentPermissions(userId, tenantId);
+    const [areas, departments, leadAreas, leadDepartments, totalAreas, totalDepartments] =
+      await Promise.all([
+        this.getAreaPermissions(userId, tenantId),
+        this.getDepartmentPermissions(userId, tenantId),
+        this.getLeadAreas(userId, tenantId),
+        this.getLeadDepartments(userId, tenantId),
+        this.getTotalAreas(tenantId),
+        this.getTotalDepartments(tenantId),
+      ]);
     const groups = this.getGroupPermissions(); // DEPRECATED: returns empty array
-    const totalAreas = await this.getTotalAreas(tenantId);
-    const totalDepartments = await this.getTotalDepartments(tenantId);
 
     return {
       areas,
@@ -176,6 +194,8 @@ export class AdminPermissionsService {
       totalDepartments,
       assignedAreas: areas.length,
       assignedDepartments: departments.length,
+      leadAreas,
+      leadDepartments,
     };
   }
 
@@ -250,9 +270,7 @@ export class AdminPermissionsService {
     modifiedBy: number,
     tenantId: number,
   ): Promise<void> {
-    this.logger.log(
-      `Removing department permission for admin ${adminId}, dept ${departmentId}`,
-    );
+    this.logger.log(`Removing department permission for admin ${adminId}, dept ${departmentId}`);
 
     const result = await this.db.query<DbAffectedRows>(
       `DELETE FROM admin_department_permissions
@@ -309,8 +327,7 @@ export class AdminPermissionsService {
     modifiedBy: number,
     tenantId: number,
   ): Promise<{ success: boolean; error?: string }> {
-    const hasValidDepts =
-      departmentIds !== undefined && departmentIds.length > 0;
+    const hasValidDepts = departmentIds !== undefined && departmentIds.length > 0;
     const shouldAssign = operation === 'assign' && hasValidDepts;
     const shouldRemove = operation === 'remove';
 
@@ -319,13 +336,7 @@ export class AdminPermissionsService {
     }
 
     const deptIds = shouldAssign ? departmentIds : [];
-    await this.setDepartmentPermissions(
-      adminId,
-      deptIds,
-      permissions,
-      modifiedBy,
-      tenantId,
-    );
+    await this.setDepartmentPermissions(adminId, deptIds, permissions, modifiedBy, tenantId);
     return { success: true };
   }
 
@@ -380,9 +391,7 @@ export class AdminPermissionsService {
     tenantId: number,
     permissionLevel: PermissionLevel = 'read',
   ): Promise<PermissionCheckResult> {
-    this.logger.log(
-      `Checking access for admin ${adminId} to department ${departmentId}`,
-    );
+    this.logger.log(`Checking access for admin ${adminId} to department ${departmentId}`);
 
     // Check direct department permissions
     const directPermissions = await this.db.query<DbPermissionResult>(
@@ -493,18 +502,16 @@ export class AdminPermissionsService {
   ): Promise<void> {
     if (allowedAreaIds.length === 0) {
       // No area permissions = remove ALL employee memberships
-      this.logger.log(
-        `Removing all employee memberships for user ${userId} (no area permissions)`,
-      );
+      this.logger.log(`Removing all employee memberships for user ${userId} (no area permissions)`);
 
-      await this.db.query(
-        'DELETE FROM user_teams WHERE user_id = $1 AND tenant_id = $2',
-        [userId, tenantId],
-      );
-      await this.db.query(
-        'DELETE FROM user_departments WHERE user_id = $1 AND tenant_id = $2',
-        [userId, tenantId],
-      );
+      await this.db.query('DELETE FROM user_teams WHERE user_id = $1 AND tenant_id = $2', [
+        userId,
+        tenantId,
+      ]);
+      await this.db.query('DELETE FROM user_departments WHERE user_id = $1 AND tenant_id = $2', [
+        userId,
+        tenantId,
+      ]);
       return;
     }
 
@@ -552,9 +559,7 @@ export class AdminPermissionsService {
     modifiedBy: number,
     tenantId: number,
   ): Promise<void> {
-    this.logger.log(
-      `Removing area permission for user ${userId}, area ${areaId}`,
-    );
+    this.logger.log(`Removing area permission for user ${userId}, area ${areaId}`);
 
     const result = await this.db.query<DbAffectedRows>(
       `DELETE FROM admin_area_permissions
@@ -648,13 +653,12 @@ export class AdminPermissionsService {
     );
 
     if (rows.length === 0) {
-      this.logger.error(
-        `User not found or inactive - userId: ${userId}, tenantId: ${tenantId}`,
-      );
+      this.logger.error(`User not found or inactive - userId: ${userId}, tenantId: ${tenantId}`);
       throw new NotFoundException('User not found or inactive');
     }
 
     const userRow = rows[0];
+    /* v8 ignore next -- @preserve noUncheckedIndexedAccess guard: rows.length > 0 guarantees rows[0] exists */
     if (userRow === undefined) {
       throw new NotFoundException('User not found or inactive');
     }
@@ -666,10 +670,7 @@ export class AdminPermissionsService {
     };
   }
 
-  private async getAreaPermissions(
-    userId: number,
-    tenantId: number,
-  ): Promise<AdminArea[]> {
+  private async getAreaPermissions(userId: number, tenantId: number): Promise<AdminArea[]> {
     const rows = await this.db.query<DbAreaPermissionRow>(
       `SELECT
         a.id,
@@ -713,11 +714,14 @@ export class AdminPermissionsService {
         d.id,
         d.name,
         d.description,
+        d.area_id,
+        a.name AS area_name,
         adp.can_read,
         adp.can_write,
         adp.can_delete
       FROM admin_department_permissions adp
       JOIN departments d ON adp.department_id = d.id
+      LEFT JOIN areas a ON d.area_id = a.id
       WHERE adp.admin_user_id = $1
         AND adp.tenant_id = $2
         AND d.is_active = ${IS_ACTIVE.ACTIVE}
@@ -725,19 +729,105 @@ export class AdminPermissionsService {
       [adminId, tenantId],
     );
 
-    return rows.map((row: DbDepartmentPermissionRow) => {
-      const result: AdminDepartment = {
+    return rows.map((row: DbDepartmentPermissionRow) =>
+      this.mapDepartmentRow(row, row.can_read, row.can_write, row.can_delete),
+    );
+  }
+
+  /**
+   * Get areas where user is area_lead (ADR-035: implicit Area permission)
+   * Excludes areas already present in admin_area_permissions to avoid duplicates
+   */
+  private async getLeadAreas(userId: number, tenantId: number): Promise<AdminArea[]> {
+    const rows = await this.db.query<DbLeadAreaRow>(
+      `SELECT
+        a.id,
+        a.name,
+        a.description,
+        COUNT(DISTINCT d.id) as department_count
+      FROM areas a
+      LEFT JOIN departments d ON d.area_id = a.id AND d.tenant_id = a.tenant_id
+      WHERE (a.area_lead_id = $1 OR a.area_deputy_lead_id = $1)
+        AND a.tenant_id = $2
+        AND a.is_active = ${IS_ACTIVE.ACTIVE}
+        AND NOT EXISTS (
+          SELECT 1 FROM admin_area_permissions aap
+          WHERE aap.area_id = a.id AND aap.admin_user_id = $1 AND aap.tenant_id = $2
+        )
+      GROUP BY a.id, a.name, a.description
+      ORDER BY a.name`,
+      [userId, tenantId],
+    );
+
+    return rows.map((row: DbLeadAreaRow) => {
+      const result: AdminArea = {
         id: row.id,
         name: row.name,
-        canRead: row.can_read,
-        canWrite: row.can_write,
-        canDelete: row.can_delete,
+        departmentCount: Number(row.department_count),
+        canRead: true,
+        canWrite: false,
+        canDelete: false,
       };
       if (row.description !== null) {
         result.description = row.description;
       }
       return result;
     });
+  }
+
+  /**
+   * Get departments where user is department_lead (ADR-035: implicit Department permission)
+   * Excludes departments already present in admin_department_permissions to avoid duplicates
+   */
+  private async getLeadDepartments(userId: number, tenantId: number): Promise<AdminDepartment[]> {
+    const rows = await this.db.query<DbLeadDepartmentRow>(
+      `SELECT d.id, d.name, d.description, d.area_id, a.name AS area_name
+      FROM departments d
+      LEFT JOIN areas a ON d.area_id = a.id
+      WHERE (d.department_lead_id = $1 OR d.department_deputy_lead_id = $1)
+        AND d.tenant_id = $2
+        AND d.is_active = ${IS_ACTIVE.ACTIVE}
+        AND NOT EXISTS (
+          SELECT 1 FROM admin_department_permissions adp
+          WHERE adp.department_id = d.id AND adp.admin_user_id = $1 AND adp.tenant_id = $2
+        )
+      ORDER BY d.name`,
+      [userId, tenantId],
+    );
+
+    return rows.map((row: DbLeadDepartmentRow) => this.mapDepartmentRow(row, true, false, false));
+  }
+
+  /** Map a department DB row to AdminDepartment (shared by explicit + lead queries) */
+  private mapDepartmentRow(
+    row: {
+      id: number;
+      name: string;
+      description: string | null;
+      area_id: number | null;
+      area_name: string | null;
+    },
+    canRead: boolean,
+    canWrite: boolean,
+    canDelete: boolean,
+  ): AdminDepartment {
+    const result: AdminDepartment = {
+      id: row.id,
+      name: row.name,
+      canRead,
+      canWrite,
+      canDelete,
+    };
+    if (row.description !== null) {
+      result.description = row.description;
+    }
+    if (row.area_id !== null) {
+      result.areaId = row.area_id;
+    }
+    if (row.area_name !== null) {
+      result.areaName = row.area_name;
+    }
+    return result;
   }
 
   /**
@@ -813,6 +903,7 @@ export class AdminPermissionsService {
         return permission.can_write;
       case 'delete':
         return permission.can_delete;
+      /* v8 ignore next -- @preserve exhaustive switch: PermissionLevel is 'read' | 'write' | 'delete' */
       default:
         return false;
     }

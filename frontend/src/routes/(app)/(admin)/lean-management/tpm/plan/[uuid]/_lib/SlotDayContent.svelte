@@ -1,8 +1,5 @@
 <script lang="ts">
-  import {
-    INTERVAL_LABELS,
-    INTERVAL_SHORT_LABELS,
-  } from '../../../_lib/constants';
+  import { INTERVAL_LABELS, INTERVAL_SHORT_LABELS } from '../../../_lib/constants';
 
   import type { ProjectedSlot, IntervalType } from '../../../_lib/types';
 
@@ -21,8 +18,7 @@
       <span
         class="slot-content__badge"
         style="background: {colorMap[interval]}"
-        title={INTERVAL_LABELS[interval]}
-        >{INTERVAL_SHORT_LABELS[interval]}</span
+        title={INTERVAL_LABELS[interval]}>{INTERVAL_SHORT_LABELS[interval]}</span
       >
     {/each}
   </div>

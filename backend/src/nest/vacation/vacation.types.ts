@@ -9,12 +9,7 @@
 // Enums (mirror PostgreSQL ENUMs from migration 29)
 // ============================================================================
 
-export type VacationRequestStatus =
-  | 'pending'
-  | 'approved'
-  | 'denied'
-  | 'withdrawn'
-  | 'cancelled';
+export type VacationRequestStatus = 'pending' | 'approved' | 'denied' | 'withdrawn' | 'cancelled';
 
 export type VacationType = 'regular' | 'unpaid';
 

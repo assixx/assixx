@@ -154,18 +154,15 @@ export async function loadCalendarEvents(
       params.append('search', search);
     }
 
-    const response = await apiClient.get<
-      CalendarEventsResponse | CalendarEvent[]
-    >(`${API_ENDPOINTS.EVENTS}?${params}`);
+    const response = await apiClient.get<CalendarEventsResponse | CalendarEvent[]>(
+      `${API_ENDPOINTS.EVENTS}?${params}`,
+    );
 
     // Handle response: api-client unwraps { success, data } → returns { events: [...], pagination: {...} }
     // Support both array (legacy) and object (current) response formats
-    const events: CalendarEvent[] =
-      Array.isArray(response) ? response : response.events;
+    const events: CalendarEvent[] = Array.isArray(response) ? response : response.events;
 
-    return events
-      .map(formatEventForCalendar)
-      .filter((e): e is EventInput => e !== null);
+    return events.map(formatEventForCalendar).filter((e): e is EventInput => e !== null);
   } catch (err: unknown) {
     log.error({ err }, 'Error loading events');
     checkSessionExpired(err);
@@ -178,9 +175,9 @@ export async function loadCalendarEvents(
  */
 export async function loadUpcomingEvents(): Promise<CalendarEvent[]> {
   try {
-    const response = await apiClient.get<
-      CalendarEventsResponse | CalendarEvent[]
-    >(API_ENDPOINTS.DASHBOARD);
+    const response = await apiClient.get<CalendarEventsResponse | CalendarEvent[]>(
+      API_ENDPOINTS.DASHBOARD,
+    );
 
     // Handle response: api-client unwraps { success, data } → returns { events: [...] } or array directly
     return Array.isArray(response) ? response : response.events;
@@ -194,13 +191,11 @@ export async function loadUpcomingEvents(): Promise<CalendarEvent[]> {
 /**
  * Fetch single event details
  */
-export async function fetchEventData(
-  eventId: number,
-): Promise<CalendarEvent | null> {
+export async function fetchEventData(eventId: number): Promise<CalendarEvent | null> {
   try {
-    const response = await apiClient.get<
-      CalendarEvent | { event: CalendarEvent }
-    >(API_ENDPOINTS.event(eventId));
+    const response = await apiClient.get<CalendarEvent | { event: CalendarEvent }>(
+      API_ENDPOINTS.event(eventId),
+    );
 
     // Handle both direct event and wrapped response
     if ('event' in response) {
@@ -277,8 +272,7 @@ export async function saveEvent(
     log.error({ err }, 'Error saving event');
     checkSessionExpired(err);
 
-    const message =
-      err instanceof Error ? err.message : 'Fehler beim Speichern';
+    const message = err instanceof Error ? err.message : 'Fehler beim Speichern';
     return { success: false, error: message };
   }
 }
@@ -286,9 +280,7 @@ export async function saveEvent(
 /**
  * Delete event
  */
-export async function deleteEvent(
-  eventId: number,
-): Promise<{ success: boolean; error?: string }> {
+export async function deleteEvent(eventId: number): Promise<{ success: boolean; error?: string }> {
   try {
     await apiClient.delete(API_ENDPOINTS.event(eventId));
     return { success: true };
@@ -341,9 +333,7 @@ export async function loadWorkOrdersForCalendar(
       endDate: endDate.slice(0, 10),
     });
 
-    const response = await apiClient.get<CalendarWorkOrder[]>(
-      `/work-orders/calendar?${params}`,
-    );
+    const response = await apiClient.get<CalendarWorkOrder[]>(`/work-orders/calendar?${params}`);
 
     const items: CalendarWorkOrder[] = Array.isArray(response) ? response : [];
     return items.map(formatWorkOrderForCalendar);
@@ -358,11 +348,8 @@ export async function loadWorkOrdersForCalendar(
 // =============================================================================
 
 /** Convert a CalendarTpmAssignment to an EventCalendar EventInput */
-function formatTpmAssignmentForCalendar(
-  assignment: CalendarTpmAssignment,
-): EventInput {
-  const shiftLabel =
-    TPM_SHIFT_TYPE_LABELS[assignment.shiftType] ?? assignment.shiftType;
+function formatTpmAssignmentForCalendar(assignment: CalendarTpmAssignment): EventInput {
+  const shiftLabel = TPM_SHIFT_TYPE_LABELS[assignment.shiftType] ?? assignment.shiftType;
   const intervalLabels = assignment.intervalTypes
     .map((t: string) => TPM_INTERVAL_TYPE_LABELS[t] ?? t)
     .join(', ');
@@ -408,8 +395,7 @@ export async function loadTpmAssignmentsForCalendar(
       `/tpm/plans/shift-assignments/calendar?${params}`,
     );
 
-    const items: CalendarTpmAssignment[] =
-      Array.isArray(response) ? response : [];
+    const items: CalendarTpmAssignment[] = Array.isArray(response) ? response : [];
     return items.map(formatTpmAssignmentForCalendar);
   } catch (err: unknown) {
     log.error({ err }, 'Error loading TPM assignments for calendar');
@@ -434,10 +420,7 @@ export interface UserShift {
  * API: GET /api/v2/shifts/my-calendar-shifts
  * Returns raw shift data - DOM rendering handled by component
  */
-export async function loadUserShifts(
-  startDate: string,
-  endDate: string,
-): Promise<UserShift[]> {
+export async function loadUserShifts(startDate: string, endDate: string): Promise<UserShift[]> {
   try {
     const params = new URLSearchParams({
       startDate,
@@ -449,8 +432,7 @@ export async function loadUserShifts(
     );
 
     // Handle response format
-    const shifts: UserShift[] =
-      Array.isArray(response) ? response : response.data;
+    const shifts: UserShift[] = Array.isArray(response) ? response : response.data;
 
     return shifts;
   } catch (err: unknown) {
@@ -510,9 +492,9 @@ export async function loadUserVacations(
  */
 export async function loadDepartments(): Promise<Department[]> {
   try {
-    const response = await apiClient.get<
-      PaginatedResponse<Department> | Department[]
-    >(API_ENDPOINTS.DEPARTMENTS);
+    const response = await apiClient.get<PaginatedResponse<Department> | Department[]>(
+      API_ENDPOINTS.DEPARTMENTS,
+    );
     return Array.isArray(response) ? response : response.data;
   } catch (err: unknown) {
     log.error({ err }, 'Error loading departments');
@@ -525,9 +507,7 @@ export async function loadDepartments(): Promise<Department[]> {
  */
 export async function loadTeams(): Promise<Team[]> {
   try {
-    const response = await apiClient.get<PaginatedResponse<Team> | Team[]>(
-      API_ENDPOINTS.TEAMS,
-    );
+    const response = await apiClient.get<PaginatedResponse<Team> | Team[]>(API_ENDPOINTS.TEAMS);
     return Array.isArray(response) ? response : response.data;
   } catch (err: unknown) {
     log.error({ err }, 'Error loading teams');
@@ -540,9 +520,7 @@ export async function loadTeams(): Promise<Team[]> {
  */
 export async function loadAreas(): Promise<Area[]> {
   try {
-    const response = await apiClient.get<PaginatedResponse<Area> | Area[]>(
-      API_ENDPOINTS.AREAS,
-    );
+    const response = await apiClient.get<PaginatedResponse<Area> | Area[]>(API_ENDPOINTS.AREAS);
     return Array.isArray(response) ? response : response.data;
   } catch (err: unknown) {
     log.error({ err }, 'Error loading areas');
@@ -555,9 +533,7 @@ export async function loadAreas(): Promise<Area[]> {
  */
 export async function loadUsers(): Promise<User[]> {
   try {
-    const response = await apiClient.get<PaginatedResponse<User> | User[]>(
-      API_ENDPOINTS.USERS,
-    );
+    const response = await apiClient.get<PaginatedResponse<User> | User[]>(API_ENDPOINTS.USERS);
     return Array.isArray(response) ? response : response.data;
   } catch (err: unknown) {
     log.error({ err }, 'Error loading users');

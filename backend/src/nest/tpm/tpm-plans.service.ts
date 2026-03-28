@@ -6,12 +6,7 @@
  * Uses tenantTransaction() for mutations, direct queries for reads.
  */
 import { IS_ACTIVE } from '@assixx/shared/constants';
-import {
-  ConflictException,
-  Injectable,
-  Logger,
-  NotFoundException,
-} from '@nestjs/common';
+import { ConflictException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import type { PoolClient } from 'pg';
 import { v7 as uuidv7 } from 'uuid';
 
@@ -153,10 +148,7 @@ export class TpmPlansService {
   }
 
   /** Get plan by asset ID (for slot assistant and inter-service lookups) */
-  async getPlanByAssetId(
-    tenantId: number,
-    assetId: number,
-  ): Promise<TpmPlan | null> {
+  async getPlanByAssetId(tenantId: number, assetId: number): Promise<TpmPlan | null> {
     const row = await this.db.queryOne<TpmPlanJoinRow>(
       `SELECT p.*, m.uuid AS asset_uuid, m.name AS asset_name, d.name AS department_name, u.username AS created_by_name
        FROM tpm_maintenance_plans p
@@ -184,49 +176,43 @@ export class TpmPlansService {
   ): Promise<TpmPlan> {
     this.logger.debug(`Creating plan "${dto.name}" for asset ${dto.assetUuid}`);
 
-    const plan = await this.db.tenantTransaction(
-      async (client: PoolClient): Promise<TpmPlan> => {
-        // Resolve asset UUID → internal ID
-        const assetId = await this.resolveAssetId(
-          client,
-          tenantId,
-          dto.assetUuid,
-        );
+    const plan = await this.db.tenantTransaction(async (client: PoolClient): Promise<TpmPlan> => {
+      // Resolve asset UUID → internal ID
+      const assetId = await this.resolveAssetId(client, tenantId, dto.assetUuid);
 
-        // Check uniqueness: one active plan per asset
-        await this.ensureNoPlanForAsset(client, tenantId, assetId);
+      // Check uniqueness: one active plan per asset
+      await this.ensureNoPlanForAsset(client, tenantId, assetId);
 
-        // INSERT
-        const uuid = uuidv7();
-        const result = await client.query<TpmPlanJoinRow>(
-          `INSERT INTO tpm_maintenance_plans
+      // INSERT
+      const uuid = uuidv7();
+      const result = await client.query<TpmPlanJoinRow>(
+        `INSERT INTO tpm_maintenance_plans
              (uuid, tenant_id, asset_id, name, base_weekday, base_repeat_every,
               base_time, buffer_hours, shift_plan_required, notes, created_by, is_active)
            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 1)
            RETURNING *`,
-          [
-            uuid,
-            tenantId,
-            assetId,
-            dto.name,
-            dto.baseWeekday,
-            dto.baseRepeatEvery,
-            dto.baseTime ?? null,
-            dto.bufferHours,
-            dto.shiftPlanRequired,
-            dto.notes ?? null,
-            userId,
-          ],
-        );
+        [
+          uuid,
+          tenantId,
+          assetId,
+          dto.name,
+          dto.baseWeekday,
+          dto.baseRepeatEvery,
+          dto.baseTime ?? null,
+          dto.bufferHours,
+          dto.shiftPlanRequired,
+          dto.notes ?? null,
+          userId,
+        ],
+      );
 
-        const row = result.rows[0];
-        if (row === undefined) {
-          throw new Error('INSERT into tpm_maintenance_plans returned no rows');
-        }
+      const row = result.rows[0];
+      if (row === undefined) {
+        throw new Error('INSERT into tpm_maintenance_plans returned no rows');
+      }
 
-        return mapPlanRowToApi(row);
-      },
-    );
+      return mapPlanRowToApi(row);
+    });
 
     void this.activityLogger.logCreate(
       tenantId,
@@ -247,36 +233,34 @@ export class TpmPlansService {
     planUuid: string,
     dto: UpdateMaintenancePlanDto,
   ): Promise<TpmPlan> {
-    const plan = await this.db.tenantTransaction(
-      async (client: PoolClient): Promise<TpmPlan> => {
-        // Lock the row
-        const existing = await this.lockPlanByUuid(client, tenantId, planUuid);
+    const plan = await this.db.tenantTransaction(async (client: PoolClient): Promise<TpmPlan> => {
+      // Lock the row
+      const existing = await this.lockPlanByUuid(client, tenantId, planUuid);
 
-        // Build dynamic SET clause
-        const { setClauses, params, nextParamIndex } = buildPlanUpdateFields(
-          dto as Record<string, unknown>,
-        );
+      // Build dynamic SET clause
+      const { setClauses, params, nextParamIndex } = buildPlanUpdateFields(
+        dto as Record<string, unknown>,
+      );
 
-        if (setClauses.length === 0) {
-          return mapPlanRowToApi(existing);
-        }
+      if (setClauses.length === 0) {
+        return mapPlanRowToApi(existing);
+      }
 
-        // Append WHERE params
-        params.push(planUuid, tenantId);
-        const sql = `UPDATE tpm_maintenance_plans
+      // Append WHERE params
+      params.push(planUuid, tenantId);
+      const sql = `UPDATE tpm_maintenance_plans
                      SET ${setClauses.join(', ')}, updated_at = NOW()
                      WHERE uuid = $${nextParamIndex} AND tenant_id = $${nextParamIndex + 1} AND is_active = ${IS_ACTIVE.ACTIVE}
                      RETURNING *`;
 
-        const result = await client.query<TpmPlanJoinRow>(sql, params);
-        const row = result.rows[0];
-        if (row === undefined) {
-          throw new Error('UPDATE tpm_maintenance_plans returned no rows');
-        }
+      const result = await client.query<TpmPlanJoinRow>(sql, params);
+      const row = result.rows[0];
+      if (row === undefined) {
+        throw new Error('UPDATE tpm_maintenance_plans returned no rows');
+      }
 
-        return mapPlanRowToApi(row);
-      },
-    );
+      return mapPlanRowToApi(row);
+    });
 
     void this.activityLogger.logUpdate(
       tenantId,
@@ -292,25 +276,19 @@ export class TpmPlansService {
   }
 
   /** Soft-delete a maintenance plan (is_active = 4) */
-  async deletePlan(
-    tenantId: number,
-    userId: number,
-    planUuid: string,
-  ): Promise<void> {
-    const plan = await this.db.tenantTransaction(
-      async (client: PoolClient): Promise<TpmPlan> => {
-        const existing = await this.lockPlanByUuid(client, tenantId, planUuid);
+  async deletePlan(tenantId: number, userId: number, planUuid: string): Promise<void> {
+    const plan = await this.db.tenantTransaction(async (client: PoolClient): Promise<TpmPlan> => {
+      const existing = await this.lockPlanByUuid(client, tenantId, planUuid);
 
-        await client.query(
-          `UPDATE tpm_maintenance_plans
+      await client.query(
+        `UPDATE tpm_maintenance_plans
            SET is_active = ${IS_ACTIVE.DELETED}, updated_at = NOW()
            WHERE uuid = $1 AND tenant_id = $2`,
-          [planUuid, tenantId],
-        );
+        [planUuid, tenantId],
+      );
 
-        return mapPlanRowToApi(existing);
-      },
-    );
+      return mapPlanRowToApi(existing);
+    });
 
     void this.activityLogger.logDelete(
       tenantId,
@@ -323,25 +301,19 @@ export class TpmPlansService {
   }
 
   /** Archive a maintenance plan (is_active = 3) */
-  async archivePlan(
-    tenantId: number,
-    userId: number,
-    planUuid: string,
-  ): Promise<TpmPlan> {
-    const plan = await this.db.tenantTransaction(
-      async (client: PoolClient): Promise<TpmPlan> => {
-        const existing = await this.lockPlanByUuid(client, tenantId, planUuid);
+  async archivePlan(tenantId: number, userId: number, planUuid: string): Promise<TpmPlan> {
+    const plan = await this.db.tenantTransaction(async (client: PoolClient): Promise<TpmPlan> => {
+      const existing = await this.lockPlanByUuid(client, tenantId, planUuid);
 
-        await client.query(
-          `UPDATE tpm_maintenance_plans
+      await client.query(
+        `UPDATE tpm_maintenance_plans
            SET is_active = ${IS_ACTIVE.ARCHIVED}, updated_at = NOW()
            WHERE uuid = $1 AND tenant_id = $2`,
-          [planUuid, tenantId],
-        );
+        [planUuid, tenantId],
+      );
 
-        return mapPlanRowToApi(existing);
-      },
-    );
+      return mapPlanRowToApi(existing);
+    });
 
     void this.activityLogger.logUpdate(
       tenantId,
@@ -357,38 +329,26 @@ export class TpmPlansService {
   }
 
   /** Unarchive a maintenance plan (is_active = 1) */
-  async unarchivePlan(
-    tenantId: number,
-    userId: number,
-    planUuid: string,
-  ): Promise<TpmPlan> {
-    const plan = await this.db.tenantTransaction(
-      async (client: PoolClient): Promise<TpmPlan> => {
-        const existing = await this.lockPlanByUuidAnyStatus(
-          client,
-          tenantId,
-          planUuid,
-        );
+  async unarchivePlan(tenantId: number, userId: number, planUuid: string): Promise<TpmPlan> {
+    const plan = await this.db.tenantTransaction(async (client: PoolClient): Promise<TpmPlan> => {
+      const existing = await this.lockPlanByUuidAnyStatus(client, tenantId, planUuid);
 
-        if (existing.is_active !== 3) {
-          throw new ConflictException(
-            'Nur archivierte Pläne können wiederhergestellt werden',
-          );
-        }
+      if (existing.is_active !== 3) {
+        throw new ConflictException('Nur archivierte Pläne können wiederhergestellt werden');
+      }
 
-        // Ensure no other active plan exists for the same asset
-        await this.ensureNoPlanForAsset(client, tenantId, existing.asset_id);
+      // Ensure no other active plan exists for the same asset
+      await this.ensureNoPlanForAsset(client, tenantId, existing.asset_id);
 
-        await client.query(
-          `UPDATE tpm_maintenance_plans
+      await client.query(
+        `UPDATE tpm_maintenance_plans
            SET is_active = ${IS_ACTIVE.ACTIVE}, updated_at = NOW()
            WHERE uuid = $1 AND tenant_id = $2`,
-          [planUuid, tenantId],
-        );
+        [planUuid, tenantId],
+      );
 
-        return mapPlanRowToApi(existing);
-      },
-    );
+      return mapPlanRowToApi(existing);
+    });
 
     void this.activityLogger.logUpdate(
       tenantId,
@@ -436,9 +396,7 @@ export class TpmPlansService {
       [tenantId, assetId],
     );
     if (result.rows[0] !== undefined) {
-      throw new ConflictException(
-        'Für diese Anlage existiert bereits ein aktiver Wartungsplan',
-      );
+      throw new ConflictException('Für diese Anlage existiert bereits ein aktiver Wartungsplan');
     }
   }
 

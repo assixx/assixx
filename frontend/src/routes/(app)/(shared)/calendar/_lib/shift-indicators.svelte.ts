@@ -9,13 +9,17 @@ import { createLogger } from '$lib/utils/logger';
 
 import { loadUserShifts } from './api';
 
+import type { UserShift } from './api';
+
 const log = createLogger('ShiftIndicators');
+
+type ShiftType = UserShift['type'];
 
 // State
 let showShiftsState = $state(
   browser ? localStorage.getItem('showShiftsInCalendar') === 'true' : false,
 );
-const shiftsCache = $state<Map<string, { type: 'F' | 'S' | 'N' }>>(new Map());
+const shiftsCache = $state(new Map<string, { type: ShiftType }>());
 
 /**
  * Render shift indicators in calendar cells (Legacy approach)
@@ -42,7 +46,7 @@ function renderShiftIndicators(): void {
     if (dateAttr === null) return;
 
     const shift = shiftsCache.get(dateAttr);
-    if (!shift) return;
+    if (shift === undefined) return;
 
     // Create shift indicator
     const indicator = document.createElement('div');
@@ -62,19 +66,13 @@ function renderShiftIndicators(): void {
     renderedCount++;
   });
 
-  log.debug(
-    { renderedCount, cachedCount: shiftsCache.size },
-    'Rendered shift indicators',
-  );
+  log.debug({ renderedCount, cachedCount: shiftsCache.size }, 'Rendered shift indicators');
 }
 
 /**
  * Fetch and cache shifts, then render indicators
  */
-async function fetchAndRenderShifts(
-  startStr: string,
-  endStr: string,
-): Promise<void> {
+async function fetchAndRenderShifts(startStr: string, endStr: string): Promise<void> {
   if (!showShiftsState) {
     shiftsCache.clear();
     return;

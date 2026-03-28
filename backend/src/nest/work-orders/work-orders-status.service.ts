@@ -11,11 +11,7 @@
  *   verified → completed
  */
 import { IS_ACTIVE } from '@assixx/shared/constants';
-import {
-  BadRequestException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import type { PoolClient } from 'pg';
 import { v7 as uuidv7 } from 'uuid';
 
@@ -39,36 +35,22 @@ export class WorkOrderStatusService {
     workOrderUuid: string,
     newStatus: WorkOrderStatus,
   ): Promise<void> {
-    await this.db.tenantTransaction(
-      async (client: PoolClient): Promise<void> => {
-        const wo = await this.lockAndValidate(
-          client,
-          tenantId,
-          workOrderUuid,
-          newStatus,
-        );
+    await this.db.tenantTransaction(async (client: PoolClient): Promise<void> => {
+      const wo = await this.lockAndValidate(client, tenantId, workOrderUuid, newStatus);
 
-        await this.applyStatusUpdate(client, wo.id, newStatus);
-        await this.insertStatusComment(
-          client,
-          tenantId,
-          wo.id,
-          userId,
-          wo.status,
-          newStatus,
-        );
+      await this.applyStatusUpdate(client, wo.id, newStatus);
+      await this.insertStatusComment(client, tenantId, wo.id, userId, wo.status, newStatus);
 
-        void this.activityLogger.logUpdate(
-          tenantId,
-          userId,
-          'work_order',
-          wo.id,
-          `Status von "${STATUS_LABELS[wo.status]}" zu "${STATUS_LABELS[newStatus]}" geändert`,
-          { status: wo.status },
-          { status: newStatus },
-        );
-      },
-    );
+      void this.activityLogger.logUpdate(
+        tenantId,
+        userId,
+        'work_order',
+        wo.id,
+        `Status von "${STATUS_LABELS[wo.status]}" zu "${STATUS_LABELS[newStatus]}" geändert`,
+        { status: wo.status },
+        { status: newStatus },
+      );
+    });
   }
 
   /** Admin: verify a completed work order */
@@ -77,42 +59,28 @@ export class WorkOrderStatusService {
     adminUserId: number,
     workOrderUuid: string,
   ): Promise<void> {
-    await this.db.tenantTransaction(
-      async (client: PoolClient): Promise<void> => {
-        const wo = await this.lockAndValidate(
-          client,
-          tenantId,
-          workOrderUuid,
-          'verified',
-        );
+    await this.db.tenantTransaction(async (client: PoolClient): Promise<void> => {
+      const wo = await this.lockAndValidate(client, tenantId, workOrderUuid, 'verified');
 
-        await client.query(
-          `UPDATE work_orders
+      await client.query(
+        `UPDATE work_orders
            SET status = 'verified', verified_at = NOW(), verified_by = $1
            WHERE id = $2`,
-          [adminUserId, wo.id],
-        );
+        [adminUserId, wo.id],
+      );
 
-        await this.insertStatusComment(
-          client,
-          tenantId,
-          wo.id,
-          adminUserId,
-          wo.status,
-          'verified',
-        );
+      await this.insertStatusComment(client, tenantId, wo.id, adminUserId, wo.status, 'verified');
 
-        void this.activityLogger.logUpdate(
-          tenantId,
-          adminUserId,
-          'work_order',
-          wo.id,
-          `Arbeitsauftrag "${wo.title}" verifiziert`,
-          { status: wo.status },
-          { status: 'verified', verifiedBy: adminUserId },
-        );
-      },
-    );
+      void this.activityLogger.logUpdate(
+        tenantId,
+        adminUserId,
+        'work_order',
+        wo.id,
+        `Arbeitsauftrag "${wo.title}" verifiziert`,
+        { status: wo.status },
+        { status: 'verified', verifiedBy: adminUserId },
+      );
+    });
   }
 
   // ==========================================================================

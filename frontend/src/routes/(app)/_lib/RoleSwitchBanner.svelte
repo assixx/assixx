@@ -13,10 +13,7 @@
 
   const { isVisible, userRole, activeRole, onDismiss }: Props = $props();
 
-  const roleDisplayNames: Record<
-    'root' | 'admin' | 'employee' | 'dummy',
-    string
-  > = {
+  const roleDisplayNames: Record<'root' | 'admin' | 'employee' | 'dummy', string> = {
     root: 'Root',
     admin: 'Administrator',
     employee: 'Mitarbeiter',
@@ -31,19 +28,17 @@
   >
     <div class="role-switch-banner-content">
       <svg
-        width="19"
-        height="19"
+        width="18"
+        height="18"
         viewBox="0 0 24 24"
         fill="currentColor"
         class="banner-icon"
       >
-        <path
-          d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"
-        />
+        <path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z" />
       </svg>
       <span>
-        Sie agieren derzeit als <strong>{roleDisplayNames[activeRole]}</strong>.
-        Ihre ursprüngliche Rolle ist
+        Sie agieren derzeit als <strong>{roleDisplayNames[activeRole]}</strong>. Ihre ursprüngliche
+        Rolle ist
         <strong>{roleDisplayNames[userRole]}</strong>.
       </span>
       <button
@@ -69,14 +64,11 @@
 
 <style>
   .role-switch-banner {
-    position: fixed;
-    top: 80px;
-    right: 30%;
-    left: 30%;
-    z-index: 999;
-    margin-top: 2px;
-    border-radius: 5px;
-    padding: 5px 20px;
+    z-index: var(--z-notification);
+    background: var(--banner-warning-bg);
+    border-bottom: 1px solid var(--banner-warning-border);
+    padding: var(--spacing-5) var(--spacing-6);
+    width: 100%;
   }
 
   .role-switch-banner-content {
@@ -84,42 +76,37 @@
     position: relative;
     justify-content: center;
     align-items: center;
-    width: 100%;
-    color: var(--color-warning);
-    font-size: 14px;
+    gap: var(--spacing-2);
+    color: var(--banner-warning-text);
+    font-size: var(--font-size-sm);
+    line-height: var(--line-height-none);
   }
 
   .role-switch-banner-content strong {
-    color: var(--color-orange-300);
-    font-weight: 600;
+    color: var(--banner-warning-text-strong);
+    font-weight: var(--font-weight-semibold);
   }
 
   .banner-icon {
-    margin-right: 8px;
+    flex-shrink: 0;
+    color: var(--banner-warning-icon);
   }
 
   .role-switch-banner-close {
-    display: inherit;
     position: absolute;
     right: 0;
+    display: flex;
+    align-items: center;
     cursor: pointer;
     border: none;
-    border-radius: 300px;
+    border-radius: var(--radius);
     background: none;
-    padding: 4px;
-    color: var(--color-warning);
+    padding: var(--spacing-1);
+    color: var(--banner-warning-close);
+    transition: color 0.15s;
   }
 
   .role-switch-banner-close:hover {
-    background: oklch(84.42% 0.1721 84.94 / 20%);
-    color: var(--color-orange-300);
-  }
-
-  @media (width < 768px) {
-    .role-switch-banner {
-      top: var(--header-height-mobile);
-      right: 5%;
-      left: 5%;
-    }
+    color: var(--banner-warning-close-hover);
   }
 </style>

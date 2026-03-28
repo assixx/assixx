@@ -31,6 +31,7 @@ export interface UserRow {
   emergency_contact: string | null;
   date_of_birth: string | null;
   has_full_access: number | null;
+  notes: string | null;
 }
 
 /**
@@ -117,6 +118,7 @@ export interface SafeUserResponse {
   availabilityStart: string | null;
   availabilityEnd: string | null;
   availabilityNotes: string | null;
+  notes: string | null;
   hasFullAccess: boolean | null;
   departmentIds?: number[];
   departmentNames?: string[];

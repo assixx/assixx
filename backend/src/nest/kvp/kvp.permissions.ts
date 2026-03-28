@@ -18,13 +18,19 @@ export const KVP_PERMISSIONS: PermissionCategoryDef = {
       code: 'kvp-suggestions',
       label: 'Vorschläge',
       icon: 'fa-lightbulb',
-      allowedPermissions: ['canRead', 'canWrite', 'canDelete'],
+      allowedPermissions: ['canRead', 'canWrite'],
     },
     {
       code: 'kvp-comments',
       label: 'Kommentare',
       icon: 'fa-comments',
-      allowedPermissions: ['canRead', 'canWrite', 'canDelete'],
+      allowedPermissions: ['canRead', 'canWrite'],
+    },
+    {
+      code: 'kvp-sharing',
+      label: 'Teilen',
+      icon: 'fa-share-nodes',
+      allowedPermissions: ['canWrite'],
     },
   ],
 };

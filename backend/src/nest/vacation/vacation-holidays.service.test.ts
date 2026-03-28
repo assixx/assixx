@@ -30,9 +30,7 @@ function createMockActivityLogger() {
   return { log: vi.fn().mockResolvedValue(undefined) };
 }
 
-function createMockHolidayRow(
-  overrides?: Partial<VacationHolidayRow>,
-): VacationHolidayRow {
+function createMockHolidayRow(overrides?: Partial<VacationHolidayRow>): VacationHolidayRow {
   return {
     id: 'hol-001',
     tenant_id: 1,
@@ -109,9 +107,7 @@ describe('VacationHolidaysService', () => {
   describe('createHoliday()', () => {
     it('should create and return a holiday', async () => {
       mockClient.query.mockResolvedValueOnce({
-        rows: [
-          createMockHolidayRow({ name: 'Neujahr', holiday_date: '2026-01-01' }),
-        ],
+        rows: [createMockHolidayRow({ name: 'Neujahr', holiday_date: '2026-01-01' })],
       });
 
       const result = await service.createHoliday(1, 10, {
@@ -160,9 +156,9 @@ describe('VacationHolidaysService', () => {
     it('should throw NotFoundException when holiday not found', async () => {
       mockClient.query.mockResolvedValueOnce({ rows: [] });
 
-      await expect(
-        service.updateHoliday(1, 10, 'nonexistent', { name: 'X' }),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.updateHoliday(1, 10, 'nonexistent', { name: 'X' })).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
@@ -176,17 +172,13 @@ describe('VacationHolidaysService', () => {
         rows: [{ id: 'hol-001', name: 'Weihnachten' }],
       });
 
-      await expect(
-        service.deleteHoliday(1, 10, 'hol-001'),
-      ).resolves.toBeUndefined();
+      await expect(service.deleteHoliday(1, 10, 'hol-001')).resolves.toBeUndefined();
     });
 
     it('should throw NotFoundException when holiday not found', async () => {
       mockClient.query.mockResolvedValueOnce({ rows: [] });
 
-      await expect(service.deleteHoliday(1, 10, 'nonexistent')).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.deleteHoliday(1, 10, 'nonexistent')).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -231,12 +223,7 @@ describe('VacationHolidaysService', () => {
       // 2026-06-01 (Mon) to 2026-06-05 (Fri), start is half day
       mockNoHolidays();
 
-      const days = await service.countWorkdays(
-        1,
-        '2026-06-01',
-        '2026-06-05',
-        'morning',
-      );
+      const days = await service.countWorkdays(1, '2026-06-01', '2026-06-05', 'morning');
 
       expect(days).toBe(4.5);
     });
@@ -245,13 +232,7 @@ describe('VacationHolidaysService', () => {
       // 2026-06-01 (Mon) to 2026-06-05 (Fri), end is half day
       mockNoHolidays();
 
-      const days = await service.countWorkdays(
-        1,
-        '2026-06-01',
-        '2026-06-05',
-        'none',
-        'afternoon',
-      );
+      const days = await service.countWorkdays(1, '2026-06-01', '2026-06-05', 'none', 'afternoon');
 
       expect(days).toBe(4.5);
     });
@@ -269,12 +250,7 @@ describe('VacationHolidaysService', () => {
       // 2026-06-01 (Mon) — single day with half-day modifier
       mockNoHolidays();
 
-      const days = await service.countWorkdays(
-        1,
-        '2026-06-01',
-        '2026-06-01',
-        'morning',
-      );
+      const days = await service.countWorkdays(1, '2026-06-01', '2026-06-01', 'morning');
 
       expect(days).toBe(0.5);
     });

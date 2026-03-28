@@ -161,6 +161,19 @@
 - Activity Logging für alle Mutationen
 - 89 Unit Tests + 18 API-Integrationstests
 
+#### 13. **Freigaben (Approvals)** (Core Addon)
+
+- Zentrales Freigabe-System für alle Module (KVP, Urlaub, Kalender, etc.)
+- Konfigurierbare Approval Masters pro Addon (Team Lead, Area Lead, Department Lead, oder direkter Benutzer)
+- Einfacher Lifecycle: pending → approved / rejected
+- Self-Approval-Prevention (Antragsteller kann nicht selbst genehmigen)
+- Approve/Reject Modals mit Begründungspflicht bei Ablehnung
+- `/manage-approvals` — Dashboard für eingehende Freigaben
+- `/settings/approvals` — Master-Konfiguration pro Modul
+- Root + Admin mit Vollzugriff können immer genehmigen (by design)
+- 104 Unit Tests + 24 API-Integrationstests
+- ADR-037
+
 ### In Development
 
 #### 14. **Survey Tool** (80% complete)
@@ -185,6 +198,8 @@
 | Schwarzes Brett       | Core    | —           | Live           |
 | Einstellungen         | Core    | —           | Live           |
 | Benachrichtigungen    | Core    | —           | Live           |
+| Organisationsstruktur | Core    | —           | Live           |
+| Freigaben             | Core    | —           | Live           |
 | Dokumente             | Kaufbar | €10         | Live           |
 | Schichtplanung        | Kaufbar | €10         | Live           |
 | Chat                  | Kaufbar | €10         | Live           |

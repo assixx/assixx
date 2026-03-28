@@ -182,14 +182,11 @@ export const WS_MESSAGE_TYPES = {
  */
 export const API_ENDPOINTS = {
   conversations: '/chat/conversations',
-  messages: (conversationId: number) =>
-    `/chat/conversations/${conversationId}/messages`,
+  messages: (conversationId: number) => `/chat/conversations/${conversationId}/messages`,
   scheduledMessages: (conversationId: number) =>
     `/chat/conversations/${conversationId}/scheduled-messages`,
-  markRead: (conversationId: number) =>
-    `/chat/conversations/${conversationId}/read`,
-  attachments: (conversationId: number) =>
-    `/chat/conversations/${conversationId}/attachments`,
+  markRead: (conversationId: number) => `/chat/conversations/${conversationId}/read`,
+  attachments: (conversationId: number) => `/chat/conversations/${conversationId}/attachments`,
   users: '/chat/users',
   deleteScheduled: (id: string) => `/chat/scheduled-messages/${id}`,
   deleteConversation: (id: number) => `/chat/conversations/${id}`,

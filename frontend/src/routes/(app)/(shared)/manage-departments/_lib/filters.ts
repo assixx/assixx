@@ -5,10 +5,7 @@
 import type { Department, StatusFilter } from './types';
 
 /** Filter departments by status */
-export function filterByStatus(
-  departments: Department[],
-  status: StatusFilter,
-): Department[] {
+export function filterByStatus(departments: Department[], status: StatusFilter): Department[] {
   switch (status) {
     case 'active':
       return departments.filter((d) => d.isActive === 1);
@@ -27,10 +24,7 @@ export function filterByStatus(
  * Filter departments by search query.
  * Searches in: name, description, areaName
  */
-export function filterBySearch(
-  departments: Department[],
-  query: string,
-): Department[] {
+export function filterBySearch(departments: Department[], query: string): Department[] {
   const term = query.toLowerCase().trim();
   if (term === '') return departments;
 
@@ -39,11 +33,7 @@ export function filterBySearch(
     const description = (d.description ?? '').toLowerCase();
     const areaName = (d.areaName ?? '').toLowerCase();
 
-    return (
-      name.includes(term) ||
-      description.includes(term) ||
-      areaName.includes(term)
-    );
+    return name.includes(term) || description.includes(term) || areaName.includes(term);
   });
 }
 

@@ -12,6 +12,7 @@ import { requireAddon } from '$lib/utils/addon-guard';
 import type { PageServerLoad } from './$types';
 import type {
   KvpSuggestion,
+  ApprovalInfo,
   Attachment,
   Department,
   Team,
@@ -34,32 +35,56 @@ const EMPTY_COMMENTS: PaginatedComments = {
   hasMore: false,
 };
 
+/** Derive departments from teams when scope-filtered endpoint returns empty */
+function deriveDepartments(teamList: Team[]): Department[] {
+  const map = new Map<number, Department>();
+  for (const t of teamList) {
+    if (t.departmentId !== undefined && t.departmentId !== null && t.departmentName !== undefined) {
+      map.set(t.departmentId, { id: t.departmentId, name: t.departmentName });
+    }
+  }
+  return [...map.values()];
+}
+
+/** Derive areas from teams when scope-filtered endpoint returns empty */
+function deriveAreas(teamList: Team[]): Area[] {
+  const map = new Map<number, Area>();
+  for (const t of teamList) {
+    if (
+      t.departmentAreaId !== undefined &&
+      t.departmentAreaId !== null &&
+      t.departmentAreaName !== undefined
+    ) {
+      map.set(t.departmentAreaId, {
+        id: t.departmentAreaId,
+        name: t.departmentAreaName,
+      });
+    }
+  }
+  return [...map.values()];
+}
+
 /** Parallel fetch: comments, attachments, and org data for share modal */
-async function fetchPageData(
-  idOrUuid: string,
-  token: string,
-  fetchFn: typeof fetch,
-) {
-  const [commentsData, attachmentsData, depts, teams, areas, assets] =
-    await Promise.all([
-      apiFetch<PaginatedComments>(
-        `/kvp/${idOrUuid}/comments?limit=20&offset=0`,
-        token,
-        fetchFn,
-      ),
-      apiFetch<Attachment[]>(`/kvp/${idOrUuid}/attachments`, token, fetchFn),
-      apiFetch<Department[]>('/departments', token, fetchFn),
-      apiFetch<Team[]>('/teams', token, fetchFn),
-      apiFetch<Area[]>('/areas', token, fetchFn),
-      apiFetch<Asset[]>('/assets', token, fetchFn),
-    ]);
+async function fetchPageData(idOrUuid: string, token: string, fetchFn: typeof fetch) {
+  const [commentsData, attachmentsData, depts, teams, areas, assets] = await Promise.all([
+    apiFetch<PaginatedComments>(`/kvp/${idOrUuid}/comments?limit=20&offset=0`, token, fetchFn),
+    apiFetch<Attachment[]>(`/kvp/${idOrUuid}/attachments`, token, fetchFn),
+    apiFetch<Department[]>('/departments', token, fetchFn),
+    apiFetch<Team[]>('/teams', token, fetchFn),
+    apiFetch<Area[]>('/areas', token, fetchFn),
+    apiFetch<Asset[]>('/assets', token, fetchFn),
+  ]);
+
+  const teamList = ensureArray(teams);
+  const departmentList = ensureArray(depts);
+  const areaList = ensureArray(areas);
 
   return {
     comments: commentsData ?? EMPTY_COMMENTS,
     attachments: ensureArray(attachmentsData),
-    departments: ensureArray(depts),
-    teams: ensureArray(teams),
-    areas: ensureArray(areas),
+    departments: departmentList.length > 0 ? departmentList : deriveDepartments(teamList),
+    teams: teamList,
+    areas: areaList.length > 0 ? areaList : deriveAreas(teamList),
     assets: ensureArray(assets),
   };
 }
@@ -97,6 +122,65 @@ async function fetchLinkedWorkOrders(
   }));
 }
 
+interface ApprovalConfigItem {
+  approverUserId: number | null;
+  addonCode: string;
+}
+
+/** Fetch approval data for a suggestion in parallel */
+async function fetchApprovalInfo(
+  idOrUuid: string,
+  token: string,
+  fetchFn: typeof fetch,
+  currentUserId: number,
+): Promise<{
+  approval: ApprovalInfo | null;
+  hasApprovalConfig: boolean;
+  isApprovalMaster: boolean;
+  rewardTiers: { id: number; amount: number; sortOrder: number }[];
+}> {
+  const [approvalData, configStatus, configs, rewardTiersData] = await Promise.all([
+    apiFetch<{ approval: ApprovalInfo | null }>(`/kvp/${idOrUuid}/approval`, token, fetchFn),
+    apiFetch<{ hasConfig: boolean }>('/kvp/approval-config-status', token, fetchFn),
+    apiFetch<ApprovalConfigItem[]>('/approvals/configs', token, fetchFn),
+    apiFetch<{ id: number; amount: number; sortOrder: number }[]>(
+      '/kvp/reward-tiers',
+      token,
+      fetchFn,
+    ),
+  ]);
+
+  const kvpConfigs =
+    Array.isArray(configs) ? configs.filter((c: ApprovalConfigItem) => c.addonCode === 'kvp') : [];
+  const isApprovalMaster = kvpConfigs.some(
+    (c: ApprovalConfigItem) => c.approverUserId === currentUserId,
+  );
+
+  return {
+    approval: approvalData?.approval ?? null,
+    hasApprovalConfig: configStatus?.hasConfig ?? false,
+    isApprovalMaster,
+    rewardTiers: Array.isArray(rewardTiersData) ? rewardTiersData : [],
+  };
+}
+
+/** Load suggestion and all related data */
+async function loadSuggestionData(
+  idOrUuid: string,
+  suggestion: KvpSuggestion,
+  token: string,
+  fetchFn: typeof fetch,
+  currentUserId: number,
+) {
+  const [pageData, linkedWorkOrders, approvalInfo] = await Promise.all([
+    fetchPageData(idOrUuid, token, fetchFn),
+    fetchLinkedWorkOrders(suggestion.uuid, token, fetchFn),
+    fetchApprovalInfo(idOrUuid, token, fetchFn, currentUserId),
+  ]);
+
+  return { ...pageData, linkedWorkOrders, ...approvalInfo };
+}
+
 export const load: PageServerLoad = async ({ cookies, fetch, url, parent }) => {
   const token = cookies.get('accessToken');
   if (token === undefined || token === '') {
@@ -111,11 +195,7 @@ export const load: PageServerLoad = async ({ cookies, fetch, url, parent }) => {
   const parentData = await parent();
   requireAddon(parentData.activeAddons, 'kvp');
 
-  const kvpResult = await apiFetchWithPermission<KvpSuggestion>(
-    `/kvp/${idOrUuid}`,
-    token,
-    fetch,
-  );
+  const kvpResult = await apiFetchWithPermission<KvpSuggestion>(`/kvp/${idOrUuid}`, token, fetch);
 
   if (kvpResult.permissionDenied) {
     return {
@@ -128,6 +208,9 @@ export const load: PageServerLoad = async ({ cookies, fetch, url, parent }) => {
       areas: [] as Area[],
       assets: [] as Asset[],
       linkedWorkOrders: [] as LinkedWorkOrder[],
+      approval: null as ApprovalInfo | null,
+      hasApprovalConfig: false,
+      isApprovalMaster: false,
       currentUser: parentData.user,
     };
   }
@@ -137,16 +220,15 @@ export const load: PageServerLoad = async ({ cookies, fetch, url, parent }) => {
     error(404, 'Vorschlag nicht gefunden');
   }
 
-  const [pageData, linkedWorkOrders] = await Promise.all([
-    fetchPageData(idOrUuid, token, fetch),
-    fetchLinkedWorkOrders(suggestion.uuid, token, fetch),
-  ]);
+  const currentUserId = (parentData.user as { id: number }).id;
+  const allData = await loadSuggestionData(idOrUuid, suggestion, token, fetch, currentUserId);
+  const isTeamLead = (parentData.user as { position?: string } | null)?.position === 'team_lead';
 
   return {
     permissionDenied: false as const,
     suggestion,
-    ...pageData,
-    linkedWorkOrders,
+    ...allData,
     currentUser: parentData.user,
+    isTeamLead,
   };
 };

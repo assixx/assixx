@@ -84,10 +84,7 @@
       // E2E messages: use decryptedContent; fallback to empty string on null
       let displayContent: string;
       if (message.isE2e === true) {
-        displayContent =
-          message.decryptionFailed === true ?
-            ''
-          : (message.decryptedContent ?? '');
+        displayContent = message.decryptionFailed === true ? '' : (message.decryptedContent ?? '');
       } else {
         displayContent = message.content ?? '';
       }
@@ -98,11 +95,8 @@
         linkifiedContent: displayContent !== '' ? linkify(displayContent) : '',
         isOwn: message.senderId === currentUserId,
         showDateSeparator,
-        dateSeparatorText:
-          showDateSeparator ? formatDateSeparator(message.createdAt) : '',
-        hasAttachments: Boolean(
-          message.attachments && message.attachments.length > 0,
-        ),
+        dateSeparatorText: showDateSeparator ? formatDateSeparator(message.createdAt) : '',
+        hasAttachments: Boolean(message.attachments && message.attachments.length > 0),
       };
     });
 
@@ -121,41 +115,31 @@
    * Messages with search highlighting applied
    * Only recomputes when searchQuery changes
    */
-  const searchHighlightedMessages = $derived.by<SvelteMap<number, string>>(
-    () => {
-      if (!searchQuery.trim()) return new SvelteMap();
+  const searchHighlightedMessages = $derived.by<SvelteMap<number, string>>(() => {
+    if (!searchQuery.trim()) return new SvelteMap();
 
-      const startTime = performance.now();
-      const highlights = new SvelteMap<number, string>();
+    const startTime = performance.now();
+    const highlights = new SvelteMap<number, string>();
 
-      for (const msg of processedMessages) {
-        // Use decryptedContent for E2E messages, content for plaintext
-        const searchContent =
-          msg.isE2e === true ?
-            (msg.decryptedContent ?? null)
-          : (msg.content ?? null);
-        if (
-          searchContent !== null &&
-          messageMatchesQuery(searchContent, searchQuery)
-        ) {
-          highlights.set(
-            msg.id,
-            highlightSearchInMessage(searchContent, searchQuery),
-          );
-        }
+    for (const msg of processedMessages) {
+      // Use decryptedContent for E2E messages, content for plaintext
+      const searchContent =
+        msg.isE2e === true ? (msg.decryptedContent ?? null) : (msg.content ?? null);
+      if (searchContent !== null && messageMatchesQuery(searchContent, searchQuery)) {
+        highlights.set(msg.id, highlightSearchInMessage(searchContent, searchQuery));
       }
+    }
 
-      const duration = performance.now() - startTime;
-      if (duration > 5) {
-        log.warn(
-          { matchCount: highlights.size, durationMs: duration.toFixed(2) },
-          'Slow search highlighting',
-        );
-      }
+    const duration = performance.now() - startTime;
+    if (duration > 5) {
+      log.warn(
+        { matchCount: highlights.size, durationMs: duration.toFixed(2) },
+        'Slow search highlighting',
+      );
+    }
 
-      return highlights;
-    },
-  );
+    return highlights;
+  });
 
   export function scrollToBottom(): void {
     if (containerRef) {
@@ -227,12 +211,9 @@
                 {@const isImage = att.mimeType.startsWith('image/')}
                 {@const isPdf = att.mimeType === 'application/pdf'}
                 {@const inlineSrc =
-                  att.downloadUrl ??
-                  `/api/v2/documents/uuid/${att.fileUuid}/download?inline=true`}
+                  att.downloadUrl ?? `/api/v2/documents/uuid/${att.fileUuid}/download?inline=true`}
                 {@const previewSrc =
-                  isPdf ?
-                    `/api/v2/documents/uuid/${att.fileUuid}/preview`
-                  : inlineSrc}
+                  isPdf ? `/api/v2/documents/uuid/${att.fileUuid}/preview` : inlineSrc}
                 <ChatAttachment
                   {isImage}
                   canPreview={isImage || isPdf}
@@ -251,16 +232,13 @@
 
             <!-- Legacy attachment support -->
             {#if message.attachment}
-              {@const isLegacyImage =
-                message.attachment.mimeType.startsWith('image/')}
-              {@const isLegacyPdf =
-                message.attachment.mimeType === 'application/pdf'}
+              {@const isLegacyImage = message.attachment.mimeType.startsWith('image/')}
+              {@const isLegacyPdf = message.attachment.mimeType === 'application/pdf'}
               {@const legacyInlineSrc = `${message.attachment.url}?inline=true`}
               {@const legacyUuidMatch = /attachments\/([^/]+)\/download/.exec(
                 message.attachment.url,
               )}
-              {@const legacyUuid =
-                legacyUuidMatch !== null ? legacyUuidMatch[1] : null}
+              {@const legacyUuid = legacyUuidMatch !== null ? legacyUuidMatch[1] : null}
               {@const legacyPreviewSrc =
                 isLegacyPdf && legacyUuid !== null ?
                   `/api/v2/documents/uuid/${legacyUuid}/preview`

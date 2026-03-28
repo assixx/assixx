@@ -24,14 +24,8 @@
     ondelete: (surveyId: number | string) => void;
   }
 
-  const {
-    survey,
-    surveyId,
-    canManage,
-    assignmentBadges,
-    onviewresults,
-    ondelete,
-  }: Props = $props();
+  const { survey, surveyId, canManage, assignmentBadges, onviewresults, ondelete }: Props =
+    $props();
 
   // =============================================================================
   // DERIVED
@@ -39,9 +33,7 @@
 
   const responseCount = $derived(survey.responseCount ?? 0);
   const completedCount = $derived(survey.completedCount ?? 0);
-  const responseRate = $derived(
-    calculateResponseRate(responseCount, completedCount),
-  );
+  const responseRate = $derived(calculateResponseRate(responseCount, completedCount));
   const startDate = $derived(formatSurveyDate(survey.startDate));
   const endDate = $derived(formatSurveyDate(survey.endDate));
   const title = $derived(getTextFromBuffer(survey.title));
@@ -62,9 +54,7 @@
   </div>
 
   <div class="mb-4 flex flex-wrap items-center gap-2">
-    <span
-      class="badge badge--sm {isAnonymous ? 'badge--info' : 'badge--secondary'}"
-    >
+    <span class="badge badge--sm {isAnonymous ? 'badge--info' : 'badge--secondary'}">
       <i class="fas {isAnonymous ? 'fa-user-secret' : 'fa-user'}"></i>
       {isAnonymous ? 'Anonym' : 'Nicht anonym'}
     </span>

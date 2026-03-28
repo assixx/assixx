@@ -502,10 +502,7 @@ export const INTERVAL_CODE_PREFIX: Record<TpmIntervalType, string> = {
 } as const;
 
 /** Default color configuration per card status */
-export const DEFAULT_COLORS: Record<
-  TpmCardStatus,
-  { hex: string; label: string }
-> = {
+export const DEFAULT_COLORS: Record<TpmCardStatus, { hex: string; label: string }> = {
   green: { hex: '#22c55e', label: 'Erledigt' },
   red: { hex: '#ef4444', label: 'Fällig' },
   yellow: { hex: '#eab308', label: 'Freigabe ausstehend' },
@@ -513,10 +510,7 @@ export const DEFAULT_COLORS: Record<
 } as const;
 
 /** Default color configuration per interval type (calendar badges) */
-export const DEFAULT_INTERVAL_COLORS: Record<
-  TpmIntervalType,
-  { hex: string; label: string }
-> = {
+export const DEFAULT_INTERVAL_COLORS: Record<TpmIntervalType, { hex: string; label: string }> = {
   daily: { hex: '#4CAF50', label: 'Täglich' },
   weekly: { hex: '#8BC34A', label: 'Wöchentlich' },
   monthly: { hex: '#5bb5f5', label: 'Monatlich' },

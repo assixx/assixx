@@ -18,10 +18,7 @@
 
   import { setPlanAssignments, logApiError } from '../../../_lib/api';
 
-  import type {
-    TeamMemberStatus,
-    TpmPlanAssignment,
-  } from '../../../_lib/types';
+  import type { TeamMemberStatus, TpmPlanAssignment } from '../../../_lib/types';
 
   interface Props {
     planUuid: string;
@@ -32,14 +29,8 @@
     onsaved: (assignments: TpmPlanAssignment[]) => void;
   }
 
-  const {
-    planUuid,
-    scheduledDate,
-    members,
-    currentAssignments,
-    onclose,
-    onsaved,
-  }: Props = $props();
+  const { planUuid, scheduledDate, members, currentAssignments, onclose, onsaved }: Props =
+    $props();
 
   // =========================================================================
   // STATE
@@ -51,9 +42,7 @@
 
   /** Effective selection: initial assignments XOR user toggles */
   const selectedIds = $derived.by(() => {
-    const initial = new SvelteSet(
-      currentAssignments.map((a: TpmPlanAssignment) => a.userId),
-    );
+    const initial = new SvelteSet(currentAssignments.map((a: TpmPlanAssignment) => a.userId));
     for (const id of toggledIds) {
       if (initial.has(id)) initial.delete(id);
       else initial.add(id);
@@ -87,30 +76,16 @@
   async function handleSave(): Promise<void> {
     saving = true;
     try {
-      const result = await setPlanAssignments(
-        planUuid,
-        [...selectedIds],
-        scheduledDate,
-      );
+      const result = await setPlanAssignments(planUuid, [...selectedIds], scheduledDate);
       showSuccessAlert('Zuweisungen gespeichert');
       onsaved(result);
       onclose();
     } catch (err: unknown) {
       logApiError('setAssignments', err);
-      showErrorAlert(
-        err instanceof Error ? err.message : 'Fehler beim Speichern',
-      );
+      showErrorAlert(err instanceof Error ? err.message : 'Fehler beim Speichern');
     } finally {
       saving = false;
     }
-  }
-
-  function handleBackdropClick(e: MouseEvent): void {
-    if (e.target === e.currentTarget) onclose();
-  }
-
-  function handleKeydown(e: KeyboardEvent): void {
-    if (e.key === 'Escape') onclose();
   }
 
   // =========================================================================
@@ -122,20 +97,11 @@
   }
 
   function avatarColorClass(member: TeamMemberStatus): string {
-    return hasProfilePic(member.profilePicture) ? '' : (
-        getAvatarColorClass(member.userId)
-      );
+    return hasProfilePic(member.profilePicture) ? '' : getAvatarColorClass(member.userId);
   }
 </script>
 
-<svelte:window onkeydown={handleKeydown} />
-
-<!-- svelte-ignore a11y_no_static_element_interactions -->
-<div
-  class="modal-overlay modal-overlay--active"
-  onclick={handleBackdropClick}
-  onkeydown={handleKeydown}
->
+<div class="modal-overlay modal-overlay--active">
   <div
     class="ds-modal ds-modal--md"
     role="dialog"
@@ -207,9 +173,7 @@
                     {member.unavailabilityReason}
                   </span>
                 {:else}
-                  <span class="assign-member__status assign-member__status--ok">
-                    Verfügbar
-                  </span>
+                  <span class="assign-member__status assign-member__status--ok"> Verfügbar </span>
                 {/if}
               </div>
               {#if isSelected}

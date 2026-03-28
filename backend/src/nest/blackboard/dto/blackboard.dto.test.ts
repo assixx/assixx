@@ -20,46 +20,32 @@ describe('CreateEntrySchema', () => {
   });
 
   it('should reject missing title', () => {
-    expect(
-      CreateEntrySchema.safeParse({ content: 'Some content' }).success,
-    ).toBe(false);
+    expect(CreateEntrySchema.safeParse({ content: 'Some content' }).success).toBe(false);
   });
 
   it('should reject title longer than 200 characters', () => {
-    expect(
-      CreateEntrySchema.safeParse({ ...valid, title: 'T'.repeat(201) }).success,
-    ).toBe(false);
+    expect(CreateEntrySchema.safeParse({ ...valid, title: 'T'.repeat(201) }).success).toBe(false);
   });
 
   it('should reject content longer than 5000 characters', () => {
-    expect(
-      CreateEntrySchema.safeParse({ ...valid, content: 'C'.repeat(5001) })
-        .success,
-    ).toBe(false);
+    expect(CreateEntrySchema.safeParse({ ...valid, content: 'C'.repeat(5001) }).success).toBe(
+      false,
+    );
   });
 
   it.each(['company', 'department', 'team', 'area'] as const)(
     'should accept orgLevel=%s',
     (orgLevel) => {
-      expect(CreateEntrySchema.safeParse({ ...valid, orgLevel }).success).toBe(
-        true,
-      );
+      expect(CreateEntrySchema.safeParse({ ...valid, orgLevel }).success).toBe(true);
     },
   );
 
-  it.each(['low', 'medium', 'high', 'urgent'] as const)(
-    'should accept priority=%s',
-    (priority) => {
-      expect(CreateEntrySchema.safeParse({ ...valid, priority }).success).toBe(
-        true,
-      );
-    },
-  );
+  it.each(['low', 'medium', 'high', 'urgent'] as const)('should accept priority=%s', (priority) => {
+    expect(CreateEntrySchema.safeParse({ ...valid, priority }).success).toBe(true);
+  });
 
   it('should reject invalid priority', () => {
-    expect(
-      CreateEntrySchema.safeParse({ ...valid, priority: 'critical' }).success,
-    ).toBe(false);
+    expect(CreateEntrySchema.safeParse({ ...valid, priority: 'critical' }).success).toBe(false);
   });
 });
 
@@ -101,15 +87,11 @@ describe('ListEntriesQuerySchema', () => {
   });
 
   it('should reject isActive=2 (not in allowed set)', () => {
-    expect(ListEntriesQuerySchema.safeParse({ isActive: '2' }).success).toBe(
-      false,
-    );
+    expect(ListEntriesQuerySchema.safeParse({ isActive: '2' }).success).toBe(false);
   });
 
   it('should reject search longer than 100 characters', () => {
-    expect(
-      ListEntriesQuerySchema.safeParse({ search: 'X'.repeat(101) }).success,
-    ).toBe(false);
+    expect(ListEntriesQuerySchema.safeParse({ search: 'X'.repeat(101) }).success).toBe(false);
   });
 
   it.each(['ASC', 'DESC'] as const)('should accept sortDir=%s', (sortDir) => {
@@ -117,9 +99,7 @@ describe('ListEntriesQuerySchema', () => {
   });
 
   it('should reject invalid sortDir', () => {
-    expect(ListEntriesQuerySchema.safeParse({ sortDir: 'asc' }).success).toBe(
-      false,
-    );
+    expect(ListEntriesQuerySchema.safeParse({ sortDir: 'asc' }).success).toBe(false);
   });
 });
 
@@ -139,9 +119,7 @@ describe('AddCommentSchema (Blackboard)', () => {
   });
 
   it('should reject comment longer than 5000 characters', () => {
-    expect(
-      AddCommentSchema.safeParse({ comment: 'C'.repeat(5001) }).success,
-    ).toBe(false);
+    expect(AddCommentSchema.safeParse({ comment: 'C'.repeat(5001) }).success).toBe(false);
   });
 });
 
@@ -179,9 +157,7 @@ describe('FileUuidParamSchema', () => {
   });
 
   it('should reject invalid UUID', () => {
-    expect(
-      FileUuidParamSchema.safeParse({ fileUuid: 'not-a-uuid' }).success,
-    ).toBe(false);
+    expect(FileUuidParamSchema.safeParse({ fileUuid: 'not-a-uuid' }).success).toBe(false);
   });
 });
 
@@ -193,8 +169,6 @@ describe('AttachmentIdParamSchema', () => {
   });
 
   it('should reject non-positive attachmentId', () => {
-    expect(
-      AttachmentIdParamSchema.safeParse({ attachmentId: '0' }).success,
-    ).toBe(false);
+    expect(AttachmentIdParamSchema.safeParse({ attachmentId: '0' }).success).toBe(false);
   });
 });

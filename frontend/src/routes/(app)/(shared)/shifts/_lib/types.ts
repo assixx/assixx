@@ -3,10 +3,7 @@
 // Based on: frontend/src/scripts/shifts/types.ts
 // =============================================================================
 
-import type {
-  ExtendedUserRole as UserRole,
-  AvailabilityStatus,
-} from '@assixx/shared';
+import type { ExtendedUserRole as UserRole, AvailabilityStatus } from '@assixx/shared';
 
 export type { UserRole, AvailabilityStatus };
 

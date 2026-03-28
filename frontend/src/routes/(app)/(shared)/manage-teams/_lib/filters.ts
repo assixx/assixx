@@ -30,18 +30,12 @@ export function filterBySearch(teams: Team[], query: string): Team[] {
     const department = (t.departmentName ?? '').toLowerCase();
     const leader = (t.leaderName ?? '').toLowerCase();
 
-    return (
-      name.includes(term) || department.includes(term) || leader.includes(term)
-    );
+    return name.includes(term) || department.includes(term) || leader.includes(term);
   });
 }
 
 /** Apply all filters to teams */
-export function applyAllFilters(
-  teams: Team[],
-  status: StatusFilter,
-  searchQuery: string,
-): Team[] {
+export function applyAllFilters(teams: Team[], status: StatusFilter, searchQuery: string): Team[] {
   let result = filterByStatus(teams, status);
   result = filterBySearch(result, searchQuery);
   return result;

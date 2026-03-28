@@ -2,11 +2,7 @@
 // Work Orders — CONSTANTS
 // =============================================================================
 
-import type {
-  WorkOrderPriority,
-  WorkOrderSourceType,
-  WorkOrderStatus,
-} from './types';
+import type { WorkOrderPriority, WorkOrderSourceType, WorkOrderStatus } from './types';
 
 // =============================================================================
 // STATUS LABELS & STYLING
@@ -278,8 +274,7 @@ export const MESSAGES = {
 
   // Empty states
   EMPTY_TITLE: 'Keine Arbeitsaufträge',
-  EMPTY_DESCRIPTION_EMPLOYEE:
-    'Ihnen sind aktuell keine Arbeitsaufträge zugewiesen.',
+  EMPTY_DESCRIPTION_EMPLOYEE: 'Ihnen sind aktuell keine Arbeitsaufträge zugewiesen.',
   EMPTY_DESCRIPTION_ADMIN: 'Es wurden noch keine Arbeitsaufträge erstellt.',
 
   // Loading

@@ -6,11 +6,7 @@
  *        (blob vs filesystem), writeFileToDisk/readFileFromDisk
  *        (path traversal protection).
  */
-import {
-  BadRequestException,
-  ForbiddenException,
-  NotFoundException,
-} from '@nestjs/common';
+import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { DatabaseService } from '../database/database.service.js';
@@ -118,9 +114,7 @@ describe('DocumentStorageService', () => {
     it('should throw when no content or path', async () => {
       const doc = makeDocument();
 
-      await expect(service.resolveFileContent(doc as never)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.resolveFileContent(doc as never)).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -154,9 +148,9 @@ describe('DocumentStorageService', () => {
     });
 
     it('should reject path traversal', async () => {
-      await expect(
-        service.readFileFromDisk('../../../etc/shadow'),
-      ).rejects.toThrow(ForbiddenException);
+      await expect(service.readFileFromDisk('../../../etc/shadow')).rejects.toThrow(
+        ForbiddenException,
+      );
     });
   });
 });

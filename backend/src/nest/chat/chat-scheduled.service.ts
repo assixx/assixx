@@ -15,11 +15,7 @@ import { ClsService } from 'nestjs-cls';
 import { DatabaseService } from '../database/database.service.js';
 import { mapScheduledMessage, validateScheduledTime } from './chat.helpers.js';
 import type { ScheduledMessage, ScheduledMessageRow } from './chat.types.js';
-import {
-  MAX_SCHEDULE_DAYS,
-  MIN_SCHEDULE_MINUTES,
-  SCHEDULED_STATUS,
-} from './chat.types.js';
+import { MAX_SCHEDULE_DAYS, MIN_SCHEDULE_MINUTES, SCHEDULED_STATUS } from './chat.types.js';
 import type { CreateScheduledMessageBody } from './dto/scheduled-message.dto.js';
 
 @Injectable()
@@ -58,11 +54,7 @@ export class ChatScheduledService {
    */
   async createScheduledMessage(
     dto: CreateScheduledMessageBody,
-    verifyAccess: (
-      conversationId: number,
-      userId: number,
-      tenantId: number,
-    ) => Promise<void>,
+    verifyAccess: (conversationId: number, userId: number, tenantId: number) => Promise<void>,
   ): Promise<ScheduledMessage> {
     const tenantId = this.getTenantId();
     const userId = this.getUserId();
@@ -86,9 +78,7 @@ export class ChatScheduledService {
     }
 
     // Determine if this is an E2E message
-    const isE2e =
-      typeof dto.encryptedContent === 'string' &&
-      dto.encryptedContent.length > 0;
+    const isE2e = typeof dto.encryptedContent === 'string' && dto.encryptedContent.length > 0;
 
     // Insert scheduled message
     const result = await this.databaseService.query<ScheduledMessageRow>(
@@ -139,9 +129,7 @@ export class ChatScheduledService {
       [userId, tenantId, SCHEDULED_STATUS.PENDING],
     );
 
-    return result.map((row: ScheduledMessageRow) =>
-      mapScheduledMessage(row, SCHEDULED_STATUS),
-    );
+    return result.map((row: ScheduledMessageRow) => mapScheduledMessage(row, SCHEDULED_STATUS));
   }
 
   /**
@@ -205,11 +193,7 @@ export class ChatScheduledService {
    */
   async getConversationScheduledMessages(
     conversationId: number,
-    verifyAccess: (
-      conversationId: number,
-      userId: number,
-      tenantId: number,
-    ) => Promise<void>,
+    verifyAccess: (conversationId: number, userId: number, tenantId: number) => Promise<void>,
   ): Promise<ScheduledMessage[]> {
     const tenantId = this.getTenantId();
     const userId = this.getUserId();
@@ -224,8 +208,6 @@ export class ChatScheduledService {
       [conversationId, userId, tenantId, SCHEDULED_STATUS.PENDING],
     );
 
-    return result.map((row: ScheduledMessageRow) =>
-      mapScheduledMessage(row, SCHEDULED_STATUS),
-    );
+    return result.map((row: ScheduledMessageRow) => mapScheduledMessage(row, SCHEDULED_STATUS));
   }
 }

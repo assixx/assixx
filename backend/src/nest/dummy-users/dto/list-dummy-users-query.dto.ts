@@ -15,6 +15,4 @@ export const ListDummyUsersQuerySchema = z.object({
   isActive: IsActiveSchema.optional(),
 });
 
-export class ListDummyUsersQueryDto extends createZodDto(
-  ListDummyUsersQuerySchema,
-) {}
+export class ListDummyUsersQueryDto extends createZodDto(ListDummyUsersQuerySchema) {}

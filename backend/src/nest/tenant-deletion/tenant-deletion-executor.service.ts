@@ -15,10 +15,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import type { PoolClient } from 'pg';
 
 import { getErrorMessage } from '../common/index.js';
-import {
-  getTablesWithTenantId,
-  getUserRelatedTables,
-} from './tenant-deletion.helpers.js';
+import { getTablesWithTenantId, getUserRelatedTables } from './tenant-deletion.helpers.js';
 import {
   CRITICAL_TABLES,
   type DeletionLog,
@@ -41,10 +38,7 @@ export class TenantDeletionExecutor {
    * 5. Delete users
    * 6. Delete tenant
    */
-  async executeDeletions(
-    tenantId: number,
-    client: PoolClient,
-  ): Promise<DeletionLog[]> {
+  async executeDeletions(tenantId: number, client: PoolClient): Promise<DeletionLog[]> {
     const deletionLog: DeletionLog[] = [];
 
     // Phase 1: Get all tables with tenant_id column
@@ -55,18 +49,11 @@ export class TenantDeletionExecutor {
     const regularTables = allTables
       .map((t: TableNameRow) => t.TABLE_NAME)
       .filter(
-        (name: string) =>
-          !CRITICAL_TABLES.includes(name) &&
-          name !== 'users' &&
-          name !== 'tenants',
+        (name: string) => !CRITICAL_TABLES.includes(name) && name !== 'users' && name !== 'tenants',
       );
 
     // Phase 2: Multi-pass deletion of regular tables
-    const regularResults = await this.multiPassDelete(
-      regularTables,
-      tenantId,
-      client,
-    );
+    const regularResults = await this.multiPassDelete(regularTables, tenantId, client);
     deletionLog.push(...regularResults.deleted);
 
     if (regularResults.stuck.length > 0) {
@@ -77,36 +64,21 @@ export class TenantDeletionExecutor {
 
     // Phase 3: Delete user-related tables (tables with user_id FK)
     const userRelatedTables = await getUserRelatedTables(client);
-    const userTableNames = userRelatedTables.map(
-      (t: TableNameRow) => t.TABLE_NAME,
-    );
-    const userResults = await this.multiPassDeleteUserRelated(
-      userTableNames,
-      tenantId,
-      client,
-    );
+    const userTableNames = userRelatedTables.map((t: TableNameRow) => t.TABLE_NAME);
+    const userResults = await this.multiPassDeleteUserRelated(userTableNames, tenantId, client);
     deletionLog.push(...userResults.deleted);
 
     // Phase 4: Clear FK references in critical tables before deleting users
     await this.clearCriticalTableUserReferences(tenantId, client);
 
     // Phase 5: Delete users
-    const usersResult = await this.deleteFromTableDirect(
-      'users',
-      tenantId,
-      client,
-    );
+    const usersResult = await this.deleteFromTableDirect('users', tenantId, client);
     if (usersResult) {
       deletionLog.push(usersResult);
     }
 
     // Phase 6: Delete tenant record
-    const tenantResult = await this.deleteFromTableDirect(
-      'tenants',
-      tenantId,
-      client,
-      'id',
-    );
+    const tenantResult = await this.deleteFromTableDirect('tenants', tenantId, client, 'id');
     if (tenantResult) {
       deletionLog.push(tenantResult);
     }
@@ -127,11 +99,7 @@ export class TenantDeletionExecutor {
     const deletionLog: DeletionLog[] = [];
     let pendingTables = [...tableNames];
 
-    for (
-      let pass = 1;
-      pass <= MAX_DELETION_PASSES && pendingTables.length > 0;
-      pass++
-    ) {
+    for (let pass = 1; pass <= MAX_DELETION_PASSES && pendingTables.length > 0; pass++) {
       this.logger.log(
         `Deletion pass ${pass}/${MAX_DELETION_PASSES}: ${pendingTables.length} tables remaining`,
       );
@@ -156,9 +124,7 @@ export class TenantDeletionExecutor {
 
       // No progress — likely circular dependency or unresolvable FK
       if (deletedCount === 0 && failedTables.length > 0) {
-        this.logger.warn(
-          `No progress in pass ${pass}. Remaining: ${failedTables.join(', ')}`,
-        );
+        this.logger.warn(`No progress in pass ${pass}. Remaining: ${failedTables.join(', ')}`);
         return { deleted: deletionLog, stuck: failedTables };
       }
 
@@ -179,11 +145,7 @@ export class TenantDeletionExecutor {
     const deletionLog: DeletionLog[] = [];
     let pendingTables = [...tableNames];
 
-    for (
-      let pass = 1;
-      pass <= MAX_DELETION_PASSES && pendingTables.length > 0;
-      pass++
-    ) {
+    for (let pass = 1; pass <= MAX_DELETION_PASSES && pendingTables.length > 0; pass++) {
       const failedTables: string[] = [];
 
       for (const tableName of pendingTables) {
@@ -218,11 +180,7 @@ export class TenantDeletionExecutor {
     client: PoolClient,
     deletionLog: DeletionLog[],
   ): Promise<boolean> {
-    const result = await this.deleteFromUserRelatedTable(
-      tableName,
-      tenantId,
-      client,
-    );
+    const result = await this.deleteFromUserRelatedTable(tableName, tenantId, client);
 
     if (result === null) {
       return false;
@@ -254,10 +212,9 @@ export class TenantDeletionExecutor {
     try {
       await client.query(`SAVEPOINT ${savepointName}`);
 
-      const result = await client.query(
-        `DELETE FROM "${tableName}" WHERE tenant_id = $1`,
-        [tenantId],
-      );
+      const result = await client.query(`DELETE FROM "${tableName}" WHERE tenant_id = $1`, [
+        tenantId,
+      ]);
 
       await client.query(`RELEASE SAVEPOINT ${savepointName}`);
 
@@ -325,10 +282,9 @@ export class TenantDeletionExecutor {
     idColumn: string = 'tenant_id',
   ): Promise<DeletionLog | null> {
     try {
-      const result = await client.query(
-        `DELETE FROM "${tableName}" WHERE ${idColumn} = $1`,
-        [tenantId],
-      );
+      const result = await client.query(`DELETE FROM "${tableName}" WHERE ${idColumn} = $1`, [
+        tenantId,
+      ]);
 
       const deleted = result.rowCount ?? 0;
       if (deleted > 0) {
@@ -336,9 +292,7 @@ export class TenantDeletionExecutor {
       }
       return { table: tableName, deleted };
     } catch (error: unknown) {
-      this.logger.error(
-        `Failed to delete from ${tableName}: ${getErrorMessage(error)}`,
-      );
+      this.logger.error(`Failed to delete from ${tableName}: ${getErrorMessage(error)}`);
       throw error;
     }
   }
@@ -348,10 +302,7 @@ export class TenantDeletionExecutor {
    * WHY: Allows deleting users without FK violations from audit/compliance tables.
    * Uses SAVEPOINT to prevent transaction abort on NOT NULL constraint violations.
    */
-  async clearCriticalTableUserReferences(
-    tenantId: number,
-    client: PoolClient,
-  ): Promise<void> {
+  async clearCriticalTableUserReferences(tenantId: number, client: PoolClient): Promise<void> {
     const safeUpdate = async (
       tableName: string,
       sql: string,
@@ -370,9 +321,7 @@ export class TenantDeletionExecutor {
         } catch {
           // Ignore rollback errors
         }
-        this.logger.warn(
-          `Could not clear ${tableName} user refs: ${getErrorMessage(error)}`,
-        );
+        this.logger.warn(`Could not clear ${tableName} user refs: ${getErrorMessage(error)}`);
         return false;
       }
     };

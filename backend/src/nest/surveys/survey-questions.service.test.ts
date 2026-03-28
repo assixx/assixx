@@ -18,10 +18,7 @@ vi.mock('./surveys.helpers.js', () => ({
   buildQuestionData: vi
     .fn()
     .mockImplementation(
-      (
-        q: { questionText: string; questionType: string; options?: string[] },
-        idx: number,
-      ) => ({
+      (q: { questionText: string; questionType: string; options?: string[] }, idx: number) => ({
         question_text: q.questionText,
         question_type: q.questionType,
         is_required: true,
@@ -106,9 +103,7 @@ describe('SurveyQuestionsService', () => {
       // INSERT question RETURNING id
       mockDb.query.mockResolvedValueOnce([{ id: 1 }]);
 
-      await service.insertSurveyQuestions(10, 1, [
-        { questionText: 'How?', questionType: 'text' },
-      ]);
+      await service.insertSurveyQuestions(10, 1, [{ questionText: 'How?', questionType: 'text' }]);
 
       expect(mockDb.query).toHaveBeenCalledTimes(1);
     });

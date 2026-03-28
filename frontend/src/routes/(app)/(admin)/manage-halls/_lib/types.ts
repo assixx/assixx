@@ -2,11 +2,7 @@
 // MANAGE HALLS - TYPE DEFINITIONS
 // =============================================================================
 
-import type {
-  IsActiveStatus,
-  FormIsActiveStatus,
-  StatusFilter,
-} from '@assixx/shared';
+import type { IsActiveStatus, FormIsActiveStatus, StatusFilter } from '@assixx/shared';
 
 export type { IsActiveStatus, FormIsActiveStatus, StatusFilter };
 
@@ -16,6 +12,9 @@ export interface Hall {
   description?: string | null;
   areaId?: number | null;
   areaName?: string | null;
+  departmentIds?: number[];
+  departmentNames?: string;
+  departmentCount?: number;
   isActive: IsActiveStatus;
   createdAt?: string;
   updatedAt?: string;

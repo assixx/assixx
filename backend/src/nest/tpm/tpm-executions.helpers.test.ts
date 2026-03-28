@@ -21,9 +21,7 @@ import type {
 
 describe('toIsoString', () => {
   it('should pass through string values unchanged', () => {
-    expect(toIsoString('2026-03-01T10:00:00.000Z')).toBe(
-      '2026-03-01T10:00:00.000Z',
-    );
+    expect(toIsoString('2026-03-01T10:00:00.000Z')).toBe('2026-03-01T10:00:00.000Z');
   });
 
   it('should convert Date to ISO string', () => {

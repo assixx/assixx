@@ -74,10 +74,6 @@
   // EVENT HANDLERS
   // =============================================================================
 
-  function handleOverlayClick(e: MouseEvent): void {
-    if (e.target === e.currentTarget) onclose();
-  }
-
   async function handleFormSubmit(e: Event): Promise<void> {
     e.preventDefault();
     if (editName.trim() === '') return;
@@ -88,8 +84,7 @@
         name: editName.trim(),
         color: editColor,
         icon: editIcon,
-        description:
-          editDescription.trim() !== '' ? editDescription.trim() : undefined,
+        description: editDescription.trim() !== '' ? editDescription.trim() : undefined,
       });
 
       if (ok) {
@@ -135,20 +130,9 @@
   aria-modal="true"
   aria-labelledby="edit-category-modal-title"
   tabindex="-1"
-  onclick={handleOverlayClick}
-  onkeydown={(e) => {
-    if (e.key === 'Escape') onclose();
-  }}
 >
-  <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
   <form
     class="ds-modal"
-    onclick={(e) => {
-      e.stopPropagation();
-    }}
-    onkeydown={(e) => {
-      e.stopPropagation();
-    }}
     onsubmit={(e) => void handleFormSubmit(e)}
   >
     <div class="ds-modal__header">
@@ -213,9 +197,7 @@
               --cp-button-hover-color="#616161"
               --picker-z-index="1060"
             />
-            <span class="text-sm text-(--color-text-secondary)"
-              >{editColor}</span
-            >
+            <span class="text-sm text-(--color-text-secondary)">{editColor}</span>
           </div>
         </div>
 

@@ -154,9 +154,7 @@ export class AssetAvailabilityService {
       return new Map();
     }
 
-    const placeholders = assetIds
-      .map((_: number, i: number) => `$${i + 2}`)
-      .join(', ');
+    const placeholders = assetIds.map((_: number, i: number) => `$${i + 2}`).join(', ');
 
     const rows = await this.databaseService.query<AssetAvailabilityRow>(
       `SELECT DISTINCT ON (asset_id)
@@ -199,10 +197,8 @@ export class AssetAvailabilityService {
     }
 
     response.availabilityStatus = availability.status;
-    response.availabilityStart =
-      availability.start_date?.toISOString().split('T')[0] ?? null;
-    response.availabilityEnd =
-      availability.end_date?.toISOString().split('T')[0] ?? null;
+    response.availabilityStart = availability.start_date?.toISOString().split('T')[0] ?? null;
+    response.availabilityEnd = availability.end_date?.toISOString().split('T')[0] ?? null;
     response.availabilityNotes = availability.notes;
   }
 
@@ -237,9 +233,7 @@ export class AssetAvailabilityService {
       [assetId, tenantId, startDate, endDate],
     );
 
-    return rows.map((row: AvailabilityRow) =>
-      this.mapAvailabilityRowToEntry(row),
-    );
+    return rows.map((row: AvailabilityRow) => this.mapAvailabilityRowToEntry(row));
   }
 
   // ============================================
@@ -263,10 +257,7 @@ export class AssetAvailabilityService {
 
     this.validateAvailabilityDates(dto);
 
-    if (
-      dto.availabilityStart !== undefined &&
-      dto.availabilityEnd !== undefined
-    ) {
+    if (dto.availabilityStart !== undefined && dto.availabilityEnd !== undefined) {
       await this.insertAvailabilityRecord(assetId, tenantId, dto, createdBy);
     }
 
@@ -307,14 +298,9 @@ export class AssetAvailabilityService {
       year,
       month,
     );
-    const rows = await this.databaseService.query<AvailabilityRow>(
-      query,
-      params,
-    );
+    const rows = await this.databaseService.query<AvailabilityRow>(query, params);
 
-    const entries = rows.map((row: AvailabilityRow) =>
-      this.mapAvailabilityRowToEntry(row),
-    );
+    const entries = rows.map((row: AvailabilityRow) => this.mapAvailabilityRowToEntry(row));
 
     return {
       asset: {
@@ -348,14 +334,11 @@ export class AssetAvailabilityService {
 
     const today = new Date();
     today.setUTCHours(0, 0, 0, 0);
-    const entryEndDate =
-      entry.end_date !== null ? new Date(entry.end_date) : null;
+    const entryEndDate = entry.end_date !== null ? new Date(entry.end_date) : null;
     if (entryEndDate !== null) {
       entryEndDate.setUTCHours(0, 0, 0, 0);
       if (entryEndDate < today) {
-        throw new BadRequestException(
-          'Cannot edit past asset availability entries',
-        );
+        throw new BadRequestException('Cannot edit past asset availability entries');
       }
     }
 
@@ -445,10 +428,7 @@ export class AssetAvailabilityService {
   // ============================================
 
   /** Check if asset exists and is active */
-  private async assetExists(
-    assetId: number,
-    tenantId: number,
-  ): Promise<boolean> {
+  private async assetExists(assetId: number, tenantId: number): Promise<boolean> {
     const rows = await this.databaseService.query<{ id: number }>(
       `SELECT id FROM assets WHERE id = $1 AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}`,
       [assetId, tenantId],
@@ -457,10 +437,7 @@ export class AssetAvailabilityService {
   }
 
   /** Resolve asset ID from UUID */
-  private async resolveAssetIdByUuid(
-    uuid: string,
-    tenantId: number,
-  ): Promise<number> {
+  private async resolveAssetIdByUuid(uuid: string, tenantId: number): Promise<number> {
     const rows = await this.databaseService.query<{ id: number }>(
       `SELECT id FROM assets WHERE uuid = $1 AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}`,
       [uuid, tenantId],
@@ -508,9 +485,7 @@ export class AssetAvailabilityService {
       dto.availabilityEnd !== undefined &&
       dto.availabilityEnd < dto.availabilityStart
     ) {
-      throw new BadRequestException(
-        'Bis-Datum muss nach oder gleich Von-Datum sein.',
-      );
+      throw new BadRequestException('Bis-Datum muss nach oder gleich Von-Datum sein.');
     }
   }
 
@@ -591,9 +566,7 @@ export class AssetAvailabilityService {
   }
 
   /** Map availability row to API format entry */
-  private mapAvailabilityRowToEntry(
-    row: AvailabilityRow,
-  ): AssetAvailabilityHistoryEntry {
+  private mapAvailabilityRowToEntry(row: AvailabilityRow): AssetAvailabilityHistoryEntry {
     return {
       id: row.id,
       assetId: row.asset_id,

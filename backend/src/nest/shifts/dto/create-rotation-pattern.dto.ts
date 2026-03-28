@@ -5,10 +5,7 @@ import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';
 
 import { ShiftDateSchema } from './common.dto.js';
-import {
-  PatternConfigSchema,
-  PatternTypeSchema,
-} from './rotation-common.dto.js';
+import { PatternConfigSchema, PatternTypeSchema } from './rotation-common.dto.js';
 
 /**
  * Create rotation pattern request body
@@ -19,11 +16,7 @@ export const CreateRotationPatternSchema = z.object({
     .trim()
     .min(1, 'Pattern name is required')
     .max(200, 'Name cannot exceed 200 characters'),
-  description: z
-    .string()
-    .trim()
-    .max(1000, 'Description cannot exceed 1000 characters')
-    .optional(),
+  description: z.string().trim().max(1000, 'Description cannot exceed 1000 characters').optional(),
   teamId: z.number().int().positive().nullable().optional(),
   patternType: PatternTypeSchema,
   patternConfig: PatternConfigSchema,
@@ -33,6 +26,4 @@ export const CreateRotationPatternSchema = z.object({
   isActive: z.boolean().default(true),
 });
 
-export class CreateRotationPatternDto extends createZodDto(
-  CreateRotationPatternSchema,
-) {}
+export class CreateRotationPatternDto extends createZodDto(CreateRotationPatternSchema) {}

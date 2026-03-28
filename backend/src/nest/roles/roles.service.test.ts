@@ -207,9 +207,7 @@ describe('SECURITY: RolesService', () => {
     it('should throw NotFoundException when user not found', async () => {
       mockDb.query.mockResolvedValueOnce([]);
 
-      await expect(service.checkUserRole(1, 10, 'admin')).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.checkUserRole(1, 10, 'admin')).rejects.toThrow(NotFoundException);
     });
 
     it('should call execute with correct SQL and parameters', async () => {

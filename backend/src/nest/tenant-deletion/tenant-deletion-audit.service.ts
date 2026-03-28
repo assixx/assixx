@@ -47,9 +47,7 @@ export class TenantDeletionAudit {
       if (!firstHold) {
         throw new Error('Tenant has active legal hold: No reason specified');
       }
-      throw new Error(
-        `Tenant has active legal hold: ${firstHold.reason ?? 'No reason specified'}`,
-      );
+      throw new Error(`Tenant has active legal hold: ${firstHold.reason ?? 'No reason specified'}`);
     }
   }
 
@@ -65,10 +63,9 @@ export class TenantDeletionAudit {
     client?: PoolClient,
   ): Promise<void> {
     const executeAudit = async (c: PoolClient): Promise<void> => {
-      const tenantResults = await c.query<TenantInfoRow>(
-        'SELECT * FROM tenants WHERE id = $1',
-        [tenantId],
-      );
+      const tenantResults = await c.query<TenantInfoRow>('SELECT * FROM tenants WHERE id = $1', [
+        tenantId,
+      ]);
       const tenantInfo = tenantResults.rows[0];
 
       const userResults = await c.query<CountResult>(
@@ -111,23 +108,16 @@ export class TenantDeletionAudit {
    * Send deletion warning notification emails to tenant admins.
    * Standalone operation — manages its own DB query (no transaction needed).
    */
-  async sendDeletionWarningEmails(
-    tenantId: number,
-    scheduledDate: Date,
-  ): Promise<void> {
+  async sendDeletionWarningEmails(tenantId: number, scheduledDate: Date): Promise<void> {
     const admins = await this.db.query<DeletionWarningUser>(
       "SELECT email, first_name, last_name FROM users WHERE tenant_id = $1 AND role IN ('admin', 'root')",
       [tenantId],
     );
 
-    this.logger.log(
-      `Sending deletion warning to ${admins.length} admin(s) for tenant ${tenantId}`,
-    );
+    this.logger.log(`Sending deletion warning to ${admins.length} admin(s) for tenant ${tenantId}`);
 
     for (const admin of admins) {
-      const nameParts = [admin.first_name, admin.last_name]
-        .filter(Boolean)
-        .join(' ');
+      const nameParts = [admin.first_name, admin.last_name].filter(Boolean).join(' ');
       const displayName = nameParts !== '' ? nameParts : 'Nutzer';
       await emailService.sendEmail({
         to: admin.email,

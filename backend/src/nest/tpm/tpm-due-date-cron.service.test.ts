@@ -67,11 +67,9 @@ describe('TpmDueDateCronService', () => {
       ]);
 
       // transaction calls: each returns void
-      mockDb.transaction.mockImplementation(
-        async (fn: (client: unknown) => Promise<void>) => {
-          await fn({});
-        },
-      );
+      mockDb.transaction.mockImplementation(async (fn: (client: unknown) => Promise<void>) => {
+        await fn({});
+      });
       mockCascade.triggerCascade.mockResolvedValue({ affectedCount: 2 });
 
       await service.handleMorningCheck();

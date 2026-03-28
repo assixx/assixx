@@ -31,11 +31,7 @@
 
 /* Hover State */
 .btn-link:hover:not(:disabled) {
-  background: color-mix(
-    in oklch,
-    var(--color-primary) 4%,
-    transparent
-  ); /* Subtle background */
+  background: color-mix(in oklch, var(--color-primary) 4%, transparent); /* Subtle background */
 
   color: var(--color-blue-700);
   text-decoration: underline;

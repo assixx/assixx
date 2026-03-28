@@ -13,11 +13,7 @@
    */
   import { MESSAGES } from '../../_lib/constants';
 
-  import {
-    INTERVAL_COLUMNS,
-    buildDateIndex,
-    buildAssignmentLookup,
-  } from './overall-view-utils';
+  import { INTERVAL_COLUMNS, buildDateIndex, buildAssignmentLookup } from './overall-view-utils';
 
   import type { MatrixRow } from './overall-view-utils';
   import type { TpmShiftAssignment, IntervalType } from '../../_lib/types';

@@ -7,10 +7,7 @@
 import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';
 
-import {
-  WorkOrderPrioritySchema,
-  WorkOrderSourceTypeSchema,
-} from './common.dto.js';
+import { WorkOrderPrioritySchema, WorkOrderSourceTypeSchema } from './common.dto.js';
 
 const BaseSchema = z.object({
   title: z
@@ -27,10 +24,7 @@ const BaseSchema = z.object({
   sourceType: WorkOrderSourceTypeSchema.default('manual'),
   sourceUuid: z.uuid().nullish(),
   dueDate: z.iso.date(),
-  assigneeUuids: z
-    .array(z.uuid())
-    .max(10, 'Maximal 10 Zuweisungen pro Auftrag')
-    .default([]),
+  assigneeUuids: z.array(z.uuid()).max(10, 'Maximal 10 Zuweisungen pro Auftrag').default([]),
 });
 
 type BaseInput = z.output<typeof BaseSchema>;

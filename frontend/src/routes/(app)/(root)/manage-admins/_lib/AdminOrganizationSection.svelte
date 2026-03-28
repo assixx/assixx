@@ -2,10 +2,7 @@
   import { tick } from 'svelte';
 
   import { MESSAGES, STATUS_OPTIONS, type AdminMessages } from './constants';
-  import {
-    filterAvailableDepartments,
-    filterDepartmentIdsByAreas,
-  } from './filters';
+  import { filterAvailableDepartments, filterDepartmentIdsByAreas } from './filters';
   import { getStatusBadgeClass, getStatusLabel } from './utils';
 
   import type { Area, Department, FormIsActiveStatus } from './types';
@@ -58,11 +55,7 @@
   // =============================================================================
 
   const availableDepartments = $derived.by(() => {
-    return filterAvailableDepartments(
-      allDepartments,
-      formAreaIds,
-      formHasFullAccess,
-    );
+    return filterAvailableDepartments(allDepartments, formAreaIds, formHasFullAccess);
   });
 
   // =============================================================================
@@ -81,21 +74,13 @@
 
   function handleAreaChange(e: Event) {
     const select = e.target as HTMLSelectElement;
-    formAreaIds = Array.from(select.selectedOptions).map((opt) =>
-      parseInt(opt.value, 10),
-    );
-    formDepartmentIds = filterDepartmentIdsByAreas(
-      formDepartmentIds,
-      allDepartments,
-      formAreaIds,
-    );
+    formAreaIds = Array.from(select.selectedOptions).map((opt) => parseInt(opt.value, 10));
+    formDepartmentIds = filterDepartmentIdsByAreas(formDepartmentIds, allDepartments, formAreaIds);
   }
 
   function handleDepartmentChange(e: Event) {
     const select = e.target as HTMLSelectElement;
-    formDepartmentIds = Array.from(select.selectedOptions).map((opt) =>
-      parseInt(opt.value, 10),
-    );
+    formDepartmentIds = Array.from(select.selectedOptions).map((opt) => parseInt(opt.value, 10));
   }
 
   // =============================================================================
@@ -178,9 +163,7 @@
           value={area.id}
           selected={formAreaIds.includes(area.id)}
         >
-          {area.name}{(
-            area.departmentCount !== undefined && area.departmentCount > 0
-          ) ?
+          {area.name}{area.departmentCount !== undefined && area.departmentCount > 0 ?
             ` (${area.departmentCount} Abt.)`
           : ''}
         </option>
@@ -273,8 +256,7 @@
         class:active={statusDropdownOpen}
         onclick={toggleStatusDropdown}
       >
-        <span class="badge {getStatusBadgeClass(formIsActive)}"
-          >{getStatusLabel(formIsActive)}</span
+        <span class="badge {getStatusBadgeClass(formIsActive)}">{getStatusLabel(formIsActive)}</span
         >
         <i class="fas fa-chevron-down"></i>
       </div>

@@ -83,10 +83,8 @@ export class AssetMaintenanceService {
     nextMaintenanceDate: string | undefined,
     statusAfter: StatusAfter,
   ): Promise<void> {
-    const assetStatus: AssetStatus =
-      statusAfter === 'needs_repair' ? 'repair' : 'operational';
-    const nextDate =
-      hasContent(nextMaintenanceDate) ? new Date(nextMaintenanceDate) : null;
+    const assetStatus: AssetStatus = statusAfter === 'needs_repair' ? 'repair' : 'operational';
+    const nextDate = hasContent(nextMaintenanceDate) ? new Date(nextMaintenanceDate) : null;
 
     await this.db.query(
       `UPDATE assets SET last_maintenance = $1, next_maintenance = $2, status = $3,
@@ -115,9 +113,7 @@ export class AssetMaintenanceService {
     );
 
     if (rows.length === 0 || rows[0] === undefined) {
-      throw new InternalServerErrorException(
-        'Failed to add maintenance record',
-      );
+      throw new InternalServerErrorException('Failed to add maintenance record');
     }
 
     const recordId = rows[0].id;
@@ -144,9 +140,7 @@ export class AssetMaintenanceService {
     );
 
     const history = await this.getMaintenanceHistory(data.assetId, tenantId);
-    const record = history.find(
-      (h: MaintenanceHistoryResponse) => h.id === recordId,
-    );
+    const record = history.find((h: MaintenanceHistoryResponse) => h.id === recordId);
     if (record === undefined) {
       throw new NotFoundException('Maintenance record not found');
     }
@@ -156,10 +150,7 @@ export class AssetMaintenanceService {
   /**
    * Get assets with upcoming maintenance within given days
    */
-  async getUpcomingMaintenance(
-    tenantId: number,
-    days: number = 30,
-  ): Promise<AssetResponse[]> {
+  async getUpcomingMaintenance(tenantId: number, days: number = 30): Promise<AssetResponse[]> {
     this.logger.debug(`Getting upcoming maintenance for tenant ${tenantId}`);
 
     const rows = await this.db.query<DbAssetRow>(

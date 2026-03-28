@@ -7,11 +7,7 @@
 import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';
 
-import {
-  MinutesSchema,
-  StaffCountSchema,
-  TpmIntervalTypeSchema,
-} from './common.dto.js';
+import { MinutesSchema, StaffCountSchema, TpmIntervalTypeSchema } from './common.dto.js';
 
 export const CreateTimeEstimateSchema = z.object({
   planUuid: z.uuid('Ungültige Plan-UUID'),
@@ -22,6 +18,4 @@ export const CreateTimeEstimateSchema = z.object({
   followupMinutes: MinutesSchema.default(0),
 });
 
-export class CreateTimeEstimateDto extends createZodDto(
-  CreateTimeEstimateSchema,
-) {}
+export class CreateTimeEstimateDto extends createZodDto(CreateTimeEstimateSchema) {}

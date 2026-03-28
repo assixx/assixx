@@ -10,14 +10,7 @@ import { apiFetch, apiFetchWithPermission } from '$lib/server/api-fetch';
 import { requireAddon } from '$lib/utils/addon-guard';
 
 import type { PageServerLoad } from './$types';
-import type {
-  Survey,
-  SurveyTemplate,
-  Department,
-  Team,
-  Area,
-  UserRole,
-} from './_lib/types';
+import type { Survey, SurveyTemplate, Department, Team, Area, UserRole } from './_lib/types';
 
 /** Ensures API data is a safe array (guards against null/unexpected shapes) */
 function toSafeArray<T>(data: T[] | null): T[] {
@@ -41,11 +34,7 @@ function buildCurrentUser(
 }
 
 async function loadSurveyData(token: string, fetchFn: typeof fetch) {
-  const surveysResult = await apiFetchWithPermission<Survey[]>(
-    '/surveys',
-    token,
-    fetchFn,
-  );
+  const surveysResult = await apiFetchWithPermission<Survey[]>('/surveys', token, fetchFn);
 
   if (surveysResult.permissionDenied) {
     return { denied: true as const } as const;

@@ -7,10 +7,7 @@
 import { browser } from '$app/environment';
 
 import { createLogger } from '$lib/utils/logger';
-import {
-  type NotificationEvent,
-  getNotificationSSE,
-} from '$lib/utils/notification-sse';
+import { type NotificationEvent, getNotificationSSE } from '$lib/utils/notification-sse';
 import { perf } from '$lib/utils/perf-logger';
 
 const log = createLogger('NotificationStore');
@@ -30,6 +27,7 @@ export interface NotificationCounts {
   vacation: number;
   tpm: number;
   workOrders: number;
+  approvals: number;
 }
 
 interface NotificationState {
@@ -57,6 +55,7 @@ function createInitialCounts(): NotificationCounts {
     vacation: 0,
     tpm: 0,
     workOrders: 0,
+    approvals: 0,
   };
 }
 
@@ -91,12 +90,11 @@ const SSE_EVENT_TO_COUNT = new Map<string, CountType>([
   ['WORK_ORDER_STATUS_CHANGED', 'workOrders'],
   ['WORK_ORDER_DUE_SOON', 'workOrders'],
   ['WORK_ORDER_VERIFIED', 'workOrders'],
+  ['NEW_APPROVAL', 'approvals'],
+  ['APPROVAL_DECIDED', 'approvals'],
 ]);
 
-function handleSSEEvent(
-  state: NotificationState,
-  event: NotificationEvent,
-): void {
+function handleSSEEvent(state: NotificationState, event: NotificationEvent): void {
   if (suppressedSSETypes.has(event.type)) return;
 
   if (event.type === 'CONNECTED') {
@@ -124,21 +122,12 @@ function resetCountMut(state: NotificationState, type: CountType): void {
   state.counts[type] = 0;
 }
 
-function setCountsMut(
-  state: NotificationState,
-  counts: Partial<NotificationCounts>,
-): void {
+function setCountsMut(state: NotificationState, counts: Partial<NotificationCounts>): void {
   state.counts = { ...createInitialCounts(), ...counts };
   state.lastUpdate = new Date();
 }
 
-export type AddonType =
-  | 'survey'
-  | 'document'
-  | 'kvp'
-  | 'vacation'
-  | 'tpm'
-  | 'work_orders';
+export type AddonType = 'survey' | 'document' | 'kvp' | 'vacation' | 'tpm' | 'work_orders';
 
 /** Map addon type to store count key */
 const ADDON_TO_COUNT_KEY: Record<AddonType, CountType> = {
@@ -151,11 +140,7 @@ const ADDON_TO_COUNT_KEY: Record<AddonType, CountType> = {
 };
 
 /** Rollback count after failed API call */
-function rollbackCount(
-  state: NotificationState,
-  countKey: CountType,
-  previousCount: number,
-): void {
+function rollbackCount(state: NotificationState, countKey: CountType, previousCount: number): void {
   state.counts[countKey] = previousCount;
   state.counts.total += previousCount;
 }
@@ -164,10 +149,7 @@ function rollbackCount(
  * Mark all notifications of an addon type as read via API (ADR-004)
  * Resets local count and persists to backend
  */
-async function markAddonTypeAsRead(
-  state: NotificationState,
-  addonType: AddonType,
-): Promise<void> {
+async function markAddonTypeAsRead(state: NotificationState, addonType: AddonType): Promise<void> {
   const countKey = ADDON_TO_COUNT_KEY[addonType];
   const previousCount = state.counts[countKey];
 
@@ -175,13 +157,10 @@ async function markAddonTypeAsRead(
   resetCountMut(state, countKey);
 
   try {
-    const response = await fetch(
-      `/api/v2/notifications/mark-read/${addonType}`,
-      {
-        method: 'POST',
-        credentials: 'include',
-      },
-    );
+    const response = await fetch(`/api/v2/notifications/mark-read/${addonType}`, {
+      method: 'POST',
+      credentials: 'include',
+    });
 
     if (!response.ok) {
       rollbackCount(state, countKey, previousCount);
@@ -201,10 +180,10 @@ async function markAddonEntityAsRead(
   entityUuid: string,
 ): Promise<void> {
   try {
-    const response = await fetch(
-      `/api/v2/notifications/mark-read/${addonType}/${entityUuid}`,
-      { method: 'POST', credentials: 'include' },
-    );
+    const response = await fetch(`/api/v2/notifications/mark-read/${addonType}/${entityUuid}`, {
+      method: 'POST',
+      credentials: 'include',
+    });
 
     if (!response.ok) return;
 
@@ -259,9 +238,8 @@ async function fetchInitialCounts(state: NotificationState): Promise<void> {
   try {
     log.debug({}, '📡 Fetching dashboard counts (single optimized request)...');
 
-    const response = await perf.time(
-      'notifications:fetch:dashboard-counts',
-      () => fetch('/api/v2/dashboard/counts', { credentials: 'include' }),
+    const response = await perf.time('notifications:fetch:dashboard-counts', () =>
+      fetch('/api/v2/dashboard/counts', { credentials: 'include' }),
     );
 
     if (!response.ok) {
@@ -271,15 +249,9 @@ async function fetchInitialCounts(state: NotificationState): Promise<void> {
     const json = (await response.json()) as DashboardCountsResponse;
     initFromSSRData(state, json.data);
 
-    log.debug(
-      { counts: state.counts },
-      `✅ Initial counts loaded: total=${state.counts.total}`,
-    );
+    log.debug({ counts: state.counts }, `✅ Initial counts loaded: total=${state.counts.total}`);
   } catch (err: unknown) {
-    log.warn(
-      { err },
-      'Failed to fetch dashboard counts - SSE will update when connected',
-    );
+    log.warn({ err }, 'Failed to fetch dashboard counts - SSE will update when connected');
   } finally {
     endTotal();
   }
@@ -328,6 +300,8 @@ interface SSRCounts {
   tpm?: { count: number };
   /** Unread work order notifications */
   workOrders?: { count: number };
+  /** Pending approval notifications */
+  approvals?: { count: number };
 }
 
 /** Safely extract count from an optional API field (defensive against missing data) */
@@ -346,6 +320,7 @@ function initFromSSRData(state: NotificationState, counts: SSRCounts): void {
   const vacation = safeCount(counts.vacation);
   const tpm = safeCount(counts.tpm);
   const workOrders = safeCount(counts.workOrders);
+  const approvals = safeCount(counts.approvals);
 
   state.counts = {
     total:
@@ -357,7 +332,8 @@ function initFromSSRData(state: NotificationState, counts: SSRCounts): void {
       calendar +
       vacation +
       tpm +
-      workOrders,
+      workOrders +
+      approvals,
     chat,
     surveys,
     documents,
@@ -367,13 +343,11 @@ function initFromSSRData(state: NotificationState, counts: SSRCounts): void {
     vacation,
     tpm,
     workOrders,
+    approvals,
   };
   state.lastUpdate = new Date();
 
-  log.debug(
-    { counts: state.counts },
-    '✅ Counts initialized from SSR (0ms fetch!)',
-  );
+  log.debug({ counts: state.counts }, '✅ Counts initialized from SSR (0ms fetch!)');
 }
 
 /** Disconnect from SSE */

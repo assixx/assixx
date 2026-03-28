@@ -20,15 +20,8 @@
     onselect: (assetUuid: string) => void;
   }
 
-  const {
-    messages,
-    assets,
-    areas,
-    departments,
-    assetUuidsWithPlans,
-    submitting,
-    onselect,
-  }: Props = $props();
+  const { messages, assets, areas, departments, assetUuidsWithPlans, submitting, onselect }: Props =
+    $props();
 
   // =========================================================================
   // STATE
@@ -53,8 +46,7 @@
   }
 
   $effect(() => {
-    const anyOpen =
-      areaDropdownOpen || departmentDropdownOpen || assetDropdownOpen;
+    const anyOpen = areaDropdownOpen || departmentDropdownOpen || assetDropdownOpen;
     if (!anyOpen) return;
 
     function handleClickOutside(event: MouseEvent): void {
@@ -88,8 +80,7 @@
   const filteredAssets = $derived.by(() => {
     if (formDepartmentId === null) return [];
     return assets.filter(
-      (m: Asset) =>
-        m.status !== 'decommissioned' && m.departmentId === formDepartmentId,
+      (m: Asset) => m.status !== 'decommissioned' && m.departmentId === formDepartmentId,
     );
   });
 
@@ -105,9 +96,7 @@
   const selectedDepartmentText = $derived.by(() => {
     if (isDepartmentDisabled) return messages.PH_SELECT_AREA_FIRST;
     if (formDepartmentId === null) return messages.PH_DEPARTMENT;
-    const match = filteredDepartments.find(
-      (d: TpmDepartment) => d.id === formDepartmentId,
-    );
+    const match = filteredDepartments.find((d: TpmDepartment) => d.id === formDepartmentId);
     return match?.name ?? messages.PH_DEPARTMENT;
   });
 

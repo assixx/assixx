@@ -100,10 +100,7 @@ export class WebSocketMessageHandler {
   constructor(private readonly db: DatabaseService) {}
 
   /** Verify that a conversation exists within a tenant and return participant IDs */
-  async verifyConversationAccess(
-    conversationId: number,
-    tenantId: number,
-  ): Promise<number[]> {
+  async verifyConversationAccess(conversationId: number, tenantId: number): Promise<number[]> {
     const participantQuery = `
       SELECT cp.user_id
       FROM chat_conversation_participants cp
@@ -112,10 +109,11 @@ export class WebSocketMessageHandler {
       AND c.tenant_id = $2
       AND cp.tenant_id = $3
     `;
-    const participants = await this.db.query<ConversationParticipantResult>(
-      participantQuery,
-      [conversationId, tenantId, tenantId],
-    );
+    const participants = await this.db.query<ConversationParticipantResult>(participantQuery, [
+      conversationId,
+      tenantId,
+      tenantId,
+    ]);
     return participants.map((p: ConversationParticipantResult) => p.user_id);
   }
 
@@ -142,10 +140,7 @@ export class WebSocketMessageHandler {
    * Get all distinct conversation partner IDs for a user across all conversations.
    * Used for presence broadcasts and snapshots.
    */
-  async getConversationPartnerIds(
-    userId: number,
-    tenantId: number,
-  ): Promise<number[]> {
+  async getConversationPartnerIds(userId: number, tenantId: number): Promise<number[]> {
     const partners = await this.db.query<ConversationParticipantResult>(
       `SELECT DISTINCT cp2.user_id
        FROM chat_conversation_participants cp1
@@ -168,11 +163,7 @@ export class WebSocketMessageHandler {
       return { isE2e: false, fields: undefined, error: undefined };
     }
     if (e2eKeyVersion !== undefined) {
-      const isValid = await this.validateE2eKeyVersion(
-        tenantId,
-        userId,
-        e2eKeyVersion,
-      );
+      const isValid = await this.validateE2eKeyVersion(tenantId, userId, e2eKeyVersion);
       if (!isValid) {
         return {
           isE2e: true,
@@ -217,10 +208,7 @@ export class WebSocketMessageHandler {
       await this.linkAttachmentsToMessage(messageId, attachmentIds, tenantId);
     }
 
-    const attachments = await this.getMessageAttachments(
-      attachmentIds,
-      tenantId,
-    );
+    const attachments = await this.getMessageAttachments(attachmentIds, tenantId);
     const sender = await this.getSenderInfo(userId, tenantId);
     const messageData = this.buildMessageData(
       messageId,
@@ -233,8 +221,7 @@ export class WebSocketMessageHandler {
     );
 
     // SSE preview: use lock icon for E2E messages (server cannot read ciphertext)
-    const preview =
-      e2eFields !== undefined ? '' : (content ?? '').substring(0, 50);
+    const preview = e2eFields !== undefined ? '' : (content ?? '').substring(0, 50);
 
     return { messageId, messageUuid, messageData, preview };
   }
@@ -347,9 +334,7 @@ export class WebSocketMessageHandler {
   ): Promise<void> {
     if (attachmentIds.length === 0) return;
 
-    const placeholders = attachmentIds
-      .map((_: number, i: number) => `$${i + 3}`)
-      .join(', ');
+    const placeholders = attachmentIds.map((_: number, i: number) => `$${i + 3}`).join(', ');
     const updateQuery = `
       UPDATE documents
       SET message_id = $1
@@ -358,9 +343,7 @@ export class WebSocketMessageHandler {
       AND message_id IS NULL
     `;
     await this.db.query(updateQuery, [messageId, tenantId, ...attachmentIds]);
-    logger.info(
-      `Linked ${attachmentIds.length} attachments to message ${messageId}`,
-    );
+    logger.info(`Linked ${attachmentIds.length} attachments to message ${messageId}`);
   }
 
   /** Get attachment details for a message */
@@ -370,9 +353,7 @@ export class WebSocketMessageHandler {
   ): Promise<AttachmentInfo[]> {
     if (attachmentIds.length === 0) return [];
 
-    const placeholders = attachmentIds
-      .map((_: number, i: number) => `$${i + 2}`)
-      .join(', ');
+    const placeholders = attachmentIds.map((_: number, i: number) => `$${i + 2}`).join(', ');
     const attachmentQuery = `
       SELECT id, file_uuid, filename, original_name, file_size, mime_type
       FROM documents
@@ -387,10 +368,7 @@ export class WebSocketMessageHandler {
       file_size: number;
       mime_type: string;
     }
-    const rows = await this.db.query<AttachmentRow>(attachmentQuery, [
-      tenantId,
-      ...attachmentIds,
-    ]);
+    const rows = await this.db.query<AttachmentRow>(attachmentQuery, [tenantId, ...attachmentIds]);
 
     return rows.map((row: AttachmentRow) => ({
       id: row.id,
@@ -403,26 +381,17 @@ export class WebSocketMessageHandler {
     }));
   }
 
-  private async getSenderInfo(
-    userId: number,
-    tenantId: number,
-  ): Promise<SenderInfo | undefined> {
+  private async getSenderInfo(userId: number, tenantId: number): Promise<SenderInfo | undefined> {
     const senderQuery = `
       SELECT id, username, first_name, last_name, profile_picture as profile_picture_url
       FROM users WHERE id = $1 AND tenant_id = $2
     `;
-    const senderInfo = await this.db.query<UserInfoResult>(senderQuery, [
-      userId,
-      tenantId,
-    ]);
+    const senderInfo = await this.db.query<UserInfoResult>(senderQuery, [userId, tenantId]);
     return senderInfo[0];
   }
 
   /** Get display name from sender info with fallbacks */
-  private getSenderDisplayName(
-    sender: SenderInfo | null | undefined,
-    fallback: string,
-  ): string {
+  private getSenderDisplayName(sender: SenderInfo | null | undefined, fallback: string): string {
     if (sender === null || sender === undefined) return fallback;
 
     const fullName = [sender.first_name, sender.last_name]

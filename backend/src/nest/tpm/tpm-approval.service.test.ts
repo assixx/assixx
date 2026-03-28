@@ -11,11 +11,7 @@
  * Call order per approve/reject: lock → validateApprover → resolveCardAssetId
  *   → UPDATE → cardStatusService → fetchExecution.
  */
-import {
-  ConflictException,
-  ForbiddenException,
-  NotFoundException,
-} from '@nestjs/common';
+import { ConflictException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { ActivityLoggerService } from '../common/services/activity-logger.service.js';
@@ -59,9 +55,7 @@ function createMockActivityLogger() {
   };
 }
 
-function createExecutionRow(
-  overrides?: Partial<TpmCardExecutionRow>,
-): TpmCardExecutionRow {
+function createExecutionRow(overrides?: Partial<TpmCardExecutionRow>): TpmCardExecutionRow {
   return {
     id: 1,
     uuid: 'exec-uuid-001                            ',
@@ -81,9 +75,7 @@ function createExecutionRow(
   };
 }
 
-function createExecutionJoinRow(
-  overrides?: Partial<TpmExecutionJoinRow>,
-): TpmExecutionJoinRow {
+function createExecutionJoinRow(overrides?: Partial<TpmExecutionJoinRow>): TpmExecutionJoinRow {
   return {
     id: 1,
     uuid: 'exec-uuid-001                            ',
@@ -201,12 +193,7 @@ describe('TpmApprovalService', () => {
         approvalNote: null,
       });
 
-      expect(mockCardStatusService.approveCard).toHaveBeenCalledWith(
-        mockClient,
-        10,
-        5,
-        7,
-      );
+      expect(mockCardStatusService.approveCard).toHaveBeenCalledWith(mockClient, 10, 5, 7);
     });
 
     it('should use FOR UPDATE lock on execution', async () => {
@@ -369,11 +356,7 @@ describe('TpmApprovalService', () => {
         approvalNote: 'Mangelhaft',
       });
 
-      expect(mockCardStatusService.rejectCard).toHaveBeenCalledWith(
-        mockClient,
-        10,
-        5,
-      );
+      expect(mockCardStatusService.rejectCard).toHaveBeenCalledWith(mockClient, 10, 5);
     });
 
     it('should throw NotFoundException when execution not found', async () => {
@@ -443,8 +426,7 @@ describe('TpmApprovalService', () => {
         approvalNote: 'Dokumentation fehlt',
       });
 
-      const description = mockActivityLogger.logUpdate.mock
-        .calls[0]?.[4] as string;
+      const description = mockActivityLogger.logUpdate.mock.calls[0]?.[4] as string;
       expect(description).toContain('Dokumentation fehlt');
     });
   });

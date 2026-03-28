@@ -34,12 +34,7 @@ function extractCards(raw: unknown): { cards: TpmCard[]; totalCards: number } {
   };
 }
 
-export const load: PageServerLoad = async ({
-  params,
-  cookies,
-  fetch,
-  parent,
-}) => {
+export const load: PageServerLoad = async ({ params, cookies, fetch, parent }) => {
   const token = cookies.get('accessToken');
   if (token === undefined || token === '') {
     redirect(302, '/login');
@@ -50,11 +45,7 @@ export const load: PageServerLoad = async ({
 
   const planUuid = params.uuid;
 
-  const planResult = await apiFetchWithPermission<TpmPlan>(
-    `/tpm/plans/${planUuid}`,
-    token,
-    fetch,
-  );
+  const planResult = await apiFetchWithPermission<TpmPlan>(`/tpm/plans/${planUuid}`, token, fetch);
 
   if (planResult.permissionDenied) {
     return {
@@ -77,11 +68,7 @@ export const load: PageServerLoad = async ({
       token,
       fetch,
     ),
-    apiFetch<LocationOption[]>(
-      `/tpm/locations?planUuid=${planUuid}`,
-      token,
-      fetch,
-    ),
+    apiFetch<LocationOption[]>(`/tpm/locations?planUuid=${planUuid}`, token, fetch),
   ]);
 
   const { cards, totalCards } = extractCards(cardsData);

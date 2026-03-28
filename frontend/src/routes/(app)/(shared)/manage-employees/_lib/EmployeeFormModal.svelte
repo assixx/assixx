@@ -3,24 +3,17 @@
 
   import AppDatePicker from '$lib/components/AppDatePicker.svelte';
   import PasswordStrengthIndicator from '$lib/components/PasswordStrengthIndicator.svelte';
+  import UserPositionChips from '$lib/components/UserPositionChips.svelte';
   import {
     DEFAULT_HIERARCHY_LABELS,
     isLeadPosition,
     LEAD_POSITION_KEYS,
-    resolvePositionDisplay,
     type HierarchyLabels,
+    type PositionOption,
   } from '$lib/types/hierarchy-labels';
 
-  import {
-    POSITION_OPTIONS,
-    MESSAGES,
-    type EmployeeMessages,
-  } from './constants';
-  import {
-    getStatusBadgeClass,
-    getStatusLabel,
-    calculatePasswordStrength,
-  } from './utils';
+  import { POSITION_OPTIONS, MESSAGES, type EmployeeMessages } from './constants';
+  import { getStatusBadgeClass, getStatusLabel, calculatePasswordStrength } from './utils';
 
   import type { Team, FormIsActiveStatus } from './types';
 
@@ -43,9 +36,10 @@
     formPassword: string;
     formPasswordConfirm: string;
     formEmployeeNumber: string;
-    formPosition: string;
+    formPositionIds: string[];
     formPhone: string;
     formDateOfBirth: string;
+    formNotes: string;
     formIsActive: FormIsActiveStatus;
     formTeamIds: number[];
     emailError: boolean;
@@ -55,44 +49,51 @@
     onsubmit: (e: Event) => void;
     onvalidateemails: () => void;
     onvalidatepasswords: () => void;
-    positionOptions?: string[];
+    positionOptions?: PositionOption[];
     labels?: HierarchyLabels;
     onupgrade?: () => void;
   }
 
   /* eslint-disable prefer-const, @typescript-eslint/no-useless-default-assignment -- Svelte $bindable() requires let and is not a useless default */
   // prettier-ignore
-  let { show, isEditMode, modalTitle, allTeams, submitting, messages: msg = MESSAGES, positionOptions, labels: lbl = DEFAULT_HIERARCHY_LABELS, formFirstName = $bindable(), formLastName = $bindable(), formEmail = $bindable(), formEmailConfirm = $bindable(), formPassword = $bindable(), formPasswordConfirm = $bindable(), formEmployeeNumber = $bindable(), formPosition = $bindable(), formPhone = $bindable(), formDateOfBirth = $bindable(), formIsActive = $bindable(), formTeamIds = $bindable(), emailError = $bindable(), passwordError = $bindable(), onclose, onsubmit, onvalidateemails, onvalidatepasswords, onupgrade }: Props = $props();
+  let { show, isEditMode, modalTitle, allTeams, submitting, messages: msg = MESSAGES, positionOptions, labels: lbl = DEFAULT_HIERARCHY_LABELS, formFirstName = $bindable(), formLastName = $bindable(), formEmail = $bindable(), formEmailConfirm = $bindable(), formPassword = $bindable(), formPasswordConfirm = $bindable(), formEmployeeNumber = $bindable(), formPositionIds = $bindable(), formPhone = $bindable(), formDateOfBirth = $bindable(), formNotes = $bindable(), formIsActive = $bindable(), formTeamIds = $bindable(), emailError = $bindable(), passwordError = $bindable(), onclose, onsubmit, onvalidateemails, onvalidatepasswords, onupgrade }: Props = $props();
   /* eslint-enable prefer-const, @typescript-eslint/no-useless-default-assignment */
 
   // =============================================================================
   // LOCAL STATE
   // =============================================================================
 
-  /** Hierarchie-Reihenfolge: area → department → team */
+  /** Hierarchie-Reihenfolge: area → department → team (jeweils Leiter + Stellvertreter) */
   const LEAD_ORDER: string[] = [
     LEAD_POSITION_KEYS.AREA,
+    LEAD_POSITION_KEYS.AREA_DEPUTY,
     LEAD_POSITION_KEYS.DEPARTMENT,
+    LEAD_POSITION_KEYS.DEPARTMENT_DEPUTY,
     LEAD_POSITION_KEYS.TEAM,
+    LEAD_POSITION_KEYS.TEAM_DEPUTY,
   ];
 
   /** System positions first (sorted by hierarchy), then custom */
-  const effectivePositions = $derived.by(() => {
-    const raw =
+  const effectivePositions = $derived.by((): PositionOption[] => {
+    const raw: readonly PositionOption[] =
       positionOptions !== undefined && positionOptions.length > 0 ?
         positionOptions
       : POSITION_OPTIONS;
-    const system = raw
-      .filter((p: string) => isLeadPosition(p))
+    const unique = raw.filter(
+      (p: PositionOption, i: number, arr: readonly PositionOption[]) =>
+        arr.findIndex((x: PositionOption) => x.name === p.name) === i,
+    );
+    const system = unique
+      .filter((p: PositionOption) => isLeadPosition(p.name))
       .sort(
-        (a: string, b: string) => LEAD_ORDER.indexOf(a) - LEAD_ORDER.indexOf(b),
+        (a: PositionOption, b: PositionOption) =>
+          LEAD_ORDER.indexOf(a.name) - LEAD_ORDER.indexOf(b.name),
       );
-    const custom = raw.filter((p: string) => !isLeadPosition(p));
+    const custom = unique.filter((p: PositionOption) => !isLeadPosition(p.name));
     return [...system, ...custom];
   });
 
   // Dropdown States
-  let positionDropdownOpen = $state(false);
   let statusDropdownOpen = $state(false);
 
   // Upgrade confirmation state
@@ -113,29 +114,15 @@
   // =============================================================================
 
   const passwordMatch = $derived(
-    formPassword !== '' &&
-      formPasswordConfirm !== '' &&
-      formPassword === formPasswordConfirm,
+    formPassword !== '' && formPasswordConfirm !== '' && formPassword === formPasswordConfirm,
   );
 
   // =============================================================================
   // DROPDOWN HANDLERS
   // =============================================================================
 
-  function togglePositionDropdown(e: MouseEvent): void {
-    e.stopPropagation();
-    statusDropdownOpen = false;
-    positionDropdownOpen = !positionDropdownOpen;
-  }
-
-  function selectPosition(position: string): void {
-    formPosition = position;
-    positionDropdownOpen = false;
-  }
-
   function toggleStatusDropdown(e: MouseEvent): void {
     e.stopPropagation();
-    positionDropdownOpen = false;
     statusDropdownOpen = !statusDropdownOpen;
   }
 
@@ -150,9 +137,7 @@
 
   function handleTeamChange(e: Event): void {
     const select = e.target as HTMLSelectElement;
-    formTeamIds = Array.from(select.selectedOptions).map((opt) =>
-      parseInt(opt.value, 10),
-    );
+    formTeamIds = Array.from(select.selectedOptions).map((opt) => parseInt(opt.value, 10));
   }
 
   // =============================================================================
@@ -167,24 +152,13 @@
   }
 
   // =============================================================================
-  // OVERLAY CLICK HANDLER
-  // =============================================================================
-
-  function handleOverlayClick(e: MouseEvent): void {
-    if (e.target === e.currentTarget) onclose();
-  }
-
-  // =============================================================================
   // OUTSIDE CLICK HANDLERS
   // =============================================================================
 
   /**
    * Checks if a click occurred outside a dropdown element
    */
-  function isClickOutsideDropdown(
-    target: HTMLElement,
-    elementId: string,
-  ): boolean {
+  function isClickOutsideDropdown(target: HTMLElement, elementId: string): boolean {
     const el = document.getElementById(elementId);
     return el !== null && !el.contains(target);
   }
@@ -192,7 +166,6 @@
   // Reset local UI state when modal opens
   $effect(() => {
     if (show) {
-      positionDropdownOpen = false;
       statusDropdownOpen = false;
       upgradeConfirmActive = false;
       showPassword = false;
@@ -204,20 +177,11 @@
   });
 
   $effect(() => {
-    if (positionDropdownOpen || statusDropdownOpen) {
+    if (statusDropdownOpen) {
       const handleOutsideClick = (e: MouseEvent): void => {
         const target = e.target as HTMLElement;
 
-        if (
-          positionDropdownOpen &&
-          isClickOutsideDropdown(target, 'position-dropdown')
-        ) {
-          positionDropdownOpen = false;
-        }
-        if (
-          statusDropdownOpen &&
-          isClickOutsideDropdown(target, 'status-dropdown')
-        ) {
+        if (statusDropdownOpen && isClickOutsideDropdown(target, 'status-dropdown')) {
           statusDropdownOpen = false;
         }
       };
@@ -232,7 +196,6 @@
 
 {#if show}
   <!-- Add/Edit Employee Modal -->
-  <!-- svelte-ignore a11y_no_noninteractive_element_interactions, a11y_click_events_have_key_events -->
   <div
     id="employee-modal"
     class="modal-overlay modal-overlay--active"
@@ -240,18 +203,10 @@
     aria-modal="true"
     aria-labelledby="employee-modal-title"
     tabindex="-1"
-    onclick={handleOverlayClick}
-    onkeydown={(e) => {
-      if (e.key === 'Escape') onclose();
-    }}
   >
-    <!-- svelte-ignore a11y_no_noninteractive_element_interactions, a11y_click_events_have_key_events -->
     <form
       id="employee-form"
       class="ds-modal"
-      onclick={(e) => {
-        e.stopPropagation();
-      }}
       {onsubmit}
     >
       <div class="ds-modal__header">
@@ -323,9 +278,7 @@
             bind:value={formEmail}
             oninput={onvalidateemails}
           />
-          <span class="form-field__message text-(--color-text-secondary)"
-            >{msg.EMAIL_HINT}</span
-          >
+          <span class="form-field__message text-(--color-text-secondary)">{msg.EMAIL_HINT}</span>
         </div>
 
         <div
@@ -349,9 +302,7 @@
             oninput={onvalidateemails}
           />
           {#if emailError}
-            <span class="form-field__message form-field__message--error"
-              >{msg.EMAIL_MISMATCH}</span
-            >
+            <span class="form-field__message form-field__message--error">{msg.EMAIL_MISMATCH}</span>
           {/if}
         </div>
 
@@ -413,9 +364,7 @@
             class="form-field__label"
             for="employee-password-confirm"
           >
-            Passwort bestätigen {#if !isEditMode}<span class="text-red-500"
-                >*</span
-              >{/if}
+            Passwort bestätigen {#if !isEditMode}<span class="text-red-500">*</span>{/if}
           </label>
           <div class="form-field__password-wrapper">
             <input
@@ -477,45 +426,22 @@
         </div>
 
         <div class="form-field">
-          <label
-            class="form-field__label"
-            for="employee-position"
-            >Position <span class="text-red-500">*</span></label
-          >
-          <div
-            class="dropdown"
-            id="position-dropdown"
-          >
-            <!-- svelte-ignore a11y_click_events_have_key_events -->
-            <!-- svelte-ignore a11y_no_static_element_interactions -->
-            <div
-              class="dropdown__trigger"
-              class:active={positionDropdownOpen}
-              onclick={togglePositionDropdown}
-            >
-              <span
-                >{formPosition !== '' ?
-                  resolvePositionDisplay(formPosition, lbl)
-                : 'Bitte wählen...'}</span
-              >
-              <i class="fas fa-chevron-down"></i>
-            </div>
-            <div
-              class="dropdown__menu"
-              class:active={positionDropdownOpen}
-            >
-              {#each effectivePositions as position (position)}
-                <!-- svelte-ignore a11y_click_events_have_key_events -->
-                <!-- svelte-ignore a11y_no_static_element_interactions -->
-                <div
-                  class="dropdown__option"
-                  onclick={() => {
-                    selectPosition(position);
-                  }}
+          <UserPositionChips
+            catalog={effectivePositions}
+            bind:selectedIds={formPositionIds}
+            hierarchyLabels={lbl}
+          />
+          <div class="alert alert--info alert--sm mt-2">
+            <div class="alert__icon"><i class="fas fa-id-badge"></i></div>
+            <div class="alert__content">
+              <div class="alert__title">Position nicht dabei?</div>
+              <div class="alert__message">
+                <a
+                  href="/settings/organigram/positions"
+                  target="_blank">Neue Position anlegen</a
                 >
-                  {resolvePositionDisplay(position, lbl)}
-                </div>
-              {/each}
+                — oder bestehende Positionen bearbeiten.
+              </div>
             </div>
           </div>
         </div>
@@ -523,8 +449,7 @@
         <div class="form-field">
           <label
             class="form-field__label"
-            for="employee-number"
-            >Personalnummer <span class="text-red-500">*</span></label
+            for="employee-number">Personalnummer <span class="text-red-500">*</span></label
           >
           <input
             type="text"
@@ -546,6 +471,20 @@
             for="employee-dateOfBirth">Geburtsdatum</label
           >
           <AppDatePicker bind:value={formDateOfBirth} />
+        </div>
+
+        <div class="form-field">
+          <label
+            class="form-field__label"
+            for="employee-notes">Zusätzliche Infos</label
+          >
+          <textarea
+            id="employee-notes"
+            name="notes"
+            class="form-field__control"
+            rows="3"
+            bind:value={formNotes}
+          ></textarea>
         </div>
 
         <!-- Team Assignment Section -->
@@ -589,10 +528,7 @@
                   value={team.id}
                   selected={formTeamIds.includes(team.id)}
                 >
-                  {team.name}{(
-                    team.departmentName !== undefined &&
-                    team.departmentName !== ''
-                  ) ?
+                  {team.name}{team.departmentName !== undefined && team.departmentName !== '' ?
                     ` (${team.departmentName})`
                   : ''}
                 </option>
@@ -668,9 +604,7 @@
                 </div>
               </div>
             </div>
-            <span
-              class="form-field__message mt-1 block text-(--color-text-secondary)"
-            >
+            <span class="form-field__message mt-1 block text-(--color-text-secondary)">
               {msg.STATUS_HINT}
             </span>
           </div>
@@ -751,8 +685,7 @@
           class="btn btn-primary"
           disabled={submitting}
         >
-          {#if submitting}<span class="spinner-ring spinner-ring--sm mr-2"
-            ></span>{/if}
+          {#if submitting}<span class="spinner-ring spinner-ring--sm mr-2"></span>{/if}
           Speichern
         </button>
       </div>

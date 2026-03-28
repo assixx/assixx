@@ -162,8 +162,7 @@
         {/each}
         {#if overviewState.yearBlackoutMonths.size > 0}
           <div class="calendar-legend__item">
-            <span class="calendar-legend__dot calendar-legend__dot--blackout"
-            ></span>
+            <span class="calendar-legend__dot calendar-legend__dot--blackout"></span>
             <span class="calendar-legend__label">Urlaubssperre</span>
           </div>
         {/if}
@@ -307,8 +306,7 @@
     font-size: 0.75rem;
     font-weight: 700;
     color: var(--color-white);
-    text-shadow: 0 1px 3px
-      color-mix(in oklch, var(--color-black) 50%, transparent);
+    text-shadow: 0 1px 3px color-mix(in oklch, var(--color-black) 50%, transparent);
   }
 
   .year-total {

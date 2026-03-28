@@ -35,7 +35,7 @@ export const UpdateTeamSchema = z.object({
     .positive('Leader ID must be a positive integer')
     .nullable()
     .optional(),
-  deputyLeaderId: z.coerce
+  teamDeputyLeadId: z.coerce
     .number()
     .int()
     .positive('Deputy Leader ID must be a positive integer')

@@ -3,23 +3,16 @@
    * Vacation — Main Page Component
    * SSR: Data loaded in +page.server.ts
    * Svelte 5 Runes: $derived for SSR, $state for local UI
+   * Handlers: extracted to _lib/actions.svelte.ts
    */
   import { onDestroy, onMount } from 'svelte';
-
-  import { invalidateAll } from '$app/navigation';
 
   import { onClickOutsideDropdown } from '$lib/actions/click-outside';
   import PermissionDenied from '$lib/components/PermissionDenied.svelte';
   import { notificationStore } from '$lib/stores/notification.store.svelte';
-  import { showSuccessAlert, showErrorAlert } from '$lib/utils';
-  import { createLogger } from '$lib/utils/logger';
 
-  import * as api from './_lib/api';
-  import {
-    DEFAULT_PAGE_SIZE,
-    STATUS_FILTER_OPTIONS,
-    VIEW_TABS,
-  } from './_lib/constants';
+  import { createVacationActions } from './_lib/actions.svelte';
+  import { STATUS_FILTER_OPTIONS, VIEW_TABS } from './_lib/constants';
   import CreateModal from './_lib/CreateModal.svelte';
   import DetailModal from './_lib/DetailModal.svelte';
   import EditModal from './_lib/EditModal.svelte';
@@ -31,15 +24,7 @@
 
   import type { PageData } from './$types';
   import type { ViewTab } from './_lib/constants';
-  import type {
-    CreateVacationRequestPayload,
-    RespondPayload,
-    VacationCapacityAnalysis,
-    VacationRequest,
-    VacationRequestStatus,
-  } from './_lib/types';
-
-  const log = createLogger('VacationPage');
+  import type { VacationRequest, VacationRequestStatus } from './_lib/types';
 
   // ==========================================================================
   // SSR DATA (single source of truth via $derived)
@@ -47,7 +32,7 @@
 
   const { data }: { data: PageData } = $props();
 
-  const permissionDenied = $derived<boolean>(data.permissionDenied);
+  const permissionDenied = $derived(data.permissionDenied);
   const myRequests = $derived(data.myRequests);
   const incomingRequests = $derived(data.incomingRequests);
   const balance = $derived(data.balance);
@@ -79,7 +64,6 @@
   let activeTab = $state<ViewTab>('my-requests');
   let statusFilter = $state<VacationRequestStatus | 'all'>('all');
   let yearFilter = $state(new Date().getFullYear());
-  let isLoadingMore = $state(false);
 
   // Sync initial year from SSR data (one-shot)
   let hasInitYear = $state(false);
@@ -91,14 +75,15 @@
     }
   });
 
-  // Modal state
-  let showCreateModal = $state(false);
-  let showRespondModal = $state(false);
-  let respondingRequest = $state<VacationRequest | null>(null);
-  let respondAction = $state<'approve' | 'deny'>('approve');
+  // ==========================================================================
+  // ACTIONS MODULE
+  // ==========================================================================
 
-  // Pre-fetched capacity for edit modal
-  let editCapacity = $state<VacationCapacityAnalysis | null>(null);
+  const actions = createVacationActions({
+    getActiveTab: () => activeTab,
+    getStatusFilter: () => statusFilter,
+    getYearFilter: () => yearFilter,
+  });
 
   // ==========================================================================
   // SYNC SSR → STATE STORE
@@ -120,26 +105,6 @@
   });
 
   // ==========================================================================
-  // GLOBAL KEYBOARD HANDLER
-  // ==========================================================================
-
-  function handleKeyDown(e: KeyboardEvent) {
-    if (e.key === 'Escape') {
-      if (showRevokeModal) {
-        closeRevokeModal();
-      } else if (showRespondModal) {
-        closeRespondModal();
-      } else if (vacationState.showEditModal) {
-        vacationState.closeEditModal();
-      } else if (vacationState.showDetailModal) {
-        vacationState.closeDetailModal();
-      } else if (showCreateModal) {
-        showCreateModal = false;
-      }
-    }
-  }
-
-  // ==========================================================================
   // DROPDOWN STATE (same pattern as KVP page)
   // ==========================================================================
 
@@ -148,9 +113,7 @@
   let yearDisplayText = $state(String(new Date().getFullYear()));
 
   const currentCalendarYear = new Date().getFullYear();
-  const yearOptions = $derived(
-    Array.from({ length: 3 }, (_, i) => currentCalendarYear - 1 + i),
-  );
+  const yearOptions = $derived(Array.from({ length: 3 }, (_, i) => currentCalendarYear - 1 + i));
 
   function toggleDropdown(dropdownId: string): void {
     activeDropdown = activeDropdown === dropdownId ? null : dropdownId;
@@ -173,274 +136,24 @@
     activeTab = tab;
   }
 
-  function handleStatusSelect(
-    value: VacationRequestStatus | 'all',
-    label: string,
-  ): void {
+  function handleStatusSelect(value: VacationRequestStatus | 'all', label: string): void {
     statusFilter = value;
     statusDisplayText = label;
     closeAllDropdowns();
-    void reloadCurrentTab();
+    void actions.reloadCurrentTab();
   }
 
   function handleYearSelect(year: number): void {
     yearFilter = year;
     yearDisplayText = String(year);
     closeAllDropdowns();
-    void reloadCurrentTab();
-  }
-
-  async function reloadCurrentTab() {
-    isLoadingMore = true;
-    try {
-      const yearParam = yearFilter;
-      const statusParam = statusFilter === 'all' ? undefined : statusFilter;
-
-      if (activeTab === 'my-requests') {
-        const result = await api.getMyRequests(
-          1,
-          DEFAULT_PAGE_SIZE,
-          yearParam,
-          statusParam,
-        );
-        vacationState.setMyRequests(result);
-      } else {
-        const result = await api.getIncomingRequests(
-          1,
-          DEFAULT_PAGE_SIZE,
-          yearParam,
-          statusParam,
-        );
-        vacationState.setIncomingRequests(result);
-      }
-    } catch (err: unknown) {
-      log.error({ err }, 'Error reloading data');
-      showErrorAlert('Fehler beim Laden der Daten');
-    } finally {
-      isLoadingMore = false;
-    }
-  }
-
-  // ==========================================================================
-  // CREATE REQUEST
-  // ==========================================================================
-
-  async function handleCreateSubmit(payload: CreateVacationRequestPayload) {
-    try {
-      await api.createRequest(payload);
-      showCreateModal = false;
-      showSuccessAlert('Urlaubsantrag eingereicht');
-      await invalidateAll();
-    } catch (err: unknown) {
-      log.error({ err }, 'Create request failed');
-      const message = err instanceof Error ? err.message : '';
-      if (message.includes('blackout')) {
-        showErrorAlert(
-          'Antrag nicht möglich: Dieser Zeitraum liegt in einer Urlaubssperre. Bitte sprechen Sie Ihren Vorgesetzten an.',
-        );
-      } else if (
-        message.includes('entitlement') ||
-        message.includes('insufficient')
-      ) {
-        showErrorAlert(
-          'Antrag nicht möglich: Ihr Urlaubskontingent reicht nicht aus. Bitte sprechen Sie Ihren Vorgesetzten an.',
-        );
-      } else {
-        showErrorAlert('Fehler beim Einreichen des Antrags');
-      }
-    }
-  }
-
-  async function handleCapacityCheck(
-    startDate: string,
-    endDate: string,
-  ): Promise<VacationCapacityAnalysis | null> {
-    try {
-      return await api.analyzeCapacity(startDate, endDate);
-    } catch (err: unknown) {
-      log.error({ err }, 'Capacity check failed');
-      return null;
-    }
-  }
-
-  // ==========================================================================
-  // EDIT REQUEST
-  // ==========================================================================
-
-  async function handleEditSubmit(payload: CreateVacationRequestPayload) {
-    const request = vacationState.selectedRequest;
-    if (request === null) return;
-
-    try {
-      await api.editRequest(request.id, payload);
-      vacationState.closeEditModal();
-      showSuccessAlert('Antrag aktualisiert');
-      await invalidateAll();
-    } catch (err: unknown) {
-      log.error({ err }, 'Edit request failed');
-      showErrorAlert('Fehler beim Aktualisieren des Antrags');
-    }
-  }
-
-  // ==========================================================================
-  // REQUEST ACTIONS (own requests)
-  // ==========================================================================
-
-  function handleDetail(request: VacationRequest) {
-    vacationState.openDetailModal(request);
-  }
-
-  async function handleEdit(request: VacationRequest) {
-    // Start capacity fetch immediately, open modal in parallel
-    const targetId = request.id;
-    const capacityPromise = api.analyzeCapacity(
-      request.startDate,
-      request.endDate,
-    );
-    editCapacity = null;
-    vacationState.openEditModal(request);
-
-    try {
-      const result = await capacityPromise;
-      // Guard: only update if still editing the same request
-      if (vacationState.selectedRequest?.id === targetId) {
-        editCapacity = result;
-      }
-    } catch (err: unknown) {
-      log.error({ err }, 'Edit capacity pre-fetch failed');
-    }
-  }
-
-  async function handleWithdraw(request: VacationRequest) {
-    try {
-      await api.withdrawRequest(request.id);
-      showSuccessAlert('Antrag zurueckgezogen');
-      await invalidateAll();
-    } catch (err: unknown) {
-      log.error({ err }, 'Withdraw failed');
-      showErrorAlert('Fehler beim Zurückziehen');
-    }
-  }
-
-  // ==========================================================================
-  // INCOMING REQUEST ACTIONS (approve/deny)
-  // ==========================================================================
-
-  function openRespondModal(
-    request: VacationRequest,
-    action: 'approve' | 'deny',
-  ) {
-    respondingRequest = request;
-    respondAction = action;
-    showRespondModal = true;
-  }
-
-  async function handleRespondSubmit(payload: RespondPayload) {
-    if (respondingRequest === null) return;
-
-    try {
-      await api.respondToRequest(respondingRequest.id, payload);
-      closeRespondModal();
-      showSuccessAlert(
-        payload.action === 'approve' ? 'Antrag genehmigt' : 'Antrag abgelehnt',
-      );
-      await invalidateAll();
-    } catch (err: unknown) {
-      log.error({ err }, 'Respond failed');
-      showErrorAlert('Fehler bei der Bearbeitung');
-    }
-  }
-
-  function closeRespondModal() {
-    showRespondModal = false;
-    respondingRequest = null;
-  }
-
-  // ==========================================================================
-  // REVOKE (cancel approved request — approver/admin/root)
-  // ==========================================================================
-
-  let showRevokeModal = $state(false);
-  let revokingRequest = $state<VacationRequest | null>(null);
-
-  function openRevokeModal(request: VacationRequest) {
-    revokingRequest = request;
-    showRevokeModal = true;
-  }
-
-  function closeRevokeModal() {
-    showRevokeModal = false;
-    revokingRequest = null;
-  }
-
-  async function handleRevokeSubmit(reason: string) {
-    if (revokingRequest === null) return;
-
-    try {
-      await api.cancelRequest(revokingRequest.id, reason);
-      closeRevokeModal();
-      showSuccessAlert('Antrag widerrufen — Urlaubstage wurden zurückgebucht');
-      await invalidateAll();
-    } catch (err: unknown) {
-      log.error({ err }, 'Revoke failed');
-      showErrorAlert('Fehler beim Widerrufen des Antrags');
-    }
-  }
-
-  // ==========================================================================
-  // PAGINATION
-  // ==========================================================================
-
-  const currentList = $derived(
-    activeTab === 'my-requests' ?
-      vacationState.myRequests
-    : vacationState.incomingRequests,
-  );
-
-  const hasMorePages = $derived(currentList.page < currentList.totalPages);
-
-  async function loadNextPage() {
-    if (!hasMorePages || isLoadingMore) return;
-
-    const setLoading = (val: boolean) => {
-      isLoadingMore = val;
-    };
-    setLoading(true);
-    try {
-      const nextPage = currentList.page + 1;
-      const statusParam = statusFilter === 'all' ? undefined : statusFilter;
-
-      if (activeTab === 'my-requests') {
-        const result = await api.getMyRequests(
-          nextPage,
-          DEFAULT_PAGE_SIZE,
-          yearFilter,
-          statusParam,
-        );
-        vacationState.setMyRequests(result);
-      } else {
-        const result = await api.getIncomingRequests(
-          nextPage,
-          DEFAULT_PAGE_SIZE,
-          yearFilter,
-          statusParam,
-        );
-        vacationState.setIncomingRequests(result);
-      }
-    } catch (err: unknown) {
-      log.error({ err }, 'Pagination error');
-      showErrorAlert('Fehler beim Laden weiterer Eintraege');
-    } finally {
-      setLoading(false);
-    }
+    void actions.reloadCurrentTab();
   }
 </script>
 
 <svelte:head>
   <title>Urlaubsverwaltung - Assixx</title>
 </svelte:head>
-
-<svelte:window onkeydown={handleKeyDown} />
 
 {#if permissionDenied}
   <PermissionDenied addonName="die Urlaubsverwaltung" />
@@ -457,9 +170,7 @@
           <button
             type="button"
             class="btn btn-primary"
-            onclick={() => {
-              showCreateModal = true;
-            }}
+            onclick={actions.openCreateModal}
           >
             <i class="fas fa-plus mr-1"></i>
             Neuer Antrag
@@ -487,9 +198,7 @@
                 >
                   {balance.remainingDays} von {balance.availableDays} Tagen verbleibend
                 </span>
-                <span
-                  style="font-size: 0.875rem; font-weight: 600; color: {balanceColor};"
-                >
+                <span style="font-size: 0.875rem; font-weight: 600; color: {balanceColor};">
                   {balancePercent}%
                 </span>
               </div>
@@ -628,20 +337,16 @@
           {#if activeTab === 'my-requests'}
             <i class="fas fa-list mr-2"></i>
             Meine Anträge
-            <span class="text-muted ml-2"
-              >({vacationState.myRequests.total})</span
-            >
+            <span class="text-muted ml-2">({vacationState.myRequests.total})</span>
           {:else}
             <i class="fas fa-inbox mr-2"></i>
             Eingehende Anträge
-            <span class="text-muted ml-2"
-              >({vacationState.incomingRequests.total})</span
-            >
+            <span class="text-muted ml-2">({vacationState.incomingRequests.total})</span>
           {/if}
         </h3>
       </div>
       <div class="card__body">
-        {#if isLoadingMore}
+        {#if actions.isLoadingMore}
           <div class="spinner-container spinner-container--sm">
             <div class="spinner-ring spinner-ring--sm"></div>
           </div>
@@ -652,16 +357,12 @@
                 <i class="fas fa-umbrella-beach"></i>
               </div>
               <h3 class="empty-state__title">Keine Urlaubsanträge vorhanden</h3>
-              <p class="empty-state__description">
-                Erstellen Sie Ihren ersten Urlaubsantrag.
-              </p>
+              <p class="empty-state__description">Erstellen Sie Ihren ersten Urlaubsantrag.</p>
               <div class="empty-state__actions">
                 <button
                   type="button"
                   class="btn btn-primary"
-                  onclick={() => {
-                    showCreateModal = true;
-                  }}
+                  onclick={actions.openCreateModal}
                 >
                   <i class="fas fa-plus mr-1"></i>
                   Ersten Antrag erstellen
@@ -674,9 +375,9 @@
                 <RequestCard
                   {request}
                   isNew={unreadRequestIds.has(request.id)}
-                  onDetail={handleDetail}
-                  onEdit={handleEdit}
-                  onWithdraw={handleWithdraw}
+                  onDetail={actions.handleDetail}
+                  onEdit={actions.handleEdit}
+                  onWithdraw={actions.handleWithdraw}
                 />
               {/each}
             </div>
@@ -698,28 +399,30 @@
                 {request}
                 isNew={unreadRequestIds.has(request.id)}
                 onApprove={(r: VacationRequest) => {
-                  openRespondModal(r, 'approve');
+                  actions.openRespondModal(r, 'approve');
                 }}
                 onDeny={(r: VacationRequest) => {
-                  openRespondModal(r, 'deny');
+                  actions.openRespondModal(r, 'deny');
                 }}
-                onDetail={handleDetail}
-                onRevoke={openRevokeModal}
+                onDetail={actions.handleDetail}
+                onRevoke={actions.openRevokeModal}
               />
             {/each}
           </div>
         {/if}
 
         <!-- Pagination -->
-        {#if hasMorePages}
+        {#if actions.hasMorePages}
           <div class="vacation-load-more">
             <button
               type="button"
               class="btn btn-cancel btn"
-              onclick={loadNextPage}
-              disabled={isLoadingMore}
+              onclick={() => {
+                void actions.loadNextPage();
+              }}
+              disabled={actions.isLoadingMore}
             >
-              Weitere laden ({currentList.page}/{currentList.totalPages})
+              Weitere laden ({actions.currentList.page}/{actions.currentList.totalPages})
             </button>
           </div>
         {/if}
@@ -727,13 +430,11 @@
     </div>
   </div>
 
-  {#if showCreateModal}
+  {#if actions.showCreateModal}
     <CreateModal
-      onclose={() => {
-        showCreateModal = false;
-      }}
-      onsubmit={handleCreateSubmit}
-      onCapacityCheck={handleCapacityCheck}
+      onclose={actions.closeCreateModal}
+      onsubmit={actions.handleCreateSubmit}
+      onCapacityCheck={actions.handleCapacityCheck}
     />
   {/if}
 
@@ -750,29 +451,29 @@
   {#if vacationState.showEditModal && vacationState.selectedRequest !== null}
     <EditModal
       request={vacationState.selectedRequest}
-      initialCapacity={editCapacity}
+      initialCapacity={actions.editCapacity}
       onclose={() => {
         vacationState.closeEditModal();
       }}
-      onsubmit={handleEditSubmit}
-      onCapacityCheck={handleCapacityCheck}
+      onsubmit={actions.handleEditSubmit}
+      onCapacityCheck={actions.handleCapacityCheck}
     />
   {/if}
 
-  {#if showRespondModal && respondingRequest !== null}
+  {#if actions.showRespondModal && actions.respondingRequest !== null}
     <RespondModal
-      request={respondingRequest}
-      action={respondAction}
-      onclose={closeRespondModal}
-      onsubmit={handleRespondSubmit}
+      request={actions.respondingRequest}
+      action={actions.respondAction}
+      onclose={actions.closeRespondModal}
+      onsubmit={actions.handleRespondSubmit}
     />
   {/if}
 
-  {#if showRevokeModal && revokingRequest !== null}
+  {#if actions.showRevokeModal && actions.revokingRequest !== null}
     <RevokeModal
-      request={revokingRequest}
-      onclose={closeRevokeModal}
-      onsubmit={handleRevokeSubmit}
+      request={actions.revokingRequest}
+      onclose={actions.closeRevokeModal}
+      onsubmit={actions.handleRevokeSubmit}
     />
   {/if}
 {/if}

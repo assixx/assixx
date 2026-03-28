@@ -95,19 +95,15 @@ export function parseFloatOrUndefined(value: unknown): number | undefined {
 // ============================================================================
 
 /** Build optional string fields from asset row */
-export function buildAssetStringFields(
-  row: DbAssetRow,
-): Partial<AssetResponse> {
+export function buildAssetStringFields(row: DbAssetRow): Partial<AssetResponse> {
   const fields: Partial<AssetResponse> = {};
   if (row.model !== null) fields.model = row.model;
   if (row.manufacturer !== null) fields.manufacturer = row.manufacturer;
   if (row.serial_number !== null) fields.serialNumber = row.serial_number;
   if (row.asset_number !== null) fields.assetNumber = row.asset_number;
   if (row.location !== null) fields.location = row.location;
-  if (row.production_capacity !== null)
-    fields.productionCapacity = row.production_capacity;
-  if (row.energy_consumption !== null)
-    fields.energyConsumption = row.energy_consumption;
+  if (row.production_capacity !== null) fields.productionCapacity = row.production_capacity;
+  if (row.energy_consumption !== null) fields.energyConsumption = row.energy_consumption;
   if (row.manual_url !== null) fields.manualUrl = row.manual_url;
   if (row.qr_code !== null) fields.qrCode = row.qr_code;
   if (row.notes !== null) fields.notes = row.notes;
@@ -117,16 +113,11 @@ export function buildAssetStringFields(
 /** Build optional date fields from asset row */
 export function buildAssetDateFields(row: DbAssetRow): Partial<AssetResponse> {
   const fields: Partial<AssetResponse> = {};
-  if (row.purchase_date !== null)
-    fields.purchaseDate = toIsoString(row.purchase_date);
-  if (row.installation_date !== null)
-    fields.installationDate = toIsoString(row.installation_date);
-  if (row.warranty_until !== null)
-    fields.warrantyUntil = toIsoString(row.warranty_until);
-  if (row.last_maintenance !== null)
-    fields.lastMaintenance = toIsoString(row.last_maintenance);
-  if (row.next_maintenance !== null)
-    fields.nextMaintenance = toIsoString(row.next_maintenance);
+  if (row.purchase_date !== null) fields.purchaseDate = toIsoString(row.purchase_date);
+  if (row.installation_date !== null) fields.installationDate = toIsoString(row.installation_date);
+  if (row.warranty_until !== null) fields.warrantyUntil = toIsoString(row.warranty_until);
+  if (row.last_maintenance !== null) fields.lastMaintenance = toIsoString(row.last_maintenance);
+  if (row.next_maintenance !== null) fields.nextMaintenance = toIsoString(row.next_maintenance);
   return fields;
 }
 
@@ -148,22 +139,17 @@ export function parseTeamsJson(
 }
 
 /** Build optional reference fields from asset row */
-export function buildAssetReferenceFields(
-  row: DbAssetRow,
-): Partial<AssetResponse> {
+export function buildAssetReferenceFields(row: DbAssetRow): Partial<AssetResponse> {
   const fields: Partial<AssetResponse> = {};
   if (row.department_id !== null) fields.departmentId = row.department_id;
-  if (row.department_name !== undefined)
-    fields.departmentName = row.department_name;
+  if (row.department_name !== undefined) fields.departmentName = row.department_name;
   if (row.area_id !== null) fields.areaId = row.area_id;
   if (row.area_name !== undefined) fields.areaName = row.area_name;
   if (row.operating_hours !== null) fields.operatingHours = row.operating_hours;
   if (row.created_by !== null) fields.createdBy = row.created_by;
-  if (row.created_by_name !== undefined)
-    fields.createdByName = row.created_by_name;
+  if (row.created_by_name !== undefined) fields.createdByName = row.created_by_name;
   if (row.updated_by !== null) fields.updatedBy = row.updated_by;
-  if (row.updated_by_name !== undefined)
-    fields.updatedByName = row.updated_by_name;
+  if (row.updated_by_name !== undefined) fields.updatedByName = row.updated_by_name;
   const parsedTeams = parseTeamsJson(row.teams);
   if (parsedTeams !== undefined) fields.teams = parsedTeams;
   return fields;
@@ -202,16 +188,13 @@ export function buildMaintenanceDetailFields(
 ): Partial<MaintenanceHistoryResponse> {
   const fields: Partial<MaintenanceHistoryResponse> = {};
   if (row.performed_by !== null) fields.performedBy = row.performed_by;
-  if (row.performed_by_name !== undefined)
-    fields.performedByName = row.performed_by_name;
-  if (row.external_company !== null)
-    fields.externalCompany = row.external_company;
+  if (row.performed_by_name !== undefined) fields.performedByName = row.performed_by_name;
+  if (row.external_company !== null) fields.externalCompany = row.external_company;
   if (row.description !== null) fields.description = row.description;
   if (row.parts_replaced !== null) fields.partsReplaced = row.parts_replaced;
   if (row.report_url !== null) fields.reportUrl = row.report_url;
   if (row.created_by !== null) fields.createdBy = row.created_by;
-  if (row.created_by_name !== undefined)
-    fields.createdByName = row.created_by_name;
+  if (row.created_by_name !== undefined) fields.createdByName = row.created_by_name;
   if (row.next_maintenance_date !== null)
     fields.nextMaintenanceDate = toIsoString(row.next_maintenance_date);
   return fields;
@@ -234,9 +217,7 @@ export function buildMaintenanceNumericFields(
 }
 
 /** Map maintenance row to API response */
-export function mapMaintenanceToApi(
-  row: DbMaintenanceRow,
-): MaintenanceHistoryResponse {
+export function mapMaintenanceToApi(row: DbMaintenanceRow): MaintenanceHistoryResponse {
   return {
     id: row.id,
     tenantId: row.tenant_id,
@@ -312,14 +293,13 @@ export const MACHINE_FIELD_MAPPINGS: [keyof AssetUpdateRequest, string][] = [
 ];
 
 /** Date field mappings for asset update */
-export const MACHINE_DATE_FIELD_MAPPINGS: [keyof AssetUpdateRequest, string][] =
-  [
-    ['purchaseDate', 'purchase_date'],
-    ['installationDate', 'installation_date'],
-    ['warrantyUntil', 'warranty_until'],
-    ['lastMaintenance', 'last_maintenance'],
-    ['nextMaintenance', 'next_maintenance'],
-  ];
+export const MACHINE_DATE_FIELD_MAPPINGS: [keyof AssetUpdateRequest, string][] = [
+  ['purchaseDate', 'purchase_date'],
+  ['installationDate', 'installation_date'],
+  ['warrantyUntil', 'warranty_until'],
+  ['lastMaintenance', 'last_maintenance'],
+  ['nextMaintenance', 'next_maintenance'],
+];
 
 /** Build SET clause fields for asset update */
 export function buildAssetUpdateFields(
@@ -371,9 +351,7 @@ export function buildMaintenanceInsertParams(
     data.cost ?? null,
     data.durationHours ?? null,
     data.statusAfter ?? 'operational',
-    hasContent(data.nextMaintenanceDate) ?
-      new Date(data.nextMaintenanceDate)
-    : null,
+    hasContent(data.nextMaintenanceDate) ? new Date(data.nextMaintenanceDate) : null,
     data.reportUrl ?? null,
     userId,
   ];

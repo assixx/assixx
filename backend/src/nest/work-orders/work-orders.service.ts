@@ -6,11 +6,7 @@
  * Returns raw data — ResponseInterceptor wraps automatically (ADR-007).
  */
 import { IS_ACTIVE } from '@assixx/shared/constants';
-import {
-  ConflictException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import type { PoolClient } from 'pg';
 import { v7 as uuidv7 } from 'uuid';
 
@@ -104,8 +100,7 @@ function buildWhereClause(
 ): WhereResult {
   const isActiveCondition =
     query.isActive === 'archived' ? `wo.is_active = ${IS_ACTIVE.ARCHIVED}`
-    : query.isActive === 'all' ?
-      `wo.is_active IN (${IS_ACTIVE.ACTIVE}, ${IS_ACTIVE.ARCHIVED})`
+    : query.isActive === 'all' ? `wo.is_active IN (${IS_ACTIVE.ACTIVE}, ${IS_ACTIVE.ARCHIVED})`
     : `wo.is_active = ${IS_ACTIVE.ACTIVE}`;
 
   const conditions: string[] = ['wo.tenant_id = $1', isActiveCondition];
@@ -178,38 +173,32 @@ export class WorkOrdersService {
   ) {}
 
   /** Create a work order, optionally with initial assignees */
-  async createWorkOrder(
-    tenantId: number,
-    userId: number,
-    dto: CreateDto,
-  ): Promise<WorkOrder> {
+  async createWorkOrder(tenantId: number, userId: number, dto: CreateDto): Promise<WorkOrder> {
     if (dto.sourceUuid != null && dto.sourceType !== 'manual') {
       await this.ensureNoActiveLinkedWorkOrder(tenantId, dto.sourceUuid);
     }
 
-    return await this.db.tenantTransaction(
-      async (client: PoolClient): Promise<WorkOrder> => {
-        const order = await this.insertWorkOrder(client, tenantId, userId, dto);
-        const assignees = await this.insertAssignees(
-          client,
-          tenantId,
-          order.id,
-          userId,
-          dto.assigneeUuids ?? [],
-        );
+    return await this.db.tenantTransaction(async (client: PoolClient): Promise<WorkOrder> => {
+      const order = await this.insertWorkOrder(client, tenantId, userId, dto);
+      const assignees = await this.insertAssignees(
+        client,
+        tenantId,
+        order.id,
+        userId,
+        dto.assigneeUuids ?? [],
+      );
 
-        void this.activityLogger.logCreate(
-          tenantId,
-          userId,
-          'work_order',
-          order.id,
-          `Arbeitsauftrag "${dto.title}" erstellt`,
-          { uuid: order.uuid, title: dto.title, priority: dto.priority },
-        );
+      void this.activityLogger.logCreate(
+        tenantId,
+        userId,
+        'work_order',
+        order.id,
+        `Arbeitsauftrag "${dto.title}" erstellt`,
+        { uuid: order.uuid, title: dto.title, priority: dto.priority },
+      );
 
-        return mapWorkOrderRowToApi(order, assignees.map(mapAssigneeRowToApi));
-      },
-    );
+      return mapWorkOrderRowToApi(order, assignees.map(mapAssigneeRowToApi));
+    });
   }
 
   /** Get a single work order by UUID with full enrichment */
@@ -233,10 +222,7 @@ export class WorkOrdersService {
       [row.id],
     );
 
-    const workOrder = mapWorkOrderRowToApi(
-      row,
-      assigneeRows.map(mapAssigneeRowToApi),
-    );
+    const workOrder = mapWorkOrderRowToApi(row, assigneeRows.map(mapAssigneeRowToApi));
 
     if (row.source_type === 'kvp_proposal' && row.source_uuid !== null) {
       const kvp = await this.db.queryOne<{ expected_benefit: string | null }>(
@@ -275,50 +261,48 @@ export class WorkOrdersService {
     uuid: string,
     dto: UpdateDto,
   ): Promise<WorkOrder> {
-    await this.db.tenantTransaction(
-      async (client: PoolClient): Promise<void> => {
-        const existing = await this.lockByUuid(client, tenantId, uuid);
+    await this.db.tenantTransaction(async (client: PoolClient): Promise<void> => {
+      const existing = await this.lockByUuid(client, tenantId, uuid);
 
-        const sets: string[] = [];
-        const params: unknown[] = [];
-        let idx = 3; // $1=uuid, $2=tenantId
+      const sets: string[] = [];
+      const params: unknown[] = [];
+      let idx = 3; // $1=uuid, $2=tenantId
 
-        if (dto.title !== undefined) {
-          sets.push(`title = $${idx++}`);
-          params.push(dto.title);
-        }
-        if (dto.description !== undefined) {
-          sets.push(`description = $${idx++}`);
-          params.push(dto.description);
-        }
-        if (dto.priority !== undefined) {
-          sets.push(`priority = $${idx++}`);
-          params.push(dto.priority);
-        }
-        if (dto.dueDate !== undefined) {
-          sets.push(`due_date = $${idx}`);
-          params.push(dto.dueDate);
-        }
+      if (dto.title !== undefined) {
+        sets.push(`title = $${idx++}`);
+        params.push(dto.title);
+      }
+      if (dto.description !== undefined) {
+        sets.push(`description = $${idx++}`);
+        params.push(dto.description);
+      }
+      if (dto.priority !== undefined) {
+        sets.push(`priority = $${idx++}`);
+        params.push(dto.priority);
+      }
+      if (dto.dueDate !== undefined) {
+        sets.push(`due_date = $${idx}`);
+        params.push(dto.dueDate);
+      }
 
-        if (sets.length === 0) return;
+      if (sets.length === 0) return;
 
-        await client.query(
-          `UPDATE work_orders SET ${sets.join(', ')}
+      await client.query(
+        `UPDATE work_orders SET ${sets.join(', ')}
            WHERE uuid = $1 AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}`,
-          [uuid, tenantId, ...params],
-        );
+        [uuid, tenantId, ...params],
+      );
 
-        void this.activityLogger.logUpdate(
-          tenantId,
-          userId,
-          'work_order',
-          existing.id,
-          `Arbeitsauftrag "${existing.title}" aktualisiert`,
-          { title: existing.title, priority: existing.priority },
-          dto as Record<string, unknown>,
-        );
-      },
-    );
+      void this.activityLogger.logUpdate(
+        tenantId,
+        userId,
+        'work_order',
+        existing.id,
+        `Arbeitsauftrag "${existing.title}" aktualisiert`,
+        { title: existing.title, priority: existing.priority },
+        dto as Record<string, unknown>,
+      );
+    });
 
     // Read AFTER commit — getWorkOrder uses db.queryOne (new pool connection),
     // which can only see committed data, not in-flight transaction changes.
@@ -326,11 +310,7 @@ export class WorkOrdersService {
   }
 
   /** Archive a work order (is_active = 3) — work orders are never deleted */
-  async archiveWorkOrder(
-    tenantId: number,
-    userId: number,
-    uuid: string,
-  ): Promise<void> {
+  async archiveWorkOrder(tenantId: number, userId: number, uuid: string): Promise<void> {
     const row = await this.db.queryOne<{ id: number; title: string }>(
       `SELECT id, title FROM work_orders
        WHERE uuid = $1 AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}`,
@@ -341,15 +321,13 @@ export class WorkOrdersService {
       throw new NotFoundException('Arbeitsauftrag nicht gefunden');
     }
 
-    await this.db.tenantTransaction(
-      async (client: PoolClient): Promise<void> => {
-        await client.query(
-          `UPDATE work_orders SET is_active = ${IS_ACTIVE.ARCHIVED}
+    await this.db.tenantTransaction(async (client: PoolClient): Promise<void> => {
+      await client.query(
+        `UPDATE work_orders SET is_active = ${IS_ACTIVE.ARCHIVED}
            WHERE uuid = $1 AND tenant_id = $2`,
-          [uuid, tenantId],
-        );
-      },
-    );
+        [uuid, tenantId],
+      );
+    });
 
     void this.activityLogger.logUpdate(
       tenantId,
@@ -363,11 +341,7 @@ export class WorkOrdersService {
   }
 
   /** Restore an archived work order back to active (is_active = 1) */
-  async restoreWorkOrder(
-    tenantId: number,
-    userId: number,
-    uuid: string,
-  ): Promise<void> {
+  async restoreWorkOrder(tenantId: number, userId: number, uuid: string): Promise<void> {
     const row = await this.db.queryOne<{ id: number; title: string }>(
       `SELECT id, title FROM work_orders
        WHERE uuid = $1 AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ARCHIVED}`,
@@ -378,15 +352,13 @@ export class WorkOrdersService {
       throw new NotFoundException('Archivierter Arbeitsauftrag nicht gefunden');
     }
 
-    await this.db.tenantTransaction(
-      async (client: PoolClient): Promise<void> => {
-        await client.query(
-          `UPDATE work_orders SET is_active = ${IS_ACTIVE.ACTIVE}
+    await this.db.tenantTransaction(async (client: PoolClient): Promise<void> => {
+      await client.query(
+        `UPDATE work_orders SET is_active = ${IS_ACTIVE.ACTIVE}
            WHERE uuid = $1 AND tenant_id = $2`,
-          [uuid, tenantId],
-        );
-      },
-    );
+        [uuid, tenantId],
+      );
+    });
 
     void this.activityLogger.logUpdate(
       tenantId,
@@ -524,9 +496,7 @@ export class WorkOrdersService {
     );
     const row = result.rows[0];
     if (row === undefined) {
-      throw new NotFoundException(
-        'Arbeitsauftrag konnte nicht erstellt werden',
-      );
+      throw new NotFoundException('Arbeitsauftrag konnte nicht erstellt werden');
     }
     return row;
   }
@@ -561,10 +531,7 @@ export class WorkOrdersService {
   }
 
   /** Reject creation if an active (non-verified) work order already exists for this source */
-  private async ensureNoActiveLinkedWorkOrder(
-    tenantId: number,
-    sourceUuid: string,
-  ): Promise<void> {
+  private async ensureNoActiveLinkedWorkOrder(tenantId: number, sourceUuid: string): Promise<void> {
     const existing = await this.db.queryOne<{ uuid: string; status: string }>(
       `SELECT uuid, status FROM work_orders
        WHERE source_uuid = $1 AND tenant_id = $2
@@ -611,11 +578,7 @@ export class WorkOrdersService {
     currentUserId: number,
     query: ListQuery,
   ): Promise<PaginatedWorkOrders> {
-    const { whereClause, params, nextIdx } = buildWhereClause(
-      tenantId,
-      forUserId,
-      query,
-    );
+    const { whereClause, params, nextIdx } = buildWhereClause(tenantId, forUserId, query);
     const page = query.page ?? 1;
     const pageSize = query.limit ?? 20;
     const offset = (page - 1) * pageSize;

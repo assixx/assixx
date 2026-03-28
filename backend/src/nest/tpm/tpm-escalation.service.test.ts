@@ -49,9 +49,7 @@ function createMockNotificationService() {
   };
 }
 
-function createConfigRow(
-  overrides?: Partial<TpmEscalationConfigRow>,
-): TpmEscalationConfigRow {
+function createConfigRow(overrides?: Partial<TpmEscalationConfigRow>): TpmEscalationConfigRow {
   return {
     id: 1,
     tenant_id: 10,
@@ -76,9 +74,7 @@ interface OverdueCandidate {
   status: string;
 }
 
-function createOverdueCandidate(
-  overrides?: Partial<OverdueCandidate>,
-): OverdueCandidate {
+function createOverdueCandidate(overrides?: Partial<OverdueCandidate>): OverdueCandidate {
   return {
     id: 100,
     uuid: 'card-uuid-overdue-001',
@@ -229,9 +225,9 @@ describe('TpmEscalationService', () => {
     it('should throw when UPSERT returns no rows', async () => {
       mockClient.query.mockResolvedValueOnce({ rows: [] });
 
-      await expect(
-        service.updateConfig(10, 1, { escalationAfterHours: 24 }),
-      ).rejects.toThrow('UPSERT tpm_escalation_config returned no rows');
+      await expect(service.updateConfig(10, 1, { escalationAfterHours: 24 })).rejects.toThrow(
+        'UPSERT tpm_escalation_config returned no rows',
+      );
     });
 
     it('should default notifyTeamLead to true and notifyDepartmentLead to false', async () => {
@@ -312,19 +308,13 @@ describe('TpmEscalationService', () => {
     });
 
     it('should call markCardOverdue with correct params', async () => {
-      mockDb.query.mockResolvedValueOnce([
-        createOverdueCandidate({ id: 100, tenant_id: 10 }),
-      ]);
+      mockDb.query.mockResolvedValueOnce([createOverdueCandidate({ id: 100, tenant_id: 10 })]);
       mockClient.query.mockResolvedValueOnce({ rows: [{ id: 100 }] });
       mockDb.queryOne.mockResolvedValueOnce({ team_lead_id: 5 });
 
       await service.handleEscalation();
 
-      expect(mockCardStatusService.markCardOverdue).toHaveBeenCalledWith(
-        mockClient,
-        10,
-        100,
-      );
+      expect(mockCardStatusService.markCardOverdue).toHaveBeenCalledWith(mockClient, 10, 100);
     });
 
     it('should notify team lead after successful escalation', async () => {
@@ -334,9 +324,7 @@ describe('TpmEscalationService', () => {
 
       await service.handleEscalation();
 
-      expect(
-        mockNotificationService.notifyMaintenanceOverdue,
-      ).toHaveBeenCalledWith(
+      expect(mockNotificationService.notifyMaintenanceOverdue).toHaveBeenCalledWith(
         10,
         expect.objectContaining({
           uuid: 'card-uuid-overdue-001',
@@ -354,9 +342,7 @@ describe('TpmEscalationService', () => {
 
       await service.handleEscalation();
 
-      expect(
-        mockNotificationService.notifyMaintenanceOverdue,
-      ).not.toHaveBeenCalled();
+      expect(mockNotificationService.notifyMaintenanceOverdue).not.toHaveBeenCalled();
     });
 
     it('should skip card when already locked by another instance', async () => {
@@ -367,9 +353,7 @@ describe('TpmEscalationService', () => {
       await service.handleEscalation();
 
       expect(mockCardStatusService.markCardOverdue).not.toHaveBeenCalled();
-      expect(
-        mockNotificationService.notifyMaintenanceOverdue,
-      ).not.toHaveBeenCalled();
+      expect(mockNotificationService.notifyMaintenanceOverdue).not.toHaveBeenCalled();
     });
 
     it('should skip when isProcessing is true', async () => {
@@ -387,8 +371,7 @@ describe('TpmEscalationService', () => {
       await service.handleEscalation();
 
       // isProcessing should be false after error
-      const isProcessing = (service as unknown as { isProcessing: boolean })
-        .isProcessing;
+      const isProcessing = (service as unknown as { isProcessing: boolean }).isProcessing;
       expect(isProcessing).toBe(false);
     });
 
@@ -413,38 +396,30 @@ describe('TpmEscalationService', () => {
       await service.handleEscalation();
 
       expect(mockCardStatusService.markCardOverdue).toHaveBeenCalledTimes(1);
-      expect(mockCardStatusService.markCardOverdue).toHaveBeenCalledWith(
-        mockClient,
-        10,
-        200,
-      );
+      expect(mockCardStatusService.markCardOverdue).toHaveBeenCalledWith(mockClient, 10, 200);
     });
 
     it('should include assetName in notification card when available', async () => {
-      mockDb.query.mockResolvedValueOnce([
-        createOverdueCandidate({ asset_name: 'Fräse F9' }),
-      ]);
+      mockDb.query.mockResolvedValueOnce([createOverdueCandidate({ asset_name: 'Fräse F9' })]);
       mockClient.query.mockResolvedValueOnce({ rows: [{ id: 100 }] });
       mockDb.queryOne.mockResolvedValueOnce({ team_lead_id: 5 });
 
       await service.handleEscalation();
 
-      const notificationCard = mockNotificationService.notifyMaintenanceOverdue
-        .mock.calls[0]?.[1] as Record<string, unknown>;
+      const notificationCard = mockNotificationService.notifyMaintenanceOverdue.mock
+        .calls[0]?.[1] as Record<string, unknown>;
       expect(notificationCard.assetName).toBe('Fräse F9');
     });
 
     it('should omit assetName from notification card when null', async () => {
-      mockDb.query.mockResolvedValueOnce([
-        createOverdueCandidate({ asset_name: null }),
-      ]);
+      mockDb.query.mockResolvedValueOnce([createOverdueCandidate({ asset_name: null })]);
       mockClient.query.mockResolvedValueOnce({ rows: [{ id: 100 }] });
       mockDb.queryOne.mockResolvedValueOnce({ team_lead_id: 5 });
 
       await service.handleEscalation();
 
-      const notificationCard = mockNotificationService.notifyMaintenanceOverdue
-        .mock.calls[0]?.[1] as Record<string, unknown>;
+      const notificationCard = mockNotificationService.notifyMaintenanceOverdue.mock
+        .calls[0]?.[1] as Record<string, unknown>;
       expect(notificationCard).not.toHaveProperty('assetName');
     });
   });

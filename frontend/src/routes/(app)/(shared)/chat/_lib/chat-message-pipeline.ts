@@ -21,10 +21,7 @@ import type { FilePreviewItem, ScheduledMessage } from './types';
 const log = createLogger('ChatPipeline');
 
 /** Callback for surfacing notifications to the user */
-export type NotifyFn = (
-  msg: string,
-  type: 'success' | 'error' | 'info' | 'warning',
-) => void;
+export type NotifyFn = (msg: string, type: 'success' | 'error' | 'info' | 'warning') => void;
 
 /**
  * Upload files for a conversation message.
@@ -128,29 +125,14 @@ async function encryptForScheduledMessage(
 ): Promise<handlers.ScheduledE2eFields | null> {
   const recipientKey = await fetchRecipientPublicKey(recipientId);
   if (recipientKey === null) {
-    log.warn(
-      { recipientId },
-      'Recipient has no E2E key — scheduling as plaintext',
-    );
+    log.warn({ recipientId }, 'Recipient has no E2E key — scheduling as plaintext');
     return null;
   }
 
   try {
-    const salt = computeConversationSalt(
-      tenantId,
-      conversationId,
-      currentUserId,
-      recipientId,
-    );
-    const encrypted = await cryptoBridge.encrypt(
-      content,
-      recipientKey.publicKey,
-      salt,
-    );
-    log.info(
-      { keyEpoch: encrypted.keyEpoch },
-      'Scheduled message encrypted successfully',
-    );
+    const salt = computeConversationSalt(tenantId, conversationId, currentUserId, recipientId);
+    const encrypted = await cryptoBridge.encrypt(content, recipientKey.publicKey, salt);
+    log.info({ keyEpoch: encrypted.keyEpoch }, 'Scheduled message encrypted successfully');
     return {
       encryptedContent: encrypted.ciphertext,
       e2eNonce: encrypted.nonce,
@@ -211,10 +193,7 @@ export async function sendImmediateMessage(
       currentUserId: opts.currentUserId,
       tenantId: opts.tenantId,
     });
-    log.info(
-      { messageType: message.type },
-      'Message prepared — sending via WebSocket',
-    );
+    log.info({ messageType: message.type }, 'Message prepared — sending via WebSocket');
     const sent = handlers.sendWebSocketMessage(message);
     if (!sent) {
       log.error('WebSocket send FAILED — connection not open');
@@ -225,10 +204,7 @@ export async function sendImmediateMessage(
     return true;
   } catch (err: unknown) {
     if (err instanceof E2eError) {
-      log.error(
-        { code: err.code, message: err.message },
-        'E2E ERROR — message NOT sent',
-      );
+      log.error({ code: err.code, message: err.message }, 'E2E ERROR — message NOT sent');
       notify(getE2eErrorMessage(err.code), 'error');
       return false;
     }
