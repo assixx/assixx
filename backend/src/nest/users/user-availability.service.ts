@@ -108,10 +108,7 @@ export class UserAvailabilityService {
    * - Priority 1: Entry where start_date is before/equal TODAY and end_date is after/equal TODAY (current active)
    * - Priority 2: Entry where start_date is after TODAY (next future, earliest first)
    */
-  async getUserAvailability(
-    userId: number,
-    tenantId: number,
-  ): Promise<UserAvailabilityRow | null> {
+  async getUserAvailability(userId: number, tenantId: number): Promise<UserAvailabilityRow | null> {
     const rows = await this.databaseService.query<UserAvailabilityRow>(
       `SELECT
          user_id,
@@ -148,9 +145,7 @@ export class UserAvailabilityService {
     }
 
     // Build parameterized query for user IDs
-    const placeholders = userIds
-      .map((_: number, i: number) => `$${i + 2}`)
-      .join(', ');
+    const placeholders = userIds.map((_: number, i: number) => `$${i + 2}`).join(', ');
 
     // Query uses DISTINCT ON to get one entry per user
     // Orders by: 1) is_current (active today first), 2) start_date ASC (earliest future)
@@ -195,10 +190,8 @@ export class UserAvailabilityService {
     }
 
     response.availabilityStatus = availability.status;
-    response.availabilityStart =
-      availability.start_date?.toISOString().split('T')[0] ?? null;
-    response.availabilityEnd =
-      availability.end_date?.toISOString().split('T')[0] ?? null;
+    response.availabilityStart = availability.start_date?.toISOString().split('T')[0] ?? null;
+    response.availabilityEnd = availability.end_date?.toISOString().split('T')[0] ?? null;
     response.availabilityNotes = availability.notes;
   }
 
@@ -220,10 +213,7 @@ export class UserAvailabilityService {
 
     this.validateAvailabilityDates(dto);
 
-    if (
-      dto.availabilityStart !== undefined &&
-      dto.availabilityEnd !== undefined
-    ) {
+    if (dto.availabilityStart !== undefined && dto.availabilityEnd !== undefined) {
       await this.insertAvailabilityRecord(userId, tenantId, dto, createdBy);
     }
 
@@ -236,9 +226,7 @@ export class UserAvailabilityService {
       dto.availabilityStatus !== 'available' &&
       (dto.availabilityStart === undefined || dto.availabilityEnd === undefined)
     ) {
-      throw new BadRequestException(
-        'Start and end dates are required for non-available status',
-      );
+      throw new BadRequestException('Start and end dates are required for non-available status');
     }
 
     if (
@@ -246,9 +234,7 @@ export class UserAvailabilityService {
       dto.availabilityEnd !== undefined &&
       dto.availabilityEnd < dto.availabilityStart
     ) {
-      throw new BadRequestException(
-        'Bis-Datum muss nach oder gleich Von-Datum sein.',
-      );
+      throw new BadRequestException('Bis-Datum muss nach oder gleich Von-Datum sein.');
     }
   }
 
@@ -315,9 +301,7 @@ export class UserAvailabilityService {
 
     // Validate: end date must be on or after start date
     if (availabilityEnd < availabilityStart) {
-      throw new BadRequestException(
-        'Bis-Datum muss nach oder gleich Von-Datum sein.',
-      );
+      throw new BadRequestException('Bis-Datum muss nach oder gleich Von-Datum sein.');
     }
 
     // Check for overlapping date ranges
@@ -379,21 +363,11 @@ export class UserAvailabilityService {
     const userRow = await this.findUserBasicInfoByUuid(uuid, tenantId);
 
     // Build and execute query
-    const { query, params } = this.buildAvailabilityHistoryQuery(
-      userRow.id,
-      tenantId,
-      year,
-      month,
-    );
-    const rows = await this.databaseService.query<AvailabilityRow>(
-      query,
-      params,
-    );
+    const { query, params } = this.buildAvailabilityHistoryQuery(userRow.id, tenantId, year, month);
+    const rows = await this.databaseService.query<AvailabilityRow>(query, params);
 
     // Map rows to API format
-    const entries = rows.map((row: AvailabilityRow) =>
-      this.mapAvailabilityRowToEntry(row),
-    );
+    const entries = rows.map((row: AvailabilityRow) => this.mapAvailabilityRowToEntry(row));
 
     return {
       employee: {
@@ -428,8 +402,7 @@ export class UserAvailabilityService {
     // Check if entry is editable (endDate >= today)
     const today = new Date();
     today.setUTCHours(0, 0, 0, 0);
-    const entryEndDate =
-      entry.end_date !== null ? new Date(entry.end_date) : null;
+    const entryEndDate = entry.end_date !== null ? new Date(entry.end_date) : null;
     if (entryEndDate !== null) {
       entryEndDate.setUTCHours(0, 0, 0, 0);
       if (entryEndDate < today) {
@@ -541,10 +514,7 @@ export class UserAvailabilityService {
    * SECURITY: Only resolves ACTIVE users (is_active = 1)
    * @throws NotFoundException if user not found or deleted
    */
-  private async resolveUserIdByUuid(
-    uuid: string,
-    tenantId: number,
-  ): Promise<number> {
+  private async resolveUserIdByUuid(uuid: string, tenantId: number): Promise<number> {
     const userId = await this.userRepository.resolveUuidToId(uuid, tenantId);
     if (userId === null) {
       throw new NotFoundException(ERROR_MESSAGES.USER_NOT_FOUND);
@@ -622,9 +592,7 @@ export class UserAvailabilityService {
   }
 
   /** Map availability row to API format entry */
-  private mapAvailabilityRowToEntry(
-    row: AvailabilityRow,
-  ): AvailabilityHistoryEntry {
+  private mapAvailabilityRowToEntry(row: AvailabilityRow): AvailabilityHistoryEntry {
     return {
       id: row.id,
       userId: row.user_id,

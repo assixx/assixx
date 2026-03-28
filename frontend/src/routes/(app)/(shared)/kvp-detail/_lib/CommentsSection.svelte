@@ -64,11 +64,7 @@
 
     const observer = new IntersectionObserver(
       (entries) => {
-        if (
-          entries[0]?.isIntersecting &&
-          kvpDetailState.commentsHasMore &&
-          !loadingMore
-        ) {
+        if (entries[0]?.isIntersecting && kvpDetailState.commentsHasMore && !loadingMore) {
           void loadMoreComments();
         }
       },
@@ -89,11 +85,7 @@
     if (suggestion === null) return;
 
     loadingMore = true;
-    const result = await fetchComments(
-      suggestion.uuid,
-      10,
-      kvpDetailState.comments.length,
-    );
+    const result = await fetchComments(suggestion.uuid, 10, kvpDetailState.comments.length);
     kvpDetailState.appendComments(result.comments, result.hasMore);
     // eslint-disable-next-line require-atomic-updates -- Constant assignment, guard prevents concurrent calls.
     loadingMore = false;
@@ -158,7 +150,7 @@
   </h3>
 
   <!-- Comment Form (Admin only) -->
-  {#if canAddComments(kvpDetailState.effectiveRole)}
+  {#if canAddComments(kvpDetailState.effectiveRole, kvpDetailState.canManage)}
     <form
       class="comment-form"
       onsubmit={(e) => {
@@ -203,9 +195,9 @@
         >
           <div class="thread-item__main">
             <div
-              class="avatar avatar--sm {hasProfilePic(comment.profilePicture) ?
-                ''
-              : getAvatarColorClass(comment.createdBy)}"
+              class="avatar avatar--sm {hasProfilePic(comment.profilePicture) ? '' : (
+                getAvatarColorClass(comment.createdBy)
+              )}"
             >
               {#if hasProfilePic(comment.profilePicture)}
                 <img
@@ -215,10 +207,7 @@
                 />
               {:else}
                 <span class="avatar__initials">
-                  {getInitials(
-                    comment.createdByName,
-                    comment.createdByLastname,
-                  )}
+                  {getInitials(comment.createdByName, comment.createdByLastname)}
                 </span>
               {/if}
             </div>
@@ -228,16 +217,14 @@
                   {comment.createdByName}
                   {comment.createdByLastname}
                 </span>
-                <span class="thread-item__date"
-                  >{formatDate(comment.createdAt)}</span
-                >
+                <span class="thread-item__date">{formatDate(comment.createdAt)}</span>
                 {#if comment.isInternal}
                   <span class="internal-badge">Intern</span>
                 {/if}
               </div>
               <p class="thread-item__text">{comment.comment}</p>
               <div class="thread-item__actions">
-                {#if canAddComments(kvpDetailState.effectiveRole)}
+                {#if canAddComments(kvpDetailState.effectiveRole, kvpDetailState.canManage)}
                   <button
                     type="button"
                     class="thread-action-btn"
@@ -316,11 +303,9 @@
                   <div class="thread-line"></div>
                   <div class="reply-item__main">
                     <div
-                      class="avatar avatar--xs {(
-                        hasProfilePic(reply.profilePicture)
-                      ) ?
-                        ''
-                      : getAvatarColorClass(reply.createdBy)}"
+                      class="avatar avatar--xs {hasProfilePic(reply.profilePicture) ? '' : (
+                        getAvatarColorClass(reply.createdBy)
+                      )}"
                     >
                       {#if hasProfilePic(reply.profilePicture)}
                         <img
@@ -330,10 +315,7 @@
                         />
                       {:else}
                         <span class="avatar__initials">
-                          {getInitials(
-                            reply.createdByName,
-                            reply.createdByLastname,
-                          )}
+                          {getInitials(reply.createdByName, reply.createdByLastname)}
                         </span>
                       {/if}
                     </div>
@@ -343,9 +325,7 @@
                           {reply.createdByName}
                           {reply.createdByLastname}
                         </span>
-                        <span class="thread-item__date"
-                          >{formatDate(reply.createdAt)}</span
-                        >
+                        <span class="thread-item__date">{formatDate(reply.createdAt)}</span>
                         {#if reply.isInternal}
                           <span class="internal-badge">Intern</span>
                         {/if}

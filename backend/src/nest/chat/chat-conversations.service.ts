@@ -16,10 +16,7 @@ import { ClsService } from 'nestjs-cls';
 import { v7 as uuidv7 } from 'uuid';
 
 import { DatabaseService } from '../database/database.service.js';
-import {
-  buildPaginationMeta,
-  mapConversationToApiFormat,
-} from './chat.helpers.js';
+import { buildPaginationMeta, mapConversationToApiFormat } from './chat.helpers.js';
 import type {
   Conversation,
   ConversationParticipant,
@@ -77,21 +74,14 @@ export class ChatConversationsService {
   ): Promise<{ data: Conversation[]; pagination: PaginationMeta }> {
     const tenantId = this.getTenantId();
     const userId = this.getUserId();
-    this.logger.debug(
-      `Getting conversations for tenant ${tenantId}, user ${userId}`,
-    );
+    this.logger.debug(`Getting conversations for tenant ${tenantId}, user ${userId}`);
 
     const page = query.page ?? 1;
     const limit = Math.min(100, Math.max(1, query.limit ?? 20));
     const offset = (page - 1) * limit;
 
     const totalItems = await this.getConversationCount(tenantId, userId);
-    const conversations = await this.fetchConversationsPage(
-      tenantId,
-      userId,
-      limit,
-      offset,
-    );
+    const conversations = await this.fetchConversationsPage(tenantId, userId, limit, offset);
 
     if (conversations.length === 0) {
       return {
@@ -101,23 +91,16 @@ export class ChatConversationsService {
     }
 
     const conversationIds = conversations.map((c: ConversationRow) => c.id);
-    const participants =
-      await this.fetchParticipantsForConversations(conversationIds);
+    const participants = await this.fetchParticipantsForConversations(conversationIds);
     const unreadCounts = await this.getUnreadCounts(conversationIds, userId);
 
     const onlineIds = this.presenceStore.getOnlineUserIds();
     const data = conversations.map((conv: ConversationRow) => {
-      const mapped = mapConversationToApiFormat(
-        conv,
-        participants,
-        unreadCounts,
-      );
-      mapped.participants = mapped.participants.map(
-        (p: ConversationParticipant) => ({
-          ...p,
-          status: onlineIds.has(p.id) ? 'online' : 'offline',
-        }),
-      );
+      const mapped = mapConversationToApiFormat(conv, participants, unreadCounts);
+      mapped.participants = mapped.participants.map((p: ConversationParticipant) => ({
+        ...p,
+        status: onlineIds.has(p.id) ? 'online' : 'offline',
+      }));
       return mapped;
     });
 
@@ -130,9 +113,7 @@ export class ChatConversationsService {
   /**
    * Get single conversation by ID
    */
-  async getConversation(
-    conversationId: number,
-  ): Promise<{ conversation: Conversation }> {
+  async getConversation(conversationId: number): Promise<{ conversation: Conversation }> {
     const tenantId = this.getTenantId();
     const userId = this.getUserId();
 
@@ -178,8 +159,7 @@ export class ChatConversationsService {
       profileImageUrl: p.profile_picture ?? undefined,
       joinedAt: new Date(p.joined_at),
       isActive: true,
-      status:
-        onlineIds.has(p.user_id) ? ('online' as const) : ('offline' as const),
+      status: onlineIds.has(p.user_id) ? ('online' as const) : ('offline' as const),
     }));
 
     return {
@@ -211,9 +191,7 @@ export class ChatConversationsService {
   ): Promise<{ conversation: Conversation }> {
     const tenantId = this.getTenantId();
     const creatorId = this.getUserId();
-    this.logger.log(
-      `Creating conversation for tenant ${tenantId}, creator ${creatorId}`,
-    );
+    this.logger.log(`Creating conversation for tenant ${tenantId}, creator ${creatorId}`);
 
     const isGroup = dto.isGroup ?? dto.participantIds.length > 1;
 
@@ -230,25 +208,11 @@ export class ChatConversationsService {
     }
 
     await this.validateParticipantIds(dto.participantIds, tenantId);
-    const conversationId = await this.insertConversation(
-      tenantId,
-      dto.name,
-      isGroup,
-    );
-    await this.addConversationParticipants(
-      tenantId,
-      conversationId,
-      creatorId,
-      dto.participantIds,
-    );
+    const conversationId = await this.insertConversation(tenantId, dto.name, isGroup);
+    await this.addConversationParticipants(tenantId, conversationId, creatorId, dto.participantIds);
 
     if (dto.initialMessage !== undefined && dto.initialMessage !== '') {
-      await sendInitialMessage(
-        tenantId,
-        conversationId,
-        creatorId,
-        dto.initialMessage,
-      );
+      await sendInitialMessage(tenantId, conversationId, creatorId, dto.initialMessage);
     }
 
     return await this.getConversation(conversationId);
@@ -258,10 +222,7 @@ export class ChatConversationsService {
    * Update a conversation (stub)
    */
   // eslint-disable-next-line @typescript-eslint/require-await -- Stub method
-  async updateConversation(
-    _conversationId: number,
-    _dto: UpdateConversationBody,
-  ): Promise<never> {
+  async updateConversation(_conversationId: number, _dto: UpdateConversationBody): Promise<never> {
     throw new BadRequestException(ERROR_FEATURE_NOT_IMPLEMENTED);
   }
 
@@ -272,9 +233,7 @@ export class ChatConversationsService {
    * - Only hides the conversation for the user who deletes it
    * - Other participants still see the conversation
    */
-  async deleteConversation(
-    conversationId: number,
-  ): Promise<{ message: string }> {
+  async deleteConversation(conversationId: number): Promise<{ message: string }> {
     const tenantId = this.getTenantId();
     const userId = this.getUserId();
 
@@ -289,9 +248,7 @@ export class ChatConversationsService {
 
     const participantRecord = participant[0];
     if (participantRecord === undefined) {
-      throw new ForbiddenException(
-        'You are not a participant of this conversation',
-      );
+      throw new ForbiddenException('You are not a participant of this conversation');
     }
 
     // Idempotent: always update deleted_at to NOW() regardless of current state.
@@ -320,9 +277,7 @@ export class ChatConversationsService {
     );
 
     if (participant.length === 0) {
-      throw new ForbiddenException(
-        'You are not a participant of this conversation',
-      );
+      throw new ForbiddenException('You are not a participant of this conversation');
     }
   }
 
@@ -345,10 +300,7 @@ export class ChatConversationsService {
   /**
    * Update conversation's updated_at timestamp
    */
-  async updateConversationTimestamp(
-    conversationId: number,
-    tenantId: number,
-  ): Promise<void> {
+  async updateConversationTimestamp(conversationId: number, tenantId: number): Promise<void> {
     await this.databaseService.query(
       `UPDATE chat_conversations SET updated_at = NOW() WHERE id = $1 AND tenant_id = $2`,
       [conversationId, tenantId],
@@ -363,10 +315,7 @@ export class ChatConversationsService {
    * Get total count of conversations for a user
    * WhatsApp-style: Show conversation if not deleted OR if new messages exist after deletion
    */
-  private async getConversationCount(
-    tenantId: number,
-    userId: number,
-  ): Promise<number> {
+  private async getConversationCount(tenantId: number, userId: number): Promise<number> {
     const countResult = await this.databaseService.query<{ count: string }>(
       `SELECT COUNT(DISTINCT c.id) as count
        FROM chat_conversations c
@@ -430,9 +379,7 @@ export class ChatConversationsService {
   private async fetchParticipantsForConversations(
     conversationIds: number[],
   ): Promise<ParticipantRow[]> {
-    const placeholders = conversationIds
-      .map((_: number, i: number) => `$${i + 1}`)
-      .join(',');
+    const placeholders = conversationIds.map((_: number, i: number) => `$${i + 1}`).join(',');
     return await this.databaseService.query<ParticipantRow>(
       `SELECT cp.conversation_id, cp.user_id, cp.joined_at, cp.is_admin,
               u.username, u.first_name, u.last_name, u.profile_picture
@@ -457,9 +404,7 @@ export class ChatConversationsService {
       return unreadCounts;
     }
 
-    const convPlaceholders = conversationIds
-      .map((_: number, i: number) => `$${i + 1}`)
-      .join(',');
+    const convPlaceholders = conversationIds.map((_: number, i: number) => `$${i + 1}`).join(',');
     const userIdIndex1 = conversationIds.length + 1;
     const userIdIndex2 = conversationIds.length + 2;
 
@@ -515,11 +460,7 @@ export class ChatConversationsService {
       throw new BadRequestException('Participant ID is required');
     }
 
-    const existingId = await this.findExisting1to1(
-      tenantId,
-      creatorId,
-      participantId,
-    );
+    const existingId = await this.findExisting1to1(tenantId, creatorId, participantId);
     if (existingId === null) {
       return null;
     }
@@ -533,12 +474,7 @@ export class ChatConversationsService {
     );
 
     if (dto.initialMessage !== undefined && dto.initialMessage !== '') {
-      await sendInitialMessage(
-        tenantId,
-        existingId,
-        creatorId,
-        dto.initialMessage,
-      );
+      await sendInitialMessage(tenantId, existingId, creatorId, dto.initialMessage);
     }
     return await this.getConversation(existingId);
   }
@@ -546,10 +482,7 @@ export class ChatConversationsService {
   /**
    * Validate that all participant IDs exist in the same tenant
    */
-  private async validateParticipantIds(
-    participantIds: number[],
-    tenantId: number,
-  ): Promise<void> {
+  private async validateParticipantIds(participantIds: number[], tenantId: number): Promise<void> {
     if (participantIds.length === 0) {
       return;
     }
@@ -647,8 +580,6 @@ export class ChatConversationsService {
       [tenantId, user1Id, user2Id],
     );
 
-    return existing.length > 0 && existing[0] !== undefined ?
-        existing[0].id
-      : null;
+    return existing.length > 0 && existing[0] !== undefined ? existing[0].id : null;
   }
 }

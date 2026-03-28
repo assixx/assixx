@@ -65,9 +65,9 @@ export function checkAuthRole(): {
 /** Load pending deletion status */
 export async function loadDeletionStatus(): Promise<DeletionStatusData | null> {
   try {
-    const result = await apiClient.get<
-      DeletionStatusResponse | DeletionStatusData | null
-    >('/root/tenant/deletion-status');
+    const result = await apiClient.get<DeletionStatusResponse | DeletionStatusData | null>(
+      '/root/tenant/deletion-status',
+    );
 
     if (result === null) {
       return null;
@@ -92,9 +92,7 @@ export async function loadDeletionStatus(): Promise<DeletionStatusData | null> {
 /** Get count of root users in tenant */
 export async function getRootUserCount(): Promise<number> {
   try {
-    const result = await apiClient.get<RootUsersResponse | { id: number }[]>(
-      '/root/users',
-    );
+    const result = await apiClient.get<RootUsersResponse | { id: number }[]>('/root/users');
 
     if (Array.isArray(result)) {
       return result.length;
@@ -112,9 +110,7 @@ export async function getRootUserCount(): Promise<number> {
 }
 
 /** Delete tenant (initiates deletion request) */
-export async function deleteTenant(
-  reason: string,
-): Promise<DeletionQueueResponse> {
+export async function deleteTenant(reason: string): Promise<DeletionQueueResponse> {
   return await apiClient.delete('/root/tenants/current', {
     reason: reason !== '' ? reason : MESSAGES.defaultReason,
   });

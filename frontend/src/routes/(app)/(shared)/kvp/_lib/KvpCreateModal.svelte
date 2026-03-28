@@ -1,40 +1,23 @@
 <script lang="ts">
-  import { SvelteSet } from 'svelte/reactivity';
-
   import { onClickOutsideDropdown } from '$lib/actions/click-outside';
-  import {
-    DEFAULT_HIERARCHY_LABELS,
-    type HierarchyLabels,
-  } from '$lib/types/hierarchy-labels';
-  import {
-    showWarningAlert,
-    showErrorAlert,
-    showSuccessAlert,
-  } from '$lib/utils';
+  import { showWarningAlert, showErrorAlert, showSuccessAlert } from '$lib/utils';
   import { createLogger } from '$lib/utils/logger';
 
   const log = createLogger('KvpCreateModal');
 
   import { createSuggestion, uploadPhotos } from './api';
-  import { PRIORITY_OPTIONS, UPLOAD_CONFIG } from './constants';
+  import { UPLOAD_CONFIG } from './constants';
   import { kvpState } from './state.svelte';
   import { validatePhotoFile, readFileAsDataUrl, isFaIcon } from './utils';
 
-  import type { KvpFormData, KvpPriority, UserTeamWithAssets } from './types';
+  import type { KvpFormData } from './types';
 
   interface Props {
-    userOrganizations: UserTeamWithAssets[];
     onclose: () => void;
     onsuccess: () => void;
-    labels?: HierarchyLabels;
   }
 
-  const {
-    userOrganizations,
-    onclose,
-    onsuccess,
-    labels = DEFAULT_HIERARCHY_LABELS,
-  }: Props = $props();
+  const { onclose, onsuccess }: Props = $props();
 
   // Photo state
   let photoPreviews = $state<string[]>([]);
@@ -46,37 +29,6 @@
   let formCategoryIcon = $state<string | undefined>(undefined);
   let formCategoryColor = $state<string | undefined>(undefined);
   let formCategoryValue = $state('');
-  let formPriorityDisplay = $state('Normal');
-  let formPriorityValue = $state<KvpPriority>('normal');
-
-  // Team/Asset selection state
-  let selectedTeamIds = $state<number[]>([]);
-  let selectedAssetIds = $state<number[]>([]);
-
-  /** All assets from all user teams (deduplicated) */
-  const allAssets = $derived.by(() => {
-    const seen = new SvelteSet<number>();
-    const assets: { id: number; name: string }[] = [];
-    for (const team of userOrganizations) {
-      for (const asset of team.assets) {
-        if (!seen.has(asset.id)) {
-          seen.add(asset.id);
-          assets.push(asset);
-        }
-      }
-    }
-    return assets;
-  });
-
-  /** Show asset select only when no team is selected */
-  const showAssetSelect = $derived(
-    selectedTeamIds.length === 0 && allAssets.length > 0,
-  );
-
-  /** Validation: at least 1 team or 1 asset */
-  const hasOrgSelection = $derived(
-    selectedTeamIds.length > 0 || selectedAssetIds.length > 0,
-  );
 
   // Form refs
   let formElement: HTMLFormElement | undefined = $state();
@@ -104,30 +56,6 @@
     closeAllDropdowns();
   }
 
-  function handleFormPrioritySelect(value: string, label: string) {
-    formPriorityValue = value as KvpPriority;
-    formPriorityDisplay = label;
-    closeAllDropdowns();
-  }
-
-  function handleTeamChange(event: Event) {
-    const select = event.target as HTMLSelectElement;
-    selectedTeamIds = Array.from(select.selectedOptions).map((o) =>
-      Number(o.value),
-    );
-    // Clear assets when teams are selected
-    if (selectedTeamIds.length > 0) {
-      selectedAssetIds = [];
-    }
-  }
-
-  function handleAssetChange(event: Event) {
-    const select = event.target as HTMLSelectElement;
-    selectedAssetIds = Array.from(select.selectedOptions).map((o) =>
-      Number(o.value),
-    );
-  }
-
   // Capture-phase click-outside: works inside modals (bypasses stopPropagation)
   $effect(() => {
     return onClickOutsideDropdown(closeAllDropdowns);
@@ -143,15 +71,13 @@
 
     for (const file of files) {
       if (selectedPhotos.length >= UPLOAD_CONFIG.MAX_FILES) {
-        showWarningAlert(
-          `Sie können maximal ${UPLOAD_CONFIG.MAX_FILES} Fotos hochladen.`,
-        );
+        showWarningAlert(`Sie können maximal ${UPLOAD_CONFIG.MAX_FILES} Fotos hochladen.`);
         break;
       }
 
       const validation = validatePhotoFile(file);
       if (!validation.valid) {
-        showErrorAlert(validation.error ?? 'Ungueltige Datei');
+        showErrorAlert(validation.error ?? 'Ungültige Datei');
         continue;
       }
 
@@ -176,14 +102,10 @@
   function handleClose() {
     photoPreviews = [];
     selectedPhotos = [];
-    selectedTeamIds = [];
-    selectedAssetIds = [];
     formCategoryDisplay = 'Bitte wählen';
     formCategoryIcon = undefined;
     formCategoryColor = undefined;
     formCategoryValue = '';
-    formPriorityDisplay = 'Normal';
-    formPriorityValue = 'normal';
     formElement?.reset();
     onclose();
   }
@@ -211,10 +133,7 @@
       description: description.trim(),
       categoryId,
       customCategoryId,
-      priority: formPriorityValue,
       expectedBenefit: expectedBenefit !== '' ? expectedBenefit : undefined,
-      teamIds: selectedTeamIds,
-      assetIds: selectedAssetIds,
       departmentId: kvpState.currentUser?.departmentId ?? null,
     };
   }
@@ -225,9 +144,7 @@
     const uploadResult = await uploadPhotos(suggestionId, selectedPhotos);
     if (!uploadResult.success) {
       const errorMsg = uploadResult.error ?? 'Unbekannter Fehler';
-      showWarningAlert(
-        `Vorschlag erstellt, aber Fotos fehlgeschlagen: ${errorMsg}`,
-      );
+      showWarningAlert(`Vorschlag erstellt, aber Fotos fehlgeschlagen: ${errorMsg}`);
     }
   }
 
@@ -243,13 +160,6 @@
 
     if (title === '' || description === '') {
       showWarningAlert('Bitte füllen Sie Titel und Beschreibung aus');
-      return;
-    }
-
-    if (!hasOrgSelection) {
-      showWarningAlert(
-        `Bitte wählen Sie mindestens ein ${labels.team} oder eine ${labels.asset} aus`,
-      );
       return;
     }
 
@@ -309,10 +219,9 @@
         <div class="alert__content">
           <strong class="alert__title">Wichtiger Hinweis:</strong>
           <p class="alert__message">
-            Nach dem Einreichen können Sie Ihren Vorschlag nicht mehr bearbeiten
-            oder löschen. Bitte prüfen Sie alle Angaben sorgfältig, bevor Sie
-            den Vorschlag absenden. KVP-Vorschläge können vom Vorgesetzten
-            firmenweit oder abteilungsübergreifend geteilt werden..
+            Nach dem Einreichen können Sie Ihren Vorschlag nicht mehr bearbeiten oder löschen. Bitte
+            prüfen Sie alle Angaben sorgfältig, bevor Sie den Vorschlag absenden. KVP-Vorschläge
+            können vom Vorgesetzten firmenweit oder abteilungsübergreifend geteilt werden.
           </p>
         </div>
       </div>
@@ -332,7 +241,7 @@
             id="kvpTitle"
             name="title"
             class="form-field__control"
-            placeholder="Kurze, praegnante Beschreibung"
+            placeholder="Kurze, prägnante Beschreibung"
             required
             minlength="3"
             maxlength="255"
@@ -452,130 +361,6 @@
           </div>
         </div>
 
-        <div class="form-field">
-          <label
-            class="form-field__label"
-            for="kvpPriorityValue">Priorität</label
-          >
-          <div
-            class="dropdown"
-            data-dropdown="kvpPriority"
-          >
-            <div
-              class="dropdown__trigger"
-              class:active={activeDropdown === 'kvpPriority'}
-              role="button"
-              tabindex="0"
-              onclick={() => {
-                toggleDropdown('kvpPriority');
-              }}
-              onkeydown={(e) => {
-                if (e.key === 'Enter') toggleDropdown('kvpPriority');
-              }}
-            >
-              <span>{formPriorityDisplay}</span>
-              <i class="fas fa-chevron-down"></i>
-            </div>
-            <div
-              class="dropdown__menu"
-              class:active={activeDropdown === 'kvpPriority'}
-            >
-              {#each PRIORITY_OPTIONS as option (option.value)}
-                <div
-                  class="dropdown__option"
-                  role="button"
-                  tabindex="0"
-                  onclick={() => {
-                    handleFormPrioritySelect(option.value, option.label);
-                  }}
-                  onkeydown={(e) => {
-                    if (e.key === 'Enter')
-                      handleFormPrioritySelect(option.value, option.label);
-                  }}
-                >
-                  {option.label}
-                </div>
-              {/each}
-            </div>
-            <input
-              type="hidden"
-              id="kvpPriorityValue"
-              name="priority"
-              value={formPriorityValue}
-            />
-          </div>
-        </div>
-
-        <!-- Team Selection -->
-        <div
-          class="form-field"
-          class:md:col-span-2={!showAssetSelect}
-        >
-          <label
-            class="form-field__label"
-            for="kvpTeamSelect"
-          >
-            Team(s) zuweisen
-            <span class="text-red-500">*</span>
-            <span class="form-field__hint"
-              >(Max. 3, Strg+Klick für Mehrfachauswahl)</span
-            >
-          </label>
-          <select
-            id="kvpTeamSelect"
-            multiple
-            class="multi-select"
-            value={selectedTeamIds}
-            onchange={handleTeamChange}
-          >
-            {#each userOrganizations as team (team.teamId)}
-              <option value={team.teamId}>
-                {team.teamName}
-              </option>
-            {/each}
-          </select>
-        </div>
-
-        <!-- Asset Selection (only when no team selected) -->
-        {#if showAssetSelect}
-          <div class="form-field">
-            <label
-              class="form-field__label"
-              for="kvpAssetSelect"
-            >
-              {labels.asset} zuweisen
-              <span class="text-red-500">*</span>
-              <span class="form-field__hint"
-                >(Strg+Klick für Mehrfachauswahl)</span
-              >
-            </label>
-            <select
-              id="kvpAssetSelect"
-              multiple
-              class="multi-select"
-              value={selectedAssetIds}
-              onchange={handleAssetChange}
-            >
-              {#each allAssets as asset (asset.id)}
-                <option value={asset.id}>
-                  {asset.name}
-                </option>
-              {/each}
-            </select>
-          </div>
-        {/if}
-
-        <!-- Validation hint -->
-        {#if !hasOrgSelection}
-          <div class="form-field md:col-span-2">
-            <p class="text-sm text-amber-400">
-              <i class="fas fa-exclamation-triangle mr-1"></i>
-              Bitte wählen Sie mindestens ein {labels.team} oder eine {labels.asset}
-              aus.
-            </p>
-          </div>
-        {/if}
-
         <div class="form-field md:col-span-2">
           <label
             class="form-field__label"
@@ -587,6 +372,7 @@
             class="form-field__control"
             placeholder="Welche Vorteile bringt dieser Vorschlag?"
             rows="3"
+            maxlength="1000"
           ></textarea>
         </div>
 
@@ -596,9 +382,7 @@
             for="kvpPhotos"
           >
             Fotos hinzufügen (optional)
-            <span class="form-field__hint"
-              >Max. 5 Fotos, je max. 10MB, nur JPG/PNG</span
-            >
+            <span class="form-field__hint">Max. 5 Fotos, je max. 10MB, nur JPG/PNG</span>
           </label>
           <div class="mt-2">
             <input
@@ -622,9 +406,7 @@
             >
               <i class="fas fa-camera"></i>
               <p>Klicken Sie hier, um Fotos auszuwählen</p>
-              <p class="mt-2 text-sm text-gray-400">
-                oder ziehen Sie Dateien hierher
-              </p>
+              <p class="mt-2 text-sm text-gray-400">oder ziehen Sie Dateien hierher</p>
             </div>
             <div class="mt-6 flex flex-wrap gap-2">
               {#each photoPreviews as preview, index (index)}

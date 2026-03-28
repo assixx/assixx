@@ -60,8 +60,8 @@
   <!-- Title -->
   <h1 class="empty-state__title">
     {#if data.addonCode}
-      {data.addonCode.charAt(0).toUpperCase() +
-        data.addonCode.slice(1).replaceAll('_', ' ')} — Modul nicht aktiviert
+      {data.addonCode.charAt(0).toUpperCase() + data.addonCode.slice(1).replaceAll('_', ' ')} — Modul
+      nicht aktiviert
     {:else}
       Modul nicht verfügbar
     {/if}
@@ -69,16 +69,13 @@
 
   <!-- Description -->
   <p class="empty-state__description">
-    Dieses Modul ist für Ihren Mandanten nicht aktiviert. Jedes Modul kann 30
-    Tage kostenlos getestet werden — wenden Sie sich an Ihren Administrator, um
-    die Testphase zu starten.
+    Dieses Modul ist für Ihren Mandanten nicht aktiviert. Jedes Modul kann 30 Tage kostenlos
+    getestet werden — wenden Sie sich an Ihren Administrator, um die Testphase zu starten.
   </p>
 
   <!-- Error Code Badge -->
   <div class="error-code-badge">
-    <span class="badge badge--warning badge--lg badge--uppercase">
-      Modul nicht aktiviert
-    </span>
+    <span class="badge badge--warning badge--lg badge--uppercase"> Modul nicht aktiviert </span>
   </div>
 
   <!-- Actions -->
@@ -104,8 +101,8 @@
 
   <!-- Screen reader announcement -->
   <span class="empty-state__sr-only">
-    Dieses Modul ist nicht für Ihren Mandanten aktiviert. Kontaktieren Sie Ihren
-    Administrator für eine 30-tägige Testphase.
+    Dieses Modul ist nicht für Ihren Mandanten aktiviert. Kontaktieren Sie Ihren Administrator für
+    eine 30-tägige Testphase.
   </span>
 </div>
 

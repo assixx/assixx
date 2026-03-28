@@ -12,12 +12,7 @@
  * cross-module coupling (no ShiftsModule/AssetsModule/UsersModule imports).
  */
 import { IS_ACTIVE } from '@assixx/shared/constants';
-import {
-  BadRequestException,
-  Injectable,
-  Logger,
-  NotFoundException,
-} from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 
 import { DatabaseService } from '../database/database.service.js';
 import { TpmScheduleProjectionService } from './tpm-schedule-projection.service.js';
@@ -28,10 +23,7 @@ import type { ProjectedSlot } from './tpm.types.js';
 // ============================================================================
 
 /** Types of scheduling conflicts */
-export type SlotConflictType =
-  | 'no_shift_plan'
-  | 'existing_tpm'
-  | 'tpm_schedule';
+export type SlotConflictType = 'no_shift_plan' | 'existing_tpm' | 'tpm_schedule';
 
 /** A single scheduling conflict */
 export interface SlotConflict {
@@ -184,9 +176,7 @@ export class TpmSlotAssistantService {
     ]);
 
     // Build per-day conflict map
-    const tpmDateSet = new Set(
-      tpmDueDates.map((r: TpmDueDateRow) => r.current_due_date),
-    );
+    const tpmDateSet = new Set(tpmDueDates.map((r: TpmDueDateRow) => r.current_due_date));
 
     // Build projected schedule map (exclude current asset — no self-conflict)
     const scheduleMap = buildScheduleMap(projection.slots, assetId);
@@ -205,9 +195,7 @@ export class TpmSlotAssistantService {
         scheduleMap,
       ),
     );
-    const availableDays = dayResults.filter(
-      (d: DayAvailability) => d.isAvailable,
-    ).length;
+    const availableDays = dayResults.filter((d: DayAvailability) => d.isAvailable).length;
 
     return {
       assetId,
@@ -280,34 +268,26 @@ export class TpmSlotAssistantService {
     }
 
     const userIds = teamMembers.map((m: TeamMemberRow) => m.user_id);
-    const unavailabilityMap = await this.fetchUserUnavailability(
-      tenantId,
-      userIds,
-      date,
-    );
+    const unavailabilityMap = await this.fetchUserUnavailability(tenantId, userIds, date);
 
-    const members: TeamMemberStatus[] = teamMembers.map(
-      (member: TeamMemberRow) => {
-        const unavailability = unavailabilityMap.get(member.user_id);
-        const fullName =
-          member.first_name !== null && member.last_name !== null ?
-            `${member.first_name} ${member.last_name}`
-          : member.username;
-        return {
-          userId: member.user_id,
-          userName: fullName,
-          firstName: member.first_name,
-          lastName: member.last_name,
-          profilePicture: member.profile_picture,
-          isAvailable: unavailability === undefined,
-          unavailabilityReason: unavailability?.status ?? null,
-        };
-      },
-    );
+    const members: TeamMemberStatus[] = teamMembers.map((member: TeamMemberRow) => {
+      const unavailability = unavailabilityMap.get(member.user_id);
+      const fullName =
+        member.first_name !== null && member.last_name !== null ?
+          `${member.first_name} ${member.last_name}`
+        : member.username;
+      return {
+        userId: member.user_id,
+        userName: fullName,
+        firstName: member.first_name,
+        lastName: member.last_name,
+        profilePicture: member.profile_picture,
+        isAvailable: unavailability === undefined,
+        unavailabilityReason: unavailability?.status ?? null,
+      };
+    });
 
-    const availableCount = members.filter(
-      (m: TeamMemberStatus) => m.isAvailable,
-    ).length;
+    const availableCount = members.filter((m: TeamMemberStatus) => m.isAvailable).length;
 
     return {
       teamId,
@@ -359,16 +339,12 @@ export class TpmSlotAssistantService {
     }));
 
     const teamResults = await Promise.all(
-      assetTeams.map((t: AssetTeamRow) =>
-        this.getTeamAvailability(tenantId, t.team_id, date),
-      ),
+      assetTeams.map((t: AssetTeamRow) => this.getTeamAvailability(tenantId, t.team_id, date)),
     );
 
     // Merge members across teams, dedupe by userId
     const members = dedupeTeamMembers(teamResults);
-    const availableCount = members.filter(
-      (m: TeamMemberStatus) => m.isAvailable,
-    ).length;
+    const availableCount = members.filter((m: TeamMemberStatus) => m.isAvailable).length;
 
     return {
       assetId,
@@ -384,10 +360,7 @@ export class TpmSlotAssistantService {
    * Resolve asset UUID to numeric ID (D11: direct DB query, no AssetsModule import).
    * Used by the create-mode endpoint where no plan UUID exists yet.
    */
-  async resolveAssetIdByUuid(
-    tenantId: number,
-    assetUuid: string,
-  ): Promise<number> {
+  async resolveAssetIdByUuid(tenantId: number, assetUuid: string): Promise<number> {
     const row = await this.db.queryOne<{ id: number }>(
       `SELECT id FROM assets
        WHERE uuid = $1 AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}`,
@@ -511,10 +484,7 @@ export class TpmSlotAssistantService {
   }
 
   /** Data source 3: Fetch team members for a given team */
-  private async fetchTeamMembers(
-    tenantId: number,
-    teamId: number,
-  ): Promise<TeamMemberRow[]> {
+  private async fetchTeamMembers(tenantId: number, teamId: number): Promise<TeamMemberRow[]> {
     return await this.db.query<TeamMemberRow>(
       `SELECT ut.user_id, u.username, u.first_name, u.last_name, u.profile_picture
        FROM user_teams ut
@@ -559,10 +529,7 @@ export class TpmSlotAssistantService {
   }
 
   /** Data source 4: Fetch teams assigned to a asset via asset_teams */
-  private async fetchAssetTeams(
-    tenantId: number,
-    assetId: number,
-  ): Promise<AssetTeamRow[]> {
+  private async fetchAssetTeams(tenantId: number, assetId: number): Promise<AssetTeamRow[]> {
     return await this.db.query<AssetTeamRow>(
       `SELECT mt.team_id, t.name AS team_name
        FROM asset_teams mt
@@ -594,9 +561,7 @@ function generateDateRange(startDate: string, endDate: string): string[] {
 }
 
 /** Merge team members across multiple teams, deduplicate by userId */
-function dedupeTeamMembers(
-  teamResults: TeamAvailabilityResult[],
-): TeamMemberStatus[] {
+function dedupeTeamMembers(teamResults: TeamAvailabilityResult[]): TeamMemberStatus[] {
   const seen = new Set<number>();
   const members: TeamMemberStatus[] = [];
   for (const result of teamResults) {
@@ -617,10 +582,7 @@ function buildDayConflicts(
   shiftCoverageDates: Set<string>,
   tpmDueDates: TpmDueDateRow[],
   tpmDateSet: Set<string>,
-  scheduleMap: Map<string, ProjectedSlot[]> = new Map<
-    string,
-    ProjectedSlot[]
-  >(),
+  scheduleMap: Map<string, ProjectedSlot[]> = new Map<string, ProjectedSlot[]>(),
 ): DayAvailability {
   const conflicts: SlotConflict[] = [];
 

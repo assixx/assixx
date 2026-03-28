@@ -89,10 +89,7 @@
   }
 
   /** Format a settings value for display */
-  function formatSettingsValue(
-    key: string,
-    settings: VacationSettings,
-  ): string {
+  function formatSettingsValue(key: string, settings: VacationSettings): string {
     const value = settings[key as keyof VacationSettings];
 
     if (key === 'carryOverDeadlineMonth') {
@@ -146,8 +143,7 @@
         </div>
         <h3 class="empty-state__title">Keine Einstellungen vorhanden</h3>
         <p class="empty-state__description">
-          Klicken Sie auf "Bearbeiten", um die Standard-Urlaubseinstellungen
-          festzulegen.
+          Klicken Sie auf "Bearbeiten", um die Standard-Urlaubseinstellungen festzulegen.
         </p>
       </div>
 

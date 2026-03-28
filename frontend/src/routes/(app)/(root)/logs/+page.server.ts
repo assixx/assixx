@@ -74,15 +74,12 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
   }
 
   try {
-    const response = await fetch(
-      `${API_BASE}/logs?limit=${LOGS_PER_PAGE}&offset=0`,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
+    const response = await fetch(`${API_BASE}/logs?limit=${LOGS_PER_PAGE}&offset=0`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
       },
-    );
+    });
 
     if (!response.ok) {
       log.error({ status: response.status, endpoint: '/logs' }, 'API error');

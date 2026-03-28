@@ -50,9 +50,7 @@ function extractArray<T>(result: unknown): T[] {
 // =============================================================================
 
 /** Create a new dummy user */
-export async function createDummy(
-  payload: CreateDummyPayload,
-): Promise<DummyUser> {
+export async function createDummy(payload: CreateDummyPayload): Promise<DummyUser> {
   return await apiClient.post<DummyUser>('/dummy-users', payload);
 }
 
@@ -73,9 +71,7 @@ export async function listDummies(
     params.set('search', filters.search);
   }
 
-  const result: unknown = await apiClient.get(
-    `/dummy-users?${params.toString()}`,
-  );
+  const result: unknown = await apiClient.get(`/dummy-users?${params.toString()}`);
   return extractPaginated(result);
 }
 
@@ -85,10 +81,7 @@ export async function getDummy(uuid: string): Promise<DummyUser> {
 }
 
 /** Update a dummy user */
-export async function updateDummy(
-  uuid: string,
-  payload: UpdateDummyPayload,
-): Promise<DummyUser> {
+export async function updateDummy(uuid: string, payload: UpdateDummyPayload): Promise<DummyUser> {
   return await apiClient.put<DummyUser>(`/dummy-users/${uuid}`, payload);
 }
 

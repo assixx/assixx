@@ -48,10 +48,7 @@ describe('AddonCheckService', () => {
       expect(result).toBe(true);
       // Only 1 query (addon lookup), no tenant_addons query
       expect(mockDb.query).toHaveBeenCalledTimes(1);
-      expect(mockDb.query).toHaveBeenCalledWith(
-        expect.stringContaining('addons'),
-        ['dashboard'],
-      );
+      expect(mockDb.query).toHaveBeenCalledWith(expect.stringContaining('addons'), ['dashboard']);
     });
 
     it('should skip tenant_addons check for all 8 core addons', async () => {

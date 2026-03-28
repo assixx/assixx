@@ -8,12 +8,7 @@ import { IS_ACTIVE } from '@assixx/shared/constants';
 
 import { dbToApi } from '../../utils/field-mapper.js';
 import type { ListUsersQueryDto } from './dto/list-users-query.dto.js';
-import type {
-  SafeUserResponse,
-  UserDepartmentRow,
-  UserRow,
-  UserTeamRow,
-} from './users.types.js';
+import type { SafeUserResponse, UserDepartmentRow, UserRow, UserTeamRow } from './users.types.js';
 
 /**
  * Sort field mapping: camelCase API field → snake_case DB column
@@ -34,9 +29,7 @@ const SORT_FIELD_MAP: Record<string, string> = {
 export function toSafeUserResponse(user: UserRow): SafeUserResponse {
   const { password, ...safeUser } = user;
   void password;
-  return dbToApi(
-    safeUser as unknown as Record<string, unknown>,
-  ) as unknown as SafeUserResponse;
+  return dbToApi(safeUser as unknown as Record<string, unknown>) as unknown as SafeUserResponse;
 }
 
 /**
@@ -46,22 +39,15 @@ export function addDepartmentInfo(
   response: SafeUserResponse,
   departments: UserDepartmentRow[],
 ): void {
-  response.departmentIds = departments.map(
-    (d: UserDepartmentRow) => d.department_id,
-  );
-  response.departmentNames = departments.map(
-    (d: UserDepartmentRow) => d.department_name,
-  );
+  response.departmentIds = departments.map((d: UserDepartmentRow) => d.department_id);
+  response.departmentNames = departments.map((d: UserDepartmentRow) => d.department_name);
 }
 
 /**
  * Add team info to response
  * INHERITANCE-FIX: Includes department and area info from team chain
  */
-export function addTeamInfo(
-  response: SafeUserResponse,
-  teams: UserTeamRow[],
-): void {
+export function addTeamInfo(response: SafeUserResponse, teams: UserTeamRow[]): void {
   response.teamIds = teams.map((t: UserTeamRow) => t.team_id);
   response.teamNames = teams.map((t: UserTeamRow) => t.team_name);
 
@@ -86,18 +72,13 @@ export function mapSortField(sortBy: string): string {
 /**
  * Check if error is a PostgreSQL unique constraint violation for a specific field
  */
-export function isUniqueConstraintViolation(
-  error: unknown,
-  fieldName: string,
-): boolean {
+export function isUniqueConstraintViolation(error: unknown, fieldName: string): boolean {
   if (typeof error !== 'object' || error === null) return false;
   const pgError = error as { code?: string; constraint?: string };
   // PostgreSQL unique violation code is 23505
   if (pgError.code !== '23505') return false;
   // Check if constraint name contains the field name
-  return (
-    pgError.constraint?.toLowerCase().includes(fieldName.toLowerCase()) ?? false
-  );
+  return pgError.constraint?.toLowerCase().includes(fieldName.toLowerCase()) ?? false;
 }
 
 /**
@@ -114,11 +95,11 @@ export function buildUpdateFields(
     firstName: 'first_name',
     lastName: 'last_name',
     role: 'role',
-    position: 'position',
     phone: 'phone',
     address: 'address',
     employeeNumber: 'employee_number',
     dateOfBirth: 'date_of_birth',
+    notes: 'notes',
   };
 
   const updates: string[] = ['updated_at = NOW()'];

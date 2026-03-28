@@ -20,8 +20,8 @@ const DEFAULT_ROTATION: ShiftRotationConfig = {
 };
 
 export function createRotationConfigState() {
-  let autofillConfig = $state<ShiftAutofillConfig>({ ...DEFAULT_AUTOFILL });
-  let rotationConfig = $state<ShiftRotationConfig>({ ...DEFAULT_ROTATION });
+  let autofillConfig = $state({ ...DEFAULT_AUTOFILL });
+  let rotationConfig = $state({ ...DEFAULT_ROTATION });
 
   return {
     get autofillConfig() {

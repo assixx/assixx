@@ -58,9 +58,7 @@ async function _performLogin(attempt = 1): Promise<AuthState> {
   // Rate limited -- wait and retry
   if (res.status === 429 && attempt < MAX_RETRIES) {
     _authPromise = null;
-    await new Promise((resolve) =>
-      setTimeout(resolve, RETRY_DELAY_MS * attempt),
-    );
+    await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS * attempt));
     return _performLogin(attempt + 1);
   }
 
@@ -128,11 +126,62 @@ export function flushThrottleKeys(): void {
   );
 }
 
+// ─── Position helper (cached) ────────────────────────────────────────────────
+
+let _cachedPositionIds: string[] | null = null;
+
+let _cachedPositions: Array<{ id: string; name: string; roleCategory: string }> | null = null;
+
+/** Fetch all positions from the catalog. Cached. */
+async function fetchPositions(
+  token: string,
+): Promise<Array<{ id: string; name: string; roleCategory: string }>> {
+  if (_cachedPositions) return _cachedPositions;
+
+  const res = await fetch(`${BASE_URL}/organigram/positions`, {
+    headers: authOnly(token),
+  });
+  if (!res.ok) throw new Error(`Failed to fetch positions: ${res.status}`);
+
+  const body = (await res.json()) as JsonBody;
+  _cachedPositions = body.data as Array<{ id: string; name: string; roleCategory: string }>;
+  return _cachedPositions;
+}
+
+/**
+ * Fetch a default employee position UUID from the position catalog.
+ * Cached: only the first call makes a real HTTP request.
+ */
+export async function getDefaultPositionIds(token: string): Promise<string[]> {
+  if (_cachedPositionIds) return _cachedPositionIds;
+
+  const positions = await fetchPositions(token);
+  const employeePos = positions.find(
+    (p: { roleCategory: string }) => p.roleCategory === 'employee',
+  );
+  if (!employeePos) throw new Error('No employee position found in position_catalog');
+
+  _cachedPositionIds = [employeePos.id];
+  return _cachedPositionIds;
+}
+
+/**
+ * Get position UUID by name (e.g. 'team_lead', 'team_deputy_lead').
+ * Returns a single-element array suitable for positionIds field.
+ */
+export async function getPositionIdsByName(token: string, name: string): Promise<string[]> {
+  const positions = await fetchPositions(token);
+  const pos = positions.find((p: { name: string }) => p.name === name);
+  if (!pos) throw new Error(`Position '${name}' not found in position_catalog`);
+  return [pos.id];
+}
+
 /**
  * Create a test employee and return their ID.
  * Used by modules that need a second user (chat, etc.).
  */
 export async function ensureTestEmployee(token: string): Promise<number> {
+  const positionIds = await getDefaultPositionIds(token);
   // Try to create
   const createRes = await fetch(`${BASE_URL}/users`, {
     method: 'POST',
@@ -144,6 +193,7 @@ export async function ensureTestEmployee(token: string): Promise<number> {
       lastName: 'Employee',
       role: 'employee',
       phone: '+49123456780',
+      positionIds,
     }),
   });
 
@@ -172,10 +222,7 @@ export async function ensureTestEmployee(token: string): Promise<number> {
  * Each asset gets a unique name to avoid conflicts.
  * Caller is responsible for cleanup via deleteAssets().
  */
-export async function createAssets(
-  token: string,
-  count: number,
-): Promise<string[]> {
+export async function createAssets(token: string, count: number): Promise<string[]> {
   const uuids: string[] = [];
 
   for (let i = 0; i < count; i++) {
@@ -206,10 +253,7 @@ export async function createAssets(
 /**
  * Delete assets by UUID. Silently ignores 404/409 errors.
  */
-export async function deleteAssets(
-  token: string,
-  uuids: string[],
-): Promise<void> {
+export async function deleteAssets(token: string, uuids: string[]): Promise<void> {
   for (const uuid of uuids) {
     await fetch(`${BASE_URL}/assets/${uuid}`, {
       method: 'DELETE',
@@ -268,9 +312,7 @@ export async function createDepartmentAndTeam(
  * Idempotent: checks GET /e2e/keys/me first, registers only if absent.
  * Returns { keyVersion } for use in encrypted message tests.
  */
-export async function ensureE2eKey(
-  token: string,
-): Promise<{ keyVersion: number }> {
+export async function ensureE2eKey(token: string): Promise<{ keyVersion: number }> {
   // Check if key already exists
   const checkRes = await fetch(`${BASE_URL}/e2e/keys/me`, {
     headers: authOnly(token),
@@ -299,9 +341,7 @@ export async function ensureE2eKey(
   }
 
   if (!registerRes.ok) {
-    throw new Error(
-      `E2E key registration failed: ${registerRes.status} ${registerRes.statusText}`,
-    );
+    throw new Error(`E2E key registration failed: ${registerRes.status} ${registerRes.statusText}`);
   }
 
   const registerBody = (await registerRes.json()) as JsonBody;

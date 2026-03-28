@@ -18,12 +18,7 @@ export type AssetType =
   | 'other';
 
 /** Asset status enum */
-export type AssetStatus =
-  | 'operational'
-  | 'maintenance'
-  | 'repair'
-  | 'standby'
-  | 'decommissioned';
+export type AssetStatus = 'operational' | 'maintenance' | 'repair' | 'standby' | 'decommissioned';
 
 /** Maintenance type enum */
 export type MaintenanceType =

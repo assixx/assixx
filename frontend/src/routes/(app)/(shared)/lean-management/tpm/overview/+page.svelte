@@ -17,11 +17,7 @@
   import { createTpmMessages, DEFAULT_COLORS } from '../_lib/constants';
 
   import type { PageData } from './$types';
-  import type {
-    CardStatus,
-    AssetWithTpmStatus,
-    TpmColorConfigEntry,
-  } from '../_lib/types';
+  import type { CardStatus, AssetWithTpmStatus, TpmColorConfigEntry } from '../_lib/types';
 
   // =============================================================================
   // SSR DATA
@@ -45,31 +41,22 @@
 
   const totalOpenCards = $derived(
     assets.reduce(
-      (sum: number, m: AssetWithTpmStatus) =>
-        sum + m.statusCounts.red + m.statusCounts.overdue,
+      (sum: number, m: AssetWithTpmStatus) => sum + m.statusCounts.red + m.statusCounts.overdue,
       0,
     ),
   );
 
   const totalOverdue = $derived(
-    assets.reduce(
-      (sum: number, m: AssetWithTpmStatus) => sum + m.statusCounts.overdue,
-      0,
-    ),
+    assets.reduce((sum: number, m: AssetWithTpmStatus) => sum + m.statusCounts.overdue, 0),
   );
 
   const totalGreenToday = $derived(
-    assets.reduce(
-      (sum: number, m: AssetWithTpmStatus) => sum + m.statusCounts.green,
-      0,
-    ),
+    assets.reduce((sum: number, m: AssetWithTpmStatus) => sum + m.statusCounts.green, 0),
   );
 
   /** Resolve color from tenant config or defaults */
   function getStatColor(status: CardStatus): string {
-    const custom = colors.find(
-      (c: TpmColorConfigEntry) => c.statusKey === status,
-    );
+    const custom = colors.find((c: TpmColorConfigEntry) => c.statusKey === status);
     return custom !== undefined ? custom.colorHex : DEFAULT_COLORS[status];
   }
 

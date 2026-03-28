@@ -22,11 +22,7 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
   requireAddon(activeAddons, 'surveys');
 
   // Permission-aware fetch for primary endpoint
-  const surveysResult = await apiFetchWithPermission<Survey[]>(
-    '/surveys',
-    token,
-    fetch,
-  );
+  const surveysResult = await apiFetchWithPermission<Survey[]>('/surveys', token, fetch);
 
   // 403 on primary endpoint → user lacks addon permission
   if (surveysResult.permissionDenied) {
@@ -37,11 +33,8 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
   }
 
   // Filter to only active/completed (employees don't see draft/paused/archived)
-  const allSurveys =
-    Array.isArray(surveysResult.data) ? surveysResult.data : [];
-  const surveys = allSurveys.filter(
-    (s) => s.status === 'active' || s.status === 'completed',
-  );
+  const allSurveys = Array.isArray(surveysResult.data) ? surveysResult.data : [];
+  const surveys = allSurveys.filter((s) => s.status === 'active' || s.status === 'completed');
 
   // Then check response status for each survey in parallel
   const surveysWithStatus: SurveyWithStatus[] = await Promise.all(
@@ -54,9 +47,7 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
 
       // If response has an 'id', user has responded
       const hasResponded =
-        responseData !== null &&
-        typeof responseData === 'object' &&
-        'id' in responseData;
+        responseData !== null && typeof responseData === 'object' && 'id' in responseData;
 
       return {
         ...survey,

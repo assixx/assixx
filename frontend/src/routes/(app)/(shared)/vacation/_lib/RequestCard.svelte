@@ -3,12 +3,7 @@
    * RequestCard — Displays a single own vacation request.
    * Shows status badge, dates, type, days. Actions: detail, edit, withdraw.
    */
-  import {
-    HALF_DAY_LABELS,
-    STATUS_BADGE_CLASS,
-    STATUS_LABELS,
-    TYPE_LABELS,
-  } from './constants';
+  import { HALF_DAY_LABELS, STATUS_BADGE_CLASS, STATUS_LABELS, TYPE_LABELS } from './constants';
 
   import type { VacationRequest } from './types';
 
@@ -178,10 +173,7 @@
     color: var(--text-muted);
     padding: 0.375rem 0.5rem;
     border-radius: var(--radius-sm, 0.25rem);
-    background: var(
-      --glass-bg,
-      color-mix(in oklch, var(--color-white) 5%, transparent)
-    );
+    background: var(--glass-bg, color-mix(in oklch, var(--color-white) 5%, transparent));
   }
 
   .request-card__actions {

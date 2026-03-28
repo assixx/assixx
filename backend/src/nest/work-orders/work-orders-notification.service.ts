@@ -44,11 +44,7 @@ export class WorkOrderNotificationService {
     const wo = await this.loadWorkOrderPayload(tenantId, workOrderUuid);
     if (wo === null) return;
 
-    eventBus.emitWorkOrderStatusChanged(
-      tenantId,
-      { ...wo, status: newStatus },
-      changedByUserId,
-    );
+    eventBus.emitWorkOrderStatusChanged(tenantId, { ...wo, status: newStatus }, changedByUserId);
   }
 
   /** Notify that a work order is due soon (called from cron) */
@@ -141,8 +137,7 @@ export class WorkOrderNotificationService {
               `($${i * colsPerRow + 1}, $${i * colsPerRow + 2}, $${i * colsPerRow + 3}, $${i * colsPerRow + 4}, $${i * colsPerRow + 5}, $${i * colsPerRow + 6}, $${i * colsPerRow + 7}, $${i * colsPerRow + 8})`,
           );
 
-          const metadataJson =
-            metadata !== null ? JSON.stringify(metadata) : null;
+          const metadataJson = metadata !== null ? JSON.stringify(metadata) : null;
           const params = userIds.flatMap((uid: number): unknown[] => [
             tenantId,
             type,
@@ -158,18 +153,12 @@ export class WorkOrderNotificationService {
              (tenant_id, type, title, message, recipient_type, recipient_id, created_by, metadata, uuid, uuid_created_at)
            VALUES ${values.map((v: string, i: number): string => v.replace(/\)$/, `, $${userIds.length * colsPerRow + i * 2 + 1}, NOW())`)).join(', ')}`;
 
-          await client.query(sql, [
-            ...params,
-            ...userIds.map((): string => uuidv7()),
-          ]);
+          await client.query(sql, [...params, ...userIds.map((): string => uuidv7())]);
         },
         { tenantId },
       );
     } catch (error: unknown) {
-      this.logger.error(
-        'Fehler beim Erstellen persistenter Benachrichtigungen',
-        error,
-      );
+      this.logger.error('Fehler beim Erstellen persistenter Benachrichtigungen', error);
     }
   }
 
@@ -208,15 +197,10 @@ export class WorkOrderNotificationService {
         title: row.title,
         status: row.status,
         priority: row.priority,
-        assigneeUserIds: assignees.map(
-          (a: { user_id: number }): number => a.user_id,
-        ),
+        assigneeUserIds: assignees.map((a: { user_id: number }): number => a.user_id),
       };
     } catch (error: unknown) {
-      this.logger.error(
-        `Fehler beim Laden der Benachrichtigungsdaten für ${uuid}`,
-        error,
-      );
+      this.logger.error(`Fehler beim Laden der Benachrichtigungsdaten für ${uuid}`, error);
       return null;
     }
   }

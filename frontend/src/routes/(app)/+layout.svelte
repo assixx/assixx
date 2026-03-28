@@ -19,19 +19,9 @@
   import { syncThemeFromSSR } from '$lib/stores/theme.svelte';
   import { getApiClient } from '$lib/utils/api-client';
   import { createLogger } from '$lib/utils/logger';
-  import {
-    perf,
-    logPageLoadTiming,
-    logResourceTiming,
-  } from '$lib/utils/perf-logger';
-  import {
-    getRoleSyncManager,
-    type RoleSyncManager,
-  } from '$lib/utils/role-sync.svelte';
-  import {
-    getSessionManager,
-    type SessionManager,
-  } from '$lib/utils/session-manager';
+  import { perf, logPageLoadTiming, logResourceTiming } from '$lib/utils/perf-logger';
+  import { getRoleSyncManager, type RoleSyncManager } from '$lib/utils/role-sync.svelte';
+  import { getSessionManager, type SessionManager } from '$lib/utils/session-manager';
   import { getTokenManager } from '$lib/utils/token-manager';
   import { clearUserCache } from '$lib/utils/user-service';
 
@@ -41,17 +31,16 @@
     disconnectWebSocket as wsDisconnect,
     setPresenceCallbacks,
     startPeriodicPing,
-    type WebSocketCallbacks,
   } from './(shared)/chat/_lib/handlers';
   import AppHeader from './_lib/AppHeader.svelte';
   import AppSidebar from './_lib/AppSidebar.svelte';
+  import { createPresenceCallbacks, formatTokenTime, performLogout } from './_lib/layout-helpers';
   import LogoutModal from './_lib/LogoutModal.svelte';
   import {
     filterMenuByAccess,
     filterMenuByAddons,
     filterMenuByScope,
     getMenuItemsForRole,
-    type NavItem,
   } from './_lib/navigation-config';
   import RoleSwitchBanner from './_lib/RoleSwitchBanner.svelte';
 
@@ -104,11 +93,7 @@
     if (stored === 'root' || stored === 'admin' || stored === 'employee') {
       return stored;
     }
-    return (data.user?.role ?? 'employee') as
-      | 'root'
-      | 'admin'
-      | 'employee'
-      | 'dummy';
+    return (data.user?.role ?? 'employee') as 'root' | 'admin' | 'employee' | 'dummy';
   };
 
   const isBannerDismissed = (role: string): boolean =>
@@ -119,15 +104,11 @@
   let userRole = $state<'root' | 'admin' | 'employee' | 'dummy'>(
     (data.user?.role ?? 'employee') as 'root' | 'admin' | 'employee' | 'dummy',
   );
-  let activeRole = $state<'root' | 'admin' | 'employee' | 'dummy'>(
-    getInitialActiveRole(),
-  );
+  let activeRole = $state<'root' | 'admin' | 'employee' | 'dummy'>(getInitialActiveRole());
   let sidebarCollapsed = $state(false);
   let mobileMenuOpen = $state(false);
   let isMobile = $state(false);
-  let roleSwitchBannerDismissed = $state(
-    isBannerDismissed(getInitialActiveRole()),
-  );
+  let roleSwitchBannerDismissed = $state(isBannerDismissed(getInitialActiveRole()));
 
   // Token Timer State
   let tokenTimeLeft = $state('--:--');
@@ -144,9 +125,7 @@
   // Tenant Info - initialize from SSR data to prevent hydration FOUC
   // INTENTIONAL: Capture initial SSR value. Updates via ssrTenant → effect sync.
   // svelte-ignore state_referenced_locally
-  let tenant = $state<{ id?: number; companyName?: string } | null>(
-    data.tenant ?? null,
-  );
+  let tenant = $state<{ id?: number; companyName?: string } | null>(data.tenant ?? null);
 
   // Session Manager instance (for cleanup on destroy)
   let sessionManagerInstance = $state<SessionManager | null>(null);
@@ -160,9 +139,7 @@
 
   // Role Switch Banner: Show when user is viewing as different role
   const isRoleSwitched = $derived(userRole !== activeRole);
-  const showRoleSwitchBanner = $derived(
-    isRoleSwitched && !roleSwitchBannerDismissed,
-  );
+  const showRoleSwitchBanner = $derived(isRoleSwitched && !roleSwitchBannerDismissed);
 
   // Sync SSR user data to local state on invalidateAll() / navigation
   // This ensures UI updates immediately after PATCH /users/me
@@ -227,17 +204,12 @@
   const hierarchyLabels = $derived(data.hierarchyLabels);
 
   // Navigation menu items - filtered by access level and tenant addon activation
-  const hasFullAccess = $derived(
-    data.user?.role === 'root' || Boolean(data.user?.hasFullAccess),
-  );
+  const hasFullAccess = $derived(data.user?.role === 'root' || Boolean(data.user?.hasFullAccess));
   const activeAddonsSet = $derived(new Set(data.activeAddons));
-  const menuItems = $derived<NavItem[]>(
+  const menuItems = $derived(
     filterMenuByAddons(
       filterMenuByScope(
-        filterMenuByAccess(
-          getMenuItemsForRole(currentRole, hierarchyLabels),
-          hasFullAccess,
-        ),
+        filterMenuByAccess(getMenuItemsForRole(currentRole, hierarchyLabels), hasFullAccess),
         data.orgScope,
         currentRole,
         hierarchyLabels,
@@ -248,46 +220,25 @@
 
   // --- API FUNCTIONS ---
 
-  /**
-   * Logout user
-   * Uses goto() for client-side navigation (no window.location)
-   */
   async function logout(): Promise<void> {
-    try {
-      // Call logout API first (while we still have a valid token)
-      await apiClient.post('/auth/logout');
-    } catch (err: unknown) {
-      log.error({ err }, 'Logout API error (continuing with logout)');
-    }
-
-    // Clear E2E encryption state + private key from Worker memory + IndexedDB
-    await e2e.lock();
-    clearPublicKeyCache();
+    await performLogout({
+      apiClient,
+      onError: (err: unknown) => {
+        log.error({ err }, 'Logout API error (continuing with logout)');
+      },
+      lockE2E: () => e2e.lock(),
+      clearCaches: () => {
+        clearPublicKeyCache();
+        clearUserCache();
+      },
+      navigate: (url: string) => goto(url, { replaceState: true }),
+    });
 
     // CRITICAL: Reset ALL Svelte state to prevent stale data on re-login
     user = null;
     userRole = 'employee';
     activeRole = 'employee';
     tenant = null;
-
-    // Clear shared user cache (prevents stale data on re-login)
-    clearUserCache();
-
-    // Clear all tokens and role data from localStorage
-    localStorage.removeItem('userRole');
-    localStorage.removeItem('activeRole');
-    localStorage.removeItem('token'); // Legacy token
-    localStorage.removeItem('accessToken');
-    // NOTE: refreshToken is in HttpOnly cookie, cleared by backend on /auth/logout
-    localStorage.removeItem('tokenReceivedAt');
-    localStorage.removeItem('user');
-
-    // Note: TokenManager in-memory state will be stale, but page navigation
-    // will reinitialize it. No need to call clearTokens() which would trigger
-    // a window.location redirect that we want to avoid.
-
-    // Use SvelteKit's goto() for client-side navigation (no full page reload)
-    await goto('/login', { replaceState: true });
   }
 
   // =============================================================================
@@ -297,44 +248,17 @@
   // =============================================================================
 
   async function connectPresenceWebSocket(): Promise<void> {
-    const userId = data.user?.id ?? 0;
-
-    const callbacks: WebSocketCallbacks = {
-      onConnected: () => {
-        log.info('Presence WebSocket connected');
+    const callbacks = createPresenceCallbacks({
+      userId: data.user?.id ?? 0,
+      tenantId: data.user?.tenantId ?? 0,
+      onInfo: (msg: string) => {
+        log.info(msg);
       },
-      onDisconnect: (_permanent: boolean) => {
-        // Reconnection handled automatically by handlers.ts
+      onError: (msg: string) => {
+        log.error(msg);
       },
-      // No-op handlers: SSE handles notification badges outside chat page.
-      // Chat page upgrades these with real handlers when mounted.
-      onNewMessage: () => {
-        /* no-op: SSE handles badges */
-      },
-      onTypingStart: () => {
-        /* no-op: chat-page-only */
-      },
-      onTypingStop: () => {
-        /* no-op: chat-page-only */
-      },
-      onUserStatus: () => {
-        /* no-op: chat-page-only */
-      },
-      onMessageRead: () => {
-        /* no-op: chat-page-only */
-      },
-      onError: (error: string) => {
-        log.error(error);
-      },
-      onAuthError: () => {
-        void goto('/login');
-      },
-      getActiveConversationId: () => null,
-      getCurrentUserId: () => userId,
-      getTenantId: () => data.user?.tenantId ?? 0,
-      getConversations: () => [],
-    };
-
+      onAuthError: () => void goto('/login'),
+    });
     setPresenceCallbacks(callbacks);
     await wsConnect(callbacks);
     startPeriodicPing();
@@ -344,24 +268,11 @@
   // TOKEN TIMER
   // =============================================================================
 
-  /**
-   * Handle token timer update from TokenManager.
-   * Uses TokenManager's relative time calculation (no clock skew!)
-   */
   function handleTokenTimerUpdate(remainingSeconds: number): void {
-    if (remainingSeconds <= 0) {
-      tokenTimeLeft = '00:00';
-      tokenExpired = true;
-      tokenWarning = false;
-      return;
-    }
-
-    const minutes = Math.floor(remainingSeconds / 60);
-    const seconds = remainingSeconds % 60;
-    tokenTimeLeft = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-
-    tokenWarning = remainingSeconds <= 120; // 2 minutes warning
-    tokenExpired = false;
+    const result = formatTokenTime(remainingSeconds);
+    tokenTimeLeft = result.timeLeft;
+    tokenWarning = result.warning;
+    tokenExpired = result.expired;
   }
 
   // --- EVENT HANDLERS ---
@@ -413,9 +324,7 @@
     // NOTE: Token expiration redirect is handled by TokenManager.clearTokens() internally
     perf.timeSync('layout:tokenManager:init', () => {
       const tokenManager = getTokenManager();
-      tokenTimerUnsubscribe = tokenManager.onTimerUpdate(
-        handleTokenTimerUpdate,
-      );
+      tokenTimerUnsubscribe = tokenManager.onTimerUpdate(handleTokenTimerUpdate);
     });
 
     // Initialize Session Manager (handles inactivity timeout + warning modal)
@@ -431,11 +340,7 @@
         log.warn({ newRole }, 'Role changed in another tab');
 
         // Update local state - the manager handles redirect/reload
-        if (
-          newRole === 'root' ||
-          newRole === 'admin' ||
-          newRole === 'employee'
-        ) {
+        if (newRole === 'root' || newRole === 'admin' || newRole === 'employee') {
           activeRole = newRole;
         }
 
@@ -488,6 +393,13 @@
 
 <!-- AUTH GUARD: Block ALL content until authenticated -->
 {#if isAuthenticated}
+  <RoleSwitchBanner
+    isVisible={showRoleSwitchBanner}
+    {userRole}
+    {activeRole}
+    onDismiss={dismissRoleSwitchBanner}
+  />
+
   <AppHeader
     {sidebarCollapsed}
     {tokenTimeLeft}
@@ -501,13 +413,6 @@
     onShowLogoutModal={() => {
       showLogoutModal = true;
     }}
-  />
-
-  <RoleSwitchBanner
-    isVisible={showRoleSwitchBanner}
-    {userRole}
-    {activeRole}
-    onDismiss={dismissRoleSwitchBanner}
   />
 
   <div class="layout-container">
@@ -532,9 +437,7 @@
       onCloseMobile={closeMobileMenu}
     />
 
-    <main
-      class="min-h-[calc(100vh-60px)] flex-1 bg-(--background-primary) p-2 md:p-3 lg:p-4"
-    >
+    <main class="min-h-[calc(100vh-60px)] flex-1 bg-(--background-primary) p-2 md:p-3 lg:p-4">
       <div id="breadcrumb-container">
         <Breadcrumb
           userRole={currentRole}

@@ -71,9 +71,7 @@ describe('CompanyService', () => {
     });
 
     it('trims country_code whitespace', async () => {
-      mockDb.query.mockResolvedValueOnce([
-        { ...FULL_DB_ROW, country_code: 'DE  ' },
-      ]);
+      mockDb.query.mockResolvedValueOnce([{ ...FULL_DB_ROW, country_code: 'DE  ' }]);
 
       const result = await service.getCompanyData(1);
 
@@ -81,9 +79,7 @@ describe('CompanyService', () => {
     });
 
     it('returns null for null country_code', async () => {
-      mockDb.query.mockResolvedValueOnce([
-        { ...FULL_DB_ROW, country_code: null },
-      ]);
+      mockDb.query.mockResolvedValueOnce([{ ...FULL_DB_ROW, country_code: null }]);
 
       const result = await service.getCompanyData(1);
 
@@ -114,9 +110,7 @@ describe('CompanyService', () => {
     it('throws when tenant not found', async () => {
       mockDb.query.mockResolvedValueOnce([]);
 
-      await expect(service.getCompanyData(999)).rejects.toThrow(
-        'Tenant 999 not found',
-      );
+      await expect(service.getCompanyData(999)).rejects.toThrow('Tenant 999 not found');
     });
   });
 
@@ -164,14 +158,7 @@ describe('CompanyService', () => {
       expect(sql).toContain('RETURNING');
 
       const params = mockDb.query.mock.calls[0]?.[1] as unknown[];
-      expect(params).toEqual([
-        'Neue Straße',
-        '1',
-        '20095',
-        'Hamburg',
-        'DE',
-        '1',
-      ]);
+      expect(params).toEqual(['Neue Straße', '1', '20095', 'Hamburg', 'DE', '1']);
     });
 
     it('updates only provided fields (partial update)', async () => {
@@ -214,9 +201,7 @@ describe('CompanyService', () => {
 
       mockDb.query.mockResolvedValueOnce([]);
 
-      await expect(service.updateCompanyData(999, dto)).rejects.toThrow(
-        'Tenant 999 not found',
-      );
+      await expect(service.updateCompanyData(999, dto)).rejects.toThrow('Tenant 999 not found');
     });
 
     it('trims country_code in update response', async () => {
@@ -224,9 +209,7 @@ describe('CompanyService', () => {
         countryCode: 'AT',
       } as UpdateCompanyDto;
 
-      mockDb.query.mockResolvedValueOnce([
-        { ...FULL_DB_ROW, country_code: 'AT ' },
-      ]);
+      mockDb.query.mockResolvedValueOnce([{ ...FULL_DB_ROW, country_code: 'AT ' }]);
 
       const result = await service.updateCompanyData(1, dto);
 

@@ -113,9 +113,7 @@ describe('TpmPlansService', () => {
     it('should throw NotFoundException when plan not found', async () => {
       mockDb.queryOne.mockResolvedValueOnce(null);
 
-      await expect(service.getPlan(10, 'nonexistent')).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.getPlan(10, 'nonexistent')).rejects.toThrow(NotFoundException);
     });
 
     it('should not set optional fields when JOIN columns are missing', async () => {
@@ -414,9 +412,9 @@ describe('TpmPlansService', () => {
     it('should throw NotFoundException when plan not found', async () => {
       mockClient.query.mockResolvedValueOnce({ rows: [] });
 
-      await expect(
-        service.updatePlan(10, 5, 'nonexistent', { name: 'X' }),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.updatePlan(10, 5, 'nonexistent', { name: 'X' })).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should call activity logger after successful update', async () => {
@@ -480,9 +478,7 @@ describe('TpmPlansService', () => {
       // UPDATE is_active = 4
       mockClient.query.mockResolvedValueOnce({ rows: [] });
 
-      await expect(
-        service.deletePlan(10, 5, 'plan-uuid-001'),
-      ).resolves.toBeUndefined();
+      await expect(service.deletePlan(10, 5, 'plan-uuid-001')).resolves.toBeUndefined();
 
       const deleteSql = mockClient.query.mock.calls[1]?.[0] as string;
       expect(deleteSql).toContain(`is_active = ${IS_ACTIVE.DELETED}`);
@@ -491,9 +487,7 @@ describe('TpmPlansService', () => {
     it('should throw NotFoundException when plan not found', async () => {
       mockClient.query.mockResolvedValueOnce({ rows: [] });
 
-      await expect(service.deletePlan(10, 5, 'nonexistent')).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.deletePlan(10, 5, 'nonexistent')).rejects.toThrow(NotFoundException);
     });
 
     it('should call activity logger after successful deletion', async () => {

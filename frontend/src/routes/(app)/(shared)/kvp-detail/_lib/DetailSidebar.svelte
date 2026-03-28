@@ -12,11 +12,14 @@
     canUnarchiveSuggestion,
   } from './utils';
 
-  import type { Attachment, KvpSuggestion, LinkedWorkOrder } from './types';
+  import type { ApprovalInfo, Attachment, KvpSuggestion, LinkedWorkOrder } from './types';
 
   interface Props {
     suggestion: KvpSuggestion;
     linkedWorkOrders: LinkedWorkOrder[];
+    approval: ApprovalInfo | null;
+    hasApprovalConfig: boolean;
+    isApprovalMaster: boolean;
     onopensharemodal: () => void;
     onunshare: () => void;
     onarchive: () => void;
@@ -25,11 +28,17 @@
     onunconfirm: () => Promise<void>;
     onopenpreview: (attachment: Attachment) => void;
     onopenworkordermodal: () => void;
+    onrequestapproval: () => Promise<void>;
+    onapprove: () => void;
+    onreject: () => void;
   }
 
   const {
     suggestion,
     linkedWorkOrders,
+    approval,
+    hasApprovalConfig,
+    isApprovalMaster,
     onopensharemodal,
     onunshare,
     onarchive,
@@ -38,12 +47,21 @@
     onunconfirm,
     onopenpreview,
     onopenworkordermodal,
+    onrequestapproval,
+    onapprove,
+    onreject,
   }: Props = $props();
+
+  const canRequestApproval = $derived(
+    kvpDetailState.canManage &&
+      hasApprovalConfig &&
+      approval === null &&
+      (suggestion.status === 'new' || suggestion.status === 'restored'),
+  );
 
   /** Active (non-verified) work order blocks new creation */
   const activeWorkOrder = $derived(
-    linkedWorkOrders.find((wo: LinkedWorkOrder) => wo.status !== 'verified') ??
-      null,
+    linkedWorkOrders.find((wo: LinkedWorkOrder) => wo.status !== 'verified') ?? null,
   );
 
   // Loading state for confirm/unconfirm
@@ -74,9 +92,7 @@
         <i class="fas fa-check-circle text-success"></i>
         <span>Bereits als gelesen markiert</span>
         {#if suggestion.confirmedAt}
-          <span class="text-muted text-sm"
-            >{formatDateTime(suggestion.confirmedAt)}</span
-          >
+          <span class="text-muted text-sm">{formatDateTime(suggestion.confirmedAt)}</span>
         {/if}
       </div>
       <button
@@ -166,19 +182,90 @@
     </div>
   {/if}
 
-  <!-- Actions (Admin Only) -->
-  {#if kvpDetailState.isAdmin}
+  <!-- Approval Status Badge -->
+  {#if approval !== null}
+    <div class="sidebar-card card">
+      <h3 class="section-title">
+        <i class="fas fa-check-double"></i>
+        Freigabe-Status
+      </h3>
+      <div class="approval-status">
+        {#if approval.status === 'pending'}
+          <span class="badge badge--warning">Freigabe ausstehend</span>
+          <p class="approval-meta">Angefordert von {approval.requestedByName}</p>
+          <p class="approval-meta">{formatDateTime(approval.createdAt)}</p>
+          {#if isApprovalMaster}
+            <div class="approval-actions">
+              <button
+                type="button"
+                class="btn btn-success"
+                onclick={onapprove}
+              >
+                <i class="fas fa-check mr-1"></i>
+                Genehmigen
+              </button>
+              <button
+                type="button"
+                class="btn btn-cancel"
+                onclick={onreject}
+              >
+                <i class="fas fa-times mr-1"></i>
+                Ablehnen
+              </button>
+            </div>
+          {/if}
+        {:else if approval.status === 'approved'}
+          <span class="badge badge--success">Freigabe erteilt</span>
+          <p class="approval-meta">Genehmigt von {approval.decidedByName ?? '—'}</p>
+          {#if approval.rewardAmount !== null}
+            <p class="approval-reward">
+              <i class="fas fa-trophy"></i>
+              {approval.rewardAmount.toFixed(0)} € Prämie
+            </p>
+          {/if}
+          {#if approval.decidedAt !== null}
+            <p class="approval-meta">{formatDateTime(approval.decidedAt)}</p>
+          {/if}
+          {#if approval.decisionNote !== null && approval.decisionNote !== ''}
+            <p class="approval-note">{approval.decisionNote}</p>
+          {/if}
+        {:else if approval.status === 'rejected'}
+          <span class="badge badge--danger">Freigabe abgelehnt</span>
+          <p class="approval-meta">Abgelehnt von {approval.decidedByName ?? '—'}</p>
+          {#if approval.decisionNote !== null && approval.decisionNote !== ''}
+            <p class="approval-reason">{approval.decisionNote}</p>
+          {/if}
+          {#if approval.decidedAt !== null}
+            <p class="approval-meta">{formatDateTime(approval.decidedAt)}</p>
+          {/if}
+        {/if}
+      </div>
+    </div>
+  {/if}
+
+  <!-- Actions (Admin, Root, Team Lead) -->
+  {#if kvpDetailState.canManage}
     <div class="sidebar-card card">
       <h3 class="section-title">
         <i class="fas fa-cog"></i>
         Aktionen
       </h3>
       <div class="action-buttons">
+        {#if canRequestApproval}
+          <button
+            type="button"
+            class="btn btn-warning"
+            onclick={onrequestapproval}
+          >
+            <i class="fas fa-check-double"></i>
+            Freigabe anfordern
+          </button>
+        {/if}
         {#if activeWorkOrder !== null}
           <div class="alert alert--info alert--sm mb-0">
             <i class="fas fa-info-circle mr-2"></i>
-            Es existiert bereits ein aktiver Arbeitsauftrag. Erst nach Verifizierung
-            kann ein neuer erstellt werden.
+            Es existiert bereits ein aktiver Arbeitsauftrag. Erst nach Verifizierung kann ein neuer erstellt
+            werden.
           </div>
         {:else}
           <button
@@ -190,17 +277,17 @@
             Arbeitsauftrag generieren
           </button>
         {/if}
-        {#if canShareSuggestion(suggestion, kvpDetailState.effectiveRole)}
+        {#if canShareSuggestion(suggestion, kvpDetailState.effectiveRole, kvpDetailState.canManage)}
           <button
             type="button"
-            class="btn btn-edit"
+            class="btn btn-secondary"
             onclick={onopensharemodal}
           >
             <i class="fas fa-share-alt"></i>
             Teilen
           </button>
         {/if}
-        {#if canUnshareSuggestion(suggestion, kvpDetailState.effectiveRole, kvpDetailState.currentUser?.id)}
+        {#if canUnshareSuggestion(suggestion, kvpDetailState.effectiveRole, kvpDetailState.currentUser?.id, kvpDetailState.canManage)}
           <button
             type="button"
             class="btn btn-secondary"
@@ -210,7 +297,7 @@
             Teilen rückgängig
           </button>
         {/if}
-        {#if canArchiveSuggestion(kvpDetailState.effectiveRole, suggestion.status)}
+        {#if canArchiveSuggestion(kvpDetailState.effectiveRole, suggestion.status, kvpDetailState.canManage)}
           <button
             type="button"
             class="btn btn-light"
@@ -220,7 +307,7 @@
             Archivieren
           </button>
         {/if}
-        {#if canUnarchiveSuggestion(kvpDetailState.effectiveRole, suggestion.status)}
+        {#if canUnarchiveSuggestion(kvpDetailState.effectiveRole, suggestion.status, kvpDetailState.canManage)}
           <button
             type="button"
             class="btn btn-success"
@@ -335,5 +422,51 @@
     font-size: 1.2rem;
     font-weight: 600;
     color: var(--primary-color);
+  }
+
+  .approval-status {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-2);
+  }
+
+  .approval-meta {
+    margin: 0;
+    font-size: 0.8rem;
+    color: var(--color-text-muted);
+  }
+
+  .approval-actions {
+    display: flex;
+    gap: var(--spacing-2);
+    margin-top: var(--spacing-3);
+  }
+
+  .approval-reward {
+    margin: var(--spacing-2) 0 0;
+    padding: var(--spacing-2);
+    border-radius: var(--radius-md);
+    background: oklch(51.29% 0.1307 157.18 / 10%);
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--color-success);
+  }
+
+  .approval-note {
+    margin: var(--spacing-2) 0 0;
+    padding: var(--spacing-2);
+    border-radius: var(--radius-md);
+    background: var(--glass-bg);
+    font-size: 0.85rem;
+    font-style: italic;
+  }
+
+  .approval-reason {
+    margin: var(--spacing-2) 0 0;
+    padding: var(--spacing-2);
+    border-radius: var(--radius-md);
+    background: var(--color-danger-bg, rgb(220 53 69 / 10%));
+    font-size: 0.85rem;
+    font-style: italic;
   }
 </style>

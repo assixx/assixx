@@ -5,22 +5,14 @@
  * and assignment validation.
  */
 import { IS_ACTIVE } from '@assixx/shared/constants';
-import {
-  BadRequestException,
-  Injectable,
-  Logger,
-  NotFoundException,
-} from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { v7 as uuidv7 } from 'uuid';
 
 import { dbToApi } from '../../utils/field-mapper.js';
 import { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import { DatabaseService } from '../database/database.service.js';
 import type { AssignUsersToPatternDto } from './dto/assign-users-to-pattern.dto.js';
-import type {
-  DbAssignmentRow,
-  RotationAssignmentResponse,
-} from './rotation.types.js';
+import type { DbAssignmentRow, RotationAssignmentResponse } from './rotation.types.js';
 
 @Injectable()
 export class RotationAssignmentService {
@@ -48,9 +40,7 @@ export class RotationAssignmentService {
 
     return rows.map(
       (row: DbAssignmentRow) =>
-        dbToApi(
-          row as unknown as Record<string, unknown>,
-        ) as RotationAssignmentResponse,
+        dbToApi(row as unknown as Record<string, unknown>) as RotationAssignmentResponse,
     );
   }
 
@@ -129,10 +119,7 @@ export class RotationAssignmentService {
   /**
    * Validates that a rotation pattern exists
    */
-  private async validatePatternExists(
-    patternId: number,
-    tenantId: number,
-  ): Promise<void> {
+  private async validatePatternExists(patternId: number, tenantId: number): Promise<void> {
     const result = await this.databaseService.query<{ id: number }>(
       'SELECT id FROM shift_rotation_patterns WHERE id = $1 AND tenant_id = $2',
       [patternId, tenantId],
@@ -145,19 +132,14 @@ export class RotationAssignmentService {
   /**
    * Validates that team exists and is active
    */
-  async validateTeamExists(
-    teamId: number | null | undefined,
-    tenantId: number,
-  ): Promise<void> {
+  async validateTeamExists(teamId: number | null | undefined, tenantId: number): Promise<void> {
     if (teamId === undefined || teamId === null) return;
     const teamResult = await this.databaseService.query<{ id: number }>(
       `SELECT id FROM teams WHERE id = $1 AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}`,
       [teamId, tenantId],
     );
     if (teamResult.length === 0) {
-      throw new BadRequestException(
-        `Team with ID ${teamId} does not exist or is not active`,
-      );
+      throw new BadRequestException(`Team with ID ${teamId} does not exist or is not active`);
     }
   }
 
@@ -175,9 +157,7 @@ export class RotationAssignmentService {
       [userIds, tenantId],
     );
     const validUserIds = new Set(userResult.map((r: { id: number }) => r.id));
-    const invalidUserIds = userIds.filter(
-      (id: number) => !validUserIds.has(id),
-    );
+    const invalidUserIds = userIds.filter((id: number) => !validUserIds.has(id));
     if (invalidUserIds.length > 0) {
       throw new BadRequestException(
         `Invalid user IDs in assignments: ${invalidUserIds.join(', ')}. Users must exist and be active.`,

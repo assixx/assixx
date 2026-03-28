@@ -27,6 +27,7 @@ import type {
   AdminFormData,
   AvailabilityStatus,
   BadgeInfo,
+  Department,
   FormIsActiveStatus,
   IsActiveStatus,
 } from './types';
@@ -90,12 +91,27 @@ export function hasFullAccess(admin: Admin): boolean {
 }
 
 /**
- * Get badge info for areas column
+ * Get unique area names inherited upward from departments (explicit + lead)
+ * ADR-035: Department permission → READ-ONLY context on parent area
  */
-export function getAreasBadge(
-  admin: Admin,
-  labels: HierarchyLabels,
-): BadgeInfo {
+function getInheritedAreaNames(admin: Admin): string[] {
+  const allDepts: Department[] = [...(admin.departments ?? []), ...(admin.leadDepartments ?? [])];
+  const seen = new Set<number>();
+  const names: string[] = [];
+  for (const dept of allDepts) {
+    if (dept.areaName !== undefined && dept.areaId !== undefined && !seen.has(dept.areaId)) {
+      seen.add(dept.areaId);
+      names.push(dept.areaName);
+    }
+  }
+  return names;
+}
+
+/**
+ * Get badge info for areas column
+ * Decision tree: Full Access → Direct/Lead count → Inherited from Depts → Keine
+ */
+export function getAreasBadge(admin: Admin, labels: HierarchyLabels): BadgeInfo {
   if (hasFullAccess(admin)) {
     return {
       class: BADGE_CLASS.PRIMARY,
@@ -104,57 +120,72 @@ export function getAreasBadge(
       icon: 'fa-globe',
     };
   }
-  if (!admin.areas || admin.areas.length === 0) {
+
+  // Direct areas (explicit permissions + lead positions)
+  const count = getAreaCount(admin);
+  if (count > 0) {
+    const names = getAreaNames(admin);
     return {
-      class: BADGE_CLASS.SECONDARY,
-      text: MESSAGES.BADGE_NONE,
-      title: `Keine ${labels.area} zugewiesen`,
+      class: BADGE_CLASS.INFO,
+      text: `${count} ${labels.area}`,
+      title: names,
     };
   }
-  const count = admin.areas.length;
-  const names = admin.areas.map((a) => a.name).join(', ');
+
+  // Upward inheritance: Departments belong to areas → READ-ONLY context
+  const inheritedNames = getInheritedAreaNames(admin);
+  if (inheritedNames.length > 0) {
+    return {
+      class: BADGE_CLASS.WARNING,
+      text: MESSAGES.BADGE_INHERITED,
+      title: `Vererbt von: ${getDepartmentNames(admin)} → ${inheritedNames.join(', ')}`,
+      icon: 'fa-sitemap',
+    };
+  }
+
   return {
-    class: BADGE_CLASS.INFO,
-    text: `${count} ${labels.area}`,
-    title: names,
+    class: BADGE_CLASS.SECONDARY,
+    text: MESSAGES.BADGE_NONE,
+    title: `Keine ${labels.area} zugewiesen`,
   };
 }
 
 /**
- * Get department count safely
+ * Get total department count (explicit permissions + lead positions)
  */
 function getDepartmentCount(admin: Admin): number {
-  return admin.departments?.length ?? 0;
+  return (admin.departments?.length ?? 0) + (admin.leadDepartments?.length ?? 0);
 }
 
 /**
- * Get area count safely
+ * Get total area count (explicit permissions + lead positions)
  */
 function getAreaCount(admin: Admin): number {
-  return admin.areas?.length ?? 0;
+  return (admin.areas?.length ?? 0) + (admin.leadAreas?.length ?? 0);
 }
 
 /**
- * Get comma-separated department names
+ * Get comma-separated department names (explicit + lead with suffix)
  */
 function getDepartmentNames(admin: Admin): string {
-  return admin.departments?.map((d) => d.name).join(', ') ?? '';
+  const explicit = admin.departments?.map((d: { name: string }) => d.name) ?? [];
+  const lead = admin.leadDepartments?.map((d: { name: string }) => `${d.name} (Lead)`) ?? [];
+  return [...explicit, ...lead].join(', ');
 }
 
 /**
- * Get comma-separated area names
+ * Get comma-separated area names (explicit + lead with suffix)
  */
 function getAreaNames(admin: Admin): string {
-  return admin.areas?.map((a) => a.name).join(', ') ?? '';
+  const explicit = admin.areas?.map((a: { name: string }) => a.name) ?? [];
+  const lead = admin.leadAreas?.map((a: { name: string }) => `${a.name} (Lead)`) ?? [];
+  return [...explicit, ...lead].join(', ');
 }
 
 /**
  * Get badge info for departments column
  */
-export function getDepartmentsBadge(
-  admin: Admin,
-  labels: HierarchyLabels,
-): BadgeInfo {
+export function getDepartmentsBadge(admin: Admin, labels: HierarchyLabels): BadgeInfo {
   if (hasFullAccess(admin)) {
     return {
       class: BADGE_CLASS.PRIMARY,
@@ -185,7 +216,7 @@ export function getDepartmentsBadge(
 
   if (areaCount > 0) {
     return {
-      class: BADGE_CLASS.INFO,
+      class: BADGE_CLASS.WARNING,
       text: MESSAGES.BADGE_INHERITED,
       title: `Vererbt von: ${getAreaNames(admin)}`,
       icon: 'fa-sitemap',
@@ -202,10 +233,7 @@ export function getDepartmentsBadge(
 /**
  * Build inheritance description for teams badge
  */
-function buildTeamsInheritanceTitle(
-  admin: Admin,
-  labels: HierarchyLabels,
-): string {
+function buildTeamsInheritanceTitle(admin: Admin, labels: HierarchyLabels): string {
   const parts: string[] = [];
   const areaNames = getAreaNames(admin);
   const deptNames = getDepartmentNames(admin);
@@ -223,10 +251,7 @@ function buildTeamsInheritanceTitle(
 /**
  * Get badge info for teams column (inherited via Area/Department)
  */
-export function getTeamsBadge(
-  admin: Admin,
-  labels: HierarchyLabels,
-): BadgeInfo {
+export function getTeamsBadge(admin: Admin, labels: HierarchyLabels): BadgeInfo {
   if (hasFullAccess(admin)) {
     return {
       class: BADGE_CLASS.PRIMARY,
@@ -241,7 +266,7 @@ export function getTeamsBadge(
 
   if (hasAreas || hasDepts) {
     return {
-      class: BADGE_CLASS.INFO,
+      class: BADGE_CLASS.WARNING,
       text: MESSAGES.BADGE_INHERITED,
       title: buildTeamsInheritanceTitle(admin, labels),
       icon: 'fa-sitemap',
@@ -266,9 +291,7 @@ export interface PasswordStrengthResult {
 }
 
 /** Calculate password strength */
-export function calculatePasswordStrength(
-  password: string,
-): PasswordStrengthResult {
+export function calculatePasswordStrength(password: string): PasswordStrengthResult {
   if (!password) {
     return { score: -1, label: '', crackTime: '' };
   }
@@ -296,20 +319,14 @@ export function calculatePasswordStrength(
 /**
  * Check if two email addresses match
  */
-export function validateEmailsMatch(
-  email: string,
-  emailConfirm: string,
-): boolean {
+export function validateEmailsMatch(email: string, emailConfirm: string): boolean {
   return email === emailConfirm;
 }
 
 /**
  * Check if two passwords match
  */
-export function validatePasswordsMatch(
-  password: string,
-  passwordConfirm: string,
-): boolean {
+export function validatePasswordsMatch(password: string, passwordConfirm: string): boolean {
   return password === passwordConfirm;
 }
 
@@ -322,7 +339,7 @@ export interface FormState {
   lastName: string;
   email: string;
   password: string;
-  position: string;
+  positionIds: string[];
   notes: string;
   isActive: FormIsActiveStatus;
   employeeNumber: string;
@@ -334,16 +351,13 @@ export interface FormState {
 /**
  * Build AdminFormData from form state
  */
-export function buildAdminFormData(
-  form: FormState,
-  isEditMode: boolean,
-): AdminFormData {
+export function buildAdminFormData(form: FormState, isEditMode: boolean): AdminFormData {
   const data: AdminFormData = {
     firstName: form.firstName,
     lastName: form.lastName,
     email: form.email.toLowerCase().trim(),
     username: form.email.toLowerCase().trim(),
-    position: form.position,
+    positionIds: form.positionIds,
     notes: form.notes,
     isActive: form.isActive,
     employeeNumber: form.employeeNumber,
@@ -393,7 +407,7 @@ export function populateFormFromAdmin(admin: Admin): FormState {
     lastName: admin.lastName,
     email: admin.email.toLowerCase(),
     password: '',
-    position: admin.position ?? '',
+    positionIds: [],
     notes: admin.notes ?? '',
     isActive: normalizeIsActiveForForm(admin.isActive),
     employeeNumber: admin.employeeNumber ?? '',
@@ -453,10 +467,7 @@ export function getAvailabilityBadge(admin: Admin): BadgeInfo {
     };
   }
 
-  const isActive = isDateRangeActive(
-    admin.availabilityStart,
-    admin.availabilityEnd,
-  );
+  const isActive = isDateRangeActive(admin.availabilityStart, admin.availabilityEnd);
 
   if (isActive) {
     return {
@@ -539,17 +550,12 @@ export interface AvailabilityFormData {
 }
 
 /** Availability validation error types */
-export type AvailabilityValidationError =
-  | 'dates_required'
-  | 'end_before_start'
-  | null;
+export type AvailabilityValidationError = 'dates_required' | 'end_before_start' | null;
 
 /**
  * Validate availability form data
  */
-export function validateAvailabilityForm(
-  data: AvailabilityFormData,
-): AvailabilityValidationError {
+export function validateAvailabilityForm(data: AvailabilityFormData): AvailabilityValidationError {
   if (data.status !== 'available' && (data.start === '' || data.end === '')) {
     return 'dates_required';
   }
@@ -571,9 +577,7 @@ export interface AvailabilityPayload {
 /**
  * Build availability API payload from form data
  */
-export function buildAvailabilityPayload(
-  data: AvailabilityFormData,
-): AvailabilityPayload {
+export function buildAvailabilityPayload(data: AvailabilityFormData): AvailabilityPayload {
   return {
     availabilityStatus: data.status,
     availabilityStart: data.start !== '' ? data.start : undefined,

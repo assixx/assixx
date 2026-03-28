@@ -129,10 +129,7 @@ export class UserRepository {
   }
 
   /** Get minimal user info by UUID (for display purposes) */
-  async findMinimalByUuid(
-    uuid: string,
-    tenantId: number,
-  ): Promise<UserMinimal | null> {
+  async findMinimalByUuid(uuid: string, tenantId: number): Promise<UserMinimal | null> {
     return await this.db.queryOne<UserMinimal>(
       `SELECT ${USER_MINIMAL_COLUMNS}
        FROM users
@@ -144,10 +141,7 @@ export class UserRepository {
   }
 
   /** Get minimal user info by ID (for display purposes) */
-  async findMinimalById(
-    id: number,
-    tenantId: number,
-  ): Promise<UserMinimal | null> {
+  async findMinimalById(id: number, tenantId: number): Promise<UserMinimal | null> {
     return await this.db.queryOne<UserMinimal>(
       `SELECT ${USER_MINIMAL_COLUMNS}
        FROM users
@@ -184,17 +178,8 @@ export class UserRepository {
   }
 
   /** List active users with pagination and filtering */
-  async findMany(
-    tenantId: number,
-    options: FindManyOptions = {},
-  ): Promise<UserBase[]> {
-    const {
-      role,
-      limit = 50,
-      offset = 0,
-      orderBy = 'created_at',
-      orderDir = 'DESC',
-    } = options;
+  async findMany(tenantId: number, options: FindManyOptions = {}): Promise<UserBase[]> {
+    const { role, limit = 50, offset = 0, orderBy = 'created_at', orderDir = 'DESC' } = options;
 
     // Whitelist allowed order columns to prevent SQL injection
     const allowedOrderColumns = [
@@ -207,8 +192,7 @@ export class UserRepository {
       'created_at',
       'updated_at',
     ];
-    const safeOrderBy =
-      allowedOrderColumns.includes(orderBy) ? orderBy : 'created_at';
+    const safeOrderBy = allowedOrderColumns.includes(orderBy) ? orderBy : 'created_at';
     const safeOrderDir = orderDir === 'ASC' ? 'ASC' : 'DESC';
 
     const params: unknown[] = [tenantId];
@@ -311,10 +295,7 @@ export class UserRepository {
    * Find user for authentication by ID (token refresh).
    * Returns user regardless of status - caller MUST check is_active
    */
-  async findForAuthById(
-    id: number,
-    tenantId: number,
-  ): Promise<UserWithPassword | null> {
+  async findForAuthById(id: number, tenantId: number): Promise<UserWithPassword | null> {
     return await this.db.queryOne<UserWithPassword>(
       `SELECT ${USER_AUTH_COLUMNS}
        FROM users
@@ -337,9 +318,7 @@ export class UserRepository {
   }
 
   async updateLastLogin(id: number): Promise<void> {
-    await this.db.query('UPDATE users SET last_login = NOW() WHERE id = $1', [
-      id,
-    ]);
+    await this.db.query('UPDATE users SET last_login = NOW() WHERE id = $1', [id]);
   }
 
   // =========================================================================
@@ -350,13 +329,8 @@ export class UserRepository {
    * Find user including deleted (for admin audit purposes).
    * WARNING: Only use for audit logs, admin dashboards
    */
-  async findByIdIncludeDeleted(
-    id: number,
-    tenantId: number,
-  ): Promise<UserBase | null> {
-    this.logger.warn(
-      `findByIdIncludeDeleted called for user ${id} - audit/admin use only`,
-    );
+  async findByIdIncludeDeleted(id: number, tenantId: number): Promise<UserBase | null> {
+    this.logger.warn(`findByIdIncludeDeleted called for user ${id} - audit/admin use only`);
     return await this.db.queryOne<UserBase>(
       `SELECT ${USER_BASE_COLUMNS}
        FROM users
@@ -366,10 +340,7 @@ export class UserRepository {
   }
 
   /** Count users by status (for admin dashboard) */
-  async countByStatus(
-    status: IsActiveStatus,
-    tenantId: number,
-  ): Promise<number> {
+  async countByStatus(status: IsActiveStatus, tenantId: number): Promise<number> {
     const result = await this.db.queryOne<{ count: string }>(
       `SELECT COUNT(*) as count
        FROM users
@@ -380,9 +351,7 @@ export class UserRepository {
   }
 
   /** Get all user statuses with counts (for admin dashboard) */
-  async getStatusCounts(
-    tenantId: number,
-  ): Promise<Map<IsActiveStatus, number>> {
+  async getStatusCounts(tenantId: number): Promise<Map<IsActiveStatus, number>> {
     const result = await this.db.query<{ is_active: number; count: string }>(
       `SELECT is_active, COUNT(*) as count
        FROM users
@@ -393,10 +362,7 @@ export class UserRepository {
 
     const counts = new Map<IsActiveStatus, number>();
     for (const row of result as { is_active: number; count: string }[]) {
-      counts.set(
-        row.is_active as IsActiveStatus,
-        Number.parseInt(row.count, 10),
-      );
+      counts.set(row.is_active as IsActiveStatus, Number.parseInt(row.count, 10));
     }
     return counts;
   }
@@ -406,10 +372,7 @@ export class UserRepository {
   // =========================================================================
 
   /** Resolve UUID to numeric ID (for active users only) */
-  async resolveUuidToId(
-    uuid: string,
-    tenantId: number,
-  ): Promise<number | null> {
+  async resolveUuidToId(uuid: string, tenantId: number): Promise<number | null> {
     const result = await this.db.queryOne<{ id: number }>(
       `SELECT id FROM users
        WHERE uuid = $1 AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}`,
@@ -432,11 +395,7 @@ export class UserRepository {
    * Check if email is already taken by another ACTIVE user
    * @param excludeId - User ID to exclude (for self-updates)
    */
-  async isEmailTaken(
-    email: string,
-    tenantId: number,
-    excludeId?: number,
-  ): Promise<boolean> {
+  async isEmailTaken(email: string, tenantId: number, excludeId?: number): Promise<boolean> {
     const params: unknown[] = [email.toLowerCase(), tenantId];
     let excludeClause = '';
 

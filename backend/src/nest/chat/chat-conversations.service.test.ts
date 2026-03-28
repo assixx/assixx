@@ -5,11 +5,7 @@
  * Phase 14 B4: Deepened from 12 → 30 tests.
  * Uses ClsService mock for tenant/user context.
  */
-import {
-  BadRequestException,
-  ForbiddenException,
-  NotFoundException,
-} from '@nestjs/common';
+import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import type { ClsService } from 'nestjs-cls';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -152,6 +148,43 @@ describe('ChatConversationsService – DB-mocked methods', () => {
       expect(result.data).toHaveLength(1);
       expect(result.data[0]?.id).toBe(10);
     });
+
+    it('sets participant status to online when user is present', async () => {
+      vi.mocked(mockPresenceStore.getOnlineUserIds).mockReturnValueOnce(new Set([5]));
+
+      const convRow = {
+        id: 10,
+        uuid: 'conv-uuid',
+        name: 'Online Test',
+        is_group: false,
+        created_at: new Date('2025-01-01'),
+        updated_at: new Date('2025-01-02'),
+        last_message_content: null,
+        last_message_time: null,
+        last_message_is_e2e: false,
+      };
+
+      mockDb.query
+        .mockResolvedValueOnce([{ count: '1' }])
+        .mockResolvedValueOnce([convRow])
+        .mockResolvedValueOnce([
+          {
+            conversation_id: 10,
+            user_id: 5,
+            joined_at: new Date(),
+            is_admin: true,
+            username: 'me',
+            first_name: 'My',
+            last_name: 'Self',
+            profile_picture: null,
+          },
+        ])
+        .mockResolvedValueOnce([]);
+
+      const result = await service.getConversations({});
+
+      expect(result.data[0]?.participants[0]?.status).toBe('online');
+    });
   });
 
   // ============================================================
@@ -162,9 +195,7 @@ describe('ChatConversationsService – DB-mocked methods', () => {
     it('throws NotFoundException when user is not participant', async () => {
       mockDb.query.mockResolvedValueOnce([]); // participant check
 
-      await expect(service.getConversation(999)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.getConversation(999)).rejects.toThrow(NotFoundException);
     });
 
     it('throws NotFoundException when conversation does not exist', async () => {
@@ -172,9 +203,7 @@ describe('ChatConversationsService – DB-mocked methods', () => {
         .mockResolvedValueOnce([{ user_id: 5 }]) // participant check OK
         .mockResolvedValueOnce([]); // conversation not found
 
-      await expect(service.getConversation(999)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.getConversation(999)).rejects.toThrow(NotFoundException);
     });
 
     it('should return conversation with participants', async () => {
@@ -213,6 +242,39 @@ describe('ChatConversationsService – DB-mocked methods', () => {
       expect(result.conversation.participants[0]?.firstName).toBe('Max');
       expect(result.conversation.unreadCount).toBe(0);
     });
+
+    it('sets participant status to online when user is present', async () => {
+      vi.mocked(mockPresenceStore.getOnlineUserIds).mockReturnValueOnce(new Set([5]));
+
+      mockDb.query
+        .mockResolvedValueOnce([{ user_id: 5 }])
+        .mockResolvedValueOnce([
+          {
+            id: 10,
+            uuid: 'conv-uuid',
+            name: 'Test',
+            is_group: false,
+            created_at: new Date('2025-01-01'),
+            updated_at: new Date('2025-01-02'),
+          },
+        ])
+        .mockResolvedValueOnce([
+          {
+            conversation_id: 10,
+            user_id: 5,
+            joined_at: new Date(),
+            is_admin: true,
+            username: 'maxm',
+            first_name: 'Max',
+            last_name: 'M',
+            profile_picture: null,
+          },
+        ]);
+
+      const result = await service.getConversation(10);
+
+      expect(result.conversation.participants[0]?.status).toBe('online');
+    });
   });
 
   // ============================================================
@@ -221,9 +283,7 @@ describe('ChatConversationsService – DB-mocked methods', () => {
 
   describe('updateConversation', () => {
     it('throws BadRequestException (stub)', async () => {
-      await expect(service.updateConversation(1, {} as never)).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(service.updateConversation(1, {} as never)).rejects.toThrow(BadRequestException);
     });
   });
 
@@ -235,9 +295,7 @@ describe('ChatConversationsService – DB-mocked methods', () => {
     it('throws ForbiddenException when user is not participant', async () => {
       mockDb.query.mockResolvedValueOnce([]); // participant not found
 
-      await expect(service.deleteConversation(999)).rejects.toThrow(
-        ForbiddenException,
-      );
+      await expect(service.deleteConversation(999)).rejects.toThrow(ForbiddenException);
     });
 
     it('soft-deletes conversation for participant', async () => {
@@ -270,17 +328,13 @@ describe('ChatConversationsService – DB-mocked methods', () => {
     it('throws ForbiddenException when not participant', async () => {
       mockDb.query.mockResolvedValueOnce([]);
 
-      await expect(service.verifyConversationAccess(1, 5, 1)).rejects.toThrow(
-        ForbiddenException,
-      );
+      await expect(service.verifyConversationAccess(1, 5, 1)).rejects.toThrow(ForbiddenException);
     });
 
     it('succeeds when user is participant', async () => {
       mockDb.query.mockResolvedValueOnce([{ user_id: 5 }]);
 
-      await expect(
-        service.verifyConversationAccess(1, 5, 1),
-      ).resolves.toBeUndefined();
+      await expect(service.verifyConversationAccess(1, 5, 1)).resolves.toBeUndefined();
     });
   });
 
@@ -290,11 +344,7 @@ describe('ChatConversationsService – DB-mocked methods', () => {
 
   describe('getConversationRecipientIds', () => {
     it('returns participant IDs excluding sender', async () => {
-      mockDb.query.mockResolvedValueOnce([
-        { user_id: 1 },
-        { user_id: 5 },
-        { user_id: 10 },
-      ]);
+      mockDb.query.mockResolvedValueOnce([{ user_id: 1 }, { user_id: 5 }, { user_id: 10 }]);
 
       const result = await service.getConversationRecipientIds(1, 5);
 
@@ -377,17 +427,15 @@ describe('ChatConversationsService – DB-mocked methods', () => {
     it('should throw BadRequestException for invalid IDs', async () => {
       mockDb.query.mockResolvedValueOnce([{ id: 1 }]); // only 1 valid
 
-      await expect(
-        service['validateParticipantIds']([1, 99], 1),
-      ).rejects.toThrow(BadRequestException);
+      await expect(service['validateParticipantIds']([1, 99], 1)).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('should pass when all IDs are valid', async () => {
       mockDb.query.mockResolvedValueOnce([{ id: 1 }, { id: 2 }]);
 
-      await expect(
-        service['validateParticipantIds']([1, 2], 1),
-      ).resolves.toBeUndefined();
+      await expect(service['validateParticipantIds']([1, 2], 1)).resolves.toBeUndefined();
     });
   });
 
@@ -403,8 +451,294 @@ describe('ChatConversationsService – DB-mocked methods', () => {
     it('should throw BadRequestException when INSERT returns empty', async () => {
       mockDb.query.mockResolvedValueOnce([]);
 
+      await expect(service['insertConversation'](1, undefined, false)).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+  });
+
+  // ============================================================
+  // createConversation
+  // ============================================================
+
+  describe('createConversation', () => {
+    it('creates a new group conversation', async () => {
+      const sendInitialMessage = vi.fn();
+
+      // validateParticipantIds
+      mockDb.query.mockResolvedValueOnce([{ id: 2 }, { id: 3 }]);
+      // insertConversation
+      mockDb.query.mockResolvedValueOnce([{ id: 42 }]);
+      // addConversationParticipants: creator
+      mockDb.query.mockResolvedValueOnce([]);
+      // addConversationParticipants: participant 2
+      mockDb.query.mockResolvedValueOnce([]);
+      // addConversationParticipants: participant 3
+      mockDb.query.mockResolvedValueOnce([]);
+      // getConversation -> participant check
+      mockDb.query.mockResolvedValueOnce([{ user_id: 5 }]);
+      // getConversation -> conversation
+      mockDb.query.mockResolvedValueOnce([
+        {
+          id: 42,
+          uuid: 'mock-uuid-v7',
+          name: 'Group',
+          is_group: true,
+          created_at: new Date(),
+          updated_at: new Date(),
+        },
+      ]);
+      // getConversation -> participants
+      mockDb.query.mockResolvedValueOnce([
+        {
+          conversation_id: 42,
+          user_id: 5,
+          joined_at: new Date(),
+          is_admin: true,
+          username: 'creator',
+          first_name: 'C',
+          last_name: 'R',
+          profile_picture: null,
+        },
+      ]);
+
+      const result = await service.createConversation(
+        { participantIds: [2, 3], isGroup: true, name: 'Group' },
+        sendInitialMessage,
+      );
+
+      expect(result.conversation.id).toBe(42);
+      expect(sendInitialMessage).not.toHaveBeenCalled();
+    });
+
+    it('returns existing 1:1 conversation when found', async () => {
+      const sendInitialMessage = vi.fn();
+
+      // findExisting1to1 -> found
+      mockDb.query.mockResolvedValueOnce([{ id: 99 }]);
+      // reset soft-delete
+      mockDb.query.mockResolvedValueOnce([]);
+      // getConversation -> participant check
+      mockDb.query.mockResolvedValueOnce([{ user_id: 5 }]);
+      // getConversation -> conversation
+      mockDb.query.mockResolvedValueOnce([
+        {
+          id: 99,
+          uuid: 'existing-uuid',
+          name: null,
+          is_group: false,
+          created_at: new Date(),
+          updated_at: new Date(),
+        },
+      ]);
+      // getConversation -> participants
+      mockDb.query.mockResolvedValueOnce([
+        {
+          conversation_id: 99,
+          user_id: 5,
+          joined_at: new Date(),
+          is_admin: false,
+          username: 'me',
+          first_name: 'M',
+          last_name: 'E',
+          profile_picture: null,
+        },
+      ]);
+
+      const result = await service.createConversation({ participantIds: [10] }, sendInitialMessage);
+
+      expect(result.conversation.id).toBe(99);
+    });
+
+    it('sends initial message when provided on new conversation', async () => {
+      const sendInitialMessage = vi.fn().mockResolvedValueOnce(undefined);
+
+      // findExisting1to1 (1:1 with single participant -> checks existing)
+      mockDb.query.mockResolvedValueOnce([]);
+      // validateParticipantIds
+      mockDb.query.mockResolvedValueOnce([{ id: 2 }]);
+      // insertConversation
+      mockDb.query.mockResolvedValueOnce([{ id: 50 }]);
+      // addConversationParticipants: creator + 1 participant
+      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.query.mockResolvedValueOnce([]);
+      // sendInitialMessage called here
+      // getConversation -> participant check
+      mockDb.query.mockResolvedValueOnce([{ user_id: 5 }]);
+      // getConversation -> conversation
+      mockDb.query.mockResolvedValueOnce([
+        {
+          id: 50,
+          uuid: 'new-uuid',
+          name: null,
+          is_group: false,
+          created_at: new Date(),
+          updated_at: new Date(),
+        },
+      ]);
+      // getConversation -> participants
+      mockDb.query.mockResolvedValueOnce([
+        {
+          conversation_id: 50,
+          user_id: 5,
+          joined_at: new Date(),
+          is_admin: true,
+          username: 'me',
+          first_name: 'M',
+          last_name: 'E',
+          profile_picture: null,
+        },
+      ]);
+
+      await service.createConversation(
+        { participantIds: [2], initialMessage: 'Hello!' },
+        sendInitialMessage,
+      );
+
+      expect(sendInitialMessage).toHaveBeenCalledWith(1, 50, 5, 'Hello!');
+    });
+
+    it('skips empty initialMessage on new conversation', async () => {
+      const sendInitialMessage = vi.fn();
+
+      // findExisting1to1 → not found
+      mockDb.query.mockResolvedValueOnce([]);
+      // validateParticipantIds
+      mockDb.query.mockResolvedValueOnce([{ id: 2 }]);
+      // insertConversation
+      mockDb.query.mockResolvedValueOnce([{ id: 60 }]);
+      // addConversationParticipants: creator + 1
+      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.query.mockResolvedValueOnce([]);
+      // getConversation chain
+      mockDb.query.mockResolvedValueOnce([{ user_id: 5 }]);
+      mockDb.query.mockResolvedValueOnce([
+        {
+          id: 60,
+          uuid: 'u',
+          name: null,
+          is_group: false,
+          created_at: new Date(),
+          updated_at: new Date(),
+        },
+      ]);
+      mockDb.query.mockResolvedValueOnce([
+        {
+          conversation_id: 60,
+          user_id: 5,
+          joined_at: new Date(),
+          is_admin: true,
+          username: 'me',
+          first_name: 'M',
+          last_name: 'E',
+          profile_picture: null,
+        },
+      ]);
+
+      await service.createConversation(
+        { participantIds: [2], initialMessage: '' },
+        sendInitialMessage,
+      );
+
+      expect(sendInitialMessage).not.toHaveBeenCalled();
+    });
+
+    it('skips empty initialMessage on existing 1:1 conversation', async () => {
+      const sendInitialMessage = vi.fn();
+
+      // findExisting1to1 → found
+      mockDb.query.mockResolvedValueOnce([{ id: 77 }]);
+      // reset soft-delete
+      mockDb.query.mockResolvedValueOnce([]);
+      // getConversation chain
+      mockDb.query.mockResolvedValueOnce([{ user_id: 5 }]);
+      mockDb.query.mockResolvedValueOnce([
+        {
+          id: 77,
+          uuid: 'u',
+          name: null,
+          is_group: false,
+          created_at: new Date(),
+          updated_at: new Date(),
+        },
+      ]);
+      mockDb.query.mockResolvedValueOnce([
+        {
+          conversation_id: 77,
+          user_id: 5,
+          joined_at: new Date(),
+          is_admin: false,
+          username: 'me',
+          first_name: 'M',
+          last_name: 'E',
+          profile_picture: null,
+        },
+      ]);
+
+      await service.createConversation(
+        { participantIds: [10], initialMessage: '' },
+        sendInitialMessage,
+      );
+
+      expect(sendInitialMessage).not.toHaveBeenCalled();
+    });
+
+    it('sends initial message on existing 1:1 conversation', async () => {
+      const sendInitialMessage = vi.fn().mockResolvedValueOnce(undefined);
+
+      // findExisting1to1 -> found
+      mockDb.query.mockResolvedValueOnce([{ id: 77 }]);
+      // reset soft-delete
+      mockDb.query.mockResolvedValueOnce([]);
+      // getConversation -> participant check
+      mockDb.query.mockResolvedValueOnce([{ user_id: 5 }]);
+      // getConversation -> conversation
+      mockDb.query.mockResolvedValueOnce([
+        {
+          id: 77,
+          uuid: 'existing-uuid',
+          name: null,
+          is_group: false,
+          created_at: new Date(),
+          updated_at: new Date(),
+        },
+      ]);
+      // getConversation -> participants
+      mockDb.query.mockResolvedValueOnce([
+        {
+          conversation_id: 77,
+          user_id: 5,
+          joined_at: new Date(),
+          is_admin: false,
+          username: 'me',
+          first_name: 'M',
+          last_name: 'E',
+          profile_picture: null,
+        },
+      ]);
+
+      await service.createConversation(
+        { participantIds: [10], initialMessage: 'Hi again!' },
+        sendInitialMessage,
+      );
+
+      expect(sendInitialMessage).toHaveBeenCalledWith(1, 77, 5, 'Hi again!');
+    });
+  });
+
+  describe('tryGetExisting1to1Conversation (private)', () => {
+    it('throws BadRequestException when participantIds[0] is undefined', async () => {
+      const sparseIds: number[] = [];
+      sparseIds.length = 1;
+
       await expect(
-        service['insertConversation'](1, undefined, false),
+        service['tryGetExisting1to1Conversation'](
+          1,
+          5,
+          { participantIds: sparseIds } as never,
+          false,
+          vi.fn(),
+        ),
       ).rejects.toThrow(BadRequestException);
     });
   });

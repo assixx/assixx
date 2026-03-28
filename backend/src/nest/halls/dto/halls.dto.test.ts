@@ -40,9 +40,7 @@ describe('CreateHallSchema', () => {
   });
 
   it('should reject name longer than 255 characters', () => {
-    expect(CreateHallSchema.safeParse({ name: 'X'.repeat(256) }).success).toBe(
-      false,
-    );
+    expect(CreateHallSchema.safeParse({ name: 'X'.repeat(256) }).success).toBe(false);
   });
 
   it('should reject description longer than 500 characters', () => {
@@ -61,15 +59,11 @@ describe('CreateHallSchema', () => {
   });
 
   it('should reject negative areaId', () => {
-    expect(CreateHallSchema.safeParse({ ...valid, areaId: '-1' }).success).toBe(
-      false,
-    );
+    expect(CreateHallSchema.safeParse({ ...valid, areaId: '-1' }).success).toBe(false);
   });
 
   it('should reject isActive out of range', () => {
-    expect(
-      CreateHallSchema.safeParse({ ...valid, isActive: '5' }).success,
-    ).toBe(false);
+    expect(CreateHallSchema.safeParse({ ...valid, isActive: '5' }).success).toBe(false);
   });
 
   it('should coerce string isActive to number', () => {

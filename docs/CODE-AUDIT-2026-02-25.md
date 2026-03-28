@@ -627,7 +627,7 @@ Analoges Vorgehen wie bei `getErrorMessage` (Maßnahme #3/#4) und Session-Expire
 | `docs/TYPESCRIPT-STANDARDS.md`                             | Section 7.3 + No-Go #12 hinzugefügt (v4.1.0) | `getErrorMessage()` als Standard dokumentiert  |
 | `docs/CODE-OF-CONDUCT-SVELTE.md`                           | Session-Expired Handling Sektion hinzugefügt | Frontend-Pattern dokumentiert                  |
 | `docs/infrastructure/adr/ADR-009-central-audit-logging.md` | Code-Beispiel gefixt                         | `catch (error: unknown)` + `getErrorMessage()` |
-| `docs/HOW-TO-ENABLE-DEBUG-LOGGING.md`                      | Code-Beispiel gefixt                         | `getErrorMessage(error)` statt `error.message` |
+| `docs/how-to/HOW-TO-ENABLE-DEBUG-LOGGING.md`               | Code-Beispiel gefixt                         | `getErrorMessage(error)` statt `error.message` |
 
 ---
 

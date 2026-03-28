@@ -126,10 +126,7 @@
 
   .toggle-hint {
     display: block;
-    color: var(
-      --color-text-muted,
-      color-mix(in oklch, var(--color-white) 50%, transparent)
-    );
+    color: var(--color-text-muted, color-mix(in oklch, var(--color-white) 50%, transparent));
     font-weight: 400;
     font-size: 11px;
   }

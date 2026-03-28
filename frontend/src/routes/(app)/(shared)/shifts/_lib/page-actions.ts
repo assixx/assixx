@@ -6,10 +6,7 @@
 
 import { invalidateAll } from '$app/navigation';
 
-import {
-  DEFAULT_HIERARCHY_LABELS,
-  type HierarchyLabels,
-} from '$lib/types/hierarchy-labels';
+import { DEFAULT_HIERARCHY_LABELS, type HierarchyLabels } from '$lib/types/hierarchy-labels';
 import {
   showSuccessAlert,
   showErrorAlert,
@@ -34,19 +31,12 @@ import {
   fetchTeamMembers,
   generateRotationFromConfig,
 } from './api';
-import {
-  convertTeamMembersToEmployees,
-  getWeekDateBounds,
-} from './data-loader';
+import { convertTeamMembersToEmployees, getWeekDateBounds } from './data-loader';
 import { loadShiftPlan, navigateToWeekContainingDate } from './plan-loader';
 import { buildAlgorithmConfig, buildRotationAssignments } from './rotation';
 import { shiftsState } from './state.svelte';
 
-import type {
-  ShiftTimesMap,
-  ShiftFavorite,
-  CustomRotationConfig,
-} from './types';
+import type { ShiftTimesMap, ShiftFavorite, CustomRotationConfig } from './types';
 
 const log = createLogger('ShiftsActions');
 
@@ -65,9 +55,7 @@ export async function handleResetSchedule(): Promise<void> {
 }
 
 /** Save the current shift schedule */
-export async function handleSaveSchedule(
-  shiftTimesMap?: ShiftTimesMap,
-): Promise<void> {
+export async function handleSaveSchedule(shiftTimesMap?: ShiftTimesMap): Promise<void> {
   shiftsState.setIsLoading(true);
   try {
     const result = await saveSchedule({
@@ -92,15 +80,12 @@ export async function handleSaveSchedule(
       (error as unknown as { code: string }).code === 'VALIDATION_ERROR' &&
       Array.isArray((error as unknown as { details: unknown }).details)
     ) {
-      const details = (error as unknown as { details: { message: string }[] })
-        .details;
+      const details = (error as unknown as { details: { message: string }[] }).details;
       const messages = details.map((d) => d.message).join(', ');
       showErrorAlert(messages);
     } else {
       const message =
-        error instanceof Error ?
-          error.message
-        : 'Fehler beim Speichern des Schichtplans.';
+        error instanceof Error ? error.message : 'Fehler beim Speichern des Schichtplans.';
       showErrorAlert(message);
     }
   } finally {
@@ -206,13 +191,9 @@ export async function handleDiscardYearPlan(): Promise<void> {
 // =============================================================================
 
 /** Delete a favorite */
-export async function handleDeleteFavorite(
-  favoriteId: number,
-  event: MouseEvent,
-): Promise<void> {
+export async function handleDeleteFavorite(favoriteId: number, event: MouseEvent): Promise<void> {
   event.stopPropagation();
-  if (!(await showConfirm('Möchten Sie diesen Favoriten wirklich löschen?')))
-    return;
+  if (!(await showConfirm('Möchten Sie diesen Favoriten wirklich löschen?'))) return;
   try {
     await deleteFavoriteById(favoriteId);
     await invalidateAll();
@@ -253,9 +234,7 @@ export async function handleAddToFavorites(
 }
 
 /** Handle favorite click - load favorite's context */
-export async function handleFavoriteClick(
-  favorite: ShiftFavorite,
-): Promise<void> {
+export async function handleFavoriteClick(favorite: ShiftFavorite): Promise<void> {
   const { startDate, endDate } = getWeekDateBounds(shiftsState.currentWeek);
 
   const [depts, machs, tms, members] = await Promise.all([
@@ -269,8 +248,7 @@ export async function handleFavoriteClick(
   shiftsState.setAssets(machs);
   shiftsState.setTeams(tms);
 
-  const teamLeaderId =
-    tms.find((t) => t.id === favorite.teamId)?.leaderId ?? null;
+  const teamLeaderId = tms.find((t) => t.id === favorite.teamId)?.leaderId ?? null;
   shiftsState.setSelectedContext({
     areaId: favorite.areaId,
     departmentId: favorite.departmentId,
@@ -289,9 +267,7 @@ export async function handleFavoriteClick(
 // =============================================================================
 
 /** Handle custom rotation generation */
-export async function handleCustomRotationGenerate(
-  config: CustomRotationConfig,
-): Promise<void> {
+export async function handleCustomRotationGenerate(config: CustomRotationConfig): Promise<void> {
   const teamId = shiftsState.selectedContext.teamId;
   const departmentId = shiftsState.selectedContext.departmentId;
   if (teamId === null) {
@@ -307,9 +283,7 @@ export async function handleCustomRotationGenerate(
     );
 
     if (assignments.length === 0) {
-      showErrorAlert(
-        'Bitte weisen Sie mindestens einem Mitarbeiter eine Schichtgruppe zu.',
-      );
+      showErrorAlert('Bitte weisen Sie mindestens einem Mitarbeiter eine Schichtgruppe zu.');
       return;
     }
 
@@ -323,15 +297,11 @@ export async function handleCustomRotationGenerate(
     });
 
     shiftsState.setShowCustomRotationModal(false);
-    showSuccessAlert(
-      `Custom Rotation erstellt! ${result.shiftsCreated} Schichten generiert.`,
-    );
+    showSuccessAlert(`Custom Rotation erstellt! ${result.shiftsCreated} Schichten generiert.`);
     navigateToWeekContainingDate(config.startDate);
     void loadShiftPlan();
   } catch (error: unknown) {
     log.error({ err: error }, 'Custom rotation error');
-    showErrorAlert(
-      error instanceof Error ? error.message : 'Fehler bei der Custom Rotation',
-    );
+    showErrorAlert(error instanceof Error ? error.message : 'Fehler bei der Custom Rotation');
   }
 }

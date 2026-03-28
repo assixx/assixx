@@ -11,6 +11,7 @@ import {
   type JsonBody,
   authHeaders,
   authOnly,
+  createDepartmentAndTeam,
   loginApitest,
 } from './helpers.js';
 
@@ -21,8 +22,253 @@ let kvpId: number | undefined;
 let _existingKvpId: number;
 let _createdKvpId: number;
 
+// Team setup — KVP requires team assignment
+let testTeamId: number;
+let testDepartmentId: number;
+
 beforeAll(async () => {
   auth = await loginApitest();
+
+  // KVP requires the user to be assigned to a team
+  const { departmentId, teamId } = await createDepartmentAndTeam(auth.authToken);
+  testDepartmentId = departmentId;
+  testTeamId = teamId;
+
+  // Assign test user to team
+  const assignRes = await fetch(`${BASE_URL}/teams/${testTeamId}/members`, {
+    method: 'POST',
+    headers: authHeaders(auth.authToken),
+    body: JSON.stringify({ userId: auth.userId }),
+  });
+  if (assignRes.status !== 201 && assignRes.status !== 409) {
+    throw new Error(`Team member assignment failed: ${assignRes.status}`);
+  }
+});
+
+afterAll(async () => {
+  if (!auth) return;
+
+  // Remove user from team
+  await fetch(`${BASE_URL}/teams/${testTeamId}/members/${auth.userId}`, {
+    method: 'DELETE',
+    headers: authOnly(auth.authToken),
+  });
+
+  // Delete team (force) and department
+  await fetch(`${BASE_URL}/teams/${testTeamId}?force=true`, {
+    method: 'DELETE',
+    headers: authOnly(auth.authToken),
+  });
+  await fetch(`${BASE_URL}/departments/${testDepartmentId}?force=true`, {
+    method: 'DELETE',
+    headers: authOnly(auth.authToken),
+  });
+});
+
+// ---- seq: 0 -- KVP Settings (root-only) ------------------------------------
+
+describe('KVP: Get Settings', () => {
+  let settingsRes: Response;
+  let settingsBody: JsonBody;
+
+  beforeAll(async () => {
+    settingsRes = await fetch(`${BASE_URL}/kvp/settings`, {
+      headers: authOnly(auth.authToken),
+    });
+    settingsBody = (await settingsRes.json()) as JsonBody;
+  });
+
+  it('should return 200 OK', () => {
+    expect(settingsRes.status).toBe(200);
+    expect(settingsBody.success).toBe(true);
+  });
+
+  it('should return dailyLimit as number', () => {
+    expect(typeof settingsBody.data.dailyLimit).toBe('number');
+    expect(settingsBody.data.dailyLimit).toBeGreaterThanOrEqual(0);
+  });
+});
+
+describe('KVP: Update Settings', () => {
+  let updateRes: Response;
+  let updateBody: JsonBody;
+
+  beforeAll(async () => {
+    updateRes = await fetch(`${BASE_URL}/kvp/settings`, {
+      method: 'PUT',
+      headers: authHeaders(auth.authToken),
+      body: JSON.stringify({ dailyLimit: 5 }),
+    });
+    updateBody = (await updateRes.json()) as JsonBody;
+  });
+
+  it('should return 200 OK', () => {
+    expect(updateRes.status).toBe(200);
+    expect(updateBody.success).toBe(true);
+  });
+
+  it('should return updated dailyLimit', () => {
+    expect(updateBody.data.dailyLimit).toBe(5);
+  });
+});
+
+describe('KVP: Verify Settings Persistence', () => {
+  let verifyRes: Response;
+  let verifyBody: JsonBody;
+
+  beforeAll(async () => {
+    verifyRes = await fetch(`${BASE_URL}/kvp/settings`, {
+      headers: authOnly(auth.authToken),
+    });
+    verifyBody = (await verifyRes.json()) as JsonBody;
+  });
+
+  it('should return persisted dailyLimit = 5', () => {
+    expect(verifyBody.data.dailyLimit).toBe(5);
+  });
+});
+
+describe('KVP: Reset Settings to Default', () => {
+  let resetRes: Response;
+  let resetBody: JsonBody;
+
+  beforeAll(async () => {
+    resetRes = await fetch(`${BASE_URL}/kvp/settings`, {
+      method: 'PUT',
+      headers: authHeaders(auth.authToken),
+      body: JSON.stringify({ dailyLimit: 1 }),
+    });
+    resetBody = (await resetRes.json()) as JsonBody;
+  });
+
+  it('should return 200 OK', () => {
+    expect(resetRes.status).toBe(200);
+    expect(resetBody.data.dailyLimit).toBe(1);
+  });
+});
+
+describe('KVP: Settings Validation', () => {
+  it('should reject negative dailyLimit', async () => {
+    const res = await fetch(`${BASE_URL}/kvp/settings`, {
+      method: 'PUT',
+      headers: authHeaders(auth.authToken),
+      body: JSON.stringify({ dailyLimit: -1 }),
+    });
+    expect(res.status).toBe(400);
+  });
+
+  it('should reject dailyLimit > 100', async () => {
+    const res = await fetch(`${BASE_URL}/kvp/settings`, {
+      method: 'PUT',
+      headers: authHeaders(auth.authToken),
+      body: JSON.stringify({ dailyLimit: 101 }),
+    });
+    expect(res.status).toBe(400);
+  });
+});
+
+// ---- seq: 0b -- KVP Reward Tiers (root-only CRUD) ----------------------------
+
+let createdTierId: number | undefined;
+
+describe('KVP: List Reward Tiers (initially)', () => {
+  let res: Response;
+  let body: JsonBody;
+
+  beforeAll(async () => {
+    res = await fetch(`${BASE_URL}/kvp/reward-tiers`, {
+      headers: authOnly(auth.authToken),
+    });
+    body = (await res.json()) as JsonBody;
+  });
+
+  it('should return 200 OK', () => {
+    expect(res.status).toBe(200);
+    expect(body.success).toBe(true);
+  });
+
+  it('should return an array', () => {
+    expect(Array.isArray(body.data)).toBe(true);
+  });
+});
+
+describe('KVP: Create Reward Tier', () => {
+  let res: Response;
+  let body: JsonBody;
+
+  beforeAll(async () => {
+    res = await fetch(`${BASE_URL}/kvp/reward-tiers`, {
+      method: 'POST',
+      headers: authHeaders(auth.authToken),
+      body: JSON.stringify({ amount: 77.77 }),
+    });
+    body = (await res.json()) as JsonBody;
+    if (res.status === 201 && body.data?.id) {
+      createdTierId = body.data.id as number;
+    }
+  });
+
+  it('should return 201 Created', () => {
+    expect(res.status).toBe(201);
+    expect(body.success).toBe(true);
+  });
+
+  it('should return tier with id, amount, sortOrder', () => {
+    expect(body.data).toHaveProperty('id');
+    expect(body.data.amount).toBe(77.77);
+    expect(typeof body.data.sortOrder).toBe('number');
+  });
+});
+
+describe('KVP: Create Duplicate Reward Tier', () => {
+  it('should return 409 Conflict for duplicate amount', async () => {
+    const res = await fetch(`${BASE_URL}/kvp/reward-tiers`, {
+      method: 'POST',
+      headers: authHeaders(auth.authToken),
+      body: JSON.stringify({ amount: 77.77 }),
+    });
+    expect(res.status).toBe(409);
+  });
+});
+
+describe('KVP: Verify Reward Tier in List', () => {
+  let res: Response;
+  let body: JsonBody;
+
+  beforeAll(async () => {
+    res = await fetch(`${BASE_URL}/kvp/reward-tiers`, {
+      headers: authOnly(auth.authToken),
+    });
+    body = (await res.json()) as JsonBody;
+  });
+
+  it('should contain the created tier', () => {
+    expect(res.status).toBe(200);
+    const tiers = body.data as Array<{ id: number; amount: number }>;
+    const found = tiers.find((t: { id: number }) => t.id === createdTierId);
+    expect(found).toBeDefined();
+    expect(found?.amount).toBe(77.77);
+  });
+});
+
+describe('KVP: Delete Reward Tier', () => {
+  it('should return 204 No Content', async () => {
+    if (createdTierId === undefined) return;
+    const res = await fetch(`${BASE_URL}/kvp/reward-tiers/${createdTierId}`, {
+      method: 'DELETE',
+      headers: authOnly(auth.authToken),
+    });
+    expect(res.status).toBe(204);
+  });
+
+  it('should return 404 when deleting again', async () => {
+    if (createdTierId === undefined) return;
+    const res = await fetch(`${BASE_URL}/kvp/reward-tiers/${createdTierId}`, {
+      method: 'DELETE',
+      headers: authOnly(auth.authToken),
+    });
+    expect(res.status).toBe(404);
+  });
 });
 
 // ---- seq: 1 -- List KVP Suggestions -----------------------------------------
@@ -74,8 +320,6 @@ describe('KVP: Create Suggestion', () => {
         title: `API Test ${Date.now()}`,
         description: 'Created via API test - will be deleted after testing',
         categoryId: 1,
-        orgLevel: 'company',
-        orgId: 1,
         priority: 'normal',
         expectedBenefit: 'Test benefit for automation testing',
       }),

@@ -41,18 +41,6 @@
   let password = $state('');
 
   const canConfirm = $derived(confirmText === 'LÖSCHEN' && password !== '');
-
-  function handleOverlayClick(event: MouseEvent): void {
-    if (event.target === event.currentTarget) {
-      onclose();
-    }
-  }
-
-  function handleOverlayKeydown(event: KeyboardEvent): void {
-    if (event.key === 'Escape') {
-      onclose();
-    }
-  }
 </script>
 
 <div
@@ -62,18 +50,9 @@
   aria-modal="true"
   aria-labelledby="delete-modal-title"
   tabindex="-1"
-  onclick={handleOverlayClick}
-  onkeydown={handleOverlayKeydown}
 >
-  <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
   <div
     class="ds-modal ds-modal--md"
-    onclick={(e) => {
-      e.stopPropagation();
-    }}
-    onkeydown={(e) => {
-      e.stopPropagation();
-    }}
     role="document"
   >
     <!-- Header -->
@@ -98,37 +77,23 @@
 
       <!-- Active Filters Display -->
       <div class="mb-6">
-        <p class="mb-2 text-(--color-text-secondary)">
-          Folgende Filter werden gelöscht:
-        </p>
-        <div
-          class="rounded-lg border border-(--color-glass-border) bg-(--glass-bg) p-4"
-        >
+        <p class="mb-2 text-(--color-text-secondary)">Folgende Filter werden gelöscht:</p>
+        <div class="rounded-lg border border-(--color-glass-border) bg-(--glass-bg) p-4">
           {#if hasActiveFilters}
             {#if filterUser !== ''}
-              <span class="badge badge--info mr-2 mb-2"
-                >Benutzer: {filterUser}</span
-              >
+              <span class="badge badge--info mr-2 mb-2">Benutzer: {filterUser}</span>
             {/if}
             {#if filterAction !== '' && filterAction !== 'all'}
-              <span class="badge badge--info mr-2 mb-2"
-                >Aktion: {actionDisplayText}</span
-              >
+              <span class="badge badge--info mr-2 mb-2">Aktion: {actionDisplayText}</span>
             {/if}
             {#if filterEntity !== '' && filterEntity !== 'all'}
-              <span class="badge badge--info mr-2 mb-2"
-                >Entitätstyp: {entityDisplayText}</span
-              >
+              <span class="badge badge--info mr-2 mb-2">Entitätstyp: {entityDisplayText}</span>
             {/if}
             {#if filterTimerange !== '' && filterTimerange !== 'all'}
-              <span class="badge badge--info mr-2 mb-2"
-                >Zeitraum: {timerangeDisplayText}</span
-              >
+              <span class="badge badge--info mr-2 mb-2">Zeitraum: {timerangeDisplayText}</span>
             {/if}
           {:else}
-            <span class="text-(--color-text-secondary)"
-              >{MESSAGES.NO_FILTERS_WARNING}</span
-            >
+            <span class="text-(--color-text-secondary)">{MESSAGES.NO_FILTERS_WARNING}</span>
           {/if}
         </div>
       </div>

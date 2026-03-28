@@ -81,9 +81,7 @@ function createMockStaffingRulesService() {
 }
 
 /** Standard base params for analyzeCapacity */
-function createBaseParams(
-  overrides?: Partial<CapacityAnalysisParams>,
-): CapacityAnalysisParams {
+function createBaseParams(overrides?: Partial<CapacityAnalysisParams>): CapacityAnalysisParams {
   return {
     tenantId: 1,
     startDate: '2026-06-01', // Monday
@@ -471,9 +469,7 @@ describe('VacationCapacityService', () => {
       // Query 2: check conflicts → none
       mockClient.query.mockResolvedValueOnce({ rows: [] });
 
-      const result = await service.analyzeCapacity(
-        createBaseParams({ substituteId: 20 }),
-      );
+      const result = await service.analyzeCapacity(createBaseParams({ substituteId: 20 }));
 
       expect(result.substituteCheck).toBeDefined();
       expect(result.substituteCheck?.substituteId).toBe(20);
@@ -492,9 +488,7 @@ describe('VacationCapacityService', () => {
         rows: [{ start_date: '2026-06-02', end_date: '2026-06-04' }],
       });
 
-      const result = await service.analyzeCapacity(
-        createBaseParams({ substituteId: 20 }),
-      );
+      const result = await service.analyzeCapacity(createBaseParams({ substituteId: 20 }));
 
       expect(result.substituteCheck?.available).toBe(false);
       expect(result.substituteCheck?.conflictDates).toHaveLength(1);

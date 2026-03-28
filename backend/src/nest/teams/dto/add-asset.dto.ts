@@ -10,10 +10,7 @@ import { z } from 'zod';
  * Add asset request body
  */
 export const AddAssetSchema = z.object({
-  assetId: z.coerce
-    .number()
-    .int()
-    .positive('Asset ID must be a positive integer'),
+  assetId: z.coerce.number().int().positive('Asset ID must be a positive integer'),
 });
 
 /**

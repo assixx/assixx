@@ -9,15 +9,12 @@
 
   import HighlightText from '$lib/components/HighlightText.svelte';
   import PermissionDenied from '$lib/components/PermissionDenied.svelte';
-  import {
-    showWarningAlert,
-    showErrorAlert,
-    showSuccessAlert,
-  } from '$lib/stores/toast';
+  import { showWarningAlert, showErrorAlert, showSuccessAlert } from '$lib/stores/toast';
 
   import {
     buildDepartmentPayload,
     saveDepartment as apiSaveDepartment,
+    assignHallsToDepartment as apiAssignHalls,
     deleteDepartment as apiDeleteDepartment,
     forceDeleteDepartment as apiForceDeleteDepartment,
     buildDependencyMessage,
@@ -32,19 +29,13 @@
     getAreaDisplay,
     getLeadDisplay,
     getTeamCountText,
+    getHallCountText,
     populateFormFromDepartment,
     getDefaultFormValues,
   } from './_lib/utils';
 
   import type { PageData } from './$types';
-  import type {
-    Department,
-    Area,
-    AdminUser,
-    StatusFilter,
-    FormIsActiveStatus,
-    DependencyDetails,
-  } from './_lib/types';
+  import type { StatusFilter, FormIsActiveStatus, DependencyDetails } from './_lib/types';
 
   // =============================================================================
   // SSR DATA - Level 3: $derived from props (single source of truth)
@@ -53,9 +44,10 @@
   const { data }: { data: PageData } = $props();
 
   // SSR data via $derived - updates when invalidateAll() is called
-  const allDepartments = $derived<Department[]>(data.departments);
-  const allAreas = $derived<Area[]>(data.areas);
-  const allDepartmentLeads = $derived<AdminUser[]>(data.departmentLeads);
+  const allDepartments = $derived(data.departments);
+  const allAreas = $derived(data.areas);
+  const allHalls = $derived(data.halls);
+  const allDepartmentLeads = $derived(data.departmentLeads);
 
   // Hierarchy labels from layout data inheritance (A6)
   const labels = $derived(data.hierarchyLabels);
@@ -93,6 +85,8 @@
   let formDescription = $state('');
   let formAreaId: number | null = $state(null);
   let formDepartmentLeadId: number | null = $state(null);
+  let formDepartmentDeputyLeadId: number | null = $state(null);
+  let formHallIds: number[] = $state([]);
   let formIsActive: FormIsActiveStatus = $state(1);
 
   // Form Submit Loading
@@ -103,9 +97,7 @@
   // =============================================================================
 
   const isEditMode = $derived(currentEditId !== null);
-  const modalTitle = $derived(
-    isEditMode ? messages.MODAL_TITLE_EDIT : messages.MODAL_TITLE_ADD,
-  );
+  const modalTitle = $derived(isEditMode ? messages.MODAL_TITLE_EDIT : messages.MODAL_TITLE_ADD);
 
   // Derived: Filtered departments based on current filter/search state
   const filteredDepartments = $derived(
@@ -128,16 +120,19 @@
       description: formDescription,
       areaId: formAreaId,
       departmentLeadId: formDepartmentLeadId,
+      departmentDeputyLeadId: formDepartmentDeputyLeadId,
       isActive: formIsActive,
     });
     const result = await apiSaveDepartment(payload, currentEditId);
-    if (result.success) {
+    if (result.success && result.departmentId !== null) {
+      await apiAssignHalls(result.departmentId, formHallIds);
       closeDepartmentModal();
-      // Level 3: Trigger SSR refetch
       await invalidateAll();
-      showSuccessAlert(
-        isEditMode ? 'Erfolgreich aktualisiert' : 'Erfolgreich erstellt',
-      );
+      showSuccessAlert(isEditMode ? 'Erfolgreich aktualisiert' : 'Erfolgreich erstellt');
+    } else if (result.success) {
+      closeDepartmentModal();
+      await invalidateAll();
+      showSuccessAlert(isEditMode ? 'Erfolgreich aktualisiert' : 'Erfolgreich erstellt');
     } else if (result.error !== null) {
       showErrorAlert(result.error);
     }
@@ -156,10 +151,7 @@
       // Level 3: Trigger SSR refetch
       await invalidateAll();
       showSuccessAlert('Erfolgreich gelöscht');
-    } else if (
-      result.hasDependencies === true &&
-      result.dependencyDetails !== undefined
-    ) {
+    } else if (result.hasDependencies === true && result.dependencyDetails !== undefined) {
       showForceDeleteWarning(result.dependencyDetails);
     } else if (result.error !== null) {
       showErrorAlert(result.error);
@@ -202,18 +194,19 @@
     // Areas and department leads already loaded via SSR
   }
 
-  function openEditModal(departmentId: number) {
+  function openEditModal(departmentId: number): void {
     const department = allDepartments.find((d) => d.id === departmentId);
     if (!department) return;
     currentEditId = departmentId;
-    const formData = populateFormFromDepartment(department);
+    const formData = populateFormFromDepartment(department, department.hallIds ?? []);
     formName = formData.name;
     formDescription = formData.description;
     formAreaId = formData.areaId;
     formDepartmentLeadId = formData.departmentLeadId;
+    formDepartmentDeputyLeadId = formData.departmentDeputyLeadId;
+    formHallIds = formData.hallIds;
     formIsActive = formData.isActive;
     showDepartmentModal = true;
-    // Areas and department leads already loaded via SSR
   }
 
   function openDeleteModal(departmentId: number) {
@@ -244,6 +237,8 @@
     formDescription = defaults.description;
     formAreaId = defaults.areaId;
     formDepartmentLeadId = defaults.departmentLeadId;
+    formDepartmentDeputyLeadId = defaults.departmentDeputyLeadId;
+    formHallIds = defaults.hallIds;
     formIsActive = defaults.isActive;
   }
 
@@ -301,25 +296,11 @@
       };
     }
   });
-
-  // =============================================================================
-  // ESCAPE KEY HANDLER
-  // =============================================================================
-
-  function handleKeydown(e: KeyboardEvent) {
-    if (e.key === 'Escape') {
-      if (showForceDeleteModal) closeForceDeleteModalFn();
-      else if (showDeleteModal) closeDeleteModalFn();
-      else if (showDepartmentModal) closeDepartmentModal();
-    }
-  }
 </script>
 
 <svelte:head>
   <title>{messages.PAGE_TITLE}</title>
 </svelte:head>
-
-<svelte:window onkeydown={handleKeydown} />
 
 {#if data.permissionDenied}
   <PermissionDenied addonName="die Abteilungsverwaltung" />
@@ -412,8 +393,7 @@
               />
               <button
                 class="search-input__clear"
-                class:search-input__clear--visible={currentSearchQuery.length >
-                  0}
+                class:search-input__clear--visible={currentSearchQuery.length > 0}
                 type="button"
                 aria-label="Suche löschen"
                 onclick={clearSearch}
@@ -468,9 +448,7 @@
       <div class="card__body">
         {#if error}
           <div class="p-6 text-center">
-            <i
-              class="fas fa-exclamation-triangle mb-4 text-4xl text-(--color-danger)"
-            ></i>
+            <i class="fas fa-exclamation-triangle mb-4 text-4xl text-(--color-danger)"></i>
             <p class="text-(--color-text-secondary)">{error}</p>
             <button
               type="button"
@@ -512,6 +490,7 @@
                     <th scope="col">{messages.TH_STATUS}</th>
                     <th scope="col">{messages.TH_AREA}</th>
                     <th scope="col">{messages.TH_DEPARTMENT_LEAD}</th>
+                    <th scope="col">{messages.TH_HALLS}</th>
                     <th scope="col">{messages.TH_TEAMS}</th>
                     <th scope="col">{messages.TH_ACTIONS}</th>
                   </tr>
@@ -553,6 +532,16 @@
                         <span class="text-(--color-text-primary)"
                           >{getLeadDisplay(dept.departmentLeadName)}</span
                         >
+                      </td>
+                      <td>
+                        <span
+                          class="badge {(dept.hallCount ?? 0) > 0 ?
+                            'badge--info'
+                          : 'badge--secondary'}"
+                          title={dept.hallNames ?? 'Keine zugeordnet'}
+                        >
+                          {getHallCountText(dept.hallCount ?? 0, labels.hall)}
+                        </span>
                       </td>
                       <td>
                         <span
@@ -621,8 +610,11 @@
     bind:formDescription
     bind:formAreaId
     bind:formDepartmentLeadId
+    bind:formDepartmentDeputyLeadId
+    bind:formHallIds
     bind:formIsActive
     {allAreas}
+    {allHalls}
     {allDepartmentLeads}
     {submitting}
     onclose={closeDepartmentModal}

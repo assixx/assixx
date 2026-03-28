@@ -7,10 +7,7 @@ import { resolve } from '$app/paths';
 
 import { getApiClient } from '$lib/utils/api-client';
 import { createLogger } from '$lib/utils/logger';
-import {
-  handleSessionExpired,
-  isSessionExpiredError,
-} from '$lib/utils/session-expired.js';
+import { handleSessionExpired, isSessionExpiredError } from '$lib/utils/session-expired.js';
 
 import { API_ENDPOINTS } from './constants';
 
@@ -18,6 +15,7 @@ import type {
   Department,
   Area,
   AdminUser,
+  Hall,
   DepartmentPayload,
   FormIsActiveStatus,
   DeleteDepartmentResult,
@@ -54,9 +52,7 @@ function parseApiError(err: unknown): ParsedApiError {
   const message = typeof errObj.message === 'string' ? errObj.message : '';
   const detailsRaw = errObj.details;
   const details =
-    detailsRaw !== null && typeof detailsRaw === 'object' ?
-      (detailsRaw as DependencyDetails)
-    : {};
+    detailsRaw !== null && typeof detailsRaw === 'object' ? (detailsRaw as DependencyDetails) : {};
 
   return { code, message, details };
 }
@@ -115,9 +111,7 @@ export function buildDependencyMessage(
   const parts = deps
     .map(([key, label]) => {
       const count = details[key as keyof DependencyDetails];
-      return typeof count === 'number' && count > 0 ?
-          `${count} ${label}`
-        : null;
+      return typeof count === 'number' && count > 0 ? `${count} ${label}` : null;
     })
     .filter((msg): msg is string => msg !== null);
 
@@ -208,6 +202,38 @@ export async function loadDepartmentLeads(): Promise<{
 }
 
 /**
+ * Load halls for multi-select
+ */
+export async function loadHalls(): Promise<{
+  halls: Hall[];
+  error: string | null;
+}> {
+  try {
+    const data = await apiClient.get(API_ENDPOINTS.HALLS);
+    const halls = extractArray<Hall>(data);
+    return { halls, error: null };
+  } catch (err: unknown) {
+    log.error({ err }, 'Error loading halls');
+    return {
+      halls: [],
+      error: err instanceof Error ? err.message : 'Fehler beim Laden',
+    };
+  }
+}
+
+/**
+ * Assign halls to a department
+ */
+export async function assignHallsToDepartment(
+  departmentId: number,
+  hallIds: number[],
+): Promise<void> {
+  await apiClient.post(API_ENDPOINTS.departmentHalls(departmentId), {
+    hallIds,
+  });
+}
+
+/**
  * Build department payload from form data
  */
 export function buildDepartmentPayload(formData: {
@@ -215,6 +241,7 @@ export function buildDepartmentPayload(formData: {
   description: string;
   areaId: number | null;
   departmentLeadId: number | null;
+  departmentDeputyLeadId: number | null;
   isActive: FormIsActiveStatus;
 }): DepartmentPayload {
   return {
@@ -222,29 +249,56 @@ export function buildDepartmentPayload(formData: {
     description: formData.description.trim() || null,
     areaId: formData.areaId,
     departmentLeadId: formData.departmentLeadId,
+    departmentDeputyLeadId: formData.departmentDeputyLeadId,
     isActive: formData.isActive,
   };
 }
 
 /**
- * Save department (create or update)
+ * Extract department ID from API response
+ */
+function extractDepartmentId(result: unknown): number | null {
+  if (result === null || typeof result !== 'object') return null;
+  const obj = result as Record<string, unknown>;
+  if (typeof obj.id === 'number') return obj.id;
+  if (
+    obj.data !== null &&
+    typeof obj.data === 'object' &&
+    typeof (obj.data as Record<string, unknown>).id === 'number'
+  ) {
+    return (obj.data as Record<string, unknown>).id as number;
+  }
+  return null;
+}
+
+/**
+ * Save department (create or update) — returns departmentId for subsequent assign calls
  */
 export async function saveDepartment(
   payload: DepartmentPayload,
   editId: number | null,
-): Promise<{ success: boolean; error: string | null }> {
+): Promise<{
+  success: boolean;
+  error: string | null;
+  departmentId: number | null;
+}> {
   try {
     if (editId !== null) {
       await apiClient.put(API_ENDPOINTS.department(editId), payload);
-    } else {
-      await apiClient.post(API_ENDPOINTS.DEPARTMENTS, payload);
+      return { success: true, error: null, departmentId: editId };
     }
-    return { success: true, error: null };
+    const result: unknown = await apiClient.post(API_ENDPOINTS.DEPARTMENTS, payload);
+    return {
+      success: true,
+      error: null,
+      departmentId: extractDepartmentId(result),
+    };
   } catch (err: unknown) {
     log.error({ err }, 'Error saving department');
     return {
       success: false,
       error: err instanceof Error ? err.message : 'Fehler beim Speichern',
+      departmentId: null,
     };
   }
 }
@@ -252,9 +306,7 @@ export async function saveDepartment(
 /**
  * Delete department
  */
-export async function deleteDepartment(
-  departmentId: number,
-): Promise<DeleteDepartmentResult> {
+export async function deleteDepartment(departmentId: number): Promise<DeleteDepartmentResult> {
   try {
     await apiClient.delete(API_ENDPOINTS.department(departmentId));
     return { success: true, error: null };

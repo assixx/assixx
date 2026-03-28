@@ -5,6 +5,7 @@
 import {
   DEFAULT_HIERARCHY_LABELS,
   type HierarchyLabels,
+  type PositionOption,
 } from '$lib/types/hierarchy-labels';
 
 import type { AvailabilityOption } from './types';
@@ -31,17 +32,22 @@ export const DEFAULT_BADGE_CLASS = 'badge--secondary';
 export const INFO_BADGE_CLASS = 'badge--info';
 
 /**
+ * Warning badge class for inherited/indirect assignments
+ */
+export const INHERITED_BADGE_CLASS = 'badge--warning';
+
+/**
  * Position options for employees
  */
-export const POSITION_OPTIONS: readonly string[] = [
-  'Produktionsmitarbeiter',
-  'Anlagenbediener',
-  'Lagerarbeiter',
-  'Qualitätsprüfer',
-  'Schichtleiter',
-  'team_lead',
-  'Wartungstechniker',
-  'Sonstiges',
+export const POSITION_OPTIONS: readonly PositionOption[] = [
+  { id: '', name: 'Produktionsmitarbeiter', roleCategory: 'employee' },
+  { id: '', name: 'Anlagenbediener', roleCategory: 'employee' },
+  { id: '', name: 'Lagerarbeiter', roleCategory: 'employee' },
+  { id: '', name: 'Qualitätsprüfer', roleCategory: 'employee' },
+  { id: '', name: 'Schichtleiter', roleCategory: 'employee' },
+  { id: '', name: 'team_lead', roleCategory: 'employee' },
+  { id: '', name: 'Wartungstechniker', roleCategory: 'employee' },
+  { id: '', name: 'Sonstiges', roleCategory: 'employee' },
 ] as const;
 
 /**
@@ -98,8 +104,7 @@ const STATIC_MESSAGES = {
   SEARCH_NO_RESULTS: 'Keine Mitarbeiter gefunden für',
   SEARCH_MORE_RESULTS: 'weitere Ergebnisse in Tabelle',
   EMAIL_HINT: 'Wird auch als Benutzername verwendet',
-  PASSWORD_HINT:
-    'Min. 8 Zeichen. Enthält Großbuchstaben, Kleinbuchstaben und Zahlen.',
+  PASSWORD_HINT: 'Min. 8 Zeichen. Enthält Großbuchstaben, Kleinbuchstaben und Zahlen.',
   EMPLOYEE_NUMBER_HINT: 'Max. 10 Zeichen (Buchstaben, Zahlen, Bindestrich)',
   TEAM_MULTISELECT_HINT: 'Strg/Cmd + Klick für Mehrfachauswahl',
   STATUS_HINT: 'Inaktive/Archivierte Mitarbeiter können sich nicht anmelden',

@@ -28,9 +28,7 @@ export interface TpmExecutionJoinRow extends TpmCardExecutionRow {
 }
 
 /** Map execution DB row to API response */
-export function mapExecutionRowToApi(
-  row: TpmExecutionJoinRow,
-): TpmCardExecution {
+export function mapExecutionRowToApi(row: TpmExecutionJoinRow): TpmCardExecution {
   const execution: TpmCardExecution = {
     uuid: row.uuid.trim(),
     executedBy: row.executed_by,
@@ -49,10 +47,8 @@ export function mapExecutionRowToApi(
   };
 
   if (row.card_uuid !== undefined) execution.cardUuid = row.card_uuid.trim();
-  if (row.executed_by_name !== undefined)
-    execution.executedByName = row.executed_by_name;
-  if (row.approved_by_name !== undefined)
-    execution.approvedByName = row.approved_by_name;
+  if (row.executed_by_name !== undefined) execution.executedByName = row.executed_by_name;
+  if (row.approved_by_name !== undefined) execution.approvedByName = row.approved_by_name;
   if (row.photo_count !== undefined) execution.photoCount = row.photo_count;
   if (row.defect_count !== undefined) execution.defectCount = row.defect_count;
   if (row.participants !== undefined && Array.isArray(row.participants)) {
@@ -63,9 +59,7 @@ export function mapExecutionRowToApi(
 }
 
 /** Map defect DB row to API response */
-export function mapDefectRowToApi(
-  row: TpmExecutionDefectRow,
-): TpmExecutionDefect {
+export function mapDefectRowToApi(row: TpmExecutionDefectRow): TpmExecutionDefect {
   return {
     uuid: row.uuid.trim(),
     title: row.title,
@@ -111,9 +105,7 @@ function mapPhotoRow(row: PhotoRowShape): PhotoApiShape {
 }
 
 /** Map execution photo DB row to API response */
-export function mapPhotoRowToApi(
-  row: TpmCardExecutionPhotoRow,
-): TpmExecutionPhoto {
+export function mapPhotoRowToApi(row: TpmCardExecutionPhotoRow): TpmExecutionPhoto {
   return mapPhotoRow(row);
 }
 

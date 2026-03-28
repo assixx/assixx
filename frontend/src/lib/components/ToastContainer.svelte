@@ -1,7 +1,7 @@
 <script lang="ts">
   /**
    * Toast Container Component
-   * Uses Design System alert primitives for consistent theming (light/dark)
+   * Uses Design System toast primitives for consistent theming (light/dark)
    */
 
   import { goto } from '$app/navigation';
@@ -22,25 +22,19 @@
         return 'fa-info-circle';
     }
   }
-
-  /** Map toast type to alert variant class */
-  function getAlertVariant(type: ToastType): string {
-    if (type === 'error') return 'alert--error';
-    return `alert--${type}`;
-  }
 </script>
 
 <div class="notification-container">
   {#each $toasts as toast (toast.id)}
     <div
       id="notification-{toast.id}"
-      class="alert {getAlertVariant(toast.type)} notification"
+      class="toast toast--{toast.type} notification"
       class:dismissing={toast.dismissing}
     >
-      <span class="alert__icon">
+      <span class="toast__icon">
         <i class="fas {getIconClass(toast.type)}"></i>
       </span>
-      <span class="alert__content">
+      <span class="toast__content">
         {toast.title}{toast.message !== undefined && toast.message !== '' ?
           `: ${toast.message}`
         : ''}
@@ -58,6 +52,14 @@
           <i class="fas fa-arrow-right"></i>
         </button>
       {/if}
+      {#if toast.showProgress === true && toast.duration !== undefined && toast.duration > 0}
+        <div class="toast__progress">
+          <div
+            class="toast__progress-bar"
+            style="animation-duration: {toast.duration}ms"
+          ></div>
+        </div>
+      {/if}
     </div>
   {/each}
 </div>
@@ -65,7 +67,7 @@
 <style>
   .notification-container {
     position: fixed;
-    top: 76px;
+    top: 65px;
     right: 20px;
     z-index: 10000;
     pointer-events: none;

@@ -240,19 +240,11 @@
 }
 
 .tooltip__content--warning.tooltip__content--bottom::before {
-  border-bottom-color: color-mix(
-    in oklch,
-    var(--color-warning) 95%,
-    transparent
-  );
+  border-bottom-color: color-mix(in oklch, var(--color-warning) 95%, transparent);
 }
 
 .tooltip__content--warning.tooltip__content--right::before {
-  border-right-color: color-mix(
-    in oklch,
-    var(--color-warning) 95%,
-    transparent
-  );
+  border-right-color: color-mix(in oklch, var(--color-warning) 95%, transparent);
 }
 
 /* Error Tooltip */
@@ -262,11 +254,7 @@
 }
 
 .tooltip__content--error.tooltip__content--bottom::before {
-  border-bottom-color: color-mix(
-    in oklch,
-    var(--color-danger) 95%,
-    transparent
-  );
+  border-bottom-color: color-mix(in oklch, var(--color-danger) 95%, transparent);
 }
 
 .tooltip__content--error.tooltip__content--right::before {
@@ -280,19 +268,11 @@
 }
 
 .tooltip__content--success.tooltip__content--bottom::before {
-  border-bottom-color: color-mix(
-    in oklch,
-    var(--color-success) 95%,
-    transparent
-  );
+  border-bottom-color: color-mix(in oklch, var(--color-success) 95%, transparent);
 }
 
 .tooltip__content--success.tooltip__content--right::before {
-  border-right-color: color-mix(
-    in oklch,
-    var(--color-success) 95%,
-    transparent
-  );
+  border-right-color: color-mix(in oklch, var(--color-success) 95%, transparent);
 }
 
 /* Light Tooltip */

@@ -92,9 +92,7 @@ function createCardRow(overrides?: Partial<TpmCardRow>): TpmCardRow {
   };
 }
 
-function createExecutionRow(
-  overrides?: Partial<TpmExecutionJoinRow>,
-): TpmExecutionJoinRow {
+function createExecutionRow(overrides?: Partial<TpmExecutionJoinRow>): TpmExecutionJoinRow {
   return {
     id: 1,
     uuid: 'exec-uuid-001                            ',
@@ -121,9 +119,7 @@ function createExecutionRow(
   };
 }
 
-function createPhotoRow(
-  overrides?: Partial<TpmCardExecutionPhotoRow>,
-): TpmCardExecutionPhotoRow {
+function createPhotoRow(overrides?: Partial<TpmCardExecutionPhotoRow>): TpmCardExecutionPhotoRow {
   return {
     id: 1,
     uuid: 'photo-uuid-001                           ',
@@ -139,9 +135,7 @@ function createPhotoRow(
   };
 }
 
-function createDefectRow(
-  overrides?: Partial<TpmExecutionDefectRow>,
-): TpmExecutionDefectRow {
+function createDefectRow(overrides?: Partial<TpmExecutionDefectRow>): TpmExecutionDefectRow {
   return {
     id: 5,
     uuid: 'defect-uuid-001                          ',
@@ -157,9 +151,7 @@ function createDefectRow(
   };
 }
 
-function createDefectPhotoRow(
-  overrides?: Partial<TpmDefectPhotoRow>,
-): TpmDefectPhotoRow {
+function createDefectPhotoRow(overrides?: Partial<TpmDefectPhotoRow>): TpmDefectPhotoRow {
   return {
     id: 1,
     uuid: 'defect-photo-uuid-001                    ',
@@ -580,9 +572,7 @@ describe('TpmExecutionsService', () => {
     it('should throw NotFoundException when not found', async () => {
       mockDb.queryOne.mockResolvedValueOnce(null);
 
-      await expect(service.getExecution(10, 'nonexistent')).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.getExecution(10, 'nonexistent')).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -598,12 +588,7 @@ describe('TpmExecutionsService', () => {
         createExecutionRow({ id: 2, uuid: 'exec-uuid-002' }),
       ]);
 
-      const result = await service.listExecutionsForCard(
-        10,
-        'card-uuid-001',
-        1,
-        20,
-      );
+      const result = await service.listExecutionsForCard(10, 'card-uuid-001', 1, 20);
 
       expect(result.total).toBe(5);
       expect(result.data).toHaveLength(2);
@@ -615,12 +600,7 @@ describe('TpmExecutionsService', () => {
       mockDb.queryOne.mockResolvedValueOnce({ count: '0' });
       mockDb.query.mockResolvedValueOnce([]);
 
-      const result = await service.listExecutionsForCard(
-        10,
-        'card-uuid-001',
-        1,
-        20,
-      );
+      const result = await service.listExecutionsForCard(10, 'card-uuid-001', 1, 20);
 
       expect(result.total).toBe(0);
       expect(result.data).toHaveLength(0);
@@ -634,9 +614,7 @@ describe('TpmExecutionsService', () => {
   describe('listPendingApprovals()', () => {
     it('should return pending executions paginated', async () => {
       mockDb.queryOne.mockResolvedValueOnce({ count: '3' });
-      mockDb.query.mockResolvedValueOnce([
-        createExecutionRow({ approval_status: 'pending' }),
-      ]);
+      mockDb.query.mockResolvedValueOnce([createExecutionRow({ approval_status: 'pending' })]);
 
       const result = await service.listPendingApprovals(10, 1, 20);
 

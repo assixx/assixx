@@ -5,21 +5,13 @@
  * Handles listing, creation, updates, deletion, and dashboard queries.
  */
 import { IS_ACTIVE } from '@assixx/shared/constants';
-import {
-  ForbiddenException,
-  Injectable,
-  Logger,
-  NotFoundException,
-} from '@nestjs/common';
+import { ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { v7 as uuidv7 } from 'uuid';
 
 import { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import { DatabaseService } from '../database/database.service.js';
 import { BlackboardAccessService } from './blackboard-access.service.js';
-import {
-  ERROR_ENTRY_NOT_FOUND,
-  FETCH_ENTRIES_BASE_QUERY,
-} from './blackboard.constants.js';
+import { ERROR_ENTRY_NOT_FOUND, FETCH_ENTRIES_BASE_QUERY } from './blackboard.constants.js';
 import {
   normalizeEntryFilters,
   processEntryContent,
@@ -64,12 +56,7 @@ export class BlackboardEntriesService {
     const userAccess = await this.accessService.getUserAccessInfo(userId);
     const normalized = normalizeEntryFilters(filters);
 
-    const { query, params } = this.buildEntryListQuery(
-      userId,
-      tenantId,
-      normalized,
-      userAccess,
-    );
+    const { query, params } = this.buildEntryListQuery(userId, tenantId, normalized, userAccess);
 
     const total = await this.countEntries(query, params);
     const entries = await this.fetchPaginatedEntries(query, params, normalized);
@@ -130,10 +117,7 @@ export class BlackboardEntriesService {
   }
 
   /** Count total entries matching query */
-  private async countEntries(
-    query: string,
-    params: unknown[],
-  ): Promise<number> {
+  private async countEntries(query: string, params: unknown[]): Promise<number> {
     const countQuery = query.replace(
       /SELECT e\.id.*FROM blackboard_entries e/,
       'SELECT COUNT(*) as total FROM blackboard_entries e',
@@ -151,11 +135,7 @@ export class BlackboardEntriesService {
     const limitIdx = params.length + 1;
     const offsetIdx = params.length + 2;
     const query = `${baseQuery} ORDER BY e.priority = 'urgent' DESC, e.priority = 'high' DESC, e.${filters.sortBy} ${filters.sortDir} LIMIT $${limitIdx} OFFSET $${offsetIdx}`;
-    const paginatedParams = [
-      ...params,
-      filters.limit,
-      (filters.page - 1) * filters.limit,
-    ];
+    const paginatedParams = [...params, filters.limit, (filters.page - 1) * filters.limit];
     return await this.db.query<DbBlackboardEntry>(query, paginatedParams);
   }
 
@@ -195,11 +175,7 @@ export class BlackboardEntriesService {
       WHERE e.${idColumn} = $2 AND e.tenant_id = $3
     `;
 
-    const entries = await this.db.query<DbBlackboardEntry>(query, [
-      userId,
-      id,
-      tenantId,
-    ]);
+    const entries = await this.db.query<DbBlackboardEntry>(query, [userId, id, tenantId]);
     const entry = entries[0];
 
     if (entry === undefined) {
@@ -251,22 +227,10 @@ export class BlackboardEntriesService {
     }
 
     const { orgLevel, orgId, areaId } = this.determineOrgTarget(dto);
-    const insertedId = await this.insertEntry(
-      dto,
-      tenantId,
-      userId,
-      orgLevel,
-      orgId,
-      areaId,
-    );
+    const insertedId = await this.insertEntry(dto, tenantId, userId, orgLevel, orgId, areaId);
 
     if (hasMultiOrg) {
-      await this.syncEntryOrganizations(
-        insertedId,
-        dto.departmentIds,
-        dto.teamIds,
-        dto.areaIds,
-      );
+      await this.syncEntryOrganizations(insertedId, dto.departmentIds, dto.teamIds, dto.areaIds);
     }
 
     const createdEntry = await this.getEntryById(insertedId, tenantId, userId);
@@ -291,11 +255,7 @@ export class BlackboardEntriesService {
 
   /** Check if DTO targets multiple organizations */
   private hasMultiOrgTargets(dto: CreateEntryDto): boolean {
-    return (
-      dto.departmentIds.length > 0 ||
-      dto.teamIds.length > 0 ||
-      dto.areaIds.length > 0
-    );
+    return dto.departmentIds.length > 0 || dto.teamIds.length > 0 || dto.areaIds.length > 0;
   }
 
   /** Determine org_level, org_id, and area_id from DTO */
@@ -335,9 +295,7 @@ export class BlackboardEntriesService {
   ): Promise<number> {
     const uuid = uuidv7();
     const expiresAt =
-      dto.expiresAt !== undefined && dto.expiresAt !== null ?
-        new Date(dto.expiresAt)
-      : null;
+      dto.expiresAt !== undefined && dto.expiresAt !== null ? new Date(dto.expiresAt) : null;
 
     const rows = await this.db.query<{ id: number }>(
       `INSERT INTO blackboard_entries
@@ -375,10 +333,9 @@ export class BlackboardEntriesService {
     teamIds: number[],
     areaIds: number[],
   ): Promise<void> {
-    await this.db.query(
-      'DELETE FROM blackboard_entry_organizations WHERE entry_id = $1',
-      [entryId],
-    );
+    await this.db.query('DELETE FROM blackboard_entry_organizations WHERE entry_id = $1', [
+      entryId,
+    ]);
 
     for (const orgId of departmentIds) {
       await this.db.query(
@@ -417,16 +374,13 @@ export class BlackboardEntriesService {
   ): Promise<BlackboardEntryResponse> {
     this.logger.log(`Updating entry ${String(id)}`);
 
-    const existingEntry = (await this.getEntryById(
-      id,
-      tenantId,
-      userId,
-    )) as Record<string, unknown>;
+    const existingEntry = (await this.getEntryById(id, tenantId, userId)) as Record<
+      string,
+      unknown
+    >;
 
     const hasMultiOrg =
-      dto.departmentIds !== undefined ||
-      dto.teamIds !== undefined ||
-      dto.areaIds !== undefined;
+      dto.departmentIds !== undefined || dto.teamIds !== undefined || dto.areaIds !== undefined;
 
     if (hasMultiOrg) {
       await this.accessService.validateOrgPermissions(
@@ -438,12 +392,7 @@ export class BlackboardEntriesService {
       );
     }
 
-    const { query, params } = this.buildUpdateQuery(
-      id,
-      tenantId,
-      dto,
-      hasMultiOrg,
-    );
+    const { query, params } = this.buildUpdateQuery(id, tenantId, dto, hasMultiOrg);
     await this.db.query(query, params);
 
     const numericId = await this.resolveNumericEntryId(id, tenantId);
@@ -459,13 +408,7 @@ export class BlackboardEntriesService {
 
     const updatedEntry = await this.getEntryById(numericId, tenantId, userId);
 
-    await this.logEntryUpdateActivity(
-      tenantId,
-      userId,
-      numericId,
-      dto,
-      existingEntry,
-    );
+    await this.logEntryUpdateActivity(tenantId, userId, numericId, dto, existingEntry);
 
     return updatedEntry;
   }
@@ -558,8 +501,7 @@ export class BlackboardEntriesService {
 
       const fieldValue = (dto as Record<string, unknown>)[key];
       if (fieldValue !== undefined) {
-        const value =
-          transform !== undefined ? transform(fieldValue) : fieldValue;
+        const value = transform !== undefined ? transform(fieldValue) : fieldValue;
         params.push(value);
         append(`, ${column} = $${params.length}`);
       }
@@ -578,9 +520,7 @@ export class BlackboardEntriesService {
 
     if (firstAreaId !== undefined) {
       params.push(firstAreaId, 'area');
-      append(
-        `, area_id = $${params.length - 1}, org_level = $${params.length}`,
-      );
+      append(`, area_id = $${params.length - 1}, org_level = $${params.length}`);
     } else if (firstDeptId !== undefined) {
       params.push(firstDeptId, 'department');
       append(`, org_id = $${params.length - 1}, org_level = $${params.length}`);
@@ -596,10 +536,7 @@ export class BlackboardEntriesService {
   }
 
   /** Resolve UUID to numeric ID if needed */
-  private async resolveNumericEntryId(
-    id: number | string,
-    tenantId: number,
-  ): Promise<number> {
+  private async resolveNumericEntryId(id: number | string, tenantId: number): Promise<number> {
     if (typeof id === 'number') {
       return id;
     }
@@ -638,8 +575,7 @@ export class BlackboardEntriesService {
     // Check delete permissions: root, has_full_access, or author
     const isRoot = userRole === 'root';
     const isAuthor = (entry as Record<string, unknown>)['authorId'] === userId;
-    const { hasFullAccess } =
-      await this.accessService.getUserAccessInfo(userId);
+    const { hasFullAccess } = await this.accessService.getUserAccessInfo(userId);
 
     if (!isRoot && !hasFullAccess && !isAuthor) {
       throw new ForbiddenException(

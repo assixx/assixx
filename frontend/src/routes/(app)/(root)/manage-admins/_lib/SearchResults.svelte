@@ -1,9 +1,6 @@
 <script lang="ts">
   import SearchResultUser from '$lib/components/SearchResultUser.svelte';
-  import {
-    DEFAULT_HIERARCHY_LABELS,
-    type HierarchyLabels,
-  } from '$lib/types/hierarchy-labels';
+  import { DEFAULT_HIERARCHY_LABELS, type HierarchyLabels } from '$lib/types/hierarchy-labels';
 
   import { MESSAGES } from './constants';
   import { getPositionDisplay } from './utils';

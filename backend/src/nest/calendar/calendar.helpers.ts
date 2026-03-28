@@ -61,9 +61,7 @@ export function buildVisibilityClause(
 
   // Merge scope + memberships — deduplicated via Set
   const areaIds = scope.areaIds;
-  const deptIds = [
-    ...new Set([...scope.departmentIds, ...memberships.departmentIds]),
-  ];
+  const deptIds = [...new Set([...scope.departmentIds, ...memberships.departmentIds])];
   const teamIds = [...new Set([...scope.teamIds, ...memberships.teamIds])];
 
   // PostgreSQL ANY() requires non-empty arrays — [0] matches nothing
@@ -178,11 +176,7 @@ export function calculateRecurrenceDates(
     currentDate = addRecurrenceInterval(currentDate, recurrence);
 
     // Check if we've passed the until date
-    if (
-      endType === 'until' &&
-      untilDateObj !== null &&
-      currentDate > untilDateObj
-    ) {
+    if (endType === 'until' && untilDateObj !== null && currentDate > untilDateObj) {
       break;
     }
 

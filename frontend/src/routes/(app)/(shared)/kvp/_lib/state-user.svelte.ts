@@ -37,11 +37,9 @@ function resolveEffectiveRole(user: User | null): string {
  */
 function createUserState() {
   let currentUser = $state<User | null>(null);
-  let effectiveRole = $state<string>('employee');
+  let effectiveRole = $state('employee');
 
-  const isAdmin = $derived(
-    effectiveRole === 'admin' || effectiveRole === 'root',
-  );
+  const isAdmin = $derived(effectiveRole === 'admin' || effectiveRole === 'root');
   const isEmployee = $derived(effectiveRole === 'employee');
 
   function setUser(user: User | null): void {

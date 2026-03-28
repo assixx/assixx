@@ -23,6 +23,4 @@ export const ExportResponsesQuerySchema = z.object({
 /**
  * Export Responses Query DTO class
  */
-export class ExportResponsesQueryDto extends createZodDto(
-  ExportResponsesQuerySchema,
-) {}
+export class ExportResponsesQueryDto extends createZodDto(ExportResponsesQuerySchema) {}

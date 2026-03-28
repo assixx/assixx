@@ -22,6 +22,7 @@ import type { DatabaseService } from '../database/database.service.js';
 import type { UserRepository } from '../database/repositories/user.repository.js';
 import type { HierarchyPermissionService } from '../hierarchy-permission/hierarchy-permission.service.js';
 import type { ScopeService } from '../hierarchy-permission/scope.service.js';
+import type { UserPositionService } from '../organigram/user-position.service.js';
 import type { CreateUserDto } from './dto/create-user.dto.js';
 import type { ListUsersQueryDto } from './dto/list-users-query.dto.js';
 import type { UpdateUserDto } from './dto/update-user.dto.js';
@@ -49,7 +50,34 @@ vi.mock('uuid', () => ({
 // =============================================================
 
 function createMockDb() {
-  return { query: vi.fn() };
+  const db = {
+    query: vi.fn(),
+    tenantTransaction: vi.fn(),
+  };
+  /**
+   * Transaction callback receives a PoolClient-like object.
+   * PoolClient.query() returns { rows: T[] } (pg QueryResult).
+   * DatabaseService.query() returns T[] (rows only).
+   * The client proxy wraps the shared mock queue so existing
+   * mockResolvedValueOnce setups work in the correct call order.
+   */
+  const clientQuery = vi.fn(async (...args: unknown[]) => {
+    const rows: unknown = await db.query(...args);
+    return { rows: rows ?? [] };
+  });
+  db.tenantTransaction.mockImplementation(
+    (callback: (client: { query: typeof clientQuery }) => Promise<unknown>) =>
+      callback({ query: clientQuery }),
+  );
+  return db;
+}
+
+function createMockUserPositionService() {
+  return {
+    syncPositions: vi.fn().mockResolvedValue(undefined),
+    getPositionsForUser: vi.fn().mockResolvedValue([]),
+    getPositionsForUsers: vi.fn().mockResolvedValue(new Map()),
+  };
 }
 
 function createMockActivityLogger() {
@@ -150,6 +178,7 @@ describe('UsersService', () => {
     mockAvailability = createMockAvailabilityService();
     const mockScope = createMockScope();
     const mockHierarchyPermission = createMockHierarchyPermission();
+    const mockUserPositions = createMockUserPositionService();
     service = new UsersService(
       mockDb as unknown as DatabaseService,
       mockActivityLogger as unknown as ActivityLoggerService,
@@ -157,6 +186,7 @@ describe('UsersService', () => {
       mockAvailability as unknown as UserAvailabilityService,
       mockScope as unknown as ScopeService,
       mockHierarchyPermission as unknown as HierarchyPermissionService,
+      mockUserPositions as unknown as UserPositionService,
     );
   });
 
@@ -277,9 +307,7 @@ describe('UsersService', () => {
         role: 'admin',
       } as unknown as ListUsersQueryDto;
 
-      await expect(service.listUsers(10, query, 'admin')).rejects.toThrow(
-        ForbiddenException,
-      );
+      await expect(service.listUsers(10, query, 'admin')).rejects.toThrow(ForbiddenException);
     });
 
     it('should calculate totalPages correctly for partial last page', async () => {
@@ -307,9 +335,7 @@ describe('UsersService', () => {
     it('should throw NotFoundException when user not found', async () => {
       mockDb.query.mockResolvedValueOnce([]);
 
-      await expect(service.getUserById(999, 10)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.getUserById(999, 10)).rejects.toThrow(NotFoundException);
     });
 
     it('should return enriched response with tenant info', async () => {
@@ -321,9 +347,7 @@ describe('UsersService', () => {
       // getUserTeams (Promise.all[1])
       mockDb.query.mockResolvedValueOnce([]);
       // getTenantInfo (Promise.all[3])
-      mockDb.query.mockResolvedValueOnce([
-        { company_name: 'Test Corp', subdomain: 'test' },
-      ]);
+      mockDb.query.mockResolvedValueOnce([{ company_name: 'Test Corp', subdomain: 'test' }]);
 
       const result = await service.getUserById(1, 10);
 
@@ -397,9 +421,7 @@ describe('UsersService', () => {
       // findUserByEmail → existing user found
       mockDb.query.mockResolvedValueOnce([makeUserRow()]);
 
-      await expect(service.createUser(createDto, 1, 10)).rejects.toThrow(
-        ConflictException,
-      );
+      await expect(service.createUser(createDto, 1, 10)).rejects.toThrow(ConflictException);
     });
 
     it('should create user and log activity', async () => {
@@ -408,9 +430,7 @@ describe('UsersService', () => {
       // insertUserRecord → INSERT RETURNING id
       mockDb.query.mockResolvedValueOnce([{ id: 5 }]);
       // fetchUserWithDepartments → findUserById
-      mockDb.query.mockResolvedValueOnce([
-        makeUserRow({ id: 5, email: 'new@example.com' }),
-      ]);
+      mockDb.query.mockResolvedValueOnce([makeUserRow({ id: 5, email: 'new@example.com' })]);
       // fetchUserWithDepartments → getUserDepartments
       mockDb.query.mockResolvedValueOnce([]);
 
@@ -437,9 +457,7 @@ describe('UsersService', () => {
       mockDb.query.mockResolvedValueOnce([{ id: 5 }]); // INSERT
       mockDb.query.mockResolvedValueOnce([]); // assignUserDepartments dept 100
       mockDb.query.mockResolvedValueOnce([]); // assignUserDepartments dept 200
-      mockDb.query.mockResolvedValueOnce([
-        makeUserRow({ id: 5, email: 'new@example.com' }),
-      ]); // fetchUser
+      mockDb.query.mockResolvedValueOnce([makeUserRow({ id: 5, email: 'new@example.com' })]); // fetchUser
       mockDb.query.mockResolvedValueOnce([]); // getDepartments
 
       await service.createUser(dtoWithDepts, 1, 10);
@@ -484,9 +502,9 @@ describe('UsersService', () => {
 
       mockDb.query.mockResolvedValueOnce([]); // findUserByEmail
 
-      await expect(
-        service.createUser(dtoEmployeeFullAccess, 1, 10),
-      ).rejects.toThrow(BadRequestException);
+      await expect(service.createUser(dtoEmployeeFullAccess, 1, 10)).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('should allow creating admin with hasFullAccess=true', async () => {
@@ -516,9 +534,7 @@ describe('UsersService', () => {
       });
       mockDb.query.mockRejectedValueOnce(pgError);
 
-      await expect(service.createUser(createDto, 1, 10)).rejects.toThrow(
-        ConflictException,
-      );
+      await expect(service.createUser(createDto, 1, 10)).rejects.toThrow(ConflictException);
     });
 
     it('should throw InternalServerError when INSERT returns no id', async () => {
@@ -541,9 +557,7 @@ describe('UsersService', () => {
       mockDb.query.mockResolvedValueOnce([]); // findUserByEmail
       // INSERT triggers CHECK constraint violation
       const pgError = Object.assign(
-        new Error(
-          'new row violates check constraint "chk_employee_no_full_access"',
-        ),
+        new Error('new row violates check constraint "chk_employee_no_full_access"'),
         { code: '23514' },
       );
       mockDb.query.mockRejectedValueOnce(pgError);
@@ -567,9 +581,7 @@ describe('UsersService', () => {
         firstName: 'Updated',
       } as unknown as UpdateUserDto;
 
-      await expect(
-        service.updateUser(999, dto, 1, 'admin', 10),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.updateUser(999, dto, 1, 'admin', 10)).rejects.toThrow(NotFoundException);
     });
 
     it('should throw ForbiddenException on unauthorized role change', async () => {
@@ -580,18 +592,14 @@ describe('UsersService', () => {
 
       const dto = { role: 'admin' } as unknown as UpdateUserDto;
 
-      await expect(service.updateUser(1, dto, 2, 'admin', 10)).rejects.toThrow(
-        ForbiddenException,
-      );
+      await expect(service.updateUser(1, dto, 2, 'admin', 10)).rejects.toThrow(ForbiddenException);
     });
 
     it('should allow root to change role', async () => {
       mockDb.query.mockResolvedValueOnce([makeUserRow({ role: 'employee' })]);
       // No assertCanChangeRole DB call for root
       mockDb.query.mockResolvedValueOnce([]); // executeUserUpdate
-      mockDb.query.mockResolvedValueOnce([
-        makeUserRow({ id: 1, role: 'admin' }),
-      ]); // fetchUser
+      mockDb.query.mockResolvedValueOnce([makeUserRow({ id: 1, role: 'admin' })]); // fetchUser
       mockDb.query.mockResolvedValueOnce([]); // getDepartments
 
       const dto = { role: 'admin' } as unknown as UpdateUserDto;
@@ -617,17 +625,13 @@ describe('UsersService', () => {
     it('should throw ConflictException when changing to taken email', async () => {
       mockDb.query.mockResolvedValueOnce([makeUserRow()]); // findUserById
       // validateEmailUniqueness → findUserByEmail → found
-      mockDb.query.mockResolvedValueOnce([
-        makeUserRow({ id: 2, email: 'taken@example.com' }),
-      ]);
+      mockDb.query.mockResolvedValueOnce([makeUserRow({ id: 2, email: 'taken@example.com' })]);
 
       const dto = {
         email: 'taken@example.com',
       } as unknown as UpdateUserDto;
 
-      await expect(service.updateUser(1, dto, 99, 'root', 10)).rejects.toThrow(
-        ConflictException,
-      );
+      await expect(service.updateUser(1, dto, 99, 'root', 10)).rejects.toThrow(ConflictException);
     });
 
     it('should update department assignments when provided', async () => {
@@ -676,9 +680,7 @@ describe('UsersService', () => {
         employeeNumber: 'EMP999',
       } as unknown as UpdateUserDto;
 
-      await expect(service.updateUser(1, dto, 99, 'root', 10)).rejects.toThrow(
-        ConflictException,
-      );
+      await expect(service.updateUser(1, dto, 99, 'root', 10)).rejects.toThrow(ConflictException);
     });
 
     it('should delegate availability history update', async () => {
@@ -694,9 +696,7 @@ describe('UsersService', () => {
 
       await service.updateUser(1, dto, 99, 'root', 10);
 
-      expect(
-        mockAvailability.insertAvailabilityHistoryIfNeeded,
-      ).toHaveBeenCalledWith(
+      expect(mockAvailability.insertAvailabilityHistoryIfNeeded).toHaveBeenCalledWith(
         1,
         10,
         'available',
@@ -710,39 +710,27 @@ describe('UsersService', () => {
 
     it('should throw BadRequestException when setting hasFullAccess=true on employee', async () => {
       // Existing user is an employee
-      mockDb.query.mockResolvedValueOnce([
-        makeUserRow({ role: 'employee', has_full_access: 0 }),
-      ]);
+      mockDb.query.mockResolvedValueOnce([makeUserRow({ role: 'employee', has_full_access: 0 })]);
 
       const dto = { hasFullAccess: true } as unknown as UpdateUserDto;
 
-      await expect(service.updateUser(1, dto, 99, 'root', 10)).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(service.updateUser(1, dto, 99, 'root', 10)).rejects.toThrow(BadRequestException);
     });
 
     it('should throw BadRequestException when changing role TO employee with existing full access', async () => {
       // Existing user is admin with has_full_access = 1
-      mockDb.query.mockResolvedValueOnce([
-        makeUserRow({ role: 'admin', has_full_access: 1 }),
-      ]);
+      mockDb.query.mockResolvedValueOnce([makeUserRow({ role: 'admin', has_full_access: 1 })]);
       // assertCanChangeRole → root, no DB call needed
 
       const dto = { role: 'employee' } as unknown as UpdateUserDto;
 
-      await expect(service.updateUser(1, dto, 99, 'root', 10)).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(service.updateUser(1, dto, 99, 'root', 10)).rejects.toThrow(BadRequestException);
     });
 
     it('should allow setting hasFullAccess=true on admin', async () => {
-      mockDb.query.mockResolvedValueOnce([
-        makeUserRow({ role: 'admin', has_full_access: 0 }),
-      ]);
+      mockDb.query.mockResolvedValueOnce([makeUserRow({ role: 'admin', has_full_access: 0 })]);
       mockDb.query.mockResolvedValueOnce([]); // executeUserUpdate
-      mockDb.query.mockResolvedValueOnce([
-        makeUserRow({ role: 'admin', has_full_access: 1 }),
-      ]); // fetchUser
+      mockDb.query.mockResolvedValueOnce([makeUserRow({ role: 'admin', has_full_access: 1 })]); // fetchUser
       mockDb.query.mockResolvedValueOnce([]); // getDepartments
 
       const dto = { hasFullAccess: true } as unknown as UpdateUserDto;
@@ -753,14 +741,10 @@ describe('UsersService', () => {
 
     it('should propagate CHECK constraint error (23514) for chk_employee_no_full_access on update', async () => {
       // Scenario: DB CHECK fires as safety net during UPDATE
-      mockDb.query.mockResolvedValueOnce([
-        makeUserRow({ role: 'admin', has_full_access: 0 }),
-      ]); // findUserById
+      mockDb.query.mockResolvedValueOnce([makeUserRow({ role: 'admin', has_full_access: 0 })]); // findUserById
       // executeUserUpdate triggers CHECK constraint
       const pgError = Object.assign(
-        new Error(
-          'new row violates check constraint "chk_employee_no_full_access"',
-        ),
+        new Error('new row violates check constraint "chk_employee_no_full_access"'),
         { code: '23514' },
       );
       mockDb.query.mockRejectedValueOnce(pgError);
@@ -780,17 +764,13 @@ describe('UsersService', () => {
 
   describe('deleteUser', () => {
     it('should throw BadRequestException on self-delete', async () => {
-      await expect(service.deleteUser(1, 1, 10)).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(service.deleteUser(1, 1, 10)).rejects.toThrow(BadRequestException);
     });
 
     it('should throw NotFoundException when user not found', async () => {
       mockDb.query.mockResolvedValueOnce([]); // findUserById
 
-      await expect(service.deleteUser(999, 2, 10)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.deleteUser(999, 2, 10)).rejects.toThrow(NotFoundException);
     });
 
     it(`should soft-delete user (is_active = ${IS_ACTIVE.DELETED})`, async () => {
@@ -817,9 +797,7 @@ describe('UsersService', () => {
     it('should throw NotFoundException when user not found', async () => {
       mockDb.query.mockResolvedValueOnce([]);
 
-      await expect(service.archiveUser(999, 10)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.archiveUser(999, 10)).rejects.toThrow(NotFoundException);
     });
 
     it('should set is_active to 3', async () => {
@@ -842,15 +820,11 @@ describe('UsersService', () => {
     it('should throw NotFoundException when user not found', async () => {
       mockDb.query.mockResolvedValueOnce([]);
 
-      await expect(service.unarchiveUser(999, 10)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.unarchiveUser(999, 10)).rejects.toThrow(NotFoundException);
     });
 
     it('should set is_active to 1', async () => {
-      mockDb.query.mockResolvedValueOnce([
-        makeUserRow({ is_active: IS_ACTIVE.ARCHIVED }),
-      ]);
+      mockDb.query.mockResolvedValueOnce([makeUserRow({ is_active: IS_ACTIVE.ARCHIVED })]);
       mockDb.query.mockResolvedValueOnce([]);
 
       const result = await service.unarchiveUser(1, 10);
@@ -869,18 +843,14 @@ describe('UsersService', () => {
     it('should throw NotFoundException for unknown UUID', async () => {
       mockUserRepo.resolveUuidToId.mockResolvedValueOnce(null);
 
-      await expect(service.getUserByUuid('unknown-uuid', 10)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.getUserByUuid('unknown-uuid', 10)).rejects.toThrow(NotFoundException);
     });
 
     it('should resolve UUID and apply scope check', async () => {
       mockUserRepo.resolveUuidToId.mockResolvedValueOnce(5);
       // getUserById chain: findUserById + getTenantInfo + getDepartments + getUserTeamsBatch
       mockDb.query.mockResolvedValueOnce([makeUserRow({ id: 5 })]);
-      mockDb.query.mockResolvedValueOnce([
-        { company_name: 'TestCo', subdomain: 'test' },
-      ]);
+      mockDb.query.mockResolvedValueOnce([{ company_name: 'TestCo', subdomain: 'test' }]);
       mockDb.query.mockResolvedValueOnce([]);
       mockDb.query.mockResolvedValueOnce([]);
 
@@ -903,19 +873,10 @@ describe('UsersService', () => {
       mockDb.query.mockResolvedValueOnce([]); // getDepartments
 
       const dto = { firstName: 'Via UUID' } as unknown as UpdateUserDto;
-      const result = await service.updateUserByUuid(
-        'some-uuid',
-        dto,
-        99,
-        'root',
-        10,
-      );
+      const result = await service.updateUserByUuid('some-uuid', dto, 99, 'root', 10);
 
       expect(result.id).toBe(5);
-      expect(mockUserRepo.resolveUuidToId).toHaveBeenCalledWith(
-        'some-uuid',
-        10,
-      );
+      expect(mockUserRepo.resolveUuidToId).toHaveBeenCalledWith('some-uuid', 10);
     });
   });
 
@@ -934,10 +895,7 @@ describe('UsersService', () => {
       const result = await service.deleteUserByUuid('some-uuid', 2, 10);
 
       expect(result.message).toBe('User deleted successfully');
-      expect(mockUserRepo.resolveUuidToId).toHaveBeenCalledWith(
-        'some-uuid',
-        10,
-      );
+      expect(mockUserRepo.resolveUuidToId).toHaveBeenCalledWith('some-uuid', 10);
     });
   });
 
@@ -964,9 +922,7 @@ describe('UsersService', () => {
   describe('unarchiveUserByUuid', () => {
     it('should resolve UUID and delegate to unarchiveUser', async () => {
       mockUserRepo.resolveUuidToId.mockResolvedValueOnce(5);
-      mockDb.query.mockResolvedValueOnce([
-        makeUserRow({ id: 5, is_active: IS_ACTIVE.ARCHIVED }),
-      ]); // findUserById
+      mockDb.query.mockResolvedValueOnce([makeUserRow({ id: 5, is_active: IS_ACTIVE.ARCHIVED })]); // findUserById
       mockDb.query.mockResolvedValueOnce([]); // UPDATE is_active = ${IS_ACTIVE.ACTIVE}
 
       const result = await service.unarchiveUserByUuid('some-uuid', 10);
@@ -997,9 +953,7 @@ describe('UsersService', () => {
       });
       mockDb.query.mockRejectedValueOnce(pgError);
 
-      await expect(service.createUser(createDto, 1, 10)).rejects.toThrow(
-        ConflictException,
-      );
+      await expect(service.createUser(createDto, 1, 10)).rejects.toThrow(ConflictException);
     });
   });
 
@@ -1017,9 +971,7 @@ describe('UsersService', () => {
 
       const dto = { firstName: 'Changed' } as unknown as UpdateUserDto;
 
-      await expect(service.updateUser(5, dto, 1, 'admin', 10)).rejects.toThrow(
-        ConflictException,
-      );
+      await expect(service.updateUser(5, dto, 1, 'admin', 10)).rejects.toThrow(ConflictException);
     });
 
     it('should throw InternalServerError when user disappears after update', async () => {
@@ -1071,17 +1023,15 @@ describe('UsersService', () => {
       // findUserById returns user
       mockDb.query.mockResolvedValueOnce([makeUserRow({ id: 999 })]);
       // getTenantInfo
-      mockDb.query.mockResolvedValueOnce([
-        { company_name: 'TestCo', subdomain: 'test' },
-      ]);
+      mockDb.query.mockResolvedValueOnce([{ company_name: 'TestCo', subdomain: 'test' }]);
       // getDepartments
       mockDb.query.mockResolvedValueOnce([]);
       // getUserTeamsBatch
       mockDb.query.mockResolvedValueOnce([]);
 
-      await expect(
-        scopedService.getUserByUuid('some-uuid', 10),
-      ).rejects.toThrow(ForbiddenException);
+      await expect(scopedService.getUserByUuid('some-uuid', 10)).rejects.toThrow(
+        ForbiddenException,
+      );
     });
   });
 });

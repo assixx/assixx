@@ -2,7 +2,7 @@
   import { onMount } from 'svelte';
 
   import { enhance } from '$app/forms';
-  import { goto, replaceState } from '$app/navigation';
+  import { replaceState } from '$app/navigation';
   import { resolve } from '$app/paths';
 
   import ThemeToggle from '$lib/components/ThemeToggle.svelte';
@@ -45,10 +45,7 @@
 
     const urlParams = new URLSearchParams(window.location.search);
 
-    if (
-      urlParams.get('timeout') === 'true' ||
-      urlParams.get('session') === 'expired'
-    ) {
+    if (urlParams.get('timeout') === 'true' || urlParams.get('session') === 'expired') {
       showError(
         'Ihre Sitzung ist aus Sicherheitsgründen abgelaufen. Bitte melden Sie sich erneut an.',
       );
@@ -57,8 +54,7 @@
     } else if (urlParams.get('ratelimit') === 'expired') {
       // Rate limit message - use warning style by setting isTimeout
       isTimeout = false; // Not a timeout, but show as success/info
-      error =
-        'Die Wartezeit ist abgelaufen. Sie können sich jetzt wieder anmelden.';
+      error = 'Die Wartezeit ist abgelaufen. Sie können sich jetzt wieder anmelden.';
       showToast = true;
       // Clean up URL - SvelteKit's replaceState (safe inside afterNavigate)
       replaceState(window.location.pathname, {});
@@ -206,9 +202,7 @@
         }}
       >
         <img
-          src={isDark() ?
-            '/images/logo_darkmode.png'
-          : '/images/logo_lightmode.png'}
+          src={isDark() ? '/images/logo_darkmode.png' : '/images/logo_lightmode.png'}
           alt="Assixx Logo"
           class="login-logo"
         />
@@ -283,11 +277,14 @@
             localStorage.setItem('activeRole', user.role);
 
             // Bridge login password for E2E key escrow recovery (ADR-022)
-            // Must happen before goto() — consumed by e2e-state.initialize()
+            // Must happen before redirect — consumed by e2e-state.initialize()
             setLoginPassword(password);
 
-            // Redirect to dashboard
-            await goto(redirectTo ?? '/admin-dashboard');
+            // Full page load — login is a state boundary (unauthenticated → authenticated).
+            // Client-side goto() fails with Vite 8 SSR: when navigating from /login (outside
+            // (app) group) to dashboard (inside (app) group), the intermediate (app)-layout
+            // insertion doesn't clean up the old SSR-rendered login DOM nodes.
+            window.location.href = redirectTo ?? '/admin-dashboard';
             return;
           }
 
@@ -364,9 +361,7 @@
 
   <!-- Company Footer -->
   <div class="login-company">
-    <p class="text-secondary">
-      © 2025 Assixx - Powered by Simon Öztürks Computer Service
-    </p>
+    <p class="text-secondary">© 2025 Assixx - Powered by Simon Öztürks Computer Service</p>
   </div>
 </div>
 
@@ -537,8 +532,7 @@
   :global(html:not(.dark)) .back-button {
     border-color: color-mix(in oklch, var(--color-black) 12%, transparent);
     background: color-mix(in oklch, var(--color-white) 85%, transparent);
-    box-shadow: 0 4px 16px
-      color-mix(in oklch, var(--color-black) 8%, transparent);
+    box-shadow: 0 4px 16px color-mix(in oklch, var(--color-black) 8%, transparent);
   }
 
   :global(html:not(.dark)) .back-button:hover {
@@ -549,8 +543,7 @@
   :global(html:not(.dark)) .help-button {
     border-color: color-mix(in oklch, var(--color-black) 12%, transparent);
     background: color-mix(in oklch, var(--color-white) 85%, transparent);
-    box-shadow: 0 4px 12px
-      color-mix(in oklch, var(--color-black) 8%, transparent);
+    box-shadow: 0 4px 12px color-mix(in oklch, var(--color-black) 8%, transparent);
   }
 
   @media (width < 768px) {

@@ -10,13 +10,7 @@ import { apiFetch, apiFetchWithPermission } from '$lib/server/api-fetch';
 import { requireAddon } from '$lib/utils/addon-guard';
 
 import type { PageServerLoad } from './$types';
-import type {
-  BlackboardEntry,
-  Department,
-  Team,
-  Area,
-  PaginationMeta,
-} from './_lib/types';
+import type { BlackboardEntry, Department, Team, Area, PaginationMeta } from './_lib/types';
 
 const ENTRIES_PER_PAGE = 12;
 
@@ -86,17 +80,16 @@ export const load: PageServerLoad = async ({ cookies, fetch, url, parent }) => {
   const apiParams = buildApiParams(url);
 
   // Parallel fetch: entries with filters + organization data for dropdowns
-  const [entriesCheck, departmentsData, teamsData, areasData] =
-    await Promise.all([
-      apiFetchWithPermission<EntriesResponse | BlackboardEntry[]>(
-        `/blackboard/entries?${apiParams.toString()}`,
-        token,
-        fetch,
-      ),
-      apiFetch<Department[]>('/departments', token, fetch),
-      apiFetch<Team[]>('/teams', token, fetch),
-      apiFetch<Area[]>('/areas', token, fetch),
-    ]);
+  const [entriesCheck, departmentsData, teamsData, areasData] = await Promise.all([
+    apiFetchWithPermission<EntriesResponse | BlackboardEntry[]>(
+      `/blackboard/entries?${apiParams.toString()}`,
+      token,
+      fetch,
+    ),
+    apiFetch<Department[]>('/departments', token, fetch),
+    apiFetch<Team[]>('/teams', token, fetch),
+    apiFetch<Area[]>('/areas', token, fetch),
+  ]);
 
   if (entriesCheck.permissionDenied) {
     return {

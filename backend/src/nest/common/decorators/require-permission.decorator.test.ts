@@ -8,10 +8,7 @@
  */
 import { describe, expect, it } from 'vitest';
 
-import {
-  PERMISSION_KEY,
-  RequirePermission,
-} from './require-permission.decorator.js';
+import { PERMISSION_KEY, RequirePermission } from './require-permission.decorator.js';
 import type { RequiredPermission } from './require-permission.decorator.js';
 
 // =============================================================
@@ -27,10 +24,7 @@ describe('SECURITY: RequirePermission()', () => {
       }
     }
 
-    const metadata = Reflect.getMetadata(
-      PERMISSION_KEY,
-      TestController.prototype.testMethod,
-    );
+    const metadata = Reflect.getMetadata(PERMISSION_KEY, TestController.prototype.testMethod);
 
     expect(metadata).toBeDefined();
   });

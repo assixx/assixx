@@ -31,9 +31,7 @@ function createMockDb() {
 }
 type MockDb = ReturnType<typeof createMockDb>;
 
-function createColorRow(
-  overrides?: Partial<TpmColorConfigRow>,
-): TpmColorConfigRow {
+function createColorRow(overrides?: Partial<TpmColorConfigRow>): TpmColorConfigRow {
   return {
     id: 1,
     tenant_id: 10,
@@ -91,12 +89,7 @@ describe('TpmColorConfigService', () => {
       const result = await service.getColors(10);
 
       expect(result).toHaveLength(4);
-      expect(result.map((c) => c.statusKey)).toEqual([
-        'green',
-        'red',
-        'yellow',
-        'overdue',
-      ]);
+      expect(result.map((c) => c.statusKey)).toEqual(['green', 'red', 'yellow', 'overdue']);
     });
 
     it('should use default hex values when no overrides exist', async () => {
@@ -222,12 +215,7 @@ describe('TpmColorConfigService', () => {
       const result = await service.resetToDefaults(10, 1);
 
       expect(result).toHaveLength(4);
-      expect(result.map((c) => c.statusKey)).toEqual([
-        'green',
-        'red',
-        'yellow',
-        'overdue',
-      ]);
+      expect(result.map((c) => c.statusKey)).toEqual(['green', 'red', 'yellow', 'overdue']);
 
       const sql = mockClient.query.mock.calls[0]?.[0] as string;
       expect(sql).toContain('DELETE FROM tpm_color_config');

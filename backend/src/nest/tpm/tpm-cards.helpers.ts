@@ -22,9 +22,7 @@ function parsePgCategoryArray(value: unknown): TpmCardCategory[] {
   const trimmed = value.trim();
   if (trimmed === '{}' || trimmed === '') return [];
   const inner = trimmed.slice(1, -1);
-  return inner
-    .split(',')
-    .map((s: string) => s.trim().replace(/^"|"$/g, '')) as TpmCardCategory[];
+  return inner.split(',').map((s: string) => s.trim().replace(/^"|"$/g, '')) as TpmCardCategory[];
 }
 
 /** Extended row type including JOIN columns from related tables */
@@ -68,8 +66,7 @@ export function mapCardRowToApi(row: TpmCardJoinRow): TpmCard {
   // Optional properties: only set when JOIN data is present
   if (row.plan_uuid !== undefined) card.planUuid = row.plan_uuid.trim();
   if (row.asset_name !== undefined) card.assetName = row.asset_name;
-  if (row.created_by_name !== undefined)
-    card.createdByName = row.created_by_name;
+  if (row.created_by_name !== undefined) card.createdByName = row.created_by_name;
   if (row.last_completed_by_name !== undefined) {
     card.lastCompletedByName = row.last_completed_by_name;
   }
@@ -92,8 +89,6 @@ const CARD_UPDATE_MAPPINGS: readonly FieldMapping[] = [
 ];
 
 /** Build SET clause for card update — only includes provided fields */
-export function buildCardUpdateFields(
-  dto: Record<string, unknown>,
-): SetClauseResult {
+export function buildCardUpdateFields(dto: Record<string, unknown>): SetClauseResult {
   return buildSetClause(dto, CARD_UPDATE_MAPPINGS);
 }

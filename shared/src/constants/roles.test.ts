@@ -51,9 +51,7 @@ describe('EXTENDED_ROLE_LABELS', () => {
 
   it('should be a superset of ROLE_LABELS', () => {
     for (const [role, label] of Object.entries(ROLE_LABELS)) {
-      expect(
-        EXTENDED_ROLE_LABELS[role as keyof typeof EXTENDED_ROLE_LABELS],
-      ).toBe(label);
+      expect(EXTENDED_ROLE_LABELS[role as keyof typeof EXTENDED_ROLE_LABELS]).toBe(label);
     }
   });
 });

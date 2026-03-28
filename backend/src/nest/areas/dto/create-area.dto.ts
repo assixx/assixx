@@ -13,8 +13,7 @@ import { z } from 'zod';
 export const AreaTypeSchema = z.enum(
   ['building', 'warehouse', 'office', 'production', 'outdoor', 'other'],
   {
-    message:
-      'Type must be one of: building, warehouse, office, production, outdoor, other',
+    message: 'Type must be one of: building, warehouse, office, production, outdoor, other',
   },
 );
 
@@ -37,6 +36,12 @@ export const CreateAreaSchema = z.object({
     .number()
     .int()
     .positive('Area lead ID must be a positive integer')
+    .nullable()
+    .optional(),
+  areaDeputyLeadId: z.coerce
+    .number()
+    .int()
+    .positive('Area deputy lead ID must be a positive integer')
     .nullable()
     .optional(),
   type: AreaTypeSchema.default('other'),

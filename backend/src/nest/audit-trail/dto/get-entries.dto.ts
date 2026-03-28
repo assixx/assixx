@@ -6,11 +6,7 @@
 import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';
 
-import {
-  DateSchema,
-  IdSchema,
-  PaginationSchema,
-} from '../../../schemas/common.schema.js';
+import { DateSchema, IdSchema, PaginationSchema } from '../../../schemas/common.schema.js';
 
 /**
  * Audit trail status enum
@@ -22,12 +18,9 @@ const AuditStatusSchema = z.enum(['success', 'failure'], {
 /**
  * Sort field enum for audit entries
  */
-const SortBySchema = z.enum(
-  ['created_at', 'action', 'user_id', 'resource_type'],
-  {
-    message: 'Invalid sort field',
-  },
-);
+const SortBySchema = z.enum(['created_at', 'action', 'user_id', 'resource_type'], {
+  message: 'Invalid sort field',
+});
 
 /**
  * Get audit entries query schema

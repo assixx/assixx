@@ -41,9 +41,7 @@ describe('DocumentNotificationService', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockNotifications = createMockNotifications();
-    service = new DocumentNotificationService(
-      mockNotifications as unknown as NotificationsService,
-    );
+    service = new DocumentNotificationService(mockNotifications as unknown as NotificationsService);
   });
 
   // =============================================================

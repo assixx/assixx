@@ -15,9 +15,7 @@ import type {
 // ============================================================================
 
 /** Map database row to API response */
-export function mapNotificationToApi(
-  row: DbNotificationRow,
-): NotificationResponse {
+export function mapNotificationToApi(row: DbNotificationRow): NotificationResponse {
   let metadata: Record<string, unknown> | null = null;
   if (row.metadata !== null) {
     try {
@@ -47,10 +45,7 @@ export function mapNotificationToApi(
     tenantId: row.tenant_id,
     createdAt: row.created_at.toISOString(),
     updatedAt: row.updated_at.toISOString(),
-    readAt:
-      row.read_at !== null && row.read_at !== undefined ?
-        row.read_at.toISOString()
-      : null,
+    readAt: row.read_at !== null && row.read_at !== undefined ? row.read_at.toISOString() : null,
     isRead: row.is_read ?? false,
   };
 }

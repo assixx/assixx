@@ -182,12 +182,7 @@ describe('TpmPlansIntervalService', () => {
     it('monthly: should return 2nd Wednesday of next month', () => {
       const base = new Date('2026-02-18');
       const anchor = { weekday: 2, nth: 2 };
-      const result = service.calculateIntervalDate(
-        base,
-        'monthly',
-        null,
-        anchor,
-      );
+      const result = service.calculateIntervalDate(base, 'monthly', null, anchor);
       // March: 1st Wed = March 4, 2nd Wed = March 11
       expect(result).toEqual(new Date(2026, 2, 11));
     });
@@ -195,12 +190,7 @@ describe('TpmPlansIntervalService', () => {
     it('quarterly: should return 2nd Wednesday 3 months ahead', () => {
       const base = new Date('2026-02-18');
       const anchor = { weekday: 2, nth: 2 };
-      const result = service.calculateIntervalDate(
-        base,
-        'quarterly',
-        null,
-        anchor,
-      );
+      const result = service.calculateIntervalDate(base, 'quarterly', null, anchor);
       // May: 1st Wed = May 6, 2nd Wed = May 13
       expect(result).toEqual(new Date(2026, 4, 13));
     });
@@ -208,12 +198,7 @@ describe('TpmPlansIntervalService', () => {
     it('semi_annual: should return 1st Monday 6 months ahead', () => {
       const base = new Date('2026-02-18');
       const anchor = { weekday: 0, nth: 1 };
-      const result = service.calculateIntervalDate(
-        base,
-        'semi_annual',
-        null,
-        anchor,
-      );
+      const result = service.calculateIntervalDate(base, 'semi_annual', null, anchor);
       // Aug: 1st Mon = Aug 3
       expect(result).toEqual(new Date(2026, 7, 3));
     });
@@ -221,12 +206,7 @@ describe('TpmPlansIntervalService', () => {
     it('annual: should return 2nd Wednesday of same month next year', () => {
       const base = new Date('2026-02-18');
       const anchor = { weekday: 2, nth: 2 };
-      const result = service.calculateIntervalDate(
-        base,
-        'annual',
-        null,
-        anchor,
-      );
+      const result = service.calculateIntervalDate(base, 'annual', null, anchor);
       // Feb 2027: 1st Wed = Feb 3, 2nd Wed = Feb 10
       expect(result).toEqual(new Date(2027, 1, 10));
     });
@@ -280,10 +260,7 @@ describe('TpmPlansIntervalService', () => {
 
     it('should filter by provided intervalTypes', () => {
       const from = new Date('2026-02-18');
-      const results = service.calculateNextDueDates(0, 1, from, [
-        'daily',
-        'monthly',
-      ]);
+      const results = service.calculateNextDueDates(0, 1, from, ['daily', 'monthly']);
 
       expect(results).toHaveLength(2);
       expect(results.map((r) => r.intervalType)).toContain('daily');

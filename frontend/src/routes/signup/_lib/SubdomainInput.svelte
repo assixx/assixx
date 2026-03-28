@@ -16,9 +16,7 @@
     const target = e.target as HTMLInputElement;
     subdomain = target.value.toLowerCase();
     subdomainError =
-      subdomain !== '' && !isSubdomainValid(subdomain) ?
-        ERROR_MESSAGES.subdomainInvalid
-      : null;
+      subdomain !== '' && !isSubdomainValid(subdomain) ? ERROR_MESSAGES.subdomainInvalid : null;
   }
 </script>
 
@@ -56,8 +54,7 @@
   .subdomain-input {
     flex: 1;
     backdrop-filter: var(--glass-form-backdrop);
-    transition:
-      var(--form-field-transition), var(--form-field-transition-shadow);
+    transition: var(--form-field-transition), var(--form-field-transition-shadow);
     border: var(--form-field-border);
     border-right: none;
     border-radius: var(--form-field-radius) 0 0 var(--form-field-radius);

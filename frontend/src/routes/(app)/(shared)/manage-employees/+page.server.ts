@@ -23,25 +23,21 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent, url }) => {
   }
 
   // Permission check: first fetch detects 403 (ADR-020 pattern)
-  const empResult = await apiFetchWithPermission<Employee[]>(
-    '/users?role=employee',
-    token,
-    fetch,
-  );
+  const empResult = await apiFetchWithPermission<Employee[]>('/users?role=employee', token, fetch);
   if (empResult.permissionDenied) {
     return {
       permissionDenied: true as const,
       employees: [] as Employee[],
       teams: [] as Team[],
-      positionOptions: [] as string[],
+      positionOptions: [] as { id: string; name: string; roleCategory: string }[],
     };
   }
 
   // Parallel fetch remaining data (permission confirmed)
-  const [teamsData, posOptData] = await Promise.all([
+  const [teamsData, positionsData] = await Promise.all([
     apiFetch<Team[]>('/teams', token, fetch),
-    apiFetch<{ employee: string[] }>(
-      '/organigram/position-options',
+    apiFetch<{ id: string; name: string; roleCategory: string }[]>(
+      '/organigram/positions?roleCategory=employee',
       token,
       fetch,
     ),
@@ -56,6 +52,13 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent, url }) => {
     permissionDenied: false as const,
     employees,
     teams: Array.isArray(teamsData) ? teamsData : [],
-    positionOptions: posOptData?.employee ?? [],
+    positionOptions:
+      Array.isArray(positionsData) ?
+        positionsData.map((p: { id: string; name: string; roleCategory: string }) => ({
+          id: p.id,
+          name: p.name,
+          roleCategory: p.roleCategory,
+        }))
+      : [],
   };
 };

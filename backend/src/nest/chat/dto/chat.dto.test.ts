@@ -16,6 +16,7 @@ import { EditMessageBodySchema } from './edit-message.dto.js';
 import { GetMessagesQuerySchema } from './get-messages-query.dto.js';
 import { MessageIdParamSchema } from './message-id-param.dto.js';
 import { RemoveParticipantParamsSchema } from './remove-participant-param.dto.js';
+import { CreateScheduledMessageBodySchema } from './scheduled-message-body.dto.js';
 import { ScheduledMessageIdParamSchema } from './scheduled-message-id-param.dto.js';
 import { SearchMessagesQuerySchema } from './search-messages-query.dto.js';
 import { SendMessageBodySchema } from './send-message.dto.js';
@@ -67,80 +68,57 @@ describe('ScheduledMessageIdParamSchema', () => {
   });
 
   it('should reject invalid UUID', () => {
-    expect(
-      ScheduledMessageIdParamSchema.safeParse({ id: 'not-a-uuid' }).success,
-    ).toBe(false);
+    expect(ScheduledMessageIdParamSchema.safeParse({ id: 'not-a-uuid' }).success).toBe(false);
   });
 });
 
 describe('ConversationMessagesParamSchema', () => {
   it('should accept valid id', () => {
-    expect(ConversationMessagesParamSchema.safeParse({ id: 1 }).success).toBe(
-      true,
-    );
+    expect(ConversationMessagesParamSchema.safeParse({ id: 1 }).success).toBe(true);
   });
 
   it('should reject zero', () => {
-    expect(ConversationMessagesParamSchema.safeParse({ id: 0 }).success).toBe(
-      false,
-    );
+    expect(ConversationMessagesParamSchema.safeParse({ id: 0 }).success).toBe(false);
   });
 });
 
 describe('ConversationScheduledMessagesParamSchema', () => {
   it('should accept valid id', () => {
-    expect(
-      ConversationScheduledMessagesParamSchema.safeParse({ id: 1 }).success,
-    ).toBe(true);
+    expect(ConversationScheduledMessagesParamSchema.safeParse({ id: 1 }).success).toBe(true);
   });
 
   it('should reject zero', () => {
-    expect(
-      ConversationScheduledMessagesParamSchema.safeParse({ id: 0 }).success,
-    ).toBe(false);
+    expect(ConversationScheduledMessagesParamSchema.safeParse({ id: 0 }).success).toBe(false);
   });
 });
 
 describe('ConversationAttachmentsParamSchema', () => {
   it('should accept valid id', () => {
-    expect(
-      ConversationAttachmentsParamSchema.safeParse({ id: 1 }).success,
-    ).toBe(true);
+    expect(ConversationAttachmentsParamSchema.safeParse({ id: 1 }).success).toBe(true);
   });
 
   it('should reject zero', () => {
-    expect(
-      ConversationAttachmentsParamSchema.safeParse({ id: 0 }).success,
-    ).toBe(false);
+    expect(ConversationAttachmentsParamSchema.safeParse({ id: 0 }).success).toBe(false);
   });
 });
 
 describe('AttachmentDocumentIdParamSchema', () => {
   it('should accept valid documentId', () => {
-    expect(
-      AttachmentDocumentIdParamSchema.safeParse({ documentId: 1 }).success,
-    ).toBe(true);
+    expect(AttachmentDocumentIdParamSchema.safeParse({ documentId: 1 }).success).toBe(true);
   });
 
   it('should reject zero', () => {
-    expect(
-      AttachmentDocumentIdParamSchema.safeParse({ documentId: 0 }).success,
-    ).toBe(false);
+    expect(AttachmentDocumentIdParamSchema.safeParse({ documentId: 0 }).success).toBe(false);
   });
 });
 
 describe('AttachmentFilenameParamSchema', () => {
   it('should accept valid filename', () => {
-    expect(
-      AttachmentFilenameParamSchema.safeParse({ filename: 'report.pdf' })
-        .success,
-    ).toBe(true);
+    expect(AttachmentFilenameParamSchema.safeParse({ filename: 'report.pdf' }).success).toBe(true);
   });
 
   it('should reject empty filename', () => {
-    expect(
-      AttachmentFilenameParamSchema.safeParse({ filename: '' }).success,
-    ).toBe(false);
+    expect(AttachmentFilenameParamSchema.safeParse({ filename: '' }).success).toBe(false);
   });
 });
 
@@ -154,29 +132,21 @@ describe('AttachmentFileUuidParamSchema', () => {
   });
 
   it('should reject invalid UUID', () => {
-    expect(
-      AttachmentFileUuidParamSchema.safeParse({ fileUuid: 'not-uuid' }).success,
-    ).toBe(false);
+    expect(AttachmentFileUuidParamSchema.safeParse({ fileUuid: 'not-uuid' }).success).toBe(false);
   });
 });
 
 describe('RemoveParticipantParamsSchema', () => {
   it('should accept valid ids', () => {
-    expect(
-      RemoveParticipantParamsSchema.safeParse({ id: 1, userId: 2 }).success,
-    ).toBe(true);
+    expect(RemoveParticipantParamsSchema.safeParse({ id: 1, userId: 2 }).success).toBe(true);
   });
 
   it('should reject zero id', () => {
-    expect(
-      RemoveParticipantParamsSchema.safeParse({ id: 0, userId: 1 }).success,
-    ).toBe(false);
+    expect(RemoveParticipantParamsSchema.safeParse({ id: 0, userId: 1 }).success).toBe(false);
   });
 
   it('should reject zero userId', () => {
-    expect(
-      RemoveParticipantParamsSchema.safeParse({ id: 1, userId: 0 }).success,
-    ).toBe(false);
+    expect(RemoveParticipantParamsSchema.safeParse({ id: 1, userId: 0 }).success).toBe(false);
   });
 });
 
@@ -190,15 +160,11 @@ describe('GetConversationsQuerySchema', () => {
   });
 
   it('should accept pagination params', () => {
-    expect(
-      GetConversationsQuerySchema.safeParse({ page: 1, limit: 20 }).success,
-    ).toBe(true);
+    expect(GetConversationsQuerySchema.safeParse({ page: 1, limit: 20 }).success).toBe(true);
   });
 
   it('should reject limit over 100', () => {
-    expect(GetConversationsQuerySchema.safeParse({ limit: 101 }).success).toBe(
-      false,
-    );
+    expect(GetConversationsQuerySchema.safeParse({ limit: 101 }).success).toBe(false);
   });
 
   it('should accept boolean query params as strings', () => {
@@ -218,10 +184,7 @@ describe('GetConversationsQuerySchema', () => {
   });
 
   it('should reject search over 200 chars', () => {
-    expect(
-      GetConversationsQuerySchema.safeParse({ search: 'a'.repeat(201) })
-        .success,
-    ).toBe(false);
+    expect(GetConversationsQuerySchema.safeParse({ search: 'a'.repeat(201) }).success).toBe(false);
   });
 });
 
@@ -241,17 +204,14 @@ describe('GetMessagesQuerySchema', () => {
   it('should accept hasAttachment as boolean string', () => {
     const result = GetMessagesQuerySchema.safeParse({ hasAttachment: 'true' });
     expect(result.success).toBe(true);
-    const data = (result as { success: true; data: { hasAttachment: boolean } })
-      .data;
+    const data = (result as { success: true; data: { hasAttachment: boolean } }).data;
     expect(data.hasAttachment).toBe(true);
   });
 });
 
 describe('SearchMessagesQuerySchema', () => {
   it('should accept valid search', () => {
-    expect(SearchMessagesQuerySchema.safeParse({ q: 'hello' }).success).toBe(
-      true,
-    );
+    expect(SearchMessagesQuerySchema.safeParse({ q: 'hello' }).success).toBe(true);
   });
 
   it('should reject search under 2 chars', () => {
@@ -263,10 +223,9 @@ describe('SearchMessagesQuerySchema', () => {
   });
 
   it('should accept with pagination', () => {
-    expect(
-      SearchMessagesQuerySchema.safeParse({ q: 'test', page: 2, limit: 50 })
-        .success,
-    ).toBe(true);
+    expect(SearchMessagesQuerySchema.safeParse({ q: 'test', page: 2, limit: 50 }).success).toBe(
+      true,
+    );
   });
 });
 
@@ -301,9 +260,7 @@ describe('AttachmentQuerySchema', () => {
   });
 
   it('should accept download as boolean string', () => {
-    expect(AttachmentQuerySchema.safeParse({ download: 'true' }).success).toBe(
-      true,
-    );
+    expect(AttachmentQuerySchema.safeParse({ download: 'true' }).success).toBe(true);
   });
 });
 
@@ -329,9 +286,7 @@ describe('CreateConversationBodySchema', () => {
   });
 
   it('should reject empty participantIds', () => {
-    expect(
-      CreateConversationBodySchema.safeParse({ participantIds: [] }).success,
-    ).toBe(false);
+    expect(CreateConversationBodySchema.safeParse({ participantIds: [] }).success).toBe(false);
   });
 
   it('should reject name over 100 chars', () => {
@@ -351,9 +306,7 @@ describe('CreateConversationBodySchema', () => {
 
 describe('SendMessageBodySchema', () => {
   it('should accept valid message', () => {
-    expect(SendMessageBodySchema.safeParse({ message: 'Hello' }).success).toBe(
-      true,
-    );
+    expect(SendMessageBodySchema.safeParse({ message: 'Hello' }).success).toBe(true);
   });
 
   it('should accept empty body (message optional)', () => {
@@ -361,37 +314,27 @@ describe('SendMessageBodySchema', () => {
   });
 
   it('should reject message over 5000 chars', () => {
-    expect(
-      SendMessageBodySchema.safeParse({ message: 'a'.repeat(5001) }).success,
-    ).toBe(false);
+    expect(SendMessageBodySchema.safeParse({ message: 'a'.repeat(5001) }).success).toBe(false);
   });
 });
 
 describe('EditMessageBodySchema', () => {
   it('should accept valid edit', () => {
-    expect(
-      EditMessageBodySchema.safeParse({ message: 'Updated' }).success,
-    ).toBe(true);
+    expect(EditMessageBodySchema.safeParse({ message: 'Updated' }).success).toBe(true);
   });
 
   it('should reject empty message', () => {
-    expect(EditMessageBodySchema.safeParse({ message: '' }).success).toBe(
-      false,
-    );
+    expect(EditMessageBodySchema.safeParse({ message: '' }).success).toBe(false);
   });
 
   it('should reject message over 5000 chars', () => {
-    expect(
-      EditMessageBodySchema.safeParse({ message: 'a'.repeat(5001) }).success,
-    ).toBe(false);
+    expect(EditMessageBodySchema.safeParse({ message: 'a'.repeat(5001) }).success).toBe(false);
   });
 });
 
 describe('UpdateConversationBodySchema', () => {
   it('should accept valid name update', () => {
-    expect(
-      UpdateConversationBodySchema.safeParse({ name: 'New Name' }).success,
-    ).toBe(true);
+    expect(UpdateConversationBodySchema.safeParse({ name: 'New Name' }).success).toBe(true);
   });
 
   it('should accept empty object (name optional)', () => {
@@ -399,35 +342,92 @@ describe('UpdateConversationBodySchema', () => {
   });
 
   it('should reject empty name', () => {
-    expect(UpdateConversationBodySchema.safeParse({ name: '' }).success).toBe(
-      false,
-    );
+    expect(UpdateConversationBodySchema.safeParse({ name: '' }).success).toBe(false);
   });
 
   it('should reject name over 100 chars', () => {
-    expect(
-      UpdateConversationBodySchema.safeParse({ name: 'a'.repeat(101) }).success,
-    ).toBe(false);
+    expect(UpdateConversationBodySchema.safeParse({ name: 'a'.repeat(101) }).success).toBe(false);
   });
 });
 
 describe('AddParticipantsBodySchema', () => {
   it('should accept valid participant ids', () => {
-    expect(
-      AddParticipantsBodySchema.safeParse({ participantIds: [1, 2, 3] })
-        .success,
-    ).toBe(true);
+    expect(AddParticipantsBodySchema.safeParse({ participantIds: [1, 2, 3] }).success).toBe(true);
   });
 
   it('should reject empty array', () => {
-    expect(
-      AddParticipantsBodySchema.safeParse({ participantIds: [] }).success,
-    ).toBe(false);
+    expect(AddParticipantsBodySchema.safeParse({ participantIds: [] }).success).toBe(false);
   });
 
   it('should reject invalid participant ids', () => {
-    expect(
-      AddParticipantsBodySchema.safeParse({ participantIds: [0] }).success,
-    ).toBe(false);
+    expect(AddParticipantsBodySchema.safeParse({ participantIds: [0] }).success).toBe(false);
+  });
+});
+
+// =============================================================
+// CreateScheduledMessageBodySchema
+// =============================================================
+
+describe('CreateScheduledMessageBodySchema', () => {
+  const futureDate = new Date(Date.now() + 30 * 60 * 1000).toISOString();
+
+  it('should accept valid plaintext scheduled message', () => {
+    const result = CreateScheduledMessageBodySchema.safeParse({
+      conversationId: 1,
+      content: 'Hello later!',
+      scheduledFor: futureDate,
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it('should accept valid E2E encrypted scheduled message', () => {
+    const result = CreateScheduledMessageBodySchema.safeParse({
+      conversationId: 1,
+      encryptedContent: 'base64ciphertext',
+      e2eNonce: 'base64nonce',
+      e2eKeyVersion: 1,
+      e2eKeyEpoch: 20000,
+      scheduledFor: futureDate,
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it('should accept valid attachment scheduled message', () => {
+    const result = CreateScheduledMessageBodySchema.safeParse({
+      conversationId: 1,
+      attachmentPath: '/uploads/file.pdf',
+      attachmentName: 'file.pdf',
+      attachmentType: 'application/pdf',
+      attachmentSize: 1024,
+      scheduledFor: futureDate,
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it('should reject when no content, encrypted content, or attachment', () => {
+    const result = CreateScheduledMessageBodySchema.safeParse({
+      conversationId: 1,
+      scheduledFor: futureDate,
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('should reject invalid conversationId', () => {
+    const result = CreateScheduledMessageBodySchema.safeParse({
+      conversationId: -1,
+      content: 'Hello',
+      scheduledFor: futureDate,
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it('should reject scheduledFor in the past', () => {
+    const pastDate = new Date(Date.now() - 60 * 1000).toISOString();
+    const result = CreateScheduledMessageBodySchema.safeParse({
+      conversationId: 1,
+      content: 'Hello',
+      scheduledFor: pastDate,
+    });
+    expect(result.success).toBe(false);
   });
 });

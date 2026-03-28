@@ -30,9 +30,7 @@ function createMockActivityLogger() {
   return { log: vi.fn().mockResolvedValue(undefined) };
 }
 
-function createMockBlackoutRow(
-  overrides?: Partial<VacationBlackoutRow>,
-): VacationBlackoutRow {
+function createMockBlackoutRow(overrides?: Partial<VacationBlackoutRow>): VacationBlackoutRow {
   return {
     id: 'bo-001',
     tenant_id: 1,
@@ -152,10 +150,11 @@ describe('VacationBlackoutsService', () => {
 
       await service.getBlackouts(1, 2026);
 
-      expect(mockClient.query).toHaveBeenCalledWith(
-        expect.stringContaining('start_date <= $2'),
-        [1, '2026-12-31', '2026-01-01'],
-      );
+      expect(mockClient.query).toHaveBeenCalledWith(expect.stringContaining('start_date <= $2'), [
+        1,
+        '2026-12-31',
+        '2026-01-01',
+      ]);
     });
   });
 
@@ -259,9 +258,9 @@ describe('VacationBlackoutsService', () => {
     it('should throw NotFoundException when blackout not found', async () => {
       mockClient.query.mockResolvedValueOnce({ rows: [] });
 
-      await expect(
-        service.updateBlackout(1, 10, 'nonexistent', { name: 'X' }),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.updateBlackout(1, 10, 'nonexistent', { name: 'X' })).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should return existing blackout when no fields to update', async () => {
@@ -287,17 +286,13 @@ describe('VacationBlackoutsService', () => {
         rows: [{ id: 'bo-001', name: 'Summer Freeze' }],
       });
 
-      await expect(
-        service.deleteBlackout(1, 10, 'bo-001'),
-      ).resolves.toBeUndefined();
+      await expect(service.deleteBlackout(1, 10, 'bo-001')).resolves.toBeUndefined();
     });
 
     it('should throw NotFoundException when blackout not found', async () => {
       mockClient.query.mockResolvedValueOnce({ rows: [] });
 
-      await expect(
-        service.deleteBlackout(1, 10, 'nonexistent'),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.deleteBlackout(1, 10, 'nonexistent')).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -340,13 +335,7 @@ describe('VacationBlackoutsService', () => {
         ],
       });
 
-      const result = await service.getConflicts(
-        1,
-        '2026-08-01',
-        '2026-08-10',
-        42,
-        undefined,
-      );
+      const result = await service.getConflicts(1, '2026-08-01', '2026-08-10', 42, undefined);
 
       expect(result).toHaveLength(1);
       expect(result[0]?.isGlobal).toBe(false);

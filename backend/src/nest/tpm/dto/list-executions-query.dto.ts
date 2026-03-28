@@ -15,6 +15,4 @@ export const ListExecutionsQuerySchema = z.object({
   limit: LimitSchema,
 });
 
-export class ListExecutionsQueryDto extends createZodDto(
-  ListExecutionsQuerySchema,
-) {}
+export class ListExecutionsQueryDto extends createZodDto(ListExecutionsQuerySchema) {}

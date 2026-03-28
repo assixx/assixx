@@ -27,12 +27,7 @@ function extractArray<T>(raw: unknown): T[] {
   return [];
 }
 
-export const load: PageServerLoad = async ({
-  cookies,
-  fetch,
-  parent,
-  params,
-}) => {
+export const load: PageServerLoad = async ({ cookies, fetch, parent, params }) => {
   const token = cookies.get('accessToken');
   if (token === undefined || token === '') redirect(302, '/login');
 
@@ -69,16 +64,8 @@ export const load: PageServerLoad = async ({
   let locations: TpmLocation[] = [];
   if (card?.planUuid !== undefined) {
     const [estimatesRaw, locationsRaw] = await Promise.all([
-      apiFetch<unknown>(
-        `/tpm/plans/${card.planUuid}/time-estimates`,
-        token,
-        fetch,
-      ),
-      apiFetch<unknown>(
-        `/tpm/locations?planUuid=${card.planUuid}`,
-        token,
-        fetch,
-      ),
+      apiFetch<unknown>(`/tpm/plans/${card.planUuid}/time-estimates`, token, fetch),
+      apiFetch<unknown>(`/tpm/locations?planUuid=${card.planUuid}`, token, fetch),
     ]);
     timeEstimates = extractArray<TpmTimeEstimate>(estimatesRaw);
     locations = extractArray<TpmLocation>(locationsRaw);

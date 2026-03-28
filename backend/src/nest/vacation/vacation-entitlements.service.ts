@@ -13,12 +13,7 @@
  * Depends on: VacationSettingsService (for default_annual_days, max_carry_over)
  */
 import { IS_ACTIVE } from '@assixx/shared/constants';
-import {
-  ConflictException,
-  Injectable,
-  Logger,
-  NotFoundException,
-} from '@nestjs/common';
+import { ConflictException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import type { PoolClient } from 'pg';
 import { v7 as uuidv7 } from 'uuid';
 
@@ -51,9 +46,7 @@ interface CrossYearRequestRow {
 
 @Injectable()
 export class VacationEntitlementsService {
-  private readonly logger: Logger = new Logger(
-    VacationEntitlementsService.name,
-  );
+  private readonly logger: Logger = new Logger(VacationEntitlementsService.name);
 
   constructor(
     private readonly db: DatabaseService,
@@ -73,8 +66,12 @@ export class VacationEntitlementsService {
   ): Promise<VacationEntitlement | undefined> {
     return await this.db.tenantTransaction(
       async (client: PoolClient): Promise<VacationEntitlement | undefined> => {
-        const row: VacationEntitlementRow | undefined =
-          await this.findEntitlement(client, tenantId, userId, year);
+        const row: VacationEntitlementRow | undefined = await this.findEntitlement(
+          client,
+          tenantId,
+          userId,
+          year,
+        );
 
         return row !== undefined ? this.mapRowToEntitlement(row) : undefined;
       },
@@ -89,74 +86,64 @@ export class VacationEntitlementsService {
    * Excludes special_leave from usedDays/pendingDays.
    * Respects carry-over expiry date.
    */
-  async getBalance(
-    tenantId: number,
-    userId: number,
-    year?: number,
-  ): Promise<VacationBalance> {
+  async getBalance(tenantId: number, userId: number, year?: number): Promise<VacationBalance> {
     const targetYear: number = year ?? new Date().getFullYear();
 
-    return await this.db.tenantTransaction(
-      async (client: PoolClient): Promise<VacationBalance> => {
-        // 1. Get entitlement (or create default)
-        let entitlement: VacationEntitlementRow | undefined =
-          await this.findEntitlement(client, tenantId, userId, targetYear);
+    return await this.db.tenantTransaction(async (client: PoolClient): Promise<VacationBalance> => {
+      // 1. Get entitlement (or create default)
+      let entitlement: VacationEntitlementRow | undefined = await this.findEntitlement(
+        client,
+        tenantId,
+        userId,
+        targetYear,
+      );
 
-        entitlement ??= await this.createDefaultEntitlement(
-          client,
-          tenantId,
-          userId,
-          targetYear,
-        );
+      entitlement ??= await this.createDefaultEntitlement(client, tenantId, userId, targetYear);
 
-        // 2. Calculate effective carry-over (respects expiry)
-        const effectiveCarriedOver: number = this.calculateEffectiveCarryOver(
-          entitlement.carried_over_days,
-          entitlement.carry_over_expires_at,
-        );
+      // 2. Calculate effective carry-over (respects expiry)
+      const effectiveCarriedOver: number = this.calculateEffectiveCarryOver(
+        entitlement.carried_over_days,
+        entitlement.carry_over_expires_at,
+      );
 
-        // 3. Calculate available days
-        const totalDays: number = Number.parseFloat(entitlement.total_days);
-        const additionalDays: number = Number.parseFloat(
-          entitlement.additional_days,
-        );
-        const availableDays: number =
-          totalDays + effectiveCarriedOver + additionalDays;
+      // 3. Calculate available days
+      const totalDays: number = Number.parseFloat(entitlement.total_days);
+      const additionalDays: number = Number.parseFloat(entitlement.additional_days);
+      const availableDays: number = totalDays + effectiveCarriedOver + additionalDays;
 
-        // 4. Calculate used + pending days (with cross-year splitting)
-        const usedDays: number = await this.calculateDaysForStatus(
-          client,
-          tenantId,
-          userId,
-          targetYear,
-          'approved',
-        );
-        const pendingDays: number = await this.calculateDaysForStatus(
-          client,
-          tenantId,
-          userId,
-          targetYear,
-          'pending',
-        );
+      // 4. Calculate used + pending days (with cross-year splitting)
+      const usedDays: number = await this.calculateDaysForStatus(
+        client,
+        tenantId,
+        userId,
+        targetYear,
+        'approved',
+      );
+      const pendingDays: number = await this.calculateDaysForStatus(
+        client,
+        tenantId,
+        userId,
+        targetYear,
+        'pending',
+      );
 
-        // 5. Compute remaining
-        const remainingDays: number = availableDays - usedDays;
-        const projectedRemaining: number = remainingDays - pendingDays;
+      // 5. Compute remaining
+      const remainingDays: number = availableDays - usedDays;
+      const projectedRemaining: number = remainingDays - pendingDays;
 
-        return {
-          year: targetYear,
-          totalDays,
-          carriedOverDays: Number.parseFloat(entitlement.carried_over_days),
-          effectiveCarriedOver,
-          additionalDays,
-          availableDays,
-          usedDays,
-          remainingDays,
-          pendingDays,
-          projectedRemaining,
-        };
-      },
-    );
+      return {
+        year: targetYear,
+        totalDays,
+        carriedOverDays: Number.parseFloat(entitlement.carried_over_days),
+        effectiveCarriedOver,
+        additionalDays,
+        availableDays,
+        usedDays,
+        remainingDays,
+        pendingDays,
+        projectedRemaining,
+      };
+    });
   }
 
   /**
@@ -201,9 +188,7 @@ export class VacationEntitlementsService {
           );
           const row: VacationEntitlementRow | undefined = result.rows[0];
           if (row === undefined) {
-            throw new Error(
-              'UPSERT into vacation_entitlements returned no rows',
-            );
+            throw new Error('UPSERT into vacation_entitlements returned no rows');
           }
           this.logger.log(
             `Entitlement upserted: user ${dto.userId}, year ${dto.year} (tenant ${tenantId})`,
@@ -296,10 +281,7 @@ export class VacationEntitlementsService {
     ]);
 
     const remainingDays: number = Math.max(0, balance.remainingDays);
-    const carryOver: number = Math.min(
-      remainingDays,
-      settings.maxCarryOverDays,
-    );
+    const carryOver: number = Math.min(remainingDays, settings.maxCarryOverDays);
 
     // Calculate carry-over expiry date
     const toYear: number = fromYear + 1;
@@ -327,9 +309,7 @@ export class VacationEntitlementsService {
 
         const row: VacationEntitlementRow | undefined = result.rows[0];
         if (row === undefined) {
-          throw new Error(
-            `Carry-over update failed for user ${userId}, year ${toYear}`,
-          );
+          throw new Error(`Carry-over update failed for user ${userId}, year ${toYear}`);
         }
 
         this.logger.log(
@@ -423,10 +403,7 @@ export class VacationEntitlementsService {
    * Calculate effective carry-over considering expiry date.
    * If expired, returns 0 (carry-over is forfeited).
    */
-  private calculateEffectiveCarryOver(
-    carriedOverDays: string,
-    expiresAt: string | null,
-  ): number {
+  private calculateEffectiveCarryOver(carriedOverDays: string, expiresAt: string | null): number {
     const days: number = Number.parseFloat(carriedOverDays);
     if (days === 0) {
       return 0;
@@ -467,9 +444,7 @@ export class VacationEntitlementsService {
       [tenantId, userId, status, year],
     );
 
-    const sameYearDays: number = Number.parseFloat(
-      sameYearResult.rows[0]?.total ?? '0',
-    );
+    const sameYearDays: number = Number.parseFloat(sameYearResult.rows[0]?.total ?? '0');
 
     // Second: get cross-year requests that overlap this year
     const crossYearDays: number = await this.calculateCrossYearDays(
@@ -517,12 +492,7 @@ export class VacationEntitlementsService {
     let totalDays: number = 0;
 
     for (const row of result.rows) {
-      totalDays += await this.calculateYearPortionDays(
-        tenantId,
-        row,
-        yearStart,
-        yearEnd,
-      );
+      totalDays += await this.calculateYearPortionDays(tenantId, row, yearStart, yearEnd);
     }
 
     return totalDays;
@@ -547,10 +517,8 @@ export class VacationEntitlementsService {
     const clampedEnd: string = endDate > yearEnd ? yearEnd : endDate;
 
     // Half-day modifiers only apply on the original boundaries
-    const halfDayStart: string =
-      clampedStart === startDate ? row.half_day_start : 'none';
-    const halfDayEnd: string =
-      clampedEnd === endDate ? row.half_day_end : 'none';
+    const halfDayStart: string = clampedStart === startDate ? row.half_day_start : 'none';
+    const halfDayEnd: string = clampedEnd === endDate ? row.half_day_end : 'none';
 
     return await this.holidaysService.countWorkdays(
       tenantId,
@@ -636,16 +604,9 @@ export class VacationEntitlementsService {
 
     // If ON CONFLICT hit, re-fetch the existing row
     if (result.rows[0] === undefined) {
-      const existing = await this.findEntitlement(
-        client,
-        tenantId,
-        userId,
-        year,
-      );
+      const existing = await this.findEntitlement(client, tenantId, userId, year);
       if (existing === undefined) {
-        throw new Error(
-          `Failed to create default entitlement for user ${userId}, year ${year}`,
-        );
+        throw new Error(`Failed to create default entitlement for user ${userId}, year ${year}`);
       }
       return existing;
     }
@@ -672,11 +633,7 @@ export class VacationEntitlementsService {
   }
 
   /** Build carry-over expiry date string (YYYY-MM-DD). */
-  private buildCarryOverExpiryDate(
-    year: number,
-    month: number,
-    day: number,
-  ): string {
+  private buildCarryOverExpiryDate(year: number, month: number, day: number): string {
     const m: string = String(month).padStart(2, '0');
     const d: string = String(day).padStart(2, '0');
     return `${year}-${m}-${d}`;
@@ -732,9 +689,7 @@ export class VacationEntitlementsService {
   }
 
   /** Map DB row to API response type (NUMERIC strings → numbers). */
-  private mapRowToEntitlement(
-    row: VacationEntitlementRow,
-  ): VacationEntitlement {
+  private mapRowToEntitlement(row: VacationEntitlementRow): VacationEntitlement {
     return {
       id: row.id,
       userId: row.user_id,

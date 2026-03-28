@@ -200,10 +200,7 @@ export interface TpmDepartment {
 // =============================================================================
 
 /** Conflict type from slot assistant */
-export type SlotConflictType =
-  | 'no_shift_plan'
-  | 'existing_tpm'
-  | 'tpm_schedule';
+export type SlotConflictType = 'no_shift_plan' | 'existing_tpm' | 'tpm_schedule';
 
 /** Single conflict description */
 export interface SlotConflict {

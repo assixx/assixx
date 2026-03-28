@@ -16,10 +16,7 @@ import type {
 } from './surveys.types.js';
 
 /** Builds a question payload for DB insertion from camelCase input */
-export function buildQuestionData(
-  q: QuestionInput,
-  index: number,
-): QuestionDbPayload {
+export function buildQuestionData(q: QuestionInput, index: number): QuestionDbPayload {
   const question: QuestionDbPayload = {
     question_text: q.questionText,
     question_type: q.questionType,
@@ -57,34 +54,22 @@ export function normalizeAnswers(answers: SurveyAnswer[]): NormalizedAnswer[] {
 }
 
 /** Transforms a DB survey row to camelCase API response, including nested questions and assignments */
-export function transformSurveyToApi(
-  survey: Record<string, unknown>,
-): Record<string, unknown> {
+export function transformSurveyToApi(survey: Record<string, unknown>): Record<string, unknown> {
   const apiSurvey = dbToApi(survey);
   const questions = survey['questions'];
-  if (
-    questions !== undefined &&
-    questions !== null &&
-    Array.isArray(questions)
-  ) {
+  if (questions !== undefined && questions !== null && Array.isArray(questions)) {
     apiSurvey['questions'] = (questions as Record<string, unknown>[]).map(
       (q: Record<string, unknown>) => {
         const transformedQuestion = dbToApi(q);
         const options = q['options'];
-        if (
-          options !== null &&
-          options !== undefined &&
-          Array.isArray(options)
-        ) {
-          transformedQuestion['options'] = (options as unknown[]).map(
-            (opt: unknown) => {
-              if (typeof opt === 'string') return opt;
-              if (typeof opt === 'object' && opt !== null) {
-                return dbToApi(opt as Record<string, unknown>);
-              }
-              return opt;
-            },
-          );
+        if (options !== null && options !== undefined && Array.isArray(options)) {
+          transformedQuestion['options'] = (options as unknown[]).map((opt: unknown) => {
+            if (typeof opt === 'string') return opt;
+            if (typeof opt === 'object' && opt !== null) {
+              return dbToApi(opt as Record<string, unknown>);
+            }
+            return opt;
+          });
         }
         return {
           ...transformedQuestion,
@@ -94,11 +79,7 @@ export function transformSurveyToApi(
     );
   }
   const assignments = survey['assignments'];
-  if (
-    assignments !== undefined &&
-    assignments !== null &&
-    Array.isArray(assignments)
-  ) {
+  if (assignments !== undefined && assignments !== null && Array.isArray(assignments)) {
     apiSurvey['assignments'] = (assignments as Record<string, unknown>[]).map(
       (a: Record<string, unknown>) => dbToApi(a),
     );
@@ -107,12 +88,8 @@ export function transformSurveyToApi(
 }
 
 /** Transforms a DB survey with aggregated metadata (counts, creator name) to API format */
-export function transformSurveyWithMetadata(
-  survey: DbSurvey,
-): Record<string, unknown> {
-  const transformed = transformSurveyToApi(
-    survey as unknown as Record<string, unknown>,
-  );
+export function transformSurveyWithMetadata(survey: DbSurvey): Record<string, unknown> {
+  const transformed = transformSurveyToApi(survey as unknown as Record<string, unknown>);
   return {
     ...transformed,
     responseCount:

@@ -10,7 +10,7 @@ import type { EmployeeListItem, VacationBalance } from './types';
 let employees = $state<EmployeeListItem[]>([]);
 let selectedEmployee = $state<EmployeeListItem | null>(null);
 let balance = $state<VacationBalance | null>(null);
-let selectedYear = $state<number>(new Date().getFullYear());
+let selectedYear = $state(new Date().getFullYear());
 
 // ─── UI ─────────────────────────────────────────────────────────────
 

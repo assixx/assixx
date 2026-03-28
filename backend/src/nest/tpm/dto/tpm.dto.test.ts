@@ -54,15 +54,11 @@ describe('TpmDefectItemSchema', () => {
   });
 
   it('should reject title exceeding 500 chars', () => {
-    expect(
-      TpmDefectItemSchema.safeParse({ title: 'x'.repeat(501) }).success,
-    ).toBe(false);
+    expect(TpmDefectItemSchema.safeParse({ title: 'x'.repeat(501) }).success).toBe(false);
   });
 
   it('should accept title at exactly 500 chars', () => {
-    expect(
-      TpmDefectItemSchema.safeParse({ title: 'x'.repeat(500) }).success,
-    ).toBe(true);
+    expect(TpmDefectItemSchema.safeParse({ title: 'x'.repeat(500) }).success).toBe(true);
   });
 
   it('should reject description exceeding 5000 chars', () => {
@@ -84,9 +80,7 @@ describe('TpmDefectItemSchema', () => {
   });
 
   it('should reject missing title', () => {
-    expect(
-      TpmDefectItemSchema.safeParse({ description: 'Details' }).success,
-    ).toBe(false);
+    expect(TpmDefectItemSchema.safeParse({ description: 'Details' }).success).toBe(false);
   });
 });
 
@@ -134,9 +128,7 @@ describe('TpmDefectsArraySchema', () => {
   });
 
   it('should reject array with invalid defect item', () => {
-    expect(TpmDefectsArraySchema.safeParse([{ title: '' }]).success).toBe(
-      false,
-    );
+    expect(TpmDefectsArraySchema.safeParse([{ title: '' }]).success).toBe(false);
   });
 });
 
@@ -159,10 +151,7 @@ describe('CreateExecutionSchema', () => {
     const data = CreateExecutionSchema.parse({
       ...validBase,
       noIssuesFound: false,
-      defects: [
-        { title: 'Leckage', description: 'Öl links' },
-        { title: 'Verschleiß' },
-      ],
+      defects: [{ title: 'Leckage', description: 'Öl links' }, { title: 'Verschleiß' }],
     });
     expect(data.defects).toHaveLength(2);
   });
@@ -177,9 +166,7 @@ describe('CreateExecutionSchema', () => {
   });
 
   it('should reject missing cardUuid', () => {
-    expect(
-      CreateExecutionSchema.safeParse({ noIssuesFound: true }).success,
-    ).toBe(false);
+    expect(CreateExecutionSchema.safeParse({ noIssuesFound: true }).success).toBe(false);
   });
 
   it('should default noIssuesFound to false', () => {

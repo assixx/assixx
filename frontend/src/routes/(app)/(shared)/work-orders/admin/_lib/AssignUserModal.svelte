@@ -16,16 +16,14 @@
     onsave: (userUuids: string[]) => void;
   }
 
-  const { show, workOrder, eligibleUsers, submitting, onclose, onsave }: Props =
-    $props();
+  const { show, workOrder, eligibleUsers, submitting, onclose, onsave }: Props = $props();
 
   let selectedUuids = $state<string[]>([]);
   let searchQuery = $state('');
 
   /** Filter out already-assigned users and apply search */
   const availableUsers = $derived.by((): EligibleUser[] => {
-    const assignedNames =
-      workOrder !== null ? workOrder.assigneeNames.toLowerCase() : '';
+    const assignedNames = workOrder !== null ? workOrder.assigneeNames.toLowerCase() : '';
     const query = searchQuery.toLowerCase().trim();
 
     return eligibleUsers.filter((user: EligibleUser) => {
@@ -39,8 +37,7 @@
       // Apply search filter
       if (query === '') return true;
       return (
-        fullName.includes(query) ||
-        user.employeeNumber?.toLowerCase().includes(query) === true
+        fullName.includes(query) || user.employeeNumber?.toLowerCase().includes(query) === true
       );
     });
   });
@@ -69,10 +66,6 @@
     touched = true;
   }
 
-  function handleOverlayClick(e: MouseEvent): void {
-    if (e.target === e.currentTarget) onclose();
-  }
-
   function handleSubmit(event: SubmitEvent): void {
     event.preventDefault();
     touched = true;
@@ -89,17 +82,9 @@
     aria-modal="true"
     aria-labelledby="assign-modal-title"
     tabindex="-1"
-    onclick={handleOverlayClick}
-    onkeydown={(e: KeyboardEvent) => {
-      if (e.key === 'Escape') onclose();
-    }}
   >
-    <!-- svelte-ignore a11y_no_noninteractive_element_interactions, a11y_click_events_have_key_events -->
     <form
       class="ds-modal"
-      onclick={(e: MouseEvent) => {
-        e.stopPropagation();
-      }}
       onsubmit={handleSubmit}
     >
       <div class="ds-modal__header">

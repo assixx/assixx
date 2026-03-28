@@ -135,9 +135,7 @@ describe('HallsService', () => {
     it('should throw NotFoundException when hall not found', async () => {
       mockDb.query.mockResolvedValueOnce([]);
 
-      await expect(service.getHallById(999, 10)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.getHallById(999, 10)).rejects.toThrow(NotFoundException);
     });
 
     it('should return mapped response', async () => {
@@ -165,9 +163,7 @@ describe('HallsService', () => {
       mockDb.query.mockRejectedValueOnce(new Error('JOIN error'));
       mockDb.query.mockResolvedValueOnce([]);
 
-      await expect(service.getHallById(999, 10)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.getHallById(999, 10)).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -183,16 +179,12 @@ describe('HallsService', () => {
         areaId: null,
       } as unknown as CreateHallDto;
 
-      await expect(service.createHall(dto, 1, 10)).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(service.createHall(dto, 1, 10)).rejects.toThrow(BadRequestException);
     });
 
     it('should create hall and log activity', async () => {
       mockDb.query.mockResolvedValueOnce([{ id: 5 }]); // INSERT RETURNING id
-      mockDb.query.mockResolvedValueOnce([
-        makeHallRow({ id: 5, name: 'Neue Halle' }),
-      ]); // getHallById
+      mockDb.query.mockResolvedValueOnce([makeHallRow({ id: 5, name: 'Neue Halle' })]); // getHallById
 
       const dto = {
         name: 'Neue Halle',
@@ -215,9 +207,7 @@ describe('HallsService', () => {
         areaId: null,
       } as unknown as CreateHallDto;
 
-      await expect(service.createHall(dto, 1, 10)).rejects.toThrow(
-        'Failed to create hall',
-      );
+      await expect(service.createHall(dto, 1, 10)).rejects.toThrow('Failed to create hall');
     });
 
     it('should pass areaId to INSERT query', async () => {
@@ -247,17 +237,13 @@ describe('HallsService', () => {
 
       const dto = { name: 'Updated' } as unknown as UpdateHallDto;
 
-      await expect(service.updateHall(999, dto, 1, 10)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.updateHall(999, dto, 1, 10)).rejects.toThrow(NotFoundException);
     });
 
     it('should update fields and log activity', async () => {
       mockDb.query.mockResolvedValueOnce([makeHallRow()]); // find existing
       mockDb.query.mockResolvedValueOnce([]); // UPDATE
-      mockDb.query.mockResolvedValueOnce([
-        makeHallRow({ name: 'Aktualisiert' }),
-      ]); // getHallById
+      mockDb.query.mockResolvedValueOnce([makeHallRow({ name: 'Aktualisiert' })]); // getHallById
 
       const dto = { name: 'Aktualisiert' } as unknown as UpdateHallDto;
       const result = await service.updateHall(1, dto, 1, 10);
@@ -287,9 +273,7 @@ describe('HallsService', () => {
     it('should throw NotFoundException when hall not found', async () => {
       mockDb.query.mockResolvedValueOnce([]);
 
-      await expect(service.deleteHall(999, 1, 10)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.deleteHall(999, 1, 10)).rejects.toThrow(NotFoundException);
     });
 
     it('should delete hall and log activity', async () => {

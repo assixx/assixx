@@ -15,11 +15,7 @@
 
   const log = createLogger('SurveyEmployeePage');
 
-  import {
-    loadSurveyById,
-    fetchUserResponse,
-    submitResponse,
-  } from './_lib/api';
+  import { loadSurveyById, fetchUserResponse, submitResponse } from './_lib/api';
   import ResponseModal from './_lib/ResponseModal.svelte';
   import { surveyEmployeeState } from './_lib/state.svelte';
   import SurveyCard from './_lib/SurveyCard.svelte';
@@ -32,7 +28,7 @@
   } from './_lib/utils';
 
   import type { PageData } from './$types';
-  import type { QuestionOption, SurveyWithStatus } from './_lib/types';
+  import type { QuestionOption } from './_lib/types';
 
   // =============================================================================
   // SSR DATA - Level 3: $derived from props (single source of truth)
@@ -40,10 +36,10 @@
 
   const { data }: { data: PageData } = $props();
 
-  const permissionDenied = $derived<boolean>(data.permissionDenied);
+  const permissionDenied = $derived(data.permissionDenied);
 
   // SSR data via $derived - updates when invalidateAll() is called
-  const allSurveys = $derived<SurveyWithStatus[]>(data.surveys);
+  const allSurveys = $derived(data.surveys);
 
   // One-time initialization flag (prevents re-running on every SSR change)
   let initialized = $state(false);
@@ -119,11 +115,7 @@
         return;
       }
 
-      if (
-        responseData === null ||
-        !responseData.responded ||
-        responseData.response === undefined
-      ) {
+      if (responseData === null || !responseData.responded || responseData.response === undefined) {
         showErrorAlert('Keine Antworten für diese Umfrage gefunden.');
         return;
       }
@@ -169,11 +161,7 @@
     });
   }
 
-  function handleMultipleChoiceChange(
-    questionId: number,
-    optionId: number,
-    checked: boolean,
-  ) {
+  function handleMultipleChoiceChange(questionId: number, optionId: number, checked: boolean) {
     const currentAnswer = surveyEmployeeState.answers[questionId];
     const currentOptions = currentAnswer?.selectedOptions ?? [];
 
@@ -212,14 +200,9 @@
     if (survey === null) return;
 
     // Validate required questions
-    const validation = validateRequiredQuestions(
-      survey.questions,
-      surveyEmployeeState.answers,
-    );
+    const validation = validateRequiredQuestions(survey.questions, surveyEmployeeState.answers);
     if (!validation.valid) {
-      showErrorAlert(
-        `Bitte beantworten Sie alle Pflichtfragen: ${validation.missing.join(', ')}`,
-      );
+      showErrorAlert(`Bitte beantworten Sie alle Pflichtfragen: ${validation.missing.join(', ')}`);
       return;
     }
 
@@ -266,10 +249,7 @@
     return answer?.answerNumber === value;
   }
 
-  function isMultipleOptionSelected(
-    questionId: number,
-    optionId: number,
-  ): boolean {
+  function isMultipleOptionSelected(questionId: number, optionId: number): boolean {
     const answer = surveyEmployeeState.answers[questionId];
     return answer?.selectedOptions?.includes(optionId) ?? false;
   }
@@ -288,8 +268,8 @@
         <div>
           <h2 class="card-title">Mitarbeiterumfragen</h2>
           <p class="text-secondary">
-            Hier finden Sie alle Umfragen, an denen Sie teilnehmen können oder
-            bereits teilgenommen haben.
+            Hier finden Sie alle Umfragen, an denen Sie teilnehmen können oder bereits teilgenommen
+            haben.
           </p>
         </div>
       </div>
@@ -433,10 +413,7 @@
                         rows="4"
                         {required}
                         oninput={(e) => {
-                          handleTextChange(
-                            question.id,
-                            (e.target as HTMLTextAreaElement).value,
-                          );
+                          handleTextChange(question.id, (e.target as HTMLTextAreaElement).value);
                         }}
                       ></textarea>
                     </div>
@@ -474,10 +451,7 @@
                             type="checkbox"
                             class="choice-card__input"
                             value={optionId}
-                            checked={isMultipleOptionSelected(
-                              question.id,
-                              optionId,
-                            )}
+                            checked={isMultipleOptionSelected(question.id, optionId)}
                             onchange={(e) => {
                               handleMultipleChoiceChange(
                                 question.id,
@@ -498,10 +472,7 @@
                         <button
                           type="button"
                           class="rating-button"
-                          class:rating-button--selected={isRatingSelected(
-                            question.id,
-                            value,
-                          )}
+                          class:rating-button--selected={isRatingSelected(question.id, value)}
                           aria-label="Bewertung {value} von 5"
                           onclick={() => {
                             handleRatingClick(question.id, value);
@@ -552,10 +523,7 @@
                         placeholder="Zahl eingeben..."
                         {required}
                         oninput={(e) => {
-                          handleNumberChange(
-                            question.id,
-                            (e.target as HTMLInputElement).value,
-                          );
+                          handleNumberChange(question.id, (e.target as HTMLInputElement).value);
                         }}
                       />
                     </div>
@@ -643,12 +611,7 @@
   .section-divider {
     position: relative;
     margin: var(--spacing-8) 0;
-    background: linear-gradient(
-      90deg,
-      transparent,
-      var(--accent-color),
-      transparent
-    );
+    background: linear-gradient(90deg, transparent, var(--accent-color), transparent);
     height: 1px;
   }
 
@@ -725,8 +688,7 @@
     border-color: oklch(71.37% 0.1435 254.63 / 50%);
 
     background: oklch(62.31% 0.1881 259.82 / 10%);
-    box-shadow: 0 0 20px
-      color-mix(in oklch, var(--color-primary) 15%, transparent);
+    box-shadow: 0 0 20px color-mix(in oklch, var(--color-primary) 15%, transparent);
 
     color: oklch(68.86% 0.1408 254.62);
   }

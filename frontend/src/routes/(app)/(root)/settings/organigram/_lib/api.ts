@@ -11,6 +11,7 @@ import type {
   OrgEntityType,
   OrgNodeDetail,
   OrgViewport,
+  PerimeterAnchor,
   PositionPayload,
   UpdateHierarchyLabelsPayload,
 } from './types.js';
@@ -29,10 +30,7 @@ export async function updateHierarchyLabels(
   payload: UpdateHierarchyLabelsPayload,
 ): Promise<HierarchyLabels> {
   const api = getApiClient();
-  return await api.patch<HierarchyLabels>(
-    '/organigram/hierarchy-labels',
-    payload,
-  );
+  return await api.patch<HierarchyLabels>('/organigram/hierarchy-labels', payload);
 }
 
 export async function fetchNodeDetails(
@@ -40,15 +38,14 @@ export async function fetchNodeDetails(
   entityUuid: string,
 ): Promise<OrgNodeDetail> {
   const api = getApiClient();
-  return await api.get<OrgNodeDetail>(
-    `/organigram/node-details/${entityType}/${entityUuid}`,
-  );
+  return await api.get<OrgNodeDetail>(`/organigram/node-details/${entityType}/${entityUuid}`);
 }
 
 export async function savePositions(
   positions: PositionPayload[],
   viewport: OrgViewport,
   hallOverrides: Record<string, HallOverride>,
+  hallConnectionAnchors: Record<string, PerimeterAnchor>,
   canvasBg: string | null,
 ): Promise<void> {
   const api = getApiClient();
@@ -56,6 +53,7 @@ export async function savePositions(
     positions,
     viewport,
     hallOverrides,
+    hallConnectionAnchors,
     canvasBg,
   });
 }

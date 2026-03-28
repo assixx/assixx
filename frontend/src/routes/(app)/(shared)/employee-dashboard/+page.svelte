@@ -54,11 +54,9 @@
   function openBlackboardEntry(uuid: string, isConfirmed: boolean): void {
     // Auto-confirm if not yet read (non-blocking)
     if (!isConfirmed) {
-      void apiClient
-        .post(`/blackboard/entries/${uuid}/confirm`, {})
-        .then(() => {
-          notificationStore.decrementCount('blackboard');
-        });
+      void apiClient.post(`/blackboard/entries/${uuid}/confirm`, {}).then(() => {
+        notificationStore.decrementCount('blackboard');
+      });
     }
     void goto(`/blackboard/${uuid}`);
   }
@@ -72,9 +70,8 @@
 
   // Hierarchy labels from layout (SSR)
   const labels = $derived(
-    ((data as Record<string, unknown>).hierarchyLabels as
-      | HierarchyLabels
-      | undefined) ?? DEFAULT_HIERARCHY_LABELS,
+    ((data as Record<string, unknown>).hierarchyLabels as HierarchyLabels | undefined) ??
+      DEFAULT_HIERARCHY_LABELS,
   );
   const orgLevelText = $derived(createOrgLevelText(labels));
   const blackboardOrgLabels = $derived(createBlackboardOrgLabels(labels));
@@ -87,13 +84,9 @@
   // User data from parent layout (via $page.data)
   // The (app) layout provides user data to all child pages
   const user = $derived($page.data.user as LayoutUser | null);
-  const employeeName = $derived(
-    getDisplayName(user?.firstName, user?.lastName),
-  );
+  const employeeName = $derived(getDisplayName(user?.firstName, user?.lastName));
   const employeeArea = $derived(getDisplayValue(user?.teamAreaName));
-  const employeeDepartment = $derived(
-    getDisplayValue(user?.teamDepartmentName),
-  );
+  const employeeDepartment = $derived(getDisplayValue(user?.teamDepartmentName));
   const employeeTeams = $derived(
     (user?.teamNames?.length ?? 0) > 0 ? (user?.teamNames ?? null) : null,
   );
@@ -189,8 +182,7 @@
             {#each blackboardEntries as entry (entry.id)}
               {@const contentText = parseContent(entry.content)}
               {@const isRead = entry.isConfirmed === true}
-              {@const isNew =
-                entry.firstSeenAt === null || entry.firstSeenAt === undefined}
+              {@const isNew = entry.firstSeenAt === null || entry.firstSeenAt === undefined}
               <div
                 class="sticky-note sticky-note--{entry.color} sticky-note--large"
                 id="sticky-note-{entry.id}"
@@ -198,8 +190,7 @@
                   openBlackboardEntry(entry.uuid, isRead);
                 }}
                 onkeydown={(e) => {
-                  if (e.key === 'Enter')
-                    openBlackboardEntry(entry.uuid, isRead);
+                  if (e.key === 'Enter') openBlackboardEntry(entry.uuid, isRead);
                 }}
                 role="button"
                 tabindex="0"
@@ -208,19 +199,13 @@
                 <div class="sticky-note__header">
                   <div class="sticky-note__title">
                     {entry.title}
-                    {#if isNew}<span class="badge badge--sm badge--success ml-2"
-                        >Neu</span
-                      >{/if}
+                    {#if isNew}<span class="badge badge--sm badge--success ml-2">Neu</span>{/if}
                   </div>
                   {#if entry.expiresAt}
                     <span
                       class="sticky-note__expires"
-                      class:sticky-note__expires--expired={isExpired(
-                        entry.expiresAt,
-                      )}
-                      title={isExpired(entry.expiresAt) ? 'Abgelaufen' : (
-                        'Gültig bis'
-                      )}
+                      class:sticky-note__expires--expired={isExpired(entry.expiresAt)}
+                      title={isExpired(entry.expiresAt) ? 'Abgelaufen' : 'Gültig bis'}
                     >
                       <i class="fas fa-clock"></i>
                       {formatBlackboardDate(entry.expiresAt)}
@@ -257,24 +242,17 @@
                 </div>
                 <div class="sticky-note__footer">
                   <div class="sticky-note__badges">
-                    <span
-                      class="sticky-note__badge sticky-note__badge--priority-{entry.priority}"
-                    >
+                    <span class="sticky-note__badge sticky-note__badge--priority-{entry.priority}">
                       {getPriorityLabel(entry.priority)}
                     </span>
-                    <span
-                      class="sticky-note__badge sticky-note__badge--org-{entry.orgLevel}"
-                    >
-                      {blackboardOrgLabels[entry.orgLevel] ??
-                        blackboardOrgLabels.company}
+                    <span class="sticky-note__badge sticky-note__badge--org-{entry.orgLevel}">
+                      {blackboardOrgLabels[entry.orgLevel] ?? blackboardOrgLabels.company}
                     </span>
                   </div>
                   <div class="sticky-note__footer-row">
                     <span class="sticky-note__author">
                       <i class="fas fa-user"></i>
-                      {entry.authorFullName ??
-                        entry.authorName ??
-                        MESSAGES.unknownAuthor}
+                      {entry.authorFullName ?? entry.authorName ?? MESSAGES.unknownAuthor}
                     </span>
                     <span class="sticky-note__date">
                       <i class="fas fa-calendar"></i>
@@ -363,9 +341,7 @@
           >
             {#if upcomingEvents.length === 0}
               <div class="rounded p-2 text-xs">
-                <strong class="block font-semibold"
-                  >{MESSAGES.upcomingEvents}</strong
-                >
+                <strong class="block font-semibold">{MESSAGES.upcomingEvents}</strong>
                 <p class="mt-1 text-(--color-text-secondary)">
                   {PLACEHOLDER_TEXT.noEvents}
                 </p>
@@ -373,13 +349,9 @@
             {:else}
               {#each upcomingEvents as event (event.id)}
                 {@const dateInfo = formatEventDate(event)}
-                {@const hasArea =
-                  event.areaId !== null && event.areaId !== undefined}
-                {@const hasDept =
-                  event.departmentId !== null &&
-                  event.departmentId !== undefined}
-                {@const hasTeam =
-                  event.teamId !== null && event.teamId !== undefined}
+                {@const hasArea = event.areaId !== null && event.areaId !== undefined}
+                {@const hasDept = event.departmentId !== null && event.departmentId !== undefined}
+                {@const hasTeam = event.teamId !== null && event.teamId !== undefined}
                 <div
                   class="event-item"
                   onclick={goToCalendar}
@@ -408,28 +380,17 @@
                     {/if}
                     <div class="event-badges">
                       {#if hasArea}
-                        <span class="event-level event-level-area"
-                          >{labels.area}</span
-                        >
+                        <span class="event-level event-level-area">{labels.area}</span>
                       {/if}
                       {#if hasDept}
-                        <span class="event-level event-level-department"
-                          >{labels.department}</span
-                        >
+                        <span class="event-level event-level-department">{labels.department}</span>
                       {/if}
                       {#if hasTeam}
-                        <span class="event-level event-level-team"
-                          >{labels.team}</span
-                        >
+                        <span class="event-level event-level-team">{labels.team}</span>
                       {/if}
                       {#if !hasArea && !hasDept && !hasTeam}
-                        <span
-                          class="event-level {getOrgLevelClass(
-                            event.orgLevel ?? 'personal',
-                          )}"
-                        >
-                          {orgLevelText[event.orgLevel ?? 'personal'] ??
-                            orgLevelText.personal}
+                        <span class="event-level {getOrgLevelClass(event.orgLevel ?? 'personal')}">
+                          {orgLevelText[event.orgLevel ?? 'personal'] ?? orgLevelText.personal}
                         </span>
                       {/if}
                     </div>

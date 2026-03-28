@@ -60,7 +60,7 @@ interface UserTeamInfoRow {
   team_id: number;
   team_name: string;
   team_lead_id: number | null;
-  deputy_lead_id: number | null;
+  team_deputy_lead_id: number | null;
   department_id: number | null;
 }
 
@@ -98,8 +98,7 @@ export class VacationService {
           dto.halfDayEnd,
         );
         const approver = await this.approver.getApprover(tenantId, userId);
-        const status: VacationRequestStatus =
-          approver.autoApproved ? 'approved' : 'pending';
+        const status: VacationRequestStatus = approver.autoApproved ? 'approved' : 'pending';
         await this.validation.validateBalanceAndBlackouts(
           tenantId,
           userId,
@@ -148,20 +147,10 @@ export class VacationService {
   ): Promise<VacationRequest> {
     const result = await this.db.tenantTransaction(
       async (client: PoolClient): Promise<VacationRequest> => {
-        const request = await this.lockPendingRequest(
-          client,
-          tenantId,
-          requestId,
-        );
+        const request = await this.lockPendingRequest(client, tenantId, requestId);
         await this.validateResponder(client, tenantId, responderId, request);
         return dto.action === 'approved' ?
-            await this.approveRequest(
-              client,
-              tenantId,
-              responderId,
-              request,
-              dto,
-            )
+            await this.approveRequest(client, tenantId, responderId, request, dto)
           : await this.denyRequest(client, tenantId, responderId, request, dto);
       },
     );
@@ -186,44 +175,17 @@ export class VacationService {
   }
 
   /** Withdraw a vacation request (requester only). */
-  async withdrawRequest(
-    requesterId: number,
-    tenantId: number,
-    requestId: string,
-  ): Promise<void> {
+  async withdrawRequest(requesterId: number, tenantId: number, requestId: string): Promise<void> {
     let approverId: number | null = null;
     let requesterName: string | undefined;
 
-    await this.db.tenantTransaction(
-      async (client: PoolClient): Promise<void> => {
-        const request = await this.lockOwnRequest(
-          client,
-          tenantId,
-          requestId,
-          requesterId,
-        );
-        approverId = request.approver_id;
-        requesterName = await this.resolveUserName(
-          client,
-          tenantId,
-          requesterId,
-        );
-        await this.executeWithdraw(
-          client,
-          tenantId,
-          requestId,
-          requesterId,
-          request,
-        );
-      },
-    );
-    this.notification.notifyWithdrawn(
-      tenantId,
-      requestId,
-      requesterId,
-      approverId,
-      requesterName,
-    );
+    await this.db.tenantTransaction(async (client: PoolClient): Promise<void> => {
+      const request = await this.lockOwnRequest(client, tenantId, requestId, requesterId);
+      approverId = request.approver_id;
+      requesterName = await this.resolveUserName(client, tenantId, requesterId);
+      await this.executeWithdraw(client, tenantId, requestId, requesterId, request);
+    });
+    this.notification.notifyWithdrawn(tenantId, requestId, requesterId, approverId, requesterName);
 
     void this.activityLogger.log({
       tenantId,
@@ -275,9 +237,7 @@ export class VacationService {
       );
       return;
     }
-    throw new ConflictException(
-      `Cannot withdraw a request with status '${request.status}'`,
-    );
+    throw new ConflictException(`Cannot withdraw a request with status '${request.status}'`);
   }
 
   /** Cancel an approved vacation request (admin/root/approver). */
@@ -289,34 +249,19 @@ export class VacationService {
   ): Promise<void> {
     let requesterId = 0;
 
-    await this.db.tenantTransaction(
-      async (client: PoolClient): Promise<void> => {
-        const user = await this.getUserRole(client, tenantId, userId);
-        const row = await this.lockRequestById(client, tenantId, requestId);
+    await this.db.tenantTransaction(async (client: PoolClient): Promise<void> => {
+      const user = await this.getUserRole(client, tenantId, userId);
+      const row = await this.lockRequestById(client, tenantId, requestId);
 
-        this.assertCancelPermission(user, row, userId);
+      this.assertCancelPermission(user, row, userId);
 
-        requesterId = row.requester_id;
-        await this.persistCancellation(
-          client,
-          tenantId,
-          requestId,
-          row,
-          userId,
-          reason,
-        );
-        this.logger.log(
-          `Request ${requestId} cancelled by user ${String(userId)} (role: ${user.role})`,
-        );
-      },
-    );
-    this.notification.notifyCancelled(
-      tenantId,
-      requestId,
-      requesterId,
-      userId,
-      reason,
-    );
+      requesterId = row.requester_id;
+      await this.persistCancellation(client, tenantId, requestId, row, userId, reason);
+      this.logger.log(
+        `Request ${requestId} cancelled by user ${String(userId)} (role: ${user.role})`,
+      );
+    });
+    this.notification.notifyCancelled(tenantId, requestId, requesterId, userId, reason);
     void this.activityLogger.log({
       tenantId,
       userId,
@@ -337,23 +282,14 @@ export class VacationService {
   ): Promise<VacationRequest> {
     const result = await this.db.tenantTransaction(
       async (client: PoolClient): Promise<VacationRequest> => {
-        const existing = await this.lockOwnRequest(
-          client,
-          tenantId,
-          requestId,
-          requesterId,
-        );
+        const existing = await this.lockOwnRequest(client, tenantId, requestId, requesterId);
         if (existing.status !== 'pending') {
           throw new ConflictException(
             `Can only edit pending requests. Current: '${existing.status}'`,
           );
         }
         const merged = this.validation.mergeWithExisting(dto, existing);
-        const teamInfo = await this.getUserTeamInfo(
-          client,
-          tenantId,
-          requesterId,
-        );
+        const teamInfo = await this.getUserTeamInfo(client, tenantId, requesterId);
         await this.validation.validateEditedRequest(
           client,
           tenantId,
@@ -371,9 +307,7 @@ export class VacationService {
           dto,
           merged,
         );
-        this.logger.log(
-          `Request ${requestId} edited by ${String(requesterId)}`,
-        );
+        this.logger.log(`Request ${requestId} edited by ${String(requesterId)}`);
         return this.mapRowToRequest(row);
       },
     );
@@ -409,28 +343,11 @@ export class VacationService {
       },
       dto,
     );
-    await this.insertStatusLog(
-      client,
-      tenantId,
-      id,
-      null,
-      status,
-      userId,
-      null,
-    );
+    await this.insertStatusLog(client, tenantId, id, null, status, userId, null);
     if (approver.autoApproved) {
-      await this.insertAvailability(
-        client,
-        tenantId,
-        userId,
-        dto.startDate,
-        dto.endDate,
-        userId,
-      );
+      await this.insertAvailability(client, tenantId, userId, dto.startDate, dto.endDate, userId);
     }
-    this.logger.log(
-      `Vacation ${id} created (${status}) for user ${String(userId)}`,
-    );
+    this.logger.log(`Vacation ${id} created (${status}) for user ${String(userId)}`);
     const request = this.mapRowToRequest(row);
     this.notification.notifyCreated(tenantId, request);
     return request;
@@ -454,14 +371,7 @@ export class VacationService {
         Number.parseFloat(request.computed_days),
       );
     }
-    const row = await this.updateStatus(
-      client,
-      tenantId,
-      request.id,
-      responderId,
-      dto,
-      'approved',
-    );
+    const row = await this.updateStatus(client, tenantId, request.id, responderId, dto, 'approved');
     await this.insertStatusLog(
       client,
       tenantId,
@@ -489,14 +399,7 @@ export class VacationService {
     request: VacationRequestRow,
     dto: RespondVacationRequestDto,
   ): Promise<VacationRequest> {
-    const row = await this.updateStatus(
-      client,
-      tenantId,
-      request.id,
-      responderId,
-      dto,
-      'denied',
-    );
+    const row = await this.updateStatus(client, tenantId, request.id, responderId, dto, 'denied');
     await this.insertStatusLog(
       client,
       tenantId,
@@ -520,9 +423,7 @@ export class VacationService {
   ): Promise<VacationRequestRow> {
     const row = await this.lockRequestById(client, tenantId, requestId);
     if (row.status !== 'pending') {
-      throw new ConflictException(
-        `Request has already been ${row.status}. Cannot respond.`,
-      );
+      throw new ConflictException(`Request has already been ${row.status}. Cannot respond.`);
     }
     return row;
   }
@@ -538,8 +439,7 @@ export class VacationService {
       [requestId, tenantId],
     );
     const row = result.rows[0];
-    if (row === undefined)
-      throw new NotFoundException(`Request ${requestId} not found`);
+    if (row === undefined) throw new NotFoundException(`Request ${requestId} not found`);
     return row;
   }
 
@@ -568,9 +468,7 @@ export class VacationService {
       [responderId, tenantId],
     );
     if (result.rows[0]?.has_full_access !== 1) {
-      throw new ForbiddenException(
-        'You are not authorized to respond to this request',
-      );
+      throw new ForbiddenException('You are not authorized to respond to this request');
     }
   }
 
@@ -586,10 +484,10 @@ export class VacationService {
     const result = await client.query<{
       first_name: string | null;
       last_name: string | null;
-    }>(
-      `SELECT first_name, last_name FROM users WHERE id = $1 AND tenant_id = $2`,
-      [userId, tenantId],
-    );
+    }>(`SELECT first_name, last_name FROM users WHERE id = $1 AND tenant_id = $2`, [
+      userId,
+      tenantId,
+    ]);
     const row = result.rows[0];
     if (row === undefined) return undefined;
     const parts = [row.first_name, row.last_name].filter(
@@ -605,7 +503,7 @@ export class VacationService {
   ): Promise<UserTeamInfoRow> {
     const result = await client.query<UserTeamInfoRow>(
       `SELECT t.id AS team_id, t.name AS team_name,
-              t.team_lead_id, t.deputy_lead_id, t.department_id
+              t.team_lead_id, t.team_deputy_lead_id, t.department_id
        FROM teams t JOIN user_teams ut ON t.id = ut.team_id
        WHERE ut.user_id = $1 AND t.tenant_id = $2 AND t.is_active = ${IS_ACTIVE.ACTIVE}`,
       [userId, tenantId],
@@ -619,11 +517,7 @@ export class VacationService {
     return row;
   }
 
-  private assertCancelPermission(
-    user: UserRoleRow,
-    row: VacationRequestRow,
-    userId: number,
-  ): void {
+  private assertCancelPermission(user: UserRoleRow, row: VacationRequestRow, userId: number): void {
     const isAdminOrRoot = user.role === 'admin' || user.role === 'root';
     const isApprover = row.approver_id === userId;
 
@@ -688,8 +582,7 @@ export class VacationService {
       [userId, tenantId],
     );
     const row = result.rows[0];
-    if (row === undefined)
-      throw new NotFoundException(`User ${String(userId)} not found`);
+    if (row === undefined) throw new NotFoundException(`User ${String(userId)} not found`);
     return row;
   }
 
@@ -722,8 +615,7 @@ export class VacationService {
       ],
     );
     const row = result.rows[0];
-    if (row === undefined)
-      throw new Error('INSERT into vacation_requests returned no rows');
+    if (row === undefined) throw new Error('INSERT into vacation_requests returned no rows');
     return row;
   }
 
@@ -798,8 +690,7 @@ export class VacationService {
       ],
     );
     const row = result.rows[0];
-    if (row === undefined)
-      throw new Error('UPDATE vacation_requests returned no rows');
+    if (row === undefined) throw new Error('UPDATE vacation_requests returned no rows');
     return row;
   }
 
@@ -817,15 +708,7 @@ export class VacationService {
        WHERE id = $2 AND tenant_id = $3 AND is_active = ${IS_ACTIVE.ACTIVE}`,
       [newStatus, requestId, tenantId],
     );
-    await this.insertStatusLog(
-      client,
-      tenantId,
-      requestId,
-      oldStatus,
-      newStatus,
-      changedBy,
-      note,
-    );
+    await this.insertStatusLog(client, tenantId, requestId, oldStatus, newStatus, changedBy, note);
   }
 
   // ==========================================================================
@@ -873,8 +756,7 @@ export class VacationService {
       ],
     );
     const row = result.rows[0];
-    if (row === undefined)
-      throw new Error('UPDATE vacation_requests returned no rows');
+    if (row === undefined) throw new Error('UPDATE vacation_requests returned no rows');
     await this.insertStatusLog(
       client,
       tenantId,
@@ -892,11 +774,7 @@ export class VacationService {
   // ==========================================================================
 
   /** Log activity for an edited vacation request. */
-  private logRequestEdited(
-    tenantId: number,
-    requesterId: number,
-    request: VacationRequest,
-  ): void {
+  private logRequestEdited(tenantId: number, requesterId: number, request: VacationRequest): void {
     void this.activityLogger.log({
       tenantId,
       userId: requesterId,

@@ -12,10 +12,13 @@
   import { onClickOutsideDropdown } from '$lib/actions/click-outside';
   import PermissionDenied from '$lib/components/PermissionDenied.svelte';
   import { notificationStore } from '$lib/stores/notification.store.svelte';
-  import { showConfirm, showErrorAlert, showSuccessAlert } from '$lib/utils';
+  import { showConfirm, showErrorAlert, showSuccessAlert, showWarningAlert } from '$lib/utils';
+
+  import ConfirmModal from '$design-system/components/confirm-modal/ConfirmModal.svelte';
 
   import { filterState } from '../kvp/_lib/state-filters.svelte';
   import { isFaIcon } from '../kvp/_lib/utils';
+  import { fetchEligibleUsers } from '../work-orders/_lib/api';
 
   import {
     addComment,
@@ -27,16 +30,17 @@
     getShareLevelText,
     confirmSuggestion,
     unconfirmSuggestion,
+    requestApproval,
   } from './_lib/api';
   import AttachmentPreviewModal from './_lib/AttachmentPreviewModal.svelte';
   import CommentsSection from './_lib/CommentsSection.svelte';
-  import { STATUS_OPTIONS } from './_lib/constants';
   import CreateWorkOrderFromKvp from './_lib/CreateWorkOrderFromKvp.svelte';
   import DetailSidebar from './_lib/DetailSidebar.svelte';
   import PhotoGallery from './_lib/PhotoGallery.svelte';
   import RejectionModal from './_lib/RejectionModal.svelte';
   import ShareModal from './_lib/ShareModal.svelte';
   import { kvpDetailState } from './_lib/state.svelte';
+  import StatusDropdown from './_lib/StatusDropdown.svelte';
   import {
     getStatusBadgeClass,
     getStatusText,
@@ -48,14 +52,13 @@
     formatCurrency,
     hasFinancialInfo,
     hasImplementationDate,
-    canUpdateStatus,
     getSharedByInfo,
     isImageAttachment,
   } from './_lib/utils';
 
-  import type { HierarchyLabels } from '$lib/types/hierarchy-labels';
   import type { PageData } from './$types';
   import type { Attachment, KvpStatus } from './_lib/types';
+  import type { EligibleUser } from '../work-orders/_lib/types';
 
   /** Interface for CommentsSection component exported methods */
   interface CommentsSectionExports {
@@ -72,7 +75,7 @@
   const permissionDenied = $derived(data.permissionDenied);
 
   // Hierarchy labels from layout data inheritance
-  const labels = $derived<HierarchyLabels>(data.hierarchyLabels);
+  const labels = $derived(data.hierarchyLabels);
 
   // Derived from SSR data (server guarantees non-null values)
   const suggestion = $derived(data.suggestion);
@@ -84,6 +87,9 @@
   const assets = $derived(data.assets);
   const currentUser = $derived(data.currentUser);
   const linkedWorkOrders = $derived(data.linkedWorkOrders);
+  const approval = $derived(data.approval);
+  const hasApprovalConfig = $derived(data.hasApprovalConfig);
+  const isApprovalMaster = $derived(data.isApprovalMaster);
 
   // Derived: Photo attachments (uses IMAGE_FILE_TYPES from constants via util)
   const photoAttachments = $derived(
@@ -95,38 +101,7 @@
     suggestion !== null ? getVisibilityInfo(suggestion, labels) : null,
   );
 
-  // Derived: Effective role (with role switch support)
-  const effectiveRole = $derived.by(() => {
-    // Guard: Protected route, but handle null gracefully
-    if (currentUser === null) {
-      return 'employee';
-    }
-
-    // Check sessionStorage for role switch
-    if (typeof sessionStorage !== 'undefined') {
-      const roleSwitch = sessionStorage.getItem('roleSwitch');
-      if (
-        (currentUser.role === 'admin' || currentUser.role === 'root') &&
-        roleSwitch === 'employee'
-      ) {
-        return 'employee';
-      }
-    }
-
-    // Check localStorage for activeRole
-    if (typeof localStorage !== 'undefined') {
-      const activeRole = localStorage.getItem('activeRole');
-      if (
-        activeRole !== null &&
-        activeRole !== '' &&
-        activeRole !== currentUser.role
-      ) {
-        return activeRole;
-      }
-    }
-
-    return currentUser.role;
-  });
+  // effectiveRole logic moved to StatusDropdown.svelte (reads from kvpDetailState.effectiveRole)
 
   // ==========================================================================
   // UI STATE (local only)
@@ -172,12 +147,9 @@
         role: currentUser.role,
         tenantId: 0,
       });
+      kvpDetailState.setTeamLead(data.isTeamLead ?? false);
       kvpDetailState.setSuggestion(suggestion);
-      kvpDetailState.setComments(
-        comments.comments,
-        comments.total,
-        comments.hasMore,
-      );
+      kvpDetailState.setComments(comments.comments, comments.total, comments.hasMore);
       kvpDetailState.setAttachments(attachments);
       kvpDetailState.setDepartments(departments);
       kvpDetailState.setTeams(teams);
@@ -196,9 +168,7 @@
   // ==========================================================================
 
   function openPreview(att: Attachment): void {
-    const idx = attachments.findIndex(
-      (a: Attachment) => a.fileUuid === att.fileUuid,
-    );
+    const idx = attachments.findIndex((a: Attachment) => a.fileUuid === att.fileUuid);
     if (idx === -1) return;
     previewIndex = idx;
     showPreviewModal = true;
@@ -211,14 +181,12 @@
 
   function handlePreviewPrev(): void {
     if (previewIndex === null || attachments.length <= 1) return;
-    previewIndex =
-      previewIndex === 0 ? attachments.length - 1 : previewIndex - 1;
+    previewIndex = previewIndex === 0 ? attachments.length - 1 : previewIndex - 1;
   }
 
   function handlePreviewNext(): void {
     if (previewIndex === null || attachments.length <= 1) return;
-    previewIndex =
-      previewIndex === attachments.length - 1 ? 0 : previewIndex + 1;
+    previewIndex = previewIndex === attachments.length - 1 ? 0 : previewIndex + 1;
   }
 
   // ==========================================================================
@@ -226,9 +194,7 @@
   // ==========================================================================
 
   function handleKeydown(e: KeyboardEvent): void {
-    if (e.key === 'Escape') {
-      if (showPreviewModal) closePreview();
-    } else if (showPreviewModal) {
+    if (showPreviewModal) {
       if (e.key === 'ArrowLeft') handlePreviewPrev();
       else if (e.key === 'ArrowRight') handlePreviewNext();
     }
@@ -240,8 +206,7 @@
 
   async function handleAddComment() {
     if (commentsSectionRef === undefined) return;
-    const textarea: HTMLTextAreaElement | undefined =
-      commentsSectionRef.getCommentInput();
+    const textarea: HTMLTextAreaElement | undefined = commentsSectionRef.getCommentInput();
     if (textarea === undefined) return;
     const comment = textarea.value.trim();
     if (comment === '') return;
@@ -307,11 +272,7 @@
     if (suggestion === null) return;
     kvpDetailState.setUpdatingStatus(true);
 
-    const result = await updateSuggestionStatus(
-      suggestion.uuid,
-      newStatus,
-      reason,
-    );
+    const result = await updateSuggestionStatus(suggestion.uuid, newStatus, reason);
     if (result.success) {
       showSuccessAlert(`Status geändert zu: ${getStatusText(newStatus)}`);
       await invalidateAll();
@@ -355,9 +316,7 @@
 
     const result = await shareSuggestion(suggestion.uuid, level, orgId);
     if (result.success) {
-      showSuccessAlert(
-        `Vorschlag wurde auf ${getShareLevelText(level)} geteilt`,
-      );
+      showSuccessAlert(`Vorschlag wurde auf ${getShareLevelText(level)} geteilt`);
       await invalidateAll();
     } else {
       showErrorAlert(result.error ?? 'Fehler beim Teilen');
@@ -367,9 +326,7 @@
   }
 
   async function handleUnshare() {
-    const confirmed = await showConfirm(
-      'Möchten Sie das Teilen wirklich rückgängig machen?',
-    );
+    const confirmed = await showConfirm('Möchten Sie das Teilen wirklich rückgängig machen?');
     if (!confirmed || suggestion === null) return;
 
     const result = await unshareSuggestion(suggestion.uuid);
@@ -414,9 +371,7 @@
   // ==========================================================================
 
   async function handleArchive() {
-    const confirmed = await showConfirm(
-      'Möchten Sie diesen Vorschlag wirklich archivieren?',
-    );
+    const confirmed = await showConfirm('Möchten Sie diesen Vorschlag wirklich archivieren?');
     if (!confirmed || suggestion === null) return;
 
     const result = await archiveSuggestion(suggestion.uuid);
@@ -433,9 +388,7 @@
   // ==========================================================================
 
   async function handleUnarchive() {
-    const confirmed = await showConfirm(
-      'Möchten Sie diesen Vorschlag wirklich wiederherstellen?',
-    );
+    const confirmed = await showConfirm('Möchten Sie diesen Vorschlag wirklich wiederherstellen?');
     if (!confirmed || suggestion === null) return;
 
     const result = await unarchiveSuggestion(suggestion.uuid);
@@ -448,13 +401,51 @@
   }
 
   // ==========================================================================
+  // APPROVAL HANDLER
+  // ==========================================================================
+
+  async function handleRequestApproval(): Promise<void> {
+    if (suggestion === null) return;
+
+    const result = await requestApproval(suggestion.uuid);
+    if (result.success) {
+      showSuccessAlert('Freigabe wurde angefordert');
+      await invalidateAll();
+    } else {
+      showErrorAlert(result.error ?? 'Fehler beim Anfordern der Freigabe');
+    }
+  }
+
+  // ==========================================================================
   // WORK ORDER MODAL HANDLERS
   // ==========================================================================
 
   let showWoModal = $state(false);
+  let woPreloadedUsers = $state<EligibleUser[] | null>(null);
 
-  function handleOpenWoModal(): void {
-    showWoModal = true;
+  // Approval approve/reject from detail page (for KVP approval masters)
+  let showApproveApprovalModal = $state(false);
+  let showRejectApprovalModal = $state(false);
+  let approvalNote = $state('');
+  let approvalRejectNote = $state('');
+  let approvalSubmitting = $state(false);
+
+  async function handleOpenWoModal(): Promise<void> {
+    try {
+      const users = await fetchEligibleUsers();
+      woPreloadedUsers = users;
+      showWoModal = true;
+    } catch (err: unknown) {
+      const is403 =
+        err instanceof Error && 'status' in err && (err as { status: number }).status === 403;
+      if (is403) {
+        showWarningAlert(
+          'Keine Berechtigung für Arbeitsaufträge. Bitte Administrator kontaktieren.',
+        );
+      } else {
+        showErrorAlert('Fehler beim Laden der Arbeitsauftrag-Daten.');
+      }
+    }
   }
 
   function handleCloseWoModal(): void {
@@ -464,6 +455,68 @@
   function handleWoSaved(): void {
     showWoModal = false;
     void invalidateAll();
+  }
+
+  // ==========================================================================
+  // APPROVAL APPROVE/REJECT FROM DETAIL (KVP Approval Master)
+  // ==========================================================================
+
+  function openApproveApprovalModal(): void {
+    approvalNote = '';
+    showApproveApprovalModal = true;
+  }
+
+  function openRejectApprovalModal(): void {
+    approvalRejectNote = '';
+    showRejectApprovalModal = true;
+  }
+
+  async function handleApproveApproval(): Promise<void> {
+    if (approval === null) return;
+    approvalSubmitting = true;
+    try {
+      const res = await fetch(`/api/v2/approvals/${approval.uuid}/approve`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ decisionNote: approvalNote !== '' ? approvalNote : null }),
+      });
+      if (res.ok) {
+        showSuccessAlert('Freigabe genehmigt');
+        showApproveApprovalModal = false;
+        await invalidateAll();
+      } else {
+        const body = (await res.json()) as { error?: { message?: string } };
+        showErrorAlert(body.error?.message ?? 'Fehler beim Genehmigen');
+      }
+    } catch {
+      showErrorAlert('Fehler beim Genehmigen');
+    } finally {
+      approvalSubmitting = false;
+    }
+  }
+
+  async function handleRejectApproval(): Promise<void> {
+    if (approval === null || approvalRejectNote.trim() === '') return;
+    approvalSubmitting = true;
+    try {
+      const res = await fetch(`/api/v2/approvals/${approval.uuid}/reject`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ decisionNote: approvalRejectNote }),
+      });
+      if (res.ok) {
+        showSuccessAlert('Freigabe abgelehnt');
+        showRejectApprovalModal = false;
+        await invalidateAll();
+      } else {
+        const body = (await res.json()) as { error?: { message?: string } };
+        showErrorAlert(body.error?.message ?? 'Fehler beim Ablehnen');
+      }
+    } catch {
+      showErrorAlert('Fehler beim Ablehnen');
+    } finally {
+      approvalSubmitting = false;
+    }
   }
 
   // ==========================================================================
@@ -532,15 +585,15 @@
             <span class="badge {getStatusBadgeClass(suggestion.status)}">
               {getStatusText(suggestion.status)}
             </span>
-            <div class="share-info">
-              <i class="fas fa-share-alt"></i>
-              <span
-                class="badge {getVisibilityBadgeClass(suggestion.orgLevel)}"
-              >
-                <i class="fas {visibilityInfo?.icon}"></i>
-                <span>{visibilityInfo?.text}{getSharedByInfo(suggestion)}</span>
-              </span>
-            </div>
+            {#if suggestion.isShared}
+              <div class="share-info">
+                <i class="fas fa-share-alt"></i>
+                <span class="badge {getVisibilityBadgeClass(suggestion.orgLevel)}">
+                  <i class="fas {visibilityInfo?.icon}"></i>
+                  <span>{visibilityInfo?.text}{getSharedByInfo(suggestion)}</span>
+                </span>
+              </div>
+            {/if}
           </div>
         </div>
 
@@ -556,8 +609,7 @@
               <span class="data-list__value">
                 <div
                   class="category-tag"
-                  class:category-tag--deleted={suggestion.categoryIsDeleted ===
-                    true}
+                  class:category-tag--deleted={suggestion.categoryIsDeleted === true}
                   style:background="{suggestion.categoryColor}20"
                   style:color={suggestion.categoryColor}
                   style:border="1px solid {suggestion.categoryColor}"
@@ -576,49 +628,16 @@
             </div>
             <div class="data-list__item">
               <span class="data-list__label">Status</span>
-              {#if canUpdateStatus(effectiveRole)}
-                <!-- Admin Status Dropdown -->
-                <div
-                  class="dropdown"
-                  data-dropdown="status"
-                >
-                  <button
-                    type="button"
-                    class="dropdown__trigger"
-                    class:active={kvpDetailState.activeDropdown === 'status'}
-                    onclick={() => {
-                      kvpDetailState.toggleDropdown('status');
-                    }}
-                  >
-                    <span>{getStatusText(suggestion.status)}</span>
-                    <i class="fas fa-chevron-down"></i>
-                  </button>
-                  <div
-                    class="dropdown__menu"
-                    class:active={kvpDetailState.activeDropdown === 'status'}
-                  >
-                    {#each STATUS_OPTIONS as option (option.value)}
-                      <button
-                        type="button"
-                        class="dropdown__option"
-                        onclick={() => handleStatusChange(option.value)}
-                      >
-                        {option.label}
-                      </button>
-                    {/each}
-                  </div>
-                </div>
-              {:else}
-                <span class="data-list__value"
-                  >{getStatusText(suggestion.status)}</span
-                >
-              {/if}
+              <StatusDropdown
+                {suggestion}
+                {hasApprovalConfig}
+                onstatuschange={handleStatusChange}
+              />
             </div>
             {#if suggestion.assignedToName !== undefined}
               <div class="data-list__item">
                 <span class="data-list__label">Zugewiesen an</span>
-                <span class="data-list__value">{suggestion.assignedToName}</span
-                >
+                <span class="data-list__value">{suggestion.assignedToName}</span>
               </div>
             {/if}
             {#if hasImplementationDate(suggestion)}
@@ -632,9 +651,7 @@
             {#if suggestion.status === 'rejected' && suggestion.rejectionReason !== undefined && suggestion.rejectionReason !== ''}
               <div class="data-list__item">
                 <span class="data-list__label">Ablehnungsgrund</span>
-                <span class="data-list__value"
-                  >{suggestion.rejectionReason}</span
-                >
+                <span class="data-list__value">{suggestion.rejectionReason}</span>
               </div>
             {/if}
           </div>
@@ -691,19 +708,13 @@
               {#if suggestion.estimatedCost !== undefined && suggestion.estimatedCost !== 0}
                 <div class="data-list__item">
                   <span class="data-list__label">Geschätzte Kosten</span>
-                  <span class="data-list__value"
-                    >{formatCurrency(suggestion.estimatedCost)}</span
-                  >
+                  <span class="data-list__value">{formatCurrency(suggestion.estimatedCost)}</span>
                 </div>
               {/if}
               {#if suggestion.actualSavings !== undefined && suggestion.actualSavings !== 0}
                 <div class="data-list__item">
-                  <span class="data-list__label"
-                    >Tatsaechliche Einsparungen</span
-                  >
-                  <span class="data-list__value"
-                    >{formatCurrency(suggestion.actualSavings)}</span
-                  >
+                  <span class="data-list__label">Tatsaechliche Einsparungen</span>
+                  <span class="data-list__value">{formatCurrency(suggestion.actualSavings)}</span>
                 </div>
               {/if}
             </div>
@@ -721,6 +732,9 @@
       <DetailSidebar
         {suggestion}
         {linkedWorkOrders}
+        {approval}
+        {hasApprovalConfig}
+        {isApprovalMaster}
         onopensharemodal={handleOpenShareModal}
         onunshare={handleUnshare}
         onarchive={handleArchive}
@@ -729,15 +743,19 @@
         onunconfirm={handleUnconfirm}
         onopenpreview={openPreview}
         onopenworkordermodal={handleOpenWoModal}
+        onrequestapproval={handleRequestApproval}
+        onapprove={openApproveApprovalModal}
+        onreject={openRejectApprovalModal}
       />
     </div>
   </div>
 
   <!-- Modal Components -->
-  {#if kvpDetailState.isAdmin}
+  {#if kvpDetailState.canManage}
     <CreateWorkOrderFromKvp
       show={showWoModal}
       {suggestion}
+      preloadedUsers={woPreloadedUsers}
       onclose={handleCloseWoModal}
       onsaved={handleWoSaved}
     />
@@ -760,6 +778,67 @@
     currentIndex={previewIndex ?? undefined}
     totalCount={attachments.length}
   />
+
+  <!-- Approval Approve Modal (KVP Approval Master) -->
+  <ConfirmModal
+    show={showApproveApprovalModal && approval !== null}
+    id="kvp-approve-approval-modal"
+    wide
+    title="Freigabe genehmigen"
+    variant="success"
+    icon="fa-check"
+    confirmLabel="Genehmigen"
+    submitting={approvalSubmitting}
+    onconfirm={() => void handleApproveApproval()}
+    oncancel={() => {
+      showApproveApprovalModal = false;
+    }}
+  >
+    {#if approval !== null}
+      <p><strong>{suggestion.title}</strong></p>
+      <p>Angefragt von: {approval.requestedByName}</p>
+      <div class="confirm-modal__input-group">
+        <textarea
+          id="kvp-approve-note"
+          class="confirm-modal__input"
+          rows="3"
+          bind:value={approvalNote}
+          placeholder="Optionaler Kommentar zur Genehmigung..."
+        ></textarea>
+      </div>
+    {/if}
+  </ConfirmModal>
+
+  <!-- Approval Reject Modal (KVP Approval Master) -->
+  <ConfirmModal
+    show={showRejectApprovalModal && approval !== null}
+    id="kvp-reject-approval-modal"
+    wide
+    title="Freigabe ablehnen"
+    variant="danger"
+    icon="fa-times"
+    confirmLabel="Ablehnen"
+    submitting={approvalSubmitting}
+    onconfirm={() => void handleRejectApproval()}
+    oncancel={() => {
+      showRejectApprovalModal = false;
+    }}
+  >
+    {#if approval !== null}
+      <p><strong>{suggestion.title}</strong></p>
+      <p>Angefragt von: {approval.requestedByName}</p>
+      <div class="confirm-modal__input-group">
+        <textarea
+          id="kvp-reject-note"
+          class="confirm-modal__input"
+          rows="3"
+          bind:value={approvalRejectNote}
+          placeholder="Begründung für die Ablehnung..."
+          required
+        ></textarea>
+      </div>
+    {/if}
+  </ConfirmModal>
 {/if}
 
 <style>

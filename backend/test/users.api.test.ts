@@ -9,6 +9,7 @@ import {
   type AuthState,
   BASE_URL,
   type JsonBody,
+  authHeaders,
   authOnly,
   loginApitest,
 } from './helpers.js';
@@ -132,5 +133,146 @@ describe('Users: Get User by ID (Admin)', () => {
     expect(body.data).toHaveProperty('email');
     expect(body.data).toHaveProperty('role');
     expect(body.data.id).toBeTypeOf('number');
+  });
+});
+
+// ---- seq: 4 -- Create User with positionIds ---------------------------------
+
+describe('Users: Create with positionIds', () => {
+  let positionId: string;
+  let createdUserId: number;
+  const testEmail = `pos-test-${Date.now()}@apitest.de`;
+
+  beforeAll(async () => {
+    // Fetch available employee positions
+    const res = await fetch(`${BASE_URL}/organigram/positions?roleCategory=employee`, {
+      headers: authOnly(auth.authToken),
+    });
+    const body = (await res.json()) as JsonBody;
+    const positions = body.data as { id: string }[];
+    if (positions[0] === undefined) throw new Error('No employee positions found');
+    positionId = positions[0].id;
+  });
+
+  afterAll(async () => {
+    // Cleanup: soft-delete created user
+    if (createdUserId !== undefined) {
+      await fetch(`${BASE_URL}/users/${createdUserId}`, {
+        method: 'DELETE',
+        headers: authOnly(auth.authToken),
+      });
+    }
+  });
+
+  it('should create employee with positionIds', async () => {
+    const res = await fetch(`${BASE_URL}/users`, {
+      method: 'POST',
+      headers: authHeaders(auth.authToken),
+      body: JSON.stringify({
+        email: testEmail,
+        password: 'TestPass123!',
+        firstName: 'Position',
+        lastName: 'TestUser',
+        role: 'employee',
+        positionIds: [positionId],
+      }),
+    });
+    const body = (await res.json()) as JsonBody;
+
+    expect(res.status).toBe(201);
+    expect(body.success).toBe(true);
+    createdUserId = body.data.id as number;
+  });
+
+  it('should persist positions in user_positions', async () => {
+    const res = await fetch(`${BASE_URL}/users/${createdUserId}/positions`, {
+      headers: authOnly(auth.authToken),
+    });
+    const body = (await res.json()) as JsonBody;
+
+    expect(res.status).toBe(200);
+    const positions = body.data as { positionId: string }[];
+    expect(positions).toHaveLength(1);
+    expect(positions[0]?.positionId).toBe(positionId);
+  });
+
+  it('should reject create without positionIds', async () => {
+    const res = await fetch(`${BASE_URL}/users`, {
+      method: 'POST',
+      headers: authHeaders(auth.authToken),
+      body: JSON.stringify({
+        email: `no-pos-${Date.now()}@apitest.de`,
+        password: 'TestPass123!',
+        firstName: 'No',
+        lastName: 'Position',
+        role: 'employee',
+      }),
+    });
+
+    expect(res.status).toBe(400);
+  });
+});
+
+// ---- seq: 5 -- Update User positionIds --------------------------------------
+
+describe('Users: Update positionIds', () => {
+  let positionIds: string[];
+  let targetUserId: number;
+  const testEmail = `pos-upd-${Date.now()}@apitest.de`;
+
+  beforeAll(async () => {
+    // Fetch 2 employee positions
+    const posRes = await fetch(`${BASE_URL}/organigram/positions?roleCategory=employee`, {
+      headers: authOnly(auth.authToken),
+    });
+    const posBody = (await posRes.json()) as JsonBody;
+    positionIds = (posBody.data as { id: string }[]).slice(0, 2).map((p: { id: string }) => p.id);
+
+    // Create a user to update
+    const createRes = await fetch(`${BASE_URL}/users`, {
+      method: 'POST',
+      headers: authHeaders(auth.authToken),
+      body: JSON.stringify({
+        email: testEmail,
+        password: 'TestPass123!',
+        firstName: 'Update',
+        lastName: 'PosTest',
+        role: 'employee',
+        positionIds: [positionIds[0]],
+      }),
+    });
+    const createBody = (await createRes.json()) as JsonBody;
+    targetUserId = createBody.data.id as number;
+  });
+
+  afterAll(async () => {
+    if (targetUserId !== undefined) {
+      await fetch(`${BASE_URL}/users/${targetUserId}`, {
+        method: 'DELETE',
+        headers: authOnly(auth.authToken),
+      });
+    }
+  });
+
+  it('should update positions via PUT', async () => {
+    const res = await fetch(`${BASE_URL}/users/${targetUserId}`, {
+      method: 'PUT',
+      headers: authHeaders(auth.authToken),
+      body: JSON.stringify({ positionIds: positionIds.slice(0, 2) }),
+    });
+
+    expect(res.status).toBe(200);
+  });
+
+  it('should reflect updated positions', async () => {
+    const res = await fetch(`${BASE_URL}/users/${targetUserId}/positions`, {
+      headers: authOnly(auth.authToken),
+    });
+    const body = (await res.json()) as JsonBody;
+
+    const assigned = (body.data as { positionId: string }[]).map(
+      (p: { positionId: string }) => p.positionId,
+    );
+    expect(assigned.sort()).toEqual(positionIds.slice(0, 2).sort());
   });
 });

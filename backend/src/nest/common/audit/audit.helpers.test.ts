@@ -157,17 +157,12 @@ describe('extractResourceId', () => {
 
   it('should return null for UUID in URL (not a numeric ID)', () => {
     expect(
-      extractResourceId(
-        '/api/v2/tpm/plans/019c9088-c3da-751f-ad4f-06ef7c086342',
-        undefined,
-      ),
+      extractResourceId('/api/v2/tpm/plans/019c9088-c3da-751f-ad4f-06ef7c086342', undefined),
     ).toBeNull();
   });
 
   it('should strip query string before parsing', () => {
-    expect(extractResourceId('/api/v2/users/42?tab=profile', undefined)).toBe(
-      42,
-    );
+    expect(extractResourceId('/api/v2/users/42?tab=profile', undefined)).toBe(42);
   });
 });
 
@@ -178,32 +173,23 @@ describe('extractResourceId', () => {
 describe('extractResourceUuid', () => {
   it('should extract UUID from params', () => {
     expect(
-      extractResourceUuid(
-        '/api/v2/tpm/plans/019c9088-c3da-751f-ad4f-06ef7c086342',
-        {
-          uuid: '019c9088-c3da-751f-ad4f-06ef7c086342',
-        },
-      ),
+      extractResourceUuid('/api/v2/tpm/plans/019c9088-c3da-751f-ad4f-06ef7c086342', {
+        uuid: '019c9088-c3da-751f-ad4f-06ef7c086342',
+      }),
     ).toBe('019c9088-c3da-751f-ad4f-06ef7c086342');
   });
 
   it('should extract UUID from URL when no params', () => {
     expect(
-      extractResourceUuid(
-        '/api/v2/tpm/plans/019c9088-c3da-751f-ad4f-06ef7c086342',
-        undefined,
-      ),
+      extractResourceUuid('/api/v2/tpm/plans/019c9088-c3da-751f-ad4f-06ef7c086342', undefined),
     ).toBe('019c9088-c3da-751f-ad4f-06ef7c086342');
   });
 
   it('should extract UUID from id param', () => {
     expect(
-      extractResourceUuid(
-        '/api/v2/tpm/plans/019c9088-c3da-751f-ad4f-06ef7c086342',
-        {
-          id: '019c9088-c3da-751f-ad4f-06ef7c086342',
-        },
-      ),
+      extractResourceUuid('/api/v2/tpm/plans/019c9088-c3da-751f-ad4f-06ef7c086342', {
+        id: '019c9088-c3da-751f-ad4f-06ef7c086342',
+      }),
     ).toBe('019c9088-c3da-751f-ad4f-06ef7c086342');
   });
 
@@ -365,9 +351,7 @@ describe('buildUserName', () => {
   });
 
   it('should fallback to email when no names', () => {
-    const user = { email: 'john@test.de' } as Parameters<
-      typeof buildUserName
-    >[0];
+    const user = { email: 'john@test.de' } as Parameters<typeof buildUserName>[0];
 
     expect(buildUserName(user)).toBe('john@test.de');
   });
@@ -513,25 +497,15 @@ describe('shouldSkipGetRequest', () => {
   });
 
   it('should skip -count catch-all endpoints', () => {
-    expect(shouldSkipGetRequest('/api/v2/notifications/unread-count')).toBe(
-      true,
-    );
+    expect(shouldSkipGetRequest('/api/v2/notifications/unread-count')).toBe(true);
   });
 
   it('should skip sub-resource data endpoints', () => {
     expect(shouldSkipGetRequest('/api/v2/tpm/plans/uuid/board')).toBe(true);
-    expect(shouldSkipGetRequest('/api/v2/tpm/plans/uuid/time-estimates')).toBe(
-      true,
-    );
-    expect(shouldSkipGetRequest('/api/v2/tpm/plans/interval-matrix')).toBe(
-      true,
-    );
-    expect(shouldSkipGetRequest('/api/v2/tpm/plans/schedule-projection')).toBe(
-      true,
-    );
-    expect(
-      shouldSkipGetRequest('/api/v2/tpm/executions/eligible-participants'),
-    ).toBe(true);
+    expect(shouldSkipGetRequest('/api/v2/tpm/plans/uuid/time-estimates')).toBe(true);
+    expect(shouldSkipGetRequest('/api/v2/tpm/plans/interval-matrix')).toBe(true);
+    expect(shouldSkipGetRequest('/api/v2/tpm/plans/schedule-projection')).toBe(true);
+    expect(shouldSkipGetRequest('/api/v2/tpm/executions/eligible-participants')).toBe(true);
   });
 
   it('should not skip normal endpoints', () => {
@@ -709,22 +683,18 @@ describe('extractResourceName', () => {
 
 describe('extractNameFromData', () => {
   it('should use mapped nameField for known resource type', () => {
-    expect(extractNameFromData({ username: 'john_doe' }, 'user')).toBe(
-      'john_doe',
-    );
+    expect(extractNameFromData({ username: 'john_doe' }, 'user')).toBe('john_doe');
   });
 
   it('should use title for blackboard resource', () => {
-    expect(
-      extractNameFromData({ title: 'Wichtige Mitteilung' }, 'blackboard'),
-    ).toBe('Wichtige Mitteilung');
+    expect(extractNameFromData({ title: 'Wichtige Mitteilung' }, 'blackboard')).toBe(
+      'Wichtige Mitteilung',
+    );
   });
 
   it('should fall back to common name fields', () => {
     // user type maps to 'username', but if username is missing, try 'name'
-    expect(extractNameFromData({ name: 'Fallback Name' }, 'user')).toBe(
-      'Fallback Name',
-    );
+    expect(extractNameFromData({ name: 'Fallback Name' }, 'user')).toBe('Fallback Name');
   });
 
   it('should return null for unknown resource type', () => {
@@ -738,9 +708,7 @@ describe('extractNameFromData', () => {
   it('should truncate to 255 chars', () => {
     const longName = 'B'.repeat(300);
 
-    expect(extractNameFromData({ username: longName }, 'user')?.length).toBe(
-      255,
-    );
+    expect(extractNameFromData({ username: longName }, 'user')?.length).toBe(255);
   });
 });
 
@@ -825,9 +793,7 @@ describe('extractDetailedErrorMessage', () => {
   });
 
   it('should return message from Error instance', () => {
-    expect(extractDetailedErrorMessage(new Error('Something broke'))).toBe(
-      'Something broke',
-    );
+    expect(extractDetailedErrorMessage(new Error('Something broke'))).toBe('Something broke');
   });
 
   it('should return string error as-is', () => {

@@ -56,25 +56,15 @@ export class AuditLoggingService {
       duration_ms: duration,
     };
 
-    const changes = buildAuditChanges(
-      metadata.action,
-      request,
-      httpMeta,
-      preMutationData,
-    );
+    const changes = buildAuditChanges(metadata.action, request, httpMeta, preMutationData);
 
-    const resourceName = this.resolveResourceName(
-      request,
-      metadata,
-      preMutationData,
-    );
+    const resourceName = this.resolveResourceName(request, metadata, preMutationData);
     const resourceId = this.resolveResourceId(metadata, preMutationData);
 
     const params: AuditLogParams = {
       tenantId: user?.tenantId ?? 0,
       userId: user?.id ?? 0,
-      userName:
-        user !== undefined ? buildUserName(user) : extractLoginEmail(request),
+      userName: user !== undefined ? buildUserName(user) : extractLoginEmail(request),
       userRole: user?.activeRole ?? null,
       action: metadata.action,
       resourceType: metadata.resourceType,
@@ -124,25 +114,15 @@ export class AuditLoggingService {
       duration_ms: duration,
     };
 
-    const changes = buildAuditChanges(
-      metadata.action,
-      request,
-      httpMeta,
-      preMutationData,
-    );
+    const changes = buildAuditChanges(metadata.action, request, httpMeta, preMutationData);
 
-    const resourceName = this.resolveResourceName(
-      request,
-      metadata,
-      preMutationData,
-    );
+    const resourceName = this.resolveResourceName(request, metadata, preMutationData);
     const resourceId = this.resolveResourceId(metadata, preMutationData);
 
     void this.logToAuditTrail({
       tenantId: user?.tenantId ?? 0,
       userId: user?.id ?? 0,
-      userName:
-        user !== undefined ? buildUserName(user) : extractLoginEmail(request),
+      userName: user !== undefined ? buildUserName(user) : extractLoginEmail(request),
       userRole: user?.activeRole ?? null,
       action: metadata.action,
       resourceType: metadata.resourceType,

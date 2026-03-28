@@ -177,22 +177,16 @@
 
 <div class="flex min-h-screen items-center justify-center p-5">
   <div class="card animate-fade-in-up w-full max-w-[450px] text-center">
-    <span class="rate-limit-icon material-symbols-outlined"
-      >hourglass_check</span
-    >
-    <h1 class="mb-4 text-[28px] font-bold text-(--color-text-primary)">
-      Zu viele Anfragen
-    </h1>
+    <span class="rate-limit-icon material-symbols-outlined">hourglass_check</span>
+    <h1 class="mb-4 text-[28px] font-bold text-(--color-text-primary)">Zu viele Anfragen</h1>
     <p class="mb-8 text-base leading-relaxed text-(--color-text-secondary)">
-      Sie haben die maximale Anzahl an Anfragen überschritten. Bitte warten Sie
-      einen Moment, bevor Sie es erneut versuchen.
+      Sie haben die maximale Anzahl an Anfragen überschritten. Bitte warten Sie einen Moment, bevor
+      Sie es erneut versuchen.
     </p>
     <div
       class="mb-8 rounded-(--radius-xl) border border-[oklch(63.24%_0.1562_249.76/20%)] bg-[oklch(63.24%_0.1562_249.76/10%)] p-6"
     >
-      <div class="mb-4 text-sm text-(--color-text-secondary)">
-        Versuchen Sie es wieder in:
-      </div>
+      <div class="mb-4 text-sm text-(--color-text-secondary)">Versuchen Sie es wieder in:</div>
       <div class="countdown text-[32px] font-bold text-(--color-primary)">
         {countdownText}
       </div>

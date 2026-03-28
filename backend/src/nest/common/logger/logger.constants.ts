@@ -141,18 +141,11 @@ export const LOKI_CONFIG = {
  * Get Grafana Cloud basicAuth configuration if credentials are set
  * Returns undefined for self-hosted Loki (no auth needed)
  */
-export function getGrafanaCloudAuth():
-  | { username: string; password: string }
-  | undefined {
+export function getGrafanaCloudAuth(): { username: string; password: string } | undefined {
   const userId = process.env['GRAFANA_CLOUD_USER'];
   const apiKey = process.env['GRAFANA_CLOUD_API_KEY'];
 
-  if (
-    userId !== undefined &&
-    userId !== '' &&
-    apiKey !== undefined &&
-    apiKey !== ''
-  ) {
+  if (userId !== undefined && userId !== '' && apiKey !== undefined && apiKey !== '') {
     return {
       username: userId,
       password: apiKey,

@@ -9,8 +9,7 @@ export default defineConfig(({ mode }) => ({
     // Sentry MUSS vor SvelteKit kommen!
     sentrySvelteKit({
       autoUploadSourceMaps:
-        process.env.SENTRY_AUTH_TOKEN !== undefined &&
-        process.env.SENTRY_AUTH_TOKEN !== '',
+        process.env.SENTRY_AUTH_TOKEN !== undefined && process.env.SENTRY_AUTH_TOKEN !== '',
       sourceMapsUploadOptions: {
         org: 'assixx',
         project: 'javascript-sveltekit',
@@ -64,12 +63,7 @@ export default defineConfig(({ mode }) => ({
     watch: {
       usePolling: true,
       interval: 100, // 100ms like legacy frontend
-      ignored: [
-        '**/node_modules/**',
-        '**/.git/**',
-        '**/dist/**',
-        '**/.svelte-kit/**',
-      ],
+      ignored: ['**/node_modules/**', '**/.git/**', '**/dist/**', '**/.svelte-kit/**'],
     },
   },
 
@@ -84,7 +78,7 @@ export default defineConfig(({ mode }) => ({
 
   // Build Optimierungen
   build: {
-    rollupOptions: {
+    rolldownOptions: {
       output: {
         // Targeted chunking - only split heavy libraries, let SvelteKit handle the rest
         manualChunks(id: string) {
@@ -102,6 +96,19 @@ export default defineConfig(({ mode }) => ({
           }
           // Let Vite/SvelteKit handle everything else automatically
         },
+        // CRITICAL: Strip console.* and debugger in production builds
+        // This removes ALL 331+ console calls from the production bundle
+        // Vite 8: esbuild.drop → rolldownOptions.output.minify.compress
+        ...(mode === 'production' ?
+          {
+            minify: {
+              compress: {
+                drop_console: true,
+                drop_debugger: true,
+              },
+            },
+          }
+        : {}),
       },
     },
     // SvelteKit SSR bundles are large due to:
@@ -110,11 +117,5 @@ export default defineConfig(({ mode }) => ({
     // Gzipped sizes are acceptable: 361 kB + 229 kB = ~590 kB total
     // For internal SaaS app, this is fine. Public-facing would need dynamic imports.
     chunkSizeWarningLimit: 850,
-  },
-
-  // CRITICAL: Strip console.* and debugger in production builds
-  // This removes ALL 331+ console calls from the production bundle
-  esbuild: {
-    drop: mode === 'production' ? ['console', 'debugger'] : [],
   },
 }));

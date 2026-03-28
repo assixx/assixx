@@ -16,9 +16,7 @@ import { CRITICAL_TABLES, type TableNameRow } from './tenant-deletion.types.js';
  */
 export function validateTenantId(tenantId: number): void {
   if (tenantId <= 0 || !Number.isInteger(tenantId)) {
-    throw new Error(
-      `INVALID TENANT_ID: ${tenantId} - must be positive integer`,
-    );
+    throw new Error(`INVALID TENANT_ID: ${tenantId} - must be positive integer`);
   }
 }
 
@@ -26,9 +24,7 @@ export function validateTenantId(tenantId: number): void {
  * Get all tables with tenant_id column.
  * NOTE: Uses PostgreSQL information_schema with table_schema = 'public'
  */
-export async function getTablesWithTenantId(
-  client: PoolClient,
-): Promise<TableNameRow[]> {
+export async function getTablesWithTenantId(client: PoolClient): Promise<TableNameRow[]> {
   const result = await client.query<TableNameRow>(`
     SELECT DISTINCT table_name AS "TABLE_NAME"
     FROM information_schema.columns
@@ -44,13 +40,9 @@ export async function getTablesWithTenantId(
  * Get user-related tables (with user_id FK), excluding critical tables.
  * NOTE: Uses PostgreSQL information_schema with table_schema = 'public'
  */
-export async function getUserRelatedTables(
-  client: PoolClient,
-): Promise<TableNameRow[]> {
+export async function getUserRelatedTables(client: PoolClient): Promise<TableNameRow[]> {
   const criticalTables = [...CRITICAL_TABLES];
-  const placeholders = criticalTables
-    .map((_: string, idx: number) => `$${idx + 1}`)
-    .join(',');
+  const placeholders = criticalTables.map((_: string, idx: number) => `$${idx + 1}`).join(',');
 
   const result = await client.query<TableNameRow>(
     `SELECT DISTINCT table_name AS "TABLE_NAME"

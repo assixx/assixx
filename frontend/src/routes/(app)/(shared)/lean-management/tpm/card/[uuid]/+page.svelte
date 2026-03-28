@@ -93,10 +93,6 @@
     previewLocation = null;
   }
 
-  function handlePreviewKeydown(e: KeyboardEvent): void {
-    if (e.key === 'Escape') closePreview();
-  }
-
   function stopPropagation(e: Event): void {
     e.stopPropagation();
   }
@@ -157,9 +153,7 @@
           <div class="flex flex-wrap items-center justify-between gap-4">
             <div>
               <div class="flex items-center gap-2">
-                <span
-                  class="text-xs font-bold tracking-wider text-(--color-text-muted) uppercase"
-                >
+                <span class="text-xs font-bold tracking-wider text-(--color-text-muted) uppercase">
                   {card.cardCode}
                 </span>
                 <span class="badge {CARD_STATUS_BADGE_CLASSES[card.status]}">
@@ -212,9 +206,7 @@
               {#if card.description !== null}
                 <p class="card-detail__description">{card.description}</p>
               {:else}
-                <p
-                  class="card-detail__description card-detail__description--empty"
-                >
+                <p class="card-detail__description card-detail__description--empty">
                   {MESSAGES.DETAIL_NO_DESCRIPTION}
                 </p>
               {/if}
@@ -276,25 +268,19 @@
                   </span>
                 </div>
                 <div class="card-detail__row">
-                  <span class="card-detail__label"
-                    >{MESSAGES.DETAIL_INTERVAL}</span
-                  >
+                  <span class="card-detail__label">{MESSAGES.DETAIL_INTERVAL}</span>
                   <span class="card-detail__value">
                     {INTERVAL_LABELS[card.intervalType]}
                   </span>
                 </div>
                 <div class="card-detail__row">
-                  <span class="card-detail__label"
-                    >{MESSAGES.DETAIL_STATUS}</span
-                  >
+                  <span class="card-detail__label">{MESSAGES.DETAIL_STATUS}</span>
                   <span class="card-detail__value">
                     {CARD_STATUS_LABELS[card.status]}
                   </span>
                 </div>
                 <div class="card-detail__row">
-                  <span class="card-detail__label"
-                    >{MESSAGES.DETAIL_DUE_DATE}</span
-                  >
+                  <span class="card-detail__label">{MESSAGES.DETAIL_DUE_DATE}</span>
                   <span class="card-detail__value">
                     {formatDate(card.currentDueDate)}
                   </span>
@@ -389,7 +375,9 @@
       id="tpm-card-photo-preview-modal"
       class="modal-overlay modal-overlay--active"
       onclick={closePreview}
-      onkeydown={handlePreviewKeydown}
+      onkeydown={(e: KeyboardEvent) => {
+        if (e.key === 'Escape') closePreview();
+      }}
       role="dialog"
       aria-modal="true"
       tabindex="-1"
@@ -425,9 +413,7 @@
             />
           </div>
           <div class="border-t border-(--border-subtle) bg-(--surface-2) p-4">
-            <div
-              class="flex items-center gap-6 text-sm text-(--color-text-secondary)"
-            >
+            <div class="flex items-center gap-6 text-sm text-(--color-text-secondary)">
               {#if previewLocation.photoFileSize !== null}
                 <span class="flex items-center gap-2">
                   <i class="fas fa-file-archive"></i>
@@ -446,8 +432,7 @@
           <button
             type="button"
             class="btn btn-cancel"
-            onclick={closePreview}
-            ><i class="fas fa-times mr-2"></i>Schließen</button
+            onclick={closePreview}><i class="fas fa-times mr-2"></i>Schließen</button
           >
         </div>
       </div>

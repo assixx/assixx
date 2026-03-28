@@ -55,8 +55,7 @@
 
     <!-- Addon Store (Featured) -->
     <div class="pricing-card featured u-relative">
-      <span
-        class="badge badge--primary badge--lg badge--uppercase pricing-card__badge"
+      <span class="badge badge--primary badge--lg badge--uppercase pricing-card__badge"
         >Flexibel</span
       >
       <h3>Modul-Baukasten</h3>
@@ -121,31 +120,23 @@
         <h4 class="catalog-group__heading">
           <i class="fas fa-shield-alt"></i>
           Core-Module
-          <span class="catalog-group__badge catalog-group__badge--core"
-            >Inklusive</span
-          >
+          <span class="catalog-group__badge catalog-group__badge--core">Inklusive</span>
         </h4>
         <ul class="catalog-list">
           <li>
             <i class="fas fa-tachometer-alt"></i>
             <span class="catalog-list__name">Dashboard</span>
-            <span class="catalog-list__desc"
-              >Zentrale Übersicht mit Kennzahlen</span
-            >
+            <span class="catalog-list__desc">Zentrale Übersicht mit Kennzahlen</span>
           </li>
           <li>
             <i class="fas fa-calendar-alt"></i>
             <span class="catalog-list__name">Kalender</span>
-            <span class="catalog-list__desc"
-              >Gemeinsamer Unternehmenskalender</span
-            >
+            <span class="catalog-list__desc">Gemeinsamer Unternehmenskalender</span>
           </li>
           <li>
             <i class="fas fa-chalkboard"></i>
             <span class="catalog-list__name">Schwarzes Brett</span>
-            <span class="catalog-list__desc"
-              >Digitales schwarzes Brett für Ankündigungen</span
-            >
+            <span class="catalog-list__desc">Digitales schwarzes Brett für Ankündigungen</span>
           </li>
           <li>
             <i class="fas fa-cog"></i>
@@ -160,9 +151,7 @@
           <li>
             <i class="fas fa-users"></i>
             <span class="catalog-list__name">Mitarbeiterverwaltung</span>
-            <span class="catalog-list__desc"
-              >Benutzer anlegen und verwalten</span
-            >
+            <span class="catalog-list__desc">Benutzer anlegen und verwalten</span>
           </li>
           <li>
             <i class="fas fa-sitemap"></i>
@@ -172,8 +161,7 @@
           <li>
             <i class="fas fa-user-friends"></i>
             <span class="catalog-list__name">Teams</span>
-            <span class="catalog-list__desc">Teams und Mitglieder zuordnen</span
-            >
+            <span class="catalog-list__desc">Teams und Mitglieder zuordnen</span>
           </li>
         </ul>
       </div>
@@ -183,66 +171,48 @@
         <h4 class="catalog-group__heading">
           <i class="fas fa-cubes"></i>
           Zusatz-Module
-          <span class="catalog-group__badge catalog-group__badge--addon"
-            >€10/Monat</span
-          >
+          <span class="catalog-group__badge catalog-group__badge--addon">€10/Monat</span>
         </h4>
         <ul class="catalog-list">
           <li>
             <i class="fas fa-folder-open"></i>
             <span class="catalog-list__name">Dokumente</span>
-            <span class="catalog-list__desc"
-              >Dokumentenverwaltung mit Upload und Archiv</span
-            >
+            <span class="catalog-list__desc">Dokumentenverwaltung mit Upload und Archiv</span>
           </li>
           <li>
             <i class="fas fa-user-secret"></i>
             <span class="catalog-list__name">Platzhalter-Benutzer</span>
-            <span class="catalog-list__desc"
-              >Anonyme Accounts für Fabrik-Bildschirme</span
-            >
+            <span class="catalog-list__desc">Anonyme Accounts für Fabrik-Bildschirme</span>
           </li>
           <li>
             <i class="fas fa-umbrella-beach"></i>
             <span class="catalog-list__name">Urlaubsverwaltung</span>
-            <span class="catalog-list__desc"
-              >Anträge, Genehmigung, Kapazitätsprüfung</span
-            >
+            <span class="catalog-list__desc">Anträge, Genehmigung, Kapazitätsprüfung</span>
           </li>
           <li>
             <i class="fas fa-clock"></i>
             <span class="catalog-list__name">Schichtplanung</span>
-            <span class="catalog-list__desc"
-              >Schichtpläne, Tauschbörse, Rotation</span
-            >
+            <span class="catalog-list__desc">Schichtpläne, Tauschbörse, Rotation</span>
           </li>
           <li>
             <i class="fas fa-comments"></i>
             <span class="catalog-list__name">Chat</span>
-            <span class="catalog-list__desc"
-              >Team-Chat mit Gesprächen und Nachrichten</span
-            >
+            <span class="catalog-list__desc">Team-Chat mit Gesprächen und Nachrichten</span>
           </li>
           <li>
             <i class="fas fa-poll"></i>
             <span class="catalog-list__name">Umfragen</span>
-            <span class="catalog-list__desc"
-              >Erstellen, durchführen und auswerten</span
-            >
+            <span class="catalog-list__desc">Erstellen, durchführen und auswerten</span>
           </li>
           <li>
             <i class="fas fa-clipboard-list"></i>
             <span class="catalog-list__name">Arbeitsaufträge</span>
-            <span class="catalog-list__desc"
-              >Mängelbeseitigung und Aufgabenverwaltung</span
-            >
+            <span class="catalog-list__desc">Mängelbeseitigung und Aufgabenverwaltung</span>
           </li>
           <li>
             <i class="fas fa-cogs"></i>
             <span class="catalog-list__name">Anlagen & Maschinen</span>
-            <span class="catalog-list__desc"
-              >Verwaltung und Verfügbarkeitstracking</span
-            >
+            <span class="catalog-list__desc">Verwaltung und Verfügbarkeitstracking</span>
           </li>
           <li>
             <i class="fas fa-chart-bar"></i>
@@ -252,23 +222,17 @@
           <li>
             <i class="fas fa-lightbulb"></i>
             <span class="catalog-list__name">KVP</span>
-            <span class="catalog-list__desc"
-              >Kontinuierlicher Verbesserungsprozess</span
-            >
+            <span class="catalog-list__desc">Kontinuierlicher Verbesserungsprozess</span>
           </li>
           <li>
             <i class="fas fa-tools"></i>
             <span class="catalog-list__name">TPM / Wartung</span>
-            <span class="catalog-list__desc"
-              >Kamishibai Board und Wartungspläne</span
-            >
+            <span class="catalog-list__desc">Kamishibai Board und Wartungspläne</span>
           </li>
           <li>
             <i class="fas fa-file-signature"></i>
             <span class="catalog-list__name">Protokoll & Audit</span>
-            <span class="catalog-list__desc"
-              >Audit-Protokollierung, Compliance-Berichte</span
-            >
+            <span class="catalog-list__desc">Audit-Protokollierung, Compliance-Berichte</span>
           </li>
         </ul>
       </div>
@@ -362,8 +326,7 @@
     font-weight: 700;
     font-size: 3.5rem;
     line-height: 1;
-    text-shadow: 0 0 10px
-      color-mix(in oklch, var(--color-primary) 20%, transparent);
+    text-shadow: 0 0 10px color-mix(in oklch, var(--color-primary) 20%, transparent);
   }
 
   .unlimited-badge {
@@ -513,8 +476,7 @@
     grid-template-rows: auto auto;
     gap: 0 var(--spacing-3);
     padding: var(--spacing-3) 0;
-    border-bottom: 1px solid
-      color-mix(in oklch, var(--color-glass-border) 50%, transparent);
+    border-bottom: 1px solid color-mix(in oklch, var(--color-glass-border) 50%, transparent);
   }
 
   .catalog-list li:last-child {

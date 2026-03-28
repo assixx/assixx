@@ -51,20 +51,14 @@
   /**
    * Handle crop complete event from Cropper
    */
-  function handleCropComplete(event: {
-    pixels: CropArea;
-    percent: CropArea;
-  }): void {
+  function handleCropComplete(event: { pixels: CropArea; percent: CropArea }): void {
     croppedAreaPixels = event.pixels;
   }
 
   /**
    * Create cropped image from source and crop area
    */
-  async function createCroppedImage(
-    src: string,
-    pixelCrop: CropArea,
-  ): Promise<Blob> {
+  async function createCroppedImage(src: string, pixelCrop: CropArea): Promise<Blob> {
     const image = new Image();
     image.crossOrigin = 'anonymous';
 
@@ -134,41 +128,15 @@
       saving = false;
     }
   }
-
-  /**
-   * Handle overlay click (close modal)
-   */
-  function handleOverlayClick(e: MouseEvent): void {
-    if (e.target === e.currentTarget) {
-      onclose();
-    }
-  }
-
-  /**
-   * Handle escape key
-   */
-  function handleKeydown(e: KeyboardEvent): void {
-    if (e.key === 'Escape' && show) {
-      onclose();
-    }
-  }
 </script>
 
-<svelte:window onkeydown={handleKeydown} />
-
 {#if show && imageSrc !== null}
-  <!-- svelte-ignore a11y_click_events_have_key_events -->
-  <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div
     id="image-crop-modal"
     class="modal-overlay modal-overlay--active"
-    onclick={handleOverlayClick}
   >
     <div
       class="ds-modal ds-modal--md"
-      onclick={(e) => {
-        e.stopPropagation();
-      }}
       role="dialog"
       aria-modal="true"
       aria-labelledby="crop-modal-title"
@@ -288,8 +256,7 @@
     gap: var(--spacing-3, 12px);
     padding: var(--spacing-4, 16px) var(--spacing-6, 24px);
     background: color-mix(in oklch, var(--color-black) 20%, transparent);
-    border-top: 1px solid
-      color-mix(in oklch, var(--color-white) 8%, transparent);
+    border-top: 1px solid color-mix(in oklch, var(--color-white) 8%, transparent);
   }
 
   .zoom-label {

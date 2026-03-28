@@ -3,7 +3,7 @@
 | Metadata                | Value                                                     |
 | ----------------------- | --------------------------------------------------------- |
 | **Status**              | Amended                                                   |
-| **Date**                | 2026-01-26 (amended 2026-02-05)                           |
+| **Date**                | 2026-01-26 (amended 2026-02-05, 2026-03-21)               |
 | **Decision Makers**     | SCS Technik                                               |
 | **Affected Components** | GitHub Actions, code-quality-checks.yml, docker-build.yml |
 
@@ -75,6 +75,29 @@ Trivy was split into two steps:
 - CodeQL SARIF upload requires GitHub Code Security / Advanced Security -- not enabled for this repository
 - Semgrep (`p/security-audit`, `p/owasp-top-ten`) and ESLint security plugins (`eslint-plugin-no-unsanitized`) already cover the relevant findings
 - CodeQL scan ran successfully (731/731 TS files), but the result could not be uploaded → CI failed
+
+### Fix 6: Codecov Coverage Upload (Amendment 2026-03-21)
+
+`codecov/patch` status check was permanently stuck at "Waiting for status to be reported", blocking PRs for over a week. Three root causes identified and fixed:
+
+| Problem                          | Cause                                                                                                                              | Fix                                                                                                           |
+| -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| Token missing                    | `CODECOV_TOKEN` secret not set (Token length: 0)                                                                                   | Secret added to GitHub Actions                                                                                |
+| Unusable report (path mismatch)  | `disable_search: false` auto-discovered `coverage-final.json` with absolute CI paths (`/home/runner/work/...`)                     | `disable_search: true` — only upload explicitly specified `lcov.info` (relative paths)                        |
+| Unusable report (empty coverage) | `changed: 'main'` in `vitest.config.ts` + shallow clone (depth 1) → `main` branch unavailable → 0 files instrumented → 0% coverage | Removed `changed: 'main'` from config (CI needs full coverage; local devs can pass `--coverage.changed=main`) |
+
+Additionally, `codecov.yml` status checks set to `informational: true` (project + patch) to prevent future blocking when workflows are skipped (e.g. docs-only PRs via `paths-ignore`).
+
+### Fix 7: GitHub Actions Node.js 24 Migration (Amendment 2026-03-21)
+
+GitHub deprecated Node.js 20 for Actions runners (forced Node.js 24 starting June 2, 2026). Updated across all workflows:
+
+| Action                       | Old | New |
+| ---------------------------- | --- | --- |
+| `actions/checkout`           | v4  | v5  |
+| `pnpm/action-setup`          | v2  | v4  |
+| `docker/setup-buildx-action` | v3  | v4  |
+| `docker/login-action`        | v3  | v4  |
 
 ### Fix 3: Cache re-enabled
 

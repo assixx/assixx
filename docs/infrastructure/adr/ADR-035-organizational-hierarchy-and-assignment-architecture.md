@@ -98,7 +98,8 @@ areas (
   id              SERIAL PRIMARY KEY,
   tenant_id       INT NOT NULL → tenants(id) ON DELETE CASCADE,
   name            VARCHAR(255) NOT NULL,
-  area_lead_id    INT NULL → users(id) ON DELETE SET NULL,     -- Bereichsleiter
+  area_lead_id           INT NULL → users(id) ON DELETE SET NULL,     -- Bereichsleiter
+  area_deputy_lead_id    INT NULL → users(id) ON DELETE SET NULL,     -- Stellvertreter (DEPUTY_EQUALS_LEAD)
   type            areas_type NOT NULL DEFAULT 'other',          -- building, production, warehouse, office, outdoor, other
   is_active       SMALLINT NOT NULL DEFAULT 1,                  -- 0=inaktiv, 1=aktiv, 3=archiviert, 4=gelöscht
   created_by      INT NOT NULL → users(id) ON DELETE RESTRICT,
@@ -111,7 +112,8 @@ departments (
   id                  SERIAL PRIMARY KEY,
   tenant_id           INT NOT NULL → tenants(id),
   name                VARCHAR(100) NOT NULL,                        -- UNIQUE per tenant
-  department_lead_id  INT NULL → users(id) ON DELETE SET NULL,     -- Abteilungsleiter
+  department_lead_id          INT NULL → users(id) ON DELETE SET NULL,     -- Abteilungsleiter
+  department_deputy_lead_id   INT NULL → users(id) ON DELETE SET NULL,     -- Stellvertreter (DEPUTY_EQUALS_LEAD)
   area_id             INT NULL → areas(id) ON DELETE SET NULL,     -- Physische Zuordnung
   is_active           SMALLINT NOT NULL DEFAULT 1,
   created_by          INT NULL → users(id) ON DELETE SET NULL,
@@ -126,8 +128,8 @@ teams (
   tenant_id        INT NOT NULL → tenants(id) ON DELETE CASCADE,
   department_id    INT NULL → departments(id) ON DELETE CASCADE,   -- ⚠️ CASCADE: Dept löschen → Teams werden gelöscht!
   name             VARCHAR(100) NOT NULL,                           -- UNIQUE per department
-  team_lead_id     INT NULL → users(id) ON DELETE SET NULL,        -- Teamleiter
-  deputy_lead_id   INT NULL → users(id) ON DELETE SET NULL,        -- Stellvertreter
+  team_lead_id          INT NULL → users(id) ON DELETE SET NULL,        -- Teamleiter
+  team_deputy_lead_id   INT NULL → users(id) ON DELETE SET NULL,        -- Stellvertreter (DEPUTY_EQUALS_LEAD)
   is_active        SMALLINT NULL DEFAULT 1,
   created_by       INT NULL → users(id) ON DELETE SET NULL,
   uuid             CHAR(36) NOT NULL UNIQUE,
@@ -703,32 +705,48 @@ Das Assixx-System hat **zwei orthogonale Berechtigungsebenen**, die unabhängig 
 
 Die Zuweisungen werden in den Management-Tabellen durch ein einheitliches Badge-System visualisiert:
 
-| Badge-Typ       | CSS-Klasse         | Icon         | Verwendung                             |
-| --------------- | ------------------ | ------------ | -------------------------------------- |
-| **Vollzugriff** | `badge--primary`   | `fa-globe`   | `has_full_access = true`               |
-| **Anzahl**      | `badge--info`      | —            | N direkte Zuweisungen, Tooltip = Namen |
-| **Vererbt**     | `badge--info`      | `fa-sitemap` | Zugriff via Parent-Hierarchie          |
-| **Keine**       | `badge--secondary` | —            | Keine Zuweisungen                      |
+| Badge-Typ       | CSS-Klasse         | Icon         | Verwendung                                |
+| --------------- | ------------------ | ------------ | ----------------------------------------- |
+| **Vollzugriff** | `badge--primary`   | `fa-globe`   | `has_full_access = true`                  |
+| **Anzahl**      | `badge--info`      | —            | N direkte Zuweisungen, Tooltip = Namen    |
+| **Vererbt**     | `badge--warning`   | `fa-sitemap` | Zugriff via Hierarchie-Vererbung (orange) |
+| **Keine**       | `badge--secondary` | —            | Keine Zuweisungen                         |
 
 **Badge-Logik für Admins:**
+
+Datenquellen: `areas[]` + `leadAreas[]` (explizite Permissions + Lead-Positionen, dedupliziert).
+Ebenso: `departments[]` + `leadDepartments[]`. Lead-Einträge erhalten Suffix `(Lead)` im Tooltip.
 
 ```
 getAreasBadge(admin):
   has_full_access → "Alle" (globe)
-  areas.length > 0 → "N Bereiche" (info)
+  (areas + leadAreas).length > 0 → "N {label}" (info), Tooltip: Namen
+  departments/leadDepartments haben areaId → "Vererbt" (sitemap, Aufwärts ↑)
   else → "Keine" (secondary)
 
 getDepartmentsBadge(admin):
   has_full_access → "Alle" (globe)
-  direct_depts + area_inheritance → "N + Vererbt"
-  only direct → "N Abteilungen"
-  only inherited → "Vererbt" (sitemap)
+  (depts + leadDepts) + (areas + leadAreas) → "N + Vererbt"
+  only (depts + leadDepts) → "N {label}"
+  only (areas + leadAreas) → "Vererbt" (sitemap, Abwärts ↓)
   else → "Keine"
 
 getTeamsBadge(admin):
   has_full_access → "Alle" (globe)
-  has areas OR departments → "Vererbt" (sitemap, Tooltip zeigt Vererbungskette)
+  has (areas + leadAreas) OR (depts + leadDepts) → "Vererbt" (sitemap)
   else → "Keine"
+```
+
+**API-Response (`GET /admin-permissions/:id`):**
+
+```json
+{
+  "areas": [...],            // Explizite admin_area_permissions
+  "departments": [...],      // Explizite admin_department_permissions (inkl. areaId/areaName)
+  "leadAreas": [...],        // Areas WHERE area_lead_id = userId (ohne Duplikate)
+  "leadDepartments": [...],  // Departments WHERE department_lead_id = userId (inkl. areaId/areaName)
+  "hasFullAccess": false
+}
 ```
 
 **Badge-Logik für Employees:**
@@ -1031,13 +1049,22 @@ frontend/src/
 
 ## Lead-Positionen und Permission-Delegation (2026-03-14)
 
-Lead-Positionen (`team_lead_id`, `deputy_lead_id`, `department_lead_id`, `area_lead_id`) haben seit ADR-036 erweiterte Bedeutung:
+Lead-Positionen und Deputies auf allen 3 Ebenen (seit Deputy Leads Feature, 2026-03-21):
 
-1. **Scope-Zugang:** Leads sehen/bearbeiten Entities in ihrem Scope (Manage-Seiten)
-2. **Permission-Delegation:** Leads mit `manage-permissions` können Addon-Permissions ihrer Untergebenen verwalten
-3. **DB-Trigger:** `trg_enforce_manage_permissions_target_is_lead` — `manage-permissions` kann NUR an Users mit Lead-Position vergeben werden
-4. **DB-Trigger:** `trg_validate_team_lead_position` — `team_lead_id`/`deputy_lead_id` muss `position='team_lead'` haben
-5. **DB-Trigger:** `trg_validate_dept_lead` / `trg_validate_area_lead` — Dept/Area-Leads müssen admin/root sein
+| Tabelle       | Lead-Spalte          | Deputy-Spalte               |
+| ------------- | -------------------- | --------------------------- |
+| `areas`       | `area_lead_id`       | `area_deputy_lead_id`       |
+| `departments` | `department_lead_id` | `department_deputy_lead_id` |
+| `teams`       | `team_lead_id`       | `team_deputy_lead_id`       |
+
+Deputies haben identische Scope-Rechte wie ihre Leads (DEPUTY_EQUALS_LEAD):
+
+1. **Scope-Zugang:** Leads + Deputies sehen/bearbeiten Entities in ihrem Scope (Manage-Seiten)
+2. **Permission-Delegation:** Leads/Deputies mit `manage-permissions` können Addon-Permissions ihrer Untergebenen verwalten
+3. **DB-Trigger:** `trg_enforce_manage_permissions_target_is_lead` — `manage-permissions` kann NUR an Users mit Lead- oder Deputy-Position vergeben werden
+4. **DB-Trigger:** `trg_validate_team_lead_position` — `team_lead_id`/`team_deputy_lead_id` muss `position='team_lead'` haben
+5. **DB-Trigger:** `trg_validate_area_deputy_lead` / `trg_validate_dept_deputy_lead` — Deputies müssen admin/root Rolle haben
+6. **DB-Trigger:** `trg_validate_dept_lead` / `trg_validate_area_lead` — Dept/Area-Leads müssen admin/root sein
 
 **Konsequenz:** Lead-Entfernung (SET NULL) entfernt Scope-Zugang + Delegationsrechte. Auto-Cleanup in `TeamsService.cleanupLeadPermissions()`.
 

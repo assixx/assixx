@@ -11,12 +11,7 @@
  *
  * IMPORTANT: Uses PostgreSQL $1, $2, $3 placeholders (NOT MySQL's ?)
  */
-import {
-  BadRequestException,
-  Injectable,
-  Logger,
-  NotFoundException,
-} from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { v7 as uuidv7 } from 'uuid';
 
 import { DatabaseService } from '../database/database.service.js';
@@ -25,10 +20,7 @@ import type { UpdatePreferencesDto } from './dto/update-preferences.dto.js';
 import { NotificationAddonService } from './notification-addon.service.js';
 import { NotificationPreferencesService } from './notification-preferences.service.js';
 import { NotificationStatisticsService } from './notification-statistics.service.js';
-import {
-  buildNotificationConditions,
-  mapNotificationToApi,
-} from './notifications.helpers.js';
+import { buildNotificationConditions, mapNotificationToApi } from './notifications.helpers.js';
 import type {
   DbCountRow,
   DbIdRow,
@@ -64,19 +56,13 @@ export class NotificationsService {
     tenantId: number,
     filters: NotificationFilters,
   ): Promise<PaginatedNotificationsResult> {
-    this.logger.debug(
-      `Listing notifications for user ${userId} in tenant ${tenantId}`,
-    );
+    this.logger.debug(`Listing notifications for user ${userId} in tenant ${tenantId}`);
 
     const page = filters.page ?? 1;
     const limit = filters.limit ?? 20;
     const offset = (page - 1) * limit;
 
-    const { conditions, params } = buildNotificationConditions(
-      userId,
-      tenantId,
-      filters,
-    );
+    const { conditions, params } = buildNotificationConditions(userId, tenantId, filters);
 
     // Build main query with dynamic parameter indices
     const userIdParamIndex = params.length + 1;
@@ -96,12 +82,7 @@ export class NotificationsService {
       LIMIT $${limitParamIndex} OFFSET $${offsetParamIndex}
     `;
 
-    const rows = await this.db.query<DbNotificationRow>(query, [
-      ...params,
-      userId,
-      limit,
-      offset,
-    ]);
+    const rows = await this.db.query<DbNotificationRow>(query, [...params, userId, limit, offset]);
 
     const { total, unreadCount } = await this.getNotificationCounts(
       userId,
@@ -112,9 +93,7 @@ export class NotificationsService {
     const totalPages = Math.ceil(total / limit);
 
     return {
-      notifications: rows.map((row: DbNotificationRow) =>
-        mapNotificationToApi(row),
-      ),
+      notifications: rows.map((row: DbNotificationRow) => mapNotificationToApi(row)),
       total,
       page,
       totalPages,
@@ -186,14 +165,8 @@ export class NotificationsService {
   /**
    * Mark notification as read
    */
-  async markAsRead(
-    notificationId: number,
-    userId: number,
-    tenantId: number,
-  ): Promise<void> {
-    this.logger.log(
-      `Marking notification ${notificationId} as read for user ${userId}`,
-    );
+  async markAsRead(notificationId: number, userId: number, tenantId: number): Promise<void> {
+    this.logger.log(`Marking notification ${notificationId} as read for user ${userId}`);
 
     const rows = await this.db.query<DbNotificationRow>(
       `SELECT * FROM notifications
@@ -225,10 +198,7 @@ export class NotificationsService {
   /**
    * Mark all notifications as read
    */
-  async markAllAsRead(
-    userId: number,
-    tenantId: number,
-  ): Promise<{ updated: number }> {
+  async markAllAsRead(userId: number, tenantId: number): Promise<{ updated: number }> {
     this.logger.log(`Marking all notifications as read for user ${userId}`);
 
     const unreadNotifications = await this.db.query<DbIdRow>(
@@ -295,8 +265,7 @@ export class NotificationsService {
     if (
       userRole !== 'admin' &&
       userRole !== 'root' &&
-      (notification.recipient_type !== 'user' ||
-        notification.recipient_id !== userId)
+      (notification.recipient_type !== 'user' || notification.recipient_id !== userId)
     ) {
       throw new NotFoundException({
         code: NOTIFICATION_ERROR_CODES.NOT_FOUND,
@@ -304,10 +273,10 @@ export class NotificationsService {
       });
     }
 
-    await this.db.query(
-      `DELETE FROM notifications WHERE id = $1 AND tenant_id = $2`,
-      [notificationId, tenantId],
-    );
+    await this.db.query(`DELETE FROM notifications WHERE id = $1 AND tenant_id = $2`, [
+      notificationId,
+      tenantId,
+    ]);
 
     await this.createAuditLog(
       'notification_deleted',
@@ -326,10 +295,7 @@ export class NotificationsService {
   // ==========================================================================
 
   /** Get notification preferences (delegates to preferences sub-service) */
-  async getPreferences(
-    userId: number,
-    tenantId: number,
-  ): Promise<NotificationPreferencesResponse> {
+  async getPreferences(userId: number, tenantId: number): Promise<NotificationPreferencesResponse> {
     return await this.preferences.getPreferences(userId, tenantId);
   }
 
@@ -378,17 +344,12 @@ export class NotificationsService {
   }
 
   /** Get notification statistics (delegates to statistics sub-service) */
-  async getStatistics(
-    tenantId: number,
-  ): Promise<NotificationStatisticsResponse> {
+  async getStatistics(tenantId: number): Promise<NotificationStatisticsResponse> {
     return await this.statistics.getStatistics(tenantId);
   }
 
   /** Get personal notification statistics (delegates to statistics sub-service) */
-  async getPersonalStats(
-    userId: number,
-    tenantId: number,
-  ): Promise<PersonalStatsResponse> {
+  async getPersonalStats(userId: number, tenantId: number): Promise<PersonalStatsResponse> {
     return await this.statistics.getPersonalStats(userId, tenantId);
   }
 
@@ -431,12 +392,7 @@ export class NotificationsService {
     userId: number,
     tenantId: number,
   ): Promise<number> {
-    return await this.addon.markAddonEntityAsRead(
-      type,
-      entityUuid,
-      userId,
-      tenantId,
-    );
+    return await this.addon.markAddonEntityAsRead(type, entityUuid, userId, tenantId);
   }
 
   // ==========================================================================
@@ -444,15 +400,8 @@ export class NotificationsService {
   // ==========================================================================
 
   /** Mark notification as read by UUID */
-  async markAsReadByUuid(
-    uuid: string,
-    userId: number,
-    tenantId: number,
-  ): Promise<void> {
-    const notificationId = await this.resolveNotificationIdByUuid(
-      uuid,
-      tenantId,
-    );
+  async markAsReadByUuid(uuid: string, userId: number, tenantId: number): Promise<void> {
+    const notificationId = await this.resolveNotificationIdByUuid(uuid, tenantId);
     await this.markAsRead(notificationId, userId, tenantId);
   }
 
@@ -465,18 +414,8 @@ export class NotificationsService {
     ipAddress?: string,
     userAgent?: string,
   ): Promise<void> {
-    const notificationId = await this.resolveNotificationIdByUuid(
-      uuid,
-      tenantId,
-    );
-    await this.deleteNotification(
-      notificationId,
-      userId,
-      tenantId,
-      userRole,
-      ipAddress,
-      userAgent,
-    );
+    const notificationId = await this.resolveNotificationIdByUuid(uuid, tenantId);
+    await this.deleteNotification(notificationId, userId, tenantId, userRole, ipAddress, userAgent);
   }
 
   // ==========================================================================
@@ -484,10 +423,7 @@ export class NotificationsService {
   // ==========================================================================
 
   /** Resolve notification UUID to internal ID */
-  private async resolveNotificationIdByUuid(
-    uuid: string,
-    tenantId: number,
-  ): Promise<number> {
+  private async resolveNotificationIdByUuid(uuid: string, tenantId: number): Promise<number> {
     const result = await this.db.query<{ id: number }>(
       `SELECT id FROM notifications WHERE uuid = $1 AND tenant_id = $2`,
       [uuid, tenantId],
@@ -514,10 +450,7 @@ export class NotificationsService {
       WHERE ${conditions.join(' AND ')}
       ${filters.unread === true ? 'AND nrs.id IS NULL' : ''}
     `;
-    const countRows = await this.db.query<DbCountRow>(countQuery, [
-      ...params,
-      userId,
-    ]);
+    const countRows = await this.db.query<DbCountRow>(countQuery, [...params, userId]);
     const total = Number.parseInt(countRows[0]?.total ?? '0', 10);
 
     const unreadQuery = `
@@ -526,10 +459,7 @@ export class NotificationsService {
       LEFT JOIN notification_read_status nrs ON n.id = nrs.notification_id AND nrs.user_id = $${userIdParamIndex}
       WHERE ${conditions.join(' AND ')} AND nrs.id IS NULL
     `;
-    const unreadRows = await this.db.query<DbCountRow>(unreadQuery, [
-      ...params,
-      userId,
-    ]);
+    const unreadRows = await this.db.query<DbCountRow>(unreadQuery, [...params, userId]);
     const unreadCount = Number.parseInt(unreadRows[0]?.unread_count ?? '0', 10);
 
     return { total, unreadCount };

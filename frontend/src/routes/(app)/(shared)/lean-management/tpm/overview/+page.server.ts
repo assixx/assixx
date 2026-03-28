@@ -82,25 +82,19 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
 
   // Phase 2: Fetch board data (cards) for each plan in parallel
   const boardPromises = plans.map((plan: TpmPlan) =>
-    apiFetch<unknown>(
-      `/tpm/plans/${plan.uuid}/board?page=1&limit=200`,
-      token,
-      fetch,
-    ),
+    apiFetch<unknown>(`/tpm/plans/${plan.uuid}/board?page=1&limit=200`, token, fetch),
   );
   const boardResults = await Promise.all(boardPromises);
 
   // Build asset-with-status list
-  const assets: AssetWithTpmStatus[] = plans.map(
-    (plan: TpmPlan, idx: number) => {
-      const cards = extractCards(boardResults[idx]);
-      return {
-        plan,
-        statusCounts: countStatuses(cards),
-        cards,
-      };
-    },
-  );
+  const assets: AssetWithTpmStatus[] = plans.map((plan: TpmPlan, idx: number) => {
+    const cards = extractCards(boardResults[idx]);
+    return {
+      plan,
+      statusCounts: countStatuses(cards),
+      cards,
+    };
+  });
 
   return { permissionDenied: false as const, assets, colors };
 };

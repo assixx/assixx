@@ -5,11 +5,7 @@
  * Private methods tested via bracket notation.
  * Pattern: mirrors user-availability.service.test.ts
  */
-import {
-  BadRequestException,
-  ConflictException,
-  NotFoundException,
-} from '@nestjs/common';
+import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { ActivityLoggerService } from '../common/services/activity-logger.service.js';
@@ -212,9 +208,7 @@ describe('AssetAvailabilityService – pure helpers', () => {
         availabilityEnd: '2026-03-15',
       };
 
-      expect(() => service['validateAvailabilityDates'](dto as never)).toThrow(
-        BadRequestException,
-      );
+      expect(() => service['validateAvailabilityDates'](dto as never)).toThrow(BadRequestException);
     });
 
     it('throws when end date is before start date', () => {
@@ -224,9 +218,7 @@ describe('AssetAvailabilityService – pure helpers', () => {
         availabilityEnd: '2026-03-01',
       };
 
-      expect(() => service['validateAvailabilityDates'](dto as never)).toThrow(
-        BadRequestException,
-      );
+      expect(() => service['validateAvailabilityDates'](dto as never)).toThrow(BadRequestException);
     });
 
     it('does not throw for operational status without dates', () => {
@@ -236,9 +228,7 @@ describe('AssetAvailabilityService – pure helpers', () => {
         availabilityEnd: undefined,
       };
 
-      expect(() =>
-        service['validateAvailabilityDates'](dto as never),
-      ).not.toThrow();
+      expect(() => service['validateAvailabilityDates'](dto as never)).not.toThrow();
     });
 
     it('does not throw for valid date range', () => {
@@ -248,9 +238,7 @@ describe('AssetAvailabilityService – pure helpers', () => {
         availabilityEnd: '2026-03-15',
       };
 
-      expect(() =>
-        service['validateAvailabilityDates'](dto as never),
-      ).not.toThrow();
+      expect(() => service['validateAvailabilityDates'](dto as never)).not.toThrow();
     });
 
     it('does not throw when start equals end', () => {
@@ -260,9 +248,7 @@ describe('AssetAvailabilityService – pure helpers', () => {
         availabilityEnd: '2026-03-01',
       };
 
-      expect(() =>
-        service['validateAvailabilityDates'](dto as never),
-      ).not.toThrow();
+      expect(() => service['validateAvailabilityDates'](dto as never)).not.toThrow();
     });
   });
 });
@@ -344,6 +330,69 @@ describe('AssetAvailabilityService – DB-mocked methods', () => {
     });
   });
 
+  describe('resolveAssetIdByUuid', () => {
+    it('returns asset ID for valid UUID', async () => {
+      mockDb.query.mockResolvedValueOnce([{ id: 42 }]);
+
+      const result = await service['resolveAssetIdByUuid']('valid-uuid', 1);
+
+      expect(result).toBe(42);
+    });
+
+    it('throws NotFoundException when UUID not found', async () => {
+      mockDb.query.mockResolvedValueOnce([]);
+
+      await expect(service['resolveAssetIdByUuid']('bad-uuid', 1)).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+  });
+
+  describe('getAssetAvailabilityForDateRange', () => {
+    it('returns mapped entries for overlapping date range', async () => {
+      mockDb.query.mockResolvedValueOnce([
+        {
+          id: 1,
+          asset_id: 42,
+          status: 'maintenance',
+          start_date: new Date('2026-03-01'),
+          end_date: new Date('2026-03-15'),
+          reason: 'Wartung',
+          notes: null,
+          created_by: 10,
+          created_by_name: 'Admin',
+          created_at: new Date('2026-02-28'),
+          updated_at: new Date('2026-02-28'),
+        },
+      ]);
+
+      const result = await service.getAssetAvailabilityForDateRange(
+        42,
+        1,
+        '2026-03-01',
+        '2026-03-31',
+      );
+
+      expect(result).toHaveLength(1);
+      expect(result[0]?.status).toBe('maintenance');
+      expect(result[0]?.assetId).toBe(42);
+      expect(result[0]?.startDate).toBe('2026-03-01');
+    });
+
+    it('returns empty array when no overlapping entries', async () => {
+      mockDb.query.mockResolvedValueOnce([]);
+
+      const result = await service.getAssetAvailabilityForDateRange(
+        42,
+        1,
+        '2026-06-01',
+        '2026-06-30',
+      );
+
+      expect(result).toEqual([]);
+    });
+  });
+
   describe('updateAvailability', () => {
     it('throws NotFoundException when asset does not exist', async () => {
       mockDb.query.mockResolvedValueOnce([]); // assetExists returns false
@@ -400,6 +449,35 @@ describe('AssetAvailabilityService – DB-mocked methods', () => {
     });
   });
 
+  describe('updateAvailability – operational status (no dates)', () => {
+    it('skips insert when operational status has no dates', async () => {
+      mockDb.query.mockResolvedValueOnce([{ id: 42 }]); // assetExists
+
+      const result = await service.updateAvailability(
+        42,
+        { availabilityStatus: 'operational' } as never,
+        1,
+      );
+
+      expect(result.message).toBe('Asset availability updated successfully');
+      expect(mockDb.query).toHaveBeenCalledTimes(1); // only assetExists, no insert
+    });
+  });
+
+  describe('createFromTpmPlan', () => {
+    it('inserts maintenance availability entry', async () => {
+      mockDb.query.mockResolvedValueOnce([]); // INSERT
+
+      await service.createFromTpmPlan(1, 42, '2026-04-01', '2026-04-02', 'TPM Wartung', 10);
+
+      expect(mockDb.query).toHaveBeenCalledOnce();
+      const sql = mockDb.query.mock.calls[0]?.[0] as string;
+      expect(sql).toContain('INSERT INTO asset_availability');
+      const params = mockDb.query.mock.calls[0]?.[1] as unknown[];
+      expect(params).toEqual([1, 42, '2026-04-01', '2026-04-02', 'TPM Wartung', 10]);
+    });
+  });
+
   describe('updateAvailabilityByUuid', () => {
     it('throws NotFoundException when UUID not found', async () => {
       mockDb.query.mockResolvedValueOnce([]); // resolveAssetIdByUuid
@@ -415,6 +493,26 @@ describe('AssetAvailabilityService – DB-mocked methods', () => {
           1,
         ),
       ).rejects.toThrow(NotFoundException);
+    });
+
+    it('resolves UUID and delegates to updateAvailability', async () => {
+      mockDb.query
+        .mockResolvedValueOnce([{ id: 42 }]) // resolveAssetIdByUuid
+        .mockResolvedValueOnce([{ id: 42 }]) // assetExists (inside updateAvailability)
+        .mockResolvedValueOnce([]) // no overlapping
+        .mockResolvedValueOnce([]); // INSERT
+
+      const result = await service.updateAvailabilityByUuid(
+        'valid-uuid',
+        {
+          availabilityStatus: 'maintenance',
+          availabilityStart: '2026-03-01',
+          availabilityEnd: '2026-03-15',
+        } as never,
+        1,
+      );
+
+      expect(result.message).toBe('Asset availability updated successfully');
     });
   });
 
@@ -471,6 +569,43 @@ describe('AssetAvailabilityService – DB-mocked methods', () => {
       vi.useRealTimers();
     });
 
+    it('allows editing entry with null end_date (open-ended)', async () => {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date('2026-03-15T12:00:00Z'));
+
+      mockDb.query
+        .mockResolvedValueOnce([
+          {
+            id: 1,
+            asset_id: 42,
+            status: 'standby',
+            start_date: new Date('2026-01-01'),
+            end_date: null,
+            reason: null,
+            notes: null,
+            created_by: null,
+            created_at: null,
+            updated_at: null,
+          },
+        ])
+        .mockResolvedValueOnce([]); // UPDATE
+
+      const result = await service.updateAvailabilityEntry(
+        1,
+        {
+          status: 'repair',
+          startDate: '2026-03-01',
+          endDate: '2026-03-20',
+        } as never,
+        1,
+        10,
+      );
+
+      expect(result.message).toBe('Asset availability entry updated successfully');
+
+      vi.useRealTimers();
+    });
+
     it('updates entry and logs activity for current/future entries', async () => {
       vi.useFakeTimers();
       vi.setSystemTime(new Date('2026-03-01T12:00:00Z'));
@@ -503,9 +638,7 @@ describe('AssetAvailabilityService – DB-mocked methods', () => {
         10,
       );
 
-      expect(result.message).toBe(
-        'Asset availability entry updated successfully',
-      );
+      expect(result.message).toBe('Asset availability entry updated successfully');
       expect(mockDb.query).toHaveBeenCalledTimes(2);
       expect(mockActivityLogger.logUpdate).toHaveBeenCalledOnce();
 
@@ -517,9 +650,7 @@ describe('AssetAvailabilityService – DB-mocked methods', () => {
     it('throws NotFoundException when entry does not exist', async () => {
       mockDb.query.mockResolvedValueOnce([]); // findAvailabilityEntryById
 
-      await expect(service.deleteAvailabilityEntry(999, 1, 10)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.deleteAvailabilityEntry(999, 1, 10)).rejects.toThrow(NotFoundException);
     });
 
     it('deletes entry and logs activity', async () => {
@@ -542,11 +673,20 @@ describe('AssetAvailabilityService – DB-mocked methods', () => {
 
       const result = await service.deleteAvailabilityEntry(1, 1, 10);
 
-      expect(result.message).toBe(
-        'Asset availability entry deleted successfully',
-      );
+      expect(result.message).toBe('Asset availability entry deleted successfully');
       expect(mockDb.query).toHaveBeenCalledTimes(2);
-      expect(mockActivityLogger.logDelete).toHaveBeenCalledOnce();
+      expect(mockActivityLogger.logDelete).toHaveBeenCalledWith(
+        1,
+        10,
+        'asset_availability',
+        1,
+        'Anlagenverfügbarkeit gelöscht: maintenance (2026-03-01 - 2026-03-15)',
+        expect.objectContaining({
+          status: 'maintenance',
+          startDate: '2026-03-01',
+          endDate: '2026-03-15',
+        }),
+      );
     });
   });
 
@@ -554,16 +694,14 @@ describe('AssetAvailabilityService – DB-mocked methods', () => {
     it('throws NotFoundException when asset UUID not found', async () => {
       mockDb.query.mockResolvedValueOnce([]); // findAssetBasicInfoByUuid
 
-      await expect(
-        service.getAvailabilityHistoryByUuid('nonexistent-uuid', 1),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.getAvailabilityHistoryByUuid('nonexistent-uuid', 1)).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('returns history with asset info and entries', async () => {
       mockDb.query
-        .mockResolvedValueOnce([
-          { id: 42, uuid: 'abc-123', name: 'CNC Mill A1' },
-        ]) // findAssetBasicInfoByUuid
+        .mockResolvedValueOnce([{ id: 42, uuid: 'abc-123', name: 'CNC Mill A1' }]) // findAssetBasicInfoByUuid
         .mockResolvedValueOnce([
           {
             id: 1,
@@ -594,17 +732,10 @@ describe('AssetAvailabilityService – DB-mocked methods', () => {
 
     it('passes year and month filters through', async () => {
       mockDb.query
-        .mockResolvedValueOnce([
-          { id: 42, uuid: 'abc-123', name: 'CNC Mill A1' },
-        ]) // findAssetBasicInfoByUuid
+        .mockResolvedValueOnce([{ id: 42, uuid: 'abc-123', name: 'CNC Mill A1' }]) // findAssetBasicInfoByUuid
         .mockResolvedValueOnce([]); // history query
 
-      const result = await service.getAvailabilityHistoryByUuid(
-        'abc-123',
-        1,
-        2026,
-        3,
-      );
+      const result = await service.getAvailabilityHistoryByUuid('abc-123', 1, 2026, 3);
 
       expect(result.meta.year).toBe(2026);
       expect(result.meta.month).toBe(3);

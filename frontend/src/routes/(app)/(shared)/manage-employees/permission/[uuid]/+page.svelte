@@ -24,5 +24,8 @@
     error={data.error}
     backUrl="/manage-employees"
     backLabel="Mitarbeiterverwaltung"
+    history={data.history}
+    historyTotal={data.historyTotal}
+    historyHasMore={data.historyHasMore}
   />
 {/if}

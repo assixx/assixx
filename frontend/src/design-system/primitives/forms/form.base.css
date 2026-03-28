@@ -43,8 +43,7 @@
   .form-field__control {
     backdrop-filter: var(--glass-form-backdrop);
 
-    transition:
-      var(--form-field-transition), var(--form-field-transition-shadow);
+    transition: var(--form-field-transition), var(--form-field-transition-shadow);
     border: var(--form-field-border);
     border-radius: var(--form-field-radius);
 

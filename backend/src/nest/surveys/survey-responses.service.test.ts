@@ -6,11 +6,7 @@
  *        (paginated, individual, access control), update (edit permission),
  *        export (CSV buffer).
  */
-import {
-  BadRequestException,
-  ForbiddenException,
-  NotFoundException,
-} from '@nestjs/common';
+import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { ActivityLoggerService } from '../common/services/activity-logger.service.js';
@@ -82,9 +78,7 @@ describe('SurveyResponsesService', () => {
     it('should throw NotFoundException when survey not found or inactive', async () => {
       mockDb.query.mockResolvedValueOnce([]);
 
-      await expect(service.submitResponse(999, 1, 10, [])).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.submitResponse(999, 1, 10, [])).rejects.toThrow(NotFoundException);
     });
 
     it('should throw BadRequestException on duplicate response', async () => {
@@ -95,9 +89,7 @@ describe('SurveyResponsesService', () => {
       // duplicate check → existing response
       mockDb.query.mockResolvedValueOnce([{ id: 1 }]);
 
-      await expect(service.submitResponse(1, 1, 10, [])).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(service.submitResponse(1, 1, 10, [])).rejects.toThrow(BadRequestException);
     });
 
     it('should create response and insert answers', async () => {
@@ -143,9 +135,9 @@ describe('SurveyResponsesService', () => {
     it('should throw NotFoundException when survey not found', async () => {
       mockDb.query.mockResolvedValueOnce([]);
 
-      await expect(
-        service.getAllResponses(999, 10, { page: 1, limit: 10 }),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.getAllResponses(999, 10, { page: 1, limit: 10 })).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should return paginated responses', async () => {
@@ -220,9 +212,9 @@ describe('SurveyResponsesService', () => {
     it('should throw NotFoundException when response not found', async () => {
       mockDb.query.mockResolvedValueOnce([]);
 
-      await expect(
-        service.getResponseById(1, 999, 10, 'admin', 1),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.getResponseById(1, 999, 10, 'admin', 1)).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should throw ForbiddenException for employee accessing other response', async () => {
@@ -237,9 +229,9 @@ describe('SurveyResponsesService', () => {
         },
       ]);
 
-      await expect(
-        service.getResponseById(1, 1, 10, 'employee', 5),
-      ).rejects.toThrow(ForbiddenException);
+      await expect(service.getResponseById(1, 1, 10, 'employee', 5)).rejects.toThrow(
+        ForbiddenException,
+      );
     });
 
     it('should allow admin to access any response', async () => {
@@ -270,17 +262,13 @@ describe('SurveyResponsesService', () => {
     it('should throw NotFoundException when response not found', async () => {
       mockDb.query.mockResolvedValueOnce([]);
 
-      await expect(service.updateResponse(1, 999, 5, 10, [])).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.updateResponse(1, 999, 5, 10, [])).rejects.toThrow(NotFoundException);
     });
 
     it('should throw ForbiddenException when editing not allowed', async () => {
       mockDb.query.mockResolvedValueOnce([{ id: 1, allow_edit_responses: 0 }]);
 
-      await expect(service.updateResponse(1, 1, 5, 10, [])).rejects.toThrow(
-        ForbiddenException,
-      );
+      await expect(service.updateResponse(1, 1, 5, 10, [])).rejects.toThrow(ForbiddenException);
     });
 
     it('should update response when editing allowed', async () => {
@@ -310,9 +298,7 @@ describe('SurveyResponsesService', () => {
     it('should throw NotFoundException when survey not found', async () => {
       mockDb.query.mockResolvedValueOnce([]);
 
-      await expect(service.exportResponses(999, 10, 'csv')).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.exportResponses(999, 10, 'csv')).rejects.toThrow(NotFoundException);
     });
 
     it('should return CSV buffer', async () => {

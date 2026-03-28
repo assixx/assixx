@@ -36,9 +36,7 @@ const mockActivityLogger = {
 };
 
 /** Creates a valid DummyUserWithTeamsRow for mocking getByUuid results */
-function createDummyRow(
-  overrides: Partial<DummyUserWithTeamsRow> = {},
-): DummyUserWithTeamsRow {
+function createDummyRow(overrides: Partial<DummyUserWithTeamsRow> = {}): DummyUserWithTeamsRow {
   return {
     id: 42,
     uuid: '019c9999-0000-7000-8000-000000000001',
@@ -123,11 +121,7 @@ describe('DummyUsersService', () => {
     it('should hash password with bcrypt', async () => {
       setupCreateMocks();
 
-      await service.create(
-        10,
-        { displayName: 'Test', password: 'SuperSicher123!' },
-        1,
-      );
+      await service.create(10, { displayName: 'Test', password: 'SuperSicher123!' }, 1);
 
       // INSERT query (4th call) should contain the hashed password
       const insertParams = mockDb.query.mock.calls[3]?.[1] as unknown[];
@@ -149,11 +143,7 @@ describe('DummyUsersService', () => {
     it('should assign 6 read-only permissions', async () => {
       setupCreateMocks();
 
-      await service.create(
-        10,
-        { displayName: 'Test', password: 'SuperSicher123!' },
-        1,
-      );
+      await service.create(10, { displayName: 'Test', password: 'SuperSicher123!' }, 1);
 
       // Permission INSERTs are calls 4 (insert user) + 1..6 = calls index 4..9
       const permCalls = mockDb.query.mock.calls.slice(4, 10);
@@ -203,9 +193,7 @@ describe('DummyUsersService', () => {
         mockDb.query.mockResolvedValueOnce([]);
       }
       // 14: getByUuid
-      mockDb.query.mockResolvedValueOnce([
-        createDummyRow({ team_ids: '1,2', team_names: 'A,B' }),
-      ]);
+      mockDb.query.mockResolvedValueOnce([createDummyRow({ team_ids: '1,2', team_names: 'A,B' })]);
 
       const result = await service.create(
         10,
@@ -223,11 +211,7 @@ describe('DummyUsersService', () => {
     it('should log activity after creation', async () => {
       setupCreateMocks();
 
-      await service.create(
-        10,
-        { displayName: 'Halle 1 Display', password: 'SuperSicher123!' },
-        1,
-      );
+      await service.create(10, { displayName: 'Halle 1 Display', password: 'SuperSicher123!' }, 1);
 
       expect(mockActivityLogger.log).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -245,11 +229,7 @@ describe('DummyUsersService', () => {
       mockDb.query.mockResolvedValueOnce([]); // No tenant row
 
       await expect(
-        service.create(
-          999,
-          { displayName: 'Test', password: 'SuperSicher123!' },
-          1,
-        ),
+        service.create(999, { displayName: 'Test', password: 'SuperSicher123!' }, 1),
       ).rejects.toThrow(BadRequestException);
     });
   });
@@ -373,9 +353,7 @@ describe('DummyUsersService', () => {
     it('should throw NotFoundException when not found', async () => {
       mockDb.query.mockResolvedValueOnce([]);
 
-      await expect(service.getByUuid(10, 'non-existent-uuid')).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.getByUuid(10, 'non-existent-uuid')).rejects.toThrow(NotFoundException);
     });
 
     it('should query with tenant_id and role=dummy', async () => {
@@ -401,20 +379,13 @@ describe('DummyUsersService', () => {
       // 2: UPDATE
       mockDb.query.mockResolvedValueOnce([]);
       // 3: getByUuid (after update)
-      mockDb.query.mockResolvedValueOnce([
-        createDummyRow({ display_name: 'Neuer Name' }),
-      ]);
+      mockDb.query.mockResolvedValueOnce([createDummyRow({ display_name: 'Neuer Name' })]);
     }
 
     it('should update displayName', async () => {
       setupUpdateMocks();
 
-      const result = await service.update(
-        10,
-        DUMMY_UUID,
-        { displayName: 'Neuer Name' },
-        1,
-      );
+      const result = await service.update(10, DUMMY_UUID, { displayName: 'Neuer Name' }, 1);
 
       expect(result.displayName).toBe('Neuer Name');
     });
@@ -422,9 +393,9 @@ describe('DummyUsersService', () => {
     it('should throw NotFoundException when dummy not found', async () => {
       mockDb.query.mockResolvedValueOnce([]); // Not found
 
-      await expect(
-        service.update(10, 'non-existent', { displayName: 'Test' }, 1),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.update(10, 'non-existent', { displayName: 'Test' }, 1)).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should build dynamic SET clause with display_name', async () => {
@@ -456,9 +427,7 @@ describe('DummyUsersService', () => {
       // 4: INSERT team
       mockDb.query.mockResolvedValueOnce([]);
       // 5: getByUuid
-      mockDb.query.mockResolvedValueOnce([
-        createDummyRow({ team_ids: '5', team_names: 'TeamA' }),
-      ]);
+      mockDb.query.mockResolvedValueOnce([createDummyRow({ team_ids: '5', team_names: 'TeamA' })]);
 
       const result = await service.update(10, DUMMY_UUID, { teamIds: [5] }, 1);
 
@@ -515,9 +484,7 @@ describe('DummyUsersService', () => {
       // Check query also returns empty
       mockDb.query.mockResolvedValueOnce([]);
 
-      await expect(service.delete(10, 'non-existent', 1)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.delete(10, 'non-existent', 1)).rejects.toThrow(NotFoundException);
     });
 
     it('should throw BadRequestException when already deleted', async () => {
@@ -526,9 +493,7 @@ describe('DummyUsersService', () => {
       // Check query finds it (exists but is_active=4)
       mockDb.query.mockResolvedValueOnce([{ id: 42 }]);
 
-      await expect(service.delete(10, DUMMY_UUID, 1)).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(service.delete(10, DUMMY_UUID, 1)).rejects.toThrow(BadRequestException);
     });
 
     it(`should set is_active = ${IS_ACTIVE.DELETED} in SQL`, async () => {

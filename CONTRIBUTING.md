@@ -44,7 +44,7 @@ You need a Service Token from the maintainer. Request one via **assixx@scs-techn
 curl -Ls --tlsv1.2 --proto "=https" "https://cli.doppler.com/install.sh" | sudo sh
 ```
 
-See [HOW-TO-DOPPLER-GUIDE.md](./docs/HOW-TO-DOPPLER-GUIDE.md) for the full reference.
+See [HOW-TO-DOPPLER-GUIDE.md](./docs/how-to/HOW-TO-DOPPLER-GUIDE.md) for the full reference.
 
 ### 2. Clone & Start
 
@@ -136,7 +136,7 @@ pnpm run test:unit
 vitest run --project api backend/test/calendar.api.test.ts
 ```
 
-See [HOW-TO-TEST-WITH-VITEST.md](./docs/HOW-TO-TEST-WITH-VITEST.md) for details.
+See [HOW-TO-TEST-WITH-VITEST.md](./docs/how-to/HOW-TO-TEST-WITH-VITEST.md) for details.
 
 ### 5. Commit
 
@@ -302,8 +302,8 @@ docker exec assixx-backend pnpm run lint
 | [CODE-OF-CONDUCT-SVELTE.md](./docs/CODE-OF-CONDUCT-SVELTE.md)                         | Svelte 5 & SvelteKit patterns |
 | [TYPESCRIPT-STANDARDS.md](./docs/TYPESCRIPT-STANDARDS.md)                             | TypeScript strict rules       |
 | [DATABASE-MIGRATION-GUIDE.md](./docs/DATABASE-MIGRATION-GUIDE.md)                     | PostgreSQL migrations & RLS   |
-| [HOW-TO-DOPPLER-GUIDE.md](./docs/HOW-TO-DOPPLER-GUIDE.md)                             | Secret management setup       |
-| [HOW-TO-TEST-WITH-VITEST.md](./docs/HOW-TO-TEST-WITH-VITEST.md)                       | API testing with Vitest       |
+| [HOW-TO-DOPPLER-GUIDE.md](./docs/how-to/HOW-TO-DOPPLER-GUIDE.md)                      | Secret management setup       |
+| [HOW-TO-TEST-WITH-VITEST.md](./docs/how-to/HOW-TO-TEST-WITH-VITEST.md)                | API testing with Vitest       |
 | [PRODUCTION-AND-DEVELOPMENT-TESTING.md](./docs/PRODUCTION-AND-DEVELOPMENT-TESTING.md) | Docker/Nginx/SvelteKit setup  |
 | [ZOD-INTEGRATION-GUIDE.md](./backend/docs/ZOD-INTEGRATION-GUIDE.md)                   | Zod validation in NestJS      |
 | [ADR Index](./docs/infrastructure/adr/README.md)                                      | Architecture Decision Records |

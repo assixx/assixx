@@ -54,9 +54,7 @@ function setupSequencedTransaction(
 }
 
 /** Create a minimal VacationRequestRow from DB */
-function createRequestRow(
-  overrides?: Record<string, unknown>,
-): Record<string, unknown> {
+function createRequestRow(overrides?: Record<string, unknown>): Record<string, unknown> {
   return {
     id: 'req-001',
     requester_id: 10,
@@ -83,9 +81,7 @@ function createRequestRow(
   };
 }
 
-function createBaseQuery(
-  overrides?: Partial<VacationQueryDto>,
-): VacationQueryDto {
+function createBaseQuery(overrides?: Partial<VacationQueryDto>): VacationQueryDto {
   return {
     page: 1,
     limit: 20,
@@ -132,9 +128,9 @@ describe('VacationQueriesService', () => {
     it('should throw NotFoundException when request not found', async () => {
       setupSequencedTransaction(mockDb, [{ rows: [] }]);
 
-      await expect(
-        service.getRequestById(TENANT_ID, 'nonexistent'),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.getRequestById(TENANT_ID, 'nonexistent')).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should not set name fields when they are null', async () => {
@@ -158,9 +154,7 @@ describe('VacationQueriesService', () => {
     });
 
     it('should query with IS_ACTIVE filter', async () => {
-      const mockClient = setupSequencedTransaction(mockDb, [
-        { rows: [createRequestRow()] },
-      ]);
+      const mockClient = setupSequencedTransaction(mockDb, [{ rows: [createRequestRow()] }]);
 
       await service.getRequestById(TENANT_ID, 'req-001');
 
@@ -201,11 +195,7 @@ describe('VacationQueriesService', () => {
         { rows: [createRequestRow()] },
       ]);
 
-      const result = await service.getMyRequests(
-        USER_ID,
-        TENANT_ID,
-        createBaseQuery(),
-      );
+      const result = await service.getMyRequests(USER_ID, TENANT_ID, createBaseQuery());
 
       expect(result.total).toBe(1);
       expect(result.page).toBe(1);
@@ -269,11 +259,7 @@ describe('VacationQueriesService', () => {
         { rows: [] },
       ]);
 
-      const result = await service.getMyRequests(
-        USER_ID,
-        TENANT_ID,
-        createBaseQuery(),
-      );
+      const result = await service.getMyRequests(USER_ID, TENANT_ID, createBaseQuery());
 
       expect(result.total).toBe(0);
       expect(result.totalPages).toBe(0);
@@ -291,11 +277,7 @@ describe('VacationQueriesService', () => {
         { rows: [createRequestRow(), createRequestRow({ id: 'req-002' })] },
       ]);
 
-      const result = await service.getIncomingRequests(
-        USER_ID,
-        TENANT_ID,
-        createBaseQuery(),
-      );
+      const result = await service.getIncomingRequests(USER_ID, TENANT_ID, createBaseQuery());
 
       expect(result.data).toHaveLength(2);
 
@@ -455,9 +437,9 @@ describe('VacationQueriesService', () => {
     it('should throw NotFoundException when team not found', async () => {
       setupSequencedTransaction(mockDb, [{ rows: [] }]);
 
-      await expect(
-        service.getTeamCalendar(TENANT_ID, 999, 3, 2026),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.getTeamCalendar(TENANT_ID, 999, 3, 2026)).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should calculate correct month bounds', async () => {
@@ -576,12 +558,7 @@ describe('VacationQueriesService', () => {
     it('should query only approved and active vacations', async () => {
       const mockClient = setupSequencedTransaction(mockDb, [{ rows: [] }]);
 
-      await service.getMyCalendarVacations(
-        USER_ID,
-        TENANT_ID,
-        '2026-03-01',
-        '2026-03-31',
-      );
+      await service.getMyCalendarVacations(USER_ID, TENANT_ID, '2026-03-01', '2026-03-31');
 
       const sql = mockClient.query.mock.calls[0]?.[0] as string;
       expect(sql).toContain("vr.status = 'approved'");
@@ -592,12 +569,7 @@ describe('VacationQueriesService', () => {
     it('should pass date range params correctly', async () => {
       const mockClient = setupSequencedTransaction(mockDb, [{ rows: [] }]);
 
-      await service.getMyCalendarVacations(
-        USER_ID,
-        TENANT_ID,
-        '2026-06-01',
-        '2026-06-30',
-      );
+      await service.getMyCalendarVacations(USER_ID, TENANT_ID, '2026-06-01', '2026-06-30');
 
       const params = mockClient.query.mock.calls[0]?.[1] as unknown[];
       expect(params).toEqual([TENANT_ID, USER_ID, '2026-06-01', '2026-06-30']);
@@ -644,30 +616,21 @@ describe('VacationQueriesService', () => {
 
   describe('getUnreadNotificationRequestIds()', () => {
     /** Wire tenantTransaction to invoke callback with a mock client */
-    function setupTransaction(queryResult: {
-      rows: Array<{ request_id: string }>;
-    }): { query: ReturnType<typeof vi.fn> } {
+    function setupTransaction(queryResult: { rows: Array<{ request_id: string }> }): {
+      query: ReturnType<typeof vi.fn>;
+    } {
       return setupSequencedTransaction(mockDb, [queryResult]);
     }
 
     it('should return request IDs from unread vacation notifications', async () => {
       const mockClient = setupTransaction({
-        rows: [
-          { request_id: 'abc-001' },
-          { request_id: 'abc-002' },
-          { request_id: 'abc-003' },
-        ],
+        rows: [{ request_id: 'abc-001' }, { request_id: 'abc-002' }, { request_id: 'abc-003' }],
       });
 
-      const result = await service.getUnreadNotificationRequestIds(
-        TENANT_ID,
-        USER_ID,
-      );
+      const result = await service.getUnreadNotificationRequestIds(TENANT_ID, USER_ID);
 
       expect(result).toEqual(['abc-001', 'abc-002', 'abc-003']);
-      expect(mockDb.tenantTransaction).toHaveBeenCalledExactlyOnceWith(
-        expect.any(Function),
-      );
+      expect(mockDb.tenantTransaction).toHaveBeenCalledExactlyOnceWith(expect.any(Function));
       expect(mockClient.query).toHaveBeenCalledExactlyOnceWith(
         expect.stringContaining("n.type = 'vacation'"),
         [TENANT_ID, USER_ID],
@@ -677,10 +640,7 @@ describe('VacationQueriesService', () => {
     it('should return empty array when no unread notifications exist', async () => {
       setupTransaction({ rows: [] });
 
-      const result = await service.getUnreadNotificationRequestIds(
-        TENANT_ID,
-        USER_ID,
-      );
+      const result = await service.getUnreadNotificationRequestIds(TENANT_ID, USER_ID);
 
       expect(result).toEqual([]);
     });
@@ -690,10 +650,7 @@ describe('VacationQueriesService', () => {
         rows: [{ request_id: 'only-one' }],
       });
 
-      const result = await service.getUnreadNotificationRequestIds(
-        TENANT_ID,
-        USER_ID,
-      );
+      const result = await service.getUnreadNotificationRequestIds(TENANT_ID, USER_ID);
 
       expect(result).toEqual(['only-one']);
     });

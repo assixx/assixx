@@ -8,12 +8,7 @@
  */
 import { beforeAll, describe, expect, it } from 'vitest';
 
-import {
-  APITEST_PASSWORD,
-  BASE_URL,
-  authOnly,
-  loginApitest,
-} from './helpers.js';
+import { APITEST_PASSWORD, BASE_URL, authOnly, loginApitest } from './helpers.js';
 
 const ENDPOINT = `${BASE_URL}/users/me/org-scope`;
 

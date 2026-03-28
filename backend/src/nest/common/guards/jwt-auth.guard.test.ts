@@ -49,14 +49,10 @@ interface MockRequestOptions {
   query?: Record<string, string | undefined>;
 }
 
-function createMockExecutionContext(
-  options: MockRequestOptions = {},
-): ExecutionContext {
+function createMockExecutionContext(options: MockRequestOptions = {}): ExecutionContext {
   const mockRequest = {
     headers: {
-      ...(options.authorization !== undefined ?
-        { authorization: options.authorization }
-      : {}),
+      ...(options.authorization !== undefined ? { authorization: options.authorization } : {}),
     },
     cookies: options.cookies,
     query: options.query ?? {},
@@ -161,10 +157,10 @@ describe('SECURITY: JwtAuthGuard', () => {
 
       await guard.canActivate(context);
 
-      expect(mockReflector.getAllAndOverride).toHaveBeenCalledWith(
-        IS_PUBLIC_KEY,
-        [context.getHandler(), context.getClass()],
-      );
+      expect(mockReflector.getAllAndOverride).toHaveBeenCalledWith(IS_PUBLIC_KEY, [
+        context.getHandler(),
+        context.getClass(),
+      ]);
     });
   });
 
@@ -185,9 +181,7 @@ describe('SECURITY: JwtAuthGuard', () => {
       const result = await guard.canActivate(context);
 
       expect(result).toBe(true);
-      expect(mockJwtService.verifyAsync).toHaveBeenCalledWith(
-        'valid-token-123',
-      );
+      expect(mockJwtService.verifyAsync).toHaveBeenCalledWith('valid-token-123');
     });
 
     it('should extract from cookie accessToken', async () => {
@@ -202,9 +196,7 @@ describe('SECURITY: JwtAuthGuard', () => {
       const result = await guard.canActivate(context);
 
       expect(result).toBe(true);
-      expect(mockJwtService.verifyAsync).toHaveBeenCalledWith(
-        'cookie-token-456',
-      );
+      expect(mockJwtService.verifyAsync).toHaveBeenCalledWith('cookie-token-456');
     });
 
     it('should extract from query parameter token', async () => {
@@ -219,18 +211,14 @@ describe('SECURITY: JwtAuthGuard', () => {
       const result = await guard.canActivate(context);
 
       expect(result).toBe(true);
-      expect(mockJwtService.verifyAsync).toHaveBeenCalledWith(
-        'query-token-789',
-      );
+      expect(mockJwtService.verifyAsync).toHaveBeenCalledWith('query-token-789');
     });
 
     it('should throw UnauthorizedException when no token anywhere', async () => {
       mockReflector.getAllAndOverride.mockReturnValue(false);
       const context = createMockExecutionContext();
 
-      await expect(guard.canActivate(context)).rejects.toThrow(
-        UnauthorizedException,
-      );
+      await expect(guard.canActivate(context)).rejects.toThrow(UnauthorizedException);
     });
   });
 
@@ -247,24 +235,18 @@ describe('SECURITY: JwtAuthGuard', () => {
         authorization: 'Bearer expired-token',
       });
 
-      await expect(guard.canActivate(context)).rejects.toThrow(
-        UnauthorizedException,
-      );
+      await expect(guard.canActivate(context)).rejects.toThrow(UnauthorizedException);
     });
 
     it('should throw UnauthorizedException on non-access token type', async () => {
       mockReflector.getAllAndOverride.mockReturnValue(false);
-      mockJwtService.verifyAsync.mockResolvedValue(
-        validJwtPayload({ type: 'refresh' }),
-      );
+      mockJwtService.verifyAsync.mockResolvedValue(validJwtPayload({ type: 'refresh' }));
 
       const context = createMockExecutionContext({
         authorization: 'Bearer refresh-token',
       });
 
-      await expect(guard.canActivate(context)).rejects.toThrow(
-        UnauthorizedException,
-      );
+      await expect(guard.canActivate(context)).rejects.toThrow(UnauthorizedException);
     });
   });
 
@@ -282,25 +264,19 @@ describe('SECURITY: JwtAuthGuard', () => {
         authorization: 'Bearer valid-token',
       });
 
-      await expect(guard.canActivate(context)).rejects.toThrow(
-        UnauthorizedException,
-      );
+      await expect(guard.canActivate(context)).rejects.toThrow(UnauthorizedException);
     });
 
     it('should throw UnauthorizedException when user is inactive', async () => {
       mockReflector.getAllAndOverride.mockReturnValue(false);
       mockJwtService.verifyAsync.mockResolvedValue(validJwtPayload());
-      mockDb.query.mockResolvedValue([
-        validUserRow({ is_active: IS_ACTIVE.INACTIVE }),
-      ]);
+      mockDb.query.mockResolvedValue([validUserRow({ is_active: IS_ACTIVE.INACTIVE })]);
 
       const context = createMockExecutionContext({
         authorization: 'Bearer valid-token',
       });
 
-      await expect(guard.canActivate(context)).rejects.toThrow(
-        UnauthorizedException,
-      );
+      await expect(guard.canActivate(context)).rejects.toThrow(UnauthorizedException);
     });
 
     it('should throw UnauthorizedException for invalid role in DB', async () => {
@@ -312,9 +288,7 @@ describe('SECURITY: JwtAuthGuard', () => {
         authorization: 'Bearer valid-token',
       });
 
-      await expect(guard.canActivate(context)).rejects.toThrow(
-        UnauthorizedException,
-      );
+      await expect(guard.canActivate(context)).rejects.toThrow(UnauthorizedException);
     });
   });
 

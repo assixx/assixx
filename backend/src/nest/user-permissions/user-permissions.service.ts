@@ -10,12 +10,7 @@
  * @see docs/infrastructure/adr/ADR-020-per-user-feature-permissions.md
  */
 import { IS_ACTIVE } from '@assixx/shared/constants';
-import {
-  BadRequestException,
-  Injectable,
-  Logger,
-  NotFoundException,
-} from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import type { PoolClient } from 'pg';
 
 import { PermissionRegistryService } from '../common/permission-registry/permission-registry.service.js';
@@ -49,6 +44,31 @@ interface AppliedPermission {
   canRead: boolean;
   canWrite: boolean;
   canDelete: boolean;
+}
+
+/** Permission value triple (used in history diff) */
+interface PermissionTriple {
+  canRead: boolean;
+  canWrite: boolean;
+  canDelete: boolean;
+}
+
+/** Single permission history entry from root_logs */
+export interface PermissionHistoryEntry {
+  createdAt: string;
+  userName: string;
+  firstName: string;
+  lastName: string;
+  details: string;
+  oldValues: Record<string, PermissionTriple>;
+  newValues: Record<string, PermissionTriple>;
+}
+
+/** Paginated history response */
+export interface PermissionHistoryResponse {
+  entries: PermissionHistoryEntry[];
+  total: number;
+  hasMore: boolean;
 }
 
 /** Response shape: category with current permission values */
@@ -132,8 +152,7 @@ export class UserPermissionsService {
         ...cat,
         modules: cat.modules.filter(
           (mod: PermissionModuleDef) =>
-            mod.allowedRoles === undefined ||
-            mod.allowedRoles.includes(targetRole),
+            mod.allowedRoles === undefined || mod.allowedRoles.includes(targetRole),
         ),
       }))
       .filter((cat: PermissionCategoryDef) => cat.modules.length > 0);
@@ -148,10 +167,7 @@ export class UserPermissionsService {
         ...cat,
         modules: cat.modules.filter(
           (mod: PermissionModuleDef) =>
-            !(
-              cat.code === 'manage_hierarchy' &&
-              mod.code === 'manage-permissions'
-            ),
+            !(cat.code === 'manage_hierarchy' && mod.code === 'manage-permissions'),
         ),
       }))
       .filter((cat: PermissionCategoryDef) => cat.modules.length > 0);
@@ -169,13 +185,6 @@ export class UserPermissionsService {
       .map((cat: PermissionCategoryDef) => ({
         ...cat,
         modules: cat.modules.filter((mod: PermissionModuleDef) => {
-          // Regel 4: non-delegatable modules are hidden in delegated view
-          if (
-            cat.code === 'manage_hierarchy' &&
-            mod.code === 'manage-permissions'
-          ) {
-            return false;
-          }
           // Regel 2: leader must have at least canRead for this module
           const key = `${cat.code}:${mod.code}:canRead`;
           return leaderPerms.has(key);
@@ -228,52 +237,39 @@ export class UserPermissionsService {
     // Pre-filter delegated entries (Regel 2 + 4) outside transaction for clarity
     const filteredPermissions =
       isDelegated ?
-        await this.filterDelegatedPermissions(
-          permissions,
-          assignedByUserId,
-          tenantId,
-        )
+        await this.filterDelegatedPermissions(permissions, assignedByUserId, tenantId)
       : permissions;
 
-    await this.db.tenantTransaction(
-      async (client: PoolClient): Promise<void> => {
-        userId = await this.resolveUserIdFromUuid(userUuid, tenantId);
-        oldState = await this.capturePermissionState(client, userId);
+    await this.db.tenantTransaction(async (client: PoolClient): Promise<void> => {
+      userId = await this.resolveUserIdFromUuid(userUuid, tenantId);
+      oldState = await this.capturePermissionState(client, userId);
 
-        for (const entry of filteredPermissions) {
-          // Per design: manage-permissions only for leads/admin/root
-          if (
-            !targetCanDelegate &&
-            entry.addonCode === 'manage_hierarchy' &&
-            entry.moduleCode === 'manage-permissions'
-          ) {
-            continue;
-          }
-
-          const result = await this.upsertSingleEntry(
-            client,
-            tenantId,
-            userId,
-            entry,
-            assignedByUserId,
-          );
-          applied.push(result);
+      for (const entry of filteredPermissions) {
+        // Per design: manage-permissions only for leads/admin/root
+        if (
+          !targetCanDelegate &&
+          entry.addonCode === 'manage_hierarchy' &&
+          entry.moduleCode === 'manage-permissions'
+        ) {
+          continue;
         }
 
-        this.logger.log(
-          `Upserted ${applied.length}/${permissions.length} permission(s) for user ${userUuid}${isDelegated ? ' (delegated)' : ''}`,
+        const result = await this.upsertSingleEntry(
+          client,
+          tenantId,
+          userId,
+          entry,
+          assignedByUserId,
         );
-      },
-    );
+        applied.push(result);
+      }
 
-    this.auditPermissionChanges(
-      tenantId,
-      userUuid,
-      userId,
-      assignedByUserId,
-      oldState,
-      applied,
-    );
+      this.logger.log(
+        `Upserted ${applied.length}/${permissions.length} permission(s) for user ${userUuid}${isDelegated ? ' (delegated)' : ''}`,
+      );
+    });
+
+    this.auditPermissionChanges(tenantId, userUuid, userId, assignedByUserId, oldState, applied);
 
     return { applied: applied.length };
   }
@@ -299,21 +295,15 @@ export class UserPermissionsService {
     });
   }
 
-  private isDelegatableEntry(
-    entry: PermissionEntry,
-    _assignedByUserId: number,
-  ): boolean {
-    return !(
-      entry.addonCode === 'manage_hierarchy' &&
-      entry.moduleCode === 'manage-permissions'
-    );
+  private isDelegatableEntry(_entry: PermissionEntry, _assignedByUserId: number): boolean {
+    // All entries are delegatable — Regel 2 (leaderHasPermission) ensures
+    // the leader can only grant what they have. manage-permissions follows
+    // the delegation chain: superior grants to subordinate.
+    return true;
   }
 
   /** Load all permissions the leader has (single query, used for Regel 2 batch check) */
-  private async loadLeaderPermissions(
-    client: PoolClient,
-    leaderId: number,
-  ): Promise<Set<string>> {
+  private async loadLeaderPermissions(client: PoolClient, leaderId: number): Promise<Set<string>> {
     const result = await client.query<DbPermissionRow>(
       `SELECT addon_code, module_code, can_read, can_write, can_delete
        FROM user_addon_permissions WHERE user_id = $1`,
@@ -321,21 +311,15 @@ export class UserPermissionsService {
     );
     const perms = new Set<string>();
     for (const row of result.rows) {
-      if (row.can_read)
-        perms.add(`${row.addon_code}:${row.module_code}:canRead`);
-      if (row.can_write)
-        perms.add(`${row.addon_code}:${row.module_code}:canWrite`);
-      if (row.can_delete)
-        perms.add(`${row.addon_code}:${row.module_code}:canDelete`);
+      if (row.can_read) perms.add(`${row.addon_code}:${row.module_code}:canRead`);
+      if (row.can_write) perms.add(`${row.addon_code}:${row.module_code}:canWrite`);
+      if (row.can_delete) perms.add(`${row.addon_code}:${row.module_code}:canDelete`);
     }
     return perms;
   }
 
   /** Regel 2: Leader can only delegate permissions they have themselves */
-  private leaderHasPermission(
-    leaderPerms: Set<string>,
-    entry: PermissionEntry,
-  ): boolean {
+  private leaderHasPermission(leaderPerms: Set<string>, entry: PermissionEntry): boolean {
     const key = `${entry.addonCode}:${entry.moduleCode}`;
     if (entry.canRead && !leaderPerms.has(`${key}:canRead`)) return false;
     if (entry.canWrite && !leaderPerms.has(`${key}:canWrite`)) return false;
@@ -352,15 +336,10 @@ export class UserPermissionsService {
     assignedByUserId: number,
   ): Promise<AppliedPermission> {
     if (!this.registry.isValidModule(entry.addonCode, entry.moduleCode)) {
-      throw new BadRequestException(
-        `Unknown addon/module: ${entry.addonCode}/${entry.moduleCode}`,
-      );
+      throw new BadRequestException(`Unknown addon/module: ${entry.addonCode}/${entry.moduleCode}`);
     }
 
-    const allowed = this.registry.getAllowedPermissions(
-      entry.addonCode,
-      entry.moduleCode,
-    );
+    const allowed = this.registry.getAllowedPermissions(entry.addonCode, entry.moduleCode);
     const canRead = allowed.includes('canRead') ? entry.canRead : false;
     const canWrite = allowed.includes('canWrite') ? entry.canWrite : false;
     const canDelete = allowed.includes('canDelete') ? entry.canDelete : false;
@@ -460,11 +439,7 @@ export class UserPermissionsService {
       const oldW = old?.can_write ?? false;
       const oldD = old?.can_delete ?? false;
 
-      if (
-        oldR !== entry.canRead ||
-        oldW !== entry.canWrite ||
-        oldD !== entry.canDelete
-      ) {
+      if (oldR !== entry.canRead || oldW !== entry.canWrite || oldD !== entry.canDelete) {
         changes.push(entry.moduleCode);
         oldValues[key] = { canRead: oldR, canWrite: oldW, canDelete: oldD };
         newValues[key] = {
@@ -484,25 +459,100 @@ export class UserPermissionsService {
   }
 
   /**
+   * Get paginated permission change history for a user from root_logs.
+   * Reads existing audit data — no new table needed.
+   */
+  async getPermissionHistory(
+    tenantId: number,
+    userUuid: string,
+    limit: number,
+    offset: number,
+  ): Promise<PermissionHistoryResponse> {
+    const userId = await this.resolveUserIdFromUuid(userUuid, tenantId);
+
+    return await this.db.tenantTransaction(
+      async (client: PoolClient): Promise<PermissionHistoryResponse> => {
+        const countResult = await client.query<{ count: string }>(
+          `SELECT COUNT(*)::text AS count
+           FROM root_logs
+           WHERE entity_type = 'user_addon_permission'
+             AND entity_id = $1`,
+          [userId],
+        );
+        const total = parseInt(countResult.rows[0]?.count ?? '0', 10);
+
+        const result = await client.query<{
+          created_at: string;
+          user_name: string;
+          first_name: string;
+          last_name: string;
+          details: string;
+          old_values: string | null;
+          new_values: string | null;
+        }>(
+          `SELECT created_at, user_name, first_name, last_name,
+                  details, old_values, new_values
+           FROM root_logs
+           WHERE entity_type = 'user_addon_permission'
+             AND entity_id = $1
+           ORDER BY created_at DESC
+           LIMIT $2 OFFSET $3`,
+          [userId, limit, offset],
+        );
+
+        const entries: PermissionHistoryEntry[] = result.rows.map(
+          (row: {
+            created_at: string;
+            user_name: string;
+            first_name: string;
+            last_name: string;
+            details: string;
+            old_values: string | null;
+            new_values: string | null;
+          }) => ({
+            createdAt: row.created_at,
+            userName: row.user_name,
+            firstName: row.first_name,
+            lastName: row.last_name,
+            details: row.details,
+            oldValues: this.parsePermissionJson(row.old_values),
+            newValues: this.parsePermissionJson(row.new_values),
+          }),
+        );
+
+        return { entries, total, hasMore: offset + limit < total };
+      },
+    );
+  }
+
+  /** Safely parse JSONB permission values from root_logs */
+  private parsePermissionJson(raw: string | null): Record<string, PermissionTriple> {
+    if (raw === null) return {};
+    try {
+      const parsed: unknown = typeof raw === 'string' ? JSON.parse(raw) : raw;
+      if (typeof parsed !== 'object' || parsed === null) return {};
+      return parsed as Record<string, PermissionTriple>;
+    } catch {
+      return {};
+    }
+  }
+
+  /**
    * Get all addon codes where the user has at least one module with can_read = true.
    * Used by DashboardService and NotificationsController to filter counts/events
    * based on user permissions — no permission = no notification.
    */
   async getReadableAddonCodes(userId: number): Promise<Set<string>> {
-    return await this.db.tenantTransaction(
-      async (client: PoolClient): Promise<Set<string>> => {
-        const result = await client.query<{ addon_code: string }>(
-          `SELECT DISTINCT addon_code
+    return await this.db.tenantTransaction(async (client: PoolClient): Promise<Set<string>> => {
+      const result = await client.query<{ addon_code: string }>(
+        `SELECT DISTINCT addon_code
            FROM user_addon_permissions
            WHERE user_id = $1 AND can_read = true`,
-          [userId],
-        );
+        [userId],
+      );
 
-        return new Set(
-          result.rows.map((row: { addon_code: string }) => row.addon_code),
-        );
-      },
-    );
+      return new Set(result.rows.map((row: { addon_code: string }) => row.addon_code));
+    });
   }
 
   /**
@@ -516,32 +566,30 @@ export class UserPermissionsService {
     moduleCode: string,
     action: PermissionType,
   ): Promise<boolean> {
-    return await this.db.tenantTransaction(
-      async (client: PoolClient): Promise<boolean> => {
-        const result = await client.query<DbPermissionRow>(
-          `SELECT can_read, can_write, can_delete
+    return await this.db.tenantTransaction(async (client: PoolClient): Promise<boolean> => {
+      const result = await client.query<DbPermissionRow>(
+        `SELECT can_read, can_write, can_delete
            FROM user_addon_permissions
            WHERE user_id = $1
              AND addon_code = $2
              AND module_code = $3`,
-          [userId, addonCode, moduleCode],
-        );
+        [userId, addonCode, moduleCode],
+      );
 
-        const row = result.rows[0];
-        if (row === undefined) {
-          return false;
-        }
+      const row = result.rows[0];
+      if (row === undefined) {
+        return false;
+      }
 
-        switch (action) {
-          case 'canRead':
-            return row.can_read;
-          case 'canWrite':
-            return row.can_write;
-          case 'canDelete':
-            return row.can_delete;
-        }
-      },
-    );
+      switch (action) {
+        case 'canRead':
+          return row.can_read;
+        case 'canWrite':
+          return row.can_write;
+        case 'canDelete':
+          return row.can_delete;
+      }
+    });
   }
 
   /**
@@ -556,10 +604,7 @@ export class UserPermissionsService {
     return result.id;
   }
 
-  private async resolveUserIdFromUuid(
-    userUuid: string,
-    tenantId: number,
-  ): Promise<number> {
+  private async resolveUserIdFromUuid(userUuid: string, tenantId: number): Promise<number> {
     const result = await this.resolveUserFromUuid(userUuid, tenantId);
     return result.id;
   }
@@ -575,9 +620,9 @@ export class UserPermissionsService {
       is_any_lead: boolean;
     }>(
       `SELECT u.id, u.role,
-        (EXISTS (SELECT 1 FROM teams t WHERE (t.team_lead_id = u.id OR t.deputy_lead_id = u.id) AND t.is_active = ${IS_ACTIVE.ACTIVE})
-         OR EXISTS (SELECT 1 FROM departments d WHERE d.department_lead_id = u.id AND d.is_active = ${IS_ACTIVE.ACTIVE})
-         OR EXISTS (SELECT 1 FROM areas a WHERE a.area_lead_id = u.id AND a.is_active = ${IS_ACTIVE.ACTIVE})
+        (EXISTS (SELECT 1 FROM teams t WHERE (t.team_lead_id = u.id OR t.team_deputy_lead_id = u.id) AND t.is_active = ${IS_ACTIVE.ACTIVE})
+         OR EXISTS (SELECT 1 FROM departments d WHERE (d.department_lead_id = u.id OR d.department_deputy_lead_id = u.id) AND d.is_active = ${IS_ACTIVE.ACTIVE})
+         OR EXISTS (SELECT 1 FROM areas a WHERE (a.area_lead_id = u.id OR a.area_deputy_lead_id = u.id) AND a.is_active = ${IS_ACTIVE.ACTIVE})
         ) AS is_any_lead
        FROM users u WHERE u.uuid = $1 AND u.tenant_id = $2 AND u.is_active = ${IS_ACTIVE.ACTIVE}`,
       [userUuid, tenantId],
@@ -591,9 +636,7 @@ export class UserPermissionsService {
   }
 
   /** Get active addon codes for the current tenant (RLS filters by tenant). */
-  private async getActiveAddonsForTenant(
-    client: PoolClient,
-  ): Promise<Set<string>> {
+  private async getActiveAddonsForTenant(client: PoolClient): Promise<Set<string>> {
     const result = await client.query<DbTenantAddonRow>(
       `SELECT a.code
        FROM addons a

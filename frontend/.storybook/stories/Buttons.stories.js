@@ -48,15 +48,7 @@ export default {
 };
 
 // Helper function to create button HTML
-const createButton = ({
-  variant,
-  label,
-  size,
-  disabled,
-  loading,
-  icon,
-  fullWidth,
-}) => {
+const createButton = ({ variant, label, size, disabled, loading, icon, fullWidth }) => {
   const classes = [
     'btn',
     `btn-${variant}`,
@@ -368,16 +360,7 @@ export const Sizes = {
   argTypes: {
     variant: {
       control: 'select',
-      options: [
-        'primary',
-        'cancel',
-        'danger',
-        'success',
-        'warning',
-        'info',
-        'dark',
-        'manage',
-      ],
+      options: ['primary', 'cancel', 'danger', 'success', 'warning', 'info', 'dark', 'manage'],
       description: 'Button variant',
     },
     label: {
@@ -447,16 +430,7 @@ export const WithIcons = {
   argTypes: {
     variant: {
       control: 'select',
-      options: [
-        'primary',
-        'cancel',
-        'danger',
-        'success',
-        'warning',
-        'info',
-        'dark',
-        'manage',
-      ],
+      options: ['primary', 'cancel', 'danger', 'success', 'warning', 'info', 'dark', 'manage'],
       description: 'Button variant',
     },
     label: {
@@ -501,16 +475,7 @@ export const Loading = {
   argTypes: {
     variant: {
       control: 'select',
-      options: [
-        'primary',
-        'cancel',
-        'danger',
-        'success',
-        'warning',
-        'info',
-        'dark',
-        'manage',
-      ],
+      options: ['primary', 'cancel', 'danger', 'success', 'warning', 'info', 'dark', 'manage'],
       description: 'Button variant',
     },
     label: {
@@ -551,16 +516,7 @@ export const Disabled = {
   argTypes: {
     variant: {
       control: 'select',
-      options: [
-        'primary',
-        'cancel',
-        'danger',
-        'success',
-        'warning',
-        'info',
-        'dark',
-        'manage',
-      ],
+      options: ['primary', 'cancel', 'danger', 'success', 'warning', 'info', 'dark', 'manage'],
       description: 'Button variant',
     },
     label: {

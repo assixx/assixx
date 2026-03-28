@@ -34,18 +34,12 @@ export class DatabaseService {
    * Execute a simple query without transaction.
    * WARNING: Does NOT set RLS context - use transaction() for tenant-isolated queries
    */
-  async query<T extends QueryResultRow>(
-    sql: string,
-    params?: unknown[],
-  ): Promise<T[]> {
+  async query<T extends QueryResultRow>(sql: string, params?: unknown[]): Promise<T[]> {
     const result = await this.pool.query(sql, params);
     return result.rows as T[];
   }
 
-  async queryOne<T extends QueryResultRow>(
-    sql: string,
-    params?: unknown[],
-  ): Promise<T | null> {
+  async queryOne<T extends QueryResultRow>(sql: string, params?: unknown[]): Promise<T | null> {
     const rows = await this.query<T>(sql, params);
     return rows[0] ?? null;
   }
@@ -99,16 +93,12 @@ export class DatabaseService {
    * Execute a transaction using tenant context from CLS.
    * Automatically reads tenantId and userId from request context
    */
-  async tenantTransaction<T>(
-    callback: (client: PoolClient) => Promise<T>,
-  ): Promise<T> {
+  async tenantTransaction<T>(callback: (client: PoolClient) => Promise<T>): Promise<T> {
     const tenantId = this.cls.get<number | undefined>('tenantId');
     const userId = this.cls.get<number | undefined>('userId');
 
     if (tenantId === undefined) {
-      this.logger.warn(
-        'tenantTransaction called without tenantId in CLS context',
-      );
+      this.logger.warn('tenantTransaction called without tenantId in CLS context');
     }
 
     return await this.transaction(callback, { tenantId, userId });
@@ -119,9 +109,7 @@ export class DatabaseService {
    * Sets the app.tenant_id GUC variable for the current transaction
    */
   async setTenantContext(client: PoolClient, tenantId: number): Promise<void> {
-    await client.query(`SELECT set_config('app.tenant_id', $1::text, true)`, [
-      String(tenantId),
-    ]);
+    await client.query(`SELECT set_config('app.tenant_id', $1::text, true)`, [String(tenantId)]);
   }
 
   /**
@@ -129,9 +117,7 @@ export class DatabaseService {
    * Sets the app.user_id GUC variable for the current transaction
    */
   async setUserContext(client: PoolClient, userId: number): Promise<void> {
-    await client.query(`SELECT set_config('app.user_id', $1::text, true)`, [
-      String(userId),
-    ]);
+    await client.query(`SELECT set_config('app.user_id', $1::text, true)`, [String(userId)]);
   }
 
   getTenantId(): number | undefined {

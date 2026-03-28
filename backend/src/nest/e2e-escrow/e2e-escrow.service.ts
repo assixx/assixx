@@ -14,11 +14,7 @@ import type { PoolClient } from 'pg';
 import { v7 as uuidv7 } from 'uuid';
 
 import { DatabaseService } from '../database/database.service.js';
-import type {
-  Argon2Params,
-  E2eEscrowResponse,
-  E2eEscrowRow,
-} from './e2e-escrow.types.js';
+import type { Argon2Params, E2eEscrowResponse, E2eEscrowRow } from './e2e-escrow.types.js';
 
 @Injectable()
 export class E2eEscrowService {
@@ -71,14 +67,10 @@ export class E2eEscrowService {
 
         const row = result.rows[0];
         if (row === undefined) {
-          throw new Error(
-            'Failed to insert escrow — RETURNING yielded no rows',
-          );
+          throw new Error('Failed to insert escrow — RETURNING yielded no rows');
         }
 
-        this.logger.log(
-          `Stored E2E escrow for user ${userId} in tenant ${tenantId}`,
-        );
+        this.logger.log(`Stored E2E escrow for user ${userId} in tenant ${tenantId}`);
 
         return this.mapRowToResponse(row);
       },
@@ -89,10 +81,7 @@ export class E2eEscrowService {
    * Retrieve the escrow blob for recovery.
    * Returns null if no active escrow exists.
    */
-  async getEscrow(
-    tenantId: number,
-    userId: number,
-  ): Promise<E2eEscrowResponse | null> {
+  async getEscrow(tenantId: number, userId: number): Promise<E2eEscrowResponse | null> {
     return await this.db.tenantTransaction(
       async (client: PoolClient): Promise<E2eEscrowResponse | null> => {
         const result = await client.query<E2eEscrowRow>(
@@ -137,14 +126,7 @@ export class E2eEscrowService {
                updated_at = NOW()
            WHERE tenant_id = $1 AND user_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}
            RETURNING encrypted_blob, argon2_salt, xchacha_nonce, argon2_params, blob_version`,
-          [
-            tenantId,
-            userId,
-            encryptedBlob,
-            argon2Salt,
-            xchachaNonce,
-            JSON.stringify(argon2Params),
-          ],
+          [tenantId, userId, encryptedBlob, argon2Salt, xchachaNonce, JSON.stringify(argon2Params)],
         );
 
         const row = result.rows[0];

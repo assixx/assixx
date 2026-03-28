@@ -81,17 +81,11 @@
   // DERIVED
   // =============================================================================
 
-  const personName = $derived(
-    person !== null ? `${person.firstName} ${person.lastName}` : '',
-  );
+  const personName = $derived(person !== null ? `${person.firstName} ${person.lastName}` : '');
 
   // =============================================================================
   // HANDLERS
   // =============================================================================
-
-  function handleOverlayClick(e: MouseEvent): void {
-    if (e.target === e.currentTarget) onclose();
-  }
 
   function handleSubmit(e: Event): void {
     e.preventDefault();
@@ -112,10 +106,7 @@
   // OUTSIDE CLICK HANDLER
   // =============================================================================
 
-  function isClickOutsideDropdown(
-    target: HTMLElement,
-    elementId: string,
-  ): boolean {
+  function isClickOutsideDropdown(target: HTMLElement, elementId: string): boolean {
     const el = document.getElementById(elementId);
     return el !== null && !el.contains(target);
   }
@@ -146,7 +137,6 @@
 
 {#if show && person !== null}
   <!-- Availability Modal -->
-  <!-- svelte-ignore a11y_no_noninteractive_element_interactions, a11y_click_events_have_key_events -->
   <div
     id="availability-modal"
     class="modal-overlay modal-overlay--active"
@@ -154,18 +144,10 @@
     aria-modal="true"
     aria-labelledby="availability-modal-title"
     tabindex="-1"
-    onclick={handleOverlayClick}
-    onkeydown={(e) => {
-      if (e.key === 'Escape') onclose();
-    }}
   >
-    <!-- svelte-ignore a11y_no_noninteractive_element_interactions, a11y_click_events_have_key_events -->
     <form
       id="availability-form"
       class="ds-modal"
-      onclick={(e) => {
-        e.stopPropagation();
-      }}
       onsubmit={handleSubmit}
     >
       <div class="ds-modal__header">
@@ -327,8 +309,7 @@
             class="btn btn-primary"
             disabled={submitting}
           >
-            {#if submitting}<span class="spinner-ring spinner-ring--sm mr-2"
-              ></span>{/if}
+            {#if submitting}<span class="spinner-ring spinner-ring--sm mr-2"></span>{/if}
             Speichern
           </button>
         </div>

@@ -14,10 +14,7 @@ import {
   CURRENT_USER_THROTTLE_MS,
   LIST_ACTION_THROTTLE_MS,
 } from './audit.constants.js';
-import {
-  isCurrentUserEndpoint,
-  shouldSkipGetRequest,
-} from './audit.helpers.js';
+import { isCurrentUserEndpoint, shouldSkipGetRequest } from './audit.helpers.js';
 
 @Injectable()
 export class AuditRequestFilterService {
@@ -86,10 +83,7 @@ export class AuditRequestFilterService {
     const now = Date.now();
     const lastLogged = this.recentLogs.get(key);
 
-    if (
-      lastLogged !== undefined &&
-      now - lastLogged < CURRENT_USER_THROTTLE_MS
-    ) {
+    if (lastLogged !== undefined && now - lastLogged < CURRENT_USER_THROTTLE_MS) {
       // Already logged within throttle window - skip
       return true;
     }
@@ -126,10 +120,7 @@ export class AuditRequestFilterService {
     const now = Date.now();
     const lastLogged = this.recentLogs.get(key);
 
-    if (
-      lastLogged !== undefined &&
-      now - lastLogged < LIST_ACTION_THROTTLE_MS
-    ) {
+    if (lastLogged !== undefined && now - lastLogged < LIST_ACTION_THROTTLE_MS) {
       // Already logged within throttle window - skip
       return true;
     }

@@ -2,10 +2,7 @@
 // KVP-DETAIL - UTILITY FUNCTIONS
 // =============================================================================
 
-import {
-  DEFAULT_HIERARCHY_LABELS,
-  type HierarchyLabels,
-} from '$lib/types/hierarchy-labels';
+import { DEFAULT_HIERARCHY_LABELS, type HierarchyLabels } from '$lib/types/hierarchy-labels';
 
 import {
   STATUS_BADGE_CLASSES,
@@ -17,13 +14,7 @@ import {
   IMAGE_FILE_TYPES,
 } from './constants';
 
-import type {
-  KvpSuggestion,
-  KvpStatus,
-  KvpPriority,
-  OrgLevel,
-  Attachment,
-} from './types';
+import type { KvpSuggestion, KvpStatus, KvpPriority, OrgLevel, Attachment } from './types';
 
 /**
  * Get status badge CSS class
@@ -71,49 +62,11 @@ export function getVisibilityInfo(
   icon: string;
   text: string;
 } {
-  // Junction table organizations take priority (new multi-team/asset flow)
-  if (
-    suggestion.organizations !== undefined &&
-    suggestion.organizations.length > 0
-  ) {
-    return getOrganizationsVisibility(suggestion, labels);
-  }
-
-  // Legacy fallback: single orgLevel/orgId
-  return getLegacyVisibility(suggestion, labels);
+  return getOrgLevelVisibility(suggestion, labels);
 }
 
-/** Visibility from junction table organizations */
-function getOrganizationsVisibility(
-  suggestion: KvpSuggestion,
-  labels: HierarchyLabels,
-): {
-  icon: string;
-  text: string;
-} {
-  const orgs = suggestion.organizations ?? [];
-  const teams = orgs.filter((o) => o.orgType === 'team');
-  const assets = orgs.filter((o) => o.orgType === 'asset');
-
-  const parts: string[] = [];
-  for (const t of teams) {
-    parts.push(t.orgName ?? `Team ${t.orgId}`);
-  }
-  for (const m of assets) {
-    parts.push(m.orgName ?? `${labels.asset} ${m.orgId}`);
-  }
-
-  if (parts.length > 0) {
-    const icon =
-      assets.length > 0 && teams.length === 0 ? 'fa-cog' : 'fa-users';
-    return { icon, text: parts.join(', ') };
-  }
-
-  return { icon: 'fa-lock', text: 'Keine Zuordnung' };
-}
-
-/** Legacy visibility from single orgLevel field */
-function getLegacyVisibility(
+/** Visibility from orgLevel + orgId on the main record */
+function getOrgLevelVisibility(
   suggestion: KvpSuggestion,
   labels: HierarchyLabels,
 ): {
@@ -128,10 +81,7 @@ function getLegacyVisibility(
   const info = visibilityInfo[suggestion.orgLevel];
   let text = info.text;
 
-  if (
-    suggestion.orgLevel === 'department' &&
-    suggestion.departmentName !== ''
-  ) {
+  if (suggestion.orgLevel === 'department' && suggestion.departmentName !== '') {
     text = suggestion.departmentName;
   } else if (
     suggestion.orgLevel === 'area' &&
@@ -197,10 +147,8 @@ export function formatFileSize(bytes: number): string {
  * Check if suggestion has financial info
  */
 export function hasFinancialInfo(suggestion: KvpSuggestion): boolean {
-  const hasEstimatedCost =
-    suggestion.estimatedCost !== undefined && suggestion.estimatedCost !== 0;
-  const hasActualSavings =
-    suggestion.actualSavings !== undefined && suggestion.actualSavings !== 0;
+  const hasEstimatedCost = suggestion.estimatedCost !== undefined && suggestion.estimatedCost !== 0;
+  const hasActualSavings = suggestion.actualSavings !== undefined && suggestion.actualSavings !== 0;
   return hasEstimatedCost || hasActualSavings;
 }
 
@@ -226,9 +174,7 @@ export function isUserAdmin(role: string): boolean {
  * Check if attachment is an image
  */
 export function isImageAttachment(attachment: Attachment): boolean {
-  return IMAGE_FILE_TYPES.includes(
-    attachment.fileType as (typeof IMAGE_FILE_TYPES)[number],
-  );
+  return IMAGE_FILE_TYPES.includes(attachment.fileType as (typeof IMAGE_FILE_TYPES)[number]);
 }
 
 /**
@@ -248,10 +194,8 @@ export function splitAttachments(attachments: Attachment[]): {
  */
 export function getFileIconClass(fileType: string): string {
   if (fileType.includes('pdf')) return 'fa-file-pdf';
-  if (fileType.includes('word') || fileType.includes('document'))
-    return 'fa-file-word';
-  if (fileType.includes('excel') || fileType.includes('spreadsheet'))
-    return 'fa-file-excel';
+  if (fileType.includes('word') || fileType.includes('document')) return 'fa-file-word';
+  if (fileType.includes('excel') || fileType.includes('spreadsheet')) return 'fa-file-excel';
   if (fileType.includes('image')) return 'fa-file-image';
   return 'fa-file';
 }
@@ -277,68 +221,66 @@ export function getSharedByInfo(suggestion: KvpSuggestion): string {
 /**
  * Check if user can update status
  */
-export function canUpdateStatus(userRole: string): boolean {
-  return userRole === 'admin' || userRole === 'root';
+export function canUpdateStatus(userRole: string, canManage = false): boolean {
+  return userRole === 'admin' || userRole === 'root' || canManage;
 }
 
 /**
  * Check if user can share suggestion
- * Admin/Root can share when the suggestion is not yet shared.
+ * Admin/Root/TeamLead can share when the suggestion is not yet shared.
  * Once shared, use "unshare" first before re-sharing at a different level.
  */
 export function canShareSuggestion(
   suggestion: KvpSuggestion,
   userRole: string,
+  canManage = false,
 ): boolean {
-  return (userRole === 'admin' || userRole === 'root') && !suggestion.isShared;
+  const hasPermission = userRole === 'admin' || userRole === 'root' || canManage;
+  return hasPermission && !suggestion.isShared;
 }
 
 /**
  * Check if user can unshare suggestion
  * Allows unsharing for any shared suggestion (team, department, area, company)
- * - Admin/Root can always unshare
+ * - Admin/Root/TeamLead can always unshare
  * - Original sharer can unshare their own shares
  */
 export function canUnshareSuggestion(
   suggestion: KvpSuggestion,
   userRole: string,
   userId: number | undefined,
+  canManage = false,
 ): boolean {
   if (!suggestion.isShared) {
     return false;
   }
 
-  // Admin/Root can always unshare, or the person who shared it
-  return (
-    userRole === 'admin' ||
-    userRole === 'root' ||
-    suggestion.sharedBy === userId
-  );
+  return userRole === 'admin' || userRole === 'root' || canManage || suggestion.sharedBy === userId;
 }
 
 /**
- * Check if user can archive suggestion (must be admin/root AND not already archived)
+ * Check if user can archive suggestion (must have manage rights AND not already archived)
  */
-export function canArchiveSuggestion(
-  userRole: string,
-  status: string,
-): boolean {
-  return (userRole === 'admin' || userRole === 'root') && status !== 'archived';
+export function canArchiveSuggestion(userRole: string, status: string, canManage = false): boolean {
+  const hasPermission = userRole === 'admin' || userRole === 'root' || canManage;
+  return hasPermission && status !== 'archived';
 }
 
 /**
- * Check if user can unarchive (restore) suggestion (must be admin/root AND archived)
+ * Check if user can unarchive (restore) suggestion (must have manage rights AND archived)
  */
 export function canUnarchiveSuggestion(
   userRole: string,
   status: string,
+  canManage = false,
 ): boolean {
-  return (userRole === 'admin' || userRole === 'root') && status === 'archived';
+  const hasPermission = userRole === 'admin' || userRole === 'root' || canManage;
+  return hasPermission && status === 'archived';
 }
 
 /**
- * Check if user can add comments
+ * Check if user can add comments (admin, root, or team lead)
  */
-export function canAddComments(userRole: string): boolean {
-  return userRole === 'admin' || userRole === 'root';
+export function canAddComments(userRole: string, canManage = false): boolean {
+  return userRole === 'admin' || userRole === 'root' || canManage;
 }

@@ -79,9 +79,7 @@ describe('SECURITY: UpsertUserPermissionsSchema', () => {
 
     it('should accept all booleans as true', () => {
       const result = UpsertUserPermissionsSchema.safeParse({
-        permissions: [
-          createValidEntry({ canRead: true, canWrite: true, canDelete: true }),
-        ],
+        permissions: [createValidEntry({ canRead: true, canWrite: true, canDelete: true })],
       });
 
       expect(result.success).toBe(true);

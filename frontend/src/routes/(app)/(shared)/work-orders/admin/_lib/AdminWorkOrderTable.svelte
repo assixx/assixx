@@ -67,9 +67,7 @@
               {item.title}
             </a>
             {#if item.isActive === 3}
-              <span class="badge badge--sm badge--secondary ml-2"
-                >{MESSAGES.BADGE_ARCHIVED}</span
-              >
+              <span class="badge badge--sm badge--secondary ml-2">{MESSAGES.BADGE_ARCHIVED}</span>
             {:else if !item.isRead}
               <span class="badge badge--sm badge--success ml-2">Neu</span>
             {/if}

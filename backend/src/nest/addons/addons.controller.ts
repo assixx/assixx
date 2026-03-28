@@ -13,15 +13,7 @@
  * - GET    /addons/all-tenants           - Get all tenants with addons (root)
  * - GET    /addons/:code                 - Get addon by code (authenticated)
  */
-import {
-  Body,
-  Controller,
-  Get,
-  Param,
-  ParseIntPipe,
-  Post,
-  Query,
-} from '@nestjs/common';
+import { Body, Controller, Get, Param, ParseIntPipe, Post, Query } from '@nestjs/common';
 
 import { CurrentUser } from '../common/decorators/current-user.decorator.js';
 import { Public } from '../common/decorators/public.decorator.js';
@@ -64,9 +56,7 @@ export class AddonsController {
   }
 
   @Get('my-addons')
-  async getMyAddons(
-    @TenantId() tenantId: number,
-  ): Promise<AddonWithTenantStatus[]> {
+  async getMyAddons(@TenantId() tenantId: number): Promise<AddonWithTenantStatus[]> {
     return await this.addonsService.getAvailableAddons(tenantId);
   }
 
@@ -83,10 +73,7 @@ export class AddonsController {
     @Param('addonCode') addonCode: string,
     @TenantId() tenantId: number,
   ): Promise<AddonAccessResponse> {
-    const hasAccess = await this.addonsService.checkTenantAccess(
-      tenantId,
-      addonCode,
-    );
+    const hasAccess = await this.addonsService.checkTenantAccess(tenantId, addonCode);
     return { hasAccess, addonCode };
   }
 
@@ -96,12 +83,7 @@ export class AddonsController {
     @Query() query: GetUsageStatsQueryDto,
     @TenantId() tenantId: number,
   ): Promise<UsageStats[]> {
-    return await this.addonsService.getUsageStats(
-      tenantId,
-      code,
-      query.startDate,
-      query.endDate,
-    );
+    return await this.addonsService.getUsageStats(tenantId, code, query.startDate, query.endDate);
   }
 
   @Get('tenant/:tenantId')
@@ -126,11 +108,7 @@ export class AddonsController {
     @Body() dto: ActivateAddonDto,
     @CurrentUser() user: JwtPayload,
   ): Promise<AddonStatus> {
-    return await this.addonsService.activateAddon(
-      dto.tenantId,
-      dto.addonCode,
-      user.id,
-    );
+    return await this.addonsService.activateAddon(dto.tenantId, dto.addonCode, user.id);
   }
 
   @Post('deactivate')
@@ -139,11 +117,7 @@ export class AddonsController {
     @Body() dto: DeactivateAddonDto,
     @CurrentUser() user: JwtPayload,
   ): Promise<MessageResponse> {
-    await this.addonsService.deactivateAddon(
-      dto.tenantId,
-      dto.addonCode,
-      user.id,
-    );
+    await this.addonsService.deactivateAddon(dto.tenantId, dto.addonCode, user.id);
     return { message: `Addon ${dto.addonCode} deactivated successfully` };
   }
 

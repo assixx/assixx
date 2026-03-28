@@ -2,10 +2,7 @@
 // KVP-DETAIL - CONSTANTS
 // =============================================================================
 
-import {
-  DEFAULT_HIERARCHY_LABELS,
-  type HierarchyLabels,
-} from '$lib/types/hierarchy-labels';
+import { DEFAULT_HIERARCHY_LABELS, type HierarchyLabels } from '$lib/types/hierarchy-labels';
 
 import type { KvpStatus, KvpPriority, OrgLevel } from './types';
 
@@ -21,8 +18,8 @@ export const API_ENDPOINTS = {
   kvpArchive: (id: string) => `/kvp/${id}/archive`,
   kvpUnarchive: (id: string) => `/kvp/${id}/unarchive`,
   kvpConfirm: (uuid: string) => `/kvp/${uuid}/confirm`,
-  attachmentDownload: (fileUuid: string) =>
-    `/kvp/attachments/${fileUuid}/download`,
+  kvpRequestApproval: (id: string) => `/kvp/${id}/request-approval`,
+  attachmentDownload: (fileUuid: string) => `/kvp/attachments/${fileUuid}/download`,
   departments: '/departments',
   teams: '/teams',
   areas: '/areas',
@@ -108,9 +105,7 @@ export const VISIBILITY_INFO: Record<OrgLevel, { icon: string; text: string }> =
 /**
  * Factory: Share level text with dynamic hierarchy labels
  */
-export function createShareLevelText(
-  labels: HierarchyLabels,
-): Record<OrgLevel, string> {
+export function createShareLevelText(labels: HierarchyLabels): Record<OrgLevel, string> {
   return {
     company: 'Firmenebene',
     department: `${labels.department}-Ebene`,
@@ -121,9 +116,8 @@ export function createShareLevelText(
 }
 
 /** Backward-compatible static export */
-export const SHARE_LEVEL_TEXT: Record<OrgLevel, string> = createShareLevelText(
-  DEFAULT_HIERARCHY_LABELS,
-);
+export const SHARE_LEVEL_TEXT: Record<OrgLevel, string> =
+  createShareLevelText(DEFAULT_HIERARCHY_LABELS);
 
 /**
  * Status options for admin dropdown
@@ -135,6 +129,31 @@ export const STATUS_OPTIONS: { value: KvpStatus; label: string }[] = [
   { value: 'implemented', label: 'Umgesetzt' },
   { value: 'rejected', label: 'Abgelehnt' },
 ] as const;
+
+/**
+ * Get filtered status options when approval config exists for KVP.
+ * Returns available transitions based on current status + approval workflow rules.
+ * Without approval config: returns all STATUS_OPTIONS (backward compat).
+ */
+export function getApprovalStatusOptions(
+  currentStatus: KvpStatus,
+  hasApprovalConfig: boolean,
+): { value: KvpStatus; label: string }[] {
+  if (!hasApprovalConfig) {
+    return [...STATUS_OPTIONS];
+  }
+
+  switch (currentStatus) {
+    case 'new':
+    case 'restored':
+      return [{ value: 'rejected', label: 'Abgelehnt' }];
+    case 'approved':
+      return [{ value: 'implemented', label: 'Umgesetzt' }];
+    default:
+      // in_review, rejected, implemented, archived → LOCKED
+      return [];
+  }
+}
 
 /**
  * Image file types for photo gallery

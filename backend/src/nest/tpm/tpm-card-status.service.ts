@@ -16,12 +16,7 @@
  *   overdue → yellow  (markCardCompleted, Flow B)
  */
 import { IS_ACTIVE } from '@assixx/shared/constants';
-import {
-  BadRequestException,
-  Injectable,
-  Logger,
-  NotFoundException,
-} from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import type { PoolClient } from 'pg';
 
 import type { TpmCardRow, TpmCardStatus } from './tpm.types.js';
@@ -120,11 +115,7 @@ export class TpmCardStatusService {
    * Mark a card as overdue (red → overdue).
    * Called by escalation cron after the threshold is exceeded.
    */
-  async markCardOverdue(
-    client: PoolClient,
-    tenantId: number,
-    cardId: number,
-  ): Promise<void> {
+  async markCardOverdue(client: PoolClient, tenantId: number, cardId: number): Promise<void> {
     const card = await this.lockCardById(client, tenantId, cardId);
     this.assertTransition(card.status, 'overdue');
 
@@ -167,11 +158,7 @@ export class TpmCardStatusService {
    * Reject a card's execution (yellow → red).
    * Card goes back to "due" state.
    */
-  async rejectCard(
-    client: PoolClient,
-    tenantId: number,
-    cardId: number,
-  ): Promise<void> {
+  async rejectCard(client: PoolClient, tenantId: number, cardId: number): Promise<void> {
     const card = await this.lockCardById(client, tenantId, cardId);
     this.assertTransition(card.status, 'red');
 
@@ -209,10 +196,7 @@ export class TpmCardStatusService {
   }
 
   /** Assert that a status transition is valid */
-  private assertTransition(
-    currentStatus: TpmCardStatus,
-    targetStatus: TpmCardStatus,
-  ): void {
+  private assertTransition(currentStatus: TpmCardStatus, targetStatus: TpmCardStatus): void {
     const allowed = VALID_TRANSITIONS[currentStatus];
     if (!allowed.includes(targetStatus)) {
       throw new BadRequestException(

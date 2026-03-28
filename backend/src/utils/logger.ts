@@ -97,9 +97,7 @@ function getLogLevel(): string {
 /**
  * Build Loki transport targets from configuration
  */
-function buildLokiTransportTargets(
-  level: string,
-): pino.TransportTargetOptions[] {
+function buildLokiTransportTargets(level: string): pino.TransportTargetOptions[] {
   const lokiTargets = getLokiTargets();
   const env = process.env['NODE_ENV'] ?? 'development';
 
@@ -128,10 +126,7 @@ function buildLokiTransportTargets(
  *
  * Supports dual Loki: local Docker Loki + Grafana Cloud simultaneously
  */
-function buildTransport():
-  | pino.TransportSingleOptions
-  | pino.TransportMultiOptions
-  | undefined {
+function buildTransport(): pino.TransportSingleOptions | pino.TransportMultiOptions | undefined {
   const lokiTargets = getLokiTargets();
   const hasLokiTargets = lokiTargets.length > 0;
 

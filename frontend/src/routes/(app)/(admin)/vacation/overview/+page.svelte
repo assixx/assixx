@@ -125,21 +125,18 @@
   let monthDropdownOpen = $state(false);
 
   function getTeamDisplayText(): string {
-    if (overviewState.selectedTeamId === null)
-      return DROPDOWN_PLACEHOLDERS.TEAM;
+    if (overviewState.selectedTeamId === null) return DROPDOWN_PLACEHOLDERS.TEAM;
     return overviewState.selectedTeamName;
   }
 
   function getYearDisplayText(): string {
-    if (overviewState.selectedTeamId === null)
-      return DROPDOWN_PLACEHOLDERS.AWAIT_TEAM;
+    if (overviewState.selectedTeamId === null) return DROPDOWN_PLACEHOLDERS.AWAIT_TEAM;
     if (overviewState.selectedYear === null) return DROPDOWN_PLACEHOLDERS.YEAR;
     return String(overviewState.selectedYear);
   }
 
   function getMonthDisplayText(): string {
-    if (overviewState.selectedYear === null)
-      return DROPDOWN_PLACEHOLDERS.AWAIT_YEAR;
+    if (overviewState.selectedYear === null) return DROPDOWN_PLACEHOLDERS.AWAIT_YEAR;
     if (overviewState.selectedMonth === null) return 'Jahresübersicht';
     return MONTH_NAMES[overviewState.selectedMonth] ?? '';
   }
@@ -195,8 +192,7 @@
             class="dropdown__trigger"
             class:active={teamDropdownOpen}
             onclick={() => {
-              if (overviewState.canSelectTeam)
-                teamDropdownOpen = !teamDropdownOpen;
+              if (overviewState.canSelectTeam) teamDropdownOpen = !teamDropdownOpen;
             }}
             onkeydown={(e) => {
               if (e.key === 'Enter' && overviewState.canSelectTeam)
@@ -230,9 +226,7 @@
               </div>
             {/each}
             {#if overviewState.canSelectTeam && overviewState.teams.length === 0}
-              <div class="dropdown__option dropdown__option--disabled">
-                Keine Teams vorhanden
-              </div>
+              <div class="dropdown__option dropdown__option--disabled">Keine Teams vorhanden</div>
             {/if}
           </div>
         </div>
@@ -250,8 +244,7 @@
             class="dropdown__trigger"
             class:active={yearDropdownOpen}
             onclick={() => {
-              if (overviewState.canSelectYear)
-                yearDropdownOpen = !yearDropdownOpen;
+              if (overviewState.canSelectYear) yearDropdownOpen = !yearDropdownOpen;
             }}
             onkeydown={(e) => {
               if (e.key === 'Enter' && overviewState.canSelectYear)
@@ -300,8 +293,7 @@
             class="dropdown__trigger"
             class:active={monthDropdownOpen}
             onclick={() => {
-              if (overviewState.canSelectMonth)
-                monthDropdownOpen = !monthDropdownOpen;
+              if (overviewState.canSelectMonth) monthDropdownOpen = !monthDropdownOpen;
             }}
             onkeydown={(e) => {
               if (e.key === 'Enter' && overviewState.canSelectMonth)

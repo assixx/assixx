@@ -110,12 +110,9 @@ describe('Create Blackboard Entry (Admin)', () => {
 
 describe('Get Blackboard Entry', () => {
   it('should return 200 OK', async () => {
-    const res = await fetch(
-      `${BASE_URL}/blackboard/entries/${blackboardEntryId}`,
-      {
-        headers: authOnly(auth.authToken),
-      },
-    );
+    const res = await fetch(`${BASE_URL}/blackboard/entries/${blackboardEntryId}`, {
+      headers: authOnly(auth.authToken),
+    });
     const body = (await res.json()) as JsonBody;
 
     expect(res.status).toBe(200);
@@ -123,12 +120,9 @@ describe('Get Blackboard Entry', () => {
   });
 
   it('should return entry object', async () => {
-    const res = await fetch(
-      `${BASE_URL}/blackboard/entries/${blackboardEntryId}`,
-      {
-        headers: authOnly(auth.authToken),
-      },
-    );
+    const res = await fetch(`${BASE_URL}/blackboard/entries/${blackboardEntryId}`, {
+      headers: authOnly(auth.authToken),
+    });
     const body = (await res.json()) as JsonBody;
 
     expect(body.data).toHaveProperty('id');
@@ -140,12 +134,9 @@ describe('Get Blackboard Entry', () => {
 
 describe('Get Entry Full (with comments and attachments)', () => {
   it('should return 200 OK', async () => {
-    const res = await fetch(
-      `${BASE_URL}/blackboard/entries/${blackboardEntryId}/full`,
-      {
-        headers: authOnly(auth.authToken),
-      },
-    );
+    const res = await fetch(`${BASE_URL}/blackboard/entries/${blackboardEntryId}/full`, {
+      headers: authOnly(auth.authToken),
+    });
     const body = (await res.json()) as JsonBody;
 
     expect(res.status).toBe(200);
@@ -153,12 +144,9 @@ describe('Get Entry Full (with comments and attachments)', () => {
   });
 
   it('should return entry with comments and attachments', async () => {
-    const res = await fetch(
-      `${BASE_URL}/blackboard/entries/${blackboardEntryId}/full`,
-      {
-        headers: authOnly(auth.authToken),
-      },
-    );
+    const res = await fetch(`${BASE_URL}/blackboard/entries/${blackboardEntryId}/full`, {
+      headers: authOnly(auth.authToken),
+    });
     const body = (await res.json()) as JsonBody;
 
     expect(body.data).toHaveProperty('entry');
@@ -171,18 +159,15 @@ describe('Get Entry Full (with comments and attachments)', () => {
 
 describe('Update Blackboard Entry (Admin)', () => {
   it('should return 200 OK', async () => {
-    const res = await fetch(
-      `${BASE_URL}/blackboard/entries/${blackboardEntryId}`,
-      {
-        method: 'PUT',
-        headers: authHeaders(auth.authToken),
-        body: JSON.stringify({
-          title: 'Updated Announcement',
-          content: 'Updated content via API test',
-          priority: 'high',
-        }),
-      },
-    );
+    const res = await fetch(`${BASE_URL}/blackboard/entries/${blackboardEntryId}`, {
+      method: 'PUT',
+      headers: authHeaders(auth.authToken),
+      body: JSON.stringify({
+        title: 'Updated Announcement',
+        content: 'Updated content via API test',
+        priority: 'high',
+      }),
+    });
     const body = (await res.json()) as JsonBody;
 
     expect(res.status).toBe(200);
@@ -194,14 +179,11 @@ describe('Update Blackboard Entry (Admin)', () => {
 
 describe('Confirm Entry (Mark as Read)', () => {
   it('should return 200 OK', async () => {
-    const res = await fetch(
-      `${BASE_URL}/blackboard/entries/${blackboardEntryId}/confirm`,
-      {
-        method: 'POST',
-        headers: authHeaders(auth.authToken),
-        body: JSON.stringify({}),
-      },
-    );
+    const res = await fetch(`${BASE_URL}/blackboard/entries/${blackboardEntryId}/confirm`, {
+      method: 'POST',
+      headers: authHeaders(auth.authToken),
+      body: JSON.stringify({}),
+    });
     const body = (await res.json()) as JsonBody;
 
     expect(res.status).toBe(200);
@@ -213,12 +195,9 @@ describe('Confirm Entry (Mark as Read)', () => {
 
 describe('Get Entry Comments', () => {
   it('should return 200 OK', async () => {
-    const res = await fetch(
-      `${BASE_URL}/blackboard/entries/${blackboardEntryId}/comments`,
-      {
-        headers: authOnly(auth.authToken),
-      },
-    );
+    const res = await fetch(`${BASE_URL}/blackboard/entries/${blackboardEntryId}/comments`, {
+      headers: authOnly(auth.authToken),
+    });
     const body = (await res.json()) as JsonBody;
 
     expect(res.status).toBe(200);
@@ -226,12 +205,9 @@ describe('Get Entry Comments', () => {
   });
 
   it('should return paginated comments', async () => {
-    const res = await fetch(
-      `${BASE_URL}/blackboard/entries/${blackboardEntryId}/comments`,
-      {
-        headers: authOnly(auth.authToken),
-      },
-    );
+    const res = await fetch(`${BASE_URL}/blackboard/entries/${blackboardEntryId}/comments`, {
+      headers: authOnly(auth.authToken),
+    });
     const body = (await res.json()) as JsonBody;
 
     expect(body.data).toHaveProperty('comments');
@@ -245,17 +221,14 @@ describe('Get Entry Comments', () => {
 
 describe('Add Comment to Entry', () => {
   it('should return 201 Created', async () => {
-    const res = await fetch(
-      `${BASE_URL}/blackboard/entries/${blackboardEntryId}/comments`,
-      {
-        method: 'POST',
-        headers: authHeaders(auth.authToken),
-        body: JSON.stringify({
-          comment: 'This is a test comment from API integration test.',
-          isInternal: false,
-        }),
-      },
-    );
+    const res = await fetch(`${BASE_URL}/blackboard/entries/${blackboardEntryId}/comments`, {
+      method: 'POST',
+      headers: authHeaders(auth.authToken),
+      body: JSON.stringify({
+        comment: 'This is a test comment from API integration test.',
+        isInternal: false,
+      }),
+    });
     const body = (await res.json()) as JsonBody;
 
     expect(res.status).toBe(201);
@@ -290,14 +263,11 @@ describe('Get Dashboard Entries', () => {
 
 describe('Archive Entry (Admin)', () => {
   it('should return 200 OK', async () => {
-    const res = await fetch(
-      `${BASE_URL}/blackboard/entries/${blackboardEntryId}/archive`,
-      {
-        method: 'POST',
-        headers: authHeaders(auth.authToken),
-        body: JSON.stringify({}),
-      },
-    );
+    const res = await fetch(`${BASE_URL}/blackboard/entries/${blackboardEntryId}/archive`, {
+      method: 'POST',
+      headers: authHeaders(auth.authToken),
+      body: JSON.stringify({}),
+    });
     const body = (await res.json()) as JsonBody;
 
     expect(res.status).toBe(200);
@@ -309,13 +279,10 @@ describe('Archive Entry (Admin)', () => {
 
 describe('Delete Entry (Admin)', () => {
   it('should return 200 OK', async () => {
-    const res = await fetch(
-      `${BASE_URL}/blackboard/entries/${blackboardEntryId}`,
-      {
-        method: 'DELETE',
-        headers: authOnly(auth.authToken),
-      },
-    );
+    const res = await fetch(`${BASE_URL}/blackboard/entries/${blackboardEntryId}`, {
+      method: 'DELETE',
+      headers: authOnly(auth.authToken),
+    });
     const body = (await res.json()) as JsonBody;
 
     expect(res.status).toBe(200);

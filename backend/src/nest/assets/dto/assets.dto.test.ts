@@ -31,35 +31,22 @@ describe('CreateAssetSchema', () => {
   });
 
   it('should reject name longer than 100 characters', () => {
-    expect(CreateAssetSchema.safeParse({ name: 'M'.repeat(101) }).success).toBe(
-      false,
-    );
+    expect(CreateAssetSchema.safeParse({ name: 'M'.repeat(101) }).success).toBe(false);
   });
 
-  it.each([
-    'production',
-    'packaging',
-    'quality_control',
-    'logistics',
-    'utility',
-    'other',
-  ] as const)('should accept assetType=%s', (assetType) => {
-    expect(CreateAssetSchema.safeParse({ ...valid, assetType }).success).toBe(
-      true,
-    );
-  });
+  it.each(['production', 'packaging', 'quality_control', 'logistics', 'utility', 'other'] as const)(
+    'should accept assetType=%s',
+    (assetType) => {
+      expect(CreateAssetSchema.safeParse({ ...valid, assetType }).success).toBe(true);
+    },
+  );
 
-  it.each([
-    'operational',
-    'maintenance',
-    'repair',
-    'standby',
-    'decommissioned',
-  ] as const)('should accept status=%s', (status) => {
-    expect(CreateAssetSchema.safeParse({ ...valid, status }).success).toBe(
-      true,
-    );
-  });
+  it.each(['operational', 'maintenance', 'repair', 'standby', 'decommissioned'] as const)(
+    'should accept status=%s',
+    (status) => {
+      expect(CreateAssetSchema.safeParse({ ...valid, status }).success).toBe(true);
+    },
+  );
 
   it('should accept valid URL for manualUrl', () => {
     expect(
@@ -71,9 +58,7 @@ describe('CreateAssetSchema', () => {
   });
 
   it('should reject invalid manualUrl', () => {
-    expect(
-      CreateAssetSchema.safeParse({ ...valid, manualUrl: 'not-a-url' }).success,
-    ).toBe(false);
+    expect(CreateAssetSchema.safeParse({ ...valid, manualUrl: 'not-a-url' }).success).toBe(false);
   });
 
   it('should accept valid ISO datetime for dates', () => {
@@ -86,9 +71,7 @@ describe('CreateAssetSchema', () => {
   });
 
   it('should reject negative operatingHours', () => {
-    expect(
-      CreateAssetSchema.safeParse({ ...valid, operatingHours: -1 }).success,
-    ).toBe(false);
+    expect(CreateAssetSchema.safeParse({ ...valid, operatingHours: -1 }).success).toBe(false);
   });
 });
 
@@ -102,9 +85,7 @@ describe('UpdateAssetSchema', () => {
   });
 
   it('should accept partial update', () => {
-    expect(UpdateAssetSchema.safeParse({ status: 'maintenance' }).success).toBe(
-      true,
-    );
+    expect(UpdateAssetSchema.safeParse({ status: 'maintenance' }).success).toBe(true);
   });
 });
 
@@ -169,33 +150,24 @@ describe('AddMaintenanceRecordSchema', () => {
     expect(AddMaintenanceRecordSchema.safeParse(noId).success).toBe(false);
   });
 
-  it.each([
-    'preventive',
-    'corrective',
-    'inspection',
-    'calibration',
-    'cleaning',
-    'other',
-  ] as const)('should accept maintenanceType=%s', (maintenanceType) => {
-    expect(
-      AddMaintenanceRecordSchema.safeParse({ ...valid, maintenanceType })
-        .success,
-    ).toBe(true);
-  });
+  it.each(['preventive', 'corrective', 'inspection', 'calibration', 'cleaning', 'other'] as const)(
+    'should accept maintenanceType=%s',
+    (maintenanceType) => {
+      expect(AddMaintenanceRecordSchema.safeParse({ ...valid, maintenanceType }).success).toBe(
+        true,
+      );
+    },
+  );
 
   it.each(['operational', 'needs_repair', 'decommissioned'] as const)(
     'should accept statusAfter=%s',
     (statusAfter) => {
-      expect(
-        AddMaintenanceRecordSchema.safeParse({ ...valid, statusAfter }).success,
-      ).toBe(true);
+      expect(AddMaintenanceRecordSchema.safeParse({ ...valid, statusAfter }).success).toBe(true);
     },
   );
 
   it('should reject negative cost', () => {
-    expect(
-      AddMaintenanceRecordSchema.safeParse({ ...valid, cost: -10 }).success,
-    ).toBe(false);
+    expect(AddMaintenanceRecordSchema.safeParse({ ...valid, cost: -10 }).success).toBe(false);
   });
 
   it('should accept valid reportUrl', () => {
@@ -226,9 +198,7 @@ describe('UpcomingMaintenanceQuerySchema', () => {
   });
 
   it('should reject days > 365', () => {
-    expect(
-      UpcomingMaintenanceQuerySchema.safeParse({ days: '366' }).success,
-    ).toBe(false);
+    expect(UpcomingMaintenanceQuerySchema.safeParse({ days: '366' }).success).toBe(false);
   });
 });
 
@@ -254,9 +224,7 @@ describe('ListAssetsQuerySchema', () => {
   });
 
   it('should reject negative teamId', () => {
-    expect(ListAssetsQuerySchema.safeParse({ teamId: '-1' }).success).toBe(
-      false,
-    );
+    expect(ListAssetsQuerySchema.safeParse({ teamId: '-1' }).success).toBe(false);
   });
 
   it('should leave teamId undefined when not provided', () => {

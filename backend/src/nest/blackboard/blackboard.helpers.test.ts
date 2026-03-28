@@ -13,10 +13,7 @@ import {
   validateSortColumn,
   validateSortDirection,
 } from './blackboard.helpers.js';
-import type {
-  DbBlackboardComment,
-  DbBlackboardEntry,
-} from './blackboard.types.js';
+import type { DbBlackboardComment, DbBlackboardEntry } from './blackboard.types.js';
 
 describe('blackboard.helpers', () => {
   it('validateSortColumn should return default for invalid column', () => {
@@ -58,6 +55,16 @@ describe('blackboard.helpers', () => {
     processEntryContent(entry);
 
     expect(entry.content).toBe('Hello World');
+  });
+
+  it('processEntryContent should convert JSON-serialized Buffer to string', () => {
+    const entry = {
+      content: { type: 'Buffer', data: [...Buffer.from('Hallo Welt', 'utf8')] },
+    } as unknown as DbBlackboardEntry;
+
+    processEntryContent(entry);
+
+    expect(entry.content).toBe('Hallo Welt');
   });
 
   it('transformEntry should convert snake_case to camelCase and include author fields', () => {

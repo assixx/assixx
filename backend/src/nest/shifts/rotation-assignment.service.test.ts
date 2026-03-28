@@ -62,9 +62,7 @@ describe('RotationAssignmentService', () => {
 
   describe('getPatternAssignments', () => {
     it('should return mapped assignments', async () => {
-      mockDb.query.mockResolvedValueOnce([
-        { id: 1, user_id: 5, pattern_id: 1, username: 'max' },
-      ]);
+      mockDb.query.mockResolvedValueOnce([{ id: 1, user_id: 5, pattern_id: 1, username: 'max' }]);
 
       const result = await service.getPatternAssignments(1, 10);
 
@@ -101,9 +99,7 @@ describe('RotationAssignmentService', () => {
       // UPDATE
       mockDb.query.mockResolvedValueOnce([]);
       // getPatternAssignments (re-fetch)
-      mockDb.query.mockResolvedValueOnce([
-        { id: 10, user_id: 5, pattern_id: 1, shift_group: 'A' },
-      ]);
+      mockDb.query.mockResolvedValueOnce([{ id: 10, user_id: 5, pattern_id: 1, shift_group: 'A' }]);
 
       const result = await service.assignUsersToPattern(
         {
@@ -126,9 +122,7 @@ describe('RotationAssignmentService', () => {
       // INSERT
       mockDb.query.mockResolvedValueOnce([]);
       // getPatternAssignments (re-fetch)
-      mockDb.query.mockResolvedValueOnce([
-        { id: 11, user_id: 5, pattern_id: 1, shift_group: 'B' },
-      ]);
+      mockDb.query.mockResolvedValueOnce([{ id: 11, user_id: 5, pattern_id: 1, shift_group: 'B' }]);
 
       const result = await service.assignUsersToPattern(
         {
@@ -164,9 +158,7 @@ describe('RotationAssignmentService', () => {
     it('should throw BadRequestException when team not found', async () => {
       mockDb.query.mockResolvedValueOnce([]);
 
-      await expect(service.validateTeamExists(999, 10)).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(service.validateTeamExists(999, 10)).rejects.toThrow(BadRequestException);
     });
 
     it('should pass when team exists', async () => {

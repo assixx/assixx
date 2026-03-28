@@ -21,10 +21,7 @@ export class AssetTeamService {
   /**
    * Get teams assigned to a asset
    */
-  async getAssetTeams(
-    assetId: number,
-    tenantId: number,
-  ): Promise<AssetTeamResponse[]> {
+  async getAssetTeams(assetId: number, tenantId: number): Promise<AssetTeamResponse[]> {
     this.logger.debug(`Getting teams for asset ${assetId}`);
 
     const rows = await this.db.query<DbAssetTeamRow>(
@@ -50,10 +47,8 @@ export class AssetTeamService {
       };
 
       if (row.department_id !== null) team.departmentId = row.department_id;
-      if (row.department_name !== null)
-        team.departmentName = row.department_name;
-      if (row.assigned_at !== null)
-        team.assignedAt = row.assigned_at.toISOString();
+      if (row.department_name !== null) team.departmentName = row.department_name;
+      if (row.assigned_at !== null) team.assignedAt = row.assigned_at.toISOString();
       if (row.notes !== null) team.notes = row.notes;
 
       return team;
@@ -72,9 +67,7 @@ export class AssetTeamService {
     this.logger.log(`Setting ${teamIds.length} teams for asset ${assetId}`);
 
     if (teamIds.length > 0) {
-      const placeholders = teamIds
-        .map((_: number, i: number) => `$${i + 2}`)
-        .join(', ');
+      const placeholders = teamIds.map((_: number, i: number) => `$${i + 2}`).join(', ');
       const validTeams = await this.db.query<{ id: number }>(
         `SELECT id FROM teams WHERE id IN (${placeholders}) AND tenant_id = $1`,
         [tenantId, ...teamIds],
@@ -85,10 +78,10 @@ export class AssetTeamService {
       }
     }
 
-    await this.db.query(
-      'DELETE FROM asset_teams WHERE asset_id = $1 AND tenant_id = $2',
-      [assetId, tenantId],
-    );
+    await this.db.query('DELETE FROM asset_teams WHERE asset_id = $1 AND tenant_id = $2', [
+      assetId,
+      tenantId,
+    ]);
 
     if (teamIds.length > 0) {
       const values: unknown[] = [];

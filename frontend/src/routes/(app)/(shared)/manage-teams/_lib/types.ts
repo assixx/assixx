@@ -2,11 +2,7 @@
 // MANAGE TEAMS - TYPE DEFINITIONS
 // =============================================================================
 
-import type {
-  IsActiveStatus,
-  FormIsActiveStatus,
-  StatusFilter,
-} from '@assixx/shared';
+import type { IsActiveStatus, FormIsActiveStatus, StatusFilter } from '@assixx/shared';
 
 export type { IsActiveStatus, FormIsActiveStatus, StatusFilter };
 
@@ -66,6 +62,16 @@ export interface Admin {
 }
 
 /**
+ * Hall interface
+ */
+export interface Hall {
+  id: number;
+  name: string;
+  areaId?: number;
+  departmentIds?: number[];
+}
+
+/**
  * Team interface - main data model
  */
 export interface Team {
@@ -76,10 +82,16 @@ export interface Team {
   leaderName?: string;
   departmentId?: number;
   departmentName?: string;
+  departmentAreaName?: string;
+  teamDeputyLeadId?: number | null;
+  teamDeputyLeadName?: string;
   memberCount?: number | string;
   memberNames?: string;
   assetCount?: number | string;
   assetNames?: string;
+  hallIds?: number[];
+  hallCount?: string;
+  hallNames?: string;
   isActive: IsActiveStatus;
   createdAt: string;
   updatedAt: string;
@@ -97,6 +109,7 @@ export interface TeamFormData {
   leaderId: number | null;
   memberIds: number[];
   assetIds: number[];
+  hallIds: number[];
   isActive: FormIsActiveStatus;
 }
 
@@ -108,6 +121,7 @@ export interface TeamPayload {
   description?: string;
   departmentId?: number | null;
   leaderId?: number | null;
+  teamDeputyLeadId?: number | null;
   isActive: FormIsActiveStatus;
 }
 

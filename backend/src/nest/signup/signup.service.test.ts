@@ -16,9 +16,7 @@ import { SignupService } from './signup.service.js';
 // Module mocks
 // ============================================================
 
-const mockBcryptHash = vi.hoisted(() =>
-  vi.fn().mockResolvedValue('hashed-password'),
-);
+const mockBcryptHash = vi.hoisted(() => vi.fn().mockResolvedValue('hashed-password'));
 const mockUuidV7 = vi.hoisted(() => vi.fn().mockReturnValue('mock-uuid-v7'));
 
 vi.mock('bcryptjs', () => ({ default: { hash: mockBcryptHash } }));
@@ -43,10 +41,7 @@ function createServiceWithMock(): {
     query: vi.fn(),
     transaction: vi.fn(),
   };
-  const service = new SignupService(
-    mockDb as unknown as DatabaseService,
-    mockConfig,
-  );
+  const service = new SignupService(mockDb as unknown as DatabaseService, mockConfig);
   return { service, mockDb };
 }
 
@@ -202,15 +197,11 @@ describe('SignupService – DB-mocked methods', () => {
 
   describe('validateSubdomainOrThrow', () => {
     it('throws BadRequestException for invalid subdomain', () => {
-      expect(() => service['validateSubdomainOrThrow']('ab')).toThrow(
-        BadRequestException,
-      );
+      expect(() => service['validateSubdomainOrThrow']('ab')).toThrow(BadRequestException);
     });
 
     it('does not throw for valid subdomain', () => {
-      expect(() =>
-        service['validateSubdomainOrThrow']('valid-company'),
-      ).not.toThrow();
+      expect(() => service['validateSubdomainOrThrow']('valid-company')).not.toThrow();
     });
   });
 
@@ -218,17 +209,13 @@ describe('SignupService – DB-mocked methods', () => {
     it('throws ConflictException when subdomain is taken', async () => {
       mockDb.query.mockResolvedValueOnce([{ id: 1 }]); // existing
 
-      await expect(
-        service['ensureSubdomainAvailable']('taken'),
-      ).rejects.toThrow(ConflictException);
+      await expect(service['ensureSubdomainAvailable']('taken')).rejects.toThrow(ConflictException);
     });
 
     it('resolves when subdomain is available', async () => {
       mockDb.query.mockResolvedValueOnce([]); // no existing
 
-      await expect(
-        service['ensureSubdomainAvailable']('available'),
-      ).resolves.toBeUndefined();
+      await expect(service['ensureSubdomainAvailable']('available')).resolves.toBeUndefined();
     });
   });
 });
@@ -267,8 +254,8 @@ describe('SignupService – registration', () => {
     // 1. isSubdomainAvailable → available
     mockDb.query.mockResolvedValueOnce([]);
     // 2. transaction executes callback
-    mockDb.transaction.mockImplementation(
-      async (cb: (c: unknown) => Promise<unknown>) => cb(mockClient),
+    mockDb.transaction.mockImplementation(async (cb: (c: unknown) => Promise<unknown>) =>
+      cb(mockClient),
     );
     // Client queries inside transaction:
     // createTenant INSERT
@@ -296,11 +283,7 @@ describe('SignupService – registration', () => {
     it('should register tenant successfully', async () => {
       setupFullHappyPath();
 
-      const result = await service.registerTenant(
-        createValidDto(),
-        '127.0.0.1',
-        'TestAgent',
-      );
+      const result = await service.registerTenant(createValidDto(), '127.0.0.1', 'TestAgent');
 
       expect(result.tenantId).toBe(10);
       expect(result.userId).toBe(1);
@@ -320,10 +303,7 @@ describe('SignupService – registration', () => {
       // Verify audit log contains structured address
       const auditCall = mockDb.query.mock.calls[1] as unknown[];
       const auditParams = auditCall[1] as unknown[];
-      const newValues = JSON.parse(auditParams[6] as string) as Record<
-        string,
-        unknown
-      >;
+      const newValues = JSON.parse(auditParams[6] as string) as Record<string, unknown>;
       expect(newValues.street).toBe('Musterstraße');
       expect(newValues.house_number).toBe('42');
       expect(newValues.postal_code).toBe('10115');
@@ -335,18 +315,14 @@ describe('SignupService – registration', () => {
       const dto = createValidDto();
       dto.subdomain = 'ab';
 
-      await expect(service.registerTenant(dto)).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(service.registerTenant(dto)).rejects.toThrow(BadRequestException);
       expect(mockDb.transaction).not.toHaveBeenCalled();
     });
 
     it('should throw ConflictException for taken subdomain', async () => {
       mockDb.query.mockResolvedValueOnce([{ id: 1 }]);
 
-      await expect(service.registerTenant(createValidDto())).rejects.toThrow(
-        ConflictException,
-      );
+      await expect(service.registerTenant(createValidDto())).rejects.toThrow(ConflictException);
       expect(mockDb.transaction).not.toHaveBeenCalled();
     });
 
@@ -354,34 +330,28 @@ describe('SignupService – registration', () => {
       mockDb.query.mockResolvedValueOnce([]);
       mockDb.transaction.mockRejectedValueOnce(new Error('DB connection lost'));
 
-      await expect(service.registerTenant(createValidDto())).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(service.registerTenant(createValidDto())).rejects.toThrow(BadRequestException);
     });
 
     it('should throw when tenant creation returns no id', async () => {
       mockDb.query.mockResolvedValueOnce([]);
-      mockDb.transaction.mockImplementation(
-        async (cb: (c: unknown) => Promise<unknown>) => cb(mockClient),
+      mockDb.transaction.mockImplementation(async (cb: (c: unknown) => Promise<unknown>) =>
+        cb(mockClient),
       );
       mockClient.query.mockResolvedValueOnce({ rows: [] });
 
-      await expect(service.registerTenant(createValidDto())).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(service.registerTenant(createValidDto())).rejects.toThrow(BadRequestException);
     });
 
     it('should throw when user creation returns no id', async () => {
       mockDb.query.mockResolvedValueOnce([]);
-      mockDb.transaction.mockImplementation(
-        async (cb: (c: unknown) => Promise<unknown>) => cb(mockClient),
+      mockDb.transaction.mockImplementation(async (cb: (c: unknown) => Promise<unknown>) =>
+        cb(mockClient),
       );
       mockClient.query.mockResolvedValueOnce({ rows: [{ id: 10 }] });
       mockClient.query.mockResolvedValueOnce({ rows: [] });
 
-      await expect(service.registerTenant(createValidDto())).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(service.registerTenant(createValidDto())).rejects.toThrow(BadRequestException);
     });
 
     it('should activate ALL purchasable addons in development mode', async () => {
@@ -392,16 +362,13 @@ describe('SignupService – registration', () => {
         query: vi.fn(),
         transaction: vi.fn(),
       };
-      const devService = new SignupService(
-        devDb as unknown as DatabaseService,
-        devConfig,
-      );
+      const devService = new SignupService(devDb as unknown as DatabaseService, devConfig);
 
       // isSubdomainAvailable → available
       devDb.query.mockResolvedValueOnce([]);
       // transaction executes callback
-      devDb.transaction.mockImplementation(
-        async (cb: (c: unknown) => Promise<unknown>) => cb(mockClient),
+      devDb.transaction.mockImplementation(async (cb: (c: unknown) => Promise<unknown>) =>
+        cb(mockClient),
       );
       // createTenant INSERT
       mockClient.query.mockResolvedValueOnce({ rows: [{ id: 10 }] });
@@ -438,8 +405,8 @@ describe('SignupService – registration', () => {
 
     it('should succeed even when audit log fails', async () => {
       mockDb.query.mockResolvedValueOnce([]);
-      mockDb.transaction.mockImplementation(
-        async (cb: (c: unknown) => Promise<unknown>) => cb(mockClient),
+      mockDb.transaction.mockImplementation(async (cb: (c: unknown) => Promise<unknown>) =>
+        cb(mockClient),
       );
       // createTenant INSERT
       mockClient.query.mockResolvedValueOnce({ rows: [{ id: 10 }] });
@@ -461,9 +428,9 @@ describe('SignupService – registration', () => {
     it('should throw BadRequestException on DB error', async () => {
       mockDb.query.mockRejectedValueOnce(new Error('Connection refused'));
 
-      await expect(
-        service.checkSubdomainAvailability('valid-sub'),
-      ).rejects.toThrow(BadRequestException);
+      await expect(service.checkSubdomainAvailability('valid-sub')).rejects.toThrow(
+        BadRequestException,
+      );
     });
   });
 });

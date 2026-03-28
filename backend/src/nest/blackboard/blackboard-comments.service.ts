@@ -4,12 +4,7 @@
  * Handles comment operations for blackboard entries.
  * Supports threaded comments (parent_id) and pagination.
  */
-import {
-  BadRequestException,
-  Injectable,
-  Logger,
-  NotFoundException,
-} from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 
 import { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import { DatabaseService } from '../database/database.service.js';
@@ -96,10 +91,7 @@ export class BlackboardCommentsService {
    * Get all replies for a top-level comment.
    * Sorted by created_at ASC (oldest first).
    */
-  async getReplies(
-    commentId: number,
-    tenantId: number,
-  ): Promise<BlackboardComment[]> {
+  async getReplies(commentId: number, tenantId: number): Promise<BlackboardComment[]> {
     this.logger.debug(`Getting replies for comment ${commentId}`);
 
     const replies = await this.db.query<DbBlackboardComment>(
@@ -144,9 +136,7 @@ export class BlackboardCommentsService {
         throw new BadRequestException('Parent comment not found');
       }
       if (parentRows[0].entry_id !== numericId) {
-        throw new BadRequestException(
-          'Parent comment does not belong to this entry',
-        );
+        throw new BadRequestException('Parent comment does not belong to this entry');
       }
     }
 
@@ -154,14 +144,7 @@ export class BlackboardCommentsService {
       `INSERT INTO blackboard_comments (tenant_id, entry_id, user_id, comment, is_internal, parent_id)
        VALUES ($1, $2, $3, $4, $5, $6)
        RETURNING id`,
-      [
-        tenantId,
-        numericId,
-        userId,
-        comment,
-        isInternal ? 1 : 0,
-        parentId ?? null,
-      ],
+      [tenantId, numericId, userId, comment, isInternal ? 1 : 0, parentId ?? null],
     );
 
     if (rows[0] === undefined) {
@@ -183,16 +166,13 @@ export class BlackboardCommentsService {
   /**
    * Delete a comment. Replies cascade-delete via FK constraint.
    */
-  async deleteComment(
-    commentId: number,
-    tenantId: number,
-  ): Promise<{ message: string }> {
+  async deleteComment(commentId: number, tenantId: number): Promise<{ message: string }> {
     this.logger.log(`Deleting comment ${commentId}`);
 
-    await this.db.query(
-      'DELETE FROM blackboard_comments WHERE id = $1 AND tenant_id = $2',
-      [commentId, tenantId],
-    );
+    await this.db.query('DELETE FROM blackboard_comments WHERE id = $1 AND tenant_id = $2', [
+      commentId,
+      tenantId,
+    ]);
 
     void this.activityLogger.logDelete(
       tenantId,
@@ -209,10 +189,7 @@ export class BlackboardCommentsService {
    * Resolve entry ID (UUID or numeric) to numeric ID.
    * Returns null if entry not found.
    */
-  private async resolveEntryId(
-    id: number | string,
-    tenantId: number,
-  ): Promise<number | null> {
+  private async resolveEntryId(id: number | string, tenantId: number): Promise<number | null> {
     if (typeof id === 'number') {
       return id;
     }

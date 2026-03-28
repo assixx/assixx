@@ -25,10 +25,7 @@ export class NotificationPreferencesService {
    * Get notification preferences for a user.
    * Returns defaults if no preferences exist.
    */
-  async getPreferences(
-    userId: number,
-    tenantId: number,
-  ): Promise<NotificationPreferencesResponse> {
+  async getPreferences(userId: number, tenantId: number): Promise<NotificationPreferencesResponse> {
     this.logger.debug(`Getting preferences for user ${userId}`);
 
     const rows = await this.db.query<DbNotificationPreferencesRow>(
@@ -42,10 +39,7 @@ export class NotificationPreferencesService {
       return this.getDefaultPreferences();
     }
 
-    let notificationTypes: Record<
-      string,
-      { email: boolean; push: boolean; sms: boolean }
-    > = {};
+    let notificationTypes: Record<string, { email: boolean; push: boolean; sms: boolean }> = {};
     if (prefs.preferences !== null) {
       try {
         notificationTypes =
@@ -54,10 +48,7 @@ export class NotificationPreferencesService {
               string,
               { email: boolean; push: boolean; sms: boolean }
             >)
-          : (prefs.preferences as Record<
-              string,
-              { email: boolean; push: boolean; sms: boolean }
-            >);
+          : (prefs.preferences as Record<string, { email: boolean; push: boolean; sms: boolean }>);
       } catch {
         this.logger.warn('Failed to parse notification preferences JSON');
         notificationTypes = {};

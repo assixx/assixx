@@ -35,10 +35,7 @@ export class BlackboardAttachmentsService {
 
     const fileUuid = uuidv7();
     const extension = path.extname(file.originalname).toLowerCase();
-    const checksum = crypto
-      .createHash('sha256')
-      .update(file.buffer)
-      .digest('hex');
+    const checksum = crypto.createHash('sha256').update(file.buffer).digest('hex');
 
     const now = new Date();
     const year = now.getFullYear();
@@ -107,11 +104,7 @@ export class BlackboardAttachmentsService {
     fileSize: number;
   }> {
     this.logger.log(`Downloading attachment ${attachmentId}`);
-    return await this.documentsService.getDocumentContent(
-      attachmentId,
-      userId,
-      tenantId,
-    );
+    return await this.documentsService.getDocumentContent(attachmentId, userId, tenantId);
   }
 
   /**
@@ -128,11 +121,7 @@ export class BlackboardAttachmentsService {
     fileSize: number;
   }> {
     this.logger.log(`Previewing attachment ${attachmentId}`);
-    return await this.documentsService.getDocumentContent(
-      attachmentId,
-      userId,
-      tenantId,
-    );
+    return await this.documentsService.getDocumentContent(attachmentId, userId, tenantId);
   }
 
   /**
@@ -160,11 +149,7 @@ export class BlackboardAttachmentsService {
       throw new NotFoundException('Attachment not found');
     }
 
-    return await this.documentsService.getDocumentContent(
-      docs[0].id,
-      userId,
-      tenantId,
-    );
+    return await this.documentsService.getDocumentContent(docs[0].id, userId, tenantId);
   }
 
   /**

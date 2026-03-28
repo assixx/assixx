@@ -3,11 +3,7 @@
    * TimeEstimateEditor — Toggle + tabbed editor for per-interval time estimates.
    * Includes the on/off toggle, help text, and per-interval input grid.
    */
-  import {
-    ESTIMATE_INTERVALS,
-    INTERVAL_LABELS,
-    MESSAGES,
-  } from '../../../_lib/constants';
+  import { ESTIMATE_INTERVALS, INTERVAL_LABELS, MESSAGES } from '../../../_lib/constants';
 
   import type { IntervalType } from '../../../_lib/types';
 
@@ -26,13 +22,7 @@
     ontoggle: (value: boolean) => void;
   }
 
-  const {
-    estimateMap,
-    submitting,
-    isCreateMode,
-    showEstimates,
-    ontoggle,
-  }: Props = $props();
+  const { estimateMap, submitting, isCreateMode, showEstimates, ontoggle }: Props = $props();
 
   let activeTab = $state<IntervalType>('monthly');
   const activeEstimate = $derived(estimateMap[activeTab]);
@@ -122,9 +112,7 @@
             min={0}
             max={480}
           />
-          <span class="form-input-group__suffix"
-            >{MESSAGES.TIME_EST_MINUTES}</span
-          >
+          <span class="form-input-group__suffix">{MESSAGES.TIME_EST_MINUTES}</span>
         </div>
       </div>
 
@@ -143,9 +131,7 @@
             min={0}
             max={480}
           />
-          <span class="form-input-group__suffix"
-            >{MESSAGES.TIME_EST_MINUTES}</span
-          >
+          <span class="form-input-group__suffix">{MESSAGES.TIME_EST_MINUTES}</span>
         </div>
       </div>
 
@@ -164,9 +150,7 @@
             min={0}
             max={480}
           />
-          <span class="form-input-group__suffix"
-            >{MESSAGES.TIME_EST_MINUTES}</span
-          >
+          <span class="form-input-group__suffix">{MESSAGES.TIME_EST_MINUTES}</span>
         </div>
       </div>
     </div>

@@ -2,26 +2,14 @@
 // MANAGE HALLS - API FUNCTIONS
 // =============================================================================
 
-import {
-  DEFAULT_HIERARCHY_LABELS,
-  type HierarchyLabels,
-} from '$lib/types/hierarchy-labels';
+import { DEFAULT_HIERARCHY_LABELS, type HierarchyLabels } from '$lib/types/hierarchy-labels';
 import { getApiClient } from '$lib/utils/api-client';
 import { createLogger } from '$lib/utils/logger';
-import {
-  isSessionExpiredError,
-  handleSessionExpired,
-} from '$lib/utils/session-expired.js';
+import { isSessionExpiredError, handleSessionExpired } from '$lib/utils/session-expired.js';
 
 import { API_ENDPOINTS } from './constants';
 
-import type {
-  Hall,
-  Area,
-  HallPayload,
-  FormIsActiveStatus,
-  DeleteHallResult,
-} from './types';
+import type { Hall, Area, HallPayload, FormIsActiveStatus, DeleteHallResult } from './types';
 
 const log = createLogger('ManageHallsApi');
 
@@ -59,9 +47,7 @@ export async function loadHalls(): Promise<{
   }
 }
 
-export async function loadAreas(
-  labels: HierarchyLabels = DEFAULT_HIERARCHY_LABELS,
-): Promise<{
+export async function loadAreas(labels: HierarchyLabels = DEFAULT_HIERARCHY_LABELS): Promise<{
   areas: Area[];
   error: string | null;
 }> {
@@ -73,10 +59,7 @@ export async function loadAreas(
     log.error({ err }, 'Error loading areas');
     return {
       areas: [],
-      error:
-        err instanceof Error ?
-          err.message
-        : `Fehler beim Laden der ${labels.area}`,
+      error: err instanceof Error ? err.message : `Fehler beim Laden der ${labels.area}`,
     };
   }
 }

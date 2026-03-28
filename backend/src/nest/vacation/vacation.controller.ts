@@ -112,11 +112,7 @@ export class VacationController {
     @CurrentUser() user: JwtPayload,
     @Body() dto: CreateVacationRequestDto,
   ): Promise<VacationRequest> {
-    return await this.vacationService.createRequest(
-      user.id,
-      user.tenantId,
-      dto,
-    );
+    return await this.vacationService.createRequest(user.id, user.tenantId, dto);
   }
 
   /** GET /vacation/requests — List own vacation requests (paginated). */
@@ -126,11 +122,7 @@ export class VacationController {
     @CurrentUser() user: JwtPayload,
     @Query() query: VacationQueryDto,
   ): Promise<PaginatedResult<VacationRequest>> {
-    return await this.queriesService.getMyRequests(
-      user.id,
-      user.tenantId,
-      query,
-    );
+    return await this.queriesService.getMyRequests(user.id, user.tenantId, query);
   }
 
   /**
@@ -143,11 +135,7 @@ export class VacationController {
     @CurrentUser() user: JwtPayload,
     @Query() query: VacationQueryDto,
   ): Promise<PaginatedResult<VacationRequest>> {
-    return await this.queriesService.getIncomingRequests(
-      user.id,
-      user.tenantId,
-      query,
-    );
+    return await this.queriesService.getIncomingRequests(user.id, user.tenantId, query);
   }
 
   /**
@@ -156,13 +144,8 @@ export class VacationController {
    */
   @Get('notifications/unread-ids')
   @RequirePermission(FEAT, MOD_REQUESTS, 'canRead')
-  async getUnreadNotificationRequestIds(
-    @CurrentUser() user: JwtPayload,
-  ): Promise<string[]> {
-    return await this.queriesService.getUnreadNotificationRequestIds(
-      user.tenantId,
-      user.id,
-    );
+  async getUnreadNotificationRequestIds(@CurrentUser() user: JwtPayload): Promise<string[]> {
+    return await this.queriesService.getUnreadNotificationRequestIds(user.tenantId, user.id);
   }
 
   /** GET /vacation/requests/:id — Get a single vacation request by ID. */
@@ -183,12 +166,7 @@ export class VacationController {
     @Param('id') id: string,
     @Body() dto: UpdateVacationRequestDto,
   ): Promise<VacationRequest> {
-    return await this.vacationService.editRequest(
-      user.id,
-      user.tenantId,
-      id,
-      dto,
-    );
+    return await this.vacationService.editRequest(user.id, user.tenantId, id, dto);
   }
 
   /** PATCH /vacation/requests/:id/respond — Approve or deny a vacation request. */
@@ -199,22 +177,14 @@ export class VacationController {
     @Param('id') id: string,
     @Body() dto: RespondVacationRequestDto,
   ): Promise<VacationRequest> {
-    return await this.vacationService.respondToRequest(
-      user.id,
-      user.tenantId,
-      id,
-      dto,
-    );
+    return await this.vacationService.respondToRequest(user.id, user.tenantId, id, dto);
   }
 
   /** PATCH /vacation/requests/:id/withdraw — Withdraw own request. */
   @Patch('requests/:id/withdraw')
   @HttpCode(HttpStatus.NO_CONTENT)
   @RequirePermission(FEAT, MOD_REQUESTS, 'canWrite')
-  async withdrawRequest(
-    @CurrentUser() user: JwtPayload,
-    @Param('id') id: string,
-  ): Promise<void> {
+  async withdrawRequest(@CurrentUser() user: JwtPayload, @Param('id') id: string): Promise<void> {
     await this.vacationService.withdrawRequest(user.id, user.tenantId, id);
   }
 
@@ -228,12 +198,7 @@ export class VacationController {
     @Param('id') id: string,
     @Body('reason') reason: string,
   ): Promise<void> {
-    await this.vacationService.cancelRequest(
-      user.id,
-      user.tenantId,
-      id,
-      reason,
-    );
+    await this.vacationService.cancelRequest(user.id, user.tenantId, id, reason);
   }
 
   // ==========================================================================
@@ -267,11 +232,7 @@ export class VacationController {
     @CurrentUser() user: JwtPayload,
     @Query('year') year?: number,
   ): Promise<VacationBalance> {
-    return await this.entitlementsService.getBalance(
-      user.tenantId,
-      user.id,
-      year,
-    );
+    return await this.entitlementsService.getBalance(user.tenantId, user.id, year);
   }
 
   /** GET /vacation/entitlements/:userId — Get balance for a specific user (admin/root). */
@@ -283,11 +244,7 @@ export class VacationController {
     @Param('userId', ParseIntPipe) userId: number,
     @Query('year') year?: number,
   ): Promise<VacationBalance> {
-    return await this.entitlementsService.getBalance(
-      user.tenantId,
-      userId,
-      year,
-    );
+    return await this.entitlementsService.getBalance(user.tenantId, userId, year);
   }
 
   /** PUT /vacation/entitlements/:userId — Create or update entitlement (admin/root). */
@@ -299,11 +256,7 @@ export class VacationController {
     @Param('userId', ParseIntPipe) userId: number,
     @Body() dto: CreateEntitlementDto,
   ): Promise<VacationEntitlement> {
-    return await this.entitlementsService.createOrUpdateEntitlement(
-      user.tenantId,
-      userId,
-      dto,
-    );
+    return await this.entitlementsService.createOrUpdateEntitlement(user.tenantId, userId, dto);
   }
 
   /** POST /vacation/entitlements/:userId/add-days — Add vacation days (admin/root). */
@@ -316,13 +269,7 @@ export class VacationController {
     @Body('year') year: number,
     @Body('days') days: number,
   ): Promise<VacationEntitlement> {
-    return await this.entitlementsService.addDays(
-      user.tenantId,
-      user.id,
-      userId,
-      year,
-      days,
-    );
+    return await this.entitlementsService.addDays(user.tenantId, user.id, userId, year, days);
   }
 
   // ==========================================================================
@@ -348,11 +295,7 @@ export class VacationController {
     @CurrentUser() user: JwtPayload,
     @Body() dto: CreateBlackoutDto,
   ): Promise<VacationBlackout> {
-    return await this.blackoutsService.createBlackout(
-      user.tenantId,
-      user.id,
-      dto,
-    );
+    return await this.blackoutsService.createBlackout(user.tenantId, user.id, dto);
   }
 
   /** PUT /vacation/blackouts/:id — Update a blackout period (admin/root). */
@@ -364,12 +307,7 @@ export class VacationController {
     @Param('id') id: string,
     @Body() dto: UpdateBlackoutDto,
   ): Promise<VacationBlackout> {
-    return await this.blackoutsService.updateBlackout(
-      user.tenantId,
-      user.id,
-      id,
-      dto,
-    );
+    return await this.blackoutsService.updateBlackout(user.tenantId, user.id, id, dto);
   }
 
   /** DELETE /vacation/blackouts/:id — Delete a blackout period (admin/root). */
@@ -377,10 +315,7 @@ export class VacationController {
   @HttpCode(HttpStatus.NO_CONTENT)
   @Roles('admin', 'root')
   @RequirePermission(FEAT, MOD_RULES, 'canDelete')
-  async deleteBlackout(
-    @CurrentUser() user: JwtPayload,
-    @Param('id') id: string,
-  ): Promise<void> {
+  async deleteBlackout(@CurrentUser() user: JwtPayload, @Param('id') id: string): Promise<void> {
     await this.blackoutsService.deleteBlackout(user.tenantId, user.id, id);
   }
 
@@ -391,9 +326,7 @@ export class VacationController {
   /** GET /vacation/staffing-rules — List all staffing rules. */
   @Get('staffing-rules')
   @RequirePermission(FEAT, MOD_RULES, 'canRead')
-  async getStaffingRules(
-    @CurrentUser() user: JwtPayload,
-  ): Promise<VacationStaffingRule[]> {
+  async getStaffingRules(@CurrentUser() user: JwtPayload): Promise<VacationStaffingRule[]> {
     return await this.staffingRulesService.getStaffingRules(user.tenantId);
   }
 
@@ -406,11 +339,7 @@ export class VacationController {
     @CurrentUser() user: JwtPayload,
     @Body() dto: CreateStaffingRuleDto,
   ): Promise<VacationStaffingRule> {
-    return await this.staffingRulesService.createStaffingRule(
-      user.tenantId,
-      user.id,
-      dto,
-    );
+    return await this.staffingRulesService.createStaffingRule(user.tenantId, user.id, dto);
   }
 
   /** PUT /vacation/staffing-rules/:id — Update a staffing rule (admin/root). */
@@ -422,12 +351,7 @@ export class VacationController {
     @Param('id') id: string,
     @Body() dto: UpdateStaffingRuleDto,
   ): Promise<VacationStaffingRule> {
-    return await this.staffingRulesService.updateStaffingRule(
-      user.tenantId,
-      user.id,
-      id,
-      dto,
-    );
+    return await this.staffingRulesService.updateStaffingRule(user.tenantId, user.id, id, dto);
   }
 
   /** DELETE /vacation/staffing-rules/:id — Delete a staffing rule (admin/root). */
@@ -439,11 +363,7 @@ export class VacationController {
     @CurrentUser() user: JwtPayload,
     @Param('id') id: string,
   ): Promise<void> {
-    await this.staffingRulesService.deleteStaffingRule(
-      user.tenantId,
-      user.id,
-      id,
-    );
+    await this.staffingRulesService.deleteStaffingRule(user.tenantId, user.id, id);
   }
 
   // ==========================================================================
@@ -469,11 +389,7 @@ export class VacationController {
     @CurrentUser() user: JwtPayload,
     @Body() dto: CreateHolidayDto,
   ): Promise<VacationHoliday> {
-    return await this.holidaysService.createHoliday(
-      user.tenantId,
-      user.id,
-      dto,
-    );
+    return await this.holidaysService.createHoliday(user.tenantId, user.id, dto);
   }
 
   /** PUT /vacation/holidays/:id — Update a holiday (admin/root). */
@@ -485,12 +401,7 @@ export class VacationController {
     @Param('id') id: string,
     @Body() dto: UpdateHolidayDto,
   ): Promise<VacationHoliday> {
-    return await this.holidaysService.updateHoliday(
-      user.tenantId,
-      user.id,
-      id,
-      dto,
-    );
+    return await this.holidaysService.updateHoliday(user.tenantId, user.id, id, dto);
   }
 
   /** DELETE /vacation/holidays/:id — Delete a holiday (admin/root). */
@@ -498,10 +409,7 @@ export class VacationController {
   @HttpCode(HttpStatus.NO_CONTENT)
   @Roles('admin', 'root')
   @RequirePermission(FEAT, MOD_HOLIDAYS, 'canDelete')
-  async deleteHoliday(
-    @CurrentUser() user: JwtPayload,
-    @Param('id') id: string,
-  ): Promise<void> {
+  async deleteHoliday(@CurrentUser() user: JwtPayload, @Param('id') id: string): Promise<void> {
     await this.holidaysService.deleteHoliday(user.tenantId, user.id, id);
   }
 
@@ -513,9 +421,7 @@ export class VacationController {
   @Get('settings')
   @Roles('admin', 'root')
   @RequirePermission(FEAT, MOD_RULES, 'canRead')
-  async getSettings(
-    @CurrentUser() user: JwtPayload,
-  ): Promise<VacationSettings> {
+  async getSettings(@CurrentUser() user: JwtPayload): Promise<VacationSettings> {
     return await this.settingsService.getSettings(user.tenantId);
   }
 
@@ -527,11 +433,7 @@ export class VacationController {
     @CurrentUser() user: JwtPayload,
     @Body() dto: UpdateSettingsDto,
   ): Promise<VacationSettings> {
-    return await this.settingsService.updateSettings(
-      user.tenantId,
-      user.id,
-      dto,
-    );
+    return await this.settingsService.updateSettings(user.tenantId, user.id, dto);
   }
 
   // ==========================================================================
@@ -571,12 +473,7 @@ export class VacationController {
     @Query('month', ParseIntPipe) month: number,
     @Query('year', ParseIntPipe) year: number,
   ): Promise<TeamCalendarData> {
-    return await this.queriesService.getTeamCalendar(
-      user.tenantId,
-      teamId,
-      month,
-      year,
-    );
+    return await this.queriesService.getTeamCalendar(user.tenantId, teamId, month, year);
   }
 
   /** GET /vacation/overview — Get own vacation balance (overview page). */

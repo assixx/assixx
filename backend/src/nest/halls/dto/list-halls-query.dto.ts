@@ -13,10 +13,7 @@ function coerceToBooleanOrPassthrough(val: unknown): unknown {
 }
 
 export const ListHallsQuerySchema = z.object({
-  includeExtended: z.preprocess(
-    coerceToBooleanOrPassthrough,
-    z.boolean().optional(),
-  ),
+  includeExtended: z.preprocess(coerceToBooleanOrPassthrough, z.boolean().optional()),
 });
 
 export class ListHallsQueryDto extends createZodDto(ListHallsQuerySchema) {}

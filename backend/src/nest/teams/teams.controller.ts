@@ -13,6 +13,7 @@
  * - GET  /teams/:id/assets         - Get team assets
  * - POST /teams/:id/assets         - Add team asset (admin only)
  * - DELETE /teams/:id/assets/:assetId - Remove team asset (admin only)
+ * - POST /teams/:id/halls             - Assign halls to team (admin only)
  */
 import {
   Body,
@@ -36,6 +37,7 @@ import type { NestAuthUser } from '../common/interfaces/auth.interface.js';
 import {
   AddAssetDto,
   AddMemberDto,
+  AssignHallsToTeamDto,
   CreateTeamDto,
   DeleteTeamQueryDto,
   ListTeamsQueryDto,
@@ -73,8 +75,6 @@ export class TeamsController {
    * List all teams with optional filters
    */
   @Get()
-  @Roles('admin', 'root', 'employee')
-  @RequirePermission(SCOPE_FEAT, SCOPE_MOD, 'canRead')
   async listTeams(
     @Query() query: ListTeamsQueryDto,
     @TenantId() tenantId: number,
@@ -91,8 +91,6 @@ export class TeamsController {
    * Get team by ID
    */
   @Get(':id')
-  @Roles('admin', 'root', 'employee')
-  @RequirePermission(SCOPE_FEAT, SCOPE_MOD, 'canRead')
   async getTeamById(
     @Param('id', ParseIntPipe) id: number,
     @TenantId() tenantId: number,
@@ -144,12 +142,7 @@ export class TeamsController {
     @CurrentUser() user: NestAuthUser,
     @TenantId() tenantId: number,
   ): Promise<MessageResponse> {
-    return await this.teamsService.deleteTeam(
-      id,
-      user.id,
-      tenantId,
-      query.force ?? false,
-    );
+    return await this.teamsService.deleteTeam(id, user.id, tenantId, query.force ?? false);
   }
 
   /**
@@ -158,19 +151,12 @@ export class TeamsController {
    * Query params: ?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD
    */
   @Get(':id/members')
-  @Roles('admin', 'root', 'employee')
-  @RequirePermission(SCOPE_FEAT, SCOPE_MOD, 'canRead')
   async getTeamMembers(
     @Param('id', ParseIntPipe) id: number,
     @Query() query: TeamMembersQueryDto,
     @TenantId() tenantId: number,
   ): Promise<TeamMember[]> {
-    return await this.teamsService.getTeamMembers(
-      id,
-      tenantId,
-      query.startDate,
-      query.endDate,
-    );
+    return await this.teamsService.getTeamMembers(id, tenantId, query.startDate, query.endDate);
   }
 
   /**
@@ -207,8 +193,6 @@ export class TeamsController {
    * Get team assets
    */
   @Get(':id/assets')
-  @Roles('admin', 'root', 'employee')
-  @RequirePermission(SCOPE_FEAT, SCOPE_MOD, 'canRead')
   async getTeamAssets(
     @Param('id', ParseIntPipe) id: number,
     @TenantId() tenantId: number,
@@ -229,12 +213,7 @@ export class TeamsController {
     @TenantId() tenantId: number,
     @CurrentUser() user: NestAuthUser,
   ): Promise<AddAssetResponse> {
-    return await this.teamsService.addTeamAsset(
-      id,
-      dto.assetId,
-      tenantId,
-      user.id,
-    );
+    return await this.teamsService.addTeamAsset(id, dto.assetId, tenantId, user.id);
   }
 
   /**
@@ -249,5 +228,20 @@ export class TeamsController {
     @TenantId() tenantId: number,
   ): Promise<MessageResponse> {
     return await this.teamsService.removeTeamAsset(id, assetId, tenantId);
+  }
+
+  /**
+   * POST /teams/:id/halls
+   * Assign halls to a team (admin only)
+   */
+  @Post(':id/halls')
+  @Roles('admin', 'root')
+  async assignHalls(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: AssignHallsToTeamDto,
+    @CurrentUser() user: NestAuthUser,
+    @TenantId() tenantId: number,
+  ): Promise<MessageResponse> {
+    return await this.teamsService.assignHallsToTeam(id, dto.hallIds, tenantId, user.id);
   }
 }

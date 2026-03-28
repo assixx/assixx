@@ -104,13 +104,10 @@ describe('Chat: Delete Chat Conversation', () => {
   it('should return 200 OK', async () => {
     expect(conversationId).toBeDefined();
 
-    const res = await fetch(
-      `${BASE_URL}/chat/conversations/${conversationId}`,
-      {
-        method: 'DELETE',
-        headers: authOnly(auth.authToken),
-      },
-    );
+    const res = await fetch(`${BASE_URL}/chat/conversations/${conversationId}`, {
+      method: 'DELETE',
+      headers: authOnly(auth.authToken),
+    });
     const body = (await res.json()) as JsonBody;
 
     expect(res.status).toBe(200);

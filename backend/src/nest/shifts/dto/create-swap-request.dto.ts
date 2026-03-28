@@ -14,13 +14,7 @@ export const CreateSwapRequestSchema = z.object({
     .int()
     .positive('Requested with user ID must be a positive integer')
     .optional(),
-  reason: z
-    .string()
-    .trim()
-    .max(500, 'Reason cannot exceed 500 characters')
-    .optional(),
+  reason: z.string().trim().max(500, 'Reason cannot exceed 500 characters').optional(),
 });
 
-export class CreateSwapRequestDto extends createZodDto(
-  CreateSwapRequestSchema,
-) {}
+export class CreateSwapRequestDto extends createZodDto(CreateSwapRequestSchema) {}

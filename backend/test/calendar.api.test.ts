@@ -64,9 +64,7 @@ describe('Calendar: Create Event', () => {
         title: `API Test ${Date.now()}`,
         description: 'Created via API test - will be deleted',
         startTime: new Date(Date.now() + 7 * 86_400_000).toISOString(),
-        endTime: new Date(
-          Date.now() + 7 * 86_400_000 + 3_600_000,
-        ).toISOString(),
+        endTime: new Date(Date.now() + 7 * 86_400_000 + 3_600_000).toISOString(),
         allDay: false,
         orgLevel: 'personal',
       }),

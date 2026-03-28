@@ -1,11 +1,7 @@
 import path from 'path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import {
-  getUploadDirectory,
-  sanitizeFilename,
-  validatePath,
-} from './path-security.js';
+import { getUploadDirectory, sanitizeFilename, validatePath } from './path-security.js';
 
 vi.mock('./logger.js', () => ({
   logger: {
@@ -168,9 +164,7 @@ describe('getUploadDirectory', () => {
 
   it('should return correct path for profile_pictures', () => {
     const result = getUploadDirectory('profile_pictures');
-    expect(result).toBe(
-      path.resolve(process.cwd(), 'uploads', 'profile_pictures'),
-    );
+    expect(result).toBe(path.resolve(process.cwd(), 'uploads', 'profile_pictures'));
   });
 
   it('should return correct path for blackboard', () => {
@@ -185,15 +179,11 @@ describe('getUploadDirectory', () => {
 
   it('should return correct path for kvp', () => {
     const result = getUploadDirectory('kvp');
-    expect(result).toBe(
-      path.resolve(process.cwd(), 'uploads', 'kvp-attachments'),
-    );
+    expect(result).toBe(path.resolve(process.cwd(), 'uploads', 'kvp-attachments'));
   });
 
   it('should throw for invalid upload type', () => {
-    expect(() => getUploadDirectory('invalid')).toThrow(
-      'Invalid upload type: invalid',
-    );
+    expect(() => getUploadDirectory('invalid')).toThrow('Invalid upload type: invalid');
   });
 
   it('should throw for empty upload type', () => {

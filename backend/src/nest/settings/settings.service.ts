@@ -7,12 +7,7 @@
  * IMPORTANT: Uses PostgreSQL $1, $2, $3 placeholders (NOT MySQL's ?)
  */
 import { IS_ACTIVE } from '@assixx/shared/constants';
-import {
-  ForbiddenException,
-  Injectable,
-  Logger,
-  NotFoundException,
-} from '@nestjs/common';
+import { ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import type { QueryResultRow } from 'pg';
 
 import { ActivityLoggerService } from '../common/services/activity-logger.service.js';
@@ -150,10 +145,7 @@ export class SettingsService {
   /**
    * Get all system settings
    */
-  async getSystemSettings(
-    filters: SettingFilters,
-    userRole: string,
-  ): Promise<ParsedSetting[]> {
+  async getSystemSettings(filters: SettingFilters, userRole: string): Promise<ParsedSetting[]> {
     this.logger.debug('Fetching system settings');
 
     if (userRole !== 'root') {
@@ -190,10 +182,7 @@ export class SettingsService {
   /**
    * Get single system setting
    */
-  async getSystemSetting(
-    key: string,
-    userRole: string,
-  ): Promise<ParsedSetting> {
+  async getSystemSetting(key: string, userRole: string): Promise<ParsedSetting> {
     this.logger.debug(`Fetching system setting: ${key}`);
 
     const rows = await this.db.query<DbSystemSetting>(
@@ -235,10 +224,7 @@ export class SettingsService {
       throw new ForbiddenException('Only root can modify system settings');
     }
 
-    const serializedValue = this.serializeValue(
-      data.setting_value,
-      data.value_type ?? 'string',
-    );
+    const serializedValue = this.serializeValue(data.setting_value, data.value_type ?? 'string');
 
     const existing = await this.db.query<DbIdResult>(
       `SELECT id FROM system_settings WHERE setting_key = $1`,
@@ -314,9 +300,7 @@ export class SettingsService {
       throw new NotFoundException(SETTING_NOT_FOUND);
     }
 
-    await this.db.query(`DELETE FROM system_settings WHERE setting_key = $1`, [
-      key,
-    ]);
+    await this.db.query(`DELETE FROM system_settings WHERE setting_key = $1`, [key]);
 
     await this.createAuditLog(
       'system_setting_deleted',
@@ -336,10 +320,7 @@ export class SettingsService {
   /**
    * Get all tenant settings
    */
-  async getTenantSettings(
-    tenantId: number,
-    filters: SettingFilters,
-  ): Promise<ParsedSetting[]> {
+  async getTenantSettings(tenantId: number, filters: SettingFilters): Promise<ParsedSetting[]> {
     this.logger.debug(`Fetching tenant settings for tenant ${tenantId}`);
 
     let query = `SELECT * FROM tenant_settings WHERE tenant_id = $1`;
@@ -366,10 +347,7 @@ export class SettingsService {
   /**
    * Get single tenant setting
    */
-  async getTenantSetting(
-    key: string,
-    tenantId: number,
-  ): Promise<ParsedSetting> {
+  async getTenantSetting(key: string, tenantId: number): Promise<ParsedSetting> {
     this.logger.debug(`Fetching tenant setting: ${key}`);
 
     const rows = await this.db.query<DbTenantSetting>(
@@ -406,10 +384,7 @@ export class SettingsService {
       throw new ForbiddenException('Only admins can modify tenant settings');
     }
 
-    const serializedValue = this.serializeValue(
-      data.setting_value,
-      data.value_type ?? 'string',
-    );
+    const serializedValue = this.serializeValue(data.setting_value, data.value_type ?? 'string');
 
     const existing = await this.db.query<DbIdResult>(
       `SELECT id FROM tenant_settings WHERE setting_key = $1 AND tenant_id = $2`,
@@ -483,10 +458,10 @@ export class SettingsService {
       throw new NotFoundException(SETTING_NOT_FOUND);
     }
 
-    await this.db.query(
-      `DELETE FROM tenant_settings WHERE setting_key = $1 AND tenant_id = $2`,
-      [key, tenantId],
-    );
+    await this.db.query(`DELETE FROM tenant_settings WHERE setting_key = $1 AND tenant_id = $2`, [
+      key,
+      tenantId,
+    ]);
 
     await this.createAuditLog(
       'tenant_setting_deleted',
@@ -587,10 +562,7 @@ export class SettingsService {
   ): Promise<{ success: boolean }> {
     this.logger.log(`Upserting user setting: ${data.setting_key}`);
 
-    const serializedValue = this.serializeValue(
-      data.setting_value,
-      data.value_type ?? 'string',
-    );
+    const serializedValue = this.serializeValue(data.setting_value, data.value_type ?? 'string');
     const settingTeamId = data.team_id ?? teamId ?? null;
     const valueType = data.value_type ?? 'string';
     const category = data.category ?? DEFAULT_CATEGORY;
@@ -644,8 +616,7 @@ export class SettingsService {
     tenantId: number,
     teamId: number | null,
   ): Promise<DbIdResult | null> {
-    const teamCondition =
-      teamId === null ? 'AND team_id IS NULL' : 'AND team_id = $4';
+    const teamCondition = teamId === null ? 'AND team_id IS NULL' : 'AND team_id = $4';
     const params: (string | number)[] = [key, userId, tenantId];
     if (teamId !== null) params.push(teamId);
 
@@ -666,16 +637,8 @@ export class SettingsService {
     tenantId: number,
     teamId: number | null,
   ): Promise<void> {
-    const teamCondition =
-      teamId === null ? 'AND team_id IS NULL' : 'AND team_id = $7';
-    const params: (string | number)[] = [
-      value,
-      valueType,
-      category,
-      key,
-      userId,
-      tenantId,
-    ];
+    const teamCondition = teamId === null ? 'AND team_id IS NULL' : 'AND team_id = $7';
+    const params: (string | number)[] = [value, valueType, category, key, userId, tenantId];
     if (teamId !== null) params.push(teamId);
 
     await this.db.query(
@@ -705,10 +668,7 @@ export class SettingsService {
   /**
    * Delete user setting
    */
-  async deleteUserSetting(
-    key: string,
-    userId: number,
-  ): Promise<{ success: boolean }> {
+  async deleteUserSetting(key: string, userId: number): Promise<{ success: boolean }> {
     this.logger.log(`Deleting user setting: ${key}`);
 
     const rows = await this.db.query<DbUserSetting>(
@@ -722,10 +682,10 @@ export class SettingsService {
 
     const tenantId = rows[0]?.tenant_id ?? 0;
 
-    await this.db.query(
-      `DELETE FROM user_settings WHERE setting_key = $1 AND user_id = $2`,
-      [key, userId],
-    );
+    await this.db.query(`DELETE FROM user_settings WHERE setting_key = $1 AND user_id = $2`, [
+      key,
+      userId,
+    ]);
 
     void this.activityLogger.logDelete(
       tenantId,
@@ -752,9 +712,7 @@ export class SettingsService {
     this.logger.debug(`Fetching settings for user ${targetUserId} (admin)`);
 
     if (userRole !== 'admin' && userRole !== 'root') {
-      throw new ForbiddenException(
-        "Only admins can view other users' settings",
-      );
+      throw new ForbiddenException("Only admins can view other users' settings");
     }
 
     // SECURITY: Only return settings for ACTIVE users (is_active = 1)
@@ -905,10 +863,7 @@ export class SettingsService {
   /**
    * Serialize setting value for storage
    */
-  private serializeValue(
-    value: SettingValue | null,
-    type: SettingValueType,
-  ): string {
+  private serializeValue(value: SettingValue | null, type: SettingValueType): string {
     if (value === null) return '';
 
     switch (type) {
@@ -928,8 +883,7 @@ export class SettingsService {
    */
   private serializeBooleanValue(value: SettingValue): string {
     if (typeof value === 'string') {
-      const isFalsy =
-        value.toLowerCase() === 'false' || value === '0' || value === '';
+      const isFalsy = value.toLowerCase() === 'false' || value === '0' || value === '';
       return isFalsy ? 'false' : 'true';
     }
     if (typeof value === 'boolean') {

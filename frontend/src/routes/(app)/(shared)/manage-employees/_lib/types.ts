@@ -9,12 +9,7 @@ import type {
   AvailabilityStatus,
 } from '@assixx/shared';
 
-export type {
-  IsActiveStatus,
-  FormIsActiveStatus,
-  StatusFilter,
-  AvailabilityStatus,
-};
+export type { IsActiveStatus, FormIsActiveStatus, StatusFilter, AvailabilityStatus };
 
 /**
  * Area interface - inherited via teams→departments→areas
@@ -85,6 +80,9 @@ export interface Employee {
   // Full access flag
   hasFullAccess?: boolean | 1 | 0;
 
+  // Additional info
+  notes?: string;
+
   // Availability
   availabilityStatus?: AvailabilityStatus;
   availabilityStart?: string;
@@ -118,6 +116,7 @@ export interface EmployeeFormData {
   position: string;
   phone: string;
   dateOfBirth: string;
+  notes: string;
   isActive: FormIsActiveStatus;
   teamIds: number[];
   availabilityStatus: AvailabilityStatus;
@@ -134,9 +133,10 @@ export interface EmployeePayload {
   lastName: string;
   email: string;
   username: string;
-  position?: string;
+  positionIds?: string[];
   phone?: string;
   dateOfBirth?: string;
+  notes?: string;
   employeeNumber: string;
   isActive: FormIsActiveStatus;
   role: 'employee';

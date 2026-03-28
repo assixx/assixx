@@ -32,12 +32,8 @@ Standard confirmation for neutral actions.
   <h3 class="confirm-modal__title">Confirm Action</h3>
   <p class="confirm-modal__message">Are you sure you want to proceed?</p>
   <div class="confirm-modal__actions">
-    <button class="confirm-modal__btn confirm-modal__btn--cancel">
-      Cancel
-    </button>
-    <button class="confirm-modal__btn confirm-modal__btn--confirm">
-      Confirm
-    </button>
+    <button class="confirm-modal__btn confirm-modal__btn--cancel">Cancel</button>
+    <button class="confirm-modal__btn confirm-modal__btn--confirm">Confirm</button>
   </div>
 </div>
 ```
@@ -56,12 +52,8 @@ For actions that require caution.
   <h3 class="confirm-modal__title">Warning</h3>
   <p class="confirm-modal__message">This action cannot be easily undone.</p>
   <div class="confirm-modal__actions">
-    <button class="confirm-modal__btn confirm-modal__btn--cancel">
-      Cancel
-    </button>
-    <button class="confirm-modal__btn confirm-modal__btn--confirm">
-      Proceed
-    </button>
+    <button class="confirm-modal__btn confirm-modal__btn--cancel">Cancel</button>
+    <button class="confirm-modal__btn confirm-modal__btn--confirm">Proceed</button>
   </div>
 </div>
 ```
@@ -88,12 +80,8 @@ For destructive actions.
     This will permanently delete the item. This action cannot be undone.
   </p>
   <div class="confirm-modal__actions">
-    <button class="confirm-modal__btn confirm-modal__btn--cancel">
-      Cancel
-    </button>
-    <button class="confirm-modal__btn confirm-modal__btn--confirm">
-      Delete
-    </button>
+    <button class="confirm-modal__btn confirm-modal__btn--cancel">Cancel</button>
+    <button class="confirm-modal__btn confirm-modal__btn--confirm">Delete</button>
   </div>
 </div>
 ```
@@ -116,13 +104,9 @@ For informational confirmations.
     <i class="fas fa-info-circle"></i>
   </div>
   <h3 class="confirm-modal__title">Information</h3>
-  <p class="confirm-modal__message">
-    This will send a notification to all team members.
-  </p>
+  <p class="confirm-modal__message">This will send a notification to all team members.</p>
   <div class="confirm-modal__actions">
-    <button class="confirm-modal__btn confirm-modal__btn--cancel">
-      Cancel
-    </button>
+    <button class="confirm-modal__btn confirm-modal__btn--cancel">Cancel</button>
     <button class="confirm-modal__btn confirm-modal__btn--confirm">Send</button>
   </div>
 </div>
@@ -148,12 +132,8 @@ For positive confirmations.
   <h3 class="confirm-modal__title">Complete Setup</h3>
   <p class="confirm-modal__message">Ready to activate your account?</p>
   <div class="confirm-modal__actions">
-    <button class="confirm-modal__btn confirm-modal__btn--cancel">
-      Not Yet
-    </button>
-    <button class="confirm-modal__btn confirm-modal__btn--confirm">
-      Activate
-    </button>
+    <button class="confirm-modal__btn confirm-modal__btn--cancel">Not Yet</button>
+    <button class="confirm-modal__btn confirm-modal__btn--confirm">Activate</button>
   </div>
 </div>
 ```
@@ -178,20 +158,14 @@ Combine with the modal overlay system:
     </div>
     <h3 class="confirm-modal__title">Delete User</h3>
     <p class="confirm-modal__message">
-      This will permanently delete the user "John Doe" and all associated data.
-      This action cannot be undone.
+      This will permanently delete the user "John Doe" and all associated data. This action cannot
+      be undone.
     </p>
     <div class="confirm-modal__actions">
-      <button
-        class="confirm-modal__btn confirm-modal__btn--cancel"
-        onclick="closeModal()"
-      >
+      <button class="confirm-modal__btn confirm-modal__btn--cancel" onclick="closeModal()">
         Cancel
       </button>
-      <button
-        class="confirm-modal__btn confirm-modal__btn--confirm"
-        onclick="deleteUser()"
-      >
+      <button class="confirm-modal__btn confirm-modal__btn--confirm" onclick="deleteUser()">
         Delete User
       </button>
     </div>
@@ -232,20 +206,12 @@ Combine with the modal overlay system:
   aria-describedby="modal-desc"
 >
   <h3 id="modal-title" class="confirm-modal__title">Delete Item</h3>
-  <p id="modal-desc" class="confirm-modal__message">
-    This action is permanent.
-  </p>
+  <p id="modal-desc" class="confirm-modal__message">This action is permanent.</p>
   <div class="confirm-modal__actions">
-    <button
-      class="confirm-modal__btn confirm-modal__btn--cancel"
-      aria-label="Cancel deletion"
-    >
+    <button class="confirm-modal__btn confirm-modal__btn--cancel" aria-label="Cancel deletion">
       Cancel
     </button>
-    <button
-      class="confirm-modal__btn confirm-modal__btn--confirm"
-      aria-label="Confirm deletion"
-    >
+    <button class="confirm-modal__btn confirm-modal__btn--confirm" aria-label="Confirm deletion">
       Delete
     </button>
   </div>

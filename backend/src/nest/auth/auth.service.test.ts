@@ -31,8 +31,7 @@ import { AuthService } from './auth.service.js';
 
 // JWT secrets must be set BEFORE auth.service.js loads (getJwtSecrets validation)
 const { mockBcryptCompare, mockBcryptHash } = vi.hoisted(() => {
-  process.env['JWT_SECRET'] =
-    'test-access-secret-for-vitest-unit-tests-minimum-32-characters-long';
+  process.env['JWT_SECRET'] = 'test-access-secret-for-vitest-unit-tests-minimum-32-characters-long';
   process.env['JWT_REFRESH_SECRET'] =
     'test-refresh-secret-for-vitest-unit-tests-minimum-32-characters-long';
 
@@ -83,9 +82,7 @@ function createAuthUser(overrides: Partial<NestAuthUser> = {}): NestAuthUser {
   };
 }
 
-function createMockUserRow(
-  overrides?: Record<string, unknown>,
-): Record<string, unknown> {
+function createMockUserRow(overrides?: Record<string, unknown>): Record<string, unknown> {
   return {
     id: 1,
     tenant_id: 10,
@@ -103,11 +100,7 @@ function createMockUserRow(
 }
 
 /** Set up mocks for a successful login flow */
-function setupLoginMocks(
-  db: MockDb,
-  jwt: MockJwt,
-  userOverrides?: Record<string, unknown>,
-): void {
+function setupLoginMocks(db: MockDb, jwt: MockJwt, userOverrides?: Record<string, unknown>): void {
   db.query.mockResolvedValueOnce([createMockUserRow(userOverrides)]); // findUserByEmail
   mockBcryptCompare.mockResolvedValueOnce(true); // password match
   jwt.sign
@@ -183,17 +176,14 @@ describe('SECURITY: AuthService', () => {
       ['admin', 10],
       ['employee', 20],
       ['root', 1],
-    ] as const)(
-      'should echo role "%s" and tenantId %d from user',
-      (role, tenantId) => {
-        const user = createAuthUser({ role, tenantId, activeRole: role });
+    ] as const)('should echo role "%s" and tenantId %d from user', (role, tenantId) => {
+      const user = createAuthUser({ role, tenantId, activeRole: role });
 
-        const result = service.verifyToken(user);
+      const result = service.verifyToken(user);
 
-        expect(result.user.role).toBe(role);
-        expect(result.user.tenantId).toBe(tenantId);
-      },
-    );
+      expect(result.user.role).toBe(role);
+      expect(result.user.tenantId).toBe(tenantId);
+    });
   });
 
   // =============================================================
@@ -219,35 +209,24 @@ describe('SECURITY: AuthService', () => {
     it('should throw UnauthorizedException for unknown email', async () => {
       mockDb.query.mockResolvedValueOnce([]); // no user found
 
-      await expect(service.login(loginDto)).rejects.toThrow(
-        UnauthorizedException,
-      );
+      await expect(service.login(loginDto)).rejects.toThrow(UnauthorizedException);
     });
 
     it.each([
       [0, 'inactive'],
       [3, 'archived'],
       [4, 'deleted'],
-    ])(
-      'should throw ForbiddenException for is_active=%i (%s) user',
-      async (isActive) => {
-        mockDb.query.mockResolvedValueOnce([
-          createMockUserRow({ is_active: isActive }),
-        ]);
+    ])('should throw ForbiddenException for is_active=%i (%s) user', async (isActive) => {
+      mockDb.query.mockResolvedValueOnce([createMockUserRow({ is_active: isActive })]);
 
-        await expect(service.login(loginDto)).rejects.toThrow(
-          ForbiddenException,
-        );
-      },
-    );
+      await expect(service.login(loginDto)).rejects.toThrow(ForbiddenException);
+    });
 
     it('should throw UnauthorizedException for wrong password', async () => {
       mockDb.query.mockResolvedValueOnce([createMockUserRow()]);
       mockBcryptCompare.mockResolvedValueOnce(false); // password mismatch
 
-      await expect(service.login(loginDto)).rejects.toThrow(
-        UnauthorizedException,
-      );
+      await expect(service.login(loginDto)).rejects.toThrow(UnauthorizedException);
     });
 
     it('should lowercase email before lookup', async () => {
@@ -272,9 +251,7 @@ describe('SECURITY: AuthService', () => {
     it('should not fail login when audit log fails', async () => {
       mockDb.query.mockResolvedValueOnce([createMockUserRow()]); // findUser
       mockBcryptCompare.mockResolvedValueOnce(true);
-      mockJwt.sign
-        .mockReturnValueOnce('access-tok')
-        .mockReturnValueOnce('refresh-tok');
+      mockJwt.sign.mockReturnValueOnce('access-tok').mockReturnValueOnce('refresh-tok');
       mockDb.query.mockResolvedValueOnce([]); // storeRefreshToken
       mockDb.query.mockResolvedValueOnce([]); // updateLastLogin
       mockDb.query.mockRejectedValueOnce(new Error('Audit DB error')); // logLoginAudit fails
@@ -315,8 +292,7 @@ describe('SECURITY: AuthService', () => {
       expect(mockJwt.sign).toHaveBeenCalledWith(
         expect.objectContaining({ type: 'access' }),
         expect.objectContaining({
-          secret:
-            'test-access-secret-for-vitest-unit-tests-minimum-32-characters-long',
+          secret: 'test-access-secret-for-vitest-unit-tests-minimum-32-characters-long',
         }),
       );
     });
@@ -329,8 +305,7 @@ describe('SECURITY: AuthService', () => {
       expect(mockJwt.sign).toHaveBeenCalledWith(
         expect.objectContaining({ type: 'refresh' }),
         expect.objectContaining({
-          secret:
-            'test-refresh-secret-for-vitest-unit-tests-minimum-32-characters-long',
+          secret: 'test-refresh-secret-for-vitest-unit-tests-minimum-32-characters-long',
         }),
       );
     });
@@ -359,10 +334,7 @@ describe('SECURITY: AuthService', () => {
     it('should allow admin to create user', async () => {
       setupRegisterMocks(mockDb);
 
-      const result = await service.register(
-        registerDto,
-        createAuthUser({ activeRole: 'admin' }),
-      );
+      const result = await service.register(registerDto, createAuthUser({ activeRole: 'admin' }));
 
       expect(result).toEqual(expect.objectContaining({ id: 42 }));
     });
@@ -370,39 +342,30 @@ describe('SECURITY: AuthService', () => {
     it('should allow root to create user', async () => {
       setupRegisterMocks(mockDb);
 
-      const result = await service.register(
-        registerDto,
-        createAuthUser({ activeRole: 'root' }),
-      );
+      const result = await service.register(registerDto, createAuthUser({ activeRole: 'root' }));
 
       expect(result).toEqual(expect.objectContaining({ id: 42 }));
     });
 
     it('should throw ForbiddenException for non-admin role', async () => {
       await expect(
-        service.register(
-          registerDto,
-          createAuthUser({ activeRole: 'employee' }),
-        ),
+        service.register(registerDto, createAuthUser({ activeRole: 'employee' })),
       ).rejects.toThrow(ForbiddenException);
     });
 
     it('should throw ConflictException when email already exists', async () => {
       mockDb.query.mockResolvedValueOnce([createMockUserRow()]); // email found
 
-      await expect(
-        service.register(registerDto, createAuthUser()),
-      ).rejects.toThrow(ConflictException);
+      await expect(service.register(registerDto, createAuthUser())).rejects.toThrow(
+        ConflictException,
+      );
     });
 
     it('should throw UnauthorizedException for email with empty prefix', async () => {
       mockDb.query.mockResolvedValueOnce([]); // no existing user
 
       await expect(
-        service.register(
-          { ...registerDto, email: '@test.de' },
-          createAuthUser(),
-        ),
+        service.register({ ...registerDto, email: '@test.de' }, createAuthUser()),
       ).rejects.toThrow(UnauthorizedException);
     });
 
@@ -420,9 +383,9 @@ describe('SECURITY: AuthService', () => {
       mockDb.query.mockResolvedValueOnce([{ id: 42 }]); // createUser
       mockDb.query.mockResolvedValueOnce([]); // findUserById returns empty
 
-      await expect(
-        service.register(registerDto, createAuthUser()),
-      ).rejects.toThrow(InternalServerErrorException);
+      await expect(service.register(registerDto, createAuthUser())).rejects.toThrow(
+        InternalServerErrorException,
+      );
     });
 
     it('should throw InternalServerErrorException when INSERT returns no id', async () => {
@@ -430,18 +393,15 @@ describe('SECURITY: AuthService', () => {
       mockBcryptHash.mockResolvedValueOnce('hashed');
       mockDb.query.mockResolvedValueOnce([]); // INSERT returns empty!
 
-      await expect(
-        service.register(registerDto, createAuthUser()),
-      ).rejects.toThrow(InternalServerErrorException);
+      await expect(service.register(registerDto, createAuthUser())).rejects.toThrow(
+        InternalServerErrorException,
+      );
     });
 
     it('should extract username from email prefix', async () => {
       setupRegisterMocks(mockDb);
 
-      await service.register(
-        { ...registerDto, email: 'john.doe@company.com' },
-        createAuthUser(),
-      );
+      await service.register({ ...registerDto, email: 'john.doe@company.com' }, createAuthUser());
 
       // createUser INSERT is the 2nd db.query call (index 1)
       const insertParams = mockDb.query.mock.calls[1]?.[1] as unknown[];
@@ -480,6 +440,26 @@ describe('SECURITY: AuthService', () => {
 
       expect(result).toEqual({ tokensRevoked: 0 });
     });
+
+    it('should default to 0 when revokeAllUserTokens returns empty result', async () => {
+      mockDb.query.mockResolvedValueOnce([]); // empty result from CTE
+      mockDb.query.mockResolvedValueOnce([]); // audit
+
+      const result = await service.logout(createAuthUser());
+
+      expect(result).toEqual({ tokensRevoked: 0 });
+    });
+
+    it('should forward ipAddress and userAgent to logout audit', async () => {
+      mockDb.query.mockResolvedValueOnce([{ count: '1' }]); // revoke
+      mockDb.query.mockResolvedValueOnce([]); // logLogoutAudit
+
+      await service.logout(createAuthUser(), '10.0.0.1', 'Chrome/120');
+
+      const auditParams = mockDb.query.mock.calls[1]?.[1] as unknown[];
+      expect(auditParams?.[7]).toBe('10.0.0.1');
+      expect(auditParams?.[8]).toBe('Chrome/120');
+    });
   });
 
   // =============================================================
@@ -498,9 +478,7 @@ describe('SECURITY: AuthService', () => {
     it('should throw NotFoundException when user not found', async () => {
       mockDb.query.mockResolvedValueOnce([]); // no user
 
-      await expect(service.getCurrentUser(createAuthUser())).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.getCurrentUser(createAuthUser())).rejects.toThrow(NotFoundException);
     });
 
     it('should query with correct userId and tenantId', async () => {
@@ -520,10 +498,7 @@ describe('SECURITY: AuthService', () => {
 
   describe('refresh', () => {
     const fakeRefreshToken = 'fake-refresh-token-for-unit-test';
-    const fakeTokenHash = crypto
-      .createHash('sha256')
-      .update(fakeRefreshToken)
-      .digest('hex');
+    const fakeTokenHash = crypto.createHash('sha256').update(fakeRefreshToken).digest('hex');
 
     const validDecodedPayload = {
       id: 1,
@@ -539,9 +514,9 @@ describe('SECURITY: AuthService', () => {
       mockDb.query.mockResolvedValueOnce([{ used_at: new Date() }]); // already used
       mockDb.query.mockResolvedValueOnce([{ count: '5' }]); // revoke family
 
-      await expect(
-        service.refresh({ refreshToken: fakeRefreshToken }),
-      ).rejects.toThrow(UnauthorizedException);
+      await expect(service.refresh({ refreshToken: fakeRefreshToken })).rejects.toThrow(
+        UnauthorizedException,
+      );
     });
 
     it('should include security alert message on reuse detection', async () => {
@@ -549,9 +524,9 @@ describe('SECURITY: AuthService', () => {
       mockDb.query.mockResolvedValueOnce([{ used_at: new Date() }]);
       mockDb.query.mockResolvedValueOnce([{ count: '3' }]);
 
-      await expect(
-        service.refresh({ refreshToken: fakeRefreshToken }),
-      ).rejects.toThrow('Token reuse detected');
+      await expect(service.refresh({ refreshToken: fakeRefreshToken })).rejects.toThrow(
+        'Token reuse detected',
+      );
     });
 
     it('should revoke entire token family on reuse detection', async () => {
@@ -562,13 +537,23 @@ describe('SECURITY: AuthService', () => {
       mockDb.query.mockResolvedValueOnce([{ used_at: new Date() }]);
       mockDb.query.mockResolvedValueOnce([{ count: '4' }]);
 
-      await expect(
-        service.refresh({ refreshToken: fakeRefreshToken }),
-      ).rejects.toThrow(UnauthorizedException);
+      await expect(service.refresh({ refreshToken: fakeRefreshToken })).rejects.toThrow(
+        UnauthorizedException,
+      );
 
       expect(mockDb.query).toHaveBeenCalledWith(
         expect.stringContaining('UPDATE refresh_tokens SET is_revoked = true'),
         ['family-xyz-789'],
+      );
+    });
+
+    it('should default to 0 when revokeTokenFamily returns empty result', async () => {
+      mockJwt.verify.mockReturnValueOnce(validDecodedPayload);
+      mockDb.query.mockResolvedValueOnce([{ used_at: new Date() }]); // token already used
+      mockDb.query.mockResolvedValueOnce([]); // revokeTokenFamily returns empty
+
+      await expect(service.refresh({ refreshToken: fakeRefreshToken })).rejects.toThrow(
+        UnauthorizedException,
       );
     });
 
@@ -588,9 +573,7 @@ describe('SECURITY: AuthService', () => {
           replaced_by_hash: null,
         },
       ]); // findValidRefreshToken
-      mockJwt.sign
-        .mockReturnValueOnce('new-access-token')
-        .mockReturnValueOnce('new-refresh-token');
+      mockJwt.sign.mockReturnValueOnce('new-access-token').mockReturnValueOnce('new-refresh-token');
       mockDb.query.mockResolvedValueOnce([]); // storeRefreshToken
       mockDb.query.mockResolvedValueOnce([]); // markTokenAsUsed
 
@@ -606,9 +589,7 @@ describe('SECURITY: AuthService', () => {
       mockJwt.verify.mockReturnValueOnce(validDecodedPayload);
       mockDb.query.mockResolvedValueOnce([]); // isTokenAlreadyUsed → not found
       mockDb.query.mockResolvedValueOnce([]); // findValidRefreshToken → not found
-      mockJwt.sign
-        .mockReturnValueOnce('new-access-token')
-        .mockReturnValueOnce('new-refresh-token');
+      mockJwt.sign.mockReturnValueOnce('new-access-token').mockReturnValueOnce('new-refresh-token');
       mockDb.query.mockResolvedValueOnce([]); // storeRefreshToken
 
       const result = await service.refresh({
@@ -625,9 +606,9 @@ describe('SECURITY: AuthService', () => {
         throw error;
       });
 
-      await expect(
-        service.refresh({ refreshToken: 'invalid-token' }),
-      ).rejects.toThrow(UnauthorizedException);
+      await expect(service.refresh({ refreshToken: 'invalid-token' })).rejects.toThrow(
+        UnauthorizedException,
+      );
     });
 
     it('should throw specific message for expired refresh token', async () => {
@@ -637,9 +618,9 @@ describe('SECURITY: AuthService', () => {
         throw error;
       });
 
-      await expect(
-        service.refresh({ refreshToken: 'expired-token' }),
-      ).rejects.toThrow('Refresh token has expired');
+      await expect(service.refresh({ refreshToken: 'expired-token' })).rejects.toThrow(
+        'Refresh token has expired',
+      );
     });
 
     it('should reject non-refresh token type', async () => {
@@ -648,9 +629,9 @@ describe('SECURITY: AuthService', () => {
         type: 'access', // Wrong type!
       });
 
-      await expect(
-        service.refresh({ refreshToken: fakeRefreshToken }),
-      ).rejects.toThrow('Not a refresh token');
+      await expect(service.refresh({ refreshToken: fakeRefreshToken })).rejects.toThrow(
+        'Not a refresh token',
+      );
     });
 
     // ----- Phase 14 additions -----
@@ -671,17 +652,14 @@ describe('SECURITY: AuthService', () => {
           replaced_by_hash: null,
         },
       ]); // token found in DB
-      mockJwt.sign
-        .mockReturnValueOnce('new-access')
-        .mockReturnValueOnce('new-refresh');
+      mockJwt.sign.mockReturnValueOnce('new-access').mockReturnValueOnce('new-refresh');
       mockDb.query.mockResolvedValueOnce([]); // storeRefreshToken
       mockDb.query.mockResolvedValueOnce([]); // markTokenAsUsed
 
       await service.refresh({ refreshToken: fakeRefreshToken });
 
       // markTokenAsUsed is the last db.query call
-      const lastCall =
-        mockDb.query.mock.calls[mockDb.query.mock.calls.length - 1];
+      const lastCall = mockDb.query.mock.calls[mockDb.query.mock.calls.length - 1];
       expect(lastCall?.[0]).toContain('UPDATE refresh_tokens');
       expect(lastCall?.[0]).toContain('used_at');
       expect((lastCall?.[1] as string[])?.[0]).toBe(fakeTokenHash);
@@ -691,9 +669,7 @@ describe('SECURITY: AuthService', () => {
       mockJwt.verify.mockReturnValueOnce(validDecodedPayload);
       mockDb.query.mockResolvedValueOnce([]); // isTokenAlreadyUsed → not found
       mockDb.query.mockResolvedValueOnce([]); // findValidRefreshToken → null
-      mockJwt.sign
-        .mockReturnValueOnce('new-access')
-        .mockReturnValueOnce('new-refresh');
+      mockJwt.sign.mockReturnValueOnce('new-access').mockReturnValueOnce('new-refresh');
       mockDb.query.mockResolvedValueOnce([]); // storeRefreshToken
 
       await service.refresh({ refreshToken: fakeRefreshToken });
@@ -711,12 +687,56 @@ describe('SECURITY: AuthService', () => {
       // Token found AND already used
       mockDb.query.mockResolvedValueOnce([{ used_at: new Date() }]);
 
-      await expect(
-        service.refresh({ refreshToken: fakeRefreshToken }),
-      ).rejects.toThrow(UnauthorizedException);
+      await expect(service.refresh({ refreshToken: fakeRefreshToken })).rejects.toThrow(
+        UnauthorizedException,
+      );
 
       // Only 1 db.query call (isTokenAlreadyUsed), no revokeTokenFamily call
       expect(mockDb.query).toHaveBeenCalledTimes(1);
     });
+  });
+});
+
+// =============================================================
+// getJwtSecrets — module-level validation (separate describe,
+// uses vi.resetModules + dynamic import to trigger re-evaluation)
+// =============================================================
+
+describe('SECURITY: getJwtSecrets validation', () => {
+  afterEach(() => {
+    process.env['JWT_SECRET'] =
+      'test-access-secret-for-vitest-unit-tests-minimum-32-characters-long';
+    process.env['JWT_REFRESH_SECRET'] =
+      'test-refresh-secret-for-vitest-unit-tests-minimum-32-characters-long';
+    vi.resetModules();
+  });
+
+  it('should throw when JWT_SECRET is empty', async () => {
+    vi.resetModules();
+    process.env['JWT_SECRET'] = '';
+
+    await expect(import('./auth.service.js')).rejects.toThrow(
+      'SECURITY ERROR: JWT_SECRET must be set',
+    );
+  });
+
+  it('should throw when JWT_REFRESH_SECRET is empty', async () => {
+    vi.resetModules();
+    process.env['JWT_REFRESH_SECRET'] = '';
+
+    await expect(import('./auth.service.js')).rejects.toThrow(
+      'SECURITY ERROR: JWT_REFRESH_SECRET must be set',
+    );
+  });
+
+  it('should throw when both secrets are identical', async () => {
+    vi.resetModules();
+    const same = 'identical-secret-that-is-long-enough-for-the-32-char-minimum-requirement';
+    process.env['JWT_SECRET'] = same;
+    process.env['JWT_REFRESH_SECRET'] = same;
+
+    await expect(import('./auth.service.js')).rejects.toThrow(
+      'JWT_REFRESH_SECRET must be different from JWT_SECRET',
+    );
   });
 });

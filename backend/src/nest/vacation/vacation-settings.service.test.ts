@@ -41,9 +41,7 @@ function createMockClient() {
 }
 type MockClient = ReturnType<typeof createMockClient>;
 
-function createSettingsRow(
-  overrides?: Partial<VacationSettingsRow>,
-): VacationSettingsRow {
+function createSettingsRow(overrides?: Partial<VacationSettingsRow>): VacationSettingsRow {
   return {
     id: 'settings-001',
     tenant_id: 1,
@@ -131,10 +129,11 @@ describe('VacationSettingsService', () => {
 
       expect(result.defaultAnnualDays).toBe(30);
       // Verify INSERT was called with ON CONFLICT
-      expect(mockClient.query).toHaveBeenCalledWith(
-        expect.stringContaining('ON CONFLICT'),
-        ['mock-settings-uuid', 1, null],
-      );
+      expect(mockClient.query).toHaveBeenCalledWith(expect.stringContaining('ON CONFLICT'), [
+        'mock-settings-uuid',
+        1,
+        null,
+      ]);
     });
 
     it('should convert NUMERIC strings to JavaScript numbers', async () => {
@@ -159,12 +158,8 @@ describe('VacationSettingsService', () => {
       mockClient.query.mockResolvedValueOnce({
         rows: [
           createSettingsRow({
-            created_at: new Date(
-              '2026-06-15T10:00:00.000Z',
-            ) as unknown as string,
-            updated_at: new Date(
-              '2026-06-15T12:00:00.000Z',
-            ) as unknown as string,
+            created_at: new Date('2026-06-15T10:00:00.000Z') as unknown as string,
+            updated_at: new Date('2026-06-15T12:00:00.000Z') as unknown as string,
           }),
         ],
       });
@@ -274,8 +269,7 @@ describe('VacationSettingsService', () => {
       expect(result.defaultAnnualDays).toBe(30);
       // buildSetClauses always adds created_by, so UPDATE runs even with empty DTO
       const updateCall = mockClient.query.mock.calls.find(
-        (call: unknown[]) =>
-          typeof call[0] === 'string' && call[0].includes('UPDATE'),
+        (call: unknown[]) => typeof call[0] === 'string' && call[0].includes('UPDATE'),
       );
       expect(updateCall).toBeDefined();
       const sql = updateCall![0] as string;
@@ -309,8 +303,7 @@ describe('VacationSettingsService', () => {
 
       // Find the UPDATE call
       const updateCall = mockClient.query.mock.calls.find(
-        (call: unknown[]) =>
-          typeof call[0] === 'string' && call[0].includes('UPDATE'),
+        (call: unknown[]) => typeof call[0] === 'string' && call[0].includes('UPDATE'),
       );
       expect(updateCall).toBeDefined();
       const sql = updateCall![0] as string;
@@ -362,8 +355,7 @@ describe('VacationSettingsService', () => {
 
       // Verify all 6 fields + created_by in params → 7 + tenantId = 8
       const updateCall = mockClient.query.mock.calls.find(
-        (call: unknown[]) =>
-          typeof call[0] === 'string' && call[0].includes('UPDATE'),
+        (call: unknown[]) => typeof call[0] === 'string' && call[0].includes('UPDATE'),
       );
       expect(updateCall![1]).toHaveLength(8);
     });

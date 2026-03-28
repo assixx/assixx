@@ -42,18 +42,17 @@ export class PermissionGuard implements CanActivate {
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const required = this.reflector.getAllAndOverride<
-      RequiredPermission | undefined
-    >(PERMISSION_KEY, [context.getHandler(), context.getClass()]);
+    const required = this.reflector.getAllAndOverride<RequiredPermission | undefined>(
+      PERMISSION_KEY,
+      [context.getHandler(), context.getClass()],
+    );
 
     // No permission decorator on this endpoint → pass through
     if (required === undefined) {
       return true;
     }
 
-    const request = context
-      .switchToHttp()
-      .getRequest<FastifyRequest & { user?: NestAuthUser }>();
+    const request = context.switchToHttp().getRequest<FastifyRequest & { user?: NestAuthUser }>();
     const user = request.user;
 
     if (user === undefined) {

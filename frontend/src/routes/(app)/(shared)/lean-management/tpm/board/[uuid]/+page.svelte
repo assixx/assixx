@@ -35,9 +35,7 @@
   const categoryColors = $derived(data.categoryColors);
 
   /** Only root/admin can manage cards and locations */
-  const canWrite = $derived(
-    data.userRole === 'root' || data.userRole === 'admin',
-  );
+  const canWrite = $derived(data.userRole === 'root' || data.userRole === 'admin');
 
   /** Active board filters — client-side only */
   let activeFilter = $state<FilterType>('all');
@@ -58,34 +56,25 @@
         result = result.filter((c: TpmCard) => c.cardRole === 'maintenance');
         break;
       case 'open_only':
-        result = result.filter(
-          (c: TpmCard) => c.status === 'red' || c.status === 'overdue',
-        );
+        result = result.filter((c: TpmCard) => c.status === 'red' || c.status === 'overdue');
         break;
     }
 
     if (catFilter !== 'all') {
-      result = result.filter((c: TpmCard) =>
-        c.cardCategories.includes(catFilter),
-      );
+      result = result.filter((c: TpmCard) => c.cardCategories.includes(catFilter));
     }
 
     return result;
   }
 
-  const filteredCards = $derived(
-    filterCards(cards, activeFilter, activeCategoryFilter),
-  );
+  const filteredCards = $derived(filterCards(cards, activeFilter, activeCategoryFilter));
 
   const pageTitle = $derived(
-    plan !== null ?
-      `${plan.assetName ?? plan.name} — Kamishibai Board`
-    : 'Kamishibai Board',
+    plan !== null ? `${plan.assetName ?? plan.name} — Kamishibai Board` : 'Kamishibai Board',
   );
 
   const openCount = $derived(
-    cards.filter((c: TpmCard) => c.status === 'red' || c.status === 'overdue')
-      .length,
+    cards.filter((c: TpmCard) => c.status === 'red' || c.status === 'overdue').length,
   );
 
   /** Legend: interval colors that are included on cards */
@@ -95,9 +84,7 @@
 
   /** Legend: category colors that are configured (non-null) */
   const legendCategoryColors = $derived(
-    categoryColors.filter(
-      (cc: CategoryColorConfigEntry) => cc.colorHex !== null,
-    ),
+    categoryColors.filter((cc: CategoryColorConfigEntry) => cc.colorHex !== null),
   );
 </script>
 
@@ -133,9 +120,7 @@
               Kamishibai Board
             </h2>
             {#if plan !== null}
-              <p
-                class="mt-2 flex items-center gap-3 text-(--color-text-secondary)"
-              >
+              <p class="mt-2 flex items-center gap-3 text-(--color-text-secondary)">
                 {#if plan.departmentName}
                   <span class="text-lg font-bold">{plan.departmentName}</span>
                   <span class="text-(--color-text-muted)">/</span>
@@ -164,9 +149,7 @@
               type="button"
               class="btn btn-primary"
               onclick={() => {
-                void goto(
-                  resolve(`/lean-management/tpm/locations/${data.planUuid}`),
-                );
+                void goto(resolve(`/lean-management/tpm/locations/${data.planUuid}`));
               }}
             >
               <i class="fas fa-map-marker-alt mr-2"></i>{MESSAGES.BTN_LOCATIONS}
@@ -176,9 +159,7 @@
                 type="button"
                 class="btn btn-primary"
                 onclick={() => {
-                  void goto(
-                    resolve(`/lean-management/tpm/cards/${data.planUuid}`),
-                  );
+                  void goto(resolve(`/lean-management/tpm/cards/${data.planUuid}`));
                 }}
               >
                 <i class="fas fa-th mr-2"></i>{MESSAGES.BTN_MANAGE_CARDS}
@@ -310,8 +291,7 @@
     height: 10px;
     border-radius: 50%;
     flex-shrink: 0;
-    box-shadow: 0 1px 2px
-      color-mix(in oklch, var(--color-black) 20%, transparent);
+    box-shadow: 0 1px 2px color-mix(in oklch, var(--color-black) 20%, transparent);
   }
 
   .board-legend__divider {

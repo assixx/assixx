@@ -27,9 +27,7 @@
   oncancel={onCancel}
 >
   Möchten Sie sich wirklich abmelden?<br />
-  <small
-    ><i class="fas fa-info-circle"></i> Alle ungespeicherten Änderungen gehen verloren.</small
-  >
+  <small><i class="fas fa-info-circle"></i> Alle ungespeicherten Änderungen gehen verloren.</small>
 </ConfirmModal>
 
 <style>

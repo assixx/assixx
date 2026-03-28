@@ -2,10 +2,7 @@
 // SURVEY-ADMIN - CONSTANTS
 // =============================================================================
 
-import {
-  DEFAULT_HIERARCHY_LABELS,
-  type HierarchyLabels,
-} from '$lib/types/hierarchy-labels';
+import { DEFAULT_HIERARCHY_LABELS, type HierarchyLabels } from '$lib/types/hierarchy-labels';
 
 import type { AssignmentType } from './types';
 
@@ -60,9 +57,7 @@ export const STATUS_BADGE_CLASS_MAP: Record<string, string> = {
 /** Build assignment badge map with dynamic hierarchy labels */
 export function createAssignmentBadgeMap(
   labels: HierarchyLabels,
-): Partial<
-  Record<AssignmentType, { badgeClass: string; icon: string; label: string }>
-> {
+): Partial<Record<AssignmentType, { badgeClass: string; icon: string; label: string }>> {
   return {
     all_users: {
       badgeClass: 'badge--visibility-company',
@@ -91,9 +86,7 @@ export function createAssignmentBadgeMap(
 export type AssignmentBadgeMap = ReturnType<typeof createAssignmentBadgeMap>;
 
 /** Default badge map (used in non-Svelte contexts) */
-export const ASSIGNMENT_BADGE_MAP = createAssignmentBadgeMap(
-  DEFAULT_HIERARCHY_LABELS,
-);
+export const ASSIGNMENT_BADGE_MAP = createAssignmentBadgeMap(DEFAULT_HIERARCHY_LABELS);
 
 /**
  * UI Messages — factory with dynamic hierarchy labels for SurveyFormModal.

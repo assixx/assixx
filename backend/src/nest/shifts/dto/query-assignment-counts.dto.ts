@@ -14,6 +14,4 @@ export const QueryAssignmentCountsSchema = z.object({
   referenceDate: ShiftDateSchema,
 });
 
-export class QueryAssignmentCountsDto extends createZodDto(
-  QueryAssignmentCountsSchema,
-) {}
+export class QueryAssignmentCountsDto extends createZodDto(QueryAssignmentCountsSchema) {}

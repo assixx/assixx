@@ -17,10 +17,7 @@ import { v7 as uuidv7 } from 'uuid';
 import { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import { DatabaseService } from '../database/database.service.js';
 import { mapCommentRowToApi } from './work-orders.helpers.js';
-import type {
-  WorkOrderComment,
-  WorkOrderCommentWithNameRow,
-} from './work-orders.types.js';
+import type { WorkOrderComment, WorkOrderCommentWithNameRow } from './work-orders.types.js';
 
 /** Paginated comment list */
 export interface PaginatedComments {
@@ -159,9 +156,7 @@ export class WorkOrderCommentsService {
     }
 
     if (comment.user_id !== userId && !isAdmin) {
-      throw new ForbiddenException(
-        'Nur eigene Kommentare können gelöscht werden',
-      );
+      throw new ForbiddenException('Nur eigene Kommentare können gelöscht werden');
     }
 
     await this.db.query(
@@ -200,10 +195,7 @@ export class WorkOrderCommentsService {
   }
 
   /** Validate that parent comment exists, belongs to same work order, and is top-level */
-  private async validateParent(
-    workOrderId: number,
-    parentId: number,
-  ): Promise<void> {
+  private async validateParent(workOrderId: number, parentId: number): Promise<void> {
     const parent = await this.db.queryOne<{
       id: number;
       parent_id: number | null;
@@ -218,9 +210,7 @@ export class WorkOrderCommentsService {
     }
 
     if (parent.parent_id !== null) {
-      throw new BadRequestException(
-        'Antworten auf Antworten sind nicht erlaubt (nur eine Ebene)',
-      );
+      throw new BadRequestException('Antworten auf Antworten sind nicht erlaubt (nur eine Ebene)');
     }
   }
 }

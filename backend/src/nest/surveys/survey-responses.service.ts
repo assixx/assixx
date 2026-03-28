@@ -63,15 +63,9 @@ export class SurveyResponsesService {
       [surveyId, tenantId],
     );
     const survey = surveyRows[0];
-    if (survey === undefined)
-      throw new NotFoundException('Survey not found or not active');
+    if (survey === undefined) throw new NotFoundException('Survey not found or not active');
 
-    await this.checkDuplicateResponse(
-      surveyId,
-      userId,
-      tenantId,
-      survey.allow_multiple_responses,
-    );
+    await this.checkDuplicateResponse(surveyId, userId, tenantId, survey.allow_multiple_responses);
 
     const responseUuid = uuidv7();
     const responseRows = await this.db.query<{ id: number }>(
@@ -85,12 +79,7 @@ export class SurveyResponsesService {
       if (answer.question_id === undefined) {
         continue;
       }
-      await this.insertSingleAnswer(
-        responseId,
-        answer.question_id,
-        tenantId,
-        answer,
-      );
+      await this.insertSingleAnswer(responseId, answer.question_id, tenantId, answer);
     }
     return responseId;
   }
@@ -134,8 +123,7 @@ export class SurveyResponsesService {
       isAnonymous ?
         'NULL as first_name, NULL as last_name, NULL as username'
       : 'u.first_name, u.last_name, u.username';
-    const userJoin =
-      isAnonymous ? '' : 'LEFT JOIN users u ON sr.user_id = u.id';
+    const userJoin = isAnonymous ? '' : 'LEFT JOIN users u ON sr.user_id = u.id';
     const responseRows = await this.db.query<DbSurveyResponse>(
       `SELECT sr.*, ${userFields} FROM survey_responses sr ${userJoin}
        WHERE sr.survey_id = $1 AND sr.tenant_id = $2 ORDER BY sr.completed_at DESC LIMIT $3 OFFSET $4`,
@@ -191,11 +179,7 @@ export class SurveyResponsesService {
     if (dbResponse === undefined) {
       throw new NotFoundException('Response not found');
     }
-    if (
-      userRole !== 'root' &&
-      userRole !== 'admin' &&
-      dbResponse.user_id !== userId
-    ) {
+    if (userRole !== 'root' && userRole !== 'admin' && dbResponse.user_id !== userId) {
       throw new ForbiddenException('No permission');
     }
     return await this.transformResponseWithAnswers(dbResponse, tenantId);
@@ -232,19 +216,14 @@ export class SurveyResponsesService {
     if (responseData.allow_edit_responses !== 1) {
       throw new ForbiddenException('Editing responses is not allowed');
     }
-    await this.db.query(
-      `DELETE FROM survey_answers WHERE response_id = $1 AND tenant_id = $2`,
-      [responseId, tenantId],
-    );
+    await this.db.query(`DELETE FROM survey_answers WHERE response_id = $1 AND tenant_id = $2`, [
+      responseId,
+      tenantId,
+    ]);
     const normalizedAnswers = normalizeAnswers(answers);
     for (const answer of normalizedAnswers) {
       if (answer.question_id === undefined) continue;
-      await this.insertSingleAnswer(
-        responseId,
-        answer.question_id,
-        tenantId,
-        answer,
-      );
+      await this.insertSingleAnswer(responseId, answer.question_id, tenantId, answer);
     }
     await this.db.query(
       `UPDATE survey_responses SET completed_at = NOW() WHERE id = $1 AND tenant_id = $2`,
@@ -312,18 +291,10 @@ export class SurveyResponsesService {
         `INSERT INTO survey_answers (response_id, question_id, answer_date, tenant_id) VALUES ($1, $2, $3, $4)`,
         [responseId, questionId, answer.answer_date, tenantId],
       );
-    } else if (
-      answer.answer_options !== undefined &&
-      answer.answer_options.length > 0
-    ) {
+    } else if (answer.answer_options !== undefined && answer.answer_options.length > 0) {
       await this.db.query(
         `INSERT INTO survey_answers (response_id, question_id, answer_options, tenant_id) VALUES ($1, $2, $3, $4)`,
-        [
-          responseId,
-          questionId,
-          JSON.stringify(answer.answer_options),
-          tenantId,
-        ],
+        [responseId, questionId, JSON.stringify(answer.answer_options), tenantId],
       );
     }
   }
@@ -341,9 +312,7 @@ export class SurveyResponsesService {
       [surveyId, userId, tenantId],
     );
     if (existingRows.length > 0) {
-      throw new BadRequestException(
-        'You have already participated in this survey',
-      );
+      throw new BadRequestException('You have already participated in this survey');
     }
   }
 
@@ -370,17 +339,12 @@ export class SurveyResponsesService {
     if (typeof dbResponse.started_at !== 'string') {
       baseResponse.startedAt = dbResponse.started_at.toISOString();
     }
-    if (
-      dbResponse.completed_at !== null &&
-      typeof dbResponse.completed_at !== 'string'
-    ) {
+    if (dbResponse.completed_at !== null && typeof dbResponse.completed_at !== 'string') {
       baseResponse.completedAt = dbResponse.completed_at.toISOString();
     }
     return {
       ...baseResponse,
-      answers: answerRows.map((a: DbSurveyAnswer) =>
-        this.transformSingleAnswer(a, optionTextMap),
-      ),
+      answers: answerRows.map((a: DbSurveyAnswer) => this.transformSingleAnswer(a, optionTextMap)),
     };
   }
 
@@ -392,14 +356,11 @@ export class SurveyResponsesService {
   }
 
   /** Batch-collects choice option IDs from answers and resolves them to display text via DB */
-  private async buildOptionTextMap(
-    answerRows: DbSurveyAnswer[],
-  ): Promise<Map<number, string>> {
+  private async buildOptionTextMap(answerRows: DbSurveyAnswer[]): Promise<Map<number, string>> {
     const allOptionIds: number[] = [];
     for (const a of answerRows) {
       if (
-        (a.question_type === 'single_choice' ||
-          a.question_type === 'multiple_choice') &&
+        (a.question_type === 'single_choice' || a.question_type === 'multiple_choice') &&
         a.answer_options !== null &&
         a.answer_options !== undefined
       ) {
@@ -428,9 +389,7 @@ export class SurveyResponsesService {
     answer: DbSurveyAnswer,
     optionTextMap: Map<number, string>,
   ): SurveyAnswer {
-    const transformed = dbToApi(
-      answer as unknown as Record<string, unknown>,
-    ) as SurveyAnswer;
+    const transformed = dbToApi(answer as unknown as Record<string, unknown>) as SurveyAnswer;
     if (answer.answer_date !== null && typeof answer.answer_date !== 'string') {
       transformed.answerDate = (answer.answer_date as Date).toISOString();
     }
@@ -455,13 +414,9 @@ export class SurveyResponsesService {
     optionTextMap: Map<number, string>,
   ): number[] {
     if (questionType === 'yes_no') {
-      return ids.map((id: number) =>
-        id === 1 ? 'Ja' : 'Nein',
-      ) as unknown as number[];
+      return ids.map((id: number) => (id === 1 ? 'Ja' : 'Nein')) as unknown as number[];
     }
-    return ids.map(
-      (id: number) => optionTextMap.get(id) ?? String(id),
-    ) as unknown as number[];
+    return ids.map((id: number) => optionTextMap.get(id) ?? String(id)) as unknown as number[];
   }
 
   // ==========================================================================
@@ -469,10 +424,7 @@ export class SurveyResponsesService {
   // ==========================================================================
 
   /** Verifies survey exists for the tenant */
-  private async verifySurveyExists(
-    surveyId: number,
-    tenantId: number,
-  ): Promise<void> {
+  private async verifySurveyExists(surveyId: number, tenantId: number): Promise<void> {
     const rows = await this.db.query<{ id: number }>(
       `SELECT id FROM surveys WHERE id = $1 AND tenant_id = $2`,
       [surveyId, tenantId],
@@ -483,10 +435,7 @@ export class SurveyResponsesService {
   }
 
   /** Fetches export data for survey responses */
-  private async fetchExportData(
-    surveyId: number,
-    tenantId: number,
-  ): Promise<ExportRow[]> {
+  private async fetchExportData(surveyId: number, tenantId: number): Promise<ExportRow[]> {
     return await this.db.query<ExportRow>(
       `SELECT sr.id as response_id, sr.user_id, sr.completed_at, u.username, u.first_name, u.last_name,
        sq.question_text, sq.question_type, sa.answer_text, sa.answer_number, sa.answer_date, sa.answer_options
@@ -500,34 +449,18 @@ export class SurveyResponsesService {
 
   /** Transforms export rows to CSV string array format */
   private transformExportRow(row: ExportRow): string[] {
-    const userName = buildFullName(
-      row.first_name,
-      row.last_name,
-      row.username ?? '',
-    );
+    const userName = buildFullName(row.first_name, row.last_name, row.username ?? '');
     const completed = row.completed_at !== null ? String(row.completed_at) : '';
     const answer = String(
-      row.answer_text ??
-        row.answer_number ??
-        row.answer_date ??
-        row.answer_options ??
-        '',
+      row.answer_text ?? row.answer_number ?? row.answer_date ?? row.answer_options ?? '',
     );
-    return [
-      String(row.response_id),
-      userName,
-      completed,
-      row.question_text,
-      answer,
-    ];
+    return [String(row.response_id), userName, completed, row.question_text, answer];
   }
 
   /** Builds CSV buffer from export rows */
   private buildCsvBuffer(exportRows: ExportRow[]): Buffer {
     const headers = ['Response ID', 'User', 'Completed', 'Question', 'Answer'];
-    const rows = exportRows.map((row: ExportRow) =>
-      this.transformExportRow(row),
-    );
+    const rows = exportRows.map((row: ExportRow) => this.transformExportRow(row));
     const csv = [
       headers.join(','),
       ...rows.map((row: string[]) =>

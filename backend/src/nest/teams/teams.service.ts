@@ -38,19 +38,23 @@ export interface TeamRow {
   description: string | null;
   department_id: number | null;
   team_lead_id: number | null;
-  deputy_lead_id: number | null;
+  team_deputy_lead_id: number | null;
   is_active: number;
   tenant_id: number;
   created_at: Date;
   updated_at: Date;
   department_name: string | undefined;
+  department_area_id: number | null;
   department_area_name: string | undefined;
   team_lead_name: string | undefined;
-  deputy_lead_name: string | undefined;
+  team_deputy_lead_name: string | undefined;
   member_count: number | undefined;
   asset_count: number | undefined;
   member_names: string | null;
   asset_names: string | null;
+  hall_ids: number[] | null;
+  hall_count: string | null;
+  hall_names: string | null;
 }
 
 /**
@@ -62,20 +66,24 @@ export interface TeamResponse {
   description: string | null;
   departmentId: number | null;
   leaderId: number | null;
-  deputyLeaderId: number | null;
+  teamDeputyLeadId: number | null;
   isActive: number;
   status: 'active' | 'inactive';
   tenantId: number;
   createdAt: string | undefined;
   updatedAt: string | undefined;
   departmentName: string | undefined;
+  departmentAreaId: number | null;
   departmentAreaName: string | undefined;
   leaderName: string | undefined;
-  deputyLeaderName: string | undefined;
+  teamDeputyLeadName: string | undefined;
   memberCount: number | undefined;
   assetCount: number | undefined;
   memberNames: string | undefined;
   assetNames: string | undefined;
+  hallIds: number[];
+  hallCount: string;
+  hallNames: string;
 }
 
 /**
@@ -139,8 +147,7 @@ interface TeamMemberRow {
 /**
  * SQL query for finding a team by ID
  */
-const FIND_TEAM_BY_ID_QUERY =
-  'SELECT * FROM teams WHERE id = $1 AND tenant_id = $2';
+const FIND_TEAM_BY_ID_QUERY = 'SELECT * FROM teams WHERE id = $1 AND tenant_id = $2';
 
 /**
  * SQL query for team members with date range availability
@@ -184,11 +191,21 @@ export class TeamsService {
    * Includes aggregated member/asset names for tooltips
    */
   private readonly FIND_ALL_TEAMS_QUERY = `
+    WITH hall_assignments AS (
+      SELECT th.team_id,
+        ARRAY_AGG(th.hall_id ORDER BY th.hall_id) AS hall_ids,
+        COUNT(*)::text AS hall_count,
+        STRING_AGG(h.name, ', ' ORDER BY h.name) AS hall_names
+      FROM team_halls th
+      JOIN halls h ON th.hall_id = h.id
+      GROUP BY th.team_id
+    )
     SELECT t.*,
       d.name as department_name,
+      d.area_id as department_area_id,
       a.name as department_area_name,
       CONCAT(COALESCE(u.first_name, ''), ' ', COALESCE(u.last_name, '')) as team_lead_name,
-      CONCAT(COALESCE(du.first_name, ''), ' ', COALESCE(du.last_name, '')) as deputy_lead_name,
+      CONCAT(COALESCE(du.first_name, ''), ' ', COALESCE(du.last_name, '')) as team_deputy_lead_name,
       (SELECT COUNT(*) FROM user_teams ut WHERE ut.team_id = t.id) as member_count,
       (SELECT COUNT(*) FROM asset_teams mt WHERE mt.team_id = t.id) as asset_count,
       (SELECT STRING_AGG(CONCAT(COALESCE(mu.first_name, ''), ' ', COALESCE(mu.last_name, '')), ', ' ORDER BY mu.last_name)
@@ -198,12 +215,16 @@ export class TeamsService {
       (SELECT STRING_AGG(mm.name, ', ' ORDER BY mm.name)
        FROM asset_teams mmt
        JOIN assets mm ON mmt.asset_id = mm.id
-       WHERE mmt.team_id = t.id) as asset_names
+       WHERE mmt.team_id = t.id) as asset_names,
+      ha.hall_ids,
+      ha.hall_count,
+      ha.hall_names
     FROM teams t
     LEFT JOIN departments d ON t.department_id = d.id
     LEFT JOIN areas a ON d.area_id = a.id
     LEFT JOIN users u ON t.team_lead_id = u.id
-    LEFT JOIN users du ON t.deputy_lead_id = du.id
+    LEFT JOIN users du ON t.team_deputy_lead_id = du.id
+    LEFT JOIN hall_assignments ha ON ha.team_id = t.id
     WHERE t.tenant_id = $1 AND t.is_active != ${IS_ACTIVE.DELETED}
     ORDER BY t.name`;
 
@@ -217,57 +238,49 @@ export class TeamsService {
       description: team.description,
       departmentId: team.department_id,
       leaderId: team.team_lead_id,
-      deputyLeaderId: team.deputy_lead_id,
+      teamDeputyLeadId: team.team_deputy_lead_id,
       isActive: team.is_active,
       status: team.is_active === 1 ? 'active' : 'inactive',
       tenantId: team.tenant_id,
       createdAt: team.created_at.toISOString(),
       updatedAt: team.updated_at.toISOString(),
       departmentName: team.department_name,
+      departmentAreaId: team.department_area_id,
       departmentAreaName: team.department_area_name,
       leaderName: team.team_lead_name,
-      deputyLeaderName: team.deputy_lead_name ?? undefined,
+      teamDeputyLeadName: team.team_deputy_lead_name ?? undefined,
       memberCount: team.member_count,
       assetCount: team.asset_count,
       memberNames: team.member_names ?? undefined,
       assetNames: team.asset_names ?? undefined,
+      hallIds: team.hall_ids ?? [],
+      hallCount: team.hall_count ?? '0',
+      hallNames: team.hall_names ?? '',
     };
   }
 
   /**
    * List all teams for a tenant
    */
-  async listTeams(
-    tenantId: number,
-    filters?: TeamFilters,
-  ): Promise<TeamResponse[]> {
+  async listTeams(tenantId: number, filters?: TeamFilters): Promise<TeamResponse[]> {
     this.logger.debug(`Fetching teams for tenant ${tenantId}`);
 
     const scope = await this.scopeService.getScope();
-    if (
-      scope.type === 'none' ||
-      (scope.type === 'limited' && scope.teamIds.length === 0)
-    ) {
+    if (scope.type === 'none' || (scope.type === 'limited' && scope.teamIds.length === 0)) {
       return [];
     }
 
-    const rows = await this.db.query<TeamRow>(this.FIND_ALL_TEAMS_QUERY, [
-      tenantId,
-    ]);
+    const rows = await this.db.query<TeamRow>(this.FIND_ALL_TEAMS_QUERY, [tenantId]);
 
     let teams = rows.map((team: TeamRow) => this.mapToResponse(team));
 
     // Scope filter: limited scope → only accessible teams
     if (scope.type === 'limited') {
-      teams = teams.filter((team: TeamResponse) =>
-        scope.teamIds.includes(team.id),
-      );
+      teams = teams.filter((team: TeamResponse) => scope.teamIds.includes(team.id));
     }
 
     if (filters?.departmentId !== undefined) {
-      teams = teams.filter(
-        (team: TeamResponse) => team.departmentId === filters.departmentId,
-      );
+      teams = teams.filter((team: TeamResponse) => team.departmentId === filters.departmentId);
     }
 
     if (filters?.search !== undefined && filters.search !== '') {
@@ -291,6 +304,7 @@ export class TeamsService {
     const rows = await this.db.query<TeamRow>(
       `SELECT t.*,
         d.name as department_name,
+        d.area_id as department_area_id,
         a.name as department_area_name,
         CONCAT(COALESCE(u.first_name, ''), ' ', COALESCE(u.last_name, '')) as team_lead_name,
         (SELECT COUNT(*) FROM user_teams ut WHERE ut.team_id = t.id) as member_count,
@@ -399,27 +413,22 @@ export class TeamsService {
       );
 
       if (existing.length > 0) {
-        await this.db.query(
-          'UPDATE user_teams SET role = $1 WHERE user_id = $2 AND team_id = $3',
-          ['lead', leaderId, teamId],
-        );
-        this.logger.log(
-          `Updated existing member ${leaderId} to lead role in team ${teamId}`,
-        );
+        await this.db.query('UPDATE user_teams SET role = $1 WHERE user_id = $2 AND team_id = $3', [
+          'lead',
+          leaderId,
+          teamId,
+        ]);
+        this.logger.log(`Updated existing member ${leaderId} to lead role in team ${teamId}`);
       } else {
         await this.db.query(
           `INSERT INTO user_teams (tenant_id, user_id, team_id, role, joined_at)
            VALUES ($1, $2, $3, $4, NOW())`,
           [tenantId, leaderId, teamId, 'lead'],
         );
-        this.logger.log(
-          `Added leader ${leaderId} to team ${teamId} with lead role`,
-        );
+        this.logger.log(`Added leader ${leaderId} to team ${teamId} with lead role`);
       }
     } catch (error: unknown) {
-      this.logger.error(
-        `Error ensuring leader in team: ${getErrorMessage(error)}`,
-      );
+      this.logger.error(`Error ensuring leader in team: ${getErrorMessage(error)}`);
     }
   }
 
@@ -442,14 +451,7 @@ export class TeamsService {
       `INSERT INTO teams (name, description, department_id, team_lead_id, is_active, tenant_id, uuid, uuid_created_at)
        VALUES ($1, $2, $3, $4, 1, $5, $6, NOW())
        RETURNING id`,
-      [
-        dto.name,
-        dto.description,
-        dto.departmentId,
-        dto.leaderId,
-        tenantId,
-        teamUuid,
-      ],
+      [dto.name, dto.description, dto.departmentId, dto.leaderId, tenantId, teamUuid],
     );
 
     if (rows.length === 0 || rows[0] === undefined) {
@@ -496,7 +498,7 @@ export class TeamsService {
       ['description', 'description'],
       ['departmentId', 'department_id'],
       ['leaderId', 'team_lead_id'],
-      ['deputyLeaderId', 'deputy_lead_id'],
+      ['teamDeputyLeadId', 'team_deputy_lead_id'],
       ['isActive', 'is_active'],
     ];
 
@@ -531,13 +533,10 @@ export class TeamsService {
   }
 
   /** Cleanup manage_hierarchy permissions when a user is no longer Lead of any team */
-  private async cleanupLeadPermissions(
-    userId: number,
-    tenantId: number,
-  ): Promise<void> {
+  private async cleanupLeadPermissions(userId: number, tenantId: number): Promise<void> {
     const remaining = await this.db.query<{ count: string }>(
       `SELECT COUNT(*) AS count FROM teams
-       WHERE (team_lead_id = $1 OR deputy_lead_id = $1)
+       WHERE (team_lead_id = $1 OR team_deputy_lead_id = $1)
          AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}`,
       [userId, tenantId],
     );
@@ -548,9 +547,7 @@ export class TeamsService {
          WHERE user_id = $1 AND tenant_id = $2 AND addon_code = 'manage_hierarchy'`,
         [userId, tenantId],
       );
-      this.logger.log(
-        `Cleaned up manage_hierarchy permissions for user ${userId}`,
-      );
+      this.logger.log(`Cleaned up manage_hierarchy permissions for user ${userId}`);
     }
   }
 
@@ -562,8 +559,7 @@ export class TeamsService {
     actingUserId: number,
   ): Promise<void> {
     if (newId === undefined || oldId === newId) return;
-    if (newId !== null)
-      await this.seedLeadPermissions(newId, tenantId, actingUserId);
+    if (newId !== null) await this.seedLeadPermissions(newId, tenantId, actingUserId);
     if (oldId !== null) await this.cleanupLeadPermissions(oldId, tenantId);
   }
 
@@ -574,15 +570,10 @@ export class TeamsService {
     tenantId: number,
     actingUserId: number,
   ): Promise<void> {
+    await this.syncLeadPermission(dto.leaderId, oldTeam.team_lead_id, tenantId, actingUserId);
     await this.syncLeadPermission(
-      dto.leaderId,
-      oldTeam.team_lead_id,
-      tenantId,
-      actingUserId,
-    );
-    await this.syncLeadPermission(
-      dto.deputyLeaderId,
-      oldTeam.deputy_lead_id,
+      dto.teamDeputyLeadId,
+      oldTeam.team_deputy_lead_id,
       tenantId,
       actingUserId,
     );
@@ -599,10 +590,11 @@ export class TeamsService {
   ): Promise<void> {
     if (dto.leaderId === undefined || dto.leaderId === null) return;
     if (currentLeaderId !== null && currentLeaderId !== dto.leaderId) {
-      await this.db.query(
-        'UPDATE user_teams SET role = $1 WHERE user_id = $2 AND team_id = $3',
-        ['member', currentLeaderId, teamId],
-      );
+      await this.db.query('UPDATE user_teams SET role = $1 WHERE user_id = $2 AND team_id = $3', [
+        'member',
+        currentLeaderId,
+        teamId,
+      ]);
     }
     await this.ensureLeaderInTeam(dto.leaderId, teamId, tenantId);
   }
@@ -618,10 +610,7 @@ export class TeamsService {
   ): Promise<TeamResponse> {
     this.logger.log(`Updating team ${id}`);
 
-    const existing = await this.db.query<TeamRow>(FIND_TEAM_BY_ID_QUERY, [
-      id,
-      tenantId,
-    ]);
+    const existing = await this.db.query<TeamRow>(FIND_TEAM_BY_ID_QUERY, [id, tenantId]);
     if (existing.length === 0) {
       throw new NotFoundException(ERROR_MESSAGES.TEAM_NOT_FOUND);
     }
@@ -630,9 +619,8 @@ export class TeamsService {
 
     await this.validateDepartment(dto.departmentId, tenantId);
     await this.validateLeader(dto.leaderId, tenantId);
-    await this.validateLeader(dto.deputyLeaderId, tenantId);
-    if (dto.name !== undefined)
-      await this.checkDuplicateName(dto.name, tenantId, id);
+    await this.validateLeader(dto.teamDeputyLeadId, tenantId);
+    if (dto.name !== undefined) await this.checkDuplicateName(dto.name, tenantId, id);
 
     const { fields, values } = this.buildUpdateFields(dto);
     if (fields.length > 0) {
@@ -657,13 +645,13 @@ export class TeamsService {
         name: old.name,
         departmentId: old.department_id,
         leaderId: old.team_lead_id,
-        deputyLeaderId: old.deputy_lead_id,
+        teamDeputyLeadId: old.team_deputy_lead_id,
       },
       {
         name: dto.name,
         departmentId: dto.departmentId,
         leaderId: dto.leaderId,
-        deputyLeaderId: dto.deputyLeaderId,
+        teamDeputyLeadId: dto.teamDeputyLeadId,
       },
     );
 
@@ -681,10 +669,7 @@ export class TeamsService {
   ): Promise<{ message: string }> {
     this.logger.log(`Deleting team ${id}, force: ${force}`);
 
-    const existing = await this.db.query<TeamRow>(FIND_TEAM_BY_ID_QUERY, [
-      id,
-      tenantId,
-    ]);
+    const existing = await this.db.query<TeamRow>(FIND_TEAM_BY_ID_QUERY, [id, tenantId]);
 
     if (existing.length === 0) {
       throw new NotFoundException(ERROR_MESSAGES.TEAM_NOT_FOUND);
@@ -738,29 +723,17 @@ export class TeamsService {
     startDate?: string,
     endDate?: string,
   ): Promise<TeamMember[]> {
-    const dateRangeStr =
-      startDate !== undefined ? `${startDate} - ${endDate ?? 'none'}` : 'none';
-    this.logger.debug(
-      `Fetching members for team ${id}, dateRange: ${dateRangeStr}`,
-    );
+    const dateRangeStr = startDate !== undefined ? `${startDate} - ${endDate ?? 'none'}` : 'none';
+    this.logger.debug(`Fetching members for team ${id}, dateRange: ${dateRangeStr}`);
 
-    const existing = await this.db.query<TeamRow>(FIND_TEAM_BY_ID_QUERY, [
-      id,
-      tenantId,
-    ]);
+    const existing = await this.db.query<TeamRow>(FIND_TEAM_BY_ID_QUERY, [id, tenantId]);
     if (existing.length === 0) {
       throw new NotFoundException(ERROR_MESSAGES.TEAM_NOT_FOUND);
     }
 
     const hasDateRange =
-      startDate !== undefined &&
-      startDate !== '' &&
-      endDate !== undefined &&
-      endDate !== '';
-    const query =
-      hasDateRange ?
-        TEAM_MEMBERS_DATE_RANGE_QUERY
-      : TEAM_MEMBERS_CURRENT_DATE_QUERY;
+      startDate !== undefined && startDate !== '' && endDate !== undefined && endDate !== '';
+    const query = hasDateRange ? TEAM_MEMBERS_DATE_RANGE_QUERY : TEAM_MEMBERS_CURRENT_DATE_QUERY;
     const params = hasDateRange ? [id, endDate, startDate] : [id];
 
     const members = await this.db.query<TeamMemberRow>(query, params);
@@ -791,10 +764,7 @@ export class TeamsService {
   ): Promise<{ message: string }> {
     this.logger.log(`Adding user ${userId} to team ${teamId}`);
 
-    const teamRows = await this.db.query<TeamRow>(FIND_TEAM_BY_ID_QUERY, [
-      teamId,
-      tenantId,
-    ]);
+    const teamRows = await this.db.query<TeamRow>(FIND_TEAM_BY_ID_QUERY, [teamId, tenantId]);
 
     if (teamRows.length === 0) {
       throw new NotFoundException(ERROR_MESSAGES.TEAM_NOT_FOUND);
@@ -837,10 +807,7 @@ export class TeamsService {
   ): Promise<{ message: string }> {
     this.logger.log(`Removing user ${userId} from team ${teamId}`);
 
-    const teamRows = await this.db.query<TeamRow>(FIND_TEAM_BY_ID_QUERY, [
-      teamId,
-      tenantId,
-    ]);
+    const teamRows = await this.db.query<TeamRow>(FIND_TEAM_BY_ID_QUERY, [teamId, tenantId]);
 
     if (teamRows.length === 0) {
       throw new NotFoundException(ERROR_MESSAGES.TEAM_NOT_FOUND);
@@ -855,10 +822,10 @@ export class TeamsService {
       throw new BadRequestException('User is not a member of this team');
     }
 
-    await this.db.query(
-      'DELETE FROM user_teams WHERE user_id = $1 AND team_id = $2',
-      [userId, teamId],
-    );
+    await this.db.query('DELETE FROM user_teams WHERE user_id = $1 AND team_id = $2', [
+      userId,
+      teamId,
+    ]);
 
     return { message: 'Team member removed successfully' };
   }
@@ -965,5 +932,52 @@ export class TeamsService {
     );
 
     return { message: 'Asset removed from team successfully' };
+  }
+
+  /**
+   * Assign halls to a team (clear-then-reassign pattern)
+   */
+  async assignHallsToTeam(
+    teamId: number,
+    hallIds: number[],
+    tenantId: number,
+    assignedBy: number,
+  ): Promise<{ message: string }> {
+    this.logger.log(`Assigning ${hallIds.length} halls to team ${teamId}`);
+
+    const teamRows = await this.db.query<TeamRow>(FIND_TEAM_BY_ID_QUERY, [teamId, tenantId]);
+    if (teamRows.length === 0) {
+      throw new NotFoundException(ERROR_MESSAGES.TEAM_NOT_FOUND);
+    }
+
+    await this.db.query('DELETE FROM team_halls WHERE team_id = $1 AND tenant_id = $2', [
+      teamId,
+      tenantId,
+    ]);
+
+    if (hallIds.length > 0) {
+      const valuePlaceholders = hallIds
+        .map((_: number, i: number) => `($1, $2, $${i + 3}, $${hallIds.length + 3}, NOW())`)
+        .join(', ');
+
+      await this.db.query(
+        `INSERT INTO team_halls (tenant_id, team_id, hall_id, assigned_by, assigned_at)
+         VALUES ${valuePlaceholders}`,
+        [tenantId, teamId, ...hallIds, assignedBy],
+      );
+    }
+
+    return { message: `${hallIds.length} halls assigned to team` };
+  }
+
+  /**
+   * Get hall IDs assigned to a team
+   */
+  async getTeamHallIds(teamId: number, tenantId: number): Promise<number[]> {
+    const rows = await this.db.query<{ hall_id: number }>(
+      'SELECT hall_id FROM team_halls WHERE team_id = $1 AND tenant_id = $2 ORDER BY hall_id',
+      [teamId, tenantId],
+    );
+    return rows.map((r: { hall_id: number }) => r.hall_id);
   }
 }

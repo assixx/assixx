@@ -24,10 +24,7 @@ const PhoneSchema = z
  */
 const EmployeeNumberSchema = z
   .string()
-  .regex(
-    /^[-0-9A-Za-z]{1,10}$/,
-    'Employee number: max 10 characters (letters, numbers, hyphen)',
-  )
+  .regex(/^[-0-9A-Za-z]{1,10}$/, 'Employee number: max 10 characters (letters, numbers, hyphen)')
   .optional();
 
 /**

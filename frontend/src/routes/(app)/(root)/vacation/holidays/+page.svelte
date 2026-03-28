@@ -262,8 +262,7 @@
             </div>
             <h3 class="empty-state__title">Keine Feiertage definiert</h3>
             <p class="empty-state__description">
-              Feiertage werden bei der Berechnung von Urlaubstagen
-              beruecksichtigt.
+              Feiertage werden bei der Berechnung von Urlaubstagen beruecksichtigt.
             </p>
           </div>
         {:else}
@@ -278,9 +277,7 @@
                       {formatDate(holiday.holidayDate)}
                     </span>
                     <span
-                      class="badge {holiday.recurring ? 'badge--info' : (
-                        'badge--warning'
-                      )} badge--sm"
+                      class="badge {holiday.recurring ? 'badge--info' : 'badge--warning'} badge--sm"
                     >
                       {RECURRING_LABELS[String(holiday.recurring)]}
                     </span>
@@ -353,9 +350,7 @@
         <div class="ds-modal__header">
           <h3 class="ds-modal__title">
             <i class="fas fa-calendar-day mr-2"></i>
-            {holidaysState.editingHoliday !== null ?
-              'Feiertag bearbeiten'
-            : 'Neuer Feiertag'}
+            {holidaysState.editingHoliday !== null ? 'Feiertag bearbeiten' : 'Neuer Feiertag'}
           </h3>
           <button
             type="button"
@@ -405,13 +400,11 @@
                 bind:checked={holidayRecurring}
               />
               <span class="toggle-switch__slider"></span>
-              <span class="toggle-switch__label">
-                Jaehrlich wiederkehrend
-              </span>
+              <span class="toggle-switch__label"> Jaehrlich wiederkehrend </span>
             </label>
             <p class="form-field__hint">
-              Wiederkehrende Feiertage werden jedes Jahr am gleichen Tag
-              beruecksichtigt (Monat + Tag).
+              Wiederkehrende Feiertage werden jedes Jahr am gleichen Tag beruecksichtigt (Monat +
+              Tag).
             </p>
           </div>
         </div>
@@ -432,9 +425,7 @@
             disabled={!canSubmit || isSaving}
           >
             <i class="fas fa-save mr-1"></i>
-            {holidaysState.editingHoliday !== null ?
-              'Aktualisieren'
-            : 'Erstellen'}
+            {holidaysState.editingHoliday !== null ? 'Aktualisieren' : 'Erstellen'}
           </button>
         </div>
       </form>
@@ -490,8 +481,7 @@
           <p>
             Moechten Sie den Feiertag
             <strong>"{holidaysState.deletingHoliday.name}"</strong>
-            ({formatDate(holidaysState.deletingHoliday.holidayDate)}) wirklich
-            loeschen?
+            ({formatDate(holidaysState.deletingHoliday.holidayDate)}) wirklich loeschen?
           </p>
           {#if holidaysState.deletingHoliday.recurring}
             <p
@@ -499,8 +489,7 @@
               style="font-size: 0.875rem;"
             >
               <i class="fas fa-exclamation-circle mr-1"></i>
-              Dieser Feiertag ist jährlich wiederkehrend. Er wird in keinem Jahr mehr
-              beruecksichtigt.
+              Dieser Feiertag ist jährlich wiederkehrend. Er wird in keinem Jahr mehr beruecksichtigt.
             </p>
           {/if}
         </div>

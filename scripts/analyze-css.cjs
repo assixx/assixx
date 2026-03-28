@@ -56,9 +56,7 @@ async function analyzeCSS() {
   // Load config
   const configPath = path.join(process.cwd(), 'purgecss.config.cjs');
   if (!fs.existsSync(configPath)) {
-    console.error(
-      `${colors.red}Error: purgecss.config.cjs not found${colors.reset}`,
-    );
+    console.error(`${colors.red}Error: purgecss.config.cjs not found${colors.reset}`);
     process.exit(1);
   }
 
@@ -67,9 +65,7 @@ async function analyzeCSS() {
   // Override CSS files if specific file provided
   if (specificFile) {
     config.css = [specificFile];
-    console.log(
-      `${colors.yellow}Analyzing specific file: ${specificFile}${colors.reset}\n`,
-    );
+    console.log(`${colors.yellow}Analyzing specific file: ${specificFile}${colors.reset}\n`);
   }
 
   try {
@@ -99,9 +95,7 @@ async function analyzeCSS() {
       }
 
       const reduction =
-        originalFileSize > 0 ?
-          Math.round((1 - originalSize / originalFileSize) * 100)
-        : 0;
+        originalFileSize > 0 ? Math.round((1 - originalSize / originalFileSize) * 100) : 0;
 
       results.totalRejected += rejectedCount;
       results.files.push({
@@ -134,9 +128,7 @@ async function analyzeCSS() {
             console.log(`     ${colors.red}- ${selector}${colors.reset}`);
           });
           if (rejectedCount > 50) {
-            console.log(
-              `     ${colors.dim}... and ${rejectedCount - 50} more${colors.reset}`,
-            );
+            console.log(`     ${colors.dim}... and ${rejectedCount - 50} more${colors.reset}`);
           }
         }
       }
@@ -154,25 +146,19 @@ async function analyzeCSS() {
     // Warnings
     console.log(`\n${colors.bold}⚠️  IMPORTANT WARNINGS${colors.reset}`);
     console.log(`${'─'.repeat(60)}`);
-    console.log(
-      `${colors.yellow}   1. These are POTENTIAL unused selectors${colors.reset}`,
-    );
+    console.log(`${colors.yellow}   1. These are POTENTIAL unused selectors${colors.reset}`);
     console.log(
       `${colors.yellow}   2. Dynamic classes (JS-generated) may show as unused${colors.reset}`,
     );
     console.log(
       `${colors.yellow}   3. Design System classes for future use may show as unused${colors.reset}`,
     );
-    console.log(
-      `${colors.yellow}   4. ALWAYS review before deleting anything!${colors.reset}`,
-    );
+    console.log(`${colors.yellow}   4. ALWAYS review before deleting anything!${colors.reset}`);
 
     // Write detailed report
     const reportPath = path.join(process.cwd(), 'css-analysis-report.json');
     fs.writeFileSync(reportPath, JSON.stringify(results, null, 2));
-    console.log(
-      `\n${colors.green}✅ Detailed report saved to: ${reportPath}${colors.reset}`,
-    );
+    console.log(`\n${colors.green}✅ Detailed report saved to: ${reportPath}${colors.reset}`);
 
     // JSON output if requested
     if (jsonOutput) {
@@ -180,9 +166,7 @@ async function analyzeCSS() {
       console.log(JSON.stringify(results, null, 2));
     }
 
-    console.log(
-      `\n${colors.cyan}To see rejected selectors, run with --verbose${colors.reset}`,
-    );
+    console.log(`\n${colors.cyan}To see rejected selectors, run with --verbose${colors.reset}`);
     console.log(
       `${colors.cyan}To analyze a specific file: node scripts/analyze-css.cjs --file <path>${colors.reset}\n`,
     );

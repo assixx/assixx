@@ -3,11 +3,7 @@
   5 Zeilen (Halle, Bereich, Abteilung, Team, Anlage) mit je einem Label
 -->
 <script lang="ts">
-  import {
-    DEFAULT_HIERARCHY_LABELS,
-    ENTITY_COLORS,
-    HALL_COLOR,
-  } from './constants.js';
+  import { DEFAULT_HIERARCHY_LABELS, ENTITY_COLORS, HALL_COLOR } from './constants.js';
 
   import type { HierarchyLabels } from './types.js';
 
@@ -21,12 +17,11 @@
 
   const { show, labels, onclose, onsave, isSaving }: Props = $props();
 
-  let editLabels = $state<HierarchyLabels>(
-    structuredClone(DEFAULT_HIERARCHY_LABELS),
-  );
+  let editLabels = $state(structuredClone(DEFAULT_HIERARCHY_LABELS));
 
   interface LabelLevel {
     key: keyof HierarchyLabels;
+    prefixKey?: keyof HierarchyLabels;
     icon: string;
     color: string;
     defaultLabel: string;
@@ -41,18 +36,21 @@
     },
     {
       key: 'area',
+      prefixKey: 'areaLeadPrefix',
       icon: ENTITY_COLORS.area.icon,
       color: ENTITY_COLORS.area.border,
       defaultLabel: 'Bereiche',
     },
     {
       key: 'department',
+      prefixKey: 'departmentLeadPrefix',
       icon: ENTITY_COLORS.department.icon,
       color: ENTITY_COLORS.department.border,
       defaultLabel: 'Abteilungen',
     },
     {
       key: 'team',
+      prefixKey: 'teamLeadPrefix',
       icon: ENTITY_COLORS.team.icon,
       color: ENTITY_COLORS.team.border,
       defaultLabel: 'Teams',
@@ -73,13 +71,16 @@
     }
   });
 
+  function isLabelValid(value: string): boolean {
+    return value.trim() !== '' && value.length <= 50;
+  }
+
   function validateLabels(): boolean {
-    for (const level of LEVELS) {
-      const label = editLabels[level.key];
-      if (label.trim() === '') return false;
-      if (label.length > 50) return false;
-    }
-    return true;
+    return LEVELS.every((level: LabelLevel) => {
+      if (!isLabelValid(editLabels[level.key])) return false;
+      if (level.prefixKey !== undefined && !isLabelValid(editLabels[level.prefixKey])) return false;
+      return true;
+    });
   }
 
   function restoreDefaults(): void {
@@ -91,34 +92,19 @@
     if (!isValid) return;
     onsave(editLabels);
   }
-
-  function handleOverlayClick(event: MouseEvent): void {
-    if (event.target === event.currentTarget) onclose();
-  }
-
-  function handleKeydown(event: KeyboardEvent): void {
-    if (event.key === 'Escape') onclose();
-  }
 </script>
 
 {#if show}
-  <!-- svelte-ignore a11y_click_events_have_key_events -->
   <div
     class="modal-overlay modal-overlay--active"
     role="dialog"
     aria-modal="true"
     aria-labelledby="hierarchy-modal-title"
     tabindex="-1"
-    onclick={handleOverlayClick}
-    onkeydown={handleKeydown}
   >
-    <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
     <form
       id="hierarchy-labels-form"
       class="ds-modal ds-modal--sm"
-      onclick={(e) => {
-        e.stopPropagation();
-      }}
       onsubmit={handleSubmit}
     >
       <div class="ds-modal__header">
@@ -141,8 +127,8 @@
 
       <div class="ds-modal__body">
         <p class="hint-text">
-          Benenne die Organisationsebenen passend für dein Unternehmen um. Die
-          Struktur bleibt identisch — nur die Anzeige-Labels ändern sich.
+          Benenne die Organisationsebenen passend für dein Unternehmen um. Die Struktur bleibt
+          identisch — nur die Anzeige-Labels ändern sich.
         </p>
 
         <div class="hierarchy-stepper">
@@ -179,6 +165,26 @@
                   required
                   bind:value={editLabels[level.key]}
                 />
+                {#if level.prefixKey}
+                  <div class="prefix-field">
+                    <label class="prefix-field__label">
+                      Positionsvorsilbe
+                      <input
+                        type="text"
+                        class="form-field__control form-field__control--sm"
+                        placeholder={DEFAULT_HIERARCHY_LABELS[level.prefixKey]}
+                        maxlength="50"
+                        required
+                        bind:value={editLabels[level.prefixKey]}
+                      />
+                    </label>
+                    <span class="prefix-field__preview">
+                      {editLabels[level.prefixKey]}leiter · Stellv. {editLabels[
+                        level.prefixKey
+                      ]}leiter
+                    </span>
+                  </div>
+                {/if}
               </div>
             </div>
           {/each}
@@ -294,5 +300,25 @@
   .footer-actions {
     display: flex;
     gap: 0.75rem;
+  }
+
+  .prefix-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    margin-top: 0.25rem;
+  }
+
+  .prefix-field__label {
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+    font-weight: 500;
+  }
+
+  .prefix-field__preview {
+    font-size: 0.7rem;
+    color: var(--color-text-secondary);
+    font-style: italic;
+    padding-left: 0.25rem;
   }
 </style>

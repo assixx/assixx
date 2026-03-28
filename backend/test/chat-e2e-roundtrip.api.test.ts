@@ -93,11 +93,7 @@ function encryptMessage(
 }
 
 /** Decrypt XChaCha20-Poly1305 ciphertext. Throws on AEAD auth failure (wrong key). */
-function decryptMessage(
-  ciphertext: Uint8Array,
-  nonce: Uint8Array,
-  encKey: Uint8Array,
-): string {
+function decryptMessage(ciphertext: Uint8Array, nonce: Uint8Array, encKey: Uint8Array): string {
   const cipher = xchacha20poly1305(encKey, nonce);
   const plaintextBytes = cipher.decrypt(ciphertext);
   return new TextDecoder().decode(plaintextBytes);
@@ -127,9 +123,7 @@ async function registerRealKey(
     return { keyVersion: body.data.keyVersion as number };
   }
 
-  throw new Error(
-    `E2E key registration failed: ${res.status} ${res.statusText}`,
-  );
+  throw new Error(`E2E key registration failed: ${res.status} ${res.statusText}`);
 }
 
 // =============================================================================
@@ -180,9 +174,9 @@ beforeAll(async () => {
     headers: authOnly(adminAuth.authToken),
   });
   const usersBody = (await usersRes.json()) as JsonBody;
-  const employee = (
-    usersBody.data as Array<{ id: number; email: string; uuid: string }>
-  ).find((u) => u.email === 'employee@apitest.de');
+  const employee = (usersBody.data as Array<{ id: number; email: string; uuid: string }>).find(
+    (u) => u.email === 'employee@apitest.de',
+  );
 
   if (!employee?.uuid) {
     throw new Error('Test employee not found or has no UUID');
@@ -214,9 +208,7 @@ beforeAll(async () => {
   });
 
   if (!permRes.ok) {
-    throw new Error(
-      `Failed to grant chat permissions: ${permRes.status} ${permRes.statusText}`,
-    );
+    throw new Error(`Failed to grant chat permissions: ${permRes.status} ${permRes.statusText}`);
   }
 
   // ── Step 2: Generate REAL X25519 key pairs ────────────────────────────────
@@ -227,16 +219,10 @@ beforeAll(async () => {
   const employeePubKey = x25519.getPublicKey(employeePrivKey);
 
   // ── Step 3: Register REAL public keys on the server ───────────────────────
-  const adminKeyInfo = await registerRealKey(
-    adminAuth.authToken,
-    toBase64(adminPubKey),
-  );
+  const adminKeyInfo = await registerRealKey(adminAuth.authToken, toBase64(adminPubKey));
   adminKeyVersion = adminKeyInfo.keyVersion;
 
-  const empKeyInfo = await registerRealKey(
-    employeeToken,
-    toBase64(employeePubKey),
-  );
+  const empKeyInfo = await registerRealKey(employeeToken, toBase64(employeePubKey));
   employeeKeyVersion = empKeyInfo.keyVersion;
 
   // ── Step 4: Compute shared secret (ECDH) ─────────────────────────────────
@@ -296,19 +282,16 @@ describe('E2E Roundtrip: Admin → Server → Employee', () => {
 
     const { ciphertext, nonce } = encryptMessage(PLAINTEXT, encKey);
 
-    const res = await fetch(
-      `${BASE_URL}/chat/conversations/${conversationId}/messages`,
-      {
-        method: 'POST',
-        headers: authHeaders(adminAuth.authToken),
-        body: JSON.stringify({
-          encryptedContent: toBase64(ciphertext),
-          e2eNonce: toBase64(nonce),
-          e2eKeyVersion: adminKeyVersion,
-          e2eKeyEpoch: CURRENT_EPOCH,
-        }),
-      },
-    );
+    const res = await fetch(`${BASE_URL}/chat/conversations/${conversationId}/messages`, {
+      method: 'POST',
+      headers: authHeaders(adminAuth.authToken),
+      body: JSON.stringify({
+        encryptedContent: toBase64(ciphertext),
+        e2eNonce: toBase64(nonce),
+        e2eKeyVersion: adminKeyVersion,
+        e2eKeyEpoch: CURRENT_EPOCH,
+      }),
+    });
     const body = (await res.json()) as JsonBody;
 
     expect(res.status).toBe(201);
@@ -330,12 +313,9 @@ describe('E2E Roundtrip: Admin → Server → Employee', () => {
     expect(sentMessageId).toBeDefined();
 
     // Employee fetches messages from the conversation (limit=100 to handle stale data from prior runs)
-    const res = await fetch(
-      `${BASE_URL}/chat/conversations/${conversationId}/messages?limit=100`,
-      {
-        headers: authOnly(employeeToken),
-      },
-    );
+    const res = await fetch(`${BASE_URL}/chat/conversations/${conversationId}/messages?limit=100`, {
+      headers: authOnly(employeeToken),
+    });
     const body = (await res.json()) as JsonBody;
 
     expect(res.status).toBe(200);
@@ -422,19 +402,16 @@ describe('E2E Roundtrip: Employee → Server → Admin', () => {
     const { ciphertext, nonce } = encryptMessage(REPLY_PLAINTEXT, encKey);
 
     // Employee sends via API
-    const sendRes = await fetch(
-      `${BASE_URL}/chat/conversations/${conversationId}/messages`,
-      {
-        method: 'POST',
-        headers: authHeaders(employeeToken),
-        body: JSON.stringify({
-          encryptedContent: toBase64(ciphertext),
-          e2eNonce: toBase64(nonce),
-          e2eKeyVersion: employeeKeyVersion,
-          e2eKeyEpoch: CURRENT_EPOCH,
-        }),
-      },
-    );
+    const sendRes = await fetch(`${BASE_URL}/chat/conversations/${conversationId}/messages`, {
+      method: 'POST',
+      headers: authHeaders(employeeToken),
+      body: JSON.stringify({
+        encryptedContent: toBase64(ciphertext),
+        e2eNonce: toBase64(nonce),
+        e2eKeyVersion: employeeKeyVersion,
+        e2eKeyEpoch: CURRENT_EPOCH,
+      }),
+    });
     const sendBody = (await sendRes.json()) as JsonBody;
 
     expect(sendRes.status).toBe(201);
@@ -452,9 +429,7 @@ describe('E2E Roundtrip: Employee → Server → Admin', () => {
     );
     const fetchBody = (await fetchRes.json()) as JsonBody;
     const messages = fetchBody.data as Array<Record<string, unknown>>;
-    const empMsg = messages.find(
-      (m: Record<string, unknown>) => (m.id as number) === msgId,
-    );
+    const empMsg = messages.find((m: Record<string, unknown>) => (m.id as number) === msgId);
 
     expect(empMsg).toBeDefined();
     expect(empMsg!.content).toBeNull();
@@ -479,19 +454,14 @@ describe('E2E Roundtrip: Server stores only ciphertext', () => {
   it('should have content=null for every E2E message in the conversation', async () => {
     expect(conversationId).toBeDefined();
 
-    const res = await fetch(
-      `${BASE_URL}/chat/conversations/${conversationId}/messages?limit=100`,
-      {
-        headers: authOnly(adminAuth.authToken),
-      },
-    );
+    const res = await fetch(`${BASE_URL}/chat/conversations/${conversationId}/messages?limit=100`, {
+      headers: authOnly(adminAuth.authToken),
+    });
     const body = (await res.json()) as JsonBody;
 
     expect(res.status).toBe(200);
     const messages = body.data as Array<Record<string, unknown>>;
-    const e2eMessages = messages.filter(
-      (m: Record<string, unknown>) => m.isE2e === true,
-    );
+    const e2eMessages = messages.filter((m: Record<string, unknown>) => m.isE2e === true);
 
     // We sent at least 2 E2E messages (admin→employee + employee→admin)
     expect(e2eMessages.length).toBeGreaterThanOrEqual(2);
@@ -523,9 +493,7 @@ describe('E2E Roundtrip: Key exchange verification', () => {
     const body = (await res.json()) as JsonBody;
 
     expect(res.status).toBe(200);
-    expect(body.data.publicKey).toBe(
-      toBase64(x25519.getPublicKey(employeePrivKey)),
-    );
+    expect(body.data.publicKey).toBe(toBase64(x25519.getPublicKey(employeePrivKey)));
     expect(body.data.keyVersion).toBe(employeeKeyVersion);
   });
 

@@ -49,9 +49,7 @@ function createMockMetadataService() {
       resourceUuid: null,
       action: 'view',
     }),
-    fetchResourceBeforeMutation: vi
-      .fn()
-      .mockResolvedValue({ id: '123', name: 'Old Name' }),
+    fetchResourceBeforeMutation: vi.fn().mockResolvedValue({ id: '123', name: 'Old Name' }),
   };
 }
 
@@ -138,10 +136,7 @@ describe('AuditTrailInterceptor', () => {
     it('should skip OPTIONS preflight', async () => {
       const next = createMockCallHandler();
 
-      const result$ = interceptor.intercept(
-        createMockContext({ method: 'OPTIONS' }),
-        next,
-      );
+      const result$ = interceptor.intercept(createMockContext({ method: 'OPTIONS' }), next);
       const result = await lastValueFrom(result$);
 
       expect(result).toBe('result');
@@ -200,9 +195,7 @@ describe('AuditTrailInterceptor', () => {
 
       const result$ = interceptor.intercept(createMockContext(), next);
 
-      await expect(lastValueFrom(result$)).rejects.toThrow(
-        'Something went wrong',
-      );
+      await expect(lastValueFrom(result$)).rejects.toThrow('Something went wrong');
       expect(mockLogging.logFailure).toHaveBeenCalledExactlyOnceWith(
         expect.objectContaining({ tenantId: 1 }),
         expect.any(Object),
@@ -218,10 +211,7 @@ describe('AuditTrailInterceptor', () => {
       mockHelpers.determineAction.mockReturnValueOnce('create');
       const next = createMockCallHandler();
 
-      const result$ = interceptor.intercept(
-        createMockContext({ method: 'POST' }),
-        next,
-      );
+      const result$ = interceptor.intercept(createMockContext({ method: 'POST' }), next);
       await lastValueFrom(result$);
 
       expect(mockLogging.logSuccess).toHaveBeenCalledOnce();
@@ -246,10 +236,7 @@ describe('AuditTrailInterceptor', () => {
       });
       const next = createMockCallHandler();
 
-      const result$ = interceptor.intercept(
-        createMockContext({ method: 'DELETE' }),
-        next,
-      );
+      const result$ = interceptor.intercept(createMockContext({ method: 'DELETE' }), next);
       await lastValueFrom(result$);
 
       expect(mockMetadata.fetchResourceBeforeMutation).toHaveBeenCalledWith(
@@ -279,10 +266,7 @@ describe('AuditTrailInterceptor', () => {
       });
       const next = createMockCallHandler();
 
-      const result$ = interceptor.intercept(
-        createMockContext({ method: 'PUT' }),
-        next,
-      );
+      const result$ = interceptor.intercept(createMockContext({ method: 'PUT' }), next);
       await lastValueFrom(result$);
 
       expect(mockMetadata.fetchResourceBeforeMutation).toHaveBeenCalledWith(
@@ -305,10 +289,7 @@ describe('AuditTrailInterceptor', () => {
       });
       const next = createMockCallHandler();
 
-      const result$ = interceptor.intercept(
-        createMockContext({ method: 'DELETE' }),
-        next,
-      );
+      const result$ = interceptor.intercept(createMockContext({ method: 'DELETE' }), next);
       await lastValueFrom(result$);
 
       // No pre-fetch when resourceId is null
@@ -328,10 +309,7 @@ describe('AuditTrailInterceptor', () => {
       const error = new Error('Delete failed');
       const next = createErrorCallHandler(error);
 
-      const result$ = interceptor.intercept(
-        createMockContext({ method: 'DELETE' }),
-        next,
-      );
+      const result$ = interceptor.intercept(createMockContext({ method: 'DELETE' }), next);
 
       await expect(lastValueFrom(result$)).rejects.toThrow('Delete failed');
       expect(mockLogging.logFailure).toHaveBeenCalledWith(

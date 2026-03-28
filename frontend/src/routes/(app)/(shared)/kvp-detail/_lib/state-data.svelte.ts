@@ -4,15 +4,7 @@
 
 import { IMAGE_FILE_TYPES } from './constants';
 
-import type {
-  KvpSuggestion,
-  Comment,
-  Attachment,
-  Department,
-  Team,
-  Area,
-  Asset,
-} from './types';
+import type { KvpSuggestion, Comment, Attachment, Department, Team, Area, Asset } from './types';
 
 type ImageFileType = (typeof IMAGE_FILE_TYPES)[number];
 
@@ -60,14 +52,10 @@ export function createDataState() {
   let attachments = $state<Attachment[]>([]);
 
   const photoAttachments = $derived(
-    attachments.filter((att) =>
-      IMAGE_FILE_TYPES.includes(att.fileType as ImageFileType),
-    ),
+    attachments.filter((att) => IMAGE_FILE_TYPES.includes(att.fileType as ImageFileType)),
   );
   const otherAttachments = $derived(
-    attachments.filter(
-      (att) => !IMAGE_FILE_TYPES.includes(att.fileType as ImageFileType),
-    ),
+    attachments.filter((att) => !IMAGE_FILE_TYPES.includes(att.fileType as ImageFileType)),
   );
 
   return {

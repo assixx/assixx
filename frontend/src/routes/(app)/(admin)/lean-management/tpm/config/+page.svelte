@@ -67,9 +67,7 @@
           <i class="fas fa-arrow-left mr-2"></i>{MESSAGES.BTN_BACK_TO_OVERVIEW}
         </button>
       </div>
-      <h1
-        class="flex items-center gap-2 text-2xl font-bold text-(--color-text-primary)"
-      >
+      <h1 class="flex items-center gap-2 text-2xl font-bold text-(--color-text-primary)">
         <i class="fas fa-cog"></i>
         {MESSAGES.CONFIG_PAGE_HEADING}
       </h1>

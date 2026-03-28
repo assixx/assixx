@@ -31,6 +31,4 @@ export const ListWorkOrdersQuerySchema = z.object({
   limit: LimitSchema,
 });
 
-export class ListWorkOrdersQueryDto extends createZodDto(
-  ListWorkOrdersQuerySchema,
-) {}
+export class ListWorkOrdersQueryDto extends createZodDto(ListWorkOrdersQuerySchema) {}

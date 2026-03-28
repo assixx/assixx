@@ -21,12 +21,7 @@ const AssetTypeEnum = z.enum([
   'other',
 ]);
 
-const SortByEnum = z.enum([
-  'created_at',
-  'updated_at',
-  'name',
-  'next_maintenance',
-]);
+const SortByEnum = z.enum(['created_at', 'updated_at', 'name', 'next_maintenance']);
 const SortOrderEnum = z.enum(['asc', 'desc']);
 
 export const ListAssetsQuerySchema = z.object({

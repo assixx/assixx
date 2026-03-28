@@ -15,6 +15,4 @@ export const GetAllResponsesQuerySchema = PaginationSchema;
 /**
  * Get All Responses Query DTO class
  */
-export class GetAllResponsesQueryDto extends createZodDto(
-  GetAllResponsesQuerySchema,
-) {}
+export class GetAllResponsesQueryDto extends createZodDto(GetAllResponsesQuerySchema) {}

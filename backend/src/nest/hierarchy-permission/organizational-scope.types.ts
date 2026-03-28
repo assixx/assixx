@@ -47,9 +47,9 @@ export interface OrganizationalScope {
 // ============================================================================
 
 /**
- * V1: Deputy hat identische Rechte wie Team-Lead.
- * V2-Erweiterung: Per-Tenant-Setting (ADR-036 Known Limitations #10).
- * Wenn false → deputy_lead_id aus CTE-Query entfernen.
+ * @deprecated Replaced by per-tenant setting `deputyHasLeadScope` (ADR-039).
+ * Read via OrganigramSettingsService.getDeputyHasLeadScope().
+ * Kept for backward-compat in tests — will be removed when tests are migrated.
  */
 export const DEPUTY_EQUALS_LEAD = true;
 
@@ -118,9 +118,6 @@ export function buildLimitedScope(row: ScopeQueryRow): OrganizationalScope {
     isAreaLead: leadAreaIds.length > 0,
     isDepartmentLead: leadDepartmentIds.length > 0,
     isTeamLead: leadTeamIds.length > 0,
-    isAnyLead:
-      leadAreaIds.length > 0 ||
-      leadDepartmentIds.length > 0 ||
-      leadTeamIds.length > 0,
+    isAnyLead: leadAreaIds.length > 0 || leadDepartmentIds.length > 0 || leadTeamIds.length > 0,
   };
 }

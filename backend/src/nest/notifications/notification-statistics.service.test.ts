@@ -15,15 +15,13 @@ import { NotificationStatisticsService } from './notification-statistics.service
 // =============================================================
 
 vi.mock('./notifications.helpers.js', () => ({
-  rowsToRecord: vi.fn(
-    (rows: { count: string }[], keyFn: (r: never) => string) => {
-      const record: Record<string, number> = {};
-      for (const row of rows) {
-        record[keyFn(row as never)] = Number.parseInt(row.count, 10);
-      }
-      return record;
-    },
-  ),
+  rowsToRecord: vi.fn((rows: { count: string }[], keyFn: (r: never) => string) => {
+    const record: Record<string, number> = {};
+    for (const row of rows) {
+      record[keyFn(row as never)] = Number.parseInt(row.count, 10);
+    }
+    return record;
+  }),
 }));
 
 // =============================================================
@@ -45,9 +43,7 @@ describe('NotificationStatisticsService', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockDb = createMockDb();
-    service = new NotificationStatisticsService(
-      mockDb as unknown as DatabaseService,
-    );
+    service = new NotificationStatisticsService(mockDb as unknown as DatabaseService);
   });
 
   // =============================================================
@@ -91,9 +87,7 @@ describe('NotificationStatisticsService', () => {
       mockDb.query.mockResolvedValueOnce([{ total: '0' }]);
       mockDb.query.mockResolvedValueOnce([]);
       mockDb.query.mockResolvedValueOnce([]);
-      mockDb.query.mockResolvedValueOnce([
-        { total_notifications: '0', read_notifications: '0' },
-      ]);
+      mockDb.query.mockResolvedValueOnce([{ total_notifications: '0', read_notifications: '0' }]);
       mockDb.query.mockResolvedValueOnce([]);
 
       const result = await service.getStatistics(10);

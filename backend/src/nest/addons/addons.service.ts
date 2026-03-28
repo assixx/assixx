@@ -8,12 +8,7 @@
  *   - Deactivation preserves user permissions (unlike old FeaturesService)
  */
 import { IS_ACTIVE } from '@assixx/shared/constants';
-import {
-  BadRequestException,
-  Injectable,
-  Logger,
-  NotFoundException,
-} from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 
 import { DatabaseService } from '../database/database.service.js';
 
@@ -164,9 +159,7 @@ export class AddonsService {
     return addon;
   }
 
-  private mapJoinRowToAddonWithStatus(
-    row: DbTenantAddonJoinRow,
-  ): AddonWithTenantStatus {
+  private mapJoinRowToAddonWithStatus(row: DbTenantAddonJoinRow): AddonWithTenantStatus {
     const addon: AddonWithTenantStatus = {
       id: row.addon_id,
       code: row.addon_code,
@@ -219,12 +212,9 @@ export class AddonsService {
   }
 
   async getAllAddons(includeInactive: boolean = false): Promise<Addon[]> {
-    this.logger.debug(
-      `Getting all addons (includeInactive: ${includeInactive})`,
-    );
+    this.logger.debug(`Getting all addons (includeInactive: ${includeInactive})`);
 
-    const whereClause: string =
-      includeInactive ? '' : `WHERE is_active = ${IS_ACTIVE.ACTIVE}`;
+    const whereClause: string = includeInactive ? '' : `WHERE is_active = ${IS_ACTIVE.ACTIVE}`;
 
     const rows = await this.db.query<DbAddonRow>(
       `SELECT * FROM addons ${whereClause} ORDER BY sort_order, name`,
@@ -236,10 +226,7 @@ export class AddonsService {
   async getAddonByCode(code: string): Promise<Addon | null> {
     this.logger.debug(`Getting addon by code: ${code}`);
 
-    const row = await this.db.queryOne<DbAddonRow>(
-      'SELECT * FROM addons WHERE code = $1',
-      [code],
-    );
+    const row = await this.db.queryOne<DbAddonRow>('SELECT * FROM addons WHERE code = $1', [code]);
 
     return row !== null ? this.mapDbAddonToApi(row) : null;
   }
@@ -264,9 +251,7 @@ export class AddonsService {
       [tenantId],
     );
 
-    return rows.map((row: DbTenantAddonJoinRow) =>
-      this.mapJoinRowToAddonWithStatus(row),
-    );
+    return rows.map((row: DbTenantAddonJoinRow) => this.mapJoinRowToAddonWithStatus(row));
   }
 
   /** Activate a purchasable addon for a tenant (starts trial or reactivates). */
@@ -280,29 +265,23 @@ export class AddonsService {
     const addon = await this.resolveAddon(addonCode);
 
     if (addon.is_core) {
-      throw new BadRequestException(
-        `Addon "${addonCode}" is a core addon and always active`,
-      );
+      throw new BadRequestException(`Addon "${addonCode}" is a core addon and always active`);
     }
 
     return await this.upsertTenantAddon(tenantId, addon);
   }
 
   private async resolveAddon(addonCode: string): Promise<DbAddonRow> {
-    const row = await this.db.queryOne<DbAddonRow>(
-      'SELECT * FROM addons WHERE code = $1',
-      [addonCode],
-    );
+    const row = await this.db.queryOne<DbAddonRow>('SELECT * FROM addons WHERE code = $1', [
+      addonCode,
+    ]);
     if (row === null) {
       throw new NotFoundException(`Addon "${addonCode}" not found`);
     }
     return row;
   }
 
-  private async upsertTenantAddon(
-    tenantId: number,
-    addon: DbAddonRow,
-  ): Promise<AddonStatus> {
+  private async upsertTenantAddon(tenantId: number, addon: DbAddonRow): Promise<AddonStatus> {
     const trialDays: number = addon.trial_days ?? 30;
 
     const rows = await this.db.query<{ id: string; status: TenantAddonStatus }>(
@@ -312,12 +291,7 @@ export class AddonsService {
     const existing = rows[0];
 
     if (existing !== undefined) {
-      return await this.reactivateExisting(
-        tenantId,
-        addon,
-        existing,
-        trialDays,
-      );
+      return await this.reactivateExisting(tenantId, addon, existing, trialDays);
     }
 
     return await this.createTrial(tenantId, addon, trialDays);
@@ -332,12 +306,9 @@ export class AddonsService {
     const isReturningFromCancel: boolean =
       existing.status === 'cancelled' || existing.status === 'expired';
 
-    const newStatus: TenantAddonStatus =
-      isReturningFromCancel ? 'trial' : 'active';
+    const newStatus: TenantAddonStatus = isReturningFromCancel ? 'trial' : 'active';
     const trialEndsAt: Date | null =
-      isReturningFromCancel ?
-        new Date(Date.now() + trialDays * 86_400_000)
-      : null;
+      isReturningFromCancel ? new Date(Date.now() + trialDays * 86_400_000) : null;
 
     await this.db.query(
       `UPDATE tenant_addons
@@ -425,9 +396,7 @@ export class AddonsService {
     );
 
     if (rows.length === 0) {
-      throw new NotFoundException(
-        `Addon "${addonCode}" is not activated for this tenant`,
-      );
+      throw new NotFoundException(`Addon "${addonCode}" is not activated for this tenant`);
     }
 
     this.logger.log(
@@ -436,10 +405,7 @@ export class AddonsService {
   }
 
   /** Get status of a specific addon for a tenant. */
-  async getAddonStatus(
-    tenantId: number,
-    addonCode: string,
-  ): Promise<AddonStatus> {
+  async getAddonStatus(tenantId: number, addonCode: string): Promise<AddonStatus> {
     const addon = await this.resolveAddon(addonCode);
 
     if (addon.is_core) {
@@ -473,8 +439,7 @@ export class AddonsService {
 
     if (row.trial_ends_at !== null) {
       result.trialEndsAt = new Date(row.trial_ends_at).toISOString();
-      const msRemaining: number =
-        new Date(row.trial_ends_at).getTime() - Date.now();
+      const msRemaining: number = new Date(row.trial_ends_at).getTime() - Date.now();
       result.daysRemaining = Math.max(0, Math.ceil(msRemaining / 86_400_000));
     }
 
@@ -518,10 +483,7 @@ export class AddonsService {
   }
 
   /** Check if tenant has access to addon (core → true, else check tenant_addons). */
-  async checkTenantAccess(
-    tenantId: number,
-    addonCode: string,
-  ): Promise<boolean> {
+  async checkTenantAccess(tenantId: number, addonCode: string): Promise<boolean> {
     const addon = await this.db.queryOne<{ id: number; is_core: boolean }>(
       'SELECT id, is_core FROM addons WHERE code = $1',
       [addonCode],

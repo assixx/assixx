@@ -62,8 +62,7 @@ describe('E2eKeysService', () => {
           {
             id: '01234567-0123-7890-abcd-012345678901',
             public_key: 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=',
-            fingerprint:
-              'abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890',
+            fingerprint: 'abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890',
             key_version: 1,
             created_at: new Date('2026-02-10T12:00:00Z'),
           },
@@ -76,9 +75,7 @@ describe('E2eKeysService', () => {
         42,
       );
 
-      expect(result.publicKey).toBe(
-        'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=',
-      );
+      expect(result.publicKey).toBe('AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=');
       expect(result.keyVersion).toBe(1);
       expect(result.fingerprint).toBeDefined();
       expect(result.createdAt).toBe('2026-02-10T12:00:00.000Z');
@@ -91,9 +88,7 @@ describe('E2eKeysService', () => {
         rows: [{ id: 'existing-id' }],
       });
 
-      await expect(service.registerKeys('someKey', 1, 42)).rejects.toThrow(
-        ConflictException,
-      );
+      await expect(service.registerKeys('someKey', 1, 42)).rejects.toThrow(ConflictException);
 
       // Should NOT attempt INSERT
       expect(mockClient.query).toHaveBeenCalledTimes(1);
@@ -253,10 +248,7 @@ describe('E2eKeysService', () => {
 
       await service.resetKeys(1, 42, 1);
 
-      const [sql, params] = mockClient.query.mock.calls[0] as [
-        string,
-        unknown[],
-      ];
+      const [sql, params] = mockClient.query.mock.calls[0] as [string, unknown[]];
       expect(sql).toContain(`is_active = ${IS_ACTIVE.DELETED}`);
       expect(params).toEqual([1, 42]);
     });
@@ -264,9 +256,7 @@ describe('E2eKeysService', () => {
     it('should throw NotFoundException when no active key found', async () => {
       mockClient.query.mockResolvedValueOnce({ rowCount: 0 });
 
-      await expect(service.resetKeys(1, 99, 1)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.resetKeys(1, 99, 1)).rejects.toThrow(NotFoundException);
     });
   });
 });

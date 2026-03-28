@@ -21,14 +21,7 @@
     onselect: (value: string) => void;
   }
 
-  const {
-    label,
-    labelId,
-    options,
-    selectedValue,
-    displayText,
-    onselect,
-  }: Props = $props();
+  const { label, labelId, options, selectedValue, displayText, onselect }: Props = $props();
 
   let open = $state(false);
   let containerRef: HTMLDivElement | undefined;
@@ -41,10 +34,7 @@
   // Close dropdown when clicking outside
   $effect(() => {
     function handleClickOutside(event: MouseEvent): void {
-      if (
-        containerRef !== undefined &&
-        !containerRef.contains(event.target as Node)
-      ) {
+      if (containerRef !== undefined && !containerRef.contains(event.target as Node)) {
         open = false;
       }
     }

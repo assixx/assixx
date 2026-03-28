@@ -112,10 +112,7 @@ export async function apiFetch<T>(
       if (response.status >= 500) {
         log.error({ status: response.status, endpoint }, 'API server error');
       } else if (response.status === 401 || response.status === 403) {
-        log.debug(
-          { status: response.status, endpoint },
-          'API auth/permission denied',
-        );
+        log.debug({ status: response.status, endpoint }, 'API auth/permission denied');
       } else {
         log.warn({ status: response.status, endpoint }, 'API client error');
       }

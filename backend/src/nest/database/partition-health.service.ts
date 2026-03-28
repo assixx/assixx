@@ -133,8 +133,7 @@ export class PartitionHealthService {
 
     const expected = this.buildExpectedNames(tableName, config.premake);
     const firstExpected = expected[0];
-    const currentMonthExists =
-      firstExpected !== undefined && existingNames.has(firstExpected);
+    const currentMonthExists = firstExpected !== undefined && existingNames.has(firstExpected);
 
     let futureMonthsCovered = 0;
     for (let i = 1; i < expected.length; i++) {
@@ -179,19 +178,13 @@ export class PartitionHealthService {
 
     return {
       auditTrail: !rows.some(
-        (r: { parent_table: string }) =>
-          r.parent_table === 'public.audit_trail',
+        (r: { parent_table: string }) => r.parent_table === 'public.audit_trail',
       ),
-      rootLogs: !rows.some(
-        (r: { parent_table: string }) => r.parent_table === 'public.root_logs',
-      ),
+      rootLogs: !rows.some((r: { parent_table: string }) => r.parent_table === 'public.root_logs'),
     };
   }
 
-  private unhealthyResult(
-    checkedAt: string,
-    extension: ExtensionHealth,
-  ): PartitionHealthResult {
+  private unhealthyResult(checkedAt: string, extension: ExtensionHealth): PartitionHealthResult {
     const emptyTable: TablePartitionHealth = {
       registered: false,
       premake: null,

@@ -10,25 +10,15 @@
     onbackToAll?: () => void;
   }
 
-  const {
-    folders,
-    showBackToAll = false,
-    onfolderClick,
-    onbackToAll,
-  }: Props = $props();
+  const { folders, showBackToAll = false, onfolderClick, onbackToAll }: Props = $props();
 
   const placeholderRowCount = $derived(
-    Math.max(
-      0,
-      MIN_LIST_ROWS - folders.length - (folders.length === 0 ? 1 : 0),
-    ),
+    Math.max(0, MIN_LIST_ROWS - folders.length - (folders.length === 0 ? 1 : 0)),
   );
 </script>
 
 <div class="overflow-x-auto">
-  <table
-    class="data-table data-table--striped data-table--hover data-table--bordered"
-  >
+  <table class="data-table data-table--striped data-table--hover data-table--bordered">
     <thead>
       <tr>
         <th>{MESSAGES.TH_NAME}</th>
@@ -65,9 +55,7 @@
       {/if}
       {#each folders as folder (folder.conversationId)}
         {@const displayName =
-          folder.isGroup ?
-            (folder.groupName ?? 'Gruppenname')
-          : folder.participantName}
+          folder.isGroup ? (folder.groupName ?? 'Gruppenname') : folder.participantName}
         {@const icon =
           folder.isGroup ?
             '<i class="fas fa-users" style="font-size: 16px; color: var(--color-content-secondary); margin-left: 4px;"></i>'

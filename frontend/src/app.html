@@ -53,10 +53,7 @@
         }
 
         // Font loading detection
-        if (
-          document.fonts &&
-          document.fonts.check('1em "Material Symbols Outlined"')
-        ) {
+        if (document.fonts && document.fonts.check('1em "Material Symbols Outlined"')) {
           document.documentElement.classList.add('fonts-loaded');
         } else if (document.fonts) {
           document.fonts.ready.then(function () {

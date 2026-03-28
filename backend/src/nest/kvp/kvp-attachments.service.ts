@@ -24,10 +24,7 @@ export class KvpAttachmentsService {
   constructor(private readonly db: DatabaseService) {}
 
   /** Get attachments for a suggestion */
-  async getAttachments(
-    numericId: number,
-    tenantId: number,
-  ): Promise<KVPAttachment[]> {
+  async getAttachments(numericId: number, tenantId: number): Promise<KVPAttachment[]> {
     this.logger.debug(`Getting attachments for suggestion ${numericId}`);
 
     const rows = await this.db.query<DbAttachment>(
@@ -50,9 +47,7 @@ export class KvpAttachmentsService {
       uploadedBy: row.uploaded_by,
       fileUuid: row.file_uuid,
       createdAt:
-        row.uploaded_at !== null ?
-          row.uploaded_at.toISOString()
-        : new Date().toISOString(),
+        row.uploaded_at !== null ? row.uploaded_at.toISOString() : new Date().toISOString(),
     }));
   }
 

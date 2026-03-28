@@ -25,10 +25,7 @@ export const ADDON_ICONS: Record<string, string> = {
 };
 
 /** Status badge configuration: label (German), CSS class, icon */
-export const STATUS_CONFIG: Record<
-  string,
-  { label: string; badgeClass: string; icon: string }
-> = {
+export const STATUS_CONFIG: Record<string, { label: string; badgeClass: string; icon: string }> = {
   core_always_active: {
     label: 'Kern-Modul',
     badgeClass: 'badge--primary',

@@ -55,8 +55,8 @@ function createRotationModalState() {
 
 /** Creates rotation history and pending deletions state */
 function createRotationHistoryState() {
-  let rotationHistoryMap = $state<Map<string, number>>(new Map());
-  let pendingRotationDeletions = $state<Set<number>>(new Set());
+  let rotationHistoryMap = $state(new Map());
+  let pendingRotationDeletions = $state(new Set());
 
   return {
     get rotationHistoryMap() {
@@ -86,11 +86,7 @@ type ModalState = ReturnType<typeof createRotationModalState>;
 type HistoryState = ReturnType<typeof createRotationHistoryState>;
 
 /** Creates coordinated setters that manage toggle/modal interactions */
-function createCoordinatedSetters(
-  toggles: ToggleState,
-  modals: ModalState,
-  history: HistoryState,
-) {
+function createCoordinatedSetters(toggles: ToggleState, modals: ModalState, history: HistoryState) {
   return {
     setStandardRotationEnabled: (enabled: boolean) => {
       toggles.setStandardEnabledRaw(enabled);
@@ -158,6 +154,4 @@ export function createRotationTogglesState() {
   };
 }
 
-export type RotationTogglesState = ReturnType<
-  typeof createRotationTogglesState
->;
+export type RotationTogglesState = ReturnType<typeof createRotationTogglesState>;

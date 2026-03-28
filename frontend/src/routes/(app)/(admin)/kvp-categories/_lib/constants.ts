@@ -43,8 +43,7 @@ export const LABELS = {
   BTN_EDIT: 'Bearbeiten',
   BTN_DELETE: 'Löschen',
   BTN_ADD: 'Neue Kategorie hinzufügen',
-  counter: (used: number, max: number) =>
-    `${used} / ${max} Kategorien verwendet`,
+  counter: (used: number, max: number) => `${used} / ${max} Kategorien verwendet`,
   remaining: (slots: number) => `${slots} von 14 verfügbar`,
 } as const;
 

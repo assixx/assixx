@@ -102,9 +102,7 @@ export async function loadDepartments(): Promise<Department[]> {
  */
 export async function loadLeaderCandidates(): Promise<Admin[]> {
   try {
-    const result: unknown = await apiClient.get(
-      API_ENDPOINTS.LEADER_CANDIDATES,
-    );
+    const result: unknown = await apiClient.get(API_ENDPOINTS.LEADER_CANDIDATES);
     return extractArrayFromResponse<Admin>(result);
   } catch (err: unknown) {
     log.error({ err }, 'Error loading leader candidates');
@@ -143,13 +141,9 @@ export async function loadAssets(): Promise<Asset[]> {
  * Fetch team members from /teams/:id/members endpoint
  * Returns array of member objects with id
  */
-export async function fetchTeamMembers(
-  teamId: number,
-): Promise<{ id: number }[]> {
+export async function fetchTeamMembers(teamId: number): Promise<{ id: number }[]> {
   try {
-    const result: unknown = await apiClient.get(
-      API_ENDPOINTS.teamMembers(teamId),
-    );
+    const result: unknown = await apiClient.get(API_ENDPOINTS.teamMembers(teamId));
     return extractArrayFromResponse<{ id: number }>(result);
   } catch (err: unknown) {
     log.error({ err }, 'Error fetching team members');
@@ -161,13 +155,9 @@ export async function fetchTeamMembers(
  * Fetch team assets from /teams/:id/assets endpoint
  * Returns array of asset objects with id
  */
-export async function fetchTeamAssets(
-  teamId: number,
-): Promise<{ id: number }[]> {
+export async function fetchTeamAssets(teamId: number): Promise<{ id: number }[]> {
   try {
-    const result: unknown = await apiClient.get(
-      API_ENDPOINTS.teamAssets(teamId),
-    );
+    const result: unknown = await apiClient.get(API_ENDPOINTS.teamAssets(teamId));
     return extractArrayFromResponse<{ id: number }>(result);
   } catch (err: unknown) {
     log.error({ err }, 'Error fetching team assets');
@@ -176,10 +166,7 @@ export async function fetchTeamAssets(
 }
 
 /** Save team (create or update), returns team ID */
-export async function saveTeam(
-  payload: TeamPayload,
-  editId: number | null,
-): Promise<number> {
+export async function saveTeam(payload: TeamPayload, editId: number | null): Promise<number> {
   const isEdit = editId !== null;
   const result: unknown =
     isEdit ?
@@ -192,10 +179,7 @@ export async function saveTeam(
 /**
  * Add member to team
  */
-export async function addTeamMember(
-  teamId: number,
-  userId: number,
-): Promise<void> {
+export async function addTeamMember(teamId: number, userId: number): Promise<void> {
   try {
     await apiClient.post(API_ENDPOINTS.teamMembers(teamId), { userId });
   } catch (err: unknown) {
@@ -206,10 +190,7 @@ export async function addTeamMember(
 /**
  * Remove member from team
  */
-export async function removeTeamMember(
-  teamId: number,
-  userId: number,
-): Promise<void> {
+export async function removeTeamMember(teamId: number, userId: number): Promise<void> {
   try {
     await apiClient.delete(API_ENDPOINTS.teamMember(teamId, userId));
   } catch (err: unknown) {
@@ -220,10 +201,7 @@ export async function removeTeamMember(
 /**
  * Add asset to team
  */
-export async function addTeamAsset(
-  teamId: number,
-  assetId: number,
-): Promise<void> {
+export async function addTeamAsset(teamId: number, assetId: number): Promise<void> {
   try {
     await apiClient.post(API_ENDPOINTS.teamAssets(teamId), { assetId });
   } catch (err: unknown) {
@@ -234,10 +212,7 @@ export async function addTeamAsset(
 /**
  * Remove asset from team
  */
-export async function removeTeamAsset(
-  teamId: number,
-  assetId: number,
-): Promise<void> {
+export async function removeTeamAsset(teamId: number, assetId: number): Promise<void> {
   try {
     await apiClient.delete(API_ENDPOINTS.teamAsset(teamId, assetId));
   } catch (err: unknown) {
@@ -268,12 +243,8 @@ export async function updateTeamRelations(
   }
 
   // Update members
-  const membersToAdd = newMemberIds.filter(
-    (id) => !currentMembers.includes(id),
-  );
-  const membersToRemove = currentMembers.filter(
-    (id) => !newMemberIds.includes(id),
-  );
+  const membersToAdd = newMemberIds.filter((id) => !currentMembers.includes(id));
+  const membersToRemove = currentMembers.filter((id) => !newMemberIds.includes(id));
 
   for (const userId of membersToAdd) {
     await addTeamMember(teamId, userId);
@@ -284,9 +255,7 @@ export async function updateTeamRelations(
 
   // Update assets
   const assetsToAdd = newAssetIds.filter((id) => !currentAssets.includes(id));
-  const assetsToRemove = currentAssets.filter(
-    (id) => !newAssetIds.includes(id),
-  );
+  const assetsToRemove = currentAssets.filter((id) => !newAssetIds.includes(id));
 
   for (const assetId of assetsToAdd) {
     await addTeamAsset(teamId, assetId);
@@ -344,14 +313,23 @@ export function buildTeamPayload(formData: {
   description: string;
   departmentId: number | null;
   leaderId: number | null;
+  teamDeputyLeadId: number | null;
   isActive: 0 | 1 | 3;
 }): TeamPayload {
   return {
     name: formData.name,
-    description:
-      formData.description.length > 0 ? formData.description : undefined,
+    description: formData.description.length > 0 ? formData.description : undefined,
     departmentId: formData.departmentId,
     leaderId: formData.leaderId,
+    teamDeputyLeadId: formData.teamDeputyLeadId,
     isActive: formData.isActive,
   };
+}
+
+/**
+ * Assign a single hall to a team (or clear assignment)
+ */
+export async function assignTeamHall(teamId: number, hallId: number | null): Promise<void> {
+  const hallIds = hallId !== null ? [hallId] : [];
+  await apiClient.post(`${API_ENDPOINTS.TEAMS}/${teamId}/halls`, { hallIds });
 }

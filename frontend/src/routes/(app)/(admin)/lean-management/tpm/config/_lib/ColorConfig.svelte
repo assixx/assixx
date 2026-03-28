@@ -59,9 +59,7 @@
 
   $effect(() => {
     rows = STATUS_ORDER.map((key: CardStatus) => {
-      const entry = colors.find(
-        (c: TpmColorConfigEntry) => c.statusKey === key,
-      );
+      const entry = colors.find((c: TpmColorConfigEntry) => c.statusKey === key);
       return {
         key,
         colorHex: entry?.colorHex ?? '#888888',
@@ -112,8 +110,7 @@
       await invalidateAll();
     } catch (err: unknown) {
       logApiError('updateColor', err);
-      const msg =
-        err instanceof Error ? err.message : MESSAGES.ERROR_COLOR_UPDATE;
+      const msg = err instanceof Error ? err.message : MESSAGES.ERROR_COLOR_UPDATE;
       showErrorAlert(msg);
     } finally {
       savingKey = null;
@@ -129,8 +126,7 @@
       await invalidateAll();
     } catch (err: unknown) {
       logApiError('resetColors', err);
-      const msg =
-        err instanceof Error ? err.message : MESSAGES.ERROR_COLOR_RESET;
+      const msg = err instanceof Error ? err.message : MESSAGES.ERROR_COLOR_RESET;
       showErrorAlert(msg);
     } finally {
       resetting = false;
@@ -145,8 +141,7 @@
       await invalidateAll();
     } catch (err: unknown) {
       logApiError('resetSingleColor', err);
-      const msg =
-        err instanceof Error ? err.message : MESSAGES.ERROR_SINGLE_COLOR_RESET;
+      const msg = err instanceof Error ? err.message : MESSAGES.ERROR_SINGLE_COLOR_RESET;
       showErrorAlert(msg);
     } finally {
       resettingKey = null;
@@ -156,9 +151,7 @@
 
 <div class="mb-4 flex items-start justify-between gap-4">
   <div>
-    <h3
-      class="flex items-center gap-2 text-base font-semibold text-(--color-text-primary)"
-    >
+    <h3 class="flex items-center gap-2 text-base font-semibold text-(--color-text-primary)">
       <i class="fas fa-palette"></i>
       {MESSAGES.COLOR_TITLE}
     </h3>

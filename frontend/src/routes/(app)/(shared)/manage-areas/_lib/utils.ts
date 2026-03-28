@@ -4,12 +4,7 @@
 
 import { IS_ACTIVE } from '@assixx/shared/constants';
 
-import {
-  STATUS_BADGE_CLASSES,
-  STATUS_LABELS,
-  TYPE_LABELS,
-  FORM_DEFAULTS,
-} from './constants';
+import { STATUS_BADGE_CLASSES, STATUS_LABELS, TYPE_LABELS, FORM_DEFAULTS } from './constants';
 
 import type {
   Area,
@@ -52,10 +47,7 @@ export function getTypeLabel(type: string): string {
 // =============================================================================
 
 /** Get area lead display name for dropdown */
-export function getAreaLeadDisplayName(
-  areaLeadId: number | null,
-  areaLeads: AdminUser[],
-): string {
+export function getAreaLeadDisplayName(areaLeadId: number | null, areaLeads: AdminUser[]): string {
   if (areaLeadId === null) return 'Kein Leiter';
   const lead = areaLeads.find((u) => u.id === areaLeadId);
   if (!lead) return 'Kein Leiter';
@@ -68,18 +60,12 @@ export function getAreaLeadDisplayName(
 // =============================================================================
 
 /** Get department IDs assigned to an area */
-export function getDepartmentIdsForArea(
-  areaId: number,
-  departments: Department[],
-): number[] {
+export function getDepartmentIdsForArea(areaId: number, departments: Department[]): number[] {
   return departments.filter((d) => d.areaId === areaId).map((d) => d.id);
 }
 
 /** Get department count display text */
-export function getDepartmentCountText(
-  count: number,
-  departmentLabel: string,
-): string {
+export function getDepartmentCountText(count: number, departmentLabel: string): string {
   if (count === 0) return 'Keine';
   return `${count} ${departmentLabel}`;
 }

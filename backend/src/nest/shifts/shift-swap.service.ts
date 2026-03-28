@@ -14,11 +14,7 @@ import { ActivityLoggerService } from '../common/services/activity-logger.servic
 import { DatabaseService } from '../database/database.service.js';
 import type { CreateSwapRequestDto } from './dto/create-swap-request.dto.js';
 import type { UpdateSwapRequestStatusDto } from './dto/swap-request-status.dto.js';
-import type {
-  DbSwapRequestRow,
-  SwapRequestFilters,
-  SwapRequestResponse,
-} from './shifts.types.js';
+import type { DbSwapRequestRow, SwapRequestFilters, SwapRequestResponse } from './shifts.types.js';
 
 @Injectable()
 export class ShiftSwapService {
@@ -51,10 +47,7 @@ export class ShiftSwapService {
 
     query += ` ORDER BY created_at DESC`;
 
-    const requests = await this.databaseService.query<DbSwapRequestRow>(
-      query,
-      params,
-    );
+    const requests = await this.databaseService.query<DbSwapRequestRow>(query, params);
     return requests.map(
       (r: DbSwapRequestRow) =>
         dbToApi(r as unknown as Record<string, unknown>) as SwapRequestResponse,
@@ -76,13 +69,7 @@ export class ShiftSwapService {
       `INSERT INTO shift_swap_requests (tenant_id, shift_id, requested_by, requested_with, reason, status)
        VALUES ($1, $2, $3, $4, $5, 'pending')
        RETURNING id`,
-      [
-        tenantId,
-        dto.shiftId,
-        userId,
-        dto.requestedWithUserId ?? null,
-        dto.reason ?? null,
-      ],
+      [tenantId, dto.shiftId, userId, dto.requestedWithUserId ?? null, dto.reason ?? null],
     );
 
     const requestId = result[0]?.id ?? 0;
@@ -113,9 +100,7 @@ export class ShiftSwapService {
     tenantId: number,
     userId: number,
   ): Promise<{ message: string }> {
-    this.logger.debug(
-      `Updating swap request ${id} status for tenant ${tenantId}`,
-    );
+    this.logger.debug(`Updating swap request ${id} status for tenant ${tenantId}`);
 
     const requests = await this.databaseService.query<DbSwapRequestRow>(
       `SELECT * FROM shift_swap_requests WHERE id = $1 AND tenant_id = $2`,

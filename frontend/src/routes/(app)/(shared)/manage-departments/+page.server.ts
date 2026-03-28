@@ -11,7 +11,7 @@ import { apiFetch, apiFetchWithPermission } from '$lib/server/api-fetch';
 import { assertAdminLevelAccess } from '$lib/server/manage-page-access';
 
 import type { PageServerLoad } from './$types';
-import type { Department, Area, AdminUser } from './_lib/types';
+import type { Department, Area, AdminUser, Hall } from './_lib/types';
 
 export const load: PageServerLoad = async ({ cookies, fetch, parent, url }) => {
   const { user, orgScope } = await parent();
@@ -36,28 +36,22 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent, url }) => {
       permissionDenied: true as const,
       departments: [] as Department[],
       areas: [] as Area[],
+      halls: [] as Hall[],
       departmentLeads: [] as AdminUser[],
     };
   }
 
   // Parallel fetch remaining data (permission confirmed)
-  const [areasData, adminsData, rootsData] = await Promise.all([
+  const [areasData, hallsData, adminsData, rootsData] = await Promise.all([
     apiFetch<Area[]>('/areas', token, fetch),
-    apiFetch<AdminUser[]>(
-      '/users?role=admin&isActive=1&position=department_lead',
-      token,
-      fetch,
-    ),
-    apiFetch<AdminUser[]>(
-      '/users?role=root&isActive=1&position=department_lead',
-      token,
-      fetch,
-    ),
+    apiFetch<Hall[]>('/halls', token, fetch),
+    apiFetch<AdminUser[]>('/users?role=admin&isActive=1&position=department_lead', token, fetch),
+    apiFetch<AdminUser[]>('/users?role=root&isActive=1&position=department_lead', token, fetch),
   ]);
 
-  const departments =
-    Array.isArray(departmentsResult.data) ? departmentsResult.data : [];
+  const departments = Array.isArray(departmentsResult.data) ? departmentsResult.data : [];
   const areas = Array.isArray(areasData) ? areasData : [];
+  const halls = Array.isArray(hallsData) ? hallsData : [];
   const admins = Array.isArray(adminsData) ? adminsData : [];
   const roots = Array.isArray(rootsData) ? rootsData : [];
   const departmentLeads = [...admins, ...roots];
@@ -66,6 +60,7 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent, url }) => {
     permissionDenied: false as const,
     departments,
     areas,
+    halls,
     departmentLeads,
   };
 };

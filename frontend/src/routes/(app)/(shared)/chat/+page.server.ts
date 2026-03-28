@@ -21,8 +21,7 @@ function unwrapConversations(raw: unknown): Conversation[] {
   if (Array.isArray(raw)) return raw as Conversation[];
   if (raw !== null && typeof raw === 'object' && 'conversations' in raw) {
     const wrapped = raw as { conversations: unknown };
-    if (Array.isArray(wrapped.conversations))
-      return wrapped.conversations as Conversation[];
+    if (Array.isArray(wrapped.conversations)) return wrapped.conversations as Conversation[];
   }
   return [];
 }
@@ -54,12 +53,10 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
   }
 
   // Unwrap (handles {conversations: [...]}) + normalize (ensure participants array exists)
-  const conversations = unwrapConversations(conversationsResult.data).map(
-    (conv) => ({
-      ...conv,
-      participants: Array.isArray(conv.participants) ? conv.participants : [],
-    }),
-  );
+  const conversations = unwrapConversations(conversationsResult.data).map((conv) => ({
+    ...conv,
+    participants: Array.isArray(conv.participants) ? conv.participants : [],
+  }));
 
   return {
     permissionDenied: false as const,

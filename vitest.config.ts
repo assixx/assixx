@@ -27,9 +27,9 @@ export default defineConfig({
     },
 
     // Coverage configuration (unit tests only via include patterns)
+    // For faster local runs: pnpm vitest run --coverage --coverage.changed=main
     coverage: {
       provider: 'v8',
-      changed: 'main',
       reporter: ['text', 'json', 'html', 'lcov'],
       reportsDirectory: './coverage',
       include: ['backend/src/**/*.ts', 'shared/src/**/*.ts'],
@@ -73,10 +73,10 @@ export default defineConfig({
         'backend/src/workers/deletion-worker.ts',
       ],
       thresholds: {
-        lines: 83,
-        functions: 83,
-        branches: 76,
-        statements: 83,
+        lines: 86,
+        functions: 87,
+        branches: 80,
+        statements: 86,
       },
     },
 
@@ -96,18 +96,9 @@ export default defineConfig({
             '@services': resolve(rootDir, './backend/src/services'),
             '@utils': resolve(rootDir, './backend/src/utils'),
             '@shared': resolve(rootDir, './shared/src'),
-            '@assixx/shared/constants': resolve(
-              rootDir,
-              './shared/src/constants/index.ts',
-            ),
-            '@assixx/shared/helpers': resolve(
-              rootDir,
-              './shared/src/helpers/index.ts',
-            ),
-            '@assixx/shared/types': resolve(
-              rootDir,
-              './shared/src/types/index.ts',
-            ),
+            '@assixx/shared/constants': resolve(rootDir, './shared/src/constants/index.ts'),
+            '@assixx/shared/helpers': resolve(rootDir, './shared/src/helpers/index.ts'),
+            '@assixx/shared/types': resolve(rootDir, './shared/src/types/index.ts'),
             '@assixx/shared': resolve(rootDir, './shared/src/index.ts'),
           },
         },
@@ -115,16 +106,8 @@ export default defineConfig({
           name: 'unit',
           environment: 'node',
           globals: true,
-          include: [
-            'backend/src/**/*.{test,spec}.ts',
-            'shared/src/**/*.{test,spec}.ts',
-          ],
-          exclude: [
-            '**/node_modules/**',
-            '**/dist/**',
-            '**/coverage/**',
-            'frontend/**',
-          ],
+          include: ['backend/src/**/*.{test,spec}.ts', 'shared/src/**/*.{test,spec}.ts'],
+          exclude: ['**/node_modules/**', '**/dist/**', '**/coverage/**', 'frontend/**'],
           testTimeout: 10_000,
           setupFiles: ['./vitest.setup.ts'],
           // Unique groupOrder required when projects have different maxWorkers
@@ -142,18 +125,9 @@ export default defineConfig({
             '@services': resolve(rootDir, './backend/src/services'),
             '@utils': resolve(rootDir, './backend/src/utils'),
             '@shared': resolve(rootDir, './shared/src'),
-            '@assixx/shared/constants': resolve(
-              rootDir,
-              './shared/src/constants/index.ts',
-            ),
-            '@assixx/shared/helpers': resolve(
-              rootDir,
-              './shared/src/helpers/index.ts',
-            ),
-            '@assixx/shared/types': resolve(
-              rootDir,
-              './shared/src/types/index.ts',
-            ),
+            '@assixx/shared/constants': resolve(rootDir, './shared/src/constants/index.ts'),
+            '@assixx/shared/helpers': resolve(rootDir, './shared/src/helpers/index.ts'),
+            '@assixx/shared/types': resolve(rootDir, './shared/src/types/index.ts'),
             '@assixx/shared': resolve(rootDir, './shared/src/index.ts'),
           },
         },
@@ -188,23 +162,11 @@ export default defineConfig({
       {
         resolve: {
           alias: {
-            '$app/environment': resolve(
-              rootDir,
-              './frontend/test/mocks/app-environment.ts',
-            ),
+            '$app/environment': resolve(rootDir, './frontend/test/mocks/app-environment.ts'),
             $lib: resolve(rootDir, './frontend/src/lib'),
-            '@assixx/shared/constants': resolve(
-              rootDir,
-              './shared/src/constants/index.ts',
-            ),
-            '@assixx/shared/helpers': resolve(
-              rootDir,
-              './shared/src/helpers/index.ts',
-            ),
-            '@assixx/shared/types': resolve(
-              rootDir,
-              './shared/src/types/index.ts',
-            ),
+            '@assixx/shared/constants': resolve(rootDir, './shared/src/constants/index.ts'),
+            '@assixx/shared/helpers': resolve(rootDir, './shared/src/helpers/index.ts'),
+            '@assixx/shared/types': resolve(rootDir, './shared/src/types/index.ts'),
             '@assixx/shared': resolve(rootDir, './shared/src/index.ts'),
           },
         },

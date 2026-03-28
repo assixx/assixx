@@ -81,11 +81,7 @@ describe('KvpConfirmationsService', () => {
     it('should return count with visibility filter', async () => {
       mockDb.query.mockResolvedValueOnce([{ count: 3 }]);
 
-      const result = await service.getUnconfirmedCount(
-        5,
-        10,
-        makeOrgInfo() as never,
-      );
+      const result = await service.getUnconfirmedCount(5, 10, makeOrgInfo() as never);
 
       expect(result.count).toBe(3);
     });
@@ -93,11 +89,7 @@ describe('KvpConfirmationsService', () => {
     it('should default to 0 when no rows', async () => {
       mockDb.query.mockResolvedValueOnce([]);
 
-      const result = await service.getUnconfirmedCount(
-        5,
-        10,
-        makeOrgInfo() as never,
-      );
+      const result = await service.getUnconfirmedCount(5, 10, makeOrgInfo() as never);
 
       expect(result.count).toBe(0);
     });
@@ -111,9 +103,7 @@ describe('KvpConfirmationsService', () => {
     it('should throw NotFoundException when suggestion not found', async () => {
       mockDb.query.mockResolvedValueOnce([]);
 
-      await expect(
-        service.confirmSuggestion('uuid-123', 5, 10),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.confirmSuggestion('uuid-123', 5, 10)).rejects.toThrow(NotFoundException);
     });
 
     it('should confirm suggestion with UPSERT', async () => {
@@ -137,9 +127,9 @@ describe('KvpConfirmationsService', () => {
     it('should throw NotFoundException when suggestion not found', async () => {
       mockDb.query.mockResolvedValueOnce([]);
 
-      await expect(
-        service.unconfirmSuggestion('uuid-123', 5, 10),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.unconfirmSuggestion('uuid-123', 5, 10)).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should set is_confirmed = false', async () => {

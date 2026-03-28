@@ -25,29 +25,13 @@ function extractCards(raw: unknown): TpmCard[] {
   return [];
 }
 
-async function fetchBoardData(
-  token: string,
-  fetchFn: typeof fetch,
-  planUuid: string,
-) {
+async function fetchBoardData(token: string, fetchFn: typeof fetch, planUuid: string) {
   return await Promise.all([
     apiFetchWithPermission<TpmPlan>(`/tpm/plans/${planUuid}`, token, fetchFn),
-    apiFetch<unknown>(
-      `/tpm/plans/${planUuid}/board?page=1&limit=200`,
-      token,
-      fetchFn,
-    ),
+    apiFetch<unknown>(`/tpm/plans/${planUuid}/board?page=1&limit=200`, token, fetchFn),
     apiFetch<TpmColorConfigEntry[]>('/tpm/config/colors', token, fetchFn),
-    apiFetch<IntervalColorConfigEntry[]>(
-      '/tpm/config/interval-colors',
-      token,
-      fetchFn,
-    ),
-    apiFetch<CategoryColorConfigEntry[]>(
-      '/tpm/config/category-colors',
-      token,
-      fetchFn,
-    ),
+    apiFetch<IntervalColorConfigEntry[]>('/tpm/config/interval-colors', token, fetchFn),
+    apiFetch<CategoryColorConfigEntry[]>('/tpm/config/category-colors', token, fetchFn),
   ]);
 }
 
@@ -64,12 +48,7 @@ function buildBoardDeniedResponse(planUuid: string) {
   };
 }
 
-export const load: PageServerLoad = async ({
-  cookies,
-  fetch,
-  parent,
-  params,
-}) => {
+export const load: PageServerLoad = async ({ cookies, fetch, parent, params }) => {
   const token = cookies.get('accessToken');
   if (token === undefined || token === '') redirect(302, '/login');
 
@@ -77,13 +56,8 @@ export const load: PageServerLoad = async ({
   requireAddon(parentData.activeAddons, 'tpm');
 
   const { uuid: planUuid } = params;
-  const [
-    planResult,
-    boardRaw,
-    colorsData,
-    intervalColorsData,
-    categoryColorsData,
-  ] = await fetchBoardData(token, fetch, planUuid);
+  const [planResult, boardRaw, colorsData, intervalColorsData, categoryColorsData] =
+    await fetchBoardData(token, fetch, planUuid);
 
   if (planResult.permissionDenied) {
     return buildBoardDeniedResponse(planUuid);

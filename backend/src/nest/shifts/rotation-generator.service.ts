@@ -9,11 +9,7 @@
  * would scatter related logic across files and harm readability.
  */
 import { IS_ACTIVE } from '@assixx/shared/constants';
-import {
-  Injectable,
-  InternalServerErrorException,
-  Logger,
-} from '@nestjs/common';
+import { Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
 import { v7 as uuidv7 } from 'uuid';
 
 import { ActivityLoggerService } from '../common/services/activity-logger.service.js';
@@ -42,10 +38,7 @@ export class RotationGeneratorService {
   // ============================================================
 
   /** F/S alternate each cycle week; N stays static */
-  private determineAlternatingShiftType(
-    shiftGroup: string,
-    cycleWeek: number,
-  ): 'F' | 'S' | 'N' {
+  private determineAlternatingShiftType(shiftGroup: string, cycleWeek: number): 'F' | 'S' | 'N' {
     if (shiftGroup === 'F') {
       return cycleWeek === 0 ? 'F' : 'S';
     }
@@ -63,8 +56,7 @@ export class RotationGeneratorService {
     config: PatternConfig,
     weeksSinceStart: number,
   ): 'F' | 'S' | 'N' {
-    const nightShiftStatic =
-      config.nightShiftStatic ?? config.ignoreNightShift ?? false;
+    const nightShiftStatic = config.nightShiftStatic ?? config.ignoreNightShift ?? false;
 
     // Fixed night shift pattern
     if (patternType === 'fixed_n') {
@@ -73,8 +65,7 @@ export class RotationGeneratorService {
 
     // Weekly rotation
     const isWeeklyRotation =
-      patternType === 'alternate_fs' ||
-      (patternType === 'custom' && config.cycleWeeks === 1);
+      patternType === 'alternate_fs' || (patternType === 'custom' && config.cycleWeeks === 1);
 
     if (!isWeeklyRotation) {
       return shiftGroup as 'F' | 'S' | 'N';
@@ -115,20 +106,14 @@ export class RotationGeneratorService {
     const skipSaturday = config.skipSaturday ?? config.skipWeekends ?? false;
     const skipSunday = config.skipSunday ?? config.skipWeekends ?? false;
 
-    for (
-      let date = new Date(start);
-      date <= end;
-      date.setDate(date.getDate() + 1)
-    ) {
+    for (let date = new Date(start); date <= end; date.setDate(date.getDate() + 1)) {
       const dayOfWeek = date.getDay();
 
       // Skip weekends if configured
       if (skipSaturday && dayOfWeek === 6) continue;
       if (skipSunday && dayOfWeek === 0) continue;
 
-      const weeksSinceStart = Math.floor(
-        (date.getTime() - patternStart.getTime()) / msPerWeek,
-      );
+      const weeksSinceStart = Math.floor((date.getTime() - patternStart.getTime()) / msPerWeek);
       const shiftType = this.determineShiftType(
         assignment.shift_group,
         pattern.patternType,
@@ -153,10 +138,7 @@ export class RotationGeneratorService {
   private getWeekNumber(date: Date): number {
     const yearStart = new Date(date.getFullYear(), 0, 1);
     return Math.ceil(
-      ((date.getTime() - yearStart.getTime()) / 86400000 +
-        yearStart.getDay() +
-        1) /
-        7,
+      ((date.getTime() - yearStart.getTime()) / 86400000 + yearStart.getDay() + 1) / 7,
     );
   }
 
@@ -192,12 +174,7 @@ export class RotationGeneratorService {
 
     // If not preview mode, save shifts
     if (!dto.preview && generatedShifts.length > 0) {
-      await this.saveGeneratedShifts(
-        generatedShifts,
-        pattern.id,
-        assignments,
-        tenantId,
-      );
+      await this.saveGeneratedShifts(generatedShifts, pattern.id, assignments, tenantId);
 
       void this.activityLogger.logCreate(
         tenantId,
@@ -276,9 +253,7 @@ export class RotationGeneratorService {
   // ============================================================
 
   /** Map shift type string to single-char group enum */
-  private mapShiftTypeToGroup(
-    shiftType: 'early' | 'late' | 'night',
-  ): 'F' | 'S' | 'N' {
+  private mapShiftTypeToGroup(shiftType: 'early' | 'late' | 'night'): 'F' | 'S' | 'N' {
     switch (shiftType) {
       case 'early':
         return 'F';
@@ -362,13 +337,8 @@ export class RotationGeneratorService {
       shiftSequence: config.shiftSequence,
       specialRules: config.specialRules,
     });
-    const cycleWeeks = Math.ceil(
-      (config.shiftBlockLength + config.freeDays) / 7,
-    );
-    const timestamp = new Date()
-      .toISOString()
-      .replace(/[:.]/g, '-')
-      .slice(0, 19);
+    const cycleWeeks = Math.ceil((config.shiftBlockLength + config.freeDays) / 7);
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
     const patternName = `Custom-Rotation ${timestamp}`;
     const patternUuid = uuidv7();
     const patternResult = await this.databaseService.query<{ id: number }>(
@@ -447,26 +417,12 @@ export class RotationGeneratorService {
     totalDays: number;
     tenantId: number;
   }): Promise<number> {
-    const {
-      config,
-      start,
-      totalDays,
-      tenantId,
-      patternId,
-      teamId,
-      assignmentId,
-      userId,
-    } = params;
+    const { config, start, totalDays, tenantId, patternId, teamId, assignmentId, userId } = params;
     const { shiftBlockLength, freeDays, shiftSequence, specialRules } = config;
     const cycleLength = shiftBlockLength + freeDays;
-    const typedRules = specialRules as
-      | { type: string; weekday: number; n: number }[]
-      | undefined;
+    const typedRules = specialRules as { type: string; weekday: number; n: number }[] | undefined;
 
-    let currentShiftIndex = this.getGroupStartIndex(
-      params.startGroup,
-      shiftSequence,
-    );
+    let currentShiftIndex = this.getGroupStartIndex(params.startGroup, shiftSequence);
     let dayInCycle = 0;
     let shiftCount = 0;
 
@@ -477,8 +433,7 @@ export class RotationGeneratorService {
       const shouldSkip = this.shouldSkipBySpecialRules(currentDate, typedRules);
 
       if (isWorkDay && !shouldSkip) {
-        const shiftType =
-          shiftSequence[currentShiftIndex % shiftSequence.length] ?? 'early';
+        const shiftType = shiftSequence[currentShiftIndex % shiftSequence.length] ?? 'early';
         await this.insertHistoryEntry({
           tenantId,
           patternId,
@@ -559,8 +514,7 @@ export class RotationGeneratorService {
     const { config, assignments, startDate, endDate, teamId } = dto;
     const start = new Date(startDate);
     const end = new Date(endDate);
-    const totalDays =
-      Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+    const totalDays = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
 
     await this.databaseService.query('BEGIN', []);
 
@@ -606,9 +560,7 @@ export class RotationGeneratorService {
     } catch (error: unknown) {
       await this.databaseService.query('ROLLBACK', []);
       this.logger.error('Failed to generate rotation from config', error);
-      throw new InternalServerErrorException(
-        'Failed to generate rotation shifts',
-      );
+      throw new InternalServerErrorException('Failed to generate rotation shifts');
     }
   }
 }

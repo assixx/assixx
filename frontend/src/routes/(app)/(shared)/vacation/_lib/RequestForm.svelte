@@ -12,17 +12,10 @@
 
   import { onClickOutsideDropdown } from '$lib/actions/click-outside';
   import AppDatePicker from '$lib/components/AppDatePicker.svelte';
-  import {
-    DEFAULT_HIERARCHY_LABELS,
-    type HierarchyLabels,
-  } from '$lib/types/hierarchy-labels';
+  import { DEFAULT_HIERARCHY_LABELS, type HierarchyLabels } from '$lib/types/hierarchy-labels';
 
   import CapacityIndicator from './CapacityIndicator.svelte';
-  import {
-    CAPACITY_DEBOUNCE_MS,
-    HALF_DAY_LABELS,
-    TYPE_LABELS,
-  } from './constants';
+  import { CAPACITY_DEBOUNCE_MS, HALF_DAY_LABELS, TYPE_LABELS } from './constants';
 
   import type {
     CreateVacationRequestPayload,
@@ -124,19 +117,12 @@
   const isSingleDay = $derived(startDate === endDate && startDate !== '');
 
   const canSubmit = $derived(
-    startDate !== '' &&
-      endDate !== '' &&
-      endDate >= startDate &&
-      startDate >= todayStr,
+    startDate !== '' && endDate !== '' && endDate >= startDate && startDate >= todayStr,
   );
 
-  const vacationTypes = $derived(
-    Object.entries(TYPE_LABELS) as [VacationType, string][],
-  );
+  const vacationTypes = $derived(Object.entries(TYPE_LABELS) as [VacationType, string][]);
 
-  const halfDayOptions = $derived(
-    Object.entries(HALF_DAY_LABELS) as [VacationHalfDay, string][],
-  );
+  const halfDayOptions = $derived(Object.entries(HALF_DAY_LABELS) as [VacationHalfDay, string][]);
 
   // ─── Capacity check with debounce ──────────────────────────────────
 
@@ -187,11 +173,7 @@
 
   // Sync pre-fetched capacity from parent (edit mode)
   $effect(() => {
-    if (
-      initialCapacity !== null &&
-      startDate === initialStartDate &&
-      endDate === initialEndDate
-    ) {
+    if (initialCapacity !== null && startDate === initialStartDate && endDate === initialEndDate) {
       capacityAnalysis = initialCapacity;
       isCheckingCapacity = false;
     }

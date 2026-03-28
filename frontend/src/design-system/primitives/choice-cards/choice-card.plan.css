@@ -55,8 +55,7 @@
 /* Hover state - lift and glow */
 .plan-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 12px 40px
-    color-mix(in oklch, var(--color-black) 40%, transparent);
+  box-shadow: 0 12px 40px color-mix(in oklch, var(--color-black) 40%, transparent);
   border-color: var(--color-glass-border-hover);
   background: var(--glass-bg-active);
 }

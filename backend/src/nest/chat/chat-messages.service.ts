@@ -81,11 +81,7 @@ export class ChatMessagesService {
   async getMessages(
     conversationId: number,
     query: GetMessagesQuery,
-    verifyAccess: (
-      conversationId: number,
-      userId: number,
-      tenantId: number,
-    ) => Promise<void>,
+    verifyAccess: (conversationId: number, userId: number, tenantId: number) => Promise<void>,
   ): Promise<{ data: Message[]; pagination: PaginationMeta }> {
     const tenantId = this.getTenantId();
     const userId = this.getUserId();
@@ -134,39 +130,24 @@ export class ChatMessagesService {
    * Send a message to a conversation.
    * Supports both plaintext (group) and E2E encrypted (1:1) messages.
    */
-  // eslint-disable-next-line max-lines-per-function -- 17-line signature (3 injected callbacks) inflates count; body logic is linear
+
   async sendMessage(
     conversationId: number,
     dto: SendMessageBody,
-    verifyAccess: (
-      conversationId: number,
-      userId: number,
-      tenantId: number,
-    ) => Promise<void>,
-    getRecipientIds: (
-      conversationId: number,
-      excludeUserId: number,
-    ) => Promise<number[]>,
-    updateTimestamp: (
-      conversationId: number,
-      tenantId: number,
-    ) => Promise<void>,
+    verifyAccess: (conversationId: number, userId: number, tenantId: number) => Promise<void>,
+    getRecipientIds: (conversationId: number, excludeUserId: number) => Promise<number[]>,
+    updateTimestamp: (conversationId: number, tenantId: number) => Promise<void>,
     attachment?: MessageAttachmentInput,
   ): Promise<{ message: Message }> {
     const tenantId = this.getTenantId();
     const senderId = this.getUserId();
     await verifyAccess(conversationId, senderId, tenantId);
 
-    const isE2e =
-      dto.encryptedContent !== undefined && dto.e2eNonce !== undefined;
+    const isE2e = dto.encryptedContent !== undefined && dto.e2eNonce !== undefined;
 
     await this.validateE2eKeyVersionIfNeeded(isE2e, tenantId, senderId, dto);
 
-    const contentResult = resolveMessageContent(
-      dto.message,
-      attachment !== undefined,
-      isE2e,
-    );
+    const contentResult = resolveMessageContent(dto.message, attachment !== undefined, isE2e);
     if ('error' in contentResult) {
       throw new BadRequestException(contentResult.error);
     }
@@ -221,15 +202,13 @@ export class ChatMessagesService {
    * Non-E2E editing is not yet implemented (HTTP 400).
    */
   async editMessage(messageId: number, _dto: EditMessageBody): Promise<never> {
-    const rows = await this.databaseService.tenantTransaction(
-      async (client: PoolClient) => {
-        const result = await client.query<{ is_e2e: boolean }>(
-          `SELECT is_e2e FROM chat_messages WHERE id = $1`,
-          [messageId],
-        );
-        return result.rows;
-      },
-    );
+    const rows = await this.databaseService.tenantTransaction(async (client: PoolClient) => {
+      const result = await client.query<{ is_e2e: boolean }>(
+        `SELECT is_e2e FROM chat_messages WHERE id = $1`,
+        [messageId],
+      );
+      return result.rows;
+    });
 
     const message = rows[0];
     if (message === undefined) {
@@ -237,9 +216,7 @@ export class ChatMessagesService {
     }
 
     if (message.is_e2e) {
-      throw new UnprocessableEntityException(
-        'Editing is not supported for encrypted messages',
-      );
+      throw new UnprocessableEntityException('Editing is not supported for encrypted messages');
     }
 
     throw new BadRequestException(ERROR_FEATURE_NOT_IMPLEMENTED);
@@ -258,11 +235,7 @@ export class ChatMessagesService {
    */
   async markAsRead(
     conversationId: number,
-    verifyAccess: (
-      conversationId: number,
-      userId: number,
-      tenantId: number,
-    ) => Promise<void>,
+    verifyAccess: (conversationId: number, userId: number, tenantId: number) => Promise<void>,
   ): Promise<{ markedCount: number }> {
     const tenantId = this.getTenantId();
     const userId = this.getUserId();
@@ -270,11 +243,7 @@ export class ChatMessagesService {
     await verifyAccess(conversationId, userId, tenantId);
 
     // Find unread messages from OTHER users (for read receipts)
-    const unreadMessages = await this.getUnreadMessageEntries(
-      conversationId,
-      userId,
-      tenantId,
-    );
+    const unreadMessages = await this.getUnreadMessageEntries(conversationId, userId, tenantId);
 
     // Get latest message ID
     const latestMessage = await this.databaseService.query<{
@@ -517,10 +486,7 @@ export class ChatMessagesService {
   /**
    * Get total count of messages matching the query
    */
-  private async getMessagesCount(
-    whereClause: string,
-    params: unknown[],
-  ): Promise<number> {
+  private async getMessagesCount(whereClause: string, params: unknown[]): Promise<number> {
     const countResult = await this.databaseService.query<{ count: string }>(
       `SELECT COUNT(*) as count FROM chat_messages m ${whereClause}`,
       params,
@@ -573,10 +539,7 @@ export class ChatMessagesService {
   /**
    * Load and attach document attachments to messages
    */
-  private async attachDocumentsToMessages(
-    messages: Message[],
-    tenantId: number,
-  ): Promise<void> {
+  private async attachDocumentsToMessages(messages: Message[], tenantId: number): Promise<void> {
     const messageIds = messages.map((m: Message) => m.id);
     if (messageIds.length === 0) {
       return;
@@ -593,9 +556,7 @@ export class ChatMessagesService {
       uploaded_at: Date | null;
     }
 
-    const placeholders = messageIds
-      .map((_: number, i: number) => `$${i + 2}`)
-      .join(', ');
+    const placeholders = messageIds.map((_: number, i: number) => `$${i + 2}`).join(', ');
     const rows = await this.databaseService.query<DocumentAttachmentRow>(
       `SELECT id, message_id, file_uuid, filename, original_name, file_size, mime_type, uploaded_at
        FROM documents
@@ -669,10 +630,7 @@ export class ChatMessagesService {
    * Fetch sender information for message response
    * SECURITY: Only returns info for ACTIVE users (is_active = 1)
    */
-  private async fetchSenderInfo(
-    senderId: number,
-    tenantId: number,
-  ): Promise<SenderInfo> {
+  private async fetchSenderInfo(senderId: number, tenantId: number): Promise<SenderInfo> {
     const senderInfo = await this.databaseService.query<SenderInfo>(
       `SELECT username, first_name, last_name, profile_picture FROM users WHERE id = $1 AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}`,
       [senderId, tenantId],

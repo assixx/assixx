@@ -68,9 +68,7 @@ describe('BlackboardConfirmationsService', () => {
     it('should throw BadRequestException when user not found', async () => {
       mockDb.query.mockResolvedValueOnce([]);
 
-      await expect(service.confirmEntry(1, 999)).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(service.confirmEntry(1, 999)).rejects.toThrow(BadRequestException);
     });
 
     it('should throw NotFoundException when entry not found', async () => {
@@ -79,9 +77,7 @@ describe('BlackboardConfirmationsService', () => {
       // resolveEntryId → not found
       mockDb.query.mockResolvedValueOnce([]);
 
-      await expect(service.confirmEntry(999, 1)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.confirmEntry(999, 1)).rejects.toThrow(NotFoundException);
     });
 
     it('should confirm entry successfully', async () => {
@@ -132,9 +128,7 @@ describe('BlackboardConfirmationsService', () => {
 
     it('should return confirmation list for company-level entry', async () => {
       // entry found
-      mockDb.query.mockResolvedValueOnce([
-        { id: 1, org_level: 'company', org_id: null },
-      ]);
+      mockDb.query.mockResolvedValueOnce([{ id: 1, org_level: 'company', org_id: null }]);
       // users with confirmation status
       mockDb.query.mockResolvedValueOnce([
         { id: 5, username: 'max', confirmed: 1, confirmed_at: new Date() },
@@ -162,9 +156,7 @@ describe('BlackboardConfirmationsService', () => {
 
     it('should return count for admin (no visibility filter)', async () => {
       // user info
-      mockDb.query.mockResolvedValueOnce([
-        { role: 'admin', department_id: null, team_id: null },
-      ]);
+      mockDb.query.mockResolvedValueOnce([{ role: 'admin', department_id: null, team_id: null }]);
       // count query
       mockDb.query.mockResolvedValueOnce([{ count: '5' }]);
 
@@ -175,9 +167,7 @@ describe('BlackboardConfirmationsService', () => {
 
     it('should apply visibility filter for employee', async () => {
       // user info
-      mockDb.query.mockResolvedValueOnce([
-        { role: 'employee', department_id: 3, team_id: 7 },
-      ]);
+      mockDb.query.mockResolvedValueOnce([{ role: 'employee', department_id: 3, team_id: 7 }]);
       // count query
       mockDb.query.mockResolvedValueOnce([{ count: '2' }]);
 

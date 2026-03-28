@@ -24,11 +24,7 @@
     fetchPlanAssignments,
     logApiError,
   } from '../../../_lib/api';
-  import {
-    INTERVAL_LABELS,
-    INTERVAL_COLORS,
-    MESSAGES,
-  } from '../../../_lib/constants';
+  import { INTERVAL_LABELS, INTERVAL_COLORS, MESSAGES } from '../../../_lib/constants';
   import {
     timestampToISO,
     weekOfMonth,
@@ -76,10 +72,7 @@
     intervalColors?: IntervalColorConfigEntry[];
     previewWeekday?: number;
     previewRepeatEvery?: number;
-    ondataload?: (
-      slots: ProjectedSlot[],
-      planAssignments: TpmPlanAssignment[],
-    ) => void;
+    ondataload?: (slots: ProjectedSlot[], planAssignments: TpmPlanAssignment[]) => void;
   }
 
   const {
@@ -103,9 +96,7 @@
   });
 
   const isEditMode = $derived(planUuid !== undefined && planUuid.length > 0);
-  const canFetch = $derived(
-    isEditMode || (assetUuid !== undefined && assetUuid.length > 0),
-  );
+  const canFetch = $derived(isEditMode || (assetUuid !== undefined && assetUuid.length > 0));
 
   // =========================================================================
   // STATE
@@ -136,9 +127,7 @@
   let endDate = $state(timestampToISO(nowMs + NINETY_DAYS_MS));
 
   // Max endDate = startDate + 365 days (schedule projection limit)
-  const maxEndDate = $derived(
-    timestampToISO(new Date(startDate).getTime() + MAX_RANGE_365_MS),
-  );
+  const maxEndDate = $derived(timestampToISO(new Date(startDate).getTime() + MAX_RANGE_365_MS));
 
   // Slot assistant is limited to 90 days — clamp end date for that call
   const slotEndDate = $derived.by(() => {
@@ -168,9 +157,7 @@
   );
 
   // Visible headers and days (filtered by weekend toggle)
-  const visibleHeaders = $derived(
-    showWeekends ? WEEKDAY_HEADERS : WEEKDAY_HEADERS.slice(0, 5),
-  );
+  const visibleHeaders = $derived(showWeekends ? WEEKDAY_HEADERS : WEEKDAY_HEADERS.slice(0, 5));
   const visibleCalendarDays = $derived(
     showWeekends ? calendarDays : (
       calendarDays.filter((d: DayAvailability) => isoWeekday(d.date) < 5)
@@ -255,10 +242,7 @@
     if (!isEditMode || planUuid === undefined) {
       return [Promise.resolve(null), Promise.resolve([])];
     }
-    return [
-      fetchTeamAvailability(planUuid),
-      fetchPlanAssignments(planUuid, startDate, endDate),
-    ];
+    return [fetchTeamAvailability(planUuid), fetchPlanAssignments(planUuid, startDate, endDate)];
   }
 
   function applyLoadedData(
@@ -280,13 +264,12 @@
     loading = true;
     try {
       const [teamPromise, assignPromise] = buildEditModePromises();
-      const [slotResult, projResult, teamResult, assignResult] =
-        await Promise.all([
-          loadSlotData(),
-          fetchScheduleProjection(startDate, endDate),
-          teamPromise,
-          assignPromise,
-        ]);
+      const [slotResult, projResult, teamResult, assignResult] = await Promise.all([
+        loadSlotData(),
+        fetchScheduleProjection(startDate, endDate),
+        teamPromise,
+        assignPromise,
+      ]);
 
       applyLoadedData(slotResult, projResult, teamResult, assignResult);
     } catch (err: unknown) {
@@ -432,19 +415,13 @@
               }
             }}
           />
-          <span class="choice-card__text"
-            >{MESSAGES.SLOT_SHOW_ONLY_SCHEDULED}</span
-          >
+          <span class="choice-card__text">{MESSAGES.SLOT_SHOW_ONLY_SCHEDULED}</span>
         </label>
-        <span
-          class="flex items-center gap-1.5 text-xs text-(--color-text-secondary)"
-        >
+        <span class="flex items-center gap-1.5 text-xs text-(--color-text-secondary)">
           <span class="slot-dot slot-dot--available"></span>
           {MESSAGES.SLOT_AVAILABLE}
         </span>
-        <span
-          class="flex items-center gap-1.5 text-xs text-(--color-text-secondary)"
-        >
+        <span class="flex items-center gap-1.5 text-xs text-(--color-text-secondary)">
           <span class="slot-dot slot-dot--unavailable"></span>
           {MESSAGES.SLOT_UNAVAILABLE}
         </span>
@@ -461,17 +438,13 @@
           </span>
         {/each}
         {#if isEditMode}
-          <span
-            class="flex items-center gap-1.5 text-xs text-(--color-text-secondary)"
-          >
+          <span class="flex items-center gap-1.5 text-xs text-(--color-text-secondary)">
             <span class="slot-dot slot-dot--other-plan"></span>
             Anderer Plan
           </span>
         {/if}
         {#if previewDates.size > 0}
-          <span
-            class="flex items-center gap-1.5 text-xs text-(--color-text-secondary)"
-          >
+          <span class="flex items-center gap-1.5 text-xs text-(--color-text-secondary)">
             <span
               class="slot-dot"
               style="background: #9333ea"
@@ -484,9 +457,7 @@
 
     <!-- Content -->
     {#if loading}
-      <div
-        class="flex items-center justify-center gap-2 p-6 text-sm text-(--color-text-muted)"
-      >
+      <div class="flex items-center justify-center gap-2 p-6 text-sm text-(--color-text-muted)">
         <i class="fas fa-spinner fa-spin"></i>
         {MESSAGES.SLOT_LOADING}
       </div>
@@ -497,17 +468,12 @@
           {#each scheduledDays as day (day.date)}
             {@const projSlots = getSlotsForDate(day.date)}
             {@const isPreview = previewDates.has(day.date)}
-            {@const isScheduled =
-              hasTpmScheduleConflict(day) || projSlots.length > 0}
+            {@const isScheduled = hasTpmScheduleConflict(day) || projSlots.length > 0}
             {@const isCurrentPlan = isCurrentPlanDate(day.date)}
             <div
               class="slot-day"
-              class:slot-day--scheduled={isScheduled &&
-                !isPreview &&
-                isCurrentPlan}
-              class:slot-day--other-plan={isScheduled &&
-                !isPreview &&
-                !isCurrentPlan}
+              class:slot-day--scheduled={isScheduled && !isPreview && isCurrentPlan}
+              class:slot-day--other-plan={isScheduled && !isPreview && !isCurrentPlan}
               class:slot-day--preview={isPreview}
               class:slot-day--selected={selectedDay === day.date}
               title={buildDayTooltip(day, projSlots)}
@@ -523,9 +489,7 @@
                 }
               }}
             >
-              <span class="slot-day__date"
-                >{formatDayMonth(day.date, true)}</span
-              >
+              <span class="slot-day__date">{formatDayMonth(day.date, true)}</span>
               {#if isScheduled}
                 <SlotDayContent
                   slots={projSlots}
@@ -546,9 +510,7 @@
               {#if getAssignmentsForDate(day.date).length > 0}
                 <div class="slot-day__assignments">
                   {#each getAssignmentsForDate(day.date) as a (a.uuid)}
-                    <span class="badge badge--sm badge--info"
-                      >{a.lastName}, {a.firstName}</span
-                    >
+                    <span class="badge badge--sm badge--info">{a.lastName}, {a.firstName}</span>
                   {/each}
                 </div>
               {/if}
@@ -585,28 +547,17 @@
                 {@const dayProjSlots = getSlotsForDate(day.date)}
                 {@const available = day.isAvailable}
                 {@const isWeekend = isoWeekday(day.date) >= 5}
-                {@const isScheduled =
-                  hasTpmScheduleConflict(day) || dayProjSlots.length > 0}
+                {@const isScheduled = hasTpmScheduleConflict(day) || dayProjSlots.length > 0}
                 {@const isPreview = previewDates.has(day.date)}
                 {@const isCurrentPlan = isCurrentPlanDate(day.date)}
                 <div
                   class="slot-day"
-                  class:slot-day--available={available &&
-                    !isScheduled &&
-                    !isPreview}
-                  class:slot-day--unavailable={!available &&
-                    !isScheduled &&
-                    !isPreview}
-                  class:slot-day--scheduled={isScheduled &&
-                    !isPreview &&
-                    isCurrentPlan}
-                  class:slot-day--other-plan={isScheduled &&
-                    !isPreview &&
-                    !isCurrentPlan}
+                  class:slot-day--available={available && !isScheduled && !isPreview}
+                  class:slot-day--unavailable={!available && !isScheduled && !isPreview}
+                  class:slot-day--scheduled={isScheduled && !isPreview && isCurrentPlan}
+                  class:slot-day--other-plan={isScheduled && !isPreview && !isCurrentPlan}
                   class:slot-day--preview={isPreview}
-                  class:slot-day--hidden={showOnlyScheduled &&
-                    !isScheduled &&
-                    !isPreview}
+                  class:slot-day--hidden={showOnlyScheduled && !isScheduled && !isPreview}
                   class:slot-day--weekend={isWeekend}
                   class:slot-day--selected={selectedDay === day.date}
                   title={buildDayTooltip(day, dayProjSlots)}
@@ -643,8 +594,7 @@
                       {colorMap}
                     />
                   {:else if available}
-                    <i class="fas fa-check slot-day__icon slot-day__icon--ok"
-                    ></i>
+                    <i class="fas fa-check slot-day__icon slot-day__icon--ok"></i>
                   {:else if day.conflicts.length > 0}
                     <i
                       class="fas {getConflictIcon(
@@ -658,9 +608,7 @@
                   {#if getAssignmentsForDate(day.date).length > 0}
                     <div class="slot-day__assignments">
                       {#each getAssignmentsForDate(day.date) as a (a.uuid)}
-                        <span class="badge badge--sm badge--info"
-                          >{a.lastName}, {a.firstName}</span
-                        >
+                        <span class="badge badge--sm badge--info">{a.lastName}, {a.firstName}</span>
                       {/each}
                     </div>
                   {/if}
@@ -723,8 +671,7 @@
       color-mix(in srgb, var(--color-text-muted) 40%, transparent) 2px,
       color-mix(in srgb, var(--color-text-muted) 40%, transparent) 4px
     );
-    border: 1px solid
-      color-mix(in srgb, var(--color-text-muted) 30%, transparent);
+    border: 1px solid color-mix(in srgb, var(--color-text-muted) 30%, transparent);
   }
 
   /* ---- Calendar Grid ---- */
@@ -757,8 +704,7 @@
     font-weight: 700;
     color: var(--color-text-primary);
     padding: 0.5rem 0 0.25rem;
-    border-bottom: 1px solid
-      color-mix(in srgb, var(--color-text-muted) 25%, transparent);
+    border-bottom: 1px solid color-mix(in srgb, var(--color-text-muted) 25%, transparent);
     text-align: center;
   }
 
@@ -840,8 +786,7 @@
 
   .slot-day--scheduled {
     background: color-mix(in srgb, var(--color-info, #3b82f6) 10%, transparent);
-    border: 1px solid
-      color-mix(in srgb, var(--color-info, #3b82f6) 30%, transparent);
+    border: 1px solid color-mix(in srgb, var(--color-info, #3b82f6) 30%, transparent);
   }
 
   .slot-day--other-plan {
@@ -852,15 +797,13 @@
       color-mix(in srgb, var(--color-text-muted) 8%, transparent) 4px,
       color-mix(in srgb, var(--color-text-muted) 8%, transparent) 8px
     );
-    border: 1px solid
-      color-mix(in srgb, var(--color-text-muted) 20%, transparent);
+    border: 1px solid color-mix(in srgb, var(--color-text-muted) 20%, transparent);
     opacity: 70%;
   }
 
   .slot-day--preview {
     background: color-mix(in srgb, var(--color-violet-600) 12%, transparent);
-    border: 1px solid
-      color-mix(in srgb, var(--color-violet-600) 35%, transparent);
+    border: 1px solid color-mix(in srgb, var(--color-violet-600) 35%, transparent);
   }
 
   .slot-day--weekend.slot-day--available {

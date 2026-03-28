@@ -1,12 +1,12 @@
 # Common Commands Reference
 
-# Iterative learning - stets vebessern und korrigeren wen nötig
+# Iterative learning — stets verbessern und korrigieren wenn nötig
 
-# Befehle können falsch sein oder nicht optimal! Achtunng! Wir suchen best pratices, Effizienz und Genauigkeit. Wenn auffällt, dass Befehle suboptimal sind, dann bitte korrigieren.
+# Befehle können falsch sein oder nicht optimal! Achtung! Wir suchen Best Practices, Effizienz und Genauigkeit. Wenn auffällt, dass Befehle suboptimal sind, dann bitte korrigieren.
 
-# npx Befehle könnne unter umständen genau so gut sein ( eventuell kein Unterschied)
+# npx Befehle können unter Umständen genau so gut sein (eventuell kein Unterschied)
 
-> **Projekt:** Assixx | **Stand:** 2026-02-18
+> **Projekt:** Assixx | **Stand:** 2026-03-20
 > Alle Befehle, die wir regelmäßig nutzen — kategorisch sortiert.
 
 ---
@@ -31,7 +31,7 @@ Bare Befehle wie `vitest` oder `eslint` können die falsche (globale) Version er
 ```bash
 # Working Directory: /home/scs/projects/Assixx/docker
 
-doppler run -- docker-compose up -d                          # Dev-Container starten (Backend, Postgres, Redis, Deletion-Worker)
+doppler run -- docker-compose up -d                          # Dev-Container starten (Backend, Postgres, Redis, Deletion-Worker, Grafana, Loki, Prometheus)
 doppler run -- docker-compose ps                             # Status aller Container anzeigen
 doppler run -- docker-compose down                           # Alle Container stoppen und entfernen
 doppler run -- docker-compose restart backend                # Nur Backend neustarten (nach Code-Änderungen)
@@ -123,28 +123,38 @@ cd /home/scs/projects/Assixx/frontend && pnpm run check      # Frontend svelte-c
 
 ## 7. Testing (Vitest)
 
+> **Config:** `vitest.config.ts` (Root) | **4 Projekte:** `api`, `unit`, `permission`, `frontend-unit`
+> **Details:** [HOW-TO-TEST-WITH-VITEST.md](./how-to/HOW-TO-TEST-WITH-VITEST.md)
+
 ```bash
 # API Integration Tests (gegen laufenden Docker-Backend)
-pnpm run test:api:vitest                                                              # Alle 18 API-Testmodule ausführen
+pnpm run test:api                                                                     # Alle 38 API-Testmodule ausführen
 pnpm exec vitest run --project api                                                    # Alternativ: direkt via vitest CLI
 pnpm exec vitest run --project api backend/test/calendar.api.test.ts                  # Einzelnes Testmodul
 pnpm exec vitest run --project api backend/test/calendar.api.test.ts --reporter verbose  # Mit detaillierter Ausgabe
 pnpm exec vitest run --project api -t "should return 200"                             # Tests nach Name filtern
 
 # Unit Tests
-pnpm run test:unit                                                                    # Alle Backend-Unit-Tests
+pnpm run test:unit                                                                    # Alle Backend + Shared Unit-Tests
 pnpm exec vitest run --project unit backend/src/nest/vacation/vacation.service.test.ts # Einzelner Unit-Test
+pnpm run test:unit:leaks                                                              # Unit-Tests mit Async-Leak-Erkennung
 
 # Frontend Unit Tests
-cd /home/scs/projects/Assixx/frontend && pnpm run test                                # Frontend-Tests ausführen
-pnpm exec vitest run --project frontend-unit                                          # Frontend-Unit-Tests via Projekt
+pnpm exec vitest run --project frontend-unit                                          # Frontend-Unit-Tests (Projekt aus Root)
 
 # Permission Tests
-pnpm exec vitest run --project permission                                             # Alle Permission-Guard-Tests
+pnpm run test:permission                                                              # Alle Permission-Guard-Tests
+pnpm exec vitest run --project permission                                             # Alternativ: direkt via vitest CLI
+
+# Alle Tests
+pnpm run test                                                                         # Alle Projekte auf einmal
 
 # Watch Mode (re-run bei Dateiänderungen)
 pnpm exec vitest --project api                                                        # API-Tests im Watch-Mode
 pnpm exec vitest --project unit                                                       # Unit-Tests im Watch-Mode
+
+# Coverage
+pnpm run test:coverage                                                                # Unit-Tests mit V8-Coverage-Report
 ```
 
 ---
@@ -156,7 +166,14 @@ pnpm exec vitest --project unit                                                 
 doppler run -- ./scripts/run-migrations.sh up                # Alle ausstehenden Migrationen anwenden
 doppler run -- ./scripts/run-migrations.sh down              # Letzte Migration zurückrollen
 doppler run -- ./scripts/run-migrations.sh up --dry-run      # Trockenlauf (zeigt was passieren würde)
+doppler run -- ./scripts/run-migrations.sh redo              # Letzte Migration zurückrollen + erneut anwenden
 doppler run -- ./scripts/run-migrations.sh up --fake         # Als "angewendet" markieren ohne SQL auszuführen
+
+# Direkte pnpm-Scripts (ohne Shell-Wrapper)
+doppler run -- pnpm run db:migrate:up                        # Alle ausstehenden Migrationen
+doppler run -- pnpm run db:migrate:down                      # Letzte Migration zurückrollen
+doppler run -- pnpm run db:migrate:dry                       # Trockenlauf
+doppler run -- pnpm run db:migrate:redo                      # Redo (down + up)
 
 # Neue Migration erstellen
 doppler run -- pnpm run db:migrate:create add-employee-skills  # Erstellt Datei mit UTC-Timestamp
@@ -177,7 +194,7 @@ docker exec assixx-postgres psql -U assixx_user -d assixx -c "SELECT id, name, r
 
 > **Bevorzugt:** `docker exec assixx-postgres psql` (arbeitet besser damit).
 > **Alternative für Menschen:** `psql -h localhost` (wenn psql lokal installiert → `export PGPASSWORD=$(docker exec assixx-postgres printenv POSTGRES_PASSWORD)`).
-> **Details:** [HOW-TO-POSTGRESQL-CLI.md](./HOW-TO-POSTGRESQL-CLI.md)
+> **Details:** [HOW-TO-POSTGRESQL-CLI.md](./how-to/HOW-TO-POSTGRESQL-CLI.md)
 
 ```bash
 # Tabellen & Schema
@@ -333,7 +350,61 @@ pnpm changeset --empty                                      # Erstellt Changeset
 
 ---
 
-## 16. Skripte
+## 16. Stylelint (CSS/Svelte)
+
+```bash
+pnpm run stylelint                                           # CSS + Svelte-Dateien prüfen (cached)
+pnpm run stylelint:fix                                       # Auto-Fix (cached)
+pnpm run stylelint:report                                    # JSON-Report generieren
+```
+
+---
+
+## 17. Knip (Dead Code & Unused Dependencies)
+
+> **Details:** [HOW-TO-KNIP.md](./how-to/HOW-TO-KNIP.md)
+
+```bash
+pnpm run knip                                                # Dead Code + unused Dependencies finden
+pnpm run knip:fix                                            # Automatisch aufräumen (Vorsicht: prüfen was gelöscht wird!)
+```
+
+---
+
+## 18. Validierung & Fixes (Komplett-Befehle)
+
+```bash
+# Alles auf einmal prüfen + fixen (empfohlen vor Commit/PR)
+pnpm run validate:all                                        # Format + Lint:Fix + Type-Check + Stylelint (bricht bei Fehler ab)
+pnpm run fix:all                                             # Format + Lint:Fix + Stylelint:Fix (nur Fixes, kein Type-Check)
+pnpm run check:all                                           # Format + Lint:Fix + Type-Check + Stylelint (im Container)
+
+# Type-Coverage
+pnpm run type-coverage                                       # Prozentsatz typisierter Stellen anzeigen
+```
+
+---
+
+## 19. Storybook
+
+```bash
+pnpm run storybook                                           # Dev-Server starten (Port 6006)
+pnpm run build-storybook                                     # Static Build nach storybook-static/
+```
+
+---
+
+## 20. CSS-Analyse
+
+```bash
+pnpm run css:analyze                                         # CSS-Nutzung analysieren
+pnpm run css:analyze:verbose                                 # Detaillierte Analyse
+pnpm run css:analyze:file                                    # Pro-Datei-Analyse
+```
+
+---
+
+## 21. Skripte
 
 ```bash
 /home/scs/projects/Assixx/scripts/check-production.sh        # Production Health-Check
@@ -342,7 +413,7 @@ pnpm changeset --empty                                      # Erstellt Changeset
 
 ---
 
-## 17. Headless Mode (`claude -p`)
+## 22. Headless Mode (`claude -p`)
 
 > **Was ist das?** ohne interaktive Session — du gibst einen Befehl, Claude arbeitet ihn ab, fertig.
 > Kein Chat, kein Bestätigen, kein Warten. Ideal für mechanische, repetitive Aufgaben.
@@ -398,6 +469,15 @@ claude -p "Fix all code quality issues in the Assixx project.
 ```
 
 **Workflow:** Befehl starten → Kaffee holen → Ergebnis prüfen. Kein Babysitten nötig.
+
+---
+
+---
+
+## HOW-TO Guides
+
+> 11 eigenständige Anleitungen zu Tools, Workflows und Patterns.
+> Vollständiger Katalog mit Beschreibungen: **[docs/how-to/README.md](./how-to/README.md)**
 
 ---
 

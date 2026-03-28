@@ -21,6 +21,4 @@ export const CreateEntitlementSchema = z.object({
     .optional(),
 });
 
-export class CreateEntitlementDto extends createZodDto(
-  CreateEntitlementSchema,
-) {}
+export class CreateEntitlementDto extends createZodDto(CreateEntitlementSchema) {}

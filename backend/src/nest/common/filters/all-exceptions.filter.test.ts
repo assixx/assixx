@@ -242,16 +242,11 @@ describe('AllExceptionsFilter', () => {
       expect(statusCode).toBe(404);
       expect(body.error.code).toBe('USER_NOT_FOUND');
       expect(body.error.message).toBe('User does not exist');
-      expect(body.error.details).toEqual([
-        { field: 'id', message: 'Invalid ID' },
-      ]);
+      expect(body.error.details).toEqual([{ field: 'id', message: 'Invalid ID' }]);
     });
 
     it('should use default error code when object has no code', () => {
-      const exception = new HttpException(
-        { message: 'Custom message' },
-        HttpStatus.FORBIDDEN,
-      );
+      const exception = new HttpException({ message: 'Custom message' }, HttpStatus.FORBIDDEN);
       const host = createMockHost();
 
       catchException(filter, exception, host);
@@ -262,10 +257,7 @@ describe('AllExceptionsFilter', () => {
     });
 
     it('should fallback to exception.message when object has no message', () => {
-      const exception = new HttpException(
-        { code: 'CUSTOM' },
-        HttpStatus.BAD_REQUEST,
-      );
+      const exception = new HttpException({ code: 'CUSTOM' }, HttpStatus.BAD_REQUEST);
       const host = createMockHost();
 
       catchException(filter, exception, host);
@@ -292,16 +284,24 @@ describe('AllExceptionsFilter', () => {
     });
 
     it('should not include details when not provided in object response', () => {
-      const exception = new HttpException(
-        { message: 'No details here' },
-        HttpStatus.BAD_REQUEST,
-      );
+      const exception = new HttpException({ message: 'No details here' }, HttpStatus.BAD_REQUEST);
       const host = createMockHost();
 
       catchException(filter, exception, host);
 
       const { body } = getSentResponse(host);
       expect(body.error).not.toHaveProperty('details');
+    });
+
+    it('should fallback to exception.message when response is non-string non-object', () => {
+      const exception = new HttpException('Original message', HttpStatus.BAD_REQUEST);
+      vi.spyOn(exception, 'getResponse').mockReturnValue(undefined as never);
+      const host = createMockHost();
+
+      catchException(filter, exception, host);
+
+      const { body } = getSentResponse(host);
+      expect(body.error.message).toBe('Original message');
     });
 
     it('should not report 4xx HttpExceptions to Sentry', () => {
@@ -315,10 +315,7 @@ describe('AllExceptionsFilter', () => {
     });
 
     it('should report 5xx HttpException to Sentry', () => {
-      const exception = new HttpException(
-        'Server broke',
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
+      const exception = new HttpException('Server broke', HttpStatus.INTERNAL_SERVER_ERROR);
       const host = createMockHost();
 
       catchException(filter, exception, host);
@@ -367,9 +364,7 @@ describe('AllExceptionsFilter', () => {
       catchException(filter, serviceError, host);
 
       const { body } = getSentResponse(host);
-      expect(body.error.details).toEqual([
-        { field: 'email', message: 'Already taken' },
-      ]);
+      expect(body.error.details).toEqual([{ field: 'email', message: 'Already taken' }]);
     });
 
     it('should include requestId for ServiceError when header present', () => {
@@ -488,11 +483,7 @@ describe('AllExceptionsFilter', () => {
     it('should always include success: false', () => {
       const host = createMockHost();
 
-      catchException(
-        filter,
-        new HttpException('test', HttpStatus.BAD_REQUEST),
-        host,
-      );
+      catchException(filter, new HttpException('test', HttpStatus.BAD_REQUEST), host);
 
       const { body } = getSentResponse(host);
       expect(body.success).toBe(false);
@@ -501,26 +492,16 @@ describe('AllExceptionsFilter', () => {
     it('should include ISO timestamp', () => {
       const host = createMockHost();
 
-      catchException(
-        filter,
-        new HttpException('test', HttpStatus.BAD_REQUEST),
-        host,
-      );
+      catchException(filter, new HttpException('test', HttpStatus.BAD_REQUEST), host);
 
       const { body } = getSentResponse(host);
-      expect(body.timestamp).toMatch(
-        /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/,
-      );
+      expect(body.timestamp).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
     });
 
     it('should include request path', () => {
       const host = createMockHost({ url: '/api/v2/users/123' });
 
-      catchException(
-        filter,
-        new HttpException('test', HttpStatus.NOT_FOUND),
-        host,
-      );
+      catchException(filter, new HttpException('test', HttpStatus.NOT_FOUND), host);
 
       const { body } = getSentResponse(host);
       expect(body.path).toBe('/api/v2/users/123');
@@ -531,11 +512,7 @@ describe('AllExceptionsFilter', () => {
         headers: { 'x-request-id': 'req-abc-123' },
       });
 
-      catchException(
-        filter,
-        new HttpException('test', HttpStatus.BAD_REQUEST),
-        host,
-      );
+      catchException(filter, new HttpException('test', HttpStatus.BAD_REQUEST), host);
 
       const { body } = getSentResponse(host);
       expect(body.requestId).toBe('req-abc-123');
@@ -544,11 +521,7 @@ describe('AllExceptionsFilter', () => {
     it('should omit requestId when header is not present', () => {
       const host = createMockHost();
 
-      catchException(
-        filter,
-        new HttpException('test', HttpStatus.BAD_REQUEST),
-        host,
-      );
+      catchException(filter, new HttpException('test', HttpStatus.BAD_REQUEST), host);
 
       const { body } = getSentResponse(host);
       expect(body).not.toHaveProperty('requestId');
@@ -597,11 +570,7 @@ describe('AllExceptionsFilter', () => {
     it('should log warnings for 4xx errors', () => {
       const host = createMockHost({ url: '/api/v2/users', method: 'POST' });
 
-      catchException(
-        filter,
-        new HttpException('Bad Request', HttpStatus.BAD_REQUEST),
-        host,
-      );
+      catchException(filter, new HttpException('Bad Request', HttpStatus.BAD_REQUEST), host);
 
       expect(mockLogger.warn).toHaveBeenCalledWith(
         expect.stringContaining('[POST] /api/v2/users - 400'),
@@ -624,11 +593,7 @@ describe('AllExceptionsFilter', () => {
     it('should stringify non-Error exceptions for 5xx stack', () => {
       const host = createMockHost();
 
-      catchException(
-        filter,
-        { code: 'BOOM', message: 'fail', statusCode: 502 },
-        host,
-      );
+      catchException(filter, { code: 'BOOM', message: 'fail', statusCode: 502 }, host);
 
       expect(mockLogger.error).toHaveBeenCalledWith(
         expect.stringContaining('502'),

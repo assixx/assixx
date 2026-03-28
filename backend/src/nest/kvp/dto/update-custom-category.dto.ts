@@ -23,10 +23,7 @@ export const UpdateCustomCategorySchema = z
       .optional(),
     color: z
       .string()
-      .regex(
-        /^#[0-9a-f]{6}$/i,
-        'Color must be a valid hex color (e.g. #ff0000)',
-      )
+      .regex(/^#[0-9a-f]{6}$/i, 'Color must be a valid hex color (e.g. #ff0000)')
       .optional(),
     icon: z
       .string()
@@ -49,6 +46,4 @@ export const UpdateCustomCategorySchema = z
     { message: 'At least one field must be provided for update' },
   );
 
-export class UpdateCustomCategoryDto extends createZodDto(
-  UpdateCustomCategorySchema,
-) {}
+export class UpdateCustomCategoryDto extends createZodDto(UpdateCustomCategorySchema) {}

@@ -59,11 +59,7 @@ export class E2eKeysController {
     @TenantId() tenantId: number,
     @CurrentUser() user: NestAuthUser,
   ): Promise<E2eKeyResponse> {
-    return await this.e2eKeysService.registerKeys(
-      dto.publicKey,
-      tenantId,
-      user.id,
-    );
+    return await this.e2eKeysService.registerKeys(dto.publicKey, tenantId, user.id);
   }
 
   /**
@@ -80,11 +76,7 @@ export class E2eKeysController {
     @TenantId() tenantId: number,
     @CurrentUser() user: NestAuthUser,
   ): Promise<E2eKeyResponse> {
-    return await this.e2eKeysService.rotateOwnKey(
-      dto.publicKey,
-      tenantId,
-      user.id,
-    );
+    return await this.e2eKeysService.rotateOwnKey(dto.publicKey, tenantId, user.id);
   }
 
   /**

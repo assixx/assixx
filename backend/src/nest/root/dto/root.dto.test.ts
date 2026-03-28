@@ -166,8 +166,7 @@ describe('AdminLogsQuerySchema', () => {
   it('should default days to 30', () => {
     const result = AdminLogsQuerySchema.safeParse({});
     expect(result.success).toBe(true);
-    const data = (result as { success: true; data: Record<string, unknown> })
-      .data;
+    const data = (result as { success: true; data: Record<string, unknown> }).data;
     expect(data.days).toBe(30);
   });
 
@@ -197,23 +196,18 @@ describe('RootApiFiltersSchema', () => {
   });
 
   it('should reject invalid status', () => {
-    expect(RootApiFiltersSchema.safeParse({ status: 'pending' }).success).toBe(
-      false,
-    );
+    expect(RootApiFiltersSchema.safeParse({ status: 'pending' }).success).toBe(false);
   });
 
   it('should transform isActive string to boolean', () => {
     const result = RootApiFiltersSchema.safeParse({ isActive: 'true' });
     expect(result.success).toBe(true);
-    const data = (result as { success: true; data: Record<string, unknown> })
-      .data;
+    const data = (result as { success: true; data: Record<string, unknown> }).data;
     expect(data.isActive).toBe(true);
   });
 
   it('should reject search over 100 chars', () => {
-    expect(
-      RootApiFiltersSchema.safeParse({ search: 'a'.repeat(101) }).success,
-    ).toBe(false);
+    expect(RootApiFiltersSchema.safeParse({ search: 'a'.repeat(101) }).success).toBe(false);
   });
 });
 
@@ -227,6 +221,7 @@ describe('CreateRootUserSchema', () => {
     password: 'StrongPass1!',
     firstName: 'Root',
     lastName: 'User',
+    positionIds: ['019579a0-0000-7000-8000-000000000001'],
   };
 
   it('should accept valid data', () => {
@@ -236,8 +231,7 @@ describe('CreateRootUserSchema', () => {
   it('should default isActive to 1', () => {
     const result = CreateRootUserSchema.safeParse(valid);
     expect(result.success).toBe(true);
-    const data = (result as { success: true; data: Record<string, unknown> })
-      .data;
+    const data = (result as { success: true; data: Record<string, unknown> }).data;
     expect(data.isActive).toBe(1);
   });
 
@@ -250,6 +244,7 @@ describe('CreateAdminSchema', () => {
   const valid = {
     email: 'admin@example.com',
     password: 'StrongPass1!',
+    positionIds: ['019579a0-0000-7000-8000-000000000001'],
   };
 
   it('should accept valid data with optional names', () => {
@@ -267,9 +262,7 @@ describe('CreateAdminSchema', () => {
   });
 
   it('should reject missing email', () => {
-    expect(
-      CreateAdminSchema.safeParse({ password: 'StrongPass1!' }).success,
-    ).toBe(false);
+    expect(CreateAdminSchema.safeParse({ password: 'StrongPass1!' }).success).toBe(false);
   });
 });
 
@@ -279,9 +272,7 @@ describe('UpdateRootUserSchema', () => {
   });
 
   it('should accept partial update', () => {
-    expect(
-      UpdateRootUserSchema.safeParse({ firstName: 'Updated' }).success,
-    ).toBe(true);
+    expect(UpdateRootUserSchema.safeParse({ firstName: 'Updated' }).success).toBe(true);
   });
 
   it('should accept isActive values 0-4', () => {
@@ -306,17 +297,13 @@ describe('UpdateAdminSchema', () => {
   });
 
   it('should reject invalid role', () => {
-    expect(UpdateAdminSchema.safeParse({ role: 'employee' }).success).toBe(
-      false,
-    );
+    expect(UpdateAdminSchema.safeParse({ role: 'employee' }).success).toBe(false);
   });
 });
 
 describe('DeletionApprovalBodySchema', () => {
   it('should accept valid approval', () => {
-    expect(
-      DeletionApprovalBodySchema.safeParse({ password: 'secret' }).success,
-    ).toBe(true);
+    expect(DeletionApprovalBodySchema.safeParse({ password: 'secret' }).success).toBe(true);
   });
 
   it('should accept with optional comment', () => {
@@ -329,9 +316,7 @@ describe('DeletionApprovalBodySchema', () => {
   });
 
   it('should reject empty password', () => {
-    expect(DeletionApprovalBodySchema.safeParse({ password: '' }).success).toBe(
-      false,
-    );
+    expect(DeletionApprovalBodySchema.safeParse({ password: '' }).success).toBe(false);
   });
 
   it('should reject comment over 500 chars', () => {
@@ -354,16 +339,11 @@ describe('DeletionRejectionBodySchema', () => {
   });
 
   it('should reject reason under 10 chars', () => {
-    expect(
-      DeletionRejectionBodySchema.safeParse({ reason: 'short' }).success,
-    ).toBe(false);
+    expect(DeletionRejectionBodySchema.safeParse({ reason: 'short' }).success).toBe(false);
   });
 
   it('should reject reason over 500 chars', () => {
-    expect(
-      DeletionRejectionBodySchema.safeParse({ reason: 'a'.repeat(501) })
-        .success,
-    ).toBe(false);
+    expect(DeletionRejectionBodySchema.safeParse({ reason: 'a'.repeat(501) }).success).toBe(false);
   });
 });
 
@@ -381,8 +361,6 @@ describe('TenantDeletionRequestSchema', () => {
   });
 
   it('should reject reason under 10 chars', () => {
-    expect(
-      TenantDeletionRequestSchema.safeParse({ reason: 'short' }).success,
-    ).toBe(false);
+    expect(TenantDeletionRequestSchema.safeParse({ reason: 'short' }).success).toBe(false);
   });
 });

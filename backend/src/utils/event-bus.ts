@@ -97,6 +97,23 @@ export interface WorkOrderEvent {
   changedByName?: string;
 }
 
+interface ApprovalEvent {
+  tenantId: number;
+  approval: {
+    uuid: string;
+    title: string;
+    addonCode: string;
+    status: string;
+    requestedByName: string;
+    decidedByName?: string;
+    decisionNote?: string | null;
+  };
+  /** User IDs of configured approval masters (for targeted delivery) */
+  approverUserIds: number[];
+  /** User ID of the requester (for decision notifications) */
+  requestedByUserId: number;
+}
+
 class NotificationEventBus extends EventEmitter {
   private static instance: NotificationEventBus | null = null;
 
@@ -122,10 +139,7 @@ class NotificationEventBus extends EventEmitter {
     this.emit('survey.updated', { tenantId, survey });
   }
 
-  emitDocumentUploaded(
-    tenantId: number,
-    document: DocumentEvent['document'],
-  ): void {
+  emitDocumentUploaded(tenantId: number, document: DocumentEvent['document']): void {
     logger.info(`[EventBus] Emitting document.uploaded for tenant ${tenantId}`);
     this.emit('document.uploaded', { tenantId, document });
   }
@@ -145,80 +159,44 @@ class NotificationEventBus extends EventEmitter {
     this.emit('messages.read', data);
   }
 
-  emitVacationRequestCreated(
-    tenantId: number,
-    request: VacationRequestEvent['request'],
-  ): void {
-    logger.info(
-      `[EventBus] Emitting vacation.request.created for tenant ${tenantId}`,
-    );
+  emitVacationRequestCreated(tenantId: number, request: VacationRequestEvent['request']): void {
+    logger.info(`[EventBus] Emitting vacation.request.created for tenant ${tenantId}`);
     this.emit('vacation.request.created', { tenantId, request });
   }
 
-  emitVacationRequestResponded(
-    tenantId: number,
-    request: VacationRequestEvent['request'],
-  ): void {
-    logger.info(
-      `[EventBus] Emitting vacation.request.responded for tenant ${tenantId}`,
-    );
+  emitVacationRequestResponded(tenantId: number, request: VacationRequestEvent['request']): void {
+    logger.info(`[EventBus] Emitting vacation.request.responded for tenant ${tenantId}`);
     this.emit('vacation.request.responded', { tenantId, request });
   }
 
-  emitVacationRequestWithdrawn(
-    tenantId: number,
-    request: VacationRequestEvent['request'],
-  ): void {
-    logger.info(
-      `[EventBus] Emitting vacation.request.withdrawn for tenant ${tenantId}`,
-    );
+  emitVacationRequestWithdrawn(tenantId: number, request: VacationRequestEvent['request']): void {
+    logger.info(`[EventBus] Emitting vacation.request.withdrawn for tenant ${tenantId}`);
     this.emit('vacation.request.withdrawn', { tenantId, request });
   }
 
-  emitVacationRequestCancelled(
-    tenantId: number,
-    request: VacationRequestEvent['request'],
-  ): void {
-    logger.info(
-      `[EventBus] Emitting vacation.request.cancelled for tenant ${tenantId}`,
-    );
+  emitVacationRequestCancelled(tenantId: number, request: VacationRequestEvent['request']): void {
+    logger.info(`[EventBus] Emitting vacation.request.cancelled for tenant ${tenantId}`);
     this.emit('vacation.request.cancelled', { tenantId, request });
   }
 
   // TPM events
   emitTpmMaintenanceDue(tenantId: number, card: TpmEvent['card']): void {
-    logger.info(
-      `[EventBus] Emitting tpm.maintenance.due for tenant ${tenantId}`,
-    );
+    logger.info(`[EventBus] Emitting tpm.maintenance.due for tenant ${tenantId}`);
     this.emit('tpm.maintenance.due', { tenantId, card });
   }
 
   emitTpmMaintenanceOverdue(tenantId: number, card: TpmEvent['card']): void {
-    logger.info(
-      `[EventBus] Emitting tpm.maintenance.overdue for tenant ${tenantId}`,
-    );
+    logger.info(`[EventBus] Emitting tpm.maintenance.overdue for tenant ${tenantId}`);
     this.emit('tpm.maintenance.overdue', { tenantId, card });
   }
 
-  emitTpmMaintenanceCompleted(
-    tenantId: number,
-    card: TpmEvent['card'],
-    userId: number,
-  ): void {
-    logger.info(
-      `[EventBus] Emitting tpm.maintenance.completed for tenant ${tenantId}`,
-    );
+  emitTpmMaintenanceCompleted(tenantId: number, card: TpmEvent['card'], userId: number): void {
+    logger.info(`[EventBus] Emitting tpm.maintenance.completed for tenant ${tenantId}`);
     this.emit('tpm.maintenance.completed', { tenantId, card, userId });
   }
 
-  emitTpmApprovalRequired(
-    tenantId: number,
-    card: TpmEvent['card'],
-    executionUuid: string,
-  ): void {
-    logger.info(
-      `[EventBus] Emitting tpm.approval.required for tenant ${tenantId}`,
-    );
+  emitTpmApprovalRequired(tenantId: number, card: TpmEvent['card'], executionUuid: string): void {
+    logger.info(`[EventBus] Emitting tpm.approval.required for tenant ${tenantId}`);
     this.emit('tpm.approval.required', { tenantId, card, executionUuid });
   }
 
@@ -228,9 +206,7 @@ class NotificationEventBus extends EventEmitter {
     executionUuid: string,
     approved: boolean,
   ): void {
-    logger.info(
-      `[EventBus] Emitting tpm.approval.result for tenant ${tenantId}`,
-    );
+    logger.info(`[EventBus] Emitting tpm.approval.result for tenant ${tenantId}`);
     this.emit('tpm.approval.result', {
       tenantId,
       card,
@@ -240,13 +216,8 @@ class NotificationEventBus extends EventEmitter {
   }
 
   // Work Order events
-  emitWorkOrderAssigned(
-    tenantId: number,
-    workOrder: WorkOrderEvent['workOrder'],
-  ): void {
-    logger.info(
-      `[EventBus] Emitting workorder.assigned for tenant ${tenantId}`,
-    );
+  emitWorkOrderAssigned(tenantId: number, workOrder: WorkOrderEvent['workOrder']): void {
+    logger.info(`[EventBus] Emitting workorder.assigned for tenant ${tenantId}`);
     this.emit('workorder.assigned', { tenantId, workOrder });
   }
 
@@ -255,9 +226,7 @@ class NotificationEventBus extends EventEmitter {
     workOrder: WorkOrderEvent['workOrder'],
     changedByUserId: number,
   ): void {
-    logger.info(
-      `[EventBus] Emitting workorder.status.changed for tenant ${tenantId}`,
-    );
+    logger.info(`[EventBus] Emitting workorder.status.changed for tenant ${tenantId}`);
     this.emit('workorder.status.changed', {
       tenantId,
       workOrder,
@@ -265,13 +234,8 @@ class NotificationEventBus extends EventEmitter {
     });
   }
 
-  emitWorkOrderDueSoon(
-    tenantId: number,
-    workOrder: WorkOrderEvent['workOrder'],
-  ): void {
-    logger.info(
-      `[EventBus] Emitting workorder.due.soon for tenant ${tenantId}`,
-    );
+  emitWorkOrderDueSoon(tenantId: number, workOrder: WorkOrderEvent['workOrder']): void {
+    logger.info(`[EventBus] Emitting workorder.due.soon for tenant ${tenantId}`);
     this.emit('workorder.due.soon', { tenantId, workOrder });
   }
 
@@ -280,9 +244,7 @@ class NotificationEventBus extends EventEmitter {
     workOrder: WorkOrderEvent['workOrder'],
     changedByUserId: number,
   ): void {
-    logger.info(
-      `[EventBus] Emitting workorder.verified for tenant ${tenantId}`,
-    );
+    logger.info(`[EventBus] Emitting workorder.verified for tenant ${tenantId}`);
     this.emit('workorder.verified', {
       tenantId,
       workOrder,
@@ -293,6 +255,37 @@ class NotificationEventBus extends EventEmitter {
   // Get active listener count for monitoring
   getListenerCount(event: string): number {
     return this.listenerCount(event);
+  }
+
+  // ── Approval Events ────────────────────────────────────────────
+
+  emitApprovalCreated(
+    tenantId: number,
+    approval: ApprovalEvent['approval'],
+    approverUserIds: number[],
+    requestedByUserId: number,
+  ): void {
+    logger.info(`[EventBus] Emitting approval.created for tenant ${tenantId}`);
+    this.emit('approval.created', {
+      tenantId,
+      approval,
+      approverUserIds,
+      requestedByUserId,
+    });
+  }
+
+  emitApprovalDecided(
+    tenantId: number,
+    approval: ApprovalEvent['approval'],
+    requestedByUserId: number,
+  ): void {
+    logger.info(`[EventBus] Emitting approval.decided for tenant ${tenantId}`);
+    this.emit('approval.decided', {
+      tenantId,
+      approval,
+      approverUserIds: [],
+      requestedByUserId,
+    });
   }
 
   // Get all active events

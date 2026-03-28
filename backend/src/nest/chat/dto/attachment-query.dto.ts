@@ -5,10 +5,7 @@ import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';
 
 const BooleanQuerySchema = z
-  .union([
-    z.boolean(),
-    z.string().transform((val: string): boolean => val === 'true'),
-  ])
+  .union([z.boolean(), z.string().transform((val: string): boolean => val === 'true')])
   .optional();
 
 export const AttachmentQuerySchema = z.object({

@@ -89,9 +89,9 @@ describe('RootDeletionService', () => {
     it('should throw BadRequestException when fewer than 2 root users', async () => {
       mockUserRepo.countByRole.mockResolvedValueOnce(1);
 
-      await expect(
-        service.requestTenantDeletion(10, 1, 'test'),
-      ).rejects.toThrow(BadRequestException);
+      await expect(service.requestTenantDeletion(10, 1, 'test')).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('should return queue id on success', async () => {
@@ -105,9 +105,7 @@ describe('RootDeletionService', () => {
         new Error('already marked_for_deletion'),
       );
 
-      await expect(
-        service.requestTenantDeletion(10, 1, 'test'),
-      ).rejects.toThrow(ConflictException);
+      await expect(service.requestTenantDeletion(10, 1, 'test')).rejects.toThrow(ConflictException);
     });
   });
 
@@ -230,17 +228,17 @@ describe('RootDeletionService', () => {
     it('should throw Error when user not found or has no password', async () => {
       mockUserRepo.getPasswordHash.mockResolvedValueOnce(null);
 
-      await expect(
-        service.approveDeletion(1, 99, 10, 'password'),
-      ).rejects.toThrow('User password not configured');
+      await expect(service.approveDeletion(1, 99, 10, 'password')).rejects.toThrow(
+        'User password not configured',
+      );
     });
 
     it('should throw Error when user has empty password', async () => {
       mockUserRepo.getPasswordHash.mockResolvedValueOnce('');
 
-      await expect(
-        service.approveDeletion(1, 5, 10, 'password'),
-      ).rejects.toThrow('User password not configured');
+      await expect(service.approveDeletion(1, 5, 10, 'password')).rejects.toThrow(
+        'User password not configured',
+      );
     });
 
     it('should throw Error on wrong password', async () => {
@@ -257,11 +255,7 @@ describe('RootDeletionService', () => {
 
       await service.approveDeletion(1, 5, 10, 'correct', 'Approved');
 
-      expect(mockTenantDeletion.approveDeletion).toHaveBeenCalledWith(
-        1,
-        5,
-        'Approved',
-      );
+      expect(mockTenantDeletion.approveDeletion).toHaveBeenCalledWith(1, 5, 'Approved');
     });
   });
 
@@ -281,10 +275,7 @@ describe('RootDeletionService', () => {
     it('should delegate to TenantDeletionService', async () => {
       await service.emergencyStop(10, 1);
 
-      expect(mockTenantDeletion.triggerEmergencyStop).toHaveBeenCalledWith(
-        10,
-        1,
-      );
+      expect(mockTenantDeletion.triggerEmergencyStop).toHaveBeenCalledWith(10, 1);
     });
   });
 });

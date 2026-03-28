@@ -23,11 +23,7 @@ import { VacationBlackoutsService } from './vacation-blackouts.service.js';
 import { VacationEntitlementsService } from './vacation-entitlements.service.js';
 import { VacationHolidaysService } from './vacation-holidays.service.js';
 import { VacationSettingsService } from './vacation-settings.service.js';
-import type {
-  VacationHalfDay,
-  VacationRequestRow,
-  VacationType,
-} from './vacation.types.js';
+import type { VacationHalfDay, VacationRequestRow, VacationType } from './vacation.types.js';
 
 /** Merged fields for edit validation */
 export interface MergedRequestFields {
@@ -57,18 +53,8 @@ export class VacationValidationService {
     this.validateStartDateNotInPast(dto.startDate);
     const settings = await this.settingsService.getSettings(tenantId);
     this.validateAdvanceNotice(dto.startDate, settings.advanceNoticeDays);
-    this.validateMaxConsecutive(
-      dto.startDate,
-      dto.endDate,
-      settings.maxConsecutiveDays,
-    );
-    await this.checkOverlap(
-      client,
-      tenantId,
-      userId,
-      dto.startDate,
-      dto.endDate,
-    );
+    this.validateMaxConsecutive(dto.startDate, dto.endDate, settings.maxConsecutiveDays);
+    await this.checkOverlap(client, tenantId, userId, dto.startDate, dto.endDate);
   }
 
   /** Check balance sufficiency and blackout conflicts. */
@@ -81,21 +67,9 @@ export class VacationValidationService {
     departmentId: number | undefined,
   ): Promise<void> {
     if (dto.vacationType !== 'unpaid') {
-      await this.checkBalance(
-        tenantId,
-        userId,
-        dto.startDate,
-        dto.endDate,
-        computedDays,
-      );
+      await this.checkBalance(tenantId, userId, dto.startDate, dto.endDate, computedDays);
     }
-    await this.checkBlackouts(
-      tenantId,
-      dto.startDate,
-      dto.endDate,
-      teamId,
-      departmentId,
-    );
+    await this.checkBlackouts(tenantId, dto.startDate, dto.endDate, teamId, departmentId);
   }
 
   /** Compute workdays in range, throwing if zero. */
@@ -147,8 +121,7 @@ export class VacationValidationService {
       request.requester_id,
       new Date(request.start_date).getFullYear(),
     );
-    const available =
-      balance.remainingDays - balance.pendingDays + computedDays;
+    const available = balance.remainingDays - balance.pendingDays + computedDays;
     if (available < computedDays) {
       throw new BadRequestException(
         `Insufficient balance to approve. Available: ${String(available)}, required: ${String(computedDays)}`,
@@ -195,11 +168,7 @@ export class VacationValidationService {
     this.validateStartDateNotInPast(merged.startDate);
     const settings = await this.settingsService.getSettings(tenantId);
     this.validateAdvanceNotice(merged.startDate, settings.advanceNoticeDays);
-    this.validateMaxConsecutive(
-      merged.startDate,
-      merged.endDate,
-      settings.maxConsecutiveDays,
-    );
+    this.validateMaxConsecutive(merged.startDate, merged.endDate, settings.maxConsecutiveDays);
     await this.checkOverlap(
       client,
       tenantId,
@@ -227,13 +196,7 @@ export class VacationValidationService {
         computedDays,
       );
     }
-    await this.checkBlackouts(
-      tenantId,
-      merged.startDate,
-      merged.endDate,
-      teamId,
-      departmentId,
-    );
+    await this.checkBlackouts(tenantId, merged.startDate, merged.endDate, teamId, departmentId);
   }
 
   // ==========================================================================
@@ -247,9 +210,7 @@ export class VacationValidationService {
     const start = new Date(startDate);
     start.setUTCHours(0, 0, 0, 0);
     if (start < today) {
-      throw new BadRequestException(
-        'Startdatum darf nicht in der Vergangenheit liegen',
-      );
+      throw new BadRequestException('Startdatum darf nicht in der Vergangenheit liegen');
     }
   }
 
@@ -266,11 +227,7 @@ export class VacationValidationService {
     }
   }
 
-  private validateMaxConsecutive(
-    startDate: string,
-    endDate: string,
-    maxDays: number | null,
-  ): void {
+  private validateMaxConsecutive(startDate: string, endDate: string, maxDays: number | null): void {
     if (maxDays === null) return;
     const diffMs = new Date(endDate).getTime() - new Date(startDate).getTime();
     const calDays = Math.round(diffMs / 86400000) + 1;
@@ -313,15 +270,9 @@ export class VacationValidationService {
     const startYear = new Date(startDate).getFullYear();
     const endYear = new Date(endDate).getFullYear();
     if (startYear === endYear) {
-      const bal = await this.entitlementsService.getBalance(
-        tenantId,
-        userId,
-        startYear,
-      );
+      const bal = await this.entitlementsService.getBalance(tenantId, userId, startYear);
       if (bal.projectedRemaining < 0) {
-        throw new BadRequestException(
-          `Insufficient balance for ${String(startYear)}`,
-        );
+        throw new BadRequestException(`Insufficient balance for ${String(startYear)}`);
       }
       return;
     }
@@ -330,14 +281,10 @@ export class VacationValidationService {
       this.entitlementsService.getBalance(tenantId, userId, endYear),
     ]);
     if (b1.projectedRemaining < 0) {
-      throw new BadRequestException(
-        `Insufficient balance for ${String(startYear)}`,
-      );
+      throw new BadRequestException(`Insufficient balance for ${String(startYear)}`);
     }
     if (b2.projectedRemaining < 0) {
-      throw new BadRequestException(
-        `Insufficient balance for ${String(endYear)}`,
-      );
+      throw new BadRequestException(`Insufficient balance for ${String(endYear)}`);
     }
   }
 
@@ -362,9 +309,7 @@ export class VacationValidationService {
             `"${c.name}" (${c.startDate}\u2013${c.endDate})`,
         )
         .join(', ');
-      throw new BadRequestException(
-        `Request conflicts with blackout period(s): ${names}`,
-      );
+      throw new BadRequestException(`Request conflicts with blackout period(s): ${names}`);
     }
   }
 

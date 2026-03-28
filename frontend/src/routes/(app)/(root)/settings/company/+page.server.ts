@@ -1,5 +1,5 @@
 /**
- * Company Settings — Server-Side Data Loading
+ * Addon Settings — Server-Side Data Loading
  * Root-only: RBAC enforced by (root) layout group
  */
 import { redirect } from '@sveltejs/kit';
@@ -8,24 +8,27 @@ import { createLogger } from '$lib/utils/logger.js';
 
 import type { PageServerLoad } from './$types';
 
-const log = createLogger('Settings:Company');
+const log = createLogger('Settings:Addons');
 
 const API_BASE = process.env.API_URL ?? 'http://localhost:3000/api/v2';
 
-interface CompanyData {
-  companyName: string;
-  street: string | null;
-  houseNumber: string | null;
-  postalCode: string | null;
-  city: string | null;
-  countryCode: string | null;
-  phone: string | null;
-  email: string;
+interface KvpSettings {
+  dailyLimit: number;
 }
 
-interface ApiResponse {
-  success?: boolean;
-  data?: CompanyData;
+interface RewardTier {
+  id: number;
+  amount: number;
+  sortOrder: number;
+}
+
+async function fetchJson<T>(url: string, token: string, fetchFn: typeof fetch): Promise<T | null> {
+  const res = await fetchFn(url, {
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+  });
+  if (!res.ok) return null;
+  const json = (await res.json()) as { success?: boolean; data?: T };
+  return json.data ?? (json as unknown as T);
 }
 
 export const load: PageServerLoad = async ({ cookies, fetch }) => {
@@ -35,24 +38,18 @@ export const load: PageServerLoad = async ({ cookies, fetch }) => {
   }
 
   try {
-    const response = await fetch(`${API_BASE}/company`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-    });
+    const [settingsJson, tiersJson] = await Promise.all([
+      fetchJson<KvpSettings>(`${API_BASE}/kvp/settings`, token, fetch),
+      fetchJson<RewardTier[]>(`${API_BASE}/kvp/reward-tiers`, token, fetch),
+    ]);
 
-    if (!response.ok) {
-      log.error({ status: response.status }, 'Failed to load company data');
-      return { company: null, loadError: true };
-    }
-
-    const json = (await response.json()) as ApiResponse;
-    const data = json.data ?? (json as unknown as CompanyData);
-
-    return { company: data, loadError: false };
+    return {
+      kvpSettings: settingsJson,
+      rewardTiers: Array.isArray(tiersJson) ? tiersJson : [],
+      loadError: settingsJson === null,
+    };
   } catch (err: unknown) {
     log.error({ err }, 'Fetch error');
-    return { company: null, loadError: true };
+    return { kvpSettings: null, rewardTiers: [] as RewardTier[], loadError: true };
   }
 };

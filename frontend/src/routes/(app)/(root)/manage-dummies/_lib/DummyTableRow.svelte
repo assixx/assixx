@@ -1,9 +1,5 @@
 <script lang="ts">
-  import {
-    IS_ACTIVE_BADGE_CLASSES,
-    IS_ACTIVE_LABELS,
-    MESSAGES,
-  } from './constants';
+  import { IS_ACTIVE_BADGE_CLASSES, IS_ACTIVE_LABELS, MESSAGES } from './constants';
 
   import type { DummyUser } from './types';
 
@@ -16,12 +12,8 @@
   const { dummy, onedit, ondelete }: Props = $props();
 
   const statusLabel = $derived(IS_ACTIVE_LABELS[dummy.isActive] ?? 'Unbekannt');
-  const statusClass = $derived(
-    IS_ACTIVE_BADGE_CLASSES[dummy.isActive] ?? 'badge--secondary',
-  );
-  const areasDisplay = $derived(
-    dummy.areaNames.length > 0 ? dummy.areaNames.join(', ') : '—',
-  );
+  const statusClass = $derived(IS_ACTIVE_BADGE_CLASSES[dummy.isActive] ?? 'badge--secondary');
+  const areasDisplay = $derived(dummy.areaNames.length > 0 ? dummy.areaNames.join(', ') : '—');
   const deptsDisplay = $derived(
     dummy.departmentNames.length > 0 ? dummy.departmentNames.join(', ') : '—',
   );

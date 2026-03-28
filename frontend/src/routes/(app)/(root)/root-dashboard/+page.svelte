@@ -8,11 +8,7 @@
   import { invalidateAll } from '$app/navigation';
   import { resolve } from '$app/paths';
 
-  import {
-    showWarningAlert,
-    showErrorAlert,
-    showSuccessAlert,
-  } from '$lib/stores/toast';
+  import { showWarningAlert, showErrorAlert, showSuccessAlert } from '$lib/stores/toast';
 
   // Module imports
   import { saveEmployeeNumber as saveEmployeeNumberApi } from './_lib/api';
@@ -221,8 +217,7 @@
               <tr>
                 <td
                   colspan="4"
-                  class="py-8 text-center text-gray-400"
-                  >{MESSAGES.noActivities}</td
+                  class="py-8 text-center text-gray-400">{MESSAGES.noActivities}</td
                 >
               </tr>
             {:else}
@@ -232,10 +227,8 @@
                   <td>
                     <div class="user-info">
                       <span class="user-name">{getDisplayName(log)}</span>
-                      <span
-                        class="badge badge--sm badge--{getRoleBadgeClass(
-                          log.userRole ?? '',
-                        )}">{getRoleLabel(log.userRole ?? '')}</span
+                      <span class="badge badge--sm badge--{getRoleBadgeClass(log.userRole ?? '')}"
+                        >{getRoleLabel(log.userRole ?? '')}</span
                       >
                     </div>
                   </td>
@@ -271,8 +264,7 @@
     color: var(--primary-color);
     font-weight: 700;
     font-size: 2.5rem;
-    text-shadow: 0 0 10px
-      color-mix(in oklch, var(--color-primary) 50%, transparent);
+    text-shadow: 0 0 10px color-mix(in oklch, var(--color-primary) 50%, transparent);
   }
 
   /* Stat Label - Description text

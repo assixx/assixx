@@ -2,11 +2,7 @@
 // MANAGE DEPARTMENTS - TYPE DEFINITIONS
 // =============================================================================
 
-import type {
-  IsActiveStatus,
-  FormIsActiveStatus,
-  StatusFilter,
-} from '@assixx/shared';
+import type { IsActiveStatus, FormIsActiveStatus, StatusFilter } from '@assixx/shared';
 
 export type { IsActiveStatus, FormIsActiveStatus, StatusFilter };
 
@@ -19,6 +15,8 @@ export interface Department {
   description?: string | null;
   departmentLeadId?: number | null;
   departmentLeadName?: string | null;
+  departmentDeputyLeadId?: number | null;
+  departmentDeputyLeadName?: string | null;
   areaId?: number | null;
   areaName?: string | null;
   parentId?: number | null;
@@ -28,6 +26,9 @@ export interface Department {
   employeeNames?: string;
   teamCount?: number;
   teamNames?: string;
+  hallIds?: number[];
+  hallNames?: string;
+  hallCount?: number;
   assetCount?: number;
   budget?: number;
   costCenter?: string;
@@ -61,6 +62,15 @@ export interface AdminUser {
 }
 
 /**
+ * Hall for multi-select assignment
+ */
+export interface Hall {
+  id: number;
+  name: string;
+  areaId?: number | null;
+}
+
+/**
  * Payload for creating/updating a department
  */
 export interface DepartmentPayload {
@@ -68,6 +78,7 @@ export interface DepartmentPayload {
   description?: string | null;
   areaId?: number | null;
   departmentLeadId?: number | null;
+  departmentDeputyLeadId?: number | null;
   isActive: FormIsActiveStatus;
 }
 

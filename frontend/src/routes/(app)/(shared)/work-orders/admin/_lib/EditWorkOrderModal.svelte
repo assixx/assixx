@@ -11,11 +11,7 @@
   import { onClickOutsideDropdown } from '$lib/actions/click-outside';
   import AppDatePicker from '$lib/components/AppDatePicker.svelte';
 
-  import {
-    FILE_UPLOAD_CONFIG,
-    MESSAGES,
-    PRIORITY_LABELS,
-  } from '../../_lib/constants';
+  import { FILE_UPLOAD_CONFIG, MESSAGES, PRIORITY_LABELS } from '../../_lib/constants';
 
   import type {
     CreateWorkOrderPayload,
@@ -52,9 +48,7 @@
   // ---------------------------------------------------------------------------
 
   const isEditMode = $derived(workOrder !== null);
-  const modalTitle = $derived(
-    isEditMode ? MESSAGES.MODAL_EDIT_TITLE : MESSAGES.MODAL_CREATE_TITLE,
-  );
+  const modalTitle = $derived(isEditMode ? MESSAGES.MODAL_EDIT_TITLE : MESSAGES.MODAL_CREATE_TITLE);
   const modalIcon = $derived(isEditMode ? 'fa-pen' : 'fa-clipboard-check');
 
   // ---------------------------------------------------------------------------
@@ -129,9 +123,7 @@
 
   function removeAttachment(index: number): void {
     if (attachmentFiles === null) return;
-    const filtered = attachmentFiles.filter(
-      (_: File, i: number) => i !== index,
-    );
+    const filtered = attachmentFiles.filter((_: File, i: number) => i !== index);
     onfileschange(filtered.length > 0 ? filtered : null);
   }
 
@@ -142,18 +134,11 @@
 
     const existing = attachmentFiles ?? [];
     const incoming = Array.from(files);
-    const merged = [...existing, ...incoming].slice(
-      0,
-      FILE_UPLOAD_CONFIG.MAX_FILES,
-    );
+    const merged = [...existing, ...incoming].slice(0, FILE_UPLOAD_CONFIG.MAX_FILES);
     onfileschange(merged);
 
     // Reset input so the same file can be re-selected
     input.value = '';
-  }
-
-  function handleOverlayClick(e: MouseEvent): void {
-    if (e.target === e.currentTarget) onclose();
   }
 
   function handleSubmit(event: SubmitEvent): void {
@@ -196,17 +181,9 @@
     aria-modal="true"
     aria-labelledby="wo-modal-title"
     tabindex="-1"
-    onclick={handleOverlayClick}
-    onkeydown={(e: KeyboardEvent) => {
-      if (e.key === 'Escape') onclose();
-    }}
   >
-    <!-- svelte-ignore a11y_no_noninteractive_element_interactions, a11y_click_events_have_key_events -->
     <form
       class="ds-modal"
-      onclick={(e: MouseEvent) => {
-        e.stopPropagation();
-      }}
       onsubmit={handleSubmit}
     >
       <div class="ds-modal__header">
@@ -276,8 +253,7 @@
               class="dropdown__trigger"
               onclick={() => (priorityDropdownOpen = !priorityDropdownOpen)}
               onkeydown={(e: KeyboardEvent) => {
-                if (e.key === 'Enter')
-                  priorityDropdownOpen = !priorityDropdownOpen;
+                if (e.key === 'Enter') priorityDropdownOpen = !priorityDropdownOpen;
               }}
               role="button"
               tabindex="0"
@@ -294,8 +270,7 @@
                       setPriority(value as WorkOrderPriority);
                     }}
                     onkeydown={(e: KeyboardEvent) => {
-                      if (e.key === 'Enter')
-                        setPriority(value as WorkOrderPriority);
+                      if (e.key === 'Enter') setPriority(value as WorkOrderPriority);
                     }}
                     role="option"
                     tabindex="0"
@@ -330,9 +305,7 @@
 
         <!-- Attachments (optional) -->
         <div class="form-field">
-          <span class="form-field__label"
-            >{MESSAGES.MODAL_FIELD_ATTACHMENTS}</span
-          >
+          <span class="form-field__label">{MESSAGES.MODAL_FIELD_ATTACHMENTS}</span>
           <div class="file-upload-zone file-upload-zone--compact">
             <input
               type="file"

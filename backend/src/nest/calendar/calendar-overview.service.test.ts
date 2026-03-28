@@ -55,9 +55,9 @@ function createMockPermissionService(): {
   };
 }
 
-function createMockScopeService(
-  scopeType: 'full' | 'limited' | 'none' = 'none',
-): { getScope: ReturnType<typeof vi.fn> } {
+function createMockScopeService(scopeType: 'full' | 'limited' | 'none' = 'none'): {
+  getScope: ReturnType<typeof vi.fn>;
+} {
   const scope: OrganizationalScope = {
     type: scopeType,
     areaIds: [],
@@ -105,9 +105,7 @@ describe('CalendarOverviewService', () => {
 
   describe('getDashboardEvents', () => {
     it('should return mapped events for employee', async () => {
-      mockDb.query.mockResolvedValueOnce([
-        { id: 1, title: 'Meeting', start_date: '2025-06-15' },
-      ]);
+      mockDb.query.mockResolvedValueOnce([{ id: 1, title: 'Meeting', start_date: '2025-06-15' }]);
 
       const result = await service.getDashboardEvents(10, 5);
 
@@ -215,9 +213,7 @@ describe('CalendarOverviewService', () => {
     });
 
     it('should use permission-based path for non-full scope', async () => {
-      mockAddonVisits.getLastVisited.mockResolvedValueOnce(
-        new Date('2025-06-01'),
-      );
+      mockAddonVisits.getLastVisited.mockResolvedValueOnce(new Date('2025-06-01'));
       // countUpcomingWithPermissions calls getScope + getUserMemberships + query
       mockScope.getScope.mockResolvedValueOnce({
         type: 'none',

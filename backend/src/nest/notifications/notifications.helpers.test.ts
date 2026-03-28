@@ -17,9 +17,7 @@ import type { DbNotificationRow } from './notifications.types.js';
 // Mock Factory
 // ============================================
 
-function createMockNotificationRow(
-  overrides?: Partial<DbNotificationRow>,
-): DbNotificationRow {
+function createMockNotificationRow(overrides?: Partial<DbNotificationRow>): DbNotificationRow {
   return {
     id: 1,
     type: 'info',

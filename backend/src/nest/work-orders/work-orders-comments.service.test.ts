@@ -5,11 +5,7 @@
  * Covers happy paths, NotFoundException, ForbiddenException, and threading validation.
  */
 import { IS_ACTIVE } from '@assixx/shared/constants';
-import {
-  BadRequestException,
-  ForbiddenException,
-  NotFoundException,
-} from '@nestjs/common';
+import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { ActivityLoggerService } from '../common/services/activity-logger.service.js';
@@ -55,9 +51,10 @@ function createService(): WorkOrderCommentsService {
   );
 }
 
-function createWorkOrderRow(
-  overrides: Partial<{ id: number; title: string }> = {},
-): { id: number; title: string } {
+function createWorkOrderRow(overrides: Partial<{ id: number; title: string }> = {}): {
+  id: number;
+  title: string;
+} {
   return {
     id: 10,
     title: 'Ölwechsel durchführen',
@@ -114,12 +111,7 @@ describe('addComment', () => {
       .mockResolvedValueOnce(woRow) // resolveWorkOrder
       .mockResolvedValueOnce(commentRow); // INSERT RETURNING
 
-    const result = await service.addComment(
-      TENANT_ID,
-      USER_ID,
-      WORK_ORDER_UUID,
-      'Neuer Kommentar',
-    );
+    const result = await service.addComment(TENANT_ID, USER_ID, WORK_ORDER_UUID, 'Neuer Kommentar');
 
     expect(result.uuid).toBe(COMMENT_UUID);
     expect(result.userId).toBe(USER_ID);
@@ -136,10 +128,7 @@ describe('addComment', () => {
 
     // Verify resolveWorkOrder query
     expect(mockDb.queryOne).toHaveBeenCalledTimes(2);
-    expect(mockDb.queryOne.mock.calls[0][1]).toEqual([
-      WORK_ORDER_UUID,
-      TENANT_ID,
-    ]);
+    expect(mockDb.queryOne.mock.calls[0][1]).toEqual([WORK_ORDER_UUID, TENANT_ID]);
 
     // Verify INSERT query params (includes parent_id = null)
     expect(mockDb.queryOne.mock.calls[1][1]).toEqual([
@@ -165,9 +154,9 @@ describe('addComment', () => {
   it('should throw NotFoundException when work order does not exist', async () => {
     mockDb.queryOne.mockResolvedValueOnce(null); // resolveWorkOrder returns null
 
-    await expect(
-      service.addComment(TENANT_ID, USER_ID, WORK_ORDER_UUID, 'Test'),
-    ).rejects.toThrow(NotFoundException);
+    await expect(service.addComment(TENANT_ID, USER_ID, WORK_ORDER_UUID, 'Test')).rejects.toThrow(
+      NotFoundException,
+    );
 
     expect(mockDb.queryOne).toHaveBeenCalledTimes(1);
   });
@@ -179,9 +168,9 @@ describe('addComment', () => {
       .mockResolvedValueOnce(woRow) // resolveWorkOrder
       .mockResolvedValueOnce(null); // INSERT returns null
 
-    await expect(
-      service.addComment(TENANT_ID, USER_ID, WORK_ORDER_UUID, 'Test'),
-    ).rejects.toThrow(NotFoundException);
+    await expect(service.addComment(TENANT_ID, USER_ID, WORK_ORDER_UUID, 'Test')).rejects.toThrow(
+      NotFoundException,
+    );
   });
 });
 
@@ -202,12 +191,7 @@ describe('listComments', () => {
       .mockResolvedValueOnce({ count: '2' }); // COUNT query
     mockDb.query.mockResolvedValueOnce(rows); // SELECT with LIMIT/OFFSET
 
-    const result = await service.listComments(
-      TENANT_ID,
-      WORK_ORDER_UUID,
-      1,
-      10,
-    );
+    const result = await service.listComments(TENANT_ID, WORK_ORDER_UUID, 1, 10);
 
     expect(result.total).toBe(2);
     expect(result.page).toBe(1);
@@ -228,12 +212,7 @@ describe('listComments', () => {
       .mockResolvedValueOnce({ count: '0' }); // COUNT = 0
     mockDb.query.mockResolvedValueOnce([]); // no rows
 
-    const result = await service.listComments(
-      TENANT_ID,
-      WORK_ORDER_UUID,
-      1,
-      10,
-    );
+    const result = await service.listComments(TENANT_ID, WORK_ORDER_UUID, 1, 10);
 
     expect(result.total).toBe(0);
     expect(result.page).toBe(1);
@@ -249,12 +228,7 @@ describe('listComments', () => {
       .mockResolvedValueOnce({ count: '25' }); // COUNT
     mockDb.query.mockResolvedValueOnce([]); // rows (irrelevant for this check)
 
-    const result = await service.listComments(
-      TENANT_ID,
-      WORK_ORDER_UUID,
-      3,
-      10,
-    );
+    const result = await service.listComments(TENANT_ID, WORK_ORDER_UUID, 3, 10);
 
     // offset = (3-1) * 10 = 20
     expect(mockDb.query.mock.calls[0][1]).toEqual([woRow.id, 10, 20]);
@@ -266,9 +240,9 @@ describe('listComments', () => {
   it('should throw NotFoundException when work order does not exist', async () => {
     mockDb.queryOne.mockResolvedValueOnce(null); // resolveWorkOrder
 
-    await expect(
-      service.listComments(TENANT_ID, WORK_ORDER_UUID, 1, 10),
-    ).rejects.toThrow(NotFoundException);
+    await expect(service.listComments(TENANT_ID, WORK_ORDER_UUID, 1, 10)).rejects.toThrow(
+      NotFoundException,
+    );
   });
 
   it('should handle null count result gracefully', async () => {
@@ -279,12 +253,7 @@ describe('listComments', () => {
       .mockResolvedValueOnce(null); // COUNT returns null
     mockDb.query.mockResolvedValueOnce([]); // no rows
 
-    const result = await service.listComments(
-      TENANT_ID,
-      WORK_ORDER_UUID,
-      1,
-      10,
-    );
+    const result = await service.listComments(TENANT_ID, WORK_ORDER_UUID, 1, 10);
 
     expect(result.total).toBe(0);
   });
@@ -324,9 +293,9 @@ describe('deleteComment', () => {
   it('should throw NotFoundException when comment does not exist', async () => {
     mockDb.queryOne.mockResolvedValueOnce(null);
 
-    await expect(
-      service.deleteComment(TENANT_ID, USER_ID, COMMENT_UUID, false),
-    ).rejects.toThrow(NotFoundException);
+    await expect(service.deleteComment(TENANT_ID, USER_ID, COMMENT_UUID, false)).rejects.toThrow(
+      NotFoundException,
+    );
 
     expect(mockDb.query).not.toHaveBeenCalled();
   });
@@ -336,9 +305,9 @@ describe('deleteComment', () => {
     const comment = { id: 20, user_id: otherUserId, work_order_id: 10 };
     mockDb.queryOne.mockResolvedValueOnce(comment);
 
-    await expect(
-      service.deleteComment(TENANT_ID, USER_ID, COMMENT_UUID, false),
-    ).rejects.toThrow(ForbiddenException);
+    await expect(service.deleteComment(TENANT_ID, USER_ID, COMMENT_UUID, false)).rejects.toThrow(
+      ForbiddenException,
+    );
 
     // No UPDATE should happen
     expect(mockDb.query).not.toHaveBeenCalled();
@@ -388,13 +357,7 @@ describe('addComment with parentId', () => {
       .mockResolvedValueOnce(parentRow) // validateParent
       .mockResolvedValueOnce(replyRow); // INSERT RETURNING
 
-    const result = await service.addComment(
-      TENANT_ID,
-      USER_ID,
-      WORK_ORDER_UUID,
-      'Antwort',
-      100,
-    );
+    const result = await service.addComment(TENANT_ID, USER_ID, WORK_ORDER_UUID, 'Antwort', 100);
 
     expect(result.parentId).toBe(100);
     expect(result.content).toBe('Antwort');
@@ -476,8 +439,8 @@ describe('listReplies', () => {
   it('should throw NotFoundException when work order does not exist', async () => {
     mockDb.queryOne.mockResolvedValueOnce(null);
 
-    await expect(
-      service.listReplies(TENANT_ID, WORK_ORDER_UUID, 20),
-    ).rejects.toThrow(NotFoundException);
+    await expect(service.listReplies(TENANT_ID, WORK_ORDER_UUID, 20)).rejects.toThrow(
+      NotFoundException,
+    );
   });
 });

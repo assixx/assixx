@@ -69,19 +69,9 @@
     }
   });
 
-  /** Global Escape key handler for modals */
+  /** Global keyboard handler for preview navigation */
   function handleKeydown(e: KeyboardEvent): void {
-    if (e.key === 'Escape') {
-      if (docExplorerState.showDeleteConfirmModal) {
-        docExplorerState.closeDeleteConfirmModal();
-      } else if (docExplorerState.showEditModal) {
-        docExplorerState.closeEditModal();
-      } else if (docExplorerState.showUploadModal) {
-        docExplorerState.closeUploadModal();
-      } else if (docExplorerState.showPreviewModal) {
-        docExplorerState.closePreview();
-      }
-    } else if (docExplorerState.showPreviewModal) {
+    if (docExplorerState.showPreviewModal) {
       if (e.key === 'ArrowLeft') docExplorerState.navigatePreviewPrev();
       else if (e.key === 'ArrowRight') docExplorerState.navigatePreviewNext();
     }
@@ -120,9 +110,7 @@
             <i class="fas fa-folder-open mr-2"></i>
             Dokumente Explorer
           </h2>
-          <p class="mt-2 text-(--color-text-secondary)">
-            Dokumente hochladen und verwalten
-          </p>
+          <p class="mt-2 text-(--color-text-secondary)">Dokumente hochladen und verwalten</p>
         </div>
 
         <!-- Toolbar -->
@@ -168,8 +156,7 @@
                 <button
                   type="button"
                   class="action-icon"
-                  class:action-icon--active={docExplorerState.viewMode ===
-                    'list'}
+                  class:action-icon--active={docExplorerState.viewMode === 'list'}
                   aria-label="Listen-Ansicht"
                   title="Listen-Ansicht"
                   onclick={() => {
@@ -181,8 +168,7 @@
                 <button
                   type="button"
                   class="action-icon"
-                  class:action-icon--active={docExplorerState.viewMode ===
-                    'grid'}
+                  class:action-icon--active={docExplorerState.viewMode === 'grid'}
                   aria-label="Grid-Ansicht"
                   title="Grid-Ansicht"
                   onclick={() => {
@@ -206,8 +192,7 @@
                     docExplorerState.toggleSortDropdown();
                   }}
                   onkeydown={(e) => {
-                    if (e.key === 'Enter')
-                      docExplorerState.toggleSortDropdown();
+                    if (e.key === 'Enter') docExplorerState.toggleSortDropdown();
                   }}
                 >
                   <span>{docExplorerState.currentSortLabel}</span>
@@ -358,17 +343,14 @@
               {:else if docExplorerState.error}
                 <div class="flex h-full items-center justify-center">
                   <div class="text-center">
-                    <i
-                      class="fas fa-exclamation-triangle text-error-500 mb-4 text-4xl"
-                    ></i>
+                    <i class="fas fa-exclamation-triangle text-error-500 mb-4 text-4xl"></i>
                     <p class="text-content-secondary mb-4">
                       {docExplorerState.error}
                     </p>
                     <button
                       type="button"
                       class="btn btn-primary"
-                      onclick={() => docExplorerState.loadDocuments()}
-                      >{MESSAGES.BTN_RETRY}</button
+                      onclick={() => docExplorerState.loadDocuments()}>{MESSAGES.BTN_RETRY}</button
                     >
                   </div>
                 </div>
@@ -389,8 +371,7 @@
                     documents={docExplorerState.filteredDocuments}
                     currentUser={docExplorerState.currentUser}
                     showActions={docExplorerState.showActions}
-                    showBackToFolders={docExplorerState.selectedConversationId !==
-                      null}
+                    showBackToFolders={docExplorerState.selectedConversationId !== null}
                     onpreview={docExplorerState.handlePreviewOpen}
                     ondownload={docExplorerState.handleDownloadClick}
                     onedit={docExplorerState.handleEditClick}
@@ -425,9 +406,7 @@
     ondownload={docExplorerState.downloadDocument}
     onprev={docExplorerState.navigatePreviewPrev}
     onnext={docExplorerState.navigatePreviewNext}
-    currentIndex={docExplorerState.previewIndex >= 0 ?
-      docExplorerState.previewIndex
-    : undefined}
+    currentIndex={docExplorerState.previewIndex >= 0 ? docExplorerState.previewIndex : undefined}
     totalCount={docExplorerState.previewTotalCount}
   />
 

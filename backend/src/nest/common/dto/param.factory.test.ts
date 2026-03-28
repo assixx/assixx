@@ -56,15 +56,11 @@ describe('idField', () => {
 
 describe('uuidField', () => {
   it('should accept valid UUID v4', () => {
-    expect(
-      uuidField.safeParse('550e8400-e29b-41d4-a716-446655440000').success,
-    ).toBe(true);
+    expect(uuidField.safeParse('550e8400-e29b-41d4-a716-446655440000').success).toBe(true);
   });
 
   it('should accept valid UUID v7', () => {
-    expect(
-      uuidField.safeParse('019539a0-0000-7000-8000-000000000001').success,
-    ).toBe(true);
+    expect(uuidField.safeParse('019539a0-0000-7000-8000-000000000001').success).toBe(true);
   });
 
   it('should reject invalid UUID', () => {
@@ -157,9 +153,7 @@ describe('createUuidParamSchema()', () => {
 
   it('should reject wrong param name', () => {
     const schema = createUuidParamSchema('fileUuid');
-    expect(
-      schema.safeParse({ id: '019539a0-0000-7000-8000-000000000001' }).success,
-    ).toBe(false);
+    expect(schema.safeParse({ id: '019539a0-0000-7000-8000-000000000001' }).success).toBe(false);
   });
 
   it('should reject invalid UUID value', () => {

@@ -17,6 +17,4 @@ export const QuerySwapRequestsSchema = z.object({
   status: SwapRequestStatusSchema.optional(),
 });
 
-export class QuerySwapRequestsDto extends createZodDto(
-  QuerySwapRequestsSchema,
-) {}
+export class QuerySwapRequestsDto extends createZodDto(QuerySwapRequestsSchema) {}

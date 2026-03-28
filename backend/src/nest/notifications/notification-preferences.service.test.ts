@@ -29,9 +29,7 @@ describe('NotificationPreferencesService', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockDb = createMockDb();
-    service = new NotificationPreferencesService(
-      mockDb as unknown as DatabaseService,
-    );
+    service = new NotificationPreferencesService(mockDb as unknown as DatabaseService);
   });
 
   // =============================================================

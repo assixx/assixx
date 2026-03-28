@@ -7,12 +7,7 @@ import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';
 
 export const UpdateStaffingRuleSchema = z.object({
-  minStaffCount: z
-    .number()
-    .int()
-    .positive('Minimum staff count must be at least 1'),
+  minStaffCount: z.number().int().positive('Minimum staff count must be at least 1'),
 });
 
-export class UpdateStaffingRuleDto extends createZodDto(
-  UpdateStaffingRuleSchema,
-) {}
+export class UpdateStaffingRuleDto extends createZodDto(UpdateStaffingRuleSchema) {}

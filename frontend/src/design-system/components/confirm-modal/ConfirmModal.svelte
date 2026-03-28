@@ -38,6 +38,8 @@
     confirmDisabled?: boolean;
     /** Center-align action buttons with min-width */
     centered?: boolean;
+    /** Wider modal (700px) for forms with textareas */
+    wide?: boolean;
     id?: string;
     onconfirm: () => void;
     oncancel: () => void;
@@ -55,14 +57,11 @@
     submitting = false,
     confirmDisabled = false,
     centered = false,
+    wide = false,
     id = 'confirm-modal',
     onconfirm,
     oncancel,
   }: Props = $props();
-
-  function handleOverlayClick(e: MouseEvent): void {
-    if (e.target === e.currentTarget) oncancel();
-  }
 
   const btnVariantClass = $derived(
     variant === 'danger' ? 'confirm-modal__btn--danger'
@@ -80,17 +79,10 @@
     aria-modal="true"
     aria-labelledby="{id}-title"
     tabindex="-1"
-    onclick={handleOverlayClick}
-    onkeydown={(e) => {
-      if (e.key === 'Escape') oncancel();
-    }}
   >
-    <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
     <div
       class="confirm-modal confirm-modal--{variant}"
-      onclick={(e) => {
-        e.stopPropagation();
-      }}
+      style={wide ? 'width: 100%; max-width: 560px' : ''}
     >
       <div class="confirm-modal__icon">
         <i class="fas {icon}"></i>
@@ -107,11 +99,7 @@
       {#if extra}
         {@render extra()}
       {/if}
-      <div
-        class="confirm-modal__actions{centered ?
-          ' confirm-modal__actions--centered'
-        : ''}"
-      >
+      <div class="confirm-modal__actions{centered ? ' confirm-modal__actions--centered' : ''}">
         <button
           type="button"
           class="confirm-modal__btn confirm-modal__btn--cancel{centered ?
@@ -122,9 +110,7 @@
         >
         <button
           type="button"
-          class="confirm-modal__btn {btnVariantClass}{centered ?
-            ' confirm-modal__btn--wide'
-          : ''}"
+          class="confirm-modal__btn {btnVariantClass}{centered ? ' confirm-modal__btn--wide' : ''}"
           disabled={submitting || confirmDisabled}
           onclick={onconfirm}
         >

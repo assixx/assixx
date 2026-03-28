@@ -18,7 +18,7 @@
     box-shadow 0.2s ease;
 
   /* Border */
-  border: 1px solid var(--color-border);
+  border: var(--glass-border);
   border-radius: var(--glass-card-radius);
   padding: var(--spacing-2);
 
@@ -41,8 +41,7 @@
 /* Focus State */
 .multi-select:focus {
   outline: none;
-  box-shadow: 0 0 0 3px
-    color-mix(in oklch, var(--color-primary) 20%, transparent); /* Primary blue focus ring */
+  box-shadow: 0 0 0 3px color-mix(in oklch, var(--color-primary) 20%, transparent); /* Primary blue focus ring */
 
   border-color: var(--color-primary);
 }
@@ -120,8 +119,7 @@
 
 .multi-select.error:focus,
 .multi-select[aria-invalid='true']:focus {
-  box-shadow: 0 0 0 3px
-    color-mix(in oklch, var(--color-danger) 20%, transparent); /* Danger red focus ring */
+  box-shadow: 0 0 0 3px color-mix(in oklch, var(--color-danger) 20%, transparent); /* Danger red focus ring */
 }
 
 /* Custom Scrollbar for Webkit browsers */

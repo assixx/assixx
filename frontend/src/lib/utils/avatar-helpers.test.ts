@@ -42,9 +42,7 @@ describe('avatar-helpers', () => {
   it('getProfilePictureUrl should normalize paths with leading slash', () => {
     expect(getProfilePictureUrl('uploads/pic.jpg')).toBe('/uploads/pic.jpg');
     expect(getProfilePictureUrl('/uploads/pic.jpg')).toBe('/uploads/pic.jpg');
-    expect(getProfilePictureUrl('https://cdn.test/pic.jpg')).toBe(
-      'https://cdn.test/pic.jpg',
-    );
+    expect(getProfilePictureUrl('https://cdn.test/pic.jpg')).toBe('https://cdn.test/pic.jpg');
     expect(getProfilePictureUrl(null)).toBeNull();
     expect(getProfilePictureUrl('')).toBeNull();
   });

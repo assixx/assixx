@@ -11,11 +11,7 @@
 
   import { FULL_DAY_NAMES, SHIFT_TYPES } from './constants';
   import ShiftScheduleLegend from './ShiftScheduleLegend.svelte';
-  import {
-    formatDate,
-    getEmployeeDisplayName,
-    getShiftTimeInfo,
-  } from './utils';
+  import { formatDate, getEmployeeDisplayName, getShiftTimeInfo } from './utils';
 
   import type { HierarchyLabels } from '$lib/types/hierarchy-labels';
   import type { Employee, ShiftDetailData, ShiftTimesMap } from './types';
@@ -52,11 +48,7 @@
     ondragenter: (event: DragEvent) => void;
     ondragleave: (event: DragEvent) => void;
     ondrop: (event: DragEvent, dateKey: string, shiftType: string) => void;
-    onremoveEmployee: (
-      dateKey: string,
-      shiftType: string,
-      employeeId: number,
-    ) => void;
+    onremoveEmployee: (dateKey: string, shiftType: string, employeeId: number) => void;
     onnotesChange: (notes: string) => void;
   }
 
@@ -83,37 +75,19 @@
   }: Props = $props();
 
   // Day names for data attributes
-  const dayNames = [
-    'monday',
-    'tuesday',
-    'wednesday',
-    'thursday',
-    'friday',
-    'saturday',
-    'sunday',
-  ];
+  const dayNames = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
 
   // Check if cell should be locked
   // Only locked when NOT in edit mode
-  function isCellLocked(
-    dateKey: string,
-    shiftType: string,
-    employeeIds: number[],
-  ): boolean {
+  function isCellLocked(dateKey: string, shiftType: string, employeeIds: number[]): boolean {
     if (isEditMode) return false; // Edit mode always unlocks
     if (currentPlanId !== null) return true;
     // Locked if any employee in this cell has rotation shifts (and not in edit mode)
-    return employeeIds.some((empId) =>
-      hasRotationShift(`${dateKey}_${shiftType}_${empId}`),
-    );
+    return employeeIds.some((empId) => hasRotationShift(`${dateKey}_${shiftType}_${empId}`));
   }
 
   // Check if remove button should be shown for an employee
-  function canRemoveEmployee(
-    dateKey: string,
-    shiftType: string,
-    empId: number,
-  ): boolean {
+  function canRemoveEmployee(dateKey: string, shiftType: string, empId: number): boolean {
     if (!canEditShifts) return false;
     if (isEditMode) return true; // Edit mode allows removing
     if (currentPlanId !== null) return false;
@@ -193,9 +167,7 @@
             {:else}
               {#each employeeIds as empId (empId)}
                 {@const emp = getEmployeeById(empId)}
-                {@const detail = getShiftDetail(
-                  `${dateKey}_${shiftType}_${empId}`,
-                )}
+                {@const detail = getShiftDetail(`${dateKey}_${shiftType}_${empId}`)}
                 <div class="employee-card">
                   <span class="employee-name">
                     {#if emp !== undefined}
@@ -395,8 +367,7 @@ Beispiele:
   }
 
   .shift-cell.drag-over {
-    box-shadow: 0 0 0 2px
-      color-mix(in oklch, var(--color-success) 30%, transparent);
+    box-shadow: 0 0 0 2px color-mix(in oklch, var(--color-success) 30%, transparent);
     border-color: var(--success-color);
     background: color-mix(in oklch, var(--color-success) 20%, transparent);
   }
@@ -529,8 +500,7 @@ Beispiele:
 
   .shift-info-textarea:focus {
     outline: none;
-    box-shadow: 0 0 0 3px
-      color-mix(in oklch, var(--color-primary) 10%, transparent);
+    box-shadow: 0 0 0 3px color-mix(in oklch, var(--color-primary) 10%, transparent);
     border-color: var(--primary-color);
   }
 

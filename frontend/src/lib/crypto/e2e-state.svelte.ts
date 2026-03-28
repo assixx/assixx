@@ -10,10 +10,7 @@ import { getApiClient } from '$lib/utils/api-client';
 import { createLogger } from '$lib/utils/logger';
 
 import { cryptoBridge } from './crypto-bridge';
-import {
-  consumeLoginPassword,
-  clearLoginPassword,
-} from './login-password-bridge';
+import { consumeLoginPassword, clearLoginPassword } from './login-password-bridge';
 
 const log = createLogger('E2eState');
 
@@ -99,8 +96,7 @@ export const e2e = {
         error: null,
       });
     } catch (err: unknown) {
-      const message =
-        err instanceof Error ? err.message : 'E2E initialization failed';
+      const message = err instanceof Error ? err.message : 'E2E initialization failed';
       setE2eState({
         isReady: false,
         publicKey: null,
@@ -260,10 +256,7 @@ async function resolveExistingKey(): Promise<ResolvedKey> {
 async function generateAndRegisterKey(): Promise<ResolvedKey> {
   log.info('No local key found — generating new X25519 key pair');
   const generated = await cryptoBridge.generateKeys();
-  log.info(
-    { fingerprint: generated.fingerprint.substring(0, 16) + '…' },
-    'Key pair generated',
-  );
+  log.info({ fingerprint: generated.fingerprint.substring(0, 16) + '…' }, 'Key pair generated');
 
   log.info('Uploading public key to server…');
   const serverResult = await registerKeyOnServer(generated.publicKey);
@@ -272,9 +265,7 @@ async function generateAndRegisterKey(): Promise<ResolvedKey> {
   // our NEW local private key doesn't match the OLD server public key.
   // Rotate server to match our new local key — otherwise ECDH shared secret diverges.
   if (serverResult.publicKey !== generated.publicKey) {
-    log.warn(
-      'Server has different key (conflict) — rotating to match new local key',
-    );
+    log.warn('Server has different key (conflict) — rotating to match new local key');
     const rotated = await rotateKeyOnServer(generated.publicKey);
     return {
       publicKey: rotated.publicKey,
@@ -341,11 +332,7 @@ async function rotateKeyOnServer(publicKey: string): Promise<ServerKeyData> {
 async function registerKeyOnServer(publicKey: string): Promise<ServerKeyData> {
   const apiClient = getApiClient();
   try {
-    return await apiClient.post<ServerKeyData>(
-      '/e2e/keys',
-      { publicKey },
-      { silent: true },
-    );
+    return await apiClient.post<ServerKeyData>('/e2e/keys', { publicKey }, { silent: true });
   } catch (err: unknown) {
     if (!isConflictError(err)) {
       throw err;
@@ -388,10 +375,7 @@ async function tryRecoverFromEscrow(password: string): Promise<boolean> {
       return false;
     }
 
-    log.info(
-      { blobVersion: escrow.blobVersion },
-      'Escrow blob found — attempting recovery',
-    );
+    log.info({ blobVersion: escrow.blobVersion }, 'Escrow blob found — attempting recovery');
 
     const result = await cryptoBridge.unwrapKey(
       password,
@@ -402,9 +386,7 @@ async function tryRecoverFromEscrow(password: string): Promise<boolean> {
     );
 
     if (result === null) {
-      log.warn(
-        'Escrow unwrap failed — password may have changed since escrow creation',
-      );
+      log.warn('Escrow unwrap failed — password may have changed since escrow creation');
       return false;
     }
 

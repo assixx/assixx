@@ -5,6 +5,7 @@
 import {
   DEFAULT_HIERARCHY_LABELS,
   type HierarchyLabels,
+  type PositionOption,
 } from '$lib/types/hierarchy-labels';
 
 import type { FormIsActiveStatus } from './types';
@@ -23,13 +24,13 @@ export {
 /**
  * Position options for root users
  */
-export const POSITION_OPTIONS = [
-  'CEO',
-  'CTO',
-  'CFO',
-  'Geschäftsführer',
-  'IT-Administrator',
-  'Systemadministrator',
+export const POSITION_OPTIONS: readonly PositionOption[] = [
+  { id: '', name: 'CEO', roleCategory: 'root' },
+  { id: '', name: 'CTO', roleCategory: 'root' },
+  { id: '', name: 'CFO', roleCategory: 'root' },
+  { id: '', name: 'Geschäftsführer', roleCategory: 'root' },
+  { id: '', name: 'IT-Administrator', roleCategory: 'root' },
+  { id: '', name: 'Systemadministrator', roleCategory: 'root' },
 ] as const;
 
 /**
@@ -51,8 +52,7 @@ const BASE_MESSAGES = {
 
   // Empty states
   NO_USERS_FOUND: 'Keine Root-Benutzer gefunden',
-  CREATE_FIRST_USER:
-    'Erstellen Sie Ihren ersten Root-Benutzer für vollständigen Systemzugriff.',
+  CREATE_FIRST_USER: 'Erstellen Sie Ihren ersten Root-Benutzer für vollständigen Systemzugriff.',
 
   // Modal titles
   MODAL_TITLE_ADD: 'Root-Benutzer hinzufügen',
@@ -63,8 +63,7 @@ const BASE_MESSAGES = {
   DELETE_CONFIRM: 'Möchten Sie diesen Root-Benutzer wirklich löschen?',
   DELETE_FINAL_TITLE: 'Endgültig löschen?',
   DELETE_FINAL_WARNING: 'Diese Aktion kann nicht rückgängig gemacht werden!',
-  DELETE_FINAL_MESSAGE:
-    'Der Root-Benutzer wird unwiderruflich aus dem System entfernt.',
+  DELETE_FINAL_MESSAGE: 'Der Root-Benutzer wird unwiderruflich aus dem System entfernt.',
 
   // Search
   SEARCH_PLACEHOLDER: 'Root-Benutzer suchen...',
@@ -83,8 +82,7 @@ const BASE_MESSAGES = {
     'Root-User haben automatisch Zugriff auf alle Abteilungen und Bereiche des Tenants.',
 
   // Profile info
-  PROFILE_INFO:
-    'Ihr eigenes Profil wird hier nicht angezeigt. Bearbeiten Sie es über',
+  PROFILE_INFO: 'Ihr eigenes Profil wird hier nicht angezeigt. Bearbeiten Sie es über',
   PROFILE_LINK_TEXT: 'Mein Profil',
 
   // Validation
@@ -101,7 +99,8 @@ const BASE_MESSAGES = {
   // Table headers - Availability
   TH_AVAILABILITY: 'Verfügbarkeit',
   TH_PLANNED: 'Geplant',
-  TH_NOTES: 'Notizen',
+  TH_ADDITIONAL_INFO: 'Zusätzliche Infos',
+  TH_ABSENCE_NOTES: 'Abwesenheitsnotiz',
 
   // API errors
   ERROR_LOADING: 'Ein Fehler ist aufgetreten',
@@ -142,13 +141,7 @@ export const PASSWORD_STRENGTH_LABELS = [
 /**
  * Password crack time estimates
  */
-export const PASSWORD_CRACK_TIMES = [
-  'sofort',
-  'Minuten',
-  'Stunden',
-  'Tage',
-  'Jahre',
-] as const;
+export const PASSWORD_CRACK_TIMES = ['sofort', 'Minuten', 'Stunden', 'Tage', 'Jahre'] as const;
 
 /**
  * API Endpoints
@@ -169,7 +162,7 @@ export const FORM_DEFAULTS: {
   password: string;
   passwordConfirm: string;
   employeeNumber: string;
-  position: string;
+  positionIds: string[];
   notes: string;
   isActive: FormIsActiveStatus;
 } = {
@@ -180,7 +173,7 @@ export const FORM_DEFAULTS: {
   password: '',
   passwordConfirm: '',
   employeeNumber: '',
-  position: '',
+  positionIds: [],
   notes: '',
   isActive: 1,
 };

@@ -53,9 +53,7 @@ describe('CreateExecutionSchema', () => {
   });
 
   it('should reject invalid cardUuid format', () => {
-    expect(
-      CreateExecutionSchema.safeParse({ cardUuid: 'not-a-uuid' }).success,
-    ).toBe(false);
+    expect(CreateExecutionSchema.safeParse({ cardUuid: 'not-a-uuid' }).success).toBe(false);
   });
 
   // -----------------------------------------------------------
@@ -63,17 +61,15 @@ describe('CreateExecutionSchema', () => {
   // -----------------------------------------------------------
 
   it('should accept valid executionDate', () => {
-    expect(
-      CreateExecutionSchema.safeParse({ ...valid, executionDate: '2026-02-25' })
-        .success,
-    ).toBe(true);
+    expect(CreateExecutionSchema.safeParse({ ...valid, executionDate: '2026-02-25' }).success).toBe(
+      true,
+    );
   });
 
   it('should reject invalid executionDate', () => {
-    expect(
-      CreateExecutionSchema.safeParse({ ...valid, executionDate: '25-02-2026' })
-        .success,
-    ).toBe(false);
+    expect(CreateExecutionSchema.safeParse({ ...valid, executionDate: '25-02-2026' }).success).toBe(
+      false,
+    );
   });
 
   // -----------------------------------------------------------
@@ -100,33 +96,24 @@ describe('CreateExecutionSchema', () => {
   // -----------------------------------------------------------
 
   it('should accept empty participantUuids array', () => {
-    expect(
-      CreateExecutionSchema.safeParse({ ...valid, participantUuids: [] })
-        .success,
-    ).toBe(true);
+    expect(CreateExecutionSchema.safeParse({ ...valid, participantUuids: [] }).success).toBe(true);
   });
 
   it('should accept 10 valid UUIDs (max)', () => {
-    const uuids = Array.from(
-      { length: 10 },
-      (_, i) => `019c9088-c3da-751f-ad4f-06ef7c08634${i}`,
+    const uuids = Array.from({ length: 10 }, (_, i) => `019c9088-c3da-751f-ad4f-06ef7c08634${i}`);
+    expect(CreateExecutionSchema.safeParse({ ...valid, participantUuids: uuids }).success).toBe(
+      true,
     );
-    expect(
-      CreateExecutionSchema.safeParse({ ...valid, participantUuids: uuids })
-        .success,
-    ).toBe(true);
   });
 
   it('should reject 11 UUIDs (over max)', () => {
     const uuids = Array.from(
       { length: 11 },
-      (_, i) =>
-        `019c9088-c3da-751f-ad4f-06ef7c0863${String(i).padStart(2, '0')}`,
+      (_, i) => `019c9088-c3da-751f-ad4f-06ef7c0863${String(i).padStart(2, '0')}`,
     );
-    expect(
-      CreateExecutionSchema.safeParse({ ...valid, participantUuids: uuids })
-        .success,
-    ).toBe(false);
+    expect(CreateExecutionSchema.safeParse({ ...valid, participantUuids: uuids }).success).toBe(
+      false,
+    );
   });
 
   it('should reject invalid UUID in participantUuids array', () => {
@@ -143,38 +130,33 @@ describe('CreateExecutionSchema', () => {
   // -----------------------------------------------------------
 
   it('should accept actualDurationMinutes=1 (minimum)', () => {
-    expect(
-      CreateExecutionSchema.safeParse({ ...valid, actualDurationMinutes: 1 })
-        .success,
-    ).toBe(true);
+    expect(CreateExecutionSchema.safeParse({ ...valid, actualDurationMinutes: 1 }).success).toBe(
+      true,
+    );
   });
 
   it('should accept actualDurationMinutes=1440 (maximum)', () => {
-    expect(
-      CreateExecutionSchema.safeParse({ ...valid, actualDurationMinutes: 1440 })
-        .success,
-    ).toBe(true);
+    expect(CreateExecutionSchema.safeParse({ ...valid, actualDurationMinutes: 1440 }).success).toBe(
+      true,
+    );
   });
 
   it('should reject actualDurationMinutes=0', () => {
-    expect(
-      CreateExecutionSchema.safeParse({ ...valid, actualDurationMinutes: 0 })
-        .success,
-    ).toBe(false);
+    expect(CreateExecutionSchema.safeParse({ ...valid, actualDurationMinutes: 0 }).success).toBe(
+      false,
+    );
   });
 
   it('should reject actualDurationMinutes=1441 (over max)', () => {
-    expect(
-      CreateExecutionSchema.safeParse({ ...valid, actualDurationMinutes: 1441 })
-        .success,
-    ).toBe(false);
+    expect(CreateExecutionSchema.safeParse({ ...valid, actualDurationMinutes: 1441 }).success).toBe(
+      false,
+    );
   });
 
   it('should reject non-integer actualDurationMinutes', () => {
-    expect(
-      CreateExecutionSchema.safeParse({ ...valid, actualDurationMinutes: 30.5 })
-        .success,
-    ).toBe(false);
+    expect(CreateExecutionSchema.safeParse({ ...valid, actualDurationMinutes: 30.5 }).success).toBe(
+      false,
+    );
   });
 
   // -----------------------------------------------------------
@@ -182,31 +164,19 @@ describe('CreateExecutionSchema', () => {
   // -----------------------------------------------------------
 
   it('should accept actualStaffCount=1 (minimum)', () => {
-    expect(
-      CreateExecutionSchema.safeParse({ ...valid, actualStaffCount: 1 })
-        .success,
-    ).toBe(true);
+    expect(CreateExecutionSchema.safeParse({ ...valid, actualStaffCount: 1 }).success).toBe(true);
   });
 
   it('should accept actualStaffCount=50 (maximum)', () => {
-    expect(
-      CreateExecutionSchema.safeParse({ ...valid, actualStaffCount: 50 })
-        .success,
-    ).toBe(true);
+    expect(CreateExecutionSchema.safeParse({ ...valid, actualStaffCount: 50 }).success).toBe(true);
   });
 
   it('should reject actualStaffCount=0', () => {
-    expect(
-      CreateExecutionSchema.safeParse({ ...valid, actualStaffCount: 0 })
-        .success,
-    ).toBe(false);
+    expect(CreateExecutionSchema.safeParse({ ...valid, actualStaffCount: 0 }).success).toBe(false);
   });
 
   it('should reject actualStaffCount=51 (over max)', () => {
-    expect(
-      CreateExecutionSchema.safeParse({ ...valid, actualStaffCount: 51 })
-        .success,
-    ).toBe(false);
+    expect(CreateExecutionSchema.safeParse({ ...valid, actualStaffCount: 51 }).success).toBe(false);
   });
 
   // -----------------------------------------------------------
@@ -240,10 +210,7 @@ describe('CreateExecutionSchema', () => {
   });
 
   it('should accept null documentation', () => {
-    expect(
-      CreateExecutionSchema.safeParse({ ...valid, documentation: null })
-        .success,
-    ).toBe(true);
+    expect(CreateExecutionSchema.safeParse({ ...valid, documentation: null }).success).toBe(true);
   });
 });
 
@@ -297,30 +264,20 @@ describe('CompleteCardSchema', () => {
   // -----------------------------------------------------------
 
   it('should accept 10 participant UUIDs (max)', () => {
-    const uuids = Array.from(
-      { length: 10 },
-      (_, i) => `019c9088-c3da-751f-ad4f-06ef7c08634${i}`,
-    );
-    expect(
-      CompleteCardSchema.safeParse({ participantUuids: uuids }).success,
-    ).toBe(true);
+    const uuids = Array.from({ length: 10 }, (_, i) => `019c9088-c3da-751f-ad4f-06ef7c08634${i}`);
+    expect(CompleteCardSchema.safeParse({ participantUuids: uuids }).success).toBe(true);
   });
 
   it('should reject 11 participant UUIDs (over max)', () => {
     const uuids = Array.from(
       { length: 11 },
-      (_, i) =>
-        `019c9088-c3da-751f-ad4f-06ef7c0863${String(i).padStart(2, '0')}`,
+      (_, i) => `019c9088-c3da-751f-ad4f-06ef7c0863${String(i).padStart(2, '0')}`,
     );
-    expect(
-      CompleteCardSchema.safeParse({ participantUuids: uuids }).success,
-    ).toBe(false);
+    expect(CompleteCardSchema.safeParse({ participantUuids: uuids }).success).toBe(false);
   });
 
   it('should reject invalid UUID in participantUuids', () => {
-    expect(
-      CompleteCardSchema.safeParse({ participantUuids: ['invalid'] }).success,
-    ).toBe(false);
+    expect(CompleteCardSchema.safeParse({ participantUuids: ['invalid'] }).success).toBe(false);
   });
 
   // -----------------------------------------------------------
@@ -328,21 +285,14 @@ describe('CompleteCardSchema', () => {
   // -----------------------------------------------------------
 
   it('should reject actualDurationMinutes=0', () => {
-    expect(
-      CompleteCardSchema.safeParse({ actualDurationMinutes: 0 }).success,
-    ).toBe(false);
+    expect(CompleteCardSchema.safeParse({ actualDurationMinutes: 0 }).success).toBe(false);
   });
 
   it('should reject actualStaffCount=51', () => {
-    expect(CompleteCardSchema.safeParse({ actualStaffCount: 51 }).success).toBe(
-      false,
-    );
+    expect(CompleteCardSchema.safeParse({ actualStaffCount: 51 }).success).toBe(false);
   });
 
   it('should reject documentation over 10000 characters', () => {
-    expect(
-      CompleteCardSchema.safeParse({ documentation: 'X'.repeat(10_001) })
-        .success,
-    ).toBe(false);
+    expect(CompleteCardSchema.safeParse({ documentation: 'X'.repeat(10_001) }).success).toBe(false);
   });
 });

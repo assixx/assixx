@@ -33,14 +33,7 @@ export default {
   },
 };
 
-const createField = ({
-  id,
-  label,
-  required = false,
-  message,
-  control,
-  helperVariant,
-}) => {
+const createField = ({ id, label, required = false, message, control, helperVariant }) => {
   const wrapper = document.createElement('div');
   wrapper.className = 'form-field';
 
@@ -364,8 +357,7 @@ export const PasswordToggle = {
     required: true,
     placeholder: 'Mindestens 8 Zeichen',
     showHelper: true,
-    helperText:
-      'Verwenden Sie eine Kombination aus Buchstaben, Zahlen und Sonderzeichen',
+    helperText: 'Verwenden Sie eine Kombination aus Buchstaben, Zahlen und Sonderzeichen',
   },
   argTypes: {
     label: {

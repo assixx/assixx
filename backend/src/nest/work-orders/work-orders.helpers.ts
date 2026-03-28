@@ -4,11 +4,7 @@
  * Stateless helper functions. No DI, no DB calls, no side effects.
  * Maps DB Row types (snake_case) to API types (camelCase).
  */
-import {
-  buildFullName,
-  toIsoString,
-  toIsoStringOrNull,
-} from '../../utils/db-helpers.js';
+import { buildFullName, toIsoString, toIsoStringOrNull } from '../../utils/db-helpers.js';
 import type {
   CalendarWorkOrder,
   CalendarWorkOrderRow,
@@ -58,9 +54,7 @@ export function mapWorkOrderRowToApi(
 }
 
 /** Map work order DB row to lightweight list item */
-export function mapWorkOrderRowToListItem(
-  row: WorkOrderWithCountsRow,
-): WorkOrderListItem {
+export function mapWorkOrderRowToListItem(row: WorkOrderWithCountsRow): WorkOrderListItem {
   return {
     uuid: row.uuid.trim(),
     title: row.title,
@@ -81,9 +75,7 @@ export function mapWorkOrderRowToListItem(
 }
 
 /** Map assignee DB row (with user name JOIN) to API response */
-export function mapAssigneeRowToApi(
-  row: WorkOrderAssigneeWithNameRow,
-): WorkOrderAssignee {
+export function mapAssigneeRowToApi(row: WorkOrderAssigneeWithNameRow): WorkOrderAssignee {
   return {
     uuid: row.uuid.trim(),
     userId: row.user_id,
@@ -94,9 +86,7 @@ export function mapAssigneeRowToApi(
 }
 
 /** Map comment DB row (with user name JOIN) to API response */
-export function mapCommentRowToApi(
-  row: WorkOrderCommentWithNameRow,
-): WorkOrderComment {
+export function mapCommentRowToApi(row: WorkOrderCommentWithNameRow): WorkOrderComment {
   return {
     id: row.id,
     uuid: row.uuid.trim(),
@@ -115,9 +105,7 @@ export function mapCommentRowToApi(
 }
 
 /** Map photo DB row (with user name JOIN) to API response */
-export function mapPhotoRowToApi(
-  row: WorkOrderPhotoWithNameRow,
-): WorkOrderPhoto {
+export function mapPhotoRowToApi(row: WorkOrderPhotoWithNameRow): WorkOrderPhoto {
   return {
     uuid: row.uuid.trim(),
     uploadedBy: row.uploaded_by,
@@ -160,9 +148,7 @@ export function mapSourcePhotoRowToApi(row: SourcePhotoRow): SourcePhoto {
 }
 
 /** Map lightweight calendar row to API response */
-export function mapCalendarWorkOrderRow(
-  row: CalendarWorkOrderRow,
-): CalendarWorkOrder {
+export function mapCalendarWorkOrderRow(row: CalendarWorkOrderRow): CalendarWorkOrder {
   return {
     uuid: row.uuid.trim(),
     title: row.title,
@@ -174,10 +160,7 @@ export function mapCalendarWorkOrderRow(
 }
 
 /** Validate whether a status transition is allowed */
-export function isValidStatusTransition(
-  from: WorkOrderStatus,
-  to: WorkOrderStatus,
-): boolean {
+export function isValidStatusTransition(from: WorkOrderStatus, to: WorkOrderStatus): boolean {
   const allowed = VALID_STATUS_TRANSITIONS.get(from);
   if (allowed === undefined) return false;
   return allowed.includes(to);

@@ -2,11 +2,7 @@
   import { goto } from '$app/navigation';
   import { resolve } from '$app/paths';
 
-  import {
-    showSuccessAlert,
-    showWarningAlert,
-    showErrorAlert,
-  } from '$lib/stores/toast';
+  import { showSuccessAlert, showWarningAlert, showErrorAlert } from '$lib/stores/toast';
   import { getErrorMessage } from '$lib/utils/error';
   import { createLogger } from '$lib/utils/logger';
   import { broadcastRoleSwitch } from '$lib/utils/role-sync.svelte';
@@ -113,10 +109,7 @@
     },
   };
 
-  function determineEndpoint(
-    targetRole: RoleType,
-    currentActiveRole: RoleType,
-  ): EndpointResult {
+  function determineEndpoint(targetRole: RoleType, currentActiveRole: RoleType): EndpointResult {
     const transitionKey = `${currentActiveRole}->${targetRole}`;
 
     // Special case: employee → admin (needs intermediate step)
@@ -162,10 +155,7 @@
 
       // CRITICAL: Broadcast role switch to other tabs
       // Uses BroadcastChannel + triggers storage event for cross-tab sync
-      broadcastRoleSwitch(
-        result.user.activeRole as 'root' | 'admin' | 'employee',
-        result.token,
-      );
+      broadcastRoleSwitch(result.user.activeRole as 'root' | 'admin' | 'employee', result.token);
     }
     // Clear role switch banner dismissals
     for (const role of ['root', 'admin', 'employee']) {
@@ -187,10 +177,7 @@
     user?: { activeRole?: RoleType };
   }
 
-  async function executeRoleSwitch(
-    endpoint: string,
-    token: string,
-  ): Promise<RoleSwitchResult> {
+  async function executeRoleSwitch(endpoint: string, token: string): Promise<RoleSwitchResult> {
     const response = await fetch(endpoint, {
       method: 'POST',
       headers: {
@@ -225,9 +212,7 @@
   async function handleRoleSelect(targetRole: RoleType): Promise<void> {
     if (targetRole === activeRole) {
       closeDropdown();
-      showWarningAlert(
-        `Sie sind bereits als ${getRoleDisplayName(targetRole)} aktiv!`,
-      );
+      showWarningAlert(`Sie sind bereits als ${getRoleDisplayName(targetRole)} aktiv!`);
       return;
     }
 

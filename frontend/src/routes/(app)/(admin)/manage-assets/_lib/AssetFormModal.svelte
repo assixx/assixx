@@ -73,10 +73,6 @@
     }
   }
 
-  function handleOverlayClick(e: MouseEvent) {
-    if (e.target === e.currentTarget) onclose();
-  }
-
   // Capture-phase click-outside: works inside modals (bypasses stopPropagation)
   $effect(() => {
     return onClickOutsideDropdown(() => {
@@ -93,21 +89,10 @@
     aria-modal="true"
     aria-labelledby="asset-modal-title"
     tabindex="-1"
-    onclick={handleOverlayClick}
-    onkeydown={(e) => {
-      if (e.key === 'Escape') onclose();
-    }}
   >
-    <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
     <form
       id="asset-form"
       class="ds-modal"
-      onclick={(e) => {
-        e.stopPropagation();
-      }}
-      onkeydown={(e) => {
-        e.stopPropagation();
-      }}
       {onsubmit}
     >
       <div class="ds-modal__header">
@@ -178,9 +163,7 @@
             class="form-field__control"
             value={assetState.formManufacturer}
             oninput={(e) => {
-              assetState.setFormManufacturer(
-                (e.target as HTMLInputElement).value,
-              );
+              assetState.setFormManufacturer((e.target as HTMLInputElement).value);
             }}
           />
         </div>
@@ -197,9 +180,7 @@
             class="form-field__control"
             value={assetState.formSerialNumber}
             oninput={(e) => {
-              assetState.setFormSerialNumber(
-                (e.target as HTMLInputElement).value,
-              );
+              assetState.setFormSerialNumber((e.target as HTMLInputElement).value);
             }}
           />
         </div>
@@ -450,9 +431,7 @@
           class="btn btn-primary"
           disabled={assetState.submitting}
         >
-          {#if assetState.submitting}<span
-              class="spinner-ring spinner-ring--sm mr-2"
-            ></span>{/if}
+          {#if assetState.submitting}<span class="spinner-ring spinner-ring--sm mr-2"></span>{/if}
           {messages.BTN_SAVE}
         </button>
       </div>

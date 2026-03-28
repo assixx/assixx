@@ -47,23 +47,13 @@ describe('AuditRequestFilterService', () => {
 
   describe('shouldSkipRequest', () => {
     it('should skip unauthenticated non-auth requests', () => {
-      const result = service.shouldSkipRequest(
-        'GET',
-        '/api/data',
-        false,
-        undefined,
-      );
+      const result = service.shouldSkipRequest('GET', '/api/data', false, undefined);
 
       expect(result).toBe(true);
     });
 
     it('should not skip auth endpoint even without user', () => {
-      const result = service.shouldSkipRequest(
-        'POST',
-        '/api/auth/login',
-        true,
-        undefined,
-      );
+      const result = service.shouldSkipRequest('POST', '/api/auth/login', true, undefined);
 
       expect(result).toBe(false);
     });
@@ -79,12 +69,7 @@ describe('AuditRequestFilterService', () => {
     it('should not skip POST requests', () => {
       const user = { id: 5 } as never;
 
-      const result = service.shouldSkipRequest(
-        'POST',
-        '/api/data',
-        false,
-        user,
-      );
+      const result = service.shouldSkipRequest('POST', '/api/data', false, user);
 
       expect(result).toBe(false);
     });
@@ -140,21 +125,13 @@ describe('AuditRequestFilterService', () => {
     it('should not throttle non-list actions', () => {
       const user = { id: 5 } as never;
 
-      const result = service.shouldThrottleListOrView(
-        'create',
-        user,
-        '/api/data',
-      );
+      const result = service.shouldThrottleListOrView('create', user, '/api/data');
 
       expect(result).toBe(false);
     });
 
     it('should not throttle without user', () => {
-      const result = service.shouldThrottleListOrView(
-        'list',
-        undefined,
-        '/api/data',
-      );
+      const result = service.shouldThrottleListOrView('list', undefined, '/api/data');
 
       expect(result).toBe(false);
     });
@@ -162,18 +139,10 @@ describe('AuditRequestFilterService', () => {
     it('should throttle repeated list actions', () => {
       const user = { id: 5 } as never;
 
-      const first = service.shouldThrottleListOrView(
-        'list',
-        user,
-        '/api/entries',
-      );
+      const first = service.shouldThrottleListOrView('list', user, '/api/entries');
       expect(first).toBe(false);
 
-      const second = service.shouldThrottleListOrView(
-        'list',
-        user,
-        '/api/entries',
-      );
+      const second = service.shouldThrottleListOrView('list', user, '/api/entries');
       expect(second).toBe(true);
     });
 
@@ -181,11 +150,7 @@ describe('AuditRequestFilterService', () => {
       const user = { id: 5 } as never;
 
       service.shouldThrottleListOrView('view', user, '/api/entries?page=1');
-      const result = service.shouldThrottleListOrView(
-        'view',
-        user,
-        '/api/entries?page=2',
-      );
+      const result = service.shouldThrottleListOrView('view', user, '/api/entries?page=2');
 
       expect(result).toBe(true);
     });
@@ -197,11 +162,7 @@ describe('AuditRequestFilterService', () => {
 
       vi.advanceTimersByTime(31_000); // > LIST_ACTION_THROTTLE_MS (30000)
 
-      const result = service.shouldThrottleListOrView(
-        'list',
-        user,
-        '/api/entries',
-      );
+      const result = service.shouldThrottleListOrView('list', user, '/api/entries');
 
       expect(result).toBe(false);
     });
@@ -218,17 +179,13 @@ describe('AuditRequestFilterService', () => {
       // Create an entry
       service.shouldSkipRequest('GET', '/users/me', false, user);
       // Second call within window → throttled
-      expect(service.shouldSkipRequest('GET', '/users/me', false, user)).toBe(
-        true,
-      );
+      expect(service.shouldSkipRequest('GET', '/users/me', false, user)).toBe(true);
 
       // Advance past the cleanup interval (5 min) + 2× throttle window
       vi.advanceTimersByTime(5 * 60 * 1000 + 1);
 
       // After cleanup, the entry should be gone → not throttled
-      expect(service.shouldSkipRequest('GET', '/users/me', false, user)).toBe(
-        false,
-      );
+      expect(service.shouldSkipRequest('GET', '/users/me', false, user)).toBe(false);
     });
   });
 });

@@ -1,18 +1,15 @@
 <script lang="ts">
   import PasswordStrengthIndicator from '$lib/components/PasswordStrengthIndicator.svelte';
+  import UserPositionChips from '$lib/components/UserPositionChips.svelte';
   import {
     isLeadPosition,
     LEAD_POSITION_KEYS,
     type HierarchyLabels,
-    resolvePositionDisplay,
+    type PositionOption,
   } from '$lib/types/hierarchy-labels';
 
   import { POSITION_OPTIONS, type createRootMessages } from './constants';
-  import {
-    getStatusBadgeClass,
-    getStatusLabel,
-    calculatePasswordStrength,
-  } from './utils';
+  import { getStatusBadgeClass, getStatusLabel, calculatePasswordStrength } from './utils';
 
   import type { FormIsActiveStatus } from './types';
 
@@ -29,7 +26,7 @@
     password: string;
     passwordConfirm: string;
     employeeNumber: string;
-    position: string;
+    positionIds: string[];
     notes: string;
     isActive: FormIsActiveStatus;
     emailError: boolean;
@@ -38,14 +35,14 @@
     onclose: () => void;
     onsubmit: (e: Event) => void;
     onValidateEmails: () => void;
-    positionOptions?: string[];
+    positionOptions?: PositionOption[];
     hierarchyLabels: HierarchyLabels;
     onValidatePasswords: () => void;
   }
 
   /* eslint-disable prefer-const, @typescript-eslint/no-useless-default-assignment -- Svelte $bindable() requires let and is not a useless default */
   // prettier-ignore
-  let { messages, show, isEditMode, modalTitle, positionOptions, hierarchyLabels, firstName = $bindable(), lastName = $bindable(), email = $bindable(), emailConfirm = $bindable(), password = $bindable(), passwordConfirm = $bindable(), employeeNumber = $bindable(), position = $bindable(), notes = $bindable(), isActive = $bindable(), emailError = $bindable(), passwordError = $bindable(), submitting, onclose, onsubmit, onValidateEmails, onValidatePasswords }: Props = $props();
+  let { messages, show, isEditMode, modalTitle, positionOptions, hierarchyLabels, firstName = $bindable(), lastName = $bindable(), email = $bindable(), emailConfirm = $bindable(), password = $bindable(), passwordConfirm = $bindable(), employeeNumber = $bindable(), positionIds = $bindable(), notes = $bindable(), isActive = $bindable(), emailError = $bindable(), passwordError = $bindable(), submitting, onclose, onsubmit, onValidateEmails, onValidatePasswords }: Props = $props();
   /* eslint-enable prefer-const, @typescript-eslint/no-useless-default-assignment */
 
   const LEAD_ORDER: string[] = [
@@ -54,22 +51,26 @@
     LEAD_POSITION_KEYS.TEAM,
   ];
 
-  const effectivePositions = $derived.by(() => {
-    const raw =
+  const effectivePositions = $derived.by((): PositionOption[] => {
+    const raw: readonly PositionOption[] =
       positionOptions !== undefined && positionOptions.length > 0 ?
         positionOptions
       : POSITION_OPTIONS;
-    const system = raw
-      .filter((p: string) => isLeadPosition(p))
+    const unique = raw.filter(
+      (p: PositionOption, i: number, arr: readonly PositionOption[]) =>
+        arr.findIndex((x: PositionOption) => x.name === p.name) === i,
+    );
+    const system = unique
+      .filter((p: PositionOption) => isLeadPosition(p.name))
       .sort(
-        (a: string, b: string) => LEAD_ORDER.indexOf(a) - LEAD_ORDER.indexOf(b),
+        (a: PositionOption, b: PositionOption) =>
+          LEAD_ORDER.indexOf(a.name) - LEAD_ORDER.indexOf(b.name),
       );
-    const custom = raw.filter((p: string) => !isLeadPosition(p));
+    const custom = unique.filter((p: PositionOption) => !isLeadPosition(p.name));
     return [...system, ...custom];
   });
 
   // Local dropdown and visibility state
-  let positionDropdownOpen = $state(false);
   let statusDropdownOpen = $state(false);
   let showPassword = $state(false);
   let showPasswordConfirm = $state(false);
@@ -81,36 +82,19 @@
     password !== '' && passwordConfirm !== '' && password === passwordConfirm,
   );
 
-  function handleOverlayClick(e: MouseEvent): void {
-    if (e.target === e.currentTarget) onclose();
-  }
-
-  function selectPosition(pos: string): void {
-    position = pos;
-    positionDropdownOpen = false;
-  }
-
   function selectStatus(status: FormIsActiveStatus): void {
     isActive = status;
     statusDropdownOpen = false;
   }
 
-  function togglePositionDropdown(e: MouseEvent): void {
-    e.stopPropagation();
-    statusDropdownOpen = false;
-    positionDropdownOpen = !positionDropdownOpen;
-  }
-
   function toggleStatusDropdown(e: MouseEvent): void {
     e.stopPropagation();
-    positionDropdownOpen = false;
     statusDropdownOpen = !statusDropdownOpen;
   }
 
   // Reset local UI state when modal opens
   $effect(() => {
     if (show) {
-      positionDropdownOpen = false;
       statusDropdownOpen = false;
       showPassword = false;
       showPasswordConfirm = false;
@@ -119,17 +103,11 @@
 
   // Close dropdowns on outside click
   $effect(() => {
-    if (positionDropdownOpen || statusDropdownOpen) {
+    if (statusDropdownOpen) {
       const handleClick = (e: MouseEvent): void => {
         const target = e.target as HTMLElement;
-        if (positionDropdownOpen) {
-          const el = document.getElementById('position-dropdown');
-          if (el && !el.contains(target)) positionDropdownOpen = false;
-        }
-        if (statusDropdownOpen) {
-          const el = document.getElementById('status-dropdown');
-          if (el && !el.contains(target)) statusDropdownOpen = false;
-        }
+        const el = document.getElementById('status-dropdown');
+        if (el && !el.contains(target)) statusDropdownOpen = false;
       };
       document.addEventListener('click', handleClick, true);
       return () => {
@@ -147,18 +125,10 @@
     aria-modal="true"
     aria-labelledby="root-modal-title"
     tabindex="-1"
-    onclick={handleOverlayClick}
-    onkeydown={(e) => {
-      if (e.key === 'Escape') onclose();
-    }}
   >
-    <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_noninteractive_element_interactions -->
     <form
       id="root-form"
       class="ds-modal"
-      onclick={(e) => {
-        e.stopPropagation();
-      }}
       {onsubmit}
     >
       <div class="ds-modal__header">
@@ -182,8 +152,7 @@
         <div class="form-field">
           <label
             class="form-field__label"
-            for="root-first-name"
-            >Vorname <span class="text-red-500">*</span></label
+            for="root-first-name">Vorname <span class="text-red-500">*</span></label
           >
           <input
             type="text"
@@ -197,8 +166,7 @@
         <div class="form-field">
           <label
             class="form-field__label"
-            for="root-last-name"
-            >Nachname <span class="text-red-500">*</span></label
+            for="root-last-name">Nachname <span class="text-red-500">*</span></label
           >
           <input
             type="text"
@@ -231,8 +199,7 @@
         <div class="form-field">
           <label
             class="form-field__label"
-            for="root-email-confirm"
-            >E-Mail wiederholen <span class="text-red-500">*</span></label
+            for="root-email-confirm">E-Mail wiederholen <span class="text-red-500">*</span></label
           >
           <input
             type="email"
@@ -253,8 +220,7 @@
         <div class="form-field">
           <label
             class="form-field__label"
-            for="root-employee-number"
-            >Personalnummer <span class="text-red-500">*</span></label
+            for="root-employee-number">Personalnummer <span class="text-red-500">*</span></label
           >
           <input
             type="text"
@@ -278,8 +244,7 @@
                 class="tooltip__content tooltip__content--info tooltip__content--right"
                 role="tooltip"
               >
-                Min. 12 Zeichen, max. 72 Zeichen. 3 von 4: Groß, Klein, Zahlen,
-                Sonderzeichen
+                Min. 12 Zeichen, max. 72 Zeichen. 3 von 4: Groß, Klein, Zahlen, Sonderzeichen
               </span>
             </span>
           </label>
@@ -297,9 +262,7 @@
             <button
               type="button"
               class="form-field__password-toggle"
-              aria-label={showPassword ? 'Passwort verbergen' : (
-                'Passwort anzeigen'
-              )}
+              aria-label={showPassword ? 'Passwort verbergen' : 'Passwort anzeigen'}
               onclick={() => (showPassword = !showPassword)}
             >
               <i
@@ -319,9 +282,7 @@
             class="form-field__label"
             for="root-password-confirm"
           >
-            Passwort wiederholen {#if !isEditMode}<span class="text-red-500"
-                >*</span
-              >{/if}
+            Passwort wiederholen {#if !isEditMode}<span class="text-red-500">*</span>{/if}
           </label>
           <div class="form-field__password-wrapper">
             <input
@@ -338,9 +299,7 @@
             <button
               type="button"
               class="form-field__password-toggle"
-              aria-label={showPasswordConfirm ? 'Passwort verbergen' : (
-                'Passwort anzeigen'
-              )}
+              aria-label={showPasswordConfirm ? 'Passwort verbergen' : 'Passwort anzeigen'}
               onclick={() => (showPasswordConfirm = !showPasswordConfirm)}
             >
               <i
@@ -380,48 +339,22 @@
         </div>
 
         <div class="form-field">
-          <label
-            class="form-field__label"
-            for="position-hidden"
-            >Position <span class="text-red-500">*</span></label
-          >
-          <input
-            type="hidden"
-            id="position-hidden"
-            value={position}
+          <UserPositionChips
+            catalog={effectivePositions}
+            bind:selectedIds={positionIds}
+            {hierarchyLabels}
           />
-          <div
-            class="dropdown"
-            id="position-dropdown"
-          >
-            <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
-            <div
-              class="dropdown__trigger"
-              class:active={positionDropdownOpen}
-              onclick={togglePositionDropdown}
-            >
-              <span
-                >{position !== '' ?
-                  resolvePositionDisplay(position, hierarchyLabels)
-                : messages.SELECT_POSITION}</span
-              >
-              <i class="fas fa-chevron-down"></i>
-            </div>
-            <div
-              class="dropdown__menu"
-              class:active={positionDropdownOpen}
-            >
-              {#each effectivePositions as pos (pos)}
-                <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
-                <div
-                  class="dropdown__option"
-                  onclick={() => {
-                    selectPosition(pos);
-                  }}
+          <div class="alert alert--info alert--sm mt-2">
+            <div class="alert__icon"><i class="fas fa-id-badge"></i></div>
+            <div class="alert__content">
+              <div class="alert__title">Position nicht dabei?</div>
+              <div class="alert__message">
+                <a
+                  href="/settings/organigram/positions"
+                  target="_blank">Neue Position anlegen</a
                 >
-                  {resolvePositionDisplay(pos, hierarchyLabels)}
-                </div>
-              {/each}
+                — oder bestehende Positionen bearbeiten.
+              </div>
             </div>
           </div>
         </div>
@@ -429,7 +362,7 @@
         <div class="form-field">
           <label
             class="form-field__label"
-            for="root-notes">Notizen</label
+            for="root-notes">Zusätzliche Infos</label
           >
           <textarea
             id="root-notes"
@@ -443,8 +376,7 @@
           <div class="form-field">
             <label
               class="form-field__label"
-              for="status-hidden"
-              >Status <span class="text-red-500">*</span></label
+              for="status-hidden">Status <span class="text-red-500">*</span></label
             >
             <input
               type="hidden"
@@ -461,8 +393,7 @@
                 class:active={statusDropdownOpen}
                 onclick={toggleStatusDropdown}
               >
-                <span class="badge {getStatusBadgeClass(isActive)}"
-                  >{getStatusLabel(isActive)}</span
+                <span class="badge {getStatusBadgeClass(isActive)}">{getStatusLabel(isActive)}</span
                 >
                 <i class="fas fa-chevron-down"></i>
               </div>
@@ -499,8 +430,7 @@
                 </div>
               </div>
             </div>
-            <span
-              class="form-field__message mt-1 block text-(--color-text-secondary)"
+            <span class="form-field__message mt-1 block text-(--color-text-secondary)"
               >{messages.INACTIVE_HINT}</span
             >
           </div>
@@ -518,8 +448,7 @@
           class="btn btn-primary"
           disabled={submitting}
         >
-          {#if submitting}<span class="spinner-ring spinner-ring--sm mr-2"
-            ></span>{/if}
+          {#if submitting}<span class="spinner-ring spinner-ring--sm mr-2"></span>{/if}
           Speichern
         </button>
       </div>

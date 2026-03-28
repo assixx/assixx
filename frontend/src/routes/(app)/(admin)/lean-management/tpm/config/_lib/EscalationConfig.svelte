@@ -8,10 +8,7 @@
 
   import { showSuccessAlert, showErrorAlert } from '$lib/stores/toast';
 
-  import {
-    updateEscalation as apiUpdateEscalation,
-    logApiError,
-  } from '../../_lib/api';
+  import { updateEscalation as apiUpdateEscalation, logApiError } from '../../_lib/api';
   import { MESSAGES } from '../../_lib/constants';
 
   import type { TpmEscalationConfig } from '../../_lib/types';
@@ -35,9 +32,7 @@
   // DERIVED
   // ===========================================================================
 
-  const isValidHours = $derived(
-    Number.isInteger(hours) && hours >= 1 && hours <= 720,
-  );
+  const isValidHours = $derived(Number.isInteger(hours) && hours >= 1 && hours <= 720);
 
   const hasChanges = $derived(
     hours !== escalation.escalationAfterHours ||
@@ -66,8 +61,7 @@
       await invalidateAll();
     } catch (err: unknown) {
       logApiError('updateEscalation', err);
-      const msg =
-        err instanceof Error ? err.message : MESSAGES.ERROR_ESCALATION_UPDATE;
+      const msg = err instanceof Error ? err.message : MESSAGES.ERROR_ESCALATION_UPDATE;
       showErrorAlert(msg);
     } finally {
       saving = false;
@@ -84,9 +78,7 @@
 
 <div>
   <div class="mb-6">
-    <h3
-      class="flex items-center gap-2 text-base font-semibold text-(--color-text-primary)"
-    >
+    <h3 class="flex items-center gap-2 text-base font-semibold text-(--color-text-primary)">
       <i class="fas fa-exclamation-triangle"></i>
       {MESSAGES.ESCALATION_TITLE}
     </h3>
@@ -135,9 +127,7 @@
           bind:checked={notifyTeam}
         />
         <span class="toggle-switch__slider"></span>
-        <span class="toggle-switch__label"
-          >{MESSAGES.ESCALATION_NOTIFY_TEAM}</span
-        >
+        <span class="toggle-switch__label">{MESSAGES.ESCALATION_NOTIFY_TEAM}</span>
       </label>
     </div>
 
@@ -154,9 +144,7 @@
           bind:checked={notifyDept}
         />
         <span class="toggle-switch__slider"></span>
-        <span class="toggle-switch__label"
-          >{MESSAGES.ESCALATION_NOTIFY_DEPT}</span
-        >
+        <span class="toggle-switch__label">{MESSAGES.ESCALATION_NOTIFY_DEPT}</span>
       </label>
     </div>
 

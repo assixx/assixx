@@ -9,14 +9,7 @@
   import { shouldShowAddFavoriteButton } from './favorites';
 
   import type { HierarchyLabels } from '$lib/types/hierarchy-labels';
-  import type {
-    Area,
-    Department,
-    Asset,
-    Team,
-    ShiftFavorite,
-    SelectedContext,
-  } from './types';
+  import type { Area, Department, Asset, Team, ShiftFavorite, SelectedContext } from './types';
 
   /**
    * Props interface for FilterDropdowns
@@ -89,10 +82,7 @@
   // Helper to get selected name
   function getSelectedAreaName(): string {
     if (selectedContext.areaId === null) return placeholders.AREA;
-    return (
-      areas.find((a) => a.id === selectedContext.areaId)?.name ??
-      placeholders.AREA
-    );
+    return areas.find((a) => a.id === selectedContext.areaId)?.name ?? placeholders.AREA;
   }
 
   function getSelectedDepartmentName(): string {
@@ -105,22 +95,15 @@
   }
 
   function getSelectedTeamName(): string {
-    if (selectedContext.departmentId === null)
-      return placeholders.AWAIT_DEPARTMENT;
+    if (selectedContext.departmentId === null) return placeholders.AWAIT_DEPARTMENT;
     if (selectedContext.teamId === null) return placeholders.TEAM;
-    return (
-      teams.find((t) => t.id === selectedContext.teamId)?.name ??
-      placeholders.TEAM
-    );
+    return teams.find((t) => t.id === selectedContext.teamId)?.name ?? placeholders.TEAM;
   }
 
   function getSelectedAssetName(): string {
     if (selectedContext.teamId === null) return placeholders.AWAIT_TEAM;
     if (selectedContext.assetId === null) return placeholders.MACHINE;
-    return (
-      assets.find((m) => m.id === selectedContext.assetId)?.name ??
-      placeholders.MACHINE
-    );
+    return assets.find((m) => m.id === selectedContext.assetId)?.name ?? placeholders.MACHINE;
   }
 </script>
 
@@ -192,8 +175,7 @@
           if (selectedContext.areaId !== null) ontoggleDepartmentDropdown();
         }}
         onkeydown={(e) => {
-          if (e.key === 'Enter' && selectedContext.areaId !== null)
-            ontoggleDepartmentDropdown();
+          if (e.key === 'Enter' && selectedContext.areaId !== null) ontoggleDepartmentDropdown();
         }}
         role="button"
         tabindex={selectedContext.areaId === null ? -1 : 0}
@@ -245,8 +227,7 @@
           if (selectedContext.departmentId !== null) ontoggleTeamDropdown();
         }}
         onkeydown={(e) => {
-          if (e.key === 'Enter' && selectedContext.departmentId !== null)
-            ontoggleTeamDropdown();
+          if (e.key === 'Enter' && selectedContext.departmentId !== null) ontoggleTeamDropdown();
         }}
         role="button"
         tabindex={selectedContext.departmentId === null ? -1 : 0}
@@ -298,8 +279,7 @@
           if (selectedContext.teamId !== null) ontoggleAssetDropdown();
         }}
         onkeydown={(e) => {
-          if (e.key === 'Enter' && selectedContext.teamId !== null)
-            ontoggleAssetDropdown();
+          if (e.key === 'Enter' && selectedContext.teamId !== null) ontoggleAssetDropdown();
         }}
         role="button"
         tabindex={selectedContext.teamId === null ? -1 : 0}
@@ -520,8 +500,7 @@
   }
 
   .favorite-btn:hover {
-    box-shadow: 0 4px 12px
-      color-mix(in oklch, var(--color-success) 20%, transparent);
+    box-shadow: 0 4px 12px color-mix(in oklch, var(--color-success) 20%, transparent);
     border-color: color-mix(in oklch, var(--color-success) 60%, transparent);
     background: linear-gradient(
       135deg,
@@ -614,8 +593,7 @@
 
   .add-favorite-btn:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 16px
-      color-mix(in oklch, var(--color-success) 30%, transparent);
+    box-shadow: 0 4px 16px color-mix(in oklch, var(--color-success) 30%, transparent);
     border-color: color-mix(in oklch, var(--color-success) 60%, transparent);
     background: linear-gradient(
       135deg,

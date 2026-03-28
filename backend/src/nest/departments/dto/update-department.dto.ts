@@ -17,15 +17,17 @@ export const UpdateDepartmentSchema = z.object({
     .min(2, 'Department name must be at least 2 characters')
     .max(100, 'Department name must not exceed 100 characters')
     .optional(),
-  description: z
-    .string()
-    .trim()
-    .max(500, 'Description must not exceed 500 characters')
-    .nullish(),
+  description: z.string().trim().max(500, 'Description must not exceed 500 characters').nullish(),
   departmentLeadId: z.coerce
     .number()
     .int()
     .positive('Department lead ID must be a positive integer')
+    .nullable()
+    .optional(),
+  departmentDeputyLeadId: z.coerce
+    .number()
+    .int()
+    .positive('Department deputy lead ID must be a positive integer')
     .nullable()
     .optional(),
   areaId: z.coerce

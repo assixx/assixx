@@ -32,11 +32,7 @@ import {
   getMinScheduleDateTime,
 } from './utils.js';
 
-import type {
-  Conversation,
-  ConversationParticipant,
-  Message,
-} from './types.js';
+import type { Conversation, ConversationParticipant, Message } from './types.js';
 
 vi.mock('$lib/utils/sanitize-html', () => ({
   escapeHtml: (text: string | null | undefined): string => {
@@ -70,9 +66,7 @@ function createMockParticipant(
   };
 }
 
-function createMockConversation(
-  overrides: Partial<Conversation> = {},
-): Conversation {
+function createMockConversation(overrides: Partial<Conversation> = {}): Conversation {
   return {
     id: 1,
     uuid: 'conv-uuid-1',
@@ -158,9 +152,7 @@ describe('getFileIcon', () => {
   it('should return word icon for document MIME types', () => {
     expect(getFileIcon('application/msword')).toBe('fa-file-word');
     expect(
-      getFileIcon(
-        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      ),
+      getFileIcon('application/vnd.openxmlformats-officedocument.wordprocessingml.document'),
     ).toBe('fa-file-word');
   });
 
@@ -374,9 +366,7 @@ describe('getConversationDisplayName', () => {
 
   it('should return group label for unnamed groups', () => {
     const conv = createMockConversation({ isGroup: true, name: undefined });
-    expect(getConversationDisplayName(conv, 1)).toBe(
-      MESSAGES.labelGroupConversation,
-    );
+    expect(getConversationDisplayName(conv, 1)).toBe(MESSAGES.labelGroupConversation);
   });
 
   it('should return partner full name for 1:1', () => {
@@ -403,9 +393,7 @@ describe('getConversationDisplayName', () => {
     const conv = createMockConversation({
       participants: [createMockParticipant({ id: 1 })],
     });
-    expect(getConversationDisplayName(conv, 1)).toBe(
-      MESSAGES.labelConversation,
-    );
+    expect(getConversationDisplayName(conv, 1)).toBe(MESSAGES.labelConversation);
   });
 });
 
@@ -620,9 +608,7 @@ describe('getMinScheduleDateTime', () => {
     const result = getMinScheduleDateTime(5 * 60 * 1000); // 5 min
 
     // Compute expected from fake time (toISOString = UTC, toTimeString = local)
-    const expected = new Date(
-      new Date('2026-01-15T12:00:00.000Z').getTime() + 5 * 60 * 1000,
-    );
+    const expected = new Date(new Date('2026-01-15T12:00:00.000Z').getTime() + 5 * 60 * 1000);
     const expectedDate = expected.toISOString().split('T')[0];
     const expectedTime = expected.toTimeString().slice(0, 5);
 

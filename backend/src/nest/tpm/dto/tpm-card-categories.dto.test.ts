@@ -19,12 +19,9 @@ const VALID_UUID = '019c9547-9fc0-771a-b022-3767e233d6f3';
 // =============================================================
 
 describe('TpmCardCategorySchema', () => {
-  it.each(['reinigung', 'wartung', 'inspektion'] as const)(
-    'should accept category=%s',
-    (value) => {
-      expect(TpmCardCategorySchema.safeParse(value).success).toBe(true);
-    },
-  );
+  it.each(['reinigung', 'wartung', 'inspektion'] as const)('should accept category=%s', (value) => {
+    expect(TpmCardCategorySchema.safeParse(value).success).toBe(true);
+  });
 
   it('should reject invalid category', () => {
     expect(TpmCardCategorySchema.safeParse('cleaning').success).toBe(false);
@@ -155,15 +152,11 @@ describe('ListCardsQuerySchema — cardCategory', () => {
   it.each(['reinigung', 'wartung', 'inspektion'] as const)(
     'should accept cardCategory=%s',
     (cardCategory) => {
-      expect(ListCardsQuerySchema.safeParse({ cardCategory }).success).toBe(
-        true,
-      );
+      expect(ListCardsQuerySchema.safeParse({ cardCategory }).success).toBe(true);
     },
   );
 
   it('should reject invalid cardCategory', () => {
-    expect(
-      ListCardsQuerySchema.safeParse({ cardCategory: 'cleaning' }).success,
-    ).toBe(false);
+    expect(ListCardsQuerySchema.safeParse({ cardCategory: 'cleaning' }).success).toBe(false);
   });
 });

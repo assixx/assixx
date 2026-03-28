@@ -20,6 +20,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import bcryptjs from 'bcryptjs';
+import type { PoolClient } from 'pg';
 import { v7 as uuidv7 } from 'uuid';
 
 import { ActivityLoggerService } from '../common/services/activity-logger.service.js';
@@ -28,6 +29,7 @@ import { UserRepository } from '../database/repositories/user.repository.js';
 import { HierarchyPermissionService } from '../hierarchy-permission/hierarchy-permission.service.js';
 import type { OrganizationalScope } from '../hierarchy-permission/organizational-scope.types.js';
 import { ScopeService } from '../hierarchy-permission/scope.service.js';
+import { UserPositionService } from '../organigram/user-position.service.js';
 import type { CreateUserDto } from './dto/create-user.dto.js';
 import type { ListUsersQueryDto } from './dto/list-users-query.dto.js';
 import type { UpdateUserDto } from './dto/update-user.dto.js';
@@ -63,10 +65,7 @@ const ERROR_MESSAGES = {
 } as const;
 
 /** Empty paginated result for scope-denied or no-data cases */
-function emptyPaginatedResult(
-  page: number,
-  limit: number,
-): PaginatedResult<SafeUserResponse> {
+function emptyPaginatedResult(page: number, limit: number): PaginatedResult<SafeUserResponse> {
   return {
     data: [],
     pagination: {
@@ -87,6 +86,7 @@ export class UsersService {
     private readonly availabilityService: UserAvailabilityService,
     private readonly scopeService: ScopeService,
     private readonly hierarchyPermission: HierarchyPermissionService,
+    private readonly userPositionService: UserPositionService,
   ) {}
 
   // ============================================
@@ -104,14 +104,8 @@ export class UsersService {
     this.assertCanListRole(query.role, userRole);
 
     // Build WHERE + scope filter
-    const { whereClause, params, paramIndex } = buildUserListWhereClause(
-      tenantId,
-      query,
-    );
-    const { scopeClause, scopeParams } = await this.buildScopeFilter(
-      tenantId,
-      paramIndex,
-    );
+    const { whereClause, params, paramIndex } = buildUserListWhereClause(tenantId, query);
+    const { scopeClause, scopeParams } = await this.buildScopeFilter(tenantId, paramIndex);
     if (scopeClause === 'DENY') {
       return emptyPaginatedResult(page, limit);
     }
@@ -144,10 +138,7 @@ export class UsersService {
     for (const response of responses) {
       const teams = teamsByUser.get(response.id) ?? [];
       addTeamInfo(response, teams);
-      this.availabilityService.addAvailabilityInfo(
-        response,
-        availabilityByUser.get(response.id),
-      );
+      this.availabilityService.addAvailabilityInfo(response, availabilityByUser.get(response.id));
     }
 
     const scopeInfo = await this.resolveScopeInfo(tenantId);
@@ -164,10 +155,7 @@ export class UsersService {
   }
 
   /** Get user by ID */
-  async getUserById(
-    userId: number,
-    tenantId: number,
-  ): Promise<SafeUserResponse> {
+  async getUserById(userId: number, tenantId: number): Promise<SafeUserResponse> {
     const user = await this.findUserById(userId, tenantId);
     if (user === null) {
       throw new NotFoundException(ERROR_MESSAGES.USER_NOT_FOUND);
@@ -184,10 +172,7 @@ export class UsersService {
     const response = toSafeUserResponse(user);
     addDepartmentInfo(response, departments);
     addTeamInfo(response, teams);
-    this.availabilityService.addAvailabilityInfo(
-      response,
-      availability ?? undefined,
-    );
+    this.availabilityService.addAvailabilityInfo(response, availability ?? undefined);
 
     // Add tenant info if available
     if (tenantInfo !== null) {
@@ -208,23 +193,20 @@ export class UsersService {
       throw new ConflictException('Email already exists');
     }
 
-    const { departmentIds, teamIds, hasFullAccess, ...userData } = dto;
+    const { departmentIds, teamIds, hasFullAccess, positionIds, ...userData } = dto;
     void teamIds;
 
     // SECURITY: Employees MUST NOT have has_full_access=true
-    const safeFullAccess = this.enforceEmployeeNoFullAccess(
-      userData.role,
-      hasFullAccess,
-    );
+    const safeFullAccess = this.enforceEmployeeNoFullAccess(userData.role, hasFullAccess);
 
-    const userId = await this.insertUserRecord(
-      userData,
-      safeFullAccess,
-      tenantId,
-    );
-    if (Array.isArray(departmentIds) && departmentIds.length > 0) {
-      await this.assignUserDepartments(userId, departmentIds, tenantId);
-    }
+    const userId = await this.databaseService.tenantTransaction(async (client: PoolClient) => {
+      const newUserId = await this.insertUserRecord(client, userData, safeFullAccess, tenantId);
+      if (Array.isArray(departmentIds) && departmentIds.length > 0) {
+        await this.assignUserDepartments(client, newUserId, departmentIds, tenantId);
+      }
+      await this.userPositionService.syncPositions(client, newUserId, tenantId, positionIds);
+      return newUserId;
+    });
 
     const response = await this.fetchUserWithDepartments(userId, tenantId);
 
@@ -261,25 +243,22 @@ export class UsersService {
 
   /** Insert user record into database (availability now via user_availability table) */
   private async insertUserRecord(
-    userData: Omit<
-      CreateUserDto,
-      'departmentIds' | 'teamIds' | 'hasFullAccess'
-    >,
+    client: PoolClient,
+    userData: Omit<CreateUserDto, 'departmentIds' | 'teamIds' | 'hasFullAccess' | 'positionIds'>,
     hasFullAccess: boolean | undefined,
     tenantId: number,
   ): Promise<number> {
-    const employeeNumber =
-      userData.employeeNumber ?? `EMP${String(Date.now())}`;
+    const employeeNumber = userData.employeeNumber ?? `EMP${String(Date.now())}`;
     const hashedPassword = await bcryptjs.hash(userData.password, 12);
     const userUuid = uuidv7();
 
     try {
-      const result = await this.databaseService.query<{ id: number }>(
+      const result = await client.query<{ id: number }>(
         `INSERT INTO users (
           tenant_id, email, password, username, first_name, last_name, role,
           position, phone, address, employee_number, date_of_birth,
-          is_active, has_full_access, uuid, uuid_created_at, created_at, updated_at
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, NOW(), NOW(), NOW())
+          is_active, has_full_access, notes, uuid, uuid_created_at, created_at, updated_at
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, NOW(), NOW(), NOW())
         RETURNING id`,
         [
           tenantId,
@@ -296,11 +275,12 @@ export class UsersService {
           userData.dateOfBirth ?? null,
           1,
           hasFullAccess === true ? 1 : 0,
+          userData.notes ?? null,
           userUuid,
         ],
       );
 
-      const userId = result[0]?.id;
+      const userId = result.rows[0]?.id;
       if (userId === undefined) {
         throw new InternalServerErrorException('Failed to create user');
       }
@@ -334,6 +314,13 @@ export class UsersService {
     const scope = await this.scopeService.getScope();
     await this.ensureUserInScope(scope, userId, tenantId);
 
+    // Self-edit block: use /users/me/profile for self-editing (Root exempt)
+    if (userId === actingUserId && actingUserRole !== 'root') {
+      throw new ForbiddenException(
+        'Eigene Daten können nur über die Profilseite bearbeitet werden',
+      );
+    }
+
     // Guard: Role changes require root OR admin with has_full_access
     if (dto.role !== undefined && dto.role !== existingUser.role) {
       await this.assertCanChangeRole(actingUserId, actingUserRole, tenantId);
@@ -341,8 +328,7 @@ export class UsersService {
 
     await this.validateEmailUniqueness(dto.email, existingUser.email, tenantId);
 
-    const { departmentIds, teamIds, hasFullAccess, password, ...updateData } =
-      dto;
+    const { departmentIds, teamIds, hasFullAccess, password, positionIds, ...updateData } = dto;
     void teamIds; // Reserved for future use
 
     // SECURITY: Employees MUST NOT have has_full_access=true (defense-in-depth)
@@ -351,14 +337,13 @@ export class UsersService {
       hasFullAccess ?? existingUser.has_full_access === 1,
     );
 
-    await this.executeUserUpdate(
-      userId,
-      tenantId,
-      updateData,
-      hasFullAccess,
-      password,
-    );
-    await this.updateDepartmentAssignments(userId, tenantId, departmentIds);
+    await this.databaseService.tenantTransaction(async (client: PoolClient) => {
+      await this.executeUserUpdate(client, userId, tenantId, updateData, hasFullAccess, password);
+      await this.updateDepartmentAssignments(client, userId, tenantId, departmentIds);
+      if (positionIds !== undefined) {
+        await this.userPositionService.syncPositions(client, userId, tenantId, positionIds);
+      }
+    });
 
     // Insert into availability history if availability fields were updated
     await this.availabilityService.insertAvailabilityHistoryIfNeeded(
@@ -422,16 +407,14 @@ export class UsersService {
 
   /** Execute user record update with dynamic fields */
   private async executeUserUpdate(
+    client: PoolClient,
     userId: number,
     tenantId: number,
     updateData: Record<string, unknown>,
     hasFullAccess: boolean | undefined,
     password: string | undefined,
   ): Promise<void> {
-    const { updates, params, paramIndex } = buildUpdateFields(
-      updateData,
-      hasFullAccess,
-    );
+    const { updates, params, paramIndex } = buildUpdateFields(updateData, hasFullAccess);
 
     let currentIndex = paramIndex;
     if (password !== undefined && password !== '') {
@@ -445,7 +428,7 @@ export class UsersService {
 
     params.push(userId, tenantId);
     try {
-      await this.databaseService.query(
+      await client.query(
         `UPDATE users SET ${updates.join(', ')} WHERE id = $${currentIndex} AND tenant_id = $${currentIndex + 1}`,
         params,
       );
@@ -463,15 +446,16 @@ export class UsersService {
 
   /** Update department assignments if provided */
   private async updateDepartmentAssignments(
+    client: PoolClient,
     userId: number,
     tenantId: number,
     departmentIds: number[] | undefined,
   ): Promise<void> {
     if (!Array.isArray(departmentIds)) return;
 
-    await this.removeUserDepartments(userId, tenantId);
+    await this.removeUserDepartments(client, userId, tenantId);
     if (departmentIds.length > 0) {
-      await this.assignUserDepartments(userId, departmentIds, tenantId);
+      await this.assignUserDepartments(client, userId, departmentIds, tenantId);
     }
   }
 
@@ -536,10 +520,7 @@ export class UsersService {
   }
 
   /** Archive user (is_active = 3) */
-  async archiveUser(
-    userId: number,
-    tenantId: number,
-  ): Promise<{ message: string }> {
+  async archiveUser(userId: number, tenantId: number): Promise<{ message: string }> {
     const user = await this.findUserById(userId, tenantId);
     if (user === null) {
       throw new NotFoundException(ERROR_MESSAGES.USER_NOT_FOUND);
@@ -554,10 +535,7 @@ export class UsersService {
   }
 
   /** Unarchive user (is_active = 1) */
-  async unarchiveUser(
-    userId: number,
-    tenantId: number,
-  ): Promise<{ message: string }> {
+  async unarchiveUser(userId: number, tenantId: number): Promise<{ message: string }> {
     const user = await this.findUserById(userId, tenantId);
     if (user === null) {
       throw new NotFoundException(ERROR_MESSAGES.USER_NOT_FOUND);
@@ -618,10 +596,7 @@ export class UsersService {
    * Find user by ID.
    * SECURITY: Only returns ACTIVE users (is_active = 1).
    */
-  private async findUserById(
-    userId: number,
-    tenantId: number,
-  ): Promise<UserRow | null> {
+  private async findUserById(userId: number, tenantId: number): Promise<UserRow | null> {
     const rows = await this.databaseService.query<UserRow>(
       `SELECT id, uuid, tenant_id, email, role, username, first_name, last_name,
               is_active, last_login, created_at, updated_at,
@@ -640,10 +615,7 @@ export class UsersService {
    * Find user by email.
    * SECURITY: Only returns ACTIVE users (is_active = 1).
    */
-  private async findUserByEmail(
-    email: string,
-    tenantId: number,
-  ): Promise<UserRow | null> {
+  private async findUserByEmail(email: string, tenantId: number): Promise<UserRow | null> {
     const rows = await this.databaseService.query<UserRow>(
       `SELECT id, tenant_id, email FROM users WHERE email = $1 AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}`,
       [email.toLowerCase(), tenantId],
@@ -653,10 +625,7 @@ export class UsersService {
   }
 
   /** Get user department assignments */
-  private async getUserDepartments(
-    userId: number,
-    tenantId: number,
-  ): Promise<UserDepartmentRow[]> {
+  private async getUserDepartments(userId: number, tenantId: number): Promise<UserDepartmentRow[]> {
     return await this.databaseService.query<UserDepartmentRow>(
       `SELECT ud.user_id, ud.department_id, d.name as department_name, ud.is_primary
        FROM user_departments ud
@@ -667,10 +636,7 @@ export class UsersService {
   }
 
   /** Get user team assignments (includes department and area info from team chain) */
-  private async getUserTeams(
-    userId: number,
-    tenantId: number,
-  ): Promise<UserTeamRow[]> {
+  private async getUserTeams(userId: number, tenantId: number): Promise<UserTeamRow[]> {
     return await this.databaseService.query<UserTeamRow>(
       `SELECT
          ut.user_id,
@@ -710,7 +676,7 @@ export class UsersService {
       `SELECT id, uuid, tenant_id, email, role, username, first_name, last_name,
               is_active, last_login, created_at, updated_at,
               phone, address, position, employee_number, profile_picture,
-              emergency_contact, date_of_birth, has_full_access
+              emergency_contact, date_of_birth, has_full_access, notes
        FROM users
        WHERE ${whereClause}
        ORDER BY ${sortBy} ${sortOrder}
@@ -722,24 +688,14 @@ export class UsersService {
   }
 
   /** Only root can list admins/root users */
-  private assertCanListRole(
-    queryRole: string | undefined,
-    userRole: string,
-  ): void {
-    if (
-      (queryRole === 'admin' || queryRole === 'root') &&
-      userRole !== 'root'
-    ) {
-      throw new ForbiddenException(
-        'Only root users can list admins/root users',
-      );
+  private assertCanListRole(queryRole: string | undefined, userRole: string): void {
+    if ((queryRole === 'admin' || queryRole === 'root') && userRole !== 'root') {
+      throw new ForbiddenException('Only root users can list admins/root users');
     }
   }
 
   /** Resolve scope metadata for response (area/department names). Returns undefined for full scope. */
-  private async resolveScopeInfo(
-    tenantId: number,
-  ): Promise<ScopedPaginatedResult<never>['scope']> {
+  private async resolveScopeInfo(tenantId: number): Promise<ScopedPaginatedResult<never>['scope']> {
     const scope = await this.scopeService.getScope(); // CLS-cached, no DB hit
     if (scope.type !== 'limited') return undefined;
 
@@ -768,10 +724,7 @@ export class UsersService {
     tenantId: number,
   ): Promise<void> {
     if (scope.type === 'full') return;
-    const visibleIds = await this.hierarchyPermission.getVisibleUserIds(
-      scope,
-      tenantId,
-    );
+    const visibleIds = await this.hierarchyPermission.getVisibleUserIds(scope, tenantId);
     if (visibleIds === 'all') return;
     if (!visibleIds.includes(targetUserId)) {
       throw new ForbiddenException('User is not in your organizational scope');
@@ -787,13 +740,9 @@ export class UsersService {
     if (scope.type === 'full') return { scopeClause: '', scopeParams: [] };
     if (scope.type === 'none') return { scopeClause: 'DENY', scopeParams: [] };
 
-    const visibleIds = await this.hierarchyPermission.getVisibleUserIds(
-      scope,
-      tenantId,
-    );
+    const visibleIds = await this.hierarchyPermission.getVisibleUserIds(scope, tenantId);
     if (visibleIds === 'all') return { scopeClause: '', scopeParams: [] };
-    if (visibleIds.length === 0)
-      return { scopeClause: 'DENY', scopeParams: [] };
+    if (visibleIds.length === 0) return { scopeClause: 'DENY', scopeParams: [] };
 
     return {
       scopeClause: ` AND id = ANY($${paramIndex}::int[])`,
@@ -812,9 +761,7 @@ export class UsersService {
 
     // Build parameterized query for user IDs
     // INHERITANCE-FIX: JOIN departments and areas for inheritance chain
-    const placeholders = userIds
-      .map((_: number, i: number) => `$${i + 2}`)
-      .join(', ');
+    const placeholders = userIds.map((_: number, i: number) => `$${i + 2}`).join(', ');
     const rows = await this.databaseService.query<UserTeamRow>(
       `SELECT
          ut.user_id,
@@ -863,6 +810,7 @@ export class UsersService {
 
   /** Assign user to departments */
   private async assignUserDepartments(
+    client: PoolClient,
     userId: number,
     departmentIds: number[],
     tenantId: number,
@@ -870,7 +818,7 @@ export class UsersService {
     const primaryDeptId = departmentIds[0];
     for (const deptId of departmentIds) {
       const isPrimary = deptId === primaryDeptId;
-      await this.databaseService.query(
+      await client.query(
         `INSERT INTO user_departments (user_id, department_id, tenant_id, is_primary)
          VALUES ($1, $2, $3, $4)
          ON CONFLICT (user_id, department_id) DO UPDATE SET is_primary = $4`,
@@ -881,13 +829,14 @@ export class UsersService {
 
   /** Remove all user department assignments */
   private async removeUserDepartments(
+    client: PoolClient,
     userId: number,
     tenantId: number,
   ): Promise<void> {
-    await this.databaseService.query(
-      `DELETE FROM user_departments WHERE user_id = $1 AND tenant_id = $2`,
-      [userId, tenantId],
-    );
+    await client.query(`DELETE FROM user_departments WHERE user_id = $1 AND tenant_id = $2`, [
+      userId,
+      tenantId,
+    ]);
   }
 
   // ============================================
@@ -899,10 +848,7 @@ export class UsersService {
    * SECURITY: Only resolves ACTIVE users (is_active = 1)
    * @throws NotFoundException if user not found or deleted
    */
-  private async resolveUserIdByUuid(
-    uuid: string,
-    tenantId: number,
-  ): Promise<number> {
+  private async resolveUserIdByUuid(uuid: string, tenantId: number): Promise<number> {
     const userId = await this.userRepository.resolveUuidToId(uuid, tenantId);
     if (userId === null) {
       throw new NotFoundException(ERROR_MESSAGES.USER_NOT_FOUND);
@@ -911,10 +857,7 @@ export class UsersService {
   }
 
   /** Get user by UUID (wrapper for UUID-based API) */
-  async getUserByUuid(
-    uuid: string,
-    tenantId: number,
-  ): Promise<SafeUserResponse> {
+  async getUserByUuid(uuid: string, tenantId: number): Promise<SafeUserResponse> {
     const userId = await this.resolveUserIdByUuid(uuid, tenantId);
     // Scope check: target user must be in acting user's scope
     const scope = await this.scopeService.getScope();
@@ -931,13 +874,7 @@ export class UsersService {
     tenantId: number,
   ): Promise<SafeUserResponse> {
     const userId = await this.resolveUserIdByUuid(uuid, tenantId);
-    return await this.updateUser(
-      userId,
-      dto,
-      actingUserId,
-      actingUserRole,
-      tenantId,
-    );
+    return await this.updateUser(userId, dto, actingUserId, actingUserRole, tenantId);
   }
 
   /** Delete user by UUID (wrapper for UUID-based API) */
@@ -951,19 +888,13 @@ export class UsersService {
   }
 
   /** Archive user by UUID (wrapper for UUID-based API) */
-  async archiveUserByUuid(
-    uuid: string,
-    tenantId: number,
-  ): Promise<{ message: string }> {
+  async archiveUserByUuid(uuid: string, tenantId: number): Promise<{ message: string }> {
     const userId = await this.resolveUserIdByUuid(uuid, tenantId);
     return await this.archiveUser(userId, tenantId);
   }
 
   /** Unarchive user by UUID (wrapper for UUID-based API) */
-  async unarchiveUserByUuid(
-    uuid: string,
-    tenantId: number,
-  ): Promise<{ message: string }> {
+  async unarchiveUserByUuid(uuid: string, tenantId: number): Promise<{ message: string }> {
     const userId = await this.resolveUserIdByUuid(uuid, tenantId);
     return await this.unarchiveUser(userId, tenantId);
   }

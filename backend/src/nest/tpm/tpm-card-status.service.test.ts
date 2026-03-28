@@ -100,9 +100,9 @@ describe('TpmCardStatusService', () => {
         rows: [createCardRow({ status: 'red' })],
       });
 
-      await expect(
-        service.setCardDue(mockClient, 10, 1, new Date('2026-03-01')),
-      ).rejects.toThrow(BadRequestException);
+      await expect(service.setCardDue(mockClient, 10, 1, new Date('2026-03-01'))).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('should allow yellow → red transition (valid per state asset)', async () => {
@@ -121,17 +121,17 @@ describe('TpmCardStatusService', () => {
         rows: [createCardRow({ status: 'overdue' })],
       });
 
-      await expect(
-        service.setCardDue(mockClient, 10, 1, new Date('2026-03-01')),
-      ).rejects.toThrow(BadRequestException);
+      await expect(service.setCardDue(mockClient, 10, 1, new Date('2026-03-01'))).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('should throw NotFoundException when card not found', async () => {
       mockClient.query.mockResolvedValueOnce({ rows: [] });
 
-      await expect(
-        service.setCardDue(mockClient, 10, 999, new Date('2026-03-01')),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.setCardDue(mockClient, 10, 999, new Date('2026-03-01'))).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('should use FOR UPDATE lock', async () => {
@@ -214,9 +214,9 @@ describe('TpmCardStatusService', () => {
         rows: [createCardRow({ status: 'green' })],
       });
 
-      await expect(
-        service.markCardCompleted(mockClient, 10, 1, 7),
-      ).rejects.toThrow(BadRequestException);
+      await expect(service.markCardCompleted(mockClient, 10, 1, 7)).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('should throw BadRequestException for yellow → complete', async () => {
@@ -224,9 +224,9 @@ describe('TpmCardStatusService', () => {
         rows: [createCardRow({ status: 'yellow' })],
       });
 
-      await expect(
-        service.markCardCompleted(mockClient, 10, 1, 7),
-      ).rejects.toThrow(BadRequestException);
+      await expect(service.markCardCompleted(mockClient, 10, 1, 7)).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('should set userId in last_completed_by for Flow A', async () => {
@@ -264,9 +264,7 @@ describe('TpmCardStatusService', () => {
         rows: [createCardRow({ status: 'green' })],
       });
 
-      await expect(service.markCardOverdue(mockClient, 10, 1)).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(service.markCardOverdue(mockClient, 10, 1)).rejects.toThrow(BadRequestException);
     });
 
     it('should throw BadRequestException for yellow → overdue', async () => {
@@ -274,9 +272,7 @@ describe('TpmCardStatusService', () => {
         rows: [createCardRow({ status: 'yellow' })],
       });
 
-      await expect(service.markCardOverdue(mockClient, 10, 1)).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(service.markCardOverdue(mockClient, 10, 1)).rejects.toThrow(BadRequestException);
     });
   });
 
@@ -307,17 +303,13 @@ describe('TpmCardStatusService', () => {
         rows: [createCardRow({ status: 'green' })],
       });
 
-      await expect(service.approveCard(mockClient, 10, 1, 7)).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(service.approveCard(mockClient, 10, 1, 7)).rejects.toThrow(BadRequestException);
     });
 
     it('should throw NotFoundException when card not found during approve', async () => {
       mockClient.query.mockResolvedValueOnce({ rows: [] });
 
-      await expect(service.approveCard(mockClient, 10, 999, 7)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.approveCard(mockClient, 10, 999, 7)).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -343,17 +335,13 @@ describe('TpmCardStatusService', () => {
         rows: [createCardRow({ status: 'overdue' })],
       });
 
-      await expect(service.rejectCard(mockClient, 10, 1)).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(service.rejectCard(mockClient, 10, 1)).rejects.toThrow(BadRequestException);
     });
 
     it('should throw NotFoundException when card not found during reject', async () => {
       mockClient.query.mockResolvedValueOnce({ rows: [] });
 
-      await expect(service.rejectCard(mockClient, 10, 999)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.rejectCard(mockClient, 10, 999)).rejects.toThrow(NotFoundException);
     });
   });
 });

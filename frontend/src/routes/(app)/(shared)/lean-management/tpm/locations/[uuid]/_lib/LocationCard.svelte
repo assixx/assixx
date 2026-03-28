@@ -41,9 +41,7 @@
   <div class="card__body">
     <!-- Header row: position badge + title + actions -->
     <div class="loc-card__header">
-      <span
-        class="badge--count badge--count-xl badge--count-soft loc-card__position"
-      >
+      <span class="badge--count badge--count-xl badge--count-soft loc-card__position">
         {location.positionNumber}
       </span>
       <div class="loc-card__info">
@@ -122,9 +120,7 @@
         >
           <i class="fas fa-camera"></i>
           <span>{MESSAGES.LOCATIONS_PHOTO_UPLOAD}</span>
-          <span class="loc-card__upload-hint"
-            >{MESSAGES.LOCATIONS_PHOTO_HINT}</span
-          >
+          <span class="loc-card__upload-hint">{MESSAGES.LOCATIONS_PHOTO_HINT}</span>
         </button>
       {/if}
     </div>

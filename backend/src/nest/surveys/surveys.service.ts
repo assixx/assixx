@@ -31,10 +31,7 @@ import { SurveyAccessService } from './survey-access.service.js';
 import { SurveyQuestionsService } from './survey-questions.service.js';
 import { SurveyResponsesService } from './survey-responses.service.js';
 import { SurveyStatisticsService } from './survey-statistics.service.js';
-import {
-  transformSurveyToApi,
-  transformSurveyWithMetadata,
-} from './surveys.helpers.js';
+import { transformSurveyToApi, transformSurveyWithMetadata } from './surveys.helpers.js';
 import type {
   DbSurvey,
   DbSurveyTemplate,
@@ -78,12 +75,11 @@ export class SurveysService {
     const limit = query.limit ?? 20;
     const offset = (page - 1) * limit;
 
-    const hasUnrestrictedAccess =
-      await this.accessService.checkUnrestrictedAccess(
-        userId,
-        tenantId,
-        userRole,
-      );
+    const hasUnrestrictedAccess = await this.accessService.checkUnrestrictedAccess(
+      userId,
+      tenantId,
+      userRole,
+    );
 
     const surveys = await this.accessService.fetchSurveysByAccessLevel(
       tenantId,
@@ -100,11 +96,7 @@ export class SurveysService {
     const manageableIds =
       hasUnrestrictedAccess || query.manage === true ?
         new Set(surveyIds)
-      : await this.accessService.getManageableSurveyIds(
-          surveyIds,
-          tenantId,
-          userId,
-        );
+      : await this.accessService.getManageableSurveyIds(surveyIds, tenantId, userId);
 
     return surveys.map((s: DbSurvey) => ({
       ...transformSurveyWithMetadata(s),
@@ -131,19 +123,9 @@ export class SurveysService {
       throw new NotFoundException(MSG_SURVEY_NOT_FOUND);
     }
     if (manage === true) {
-      await this.accessService.checkSurveyManagementAccess(
-        survey.id,
-        tenantId,
-        userId,
-        userRole,
-      );
+      await this.accessService.checkSurveyManagementAccess(survey.id, tenantId, userId, userRole);
     } else {
-      await this.accessService.checkSurveyAccess(
-        survey.id,
-        tenantId,
-        userId,
-        userRole,
-      );
+      await this.accessService.checkSurveyAccess(survey.id, tenantId, userId, userRole);
     }
     return transformSurveyToApi(survey as unknown as Record<string, unknown>);
   }
@@ -171,26 +153,13 @@ export class SurveysService {
     const surveyId = await this.insertSurveyRecord(dto, tenantId, userId);
 
     if (dto.questions !== undefined && dto.questions.length > 0) {
-      await this.questionsService.insertSurveyQuestions(
-        tenantId,
-        surveyId,
-        dto.questions,
-      );
+      await this.questionsService.insertSurveyQuestions(tenantId, surveyId, dto.questions);
     }
     if (dto.assignments !== undefined && dto.assignments.length > 0) {
-      await this.questionsService.insertSurveyAssignments(
-        tenantId,
-        surveyId,
-        dto.assignments,
-      );
+      await this.questionsService.insertSurveyAssignments(tenantId, surveyId, dto.assignments);
     }
 
-    const createdSurvey = await this.getSurveyById(
-      surveyId,
-      tenantId,
-      userId,
-      'admin',
-    );
+    const createdSurvey = await this.getSurveyById(surveyId, tenantId, userId, 'admin');
 
     await this.emitSurveyCreatedNotifications(dto, surveyId, tenantId, userId);
 
@@ -208,19 +177,12 @@ export class SurveysService {
     _userAgent?: string,
   ): Promise<unknown> {
     this.logger.log(`Updating survey ${id}`);
-    await this.accessService.checkSurveyManagementAccess(
-      id,
-      tenantId,
-      userId,
-      userRole,
-    );
+    await this.accessService.checkSurveyManagementAccess(id, tenantId, userId, userRole);
 
-    const existingSurvey = (await this.getSurveyById(
-      id,
-      tenantId,
-      userId,
-      userRole,
-    )) as Record<string, unknown>;
+    const existingSurvey = (await this.getSurveyById(id, tenantId, userId, userRole)) as Record<
+      string,
+      unknown
+    >;
 
     const responseCount = existingSurvey['responseCount'];
     this.validateSurveyUpdate(
@@ -232,19 +194,8 @@ export class SurveysService {
     await this.updateSurveyRecord(id, dto, tenantId);
     await this.updateSurveyRelations(id, dto, tenantId, userId, userRole);
 
-    const updatedSurvey = await this.getSurveyById(
-      id,
-      tenantId,
-      userId,
-      userRole,
-    );
-    await this.emitSurveyUpdatedNotifications(
-      id,
-      dto,
-      existingSurvey,
-      tenantId,
-      userId,
-    );
+    const updatedSurvey = await this.getSurveyById(id, tenantId, userId, userRole);
+    await this.emitSurveyUpdatedNotifications(id, dto, existingSurvey, tenantId, userId);
 
     return updatedSurvey;
   }
@@ -259,29 +210,17 @@ export class SurveysService {
     _userAgent?: string,
   ): Promise<{ message: string }> {
     this.logger.log(`Deleting survey ${id}`);
-    await this.accessService.checkSurveyManagementAccess(
-      id,
-      tenantId,
-      userId,
-      userRole,
-    );
-    const existingSurvey = (await this.getSurveyById(
-      id,
-      tenantId,
-      userId,
-      userRole,
-    )) as Record<string, unknown>;
+    await this.accessService.checkSurveyManagementAccess(id, tenantId, userId, userRole);
+    const existingSurvey = (await this.getSurveyById(id, tenantId, userId, userRole)) as Record<
+      string,
+      unknown
+    >;
     const rawCount = existingSurvey['responseCount'];
     const responseCount = typeof rawCount === 'number' ? rawCount : 0;
     if (responseCount > 0) {
-      throw new ConflictException(
-        'Cannot delete survey with existing responses',
-      );
+      throw new ConflictException('Cannot delete survey with existing responses');
     }
-    await this.db.query(
-      'DELETE FROM surveys WHERE id = $1 AND tenant_id = $2',
-      [id, tenantId],
-    );
+    await this.db.query('DELETE FROM surveys WHERE id = $1 AND tenant_id = $2', [id, tenantId]);
 
     await this.activityLogger.logDelete(
       tenantId,
@@ -344,14 +283,7 @@ export class SurveysService {
     if (templateData.questions !== undefined) {
       dto.questions = templateData.questions as CreateSurveyDto['questions'];
     }
-    return await this.createSurvey(
-      dto,
-      tenantId,
-      userId,
-      userRole,
-      ipAddress,
-      userAgent,
-    );
+    return await this.createSurvey(dto, tenantId, userId, userRole, ipAddress, userAgent);
   }
 
   /** Gets survey statistics (facade: resolve + access check + delegate) */
@@ -361,21 +293,11 @@ export class SurveysService {
     userId: number,
     userRole: string,
   ): Promise<SurveyStatisticsResponse> {
-    this.logger.debug(
-      `Getting statistics for survey ${String(surveyIdOrUuid)}`,
-    );
+    this.logger.debug(`Getting statistics for survey ${String(surveyIdOrUuid)}`);
 
-    const { survey, surveyId } = await this.resolveSurveyOrThrow(
-      surveyIdOrUuid,
-      tenantId,
-    );
+    const { survey, surveyId } = await this.resolveSurveyOrThrow(surveyIdOrUuid, tenantId);
 
-    await this.accessService.checkSurveyManagementAccess(
-      surveyId,
-      tenantId,
-      userId,
-      userRole,
-    );
+    await this.accessService.checkSurveyManagementAccess(surveyId, tenantId, userId, userRole);
 
     return await this.statisticsService.computeStatistics(
       surveyId,
@@ -391,12 +313,7 @@ export class SurveysService {
     tenantId: number,
     answers: SurveyAnswer[],
   ): Promise<number> {
-    return await this.responsesService.submitResponse(
-      surveyId,
-      userId,
-      tenantId,
-      answers,
-    );
+    return await this.responsesService.submitResponse(surveyId, userId, tenantId, answers);
   }
 
   /** Gets all responses for a survey (admin only) */
@@ -407,17 +324,8 @@ export class SurveysService {
     userId: number,
     options: { page: number; limit: number },
   ): Promise<PaginatedResponsesResult> {
-    await this.accessService.checkSurveyManagementAccess(
-      surveyId,
-      tenantId,
-      userId,
-      userRole,
-    );
-    return await this.responsesService.getAllResponses(
-      surveyId,
-      tenantId,
-      options,
-    );
+    await this.accessService.checkSurveyManagementAccess(surveyId, tenantId, userId, userRole);
+    return await this.responsesService.getAllResponses(surveyId, tenantId, options);
   }
 
   /** Gets user's own response to a survey */
@@ -426,11 +334,7 @@ export class SurveysService {
     userId: number,
     tenantId: number,
   ): Promise<SurveyResponse | null> {
-    return await this.responsesService.getMyResponse(
-      surveyId,
-      userId,
-      tenantId,
-    );
+    return await this.responsesService.getMyResponse(surveyId, userId, tenantId);
   }
 
   /** Gets a specific response by ID */
@@ -475,48 +379,30 @@ export class SurveysService {
     userId: number,
     format: 'csv' | 'excel',
   ): Promise<Buffer> {
-    await this.accessService.checkSurveyManagementAccess(
-      surveyId,
-      tenantId,
-      userId,
-      userRole,
-    );
-    return await this.responsesService.exportResponses(
-      surveyId,
-      tenantId,
-      format,
-    );
+    await this.accessService.checkSurveyManagementAccess(surveyId, tenantId, userId, userRole);
+    return await this.responsesService.exportResponses(surveyId, tenantId, format);
   }
 
   /** Gets count of pending surveys for notification badge */
-  async getPendingSurveyCount(
-    userId: number,
-    tenantId: number,
-  ): Promise<{ count: number }> {
+  async getPendingSurveyCount(userId: number, tenantId: number): Promise<{ count: number }> {
     return await this.accessService.getPendingSurveyCount(userId, tenantId);
   }
 
   /** Parses a string ID param as numeric or UUID */
   parseIdParam(id: string): number | string {
-    const uuidPattern =
-      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     if (uuidPattern.test(id)) {
       return id;
     }
     const numericId = Number.parseInt(id, 10);
     if (Number.isNaN(numericId) || numericId <= 0) {
-      throw new BadRequestException(
-        'ID must be a positive integer or valid UUID',
-      );
+      throw new BadRequestException('ID must be a positive integer or valid UUID');
     }
     return numericId;
   }
 
   /** Resolves a UUID or numeric ID to a numeric survey ID */
-  async resolveToNumericId(
-    idOrUuid: number | string,
-    tenantId: number,
-  ): Promise<number> {
+  async resolveToNumericId(idOrUuid: number | string, tenantId: number): Promise<number> {
     if (typeof idOrUuid === 'number') {
       return idOrUuid;
     }
@@ -528,10 +414,7 @@ export class SurveysService {
   }
 
   /** Loads a survey by numeric ID with questions and assignments */
-  private async getSurveyByNumericId(
-    surveyId: number,
-    tenantId: number,
-  ): Promise<DbSurvey | null> {
+  private async getSurveyByNumericId(surveyId: number, tenantId: number): Promise<DbSurvey | null> {
     const surveyRows = await this.db.query<DbSurvey>(
       `SELECT s.*, u.first_name as creator_first_name, u.last_name as creator_last_name
        FROM surveys s LEFT JOIN users u ON s.created_by = u.id WHERE s.id = $1 AND s.tenant_id = $2`,
@@ -540,18 +423,14 @@ export class SurveysService {
     if (surveyRows.length === 0) return null;
     const survey = surveyRows[0];
     if (survey === undefined) return null;
-    const loaded =
-      await this.questionsService.loadSurveyQuestionsAndAssignments(survey.id);
+    const loaded = await this.questionsService.loadSurveyQuestionsAndAssignments(survey.id);
     survey.questions = loaded.questions;
     survey.assignments = loaded.assignments;
     return survey;
   }
 
   /** Loads a survey by UUID with questions and assignments */
-  private async getSurveyByUUID(
-    uuid: string,
-    tenantId: number,
-  ): Promise<DbSurvey | null> {
+  private async getSurveyByUUID(uuid: string, tenantId: number): Promise<DbSurvey | null> {
     const surveyRows = await this.db.query<DbSurvey>(
       `SELECT s.*, u.first_name as creator_first_name, u.last_name as creator_last_name
        FROM surveys s LEFT JOIN users u ON s.created_by = u.id WHERE s.uuid = $1 AND s.tenant_id = $2`,
@@ -560,8 +439,7 @@ export class SurveysService {
     if (surveyRows.length === 0) return null;
     const survey = surveyRows[0];
     if (survey === undefined) return null;
-    const loaded =
-      await this.questionsService.loadSurveyQuestionsAndAssignments(survey.id);
+    const loaded = await this.questionsService.loadSurveyQuestionsAndAssignments(survey.id);
     survey.questions = loaded.questions;
     survey.assignments = loaded.assignments;
     return survey;
@@ -647,14 +525,8 @@ export class SurveysService {
     userRole: string,
   ): Promise<void> {
     if (dto.questions !== undefined) {
-      await this.db.query('DELETE FROM survey_questions WHERE survey_id = $1', [
-        id,
-      ]);
-      await this.questionsService.insertSurveyQuestions(
-        tenantId,
-        id,
-        dto.questions,
-      );
+      await this.db.query('DELETE FROM survey_questions WHERE survey_id = $1', [id]);
+      await this.questionsService.insertSurveyQuestions(tenantId, id, dto.questions);
     }
     if (dto.assignments !== undefined) {
       if (dto.assignments.length > 0) {
@@ -665,31 +537,18 @@ export class SurveysService {
           dto.assignments,
         );
       }
-      await this.db.query(
-        'DELETE FROM survey_assignments WHERE survey_id = $1',
-        [id],
-      );
-      await this.questionsService.insertSurveyAssignments(
-        tenantId,
-        id,
-        dto.assignments,
-      );
+      await this.db.query('DELETE FROM survey_assignments WHERE survey_id = $1', [id]);
+      await this.questionsService.insertSurveyAssignments(tenantId, id, dto.assignments);
     }
   }
 
   /** Validates update permissions and state */
-  private validateSurveyUpdate(
-    userRole: string,
-    status: string,
-    responseCount: number,
-  ): void {
+  private validateSurveyUpdate(userRole: string, status: string, responseCount: number): void {
     if (userRole === 'employee') {
       throw new ForbiddenException('Only admins can update surveys');
     }
     if (status === 'active' && responseCount > 0) {
-      throw new ConflictException(
-        'Cannot update survey with existing responses',
-      );
+      throw new ConflictException('Cannot update survey with existing responses');
     }
   }
 
@@ -703,9 +562,7 @@ export class SurveysService {
     eventBus.emitSurveyCreated(tenantId, {
       id: surveyId,
       title: dto.title,
-      ...(dto.endDate !== undefined && dto.endDate !== null ?
-        { deadline: dto.endDate }
-      : {}),
+      ...(dto.endDate !== undefined && dto.endDate !== null ? { deadline: dto.endDate } : {}),
     });
 
     void this.notificationsService.createAddonNotification(
@@ -745,8 +602,7 @@ export class SurveysService {
     tenantId: number,
     userId: number,
   ): Promise<void> {
-    const deadline =
-      dto.endDate ?? (existingSurvey['endDate'] as string | undefined);
+    const deadline = dto.endDate ?? (existingSurvey['endDate'] as string | undefined);
     eventBus.emitSurveyUpdated(tenantId, {
       id,
       title: dto.title ?? (existingSurvey['title'] as string),

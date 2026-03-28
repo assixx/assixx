@@ -300,9 +300,7 @@ describe('ShiftsService – DB-mocked methods', () => {
     it('throws NotFoundException when shift does not exist', async () => {
       mockDb.query.mockResolvedValueOnce([]);
 
-      await expect(service.getShiftById(999, 1)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.getShiftById(999, 1)).rejects.toThrow(NotFoundException);
     });
 
     it('returns mapped shift when found', async () => {
@@ -376,16 +374,9 @@ describe('ShiftsService – DB-mocked methods', () => {
       // Q2: UPDATE
       mockDb.query.mockResolvedValueOnce([]);
       // Q3: getShiftById (updated)
-      mockDb.query.mockResolvedValueOnce([
-        createMockDbShift({ status: 'confirmed' }),
-      ]);
+      mockDb.query.mockResolvedValueOnce([createMockDbShift({ status: 'confirmed' })]);
 
-      const result = await service.updateShift(
-        1,
-        { status: 'confirmed' } as never,
-        42,
-        5,
-      );
+      const result = await service.updateShift(1, { status: 'confirmed' } as never, 42, 5);
 
       expect(result.id).toBe(1);
       expect(mockActivityLogger.logUpdate).toHaveBeenCalledOnce();
@@ -396,9 +387,7 @@ describe('ShiftsService – DB-mocked methods', () => {
       // Q1: getShiftById
       mockDb.query.mockResolvedValueOnce([createMockDbShift()]);
 
-      await expect(service.updateShift(1, {} as never, 42, 5)).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(service.updateShift(1, {} as never, 42, 5)).rejects.toThrow(BadRequestException);
     });
   });
 
@@ -422,9 +411,7 @@ describe('ShiftsService – DB-mocked methods', () => {
     it('throws NotFoundException if shift does not exist', async () => {
       mockDb.query.mockResolvedValueOnce([]);
 
-      await expect(service.deleteShift(999, 42, 5)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.deleteShift(999, 42, 5)).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -436,12 +423,7 @@ describe('ShiftsService – DB-mocked methods', () => {
     it('returns count of deleted shifts', async () => {
       mockDb.query.mockResolvedValueOnce([{ count: '5' }]);
 
-      const result = await service.deleteShiftsByWeek(
-        1,
-        '2025-06-01',
-        '2025-06-07',
-        42,
-      );
+      const result = await service.deleteShiftsByWeek(1, '2025-06-01', '2025-06-07', 42);
 
       expect(result.shiftsDeleted).toBe(5);
     });
@@ -449,12 +431,7 @@ describe('ShiftsService – DB-mocked methods', () => {
     it('returns 0 when no shifts match', async () => {
       mockDb.query.mockResolvedValueOnce([{ count: '0' }]);
 
-      const result = await service.deleteShiftsByWeek(
-        1,
-        '2025-06-01',
-        '2025-06-07',
-        42,
-      );
+      const result = await service.deleteShiftsByWeek(1, '2025-06-01', '2025-06-07', 42);
 
       expect(result.shiftsDeleted).toBe(0);
     });
@@ -521,11 +498,7 @@ describe('ShiftsService – DB-mocked methods', () => {
   describe('exportShifts', () => {
     it('throws NotImplementedException for excel format', async () => {
       await expect(
-        service.exportShifts(
-          { startDate: '2025-06-01', endDate: '2025-06-30' },
-          1,
-          'excel',
-        ),
+        service.exportShifts({ startDate: '2025-06-01', endDate: '2025-06-30' }, 1, 'excel'),
       ).rejects.toThrow(NotImplementedException);
     });
 
@@ -574,12 +547,7 @@ describe('ShiftsService – DB-mocked methods', () => {
         { date: '2025-06-16', type: 'S' },
       ]);
 
-      const result = await service.getUserCalendarShifts(
-        5,
-        42,
-        '2025-06-01',
-        '2025-06-30',
-      );
+      const result = await service.getUserCalendarShifts(5, 42, '2025-06-01', '2025-06-30');
 
       expect(result).toHaveLength(2);
       expect(result[0]).toEqual({ date: '2025-06-15', type: 'F' });
@@ -593,12 +561,7 @@ describe('ShiftsService – DB-mocked methods', () => {
         { date: '2025-06-17', type: 'night' },
       ]);
 
-      const result = await service.getUserCalendarShifts(
-        5,
-        42,
-        '2025-06-01',
-        '2025-06-30',
-      );
+      const result = await service.getUserCalendarShifts(5, 42, '2025-06-01', '2025-06-30');
 
       expect(result[0]?.type).toBe('F'); // early → F
       expect(result[1]?.type).toBe('S'); // late → S
@@ -608,12 +571,7 @@ describe('ShiftsService – DB-mocked methods', () => {
     it('returns empty array when no calendar shifts', async () => {
       mockDb.query.mockResolvedValueOnce([]);
 
-      const result = await service.getUserCalendarShifts(
-        5,
-        42,
-        '2025-06-01',
-        '2025-06-30',
-      );
+      const result = await service.getUserCalendarShifts(5, 42, '2025-06-01', '2025-06-30');
 
       expect(result).toEqual([]);
     });
@@ -692,9 +650,7 @@ describe('ShiftsService – DB-mocked methods', () => {
     });
 
     it('throws ConflictException on duplicate favorite name', async () => {
-      const dbError = new Error(
-        'duplicate key value violates unique constraint',
-      );
+      const dbError = new Error('duplicate key value violates unique constraint');
       (dbError as unknown as { code: string }).code = '23505';
       mockDb.query.mockRejectedValueOnce(dbError);
 
@@ -748,9 +704,7 @@ describe('ShiftsService – DB-mocked methods', () => {
     it('throws NotFoundException when favorite does not exist', async () => {
       mockDb.query.mockResolvedValueOnce([]);
 
-      await expect(service.deleteFavorite(999, 42, 5)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.deleteFavorite(999, 42, 5)).rejects.toThrow(NotFoundException);
     });
 
     it('deletes favorite when found', async () => {
@@ -874,11 +828,7 @@ describe('ShiftsService – delegation methods', () => {
       const result = await service.createShiftPlan({} as never, 42, 5);
 
       expect(result).toEqual(mockResult);
-      expect(mockPlansService.createShiftPlan).toHaveBeenCalledWith(
-        expect.anything(),
-        42,
-        5,
-      );
+      expect(mockPlansService.createShiftPlan).toHaveBeenCalledWith(expect.anything(), 42, 5);
     });
   });
 
@@ -890,12 +840,7 @@ describe('ShiftsService – delegation methods', () => {
       const result = await service.updateShiftPlan(1, {} as never, 42, 5);
 
       expect(result).toEqual(mockResult);
-      expect(mockPlansService.updateShiftPlan).toHaveBeenCalledWith(
-        1,
-        expect.anything(),
-        42,
-        5,
-      );
+      expect(mockPlansService.updateShiftPlan).toHaveBeenCalledWith(1, expect.anything(), 42, 5);
     });
   });
 
@@ -904,12 +849,7 @@ describe('ShiftsService – delegation methods', () => {
       const mockResult = { planId: 1, shiftIds: [], message: 'updated' };
       mockPlansService.updateShiftPlanByUuid.mockResolvedValueOnce(mockResult);
 
-      const result = await service.updateShiftPlanByUuid(
-        'plan-uuid',
-        {} as never,
-        42,
-        5,
-      );
+      const result = await service.updateShiftPlanByUuid('plan-uuid', {} as never, 42, 5);
 
       expect(result).toEqual(mockResult);
       expect(mockPlansService.updateShiftPlanByUuid).toHaveBeenCalledWith(
@@ -927,11 +867,7 @@ describe('ShiftsService – delegation methods', () => {
 
       await service.deleteShiftPlanByUuid('plan-uuid', 42, 5);
 
-      expect(mockPlansService.deleteShiftPlanByUuid).toHaveBeenCalledWith(
-        'plan-uuid',
-        42,
-        5,
-      );
+      expect(mockPlansService.deleteShiftPlanByUuid).toHaveBeenCalledWith('plan-uuid', 42, 5);
     });
   });
 
@@ -953,10 +889,7 @@ describe('ShiftsService – delegation methods', () => {
       const result = await service.listSwapRequests(42, {});
 
       expect(result).toEqual(mockResult);
-      expect(mockSwapService.listSwapRequests).toHaveBeenCalledWith(
-        42,
-        expect.anything(),
-      );
+      expect(mockSwapService.listSwapRequests).toHaveBeenCalledWith(42, expect.anything());
     });
   });
 

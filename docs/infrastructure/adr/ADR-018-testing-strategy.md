@@ -308,7 +308,7 @@ export default defineConfig({
         '**/index.ts',
         '**/types/**',
       ],
-      thresholds: { lines: 83, functions: 83, branches: 76, statements: 83 },
+      thresholds: { lines: 86, functions: 87, branches: 80, statements: 86 },
     },
     projects: [
       // Tier 1: Unit Tests (backend + shared)
@@ -433,16 +433,68 @@ TOTAL: 5568 Unit + 430 Permission (subset) + 399 Frontend + 558 API = 6955 Tests
 ──────────────────────────────────────────────────────────────────────
 ```
 
-### Coverage Thresholds (raised 2026-03-10 after Phase 10)
+### Coverage Thresholds (raised 2026-03-23)
 
-| Metric     | Current (Phase 10) | Threshold (Floor) | Long-term Goal |
-| ---------- | ------------------ | ----------------- | -------------- |
-| Lines      | **87.57%**         | **83%**           | 90%            |
-| Branches   | **81.45%**         | **76%**           | 85%            |
-| Functions  | **88.89%**         | **83%**           | 90%            |
-| Statements | **87.52%**         | **83%**           | 90%            |
+| Metric     | Current (2026-03-23) | Threshold (Floor) | Long-term Goal |
+| ---------- | -------------------- | ----------------- | -------------- |
+| Lines      | **91.07%**           | **86%**           | 93%            |
+| Branches   | **85.56%**           | **80%**           | 88%            |
+| Functions  | **92.36%**           | **87%**           | 93%            |
+| Statements | **91.35%**           | **86%**           | 93%            |
 
-> **Phase 11 added scope/hierarchy-permission tests (ADR-036).** Coverage remains above thresholds. Thresholds remain at 83%/76% (floor).
+> **2026-03-23:** Thresholds von 83/76/83/83 auf 86/80/87/86 erhöht (~5% Puffer). Bisherige Long-term Goals (90/85/90/90) erreicht und übertroffen — neue Goals: 93/88/93/93. 6455 Unit+Frontend Tests (255 Dateien).
+
+### Coverage Ignore Comments (v8 Provider)
+
+Für unerreichbaren defensiven Code (z.B. `noUncheckedIndexedAccess` Guards, exhaustive `switch default`) nutzt das Projekt `/* v8 ignore next */`. **Quelle:** [Vitest Coverage Docs](https://vitest.dev/guide/coverage)
+
+```typescript
+// Nächsten Code-Knoten ignorieren (if-Block, Funktion, Klasse, switch-case)
+/* v8 ignore next -- @preserve Begründung */
+if (unreachableGuard) {
+  throw new Error('dead code');
+}
+
+// switch default (exhaustive type union)
+switch (level) {
+  case 'read':
+    return true;
+  case 'write':
+    return false;
+  /* v8 ignore next -- @preserve exhaustive switch */
+  default:
+    return false;
+}
+
+// Ganzen Block ignorieren (start/stop)
+/* v8 ignore start -- @preserve Begründung */
+if (defensiveGuard) {
+  throw new Error('dead code');
+}
+/* v8 ignore stop */
+
+// if-Branch oder else-Branch selektiv ignorieren
+/* v8 ignore if -- @preserve Begründung */
+if (condition) {
+  /* ignoriert */
+} else {
+  /* gezählt */
+}
+
+/* v8 ignore else -- @preserve Begründung */
+if (condition) {
+  /* gezählt */
+} else {
+  /* ignoriert */
+}
+```
+
+**Regeln:**
+
+- `/* v8 ignore next */` ignoriert den **nächsten AST-Knoten** (nicht nur die nächste Zeile!)
+- Es gibt **kein** `/* v8 ignore next N */` — die Zahl-Syntax existiert nicht
+- `-- @preserve` verhindert, dass Minifier den Kommentar entfernt
+- Nur für **beweisbar unerreichbaren** Code — nicht als Ausrede für fehlende Tests
 
 ### CI/CD Integration (implemented 2026-02-05)
 
@@ -454,7 +506,7 @@ unit-tests:
   steps:
     - uses: actions/checkout@v4
     - uses: pnpm/action-setup@v2
-      with: { version: 10.32.1 }
+      with: { version: 10.33.0 }
     - uses: actions/setup-node@v5
       with: { node-version: '24', cache: 'pnpm' }
     - run: pnpm install --frozen-lockfile
@@ -550,8 +602,8 @@ Settings → Branches → main:
 
 - [VITEST-UNIT-TEST-PLAN.md](../../VITEST-UNIT-TEST-PLAN.md) — Detailed phase plan (Phase 0-8)
 - [VITEST-API-MIGRATION.md](../../VITEST-API-MIGRATION.md) — Bruno → Vitest migration (103 tests)
-- [HOW-TO-TEST-WITH-VITEST.md](../../HOW-TO-TEST-WITH-VITEST.md) — User guide for API tests
-- [HOW-TO-CREATE-TEST-USER.md](../../HOW-TO-CREATE-TEST-USER.md) — Test-Tenant `apitest` erstellen (Voraussetzung für API Integration Tests)
+- [HOW-TO-TEST-WITH-VITEST.md](../../how-to/HOW-TO-TEST-WITH-VITEST.md) — User guide for API tests
+- [HOW-TO-CREATE-TEST-USER.md](../../how-to/HOW-TO-CREATE-TEST-USER.md) — Test-Tenant `apitest` erstellen (Voraussetzung für API Integration Tests)
 
 ## Related ADRs
 
@@ -563,4 +615,4 @@ Settings → Branches → main:
 
 ---
 
-_Last Updated: 2026-03-14 (v9 - Phase 11: Org Scope + Hierarchy (ADR-036). Added org-scope + org-scope-manage API modules. Permission project expanded with roles.guard, jwt-auth.guard, document-access.service tests. Fixed dummy-users 429 with flushThrottleKeys(). 35 API modules (558 tests), 5568 unit tests, 399 frontend tests, 430 permission tests. Total: 6955 tests)_
+_Last Updated: 2026-03-23 (v10 - Coverage thresholds raised: 83/76/83/83 → 86/80/87/86. Long-term goals updated: 93/88/93/93. Current coverage: Lines 91.07%, Branches 85.56%, Functions 92.36%, Statements 91.35%. 6455 unit+frontend tests across 255 files.)_

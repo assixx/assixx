@@ -92,16 +92,13 @@ export class ChatWebSocketServer {
     const redisHost = process.env['REDIS_HOST'] ?? 'redis';
     const redisPortEnv = process.env['REDIS_PORT'];
     const redisPort =
-      redisPortEnv !== undefined && redisPortEnv !== '' ?
-        Number(redisPortEnv)
-      : 6379;
+      redisPortEnv !== undefined && redisPortEnv !== '' ? Number(redisPortEnv) : 6379;
     const redisPassword = process.env['REDIS_PASSWORD'];
 
     this.redis = new Redis({
       host: redisHost,
       port: redisPort,
-      ...(redisPassword !== undefined &&
-        redisPassword !== '' && { password: redisPassword }),
+      ...(redisPassword !== undefined && redisPassword !== '' && { password: redisPassword }),
       lazyConnect: true,
       maxRetriesPerRequest: 3,
       connectTimeout: 5000,
@@ -125,39 +122,33 @@ export class ChatWebSocketServer {
 
   /** Forward read receipts from REST markAsRead to WebSocket senders */
   private listenForReadReceipts(): void {
-    eventBus.on(
-      'messages.read',
-      (data: { readByUserId: number; entries: ReadReceiptEntry[] }) => {
-        for (const entry of data.entries) {
-          const senderWs = this.clients.get(entry.senderId);
-          if (senderWs?.readyState === WebSocket.OPEN) {
-            this.sendMessage(senderWs, {
-              type: 'message_read',
-              data: {
-                messageId: entry.messageId,
-                readBy: data.readByUserId,
-                timestamp: new Date().toISOString(),
-              },
-            });
-          }
+    eventBus.on('messages.read', (data: { readByUserId: number; entries: ReadReceiptEntry[] }) => {
+      for (const entry of data.entries) {
+        const senderWs = this.clients.get(entry.senderId);
+        if (senderWs?.readyState === WebSocket.OPEN) {
+          this.sendMessage(senderWs, {
+            type: 'message_read',
+            data: {
+              messageId: entry.messageId,
+              readBy: data.readByUserId,
+              timestamp: new Date().toISOString(),
+            },
+          });
         }
-      },
-    );
+      }
+    });
   }
 
   private init(): void {
-    this.wss.on(
-      'connection',
-      (ws: ExtendedWebSocket, request: IncomingMessage) => {
-        const sanitizedRequest = {
-          url: request.url,
-          headers: {
-            host: request.headers.host,
-          },
-        };
-        void this.handleConnection(ws, sanitizedRequest);
-      },
-    );
+    this.wss.on('connection', (ws: ExtendedWebSocket, request: IncomingMessage) => {
+      const sanitizedRequest = {
+        url: request.url,
+        headers: {
+          host: request.headers.host,
+        },
+      };
+      void this.handleConnection(ws, sanitizedRequest);
+    });
   }
 
   /** Extract connection ticket from request URL query parameter */
@@ -165,10 +156,7 @@ export class ChatWebSocketServer {
     url: string | undefined;
     headers: { host: string | undefined };
   }): string | null {
-    const url = new URL(
-      request.url ?? '/',
-      `http://${request.headers.host ?? 'localhost'}`,
-    );
+    const url = new URL(request.url ?? '/', `http://${request.headers.host ?? 'localhost'}`);
     const ticket = url.searchParams.get('ticket');
     return ticket !== null && ticket !== '' ? ticket : null;
   }
@@ -177,9 +165,7 @@ export class ChatWebSocketServer {
    * Consume a connection ticket from Redis (atomic GET + DELETE)
    * Returns null if ticket is invalid/expired/already used
    */
-  private async consumeTicket(
-    ticket: string,
-  ): Promise<ConnectionTicketData | null> {
+  private async consumeTicket(ticket: string): Promise<ConnectionTicketData | null> {
     try {
       // Use shared constant to ensure consistency with ConnectionTicketService
       const key = `${CONNECTION_TICKET_PREFIX}${ticket}`;
@@ -193,10 +179,7 @@ export class ChatWebSocketServer {
 
       // Verify purpose is websocket
       if (data.purpose !== 'websocket') {
-        logger.warn(
-          { purpose: data.purpose },
-          'WebSocket: Ticket has wrong purpose',
-        );
+        logger.warn({ purpose: data.purpose }, 'WebSocket: Ticket has wrong purpose');
         return null;
       }
 
@@ -208,10 +191,7 @@ export class ChatWebSocketServer {
   }
 
   /** Check if user is active in database (is_active = 1) */
-  private async isUserActive(
-    userId: number,
-    tenantId: number,
-  ): Promise<boolean> {
+  private async isUserActive(userId: number, tenantId: number): Promise<boolean> {
     interface UserActiveResult {
       is_active: number;
     }
@@ -236,10 +216,7 @@ export class ChatWebSocketServer {
     this.clients.set(userId, ws);
     this.presenceStore.add(userId);
 
-    ws.on(
-      'message',
-      (data: WebSocketData) => void this.handleMessage(ws, data),
-    );
+    ws.on('message', (data: WebSocketData) => void this.handleMessage(ws, data));
     ws.on('close', () => void this.handleDisconnection(ws));
     ws.on('error', (error: Error) => {
       this.handleError(ws, error);
@@ -275,23 +252,14 @@ export class ChatWebSocketServer {
 
       // SECURITY: Check if user is still active (is_active = 1)
       if (!(await this.isUserActive(ticketData.userId, ticketData.tenantId))) {
-        logger.warn(
-          { userId: ticketData.userId },
-          'WebSocket: Rejected inactive/deleted user',
-        );
+        logger.warn({ userId: ticketData.userId }, 'WebSocket: Rejected inactive/deleted user');
         ws.close(1008, 'User account inactive');
         return;
       }
 
       // Use activeRole if available, otherwise fall back to role
-      const effectiveRole =
-        ticketData.activeRole !== '' ? ticketData.activeRole : ticketData.role;
-      this.setupWebSocketClient(
-        ws,
-        ticketData.userId,
-        ticketData.tenantId,
-        effectiveRole,
-      );
+      const effectiveRole = ticketData.activeRole !== '' ? ticketData.activeRole : ticketData.role;
+      this.setupWebSocketClient(ws, ticketData.userId, ticketData.tenantId, effectiveRole);
 
       this.sendMessage(ws, {
         type: 'connection_established',
@@ -301,20 +269,10 @@ export class ChatWebSocketServer {
         },
       });
 
-      await this.broadcastUserStatus(
-        ticketData.userId,
-        ticketData.tenantId,
-        'online',
-      );
-      logger.info(
-        { userId: ticketData.userId },
-        'WebSocket: Connection established via ticket',
-      );
+      await this.broadcastUserStatus(ticketData.userId, ticketData.tenantId, 'online');
+      logger.info({ userId: ticketData.userId }, 'WebSocket: Connection established via ticket');
     } catch (error: unknown) {
-      logger.error(
-        { err: error },
-        'WebSocket Authentifizierung fehlgeschlagen',
-      );
+      logger.error({ err: error }, 'WebSocket Authentifizierung fehlgeschlagen');
       ws.close(1008, 'Authentifizierung fehlgeschlagen');
     }
   }
@@ -323,10 +281,7 @@ export class ChatWebSocketServer {
   // Message Routing
   // ==========================================================================
 
-  private async handleMessage(
-    ws: ExtendedWebSocket,
-    data: WebSocketData,
-  ): Promise<void> {
+  private async handleMessage(ws: ExtendedWebSocket, data: WebSocketData): Promise<void> {
     try {
       const dataString =
         typeof data === 'string' ? data
@@ -336,24 +291,13 @@ export class ChatWebSocketServer {
 
       switch (message.type) {
         case 'send_message':
-          await this.handleSendMessage(
-            ws,
-            SendMessageDataSchema.parse(message.data),
-          );
+          await this.handleSendMessage(ws, SendMessageDataSchema.parse(message.data));
           break;
         case 'typing_start':
-          await this.handleTyping(
-            ws,
-            TypingDataSchema.parse(message.data),
-            true,
-          );
+          await this.handleTyping(ws, TypingDataSchema.parse(message.data), true);
           break;
         case 'typing_stop':
-          await this.handleTyping(
-            ws,
-            TypingDataSchema.parse(message.data),
-            false,
-          );
+          await this.handleTyping(ws, TypingDataSchema.parse(message.data), false);
           break;
         case 'mark_read':
           await this.handleMarkRead(ws, MarkReadDataSchema.parse(message.data));
@@ -371,10 +315,7 @@ export class ChatWebSocketServer {
           logger.warn(`Unbekannter WebSocket Message Typ: ${message.type}`);
       }
     } catch (error: unknown) {
-      logger.error(
-        { err: error },
-        'Fehler beim Verarbeiten der WebSocket Nachricht',
-      );
+      logger.error({ err: error }, 'Fehler beim Verarbeiten der WebSocket Nachricht');
       this.sendMessage(ws, {
         type: 'error',
         data: { message: 'Fehler beim Verarbeiten der Nachricht' },
@@ -395,11 +336,7 @@ export class ChatWebSocketServer {
     | { error: string; isE2e?: undefined; fields?: undefined }
     | { error: undefined; isE2e: boolean; fields: E2eFields | undefined }
   > {
-    const e2eResult = await this.messageHandler.resolveE2eFields(
-      data,
-      tenantId,
-      userId,
-    );
+    const e2eResult = await this.messageHandler.resolveE2eFields(data, tenantId, userId);
     const validationError =
       e2eResult.error ??
       (!e2eResult.isE2e && (data.content === undefined || data.content === '') ?
@@ -415,10 +352,7 @@ export class ChatWebSocketServer {
     };
   }
 
-  private async handleSendMessage(
-    ws: ExtendedWebSocket,
-    data: SendMessageData,
-  ): Promise<void> {
+  private async handleSendMessage(ws: ExtendedWebSocket, data: SendMessageData): Promise<void> {
     const { conversationId, content, attachments: attachmentIds = [] } = data;
 
     if (ws.userId === undefined || ws.tenantId === undefined) {
@@ -429,11 +363,7 @@ export class ChatWebSocketServer {
       return;
     }
 
-    const validation = await this.validateAndResolveE2e(
-      data,
-      ws.tenantId,
-      ws.userId,
-    );
+    const validation = await this.validateAndResolveE2e(data, ws.tenantId, ws.userId);
     if (validation.error !== undefined) {
       this.sendMessage(ws, {
         type: 'error',
@@ -505,20 +435,13 @@ export class ChatWebSocketServer {
     }
   }
 
-  private async handleMarkRead(
-    ws: ExtendedWebSocket,
-    data: MarkReadData,
-  ): Promise<void> {
+  private async handleMarkRead(ws: ExtendedWebSocket, data: MarkReadData): Promise<void> {
     const { userId, tenantId } = ws;
     if (userId === undefined || tenantId === undefined) return;
     const { messageId } = data;
 
     try {
-      const result = await this.messageHandler.markAsRead(
-        messageId,
-        tenantId,
-        userId,
-      );
+      const result = await this.messageHandler.markAsRead(messageId, tenantId, userId);
 
       // Notify sender about the read receipt
       if (result !== null) {
@@ -553,11 +476,7 @@ export class ChatWebSocketServer {
     const { userId, tenantId } = ws;
     if (userId === undefined || tenantId === undefined) return;
 
-    this.broadcastToParticipants(
-      participantIds,
-      'new_message',
-      result.messageData,
-    );
+    this.broadcastToParticipants(participantIds, 'new_message', result.messageData);
 
     // Emit SSE event so sidebar badges update for users NOT on the chat page
     const recipientIds = participantIds.filter((id: number) => id !== userId);
@@ -580,11 +499,7 @@ export class ChatWebSocketServer {
   }
 
   /** Broadcast message to all participants in a conversation */
-  private broadcastToParticipants(
-    participantIds: number[],
-    type: string,
-    data: unknown,
-  ): void {
+  private broadcastToParticipants(participantIds: number[], type: string, data: unknown): void {
     for (const participantId of participantIds) {
       const clientWs = this.clients.get(participantId);
       if (clientWs?.readyState === WebSocket.OPEN) {
@@ -609,10 +524,7 @@ export class ChatWebSocketServer {
     status: string,
   ): Promise<void> {
     try {
-      const partnerIds = await this.messageHandler.getConversationPartnerIds(
-        userId,
-        tenantId,
-      );
+      const partnerIds = await this.messageHandler.getConversationPartnerIds(userId, tenantId);
 
       for (const partnerId of partnerIds) {
         const clientWs = this.clients.get(partnerId);
@@ -641,10 +553,7 @@ export class ChatWebSocketServer {
     if (userId === undefined || tenantId === undefined) return;
 
     try {
-      const partnerIds = await this.messageHandler.getConversationPartnerIds(
-        userId,
-        tenantId,
-      );
+      const partnerIds = await this.messageHandler.getConversationPartnerIds(userId, tenantId);
 
       const onlineUserIds: number[] = [];
       for (const partnerId of partnerIds) {
@@ -654,10 +563,7 @@ export class ChatWebSocketServer {
         }
       }
 
-      logger.debug(
-        { userId, onlinePartners: onlineUserIds.length },
-        'Sending presence snapshot',
-      );
+      logger.debug({ userId, onlinePartners: onlineUserIds.length }, 'Sending presence snapshot');
 
       this.sendMessage(ws, {
         type: 'initial_presence',

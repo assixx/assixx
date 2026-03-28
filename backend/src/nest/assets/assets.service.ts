@@ -61,10 +61,7 @@ export class AssetsService {
    * List all assets with filters
    * Excludes soft-deleted assets (is_active = 4) by default
    */
-  async listAssets(
-    tenantId: number,
-    filters: AssetFilters = {},
-  ): Promise<AssetResponse[]> {
+  async listAssets(tenantId: number, filters: AssetFilters = {}): Promise<AssetResponse[]> {
     this.logger.debug(`Listing assets for tenant ${tenantId}`);
 
     const baseSql = `
@@ -204,10 +201,7 @@ export class AssetsService {
     this.logger.log(`Updating asset ${id}`);
 
     const existing = await this.getAssetById(id, tenantId);
-    if (
-      hasContent(data.serialNumber) &&
-      data.serialNumber !== existing.serialNumber
-    ) {
+    if (hasContent(data.serialNumber) && data.serialNumber !== existing.serialNumber) {
       await this.validateSerialNumberUnique(data.serialNumber, tenantId, id);
     }
 
@@ -257,10 +251,7 @@ export class AssetsService {
 
     const existing = await this.getAssetById(id, tenantId);
 
-    await this.db.query('DELETE FROM assets WHERE id = $1 AND tenant_id = $2', [
-      id,
-      tenantId,
-    ]);
+    await this.db.query('DELETE FROM assets WHERE id = $1 AND tenant_id = $2', [id, tenantId]);
 
     await this.activityLogger.logDelete(
       tenantId,
@@ -338,10 +329,7 @@ export class AssetsService {
   }
 
   /** Get upcoming maintenance */
-  async getUpcomingMaintenance(
-    tenantId: number,
-    days?: number,
-  ): Promise<AssetResponse[]> {
+  async getUpcomingMaintenance(tenantId: number, days?: number): Promise<AssetResponse[]> {
     return await this.maintenance.getUpcomingMaintenance(tenantId, days);
   }
 
@@ -360,10 +348,7 @@ export class AssetsService {
   // ============================================================================
 
   /** Get teams assigned to a asset */
-  async getAssetTeams(
-    assetId: number,
-    tenantId: number,
-  ): Promise<AssetTeamResponse[]> {
+  async getAssetTeams(assetId: number, tenantId: number): Promise<AssetTeamResponse[]> {
     await this.getAssetById(assetId, tenantId);
     return await this.teams.getAssetTeams(assetId, tenantId);
   }
@@ -386,10 +371,7 @@ export class AssetsService {
   /**
    * Resolve asset UUID to internal ID
    */
-  private async resolveAssetIdByUuid(
-    uuid: string,
-    tenantId: number,
-  ): Promise<number> {
+  private async resolveAssetIdByUuid(uuid: string, tenantId: number): Promise<number> {
     const result = await this.db.query<{ id: number }>(
       `SELECT id FROM assets WHERE uuid = $1 AND tenant_id = $2`,
       [uuid, tenantId],
@@ -418,31 +400,19 @@ export class AssetsService {
   }
 
   /** Delete asset by UUID */
-  async deleteAssetByUuid(
-    uuid: string,
-    tenantId: number,
-    userId: number,
-  ): Promise<void> {
+  async deleteAssetByUuid(uuid: string, tenantId: number, userId: number): Promise<void> {
     const assetId = await this.resolveAssetIdByUuid(uuid, tenantId);
     await this.deleteAsset(assetId, tenantId, userId);
   }
 
   /** Deactivate asset by UUID */
-  async deactivateAssetByUuid(
-    uuid: string,
-    tenantId: number,
-    userId: number,
-  ): Promise<void> {
+  async deactivateAssetByUuid(uuid: string, tenantId: number, userId: number): Promise<void> {
     const assetId = await this.resolveAssetIdByUuid(uuid, tenantId);
     await this.deactivateAsset(assetId, tenantId, userId);
   }
 
   /** Activate asset by UUID */
-  async activateAssetByUuid(
-    uuid: string,
-    tenantId: number,
-    userId: number,
-  ): Promise<void> {
+  async activateAssetByUuid(uuid: string, tenantId: number, userId: number): Promise<void> {
     const assetId = await this.resolveAssetIdByUuid(uuid, tenantId);
     await this.activateAsset(assetId, tenantId, userId);
   }

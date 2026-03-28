@@ -27,14 +27,10 @@ export const PermissionEntrySchema = z.object({
 
 /** Request body: array of permission entries */
 export const UpsertUserPermissionsSchema = z.object({
-  permissions: z
-    .array(PermissionEntrySchema)
-    .min(1, 'At least one permission entry is required'),
+  permissions: z.array(PermissionEntrySchema).min(1, 'At least one permission entry is required'),
 });
 
-export class UpsertUserPermissionsDto extends createZodDto(
-  UpsertUserPermissionsSchema,
-) {}
+export class UpsertUserPermissionsDto extends createZodDto(UpsertUserPermissionsSchema) {}
 
 /** Inferred type for a single permission entry */
 export type PermissionEntry = z.infer<typeof PermissionEntrySchema>;

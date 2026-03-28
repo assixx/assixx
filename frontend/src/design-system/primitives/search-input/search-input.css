@@ -42,8 +42,7 @@
 }
 
 .search-input:focus-within {
-  box-shadow: 0 0 0 3px
-    color-mix(in oklch, var(--color-primary) 10%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in oklch, var(--color-primary) 10%, transparent);
   border-color: var(--color-primary);
   background: var(--glass-bg-active);
 }
@@ -226,8 +225,7 @@
 }
 
 .search-input--error:focus-within {
-  box-shadow: 0 0 0 3px
-    color-mix(in oklch, var(--color-danger) 10%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in oklch, var(--color-danger) 10%, transparent);
   border-color: var(--color-danger);
 }
 
@@ -241,8 +239,7 @@
 }
 
 .search-input--success:focus-within {
-  box-shadow: 0 0 0 3px
-    color-mix(in oklch, var(--color-success) 10%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in oklch, var(--color-success) 10%, transparent);
   border-color: var(--color-success);
 }
 

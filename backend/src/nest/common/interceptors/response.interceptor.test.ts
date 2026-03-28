@@ -67,9 +67,7 @@ describe('ResponseInterceptor', () => {
       );
 
       const response = result as { timestamp: string };
-      expect(response.timestamp).toMatch(
-        /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/,
-      );
+      expect(response.timestamp).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
     });
 
     it('should wrap array data', async () => {
@@ -332,6 +330,17 @@ describe('ResponseInterceptor', () => {
         results: ['unknown-key'],
         pagination: { total: 1 },
       });
+    });
+  });
+
+  describe('extractPaginatedItems (private)', () => {
+    it('should return empty array when no items/entries/data key present', () => {
+      const result = interceptor['extractPaginatedItems']({
+        pagination: { total: 0 },
+        results: ['unknown-key'],
+      });
+
+      expect(result).toEqual([]);
     });
   });
 

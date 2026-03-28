@@ -50,8 +50,7 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
   }
 
   // Process documents with field mapping
-  const rawDocs =
-    Array.isArray(documentsResult.data) ? documentsResult.data : [];
+  const rawDocs = Array.isArray(documentsResult.data) ? documentsResult.data : [];
   const documents: Document[] = rawDocs.map((doc) => ({
     ...doc,
     size: doc.fileSize ?? doc.size ?? 0,

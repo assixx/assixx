@@ -5,6 +5,7 @@
 import {
   DEFAULT_HIERARCHY_LABELS,
   type HierarchyLabels,
+  type PositionOption,
 } from '$lib/types/hierarchy-labels';
 
 import type { FormIsActiveStatus } from './types';
@@ -23,17 +24,17 @@ export {
 /**
  * Position options for admin selection dropdown
  */
-export const POSITION_OPTIONS = [
-  'area_lead',
-  'department_lead',
-  'Personalleiter',
-  'Geschäftsführer',
-  'Werksleiter',
-  'Produktionsleiter',
-  'Qualitätsleiter',
-  'IT-Leiter',
-  'Vertriebsleiter',
-  'Mitarbeiter',
+export const POSITION_OPTIONS: readonly PositionOption[] = [
+  { id: '', name: 'area_lead', roleCategory: 'admin' },
+  { id: '', name: 'department_lead', roleCategory: 'admin' },
+  { id: '', name: 'Personalleiter', roleCategory: 'admin' },
+  { id: '', name: 'Geschäftsführer', roleCategory: 'admin' },
+  { id: '', name: 'Werksleiter', roleCategory: 'admin' },
+  { id: '', name: 'Produktionsleiter', roleCategory: 'admin' },
+  { id: '', name: 'Qualitätsleiter', roleCategory: 'admin' },
+  { id: '', name: 'IT-Leiter', roleCategory: 'admin' },
+  { id: '', name: 'Vertriebsleiter', roleCategory: 'admin' },
+  { id: '', name: 'Mitarbeiter', roleCategory: 'admin' },
 ] as const;
 
 /**
@@ -94,13 +95,7 @@ export const PASSWORD_STRENGTH_LABELS = [
 /**
  * Password crack time labels (German)
  */
-export const PASSWORD_CRACK_TIMES = [
-  'sofort',
-  'Minuten',
-  'Stunden',
-  'Tage',
-  'Jahre',
-] as const;
+export const PASSWORD_CRACK_TIMES = ['sofort', 'Minuten', 'Stunden', 'Tage', 'Jahre'] as const;
 
 /** Static messages that don't depend on hierarchy labels */
 const STATIC_MESSAGES = {
@@ -119,7 +114,7 @@ const STATIC_MESSAGES = {
   LABEL_PASSWORD_CONFIRM: 'Passwort wiederholen',
   LABEL_EMPLOYEE_NUMBER: 'Personalnummer',
   LABEL_POSITION: 'Position',
-  LABEL_NOTES: 'Notizen',
+  LABEL_NOTES: 'Zusätzliche Infos',
   LABEL_STATUS: 'Status',
   BTN_SAVE: 'Speichern',
   BTN_CANCEL: 'Abbrechen',
@@ -135,8 +130,7 @@ const STATIC_MESSAGES = {
   SEARCH_NO_RESULTS: 'Keine Administratoren gefunden für',
   SEARCH_MORE_RESULTS: 'weitere Ergebnisse in Tabelle',
   EMPTY_TITLE: 'Keine Administratoren gefunden',
-  EMPTY_DESCRIPTION:
-    'Erstellen Sie Ihren ersten Administrator, um das System zu verwalten.',
+  EMPTY_DESCRIPTION: 'Erstellen Sie Ihren ersten Administrator, um das System zu verwalten.',
   LOADING_ADMINS: 'Administratoren werden geladen...',
   SUCCESS_CREATED: 'Administrator erfolgreich erstellt',
   SUCCESS_UPDATED: 'Administrator erfolgreich aktualisiert',
@@ -151,13 +145,10 @@ const STATIC_MESSAGES = {
     'Min. 12 Zeichen, max. 72 Zeichen. Enthält 3 von 4: Großbuchstaben, Kleinbuchstaben, Zahlen, Sonderzeichen (!@#$%^&*)',
   HINT_EMPLOYEE_NUMBER: 'Max. 10 Zeichen (Buchstaben, Zahlen, Bindestrich)',
   HINT_MULTISELECT: 'Strg/Cmd + Klick für Mehrfachauswahl',
-  HINT_STATUS:
-    'Inaktive/Archivierte Administratoren können sich nicht anmelden',
+  HINT_STATUS: 'Inaktive/Archivierte Administratoren können sich nicht anmelden',
   DELETE_CONFIRM_MESSAGE: 'Möchten Sie diesen Administrator wirklich löschen?',
-  DELETE_FINAL_WARNING:
-    'ACHTUNG: Diese Aktion kann nicht rückgängig gemacht werden!',
-  DELETE_FINAL_INFO:
-    'Der Administrator wird unwiderruflich aus dem System entfernt.',
+  DELETE_FINAL_WARNING: 'ACHTUNG: Diese Aktion kann nicht rückgängig gemacht werden!',
+  DELETE_FINAL_INFO: 'Der Administrator wird unwiderruflich aus dem System entfernt.',
   BADGE_ALL: 'Alle',
   BADGE_NONE: 'Keine',
   BADGE_INHERITED: 'Vererbt',
@@ -189,7 +180,8 @@ const STATIC_MESSAGES = {
   TH_STATUS: 'Status',
   TH_AVAILABILITY: 'Verfügbarkeit',
   TH_PLANNED: 'Geplant',
-  TH_NOTES: 'Notizen',
+  TH_ADDITIONAL_INFO: 'Zusätzliche Infos',
+  TH_ABSENCE_NOTES: 'Abwesenheitsnotiz',
   TH_ACTIONS: 'Aktionen',
 };
 
@@ -234,7 +226,7 @@ export const FORM_DEFAULTS = {
   password: '',
   passwordConfirm: '',
   employeeNumber: '',
-  position: '',
+  positionIds: [] as string[],
   notes: '',
   isActive: 1 as FormIsActiveStatus,
   hasFullAccess: false,

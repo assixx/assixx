@@ -19,6 +19,4 @@ export const UpdateCategoryColorConfigSchema = z.object({
     .max(50, 'Label darf maximal 50 Zeichen lang sein'),
 });
 
-export class UpdateCategoryColorConfigDto extends createZodDto(
-  UpdateCategoryColorConfigSchema,
-) {}
+export class UpdateCategoryColorConfigDto extends createZodDto(UpdateCategoryColorConfigSchema) {}

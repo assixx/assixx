@@ -31,10 +31,7 @@ export const PatternTypeSchema = z.enum(['alternate_fs', 'fixed_n', 'custom'], {
  */
 export const NthWeekdayFreeRuleSchema = z.object({
   type: z.literal('nth_weekday_free'),
-  name: z
-    .string()
-    .min(1, 'Rule name is required')
-    .max(100, 'Name cannot exceed 100 characters'),
+  name: z.string().min(1, 'Rule name is required').max(100, 'Name cannot exceed 100 characters'),
   weekday: z.number().int().min(0).max(6), // 0-6 (0 = Sunday)
   n: z.number().int().min(1).max(5), // 1-5 (e.g., 4 = "every 4th")
 });

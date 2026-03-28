@@ -9,10 +9,7 @@
     DEFAULT_HIERARCHY_LABELS,
     resolvePositionDisplay,
   } from '$lib/types/hierarchy-labels';
-  import {
-    getAvatarColorClass,
-    getProfilePictureUrl,
-  } from '$lib/utils/avatar-helpers';
+  import { getAvatarColorClass, getProfilePictureUrl } from '$lib/utils/avatar-helpers';
 
   interface UserInfo {
     id?: number;
@@ -171,10 +168,7 @@
   }
 
   .footer-trigger:hover {
-    background: var(
-      --glass-bg-hover,
-      color-mix(in oklch, var(--color-white) 5%, transparent)
-    );
+    background: var(--glass-bg-hover, color-mix(in oklch, var(--color-white) 5%, transparent));
   }
 
   .sidebar-footer.collapsed .footer-trigger {
@@ -243,10 +237,7 @@
   .detail-divider {
     margin-bottom: 4px;
     border-bottom: 1px solid
-      var(
-        --glass-border,
-        color-mix(in oklch, var(--color-white) 10%, transparent)
-      );
+      var(--glass-border, color-mix(in oklch, var(--color-white) 10%, transparent));
   }
 
   .detail-company {

@@ -63,8 +63,6 @@ export class AreasController {
    * List all areas with optional filters (scope-filtered)
    */
   @Get()
-  @Roles('admin', 'root', 'employee')
-  @RequirePermission(SCOPE_FEAT, SCOPE_MOD, 'canRead')
   async listAreas(
     @Query() query: ListAreasQueryDto,
     @TenantId() tenantId: number,
@@ -77,8 +75,6 @@ export class AreasController {
    * Get area statistics for the tenant
    */
   @Get('stats')
-  @Roles('admin', 'root', 'employee')
-  @RequirePermission(SCOPE_FEAT, SCOPE_MOD, 'canRead')
   async getAreaStats(@TenantId() tenantId: number): Promise<AreaStatsResponse> {
     return await this.areasService.getAreaStats(tenantId);
   }
@@ -88,8 +84,6 @@ export class AreasController {
    * Get area by ID
    */
   @Get(':id')
-  @Roles('admin', 'root', 'employee')
-  @RequirePermission(SCOPE_FEAT, SCOPE_MOD, 'canRead')
   async getAreaById(
     @Param('id', ParseIntPipe) id: number,
     @TenantId() tenantId: number,
@@ -141,12 +135,7 @@ export class AreasController {
     @CurrentUser() user: NestAuthUser,
     @TenantId() tenantId: number,
   ): Promise<MessageResponse> {
-    return await this.areasService.deleteArea(
-      id,
-      user.id,
-      tenantId,
-      query.force,
-    );
+    return await this.areasService.deleteArea(id, user.id, tenantId, query.force);
   }
 
   /**
@@ -160,11 +149,7 @@ export class AreasController {
     @Body() dto: AssignDepartmentsDto,
     @TenantId() tenantId: number,
   ): Promise<MessageResponse> {
-    return await this.areasService.assignDepartmentsToArea(
-      id,
-      dto.departmentIds,
-      tenantId,
-    );
+    return await this.areasService.assignDepartmentsToArea(id, dto.departmentIds, tenantId);
   }
 
   /**

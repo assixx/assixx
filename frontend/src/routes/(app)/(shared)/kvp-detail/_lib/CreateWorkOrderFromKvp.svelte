@@ -9,15 +9,8 @@
   import AppDatePicker from '$lib/components/AppDatePicker.svelte';
   import { showSuccessAlert, showErrorAlert } from '$lib/stores/toast';
 
-  import {
-    createWorkOrder,
-    fetchEligibleUsers,
-    logApiError,
-  } from '../../work-orders/_lib/api';
-  import {
-    PRIORITY_LABELS,
-    MESSAGES as WO_MESSAGES,
-  } from '../../work-orders/_lib/constants';
+  import { createWorkOrder, logApiError } from '../../work-orders/_lib/api';
+  import { PRIORITY_LABELS, MESSAGES as WO_MESSAGES } from '../../work-orders/_lib/constants';
 
   import type { KvpSuggestion } from './types';
   import type {
@@ -29,11 +22,12 @@
   interface Props {
     show: boolean;
     suggestion: KvpSuggestion | null;
+    preloadedUsers?: EligibleUser[] | null;
     onclose: () => void;
     onsaved: () => void;
   }
 
-  const { show, suggestion, onclose, onsaved }: Props = $props();
+  const { show, suggestion, preloadedUsers = null, onclose, onsaved }: Props = $props();
 
   // ---------------------------------------------------------------------------
   // FORM STATE
@@ -56,7 +50,7 @@
   // ---------------------------------------------------------------------------
 
   let eligibleUsers = $state<EligibleUser[]>([]);
-  let loadingUsers = $state(false);
+  const loadingUsers = $state(false);
   let submitting = $state(false);
   let errorMessage = $state<string | null>(null);
   let priorityDropdownOpen = $state(false);
@@ -77,21 +71,9 @@
       assigneeTouched = false;
       dueDateTouched = false;
       errorMessage = null;
-      void loadUsers();
+      eligibleUsers = preloadedUsers ?? [];
     }
   });
-
-  async function loadUsers(): Promise<void> {
-    loadingUsers = true;
-    try {
-      eligibleUsers = await fetchEligibleUsers();
-    } catch (err: unknown) {
-      logApiError('fetchEligibleUsers', err);
-      eligibleUsers = [];
-    } finally {
-      loadingUsers = false;
-    }
-  }
 
   // ---------------------------------------------------------------------------
   // HANDLERS
@@ -112,10 +94,6 @@
     priorityDropdownOpen = false;
   }
 
-  function handleOverlayClick(e: MouseEvent): void {
-    if (e.target === e.currentTarget) onclose();
-  }
-
   $effect(() => {
     return onClickOutsideDropdown(() => {
       priorityDropdownOpen = false;
@@ -127,13 +105,7 @@
     assigneeTouched = true;
     dueDateTouched = true;
     const trimmedTitle = formTitle.trim();
-    if (
-      trimmedTitle === '' ||
-      suggestion === null ||
-      !hasAssignees ||
-      !hasDueDate
-    )
-      return;
+    if (trimmedTitle === '' || suggestion === null || !hasAssignees || !hasDueDate) return;
 
     submitting = true;
     errorMessage = null;
@@ -169,17 +141,9 @@
     aria-modal="true"
     aria-labelledby="wo-kvp-modal-title"
     tabindex="-1"
-    onclick={handleOverlayClick}
-    onkeydown={(e: KeyboardEvent) => {
-      if (e.key === 'Escape') onclose();
-    }}
   >
-    <!-- svelte-ignore a11y_no_noninteractive_element_interactions, a11y_click_events_have_key_events -->
     <form
       class="ds-modal"
-      onclick={(e: MouseEvent) => {
-        e.stopPropagation();
-      }}
       onsubmit={handleSubmit}
     >
       <div class="ds-modal__header">
@@ -267,8 +231,7 @@
               role="button"
               tabindex="0"
               onkeydown={(e: KeyboardEvent) => {
-                if (e.key === 'Enter')
-                  priorityDropdownOpen = !priorityDropdownOpen;
+                if (e.key === 'Enter') priorityDropdownOpen = !priorityDropdownOpen;
               }}
             >
               <span>{priorityLabel}</span>
@@ -283,8 +246,7 @@
                       setPriority(value as WorkOrderPriority);
                     }}
                     onkeydown={(e: KeyboardEvent) => {
-                      if (e.key === 'Enter')
-                        setPriority(value as WorkOrderPriority);
+                      if (e.key === 'Enter') setPriority(value as WorkOrderPriority);
                     }}
                     role="option"
                     tabindex="0"

@@ -24,9 +24,7 @@ import type { DbCalendarEvent, EventFilters } from './calendar.types.js';
 // Mock Factory
 // ============================================
 
-function createMockDbEvent(
-  overrides?: Partial<DbCalendarEvent>,
-): DbCalendarEvent {
+function createMockDbEvent(overrides?: Partial<DbCalendarEvent>): DbCalendarEvent {
   return {
     id: 1,
     uuid: 'abc-123',
@@ -307,13 +305,7 @@ describe('validateSortColumn', () => {
 describe('calculateRecurrenceDates', () => {
   it('should generate weekly dates with count limit', () => {
     const start = new Date('2025-01-06T09:00:00Z');
-    const dates = calculateRecurrenceDates(
-      start,
-      'weekly',
-      'after',
-      4,
-      undefined,
-    );
+    const dates = calculateRecurrenceDates(start, 'weekly', 'after', 4, undefined);
 
     expect(dates).toHaveLength(4);
     expect(dates[1]!.getDate()).toBe(13);
@@ -322,13 +314,7 @@ describe('calculateRecurrenceDates', () => {
 
   it('should return single date when no recurrence', () => {
     const start = new Date('2025-01-01T09:00:00Z');
-    const dates = calculateRecurrenceDates(
-      start,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-    );
+    const dates = calculateRecurrenceDates(start, undefined, undefined, undefined, undefined);
 
     expect(dates).toHaveLength(1);
   });
@@ -348,26 +334,14 @@ describe('calculateRecurrenceDates', () => {
 
   it('should respect MAX_OCCURRENCES safety limit (52)', () => {
     const start = new Date('2025-01-01T09:00:00Z');
-    const dates = calculateRecurrenceDates(
-      start,
-      'daily',
-      'after',
-      100,
-      undefined,
-    );
+    const dates = calculateRecurrenceDates(start, 'daily', 'after', 100, undefined);
 
     expect(dates).toHaveLength(52); // capped at MAX_OCCURRENCES
   });
 
   it('should generate monthly dates', () => {
     const start = new Date('2025-01-15T09:00:00Z');
-    const dates = calculateRecurrenceDates(
-      start,
-      'monthly',
-      'after',
-      3,
-      undefined,
-    );
+    const dates = calculateRecurrenceDates(start, 'monthly', 'after', 3, undefined);
 
     expect(dates).toHaveLength(3);
     expect(dates[1]!.getMonth()).toBe(1); // Feb
@@ -445,11 +419,7 @@ describe('appendDateSearchFilters', () => {
 
   it('should handle only startDate', () => {
     const params: unknown[] = [10];
-    const result = appendDateSearchFilters(
-      { ...emptyFilters, startDate: '2025-06-01' },
-      params,
-      2,
-    );
+    const result = appendDateSearchFilters({ ...emptyFilters, startDate: '2025-06-01' }, params, 2);
 
     expect(result.clause).toContain('AND e.start_date >= $2');
     expect(result.newIndex).toBe(3);
@@ -458,11 +428,7 @@ describe('appendDateSearchFilters', () => {
 
   it('should skip empty search string', () => {
     const params: unknown[] = [];
-    const result = appendDateSearchFilters(
-      { ...emptyFilters, search: '' },
-      params,
-      1,
-    );
+    const result = appendDateSearchFilters({ ...emptyFilters, search: '' }, params, 1);
 
     expect(result.clause).toBe('');
   });

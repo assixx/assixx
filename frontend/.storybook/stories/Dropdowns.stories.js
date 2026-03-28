@@ -140,19 +140,7 @@ export const CountrySelector = {
     },
     defaultCountry: {
       control: 'select',
-      options: [
-        'de',
-        'at',
-        'ch',
-        'fr',
-        'it',
-        'es',
-        'nl',
-        'be',
-        'pl',
-        'us',
-        'gb',
-      ],
+      options: ['de', 'at', 'ch', 'fr', 'it', 'es', 'nl', 'be', 'pl', 'us', 'gb'],
       description: 'Default selected country',
     },
   },
@@ -320,9 +308,7 @@ export const DepartmentSelector = {
         }
 
         // Append text safely using createTextNode (XSS-safe)
-        triggerSpan.appendChild(
-          document.createTextNode(option.textContent.trim()),
-        );
+        triggerSpan.appendChild(document.createTextNode(option.textContent.trim()));
 
         trigger.classList.remove('active');
         menu.classList.remove('active');
@@ -460,12 +446,9 @@ export const NativeVsCustom = {
     options.forEach((option) => {
       option.addEventListener('click', () => {
         const name = option.querySelector('span:first-child').textContent;
-        const price = option.querySelector(
-          '.dropdown__option-secondary',
-        ).textContent;
+        const price = option.querySelector('.dropdown__option-secondary').textContent;
         trigger.querySelector('span:first-child').textContent = name;
-        trigger.querySelector('.dropdown__option-secondary').textContent =
-          price;
+        trigger.querySelector('.dropdown__option-secondary').textContent = price;
         trigger.classList.remove('active');
         menu.classList.remove('active');
       });
@@ -525,9 +508,7 @@ export const SearchableDropdown = {
     let searchInput = null;
 
     function renderOptions(query) {
-      const filtered = items.filter((item) =>
-        item.toLowerCase().includes(query.toLowerCase()),
-      );
+      const filtered = items.filter((item) => item.toLowerCase().includes(query.toLowerCase()));
 
       const optionsContainer = container.querySelector('.dropdown__options');
       const emptyEl = container.querySelector('.dropdown__empty');

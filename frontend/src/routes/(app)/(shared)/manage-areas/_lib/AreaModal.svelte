@@ -8,13 +8,7 @@
   } from './utils';
 
   import type { AreaMessages } from './constants';
-  import type {
-    FormIsActiveStatus,
-    AreaType,
-    AdminUser,
-    Department,
-    Hall,
-  } from './types';
+  import type { FormIsActiveStatus, AreaType, AdminUser, Department, Hall } from './types';
 
   // Props with bindable for two-way binding
   interface Props {
@@ -25,6 +19,7 @@
     formName: string;
     formDescription: string;
     formAreaLeadId: number | null;
+    formAreaDeputyLeadId: number | null;
     formType: AreaType;
     formCapacity: number | null;
     formDepartmentIds: number[];
@@ -40,17 +35,19 @@
 
   /* eslint-disable prefer-const, @typescript-eslint/no-useless-default-assignment -- Svelte $bindable() requires let and is not a useless default */
   // prettier-ignore
-  let { show, isEditMode, modalTitle, messages, formName = $bindable(), formDescription = $bindable(), formAreaLeadId = $bindable(), formType = $bindable(), formCapacity = $bindable(), formDepartmentIds = $bindable(), formHallIds = $bindable(), formIsActive = $bindable(), areaLeads, allDepartments, allHalls, submitting, onclose, onsubmit }: Props = $props();
+  let { show, isEditMode, modalTitle, messages, formName = $bindable(), formDescription = $bindable(), formAreaLeadId = $bindable(), formAreaDeputyLeadId = $bindable(), formType = $bindable(), formCapacity = $bindable(), formDepartmentIds = $bindable(), formHallIds = $bindable(), formIsActive = $bindable(), areaLeads, allDepartments, allHalls, submitting, onclose, onsubmit }: Props = $props();
   /* eslint-enable prefer-const, @typescript-eslint/no-useless-default-assignment */
 
   // Local dropdown states
   let typeDropdownOpen = $state(false);
   let statusDropdownOpen = $state(false);
   let areaLeadDropdownOpen = $state(false);
+  let areaDeputyLeadDropdownOpen = $state(false);
 
   // Derived area lead display name
-  const areaLeadDisplayName = $derived(
-    getAreaLeadDisplayName(formAreaLeadId, areaLeads),
+  const areaLeadDisplayName = $derived(getAreaLeadDisplayName(formAreaLeadId, areaLeads));
+  const areaDeputyLeadDisplayName = $derived(
+    getAreaLeadDisplayName(formAreaDeputyLeadId, areaLeads),
   );
 
   // =============================================================================
@@ -61,6 +58,7 @@
     e.stopPropagation();
     statusDropdownOpen = false;
     areaLeadDropdownOpen = false;
+    areaDeputyLeadDropdownOpen = false;
     typeDropdownOpen = !typeDropdownOpen;
   }
 
@@ -73,6 +71,7 @@
     e.stopPropagation();
     typeDropdownOpen = false;
     areaLeadDropdownOpen = false;
+    areaDeputyLeadDropdownOpen = false;
     statusDropdownOpen = !statusDropdownOpen;
   }
 
@@ -85,6 +84,7 @@
     e.stopPropagation();
     typeDropdownOpen = false;
     statusDropdownOpen = false;
+    areaDeputyLeadDropdownOpen = false;
     areaLeadDropdownOpen = !areaLeadDropdownOpen;
   }
 
@@ -93,8 +93,17 @@
     areaLeadDropdownOpen = false;
   }
 
-  function handleOverlayClick(e: MouseEvent): void {
-    if (e.target === e.currentTarget) onclose();
+  function toggleAreaDeputyLeadDropdown(e: MouseEvent): void {
+    e.stopPropagation();
+    typeDropdownOpen = false;
+    statusDropdownOpen = false;
+    areaLeadDropdownOpen = false;
+    areaDeputyLeadDropdownOpen = !areaDeputyLeadDropdownOpen;
+  }
+
+  function selectAreaDeputyLead(id: number | null): void {
+    formAreaDeputyLeadId = id;
+    areaDeputyLeadDropdownOpen = false;
   }
 
   // Reset local UI state when modal opens
@@ -103,12 +112,18 @@
       typeDropdownOpen = false;
       statusDropdownOpen = false;
       areaLeadDropdownOpen = false;
+      areaDeputyLeadDropdownOpen = false;
     }
   });
 
   // Close dropdowns on outside click
   $effect(() => {
-    if (typeDropdownOpen || statusDropdownOpen || areaLeadDropdownOpen) {
+    if (
+      typeDropdownOpen ||
+      statusDropdownOpen ||
+      areaLeadDropdownOpen ||
+      areaDeputyLeadDropdownOpen
+    ) {
       const handleClick = (e: MouseEvent): void => {
         const target = e.target as HTMLElement;
         if (typeDropdownOpen && !target.closest('#type-dropdown')) {
@@ -119,6 +134,9 @@
         }
         if (areaLeadDropdownOpen && !target.closest('#area-lead-dropdown')) {
           areaLeadDropdownOpen = false;
+        }
+        if (areaDeputyLeadDropdownOpen && !target.closest('#area-deputy-lead-dropdown')) {
+          areaDeputyLeadDropdownOpen = false;
         }
       };
       document.addEventListener('click', handleClick, true);
@@ -137,18 +155,10 @@
     aria-modal="true"
     aria-labelledby="area-modal-title"
     tabindex="-1"
-    onclick={handleOverlayClick}
-    onkeydown={(e) => {
-      if (e.key === 'Escape') onclose();
-    }}
   >
-    <!-- svelte-ignore a11y_no_noninteractive_element_interactions, a11y_click_events_have_key_events -->
     <form
       id="area-form"
       class="ds-modal"
-      onclick={(e) => {
-        e.stopPropagation();
-      }}
       {onsubmit}
     >
       <div class="ds-modal__header">
@@ -222,8 +232,8 @@
             </span>
             <div class="alert__content">
               <p class="alert__message">
-                Nur Admins/Root mit der Position &laquo;{messages.AREA_LEAD_POSITION}&raquo;
-                stehen zur Auswahl. Zuweisung über die
+                Nur Admins/Root mit der Position &laquo;{messages.AREA_LEAD_POSITION}&raquo; stehen
+                zur Auswahl. Zuweisung über die
                 <a href="/manage-admins">Admin-Verwaltung</a>.
               </p>
             </div>
@@ -266,6 +276,65 @@
                     class="dropdown__option"
                     onclick={() => {
                       selectAreaLead(user.id);
+                    }}
+                  >
+                    {user.firstName}
+                    {user.lastName}
+                    {user.role === 'root' ? '(Root)' : '(Admin)'}
+                  </button>
+                {/each}
+              </div>
+            </div>
+          {/if}
+        </div>
+
+        <!-- Area Deputy Lead Dropdown -->
+        <div class="form-field">
+          <label
+            class="form-field__label"
+            for="area-deputy-lead-hidden"
+          >
+            <i class="fas fa-user-shield mr-1"></i>
+            Stellvertreter
+          </label>
+          <input
+            type="hidden"
+            id="area-deputy-lead-hidden"
+            value={formAreaDeputyLeadId ?? ''}
+          />
+          {#if areaLeads.length > 0}
+            <div
+              class="dropdown"
+              id="area-deputy-lead-dropdown"
+            >
+              <button
+                type="button"
+                class="dropdown__trigger"
+                class:active={areaDeputyLeadDropdownOpen}
+                onclick={toggleAreaDeputyLeadDropdown}
+              >
+                <span>{areaDeputyLeadDisplayName}</span>
+                <i class="fas fa-chevron-down"></i>
+              </button>
+              <div
+                class="dropdown__menu"
+                class:active={areaDeputyLeadDropdownOpen}
+              >
+                <button
+                  type="button"
+                  class="dropdown__option"
+                  onclick={() => {
+                    selectAreaDeputyLead(null);
+                  }}
+                >
+                  — Kein Stellvertreter —
+                </button>
+                {#each areaLeads as user (user.id)}
+                  <button
+                    type="button"
+                    class="dropdown__option"
+                    onclick={() => {
+                      selectAreaDeputyLead(user.id);
                     }}
                   >
                     {user.firstName}
@@ -454,9 +523,7 @@
                 </button>
               </div>
             </div>
-            <span
-              class="form-field__message mt-1 block text-(--color-text-secondary)"
-            >
+            <span class="form-field__message mt-1 block text-(--color-text-secondary)">
               {messages.STATUS_HINT}
             </span>
           </div>
@@ -474,8 +541,7 @@
           class="btn btn-primary"
           disabled={submitting}
         >
-          {#if submitting}<span class="spinner-ring spinner-ring--sm mr-2"
-            ></span>{/if}
+          {#if submitting}<span class="spinner-ring spinner-ring--sm mr-2"></span>{/if}
           {messages.BTN_SAVE}
         </button>
       </div>

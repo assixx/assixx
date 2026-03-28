@@ -368,12 +368,9 @@ describe('TPM: List Cards by Plan', () => {
   let body: JsonBody;
 
   beforeAll(async () => {
-    res = await fetch(
-      `${BASE_URL}/tpm/cards?planUuid=${planUuid}&page=1&limit=20`,
-      {
-        headers: authOnly(auth.authToken),
-      },
-    );
+    res = await fetch(`${BASE_URL}/tpm/cards?planUuid=${planUuid}&page=1&limit=20`, {
+      headers: authOnly(auth.authToken),
+    });
     body = (await res.json()) as JsonBody;
   });
 
@@ -470,12 +467,9 @@ describe('TPM: Board Data', () => {
   let body: JsonBody;
 
   beforeAll(async () => {
-    res = await fetch(
-      `${BASE_URL}/tpm/plans/${planUuid}/board?page=1&limit=50`,
-      {
-        headers: authOnly(auth.authToken),
-      },
-    );
+    res = await fetch(`${BASE_URL}/tpm/plans/${planUuid}/board?page=1&limit=50`, {
+      headers: authOnly(auth.authToken),
+    });
     body = (await res.json()) as JsonBody;
   });
 
@@ -500,12 +494,9 @@ describe('TPM: Plan Not Found', () => {
   let res: Response;
 
   beforeAll(async () => {
-    res = await fetch(
-      `${BASE_URL}/tpm/plans/019fffff-ffff-7fff-bfff-ffffffffffff`,
-      {
-        headers: authOnly(auth.authToken),
-      },
-    );
+    res = await fetch(`${BASE_URL}/tpm/plans/019fffff-ffff-7fff-bfff-ffffffffffff`, {
+      headers: authOnly(auth.authToken),
+    });
   });
 
   it('should return 404 for non-existent plan', () => {
@@ -519,12 +510,9 @@ describe('TPM: Card Not Found', () => {
   let res: Response;
 
   beforeAll(async () => {
-    res = await fetch(
-      `${BASE_URL}/tpm/cards/019fffff-ffff-7fff-bfff-ffffffffffff`,
-      {
-        headers: authOnly(auth.authToken),
-      },
-    );
+    res = await fetch(`${BASE_URL}/tpm/cards/019fffff-ffff-7fff-bfff-ffffffffffff`, {
+      headers: authOnly(auth.authToken),
+    });
   });
 
   it('should return 404 for non-existent card', () => {

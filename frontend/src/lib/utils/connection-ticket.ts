@@ -25,9 +25,7 @@ interface ConnectionTicketResponse {
  * - Single-use (deleted after first validation)
  * - Contain no sensitive data (just a random UUID)
  */
-export async function getConnectionTicket(
-  purpose: TicketPurpose,
-): Promise<string | null> {
+export async function getConnectionTicket(purpose: TicketPurpose): Promise<string | null> {
   if (!browser) {
     logger.error('getConnectionTicket called outside browser context');
     return null;
@@ -45,9 +43,7 @@ export async function getConnectionTicket(
 
     if (!response.ok) {
       const errorText = await response.text();
-      logger.error(
-        `Failed to get connection ticket: ${response.status} - ${errorText}`,
-      );
+      logger.error(`Failed to get connection ticket: ${response.status} - ${errorText}`);
       return null;
     }
 

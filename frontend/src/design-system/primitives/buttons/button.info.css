@@ -10,10 +10,7 @@
 
 .btn-info {
   /* Shadow */
-  box-shadow: var(
-    --shadow-btn-info,
-    0 2px 8px oklch(72.32% 0.1106 207.83 / 30%)
-  );
+  box-shadow: var(--shadow-btn-info, 0 2px 8px oklch(72.32% 0.1106 207.83 / 30%));
   border: 1px solid oklch(66.02% 0.1059 210.36); /* Solid cyan border - avatar style */
 
   background: linear-gradient(
@@ -31,10 +28,7 @@
 
 /* Hover State - Brighten the gradient */
 .btn-info:hover:not(:disabled) {
-  box-shadow: var(
-    --shadow-btn-info-hover,
-    0 4px 12px oklch(72.32% 0.1106 207.83 / 40%)
-  );
+  box-shadow: var(--shadow-btn-info-hover, 0 4px 12px oklch(72.32% 0.1106 207.83 / 40%));
   background: linear-gradient(
     145deg,
     oklch(83.14% 0.0793 228.67 / 18%),
@@ -45,10 +39,7 @@
 /* Active/Pressed State */
 .btn-info:active:not(:disabled) {
   transform: translateY(0);
-  box-shadow: var(
-    --shadow-btn-info-active,
-    0 1px 4px oklch(72.32% 0.1106 207.83 / 30%)
-  );
+  box-shadow: var(--shadow-btn-info-active, 0 1px 4px oklch(72.32% 0.1106 207.83 / 30%));
   background: var(--color-cyan-dark); /* Cyan 700 */
 }
 

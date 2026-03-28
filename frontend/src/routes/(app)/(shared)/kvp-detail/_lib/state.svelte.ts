@@ -86,7 +86,11 @@ function createKvpDetailState() {
     get isAdmin() {
       return user.isAdmin;
     },
+    get canManage() {
+      return user.canManage;
+    },
     setUser: user.setUser,
+    setTeamLead: user.setTeamLead,
     updateEffectiveRole: user.updateEffectiveRole,
 
     // Data state

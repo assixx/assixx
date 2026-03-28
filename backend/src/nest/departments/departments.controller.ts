@@ -36,6 +36,7 @@ import type {
 } from './departments.service.js';
 import { DepartmentsService } from './departments.service.js';
 import {
+  AssignHallsToDepartmentDto,
   CreateDepartmentDto,
   DeleteDepartmentQueryDto,
   ListDepartmentsQueryDto,
@@ -62,17 +63,12 @@ export class DepartmentsController {
    * List all departments with optional extended info
    */
   @Get()
-  @Roles('admin', 'root', 'employee')
-  @RequirePermission(SCOPE_FEAT, SCOPE_MOD, 'canRead')
   async listDepartments(
     @Query() query: ListDepartmentsQueryDto,
     @TenantId() tenantId: number,
   ): Promise<DepartmentResponse[]> {
     const includeExtended = query.includeExtended !== false;
-    return await this.departmentsService.listDepartments(
-      tenantId,
-      includeExtended,
-    );
+    return await this.departmentsService.listDepartments(tenantId, includeExtended);
   }
 
   /**
@@ -80,11 +76,7 @@ export class DepartmentsController {
    * Get department statistics for the tenant
    */
   @Get('stats')
-  @Roles('admin', 'root', 'employee')
-  @RequirePermission(SCOPE_FEAT, SCOPE_MOD, 'canRead')
-  async getDepartmentStats(
-    @TenantId() tenantId: number,
-  ): Promise<DepartmentStats> {
+  async getDepartmentStats(@TenantId() tenantId: number): Promise<DepartmentStats> {
     return await this.departmentsService.getDepartmentStats(tenantId);
   }
 
@@ -93,8 +85,6 @@ export class DepartmentsController {
    * Get department by ID
    */
   @Get(':id')
-  @Roles('admin', 'root', 'employee')
-  @RequirePermission(SCOPE_FEAT, SCOPE_MOD, 'canRead')
   async getDepartmentById(
     @Param('id', ParseIntPipe) id: number,
     @TenantId() tenantId: number,
@@ -107,8 +97,6 @@ export class DepartmentsController {
    * Get department members
    */
   @Get(':id/members')
-  @Roles('admin', 'root', 'employee')
-  @RequirePermission(SCOPE_FEAT, SCOPE_MOD, 'canRead')
   async getDepartmentMembers(
     @Param('id', ParseIntPipe) id: number,
     @TenantId() tenantId: number,
@@ -128,11 +116,7 @@ export class DepartmentsController {
     @CurrentUser() user: NestAuthUser,
     @TenantId() tenantId: number,
   ): Promise<DepartmentResponse> {
-    return await this.departmentsService.createDepartment(
-      dto,
-      user.id,
-      tenantId,
-    );
+    return await this.departmentsService.createDepartment(dto, user.id, tenantId);
   }
 
   /**
@@ -148,11 +132,26 @@ export class DepartmentsController {
     @CurrentUser() user: NestAuthUser,
     @TenantId() tenantId: number,
   ): Promise<DepartmentResponse> {
-    return await this.departmentsService.updateDepartment(
+    return await this.departmentsService.updateDepartment(id, dto, user.id, tenantId);
+  }
+
+  /**
+   * POST /departments/:id/halls
+   * Assign halls to a department (admin only)
+   */
+  @Post(':id/halls')
+  @Roles('admin', 'root')
+  async assignHalls(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: AssignHallsToDepartmentDto,
+    @CurrentUser() user: NestAuthUser,
+    @TenantId() tenantId: number,
+  ): Promise<MessageResponse> {
+    return await this.departmentsService.assignHallsToDepartment(
       id,
-      dto,
-      user.id,
+      dto.hallIds,
       tenantId,
+      user.id,
     );
   }
 

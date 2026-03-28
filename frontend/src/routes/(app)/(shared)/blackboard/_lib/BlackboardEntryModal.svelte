@@ -1,10 +1,7 @@
 <script lang="ts">
   import { onClickOutsideDropdown } from '$lib/actions/click-outside';
   import AppDatePicker from '$lib/components/AppDatePicker.svelte';
-  import {
-    DEFAULT_HIERARCHY_LABELS,
-    type HierarchyLabels,
-  } from '$lib/types/hierarchy-labels';
+  import { DEFAULT_HIERARCHY_LABELS, type HierarchyLabels } from '$lib/types/hierarchy-labels';
   import {
     filterAvailableDepartments,
     filterDepartmentIdsByAreas,
@@ -12,22 +9,10 @@
     filterTeamIdsByDepartments,
   } from '$lib/utils';
 
-  import {
-    COLOR_OPTIONS,
-    PRIORITY_OPTIONS,
-    MESSAGES,
-    FILE_UPLOAD_CONFIG,
-  } from './constants';
+  import { COLOR_OPTIONS, PRIORITY_OPTIONS, MESSAGES, FILE_UPLOAD_CONFIG } from './constants';
   import { getPriorityLabel } from './utils';
 
-  import type {
-    Priority,
-    EntryColor,
-    Department,
-    Team,
-    Area,
-    FormMode,
-  } from './types';
+  import type { Priority, EntryColor, Department, Team, Area, FormMode } from './types';
 
   interface Props {
     mode: FormMode;
@@ -100,9 +85,7 @@
 
   // All department IDs covered by selection (explicit + area-inherited)
   const coveredDepartmentIds = $derived.by(() => {
-    const inherited = departments
-      .filter((d) => areaIds.includes(d.areaId ?? -1))
-      .map((d) => d.id);
+    const inherited = departments.filter((d) => areaIds.includes(d.areaId ?? -1)).map((d) => d.id);
     return [...departmentIds, ...inherited];
   });
 
@@ -118,11 +101,7 @@
   function handleAreaChange(newAreaIds: number[]): void {
     onareaschange(newAreaIds);
     // Remove departments that are now covered by selected areas
-    const filteredDeptIds = filterDepartmentIdsByAreas(
-      departmentIds,
-      departments,
-      newAreaIds,
-    );
+    const filteredDeptIds = filterDepartmentIdsByAreas(departmentIds, departments, newAreaIds);
     if (filteredDeptIds.length !== departmentIds.length) {
       ondepartmentschange(filteredDeptIds);
     }
@@ -169,13 +148,6 @@
     onfileschange(filtered.length > 0 ? filtered : null);
   }
 
-  function handleKeyDown(e: KeyboardEvent): void {
-    if (e.key === 'Escape') {
-      priorityDropdownOpen = false;
-      onclose();
-    }
-  }
-
   // Capture-phase click-outside: works inside modals (bypasses stopPropagation)
   $effect(() => {
     return onClickOutsideDropdown(() => {
@@ -184,35 +156,19 @@
   });
 </script>
 
-<svelte:window onkeydown={handleKeyDown} />
-
 <div
   id="blackboard-entry-modal"
   class="modal-overlay modal-overlay--active"
-  onclick={onclose}
-  onkeydown={(e) => {
-    if (e.key === 'Escape') onclose();
-  }}
   role="dialog"
   aria-modal="true"
-  tabindex="-1"
 >
-  <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
   <form
     class="ds-modal ds-modal--lg"
-    onclick={(e) => {
-      e.stopPropagation();
-    }}
-    onkeydown={(e) => {
-      e.stopPropagation();
-    }}
     {onsubmit}
   >
     <div class="ds-modal__header">
       <h3 class="ds-modal__title">
-        {mode === 'edit' ?
-          MESSAGES.MODAL_TITLE_EDIT
-        : MESSAGES.MODAL_TITLE_CREATE}
+        {mode === 'edit' ? MESSAGES.MODAL_TITLE_EDIT : MESSAGES.MODAL_TITLE_CREATE}
       </h3>
       <button
         type="button"
@@ -275,13 +231,10 @@
             }}
           />
           <span class="toggle-switch__slider"></span>
-          <span class="toggle-switch__label"
-            ><i class="fas fa-building mr-2"></i>Ganze Firma</span
-          >
+          <span class="toggle-switch__label"><i class="fas fa-building mr-2"></i>Ganze Firma</span>
         </label>
         <span class="form-field__message form-field__message--warning">
-          <i class="fas fa-exclamation-triangle mr-1"
-          ></i>{MESSAGES.COMPANY_WIDE_WARNING}
+          <i class="fas fa-exclamation-triangle mr-1"></i>{MESSAGES.COMPANY_WIDE_WARNING}
         </span>
       </div>
 
@@ -303,16 +256,12 @@
           disabled={companyWide}
           onchange={(e) => {
             const select = e.target as HTMLSelectElement;
-            handleAreaChange(
-              Array.from(select.selectedOptions).map((o) => Number(o.value)),
-            );
+            handleAreaChange(Array.from(select.selectedOptions).map((o) => Number(o.value)));
           }}
         >
           {#each areas as area (area.id)}
             <option value={area.id}>
-              {area.name}{(
-                area.departmentCount !== undefined && area.departmentCount > 0
-              ) ?
+              {area.name}{area.departmentCount !== undefined && area.departmentCount > 0 ?
                 ` (${area.departmentCount} Abt.)`
               : ''}
             </option>
@@ -320,8 +269,7 @@
         </select>
         <span class="form-field__message text-(--color-text-secondary)">
           <i class="fas fa-info-circle mr-1"></i>
-          Strg/Cmd + Klick für Mehrfachauswahl. {labels.area} vererben Zugriff auf
-          zugehörige
+          Strg/Cmd + Klick für Mehrfachauswahl. {labels.area} vererben Zugriff auf zugehörige
           {labels.department}.
         </span>
       </div>
@@ -343,9 +291,7 @@
           disabled={companyWide}
           onchange={(e) => {
             const select = e.target as HTMLSelectElement;
-            handleDepartmentChange(
-              Array.from(select.selectedOptions).map((o) => Number(o.value)),
-            );
+            handleDepartmentChange(Array.from(select.selectedOptions).map((o) => Number(o.value)));
           }}
         >
           {#each availableDepartments as dept (dept.id)}
@@ -358,8 +304,8 @@
         </select>
         <span class="form-field__message text-(--color-text-secondary)">
           <i class="fas fa-info-circle mr-1"></i>
-          Strg/Cmd + Klick für Mehrfachauswahl. Nur {labels.department} die nicht
-          bereits durch {labels.area} abgedeckt sind.
+          Strg/Cmd + Klick für Mehrfachauswahl. Nur {labels.department} die nicht bereits durch {labels.area}
+          abgedeckt sind.
         </span>
       </div>
       <div
@@ -380,9 +326,7 @@
           disabled={companyWide}
           onchange={(e) => {
             const select = e.target as HTMLSelectElement;
-            onteamschange(
-              Array.from(select.selectedOptions).map((o) => Number(o.value)),
-            );
+            onteamschange(Array.from(select.selectedOptions).map((o) => Number(o.value)));
           }}
         >
           {#each availableTeams as team (team.id)}
@@ -411,8 +355,7 @@
             role="button"
             tabindex="0"
             onkeydown={(e) => {
-              if (e.key === 'Enter')
-                priorityDropdownOpen = !priorityDropdownOpen;
+              if (e.key === 'Enter') priorityDropdownOpen = !priorityDropdownOpen;
             }}
           >
             <span>{priorityLabel}</span>
@@ -457,9 +400,7 @@
 
       <!-- Color Picker -->
       <div class="form-field">
-        <span class="form-field__label"
-          ><i class="fas fa-palette mr-2"></i>Farbe</span
-        >
+        <span class="form-field__label"><i class="fas fa-palette mr-2"></i>Farbe</span>
         <div
           class="color-picker"
           role="radiogroup"
@@ -516,8 +457,7 @@
               <div class="file-upload-list__item">
                 <i class="fas fa-file file-upload-list__icon"></i>
                 <span class="file-upload-list__name">{file.name}</span>
-                <span class="file-upload-list__size"
-                  >{(file.size / 1024 / 1024).toFixed(2)} MB</span
+                <span class="file-upload-list__size">{(file.size / 1024 / 1024).toFixed(2)} MB</span
                 >
                 <button
                   type="button"
@@ -609,8 +549,7 @@
     position: absolute;
     top: 6px;
     right: 6px;
-    box-shadow: 0 2px 4px
-      color-mix(in oklch, var(--color-black) 20%, transparent);
+    box-shadow: 0 2px 4px color-mix(in oklch, var(--color-black) 20%, transparent);
     border-radius: 50%;
     background: var(--color-primary);
     width: 18px;
@@ -631,8 +570,7 @@
 
   .color-option__swatch {
     display: block;
-    box-shadow: 0 2px 8px
-      color-mix(in oklch, var(--color-black) 15%, transparent);
+    box-shadow: 0 2px 8px color-mix(in oklch, var(--color-black) 15%, transparent);
     border: 2px solid color-mix(in oklch, var(--color-white) 30%, transparent);
     border-radius: 50%;
     width: 32px;
@@ -648,27 +586,15 @@
   /* Color Swatch Variants */
 
   .color-option[data-color='yellow'] .color-option__swatch {
-    background: linear-gradient(
-      135deg,
-      var(--color-amber-light) 0%,
-      var(--color-amber-hover) 100%
-    );
+    background: linear-gradient(135deg, var(--color-amber-light) 0%, var(--color-amber-hover) 100%);
   }
 
   .color-option[data-color='pink'] .color-option__swatch {
-    background: linear-gradient(
-      135deg,
-      var(--color-pink) 0%,
-      var(--color-pink-hover) 100%
-    );
+    background: linear-gradient(135deg, var(--color-pink) 0%, var(--color-pink-hover) 100%);
   }
 
   .color-option[data-color='blue'] .color-option__swatch {
-    background: linear-gradient(
-      135deg,
-      var(--color-info) 0%,
-      oklch(54.61% 0.2152 262.88) 100%
-    );
+    background: linear-gradient(135deg, var(--color-info) 0%, oklch(54.61% 0.2152 262.88) 100%);
   }
 
   .color-option[data-color='green'] .color-option__swatch {

@@ -35,7 +35,9 @@ export type NotificationEventType =
   | 'WORK_ORDER_ASSIGNED'
   | 'WORK_ORDER_STATUS_CHANGED'
   | 'WORK_ORDER_DUE_SOON'
-  | 'WORK_ORDER_VERIFIED';
+  | 'WORK_ORDER_VERIFIED'
+  | 'NEW_APPROVAL'
+  | 'APPROVAL_DECIDED';
 
 export interface NotificationEvent {
   type: NotificationEventType;
@@ -52,6 +54,8 @@ export interface NotificationEvent {
   request?: VacationRequestEventData;
   /** Work order data — present when type starts with 'WORK_ORDER_' */
   workOrder?: WorkOrderEventData;
+  /** Approval data — present when type is 'NEW_APPROVAL' or 'APPROVAL_DECIDED' */
+  approval?: ApprovalEventData;
   user?: {
     id: number;
     role: string;
@@ -102,6 +106,15 @@ export interface MessageEventData {
   senderId: number;
   conversationId: number;
   preview?: string;
+}
+
+interface ApprovalEventData {
+  uuid: string;
+  title: string;
+  addonCode: string;
+  status: string;
+  requestedByName?: string;
+  decidedByName?: string;
 }
 
 type NotificationHandler = (event: NotificationEvent) => void;

@@ -60,10 +60,10 @@
   let loading = $state(true);
   let plans = $state<TpmPlan[]>([]);
   let slots = $state<ProjectedSlot[]>([]);
-  let estimatesByPlan = $state<Map<string, TpmTimeEstimate[]>>(new Map());
+  let estimatesByPlan = $state(new Map<string, TpmTimeEstimate[]>());
   let intervalColorEntries = $state<IntervalColorConfigEntry[]>([]);
   let assignments = $state<TpmShiftAssignment[]>([]);
-  let zoomLevel = $state<number>(ZOOM_CONFIG.DEFAULT);
+  let zoomLevel: number = $state(ZOOM_CONFIG.DEFAULT);
 
   // =========================================================================
   // DERIVED
@@ -80,17 +80,13 @@
   const matrixRows: MatrixRow[] = $derived(buildMatrix(plans, slots, maxDates));
 
   const hasAnyEstimates = $derived(
-    [...estimatesByPlan.values()].some(
-      (list: TpmTimeEstimate[]) => list.length > 0,
-    ),
+    [...estimatesByPlan.values()].some((list: TpmTimeEstimate[]) => list.length > 0),
   );
 
   const hasAnyAssignments = $derived(assignments.length > 0);
 
   const dateIndex = $derived(buildDateIndex(matrixRows));
-  const assignmentCounts = $derived(
-    buildAssignmentCounts(assignments, dateIndex),
-  );
+  const assignmentCounts = $derived(buildAssignmentCounts(assignments, dateIndex));
 
   /** Colspan distribution: 4 sub-columns across maxDates cells */
   const estColSpans = $derived.by((): number[] => {
@@ -115,9 +111,7 @@
   function getDateRange(dates: number): { start: string; end: string } {
     const now = new Date();
     const start = now.toISOString().split('T')[0];
-    const end = new Date(now.getTime() + dates * 365 * 86_400_000)
-      .toISOString()
-      .split('T')[0];
+    const end = new Date(now.getTime() + dates * 365 * 86_400_000).toISOString().split('T')[0];
     return { start, end };
   }
 
@@ -132,9 +126,7 @@
         fetchShiftAssignments(start, end),
       ]);
 
-      const activePlans = plansRes.items.filter(
-        (p: TpmPlan) => p.isActive === 1,
-      );
+      const activePlans = plansRes.items.filter((p: TpmPlan) => p.isActive === 1);
       plans = activePlans;
       slots = projRes?.slots ?? [];
       intervalColorEntries = colorsRes;
@@ -162,10 +154,7 @@
     estimatesByPlan = new Map(entries);
   }
 
-  function getEstimate(
-    planUuid: string,
-    intv: IntervalType,
-  ): TpmTimeEstimate | undefined {
+  function getEstimate(planUuid: string, intv: IntervalType): TpmTimeEstimate | undefined {
     const list = estimatesByPlan.get(planUuid);
     return list?.find((e: TpmTimeEstimate) => e.intervalType === intv);
   }
@@ -195,8 +184,7 @@
         await document.documentElement.requestFullscreen();
       }
     } catch (err: unknown) {
-      const message =
-        err instanceof Error ? err.message : 'Unknown fullscreen error';
+      const message = err instanceof Error ? err.message : 'Unknown fullscreen error';
       logger.error(message);
       document.body.classList.remove('tpm-gv-fullscreen');
     }
@@ -230,8 +218,7 @@
       class="gv-slider"
       for="gv-max-dates"
     >
-      <span class="gv-slider__label">{messages.GESAMTANSICHT_SLIDER_LABEL}</span
-      >
+      <span class="gv-slider__label">{messages.GESAMTANSICHT_SLIDER_LABEL}</span>
       <input
         id="gv-max-dates"
         type="range"
@@ -250,9 +237,7 @@
         class="choice-card__input"
         bind:checked={groupedView}
       />
-      <span class="choice-card__text"
-        >{messages.GESAMTANSICHT_TOGGLE_GROUPED}</span
-      >
+      <span class="choice-card__text">{messages.GESAMTANSICHT_TOGGLE_GROUPED}</span>
     </label>
 
     <div class="zoom-controls">
@@ -312,9 +297,7 @@
             <th class="gv-th gv-th--sticky">
               {messages.GESAMTANSICHT_TH_MACHINE}
             </th>
-            <th class="gv-th gv-th--sticky gv-th--col2"
-              >{messages.GESAMTANSICHT_TH_TIME}</th
-            >
+            <th class="gv-th gv-th--sticky gv-th--col2">{messages.GESAMTANSICHT_TH_TIME}</th>
             {#each INTERVAL_COLUMNS as col (col)}
               <th
                 colspan={maxDates}

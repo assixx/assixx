@@ -6,12 +6,7 @@
  *
  * Uses tenantDeletionService for the actual deletion engine.
  */
-import {
-  BadRequestException,
-  ConflictException,
-  Injectable,
-  Logger,
-} from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, Logger } from '@nestjs/common';
 import bcrypt from 'bcryptjs';
 
 import { DatabaseService } from '../database/database.service.js';
@@ -105,8 +100,7 @@ export class RootDeletionService {
     const hasUserId = currentUserId !== undefined && currentUserId !== 0;
     const isCreator = hasUserId ? deletion.created_by === currentUserId : false;
     const canApprove = deletion.status === 'pending_approval' && !isCreator;
-    const canCancel =
-      ['pending_approval', 'approved'].includes(deletion.status) && isCreator;
+    const canCancel = ['pending_approval', 'approved'].includes(deletion.status) && isCreator;
 
     return {
       queueId: deletion.id,
@@ -148,10 +142,7 @@ export class RootDeletionService {
       [tenantId],
     );
 
-    const records = report.affectedRecords as Record<
-      string,
-      number | undefined
-    >;
+    const records = report.affectedRecords as Record<string, number | undefined>;
 
     return {
       tenantId: report.tenantId,
@@ -209,9 +200,7 @@ export class RootDeletionService {
   /**
    * Get pending approvals
    */
-  async getPendingApprovals(
-    currentUserId: number,
-  ): Promise<DeletionApproval[]> {
+  async getPendingApprovals(currentUserId: number): Promise<DeletionApproval[]> {
     this.logger.debug(`Getting pending approvals for user ${currentUserId}`);
 
     const approvals = await this.db.query<DbDeletionRequestRow>(
@@ -254,10 +243,7 @@ export class RootDeletionService {
     this.logger.log(`Approving deletion ${queueId} - verifying user password`);
 
     // SECURITY: Get user's password hash via repository for full tenant isolation
-    const storedHash = await this.userRepository.getPasswordHash(
-      userId,
-      tenantId,
-    );
+    const storedHash = await this.userRepository.getPasswordHash(userId, tenantId);
 
     if (storedHash === null || storedHash === '') {
       this.logger.error(
@@ -268,26 +254,18 @@ export class RootDeletionService {
 
     const isPasswordValid = await bcrypt.compare(password, storedHash);
     if (!isPasswordValid) {
-      this.logger.warn(
-        `Invalid password for deletion approval by user ${userId}`,
-      );
+      this.logger.warn(`Invalid password for deletion approval by user ${userId}`);
       throw new Error('Ungültiges Passwort');
     }
 
-    this.logger.log(
-      `Password verified for user ${userId}, proceeding with approval`,
-    );
+    this.logger.log(`Password verified for user ${userId}, proceeding with approval`);
     await this.tenantDeletion.approveDeletion(queueId, userId, comment);
   }
 
   /**
    * Reject deletion
    */
-  async rejectDeletion(
-    queueId: number,
-    userId: number,
-    reason: string,
-  ): Promise<void> {
+  async rejectDeletion(queueId: number, userId: number, reason: string): Promise<void> {
     this.logger.log(`Rejecting deletion ${queueId}`);
     await this.tenantDeletion.rejectDeletion(queueId, userId, reason);
   }

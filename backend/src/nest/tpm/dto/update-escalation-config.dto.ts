@@ -17,6 +17,4 @@ export const UpdateEscalationConfigSchema = z.object({
   notifyDepartmentLead: z.boolean().optional(),
 });
 
-export class UpdateEscalationConfigDto extends createZodDto(
-  UpdateEscalationConfigSchema,
-) {}
+export class UpdateEscalationConfigDto extends createZodDto(UpdateEscalationConfigSchema) {}

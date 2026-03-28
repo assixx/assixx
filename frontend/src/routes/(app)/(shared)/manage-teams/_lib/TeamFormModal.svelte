@@ -1,9 +1,6 @@
 <script lang="ts">
   import { onClickOutsideDropdown } from '$lib/actions/click-outside';
-  import {
-    DEFAULT_HIERARCHY_LABELS,
-    type HierarchyLabels,
-  } from '$lib/types/hierarchy-labels';
+  import { DEFAULT_HIERARCHY_LABELS, type HierarchyLabels } from '$lib/types/hierarchy-labels';
 
   import { createMessages } from './constants';
   import {
@@ -16,13 +13,7 @@
     toggleIdInArray,
   } from './utils';
 
-  import type {
-    Department,
-    Admin,
-    TeamMember,
-    Asset,
-    FormIsActiveStatus,
-  } from './types';
+  import type { Department, Admin, TeamMember, Asset, Hall, FormIsActiveStatus } from './types';
 
   interface Props {
     isEditMode: boolean;
@@ -32,13 +23,16 @@
     formDescription: string;
     formDepartmentId: number | null;
     formLeaderId: number | null;
+    formDeputyLeaderId: number | null;
     formMemberIds: number[];
     formAssetIds: number[];
+    formHallId: number | null;
     formIsActive: FormIsActiveStatus;
     allDepartments: Department[];
     allLeaders: Admin[];
     allEmployees: TeamMember[];
     allAssets: Asset[];
+    allHalls: Hall[];
     submitting: boolean;
     onclose: () => void;
     onsubmit: (data: {
@@ -46,8 +40,10 @@
       description: string;
       departmentId: number | null;
       leaderId: number | null;
+      deputyLeaderId: number | null;
       memberIds: number[];
       assetIds: number[];
+      hallId: number | null;
       isActive: FormIsActiveStatus;
     }) => void;
   }
@@ -61,13 +57,16 @@
     formDescription,
     formDepartmentId,
     formLeaderId,
+    formDeputyLeaderId,
     formMemberIds,
     formAssetIds,
+    formHallId,
     formIsActive,
     allDepartments,
     allLeaders,
     allEmployees,
     allAssets,
+    allHalls,
     submitting,
     onclose,
     onsubmit,
@@ -80,8 +79,10 @@
   let localDescription = $state('');
   let localDepartmentId = $state<number | null>(null);
   let localLeaderId = $state<number | null>(null);
+  let localDeputyLeaderId = $state<number | null>(null);
   let localMemberIds = $state<number[]>([]);
   let localAssetIds = $state<number[]>([]);
+  let localHallId = $state<number | null>(null);
   let localIsActive = $state<FormIsActiveStatus>(1);
 
   // Sync props to local state when they change
@@ -90,21 +91,60 @@
     localDescription = formDescription;
     localDepartmentId = formDepartmentId;
     localLeaderId = formLeaderId;
+    localDeputyLeaderId = formDeputyLeaderId;
     localMemberIds = [...formMemberIds];
     localAssetIds = [...formAssetIds];
+    localHallId = formHallId;
     localIsActive = formIsActive;
   });
 
   // Dropdown states
   let departmentDropdownOpen = $state(false);
+  let hallDropdownOpen = $state(false);
   let leaderDropdownOpen = $state(false);
+  let deputyLeaderDropdownOpen = $state(false);
   let membersDropdownOpen = $state(false);
   let assetsDropdownOpen = $state(false);
   let statusDropdownOpen = $state(false);
 
+  // Filter: exclude current leader from members dropdown (leader is auto-member)
+  const availableEmployees = $derived(
+    allEmployees.filter((e: TeamMember) => e.id !== localLeaderId),
+  );
+
+  // Filtered halls: only halls assigned to the selected department
+  const departmentHalls = $derived.by((): Hall[] => {
+    const deptId = localDepartmentId;
+    if (deptId === null) return [];
+    return allHalls.filter((h: Hall) => h.departmentIds?.includes(deptId) === true);
+  });
+
+  const hallDropdownDisabled = $derived(localDepartmentId === null || departmentHalls.length <= 1);
+
+  const hallInfoMessage = $derived.by((): string => {
+    if (localDepartmentId === null) return messages.HALL_INFO_NO_DEPARTMENT;
+    if (departmentHalls.length === 0) return messages.HALL_INFO_NO_HALLS;
+    if (departmentHalls.length === 1) return messages.HALL_INFO_AUTO_ASSIGNED;
+    return '';
+  });
+
+  // Auto-assign hall when department has exactly 1 hall; validate existing selection
+  $effect(() => {
+    const halls = departmentHalls;
+    if (halls.length === 1) {
+      localHallId = halls[0].id;
+    } else if (halls.length === 0) {
+      localHallId = null;
+    } else if (localHallId !== null && !halls.some((h: Hall) => h.id === localHallId)) {
+      localHallId = null;
+    }
+  });
+
   function closeOtherDropdowns(except: string): void {
     if (except !== 'department') departmentDropdownOpen = false;
+    if (except !== 'hall') hallDropdownOpen = false;
     if (except !== 'leader') leaderDropdownOpen = false;
+    if (except !== 'deputyLeader') deputyLeaderDropdownOpen = false;
     if (except !== 'members') membersDropdownOpen = false;
     if (except !== 'assets') assetsDropdownOpen = false;
     if (except !== 'status') statusDropdownOpen = false;
@@ -121,6 +161,24 @@
     departmentDropdownOpen = false;
   }
 
+  function toggleHallDropdown(e: MouseEvent): void {
+    e.stopPropagation();
+    if (hallDropdownDisabled) return;
+    closeOtherDropdowns('hall');
+    hallDropdownOpen = !hallDropdownOpen;
+  }
+
+  function selectHall(id: number | null): void {
+    localHallId = id;
+    hallDropdownOpen = false;
+  }
+
+  function getHallDisplayText(): string {
+    if (localHallId === null) return '— Keine Zuordnung —';
+    const hall = allHalls.find((h: Hall) => h.id === localHallId);
+    return hall?.name ?? '— Keine Zuordnung —';
+  }
+
   function toggleLeaderDropdown(e: MouseEvent): void {
     e.stopPropagation();
     closeOtherDropdowns('leader');
@@ -130,6 +188,17 @@
   function selectLeader(id: number | null): void {
     localLeaderId = id;
     leaderDropdownOpen = false;
+  }
+
+  function toggleDeputyLeaderDropdown(e: MouseEvent): void {
+    e.stopPropagation();
+    closeOtherDropdowns('deputyLeader');
+    deputyLeaderDropdownOpen = !deputyLeaderDropdownOpen;
+  }
+
+  function selectDeputyLeader(id: number | null): void {
+    localDeputyLeaderId = id;
+    deputyLeaderDropdownOpen = false;
   }
 
   function toggleMembersDropdown(e: MouseEvent): void {
@@ -163,10 +232,6 @@
     statusDropdownOpen = false;
   }
 
-  function handleOverlayClick(e: MouseEvent): void {
-    if (e.target === e.currentTarget) onclose();
-  }
-
   function handleFormSubmit(e: Event): void {
     e.preventDefault();
     onsubmit({
@@ -174,8 +239,10 @@
       description: localDescription,
       departmentId: localDepartmentId,
       leaderId: localLeaderId,
+      deputyLeaderId: localDeputyLeaderId,
       memberIds: localMemberIds,
       assetIds: localAssetIds,
+      hallId: localHallId,
       isActive: localIsActive,
     });
   }
@@ -184,7 +251,9 @@
   $effect(() => {
     return onClickOutsideDropdown(() => {
       departmentDropdownOpen = false;
+      hallDropdownOpen = false;
       leaderDropdownOpen = false;
+      deputyLeaderDropdownOpen = false;
       membersDropdownOpen = false;
       assetsDropdownOpen = false;
       statusDropdownOpen = false;
@@ -199,20 +268,9 @@
   aria-modal="true"
   aria-labelledby="team-modal-title"
   tabindex="-1"
-  onclick={handleOverlayClick}
-  onkeydown={(e) => {
-    if (e.key === 'Escape') onclose();
-  }}
 >
-  <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
   <form
     class="ds-modal"
-    onclick={(e) => {
-      e.stopPropagation();
-    }}
-    onkeydown={(e) => {
-      e.stopPropagation();
-    }}
     onsubmit={handleFormSubmit}
   >
     <div class="ds-modal__header">
@@ -278,13 +336,7 @@
             class:active={departmentDropdownOpen}
             onclick={toggleDepartmentDropdown}
           >
-            <span
-              >{getDepartmentDisplayText(
-                localDepartmentId,
-                allDepartments,
-                labels,
-              )}</span
-            >
+            <span>{getDepartmentDisplayText(localDepartmentId, allDepartments, labels)}</span>
             <i class="fas fa-chevron-down"></i>
           </button>
           <div
@@ -315,6 +367,73 @@
         </div>
       </div>
 
+      {#if allHalls.length > 0}
+        <div class="form-field">
+          <label
+            class="form-field__label"
+            for="team-hall">{labels.hall}</label
+          >
+          {#if hallDropdownDisabled && hallInfoMessage.length > 0}
+            <div
+              class="alert alert--info alert--sm"
+              role="status"
+              id="hall-info"
+              style="margin-bottom: var(--spacing-3);"
+            >
+              <span class="alert__icon">
+                <i class="fas fa-info-circle"></i>
+              </span>
+              <div class="alert__content">
+                <p class="alert__message">{hallInfoMessage}</p>
+              </div>
+            </div>
+          {/if}
+          <div
+            class="dropdown"
+            id="hall-dropdown"
+          >
+            <button
+              type="button"
+              class="dropdown__trigger"
+              class:active={hallDropdownOpen}
+              disabled={hallDropdownDisabled}
+              aria-describedby={hallDropdownDisabled ? 'hall-info' : undefined}
+              onclick={toggleHallDropdown}
+            >
+              <span>{getHallDisplayText()}</span>
+              <i class="fas fa-chevron-down"></i>
+            </button>
+            {#if !hallDropdownDisabled}
+              <div
+                class="dropdown__menu"
+                class:active={hallDropdownOpen}
+              >
+                <button
+                  type="button"
+                  class="dropdown__option"
+                  onclick={() => {
+                    selectHall(null);
+                  }}
+                >
+                  — Keine Zuordnung —
+                </button>
+                {#each departmentHalls as hall (hall.id)}
+                  <button
+                    type="button"
+                    class="dropdown__option"
+                    onclick={() => {
+                      selectHall(hall.id);
+                    }}
+                  >
+                    {hall.name}
+                  </button>
+                {/each}
+              </div>
+            {/if}
+          </div>
+        </div>
+      {/if}
+
       <div class="form-field">
         <label
           class="form-field__label"
@@ -329,8 +448,8 @@
           </span>
           <div class="alert__content">
             <p class="alert__message">
-              Nur Mitarbeiter mit der Position &laquo;{messages.TEAM_LEAD_POSITION}&raquo;
-              stehen zur Auswahl. Zuweisung über die
+              Nur Mitarbeiter mit der Position &laquo;{messages.TEAM_LEAD_POSITION}&raquo; stehen
+              zur Auswahl. Zuweisung über die
               <a href="/manage-employees">Mitarbeiterverwaltung</a>.
             </p>
           </div>
@@ -382,6 +501,58 @@
       <div class="form-field">
         <label
           class="form-field__label"
+          for="team-deputy-lead"
+        >
+          <i class="fas fa-user-shield mr-1"></i>
+          Stellvertreter
+        </label>
+        {#if allLeaders.length > 0}
+          <div
+            class="dropdown"
+            id="team-deputy-lead-dropdown"
+          >
+            <button
+              type="button"
+              class="dropdown__trigger"
+              class:active={deputyLeaderDropdownOpen}
+              onclick={toggleDeputyLeaderDropdown}
+            >
+              <span>{getLeaderDisplayText(localDeputyLeaderId, allLeaders)}</span>
+              <i class="fas fa-chevron-down"></i>
+            </button>
+            <div
+              class="dropdown__menu"
+              class:active={deputyLeaderDropdownOpen}
+            >
+              <button
+                type="button"
+                class="dropdown__option"
+                onclick={() => {
+                  selectDeputyLeader(null);
+                }}
+              >
+                — Kein Stellvertreter —
+              </button>
+              {#each allLeaders as leader (leader.id)}
+                <button
+                  type="button"
+                  class="dropdown__option"
+                  onclick={() => {
+                    selectDeputyLeader(leader.id);
+                  }}
+                >
+                  {leader.firstName}
+                  {leader.lastName}
+                </button>
+              {/each}
+            </div>
+          </div>
+        {/if}
+      </div>
+
+      <div class="form-field">
+        <label
+          class="form-field__label"
           for="team-members">Mitglieder</label
         >
         <div
@@ -394,14 +565,14 @@
             class:active={membersDropdownOpen}
             onclick={toggleMembersDropdown}
           >
-            <span>{getMembersDisplayText(localMemberIds, allEmployees)}</span>
+            <span>{getMembersDisplayText(localMemberIds, availableEmployees)}</span>
             <i class="fas fa-chevron-down"></i>
           </button>
           <div
             class="dropdown__menu"
             class:active={membersDropdownOpen}
           >
-            {#each allEmployees as employee (employee.id)}
+            {#each availableEmployees as employee (employee.id)}
               <button
                 type="button"
                 class="dropdown__option dropdown__option--checkbox"
@@ -424,7 +595,7 @@
                 {employee.lastName}
               </button>
             {/each}
-            {#if allEmployees.length === 0}
+            {#if availableEmployees.length === 0}
               <div class="dropdown__option dropdown__option--disabled">
                 {messages.NO_EMPLOYEES_AVAILABLE}
               </div>
@@ -448,8 +619,7 @@
             class:active={assetsDropdownOpen}
             onclick={toggleAssetsDropdown}
           >
-            <span>{getAssetsDisplayText(localAssetIds, allAssets, labels)}</span
-            >
+            <span>{getAssetsDisplayText(localAssetIds, allAssets, labels)}</span>
             <i class="fas fa-chevron-down"></i>
           </button>
           <div
@@ -561,8 +731,7 @@
         class="btn btn-primary"
         disabled={submitting}
       >
-        {#if submitting}<span class="spinner-ring spinner-ring--sm mr-2"
-          ></span>{/if}
+        {#if submitting}<span class="spinner-ring spinner-ring--sm mr-2"></span>{/if}
         Speichern
       </button>
     </div>

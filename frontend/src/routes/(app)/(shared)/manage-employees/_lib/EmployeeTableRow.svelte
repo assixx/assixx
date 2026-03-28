@@ -1,8 +1,5 @@
 <script lang="ts">
-  import {
-    DEFAULT_HIERARCHY_LABELS,
-    resolvePositionDisplay,
-  } from '$lib/types/hierarchy-labels';
+  import { DEFAULT_HIERARCHY_LABELS, resolvePositionDisplay } from '$lib/types/hierarchy-labels';
 
   import {
     getStatusBadgeClass,
@@ -26,6 +23,7 @@
   interface Props {
     employee: Employee;
     labels?: HierarchyLabels;
+    currentUserId?: number;
     canManagePermissions?: boolean;
     canMutate?: boolean;
     onedit: (employeeId: number) => void;
@@ -37,6 +35,7 @@
   const {
     employee,
     labels = DEFAULT_HIERARCHY_LABELS,
+    currentUserId = 0,
     canManagePermissions = true,
     canMutate = true,
     onedit,
@@ -44,6 +43,8 @@
     onpermission,
     ondelete,
   }: Props = $props();
+
+  const isSelf = $derived(employee.id === currentUserId);
 
   // =============================================================================
   // DERIVED VALUES
@@ -54,16 +55,15 @@
   const departmentsBadge = $derived(getDepartmentsBadge(employee, labels));
   const availabilityBadge = $derived(getAvailabilityBadge(employee));
   const plannedAvailability = $derived(getPlannedAvailability(employee));
-  const notes = $derived(getTruncatedNotes(employee.availabilityNotes));
+  const additionalInfo = $derived(getTruncatedNotes(employee.notes));
+  const absenceNotes = $derived(getTruncatedNotes(employee.availabilityNotes));
 </script>
 
 <tr>
   <td><code class="text-muted">{employee.id}</code></td>
   <td>
     <div class="flex items-center gap-2">
-      <div
-        class="avatar avatar--sm avatar--color-{getAvatarColor(employee.id)}"
-      >
+      <div class="avatar avatar--sm avatar--color-{getAvatarColor(employee.id)}">
         <span>{employee.firstName.charAt(0)}{employee.lastName.charAt(0)}</span>
       </div>
       <span>{employee.firstName} {employee.lastName}</span>
@@ -105,63 +105,69 @@
   </td>
   <td>
     <span class="badge {availabilityBadge.class}">
-      {#if availabilityBadge.icon}<i class="fas {availabilityBadge.icon} mr-1"
-        ></i>{/if}
+      {#if availabilityBadge.icon}<i class="fas {availabilityBadge.icon} mr-1"></i>{/if}
       {availabilityBadge.text}
     </span>
   </td>
   <td>{plannedAvailability}</td>
-  <td title={notes.title}>{notes.text}</td>
+  <td title={additionalInfo.title}>{additionalInfo.text}</td>
+  <td title={absenceNotes.title}>{absenceNotes.text}</td>
   <td>
-    <div class="flex gap-2">
-      <button
-        type="button"
-        class="action-icon action-icon--edit"
-        title="Bearbeiten"
-        aria-label="Mitarbeiter bearbeiten"
-        onclick={() => {
-          onedit(employee.id);
-        }}
-      >
-        <i class="fas fa-edit"></i>
-      </button>
-      <button
-        type="button"
-        class="action-icon action-icon--info"
-        title="Verfügbarkeit bearbeiten"
-        aria-label="Verfügbarkeit bearbeiten"
-        onclick={() => {
-          onavailability(employee.id);
-        }}
-      >
-        <i class="fas fa-calendar-alt"></i>
-      </button>
-      {#if canManagePermissions}
+    {#if isSelf}
+      <div class="u-text-center">
+        <span class="u-fs-20 text-(--color-text-secondary)">n/a</span>
+      </div>
+    {:else}
+      <div class="flex gap-2">
+        <button
+          type="button"
+          class="action-icon action-icon--edit"
+          title="Bearbeiten"
+          aria-label="Mitarbeiter bearbeiten"
+          onclick={() => {
+            onedit(employee.id);
+          }}
+        >
+          <i class="fas fa-edit"></i>
+        </button>
         <button
           type="button"
           class="action-icon action-icon--info"
-          title="Berechtigungen"
-          aria-label="Berechtigungen verwalten"
+          title="Verfügbarkeit bearbeiten"
+          aria-label="Verfügbarkeit bearbeiten"
           onclick={() => {
-            onpermission(employee.uuid);
+            onavailability(employee.id);
           }}
         >
-          <i class="fas fa-shield-alt"></i>
+          <i class="fas fa-calendar-alt"></i>
         </button>
-      {/if}
-      {#if canMutate}
-        <button
-          type="button"
-          class="action-icon action-icon--delete"
-          title="Löschen"
-          aria-label="Mitarbeiter löschen"
-          onclick={() => {
-            ondelete(employee.id);
-          }}
-        >
-          <i class="fas fa-trash"></i>
-        </button>
-      {/if}
-    </div>
+        {#if canManagePermissions}
+          <button
+            type="button"
+            class="action-icon action-icon--info"
+            title="Berechtigungen"
+            aria-label="Berechtigungen verwalten"
+            onclick={() => {
+              onpermission(employee.uuid);
+            }}
+          >
+            <i class="fas fa-shield-alt"></i>
+          </button>
+        {/if}
+        {#if canMutate}
+          <button
+            type="button"
+            class="action-icon action-icon--delete"
+            title="Löschen"
+            aria-label="Mitarbeiter löschen"
+            onclick={() => {
+              ondelete(employee.id);
+            }}
+          >
+            <i class="fas fa-trash"></i>
+          </button>
+        {/if}
+      </div>
+    {/if}
   </td>
 </tr>

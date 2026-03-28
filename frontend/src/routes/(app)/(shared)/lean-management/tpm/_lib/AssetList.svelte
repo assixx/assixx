@@ -12,12 +12,7 @@
     type TpmMessages,
   } from './constants';
 
-  import type {
-    AssetWithTpmStatus,
-    TpmCard,
-    CardStatus,
-    IntervalType,
-  } from './types';
+  import type { AssetWithTpmStatus, TpmCard, CardStatus, IntervalType } from './types';
 
   interface Props {
     messages: TpmMessages;
@@ -66,10 +61,7 @@
   }
 
   /** Compute status breakdown for a specific interval from card data */
-  function getIntervalEntry(
-    cards: TpmCard[],
-    interval: IntervalType,
-  ): IntervalStatusEntry | null {
+  function getIntervalEntry(cards: TpmCard[], interval: IntervalType): IntervalStatusEntry | null {
     const matching = cards.filter((c: TpmCard) => c.intervalType === interval);
     if (matching.length === 0) return null;
 
@@ -99,15 +91,10 @@
     return 'green';
   }
 
-  function getStatusTooltip(
-    entry: IntervalStatusEntry,
-    intervalLabel: string,
-  ): string {
+  function getStatusTooltip(entry: IntervalStatusEntry, intervalLabel: string): string {
     const parts: string[] = [];
-    if (entry.greenCount > 0)
-      parts.push(`${String(entry.greenCount)} ${CARD_STATUS_LABELS.green}`);
-    if (entry.redCount > 0)
-      parts.push(`${String(entry.redCount)} ${CARD_STATUS_LABELS.red}`);
+    if (entry.greenCount > 0) parts.push(`${String(entry.greenCount)} ${CARD_STATUS_LABELS.green}`);
+    if (entry.redCount > 0) parts.push(`${String(entry.redCount)} ${CARD_STATUS_LABELS.red}`);
     if (entry.yellowCount > 0)
       parts.push(`${String(entry.yellowCount)} ${CARD_STATUS_LABELS.yellow}`);
     if (entry.overdueCount > 0)
@@ -160,9 +147,7 @@
                 {#if entry !== null}
                   {@const worstStatus = getWorstStatus(entry)}
                   <span
-                    class="badge {CARD_STATUS_BADGE_CLASSES[
-                      worstStatus
-                    ]} badge--sm"
+                    class="badge {CARD_STATUS_BADGE_CLASSES[worstStatus]} badge--sm"
                     title={getStatusTooltip(entry, INTERVAL_LABELS[col])}
                   >
                     {entry.cardCount}
@@ -178,9 +163,7 @@
             <td>
               <div class="flex gap-2">
                 <a
-                  href={resolve(
-                    `/lean-management/tpm/board/${asset.plan.uuid}`,
-                  )}
+                  href={resolve(`/lean-management/tpm/board/${asset.plan.uuid}`)}
                   class="action-icon action-icon--primary"
                   title={messages.BTN_VIEW_BOARD}
                   aria-label={messages.BTN_VIEW_BOARD}
@@ -188,9 +171,7 @@
                   <i class="fas fa-th-large"></i>
                 </a>
                 <a
-                  href={resolve(
-                    `/lean-management/tpm/locations/${asset.plan.uuid}`,
-                  )}
+                  href={resolve(`/lean-management/tpm/locations/${asset.plan.uuid}`)}
                   class="action-icon action-icon--warning"
                   title="Standorte"
                   aria-label="Standorte"

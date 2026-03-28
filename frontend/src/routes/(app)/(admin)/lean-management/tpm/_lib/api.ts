@@ -83,13 +83,8 @@ function extractArray<T>(result: unknown): T[] {
 // =============================================================================
 
 /** Fetch paginated list of maintenance plans */
-export async function fetchPlans(
-  page = 1,
-  limit = 20,
-): Promise<PaginatedResponse<TpmPlan>> {
-  const result: unknown = await apiClient.get(
-    `/tpm/plans?page=${page}&limit=${limit}`,
-  );
+export async function fetchPlans(page = 1, limit = 20): Promise<PaginatedResponse<TpmPlan>> {
+  const result: unknown = await apiClient.get(`/tpm/plans?page=${page}&limit=${limit}`);
   return extractPaginated<TpmPlan>(result);
 }
 
@@ -104,17 +99,12 @@ export async function createPlan(payload: CreatePlanPayload): Promise<TpmPlan> {
 }
 
 /** Update an existing maintenance plan */
-export async function updatePlan(
-  planUuid: string,
-  payload: UpdatePlanPayload,
-): Promise<TpmPlan> {
+export async function updatePlan(planUuid: string, payload: UpdatePlanPayload): Promise<TpmPlan> {
   return await apiClient.patch<TpmPlan>(`/tpm/plans/${planUuid}`, payload);
 }
 
 /** Soft-delete a maintenance plan */
-export async function deletePlan(
-  planUuid: string,
-): Promise<{ message: string }> {
+export async function deletePlan(planUuid: string): Promise<{ message: string }> {
   return await apiClient.delete<{ message: string }>(`/tpm/plans/${planUuid}`);
 }
 
@@ -158,12 +148,8 @@ export async function fetchAssets(): Promise<Asset[]> {
 // =============================================================================
 
 /** Fetch time estimates for a plan */
-export async function fetchTimeEstimates(
-  planUuid: string,
-): Promise<TpmTimeEstimate[]> {
-  const result: unknown = await apiClient.get(
-    `/tpm/plans/${planUuid}/time-estimates`,
-  );
+export async function fetchTimeEstimates(planUuid: string): Promise<TpmTimeEstimate[]> {
+  const result: unknown = await apiClient.get(`/tpm/plans/${planUuid}/time-estimates`);
   return extractArray<TpmTimeEstimate>(result);
 }
 
@@ -172,10 +158,7 @@ export async function setTimeEstimate(
   planUuid: string,
   payload: CreateTimeEstimatePayload,
 ): Promise<TpmTimeEstimate> {
-  return await apiClient.post<TpmTimeEstimate>(
-    `/tpm/plans/${planUuid}/time-estimates`,
-    payload,
-  );
+  return await apiClient.post<TpmTimeEstimate>(`/tpm/plans/${planUuid}/time-estimates`, payload);
 }
 
 // =============================================================================
@@ -291,10 +274,10 @@ export async function setPlanAssignments(
   userIds: number[],
   scheduledDate: string,
 ): Promise<TpmPlanAssignment[]> {
-  const result: unknown = await apiClient.post(
-    `/tpm/plans/${planUuid}/assignments`,
-    { userIds, scheduledDate },
-  );
+  const result: unknown = await apiClient.post(`/tpm/plans/${planUuid}/assignments`, {
+    userIds,
+    scheduledDate,
+  });
   return extractArray<TpmPlanAssignment>(result);
 }
 
@@ -315,11 +298,9 @@ export async function fetchCards(
 ): Promise<PaginatedResponse<TpmCard>> {
   const params = new URLSearchParams();
   if (filters.planUuid !== undefined) params.set('planUuid', filters.planUuid);
-  if (filters.assetUuid !== undefined)
-    params.set('assetUuid', filters.assetUuid);
+  if (filters.assetUuid !== undefined) params.set('assetUuid', filters.assetUuid);
   if (filters.status !== undefined) params.set('status', filters.status);
-  if (filters.intervalType !== undefined)
-    params.set('intervalType', filters.intervalType);
+  if (filters.intervalType !== undefined) params.set('intervalType', filters.intervalType);
   params.set('page', String(filters.page ?? 1));
   params.set('limit', String(filters.limit ?? 20));
 
@@ -351,17 +332,12 @@ export async function createCard(payload: CreateCardPayload): Promise<TpmCard> {
 }
 
 /** Update an existing card */
-export async function updateCard(
-  cardUuid: string,
-  payload: UpdateCardPayload,
-): Promise<TpmCard> {
+export async function updateCard(cardUuid: string, payload: UpdateCardPayload): Promise<TpmCard> {
   return await apiClient.patch<TpmCard>(`/tpm/cards/${cardUuid}`, payload);
 }
 
 /** Soft-delete a card */
-export async function deleteCard(
-  cardUuid: string,
-): Promise<{ message: string }> {
+export async function deleteCard(cardUuid: string): Promise<{ message: string }> {
   return await apiClient.delete<{ message: string }>(`/tpm/cards/${cardUuid}`);
 }
 
@@ -369,10 +345,7 @@ export async function deleteCard(
 export async function checkDuplicate(
   payload: CheckDuplicatePayload,
 ): Promise<DuplicateCheckResult> {
-  return await apiClient.post<DuplicateCheckResult>(
-    '/tpm/cards/check-duplicate',
-    payload,
-  );
+  return await apiClient.post<DuplicateCheckResult>('/tpm/cards/check-duplicate', payload);
 }
 
 // =============================================================================
@@ -406,13 +379,8 @@ export async function fetchEscalationConfig(): Promise<TpmEscalationConfig> {
 }
 
 /** Update a single color config entry */
-export async function updateColor(
-  payload: UpdateColorPayload,
-): Promise<TpmColorConfigEntry> {
-  return await apiClient.patch<TpmColorConfigEntry>(
-    '/tpm/config/colors',
-    payload,
-  );
+export async function updateColor(payload: UpdateColorPayload): Promise<TpmColorConfigEntry> {
+  return await apiClient.patch<TpmColorConfigEntry>('/tpm/config/colors', payload);
 }
 
 /** Reset all card status colors to defaults */
@@ -422,18 +390,12 @@ export async function resetColors(): Promise<TpmColorConfigEntry[]> {
 }
 
 /** Reset a single status color to its default */
-export async function resetSingleColor(
-  statusKey: string,
-): Promise<TpmColorConfigEntry> {
-  return await apiClient.delete<TpmColorConfigEntry>(
-    `/tpm/config/colors/${statusKey}`,
-  );
+export async function resetSingleColor(statusKey: string): Promise<TpmColorConfigEntry> {
+  return await apiClient.delete<TpmColorConfigEntry>(`/tpm/config/colors/${statusKey}`);
 }
 
 /** Fetch interval color configuration */
-export async function fetchIntervalColors(): Promise<
-  IntervalColorConfigEntry[]
-> {
+export async function fetchIntervalColors(): Promise<IntervalColorConfigEntry[]> {
   const result: unknown = await apiClient.get('/tpm/config/interval-colors');
   return extractArray<IntervalColorConfigEntry>(result);
 }
@@ -442,20 +404,12 @@ export async function fetchIntervalColors(): Promise<
 export async function updateIntervalColor(
   payload: UpdateIntervalColorPayload,
 ): Promise<IntervalColorConfigEntry> {
-  return await apiClient.patch<IntervalColorConfigEntry>(
-    '/tpm/config/interval-colors',
-    payload,
-  );
+  return await apiClient.patch<IntervalColorConfigEntry>('/tpm/config/interval-colors', payload);
 }
 
 /** Reset all interval colors to defaults */
-export async function resetIntervalColors(): Promise<
-  IntervalColorConfigEntry[]
-> {
-  const result: unknown = await apiClient.post(
-    '/tpm/config/interval-colors/reset',
-    {},
-  );
+export async function resetIntervalColors(): Promise<IntervalColorConfigEntry[]> {
+  const result: unknown = await apiClient.post('/tpm/config/interval-colors/reset', {});
   return extractArray<IntervalColorConfigEntry>(result);
 }
 
@@ -473,9 +427,7 @@ export async function resetSingleIntervalColor(
 // =============================================================================
 
 /** Fetch category color configuration */
-export async function fetchCategoryColors(): Promise<
-  CategoryColorConfigEntry[]
-> {
+export async function fetchCategoryColors(): Promise<CategoryColorConfigEntry[]> {
   const result: unknown = await apiClient.get('/tpm/config/category-colors');
   return extractArray<CategoryColorConfigEntry>(result);
 }
@@ -484,20 +436,12 @@ export async function fetchCategoryColors(): Promise<
 export async function updateCategoryColor(
   payload: UpdateCategoryColorPayload,
 ): Promise<CategoryColorConfigEntry> {
-  return await apiClient.patch<CategoryColorConfigEntry>(
-    '/tpm/config/category-colors',
-    payload,
-  );
+  return await apiClient.patch<CategoryColorConfigEntry>('/tpm/config/category-colors', payload);
 }
 
 /** Reset all category colors (remove custom colors) */
-export async function resetCategoryColors(): Promise<
-  CategoryColorConfigEntry[]
-> {
-  const result: unknown = await apiClient.post(
-    '/tpm/config/category-colors/reset',
-    {},
-  );
+export async function resetCategoryColors(): Promise<CategoryColorConfigEntry[]> {
+  const result: unknown = await apiClient.post('/tpm/config/category-colors/reset', {});
   return extractArray<CategoryColorConfigEntry>(result);
 }
 
@@ -514,10 +458,7 @@ export async function resetSingleCategoryColor(
 export async function updateEscalation(
   payload: UpdateEscalationPayload,
 ): Promise<TpmEscalationConfig> {
-  return await apiClient.patch<TpmEscalationConfig>(
-    '/tpm/config/escalation',
-    payload,
-  );
+  return await apiClient.patch<TpmEscalationConfig>('/tpm/config/escalation', payload);
 }
 
 // =============================================================================

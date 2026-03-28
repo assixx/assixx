@@ -10,6 +10,7 @@
     OrgEntityType,
     OrgNodeDetail,
     OrgNodeDetailEntry,
+    OrgNodeDetailPerson,
   } from './types.js';
 
   interface Props {
@@ -50,56 +51,68 @@
     return '';
   }
 
-  const fields = $derived.by((): FieldConfig[] => {
-    if (detail === null) return [];
-    const result: FieldConfig[] = [];
-    if (detail.lead !== undefined) {
-      result.push({
-        label: 'Leiter',
-        icon: 'fas fa-user-tie',
-        value: detail.lead.name,
-      });
-    }
-    if (detail.deputyLead !== undefined) {
-      result.push({
-        label: 'Stellvertreter',
-        icon: 'fas fa-user-shield',
-        value: detail.deputyLead.name,
-      });
-    }
-    if (detail.areaType !== undefined) {
-      result.push({ label: 'Typ', icon: 'fas fa-tag', value: detail.areaType });
-    }
-    if (detail.assetStatus !== undefined) {
-      result.push({
-        label: 'Status',
-        icon: 'fas fa-info-circle',
-        value: detail.assetStatus,
-      });
-    }
-    if (detail.assetType !== undefined) {
-      result.push({
-        label: 'Anlagentyp',
-        icon: 'fas fa-cogs',
-        value: detail.assetType,
-      });
-    }
-    if (detail.parentArea !== undefined) {
-      result.push({
-        label: labels.area,
-        icon: 'fas fa-building',
-        value: detail.parentArea.name,
-      });
-    }
-    if (detail.parentDepartment !== undefined) {
-      result.push({
-        label: labels.department,
-        icon: 'fas fa-layer-group',
-        value: detail.parentDepartment.name,
-      });
-    }
-    return result;
-  });
+  const AREA_TYPE_LABELS: Record<string, string> = {
+    building: 'Gebäude',
+    warehouse: 'Lager',
+    office: 'Büro',
+    production: 'Produktion',
+    outdoor: 'Außenbereich',
+    other: 'Sonstiges',
+  };
+
+  const ASSET_STATUS_LABELS: Record<string, string> = {
+    operational: 'Betriebsbereit',
+    maintenance: 'In Wartung',
+    repair: 'In Reparatur',
+    standby: 'Standby',
+    decommissioned: 'Außer Betrieb',
+  };
+
+  const ASSET_TYPE_LABELS: Record<string, string> = {
+    production: 'Produktion',
+    packaging: 'Verpackung',
+    quality_control: 'Qualitätskontrolle',
+    logistics: 'Logistik',
+    utility: 'Versorgung',
+    other: 'Sonstiges',
+  };
+
+  /** Translate raw DB enum values that arrive via `extra` */
+  function translateExtra(raw: string): string {
+    if (raw === 'lead') return `${labels.teamLeadPrefix}leiter`;
+    if (raw === 'member') return 'Mitglied';
+    return ASSET_STATUS_LABELS[raw] ?? raw;
+  }
+
+  function resolveDeputyLead(d: OrgNodeDetail): OrgNodeDetailPerson | undefined {
+    return d.areaDeputyLead ?? d.departmentDeputyLead ?? d.teamDeputyLead;
+  }
+
+  function buildField(
+    value: string | undefined,
+    label: string,
+    icon: string,
+    translate?: Record<string, string>,
+  ): FieldConfig | undefined {
+    if (value === undefined) return undefined;
+    return { label, icon, value: translate !== undefined ? (translate[value] ?? value) : value };
+  }
+
+  function buildFields(d: OrgNodeDetail): FieldConfig[] {
+    const deputy = resolveDeputyLead(d);
+    const candidates: (FieldConfig | undefined)[] = [
+      buildField(d.lead?.name, 'Leiter', 'fas fa-user-tie'),
+      buildField(deputy?.name, 'Stellvertreter', 'fas fa-user-shield'),
+      buildField(d.areaType, 'Typ', 'fas fa-tag', AREA_TYPE_LABELS),
+      buildField(d.assetStatus, 'Status', 'fas fa-info-circle', ASSET_STATUS_LABELS),
+      buildField(d.assetType, 'Anlagentyp', 'fas fa-cogs', ASSET_TYPE_LABELS),
+      buildField(d.parentArea?.name, labels.area, 'fas fa-building'),
+      buildField(d.parentDepartment?.name, labels.department, 'fas fa-layer-group'),
+    ];
+    return candidates.filter((c): c is FieldConfig => c !== undefined);
+  }
+
+  const fields = $derived(detail !== null ? buildFields(detail) : []);
 
   const sections = $derived.by((): SectionConfig[] => {
     if (detail === null) return [];
@@ -132,30 +145,18 @@
         entries: detail.assignedTeams,
       },
     ];
-    return all.filter(
-      (s): s is SectionConfig =>
-        s.entries !== undefined && s.entries.length > 0,
-    );
+    return all.filter((s): s is SectionConfig => s.entries !== undefined && s.entries.length > 0);
   });
-
-  function handleOverlayClick(event: MouseEvent): void {
-    if (event.target === event.currentTarget) onclose();
-  }
-
-  function handleKeydown(event: KeyboardEvent): void {
-    if (event.key === 'Escape') onclose();
-  }
 </script>
 
 {#if show}
   <div
+    id="organigram-node-detail-modal"
     class="modal-overlay modal-overlay--active"
     role="dialog"
     aria-modal="true"
     aria-labelledby="node-detail-title"
     tabindex="-1"
-    onclick={handleOverlayClick}
-    onkeydown={handleKeydown}
   >
     <div
       class="ds-modal ds-modal--sm"
@@ -202,7 +203,7 @@
         </button>
       </div>
 
-      <div class="ds-modal__body detail-body">
+      <div class="ds-modal__body">
         {#if isLoading}
           <div class="loading-state">
             <span class="spinner-ring"></span>
@@ -210,15 +211,17 @@
           </div>
         {:else if detail}
           <!-- Single-value fields (lead, parent, metadata) -->
-          {#each fields as field (field.label)}
-            <div class="detail-field">
-              <span class="detail-field__label">
-                <i class="{field.icon} detail-field__icon"></i>
-                {field.label}
-              </span>
-              <span class="detail-field__value">{field.value}</span>
+          {#if fields.length > 0}
+            <div class="detail-fields">
+              {#each fields as field (field.label)}
+                <div class="detail-field">
+                  <i class="{field.icon} detail-field__icon"></i>
+                  <span class="detail-field__label">{field.label}:</span>
+                  <span class="detail-field__value">{field.value}</span>
+                </div>
+              {/each}
             </div>
-          {/each}
+          {/if}
 
           <!-- List sections (departments, teams, members, etc.) -->
           {#each sections as section (section.title)}
@@ -226,16 +229,14 @@
               <h4 class="detail-section__title">
                 <i class="{section.icon} detail-section__icon"></i>
                 {section.title}
-                <span class="detail-section__count"
-                  >{section.entries.length}</span
-                >
+                <span class="detail-section__count">{section.entries.length}</span>
               </h4>
               <ul class="detail-section__list">
                 {#each section.entries as entry (entry.uuid)}
                   <li class="detail-section__item">
                     <span class="detail-section__name">{entry.name}</span>
                     {#if entry.extra !== undefined}
-                      <span class="detail-section__extra">{entry.extra}</span>
+                      <span class="detail-section__extra">{translateExtra(entry.extra)}</span>
                     {/if}
                   </li>
                 {/each}
@@ -259,6 +260,8 @@
 {/if}
 
 <style>
+  /* ─── Header ──────── */
+
   .detail-header {
     display: flex;
     flex-direction: column;
@@ -280,66 +283,93 @@
   }
 
   .detail-subtitle {
+    margin: 0;
     font-size: 0.8rem;
     color: var(--color-text-secondary);
-    margin: 0;
   }
 
-  .detail-body {
-    gap: var(--spacing-2, 0.5rem);
+  /* ─── Fields Grid (glass container) ──────── */
+
+  .detail-fields {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0;
+    padding: 16px 20px;
+    border: 1px solid var(--color-glass-border);
+    border-radius: var(--radius-xl);
+    background: var(--glass-bg);
   }
 
   .detail-field {
     display: flex;
+    gap: 12px;
     align-items: center;
-    justify-content: space-between;
-    padding: 0.5rem 0;
-    border-bottom: 1px solid var(--glass-border, rgb(255 255 255 / 8%));
+    padding: 10px 0;
+    border-bottom: 1px solid var(--color-glass-border);
   }
 
-  .detail-field__label {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-size: 0.8rem;
-    color: var(--color-text-secondary);
-    font-weight: 500;
+  .detail-field:last-child {
+    border-bottom: none;
+  }
+
+  .detail-field:hover {
+    margin: 0 -10px;
+    padding-right: 10px;
+    padding-left: 10px;
+    border-radius: var(--radius-xl);
+    background: var(--glass-bg);
   }
 
   .detail-field__icon {
-    width: 1rem;
+    flex-shrink: 0;
+    width: 20px;
+    font-size: 0.85rem;
+    color: var(--color-primary);
     text-align: center;
-    font-size: 0.75rem;
-    opacity: 70%;
+  }
+
+  .detail-field__label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--color-text-secondary);
   }
 
   .detail-field__value {
+    margin-left: auto;
     font-size: 0.85rem;
     font-weight: 600;
     color: var(--color-text-primary);
   }
 
+  /* ─── List Sections ──────── */
+
   .detail-section {
-    margin-top: 0.5rem;
+    margin-top: 16px;
   }
 
   .detail-section__title {
     display: flex;
+    gap: 10px;
     align-items: center;
-    gap: 0.5rem;
-    font-size: 0.8rem;
+    margin: 0 0 10px;
+    font-size: 0.9rem;
     font-weight: 600;
-    color: var(--color-text-secondary);
-    margin: 0 0 0.375rem;
-    text-transform: uppercase;
-    letter-spacing: 0.03em;
+    color: var(--color-text-primary);
+  }
+
+  .detail-section__title::before {
+    content: '';
+    width: 4px;
+    height: 18px;
+    border-radius: 2px;
+    background: var(--color-primary);
   }
 
   .detail-section__icon {
-    width: 1rem;
+    width: 18px;
+    font-size: 0.8rem;
+    color: var(--color-primary);
     text-align: center;
-    font-size: 0.75rem;
-    opacity: 70%;
   }
 
   .detail-section__count {
@@ -348,15 +378,18 @@
     justify-content: center;
     min-width: 1.25rem;
     height: 1.25rem;
+    padding: 0 0.25rem;
     border-radius: 999px;
-    background: var(--glass-border, rgb(255 255 255 / 12%));
+    background: color-mix(in oklch, var(--color-primary) 15%, transparent);
     font-size: 0.65rem;
     font-weight: 700;
-    color: var(--color-text-secondary);
-    padding: 0 0.25rem;
+    color: var(--color-primary);
   }
 
   .detail-section__list {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 6px;
     list-style: none;
     margin: 0;
     padding: 0;
@@ -366,13 +399,16 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0.375rem 0.5rem;
-    border-radius: 6px;
+    padding: 8px 12px;
+    border: 1px solid var(--color-glass-border);
+    border-radius: var(--radius-lg);
+    background: color-mix(in oklch, var(--color-white) 3%, transparent);
     font-size: 0.8rem;
   }
 
-  .detail-section__item:nth-child(odd) {
-    background: var(--glass-border, rgb(255 255 255 / 4%));
+  .detail-section__item:hover {
+    border-color: color-mix(in oklch, var(--color-white) 12%, transparent);
+    background: color-mix(in oklch, var(--color-white) 5%, transparent);
   }
 
   .detail-section__name {
@@ -383,8 +419,9 @@
   .detail-section__extra {
     font-size: 0.75rem;
     color: var(--color-text-secondary);
-    opacity: 80%;
   }
+
+  /* ─── Loading ──────── */
 
   .loading-state {
     display: flex;

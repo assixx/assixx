@@ -64,9 +64,7 @@ export function getAvatarColor(id: number): number {
 // =============================================================================
 
 /** Calculate password strength (simplified) */
-export function calculatePasswordStrength(
-  password: string,
-): PasswordStrengthResult {
+export function calculatePasswordStrength(password: string): PasswordStrengthResult {
   if (password === '') {
     return { score: -1, label: '', time: '' };
   }
@@ -105,7 +103,7 @@ export function populateFormFromUser(user: RootUser): {
   password: string;
   passwordConfirm: string;
   employeeNumber: string;
-  position: string;
+  positionIds: string[];
   notes: string;
   isActive: FormIsActiveStatus;
 } {
@@ -117,7 +115,7 @@ export function populateFormFromUser(user: RootUser): {
     password: '',
     passwordConfirm: '',
     employeeNumber: user.employeeNumber ?? '',
-    position: user.position ?? '',
+    positionIds: [],
     notes: user.notes ?? '',
     isActive: (user.isActive === 4 ? 0 : user.isActive) as FormIsActiveStatus,
   };
@@ -133,19 +131,13 @@ export function getDefaultFormValues(): typeof FORM_DEFAULTS {
 // =============================================================================
 
 /** Validate email match (returns true if confirm is empty) */
-export function validateEmailMatch(
-  email: string,
-  emailConfirm: string,
-): boolean {
+export function validateEmailMatch(email: string, emailConfirm: string): boolean {
   if (emailConfirm === '') return true;
   return email.toLowerCase() === emailConfirm.toLowerCase();
 }
 
 /** Validate password match (both must be filled and equal) */
-export function validatePasswordMatch(
-  password: string,
-  passwordConfirm: string,
-): boolean {
+export function validatePasswordMatch(password: string, passwordConfirm: string): boolean {
   return password === passwordConfirm;
 }
 
@@ -207,10 +199,7 @@ export function getAvailabilityBadge(user: RootUser): BadgeInfo {
     };
   }
 
-  const isActive = isDateRangeActive(
-    user.availabilityStart,
-    user.availabilityEnd,
-  );
+  const isActive = isDateRangeActive(user.availabilityStart, user.availabilityEnd);
 
   if (isActive) {
     return {
@@ -286,17 +275,12 @@ export interface AvailabilityFormData {
 }
 
 /** Availability validation error types */
-export type AvailabilityValidationError =
-  | 'dates_required'
-  | 'end_before_start'
-  | null;
+export type AvailabilityValidationError = 'dates_required' | 'end_before_start' | null;
 
 /**
  * Validate availability form data
  */
-export function validateAvailabilityForm(
-  data: AvailabilityFormData,
-): AvailabilityValidationError {
+export function validateAvailabilityForm(data: AvailabilityFormData): AvailabilityValidationError {
   if (data.status !== 'available' && (data.start === '' || data.end === '')) {
     return 'dates_required';
   }
@@ -318,9 +302,7 @@ export interface AvailabilityPayload {
 /**
  * Build availability API payload from form data
  */
-export function buildAvailabilityPayload(
-  data: AvailabilityFormData,
-): AvailabilityPayload {
+export function buildAvailabilityPayload(data: AvailabilityFormData): AvailabilityPayload {
   return {
     availabilityStatus: data.status,
     availabilityStart: data.start !== '' ? data.start : undefined,

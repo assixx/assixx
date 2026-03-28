@@ -47,24 +47,26 @@ if (entity.items?.length > 0) {
 
 ### 3. Inherited Badge (`badge--info` + sitemap icon)
 
-**Use when:** Access is inherited from parent hierarchy (Employee → Team → Dept → Area).
+**Use when:** Access is inherited through the hierarchy. Works in **both directions**:
+
+- **Abwärts (↓):** Area-Permission → Departments vererbt, Dept-Permission → Teams vererbt
+- **Aufwärts (↑):** Dept-Permission → Area als READ-ONLY Kontext (ADR-035 Sektion 5)
 
 ```html
-<span class="badge badge--info" title="Vererbt von: Team Alpha"> <i class="fas fa-sitemap mr-1"></i>Vererbt </span>
+<span class="badge badge--warning" title="Vererbt von: Team Alpha"> <i class="fas fa-sitemap mr-1"></i>Vererbt </span>
 ```
 
 **Detection:**
 
 ```typescript
-// For Employees: Check if they have teams but no direct assignments
+// For Employees: Inherited from teams → departments → areas
 const hasTeams = (entity.teams?.length ?? 0) > 0 || entity.teamId != null;
-const hasDirectAssignments = (entity.areas?.length ?? 0) > 0;
 
-if (hasTeams && !hasDirectAssignments) {
-  const teamNames = entity.teams?.map((t) => t.name).join(', ') ?? entity.teamName;
-  return `<span class="badge badge--info" title="Vererbt von: ${teamNames}">
-    <i class="fas fa-sitemap mr-1"></i>Vererbt</span>`;
-}
+// For Admins: Inherited from areas → departments (downward)
+const hasAreas = getAreaCount(admin) > 0;
+
+// For Admins: Inherited from departments → areas (upward context)
+const inheritedAreaNames = getInheritedAreaNames(admin); // departments with areaId
 ```
 
 ### 4. None Badge (`badge--secondary`)
@@ -129,22 +131,37 @@ const hasTeams = (employee.teams?.length ?? 0) > 0 || employee.teamId != null;
 
 ### Admins (role: admin)
 
-| Column      | Direct Source         | Inherited From     |
-| ----------- | --------------------- | ------------------ |
-| Areas       | `admin.areas[]`       | - (no inheritance) |
-| Departments | `admin.departments[]` | Area → Dept        |
-| Teams       | -                     | Area/Dept → Teams  |
+**Quellen:** Explizite Permissions (`admin_area_permissions`, `admin_department_permissions`) **+ Lead-Positionen** (`area_lead_id`, `department_lead_id`). Lead-Positionen sind implizite Permissions (ADR-035 Sektion 4).
+
+| Column      | Direct Source         | Lead Source               | Inherited From                      |
+| ----------- | --------------------- | ------------------------- | ----------------------------------- |
+| Areas       | `admin.areas[]`       | `admin.leadAreas[]`       | Dept → Area (aufwärts, READ-ONLY ↑) |
+| Departments | `admin.departments[]` | `admin.leadDepartments[]` | Area → Dept (abwärts ↓)             |
+| Teams       | -                     | -                         | Area/Dept → Teams (abwärts ↓)       |
 
 **Inheritance Detection:**
 
 ```typescript
-// For Departments: Check if admin has areas (depts inherited from areas)
-const hasAreas = (admin.areas?.length ?? 0) > 0;
+// Combined counts: explicit permissions + lead positions (deduplicated by backend)
+const areaCount = (admin.areas?.length ?? 0) + (admin.leadAreas?.length ?? 0);
+const deptCount = (admin.departments?.length ?? 0) + (admin.leadDepartments?.length ?? 0);
 
-// For Teams: Admins get team access via area/dept permissions
-const hasAreas = (admin.areas?.length ?? 0) > 0;
-const hasDepts = (admin.departments?.length ?? 0) > 0;
+// For Areas: Upward inheritance from departments with areaId
+const inheritedAreaNames = getInheritedAreaNames(admin);
+
+// For Departments: Downward inheritance from areas
+const hasAreas = areaCount > 0;
+
+// For Teams: Downward from areas + departments
+const hasAreas = areaCount > 0;
+const hasDepts = deptCount > 0;
 ```
+
+**Lead-Position Badge-Regeln:**
+
+- Lead-Departments/Areas werden mit Suffix `(Lead)` im Tooltip angezeigt
+- Backend liefert `leadAreas[]` und `leadDepartments[]` separat (keine Duplikate mit expliziten Permissions)
+- `leadDepartments` enthalten `areaId`/`areaName` für Aufwärtsvererbung
 
 ## Standard Function Template
 
@@ -174,7 +191,7 @@ export function getAreasBadge(entity: Entity): string {
   // 3. Inherited (via teams)
   if (hasTeams) {
     const teamNames = entity.teams?.map((t) => t.name).join(', ') ?? entity.teamName ?? '';
-    return `<span class="badge badge--info" title="Vererbt von: ${teamNames}"><i class="fas fa-sitemap mr-1"></i>Vererbt</span>`;
+    return `<span class="badge badge--warning" title="Vererbt von: ${teamNames}"><i class="fas fa-sitemap mr-1"></i>Vererbt</span>`;
   }
 
   // 4. None
@@ -225,32 +242,19 @@ export function getAreasBadge(entity: Entity): string {
 
 All these files MUST follow this standard:
 
-- `frontend/src/scripts/manage/employees/ui.ts`
-  - `getAreasBadge()`
-  - `getDepartmentsBadge()`
-  - `getTeamsBadge()`
-
-- `frontend/src/scripts/manage/admins/forms.ts`
-  - `getAreasBadge()`
-  - `getDepartmentsBadge()`
-  - `getTeamsBadge()`
-
-- `frontend/src/scripts/manage/teams/ui.ts`
-  - `createCountBadge()` (Members, Machines)
-
-- `frontend/src/scripts/manage/departments/ui.ts`
-  - `createCountBadge()` (Employees, Teams)
-
-## Storybook Documentation
-
-See the interactive documentation in Storybook:
-
-```
-http://localhost:6006/?path=/story/design-system-assignment-badges
-```
+- `frontend/src/routes/(app)/(root)/manage-admins/_lib/utils.ts`
+  - `getAreasBadge()`, `getDepartmentsBadge()`, `getTeamsBadge()`
+- `frontend/src/routes/(app)/(shared)/manage-employees/_lib/utils.ts`
+  - `getAreasBadge()`, `getDepartmentsBadge()`, `getTeamsBadge()`
+- `frontend/src/routes/(app)/(shared)/manage-teams/_lib/utils.ts`
+  - `getDepartmentBadge()`, `getMembersBadge()`, `getAssetsBadge()`
+- `frontend/src/routes/(app)/(admin)/manage-assets/_lib/utils.ts`
+  - `getTeamsBadgeData()`, `getAreaBadgeData()`, `getDepartmentBadgeData()`
 
 ## Changelog
 
-| Date       | Change                                             |
-| ---------- | -------------------------------------------------- |
-| 2025-11-29 | Initial version - unified badge system established |
+| Date       | Change                                                                     |
+| ---------- | -------------------------------------------------------------------------- |
+| 2025-11-29 | Initial version - unified badge system established                         |
+| 2026-03-14 | Lead-Positionen + Aufwärtsvererbung (Dept→Area) für Admins hinzugefügt     |
+| 2026-03-14 | File-Pfade auf SvelteKit-Routing aktualisiert, Storybook-Referenz entfernt |

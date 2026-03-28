@@ -5,11 +5,7 @@
  * All functions here are stateless — no Svelte runes or reactive state.
  */
 import { INTERVAL_LABELS, MESSAGES } from '../../../_lib/constants';
-import {
-  getISOWeek,
-  timestampToISO,
-  weekOfMonth,
-} from '../../../_lib/date-helpers';
+import { getISOWeek, timestampToISO, weekOfMonth } from '../../../_lib/date-helpers';
 
 import type {
   DayAvailability,
@@ -47,10 +43,7 @@ export interface CalendarRow {
 // =========================================================================
 
 /** Group items by a string key into a Map<key, items[]> */
-export function buildLookupMap<T>(
-  items: T[],
-  keyFn: (item: T) => string,
-): Map<string, T[]> {
+export function buildLookupMap<T>(items: T[], keyFn: (item: T) => string): Map<string, T[]> {
   const map = new Map<string, T[]>();
   for (const item of items) {
     const key = keyFn(item);
@@ -110,13 +103,8 @@ export function hasTpmScheduleConflict(day: DayAvailability): boolean {
 // =========================================================================
 
 export function formatProjectionDescription(slot: ProjectedSlot): string {
-  const intervals = slot.intervalTypes
-    .map((t: IntervalType) => INTERVAL_LABELS[t])
-    .join(', ');
-  const time =
-    slot.isFullDay ? 'Ganztägig' : (
-      `${slot.startTime ?? '?'} – ${slot.endTime ?? '?'}`
-    );
+  const intervals = slot.intervalTypes.map((t: IntervalType) => INTERVAL_LABELS[t]).join(', ');
+  const time = slot.isFullDay ? 'Ganztägig' : `${slot.startTime ?? '?'} – ${slot.endTime ?? '?'}`;
   return `${slot.planName} (${slot.assetName}) — ${intervals} — ${time}`;
 }
 
@@ -126,9 +114,7 @@ function formatProjectionLines(slots: ProjectedSlot[]): string[] {
 
 function collectConflictParts(day: DayAvailability): string[] {
   return day.conflicts.map((c) =>
-    c.type === 'tpm_schedule' ?
-      c.description
-    : `${getConflictLabel(c.type)}: ${c.description}`,
+    c.type === 'tpm_schedule' ? c.description : `${getConflictLabel(c.type)}: ${c.description}`,
   );
 }
 
@@ -146,10 +132,7 @@ function appendUniqueProjections(
 }
 
 /** Build tooltip from slot data + projection enrichment */
-export function buildDayTooltip(
-  day: DayAvailability,
-  projSlots: ProjectedSlot[],
-): string {
+export function buildDayTooltip(day: DayAvailability, projSlots: ProjectedSlot[]): string {
   if (day.isAvailable) {
     if (projSlots.length === 0) return 'Verfügbar';
     const lines = formatProjectionLines(projSlots);
@@ -201,16 +184,9 @@ export function computeIntervalsForMonth(
 // CALENDAR ROW HELPERS
 // =========================================================================
 
-export function buildCalendarRow(
-  days: DayAvailability[],
-  kw: number,
-  cols: number,
-): CalendarRow {
+export function buildCalendarRow(days: DayAvailability[], kw: number, cols: number): CalendarRow {
   const wd = isoWeekday(days[0].date);
-  const cells: (DayAvailability | null)[] = [
-    ...(Array(wd).fill(null) as null[]),
-    ...days,
-  ];
+  const cells: (DayAvailability | null)[] = [...(Array(wd).fill(null) as null[]), ...days];
   while (cells.length < cols) cells.push(null);
   return { kw, monthLabel: '', cells };
 }
@@ -233,10 +209,7 @@ export function applyMonthLabels(rows: CalendarRow[]): void {
 }
 
 /** Group visible days into calendar rows by ISO week + month boundary */
-export function computeCalendarRows(
-  days: DayAvailability[],
-  headerCount: number,
-): CalendarRow[] {
+export function computeCalendarRows(days: DayAvailability[], headerCount: number): CalendarRow[] {
   if (days.length === 0) return [];
   const rows: CalendarRow[] = [];
   let batch: DayAvailability[] = [];
@@ -383,9 +356,7 @@ function processIntervals(
 }
 
 /** Convert accumulator map to sorted AssignmentCount array */
-function toSortedAssignmentCounts(
-  map: Map<number, CountAccumulator>,
-): AssignmentCount[] {
+function toSortedAssignmentCounts(map: Map<number, CountAccumulator>): AssignmentCount[] {
   const result: AssignmentCount[] = [];
   for (const [userId, d] of map) {
     const counts: Partial<Record<IntervalType, number>> = {};
@@ -402,10 +373,7 @@ function toSortedAssignmentCounts(
     });
   }
   return result.sort((a: AssignmentCount, b: AssignmentCount): number =>
-    `${a.lastName}, ${a.firstName}`.localeCompare(
-      `${b.lastName}, ${b.firstName}`,
-      'de',
-    ),
+    `${a.lastName}, ${a.firstName}`.localeCompare(`${b.lastName}, ${b.firstName}`, 'de'),
   );
 }
 
@@ -451,10 +419,7 @@ export function computePreviewData(
     : new Map<IntervalType, number>();
 
   for (const day of days) {
-    if (
-      isoWeekday(day.date) !== previewWeekday ||
-      weekOfMonth(day.date) !== previewRepeatEvery
-    ) {
+    if (isoWeekday(day.date) !== previewWeekday || weekOfMonth(day.date) !== previewRepeatEvery) {
       continue;
     }
     dates.add(day.date);

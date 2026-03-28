@@ -160,9 +160,7 @@ export function getActiveRole(): UserRole | null {
   if (
     activeRole !== null &&
     activeRole !== '' &&
-    (activeRole === 'root' ||
-      activeRole === 'admin' ||
-      activeRole === 'employee')
+    (activeRole === 'root' || activeRole === 'admin' || activeRole === 'employee')
   ) {
     return activeRole;
   }
@@ -203,18 +201,12 @@ export function setActiveRole(targetRole: UserRole): boolean {
 
   // Validate that user can switch to target role
   if (targetRole === 'root' && currentRole !== 'root') {
-    log.warn(
-      { targetRole, currentRole },
-      'Only root users can switch to root role',
-    );
+    log.warn({ targetRole, currentRole }, 'Only root users can switch to root role');
     return false;
   }
 
   if (targetRole === 'admin' && currentRole === 'employee') {
-    log.warn(
-      { targetRole, currentRole },
-      'Employees cannot switch to admin role',
-    );
+    log.warn({ targetRole, currentRole }, 'Employees cannot switch to admin role');
     return false;
   }
 

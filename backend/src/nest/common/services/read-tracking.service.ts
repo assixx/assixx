@@ -67,9 +67,7 @@ export class ReadTrackingService {
     );
 
     if (row === null) {
-      throw new NotFoundException(
-        `Entity not found: ${config.entityTable} uuid=${entityUuid}`,
-      );
+      throw new NotFoundException(`Entity not found: ${config.entityTable} uuid=${entityUuid}`);
     }
 
     await this.markAsRead(config, row.id, userId, tenantId);

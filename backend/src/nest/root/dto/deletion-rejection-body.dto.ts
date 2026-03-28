@@ -11,6 +11,4 @@ export const DeletionRejectionBodySchema = z.object({
     .max(500, 'Rejection reason too long'),
 });
 
-export class DeletionRejectionBodyDto extends createZodDto(
-  DeletionRejectionBodySchema,
-) {}
+export class DeletionRejectionBodyDto extends createZodDto(DeletionRejectionBodySchema) {}

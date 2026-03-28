@@ -2,24 +2,14 @@
 // MANAGE AREAS - TYPE DEFINITIONS
 // =============================================================================
 
-import type {
-  IsActiveStatus,
-  FormIsActiveStatus,
-  StatusFilter,
-} from '@assixx/shared';
+import type { IsActiveStatus, FormIsActiveStatus, StatusFilter } from '@assixx/shared';
 
 export type { IsActiveStatus, FormIsActiveStatus, StatusFilter };
 
 /**
  * Area type values
  */
-export type AreaType =
-  | 'building'
-  | 'warehouse'
-  | 'office'
-  | 'production'
-  | 'outdoor'
-  | 'other';
+export type AreaType = 'building' | 'warehouse' | 'office' | 'production' | 'outdoor' | 'other';
 
 /**
  * Area entity from API (camelCase to match NestJS response)
@@ -30,6 +20,8 @@ export interface Area {
   description?: string | null;
   areaLeadId?: number | null;
   areaLeadName?: string | null;
+  areaDeputyLeadId?: number | null;
+  areaDeputyLeadName?: string;
   type: AreaType;
   capacity?: number | null;
   address?: string | null;
@@ -77,6 +69,7 @@ export interface AreaPayload {
   name: string;
   description?: string | null;
   areaLeadId?: number | null;
+  areaDeputyLeadId?: number | null;
   type: AreaType;
   capacity?: number | null;
   address?: string | null;

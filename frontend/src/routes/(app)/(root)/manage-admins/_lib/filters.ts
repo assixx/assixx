@@ -2,10 +2,7 @@
 // MANAGE ADMINS - FILTER FUNCTIONS (Pure Functions)
 // =============================================================================
 
-import {
-  DEFAULT_HIERARCHY_LABELS,
-  type HierarchyLabels,
-} from '$lib/types/hierarchy-labels';
+import { DEFAULT_HIERARCHY_LABELS, type HierarchyLabels } from '$lib/types/hierarchy-labels';
 
 import { getPositionDisplay } from './utils';
 

@@ -27,14 +27,7 @@
   const END_HOUR = 22;
   const TOTAL_MIN = (END_HOUR - START_HOUR) * 60;
   const HOUR_MARKERS = [6, 8, 10, 12, 14, 16, 18, 20, 22];
-  const PALETTE = [
-    '#3b82f6',
-    '#8b5cf6',
-    '#f59e0b',
-    '#ec4899',
-    '#06b6d4',
-    '#84cc16',
-  ];
+  const PALETTE = ['#3b82f6', '#8b5cf6', '#f59e0b', '#ec4899', '#06b6d4', '#84cc16'];
 
   // =========================================================================
   // DERIVED
@@ -129,15 +122,11 @@
   }
 
   /** Merge overlapping minute-offset ranges into non-overlapping set */
-  function mergeRanges(
-    ranges: { start: number; end: number }[],
-  ): { start: number; end: number }[] {
+  function mergeRanges(ranges: { start: number; end: number }[]): { start: number; end: number }[] {
     if (ranges.length === 0) return [];
     const sorted = [...ranges].sort((a, b) => a.start - b.start);
     const [first, ...rest] = sorted;
-    const result: { start: number; end: number }[] = [
-      { start: first.start, end: first.end },
-    ];
+    const result: { start: number; end: number }[] = [{ start: first.start, end: first.end }];
     let last = result[0];
     for (const current of rest) {
       if (current.start <= last.end) {
@@ -247,11 +236,8 @@
         <div class="tl-track">
           <div
             class="tl-block"
-            style="left: {block.leftPct}%; width: {block.widthPct}%; background: {blockColor(
-              i,
-            )}"
-            title="{block.slot.planName} ({block.slot
-              .assetName}) — {intervalLabel(
+            style="left: {block.leftPct}%; width: {block.widthPct}%; background: {blockColor(i)}"
+            title="{block.slot.planName} ({block.slot.assetName}) — {intervalLabel(
               block.slot.intervalTypes,
             )} — {block.timeLabel}"
           >
@@ -390,8 +376,7 @@
     overflow: hidden;
     color: var(--color-white);
     cursor: default;
-    box-shadow: 0 1px 2px
-      color-mix(in oklch, var(--color-black) 10%, transparent);
+    box-shadow: 0 1px 2px color-mix(in oklch, var(--color-black) 10%, transparent);
   }
 
   .tl-block__name {

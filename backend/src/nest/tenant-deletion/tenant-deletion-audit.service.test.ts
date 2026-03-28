@@ -55,15 +55,13 @@ describe('TenantDeletionAudit', () => {
     it('should throw with hold reason when active holds exist', async () => {
       const mockClient = {
         query: vi.fn().mockResolvedValue({
-          rows: [
-            { id: 1, tenant_id: 1, reason: 'Court order #123', active: 1 },
-          ],
+          rows: [{ id: 1, tenant_id: 1, reason: 'Court order #123', active: 1 }],
         }),
       };
 
-      await expect(
-        audit.checkLegalHolds(1, mockClient as unknown as PoolClient),
-      ).rejects.toThrow('Tenant has active legal hold: Court order #123');
+      await expect(audit.checkLegalHolds(1, mockClient as unknown as PoolClient)).rejects.toThrow(
+        'Tenant has active legal hold: Court order #123',
+      );
     });
 
     it('should throw with default message when hold has null reason', async () => {
@@ -73,9 +71,9 @@ describe('TenantDeletionAudit', () => {
         }),
       };
 
-      await expect(
-        audit.checkLegalHolds(1, mockClient as unknown as PoolClient),
-      ).rejects.toThrow('No reason specified');
+      await expect(audit.checkLegalHolds(1, mockClient as unknown as PoolClient)).rejects.toThrow(
+        'No reason specified',
+      );
     });
 
     it('should throw generic message when firstHold is falsy', async () => {
@@ -86,9 +84,9 @@ describe('TenantDeletionAudit', () => {
         query: vi.fn().mockResolvedValue({ rows: sparseArray }),
       };
 
-      await expect(
-        audit.checkLegalHolds(1, mockClient as unknown as PoolClient),
-      ).rejects.toThrow('Tenant has active legal hold: No reason specified');
+      await expect(audit.checkLegalHolds(1, mockClient as unknown as PoolClient)).rejects.toThrow(
+        'Tenant has active legal hold: No reason specified',
+      );
     });
 
     it('should query correct SQL with tenantId', async () => {
@@ -98,10 +96,7 @@ describe('TenantDeletionAudit', () => {
 
       await audit.checkLegalHolds(42, mockClient as unknown as PoolClient);
 
-      expect(mockClient.query).toHaveBeenCalledWith(
-        expect.stringContaining('legal_holds'),
-        [42],
-      );
+      expect(mockClient.query).toHaveBeenCalledWith(expect.stringContaining('legal_holds'), [42]);
     });
   });
 
@@ -157,11 +152,9 @@ describe('TenantDeletionAudit', () => {
           .mockResolvedValueOnce({ rows: [{ count: '0' }] })
           .mockResolvedValueOnce({ rows: [], rowCount: 1 }),
       };
-      mockDb.transaction.mockImplementation(
-        async (cb: (client: PoolClient) => Promise<void>) => {
-          await cb(mockClient as unknown as PoolClient);
-        },
-      );
+      mockDb.transaction.mockImplementation(async (cb: (client: PoolClient) => Promise<void>) => {
+        await cb(mockClient as unknown as PoolClient);
+      });
 
       await audit.createDeletionAuditTrail(1, 10);
 
@@ -195,17 +188,9 @@ describe('TenantDeletionAudit', () => {
       );
 
       // First call: tenant info
-      expect(mockClient.query).toHaveBeenNthCalledWith(
-        1,
-        expect.stringContaining('tenants'),
-        [1],
-      );
+      expect(mockClient.query).toHaveBeenNthCalledWith(1, expect.stringContaining('tenants'), [1]);
       // Second call: user count
-      expect(mockClient.query).toHaveBeenNthCalledWith(
-        2,
-        expect.stringContaining('COUNT'),
-        [1],
-      );
+      expect(mockClient.query).toHaveBeenNthCalledWith(2, expect.stringContaining('COUNT'), [1]);
       // Third call: INSERT audit trail
       expect(mockClient.query).toHaveBeenNthCalledWith(
         3,

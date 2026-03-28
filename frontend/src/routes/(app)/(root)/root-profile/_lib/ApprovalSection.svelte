@@ -4,10 +4,7 @@
    */
   import { invalidateAll } from '$app/navigation';
 
-  import {
-    approveRequest as apiApproveRequest,
-    rejectRequest as apiRejectRequest,
-  } from './api';
+  import { approveRequest as apiApproveRequest, rejectRequest as apiRejectRequest } from './api';
   import { MESSAGES } from './constants';
   import { formatDate, showToast } from './utils';
 
@@ -54,8 +51,7 @@
         <div class="approval-item-header">
           <div class="approval-item-info">
             <strong>{approval.tenantName}</strong>
-            <span class="approval-status pending">{MESSAGES.pendingStatus}</span
-            >
+            <span class="approval-status pending">{MESSAGES.pendingStatus}</span>
             <p>Angefragt von: {approval.requestedBy}</p>
             <p>Datum: {formatDate(approval.requestedAt)}</p>
           </div>
@@ -81,9 +77,7 @@
         {#if !approval.coolingOffComplete && approval.coolingOffEndsAt}
           <div class="cooling-off-warning">
             <i class="fas fa-clock"></i>
-            <span
-              >Wartezeit endet am: {formatDate(approval.coolingOffEndsAt)}</span
-            >
+            <span>Wartezeit endet am: {formatDate(approval.coolingOffEndsAt)}</span>
           </div>
         {/if}
       </div>

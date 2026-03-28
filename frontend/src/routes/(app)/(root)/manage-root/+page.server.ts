@@ -23,17 +23,19 @@ export const load: PageServerLoad = async ({ cookies, fetch, locals }) => {
   // Get current user ID from locals (set by RBAC hook)
   const currentUserId = locals.user?.id ?? null;
 
-  // Parallel fetch: root users + position options
-  const [rootUsersData, posOptData] = await Promise.all([
+  // Parallel fetch: root users + positions
+  const [rootUsersData, positionsData] = await Promise.all([
     apiFetch<RootUser[]>('/users?role=root', token, fetch),
-    apiFetch<{ root: string[] }>('/organigram/position-options', token, fetch),
+    apiFetch<{ id: string; name: string; roleCategory: string }[]>(
+      '/organigram/positions',
+      token,
+      fetch,
+    ),
   ]);
   const allRootUsers = Array.isArray(rootUsersData) ? rootUsersData : [];
 
   // Exclude current user - they edit themselves on /root-profile
-  const rootUsers = allRootUsers.filter(
-    (u: RootUser): boolean => u.id !== currentUserId,
-  );
+  const rootUsers = allRootUsers.filter((u: RootUser): boolean => u.id !== currentUserId);
 
   log.debug(
     {
@@ -48,6 +50,13 @@ export const load: PageServerLoad = async ({ cookies, fetch, locals }) => {
 
   return {
     rootUsers,
-    positionOptions: posOptData?.root ?? [],
+    positionOptions:
+      Array.isArray(positionsData) ?
+        positionsData.map((p: { id: string; name: string; roleCategory: string }) => ({
+          id: p.id,
+          name: p.name,
+          roleCategory: p.roleCategory,
+        }))
+      : [],
   };
 };

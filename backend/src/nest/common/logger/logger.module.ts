@@ -82,9 +82,7 @@ function getLokiTargets(): LokiTargetConfig[] {
 /**
  * Build Loki transport targets from configuration
  */
-function buildLokiTransportTargets(
-  level: string,
-): TransportMultiOptions['targets'] {
+function buildLokiTransportTargets(level: string): TransportMultiOptions['targets'] {
   const lokiTargets = getLokiTargets();
   const env = process.env['NODE_ENV'] ?? 'development';
 
@@ -110,10 +108,7 @@ function buildLokiTransportTargets(
  *
  * Supports dual Loki: local Docker Loki + Grafana Cloud simultaneously
  */
-function buildTransport():
-  | TransportSingleOptions
-  | TransportMultiOptions
-  | undefined {
+function buildTransport(): TransportSingleOptions | TransportMultiOptions | undefined {
   const lokiTargets = getLokiTargets();
   const hasLokiTargets = lokiTargets.length > 0;
 
@@ -178,10 +173,7 @@ function buildTransport():
  * - contentType: Almost always "application/json"
  * - These can be added at debug level if needed for specific investigations
  */
-function minimalReqSerializer(req: {
-  method?: string;
-  url?: string;
-}): Record<string, unknown> {
+function minimalReqSerializer(req: { method?: string; url?: string }): Record<string, unknown> {
   return {
     method: req.method,
     url: req.url,
@@ -191,9 +183,7 @@ function minimalReqSerializer(req: {
 /**
  * Minimal response serializer - only status code
  */
-function minimalResSerializer(res: {
-  statusCode?: number;
-}): Record<string, unknown> {
+function minimalResSerializer(res: { statusCode?: number }): Record<string, unknown> {
   return {
     statusCode: res.statusCode,
   };
@@ -258,12 +248,10 @@ function buildPinoHttpOptions(): Record<string, unknown> {
       forRoutes: [{ path: '{*path}', method: RequestMethod.ALL }],
 
       // Exclude health check and metrics routes from logging
-      exclude: EXCLUDED_ROUTES.map(
-        (route: (typeof EXCLUDED_ROUTES)[number]) => ({
-          method: RequestMethod.GET,
-          path: route.path,
-        }),
-      ),
+      exclude: EXCLUDED_ROUTES.map((route: (typeof EXCLUDED_ROUTES)[number]) => ({
+        method: RequestMethod.GET,
+        path: route.path,
+      })),
     }),
   ],
   exports: [PinoLoggerModule],

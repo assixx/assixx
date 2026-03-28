@@ -28,9 +28,7 @@ export class VacationNotificationService {
    * Build the EventBus payload from a VacationRequest domain object.
    * Only includes the fields needed for notification display.
    */
-  private toEventPayload(
-    request: VacationRequest,
-  ): VacationRequestEvent['request'] {
+  private toEventPayload(request: VacationRequest): VacationRequestEvent['request'] {
     return {
       id: request.id,
       requesterId: request.requesterId,
@@ -80,13 +78,9 @@ export class VacationNotificationService {
     this.logger.log(
       `Vacation request ${request.status}: ${request.id} by approver ${String(request.respondedBy)}`,
     );
-    eventBus.emitVacationRequestResponded(
-      tenantId,
-      this.toEventPayload(request),
-    );
+    eventBus.emitVacationRequestResponded(tenantId, this.toEventPayload(request));
 
-    const statusLabel =
-      request.status === 'approved' ? 'genehmigt' : 'abgelehnt';
+    const statusLabel = request.status === 'approved' ? 'genehmigt' : 'abgelehnt';
     void this.createPersistentNotification(
       tenantId,
       request.requesterId,
@@ -111,9 +105,7 @@ export class VacationNotificationService {
     approverId: number | null,
     requesterName: string | undefined,
   ): void {
-    this.logger.log(
-      `Vacation request withdrawn: ${requestId} by user ${String(requesterId)}`,
-    );
+    this.logger.log(`Vacation request withdrawn: ${requestId} by user ${String(requesterId)}`);
     eventBus.emitVacationRequestWithdrawn(tenantId, {
       id: requestId,
       requesterId,
@@ -150,9 +142,7 @@ export class VacationNotificationService {
     adminId: number,
     reason: string,
   ): void {
-    this.logger.log(
-      `Vacation request cancelled: ${requestId} by admin ${String(adminId)}`,
-    );
+    this.logger.log(`Vacation request cancelled: ${requestId} by admin ${String(adminId)}`);
     eventBus.emitVacationRequestCancelled(tenantId, {
       id: requestId,
       requesterId,
@@ -215,14 +205,10 @@ export class VacationNotificationService {
           notificationUuid,
         ],
       );
-      this.logger.log(
-        `Created persistent vacation notification for user ${String(recipientId)}`,
-      );
+      this.logger.log(`Created persistent vacation notification for user ${String(recipientId)}`);
     } catch (error: unknown) {
       // Log but don't fail — notification is secondary to the business operation
-      this.logger.error(
-        `Failed to create persistent vacation notification: ${String(error)}`,
-      );
+      this.logger.error(`Failed to create persistent vacation notification: ${String(error)}`);
     }
   }
 
@@ -230,11 +216,7 @@ export class VacationNotificationService {
    * Email notification stub — logs intent, no actual email sent.
    * Will be replaced with real email integration in a future session.
    */
-  private sendEmailStub(
-    action: string,
-    tenantId: number,
-    request: VacationRequest,
-  ): void {
+  private sendEmailStub(action: string, tenantId: number, request: VacationRequest): void {
     this.logger.debug(
       `[EMAIL STUB] Would send '${action}' email for request ${request.id} ` +
         `(tenant ${String(tenantId)}, requester ${String(request.requesterId)})`,

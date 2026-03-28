@@ -6,11 +6,7 @@
 <script lang="ts">
   import { resolve } from '$app/paths';
 
-  import {
-    AVAILABILITY_ICONS,
-    AVAILABILITY_LABELS,
-    AVAILABILITY_COLORS,
-  } from './constants';
+  import { AVAILABILITY_ICONS, AVAILABILITY_LABELS, AVAILABILITY_COLORS } from './constants';
   import {
     getEmployeeDisplayName,
     getEffectiveAvailabilityForWeek,
@@ -92,10 +88,7 @@
     {#each employees as employee (employee.id)}
       {@const isFullyUnavailable =
         getEffectiveAvailabilityForWeek(employee, weekDates) !== 'available'}
-      {@const overlappingEntries = getOverlappingUnavailabilities(
-        employee,
-        weekDates,
-      )}
+      {@const overlappingEntries = getOverlappingUnavailabilities(employee, weekDates)}
       <div
         class="employee-item"
         class:unavailable={isFullyUnavailable}
@@ -112,13 +105,8 @@
         <div class="employee-info">
           <span class="employee-name">{getEmployeeDisplayName(employee)}</span>
           {#each overlappingEntries as entry, idx (idx)}
-            {@const period = formatAvailabilityPeriod(
-              entry.startDate,
-              entry.endDate,
-            )}
-            <span
-              class="availability-badge {AVAILABILITY_COLORS[entry.status]}"
-            >
+            {@const period = formatAvailabilityPeriod(entry.startDate, entry.endDate)}
+            <span class="availability-badge {AVAILABILITY_COLORS[entry.status]}">
               <i class="fas {AVAILABILITY_ICONS[entry.status]}"></i>
               {AVAILABILITY_LABELS[entry.status]}
             </span>

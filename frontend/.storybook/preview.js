@@ -95,9 +95,7 @@ const preview = {
         bg,
         'html.dark': html.classList.contains('dark'),
         '--main-bg': computed.getPropertyValue('--main-bg'),
-        '--color-text-primary': computed.getPropertyValue(
-          '--color-text-primary',
-        ),
+        '--color-text-primary': computed.getPropertyValue('--color-text-primary'),
         '--glass-bg': computed.getPropertyValue('--glass-bg'),
         '--color-white': computed.getPropertyValue('--color-white'),
         'body.color': getComputedStyle(body).color,

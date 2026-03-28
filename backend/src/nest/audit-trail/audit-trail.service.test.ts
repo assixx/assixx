@@ -138,9 +138,7 @@ describe('AuditTrailService', () => {
     it('should return only header for empty entries', () => {
       const csv = service.generateCSV([]);
 
-      expect(csv).toBe(
-        'ID,Date/Time,User,Role,Action,Resource Type,Resource,Status,IP Address',
-      );
+      expect(csv).toBe('ID,Date/Time,User,Role,Action,Resource Type,Resource,Status,IP Address');
     });
 
     it('should use userId when userName is missing', () => {
@@ -231,9 +229,7 @@ describe('AuditTrailService', () => {
     });
 
     it('should pass through string created_at unchanged', async () => {
-      mockDb.query.mockResolvedValueOnce([
-        createDbRow({ created_at: '2026-06-01T12:00:00Z' }),
-      ]);
+      mockDb.query.mockResolvedValueOnce([createDbRow({ created_at: '2026-06-01T12:00:00Z' })]);
 
       const result = await service.getEntryById(createRootUser(), 100);
 
@@ -241,9 +237,7 @@ describe('AuditTrailService', () => {
     });
 
     it('should return undefined changes for invalid JSON', async () => {
-      mockDb.query.mockResolvedValueOnce([
-        createDbRow({ changes: 'not-valid-json{' }),
-      ]);
+      mockDb.query.mockResolvedValueOnce([createDbRow({ changes: 'not-valid-json{' })]);
 
       const result = await service.getEntryById(createRootUser(), 100);
 
@@ -264,9 +258,7 @@ describe('AuditTrailService', () => {
     it('should throw NotFoundException when no rows returned', async () => {
       mockDb.query.mockResolvedValueOnce([]);
 
-      await expect(service.getEntryById(createRootUser(), 999)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.getEntryById(createRootUser(), 999)).rejects.toThrow(NotFoundException);
     });
 
     it('should throw ForbiddenException for non-root viewing other user entry', async () => {
@@ -274,9 +266,9 @@ describe('AuditTrailService', () => {
         createDbRow({ user_id: 99 }), // belongs to user 99
       ]);
 
-      await expect(
-        service.getEntryById(createEmployeeUser({ id: 3 }), 100),
-      ).rejects.toThrow(ForbiddenException);
+      await expect(service.getEntryById(createEmployeeUser({ id: 3 }), 100)).rejects.toThrow(
+        ForbiddenException,
+      );
     });
 
     it('should allow non-root to view own entry', async () => {
@@ -284,10 +276,7 @@ describe('AuditTrailService', () => {
         createDbRow({ user_id: 3 }), // belongs to requesting user
       ]);
 
-      const result = await service.getEntryById(
-        createEmployeeUser({ id: 3 }),
-        100,
-      );
+      const result = await service.getEntryById(createEmployeeUser({ id: 3 }), 100);
 
       expect(result.userId).toBe(3);
     });
@@ -403,9 +392,7 @@ describe('AuditTrailService', () => {
 
   describe('getStats', () => {
     it('should throw ForbiddenException for employee', async () => {
-      await expect(service.getStats(createEmployeeUser(), {})).rejects.toThrow(
-        ForbiddenException,
-      );
+      await expect(service.getStats(createEmployeeUser(), {})).rejects.toThrow(ForbiddenException);
     });
 
     it('should transform stats results correctly', async () => {
@@ -583,18 +570,11 @@ describe('AuditTrailService', () => {
       // Entries query (queryEntries)
       mockDb.query.mockResolvedValueOnce([createDbRow()]);
       // createEntry: user lookup
-      mockDb.query.mockResolvedValueOnce([
-        { username: 'admin', role: 'admin' },
-      ]);
+      mockDb.query.mockResolvedValueOnce([{ username: 'admin', role: 'admin' }]);
       // createEntry: INSERT
       mockDb.query.mockResolvedValueOnce([]);
 
-      const result = await service.exportEntries(
-        createAdminUser(),
-        {},
-        '127.0.0.1',
-        'TestAgent',
-      );
+      const result = await service.exportEntries(createAdminUser(), {}, '127.0.0.1', 'TestAgent');
 
       expect(result.format).toBe('json');
       expect(result.entries).toHaveLength(1);

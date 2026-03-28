@@ -7,10 +7,7 @@ const OrgEntityTypeSchema = z.enum(['area', 'department', 'team', 'asset'], {
 
 const PositionItemSchema = z.object({
   entityType: OrgEntityTypeSchema,
-  entityUuid: z
-    .string()
-    .trim()
-    .length(36, 'entityUuid muss exakt 36 Zeichen haben'),
+  entityUuid: z.string().trim().length(36, 'entityUuid muss exakt 36 Zeichen haben'),
   positionX: z.number(),
   positionY: z.number(),
   width: z.number().positive('Breite muss positiv sein').max(2000),
@@ -35,6 +32,11 @@ const HallOverrideSchema = z.object({
   height: z.number().positive().max(10000),
 });
 
+const PerimeterAnchorSchema = z.object({
+  side: z.enum(['top', 'right', 'bottom', 'left']),
+  t: z.number().min(0).max(1),
+});
+
 export const UpsertPositionsSchema = z.object({
   positions: z
     .array(PositionItemSchema)
@@ -42,12 +44,10 @@ export const UpsertPositionsSchema = z.object({
     .max(500, 'Maximal 500 Positionen pro Request'),
   viewport: ViewportSchema,
   hallOverrides: z.record(z.string(), HallOverrideSchema).optional(),
+  hallConnectionAnchors: z.record(z.string(), PerimeterAnchorSchema).optional(),
   canvasBg: z
     .string()
-    .regex(
-      /^#[\da-f]{6,8}$/i,
-      'canvasBg muss ein Hex-Farbwert sein (#rrggbb oder #rrggbbaa)',
-    )
+    .regex(/^#[\da-f]{6,8}$/i, 'canvasBg muss ein Hex-Farbwert sein (#rrggbb oder #rrggbbaa)')
     .nullable()
     .optional(),
 });

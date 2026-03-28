@@ -11,10 +11,7 @@
    * Pattern: Controlled component with local dropdown state
    */
   import { onClickOutsideDropdown } from '$lib/actions/click-outside';
-  import {
-    DEFAULT_HIERARCHY_LABELS,
-    type HierarchyLabels,
-  } from '$lib/types/hierarchy-labels';
+  import { DEFAULT_HIERARCHY_LABELS, type HierarchyLabels } from '$lib/types/hierarchy-labels';
 
   import { SORT_OPTIONS, createLevelFilterOptions } from './constants';
 
@@ -152,9 +149,7 @@
               bind:value={searchInput}
               onkeydown={handleSearchKeyDown}
             />
-            <i
-              class="fas fa-search absolute top-1/2 left-3 -translate-y-1/2 text-gray-400"
-            ></i>
+            <i class="fas fa-search absolute top-1/2 left-3 -translate-y-1/2 text-gray-400"></i>
           </div>
         </div>
 

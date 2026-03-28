@@ -18,12 +18,7 @@ import {
 } from './overall-view-utils.js';
 
 import type { MatrixRow, TpmAssignmentCount } from './overall-view-utils.js';
-import type {
-  IntervalType,
-  ProjectedSlot,
-  TpmPlan,
-  TpmShiftAssignment,
-} from '../../_lib/types.js';
+import type { IntervalType, ProjectedSlot, TpmPlan, TpmShiftAssignment } from '../../_lib/types.js';
 
 // =============================================================================
 // Test Fixtures
@@ -76,13 +71,7 @@ function makeSlot(overrides: Partial<ProjectedSlot> = {}): ProjectedSlot {
 describe('INTERVAL_COLUMNS', () => {
   it('should contain exactly 5 interval types (no daily/weekly)', () => {
     expect(INTERVAL_COLUMNS).toHaveLength(5);
-    expect(INTERVAL_COLUMNS).toEqual([
-      'monthly',
-      'quarterly',
-      'semi_annual',
-      'annual',
-      'custom',
-    ]);
+    expect(INTERVAL_COLUMNS).toEqual(['monthly', 'quarterly', 'semi_annual', 'annual', 'custom']);
   });
 
   it('should not include daily or weekly', () => {
@@ -152,11 +141,7 @@ describe('buildMatrix – sorting & capping', () => {
     ];
 
     const result = buildMatrix(plans, slots, 10);
-    expect(result[0].cells.monthly).toEqual([
-      DEFAULT_DATE,
-      '2026-06-01',
-      '2026-09-01',
-    ]);
+    expect(result[0].cells.monthly).toEqual([DEFAULT_DATE, '2026-06-01', '2026-09-01']);
   });
 
   it('should cap dates at maxDates', () => {
@@ -324,9 +309,7 @@ describe('isFullDay', () => {
 // buildAssignmentCounts — Test Fixtures
 // =============================================================================
 
-function makeAssignment(
-  overrides: Partial<TpmShiftAssignment> = {},
-): TpmShiftAssignment {
+function makeAssignment(overrides: Partial<TpmShiftAssignment> = {}): TpmShiftAssignment {
   return {
     planUuid: DEFAULT_PLAN_UUID,
     assetId: 1,
@@ -347,9 +330,7 @@ interface DateIndexEntry {
 }
 
 /** Build a dateIndex from plan UUID + dates → interval sets */
-function makeDateIndex(
-  entries: DateIndexEntry[],
-): Map<string, Set<IntervalType>> {
+function makeDateIndex(entries: DateIndexEntry[]): Map<string, Set<IntervalType>> {
   const idx = new Map<string, Set<IntervalType>>();
   for (const e of entries) {
     idx.set(`${e.planUuid}:${e.date}`, new Set(e.intervals));
@@ -363,9 +344,7 @@ function makeDateIndex(
 
 describe('buildAssignmentCounts – empty inputs', () => {
   it('should return empty array for empty assignments', () => {
-    const idx = makeDateIndex([
-      { planUuid: 'p1', date: DEFAULT_DATE, intervals: ['monthly'] },
-    ]);
+    const idx = makeDateIndex([{ planUuid: 'p1', date: DEFAULT_DATE, intervals: ['monthly'] }]);
     expect(buildAssignmentCounts([], idx)).toEqual([]);
   });
 
@@ -387,9 +366,7 @@ describe('buildAssignmentCounts – empty inputs', () => {
 describe('buildAssignmentCounts – single assignment', () => {
   it('should count one assignment in one interval', () => {
     const items = [makeAssignment({ planUuid: 'p1', shiftDate: DEFAULT_DATE })];
-    const idx = makeDateIndex([
-      { planUuid: 'p1', date: DEFAULT_DATE, intervals: ['monthly'] },
-    ]);
+    const idx = makeDateIndex([{ planUuid: 'p1', date: DEFAULT_DATE, intervals: ['monthly'] }]);
 
     const result = buildAssignmentCounts(items, idx);
 
@@ -401,9 +378,7 @@ describe('buildAssignmentCounts – single assignment', () => {
 
   it('should skip assignment when date has no match in index', () => {
     const items = [makeAssignment({ planUuid: 'p1', shiftDate: '2026-05-01' })];
-    const idx = makeDateIndex([
-      { planUuid: 'p1', date: DEFAULT_DATE, intervals: ['monthly'] },
-    ]);
+    const idx = makeDateIndex([{ planUuid: 'p1', date: DEFAULT_DATE, intervals: ['monthly'] }]);
 
     expect(buildAssignmentCounts(items, idx)).toEqual([]);
   });
@@ -456,9 +431,7 @@ describe('buildAssignmentCounts – multiple employees & plans', () => {
         shiftDate: DEFAULT_DATE,
       }),
     ];
-    const idx = makeDateIndex([
-      { planUuid: 'p1', date: DEFAULT_DATE, intervals: ['monthly'] },
-    ]);
+    const idx = makeDateIndex([{ planUuid: 'p1', date: DEFAULT_DATE, intervals: ['monthly'] }]);
 
     const result = buildAssignmentCounts(items, idx);
 
@@ -497,9 +470,7 @@ describe('buildAssignmentCounts – deduplication', () => {
       makeAssignment({ userId: 10, planUuid: 'p1', shiftDate: DEFAULT_DATE }),
       makeAssignment({ userId: 10, planUuid: 'p1', shiftDate: DEFAULT_DATE }),
     ];
-    const idx = makeDateIndex([
-      { planUuid: 'p1', date: DEFAULT_DATE, intervals: ['monthly'] },
-    ]);
+    const idx = makeDateIndex([{ planUuid: 'p1', date: DEFAULT_DATE, intervals: ['monthly'] }]);
 
     const result = buildAssignmentCounts(items, idx);
 
@@ -538,9 +509,7 @@ describe('buildAssignmentCounts – sorting', () => {
         shiftDate: DEFAULT_DATE,
       }),
     ];
-    const idx = makeDateIndex([
-      { planUuid: 'p1', date: DEFAULT_DATE, intervals: ['monthly'] },
-    ]);
+    const idx = makeDateIndex([{ planUuid: 'p1', date: DEFAULT_DATE, intervals: ['monthly'] }]);
 
     const result = buildAssignmentCounts(items, idx);
 

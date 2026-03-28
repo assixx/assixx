@@ -1,169 +1,148 @@
 /**
  * Design System - Secondary Button
  *
- * Purpose: Alternative/Secondary actions (same visual as upload button)
- * Usage: Secondary actions, informational buttons, alternative options
+ * Purpose: Alternative/secondary actions — lower visual weight than primary
+ * Usage: "View Details", "More Options", supporting actions in button groups
  *
- * Visual: Blue gradient background - matches btn-upload exactly
+ * Visual: Glassmorphism + subtle blue-accent border
+ * Pattern: Glass bg + tinted border → hover intensifies glow + border
+ *
+ * Hierarchy: primary (solid gray) > secondary (glass + accent) > link (text-only)
  */
 
 .btn-secondary {
-  border: 1px solid var(--color-glass-border-hover);
+  /* ========== TRANSITIONS ========== */
+  transition: var(--transition-all);
+
+  /* ========== SHADOW ========== */
+  box-shadow: 0 1px 2px oklch(0% 0 0 / 4%);
+
+  /* ========== BORDER ========== */
+  border: 1px solid oklch(65.82% 0.169 248.81 / 85%); /* Brand blue — strong accent */
   border-radius: var(--radius-xl);
-  background: oklch(100% 0 0 / 10%);
-  padding: var(--spacing-2) var(--spacing-4);
+
+  /* ========== BACKGROUND ========== */
+  backdrop-filter: var(--blur-sm); /* Glass effect */
+  background: oklch(65.82% 0.169 248.81 / 4%); /* Brand blue tint at 4% */
+
+  /* ========== SPACING ========== */
+  padding: var(--spacing-2) var(--spacing-4); /* 8px 16px */
+
+  /* ========== TYPOGRAPHY ========== */
+  color: var(--color-text-primary);
 }
 
-/* Hover state - Slightly darker gradient */
+/* Dark mode: stronger glass, lighter border */
+html.dark .btn-secondary {
+  box-shadow:
+    0 1px 3px oklch(0% 0 0 / 20%),
+    inset 0 1px 0 oklch(100% 0 0 / 5%);
+  border-color: oklch(65.82% 0.169 248.81 / 52%);
+  background: oklch(65.82% 0.169 248.81 / 6%);
+}
+
+/* ========== HOVER ========== */
 .btn-secondary:hover:not(:disabled) {
-  border-color: var(--color-icon-primary);
-  background: var(--color-icon-primary);
-  color: var(--color-black);
+  box-shadow: 0 2px 8px oklch(65.82% 0.169 248.81 / 18%);
+  border-color: oklch(65.82% 0.169 248.81 / 95%);
+  background: oklch(65.82% 0.169 248.81 / 10%);
 }
 
-/* Active/Pressed state */
+html.dark .btn-secondary:hover:not(:disabled) {
+  box-shadow:
+    0 4px 12px oklch(65.82% 0.169 248.81 / 25%),
+    inset 0 1px 0 oklch(100% 0 0 / 8%);
+  border-color: oklch(65.82% 0.169 248.81 / 70%);
+  background: oklch(65.82% 0.169 248.81 / 12%);
+}
+
+/* ========== ACTIVE / PRESSED ========== */
 .btn-secondary:active:not(:disabled) {
-  transform: translateY(0);
-  box-shadow: var(--shadow-btn-primary);
+  transform: scale(0.98);
+  box-shadow: inset 0 1px 2px oklch(0% 0 0 / 8%);
+  border-color: oklch(65.82% 0.169 248.81 / 50%);
+  background: oklch(65.82% 0.169 248.81 / 12%);
 }
 
-/* Focus state - Accessibility */
+html.dark .btn-secondary:active:not(:disabled) {
+  box-shadow: inset 0 1px 3px oklch(0% 0 0 / 30%);
+  border-color: oklch(65.82% 0.169 248.81 / 45%);
+  background: oklch(65.82% 0.169 248.81 / 14%);
+}
+
+/* ========== FOCUS — WCAG AAA ========== */
 .btn-secondary:focus-visible {
-  box-shadow: var(--shadow-btn-primary), var(--shadow-focus-primary);
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+  box-shadow:
+    var(--shadow-focus-primary),
+    0 1px 2px oklch(0% 0 0 / 4%);
 }
 
-/* Disabled state */
-.btn-secondary:disabled {
-  opacity: 60%;
+/* ========== DISABLED ========== */
+.btn-secondary:disabled,
+.btn-secondary.disabled {
+  opacity: 50%;
   cursor: not-allowed;
-  background: var(--color-gray-700);
+  box-shadow: none;
+  border-color: var(--color-gray-300);
+  background: var(--color-gray-100);
   color: var(--color-gray-500);
 }
 
+html.dark .btn-secondary:disabled,
+html.dark .btn-secondary.disabled {
+  border-color: var(--color-gray-700);
+  background: var(--color-gray-800);
+  color: var(--color-gray-500);
+}
+
+/* ========== LOADING ========== */
+.btn-secondary.is-loading {
+  pointer-events: none;
+  color: transparent;
+}
+
+.btn-secondary.is-loading::after {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  animation: spin var(--duration-slow, 0.6s) linear infinite;
+  margin-top: -8px;
+  margin-left: -8px;
+  border: 2px solid var(--color-primary);
+  border-top-color: transparent;
+  border-radius: 50%;
+  width: 16px;
+  height: 16px;
+  content: '';
+}
+
+/* ========== REDUCED MOTION ========== */
+@media (prefers-reduced-motion: reduce) {
+  .btn-secondary {
+    transition: var(--transition-colors);
+  }
+}
+
 /**
- * WHY SAME AS BTN-UPLOAD?
+ * WHY THIS DESIGN?
  *
- * - Visual consistency: Same blue gradient creates unified look
- * - Blue gradient: Premium, trustworthy look for important actions
- * - Shadow: Creates depth in dark UI
- * - White text: Maximum contrast for accessibility
- * - Hover feedback: Clear interactive indication
+ * - Glass + blue accent = cohesive with glassmorphism system
+ * - Subtle tint (not solid fill) = clearly secondary in hierarchy
+ * - Border intensifies on hover = smooth, not jarring
+ * - Blue glow shadow = brand-consistent depth
+ * - No color flip on hover = professional interaction
  *
  * WHEN TO USE:
- * ✅ Secondary actions (e.g., "View Details", "More Options")
- * ✅ Informational buttons
+ * ✅ Secondary actions ("View Details", "More Options")
+ * ✅ Supporting actions in button groups (next to primary)
  * ✅ Alternative navigation options
- * ✅ Supporting actions in button groups
+ * ✅ "Learn more", "Show filters" type actions
  *
  * WHEN NOT TO USE:
  * ❌ Primary form submit (use .btn-primary)
  * ❌ Destructive actions (use .btn-danger)
- * ❌ Cancel/Close actions (use .btn-cancel)
- */
-
-/**
- * Design System - Cancel Button
- *
- * Purpose: Alternative/Cancel actions
- * Usage: Cancel, Back, Close, Secondary actions
- *
- * Visual: Outline style with glassmorphism
- */
-
-.btn-cancel {
-  /* ========== VISUAL ========== */
-  backdrop-filter: var(--blur-sm); /* Glass effect — --blur-sm = blur(10px) */
-
-  /* No transitions - instant response */
-  transition: none;
-
-  /* No shadow on default state (lighter weight than primary) */
-  box-shadow: none;
-  border: 1px solid var(--color-glass-border); /* Subtle border */
-
-  /* Light mode: bright bg with red gradient border */
-  background:
-    linear-gradient(
-        color-mix(in oklch, var(--color-white) 95%, transparent),
-        oklch(96.43% 0.0017 17.18)
-      )
-      padding-box,
-    linear-gradient(
-        135deg,
-        oklch(49.42% 0.2339 28.18),
-        oklch(51.41% 0.2162 27.69)
-      )
-      border-box;
-
-  /* Padding - Standard size */
-  padding: var(--spacing-2) var(--spacing-4); /* 8px 16px */
-
-  color: var(--text-primary);
-}
-
-/* Dark mode: dark bg with same red gradient border */
-html.dark .btn-cancel {
-  background:
-    linear-gradient(
-        color-mix(in oklch, var(--color-black) 90%, transparent),
-        oklch(22.58% 0 0)
-      )
-      padding-box,
-    linear-gradient(
-        135deg,
-        oklch(49.42% 0.2339 28.18),
-        oklch(51.41% 0.2162 27.69)
-      )
-      border-box;
-  color: var(--color-white);
-}
-
-/* Hover state - Strengthen glass and border */
-.btn-cancel:hover:not(:disabled) {
-  background:
-    linear-gradient(oklch(95.85% 0.0039 17.18), oklch(93.04% 0.0068 17.18))
-      padding-box,
-    linear-gradient(
-        135deg,
-        oklch(49.42% 0.2339 28.18),
-        oklch(51.41% 0.2162 27.69)
-      )
-      border-box;
-}
-
-html.dark .btn-cancel:hover:not(:disabled) {
-  background:
-    linear-gradient(oklch(10.59% 0 0 / 88%), oklch(19.81% 0 0 / 93%))
-      padding-box,
-    linear-gradient(
-        135deg,
-        oklch(49.42% 0.2339 28.18),
-        oklch(51.41% 0.2162 27.69)
-      )
-      border-box;
-}
-
-/* Focus state */
-.btn-cancel:focus-visible {
-  box-shadow: var(--shadow-focus-primary);
-  border-color: var(--color-primary);
-}
-
-/**
- * WHY OUTLINE STYLE?
- *
- * - Visual hierarchy: Less prominent than primary
- * - Glassmorphism: Maintains design language
- * - No shadow: Reduces visual weight
- * - Primary color text: Still related to brand
- *
- * WHEN TO USE:
- * ✅ Cancel buttons in forms/dialogs
- * ✅ "Back" navigation buttons
- * ✅ "More info" / "Learn more" links
- * ✅ Secondary actions in button groups
- *
- * WHEN NOT TO USE:
- * ❌ Primary form submit (use .btn-primary)
- * ❌ Destructive actions (use .btn-danger)
+ * ❌ Cancel/Close/Back (use .btn-cancel)
+ * ❌ Modal confirm actions (use .btn-modal)
  */

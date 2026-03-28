@@ -39,10 +39,7 @@
 /* Active/Pressed State */
 .btn-edit:active:not(:disabled) {
   transform: translateY(0);
-  box-shadow: var(
-    --shadow-btn-edit-active,
-    0 1px 4px oklch(84.25% 0.1599 85.75 / 30%)
-  );
+  box-shadow: var(--shadow-btn-edit-active, 0 1px 4px oklch(84.25% 0.1599 85.75 / 30%));
   background: var(--color-amber-dark); /* Yellow-600 */
 }
 

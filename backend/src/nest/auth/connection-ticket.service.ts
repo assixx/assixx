@@ -57,15 +57,16 @@ export class ConnectionTicketService implements OnModuleDestroy {
   `;
 
   constructor(private readonly configService: ConfigService) {
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-arguments -- NestJS ConfigService uses NoInferType<T>, so TS cannot infer from default value; removing <string> causes no-unsafe-assignment
     const redisHost = this.configService.get<string>('REDIS_HOST', 'redis');
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-arguments -- same: NoInferType<T> prevents inference from numeric default
     const redisPort = this.configService.get<number>('REDIS_PORT', 6379);
     const redisPassword = this.configService.get<string>('REDIS_PASSWORD');
 
     this.redis = new Redis({
       host: redisHost,
       port: redisPort,
-      ...(redisPassword !== undefined &&
-        redisPassword !== '' && { password: redisPassword }),
+      ...(redisPassword !== undefined && redisPassword !== '' && { password: redisPassword }),
       keyPrefix: '', // No prefix - we handle it ourselves
       lazyConnect: true,
       maxRetriesPerRequest: 3,
@@ -87,17 +88,11 @@ export class ConnectionTicketService implements OnModuleDestroy {
   }
 
   /** Create a new connection ticket */
-  async createTicket(
-    data: ConnectionTicketData,
-  ): Promise<CreateTicketResponse> {
+  async createTicket(data: ConnectionTicketData): Promise<CreateTicketResponse> {
     const ticketId = randomUUID();
     const key = `${CONNECTION_TICKET_PREFIX}${ticketId}`;
 
-    await this.redis.setex(
-      key,
-      CONNECTION_TICKET_TTL_SECONDS,
-      JSON.stringify(data),
-    );
+    await this.redis.setex(key, CONNECTION_TICKET_TTL_SECONDS, JSON.stringify(data));
 
     this.logger.debug(
       `Created connection ticket for user ${data.userId} (purpose: ${data.purpose})`,
@@ -128,21 +123,15 @@ export class ConnectionTicketService implements OnModuleDestroy {
 
     try {
       // Atomic GET + DELETE using Lua script
-      const result = (await this.redis.eval(this.CONSUME_SCRIPT, 1, key)) as
-        | string
-        | null;
+      const result = (await this.redis.eval(this.CONSUME_SCRIPT, 1, key)) as string | null;
 
       if (result === null) {
-        this.logger.debug(
-          `Ticket not found or expired: ${ticketId.substring(0, 8)}...`,
-        );
+        this.logger.debug(`Ticket not found or expired: ${ticketId.substring(0, 8)}...`);
         return null;
       }
 
       const data = JSON.parse(result) as ConnectionTicketData;
-      this.logger.debug(
-        `Consumed ticket for user ${data.userId} (purpose: ${data.purpose})`,
-      );
+      this.logger.debug(`Consumed ticket for user ${data.userId} (purpose: ${data.purpose})`);
 
       return data;
     } catch (error: unknown) {
@@ -163,8 +152,7 @@ export class ConnectionTicketService implements OnModuleDestroy {
   }
 
   private isValidUuid(id: string): boolean {
-    const uuidRegex =
-      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     return uuidRegex.test(id);
   }
 }

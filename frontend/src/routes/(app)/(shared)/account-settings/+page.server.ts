@@ -6,11 +6,7 @@
  */
 import { redirect } from '@sveltejs/kit';
 
-import {
-  API_BASE,
-  extractResponseData,
-  type ServerApiResponse,
-} from '$lib/server/api-fetch';
+import { API_BASE, extractResponseData, type ServerApiResponse } from '$lib/server/api-fetch';
 import { dashboardForRole } from '$lib/server/role-redirects';
 import { createLogger } from '$lib/utils/logger';
 
@@ -82,8 +78,7 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
     redirect(302, dashboardForRole(parentData.user.role));
   }
 
-  const activeAddons: string[] =
-    (parentData as { activeAddons?: string[] }).activeAddons ?? [];
+  const activeAddons: string[] = (parentData as { activeAddons?: string[] }).activeAddons ?? [];
   const shiftPlanningEnabled = activeAddons.includes('shift_planning');
 
   // Only fetch shift times if the addon is enabled — avoids 403

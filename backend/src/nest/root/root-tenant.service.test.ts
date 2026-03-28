@@ -20,8 +20,7 @@ vi.mock('./root.helpers.js', () => ({
 }));
 
 vi.mock('./root.types.js', async () => {
-  const actual =
-    await vi.importActual<typeof import('./root.types.js')>('./root.types.js');
+  const actual = await vi.importActual<typeof import('./root.types.js')>('./root.types.js');
   return { ...actual };
 });
 

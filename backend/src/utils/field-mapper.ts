@@ -50,9 +50,7 @@ function transformDbValue(key: string, value: unknown): unknown {
  * Converts is_* / has_* fields to boolean (except is_active).
  * Converts Date values to ISO strings.
  */
-export function dbToApi(
-  dbObject: Record<string, unknown>,
-): Record<string, unknown> {
+export function dbToApi(dbObject: Record<string, unknown>): Record<string, unknown> {
   const result: Record<string, unknown> = {};
 
   for (const [key, value] of Object.entries(dbObject)) {
@@ -67,9 +65,7 @@ export function dbToApi(
  *
  * Recursively converts nested objects and arrays.
  */
-export function apiToDb(
-  apiObject: Record<string, unknown>,
-): Record<string, unknown> {
+export function apiToDb(apiObject: Record<string, unknown>): Record<string, unknown> {
   const result: Record<string, unknown> = {};
 
   for (const [key, value] of Object.entries(apiObject)) {

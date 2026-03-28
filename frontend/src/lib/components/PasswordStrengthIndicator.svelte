@@ -39,13 +39,7 @@
     } | null;
   }
 
-  const {
-    score,
-    label = '',
-    crackTime = '',
-    loading = false,
-    feedback = null,
-  }: Props = $props();
+  const { score, label = '', crackTime = '', loading = false, feedback = null }: Props = $props();
 </script>
 
 <div
@@ -118,52 +112,32 @@
 
   .password-strength-bar[data-score='0'] {
     box-shadow: 0 0 10px oklch(56.8% 0.2001 26.4 / 40%);
-    background: linear-gradient(
-      90deg,
-      var(--color-red-700),
-      oklch(56.43% 0.1893 26.98)
-    );
+    background: linear-gradient(90deg, var(--color-red-700), oklch(56.43% 0.1893 26.98));
     width: 20%;
   }
 
   .password-strength-bar[data-score='1'] {
     box-shadow: 0 0 10px oklch(71.2% 0.1794 53.54 / 40%);
-    background: linear-gradient(
-      90deg,
-      var(--color-orange-700),
-      oklch(77.01% 0.1645 63.16)
-    );
+    background: linear-gradient(90deg, var(--color-orange-700), oklch(77.01% 0.1645 63.16));
     width: 40%;
   }
 
   .password-strength-bar[data-score='2'] {
     box-shadow: 0 0 10px oklch(83.92% 0.1614 84.38 / 40%);
-    background: linear-gradient(
-      90deg,
-      var(--color-yellow-600),
-      var(--color-yellow-500)
-    );
+    background: linear-gradient(90deg, var(--color-yellow-600), var(--color-yellow-500));
     width: 60%;
   }
 
   .password-strength-bar[data-score='3'] {
     box-shadow: 0 0 10px oklch(64.23% 0.1466 133.03 / 40%);
-    background: linear-gradient(
-      90deg,
-      var(--color-light-green-700),
-      var(--color-light-green-600)
-    );
+    background: linear-gradient(90deg, var(--color-light-green-700), var(--color-light-green-600));
     width: 80%;
   }
 
   .password-strength-bar[data-score='4'] {
     animation: pulse-success 2s ease-in-out;
     box-shadow: 0 0 10px oklch(57.52% 0.1446 144.2 / 40%);
-    background: linear-gradient(
-      90deg,
-      var(--color-green-700),
-      var(--color-success)
-    );
+    background: linear-gradient(90deg, var(--color-green-700), var(--color-success));
     width: 100%;
   }
 

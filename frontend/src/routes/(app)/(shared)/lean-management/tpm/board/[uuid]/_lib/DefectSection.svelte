@@ -23,8 +23,7 @@
   let { defects = $bindable(), submitting }: Props = $props();
 
   let photoError = $state<string | null>(null);
-  let defectIdCounter =
-    Math.max(0, ...defects.map((d: DefectEntry) => d.id)) + 1;
+  let defectIdCounter = Math.max(0, ...defects.map((d: DefectEntry) => d.id)) + 1;
 
   const canAddDefect = $derived(defects.length < MAX_DEFECTS && !submitting);
 
@@ -68,10 +67,7 @@
 
     photoError = null;
     const defect = defects[defectIndex];
-    defect.stagedPhotos = [
-      ...defect.stagedPhotos,
-      { file, previewUrl: URL.createObjectURL(file) },
-    ];
+    defect.stagedPhotos = [...defect.stagedPhotos, { file, previewUrl: URL.createObjectURL(file) }];
     input.value = '';
   }
 
@@ -85,9 +81,7 @@
 </script>
 
 <div class="flex flex-col gap-3">
-  <h5
-    class="m-0 flex items-center gap-2 text-sm font-semibold text-(--color-warning)"
-  >
+  <h5 class="m-0 flex items-center gap-2 text-sm font-semibold text-(--color-warning)">
     <i class="fas fa-exclamation-triangle"></i>
     {MESSAGES.DEFECT_SECTION_TITLE}
   </h5>
@@ -201,8 +195,7 @@
                   {MESSAGES.DEFECT_PHOTO_ADD}
                 </p>
                 <p class="file-upload-zone__subtitle">
-                  {MESSAGES.DEFECT_PHOTO_MAX_SIZE} · {defect.stagedPhotos
-                    .length} / {MAX_PHOTOS}
+                  {MESSAGES.DEFECT_PHOTO_MAX_SIZE} · {defect.stagedPhotos.length} / {MAX_PHOTOS}
                 </p>
               </div>
             </label>

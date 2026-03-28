@@ -62,9 +62,7 @@ export function getStatusText(status: string): string {
  */
 export function getStatusClass(status: string): string {
   if (status in MACHINE_AVAILABILITY_BADGE_CLASSES) {
-    return MACHINE_AVAILABILITY_BADGE_CLASSES[
-      status as AssetAvailabilityStatus
-    ];
+    return MACHINE_AVAILABILITY_BADGE_CLASSES[status as AssetAvailabilityStatus];
   }
   return 'badge--secondary';
 }
@@ -82,10 +80,7 @@ export function getStatusIcon(status: string): string {
 /**
  * Truncate long text with ellipsis
  */
-export function truncateText(
-  text: string | null,
-  maxLength: number = 50,
-): string {
+export function truncateText(text: string | null, maxLength: number = 50): string {
   if (text === null || text === '') return '-';
   if (text.length <= maxLength) return text;
   return text.substring(0, maxLength) + '...';

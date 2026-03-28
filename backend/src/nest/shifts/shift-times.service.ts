@@ -94,9 +94,7 @@ export class ShiftTimesService {
          ORDER BY sort_order ASC`,
         [tenantId],
       );
-      return defaultRows.map((row: DbShiftTimeRow) =>
-        this.mapRowToResponse(row),
-      );
+      return defaultRows.map((row: DbShiftTimeRow) => this.mapRowToResponse(row));
     }
 
     return rows.map((row: DbShiftTimeRow) => this.mapRowToResponse(row));
@@ -122,12 +120,8 @@ export class ShiftTimesService {
     const row = rows[0];
     if (row === undefined) {
       // Should not happen after ensureDefaults, but defensive
-      this.logger.error(
-        `Shift time not found: tenant=${tenantId}, key=${shiftKey}`,
-      );
-      throw new Error(
-        `Shift time '${shiftKey}' not found for tenant ${tenantId}`,
-      );
+      this.logger.error(`Shift time not found: tenant=${tenantId}, key=${shiftKey}`);
+      throw new Error(`Shift time '${shiftKey}' not found for tenant ${tenantId}`);
     }
 
     return this.mapRowToResponse(row);
@@ -189,14 +183,7 @@ export class ShiftTimesService {
         `INSERT INTO shift_times (tenant_id, shift_key, label, start_time, end_time, sort_order)
          VALUES ($1, $2, $3, $4::TIME, $5::TIME, $6)
          ON CONFLICT (tenant_id, shift_key) DO NOTHING`,
-        [
-          tenantId,
-          def.shiftKey,
-          def.label,
-          def.startTime,
-          def.endTime,
-          def.sortOrder,
-        ],
+        [tenantId, def.shiftKey, def.label, def.startTime, def.endTime, def.sortOrder],
       );
     }
   }

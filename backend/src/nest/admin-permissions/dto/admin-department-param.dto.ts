@@ -8,6 +8,4 @@ export const AdminDepartmentParamSchema = z.object({
   departmentId: idField,
 });
 
-export class AdminDepartmentParamDto extends createZodDto(
-  AdminDepartmentParamSchema,
-) {}
+export class AdminDepartmentParamDto extends createZodDto(AdminDepartmentParamSchema) {}

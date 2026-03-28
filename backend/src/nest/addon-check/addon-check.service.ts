@@ -31,10 +31,7 @@ export class AddonCheckService {
    * Core addons → always true (no tenant_addons lookup needed).
    * Purchasable addons → check tenant_addons for active/trial status.
    */
-  async checkTenantAccess(
-    tenantId: number,
-    addonCode: string,
-  ): Promise<boolean> {
+  async checkTenantAccess(tenantId: number, addonCode: string): Promise<boolean> {
     try {
       // Step 1: Check if addon exists and whether it's core
       const addons = await this.db.query<DbAddon>(
@@ -67,9 +64,7 @@ export class AddonCheckService {
 
       return rows.length > 0;
     } catch (error: unknown) {
-      this.logger.error(
-        `Error checking addon access: ${getErrorMessage(error)}`,
-      );
+      this.logger.error(`Error checking addon access: ${getErrorMessage(error)}`);
       return false;
     }
   }

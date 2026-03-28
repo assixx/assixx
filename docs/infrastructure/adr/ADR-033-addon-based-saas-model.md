@@ -46,7 +46,7 @@ Das bisherige 3-Tier-Modell (Basic €49 / Professional €149 / Enterprise €2
 │  ┌────────────────────────────────────────────────────┐  │
 │  │ ∞ Users (Root, Admin, Employee)                    │  │
 │  │ 100 GB Storage (Default)                           │  │
-│  │ 8 Core-Addons (immer aktiv)                        │  │
+│  │ 10 Core-Addons (immer aktiv)                       │  │
 │  └────────────────────────────────────────────────────┘  │
 │                                                          │
 │  + Beliebige Addons à la carte (je €10/Monat)            │
@@ -71,20 +71,22 @@ Das bisherige 3-Tier-Modell (Basic €49 / Professional €149 / Enterprise €2
 
 ---
 
-## Addon-Katalog (20 Addons)
+## Addon-Katalog (22 Addons)
 
-### Core-Addons (8) — Immer aktiv, in Grundgebühr enthalten
+### Core-Addons (10) — Immer aktiv, in Grundgebühr enthalten
 
-| #   | Code            | Name                  | Beschreibung                                         | Permission-Module                                                                     |
-| --- | --------------- | --------------------- | ---------------------------------------------------- | ------------------------------------------------------------------------------------- |
-| 1   | `dashboard`     | Dashboard             | Zentrale Übersicht mit Kennzahlen und Schnellzugriff | — (kein Guard)                                                                        |
-| 2   | `calendar`      | Kalender              | Gemeinsamer Unternehmenskalender                     | `calendar-events` (R/W/D)                                                             |
-| 3   | `blackboard`    | Schwarzes Brett       | Digitales schwarzes Brett für Ankündigungen          | `blackboard-posts` (R/W/D), `blackboard-comments` (R/W/D), `blackboard-archive` (R/W) |
-| 4   | `settings`      | Einstellungen         | Mandanten-Einstellungen und Konfiguration            | `settings-tenant` (W/D)                                                               |
-| 5   | `notifications` | Benachrichtigungen    | Push-Benachrichtigungen und SSE-Streaming            | `notifications-manage` (R/W)                                                          |
-| 6   | `employees`     | Mitarbeiterverwaltung | Benutzer anlegen, bearbeiten, deaktivieren           | `employees-manage` (R/W/D), `employees-availability` (R/W/D)                          |
-| 7   | `departments`   | Abteilungen           | Abteilungen und Bereiche (Organisationsstruktur)     | `departments-manage` (W/D), `areas-manage` (W/D)                                      |
-| 8   | `teams`         | Teams                 | Teams verwalten, Mitglieder und Anlagen zuordnen     | `teams-manage` (W/D)                                                                  |
+| #   | Code               | Name                  | Beschreibung                                                  | Permission-Module                                                                     |
+| --- | ------------------ | --------------------- | ------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| 1   | `dashboard`        | Dashboard             | Zentrale Übersicht mit Kennzahlen und Schnellzugriff          | — (kein Guard)                                                                        |
+| 2   | `calendar`         | Kalender              | Gemeinsamer Unternehmenskalender                              | `calendar-events` (R/W/D)                                                             |
+| 3   | `blackboard`       | Schwarzes Brett       | Digitales schwarzes Brett für Ankündigungen                   | `blackboard-posts` (R/W/D), `blackboard-comments` (R/W/D), `blackboard-archive` (R/W) |
+| 4   | `settings`         | Einstellungen         | Mandanten-Einstellungen und Konfiguration                     | `settings-tenant` (W/D)                                                               |
+| 5   | `notifications`    | Benachrichtigungen    | Push-Benachrichtigungen und SSE-Streaming                     | `notifications-manage` (R/W)                                                          |
+| 6   | `employees`        | Mitarbeiterverwaltung | Benutzer anlegen, bearbeiten, deaktivieren                    | `employees-manage` (R/W/D), `employees-availability` (R/W/D)                          |
+| 7   | `departments`      | Abteilungen           | Abteilungen und Bereiche (Organisationsstruktur)              | `departments-manage` (W/D), `areas-manage` (W/D)                                      |
+| 8   | `teams`            | Teams                 | Teams verwalten, Mitglieder und Anlagen zuordnen              | `teams-manage` (W/D)                                                                  |
+| 9   | `manage_hierarchy` | Organisationsstruktur | Verwaltung von Bereichen, Abteilungen, Teams und Mitarbeitern | — (kein Guard, ADR-035)                                                               |
+| 10  | `approvals`        | Freigaben             | Zentrales Freigabe-System für Genehmigungsworkflows           | `approvals-manage` (R/W/D), `approvals-request` (R/W)                                 |
 
 ### Kaufbare Addons (12) — Je €10/Monat (provisorisch), 30 Tage Trial
 

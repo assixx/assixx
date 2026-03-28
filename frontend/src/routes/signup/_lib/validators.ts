@@ -33,10 +33,7 @@ export function emailsMatch(email: string, emailConfirm: string): boolean {
 }
 
 /** Checks if two passwords match */
-export function passwordsMatch(
-  password: string,
-  passwordConfirm: string,
-): boolean {
+export function passwordsMatch(password: string, passwordConfirm: string): boolean {
   if (passwordConfirm === '') return true;
   return password === passwordConfirm;
 }
@@ -109,32 +106,18 @@ interface FormData {
 }
 
 /** Validate company section fields */
-function isCompanySectionValid(
-  data: FormData,
-  subdomainValid: boolean,
-): boolean {
+function isCompanySectionValid(data: FormData, subdomainValid: boolean): boolean {
   return data.companyName !== '' && data.subdomain !== '' && subdomainValid;
 }
 
 /** Validate contact section fields */
-function isContactSectionValid(
-  data: FormData,
-  emailValid: boolean,
-  emailMatch: boolean,
-): boolean {
-  return (
-    data.email !== '' && emailValid && data.emailConfirm !== '' && emailMatch
-  );
+function isContactSectionValid(data: FormData, emailValid: boolean, emailMatch: boolean): boolean {
+  return data.email !== '' && emailValid && data.emailConfirm !== '' && emailMatch;
 }
 
 /** Validate user section fields */
 function isUserSectionValid(data: FormData, phoneValid: boolean): boolean {
-  return (
-    data.firstName !== '' &&
-    data.lastName !== '' &&
-    data.phone !== '' &&
-    phoneValid
-  );
+  return data.firstName !== '' && data.lastName !== '' && data.phone !== '' && phoneValid;
 }
 
 /** Validate security section fields */
@@ -143,12 +126,7 @@ function isSecuritySectionValid(
   passwordValid: boolean,
   passwordMatch: boolean,
 ): boolean {
-  return (
-    passwordValid &&
-    data.passwordConfirm !== '' &&
-    passwordMatch &&
-    data.termsAccepted
-  );
+  return passwordValid && data.passwordConfirm !== '' && passwordMatch && data.termsAccepted;
 }
 
 /** Validates the entire signup form */
@@ -169,13 +147,9 @@ export function validateForm(data: FormData): FormValidation {
   return {
     isValid,
     errors: {
-      subdomain:
-        !subdomainValid ? 'Nur Kleinbuchstaben und Bindestriche' : null,
+      subdomain: !subdomainValid ? 'Nur Kleinbuchstaben und Bindestriche' : null,
       emailMatch: !emailMatch ? 'E-Mail-Adressen stimmen nicht überein' : null,
-      phone:
-        !phoneValid ?
-          'Bitte geben Sie eine gültige Telefonnummer ein (7-15 Ziffern)'
-        : null,
+      phone: !phoneValid ? 'Bitte geben Sie eine gültige Telefonnummer ein (7-15 Ziffern)' : null,
       passwordMatch: !passwordMatch ? 'Passwörter stimmen nicht überein' : null,
     },
   };

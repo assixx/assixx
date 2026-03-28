@@ -25,6 +25,9 @@
  * - GET    /kvp/:id/attachments   - Get attachments
  * - POST   /kvp/:id/attachments   - Upload attachments
  * - GET    /kvp/attachments/:fileUuid/download - Download attachment
+ * - GET    /kvp/approval-config-status        - Check if approval config exists
+ * - POST   /kvp/:id/request-approval          - Request approval from KVP master
+ * - GET    /kvp/:id/approval                  - Get linked approval status
  */
 import {
   BadRequestException,
@@ -52,6 +55,8 @@ import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 import { v7 as uuidv7 } from 'uuid';
 
+import { attachmentHeader } from '../../utils/content-disposition.js';
+import type { Approval } from '../approvals/approvals.types.js';
 import { CurrentUser } from '../common/decorators/current-user.decorator.js';
 import { RequireAddon } from '../common/decorators/require-addon.decorator.js';
 import { RequirePermission } from '../common/decorators/require-permission.decorator.js';
@@ -68,10 +73,14 @@ import {
   OverrideCategoryNameDto,
   ShareSuggestionDto,
   UpdateCustomCategoryDto,
+  UpdateKvpSettingsDto,
   UpdateSuggestionDto,
 } from './dto/index.js';
+import { KvpApprovalService } from './kvp-approval.service.js';
 import type { CustomizableCategoriesResponse } from './kvp-categories.service.js';
 import { KvpCategoriesService } from './kvp-categories.service.js';
+import type { RewardTier } from './kvp-reward-tiers.service.js';
+import { KvpRewardTiersService } from './kvp-reward-tiers.service.js';
 import type {
   CategoryOption,
   DashboardStats,
@@ -108,6 +117,7 @@ interface MessageResponse {
 const KVP_FEATURE = 'kvp';
 const KVP_SUGGESTIONS = 'kvp-suggestions';
 const KVP_COMMENTS = 'kvp-comments';
+const KVP_SHARING = 'kvp-sharing';
 
 @Controller('kvp')
 @RequireAddon('kvp')
@@ -115,7 +125,74 @@ export class KvpController {
   constructor(
     private readonly kvpService: KvpService,
     private readonly categoriesService: KvpCategoriesService,
+    private readonly kvpApprovalService: KvpApprovalService,
+    private readonly rewardTiersService: KvpRewardTiersService,
   ) {}
+
+  // ==========================================================================
+  // ADDON SETTINGS (root / admin+has_full_access only)
+  // ==========================================================================
+
+  /**
+   * GET /kvp/settings
+   * Get KVP addon settings (daily limit) for the tenant
+   */
+  @Get('settings')
+  @UseGuards(RolesGuard)
+  @Roles('root')
+  async getKvpSettings(@TenantId() tenantId: number): Promise<{ dailyLimit: number }> {
+    return await this.kvpService.getKvpSettings(tenantId);
+  }
+
+  /**
+   * PUT /kvp/settings
+   * Update KVP addon settings (daily limit) for the tenant
+   */
+  @Put('settings')
+  @UseGuards(RolesGuard)
+  @Roles('root')
+  async updateKvpSettings(
+    @Body() dto: UpdateKvpSettingsDto,
+    @TenantId() tenantId: number,
+  ): Promise<{ dailyLimit: number }> {
+    return await this.kvpService.updateKvpSettings(tenantId, dto.dailyLimit);
+  }
+
+  // ==========================================================================
+  // REWARD TIERS (root only)
+  // ==========================================================================
+
+  /** GET /kvp/reward-tiers — List active reward tiers */
+  @Get('reward-tiers')
+  @RequirePermission(KVP_FEATURE, KVP_SUGGESTIONS, 'canRead')
+  async getRewardTiers(@TenantId() tenantId: number): Promise<RewardTier[]> {
+    return await this.rewardTiersService.findAll(tenantId);
+  }
+
+  /** POST /kvp/reward-tiers — Create a new reward tier (root only) */
+  @Post('reward-tiers')
+  @UseGuards(RolesGuard)
+  @Roles('root')
+  @HttpCode(HttpStatus.CREATED)
+  async createRewardTier(
+    @TenantId() tenantId: number,
+    @Body() body: { amount: number },
+  ): Promise<RewardTier> {
+    return await this.rewardTiersService.create(tenantId, body.amount);
+  }
+
+  /** DELETE /kvp/reward-tiers/:id — Soft-delete a reward tier (root only) */
+  @Delete('reward-tiers/:id')
+  @UseGuards(RolesGuard)
+  @Roles('root')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async deleteRewardTier(@Param('id') id: string, @TenantId() tenantId: number): Promise<void> {
+    await this.rewardTiersService.remove(tenantId, Number(id));
+  }
+
+  // ==========================================================================
+  // CATEGORIES
+  // ==========================================================================
 
   /**
    * GET /kvp/categories
@@ -143,11 +220,7 @@ export class KvpController {
     @CurrentUser() user: NestAuthUser,
     @TenantId() tenantId: number,
   ): Promise<CustomizableCategoriesResponse> {
-    return await this.categoriesService.getCustomizable(
-      tenantId,
-      user.id,
-      user.role,
-    );
+    return await this.categoriesService.getCustomizable(tenantId, user.id, user.role);
   }
 
   /**
@@ -188,12 +261,7 @@ export class KvpController {
     @TenantId() tenantId: number,
   ): Promise<MessageResponse> {
     const id = Number.parseInt(categoryId, 10);
-    await this.categoriesService.deleteOverride(
-      tenantId,
-      id,
-      user.id,
-      user.role,
-    );
+    await this.categoriesService.deleteOverride(tenantId, id, user.id, user.role);
     return { message: 'Override removed' };
   }
 
@@ -237,13 +305,7 @@ export class KvpController {
     @TenantId() tenantId: number,
   ): Promise<{ id: number }> {
     const categoryId = Number.parseInt(id, 10);
-    return await this.categoriesService.updateCustom(
-      tenantId,
-      categoryId,
-      user.id,
-      user.role,
-      dto,
-    );
+    return await this.categoriesService.updateCustom(tenantId, categoryId, user.id, user.role, dto);
   }
 
   /**
@@ -316,6 +378,22 @@ export class KvpController {
     return await this.kvpService.getMyOrganizations(user.id, tenantId);
   }
 
+  // ==========================================================================
+  // APPROVAL INTEGRATION (ADR-037)
+  // ==========================================================================
+
+  /**
+   * GET /kvp/approval-config-status
+   * Check if an approval master is configured for addon 'kvp'
+   * Static route — MUST be before parameterized /:id routes (Fastify ordering)
+   */
+  @Get('approval-config-status')
+  @RequirePermission(KVP_FEATURE, KVP_SUGGESTIONS, 'canRead')
+  async getApprovalConfigStatus(@TenantId() tenantId: number): Promise<{ hasConfig: boolean }> {
+    const hasConfig = await this.kvpApprovalService.hasApprovalConfig(tenantId);
+    return { hasConfig };
+  }
+
   /**
    * POST /kvp/:uuid/confirm
    * Mark a suggestion as read (confirmed) by current user
@@ -363,7 +441,6 @@ export class KvpController {
       priority: query.priority,
       orgLevel: query.orgLevel,
       teamId: query.teamId,
-      assetId: query.assetId,
       search: query.search,
       page: query.page,
       limit: query.limit,
@@ -383,12 +460,7 @@ export class KvpController {
     @TenantId() tenantId: number,
   ): Promise<KVPSuggestionResponse> {
     const suggestionId = this.parseIdParam(id);
-    return await this.kvpService.getSuggestionById(
-      suggestionId,
-      tenantId,
-      user.id,
-      user.role,
-    );
+    return await this.kvpService.getSuggestionById(suggestionId, tenantId, user.id, user.role);
   }
 
   /**
@@ -404,12 +476,7 @@ export class KvpController {
     @CurrentUser() user: NestAuthUser,
     @TenantId() tenantId: number,
   ): Promise<KVPSuggestionResponse> {
-    return await this.kvpService.createSuggestion(
-      dto,
-      tenantId,
-      user.id,
-      user.role,
-    );
+    return await this.kvpService.createSuggestion(dto, tenantId, user.id, user.role);
   }
 
   /**
@@ -425,13 +492,7 @@ export class KvpController {
     @TenantId() tenantId: number,
   ): Promise<KVPSuggestionResponse> {
     const suggestionId = this.parseIdParam(id);
-    return await this.kvpService.updateSuggestion(
-      suggestionId,
-      dto,
-      tenantId,
-      user.id,
-      user.role,
-    );
+    return await this.kvpService.updateSuggestion(suggestionId, dto, tenantId, user.id, user.role);
   }
 
   /**
@@ -446,22 +507,16 @@ export class KvpController {
     @TenantId() tenantId: number,
   ): Promise<MessageResponse> {
     const suggestionId = this.parseIdParam(id);
-    return await this.kvpService.deleteSuggestion(
-      suggestionId,
-      tenantId,
-      user.id,
-      user.role,
-    );
+    return await this.kvpService.deleteSuggestion(suggestionId, tenantId, user.id, user.role);
   }
 
   /**
    * PUT /kvp/:id/share
-   * Share a suggestion at organization level (admin/root only)
+   * Share a suggestion at organization level
+   * Requires kvp-sharing.canWrite permission (PermissionGuard enforced)
    */
   @Put(':id/share')
-  @UseGuards(RolesGuard)
-  @Roles('admin', 'root')
-  @RequirePermission(KVP_FEATURE, KVP_SUGGESTIONS, 'canWrite')
+  @RequirePermission(KVP_FEATURE, KVP_SHARING, 'canWrite')
   async shareSuggestion(
     @Param('id') id: string,
     @Body() dto: ShareSuggestionDto,
@@ -469,35 +524,23 @@ export class KvpController {
     @TenantId() tenantId: number,
   ): Promise<MessageResponse> {
     const suggestionId = this.parseIdParam(id);
-    return await this.kvpService.shareSuggestion(
-      suggestionId,
-      dto,
-      tenantId,
-      user.id,
-      user.role,
-    );
+    return await this.kvpService.shareSuggestion(suggestionId, dto, tenantId, user.id, user.role);
   }
 
   /**
    * POST /kvp/:id/unshare
-   * Unshare a suggestion (admin/root only)
+   * Unshare a suggestion
+   * Requires kvp-sharing.canWrite permission (PermissionGuard enforced)
    */
   @Post(':id/unshare')
-  @UseGuards(RolesGuard)
-  @Roles('admin', 'root')
-  @RequirePermission(KVP_FEATURE, KVP_SUGGESTIONS, 'canWrite')
+  @RequirePermission(KVP_FEATURE, KVP_SHARING, 'canWrite')
   async unshareSuggestion(
     @Param('id') id: string,
     @CurrentUser() user: NestAuthUser,
     @TenantId() tenantId: number,
   ): Promise<MessageResponse> {
     const suggestionId = this.parseIdParam(id);
-    return await this.kvpService.unshareSuggestion(
-      suggestionId,
-      tenantId,
-      user.id,
-      user.role,
-    );
+    return await this.kvpService.unshareSuggestion(suggestionId, tenantId, user.id, user.role);
   }
 
   /**
@@ -515,11 +558,7 @@ export class KvpController {
     @TenantId() tenantId: number,
   ): Promise<MessageResponse> {
     const suggestionId = this.parseIdParam(id);
-    return await this.kvpService.archiveSuggestion(
-      suggestionId,
-      tenantId,
-      user.id,
-    );
+    return await this.kvpService.archiveSuggestion(suggestionId, tenantId, user.id);
   }
 
   /**
@@ -537,11 +576,38 @@ export class KvpController {
     @TenantId() tenantId: number,
   ): Promise<MessageResponse> {
     const suggestionId = this.parseIdParam(id);
-    return await this.kvpService.unarchiveSuggestion(
-      suggestionId,
-      tenantId,
-      user.id,
-    );
+    return await this.kvpService.unarchiveSuggestion(suggestionId, tenantId, user.id);
+  }
+
+  /**
+   * POST /kvp/:id/request-approval
+   * Request approval from configured KVP masters
+   */
+  @Post(':id/request-approval')
+  @RequirePermission(KVP_FEATURE, KVP_SUGGESTIONS, 'canWrite')
+  @HttpCode(HttpStatus.CREATED)
+  async requestApproval(
+    @Param('id') id: string,
+    @CurrentUser() user: NestAuthUser,
+    @TenantId() tenantId: number,
+  ): Promise<Approval> {
+    const suggestionId = this.parseIdParam(id);
+    return await this.kvpApprovalService.requestApproval(tenantId, suggestionId, user.id);
+  }
+
+  /**
+   * GET /kvp/:id/approval
+   * Get approval status linked to a KVP suggestion
+   */
+  @Get(':id/approval')
+  @RequirePermission(KVP_FEATURE, KVP_SUGGESTIONS, 'canRead')
+  async getApproval(
+    @Param('id') id: string,
+    @TenantId() tenantId: number,
+  ): Promise<{ approval: Approval | null }> {
+    const suggestionId = this.parseIdParam(id);
+    const approval = await this.kvpApprovalService.getApprovalForSuggestion(tenantId, suggestionId);
+    return { approval };
   }
 
   /**
@@ -558,10 +624,8 @@ export class KvpController {
     @TenantId() tenantId: number,
   ): Promise<PaginatedKVPComments> {
     const suggestionId = this.parseIdParam(id);
-    const parsedLimit =
-      limit !== undefined ? Number.parseInt(limit, 10) : undefined;
-    const parsedOffset =
-      offset !== undefined ? Number.parseInt(offset, 10) : undefined;
+    const parsedLimit = limit !== undefined ? Number.parseInt(limit, 10) : undefined;
+    const parsedOffset = offset !== undefined ? Number.parseInt(offset, 10) : undefined;
     return await this.kvpService.getComments(
       suggestionId,
       tenantId,
@@ -590,11 +654,9 @@ export class KvpController {
   /**
    * POST /kvp/:id/comments
    * Add a comment or reply to a suggestion
-   * Only admin and root users can add comments
+   * Requires kvp-comments.canWrite permission (PermissionGuard enforced)
    */
   @Post(':id/comments')
-  @UseGuards(RolesGuard)
-  @Roles('admin', 'root')
   @RequirePermission(KVP_FEATURE, KVP_COMMENTS, 'canWrite')
   @HttpCode(HttpStatus.CREATED)
   async addComment(
@@ -627,12 +689,7 @@ export class KvpController {
     @TenantId() tenantId: number,
   ): Promise<KVPAttachment[]> {
     const suggestionId = this.parseIdParam(id);
-    return await this.kvpService.getAttachments(
-      suggestionId,
-      tenantId,
-      user.id,
-      user.role,
-    );
+    return await this.kvpService.getAttachments(suggestionId, tenantId, user.id, user.role);
   }
 
   /**
@@ -660,10 +717,7 @@ export class KvpController {
     for (const file of files) {
       const fileUuid = uuidv7();
       const extension = path.extname(file.originalname).toLowerCase();
-      const checksum = crypto
-        .createHash('sha256')
-        .update(file.buffer)
-        .digest('hex');
+      const checksum = crypto.createHash('sha256').update(file.buffer).digest('hex');
 
       // Build storage path
       const storagePath = path.join(
@@ -713,18 +767,10 @@ export class KvpController {
     @TenantId() tenantId: number,
     @Res() reply: FastifyReply,
   ): Promise<void> {
-    const attachment = await this.kvpService.getAttachment(
-      fileUuid,
-      tenantId,
-      user.id,
-      user.role,
-    );
+    const attachment = await this.kvpService.getAttachment(fileUuid, tenantId, user.id, user.role);
     await reply
       .header('Content-Type', 'application/octet-stream')
-      .header(
-        'Content-Disposition',
-        `attachment; filename="${attachment.fileName}"`,
-      )
+      .header('Content-Disposition', attachmentHeader(attachment.fileName))
       .send(createReadStream(attachment.filePath));
   }
 
@@ -738,8 +784,7 @@ export class KvpController {
    */
   private parseIdParam(id: string): number | string {
     // Check UUID pattern first
-    const uuidPattern =
-      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     if (uuidPattern.test(id)) {
       return id;
     }

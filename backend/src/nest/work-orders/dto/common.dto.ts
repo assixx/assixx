@@ -15,10 +15,9 @@ export const UuidParamSchema = z.object({
 export class UuidParamDto extends createZodDto(UuidParamSchema) {}
 
 /** Work order status enum — mirrors PostgreSQL work_order_status */
-export const WorkOrderStatusSchema = z.enum(
-  ['open', 'in_progress', 'completed', 'verified'],
-  { message: 'Ungültiger Auftragsstatus' },
-);
+export const WorkOrderStatusSchema = z.enum(['open', 'in_progress', 'completed', 'verified'], {
+  message: 'Ungültiger Auftragsstatus',
+});
 
 /** Work order priority enum — mirrors PostgreSQL work_order_priority */
 export const WorkOrderPrioritySchema = z.enum(['low', 'medium', 'high'], {
@@ -26,10 +25,9 @@ export const WorkOrderPrioritySchema = z.enum(['low', 'medium', 'high'], {
 });
 
 /** Work order source type enum — mirrors PostgreSQL work_order_source_type */
-export const WorkOrderSourceTypeSchema = z.enum(
-  ['tpm_defect', 'kvp_proposal', 'manual'],
-  { message: 'Ungültiger Quellentyp' },
-);
+export const WorkOrderSourceTypeSchema = z.enum(['tpm_defect', 'kvp_proposal', 'manual'], {
+  message: 'Ungültiger Quellentyp',
+});
 
 /** Pagination — page parameter (coerced from query string) */
 export const PageSchema = z.coerce.number().int().positive().default(1);

@@ -44,12 +44,7 @@ export {
 } from './auth';
 
 // JWT utilities
-export {
-  parseJwt,
-  isTokenExpired,
-  getTokenExpiryTime,
-  type JWTPayload,
-} from './jwt-utils';
+export { parseJwt, isTokenExpired, getTokenExpiryTime, type JWTPayload } from './jwt-utils';
 
 // Date helpers
 export {
@@ -62,37 +57,22 @@ export {
 } from './date-helpers';
 
 // Token manager (singleton)
-export {
-  TokenManager,
-  getTokenManager,
-  type LogoutReason,
-} from './token-manager';
+export { TokenManager, getTokenManager, type LogoutReason } from './token-manager';
 
 // HTML sanitization (XSS prevention)
-export {
-  sanitizeHtml,
-  sanitizeWithLineBreaks,
-  escapeHtml,
-} from './sanitize-html';
+export { sanitizeHtml, sanitizeWithLineBreaks, escapeHtml } from './sanitize-html';
 
 // API Client
 export { ApiClient, ApiError, getApiClient, apiClient } from './api-client';
 
 // Password strength (lazy-loaded zxcvbn-ts)
-export {
-  analyzePassword,
-  type PasswordStrengthResult,
-} from './password-strength';
+export { analyzePassword, type PasswordStrengthResult } from './password-strength';
 
 // Session manager (singleton) - handles inactivity timeout + warning modal
 export { SessionManager, getSessionManager } from './session-manager';
 
 // Avatar helpers (color assignment + initials)
-export {
-  getAvatarColor,
-  getAvatarColorClass,
-  getInitials,
-} from './avatar-helpers';
+export { getAvatarColor, getAvatarColorClass, getInitials } from './avatar-helpers';
 
 // Alert utilities (toast notifications + confirm dialogs)
 export {

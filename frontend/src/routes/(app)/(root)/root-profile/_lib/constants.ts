@@ -39,8 +39,7 @@ export const MESSAGES = {
   fileTooLarge: 'Datei zu groß (max. 5MB)',
 
   // Password
-  passwordChanged:
-    'Passwort erfolgreich geändert. Sie werden aus Sicherheitsgründen abgemeldet...',
+  passwordChanged: 'Passwort erfolgreich geändert. Sie werden aus Sicherheitsgründen abgemeldet...',
   passwordChangeError: 'Fehler beim Ändern des Passworts',
   currentPasswordWrong: 'Aktuelles Passwort ist falsch',
   passwordMismatch: 'Passwörter stimmen nicht überein',

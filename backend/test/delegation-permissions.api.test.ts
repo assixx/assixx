@@ -10,6 +10,7 @@ import {
   BASE_URL,
   authHeaders,
   authOnly,
+  getDefaultPositionIds,
   loginApitest,
 } from './helpers.js';
 
@@ -31,6 +32,7 @@ beforeAll(async () => {
   rootUuid = meBody.data?.uuid ?? '';
 
   // Create test employee
+  const positionIds = await getDefaultPositionIds(rootToken);
   const createRes = await fetch(`${BASE_URL}/users`, {
     method: 'POST',
     headers: authHeaders(rootToken),
@@ -40,6 +42,7 @@ beforeAll(async () => {
       firstName: 'PermAPI',
       lastName: 'Test',
       role: 'employee',
+      positionIds,
     }),
   });
   if (createRes.ok) {
@@ -163,12 +166,9 @@ describe('Root → GET /user-permissions/nonexistent → 404', () => {
   let response: Response;
 
   beforeAll(async () => {
-    response = await fetch(
-      `${BASE_URL}/user-permissions/00000000-0000-0000-0000-000000000000`,
-      {
-        headers: authOnly(rootToken),
-      },
-    );
+    response = await fetch(`${BASE_URL}/user-permissions/00000000-0000-0000-0000-000000000000`, {
+      headers: authOnly(rootToken),
+    });
   });
 
   it('should return 404', () => {

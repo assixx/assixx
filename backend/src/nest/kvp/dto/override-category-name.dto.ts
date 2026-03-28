@@ -15,6 +15,4 @@ export const OverrideCategoryNameSchema = z.object({
     .max(50, 'Custom name must not exceed 50 characters'),
 });
 
-export class OverrideCategoryNameDto extends createZodDto(
-  OverrideCategoryNameSchema,
-) {}
+export class OverrideCategoryNameDto extends createZodDto(OverrideCategoryNameSchema) {}

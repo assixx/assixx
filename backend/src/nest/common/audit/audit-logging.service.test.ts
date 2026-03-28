@@ -24,9 +24,7 @@ function createMockMetadataService() {
   return { fetchResourceName: vi.fn().mockResolvedValue(null) };
 }
 
-function createMinimalMetadata(
-  overrides?: Partial<AuditRequestMetadata>,
-): AuditRequestMetadata {
+function createMinimalMetadata(overrides?: Partial<AuditRequestMetadata>): AuditRequestMetadata {
   return {
     action: 'create',
     resourceType: 'users',

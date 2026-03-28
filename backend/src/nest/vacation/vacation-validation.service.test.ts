@@ -8,22 +8,14 @@
  * Uses vi.useFakeTimers() pinned to 2026-03-15 for deterministic date logic.
  */
 import { IS_ACTIVE } from '@assixx/shared/constants';
-import {
-  BadRequestException,
-  ConflictException,
-  ForbiddenException,
-} from '@nestjs/common';
+import { BadRequestException, ConflictException, ForbiddenException } from '@nestjs/common';
 import type { PoolClient } from 'pg';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { CreateVacationRequestDto } from './dto/create-vacation-request.dto.js';
 import type { UpdateVacationRequestDto } from './dto/update-vacation-request.dto.js';
 import { VacationValidationService } from './vacation-validation.service.js';
-import type {
-  VacationHalfDay,
-  VacationRequestRow,
-  VacationType,
-} from './vacation.types.js';
+import type { VacationHalfDay, VacationRequestRow, VacationType } from './vacation.types.js';
 
 // =============================================================
 // Fake Clock — pinned to 2026-03-15T00:00:00.000Z
@@ -75,9 +67,7 @@ function createMockClient() {
 }
 type MockClient = ReturnType<typeof createMockClient>;
 
-function createDto(
-  overrides?: Partial<CreateVacationRequestDto>,
-): CreateVacationRequestDto {
+function createDto(overrides?: Partial<CreateVacationRequestDto>): CreateVacationRequestDto {
   return {
     startDate: '2026-04-01',
     endDate: '2026-04-05',
@@ -89,9 +79,7 @@ function createDto(
   };
 }
 
-function createExistingRequest(
-  overrides?: Partial<VacationRequestRow>,
-): VacationRequestRow {
+function createExistingRequest(overrides?: Partial<VacationRequestRow>): VacationRequestRow {
   return {
     id: 1,
     uuid: 'req-uuid-001',
@@ -156,12 +144,7 @@ describe('VacationValidationService', () => {
   describe('validateNewRequest()', () => {
     it('should pass with valid future date and no overlap', async () => {
       await expect(
-        service.validateNewRequest(
-          mockClient as unknown as PoolClient,
-          1,
-          100,
-          createDto(),
-        ),
+        service.validateNewRequest(mockClient as unknown as PoolClient, 1, 100, createDto()),
       ).resolves.toBeUndefined();
 
       expect(mockSettings.getSettings).toHaveBeenCalledWith(1);
@@ -172,12 +155,7 @@ describe('VacationValidationService', () => {
       const dto = createDto({ startDate: '2026-03-01' });
 
       await expect(
-        service.validateNewRequest(
-          mockClient as unknown as PoolClient,
-          1,
-          100,
-          dto,
-        ),
+        service.validateNewRequest(mockClient as unknown as PoolClient, 1, 100, dto),
       ).rejects.toThrow(BadRequestException);
     });
 
@@ -186,12 +164,7 @@ describe('VacationValidationService', () => {
       const dto = createDto({ startDate: '2026-03-16' });
 
       await expect(
-        service.validateNewRequest(
-          mockClient as unknown as PoolClient,
-          1,
-          100,
-          dto,
-        ),
+        service.validateNewRequest(mockClient as unknown as PoolClient, 1, 100, dto),
       ).rejects.toThrow(BadRequestException);
     });
 
@@ -204,12 +177,7 @@ describe('VacationValidationService', () => {
       const dto = createDto({ startDate: '2026-03-16' });
 
       await expect(
-        service.validateNewRequest(
-          mockClient as unknown as PoolClient,
-          1,
-          100,
-          dto,
-        ),
+        service.validateNewRequest(mockClient as unknown as PoolClient, 1, 100, dto),
       ).resolves.toBeUndefined();
     });
 
@@ -225,12 +193,7 @@ describe('VacationValidationService', () => {
       });
 
       await expect(
-        service.validateNewRequest(
-          mockClient as unknown as PoolClient,
-          1,
-          100,
-          dto,
-        ),
+        service.validateNewRequest(mockClient as unknown as PoolClient, 1, 100, dto),
       ).rejects.toThrow(BadRequestException);
     });
 
@@ -246,12 +209,7 @@ describe('VacationValidationService', () => {
       });
 
       await expect(
-        service.validateNewRequest(
-          mockClient as unknown as PoolClient,
-          1,
-          100,
-          dto,
-        ),
+        service.validateNewRequest(mockClient as unknown as PoolClient, 1, 100, dto),
       ).resolves.toBeUndefined();
     });
 
@@ -259,12 +217,7 @@ describe('VacationValidationService', () => {
       mockClient.query.mockResolvedValueOnce({ rows: [{ id: 1 }] });
 
       await expect(
-        service.validateNewRequest(
-          mockClient as unknown as PoolClient,
-          1,
-          100,
-          createDto(),
-        ),
+        service.validateNewRequest(mockClient as unknown as PoolClient, 1, 100, createDto()),
       ).rejects.toThrow(ConflictException);
     });
   });
@@ -563,10 +516,13 @@ describe('VacationValidationService', () => {
       );
 
       // checkOverlap SQL should contain $5 for excludeId
-      expect(mockClient.query).toHaveBeenCalledWith(
-        expect.stringContaining('AND id != $5'),
-        [1, 100, '2026-04-01', '2026-04-05', 'req-uuid-001'],
-      );
+      expect(mockClient.query).toHaveBeenCalledWith(expect.stringContaining('AND id != $5'), [
+        1,
+        100,
+        '2026-04-01',
+        '2026-04-05',
+        'req-uuid-001',
+      ]);
     });
 
     it('should throw when edited range has no workdays', async () => {
@@ -615,13 +571,7 @@ describe('VacationValidationService', () => {
         7,
       );
 
-      expect(mockBlackouts.getConflicts).toHaveBeenCalledWith(
-        1,
-        '2026-04-01',
-        '2026-04-05',
-        42,
-        7,
-      );
+      expect(mockBlackouts.getConflicts).toHaveBeenCalledWith(1, '2026-04-01', '2026-04-05', 42, 7);
     });
   });
 });

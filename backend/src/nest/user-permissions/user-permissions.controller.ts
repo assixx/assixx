@@ -19,6 +19,7 @@ import {
   Logger,
   Param,
   Put,
+  Query,
 } from '@nestjs/common';
 
 import { CurrentUser } from '../common/decorators/current-user.decorator.js';
@@ -27,8 +28,11 @@ import { TenantId } from '../common/decorators/tenant.decorator.js';
 import type { NestAuthUser } from '../common/interfaces/auth.interface.js';
 import { HierarchyPermissionService } from '../hierarchy-permission/hierarchy-permission.service.js';
 import { ScopeService } from '../hierarchy-permission/scope.service.js';
-import { UpsertUserPermissionsDto } from './dto/index.js';
-import type { PermissionCategoryResponse } from './user-permissions.service.js';
+import { PermissionHistoryQueryDto, UpsertUserPermissionsDto } from './dto/index.js';
+import type {
+  PermissionCategoryResponse,
+  PermissionHistoryResponse,
+} from './user-permissions.service.js';
 import { UserPermissionsService } from './user-permissions.service.js';
 
 @Controller('user-permissions')
@@ -41,6 +45,21 @@ export class UserPermissionsController {
     private readonly scopeService: ScopeService,
     private readonly hierarchyPermission: HierarchyPermissionService,
   ) {}
+
+  /**
+   * Get permission change history for a user.
+   * Access: same rules as GET permissions (read access required).
+   */
+  @Get(':uuid/history')
+  async getPermissionHistory(
+    @TenantId() tenantId: number,
+    @Param('uuid') uuid: string,
+    @Query() query: PermissionHistoryQueryDto,
+    @CurrentUser() user: NestAuthUser,
+  ): Promise<PermissionHistoryResponse> {
+    await this.assertPermissionAccess(user, uuid, tenantId, 'canRead');
+    return await this.service.getPermissionHistory(tenantId, uuid, query.limit, query.offset);
+  }
 
   /**
    * Get permission tree for a user.
@@ -75,9 +94,7 @@ export class UserPermissionsController {
     await this.assertPermissionAccess(user, uuid, tenantId, 'canWrite');
 
     const delegatorScope =
-      this.isDelegatedAccess(user) ?
-        await this.scopeService.getScope()
-      : undefined;
+      this.isDelegatedAccess(user) ? await this.scopeService.getScope() : undefined;
 
     const result = await this.service.upsertPermissions(
       tenantId,
@@ -121,12 +138,8 @@ export class UserPermissionsController {
       action,
     );
     if (!hasManagePerms) {
-      this.logger.warn(
-        `Permission denied: user ${user.id} lacks manage-permissions.${action}`,
-      );
-      throw new ForbiddenException(
-        'Keine Berechtigung zum Verwalten von Benutzer-Permissions',
-      );
+      this.logger.warn(`Permission denied: user ${user.id} lacks manage-permissions.${action}`);
+      throw new ForbiddenException('Keine Berechtigung zum Verwalten von Benutzer-Permissions');
     }
 
     // Self-grant block (Regel 1)
@@ -144,12 +157,8 @@ export class UserPermissionsController {
   ): Promise<void> {
     const targetId = await this.service.resolveUserId(targetUuid, tenantId);
     if (targetId === currentUserId) {
-      this.logger.warn(
-        `Self-grant blocked: user ${currentUserId} tried to edit own permissions`,
-      );
-      throw new ForbiddenException(
-        'Eigene Berechtigungen können nicht selbst geändert werden',
-      );
+      this.logger.warn(`Self-grant blocked: user ${currentUserId} tried to edit own permissions`);
+      throw new ForbiddenException('Eigene Berechtigungen können nicht selbst geändert werden');
     }
   }
 
@@ -161,18 +170,13 @@ export class UserPermissionsController {
   ): Promise<void> {
     const scope = await this.scopeService.getScope();
     const targetId = await this.service.resolveUserId(targetUuid, tenantId);
-    const visibleIds = await this.hierarchyPermission.getVisibleUserIds(
-      scope,
-      tenantId,
-    );
+    const visibleIds = await this.hierarchyPermission.getVisibleUserIds(scope, tenantId);
 
     if (visibleIds !== 'all' && !visibleIds.includes(targetId)) {
       this.logger.warn(
         `Scope denied: user ${currentUserId} cannot access permissions of user ${targetId}`,
       );
-      throw new ForbiddenException(
-        'Benutzer liegt nicht in Ihrem Zuständigkeitsbereich',
-      );
+      throw new ForbiddenException('Benutzer liegt nicht in Ihrem Zuständigkeitsbereich');
     }
   }
 

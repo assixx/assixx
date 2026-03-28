@@ -21,11 +21,7 @@
     resetSingleCategoryColor as apiResetSingleCategoryColor,
     logApiError,
   } from '../../_lib/api';
-  import {
-    MESSAGES,
-    CARD_CATEGORY_LABELS,
-    DEFAULT_COLORS,
-  } from '../../_lib/constants';
+  import { MESSAGES, CARD_CATEGORY_LABELS, DEFAULT_COLORS } from '../../_lib/constants';
 
   import type {
     CategoryColorConfigEntry,
@@ -75,10 +71,7 @@
   // STATE
   // ===========================================================================
 
-  function buildEditRow(
-    key: CardCategory,
-    entry: CategoryColorConfigEntry | undefined,
-  ): EditRow {
+  function buildEditRow(key: CardCategory, entry: CategoryColorConfigEntry | undefined): EditRow {
     const rawHex = entry?.colorHex ?? null;
     const hasColor = rawHex !== null;
     const hex = rawHex ?? '#888888';
@@ -99,9 +92,7 @@
 
   $effect(() => {
     rows = CATEGORY_ORDER.map((key: CardCategory) => {
-      const entry = categoryColors.find(
-        (c: CategoryColorConfigEntry) => c.categoryKey === key,
-      );
+      const entry = categoryColors.find((c: CategoryColorConfigEntry) => c.categoryKey === key);
       return buildEditRow(key, entry);
     });
   });
@@ -118,9 +109,7 @@
   }
 
   function getStatusColor(status: CardStatus): string {
-    const found = statusColors.find(
-      (c: TpmColorConfigEntry) => c.statusKey === status,
-    );
+    const found = statusColors.find((c: TpmColorConfigEntry) => c.statusKey === status);
     return found !== undefined ? found.colorHex : DEFAULT_COLORS[status];
   }
 
@@ -130,9 +119,7 @@
   }
 
   function hasAnyCustomColor(): boolean {
-    return categoryColors.some(
-      (c: CategoryColorConfigEntry) => c.colorHex !== null,
-    );
+    return categoryColors.some((c: CategoryColorConfigEntry) => c.colorHex !== null);
   }
 
   // ===========================================================================
@@ -160,10 +147,7 @@
       await invalidateAll();
     } catch (err: unknown) {
       logApiError('updateCategoryColor', err);
-      const msg =
-        err instanceof Error ?
-          err.message
-        : MESSAGES.ERROR_CATEGORY_COLOR_UPDATE;
+      const msg = err instanceof Error ? err.message : MESSAGES.ERROR_CATEGORY_COLOR_UPDATE;
       showErrorAlert(msg);
     } finally {
       savingKey = null;
@@ -179,10 +163,7 @@
       await invalidateAll();
     } catch (err: unknown) {
       logApiError('resetCategoryColors', err);
-      const msg =
-        err instanceof Error ?
-          err.message
-        : MESSAGES.ERROR_CATEGORY_COLOR_RESET;
+      const msg = err instanceof Error ? err.message : MESSAGES.ERROR_CATEGORY_COLOR_RESET;
       showErrorAlert(msg);
     } finally {
       resetting = false;
@@ -197,10 +178,7 @@
       await invalidateAll();
     } catch (err: unknown) {
       logApiError('resetSingleCategoryColor', err);
-      const msg =
-        err instanceof Error ?
-          err.message
-        : MESSAGES.ERROR_SINGLE_CATEGORY_COLOR_RESET;
+      const msg = err instanceof Error ? err.message : MESSAGES.ERROR_SINGLE_CATEGORY_COLOR_RESET;
       showErrorAlert(msg);
     } finally {
       resettingKey = null;
@@ -210,9 +188,7 @@
 
 <div class="mb-4 flex items-start justify-between gap-4">
   <div>
-    <h3
-      class="flex items-center gap-2 text-base font-semibold text-(--color-text-primary)"
-    >
+    <h3 class="flex items-center gap-2 text-base font-semibold text-(--color-text-primary)">
       <i class="fas fa-palette"></i>
       {MESSAGES.CATEGORY_COLOR_TITLE}
     </h3>
@@ -506,8 +482,7 @@
     flex-direction: column;
     padding: 0.625rem;
     color: var(--color-white);
-    box-shadow: 0 2px 8px
-      color-mix(in oklch, var(--color-black) 20%, transparent);
+    box-shadow: 0 2px 8px color-mix(in oklch, var(--color-black) 20%, transparent);
     flex-shrink: 0;
   }
 
@@ -516,8 +491,7 @@
     align-items: center;
     gap: 0.375rem;
     padding-bottom: 0.375rem;
-    border-bottom: 1px solid
-      color-mix(in oklch, var(--color-black) 15%, transparent);
+    border-bottom: 1px solid color-mix(in oklch, var(--color-black) 15%, transparent);
   }
 
   .card-preview__code {
@@ -559,8 +533,7 @@
     justify-content: flex-end;
     gap: 0.25rem;
     padding-top: 0.375rem;
-    border-top: 1px solid
-      color-mix(in oklch, var(--color-black) 15%, transparent);
+    border-top: 1px solid color-mix(in oklch, var(--color-black) 15%, transparent);
   }
 
   .card-preview__status {

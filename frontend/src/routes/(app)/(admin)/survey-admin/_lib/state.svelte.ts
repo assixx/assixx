@@ -88,8 +88,7 @@ class SurveyAdminState {
   // ==========================================================================
   openModal(surveyId: number | null = null): void {
     this.currentSurveyId = surveyId;
-    this.modalTitle =
-      surveyId !== null ? 'Umfrage bearbeiten' : 'Neue Umfrage erstellen';
+    this.modalTitle = surveyId !== null ? 'Umfrage bearbeiten' : 'Neue Umfrage erstellen';
     this.questionCounter = 0;
     this.showModal = true;
   }

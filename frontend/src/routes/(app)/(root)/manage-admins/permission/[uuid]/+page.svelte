@@ -19,4 +19,7 @@
   error={data.error}
   backUrl="/manage-admins"
   backLabel="Adminverwaltung"
+  history={data.history}
+  historyTotal={data.historyTotal}
+  historyHasMore={data.historyHasMore}
 />

@@ -231,10 +231,11 @@ async getHierarchyLabels(@Req() req): Promise<HierarchyLabelsResponse> {
 ### Negative
 
 - **Prop Threading Boilerplate**: Jede Child-Component braucht `messages` Prop + Type-Import (3-5 Zeilen pro Component)
-- **Plural-Only Limitation**: "Bereichsleiter" kann nicht dynamisch zu "Hallenleiter" werden — nutzt stattdessen "Leiter" oder wird übersprungen (KL#2)
+- **~~Plural-Only Limitation~~ (V3 RESOLVED)**: Gelöst durch Positionsvorsilbe-Felder (`areaLeadPrefix`, `departmentLeadPrefix`, `teamLeadPrefix`) im JSONB. `resolvePositionDisplay()` nutzt `${prefix}leiter` / `Stellv. ${prefix}leiter`. Formular zeigt Live-Vorschau.
 - **Kein Live-Update**: Label-Änderungen werden erst nach Navigation/Reload sichtbar, nicht in Echtzeit
 - **~~7 Module nicht propagiert~~ (V2.1 RESOLVED)**: employee-dashboard, documents-explorer, calendar, shifts, kvp, kvp-detail, blackboard — alle ~110 Stellen in V2.1 nachpropagiert
 - **~~Sidebar User Card nicht propagiert~~ (V2.2 RESOLVED)**: `SidebarUserCard` zeigte Lead-Positionen (`team_lead`, `area_lead`, `department_lead`) als rohe DB-Werte statt `resolvePositionDisplay()` zu nutzen — behoben durch Prop-Threading von `hierarchyLabels` über Layout → AppSidebar → SidebarUserCard
+- **~~Deputy Lead nicht als Position~~ (V2.3 RESOLVED via ADR-038, expanded V2.4)**: Deputies auf allen 3 Ebenen als System-Positionen: `area_deputy_lead` → `${labels.area} Stellvertreter`, `department_deputy_lead` → `${labels.department} Stellvertreter`, `team_deputy_lead` → `${labels.team} Stellvertreter`. 6 System-Positionen total, kein eigenes HierarchyLabels-Feld nötig — Display wird aus bestehenden Labels abgeleitet
 - **Keine E-Mail/PDF-Propagation**: Backend-generierte Texte (Notifications, Exports) nutzen weiterhin Default-Labels
 - **`hall` ist kein OrgEntityType**: Hall hat keine eigene Org-Chart-Farbe in `ENTITY_COLORS`, sondern eine separate `HALL_COLOR`-Konstante im Organigram-Modal
 
@@ -242,17 +243,22 @@ async getHierarchyLabels(@Req() req): Promise<HierarchyLabelsResponse> {
 
 ## Implementation Summary
 
-| Phase | Scope                                                | Sessions    | Dateien |
-| ----- | ---------------------------------------------------- | ----------- | ------- |
-| 1     | Backend: Public Endpoint                             | 1           | 2       |
-| 2     | Frontend: Layout + Nav + Breadcrumb                  | 1           | 5       |
-| 3     | Management-Seiten (areas, depts, teams, assets)      | 2           | ~20     |
-| 4     | Remaining Pages (halls, admins, dashboard, TPM, ...) | 4           | ~25     |
-| 5     | Smoke Test + Docs + Polish                           | 1 (pending) | ~3      |
-| V2.1  | Nachpropagation: 7 zurückgestellte Module            | 1           | ~35     |
-| V2.2  | Sidebar User Card: Lead-Position Display             | 1           | 3       |
+| Phase | Scope                                                   | Sessions    | Dateien |
+| ----- | ------------------------------------------------------- | ----------- | ------- |
+| 1     | Backend: Public Endpoint                                | 1           | 2       |
+| 2     | Frontend: Layout + Nav + Breadcrumb                     | 1           | 5       |
+| 3     | Management-Seiten (areas, depts, teams, assets)         | 2           | ~20     |
+| 4     | Remaining Pages (halls, admins, dashboard, TPM, ...)    | 4           | ~25     |
+| 5     | Smoke Test + Docs + Polish                              | 1 (pending) | ~3      |
+| V2.1  | Nachpropagation: 7 zurückgestellte Module               | 1           | ~35     |
+| V2.2  | Sidebar User Card: Lead-Position Display                | 1           | 3       |
+| V3    | Positionsvorsilbe: Prefix-Felder für korrekte Komposita | 1           | ~10     |
 
-**Total:** 10 Sessions, ~360 String-Ersetzungen, 0 Breaking Changes.
+**Total:** 11 Sessions, ~360 String-Ersetzungen, 0 Breaking Changes.
+
+### V3: Positionsvorsilbe (2026-03-24)
+
+3 neue Felder im JSONB (`areaLeadPrefix`, `departmentLeadPrefix`, `teamLeadPrefix`) lösen die Plural-Only Limitation. Statt `${plural}-Leiter` ("Bereiche-Leiter") wird `${prefix}leiter` ("Bereichsleiter") generiert. Deputies folgen dem Muster `Stellv. ${prefix}leiter`. Keine DB-Migration — reine JSONB-Erweiterung. HierarchyLabelsModal zeigt Prefix-Inputs mit Live-Vorschau.
 
 ---
 

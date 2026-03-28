@@ -6,12 +6,7 @@
  */
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 
-import {
-  API_BASE,
-  apiFetch,
-  apiFetchWithPermission,
-  extractResponseData,
-} from './api-fetch';
+import { API_BASE, apiFetch, apiFetchWithPermission, extractResponseData } from './api-fetch';
 
 // ─── extractResponseData ────────────────────────────────────────────────────
 
@@ -127,37 +122,23 @@ describe('apiFetch – request construction', () => {
 
 describe('apiFetch – success responses', () => {
   it('should return extracted data on success', async () => {
-    mockFetch.mockResolvedValueOnce(
-      mockResponse({ success: true, data: [{ id: 1 }] }),
-    );
+    mockFetch.mockResolvedValueOnce(mockResponse({ success: true, data: [{ id: 1 }] }));
 
-    const result = await apiFetch<{ id: number }[]>(
-      '/items',
-      TOKEN,
-      mockFetch as typeof fetch,
-    );
+    const result = await apiFetch<{ id: number }[]>('/items', TOKEN, mockFetch as typeof fetch);
     expect(result).toEqual([{ id: 1 }]);
   });
 
   it('should handle raw array response', async () => {
     mockFetch.mockResolvedValueOnce(mockResponse([1, 2, 3]));
 
-    const result = await apiFetch<number[]>(
-      '/raw',
-      TOKEN,
-      mockFetch as typeof fetch,
-    );
+    const result = await apiFetch<number[]>('/raw', TOKEN, mockFetch as typeof fetch);
     expect(result).toEqual([1, 2, 3]);
   });
 
   it('should handle { data: T } without success field', async () => {
     mockFetch.mockResolvedValueOnce(mockResponse({ data: { count: 42 } }));
 
-    const result = await apiFetch<{ count: number }>(
-      '/stats',
-      TOKEN,
-      mockFetch as typeof fetch,
-    );
+    const result = await apiFetch<{ count: number }>('/stats', TOKEN, mockFetch as typeof fetch);
     expect(result).toEqual({ count: 42 });
   });
 });
@@ -183,11 +164,7 @@ describe('apiFetch – error handling', () => {
       json: () => Promise.reject(new SyntaxError('Unexpected token')),
     });
 
-    const result = await apiFetch(
-      '/bad-json',
-      TOKEN,
-      mockFetch as typeof fetch,
-    );
+    const result = await apiFetch('/bad-json', TOKEN, mockFetch as typeof fetch);
     expect(result).toBeNull();
   });
 });
@@ -213,11 +190,7 @@ describe('apiFetchWithPermission – 403 detection', () => {
   it('should return permissionDenied: true on 403', async () => {
     mockFetch.mockResolvedValueOnce(mockResponse(null, false, 403));
 
-    const result = await apiFetchWithPermission(
-      '/kvp',
-      TOKEN,
-      mockFetch as typeof fetch,
-    );
+    const result = await apiFetchWithPermission('/kvp', TOKEN, mockFetch as typeof fetch);
 
     expect(result).toEqual({ data: null, permissionDenied: true });
   });
@@ -225,11 +198,7 @@ describe('apiFetchWithPermission – 403 detection', () => {
   it('should NOT flag permissionDenied on 401', async () => {
     mockFetch.mockResolvedValueOnce(mockResponse(null, false, 401));
 
-    const result = await apiFetchWithPermission(
-      '/kvp',
-      TOKEN,
-      mockFetch as typeof fetch,
-    );
+    const result = await apiFetchWithPermission('/kvp', TOKEN, mockFetch as typeof fetch);
 
     expect(result).toEqual({ data: null, permissionDenied: false });
   });
@@ -249,11 +218,7 @@ describe('apiFetchWithPermission – 403 detection', () => {
   it('should NOT flag permissionDenied on 500', async () => {
     mockFetch.mockResolvedValueOnce(mockResponse(null, false, 500));
 
-    const result = await apiFetchWithPermission(
-      '/kvp',
-      TOKEN,
-      mockFetch as typeof fetch,
-    );
+    const result = await apiFetchWithPermission('/kvp', TOKEN, mockFetch as typeof fetch);
 
     expect(result).toEqual({ data: null, permissionDenied: false });
   });
@@ -261,9 +226,7 @@ describe('apiFetchWithPermission – 403 detection', () => {
 
 describe('apiFetchWithPermission – success responses', () => {
   it('should return extracted data from { success: true, data: T }', async () => {
-    mockFetch.mockResolvedValueOnce(
-      mockResponse({ success: true, data: [{ id: 1 }] }),
-    );
+    mockFetch.mockResolvedValueOnce(mockResponse({ success: true, data: [{ id: 1 }] }));
 
     const result = await apiFetchWithPermission<{ id: number }[]>(
       '/items',
@@ -295,25 +258,15 @@ describe('apiFetchWithPermission – success responses', () => {
   it('should handle raw array response', async () => {
     mockFetch.mockResolvedValueOnce(mockResponse([1, 2, 3]));
 
-    const result = await apiFetchWithPermission<number[]>(
-      '/raw',
-      TOKEN,
-      mockFetch as typeof fetch,
-    );
+    const result = await apiFetchWithPermission<number[]>('/raw', TOKEN, mockFetch as typeof fetch);
 
     expect(result).toEqual({ data: [1, 2, 3], permissionDenied: false });
   });
 
   it('should return data: null for empty success response', async () => {
-    mockFetch.mockResolvedValueOnce(
-      mockResponse({ success: true, data: null }),
-    );
+    mockFetch.mockResolvedValueOnce(mockResponse({ success: true, data: null }));
 
-    const result = await apiFetchWithPermission(
-      '/empty',
-      TOKEN,
-      mockFetch as typeof fetch,
-    );
+    const result = await apiFetchWithPermission('/empty', TOKEN, mockFetch as typeof fetch);
 
     expect(result).toEqual({ data: null, permissionDenied: false });
   });
@@ -323,11 +276,7 @@ describe('apiFetchWithPermission – error handling', () => {
   it('should return permissionDenied: false on network error', async () => {
     mockFetch.mockRejectedValueOnce(new Error('ECONNREFUSED'));
 
-    const result = await apiFetchWithPermission(
-      '/offline',
-      TOKEN,
-      mockFetch as typeof fetch,
-    );
+    const result = await apiFetchWithPermission('/offline', TOKEN, mockFetch as typeof fetch);
 
     expect(result).toEqual({ data: null, permissionDenied: false });
   });
@@ -338,11 +287,7 @@ describe('apiFetchWithPermission – error handling', () => {
       json: () => Promise.reject(new SyntaxError('Unexpected token')),
     });
 
-    const result = await apiFetchWithPermission(
-      '/bad-json',
-      TOKEN,
-      mockFetch as typeof fetch,
-    );
+    const result = await apiFetchWithPermission('/bad-json', TOKEN, mockFetch as typeof fetch);
 
     expect(result).toEqual({ data: null, permissionDenied: false });
   });

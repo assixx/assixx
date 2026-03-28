@@ -57,9 +57,7 @@ describe('ShiftSwapService', () => {
 
   describe('listSwapRequests', () => {
     it('should return mapped requests', async () => {
-      mockDb.query.mockResolvedValueOnce([
-        { id: 1, status: 'pending', requested_by: 5 },
-      ]);
+      mockDb.query.mockResolvedValueOnce([{ id: 1, status: 'pending', requested_by: 5 }]);
 
       const result = await service.listSwapRequests(10, {});
 
@@ -115,12 +113,7 @@ describe('ShiftSwapService', () => {
       mockDb.query.mockResolvedValueOnce([]);
 
       await expect(
-        service.updateSwapRequestStatus(
-          999,
-          { status: 'approved' } as never,
-          10,
-          1,
-        ),
+        service.updateSwapRequestStatus(999, { status: 'approved' } as never, 10, 1),
       ).rejects.toThrow(NotFoundException);
     });
 

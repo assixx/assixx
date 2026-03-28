@@ -8,11 +8,7 @@
   import { invalidateAll } from '$app/navigation';
 
   import HighlightText from '$lib/components/HighlightText.svelte';
-  import {
-    showWarningAlert,
-    showErrorAlert,
-    showSuccessAlert,
-  } from '$lib/stores/toast';
+  import { showWarningAlert, showErrorAlert, showSuccessAlert } from '$lib/stores/toast';
 
   import {
     buildHallPayload,
@@ -32,12 +28,7 @@
   } from './_lib/utils';
 
   import type { PageData } from './$types';
-  import type {
-    Hall,
-    Area,
-    StatusFilter,
-    FormIsActiveStatus,
-  } from './_lib/types';
+  import type { StatusFilter, FormIsActiveStatus } from './_lib/types';
 
   // =============================================================================
   // SSR DATA
@@ -45,8 +36,7 @@
 
   const { data }: { data: PageData } = $props();
 
-  const allHalls = $derived<Hall[]>(data.halls);
-  const allAreas = $derived<Area[]>(data.areas);
+  const allHalls = $derived(data.halls);
 
   // Hierarchy labels from layout data inheritance (A6)
   const labels = $derived(data.hierarchyLabels);
@@ -71,7 +61,6 @@
 
   let formName = $state('');
   let formDescription = $state('');
-  let formAreaId: number | null = $state(null);
   let formIsActive: FormIsActiveStatus = $state(1);
 
   let submitting = $state(false);
@@ -81,9 +70,7 @@
   // =============================================================================
 
   const isEditMode = $derived(currentEditId !== null);
-  const modalTitle = $derived(
-    isEditMode ? messages.MODAL_TITLE_EDIT : messages.MODAL_TITLE_ADD,
-  );
+  const modalTitle = $derived(isEditMode ? messages.MODAL_TITLE_EDIT : messages.MODAL_TITLE_ADD);
 
   const filteredHalls = $derived(
     applyAllFilters(allHalls, currentStatusFilter, currentSearchQuery),
@@ -103,7 +90,7 @@
     const payload = buildHallPayload({
       name: formName,
       description: formDescription,
-      areaId: formAreaId,
+      areaId: null,
       isActive: formIsActive,
     });
     const result = await apiSaveHall(payload, currentEditId);
@@ -149,7 +136,6 @@
     const formData = populateFormFromHall(hall);
     formName = formData.name;
     formDescription = formData.description;
-    formAreaId = formData.areaId;
     formIsActive = formData.isActive;
     showHallModal = true;
   }
@@ -174,7 +160,6 @@
     const defaults = getDefaultFormValues();
     formName = defaults.name;
     formDescription = defaults.description;
-    formAreaId = defaults.areaId;
     formIsActive = defaults.isActive;
   }
 
@@ -225,24 +210,11 @@
       };
     }
   });
-
-  // =============================================================================
-  // ESCAPE KEY HANDLER
-  // =============================================================================
-
-  function handleKeydown(e: KeyboardEvent) {
-    if (e.key === 'Escape') {
-      if (showDeleteModal) closeDeleteModalFn();
-      else if (showHallModal) closeHallModal();
-    }
-  }
 </script>
 
 <svelte:head>
   <title>{messages.PAGE_TITLE}</title>
 </svelte:head>
-
-<svelte:window onkeydown={handleKeydown} />
 
 <div class="container">
   <div class="card">
@@ -384,9 +356,7 @@
     <div class="card__body">
       {#if error}
         <div class="p-6 text-center">
-          <i
-            class="fas fa-exclamation-triangle mb-4 text-4xl text-(--color-danger)"
-          ></i>
+          <i class="fas fa-exclamation-triangle mb-4 text-4xl text-(--color-danger)"></i>
           <p class="text-(--color-text-secondary)">{error}</p>
           <button
             type="button"
@@ -427,6 +397,7 @@
                   <th scope="col">{messages.TH_DESCRIPTION}</th>
                   <th scope="col">{messages.TH_STATUS}</th>
                   <th scope="col">{messages.TH_AREA}</th>
+                  <th scope="col">{messages.TH_DEPARTMENTS}</th>
                   <th scope="col">{messages.TH_ACTIONS}</th>
                 </tr>
               </thead>
@@ -461,6 +432,17 @@
                         title={hall.areaName ?? messages.NO_AREA}
                       >
                         {getAreaDisplay(hall.areaName)}
+                      </span>
+                    </td>
+                    <td>
+                      <span
+                        class="badge {(hall.departmentCount ?? 0) > 0 ?
+                          'badge--info'
+                        : 'badge--secondary'}"
+                        title={hall.departmentNames ?? 'Keine zugeordnet'}
+                      >
+                        {hall.departmentCount ?? 0}
+                        {labels.department}
                       </span>
                     </td>
                     <td>
@@ -517,9 +499,7 @@
   {modalTitle}
   bind:formName
   bind:formDescription
-  bind:formAreaId
   bind:formIsActive
-  {allAreas}
   {submitting}
   {messages}
   onclose={closeHallModal}

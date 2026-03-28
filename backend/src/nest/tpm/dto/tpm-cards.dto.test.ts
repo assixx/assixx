@@ -74,54 +74,34 @@ describe('CreateCardSchema', () => {
   });
 
   it('should reject empty title', () => {
-    expect(CreateCardSchema.safeParse({ ...valid, title: '' }).success).toBe(
-      false,
-    );
+    expect(CreateCardSchema.safeParse({ ...valid, title: '' }).success).toBe(false);
   });
 
   it('should reject whitespace-only title', () => {
-    expect(CreateCardSchema.safeParse({ ...valid, title: '   ' }).success).toBe(
-      false,
-    );
+    expect(CreateCardSchema.safeParse({ ...valid, title: '   ' }).success).toBe(false);
   });
 
   it('should reject title longer than 255 characters', () => {
-    expect(
-      CreateCardSchema.safeParse({ ...valid, title: 'X'.repeat(256) }).success,
-    ).toBe(false);
+    expect(CreateCardSchema.safeParse({ ...valid, title: 'X'.repeat(256) }).success).toBe(false);
   });
 
   // -----------------------------------------------------------
   // cardRole validation
   // -----------------------------------------------------------
 
-  it.each(['operator', 'maintenance'] as const)(
-    'should accept cardRole=%s',
-    (cardRole) => {
-      expect(CreateCardSchema.safeParse({ ...valid, cardRole }).success).toBe(
-        true,
-      );
-    },
-  );
+  it.each(['operator', 'maintenance'] as const)('should accept cardRole=%s', (cardRole) => {
+    expect(CreateCardSchema.safeParse({ ...valid, cardRole }).success).toBe(true);
+  });
 
   it('should reject invalid cardRole', () => {
-    expect(
-      CreateCardSchema.safeParse({ ...valid, cardRole: 'admin' }).success,
-    ).toBe(false);
+    expect(CreateCardSchema.safeParse({ ...valid, cardRole: 'admin' }).success).toBe(false);
   });
 
   // -----------------------------------------------------------
   // intervalType validation
   // -----------------------------------------------------------
 
-  it.each([
-    'daily',
-    'weekly',
-    'monthly',
-    'quarterly',
-    'semi_annual',
-    'annual',
-  ] as const)(
+  it.each(['daily', 'weekly', 'monthly', 'quarterly', 'semi_annual', 'annual'] as const)(
     'should accept intervalType=%s without customIntervalDays',
     (intervalType) => {
       const payload = {
@@ -135,10 +115,7 @@ describe('CreateCardSchema', () => {
   );
 
   it('should reject invalid intervalType', () => {
-    expect(
-      CreateCardSchema.safeParse({ ...valid, intervalType: 'biweekly' })
-        .success,
-    ).toBe(false);
+    expect(CreateCardSchema.safeParse({ ...valid, intervalType: 'biweekly' }).success).toBe(false);
   });
 
   // -----------------------------------------------------------
@@ -146,45 +123,39 @@ describe('CreateCardSchema', () => {
   // -----------------------------------------------------------
 
   it('should accept estimatedExecutionMinutes=1 (minimum)', () => {
-    expect(
-      CreateCardSchema.safeParse({ ...valid, estimatedExecutionMinutes: 1 })
-        .success,
-    ).toBe(true);
+    expect(CreateCardSchema.safeParse({ ...valid, estimatedExecutionMinutes: 1 }).success).toBe(
+      true,
+    );
   });
 
   it('should accept estimatedExecutionMinutes=10080 (maximum)', () => {
-    expect(
-      CreateCardSchema.safeParse({ ...valid, estimatedExecutionMinutes: 10080 })
-        .success,
-    ).toBe(true);
+    expect(CreateCardSchema.safeParse({ ...valid, estimatedExecutionMinutes: 10080 }).success).toBe(
+      true,
+    );
   });
 
   it('should reject estimatedExecutionMinutes=0', () => {
-    expect(
-      CreateCardSchema.safeParse({ ...valid, estimatedExecutionMinutes: 0 })
-        .success,
-    ).toBe(false);
+    expect(CreateCardSchema.safeParse({ ...valid, estimatedExecutionMinutes: 0 }).success).toBe(
+      false,
+    );
   });
 
   it('should reject estimatedExecutionMinutes=10081 (over max)', () => {
-    expect(
-      CreateCardSchema.safeParse({ ...valid, estimatedExecutionMinutes: 10081 })
-        .success,
-    ).toBe(false);
+    expect(CreateCardSchema.safeParse({ ...valid, estimatedExecutionMinutes: 10081 }).success).toBe(
+      false,
+    );
   });
 
   it('should reject non-integer estimatedExecutionMinutes', () => {
-    expect(
-      CreateCardSchema.safeParse({ ...valid, estimatedExecutionMinutes: 30.5 })
-        .success,
-    ).toBe(false);
+    expect(CreateCardSchema.safeParse({ ...valid, estimatedExecutionMinutes: 30.5 }).success).toBe(
+      false,
+    );
   });
 
   it('should reject negative estimatedExecutionMinutes', () => {
-    expect(
-      CreateCardSchema.safeParse({ ...valid, estimatedExecutionMinutes: -10 })
-        .success,
-    ).toBe(false);
+    expect(CreateCardSchema.safeParse({ ...valid, estimatedExecutionMinutes: -10 }).success).toBe(
+      false,
+    );
   });
 
   // -----------------------------------------------------------
@@ -250,18 +221,15 @@ describe('CreateCardSchema', () => {
     ).toBe(false);
   });
 
-  it.each([0, 1, 2, 3, 4, 5, 6])(
-    'should accept weekdayOverride=%d for weekly',
-    (day) => {
-      expect(
-        CreateCardSchema.safeParse({
-          ...valid,
-          intervalType: 'weekly',
-          weekdayOverride: day,
-        }).success,
-      ).toBe(true);
-    },
-  );
+  it.each([0, 1, 2, 3, 4, 5, 6])('should accept weekdayOverride=%d for weekly', (day) => {
+    expect(
+      CreateCardSchema.safeParse({
+        ...valid,
+        intervalType: 'weekly',
+        weekdayOverride: day,
+      }).success,
+    ).toBe(true);
+  });
 
   it('should reject weekdayOverride=7 (out of range)', () => {
     expect(
@@ -328,21 +296,15 @@ describe('UpdateCardSchema', () => {
   });
 
   it('should accept single field update', () => {
-    expect(UpdateCardSchema.safeParse({ title: 'Neuer Titel' }).success).toBe(
-      true,
-    );
+    expect(UpdateCardSchema.safeParse({ title: 'Neuer Titel' }).success).toBe(true);
   });
 
   it('should accept estimatedExecutionMinutes update', () => {
-    expect(
-      UpdateCardSchema.safeParse({ estimatedExecutionMinutes: 60 }).success,
-    ).toBe(true);
+    expect(UpdateCardSchema.safeParse({ estimatedExecutionMinutes: 60 }).success).toBe(true);
   });
 
   it('should accept estimatedExecutionMinutes=null (clear value)', () => {
-    expect(
-      UpdateCardSchema.safeParse({ estimatedExecutionMinutes: null }).success,
-    ).toBe(true);
+    expect(UpdateCardSchema.safeParse({ estimatedExecutionMinutes: null }).success).toBe(true);
   });
 
   // -----------------------------------------------------------
@@ -350,33 +312,23 @@ describe('UpdateCardSchema', () => {
   // -----------------------------------------------------------
 
   it('should accept estimatedExecutionMinutes=1 (minimum)', () => {
-    expect(
-      UpdateCardSchema.safeParse({ estimatedExecutionMinutes: 1 }).success,
-    ).toBe(true);
+    expect(UpdateCardSchema.safeParse({ estimatedExecutionMinutes: 1 }).success).toBe(true);
   });
 
   it('should accept estimatedExecutionMinutes=10080 (maximum)', () => {
-    expect(
-      UpdateCardSchema.safeParse({ estimatedExecutionMinutes: 10080 }).success,
-    ).toBe(true);
+    expect(UpdateCardSchema.safeParse({ estimatedExecutionMinutes: 10080 }).success).toBe(true);
   });
 
   it('should reject estimatedExecutionMinutes=0', () => {
-    expect(
-      UpdateCardSchema.safeParse({ estimatedExecutionMinutes: 0 }).success,
-    ).toBe(false);
+    expect(UpdateCardSchema.safeParse({ estimatedExecutionMinutes: 0 }).success).toBe(false);
   });
 
   it('should reject estimatedExecutionMinutes=10081', () => {
-    expect(
-      UpdateCardSchema.safeParse({ estimatedExecutionMinutes: 10081 }).success,
-    ).toBe(false);
+    expect(UpdateCardSchema.safeParse({ estimatedExecutionMinutes: 10081 }).success).toBe(false);
   });
 
   it('should reject non-integer estimatedExecutionMinutes', () => {
-    expect(
-      UpdateCardSchema.safeParse({ estimatedExecutionMinutes: 15.7 }).success,
-    ).toBe(false);
+    expect(UpdateCardSchema.safeParse({ estimatedExecutionMinutes: 15.7 }).success).toBe(false);
   });
 
   // -----------------------------------------------------------
@@ -393,9 +345,7 @@ describe('UpdateCardSchema', () => {
   });
 
   it('should reject intervalType=custom without customIntervalDays', () => {
-    expect(UpdateCardSchema.safeParse({ intervalType: 'custom' }).success).toBe(
-      false,
-    );
+    expect(UpdateCardSchema.safeParse({ intervalType: 'custom' }).success).toBe(false);
   });
 
   it('should reject customIntervalDays with non-custom intervalType', () => {
@@ -410,9 +360,7 @@ describe('UpdateCardSchema', () => {
   it('should allow customIntervalDays without intervalType (partial update)', () => {
     // When intervalType is not provided, customIntervalDays is valid
     // (the server knows the existing intervalType)
-    expect(UpdateCardSchema.safeParse({ customIntervalDays: 14 }).success).toBe(
-      true,
-    );
+    expect(UpdateCardSchema.safeParse({ customIntervalDays: 14 }).success).toBe(true);
   });
 
   // -----------------------------------------------------------
@@ -438,9 +386,7 @@ describe('UpdateCardSchema', () => {
   });
 
   it('should allow weekdayOverride without intervalType (partial update)', () => {
-    expect(UpdateCardSchema.safeParse({ weekdayOverride: 5 }).success).toBe(
-      true,
-    );
+    expect(UpdateCardSchema.safeParse({ weekdayOverride: 5 }).success).toBe(true);
   });
 
   // -----------------------------------------------------------
@@ -452,20 +398,14 @@ describe('UpdateCardSchema', () => {
   });
 
   it('should reject title longer than 255 characters', () => {
-    expect(UpdateCardSchema.safeParse({ title: 'X'.repeat(256) }).success).toBe(
-      false,
-    );
+    expect(UpdateCardSchema.safeParse({ title: 'X'.repeat(256) }).success).toBe(false);
   });
 
   it('should reject invalid cardRole', () => {
-    expect(UpdateCardSchema.safeParse({ cardRole: 'engineer' }).success).toBe(
-      false,
-    );
+    expect(UpdateCardSchema.safeParse({ cardRole: 'engineer' }).success).toBe(false);
   });
 
   it('should reject invalid intervalType', () => {
-    expect(UpdateCardSchema.safeParse({ intervalType: 'hourly' }).success).toBe(
-      false,
-    );
+    expect(UpdateCardSchema.safeParse({ intervalType: 'hourly' }).success).toBe(false);
   });
 });

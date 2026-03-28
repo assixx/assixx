@@ -38,8 +38,8 @@
 | [ADR-002: Alerting & Monitoring](./infrastructure/adr/ADR-002-alerting-monitoring.md)               | Sentry `captureException` für Service-Fehler, Pino-Logging für Debug-Traces                                                 |
 | [ADR-003: Notification System](./infrastructure/adr/ADR-003-notification-system.md)                 | Abgrenzung: Notification-Read (Sidebar-Badge) vs. Entity-Read ("Neu" Badge) — ZWEI GETRENNTE Systeme                        |
 | [ADR-019: Multi-Tenant RLS](./infrastructure/adr/ADR-019-multi-tenant-rls-isolation.md)             | RLS Policy für `work_order_read_status` — Tenant-Isolation mandatory                                                        |
-| [HOW-TO-INTEGRATE-FEATURE.md](./HOW-TO-INTEGRATE-FEATURE.md)                                        | Integration-Checkliste: RLS, GRANTs, Activity Logging, Tests, Doku                                                          |
-| [HOW-TO-TEST-WITH-VITEST.md](./HOW-TO-TEST-WITH-VITEST.md)                                          | API-Test-Patterns: `loginApitest()`, `flushThrottleKeys()`, Fastify Header-Trennung                                         |
+| [HOW-TO-INTEGRATE-FEATURE.md](./how-to/HOW-TO-INTEGRATE-FEATURE.md)                                 | Integration-Checkliste: RLS, GRANTs, Activity Logging, Tests, Doku                                                          |
+| [HOW-TO-TEST-WITH-VITEST.md](./how-to/HOW-TO-TEST-WITH-VITEST.md)                                   | API-Test-Patterns: `loginApitest()`, `flushThrottleKeys()`, Fastify Header-Trennung                                         |
 
 ---
 

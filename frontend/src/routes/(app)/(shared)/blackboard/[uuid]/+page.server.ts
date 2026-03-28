@@ -40,12 +40,7 @@ function mapCurrentUser(user: ParentUser | null | undefined) {
   };
 }
 
-export const load: PageServerLoad = async ({
-  cookies,
-  fetch,
-  params,
-  parent,
-}) => {
+export const load: PageServerLoad = async ({ cookies, fetch, params, parent }) => {
   const token = cookies.get('accessToken');
   if (token === undefined || token === '') {
     redirect(302, '/login');
@@ -93,8 +88,6 @@ export const load: PageServerLoad = async ({
     entry: result.data.entry,
     comments: result.data.comments ?? defaultComments,
     attachments: result.data.attachments ?? [],
-    currentUser: mapCurrentUser(
-      parentData.user as ParentUser | null | undefined,
-    ),
+    currentUser: mapCurrentUser(parentData.user as ParentUser | null | undefined),
   };
 };

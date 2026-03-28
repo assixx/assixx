@@ -8,9 +8,5 @@ export const RemoveParticipantParamsSchema = z.object({
   userId: idField,
 });
 
-export class RemoveParticipantParamsDto extends createZodDto(
-  RemoveParticipantParamsSchema,
-) {}
-export type RemoveParticipantParams = z.infer<
-  typeof RemoveParticipantParamsSchema
->;
+export class RemoveParticipantParamsDto extends createZodDto(RemoveParticipantParamsSchema) {}
+export type RemoveParticipantParams = z.infer<typeof RemoveParticipantParamsSchema>;
