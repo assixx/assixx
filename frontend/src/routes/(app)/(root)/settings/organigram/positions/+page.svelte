@@ -324,7 +324,7 @@
         </div>
         <a
           href="/settings/organigram"
-          class="btn btn-secondary btn-sm"
+          class="btn btn-secondary btn"
         >
           <i class="fas fa-sitemap"></i>
           Organigramm
