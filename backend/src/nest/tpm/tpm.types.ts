@@ -567,3 +567,59 @@ export const MAX_PHOTOS_PER_DEFECT = 5;
 
 /** Max photo file size in bytes (5MB, enforced in DB + service) */
 export const MAX_PHOTO_FILE_SIZE = 5_242_880;
+
+// ============================================================================
+// Permission Types (for GET /tpm/plans/my-permissions)
+// ============================================================================
+
+/** Permission set for a single TPM module */
+export interface TpmModulePermissions {
+  readonly canRead: boolean;
+  readonly canWrite: boolean;
+  readonly canDelete?: boolean;
+}
+
+/** User's effective TPM permissions across all modules */
+export interface TpmMyPermissions {
+  readonly plans: TpmModulePermissions;
+  readonly cards: TpmModulePermissions;
+  readonly executions: Omit<TpmModulePermissions, 'canDelete'>;
+  readonly config: Omit<TpmModulePermissions, 'canDelete'>;
+  readonly locations: TpmModulePermissions;
+}
+
+// ============================================================================
+// Scoped Org Data (for GET /tpm/plans/my-assets)
+// ============================================================================
+
+/** Minimal area for asset cascade selector */
+export interface TpmScopedArea {
+  readonly id: number;
+  readonly name: string;
+  readonly uuid: string;
+}
+
+/** Minimal department for asset cascade selector */
+export interface TpmScopedDepartment {
+  readonly id: number;
+  readonly name: string;
+  readonly uuid: string;
+  readonly areaId: number;
+}
+
+/** Minimal asset for asset cascade selector */
+export interface TpmScopedAsset {
+  readonly id: number;
+  readonly name: string;
+  readonly uuid: string;
+  readonly departmentId: number;
+  readonly assetNumber: string | null;
+  readonly status: string;
+}
+
+/** Scoped org data for plan creation */
+export interface TpmScopedOrgData {
+  readonly areas: readonly TpmScopedArea[];
+  readonly departments: readonly TpmScopedDepartment[];
+  readonly assets: readonly TpmScopedAsset[];
+}

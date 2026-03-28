@@ -70,7 +70,9 @@ import type {
   TpmCardRole,
   TpmCardStatus,
   TpmIntervalType,
+  TpmMyPermissions,
   TpmPlan,
+  TpmScopedOrgData,
   TpmTimeEstimate,
 } from './tpm.types.js';
 
@@ -91,6 +93,27 @@ export class TpmPlansController {
   ) {}
 
   // ============================================================================
+  // SCOPE + PERMISSIONS
+  // ============================================================================
+
+  /** GET /tpm/plans/my-permissions — User's effective TPM permissions */
+  @Get('my-permissions')
+  @RequirePermission(FEAT, MOD_PLANS, 'canRead')
+  async getMyPermissions(@CurrentUser() user: NestAuthUser): Promise<TpmMyPermissions> {
+    return await this.plansService.getMyPermissions(user.id, user.hasFullAccess);
+  }
+
+  /** GET /tpm/plans/my-assets — Scoped org data for plan creation */
+  @Get('my-assets')
+  @RequirePermission(FEAT, MOD_PLANS, 'canRead')
+  async getMyAssets(
+    @CurrentUser() user: NestAuthUser,
+    @TenantId() tenantId: number,
+  ): Promise<TpmScopedOrgData> {
+    return await this.plansService.getScopedOrgData(tenantId, user);
+  }
+
+  // ============================================================================
   // PLAN CRUD
   // ============================================================================
 
@@ -106,21 +129,25 @@ export class TpmPlansController {
     return await this.plansService.createPlan(tenantId, user.id, dto);
   }
 
-  /** GET /tpm/plans — List all plans (paginated) */
+  /** GET /tpm/plans — List all plans (paginated, scoped by user) */
   @Get()
   @RequirePermission(FEAT, MOD_PLANS, 'canRead')
   async listPlans(
     @Query() query: ListPlansQueryDto,
     @TenantId() tenantId: number,
+    @CurrentUser() user: NestAuthUser,
   ): Promise<PaginatedPlans> {
-    return await this.plansService.listPlans(tenantId, query.page, query.limit);
+    return await this.plansService.listPlans(tenantId, query.page, query.limit, user);
   }
 
-  /** GET /tpm/plans/interval-matrix — Card counts per plan × interval type */
+  /** GET /tpm/plans/interval-matrix — Card counts per plan × interval type (scoped) */
   @Get('interval-matrix')
   @RequirePermission(FEAT, MOD_PLANS, 'canRead')
-  async getIntervalMatrix(@TenantId() tenantId: number): Promise<IntervalMatrixEntry[]> {
-    return await this.plansService.getIntervalMatrix(tenantId);
+  async getIntervalMatrix(
+    @TenantId() tenantId: number,
+    @CurrentUser() user: NestAuthUser,
+  ): Promise<IntervalMatrixEntry[]> {
+    return await this.plansService.getIntervalMatrix(tenantId, user);
   }
 
   /** GET /tpm/plans/available-slots — Slot availability by asset UUID (no plan needed) */

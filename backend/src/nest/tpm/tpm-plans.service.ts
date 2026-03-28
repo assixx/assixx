@@ -10,8 +10,10 @@ import { ConflictException, Injectable, Logger, NotFoundException } from '@nestj
 import type { PoolClient } from 'pg';
 import { v7 as uuidv7 } from 'uuid';
 
+import type { NestAuthUser } from '../common/interfaces/auth.interface.js';
 import { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import { DatabaseService } from '../database/database.service.js';
+import { ScopeService } from '../hierarchy-permission/scope.service.js';
 import type { CreateMaintenancePlanDto } from './dto/create-maintenance-plan.dto.js';
 import type { UpdateMaintenancePlanDto } from './dto/update-maintenance-plan.dto.js';
 import {
@@ -19,7 +21,14 @@ import {
   buildPlanUpdateFields,
   mapPlanRowToApi,
 } from './tpm-plans.helpers.js';
-import type { TpmIntervalType, TpmPlan } from './tpm.types.js';
+import type {
+  TpmIntervalType,
+  TpmMyPermissions,
+  TpmPlan,
+  TpmScopedAsset,
+  TpmScopedDepartment,
+  TpmScopedOrgData,
+} from './tpm.types.js';
 
 /** Single entry in the interval matrix: one plan × one interval */
 export interface IntervalMatrixEntry {
@@ -40,6 +49,45 @@ export interface PaginatedPlans {
   pageSize: number;
 }
 
+// ============================================================================
+// Org data row types + mappers (for getScopedOrgData)
+// ============================================================================
+
+interface OrgAreaRow {
+  id: number;
+  name: string;
+  uuid: string;
+}
+interface OrgDeptRow {
+  id: number;
+  name: string;
+  uuid: string;
+  area_id: number;
+}
+interface OrgAssetRow {
+  id: number;
+  name: string;
+  uuid: string;
+  department_id: number;
+  asset_number: string | null;
+  status: string;
+}
+
+function mapDeptRow(d: OrgDeptRow): TpmScopedDepartment {
+  return { id: d.id, name: d.name, uuid: d.uuid, areaId: d.area_id };
+}
+
+function mapAssetRow(a: OrgAssetRow): TpmScopedAsset {
+  return {
+    id: a.id,
+    name: a.name,
+    uuid: a.uuid,
+    departmentId: a.department_id,
+    assetNumber: a.asset_number,
+    status: a.status,
+  };
+}
+
 @Injectable()
 export class TpmPlansService {
   private readonly logger = new Logger(TpmPlansService.name);
@@ -47,7 +95,69 @@ export class TpmPlansService {
   constructor(
     private readonly db: DatabaseService,
     private readonly activityLogger: ActivityLoggerService,
+    private readonly scopeService: ScopeService,
   ) {}
+
+  // ============================================================================
+  // SCOPE + PERMISSION HELPERS
+  // ============================================================================
+
+  /** Resolve team IDs for scope-filtered queries. Returns null for full-access users. */
+  private async resolveScopeTeamIds(user: NestAuthUser): Promise<number[] | null> {
+    if (user.hasFullAccess) return null;
+
+    const scope = await this.scopeService.getScope();
+    if (scope.type === 'full') return null;
+    return scope.teamIds;
+  }
+
+  /** Get the calling user's effective TPM permissions across all modules. */
+  async getMyPermissions(userId: number, hasFullAccess: boolean): Promise<TpmMyPermissions> {
+    if (hasFullAccess) {
+      return {
+        plans: { canRead: true, canWrite: true, canDelete: true },
+        cards: { canRead: true, canWrite: true, canDelete: true },
+        executions: { canRead: true, canWrite: true },
+        config: { canRead: true, canWrite: true },
+        locations: { canRead: true, canWrite: true, canDelete: true },
+      };
+    }
+
+    interface PermRow {
+      module_code: string;
+      can_read: boolean;
+      can_write: boolean;
+      can_delete: boolean;
+    }
+
+    const rows = await this.db.query<PermRow>(
+      `SELECT module_code, can_read, can_write, can_delete
+       FROM user_addon_permissions
+       WHERE user_id = $1 AND addon_code = 'tpm'`,
+      [userId],
+    );
+
+    const perms = new Map(rows.map((r: PermRow) => [r.module_code, r]));
+    const get = (code: string): { canRead: boolean; canWrite: boolean; canDelete: boolean } => {
+      const row = perms.get(code);
+      return {
+        canRead: row?.can_read ?? false,
+        canWrite: row?.can_write ?? false,
+        canDelete: row?.can_delete ?? false,
+      };
+    };
+
+    return {
+      plans: get('tpm-plans'),
+      cards: get('tpm-cards'),
+      executions: {
+        canRead: get('tpm-executions').canRead,
+        canWrite: get('tpm-executions').canWrite,
+      },
+      config: { canRead: get('tpm-config').canRead, canWrite: get('tpm-config').canWrite },
+      locations: get('tpm-locations'),
+    };
+  }
 
   // ============================================================================
   // READ OPERATIONS
@@ -72,19 +182,30 @@ export class TpmPlansService {
     return mapPlanRowToApi(row);
   }
 
-  /** List plans with pagination */
+  /** List plans with pagination, scoped by user's teams for non-full-access users */
   async listPlans(
     tenantId: number,
     page: number = 1,
     pageSize: number = 20,
+    user: NestAuthUser,
   ): Promise<PaginatedPlans> {
     const offset = (page - 1) * pageSize;
+    const teamIds = await this.resolveScopeTeamIds(user);
+
+    // Dynamic scope filter: when teamIds is set, restrict to plans whose asset is linked to those teams
+    const scopeClause =
+      teamIds !== null ?
+        `AND EXISTS (SELECT 1 FROM asset_teams ats WHERE ats.asset_id = p.asset_id AND ats.team_id = ANY($4::int[]))`
+      : '';
+    const baseParams: unknown[] = [tenantId, pageSize, offset];
+    const allParams = teamIds !== null ? [...baseParams, teamIds] : baseParams;
 
     const countResult = await this.db.queryOne<{ count: string }>(
       `SELECT COUNT(*) AS count
-       FROM tpm_maintenance_plans
-       WHERE tenant_id = $1 AND is_active IN (${IS_ACTIVE.ACTIVE}, ${IS_ACTIVE.ARCHIVED})`,
-      [tenantId],
+       FROM tpm_maintenance_plans p
+       WHERE p.tenant_id = $1 AND p.is_active IN (${IS_ACTIVE.ACTIVE}, ${IS_ACTIVE.ARCHIVED})
+       ${teamIds !== null ? `AND EXISTS (SELECT 1 FROM asset_teams ats WHERE ats.asset_id = p.asset_id AND ats.team_id = ANY($2::int[]))` : ''}`,
+      teamIds !== null ? [tenantId, teamIds] : [tenantId],
     );
     const total = Number.parseInt(countResult?.count ?? '0', 10);
 
@@ -95,9 +216,10 @@ export class TpmPlansService {
        LEFT JOIN departments d ON m.department_id = d.id
        LEFT JOIN users u ON p.created_by = u.id
        WHERE p.tenant_id = $1 AND p.is_active IN (${IS_ACTIVE.ACTIVE}, ${IS_ACTIVE.ARCHIVED})
+       ${scopeClause}
        ORDER BY p.is_active ASC, p.name ASC
        LIMIT $2 OFFSET $3`,
-      [tenantId, pageSize, offset],
+      allParams,
     );
 
     return {
@@ -108,8 +230,8 @@ export class TpmPlansService {
     };
   }
 
-  /** Get interval matrix: which plans have cards for which interval types */
-  async getIntervalMatrix(tenantId: number): Promise<IntervalMatrixEntry[]> {
+  /** Get interval matrix: which plans have cards for which interval types (scoped) */
+  async getIntervalMatrix(tenantId: number, user: NestAuthUser): Promise<IntervalMatrixEntry[]> {
     interface MatrixRow {
       plan_uuid: string;
       interval_type: TpmIntervalType;
@@ -119,6 +241,12 @@ export class TpmPlansService {
       yellow_count: string;
       overdue_count: string;
     }
+
+    const teamIds = await this.resolveScopeTeamIds(user);
+    const scopeClause =
+      teamIds !== null ?
+        `AND EXISTS (SELECT 1 FROM asset_teams ats WHERE ats.asset_id = p.asset_id AND ats.team_id = ANY($2::int[]))`
+      : '';
 
     const rows = await this.db.query<MatrixRow>(
       `SELECT p.uuid AS plan_uuid,
@@ -131,9 +259,10 @@ export class TpmPlansService {
        FROM tpm_cards c
        JOIN tpm_maintenance_plans p ON c.plan_id = p.id
        WHERE c.tenant_id = $1 AND c.is_active = ${IS_ACTIVE.ACTIVE} AND p.is_active = ${IS_ACTIVE.ACTIVE}
+       ${scopeClause}
        GROUP BY p.uuid, c.interval_type
        ORDER BY p.uuid, c.interval_type`,
-      [tenantId],
+      teamIds !== null ? [tenantId, teamIds] : [tenantId],
     );
 
     return rows.map((r: MatrixRow) => ({
@@ -145,6 +274,64 @@ export class TpmPlansService {
       yellowCount: Number.parseInt(r.yellow_count, 10),
       overdueCount: Number.parseInt(r.overdue_count, 10),
     }));
+  }
+
+  /** Get org data (areas, departments, assets) scoped to user's teams for plan creation */
+  async getScopedOrgData(tenantId: number, user: NestAuthUser): Promise<TpmScopedOrgData> {
+    const teamIds = await this.resolveScopeTeamIds(user);
+    return teamIds === null ?
+        await this.loadAllOrgData(tenantId)
+      : await this.loadScopedOrgData(tenantId, teamIds);
+  }
+
+  /** Load all org data for full-access users */
+  private async loadAllOrgData(tenantId: number): Promise<TpmScopedOrgData> {
+    const [areas, depts, assets] = await Promise.all([
+      this.db.query<OrgAreaRow>(
+        `SELECT id, name, uuid FROM areas WHERE tenant_id = $1 AND is_active = ${IS_ACTIVE.ACTIVE} ORDER BY name`,
+        [tenantId],
+      ),
+      this.db.query<OrgDeptRow>(
+        `SELECT id, name, uuid, area_id FROM departments WHERE tenant_id = $1 AND is_active = ${IS_ACTIVE.ACTIVE} ORDER BY name`,
+        [tenantId],
+      ),
+      this.db.query<OrgAssetRow>(
+        `SELECT id, name, uuid, department_id, asset_number, status FROM assets WHERE tenant_id = $1 AND is_active = ${IS_ACTIVE.ACTIVE} ORDER BY name`,
+        [tenantId],
+      ),
+    ]);
+    return { areas, departments: depts.map(mapDeptRow), assets: assets.map(mapAssetRow) };
+  }
+
+  /** Load org data scoped to specific teams via asset_teams */
+  private async loadScopedOrgData(tenantId: number, teamIds: number[]): Promise<TpmScopedOrgData> {
+    const assets = await this.db.query<OrgAssetRow>(
+      `SELECT DISTINCT a.id, a.name, a.uuid, a.department_id, a.asset_number, a.status
+       FROM assets a JOIN asset_teams at ON a.id = at.asset_id
+       WHERE a.tenant_id = $1 AND a.is_active = ${IS_ACTIVE.ACTIVE} AND at.team_id = ANY($2::int[])
+       ORDER BY a.name`,
+      [tenantId, teamIds],
+    );
+
+    const deptIds = [...new Set(assets.map((a: OrgAssetRow) => a.department_id))];
+    const depts =
+      deptIds.length > 0 ?
+        await this.db.query<OrgDeptRow>(
+          `SELECT id, name, uuid, area_id FROM departments WHERE id = ANY($1::int[]) AND is_active = ${IS_ACTIVE.ACTIVE}`,
+          [deptIds],
+        )
+      : [];
+
+    const areaIds = [...new Set(depts.map((d: OrgDeptRow) => d.area_id))];
+    const areas =
+      areaIds.length > 0 ?
+        await this.db.query<OrgAreaRow>(
+          `SELECT id, name, uuid FROM areas WHERE id = ANY($1::int[]) AND is_active = ${IS_ACTIVE.ACTIVE}`,
+          [areaIds],
+        )
+      : [];
+
+    return { areas, departments: depts.map(mapDeptRow), assets: assets.map(mapAssetRow) };
   }
 
   /** Get plan by asset ID (for slot assistant and inter-service lookups) */

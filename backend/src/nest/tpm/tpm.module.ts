@@ -9,9 +9,11 @@
  * - TpmLocationsModule — self-contained location management (controller + service)
  * - TpmConfigServicesModule — pure config services (color, templates, time estimates)
  */
+/* eslint-disable import-x/max-dependencies -- NestJS feature module: 18 services + 4 sub-modules; NestJS DI requires explicit imports */
 import { Module } from '@nestjs/common';
 
 import { AddonCheckModule } from '../addon-check/addon-check.module.js';
+import { ScopeModule } from '../hierarchy-permission/scope.module.js';
 import { TpmApprovalService } from './tpm-approval.service.js';
 import { TpmCardCascadeService } from './tpm-card-cascade.service.js';
 import { TpmCardDuplicateService } from './tpm-card-duplicate.service.js';
@@ -37,7 +39,7 @@ import { TpmShiftAssignmentsService } from './tpm-shift-assignments.service.js';
 import { TpmSlotAssistantService } from './tpm-slot-assistant.service.js';
 
 @Module({
-  imports: [AddonCheckModule, TpmLocationsModule, TpmConfigServicesModule],
+  imports: [AddonCheckModule, ScopeModule, TpmLocationsModule, TpmConfigServicesModule],
   controllers: [
     TpmPlansController,
     TpmCardsController,

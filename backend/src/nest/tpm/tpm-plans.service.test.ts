@@ -13,8 +13,10 @@ import { IS_ACTIVE } from '@assixx/shared/constants';
 import { ConflictException, NotFoundException } from '@nestjs/common';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import type { NestAuthUser } from '../common/interfaces/auth.interface.js';
 import type { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import type { DatabaseService } from '../database/database.service.js';
+import type { ScopeService } from '../hierarchy-permission/scope.service.js';
 import type { TpmPlanJoinRow } from './tpm-plans.helpers.js';
 import { TpmPlansService } from './tpm-plans.service.js';
 
@@ -38,6 +40,21 @@ function createMockActivityLogger() {
     logDelete: vi.fn().mockResolvedValue(undefined),
   };
 }
+
+function createMockScopeService() {
+  return { getScope: vi.fn() };
+}
+
+/** Full-access user stub — scope filtering is bypassed */
+const FULL_ACCESS_USER: NestAuthUser = {
+  id: 1,
+  email: 'admin@test.de',
+  role: 'admin',
+  tenantId: 10,
+  activeRole: 'admin',
+  isRoleSwitched: false,
+  hasFullAccess: true,
+};
 
 function createPlanRow(overrides?: Partial<TpmPlanJoinRow>): TpmPlanJoinRow {
   return {
@@ -70,12 +87,14 @@ describe('TpmPlansService', () => {
   let mockDb: MockDb;
   let mockClient: { query: ReturnType<typeof vi.fn> };
   let mockActivityLogger: ReturnType<typeof createMockActivityLogger>;
+  let mockScopeService: ReturnType<typeof createMockScopeService>;
 
   beforeEach(() => {
     vi.clearAllMocks();
     mockDb = createMockDb();
     mockClient = { query: vi.fn() };
     mockActivityLogger = createMockActivityLogger();
+    mockScopeService = createMockScopeService();
 
     mockDb.tenantTransaction.mockImplementation(
       async (callback: (client: typeof mockClient) => Promise<unknown>) => {
@@ -86,6 +105,7 @@ describe('TpmPlansService', () => {
     service = new TpmPlansService(
       mockDb as unknown as DatabaseService,
       mockActivityLogger as unknown as ActivityLoggerService,
+      mockScopeService as unknown as ScopeService,
     );
   });
 
@@ -140,7 +160,7 @@ describe('TpmPlansService', () => {
         createPlanRow({ id: 2, uuid: 'plan-uuid-002', name: 'Plan B' }),
       ]);
 
-      const result = await service.listPlans(10, 1, 20);
+      const result = await service.listPlans(10, 1, 20, FULL_ACCESS_USER);
 
       expect(result.total).toBe(3);
       expect(result.data).toHaveLength(2);
@@ -152,7 +172,7 @@ describe('TpmPlansService', () => {
       mockDb.queryOne.mockResolvedValueOnce({ count: '0' });
       mockDb.query.mockResolvedValueOnce([]);
 
-      const result = await service.listPlans(10);
+      const result = await service.listPlans(10, 1, 20, FULL_ACCESS_USER);
 
       expect(result.total).toBe(0);
       expect(result.data).toHaveLength(0);
@@ -162,7 +182,7 @@ describe('TpmPlansService', () => {
       mockDb.queryOne.mockResolvedValueOnce(null);
       mockDb.query.mockResolvedValueOnce([]);
 
-      const result = await service.listPlans(10);
+      const result = await service.listPlans(10, 1, 20, FULL_ACCESS_USER);
 
       expect(result.total).toBe(0);
     });
@@ -171,7 +191,7 @@ describe('TpmPlansService', () => {
       mockDb.queryOne.mockResolvedValueOnce({ count: '0' });
       mockDb.query.mockResolvedValueOnce([]);
 
-      const result = await service.listPlans(10);
+      const result = await service.listPlans(10, 1, 20, FULL_ACCESS_USER);
 
       expect(result.page).toBe(1);
       expect(result.pageSize).toBe(20);
@@ -181,7 +201,7 @@ describe('TpmPlansService', () => {
       mockDb.queryOne.mockResolvedValueOnce({ count: '25' });
       mockDb.query.mockResolvedValueOnce([]);
 
-      await service.listPlans(10, 2, 10);
+      await service.listPlans(10, 2, 10, FULL_ACCESS_USER);
 
       // Second call is the data query with LIMIT/OFFSET
       const params = mockDb.query.mock.calls[0]?.[1] as unknown[];

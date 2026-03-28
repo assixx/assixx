@@ -354,6 +354,7 @@ function buildRootMenuItems(labels: HierarchyLabels): NavItem[] {
         },
         { id: 'teams', label: labels.team, url: '/manage-teams' },
         { id: 'halls', label: labels.hall, url: '/manage-halls' },
+        { id: 'assets', label: labels.asset, url: '/manage-assets' },
       ],
     },
     ...ROOT_STATIC_BOTTOM,
@@ -541,9 +542,20 @@ const employeeMenuItems: NavItem[] = [
       {
         id: 'tpm',
         label: 'TPM Wartung',
-        url: '/lean-management/tpm/overview',
-        badgeType: 'tpm',
         addonCode: 'tpm',
+        submenu: [
+          {
+            id: 'tpm-overview',
+            label: 'Übersicht',
+            url: '/lean-management/tpm',
+          },
+          {
+            id: 'tpm-boards',
+            label: 'Boards',
+            url: '/lean-management/tpm/overview',
+            badgeType: 'tpm',
+          },
+        ],
       },
     ],
   },
