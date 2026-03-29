@@ -2,6 +2,8 @@
 export interface TpmPlanRevision {
   uuid: string;
   revisionNumber: number;
+  approvalVersion: number;
+  revisionMinor: number;
   name: string;
   assetId: number;
   baseWeekday: number;
@@ -19,6 +21,8 @@ export interface TpmPlanRevision {
 /** Paginated revision list response from API */
 export interface TpmPlanRevisionList {
   currentVersion: number;
+  currentApprovalVersion: number;
+  currentRevisionMinor: number;
   planName: string;
   assetName: string;
   revisions: TpmPlanRevision[];

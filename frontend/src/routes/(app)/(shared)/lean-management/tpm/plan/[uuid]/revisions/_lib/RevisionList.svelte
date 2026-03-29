@@ -75,7 +75,7 @@
         <div class="revision-header">
           <div class="revision-header__left">
             <span class="badge {isCurrent ? 'badge--primary' : 'badge--info'} badge--sm">
-              v{revision.revisionNumber}
+              v{revision.approvalVersion}.{revision.revisionMinor}
             </span>
             {#if isCurrent}
               <span class="badge badge--success badge--sm">aktuell</span>

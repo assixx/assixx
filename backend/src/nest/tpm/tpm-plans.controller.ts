@@ -51,6 +51,7 @@ import { ShiftAssignmentsQueryDto } from './dto/shift-assignments-query.dto.js';
 import { UpdateMaintenancePlanDto } from './dto/update-maintenance-plan.dto.js';
 import type { CardListFilter, PaginatedCards } from './tpm-cards.service.js';
 import { TpmCardsService } from './tpm-cards.service.js';
+import { TpmPlanApprovalService } from './tpm-plan-approval.service.js';
 import { TpmPlanRevisionsService } from './tpm-plan-revisions.service.js';
 import type { IntervalMatrixEntry, PaginatedPlans } from './tpm-plans.service.js';
 import { TpmPlansService } from './tpm-plans.service.js';
@@ -95,6 +96,7 @@ export class TpmPlansController {
     private readonly scheduleProjectionService: TpmScheduleProjectionService,
     private readonly shiftAssignmentsService: TpmShiftAssignmentsService,
     private readonly revisionsService: TpmPlanRevisionsService,
+    private readonly planApprovalService: TpmPlanApprovalService,
   ) {}
 
   // ============================================================================
@@ -131,7 +133,18 @@ export class TpmPlansController {
     @CurrentUser() user: NestAuthUser,
     @TenantId() tenantId: number,
   ): Promise<TpmPlan> {
-    return await this.plansService.createPlan(tenantId, user.id, dto);
+    const plan = await this.plansService.createPlan(tenantId, user.id, dto);
+
+    // Fire-and-forget: approval failure must not block plan creation (D6)
+    void this.planApprovalService.requestApproval(
+      tenantId,
+      user.id,
+      plan.uuid,
+      plan.name,
+      plan.assetName ?? '',
+    );
+
+    return plan;
   }
 
   /** GET /tpm/plans — List all plans (paginated, scoped by user) */
@@ -260,7 +273,23 @@ export class TpmPlansController {
     @CurrentUser() user: NestAuthUser,
     @TenantId() tenantId: number,
   ): Promise<TpmPlan> {
-    return await this.plansService.updatePlan(tenantId, user.id, uuid, dto);
+    const plan = await this.plansService.updatePlan(tenantId, user.id, uuid, dto);
+
+    // D3: Only request approval if no pending approval exists for this plan
+    void (async (): Promise<void> => {
+      const hasPending = await this.planApprovalService.hasPendingApproval(tenantId, uuid);
+      if (!hasPending) {
+        await this.planApprovalService.requestApproval(
+          tenantId,
+          user.id,
+          plan.uuid,
+          plan.name,
+          plan.assetName ?? '',
+        );
+      }
+    })();
+
+    return plan;
   }
 
   /** DELETE /tpm/plans/:uuid — Soft-delete plan (is_active=4) */

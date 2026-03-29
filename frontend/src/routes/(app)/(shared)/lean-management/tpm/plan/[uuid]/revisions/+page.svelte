@@ -67,7 +67,7 @@
           </p>
         </div>
         <span class="badge badge--primary mt-2">
-          Aktuelle Version: v{revisions.currentVersion}
+          Aktuelle Version: v{revisions.currentApprovalVersion}.{revisions.currentRevisionMinor}
         </span>
       </div>
 

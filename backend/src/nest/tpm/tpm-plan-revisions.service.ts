@@ -24,6 +24,8 @@ function mapRevisionRowToApi(row: RevisionJoinRow): TpmPlanRevision {
   return {
     uuid: row.uuid.trim(),
     revisionNumber: row.revision_number,
+    approvalVersion: row.approval_version,
+    revisionMinor: row.revision_minor,
     name: row.name,
     assetId: row.asset_id,
     baseWeekday: row.base_weekday,
@@ -54,9 +56,11 @@ export class TpmPlanRevisionsService {
       id: number;
       name: string;
       revision_number: number;
+      approval_version: number;
+      revision_minor: number;
       asset_name: string;
     }>(
-      `SELECT p.id, p.name, p.revision_number,
+      `SELECT p.id, p.name, p.revision_number, p.approval_version, p.revision_minor,
               COALESCE(a.name, 'Unbekannt') AS asset_name
        FROM tpm_maintenance_plans p
        LEFT JOIN assets a ON a.id = p.asset_id
@@ -100,6 +104,8 @@ export class TpmPlanRevisionsService {
 
     return {
       currentVersion: plan.revision_number,
+      currentApprovalVersion: plan.approval_version,
+      currentRevisionMinor: plan.revision_minor,
       planName: plan.name,
       assetName: plan.asset_name,
       revisions: rows.map(mapRevisionRowToApi),

@@ -20,6 +20,9 @@ export interface TpmPlanJoinRow extends TpmMaintenancePlanRow {
   asset_name?: string;
   department_name?: string;
   created_by_name?: string;
+  approval_status?: string;
+  approval_decision_note?: string;
+  approval_decided_by_name?: string;
 }
 
 /** Map database row to API response */
@@ -34,6 +37,11 @@ export function mapPlanRowToApi(row: TpmPlanJoinRow): TpmPlan {
     bufferHours: Number(row.buffer_hours),
     notes: row.notes,
     revisionNumber: row.revision_number,
+    approvalVersion: row.approval_version,
+    revisionMinor: row.revision_minor,
+    approvalStatus: row.approval_status?.trim() ?? null,
+    approvalDecisionNote: row.approval_decision_note ?? null,
+    approvalDecidedByName: row.approval_decided_by_name ?? null,
     createdBy: row.created_by,
     isActive: row.is_active,
     createdAt: toIsoString(row.created_at),
@@ -113,22 +121,26 @@ export async function insertRevisionSnapshot(
   tenantId: number,
   row: TpmMaintenancePlanRow,
   revisionNumber: number,
+  approvalVersion: number,
+  revisionMinor: number,
   changedBy: number,
   changeReason: string | null,
   changedFields: string[],
 ): Promise<void> {
   await client.query(
     `INSERT INTO tpm_plan_revisions
-       (uuid, tenant_id, plan_id, revision_number,
+       (uuid, tenant_id, plan_id, revision_number, approval_version, revision_minor,
         name, asset_id, base_weekday, base_repeat_every, base_time,
         buffer_hours, notes,
         changed_by, change_reason, changed_fields)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)`,
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)`,
     [
       uuidv7(),
       tenantId,
       row.id,
       revisionNumber,
+      approvalVersion,
+      revisionMinor,
       row.name,
       row.asset_id,
       row.base_weekday,

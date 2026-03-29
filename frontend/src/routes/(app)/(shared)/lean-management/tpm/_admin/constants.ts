@@ -55,6 +55,20 @@ export const CARD_STATUS_BADGE_CLASSES: Record<CardStatus, string> = {
   overdue: 'badge--error',
 };
 
+/** Plan approval status labels (German) */
+export const APPROVAL_STATUS_LABELS: Record<string, string> = {
+  pending: 'Ausstehend',
+  approved: 'Freigegeben',
+  rejected: 'Abgelehnt',
+};
+
+/** Plan approval status badge CSS classes */
+export const APPROVAL_STATUS_BADGE: Record<string, string> = {
+  pending: 'badge--warning',
+  approved: 'badge--success',
+  rejected: 'badge--danger',
+};
+
 /** Card role labels (German) */
 export const CARD_ROLE_LABELS: Record<string, string> = {
   operator: 'Bediener',

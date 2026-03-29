@@ -13,6 +13,7 @@
 import { Module } from '@nestjs/common';
 
 import { AddonCheckModule } from '../addon-check/addon-check.module.js';
+import { ApprovalsModule } from '../approvals/approvals.module.js';
 import { ScopeModule } from '../hierarchy-permission/scope.module.js';
 import { TpmApprovalService } from './tpm-approval.service.js';
 import { TpmCardCascadeService } from './tpm-card-cascade.service.js';
@@ -30,6 +31,7 @@ import { TpmExecutionsService } from './tpm-executions.service.js';
 import { TpmLocationsModule } from './tpm-locations.module.js';
 import { TpmNotificationService } from './tpm-notification.service.js';
 import { TpmPermissionRegistrar } from './tpm-permission.registrar.js';
+import { TpmPlanApprovalService } from './tpm-plan-approval.service.js';
 import { TpmPlanRevisionsService } from './tpm-plan-revisions.service.js';
 import { TpmPlansIntervalService } from './tpm-plans-interval.service.js';
 import { TpmPlansController } from './tpm-plans.controller.js';
@@ -40,7 +42,13 @@ import { TpmShiftAssignmentsService } from './tpm-shift-assignments.service.js';
 import { TpmSlotAssistantService } from './tpm-slot-assistant.service.js';
 
 @Module({
-  imports: [AddonCheckModule, ScopeModule, TpmLocationsModule, TpmConfigServicesModule],
+  imports: [
+    AddonCheckModule,
+    ApprovalsModule,
+    ScopeModule,
+    TpmLocationsModule,
+    TpmConfigServicesModule,
+  ],
   controllers: [
     TpmPlansController,
     TpmCardsController,
@@ -55,6 +63,7 @@ import { TpmSlotAssistantService } from './tpm-slot-assistant.service.js';
     TpmPlansService,
     TpmPlansIntervalService,
     TpmPlanRevisionsService,
+    TpmPlanApprovalService,
 
     // Card services (Session 8)
     TpmCardsService,
@@ -96,6 +105,7 @@ import { TpmSlotAssistantService } from './tpm-slot-assistant.service.js';
     // Services from this module
     TpmPlansService,
     TpmPlansIntervalService,
+    TpmPlanApprovalService,
     TpmCardsService,
     TpmCardStatusService,
     TpmCardCascadeService,

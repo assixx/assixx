@@ -49,6 +49,8 @@ export interface TpmMaintenancePlanRow {
   buffer_hours: string; // NUMERIC(4,1) → pg returns string
   notes: string | null;
   revision_number: number;
+  approval_version: number;
+  revision_minor: number;
   created_by: number;
   is_active: number;
   created_at: string;
@@ -62,6 +64,8 @@ export interface TpmPlanRevisionRow {
   tenant_id: number;
   plan_id: number;
   revision_number: number;
+  approval_version: number;
+  revision_minor: number;
   name: string;
   asset_id: number;
   base_weekday: number;
@@ -253,6 +257,11 @@ export interface TpmPlan {
   bufferHours: number;
   notes: string | null;
   revisionNumber: number;
+  approvalVersion: number;
+  revisionMinor: number;
+  approvalStatus: string | null;
+  approvalDecisionNote: string | null;
+  approvalDecidedByName: string | null;
   createdBy: number;
   createdByName?: string;
   isActive: number;
@@ -264,6 +273,8 @@ export interface TpmPlan {
 export interface TpmPlanRevision {
   uuid: string;
   revisionNumber: number;
+  approvalVersion: number;
+  revisionMinor: number;
   name: string;
   assetId: number;
   baseWeekday: number;
@@ -281,6 +292,8 @@ export interface TpmPlanRevision {
 /** Paginated revision list response */
 export interface TpmPlanRevisionList {
   currentVersion: number;
+  currentApprovalVersion: number;
+  currentRevisionMinor: number;
   planName: string;
   assetName: string;
   revisions: TpmPlanRevision[];

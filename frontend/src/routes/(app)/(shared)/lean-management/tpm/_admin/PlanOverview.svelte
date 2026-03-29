@@ -8,6 +8,8 @@
     WEEKDAY_LABELS,
     CARD_STATUS_LABELS,
     CARD_STATUS_BADGE_CLASSES,
+    APPROVAL_STATUS_LABELS,
+    APPROVAL_STATUS_BADGE,
     DEFAULT_PAGE_SIZE,
     type TpmMessages,
   } from './constants';
@@ -225,6 +227,7 @@
           <th scope="col">{messages.TH_WEEKDAY}</th>
           <th scope="col">{messages.TH_STATUS}</th>
           <th scope="col">Version</th>
+          <th scope="col">Freigabe</th>
           <th scope="col">Geändert</th>
           {#each intervalColumns as col (col)}
             <th
@@ -258,7 +261,26 @@
               <span class="badge {badge.cls}">{badge.label}</span>
             </td>
             <td>
-              <span class="badge badge--primary">v{plan.revisionNumber}</span>
+              <span class="badge badge--primary">v{plan.approvalVersion}.{plan.revisionMinor}</span>
+            </td>
+            <td>
+              {#if plan.approvalStatus !== null}
+                <span
+                  class="badge {APPROVAL_STATUS_BADGE[plan.approvalStatus] ?? 'badge--outline'}"
+                >
+                  {APPROVAL_STATUS_LABELS[plan.approvalStatus] ?? plan.approvalStatus}
+                </span>
+                {#if plan.approvalDecisionNote !== null}
+                  <span
+                    class="decision-note-icon"
+                    title="{plan.approvalDecidedByName ?? ''}: {plan.approvalDecisionNote}"
+                  >
+                    <i class="fas fa-comment"></i>
+                  </span>
+                {/if}
+              {:else}
+                <span class="text-muted">—</span>
+              {/if}
             </td>
             <td class="text-nowrap">
               {formatShortDate(plan.updatedAt)}
@@ -416,5 +438,12 @@
     gap: 0.375rem;
     font-size: 0.75rem;
     color: var(--color-text-muted);
+  }
+
+  .decision-note-icon {
+    margin-left: 0.375rem;
+    color: var(--color-text-muted);
+    cursor: help;
+    font-size: 0.8rem;
   }
 </style>

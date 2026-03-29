@@ -75,7 +75,7 @@
   .notification-badge--inline {
     position: absolute;
     top: 50%;
-    right: 20px;
+    right: 23px;
     transform: translateY(-50%);
   }
 

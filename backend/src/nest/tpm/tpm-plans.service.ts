@@ -168,11 +168,27 @@ export class TpmPlansService {
   /** Get a single plan by UUID */
   async getPlan(tenantId: number, planUuid: string): Promise<TpmPlan> {
     const row = await this.db.queryOne<TpmPlanJoinRow>(
-      `SELECT p.*, m.uuid AS asset_uuid, m.name AS asset_name, d.name AS department_name, u.username AS created_by_name
+      `SELECT p.*, m.uuid AS asset_uuid, m.name AS asset_name, d.name AS department_name, u.username AS created_by_name,
+              latest_approval.approval_status,
+              latest_approval.approval_decision_note,
+              latest_approval.approval_decided_by_name
        FROM tpm_maintenance_plans p
        LEFT JOIN assets m ON p.asset_id = m.id AND m.tenant_id = p.tenant_id
        LEFT JOIN departments d ON m.department_id = d.id
        LEFT JOIN users u ON p.created_by = u.id
+       LEFT JOIN LATERAL (
+         SELECT a.status AS approval_status,
+                a.decision_note AS approval_decision_note,
+                COALESCE(NULLIF(CONCAT(du.first_name, ' ', du.last_name), ' '), du.username) AS approval_decided_by_name
+         FROM approvals a
+         LEFT JOIN users du ON du.id = a.decided_by
+         WHERE a.addon_code = 'tpm'
+           AND a.source_entity_type = 'tpm_plan'
+           AND a.source_uuid = p.uuid
+           AND a.is_active = ${IS_ACTIVE.ACTIVE}
+         ORDER BY a.created_at DESC
+         LIMIT 1
+       ) latest_approval ON true
        WHERE p.uuid = $1 AND p.tenant_id = $2 AND p.is_active IN (${IS_ACTIVE.ACTIVE}, ${IS_ACTIVE.ARCHIVED})`,
       [planUuid, tenantId],
     );
@@ -212,11 +228,27 @@ export class TpmPlansService {
     const total = Number.parseInt(countResult?.count ?? '0', 10);
 
     const rows = await this.db.query<TpmPlanJoinRow>(
-      `SELECT p.*, m.uuid AS asset_uuid, m.name AS asset_name, d.name AS department_name, u.username AS created_by_name
+      `SELECT p.*, m.uuid AS asset_uuid, m.name AS asset_name, d.name AS department_name, u.username AS created_by_name,
+              latest_approval.approval_status,
+              latest_approval.approval_decision_note,
+              latest_approval.approval_decided_by_name
        FROM tpm_maintenance_plans p
        LEFT JOIN assets m ON p.asset_id = m.id AND m.tenant_id = p.tenant_id
        LEFT JOIN departments d ON m.department_id = d.id
        LEFT JOIN users u ON p.created_by = u.id
+       LEFT JOIN LATERAL (
+         SELECT a.status AS approval_status,
+                a.decision_note AS approval_decision_note,
+                COALESCE(NULLIF(CONCAT(du.first_name, ' ', du.last_name), ' '), du.username) AS approval_decided_by_name
+         FROM approvals a
+         LEFT JOIN users du ON du.id = a.decided_by
+         WHERE a.addon_code = 'tpm'
+           AND a.source_entity_type = 'tpm_plan'
+           AND a.source_uuid = p.uuid
+           AND a.is_active = ${IS_ACTIVE.ACTIVE}
+         ORDER BY a.created_at DESC
+         LIMIT 1
+       ) latest_approval ON true
        WHERE p.tenant_id = $1 AND p.is_active IN (${IS_ACTIVE.ACTIVE}, ${IS_ACTIVE.ARCHIVED})
        ${scopeClause}
        ORDER BY p.is_active ASC, p.name ASC
@@ -377,8 +409,9 @@ export class TpmPlansService {
       const result = await client.query<TpmPlanJoinRow>(
         `INSERT INTO tpm_maintenance_plans
              (uuid, tenant_id, asset_id, name, base_weekday, base_repeat_every,
-              base_time, buffer_hours, notes, created_by, is_active)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 1)
+              base_time, buffer_hours, notes, created_by, is_active,
+              approval_version, revision_minor)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 1, 0, 0)
            RETURNING *`,
         [
           uuid,
@@ -399,8 +432,8 @@ export class TpmPlansService {
         throw new Error('INSERT into tpm_maintenance_plans returned no rows');
       }
 
-      // Create v1 revision snapshot (initial baseline)
-      await insertRevisionSnapshot(client, tenantId, row, 1, userId, 'Initial version', []);
+      // Create v0.0 revision snapshot (initial baseline, pending approval)
+      await insertRevisionSnapshot(client, tenantId, row, 1, 0, 0, userId, 'Initial version', []);
 
       return mapPlanRowToApi(row);
     });
@@ -446,11 +479,14 @@ export class TpmPlansService {
       }
 
       const newRevision = existing.revision_number + 1;
+      const newMinor = existing.revision_minor + 1;
 
-      // Append revision_number + WHERE params
+      // Append revision_number + revision_minor + WHERE params
       setClauses.push(`revision_number = $${nextParamIndex}`);
       params.push(newRevision);
-      const whereIdx = nextParamIndex + 1;
+      setClauses.push(`revision_minor = $${nextParamIndex + 1}`);
+      params.push(newMinor);
+      const whereIdx = nextParamIndex + 2;
       params.push(planUuid, tenantId);
       const sql = `UPDATE tpm_maintenance_plans
                      SET ${setClauses.join(', ')}, updated_at = NOW()
@@ -469,6 +505,8 @@ export class TpmPlansService {
         tenantId,
         row,
         newRevision,
+        existing.approval_version,
+        newMinor,
         userId,
         dto.changeReason ?? null,
         changedFields,

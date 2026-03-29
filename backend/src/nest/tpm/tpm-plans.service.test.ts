@@ -72,6 +72,8 @@ function createPlanRow(overrides?: Partial<TpmPlanJoinRow>): TpmPlanJoinRow {
     buffer_hours: '4.0',
     notes: 'Wöchentliche Kontrolle',
     revision_number: 1,
+    approval_version: 1,
+    revision_minor: 0,
     created_by: 5,
     is_active: IS_ACTIVE.ACTIVE,
     created_at: '2026-02-18T00:00:00.000Z',
@@ -904,11 +906,13 @@ describe('TpmPlansService', () => {
       const params = revisionCall?.[1] as unknown[];
 
       expect(sql).toContain('tpm_plan_revisions');
-      // [uuid, tenantId, planId, revNum, name, assetId, weekday, repeat, time, buffer, notes, changedBy, reason, fields]
+      // [uuid, tenantId, planId, revNum, approvalVersion, revMinor, name, assetId, weekday, repeat, time, buffer, notes, changedBy, reason, fields]
       expect(params?.[3]).toBe(1); // revision_number = 1
-      expect(params?.[4]).toBe('Wartungsplan P17'); // name snapshot
-      expect(params?.[11]).toBe(5); // changed_by = userId
-      expect(params?.[12]).toBe('Initial version'); // change_reason
+      expect(params?.[4]).toBe(0); // approval_version = 0 (pending)
+      expect(params?.[5]).toBe(0); // revision_minor = 0
+      expect(params?.[6]).toBe('Wartungsplan P17'); // name snapshot
+      expect(params?.[13]).toBe(5); // changed_by = userId
+      expect(params?.[14]).toBe('Initial version'); // change_reason
     });
   });
 
@@ -930,13 +934,13 @@ describe('TpmPlansService', () => {
       });
 
       // 3rd call = revision INSERT via insertRevisionSnapshot
-      // Params: [uuid, tenantId, planId, revNum, name, assetId, weekday, repeat, time, buffer, notes, changedBy, reason, fields]
+      // Params: [uuid, tenantId, planId, revNum, approvalVersion, revMinor, name, assetId, weekday, repeat, time, buffer, notes, changedBy, reason, fields]
       const revisionCall = mockClient.query.mock.calls[2];
       const params = revisionCall?.[1] as unknown[];
 
       expect(params?.[3]).toBe(2); // revision_number
-      expect(params?.[12]).toBeNull(); // changeReason not provided
-      expect(params?.[13]).toEqual(['base_time']); // changed_fields
+      expect(params?.[14]).toBeNull(); // changeReason not provided
+      expect(params?.[15]).toEqual(['base_time']); // changed_fields
     });
 
     it('should increment revision_number on plan', async () => {
@@ -990,7 +994,7 @@ describe('TpmPlansService', () => {
 
       const revisionCall = mockClient.query.mock.calls[2];
       const params = revisionCall?.[1] as unknown[];
-      expect(params?.[12]).toBe('Schichtwechsel erfordert Anpassung');
+      expect(params?.[14]).toBe('Schichtwechsel erfordert Anpassung');
     });
 
     it('should set changeReason to null when not provided', async () => {
@@ -1008,7 +1012,7 @@ describe('TpmPlansService', () => {
 
       const revisionCall = mockClient.query.mock.calls[2];
       const params = revisionCall?.[1] as unknown[];
-      expect(params?.[12]).toBeNull();
+      expect(params?.[14]).toBeNull();
     });
   });
 

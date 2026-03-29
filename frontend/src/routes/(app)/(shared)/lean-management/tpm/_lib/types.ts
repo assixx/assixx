@@ -37,6 +37,11 @@ export interface TpmPlan {
   baseTime: string | null;
   bufferHours: number;
   notes: string | null;
+  approvalVersion: number;
+  revisionMinor: number;
+  approvalStatus: 'pending' | 'approved' | 'rejected' | null;
+  approvalDecisionNote: string | null;
+  approvalDecidedByName: string | null;
   createdBy: number;
   createdByName?: string;
   isActive: number;
