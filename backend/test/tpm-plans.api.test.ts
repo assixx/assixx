@@ -25,6 +25,7 @@ let assetUuid: string;
 let planUuid: string;
 let cardUuid: string;
 let timeEstimateUuid: string;
+let approvalConfigUuid: string | null = null;
 
 beforeAll(async () => {
   auth = await loginApitest();
@@ -32,6 +33,21 @@ beforeAll(async () => {
   // Create own asset (self-sufficient — no dependency on other suites)
   assetUuids = await createAssets(auth.authToken, 1);
   assetUuid = assetUuids[0]!;
+
+  // Create TPM approval master config (D6: needed for approval requests to be created)
+  const configRes = await fetch(`${BASE_URL}/approvals/configs`, {
+    method: 'PUT',
+    headers: authHeaders(auth.authToken),
+    body: JSON.stringify({
+      addonCode: 'tpm',
+      approverType: 'user',
+      approverUserId: auth.userId,
+    }),
+  });
+  if (configRes.status === 200 || configRes.status === 201) {
+    const configBody = (await configRes.json()) as JsonBody;
+    approvalConfigUuid = (configBody.data?.uuid as string) ?? null;
+  }
 });
 
 // ---- seq: 0 -- Unauthenticated ------------------------------------------------
@@ -90,6 +106,11 @@ describe('TPM: Create Plan', () => {
     expect(body.data.baseTime).toBe('08:00:00');
     expect(body.data.assetId).toBeDefined();
     expect(body.data.isActive).toBe(1);
+  });
+
+  it('should start at approval version v0.0', () => {
+    expect(body.data.approvalVersion).toBe(0);
+    expect(body.data.revisionMinor).toBe(0);
   });
 });
 
@@ -205,6 +226,142 @@ describe('TPM: Update Plan', () => {
     expect(body.data.name).toBe('Updated TPM Plan');
     expect(body.data.baseWeekday).toBe(4);
     expect(body.data.notes).toBe('Updated via API test');
+  });
+
+  it('should bump revisionMinor on edit', () => {
+    expect(body.data.revisionMinor).toBe(1);
+    expect(body.data.approvalVersion).toBe(0);
+  });
+});
+
+// ---- seq: 5a -- Approval: Verify request was created after plan create/update ----
+
+describe('TPM Approval: Verify approval request created', () => {
+  let res: Response;
+  let body: JsonBody;
+
+  beforeAll(async () => {
+    res = await fetch(`${BASE_URL}/approvals?addonCode=tpm`, {
+      headers: authOnly(auth.authToken),
+    });
+    body = (await res.json()) as JsonBody;
+  });
+
+  it('should return 200 OK', () => {
+    expect(res.status).toBe(200);
+  });
+
+  it('should have at least one TPM approval', () => {
+    const items = body.data?.items as JsonBody[] | undefined;
+    expect(items).toBeDefined();
+    expect(items!.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('should reference the created plan as source', () => {
+    const items = body.data?.items as JsonBody[];
+    const tpmApproval = items.find(
+      (a: JsonBody) => a.sourceUuid === planUuid && a.addonCode === 'tpm',
+    );
+    expect(tpmApproval).toBeDefined();
+    expect(tpmApproval!.sourceEntityType).toBe('tpm_plan');
+    expect(tpmApproval!.status).toBe('pending');
+  });
+
+  it('should include plan name in approval title', () => {
+    const items = body.data?.items as JsonBody[];
+    const tpmApproval = items.find((a: JsonBody) => a.sourceUuid === planUuid);
+    expect(tpmApproval!.title).toContain('TPM Plan:');
+  });
+});
+
+// ---- seq: 5b -- Approval: Second edit should NOT create new approval (D3) --------
+
+describe('TPM Approval: Edit with pending — no duplicate (D3)', () => {
+  let updateRes: Response;
+  let updateBody: JsonBody;
+  let approvalsRes: Response;
+  let approvalsBody: JsonBody;
+
+  beforeAll(async () => {
+    // Second edit
+    updateRes = await fetch(`${BASE_URL}/tpm/plans/${planUuid}`, {
+      method: 'PATCH',
+      headers: authHeaders(auth.authToken),
+      body: JSON.stringify({ notes: 'Second edit — D3 test' }),
+    });
+    updateBody = (await updateRes.json()) as JsonBody;
+
+    // Small delay for async approval processing
+    await new Promise((r: (v: void) => void) => {
+      setTimeout(r, 200);
+    });
+
+    // Check approvals count
+    approvalsRes = await fetch(`${BASE_URL}/approvals?addonCode=tpm`, {
+      headers: authOnly(auth.authToken),
+    });
+    approvalsBody = (await approvalsRes.json()) as JsonBody;
+  });
+
+  it('should bump revisionMinor to 2', () => {
+    expect(updateRes.status).toBe(200);
+    expect(updateBody.data.revisionMinor).toBe(2);
+  });
+
+  it('should still have only one pending TPM approval for this plan', () => {
+    const items = approvalsBody.data?.items as JsonBody[];
+    const tpmPending = items.filter(
+      (a: JsonBody) =>
+        a.sourceUuid === planUuid && a.addonCode === 'tpm' && a.status === 'pending',
+    );
+    expect(tpmPending.length).toBe(1);
+  });
+});
+
+// ---- seq: 5c -- Approval: approvalStatus visible in list plans -------------------
+
+describe('TPM Approval: approvalStatus in list plans', () => {
+  let res: Response;
+  let body: JsonBody;
+
+  beforeAll(async () => {
+    res = await fetch(`${BASE_URL}/tpm/plans`, {
+      headers: authOnly(auth.authToken),
+    });
+    body = (await res.json()) as JsonBody;
+  });
+
+  it('should return 200 OK', () => {
+    expect(res.status).toBe(200);
+  });
+
+  it('should include approvalStatus field on plans', () => {
+    const plans = body.data?.data as JsonBody[];
+    const plan = plans.find((p: JsonBody) => p.uuid === planUuid);
+    expect(plan).toBeDefined();
+    expect(plan!.approvalStatus).toBe('pending');
+    expect(plan!.approvalVersion).toBe(0);
+    expect(plan!.revisionMinor).toBe(2);
+  });
+});
+
+// ---- seq: 5d -- Approval: approvalStatus in single plan --------------------------
+
+describe('TPM Approval: approvalStatus in single plan', () => {
+  let res: Response;
+  let body: JsonBody;
+
+  beforeAll(async () => {
+    res = await fetch(`${BASE_URL}/tpm/plans/${planUuid}`, {
+      headers: authOnly(auth.authToken),
+    });
+    body = (await res.json()) as JsonBody;
+  });
+
+  it('should include approval fields', () => {
+    expect(body.data.approvalStatus).toBe('pending');
+    expect(body.data.approvalDecisionNote).toBeNull();
+    expect(body.data.approvalDecidedByName).toBeNull();
   });
 });
 
@@ -735,6 +892,14 @@ describe('TPM: Verify Plan Deleted', () => {
 // ---- Cleanup: delete assets created for this suite ----------------------------
 
 afterAll(async () => {
+  // Cleanup approval config
+  if (approvalConfigUuid !== null) {
+    await fetch(`${BASE_URL}/approvals/configs/${approvalConfigUuid}`, {
+      method: 'DELETE',
+      headers: authOnly(auth.authToken),
+    });
+  }
+
   if (assetUuids.length > 0) {
     await deleteAssets(auth.authToken, assetUuids);
   }
