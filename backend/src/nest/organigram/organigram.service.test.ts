@@ -575,4 +575,278 @@ describe('OrganigramService', () => {
       expect(tree.nodes[1]?.name).toBe('Orphaned');
     });
   });
+
+  // =============================================================
+  // getNodeDetails
+  // =============================================================
+
+  describe('getNodeDetails', () => {
+    // ---- Area Detail ----
+
+    it('should return area detail with lead, deputy, children', async () => {
+      // 4 parallel queries: base, departments, assets, halls
+      mockDb.query.mockResolvedValueOnce([
+        {
+          uuid: AREA_1,
+          name: 'Produktion',
+          area_type: 'production',
+          lead_uuid: 'lu-001',
+          lead_name: 'Max Müller',
+          deputy_uuid: 'du-001',
+          deputy_name: 'Anna Schmidt',
+        },
+      ]);
+      mockDb.query.mockResolvedValueOnce([{ uuid: DEPT_1, name: 'Fertigung', extra: 'Peter' }]);
+      mockDb.query.mockResolvedValueOnce([
+        { uuid: ASSET_1, name: 'CNC Fräse', extra: 'operational' },
+      ]);
+      mockDb.query.mockResolvedValueOnce([{ uuid: HALL_1, name: 'Halle Nord', extra: null }]);
+
+      const detail = await service.getNodeDetails(1, 'area', AREA_1);
+
+      expect(detail.entityType).toBe('area');
+      expect(detail.entityUuid).toBe(AREA_1);
+      expect(detail.name).toBe('Produktion');
+      expect(detail.areaType).toBe('production');
+      expect(detail.lead).toEqual({ uuid: 'lu-001', name: 'Max Müller' });
+      expect(detail.departments).toHaveLength(1);
+      expect(detail.assets).toHaveLength(1);
+      expect(detail.halls).toHaveLength(1);
+    });
+
+    it('should throw NotFoundException when area not found', async () => {
+      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.query.mockResolvedValueOnce([]);
+
+      await expect(service.getNodeDetails(1, 'area', 'not-found')).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+
+    it('should omit lead and deputy when null', async () => {
+      mockDb.query.mockResolvedValueOnce([
+        {
+          uuid: AREA_1,
+          name: 'Verwaltung',
+          area_type: 'administrative',
+          lead_uuid: null,
+          lead_name: null,
+          deputy_uuid: null,
+          deputy_name: null,
+        },
+      ]);
+      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.query.mockResolvedValueOnce([]);
+
+      const detail = await service.getNodeDetails(1, 'area', AREA_1);
+
+      expect(detail).not.toHaveProperty('lead');
+      expect(detail).not.toHaveProperty('areaDeputyLead');
+      expect(detail).not.toHaveProperty('departments');
+      expect(detail).not.toHaveProperty('assets');
+      expect(detail).not.toHaveProperty('halls');
+    });
+
+    // ---- Department Detail ----
+
+    it('should return department detail with parent area', async () => {
+      // 4 parallel queries: base, teams, employees, assets
+      mockDb.query.mockResolvedValueOnce([
+        {
+          uuid: DEPT_1,
+          name: 'Fertigung',
+          lead_uuid: 'lu-002',
+          lead_name: 'Peter',
+          deputy_uuid: null,
+          deputy_name: null,
+          area_uuid: AREA_1,
+          area_name: 'Produktion',
+        },
+      ]);
+      mockDb.query.mockResolvedValueOnce([
+        { uuid: TEAM_1, name: 'Schicht A', extra: 'Franz · 12 Mitgl.' },
+      ]);
+      mockDb.query.mockResolvedValueOnce([
+        { uuid: 'emp-001', name: 'Lisa Meier', extra: 'Primär' },
+      ]);
+      mockDb.query.mockResolvedValueOnce([]);
+
+      const detail = await service.getNodeDetails(1, 'department', DEPT_1);
+
+      expect(detail.entityType).toBe('department');
+      expect(detail.name).toBe('Fertigung');
+      expect(detail.lead).toEqual({ uuid: 'lu-002', name: 'Peter' });
+      expect(detail).not.toHaveProperty('departmentDeputyLead');
+      expect(detail.parentArea).toEqual({ uuid: AREA_1, name: 'Produktion' });
+      expect(detail.teams).toHaveLength(1);
+      expect(detail.teams?.[0]?.extra).toBe('Franz · 12 Mitgl.');
+      expect(detail.employees).toHaveLength(1);
+      expect(detail).not.toHaveProperty('assets');
+    });
+
+    it('should throw NotFoundException when department not found', async () => {
+      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.query.mockResolvedValueOnce([]);
+
+      await expect(service.getNodeDetails(1, 'department', 'not-found')).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+
+    // ---- Team Detail ----
+
+    it('should return team detail with members and parent chain', async () => {
+      // 3 parallel queries: base, members, assets
+      mockDb.query.mockResolvedValueOnce([
+        {
+          uuid: TEAM_1,
+          name: 'Schicht A',
+          lead_uuid: 'lu-003',
+          lead_name: 'Franz',
+          deputy_uuid: 'du-003',
+          deputy_name: 'Karl',
+          dept_uuid: DEPT_1,
+          dept_name: 'Fertigung',
+          area_uuid: AREA_1,
+          area_name: 'Produktion',
+        },
+      ]);
+      mockDb.query.mockResolvedValueOnce([{ uuid: 'mem-001', name: 'Tim Weber', extra: 'member' }]);
+      mockDb.query.mockResolvedValueOnce([
+        { uuid: ASSET_1, name: 'CNC Fräse', extra: 'operational' },
+      ]);
+
+      const detail = await service.getNodeDetails(1, 'team', TEAM_1);
+
+      expect(detail.entityType).toBe('team');
+      expect(detail.lead).toEqual({ uuid: 'lu-003', name: 'Franz' });
+      expect(detail.deputyLead).toEqual({ uuid: 'du-003', name: 'Karl' });
+      expect(detail.parentDepartment).toEqual({ uuid: DEPT_1, name: 'Fertigung' });
+      expect(detail.parentArea).toEqual({ uuid: AREA_1, name: 'Produktion' });
+      expect(detail.members).toHaveLength(1);
+      expect(detail.assets).toHaveLength(1);
+    });
+
+    it('should throw NotFoundException when team not found', async () => {
+      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.query.mockResolvedValueOnce([]);
+
+      await expect(service.getNodeDetails(1, 'team', 'not-found')).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+
+    // ---- Asset Detail ----
+
+    it('should return asset detail with status, type, and parents', async () => {
+      // 2 parallel queries: base, teams
+      mockDb.query.mockResolvedValueOnce([
+        {
+          uuid: ASSET_1,
+          name: 'CNC Fräse',
+          asset_status: 'operational',
+          asset_type: 'machine',
+          area_uuid: AREA_1,
+          area_name: 'Produktion',
+          dept_uuid: DEPT_1,
+          dept_name: 'Fertigung',
+        },
+      ]);
+      mockDb.query.mockResolvedValueOnce([{ uuid: TEAM_1, name: 'Schicht A', extra: null }]);
+
+      const detail = await service.getNodeDetails(1, 'asset', ASSET_1);
+
+      expect(detail.entityType).toBe('asset');
+      expect(detail.assetStatus).toBe('operational');
+      expect(detail.assetType).toBe('machine');
+      expect(detail.parentArea).toEqual({ uuid: AREA_1, name: 'Produktion' });
+      expect(detail.parentDepartment).toEqual({ uuid: DEPT_1, name: 'Fertigung' });
+      expect(detail.assignedTeams).toHaveLength(1);
+    });
+
+    it('should omit null assetStatus and assetType', async () => {
+      mockDb.query.mockResolvedValueOnce([
+        {
+          uuid: ASSET_2,
+          name: 'Drucker',
+          asset_status: null,
+          asset_type: null,
+          area_uuid: null,
+          area_name: null,
+          dept_uuid: null,
+          dept_name: null,
+        },
+      ]);
+      mockDb.query.mockResolvedValueOnce([]);
+
+      const detail = await service.getNodeDetails(1, 'asset', ASSET_2);
+
+      expect(detail).not.toHaveProperty('assetStatus');
+      expect(detail).not.toHaveProperty('assetType');
+      expect(detail).not.toHaveProperty('parentArea');
+      expect(detail).not.toHaveProperty('parentDepartment');
+      expect(detail).not.toHaveProperty('assignedTeams');
+    });
+
+    it('should throw NotFoundException when asset not found', async () => {
+      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.query.mockResolvedValueOnce([]);
+
+      await expect(service.getNodeDetails(1, 'asset', 'not-found')).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+
+    // ---- Helper edge cases ----
+
+    it('should omit lead when name is only whitespace', async () => {
+      mockDb.query.mockResolvedValueOnce([
+        {
+          uuid: AREA_1,
+          name: 'Test',
+          area_type: 'production',
+          lead_uuid: 'lu-001',
+          lead_name: '   ',
+          deputy_uuid: null,
+          deputy_name: null,
+        },
+      ]);
+      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.query.mockResolvedValueOnce([]);
+
+      const detail = await service.getNodeDetails(1, 'area', AREA_1);
+
+      expect(detail).not.toHaveProperty('lead');
+    });
+
+    it('should trim UUIDs and omit empty extra in detail entries', async () => {
+      mockDb.query.mockResolvedValueOnce([
+        {
+          uuid: `${AREA_1} `,
+          name: 'Padded',
+          area_type: 'production',
+          lead_uuid: null,
+          lead_name: null,
+          deputy_uuid: null,
+          deputy_name: null,
+        },
+      ]);
+      mockDb.query.mockResolvedValueOnce([{ uuid: `${DEPT_1} `, name: 'Dept', extra: '  ' }]);
+      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.query.mockResolvedValueOnce([]);
+
+      const detail = await service.getNodeDetails(1, 'area', AREA_1);
+
+      expect(detail.entityUuid).toBe(AREA_1);
+      expect(detail.departments?.[0]?.uuid).toBe(DEPT_1);
+      expect(detail.departments?.[0]).not.toHaveProperty('extra');
+    });
+  });
 });

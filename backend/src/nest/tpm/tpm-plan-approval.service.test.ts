@@ -196,6 +196,44 @@ describe('TpmPlanApprovalService', () => {
       expect(mockApprovals.create).not.toHaveBeenCalled();
     });
 
+    it('should resolve asset name via DB when assetName is empty', async () => {
+      // hasApprovalConfig → true
+      mockDb.query.mockResolvedValueOnce([{ count: '1' }]);
+      // Asset name resolution query
+      mockDb.query.mockResolvedValueOnce([{ asset_name: 'Presse P17' }]);
+
+      await service.requestApproval(10, 5, 'plan-uuid-001', 'Wartungsplan A', '');
+
+      expect(mockDb.query).toHaveBeenCalledTimes(2);
+      expect(mockDb.query).toHaveBeenNthCalledWith(2, expect.stringContaining('JOIN assets a ON'), [
+        'plan-uuid-001',
+        10,
+      ]);
+      expect(mockApprovals.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          title: 'TPM Plan: Wartungsplan A (Presse P17)',
+        }),
+        10,
+        5,
+      );
+    });
+
+    it('should fallback to empty string when asset not found', async () => {
+      mockDb.query.mockResolvedValueOnce([{ count: '1' }]);
+      // Asset name resolution returns no rows
+      mockDb.query.mockResolvedValueOnce([]);
+
+      await service.requestApproval(10, 5, 'plan-uuid-001', 'Wartungsplan A', '');
+
+      expect(mockApprovals.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          title: 'TPM Plan: Wartungsplan A ()',
+        }),
+        10,
+        5,
+      );
+    });
+
     it('should not throw when ApprovalsService.create fails', async () => {
       mockDb.query.mockResolvedValueOnce([{ count: '1' }]);
       mockApprovals.create.mockRejectedValueOnce(new Error('DB error'));

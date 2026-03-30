@@ -311,8 +311,7 @@ describe('TPM Approval: Edit with pending — no duplicate (D3)', () => {
   it('should still have only one pending TPM approval for this plan', () => {
     const items = approvalsBody.data?.items as JsonBody[];
     const tpmPending = items.filter(
-      (a: JsonBody) =>
-        a.sourceUuid === planUuid && a.addonCode === 'tpm' && a.status === 'pending',
+      (a: JsonBody) => a.sourceUuid === planUuid && a.addonCode === 'tpm' && a.status === 'pending',
     );
     expect(tpmPending.length).toBe(1);
   });
