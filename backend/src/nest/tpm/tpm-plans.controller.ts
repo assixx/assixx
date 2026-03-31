@@ -18,6 +18,8 @@
  * - GET    /tpm/plans/:uuid/team-availability  — Asset team member availability
  * - POST   /tpm/plans/:uuid/assignments         — Set assignments for a date
  * - GET    /tpm/plans/:uuid/assignments         — Get assignments for date range
+ * - GET    /tpm/plans/:uuid/defects             — Gesamtmängelliste (all defects across all cards)
+ * - GET    /tpm/plans/:uuid/defect-stats        — Mängelgrafik (weekly aggregated defect statistics)
  * - GET    /tpm/plans/:uuid/board               — Board data (cards for plan)
  */
 import {
@@ -38,19 +40,24 @@ import { RequireAddon } from '../common/decorators/require-addon.decorator.js';
 import { RequirePermission } from '../common/decorators/require-permission.decorator.js';
 import { TenantId } from '../common/decorators/tenant.decorator.js';
 import type { NestAuthUser } from '../common/interfaces/auth.interface.js';
-import { AssetSlotsQueryDto } from './dto/asset-slots-query.dto.js';
-import { AvailableSlotsQueryDto } from './dto/available-slots-query.dto.js';
-import { BoardQueryDto } from './dto/board-query.dto.js';
-import { CreateMaintenancePlanDto } from './dto/create-maintenance-plan.dto.js';
-import { CreateTimeEstimateDto } from './dto/create-time-estimate.dto.js';
-import { ListPlansQueryDto } from './dto/list-plans-query.dto.js';
-import { ListRevisionsQueryDto } from './dto/list-revisions-query.dto.js';
-import { ScheduleProjectionQueryDto } from './dto/schedule-projection-query.dto.js';
-import { SetPlanAssignmentsDto } from './dto/set-plan-assignments.dto.js';
-import { ShiftAssignmentsQueryDto } from './dto/shift-assignments-query.dto.js';
-import { UpdateMaintenancePlanDto } from './dto/update-maintenance-plan.dto.js';
+import {
+  AssetSlotsQueryDto,
+  AvailableSlotsQueryDto,
+  BoardQueryDto,
+  CreateMaintenancePlanDto,
+  CreateTimeEstimateDto,
+  DefectStatsQueryDto,
+  ListPlansQueryDto,
+  ListRevisionsQueryDto,
+  ScheduleProjectionQueryDto,
+  SetPlanAssignmentsDto,
+  ShiftAssignmentsQueryDto,
+  UpdateMaintenancePlanDto,
+} from './dto/index.js';
 import type { CardListFilter, PaginatedCards } from './tpm-cards.service.js';
 import { TpmCardsService } from './tpm-cards.service.js';
+import { TpmDefectStatsService } from './tpm-defect-stats.service.js';
+import { type PaginatedPlanDefects, TpmExecutionsService } from './tpm-executions.service.js';
 import { TpmPlanApprovalService } from './tpm-plan-approval.service.js';
 import { TpmPlanRevisionsService } from './tpm-plan-revisions.service.js';
 import type { IntervalMatrixEntry, PaginatedPlans } from './tpm-plans.service.js';
@@ -69,6 +76,7 @@ import type {
 import { TpmSlotAssistantService } from './tpm-slot-assistant.service.js';
 import { TpmTimeEstimatesService } from './tpm-time-estimates.service.js';
 import type {
+  DefectChartData,
   ScheduleProjectionResult,
   TpmCardRole,
   TpmCardStatus,
@@ -91,12 +99,14 @@ export class TpmPlansController {
   constructor(
     private readonly plansService: TpmPlansService,
     private readonly cardsService: TpmCardsService,
+    private readonly executionsService: TpmExecutionsService,
     private readonly timeEstimatesService: TpmTimeEstimatesService,
     private readonly slotAssistantService: TpmSlotAssistantService,
     private readonly scheduleProjectionService: TpmScheduleProjectionService,
     private readonly shiftAssignmentsService: TpmShiftAssignmentsService,
     private readonly revisionsService: TpmPlanRevisionsService,
     private readonly planApprovalService: TpmPlanApprovalService,
+    private readonly defectStatsService: TpmDefectStatsService,
   ) {}
 
   // ============================================================================
@@ -404,6 +414,41 @@ export class TpmPlansController {
       query.startDate,
       query.endDate,
     );
+  }
+
+  // ============================================================================
+  // DEFECTS (Gesamtmängelliste)
+  // ============================================================================
+
+  /** GET /tpm/plans/:uuid/defects — All defects across all cards of a plan */
+  @Get(':uuid/defects')
+  @RequirePermission(FEAT, MOD_PLANS, 'canRead')
+  async listPlanDefects(
+    @Param('uuid') planUuid: string,
+    @Query() query: ListPlansQueryDto,
+    @TenantId() tenantId: number,
+  ): Promise<PaginatedPlanDefects> {
+    return await this.executionsService.listDefectsForPlan(
+      tenantId,
+      planUuid,
+      query.page,
+      query.limit,
+    );
+  }
+
+  // ============================================================================
+  // DEFECT STATISTICS (Mängelgrafik)
+  // ============================================================================
+
+  /** GET /tpm/plans/:uuid/defect-stats — Weekly defect stats for chart */
+  @Get(':uuid/defect-stats')
+  @RequirePermission(FEAT, MOD_PLANS, 'canRead')
+  async getDefectStats(
+    @Param('uuid') planUuid: string,
+    @Query() query: DefectStatsQueryDto,
+    @TenantId() tenantId: number,
+  ): Promise<DefectChartData> {
+    return await this.defectStatsService.getDefectStats(tenantId, planUuid, query.year);
   }
 
   // ============================================================================

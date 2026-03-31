@@ -255,27 +255,11 @@
       submitting = false;
     }
   }
-
-  function handleKeydown(event: KeyboardEvent): void {
-    if (event.key !== 'Escape') return;
-    if (showArchiveConfirm) {
-      showArchiveConfirm = false;
-      archivingItem = null;
-    } else if (showAssignModal) {
-      showAssignModal = false;
-      assigningItem = null;
-    } else if (showEditModal) {
-      showEditModal = false;
-      editingItem = null;
-    }
-  }
 </script>
 
 <svelte:head>
   <title>{MESSAGES.PAGE_TITLE_ADMIN}</title>
 </svelte:head>
-
-<svelte:window onkeydown={handleKeydown} />
 
 {#if permissionDenied}
   <PermissionDenied addonName="die Arbeitsaufträge" />

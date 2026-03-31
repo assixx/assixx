@@ -24,6 +24,8 @@ import type {
   ScheduleProjectionResult,
   IntervalColorConfigEntry,
   DefectWithContext,
+  DefectChartData,
+  PlanDefectWithContext,
 } from './types';
 
 const log = createLogger('TpmEmployeeApi');
@@ -186,6 +188,35 @@ export async function fetchCardDefects(
     `/tpm/cards/${cardUuid}/defects?page=${page}&limit=${limit}`,
   );
   return extractPaginated<DefectWithContext>(result);
+}
+
+/** Fetch defects for an entire plan (Gesamtmängelliste, paginated) */
+export async function fetchPlanDefects(
+  planUuid: string,
+  page = 1,
+  limit = 50,
+): Promise<PaginatedResponse<PlanDefectWithContext>> {
+  const result: unknown = await apiClient.get(
+    `/tpm/plans/${planUuid}/defects?page=${page}&limit=${limit}`,
+  );
+  return extractPaginated<PlanDefectWithContext>(result);
+}
+
+// =============================================================================
+// DEFECT STATISTICS (Mängelgrafik)
+// =============================================================================
+
+/** Fetch aggregated defect stats for a plan (Mängelgrafik) */
+export async function fetchDefectStats(
+  planUuid: string,
+  year: number,
+): Promise<DefectChartData | null> {
+  try {
+    return await apiClient.get<DefectChartData>(`/tpm/plans/${planUuid}/defect-stats?year=${year}`);
+  } catch (err: unknown) {
+    log.error({ err }, 'Error loading defect stats');
+    return null;
+  }
 }
 
 /** Get a single execution */

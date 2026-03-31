@@ -826,7 +826,49 @@ describe('TPM: Verify Plan Restored', () => {
   });
 });
 
-// ---- seq: 22 -- Cleanup: Delete Card -------------------------------------------
+// ---- seq: 22 -- Plan Defects (Gesamtmängelliste) --------------------------------
+
+describe('TPM: Plan Defects — Empty Plan', () => {
+  let res: Response;
+  let body: JsonBody;
+
+  beforeAll(async () => {
+    res = await fetch(`${BASE_URL}/tpm/plans/${planUuid}/defects?page=1&limit=50`, {
+      headers: authOnly(auth.authToken),
+    });
+    body = (await res.json()) as JsonBody;
+  });
+
+  it('should return 200 OK', () => {
+    expect(res.status).toBe(200);
+  });
+
+  it('should return paginated structure', () => {
+    expect(typeof body.data.total).toBe('number');
+    expect(typeof body.data.page).toBe('number');
+    expect(typeof body.data.pageSize).toBe('number');
+    expect(Array.isArray(body.data.data)).toBe(true);
+  });
+
+  it('should return empty data for plan without defects', () => {
+    expect(body.data.total).toBe(0);
+    expect(body.data.data.length).toBe(0);
+  });
+});
+
+describe('TPM: Plan Defects — Unauthenticated', () => {
+  let res: Response;
+
+  beforeAll(async () => {
+    res = await fetch(`${BASE_URL}/tpm/plans/${planUuid}/defects?page=1&limit=50`);
+  });
+
+  it('should return 401 without auth', () => {
+    expect(res.status).toBe(401);
+  });
+});
+
+// ---- seq: 23 -- Cleanup: Delete Card -------------------------------------------
 
 describe('TPM: Delete Card', () => {
   let res: Response;
@@ -885,6 +927,109 @@ describe('TPM: Verify Plan Deleted', () => {
 
   it('should return 404 after deletion', () => {
     expect(res.status).toBe(404);
+  });
+});
+
+// ---- Defect Stats (Mängelgrafik) -------------------------------------------
+
+describe('GET /tpm/plans/:uuid/defect-stats', () => {
+  describe('authenticated', () => {
+    let res: Response;
+    let body: JsonBody;
+
+    beforeAll(async () => {
+      res = await fetch(`${BASE_URL}/tpm/plans/${planUuid}/defect-stats?year=2026`, {
+        headers: authOnly(auth.authToken),
+      });
+      body = (await res.json()) as JsonBody;
+    });
+
+    it('should return 200', () => {
+      expect(res.status).toBe(200);
+    });
+
+    it('should have correct structure', () => {
+      const data = body.data as Record<string, unknown>;
+      expect(data.year).toBe(2026);
+      expect(data.assetName).toEqual(expect.any(String));
+      expect(data.planName).toEqual(expect.any(String));
+      expect(data.baseDetected).toEqual(expect.any(Number));
+      expect(data.baseResolved).toEqual(expect.any(Number));
+      expect(data.totalDetected).toEqual(expect.any(Number));
+      expect(data.totalResolved).toEqual(expect.any(Number));
+      expect(data.availableYears).toEqual(expect.any(Array));
+    });
+
+    it('should return 52 weeks', () => {
+      const data = body.data as Record<string, unknown>;
+      const weeks = data.weeks as unknown[];
+      expect(weeks).toHaveLength(52);
+    });
+
+    it('should have correct week structure', () => {
+      const data = body.data as Record<string, unknown>;
+      const weeks = data.weeks as Record<string, unknown>[];
+      const firstWeek = weeks[0]!;
+      expect(firstWeek.week).toBe(1);
+      expect(firstWeek).toHaveProperty('detected');
+      expect(firstWeek).toHaveProperty('resolved');
+      expect(firstWeek).toHaveProperty('cumulativeDetected');
+      expect(firstWeek).toHaveProperty('cumulativeResolved');
+    });
+  });
+
+  describe('default year (omitted)', () => {
+    let res: Response;
+
+    beforeAll(async () => {
+      res = await fetch(`${BASE_URL}/tpm/plans/${planUuid}/defect-stats`, {
+        headers: authOnly(auth.authToken),
+      });
+    });
+
+    it('should return 200 with default year', () => {
+      expect(res.status).toBe(200);
+    });
+  });
+
+  describe('invalid year', () => {
+    let res: Response;
+
+    beforeAll(async () => {
+      res = await fetch(`${BASE_URL}/tpm/plans/${planUuid}/defect-stats?year=abc`, {
+        headers: authOnly(auth.authToken),
+      });
+    });
+
+    it('should return 400', () => {
+      expect(res.status).toBe(400);
+    });
+  });
+
+  describe('non-existent plan', () => {
+    let res: Response;
+
+    beforeAll(async () => {
+      res = await fetch(`${BASE_URL}/tpm/plans/00000000-0000-0000-0000-000000000000/defect-stats`, {
+        headers: authOnly(auth.authToken),
+      });
+    });
+
+    it('should return 404', () => {
+      expect(res.status).toBe(404);
+    });
+  });
+
+  describe('unauthenticated', () => {
+    let res: Response;
+
+    beforeAll(async () => {
+      res = await fetch(`${BASE_URL}/tpm/plans/${planUuid}/defect-stats`);
+    });
+
+    it('should return 401', () => {
+      expect(res.status).toBe(401);
+    });
   });
 });
 

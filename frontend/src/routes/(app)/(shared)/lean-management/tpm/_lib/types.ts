@@ -207,6 +207,12 @@ export interface DefectWithContext {
   workOrderCreatedAt: string | null;
 }
 
+/** Defect with card context (for plan-level Gesamtmängelliste page) */
+export interface PlanDefectWithContext extends DefectWithContext {
+  cardCode: string;
+  cardTitle: string;
+}
+
 /** Defect entry payload for creating an execution */
 export interface DefectPayload {
   title: string;
@@ -358,4 +364,30 @@ export interface PaginatedResponse<T> {
   total: number;
   page: number;
   limit: number;
+}
+
+// =============================================================================
+// DEFECT STATISTICS (Mängelgrafik)
+// =============================================================================
+
+/** Weekly defect counts (single week) */
+export interface DefectWeeklyEntry {
+  week: number;
+  detected: number;
+  resolved: number;
+  cumulativeDetected: number;
+  cumulativeResolved: number;
+}
+
+/** Full defect chart data for a plan/year */
+export interface DefectChartData {
+  year: number;
+  assetName: string;
+  planName: string;
+  weeks: DefectWeeklyEntry[];
+  baseDetected: number;
+  baseResolved: number;
+  totalDetected: number;
+  totalResolved: number;
+  availableYears: number[];
 }

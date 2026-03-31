@@ -24,6 +24,7 @@ import { TpmCardsService } from './tpm-cards.service.js';
 import { TpmConfigServicesModule } from './tpm-config-services.module.js';
 import { TpmConfigController } from './tpm-config.controller.js';
 import { TpmDashboardService } from './tpm-dashboard.service.js';
+import { TpmDefectStatsService } from './tpm-defect-stats.service.js';
 import { TpmDueDateCronService } from './tpm-due-date-cron.service.js';
 import { TpmEscalationService } from './tpm-escalation.service.js';
 import { TpmExecutionsController } from './tpm-executions.controller.js';
@@ -93,6 +94,9 @@ import { TpmSlotAssistantService } from './tpm-slot-assistant.service.js';
     // Scheduling + Cron (scheduling wiring)
     TpmSchedulingService,
     TpmDueDateCronService,
+
+    // Defect statistics (Mängelgrafik)
+    TpmDefectStatsService,
 
     // Dashboard count (Session 14)
     TpmDashboardService,

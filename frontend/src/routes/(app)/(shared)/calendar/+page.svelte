@@ -54,7 +54,11 @@
     ((data as Record<string, unknown>).hierarchyLabels as HierarchyLabels | undefined) ??
       DEFAULT_HIERARCHY_LABELS,
   );
-  const filterOptions = $derived(createFilterOptions(labels));
+  const filterOptions = $derived(
+    calendarState.isDummy ?
+      createFilterOptions(labels).filter((o) => o.value !== 'personal')
+    : createFilterOptions(labels),
+  );
 
   const upcomingEvents = $derived(data.upcomingEvents);
   const recentlyAddedEvents = $derived(data.recentlyAddedEvents);
@@ -100,6 +104,8 @@
   let calendarViewRef = $state<CalendarViewRef | null>(null);
 
   // Form state
+  const defaultOrgLevel = $derived(calendarState.isDummy ? 'company' : 'personal');
+
   let formData = $state<EventFormData>({
     title: '',
     description: '',
@@ -138,7 +144,7 @@
     buttonText: DE_LOCALE.buttonText,
     firstDay: 1,
     editable: calendarState.isAdmin,
-    selectable: true,
+    selectable: calendarState.canCreateEvents,
     selectMirror: true,
     dayMaxEvents: true,
     nowIndicator: true,
@@ -317,6 +323,7 @@
   // ==========================================================================
 
   function openEventForm(startDate?: Date, endDate?: Date, allDay: boolean = false): void {
+    if (!calendarState.canCreateEvents) return;
     log.debug({ startDate, endDate, allDay }, 'Opening event form');
     const now = startDate ?? new Date();
     const later = endDate ?? new Date(now.getTime() + 60 * 60 * 1000);
@@ -328,7 +335,7 @@
       endTime: formatDatetimeLocal(later),
       allDay,
       location: '',
-      orgLevel: 'personal',
+      orgLevel: defaultOrgLevel as EventFormData['orgLevel'],
       departmentIds: [],
       teamIds: [],
       areaIds: [],
@@ -573,10 +580,12 @@
                 <span class="legend-color legend-team"></span>
                 <span class="legend-label">{labels.team}</span>
               </div>
-              <div class="legend-item">
-                <span class="legend-color legend-personal"></span>
-                <span class="legend-label">Persoenlich</span>
-              </div>
+              {#if !calendarState.isDummy}
+                <div class="legend-item">
+                  <span class="legend-color legend-personal"></span>
+                  <span class="legend-label">Persönlich</span>
+                </div>
+              {/if}
               <div class="legend-item">
                 <span class="legend-color legend-vacation"></span>
                 <span class="legend-label">Urlaub</span>
@@ -600,6 +609,7 @@
       bind:this={calendarViewRef}
       plugins={calendarPlugins}
       options={calendarOptions}
+      canCreateEvents={calendarState.canCreateEvents}
       onNewEvent={() => {
         openEventForm();
       }}

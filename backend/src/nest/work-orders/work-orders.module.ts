@@ -7,6 +7,7 @@
 import { Module } from '@nestjs/common';
 
 import { AddonCheckModule } from '../addon-check/addon-check.module.js';
+import { ScopeModule } from '../hierarchy-permission/scope.module.js';
 import { WorkOrderAssigneesService } from './work-orders-assignees.service.js';
 import { WorkOrderCommentsService } from './work-orders-comments.service.js';
 import { WorkOrderDueCronService } from './work-orders-due-cron.service.js';
@@ -18,7 +19,7 @@ import { WorkOrdersController } from './work-orders.controller.js';
 import { WorkOrdersService } from './work-orders.service.js';
 
 @Module({
-  imports: [AddonCheckModule],
+  imports: [AddonCheckModule, ScopeModule],
   controllers: [WorkOrdersController],
   providers: [
     // Permission registration (ADR-020)

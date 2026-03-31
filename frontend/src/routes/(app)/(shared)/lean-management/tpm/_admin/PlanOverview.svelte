@@ -331,6 +331,14 @@
                   <i class="fas fa-clone"></i>
                 </a>
                 <a
+                  href={resolve(`/lean-management/tpm/board/${plan.uuid}/defects`)}
+                  class="action-icon action-icon--danger"
+                  title="Gesamtmängelliste"
+                  aria-label="Gesamtmängelliste"
+                >
+                  <i class="fas fa-exclamation-triangle"></i>
+                </a>
+                <a
                   href={resolve(`/lean-management/tpm/plan/${plan.uuid}/revisions`)}
                   class="action-icon"
                   title="Versionshistorie"

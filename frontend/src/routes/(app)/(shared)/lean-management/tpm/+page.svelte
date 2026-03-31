@@ -130,29 +130,27 @@
 
     <!-- Plan table (full width) -->
     <div class="mt-6">
+      <div class="mb-4 flex items-center justify-end gap-2">
+        <a
+          href={resolve('/lean-management/tpm/gesamtansicht')}
+          class="btn btn-secondary"
+        >
+          <i class="fas fa-table mr-2"></i>
+          {messages.BTN_GESAMTANSICHT}
+        </a>
+        {#if canWrite}
+          <a
+            href={resolve('/lean-management/tpm/plan/new')}
+            class="btn btn-secondary"
+          >
+            <i class="fas fa-plus mr-2"></i>
+            {messages.BTN_NEW_PLAN}
+          </a>
+        {/if}
+      </div>
       <div class="card">
         <div class="card__header">
-          <div class="flex items-center justify-between gap-4">
-            <h2 class="card__title">{messages.STAT_TOTAL_PLANS}</h2>
-            <div class="flex gap-2">
-              <a
-                href={resolve('/lean-management/tpm/gesamtansicht')}
-                class="btn btn-info"
-              >
-                <i class="fas fa-table"></i>
-                {messages.BTN_GESAMTANSICHT}
-              </a>
-              {#if canWrite}
-                <a
-                  href={resolve('/lean-management/tpm/plan/new')}
-                  class="btn btn-primary"
-                >
-                  <i class="fas fa-plus"></i>
-                  {messages.BTN_NEW_PLAN}
-                </a>
-              {/if}
-            </div>
-          </div>
+          <h2 class="card__title">{messages.STAT_TOTAL_PLANS}</h2>
         </div>
         <div class="card__body">
           <PlanOverview

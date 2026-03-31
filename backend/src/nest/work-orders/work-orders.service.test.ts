@@ -38,6 +38,10 @@ const mockActivityLogger = {
   logDelete: vi.fn().mockResolvedValue(undefined),
 };
 
+const mockScopeService = {
+  getScope: vi.fn().mockResolvedValue({ type: 'full' }),
+};
+
 // ============================================================================
 // Factory functions
 // ============================================================================
@@ -101,6 +105,7 @@ beforeEach(() => {
   service = new WorkOrdersService(
     mockDb as unknown as DatabaseService,
     mockActivityLogger as never,
+    mockScopeService as never,
   );
 });
 

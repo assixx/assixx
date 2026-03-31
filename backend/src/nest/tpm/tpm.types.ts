@@ -683,3 +683,29 @@ export interface TpmScopedOrgData {
   readonly departments: readonly TpmScopedDepartment[];
   readonly assets: readonly TpmScopedAsset[];
 }
+
+// ============================================================================
+// Defect Statistics (Mängelgrafik)
+// ============================================================================
+
+/** Weekly defect counts (single week) */
+export interface DefectWeeklyEntry {
+  readonly week: number;
+  readonly detected: number;
+  readonly resolved: number;
+  readonly cumulativeDetected: number;
+  readonly cumulativeResolved: number;
+}
+
+/** Full defect chart data for a plan/year */
+export interface DefectChartData {
+  readonly year: number;
+  readonly assetName: string;
+  readonly planName: string;
+  readonly weeks: readonly DefectWeeklyEntry[];
+  readonly baseDetected: number;
+  readonly baseResolved: number;
+  readonly totalDetected: number;
+  readonly totalResolved: number;
+  readonly availableYears: readonly number[];
+}

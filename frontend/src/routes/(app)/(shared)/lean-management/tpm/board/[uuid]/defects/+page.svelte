@@ -1,11 +1,10 @@
 <script lang="ts">
   /**
-   * TPM Card Defects (Mängelliste) — Page Component
+   * TPM Plan Defects (Gesamtmängelliste) — Page Component
    *
-   * Displays all documented defects for a single Kamishibai card.
-   * Expandable rows show defect description, photos + execution context.
+   * Displays all documented defects across ALL cards of a maintenance plan.
+   * Mirrors card-level defects page structure with additional "Karte" column.
    * Admin users can create work orders from defects via "Zuweisen" button.
-   * Pattern: mirrors history/+page.svelte structure.
    */
   import { goto, invalidateAll } from '$app/navigation';
   import { resolve } from '$app/paths';
@@ -18,18 +17,12 @@
     STATUS_BADGE_CLASSES as WO_STATUS_BADGE_CLASSES,
   } from '../../../../../work-orders/_lib/constants';
   import { fetchDefectPhotos, updateDefect, logApiError } from '../../../_lib/api';
-  import {
-    INTERVAL_LABELS,
-    CARD_STATUS_LABELS,
-    CARD_STATUS_BADGE_CLASSES,
-    MESSAGES,
-  } from '../../../_lib/constants';
-
-  import CreateWorkOrderFromDefect from './_lib/CreateWorkOrderFromDefect.svelte';
+  import { MESSAGES } from '../../../_lib/constants';
+  import CreateWorkOrderFromDefect from '../../../card/[uuid]/defects/_lib/CreateWorkOrderFromDefect.svelte';
 
   import type { PageData } from './$types';
   import type { WorkOrderStatus } from '../../../../../work-orders/_lib/types';
-  import type { DefectWithContext, TpmDefectPhoto } from '../../../_lib/types';
+  import type { TpmDefectPhoto, TpmCard, PlanDefectWithContext } from '../../../_lib/types';
 
   // ===========================================================================
   // SSR DATA
@@ -38,28 +31,19 @@
   const { data }: { data: PageData } = $props();
 
   const permissionDenied = $derived(data.permissionDenied);
-  const card = $derived(data.card);
+  const plan = $derived(data.plan);
   const defects = $derived(data.defects);
   const total = $derived(data.total);
   const error = $derived(data.error);
   const userRole = $derived(data.userRole);
   const isAdmin = $derived(userRole === 'admin' || userRole === 'root');
-  const colSpan = $derived(isAdmin ? 6 : 5);
-  const expandExecutionUuid = $derived(data.expandExecutionUuid);
-
-  // Auto-expand first defect matching the execution UUID from query param
-  const initialExpandUuid = $derived.by((): string | null => {
-    if (expandExecutionUuid === null) return null;
-    const match = defects.find((d) => d.executionUuid === expandExecutionUuid);
-    return match?.uuid ?? null;
-  });
+  const colSpan = $derived(isAdmin ? 7 : 6);
 
   // ===========================================================================
   // EXPAND / PHOTO STATE
   // ===========================================================================
 
   let expandedUuid = $state<string | null>(null);
-  let initialExpandApplied = $state(false);
   let loadedPhotos = $state<Partial<Record<string, TpmDefectPhoto[]>>>({});
   let loadingPhotos = $state<Partial<Record<string, boolean>>>({});
   let photoErrors = $state<Partial<Record<string, boolean>>>({});
@@ -74,20 +58,23 @@
     return previewPhotos[previewPhotoIndex] ?? null;
   });
 
-  // Auto-expand matching defect on initial load (from history page link)
-  $effect(() => {
-    if (initialExpandApplied || initialExpandUuid === null) return;
-    initialExpandApplied = true;
-    toggleExpand(initialExpandUuid);
-  });
-
   // Work Order Modal State (admin only)
   let showWoModal = $state(false);
-  let woDefect = $state<DefectWithContext | null>(null);
+  let woDefect = $state<PlanDefectWithContext | null>(null);
+
+  /** Construct a minimal TpmCard-compatible object for CreateWorkOrderFromDefect */
+  const woCardContext = $derived.by((): TpmCard | null => {
+    if (woDefect === null || plan === null) return null;
+    return {
+      assetId: plan.assetId,
+      cardCode: woDefect.cardCode,
+      title: woDefect.cardTitle,
+    } as unknown as TpmCard;
+  });
 
   // Edit Defect Modal State (admin only)
   let showEditModal = $state(false);
-  let editDefect = $state<DefectWithContext | null>(null);
+  let editDefect = $state<PlanDefectWithContext | null>(null);
   let editTitle = $state('');
   let editDescription = $state('');
   let editSubmitting = $state(false);
@@ -126,7 +113,6 @@
     }
     expandedUuid = uuid;
 
-    // Load photos if not cached and photoCount > 0
     const defect = defects.find((d) => d.uuid === uuid);
     if (
       defect !== undefined &&
@@ -187,7 +173,7 @@
   // WORK ORDER MODAL (admin only)
   // ===========================================================================
 
-  function openCreateWoModal(defectItem: DefectWithContext, event: MouseEvent): void {
+  function openCreateWoModal(defectItem: PlanDefectWithContext, event: MouseEvent): void {
     event.stopPropagation();
     woDefect = defectItem;
     showWoModal = true;
@@ -208,7 +194,7 @@
   // EDIT DEFECT MODAL (admin only)
   // ===========================================================================
 
-  function openEditModal(defectItem: DefectWithContext, event: MouseEvent): void {
+  function openEditModal(defectItem: PlanDefectWithContext, event: MouseEvent): void {
     event.stopPropagation();
     editDefect = defectItem;
     editTitle = defectItem.title;
@@ -255,10 +241,10 @@
   // ===========================================================================
 
   function goBack(): void {
-    if (card !== null) {
-      void goto(resolve(`/lean-management/tpm/card/${card.uuid}`));
+    if (plan !== null) {
+      void goto(resolve(`/lean-management/tpm/board/${plan.uuid}`));
     } else {
-      void goto(resolve('/lean-management/tpm/overview'));
+      void goto(resolve('/lean-management/tpm'));
     }
   }
 </script>
@@ -267,9 +253,9 @@
 
 <svelte:head>
   <title>
-    {card !== null ?
-      `${card.cardCode} — ${MESSAGES.DEFECTS_PAGE_TITLE}`
-    : MESSAGES.DEFECTS_PAGE_TITLE} - Assixx
+    {plan !== null ?
+      `${plan.assetName ?? plan.name} — ${MESSAGES.PLAN_DEFECTS_PAGE_TITLE}`
+    : MESSAGES.PLAN_DEFECTS_PAGE_TITLE} - Assixx
   </title>
 </svelte:head>
 
@@ -277,40 +263,38 @@
   <PermissionDenied addonName="das TPM-System" />
 {:else}
   <div class="container">
-    <!-- Back Button -->
-    <div class="mb-4">
+    <!-- Back + Chart Button -->
+    <div class="mb-4 flex items-center justify-between">
       <button
         type="button"
         class="btn btn-light"
         onclick={goBack}
       >
-        <i class="fas fa-arrow-left mr-2"></i>{MESSAGES.DEFECTS_BACK}
+        <i class="fas fa-arrow-left mr-2"></i>{MESSAGES.PLAN_DEFECTS_BACK}
       </button>
+      {#if plan !== null}
+        <a
+          href={resolve(`/lean-management/tpm/board/${plan.uuid}/defect-chart`)}
+          class="btn btn-secondary"
+        >
+          <i class="fas fa-chart-line mr-2"></i>{MESSAGES.BTN_CHART}
+        </a>
+      {/if}
     </div>
 
     <div class="card">
-      <div
-        class="card__header"
-        style="display: flex; justify-content: space-between; align-items: flex-start;"
-      >
+      <div class="card__header">
         <div>
           <h2 class="card__title">
             <i class="fas fa-exclamation-triangle mr-2"></i>
-            {MESSAGES.DEFECTS_HEADING}
+            {MESSAGES.PLAN_DEFECTS_HEADING}
           </h2>
-          {#if card !== null}
+          {#if plan !== null}
             <p class="mt-1 text-(--color-text-secondary)">
-              <span class="font-semibold">{card.cardCode}</span>
-              — {card.title}
-              · {INTERVAL_LABELS[card.intervalType]}
-              {#if card.assetName !== undefined}
-                · {card.assetName}
-              {/if}
+              <span class="font-semibold">{plan.assetName ?? '—'}</span>
+              — {plan.name}
             </p>
             <div class="mt-2 flex items-center gap-3">
-              <span class="badge {CARD_STATUS_BADGE_CLASSES[card.status]}">
-                {CARD_STATUS_LABELS[card.status]}
-              </span>
               <span class="text-sm text-(--color-text-muted)">
                 {total}
                 {MESSAGES.DEFECTS_COUNT}
@@ -318,17 +302,6 @@
             </div>
           {/if}
         </div>
-        {#if card !== null}
-          <button
-            type="button"
-            class="btn btn-primary"
-            onclick={() => {
-              void goto(resolve(`/lean-management/tpm/card/${card.uuid}/history`));
-            }}
-          >
-            <i class="fas fa-history mr-2"></i>{MESSAGES.HISTORY_HEADING}
-          </button>
-        {/if}
       </div>
 
       <div class="card__body">
@@ -342,9 +315,9 @@
             <div class="empty-state__icon">
               <i class="fas fa-check-circle"></i>
             </div>
-            <h3 class="empty-state__title">{MESSAGES.DEFECTS_EMPTY_TITLE}</h3>
+            <h3 class="empty-state__title">{MESSAGES.PLAN_DEFECTS_EMPTY_TITLE}</h3>
             <p class="empty-state__description">
-              {MESSAGES.DEFECTS_EMPTY_DESC}
+              {MESSAGES.PLAN_DEFECTS_EMPTY_DESC}
             </p>
             <button
               type="button"
@@ -352,7 +325,7 @@
               onclick={goBack}
             >
               <i class="fas fa-arrow-left mr-2"></i>
-              {MESSAGES.DEFECTS_BACK}
+              {MESSAGES.PLAN_DEFECTS_BACK}
             </button>
           </div>
         {:else}
@@ -361,6 +334,7 @@
               <thead>
                 <tr>
                   <th scope="col">{MESSAGES.DEFECTS_COL_TITLE}</th>
+                  <th scope="col">{MESSAGES.PLAN_DEFECTS_COL_CARD}</th>
                   <th scope="col">{MESSAGES.DEFECTS_COL_WO_STATUS}</th>
                   <th scope="col">{MESSAGES.DEFECTS_COL_DATE}</th>
                   <th scope="col">{MESSAGES.DEFECTS_COL_PERSON}</th>
@@ -387,6 +361,10 @@
                   >
                     <td>
                       <div class="font-medium">{defect.title}</div>
+                    </td>
+                    <td>
+                      <span class="card-code-badge">{defect.cardCode}</span>
+                      <span class="text-sm text-(--color-text-secondary)">{defect.cardTitle}</span>
                     </td>
                     <td>
                       {#if defect.workOrderUuid !== null && defect.workOrderStatus !== null}
@@ -561,7 +539,7 @@
     <CreateWorkOrderFromDefect
       show={showWoModal}
       defect={woDefect}
-      {card}
+      card={woCardContext}
       onclose={closeWoModal}
       onsaved={handleWoSaved}
     />
@@ -906,5 +884,17 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+
+  .card-code-badge {
+    display: inline-block;
+    padding: 0.125rem 0.375rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.75rem;
+    font-weight: 600;
+    font-family: var(--font-mono, monospace);
+    color: var(--color-primary);
+    background: color-mix(in oklch, var(--color-primary) 10%, transparent);
+    margin-right: 0.375rem;
   }
 </style>

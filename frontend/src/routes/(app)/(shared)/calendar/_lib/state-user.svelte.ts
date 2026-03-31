@@ -73,8 +73,11 @@ function createUserState() {
     get userRole() {
       return userRole;
     },
+    get isDummy() {
+      return userRole === 'dummy';
+    },
     get canCreateEvents() {
-      return true;
+      return userRole !== 'dummy';
     },
     setUser,
     isEventPast,

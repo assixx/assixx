@@ -765,11 +765,20 @@ function injectLeadItems(items: NavItem[], labels: HierarchyLabels): NavItem[] {
   return [...items.slice(0, insertAt), ...leadItems, ...items.slice(insertAt)];
 }
 
+/** Upgrade employee work-orders entry to include admin submenu (for leads) */
+function upgradeWorkOrdersForLead(items: NavItem[]): NavItem[] {
+  const idx = items.findIndex((i: NavItem) => i.id === 'work-orders');
+  if (idx < 0) return items;
+  const result = [...items];
+  result[idx] = { ...result[idx], url: undefined, submenu: WORK_ORDERS_ADMIN_SUBMENU };
+  return result;
+}
+
 /**
  * Filter/inject menu items based on organizational scope.
  * - Root: pass through (already has all manage items + approvals)
  * - Admin (full/limited): inject manage-areas/departments/teams
- * - Employee-Lead: inject manage-teams + manage-employees + approvals
+ * - Employee-Lead: inject manage-teams + manage-employees + work-orders admin + approvals
  * - Employee (area/department lead only): inject approvals
  * - Others: pass through
  */
@@ -787,7 +796,8 @@ export function filterMenuByScope(
 
   if (role === 'employee' && orgScope.isTeamLead) {
     const withLeadItems = injectLeadItems(items, labels);
-    return injectBeforeProfile(withLeadItems, APPROVALS_NAV_ITEM);
+    const withWorkOrders = upgradeWorkOrdersForLead(withLeadItems);
+    return injectBeforeProfile(withWorkOrders, APPROVALS_NAV_ITEM);
   }
 
   if (role === 'employee' && (orgScope.isAreaLead || orgScope.isDepartmentLead)) {

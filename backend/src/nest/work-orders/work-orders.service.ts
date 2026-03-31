@@ -12,6 +12,7 @@ import { v7 as uuidv7 } from 'uuid';
 
 import { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import { DatabaseService } from '../database/database.service.js';
+import { ScopeService } from '../hierarchy-permission/scope.service.js';
 import {
   mapAssigneeRowToApi,
   mapCalendarWorkOrderRow,
@@ -93,27 +94,14 @@ interface WhereResult {
   nextIdx: number;
 }
 
-function buildWhereClause(
-  tenantId: number,
-  forUserId: number | null,
+/** Append optional query filters to WHERE clause (extracted for complexity budget) */
+function appendQueryFilters(
+  conditions: string[],
+  params: unknown[],
+  startIdx: number,
   query: ListQuery,
-): WhereResult {
-  const isActiveCondition =
-    query.isActive === 'archived' ? `wo.is_active = ${IS_ACTIVE.ARCHIVED}`
-    : query.isActive === 'all' ? `wo.is_active IN (${IS_ACTIVE.ACTIVE}, ${IS_ACTIVE.ARCHIVED})`
-    : `wo.is_active = ${IS_ACTIVE.ACTIVE}`;
-
-  const conditions: string[] = ['wo.tenant_id = $1', isActiveCondition];
-  const params: unknown[] = [tenantId];
-  let idx = 2;
-
-  if (forUserId !== null) {
-    conditions.push(
-      `EXISTS (SELECT 1 FROM work_order_assignees a2
-               WHERE a2.work_order_id = wo.id AND a2.user_id = $${idx++})`,
-    );
-    params.push(forUserId);
-  }
+): number {
+  let idx = startIdx;
   if (query.status !== undefined) {
     conditions.push(`wo.status = $${idx++}`);
     params.push(query.status);
@@ -138,8 +126,44 @@ function buildWhereClause(
     );
     params.push(query.assigneeUuid);
   }
+  return idx;
+}
 
-  return { whereClause: conditions.join(' AND '), params, nextIdx: idx };
+function buildWhereClause(
+  tenantId: number,
+  forUserId: number | null,
+  query: ListQuery,
+  scopeTeamIds?: number[],
+): WhereResult {
+  const isActiveCondition =
+    query.isActive === 'archived' ? `wo.is_active = ${IS_ACTIVE.ARCHIVED}`
+    : query.isActive === 'all' ? `wo.is_active IN (${IS_ACTIVE.ACTIVE}, ${IS_ACTIVE.ARCHIVED})`
+    : `wo.is_active = ${IS_ACTIVE.ACTIVE}`;
+
+  const conditions: string[] = ['wo.tenant_id = $1', isActiveCondition];
+  const params: unknown[] = [tenantId];
+  let idx = 2;
+
+  if (forUserId !== null) {
+    conditions.push(
+      `EXISTS (SELECT 1 FROM work_order_assignees a2
+               WHERE a2.work_order_id = wo.id AND a2.user_id = $${idx++})`,
+    );
+    params.push(forUserId);
+  }
+
+  // Scope filter: limited users see only work orders with assignees in their teams
+  if (scopeTeamIds !== undefined && scopeTeamIds.length > 0) {
+    conditions.push(
+      `EXISTS (SELECT 1 FROM work_order_assignees sa
+               JOIN user_teams ut ON ut.user_id = sa.user_id
+               WHERE sa.work_order_id = wo.id AND ut.team_id = ANY($${idx++}::int[]))`,
+    );
+    params.push(scopeTeamIds);
+  }
+
+  const nextIdx = appendQueryFilters(conditions, params, idx, query);
+  return { whereClause: conditions.join(' AND '), params, nextIdx };
 }
 
 // ============================================================================
@@ -170,6 +194,7 @@ export class WorkOrdersService {
   constructor(
     private readonly db: DatabaseService,
     private readonly activityLogger: ActivityLoggerService,
+    private readonly scopeService: ScopeService,
   ) {}
 
   /** Create a work order, optionally with initial assignees */
@@ -236,13 +261,14 @@ export class WorkOrdersService {
     return workOrder;
   }
 
-  /** List all work orders (admin view) with filters and pagination */
+  /** List all work orders (admin view) with filters and pagination — scope-filtered for leads */
   async listWorkOrders(
     tenantId: number,
     currentUserId: number,
     query: ListQuery,
   ): Promise<PaginatedWorkOrders> {
-    return await this.buildPaginatedList(tenantId, null, currentUserId, query);
+    const scopeTeamIds = await this.resolveScopeTeamIds();
+    return await this.buildPaginatedList(tenantId, null, currentUserId, query, scopeTeamIds);
   }
 
   /** List only work orders assigned to a specific user */
@@ -371,12 +397,25 @@ export class WorkOrdersService {
     );
   }
 
-  /** Get stats (counts per status) for dashboard — all work orders */
+  /** Get stats (counts per status) for dashboard — scope-filtered for leads */
   async getStats(tenantId: number): Promise<WorkOrderStats> {
+    const scopeTeamIds = await this.resolveScopeTeamIds();
+
+    if (scopeTeamIds === undefined) {
+      return await this.queryStats(
+        `FROM work_orders
+         WHERE tenant_id = $1 AND is_active = ${IS_ACTIVE.ACTIVE}`,
+        [tenantId],
+      );
+    }
+
     return await this.queryStats(
-      `FROM work_orders
-       WHERE tenant_id = $1 AND is_active = ${IS_ACTIVE.ACTIVE}`,
-      [tenantId],
+      `FROM work_orders wo
+       WHERE wo.tenant_id = $1 AND wo.is_active = ${IS_ACTIVE.ACTIVE}
+         AND EXISTS (SELECT 1 FROM work_order_assignees sa
+                     JOIN user_teams ut ON ut.user_id = sa.user_id
+                     WHERE sa.work_order_id = wo.id AND ut.team_id = ANY($2::int[]))`,
+      [tenantId, scopeTeamIds],
     );
   }
 
@@ -434,7 +473,7 @@ export class WorkOrdersService {
   /** Shared stats query — DRY helper for getStats + getMyStats */
   private async queryStats(
     fromClause: string,
-    params: (number | string)[],
+    params: (number | string | number[])[],
   ): Promise<WorkOrderStats> {
     const row = await this.db.queryOne<{
       open: string;
@@ -571,14 +610,27 @@ export class WorkOrdersService {
     return result.rows[0];
   }
 
+  /** Resolve team IDs for scope filtering — undefined = full access (no filter) */
+  private async resolveScopeTeamIds(): Promise<number[] | undefined> {
+    const scope = await this.scopeService.getScope();
+    if (scope.type === 'full') return undefined;
+    return scope.teamIds;
+  }
+
   /** Build paginated list with dynamic WHERE clause + read-status LEFT JOIN */
   private async buildPaginatedList(
     tenantId: number,
     forUserId: number | null,
     currentUserId: number,
     query: ListQuery,
+    scopeTeamIds?: number[],
   ): Promise<PaginatedWorkOrders> {
-    const { whereClause, params, nextIdx } = buildWhereClause(tenantId, forUserId, query);
+    const { whereClause, params, nextIdx } = buildWhereClause(
+      tenantId,
+      forUserId,
+      query,
+      scopeTeamIds,
+    );
     const page = query.page ?? 1;
     const pageSize = query.limit ?? 20;
     const offset = (page - 1) * pageSize;
