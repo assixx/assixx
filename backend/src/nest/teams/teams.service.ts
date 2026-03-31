@@ -160,7 +160,7 @@ const TEAM_MEMBERS_DATE_RANGE_QUERY = `
   JOIN user_teams ut ON u.id = ut.user_id
   LEFT JOIN user_availability ea ON u.id = ea.user_id
          AND ea.start_date <= $2::date AND ea.end_date >= $3::date
-  WHERE ut.team_id = $1 AND u.role != 'dummy' AND u.is_active = ${IS_ACTIVE.ACTIVE}`;
+  WHERE ut.team_id = $1 AND u.is_active = ${IS_ACTIVE.ACTIVE}`;
 
 /**
  * SQL query for team members with current date availability
@@ -173,7 +173,7 @@ const TEAM_MEMBERS_CURRENT_DATE_QUERY = `
   JOIN user_teams ut ON u.id = ut.user_id
   LEFT JOIN user_availability ea ON u.id = ea.user_id
          AND CURRENT_DATE BETWEEN ea.start_date AND ea.end_date
-  WHERE ut.team_id = $1 AND u.role != 'dummy' AND u.is_active = ${IS_ACTIVE.ACTIVE}`;
+  WHERE ut.team_id = $1 AND u.is_active = ${IS_ACTIVE.ACTIVE}`;
 
 @Injectable()
 export class TeamsService {
@@ -206,12 +206,14 @@ export class TeamsService {
       a.name as department_area_name,
       CONCAT(COALESCE(u.first_name, ''), ' ', COALESCE(u.last_name, '')) as team_lead_name,
       CONCAT(COALESCE(du.first_name, ''), ' ', COALESCE(du.last_name, '')) as team_deputy_lead_name,
-      (SELECT COUNT(*) FROM user_teams ut WHERE ut.team_id = t.id) as member_count,
+      (SELECT COUNT(*) FROM user_teams ut JOIN users uu ON ut.user_id = uu.id WHERE ut.team_id = t.id AND uu.is_active = ${IS_ACTIVE.ACTIVE}) as member_count,
       (SELECT COUNT(*) FROM asset_teams mt WHERE mt.team_id = t.id) as asset_count,
-      (SELECT STRING_AGG(CONCAT(COALESCE(mu.first_name, ''), ' ', COALESCE(mu.last_name, '')), ', ' ORDER BY mu.last_name)
+      (SELECT STRING_AGG(
+        COALESCE(NULLIF(TRIM(CONCAT(COALESCE(mu.first_name, ''), ' ', COALESCE(mu.last_name, ''))), ''), mu.display_name, SPLIT_PART(mu.email, '@', 1)),
+        ', ' ORDER BY mu.last_name)
        FROM user_teams mut
        JOIN users mu ON mut.user_id = mu.id
-       WHERE mut.team_id = t.id) as member_names,
+       WHERE mut.team_id = t.id AND mu.is_active = ${IS_ACTIVE.ACTIVE}) as member_names,
       (SELECT STRING_AGG(mm.name, ', ' ORDER BY mm.name)
        FROM asset_teams mmt
        JOIN assets mm ON mmt.asset_id = mm.id
