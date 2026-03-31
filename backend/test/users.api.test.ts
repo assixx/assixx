@@ -276,3 +276,40 @@ describe('Users: Update positionIds', () => {
     expect(assigned.sort()).toEqual(positionIds.slice(0, 2).sort());
   });
 });
+
+// ---- seq: 6 -- Get User Profile (permission-gated) ----------------------------
+
+describe('Users: Get User Profile', () => {
+  let targetUuid: string;
+
+  beforeAll(async () => {
+    const meRes = await fetch(`${BASE_URL}/users/me`, {
+      headers: authOnly(auth.authToken),
+    });
+    const meBody = (await meRes.json()) as JsonBody;
+    targetUuid = (meBody.data as { uuid: string }).uuid;
+  });
+
+  it('should return 200 for own profile via /users/profile/:uuid', async () => {
+    const res = await fetch(`${BASE_URL}/users/profile/${targetUuid}`, {
+      headers: authOnly(auth.authToken),
+    });
+    const body = (await res.json()) as JsonBody;
+
+    expect(res.status).toBe(200);
+    expect(body.success).toBe(true);
+  });
+
+  it('should return user data with required properties', async () => {
+    const res = await fetch(`${BASE_URL}/users/profile/${targetUuid}`, {
+      headers: authOnly(auth.authToken),
+    });
+    const body = (await res.json()) as JsonBody;
+    const user = body.data as Record<string, unknown>;
+
+    expect(user).toHaveProperty('id');
+    expect(user).toHaveProperty('uuid');
+    expect(user).toHaveProperty('email');
+    expect(user).toHaveProperty('firstName');
+  });
+});

@@ -861,6 +861,34 @@ describe('UsersService', () => {
   });
 
   // =============================================================
+  // getUserProfileByUuid (no scope check)
+  // =============================================================
+
+  describe('getUserProfileByUuid', () => {
+    it('should throw NotFoundException for unknown UUID', async () => {
+      mockUserRepo.resolveUuidToId.mockResolvedValueOnce(null);
+
+      await expect(service.getUserProfileByUuid('unknown-uuid', 10)).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+
+    it('should resolve UUID and return user WITHOUT scope check', async () => {
+      mockUserRepo.resolveUuidToId.mockResolvedValueOnce(5);
+      // getUserById chain: findUserById + getTenantInfo + getDepartments + getUserTeamsBatch
+      mockDb.query.mockResolvedValueOnce([makeUserRow({ id: 5 })]);
+      mockDb.query.mockResolvedValueOnce([{ company_name: 'TestCo', subdomain: 'test' }]);
+      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.query.mockResolvedValueOnce([]);
+
+      const result = await service.getUserProfileByUuid('valid-uuid', 10);
+
+      expect(result.id).toBe(5);
+      expect(mockUserRepo.resolveUuidToId).toHaveBeenCalledWith('valid-uuid', 10);
+    });
+  });
+
+  // =============================================================
   // updateUserByUuid
   // =============================================================
 

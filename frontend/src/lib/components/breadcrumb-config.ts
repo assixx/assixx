@@ -150,6 +150,11 @@ const dynamicRoutes: DynamicRoute[] = [
     label: 'Auftragsdetail',
     icon: ICON_INFO,
   },
+  {
+    pattern: /^\/user\/[^/]+$/,
+    label: 'Benutzerprofil',
+    icon: 'fa-id-card',
+  },
 ];
 
 /**
@@ -395,6 +400,7 @@ function buildUrlMappings(labels: HierarchyLabels): Partial<Record<string, Route
     },
     '/manage-teams': { label: `${labels.team} verwalten`, icon: 'fa-users' },
     '/manage-assets': { label: `${labels.asset} verwalten`, icon: 'fa-cogs' },
+    '/my-team': { label: `Meine ${labels.team}`, icon: 'fa-user-friends' },
   };
 }
 
@@ -406,6 +412,12 @@ function buildDynamicIntermediateBreadcrumbs(labels: HierarchyLabels): DynamicIn
       label: `${labels.asset} verwalten`,
       href: '/manage-assets',
       icon: 'fa-cogs',
+    },
+    {
+      pattern: /^\/user\/[^/]+$/,
+      label: `Meine ${labels.team}`,
+      href: '/my-team',
+      icon: 'fa-user-friends',
     },
   ];
 }

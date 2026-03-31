@@ -2,22 +2,28 @@
  * TPM Plan Revision History — Server-Side Data Loading
  *
  * Loads plan info + all revisions for that plan (paginated, newest first).
+ * Access: Root | Admin (scoped) | Employee Team-Lead
  * ISO 9001 Chapter 7.5.3: every plan change is traceable.
  */
 import { redirect } from '@sveltejs/kit';
 
 import { apiFetch, apiFetchWithPermission } from '$lib/server/api-fetch';
+import { assertTeamLevelAccess } from '$lib/server/manage-page-access';
 import { requireAddon } from '$lib/utils/addon-guard';
 
 import type { PageServerLoad } from './$types';
 import type { TpmPlanRevisionList } from './_lib/types';
 import type { TpmPlan } from '../../../_admin/types';
 
-export const load: PageServerLoad = async ({ cookies, fetch, parent, params }) => {
+export const load: PageServerLoad = async ({ cookies, fetch, parent, params, url }) => {
   const token = cookies.get('accessToken');
   if (token === undefined || token === '') redirect(302, '/login');
 
   const parentData = await parent();
+  assertTeamLevelAccess(parentData.orgScope, {
+    role: parentData.user?.role,
+    pathname: url.pathname,
+  });
   requireAddon(parentData.activeAddons, 'tpm');
 
   const { uuid: planUuid } = params;

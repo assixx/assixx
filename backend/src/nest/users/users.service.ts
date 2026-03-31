@@ -889,6 +889,16 @@ export class UsersService {
     return await this.getUserById(userId, tenantId);
   }
 
+  /**
+   * Get user profile by UUID — no scope check.
+   * Access is gated by @RequirePermission('user_profiles', 'user-profiles-view', 'canRead')
+   * at the controller level, so scope enforcement is not needed here.
+   */
+  async getUserProfileByUuid(uuid: string, tenantId: number): Promise<SafeUserResponse> {
+    const userId = await this.resolveUserIdByUuid(uuid, tenantId);
+    return await this.getUserById(userId, tenantId);
+  }
+
   /** Update user by UUID (wrapper for UUID-based API) */
   async updateUserByUuid(
     uuid: string,

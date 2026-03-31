@@ -91,6 +91,7 @@ export interface TeamResponse {
  */
 export interface TeamMember {
   id: number;
+  uuid: string;
   username: string;
   email: string;
   firstName: string;
@@ -131,6 +132,7 @@ export interface TeamFilters {
  */
 interface TeamMemberRow {
   id: number;
+  uuid: string;
   username: string;
   email: string;
   first_name: string | null;
@@ -153,7 +155,7 @@ const FIND_TEAM_BY_ID_QUERY = 'SELECT * FROM teams WHERE id = $1 AND tenant_id =
  * SQL query for team members with date range availability
  */
 const TEAM_MEMBERS_DATE_RANGE_QUERY = `
-  SELECT u.id, u.username, u.email, u.first_name, u.last_name, u.position, u.employee_id,
+  SELECT u.id, u.uuid, u.username, u.email, u.first_name, u.last_name, u.position, u.employee_id,
          ut.role, u.role as user_role,
          ea.status as availability_status, ea.start_date as availability_start, ea.end_date as availability_end
   FROM users u
@@ -166,7 +168,7 @@ const TEAM_MEMBERS_DATE_RANGE_QUERY = `
  * SQL query for team members with current date availability
  */
 const TEAM_MEMBERS_CURRENT_DATE_QUERY = `
-  SELECT u.id, u.username, u.email, u.first_name, u.last_name, u.position, u.employee_id,
+  SELECT u.id, u.uuid, u.username, u.email, u.first_name, u.last_name, u.position, u.employee_id,
          ut.role, u.role as user_role,
          ea.status as availability_status, ea.start_date as availability_start, ea.end_date as availability_end
   FROM users u
@@ -742,6 +744,7 @@ export class TeamsService {
 
     return members.map((member: TeamMemberRow) => ({
       id: member.id,
+      uuid: member.uuid,
       username: member.username,
       email: member.email,
       firstName: member.first_name ?? '',

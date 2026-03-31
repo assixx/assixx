@@ -696,6 +696,42 @@ describe('TpmPlansService', () => {
       const dataParams = mockDb.query.mock.calls[0]?.[1] as unknown[];
       expect(dataParams).toEqual([10, 20, 0, [3, 7]]);
     });
+
+    it('should fall back to user_teams when scope is none (non-lead employee)', async () => {
+      mockScopeService.getScope.mockResolvedValueOnce({
+        type: 'none',
+        teamIds: [],
+        areaIds: [],
+        departmentIds: [],
+      });
+      const employee: NestAuthUser = {
+        ...FULL_ACCESS_USER,
+        id: 44,
+        role: 'employee',
+        hasFullAccess: false,
+      };
+
+      // 1st db.query: user_teams fallback
+      mockDb.query.mockResolvedValueOnce([{ team_id: 10 }, { team_id: 15 }]);
+      // 2nd: count query
+      mockDb.queryOne.mockResolvedValueOnce({ count: '1' });
+      // 3rd: data query
+      mockDb.query.mockResolvedValueOnce([createPlanRow()]);
+
+      await service.listPlans(10, 1, 20, employee);
+
+      // First db.query call = user_teams fallback
+      const teamsSql = mockDb.query.mock.calls[0]?.[0] as string;
+      expect(teamsSql).toContain('user_teams');
+      expect(mockDb.query.mock.calls[0]?.[1]).toEqual([44, 10]);
+
+      // Count + data queries should use the resolved team IDs [10, 15]
+      const countParams = mockDb.queryOne.mock.calls[0]?.[1] as unknown[];
+      expect(countParams).toEqual([10, [10, 15]]);
+
+      const dataParams = mockDb.query.mock.calls[1]?.[1] as unknown[];
+      expect(dataParams).toEqual([10, 20, 0, [10, 15]]);
+    });
   });
 
   // =============================================================

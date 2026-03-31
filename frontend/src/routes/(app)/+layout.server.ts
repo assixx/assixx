@@ -25,6 +25,7 @@ const log = createLogger('AppLayout');
 /** User data from /users/me endpoint */
 interface UserData {
   id: number;
+  uuid: string;
   email: string;
   firstName?: string;
   lastName?: string;
@@ -98,6 +99,7 @@ function isPublicPath(pathname: string): boolean {
 function mapUserData(userData: UserData) {
   return {
     id: userData.id,
+    uuid: userData.uuid,
     email: userData.email,
     firstName: userData.firstName,
     lastName: userData.lastName,

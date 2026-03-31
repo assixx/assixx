@@ -2,11 +2,12 @@
  * TPM Config Page - Server-Side Data Loading
  * @module lean-management/tpm/config/+page.server
  *
- * SSR: Loads escalation config, color config, and templates in parallel.
+ * Access: Root | Admin (scoped) | Employee Team-Lead
  */
 import { redirect } from '@sveltejs/kit';
 
 import { apiFetch, apiFetchWithPermission } from '$lib/server/api-fetch';
+import { assertTeamLevelAccess } from '$lib/server/manage-page-access';
 import { requireAddon } from '$lib/utils/addon-guard';
 
 import type { PageServerLoad } from './$types';
@@ -17,13 +18,14 @@ import type {
   TpmEscalationConfig,
 } from '../_admin/types';
 
-export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
+export const load: PageServerLoad = async ({ cookies, fetch, parent, url }) => {
   const token = cookies.get('accessToken');
   if (token === undefined || token === '') {
     redirect(302, '/login');
   }
 
-  const { activeAddons } = await parent();
+  const { activeAddons, user, orgScope } = await parent();
+  assertTeamLevelAccess(orgScope, { role: user?.role, pathname: url.pathname });
   requireAddon(activeAddons, 'tpm');
 
   const escalationResult = await apiFetchWithPermission<TpmEscalationConfig>(

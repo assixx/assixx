@@ -7,6 +7,9 @@ import { DEFAULT_HIERARCHY_LABELS, type HierarchyLabels } from '$lib/types/hiera
 
 import type { OrganizationalScope } from '$lib/types/organizational-scope';
 
+// Navigation IDs used in multiple menus
+const NAV_ID_LEAN = 'lean-management';
+
 // Shared labels to avoid duplication
 const LABELS = {
   BLACKBOARD: 'Schwarzes Brett',
@@ -288,7 +291,7 @@ const ROOT_STATIC_BOTTOM: NavItem[] = [
     submenu: DOCUMENTS_SUBMENU,
   },
   {
-    id: 'lean-management',
+    id: NAV_ID_LEAN,
     icon: ICONS.lean,
     label: 'LEAN-Management',
     submenu: LEAN_ADMIN_SUBMENU,
@@ -352,7 +355,14 @@ function buildRootMenuItems(labels: HierarchyLabels): NavItem[] {
           label: labels.department,
           url: '/manage-departments',
         },
-        { id: 'teams', label: labels.team, url: '/manage-teams' },
+        {
+          id: 'teams',
+          label: labels.team,
+          submenu: [
+            { id: 'teams-manage', label: `${labels.team} verwalten`, url: '/manage-teams' },
+            { id: 'my-team', label: `Meine ${labels.team}`, url: '/my-team' },
+          ],
+        },
         { id: 'halls', label: labels.hall, url: '/manage-halls' },
         { id: 'assets', label: labels.asset, url: '/manage-assets' },
       ],
@@ -413,7 +423,7 @@ const ADMIN_STATIC_BOTTOM: NavItem[] = [
     submenu: VACATION_ADMIN_SUBMENU,
   },
   {
-    id: 'lean-management',
+    id: NAV_ID_LEAN,
     icon: ICONS.lean,
     label: 'LEAN-Management',
     submenu: LEAN_ADMIN_SUBMENU,
@@ -482,13 +492,7 @@ function buildAdminMenuItems(labels: HierarchyLabels): NavItem[] {
   ];
 }
 
-const employeeMenuItems: NavItem[] = [
-  {
-    id: 'dashboard',
-    icon: ICONS.home,
-    label: 'Dashboard',
-    url: '/employee-dashboard',
-  },
+const EMPLOYEE_MENU_STATIC: NavItem[] = [
   {
     id: 'blackboard',
     icon: ICONS.pin,
@@ -521,7 +525,7 @@ const employeeMenuItems: NavItem[] = [
     addonCode: 'vacation',
   },
   {
-    id: 'lean-management',
+    id: NAV_ID_LEAN,
     icon: ICONS.lean,
     label: 'LEAN-Management',
     submenu: [
@@ -544,11 +548,6 @@ const employeeMenuItems: NavItem[] = [
         label: 'TPM Wartung',
         addonCode: 'tpm',
         submenu: [
-          {
-            id: 'tpm-overview',
-            label: 'Übersicht',
-            url: '/lean-management/tpm',
-          },
           {
             id: 'tpm-boards',
             label: 'Boards',
@@ -602,6 +601,14 @@ const employeeMenuItems: NavItem[] = [
   },
 ];
 
+function buildEmployeeMenuItems(labels: HierarchyLabels): NavItem[] {
+  return [
+    { id: 'dashboard', icon: ICONS.home, label: 'Dashboard', url: '/employee-dashboard' },
+    { id: 'my-team', icon: ICONS.team, label: `Meine ${labels.team}`, url: '/my-team' },
+    ...EMPLOYEE_MENU_STATIC,
+  ];
+}
+
 const dummyMenuItems: NavItem[] = [
   {
     id: 'blackboard',
@@ -618,7 +625,7 @@ const dummyMenuItems: NavItem[] = [
     addonCode: 'calendar',
   },
   {
-    id: 'lean-management',
+    id: NAV_ID_LEAN,
     icon: ICONS.lean,
     label: 'LEAN-Management',
     submenu: [
@@ -646,7 +653,7 @@ export function getMenuItemsForRole(
     case 'admin':
       return buildAdminMenuItems(labels);
     case 'employee':
-      return employeeMenuItems;
+      return buildEmployeeMenuItems(labels);
     case 'dummy':
       return dummyMenuItems;
   }
@@ -709,7 +716,14 @@ function buildAdminScopeItems(labels: HierarchyLabels): NavItem[] {
   return [
     { id: 'areas', label: labels.area, url: '/manage-areas' },
     { id: 'departments', label: labels.department, url: '/manage-departments' },
-    { id: 'teams', label: labels.team, url: '/manage-teams' },
+    {
+      id: 'teams',
+      label: labels.team,
+      submenu: [
+        { id: 'teams-manage', label: `${labels.team} verwalten`, url: '/manage-teams' },
+        { id: 'my-team', label: `Meine ${labels.team}`, url: '/my-team' },
+      ],
+    },
   ];
 }
 
@@ -754,7 +768,15 @@ function injectLeadItems(items: NavItem[], labels: HierarchyLabels): NavItem[] {
   const dashboardIdx = items.findIndex((i: NavItem) => i.id === 'dashboard');
   const insertAt = dashboardIdx >= 0 ? dashboardIdx + 1 : 0;
   const leadItems: NavItem[] = [
-    { id: 'teams', icon: ICONS.team, label: labels.team, url: '/manage-teams' },
+    {
+      id: 'teams',
+      icon: ICONS.team,
+      label: labels.team,
+      submenu: [
+        { id: 'teams-manage', label: `${labels.team} verwalten`, url: '/manage-teams' },
+        { id: 'my-team', label: `Meine ${labels.team}`, url: '/my-team' },
+      ],
+    },
     {
       id: 'employees',
       icon: ICONS.users,
@@ -763,6 +785,34 @@ function injectLeadItems(items: NavItem[], labels: HierarchyLabels): NavItem[] {
     },
   ];
   return [...items.slice(0, insertAt), ...leadItems, ...items.slice(insertAt)];
+}
+
+/** Upgrade employee TPM submenu to include management overview (for leads) */
+function upgradeTpmForLead(items: NavItem[]): NavItem[] {
+  const leanIdx = items.findIndex((i: NavItem) => i.id === NAV_ID_LEAN);
+  if (leanIdx < 0) return items;
+
+  const lean = items[leanIdx];
+  const leanSub = lean.submenu ?? [];
+  const tpmIdx = leanSub.findIndex((i: NavItem) => i.id === 'tpm');
+  if (tpmIdx < 0) return items;
+
+  const tpm = leanSub[tpmIdx];
+  const tpmSub = tpm.submenu ?? [];
+
+  const managementItem: NavItem = {
+    id: 'tpm-overview',
+    label: 'Übersicht',
+    url: '/lean-management/tpm',
+  };
+
+  const updatedTpm = { ...tpm, submenu: [managementItem, ...tpmSub] };
+  const updatedLeanSub = [...leanSub];
+  updatedLeanSub[tpmIdx] = updatedTpm;
+
+  const result = [...items];
+  result[leanIdx] = { ...lean, submenu: updatedLeanSub };
+  return result;
 }
 
 /** Upgrade employee work-orders entry to include admin submenu (for leads) */
@@ -797,7 +847,8 @@ export function filterMenuByScope(
   if (role === 'employee' && orgScope.isTeamLead) {
     const withLeadItems = injectLeadItems(items, labels);
     const withWorkOrders = upgradeWorkOrdersForLead(withLeadItems);
-    return injectBeforeProfile(withWorkOrders, APPROVALS_NAV_ITEM);
+    const withTpmAdmin = upgradeTpmForLead(withWorkOrders);
+    return injectBeforeProfile(withTpmAdmin, APPROVALS_NAV_ITEM);
   }
 
   if (role === 'employee' && (orgScope.isAreaLead || orgScope.isDepartmentLead)) {

@@ -3,11 +3,12 @@
  * @module lean-management/tpm/+page.server
  *
  * SSR: Loads maintenance plans + color config + user permissions in parallel.
- * Moved from (admin) to (shared) — permission-based UI instead of role-based.
+ * Access: Root | Admin (scoped) | Employee Team-Lead
  */
 import { redirect } from '@sveltejs/kit';
 
 import { apiFetch, apiFetchWithPermission } from '$lib/server/api-fetch';
+import { assertTeamLevelAccess } from '$lib/server/manage-page-access';
 import { requireAddon } from '$lib/utils/addon-guard';
 
 import type { PageServerLoad } from './$types';
@@ -41,13 +42,14 @@ function extractPlans(raw: Record<string, unknown> | null): {
   return { plans, total };
 }
 
-export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
+export const load: PageServerLoad = async ({ cookies, fetch, parent, url }) => {
   const token = cookies.get('accessToken');
   if (token === undefined || token === '') {
     redirect(302, '/login');
   }
 
-  const { activeAddons } = await parent();
+  const { activeAddons, user, orgScope } = await parent();
+  assertTeamLevelAccess(orgScope, { role: user?.role, pathname: url.pathname });
   requireAddon(activeAddons, 'tpm');
 
   const plansResult = await apiFetchWithPermission<PaginatedResponse<TpmPlan>>(

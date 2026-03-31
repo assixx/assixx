@@ -110,7 +110,15 @@ export class TpmPlansService {
 
     const scope = await this.scopeService.getScope();
     if (scope.type === 'full') return null;
-    return scope.teamIds;
+    if (scope.type === 'limited') return scope.teamIds;
+
+    // Non-lead employees: ScopeService returns 'none' (designed for hierarchy management).
+    // Fall back to their direct team assignments so they see TPM plans for their teams.
+    const rows = await this.db.query<{ team_id: number }>(
+      'SELECT team_id FROM user_teams WHERE user_id = $1 AND tenant_id = $2',
+      [user.id, user.tenantId],
+    );
+    return rows.map((r: { team_id: number }) => r.team_id);
   }
 
   /** Get the calling user's effective TPM permissions across all modules. */

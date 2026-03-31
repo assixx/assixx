@@ -41,7 +41,9 @@ const ALL_ADDON_CODES = new Set([
   'kvp',
   'surveys',
   'shift_planning',
+  'tpm',
   'vacation',
+  'work_orders',
 ]);
 
 /** No addons active */
@@ -49,6 +51,7 @@ const NO_ADDONS = new Set<string>();
 
 /** Commonly referenced IDs — extracted to satisfy sonarjs/no-duplicate-string */
 const ID_LEAN = 'lean-management';
+const ID_TPM_OVERVIEW = 'tpm-overview';
 
 /** Helper: extract all item IDs from a (possibly nested) menu */
 function collectIds(items: NavItem[]): string[] {
@@ -353,12 +356,22 @@ describe('filterMenuByAddons: real employeeMenuItems', () => {
     expect(ids).toContain('profile');
   });
 
-  it('should remove lean-management when kvp+surveys disabled', () => {
+  it('should remove lean-management when all LEAN addons disabled (kvp+surveys+tpm)', () => {
     const addons = new Set(ALL_ADDON_CODES);
     addons.delete('kvp');
     addons.delete('surveys');
+    addons.delete('tpm');
 
     expect(collectIds(filterMenuByAddons(employeeMenuItems, addons))).not.toContain(ID_LEAN);
+  });
+
+  it('should keep lean-management when only tpm is active', () => {
+    const ids = collectIds(filterMenuByAddons(employeeMenuItems, new Set(['tpm'])));
+
+    expect(ids).toContain(ID_LEAN);
+    expect(ids).toContain('tpm');
+    expect(ids).not.toContain('kvp');
+    expect(ids).not.toContain('surveys');
   });
 
   it('should keep lean-management when only kvp is active', () => {
@@ -433,7 +446,21 @@ describe('getMenuItemsForRole', () => {
   });
 
   it('should return employeeMenuItems for employee', () => {
-    expect(getMenuItemsForRole('employee')).toBe(employeeMenuItems);
+    expect(getMenuItemsForRole('employee')).toEqual(employeeMenuItems);
+  });
+
+  it('should include my-team in employee base menu', () => {
+    const ids = collectIds(employeeMenuItems);
+    expect(ids).toContain('my-team');
+  });
+
+  it('should have teams submenu with teams-manage and my-team for root', () => {
+    const items = getMenuItemsForRole('root');
+    const teams = findById(items, 'teams');
+    expect(teams?.submenu).toBeDefined();
+    const subIds = (teams?.submenu ?? []).map((i: NavItem) => i.id);
+    expect(subIds).toContain('teams-manage');
+    expect(subIds).toContain('my-team');
   });
 
   it('should return dummyMenuItems for dummy', () => {
@@ -537,6 +564,17 @@ describe('filterMenuByScope: employee team lead', () => {
     expect(ids).toContain('employees');
   });
 
+  it('should create teams submenu with teams-manage and my-team for team lead', () => {
+    const scope = scopeWith({ isTeamLead: true, isAnyLead: true });
+    const result = filterMenuByScope(employeeMenuItems, scope, 'employee');
+    const teams = findById(result, 'teams');
+
+    expect(teams?.submenu).toBeDefined();
+    const subIds = (teams?.submenu ?? []).map((i: NavItem) => i.id);
+    expect(subIds).toContain('teams-manage');
+    expect(subIds).toContain('my-team');
+  });
+
   it('should place approvals before profile', () => {
     const scope = scopeWith({ isTeamLead: true, isAnyLead: true });
     const result = filterMenuByScope(employeeMenuItems, scope, 'employee');
@@ -596,6 +634,59 @@ describe('filterMenuByScope: employee without lead', () => {
     const result = filterMenuByScope(employeeMenuItems, DEFAULT_ORG_SCOPE, 'employee');
 
     expect(result).toBe(employeeMenuItems);
+  });
+
+  it('should NOT have tpm-overview in base employee menu', () => {
+    expect(collectIds(employeeMenuItems)).not.toContain(ID_TPM_OVERVIEW);
+  });
+
+  it('should have tpm-boards in base employee menu', () => {
+    expect(collectIds(employeeMenuItems)).toContain('tpm-boards');
+  });
+});
+
+// =============================================================================
+// filterMenuByScope — TPM MANAGEMENT ACCESS
+// =============================================================================
+
+describe('filterMenuByScope: TPM management for team lead', () => {
+  const teamLeadScope = scopeWith({ isTeamLead: true, isAnyLead: true });
+
+  it('should inject tpm-overview for team lead', () => {
+    const result = filterMenuByScope(employeeMenuItems, teamLeadScope, 'employee');
+
+    expect(collectIds(result)).toContain(ID_TPM_OVERVIEW);
+  });
+
+  it('should place tpm-overview before tpm-boards', () => {
+    const result = filterMenuByScope(employeeMenuItems, teamLeadScope, 'employee');
+    const tpm = findById(result, 'tpm');
+    const subIds = (tpm?.submenu ?? []).map((i: NavItem) => i.id);
+
+    expect(subIds).toEqual([ID_TPM_OVERVIEW, 'tpm-boards']);
+  });
+
+  it('should set correct URL for tpm-overview', () => {
+    const result = filterMenuByScope(employeeMenuItems, teamLeadScope, 'employee');
+    const tpmOverview = findById(result, ID_TPM_OVERVIEW);
+
+    expect(tpmOverview?.url).toBe('/lean-management/tpm');
+  });
+});
+
+describe('filterMenuByScope: TPM management for area/dept lead (non-team-lead)', () => {
+  it('should NOT inject tpm-overview for area lead', () => {
+    const scope = scopeWith({ isAreaLead: true, isAnyLead: true });
+    const result = filterMenuByScope(employeeMenuItems, scope, 'employee');
+
+    expect(collectIds(result)).not.toContain(ID_TPM_OVERVIEW);
+  });
+
+  it('should NOT inject tpm-overview for department lead', () => {
+    const scope = scopeWith({ isDepartmentLead: true, isAnyLead: true });
+    const result = filterMenuByScope(employeeMenuItems, scope, 'employee');
+
+    expect(collectIds(result)).not.toContain(ID_TPM_OVERVIEW);
   });
 });
 
