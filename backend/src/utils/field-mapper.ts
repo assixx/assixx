@@ -9,10 +9,20 @@
  * - Date handling: Date objects to ISO string
  * - Null-safe values: null stays null
  */
-import lodash from 'lodash';
+/** Convert snake_case to camelCase (e.g. "first_name" → "firstName") */
+function camelCase(str: string): string {
+  return str
+    .split('_')
+    .map((word: string, i: number) =>
+      i === 0 ? word.toLowerCase() : word.charAt(0).toUpperCase() + word.slice(1).toLowerCase(),
+    )
+    .join('');
+}
 
-const camelCase = (str: string): string => lodash.camelCase(str);
-const snakeCase = (str: string): string => lodash.snakeCase(str);
+/** Convert camelCase to snake_case (e.g. "firstName" → "first_name") */
+function snakeCase(str: string): string {
+  return str.replace(/[A-Z]/g, (letter: string) => `_${letter.toLowerCase()}`).replace(/^_/, '');
+}
 
 /**
  * Check if a DB key should be converted to boolean.
