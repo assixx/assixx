@@ -9,9 +9,12 @@
  * - TpmLocationsModule — self-contained location management (controller + service)
  * - TpmConfigServicesModule — pure config services (color, templates, time estimates)
  */
+/* eslint-disable import-x/max-dependencies -- NestJS feature module: 18 services + 4 sub-modules; NestJS DI requires explicit imports */
 import { Module } from '@nestjs/common';
 
 import { AddonCheckModule } from '../addon-check/addon-check.module.js';
+import { ApprovalsModule } from '../approvals/approvals.module.js';
+import { ScopeModule } from '../hierarchy-permission/scope.module.js';
 import { TpmApprovalService } from './tpm-approval.service.js';
 import { TpmCardCascadeService } from './tpm-card-cascade.service.js';
 import { TpmCardDuplicateService } from './tpm-card-duplicate.service.js';
@@ -21,6 +24,7 @@ import { TpmCardsService } from './tpm-cards.service.js';
 import { TpmConfigServicesModule } from './tpm-config-services.module.js';
 import { TpmConfigController } from './tpm-config.controller.js';
 import { TpmDashboardService } from './tpm-dashboard.service.js';
+import { TpmDefectStatsService } from './tpm-defect-stats.service.js';
 import { TpmDueDateCronService } from './tpm-due-date-cron.service.js';
 import { TpmEscalationService } from './tpm-escalation.service.js';
 import { TpmExecutionsController } from './tpm-executions.controller.js';
@@ -28,6 +32,8 @@ import { TpmExecutionsService } from './tpm-executions.service.js';
 import { TpmLocationsModule } from './tpm-locations.module.js';
 import { TpmNotificationService } from './tpm-notification.service.js';
 import { TpmPermissionRegistrar } from './tpm-permission.registrar.js';
+import { TpmPlanApprovalService } from './tpm-plan-approval.service.js';
+import { TpmPlanRevisionsService } from './tpm-plan-revisions.service.js';
 import { TpmPlansIntervalService } from './tpm-plans-interval.service.js';
 import { TpmPlansController } from './tpm-plans.controller.js';
 import { TpmPlansService } from './tpm-plans.service.js';
@@ -37,7 +43,13 @@ import { TpmShiftAssignmentsService } from './tpm-shift-assignments.service.js';
 import { TpmSlotAssistantService } from './tpm-slot-assistant.service.js';
 
 @Module({
-  imports: [AddonCheckModule, TpmLocationsModule, TpmConfigServicesModule],
+  imports: [
+    AddonCheckModule,
+    ApprovalsModule,
+    ScopeModule,
+    TpmLocationsModule,
+    TpmConfigServicesModule,
+  ],
   controllers: [
     TpmPlansController,
     TpmCardsController,
@@ -51,6 +63,8 @@ import { TpmSlotAssistantService } from './tpm-slot-assistant.service.js';
     // Plan management (Session 6)
     TpmPlansService,
     TpmPlansIntervalService,
+    TpmPlanRevisionsService,
+    TpmPlanApprovalService,
 
     // Card services (Session 8)
     TpmCardsService,
@@ -81,6 +95,9 @@ import { TpmSlotAssistantService } from './tpm-slot-assistant.service.js';
     TpmSchedulingService,
     TpmDueDateCronService,
 
+    // Defect statistics (Mängelgrafik)
+    TpmDefectStatsService,
+
     // Dashboard count (Session 14)
     TpmDashboardService,
   ],
@@ -92,6 +109,7 @@ import { TpmSlotAssistantService } from './tpm-slot-assistant.service.js';
     // Services from this module
     TpmPlansService,
     TpmPlansIntervalService,
+    TpmPlanApprovalService,
     TpmCardsService,
     TpmCardStatusService,
     TpmCardCascadeService,

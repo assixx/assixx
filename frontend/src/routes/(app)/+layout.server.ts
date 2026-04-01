@@ -25,6 +25,7 @@ const log = createLogger('AppLayout');
 /** User data from /users/me endpoint */
 interface UserData {
   id: number;
+  uuid: string;
   email: string;
   firstName?: string;
   lastName?: string;
@@ -42,6 +43,13 @@ interface UserData {
   teamDepartmentName?: string | null;
   teamAreaId?: number | null;
   teamAreaName?: string | null;
+  // Lead/Deputy names per org level (from primary team's chain)
+  teamLeadName?: string | null;
+  teamDeputyLeadName?: string | null;
+  departmentLeadName?: string | null;
+  departmentDeputyLeadName?: string | null;
+  areaLeadName?: string | null;
+  areaDeputyLeadName?: string | null;
 }
 
 /** Tenant data included in user response */
@@ -91,6 +99,7 @@ function isPublicPath(pathname: string): boolean {
 function mapUserData(userData: UserData) {
   return {
     id: userData.id,
+    uuid: userData.uuid,
     email: userData.email,
     firstName: userData.firstName,
     lastName: userData.lastName,
@@ -106,6 +115,12 @@ function mapUserData(userData: UserData) {
     teamDepartmentName: userData.teamDepartmentName,
     teamAreaId: userData.teamAreaId,
     teamAreaName: userData.teamAreaName,
+    teamLeadName: userData.teamLeadName,
+    teamDeputyLeadName: userData.teamDeputyLeadName,
+    departmentLeadName: userData.departmentLeadName,
+    departmentDeputyLeadName: userData.departmentDeputyLeadName,
+    areaLeadName: userData.areaLeadName,
+    areaDeputyLeadName: userData.areaDeputyLeadName,
   };
 }
 

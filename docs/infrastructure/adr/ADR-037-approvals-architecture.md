@@ -484,6 +484,56 @@ Status-Lifecycle: pending → approved/rejected/revision_requested → resubmitt
 
 ---
 
+## Amendment: Addon Integration Status (2026-03-29)
+
+### Implemented Integrations
+
+Two addons are fully integrated with the centralized Approvals system. Their bridge services serve as reference implementations for future addon integrations.
+
+| Addon | Bridge Service           | Masterplan                                                                                       | addon_code | source_entity_type | Status Sync                          | Version Coupling                        |
+| ----- | ------------------------ | ------------------------------------------------------------------------------------------------ | ---------- | ------------------ | ------------------------------------ | --------------------------------------- |
+| KVP   | `KvpApprovalService`     | [FEAT_KVP_APPROVAL_INTEGRATION_MASTERPLAN.md](../../FEAT_KVP_APPROVAL_INTEGRATION_MASTERPLAN.md) | `kvp`      | `kvp_suggestion`   | Yes (approved/rejected → KVP status) | No                                      |
+| TPM   | `TpmPlanApprovalService` | [FEAT_TPM_PLAN_APPROVAL_MASTERPLAN.md](../../FEAT_TPM_PLAN_APPROVAL_MASTERPLAN.md)               | `tpm`      | `tpm_plan`         | No (informational only)              | Yes (`approval_version.revision_minor`) |
+
+### Bridge Service Pattern (Reference for Future Addons)
+
+Every addon integration follows the same pattern:
+
+1. **Bridge Service** (`{addon}-approval.service.ts`) — Injectable NestJS service that:
+   - Creates approval requests via `ApprovalsService.create()`
+   - Subscribes to `approval.decided` events on the EventBus
+   - Handles addon-specific side effects on approve/reject
+   - Implements startup reconciliation for missed events (onModuleInit)
+
+2. **Module Registration** — Import `ApprovalsModule` in the addon's module, register bridge service
+
+3. **Controller Integration** — Fire-and-forget approval calls after CRUD operations
+
+4. **Frontend** — Add addon to `APPROVABLE_ADDONS` (settings), `ADDON_FILTER_OPTIONS` + `ADDON_BADGE` + `resolveSourceUrl()` (manage-approvals)
+
+### Key Findings from Implementation
+
+**Self-Approval Prevention (C1):** `ApprovalsService.reject()` blocks `requested_by === decidedBy`. This means a user who creates/edits an entity CANNOT auto-reject their own pending approval. Supersede patterns (auto-rejecting old approvals on edit) are NOT possible for same-user workflows. TPM solves this with the "no-supersede" pattern: edits with an existing pending approval reuse it instead of creating a new one.
+
+**Event Payload (D7):** The `approval.decided` EventBus payload contains `approval.uuid` and `approval.addonCode` but does NOT contain `sourceUuid` or `sourceEntityType`. Bridge services must query the `approvals` table to resolve `source_uuid` before acting on the decision.
+
+**Config Gate (D6):** If no approval master is configured for an addon (`approval_configs` has no rows), the bridge service should skip approval creation entirely. Otherwise orphaned approvals accumulate that nobody can decide.
+
+### KVP-specific Patterns
+
+- **Status Sync:** KVP suggestions track their own status (`in_review`, `approved`, `rejected`). The bridge service syncs this when an approval decision is made.
+- **Notification Bridge:** Creates persistent notifications + SSE events for both request and decision.
+- **No Supersede:** KVP prevents new approvals while one is pending (different approach from TPM, same result).
+
+### TPM-specific Patterns
+
+- **Informational Only (D1):** Approval status is documentary (ISO 9001). Plans remain fully operational regardless of pending/rejected status.
+- **Version Coupling (D2):** Two new columns (`approval_version`, `revision_minor`) create a major.minor scheme where major = approval count, minor = draft edits since last approval. `revision_number` (total edit count) is unchanged.
+- **No Supersede (D3):** Edits with an existing pending approval only bump `revision_minor`. The master reviews the latest plan state when deciding.
+- **Asset Name Resolution:** `RETURNING *` after UPDATE doesn't include JOIN columns. The bridge service resolves the asset name via DB lookup when it's missing.
+
+---
+
 ## References
 
 - [ADR-009: User Role Assignment & Permissions](./ADR-009-user-role-assignment-permissions.md) — Org-Hierarchie, Lead-Positionen, Zugangs-Matrix
@@ -493,3 +543,5 @@ Status-Lifecycle: pending → approved/rejected/revision_requested → resubmitt
 - [ADR-033: Addon-basiertes SaaS-Modell](./ADR-033-addon-based-saas-model.md) — Core-Addon Definition
 - [ADR-035: Organizational Hierarchy & Assignment Architecture](./ADR-035-organizational-hierarchy-and-assignment-architecture.md) — Lead-Positionen für dynamische Approver-Auflösung
 - [ADR-038: Position Catalog Architecture](./ADR-038-position-catalog-architecture.md) — Position-basierte Approval Masters
+- [FEAT_KVP_APPROVAL_INTEGRATION_MASTERPLAN.md](../../FEAT_KVP_APPROVAL_INTEGRATION_MASTERPLAN.md) — KVP Approval Bridge implementation details
+- [FEAT_TPM_PLAN_APPROVAL_MASTERPLAN.md](../../FEAT_TPM_PLAN_APPROVAL_MASTERPLAN.md) — TPM Plan Approval Bridge implementation details

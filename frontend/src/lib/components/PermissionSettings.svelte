@@ -65,8 +65,8 @@
   interface Props {
     /** Employee/Admin/Root user data */
     employee: Employee | null;
-    /** Permission categories from API */
-    permissionData: PermissionCategory[];
+    /** Permission categories from API (undefined during SvelteKit route transitions) */
+    permissionData?: PermissionCategory[];
     /** Error message from SSR load */
     error: string | null;
     /** URL to navigate back to */
@@ -97,12 +97,13 @@
   // =============================================================================
 
   // Intentional one-time clone: user edits this mutable copy, SSR data must NOT reset it
+  // Guard: permissionData can be undefined during SvelteKit route transitions (invalidateAll)
   // svelte-ignore state_referenced_locally
-  const categories = $state(structuredClone(permissionData));
+  const categories = $state(structuredClone(permissionData ?? []));
 
   // Snapshot of last-saved state for unsaved-changes detection (avoids mutating props)
   // svelte-ignore state_referenced_locally
-  let savedSnapshot = $state(structuredClone(permissionData));
+  let savedSnapshot = $state(structuredClone(permissionData ?? []));
 
   let isSaving = $state(false);
 

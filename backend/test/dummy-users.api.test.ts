@@ -286,6 +286,20 @@ describe('Dummy Users: Login & Access', () => {
     expect(res.status).toBe(403);
   });
 
+  it('should deny dummy POST /calendar/events (canWrite=false)', async () => {
+    const res = await fetch(`${BASE_URL}/calendar/events`, {
+      method: 'POST',
+      headers: authHeaders(accessDummyAuth.authToken),
+      body: JSON.stringify({
+        title: 'Dummy should not create events',
+        startTime: '2026-04-01T09:00:00',
+        endTime: '2026-04-01T10:00:00',
+        orgLevel: 'personal',
+      }),
+    });
+    expect(res.status).toBe(403);
+  });
+
   it('should deny dummy GET /chat/conversations (no chat permission)', async () => {
     const res = await fetch(`${BASE_URL}/chat/conversations`, {
       headers: authOnly(accessDummyAuth.authToken),

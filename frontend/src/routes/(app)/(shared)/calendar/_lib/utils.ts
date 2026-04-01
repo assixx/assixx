@@ -59,7 +59,7 @@ export function getEventLevelText(
     case 'area':
       return `${labels.area}-Termin`;
     default:
-      return 'Persoenlicher Termin';
+      return 'Persönlicher Termin';
   }
 }
 

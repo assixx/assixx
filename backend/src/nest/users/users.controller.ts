@@ -164,6 +164,16 @@ export class UsersController {
     return await this.usersService.getUserByUuid(uuid, tenantId);
   }
 
+  /** GET /users/profile/:uuid - View user profile (requires user_profiles permission, no scope check) */
+  @Get('profile/:uuid')
+  @RequirePermission('user_profiles', 'user-profiles-view', 'canRead')
+  async getUserProfile(
+    @Param('uuid') uuid: string,
+    @TenantId() tenantId: number,
+  ): Promise<SafeUserResponse> {
+    return await this.usersService.getUserProfileByUuid(uuid, tenantId);
+  }
+
   /**
    * GET /users/:id
    * Get user by ID (admin only)

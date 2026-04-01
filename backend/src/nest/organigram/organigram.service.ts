@@ -63,6 +63,11 @@ interface TeamHallRow {
   hall_uuid: string;
 }
 
+interface AssetTeamRow {
+  asset_uuid: string;
+  team_uuid: string;
+}
+
 // ---- Node Detail Row Types ----
 
 interface AreaDetailRow {
@@ -140,6 +145,7 @@ export class OrganigramService {
       positions,
       deptHallRows,
       teamHallRows,
+      assetTeamRows,
     ] = await Promise.all([
       this.fetchTenantInfo(tenantId),
       this.settings.getHierarchyLabels(tenantId),
@@ -155,12 +161,13 @@ export class OrganigramService {
       this.layout.getPositions(tenantId),
       this.fetchDepartmentHalls(tenantId),
       this.fetchTeamHalls(tenantId),
+      this.fetchAssetTeams(tenantId),
     ]);
 
     const orgHalls = this.mapHallRows(halls);
     const departmentHallMap = this.buildUuidHallMap(deptHallRows, 'department_uuid');
     const teamHallMap = this.buildUuidHallMap(teamHallRows, 'team_uuid');
-    const nodes = this.buildTree(areas, departments, teams, assets, positions);
+    const nodes = this.buildTree(areas, departments, teams, assets, assetTeamRows, positions);
 
     return {
       companyName: tenant.company_name,
@@ -296,6 +303,20 @@ export class OrganigramService {
     );
   }
 
+  private async fetchAssetTeams(tenantId: number): Promise<AssetTeamRow[]> {
+    return await this.db.query<AssetTeamRow>(
+      `SELECT ast.uuid AS asset_uuid, t.uuid AS team_uuid
+       FROM asset_teams at2
+       JOIN assets ast ON at2.asset_id = ast.id
+       JOIN teams t ON at2.team_id = t.id
+       WHERE at2.tenant_id = $1
+         AND ast.is_active = 1
+         AND t.is_active = 1
+       ORDER BY ast.name, t.name`,
+      [tenantId],
+    );
+  }
+
   private async fetchHalls(tenantId: number): Promise<HallRow[]> {
     return await this.db.query<HallRow>(
       `SELECT h.name, h.uuid AS hall_uuid, a.uuid AS area_uuid
@@ -312,6 +333,7 @@ export class OrganigramService {
     departments: DepartmentRow[],
     teams: TeamRow[],
     assets: AssetRow[],
+    assetTeamRows: AssetTeamRow[],
     positions: OrgChartPosition[],
   ): OrgChartNode[] {
     const posMap = this.buildPositionMap(positions);
@@ -324,8 +346,8 @@ export class OrganigramService {
     topLevel.push(...areaNodes);
 
     const deptMap = this.attachDepartments(departments, areaMap, posMap, topLevel);
-    this.attachTeams(teams, deptMap, posMap, topLevel);
-    this.attachAssets(assets, areaMap, deptMap, posMap, topLevel);
+    const teamMap = this.attachTeams(teams, deptMap, posMap, topLevel);
+    this.attachAssets(assets, assetTeamRows, teamMap, areaMap, deptMap, posMap, topLevel);
 
     return topLevel;
   }
@@ -361,9 +383,12 @@ export class OrganigramService {
     deptMap: Map<string, OrgChartNode>,
     posMap: Map<string, OrgChartPosition>,
     topLevel: OrgChartNode[],
-  ): void {
+  ): Map<string, OrgChartNode> {
+    const teamMap = new Map<string, OrgChartNode>();
+
     for (const t of teams) {
       const node = this.toNode('team', t.uuid, t.name, posMap, t.lead_name, t.member_count);
+      teamMap.set(node.entityUuid, node);
 
       if (t.department_uuid !== null) {
         const parent = deptMap.get(t.department_uuid.trim());
@@ -374,28 +399,65 @@ export class OrganigramService {
       }
       topLevel.push(node);
     }
+
+    return teamMap;
   }
 
   private attachAssets(
     assets: AssetRow[],
+    assetTeamRows: AssetTeamRow[],
+    teamMap: Map<string, OrgChartNode>,
     areaMap: Map<string, OrgChartNode>,
     deptMap: Map<string, OrgChartNode>,
     posMap: Map<string, OrgChartPosition>,
     topLevel: OrgChartNode[],
   ): void {
-    for (const a of assets) {
-      const node = this.toNode('asset', a.uuid, a.name, posMap);
-      const parent = this.findAssetParent(a, deptMap, areaMap);
+    const assetTeamMap = this.buildAssetTeamMap(assetTeamRows);
 
-      if (parent !== undefined) {
-        parent.assets.push(node);
-      } else {
-        topLevel.push(node);
+    for (const a of assets) {
+      const teamUuids = assetTeamMap.get(a.uuid.trim());
+
+      if (teamUuids !== undefined) {
+        this.attachAssetToTeams(a, teamUuids, teamMap, posMap);
+        continue;
       }
+
+      // No team assignment → fallback: department → area → top-level
+      const node = this.toNode('asset', a.uuid, a.name, posMap);
+      const parent = this.findFallbackParent(a, deptMap, areaMap);
+      (parent?.assets ?? topLevel).push(node);
     }
   }
 
-  private findAssetParent(
+  private attachAssetToTeams(
+    asset: AssetRow,
+    teamUuids: string[],
+    teamMap: Map<string, OrgChartNode>,
+    posMap: Map<string, OrgChartPosition>,
+  ): void {
+    for (const teamUuid of teamUuids) {
+      const teamNode = teamMap.get(teamUuid);
+      if (teamNode === undefined) continue;
+      teamNode.assets.push(this.toNode('asset', asset.uuid, asset.name, posMap));
+    }
+  }
+
+  private buildAssetTeamMap(rows: AssetTeamRow[]): Map<string, string[]> {
+    const map = new Map<string, string[]>();
+    for (const row of rows) {
+      const assetUuid = row.asset_uuid.trim();
+      const teamUuid = row.team_uuid.trim();
+      const existing = map.get(assetUuid);
+      if (existing !== undefined) {
+        existing.push(teamUuid);
+      } else {
+        map.set(assetUuid, [teamUuid]);
+      }
+    }
+    return map;
+  }
+
+  private findFallbackParent(
     asset: AssetRow,
     deptMap: Map<string, OrgChartNode>,
     areaMap: Map<string, OrgChartNode>,

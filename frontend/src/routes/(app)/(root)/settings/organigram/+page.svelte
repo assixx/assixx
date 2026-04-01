@@ -8,6 +8,8 @@
   import { showSuccessAlert, showErrorAlert } from '$lib/stores/toast';
   import { createLogger } from '$lib/utils/logger.js';
 
+  import ConfirmModal from '$design-system/components/confirm-modal/ConfirmModal.svelte';
+
   import { fetchNodeDetails, savePositions } from './_lib/api.js';
   import NodeDetailModal from './_lib/NodeDetailModal.svelte';
   import OrgCanvas from './_lib/OrgCanvas.svelte';
@@ -31,6 +33,7 @@
     initFromTree,
     markSaved,
     recomputeAutoLayout,
+    resetToDefaults,
     resetToSaved,
     resetView,
     setCanvasBg,
@@ -104,6 +107,13 @@
       initFromTree(tree);
     });
   });
+
+  let showResetConfirm = $state(false);
+
+  function confirmResetDefaults(): void {
+    resetToDefaults();
+    showResetConfirm = false;
+  }
 
   async function handleSavePositions(): Promise<void> {
     setSaving(true);
@@ -256,6 +266,19 @@
         <OrgCanvas ondblclicknode={handleNodeDblClick} />
       {/if}
     </div>
+
+    <button
+      type="button"
+      class="btn btn-danger"
+      style="align-self: flex-end"
+      title="Alles auf Werkseinstellungen zurücksetzen"
+      onclick={() => {
+        showResetConfirm = true;
+      }}
+    >
+      <i class="fas fa-trash-restore"></i>
+      Werksreset
+    </button>
   </div>
 </div>
 
@@ -267,6 +290,21 @@
   {labels}
   onclose={closeDetail}
 />
+
+<ConfirmModal
+  show={showResetConfirm}
+  title="Werksreset"
+  variant="warning"
+  icon="fa-exclamation-triangle"
+  confirmLabel="Zurücksetzen"
+  onconfirm={confirmResetDefaults}
+  oncancel={() => {
+    showResetConfirm = false;
+  }}
+>
+  Alle Positionen, Zoom, Schriftgröße, Knotengrößen und Hintergrundfarbe werden auf
+  Werkseinstellungen zurückgesetzt. Ungespeicherte Änderungen gehen verloren.
+</ConfirmModal>
 
 <style>
   .organigramm-page {

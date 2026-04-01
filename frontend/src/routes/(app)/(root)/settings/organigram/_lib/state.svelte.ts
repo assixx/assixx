@@ -357,9 +357,8 @@ function layoutNode(
   node: OrgChartNode,
   depth: number,
 ): { left: number; right: number } {
-  const headerOffset = node.entityType === 'area' ? LAYOUT.AREA_HEADER_HEIGHT : 0;
   const pad = LAYOUT.CANVAS_PADDING;
-  const y = pad + headerOffset + depth * (nodeHeight + LAYOUT.VERTICAL_GAP);
+  const y = pad + LAYOUT.AREA_HEADER_HEIGHT + depth * (nodeHeight + LAYOUT.VERTICAL_GAP);
   const key = makeCtxKey(ctx, node.entityType, node.entityUuid);
   const allChildren = [...node.children, ...node.assets];
 
@@ -473,15 +472,13 @@ function layoutHallGroups(
 ): { primaryLeft: number; primaryRight: number } {
   let primaryLeft = Infinity;
   let primaryRight = -Infinity;
-  let isFirst = true;
+  let hasPrimary = false;
 
   for (const [hallUuid, depts] of groups) {
-    // Primary hall with no departments: skip (area node placed later)
-    if (depts.length === 0 && isFirst) {
-      isFirst = false;
-      continue;
-    }
-    if (!isFirst) ctx.nextLeafX += LAYOUT.HORIZONTAL_GAP * 2;
+    // Empty hall before any primary is chosen: skip, don't consume the primary slot
+    if (depts.length === 0 && !hasPrimary) continue;
+
+    if (hasPrimary) ctx.nextLeafX += LAYOUT.HORIZONTAL_GAP * 2;
 
     // Secondary hall with no departments: create standalone ghost area node
     if (depts.length === 0) {
@@ -500,13 +497,14 @@ function layoutHallGroups(
       continue;
     }
 
-    const extents = layoutSingleHallGroup(ctx, hallUuid, depts, isFirst, areaNode);
+    const isPrimary = !hasPrimary;
+    const extents = layoutSingleHallGroup(ctx, hallUuid, depts, isPrimary, areaNode);
 
-    if (isFirst) {
+    if (isPrimary) {
       primaryLeft = extents.left;
       primaryRight = extents.right;
+      hasPrimary = true;
     }
-    isFirst = false;
   }
 
   ctx.keySuffix = '';
@@ -742,6 +740,22 @@ export function recomputeAutoLayout(): void {
   nodePositions = autoPositions;
   hallOverrides = {};
   hallConnectionAnchors = {};
+  dirty = true;
+}
+
+/** Alles auf Werkseinstellungen: Positionen, Viewport, Größen, Farbe */
+export function resetToDefaults(): void {
+  nodeWidth = LAYOUT.NODE_WIDTH;
+  nodeHeight = LAYOUT.NODE_HEIGHT;
+  const autoPositions = computeAutoLayout(tree.nodes);
+  nodePositions = autoPositions;
+  hallOverrides = {};
+  hallConnectionAnchors = {};
+  zoom = 1;
+  panX = 0;
+  panY = 0;
+  fontSize = 13;
+  canvasBg = null;
   dirty = true;
 }
 

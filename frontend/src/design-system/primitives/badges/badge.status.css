@@ -91,6 +91,17 @@
   background: oklch(32.36% 0.0094 250.49 / 20%);
 }
 
+:is(html.dark) .badge--dark {
+  border-color: oklch(60% 0.01 250 / 30%);
+  background: oklch(60% 0.01 250 / 12%);
+  color: oklch(75% 0.01 250);
+}
+
+:is(html.dark) .badge--dark:hover {
+  border-color: oklch(60% 0.01 250 / 40%);
+  background: oklch(60% 0.01 250 / 20%);
+}
+
 /* ========== Machine Availability Status Badges ========== */
 /* Colors match legend/indicator colors across shifts + vacation overview */
 

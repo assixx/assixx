@@ -495,8 +495,8 @@
           y={hall.y}
           width={hall.width}
           height={hall.height}
-          rx="12"
-          ry="12"
+          rx="10"
+          ry="10 "
           fill="none"
           stroke="var(--org-connection-stroke, #000)"
           stroke-width="1.65"

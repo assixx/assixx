@@ -17,6 +17,8 @@ const ICON_SHIELD = 'fa-shield-alt';
 const ICON_TOOLS = 'fa-tools';
 const TPM_OVERVIEW_PATH = '/lean-management/tpm/overview';
 const TPM_OVERVIEW_LABEL = 'TPM Übersicht';
+const TPM_MAINTENANCE_LABEL = 'TPM Wartung';
+const TPM_MAINTENANCE_PATH = '/lean-management/tpm';
 
 const FULLSCREEN_PAGES: string[] = ['/chat'];
 
@@ -124,14 +126,34 @@ const dynamicRoutes: DynamicRoute[] = [
     icon: 'fa-exclamation-triangle',
   },
   {
+    pattern: /^\/lean-management\/tpm\/board\/[^/]+\/defects$/,
+    label: 'Gesamtmängelliste',
+    icon: 'fa-exclamation-triangle',
+  },
+  {
+    pattern: /^\/lean-management\/tpm\/board\/[^/]+\/defect-chart$/,
+    label: 'Mängelgrafik',
+    icon: 'fa-chart-line',
+  },
+  {
     pattern: /^\/lean-management\/tpm\/locations\/[^/]+$/,
     label: 'Standorte',
     icon: 'fa-map-marker-alt',
   },
   {
+    pattern: /^\/lean-management\/tpm\/plan\/[^/]+\/revisions$/,
+    label: 'Versionshistorie',
+    icon: 'fa-history',
+  },
+  {
     pattern: /^\/work-orders\/[0-9a-f-]+$/,
     label: 'Auftragsdetail',
     icon: ICON_INFO,
+  },
+  {
+    pattern: /^\/user\/[^/]+$/,
+    label: 'Benutzerprofil',
+    icon: 'fa-id-card',
   },
 ];
 
@@ -227,7 +249,7 @@ const staticUrlMappings: Partial<Record<string, RouteMapping>> = {
   '/vacation/holidays': { label: 'Feiertage', icon: 'fa-calendar-day' },
   '/vacation/overview': { label: 'Urlaubsübersicht', icon: ICON_CALENDAR },
   '/logs': { label: 'Logs', icon: 'fa-list-alt' },
-  '/lean-management/tpm': { label: 'TPM Wartung', icon: ICON_TOOLS },
+  '/lean-management/tpm': { label: TPM_MAINTENANCE_LABEL, icon: ICON_TOOLS },
   '/lean-management/tpm/config': { label: 'TPM Konfiguration', icon: 'fa-cog' },
   '/lean-management/tpm/overview': {
     label: TPM_OVERVIEW_LABEL,
@@ -294,14 +316,20 @@ const staticDynamicIntermediates: DynamicIntermediate[] = [
   },
   {
     pattern: /^\/lean-management\/tpm\/plan\/[^/]+$/,
-    label: 'TPM Wartung',
-    href: '/lean-management/tpm',
+    label: TPM_MAINTENANCE_LABEL,
+    href: TPM_MAINTENANCE_PATH,
     icon: ICON_TOOLS,
   },
   {
     pattern: /^\/lean-management\/tpm\/cards\/[^/]+$/,
-    label: 'TPM Wartung',
-    href: '/lean-management/tpm',
+    label: TPM_MAINTENANCE_LABEL,
+    href: TPM_MAINTENANCE_PATH,
+    icon: ICON_TOOLS,
+  },
+  {
+    pattern: /^\/lean-management\/tpm\/plan\/[^/]+\/revisions$/,
+    label: TPM_MAINTENANCE_LABEL,
+    href: TPM_MAINTENANCE_PATH,
     icon: ICON_TOOLS,
   },
   {
@@ -326,6 +354,18 @@ const staticDynamicIntermediates: DynamicIntermediate[] = [
     pattern: /^\/lean-management\/tpm\/card\/[^/]+\/defects$/,
     label: TPM_OVERVIEW_LABEL,
     href: TPM_OVERVIEW_PATH,
+    icon: ICON_TOOLS,
+  },
+  {
+    pattern: /^\/lean-management\/tpm\/board\/[^/]+\/defects$/,
+    label: TPM_MAINTENANCE_LABEL,
+    href: TPM_MAINTENANCE_PATH,
+    icon: ICON_TOOLS,
+  },
+  {
+    pattern: /^\/lean-management\/tpm\/board\/[^/]+\/defect-chart$/,
+    label: TPM_MAINTENANCE_LABEL,
+    href: TPM_MAINTENANCE_PATH,
     icon: ICON_TOOLS,
   },
   {
@@ -360,6 +400,7 @@ function buildUrlMappings(labels: HierarchyLabels): Partial<Record<string, Route
     },
     '/manage-teams': { label: `${labels.team} verwalten`, icon: 'fa-users' },
     '/manage-assets': { label: `${labels.asset} verwalten`, icon: 'fa-cogs' },
+    '/my-team': { label: `Meine ${labels.team}`, icon: 'fa-user-friends' },
   };
 }
 
@@ -371,6 +412,12 @@ function buildDynamicIntermediateBreadcrumbs(labels: HierarchyLabels): DynamicIn
       label: `${labels.asset} verwalten`,
       href: '/manage-assets',
       icon: 'fa-cogs',
+    },
+    {
+      pattern: /^\/user\/[^/]+$/,
+      label: `Meine ${labels.team}`,
+      href: '/my-team',
+      icon: 'fa-user-friends',
     },
   ];
 }

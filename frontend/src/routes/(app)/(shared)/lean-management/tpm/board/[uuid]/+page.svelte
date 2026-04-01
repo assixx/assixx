@@ -96,8 +96,8 @@
   <PermissionDenied addonName="das TPM-System" />
 {:else}
   <div class="container">
-    <!-- Back Navigation -->
-    <div class="mb-4">
+    <!-- Back + Actions -->
+    <div class="mb-4 flex items-center justify-between">
       <button
         type="button"
         class="btn btn-light"
@@ -108,6 +108,28 @@
         <i class="fas fa-arrow-left mr-2"></i>
         {MESSAGES.BTN_BACK_TO_OVERVIEW}
       </button>
+      <div class="flex items-center gap-2">
+        <button
+          type="button"
+          class="btn btn-secondary"
+          onclick={() => {
+            void goto(resolve(`/lean-management/tpm/locations/${data.planUuid}`));
+          }}
+        >
+          <i class="fas fa-map-marker-alt mr-2"></i>{MESSAGES.BTN_LOCATIONS}
+        </button>
+        {#if canWrite}
+          <button
+            type="button"
+            class="btn btn-secondary"
+            onclick={() => {
+              void goto(resolve(`/lean-management/tpm/cards/${data.planUuid}`));
+            }}
+          >
+            <i class="fas fa-th mr-2"></i>{MESSAGES.BTN_MANAGE_CARDS}
+          </button>
+        {/if}
+      </div>
     </div>
 
     <!-- Page Header -->
@@ -144,26 +166,6 @@
                 <i class="fas fa-check-circle"></i>
                 Alles erledigt
               </span>
-            {/if}
-            <button
-              type="button"
-              class="btn btn-primary"
-              onclick={() => {
-                void goto(resolve(`/lean-management/tpm/locations/${data.planUuid}`));
-              }}
-            >
-              <i class="fas fa-map-marker-alt mr-2"></i>{MESSAGES.BTN_LOCATIONS}
-            </button>
-            {#if canWrite}
-              <button
-                type="button"
-                class="btn btn-primary"
-                onclick={() => {
-                  void goto(resolve(`/lean-management/tpm/cards/${data.planUuid}`));
-                }}
-              >
-                <i class="fas fa-th mr-2"></i>{MESSAGES.BTN_MANAGE_CARDS}
-              </button>
             {/if}
           </div>
         </div>

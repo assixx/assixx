@@ -91,6 +91,7 @@ export interface TeamResponse {
  */
 export interface TeamMember {
   id: number;
+  uuid: string;
   username: string;
   email: string;
   firstName: string;
@@ -131,6 +132,7 @@ export interface TeamFilters {
  */
 interface TeamMemberRow {
   id: number;
+  uuid: string;
   username: string;
   email: string;
   first_name: string | null;
@@ -153,27 +155,27 @@ const FIND_TEAM_BY_ID_QUERY = 'SELECT * FROM teams WHERE id = $1 AND tenant_id =
  * SQL query for team members with date range availability
  */
 const TEAM_MEMBERS_DATE_RANGE_QUERY = `
-  SELECT u.id, u.username, u.email, u.first_name, u.last_name, u.position, u.employee_id,
+  SELECT u.id, u.uuid, u.username, u.email, u.first_name, u.last_name, u.position, u.employee_id,
          ut.role, u.role as user_role,
          ea.status as availability_status, ea.start_date as availability_start, ea.end_date as availability_end
   FROM users u
   JOIN user_teams ut ON u.id = ut.user_id
   LEFT JOIN user_availability ea ON u.id = ea.user_id
          AND ea.start_date <= $2::date AND ea.end_date >= $3::date
-  WHERE ut.team_id = $1 AND u.role != 'dummy' AND u.is_active = ${IS_ACTIVE.ACTIVE}`;
+  WHERE ut.team_id = $1 AND u.is_active = ${IS_ACTIVE.ACTIVE}`;
 
 /**
  * SQL query for team members with current date availability
  */
 const TEAM_MEMBERS_CURRENT_DATE_QUERY = `
-  SELECT u.id, u.username, u.email, u.first_name, u.last_name, u.position, u.employee_id,
+  SELECT u.id, u.uuid, u.username, u.email, u.first_name, u.last_name, u.position, u.employee_id,
          ut.role, u.role as user_role,
          ea.status as availability_status, ea.start_date as availability_start, ea.end_date as availability_end
   FROM users u
   JOIN user_teams ut ON u.id = ut.user_id
   LEFT JOIN user_availability ea ON u.id = ea.user_id
          AND CURRENT_DATE BETWEEN ea.start_date AND ea.end_date
-  WHERE ut.team_id = $1 AND u.role != 'dummy' AND u.is_active = ${IS_ACTIVE.ACTIVE}`;
+  WHERE ut.team_id = $1 AND u.is_active = ${IS_ACTIVE.ACTIVE}`;
 
 @Injectable()
 export class TeamsService {
@@ -206,12 +208,14 @@ export class TeamsService {
       a.name as department_area_name,
       CONCAT(COALESCE(u.first_name, ''), ' ', COALESCE(u.last_name, '')) as team_lead_name,
       CONCAT(COALESCE(du.first_name, ''), ' ', COALESCE(du.last_name, '')) as team_deputy_lead_name,
-      (SELECT COUNT(*) FROM user_teams ut WHERE ut.team_id = t.id) as member_count,
+      (SELECT COUNT(*) FROM user_teams ut JOIN users uu ON ut.user_id = uu.id WHERE ut.team_id = t.id AND uu.is_active = ${IS_ACTIVE.ACTIVE}) as member_count,
       (SELECT COUNT(*) FROM asset_teams mt WHERE mt.team_id = t.id) as asset_count,
-      (SELECT STRING_AGG(CONCAT(COALESCE(mu.first_name, ''), ' ', COALESCE(mu.last_name, '')), ', ' ORDER BY mu.last_name)
+      (SELECT STRING_AGG(
+        COALESCE(NULLIF(TRIM(CONCAT(COALESCE(mu.first_name, ''), ' ', COALESCE(mu.last_name, ''))), ''), mu.display_name, SPLIT_PART(mu.email, '@', 1)),
+        ', ' ORDER BY mu.last_name)
        FROM user_teams mut
        JOIN users mu ON mut.user_id = mu.id
-       WHERE mut.team_id = t.id) as member_names,
+       WHERE mut.team_id = t.id AND mu.is_active = ${IS_ACTIVE.ACTIVE}) as member_names,
       (SELECT STRING_AGG(mm.name, ', ' ORDER BY mm.name)
        FROM asset_teams mmt
        JOIN assets mm ON mmt.asset_id = mm.id
@@ -740,6 +744,7 @@ export class TeamsService {
 
     return members.map((member: TeamMemberRow) => ({
       id: member.id,
+      uuid: member.uuid,
       username: member.username,
       email: member.email,
       firstName: member.first_name ?? '',

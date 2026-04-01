@@ -13,13 +13,14 @@ import { ScopeModule } from '../hierarchy-permission/scope.module.js';
 import { OrganigramModule } from '../organigram/organigram.module.js';
 import { UserAvailabilityService } from './user-availability.service.js';
 import { UserProfileService } from './user-profile.service.js';
+import { UsersPermissionRegistrar } from './users-permission.registrar.js';
 import { UsersController } from './users.controller.js';
 import { UsersService } from './users.service.js';
 
 @Module({
   imports: [ScopeModule, HierarchyPermissionModule, OrganigramModule],
   controllers: [UsersController],
-  providers: [UserAvailabilityService, UserProfileService, UsersService],
+  providers: [UsersPermissionRegistrar, UserAvailabilityService, UserProfileService, UsersService],
   exports: [UsersService, UserAvailabilityService, UserProfileService],
 })
 // eslint-disable-next-line @typescript-eslint/no-extraneous-class -- NestJS modules are empty by design

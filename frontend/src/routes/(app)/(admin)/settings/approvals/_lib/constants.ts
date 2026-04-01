@@ -35,6 +35,7 @@ export const APPROVER_TYPE_OPTIONS: readonly ApproverOption[] = createApproverTy
 /** Addons that support approval workflows */
 export const APPROVABLE_ADDONS: readonly { code: string; label: string }[] = [
   { code: 'kvp', label: 'KVP' },
+  { code: 'tpm', label: 'TPM / Wartung' },
   { code: 'vacation', label: 'Urlaub' },
   { code: 'blackboard', label: 'Schwarzes Brett' },
   { code: 'calendar', label: 'Kalender' },

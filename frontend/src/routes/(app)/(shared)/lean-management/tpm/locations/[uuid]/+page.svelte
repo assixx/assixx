@@ -237,8 +237,8 @@
   />
 
   <div class="container">
-    <!-- Back Navigation -->
-    <div class="mb-4">
+    <!-- Back + Actions -->
+    <div class="mb-4 flex items-center justify-between">
       <button
         type="button"
         class="btn btn-light"
@@ -247,6 +247,19 @@
         <i class="fas fa-arrow-left mr-2"></i>
         {MESSAGES.LOCATIONS_BACK}
       </button>
+      {#if canWrite && !showForm && plan !== null}
+        <button
+          type="button"
+          class="btn btn-secondary"
+          onclick={() => {
+            showForm = true;
+            editingLocation = undefined;
+          }}
+        >
+          <i class="fas fa-plus mr-2"></i>
+          {MESSAGES.LOCATIONS_ADD}
+        </button>
+      {/if}
     </div>
 
     {#if data.error !== null || plan === null}
@@ -260,41 +273,20 @@
         </p>
       </div>
     {:else}
-      <!-- Page Header (matches card detail page header) -->
+      <!-- Page Header -->
       <div class="card">
         <div class="card__header">
-          <div class="flex flex-wrap items-center justify-between gap-4">
-            <div class="flex items-center gap-3">
-              <div>
-                <h2 class="card__title m-0">{MESSAGES.LOCATIONS_HEADING}</h2>
-                <div class="mt-1 flex items-center gap-2">
-                  <span
-                    class="text-xs font-bold tracking-wider text-(--color-text-muted) uppercase"
-                  >
-                    {plan.name}
-                  </span>
-                  {#if plan.assetName !== undefined}
-                    <span class="badge badge--info">{plan.assetName}</span>
-                  {/if}
-                  <span class="badge badge--success">
-                    {locations.length} Standorte
-                  </span>
-                </div>
-              </div>
-            </div>
-            {#if canWrite && !showForm}
-              <button
-                type="button"
-                class="btn btn-primary"
-                onclick={() => {
-                  showForm = true;
-                  editingLocation = undefined;
-                }}
-              >
-                <i class="fas fa-plus mr-2"></i>
-                {MESSAGES.LOCATIONS_ADD}
-              </button>
+          <h2 class="card__title m-0">{MESSAGES.LOCATIONS_HEADING}</h2>
+          <div class="mt-1 flex items-center gap-2">
+            <span class="text-xs font-bold tracking-wider text-(--color-text-muted) uppercase">
+              {plan.name}
+            </span>
+            {#if plan.assetName !== undefined}
+              <span class="badge badge--info">{plan.assetName}</span>
             {/if}
+            <span class="badge badge--success">
+              {locations.length} Standorte
+            </span>
           </div>
         </div>
       </div>

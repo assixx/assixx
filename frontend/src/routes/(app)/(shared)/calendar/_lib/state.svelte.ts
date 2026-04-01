@@ -57,6 +57,9 @@ export const calendarState = {
   get userRole() {
     return userState.userRole;
   },
+  get isDummy() {
+    return userState.isDummy;
+  },
   get canCreateEvents() {
     return userState.canCreateEvents;
   },

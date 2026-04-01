@@ -13,11 +13,18 @@
   interface Props {
     plugins: unknown[];
     options: Record<string, unknown>;
+    canCreateEvents?: boolean;
     onNewEvent: () => void;
     onToggleFullscreen: () => void;
   }
 
-  const { plugins, options, onNewEvent, onToggleFullscreen }: Props = $props();
+  const {
+    plugins,
+    options,
+    canCreateEvents = true,
+    onNewEvent,
+    onToggleFullscreen,
+  }: Props = $props();
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment -- Calendar component type from @event-calendar/core lacks proper types
   let calendarRef: any = $state();
@@ -57,15 +64,17 @@
         >
           <i class="fas fa-expand"></i>
         </button>
-        <button
-          type="button"
-          id="newEventBtn"
-          class="btn btn-primary"
-          onclick={onNewEvent}
-        >
-          <i class="fas fa-plus mr-2"></i>
-          Neuer Termin
-        </button>
+        {#if canCreateEvents}
+          <button
+            type="button"
+            id="newEventBtn"
+            class="btn btn-primary"
+            onclick={onNewEvent}
+          >
+            <i class="fas fa-plus mr-2"></i>
+            Neuer Termin
+          </button>
+        {/if}
       </div>
     </div>
   </div>

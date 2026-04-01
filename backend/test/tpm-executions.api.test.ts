@@ -52,7 +52,6 @@ beforeAll(async () => {
       baseWeekday: 2,
       baseRepeatEvery: 1,
       baseTime: '09:00',
-      shiftPlanRequired: false,
     }),
   });
   const planBody = (await planRes.json()) as JsonBody;

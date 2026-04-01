@@ -645,11 +645,23 @@ export class UsersService {
          t.department_id as team_department_id,
          d.name as team_department_name,
          d.area_id as team_area_id,
-         a.name as team_area_name
+         a.name as team_area_name,
+         NULLIF(CONCAT_WS(' ', tl.first_name, tl.last_name), '') as team_lead_name,
+         NULLIF(CONCAT_WS(' ', tdl.first_name, tdl.last_name), '') as team_deputy_lead_name,
+         NULLIF(CONCAT_WS(' ', dl.first_name, dl.last_name), '') as department_lead_name,
+         NULLIF(CONCAT_WS(' ', ddl.first_name, ddl.last_name), '') as department_deputy_lead_name,
+         NULLIF(CONCAT_WS(' ', al.first_name, al.last_name), '') as area_lead_name,
+         NULLIF(CONCAT_WS(' ', adl.first_name, adl.last_name), '') as area_deputy_lead_name
        FROM user_teams ut
        JOIN teams t ON ut.team_id = t.id
        LEFT JOIN departments d ON t.department_id = d.id
        LEFT JOIN areas a ON d.area_id = a.id
+       LEFT JOIN users tl ON t.team_lead_id = tl.id
+       LEFT JOIN users tdl ON t.team_deputy_lead_id = tdl.id
+       LEFT JOIN users dl ON d.department_lead_id = dl.id
+       LEFT JOIN users ddl ON d.department_deputy_lead_id = ddl.id
+       LEFT JOIN users al ON a.area_lead_id = al.id
+       LEFT JOIN users adl ON a.area_deputy_lead_id = adl.id
        WHERE ut.user_id = $1 AND ut.tenant_id = $2`,
       [userId, tenantId],
     );
@@ -770,11 +782,23 @@ export class UsersService {
          t.department_id as team_department_id,
          d.name as team_department_name,
          d.area_id as team_area_id,
-         a.name as team_area_name
+         a.name as team_area_name,
+         NULLIF(CONCAT_WS(' ', tl.first_name, tl.last_name), '') as team_lead_name,
+         NULLIF(CONCAT_WS(' ', tdl.first_name, tdl.last_name), '') as team_deputy_lead_name,
+         NULLIF(CONCAT_WS(' ', dl.first_name, dl.last_name), '') as department_lead_name,
+         NULLIF(CONCAT_WS(' ', ddl.first_name, ddl.last_name), '') as department_deputy_lead_name,
+         NULLIF(CONCAT_WS(' ', al.first_name, al.last_name), '') as area_lead_name,
+         NULLIF(CONCAT_WS(' ', adl.first_name, adl.last_name), '') as area_deputy_lead_name
        FROM user_teams ut
        JOIN teams t ON ut.team_id = t.id
        LEFT JOIN departments d ON t.department_id = d.id
        LEFT JOIN areas a ON d.area_id = a.id
+       LEFT JOIN users tl ON t.team_lead_id = tl.id
+       LEFT JOIN users tdl ON t.team_deputy_lead_id = tdl.id
+       LEFT JOIN users dl ON d.department_lead_id = dl.id
+       LEFT JOIN users ddl ON d.department_deputy_lead_id = ddl.id
+       LEFT JOIN users al ON a.area_lead_id = al.id
+       LEFT JOIN users adl ON a.area_deputy_lead_id = adl.id
        WHERE ut.user_id IN (${placeholders}) AND ut.tenant_id = $1`,
       [tenantId, ...userIds],
     );
@@ -862,6 +886,16 @@ export class UsersService {
     // Scope check: target user must be in acting user's scope
     const scope = await this.scopeService.getScope();
     await this.ensureUserInScope(scope, userId, tenantId);
+    return await this.getUserById(userId, tenantId);
+  }
+
+  /**
+   * Get user profile by UUID — no scope check.
+   * Access is gated by @RequirePermission('user_profiles', 'user-profiles-view', 'canRead')
+   * at the controller level, so scope enforcement is not needed here.
+   */
+  async getUserProfileByUuid(uuid: string, tenantId: number): Promise<SafeUserResponse> {
+    const userId = await this.resolveUserIdByUuid(uuid, tenantId);
     return await this.getUserById(userId, tenantId);
   }
 

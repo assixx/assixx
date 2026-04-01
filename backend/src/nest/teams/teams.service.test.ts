@@ -602,13 +602,14 @@ describe('TeamsService', () => {
       await expect(service.getTeamMembers(999, 10)).rejects.toThrow(NotFoundException);
     });
 
-    it('should return mapped team members', async () => {
+    it('should return mapped team members with uuid', async () => {
       // find team
       mockDb.query.mockResolvedValueOnce([makeTeamRow()]);
       // fetch members
       mockDb.query.mockResolvedValueOnce([
         {
           id: 1,
+          uuid: '019d31ba-0248-7095-8170-e58a6c57b17b',
           username: 'maxm',
           email: 'max@example.com',
           first_name: 'Max',
@@ -628,6 +629,7 @@ describe('TeamsService', () => {
       expect(result).toHaveLength(1);
       expect(result[0]?.firstName).toBe('Max');
       expect(result[0]?.lastName).toBe('Mustermann');
+      expect(result[0]?.uuid).toBe('019d31ba-0248-7095-8170-e58a6c57b17b');
     });
 
     it('should use date range query when dates provided', async () => {
@@ -635,6 +637,7 @@ describe('TeamsService', () => {
       mockDb.query.mockResolvedValueOnce([
         {
           id: 1,
+          uuid: '019d31ba-aaaa-7095-8170-e58a6c57b17b',
           username: 'user1',
           email: 'user1@test.de',
           first_name: 'Test',

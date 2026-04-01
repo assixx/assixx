@@ -1,12 +1,11 @@
 /**
  * TPM Slot Availability Assistant
  *
- * Combines 4 data sources to determine when a asset is available
+ * Combines 3 data sources to determine when a asset is available
  * for maintenance scheduling:
- *   1. shift_plans — E15: shift plan must exist for the period
- *   2. tpm_cards — already scheduled TPM due dates
- *   3. user_availability — team member vacation/sick status
- *   4. tpm_schedule — projected schedules from other plans (cross-plan conflicts)
+ *   1. tpm_cards — already scheduled TPM due dates
+ *   2. user_availability — team member vacation/sick status
+ *   3. tpm_schedule — projected schedules from other plans (cross-plan conflicts)
  *
  * All methods are read-only. Uses DatabaseService directly to avoid
  * cross-module coupling (no ShiftsModule/AssetsModule/UsersModule imports).
@@ -23,7 +22,7 @@ import type { ProjectedSlot } from './tpm.types.js';
 // ============================================================================
 
 /** Types of scheduling conflicts */
-export type SlotConflictType = 'no_shift_plan' | 'existing_tpm' | 'tpm_schedule';
+export type SlotConflictType = 'existing_tpm' | 'tpm_schedule';
 
 /** A single scheduling conflict */
 export interface SlotConflict {
@@ -51,7 +50,6 @@ export interface SlotAvailabilityResult {
 /** Result of checkSlotAvailability() */
 export interface SlotCheckResult {
   isAvailable: boolean;
-  hasShiftPlan: boolean;
   conflicts: SlotConflict[];
 }
 
@@ -95,10 +93,6 @@ export interface AssetTeamAvailabilityResult {
 // Internal DB Row Types
 // ============================================================================
 
-interface ShiftPlanCountRow {
-  count: string;
-}
-
 interface TpmDueDateRow {
   current_due_date: string;
   card_code: string;
@@ -125,12 +119,6 @@ interface AssetTeamRow {
   team_name: string;
 }
 
-/** Row from shift coverage date-range query */
-interface ShiftCoverageRangeRow {
-  range_start: string;
-  range_end: string;
-}
-
 /** Max days allowed in a single range query */
 const MAX_RANGE_DAYS = 90;
 
@@ -149,15 +137,13 @@ export class TpmSlotAssistantService {
 
   /**
    * Get per-day availability for a asset over a date range.
-   * Combines shift plan (E15), existing TPM slots, and projected schedules.
-   * When shiftPlanRequired=false, missing shift plans are not flagged as conflicts.
+   * Combines existing TPM slots and projected schedules.
    */
   async getAvailableSlots(
     tenantId: number,
     assetId: number,
     startDate: string,
     endDate: string,
-    shiftPlanRequired: boolean = true,
   ): Promise<SlotAvailabilityResult> {
     const days = generateDateRange(startDate, endDate);
     if (days.length > MAX_RANGE_DAYS) {
@@ -166,11 +152,8 @@ export class TpmSlotAssistantService {
       );
     }
 
-    // Batch-fetch all 3 data sources for the full range
-    const [shiftCoverageDates, tpmDueDates, projection] = await Promise.all([
-      shiftPlanRequired ?
-        this.fetchShiftCoverageDates(tenantId, assetId, startDate, endDate)
-      : Promise.resolve(new Set<string>()),
+    // Batch-fetch data sources for the full range
+    const [tpmDueDates, projection] = await Promise.all([
       this.fetchExistingTpmDueDates(tenantId, assetId, startDate, endDate),
       this.scheduleProjection.projectSchedules(tenantId, startDate, endDate),
     ]);
@@ -186,14 +169,7 @@ export class TpmSlotAssistantService {
     );
 
     const dayResults = days.map((date: string) =>
-      buildDayConflicts(
-        date,
-        shiftPlanRequired,
-        shiftCoverageDates,
-        tpmDueDates,
-        tpmDateSet,
-        scheduleMap,
-      ),
+      buildDayConflicts(date, tpmDueDates, tpmDateSet, scheduleMap),
     );
     const availableDays = dayResults.filter((d: DayAvailability) => d.isAvailable).length;
 
@@ -210,27 +186,15 @@ export class TpmSlotAssistantService {
   /**
    * Check availability for a single date.
    * Returns boolean + list of conflicts.
-   * When shiftPlanRequired=false, missing shift plans are not flagged.
    */
   async checkSlotAvailability(
     tenantId: number,
     assetId: number,
     date: string,
-    shiftPlanRequired: boolean = true,
   ): Promise<SlotCheckResult> {
-    const [hasShiftPlan, tpmDueDates] = await Promise.all([
-      this.hasShiftPlan(tenantId, assetId, date, date),
-      this.fetchExistingTpmDueDates(tenantId, assetId, date, date),
-    ]);
+    const tpmDueDates = await this.fetchExistingTpmDueDates(tenantId, assetId, date, date);
 
     const conflicts: SlotConflict[] = [];
-
-    if (shiftPlanRequired && !hasShiftPlan) {
-      conflicts.push({
-        type: 'no_shift_plan',
-        description: 'Kein Schichtplan für dieses Datum (E15)',
-      });
-    }
 
     for (const card of tpmDueDates) {
       conflicts.push({
@@ -241,7 +205,6 @@ export class TpmSlotAssistantService {
 
     return {
       isAvailable: conflicts.length === 0,
-      hasShiftPlan,
       conflicts,
     };
   }
@@ -296,19 +259,6 @@ export class TpmSlotAssistantService {
       availableCount,
       totalCount: members.length,
     };
-  }
-
-  /**
-   * E15 Validation: Check if an active shift plan covers this asset+date range.
-   * Only published or locked plans count.
-   */
-  async validateShiftPlanExists(
-    tenantId: number,
-    assetId: number,
-    startDate: string,
-    endDate: string,
-  ): Promise<boolean> {
-    return await this.hasShiftPlan(tenantId, assetId, startDate, endDate);
   }
 
   /**
@@ -376,93 +326,7 @@ export class TpmSlotAssistantService {
   // PRIVATE DATA SOURCE QUERIES
   // ============================================================================
 
-  /**
-   * Data source 1a: Fetch all dates with shift coverage within the range.
-   * Returns a Set<date> for per-day conflict resolution in getAvailableSlots().
-   * Expands shift_plans, rotation_patterns ranges + individual shifts to dates.
-   */
-  private async fetchShiftCoverageDates(
-    tenantId: number,
-    assetId: number,
-    startDate: string,
-    endDate: string,
-  ): Promise<Set<string>> {
-    const rows = await this.db.query<ShiftCoverageRangeRow>(
-      `WITH mt AS (
-         SELECT team_id FROM asset_teams
-         WHERE asset_id = $1 AND tenant_id = $2
-       )
-       SELECT GREATEST(sp.start_date, $3::date)::text AS range_start,
-              LEAST(sp.end_date, $4::date)::text AS range_end
-       FROM shift_plans sp
-       WHERE sp.tenant_id = $2
-         AND (sp.asset_id = $1 OR sp.team_id IN (SELECT team_id FROM mt))
-         AND sp.start_date <= $4::date AND sp.end_date >= $3::date
-         AND sp.status IN ('published', 'locked')
-       UNION ALL
-       SELECT GREATEST(srp.starts_at, $3::date)::text AS range_start,
-              LEAST(srp.ends_at, $4::date)::text AS range_end
-       FROM shift_rotation_patterns srp
-       WHERE srp.tenant_id = $2
-         AND srp.team_id IN (SELECT team_id FROM mt)
-         AND srp.starts_at <= $4::date AND srp.ends_at >= $3::date
-         AND srp.is_active = ${IS_ACTIVE.ACTIVE}
-       UNION ALL
-       SELECT s.date::text AS range_start, s.date::text AS range_end
-       FROM shifts s
-       WHERE s.tenant_id = $2
-         AND (s.asset_id = $1 OR s.team_id IN (SELECT team_id FROM mt))
-         AND s.date BETWEEN $3::date AND $4::date`,
-      [assetId, tenantId, startDate, endDate],
-    );
-
-    return expandRangesToDateSet(rows);
-  }
-
-  /**
-   * Data source 1b: Check if ANY shift coverage exists for asset + date range.
-   * Checks all 3 sources (see ADR-011):
-   *   1. shift_plans — manual plans (direct asset_id OR via team_id)
-   *   2. shift_rotation_patterns — rotation-based (via team_id → asset_teams)
-   *   3. shifts — individual shifts without plan (direct asset_id OR via team_id)
-   */
-  private async hasShiftPlan(
-    tenantId: number,
-    assetId: number,
-    startDate: string,
-    endDate: string,
-  ): Promise<boolean> {
-    const row = await this.db.queryOne<ShiftPlanCountRow>(
-      `WITH mt AS (
-         SELECT team_id FROM asset_teams
-         WHERE asset_id = $1 AND tenant_id = $2
-       )
-       SELECT CASE WHEN (
-         EXISTS (
-           SELECT 1 FROM shift_plans
-           WHERE tenant_id = $2
-             AND (asset_id = $1 OR team_id IN (SELECT team_id FROM mt))
-             AND start_date <= $4::date AND end_date >= $3::date
-             AND status IN ('published', 'locked')
-         ) OR EXISTS (
-           SELECT 1 FROM shift_rotation_patterns
-           WHERE tenant_id = $2
-             AND team_id IN (SELECT team_id FROM mt)
-             AND starts_at <= $4::date AND ends_at >= $3::date
-             AND is_active = ${IS_ACTIVE.ACTIVE}
-         ) OR EXISTS (
-           SELECT 1 FROM shifts
-           WHERE tenant_id = $2
-             AND (asset_id = $1 OR team_id IN (SELECT team_id FROM mt))
-             AND date BETWEEN $3::date AND $4::date
-         )
-       ) THEN 1 ELSE 0 END AS count`,
-      [assetId, tenantId, startDate, endDate],
-    );
-    return Number.parseInt(row?.count ?? '0', 10) > 0;
-  }
-
-  /** Data source 2: Fetch existing TPM cards with due dates in the range */
+  /** Fetch existing TPM cards with due dates in the range */
   private async fetchExistingTpmDueDates(
     tenantId: number,
     assetId: number,
@@ -578,20 +442,11 @@ function dedupeTeamMembers(teamResults: TeamAvailabilityResult[]): TeamMemberSta
 /** Build conflicts for a single day from pre-fetched data sources */
 function buildDayConflicts(
   date: string,
-  shiftPlanRequired: boolean,
-  shiftCoverageDates: Set<string>,
   tpmDueDates: TpmDueDateRow[],
   tpmDateSet: Set<string>,
   scheduleMap: Map<string, ProjectedSlot[]> = new Map<string, ProjectedSlot[]>(),
 ): DayAvailability {
   const conflicts: SlotConflict[] = [];
-
-  if (shiftPlanRequired && !shiftCoverageDates.has(date)) {
-    conflicts.push({
-      type: 'no_shift_plan',
-      description: 'Kein Schichtplan für dieses Datum (E15)',
-    });
-  }
 
   collectTpmDueDateConflicts(conflicts, date, tpmDueDates, tpmDateSet);
   collectScheduleConflicts(conflicts, scheduleMap.get(date));
@@ -637,20 +492,6 @@ function collectScheduleConflicts(
       description: `TPM Plan '${slot.planName}' (${slot.assetName}, ${intervals}): ${timeRange}`,
     });
   }
-}
-
-/** Expand date ranges into a flat Set<YYYY-MM-DD> */
-function expandRangesToDateSet(rows: ShiftCoverageRangeRow[]): Set<string> {
-  const result = new Set<string>();
-  for (const row of rows) {
-    const current = new Date(row.range_start + 'T00:00:00Z');
-    const end = new Date(row.range_end + 'T00:00:00Z');
-    while (current <= end) {
-      result.add(current.toISOString().slice(0, 10));
-      current.setUTCDate(current.getUTCDate() + 1);
-    }
-  }
-  return result;
 }
 
 /**

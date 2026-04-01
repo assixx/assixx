@@ -138,7 +138,7 @@
     buttonText: DE_LOCALE.buttonText,
     firstDay: 1,
     editable: calendarState.isAdmin,
-    selectable: true,
+    selectable: calendarState.canCreateEvents,
     selectMirror: true,
     dayMaxEvents: true,
     nowIndicator: true,
@@ -282,11 +282,13 @@
       log.debug({}, 'Date click disabled in fullscreen mode');
       return;
     }
+    if (!calendarState.canCreateEvents) return;
     handleDateClick(info.date, info.allDay);
   }
 
   function handleCalendarSelect(info: { start: Date; end: Date; allDay: boolean }) {
     if (isFullscreen) return;
+    if (!calendarState.canCreateEvents) return;
     handleDateSelect(info.start, info.end, info.allDay);
   }
 
@@ -573,10 +575,12 @@
                 <span class="legend-color legend-team"></span>
                 <span class="legend-label">{labels.team}</span>
               </div>
-              <div class="legend-item">
-                <span class="legend-color legend-personal"></span>
-                <span class="legend-label">Persoenlich</span>
-              </div>
+              {#if calendarState.canCreateEvents}
+                <div class="legend-item">
+                  <span class="legend-color legend-personal"></span>
+                  <span class="legend-label">Persönlich</span>
+                </div>
+              {/if}
               <div class="legend-item">
                 <span class="legend-color legend-vacation"></span>
                 <span class="legend-label">Urlaub</span>
@@ -600,6 +604,7 @@
       bind:this={calendarViewRef}
       plugins={calendarPlugins}
       options={calendarOptions}
+      canCreateEvents={calendarState.canCreateEvents}
       onNewEvent={() => {
         openEventForm();
       }}

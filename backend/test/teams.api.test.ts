@@ -196,6 +196,31 @@ describe('Teams: Get Team Members', () => {
 
     expect(Array.isArray(body.data)).toBe(true);
   });
+
+  it('should include uuid in member objects', async () => {
+    // Add current user as member so the array is non-empty
+    await fetch(`${BASE_URL}/teams/${teamId}/members`, {
+      method: 'POST',
+      headers: authHeaders(auth.authToken),
+      body: JSON.stringify({ userId: auth.userId }),
+    });
+
+    const res = await fetch(`${BASE_URL}/teams/${teamId}/members`, {
+      headers: authOnly(auth.authToken),
+    });
+    const body = (await res.json()) as JsonBody;
+    const members = body.data as Array<Record<string, unknown>>;
+
+    expect(members.length).toBeGreaterThan(0);
+    expect(members[0]).toHaveProperty('uuid');
+    expect(typeof members[0]?.uuid).toBe('string');
+
+    // Cleanup: remove member
+    await fetch(`${BASE_URL}/teams/${teamId}/members/${auth.userId}`, {
+      method: 'DELETE',
+      headers: authOnly(auth.authToken),
+    });
+  });
 });
 
 // ---- seq: 6 -- Delete Team (Admin) ------------------------------------------

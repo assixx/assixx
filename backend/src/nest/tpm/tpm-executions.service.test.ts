@@ -745,6 +745,126 @@ describe('TpmExecutionsService', () => {
   });
 
   // =============================================================
+  // listDefectsForPlan
+  // =============================================================
+
+  describe('listDefectsForPlan()', () => {
+    it('should return paginated plan defects with card context', async () => {
+      mockDb.queryOne.mockResolvedValueOnce({ count: '3' });
+      mockDb.query.mockResolvedValueOnce([
+        {
+          ...createDefectRow(),
+          execution_uuid: 'exec-uuid-001                            ',
+          execution_date: '2026-03-01',
+          executed_by_name: 'Max Mustermann',
+          approval_status: 'none',
+          photo_count: 2,
+          card_code: 'BT1',
+          card_title: 'Sichtprüfung',
+          work_order_uuid: null,
+          work_order_status: null,
+          work_order_priority: null,
+          work_order_assignee_names: null,
+          work_order_created_at: null,
+        },
+      ]);
+
+      const result = await service.listDefectsForPlan(10, 'plan-uuid-001', 1, 20);
+
+      expect(result.total).toBe(3);
+      expect(result.page).toBe(1);
+      expect(result.pageSize).toBe(20);
+      expect(result.data).toHaveLength(1);
+      expect(result.data[0]?.cardCode).toBe('BT1');
+      expect(result.data[0]?.cardTitle).toBe('Sichtprüfung');
+      expect(result.data[0]?.title).toBe('Leckage am Ventil');
+      expect(result.data[0]?.executionUuid).toBe('exec-uuid-001');
+      expect(result.data[0]?.photoCount).toBe(2);
+    });
+
+    it('should return empty when plan has no defects', async () => {
+      mockDb.queryOne.mockResolvedValueOnce({ count: '0' });
+      mockDb.query.mockResolvedValueOnce([]);
+
+      const result = await service.listDefectsForPlan(10, 'plan-uuid-001', 1, 20);
+
+      expect(result.total).toBe(0);
+      expect(result.data).toHaveLength(0);
+    });
+
+    it('should handle null count result', async () => {
+      mockDb.queryOne.mockResolvedValueOnce(null);
+      mockDb.query.mockResolvedValueOnce([]);
+
+      const result = await service.listDefectsForPlan(10, 'plan-uuid-001', 1, 20);
+
+      expect(result.total).toBe(0);
+    });
+
+    it('should pass correct SQL parameters (planUuid, tenantId, pagination)', async () => {
+      mockDb.queryOne.mockResolvedValueOnce({ count: '0' });
+      mockDb.query.mockResolvedValueOnce([]);
+
+      await service.listDefectsForPlan(10, 'plan-uuid-001', 2, 25);
+
+      // Count query: [planUuid, tenantId]
+      const countParams = mockDb.queryOne.mock.calls[0]?.[1] as unknown[];
+      expect(countParams?.[0]).toBe('plan-uuid-001');
+      expect(countParams?.[1]).toBe(10);
+
+      // Data query: [planUuid, tenantId, pageSize, offset]
+      const dataParams = mockDb.query.mock.calls[0]?.[1] as unknown[];
+      expect(dataParams?.[0]).toBe('plan-uuid-001');
+      expect(dataParams?.[1]).toBe(10);
+      expect(dataParams?.[2]).toBe(25); // pageSize
+      expect(dataParams?.[3]).toBe(25); // offset = (2-1) * 25
+    });
+
+    it('should query tpm_maintenance_plans in SQL', async () => {
+      mockDb.queryOne.mockResolvedValueOnce({ count: '0' });
+      mockDb.query.mockResolvedValueOnce([]);
+
+      await service.listDefectsForPlan(10, 'plan-uuid-001', 1, 20);
+
+      const countSql = mockDb.queryOne.mock.calls[0]?.[0] as string;
+      const dataSql = mockDb.query.mock.calls[0]?.[0] as string;
+      expect(countSql).toContain('tpm_maintenance_plans');
+      expect(dataSql).toContain('tpm_maintenance_plans');
+      expect(dataSql).toContain('card_code');
+      expect(dataSql).toContain('card_title');
+    });
+
+    it('should map work order context fields', async () => {
+      mockDb.queryOne.mockResolvedValueOnce({ count: '1' });
+      mockDb.query.mockResolvedValueOnce([
+        {
+          ...createDefectRow(),
+          execution_uuid: 'exec-uuid-001                            ',
+          execution_date: '2026-03-01',
+          executed_by_name: 'Max Mustermann',
+          approval_status: 'approved',
+          photo_count: 0,
+          card_code: 'BT1',
+          card_title: 'Sichtprüfung',
+          work_order_uuid: 'wo-uuid-001',
+          work_order_status: 'open',
+          work_order_priority: 'high',
+          work_order_assignee_names: 'Anna Schmidt, Max Müller',
+          work_order_created_at: '2026-03-05T09:00:00.000Z',
+        },
+      ]);
+
+      const result = await service.listDefectsForPlan(10, 'plan-uuid-001', 1, 20);
+
+      const defect = result.data[0]!;
+      expect(defect.workOrderUuid).toBe('wo-uuid-001');
+      expect(defect.workOrderStatus).toBe('open');
+      expect(defect.workOrderPriority).toBe('high');
+      expect(defect.workOrderAssigneeNames).toEqual(['Anna Schmidt', 'Max Müller']);
+    });
+  });
+
+  // =============================================================
   // addDefectPhoto
   // =============================================================
 

@@ -644,13 +644,6 @@
 />
 
 <style>
-  /* ===== CONTAINER WIDTH ===== */
-  .profile-card {
-    margin-right: auto;
-    margin-left: auto;
-    max-width: 800px;
-  }
-
   /* ===== PROFILE PICTURE LAYOUT ===== */
   .profile-picture-section {
     display: flex;
