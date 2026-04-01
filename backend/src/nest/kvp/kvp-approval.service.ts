@@ -165,9 +165,15 @@ export class KvpApprovalService implements OnModuleInit {
         tenantId: number;
         approval: ApprovalDecisionPayload;
         requestedByUserId: number;
+        decidedByUserId?: number;
       }) => {
         if (data.approval.addonCode === 'kvp') {
-          void this.handleApprovalDecision(data.tenantId, data.approval, data.requestedByUserId);
+          void this.handleApprovalDecision(
+            data.tenantId,
+            data.approval,
+            data.requestedByUserId,
+            data.decidedByUserId ?? 0,
+          );
         }
       },
     );
@@ -178,6 +184,7 @@ export class KvpApprovalService implements OnModuleInit {
     tenantId: number,
     approvalData: ApprovalDecisionPayload,
     requestedByUserId: number,
+    decidedByUserId: number,
   ): Promise<void> {
     try {
       const sourceUuid = await this.getSourceUuidFromApproval(tenantId, approvalData.uuid);
@@ -192,7 +199,7 @@ export class KvpApprovalService implements OnModuleInit {
         return;
       }
 
-      await this.syncKvpStatus(tenantId, suggestion, approvalData);
+      await this.syncKvpStatus(tenantId, suggestion, approvalData, decidedByUserId);
       await this.createDecisionNotification(tenantId, suggestion, approvalData, requestedByUserId);
 
       this.logger.log(
@@ -219,11 +226,12 @@ export class KvpApprovalService implements OnModuleInit {
         decision_note: string | null;
         tenant_id: number;
         requested_by: number;
+        decided_by: number | null;
       }>(
         `SELECT
            ks.uuid AS kvp_uuid, ks.id AS kvp_id, ks.title AS kvp_title,
            a.uuid AS approval_uuid, a.status AS approval_status,
-           a.decision_note, a.tenant_id, a.requested_by
+           a.decision_note, a.tenant_id, a.requested_by, a.decided_by
          FROM kvp_suggestions ks
          INNER JOIN approvals a
            ON a.source_uuid = ks.uuid
@@ -260,6 +268,7 @@ export class KvpApprovalService implements OnModuleInit {
             submitted_by: row.requested_by,
           },
           payload,
+          row.decided_by ?? 0,
         );
       }
     } catch (error: unknown) {
@@ -349,6 +358,7 @@ export class KvpApprovalService implements OnModuleInit {
     tenantId: number,
     suggestion: KvpSuggestionStub,
     approvalData: ApprovalDecisionPayload,
+    decidedByUserId: number,
   ): Promise<void> {
     if (suggestion.status === approvalData.status) {
       return; // idempotent
@@ -372,7 +382,7 @@ export class KvpApprovalService implements OnModuleInit {
 
     void this.activityLogger.logUpdate(
       tenantId,
-      0, // system action
+      decidedByUserId,
       'kvp',
       suggestion.id,
       `KVP '${suggestion.title}' → ${approvalData.status} (via Freigabe-Entscheidung)`,

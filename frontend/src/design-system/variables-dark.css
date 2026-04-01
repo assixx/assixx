@@ -51,7 +51,7 @@ html.dark {
   --glass-bg: oklch(100% 0 0 / 2.5%);
   --glass-bg-hover: oklch(100% 0 0 / 3%);
   --glass-bg-active: oklch(100% 0 0 / 5%);
-  --glass-border: 1px solid oklch(100% 0 0 / 10%);
+  --glass-border: 1px solid oklch(100% 0 0 / 15%);
   --glass-border-sidebar-tree: 1px solid oklch(100% 0 0 / 26.7%);
 
   /* Glass Form (dark mode) */

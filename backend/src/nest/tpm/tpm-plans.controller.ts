@@ -18,6 +18,8 @@
  * - GET    /tpm/plans/:uuid/team-availability  — Asset team member availability
  * - POST   /tpm/plans/:uuid/assignments         — Set assignments for a date
  * - GET    /tpm/plans/:uuid/assignments         — Get assignments for date range
+ * - GET    /tpm/plans/:uuid/defects             — Gesamtmängelliste (all defects across all cards)
+ * - GET    /tpm/plans/:uuid/defect-stats        — Mängelgrafik (weekly aggregated defect statistics)
  * - GET    /tpm/plans/:uuid/board               — Board data (cards for plan)
  */
 import {
@@ -38,18 +40,26 @@ import { RequireAddon } from '../common/decorators/require-addon.decorator.js';
 import { RequirePermission } from '../common/decorators/require-permission.decorator.js';
 import { TenantId } from '../common/decorators/tenant.decorator.js';
 import type { NestAuthUser } from '../common/interfaces/auth.interface.js';
-import { AssetSlotsQueryDto } from './dto/asset-slots-query.dto.js';
-import { AvailableSlotsQueryDto } from './dto/available-slots-query.dto.js';
-import { BoardQueryDto } from './dto/board-query.dto.js';
-import { CreateMaintenancePlanDto } from './dto/create-maintenance-plan.dto.js';
-import { CreateTimeEstimateDto } from './dto/create-time-estimate.dto.js';
-import { ListPlansQueryDto } from './dto/list-plans-query.dto.js';
-import { ScheduleProjectionQueryDto } from './dto/schedule-projection-query.dto.js';
-import { SetPlanAssignmentsDto } from './dto/set-plan-assignments.dto.js';
-import { ShiftAssignmentsQueryDto } from './dto/shift-assignments-query.dto.js';
-import { UpdateMaintenancePlanDto } from './dto/update-maintenance-plan.dto.js';
+import {
+  AssetSlotsQueryDto,
+  AvailableSlotsQueryDto,
+  BoardQueryDto,
+  CreateMaintenancePlanDto,
+  CreateTimeEstimateDto,
+  DefectStatsQueryDto,
+  ListPlansQueryDto,
+  ListRevisionsQueryDto,
+  ScheduleProjectionQueryDto,
+  SetPlanAssignmentsDto,
+  ShiftAssignmentsQueryDto,
+  UpdateMaintenancePlanDto,
+} from './dto/index.js';
 import type { CardListFilter, PaginatedCards } from './tpm-cards.service.js';
 import { TpmCardsService } from './tpm-cards.service.js';
+import { TpmDefectStatsService } from './tpm-defect-stats.service.js';
+import { type PaginatedPlanDefects, TpmExecutionsService } from './tpm-executions.service.js';
+import { TpmPlanApprovalService } from './tpm-plan-approval.service.js';
+import { TpmPlanRevisionsService } from './tpm-plan-revisions.service.js';
 import type { IntervalMatrixEntry, PaginatedPlans } from './tpm-plans.service.js';
 import { TpmPlansService } from './tpm-plans.service.js';
 import { TpmScheduleProjectionService } from './tpm-schedule-projection.service.js';
@@ -66,11 +76,16 @@ import type {
 import { TpmSlotAssistantService } from './tpm-slot-assistant.service.js';
 import { TpmTimeEstimatesService } from './tpm-time-estimates.service.js';
 import type {
+  DefectChartData,
   ScheduleProjectionResult,
   TpmCardRole,
   TpmCardStatus,
   TpmIntervalType,
+  TpmMyPermissions,
   TpmPlan,
+  TpmPlanRevision,
+  TpmPlanRevisionList,
+  TpmScopedOrgData,
   TpmTimeEstimate,
 } from './tpm.types.js';
 
@@ -84,11 +99,36 @@ export class TpmPlansController {
   constructor(
     private readonly plansService: TpmPlansService,
     private readonly cardsService: TpmCardsService,
+    private readonly executionsService: TpmExecutionsService,
     private readonly timeEstimatesService: TpmTimeEstimatesService,
     private readonly slotAssistantService: TpmSlotAssistantService,
     private readonly scheduleProjectionService: TpmScheduleProjectionService,
     private readonly shiftAssignmentsService: TpmShiftAssignmentsService,
+    private readonly revisionsService: TpmPlanRevisionsService,
+    private readonly planApprovalService: TpmPlanApprovalService,
+    private readonly defectStatsService: TpmDefectStatsService,
   ) {}
+
+  // ============================================================================
+  // SCOPE + PERMISSIONS
+  // ============================================================================
+
+  /** GET /tpm/plans/my-permissions — User's effective TPM permissions */
+  @Get('my-permissions')
+  @RequirePermission(FEAT, MOD_PLANS, 'canRead')
+  async getMyPermissions(@CurrentUser() user: NestAuthUser): Promise<TpmMyPermissions> {
+    return await this.plansService.getMyPermissions(user.id, user.hasFullAccess);
+  }
+
+  /** GET /tpm/plans/my-assets — Scoped org data for plan creation */
+  @Get('my-assets')
+  @RequirePermission(FEAT, MOD_PLANS, 'canRead')
+  async getMyAssets(
+    @CurrentUser() user: NestAuthUser,
+    @TenantId() tenantId: number,
+  ): Promise<TpmScopedOrgData> {
+    return await this.plansService.getScopedOrgData(tenantId, user);
+  }
 
   // ============================================================================
   // PLAN CRUD
@@ -103,24 +143,39 @@ export class TpmPlansController {
     @CurrentUser() user: NestAuthUser,
     @TenantId() tenantId: number,
   ): Promise<TpmPlan> {
-    return await this.plansService.createPlan(tenantId, user.id, dto);
+    const plan = await this.plansService.createPlan(tenantId, user.id, dto);
+
+    // Fire-and-forget: approval failure must not block plan creation (D6)
+    void this.planApprovalService.requestApproval(
+      tenantId,
+      user.id,
+      plan.uuid,
+      plan.name,
+      plan.assetName ?? '',
+    );
+
+    return plan;
   }
 
-  /** GET /tpm/plans — List all plans (paginated) */
+  /** GET /tpm/plans — List all plans (paginated, scoped by user) */
   @Get()
   @RequirePermission(FEAT, MOD_PLANS, 'canRead')
   async listPlans(
     @Query() query: ListPlansQueryDto,
     @TenantId() tenantId: number,
+    @CurrentUser() user: NestAuthUser,
   ): Promise<PaginatedPlans> {
-    return await this.plansService.listPlans(tenantId, query.page, query.limit);
+    return await this.plansService.listPlans(tenantId, query.page, query.limit, user);
   }
 
-  /** GET /tpm/plans/interval-matrix — Card counts per plan × interval type */
+  /** GET /tpm/plans/interval-matrix — Card counts per plan × interval type (scoped) */
   @Get('interval-matrix')
   @RequirePermission(FEAT, MOD_PLANS, 'canRead')
-  async getIntervalMatrix(@TenantId() tenantId: number): Promise<IntervalMatrixEntry[]> {
-    return await this.plansService.getIntervalMatrix(tenantId);
+  async getIntervalMatrix(
+    @TenantId() tenantId: number,
+    @CurrentUser() user: NestAuthUser,
+  ): Promise<IntervalMatrixEntry[]> {
+    return await this.plansService.getIntervalMatrix(tenantId, user);
   }
 
   /** GET /tpm/plans/available-slots — Slot availability by asset UUID (no plan needed) */
@@ -136,7 +191,6 @@ export class TpmPlansController {
       assetId,
       query.startDate,
       query.endDate,
-      query.shiftPlanRequired,
     );
   }
 
@@ -229,7 +283,23 @@ export class TpmPlansController {
     @CurrentUser() user: NestAuthUser,
     @TenantId() tenantId: number,
   ): Promise<TpmPlan> {
-    return await this.plansService.updatePlan(tenantId, user.id, uuid, dto);
+    const plan = await this.plansService.updatePlan(tenantId, user.id, uuid, dto);
+
+    // D3: Only request approval if no pending approval exists for this plan
+    void (async (): Promise<void> => {
+      const hasPending = await this.planApprovalService.hasPendingApproval(tenantId, uuid);
+      if (!hasPending) {
+        await this.planApprovalService.requestApproval(
+          tenantId,
+          user.id,
+          plan.uuid,
+          plan.name,
+          plan.assetName ?? '',
+        );
+      }
+    })();
+
+    return plan;
   }
 
   /** DELETE /tpm/plans/:uuid — Soft-delete plan (is_active=4) */
@@ -288,7 +358,6 @@ export class TpmPlansController {
       plan.assetId,
       query.startDate,
       query.endDate,
-      plan.shiftPlanRequired,
     );
   }
 
@@ -348,6 +417,41 @@ export class TpmPlansController {
   }
 
   // ============================================================================
+  // DEFECTS (Gesamtmängelliste)
+  // ============================================================================
+
+  /** GET /tpm/plans/:uuid/defects — All defects across all cards of a plan */
+  @Get(':uuid/defects')
+  @RequirePermission(FEAT, MOD_PLANS, 'canRead')
+  async listPlanDefects(
+    @Param('uuid') planUuid: string,
+    @Query() query: ListPlansQueryDto,
+    @TenantId() tenantId: number,
+  ): Promise<PaginatedPlanDefects> {
+    return await this.executionsService.listDefectsForPlan(
+      tenantId,
+      planUuid,
+      query.page,
+      query.limit,
+    );
+  }
+
+  // ============================================================================
+  // DEFECT STATISTICS (Mängelgrafik)
+  // ============================================================================
+
+  /** GET /tpm/plans/:uuid/defect-stats — Weekly defect stats for chart */
+  @Get(':uuid/defect-stats')
+  @RequirePermission(FEAT, MOD_PLANS, 'canRead')
+  async getDefectStats(
+    @Param('uuid') planUuid: string,
+    @Query() query: DefectStatsQueryDto,
+    @TenantId() tenantId: number,
+  ): Promise<DefectChartData> {
+    return await this.defectStatsService.getDefectStats(tenantId, planUuid, query.year);
+  }
+
+  // ============================================================================
   // BOARD DATA
   // ============================================================================
 
@@ -367,6 +471,31 @@ export class TpmPlansController {
       query.limit,
       filters,
     );
+  }
+
+  // ============================================================================
+  // REVISIONS (ISO 9001 plan version history)
+  // ============================================================================
+
+  /** GET /tpm/plans/:uuid/revisions — List all revisions for a plan */
+  @Get(':uuid/revisions')
+  @RequirePermission(FEAT, MOD_PLANS, 'canRead')
+  async listRevisions(
+    @Param('uuid') planUuid: string,
+    @Query() query: ListRevisionsQueryDto,
+    @TenantId() tenantId: number,
+  ): Promise<TpmPlanRevisionList> {
+    return await this.revisionsService.listRevisions(tenantId, planUuid, query.page, query.limit);
+  }
+
+  /** GET /tpm/plans/:uuid/revisions/:revisionUuid — Get single revision */
+  @Get(':uuid/revisions/:revisionUuid')
+  @RequirePermission(FEAT, MOD_PLANS, 'canRead')
+  async getRevision(
+    @Param('revisionUuid') revisionUuid: string,
+    @TenantId() tenantId: number,
+  ): Promise<TpmPlanRevision> {
+    return await this.revisionsService.getRevision(tenantId, revisionUuid);
   }
 }
 

@@ -84,9 +84,12 @@ describe('WorkOrderAssigneesService', () => {
         await callback(mockClient),
     );
 
+    const mockScopeService = { getScope: vi.fn().mockResolvedValue({ type: 'full' }) };
+
     service = new WorkOrderAssigneesService(
       mockDb as unknown as DatabaseService,
       mockActivityLogger as unknown as ActivityLoggerService,
+      mockScopeService as never,
     );
   });
 

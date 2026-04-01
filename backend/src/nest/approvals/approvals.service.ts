@@ -400,7 +400,7 @@ export class ApprovalsService {
     );
 
     const mapped = mapApprovalRowToApi(row);
-    this.emitDecidedEvent(tenantId, mapped, row.requested_by);
+    this.emitDecidedEvent(tenantId, mapped, row.requested_by, decidedBy);
     return mapped;
   }
 
@@ -426,7 +426,12 @@ export class ApprovalsService {
   }
 
   /** SSE: notify the requester about the decision */
-  private emitDecidedEvent(tenantId: number, approval: Approval, requestedByUserId: number): void {
+  private emitDecidedEvent(
+    tenantId: number,
+    approval: Approval,
+    requestedByUserId: number,
+    decidedByUserId: number,
+  ): void {
     const payload: {
       uuid: string;
       title: string;
@@ -448,6 +453,6 @@ export class ApprovalsService {
     if (approval.decisionNote !== null) {
       payload.decisionNote = approval.decisionNote;
     }
-    eventBus.emitApprovalDecided(tenantId, payload, requestedByUserId);
+    eventBus.emitApprovalDecided(tenantId, payload, requestedByUserId, decidedByUserId);
   }
 }

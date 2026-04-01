@@ -44,7 +44,7 @@
   const error = $derived(data.error);
   const userRole = $derived(data.userRole);
   const isAdmin = $derived(userRole === 'admin' || userRole === 'root');
-  const colSpan = $derived(isAdmin ? 5 : 4);
+  const colSpan = $derived(isAdmin ? 6 : 5);
   const expandExecutionUuid = $derived(data.expandExecutionUuid);
 
   // Auto-expand first defect matching the execution UUID from query param
@@ -361,6 +361,7 @@
               <thead>
                 <tr>
                   <th scope="col">{MESSAGES.DEFECTS_COL_TITLE}</th>
+                  <th scope="col">{MESSAGES.DEFECTS_COL_WO_STATUS}</th>
                   <th scope="col">{MESSAGES.DEFECTS_COL_DATE}</th>
                   <th scope="col">{MESSAGES.DEFECTS_COL_PERSON}</th>
                   <th scope="col">{MESSAGES.DEFECTS_COL_PHOTOS}</th>
@@ -386,6 +387,19 @@
                   >
                     <td>
                       <div class="font-medium">{defect.title}</div>
+                    </td>
+                    <td>
+                      {#if defect.workOrderUuid !== null && defect.workOrderStatus !== null}
+                        <span
+                          class="badge {WO_STATUS_BADGE_CLASSES[
+                            defect.workOrderStatus as WorkOrderStatus
+                          ]}"
+                        >
+                          {WO_STATUS_LABELS[defect.workOrderStatus as WorkOrderStatus]}
+                        </span>
+                      {:else}
+                        <span class="badge badge--warning">Offen</span>
+                      {/if}
                     </td>
                     <td>{formatDate(defect.executionDate)}</td>
                     <td>{defect.executedByName ?? '-'}</td>
@@ -414,13 +428,6 @@
                           </button>
                           {#if defect.workOrderUuid !== null && defect.workOrderStatus !== null}
                             <div class="wo-info">
-                              <span
-                                class="badge {WO_STATUS_BADGE_CLASSES[
-                                  defect.workOrderStatus as WorkOrderStatus
-                                ]}"
-                              >
-                                {WO_STATUS_LABELS[defect.workOrderStatus as WorkOrderStatus]}
-                              </span>
                               {#if defect.workOrderAssigneeNames.length > 0}
                                 <span class="wo-info__assignees">
                                   <i class="fas fa-user text-(--color-text-muted)"></i>

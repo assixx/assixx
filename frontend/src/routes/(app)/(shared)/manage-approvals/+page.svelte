@@ -73,6 +73,7 @@
   const ADDON_FILTER_OPTIONS = [
     { value: '', label: 'Alle Module' },
     { value: 'kvp', label: 'KVP' },
+    { value: 'tpm', label: 'TPM / Wartung' },
     { value: 'vacation', label: 'Urlaub' },
     { value: 'blackboard', label: 'Schwarzes Brett' },
     { value: 'calendar', label: 'Kalender' },
@@ -99,6 +100,7 @@
 
   const ADDON_BADGE: Record<string, { cssClass: string; label: string }> = {
     kvp: { cssClass: 'badge--info', label: 'KVP' },
+    tpm: { cssClass: 'badge--dark', label: 'TPM' },
     vacation: { cssClass: 'badge--primary', label: 'Urlaub' },
     blackboard: { cssClass: 'badge--secondary', label: 'Schwarzes Brett' },
     calendar: { cssClass: 'badge--warning', label: 'Kalender' },
@@ -110,6 +112,8 @@
     switch (addonCode) {
       case 'kvp':
         return `/kvp-detail?uuid=${sourceUuid}`;
+      case 'tpm':
+        return `/lean-management/tpm/plan/${sourceUuid}`;
       case 'blackboard':
         return `/blackboard/${sourceUuid}`;
       default:

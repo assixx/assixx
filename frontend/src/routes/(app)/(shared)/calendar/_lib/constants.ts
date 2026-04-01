@@ -52,7 +52,7 @@ export function createEventLevelInfo(labels: HierarchyLabels): Record<OrgLevel, 
     },
     personal: {
       class: 'event-level-personal',
-      text: 'Persoenlich',
+      text: 'Persönlich',
       color: '#9b59b6',
     },
   };
@@ -127,7 +127,7 @@ export function createFilterOptions(labels: HierarchyLabels): readonly FilterOpt
       value: 'personal',
       label: 'Meine',
       icon: 'fa-user',
-      title: 'Persoenliche Termine',
+      title: 'Persönliche Termine',
     },
   ];
 }
@@ -149,7 +149,7 @@ interface OrgLevelOption {
  */
 export function createOrgLevelOptions(labels: HierarchyLabels): readonly OrgLevelOption[] {
   return [
-    { value: 'personal', label: 'Persoenlich', icon: 'fa-user' },
+    { value: 'personal', label: 'Persönlich', icon: 'fa-user' },
     { value: 'company', label: 'Firma', icon: 'fa-building' },
     { value: 'department', label: labels.department, icon: 'fa-sitemap' },
     { value: 'team', label: labels.team, icon: 'fa-users' },

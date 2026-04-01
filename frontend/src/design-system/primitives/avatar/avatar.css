@@ -76,7 +76,7 @@
    ======================================== */
 
 .avatar__initials {
-  color: var(--color-white);
+  color: var(--color-text-primary);
   font-weight: 600;
   font-size: 0.875rem;
   line-height: 1;

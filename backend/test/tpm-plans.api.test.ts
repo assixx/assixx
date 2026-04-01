@@ -25,6 +25,7 @@ let assetUuid: string;
 let planUuid: string;
 let cardUuid: string;
 let timeEstimateUuid: string;
+let approvalConfigUuid: string | null = null;
 
 beforeAll(async () => {
   auth = await loginApitest();
@@ -32,6 +33,21 @@ beforeAll(async () => {
   // Create own asset (self-sufficient — no dependency on other suites)
   assetUuids = await createAssets(auth.authToken, 1);
   assetUuid = assetUuids[0]!;
+
+  // Create TPM approval master config (D6: needed for approval requests to be created)
+  const configRes = await fetch(`${BASE_URL}/approvals/configs`, {
+    method: 'PUT',
+    headers: authHeaders(auth.authToken),
+    body: JSON.stringify({
+      addonCode: 'tpm',
+      approverType: 'user',
+      approverUserId: auth.userId,
+    }),
+  });
+  if (configRes.status === 200 || configRes.status === 201) {
+    const configBody = (await configRes.json()) as JsonBody;
+    approvalConfigUuid = (configBody.data?.uuid as string) ?? null;
+  }
 });
 
 // ---- seq: 0 -- Unauthenticated ------------------------------------------------
@@ -64,7 +80,6 @@ describe('TPM: Create Plan', () => {
         baseWeekday: 1,
         baseRepeatEvery: 1,
         baseTime: '08:00',
-        shiftPlanRequired: false,
         notes: 'Created via API test',
       }),
     });
@@ -89,9 +104,13 @@ describe('TPM: Create Plan', () => {
     expect(body.data.baseWeekday).toBe(1);
     expect(body.data.baseRepeatEvery).toBe(1);
     expect(body.data.baseTime).toBe('08:00:00');
-    expect(body.data.shiftPlanRequired).toBe(false);
     expect(body.data.assetId).toBeDefined();
     expect(body.data.isActive).toBe(1);
+  });
+
+  it('should start at approval version v0.0', () => {
+    expect(body.data.approvalVersion).toBe(0);
+    expect(body.data.revisionMinor).toBe(0);
   });
 });
 
@@ -207,6 +226,141 @@ describe('TPM: Update Plan', () => {
     expect(body.data.name).toBe('Updated TPM Plan');
     expect(body.data.baseWeekday).toBe(4);
     expect(body.data.notes).toBe('Updated via API test');
+  });
+
+  it('should bump revisionMinor on edit', () => {
+    expect(body.data.revisionMinor).toBe(1);
+    expect(body.data.approvalVersion).toBe(0);
+  });
+});
+
+// ---- seq: 5a -- Approval: Verify request was created after plan create/update ----
+
+describe('TPM Approval: Verify approval request created', () => {
+  let res: Response;
+  let body: JsonBody;
+
+  beforeAll(async () => {
+    res = await fetch(`${BASE_URL}/approvals?addonCode=tpm`, {
+      headers: authOnly(auth.authToken),
+    });
+    body = (await res.json()) as JsonBody;
+  });
+
+  it('should return 200 OK', () => {
+    expect(res.status).toBe(200);
+  });
+
+  it('should have at least one TPM approval', () => {
+    const items = body.data?.items as JsonBody[] | undefined;
+    expect(items).toBeDefined();
+    expect(items!.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('should reference the created plan as source', () => {
+    const items = body.data?.items as JsonBody[];
+    const tpmApproval = items.find(
+      (a: JsonBody) => a.sourceUuid === planUuid && a.addonCode === 'tpm',
+    );
+    expect(tpmApproval).toBeDefined();
+    expect(tpmApproval!.sourceEntityType).toBe('tpm_plan');
+    expect(tpmApproval!.status).toBe('pending');
+  });
+
+  it('should include plan name in approval title', () => {
+    const items = body.data?.items as JsonBody[];
+    const tpmApproval = items.find((a: JsonBody) => a.sourceUuid === planUuid);
+    expect(tpmApproval!.title).toContain('TPM Plan:');
+  });
+});
+
+// ---- seq: 5b -- Approval: Second edit should NOT create new approval (D3) --------
+
+describe('TPM Approval: Edit with pending — no duplicate (D3)', () => {
+  let updateRes: Response;
+  let updateBody: JsonBody;
+  let approvalsRes: Response;
+  let approvalsBody: JsonBody;
+
+  beforeAll(async () => {
+    // Second edit
+    updateRes = await fetch(`${BASE_URL}/tpm/plans/${planUuid}`, {
+      method: 'PATCH',
+      headers: authHeaders(auth.authToken),
+      body: JSON.stringify({ notes: 'Second edit — D3 test' }),
+    });
+    updateBody = (await updateRes.json()) as JsonBody;
+
+    // Small delay for async approval processing
+    await new Promise((r: (v: void) => void) => {
+      setTimeout(r, 200);
+    });
+
+    // Check approvals count
+    approvalsRes = await fetch(`${BASE_URL}/approvals?addonCode=tpm`, {
+      headers: authOnly(auth.authToken),
+    });
+    approvalsBody = (await approvalsRes.json()) as JsonBody;
+  });
+
+  it('should bump revisionMinor to 2', () => {
+    expect(updateRes.status).toBe(200);
+    expect(updateBody.data.revisionMinor).toBe(2);
+  });
+
+  it('should still have only one pending TPM approval for this plan', () => {
+    const items = approvalsBody.data?.items as JsonBody[];
+    const tpmPending = items.filter(
+      (a: JsonBody) => a.sourceUuid === planUuid && a.addonCode === 'tpm' && a.status === 'pending',
+    );
+    expect(tpmPending.length).toBe(1);
+  });
+});
+
+// ---- seq: 5c -- Approval: approvalStatus visible in list plans -------------------
+
+describe('TPM Approval: approvalStatus in list plans', () => {
+  let res: Response;
+  let body: JsonBody;
+
+  beforeAll(async () => {
+    res = await fetch(`${BASE_URL}/tpm/plans`, {
+      headers: authOnly(auth.authToken),
+    });
+    body = (await res.json()) as JsonBody;
+  });
+
+  it('should return 200 OK', () => {
+    expect(res.status).toBe(200);
+  });
+
+  it('should include approvalStatus field on plans', () => {
+    const plans = body.data?.data as JsonBody[];
+    const plan = plans.find((p: JsonBody) => p.uuid === planUuid);
+    expect(plan).toBeDefined();
+    expect(plan!.approvalStatus).toBe('pending');
+    expect(plan!.approvalVersion).toBe(0);
+    expect(plan!.revisionMinor).toBe(2);
+  });
+});
+
+// ---- seq: 5d -- Approval: approvalStatus in single plan --------------------------
+
+describe('TPM Approval: approvalStatus in single plan', () => {
+  let res: Response;
+  let body: JsonBody;
+
+  beforeAll(async () => {
+    res = await fetch(`${BASE_URL}/tpm/plans/${planUuid}`, {
+      headers: authOnly(auth.authToken),
+    });
+    body = (await res.json()) as JsonBody;
+  });
+
+  it('should include approval fields', () => {
+    expect(body.data.approvalStatus).toBe('pending');
+    expect(body.data.approvalDecisionNote).toBeNull();
+    expect(body.data.approvalDecidedByName).toBeNull();
   });
 });
 
@@ -672,7 +826,49 @@ describe('TPM: Verify Plan Restored', () => {
   });
 });
 
-// ---- seq: 22 -- Cleanup: Delete Card -------------------------------------------
+// ---- seq: 22 -- Plan Defects (Gesamtmängelliste) --------------------------------
+
+describe('TPM: Plan Defects — Empty Plan', () => {
+  let res: Response;
+  let body: JsonBody;
+
+  beforeAll(async () => {
+    res = await fetch(`${BASE_URL}/tpm/plans/${planUuid}/defects?page=1&limit=50`, {
+      headers: authOnly(auth.authToken),
+    });
+    body = (await res.json()) as JsonBody;
+  });
+
+  it('should return 200 OK', () => {
+    expect(res.status).toBe(200);
+  });
+
+  it('should return paginated structure', () => {
+    expect(typeof body.data.total).toBe('number');
+    expect(typeof body.data.page).toBe('number');
+    expect(typeof body.data.pageSize).toBe('number');
+    expect(Array.isArray(body.data.data)).toBe(true);
+  });
+
+  it('should return empty data for plan without defects', () => {
+    expect(body.data.total).toBe(0);
+    expect(body.data.data.length).toBe(0);
+  });
+});
+
+describe('TPM: Plan Defects — Unauthenticated', () => {
+  let res: Response;
+
+  beforeAll(async () => {
+    res = await fetch(`${BASE_URL}/tpm/plans/${planUuid}/defects?page=1&limit=50`);
+  });
+
+  it('should return 401 without auth', () => {
+    expect(res.status).toBe(401);
+  });
+});
+
+// ---- seq: 23 -- Cleanup: Delete Card -------------------------------------------
 
 describe('TPM: Delete Card', () => {
   let res: Response;
@@ -734,9 +930,120 @@ describe('TPM: Verify Plan Deleted', () => {
   });
 });
 
+// ---- Defect Stats (Mängelgrafik) -------------------------------------------
+
+describe('GET /tpm/plans/:uuid/defect-stats', () => {
+  describe('authenticated', () => {
+    let res: Response;
+    let body: JsonBody;
+
+    beforeAll(async () => {
+      res = await fetch(`${BASE_URL}/tpm/plans/${planUuid}/defect-stats?year=2026`, {
+        headers: authOnly(auth.authToken),
+      });
+      body = (await res.json()) as JsonBody;
+    });
+
+    it('should return 200', () => {
+      expect(res.status).toBe(200);
+    });
+
+    it('should have correct structure', () => {
+      const data = body.data as Record<string, unknown>;
+      expect(data.year).toBe(2026);
+      expect(data.assetName).toEqual(expect.any(String));
+      expect(data.planName).toEqual(expect.any(String));
+      expect(data.baseDetected).toEqual(expect.any(Number));
+      expect(data.baseResolved).toEqual(expect.any(Number));
+      expect(data.totalDetected).toEqual(expect.any(Number));
+      expect(data.totalResolved).toEqual(expect.any(Number));
+      expect(data.availableYears).toEqual(expect.any(Array));
+    });
+
+    it('should return 52 weeks', () => {
+      const data = body.data as Record<string, unknown>;
+      const weeks = data.weeks as unknown[];
+      expect(weeks).toHaveLength(52);
+    });
+
+    it('should have correct week structure', () => {
+      const data = body.data as Record<string, unknown>;
+      const weeks = data.weeks as Record<string, unknown>[];
+      const firstWeek = weeks[0]!;
+      expect(firstWeek.week).toBe(1);
+      expect(firstWeek).toHaveProperty('detected');
+      expect(firstWeek).toHaveProperty('resolved');
+      expect(firstWeek).toHaveProperty('cumulativeDetected');
+      expect(firstWeek).toHaveProperty('cumulativeResolved');
+    });
+  });
+
+  describe('default year (omitted)', () => {
+    let res: Response;
+
+    beforeAll(async () => {
+      res = await fetch(`${BASE_URL}/tpm/plans/${planUuid}/defect-stats`, {
+        headers: authOnly(auth.authToken),
+      });
+    });
+
+    it('should return 200 with default year', () => {
+      expect(res.status).toBe(200);
+    });
+  });
+
+  describe('invalid year', () => {
+    let res: Response;
+
+    beforeAll(async () => {
+      res = await fetch(`${BASE_URL}/tpm/plans/${planUuid}/defect-stats?year=abc`, {
+        headers: authOnly(auth.authToken),
+      });
+    });
+
+    it('should return 400', () => {
+      expect(res.status).toBe(400);
+    });
+  });
+
+  describe('non-existent plan', () => {
+    let res: Response;
+
+    beforeAll(async () => {
+      res = await fetch(`${BASE_URL}/tpm/plans/00000000-0000-0000-0000-000000000000/defect-stats`, {
+        headers: authOnly(auth.authToken),
+      });
+    });
+
+    it('should return 404', () => {
+      expect(res.status).toBe(404);
+    });
+  });
+
+  describe('unauthenticated', () => {
+    let res: Response;
+
+    beforeAll(async () => {
+      res = await fetch(`${BASE_URL}/tpm/plans/${planUuid}/defect-stats`);
+    });
+
+    it('should return 401', () => {
+      expect(res.status).toBe(401);
+    });
+  });
+});
+
 // ---- Cleanup: delete assets created for this suite ----------------------------
 
 afterAll(async () => {
+  // Cleanup approval config
+  if (approvalConfigUuid !== null) {
+    await fetch(`${BASE_URL}/approvals/configs/${approvalConfigUuid}`, {
+      method: 'DELETE',
+      headers: authOnly(auth.authToken),
+    });
+  }
+
   if (assetUuids.length > 0) {
     await deleteAssets(auth.authToken, assetUuids);
   }

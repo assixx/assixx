@@ -4,13 +4,14 @@
  *
  * SSR: Loads all work orders, stats, and eligible users in parallel.
  * Addon guard: requires 'work_orders' addon active for tenant.
- * Role guard: explicit check (not under (admin) layout group due to route conflict).
+ * Scope guard: Root | Admin (scoped) | Employee Team-Lead (ADR-036 pattern).
+ * Deputies inherit lead scope when tenant toggle is ON.
  */
 import { redirect } from '@sveltejs/kit';
 
 import { apiFetch, apiFetchWithPermission } from '$lib/server/api-fetch';
+import { assertTeamLevelAccess } from '$lib/server/manage-page-access';
 import { requireAddon } from '$lib/utils/addon-guard';
-import { createLogger } from '$lib/utils/logger';
 
 import type { PageServerLoad } from './$types';
 import type {
@@ -19,11 +20,6 @@ import type {
   WorkOrderListItem,
   WorkOrderStats,
 } from '../_lib/types';
-
-const log = createLogger('WorkOrdersAdmin');
-
-/** Roles allowed to access the admin work orders view */
-const ALLOWED_ROLES: ReadonlySet<string> = new Set(['admin', 'root']);
 
 function emptyPage(): PaginatedResponse<WorkOrderListItem> {
   return { items: [], total: 0, page: 1, pageSize: 20 };
@@ -41,29 +37,15 @@ function emptyStats(): WorkOrderStats {
 }
 
 export const load: PageServerLoad = async ({ cookies, fetch, parent, url }) => {
+  const { user, orgScope, activeAddons } = await parent();
+  assertTeamLevelAccess(orgScope, { role: user?.role, pathname: url.pathname });
+
   const token = cookies.get('accessToken');
   if (token === undefined || token === '') {
     redirect(302, '/login');
   }
 
-  const parentData = await parent();
-
-  // Role guard — replicate (admin) layout behavior
-  const user = parentData.user;
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- defense-in-depth: parent guarantees user, but security checks must not rely on upstream alone
-  if (user === null || user === undefined) {
-    log.warn({ pathname: url.pathname }, 'RBAC: No user data');
-    redirect(302, '/login');
-  }
-  if (!ALLOWED_ROLES.has(user.role)) {
-    log.warn(
-      { pathname: url.pathname, userRole: user.role },
-      'RBAC: Access denied to admin work orders',
-    );
-    redirect(302, '/permission-denied');
-  }
-
-  requireAddon(parentData.activeAddons, 'work_orders');
+  requireAddon(activeAddons, 'work_orders');
 
   const [workOrdersResult, statsData, eligibleUsersData] = await Promise.all([
     apiFetchWithPermission<PaginatedResponse<WorkOrderListItem>>(

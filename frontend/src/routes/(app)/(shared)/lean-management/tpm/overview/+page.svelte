@@ -77,22 +77,24 @@
   <PermissionDenied addonName="das TPM-System" />
 {:else}
   <div class="container">
+    <!-- Actions -->
+    <div class="mb-4 flex items-center justify-end">
+      <a
+        href={resolve('/lean-management/tpm/gesamtansicht')}
+        class="btn btn-secondary"
+      >
+        <i class="fas fa-table mr-2"></i>
+        {messages.BTN_GESAMTANSICHT}
+      </a>
+    </div>
+
     <!-- Header -->
     <div class="card">
       <div class="card__header">
-        <div class="flex items-center justify-between gap-4">
-          <h2 class="card__title">
-            <i class="fas fa-tools mr-2"></i>
-            {messages.PAGE_HEADING}
-          </h2>
-          <a
-            href={resolve('/lean-management/tpm/gesamtansicht')}
-            class="btn btn-info"
-          >
-            <i class="fas fa-table"></i>
-            {messages.BTN_GESAMTANSICHT}
-          </a>
-        </div>
+        <h2 class="card__title">
+          <i class="fas fa-tools mr-2"></i>
+          {messages.PAGE_HEADING}
+        </h2>
         <p class="mt-2 text-(--color-text-secondary)">
           {messages.PAGE_DESCRIPTION}
         </p>

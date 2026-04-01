@@ -58,6 +58,13 @@ export function addTeamInfo(response: SafeUserResponse, teams: UserTeamRow[]): v
     response.teamDepartmentName = primaryTeam.team_department_name;
     response.teamAreaId = primaryTeam.team_area_id;
     response.teamAreaName = primaryTeam.team_area_name;
+    // Lead/Deputy names from primary team's org chain
+    response.teamLeadName = primaryTeam.team_lead_name;
+    response.teamDeputyLeadName = primaryTeam.team_deputy_lead_name;
+    response.departmentLeadName = primaryTeam.department_lead_name;
+    response.departmentDeputyLeadName = primaryTeam.department_deputy_lead_name;
+    response.areaLeadName = primaryTeam.area_lead_name;
+    response.areaDeputyLeadName = primaryTeam.area_deputy_lead_name;
   }
 }
 

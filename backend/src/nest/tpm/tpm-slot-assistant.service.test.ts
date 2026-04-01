@@ -2,10 +2,9 @@
  * Unit tests for TpmSlotAssistantService
  *
  * Mocked dependencies: DatabaseService, TpmScheduleProjectionService.
- * Tests: getAvailableSlots (4 data sources combined, MAX_RANGE_DAYS validation,
+ * Tests: getAvailableSlots (data sources combined, MAX_RANGE_DAYS validation,
  * per-day conflict resolution), checkSlotAvailability (single-date check),
- * getTeamAvailability (team members + unavailability lookup),
- * validateShiftPlanExists (E15 validation).
+ * getTeamAvailability (team members + unavailability lookup).
  *
  * All methods are read-only (no mutations).
  */
@@ -92,8 +91,6 @@ describe('TpmSlotAssistantService', () => {
 
   describe('getAvailableSlots()', () => {
     it('should return per-day availability for a date range', async () => {
-      // fetchShiftCoverageDates → full coverage
-      mockDb.query.mockResolvedValueOnce([{ range_start: '2026-03-01', range_end: '2026-03-03' }]);
       // fetchExistingTpmDueDates → none
       mockDb.query.mockResolvedValueOnce([]);
       // scheduleProjection → empty
@@ -111,40 +108,7 @@ describe('TpmSlotAssistantService', () => {
       expect(result.days).toHaveLength(3);
     });
 
-    it('should mark days as unavailable when no shift plan exists', async () => {
-      // fetchShiftCoverageDates → empty (no coverage)
-      mockDb.query.mockResolvedValueOnce([]);
-      // fetchExistingTpmDueDates → none
-      mockDb.query.mockResolvedValueOnce([]);
-      mockProjection.projectSchedules.mockResolvedValueOnce(
-        emptyProjection('2026-03-01', '2026-03-01'),
-      );
-
-      const result = await service.getAvailableSlots(10, 42, '2026-03-01', '2026-03-01');
-
-      expect(result.availableDays).toBe(0);
-      expect(result.days[0]?.isAvailable).toBe(false);
-      expect(result.days[0]?.conflicts[0]?.type).toBe('no_shift_plan');
-    });
-
-    it('should skip shift plan check when shiftPlanRequired=false', async () => {
-      // shiftPlanRequired=false → no fetchShiftCoverageDates call
-      // fetchExistingTpmDueDates → none
-      mockDb.query.mockResolvedValueOnce([]);
-      mockProjection.projectSchedules.mockResolvedValueOnce(
-        emptyProjection('2026-03-01', '2026-03-01'),
-      );
-
-      const result = await service.getAvailableSlots(10, 42, '2026-03-01', '2026-03-01', false);
-
-      expect(result.availableDays).toBe(1);
-      expect(result.days[0]?.isAvailable).toBe(true);
-      expect(result.days[0]?.conflicts).toHaveLength(0);
-    });
-
     it('should detect existing TPM due date conflicts', async () => {
-      // fetchShiftCoverageDates → full coverage
-      mockDb.query.mockResolvedValueOnce([{ range_start: '2026-03-01', range_end: '2026-03-03' }]);
       // fetchExistingTpmDueDates → one due card
       mockDb.query.mockResolvedValueOnce([
         {
@@ -168,25 +132,6 @@ describe('TpmSlotAssistantService', () => {
       expect(day2?.conflicts[0]?.description).toContain('BT3');
     });
 
-    it('should mark individual days without shift coverage as unavailable', async () => {
-      // fetchShiftCoverageDates → covers only Mar 1-2 (not Mar 3)
-      mockDb.query.mockResolvedValueOnce([{ range_start: '2026-03-01', range_end: '2026-03-02' }]);
-      // fetchExistingTpmDueDates → none
-      mockDb.query.mockResolvedValueOnce([]);
-      mockProjection.projectSchedules.mockResolvedValueOnce(
-        emptyProjection('2026-03-01', '2026-03-03'),
-      );
-
-      const result = await service.getAvailableSlots(10, 42, '2026-03-01', '2026-03-03');
-
-      expect(result.totalDays).toBe(3);
-      expect(result.availableDays).toBe(2);
-      expect(result.days[0]?.isAvailable).toBe(true);
-      expect(result.days[1]?.isAvailable).toBe(true);
-      expect(result.days[2]?.isAvailable).toBe(false);
-      expect(result.days[2]?.conflicts[0]?.type).toBe('no_shift_plan');
-    });
-
     it('should throw BadRequestException when range exceeds 90 days', async () => {
       await expect(service.getAvailableSlots(10, 42, '2026-01-01', '2026-06-01')).rejects.toThrow(
         BadRequestException,
@@ -194,8 +139,6 @@ describe('TpmSlotAssistantService', () => {
     });
 
     it('should handle single-day range', async () => {
-      // fetchShiftCoverageDates → full coverage
-      mockDb.query.mockResolvedValueOnce([{ range_start: '2026-03-15', range_end: '2026-03-15' }]);
       // fetchExistingTpmDueDates → none
       mockDb.query.mockResolvedValueOnce([]);
       mockProjection.projectSchedules.mockResolvedValueOnce(
@@ -210,8 +153,6 @@ describe('TpmSlotAssistantService', () => {
     });
 
     it('should combine multiple conflict types on the same day', async () => {
-      // fetchShiftCoverageDates → empty (no coverage)
-      mockDb.query.mockResolvedValueOnce([]);
       // Existing TPM
       mockDb.query.mockResolvedValueOnce([
         {
@@ -220,17 +161,19 @@ describe('TpmSlotAssistantService', () => {
           title: 'Ölwechsel',
         },
       ]);
-      // scheduleProjection → empty
-      mockProjection.projectSchedules.mockResolvedValueOnce(
-        emptyProjection('2026-03-01', '2026-03-01'),
-      );
+      // Schedule conflict from another asset
+      mockProjection.projectSchedules.mockResolvedValueOnce({
+        slots: [makeSlot({ date: '2026-03-01', assetId: 99 })],
+        dateRange: { start: '2026-03-01', end: '2026-03-01' },
+        planCount: 1,
+      });
 
       const result = await service.getAvailableSlots(10, 42, '2026-03-01', '2026-03-01');
 
       expect(result.days[0]?.conflicts).toHaveLength(2);
       const types = result.days[0]?.conflicts.map((c) => c.type);
-      expect(types).toContain('no_shift_plan');
       expect(types).toContain('existing_tpm');
+      expect(types).toContain('tpm_schedule');
     });
 
     // =========================================================
@@ -238,8 +181,6 @@ describe('TpmSlotAssistantService', () => {
     // =========================================================
 
     it('should detect tpm_schedule conflicts from other assets', async () => {
-      // fetchShiftCoverageDates → full coverage
-      mockDb.query.mockResolvedValueOnce([{ range_start: '2026-03-01', range_end: '2026-03-01' }]);
       // fetchExistingTpmDueDates → none
       mockDb.query.mockResolvedValueOnce([]);
       // Projected slot from a DIFFERENT asset (99 != 42)
@@ -261,8 +202,6 @@ describe('TpmSlotAssistantService', () => {
     });
 
     it('should exclude same-asset projected slots (no self-conflict)', async () => {
-      // fetchShiftCoverageDates → full coverage
-      mockDb.query.mockResolvedValueOnce([{ range_start: '2026-03-01', range_end: '2026-03-01' }]);
       // fetchExistingTpmDueDates → none
       mockDb.query.mockResolvedValueOnce([]);
       // Projected slot for the SAME asset (42 === 42) → should be excluded
@@ -280,8 +219,6 @@ describe('TpmSlotAssistantService', () => {
     });
 
     it('should show full-day schedule conflict with Ganztägig', async () => {
-      // fetchShiftCoverageDates → full coverage
-      mockDb.query.mockResolvedValueOnce([{ range_start: '2026-03-01', range_end: '2026-03-01' }]);
       // fetchExistingTpmDueDates → none
       mockDb.query.mockResolvedValueOnce([]);
       mockProjection.projectSchedules.mockResolvedValueOnce({
@@ -305,8 +242,6 @@ describe('TpmSlotAssistantService', () => {
     });
 
     it('should handle multiple projected slots on the same day', async () => {
-      // fetchShiftCoverageDates → full coverage
-      mockDb.query.mockResolvedValueOnce([{ range_start: '2026-03-01', range_end: '2026-03-01' }]);
       // fetchExistingTpmDueDates → none
       mockDb.query.mockResolvedValueOnce([]);
       mockProjection.projectSchedules.mockResolvedValueOnce({
@@ -335,11 +270,15 @@ describe('TpmSlotAssistantService', () => {
       expect(schedConflicts?.[1]?.description).toContain('Plan B');
     });
 
-    it('should combine tpm_schedule with other conflict types', async () => {
-      // fetchShiftCoverageDates → empty (no coverage, produces no_shift_plan)
-      mockDb.query.mockResolvedValueOnce([]);
-      // fetchExistingTpmDueDates → none
-      mockDb.query.mockResolvedValueOnce([]);
+    it('should combine tpm_schedule with existing_tpm conflict', async () => {
+      // fetchExistingTpmDueDates → one existing
+      mockDb.query.mockResolvedValueOnce([
+        {
+          current_due_date: '2026-03-01',
+          card_code: 'BT1',
+          title: 'Prüfung',
+        },
+      ]);
       // Schedule conflict from another asset
       mockProjection.projectSchedules.mockResolvedValueOnce({
         slots: [makeSlot({ date: '2026-03-01', assetId: 99 })],
@@ -350,7 +289,7 @@ describe('TpmSlotAssistantService', () => {
       const result = await service.getAvailableSlots(10, 42, '2026-03-01', '2026-03-01');
 
       const types = result.days[0]?.conflicts.map((c) => c.type);
-      expect(types).toContain('no_shift_plan');
+      expect(types).toContain('existing_tpm');
       expect(types).toContain('tpm_schedule');
       expect(result.days[0]?.conflicts).toHaveLength(2);
     });
@@ -362,40 +301,15 @@ describe('TpmSlotAssistantService', () => {
 
   describe('checkSlotAvailability()', () => {
     it('should return available when no conflicts', async () => {
-      mockDb.queryOne.mockResolvedValueOnce({ count: '1' });
       mockDb.query.mockResolvedValueOnce([]);
 
       const result = await service.checkSlotAvailability(10, 42, '2026-03-01');
 
       expect(result.isAvailable).toBe(true);
-      expect(result.hasShiftPlan).toBe(true);
-      expect(result.conflicts).toHaveLength(0);
-    });
-
-    it('should detect missing shift plan', async () => {
-      mockDb.queryOne.mockResolvedValueOnce({ count: '0' });
-      mockDb.query.mockResolvedValueOnce([]);
-
-      const result = await service.checkSlotAvailability(10, 42, '2026-03-01');
-
-      expect(result.isAvailable).toBe(false);
-      expect(result.hasShiftPlan).toBe(false);
-      expect(result.conflicts[0]?.type).toBe('no_shift_plan');
-    });
-
-    it('should skip shift plan check when shiftPlanRequired=false', async () => {
-      mockDb.queryOne.mockResolvedValueOnce({ count: '0' });
-      mockDb.query.mockResolvedValueOnce([]);
-
-      const result = await service.checkSlotAvailability(10, 42, '2026-03-01', false);
-
-      expect(result.isAvailable).toBe(true);
-      expect(result.hasShiftPlan).toBe(false);
       expect(result.conflicts).toHaveLength(0);
     });
 
     it('should detect existing TPM due dates', async () => {
-      mockDb.queryOne.mockResolvedValueOnce({ count: '1' });
       mockDb.query.mockResolvedValueOnce([
         {
           current_due_date: '2026-03-01',
@@ -699,36 +613,6 @@ describe('TpmSlotAssistantService', () => {
 
       expect(result.availableCount).toBe(1);
       expect(result.totalCount).toBe(2);
-    });
-  });
-
-  // =============================================================
-  // validateShiftPlanExists (E15)
-  // =============================================================
-
-  describe('validateShiftPlanExists()', () => {
-    it('should return true when published/locked shift plan exists', async () => {
-      mockDb.queryOne.mockResolvedValueOnce({ count: '1' });
-
-      const result = await service.validateShiftPlanExists(10, 42, '2026-03-01', '2026-03-07');
-
-      expect(result).toBe(true);
-    });
-
-    it('should return false when no shift plan covers the range', async () => {
-      mockDb.queryOne.mockResolvedValueOnce({ count: '0' });
-
-      const result = await service.validateShiftPlanExists(10, 42, '2026-06-01', '2026-06-07');
-
-      expect(result).toBe(false);
-    });
-
-    it('should handle null count result', async () => {
-      mockDb.queryOne.mockResolvedValueOnce(null);
-
-      const result = await service.validateShiftPlanExists(10, 42, '2026-03-01', '2026-03-07');
-
-      expect(result).toBe(false);
     });
   });
 });

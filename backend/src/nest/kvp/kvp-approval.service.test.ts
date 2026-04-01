@@ -2,8 +2,8 @@
  * KVP Approval Service – Unit Tests
  *
  * Tests: requestApproval, getApprovalForSuggestion, hasApprovalConfig,
- * handleApprovalDecision (via EventBus), reconcilePendingApprovals,
- * persistent notifications.
+ * handleApprovalDecision (via EventBus callback — including decidedByUserId
+ * fallback, non-kvp filtering, idempotent status sync).
  */
 import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -25,8 +25,10 @@ vi.mock('./kvp.helpers.js', () => ({
   isUuid: mockIsUuid,
 }));
 
+const mockEventBusOn = vi.hoisted(() => vi.fn());
+
 vi.mock('../../utils/event-bus.js', () => ({
-  eventBus: { on: vi.fn() },
+  eventBus: { on: mockEventBusOn },
 }));
 
 // =============================================================
@@ -256,6 +258,141 @@ describe('KvpApprovalService', () => {
       const result = await service.hasApprovalConfig(1);
 
       expect(result).toBe(false);
+    });
+  });
+
+  // -----------------------------------------------------------
+  // handleApprovalDecision (via EventBus)
+  // -----------------------------------------------------------
+
+  describe('handleApprovalDecision (via EventBus)', () => {
+    function getDecisionCallback(): (data: {
+      tenantId: number;
+      approval: {
+        uuid: string;
+        title: string;
+        addonCode: string;
+        status: string;
+        requestedByName: string;
+        decidedByName?: string;
+        decisionNote?: string | null;
+      };
+      requestedByUserId: number;
+      decidedByUserId?: number;
+    }) => void {
+      // Constructor registers callback via eventBus.on('approval.decided', cb)
+      const call = mockEventBusOn.mock.calls.find((c: unknown[]) => c[0] === 'approval.decided');
+      return call[1] as ReturnType<typeof getDecisionCallback>;
+    }
+
+    it('should sync KVP status on approved decision', async () => {
+      const callback = getDecisionCallback();
+
+      // getSourceUuidFromApproval
+      mockDb.query.mockResolvedValueOnce([{ source_uuid: '019ceec8-3992-731b-9b79-9e292307b3ea' }]);
+      // findSuggestionByUuid
+      mockDb.query.mockResolvedValueOnce([createMockSuggestionRow({ status: 'in_review' })]);
+      // syncKvpStatus UPDATE
+      mockDb.query.mockResolvedValueOnce([]);
+      // createDecisionNotification
+      mockNotifications.createAddonNotification.mockResolvedValueOnce(undefined);
+
+      callback({
+        tenantId: 1,
+        approval: {
+          uuid: 'approval-uuid-1',
+          title: 'Lichtschranke',
+          addonCode: 'kvp',
+          status: 'approved',
+          requestedByName: 'Test User',
+        },
+        requestedByUserId: 5,
+        decidedByUserId: 10,
+      });
+
+      // Wait for async void handler
+      await vi.waitFor(() => {
+        expect(mockDb.query).toHaveBeenCalledTimes(3);
+      });
+    });
+
+    it('should handle missing decidedByUserId with fallback to 0', async () => {
+      const callback = getDecisionCallback();
+
+      mockDb.query.mockResolvedValueOnce([{ source_uuid: '019ceec8-3992-731b-9b79-9e292307b3ea' }]);
+      mockDb.query.mockResolvedValueOnce([createMockSuggestionRow({ status: 'in_review' })]);
+      mockDb.query.mockResolvedValueOnce([]);
+      mockNotifications.createAddonNotification.mockResolvedValueOnce(undefined);
+
+      callback({
+        tenantId: 1,
+        approval: {
+          uuid: 'approval-uuid-1',
+          title: 'Lichtschranke',
+          addonCode: 'kvp',
+          status: 'rejected',
+          requestedByName: 'Test User',
+          decisionNote: 'Abgelehnt',
+        },
+        requestedByUserId: 5,
+        // decidedByUserId omitted — should fall back to 0
+      });
+
+      await vi.waitFor(() => {
+        expect(mockDb.query).toHaveBeenCalledTimes(3);
+      });
+    });
+
+    it('should ignore events with non-kvp addonCode', async () => {
+      const callback = getDecisionCallback();
+
+      callback({
+        tenantId: 1,
+        approval: {
+          uuid: 'approval-uuid-1',
+          title: 'Something',
+          addonCode: 'shift_planning',
+          status: 'approved',
+          requestedByName: 'Test User',
+        },
+        requestedByUserId: 5,
+      });
+
+      // No DB calls — event ignored
+      expect(mockDb.query).not.toHaveBeenCalled();
+    });
+
+    it('should not create duplicate sync when status already matches', async () => {
+      const callback = getDecisionCallback();
+
+      mockDb.query.mockResolvedValueOnce([{ source_uuid: '019ceec8-3992-731b-9b79-9e292307b3ea' }]);
+      // Suggestion already has status 'approved'
+      mockDb.query.mockResolvedValueOnce([createMockSuggestionRow({ status: 'approved' })]);
+      mockNotifications.createAddonNotification.mockResolvedValueOnce(undefined);
+
+      callback({
+        tenantId: 1,
+        approval: {
+          uuid: 'approval-uuid-1',
+          title: 'Lichtschranke',
+          addonCode: 'kvp',
+          status: 'approved',
+          requestedByName: 'Test User',
+        },
+        requestedByUserId: 5,
+        decidedByUserId: 10,
+      });
+
+      await vi.waitFor(() => {
+        expect(mockDb.query).toHaveBeenCalledTimes(2);
+      });
+
+      // syncKvpStatus should have returned early (idempotent) — no UPDATE query
+      const updateCalls = mockDb.query.mock.calls.filter((c: unknown[]) => {
+        const sql = c[0] as string;
+        return sql.includes('UPDATE kvp_suggestions');
+      });
+      expect(updateCalls).toHaveLength(0);
     });
   });
 });

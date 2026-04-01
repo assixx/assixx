@@ -110,6 +110,20 @@ export interface PaginatedDefects {
   pageSize: number;
 }
 
+/** Defect with card context for plan-level Gesamtmängelliste */
+export interface PlanDefectWithContext extends DefectWithContext {
+  cardCode: string;
+  cardTitle: string;
+}
+
+/** Paginated plan-level defect list response */
+export interface PaginatedPlanDefects {
+  data: PlanDefectWithContext[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
 /** DB row type for defect with execution context JOIN */
 interface DefectWithContextRow extends TpmExecutionDefectRow {
   execution_uuid: string;
@@ -122,6 +136,12 @@ interface DefectWithContextRow extends TpmExecutionDefectRow {
   work_order_priority: string | null;
   work_order_assignee_names: string | null;
   work_order_created_at: string | null;
+}
+
+/** DB row type for plan-level defect query (extends with card columns) */
+interface PlanDefectWithContextRow extends DefectWithContextRow {
+  card_code: string;
+  card_title: string;
 }
 
 /** SQL for fetching defects with execution context + work order info */
@@ -151,6 +171,49 @@ const DEFECT_WITH_CONTEXT_SELECT = `
   FROM tpm_execution_defects d
   JOIN tpm_card_executions e ON d.execution_id = e.id
   JOIN tpm_cards c ON e.card_id = c.id
+  LEFT JOIN users u ON e.executed_by = u.id
+  LEFT JOIN LATERAL (
+    SELECT wo_inner.id, wo_inner.uuid, wo_inner.status, wo_inner.priority, wo_inner.created_at
+    FROM work_orders wo_inner
+    WHERE wo_inner.source_type = 'tpm_defect'
+      AND wo_inner.source_uuid = d.uuid
+      AND wo_inner.tenant_id = d.tenant_id
+      AND wo_inner.is_active = ${IS_ACTIVE.ACTIVE}
+    ORDER BY wo_inner.created_at DESC
+    LIMIT 1
+  ) wo ON true
+` as const;
+
+/** SQL for fetching defects with card context for plan-level Gesamtmängelliste */
+const DEFECT_WITH_PLAN_CONTEXT_SELECT = `
+  SELECT d.*,
+    e.uuid AS execution_uuid,
+    e.execution_date,
+    COALESCE(
+      NULLIF(CONCAT(u.first_name, ' ', u.last_name), ' '),
+      u.username
+    ) AS executed_by_name,
+    e.approval_status,
+    (SELECT COUNT(*)::int FROM tpm_defect_photos dp WHERE dp.defect_id = d.id) AS photo_count,
+    c.card_code,
+    c.title AS card_title,
+    TRIM(wo.uuid) AS work_order_uuid,
+    wo.status::text AS work_order_status,
+    wo.priority::text AS work_order_priority,
+    wo.created_at AS work_order_created_at,
+    (
+      SELECT string_agg(
+        COALESCE(NULLIF(CONCAT(ua.first_name, ' ', ua.last_name), ' '), ua.username),
+        ', ' ORDER BY ua.last_name, ua.first_name
+      )
+      FROM work_order_assignees woa
+      JOIN users ua ON woa.user_id = ua.id
+      WHERE woa.work_order_id = wo.id
+    ) AS work_order_assignee_names
+  FROM tpm_execution_defects d
+  JOIN tpm_card_executions e ON d.execution_id = e.id
+  JOIN tpm_cards c ON e.card_id = c.id
+  JOIN tpm_maintenance_plans p ON c.plan_id = p.id
   LEFT JOIN users u ON e.executed_by = u.id
   LEFT JOIN LATERAL (
     SELECT wo_inner.id, wo_inner.uuid, wo_inner.status, wo_inner.priority, wo_inner.created_at
@@ -528,6 +591,42 @@ export class TpmExecutionsService {
 
     return {
       data: rows.map(mapDefectWithContextToApi),
+      total,
+      page,
+      pageSize,
+    };
+  }
+
+  /** List all defects across all cards of a plan (Gesamtmängelliste) */
+  async listDefectsForPlan(
+    tenantId: number,
+    planUuid: string,
+    page: number,
+    pageSize: number,
+  ): Promise<PaginatedPlanDefects> {
+    const countResult = await this.db.queryOne<{ count: string }>(
+      `SELECT COUNT(*) AS count
+       FROM tpm_execution_defects d
+       JOIN tpm_card_executions e ON d.execution_id = e.id
+       JOIN tpm_cards c ON e.card_id = c.id
+       JOIN tpm_maintenance_plans p ON c.plan_id = p.id
+       WHERE p.uuid = $1 AND d.tenant_id = $2 AND d.is_active = ${IS_ACTIVE.ACTIVE}`,
+      [planUuid, tenantId],
+    );
+
+    const total = Number.parseInt(countResult?.count ?? '0', 10);
+    const offset = (page - 1) * pageSize;
+
+    const rows = await this.db.query<PlanDefectWithContextRow>(
+      `${DEFECT_WITH_PLAN_CONTEXT_SELECT}
+       WHERE p.uuid = $1 AND d.tenant_id = $2 AND d.is_active = ${IS_ACTIVE.ACTIVE}
+       ORDER BY c.card_code ASC, e.execution_date DESC, d.position_number ASC
+       LIMIT $3 OFFSET $4`,
+      [planUuid, tenantId, pageSize, offset],
+    );
+
+    return {
+      data: rows.map(mapPlanDefectWithContextToApi),
       total,
       page,
       pageSize,
@@ -946,6 +1045,15 @@ function mapDefectWithContextToApi(row: DefectWithContextRow): DefectWithContext
     workOrderAssigneeNames: assigneeNames,
     workOrderCreatedAt:
       row.work_order_created_at !== null ? toIsoString(row.work_order_created_at) : null,
+  };
+}
+
+/** Map plan-level defect-with-context DB row to API response (module-level helper) */
+function mapPlanDefectWithContextToApi(row: PlanDefectWithContextRow): PlanDefectWithContext {
+  return {
+    ...mapDefectWithContextToApi(row),
+    cardCode: row.card_code,
+    cardTitle: row.card_title,
   };
 }
 

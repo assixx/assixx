@@ -95,6 +95,14 @@
       resolvePositionDisplay(user.position, labels)
     : PLACEHOLDER_TEXT.employee,
   );
+
+  // Lead/Deputy names per org level
+  const areaLeadName = $derived(user?.areaLeadName ?? null);
+  const areaDeputyLeadName = $derived(user?.areaDeputyLeadName ?? null);
+  const departmentLeadName = $derived(user?.departmentLeadName ?? null);
+  const departmentDeputyLeadName = $derived(user?.departmentDeputyLeadName ?? null);
+  const teamLeadName = $derived(user?.teamLeadName ?? null);
+  const teamDeputyLeadName = $derived(user?.teamDeputyLeadName ?? null);
 </script>
 
 <svelte:head>
@@ -114,6 +122,22 @@
       </div>
       <div class="card-stat__value">{employeeArea}</div>
       <div class="card-stat__label">{labels.area}</div>
+      <div class="card-stat__leads">
+        <span
+          class="card-stat__lead"
+          title="Leitung"
+        >
+          <i class="fas fa-user-shield"></i>
+          {areaLeadName ?? '—'}
+        </span>
+        <span
+          class="card-stat__lead card-stat__lead--deputy"
+          title="Stellvertretung"
+        >
+          <i class="fas fa-user-tag"></i>
+          {areaDeputyLeadName ?? '—'}
+        </span>
+      </div>
     </div>
     <div class="card-stat">
       <div class="card-stat__icon">
@@ -121,6 +145,22 @@
       </div>
       <div class="card-stat__value">{employeeDepartment}</div>
       <div class="card-stat__label">{labels.department}</div>
+      <div class="card-stat__leads">
+        <span
+          class="card-stat__lead"
+          title="Leitung"
+        >
+          <i class="fas fa-user-shield"></i>
+          {departmentLeadName ?? '—'}
+        </span>
+        <span
+          class="card-stat__lead card-stat__lead--deputy"
+          title="Stellvertretung"
+        >
+          <i class="fas fa-user-tag"></i>
+          {departmentDeputyLeadName ?? '—'}
+        </span>
+      </div>
     </div>
     <div class="card-stat">
       <div class="card-stat__icon">
@@ -137,6 +177,22 @@
       </div>
       <div class="card-stat__label">
         {labels.team}
+      </div>
+      <div class="card-stat__leads">
+        <span
+          class="card-stat__lead"
+          title="Leitung"
+        >
+          <i class="fas fa-user-shield"></i>
+          {teamLeadName ?? '—'}
+        </span>
+        <span
+          class="card-stat__lead card-stat__lead--deputy"
+          title="Stellvertretung"
+        >
+          <i class="fas fa-user-tag"></i>
+          {teamDeputyLeadName ?? '—'}
+        </span>
       </div>
     </div>
     <div class="card-stat">

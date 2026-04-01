@@ -124,8 +124,8 @@
   <PermissionDenied addonName="das TPM-System" />
 {:else}
   <div class="container">
-    <!-- Back Navigation -->
-    <div class="mb-4">
+    <!-- Back + Actions -->
+    <div class="mb-4 flex items-center justify-between">
       <button
         type="button"
         class="btn btn-light"
@@ -134,6 +134,26 @@
         <i class="fas fa-arrow-left mr-2"></i>
         Zurück zum Board
       </button>
+      {#if card !== null}
+        <div class="flex gap-2">
+          <button
+            type="button"
+            class="btn btn-secondary"
+            onclick={navigateToDefects}
+          >
+            <i class="fas fa-exclamation-triangle mr-2"></i>
+            {MESSAGES.BTN_DEFECTS}
+          </button>
+          <button
+            type="button"
+            class="btn btn-secondary"
+            onclick={navigateToHistory}
+          >
+            <i class="fas fa-history mr-2"></i>
+            {MESSAGES.HISTORY_HEADING}
+          </button>
+        </div>
+      {/if}
     </div>
 
     {#if data.error !== null || card === null}
@@ -150,45 +170,23 @@
       <!-- Page Header -->
       <div class="card">
         <div class="card__header">
-          <div class="flex flex-wrap items-center justify-between gap-4">
-            <div>
-              <div class="flex items-center gap-2">
-                <span class="text-xs font-bold tracking-wider text-(--color-text-muted) uppercase">
-                  {card.cardCode}
-                </span>
-                <span class="badge {CARD_STATUS_BADGE_CLASSES[card.status]}">
-                  {CARD_STATUS_LABELS[card.status]}
-                </span>
-                {#if card.requiresApproval}
-                  <span
-                    class="text-xs text-(--color-warning)"
-                    title={MESSAGES.DETAIL_APPROVAL_REQUIRED}
-                  >
-                    <i class="fas fa-lock"></i>
-                  </span>
-                {/if}
-              </div>
-              <h2 class="card__title m-0 mt-1">{card.title}</h2>
-            </div>
-            <div class="flex gap-2">
-              <button
-                type="button"
-                class="btn btn-primary"
-                onclick={navigateToDefects}
+          <div class="flex items-center gap-2">
+            <span class="text-xs font-bold tracking-wider text-(--color-text-muted) uppercase">
+              {card.cardCode}
+            </span>
+            <span class="badge {CARD_STATUS_BADGE_CLASSES[card.status]}">
+              {CARD_STATUS_LABELS[card.status]}
+            </span>
+            {#if card.requiresApproval}
+              <span
+                class="text-xs text-(--color-warning)"
+                title={MESSAGES.DETAIL_APPROVAL_REQUIRED}
               >
-                <i class="fas fa-exclamation-triangle mr-2"></i>
-                {MESSAGES.BTN_DEFECTS}
-              </button>
-              <button
-                type="button"
-                class="btn btn-primary"
-                onclick={navigateToHistory}
-              >
-                <i class="fas fa-history mr-2"></i>
-                {MESSAGES.HISTORY_HEADING}
-              </button>
-            </div>
+                <i class="fas fa-lock"></i>
+              </span>
+            {/if}
           </div>
+          <h2 class="card__title m-0 mt-1">{card.title}</h2>
         </div>
       </div>
 

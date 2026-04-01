@@ -31,7 +31,27 @@ export { CheckDuplicateDto, CheckDuplicateSchema } from './check-duplicate.dto.j
 export { ListCardsQueryDto, ListCardsQuerySchema } from './list-cards-query.dto.js';
 export { ListExecutionsQueryDto, ListExecutionsQuerySchema } from './list-executions-query.dto.js';
 export { ListPlansQueryDto, ListPlansQuerySchema } from './list-plans-query.dto.js';
+export { ListRevisionsQueryDto, ListRevisionsQuerySchema } from './list-revisions-query.dto.js';
 export { AssetSlotsQueryDto, AssetSlotsQuerySchema } from './asset-slots-query.dto.js';
+export {
+  ScheduleProjectionQueryDto,
+  ScheduleProjectionQuerySchema,
+} from './schedule-projection-query.dto.js';
+export { SetPlanAssignmentsDto, SetPlanAssignmentsSchema } from './set-plan-assignments.dto.js';
+export {
+  ShiftAssignmentsQueryDto,
+  ShiftAssignmentsQuerySchema,
+} from './shift-assignments-query.dto.js';
+export { DefectStatsQueryDto, DefectStatsQuerySchema } from './defect-stats-query.dto.js';
+export { UpdateDefectDto, UpdateDefectSchema } from './update-defect.dto.js';
+export {
+  UpdateIntervalColorConfigDto,
+  UpdateIntervalColorConfigSchema,
+} from './update-interval-color-config.dto.js';
+export {
+  UpdateCategoryColorConfigDto,
+  UpdateCategoryColorConfigSchema,
+} from './update-category-color-config.dto.js';
 
 // Common schemas (for reuse in services/controllers/tests)
 export {

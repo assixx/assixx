@@ -11,6 +11,7 @@ import { v7 as uuidv7 } from 'uuid';
 
 import { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import { DatabaseService } from '../database/database.service.js';
+import { ScopeService } from '../hierarchy-permission/scope.service.js';
 import { mapAssigneeRowToApi } from './work-orders.helpers.js';
 import type {
   EligibleUser,
@@ -24,6 +25,7 @@ export class WorkOrderAssigneesService {
   constructor(
     private readonly db: DatabaseService,
     private readonly activityLogger: ActivityLoggerService,
+    private readonly scopeService: ScopeService,
   ) {}
 
   /** Bulk-assign users to a work order */
@@ -116,12 +118,20 @@ export class WorkOrderAssigneesService {
     return rows.map(mapAssigneeRowToApi);
   }
 
-  /** Get eligible users for assignment, optionally filtered by asset teams */
+  /** Get eligible users for assignment, optionally filtered by asset teams + scope */
   async getEligibleUsers(tenantId: number, assetId?: number): Promise<EligibleUser[]> {
     if (assetId !== undefined) {
       return await this.fetchTeamFilteredUsers(tenantId, assetId);
     }
-    return await this.fetchAllEmployees(tenantId);
+
+    const scope = await this.scopeService.getScope();
+    if (scope.type === 'full') {
+      return await this.fetchAllEmployees(tenantId);
+    }
+
+    // Limited scope: only employees in the user's teams
+    if (scope.teamIds.length === 0) return [];
+    return await this.fetchScopeFilteredUsers(tenantId, scope.teamIds);
   }
 
   // ==========================================================================
@@ -197,6 +207,30 @@ export class WorkOrderAssigneesService {
        WHERE mt.asset_id = $1 AND u.tenant_id = $2 AND u.is_active = ${IS_ACTIVE.ACTIVE} AND u.role = 'employee'
        ORDER BY u.last_name, u.first_name`,
       [assetId, tenantId],
+    );
+    return rows.map(mapEligibleUserRow);
+  }
+
+  /** Scope-filtered: only employees in the user's accessible teams */
+  private async fetchScopeFilteredUsers(
+    tenantId: number,
+    teamIds: number[],
+  ): Promise<EligibleUser[]> {
+    const rows = await this.db.query<{
+      id: number;
+      uuid: string;
+      first_name: string;
+      last_name: string;
+      email: string;
+      employee_number: string | null;
+    }>(
+      `SELECT DISTINCT u.id, u.uuid, u.first_name, u.last_name, u.email, u.employee_number
+       FROM users u
+       JOIN user_teams ut ON u.id = ut.user_id AND ut.tenant_id = u.tenant_id
+       WHERE ut.team_id = ANY($1::int[]) AND u.tenant_id = $2
+         AND u.is_active = ${IS_ACTIVE.ACTIVE} AND u.role = 'employee'
+       ORDER BY u.last_name, u.first_name`,
+      [teamIds, tenantId],
     );
     return rows.map(mapEligibleUserRow);
   }

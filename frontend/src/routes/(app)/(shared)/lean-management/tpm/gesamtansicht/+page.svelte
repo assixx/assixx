@@ -28,10 +28,10 @@
   <div class="gv-header">
     <a
       href={resolve('/lean-management/tpm/overview')}
-      class="btn btn-info btn-icon"
-      title={messages.BTN_BACK_TO_OVERVIEW}
+      class="btn btn-light"
     >
-      <i class="fas fa-arrow-left"></i>
+      <i class="fas fa-arrow-left mr-2"></i>
+      {messages.BTN_BACK_TO_OVERVIEW}
     </a>
     <h1 class="gv-header__title">{messages.GESAMTANSICHT_TITLE}</h1>
   </div>

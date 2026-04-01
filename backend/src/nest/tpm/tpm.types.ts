@@ -47,12 +47,36 @@ export interface TpmMaintenancePlanRow {
   base_repeat_every: number;
   base_time: string | null;
   buffer_hours: string; // NUMERIC(4,1) → pg returns string
-  shift_plan_required: boolean;
   notes: string | null;
+  revision_number: number;
+  approval_version: number;
+  revision_minor: number;
   created_by: number;
   is_active: number;
   created_at: string;
   updated_at: string;
+}
+
+/** Row type for `tpm_plan_revisions` table (immutable snapshot) */
+export interface TpmPlanRevisionRow {
+  id: number;
+  uuid: string;
+  tenant_id: number;
+  plan_id: number;
+  revision_number: number;
+  approval_version: number;
+  revision_minor: number;
+  name: string;
+  asset_id: number;
+  base_weekday: number;
+  base_repeat_every: number;
+  base_time: string | null;
+  buffer_hours: string; // NUMERIC(4,1) → pg returns string
+  notes: string | null;
+  changed_by: number;
+  change_reason: string | null;
+  changed_fields: string[];
+  created_at: string;
 }
 
 /** Row type for `tpm_time_estimates` table (migration 041) */
@@ -231,13 +255,49 @@ export interface TpmPlan {
   baseRepeatEvery: number;
   baseTime: string | null;
   bufferHours: number;
-  shiftPlanRequired: boolean;
   notes: string | null;
+  revisionNumber: number;
+  approvalVersion: number;
+  revisionMinor: number;
+  approvalStatus: string | null;
+  approvalDecisionNote: string | null;
+  approvalDecidedByName: string | null;
   createdBy: number;
   createdByName?: string;
   isActive: number;
   createdAt: string;
   updatedAt: string;
+}
+
+/** Plan revision as returned by the API */
+export interface TpmPlanRevision {
+  uuid: string;
+  revisionNumber: number;
+  approvalVersion: number;
+  revisionMinor: number;
+  name: string;
+  assetId: number;
+  baseWeekday: number;
+  baseRepeatEvery: number;
+  baseTime: string | null;
+  bufferHours: number;
+  notes: string | null;
+  changedBy: number;
+  changedByName: string;
+  changeReason: string | null;
+  changedFields: string[];
+  createdAt: string;
+}
+
+/** Paginated revision list response */
+export interface TpmPlanRevisionList {
+  currentVersion: number;
+  currentApprovalVersion: number;
+  currentRevisionMinor: number;
+  planName: string;
+  assetName: string;
+  revisions: TpmPlanRevision[];
+  total: number;
 }
 
 /** Time estimate as returned by the API */
@@ -567,3 +627,85 @@ export const MAX_PHOTOS_PER_DEFECT = 5;
 
 /** Max photo file size in bytes (5MB, enforced in DB + service) */
 export const MAX_PHOTO_FILE_SIZE = 5_242_880;
+
+// ============================================================================
+// Permission Types (for GET /tpm/plans/my-permissions)
+// ============================================================================
+
+/** Permission set for a single TPM module */
+export interface TpmModulePermissions {
+  readonly canRead: boolean;
+  readonly canWrite: boolean;
+  readonly canDelete?: boolean;
+}
+
+/** User's effective TPM permissions across all modules */
+export interface TpmMyPermissions {
+  readonly plans: TpmModulePermissions;
+  readonly cards: TpmModulePermissions;
+  readonly executions: Omit<TpmModulePermissions, 'canDelete'>;
+  readonly config: Omit<TpmModulePermissions, 'canDelete'>;
+  readonly locations: TpmModulePermissions;
+}
+
+// ============================================================================
+// Scoped Org Data (for GET /tpm/plans/my-assets)
+// ============================================================================
+
+/** Minimal area for asset cascade selector */
+export interface TpmScopedArea {
+  readonly id: number;
+  readonly name: string;
+  readonly uuid: string;
+}
+
+/** Minimal department for asset cascade selector */
+export interface TpmScopedDepartment {
+  readonly id: number;
+  readonly name: string;
+  readonly uuid: string;
+  readonly areaId: number;
+}
+
+/** Minimal asset for asset cascade selector */
+export interface TpmScopedAsset {
+  readonly id: number;
+  readonly name: string;
+  readonly uuid: string;
+  readonly departmentId: number;
+  readonly assetNumber: string | null;
+  readonly status: string;
+}
+
+/** Scoped org data for plan creation */
+export interface TpmScopedOrgData {
+  readonly areas: readonly TpmScopedArea[];
+  readonly departments: readonly TpmScopedDepartment[];
+  readonly assets: readonly TpmScopedAsset[];
+}
+
+// ============================================================================
+// Defect Statistics (Mängelgrafik)
+// ============================================================================
+
+/** Weekly defect counts (single week) */
+export interface DefectWeeklyEntry {
+  readonly week: number;
+  readonly detected: number;
+  readonly resolved: number;
+  readonly cumulativeDetected: number;
+  readonly cumulativeResolved: number;
+}
+
+/** Full defect chart data for a plan/year */
+export interface DefectChartData {
+  readonly year: number;
+  readonly assetName: string;
+  readonly planName: string;
+  readonly weeks: readonly DefectWeeklyEntry[];
+  readonly baseDetected: number;
+  readonly baseResolved: number;
+  readonly totalDetected: number;
+  readonly totalResolved: number;
+  readonly availableYears: readonly number[];
+}

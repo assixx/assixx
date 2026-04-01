@@ -1,5 +1,13 @@
 # assixx-frontend
 
+## 0.4.9
+
+### Patch Changes
+
+- a180d70: refactor: add TPM apporval system
+- a180d70: feat: add defects chart
+  - @assixx/shared@0.4.9
+
 ## 0.4.8
 
 ### Patch Changes

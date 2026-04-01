@@ -291,6 +291,15 @@ const BASE_MESSAGES = {
   DEFECTS_EDIT_SUCCESS: 'Mangel erfolgreich aktualisiert',
   DEFECTS_EDIT_ERROR: 'Fehler beim Speichern des Mangels',
   DEFECTS_WO_CREATED: 'Arbeitsauftrag erfolgreich erstellt',
+
+  // Plan-level Gesamtmängelliste
+  PLAN_DEFECTS_PAGE_TITLE: 'Gesamtmängelliste',
+  PLAN_DEFECTS_HEADING: 'Gesamtmängelliste',
+  PLAN_DEFECTS_BACK: 'Zurück zum Board',
+  PLAN_DEFECTS_EMPTY_TITLE: 'Keine Mängel',
+  PLAN_DEFECTS_EMPTY_DESC: 'Für diesen Wartungsplan wurden keine Mängel dokumentiert.',
+  PLAN_DEFECTS_COL_CARD: 'Karte',
+  DEFECTS_COL_WO_STATUS: 'Status',
   BTN_DEFECTS: 'Mängelliste',
 
   // Board view toggle
@@ -301,6 +310,21 @@ const BASE_MESSAGES = {
   DEFECT_PHOTO_ADD: 'Mängelfoto hinzufügen',
   DEFECT_PHOTO_MAX_SIZE: 'Max. 5 MB pro Foto',
   DEFECT_PHOTO_MAX_REACHED: 'Maximum von 5 Fotos pro Mangel erreicht',
+
+  // Mängelgrafik (Defect Chart)
+  CHART_PAGE_TITLE: 'Mängelgrafik',
+  CHART_HEADING: 'Mängelgrafik',
+  CHART_BACK: 'Zurück zur Mängelliste',
+  CHART_YEAR_LABEL: 'Jahr',
+  CHART_LEGEND_DETECTED: 'Mängel erkannt',
+  CHART_LEGEND_RESOLVED: 'Mängel behoben',
+  CHART_Y_AXIS: 'Anzahl Mängel',
+  CHART_X_AXIS: 'Woche',
+  CHART_EMPTY_TITLE: 'Keine Daten',
+  CHART_EMPTY_DESC: 'Für diesen Zeitraum liegen keine Mängeldaten vor.',
+  CHART_ERROR: 'Fehler beim Laden der Mängelstatistik',
+  CHART_FOOTER: 'Dokumentation Mängelkartensystem',
+  BTN_CHART: 'Mängelgrafik',
 
   // Time Estimates
   TIME_HEADING: 'Zeitschätzung',

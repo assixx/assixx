@@ -21,6 +21,13 @@ export interface LayoutUser {
   teamDepartmentName?: string;
   teamAreaId?: number;
   teamAreaName?: string;
+  // Lead/Deputy names per org level
+  teamLeadName?: string | null;
+  teamDeputyLeadName?: string | null;
+  departmentLeadName?: string | null;
+  departmentDeputyLeadName?: string | null;
+  areaLeadName?: string | null;
+  areaDeputyLeadName?: string | null;
 }
 
 /** Employee info from user data */
