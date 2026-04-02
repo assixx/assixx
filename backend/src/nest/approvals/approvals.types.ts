@@ -22,30 +22,6 @@ export type ApprovalApproverType =
   | 'position';
 
 // =============================================================================
-// CONSTANTS
-// =============================================================================
-
-export const STATUS_LABELS: Readonly<Record<ApprovalStatus, string>> = {
-  pending: 'Offen',
-  approved: 'Genehmigt',
-  rejected: 'Abgelehnt',
-};
-
-export const PRIORITY_LABELS: Readonly<Record<ApprovalPriority, string>> = {
-  low: 'Niedrig',
-  medium: 'Mittel',
-  high: 'Hoch',
-};
-
-export const APPROVER_TYPE_LABELS: Readonly<Record<ApprovalApproverType, string>> = {
-  user: 'Benutzer',
-  team_lead: 'Team Lead',
-  area_lead: 'Bereichsleiter',
-  department_lead: 'Abteilungsleiter',
-  position: 'Position',
-};
-
-// =============================================================================
 // DB ROW TYPES (snake_case — 1:1 with PostgreSQL tables)
 // =============================================================================
 

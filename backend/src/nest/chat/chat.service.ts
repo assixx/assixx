@@ -36,7 +36,7 @@ import type {
   UnreadCountSummary,
   UserPermissions,
 } from './chat.types.js';
-import { ERROR_FEATURE_NOT_IMPLEMENTED } from './chat.types.js';
+import { ERROR_NOT_IMPLEMENTED } from './chat.types.js';
 import type {
   AddParticipantsBody,
   CreateConversationBody,
@@ -304,7 +304,7 @@ export class ChatService {
    */
   // eslint-disable-next-line @typescript-eslint/require-await -- Stub method
   async addParticipants(_conversationId: number, _dto: AddParticipantsBody): Promise<never> {
-    throw new BadRequestException(ERROR_FEATURE_NOT_IMPLEMENTED);
+    throw new BadRequestException(ERROR_NOT_IMPLEMENTED);
   }
 
   /**
@@ -312,7 +312,7 @@ export class ChatService {
    */
   // eslint-disable-next-line @typescript-eslint/require-await -- Stub method
   async removeParticipant(_conversationId: number, _userId: number): Promise<never> {
-    throw new BadRequestException(ERROR_FEATURE_NOT_IMPLEMENTED);
+    throw new BadRequestException(ERROR_NOT_IMPLEMENTED);
   }
 
   /**
@@ -320,7 +320,7 @@ export class ChatService {
    */
   // eslint-disable-next-line @typescript-eslint/require-await -- Stub method
   async leaveConversation(_conversationId: number): Promise<never> {
-    throw new BadRequestException(ERROR_FEATURE_NOT_IMPLEMENTED);
+    throw new BadRequestException(ERROR_NOT_IMPLEMENTED);
   }
 
   // ============================================

@@ -28,7 +28,7 @@
         <i class="fas fa-infinity"></i>
         Unbegrenzte Lizenzen inklusive
       </div>
-      <ul class="feature-list">
+      <ul class="plan-list">
         <li>
           <strong>Unbegrenzt</strong> Mitarbeiter
         </li>
@@ -63,7 +63,7 @@
         €10
         <span>/Modul/Monat</span>
       </div>
-      <ul class="feature-list">
+      <ul class="plan-list">
         <li>12 Zusatz-Module verfügbar</li>
         <li>30 Tage kostenlos testen</li>
         <li>Jederzeit aktivieren/deaktivieren</li>
@@ -90,7 +90,7 @@
         Individuell
         <span>auf Anfrage</span>
       </div>
-      <ul class="feature-list">
+      <ul class="plan-list">
         <li>On-Premise Installation</li>
         <li>Eigene Server-Infrastruktur</li>
         <li>Dedizierter Support</li>
@@ -358,7 +358,7 @@
     font-size: 1rem;
   }
 
-  .feature-list {
+  .plan-list {
     flex-grow: 1;
     margin: var(--spacing-8) 0;
     padding: 0;
@@ -366,7 +366,7 @@
     text-align: left;
   }
 
-  .feature-list li {
+  .plan-list li {
     position: relative;
     padding: var(--spacing-2) 0;
     padding-left: var(--spacing-8);
@@ -375,7 +375,7 @@
     line-height: 1.6;
   }
 
-  .feature-list li::before {
+  .plan-list li::before {
     position: absolute;
     left: 0;
     content: '\2713';

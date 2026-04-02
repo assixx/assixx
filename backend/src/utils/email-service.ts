@@ -208,7 +208,6 @@ interface BulkMessageOptions {
   attachments?: Attachment[];
   tenantId?: number;
   userId?: number;
-  checkFeature?: boolean;
 }
 
 type TemplateReplacements = Record<string, string>;

@@ -18,9 +18,9 @@
       sind durch modernste Verschlüsselung und strikte Sicherheitsmaßnahmen geschützt.
     </p>
 
-    <div class="security-features-grid">
+    <div class="security-grid">
       <!-- Security Feature Cards -->
-      <div class="feature-card u-text-center">
+      <div class="security-card u-text-center">
         <span class="material-symbols-outlined security-icon">dns</span>
         <h3 class="u-color-primary u-mb-md u-text-center">100% Deutsche Server</h3>
         <p>
@@ -29,7 +29,7 @@
         </p>
       </div>
 
-      <div class="feature-card u-text-center">
+      <div class="security-card u-text-center">
         <span class="material-symbols-outlined security-icon">lock</span>
         <h3 class="u-color-primary u-mb-md u-text-center">Ende-zu-Ende Verschlüsselung</h3>
         <p>
@@ -38,7 +38,7 @@
         </p>
       </div>
 
-      <div class="feature-card u-text-center">
+      <div class="security-card u-text-center">
         <span class="material-symbols-outlined security-icon">policy</span>
         <h3 class="u-color-primary u-mb-md u-text-center">DSGVO-konform</h3>
         <p>
@@ -47,7 +47,7 @@
         </p>
       </div>
 
-      <div class="feature-card u-text-center">
+      <div class="security-card u-text-center">
         <span class="material-symbols-outlined security-icon">visibility</span>
         <h3 class="u-color-primary u-mb-md u-text-center">Transparente Datenverarbeitung</h3>
         <p>
@@ -56,7 +56,7 @@
         </p>
       </div>
 
-      <div class="feature-card u-text-center">
+      <div class="security-card u-text-center">
         <span class="material-symbols-outlined security-icon">verified_user</span>
         <h3 class="u-color-primary u-mb-md u-text-center">ISO 27001 zertifiziert</h3>
         <p>
@@ -65,7 +65,7 @@
         </p>
       </div>
 
-      <div class="feature-card u-text-center">
+      <div class="security-card u-text-center">
         <span class="material-symbols-outlined security-icon">block</span>
         <h3 class="u-color-primary u-mb-md u-text-center">Keine Datenweitergabe</h3>
         <p>
@@ -85,7 +85,7 @@
         vollständig auf Ihren eigenen Servern zu betreiben.
         <strong>100% Ihrer Daten bleiben in Ihrer eigenen Infrastruktur.</strong>
       </p>
-      <div class="enterprise-features-grid">
+      <div class="enterprise-grid">
         <div>
           <span class="material-symbols-outlined enterprise-check">check_circle</span>
           <p class="u-fw-600">Eigene Server</p>
@@ -163,14 +163,14 @@
     animation-delay: 100ms;
   }
 
-  .security-features-grid {
+  .security-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
     gap: var(--spacing-8);
     margin-bottom: calc(var(--spacing-8) * 2);
   }
 
-  .feature-card {
+  .security-card {
     border: var(--glass-border);
     border-radius: var(--glass-card-radius);
     background: var(--glass-bg);
@@ -179,31 +179,31 @@
     animation: fade-in-up var(--duration-slow) var(--ease-out) both;
   }
 
-  .feature-card:nth-child(1) {
+  .security-card:nth-child(1) {
     animation-delay: 100ms;
   }
 
-  .feature-card:nth-child(2) {
+  .security-card:nth-child(2) {
     animation-delay: 200ms;
   }
 
-  .feature-card:nth-child(3) {
+  .security-card:nth-child(3) {
     animation-delay: 300ms;
   }
 
-  .feature-card:nth-child(4) {
+  .security-card:nth-child(4) {
     animation-delay: 400ms;
   }
 
-  .feature-card:nth-child(5) {
+  .security-card:nth-child(5) {
     animation-delay: 500ms;
   }
 
-  .feature-card:nth-child(6) {
+  .security-card:nth-child(6) {
     animation-delay: 600ms;
   }
 
-  .feature-card:hover {
+  .security-card:hover {
     transform: translateY(-2px);
     border-color: var(--color-border-hover);
     background: var(--glass-bg-hover);
@@ -216,13 +216,13 @@
     font-size: 32px;
   }
 
-  .feature-card h3 {
+  .security-card h3 {
     margin-bottom: var(--spacing-4);
     color: var(--primary-color);
     font-weight: 600;
   }
 
-  .feature-card p {
+  .security-card p {
     color: var(--text-secondary);
     font-size: 14px;
     line-height: 1.6;
@@ -266,7 +266,7 @@
     line-height: 1.8;
   }
 
-  .enterprise-features-grid {
+  .enterprise-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     gap: var(--spacing-6);

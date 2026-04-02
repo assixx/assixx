@@ -7,8 +7,8 @@ import { createLogger } from './logger';
 
 const log = createLogger('JWTUtils');
 
-/** JWT Payload structure */
-export interface JWTPayload {
+/** JWT Payload structure (used internally by parseJwt) */
+interface JWTPayload {
   id: number;
   email: string;
   role: 'root' | 'admin' | 'employee';
@@ -36,22 +36,4 @@ export function parseJwt(token: string): JWTPayload | null {
     log.error({ err: error }, 'Error parsing JWT');
     return null;
   }
-}
-
-/** Check if token is expired */
-export function isTokenExpired(token: string): boolean {
-  const payload = parseJwt(token);
-  if (payload?.exp === undefined) return true;
-
-  const now = Date.now() / 1000;
-  return payload.exp < now;
-}
-
-/** Get time until token expires (in seconds) */
-export function getTokenExpiryTime(token: string): number {
-  const payload = parseJwt(token);
-  if (payload?.exp === undefined) return 0;
-
-  const now = Date.now() / 1000;
-  return Math.max(0, payload.exp - now);
 }

@@ -13,7 +13,7 @@ export const KVP_PERMISSIONS: PermissionCategoryDef = {
   label: 'KVP',
   icon: 'fa-lightbulb',
   modules: [
-    // TODO: 'kvp-reviews' existiert bereits in DB (user_addon_permissions) — Modul hier hinzufügen sobald KVP-Bewertungen implementiert werden
+    // 'kvp-reviews' existiert bereits in DB (user_addon_permissions) — Modul hier registrieren sobald KVP-Bewertungen implementiert sind
     {
       code: 'kvp-suggestions',
       label: 'Vorschläge',

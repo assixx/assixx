@@ -6,7 +6,7 @@
   import ThemeToggle from '$lib/components/ThemeToggle.svelte';
   import { isDark } from '$lib/stores/theme.svelte';
 
-  import FeaturesGrid from './_lib/FeaturesGrid.svelte';
+  import ModuleGrid from './_lib/ModuleGrid.svelte';
   import PricingSection from './_lib/PricingSection.svelte';
   import SecuritySection from './_lib/SecuritySection.svelte';
 
@@ -72,8 +72,8 @@
     >
   </section>
 
-  <!-- Features Section (Extracted Component) -->
-  <FeaturesGrid />
+  <!-- Module Section (Extracted Component) -->
+  <ModuleGrid />
 
   <!-- Security Section (Extracted Component) -->
   <SecuritySection />

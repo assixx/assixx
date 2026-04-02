@@ -117,15 +117,11 @@ services:
       # SECURITY: Secrets are REQUIRED - no fallback defaults
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET must be set - use doppler run}
       JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:?JWT_REFRESH_SECRET must be set - use doppler run}
-      SESSION_SECRET: ${SESSION_SECRET:?SESSION_SECRET must be set - use doppler run}
       SMTP_HOST: ${SMTP_HOST}
       SMTP_PORT: ${SMTP_PORT}
       SMTP_USER: ${SMTP_USER}
       SMTP_PASS: ${SMTP_PASS}
-      SMTP_FROM: ${SMTP_FROM}
       ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:3000}
-      DELETION_GRACE_PERIOD_DAYS: ${DELETION_GRACE_PERIOD_DAYS:-30}
-      DELETION_COOLING_OFF_HOURS: ${DELETION_COOLING_OFF_HOURS:-24}
       TENANT_DELETION_GRACE_MINUTES: ${TENANT_DELETION_GRACE_MINUTES:-43200}
       # Log level override (default: info, set to debug for troubleshooting)
       LOG_LEVEL: ${LOG_LEVEL:-info}
@@ -259,13 +255,10 @@ services:
       # SECURITY: Secrets are REQUIRED - no fallback defaults
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET must be set - use doppler run}
       JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:?JWT_REFRESH_SECRET must be set - use doppler run}
-      SESSION_SECRET: ${SESSION_SECRET:?SESSION_SECRET must be set - use doppler run}
       REDIS_HOST: redis
       REDIS_PORT: 6379
       REDIS_PASSWORD: ${REDIS_PASSWORD:?REDIS_PASSWORD must be set - use doppler run}
       DELETION_WORKER_HEALTH_PORT: 3002
-      DELETION_GRACE_PERIOD_DAYS: ${DELETION_GRACE_PERIOD_DAYS:-30}
-      DELETION_COOLING_OFF_HOURS: ${DELETION_COOLING_OFF_HOURS:-24}
       TENANT_DELETION_GRACE_MINUTES: ${TENANT_DELETION_GRACE_MINUTES:-43200}
       # Sentry Error Tracking
       SENTRY_DSN: ${SENTRY_DSN:-}
@@ -282,7 +275,6 @@ services:
       SMTP_PORT: ${SMTP_PORT}
       SMTP_USER: ${SMTP_USER}
       SMTP_PASS: ${SMTP_PASS}
-      SMTP_FROM: ${SMTP_FROM}
     ports:
       - "3002:3002" # Health check port (changed from 3001 - SvelteKit uses 3001)
     volumes:

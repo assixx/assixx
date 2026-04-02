@@ -220,16 +220,3 @@ function buildLoggerOptions(): pino.LoggerOptions {
  * ```
  */
 export const logger = pino(buildLoggerOptions());
-
-/**
- * Create a child logger with context
- *
- * @example
- * ```typescript
- * const dbLogger = createLogger('Database');
- * dbLogger.info('Query executed');
- * ```
- */
-export function createLogger(context: string): pino.Logger {
-  return logger.child({ context });
-}

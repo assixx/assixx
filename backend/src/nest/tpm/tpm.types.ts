@@ -496,31 +496,6 @@ export const INTERVAL_TYPES_ORDERED: readonly TpmIntervalType[] = [
   'custom',
 ] as const;
 
-/** German labels for interval types (used in API responses and frontend) */
-export const INTERVAL_LABELS: Record<TpmIntervalType, string> = {
-  daily: 'Täglich',
-  weekly: 'Wöchentlich',
-  monthly: 'Monatlich',
-  quarterly: 'Vierteljährlich',
-  semi_annual: 'Halbjährlich',
-  annual: 'Jährlich',
-  custom: 'Benutzerdefiniert',
-} as const;
-
-/** German labels for card status (used in API responses and frontend) */
-export const STATUS_LABELS: Record<TpmCardStatus, string> = {
-  green: 'Erledigt',
-  red: 'Fällig',
-  yellow: 'Freigabe ausstehend',
-  overdue: 'Überfällig',
-} as const;
-
-/** German labels for card roles */
-export const ROLE_LABELS: Record<TpmCardRole, string> = {
-  operator: 'Bediener',
-  maintenance: 'Instandhaltung',
-} as const;
-
 /** German labels for card categories */
 export const CATEGORY_LABELS: Record<TpmCardCategory, string> = {
   reinigung: 'Reinigung',

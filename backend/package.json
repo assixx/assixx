@@ -6,10 +6,8 @@
   "type": "module",
   "scripts": {
     "dev": "nodemon --watch src --ext ts --exec 'pnpm exec tsx src/nest/main.ts'",
-    "dev:express": "nodemon --watch src --ext ts --exec 'pnpm exec tsx src/server.ts'",
     "build": "tsc",
     "start": "node dist/nest/main.js",
-    "start:express": "node dist/server.js",
     "lint": "cd .. && eslint . --no-warn-ignored",
     "lint:fix": "cd .. && eslint . --fix --no-warn-ignored",
     "lint:fixnowarn": "cd .. && eslint . --fix --quiet --no-warn-ignored",

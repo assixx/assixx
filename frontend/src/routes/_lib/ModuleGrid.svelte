@@ -1,5 +1,5 @@
 <!--
-  FeaturesGrid.svelte
+  ModuleGrid.svelte
   Landing page module section — 4 category cards with unique accent colors
   Updated for addon-based SaaS model (ADR-033)
 -->

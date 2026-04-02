@@ -97,7 +97,7 @@
   }
 
   function handleExportPDF(): void {
-    // TODO: Implement PDF export
+    // PDF-Export noch nicht implementiert
     showAlert('PDF-Export wird implementiert...');
   }
 

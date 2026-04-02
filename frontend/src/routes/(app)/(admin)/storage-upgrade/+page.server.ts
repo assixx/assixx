@@ -42,7 +42,7 @@ export const load: PageServerLoad = async ({ cookies, fetch }) => {
   return {
     title: 'Speicher erweitern',
     storageInfo: {
-      used: 0, // TODO: Get actual used storage from backend
+      used: 0, // Platzhalter — Backend-Endpoint für tatsächlichen Verbrauch fehlt noch
       total: storageGb * 1024 * 1024 * 1024, // Convert GB to bytes
       percentage: 0,
       plan: planCode,

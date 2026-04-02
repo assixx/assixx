@@ -11,7 +11,7 @@ export const TPM_PERMISSIONS: PermissionCategoryDef = {
   label: 'TPM / Wartung',
   icon: 'fa-tools',
   modules: [
-    // TODO: 'tpm-reports' existiert bereits in DB (user_addon_permissions) — Modul hier hinzufügen sobald TPM-Reports implementiert werden
+    // 'tpm-reports' existiert bereits in DB (user_addon_permissions) — Modul hier registrieren sobald TPM-Reports implementiert sind
     {
       code: 'tpm-plans',
       label: 'Wartungspläne',
