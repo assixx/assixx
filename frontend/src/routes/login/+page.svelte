@@ -384,7 +384,7 @@
     background: var(--glass-bg);
 
     padding: 10px 20px;
-    color: var(--text-secondary);
+    color: var(--color-white);
     font-weight: 500;
 
     font-size: 14px;
@@ -397,7 +397,7 @@
 
     background: var(--glass-bg-hover);
 
-    color: var(--text-primary);
+    color: var(--color-white);
   }
 
   .back-button:active {

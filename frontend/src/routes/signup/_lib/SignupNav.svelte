@@ -80,31 +80,27 @@
     gap: 10px;
     z-index: 1001;
 
-    box-shadow:
-      0 4px 16px color-mix(in oklch, var(--color-black) 20%, transparent),
-      inset 0 1px 0 color-mix(in oklch, var(--color-white) 5%, transparent);
+    box-shadow: 0 2px 8px color-mix(in oklch, var(--color-black) 10%, transparent);
     border: 1px solid color-mix(in oklch, var(--color-white) 10%, transparent);
     border-radius: 12px;
     background: color-mix(in oklch, var(--color-white) 2%, transparent);
     padding: 10px 20px;
-    color: var(--text-secondary);
+    color: var(--color-white);
     font-weight: 500;
     font-size: 14px;
     text-decoration: none;
   }
 
   .back-button:hover {
-    transform: translateX(-5px);
-    box-shadow:
-      0 6px 24px color-mix(in oklch, var(--color-black) 30%, transparent),
-      inset 0 1px 0 color-mix(in oklch, var(--color-white) 10%, transparent);
+    transform: translateX(-2px);
+    box-shadow: 0 4px 12px color-mix(in oklch, var(--color-black) 15%, transparent);
     border-color: color-mix(in oklch, var(--color-white) 15%, transparent);
     background: color-mix(in oklch, var(--color-white) 5%, transparent);
-    color: var(--text-primary);
+    color: var(--color-white);
   }
 
   .back-button:active {
-    transform: translateX(-3px) scale(0.98);
+    transform: translateX(-1px) scale(0.98);
   }
 
   .back-button .icon {

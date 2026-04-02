@@ -10,9 +10,6 @@
   import PricingSection from './_lib/PricingSection.svelte';
   import SecuritySection from './_lib/SecuritySection.svelte';
 
-  // Modal state
-  let showSignupModal: boolean = $state(false);
-
   // Body class for landing page (disables global gradient)
   onMount(() => {
     document.body.classList.add('landing-page-active');
@@ -23,16 +20,6 @@
 
   function handleReloadPage(): void {
     window.location.reload();
-  }
-
-  function closeSignupModal(): void {
-    showSignupModal = false;
-  }
-
-  function handleModalBackdropClick(e: MouseEvent): void {
-    if (e.target === e.currentTarget) {
-      closeSignupModal();
-    }
   }
 </script>
 
@@ -99,33 +86,8 @@
     <p>&copy; 2026 Assixx. Alle Rechte vorbehalten.</p>
   </footer>
 </div>
-<!-- End .landing-page -->
 
-<!-- Signup Modal (kept for compatibility but links go to /signup) -->
-{#if showSignupModal}
-  <!-- svelte-ignore a11y_click_events_have_key_events -->
-  <!-- svelte-ignore a11y_no_static_element_interactions -->
-  <div
-    class="signup-modal"
-    style="display: flex"
-    onclick={handleModalBackdropClick}
-  >
-    <div class="modal-content">
-      <h2>Jetzt kostenlos testen</h2>
-      <p>30 Tage kostenlos testen - keine Kreditkarte erforderlich</p>
-      <p class="u-mb-md">Bitte nutzen Sie unser vollständiges Registrierungsformular:</p>
-      <a
-        href={resolve('/signup', {})}
-        class="btn btn-index u-w-full">Zur Registrierung</a
-      >
-      <button
-        type="button"
-        class="btn btn-secondary btn-cancel--full"
-        onclick={closeSignupModal}>Abbrechen</button
-      >
-    </div>
-  </div>
-{/if}
+<!-- End .landing-page -->
 
 <style>
   /* Landing page container */
@@ -268,49 +230,6 @@
     text-align: center;
   }
 
-  /* Signup Modal */
-  .signup-modal {
-    display: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    justify-content: center;
-    align-items: center;
-    z-index: 2000;
-    backdrop-filter: blur(10px);
-    background: color-mix(in oklch, var(--color-black) 80%, transparent);
-    width: 100%;
-    height: 100%;
-  }
-
-  .modal-content {
-    border: var(--glass-border);
-    border-radius: var(--glass-card-radius);
-    background: var(--glass-bg);
-    padding: var(--spacing-6);
-    width: 90%;
-    max-width: 500px;
-    max-height: 90vh;
-    overflow-y: auto;
-  }
-
-  .modal-content h2 {
-    margin-bottom: var(--spacing-2);
-    color: var(--primary-color);
-    font-weight: 600;
-  }
-
-  .modal-content p {
-    margin-bottom: var(--spacing-6);
-    color: var(--text-secondary);
-    font-size: 13px;
-  }
-
-  .btn-cancel--full {
-    margin-top: 1rem;
-    width: 100%;
-  }
-
   /* Light mode overrides */
   :global(html:not(.dark)) .nav-links a:hover {
     color: var(--color-primary);
@@ -348,11 +267,6 @@
 
     .hero p {
       font-size: 1rem;
-    }
-
-    .modal-content {
-      padding: var(--spacing-3);
-      width: 95%;
     }
   }
 </style>

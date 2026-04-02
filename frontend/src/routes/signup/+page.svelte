@@ -638,14 +638,6 @@
   }
 
   /* --- Light mode overrides --- */
-  :global(html:not(.dark)) .signup-hero__overlay {
-    background: linear-gradient(
-      135deg,
-      color-mix(in oklch, var(--color-black) 40%, transparent) 0%,
-      color-mix(in oklch, var(--color-black) 20%, transparent) 100%
-    );
-  }
-
   :global(html:not(.dark)) .section-divider {
     border-color: color-mix(in oklch, var(--color-black) 10%, transparent);
   }

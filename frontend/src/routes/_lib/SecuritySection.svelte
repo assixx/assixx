@@ -33,8 +33,8 @@
         <span class="material-symbols-outlined security-icon">lock</span>
         <h3 class="u-color-primary u-mb-md u-text-center">Ende-zu-Ende Verschlüsselung</h3>
         <p>
-          Militärgrade AES-256 Verschlüsselung für alle Daten - sowohl bei der Übertragung als auch
-          bei der Speicherung.
+          Modernste Verschlüsselung (XChaCha20-Poly1305) für alle Daten — sowohl bei der Übertragung
+          als auch bei der Speicherung.
         </p>
       </div>
 
@@ -117,7 +117,7 @@
 
     <!-- Trust Badges -->
     <div class="trust-badges">
-      <p class="trust-badges__label">Vertraut von führenden Industrieunternehmen</p>
+      <p class="trust-badges__label">Entwickelt für die deutsche Industrie</p>
       <div class="trust-badges__list">
         <div class="trust-badge">SSL-verschlüsselt</div>
         <div class="trust-badge">DSGVO-konform</div>
