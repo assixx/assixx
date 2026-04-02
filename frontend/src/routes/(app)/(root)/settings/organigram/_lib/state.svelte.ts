@@ -164,6 +164,7 @@ export function initFromTree(data: OrgChartTree): void {
   tree = data;
   dirty = false;
   saving = false;
+  locked = true;
   hoveredNodeKey = '';
   ghostEntries = [];
 
