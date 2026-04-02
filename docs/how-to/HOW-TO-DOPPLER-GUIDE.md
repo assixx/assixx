@@ -513,11 +513,11 @@ doppler activity --project assixx
 
 Assixx hat **3 Doppler-Configs** mit eigenständigen, kryptographisch starken Secrets:
 
-| Config | Zweck | NODE_ENV | Domains | Secrets |
-|---|---|---|---|---|
+| Config  | Zweck              | NODE_ENV    | Domains                        | Secrets                       |
+| ------- | ------------------ | ----------- | ------------------------------ | ----------------------------- |
 | **dev** | Lokale Entwicklung | development | localhost:3000, localhost:5173 | Dev-Passwörter (`dev_only_*`) |
-| **stg** | Staging / QA | production | stg.assixx.com, stg.assixx.de | 128-char Hex-Secrets |
-| **prd** | Live-Produktion | production | assixx.com, assixx.de, www.* | 128-char Hex-Secrets |
+| **stg** | Staging / QA       | production  | stg.assixx.com, stg.assixx.de  | 128-char Hex-Secrets          |
+| **prd** | Live-Produktion    | production  | assixx.com, assixx.de, www.\*  | 128-char Hex-Secrets          |
 
 > **Warum `NODE_ENV=production` für stg?** Der Backend-Config-Validator (`config.service.ts`) akzeptiert nur
 > `development`, `production`, `test`. Staging-spezifisches Verhalten wird über `LOG_LEVEL`,
@@ -525,14 +525,14 @@ Assixx hat **3 Doppler-Configs** mit eigenständigen, kryptographisch starken Se
 
 ### Unterschiede zwischen den Environments
 
-| Variable | dev | stg | prd |
-|---|---|---|---|
-| `LOG_LEVEL` | debug | info | warn |
-| `ALLOWED_ORIGINS` | localhost:3000,5173 | stg.assixx.com, stg.assixx.de | assixx.com, assixx.de, www.* |
-| `ORIGIN` | http://localhost | https://stg.assixx.com | https://assixx.com |
-| `REDIS_PASSWORD` | `dev_only_redis_p@ss_...` | 64-char Hex | 64-char Hex |
-| `JWT_SECRET` | `DEV_91040ae...` | 128-char Hex | 128-char Hex |
-| Alle anderen Secrets | Dev-Strings | Eigenständig generiert | Eigenständig generiert |
+| Variable             | dev                       | stg                           | prd                           |
+| -------------------- | ------------------------- | ----------------------------- | ----------------------------- |
+| `LOG_LEVEL`          | debug                     | info                          | warn                          |
+| `ALLOWED_ORIGINS`    | localhost:3000,5173       | stg.assixx.com, stg.assixx.de | assixx.com, assixx.de, www.\* |
+| `ORIGIN`             | http://localhost          | https://stg.assixx.com        | https://assixx.com            |
+| `REDIS_PASSWORD`     | `dev_only_redis_p@ss_...` | 64-char Hex                   | 64-char Hex                   |
+| `JWT_SECRET`         | `DEV_91040ae...`          | 128-char Hex                  | 128-char Hex                  |
+| Alle anderen Secrets | Dev-Strings               | Eigenständig generiert        | Eigenständig generiert        |
 
 **Jedes Environment hat komplett eigenständige Secrets.** Kein Secret wird zwischen stg/prd geteilt
 (außer Sentry DSN und Grafana Cloud Keys — das sind Monitoring-Endpoints, keine Geheimnisse).
@@ -555,6 +555,7 @@ Secrets für stg/prd werden mit dem Seeder-Script generiert:
 ```
 
 **Sicherheitsregeln des Scripts:**
+
 - `dev` wird **immer abgelehnt** — Dev-Secrets werden separat verwaltet
 - Secrets werden **nie** auf stdout gedruckt
 - Bestätigung: Man muss den Environment-Namen eintippen
@@ -613,11 +614,11 @@ Secrets aus einer bestimmten Doppler-Config zu ziehen. Jedes Environment braucht
 
 ### Aktueller Status
 
-| Token | Config | Erstellt | Wo gespeichert |
-|---|---|---|---|
-| `docker-dev` | dev | 2026-01-14 | .locklock |
-| — | stg | **Noch nicht erstellt** | — |
-| — | prd | **Noch nicht erstellt** | — |
+| Token        | Config | Erstellt                | Wo gespeichert |
+| ------------ | ------ | ----------------------- | -------------- |
+| `docker-dev` | dev    | 2026-01-14              | .locklock      |
+| —            | stg    | **Noch nicht erstellt** | —              |
+| —            | prd    | **Noch nicht erstellt** | —              |
 
 **stg/prd Tokens werden erst benötigt, wenn ein Staging- oder Production-Server aufgesetzt wird.**
 Solange alles lokal läuft, reicht der `docker-dev` Token.
@@ -769,14 +770,14 @@ DOPPLER_TOKEN="xxx" doppler run -- docker-compose --profile production up -d
 
 ## Wichtige Dateien
 
-| Datei | Inhalt | In Git? |
-|---|---|---|
-| `.locklock` | Token-Werte, Passwörter, Archiv | ❌ NEIN |
-| `docker/.env` | Nur Non-Secrets (Ports, Hosts, Versions) | ❌ NEIN |
-| `docker/.env.example` | Template mit CHANGE_ME Platzhaltern | ✅ JA |
-| `scripts/doppler-seed-environment.sh` | Environment Seeder (stg/prd) | ✅ JA |
-| `docs/DOPPLER-IMPLEMENTATION-PLAN.md` | Implementierungs-Details | ✅ JA |
-| `HOW-TO-DOPPLER-GUIDE.md` | Diese Anleitung | ❌ NEIN |
+| Datei                                 | Inhalt                                   | In Git? |
+| ------------------------------------- | ---------------------------------------- | ------- |
+| `.locklock`                           | Token-Werte, Passwörter, Archiv          | ❌ NEIN |
+| `docker/.env`                         | Nur Non-Secrets (Ports, Hosts, Versions) | ❌ NEIN |
+| `docker/.env.example`                 | Template mit CHANGE_ME Platzhaltern      | ✅ JA   |
+| `scripts/doppler-seed-environment.sh` | Environment Seeder (stg/prd)             | ✅ JA   |
+| `docs/DOPPLER-IMPLEMENTATION-PLAN.md` | Implementierungs-Details                 | ✅ JA   |
+| `HOW-TO-DOPPLER-GUIDE.md`             | Diese Anleitung                          | ❌ NEIN |
 
 ---
 

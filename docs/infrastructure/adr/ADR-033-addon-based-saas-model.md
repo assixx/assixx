@@ -75,22 +75,22 @@ Das bisherige 3-Tier-Modell (Basic €49 / Professional €149 / Enterprise €2
 
 ### Core-Addons (14) — Immer aktiv, in Grundgebühr enthalten
 
-| #   | Code               | Name                  | Beschreibung                                                  | Permission-Module                                                                     |
-| --- | ------------------ | --------------------- | ------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
-| 1   | `dashboard`        | Dashboard             | Zentrale Übersicht mit Kennzahlen und Schnellzugriff          | — (kein Guard)                                                                        |
-| 2   | `settings`         | Einstellungen         | Mandanten-Einstellungen und Konfiguration                     | `settings-tenant` (W/D)                                                               |
-| 3   | `notifications`    | Benachrichtigungen    | Push-Benachrichtigungen und SSE-Streaming                     | `notifications-manage` (R/W)                                                          |
-| 4   | `employees`        | Mitarbeiterverwaltung | Benutzer anlegen, bearbeiten, deaktivieren                    | `employees-manage` (R/W/D), `employees-availability` (R/W/D)                          |
-| 5   | `departments`      | Abteilungen           | Abteilungen und Bereiche (Organisationsstruktur)              | `departments-manage` (W/D), `areas-manage` (W/D)                                      |
-| 6   | `teams`            | Teams                 | Teams verwalten, Mitglieder und Anlagen zuordnen              | `teams-manage` (W/D)                                                                  |
+| #   | Code               | Name                  | Beschreibung                                                  | Permission-Module                                                                                                            |
+| --- | ------------------ | --------------------- | ------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| 1   | `dashboard`        | Dashboard             | Zentrale Übersicht mit Kennzahlen und Schnellzugriff          | — (kein Guard)                                                                                                               |
+| 2   | `settings`         | Einstellungen         | Mandanten-Einstellungen und Konfiguration                     | `settings-tenant` (W/D)                                                                                                      |
+| 3   | `notifications`    | Benachrichtigungen    | Push-Benachrichtigungen und SSE-Streaming                     | `notifications-manage` (R/W)                                                                                                 |
+| 4   | `employees`        | Mitarbeiterverwaltung | Benutzer anlegen, bearbeiten, deaktivieren                    | `employees-manage` (R/W/D), `employees-availability` (R/W/D)                                                                 |
+| 5   | `departments`      | Abteilungen           | Abteilungen und Bereiche (Organisationsstruktur)              | `departments-manage` (W/D), `areas-manage` (W/D)                                                                             |
+| 6   | `teams`            | Teams                 | Teams verwalten, Mitglieder und Anlagen zuordnen              | `teams-manage` (W/D)                                                                                                         |
 | 7   | `manage_hierarchy` | Organisationsstruktur | Verwaltung von Bereichen, Abteilungen, Teams und Mitarbeitern | `manage-areas` (R/W), `manage-departments` (R/W), `manage-teams` (R/W), `manage-employees` (R/W), `manage-permissions` (R/W) |
-| 8   | `halls`            | Hallen                | Verwaltung von Produktionshallen                              | `halls-manage` (W/D)                                                                  |
-| 9   | `assets`           | Anlagen & Maschinen   | Anlagen-/Maschinenverwaltung mit Verfügbarkeitstracking       | `assets-manage` (W/D), `assets-availability` (W/D)                                    |
-| 10  | `dummy_users`      | Platzhalter-Benutzer  | Anonyme Anzeige-Accounts für Fabrik-Bildschirme (Kiosk-Modus) | `dummy-users-manage` (R/W/D)                                                          |
-| 11  | `approvals`        | Freigaben             | Zentrales Freigabe-System für Genehmigungsworkflows           | `approvals-manage` (R/W/D), `approvals-request` (R/W)                                 |
-| 12  | `user_profiles`    | Benutzerprofile       | Profilansicht und Mitarbeiterübersicht                        | `user-profiles-view` (R)                                                              |
-| 13  | `calendar`         | Kalender              | Gemeinsamer Unternehmenskalender                              | `calendar-events` (R/W/D)                                                             |
-| 14  | `blackboard`       | Schwarzes Brett       | Digitales schwarzes Brett für Ankündigungen                   | `blackboard-posts` (R/W/D), `blackboard-comments` (R/W/D), `blackboard-archive` (R/W) |
+| 8   | `halls`            | Hallen                | Verwaltung von Produktionshallen                              | `halls-manage` (W/D)                                                                                                         |
+| 9   | `assets`           | Anlagen & Maschinen   | Anlagen-/Maschinenverwaltung mit Verfügbarkeitstracking       | `assets-manage` (W/D), `assets-availability` (W/D)                                                                           |
+| 10  | `dummy_users`      | Platzhalter-Benutzer  | Anonyme Anzeige-Accounts für Fabrik-Bildschirme (Kiosk-Modus) | `dummy-users-manage` (R/W/D)                                                                                                 |
+| 11  | `approvals`        | Freigaben             | Zentrales Freigabe-System für Genehmigungsworkflows           | `approvals-manage` (R/W/D), `approvals-request` (R/W)                                                                        |
+| 12  | `user_profiles`    | Benutzerprofile       | Profilansicht und Mitarbeiterübersicht                        | `user-profiles-view` (R)                                                                                                     |
+| 13  | `calendar`         | Kalender              | Gemeinsamer Unternehmenskalender                              | `calendar-events` (R/W/D)                                                                                                    |
+| 14  | `blackboard`       | Schwarzes Brett       | Digitales schwarzes Brett für Ankündigungen                   | `blackboard-posts` (R/W/D), `blackboard-comments` (R/W/D), `blackboard-archive` (R/W)                                        |
 
 > **Änderungen seit v1 (2026-03-10):** `assets`, `dummy_users` von Purchasable → Core (2026-04-03). `halls`, `user_profiles` als neue Core-Addons hinzugefügt (2026-03-31 / 2026-04-03).
 

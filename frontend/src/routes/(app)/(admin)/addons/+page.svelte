@@ -170,7 +170,9 @@
           ]}
           <div
             class="core-card"
-            style="--accent: {accents[i % accents.length]};"
+            style="
+
+--accent: {accents[i % accents.length]};"
           >
             <div class="core-card__icon">
               <i class={ADDON_ICONS[addon.code] ?? 'fas fa-cube'}></i>
