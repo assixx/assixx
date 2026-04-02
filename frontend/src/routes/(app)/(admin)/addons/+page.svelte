@@ -162,7 +162,12 @@
     <div class="card__body">
       <div class="core-grid">
         {#each coreAddons as addon, i (addon.code)}
-          {@const accents = ['var(--color-info)', 'var(--color-success)', 'var(--color-warning)', 'var(--color-purple)']}
+          {@const accents = [
+            'var(--color-info)',
+            'var(--color-success)',
+            'var(--color-warning)',
+            'var(--color-purple)',
+          ]}
           <div
             class="core-card"
             style="--accent: {accents[i % accents.length]};"
