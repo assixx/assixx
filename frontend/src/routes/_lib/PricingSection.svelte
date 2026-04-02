@@ -39,11 +39,11 @@
           <strong>Unbegrenzt</strong> Geschäftsführer (Root-User)
         </li>
         <li>100 GB Speicher</li>
-        <li>8 Core-Module inklusive</li>
+        <li>14 Core-Module inklusive</li>
         <li>Dashboard & Kalender</li>
-        <li>Schwarzes Brett</li>
-        <li>Benachrichtigungen</li>
-        <li>Mitarbeiter & Teams</li>
+        <li>Schwarzes Brett & Benachrichtigungen</li>
+        <li>Mitarbeiter, Teams & Abteilungen</li>
+        <li>Anlagen, Hallen & Freigaben</li>
       </ul>
       <div class="pricing-card__footer">
         <a
@@ -64,7 +64,7 @@
         <span>/Modul/Monat</span>
       </div>
       <ul class="plan-list">
-        <li>12 Zusatz-Module verfügbar</li>
+        <li>10 Zusatz-Module verfügbar</li>
         <li>30 Tage kostenlos testen</li>
         <li>Jederzeit aktivieren/deaktivieren</li>
         <li>Berechtigungen bleiben erhalten</li>
@@ -113,7 +113,7 @@
 
   <!-- Module Catalog -->
   <div class="module-catalog">
-    <h3 class="module-catalog__title">Alle 20 Module im Überblick</h3>
+    <h3 class="module-catalog__title">Alle 24 Module im Überblick</h3>
     <div class="catalog-columns">
       <!-- Core Modules -->
       <div class="catalog-group">
@@ -163,6 +163,36 @@
             <span class="catalog-list__name">Teams</span>
             <span class="catalog-list__desc">Teams und Mitglieder zuordnen</span>
           </li>
+          <li>
+            <i class="fas fa-sitemap"></i>
+            <span class="catalog-list__name">Organisationsstruktur</span>
+            <span class="catalog-list__desc">Bereiche, Abteilungen, Teams verwalten</span>
+          </li>
+          <li>
+            <i class="fas fa-warehouse"></i>
+            <span class="catalog-list__name">Hallen</span>
+            <span class="catalog-list__desc">Produktionshallen verwalten</span>
+          </li>
+          <li>
+            <i class="fas fa-industry"></i>
+            <span class="catalog-list__name">Anlagen & Maschinen</span>
+            <span class="catalog-list__desc">Verwaltung und Verfügbarkeitstracking</span>
+          </li>
+          <li>
+            <i class="fas fa-user-slash"></i>
+            <span class="catalog-list__name">Platzhalter-Benutzer</span>
+            <span class="catalog-list__desc">Anonyme Accounts für Fabrik-Bildschirme</span>
+          </li>
+          <li>
+            <i class="fas fa-check-double"></i>
+            <span class="catalog-list__name">Freigaben</span>
+            <span class="catalog-list__desc">Zentrales Genehmigungssystem</span>
+          </li>
+          <li>
+            <i class="fas fa-id-card"></i>
+            <span class="catalog-list__name">Benutzerprofile</span>
+            <span class="catalog-list__desc">Profilansicht und Mitarbeiterübersicht</span>
+          </li>
         </ul>
       </div>
 
@@ -178,11 +208,6 @@
             <i class="fas fa-folder-open"></i>
             <span class="catalog-list__name">Dokumente</span>
             <span class="catalog-list__desc">Dokumentenverwaltung mit Upload und Archiv</span>
-          </li>
-          <li>
-            <i class="fas fa-user-secret"></i>
-            <span class="catalog-list__name">Platzhalter-Benutzer</span>
-            <span class="catalog-list__desc">Anonyme Accounts für Fabrik-Bildschirme</span>
           </li>
           <li>
             <i class="fas fa-umbrella-beach"></i>
@@ -208,11 +233,6 @@
             <i class="fas fa-clipboard-list"></i>
             <span class="catalog-list__name">Arbeitsaufträge</span>
             <span class="catalog-list__desc">Mängelbeseitigung und Aufgabenverwaltung</span>
-          </li>
-          <li>
-            <i class="fas fa-cogs"></i>
-            <span class="catalog-list__name">Anlagen & Maschinen</span>
-            <span class="catalog-list__desc">Verwaltung und Verfügbarkeitstracking</span>
           </li>
           <li>
             <i class="fas fa-chart-bar"></i>

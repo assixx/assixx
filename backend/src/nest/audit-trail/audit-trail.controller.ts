@@ -18,6 +18,7 @@ import {
 import type { FastifyReply, FastifyRequest } from 'fastify';
 
 import { attachmentHeader } from '../../utils/content-disposition.js';
+import { RequireAddon } from '../common/decorators/require-addon.decorator.js';
 import { RequirePermission } from '../common/decorators/require-permission.decorator.js';
 import { CurrentUser, Roles } from '../common/index.js';
 import type { NestAuthUser } from '../common/index.js';
@@ -107,6 +108,7 @@ const MOD_VIEW = 'audit-view';
 const MOD_EXPORT = 'audit-export';
 const MOD_RETENTION = 'audit-retention';
 
+@RequireAddon('audit_trail')
 @Controller('audit-trail')
 export class AuditTrailController {
   private readonly logger = new Logger(AuditTrailController.name);

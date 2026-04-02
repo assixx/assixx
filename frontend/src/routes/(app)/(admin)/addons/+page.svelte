@@ -161,15 +161,16 @@
     </div>
     <div class="card__body">
       <div class="core-grid">
-        {#each coreAddons as addon (addon.code)}
-          <div class="core-card">
+        {#each coreAddons as addon, i (addon.code)}
+          {@const accents = ['var(--color-info)', 'var(--color-success)', 'var(--color-warning)', 'var(--color-purple)']}
+          <div
+            class="core-card"
+            style="--accent: {accents[i % accents.length]};"
+          >
             <div class="core-card__icon">
               <i class={ADDON_ICONS[addon.code] ?? 'fas fa-cube'}></i>
             </div>
             <span class="core-card__name">{addon.name}</span>
-            <span class="badge badge--primary badge--sm">
-              <i class="fas fa-check"></i> Aktiv
-            </span>
           </div>
         {/each}
       </div>
@@ -386,47 +387,52 @@
   }
 
   /* ==========================================================
-     CORE ADDONS GRID
+     CORE ADDONS — landing-page style with accent colors
      ========================================================== */
   .core-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-    gap: var(--spacing-4);
+    gap: var(--spacing-3);
   }
 
   .core-card {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: var(--spacing-3);
-    padding: var(--spacing-5) var(--spacing-4);
-    border: 1px solid var(--color-glass-border);
-    border-radius: var(--radius-xl);
-    background: var(--glass-bg);
-    transition: border-color var(--duration-normal) var(--ease-out);
+    gap: var(--spacing-2);
+    padding: var(--spacing-4) var(--spacing-3);
+    border: var(--glass-border);
+    border-radius: var(--glass-card-radius);
+    transition: all var(--duration-normal) var(--ease-out);
   }
 
   .core-card:hover {
-    border-color: var(--color-glass-border-hover);
+    transform: translateY(-2px);
+    border-color: color-mix(in oklch, var(--accent) 40%, transparent);
   }
 
   .core-card__icon {
-    width: 40px;
-    height: 40px;
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: var(--radius-md);
-    background: var(--glass-bg-hover);
-    color: var(--color-text-secondary);
-    font-size: 17px;
+    width: 36px;
+    height: 36px;
+    border-radius: var(--radius-lg);
+    background: color-mix(in oklch, var(--accent) 12%, transparent);
+    color: var(--accent);
+    font-size: 15px;
+  }
+
+  .core-card:hover .core-card__icon {
+    background: color-mix(in oklch, var(--accent) 20%, transparent);
   }
 
   .core-card__name {
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 500;
     color: var(--color-text-primary);
     text-align: center;
+    line-height: 1.3;
   }
 
   /* ==========================================================

@@ -14,6 +14,7 @@ import { Body, Controller, Get, Param, Post, Query, Res } from '@nestjs/common';
 import type { FastifyReply } from 'fastify';
 
 import { attachmentHeader } from '../../utils/content-disposition.js';
+import { RequireAddon } from '../common/decorators/require-addon.decorator.js';
 import { RequirePermission } from '../common/decorators/require-permission.decorator.js';
 import { Roles } from '../common/decorators/roles.decorator.js';
 import { TenantId } from '../common/decorators/tenant.decorator.js';
@@ -34,6 +35,7 @@ const MOD_VIEW = 'reports-view';
 const MOD_EXPORT = 'reports-export';
 
 @Roles('admin', 'root')
+@RequireAddon('reports')
 @Controller('reports')
 export class ReportsController {
   constructor(private readonly reportsService: ReportsService) {}
