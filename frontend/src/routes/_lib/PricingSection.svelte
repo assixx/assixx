@@ -254,6 +254,7 @@
     font-size: 3rem;
     letter-spacing: -0.5px;
     text-align: center;
+    animation: fade-in-up var(--duration-slow) var(--ease-out) both;
   }
 
   .pricing-subtitle {
@@ -262,6 +263,8 @@
     color: var(--color-text-secondary);
     font-size: 1.1rem;
     text-align: center;
+    animation: fade-in-up var(--duration-slow) var(--ease-out) both;
+    animation-delay: 100ms;
   }
 
   .pricing-grid {
@@ -276,26 +279,32 @@
     display: flex;
     position: relative;
     flex-direction: column;
-    border: 1px solid var(--color-glass-border);
-    border-radius: var(--radius-xl);
+    border: var(--glass-border);
+    border-radius: var(--glass-card-radius);
     background: var(--glass-bg);
     padding: var(--spacing-8);
     min-height: 550px;
     overflow: hidden;
     text-align: center;
-    transition:
-      transform 0.3s ease,
-      box-shadow 0.3s ease,
-      border-color 0.3s ease,
-      background 0.3s ease;
+    transition: all var(--duration-normal) var(--ease-out);
+    animation: fade-in-up var(--duration-slow) var(--ease-out) both;
+  }
+
+  .pricing-card:nth-child(1) {
+    animation-delay: 200ms;
+  }
+
+  .pricing-card:nth-child(2) {
+    animation-delay: 350ms;
+  }
+
+  .pricing-card:nth-child(3) {
+    animation-delay: 500ms;
   }
 
   .pricing-card:hover {
-    transform: translateY(-5px);
-    box-shadow:
-      0 12px 40px color-mix(in oklch, var(--color-primary) 40%, transparent),
-      inset 0 1px 0 color-mix(in oklch, var(--color-white) 10%, transparent);
-    border-color: var(--primary-color);
+    transform: translateY(-2px);
+    border-color: var(--color-border-hover);
     background: var(--glass-bg-hover);
   }
 
@@ -306,10 +315,8 @@
   }
 
   .pricing-card.featured:hover {
-    transform: translateY(-6px);
-    box-shadow:
-      0 14px 45px color-mix(in oklch, var(--color-primary) 50%, transparent),
-      inset 0 1px 0 color-mix(in oklch, var(--color-white) 10%, transparent);
+    transform: translateY(-3px);
+    border-color: color-mix(in oklch, var(--color-primary) 50%, transparent);
   }
 
   .pricing-card h3 {
@@ -326,7 +333,6 @@
     font-weight: 700;
     font-size: 3.5rem;
     line-height: 1;
-    text-shadow: 0 0 10px color-mix(in oklch, var(--color-primary) 20%, transparent);
   }
 
   .unlimited-badge {
@@ -426,10 +432,19 @@
   }
 
   .catalog-group {
-    border: 1px solid var(--color-glass-border);
-    border-radius: var(--radius-xl);
+    border: var(--glass-border);
+    border-radius: var(--glass-card-radius);
     background: var(--glass-bg);
     padding: var(--spacing-6);
+    animation: fade-in-up var(--duration-slow) var(--ease-out) both;
+  }
+
+  .catalog-group:nth-child(1) {
+    animation-delay: 200ms;
+  }
+
+  .catalog-group:nth-child(2) {
+    animation-delay: 400ms;
   }
 
   .catalog-group__heading {
@@ -438,7 +453,7 @@
     gap: var(--spacing-3);
     margin-bottom: var(--spacing-6);
     padding-bottom: var(--spacing-4);
-    border-bottom: 1px solid var(--color-glass-border);
+    border-bottom: var(--glass-border);
     color: var(--primary-color);
     font-weight: 600;
     font-size: 1.1rem;

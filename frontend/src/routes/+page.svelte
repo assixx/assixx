@@ -135,6 +135,12 @@
     min-height: 100vh;
   }
 
+  /* Header - Glass nav bar */
+  .header {
+    padding: var(--spacing-4) 5%;
+    border-bottom: var(--glass-border);
+  }
+
   /* Logo button reset */
   .logo-button {
     all: unset;
@@ -233,6 +239,8 @@
     font-weight: 700;
     font-size: 3rem;
     text-shadow: 0 2px 4px color-mix(in oklch, var(--color-black) 30%, transparent);
+    animation: fade-in-up var(--duration-slow) var(--ease-out) both;
+    animation-delay: 100ms;
   }
 
   .hero p {
@@ -241,19 +249,20 @@
     font-size: 1.25rem;
     line-height: 1.6;
     text-shadow: 0 1px 2px color-mix(in oklch, var(--color-black) 20%, transparent);
+    animation: fade-in-up var(--duration-slow) var(--ease-out) both;
+    animation-delay: 250ms;
   }
 
   /* Hero CTA button: always white text (sits on dark image overlay in both modes) */
   .hero :global(.btn) {
     color: var(--color-white);
+    animation: fade-in-up var(--duration-slow) var(--ease-out) both;
+    animation-delay: 400ms;
   }
 
   /* Footer */
   .footer {
-    backdrop-filter: blur(20px);
-    box-shadow: 0 -8px 32px color-mix(in oklch, var(--color-black) 20%, transparent);
-    border-top: 1px solid var(--color-glass-border);
-    background: var(--glass-bg);
+    border-top: var(--glass-border);
     padding: var(--spacing-6) 5%;
     color: var(--color-text-secondary);
     text-align: center;
@@ -275,8 +284,8 @@
   }
 
   .modal-content {
-    border: 1px solid var(--color-glass-border);
-    border-radius: var(--radius-xl);
+    border: var(--glass-border);
+    border-radius: var(--glass-card-radius);
     background: var(--glass-bg);
     padding: var(--spacing-6);
     width: 90%;
