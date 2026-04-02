@@ -64,6 +64,14 @@ function applyDbPrerequisites(tenantId: number, userId: number): void {
   );
 }
 
+/** Flush throttle/rate-limit keys from Redis — prevents 429 on repeated test runs. */
+function flushThrottleKeys(): void {
+  execSync(
+    "docker exec assixx-redis redis-cli -a 'dev_only_redis_p@ss_a1b2c3d4e5f6g7h8i9j0' --no-auth-warning EVAL \"local keys = redis.call('KEYS', 'throttle:*') for i, key in ipairs(keys) do redis.call('DEL', key) end return #keys\" 0",
+    { stdio: 'pipe' },
+  );
+}
+
 /** Login with 429 retry for rate-limited environments. */
 async function login(): Promise<{ res: Response; body: JsonBody }> {
   for (let attempt = 1; attempt <= 3; attempt++) {
@@ -91,6 +99,9 @@ async function login(): Promise<{ res: Response; body: JsonBody }> {
 // ─── Setup: Ensure apitest tenant exists and login ─────────────────────────
 
 describe('Setup: Apitest Tenant', () => {
+  // Flush rate-limit keys to prevent 429 from previous test runs
+  beforeAll(() => flushThrottleKeys());
+
   it('should check subdomain availability', async () => {
     const res = await fetch(`${BASE_URL}/signup/check-subdomain/apitest`);
     const body = (await res.json()) as JsonBody;
