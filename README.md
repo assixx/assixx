@@ -73,21 +73,24 @@ Development: `http://localhost:5173` | Production: `http://localhost`
 
 ## Features
 
-**Available:**
+**Available (19+ Addons):**
 
 - User Management (Multi-Tenant, Roles: Root/Admin/Employee)
 - Document System (Upload, Categories, Access Control)
 - Bulletin Board (Digital Announcements)
-- Calendar (Events, Drag & Drop)
-- CIP System (Continuous Improvement Proposals)
-- Shift Planning (Weekly View, Drag & Drop)
-- Chat System (Real-Time, Groups, File Attachments)
-
-**In Development:**
-
-- TPM System — Maintenance Planning for Machines
-- Payroll — Secure Salary Documents
-- Leave Requests — Digital Workflow
+- Calendar (Events, Drag & Drop, ICS/CSV Export)
+- CIP System (Continuous Improvement Proposals + Approval Workflow)
+- Shift Planning (Weekly View, Rotation, Drag & Drop)
+- Chat System (Real-Time, E2E Encryption, Groups, File Attachments)
+- TPM System — Total Productive Maintenance (Plans, Checklists, Escalation)
+- Vacation Management (Requests, Approval Workflow, Entitlements, Absence Calendar)
+- Work Orders (Status Workflow, Photo Documentation, SSE Notifications)
+- Approvals System (Multi-Level, Configurable Approver Types)
+- Organigram (Hierarchy Visualization, Position Catalog)
+- Survey Tool (Templates, Statistics, Export)
+- Asset Management (CRUD, Categories, Maintenance)
+- Payroll (via Document Explorer: Secure PDF Upload)
+- Addon System (22 Addons, A-la-carte Model)
 
 Details: [FEATURES.md](./docs/FEATURES.md)
 
