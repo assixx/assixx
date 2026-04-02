@@ -3,6 +3,7 @@
 // =============================================================================
 
 import { getApiClient } from '$lib/utils/api-client';
+import { extractArray, extractId } from '$lib/utils/api-response';
 import { createLogger } from '$lib/utils/logger';
 
 import { API_ENDPOINTS } from './constants';
@@ -22,56 +23,6 @@ const log = createLogger('ManageTeamsApi');
 const apiClient = getApiClient();
 
 // =============================================================================
-// HELPER FUNCTIONS
-// =============================================================================
-
-/**
- * Type-safe extraction of array data from various API response formats
- * Handles: T[], { data: T[] }
- */
-function extractArrayFromResponse<T>(result: unknown): T[] {
-  if (Array.isArray(result)) {
-    return result as T[];
-  }
-
-  if (result !== null && typeof result === 'object') {
-    const obj = result as Record<string, unknown>;
-    if (Array.isArray(obj.data)) {
-      return obj.data as T[];
-    }
-  }
-
-  return [];
-}
-
-/**
- * Type-safe extraction of ID from API response
- * Handles: { id: number }, { data: { id: number } }
- */
-function extractIdFromResponse(result: unknown): number | null {
-  if (result === null || typeof result !== 'object') {
-    return null;
-  }
-
-  const obj = result as Record<string, unknown>;
-
-  // Direct { id: number }
-  if (typeof obj.id === 'number') {
-    return obj.id;
-  }
-
-  // { data: { id: number } }
-  if (obj.data !== null && typeof obj.data === 'object') {
-    const dataObj = obj.data as Record<string, unknown>;
-    if (typeof dataObj.id === 'number') {
-      return dataObj.id;
-    }
-  }
-
-  return null;
-}
-
-// =============================================================================
 // LOAD FUNCTIONS
 // =============================================================================
 
@@ -80,7 +31,7 @@ function extractIdFromResponse(result: unknown): number | null {
  */
 export async function loadTeams(): Promise<Team[]> {
   const result: unknown = await apiClient.get(API_ENDPOINTS.TEAMS);
-  return extractArrayFromResponse<Team>(result);
+  return extractArray<Team>(result);
 }
 
 /**
@@ -89,7 +40,7 @@ export async function loadTeams(): Promise<Team[]> {
 export async function loadDepartments(): Promise<Department[]> {
   try {
     const result: unknown = await apiClient.get(API_ENDPOINTS.DEPARTMENTS);
-    return extractArrayFromResponse<Department>(result);
+    return extractArray<Department>(result);
   } catch (err: unknown) {
     log.error({ err }, 'Error loading departments');
     return [];
@@ -103,7 +54,7 @@ export async function loadDepartments(): Promise<Department[]> {
 export async function loadLeaderCandidates(): Promise<Admin[]> {
   try {
     const result: unknown = await apiClient.get(API_ENDPOINTS.LEADER_CANDIDATES);
-    return extractArrayFromResponse<Admin>(result);
+    return extractArray<Admin>(result);
   } catch (err: unknown) {
     log.error({ err }, 'Error loading leader candidates');
     return [];
@@ -116,7 +67,7 @@ export async function loadLeaderCandidates(): Promise<Admin[]> {
 export async function loadEmployees(): Promise<TeamMember[]> {
   try {
     const result: unknown = await apiClient.get(API_ENDPOINTS.EMPLOYEES);
-    const data = extractArrayFromResponse<TeamMember>(result);
+    const data = extractArray<TeamMember>(result);
     return data.filter((u) => u.role === 'employee');
   } catch (err: unknown) {
     log.error({ err }, 'Error loading employees');
@@ -130,7 +81,7 @@ export async function loadEmployees(): Promise<TeamMember[]> {
 export async function loadAssets(): Promise<Asset[]> {
   try {
     const result: unknown = await apiClient.get(API_ENDPOINTS.MACHINES);
-    return extractArrayFromResponse<Asset>(result);
+    return extractArray<Asset>(result);
   } catch (err: unknown) {
     log.error({ err }, 'Error loading assets');
     return [];
@@ -144,7 +95,7 @@ export async function loadAssets(): Promise<Asset[]> {
 export async function fetchTeamMembers(teamId: number): Promise<{ id: number }[]> {
   try {
     const result: unknown = await apiClient.get(API_ENDPOINTS.teamMembers(teamId));
-    return extractArrayFromResponse<{ id: number }>(result);
+    return extractArray<{ id: number }>(result);
   } catch (err: unknown) {
     log.error({ err }, 'Error fetching team members');
     return [];
@@ -158,7 +109,7 @@ export async function fetchTeamMembers(teamId: number): Promise<{ id: number }[]
 export async function fetchTeamAssets(teamId: number): Promise<{ id: number }[]> {
   try {
     const result: unknown = await apiClient.get(API_ENDPOINTS.teamAssets(teamId));
-    return extractArrayFromResponse<{ id: number }>(result);
+    return extractArray<{ id: number }>(result);
   } catch (err: unknown) {
     log.error({ err }, 'Error fetching team assets');
     return [];
@@ -173,7 +124,7 @@ export async function saveTeam(payload: TeamPayload, editId: number | null): Pro
       await apiClient.put(API_ENDPOINTS.team(editId), payload)
     : await apiClient.post(API_ENDPOINTS.TEAMS, payload);
 
-  return editId ?? extractIdFromResponse(result) ?? 0;
+  return editId ?? extractId(result) ?? 0;
 }
 
 /**

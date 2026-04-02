@@ -4,6 +4,7 @@
  */
 
 import { getApiClient } from '$lib/utils/api-client';
+import { extractArray } from '$lib/utils/api-response';
 import { getProfilePictureUrl } from '$lib/utils/avatar-helpers';
 import { createLogger } from '$lib/utils/logger';
 import { fetchCurrentUser as fetchSharedUser } from '$lib/utils/user-service';
@@ -20,39 +21,6 @@ import type {
 const log = createLogger('RootProfileApi');
 
 const apiClient = getApiClient();
-
-// =============================================================================
-// HELPER FUNCTIONS
-// =============================================================================
-
-/**
- * Type-safe extraction of array data from various API response formats
- * Handles: T[], { data: T[] }, { [key]: T[] }
- */
-function extractArrayFromResponse<T>(result: unknown, key?: string): T[] {
-  if (Array.isArray(result)) {
-    return result as T[];
-  }
-
-  if (result === null || typeof result !== 'object') {
-    return [];
-  }
-
-  const obj = result as Record<string, unknown>;
-
-  // { [key]: T[] } - e.g. { approvals: ApprovalItem[] }
-
-  if (key !== undefined && Array.isArray(obj[key])) {
-    return obj[key] as T[];
-  }
-
-  // { data: T[] }
-  if (Array.isArray(obj.data)) {
-    return obj.data as T[];
-  }
-
-  return [];
-}
 
 // =============================================================================
 // LOAD FUNCTIONS
@@ -94,7 +62,7 @@ export function loadProfilePicture(userPicture?: string): string | null {
 export async function loadPendingApprovals(): Promise<ApprovalItem[]> {
   try {
     const result: unknown = await apiClient.get('/root/deletion-approvals/pending');
-    return extractArrayFromResponse<ApprovalItem>(result, 'approvals');
+    return extractArray<ApprovalItem>(result, 'approvals');
   } catch (err: unknown) {
     log.warn({ err }, 'Could not load approvals');
     return [];
