@@ -58,7 +58,7 @@ import { ShiftsService } from './shifts.service.js';
 // Controllers return raw data only — NO manual { success, data } wrapping.
 
 /** Permission constants for RequirePermission decorator */
-const SHIFT_FEATURE = 'shift_planning';
+const SHIFT_ADDON = 'shift_planning';
 const SHIFT_PLAN = 'shift-plan';
 const SHIFT_SWAP = 'shift-swap';
 
@@ -74,7 +74,7 @@ export class ShiftsController {
 
   /** GET /api/v2/shifts */
   @Get()
-  @RequirePermission(SHIFT_FEATURE, SHIFT_PLAN, 'canRead')
+  @RequirePermission(SHIFT_ADDON, SHIFT_PLAN, 'canRead')
   async listShifts(
     @CurrentUser() user: JwtPayload,
     @Query() query: QueryShiftsDto,
@@ -102,7 +102,7 @@ export class ShiftsController {
 
   /** GET /api/v2/shifts/swap-requests (must be before /:id) */
   @Get('swap-requests')
-  @RequirePermission(SHIFT_FEATURE, SHIFT_SWAP, 'canRead')
+  @RequirePermission(SHIFT_ADDON, SHIFT_SWAP, 'canRead')
   async listSwapRequests(
     @CurrentUser() user: JwtPayload,
     @Query() query: QuerySwapRequestsDto,
@@ -114,7 +114,7 @@ export class ShiftsController {
   /** POST /api/v2/shifts/swap-requests */
   @Post('swap-requests')
   @HttpCode(HttpStatus.CREATED)
-  @RequirePermission(SHIFT_FEATURE, SHIFT_SWAP, 'canWrite')
+  @RequirePermission(SHIFT_ADDON, SHIFT_SWAP, 'canWrite')
   async createSwapRequest(
     @CurrentUser() user: JwtPayload,
     @Body() dto: CreateSwapRequestDto,
@@ -126,7 +126,7 @@ export class ShiftsController {
   /** PUT /api/v2/shifts/swap-requests/:id/status */
   @Put('swap-requests/:id/status')
   @Roles('admin', 'root')
-  @RequirePermission(SHIFT_FEATURE, SHIFT_SWAP, 'canWrite')
+  @RequirePermission(SHIFT_ADDON, SHIFT_SWAP, 'canWrite')
   async updateSwapRequestStatus(
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser() user: JwtPayload,
@@ -138,7 +138,7 @@ export class ShiftsController {
 
   /** GET /api/v2/shifts/overtime */
   @Get('overtime')
-  @RequirePermission(SHIFT_FEATURE, SHIFT_PLAN, 'canRead')
+  @RequirePermission(SHIFT_ADDON, SHIFT_PLAN, 'canRead')
   async getOvertimeReport(
     @CurrentUser() user: JwtPayload,
     @Query() query: QueryOvertimeDto,
@@ -154,7 +154,7 @@ export class ShiftsController {
 
   /** GET /api/v2/shifts/favorites */
   @Get('favorites')
-  @RequirePermission(SHIFT_FEATURE, SHIFT_PLAN, 'canRead')
+  @RequirePermission(SHIFT_ADDON, SHIFT_PLAN, 'canRead')
   async listFavorites(@CurrentUser() user: JwtPayload): Promise<FavoriteResponse[]> {
     this.logger.debug(`Listing favorites for user ${user.id}`);
     return await this.shiftsService.listFavorites(user.tenantId, user.id);
@@ -163,7 +163,7 @@ export class ShiftsController {
   /** POST /api/v2/shifts/favorites */
   @Post('favorites')
   @HttpCode(HttpStatus.CREATED)
-  @RequirePermission(SHIFT_FEATURE, SHIFT_PLAN, 'canWrite')
+  @RequirePermission(SHIFT_ADDON, SHIFT_PLAN, 'canWrite')
   async createFavorite(
     @CurrentUser() user: JwtPayload,
     @Body() dto: CreateFavoriteDto,
@@ -174,7 +174,7 @@ export class ShiftsController {
 
   /** DELETE /api/v2/shifts/favorites/:id */
   @Delete('favorites/:id')
-  @RequirePermission(SHIFT_FEATURE, SHIFT_PLAN, 'canDelete')
+  @RequirePermission(SHIFT_ADDON, SHIFT_PLAN, 'canDelete')
   async deleteFavorite(
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser() user: JwtPayload,
@@ -187,7 +187,7 @@ export class ShiftsController {
   /** GET /api/v2/shifts/assignment-counts */
   @Get('assignment-counts')
   @Roles('admin', 'root')
-  @RequirePermission(SHIFT_FEATURE, SHIFT_PLAN, 'canRead')
+  @RequirePermission(SHIFT_ADDON, SHIFT_PLAN, 'canRead')
   async getAssignmentCounts(
     @CurrentUser() user: JwtPayload,
     @Query() query: QueryAssignmentCountsDto,
@@ -202,7 +202,7 @@ export class ShiftsController {
 
   /** GET /api/v2/shifts/my-calendar-shifts */
   @Get('my-calendar-shifts')
-  @RequirePermission(SHIFT_FEATURE, SHIFT_PLAN, 'canRead')
+  @RequirePermission(SHIFT_ADDON, SHIFT_PLAN, 'canRead')
   async getMyCalendarShifts(
     @CurrentUser() user: JwtPayload,
     @Query() query: QueryMyCalendarShiftsDto,
@@ -219,7 +219,7 @@ export class ShiftsController {
   /** GET /api/v2/shifts/export */
   @Get('export')
   @Roles('admin', 'root')
-  @RequirePermission(SHIFT_FEATURE, SHIFT_PLAN, 'canRead')
+  @RequirePermission(SHIFT_ADDON, SHIFT_PLAN, 'canRead')
   async exportShifts(
     @CurrentUser() user: JwtPayload,
     @Query() query: ExportShiftsDto,
@@ -250,7 +250,7 @@ export class ShiftsController {
 
   /** GET /api/v2/shifts/plan */
   @Get('plan')
-  @RequirePermission(SHIFT_FEATURE, SHIFT_PLAN, 'canRead')
+  @RequirePermission(SHIFT_ADDON, SHIFT_PLAN, 'canRead')
   async getShiftPlan(
     @CurrentUser() user: JwtPayload,
     @Query() query: QueryShiftPlanDto,
@@ -263,7 +263,7 @@ export class ShiftsController {
   @Post('plan')
   @Roles('admin', 'root')
   @HttpCode(HttpStatus.CREATED)
-  @RequirePermission(SHIFT_FEATURE, SHIFT_PLAN, 'canWrite')
+  @RequirePermission(SHIFT_ADDON, SHIFT_PLAN, 'canWrite')
   async createShiftPlan(
     @CurrentUser() user: JwtPayload,
     @Body() dto: CreateShiftPlanDto,
@@ -274,7 +274,7 @@ export class ShiftsController {
 
   /** PUT /api/v2/shifts/plan/uuid/:uuid */
   @Put('plan/uuid/:uuid')
-  @RequirePermission(SHIFT_FEATURE, SHIFT_PLAN, 'canWrite')
+  @RequirePermission(SHIFT_ADDON, SHIFT_PLAN, 'canWrite')
   async updateShiftPlanByUuid(
     @Param('uuid') uuid: string,
     @CurrentUser() user: JwtPayload,
@@ -289,7 +289,7 @@ export class ShiftsController {
    * @deprecated Use PUT /api/v2/shifts/plan/uuid/:uuid instead
    */
   @Put('plan/:id')
-  @RequirePermission(SHIFT_FEATURE, SHIFT_PLAN, 'canWrite')
+  @RequirePermission(SHIFT_ADDON, SHIFT_PLAN, 'canWrite')
   async updateShiftPlan(
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser() user: JwtPayload,
@@ -302,7 +302,7 @@ export class ShiftsController {
   /** DELETE /api/v2/shifts/plan/uuid/:uuid */
   @Delete('plan/uuid/:uuid')
   @Roles('admin', 'root')
-  @RequirePermission(SHIFT_FEATURE, SHIFT_PLAN, 'canDelete')
+  @RequirePermission(SHIFT_ADDON, SHIFT_PLAN, 'canDelete')
   async deleteShiftPlanByUuid(
     @Param('uuid') uuid: string,
     @CurrentUser() user: JwtPayload,
@@ -318,7 +318,7 @@ export class ShiftsController {
    */
   @Delete('plan/:id')
   @Roles('admin', 'root')
-  @RequirePermission(SHIFT_FEATURE, SHIFT_PLAN, 'canDelete')
+  @RequirePermission(SHIFT_ADDON, SHIFT_PLAN, 'canDelete')
   async deleteShiftPlan(
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser() user: JwtPayload,
@@ -330,7 +330,7 @@ export class ShiftsController {
 
   /** GET /api/v2/shifts/:id */
   @Get(':id')
-  @RequirePermission(SHIFT_FEATURE, SHIFT_PLAN, 'canRead')
+  @RequirePermission(SHIFT_ADDON, SHIFT_PLAN, 'canRead')
   async getShiftById(
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser() user: JwtPayload,
@@ -343,7 +343,7 @@ export class ShiftsController {
   @Post()
   @Roles('admin', 'root')
   @HttpCode(HttpStatus.CREATED)
-  @RequirePermission(SHIFT_FEATURE, SHIFT_PLAN, 'canWrite')
+  @RequirePermission(SHIFT_ADDON, SHIFT_PLAN, 'canWrite')
   async createShift(
     @CurrentUser() user: JwtPayload,
     @Body() dto: CreateShiftDto,
@@ -355,7 +355,7 @@ export class ShiftsController {
   /** PUT /api/v2/shifts/:id */
   @Put(':id')
   @Roles('admin', 'root')
-  @RequirePermission(SHIFT_FEATURE, SHIFT_PLAN, 'canWrite')
+  @RequirePermission(SHIFT_ADDON, SHIFT_PLAN, 'canWrite')
   async updateShift(
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser() user: JwtPayload,
@@ -368,7 +368,7 @@ export class ShiftsController {
   /** DELETE /api/v2/shifts/week */
   @Delete('week')
   @Roles('admin', 'root')
-  @RequirePermission(SHIFT_FEATURE, SHIFT_PLAN, 'canDelete')
+  @RequirePermission(SHIFT_ADDON, SHIFT_PLAN, 'canDelete')
   async deleteShiftsByWeek(
     @Query('teamId', ParseIntPipe) teamId: number,
     @Query('startDate') startDate: string,
@@ -382,7 +382,7 @@ export class ShiftsController {
   /** DELETE /api/v2/shifts/team */
   @Delete('team')
   @Roles('admin', 'root')
-  @RequirePermission(SHIFT_FEATURE, SHIFT_PLAN, 'canDelete')
+  @RequirePermission(SHIFT_ADDON, SHIFT_PLAN, 'canDelete')
   async deleteShiftsByTeam(
     @Query('teamId', ParseIntPipe) teamId: number,
     @CurrentUser() user: JwtPayload,
@@ -394,7 +394,7 @@ export class ShiftsController {
   /** DELETE /api/v2/shifts/:id */
   @Delete(':id')
   @Roles('admin', 'root')
-  @RequirePermission(SHIFT_FEATURE, SHIFT_PLAN, 'canDelete')
+  @RequirePermission(SHIFT_ADDON, SHIFT_PLAN, 'canDelete')
   async deleteShift(
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser() user: JwtPayload,

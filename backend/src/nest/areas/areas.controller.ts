@@ -48,10 +48,10 @@ interface MessageResponse {
   message: string;
 }
 
-/** Permission constants — areas use departments feature code (legacy, POST/DELETE) */
+/** Permission constants — areas use departments addon code (legacy, POST/DELETE) */
 
 /** Permission constants — manage_hierarchy (GET/PUT scope-filtered) */
-const SCOPE_FEAT = 'manage_hierarchy';
+const SCOPE_ADDON = 'manage_hierarchy';
 const SCOPE_MOD = 'manage-areas';
 
 @Controller('areas')
@@ -112,7 +112,7 @@ export class AreasController {
    */
   @Put(':id')
   @Roles('admin', 'root', 'employee')
-  @RequirePermission(SCOPE_FEAT, SCOPE_MOD, 'canWrite')
+  @RequirePermission(SCOPE_ADDON, SCOPE_MOD, 'canWrite')
   async updateArea(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateAreaDto,

@@ -34,7 +34,7 @@ import type {
   SenderInfo,
   UnreadCountSummary,
 } from './chat.types.js';
-import { ERROR_FEATURE_NOT_IMPLEMENTED } from './chat.types.js';
+import { ERROR_NOT_IMPLEMENTED } from './chat.types.js';
 import type {
   EditMessageBody,
   GetMessagesQuery,
@@ -219,7 +219,7 @@ export class ChatMessagesService {
       throw new UnprocessableEntityException('Editing is not supported for encrypted messages');
     }
 
-    throw new BadRequestException(ERROR_FEATURE_NOT_IMPLEMENTED);
+    throw new BadRequestException(ERROR_NOT_IMPLEMENTED);
   }
 
   /**
@@ -227,7 +227,7 @@ export class ChatMessagesService {
    */
   // eslint-disable-next-line @typescript-eslint/require-await -- Stub method
   async deleteMessage(_messageId: number): Promise<never> {
-    throw new BadRequestException(ERROR_FEATURE_NOT_IMPLEMENTED);
+    throw new BadRequestException(ERROR_NOT_IMPLEMENTED);
   }
 
   /**
@@ -364,7 +364,7 @@ export class ChatMessagesService {
    */
   // eslint-disable-next-line @typescript-eslint/require-await -- Stub method
   async searchMessages(_query: SearchMessagesQuery): Promise<never> {
-    throw new BadRequestException(ERROR_FEATURE_NOT_IMPLEMENTED);
+    throw new BadRequestException(ERROR_NOT_IMPLEMENTED);
   }
 
   /**

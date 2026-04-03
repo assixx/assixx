@@ -19,35 +19,12 @@
   max-width: none;
 }
 
-/* Form Styles */
-.form-group {
-  margin-bottom: 1rem;
-}
-
-.form-label {
-  display: block;
-  margin-bottom: 0.5rem;
-  font-weight: 500;
-}
-
-.card-header {
-  border-bottom: 1px solid var(--border-color);
-  background-color: oklch(0% 0 0 / 2%);
-  padding: 0.75rem 1.25rem;
-}
-
 .card-body {
   flex: 1 1 auto;
   padding: 1.25rem;
 }
 
 /* NOTE: .card-title moved to Design System → design-system/components/card/card.css (2025-11-20) */
-
-.card-footer {
-  border-top: 1px solid var(--border-color);
-  background-color: oklch(0% 0 0 / 2%);
-  padding: 0.75rem 1.25rem;
-}
 
 /* Helper Classes */
 .text-primary {

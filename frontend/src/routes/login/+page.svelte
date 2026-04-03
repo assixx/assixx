@@ -377,16 +377,14 @@
     z-index: 1001;
 
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow:
-      0 4px 16px color-mix(in oklch, var(--color-black) 20%, transparent),
-      inset 0 1px 0 color-mix(in oklch, var(--color-white) 5%, transparent);
-    border: 1px solid color-mix(in oklch, var(--color-white) 10%, transparent);
+    box-shadow: var(--glass-card-shadow);
+    border: var(--glass-border);
     border-radius: 12px;
 
-    background: color-mix(in oklch, var(--color-white) 2%, transparent);
+    background: var(--glass-bg);
 
     padding: 10px 20px;
-    color: var(--text-secondary);
+    color: var(--color-white);
     font-weight: 500;
 
     font-size: 14px;
@@ -395,15 +393,11 @@
 
   .back-button:hover {
     transform: translateX(-5px);
-    box-shadow:
-      0 6px 24px color-mix(in oklch, var(--color-black) 30%, transparent),
-      inset 0 1px 0 color-mix(in oklch, var(--color-white) 10%, transparent);
+    border-color: var(--color-glass-border-hover);
 
-    border-color: color-mix(in oklch, var(--color-white) 15%, transparent);
+    background: var(--glass-bg-hover);
 
-    background: color-mix(in oklch, var(--color-white) 5%, transparent);
-
-    color: var(--text-primary);
+    color: var(--color-white);
   }
 
   .back-button:active {
@@ -500,13 +494,11 @@
     align-items: center;
     backdrop-filter: blur(10px);
     cursor: pointer;
-    box-shadow:
-      0 4px 12px color-mix(in oklch, var(--color-black) 20%, transparent),
-      inset 0 1px 0 color-mix(in oklch, var(--color-white) 10%, transparent);
-    border: 1px solid color-mix(in oklch, var(--color-white) 10%, transparent);
+    box-shadow: var(--glass-card-shadow);
+    border: var(--glass-border);
     border-radius: 50%;
 
-    background: color-mix(in oklch, var(--color-white) 8%, transparent);
+    background: var(--glass-bg-active);
 
     width: 36px;
     height: 36px;
@@ -517,33 +509,11 @@
 
   .help-button:hover {
     transform: scale(1.1);
-    box-shadow:
-      0 6px 16px color-mix(in oklch, var(--color-primary) 30%, transparent),
-      inset 0 1px 0 color-mix(in oklch, var(--color-white) 10%, transparent);
-
     border-color: var(--primary-color);
 
     background: color-mix(in oklch, var(--color-primary) 15%, transparent);
 
     color: var(--primary-color);
-  }
-
-  /* Light mode overrides */
-  :global(html:not(.dark)) .back-button {
-    border-color: color-mix(in oklch, var(--color-black) 12%, transparent);
-    background: color-mix(in oklch, var(--color-white) 85%, transparent);
-    box-shadow: 0 4px 16px color-mix(in oklch, var(--color-black) 8%, transparent);
-  }
-
-  :global(html:not(.dark)) .back-button:hover {
-    border-color: color-mix(in oklch, var(--color-black) 20%, transparent);
-    background: color-mix(in oklch, var(--color-white) 95%, transparent);
-  }
-
-  :global(html:not(.dark)) .help-button {
-    border-color: color-mix(in oklch, var(--color-black) 12%, transparent);
-    background: color-mix(in oklch, var(--color-white) 85%, transparent);
-    box-shadow: 0 4px 12px color-mix(in oklch, var(--color-black) 8%, transparent);
   }
 
   @media (width < 768px) {

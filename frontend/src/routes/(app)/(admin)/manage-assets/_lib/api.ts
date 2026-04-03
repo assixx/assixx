@@ -3,35 +3,13 @@
 // =============================================================================
 
 import { getApiClient } from '$lib/utils/api-client';
+import { extractArray } from '$lib/utils/api-response';
 import { createLogger } from '$lib/utils/logger';
 
 import type { Asset, Department, Area, Team, AssetTeam, AssetFormData } from './types';
 
 const log = createLogger('ManageAssetsApi');
 const apiClient = getApiClient();
-
-// =============================================================================
-// HELPER FUNCTIONS
-// =============================================================================
-
-/**
- * Type-safe extraction of array data from various API response formats
- * Handles: T[], { data: T[] }
- */
-function extractArrayFromResponse<T>(result: unknown): T[] {
-  if (Array.isArray(result)) {
-    return result as T[];
-  }
-
-  if (result !== null && typeof result === 'object') {
-    const obj = result as Record<string, unknown>;
-    if (Array.isArray(obj.data)) {
-      return obj.data as T[];
-    }
-  }
-
-  return [];
-}
 
 // =============================================================================
 // LOAD FUNCTIONS
@@ -56,7 +34,7 @@ export async function loadAssets(statusFilter?: string, searchTerm?: string): Pr
   const endpoint = queryString.length > 0 ? `/assets?${queryString}` : '/assets';
 
   const result: unknown = await apiClient.get(endpoint);
-  return extractArrayFromResponse<Asset>(result);
+  return extractArray<Asset>(result);
 }
 
 /**
@@ -76,7 +54,7 @@ export async function getAssetById(assetId: number): Promise<Asset | null> {
  */
 export async function loadDepartments(): Promise<Department[]> {
   const result: unknown = await apiClient.get('/departments');
-  return extractArrayFromResponse<Department>(result);
+  return extractArray<Department>(result);
 }
 
 /**
@@ -84,7 +62,7 @@ export async function loadDepartments(): Promise<Department[]> {
  */
 export async function loadAreas(): Promise<Area[]> {
   const result: unknown = await apiClient.get('/areas');
-  return extractArrayFromResponse<Area>(result);
+  return extractArray<Area>(result);
 }
 
 /**
@@ -92,7 +70,7 @@ export async function loadAreas(): Promise<Area[]> {
  */
 export async function loadTeams(): Promise<Team[]> {
   const result: unknown = await apiClient.get('/teams');
-  return extractArrayFromResponse<Team>(result);
+  return extractArray<Team>(result);
 }
 
 /**
@@ -101,7 +79,7 @@ export async function loadTeams(): Promise<Team[]> {
 export async function getAssetTeams(assetId: number): Promise<AssetTeam[]> {
   try {
     const result: unknown = await apiClient.get(`/assets/${assetId}/teams`);
-    return extractArrayFromResponse<AssetTeam>(result);
+    return extractArray<AssetTeam>(result);
   } catch (err: unknown) {
     log.error({ err, assetId }, 'Error loading teams for asset');
     return [];
@@ -115,7 +93,7 @@ export async function setAssetTeams(assetId: number, teamIds: number[]): Promise
   const result: unknown = await apiClient.put(`/assets/${assetId}/teams`, {
     teamIds,
   });
-  return extractArrayFromResponse<AssetTeam>(result);
+  return extractArray<AssetTeam>(result);
 }
 
 // =============================================================================

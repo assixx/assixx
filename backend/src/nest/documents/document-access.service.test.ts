@@ -257,6 +257,23 @@ describe('DocumentAccessService', () => {
       expect(result.params).toContain(5);
     });
 
+    it('should include chat in non-admin access scope filter', () => {
+      const result = service.buildDocumentQuery(10, 1, {}, false, 5);
+
+      // Non-admin scope filter must allow 'chat' through — chat privacy check
+      // (conversation_participants) already restricts to participants only.
+      // Without this, employees see 0 chat attachments in Document Explorer.
+      expect(result.baseQuery).toContain("d.access_scope = 'chat'");
+    });
+
+    it('should not duplicate chat scope for admin queries', () => {
+      const result = service.buildDocumentQuery(10, 1, {}, true, 5);
+
+      // Admin queries skip the scope filter entirely, only chat privacy applies
+      expect(result.baseQuery).not.toContain("d.access_scope = 'company'");
+      expect(result.baseQuery).toContain("d.access_scope != 'chat'");
+    });
+
     it('should apply category filter', () => {
       const result = service.buildDocumentQuery(10, 1, { category: 'report' }, true, 5);
 

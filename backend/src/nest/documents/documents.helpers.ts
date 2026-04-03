@@ -260,7 +260,7 @@ export async function getDocumentsCount(
   params: unknown[],
 ): Promise<number> {
   const countQuery = baseQuery.replace(
-    'SELECT d.*, u.username as uploaded_by_name',
+    /SELECT d\.\*.*?as uploaded_by_name/,
     'SELECT COUNT(*) as count',
   );
   const countResult = await db.query<{ count: string }>(countQuery, params);

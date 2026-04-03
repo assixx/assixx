@@ -188,9 +188,10 @@ import { WorkOrdersModule } from './work-orders/work-orders.module.js';
     UserPermissionsModule,
   ],
   providers: [
-    // NOTE: Throttler Guard is NOT global - applied selectively via decorators
-    // @AuthThrottle() on login/signup, @UploadThrottle() on file uploads
-    // See: docs/RATE-LIMITING-NESTJS-PLAN.md for details
+    // NOTE: Throttler Guard is NOT global — applied selectively via decorators.
+    // Every @Public() endpoint MUST have @UseGuards(CustomThrottlerGuard) + @AuthThrottle().
+    // Authenticated endpoints: @UserThrottle(), @AdminThrottle(), @UploadThrottle(), @ExportThrottle().
+    // See: ADR-001, docs/RATE-LIMITING-NESTJS-PLAN.md
 
     // Global JWT Auth Guard
     {

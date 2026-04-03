@@ -394,17 +394,7 @@ pnpm run build-storybook                                     # Static Build nach
 
 ---
 
-## 20. CSS-Analyse
-
-```bash
-pnpm run css:analyze                                         # CSS-Nutzung analysieren
-pnpm run css:analyze:verbose                                 # Detaillierte Analyse
-pnpm run css:analyze:file                                    # Pro-Datei-Analyse
-```
-
----
-
-## 21. Skripte
+## 20. Skripte
 
 ```bash
 /home/scs/projects/Assixx/scripts/check-production.sh        # Production Health-Check
@@ -413,7 +403,7 @@ pnpm run css:analyze:file                                    # Pro-Datei-Analyse
 
 ---
 
-## 22. Headless Mode (`claude -p`)
+## 21. Headless Mode (`claude -p`)
 
 > **Was ist das?** ohne interaktive Session — du gibst einen Befehl, Claude arbeitet ihn ab, fertig.
 > Kein Chat, kein Bestätigen, kein Warten. Ideal für mechanische, repetitive Aufgaben.

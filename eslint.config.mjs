@@ -27,8 +27,6 @@ export default [
       '.svelte-kit/**',
       'node_modules/**',
       'archive/**',
-      'scripts/analyze-css.cjs',
-      'scripts/purge-css-inplace.cjs',
       'node_modules_old_backup/**',
       '**/node_modules_old_backup/**',
       'dist/**',

@@ -45,7 +45,7 @@ import type {
 import { RotationService } from './rotation.service.js';
 
 /** Permission constants for RequirePermission decorator */
-const SHIFT_FEATURE = 'shift_planning';
+const SHIFT_ADDON = 'shift_planning';
 const SHIFT_ROTATION = 'shift-rotation';
 
 @Controller('shifts/rotation')
@@ -60,7 +60,7 @@ export class RotationController {
 
   /** GET /api/v2/shifts/rotation/patterns */
   @Get('patterns')
-  @RequirePermission(SHIFT_FEATURE, SHIFT_ROTATION, 'canRead')
+  @RequirePermission(SHIFT_ADDON, SHIFT_ROTATION, 'canRead')
   async getRotationPatterns(
     @CurrentUser() user: JwtPayload,
     @Query('active_only') activeOnly?: string,
@@ -73,7 +73,7 @@ export class RotationController {
 
   /** GET /api/v2/shifts/rotation/patterns/uuid/:uuid */
   @Get('patterns/uuid/:uuid')
-  @RequirePermission(SHIFT_FEATURE, SHIFT_ROTATION, 'canRead')
+  @RequirePermission(SHIFT_ADDON, SHIFT_ROTATION, 'canRead')
   async getRotationPatternByUuid(
     @Param('uuid') uuid: string,
     @CurrentUser() user: JwtPayload,
@@ -88,7 +88,7 @@ export class RotationController {
    * @deprecated Use GET /patterns/uuid/:uuid instead
    */
   @Get('patterns/:id')
-  @RequirePermission(SHIFT_FEATURE, SHIFT_ROTATION, 'canRead')
+  @RequirePermission(SHIFT_ADDON, SHIFT_ROTATION, 'canRead')
   async getRotationPattern(
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser() user: JwtPayload,
@@ -243,7 +243,7 @@ export class RotationController {
 
   /** GET /api/v2/shifts/rotation/history */
   @Get('history')
-  @RequirePermission(SHIFT_FEATURE, SHIFT_ROTATION, 'canRead')
+  @RequirePermission(SHIFT_ADDON, SHIFT_ROTATION, 'canRead')
   async getRotationHistory(
     @CurrentUser() user: JwtPayload,
     @Query() query: QueryRotationHistoryDto,

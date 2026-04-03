@@ -3,6 +3,7 @@
 // =============================================================================
 
 import { getApiClient } from '$lib/utils/api-client';
+import { extractArray } from '$lib/utils/api-response';
 import { createLogger } from '$lib/utils/logger';
 
 import type {
@@ -33,16 +34,6 @@ function extractPaginated(result: unknown): PaginatedDummies {
     page: typeof obj.page === 'number' ? obj.page : 1,
     pageSize: typeof obj.pageSize === 'number' ? obj.pageSize : 20,
   };
-}
-
-/** Type-safe extraction of array data from API response */
-function extractArray<T>(result: unknown): T[] {
-  if (Array.isArray(result)) return result as T[];
-  if (result !== null && typeof result === 'object') {
-    const obj = result as Record<string, unknown>;
-    if (Array.isArray(obj.data)) return obj.data as T[];
-  }
-  return [];
 }
 
 // =============================================================================

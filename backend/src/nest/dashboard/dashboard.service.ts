@@ -76,15 +76,15 @@ export class DashboardService {
    * Executes all count queries in parallel for optimal performance.
    * This replaces 5 separate API calls from the frontend.
    *
-   * Permission-aware (ADR-020): Counts are only fetched for features
+   * Permission-aware (ADR-020): Counts are only fetched for addons
    * the user has read permission for. No permission = count 0.
    * Root and admin with fullAccess bypass this check.
    */
   async getCounts(user: NestAuthUser, tenantId: number): Promise<DashboardCounts> {
-    // Determine which features the user can access (ADR-020)
+    // Determine which addons the user can access (ADR-020)
     const canAccess = await this.buildAddonAccessCheck(user);
 
-    // Execute count queries in parallel — skip features without permission
+    // Execute count queries in parallel — skip addons without permission
     const [
       chat,
       notifications,
@@ -114,18 +114,18 @@ export class DashboardService {
   }
 
   /**
-   * Create a guarded fetcher that skips features without permission.
+   * Create a guarded fetcher that skips addons without permission.
    * Returns a function that catches errors and returns the fallback.
    */
   private createGuard(
     canAccess: (code: string) => boolean,
-  ): <T>(feature: string | null, fetcher: () => Promise<T>, fallback: T) => Promise<T> {
-    return <T>(feature: string | null, fetcher: () => Promise<T>, fallback: T): Promise<T> => {
-      if (feature !== null && !canAccess(feature)) {
+  ): <T>(addon: string | null, fetcher: () => Promise<T>, fallback: T) => Promise<T> {
+    return <T>(addon: string | null, fetcher: () => Promise<T>, fallback: T): Promise<T> => {
+      if (addon !== null && !canAccess(addon)) {
         return Promise.resolve(fallback);
       }
       return fetcher().catch((err: unknown) => {
-        this.logger.warn(`${feature ?? 'global'} count failed: ${String(err)}`);
+        this.logger.warn(`${addon ?? 'global'} count failed: ${String(err)}`);
         return fallback;
       });
     };

@@ -187,34 +187,6 @@ export function setUserRole(role: string): boolean {
 }
 
 /**
- * Set active role for role switching
- * Returns true if successful, false if invalid role or insufficient permissions
- */
-export function setActiveRole(targetRole: UserRole): boolean {
-  if (!isBrowser()) return false;
-
-  const currentRole = getUserRole();
-
-  if (currentRole === null) {
-    return false;
-  }
-
-  // Validate that user can switch to target role
-  if (targetRole === 'root' && currentRole !== 'root') {
-    log.warn({ targetRole, currentRole }, 'Only root users can switch to root role');
-    return false;
-  }
-
-  if (targetRole === 'admin' && currentRole === 'employee') {
-    log.warn({ targetRole, currentRole }, 'Employees cannot switch to admin role');
-    return false;
-  }
-
-  localStorage.setItem(STORAGE_KEYS.ACTIVE_ROLE, targetRole);
-  return true;
-}
-
-/**
  * Clear user role from localStorage (for logout)
  */
 export function clearUserRole(): void {
@@ -283,54 +255,6 @@ export function hasPermission(requiredRole: UserRole): boolean {
 
   // Employee only has employee permission
   return requiredRole === 'employee';
-}
-
-/**
- * Check if the user has exactly the specified role
- */
-export function hasExactRole(targetRole: UserRole): boolean {
-  const role = getUserRole();
-  return role === targetRole;
-}
-
-// =============================================================================
-// PERMISSION CHECKS (from Vite auth-helpers.ts)
-// =============================================================================
-
-/**
- * Check if user can perform administrative actions
- * (Same as isAdmin but more semantic)
- */
-export function canPerformAdminActions(): boolean {
-  return isAdmin();
-}
-
-/**
- * Check if user can access user management features
- */
-export function canManageUsers(): boolean {
-  return isAdmin();
-}
-
-/**
- * Check if user can access department management
- */
-export function canManageDepartments(): boolean {
-  return isAdmin();
-}
-
-/**
- * Check if user can access team management
- */
-export function canManageTeams(): boolean {
-  return isAdmin();
-}
-
-/**
- * Check if user can view all employees
- */
-export function canViewAllEmployees(): boolean {
-  return isAdmin();
 }
 
 // =============================================================================

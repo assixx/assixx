@@ -3,7 +3,7 @@
  * @module addons/_lib/constants
  */
 
-/** FontAwesome icon class per addon code */
+/** FontAwesome icon class per addon code — must cover all 23 addons */
 export const ADDON_ICONS: Record<string, string> = {
   dashboard: 'fas fa-tachometer-alt',
   employees: 'fas fa-users',
@@ -21,7 +21,14 @@ export const ADDON_ICONS: Record<string, string> = {
   vacation: 'fas fa-umbrella-beach',
   tpm: 'fas fa-tools',
   work_orders: 'fas fa-clipboard-list',
-  organigram: 'fas fa-project-diagram',
+  assets: 'fas fa-industry',
+  reports: 'fas fa-chart-line',
+  audit_trail: 'fas fa-history',
+  dummy_users: 'fas fa-user-slash',
+  manage_hierarchy: 'fas fa-sitemap',
+  approvals: 'fas fa-check-double',
+  user_profiles: 'fas fa-id-card',
+  halls: 'fas fa-warehouse',
 };
 
 /** Status badge configuration: label (German), CSS class, icon */

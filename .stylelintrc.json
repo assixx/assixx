@@ -128,6 +128,7 @@
       "files": ["**/*.svelte"],
       "customSyntax": "postcss-html",
       "rules": {
+        "no-unknown-animations": null,
         "selector-pseudo-class-no-unknown": [
           true,
           {

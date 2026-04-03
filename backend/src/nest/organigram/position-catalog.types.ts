@@ -16,12 +16,6 @@ export type PositionRoleCategory = 'employee' | 'admin' | 'root';
 // CONSTANTS
 // =============================================================================
 
-export const ROLE_CATEGORY_LABELS: Readonly<Record<PositionRoleCategory, string>> = {
-  employee: 'Mitarbeiter',
-  admin: 'Admin',
-  root: 'Root',
-};
-
 /** System positions seeded per tenant — locked from editing/deletion */
 export const SYSTEM_POSITIONS: readonly {
   name: string;

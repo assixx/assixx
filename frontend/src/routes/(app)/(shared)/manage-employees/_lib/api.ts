@@ -6,6 +6,7 @@ import { goto } from '$app/navigation';
 import { resolve } from '$app/paths';
 
 import { getApiClient, ApiError } from '$lib/utils/api-client';
+import { extractArray } from '$lib/utils/api-response';
 import { createLogger } from '$lib/utils/logger';
 import { handleSessionExpired } from '$lib/utils/session-expired.js';
 
@@ -19,18 +20,6 @@ const apiClient = getApiClient();
 // =============================================================================
 // HELPER FUNCTIONS
 // =============================================================================
-
-/**
- * Type-safe extraction helper for nested API responses
- */
-function extractArray<T>(response: unknown): T[] {
-  if (Array.isArray(response)) return response as T[];
-  if (response !== null && typeof response === 'object') {
-    const obj = response as Record<string, unknown>;
-    if (Array.isArray(obj.data)) return obj.data as T[];
-  }
-  return [];
-}
 
 /**
  * Convert empty string to undefined (for optional API fields)

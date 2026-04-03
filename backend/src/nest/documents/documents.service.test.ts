@@ -334,6 +334,18 @@ describe('DocumentsService', () => {
       expect(sql).toContain('personal');
       expect(sql).toContain('payroll');
     });
+
+    it('should include chat in employee access scope filter', async () => {
+      mockDb.query.mockResolvedValueOnce([{ count: '5' }]);
+
+      await service.getUnreadCount(42, 3, 'employee');
+
+      const sql = mockDb.query.mock.calls[0]?.[0] as string;
+      // Employee scope filter must include 'chat' — chat privacy check
+      // already restricts to conversation participants only.
+      // Without this, employees see 0 unread chat attachments.
+      expect(sql).toContain("d.access_scope = 'chat'");
+    });
   });
 
   // =============================================================

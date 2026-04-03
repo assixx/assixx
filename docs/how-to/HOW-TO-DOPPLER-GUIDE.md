@@ -2,10 +2,10 @@
 
 > Assixx - Zentrale Secrets-Verwaltung mit Doppler
 
-**Stand:** 2026-01-26
-**Doppler CLI:** v3.75.1
+**Stand:** 2026-04-03
+**Doppler CLI:** v3.75.3
 **Project:** assixx
-**Config:** dev
+**Configs:** dev, stg, prd
 
 ---
 
@@ -20,7 +20,9 @@
 7. [Token verloren? Neuen erstellen](#7-token-verloren-neuen-erstellen)
 8. [Secrets verwalten](#8-secrets-verwalten)
 9. [Team: Token-Management für Entwickler](#9-team-token-management-für-entwickler)
-10. [Troubleshooting](#10-troubleshooting)
+10. [Multi-Environment Setup (dev / stg / prd)](#10-multi-environment-setup-dev--stg--prd)
+11. [Service Tokens für Deployment](#11-service-tokens-für-deployment)
+12. [Troubleshooting](#12-troubleshooting)
 
 ---
 
@@ -505,7 +507,167 @@ doppler activity --project assixx
 
 ---
 
-## 10. Troubleshooting
+## 10. Multi-Environment Setup (dev / stg / prd)
+
+### Übersicht
+
+Assixx hat **3 Doppler-Configs** mit eigenständigen, kryptographisch starken Secrets:
+
+| Config  | Zweck              | NODE_ENV    | Domains                        | Secrets                       |
+| ------- | ------------------ | ----------- | ------------------------------ | ----------------------------- |
+| **dev** | Lokale Entwicklung | development | localhost:3000, localhost:5173 | Dev-Passwörter (`dev_only_*`) |
+| **stg** | Staging / QA       | production  | stg.assixx.com, stg.assixx.de  | 128-char Hex-Secrets          |
+| **prd** | Live-Produktion    | production  | assixx.com, assixx.de, www.\*  | 128-char Hex-Secrets          |
+
+> **Warum `NODE_ENV=production` für stg?** Der Backend-Config-Validator (`config.service.ts`) akzeptiert nur
+> `development`, `production`, `test`. Staging-spezifisches Verhalten wird über `LOG_LEVEL`,
+> `ALLOWED_ORIGINS` und `ORIGIN` gesteuert.
+
+### Unterschiede zwischen den Environments
+
+| Variable             | dev                       | stg                           | prd                           |
+| -------------------- | ------------------------- | ----------------------------- | ----------------------------- |
+| `LOG_LEVEL`          | debug                     | info                          | warn                          |
+| `ALLOWED_ORIGINS`    | localhost:3000,5173       | stg.assixx.com, stg.assixx.de | assixx.com, assixx.de, www.\* |
+| `ORIGIN`             | http://localhost          | https://stg.assixx.com        | https://assixx.com            |
+| `REDIS_PASSWORD`     | `dev_only_redis_p@ss_...` | 64-char Hex                   | 64-char Hex                   |
+| `JWT_SECRET`         | `DEV_91040ae...`          | 128-char Hex                  | 128-char Hex                  |
+| Alle anderen Secrets | Dev-Strings               | Eigenständig generiert        | Eigenständig generiert        |
+
+**Jedes Environment hat komplett eigenständige Secrets.** Kein Secret wird zwischen stg/prd geteilt
+(außer Sentry DSN und Grafana Cloud Keys — das sind Monitoring-Endpoints, keine Geheimnisse).
+
+### Environment Seeder Script
+
+Secrets für stg/prd werden mit dem Seeder-Script generiert:
+
+```bash
+# Preview (kein Schreibzugriff)
+./scripts/doppler-seed-environment.sh stg --dry-run
+./scripts/doppler-seed-environment.sh prd --dry-run
+
+# Tatsächlich seeden (erfordert Bestätigung)
+./scripts/doppler-seed-environment.sh stg
+./scripts/doppler-seed-environment.sh prd
+
+# Bestehende Secrets überschreiben (z.B. bei Rotation)
+./scripts/doppler-seed-environment.sh prd --force
+```
+
+**Sicherheitsregeln des Scripts:**
+
+- `dev` wird **immer abgelehnt** — Dev-Secrets werden separat verwaltet
+- Secrets werden **nie** auf stdout gedruckt
+- Bestätigung: Man muss den Environment-Namen eintippen
+- Automatische Verifizierung: JWT≠Refresh, Mindestlängen, alle kritischen Keys gesetzt
+
+### Secrets vergleichen (nur Namen, nie Werte!)
+
+```bash
+# Welche Secrets hat stg?
+doppler secrets --project assixx --config stg --only-names
+
+# Welche Secrets hat prd?
+doppler secrets --project assixx --config prd --only-names
+
+# Einzelnes Secret prüfen (Länge, nicht Wert)
+doppler secrets get JWT_SECRET --project assixx --config prd --plain | wc -c
+```
+
+### Manuelle Secret-Änderung (z.B. SMTP)
+
+```bash
+# SMTP für Production setzen
+doppler secrets set SMTP_USER="real-email@assixx.com" --project assixx --config prd
+doppler secrets set SMTP_PASS="app-specific-password" --project assixx --config prd
+
+# Domain ändern
+doppler secrets set ALLOWED_ORIGINS="https://neue-domain.com" --project assixx --config prd
+```
+
+---
+
+## 11. Service Tokens für Deployment
+
+### Was ist ein Service Token?
+
+Ein Service Token ist ein **read-only API-Key**, der es einem Server/Container erlaubt,
+Secrets aus einer bestimmten Doppler-Config zu ziehen. Jedes Environment braucht seinen eigenen Token.
+
+```
+┌─��───────────────────────────────────────────────────────────────────────┐
+│                                                                         │
+│   Dein Laptop (dev)          Staging-Server          Production-Server  │
+│   ┌─────────────┐           ┌─────────────┐         ┌─────────────┐   │
+│   │ docker-dev  │           │ docker-stg  │         │ docker-prd  │   │
+│   │ Token       │           │ Token       │         │ Token       │   │
+│   └──────┬──────┘           └──────┬──────┘         └──────┬──────┘   │
+│          │                         │                       │          │
+│          ▼                         ▼                       ▼          │
+│   ┌─────────────┐           ┌─────────────┐         ┌─────────────┐   │
+│   │ Doppler dev │           │ Doppler stg │         │ Doppler prd │   │
+│   │ Config      │           │ Config      │         │ Config      │   │
+│   └─────────────┘           └─────────────┘         └─────────────┘   │
+│                                                                         │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+### Aktueller Status
+
+| Token        | Config | Erstellt                | Wo gespeichert |
+| ------------ | ------ | ----------------------- | -------------- |
+| `docker-dev` | dev    | 2026-01-14              | .locklock      |
+| —            | stg    | **Noch nicht erstellt** | —              |
+| —            | prd    | **Noch nicht erstellt** | —              |
+
+**stg/prd Tokens werden erst benötigt, wenn ein Staging- oder Production-Server aufgesetzt wird.**
+Solange alles lokal läuft, reicht der `docker-dev` Token.
+
+### Token erstellen (wenn Deployment ansteht)
+
+```bash
+# Staging-Token erstellen (wird EINMAL angezeigt!)
+doppler configs tokens create docker-stg \
+  --project assixx \
+  --config stg \
+  --max-age 0 \
+  --plain
+# Output: dp.st.stg.xxxxx → SOFORT in .locklock speichern!
+
+# Production-Token erstellen
+doppler configs tokens create docker-prd \
+  --project assixx \
+  --config prd \
+  --max-age 0 \
+  --plain
+# Output: dp.st.prd.xxxxx → SOFORT in .locklock speichern!
+```
+
+### Token auf dem Server verwenden
+
+```bash
+# Auf dem Staging-Server:
+export DOPPLER_TOKEN="dp.st.stg.xxxxx"
+doppler run -- docker-compose --profile production up -d
+
+# Auf dem Production-Server:
+export DOPPLER_TOKEN="dp.st.prd.xxxxx"
+doppler run -- docker-compose --profile production up -d
+```
+
+### Sicherheitsregeln
+
+- **1 Token pro Server/Environment** — niemals denselben Token teilen
+- **Token-Wert wird nur EINMAL angezeigt** — sofort in .locklock dokumentieren
+- **Token widerrufen bei Kompromittierung:**
+  ```bash
+  doppler configs tokens revoke docker-stg --project assixx --config stg
+  ```
+- **Token haben kein Ablaufdatum** (`max-age 0`) — bei Bedarf manuell rotieren
+
+---
+
+## 12. Troubleshooting
 
 ### "you must provide a token"
 
@@ -577,7 +739,10 @@ doppler run -- docker-compose up -d
 # === DOPPLER CLI ===
 doppler login                                    # Browser Auth
 doppler whoami                                   # Aktueller User
-doppler secrets --project assixx --config dev   # Alle Secrets
+doppler secrets --project assixx --config dev    # Alle Dev-Secrets
+doppler secrets --project assixx --config stg    # Alle Staging-Secrets
+doppler secrets --project assixx --config prd    # Alle Production-Secrets
+doppler configs --project assixx                 # Alle Configs auflisten
 
 # === TOKEN MANAGEMENT ===
 doppler configs tokens --project assixx --config dev              # Tokens auflisten
@@ -588,6 +753,13 @@ doppler configs tokens revoke NAME --project assixx --config dev  # Token lösch
 DOPPLER_TOKEN="xxx" doppler run -- docker-compose up -d
 DOPPLER_TOKEN="xxx" doppler run -- docker-compose --profile observability up -d
 DOPPLER_TOKEN="xxx" doppler run -- docker-compose --profile production up -d
+
+# === ENVIRONMENT SEEDER (stg/prd) ===
+./scripts/doppler-seed-environment.sh stg --dry-run   # Staging Preview
+./scripts/doppler-seed-environment.sh prd --dry-run   # Production Preview
+./scripts/doppler-seed-environment.sh stg             # Staging seeden
+./scripts/doppler-seed-environment.sh prd             # Production seeden
+./scripts/doppler-seed-environment.sh prd --force     # Secrets rotieren
 
 # === NOTFALL (ohne Doppler - Secrets aus .locklock) ===
 # export JWT_SECRET="..." DB_PASSWORD="..." REDIS_PASSWORD="..." etc.
@@ -603,9 +775,10 @@ DOPPLER_TOKEN="xxx" doppler run -- docker-compose --profile production up -d
 | `.locklock`                           | Token-Werte, Passwörter, Archiv          | ❌ NEIN |
 | `docker/.env`                         | Nur Non-Secrets (Ports, Hosts, Versions) | ❌ NEIN |
 | `docker/.env.example`                 | Template mit CHANGE_ME Platzhaltern      | ✅ JA   |
+| `scripts/doppler-seed-environment.sh` | Environment Seeder (stg/prd)             | ✅ JA   |
 | `docs/DOPPLER-IMPLEMENTATION-PLAN.md` | Implementierungs-Details                 | ✅ JA   |
 | `HOW-TO-DOPPLER-GUIDE.md`             | Diese Anleitung                          | ❌ NEIN |
 
 ---
 
-**Letzte Aktualisierung:** 2026-01-26
+**Letzte Aktualisierung:** 2026-04-03

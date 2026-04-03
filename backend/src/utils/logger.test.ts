@@ -55,11 +55,9 @@ function withEnv(overrides: Record<string, string | undefined>): () => void {
 /** Dynamic import logger module (fresh due to vi.resetModules) */
 async function importLogger(): Promise<{
   logger: unknown;
-  createLogger: (context: string) => unknown;
 }> {
   return (await import('./logger.js')) as {
     logger: unknown;
-    createLogger: (context: string) => unknown;
   };
 }
 
@@ -306,26 +304,6 @@ describe('logger', () => {
       expect(lokiTarget!.options.labels.app).toBe('assixx');
       expect(lokiTarget!.options.labels.service).toBe('backend');
       expect(lokiTarget!.options.labels.loki_target).toBe('local');
-    });
-  });
-
-  describe('createLogger', () => {
-    it('should create a child logger with context binding', async () => {
-      process.env['NODE_ENV'] = 'test';
-
-      const { createLogger } = await importLogger();
-      createLogger('DatabaseService');
-
-      expect(mockChild).toHaveBeenCalledWith({ context: 'DatabaseService' });
-    });
-
-    it('should pass through the context string as-is', async () => {
-      process.env['NODE_ENV'] = 'test';
-
-      const { createLogger } = await importLogger();
-      createLogger('RedisConnection');
-
-      expect(mockChild).toHaveBeenCalledWith({ context: 'RedisConnection' });
     });
   });
 

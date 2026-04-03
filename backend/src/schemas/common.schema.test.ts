@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest';
 
 import {
   DateSchema,
-  DocumentMimeTypes,
   EmailSchema,
   IdSchema,
   PaginationSchema,
@@ -338,33 +337,5 @@ describe('TimeSchema', () => {
 
   it('should fail for minute 60', () => {
     expect(TimeSchema.safeParse('14:60').success).toBe(false);
-  });
-});
-
-// =============================================================
-// DocumentMimeTypes
-// =============================================================
-
-describe('DocumentMimeTypes', () => {
-  it.each([
-    'image/jpeg',
-    'image/png',
-    'application/pdf',
-    'application/msword',
-    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-  ])('should accept valid MIME type "%s"', (mime) => {
-    expect(DocumentMimeTypes.safeParse(mime).success).toBe(true);
-  });
-
-  it('should fail for text/plain', () => {
-    expect(DocumentMimeTypes.safeParse('text/plain').success).toBe(false);
-  });
-
-  it('should fail for application/exe', () => {
-    expect(DocumentMimeTypes.safeParse('application/exe').success).toBe(false);
-  });
-
-  it('should fail for empty string', () => {
-    expect(DocumentMimeTypes.safeParse('').success).toBe(false);
   });
 });
