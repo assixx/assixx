@@ -23,7 +23,6 @@ import {
 import { CurrentUser } from '../common/decorators/current-user.decorator.js';
 import { RequireAddon } from '../common/decorators/require-addon.decorator.js';
 import { RequirePermission } from '../common/decorators/require-permission.decorator.js';
-import { Roles } from '../common/decorators/roles.decorator.js';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard.js';
 import { RolesGuard } from '../common/guards/roles.guard.js';
 import type { JwtPayload } from '../common/interfaces/auth.interface.js';
@@ -100,7 +99,6 @@ export class RotationController {
 
   /** POST /api/v2/shifts/rotation/patterns */
   @Post('patterns')
-  @Roles('admin', 'root')
   @HttpCode(HttpStatus.CREATED)
   async createRotationPattern(
     @CurrentUser() user: JwtPayload,
@@ -118,7 +116,6 @@ export class RotationController {
 
   /** PUT /api/v2/shifts/rotation/patterns/uuid/:uuid */
   @Put('patterns/uuid/:uuid')
-  @Roles('admin', 'root')
   async updateRotationPatternByUuid(
     @Param('uuid') uuid: string,
     @CurrentUser() user: JwtPayload,
@@ -140,7 +137,6 @@ export class RotationController {
    * @deprecated Use PUT /patterns/uuid/:uuid instead
    */
   @Put('patterns/:id')
-  @Roles('admin', 'root')
   async updateRotationPattern(
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser() user: JwtPayload,
@@ -159,7 +155,6 @@ export class RotationController {
 
   /** DELETE /api/v2/shifts/rotation/patterns/uuid/:uuid */
   @Delete('patterns/uuid/:uuid')
-  @Roles('admin', 'root')
   async deleteRotationPatternByUuid(
     @Param('uuid') uuid: string,
     @CurrentUser() user: JwtPayload,
@@ -174,7 +169,6 @@ export class RotationController {
    * @deprecated Use DELETE /patterns/uuid/:uuid instead
    */
   @Delete('patterns/:id')
-  @Roles('admin', 'root')
   async deleteRotationPattern(
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser() user: JwtPayload,
@@ -188,7 +182,6 @@ export class RotationController {
 
   /** POST /api/v2/shifts/rotation/assign */
   @Post('assign')
-  @Roles('admin', 'root')
   async assignUsersToPattern(
     @CurrentUser() user: JwtPayload,
     @Body() dto: AssignUsersToPatternDto,
@@ -207,7 +200,6 @@ export class RotationController {
 
   /** POST /api/v2/shifts/rotation/generate */
   @Post('generate')
-  @Roles('admin', 'root')
   async generateRotationShifts(
     @CurrentUser() user: JwtPayload,
     @Body() dto: GenerateRotationShiftsDto,
@@ -224,7 +216,6 @@ export class RotationController {
 
   /** POST /api/v2/shifts/rotation/generate-from-config */
   @Post('generate-from-config')
-  @Roles('admin', 'root')
   async generateRotationFromConfig(
     @CurrentUser() user: JwtPayload,
     @Body() dto: GenerateRotationFromConfigDto,
@@ -270,7 +261,6 @@ export class RotationController {
    * If only teamId: deletes ALL patterns for the team.
    */
   @Delete('history')
-  @Roles('admin', 'root')
   async deleteRotationHistory(
     @CurrentUser() user: JwtPayload,
     @Query() query: DeleteRotationHistoryDto,
@@ -302,7 +292,6 @@ export class RotationController {
 
   /** DELETE /api/v2/shifts/rotation/history/week */
   @Delete('history/week')
-  @Roles('admin', 'root')
   async deleteRotationHistoryByDateRange(
     @CurrentUser() user: JwtPayload,
     @Query() query: DeleteRotationHistoryByDateRangeDto,
@@ -329,7 +318,6 @@ export class RotationController {
 
   /** DELETE /api/v2/shifts/rotation/history/:id */
   @Delete('history/:id')
-  @Roles('admin', 'root')
   async deleteRotationHistoryEntry(
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser() user: JwtPayload,

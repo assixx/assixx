@@ -4,8 +4,9 @@
  *
  * SSR Performance: Loads initial data server-side for instant render.
  * - Employee view: user with team info, team members, areas (for context display)
- * - Admin/Root view: user, areas, favorites
+ * - Manager view (org scope != none): user, areas, favorites, staffing rules
  *
+ * Scope-based: uses orgScope from GET /users/me/org-scope instead of role checks.
  * Shift plan loading happens client-side on team selection (dynamic context).
  */
 import { redirect } from '@sveltejs/kit';
@@ -14,6 +15,9 @@ import { apiFetch, apiFetchWithPermission } from '$lib/server/api-fetch';
 import { DEFAULT_HIERARCHY_LABELS } from '$lib/types/hierarchy-labels';
 import { requireAddon } from '$lib/utils/addon-guard';
 import { createLogger } from '$lib/utils/logger';
+
+import { deriveRoleFlags, resolveAutoTeam } from './_lib/server-helpers';
+import { DEFAULT_ORG_SCOPE } from './_lib/types';
 
 import type { PageServerLoad } from './$types';
 import type {
@@ -24,6 +28,7 @@ import type {
   ShiftFavorite,
   ShiftTimeApiResponse,
   AvailabilityStatus,
+  OrganizationalScope,
 } from './_lib/types';
 
 const log = createLogger('Shifts');
@@ -229,7 +234,7 @@ function prepareFetchPromises(
   userData: User,
   hasTeam: boolean,
   primaryTeamId: number | null,
-  isAdminOrRoot: boolean,
+  isManager: boolean,
 ): { promises: Promise<unknown>[]; labels: string[] } {
   const promises: Promise<unknown>[] = [];
   const labels: string[] = [];
@@ -250,7 +255,8 @@ function prepareFetchPromises(
     labels.push('teamMembers');
   }
 
-  if (isAdminOrRoot) {
+  // Managers (any org scope) get favorites + staffing rules, not just admin/root
+  if (isManager) {
     promises.push(apiFetch<ShiftFavorite[]>('/shifts/favorites', token, fetchFn));
     labels.push('favorites');
 
@@ -282,6 +288,8 @@ function buildDeniedResponse(
     employeeTeamInfo: null,
     isEmployee,
     isAdminOrRoot,
+    orgScope: DEFAULT_ORG_SCOPE,
+    isManager: false,
   };
 }
 
@@ -289,31 +297,32 @@ function buildDeniedResponse(
  * Fetch and assemble all shift data for a given user
  */
 async function loadShiftsDataForUser(token: string, fetchFn: typeof fetch, userData: User) {
-  const isEmployee = userData.role === 'employee';
-  const primaryTeamId = userData.teamIds?.[0] ?? userData.teamId ?? null;
-  const hasTeam = isEmployee && primaryTeamId !== null;
-  const isAdminOrRoot = userData.role === 'admin' || userData.role === 'root';
+  const { isEmployee, primaryTeamId, isAdminOrRoot } = deriveRoleFlags(userData);
 
-  const shiftTimesResult = await apiFetchWithPermission<ShiftTimeApiResponse[]>(
-    '/shift-times',
-    token,
-    fetchFn,
-  );
+  // Fetch org scope and shift times in parallel (both independent, both needed before batch)
+  const [orgScopeRaw, shiftTimesResult] = await Promise.all([
+    apiFetch<OrganizationalScope>('/users/me/org-scope', token, fetchFn),
+    apiFetchWithPermission<ShiftTimeApiResponse[]>('/shift-times', token, fetchFn),
+  ]);
+  const orgScope = orgScopeRaw ?? DEFAULT_ORG_SCOPE;
+  const isManager = orgScope.type !== 'none';
 
   if (shiftTimesResult.permissionDenied) {
     return buildDeniedResponse(userData, primaryTeamId, isEmployee, isAdminOrRoot);
   }
 
+  const { autoTeamId, hasAutoTeam } = resolveAutoTeam(orgScope, isManager, primaryTeamId);
+
   const { promises, labels } = prepareFetchPromises(
     token,
     fetchFn,
     userData,
-    hasTeam,
-    primaryTeamId,
-    isAdminOrRoot,
+    hasAutoTeam,
+    autoTeamId,
+    isManager,
   );
   const results = await Promise.all(promises);
-  const processed = processFetchResults(results, labels, hasTeam, primaryTeamId);
+  const processed = processFetchResults(results, labels, hasAutoTeam, autoTeamId);
 
   return {
     permissionDenied: false as const,
@@ -326,12 +335,14 @@ async function loadShiftsDataForUser(token: string, fetchFn: typeof fetch, userD
     staffingRules: processed.staffingRules,
     employeeTeamInfo: buildEmployeeTeamInfo(
       userData,
-      hasTeam,
-      primaryTeamId,
+      hasAutoTeam,
+      autoTeamId,
       processed.teamLeaderId,
     ),
     isEmployee,
     isAdminOrRoot,
+    orgScope,
+    isManager,
   };
 }
 

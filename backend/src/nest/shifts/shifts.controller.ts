@@ -26,7 +26,6 @@ import { attachmentHeader } from '../../utils/content-disposition.js';
 import { CurrentUser } from '../common/decorators/current-user.decorator.js';
 import { RequireAddon } from '../common/decorators/require-addon.decorator.js';
 import { RequirePermission } from '../common/decorators/require-permission.decorator.js';
-import { Roles } from '../common/decorators/roles.decorator.js';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard.js';
 import { RolesGuard } from '../common/guards/roles.guard.js';
 import type { JwtPayload } from '../common/interfaces/auth.interface.js';
@@ -125,7 +124,6 @@ export class ShiftsController {
 
   /** PUT /api/v2/shifts/swap-requests/:id/status */
   @Put('swap-requests/:id/status')
-  @Roles('admin', 'root')
   @RequirePermission(SHIFT_ADDON, SHIFT_SWAP, 'canWrite')
   async updateSwapRequestStatus(
     @Param('id', ParseIntPipe) id: number,
@@ -186,7 +184,6 @@ export class ShiftsController {
 
   /** GET /api/v2/shifts/assignment-counts */
   @Get('assignment-counts')
-  @Roles('admin', 'root')
   @RequirePermission(SHIFT_ADDON, SHIFT_PLAN, 'canRead')
   async getAssignmentCounts(
     @CurrentUser() user: JwtPayload,
@@ -218,7 +215,6 @@ export class ShiftsController {
 
   /** GET /api/v2/shifts/export */
   @Get('export')
-  @Roles('admin', 'root')
   @RequirePermission(SHIFT_ADDON, SHIFT_PLAN, 'canRead')
   async exportShifts(
     @CurrentUser() user: JwtPayload,
@@ -261,7 +257,6 @@ export class ShiftsController {
 
   /** POST /api/v2/shifts/plan */
   @Post('plan')
-  @Roles('admin', 'root')
   @HttpCode(HttpStatus.CREATED)
   @RequirePermission(SHIFT_ADDON, SHIFT_PLAN, 'canWrite')
   async createShiftPlan(
@@ -301,7 +296,6 @@ export class ShiftsController {
 
   /** DELETE /api/v2/shifts/plan/uuid/:uuid */
   @Delete('plan/uuid/:uuid')
-  @Roles('admin', 'root')
   @RequirePermission(SHIFT_ADDON, SHIFT_PLAN, 'canDelete')
   async deleteShiftPlanByUuid(
     @Param('uuid') uuid: string,
@@ -317,7 +311,6 @@ export class ShiftsController {
    * @deprecated Use DELETE /api/v2/shifts/plan/uuid/:uuid instead
    */
   @Delete('plan/:id')
-  @Roles('admin', 'root')
   @RequirePermission(SHIFT_ADDON, SHIFT_PLAN, 'canDelete')
   async deleteShiftPlan(
     @Param('id', ParseIntPipe) id: number,
@@ -341,7 +334,6 @@ export class ShiftsController {
 
   /** POST /api/v2/shifts */
   @Post()
-  @Roles('admin', 'root')
   @HttpCode(HttpStatus.CREATED)
   @RequirePermission(SHIFT_ADDON, SHIFT_PLAN, 'canWrite')
   async createShift(
@@ -354,7 +346,6 @@ export class ShiftsController {
 
   /** PUT /api/v2/shifts/:id */
   @Put(':id')
-  @Roles('admin', 'root')
   @RequirePermission(SHIFT_ADDON, SHIFT_PLAN, 'canWrite')
   async updateShift(
     @Param('id', ParseIntPipe) id: number,
@@ -367,7 +358,6 @@ export class ShiftsController {
 
   /** DELETE /api/v2/shifts/week */
   @Delete('week')
-  @Roles('admin', 'root')
   @RequirePermission(SHIFT_ADDON, SHIFT_PLAN, 'canDelete')
   async deleteShiftsByWeek(
     @Query('teamId', ParseIntPipe) teamId: number,
@@ -381,7 +371,6 @@ export class ShiftsController {
 
   /** DELETE /api/v2/shifts/team */
   @Delete('team')
-  @Roles('admin', 'root')
   @RequirePermission(SHIFT_ADDON, SHIFT_PLAN, 'canDelete')
   async deleteShiftsByTeam(
     @Query('teamId', ParseIntPipe) teamId: number,
@@ -393,7 +382,6 @@ export class ShiftsController {
 
   /** DELETE /api/v2/shifts/:id */
   @Delete(':id')
-  @Roles('admin', 'root')
   @RequirePermission(SHIFT_ADDON, SHIFT_PLAN, 'canDelete')
   async deleteShift(
     @Param('id', ParseIntPipe) id: number,

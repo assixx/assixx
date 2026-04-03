@@ -73,7 +73,8 @@
   const ssrFavorites = $derived(data.favorites);
   const ssrEmployeeTeamInfo = $derived(data.employeeTeamInfo);
   const ssrStaffingRules = $derived(data.staffingRules);
-  const ssrIsEmployee = $derived(data.isEmployee);
+  const ssrOrgScope = $derived(data.orgScope);
+  const ssrIsManager = $derived(data.orgScope.type !== 'none');
 
   // Build shift times map from SSR API data (tenant-configurable)
   const shiftTimesMap: ShiftTimesMap = $derived(
@@ -86,7 +87,7 @@
   $effect(() => {
     const teamId = shiftsState.selectedContext.teamId;
     const week = shiftsState.currentWeek;
-    if (teamId === null || !shiftsState.showPlanningUI || !shiftsState.isAdmin) return;
+    if (teamId === null || !shiftsState.showPlanningUI || !shiftsState.isManager) return;
     const refDate = formatDate(getWeekStart(week));
     void fetchAssignmentCounts(teamId, refDate).then((result: AssignmentCount[]) => {
       baseAssignmentCounts = result;
@@ -130,9 +131,13 @@
     ssrInitialized = true;
 
     shiftsState.setUser(ssrUser);
+    // Set org scope BEFORE setAreas — derived isManager depends on it
+    shiftsState.setOrgScope(ssrOrgScope);
     shiftsState.setAreas(ssrAreas);
 
-    if (ssrIsEmployee && ssrEmployeeTeamInfo) {
+    // Auto-select team for non-managers AND single-team managers
+    // (employeeTeamInfo is set by server for both cases)
+    if (ssrEmployeeTeamInfo) {
       shiftsState.setEmployeeTeamInfo(ssrEmployeeTeamInfo);
       shiftsState.setTeams(ssrTeams);
       shiftsState.setSelectedContext({
@@ -144,6 +149,11 @@
       });
       shiftsState.setEmployees(convertSSRTeamMembersToEmployees(ssrTeamMembers));
       shiftsState.setShowPlanningUI(true);
+    }
+
+    // Set favorites for managers
+    if (ssrIsManager && ssrFavorites.length > 0) {
+      shiftsState.setFavorites(ssrFavorites);
     }
 
     shiftsState.setIsLoading(false);
@@ -159,7 +169,8 @@
 
   onMount(() => {
     document.addEventListener('click', handleClickOutside, true);
-    if (ssrIsEmployee && ssrEmployeeTeamInfo !== null && ssrEmployeeTeamInfo.teamId !== 0) {
+    // Load shift plan when team was auto-selected (employees + single-team managers)
+    if (ssrEmployeeTeamInfo !== null && ssrEmployeeTeamInfo.teamId !== 0) {
       void loadShiftPlan();
     }
     return () => {
@@ -254,7 +265,7 @@
 </script>
 
 {#snippet assignmentCountsSnippet()}
-  {#if shiftsState.isAdmin}
+  {#if shiftsState.isManager}
     <ShiftAssignmentCounts counts={assignmentCounts} />
   {/if}
   <WeekNavigation
@@ -305,8 +316,8 @@
           </div>
         {/if}
 
-        <!-- Admin Filter Controls (Extracted Component) -->
-        {#if shiftsState.isAdmin && shiftsState.employeeTeamInfo === null}
+        <!-- Filter Controls (for managers without auto-selected team) -->
+        {#if shiftsState.isManager && shiftsState.employeeTeamInfo === null}
           <FilterDropdowns
             {labels}
             areas={shiftsState.areas}
@@ -347,8 +358,8 @@
       <!-- END card__header -->
 
       <div class="card__body">
-        <!-- Employee without Team - Error Notice -->
-        {#if ssrIsEmployee && !ssrEmployeeTeamInfo}
+        <!-- Non-manager without Team - Error Notice -->
+        {#if !shiftsState.isManager && !ssrEmployeeTeamInfo}
           <div class="department-notice">
             <div class="notice-icon">
               <i class="fas fa-exclamation-triangle"></i>
@@ -358,8 +369,8 @@
           </div>
         {/if}
 
-        <!-- Admin Notice (show when filters incomplete) -->
-        {#if !shiftsState.showPlanningUI && shiftsState.isAdmin}
+        <!-- Manager Notice (show when filters incomplete) -->
+        {#if !shiftsState.showPlanningUI && shiftsState.isManager}
           <div class="department-notice">
             <div class="notice-icon"><i class="fas fa-info-circle"></i></div>
             <h3>{labels.asset} auswählen</h3>
@@ -372,8 +383,8 @@
 
         <!-- Main Planning UI -->
         {#if shiftsState.showPlanningUI}
-          <!-- Shift Control Toggles (Admin Only) -->
-          {#if shiftsState.isAdmin}
+          <!-- Shift Control Toggles (Managers Only) -->
+          {#if shiftsState.isManager}
             <ShiftControls
               autofillConfig={shiftsState.autofillConfig}
               standardRotationEnabled={shiftsState.standardRotationEnabled}
@@ -420,7 +431,7 @@
             />
 
             <!-- Employee Sidebar (Extracted Component) -->
-            {#if shiftsState.isAdmin || shiftsState.employees.length > 0}
+            {#if shiftsState.isManager || shiftsState.employees.length > 0}
               <EmployeeSidebar
                 {labels}
                 employees={shiftsState.employees}
@@ -437,8 +448,8 @@
           </div>
           <!-- END main-planning-area -->
 
-          <!-- Admin Actions (Extracted Component) -->
-          {#if shiftsState.isAdmin}
+          <!-- Manager Actions (Extracted Component) -->
+          {#if shiftsState.isManager}
             <AdminActions
               currentPatternId={shiftsState.currentPatternId}
               isPlanLocked={shiftsState.isPlanLocked}
