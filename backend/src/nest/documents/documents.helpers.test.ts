@@ -351,6 +351,22 @@ describe('getDocumentsCount', () => {
     );
   });
 
+  it('should handle COALESCE SELECT pattern from buildDocumentQuery', async () => {
+    const mockDb = { query: vi.fn().mockResolvedValue([{ count: '12' }]) };
+
+    // This is the ACTUAL SELECT pattern produced by buildDocumentQuery
+    const realBaseQuery =
+      "SELECT d.*, COALESCE(CONCAT(u.first_name, ' ', u.last_name), u.username) as uploaded_by_name FROM documents d WHERE d.tenant_id = $1";
+
+    const result = await getDocumentsCount(mockDb as never, realBaseQuery, [10]);
+
+    expect(result).toBe(12);
+    const executedQuery = mockDb.query.mock.calls[0]?.[0] as string;
+    expect(executedQuery).toContain('SELECT COUNT(*) as count');
+    expect(executedQuery).not.toContain('COALESCE');
+    expect(executedQuery).toContain('FROM documents d');
+  });
+
   it('should return 0 when no rows', async () => {
     const mockDb = { query: vi.fn().mockResolvedValue([]) };
 
