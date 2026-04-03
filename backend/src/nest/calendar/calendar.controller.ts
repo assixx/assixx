@@ -50,7 +50,7 @@ interface MessageResponse {
 }
 
 /** Permission constants for \@RequirePermission decorator */
-const CAL_FEATURE = 'calendar';
+const CAL_ADDON = 'calendar';
 const CAL_EVENTS = 'calendar-events';
 
 @Controller('calendar')
@@ -60,7 +60,7 @@ export class CalendarController {
 
   /** GET /calendar/events */
   @Get('events')
-  @RequirePermission(CAL_FEATURE, CAL_EVENTS, 'canRead')
+  @RequirePermission(CAL_ADDON, CAL_EVENTS, 'canRead')
   async listEvents(
     @Query() query: ListEventsQueryDto,
     @CurrentUser() user: NestAuthUser,
@@ -87,7 +87,7 @@ export class CalendarController {
 
   /** GET /calendar/dashboard */
   @Get('dashboard')
-  @RequirePermission(CAL_FEATURE, CAL_EVENTS, 'canRead')
+  @RequirePermission(CAL_ADDON, CAL_EVENTS, 'canRead')
   async getDashboardEvents(
     @Query() query: DashboardEventsQueryDto,
     @CurrentUser() user: NestAuthUser,
@@ -98,7 +98,7 @@ export class CalendarController {
 
   /** GET /calendar/recently-added */
   @Get('recently-added')
-  @RequirePermission(CAL_FEATURE, CAL_EVENTS, 'canRead')
+  @RequirePermission(CAL_ADDON, CAL_EVENTS, 'canRead')
   async getRecentlyAddedEvents(
     @Query() query: DashboardEventsQueryDto,
     @CurrentUser() user: NestAuthUser,
@@ -109,7 +109,7 @@ export class CalendarController {
 
   /** GET /calendar/upcoming-count */
   @Get('upcoming-count')
-  @RequirePermission(CAL_FEATURE, CAL_EVENTS, 'canRead')
+  @RequirePermission(CAL_ADDON, CAL_EVENTS, 'canRead')
   async getUpcomingCount(
     @CurrentUser() user: NestAuthUser,
     @TenantId() tenantId: number,
@@ -124,7 +124,7 @@ export class CalendarController {
 
   /** GET /calendar/export */
   @Get('export')
-  @RequirePermission(CAL_FEATURE, CAL_EVENTS, 'canRead')
+  @RequirePermission(CAL_ADDON, CAL_EVENTS, 'canRead')
   async exportEvents(
     @Query() query: ExportEventsQueryDto,
     @CurrentUser() user: NestAuthUser,
@@ -149,7 +149,7 @@ export class CalendarController {
 
   /** GET /calendar/events/uuid/:uuid */
   @Get('events/uuid/:uuid')
-  @RequirePermission(CAL_FEATURE, CAL_EVENTS, 'canRead')
+  @RequirePermission(CAL_ADDON, CAL_EVENTS, 'canRead')
   async getEventByUuid(
     @Param('uuid') uuid: string,
     @CurrentUser() user: NestAuthUser,
@@ -163,7 +163,7 @@ export class CalendarController {
    * @deprecated Use GET /calendar/events/uuid/:uuid instead
    */
   @Get('events/:id')
-  @RequirePermission(CAL_FEATURE, CAL_EVENTS, 'canRead')
+  @RequirePermission(CAL_ADDON, CAL_EVENTS, 'canRead')
   async getEventById(
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser() user: NestAuthUser,
@@ -174,7 +174,7 @@ export class CalendarController {
 
   /** POST /calendar/events */
   @Post('events')
-  @RequirePermission(CAL_FEATURE, CAL_EVENTS, 'canWrite')
+  @RequirePermission(CAL_ADDON, CAL_EVENTS, 'canWrite')
   @HttpCode(HttpStatus.CREATED)
   async createEvent(
     @Body() dto: CreateEventDto,
@@ -186,7 +186,7 @@ export class CalendarController {
 
   /** PUT /calendar/events/uuid/:uuid */
   @Put('events/uuid/:uuid')
-  @RequirePermission(CAL_FEATURE, CAL_EVENTS, 'canWrite')
+  @RequirePermission(CAL_ADDON, CAL_EVENTS, 'canWrite')
   async updateEventByUuid(
     @Param('uuid') uuid: string,
     @Body() dto: UpdateEventDto,
@@ -201,7 +201,7 @@ export class CalendarController {
    * @deprecated Use PUT /calendar/events/uuid/:uuid instead
    */
   @Put('events/:id')
-  @RequirePermission(CAL_FEATURE, CAL_EVENTS, 'canWrite')
+  @RequirePermission(CAL_ADDON, CAL_EVENTS, 'canWrite')
   async updateEvent(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateEventDto,
@@ -213,7 +213,7 @@ export class CalendarController {
 
   /** DELETE /calendar/events/uuid/:uuid */
   @Delete('events/uuid/:uuid')
-  @RequirePermission(CAL_FEATURE, CAL_EVENTS, 'canDelete')
+  @RequirePermission(CAL_ADDON, CAL_EVENTS, 'canDelete')
   async deleteEventByUuid(
     @Param('uuid') uuid: string,
     @CurrentUser() user: NestAuthUser,
@@ -227,7 +227,7 @@ export class CalendarController {
    * @deprecated Use DELETE /calendar/events/uuid/:uuid instead
    */
   @Delete('events/:id')
-  @RequirePermission(CAL_FEATURE, CAL_EVENTS, 'canDelete')
+  @RequirePermission(CAL_ADDON, CAL_EVENTS, 'canDelete')
   async deleteEvent(
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser() user: NestAuthUser,

@@ -5,10 +5,22 @@
  * - POST /signup          - Register new tenant (public)
  * - GET  /signup/check-subdomain/:subdomain - Check subdomain availability (public)
  */
-import { Body, Controller, Get, HttpCode, HttpStatus, Param, Post, Req } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Post,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import type { FastifyRequest } from 'fastify';
 
 import { Public } from '../common/decorators/public.decorator.js';
+import { AuthThrottle } from '../common/decorators/throttle.decorators.js';
+import { CustomThrottlerGuard } from '../common/guards/throttler.guard.js';
 import { CheckSubdomainParamDto, SignupDto } from './dto/index.js';
 import type { SignupResponseData, SubdomainCheckResponseData } from './dto/index.js';
 import { SignupService } from './signup.service.js';
@@ -42,6 +54,8 @@ export class SignupController {
    */
   @Post()
   @Public()
+  @UseGuards(CustomThrottlerGuard)
+  @AuthThrottle()
   @HttpCode(HttpStatus.CREATED)
   async signup(@Body() dto: SignupDto, @Req() req: FastifyRequest): Promise<SignupResponseData> {
     const { ipAddress, userAgent } = getClientInfo(req);
@@ -59,6 +73,8 @@ export class SignupController {
    */
   @Get('check-subdomain/:subdomain')
   @Public()
+  @UseGuards(CustomThrottlerGuard)
+  @AuthThrottle()
   @HttpCode(HttpStatus.OK)
   async checkSubdomain(
     @Param() params: CheckSubdomainParamDto,

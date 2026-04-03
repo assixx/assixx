@@ -6,6 +6,7 @@ import { goto } from '$app/navigation';
 import { resolve } from '$app/paths';
 
 import { getApiClient } from '$lib/utils/api-client';
+import { extractArray, extractId } from '$lib/utils/api-response';
 import { createLogger } from '$lib/utils/logger';
 import { handleSessionExpired, isSessionExpiredError } from '$lib/utils/session-expired.js';
 
@@ -85,19 +86,6 @@ export function checkSession(): boolean {
 // =============================================================================
 // HELPER FUNCTIONS
 // =============================================================================
-
-/**
- * Type-safe extraction helper for nested API responses
- * Caller is responsible for ensuring T matches the actual data type
- */
-function extractArray<T>(response: unknown): T[] {
-  if (Array.isArray(response)) return response as T[];
-  if (response !== null && typeof response === 'object') {
-    const obj = response as Record<string, unknown>;
-    if (Array.isArray(obj.data)) return obj.data as T[];
-  }
-  return [];
-}
 
 /**
  * Build dependency message from details using dynamic labels
@@ -255,23 +243,6 @@ export function buildDepartmentPayload(formData: {
 }
 
 /**
- * Extract department ID from API response
- */
-function extractDepartmentId(result: unknown): number | null {
-  if (result === null || typeof result !== 'object') return null;
-  const obj = result as Record<string, unknown>;
-  if (typeof obj.id === 'number') return obj.id;
-  if (
-    obj.data !== null &&
-    typeof obj.data === 'object' &&
-    typeof (obj.data as Record<string, unknown>).id === 'number'
-  ) {
-    return (obj.data as Record<string, unknown>).id as number;
-  }
-  return null;
-}
-
-/**
  * Save department (create or update) — returns departmentId for subsequent assign calls
  */
 export async function saveDepartment(
@@ -291,7 +262,7 @@ export async function saveDepartment(
     return {
       success: true,
       error: null,
-      departmentId: extractDepartmentId(result),
+      departmentId: extractId(result),
     };
   } catch (err: unknown) {
     log.error({ err }, 'Error saving department');

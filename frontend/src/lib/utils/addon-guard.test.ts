@@ -28,7 +28,9 @@ const ADDON_CODES = [
   'kvp',
   'surveys',
   'shift_planning',
+  'tpm',
   'vacation',
+  'work_orders',
 ] as const;
 
 // =============================================================================
@@ -114,10 +116,10 @@ describe('requireAddon: empty activeAddons', () => {
 });
 
 // =============================================================================
-// ALL 8 ADDON CODES — parametrized
+// ALL 10 ADDON CODES — parametrized
 // =============================================================================
 
-describe('requireAddon: all 8 addon codes', () => {
+describe('requireAddon: all 10 addon codes', () => {
   it.each(ADDON_CODES)('should pass when "%s" is in activeAddons', (code) => {
     expect(() => {
       requireAddon([code], code);

@@ -18,8 +18,8 @@ const ACTION_LABELS: Record<string, string> = {
   canDelete: 'Löschen',
 };
 
-/** Feature/module labels for user-facing messages */
-const FEATURE_LABELS: Record<string, string> = {
+/** Addon/module labels for user-facing messages */
+const ADDON_LABELS: Record<string, string> = {
   calendar: 'Kalender',
   'calendar-events': 'Kalendereinträge',
   blackboard: 'Schwarzes Brett',
@@ -39,7 +39,7 @@ const FEATURE_LABELS: Record<string, string> = {
   suggestions: 'Verbesserungsvorschläge',
   users: 'Benutzerverwaltung',
   settings: 'Einstellungen',
-  features: 'Features',
+  addons: 'Module',
   'asset-status': 'Anlagenstatus',
 };
 
@@ -63,7 +63,7 @@ export function humanizePermissionError(message: string): string | null {
 
     // Build human-readable resource name from feature/module parts
     const resourceLabels = parts
-      .map((part) => FEATURE_LABELS[part] ?? part)
+      .map((part) => ADDON_LABELS[part] ?? part)
       .filter((label, index, arr) => arr.indexOf(label) === index); // dedupe same label
 
     const resource = resourceLabels.join(' – ');

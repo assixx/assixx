@@ -3,6 +3,7 @@
 // =============================================================================
 
 import { getApiClient } from '$lib/utils/api-client';
+import { extractArray, extractId, isNonNullObject } from '$lib/utils/api-response';
 import { createLogger } from '$lib/utils/logger';
 import { handleSessionExpired, isSessionExpiredError } from '$lib/utils/session-expired.js';
 
@@ -26,30 +27,6 @@ const apiClient = getApiClient();
 // =============================================================================
 // HELPER FUNCTIONS
 // =============================================================================
-
-/**
- * Check if value is a non-null object
- */
-function isNonNullObject(value: unknown): value is Record<string, unknown> {
-  return value !== null && typeof value === 'object' && !Array.isArray(value);
-}
-
-/**
- * Type-safe extraction helper for nested API responses
- */
-function extractArray(response: unknown): unknown[] {
-  if (Array.isArray(response)) return response;
-  if (!isNonNullObject(response)) return [];
-
-  const obj = response;
-  if (Array.isArray(obj.data)) return obj.data;
-  if (!isNonNullObject(obj.data)) return [];
-
-  const nested = obj.data;
-  if (Array.isArray(nested.data)) return nested.data;
-
-  return [];
-}
 
 /**
  * Parse delete error to extract dependency information
@@ -117,8 +94,8 @@ export async function loadAreaLeads(): Promise<{
       apiClient.get(API_ENDPOINTS.USERS_ROOT),
     ]);
 
-    const admins = extractArray(adminsDataRaw) as AdminUser[];
-    const roots = extractArray(rootsDataRaw) as AdminUser[];
+    const admins = extractArray<AdminUser>(adminsDataRaw);
+    const roots = extractArray<AdminUser>(rootsDataRaw);
 
     // Combine and deduplicate
     const combined = [...roots, ...admins];
@@ -208,18 +185,6 @@ export function buildAreaPayload(formData: {
 }
 
 /**
- * Extract area ID from API response (handles `{ id }` and `{ data: { id } }`)
- */
-function extractAreaId(result: unknown): number | null {
-  if (!isNonNullObject(result)) return null;
-  if (typeof result.id === 'number') return result.id;
-  if (isNonNullObject(result.data) && typeof result.data.id === 'number') {
-    return result.data.id;
-  }
-  return null;
-}
-
-/**
  * Save area (create or update) — returns areaId for subsequent assign calls
  */
 export async function saveArea(
@@ -232,7 +197,7 @@ export async function saveArea(
       return { success: true, error: null, areaId: editId };
     }
     const result: unknown = await apiClient.post(API_ENDPOINTS.AREAS, payload);
-    return { success: true, error: null, areaId: extractAreaId(result) };
+    return { success: true, error: null, areaId: extractId(result) };
   } catch (err: unknown) {
     log.error({ err }, 'Error saving area');
     return {

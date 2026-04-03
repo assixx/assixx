@@ -120,6 +120,7 @@ export class DocumentAccessService {
     if (!isAdmin) {
       baseQuery += ` AND (
         d.access_scope = 'company' OR
+        d.access_scope = 'chat' OR
         (d.access_scope = 'personal' AND d.owner_user_id = $${paramIndex}) OR
         (d.access_scope = 'payroll' AND d.owner_user_id = $${paramIndex})
       )`;

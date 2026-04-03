@@ -316,7 +316,7 @@ Seeds are **global configuration data** without tenant_id:
 
 | Table              | Rows | Description                                              |
 | ------------------ | ---- | -------------------------------------------------------- |
-| `addons`           | 22   | Available addons (10 core + 12 purchasable, see ADR-033) |
+| `addons`           | 24   | Available addons (14 core + 10 purchasable, see ADR-033) |
 | `kvp_categories`   | 6    | KVP proposal categories                                  |
 | `asset_categories` | 11   | Asset categories (equipment/installations)               |
 

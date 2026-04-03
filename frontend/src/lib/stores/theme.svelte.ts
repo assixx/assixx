@@ -18,6 +18,7 @@
 import { browser } from '$app/environment';
 
 import { getApiClient } from '$lib/utils/api-client';
+import { isAuthenticated } from '$lib/utils/auth';
 import { createLogger } from '$lib/utils/logger';
 
 const log = createLogger('ThemeStore');
@@ -107,6 +108,7 @@ export function restoreUserTheme(): void {
  */
 async function syncThemeToApi(theme: 'dark' | 'light'): Promise<void> {
   if (!browser) return;
+  if (!isAuthenticated()) return;
 
   try {
     const api = getApiClient();

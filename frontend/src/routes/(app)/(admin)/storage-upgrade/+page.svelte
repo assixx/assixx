@@ -144,7 +144,7 @@
       const plan = currentPlanRes as { plan?: { code?: string } };
 
       storageInfo = {
-        used: 0, // TODO: Get actual used storage from backend
+        used: 0, // Platzhalter — Backend-Endpoint für tatsächlichen Verbrauch fehlt noch
         total: (addons.storageGb ?? 5) * 1024 * 1024 * 1024,
         percentage: 0,
         plan: plan.plan?.code ?? 'basic',
@@ -244,7 +244,7 @@
         Inklusive
         <span>im Basic Plan</span>
       </div>
-      <ul class="storage-features">
+      <ul class="storage-plan-list">
         <li>Für kleine Teams</li>
         <li>Dokumente & Lohnabrechnungen</li>
         <li>Chat-Dateianhänge</li>
@@ -270,7 +270,7 @@
         +20 €
         <span>/Monat</span>
       </div>
-      <ul class="storage-features">
+      <ul class="storage-plan-list">
         <li>Für mittlere Teams</li>
         <li>Erweiterte Dokumentenverwaltung</li>
         <li>Mehr Speicher für Anhänge</li>
@@ -306,7 +306,7 @@
         +50 €
         <span>/Monat</span>
       </div>
-      <ul class="storage-features">
+      <ul class="storage-plan-list">
         <li>Für große Unternehmen</li>
         <li>Unbegrenzte Dokumententypen</li>
         <li>Maximale Dateigröße: 1 GB</li>
@@ -445,7 +445,7 @@
     color: var(--text-secondary);
   }
 
-  .storage-features {
+  .storage-plan-list {
     flex-grow: 1;
 
     margin: var(--spacing-6) 0;
@@ -455,14 +455,14 @@
     list-style: none;
   }
 
-  .storage-features li {
+  .storage-plan-list li {
     position: relative;
     padding: var(--spacing-2) 0;
     padding-left: var(--spacing-8);
     color: var(--text-secondary);
   }
 
-  .storage-features li::before {
+  .storage-plan-list li::before {
     content: '\2713';
 
     position: absolute;

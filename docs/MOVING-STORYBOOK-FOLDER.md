@@ -36,7 +36,6 @@ Assixx/                         Assixx/
 | `knip.json`                          | Updated entry + ignore paths                            |
 | `tsconfig.json`                      | Updated exclude path                                    |
 | `.dockerignore`                      | `.storybook/` → `frontend/.storybook/`                  |
-| `purgecss.config.cjs`                | `stories/**` → `frontend/.storybook/stories/**`         |
 
 ## The Trap: SvelteKit Vite Config Auto-Loading
 

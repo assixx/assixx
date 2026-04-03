@@ -24,7 +24,7 @@ import type {
   PaginationMeta,
   ParticipantRow,
 } from './chat.types.js';
-import { ERROR_FEATURE_NOT_IMPLEMENTED } from './chat.types.js';
+import { ERROR_NOT_IMPLEMENTED } from './chat.types.js';
 import type {
   CreateConversationBody,
   GetConversationsQuery,
@@ -223,7 +223,7 @@ export class ChatConversationsService {
    */
   // eslint-disable-next-line @typescript-eslint/require-await -- Stub method
   async updateConversation(_conversationId: number, _dto: UpdateConversationBody): Promise<never> {
-    throw new BadRequestException(ERROR_FEATURE_NOT_IMPLEMENTED);
+    throw new BadRequestException(ERROR_NOT_IMPLEMENTED);
   }
 
   /**

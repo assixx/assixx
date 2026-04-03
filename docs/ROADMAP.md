@@ -1,7 +1,7 @@
 # Assixx Roadmap
 
-> **Letzte Aktualisierung:** 2026-02-08
-> **Version:** 0.2.0
+> **Letzte Aktualisierung:** 2026-04-02
+> **Version:** 0.4.9
 > **Tech Stack:** NestJS 11 + Fastify, SvelteKit 5, PostgreSQL 17 + RLS, Vitest
 > **Domains:** assixx.com, assixx.de
 
@@ -11,7 +11,7 @@
 
 ### Core Platform
 
-- [x] Multi-Tenant Architektur mit Row Level Security (79 Tabellen, 84 Policies)
+- [x] Multi-Tenant Architektur mit Row Level Security (109 Tabellen, 114 Policies)
 - [x] JWT Auth mit Token-Rotation, Reuse Detection, Family UUID
 - [x] Rate Limiting (Redis-backed, ADR-001)
 - [x] Global ResponseInterceptor + AllExceptionsFilter (ADR-007)
@@ -49,6 +49,14 @@
 - [x] Umfrage-Tool (Templates, Statistiken, Antworten, Export)
 - [x] Anlagen-Verwaltung (CRUD, Kategorien, Basic Wartung)
 - [x] Abteilungen, Teams, Bereiche (CRUD, Hierarchie, Stats)
+- [x] TPM -- Total Productive Maintenance (Wartungsplaene, Checklisten, Eskalation, Schedule Projection)
+- [x] Urlaubsverwaltung (Antraege, Genehmigungsworkflow, Kontingente, Abwesenheitskalender)
+- [x] Arbeitsauftraege (Status-Workflow, Foto-Dokumentation, SSE-Benachrichtigungen)
+- [x] Freigaben-System (Mehrstufig, KVP-Integration, ADR-037)
+- [x] Organigramm (Hierarchie-Darstellung, Positionskatalog)
+- [x] Addon-System (22 Addons, A-la-carte Modell, ADR-033)
+- [x] Delegierte Berechtigungen (Lead-Management, ADR-020)
+- [x] Stellvertretung (Deputy Leads, ADR-039)
 
 ### Infrastruktur
 
@@ -57,7 +65,7 @@
 - [x] Monitoring: Sentry + Pino Logging (ADR-002)
 - [x] Backup System (pg_dump, automatisiert)
 - [x] Security Headers (Helmet, CORS, CSP)
-- [x] 3061 Unit Tests + 175 API Integration Tests (ADR-018)
+- [x] 6955 Tests (5568 Unit + 430 Permission + 399 Frontend + 558 API), 91% Line Coverage (ADR-018)
 
 ---
 
@@ -66,20 +74,25 @@
 > Pflicht-Features die zum Kern der Software gehoeren.
 > Ohne diese ist Assixx kein vollstaendiges Produkt.
 
-### Urlaubsantrag-System (nicht begonnen)
+### ~~Urlaubsantrag-System~~ ✅ KOMPLETT (2026-03)
 
-- [ ] Antragsformular mit Kalender-Integration
-- [ ] Mehrstufiger Genehmigungsworkflow (Employee -> Lead -> Admin)
-- [ ] Resturlaubsberechnung und Kontingent-Verwaltung
-- [ ] Abwesenheitskalender (Team-Übersicht)
+- [x] Antragsformular mit Kalender-Integration
+- [x] Mehrstufiger Genehmigungsworkflow (Employee -> Lead -> Admin)
+- [x] Resturlaubsberechnung und Kontingent-Verwaltung
+- [x] Abwesenheitskalender (Team-Übersicht)
+- [x] Blackout-Perioden, Halbtags-Splits, Feiertage
+- [x] Kapazitaetsanalyse und Staffing-Rules
 
-### TPM-System -- Total Productive Maintenance (nicht begonnen)
+### ~~TPM-System -- Total Productive Maintenance~~ ✅ KOMPLETT (2026-03)
 
-- [ ] Wartungsplanung fuer Anlagen (Intervalle, Checklisten)
-- [ ] Digitale Checklisten mit Foto-Dokumentation
-- [ ] Automatische Erinnerungen (Faelligkeiten)
-- [ ] Wartungshistorie und Reports
-- [ ] QR-Code Integration (Anlage scannen -> Wartungsprotokoll)
+- [x] Wartungsplanung fuer Anlagen (Intervalle, Checklisten)
+- [x] Digitale Checklisten mit Foto-Dokumentation
+- [x] Automatische Erinnerungen (Faelligkeiten) + Eskalation
+- [x] Wartungshistorie und Reports
+- [x] Schedule Projection + Slot Assistant
+- [x] Plan Revisions + Plan Approval Workflow
+- [x] Schicht-Zuordnung fuer TPM-Karten
+- [x] 364 Tests (278 Unit + 86 API)
 
 ### Schichttausch-Antrag (nicht implementiert)
 
@@ -97,6 +110,7 @@ aber kein funktionierendes Feature. Muss von Grund auf gebaut werden.
 ### Stripe Payment Integration (nicht begonnen)
 
 Pflicht fuer Cloud/SaaS-Betrieb. On-Premise kann ohne Stripe laufen.
+Kommt spaeter wenn Staging/Production vorbereitet wird.
 
 - [ ] Stripe SDK Integration + Webhook-Handler
 - [ ] Subscription-Pläne (Basic/Premium/Enterprise)
@@ -115,9 +129,9 @@ Pflicht fuer Cloud/SaaS-Betrieb. On-Premise kann ohne Stripe laufen.
 
 ### E2E Feature-Testing
 
-- [ ] Alle 11 bestehenden Features durchklicken und verifizieren
-- [ ] Neue Features (Urlaub, TPM, Schichttausch) vollstaendig testen
+- [ ] Alle 19+ bestehenden Addons durchklicken und verifizieren
 - [ ] Cross-Feature-Tests (z.B. Urlaub im Kalender sichtbar, TPM in Anlagen)
+- [ ] Schichttausch vollstaendig testen (wenn implementiert)
 
 ### Signup + Payment + Feature-Aktivierung (kritischer Pfad)
 
@@ -130,7 +144,7 @@ Pflicht fuer Cloud/SaaS-Betrieb. On-Premise kann ohne Stripe laufen.
 
 ### Regressions- und Lasttests
 
-- [ ] Unit + API Test Suite gruen (alle ~3200+ Tests)
+- [ ] Unit + API Test Suite gruen (alle ~6955 Tests)
 - [ ] Multi-Tenant Isolation verifizieren (Tenant A sieht keine Daten von Tenant B)
 - [ ] Performance-Test mit realistischen Datenmengen
 
@@ -265,5 +279,5 @@ Pflicht fuer Cloud/SaaS-Betrieb. On-Premise kann ohne Stripe laufen.
 
 - [FEATURES.md](./FEATURES.md) -- Feature-Details und Preismodelle
 - [DATABASE-MIGRATION-GUIDE.md](./DATABASE-MIGRATION-GUIDE.md) -- PostgreSQL + RLS
-- [ADR Index](./infrastructure/adr/README.md) -- 20 Architecture Decision Records
+- [ADR Index](./infrastructure/adr/README.md) -- 39 Architecture Decision Records
 - [HOW-TO-TEST-WITH-VITEST.md](./how-to/HOW-TO-TEST-WITH-VITEST.md) -- Testing Guide

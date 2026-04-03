@@ -208,7 +208,6 @@ interface BulkMessageOptions {
   attachments?: Attachment[];
   tenantId?: number;
   userId?: number;
-  checkFeature?: boolean;
 }
 
 type TemplateReplacements = Record<string, string>;
@@ -224,16 +223,19 @@ const MAX_EMAILS_PER_BATCH = 50; // Maximale Anzahl von E-Mails pro Batch
 let transporter: Transporter | null = null;
 
 function initializeTransporter(config: EmailConfig | null = null): Transporter {
-  // Default-Konfiguration für Entwicklung
   const defaultConfig: EmailConfig = {
     host: process.env['EMAIL_HOST'] ?? 'smtp.example.com',
     port: Number.parseInt(process.env['EMAIL_PORT'] ?? '587', 10),
     secure: process.env['EMAIL_SECURE'] === 'true',
     auth: {
       user: process.env['EMAIL_USER'] ?? 'user@example.com',
-      pass: process.env['EMAIL_PASSWORD'] ?? 'password',
+      pass: process.env['EMAIL_PASSWORD'] ?? '',
     },
   };
+
+  if (defaultConfig.auth.pass === '') {
+    logger.warn('EMAIL_PASSWORD not set — emails will likely fail to send');
+  }
 
   const transportConfig: EmailConfig = config ?? defaultConfig;
 
@@ -564,14 +566,19 @@ async function sendBulkNotification(
 }
 
 function generateUnsubscribeLink(email: string, type?: string): string {
+  const jwtSecret = process.env['JWT_SECRET'];
+  if (jwtSecret === undefined || jwtSecret === '') {
+    logger.error(
+      'JWT_SECRET environment variable is not set — unsubscribe link cannot be generated',
+    );
+    return '#';
+  }
+
   const resolvedType = type ?? 'all';
 
-  // Token generieren (würde normalerweise mit JWT o.ä. implementiert)
-  const token: string = jwt.sign(
-    { email, type: resolvedType, purpose: 'unsubscribe' },
-    process.env['JWT_SECRET'] ?? 'default-secret',
-    { expiresIn: '30d' },
-  );
+  const token: string = jwt.sign({ email, type: resolvedType, purpose: 'unsubscribe' }, jwtSecret, {
+    expiresIn: '30d',
+  });
 
   return `${process.env['APP_URL'] ?? 'https://app.assixx.de'}/unsubscribe?token=${token}`;
 }

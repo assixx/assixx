@@ -13,7 +13,6 @@
         "husky",
         "concurrently",
         "markdownlint-cli",
-        "purgecss",
         "prettier-plugin-svelte",
         "@tailwindcss/vite"
       ],

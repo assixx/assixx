@@ -25,18 +25,11 @@ describe('getApiErrorMessage', () => {
     expect(getApiErrorMessage(err, 'Fallback')).toBe('Validation failed');
   });
 
-  // TODO(human): Write 4-5 more test cases here.
-  // Each test should use: expect(getApiErrorMessage(input, 'fallback')).toBe(expected)
-  //
-  // Hint: new ApiError(message, code, status, details?)
-  //
-  // Cases to cover:
-  // 1. ApiError WITH details array containing validation messages
-  //    e.g. new ApiError('Validation failed', 'VALIDATION_ERROR', 400,
-  //      [{ field: 'employeeNumber', message: 'Max 10 Zeichen', code: 'invalid_format' }])
-  // 2. ApiError WITHOUT details (should return err.message)
-  // 3. Regular Error (not ApiError) — should return err.message
-  // 4. ApiError with empty details array
+  // Lernübung: Weitere Testfälle ergänzen
+  // - ApiError MIT details Array (Validierungsmeldungen)
+  // - ApiError OHNE details (sollte err.message zurückgeben)
+  // - Normaler Error (nicht ApiError) — sollte err.message zurückgeben
+  // - ApiError mit leerem details Array
   // 5. ApiError with multiple validation details (joined with comma)
   // 6. Edge: ApiError with details containing objects without 'message' property
 });

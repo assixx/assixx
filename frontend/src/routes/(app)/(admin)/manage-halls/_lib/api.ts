@@ -4,6 +4,7 @@
 
 import { DEFAULT_HIERARCHY_LABELS, type HierarchyLabels } from '$lib/types/hierarchy-labels';
 import { getApiClient } from '$lib/utils/api-client';
+import { extractArray } from '$lib/utils/api-response';
 import { createLogger } from '$lib/utils/logger';
 import { isSessionExpiredError, handleSessionExpired } from '$lib/utils/session-expired.js';
 
@@ -14,15 +15,6 @@ import type { Hall, Area, HallPayload, FormIsActiveStatus, DeleteHallResult } fr
 const log = createLogger('ManageHallsApi');
 
 const apiClient = getApiClient();
-
-function extractArray<T>(response: unknown): T[] {
-  if (Array.isArray(response)) return response as T[];
-  if (response !== null && typeof response === 'object') {
-    const obj = response as Record<string, unknown>;
-    if (Array.isArray(obj.data)) return obj.data as T[];
-  }
-  return [];
-}
 
 export async function loadHalls(): Promise<{
   halls: Hall[];

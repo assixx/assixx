@@ -23,6 +23,18 @@ interface RawDocument {
   [key: string]: unknown;
 }
 
+/** Backend paginated response shape */
+interface PaginatedDocumentsResponse {
+  documents: RawDocument[];
+  pagination: { page: number; limit: number; total: number; totalPages: number };
+}
+
+/** Backend chat-folders response shape */
+interface ChatFoldersResponse {
+  folders: ChatFolder[];
+  total: number;
+}
+
 export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
   const token = cookies.get('accessToken');
   if (token === undefined || token === '') {
@@ -35,8 +47,8 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
 
   // Parallel fetch: documents (permission-aware) + chat folders
   const [documentsResult, chatFoldersData] = await Promise.all([
-    apiFetchWithPermission<RawDocument[]>('/documents', token, fetch),
-    apiFetch<ChatFolder[]>('/documents/chat-folders', token, fetch),
+    apiFetchWithPermission<PaginatedDocumentsResponse>('/documents', token, fetch),
+    apiFetch<ChatFoldersResponse>('/documents/chat-folders', token, fetch),
   ]);
 
   // 403 → early return with empty data + permission flag
@@ -49,8 +61,8 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
     };
   }
 
-  // Process documents with field mapping
-  const rawDocs = Array.isArray(documentsResult.data) ? documentsResult.data : [];
+  // Extract documents from paginated response
+  const rawDocs: RawDocument[] = documentsResult.data?.documents ?? [];
   const documents: Document[] = rawDocs.map((doc) => ({
     ...doc,
     size: doc.fileSize ?? doc.size ?? 0,
@@ -58,7 +70,8 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
     uploadedBy: doc.createdBy ?? doc.uploadedBy ?? 0,
   })) as Document[];
 
-  const chatFolders = Array.isArray(chatFoldersData) ? chatFoldersData : [];
+  // Extract folders from chat-folders response
+  const chatFolders: ChatFolder[] = chatFoldersData?.folders ?? [];
 
   return {
     permissionDenied: false as const,

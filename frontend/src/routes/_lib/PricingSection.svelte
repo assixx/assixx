@@ -28,7 +28,7 @@
         <i class="fas fa-infinity"></i>
         Unbegrenzte Lizenzen inklusive
       </div>
-      <ul class="feature-list">
+      <ul class="plan-list">
         <li>
           <strong>Unbegrenzt</strong> Mitarbeiter
         </li>
@@ -39,11 +39,11 @@
           <strong>Unbegrenzt</strong> Geschäftsführer (Root-User)
         </li>
         <li>100 GB Speicher</li>
-        <li>8 Core-Module inklusive</li>
+        <li>14 Core-Module inklusive</li>
         <li>Dashboard & Kalender</li>
-        <li>Schwarzes Brett</li>
-        <li>Benachrichtigungen</li>
-        <li>Mitarbeiter & Teams</li>
+        <li>Schwarzes Brett & Benachrichtigungen</li>
+        <li>Mitarbeiter, Teams & Abteilungen</li>
+        <li>Anlagen, Hallen & Freigaben</li>
       </ul>
       <div class="pricing-card__footer">
         <a
@@ -63,8 +63,8 @@
         €10
         <span>/Modul/Monat</span>
       </div>
-      <ul class="feature-list">
-        <li>12 Zusatz-Module verfügbar</li>
+      <ul class="plan-list">
+        <li>10 Zusatz-Module verfügbar</li>
         <li>30 Tage kostenlos testen</li>
         <li>Jederzeit aktivieren/deaktivieren</li>
         <li>Berechtigungen bleiben erhalten</li>
@@ -90,7 +90,7 @@
         Individuell
         <span>auf Anfrage</span>
       </div>
-      <ul class="feature-list">
+      <ul class="plan-list">
         <li>On-Premise Installation</li>
         <li>Eigene Server-Infrastruktur</li>
         <li>Dedizierter Support</li>
@@ -113,7 +113,7 @@
 
   <!-- Module Catalog -->
   <div class="module-catalog">
-    <h3 class="module-catalog__title">Alle 20 Module im Überblick</h3>
+    <h3 class="module-catalog__title">Alle 24 Module im Überblick</h3>
     <div class="catalog-columns">
       <!-- Core Modules -->
       <div class="catalog-group">
@@ -163,6 +163,36 @@
             <span class="catalog-list__name">Teams</span>
             <span class="catalog-list__desc">Teams und Mitglieder zuordnen</span>
           </li>
+          <li>
+            <i class="fas fa-sitemap"></i>
+            <span class="catalog-list__name">Organisationsstruktur</span>
+            <span class="catalog-list__desc">Bereiche, Abteilungen, Teams verwalten</span>
+          </li>
+          <li>
+            <i class="fas fa-warehouse"></i>
+            <span class="catalog-list__name">Hallen</span>
+            <span class="catalog-list__desc">Produktionshallen verwalten</span>
+          </li>
+          <li>
+            <i class="fas fa-industry"></i>
+            <span class="catalog-list__name">Anlagen & Maschinen</span>
+            <span class="catalog-list__desc">Verwaltung und Verfügbarkeitstracking</span>
+          </li>
+          <li>
+            <i class="fas fa-user-slash"></i>
+            <span class="catalog-list__name">Platzhalter-Benutzer</span>
+            <span class="catalog-list__desc">Anonyme Accounts für Fabrik-Bildschirme</span>
+          </li>
+          <li>
+            <i class="fas fa-check-double"></i>
+            <span class="catalog-list__name">Freigaben</span>
+            <span class="catalog-list__desc">Zentrales Genehmigungssystem</span>
+          </li>
+          <li>
+            <i class="fas fa-id-card"></i>
+            <span class="catalog-list__name">Benutzerprofile</span>
+            <span class="catalog-list__desc">Profilansicht und Mitarbeiterübersicht</span>
+          </li>
         </ul>
       </div>
 
@@ -178,11 +208,6 @@
             <i class="fas fa-folder-open"></i>
             <span class="catalog-list__name">Dokumente</span>
             <span class="catalog-list__desc">Dokumentenverwaltung mit Upload und Archiv</span>
-          </li>
-          <li>
-            <i class="fas fa-user-secret"></i>
-            <span class="catalog-list__name">Platzhalter-Benutzer</span>
-            <span class="catalog-list__desc">Anonyme Accounts für Fabrik-Bildschirme</span>
           </li>
           <li>
             <i class="fas fa-umbrella-beach"></i>
@@ -208,11 +233,6 @@
             <i class="fas fa-clipboard-list"></i>
             <span class="catalog-list__name">Arbeitsaufträge</span>
             <span class="catalog-list__desc">Mängelbeseitigung und Aufgabenverwaltung</span>
-          </li>
-          <li>
-            <i class="fas fa-cogs"></i>
-            <span class="catalog-list__name">Anlagen & Maschinen</span>
-            <span class="catalog-list__desc">Verwaltung und Verfügbarkeitstracking</span>
           </li>
           <li>
             <i class="fas fa-chart-bar"></i>
@@ -254,6 +274,7 @@
     font-size: 3rem;
     letter-spacing: -0.5px;
     text-align: center;
+    animation: fade-in-up var(--duration-slow) var(--ease-out) both;
   }
 
   .pricing-subtitle {
@@ -262,6 +283,8 @@
     color: var(--color-text-secondary);
     font-size: 1.1rem;
     text-align: center;
+    animation: fade-in-up var(--duration-slow) var(--ease-out) both;
+    animation-delay: 100ms;
   }
 
   .pricing-grid {
@@ -276,26 +299,32 @@
     display: flex;
     position: relative;
     flex-direction: column;
-    border: 1px solid var(--color-glass-border);
-    border-radius: var(--radius-xl);
+    border: var(--glass-border);
+    border-radius: var(--glass-card-radius);
     background: var(--glass-bg);
     padding: var(--spacing-8);
     min-height: 550px;
     overflow: hidden;
     text-align: center;
-    transition:
-      transform 0.3s ease,
-      box-shadow 0.3s ease,
-      border-color 0.3s ease,
-      background 0.3s ease;
+    transition: all var(--duration-normal) var(--ease-out);
+    animation: fade-in-up var(--duration-slow) var(--ease-out) both;
+  }
+
+  .pricing-card:nth-child(1) {
+    animation-delay: 200ms;
+  }
+
+  .pricing-card:nth-child(2) {
+    animation-delay: 350ms;
+  }
+
+  .pricing-card:nth-child(3) {
+    animation-delay: 500ms;
   }
 
   .pricing-card:hover {
-    transform: translateY(-5px);
-    box-shadow:
-      0 12px 40px color-mix(in oklch, var(--color-primary) 40%, transparent),
-      inset 0 1px 0 color-mix(in oklch, var(--color-white) 10%, transparent);
-    border-color: var(--primary-color);
+    transform: translateY(-2px);
+    border-color: var(--color-border-hover);
     background: var(--glass-bg-hover);
   }
 
@@ -306,10 +335,8 @@
   }
 
   .pricing-card.featured:hover {
-    transform: translateY(-6px);
-    box-shadow:
-      0 14px 45px color-mix(in oklch, var(--color-primary) 50%, transparent),
-      inset 0 1px 0 color-mix(in oklch, var(--color-white) 10%, transparent);
+    transform: translateY(-3px);
+    border-color: color-mix(in oklch, var(--color-primary) 50%, transparent);
   }
 
   .pricing-card h3 {
@@ -326,7 +353,6 @@
     font-weight: 700;
     font-size: 3.5rem;
     line-height: 1;
-    text-shadow: 0 0 10px color-mix(in oklch, var(--color-primary) 20%, transparent);
   }
 
   .unlimited-badge {
@@ -352,7 +378,7 @@
     font-size: 1rem;
   }
 
-  .feature-list {
+  .plan-list {
     flex-grow: 1;
     margin: var(--spacing-8) 0;
     padding: 0;
@@ -360,7 +386,7 @@
     text-align: left;
   }
 
-  .feature-list li {
+  .plan-list li {
     position: relative;
     padding: var(--spacing-2) 0;
     padding-left: var(--spacing-8);
@@ -369,7 +395,7 @@
     line-height: 1.6;
   }
 
-  .feature-list li::before {
+  .plan-list li::before {
     position: absolute;
     left: 0;
     content: '\2713';
@@ -426,10 +452,19 @@
   }
 
   .catalog-group {
-    border: 1px solid var(--color-glass-border);
-    border-radius: var(--radius-xl);
+    border: var(--glass-border);
+    border-radius: var(--glass-card-radius);
     background: var(--glass-bg);
     padding: var(--spacing-6);
+    animation: fade-in-up var(--duration-slow) var(--ease-out) both;
+  }
+
+  .catalog-group:nth-child(1) {
+    animation-delay: 200ms;
+  }
+
+  .catalog-group:nth-child(2) {
+    animation-delay: 400ms;
   }
 
   .catalog-group__heading {
@@ -438,7 +473,7 @@
     gap: var(--spacing-3);
     margin-bottom: var(--spacing-6);
     padding-bottom: var(--spacing-4);
-    border-bottom: 1px solid var(--color-glass-border);
+    border-bottom: var(--glass-border);
     color: var(--primary-color);
     font-weight: 600;
     font-size: 1.1rem;

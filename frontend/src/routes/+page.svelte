@@ -6,12 +6,9 @@
   import ThemeToggle from '$lib/components/ThemeToggle.svelte';
   import { isDark } from '$lib/stores/theme.svelte';
 
-  import FeaturesGrid from './_lib/FeaturesGrid.svelte';
+  import ModuleGrid from './_lib/ModuleGrid.svelte';
   import PricingSection from './_lib/PricingSection.svelte';
   import SecuritySection from './_lib/SecuritySection.svelte';
-
-  // Modal state
-  let showSignupModal: boolean = $state(false);
 
   // Body class for landing page (disables global gradient)
   onMount(() => {
@@ -23,16 +20,6 @@
 
   function handleReloadPage(): void {
     window.location.reload();
-  }
-
-  function closeSignupModal(): void {
-    showSignupModal = false;
-  }
-
-  function handleModalBackdropClick(e: MouseEvent): void {
-    if (e.target === e.currentTarget) {
-      closeSignupModal();
-    }
   }
 </script>
 
@@ -85,8 +72,8 @@
     >
   </section>
 
-  <!-- Features Section (Extracted Component) -->
-  <FeaturesGrid />
+  <!-- Module Section (Extracted Component) -->
+  <ModuleGrid />
 
   <!-- Security Section (Extracted Component) -->
   <SecuritySection />
@@ -99,33 +86,8 @@
     <p>&copy; 2026 Assixx. Alle Rechte vorbehalten.</p>
   </footer>
 </div>
-<!-- End .landing-page -->
 
-<!-- Signup Modal (kept for compatibility but links go to /signup) -->
-{#if showSignupModal}
-  <!-- svelte-ignore a11y_click_events_have_key_events -->
-  <!-- svelte-ignore a11y_no_static_element_interactions -->
-  <div
-    class="signup-modal"
-    style="display: flex"
-    onclick={handleModalBackdropClick}
-  >
-    <div class="modal-content">
-      <h2>Jetzt kostenlos testen</h2>
-      <p>30 Tage kostenlos testen - keine Kreditkarte erforderlich</p>
-      <p class="u-mb-md">Bitte nutzen Sie unser vollständiges Registrierungsformular:</p>
-      <a
-        href={resolve('/signup', {})}
-        class="btn btn-index u-w-full">Zur Registrierung</a
-      >
-      <button
-        type="button"
-        class="btn btn-secondary btn-cancel--full"
-        onclick={closeSignupModal}>Abbrechen</button
-      >
-    </div>
-  </div>
-{/if}
+<!-- End .landing-page -->
 
 <style>
   /* Landing page container */
@@ -133,6 +95,12 @@
     display: block;
     width: 100%;
     min-height: 100vh;
+  }
+
+  /* Header - Glass nav bar */
+  .header {
+    padding: var(--spacing-4) 5%;
+    border-bottom: var(--glass-border);
   }
 
   /* Logo button reset */
@@ -233,6 +201,8 @@
     font-weight: 700;
     font-size: 3rem;
     text-shadow: 0 2px 4px color-mix(in oklch, var(--color-black) 30%, transparent);
+    animation: fade-in-up var(--duration-slow) var(--ease-out) both;
+    animation-delay: 100ms;
   }
 
   .hero p {
@@ -241,65 +211,23 @@
     font-size: 1.25rem;
     line-height: 1.6;
     text-shadow: 0 1px 2px color-mix(in oklch, var(--color-black) 20%, transparent);
+    animation: fade-in-up var(--duration-slow) var(--ease-out) both;
+    animation-delay: 250ms;
   }
 
   /* Hero CTA button: always white text (sits on dark image overlay in both modes) */
   .hero :global(.btn) {
     color: var(--color-white);
+    animation: fade-in-up var(--duration-slow) var(--ease-out) both;
+    animation-delay: 400ms;
   }
 
   /* Footer */
   .footer {
-    backdrop-filter: blur(20px);
-    box-shadow: 0 -8px 32px color-mix(in oklch, var(--color-black) 20%, transparent);
-    border-top: 1px solid var(--color-glass-border);
-    background: var(--glass-bg);
+    border-top: var(--glass-border);
     padding: var(--spacing-6) 5%;
     color: var(--color-text-secondary);
     text-align: center;
-  }
-
-  /* Signup Modal */
-  .signup-modal {
-    display: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    justify-content: center;
-    align-items: center;
-    z-index: 2000;
-    backdrop-filter: blur(10px);
-    background: color-mix(in oklch, var(--color-black) 80%, transparent);
-    width: 100%;
-    height: 100%;
-  }
-
-  .modal-content {
-    border: 1px solid var(--color-glass-border);
-    border-radius: var(--radius-xl);
-    background: var(--glass-bg);
-    padding: var(--spacing-6);
-    width: 90%;
-    max-width: 500px;
-    max-height: 90vh;
-    overflow-y: auto;
-  }
-
-  .modal-content h2 {
-    margin-bottom: var(--spacing-2);
-    color: var(--primary-color);
-    font-weight: 600;
-  }
-
-  .modal-content p {
-    margin-bottom: var(--spacing-6);
-    color: var(--text-secondary);
-    font-size: 13px;
-  }
-
-  .btn-cancel--full {
-    margin-top: 1rem;
-    width: 100%;
   }
 
   /* Light mode overrides */
@@ -339,11 +267,6 @@
 
     .hero p {
       font-size: 1rem;
-    }
-
-    .modal-content {
-      padding: var(--spacing-3);
-      width: 95%;
     }
   }
 </style>

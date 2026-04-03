@@ -20,7 +20,6 @@ export {
   getUserRole,
   getActiveRole,
   setUserRole,
-  setActiveRole,
   clearUserRole,
   // Role checks
   isAuthenticated,
@@ -28,13 +27,6 @@ export {
   isRoot,
   isEmployee,
   hasPermission,
-  hasExactRole,
-  // Permission checks
-  canPerformAdminActions,
-  canManageUsers,
-  canManageDepartments,
-  canManageTeams,
-  canViewAllEmployees,
   // Display helpers
   getRoleDisplayName,
   // Full logout
@@ -44,17 +36,10 @@ export {
 } from './auth';
 
 // JWT utilities
-export { parseJwt, isTokenExpired, getTokenExpiryTime, type JWTPayload } from './jwt-utils';
+export { parseJwt } from './jwt-utils';
 
 // Date helpers
-export {
-  formatDate,
-  formatDateTime,
-  formatTime,
-  formatRelativeDate,
-  isToday,
-  isWithinDays,
-} from './date-helpers';
+export { formatDate, formatDateTime, formatTime, formatRelativeDate } from './date-helpers';
 
 // Token manager (singleton)
 export { TokenManager, getTokenManager, type LogoutReason } from './token-manager';

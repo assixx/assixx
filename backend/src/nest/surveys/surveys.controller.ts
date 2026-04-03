@@ -67,7 +67,7 @@ interface MessageResponse {
 }
 
 /** Permission constants for RequirePermission decorator */
-const SURVEY_FEATURE = 'surveys';
+const SURVEY_ADDON = 'surveys';
 const SURVEY_MANAGE = 'surveys-manage';
 const SURVEY_PARTICIPATE = 'surveys-participate';
 const SURVEY_RESULTS = 'surveys-results';
@@ -82,7 +82,7 @@ export class SurveysController {
    * List surveys based on user role
    */
   @Get()
-  @RequirePermission(SURVEY_FEATURE, SURVEY_MANAGE, 'canRead')
+  @RequirePermission(SURVEY_ADDON, SURVEY_MANAGE, 'canRead')
   async listSurveys(
     @Query() query: ListSurveysQueryDto,
     @CurrentUser() user: NestAuthUser,
@@ -101,7 +101,7 @@ export class SurveysController {
    * Get available survey templates
    */
   @Get('templates')
-  @RequirePermission(SURVEY_FEATURE, SURVEY_MANAGE, 'canRead')
+  @RequirePermission(SURVEY_ADDON, SURVEY_MANAGE, 'canRead')
   async getTemplates(@TenantId() tenantId: number): Promise<unknown[]> {
     return await this.surveysService.getTemplates(tenantId);
   }
@@ -114,7 +114,7 @@ export class SurveysController {
   @HttpCode(HttpStatus.CREATED)
   @UseGuards(RolesGuard)
   @Roles('admin', 'root')
-  @RequirePermission(SURVEY_FEATURE, SURVEY_MANAGE, 'canWrite')
+  @RequirePermission(SURVEY_ADDON, SURVEY_MANAGE, 'canWrite')
   async createFromTemplate(
     @Param('templateId') templateId: string,
     @CurrentUser() user: NestAuthUser,
@@ -139,7 +139,7 @@ export class SurveysController {
    * Pass ?manage=true from admin panel to enforce management-level access.
    */
   @Get(':id')
-  @RequirePermission(SURVEY_FEATURE, SURVEY_PARTICIPATE, 'canRead')
+  @RequirePermission(SURVEY_ADDON, SURVEY_PARTICIPATE, 'canRead')
   async getSurveyById(
     @Param('id') id: string,
     @Query('manage') manage: string | undefined,
@@ -165,7 +165,7 @@ export class SurveysController {
   @HttpCode(HttpStatus.CREATED)
   @UseGuards(RolesGuard)
   @Roles('admin', 'root')
-  @RequirePermission(SURVEY_FEATURE, SURVEY_MANAGE, 'canWrite')
+  @RequirePermission(SURVEY_ADDON, SURVEY_MANAGE, 'canWrite')
   async createSurvey(
     @Body() dto: CreateSurveyDto,
     @CurrentUser() user: NestAuthUser,
@@ -190,7 +190,7 @@ export class SurveysController {
   @Put(':id')
   @UseGuards(RolesGuard)
   @Roles('admin', 'root')
-  @RequirePermission(SURVEY_FEATURE, SURVEY_MANAGE, 'canWrite')
+  @RequirePermission(SURVEY_ADDON, SURVEY_MANAGE, 'canWrite')
   async updateSurvey(
     @Param('id') id: string,
     @Body() dto: UpdateSurveyDto,
@@ -219,7 +219,7 @@ export class SurveysController {
   @Delete(':id')
   @UseGuards(RolesGuard)
   @Roles('admin', 'root')
-  @RequirePermission(SURVEY_FEATURE, SURVEY_MANAGE, 'canDelete')
+  @RequirePermission(SURVEY_ADDON, SURVEY_MANAGE, 'canDelete')
   async deleteSurvey(
     @Param('id') id: string,
     @CurrentUser() user: NestAuthUser,
@@ -246,7 +246,7 @@ export class SurveysController {
   @Get(':id/statistics')
   @UseGuards(RolesGuard)
   @Roles('admin', 'root')
-  @RequirePermission(SURVEY_FEATURE, SURVEY_RESULTS, 'canRead')
+  @RequirePermission(SURVEY_ADDON, SURVEY_RESULTS, 'canRead')
   async getStatistics(
     @Param('id') id: string,
     @CurrentUser() user: NestAuthUser,
@@ -262,7 +262,7 @@ export class SurveysController {
    */
   @Post(':id/responses')
   @HttpCode(HttpStatus.CREATED)
-  @RequirePermission(SURVEY_FEATURE, SURVEY_PARTICIPATE, 'canWrite')
+  @RequirePermission(SURVEY_ADDON, SURVEY_PARTICIPATE, 'canWrite')
   async submitResponse(
     @Param('id') id: string,
     @Body() dto: SubmitResponseDto,
@@ -287,7 +287,7 @@ export class SurveysController {
   @Get(':id/responses')
   @UseGuards(RolesGuard)
   @Roles('admin', 'root')
-  @RequirePermission(SURVEY_FEATURE, SURVEY_RESULTS, 'canRead')
+  @RequirePermission(SURVEY_ADDON, SURVEY_RESULTS, 'canRead')
   async getAllResponses(
     @Param('id') id: string,
     @Query() query: GetAllResponsesQueryDto,
@@ -307,7 +307,7 @@ export class SurveysController {
    * Get user's own response to a survey (supports both numeric ID and UUID)
    */
   @Get(':id/my-response')
-  @RequirePermission(SURVEY_FEATURE, SURVEY_PARTICIPATE, 'canRead')
+  @RequirePermission(SURVEY_ADDON, SURVEY_PARTICIPATE, 'canRead')
   async getMyResponse(
     @Param('id') id: string,
     @CurrentUser() user: NestAuthUser,
@@ -325,7 +325,7 @@ export class SurveysController {
   @Get(':id/export')
   @UseGuards(RolesGuard)
   @Roles('admin', 'root')
-  @RequirePermission(SURVEY_FEATURE, SURVEY_RESULTS, 'canRead')
+  @RequirePermission(SURVEY_ADDON, SURVEY_RESULTS, 'canRead')
   async exportResponses(
     @Param('id') id: string,
     @Query() query: ExportResponsesQueryDto,
@@ -362,7 +362,7 @@ export class SurveysController {
    * Get a specific response by ID (supports both numeric ID and UUID)
    */
   @Get(':id/responses/:responseId')
-  @RequirePermission(SURVEY_FEATURE, SURVEY_RESULTS, 'canRead')
+  @RequirePermission(SURVEY_ADDON, SURVEY_RESULTS, 'canRead')
   async getResponseById(
     @Param('id') id: string,
     @Param('responseId') responseId: string,
@@ -386,7 +386,7 @@ export class SurveysController {
    * Update a response (if allowed, supports both numeric ID and UUID)
    */
   @Put(':id/responses/:responseId')
-  @RequirePermission(SURVEY_FEATURE, SURVEY_PARTICIPATE, 'canWrite')
+  @RequirePermission(SURVEY_ADDON, SURVEY_PARTICIPATE, 'canWrite')
   async updateResponse(
     @Param('id') id: string,
     @Param('responseId') responseId: string,

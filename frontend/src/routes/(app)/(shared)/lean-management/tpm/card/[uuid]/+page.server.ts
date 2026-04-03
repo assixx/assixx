@@ -8,6 +8,7 @@ import { redirect } from '@sveltejs/kit';
 
 import { apiFetch, apiFetchWithPermission } from '$lib/server/api-fetch';
 import { requireAddon } from '$lib/utils/addon-guard';
+import { extractArray } from '$lib/utils/api-response';
 
 import type { PageServerLoad } from './$types';
 import type {
@@ -17,15 +18,6 @@ import type {
   TpmLocation,
   TpmTimeEstimate,
 } from '../../_lib/types';
-
-function extractArray<T>(raw: unknown): T[] {
-  if (Array.isArray(raw)) return raw as T[];
-  if (raw !== null && typeof raw !== 'undefined' && typeof raw === 'object') {
-    const obj = raw as Record<string, unknown>;
-    if (Array.isArray(obj.data)) return obj.data as T[];
-  }
-  return [];
-}
 
 export const load: PageServerLoad = async ({ cookies, fetch, parent, params }) => {
   const token = cookies.get('accessToken');

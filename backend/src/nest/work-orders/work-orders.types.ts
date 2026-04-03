@@ -40,20 +40,6 @@ export const STATUS_LABELS: Record<WorkOrderStatus, string> = {
   verified: 'Verifiziert',
 };
 
-/** German labels for priority display */
-export const PRIORITY_LABELS: Record<WorkOrderPriority, string> = {
-  low: 'Niedrig',
-  medium: 'Mittel',
-  high: 'Hoch',
-};
-
-/** German labels for source type display */
-export const SOURCE_TYPE_LABELS: Record<WorkOrderSourceType, string> = {
-  tpm_defect: 'TPM-Mangel',
-  kvp_proposal: 'KVP-Vorschlag',
-  manual: 'Manuell',
-};
-
 // ============================================================================
 // Status Transition Matrix
 // ============================================================================
