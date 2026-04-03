@@ -39,6 +39,7 @@
   import ShiftAssignmentCounts from './_lib/ShiftAssignmentCounts.svelte';
   import ShiftControls from './_lib/ShiftControls.svelte';
   import ShiftScheduleGrid from './_lib/ShiftScheduleGrid.svelte';
+  import ShiftScheduleLegend from './_lib/ShiftScheduleLegend.svelte';
   import { shiftsState } from './_lib/state.svelte';
   import {
     formatWeekRange,
@@ -264,16 +265,6 @@
   }
 </script>
 
-{#snippet assignmentCountsSnippet()}
-  {#if shiftsState.isManager}
-    <ShiftAssignmentCounts counts={assignmentCounts} />
-  {/if}
-  <WeekNavigation
-    {weekRangeText}
-    onnavigateWeek={navigateWeek}
-  />
-{/snippet}
-
 <svelte:head>
   <title>Schichtplanung - Assixx</title>
 </svelte:head>
@@ -383,31 +374,21 @@
 
         <!-- Main Planning UI -->
         {#if shiftsState.showPlanningUI}
-          <!-- Shift Control Toggles (Managers Only) -->
+          <!-- Legend + Navigation (full width, above grid) -->
+          <ShiftScheduleLegend {labels} />
           {#if shiftsState.isManager}
-            <ShiftControls
-              autofillConfig={shiftsState.autofillConfig}
-              standardRotationEnabled={shiftsState.standardRotationEnabled}
-              customRotationEnabled={shiftsState.customRotationEnabled}
-              isPlanLocked={shiftsState.isPlanLocked}
-              onautofillChange={(enabled: boolean) => {
-                shiftsState.setAutofillConfig({ enabled });
-              }}
-              onstandardRotationChange={(enabled: boolean) => {
-                shiftsState.setStandardRotationEnabled(enabled);
-              }}
-              oncustomRotationChange={(enabled: boolean) => {
-                shiftsState.setCustomRotationEnabled(enabled);
-              }}
-            />
+            <ShiftAssignmentCounts counts={assignmentCounts} />
           {/if}
+          <WeekNavigation
+            {weekRangeText}
+            onnavigateWeek={navigateWeek}
+          />
 
           <!-- Main Planning Area (enthält NUR week-schedule + employee-sidebar!) -->
           <div class="main-planning-area">
             <!-- Week Schedule (Extracted Component) -->
             <ShiftScheduleGrid
               {labels}
-              afterLegend={assignmentCountsSnippet}
               {weekDates}
               {shiftTimesMap}
               weeklyNotes={shiftsState.weeklyNotes}
@@ -430,21 +411,39 @@
               }}
             />
 
-            <!-- Employee Sidebar (Extracted Component) -->
-            {#if shiftsState.isManager || shiftsState.employees.length > 0}
-              <EmployeeSidebar
-                {labels}
-                employees={shiftsState.employees}
-                {weekDates}
-                canEditShifts={shiftsState.canEditShifts}
-                isEditMode={shiftsState.isEditMode}
-                currentPlanId={shiftsState.currentPlanId}
-                hasRotationHistory={shiftsState.rotationHistoryMap.size > 0}
-                {minStaffCount}
-                ondragstart={handleDragStart}
-                ondragend={handleDragEnd}
-              />
-            {/if}
+            <!-- Right Column: Controls + Sidebar -->
+            <div class="sidebar-column">
+              {#if shiftsState.isManager}
+                <ShiftControls
+                  autofillConfig={shiftsState.autofillConfig}
+                  standardRotationEnabled={shiftsState.standardRotationEnabled}
+                  customRotationEnabled={shiftsState.customRotationEnabled}
+                  isPlanLocked={shiftsState.isPlanLocked}
+                  onautofillChange={(enabled: boolean) => {
+                    shiftsState.setAutofillConfig({ enabled });
+                  }}
+                  onstandardRotationChange={(enabled: boolean) => {
+                    shiftsState.setStandardRotationEnabled(enabled);
+                  }}
+                  oncustomRotationChange={(enabled: boolean) => {
+                    shiftsState.setCustomRotationEnabled(enabled);
+                  }}
+                />
+              {/if}
+              {#if shiftsState.isManager || shiftsState.employees.length > 0}
+                <EmployeeSidebar
+                  employees={shiftsState.employees}
+                  {weekDates}
+                  canEditShifts={shiftsState.canEditShifts}
+                  isEditMode={shiftsState.isEditMode}
+                  currentPlanId={shiftsState.currentPlanId}
+                  hasRotationHistory={shiftsState.rotationHistoryMap.size > 0}
+                  {minStaffCount}
+                  ondragstart={handleDragStart}
+                  ondragend={handleDragEnd}
+                />
+              {/if}
+            </div>
           </div>
           <!-- END main-planning-area -->
 
@@ -514,6 +513,13 @@
     display: grid;
     grid-template-columns: 1fr 320px;
     gap: var(--spacing-8);
+    align-items: start;
+  }
+
+  .sidebar-column {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-4);
   }
 
   .department-notice {

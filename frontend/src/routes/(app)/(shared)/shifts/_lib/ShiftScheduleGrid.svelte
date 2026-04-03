@@ -10,12 +10,10 @@
   } from '$lib/asset-availability/constants';
 
   import { FULL_DAY_NAMES, SHIFT_TYPES } from './constants';
-  import ShiftScheduleLegend from './ShiftScheduleLegend.svelte';
   import { formatDate, getEmployeeDisplayName, getShiftTimeInfo } from './utils';
 
   import type { HierarchyLabels } from '$lib/types/hierarchy-labels';
   import type { Employee, ShiftDetailData, ShiftTimesMap } from './types';
-  import type { Snippet } from 'svelte';
 
   /**
    * Props interface for ShiftScheduleGrid
@@ -23,8 +21,6 @@
   interface Props {
     /** Dynamic hierarchy labels from layout */
     labels: HierarchyLabels;
-    /** Optional snippet rendered directly after the legend bar */
-    afterLegend?: Snippet | undefined;
     weekDates: Date[];
     weeklyNotes: string;
     canEditShifts: boolean;
@@ -54,7 +50,6 @@
 
   const {
     labels,
-    afterLegend,
     weekDates,
     weeklyNotes,
     canEditShifts,
@@ -103,13 +98,6 @@
 </script>
 
 <div class="week-schedule">
-  <!-- Asset Availability Legend -->
-  <ShiftScheduleLegend {labels} />
-
-  {#if afterLegend}
-    {@render afterLegend()}
-  {/if}
-
   <!-- Schedule Header -->
   <div class="schedule-header">
     <div class="day-header">Schicht</div>
@@ -286,7 +274,7 @@ Beispiele:
   .shift-row {
     display: grid;
     grid-template-columns: 120px repeat(7, 1fr);
-    gap: 2px;
+    gap: 5px;
 
     background: transparent;
 
@@ -348,7 +336,7 @@ Beispiele:
     position: relative;
     backdrop-filter: blur(5px);
     cursor: pointer;
-    border: 1px solid var(--color-glass-border);
+    border: var(--glass-border);
     border-radius: var(--radius-xl);
 
     background: var(--glass-bg);

@@ -48,8 +48,6 @@
       </span>
     </label>
 
-    <div class="divider"></div>
-
     <!-- Standard Rotation Toggle (disabled when plan is locked) -->
     <label
       class="toggle-switch"
@@ -70,8 +68,6 @@
         <small class="toggle-hint">Einfache Rotation</small>
       </span>
     </label>
-
-    <div class="divider"></div>
 
     <!-- Custom Rotation Toggle (disabled when plan is locked) -->
     <label
@@ -100,28 +96,12 @@
   .shift-controls {
     display: flex;
     justify-content: center;
-    margin: var(--spacing-4) auto var(--spacing-6);
+    margin: var(--spacing-2) auto;
   }
 
   .controls-group {
     display: flex;
     flex-wrap: wrap;
-    align-items: center;
-    gap: var(--spacing-4);
-    backdrop-filter: blur(10px);
-    border: 1px solid var(--color-glass-border);
-    border-radius: var(--radius-xl);
-
-    background: var(--glass-bg);
-
-    padding: var(--spacing-4);
-  }
-
-  .divider {
-    margin: 0 var(--spacing-2);
-    background: var(--accent-color);
-    width: 1px;
-    height: 40px;
   }
 
   .toggle-hint {
@@ -136,12 +116,6 @@
       flex-direction: column;
       align-items: flex-start;
       gap: var(--spacing-2);
-    }
-
-    .divider {
-      margin: var(--spacing-2) 0;
-      width: 100%;
-      height: 1px;
     }
   }
 </style>
