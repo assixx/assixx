@@ -53,7 +53,12 @@ vi.mock('uuid', () => ({
 // =============================================================
 
 function createMockDb() {
-  return { query: vi.fn() };
+  const queryFn = vi.fn();
+  return {
+    query: queryFn,
+    tenantQuery: queryFn,
+    tenantQueryOne: vi.fn().mockResolvedValue(null),
+  };
 }
 
 function createMockNotifications() {
@@ -258,11 +263,11 @@ describe('SurveysService', () => {
       const result = await mocks.service.resolveToNumericId(42, 1);
 
       expect(result).toBe(42);
-      expect(mocks.mockDb.query).not.toHaveBeenCalled();
+      expect(mocks.mockDb.tenantQuery).not.toHaveBeenCalled();
     });
 
     it('should throw NotFoundException for unknown UUID', async () => {
-      mocks.mockDb.query.mockResolvedValueOnce([]);
+      mocks.mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       await expect(mocks.service.resolveToNumericId('unknown-uuid', 1)).rejects.toThrow(
         NotFoundException,
@@ -271,7 +276,7 @@ describe('SurveysService', () => {
 
     it('should resolve UUID to numeric ID', async () => {
       const survey = createMockDbSurvey({ id: 42 });
-      mocks.mockDb.query.mockResolvedValueOnce([survey]);
+      mocks.mockDb.tenantQuery.mockResolvedValueOnce([survey]);
 
       const result = await mocks.service.resolveToNumericId(
         '0194a1b2-c3d4-7e5f-8a9b-c0d1e2f3a4b5',
@@ -288,7 +293,7 @@ describe('SurveysService', () => {
 
   describe('getSurveyById', () => {
     it('should throw NotFoundException when survey not found by ID', async () => {
-      mocks.mockDb.query.mockResolvedValueOnce([]);
+      mocks.mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       await expect(mocks.service.getSurveyById(999, 42, 1, 'admin')).rejects.toThrow(
         NotFoundException,
@@ -296,7 +301,7 @@ describe('SurveysService', () => {
     });
 
     it('should throw NotFoundException when survey not found by UUID', async () => {
-      mocks.mockDb.query.mockResolvedValueOnce([]);
+      mocks.mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       await expect(mocks.service.getSurveyById('missing-uuid', 42, 1, 'admin')).rejects.toThrow(
         NotFoundException,
@@ -305,7 +310,7 @@ describe('SurveysService', () => {
 
     it('should return survey for numeric ID (found path)', async () => {
       const survey = createMockDbSurvey();
-      mocks.mockDb.query.mockResolvedValueOnce([survey]);
+      mocks.mockDb.tenantQuery.mockResolvedValueOnce([survey]);
 
       const result = await mocks.service.getSurveyById(1, 1, 5, 'admin');
 
@@ -315,7 +320,7 @@ describe('SurveysService', () => {
 
     it('should return survey for UUID (found path)', async () => {
       const survey = createMockDbSurvey();
-      mocks.mockDb.query.mockResolvedValueOnce([survey]);
+      mocks.mockDb.tenantQuery.mockResolvedValueOnce([survey]);
 
       const result = await mocks.service.getSurveyById(
         '0194a1b2-c3d4-7e5f-8a9b-c0d1e2f3a4b5',
@@ -329,7 +334,7 @@ describe('SurveysService', () => {
 
     it('calls checkSurveyManagementAccess when manage=true', async () => {
       const survey = createMockDbSurvey();
-      mocks.mockDb.query.mockResolvedValueOnce([survey]);
+      mocks.mockDb.tenantQuery.mockResolvedValueOnce([survey]);
 
       await mocks.service.getSurveyById(1, 1, 5, 'admin', true);
 
@@ -348,7 +353,7 @@ describe('SurveysService', () => {
 
   describe('getSurveyByNumericId', () => {
     it('returns null when no rows found', async () => {
-      mocks.mockDb.query.mockResolvedValueOnce([]);
+      mocks.mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       const result = await mocks.service['getSurveyByNumericId'](999, 1);
 
@@ -357,7 +362,7 @@ describe('SurveysService', () => {
 
     it('returns survey with loaded questions and assignments', async () => {
       const survey = createMockDbSurvey();
-      mocks.mockDb.query.mockResolvedValueOnce([survey]);
+      mocks.mockDb.tenantQuery.mockResolvedValueOnce([survey]);
       mocks.mockQuestionsService.loadSurveyQuestionsAndAssignments.mockResolvedValueOnce({
         questions: [{ id: 1, question_text: 'Q1' }],
         assignments: [{ id: 1, scope: 'all' }],
@@ -373,7 +378,7 @@ describe('SurveysService', () => {
 
   describe('getSurveyByUUID', () => {
     it('returns null when no rows found', async () => {
-      mocks.mockDb.query.mockResolvedValueOnce([]);
+      mocks.mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       const result = await mocks.service['getSurveyByUUID']('missing', 1);
 
@@ -382,7 +387,7 @@ describe('SurveysService', () => {
 
     it('returns survey with loaded questions', async () => {
       const survey = createMockDbSurvey();
-      mocks.mockDb.query.mockResolvedValueOnce([survey]);
+      mocks.mockDb.tenantQuery.mockResolvedValueOnce([survey]);
 
       const result = await mocks.service['getSurveyByUUID'](
         '0194a1b2-c3d4-7e5f-8a9b-c0d1e2f3a4b5',
@@ -401,7 +406,7 @@ describe('SurveysService', () => {
   describe('resolveSurveyOrThrow', () => {
     it('resolves numeric ID and returns survey + surveyId', async () => {
       const survey = createMockDbSurvey({ id: 42 });
-      mocks.mockDb.query.mockResolvedValueOnce([survey]);
+      mocks.mockDb.tenantQuery.mockResolvedValueOnce([survey]);
 
       const result = await mocks.service['resolveSurveyOrThrow'](42, 1);
 
@@ -411,7 +416,7 @@ describe('SurveysService', () => {
 
     it('resolves UUID and returns survey + surveyId', async () => {
       const survey = createMockDbSurvey({ id: 42 });
-      mocks.mockDb.query.mockResolvedValueOnce([survey]);
+      mocks.mockDb.tenantQuery.mockResolvedValueOnce([survey]);
 
       const result = await mocks.service['resolveSurveyOrThrow']('some-uuid', 1);
 
@@ -419,7 +424,7 @@ describe('SurveysService', () => {
     });
 
     it('throws NotFoundException when not found', async () => {
-      mocks.mockDb.query.mockResolvedValueOnce([]);
+      mocks.mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       await expect(mocks.service['resolveSurveyOrThrow'](999, 1)).rejects.toThrow(
         NotFoundException,
@@ -433,20 +438,20 @@ describe('SurveysService', () => {
 
   describe('insertSurveyRecord', () => {
     it('inserts survey and returns ID', async () => {
-      mocks.mockDb.query.mockResolvedValueOnce([{ id: 42 }]);
+      mocks.mockDb.tenantQuery.mockResolvedValueOnce([{ id: 42 }]);
 
       const dto = { title: 'New Survey', status: 'draft' };
       const result = await mocks.service['insertSurveyRecord'](dto as never, 1, 5);
 
       expect(result).toBe(42);
-      expect(mocks.mockDb.query).toHaveBeenCalledWith(
+      expect(mocks.mockDb.tenantQuery).toHaveBeenCalledWith(
         expect.stringContaining('INSERT INTO surveys'),
         expect.arrayContaining([1, 'New Survey']),
       );
     });
 
     it('returns 0 when no rows returned', async () => {
-      mocks.mockDb.query.mockResolvedValueOnce([]);
+      mocks.mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       const dto = { title: 'Survey' };
       const result = await mocks.service['insertSurveyRecord'](dto as never, 1, 5);
@@ -455,7 +460,7 @@ describe('SurveysService', () => {
     });
 
     it('passes all optional fields with defaults', async () => {
-      mocks.mockDb.query.mockResolvedValueOnce([{ id: 1 }]);
+      mocks.mockDb.tenantQuery.mockResolvedValueOnce([{ id: 1 }]);
 
       const dto = {
         title: 'Survey',
@@ -469,7 +474,7 @@ describe('SurveysService', () => {
 
       await mocks.service['insertSurveyRecord'](dto as never, 1, 5);
 
-      const callArgs = mocks.mockDb.query.mock.calls[0] as unknown[];
+      const callArgs = mocks.mockDb.tenantQuery.mock.calls[0] as unknown[];
       const params = callArgs[1] as unknown[];
       expect(params).toContain('Desc');
       expect(params).toContain('active');
@@ -485,24 +490,24 @@ describe('SurveysService', () => {
 
   describe('updateSurveyRecord', () => {
     it('calls db.query with COALESCE update', async () => {
-      mocks.mockDb.query.mockResolvedValueOnce([]);
+      mocks.mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       const dto = { title: 'Updated', status: 'active' };
       await mocks.service['updateSurveyRecord'](1, dto as never, 1);
 
-      expect(mocks.mockDb.query).toHaveBeenCalledWith(
+      expect(mocks.mockDb.tenantQuery).toHaveBeenCalledWith(
         expect.stringContaining('UPDATE surveys SET'),
         expect.arrayContaining(['Updated', 'active', 1, 1]),
       );
     });
 
     it('passes null for undefined optional fields', async () => {
-      mocks.mockDb.query.mockResolvedValueOnce([]);
+      mocks.mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       const dto = { title: 'Only Title' };
       await mocks.service['updateSurveyRecord'](1, dto as never, 1);
 
-      const callArgs = mocks.mockDb.query.mock.calls[0] as unknown[];
+      const callArgs = mocks.mockDb.tenantQuery.mock.calls[0] as unknown[];
       const params = callArgs[1] as unknown[];
       expect(params[0]).toBe('Only Title');
       expect(params[1]).toBeNull(); // description
@@ -515,14 +520,14 @@ describe('SurveysService', () => {
 
   describe('updateSurveyRelations', () => {
     it('replaces questions when provided', async () => {
-      mocks.mockDb.query.mockResolvedValue([]);
+      mocks.mockDb.tenantQuery.mockResolvedValue([]);
 
       const dto = { questions: [{ questionText: 'Q1', questionType: 'text' }] };
       await mocks.service['updateSurveyRelations'](1, dto as never, 1, 5, 'admin');
 
-      expect(mocks.mockDb.query).toHaveBeenCalledWith(
+      expect(mocks.mockDb.tenantQuery).toHaveBeenCalledWith(
         expect.stringContaining('DELETE FROM survey_questions'),
-        [1],
+        [1, 1],
       );
       expect(mocks.mockQuestionsService.insertSurveyQuestions).toHaveBeenCalledWith(
         1,
@@ -532,15 +537,15 @@ describe('SurveysService', () => {
     });
 
     it('replaces assignments when provided', async () => {
-      mocks.mockDb.query.mockResolvedValue([]);
+      mocks.mockDb.tenantQuery.mockResolvedValue([]);
 
       const dto = { assignments: [{ scope: 'all' }] };
       await mocks.service['updateSurveyRelations'](1, dto as never, 1, 5, 'admin');
 
       expect(mocks.mockAccessService.validateAssignmentPermissions).toHaveBeenCalled();
-      expect(mocks.mockDb.query).toHaveBeenCalledWith(
+      expect(mocks.mockDb.tenantQuery).toHaveBeenCalledWith(
         expect.stringContaining('DELETE FROM survey_assignments'),
-        [1],
+        [1, 1],
       );
       expect(mocks.mockQuestionsService.insertSurveyAssignments).toHaveBeenCalledWith(
         1,
@@ -553,12 +558,12 @@ describe('SurveysService', () => {
       const dto = { title: 'Just title' };
       await mocks.service['updateSurveyRelations'](1, dto as never, 1, 5, 'admin');
 
-      expect(mocks.mockDb.query).not.toHaveBeenCalled();
+      expect(mocks.mockDb.tenantQuery).not.toHaveBeenCalled();
       expect(mocks.mockQuestionsService.insertSurveyQuestions).not.toHaveBeenCalled();
     });
 
     it('skips validateAssignmentPermissions for empty assignments', async () => {
-      mocks.mockDb.query.mockResolvedValue([]);
+      mocks.mockDb.tenantQuery.mockResolvedValue([]);
 
       const dto = { assignments: [] };
       await mocks.service['updateSurveyRelations'](1, dto as never, 1, 5, 'admin');
@@ -573,7 +578,7 @@ describe('SurveysService', () => {
 
   describe('createFromTemplate', () => {
     it('should throw NotFoundException when template not found', async () => {
-      mocks.mockDb.query.mockResolvedValueOnce([]);
+      mocks.mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       await expect(mocks.service.createFromTemplate(999, 42, 1, 'admin')).rejects.toThrow(
         NotFoundException,
@@ -593,7 +598,7 @@ describe('SurveysService', () => {
         is_public: true,
         tenant_id: null,
       };
-      mocks.mockDb.query
+      mocks.mockDb.tenantQuery
         .mockResolvedValueOnce([template]) // getTemplate
         .mockResolvedValueOnce([{ id: 42 }]) // insertSurveyRecord
         .mockResolvedValueOnce([createMockDbSurvey({ id: 42 })]); // getSurveyById
@@ -611,7 +616,7 @@ describe('SurveysService', () => {
 
   describe('getTemplates', () => {
     it('should return mapped templates', async () => {
-      mocks.mockDb.query.mockResolvedValueOnce([
+      mocks.mockDb.tenantQuery.mockResolvedValueOnce([
         {
           id: 1,
           name: 'Employee Satisfaction',
@@ -630,7 +635,7 @@ describe('SurveysService', () => {
     });
 
     it('should return empty array when no templates', async () => {
-      mocks.mockDb.query.mockResolvedValueOnce([]);
+      mocks.mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       const result = await mocks.service.getTemplates(42);
 
@@ -720,7 +725,7 @@ describe('SurveysService', () => {
   describe('createSurvey', () => {
     it('creates survey without questions or assignments', async () => {
       const createdSurvey = createMockDbSurvey({ id: 42 });
-      mocks.mockDb.query
+      mocks.mockDb.tenantQuery
         .mockResolvedValueOnce([{ id: 42 }]) // insertSurveyRecord
         .mockResolvedValueOnce([createdSurvey]); // getSurveyById
 
@@ -740,7 +745,9 @@ describe('SurveysService', () => {
 
     it('inserts questions when provided', async () => {
       const createdSurvey = createMockDbSurvey({ id: 42 });
-      mocks.mockDb.query.mockResolvedValueOnce([{ id: 42 }]).mockResolvedValueOnce([createdSurvey]);
+      mocks.mockDb.tenantQuery
+        .mockResolvedValueOnce([{ id: 42 }])
+        .mockResolvedValueOnce([createdSurvey]);
 
       const dto = {
         title: 'Survey with Q',
@@ -757,7 +764,9 @@ describe('SurveysService', () => {
 
     it('inserts assignments and validates permissions', async () => {
       const createdSurvey = createMockDbSurvey({ id: 42 });
-      mocks.mockDb.query.mockResolvedValueOnce([{ id: 42 }]).mockResolvedValueOnce([createdSurvey]);
+      mocks.mockDb.tenantQuery
+        .mockResolvedValueOnce([{ id: 42 }])
+        .mockResolvedValueOnce([createdSurvey]);
 
       const dto = {
         title: 'Survey with Assign',
@@ -783,7 +792,7 @@ describe('SurveysService', () => {
       const existing = createMockDbSurvey();
       const updated = createMockDbSurvey({ title: 'Updated' });
       // getSurveyById (existing) → db.query, then checkSurveyManagementAccess + checkSurveyAccess
-      mocks.mockDb.query
+      mocks.mockDb.tenantQuery
         .mockResolvedValueOnce([existing]) // getSurveyById (existing)
         .mockResolvedValueOnce([]) // updateSurveyRecord
         .mockResolvedValueOnce([updated]); // getSurveyById (updated)
@@ -802,7 +811,7 @@ describe('SurveysService', () => {
 
     it('throws ForbiddenException for employee update', async () => {
       const existing = createMockDbSurvey();
-      mocks.mockDb.query.mockResolvedValueOnce([existing]);
+      mocks.mockDb.tenantQuery.mockResolvedValueOnce([existing]);
 
       await expect(
         mocks.service.updateSurvey(1, { title: 'X' } as never, 1, 5, 'employee'),
@@ -814,7 +823,7 @@ describe('SurveysService', () => {
         status: 'active',
         response_count: 5,
       });
-      mocks.mockDb.query.mockResolvedValueOnce([existing]);
+      mocks.mockDb.tenantQuery.mockResolvedValueOnce([existing]);
 
       await expect(
         mocks.service.updateSurvey(1, { title: 'X' } as never, 1, 5, 'admin'),
@@ -829,7 +838,7 @@ describe('SurveysService', () => {
   describe('deleteSurvey', () => {
     it('deletes survey with zero responses', async () => {
       const survey = createMockDbSurvey({ response_count: 0 });
-      mocks.mockDb.query
+      mocks.mockDb.tenantQuery
         .mockResolvedValueOnce([survey]) // getSurveyById
         .mockResolvedValueOnce([]); // DELETE query
 
@@ -848,14 +857,14 @@ describe('SurveysService', () => {
 
     it('throws ConflictException when responses exist', async () => {
       const survey = createMockDbSurvey({ response_count: 3 });
-      mocks.mockDb.query.mockResolvedValueOnce([survey]);
+      mocks.mockDb.tenantQuery.mockResolvedValueOnce([survey]);
 
       await expect(mocks.service.deleteSurvey(1, 1, 5, 'admin')).rejects.toThrow(ConflictException);
     });
 
     it('calls checkSurveyManagementAccess', async () => {
       const survey = createMockDbSurvey();
-      mocks.mockDb.query.mockResolvedValueOnce([survey]).mockResolvedValueOnce([]);
+      mocks.mockDb.tenantQuery.mockResolvedValueOnce([survey]).mockResolvedValueOnce([]);
 
       await mocks.service.deleteSurvey(1, 1, 5, 'admin');
 
@@ -875,7 +884,7 @@ describe('SurveysService', () => {
   describe('getStatistics', () => {
     it('resolves survey and delegates to statisticsService', async () => {
       const survey = createMockDbSurvey({ id: 42 });
-      mocks.mockDb.query.mockResolvedValueOnce([survey]);
+      mocks.mockDb.tenantQuery.mockResolvedValueOnce([survey]);
       mocks.mockStatisticsService.computeStatistics.mockResolvedValueOnce({
         totalResponses: 10,
       });
@@ -894,12 +903,12 @@ describe('SurveysService', () => {
 
     it('resolves UUID before computing statistics', async () => {
       const survey = createMockDbSurvey({ id: 42 });
-      mocks.mockDb.query.mockResolvedValueOnce([survey]);
+      mocks.mockDb.tenantQuery.mockResolvedValueOnce([survey]);
       mocks.mockStatisticsService.computeStatistics.mockResolvedValueOnce({});
 
       await mocks.service.getStatistics('some-uuid', 1, 5, 'admin');
 
-      expect(mocks.mockDb.query).toHaveBeenCalledWith(
+      expect(mocks.mockDb.tenantQuery).toHaveBeenCalledWith(
         expect.stringContaining('WHERE s.uuid ='),
         expect.any(Array),
       );

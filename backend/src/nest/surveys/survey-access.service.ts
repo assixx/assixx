@@ -43,7 +43,7 @@ export class SurveyAccessService {
     userRole: string,
   ): Promise<boolean> {
     if (userRole === 'root') return true;
-    const rows = await this.db.query<{ has_full_access: boolean }>(
+    const rows = await this.db.tenantQuery<{ has_full_access: boolean }>(
       `SELECT has_full_access FROM users WHERE id = $1 AND tenant_id = $2`,
       [userId, tenantId],
     );
@@ -61,7 +61,7 @@ export class SurveyAccessService {
     if (hasUnrestrictedAccess) return;
 
     const visibilityClause = this.buildVisibilityClause('$2', '$3');
-    const rows = await this.db.query<{ id: number }>(
+    const rows = await this.db.tenantQuery<{ id: number }>(
       `SELECT s.id FROM surveys s
        WHERE s.id = $1 AND s.tenant_id = $2
        AND ${visibilityClause}`,
@@ -86,7 +86,7 @@ export class SurveyAccessService {
     if (hasUnrestrictedAccess) return;
 
     const managementClause = this.buildManagementVisibilityClause('$2', '$3');
-    const rows = await this.db.query<{ id: number }>(
+    const rows = await this.db.tenantQuery<{ id: number }>(
       `SELECT s.id FROM surveys s
        WHERE s.id = $1 AND s.tenant_id = $2
        AND ${managementClause}`,
@@ -136,7 +136,7 @@ export class SurveyAccessService {
     const userIdx = surveyIds.length + 2;
     const managementClause = this.buildManagementVisibilityClause(`$${tenantIdx}`, `$${userIdx}`);
 
-    const rows = await this.db.query<{ id: number }>(
+    const rows = await this.db.tenantQuery<{ id: number }>(
       `SELECT s.id FROM surveys s
        WHERE s.id IN (${placeholders}) AND s.tenant_id = $${tenantIdx}
        AND ${managementClause}`,
@@ -152,7 +152,7 @@ export class SurveyAccessService {
     const placeholders = surveyIds.map((_: number, idx: number) => `$${idx + 1}`).join(',');
     const tenantParamIndex = surveyIds.length + 1;
 
-    const assignmentRows = await this.db.query<DbSurveyAssignment & { survey_id: number }>(
+    const assignmentRows = await this.db.tenantQuery<DbSurveyAssignment & { survey_id: number }>(
       `SELECT sa.*,
          a.name AS area_name,
          d.name AS department_name,
@@ -214,7 +214,7 @@ export class SurveyAccessService {
     this.logger.debug(`Getting pending survey count for user ${userId}, tenant ${tenantId}`);
 
     const visibilityClause = this.buildVisibilityClause('$1', '$2');
-    const rows = await this.db.query<{ count: number }>(
+    const rows = await this.db.tenantQuery<{ count: number }>(
       `SELECT COUNT(DISTINCT s.id)::integer as count
        FROM surveys s
        LEFT JOIN survey_responses sr
@@ -342,7 +342,7 @@ export class SurveyAccessService {
     const offsetIdx = params.length + 2;
     params.push(limit, offset);
 
-    return await this.db.query<DbSurvey>(
+    return await this.db.tenantQuery<DbSurvey>(
       `SELECT s.*, MAX(u.first_name) as creator_first_name, MAX(u.last_name) as creator_last_name,
        COUNT(DISTINCT sr.id) as response_count,
        COUNT(DISTINCT CASE WHEN sr.status = 'completed' THEN sr.id END) as completed_count
@@ -377,7 +377,7 @@ export class SurveyAccessService {
     params.push(limit, offset);
 
     const visibilityClause = this.buildVisibilityClause('$1', '$2');
-    return await this.db.query<DbSurvey>(
+    return await this.db.tenantQuery<DbSurvey>(
       `SELECT s.*, MAX(u.first_name) as creator_first_name, MAX(u.last_name) as creator_last_name,
        COUNT(DISTINCT sr.id) as response_count,
        COUNT(DISTINCT CASE WHEN sr.status = 'completed' THEN sr.id END) as completed_count
@@ -414,7 +414,7 @@ export class SurveyAccessService {
     params.push(limit, offset);
 
     const managementClause = this.buildManagementVisibilityClause('$1', '$2');
-    return await this.db.query<DbSurvey>(
+    return await this.db.tenantQuery<DbSurvey>(
       `SELECT s.*, MAX(u.first_name) as creator_first_name, MAX(u.last_name) as creator_last_name,
        COUNT(DISTINCT sr.id) as response_count,
        COUNT(DISTINCT CASE WHEN sr.status = 'completed' THEN sr.id END) as completed_count
@@ -475,7 +475,7 @@ export class SurveyAccessService {
     const query = LEADERSHIP_QUERIES[entityType];
     if (query === undefined) return;
 
-    const rows = await this.db.query<{ id: number }>(query, [entityId, userId, tenantId]);
+    const rows = await this.db.tenantQuery<{ id: number }>(query, [entityId, userId, tenantId]);
     if (rows.length === 0) {
       throw new ForbiddenException(`No leadership permission for ${entityType} ${entityId}`);
     }

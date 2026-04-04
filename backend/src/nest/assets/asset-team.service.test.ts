@@ -15,7 +15,7 @@ import { AssetTeamService } from './asset-team.service.js';
 // =============================================================
 
 function createMockDb() {
-  return { query: vi.fn() };
+  return { tenantQuery: vi.fn() };
 }
 
 // =============================================================
@@ -37,7 +37,7 @@ describe('AssetTeamService', () => {
 
   describe('getAssetTeams', () => {
     it('should map DB rows to response with all optional fields', async () => {
-      mockDb.query.mockResolvedValueOnce([
+      mockDb.tenantQuery.mockResolvedValueOnce([
         {
           id: 1,
           team_id: 10,
@@ -66,7 +66,7 @@ describe('AssetTeamService', () => {
     });
 
     it('should omit optional fields when DB values are null', async () => {
-      mockDb.query.mockResolvedValueOnce([
+      mockDb.tenantQuery.mockResolvedValueOnce([
         {
           id: 1,
           team_id: 10,
@@ -92,7 +92,7 @@ describe('AssetTeamService', () => {
     });
 
     it('should return empty array when no teams assigned', async () => {
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       const result = await service.getAssetTeams(42, 1);
 
@@ -107,22 +107,22 @@ describe('AssetTeamService', () => {
   describe('setAssetTeams', () => {
     it('should throw BadRequestException when team IDs are invalid', async () => {
       // Validation query returns fewer rows than requested
-      mockDb.query.mockResolvedValueOnce([{ id: 1 }]); // only 1 valid, but 2 requested
+      mockDb.tenantQuery.mockResolvedValueOnce([{ id: 1 }]); // only 1 valid, but 2 requested
 
       await expect(service.setAssetTeams(42, [1, 999], 1, 1)).rejects.toThrow(BadRequestException);
     });
 
     it('should skip validation and delete when teamIds is empty', async () => {
       // DELETE existing
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
       // getAssetTeams after
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       const result = await service.setAssetTeams(42, [], 1, 1);
 
       expect(result).toEqual([]);
       // First call should be DELETE, not SELECT for validation
-      const firstCallSql = mockDb.query.mock.calls[0]?.[0] as string;
+      const firstCallSql = mockDb.tenantQuery.mock.calls[0]?.[0] as string;
       expect(firstCallSql).toContain('DELETE FROM asset_teams');
     });
   });

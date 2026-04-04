@@ -82,7 +82,12 @@ export class NotificationsService {
       LIMIT $${limitParamIndex} OFFSET $${offsetParamIndex}
     `;
 
-    const rows = await this.db.query<DbNotificationRow>(query, [...params, userId, limit, offset]);
+    const rows = await this.db.tenantQuery<DbNotificationRow>(query, [
+      ...params,
+      userId,
+      limit,
+      offset,
+    ]);
 
     const { total, unreadCount } = await this.getNotificationCounts(
       userId,
@@ -115,7 +120,7 @@ export class NotificationsService {
     this.logger.log(`Creating notification: ${dto.title}`);
 
     const notificationUuid = uuidv7();
-    const rows = await this.db.query<DbIdRow>(
+    const rows = await this.db.tenantQuery<DbIdRow>(
       `INSERT INTO notifications
        (type, title, message, priority, recipient_id, recipient_type, action_url, action_label,
         metadata, scheduled_for, created_by, tenant_id, uuid, uuid_created_at)
@@ -168,7 +173,7 @@ export class NotificationsService {
   async markAsRead(notificationId: number, userId: number, tenantId: number): Promise<void> {
     this.logger.log(`Marking notification ${notificationId} as read for user ${userId}`);
 
-    const rows = await this.db.query<DbNotificationRow>(
+    const rows = await this.db.tenantQuery<DbNotificationRow>(
       `SELECT * FROM notifications
        WHERE id = $1 AND tenant_id = $2
        AND (recipient_type = 'all' OR (recipient_type = 'user' AND recipient_id = $3)
@@ -187,7 +192,7 @@ export class NotificationsService {
       });
     }
 
-    await this.db.query(
+    await this.db.tenantQuery(
       `INSERT INTO notification_read_status (notification_id, user_id, tenant_id)
        VALUES ($1, $2, $3)
        ON CONFLICT DO NOTHING`,
@@ -201,7 +206,7 @@ export class NotificationsService {
   async markAllAsRead(userId: number, tenantId: number): Promise<{ updated: number }> {
     this.logger.log(`Marking all notifications as read for user ${userId}`);
 
-    const unreadNotifications = await this.db.query<DbIdRow>(
+    const unreadNotifications = await this.db.tenantQuery<DbIdRow>(
       `SELECT n.id FROM notifications n
        LEFT JOIN notification_read_status nrs ON n.id = nrs.notification_id AND nrs.user_id = $2
        WHERE n.tenant_id = $1
@@ -217,7 +222,7 @@ export class NotificationsService {
 
     let markedCount = 0;
     for (const notification of unreadNotifications) {
-      await this.db.query(
+      await this.db.tenantQuery(
         `INSERT INTO notification_read_status (notification_id, user_id, tenant_id)
          VALUES ($1, $2, $3)
          ON CONFLICT DO NOTHING`,
@@ -242,7 +247,7 @@ export class NotificationsService {
   ): Promise<void> {
     this.logger.log(`Deleting notification ${notificationId}`);
 
-    const rows = await this.db.query<DbNotificationRow>(
+    const rows = await this.db.tenantQuery<DbNotificationRow>(
       `SELECT * FROM notifications WHERE id = $1 AND tenant_id = $2`,
       [notificationId, tenantId],
     );
@@ -273,7 +278,7 @@ export class NotificationsService {
       });
     }
 
-    await this.db.query(`DELETE FROM notifications WHERE id = $1 AND tenant_id = $2`, [
+    await this.db.tenantQuery(`DELETE FROM notifications WHERE id = $1 AND tenant_id = $2`, [
       notificationId,
       tenantId,
     ]);
@@ -424,7 +429,7 @@ export class NotificationsService {
 
   /** Resolve notification UUID to internal ID */
   private async resolveNotificationIdByUuid(uuid: string, tenantId: number): Promise<number> {
-    const result = await this.db.query<{ id: number }>(
+    const result = await this.db.tenantQuery<{ id: number }>(
       `SELECT id FROM notifications WHERE uuid = $1 AND tenant_id = $2`,
       [uuid, tenantId],
     );
@@ -450,7 +455,7 @@ export class NotificationsService {
       WHERE ${conditions.join(' AND ')}
       ${filters.unread === true ? 'AND nrs.id IS NULL' : ''}
     `;
-    const countRows = await this.db.query<DbCountRow>(countQuery, [...params, userId]);
+    const countRows = await this.db.tenantQuery<DbCountRow>(countQuery, [...params, userId]);
     const total = Number.parseInt(countRows[0]?.total ?? '0', 10);
 
     const unreadQuery = `
@@ -459,7 +464,7 @@ export class NotificationsService {
       LEFT JOIN notification_read_status nrs ON n.id = nrs.notification_id AND nrs.user_id = $${userIdParamIndex}
       WHERE ${conditions.join(' AND ')} AND nrs.id IS NULL
     `;
-    const unreadRows = await this.db.query<DbCountRow>(unreadQuery, [...params, userId]);
+    const unreadRows = await this.db.tenantQuery<DbCountRow>(unreadQuery, [...params, userId]);
     const unreadCount = Number.parseInt(unreadRows[0]?.unread_count ?? '0', 10);
 
     return { total, unreadCount };
@@ -477,7 +482,7 @@ export class NotificationsService {
     userAgent?: string,
   ): Promise<void> {
     try {
-      await this.db.query(
+      await this.db.tenantQuery(
         `INSERT INTO root_logs (action, user_id, tenant_id, entity_type, entity_id, new_values, ip_address, user_agent, created_at)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())`,
         [

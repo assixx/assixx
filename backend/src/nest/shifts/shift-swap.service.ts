@@ -111,7 +111,7 @@ export class ShiftSwapService {
       requesterId,
     );
 
-    const rows = await this.db.query<{ uuid: string }>(
+    const rows = await this.db.tenantQuery<{ uuid: string }>(
       `INSERT INTO shift_swap_requests
          (tenant_id, requester_id, requester_shift_id, target_id, target_shift_id,
           team_id, swap_scope, start_date, end_date, reason)
@@ -179,7 +179,7 @@ export class ShiftSwapService {
 
     const newStatus = accept ? 'pending_approval' : 'rejected';
 
-    await this.db.query(
+    await this.db.tenantQuery(
       `UPDATE shift_swap_requests
        SET status = $1, partner_responded_at = NOW(), partner_note = $2
        WHERE uuid = $3::uuid AND tenant_id = $4`,
@@ -220,7 +220,7 @@ export class ShiftSwapService {
       throw new ConflictException('Can only cancel requests in pending_partner status');
     }
 
-    await this.db.query(
+    await this.db.tenantQuery(
       `UPDATE shift_swap_requests SET status = 'cancelled' WHERE uuid = $1::uuid AND tenant_id = $2`,
       [uuid, tenantId],
     );
@@ -353,12 +353,12 @@ export class ShiftSwapService {
 
     query += ` ORDER BY ssr.created_at DESC`;
 
-    const rows = await this.db.query<DbSwapRequestDetailRow>(query, params);
+    const rows = await this.db.tenantQuery<DbSwapRequestDetailRow>(query, params);
     return rows.map(mapRowToResponse);
   }
 
   async getSwapRequestByUuid(uuid: string, tenantId: number): Promise<SwapRequestResponse> {
-    const rows = await this.db.query<DbSwapRequestDetailRow>(
+    const rows = await this.db.tenantQuery<DbSwapRequestDetailRow>(
       `${SELECT_DETAIL} WHERE ssr.uuid = $1::uuid AND ssr.tenant_id = $2 AND ssr.is_active = 1`,
       [uuid, tenantId],
     );
@@ -369,7 +369,7 @@ export class ShiftSwapService {
   }
 
   async getMyPendingConsents(tenantId: number, userId: number): Promise<SwapRequestResponse[]> {
-    const rows = await this.db.query<DbSwapRequestDetailRow>(
+    const rows = await this.db.tenantQuery<DbSwapRequestDetailRow>(
       `${SELECT_DETAIL} WHERE ssr.tenant_id = $1 AND ssr.target_id = $2
        AND ssr.status = 'pending_partner' AND ssr.is_active = 1
        ORDER BY ssr.created_at DESC`,
@@ -433,7 +433,7 @@ export class ShiftSwapService {
     date: string,
   ): Promise<{ shiftId: number | null; teamId: number }> {
     // 1. Try shifts table
-    const shiftRows = await this.db.query<{ id: number; team_id: number | null }>(
+    const shiftRows = await this.db.tenantQuery<{ id: number; team_id: number | null }>(
       `SELECT id, team_id FROM shifts WHERE tenant_id = $1 AND user_id = $2 AND date = $3 LIMIT 1`,
       [tenantId, userId, date],
     );
@@ -442,7 +442,7 @@ export class ShiftSwapService {
     }
 
     // 2. Try shift_rotation_history
-    const rotationRows = await this.db.query<{ team_id: number }>(
+    const rotationRows = await this.db.tenantQuery<{ team_id: number }>(
       `SELECT team_id FROM shift_rotation_history
        WHERE tenant_id = $1 AND user_id = $2 AND shift_date = $3 LIMIT 1`,
       [tenantId, userId, date],
@@ -455,9 +455,10 @@ export class ShiftSwapService {
   }
 
   private async assertSwapEnabled(tenantId: number): Promise<void> {
-    const rows = await this.db.query<{ settings: Record<string, unknown> | null }>(SETTING_QUERY, [
-      tenantId,
-    ]);
+    const rows = await this.db.tenantQuery<{ settings: Record<string, unknown> | null }>(
+      SETTING_QUERY,
+      [tenantId],
+    );
     const settings = rows[0]?.settings;
     const enabled = (settings?.['swapRequestsEnabled'] as boolean | undefined) ?? false;
     if (!enabled) {
@@ -472,7 +473,7 @@ export class ShiftSwapService {
     startDate: string,
     endDate: string,
   ): Promise<void> {
-    const counts = await this.db.query<{ user_id: number; cnt: string }>(
+    const counts = await this.db.tenantQuery<{ user_id: number; cnt: string }>(
       `SELECT user_id, COUNT(*) AS cnt FROM (
          SELECT user_id, date FROM shifts
          WHERE tenant_id = $1 AND date >= $2 AND date <= $3 AND user_id IN ($4, $5)
@@ -510,7 +511,7 @@ export class ShiftSwapService {
     startDate: string,
     endDate: string,
   ): Promise<void> {
-    const rows = await this.db.query<{ uuid: string }>(
+    const rows = await this.db.tenantQuery<{ uuid: string }>(
       `SELECT uuid FROM shift_swap_requests
        WHERE tenant_id = $1 AND requester_id = $2 AND target_id = $3
          AND start_date = $4 AND end_date = $5
@@ -524,7 +525,7 @@ export class ShiftSwapService {
   }
 
   private async getRowOrThrow(uuid: string, tenantId: number): Promise<DbSwapRequestRow> {
-    const rows = await this.db.query<DbSwapRequestRow>(
+    const rows = await this.db.tenantQuery<DbSwapRequestRow>(
       `SELECT * FROM shift_swap_requests WHERE uuid = $1::uuid AND tenant_id = $2 AND is_active = 1`,
       [uuid, tenantId],
     );

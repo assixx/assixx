@@ -142,7 +142,7 @@ export class SignupService {
   private async executeRegistrationTransaction(
     dto: SignupDto,
   ): Promise<{ tenantId: number; userId: number; trialEndsAt: Date }> {
-    return await this.db.transaction<{
+    return await this.db.systemTransaction<{
       tenantId: number;
       userId: number;
       trialEndsAt: Date;
@@ -262,9 +262,10 @@ export class SignupService {
    * Check if subdomain is available in database
    */
   private async isSubdomainAvailable(subdomain: string): Promise<boolean> {
-    const rows = await this.db.query<DbIdResult>('SELECT id FROM tenants WHERE subdomain = $1', [
-      subdomain,
-    ]);
+    const rows = await this.db.systemQuery<DbIdResult>(
+      'SELECT id FROM tenants WHERE subdomain = $1',
+      [subdomain],
+    );
     return rows.length === 0;
   }
 
@@ -383,7 +384,7 @@ export class SignupService {
     userAgent?: string,
   ): Promise<void> {
     try {
-      await this.db.query(
+      await this.db.systemQuery(
         `INSERT INTO root_logs (action, user_id, tenant_id, entity_type, entity_id, details, new_values, ip_address, user_agent, created_at)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW())`,
         [

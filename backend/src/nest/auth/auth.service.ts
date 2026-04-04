@@ -449,7 +449,7 @@ export class AuthService {
    * Find user by email
    */
   private async findUserByEmail(email: string): Promise<UserRow | null> {
-    const rows = await this.databaseService.query<UserRow>(
+    const rows = await this.databaseService.systemQuery<UserRow>(
       `SELECT id, tenant_id, email, password, role, username, first_name, last_name,
               is_active, last_login, created_at
        FROM users
@@ -464,7 +464,7 @@ export class AuthService {
    * Find user by ID
    */
   private async findUserById(userId: number, tenantId: number): Promise<UserRow | null> {
-    const rows = await this.databaseService.query<UserRow>(
+    const rows = await this.databaseService.systemQuery<UserRow>(
       `SELECT id, tenant_id, email, password, role, username, first_name, last_name,
               is_active, last_login, created_at
        FROM users
@@ -488,7 +488,7 @@ export class AuthService {
     role: string;
   }): Promise<number> {
     const userUuid = uuidv7();
-    const rows = await this.databaseService.query<{ id: number }>(
+    const rows = await this.databaseService.systemQuery<{ id: number }>(
       `INSERT INTO users (tenant_id, username, email, password, first_name, last_name, role, is_active, uuid, uuid_created_at)
        VALUES ($1, $2, $3, $4, $5, $6, $7, 1, $8, NOW())
        RETURNING id`,
@@ -516,7 +516,7 @@ export class AuthService {
    * Update last login timestamp
    */
   private async updateLastLogin(userId: number, tenantId: number): Promise<void> {
-    await this.databaseService.query(
+    await this.databaseService.systemQuery(
       `UPDATE users SET last_login = NOW() WHERE id = $1 AND tenant_id = $2`,
       [userId, tenantId],
     );
@@ -534,7 +534,7 @@ export class AuthService {
     ipAddress?: string,
     userAgent?: string,
   ): Promise<void> {
-    await this.databaseService.query(
+    await this.databaseService.systemQuery(
       `INSERT INTO refresh_tokens
        (token_hash, user_id, tenant_id, token_family, expires_at, ip_address, user_agent)
        VALUES ($1, $2, $3, $4, $5, $6, $7)`,
@@ -548,7 +548,7 @@ export class AuthService {
    * Find valid refresh token by hash
    */
   private async findValidRefreshToken(tokenHash: string): Promise<RefreshTokenRow | null> {
-    const rows = await this.databaseService.query<RefreshTokenRow>(
+    const rows = await this.databaseService.systemQuery<RefreshTokenRow>(
       `SELECT id, user_id, tenant_id, token_hash, token_family, expires_at, is_revoked, used_at, replaced_by_hash
        FROM refresh_tokens
        WHERE token_hash = $1 AND is_revoked = false AND expires_at > NOW()`,
@@ -562,7 +562,7 @@ export class AuthService {
    * Check if token was already used (reuse detection)
    */
   private async isTokenAlreadyUsed(tokenHash: string, decoded: JwtPayload): Promise<boolean> {
-    const rows = await this.databaseService.query<{ used_at: Date | null }>(
+    const rows = await this.databaseService.systemQuery<{ used_at: Date | null }>(
       `SELECT used_at FROM refresh_tokens WHERE token_hash = $1`,
       [tokenHash],
     );
@@ -592,7 +592,7 @@ export class AuthService {
    * Mark token as used and link to replacement
    */
   private async markTokenAsUsed(tokenHash: string, replacementHash: string): Promise<void> {
-    await this.databaseService.query(
+    await this.databaseService.systemQuery(
       `UPDATE refresh_tokens
        SET used_at = NOW(), replaced_by_hash = $2
        WHERE token_hash = $1`,
@@ -606,7 +606,7 @@ export class AuthService {
    * Revoke all tokens in a family
    */
   private async revokeTokenFamily(tokenFamily: string): Promise<number> {
-    const result = await this.databaseService.query<{ count: string }>(
+    const result = await this.databaseService.systemQuery<{ count: string }>(
       `WITH updated AS (
          UPDATE refresh_tokens SET is_revoked = true WHERE token_family = $1 RETURNING 1
        )
@@ -623,7 +623,7 @@ export class AuthService {
    * Revoke all tokens for a user
    */
   private async revokeAllUserTokens(userId: number, tenantId: number): Promise<number> {
-    const result = await this.databaseService.query<{ count: string }>(
+    const result = await this.databaseService.systemQuery<{ count: string }>(
       `WITH updated AS (
          UPDATE refresh_tokens SET is_revoked = true
          WHERE user_id = $1 AND tenant_id = $2 AND is_revoked = false
@@ -663,7 +663,7 @@ export class AuthService {
     userAgent?: string,
   ): Promise<void> {
     try {
-      await this.databaseService.query(
+      await this.databaseService.systemQuery(
         `INSERT INTO root_logs
          (tenant_id, user_id, action, entity_type, entity_id, details, new_values, ip_address, user_agent, was_role_switched)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
@@ -699,7 +699,7 @@ export class AuthService {
     userAgent?: string,
   ): Promise<void> {
     try {
-      await this.databaseService.query(
+      await this.databaseService.systemQuery(
         `INSERT INTO root_logs
          (tenant_id, user_id, action, entity_type, entity_id, details, new_values, ip_address, user_agent, was_role_switched)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,

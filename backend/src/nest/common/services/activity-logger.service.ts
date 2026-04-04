@@ -147,9 +147,9 @@ export class ActivityLoggerService {
    * Uses LIMIT 1 to handle 1:N user_teams (one user can be in multiple teams).
    * Pool runs as assixx_user (BYPASSRLS) — no tenant context required.
    */
-  private async resolveUserContext(userId: number): Promise<UserContext> {
+  private async resolveUserContext(userId: number, tenantId: number): Promise<UserContext> {
     try {
-      const rows = await this.db.query<{
+      const rows = await this.db.queryAsTenant<{
         username: string | null;
         role: string | null;
         employee_number: string | null;
@@ -171,6 +171,7 @@ export class ActivityLoggerService {
          WHERE u.id = $1
          LIMIT 1`,
         [userId],
+        tenantId,
       );
       const row = rows[0];
       if (row === undefined) {
@@ -202,9 +203,9 @@ export class ActivityLoggerService {
    */
   async log(params: ActivityLogParams): Promise<void> {
     try {
-      const ctx = await this.resolveUserContext(params.userId);
+      const ctx = await this.resolveUserContext(params.userId, params.tenantId);
 
-      await this.db.query(
+      await this.db.queryAsTenant(
         `INSERT INTO root_logs
          (tenant_id, user_id, action, entity_type, entity_id, details,
           old_values, new_values, ip_address, user_agent, was_role_switched,
@@ -233,6 +234,7 @@ export class ActivityLoggerService {
           ctx.areaName,
           ctx.teamName,
         ],
+        params.tenantId,
       );
     } catch (error: unknown) {
       // NEVER throw - logging failures should not break main operations

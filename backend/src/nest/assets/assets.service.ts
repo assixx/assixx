@@ -87,7 +87,7 @@ export class AssetsService {
     const { clauses, params } = buildAssetFilterClauses(filters, 2);
     const sql = `${baseSql} ${clauses} ORDER BY m.name ASC`;
 
-    const rows = await this.db.query<DbAssetRow>(sql, [tenantId, ...params]);
+    const rows = await this.db.tenantQuery<DbAssetRow>(sql, [tenantId, ...params]);
     return rows.map((row: DbAssetRow) => mapDbAssetToApi(row));
   }
 
@@ -97,7 +97,7 @@ export class AssetsService {
   async getAssetById(id: number, tenantId: number): Promise<AssetResponse> {
     this.logger.debug(`Getting asset ${id}`);
 
-    const row = await this.db.queryOne<DbAssetRow>(
+    const row = await this.db.tenantQueryOne<DbAssetRow>(
       `
       SELECT m.*,
              d.name as department_name
@@ -133,7 +133,7 @@ export class AssetsService {
       params.push(excludeId);
     }
 
-    const existing = await this.db.queryOne<{ id: number }>(sql, params);
+    const existing = await this.db.tenantQueryOne<{ id: number }>(sql, params);
     if (existing !== null) {
       throw new BadRequestException('Serial number already exists');
     }
@@ -154,7 +154,7 @@ export class AssetsService {
 
     const assetUuid = uuidv7();
     const params = buildAssetInsertParams(data, tenantId, userId, assetUuid);
-    const rows = await this.db.query<{ id: number }>(
+    const rows = await this.db.tenantQuery<{ id: number }>(
       `INSERT INTO assets (
         tenant_id, name, model, manufacturer, serial_number, asset_number,
         department_id, area_id, location, asset_type, status,
@@ -214,7 +214,7 @@ export class AssetsService {
       WHERE id = $${paramIndex} AND tenant_id = $${paramIndex + 1}
     `;
 
-    await this.db.query(sql, params);
+    await this.db.tenantQuery(sql, params);
 
     await this.activityLogger.logUpdate(
       tenantId,
@@ -251,7 +251,10 @@ export class AssetsService {
 
     const existing = await this.getAssetById(id, tenantId);
 
-    await this.db.query('DELETE FROM assets WHERE id = $1 AND tenant_id = $2', [id, tenantId]);
+    await this.db.tenantQuery('DELETE FROM assets WHERE id = $1 AND tenant_id = $2', [
+      id,
+      tenantId,
+    ]);
 
     await this.activityLogger.logDelete(
       tenantId,
@@ -279,7 +282,7 @@ export class AssetsService {
   ): Promise<void> {
     this.logger.log(`Deactivating asset ${id}`);
     await this.getAssetById(id, tenantId);
-    await this.db.query(
+    await this.db.tenantQuery(
       `UPDATE assets SET is_active = ${IS_ACTIVE.INACTIVE}, updated_at = CURRENT_TIMESTAMP WHERE id = $1 AND tenant_id = $2`,
       [id, tenantId],
     );
@@ -297,7 +300,7 @@ export class AssetsService {
   ): Promise<void> {
     this.logger.log(`Activating asset ${id}`);
     await this.getAssetById(id, tenantId);
-    await this.db.query(
+    await this.db.tenantQuery(
       `UPDATE assets SET is_active = ${IS_ACTIVE.ACTIVE}, updated_at = CURRENT_TIMESTAMP WHERE id = $1 AND tenant_id = $2`,
       [id, tenantId],
     );
@@ -372,7 +375,7 @@ export class AssetsService {
    * Resolve asset UUID to internal ID
    */
   private async resolveAssetIdByUuid(uuid: string, tenantId: number): Promise<number> {
-    const result = await this.db.query<{ id: number }>(
+    const result = await this.db.tenantQuery<{ id: number }>(
       `SELECT id FROM assets WHERE uuid = $1 AND tenant_id = $2`,
       [uuid, tenantId],
     );

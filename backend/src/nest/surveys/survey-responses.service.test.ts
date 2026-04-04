@@ -42,7 +42,12 @@ vi.mock('./surveys.helpers.js', () => ({
 // =============================================================
 
 function createMockDb() {
-  return { query: vi.fn() };
+  const queryFn = vi.fn();
+  return {
+    query: queryFn,
+    tenantQuery: queryFn,
+    tenantQueryOne: vi.fn().mockResolvedValue(null),
+  };
 }
 
 function createMockActivityLogger() {
@@ -76,33 +81,33 @@ describe('SurveyResponsesService', () => {
 
   describe('submitResponse', () => {
     it('should throw NotFoundException when survey not found or inactive', async () => {
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       await expect(service.submitResponse(999, 1, 10, [])).rejects.toThrow(NotFoundException);
     });
 
     it('should throw BadRequestException on duplicate response', async () => {
       // survey found
-      mockDb.query.mockResolvedValueOnce([
+      mockDb.tenantQuery.mockResolvedValueOnce([
         { id: 1, status: 'active', allow_multiple_responses: 0 },
       ]);
       // duplicate check → existing response
-      mockDb.query.mockResolvedValueOnce([{ id: 1 }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ id: 1 }]);
 
       await expect(service.submitResponse(1, 1, 10, [])).rejects.toThrow(BadRequestException);
     });
 
     it('should create response and insert answers', async () => {
       // survey found
-      mockDb.query.mockResolvedValueOnce([
+      mockDb.tenantQuery.mockResolvedValueOnce([
         { id: 1, status: 'active', allow_multiple_responses: 0 },
       ]);
       // no duplicate
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
       // INSERT response RETURNING id
-      mockDb.query.mockResolvedValueOnce([{ id: 42 }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ id: 42 }]);
       // INSERT answer (text type)
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       const result = await service.submitResponse(1, 1, 10, [
         { questionId: 5, answerText: 'Great' } as never,
@@ -113,17 +118,17 @@ describe('SurveyResponsesService', () => {
 
     it('should skip duplicate check when multiple responses allowed', async () => {
       // survey with allow_multiple_responses = 1
-      mockDb.query.mockResolvedValueOnce([
+      mockDb.tenantQuery.mockResolvedValueOnce([
         { id: 1, status: 'active', allow_multiple_responses: 1 },
       ]);
       // INSERT response (no duplicate check query)
-      mockDb.query.mockResolvedValueOnce([{ id: 10 }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ id: 10 }]);
 
       const result = await service.submitResponse(1, 1, 10, []);
 
       expect(result).toBe(10);
       // Only 2 queries: survey check + insert (no duplicate check)
-      expect(mockDb.query).toHaveBeenCalledTimes(2);
+      expect(mockDb.tenantQuery).toHaveBeenCalledTimes(2);
     });
   });
 
@@ -133,7 +138,7 @@ describe('SurveyResponsesService', () => {
 
   describe('getAllResponses', () => {
     it('should throw NotFoundException when survey not found', async () => {
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       await expect(service.getAllResponses(999, 10, { page: 1, limit: 10 })).rejects.toThrow(
         NotFoundException,
@@ -142,11 +147,11 @@ describe('SurveyResponsesService', () => {
 
     it('should return paginated responses', async () => {
       // survey check (is_anonymous)
-      mockDb.query.mockResolvedValueOnce([{ is_anonymous: false }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ is_anonymous: false }]);
       // COUNT
-      mockDb.query.mockResolvedValueOnce([{ total: '2' }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ total: '2' }]);
       // SELECT responses
-      mockDb.query.mockResolvedValueOnce([
+      mockDb.tenantQuery.mockResolvedValueOnce([
         {
           id: 1,
           survey_id: 1,
@@ -158,7 +163,7 @@ describe('SurveyResponsesService', () => {
         },
       ]);
       // answers for response 1
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       const result = await service.getAllResponses(1, 10, {
         page: 1,
@@ -176,7 +181,7 @@ describe('SurveyResponsesService', () => {
 
   describe('getMyResponse', () => {
     it('should return null when no response exists', async () => {
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       const result = await service.getMyResponse(1, 5, 10);
 
@@ -184,7 +189,7 @@ describe('SurveyResponsesService', () => {
     });
 
     it('should return transformed response', async () => {
-      mockDb.query.mockResolvedValueOnce([
+      mockDb.tenantQuery.mockResolvedValueOnce([
         {
           id: 1,
           survey_id: 1,
@@ -196,7 +201,7 @@ describe('SurveyResponsesService', () => {
         },
       ]);
       // answers
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       const result = await service.getMyResponse(1, 5, 10);
 
@@ -210,7 +215,7 @@ describe('SurveyResponsesService', () => {
 
   describe('getResponseById', () => {
     it('should throw NotFoundException when response not found', async () => {
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       await expect(service.getResponseById(1, 999, 10, 'admin', 1)).rejects.toThrow(
         NotFoundException,
@@ -218,7 +223,7 @@ describe('SurveyResponsesService', () => {
     });
 
     it('should throw ForbiddenException for employee accessing other response', async () => {
-      mockDb.query.mockResolvedValueOnce([
+      mockDb.tenantQuery.mockResolvedValueOnce([
         {
           id: 1,
           survey_id: 1,
@@ -235,7 +240,7 @@ describe('SurveyResponsesService', () => {
     });
 
     it('should allow admin to access any response', async () => {
-      mockDb.query.mockResolvedValueOnce([
+      mockDb.tenantQuery.mockResolvedValueOnce([
         {
           id: 1,
           survey_id: 1,
@@ -246,7 +251,7 @@ describe('SurveyResponsesService', () => {
         },
       ]);
       // answers
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       const result = await service.getResponseById(1, 1, 10, 'admin', 5);
 
@@ -260,26 +265,26 @@ describe('SurveyResponsesService', () => {
 
   describe('updateResponse', () => {
     it('should throw NotFoundException when response not found', async () => {
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       await expect(service.updateResponse(1, 999, 5, 10, [])).rejects.toThrow(NotFoundException);
     });
 
     it('should throw ForbiddenException when editing not allowed', async () => {
-      mockDb.query.mockResolvedValueOnce([{ id: 1, allow_edit_responses: 0 }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ id: 1, allow_edit_responses: 0 }]);
 
       await expect(service.updateResponse(1, 1, 5, 10, [])).rejects.toThrow(ForbiddenException);
     });
 
     it('should update response when editing allowed', async () => {
       // response + survey join check
-      mockDb.query.mockResolvedValueOnce([{ id: 1, allow_edit_responses: 1 }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ id: 1, allow_edit_responses: 1 }]);
       // DELETE old answers
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
       // INSERT new answer
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
       // UPDATE completed_at
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       const result = await service.updateResponse(1, 1, 5, 10, [
         { questionId: 1, answerText: 'Updated' } as never,
@@ -296,16 +301,16 @@ describe('SurveyResponsesService', () => {
 
   describe('exportResponses', () => {
     it('should throw NotFoundException when survey not found', async () => {
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       await expect(service.exportResponses(999, 10, 'csv')).rejects.toThrow(NotFoundException);
     });
 
     it('should return CSV buffer', async () => {
       // verifySurveyExists
-      mockDb.query.mockResolvedValueOnce([{ id: 1 }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ id: 1 }]);
       // fetchExportData
-      mockDb.query.mockResolvedValueOnce([
+      mockDb.tenantQuery.mockResolvedValueOnce([
         {
           response_id: 1,
           user_id: 5,

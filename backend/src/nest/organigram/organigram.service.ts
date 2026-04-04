@@ -207,7 +207,7 @@ export class OrganigramService {
   }
 
   private async fetchTenantInfo(tenantId: number): Promise<TenantInfoRow> {
-    const rows = await this.db.query<TenantInfoRow>(
+    const rows = await this.db.tenantQuery<TenantInfoRow>(
       `SELECT company_name,
               NULLIF(TRIM(CONCAT_WS(' ', street, house_number, postal_code, city)), '') AS address
        FROM tenants WHERE id = $1`,
@@ -222,7 +222,7 @@ export class OrganigramService {
   }
 
   private async fetchAreas(tenantId: number): Promise<AreaRow[]> {
-    return await this.db.query<AreaRow>(
+    return await this.db.tenantQuery<AreaRow>(
       `SELECT a.uuid, a.name,
               TRIM(CONCAT(u.first_name, ' ', u.last_name)) AS lead_name
        FROM areas a
@@ -234,7 +234,7 @@ export class OrganigramService {
   }
 
   private async fetchDepartments(tenantId: number): Promise<DepartmentRow[]> {
-    return await this.db.query<DepartmentRow>(
+    return await this.db.tenantQuery<DepartmentRow>(
       `SELECT d.uuid, d.name,
               TRIM(CONCAT(u.first_name, ' ', u.last_name)) AS lead_name,
               pa.uuid AS area_uuid
@@ -248,7 +248,7 @@ export class OrganigramService {
   }
 
   private async fetchTeams(tenantId: number): Promise<TeamRow[]> {
-    return await this.db.query<TeamRow>(
+    return await this.db.tenantQuery<TeamRow>(
       `SELECT t.uuid, t.name,
               TRIM(CONCAT(u.first_name, ' ', u.last_name)) AS lead_name,
               pd.uuid AS department_uuid,
@@ -268,7 +268,7 @@ export class OrganigramService {
   }
 
   private async fetchAssets(tenantId: number): Promise<AssetRow[]> {
-    return await this.db.query<AssetRow>(
+    return await this.db.tenantQuery<AssetRow>(
       `SELECT ast.uuid, ast.name,
               pa.uuid AS area_uuid,
               pd.uuid AS department_uuid
@@ -282,7 +282,7 @@ export class OrganigramService {
   }
 
   private async fetchDepartmentHalls(tenantId: number): Promise<DepartmentHallRow[]> {
-    return await this.db.query<DepartmentHallRow>(
+    return await this.db.tenantQuery<DepartmentHallRow>(
       `SELECT d.uuid AS department_uuid, h.uuid AS hall_uuid
        FROM department_halls dh
        JOIN departments d ON dh.department_id = d.id
@@ -293,7 +293,7 @@ export class OrganigramService {
   }
 
   private async fetchTeamHalls(tenantId: number): Promise<TeamHallRow[]> {
-    return await this.db.query<TeamHallRow>(
+    return await this.db.tenantQuery<TeamHallRow>(
       `SELECT t.uuid AS team_uuid, h.uuid AS hall_uuid
        FROM team_halls th
        JOIN teams t ON th.team_id = t.id
@@ -304,7 +304,7 @@ export class OrganigramService {
   }
 
   private async fetchAssetTeams(tenantId: number): Promise<AssetTeamRow[]> {
-    return await this.db.query<AssetTeamRow>(
+    return await this.db.tenantQuery<AssetTeamRow>(
       `SELECT ast.uuid AS asset_uuid, t.uuid AS team_uuid
        FROM asset_teams at2
        JOIN assets ast ON at2.asset_id = ast.id
@@ -318,7 +318,7 @@ export class OrganigramService {
   }
 
   private async fetchHalls(tenantId: number): Promise<HallRow[]> {
-    return await this.db.query<HallRow>(
+    return await this.db.tenantQuery<HallRow>(
       `SELECT h.name, h.uuid AS hall_uuid, a.uuid AS area_uuid
        FROM halls h
        LEFT JOIN areas a ON h.area_id = a.id
@@ -526,7 +526,7 @@ export class OrganigramService {
 
   private async getAreaDetail(tenantId: number, uuid: string): Promise<OrgNodeDetail> {
     const [baseRows, deptRows, assetRows, hallRows] = await Promise.all([
-      this.db.query<AreaDetailRow>(
+      this.db.tenantQuery<AreaDetailRow>(
         `SELECT a.uuid, a.name, a.type::text AS area_type,
                 u.uuid AS lead_uuid,
                 TRIM(CONCAT(u.first_name, ' ', u.last_name)) AS lead_name,
@@ -538,7 +538,7 @@ export class OrganigramService {
          WHERE a.tenant_id = $1 AND a.uuid = $2 AND a.is_active = 1`,
         [tenantId, uuid],
       ),
-      this.db.query<DetailChildRow>(
+      this.db.tenantQuery<DetailChildRow>(
         `SELECT d.uuid, d.name,
                 NULLIF(TRIM(CONCAT(u.first_name, ' ', u.last_name)), '') AS extra
          FROM departments d
@@ -548,7 +548,7 @@ export class OrganigramService {
          ORDER BY d.name`,
         [tenantId, uuid],
       ),
-      this.db.query<DetailChildRow>(
+      this.db.tenantQuery<DetailChildRow>(
         `SELECT ast.uuid, ast.name, ast.status::text AS extra
          FROM assets ast
          WHERE ast.area_id = (SELECT id FROM areas WHERE uuid = $2 AND tenant_id = $1)
@@ -556,7 +556,7 @@ export class OrganigramService {
          ORDER BY ast.name`,
         [tenantId, uuid],
       ),
-      this.db.query<DetailChildRow>(
+      this.db.tenantQuery<DetailChildRow>(
         `SELECT h.uuid, h.name, NULL::text AS extra
          FROM halls h
          WHERE h.area_id = (SELECT id FROM areas WHERE uuid = $2 AND tenant_id = $1)
@@ -591,7 +591,7 @@ export class OrganigramService {
   private async getDeptDetail(tenantId: number, uuid: string): Promise<OrgNodeDetail> {
     const sub = `(SELECT id FROM departments WHERE uuid = $2 AND tenant_id = $1)`;
     const [baseRows, teamRows, empRows, assetRows] = await Promise.all([
-      this.db.query<DeptDetailRow>(
+      this.db.tenantQuery<DeptDetailRow>(
         `SELECT d.uuid, d.name, u.uuid AS lead_uuid,
                 TRIM(CONCAT(u.first_name, ' ', u.last_name)) AS lead_name,
                 du.uuid AS deputy_uuid,
@@ -604,7 +604,7 @@ export class OrganigramService {
          WHERE d.tenant_id = $1 AND d.uuid = $2 AND d.is_active = 1`,
         [tenantId, uuid],
       ),
-      this.db.query<DetailChildRow>(
+      this.db.tenantQuery<DetailChildRow>(
         `SELECT t.uuid, t.name,
                 CONCAT_WS(' · ', NULLIF(TRIM(CONCAT(u.first_name, ' ', u.last_name)), ''),
                   COALESCE(mc.cnt, 0) || ' Mitgl.') AS extra
@@ -615,14 +615,14 @@ export class OrganigramService {
          ORDER BY t.name`,
         [tenantId, uuid],
       ),
-      this.db.query<DetailChildRow>(
+      this.db.tenantQuery<DetailChildRow>(
         `SELECT u.uuid, TRIM(CONCAT(u.first_name, ' ', u.last_name)) AS name,
                 CASE WHEN ud.is_primary THEN 'Primär' ELSE NULL END AS extra
          FROM user_departments ud JOIN users u ON ud.user_id = u.id
          WHERE ud.department_id = ${sub} ORDER BY u.last_name`,
         [tenantId, uuid],
       ),
-      this.db.query<DetailChildRow>(
+      this.db.tenantQuery<DetailChildRow>(
         `SELECT ast.uuid, ast.name, ast.status::text AS extra FROM assets ast
          WHERE ast.department_id = ${sub} AND ast.is_active = 1 ORDER BY ast.name`,
         [tenantId, uuid],
@@ -652,7 +652,7 @@ export class OrganigramService {
 
   private async getTeamDetail(tenantId: number, uuid: string): Promise<OrgNodeDetail> {
     const [baseRows, memberRows, assetRows] = await Promise.all([
-      this.db.query<TeamDetailRow>(
+      this.db.tenantQuery<TeamDetailRow>(
         `SELECT t.uuid, t.name,
                 lu.uuid AS lead_uuid,
                 TRIM(CONCAT(lu.first_name, ' ', lu.last_name)) AS lead_name,
@@ -668,7 +668,7 @@ export class OrganigramService {
          WHERE t.tenant_id = $1 AND t.uuid = $2 AND t.is_active = 1`,
         [tenantId, uuid],
       ),
-      this.db.query<DetailChildRow>(
+      this.db.tenantQuery<DetailChildRow>(
         `SELECT u.uuid, TRIM(CONCAT(u.first_name, ' ', u.last_name)) AS name,
                 ut.role::text AS extra
          FROM user_teams ut
@@ -677,7 +677,7 @@ export class OrganigramService {
          ORDER BY u.last_name`,
         [tenantId, uuid],
       ),
-      this.db.query<DetailChildRow>(
+      this.db.tenantQuery<DetailChildRow>(
         `SELECT ast.uuid, ast.name, ast.status::text AS extra
          FROM asset_teams at2
          JOIN assets ast ON at2.asset_id = ast.id
@@ -713,7 +713,7 @@ export class OrganigramService {
 
   private async getAssetDetail(tenantId: number, uuid: string): Promise<OrgNodeDetail> {
     const [baseRows, teamRows] = await Promise.all([
-      this.db.query<AssetDetailRow>(
+      this.db.tenantQuery<AssetDetailRow>(
         `SELECT ast.uuid, ast.name, ast.status::text AS asset_status,
                 ast.asset_type::text,
                 pa.uuid AS area_uuid, pa.name AS area_name,
@@ -724,7 +724,7 @@ export class OrganigramService {
          WHERE ast.tenant_id = $1 AND ast.uuid = $2 AND ast.is_active = 1`,
         [tenantId, uuid],
       ),
-      this.db.query<DetailChildRow>(
+      this.db.tenantQuery<DetailChildRow>(
         `SELECT t.uuid, t.name, NULL::text AS extra
          FROM asset_teams at2
          JOIN teams t ON at2.team_id = t.id

@@ -48,7 +48,7 @@ export class WorkOrderCommentsService {
       await this.validateParent(wo.id, parentId);
     }
 
-    const row = await this.db.queryOne<WorkOrderCommentWithNameRow>(
+    const row = await this.db.tenantQueryOne<WorkOrderCommentWithNameRow>(
       `INSERT INTO work_order_comments
          (uuid, tenant_id, work_order_id, user_id, content, parent_id)
        VALUES ($1, $2, $3, $4, $5, $6)
@@ -86,14 +86,14 @@ export class WorkOrderCommentsService {
     const wo = await this.resolveWorkOrder(tenantId, workOrderUuid);
     const offset = (page - 1) * limit;
 
-    const countResult = await this.db.queryOne<{ count: string }>(
+    const countResult = await this.db.tenantQueryOne<{ count: string }>(
       `SELECT COUNT(*) AS count FROM work_order_comments
        WHERE work_order_id = $1 AND is_active = ${IS_ACTIVE.ACTIVE} AND parent_id IS NULL`,
       [wo.id],
     );
     const total = Number.parseInt(countResult?.count ?? '0', 10);
 
-    const rows = await this.db.query<WorkOrderCommentWithNameRow>(
+    const rows = await this.db.tenantQuery<WorkOrderCommentWithNameRow>(
       `SELECT c.*, u.first_name, u.last_name, u.profile_picture,
               (SELECT COUNT(*)::text FROM work_order_comments r
                WHERE r.parent_id = c.id AND r.is_active = ${IS_ACTIVE.ACTIVE}) AS reply_count
@@ -121,7 +121,7 @@ export class WorkOrderCommentsService {
   ): Promise<WorkOrderComment[]> {
     const wo = await this.resolveWorkOrder(tenantId, workOrderUuid);
 
-    const rows = await this.db.query<WorkOrderCommentWithNameRow>(
+    const rows = await this.db.tenantQuery<WorkOrderCommentWithNameRow>(
       `SELECT c.*, u.first_name, u.last_name, u.profile_picture,
               '0' AS reply_count
        FROM work_order_comments c
@@ -141,7 +141,7 @@ export class WorkOrderCommentsService {
     commentUuid: string,
     isAdmin: boolean,
   ): Promise<void> {
-    const comment = await this.db.queryOne<{
+    const comment = await this.db.tenantQueryOne<{
       id: number;
       user_id: number;
       work_order_id: number;
@@ -159,7 +159,7 @@ export class WorkOrderCommentsService {
       throw new ForbiddenException('Nur eigene Kommentare können gelöscht werden');
     }
 
-    await this.db.query(
+    await this.db.tenantQuery(
       `UPDATE work_order_comments SET is_active = ${IS_ACTIVE.DELETED}
        WHERE id = $1`,
       [comment.id],
@@ -183,7 +183,7 @@ export class WorkOrderCommentsService {
     tenantId: number,
     uuid: string,
   ): Promise<{ id: number; title: string }> {
-    const row = await this.db.queryOne<{ id: number; title: string }>(
+    const row = await this.db.tenantQueryOne<{ id: number; title: string }>(
       `SELECT id, title FROM work_orders
        WHERE uuid = $1 AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}`,
       [uuid, tenantId],
@@ -196,7 +196,7 @@ export class WorkOrderCommentsService {
 
   /** Validate that parent comment exists, belongs to same work order, and is top-level */
   private async validateParent(workOrderId: number, parentId: number): Promise<void> {
-    const parent = await this.db.queryOne<{
+    const parent = await this.db.tenantQueryOne<{
       id: number;
       parent_id: number | null;
     }>(

@@ -38,7 +38,7 @@ export class KvpLifecycleService {
     this.logger.log(`Sharing suggestion ${String(id)} at ${dto.orgLevel} level`);
 
     const idColumn = isUuid(id) ? 'uuid' : 'id';
-    const rows = await this.db.query<{ id: number }>(
+    const rows = await this.db.tenantQuery<{ id: number }>(
       `UPDATE kvp_suggestions
        SET org_level = $1, org_id = $2, is_shared = TRUE, shared_by = $3, shared_at = NOW(), updated_at = NOW()
        WHERE ${idColumn} = $4 AND tenant_id = $5
@@ -61,7 +61,7 @@ export class KvpLifecycleService {
     const idColumn = isUuid(id) ? 'uuid' : 'id';
 
     // Reset to original team level (team_id is preserved from creation)
-    const rows = await this.db.query<{ id: number }>(
+    const rows = await this.db.tenantQuery<{ id: number }>(
       `UPDATE kvp_suggestions
        SET org_level = 'team', org_id = team_id, is_shared = FALSE, shared_by = NULL, shared_at = NULL, updated_at = NOW()
        WHERE ${idColumn} = $1 AND tenant_id = $2
@@ -90,7 +90,7 @@ export class KvpLifecycleService {
 
     const { suggestion, idColumn } = await this.findSuggestionOrThrow(id, tenantId);
 
-    await this.db.query(
+    await this.db.tenantQuery(
       `UPDATE kvp_suggestions SET status = 'archived', updated_at = NOW() WHERE ${idColumn} = $1 AND tenant_id = $2`,
       [id, tenantId],
     );
@@ -118,7 +118,7 @@ export class KvpLifecycleService {
 
     const { suggestion, idColumn } = await this.findSuggestionOrThrow(id, tenantId);
 
-    await this.db.query(
+    await this.db.tenantQuery(
       `UPDATE kvp_suggestions SET status = 'restored', updated_at = NOW() WHERE ${idColumn} = $1 AND tenant_id = $2`,
       [id, tenantId],
     );
@@ -150,7 +150,7 @@ export class KvpLifecycleService {
   }> {
     const idColumn = isUuid(id) ? 'uuid' : 'id';
 
-    const rows = await this.db.query<{
+    const rows = await this.db.tenantQuery<{
       id: number;
       title: string;
       status: string;

@@ -15,9 +15,13 @@ import { TpmPlanRevisionsService } from './tpm-plan-revisions.service.js';
 // =============================================================
 
 function createMockDb() {
+  const qf = vi.fn();
+  const qof = vi.fn();
   return {
-    query: vi.fn(),
-    queryOne: vi.fn(),
+    query: qf,
+    tenantQuery: qf,
+    queryOne: qof,
+    tenantQueryOne: qof,
   };
 }
 type MockDb = ReturnType<typeof createMockDb>;

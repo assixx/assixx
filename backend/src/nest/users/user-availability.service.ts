@@ -109,7 +109,7 @@ export class UserAvailabilityService {
    * - Priority 2: Entry where start_date is after TODAY (next future, earliest first)
    */
   async getUserAvailability(userId: number, tenantId: number): Promise<UserAvailabilityRow | null> {
-    const rows = await this.databaseService.query<UserAvailabilityRow>(
+    const rows = await this.databaseService.tenantQuery<UserAvailabilityRow>(
       `SELECT
          user_id,
          status,
@@ -149,7 +149,7 @@ export class UserAvailabilityService {
 
     // Query uses DISTINCT ON to get one entry per user
     // Orders by: 1) is_current (active today first), 2) start_date ASC (earliest future)
-    const rows = await this.databaseService.query<UserAvailabilityRow>(
+    const rows = await this.databaseService.tenantQuery<UserAvailabilityRow>(
       `SELECT DISTINCT ON (user_id)
          user_id,
          status,
@@ -245,7 +245,7 @@ export class UserAvailabilityService {
     dto: UpdateAvailabilityDto,
     createdBy?: number,
   ): Promise<void> {
-    const overlapping = await this.databaseService.query<{ id: number }>(
+    const overlapping = await this.databaseService.tenantQuery<{ id: number }>(
       `SELECT id FROM user_availability
        WHERE user_id = $1
          AND tenant_id = $2
@@ -260,7 +260,7 @@ export class UserAvailabilityService {
       );
     }
 
-    await this.databaseService.query(
+    await this.databaseService.tenantQuery(
       `INSERT INTO user_availability
         (user_id, tenant_id, status, start_date, end_date, reason, notes, created_by)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
@@ -305,7 +305,7 @@ export class UserAvailabilityService {
     }
 
     // Check for overlapping date ranges
-    const overlapping = await this.databaseService.query<{ id: number }>(
+    const overlapping = await this.databaseService.tenantQuery<{ id: number }>(
       `SELECT id FROM user_availability
        WHERE user_id = $1
          AND tenant_id = $2
@@ -320,7 +320,7 @@ export class UserAvailabilityService {
       );
     }
 
-    await this.databaseService.query(
+    await this.databaseService.tenantQuery(
       `INSERT INTO user_availability
         (user_id, tenant_id, status, start_date, end_date, reason, notes, created_by)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
@@ -364,7 +364,7 @@ export class UserAvailabilityService {
 
     // Build and execute query
     const { query, params } = this.buildAvailabilityHistoryQuery(userRow.id, tenantId, year, month);
-    const rows = await this.databaseService.query<AvailabilityRow>(query, params);
+    const rows = await this.databaseService.tenantQuery<AvailabilityRow>(query, params);
 
     // Map rows to API format
     const entries = rows.map((row: AvailabilityRow) => this.mapAvailabilityRowToEntry(row));
@@ -420,7 +420,7 @@ export class UserAvailabilityService {
     };
 
     // Execute update
-    await this.databaseService.query(
+    await this.databaseService.tenantQuery(
       `UPDATE user_availability
        SET status = $1, start_date = $2, end_date = $3, reason = $4, notes = $5, updated_at = NOW()
        WHERE id = $6 AND tenant_id = $7`,
@@ -478,7 +478,7 @@ export class UserAvailabilityService {
     };
 
     // Execute delete
-    await this.databaseService.query(
+    await this.databaseService.tenantQuery(
       `DELETE FROM user_availability WHERE id = $1 AND tenant_id = $2`,
       [entryId, tenantId],
     );
@@ -502,7 +502,7 @@ export class UserAvailabilityService {
 
   /** Check if user exists and is active */
   private async userExists(userId: number, tenantId: number): Promise<boolean> {
-    const rows = await this.databaseService.query<{ id: number }>(
+    const rows = await this.databaseService.tenantQuery<{ id: number }>(
       `SELECT id FROM users WHERE id = $1 AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}`,
       [userId, tenantId],
     );
@@ -536,7 +536,7 @@ export class UserAvailabilityService {
     last_name: string | null;
     email: string;
   }> {
-    const result = await this.databaseService.query<{
+    const result = await this.databaseService.tenantQuery<{
       id: number;
       uuid: string;
       first_name: string | null;
@@ -613,7 +613,7 @@ export class UserAvailabilityService {
     entryId: number,
     tenantId: number,
   ): Promise<AvailabilityRow | null> {
-    const rows = await this.databaseService.query<AvailabilityRow>(
+    const rows = await this.databaseService.tenantQuery<AvailabilityRow>(
       `SELECT id, user_id, status, start_date, end_date, reason, notes,
               created_by, created_at, updated_at
        FROM user_availability

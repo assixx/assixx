@@ -140,7 +140,7 @@ export class BlackboardAttachmentsService {
     this.logger.log(`Downloading attachment by UUID ${fileUuid}`);
 
     // Get document ID by file_uuid
-    const docs = await this.db.query<{ id: number }>(
+    const docs = await this.db.tenantQuery<{ id: number }>(
       'SELECT id FROM documents WHERE file_uuid = $1 AND tenant_id = $2',
       [fileUuid, tenantId],
     );

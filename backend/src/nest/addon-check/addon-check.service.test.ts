@@ -18,6 +18,10 @@ function createMockDb() {
   return {
     query: vi.fn(),
     queryOne: vi.fn(),
+    tenantQuery: vi.fn(),
+    tenantQueryOne: vi.fn(),
+    systemQuery: vi.fn(),
+    systemQueryOne: vi.fn(),
     tenantTransaction: vi.fn(),
   };
 }
@@ -77,17 +81,18 @@ describe('AddonCheckService', () => {
 
     it('should return true when purchasable addon is active for tenant', async () => {
       mockDb.query.mockResolvedValueOnce([{ id: 5, is_core: false }]);
-      mockDb.query.mockResolvedValueOnce([{ id: 'uuid-123' }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ id: 'uuid-123' }]);
 
       const result = await service.checkTenantAccess(10, 'tpm');
 
       expect(result).toBe(true);
-      expect(mockDb.query).toHaveBeenCalledTimes(2);
+      expect(mockDb.query).toHaveBeenCalledTimes(1);
+      expect(mockDb.tenantQuery).toHaveBeenCalledTimes(1);
     });
 
     it('should return false when purchasable addon is not in tenant_addons', async () => {
       mockDb.query.mockResolvedValueOnce([{ id: 5, is_core: false }]);
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       const result = await service.checkTenantAccess(10, 'tpm');
 
@@ -96,23 +101,23 @@ describe('AddonCheckService', () => {
 
     it('should pass correct tenantId and addon.id to tenant_addons query', async () => {
       mockDb.query.mockResolvedValueOnce([{ id: 42, is_core: false }]);
-      mockDb.query.mockResolvedValueOnce([{ id: 'uuid-123' }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ id: 'uuid-123' }]);
 
       await service.checkTenantAccess(99, 'vacation');
 
-      const tenantAddonsCall = mockDb.query.mock.calls[1];
+      const tenantAddonsCall = mockDb.tenantQuery.mock.calls[0];
       expect(tenantAddonsCall?.[1]).toEqual([99, 42]);
     });
 
     it('should check status IN (active, trial) and trial_ends_at', async () => {
       mockDb.query.mockResolvedValueOnce([{ id: 5, is_core: false }]);
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       await service.checkTenantAccess(10, 'chat');
 
-      const query = mockDb.query.mock.calls[1]?.[0] as string;
-      expect(query).toContain("('active', 'trial')");
-      expect(query).toContain('trial_ends_at');
+      const sql = mockDb.tenantQuery.mock.calls[0]?.[0] as string;
+      expect(sql).toContain("('active', 'trial')");
+      expect(sql).toContain('trial_ends_at');
     });
 
     // --- Edge cases ---
@@ -138,7 +143,7 @@ describe('AddonCheckService', () => {
     it('should return false when purchasable addon trial has expired', async () => {
       mockDb.query.mockResolvedValueOnce([{ id: 5, is_core: false }]);
       // No matching rows — trial_ends_at < NOW() filtered out by SQL
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       const result = await service.checkTenantAccess(10, 'vacation');
 
@@ -147,13 +152,13 @@ describe('AddonCheckService', () => {
 
     it('should filter by trial_ends_at > NOW() to exclude expired trials', async () => {
       mockDb.query.mockResolvedValueOnce([{ id: 5, is_core: false }]);
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       await service.checkTenantAccess(10, 'tpm');
 
-      const query = mockDb.query.mock.calls[1]?.[0] as string;
-      expect(query).toContain('trial_ends_at IS NULL OR');
-      expect(query).toContain('trial_ends_at > NOW()');
+      const sql = mockDb.tenantQuery.mock.calls[0]?.[0] as string;
+      expect(sql).toContain('trial_ends_at IS NULL OR');
+      expect(sql).toContain('trial_ends_at > NOW()');
     });
   });
 
@@ -164,7 +169,7 @@ describe('AddonCheckService', () => {
   describe('logUsage', () => {
     it('should return true on successful log', async () => {
       mockDb.query.mockResolvedValueOnce([{ id: 5, is_core: false }]);
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       const result = await service.logUsage(10, 'tpm', 1, {
         action: 'card_check',
@@ -175,11 +180,11 @@ describe('AddonCheckService', () => {
 
     it('should insert into addon_usage_logs table', async () => {
       mockDb.query.mockResolvedValueOnce([{ id: 5, is_core: false }]);
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       await service.logUsage(10, 'tpm', 1);
 
-      const insertCall = mockDb.query.mock.calls[1];
+      const insertCall = mockDb.tenantQuery.mock.calls[0];
       expect(insertCall?.[0]).toContain('addon_usage_logs');
       expect(insertCall?.[0]).toContain('addon_id');
     });
@@ -202,21 +207,21 @@ describe('AddonCheckService', () => {
 
     it('should pass null userId by default', async () => {
       mockDb.query.mockResolvedValueOnce([{ id: 5, is_core: false }]);
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       await service.logUsage(10, 'tpm');
 
-      const insertCall = mockDb.query.mock.calls[1];
+      const insertCall = mockDb.tenantQuery.mock.calls[0];
       expect(insertCall?.[1]?.[2]).toBeNull();
     });
 
     it('should pass correct addon ID to INSERT', async () => {
       mockDb.query.mockResolvedValueOnce([{ id: 42, is_core: false }]);
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       await service.logUsage(10, 'chat', 1, { action: 'send' });
 
-      const insertCall = mockDb.query.mock.calls[1];
+      const insertCall = mockDb.tenantQuery.mock.calls[0];
       expect(insertCall?.[1]?.[1]).toBe(42);
     });
   });

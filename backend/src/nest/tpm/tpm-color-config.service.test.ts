@@ -24,8 +24,10 @@ import {
 // =============================================================
 
 function createMockDb() {
+  const qf = vi.fn();
   return {
-    query: vi.fn(),
+    query: qf,
+    tenantQuery: qf,
     tenantTransaction: vi.fn(),
   };
 }

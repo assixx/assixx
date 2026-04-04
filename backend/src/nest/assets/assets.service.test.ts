@@ -25,16 +25,16 @@ import { AssetsService } from './assets.service.js';
 function createServiceWithMock(): {
   service: AssetsService;
   mockDb: {
-    query: ReturnType<typeof vi.fn>;
-    queryOne: ReturnType<typeof vi.fn>;
+    tenantQuery: ReturnType<typeof vi.fn>;
+    tenantQueryOne: ReturnType<typeof vi.fn>;
   };
   mockActivityLogger: Record<string, ReturnType<typeof vi.fn>>;
   mockMaintenance: Record<string, ReturnType<typeof vi.fn>>;
   mockTeams: Record<string, ReturnType<typeof vi.fn>>;
 } {
   const mockDb = {
-    query: vi.fn(),
-    queryOne: vi.fn(),
+    tenantQuery: vi.fn(),
+    tenantQueryOne: vi.fn(),
   };
   const mockActivityLogger = {
     logCreate: vi.fn(),
@@ -70,8 +70,8 @@ function createServiceWithMock(): {
 describe('AssetsService – DB-mocked methods', () => {
   let service: AssetsService;
   let mockDb: {
-    query: ReturnType<typeof vi.fn>;
-    queryOne: ReturnType<typeof vi.fn>;
+    tenantQuery: ReturnType<typeof vi.fn>;
+    tenantQueryOne: ReturnType<typeof vi.fn>;
   };
   let _mockActivityLogger: Record<string, ReturnType<typeof vi.fn>>;
   let mockMaintenance: Record<string, ReturnType<typeof vi.fn>>;
@@ -88,29 +88,29 @@ describe('AssetsService – DB-mocked methods', () => {
 
   describe('listAssets', () => {
     it('should include team_id filter using EXISTS on asset_teams', async () => {
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       await service.listAssets(1, { team_id: 468 });
 
-      const sql = mockDb.query.mock.calls[0][0] as string;
+      const sql = mockDb.tenantQuery.mock.calls[0][0] as string;
       expect(sql).toContain('asset_teams');
       expect(sql).toContain('mt2.team_id');
-      expect(mockDb.query.mock.calls[0][1]).toContain(468);
+      expect(mockDb.tenantQuery.mock.calls[0][1]).toContain(468);
     });
 
     it('should not include team_id filter when not provided', async () => {
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       await service.listAssets(1, {});
 
-      const sql = mockDb.query.mock.calls[0][0] as string;
+      const sql = mockDb.tenantQuery.mock.calls[0][0] as string;
       expect(sql).not.toContain('mt2.team_id');
     });
   });
 
   describe('getAssetById', () => {
     it('throws NotFoundException when asset not found', async () => {
-      mockDb.queryOne.mockResolvedValueOnce(null);
+      mockDb.tenantQueryOne.mockResolvedValueOnce(null);
 
       await expect(service.getAssetById(999, 1)).rejects.toThrow(NotFoundException);
     });
@@ -118,7 +118,7 @@ describe('AssetsService – DB-mocked methods', () => {
 
   describe('validateSerialNumberUnique', () => {
     it('throws BadRequestException for duplicate serial number', async () => {
-      mockDb.queryOne.mockResolvedValueOnce({ id: 1 }); // existing found
+      mockDb.tenantQueryOne.mockResolvedValueOnce({ id: 1 }); // existing found
 
       await expect(service['validateSerialNumberUnique']('SN-001', 1)).rejects.toThrow(
         BadRequestException,
@@ -128,11 +128,11 @@ describe('AssetsService – DB-mocked methods', () => {
     it('returns early for empty serial number', async () => {
       await service['validateSerialNumberUnique'](undefined, 1);
 
-      expect(mockDb.queryOne).not.toHaveBeenCalled();
+      expect(mockDb.tenantQueryOne).not.toHaveBeenCalled();
     });
 
     it('passes when serial number is unique', async () => {
-      mockDb.queryOne.mockResolvedValueOnce(null); // no existing
+      mockDb.tenantQueryOne.mockResolvedValueOnce(null); // no existing
 
       await expect(service['validateSerialNumberUnique']('SN-NEW', 1)).resolves.toBeUndefined();
     });
@@ -140,8 +140,8 @@ describe('AssetsService – DB-mocked methods', () => {
 
   describe('createAsset', () => {
     it('throws InternalServerErrorException when INSERT returns no rows', async () => {
-      mockDb.queryOne.mockResolvedValueOnce(null); // validateSerialNumberUnique
-      mockDb.query.mockResolvedValueOnce([]); // INSERT returns empty
+      mockDb.tenantQueryOne.mockResolvedValueOnce(null); // validateSerialNumberUnique
+      mockDb.tenantQuery.mockResolvedValueOnce([]); // INSERT returns empty
 
       await expect(service.createAsset({ name: 'Test Asset' } as never, 1, 5)).rejects.toThrow(
         InternalServerErrorException,
@@ -151,7 +151,7 @@ describe('AssetsService – DB-mocked methods', () => {
 
   describe('resolveAssetIdByUuid', () => {
     it('throws NotFoundException when UUID not found', async () => {
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       await expect(service['resolveAssetIdByUuid']('non-existent-uuid', 1)).rejects.toThrow(
         NotFoundException,
@@ -159,7 +159,7 @@ describe('AssetsService – DB-mocked methods', () => {
     });
 
     it('returns ID for valid UUID', async () => {
-      mockDb.query.mockResolvedValueOnce([{ id: 42 }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ id: 42 }]);
 
       const result = await service['resolveAssetIdByUuid']('valid-uuid', 1);
 
@@ -208,7 +208,7 @@ describe('AssetsService – DB-mocked methods', () => {
 
   describe('addMaintenanceRecord – pre-check + delegation', () => {
     it('throws NotFoundException when asset does not exist', async () => {
-      mockDb.queryOne.mockResolvedValueOnce(null); // getAssetById
+      mockDb.tenantQueryOne.mockResolvedValueOnce(null); // getAssetById
 
       await expect(service.addMaintenanceRecord({ assetId: 999 } as never, 1, 5)).rejects.toThrow(
         NotFoundException,
@@ -218,7 +218,7 @@ describe('AssetsService – DB-mocked methods', () => {
 
     it('delegates to maintenance sub-service after verifying asset', async () => {
       const expected = { id: 1, type: 'repair' };
-      mockDb.queryOne.mockResolvedValueOnce({
+      mockDb.tenantQueryOne.mockResolvedValueOnce({
         id: 1,
         uuid: 'u',
         name: 'A',
@@ -293,7 +293,7 @@ describe('AssetsService – DB-mocked methods', () => {
 
   describe('updateAsset', () => {
     it('validates serial number uniqueness when serial number changes', async () => {
-      mockDb.queryOne
+      mockDb.tenantQueryOne
         .mockResolvedValueOnce(existingAsset) // getAssetById
         .mockResolvedValueOnce({ id: 99 }); // validateSerialNumberUnique finds duplicate
 
@@ -304,43 +304,43 @@ describe('AssetsService – DB-mocked methods', () => {
 
     it('skips serial number validation when unchanged', async () => {
       const assetWithSerial = { ...existingAsset, serial_number: 'SN-001', serialNumber: 'SN-001' };
-      mockDb.queryOne.mockResolvedValueOnce(assetWithSerial); // getAssetById
-      mockDb.query.mockResolvedValueOnce([]); // UPDATE
-      mockDb.queryOne.mockResolvedValueOnce(assetWithSerial); // getAssetById (return updated)
+      mockDb.tenantQueryOne.mockResolvedValueOnce(assetWithSerial); // getAssetById
+      mockDb.tenantQuery.mockResolvedValueOnce([]); // UPDATE
+      mockDb.tenantQueryOne.mockResolvedValueOnce(assetWithSerial); // getAssetById (return updated)
 
       await service.updateAsset(1, { serialNumber: 'SN-001' } as never, 1, 5);
 
       // validateSerialNumberUnique uses queryOne — only getAssetById calls should exist
-      expect(mockDb.queryOne).toHaveBeenCalledTimes(2);
+      expect(mockDb.tenantQueryOne).toHaveBeenCalledTimes(2);
     });
   });
 
   describe('deleteAsset', () => {
     it('throws NotFoundException when asset does not exist', async () => {
-      mockDb.queryOne.mockResolvedValueOnce(null); // getAssetById
+      mockDb.tenantQueryOne.mockResolvedValueOnce(null); // getAssetById
 
       await expect(service.deleteAsset(999, 1, 5)).rejects.toThrow(NotFoundException);
     });
 
     it('deletes asset and logs activity', async () => {
-      mockDb.queryOne.mockResolvedValueOnce({
+      mockDb.tenantQueryOne.mockResolvedValueOnce({
         ...existingAsset,
         serial_number: 'SN-001',
         serialNumber: 'SN-001',
       }); // getAssetById
-      mockDb.query.mockResolvedValueOnce([]); // DELETE
+      mockDb.tenantQuery.mockResolvedValueOnce([]); // DELETE
 
       await service.deleteAsset(1, 1, 5);
 
-      const sql = mockDb.query.mock.calls[0]?.[0] as string;
+      const sql = mockDb.tenantQuery.mock.calls[0]?.[0] as string;
       expect(sql).toContain('DELETE FROM assets');
-      expect(mockDb.query.mock.calls[0]?.[1]).toEqual([1, 1]);
+      expect(mockDb.tenantQuery.mock.calls[0]?.[1]).toEqual([1, 1]);
     });
   });
 
   describe('deactivateAsset', () => {
     it('should set is_active to INACTIVE', async () => {
-      mockDb.queryOne.mockResolvedValueOnce({
+      mockDb.tenantQueryOne.mockResolvedValueOnce({
         id: 1,
         uuid: 'u',
         name: 'A',
@@ -371,18 +371,18 @@ describe('AssetsService – DB-mocked methods', () => {
         qr_code: null,
         notes: null,
       });
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       await service.deactivateAsset(1, 1, 5);
 
-      const sql = mockDb.query.mock.calls[0]?.[0] as string;
+      const sql = mockDb.tenantQuery.mock.calls[0]?.[0] as string;
       expect(sql).toContain('is_active');
     });
   });
 
   describe('activateAsset', () => {
     it('should set is_active to ACTIVE', async () => {
-      mockDb.queryOne.mockResolvedValueOnce({
+      mockDb.tenantQueryOne.mockResolvedValueOnce({
         id: 1,
         uuid: 'u',
         name: 'A',
@@ -413,11 +413,11 @@ describe('AssetsService – DB-mocked methods', () => {
         qr_code: null,
         notes: null,
       });
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       await service.activateAsset(1, 1, 5);
 
-      const sql = mockDb.query.mock.calls[0]?.[0] as string;
+      const sql = mockDb.tenantQuery.mock.calls[0]?.[0] as string;
       expect(sql).toContain('is_active');
     });
   });
@@ -426,7 +426,7 @@ describe('AssetsService – DB-mocked methods', () => {
     it('verifies asset exists and delegates to teams sub-service', async () => {
       // getAssetById succeeds — needs full row for mapDbAssetToApi
       // All optional fields must be null (NOT undefined) to avoid new Date(undefined)
-      mockDb.queryOne.mockResolvedValueOnce({
+      mockDb.tenantQueryOne.mockResolvedValueOnce({
         id: 1,
         uuid: '01953d6a-0000-7000-8000-000000000001',
         name: 'Asset 1',
@@ -466,7 +466,7 @@ describe('AssetsService – DB-mocked methods', () => {
     });
 
     it('throws NotFoundException when asset does not exist', async () => {
-      mockDb.queryOne.mockResolvedValueOnce(null);
+      mockDb.tenantQueryOne.mockResolvedValueOnce(null);
 
       await expect(service.getAssetTeams(999, 1)).rejects.toThrow(NotFoundException);
     });
@@ -478,18 +478,18 @@ describe('AssetsService – DB-mocked methods', () => {
 
   describe('updateAssetByUuid', () => {
     it('resolves UUID and delegates to updateAsset', async () => {
-      mockDb.query.mockResolvedValueOnce([{ id: 42 }]); // resolveAssetIdByUuid
-      mockDb.queryOne.mockResolvedValueOnce(existingAsset); // getAssetById (inside updateAsset)
-      mockDb.query.mockResolvedValueOnce([]); // UPDATE
-      mockDb.queryOne.mockResolvedValueOnce(existingAsset); // getAssetById (return updated)
+      mockDb.tenantQuery.mockResolvedValueOnce([{ id: 42 }]); // resolveAssetIdByUuid
+      mockDb.tenantQueryOne.mockResolvedValueOnce(existingAsset); // getAssetById (inside updateAsset)
+      mockDb.tenantQuery.mockResolvedValueOnce([]); // UPDATE
+      mockDb.tenantQueryOne.mockResolvedValueOnce(existingAsset); // getAssetById (return updated)
 
       await service.updateAssetByUuid('valid-uuid', { name: 'New' } as never, 1, 5);
 
-      expect(mockDb.query.mock.calls[0]?.[1]).toContain('valid-uuid');
+      expect(mockDb.tenantQuery.mock.calls[0]?.[1]).toContain('valid-uuid');
     });
 
     it('throws NotFoundException for unknown UUID', async () => {
-      mockDb.query.mockResolvedValueOnce([]); // resolveAssetIdByUuid
+      mockDb.tenantQuery.mockResolvedValueOnce([]); // resolveAssetIdByUuid
 
       await expect(service.updateAssetByUuid('bad-uuid', {} as never, 1, 5)).rejects.toThrow(
         NotFoundException,
@@ -499,17 +499,17 @@ describe('AssetsService – DB-mocked methods', () => {
 
   describe('deleteAssetByUuid', () => {
     it('resolves UUID and delegates to deleteAsset', async () => {
-      mockDb.query.mockResolvedValueOnce([{ id: 42 }]); // resolveAssetIdByUuid
-      mockDb.queryOne.mockResolvedValueOnce(existingAsset); // getAssetById
-      mockDb.query.mockResolvedValueOnce([]); // DELETE
+      mockDb.tenantQuery.mockResolvedValueOnce([{ id: 42 }]); // resolveAssetIdByUuid
+      mockDb.tenantQueryOne.mockResolvedValueOnce(existingAsset); // getAssetById
+      mockDb.tenantQuery.mockResolvedValueOnce([]); // DELETE
 
       await service.deleteAssetByUuid('valid-uuid', 1, 5);
 
-      expect(mockDb.query.mock.calls[1]?.[0]).toContain('DELETE FROM assets');
+      expect(mockDb.tenantQuery.mock.calls[1]?.[0]).toContain('DELETE FROM assets');
     });
 
     it('throws NotFoundException for unknown UUID', async () => {
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       await expect(service.deleteAssetByUuid('bad-uuid', 1, 5)).rejects.toThrow(NotFoundException);
     });
@@ -517,18 +517,21 @@ describe('AssetsService – DB-mocked methods', () => {
 
   describe('deactivateAssetByUuid', () => {
     it('resolves UUID and delegates to deactivateAsset', async () => {
-      mockDb.query.mockResolvedValueOnce([{ id: 42 }]); // resolveAssetIdByUuid
-      mockDb.queryOne.mockResolvedValueOnce({ ...existingAsset, is_active: IS_ACTIVE.ACTIVE }); // getAssetById
-      mockDb.query.mockResolvedValueOnce([]); // UPDATE is_active
+      mockDb.tenantQuery.mockResolvedValueOnce([{ id: 42 }]); // resolveAssetIdByUuid
+      mockDb.tenantQueryOne.mockResolvedValueOnce({
+        ...existingAsset,
+        is_active: IS_ACTIVE.ACTIVE,
+      }); // getAssetById
+      mockDb.tenantQuery.mockResolvedValueOnce([]); // UPDATE is_active
 
       await service.deactivateAssetByUuid('valid-uuid', 1, 5);
 
-      const sql = mockDb.query.mock.calls[1]?.[0] as string;
+      const sql = mockDb.tenantQuery.mock.calls[1]?.[0] as string;
       expect(sql).toContain('is_active');
     });
 
     it('throws NotFoundException for unknown UUID', async () => {
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       await expect(service.deactivateAssetByUuid('bad-uuid', 1, 5)).rejects.toThrow(
         NotFoundException,
@@ -538,18 +541,21 @@ describe('AssetsService – DB-mocked methods', () => {
 
   describe('activateAssetByUuid', () => {
     it('resolves UUID and delegates to activateAsset', async () => {
-      mockDb.query.mockResolvedValueOnce([{ id: 42 }]); // resolveAssetIdByUuid
-      mockDb.queryOne.mockResolvedValueOnce({ ...existingAsset, is_active: IS_ACTIVE.INACTIVE }); // getAssetById
-      mockDb.query.mockResolvedValueOnce([]); // UPDATE is_active
+      mockDb.tenantQuery.mockResolvedValueOnce([{ id: 42 }]); // resolveAssetIdByUuid
+      mockDb.tenantQueryOne.mockResolvedValueOnce({
+        ...existingAsset,
+        is_active: IS_ACTIVE.INACTIVE,
+      }); // getAssetById
+      mockDb.tenantQuery.mockResolvedValueOnce([]); // UPDATE is_active
 
       await service.activateAssetByUuid('valid-uuid', 1, 5);
 
-      const sql = mockDb.query.mock.calls[1]?.[0] as string;
+      const sql = mockDb.tenantQuery.mock.calls[1]?.[0] as string;
       expect(sql).toContain('is_active');
     });
 
     it('throws NotFoundException for unknown UUID', async () => {
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       await expect(service.activateAssetByUuid('bad-uuid', 1, 5)).rejects.toThrow(
         NotFoundException,

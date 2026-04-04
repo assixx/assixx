@@ -20,7 +20,7 @@ export class CalendarPermissionService {
    * Separate from OrganizationalScope (manage-page access) — see R7 in masterplan.
    */
   async getUserMemberships(userId: number, tenantId: number): Promise<CalendarMemberships> {
-    const rows = await this.databaseService.query<{
+    const rows = await this.databaseService.tenantQuery<{
       department_ids: number[] | null;
       team_ids: number[] | null;
     }>(
@@ -83,7 +83,7 @@ export class CalendarPermissionService {
     }
 
     // Attendee check (DB query, last resort)
-    const attendees = await this.databaseService.query<{ user_id: number }>(
+    const attendees = await this.databaseService.tenantQuery<{ user_id: number }>(
       `SELECT user_id FROM calendar_attendees WHERE event_id = $1 AND user_id = $2`,
       [event.id, userId],
     );
@@ -94,7 +94,7 @@ export class CalendarPermissionService {
    * Get event attendees
    */
   async getEventAttendees(eventId: number, tenantId: number): Promise<DbEventAttendee[]> {
-    return await this.databaseService.query<DbEventAttendee>(
+    return await this.databaseService.tenantQuery<DbEventAttendee>(
       `SELECT a.user_id, u.username, u.first_name, u.last_name, u.email, u.profile_picture
        FROM calendar_attendees a
        JOIN users u ON a.user_id = u.id

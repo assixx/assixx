@@ -23,6 +23,8 @@ const EnvSchema = z.object({
   DB_NAME: z.string().default('assixx'),
   DB_USER: z.string().default('assixx_user'),
   DB_PASSWORD: z.string().min(1),
+  DB_SYSTEM_USER: z.string().default('sys_user'),
+  DB_SYSTEM_PASSWORD: z.string().min(1),
 
   // JWT
   // SECURITY: Both secrets are REQUIRED and must be at least 32 chars
@@ -62,6 +64,8 @@ export class AppConfigService {
       DB_NAME: this.configService.get<string>('DB_NAME'),
       DB_USER: this.configService.get<string>('DB_USER'),
       DB_PASSWORD: this.configService.get<string>('DB_PASSWORD'),
+      DB_SYSTEM_USER: this.configService.get<string>('DB_SYSTEM_USER'),
+      DB_SYSTEM_PASSWORD: this.configService.get<string>('DB_SYSTEM_PASSWORD'),
       JWT_SECRET: this.configService.get<string>('JWT_SECRET'),
       JWT_REFRESH_SECRET: this.configService.get<string>('JWT_REFRESH_SECRET'),
       JWT_ACCESS_EXPIRY: this.configService.get<string>('JWT_ACCESS_EXPIRY'),
@@ -137,6 +141,23 @@ export class AppConfigService {
       database: this.config.DB_NAME,
       user: this.config.DB_USER,
       password: this.config.DB_PASSWORD,
+    };
+  }
+
+  /** System pool config (sys_user with BYPASSRLS — for cron, auth, root) */
+  get systemDatabaseConfig(): {
+    host: string;
+    port: number;
+    database: string;
+    user: string;
+    password: string;
+  } {
+    return {
+      host: this.config.DB_HOST,
+      port: this.config.DB_PORT,
+      database: this.config.DB_NAME,
+      user: this.config.DB_SYSTEM_USER,
+      password: this.config.DB_SYSTEM_PASSWORD,
     };
   }
 

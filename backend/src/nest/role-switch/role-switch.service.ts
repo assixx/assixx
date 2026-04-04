@@ -66,7 +66,7 @@ export class RoleSwitchService {
    * SECURITY: Only allows ACTIVE users (is_active = 1) to perform role switches
    */
   private async verifyUserTenant(userId: number, tenantId: number): Promise<UserRow> {
-    const rows = await this.db.query<UserRow>(
+    const rows = await this.db.tenantQuery<UserRow>(
       `SELECT id, username, email, role, tenant_id, position FROM users WHERE id = $1 AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}`,
       [userId, tenantId],
     );
@@ -121,7 +121,7 @@ export class RoleSwitchService {
     action: string,
   ): Promise<void> {
     try {
-      await this.db.query(
+      await this.db.tenantQuery(
         `INSERT INTO root_logs (tenant_id, user_id, action, entity_type, entity_id, new_values, was_role_switched, created_at)
          VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())`,
         [

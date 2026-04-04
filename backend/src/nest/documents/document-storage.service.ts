@@ -28,7 +28,7 @@ export class DocumentStorageService {
    */
   async getDocumentContent(document: DbDocument): Promise<DocumentContentResponse> {
     // Increment download count
-    await this.databaseService.query(
+    await this.databaseService.tenantQuery(
       `UPDATE documents SET download_count = download_count + 1 WHERE id = $1 AND tenant_id = $2`,
       [document.id, document.tenant_id],
     );

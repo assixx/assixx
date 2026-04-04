@@ -25,8 +25,11 @@ vi.mock('../../utils/field-mapper.js', () => ({
 // =============================================================
 
 function createMockDb() {
+  const query = vi.fn();
   return {
-    query: vi.fn(),
+    query,
+    tenantQuery: query,
+    tenantQueryOne: vi.fn(),
   };
 }
 

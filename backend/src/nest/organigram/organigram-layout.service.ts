@@ -13,7 +13,7 @@ export class OrganigramLayoutService {
   constructor(private readonly db: DatabaseService) {}
 
   async getPositions(tenantId: number): Promise<OrgChartPosition[]> {
-    const rows = await this.db.query<OrgChartPositionRow>(
+    const rows = await this.db.tenantQuery<OrgChartPositionRow>(
       `SELECT uuid, entity_type, entity_uuid,
               position_x, position_y, width, height
        FROM org_chart_positions

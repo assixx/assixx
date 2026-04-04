@@ -16,7 +16,7 @@ import { Pool } from 'pg';
 // eslint-disable-next-line @typescript-eslint/naming-convention -- pg-cursor exports Cursor as default
 import Cursor from 'pg-cursor';
 
-import { PG_POOL } from '../database/database.constants.js';
+import { SYSTEM_POOL } from '../database/database.constants.js';
 import type { ExportMetadata, UnifiedLogEntry } from './dto/export-logs.dto.js';
 import { IS_ACTIVE } from '@assixx/shared/constants';
 
@@ -77,7 +77,7 @@ export interface LogFilterParams {
 export class UnifiedLogsService {
   private readonly logger = new Logger(UnifiedLogsService.name);
 
-  constructor(@Inject(PG_POOL) private readonly pool: Pool) {}
+  constructor(@Inject(SYSTEM_POOL) private readonly pool: Pool) {}
 
   /**
    * Stream unified logs with cursor-based pagination.

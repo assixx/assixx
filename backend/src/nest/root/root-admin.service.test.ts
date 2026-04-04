@@ -62,13 +62,16 @@ vi.mock('./root.helpers.js', () => ({
 function createMockDb() {
   const db = {
     query: vi.fn(),
+    systemQuery: vi.fn(),
+    systemQueryOne: vi.fn(),
     tenantTransaction: vi.fn(),
+    systemTransaction: vi.fn(),
   };
   const clientQuery = vi.fn(async (...args: unknown[]) => {
-    const rows: unknown = await db.query(...args);
+    const rows: unknown = await db.systemQuery(...args);
     return { rows: rows ?? [] };
   });
-  db.tenantTransaction.mockImplementation(
+  db.systemTransaction.mockImplementation(
     (callback: (client: { query: typeof clientQuery }) => Promise<unknown>) =>
       callback({ query: clientQuery }),
   );
@@ -147,7 +150,7 @@ describe('RootAdminService', () => {
 
   describe('getAdmins', () => {
     it('should return mapped admin users', async () => {
-      mockDb.query.mockResolvedValueOnce([makeAdminRow()]);
+      mockDb.systemQuery.mockResolvedValueOnce([makeAdminRow()]);
 
       const result = await service.getAdmins(10);
 
@@ -162,7 +165,7 @@ describe('RootAdminService', () => {
 
   describe('getAdminById', () => {
     it('should return null when not found', async () => {
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.systemQuery.mockResolvedValueOnce([]);
 
       const result = await service.getAdminById(999, 10);
 
@@ -171,9 +174,9 @@ describe('RootAdminService', () => {
 
     it('should return admin with last login', async () => {
       // admin row
-      mockDb.query.mockResolvedValueOnce([makeAdminRow()]);
+      mockDb.systemQuery.mockResolvedValueOnce([makeAdminRow()]);
       // last login
-      mockDb.query.mockResolvedValueOnce([{ created_at: new Date('2025-06-01') }]);
+      mockDb.systemQuery.mockResolvedValueOnce([{ created_at: new Date('2025-06-01') }]);
 
       const result = await service.getAdminById(1, 10);
 
@@ -204,7 +207,7 @@ describe('RootAdminService', () => {
 
     it('should create admin and return id', async () => {
       // INSERT RETURNING id
-      mockDb.query.mockResolvedValueOnce([{ id: 5 }]);
+      mockDb.systemQuery.mockResolvedValueOnce([{ id: 5 }]);
 
       const result = await service.createAdmin(
         {
@@ -229,7 +232,7 @@ describe('RootAdminService', () => {
   describe('updateAdmin', () => {
     it('should throw NotFoundException when admin not found', async () => {
       // getAdminById → not found
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.systemQuery.mockResolvedValueOnce([]);
 
       await expect(service.updateAdmin(999, {} as never, 10)).rejects.toThrow(NotFoundException);
     });
@@ -241,18 +244,18 @@ describe('RootAdminService', () => {
 
   describe('deleteAdmin', () => {
     it('should throw NotFoundException when admin not found', async () => {
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.systemQuery.mockResolvedValueOnce([]);
 
       await expect(service.deleteAdmin(999, 10, 1)).rejects.toThrow(NotFoundException);
     });
 
     it('should delete admin and log activity', async () => {
       // getAdminById → admin row
-      mockDb.query.mockResolvedValueOnce([makeAdminRow()]);
+      mockDb.systemQuery.mockResolvedValueOnce([makeAdminRow()]);
       // last login (from getAdminById)
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.systemQuery.mockResolvedValueOnce([]);
       // DELETE
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.systemQuery.mockResolvedValueOnce([]);
 
       await service.deleteAdmin(1, 10, 5);
 
@@ -266,18 +269,18 @@ describe('RootAdminService', () => {
 
   describe('getAdminLogs', () => {
     it('should throw NotFoundException when admin not found', async () => {
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.systemQuery.mockResolvedValueOnce([]);
 
       await expect(service.getAdminLogs(999, 10)).rejects.toThrow(NotFoundException);
     });
 
     it('should return mapped logs', async () => {
       // getAdminById → admin row
-      mockDb.query.mockResolvedValueOnce([makeAdminRow()]);
+      mockDb.systemQuery.mockResolvedValueOnce([makeAdminRow()]);
       // last login
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.systemQuery.mockResolvedValueOnce([]);
       // logs query
-      mockDb.query.mockResolvedValueOnce([
+      mockDb.systemQuery.mockResolvedValueOnce([
         { id: 1, action: 'login', created_at: new Date('2025-06-01') },
       ]);
 

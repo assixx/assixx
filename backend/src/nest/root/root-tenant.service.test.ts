@@ -29,7 +29,7 @@ vi.mock('./root.types.js', async () => {
 // =============================================================
 
 function createMockDb() {
-  return { query: vi.fn() };
+  return { query: vi.fn(), systemQuery: vi.fn() };
 }
 
 function createMockUserRepo() {
@@ -61,7 +61,7 @@ describe('RootTenantService', () => {
 
   describe('getTenants', () => {
     it('should return empty array when no tenant found', async () => {
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.systemQuery.mockResolvedValueOnce([]);
 
       const result = await service.getTenants(10);
 
@@ -69,7 +69,7 @@ describe('RootTenantService', () => {
     });
 
     it('should return tenant with stats', async () => {
-      mockDb.query.mockResolvedValueOnce([
+      mockDb.systemQuery.mockResolvedValueOnce([
         {
           id: 10,
           company_name: 'Acme Corp',
@@ -84,7 +84,7 @@ describe('RootTenantService', () => {
       // employeeCount
       mockUserRepo.countByRole.mockResolvedValueOnce(50);
       // storageUsed
-      mockDb.query.mockResolvedValueOnce([{ total: '1048576' }]);
+      mockDb.systemQuery.mockResolvedValueOnce([{ total: '1048576' }]);
 
       const result = await service.getTenants(10);
 
@@ -103,13 +103,13 @@ describe('RootTenantService', () => {
   describe('getStorageInfo', () => {
     it('should return storage breakdown from tenant_storage', async () => {
       // tenant_storage query
-      mockDb.query.mockResolvedValueOnce([{ storage_limit_gb: 100 }]);
+      mockDb.systemQuery.mockResolvedValueOnce([{ storage_limit_gb: 100 }]);
       // documents
-      mockDb.query.mockResolvedValueOnce([{ total: '500000' }]);
+      mockDb.systemQuery.mockResolvedValueOnce([{ total: '500000' }]);
       // attachments
-      mockDb.query.mockResolvedValueOnce([{ total: '200000' }]);
+      mockDb.systemQuery.mockResolvedValueOnce([{ total: '200000' }]);
       // logs
-      mockDb.query.mockResolvedValueOnce([{ total: '50000' }]);
+      mockDb.systemQuery.mockResolvedValueOnce([{ total: '50000' }]);
 
       const result = await service.getStorageInfo(10);
 
@@ -123,11 +123,11 @@ describe('RootTenantService', () => {
 
     it('should default to 100 GB when no tenant_storage entry', async () => {
       // tenant_storage returns empty
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.systemQuery.mockResolvedValueOnce([]);
       // documents, attachments, logs
-      mockDb.query.mockResolvedValueOnce([{ total: '0' }]);
-      mockDb.query.mockResolvedValueOnce([{ total: '0' }]);
-      mockDb.query.mockResolvedValueOnce([{ total: '0' }]);
+      mockDb.systemQuery.mockResolvedValueOnce([{ total: '0' }]);
+      mockDb.systemQuery.mockResolvedValueOnce([{ total: '0' }]);
+      mockDb.systemQuery.mockResolvedValueOnce([{ total: '0' }]);
 
       const result = await service.getStorageInfo(10);
 

@@ -50,7 +50,7 @@ export class TpmCardDuplicateService {
     const intervalOrder = INTERVAL_ORDER_MAP[intervalType];
     const searchPattern = `%${escapeLikePattern(title)}%`;
 
-    const rows = await this.db.query<TpmCardJoinRow>(
+    const rows = await this.db.tenantQuery<TpmCardJoinRow>(
       `SELECT c.*,
          p.uuid AS plan_uuid,
          m.name AS asset_name
@@ -93,7 +93,7 @@ export class TpmCardDuplicateService {
   ): Promise<TpmCard[]> {
     const searchPattern = `%${escapeLikePattern(searchText)}%`;
 
-    const rows = await this.db.query<TpmCardJoinRow>(
+    const rows = await this.db.tenantQuery<TpmCardJoinRow>(
       `SELECT c.*,
          p.uuid AS plan_uuid,
          m.name AS asset_name

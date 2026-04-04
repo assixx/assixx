@@ -66,7 +66,7 @@ export class KvpCommentsService {
     const internalFilter = userRole === 'employee' ? ' AND c.is_internal = FALSE' : '';
 
     const [countResult, rows] = await Promise.all([
-      this.db.query<{ total: number }>(
+      this.db.tenantQuery<{ total: number }>(
         `SELECT COUNT(*)::int AS total
          FROM kvp_comments c
          JOIN kvp_suggestions s ON c.suggestion_id = s.id
@@ -74,7 +74,7 @@ export class KvpCommentsService {
            AND c.parent_id IS NULL${internalFilter}`,
         [numericId, tenantId],
       ),
-      this.db.query<DbComment>(
+      this.db.tenantQuery<DbComment>(
         `SELECT ${COMMENT_SELECT}
          ${COMMENT_JOIN}
          WHERE c.suggestion_id = $1 AND s.tenant_id = $2
@@ -103,7 +103,7 @@ export class KvpCommentsService {
 
     const internalFilter = userRole === 'employee' ? ' AND c.is_internal = FALSE' : '';
 
-    const rows = await this.db.query<DbComment>(
+    const rows = await this.db.tenantQuery<DbComment>(
       `SELECT ${COMMENT_SELECT}
        ${COMMENT_JOIN}
        WHERE c.parent_id = $1 AND s.tenant_id = $2${internalFilter}
@@ -134,7 +134,7 @@ export class KvpCommentsService {
     const safeIsInternal = userRole === 'admin' || userRole === 'root' ? isInternal : false;
 
     if (parentId !== undefined) {
-      const parentRows = await this.db.query<{ suggestion_id: number }>(
+      const parentRows = await this.db.tenantQuery<{ suggestion_id: number }>(
         `SELECT suggestion_id FROM kvp_comments
          WHERE id = $1`,
         [parentId],
@@ -148,7 +148,7 @@ export class KvpCommentsService {
       }
     }
 
-    const rows = await this.db.query<{ id: number }>(
+    const rows = await this.db.tenantQuery<{ id: number }>(
       `INSERT INTO kvp_comments (tenant_id, suggestion_id, user_id, comment, is_internal, parent_id)
        VALUES ($1, $2, $3, $4, $5, $6)
        RETURNING id`,

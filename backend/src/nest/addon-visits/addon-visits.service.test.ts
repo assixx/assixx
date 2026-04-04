@@ -15,7 +15,13 @@ import { AddonVisitsService } from './addon-visits.service.js';
 // =============================================================
 
 function createMockDb() {
-  return { query: vi.fn(), queryOne: vi.fn() };
+  const queryFn = vi.fn();
+  return {
+    query: queryFn,
+    tenantQuery: queryFn,
+    queryOne: vi.fn(),
+    tenantQueryOne: vi.fn(),
+  };
 }
 
 // =============================================================
@@ -56,7 +62,7 @@ describe('AddonVisitsService', () => {
   describe('getLastVisited', () => {
     it('should return date when visit exists', async () => {
       const visitDate = new Date('2025-06-01T10:00:00Z');
-      mockDb.queryOne.mockResolvedValueOnce({ last_visited_at: visitDate });
+      mockDb.tenantQueryOne.mockResolvedValueOnce({ last_visited_at: visitDate });
 
       const result = await service.getLastVisited(10, 5, 'kvp');
 
@@ -64,7 +70,7 @@ describe('AddonVisitsService', () => {
     });
 
     it('should return null when never visited', async () => {
-      mockDb.queryOne.mockResolvedValueOnce(null);
+      mockDb.tenantQueryOne.mockResolvedValueOnce(null);
 
       const result = await service.getLastVisited(10, 5, 'surveys');
 

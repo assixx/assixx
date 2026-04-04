@@ -64,7 +64,7 @@ export class CalendarOverviewService {
     query += ` ORDER BY e.start_date ASC LIMIT $${limitIndex}`;
     params.push(limit);
 
-    const events = await this.databaseService.query<DbCalendarEvent>(query, params);
+    const events = await this.databaseService.tenantQuery<DbCalendarEvent>(query, params);
     return events.map((e: DbCalendarEvent) => dbToApiEvent(e));
   }
 
@@ -102,7 +102,7 @@ export class CalendarOverviewService {
     query += ` ORDER BY e.created_at DESC LIMIT $${limitIndex}`;
     params.push(limit);
 
-    const events = await this.databaseService.query<DbCalendarEvent>(query, params);
+    const events = await this.databaseService.tenantQuery<DbCalendarEvent>(query, params);
     return events.map((e: DbCalendarEvent) => dbToApiEvent(e));
   }
 
@@ -169,7 +169,7 @@ export class CalendarOverviewService {
         AND e.user_id != $5
         AND (e.org_level != 'personal' OR e.user_id = $5)
     `;
-    const result = await this.databaseService.query<{ count: string }>(query, [
+    const result = await this.databaseService.tenantQuery<{ count: string }>(query, [
       tenantId,
       startOfDay,
       endOfWeek,
@@ -215,7 +215,7 @@ export class CalendarOverviewService {
         AND ${clause}
     `;
 
-    const result = await this.databaseService.query<{ count: string }>(query, [
+    const result = await this.databaseService.tenantQuery<{ count: string }>(query, [
       tenantId,
       startOfDay,
       endOfWeek,

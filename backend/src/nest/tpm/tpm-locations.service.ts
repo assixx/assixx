@@ -70,7 +70,7 @@ export class TpmLocationsService {
       plan_uuid: string;
       created_by_name: string;
     };
-    const rows = await this.db.query<JoinRow>(
+    const rows = await this.db.tenantQuery<JoinRow>(
       `SELECT l.*, p.uuid AS plan_uuid,
               COALESCE(NULLIF(CONCAT(u.first_name, ' ', u.last_name), ' '), u.username) AS created_by_name
        FROM tpm_locations l
@@ -90,7 +90,7 @@ export class TpmLocationsService {
       plan_uuid: string;
       created_by_name: string;
     };
-    const row = await this.db.queryOne<JoinRow>(
+    const row = await this.db.tenantQueryOne<JoinRow>(
       `SELECT l.*, p.uuid AS plan_uuid,
               COALESCE(NULLIF(CONCAT(u.first_name, ' ', u.last_name), ' '), u.username) AS created_by_name
        FROM tpm_locations l

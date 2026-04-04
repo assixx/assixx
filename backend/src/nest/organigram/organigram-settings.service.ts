@@ -46,7 +46,7 @@ export class OrganigramSettingsService {
   }
 
   async getViewport(tenantId: number): Promise<OrgViewport> {
-    const rows = await this.db.query<TenantSettingsRow>(SELECT_SETTINGS, [tenantId]);
+    const rows = await this.db.tenantQuery<TenantSettingsRow>(SELECT_SETTINGS, [tenantId]);
 
     if (rows.length === 0 || rows[0] === undefined) {
       return { ...DEFAULT_VIEWPORT };
@@ -73,7 +73,7 @@ export class OrganigramSettingsService {
   }
 
   async getHallOverrides(tenantId: number): Promise<Record<string, HallOverride>> {
-    const rows = await this.db.query<TenantSettingsRow>(SELECT_SETTINGS, [tenantId]);
+    const rows = await this.db.tenantQuery<TenantSettingsRow>(SELECT_SETTINGS, [tenantId]);
 
     const settings = rows[0]?.settings;
     if (settings === null || settings === undefined) return {};
@@ -86,7 +86,7 @@ export class OrganigramSettingsService {
     tenantId: number,
     overrides: Record<string, HallOverride>,
   ): Promise<void> {
-    const settingsRows = await this.db.query<TenantSettingsRow>(SELECT_SETTINGS, [tenantId]);
+    const settingsRows = await this.db.tenantQuery<TenantSettingsRow>(SELECT_SETTINGS, [tenantId]);
 
     const currentSettings =
       settingsRows.length > 0 && settingsRows[0] !== undefined ?
@@ -102,7 +102,7 @@ export class OrganigramSettingsService {
   }
 
   async getHallConnectionAnchors(tenantId: number): Promise<Record<string, PerimeterAnchor>> {
-    const rows = await this.db.query<TenantSettingsRow>(SELECT_SETTINGS, [tenantId]);
+    const rows = await this.db.tenantQuery<TenantSettingsRow>(SELECT_SETTINGS, [tenantId]);
 
     const settings = rows[0]?.settings;
     if (settings === null || settings === undefined) return {};
@@ -117,7 +117,7 @@ export class OrganigramSettingsService {
     tenantId: number,
     anchors: Record<string, PerimeterAnchor>,
   ): Promise<void> {
-    const settingsRows = await this.db.query<TenantSettingsRow>(SELECT_SETTINGS, [tenantId]);
+    const settingsRows = await this.db.tenantQuery<TenantSettingsRow>(SELECT_SETTINGS, [tenantId]);
 
     const currentSettings =
       settingsRows.length > 0 && settingsRows[0] !== undefined ?
@@ -133,7 +133,7 @@ export class OrganigramSettingsService {
   }
 
   async saveViewport(tenantId: number, viewport: OrgViewport): Promise<void> {
-    const settingsRows = await this.db.query<TenantSettingsRow>(SELECT_SETTINGS, [tenantId]);
+    const settingsRows = await this.db.tenantQuery<TenantSettingsRow>(SELECT_SETTINGS, [tenantId]);
 
     const currentSettings =
       settingsRows.length > 0 && settingsRows[0] !== undefined ?
@@ -149,7 +149,7 @@ export class OrganigramSettingsService {
   }
 
   async getCanvasBg(tenantId: number): Promise<string | null> {
-    const rows = await this.db.query<TenantSettingsRow>(SELECT_SETTINGS, [tenantId]);
+    const rows = await this.db.tenantQuery<TenantSettingsRow>(SELECT_SETTINGS, [tenantId]);
 
     const settings = rows[0]?.settings;
     if (settings === null || settings === undefined) return null;
@@ -159,7 +159,7 @@ export class OrganigramSettingsService {
   }
 
   async saveCanvasBg(tenantId: number, canvasBg: string | null): Promise<void> {
-    const settingsRows = await this.db.query<TenantSettingsRow>(SELECT_SETTINGS, [tenantId]);
+    const settingsRows = await this.db.tenantQuery<TenantSettingsRow>(SELECT_SETTINGS, [tenantId]);
 
     const currentSettings =
       settingsRows.length > 0 && settingsRows[0] !== undefined ?
@@ -175,7 +175,7 @@ export class OrganigramSettingsService {
   }
 
   async getHierarchyLabels(tenantId: number): Promise<HierarchyLabels> {
-    const rows = await this.db.query<TenantSettingsRow>(SELECT_SETTINGS, [tenantId]);
+    const rows = await this.db.tenantQuery<TenantSettingsRow>(SELECT_SETTINGS, [tenantId]);
 
     if (rows.length === 0 || rows[0] === undefined) {
       return { ...DEFAULT_HIERARCHY_LABELS };
@@ -222,7 +222,7 @@ export class OrganigramSettingsService {
     };
 
     // Read-Merge-Write: read current settings, deep merge, write back
-    const settingsRows = await this.db.query<TenantSettingsRow>(SELECT_SETTINGS, [tenantId]);
+    const settingsRows = await this.db.tenantQuery<TenantSettingsRow>(SELECT_SETTINGS, [tenantId]);
 
     const currentSettings =
       settingsRows.length > 0 && settingsRows[0] !== undefined ?
@@ -258,7 +258,7 @@ export class OrganigramSettingsService {
 
   /** Read the per-tenant flag: do deputies have equal scope rights as their leads? */
   async getDeputyHasLeadScope(tenantId: number): Promise<boolean> {
-    const rows = await this.db.query<TenantSettingsRow>(SELECT_SETTINGS, [tenantId]);
+    const rows = await this.db.tenantQuery<TenantSettingsRow>(SELECT_SETTINGS, [tenantId]);
     const settings = rows[0]?.settings;
     if (settings === null || settings === undefined) return false;
     return (settings['deputyHasLeadScope'] as boolean | undefined) ?? false;
@@ -266,7 +266,7 @@ export class OrganigramSettingsService {
 
   /** Update the per-tenant deputy scope toggle */
   async updateDeputyHasLeadScope(tenantId: number, enabled: boolean): Promise<boolean> {
-    const settingsRows = await this.db.query<TenantSettingsRow>(SELECT_SETTINGS, [tenantId]);
+    const settingsRows = await this.db.tenantQuery<TenantSettingsRow>(SELECT_SETTINGS, [tenantId]);
     const currentSettings =
       settingsRows.length > 0 && settingsRows[0] !== undefined ?
         (settingsRows[0].settings ?? {})
@@ -285,7 +285,7 @@ export class OrganigramSettingsService {
 
   /** Read the per-tenant flag: are shift swap requests enabled? */
   async getSwapRequestsEnabled(tenantId: number): Promise<boolean> {
-    const rows = await this.db.query<TenantSettingsRow>(SELECT_SETTINGS, [tenantId]);
+    const rows = await this.db.tenantQuery<TenantSettingsRow>(SELECT_SETTINGS, [tenantId]);
     const settings = rows[0]?.settings;
     if (settings === null || settings === undefined) return false;
     return (settings['swapRequestsEnabled'] as boolean | undefined) ?? false;
@@ -293,7 +293,7 @@ export class OrganigramSettingsService {
 
   /** Update the per-tenant swap requests toggle */
   async updateSwapRequestsEnabled(tenantId: number, enabled: boolean): Promise<boolean> {
-    const settingsRows = await this.db.query<TenantSettingsRow>(SELECT_SETTINGS, [tenantId]);
+    const settingsRows = await this.db.tenantQuery<TenantSettingsRow>(SELECT_SETTINGS, [tenantId]);
     const currentSettings =
       settingsRows.length > 0 && settingsRows[0] !== undefined ?
         (settingsRows[0].settings ?? {})

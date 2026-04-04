@@ -59,9 +59,14 @@ vi.mock('uuid', () => ({
 
 function createMockDb(): {
   query: ReturnType<typeof vi.fn>;
+  tenantQuery: ReturnType<typeof vi.fn>;
+  tenantQueryOne: ReturnType<typeof vi.fn>;
 } {
+  const queryFn = vi.fn().mockResolvedValue([]);
   return {
-    query: vi.fn().mockResolvedValue([]),
+    query: queryFn,
+    tenantQuery: queryFn,
+    tenantQueryOne: vi.fn().mockResolvedValue(null),
   };
 }
 

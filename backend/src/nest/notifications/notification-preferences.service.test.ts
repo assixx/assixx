@@ -15,7 +15,7 @@ import { NotificationPreferencesService } from './notification-preferences.servi
 // =============================================================
 
 function createMockDb() {
-  return { query: vi.fn() };
+  return { tenantQuery: vi.fn(), tenantQueryOne: vi.fn().mockResolvedValue(null) };
 }
 
 // =============================================================
@@ -38,7 +38,7 @@ describe('NotificationPreferencesService', () => {
 
   describe('getPreferences', () => {
     it('should return defaults when no preferences exist', async () => {
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       const result = await service.getPreferences(5, 10);
 
@@ -48,7 +48,7 @@ describe('NotificationPreferencesService', () => {
     });
 
     it('should return stored preferences', async () => {
-      mockDb.query.mockResolvedValueOnce([
+      mockDb.tenantQuery.mockResolvedValueOnce([
         {
           email_notifications: 0,
           push_notifications: 1,
@@ -67,7 +67,7 @@ describe('NotificationPreferencesService', () => {
     });
 
     it('should handle null preferences JSON', async () => {
-      mockDb.query.mockResolvedValueOnce([
+      mockDb.tenantQuery.mockResolvedValueOnce([
         {
           email_notifications: 1,
           push_notifications: 1,
@@ -82,7 +82,7 @@ describe('NotificationPreferencesService', () => {
     });
 
     it('should handle already-parsed preferences object', async () => {
-      mockDb.query.mockResolvedValueOnce([
+      mockDb.tenantQuery.mockResolvedValueOnce([
         {
           email_notifications: 1,
           push_notifications: 1,
@@ -103,24 +103,24 @@ describe('NotificationPreferencesService', () => {
 
   describe('upsertPreferences', () => {
     it('should update existing preferences', async () => {
-      mockDb.query.mockResolvedValueOnce([{ id: 1 }]);
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ id: 1 }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       await service.upsertPreferences(5, 10, true, false, false, '{}');
 
-      expect(mockDb.query).toHaveBeenCalledTimes(2);
-      const updateCall = mockDb.query.mock.calls[1];
+      expect(mockDb.tenantQuery).toHaveBeenCalledTimes(2);
+      const updateCall = mockDb.tenantQuery.mock.calls[1];
       expect(updateCall?.[0]).toContain('UPDATE');
     });
 
     it('should insert new preferences', async () => {
-      mockDb.query.mockResolvedValueOnce([]);
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       await service.upsertPreferences(5, 10, true, true, false, '{}');
 
-      expect(mockDb.query).toHaveBeenCalledTimes(2);
-      const insertCall = mockDb.query.mock.calls[1];
+      expect(mockDb.tenantQuery).toHaveBeenCalledTimes(2);
+      const insertCall = mockDb.tenantQuery.mock.calls[1];
       expect(insertCall?.[0]).toContain('INSERT');
     });
   });

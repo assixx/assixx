@@ -42,7 +42,8 @@ async function flushPromises(): Promise<void> {
 }
 
 function createMockDb() {
-  return { query: vi.fn().mockResolvedValue({ rows: [] }) };
+  const queryFn = vi.fn().mockResolvedValue({ rows: [] });
+  return { query: queryFn, tenantQuery: queryFn, tenantQueryOne: vi.fn() };
 }
 type MockDb = ReturnType<typeof createMockDb>;
 

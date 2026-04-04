@@ -272,7 +272,7 @@ export class DashboardService {
    * No permission gating — every user can have vacation notifications.
    */
   private async fetchVacationCount(userId: number, tenantId: number): Promise<{ count: number }> {
-    const rows = await this.db.query<{ count: string }>(
+    const rows = await this.db.tenantQuery<{ count: string }>(
       `SELECT COUNT(*) AS count
        FROM notifications n
        LEFT JOIN notification_read_status nrs
@@ -293,7 +293,7 @@ export class DashboardService {
    * that have no entry in notification_read_status.
    */
   private async fetchTpmCount(userId: number, tenantId: number): Promise<{ count: number }> {
-    const rows = await this.db.query<{ count: string }>(
+    const rows = await this.db.tenantQuery<{ count: string }>(
       `SELECT COUNT(*) AS count
        FROM notifications n
        LEFT JOIN notification_read_status nrs
@@ -314,7 +314,7 @@ export class DashboardService {
    * that have no entry in notification_read_status.
    */
   private async fetchWorkOrdersCount(userId: number, tenantId: number): Promise<{ count: number }> {
-    const rows = await this.db.query<{ count: string }>(
+    const rows = await this.db.tenantQuery<{ count: string }>(
       `SELECT COUNT(*) AS count
        FROM notifications n
        LEFT JOIN notification_read_status nrs
@@ -334,7 +334,7 @@ export class DashboardService {
    * Counts swap requests where the user is the target and status is pending_partner.
    */
   private async fetchShiftSwapCount(userId: number, tenantId: number): Promise<{ count: number }> {
-    const rows = await this.db.query<{ count: string }>(
+    const rows = await this.db.tenantQuery<{ count: string }>(
       `SELECT COUNT(*) AS count
        FROM shift_swap_requests
        WHERE tenant_id = $1

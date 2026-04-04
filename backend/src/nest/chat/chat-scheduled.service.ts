@@ -81,7 +81,7 @@ export class ChatScheduledService {
     const isE2e = typeof dto.encryptedContent === 'string' && dto.encryptedContent.length > 0;
 
     // Insert scheduled message
-    const result = await this.databaseService.query<ScheduledMessageRow>(
+    const result = await this.databaseService.tenantQuery<ScheduledMessageRow>(
       `INSERT INTO chat_scheduled_messages (
         tenant_id, conversation_id, sender_id, content,
         attachment_path, attachment_name, attachment_type, attachment_size,
@@ -122,7 +122,7 @@ export class ChatScheduledService {
     const tenantId = this.getTenantId();
     const userId = this.getUserId();
 
-    const result = await this.databaseService.query<ScheduledMessageRow>(
+    const result = await this.databaseService.tenantQuery<ScheduledMessageRow>(
       `SELECT * FROM chat_scheduled_messages
        WHERE sender_id = $1 AND tenant_id = $2 AND is_active = $3
        ORDER BY scheduled_for ASC`,
@@ -139,7 +139,7 @@ export class ChatScheduledService {
     const tenantId = this.getTenantId();
     const userId = this.getUserId();
 
-    const result = await this.databaseService.query<ScheduledMessageRow>(
+    const result = await this.databaseService.tenantQuery<ScheduledMessageRow>(
       `SELECT * FROM chat_scheduled_messages
        WHERE id = $1 AND sender_id = $2 AND tenant_id = $3`,
       [id, userId, tenantId],
@@ -161,7 +161,7 @@ export class ChatScheduledService {
     const userId = this.getUserId();
 
     // Check if message exists
-    const existing = await this.databaseService.query<ScheduledMessageRow>(
+    const existing = await this.databaseService.tenantQuery<ScheduledMessageRow>(
       `SELECT * FROM chat_scheduled_messages
        WHERE id = $1 AND sender_id = $2 AND tenant_id = $3`,
       [id, userId, tenantId],
@@ -180,7 +180,7 @@ export class ChatScheduledService {
       throw new BadRequestException('This message has already been cancelled');
     }
 
-    await this.databaseService.query(
+    await this.databaseService.tenantQuery(
       `UPDATE chat_scheduled_messages SET is_active = $1 WHERE id = $2`,
       [SCHEDULED_STATUS.CANCELLED, id],
     );
@@ -201,7 +201,7 @@ export class ChatScheduledService {
     // Verify access
     await verifyAccess(conversationId, userId, tenantId);
 
-    const result = await this.databaseService.query<ScheduledMessageRow>(
+    const result = await this.databaseService.tenantQuery<ScheduledMessageRow>(
       `SELECT * FROM chat_scheduled_messages
        WHERE conversation_id = $1 AND sender_id = $2 AND tenant_id = $3 AND is_active = $4
        ORDER BY scheduled_for ASC`,

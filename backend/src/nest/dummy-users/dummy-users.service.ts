@@ -119,7 +119,7 @@ export class DummyUsersService {
     const email = await this.generateEmail(tenantId);
     const employeeNumber = await this.generateEmployeeNumber(tenantId);
 
-    const rows = await this.db.query<{ id: number }>(
+    const rows = await this.db.tenantQuery<{ id: number }>(
       `INSERT INTO users
         (uuid, tenant_id, username, email, password, role, has_full_access,
          display_name, employee_number, is_active)
@@ -166,14 +166,14 @@ export class DummyUsersService {
     const whereClause = conditions.join(' AND ');
 
     // Count total
-    const countRows = await this.db.query<{ count: string }>(
+    const countRows = await this.db.tenantQuery<{ count: string }>(
       `SELECT COUNT(DISTINCT u.id) AS count FROM users u WHERE ${whereClause}`,
       params,
     );
     const total = Number(countRows[0]?.count ?? '0');
 
     // Fetch page
-    const rows = await this.db.query<DummyUserWithTeamsRow>(
+    const rows = await this.db.tenantQuery<DummyUserWithTeamsRow>(
       `${DUMMY_SELECT_SQL}
        WHERE ${whereClause}
        ${DUMMY_GROUP_BY}
@@ -195,7 +195,7 @@ export class DummyUsersService {
   // ==========================================================================
 
   async getByUuid(tenantId: number, uuid: string): Promise<DummyUser> {
-    const rows = await this.db.query<DummyUserWithTeamsRow>(
+    const rows = await this.db.tenantQuery<DummyUserWithTeamsRow>(
       `${DUMMY_SELECT_SQL}
        WHERE u.tenant_id = $1 AND u.uuid = $2 AND u.role = 'dummy' AND u.is_active != ${IS_ACTIVE.DELETED}
        ${DUMMY_GROUP_BY}`,
@@ -226,7 +226,7 @@ export class DummyUsersService {
     actingUserId: number,
   ): Promise<DummyUser> {
     // Verify exists
-    const [existing] = await this.db.query<{ id: number }>(
+    const [existing] = await this.db.tenantQuery<{ id: number }>(
       `SELECT id FROM users
        WHERE tenant_id = $1 AND uuid = $2 AND role = 'dummy' AND is_active != ${IS_ACTIVE.DELETED}`,
       [tenantId, uuid],
@@ -257,7 +257,7 @@ export class DummyUsersService {
       params.push(dto.isActive);
     }
 
-    await this.db.query(
+    await this.db.tenantQuery(
       `UPDATE users SET ${setClauses.join(', ')}
        WHERE tenant_id = $1 AND uuid = $2 AND role = 'dummy'`,
       params,
@@ -285,7 +285,7 @@ export class DummyUsersService {
   // ==========================================================================
 
   async delete(tenantId: number, uuid: string, actingUserId: number): Promise<void> {
-    const rows = await this.db.query<{ id: number }>(
+    const rows = await this.db.tenantQuery<{ id: number }>(
       `UPDATE users SET is_active = ${IS_ACTIVE.DELETED}, updated_at = NOW()
        WHERE tenant_id = $1 AND uuid = $2 AND role = 'dummy' AND is_active != ${IS_ACTIVE.DELETED}
        RETURNING id`,
@@ -293,7 +293,7 @@ export class DummyUsersService {
     );
 
     if (rows.length === 0) {
-      const [check] = await this.db.query<{ id: number }>(
+      const [check] = await this.db.tenantQuery<{ id: number }>(
         `SELECT id FROM users WHERE tenant_id = $1 AND uuid = $2 AND role = 'dummy'`,
         [tenantId, uuid],
       );
@@ -317,7 +317,7 @@ export class DummyUsersService {
   // ==========================================================================
 
   private async generateEmail(tenantId: number): Promise<string> {
-    const nextRows = await this.db.query<{ next_number: number }>(
+    const nextRows = await this.db.tenantQuery<{ next_number: number }>(
       `SELECT COALESCE(MAX(
         CAST(SUBSTRING(email FROM 'dummy_(\\d+)@') AS INTEGER)
        ), 0) + 1 AS next_number
@@ -325,7 +325,7 @@ export class DummyUsersService {
       [tenantId],
     );
 
-    const tenantRows = await this.db.query<{ subdomain: string }>(
+    const tenantRows = await this.db.tenantQuery<{ subdomain: string }>(
       `SELECT subdomain FROM tenants WHERE id = $1`,
       [tenantId],
     );
@@ -339,7 +339,7 @@ export class DummyUsersService {
   }
 
   private async generateEmployeeNumber(tenantId: number): Promise<string> {
-    const nextRows = await this.db.query<{ next_number: number }>(
+    const nextRows = await this.db.tenantQuery<{ next_number: number }>(
       `SELECT COALESCE(MAX(
         CAST(SUBSTRING(employee_number FROM 'DUMMY-(\\d+)') AS INTEGER)
        ), 0) + 1 AS next_number
@@ -356,11 +356,14 @@ export class DummyUsersService {
 
   private async syncTeams(tenantId: number, userId: number, teamIds: number[]): Promise<void> {
     // Delete existing assignments
-    await this.db.query(`DELETE FROM user_teams WHERE user_id = $1`, [userId]);
+    await this.db.tenantQuery(`DELETE FROM user_teams WHERE user_id = $1 AND tenant_id = $2`, [
+      userId,
+      tenantId,
+    ]);
 
     // Insert new assignments
     for (const teamId of teamIds) {
-      await this.db.query(
+      await this.db.tenantQuery(
         `INSERT INTO user_teams (user_id, team_id, tenant_id)
          VALUES ($1, $2, $3)
          ON CONFLICT (user_id, team_id) DO NOTHING`,
@@ -379,7 +382,7 @@ export class DummyUsersService {
     assignedBy: number,
   ): Promise<void> {
     for (const perm of DUMMY_PERMISSIONS) {
-      await this.db.query(
+      await this.db.tenantQuery(
         `INSERT INTO user_addon_permissions
           (tenant_id, user_id, addon_code, module_code,
            can_read, can_write, can_delete, assigned_by)

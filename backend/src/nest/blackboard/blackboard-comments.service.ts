@@ -62,13 +62,13 @@ export class BlackboardCommentsService {
     }
 
     const [countResult, comments] = await Promise.all([
-      this.db.query<{ total: number }>(
+      this.db.tenantQuery<{ total: number }>(
         `SELECT COUNT(*)::int AS total
          FROM blackboard_comments
          WHERE entry_id = $1 AND tenant_id = $2 AND parent_id IS NULL`,
         [numericId, tenantId],
       ),
-      this.db.query<DbBlackboardComment>(
+      this.db.tenantQuery<DbBlackboardComment>(
         `SELECT ${COMMENT_SELECT}
          ${COMMENT_JOIN}
          WHERE c.entry_id = $1 AND c.tenant_id = $2 AND c.parent_id IS NULL
@@ -94,7 +94,7 @@ export class BlackboardCommentsService {
   async getReplies(commentId: number, tenantId: number): Promise<BlackboardComment[]> {
     this.logger.debug(`Getting replies for comment ${commentId}`);
 
-    const replies = await this.db.query<DbBlackboardComment>(
+    const replies = await this.db.tenantQuery<DbBlackboardComment>(
       `SELECT ${COMMENT_SELECT}
        ${COMMENT_JOIN}
        WHERE c.parent_id = $1 AND c.tenant_id = $2
@@ -126,7 +126,7 @@ export class BlackboardCommentsService {
     }
 
     if (parentId !== undefined) {
-      const parentRows = await this.db.query<{ entry_id: number }>(
+      const parentRows = await this.db.tenantQuery<{ entry_id: number }>(
         `SELECT entry_id FROM blackboard_comments
          WHERE id = $1 AND tenant_id = $2`,
         [parentId, tenantId],
@@ -140,7 +140,7 @@ export class BlackboardCommentsService {
       }
     }
 
-    const rows = await this.db.query<{ id: number }>(
+    const rows = await this.db.tenantQuery<{ id: number }>(
       `INSERT INTO blackboard_comments (tenant_id, entry_id, user_id, comment, is_internal, parent_id)
        VALUES ($1, $2, $3, $4, $5, $6)
        RETURNING id`,
@@ -169,7 +169,7 @@ export class BlackboardCommentsService {
   async deleteComment(commentId: number, tenantId: number): Promise<{ message: string }> {
     this.logger.log(`Deleting comment ${commentId}`);
 
-    await this.db.query('DELETE FROM blackboard_comments WHERE id = $1 AND tenant_id = $2', [
+    await this.db.tenantQuery('DELETE FROM blackboard_comments WHERE id = $1 AND tenant_id = $2', [
       commentId,
       tenantId,
     ]);
@@ -194,7 +194,7 @@ export class BlackboardCommentsService {
       return id;
     }
 
-    const entries = await this.db.query<{ id: number }>(
+    const entries = await this.db.tenantQuery<{ id: number }>(
       'SELECT id FROM blackboard_entries WHERE uuid = $1 AND tenant_id = $2',
       [id, tenantId],
     );

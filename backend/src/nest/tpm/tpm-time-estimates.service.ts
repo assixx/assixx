@@ -105,7 +105,7 @@ export class TpmTimeEstimatesService {
 
   /** Get all time estimates for a plan */
   async getEstimatesForPlan(tenantId: number, planUuid: string): Promise<TpmTimeEstimate[]> {
-    const rows = await this.db.query<TpmTimeEstimateRow>(
+    const rows = await this.db.tenantQuery<TpmTimeEstimateRow>(
       `SELECT te.*
        FROM tpm_time_estimates te
        JOIN tpm_maintenance_plans p ON te.plan_id = p.id
@@ -123,7 +123,7 @@ export class TpmTimeEstimatesService {
     planUuid: string,
     intervalType: TpmIntervalType,
   ): Promise<TpmTimeEstimate | null> {
-    const row = await this.db.queryOne<TpmTimeEstimateRow>(
+    const row = await this.db.tenantQueryOne<TpmTimeEstimateRow>(
       `SELECT te.*
        FROM tpm_time_estimates te
        JOIN tpm_maintenance_plans p ON te.plan_id = p.id

@@ -44,13 +44,16 @@ vi.mock('../../utils/employee-id-generator.js', () => ({
 function createMockDb() {
   const db = {
     query: vi.fn(),
+    systemQuery: vi.fn(),
+    systemQueryOne: vi.fn(),
     tenantTransaction: vi.fn(),
+    systemTransaction: vi.fn(),
   };
   const clientQuery = vi.fn(async (...args: unknown[]) => {
-    const rows: unknown = await db.query(...args);
+    const rows: unknown = await db.systemQuery(...args);
     return { rows: rows ?? [] };
   });
-  db.tenantTransaction.mockImplementation(
+  db.systemTransaction.mockImplementation(
     (callback: (client: { query: typeof clientQuery }) => Promise<unknown>) =>
       callback({ query: clientQuery }),
   );
@@ -226,7 +229,7 @@ describe('RootService', () => {
 
   describe('getRootUsers', () => {
     it('should return mapped root users', async () => {
-      mockDb.query.mockResolvedValueOnce([makeDbUserRow()]);
+      mockDb.systemQuery.mockResolvedValueOnce([makeDbUserRow()]);
 
       const result = await service.getRootUsers(10);
 
@@ -241,7 +244,7 @@ describe('RootService', () => {
 
   describe('getRootUserById', () => {
     it('should return null when not found', async () => {
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.systemQuery.mockResolvedValueOnce([]);
 
       const result = await service.getRootUserById(999, 10);
 
@@ -249,7 +252,7 @@ describe('RootService', () => {
     });
 
     it('should return mapped root user', async () => {
-      mockDb.query.mockResolvedValueOnce([makeDbUserRow()]);
+      mockDb.systemQuery.mockResolvedValueOnce([makeDbUserRow()]);
 
       const result = await service.getRootUserById(1, 10);
 
@@ -283,11 +286,11 @@ describe('RootService', () => {
     it('should create root user and return id', async () => {
       // isEmailTaken → false
       // getTenantSubdomain
-      mockDb.query.mockResolvedValueOnce([{ subdomain: 'testcorp' }]);
+      mockDb.systemQuery.mockResolvedValueOnce([{ subdomain: 'testcorp' }]);
       // INSERT RETURNING id
-      mockDb.query.mockResolvedValueOnce([{ id: 5 }]);
+      mockDb.systemQuery.mockResolvedValueOnce([{ id: 5 }]);
       // UPDATE employee_id
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.systemQuery.mockResolvedValueOnce([]);
 
       const result = await service.createRootUser(
         {
@@ -312,7 +315,7 @@ describe('RootService', () => {
   describe('updateRootUser', () => {
     it('should throw NotFoundException when user not found', async () => {
       // getRootUserById → empty
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.systemQuery.mockResolvedValueOnce([]);
 
       await expect(service.updateRootUser(999, { firstName: 'Updated' }, 10)).rejects.toThrow(
         NotFoundException,
@@ -331,34 +334,34 @@ describe('RootService', () => {
 
     it('should throw NotFoundException when user not found', async () => {
       // getRootUserById → empty
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.systemQuery.mockResolvedValueOnce([]);
 
       await expect(service.deleteRootUser(99, 10, 1)).rejects.toThrow(NotFoundException);
     });
 
     it('should throw BadRequestException when last root user', async () => {
       // getRootUserById → found
-      mockDb.query.mockResolvedValueOnce([makeDbUserRow({ id: 2 })]);
+      mockDb.systemQuery.mockResolvedValueOnce([makeDbUserRow({ id: 2 })]);
       // COUNT root users (excluding this one) → 0
-      mockDb.query.mockResolvedValueOnce([{ count: '0' }]);
+      mockDb.systemQuery.mockResolvedValueOnce([{ count: '0' }]);
 
       await expect(service.deleteRootUser(2, 10, 1)).rejects.toThrow(BadRequestException);
     });
 
     it('should delete root user when not last', async () => {
       // getRootUserById → found
-      mockDb.query.mockResolvedValueOnce([makeDbUserRow({ id: 2 })]);
+      mockDb.systemQuery.mockResolvedValueOnce([makeDbUserRow({ id: 2 })]);
       // COUNT root users → 1 remaining
-      mockDb.query.mockResolvedValueOnce([{ count: '1' }]);
+      mockDb.systemQuery.mockResolvedValueOnce([{ count: '1' }]);
       // logDelete activity logger
       // DELETE oauth_tokens
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.systemQuery.mockResolvedValueOnce([]);
       // DELETE user_teams
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.systemQuery.mockResolvedValueOnce([]);
       // DELETE user_departments
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.systemQuery.mockResolvedValueOnce([]);
       // DELETE users
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.systemQuery.mockResolvedValueOnce([]);
 
       await service.deleteRootUser(2, 10, 1);
 
@@ -377,9 +380,9 @@ describe('RootService', () => {
         .mockResolvedValueOnce(50); // employee count
       mockUserRepo.countAll.mockResolvedValueOnce(55);
       // tenant count
-      mockDb.query.mockResolvedValueOnce([{ count: '2' }]);
+      mockDb.systemQuery.mockResolvedValueOnce([{ count: '2' }]);
       // addons
-      mockDb.query.mockResolvedValueOnce([{ code: 'chat' }, { code: 'documents' }]);
+      mockDb.systemQuery.mockResolvedValueOnce([{ code: 'chat' }, { code: 'documents' }]);
 
       const result = await service.getDashboardStats(10);
 

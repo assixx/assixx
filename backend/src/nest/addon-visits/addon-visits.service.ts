@@ -29,7 +29,7 @@ export class AddonVisitsService {
   async markVisited(tenantId: number, userId: number, addon: VisitableAddon): Promise<void> {
     this.logger.debug(`Marking ${addon} as visited for user ${userId}`);
 
-    await this.db.query(
+    await this.db.tenantQuery(
       `INSERT INTO addon_visits (tenant_id, user_id, addon, last_visited_at)
        VALUES ($1, $2, $3, NOW())
        ON CONFLICT (user_id, addon, tenant_id)
@@ -44,7 +44,7 @@ export class AddonVisitsService {
     userId: number,
     addon: VisitableAddon,
   ): Promise<Date | null> {
-    const result = await this.db.queryOne<AddonVisitRow>(
+    const result = await this.db.tenantQueryOne<AddonVisitRow>(
       `SELECT last_visited_at FROM addon_visits
        WHERE tenant_id = $1 AND user_id = $2 AND addon = $3`,
       [tenantId, userId, addon],
@@ -55,7 +55,7 @@ export class AddonVisitsService {
 
   /** Get all addon visits for a user. */
   async getAllVisits(tenantId: number, userId: number): Promise<Map<VisitableAddon, Date>> {
-    const rows = await this.db.query<AddonVisitRow>(
+    const rows = await this.db.tenantQuery<AddonVisitRow>(
       `SELECT addon, last_visited_at FROM addon_visits
        WHERE tenant_id = $1 AND user_id = $2`,
       [tenantId, userId],

@@ -38,9 +38,8 @@ function createMockClsService() {
 }
 
 function createMockDatabaseService() {
-  return {
-    query: vi.fn(),
-  };
+  const queryFn = vi.fn();
+  return { query: queryFn, queryAsTenant: queryFn };
 }
 
 interface MockRequestOptions {

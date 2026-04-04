@@ -98,7 +98,7 @@ export class TenantDeletionAudit {
     if (client) {
       await executeAudit(client);
     } else {
-      await this.db.transaction(async (c: PoolClient) => {
+      await this.db.systemTransaction(async (c: PoolClient) => {
         await executeAudit(c);
       });
     }
@@ -109,7 +109,7 @@ export class TenantDeletionAudit {
    * Standalone operation — manages its own DB query (no transaction needed).
    */
   async sendDeletionWarningEmails(tenantId: number, scheduledDate: Date): Promise<void> {
-    const admins = await this.db.query<DeletionWarningUser>(
+    const admins = await this.db.systemQuery<DeletionWarningUser>(
       "SELECT email, first_name, last_name FROM users WHERE tenant_id = $1 AND role IN ('admin', 'root')",
       [tenantId],
     );

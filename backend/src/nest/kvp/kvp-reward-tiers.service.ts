@@ -29,7 +29,7 @@ export class KvpRewardTiersService {
 
   /** List all active reward tiers for a tenant (sorted by sort_order, then amount) */
   async findAll(tenantId: number): Promise<RewardTier[]> {
-    const rows = await this.db.query<RewardTierRow>(
+    const rows = await this.db.tenantQuery<RewardTierRow>(
       `SELECT id, amount, sort_order, is_active
        FROM kvp_reward_tiers
        WHERE tenant_id = $1 AND is_active = $2
@@ -47,7 +47,7 @@ export class KvpRewardTiersService {
   /** Create a new reward tier */
   async create(tenantId: number, amount: number): Promise<RewardTier> {
     try {
-      const maxSort = await this.db.query<{ max: string | null }>(
+      const maxSort = await this.db.tenantQuery<{ max: string | null }>(
         `SELECT MAX(sort_order)::text AS max
          FROM kvp_reward_tiers
          WHERE tenant_id = $1 AND is_active = $2`,
@@ -55,7 +55,7 @@ export class KvpRewardTiersService {
       );
       const nextSort = Number(maxSort[0]?.max ?? '0') + 1;
 
-      const rows = await this.db.query<RewardTierRow>(
+      const rows = await this.db.tenantQuery<RewardTierRow>(
         `INSERT INTO kvp_reward_tiers (tenant_id, amount, sort_order)
          VALUES ($1, $2, $3)
          RETURNING id, amount, sort_order, is_active`,
@@ -79,7 +79,7 @@ export class KvpRewardTiersService {
 
   /** Soft-delete a reward tier */
   async remove(tenantId: number, tierId: number): Promise<void> {
-    const result = await this.db.query<{ id: number }>(
+    const result = await this.db.tenantQuery<{ id: number }>(
       `UPDATE kvp_reward_tiers
        SET is_active = $1, updated_at = NOW()
        WHERE id = $2 AND tenant_id = $3 AND is_active = $4

@@ -32,7 +32,8 @@ vi.mock('./kvp.helpers.js', () => ({
 // =============================================================
 
 function createMockDb() {
-  return { query: vi.fn() };
+  const qf = vi.fn();
+  return { query: qf, tenantQuery: qf };
 }
 type MockDb = ReturnType<typeof createMockDb>;
 
@@ -157,14 +158,13 @@ describe('KvpLifecycleService', () => {
     it('should archive suggestion and log activity', async () => {
       // Q1: findSuggestionOrThrow SELECT
       mockDb.query.mockResolvedValueOnce([{ id: 42, title: 'Mein Vorschlag', status: 'open' }]);
-      // Q2: UPDATE status='archived'
-      mockDb.query.mockResolvedValueOnce([]);
+      // Q2: UPDATE status='archived' (tenantQuery)
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       const result = await service.archiveSuggestion(42, 1, 100);
 
       expect(result.message).toBe('Suggestion archived successfully');
-      expect(mockDb.query).toHaveBeenNthCalledWith(
-        2,
+      expect(mockDb.tenantQuery).toHaveBeenCalledWith(
         expect.stringContaining("status = 'archived'"),
         [42, 1],
       );
@@ -188,7 +188,7 @@ describe('KvpLifecycleService', () => {
     it('should use uuid column when id is UUID', async () => {
       mockIsUuid.mockReturnValueOnce(true);
       mockDb.query.mockResolvedValueOnce([{ id: 42, title: 'Test', status: 'open' }]);
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       await service.archiveSuggestion('abc-uuid', 1, 100);
 
@@ -207,14 +207,13 @@ describe('KvpLifecycleService', () => {
     it('should restore suggestion and log activity', async () => {
       // Q1: findSuggestionOrThrow SELECT
       mockDb.query.mockResolvedValueOnce([{ id: 42, title: 'Mein Vorschlag', status: 'archived' }]);
-      // Q2: UPDATE status='restored'
-      mockDb.query.mockResolvedValueOnce([]);
+      // Q2: UPDATE status='restored' (tenantQuery)
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       const result = await service.unarchiveSuggestion(42, 1, 100);
 
       expect(result.message).toBe('Suggestion restored successfully');
-      expect(mockDb.query).toHaveBeenNthCalledWith(
-        2,
+      expect(mockDb.tenantQuery).toHaveBeenCalledWith(
         expect.stringContaining("status = 'restored'"),
         [42, 1],
       );

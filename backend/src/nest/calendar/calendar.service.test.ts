@@ -21,14 +21,14 @@ import { CalendarService } from './calendar.service.js';
 
 function createServiceWithMock(): {
   service: CalendarService;
-  mockDb: { query: ReturnType<typeof vi.fn> };
+  mockDb: { tenantQuery: ReturnType<typeof vi.fn>; tenantQueryOne: ReturnType<typeof vi.fn> };
   mockActivityLogger: Record<string, ReturnType<typeof vi.fn>>;
   mockPermission: Record<string, ReturnType<typeof vi.fn>>;
   mockCreation: Record<string, ReturnType<typeof vi.fn>>;
   mockOverview: Record<string, ReturnType<typeof vi.fn>>;
   mockScope: { getScope: ReturnType<typeof vi.fn> };
 } {
-  const mockDb = { query: vi.fn() };
+  const mockDb = { tenantQuery: vi.fn(), tenantQueryOne: vi.fn().mockResolvedValue(null) };
   const mockActivityLogger = {
     logCreate: vi.fn(),
     logUpdate: vi.fn(),
@@ -197,7 +197,7 @@ describe('CalendarService – pure helpers', () => {
 
 describe('CalendarService – DB-mocked methods', () => {
   let service: CalendarService;
-  let mockDb: { query: ReturnType<typeof vi.fn> };
+  let mockDb: { tenantQuery: ReturnType<typeof vi.fn>; tenantQueryOne: ReturnType<typeof vi.fn> };
   let mockPermission: Record<string, ReturnType<typeof vi.fn>>;
   let mockCreation: Record<string, ReturnType<typeof vi.fn>>;
   let mockActivityLogger: Record<string, ReturnType<typeof vi.fn>>;
@@ -215,13 +215,13 @@ describe('CalendarService – DB-mocked methods', () => {
 
   describe('getEventById', () => {
     it('throws NotFoundException when event does not exist', async () => {
-      mockDb.query.mockResolvedValueOnce([]); // SELECT event
+      mockDb.tenantQuery.mockResolvedValueOnce([]); // SELECT event
 
       await expect(service.getEventById(999, 1, 1)).rejects.toThrow(NotFoundException);
     });
 
     it('throws NotFoundException when user has no access', async () => {
-      mockDb.query.mockResolvedValueOnce([
+      mockDb.tenantQuery.mockResolvedValueOnce([
         {
           id: 1,
           title: 'Secret Event',
@@ -238,7 +238,7 @@ describe('CalendarService – DB-mocked methods', () => {
 
     it('returns event with attendees on happy path', async () => {
       const now = new Date();
-      mockDb.query.mockResolvedValueOnce([
+      mockDb.tenantQuery.mockResolvedValueOnce([
         {
           id: 1,
           uuid: 'evt-uuid',
@@ -283,7 +283,7 @@ describe('CalendarService – DB-mocked methods', () => {
 
   describe('updateEvent', () => {
     it('throws NotFoundException when event does not exist', async () => {
-      mockDb.query.mockResolvedValueOnce([]); // SELECT
+      mockDb.tenantQuery.mockResolvedValueOnce([]); // SELECT
 
       await expect(
         service.updateEvent(999, { title: 'New' } as never, 1, 1, 'admin'),
@@ -294,7 +294,7 @@ describe('CalendarService – DB-mocked methods', () => {
       const tomorrow = new Date();
       tomorrow.setDate(tomorrow.getDate() + 1);
 
-      mockDb.query.mockResolvedValueOnce([
+      mockDb.tenantQuery.mockResolvedValueOnce([
         {
           id: 1,
           title: 'Event',
@@ -314,7 +314,7 @@ describe('CalendarService – DB-mocked methods', () => {
       const yesterday = new Date();
       yesterday.setDate(yesterday.getDate() - 1);
 
-      mockDb.query.mockResolvedValueOnce([
+      mockDb.tenantQuery.mockResolvedValueOnce([
         {
           id: 1,
           title: 'Past Event',
@@ -336,7 +336,7 @@ describe('CalendarService – DB-mocked methods', () => {
       const now = new Date();
 
       // SELECT existing event
-      mockDb.query.mockResolvedValueOnce([
+      mockDb.tenantQuery.mockResolvedValueOnce([
         {
           id: 1,
           uuid: 'evt-uuid',
@@ -358,9 +358,9 @@ describe('CalendarService – DB-mocked methods', () => {
         },
       ]);
       // UPDATE query
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
       // getEventById → SELECT event
-      mockDb.query.mockResolvedValueOnce([
+      mockDb.tenantQuery.mockResolvedValueOnce([
         {
           id: 1,
           uuid: 'evt-uuid',
@@ -402,7 +402,7 @@ describe('CalendarService – DB-mocked methods', () => {
 
   describe('deleteEvent', () => {
     it('throws NotFoundException when event does not exist', async () => {
-      mockDb.query.mockResolvedValueOnce([]); // SELECT
+      mockDb.tenantQuery.mockResolvedValueOnce([]); // SELECT
 
       await expect(service.deleteEvent(999, 1, 1, 'admin')).rejects.toThrow(NotFoundException);
     });
@@ -411,7 +411,7 @@ describe('CalendarService – DB-mocked methods', () => {
       const tomorrow = new Date();
       tomorrow.setDate(tomorrow.getDate() + 1);
 
-      mockDb.query.mockResolvedValueOnce([
+      mockDb.tenantQuery.mockResolvedValueOnce([
         {
           id: 1,
           title: 'Event',
@@ -429,7 +429,7 @@ describe('CalendarService – DB-mocked methods', () => {
       const yesterday = new Date();
       yesterday.setDate(yesterday.getDate() - 1);
 
-      mockDb.query.mockResolvedValueOnce([
+      mockDb.tenantQuery.mockResolvedValueOnce([
         {
           id: 1,
           title: 'Past Event',
@@ -447,7 +447,7 @@ describe('CalendarService – DB-mocked methods', () => {
       const tomorrow = new Date();
       tomorrow.setDate(tomorrow.getDate() + 1);
 
-      mockDb.query
+      mockDb.tenantQuery
         .mockResolvedValueOnce([
           {
             id: 1,
@@ -471,7 +471,7 @@ describe('CalendarService – DB-mocked methods', () => {
       const tomorrow = new Date();
       tomorrow.setDate(tomorrow.getDate() + 1);
 
-      mockDb.query
+      mockDb.tenantQuery
         .mockResolvedValueOnce([
           {
             id: 1,
@@ -490,7 +490,7 @@ describe('CalendarService – DB-mocked methods', () => {
       const result = await service.deleteEvent(1, 1, 5, 'admin');
 
       expect(result.message).toBe('Event deleted successfully');
-      expect(mockDb.query).toHaveBeenCalledTimes(3);
+      expect(mockDb.tenantQuery).toHaveBeenCalledTimes(3);
     });
   });
 
@@ -519,7 +519,7 @@ describe('CalendarService – DB-mocked methods', () => {
       mockCreation.logEventCreated.mockResolvedValueOnce(undefined);
 
       // getEventById called at the end → SELECT event + access check + attendees
-      mockDb.query.mockResolvedValueOnce([
+      mockDb.tenantQuery.mockResolvedValueOnce([
         {
           id: 42,
           uuid: 'new-uuid',
@@ -564,7 +564,7 @@ describe('CalendarService – DB-mocked methods', () => {
 
   describe('countEvents (private)', () => {
     it('should default to 0 when COUNT returns no rows', async () => {
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       const result = await service['countEvents']('SELECT COUNT(*) as count FROM x', []);
 
@@ -574,7 +574,7 @@ describe('CalendarService – DB-mocked methods', () => {
 
   describe('resolveEventIdByUuid', () => {
     it('throws NotFoundException when UUID not found', async () => {
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       await expect(service['resolveEventIdByUuid']('non-existent-uuid', 1)).rejects.toThrow(
         NotFoundException,
@@ -582,7 +582,7 @@ describe('CalendarService – DB-mocked methods', () => {
     });
 
     it('returns ID for valid UUID', async () => {
-      mockDb.query.mockResolvedValueOnce([{ id: 42 }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ id: 42 }]);
 
       const result = await service['resolveEventIdByUuid']('valid-uuid', 1);
 
@@ -644,9 +644,9 @@ describe('CalendarService – DB-mocked methods', () => {
       });
 
       // COUNT query
-      db.query.mockResolvedValueOnce([{ count: '2' }]);
+      db.tenantQuery.mockResolvedValueOnce([{ count: '2' }]);
       // SELECT events
-      db.query.mockResolvedValueOnce([
+      db.tenantQuery.mockResolvedValueOnce([
         {
           id: 1,
           uuid: 'u1',
@@ -721,8 +721,8 @@ describe('CalendarService – DB-mocked methods', () => {
         newIndex: 3,
       });
 
-      db.query.mockResolvedValueOnce([{ count: '0' }]);
-      db.query.mockResolvedValueOnce([]);
+      db.tenantQuery.mockResolvedValueOnce([{ count: '0' }]);
+      db.tenantQuery.mockResolvedValueOnce([]);
 
       const result = await svc.listEvents(1, 5, null, null, {
         status: undefined,
@@ -737,7 +737,7 @@ describe('CalendarService – DB-mocked methods', () => {
       });
 
       expect(result.events).toHaveLength(0);
-      const selectCall = db.query.mock.calls[1]?.[0] as string;
+      const selectCall = db.tenantQuery.mock.calls[1]?.[0] as string;
       expect(selectCall).toContain('ORDER BY e.start_date');
     });
 
@@ -763,8 +763,8 @@ describe('CalendarService – DB-mocked methods', () => {
         newIndex: 3,
       });
 
-      db.query.mockResolvedValueOnce([{ count: '0' }]);
-      db.query.mockResolvedValueOnce([]);
+      db.tenantQuery.mockResolvedValueOnce([{ count: '0' }]);
+      db.tenantQuery.mockResolvedValueOnce([]);
 
       const result = await svc.listEvents(1, 5, null, null, {
         status: 'cancelled',
@@ -786,7 +786,7 @@ describe('CalendarService – DB-mocked methods', () => {
   describe('exportEvents', () => {
     it('returns ICS export string', async () => {
       const now = new Date();
-      mockDb.query.mockResolvedValueOnce([
+      mockDb.tenantQuery.mockResolvedValueOnce([
         {
           id: 1,
           uuid: 'u1',
@@ -816,7 +816,7 @@ describe('CalendarService – DB-mocked methods', () => {
 
     it('returns CSV export string', async () => {
       const now = new Date();
-      mockDb.query.mockResolvedValueOnce([
+      mockDb.tenantQuery.mockResolvedValueOnce([
         {
           id: 1,
           uuid: 'u1',
@@ -849,9 +849,9 @@ describe('CalendarService – DB-mocked methods', () => {
     it('getEventByUuid resolves UUID and delegates', async () => {
       const now = new Date();
       // resolveEventIdByUuid query
-      mockDb.query.mockResolvedValueOnce([{ id: 10 }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ id: 10 }]);
       // getEventById query
-      mockDb.query.mockResolvedValueOnce([
+      mockDb.tenantQuery.mockResolvedValueOnce([
         {
           id: 10,
           uuid: 'test-uuid',
@@ -886,9 +886,9 @@ describe('CalendarService – DB-mocked methods', () => {
       const now = new Date();
 
       // resolveEventIdByUuid
-      mockDb.query.mockResolvedValueOnce([{ id: 10 }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ id: 10 }]);
       // updateEvent → SELECT existing
-      mockDb.query.mockResolvedValueOnce([
+      mockDb.tenantQuery.mockResolvedValueOnce([
         {
           id: 10,
           uuid: 'test-uuid',
@@ -910,9 +910,9 @@ describe('CalendarService – DB-mocked methods', () => {
         },
       ]);
       // UPDATE
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
       // getEventById at end
-      mockDb.query.mockResolvedValueOnce([
+      mockDb.tenantQuery.mockResolvedValueOnce([
         {
           id: 10,
           uuid: 'test-uuid',
@@ -953,9 +953,9 @@ describe('CalendarService – DB-mocked methods', () => {
       tomorrow.setDate(tomorrow.getDate() + 1);
 
       // resolveEventIdByUuid
-      mockDb.query.mockResolvedValueOnce([{ id: 10 }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ id: 10 }]);
       // deleteEvent → SELECT
-      mockDb.query.mockResolvedValueOnce([
+      mockDb.tenantQuery.mockResolvedValueOnce([
         {
           id: 10,
           title: 'Delete Me',
@@ -966,9 +966,9 @@ describe('CalendarService – DB-mocked methods', () => {
         },
       ]);
       // DELETE attendees
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
       // DELETE event
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
       mockActivityLogger.logDelete.mockResolvedValueOnce(undefined);
 
       const result = await service.deleteEventByUuid('test-uuid', 1, 5, 'admin');

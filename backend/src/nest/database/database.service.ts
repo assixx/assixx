@@ -12,7 +12,7 @@ import { ClsService } from 'nestjs-cls';
 import type { PoolClient, QueryResultRow } from 'pg';
 import { Pool } from 'pg';
 
-import { PG_POOL } from './database.constants.js';
+import { PG_POOL, SYSTEM_POOL } from './database.constants.js';
 
 interface TransactionOptions {
   /** Tenant ID for RLS context */
@@ -27,6 +27,7 @@ export class DatabaseService {
 
   constructor(
     @Inject(PG_POOL) private readonly pool: Pool,
+    @Inject(SYSTEM_POOL) private readonly systemPool: Pool,
     private readonly cls: ClsService,
   ) {}
 
@@ -98,10 +99,60 @@ export class DatabaseService {
     const userId = this.cls.get<number | undefined>('userId');
 
     if (tenantId === undefined) {
-      this.logger.warn('tenantTransaction called without tenantId in CLS context');
+      throw new Error(
+        'tenantTransaction called without tenantId in CLS context — use transaction() with explicit tenantId for system-level operations',
+      );
     }
 
     return await this.transaction(callback, { tenantId, userId });
+  }
+
+  // ============================================
+  // Tenant-scoped queries (app_user + RLS context from CLS)
+  // Used for: ALL authenticated tenant-scoped reads/writes
+  // ============================================
+
+  /** Execute a single query with RLS context from CLS. Throws if no tenant context. */
+  async tenantQuery<T extends QueryResultRow>(sql: string, params?: unknown[]): Promise<T[]> {
+    const tenantId = this.cls.get<number | undefined>('tenantId');
+
+    if (tenantId === undefined) {
+      throw new Error(
+        'tenantQuery called without tenantId in CLS context — use systemQuery() for cross-tenant operations',
+      );
+    }
+
+    return await this.transaction(
+      async (client: PoolClient) => {
+        const result = await client.query(sql, params);
+        return result.rows as T[];
+      },
+      { tenantId },
+    );
+  }
+
+  async tenantQueryOne<T extends QueryResultRow>(
+    sql: string,
+    params?: unknown[],
+  ): Promise<T | null> {
+    const rows = await this.tenantQuery<T>(sql, params);
+    return rows[0] ?? null;
+  }
+
+  /** Execute a query with explicit tenant context (no CLS needed).
+   *  Used by: WebSocket, workers, background tasks with known tenantId */
+  async queryAsTenant<T extends QueryResultRow>(
+    sql: string,
+    params: unknown[] | undefined,
+    tenantId: number,
+  ): Promise<T[]> {
+    return await this.transaction(
+      async (client: PoolClient) => {
+        const result = await client.query(sql, params);
+        return result.rows as T[];
+      },
+      { tenantId },
+    );
   }
 
   /**
@@ -126,6 +177,51 @@ export class DatabaseService {
 
   getUserId(): number | undefined {
     return this.cls.get<number | undefined>('userId');
+  }
+
+  // ============================================
+  // System pool methods (sys_user — BYPASSRLS)
+  // Used for: cron, auth, signup, root, deletion
+  // ============================================
+
+  /** Execute a query on the system pool (BYPASSRLS — no RLS filtering) */
+  async systemQuery<T extends QueryResultRow>(sql: string, params?: unknown[]): Promise<T[]> {
+    const result = await this.systemPool.query(sql, params);
+    return result.rows as T[];
+  }
+
+  async systemQueryOne<T extends QueryResultRow>(
+    sql: string,
+    params?: unknown[],
+  ): Promise<T | null> {
+    const rows = await this.systemQuery<T>(sql, params);
+    return rows[0] ?? null;
+  }
+
+  /** Execute a transaction on the system pool (BYPASSRLS) */
+  async systemTransaction<T>(callback: (client: PoolClient) => Promise<T>): Promise<T> {
+    const client = await this.systemPool.connect();
+
+    try {
+      await client.query('BEGIN');
+      const result = await callback(client);
+      await client.query('COMMIT');
+      return result;
+    } catch (error: unknown) {
+      await client.query('ROLLBACK');
+
+      if (error instanceof HttpException) {
+        this.logger.debug(
+          `System transaction rolled back (HTTP ${String(error.getStatus())}: ${error.message})`,
+        );
+      } else {
+        this.logger.error('System transaction failed, rolled back', error);
+      }
+
+      throw error;
+    } finally {
+      client.release();
+    }
   }
 
   /**
@@ -183,7 +279,7 @@ export class DatabaseService {
    * Called on application shutdown
    */
   async closePool(): Promise<void> {
-    await this.pool.end();
+    await Promise.all([this.pool.end(), this.systemPool.end()]);
   }
 
   async isHealthy(): Promise<boolean> {

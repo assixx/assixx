@@ -120,7 +120,7 @@ export class CalendarService {
     query += ` ORDER BY e.${sortBy} ${sortDir} LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
     params.push(limit, offset);
 
-    const events = await this.databaseService.query<DbCalendarEvent>(query, params);
+    const events = await this.databaseService.tenantQuery<DbCalendarEvent>(query, params);
 
     return {
       events: events.map((e: DbCalendarEvent) => dbToApiEvent(e)),
@@ -136,7 +136,7 @@ export class CalendarService {
     tenantId: number,
     userId: number,
   ): Promise<CalendarEventResponse> {
-    const events = await this.databaseService.query<DbCalendarEvent>(
+    const events = await this.databaseService.tenantQuery<DbCalendarEvent>(
       `SELECT e.*, u.username as creator_name
        FROM calendar_events e
        LEFT JOIN users u ON e.user_id = u.id
@@ -263,7 +263,7 @@ export class CalendarService {
   ): Promise<CalendarEventResponse> {
     this.logger.log(`Updating event ${eventId}`);
 
-    const events = await this.databaseService.query<DbCalendarEvent>(
+    const events = await this.databaseService.tenantQuery<DbCalendarEvent>(
       `SELECT * FROM calendar_events WHERE id = $1 AND tenant_id = $2`,
       [eventId, tenantId],
     );
@@ -287,7 +287,7 @@ export class CalendarService {
     const paramIndex = params.length + 1;
 
     params.push(eventId, tenantId);
-    await this.databaseService.query(
+    await this.databaseService.tenantQuery(
       `UPDATE calendar_events SET ${updates.join(', ')} WHERE id = $${paramIndex} AND tenant_id = $${paramIndex + 1}`,
       params,
     );
@@ -325,7 +325,7 @@ export class CalendarService {
   ): Promise<{ message: string }> {
     this.logger.log(`Deleting event ${eventId}`);
 
-    const events = await this.databaseService.query<DbCalendarEvent>(
+    const events = await this.databaseService.tenantQuery<DbCalendarEvent>(
       `SELECT * FROM calendar_events WHERE id = $1 AND tenant_id = $2`,
       [eventId, tenantId],
     );
@@ -346,12 +346,13 @@ export class CalendarService {
     }
 
     // Delete attendees first
-    await this.databaseService.query(`DELETE FROM calendar_attendees WHERE event_id = $1`, [
-      eventId,
-    ]);
+    await this.databaseService.tenantQuery(
+      `DELETE FROM calendar_attendees WHERE event_id = $1 AND tenant_id = $2`,
+      [eventId, tenantId],
+    );
 
     // Delete event
-    await this.databaseService.query(
+    await this.databaseService.tenantQuery(
       `DELETE FROM calendar_events WHERE id = $1 AND tenant_id = $2`,
       [eventId, tenantId],
     );
@@ -381,7 +382,7 @@ export class CalendarService {
    * Resolve event ID from UUID
    */
   private async resolveEventIdByUuid(uuid: string, tenantId: number): Promise<number> {
-    const result = await this.databaseService.query<{ id: number }>(
+    const result = await this.databaseService.tenantQuery<{ id: number }>(
       `SELECT id FROM calendar_events WHERE uuid = $1 AND tenant_id = $2`,
       [uuid, tenantId],
     );
@@ -435,7 +436,7 @@ export class CalendarService {
     _userDepartmentId: number | null,
     format: 'ics' | 'csv',
   ): Promise<string> {
-    const events = await this.databaseService.query<DbCalendarEvent>(
+    const events = await this.databaseService.tenantQuery<DbCalendarEvent>(
       `SELECT e.*, u.username as creator_name
        FROM calendar_events e
        LEFT JOIN users u ON e.user_id = u.id
@@ -502,7 +503,10 @@ export class CalendarService {
       'SELECT e.*, u.username as creator_name',
       'SELECT COUNT(*) as count',
     );
-    const countResult = await this.databaseService.query<{ count: string }>(countQuery, params);
+    const countResult = await this.databaseService.tenantQuery<{ count: string }>(
+      countQuery,
+      params,
+    );
     return Number.parseInt(countResult[0]?.count ?? '0', 10);
   }
 

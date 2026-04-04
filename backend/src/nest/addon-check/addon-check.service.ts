@@ -51,7 +51,7 @@ export class AddonCheckService {
       }
 
       // Step 2: Purchasable addon — check tenant_addons
-      const rows = await this.db.query<{ id: string }>(
+      const rows = await this.db.tenantQuery<{ id: string }>(
         `SELECT ta.id
          FROM tenant_addons ta
          WHERE ta.tenant_id = $1
@@ -88,7 +88,7 @@ export class AddonCheckService {
         return false;
       }
 
-      await this.db.query(
+      await this.db.tenantQuery(
         `INSERT INTO addon_usage_logs
            (tenant_id, addon_id, user_id, action, metadata)
          VALUES ($1, $2, $3, 'usage', $4)`,

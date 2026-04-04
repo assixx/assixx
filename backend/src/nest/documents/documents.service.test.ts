@@ -35,7 +35,13 @@ vi.mock('../../utils/event-bus.js', () => ({
 // =============================================================
 
 function createMockDb() {
-  return { query: vi.fn() };
+  const tenantQuery = vi.fn();
+  return {
+    tenantQuery,
+    tenantQueryOne: vi.fn().mockResolvedValue(null),
+    /** Helper functions in documents.helpers.ts still call db.query directly */
+    query: tenantQuery,
+  };
 }
 
 function createMockAccessService() {
@@ -129,23 +135,23 @@ describe('DocumentsService', () => {
 
   describe('getDocumentById', () => {
     it('should throw NotFoundException when document not found', async () => {
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       await expect(service.getDocumentById(999, 42, 1)).rejects.toThrow(NotFoundException);
     });
 
     it('should throw ForbiddenException when user has no access', async () => {
-      mockDb.query.mockResolvedValueOnce([createDocRow()]);
+      mockDb.tenantQuery.mockResolvedValueOnce([createDocRow()]);
       mockAccess.checkDocumentAccess.mockResolvedValueOnce(false);
 
       await expect(service.getDocumentById(1, 42, 99)).rejects.toThrow(ForbiddenException);
     });
 
     it('should return enriched document when user has access', async () => {
-      mockDb.query.mockResolvedValueOnce([createDocRow()]);
+      mockDb.tenantQuery.mockResolvedValueOnce([createDocRow()]);
       mockAccess.checkDocumentAccess.mockResolvedValueOnce(true);
       // markAsRead
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
       mockAccess.isDocumentRead.mockResolvedValueOnce(true);
 
       const result = await service.getDocumentById(1, 42, 10);
@@ -160,7 +166,7 @@ describe('DocumentsService', () => {
 
   describe('getDocumentByFileUuid', () => {
     it('should return null when document not found', async () => {
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       const result = await service.getDocumentByFileUuid('missing-uuid', 42, 1);
 
@@ -168,7 +174,7 @@ describe('DocumentsService', () => {
     });
 
     it('should return null when user has no access', async () => {
-      mockDb.query.mockResolvedValueOnce([createDocRow()]);
+      mockDb.tenantQuery.mockResolvedValueOnce([createDocRow()]);
       mockAccess.checkDocumentAccess.mockResolvedValueOnce(false);
 
       const result = await service.getDocumentByFileUuid('test-uuid', 42, 99);
@@ -184,32 +190,32 @@ describe('DocumentsService', () => {
   describe('deleteDocument', () => {
     it('should throw NotFoundException when document missing', async () => {
       // getDocumentRow → query returns empty
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       await expect(service.deleteDocument(999, 42, 1)).rejects.toThrow(NotFoundException);
     });
 
     it('should throw ForbiddenException for non-admin user', async () => {
       // getDocumentRow
-      mockDb.query.mockResolvedValueOnce([createDocRow()]);
+      mockDb.tenantQuery.mockResolvedValueOnce([createDocRow()]);
       // getUserById → employee
-      mockDb.query.mockResolvedValueOnce([{ role: 'employee' }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ role: 'employee' }]);
 
       await expect(service.deleteDocument(1, 42, 3)).rejects.toThrow(ForbiddenException);
     });
 
     it('should soft-delete for admin user', async () => {
       // getDocumentRow
-      mockDb.query.mockResolvedValueOnce([createDocRow()]);
+      mockDb.tenantQuery.mockResolvedValueOnce([createDocRow()]);
       // getUserById → admin
-      mockDb.query.mockResolvedValueOnce([{ role: 'admin' }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ role: 'admin' }]);
       // UPDATE is_active = 4
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       const result = await service.deleteDocument(1, 42, 2);
 
       expect(result.message).toBe('Document deleted successfully');
-      const updateSql = mockDb.query.mock.calls[2]?.[0] as string;
+      const updateSql = mockDb.tenantQuery.mock.calls[2]?.[0] as string;
       expect(updateSql).toContain(`is_active = ${IS_ACTIVE.DELETED}`);
     });
   });
@@ -220,38 +226,38 @@ describe('DocumentsService', () => {
 
   describe('archiveDocument', () => {
     it('should throw ForbiddenException for employee', async () => {
-      mockDb.query.mockResolvedValueOnce([{ role: 'employee' }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ role: 'employee' }]);
 
       await expect(service.archiveDocument(1, 42, 3)).rejects.toThrow(ForbiddenException);
     });
 
     it(`should set is_active = ${IS_ACTIVE.ARCHIVED} for admin`, async () => {
-      mockDb.query.mockResolvedValueOnce([{ role: 'admin' }]);
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ role: 'admin' }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       const result = await service.archiveDocument(1, 42, 2);
 
       expect(result.message).toBe('Document archived successfully');
-      const updateSql = mockDb.query.mock.calls[1]?.[0] as string;
+      const updateSql = mockDb.tenantQuery.mock.calls[1]?.[0] as string;
       expect(updateSql).toContain(`is_active = ${IS_ACTIVE.ARCHIVED}`);
     });
   });
 
   describe('unarchiveDocument', () => {
     it('should throw ForbiddenException for employee', async () => {
-      mockDb.query.mockResolvedValueOnce([{ role: 'employee' }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ role: 'employee' }]);
 
       await expect(service.unarchiveDocument(1, 42, 3)).rejects.toThrow(ForbiddenException);
     });
 
     it(`should set is_active = ${IS_ACTIVE.ACTIVE} for root`, async () => {
-      mockDb.query.mockResolvedValueOnce([{ role: 'root' }]);
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ role: 'root' }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       const result = await service.unarchiveDocument(1, 42, 1);
 
       expect(result.message).toBe('Document unarchived successfully');
-      const updateSql = mockDb.query.mock.calls[1]?.[0] as string;
+      const updateSql = mockDb.tenantQuery.mock.calls[1]?.[0] as string;
       expect(updateSql).toContain(`is_active = ${IS_ACTIVE.ACTIVE}`);
     });
   });
@@ -262,20 +268,20 @@ describe('DocumentsService', () => {
 
   describe('getDocumentStats', () => {
     it('should throw NotFoundException when user not found', async () => {
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       await expect(service.getDocumentStats(42, 999)).rejects.toThrow(NotFoundException);
     });
 
     it('should include storage for admin', async () => {
       // getUserById → admin
-      mockDb.query.mockResolvedValueOnce([{ role: 'admin' }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ role: 'admin' }]);
       // unread count
-      mockDb.query.mockResolvedValueOnce([{ count: '5' }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ count: '5' }]);
       // storage
-      mockDb.query.mockResolvedValueOnce([{ total: '1048576' }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ total: '1048576' }]);
       // categories
-      mockDb.query.mockResolvedValueOnce([
+      mockDb.tenantQuery.mockResolvedValueOnce([
         { category: 'general', count: '10' },
         { category: 'payroll', count: '3' },
       ]);
@@ -289,17 +295,17 @@ describe('DocumentsService', () => {
 
     it('should skip storage for employee', async () => {
       // getUserById → employee
-      mockDb.query.mockResolvedValueOnce([{ role: 'employee' }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ role: 'employee' }]);
       // unread count
-      mockDb.query.mockResolvedValueOnce([{ count: '2' }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ count: '2' }]);
       // categories (no storage query for employee)
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       const result = await service.getDocumentStats(42, 3);
 
       expect(result.storageUsed).toBe(0);
       // Only 3 queries (user, unread, categories — no storage)
-      expect(mockDb.query).toHaveBeenCalledTimes(3);
+      expect(mockDb.tenantQuery).toHaveBeenCalledTimes(3);
     });
   });
 
@@ -309,12 +315,12 @@ describe('DocumentsService', () => {
 
   describe('getUnreadCount', () => {
     it('should add chat privacy filter but no role-based scope filter for admin', async () => {
-      mockDb.query.mockResolvedValueOnce([{ count: '10' }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ count: '10' }]);
 
       const result = await service.getUnreadCount(42, 2, 'admin');
 
       expect(result.count).toBe(10);
-      const sql = mockDb.query.mock.calls[0]?.[0] as string;
+      const sql = mockDb.tenantQuery.mock.calls[0]?.[0] as string;
       // Chat privacy filter is present for ALL users
       expect(sql).toContain("d.access_scope != 'chat'");
       expect(sql).toContain('conversation_participants');
@@ -323,12 +329,12 @@ describe('DocumentsService', () => {
     });
 
     it('should add access scope filter for employee', async () => {
-      mockDb.query.mockResolvedValueOnce([{ count: '3' }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ count: '3' }]);
 
       const result = await service.getUnreadCount(42, 3, 'employee');
 
       expect(result.count).toBe(3);
-      const sql = mockDb.query.mock.calls[0]?.[0] as string;
+      const sql = mockDb.tenantQuery.mock.calls[0]?.[0] as string;
       expect(sql).toContain('access_scope');
       expect(sql).toContain('company');
       expect(sql).toContain('personal');
@@ -336,11 +342,11 @@ describe('DocumentsService', () => {
     });
 
     it('should include chat in employee access scope filter', async () => {
-      mockDb.query.mockResolvedValueOnce([{ count: '5' }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ count: '5' }]);
 
       await service.getUnreadCount(42, 3, 'employee');
 
-      const sql = mockDb.query.mock.calls[0]?.[0] as string;
+      const sql = mockDb.tenantQuery.mock.calls[0]?.[0] as string;
       // Employee scope filter must include 'chat' — chat privacy check
       // already restricts to conversation participants only.
       // Without this, employees see 0 unread chat attachments.
@@ -355,7 +361,7 @@ describe('DocumentsService', () => {
   describe('getDocumentContent', () => {
     it('should throw ForbiddenException when no access', async () => {
       // getDocumentRow
-      mockDb.query.mockResolvedValueOnce([createDocRow()]);
+      mockDb.tenantQuery.mockResolvedValueOnce([createDocRow()]);
       mockAccess.checkDocumentAccess.mockResolvedValueOnce(false);
 
       await expect(service.getDocumentContent(1, 42, 99)).rejects.toThrow(ForbiddenException);
@@ -368,7 +374,7 @@ describe('DocumentsService', () => {
 
   describe('getDocumentByUuid', () => {
     it('should throw NotFoundException for unknown UUID', async () => {
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       await expect(service.getDocumentByUuid('unknown-uuid', 42, 1)).rejects.toThrow(
         NotFoundException,
@@ -383,7 +389,7 @@ describe('DocumentsService', () => {
   describe('updateDocument', () => {
     it('should throw NotFoundException when document not found', async () => {
       // getDocumentRow → empty
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       await expect(service.updateDocument(999, { filename: 'x' } as never, 42, 1)).rejects.toThrow(
         NotFoundException,
@@ -391,9 +397,9 @@ describe('DocumentsService', () => {
     });
 
     it('should throw NotFoundException when user not found', async () => {
-      mockDb.query.mockResolvedValueOnce([createDocRow()]);
+      mockDb.tenantQuery.mockResolvedValueOnce([createDocRow()]);
       // getUserById → empty
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       await expect(service.updateDocument(1, { filename: 'x' } as never, 42, 999)).rejects.toThrow(
         NotFoundException,
@@ -401,9 +407,9 @@ describe('DocumentsService', () => {
     });
 
     it('should throw ForbiddenException for non-admin non-creator', async () => {
-      mockDb.query.mockResolvedValueOnce([createDocRow({ created_by: 10 })]);
+      mockDb.tenantQuery.mockResolvedValueOnce([createDocRow({ created_by: 10 })]);
       // getUserById → employee (not creator)
-      mockDb.query.mockResolvedValueOnce([{ role: 'employee' }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ role: 'employee' }]);
 
       await expect(service.updateDocument(1, { filename: 'x' } as never, 42, 99)).rejects.toThrow(
         ForbiddenException,
@@ -411,10 +417,10 @@ describe('DocumentsService', () => {
     });
 
     it('should allow admin to update any document', async () => {
-      mockDb.query.mockResolvedValueOnce([createDocRow({ created_by: 10 })]);
-      mockDb.query.mockResolvedValueOnce([{ role: 'admin' }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([createDocRow({ created_by: 10 })]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ role: 'admin' }]);
       // UPDATE
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       const result = await service.updateDocument(1, { filename: 'Updated.pdf' } as never, 42, 2);
 
@@ -422,10 +428,10 @@ describe('DocumentsService', () => {
     });
 
     it('should allow creator to update own document', async () => {
-      mockDb.query.mockResolvedValueOnce([createDocRow({ created_by: 10 })]);
-      mockDb.query.mockResolvedValueOnce([{ role: 'employee' }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([createDocRow({ created_by: 10 })]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ role: 'employee' }]);
       // UPDATE
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       const result = await service.updateDocument(1, { description: 'New desc' } as never, 42, 10);
 
@@ -439,12 +445,12 @@ describe('DocumentsService', () => {
 
   describe('markDocumentAsRead', () => {
     it('should upsert read status and return success', async () => {
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       const result = await service.markDocumentAsRead(1, 42, 10);
 
       expect(result.success).toBe(true);
-      expect(mockDb.query).toHaveBeenCalledWith(
+      expect(mockDb.tenantQuery).toHaveBeenCalledWith(
         expect.stringContaining('ON CONFLICT'),
         [1, 10, 42],
       );
@@ -457,7 +463,7 @@ describe('DocumentsService', () => {
 
   describe('getChatFolders', () => {
     it('should return folders with total count', async () => {
-      mockDb.query.mockResolvedValueOnce([
+      mockDb.tenantQuery.mockResolvedValueOnce([
         {
           conversationId: 1,
           conversationUuid: 'conv-uuid',
@@ -477,7 +483,7 @@ describe('DocumentsService', () => {
     });
 
     it('should return empty when no chat folders', async () => {
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       const result = await service.getChatFolders(42, 10);
 
@@ -492,7 +498,7 @@ describe('DocumentsService', () => {
 
   describe('getDocumentContent — success', () => {
     it('should return content from storage service', async () => {
-      mockDb.query.mockResolvedValueOnce([createDocRow()]);
+      mockDb.tenantQuery.mockResolvedValueOnce([createDocRow()]);
       mockAccess.checkDocumentAccess.mockResolvedValueOnce(true);
       mockStorage.getDocumentContent.mockResolvedValueOnce({
         content: Buffer.from('PDF data'),
@@ -509,7 +515,7 @@ describe('DocumentsService', () => {
     });
 
     it('should throw NotFoundException when document missing', async () => {
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       await expect(service.getDocumentContent(999, 42, 10)).rejects.toThrow(NotFoundException);
     });
@@ -521,7 +527,7 @@ describe('DocumentsService', () => {
 
   describe('getDocumentByFileUuid — success', () => {
     it('should return enriched document when found and accessible', async () => {
-      mockDb.query.mockResolvedValueOnce([createDocRow()]);
+      mockDb.tenantQuery.mockResolvedValueOnce([createDocRow()]);
       mockAccess.checkDocumentAccess.mockResolvedValueOnce(true);
       mockAccess.isDocumentRead.mockResolvedValueOnce(true);
 
@@ -537,7 +543,7 @@ describe('DocumentsService', () => {
 
   describe('listDocuments', () => {
     it('should throw NotFoundException when user not found', async () => {
-      mockDb.query.mockResolvedValueOnce([]); // getUserById → empty
+      mockDb.tenantQuery.mockResolvedValueOnce([]); // getUserById → empty
 
       await expect(
         service.listDocuments(42, 999, {
@@ -550,7 +556,7 @@ describe('DocumentsService', () => {
 
     it('should return paginated documents for admin', async () => {
       // getUserById → admin
-      mockDb.query.mockResolvedValueOnce([{ role: 'admin' }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ role: 'admin' }]);
       mockAccess.buildDocumentQuery.mockReturnValueOnce({
         baseQuery:
           "SELECT d.*, u.username as uploaded_by_name FROM documents d LEFT JOIN users u ON d.created_by = u.id WHERE d.tenant_id = $1 AND d.is_active = $2 AND d.access_scope != 'chat'",
@@ -558,9 +564,9 @@ describe('DocumentsService', () => {
         paramIndex: 3,
       });
       // getDocumentsCount → count query
-      mockDb.query.mockResolvedValueOnce([{ count: '25' }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ count: '25' }]);
       // paginated query → 2 docs
-      mockDb.query.mockResolvedValueOnce([createDocRow({ id: 1 }), createDocRow({ id: 2 })]);
+      mockDb.tenantQuery.mockResolvedValueOnce([createDocRow({ id: 1 }), createDocRow({ id: 2 })]);
       // isDocumentRead for each doc
       mockAccess.isDocumentRead.mockResolvedValueOnce(true).mockResolvedValueOnce(false);
 
@@ -593,12 +599,12 @@ describe('DocumentsService', () => {
 
     it('should create document and emit event', async () => {
       // insertDocumentRecord → INSERT RETURNING id
-      mockDb.query.mockResolvedValueOnce([{ id: 42 }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ id: 42 }]);
       // getDocumentById → SELECT doc
-      mockDb.query.mockResolvedValueOnce([createDocRow({ id: 42 })]);
+      mockDb.tenantQuery.mockResolvedValueOnce([createDocRow({ id: 42 })]);
       mockAccess.checkDocumentAccess.mockResolvedValueOnce(true);
       // markAsRead
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
       mockAccess.isDocumentRead.mockResolvedValueOnce(true);
 
       const result = await service.createDocument(validInput, 10, 1);
@@ -617,10 +623,10 @@ describe('DocumentsService', () => {
         filePath: '/uploads/test.pdf',
       };
 
-      mockDb.query.mockResolvedValueOnce([{ id: 42 }]);
-      mockDb.query.mockResolvedValueOnce([createDocRow({ id: 42 })]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ id: 42 }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([createDocRow({ id: 42 })]);
       mockAccess.checkDocumentAccess.mockResolvedValueOnce(true);
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
       mockAccess.isDocumentRead.mockResolvedValueOnce(true);
 
       await service.createDocument(input, 10, 1);
@@ -639,13 +645,13 @@ describe('DocumentsService', () => {
   describe('UUID wrappers', () => {
     it('updateDocumentByUuid should resolve UUID and update', async () => {
       // resolveDocumentIdByUuid → SELECT id
-      mockDb.query.mockResolvedValueOnce([{ id: 5 }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ id: 5 }]);
       // getDocumentRow
-      mockDb.query.mockResolvedValueOnce([createDocRow({ id: 5 })]);
+      mockDb.tenantQuery.mockResolvedValueOnce([createDocRow({ id: 5 })]);
       // getUserById
-      mockDb.query.mockResolvedValueOnce([{ role: 'admin' }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ role: 'admin' }]);
       // UPDATE
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       const result = await service.updateDocumentByUuid(
         'doc-uuid',
@@ -658,10 +664,10 @@ describe('DocumentsService', () => {
     });
 
     it('deleteDocumentByUuid should resolve UUID and delete', async () => {
-      mockDb.query.mockResolvedValueOnce([{ id: 5 }]);
-      mockDb.query.mockResolvedValueOnce([createDocRow({ id: 5 })]);
-      mockDb.query.mockResolvedValueOnce([{ role: 'admin' }]);
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ id: 5 }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([createDocRow({ id: 5 })]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ role: 'admin' }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       const result = await service.deleteDocumentByUuid('doc-uuid', 42, 1);
 
@@ -669,9 +675,9 @@ describe('DocumentsService', () => {
     });
 
     it('archiveDocumentByUuid should resolve UUID and archive', async () => {
-      mockDb.query.mockResolvedValueOnce([{ id: 5 }]);
-      mockDb.query.mockResolvedValueOnce([{ role: 'admin' }]);
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ id: 5 }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ role: 'admin' }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       const result = await service.archiveDocumentByUuid('doc-uuid', 42, 1);
 
@@ -679,9 +685,9 @@ describe('DocumentsService', () => {
     });
 
     it('unarchiveDocumentByUuid should resolve UUID and unarchive', async () => {
-      mockDb.query.mockResolvedValueOnce([{ id: 5 }]);
-      mockDb.query.mockResolvedValueOnce([{ role: 'root' }]);
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ id: 5 }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ role: 'root' }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       const result = await service.unarchiveDocumentByUuid('doc-uuid', 42, 1);
 
@@ -689,8 +695,8 @@ describe('DocumentsService', () => {
     });
 
     it('getDocumentContentByUuid should resolve UUID and get content', async () => {
-      mockDb.query.mockResolvedValueOnce([{ id: 5 }]);
-      mockDb.query.mockResolvedValueOnce([createDocRow({ id: 5 })]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ id: 5 }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([createDocRow({ id: 5 })]);
       mockAccess.checkDocumentAccess.mockResolvedValueOnce(true);
       mockStorage.getDocumentContent.mockResolvedValueOnce({
         content: Buffer.from('data'),
@@ -705,8 +711,8 @@ describe('DocumentsService', () => {
     });
 
     it('markDocumentAsReadByUuid should resolve UUID and mark read', async () => {
-      mockDb.query.mockResolvedValueOnce([{ id: 5 }]);
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ id: 5 }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       const result = await service.markDocumentAsReadByUuid('doc-uuid', 42, 1);
 
@@ -720,20 +726,20 @@ describe('DocumentsService', () => {
 
   describe('edge cases — user not found', () => {
     it('archiveDocument should throw when user not found', async () => {
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       await expect(service.archiveDocument(1, 42, 999)).rejects.toThrow(NotFoundException);
     });
 
     it('unarchiveDocument should throw when user not found', async () => {
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       await expect(service.unarchiveDocument(1, 42, 999)).rejects.toThrow(NotFoundException);
     });
 
     it('deleteDocument should throw when user not found', async () => {
-      mockDb.query.mockResolvedValueOnce([createDocRow()]);
-      mockDb.query.mockResolvedValueOnce([]); // getUserById → empty
+      mockDb.tenantQuery.mockResolvedValueOnce([createDocRow()]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]); // getUserById → empty
 
       await expect(service.deleteDocument(1, 42, 999)).rejects.toThrow(NotFoundException);
     });
@@ -745,12 +751,12 @@ describe('DocumentsService', () => {
 
   describe('getUnreadCount — root', () => {
     it('should not add scope filter for root user', async () => {
-      mockDb.query.mockResolvedValueOnce([{ count: '7' }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ count: '7' }]);
 
       const result = await service.getUnreadCount(42, 1, 'root');
 
       expect(result.count).toBe(7);
-      const sql = mockDb.query.mock.calls[0]?.[0] as string;
+      const sql = mockDb.tenantQuery.mock.calls[0]?.[0] as string;
       expect(sql).not.toContain("d.access_scope = 'company'");
     });
   });

@@ -82,7 +82,7 @@ export class RootDeletionService {
   ): Promise<TenantDeletionStatus | null> {
     this.logger.debug(`Getting deletion status for tenant ${tenantId}`);
 
-    const deletions = await this.db.query<DbDeletionQueueRow>(
+    const deletions = await this.db.systemQuery<DbDeletionQueueRow>(
       `SELECT dq.*, t.company_name, u.username as requested_by_name
        FROM tenant_deletion_queue dq
        JOIN tenants t ON t.id = dq.tenant_id
@@ -137,7 +137,7 @@ export class RootDeletionService {
     const report = await this.tenantDeletion.performDryRun(tenantId);
 
     // Get tenant name
-    const tenant = await this.db.query<DbTenantRow>(
+    const tenant = await this.db.systemQuery<DbTenantRow>(
       'SELECT company_name FROM tenants WHERE id = $1',
       [tenantId],
     );
@@ -175,7 +175,7 @@ export class RootDeletionService {
   async getAllDeletionRequests(): Promise<DeletionApproval[]> {
     this.logger.debug('Getting all deletion requests');
 
-    const deletions = await this.db.query<DbDeletionRequestRow>(
+    const deletions = await this.db.systemQuery<DbDeletionRequestRow>(
       `SELECT q.*, t.company_name, t.subdomain, u.username as requester_name, u.email as requester_email
        FROM tenant_deletion_queue q
        JOIN tenants t ON t.id = q.tenant_id
@@ -203,7 +203,7 @@ export class RootDeletionService {
   async getPendingApprovals(currentUserId: number): Promise<DeletionApproval[]> {
     this.logger.debug(`Getting pending approvals for user ${currentUserId}`);
 
-    const approvals = await this.db.query<DbDeletionRequestRow>(
+    const approvals = await this.db.systemQuery<DbDeletionRequestRow>(
       `SELECT q.*, t.company_name, t.subdomain, u.username as requester_name, u.email as requester_email
        FROM tenant_deletion_queue q
        JOIN tenants t ON t.id = q.tenant_id

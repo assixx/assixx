@@ -32,7 +32,7 @@ export class RootTenantService {
     this.logger.debug(`Getting tenants for tenant ${tenantId}`);
 
     // Only return user's own tenant (multi-tenant isolation)
-    const tenants = await this.db.query<DbTenantRow>('SELECT * FROM tenants WHERE id = $1', [
+    const tenants = await this.db.systemQuery<DbTenantRow>('SELECT * FROM tenants WHERE id = $1', [
       tenantId,
     ]);
 
@@ -46,7 +46,7 @@ export class RootTenantService {
         const [adminCount, employeeCount, storageUsed] = await Promise.all([
           this.userRepository.countByRole('admin', tenant.id),
           this.userRepository.countByRole('employee', tenant.id),
-          this.db.query<DbStorageTotalRow>(
+          this.db.systemQuery<DbStorageTotalRow>(
             'SELECT COALESCE(SUM(file_size), 0) as total FROM documents WHERE tenant_id = $1',
             [tenant.id],
           ),
@@ -74,7 +74,7 @@ export class RootTenantService {
     this.logger.debug(`Getting storage info for tenant ${tenantId}`);
 
     // Get storage limit from tenant_storage (ADR-033: replaces plan-based limits)
-    const storageRows = await this.db.query<DbTenantStorageRow>(
+    const storageRows = await this.db.systemQuery<DbTenantStorageRow>(
       'SELECT storage_limit_gb FROM tenant_storage WHERE tenant_id = $1 AND is_active = 1',
       [tenantId],
     );
@@ -84,16 +84,16 @@ export class RootTenantService {
 
     // Get storage breakdown in parallel
     const [documentsSize, attachmentsSize, logsSize] = await Promise.all([
-      this.db.query<DbStorageTotalRow>(
+      this.db.systemQuery<DbStorageTotalRow>(
         'SELECT COALESCE(SUM(file_size), 0) as total FROM documents WHERE tenant_id = $1',
         [tenantId],
       ),
-      this.db.query<DbStorageTotalRow>(
+      this.db.systemQuery<DbStorageTotalRow>(
         `SELECT COALESCE(SUM(ka.file_size), 0) as total FROM kvp_attachments ka
          JOIN kvp_suggestions ks ON ka.suggestion_id = ks.id WHERE ks.tenant_id = $1`,
         [tenantId],
       ),
-      this.db.query<DbStorageTotalRow>(
+      this.db.systemQuery<DbStorageTotalRow>(
         "SELECT COALESCE(SUM(LENGTH(action) + LENGTH(COALESCE(details, ''))), 0) as total FROM admin_logs WHERE tenant_id = $1",
         [tenantId],
       ),

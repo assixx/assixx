@@ -27,7 +27,7 @@ export class KvpAttachmentsService {
   async getAttachments(numericId: number, tenantId: number): Promise<KVPAttachment[]> {
     this.logger.debug(`Getting attachments for suggestion ${numericId}`);
 
-    const rows = await this.db.query<DbAttachment>(
+    const rows = await this.db.tenantQuery<DbAttachment>(
       `SELECT a.*, u.first_name, u.last_name
        FROM kvp_attachments a
        JOIN kvp_suggestions s ON a.suggestion_id = s.id
@@ -66,7 +66,7 @@ export class KvpAttachmentsService {
   ): Promise<KVPAttachment> {
     this.logger.log(`Adding attachment to suggestion ${numericId}`);
 
-    const rows = await this.db.query<{ id: number }>(
+    const rows = await this.db.tenantQuery<{ id: number }>(
       `INSERT INTO kvp_attachments
        (file_uuid, suggestion_id, file_name, file_path, file_type, file_size, uploaded_by)
        VALUES ($1, $2, $3, $4, $5, $6, $7)
@@ -109,7 +109,7 @@ export class KvpAttachmentsService {
   ): Promise<AttachmentWithSuggestion> {
     this.logger.debug(`Finding attachment by UUID ${fileUuid}`);
 
-    const rows = await this.db.query<AttachmentWithSuggestion>(
+    const rows = await this.db.tenantQuery<AttachmentWithSuggestion>(
       `SELECT a.*, s.submitted_by, s.tenant_id, s.org_level, s.org_id, s.status
        FROM kvp_attachments a
        JOIN kvp_suggestions s ON a.suggestion_id = s.id

@@ -21,13 +21,18 @@ const TENANT_ID = 42;
 const USER_ID = 7;
 const USER_UUID = '019539a0-0000-7000-8000-000000000001';
 
-function createMockDb(): {
-  query: ReturnType<typeof vi.fn>;
-  queryOne: ReturnType<typeof vi.fn>;
-} {
+function createMockDb() {
+  const qf = vi.fn();
+  const qof = vi.fn();
+  const sqf = vi.fn();
+  const sqof = vi.fn();
   return {
-    query: vi.fn(),
-    queryOne: vi.fn(),
+    query: qf,
+    tenantQuery: qf,
+    queryOne: qof,
+    tenantQueryOne: qof,
+    systemQuery: sqf,
+    systemQueryOne: sqof,
   };
 }
 type MockDb = ReturnType<typeof createMockDb>;
@@ -182,7 +187,7 @@ describe('UserRepository – safe methods', () => {
 
   describe('countByRole()', () => {
     it('should return parsed count', async () => {
-      mockDb.queryOne.mockResolvedValueOnce({ count: '15' });
+      mockDb.systemQueryOne.mockResolvedValueOnce({ count: '15' });
 
       const result = await repo.countByRole('employee', TENANT_ID);
 
@@ -190,7 +195,7 @@ describe('UserRepository – safe methods', () => {
     });
 
     it('should return 0 when no result', async () => {
-      mockDb.queryOne.mockResolvedValueOnce(null);
+      mockDb.systemQueryOne.mockResolvedValueOnce(null);
 
       const result = await repo.countByRole('admin', TENANT_ID);
 
@@ -200,7 +205,7 @@ describe('UserRepository – safe methods', () => {
 
   describe('countAll()', () => {
     it('should return total active user count', async () => {
-      mockDb.queryOne.mockResolvedValueOnce({ count: '100' });
+      mockDb.systemQueryOne.mockResolvedValueOnce({ count: '100' });
 
       const result = await repo.countAll(TENANT_ID);
 
@@ -208,7 +213,7 @@ describe('UserRepository – safe methods', () => {
     });
 
     it('should return 0 when null result', async () => {
-      mockDb.queryOne.mockResolvedValueOnce(null);
+      mockDb.systemQueryOne.mockResolvedValueOnce(null);
 
       const result = await repo.countAll(TENANT_ID);
 
@@ -396,39 +401,39 @@ describe('UserRepository – auth methods', () => {
 
   describe('findForAuth()', () => {
     it('should return user with password regardless of status', async () => {
-      mockDb.queryOne.mockResolvedValueOnce(
+      mockDb.systemQueryOne.mockResolvedValueOnce(
         createUserRow({ password: 'hashed', last_login: null }),
       );
 
       const result = await repo.findForAuth('max@example.com');
 
       expect(result).not.toBeNull();
-      const sql = mockDb.queryOne.mock.calls[0]?.[0] as string;
+      const sql = mockDb.systemQueryOne.mock.calls[0]?.[0] as string;
       expect(sql).toContain('password');
       // No is_active filter in WHERE — only in SELECT column list
       expect(sql).not.toMatch(/WHERE.*is_active\s*=/s);
     });
 
     it('should query with case-insensitive email', async () => {
-      mockDb.queryOne.mockResolvedValueOnce(null);
+      mockDb.systemQueryOne.mockResolvedValueOnce(null);
 
       await repo.findForAuth('MAX@EXAMPLE.COM');
 
-      const sql = mockDb.queryOne.mock.calls[0]?.[0] as string;
+      const sql = mockDb.systemQueryOne.mock.calls[0]?.[0] as string;
       expect(sql).toContain('LOWER(email) = LOWER($1)');
     });
   });
 
   describe('findForAuthById()', () => {
     it('should return user with password without is_active filter', async () => {
-      mockDb.queryOne.mockResolvedValueOnce(
+      mockDb.systemQueryOne.mockResolvedValueOnce(
         createUserRow({ password: 'hashed', last_login: null }),
       );
 
       const result = await repo.findForAuthById(USER_ID, TENANT_ID);
 
       expect(result).not.toBeNull();
-      const sql = mockDb.queryOne.mock.calls[0]?.[0] as string;
+      const sql = mockDb.systemQueryOne.mock.calls[0]?.[0] as string;
       expect(sql).toContain('password');
       // No is_active filter in WHERE — only in SELECT column list
       expect(sql).not.toMatch(/WHERE.*is_active\s*=/s);
@@ -457,13 +462,13 @@ describe('UserRepository – auth methods', () => {
 
   describe('updateLastLogin()', () => {
     it('should update last_login timestamp', async () => {
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.systemQuery.mockResolvedValueOnce([]);
 
       await repo.updateLastLogin(USER_ID);
 
-      const sql = mockDb.query.mock.calls[0]?.[0] as string;
+      const sql = mockDb.systemQuery.mock.calls[0]?.[0] as string;
       expect(sql).toContain('UPDATE users SET last_login = NOW()');
-      const params = mockDb.query.mock.calls[0]?.[1] as unknown[];
+      const params = mockDb.systemQuery.mock.calls[0]?.[1] as unknown[];
       expect(params).toEqual([USER_ID]);
     });
   });
@@ -596,7 +601,7 @@ describe('UserRepository – utility methods', () => {
 
   describe('isEmailTaken()', () => {
     it('should return true when email exists', async () => {
-      mockDb.queryOne.mockResolvedValueOnce({ exists: true });
+      mockDb.systemQueryOne.mockResolvedValueOnce({ exists: true });
 
       const result = await repo.isEmailTaken('taken@example.com', TENANT_ID);
 
@@ -604,7 +609,7 @@ describe('UserRepository – utility methods', () => {
     });
 
     it('should return false when email available', async () => {
-      mockDb.queryOne.mockResolvedValueOnce({ exists: false });
+      mockDb.systemQueryOne.mockResolvedValueOnce({ exists: false });
 
       const result = await repo.isEmailTaken('free@example.com', TENANT_ID);
 
@@ -612,36 +617,36 @@ describe('UserRepository – utility methods', () => {
     });
 
     it('should exclude own user ID when provided', async () => {
-      mockDb.queryOne.mockResolvedValueOnce({ exists: false });
+      mockDb.systemQueryOne.mockResolvedValueOnce({ exists: false });
 
       await repo.isEmailTaken('my@example.com', TENANT_ID, USER_ID);
 
-      const sql = mockDb.queryOne.mock.calls[0]?.[0] as string;
+      const sql = mockDb.systemQueryOne.mock.calls[0]?.[0] as string;
       expect(sql).toContain('id != $3');
-      const params = mockDb.queryOne.mock.calls[0]?.[1] as unknown[];
+      const params = mockDb.systemQueryOne.mock.calls[0]?.[1] as unknown[];
       expect(params).toEqual(['my@example.com', TENANT_ID, USER_ID]);
     });
 
     it('should not add exclude clause when excludeId undefined', async () => {
-      mockDb.queryOne.mockResolvedValueOnce({ exists: false });
+      mockDb.systemQueryOne.mockResolvedValueOnce({ exists: false });
 
       await repo.isEmailTaken('test@example.com', TENANT_ID);
 
-      const sql = mockDb.queryOne.mock.calls[0]?.[0] as string;
+      const sql = mockDb.systemQueryOne.mock.calls[0]?.[0] as string;
       expect(sql).not.toContain('id !=');
     });
 
     it('should lowercase email before querying', async () => {
-      mockDb.queryOne.mockResolvedValueOnce({ exists: false });
+      mockDb.systemQueryOne.mockResolvedValueOnce({ exists: false });
 
       await repo.isEmailTaken('Test@Example.COM', TENANT_ID);
 
-      const params = mockDb.queryOne.mock.calls[0]?.[1] as unknown[];
+      const params = mockDb.systemQueryOne.mock.calls[0]?.[1] as unknown[];
       expect(params[0]).toBe('test@example.com');
     });
 
-    it('should return false when queryOne returns null', async () => {
-      mockDb.queryOne.mockResolvedValueOnce(null);
+    it('should return false when systemQueryOne returns null', async () => {
+      mockDb.systemQueryOne.mockResolvedValueOnce(null);
 
       const result = await repo.isEmailTaken('x@x.com', TENANT_ID);
 

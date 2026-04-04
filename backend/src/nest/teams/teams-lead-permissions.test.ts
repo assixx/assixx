@@ -10,7 +10,12 @@ import type { DatabaseService } from '../database/database.service.js';
 import type { ScopeService } from '../hierarchy-permission/scope.service.js';
 import { TeamsService } from './teams.service.js';
 
-const mockDb = { query: vi.fn() } as unknown as DatabaseService;
+const _query = vi.fn();
+const mockDb = {
+  query: _query,
+  tenantQuery: _query,
+  tenantQueryOne: vi.fn(),
+} as unknown as DatabaseService;
 const mockActivity = {
   logUpdate: vi.fn().mockResolvedValue(undefined),
 } as unknown as ActivityLoggerService;

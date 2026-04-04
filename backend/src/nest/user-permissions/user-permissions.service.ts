@@ -614,7 +614,7 @@ export class UserPermissionsService {
     userUuid: string,
     tenantId: number,
   ): Promise<{ id: number; role: string; isAnyLead: boolean }> {
-    const result = await this.db.queryOne<{
+    const result = await this.db.tenantQueryOne<{
       id: number;
       role: string;
       is_any_lead: boolean;

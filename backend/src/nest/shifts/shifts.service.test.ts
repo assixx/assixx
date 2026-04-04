@@ -29,7 +29,8 @@ function createServiceWithMock(): {
   mockPlansService: Record<string, ReturnType<typeof vi.fn>>;
   mockSwapService: Record<string, ReturnType<typeof vi.fn>>;
 } {
-  const mockDb = { query: vi.fn() };
+  const query = vi.fn();
+  const mockDb = { query, tenantQuery: query, tenantQueryOne: vi.fn() };
   const mockActivityLogger = {
     logCreate: vi.fn(),
     logUpdate: vi.fn(),

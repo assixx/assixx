@@ -220,14 +220,14 @@ export class ShiftsService {
     params.push(filters.limit, (filters.page - 1) * filters.limit);
 
     const query = baseQuery + filterClause + orderClause + limitClause;
-    const shifts = await this.databaseService.query<DbShiftRow>(query, params);
+    const shifts = await this.databaseService.tenantQuery<DbShiftRow>(query, params);
     return shifts.map((s: DbShiftRow) => dbShiftToApi(s));
   }
 
   async getShiftById(id: number, tenantId: number): Promise<ShiftResponse> {
     this.logger.debug(`Getting shift ${id} for tenant ${tenantId}`);
 
-    const shifts = await this.databaseService.query<DbShiftRow>(
+    const shifts = await this.databaseService.tenantQuery<DbShiftRow>(
       `SELECT s.*,
         u.username as user_name, u.first_name, u.last_name,
         d.name as department_name, t.name as team_name
@@ -256,7 +256,7 @@ export class ShiftsService {
     const startTime = buildTimestamp(dbData['date'], dbData['start_time']);
     const endTime = buildTimestamp(dbData['date'], dbData['end_time']);
 
-    const result = await this.databaseService.query<{ id: number }>(
+    const result = await this.databaseService.tenantQuery<{ id: number }>(
       `INSERT INTO shifts (
         tenant_id, plan_id, user_id, date, start_time, end_time,
         title, required_employees, break_minutes, status, type, notes,
@@ -340,7 +340,7 @@ export class ShiftsService {
     }
 
     params.push(id, tenantId);
-    await this.databaseService.query(
+    await this.databaseService.tenantQuery(
       `UPDATE shifts SET ${updates.join(', ')}, updated_at = NOW()
        WHERE id = $${paramIndex} AND tenant_id = $${paramIndex + 1}`,
       params,
@@ -371,7 +371,7 @@ export class ShiftsService {
     this.logger.debug(`Deleting shift ${id} for tenant ${tenantId}`);
 
     const existingShift = await this.getShiftById(id, tenantId);
-    await this.databaseService.query(`DELETE FROM shifts WHERE id = $1 AND tenant_id = $2`, [
+    await this.databaseService.tenantQuery(`DELETE FROM shifts WHERE id = $1 AND tenant_id = $2`, [
       id,
       tenantId,
     ]);
@@ -403,7 +403,7 @@ export class ShiftsService {
   ): Promise<{ shiftsDeleted: number }> {
     this.logger.debug(`Deleting shifts for team ${teamId} from ${startDate} to ${endDate}`);
 
-    const result = await this.databaseService.query<{ count: string }>(
+    const result = await this.databaseService.tenantQuery<{ count: string }>(
       `WITH deleted AS (
         DELETE FROM shifts
         WHERE tenant_id = $1 AND team_id = $2 AND date >= $3 AND date <= $4
@@ -424,7 +424,7 @@ export class ShiftsService {
   async deleteShiftsByTeam(teamId: number, tenantId: number): Promise<{ shiftsDeleted: number }> {
     this.logger.debug(`Deleting ALL shifts for team ${teamId}`);
 
-    const result = await this.databaseService.query<{ count: string }>(
+    const result = await this.databaseService.tenantQuery<{ count: string }>(
       `WITH deleted AS (
         DELETE FROM shifts
         WHERE tenant_id = $1 AND team_id = $2
@@ -551,7 +551,7 @@ export class ShiftsService {
   ): Promise<Record<string, unknown>> {
     this.logger.debug(`Getting overtime report for tenant ${tenantId}`);
 
-    const result = await this.databaseService.query<{
+    const result = await this.databaseService.tenantQuery<{
       total_shifts: string;
       total_hours: string;
       total_break_hours: string;
@@ -650,7 +650,7 @@ export class ShiftsService {
   ): Promise<CalendarShiftResponse[]> {
     this.logger.debug(`Getting calendar shifts for user ${userId} in tenant ${tenantId}`);
 
-    const rows = await this.databaseService.query<{
+    const rows = await this.databaseService.tenantQuery<{
       date: string;
       type: string;
     }>(
@@ -693,11 +693,10 @@ export class ShiftsService {
   ): Promise<AssignmentCountResponse[]> {
     this.logger.debug(`Getting assignment counts for team ${teamId}, ref ${referenceDate}`);
 
-    const rows = await this.databaseService.query<DbAssignmentCountRow>(ASSIGNMENT_COUNTS_SQL, [
-      tenantId,
-      teamId,
-      referenceDate,
-    ]);
+    const rows = await this.databaseService.tenantQuery<DbAssignmentCountRow>(
+      ASSIGNMENT_COUNTS_SQL,
+      [tenantId, teamId, referenceDate],
+    );
 
     return rows.map((r: DbAssignmentCountRow) => mapAssignmentCountRow(r));
   }
@@ -709,7 +708,7 @@ export class ShiftsService {
   async listFavorites(tenantId: number, userId: number): Promise<FavoriteResponse[]> {
     this.logger.debug(`Listing favorites for user ${userId} in tenant ${tenantId}`);
 
-    const favorites = await this.databaseService.query<DbFavoriteRow>(
+    const favorites = await this.databaseService.tenantQuery<DbFavoriteRow>(
       `SELECT * FROM shift_favorites WHERE tenant_id = $1 AND user_id = $2 ORDER BY created_at DESC`,
       [tenantId, userId],
     );
@@ -728,7 +727,7 @@ export class ShiftsService {
 
     let result: { id: number }[];
     try {
-      result = await this.databaseService.query<{ id: number }>(
+      result = await this.databaseService.tenantQuery<{ id: number }>(
         `INSERT INTO shift_favorites (
           tenant_id, user_id, name, area_id, area_name, department_id, department_name,
           asset_id, asset_name, team_id, team_name
@@ -762,7 +761,7 @@ export class ShiftsService {
     }
 
     const favoriteId = result[0]?.id ?? 0;
-    const favorites = await this.databaseService.query<DbFavoriteRow>(
+    const favorites = await this.databaseService.tenantQuery<DbFavoriteRow>(
       `SELECT * FROM shift_favorites WHERE id = $1 AND tenant_id = $2`,
       [favoriteId, tenantId],
     );
@@ -773,7 +772,7 @@ export class ShiftsService {
   async deleteFavorite(favoriteId: number, tenantId: number, userId: number): Promise<void> {
     this.logger.debug(`Deleting favorite ${favoriteId} for user ${userId} in tenant ${tenantId}`);
 
-    const favorites = await this.databaseService.query<DbFavoriteRow>(
+    const favorites = await this.databaseService.tenantQuery<DbFavoriteRow>(
       `SELECT * FROM shift_favorites WHERE id = $1 AND tenant_id = $2 AND user_id = $3`,
       [favoriteId, tenantId, userId],
     );
@@ -782,7 +781,7 @@ export class ShiftsService {
       throw new NotFoundException(`Favorite ${favoriteId} not found`);
     }
 
-    await this.databaseService.query(
+    await this.databaseService.tenantQuery(
       `DELETE FROM shift_favorites WHERE id = $1 AND tenant_id = $2 AND user_id = $3`,
       [favoriteId, tenantId, userId],
     );

@@ -39,7 +39,8 @@ vi.mock('./shifts.helpers.js', () => ({
 // =============================================================
 
 function createMockDb() {
-  return { query: vi.fn() };
+  const query = vi.fn();
+  return { query, tenantQuery: query, tenantQueryOne: vi.fn() };
 }
 
 function createMockActivityLogger() {

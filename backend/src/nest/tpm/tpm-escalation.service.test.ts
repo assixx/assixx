@@ -28,9 +28,15 @@ import type { TpmEscalationConfigRow } from './tpm.types.js';
 // =============================================================
 
 function createMockDb() {
+  const qf = vi.fn().mockResolvedValue([]);
+  const qof = vi.fn().mockResolvedValue(null);
   return {
-    query: vi.fn().mockResolvedValue([]),
-    queryOne: vi.fn().mockResolvedValue(null),
+    query: qf,
+    tenantQuery: qf,
+    queryOne: qof,
+    tenantQueryOne: qof,
+    systemQuery: vi.fn().mockResolvedValue([]),
+    systemQueryOne: vi.fn().mockResolvedValue(null),
     tenantTransaction: vi.fn(),
     transaction: vi.fn(),
   };
@@ -251,11 +257,11 @@ describe('TpmEscalationService', () => {
 
   describe('handleEscalation()', () => {
     it('should find overdue candidates via SQL query', async () => {
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.systemQuery.mockResolvedValueOnce([]);
 
       await service.handleEscalation();
 
-      const sql = mockDb.query.mock.calls[0]?.[0] as string;
+      const sql = mockDb.systemQuery.mock.calls[0]?.[0] as string;
       expect(sql).toContain("status = 'red'");
       expect(sql).toContain(`is_active = ${IS_ACTIVE.ACTIVE}`);
       expect(sql).toContain('current_due_date');
@@ -263,7 +269,7 @@ describe('TpmEscalationService', () => {
     });
 
     it('should do nothing when no candidates found', async () => {
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.systemQuery.mockResolvedValueOnce([]);
 
       await service.handleEscalation();
 
@@ -276,7 +282,7 @@ describe('TpmEscalationService', () => {
         createOverdueCandidate({ id: 100 }),
         createOverdueCandidate({ id: 200, card_code: 'BW3' }),
       ];
-      mockDb.query.mockResolvedValueOnce(candidates);
+      mockDb.systemQuery.mockResolvedValueOnce(candidates);
 
       // Per candidate: FOR UPDATE SKIP LOCKED → found
       mockClient.query.mockResolvedValueOnce({
@@ -297,7 +303,7 @@ describe('TpmEscalationService', () => {
     });
 
     it('should use FOR UPDATE SKIP LOCKED when locking card', async () => {
-      mockDb.query.mockResolvedValueOnce([createOverdueCandidate()]);
+      mockDb.systemQuery.mockResolvedValueOnce([createOverdueCandidate()]);
       mockClient.query.mockResolvedValueOnce({ rows: [{ id: 100 }] });
       mockDb.queryOne.mockResolvedValueOnce({ team_lead_id: 5 });
 
@@ -308,7 +314,9 @@ describe('TpmEscalationService', () => {
     });
 
     it('should call markCardOverdue with correct params', async () => {
-      mockDb.query.mockResolvedValueOnce([createOverdueCandidate({ id: 100, tenant_id: 10 })]);
+      mockDb.systemQuery.mockResolvedValueOnce([
+        createOverdueCandidate({ id: 100, tenant_id: 10 }),
+      ]);
       mockClient.query.mockResolvedValueOnce({ rows: [{ id: 100 }] });
       mockDb.queryOne.mockResolvedValueOnce({ team_lead_id: 5 });
 
@@ -318,7 +326,7 @@ describe('TpmEscalationService', () => {
     });
 
     it('should notify team lead after successful escalation', async () => {
-      mockDb.query.mockResolvedValueOnce([createOverdueCandidate()]);
+      mockDb.systemQuery.mockResolvedValueOnce([createOverdueCandidate()]);
       mockClient.query.mockResolvedValueOnce({ rows: [{ id: 100 }] });
       mockDb.queryOne.mockResolvedValueOnce({ team_lead_id: 5 });
 
@@ -336,7 +344,7 @@ describe('TpmEscalationService', () => {
     });
 
     it('should skip notification when no team lead found', async () => {
-      mockDb.query.mockResolvedValueOnce([createOverdueCandidate()]);
+      mockDb.systemQuery.mockResolvedValueOnce([createOverdueCandidate()]);
       mockClient.query.mockResolvedValueOnce({ rows: [{ id: 100 }] });
       mockDb.queryOne.mockResolvedValueOnce(null);
 
@@ -346,7 +354,7 @@ describe('TpmEscalationService', () => {
     });
 
     it('should skip card when already locked by another instance', async () => {
-      mockDb.query.mockResolvedValueOnce([createOverdueCandidate()]);
+      mockDb.systemQuery.mockResolvedValueOnce([createOverdueCandidate()]);
       // SKIP LOCKED → no row returned (another instance holds the lock)
       mockClient.query.mockResolvedValueOnce({ rows: [] });
 
@@ -362,11 +370,11 @@ describe('TpmEscalationService', () => {
 
       await service.handleEscalation();
 
-      expect(mockDb.query).not.toHaveBeenCalled();
+      expect(mockDb.systemQuery).not.toHaveBeenCalled();
     });
 
     it('should reset isProcessing after error in processing', async () => {
-      mockDb.query.mockRejectedValueOnce(new Error('DB down'));
+      mockDb.systemQuery.mockRejectedValueOnce(new Error('DB down'));
 
       await service.handleEscalation();
 
@@ -380,7 +388,7 @@ describe('TpmEscalationService', () => {
         createOverdueCandidate({ id: 100 }),
         createOverdueCandidate({ id: 200, card_code: 'IV7' }),
       ];
-      mockDb.query.mockResolvedValueOnce(candidates);
+      mockDb.systemQuery.mockResolvedValueOnce(candidates);
 
       // First card: lock fails with error
       mockDb.transaction.mockRejectedValueOnce(new Error('Lock failed'));
@@ -400,7 +408,9 @@ describe('TpmEscalationService', () => {
     });
 
     it('should include assetName in notification card when available', async () => {
-      mockDb.query.mockResolvedValueOnce([createOverdueCandidate({ asset_name: 'Fräse F9' })]);
+      mockDb.systemQuery.mockResolvedValueOnce([
+        createOverdueCandidate({ asset_name: 'Fräse F9' }),
+      ]);
       mockClient.query.mockResolvedValueOnce({ rows: [{ id: 100 }] });
       mockDb.queryOne.mockResolvedValueOnce({ team_lead_id: 5 });
 
@@ -412,7 +422,7 @@ describe('TpmEscalationService', () => {
     });
 
     it('should omit assetName from notification card when null', async () => {
-      mockDb.query.mockResolvedValueOnce([createOverdueCandidate({ asset_name: null })]);
+      mockDb.systemQuery.mockResolvedValueOnce([createOverdueCandidate({ asset_name: null })]);
       mockClient.query.mockResolvedValueOnce({ rows: [{ id: 100 }] });
       mockDb.queryOne.mockResolvedValueOnce({ team_lead_id: 5 });
 
@@ -430,13 +440,13 @@ describe('TpmEscalationService', () => {
 
   describe('onModuleInit()', () => {
     it('should call processOverdueCards on startup', async () => {
-      mockDb.query.mockResolvedValueOnce([createOverdueCandidate()]);
+      mockDb.systemQuery.mockResolvedValueOnce([createOverdueCandidate()]);
       mockClient.query.mockResolvedValueOnce({ rows: [{ id: 100 }] });
       mockDb.queryOne.mockResolvedValueOnce({ team_lead_id: 5 });
 
       await service.onModuleInit();
 
-      expect(mockDb.query).toHaveBeenCalledTimes(1);
+      expect(mockDb.systemQuery).toHaveBeenCalledTimes(1);
       expect(mockCardStatusService.markCardOverdue).toHaveBeenCalledTimes(1);
     });
   });
@@ -447,7 +457,7 @@ describe('TpmEscalationService', () => {
 
   describe('resolveTeamLead()', () => {
     it('should query teams + asset_teams for team lead', async () => {
-      mockDb.query.mockResolvedValueOnce([createOverdueCandidate()]);
+      mockDb.systemQuery.mockResolvedValueOnce([createOverdueCandidate()]);
       mockClient.query.mockResolvedValueOnce({ rows: [{ id: 100 }] });
       mockDb.queryOne.mockResolvedValueOnce({ team_lead_id: 5 });
 
@@ -460,7 +470,7 @@ describe('TpmEscalationService', () => {
     });
 
     it('should filter for active teams only', async () => {
-      mockDb.query.mockResolvedValueOnce([createOverdueCandidate()]);
+      mockDb.systemQuery.mockResolvedValueOnce([createOverdueCandidate()]);
       mockClient.query.mockResolvedValueOnce({ rows: [{ id: 100 }] });
       mockDb.queryOne.mockResolvedValueOnce({ team_lead_id: 5 });
 

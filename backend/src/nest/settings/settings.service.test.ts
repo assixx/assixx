@@ -26,9 +26,10 @@ function createMockActivityLogger() {
 
 function createServiceWithMock(): {
   service: SettingsService;
-  mockDb: { query: ReturnType<typeof vi.fn> };
+  mockDb: { query: ReturnType<typeof vi.fn>; tenantQuery: ReturnType<typeof vi.fn> };
 } {
-  const mockDb = { query: vi.fn() };
+  const queryFn = vi.fn();
+  const mockDb = { query: queryFn, tenantQuery: queryFn };
   const mockActivityLogger = createMockActivityLogger();
   const service = new SettingsService(
     mockDb as unknown as DatabaseService,
@@ -239,7 +240,7 @@ describe('SettingsService – pure helpers', () => {
 
 describe('SettingsService – DB-mocked methods', () => {
   let service: SettingsService;
-  let mockDb: { query: ReturnType<typeof vi.fn> };
+  let mockDb: { query: ReturnType<typeof vi.fn>; tenantQuery: ReturnType<typeof vi.fn> };
 
   beforeEach(() => {
     const result = createServiceWithMock();

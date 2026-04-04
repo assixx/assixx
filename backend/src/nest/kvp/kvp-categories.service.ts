@@ -112,8 +112,8 @@ export class KvpCategoriesService {
     `;
 
     const [defaultRows, customRows] = await Promise.all([
-      this.db.query<DbDefaultRow>(defaultsQuery, [tenantId]),
-      this.db.query<DbCustomRow>(customQuery, [tenantId]),
+      this.db.tenantQuery<DbDefaultRow>(defaultsQuery, [tenantId]),
+      this.db.tenantQuery<DbCustomRow>(customQuery, [tenantId]),
     ]);
 
     const defaults: CustomizableDefault[] = defaultRows.map((row: DbDefaultRow) => ({
@@ -169,7 +169,11 @@ export class KvpCategoriesService {
       RETURNING id
     `;
 
-    const rows = await this.db.query<{ id: number }>(query, [tenantId, categoryId, customName]);
+    const rows = await this.db.tenantQuery<{ id: number }>(query, [
+      tenantId,
+      categoryId,
+      customName,
+    ]);
 
     if (rows[0] === undefined) {
       throw new Error('Failed to upsert override');
@@ -195,7 +199,7 @@ export class KvpCategoriesService {
       WHERE category_id = $1 AND tenant_id = $2
     `;
 
-    await this.db.query(query, [categoryId, tenantId]);
+    await this.db.tenantQuery(query, [categoryId, tenantId]);
   }
 
   /**
@@ -222,7 +226,7 @@ export class KvpCategoriesService {
       RETURNING id
     `;
 
-    const rows = await this.db.query<{ id: number }>(query, [
+    const rows = await this.db.tenantQuery<{ id: number }>(query, [
       tenantId,
       name,
       description ?? null,
@@ -291,7 +295,7 @@ export class KvpCategoriesService {
       RETURNING id
     `;
 
-    const rows = await this.db.query<{ id: number }>(query, values);
+    const rows = await this.db.tenantQuery<{ id: number }>(query, values);
 
     if (rows[0] === undefined) {
       throw new NotFoundException('Custom category not found');
@@ -321,14 +325,14 @@ export class KvpCategoriesService {
       RETURNING id
     `;
 
-    const rows = await this.db.query<{ id: number }>(query, [id, tenantId]);
+    const rows = await this.db.tenantQuery<{ id: number }>(query, [id, tenantId]);
 
     if (rows.length === 0) {
       throw new NotFoundException('Custom category not found');
     }
 
     // Count affected suggestions for user feedback
-    const countResult = await this.db.query<{ cnt: number }>(
+    const countResult = await this.db.tenantQuery<{ cnt: number }>(
       `SELECT COUNT(*)::integer AS cnt
        FROM kvp_suggestions
        WHERE custom_category_id = $1`,
@@ -351,7 +355,7 @@ export class KvpCategoriesService {
 
   /** Verify global category exists */
   private async assertGlobalCategoryExists(categoryId: number): Promise<void> {
-    const rows = await this.db.query<{ id: number }>(
+    const rows = await this.db.tenantQuery<{ id: number }>(
       'SELECT id FROM kvp_categories WHERE id = $1',
       [categoryId],
     );
@@ -363,7 +367,7 @@ export class KvpCategoriesService {
 
   /** Verify tenant hasn't exceeded max category limit (only count active) */
   private async assertCategoryLimitNotReached(tenantId: number): Promise<void> {
-    const rows = await this.db.query<{ cnt: number }>(
+    const rows = await this.db.tenantQuery<{ cnt: number }>(
       `SELECT
         (SELECT COUNT(*) FROM kvp_categories) +
         (SELECT COUNT(*) FROM kvp_categories_custom WHERE tenant_id = $1 AND category_id IS NULL AND is_active = ${IS_ACTIVE.ACTIVE})
@@ -387,7 +391,7 @@ export class KvpCategoriesService {
     if (userRole === 'root') return;
 
     if (userRole === 'admin') {
-      const rows = await this.db.query<{ has_full_access: boolean }>(
+      const rows = await this.db.tenantQuery<{ has_full_access: boolean }>(
         'SELECT has_full_access FROM users WHERE id = $1 AND tenant_id = $2',
         [userId, tenantId],
       );

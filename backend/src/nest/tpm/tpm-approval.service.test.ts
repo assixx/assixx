@@ -29,8 +29,9 @@ import type { TpmCardExecutionRow } from './tpm.types.js';
 
 function createMockDb() {
   return {
-    queryOne: vi.fn(),
     query: vi.fn().mockResolvedValue(undefined),
+    tenantQuery: vi.fn().mockResolvedValue([]),
+    tenantQueryOne: vi.fn().mockResolvedValue(null),
     tenantTransaction: vi.fn(),
   };
 }
@@ -437,7 +438,7 @@ describe('TpmApprovalService', () => {
 
   describe('canUserApprove()', () => {
     it('should return true when user is team lead', async () => {
-      mockDb.queryOne.mockResolvedValueOnce({ can_approve: true });
+      mockDb.tenantQueryOne.mockResolvedValueOnce({ can_approve: true });
 
       const result = await service.canUserApprove(10, 9, 5);
 
@@ -445,7 +446,7 @@ describe('TpmApprovalService', () => {
     });
 
     it('should return false when user has no approval rights', async () => {
-      mockDb.queryOne.mockResolvedValueOnce({ can_approve: false });
+      mockDb.tenantQueryOne.mockResolvedValueOnce({ can_approve: false });
 
       const result = await service.canUserApprove(10, 99, 5);
 
@@ -453,7 +454,7 @@ describe('TpmApprovalService', () => {
     });
 
     it('should return false when queryOne returns null', async () => {
-      mockDb.queryOne.mockResolvedValueOnce(null);
+      mockDb.tenantQueryOne.mockResolvedValueOnce(null);
 
       const result = await service.canUserApprove(10, 99, 5);
 
@@ -461,26 +462,26 @@ describe('TpmApprovalService', () => {
     });
 
     it('should pass correct params to query', async () => {
-      mockDb.queryOne.mockResolvedValueOnce({ can_approve: true });
+      mockDb.tenantQueryOne.mockResolvedValueOnce({ can_approve: true });
 
       await service.canUserApprove(10, 9, 5);
 
-      const sql = mockDb.queryOne.mock.calls[0]?.[0] as string;
+      const sql = mockDb.tenantQueryOne.mock.calls[0]?.[0] as string;
       expect(sql).toContain('team_lead_id');
       expect(sql).toContain('has_full_access');
 
-      const params = mockDb.queryOne.mock.calls[0]?.[1] as unknown[];
+      const params = mockDb.tenantQueryOne.mock.calls[0]?.[1] as unknown[];
       expect(params?.[0]).toBe(5);
       expect(params?.[1]).toBe(10);
       expect(params?.[2]).toBe(9);
     });
 
     it('should check both team lead and admin paths', async () => {
-      mockDb.queryOne.mockResolvedValueOnce({ can_approve: true });
+      mockDb.tenantQueryOne.mockResolvedValueOnce({ can_approve: true });
 
       await service.canUserApprove(10, 9, 5);
 
-      const sql = mockDb.queryOne.mock.calls[0]?.[0] as string;
+      const sql = mockDb.tenantQueryOne.mock.calls[0]?.[0] as string;
       expect(sql).toContain('teams');
       expect(sql).toContain('asset_teams');
       expect(sql).toContain('users');

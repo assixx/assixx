@@ -83,7 +83,7 @@ export class TpmDefectStatsService {
     tenantId: number,
     planUuid: string,
   ): Promise<{ name: string; asset_name: string }> {
-    const row = await this.db.queryOne<{ name: string; asset_name: string }>(
+    const row = await this.db.tenantQueryOne<{ name: string; asset_name: string }>(
       `SELECT p.name, a.name AS asset_name
        FROM tpm_maintenance_plans p
        JOIN assets a ON p.asset_id = a.id
@@ -123,7 +123,12 @@ export class TpmDefectStatsService {
              AND COALESCE(wo.completed_at, wo.verified_at) < ($4::date + INTERVAL '1 day')
            GROUP BY week ORDER BY week`;
 
-    const rows = await this.db.query<WeekCount>(sql, [planUuid, tenantId, yearStart, yearEnd]);
+    const rows = await this.db.tenantQuery<WeekCount>(sql, [
+      planUuid,
+      tenantId,
+      yearStart,
+      yearEnd,
+    ]);
     const map = new Map<number, number>();
     for (const row of rows) {
       map.set(Number(row.week), Number(row.count));
@@ -150,7 +155,7 @@ export class TpmDefectStatsService {
              AND wo.is_active = ${IS_ACTIVE.ACTIVE} AND d.is_active = ${IS_ACTIVE.ACTIVE}
              AND COALESCE(wo.completed_at, wo.verified_at) < $3::date`;
 
-    const row = await this.db.queryOne<CountResult>(sql, [planUuid, tenantId, yearStart]);
+    const row = await this.db.tenantQueryOne<CountResult>(sql, [planUuid, tenantId, yearStart]);
     return Number.parseInt(row?.count ?? '0', 10);
   }
 
@@ -159,7 +164,7 @@ export class TpmDefectStatsService {
     planUuid: string,
     currentYear: number,
   ): Promise<number[]> {
-    const rows = await this.db.query<YearResult>(
+    const rows = await this.db.tenantQuery<YearResult>(
       `SELECT DISTINCT EXTRACT(YEAR FROM e.execution_date)::int AS year
        ${DEFECT_PLAN_JOIN}
        WHERE p.uuid = $1 AND d.tenant_id = $2 AND d.is_active = ${IS_ACTIVE.ACTIVE}

@@ -73,7 +73,7 @@ export class SwapApprovalBridgeService implements OnModuleInit {
     );
 
     // Link approval UUID back to the swap request
-    await this.db.query(
+    await this.db.tenantQuery(
       `UPDATE shift_swap_requests SET approval_uuid = $1 WHERE uuid = $2::uuid AND tenant_id = $3`,
       [approval.uuid, swapUuid, tenantId],
     );
@@ -119,7 +119,7 @@ export class SwapApprovalBridgeService implements OnModuleInit {
         await this.shiftSwapService.executeSwap(source.uuid, tenantId);
         this.logger.log(`Swap ${source.uuid} executed via approval ${approvalData.uuid}`);
       } else if (approvalData.status === 'rejected') {
-        await this.db.query(
+        await this.db.tenantQuery(
           `UPDATE shift_swap_requests SET status = 'rejected' WHERE uuid = $1::uuid AND tenant_id = $2`,
           [source.uuid, tenantId],
         );
@@ -136,7 +136,7 @@ export class SwapApprovalBridgeService implements OnModuleInit {
 
   /** Ensure approval_configs has a team_lead entry for shift_planning (C2 fix) */
   private async ensureApprovalConfig(tenantId: number): Promise<void> {
-    const existing = await this.db.query<{ id: number }>(
+    const existing = await this.db.tenantQuery<{ id: number }>(
       `SELECT id FROM approval_configs
        WHERE tenant_id = $1 AND addon_code = $2 AND approver_type = 'team_lead' AND is_active = $3`,
       [tenantId, ADDON_CODE, IS_ACTIVE.ACTIVE],
@@ -157,7 +157,7 @@ export class SwapApprovalBridgeService implements OnModuleInit {
     tenantId: number,
     approvalUuid: string,
   ): Promise<{ uuid: string; entityType: string } | null> {
-    const rows = await this.db.query<{ source_uuid: string; source_entity_type: string }>(
+    const rows = await this.db.tenantQuery<{ source_uuid: string; source_entity_type: string }>(
       `SELECT source_uuid, source_entity_type FROM approvals WHERE uuid = $1 AND tenant_id = $2 AND is_active = $3`,
       [approvalUuid, tenantId, IS_ACTIVE.ACTIVE],
     );
