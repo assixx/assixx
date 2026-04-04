@@ -15,9 +15,10 @@ import type { UpdateCompanyDto } from './dto/company.dto.js';
 
 function createServiceWithMock(): {
   service: CompanyService;
-  mockDb: { query: ReturnType<typeof vi.fn> };
+  mockDb: { query: ReturnType<typeof vi.fn>; tenantQuery: ReturnType<typeof vi.fn> };
 } {
-  const mockDb = { query: vi.fn() };
+  const qf = vi.fn();
+  const mockDb = { query: qf, tenantQuery: qf };
   const service = new CompanyService(mockDb as unknown as DatabaseService);
   return { service, mockDb };
 }
@@ -39,7 +40,7 @@ const FULL_DB_ROW = {
 
 describe('CompanyService', () => {
   let service: CompanyService;
-  let mockDb: { query: ReturnType<typeof vi.fn> };
+  let mockDb: { query: ReturnType<typeof vi.fn>; tenantQuery: ReturnType<typeof vi.fn> };
 
   beforeEach(() => {
     vi.clearAllMocks();

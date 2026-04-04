@@ -193,11 +193,12 @@ export class JwtAuthGuard implements CanActivate {
    * Lookup user in database (fresh data, not from token)
    */
   private async lookupUser(userId: number, tenantId: number): Promise<UserRow | null> {
-    const rows = await this.databaseService.query<UserRow>(
+    const rows = await this.databaseService.queryAsTenant<UserRow>(
       `SELECT id, email, role, tenant_id, first_name, last_name, is_active, has_full_access
        FROM users
        WHERE id = $1 AND tenant_id = $2`,
       [userId, tenantId],
+      tenantId,
     );
 
     return rows[0] ?? null;

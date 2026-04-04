@@ -1,11 +1,9 @@
 /**
  * Unit tests for RotationService (Facade)
  *
- * Phase 11: Service tests — mocked dependencies.
- * Focus: Admin role guard (assertAdminRole), delegation to
- *        pattern/assignment/generator/history sub-services.
+ * Tests delegation to pattern/assignment/generator/history sub-services.
+ * Authorization is handled at controller level via @RequirePermission.
  */
-import { ForbiddenException } from '@nestjs/common';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { RotationAssignmentService } from './rotation-assignment.service.js';
@@ -81,30 +79,6 @@ describe('RotationService', () => {
   });
 
   // =============================================================
-  // assertAdminRole
-  // =============================================================
-
-  describe('admin role guard', () => {
-    it('should throw ForbiddenException for employee on create', async () => {
-      await expect(service.createRotationPattern({} as never, 10, 1, 'employee')).rejects.toThrow(
-        ForbiddenException,
-      );
-    });
-
-    it('should allow admin on create', async () => {
-      await service.createRotationPattern({} as never, 10, 1, 'admin');
-
-      expect(mockPatternService.createRotationPattern).toHaveBeenCalled();
-    });
-
-    it('should allow root on create', async () => {
-      await service.createRotationPattern({} as never, 10, 1, 'root');
-
-      expect(mockPatternService.createRotationPattern).toHaveBeenCalled();
-    });
-  });
-
-  // =============================================================
   // Pattern delegation
   // =============================================================
 
@@ -116,9 +90,17 @@ describe('RotationService', () => {
     });
   });
 
+  describe('createRotationPattern', () => {
+    it('should delegate to patternService', async () => {
+      await service.createRotationPattern({} as never, 10, 1);
+
+      expect(mockPatternService.createRotationPattern).toHaveBeenCalledWith({}, 10, 1);
+    });
+  });
+
   describe('deleteRotationPattern', () => {
-    it('should check admin role then delegate', async () => {
-      await service.deleteRotationPattern(1, 10, 'admin', 5);
+    it('should delegate to patternService', async () => {
+      await service.deleteRotationPattern(1, 10, 5);
 
       expect(mockPatternService.deleteRotationPattern).toHaveBeenCalledWith(1, 10, 5);
     });
@@ -141,8 +123,8 @@ describe('RotationService', () => {
   // =============================================================
 
   describe('assignUsersToPattern', () => {
-    it('should check admin role then delegate', async () => {
-      await service.assignUsersToPattern({} as never, 10, 1, 'admin');
+    it('should delegate to assignmentService', async () => {
+      await service.assignUsersToPattern({} as never, 10, 1);
 
       expect(mockAssignmentService.assignUsersToPattern).toHaveBeenCalled();
     });
@@ -154,7 +136,7 @@ describe('RotationService', () => {
 
   describe('generateRotationShifts', () => {
     it('should resolve pattern then generate', async () => {
-      await service.generateRotationShifts({ patternId: 1 } as never, 10, 1, 'admin');
+      await service.generateRotationShifts({ patternId: 1 } as never, 10, 1);
 
       expect(mockPatternService.getRotationPattern).toHaveBeenCalledWith(1, 10);
       expect(mockGeneratorService.generateRotationShifts).toHaveBeenCalled();
@@ -174,8 +156,8 @@ describe('RotationService', () => {
   });
 
   describe('deleteRotationHistory', () => {
-    it('should check admin role then delegate', async () => {
-      await service.deleteRotationHistory(10, 5, 'admin', 1);
+    it('should delegate to historyService', async () => {
+      await service.deleteRotationHistory(10, 5, 1);
 
       expect(mockHistoryService.deleteRotationHistory).toHaveBeenCalledWith(10, 5, 1, undefined);
     });

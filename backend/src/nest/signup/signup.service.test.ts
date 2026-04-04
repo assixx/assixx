@@ -33,13 +33,13 @@ const mockConfig = {
 function createServiceWithMock(): {
   service: SignupService;
   mockDb: {
-    query: ReturnType<typeof vi.fn>;
-    transaction: ReturnType<typeof vi.fn>;
+    systemQuery: ReturnType<typeof vi.fn>;
+    systemTransaction: ReturnType<typeof vi.fn>;
   };
 } {
   const mockDb = {
-    query: vi.fn(),
-    transaction: vi.fn(),
+    systemQuery: vi.fn(),
+    systemTransaction: vi.fn(),
   };
   const service = new SignupService(mockDb as unknown as DatabaseService, mockConfig);
   return { service, mockDb };
@@ -151,8 +151,8 @@ describe('SignupService – pure validators', () => {
 describe('SignupService – DB-mocked methods', () => {
   let service: SignupService;
   let mockDb: {
-    query: ReturnType<typeof vi.fn>;
-    transaction: ReturnType<typeof vi.fn>;
+    systemQuery: ReturnType<typeof vi.fn>;
+    systemTransaction: ReturnType<typeof vi.fn>;
   };
 
   beforeEach(() => {
@@ -163,7 +163,7 @@ describe('SignupService – DB-mocked methods', () => {
 
   describe('checkSubdomainAvailability', () => {
     it('returns available=true for unused subdomain', async () => {
-      mockDb.query.mockResolvedValueOnce([]); // no existing tenant
+      mockDb.systemQuery.mockResolvedValueOnce([]); // no existing tenant
 
       const result = await service.checkSubdomainAvailability('new-company');
 
@@ -172,7 +172,7 @@ describe('SignupService – DB-mocked methods', () => {
     });
 
     it('returns available=false for taken subdomain', async () => {
-      mockDb.query.mockResolvedValueOnce([{ id: 1 }]); // existing tenant
+      mockDb.systemQuery.mockResolvedValueOnce([{ id: 1 }]); // existing tenant
 
       const result = await service.checkSubdomainAvailability('existing');
 
@@ -184,7 +184,7 @@ describe('SignupService – DB-mocked methods', () => {
 
       expect(result.available).toBe(false);
       expect(result.error).toBeDefined();
-      expect(mockDb.query).not.toHaveBeenCalled();
+      expect(mockDb.systemQuery).not.toHaveBeenCalled();
     });
 
     it('returns available=false for reserved subdomain', async () => {
@@ -207,13 +207,13 @@ describe('SignupService – DB-mocked methods', () => {
 
   describe('ensureSubdomainAvailable', () => {
     it('throws ConflictException when subdomain is taken', async () => {
-      mockDb.query.mockResolvedValueOnce([{ id: 1 }]); // existing
+      mockDb.systemQuery.mockResolvedValueOnce([{ id: 1 }]); // existing
 
       await expect(service['ensureSubdomainAvailable']('taken')).rejects.toThrow(ConflictException);
     });
 
     it('resolves when subdomain is available', async () => {
-      mockDb.query.mockResolvedValueOnce([]); // no existing
+      mockDb.systemQuery.mockResolvedValueOnce([]); // no existing
 
       await expect(service['ensureSubdomainAvailable']('available')).resolves.toBeUndefined();
     });
@@ -227,8 +227,8 @@ describe('SignupService – DB-mocked methods', () => {
 describe('SignupService – registration', () => {
   let service: SignupService;
   let mockDb: {
-    query: ReturnType<typeof vi.fn>;
-    transaction: ReturnType<typeof vi.fn>;
+    systemQuery: ReturnType<typeof vi.fn>;
+    systemTransaction: ReturnType<typeof vi.fn>;
   };
   let mockClient: { query: ReturnType<typeof vi.fn> };
 
@@ -252,9 +252,9 @@ describe('SignupService – registration', () => {
 
   function setupFullHappyPath(): void {
     // 1. isSubdomainAvailable → available
-    mockDb.query.mockResolvedValueOnce([]);
+    mockDb.systemQuery.mockResolvedValueOnce([]);
     // 2. transaction executes callback
-    mockDb.transaction.mockImplementation(async (cb: (c: unknown) => Promise<unknown>) =>
+    mockDb.systemTransaction.mockImplementation(async (cb: (c: unknown) => Promise<unknown>) =>
       cb(mockClient),
     );
     // Client queries inside transaction:
@@ -266,7 +266,7 @@ describe('SignupService – registration', () => {
     mockClient.query.mockResolvedValueOnce({ rows: [] });
     // activateTrialAddons: production mode → returns early (no queries)
     // 3. createAuditLog INSERT
-    mockDb.query.mockResolvedValueOnce([]);
+    mockDb.systemQuery.mockResolvedValueOnce([]);
   }
 
   beforeEach(() => {
@@ -301,7 +301,7 @@ describe('SignupService – registration', () => {
       expect(result.tenantId).toBe(10);
 
       // Verify audit log contains structured address
-      const auditCall = mockDb.query.mock.calls[1] as unknown[];
+      const auditCall = mockDb.systemQuery.mock.calls[1] as unknown[];
       const auditParams = auditCall[1] as unknown[];
       const newValues = JSON.parse(auditParams[6] as string) as Record<string, unknown>;
       expect(newValues.street).toBe('Musterstraße');
@@ -316,26 +316,26 @@ describe('SignupService – registration', () => {
       dto.subdomain = 'ab';
 
       await expect(service.registerTenant(dto)).rejects.toThrow(BadRequestException);
-      expect(mockDb.transaction).not.toHaveBeenCalled();
+      expect(mockDb.systemTransaction).not.toHaveBeenCalled();
     });
 
     it('should throw ConflictException for taken subdomain', async () => {
-      mockDb.query.mockResolvedValueOnce([{ id: 1 }]);
+      mockDb.systemQuery.mockResolvedValueOnce([{ id: 1 }]);
 
       await expect(service.registerTenant(createValidDto())).rejects.toThrow(ConflictException);
-      expect(mockDb.transaction).not.toHaveBeenCalled();
+      expect(mockDb.systemTransaction).not.toHaveBeenCalled();
     });
 
     it('should throw BadRequestException when transaction fails', async () => {
-      mockDb.query.mockResolvedValueOnce([]);
-      mockDb.transaction.mockRejectedValueOnce(new Error('DB connection lost'));
+      mockDb.systemQuery.mockResolvedValueOnce([]);
+      mockDb.systemTransaction.mockRejectedValueOnce(new Error('DB connection lost'));
 
       await expect(service.registerTenant(createValidDto())).rejects.toThrow(BadRequestException);
     });
 
     it('should throw when tenant creation returns no id', async () => {
-      mockDb.query.mockResolvedValueOnce([]);
-      mockDb.transaction.mockImplementation(async (cb: (c: unknown) => Promise<unknown>) =>
+      mockDb.systemQuery.mockResolvedValueOnce([]);
+      mockDb.systemTransaction.mockImplementation(async (cb: (c: unknown) => Promise<unknown>) =>
         cb(mockClient),
       );
       mockClient.query.mockResolvedValueOnce({ rows: [] });
@@ -344,8 +344,8 @@ describe('SignupService – registration', () => {
     });
 
     it('should throw when user creation returns no id', async () => {
-      mockDb.query.mockResolvedValueOnce([]);
-      mockDb.transaction.mockImplementation(async (cb: (c: unknown) => Promise<unknown>) =>
+      mockDb.systemQuery.mockResolvedValueOnce([]);
+      mockDb.systemTransaction.mockImplementation(async (cb: (c: unknown) => Promise<unknown>) =>
         cb(mockClient),
       );
       mockClient.query.mockResolvedValueOnce({ rows: [{ id: 10 }] });
@@ -359,15 +359,15 @@ describe('SignupService – registration', () => {
         isDevelopment: true,
       } as unknown as AppConfigService;
       const devDb = {
-        query: vi.fn(),
-        transaction: vi.fn(),
+        systemQuery: vi.fn(),
+        systemTransaction: vi.fn(),
       };
       const devService = new SignupService(devDb as unknown as DatabaseService, devConfig);
 
       // isSubdomainAvailable → available
-      devDb.query.mockResolvedValueOnce([]);
+      devDb.systemQuery.mockResolvedValueOnce([]);
       // transaction executes callback
-      devDb.transaction.mockImplementation(async (cb: (c: unknown) => Promise<unknown>) =>
+      devDb.systemTransaction.mockImplementation(async (cb: (c: unknown) => Promise<unknown>) =>
         cb(mockClient),
       );
       // createTenant INSERT
@@ -389,7 +389,7 @@ describe('SignupService – registration', () => {
       mockClient.query.mockResolvedValueOnce({ rows: [] });
       mockClient.query.mockResolvedValueOnce({ rows: [] });
       // createAuditLog INSERT
-      devDb.query.mockResolvedValueOnce([]);
+      devDb.systemQuery.mockResolvedValueOnce([]);
 
       const result = await devService.registerTenant(createValidDto());
 
@@ -404,8 +404,8 @@ describe('SignupService – registration', () => {
     });
 
     it('should succeed even when audit log fails', async () => {
-      mockDb.query.mockResolvedValueOnce([]);
-      mockDb.transaction.mockImplementation(async (cb: (c: unknown) => Promise<unknown>) =>
+      mockDb.systemQuery.mockResolvedValueOnce([]);
+      mockDb.systemTransaction.mockImplementation(async (cb: (c: unknown) => Promise<unknown>) =>
         cb(mockClient),
       );
       // createTenant INSERT
@@ -416,7 +416,7 @@ describe('SignupService – registration', () => {
       mockClient.query.mockResolvedValueOnce({ rows: [] });
       // activateTrialAddons: production mode → returns early
       // createAuditLog → fails
-      mockDb.query.mockRejectedValueOnce(new Error('Audit log failed'));
+      mockDb.systemQuery.mockRejectedValueOnce(new Error('Audit log failed'));
 
       const result = await service.registerTenant(createValidDto());
 
@@ -426,7 +426,7 @@ describe('SignupService – registration', () => {
 
   describe('checkSubdomainAvailability – error path', () => {
     it('should throw BadRequestException on DB error', async () => {
-      mockDb.query.mockRejectedValueOnce(new Error('Connection refused'));
+      mockDb.systemQuery.mockRejectedValueOnce(new Error('Connection refused'));
 
       await expect(service.checkSubdomainAvailability('valid-sub')).rejects.toThrow(
         BadRequestException,

@@ -235,7 +235,7 @@ export class AddonsService {
   async getAvailableAddons(tenantId: number): Promise<AddonWithTenantStatus[]> {
     this.logger.debug(`Getting available addons for tenant ${tenantId}`);
 
-    const rows = await this.db.query<DbTenantAddonJoinRow>(
+    const rows = await this.db.tenantQuery<DbTenantAddonJoinRow>(
       `SELECT
          a.id AS addon_id, a.code AS addon_code, a.name AS addon_name,
          a.description AS addon_description,
@@ -284,7 +284,7 @@ export class AddonsService {
   private async upsertTenantAddon(tenantId: number, addon: DbAddonRow): Promise<AddonStatus> {
     const trialDays: number = addon.trial_days ?? 30;
 
-    const rows = await this.db.query<{ id: string; status: TenantAddonStatus }>(
+    const rows = await this.db.tenantQuery<{ id: string; status: TenantAddonStatus }>(
       'SELECT id, status FROM tenant_addons WHERE tenant_id = $1 AND addon_id = $2',
       [tenantId, addon.id],
     );
@@ -310,7 +310,7 @@ export class AddonsService {
     const trialEndsAt: Date | null =
       isReturningFromCancel ? new Date(Date.now() + trialDays * 86_400_000) : null;
 
-    await this.db.query(
+    await this.db.tenantQuery(
       `UPDATE tenant_addons
        SET status = $1, is_active = ${IS_ACTIVE.ACTIVE},
            trial_started_at = CASE WHEN $2::timestamptz IS NOT NULL THEN NOW() ELSE trial_started_at END,
@@ -333,7 +333,7 @@ export class AddonsService {
   ): Promise<AddonStatus> {
     const trialEndsAt: Date = new Date(Date.now() + trialDays * 86_400_000);
 
-    await this.db.query(
+    await this.db.tenantQuery(
       `INSERT INTO tenant_addons
          (tenant_id, addon_id, status, trial_started_at, trial_ends_at, activated_at, is_active, created_at, updated_at)
        VALUES ($1, $2, 'trial', NOW(), $3, NOW(), ${IS_ACTIVE.ACTIVE}, NOW(), NOW())`,
@@ -386,7 +386,7 @@ export class AddonsService {
       );
     }
 
-    const rows = await this.db.query(
+    const rows = await this.db.tenantQuery(
       `UPDATE tenant_addons
        SET status = 'cancelled', is_active = ${IS_ACTIVE.INACTIVE},
            deactivated_at = NOW(), updated_at = NOW()
@@ -416,7 +416,7 @@ export class AddonsService {
       };
     }
 
-    const row = await this.db.queryOne<{
+    const row = await this.db.tenantQueryOne<{
       status: TenantAddonStatus;
       trial_ends_at: Date | null;
       activated_at: Date | null;
@@ -461,7 +461,7 @@ export class AddonsService {
 
     const addon = await this.resolveAddon(addonCode);
 
-    const rows = await this.db.query<DbUsageStatsRow>(
+    const rows = await this.db.tenantQuery<DbUsageStatsRow>(
       `SELECT
          DATE(created_at) AS date,
          COUNT(*) AS usage_count,
@@ -497,7 +497,7 @@ export class AddonsService {
       return true;
     }
 
-    const row = await this.db.queryOne<{ id: string }>(
+    const row = await this.db.tenantQueryOne<{ id: string }>(
       `SELECT id FROM tenant_addons
        WHERE tenant_id = $1 AND addon_id = $2
          AND is_active = ${IS_ACTIVE.ACTIVE}
@@ -553,7 +553,7 @@ export class AddonsService {
   async getAllTenantsWithAddons(): Promise<TenantWithAddons[]> {
     this.logger.debug('Getting all tenants with addons');
 
-    const tenants = await this.db.query<DbTenantRow>(
+    const tenants = await this.db.systemQuery<DbTenantRow>(
       'SELECT id, subdomain, company_name, status FROM tenants ORDER BY company_name',
     );
 

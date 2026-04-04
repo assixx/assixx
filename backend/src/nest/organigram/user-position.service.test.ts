@@ -24,8 +24,13 @@ vi.mock('uuid', () => ({
 // =============================================================
 
 function createMockDb() {
+  const qf = vi.fn();
+  const qof = vi.fn().mockResolvedValue(null);
   return {
-    query: vi.fn(),
+    query: qf,
+    tenantQuery: qf,
+    queryOne: qof,
+    tenantQueryOne: qof,
     getUserId: vi.fn().mockReturnValue(1),
   };
 }
@@ -126,15 +131,17 @@ describe('UserPositionService', () => {
 
   describe('assign', () => {
     it('should check position exists then insert with ON CONFLICT DO NOTHING', async () => {
-      // assertPositionExists
+      // assertPositionExists (uses query)
       mockDb.query.mockResolvedValueOnce([{ id: 'pos-uuid-001' }]);
-      // INSERT
-      mockDb.query.mockResolvedValueOnce([]);
+      // INSERT (uses tenantQuery)
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       await service.assign(10, 42, 'pos-uuid-001');
 
-      expect(mockDb.query).toHaveBeenCalledTimes(2);
-      const insertCall = mockDb.query.mock.calls[1];
+      // 2 total: assertPositionExists + INSERT (query === tenantQuery, same fn)
+      expect(mockDb.tenantQuery).toHaveBeenCalledTimes(2);
+      // Index 1 = second call = INSERT (first was assertPositionExists)
+      const insertCall = mockDb.tenantQuery.mock.calls[1];
       expect(insertCall?.[0]).toContain('ON CONFLICT');
       expect(insertCall?.[0]).toContain('DO NOTHING');
     });
@@ -147,7 +154,7 @@ describe('UserPositionService', () => {
 
     it('should be idempotent — second assign does not throw', async () => {
       mockDb.query.mockResolvedValueOnce([{ id: 'pos-uuid-001' }]);
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       await expect(service.assign(10, 42, 'pos-uuid-001')).resolves.toBeUndefined();
     });
@@ -159,17 +166,17 @@ describe('UserPositionService', () => {
 
   describe('unassign', () => {
     it('should delete the assignment', async () => {
-      mockDb.query.mockResolvedValueOnce([{ id: 'up-uuid-001' }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ id: 'up-uuid-001' }]);
 
       await service.unassign(10, 42, 'pos-uuid-001');
 
-      const deleteCall = mockDb.query.mock.calls[0];
+      const deleteCall = mockDb.tenantQuery.mock.calls[0];
       expect(deleteCall?.[0]).toContain('DELETE FROM user_positions');
       expect(deleteCall?.[1]).toEqual([10, 42, 'pos-uuid-001']);
     });
 
     it('should not throw when assignment does not exist', async () => {
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       await expect(service.unassign(10, 42, 'pos-uuid-001')).resolves.toBeUndefined();
     });

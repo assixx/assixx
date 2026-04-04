@@ -25,9 +25,13 @@ import { UserPermissionsService } from './user-permissions.service.js';
 // =============================================================
 
 function createMockDb() {
+  const qf = vi.fn();
+  const qof = vi.fn();
   return {
-    query: vi.fn(),
-    queryOne: vi.fn(),
+    query: qf,
+    tenantQuery: qf,
+    queryOne: qof,
+    tenantQueryOne: qof,
     tenantTransaction: vi.fn(),
   };
 }

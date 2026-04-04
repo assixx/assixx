@@ -114,7 +114,7 @@ export class TpmPlansService {
 
     // Non-lead employees: ScopeService returns 'none' (designed for hierarchy management).
     // Fall back to their direct team assignments so they see TPM plans for their teams.
-    const rows = await this.db.query<{ team_id: number }>(
+    const rows = await this.db.tenantQuery<{ team_id: number }>(
       'SELECT team_id FROM user_teams WHERE user_id = $1 AND tenant_id = $2',
       [user.id, user.tenantId],
     );
@@ -140,7 +140,7 @@ export class TpmPlansService {
       can_delete: boolean;
     }
 
-    const rows = await this.db.query<PermRow>(
+    const rows = await this.db.tenantQuery<PermRow>(
       `SELECT module_code, can_read, can_write, can_delete
        FROM user_addon_permissions
        WHERE user_id = $1 AND addon_code = 'tpm'`,
@@ -175,7 +175,7 @@ export class TpmPlansService {
 
   /** Get a single plan by UUID */
   async getPlan(tenantId: number, planUuid: string): Promise<TpmPlan> {
-    const row = await this.db.queryOne<TpmPlanJoinRow>(
+    const row = await this.db.tenantQueryOne<TpmPlanJoinRow>(
       `SELECT p.*, m.uuid AS asset_uuid, m.name AS asset_name, d.name AS department_name, u.username AS created_by_name,
               latest_approval.approval_status,
               latest_approval.approval_decision_note,
@@ -226,7 +226,7 @@ export class TpmPlansService {
     const baseParams: unknown[] = [tenantId, pageSize, offset];
     const allParams = teamIds !== null ? [...baseParams, teamIds] : baseParams;
 
-    const countResult = await this.db.queryOne<{ count: string }>(
+    const countResult = await this.db.tenantQueryOne<{ count: string }>(
       `SELECT COUNT(*) AS count
        FROM tpm_maintenance_plans p
        WHERE p.tenant_id = $1 AND p.is_active IN (${IS_ACTIVE.ACTIVE}, ${IS_ACTIVE.ARCHIVED})
@@ -235,7 +235,7 @@ export class TpmPlansService {
     );
     const total = Number.parseInt(countResult?.count ?? '0', 10);
 
-    const rows = await this.db.query<TpmPlanJoinRow>(
+    const rows = await this.db.tenantQuery<TpmPlanJoinRow>(
       `SELECT p.*, m.uuid AS asset_uuid, m.name AS asset_name, d.name AS department_name, u.username AS created_by_name,
               latest_approval.approval_status,
               latest_approval.approval_decision_note,
@@ -290,7 +290,7 @@ export class TpmPlansService {
         `AND EXISTS (SELECT 1 FROM asset_teams ats WHERE ats.asset_id = p.asset_id AND ats.team_id = ANY($2::int[]))`
       : '';
 
-    const rows = await this.db.query<MatrixRow>(
+    const rows = await this.db.tenantQuery<MatrixRow>(
       `SELECT p.uuid AS plan_uuid,
               c.interval_type,
               COUNT(*)::text AS card_count,
@@ -329,15 +329,15 @@ export class TpmPlansService {
   /** Load all org data for full-access users */
   private async loadAllOrgData(tenantId: number): Promise<TpmScopedOrgData> {
     const [areas, depts, assets] = await Promise.all([
-      this.db.query<OrgAreaRow>(
+      this.db.tenantQuery<OrgAreaRow>(
         `SELECT id, name, uuid FROM areas WHERE tenant_id = $1 AND is_active = ${IS_ACTIVE.ACTIVE} ORDER BY name`,
         [tenantId],
       ),
-      this.db.query<OrgDeptRow>(
+      this.db.tenantQuery<OrgDeptRow>(
         `SELECT id, name, uuid, area_id FROM departments WHERE tenant_id = $1 AND is_active = ${IS_ACTIVE.ACTIVE} ORDER BY name`,
         [tenantId],
       ),
-      this.db.query<OrgAssetRow>(
+      this.db.tenantQuery<OrgAssetRow>(
         `SELECT id, name, uuid, department_id, asset_number, status FROM assets WHERE tenant_id = $1 AND is_active = ${IS_ACTIVE.ACTIVE} ORDER BY name`,
         [tenantId],
       ),
@@ -347,7 +347,7 @@ export class TpmPlansService {
 
   /** Load org data scoped to specific teams via asset_teams */
   private async loadScopedOrgData(tenantId: number, teamIds: number[]): Promise<TpmScopedOrgData> {
-    const assets = await this.db.query<OrgAssetRow>(
+    const assets = await this.db.tenantQuery<OrgAssetRow>(
       `SELECT DISTINCT a.id, a.name, a.uuid, a.department_id, a.asset_number, a.status
        FROM assets a JOIN asset_teams at ON a.id = at.asset_id
        WHERE a.tenant_id = $1 AND a.is_active = ${IS_ACTIVE.ACTIVE} AND at.team_id = ANY($2::int[])
@@ -358,7 +358,7 @@ export class TpmPlansService {
     const deptIds = [...new Set(assets.map((a: OrgAssetRow) => a.department_id))];
     const depts =
       deptIds.length > 0 ?
-        await this.db.query<OrgDeptRow>(
+        await this.db.tenantQuery<OrgDeptRow>(
           `SELECT id, name, uuid, area_id FROM departments WHERE id = ANY($1::int[]) AND is_active = ${IS_ACTIVE.ACTIVE}`,
           [deptIds],
         )
@@ -367,7 +367,7 @@ export class TpmPlansService {
     const areaIds = [...new Set(depts.map((d: OrgDeptRow) => d.area_id))];
     const areas =
       areaIds.length > 0 ?
-        await this.db.query<OrgAreaRow>(
+        await this.db.tenantQuery<OrgAreaRow>(
           `SELECT id, name, uuid FROM areas WHERE id = ANY($1::int[]) AND is_active = ${IS_ACTIVE.ACTIVE}`,
           [areaIds],
         )
@@ -378,7 +378,7 @@ export class TpmPlansService {
 
   /** Get plan by asset ID (for slot assistant and inter-service lookups) */
   async getPlanByAssetId(tenantId: number, assetId: number): Promise<TpmPlan | null> {
-    const row = await this.db.queryOne<TpmPlanJoinRow>(
+    const row = await this.db.tenantQueryOne<TpmPlanJoinRow>(
       `SELECT p.*, m.uuid AS asset_uuid, m.name AS asset_name, d.name AS department_name, u.username AS created_by_name
        FROM tpm_maintenance_plans p
        LEFT JOIN assets m ON p.asset_id = m.id AND m.tenant_id = p.tenant_id

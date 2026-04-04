@@ -178,7 +178,7 @@ export class TpmNotificationService {
   ): Promise<void> {
     try {
       const notificationUuid = uuidv7();
-      await this.db.query(
+      await this.db.tenantQuery(
         `INSERT INTO notifications (
           tenant_id, type, title, message, priority,
           recipient_type, recipient_id, action_url, action_label,

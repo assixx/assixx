@@ -16,7 +16,8 @@ import { KvpAttachmentsService } from './kvp-attachments.service.js';
 // =============================================================
 
 function createMockDb() {
-  return { query: vi.fn() };
+  const qf = vi.fn();
+  return { query: qf, tenantQuery: qf };
 }
 
 function makeDbAttachment(overrides: Record<string, unknown> = {}) {

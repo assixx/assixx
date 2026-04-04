@@ -37,6 +37,10 @@
   let newRewardAmount = $state('');
   let savingReward = $state(false);
 
+  // Swap Requests
+  let swapEnabled = $state(untrack(() => data.swapRequestsEnabled));
+  let savingSwap = $state(false);
+
   // =========================================================================
   // DERIVED
   // =========================================================================
@@ -88,6 +92,20 @@
       showErrorAlert(message);
     } finally {
       savingReward = false;
+    }
+  }
+
+  async function toggleSwapRequests(enabled: boolean): Promise<void> {
+    savingSwap = true;
+    try {
+      await apiClient.patch('/organigram/swap-requests-enabled', { enabled });
+      swapEnabled = enabled;
+      showSuccessAlert(enabled ? 'Schichttausch aktiviert' : 'Schichttausch deaktiviert');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Fehler beim Speichern';
+      showErrorAlert(message);
+    } finally {
+      savingSwap = false;
     }
   }
 
@@ -256,6 +274,40 @@
       </div>
     </div>
   </div>
+
+  <!-- ================================================================= -->
+  <!-- SECTION: Schichttausch (Shift Swap Requests)                       -->
+  <!-- ================================================================= -->
+  <div class="card mt-6">
+    <div class="card__header">
+      <h2 class="card__title">
+        <i class="fas fa-exchange-alt mr-2"></i>
+        Schichttausch
+      </h2>
+      <p class="mt-2 text-(--color-text-secondary)">
+        Erlaubt Mitarbeitern, untereinander Schichten zu tauschen. Tausch-Anfragen werden vom
+        Team-Lead genehmigt.
+      </p>
+    </div>
+
+    <div class="card__body">
+      <label class="swap-toggle">
+        <input
+          type="checkbox"
+          checked={swapEnabled}
+          onchange={(e: Event) =>
+            void toggleSwapRequests((e.currentTarget as HTMLInputElement).checked)}
+          disabled={savingSwap}
+        />
+        <span class="swap-toggle__label">
+          Schichttausch-Anfragen aktivieren
+          <span class="swap-toggle__hint">
+            (Mitarbeiter können im Schichtplan Tausch-Anfragen stellen)
+          </span>
+        </span>
+      </label>
+    </div>
+  </div>
 </div>
 
 <style>
@@ -308,5 +360,28 @@
 
   .reward-tier-input {
     max-width: 150px;
+  }
+
+  .swap-toggle {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--spacing-3);
+    cursor: pointer;
+  }
+
+  .swap-toggle input {
+    margin-top: 3px;
+  }
+
+  .swap-toggle__label {
+    font-weight: 500;
+  }
+
+  .swap-toggle__hint {
+    display: block;
+    margin-top: var(--spacing-1);
+    color: var(--color-text-secondary);
+    font-weight: 400;
+    font-size: 0.85rem;
   }
 </style>

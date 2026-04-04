@@ -13,8 +13,10 @@ import { HierarchyPermissionService } from './hierarchy-permission.service.js';
 // Mock Setup — DI bypass pattern
 // ============================================
 
+const qf = vi.fn();
 const mockDb = {
-  query: vi.fn(),
+  query: qf,
+  tenantQuery: qf,
 } as unknown as DatabaseService;
 
 const mockOrgSettings = {

@@ -17,7 +17,8 @@ import type { AuditRequestMetadata } from './audit.constants.js';
 // =============================================================
 
 function createMockDb() {
-  return { query: vi.fn().mockResolvedValue([]) };
+  const queryFn = vi.fn().mockResolvedValue([]);
+  return { query: queryFn, tenantQuery: queryFn, queryAsTenant: queryFn, tenantQueryOne: vi.fn() };
 }
 
 function createMockMetadataService() {
@@ -110,6 +111,7 @@ describe('AuditLoggingService', () => {
       expect(mockDb.query).toHaveBeenCalledWith(
         expect.stringContaining('INSERT INTO audit_trail'),
         expect.arrayContaining([10, 1, 'Max Mustermann', 'admin', 'create']),
+        10, // tenantId
       );
     });
 

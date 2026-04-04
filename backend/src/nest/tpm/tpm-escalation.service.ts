@@ -64,7 +64,7 @@ export class TpmEscalationService implements OnModuleInit {
 
   /** Get escalation config for a tenant (returns defaults if no row exists) */
   async getConfig(tenantId: number): Promise<TpmEscalationConfig> {
-    const row = await this.db.queryOne<TpmEscalationConfigRow>(
+    const row = await this.db.tenantQueryOne<TpmEscalationConfigRow>(
       `SELECT * FROM tpm_escalation_config WHERE tenant_id = $1`,
       [tenantId],
     );
@@ -167,7 +167,7 @@ export class TpmEscalationService implements OnModuleInit {
    * Uses COALESCE for tenants without explicit escalation config.
    */
   private async findOverdueCandidates(): Promise<OverdueCandidate[]> {
-    return await this.db.query<OverdueCandidate>(
+    return await this.db.systemQuery<OverdueCandidate>(
       `SELECT c.id, c.uuid, c.tenant_id, c.card_code, c.title,
               c.asset_id, c.interval_type, c.status,
               m.name AS asset_name
@@ -247,7 +247,7 @@ export class TpmEscalationService implements OnModuleInit {
 
   /** Find the team lead (or deputy) responsible for a asset */
   private async resolveTeamLead(tenantId: number, assetId: number): Promise<number | null> {
-    const result = await this.db.queryOne<{
+    const result = await this.db.tenantQueryOne<{
       team_lead_id: number | null;
       team_deputy_lead_id: number | null;
     }>(

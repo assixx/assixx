@@ -35,7 +35,7 @@ export class NotificationAddonService {
   ): Promise<void> {
     try {
       const notificationUuid = uuidv7();
-      await this.db.query(
+      await this.db.tenantQuery(
         `INSERT INTO notifications (
           tenant_id, type, title, message, priority,
           recipient_type, recipient_id, feature_id,
@@ -78,7 +78,7 @@ export class NotificationAddonService {
       `Marking ${type} notifications for entity ${entityUuid} as read for user ${userId}`,
     );
 
-    const result = await this.db.query<{ id: number }>(
+    const result = await this.db.tenantQuery<{ id: number }>(
       `WITH unread_notifications AS (
         SELECT n.id FROM notifications n
         LEFT JOIN notification_read_status nrs
@@ -114,7 +114,7 @@ export class NotificationAddonService {
   ): Promise<number> {
     this.logger.log(`Marking all ${type} notifications as read for user ${userId}`);
 
-    const result = await this.db.query<{ id: number }>(
+    const result = await this.db.tenantQuery<{ id: number }>(
       `WITH unread_notifications AS (
         SELECT n.id FROM notifications n
         LEFT JOIN notification_read_status nrs

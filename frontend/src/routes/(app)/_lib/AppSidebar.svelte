@@ -278,8 +278,8 @@
               <span class="label">{item.label}</span>
               <span class="submenu-arrow">
                 <svg
-                  width="21"
-                  height="21"
+                  width="24"
+                  height="24"
                   viewBox="0 0 24 24"
                   fill="currentColor"
                 >
@@ -317,8 +317,8 @@
                         {/if}
                         <span class="submenu-arrow">
                           <svg
-                            width="16"
-                            height="16"
+                            width="24"
+                            height="24"
                             viewBox="0 0 24 24"
                             fill="currentColor"
                           >

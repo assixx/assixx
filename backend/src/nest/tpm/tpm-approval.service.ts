@@ -109,7 +109,7 @@ export class TpmApprovalService {
 
   /** Check if a user can approve executions for a given card */
   async canUserApprove(tenantId: number, userId: number, cardId: number): Promise<boolean> {
-    const result = await this.db.queryOne<{ can_approve: boolean }>(
+    const result = await this.db.tenantQueryOne<{ can_approve: boolean }>(
       `SELECT EXISTS (
         SELECT 1 FROM teams t
         JOIN asset_teams mt ON t.id = mt.team_id AND mt.tenant_id = t.tenant_id
@@ -206,7 +206,7 @@ export class TpmApprovalService {
     executionUuid: string,
   ): Promise<void> {
     try {
-      await this.db.query(
+      await this.db.tenantQuery(
         `INSERT INTO asset_maintenance_history
            (tenant_id, asset_id, maintenance_type, performed_date,
             performed_by, description, status_after, created_by)

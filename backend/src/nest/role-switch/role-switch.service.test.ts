@@ -16,7 +16,15 @@ import { RoleSwitchService } from './role-switch.service.js';
 // =============================================================
 
 function createMockDb() {
-  return { query: vi.fn(), queryOne: vi.fn(), tenantTransaction: vi.fn() };
+  const qf = vi.fn();
+  const qof = vi.fn();
+  return {
+    query: qf,
+    tenantQuery: qf,
+    queryOne: qof,
+    tenantQueryOne: qof,
+    tenantTransaction: vi.fn(),
+  };
 }
 type MockDb = ReturnType<typeof createMockDb>;
 

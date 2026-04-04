@@ -62,7 +62,7 @@ export class DocumentAccessService {
     conversationId: number,
     tenantId: number,
   ): Promise<boolean> {
-    const rows = await this.databaseService.query<{ user_id: number }>(
+    const rows = await this.databaseService.tenantQuery<{ user_id: number }>(
       `SELECT user_id FROM chat_conversation_participants cp
        JOIN chat_conversations c ON cp.conversation_id = c.id
        WHERE cp.conversation_id = $1 AND cp.user_id = $2 AND c.tenant_id = $3`,
@@ -73,7 +73,7 @@ export class DocumentAccessService {
 
   /** Check if a document has been read by a user */
   async isDocumentRead(documentId: number, userId: number, tenantId: number): Promise<boolean> {
-    const rows = await this.databaseService.query<{ read_at: Date }>(
+    const rows = await this.databaseService.tenantQuery<{ read_at: Date }>(
       `SELECT read_at FROM document_read_status
        WHERE document_id = $1 AND user_id = $2 AND tenant_id = $3`,
       [documentId, userId, tenantId],
@@ -184,7 +184,7 @@ export class DocumentAccessService {
    * SECURITY: Only returns data for ACTIVE users (is_active = 1).
    */
   private async getUserRole(userId: number, tenantId: number): Promise<{ role: string } | null> {
-    const rows = await this.databaseService.query<{ role: string }>(
+    const rows = await this.databaseService.tenantQuery<{ role: string }>(
       `SELECT role FROM users WHERE id = $1 AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}`,
       [userId, tenantId],
     );

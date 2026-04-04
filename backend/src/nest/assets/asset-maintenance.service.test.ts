@@ -59,8 +59,8 @@ vi.mock('./assets.helpers.js', () => ({
 
 function createMockDb() {
   return {
-    query: vi.fn(),
-    queryOne: vi.fn(),
+    tenantQuery: vi.fn(),
+    tenantQueryOne: vi.fn(),
   };
 }
 
@@ -97,7 +97,7 @@ describe('AssetMaintenanceService', () => {
 
   describe('getMaintenanceHistory', () => {
     it('should return mapped history', async () => {
-      mockDb.query.mockResolvedValueOnce([
+      mockDb.tenantQuery.mockResolvedValueOnce([
         { id: 1, maintenance_type: 'preventive', performed_date: '2025-06-01' },
       ]);
 
@@ -113,7 +113,7 @@ describe('AssetMaintenanceService', () => {
 
   describe('addMaintenanceRecord', () => {
     it('should throw InternalServerErrorException on insert failure', async () => {
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       await expect(
         service.addMaintenanceRecord({ assetId: 1, performedDate: '2025-06-01' } as never, 10, 1),
@@ -122,11 +122,11 @@ describe('AssetMaintenanceService', () => {
 
     it('should add record and update asset status', async () => {
       // INSERT RETURNING id
-      mockDb.query.mockResolvedValueOnce([{ id: 5 }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ id: 5 }]);
       // UPDATE asset
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
       // getMaintenanceHistory (re-fetch)
-      mockDb.query.mockResolvedValueOnce([
+      mockDb.tenantQuery.mockResolvedValueOnce([
         { id: 5, maintenance_type: 'preventive', performed_date: '2025-06-01' },
       ]);
 
@@ -140,9 +140,9 @@ describe('AssetMaintenanceService', () => {
     });
 
     it('should set repair status when statusAfter is needs_repair', async () => {
-      mockDb.query.mockResolvedValueOnce([{ id: 6 }]); // INSERT
-      mockDb.query.mockResolvedValueOnce([]); // UPDATE asset
-      mockDb.query.mockResolvedValueOnce([
+      mockDb.tenantQuery.mockResolvedValueOnce([{ id: 6 }]); // INSERT
+      mockDb.tenantQuery.mockResolvedValueOnce([]); // UPDATE asset
+      mockDb.tenantQuery.mockResolvedValueOnce([
         { id: 6, maintenance_type: 'corrective', performed_date: '2025-07-01' },
       ]); // history
 
@@ -160,7 +160,7 @@ describe('AssetMaintenanceService', () => {
 
       expect(result.id).toBe(6);
       // UPDATE asset called with 'repair' status and nextDate
-      const updateCall = mockDb.query.mock.calls[1] as [string, unknown[]];
+      const updateCall = mockDb.tenantQuery.mock.calls[1] as [string, unknown[]];
       expect(updateCall[1]?.[2]).toBe('repair');
       expect(updateCall[1]?.[1]).toEqual(new Date('2025-08-01'));
     });
@@ -172,7 +172,7 @@ describe('AssetMaintenanceService', () => {
 
   describe('getUpcomingMaintenance', () => {
     it('should return mapped assets needing maintenance', async () => {
-      mockDb.query.mockResolvedValueOnce([{ id: 1, name: 'CNC-001', status: 'operational' }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ id: 1, name: 'CNC-001', status: 'operational' }]);
 
       const result = await service.getUpcomingMaintenance(10, 30);
 
@@ -186,7 +186,7 @@ describe('AssetMaintenanceService', () => {
 
   describe('getStatistics', () => {
     it('should return zero stats when no assets', async () => {
-      mockDb.queryOne.mockResolvedValueOnce(null);
+      mockDb.tenantQueryOne.mockResolvedValueOnce(null);
 
       const result = await service.getStatistics(10);
 
@@ -195,7 +195,7 @@ describe('AssetMaintenanceService', () => {
     });
 
     it('should return aggregated stats', async () => {
-      mockDb.queryOne.mockResolvedValueOnce({
+      mockDb.tenantQueryOne.mockResolvedValueOnce({
         total_assets: '10',
         operational: '7',
         in_maintenance: '1',
@@ -219,7 +219,7 @@ describe('AssetMaintenanceService', () => {
 
   describe('getCategories', () => {
     it('should return mapped categories', async () => {
-      mockDb.query.mockResolvedValueOnce([
+      mockDb.tenantQuery.mockResolvedValueOnce([
         {
           id: 1,
           name: 'CNC Assets',
@@ -238,7 +238,7 @@ describe('AssetMaintenanceService', () => {
     });
 
     it('should omit description and icon when null', async () => {
-      mockDb.query.mockResolvedValueOnce([
+      mockDb.tenantQuery.mockResolvedValueOnce([
         {
           id: 2,
           name: 'Pumps',

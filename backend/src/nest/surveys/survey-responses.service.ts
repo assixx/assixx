@@ -54,7 +54,7 @@ export class SurveyResponsesService {
     answers: SurveyAnswer[],
   ): Promise<number> {
     this.logger.log(`Submitting response to survey ${surveyId}`);
-    const surveyRows = await this.db.query<{
+    const surveyRows = await this.db.tenantQuery<{
       id: number;
       status: string;
       allow_multiple_responses: number;
@@ -68,7 +68,7 @@ export class SurveyResponsesService {
     await this.checkDuplicateResponse(surveyId, userId, tenantId, survey.allow_multiple_responses);
 
     const responseUuid = uuidv7();
-    const responseRows = await this.db.query<{ id: number }>(
+    const responseRows = await this.db.tenantQuery<{ id: number }>(
       `INSERT INTO survey_responses (survey_id, user_id, tenant_id, started_at, completed_at, status, uuid, uuid_created_at)
        VALUES ($1, $2, $3, NOW(), NOW(), 'completed', $4, NOW()) RETURNING id`,
       [surveyId, userId, tenantId, responseUuid],
@@ -98,7 +98,7 @@ export class SurveyResponsesService {
     options: { page: number; limit: number },
   ): Promise<PaginatedResponsesResult> {
     this.logger.debug(`Getting all responses for survey ${surveyId}`);
-    const surveyRows = await this.db.query<{ is_anonymous: boolean | number }>(
+    const surveyRows = await this.db.tenantQuery<{ is_anonymous: boolean | number }>(
       `SELECT is_anonymous FROM surveys WHERE id = $1 AND tenant_id = $2`,
       [surveyId, tenantId],
     );
@@ -110,7 +110,7 @@ export class SurveyResponsesService {
       throw new NotFoundException(MSG_SURVEY_NOT_FOUND);
     }
     const isAnonymous = Boolean(surveyData.is_anonymous);
-    const countRows = await this.db.query<{ total: number | string }>(
+    const countRows = await this.db.tenantQuery<{ total: number | string }>(
       `SELECT COUNT(*) as total FROM survey_responses WHERE survey_id = $1 AND tenant_id = $2`,
       [surveyId, tenantId],
     );
@@ -124,7 +124,7 @@ export class SurveyResponsesService {
         'NULL as first_name, NULL as last_name, NULL as username'
       : 'u.first_name, u.last_name, u.username';
     const userJoin = isAnonymous ? '' : 'LEFT JOIN users u ON sr.user_id = u.id';
-    const responseRows = await this.db.query<DbSurveyResponse>(
+    const responseRows = await this.db.tenantQuery<DbSurveyResponse>(
       `SELECT sr.*, ${userFields} FROM survey_responses sr ${userJoin}
        WHERE sr.survey_id = $1 AND sr.tenant_id = $2 ORDER BY sr.completed_at DESC LIMIT $3 OFFSET $4`,
       [surveyId, tenantId, options.limit, offset],
@@ -143,7 +143,7 @@ export class SurveyResponsesService {
     tenantId: number,
   ): Promise<SurveyResponse | null> {
     this.logger.debug(`Getting user ${userId} response to survey ${surveyId}`);
-    const responseRows = await this.db.query<DbSurveyResponse>(
+    const responseRows = await this.db.tenantQuery<DbSurveyResponse>(
       `SELECT sr.* FROM survey_responses sr WHERE sr.survey_id = $1 AND sr.user_id = $2 AND sr.tenant_id = $3
        ORDER BY sr.started_at DESC LIMIT 1`,
       [surveyId, userId, tenantId],
@@ -167,7 +167,7 @@ export class SurveyResponsesService {
     userId: number,
   ): Promise<SurveyResponse> {
     this.logger.debug(`Getting response ${responseId} for survey ${surveyId}`);
-    const responseRows = await this.db.query<DbSurveyResponse>(
+    const responseRows = await this.db.tenantQuery<DbSurveyResponse>(
       `SELECT sr.*, u.first_name, u.last_name, u.username FROM survey_responses sr
        LEFT JOIN users u ON sr.user_id = u.id WHERE sr.id = $1 AND sr.survey_id = $2 AND sr.tenant_id = $3`,
       [responseId, surveyId, tenantId],
@@ -198,7 +198,7 @@ export class SurveyResponsesService {
     answers: SurveyAnswer[],
   ): Promise<{ message: string }> {
     this.logger.log(`Updating response ${responseId} for survey ${surveyId}`);
-    const resultRows = await this.db.query<{
+    const resultRows = await this.db.tenantQuery<{
       id: number;
       allow_edit_responses: number;
     }>(
@@ -216,16 +216,16 @@ export class SurveyResponsesService {
     if (responseData.allow_edit_responses !== 1) {
       throw new ForbiddenException('Editing responses is not allowed');
     }
-    await this.db.query(`DELETE FROM survey_answers WHERE response_id = $1 AND tenant_id = $2`, [
-      responseId,
-      tenantId,
-    ]);
+    await this.db.tenantQuery(
+      `DELETE FROM survey_answers WHERE response_id = $1 AND tenant_id = $2`,
+      [responseId, tenantId],
+    );
     const normalizedAnswers = normalizeAnswers(answers);
     for (const answer of normalizedAnswers) {
       if (answer.question_id === undefined) continue;
       await this.insertSingleAnswer(responseId, answer.question_id, tenantId, answer);
     }
-    await this.db.query(
+    await this.db.tenantQuery(
       `UPDATE survey_responses SET completed_at = NOW() WHERE id = $1 AND tenant_id = $2`,
       [responseId, tenantId],
     );
@@ -277,22 +277,22 @@ export class SurveyResponsesService {
     answer: NormalizedAnswer,
   ): Promise<void> {
     if (answer.answer_text !== undefined && answer.answer_text !== '') {
-      await this.db.query(
+      await this.db.tenantQuery(
         `INSERT INTO survey_answers (response_id, question_id, answer_text, tenant_id) VALUES ($1, $2, $3, $4)`,
         [responseId, questionId, answer.answer_text, tenantId],
       );
     } else if (answer.answer_number !== undefined) {
-      await this.db.query(
+      await this.db.tenantQuery(
         `INSERT INTO survey_answers (response_id, question_id, answer_number, tenant_id) VALUES ($1, $2, $3, $4)`,
         [responseId, questionId, answer.answer_number, tenantId],
       );
     } else if (answer.answer_date !== undefined && answer.answer_date !== '') {
-      await this.db.query(
+      await this.db.tenantQuery(
         `INSERT INTO survey_answers (response_id, question_id, answer_date, tenant_id) VALUES ($1, $2, $3, $4)`,
         [responseId, questionId, answer.answer_date, tenantId],
       );
     } else if (answer.answer_options !== undefined && answer.answer_options.length > 0) {
-      await this.db.query(
+      await this.db.tenantQuery(
         `INSERT INTO survey_answers (response_id, question_id, answer_options, tenant_id) VALUES ($1, $2, $3, $4)`,
         [responseId, questionId, JSON.stringify(answer.answer_options), tenantId],
       );
@@ -307,7 +307,7 @@ export class SurveyResponsesService {
     allowMultiple: number,
   ): Promise<void> {
     if (allowMultiple === 1) return;
-    const existingRows = await this.db.query<{ id: number }>(
+    const existingRows = await this.db.tenantQuery<{ id: number }>(
       `SELECT id FROM survey_responses WHERE survey_id = $1 AND user_id = $2 AND tenant_id = $3`,
       [surveyId, userId, tenantId],
     );
@@ -325,7 +325,7 @@ export class SurveyResponsesService {
     dbResponse: DbSurveyResponse,
     tenantId: number,
   ): Promise<SurveyResponse> {
-    const answerRows = await this.db.query<DbSurveyAnswer>(
+    const answerRows = await this.db.tenantQuery<DbSurveyAnswer>(
       `SELECT sa.*, sq.question_type, sq.question_text FROM survey_answers sa
        JOIN survey_questions sq ON sa.question_id = sq.id WHERE sa.response_id = $1 AND sa.tenant_id = $2`,
       [dbResponse.id, tenantId],
@@ -374,7 +374,7 @@ export class SurveyResponsesService {
     }
 
     const uniqueIds = [...new Set(allOptionIds)];
-    const optionRows = await this.db.query<{ id: number; option_text: string }>(
+    const optionRows = await this.db.tenantQuery<{ id: number; option_text: string }>(
       `SELECT id, option_text FROM survey_question_options WHERE id = ANY($1)`,
       [uniqueIds],
     );
@@ -425,7 +425,7 @@ export class SurveyResponsesService {
 
   /** Verifies survey exists for the tenant */
   private async verifySurveyExists(surveyId: number, tenantId: number): Promise<void> {
-    const rows = await this.db.query<{ id: number }>(
+    const rows = await this.db.tenantQuery<{ id: number }>(
       `SELECT id FROM surveys WHERE id = $1 AND tenant_id = $2`,
       [surveyId, tenantId],
     );
@@ -436,7 +436,7 @@ export class SurveyResponsesService {
 
   /** Fetches export data for survey responses */
   private async fetchExportData(surveyId: number, tenantId: number): Promise<ExportRow[]> {
-    return await this.db.query<ExportRow>(
+    return await this.db.tenantQuery<ExportRow>(
       `SELECT sr.id as response_id, sr.user_id, sr.completed_at, u.username, u.first_name, u.last_name,
        sq.question_text, sq.question_type, sa.answer_text, sa.answer_number, sa.answer_date, sa.answer_options
        FROM survey_responses sr LEFT JOIN users u ON sr.user_id = u.id

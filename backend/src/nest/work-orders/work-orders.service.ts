@@ -228,7 +228,7 @@ export class WorkOrdersService {
 
   /** Get a single work order by UUID with full enrichment */
   async getWorkOrder(tenantId: number, uuid: string): Promise<WorkOrder> {
-    const row = await this.db.queryOne<WorkOrderWithCountsRow>(
+    const row = await this.db.tenantQueryOne<WorkOrderWithCountsRow>(
       `${ORDER_SELECT_SQL}
        WHERE wo.uuid = $1 AND wo.tenant_id = $2
          AND wo.is_active IN (${IS_ACTIVE.ACTIVE}, ${IS_ACTIVE.ARCHIVED})`,
@@ -239,7 +239,7 @@ export class WorkOrdersService {
       throw new NotFoundException('Arbeitsauftrag nicht gefunden');
     }
 
-    const assigneeRows = await this.db.query<WorkOrderAssigneeWithNameRow>(
+    const assigneeRows = await this.db.tenantQuery<WorkOrderAssigneeWithNameRow>(
       `SELECT a.*, u.first_name, u.last_name, u.profile_picture
        FROM work_order_assignees a
        JOIN users u ON a.user_id = u.id
@@ -250,7 +250,7 @@ export class WorkOrdersService {
     const workOrder = mapWorkOrderRowToApi(row, assigneeRows.map(mapAssigneeRowToApi));
 
     if (row.source_type === 'kvp_proposal' && row.source_uuid !== null) {
-      const kvp = await this.db.queryOne<{ expected_benefit: string | null }>(
+      const kvp = await this.db.tenantQueryOne<{ expected_benefit: string | null }>(
         `SELECT expected_benefit FROM kvp_suggestions
          WHERE uuid = $1 AND tenant_id = $2`,
         [row.source_uuid.trim(), tenantId],
@@ -337,7 +337,7 @@ export class WorkOrdersService {
 
   /** Archive a work order (is_active = 3) — work orders are never deleted */
   async archiveWorkOrder(tenantId: number, userId: number, uuid: string): Promise<void> {
-    const row = await this.db.queryOne<{ id: number; title: string }>(
+    const row = await this.db.tenantQueryOne<{ id: number; title: string }>(
       `SELECT id, title FROM work_orders
        WHERE uuid = $1 AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}`,
       [uuid, tenantId],
@@ -368,7 +368,7 @@ export class WorkOrdersService {
 
   /** Restore an archived work order back to active (is_active = 1) */
   async restoreWorkOrder(tenantId: number, userId: number, uuid: string): Promise<void> {
-    const row = await this.db.queryOne<{ id: number; title: string }>(
+    const row = await this.db.tenantQueryOne<{ id: number; title: string }>(
       `SELECT id, title FROM work_orders
        WHERE uuid = $1 AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ARCHIVED}`,
       [uuid, tenantId],
@@ -445,7 +445,7 @@ export class WorkOrdersService {
       params.push(userId);
     }
 
-    const rows = await this.db.query<CalendarWorkOrderRow>(
+    const rows = await this.db.tenantQuery<CalendarWorkOrderRow>(
       `SELECT wo.uuid, wo.title, wo.due_date, wo.status, wo.priority, wo.source_type
        FROM work_orders wo
        WHERE ${conditions.join(' AND ')}
@@ -475,7 +475,7 @@ export class WorkOrdersService {
     fromClause: string,
     params: (number | string | number[])[],
   ): Promise<WorkOrderStats> {
-    const row = await this.db.queryOne<{
+    const row = await this.db.tenantQueryOne<{
       open: string;
       in_progress: string;
       completed: string;
@@ -571,7 +571,7 @@ export class WorkOrdersService {
 
   /** Reject creation if an active (non-verified) work order already exists for this source */
   private async ensureNoActiveLinkedWorkOrder(tenantId: number, sourceUuid: string): Promise<void> {
-    const existing = await this.db.queryOne<{ uuid: string; status: string }>(
+    const existing = await this.db.tenantQueryOne<{ uuid: string; status: string }>(
       `SELECT uuid, status FROM work_orders
        WHERE source_uuid = $1 AND tenant_id = $2
          AND is_active = ${IS_ACTIVE.ACTIVE} AND status != 'verified'
@@ -635,7 +635,7 @@ export class WorkOrdersService {
     const pageSize = query.limit ?? 20;
     const offset = (page - 1) * pageSize;
 
-    const countResult = await this.db.queryOne<{ count: string }>(
+    const countResult = await this.db.tenantQueryOne<{ count: string }>(
       `SELECT COUNT(*) AS count FROM work_orders wo
        JOIN users u ON wo.created_by = u.id
        WHERE ${whereClause}`,
@@ -647,7 +647,7 @@ export class WorkOrdersService {
     const readTenantIdx = nextIdx + 1;
     const limitIdx = nextIdx + 2;
     const offsetIdx = nextIdx + 3;
-    const rows = await this.db.query<WorkOrderWithCountsRow>(
+    const rows = await this.db.tenantQuery<WorkOrderWithCountsRow>(
       `${ORDER_SELECT_WITH_READ_SQL}
        LEFT JOIN work_order_read_status rs
          ON rs.work_order_id = wo.id AND rs.user_id = $${readUserIdx} AND rs.tenant_id = $${readTenantIdx}

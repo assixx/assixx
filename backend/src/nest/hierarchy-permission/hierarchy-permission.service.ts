@@ -256,7 +256,7 @@ export class HierarchyPermissionService {
 
     const deputyScope = await this.orgSettings.getDeputyHasLeadScope(tenantId);
     const cte = buildScopeCte(deputyScope);
-    const rows = await this.db.query<ScopeQueryRow>(cte, [userId, tenantId]);
+    const rows = await this.db.tenantQuery<ScopeQueryRow>(cte, [userId, tenantId]);
     const row = rows[0];
     if (row === undefined) return NO_SCOPE;
 
@@ -282,7 +282,7 @@ export class HierarchyPermissionService {
 
     const deputyScope = await this.orgSettings.getDeputyHasLeadScope(tenantId);
     const query = buildVisibleUsersQuery(deputyScope);
-    const rows = await this.db.query<{ id: number }>(query, [
+    const rows = await this.db.tenantQuery<{ id: number }>(query, [
       tenantId,
       scope.departmentIds,
       scope.teamIds,
@@ -322,7 +322,7 @@ export class HierarchyPermissionService {
     permission: PermissionLevel,
     tenantId: number,
   ): Promise<boolean> {
-    const rows = await this.db.query<PermissionRow>(
+    const rows = await this.db.tenantQuery<PermissionRow>(
       `SELECT can_read, can_write, can_delete
        FROM admin_area_permissions
        WHERE admin_user_id = $1 AND area_id = $2 AND tenant_id = $3`,
@@ -348,7 +348,7 @@ export class HierarchyPermissionService {
     tenantId: number,
   ): Promise<boolean> {
     // 1. Check direct department permission
-    const directPerm = await this.db.query<PermissionRow>(
+    const directPerm = await this.db.tenantQuery<PermissionRow>(
       `SELECT can_read, can_write, can_delete
        FROM admin_department_permissions
        WHERE admin_user_id = $1 AND department_id = $2 AND tenant_id = $3`,
@@ -412,14 +412,15 @@ export class HierarchyPermissionService {
 
     // Root or full access = all areas
     if (user.role === 'root' || user.has_full_access) {
-      const allAreas = await this.db.query<IdRow>(`SELECT id FROM areas WHERE tenant_id = $1`, [
-        tenantId,
-      ]);
+      const allAreas = await this.db.tenantQuery<IdRow>(
+        `SELECT id FROM areas WHERE tenant_id = $1`,
+        [tenantId],
+      );
       return allAreas.map((a: IdRow) => a.id);
     }
 
     // Get directly assigned areas
-    const assignedAreas = await this.db.query<AreaIdRow>(
+    const assignedAreas = await this.db.tenantQuery<AreaIdRow>(
       `SELECT area_id FROM admin_area_permissions
        WHERE admin_user_id = $1 AND tenant_id = $2 AND can_read = true`,
       [userId, tenantId],
@@ -435,7 +436,7 @@ export class HierarchyPermissionService {
 
     // Root or full access = all departments
     if (user.role === 'root' || user.has_full_access) {
-      const allDepts = await this.db.query<IdRow>(
+      const allDepts = await this.db.tenantQuery<IdRow>(
         `SELECT id FROM departments WHERE tenant_id = $1`,
         [tenantId],
       );
@@ -443,7 +444,7 @@ export class HierarchyPermissionService {
     }
 
     // Get directly assigned departments
-    const directDepts = await this.db.query<DepartmentIdRow>(
+    const directDepts = await this.db.tenantQuery<DepartmentIdRow>(
       `SELECT department_id FROM admin_department_permissions
        WHERE admin_user_id = $1 AND tenant_id = $2 AND can_read = true`,
       [userId, tenantId],
@@ -455,7 +456,7 @@ export class HierarchyPermissionService {
     const accessibleAreas = await this.getAccessibleAreaIds(userId, tenantId);
     if (accessibleAreas.length > 0) {
       const placeholders = accessibleAreas.map((_: number, i: number) => `$${i + 2}`).join(',');
-      const inheritedDepts = await this.db.query<IdRow>(
+      const inheritedDepts = await this.db.tenantQuery<IdRow>(
         `SELECT id FROM departments
          WHERE tenant_id = $1 AND area_id IN (${placeholders})`,
         [tenantId, ...accessibleAreas],
@@ -475,14 +476,15 @@ export class HierarchyPermissionService {
 
     // Root or full access = all teams
     if (user.role === 'root' || user.has_full_access) {
-      const allTeams = await this.db.query<IdRow>(`SELECT id FROM teams WHERE tenant_id = $1`, [
-        tenantId,
-      ]);
+      const allTeams = await this.db.tenantQuery<IdRow>(
+        `SELECT id FROM teams WHERE tenant_id = $1`,
+        [tenantId],
+      );
       return allTeams.map((t: IdRow) => t.id);
     }
 
     // Get teams user is member of
-    const memberTeams = await this.db.query<TeamIdRow>(
+    const memberTeams = await this.db.tenantQuery<TeamIdRow>(
       `SELECT team_id FROM user_teams WHERE user_id = $1`,
       [userId],
     );
@@ -493,7 +495,7 @@ export class HierarchyPermissionService {
     const accessibleDepts = await this.getAccessibleDepartmentIds(userId, tenantId);
     if (accessibleDepts.length > 0) {
       const placeholders = accessibleDepts.map((_: number, i: number) => `$${i + 2}`).join(',');
-      const inheritedTeams = await this.db.query<IdRow>(
+      const inheritedTeams = await this.db.tenantQuery<IdRow>(
         `SELECT id FROM teams
          WHERE tenant_id = $1 AND department_id IN (${placeholders})`,
         [tenantId, ...accessibleDepts],
@@ -512,7 +514,7 @@ export class HierarchyPermissionService {
 
   /** Get user info for permission checks */
   private async getUserInfo(userId: number, tenantId: number): Promise<UserInfoRow | null> {
-    const rows = await this.db.query<UserInfoRow>(
+    const rows = await this.db.tenantQuery<UserInfoRow>(
       `SELECT id, role, has_full_access FROM users WHERE id = $1 AND tenant_id = $2`,
       [userId, tenantId],
     );
@@ -524,7 +526,7 @@ export class HierarchyPermissionService {
     departmentId: number,
     tenantId: number,
   ): Promise<DepartmentInfoRow | null> {
-    const rows = await this.db.query<DepartmentInfoRow>(
+    const rows = await this.db.tenantQuery<DepartmentInfoRow>(
       `SELECT id, area_id FROM departments WHERE id = $1 AND tenant_id = $2`,
       [departmentId, tenantId],
     );
@@ -533,7 +535,7 @@ export class HierarchyPermissionService {
 
   /** Get team info for inheritance */
   private async getTeamInfo(teamId: number, tenantId: number): Promise<TeamInfoRow | null> {
-    const rows = await this.db.query<TeamInfoRow>(
+    const rows = await this.db.tenantQuery<TeamInfoRow>(
       `SELECT id, department_id FROM teams WHERE id = $1 AND tenant_id = $2`,
       [teamId, tenantId],
     );
@@ -542,7 +544,7 @@ export class HierarchyPermissionService {
 
   /** Check if user is team member */
   private async isTeamMember(userId: number, teamId: number, _tenantId: number): Promise<boolean> {
-    const rows = await this.db.query<TeamMemberRow>(
+    const rows = await this.db.tenantQuery<TeamMemberRow>(
       `SELECT user_id FROM user_teams WHERE user_id = $1 AND team_id = $2`,
       [userId, teamId],
     );

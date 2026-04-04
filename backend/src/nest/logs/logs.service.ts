@@ -270,7 +270,7 @@ export class LogsService {
     params: unknown[],
   ): Promise<number> {
     const countQuery = `SELECT COUNT(*) as total FROM root_logs rl WHERE ${whereClause}`;
-    const result = await this.databaseService.query<{ total: string }>(countQuery, params);
+    const result = await this.databaseService.tenantQuery<{ total: string }>(countQuery, params);
     return Number.parseInt(result[0]?.total ?? '0', 10);
   }
 
@@ -301,7 +301,7 @@ export class LogsService {
        ORDER BY rl.id DESC, rl.created_at DESC
        LIMIT $${limitParamIndex} OFFSET $${offsetParamIndex}`;
 
-    return await this.databaseService.query<DbLogRow>(logsQuery, [...params, limit, offset]);
+    return await this.databaseService.tenantQuery<DbLogRow>(logsQuery, [...params, limit, offset]);
   }
 
   // ============================================================
@@ -446,20 +446,20 @@ export class LogsService {
 
     // Run all stats queries in parallel
     const [basicStats, topActions, topUsers] = await Promise.all([
-      this.databaseService.query<StatsRow>(
+      this.databaseService.tenantQuery<StatsRow>(
         `SELECT COUNT(*) as total_logs, COUNT(DISTINCT user_id) as unique_users,
          COUNT(DISTINCT tenant_id) as unique_tenants,
          SUM(CASE WHEN DATE(created_at) = CURRENT_DATE THEN 1 ELSE 0 END) as today_logs
          FROM root_logs WHERE tenant_id = $1 AND (is_active IS NULL OR is_active != ${IS_ACTIVE.DELETED})`,
         [tenantId],
       ),
-      this.databaseService.query<TopActionResult>(
+      this.databaseService.tenantQuery<TopActionResult>(
         `SELECT action, COUNT(*) as count FROM root_logs
          WHERE tenant_id = $1 AND (is_active IS NULL OR is_active != ${IS_ACTIVE.DELETED})
          GROUP BY action ORDER BY count DESC LIMIT 10`,
         [tenantId],
       ),
-      this.databaseService.query<TopUserResult>(
+      this.databaseService.tenantQuery<TopUserResult>(
         `SELECT rl.user_id, rl.user_name, COUNT(*) as count
          FROM root_logs rl
          WHERE rl.tenant_id = $1 AND (rl.is_active IS NULL OR rl.is_active != ${IS_ACTIVE.DELETED})
@@ -572,7 +572,7 @@ export class LogsService {
       SELECT rl.id FROM root_logs rl
       WHERE ${whereClause})`;
 
-    const result = await this.databaseService.query<{ rowCount: number }>(deleteQuery, params);
+    const result = await this.databaseService.tenantQuery<{ rowCount: number }>(deleteQuery, params);
     // PostgreSQL returns affected rows on the result object
     const rowCount = (result as unknown as { rowCount?: number }).rowCount;
     return rowCount ?? 0;
@@ -627,7 +627,7 @@ export class LogsService {
     // Only soft-delete logs that are not already deleted
     conditions.push(`(is_active IS NULL OR is_active != ${IS_ACTIVE.DELETED})`);
 
-    const result = await this.databaseService.query<{ rowCount: number }>(
+    const result = await this.databaseService.tenantQuery<{ rowCount: number }>(
       `UPDATE root_logs SET is_active = ${IS_ACTIVE.DELETED} WHERE ${conditions.join(' AND ')}`,
       params,
     );

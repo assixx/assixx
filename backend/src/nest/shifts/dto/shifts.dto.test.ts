@@ -128,7 +128,7 @@ describe('SortOrderSchema', () => {
 });
 
 describe('SwapRequestStatusSchema', () => {
-  it.each(['pending', 'approved', 'rejected', 'cancelled'] as const)(
+  it.each(['pending_partner', 'pending_approval', 'approved', 'rejected', 'cancelled'] as const)(
     'should accept %s',
     (status) => {
       expect(SwapRequestStatusSchema.safeParse(status).success).toBe(true);
@@ -238,21 +238,34 @@ describe('ExportShiftsSchema', () => {
 // =============================================================
 
 describe('CreateSwapRequestSchema', () => {
+  const validDto = {
+    requesterShiftId: 1,
+    targetShiftId: 2,
+    targetId: 10,
+    startDate: '2026-04-10',
+    endDate: '2026-04-10',
+  };
+
   it('should accept valid swap request', () => {
-    expect(CreateSwapRequestSchema.safeParse({ shiftId: 1 }).success).toBe(true);
+    expect(CreateSwapRequestSchema.safeParse(validDto).success).toBe(true);
   });
 
-  it('should reject missing shiftId', () => {
+  it('should reject empty body (missing required fields)', () => {
     expect(CreateSwapRequestSchema.safeParse({}).success).toBe(false);
   });
 
   it('should reject reason longer than 500 characters', () => {
     expect(
       CreateSwapRequestSchema.safeParse({
-        shiftId: 1,
+        ...validDto,
         reason: 'R'.repeat(501),
       }).success,
     ).toBe(false);
+  });
+
+  it('should default swapScope to single_day', () => {
+    const parsed = CreateSwapRequestSchema.parse(validDto);
+    expect(parsed.swapScope).toBe('single_day');
   });
 });
 

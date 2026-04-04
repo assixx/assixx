@@ -152,7 +152,7 @@ export class RotationGeneratorService {
     this.logger.debug(`Generating rotation shifts for tenant ${tenantId}`);
 
     // Get active assignments for pattern
-    const assignments = await this.databaseService.query<DbAssignmentRow>(
+    const assignments = await this.databaseService.tenantQuery<DbAssignmentRow>(
       `SELECT * FROM shift_rotation_assignments
        WHERE pattern_id = $1 AND tenant_id = $2
        AND is_active = ${IS_ACTIVE.ACTIVE}
@@ -203,7 +203,7 @@ export class RotationGeneratorService {
     }
 
     // Use transaction for consistency
-    await this.databaseService.query('BEGIN', []);
+    await this.databaseService.tenantQuery('BEGIN', []);
 
     try {
       for (const shift of shifts) {
@@ -211,7 +211,7 @@ export class RotationGeneratorService {
         if (assignment === undefined) continue;
 
         // Check if shift already exists
-        const existing = await this.databaseService.query<{ id: number }>(
+        const existing = await this.databaseService.tenantQuery<{ id: number }>(
           `SELECT id FROM shift_rotation_history
            WHERE tenant_id = $1 AND user_id = $2 AND shift_date = $3`,
           [tenantId, shift.userId, shift.date],
@@ -221,7 +221,7 @@ export class RotationGeneratorService {
           const weekNumber = this.getWeekNumber(new Date(shift.date));
           const historyUuid = uuidv7();
 
-          await this.databaseService.query(
+          await this.databaseService.tenantQuery(
             `INSERT INTO shift_rotation_history (
               tenant_id, pattern_id, assignment_id, user_id, team_id,
               shift_date, shift_type, week_number, status, uuid, uuid_created_at
@@ -241,9 +241,9 @@ export class RotationGeneratorService {
         }
       }
 
-      await this.databaseService.query('COMMIT', []);
+      await this.databaseService.tenantQuery('COMMIT', []);
     } catch (error: unknown) {
-      await this.databaseService.query('ROLLBACK', []);
+      await this.databaseService.tenantQuery('ROLLBACK', []);
       throw error;
     }
   }
@@ -341,7 +341,7 @@ export class RotationGeneratorService {
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
     const patternName = `Custom-Rotation ${timestamp}`;
     const patternUuid = uuidv7();
-    const patternResult = await this.databaseService.query<{ id: number }>(
+    const patternResult = await this.databaseService.tenantQuery<{ id: number }>(
       `INSERT INTO shift_rotation_patterns
        (tenant_id, team_id, name, pattern_type, pattern_config, cycle_length_weeks, starts_at, ends_at, created_by, uuid, uuid_created_at)
        VALUES ($1, $2, $3, 'custom', $4::jsonb, $5, $6, $7, $8, $9, NOW()) RETURNING id`,
@@ -372,7 +372,7 @@ export class RotationGeneratorService {
     weekNumber: number;
   }): Promise<void> {
     const historyUuid = uuidv7();
-    await this.databaseService.query(
+    await this.databaseService.tenantQuery(
       `INSERT INTO shift_rotation_history
        (tenant_id, pattern_id, assignment_id, user_id, team_id, shift_date, shift_type, week_number, status, uuid, uuid_created_at)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'generated', $9, NOW())
@@ -469,7 +469,7 @@ export class RotationGeneratorService {
     endDate: string,
   ): Promise<number> {
     const assignmentUuid = uuidv7();
-    const assignmentResult = await this.databaseService.query<{ id: number }>(
+    const assignmentResult = await this.databaseService.tenantQuery<{ id: number }>(
       `INSERT INTO shift_rotation_assignments
        (tenant_id, pattern_id, user_id, team_id, shift_group, starts_at, ends_at, assigned_by, uuid, uuid_created_at)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW()) RETURNING id`,
@@ -516,7 +516,7 @@ export class RotationGeneratorService {
     const end = new Date(endDate);
     const totalDays = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
 
-    await this.databaseService.query('BEGIN', []);
+    await this.databaseService.tenantQuery('BEGIN', []);
 
     try {
       const patternId = await this.createPatternForConfig(
@@ -545,7 +545,7 @@ export class RotationGeneratorService {
         totalShifts += shiftCount;
       }
 
-      await this.databaseService.query('COMMIT', []);
+      await this.databaseService.tenantQuery('COMMIT', []);
 
       void this.activityLogger.logCreate(
         tenantId,
@@ -558,7 +558,7 @@ export class RotationGeneratorService {
 
       return { success: true, shiftsCreated: totalShifts, patternId };
     } catch (error: unknown) {
-      await this.databaseService.query('ROLLBACK', []);
+      await this.databaseService.tenantQuery('ROLLBACK', []);
       this.logger.error('Failed to generate rotation from config', error);
       throw new InternalServerErrorException('Failed to generate rotation shifts');
     }

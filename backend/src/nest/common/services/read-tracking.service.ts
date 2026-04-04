@@ -38,12 +38,13 @@ export class ReadTrackingService {
     tenantId: number,
   ): Promise<void> {
     try {
-      await this.db.query(
+      await this.db.queryAsTenant(
         `INSERT INTO ${config.tableName} (${config.entityColumn}, user_id, tenant_id, read_at)
          VALUES ($1, $2, $3, NOW())
          ON CONFLICT (${config.entityColumn}, user_id, tenant_id)
          DO UPDATE SET read_at = NOW()`,
         [entityId, userId, tenantId],
+        tenantId,
       );
     } catch (error: unknown) {
       this.logger.warn(
@@ -60,11 +61,13 @@ export class ReadTrackingService {
     userId: number,
     tenantId: number,
   ): Promise<void> {
-    const row = await this.db.queryOne<{ id: number }>(
+    const rows = await this.db.queryAsTenant<{ id: number }>(
       `SELECT id FROM ${config.entityTable}
        WHERE ${config.entityUuidColumn} = $1 AND tenant_id = $2`,
       [entityUuid, tenantId],
+      tenantId,
     );
+    const row = rows[0] ?? null;
 
     if (row === null) {
       throw new NotFoundException(`Entity not found: ${config.entityTable} uuid=${entityUuid}`);

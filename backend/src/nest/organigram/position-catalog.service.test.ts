@@ -25,8 +25,13 @@ vi.mock('uuid', () => ({
 // =============================================================
 
 function createMockDb() {
+  const qf = vi.fn();
+  const qof = vi.fn().mockResolvedValue(null);
   return {
-    query: vi.fn(),
+    query: qf,
+    tenantQuery: qf,
+    queryOne: qof,
+    tenantQueryOne: qof,
     getUserId: vi.fn().mockReturnValue(1),
   };
 }
@@ -75,13 +80,13 @@ describe('PositionCatalogService', () => {
 
   describe('ensureSystemPositions', () => {
     it('should insert system + default positions with ON CONFLICT DO NOTHING', async () => {
-      mockDb.query.mockResolvedValue([]);
+      mockDb.tenantQuery.mockResolvedValue([]);
 
       await service.ensureSystemPositions(10);
 
       // 6 system + 18 defaults = 24
-      expect(mockDb.query).toHaveBeenCalledTimes(24);
-      const calls = mockDb.query.mock.calls;
+      expect(mockDb.tenantQuery).toHaveBeenCalledTimes(24);
+      const calls = mockDb.tenantQuery.mock.calls;
       // All use ON CONFLICT with partial index predicate
       expect(calls[0]?.[0]).toContain('ON CONFLICT');
       expect(calls[0]?.[0]).toContain('WHERE is_active = 1');
@@ -106,13 +111,13 @@ describe('PositionCatalogService', () => {
   // =============================================================
 
   describe('getAll', () => {
-    /** Mock 24 seed queries + 1 SELECT */
+    /** Mock 24 seed queries (tenantQuery) + 1 SELECT (query) */
     function mockSeedThenSelect(selectResult: PositionCatalogRow[]): void {
       // 24 seed queries return empty (ON CONFLICT DO NOTHING) — 6 system + 18 defaults
       for (let i = 0; i < 24; i++) {
-        mockDb.query.mockResolvedValueOnce([]);
+        mockDb.tenantQuery.mockResolvedValueOnce([]);
       }
-      // Final SELECT
+      // Final SELECT uses query (not tenantQuery)
       mockDb.query.mockResolvedValueOnce(selectResult);
     }
 
@@ -121,7 +126,8 @@ describe('PositionCatalogService', () => {
 
       const result = await service.getAll(10);
 
-      expect(mockDb.query).toHaveBeenCalledTimes(25);
+      // 24 seed + 1 SELECT = 25 (query === tenantQuery, same fn)
+      expect(mockDb.tenantQuery).toHaveBeenCalledTimes(25);
       expect(result).toHaveLength(1);
       expect(result[0]?.name).toBe('Qualitätsmanager');
       expect(result[0]?.roleCategory).toBe('employee');
@@ -132,6 +138,7 @@ describe('PositionCatalogService', () => {
 
       await service.getAll(10, 'admin');
 
+      // Index 24 = 25th call = the SELECT after 24 seed queries (same fn)
       const selectCall = mockDb.query.mock.calls[24];
       expect(selectCall?.[0]).toContain('AND role_category = $3');
       expect(selectCall?.[1]).toContain('admin');
@@ -152,9 +159,9 @@ describe('PositionCatalogService', () => {
 
   describe('create', () => {
     it('should create a position and return mapped entry', async () => {
-      // assertNameUnique: no duplicate
+      // assertNameUnique: no duplicate (uses query)
       mockDb.query.mockResolvedValueOnce([]);
-      // INSERT RETURNING
+      // INSERT RETURNING (uses query)
       mockDb.query.mockResolvedValueOnce([makeRow({ name: 'Schichtführer' })]);
 
       const result = await service.create(10, {
@@ -186,11 +193,11 @@ describe('PositionCatalogService', () => {
 
   describe('update', () => {
     it('should update name and sortOrder', async () => {
-      // findOneOrFail
+      // findOneOrFail (uses query)
       mockDb.query.mockResolvedValueOnce([makeRow()]);
-      // assertNameUnique
+      // assertNameUnique (uses query)
       mockDb.query.mockResolvedValueOnce([]);
-      // UPDATE RETURNING
+      // UPDATE RETURNING (uses query)
       mockDb.query.mockResolvedValueOnce([makeRow({ name: 'Neuer Name', sort_order: 5 })]);
 
       const result = await service.update(10, 'pos-uuid-001', {
@@ -245,12 +252,13 @@ describe('PositionCatalogService', () => {
 
   describe('delete', () => {
     it('should soft-delete a custom position', async () => {
-      mockDb.query.mockResolvedValueOnce([makeRow()]); // findOneOrFail
-      mockDb.query.mockResolvedValueOnce([]); // UPDATE is_active
+      mockDb.query.mockResolvedValueOnce([makeRow()]); // findOneOrFail (uses query)
+      mockDb.tenantQuery.mockResolvedValueOnce([]); // UPDATE is_active (uses tenantQuery)
 
       await service.delete(10, 'pos-uuid-001');
 
-      const updateCall = mockDb.query.mock.calls[1];
+      // Index 1 = second call = UPDATE (first was findOneOrFail, same fn)
+      const updateCall = mockDb.tenantQuery.mock.calls[1];
       expect(updateCall?.[0]).toContain('is_active = $1');
       expect(updateCall?.[1]?.[0]).toBe(4); // IS_ACTIVE.DELETED
     });

@@ -173,7 +173,7 @@ export class WorkOrderNotificationService {
     assigneeUserIds: number[];
   } | null> {
     try {
-      const row = await this.db.queryOne<{
+      const row = await this.db.tenantQueryOne<{
         uuid: string;
         title: string;
         status: string;
@@ -186,7 +186,7 @@ export class WorkOrderNotificationService {
 
       if (row === null) return null;
 
-      const assignees = await this.db.query<{ user_id: number }>(
+      const assignees = await this.db.tenantQuery<{ user_id: number }>(
         `SELECT user_id FROM work_order_assignees
          WHERE work_order_id = (SELECT id FROM work_orders WHERE uuid = $1 AND tenant_id = $2)`,
         [uuid, tenantId],

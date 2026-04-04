@@ -3,7 +3,8 @@
  *
  * Thin orchestration layer for shift rotation management.
  * Delegates all business logic to specialized sub-services.
- * Handles authorization checks and cross-service coordination.
+ *
+ * Authorization is handled at the controller level via @RequirePermission decorators.
  *
  * Sub-services:
  * - RotationPatternService: Pattern CRUD + UUID resolution
@@ -11,7 +12,7 @@
  * - RotationGeneratorService: Shift generation engine
  * - RotationHistoryService: History queries + deletion
  */
-import { ForbiddenException, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 
 import type { AssignUsersToPatternDto } from './dto/assign-users-to-pattern.dto.js';
 import type { CreateRotationPatternDto } from './dto/create-rotation-pattern.dto.js';
@@ -31,7 +32,6 @@ import type {
   RotationPatternResponse,
 } from './rotation.types.js';
 
-// Re-export types for backwards compatibility (controller + index.ts import from here)
 export type {
   DeleteHistoryCountsResponse,
   GeneratedShiftsResponse,
@@ -72,9 +72,7 @@ export class RotationService {
     dto: CreateRotationPatternDto,
     tenantId: number,
     userId: number,
-    userRole: string,
   ): Promise<RotationPatternResponse> {
-    this.assertAdminRole(userRole, 'create rotation patterns');
     return await this.patternService.createRotationPattern(dto, tenantId, userId);
   }
 
@@ -83,21 +81,13 @@ export class RotationService {
     patternId: number,
     dto: UpdateRotationPatternDto,
     tenantId: number,
-    userRole: string,
     userId: number,
   ): Promise<RotationPatternResponse> {
-    this.assertAdminRole(userRole, 'update rotation patterns');
     return await this.patternService.updateRotationPattern(patternId, dto, tenantId, userId);
   }
 
   /** Delete rotation pattern */
-  async deleteRotationPattern(
-    patternId: number,
-    tenantId: number,
-    userRole: string,
-    userId: number,
-  ): Promise<void> {
-    this.assertAdminRole(userRole, 'delete rotation patterns');
+  async deleteRotationPattern(patternId: number, tenantId: number, userId: number): Promise<void> {
     await this.patternService.deleteRotationPattern(patternId, tenantId, userId);
   }
 
@@ -115,21 +105,13 @@ export class RotationService {
     uuid: string,
     dto: UpdateRotationPatternDto,
     tenantId: number,
-    userRole: string,
     userId: number,
   ): Promise<RotationPatternResponse> {
-    this.assertAdminRole(userRole, 'update rotation patterns');
     return await this.patternService.updateRotationPatternByUuid(uuid, dto, tenantId, userId);
   }
 
   /** Delete rotation pattern by UUID */
-  async deleteRotationPatternByUuid(
-    uuid: string,
-    tenantId: number,
-    userRole: string,
-    userId: number,
-  ): Promise<void> {
-    this.assertAdminRole(userRole, 'delete rotation patterns');
+  async deleteRotationPatternByUuid(uuid: string, tenantId: number, userId: number): Promise<void> {
     await this.patternService.deleteRotationPatternByUuid(uuid, tenantId, userId);
   }
 
@@ -142,9 +124,7 @@ export class RotationService {
     dto: AssignUsersToPatternDto,
     tenantId: number,
     userId: number,
-    userRole: string,
   ): Promise<RotationAssignmentResponse[]> {
-    this.assertAdminRole(userRole, 'assign users to patterns');
     return await this.assignmentService.assignUsersToPattern(dto, tenantId, userId);
   }
 
@@ -157,9 +137,7 @@ export class RotationService {
     dto: GenerateRotationShiftsDto,
     tenantId: number,
     userId: number,
-    userRole: string,
   ): Promise<GeneratedShiftsResponse> {
-    this.assertAdminRole(userRole, 'generate rotation shifts');
     const pattern = await this.patternService.getRotationPattern(dto.patternId, tenantId);
     return await this.generatorService.generateRotationShifts(pattern, dto, tenantId, userId);
   }
@@ -169,9 +147,7 @@ export class RotationService {
     dto: GenerateRotationFromConfigDto,
     tenantId: number,
     userId: number,
-    userRole: string,
   ): Promise<Record<string, unknown>> {
-    this.assertAdminRole(userRole, 'generate rotation shifts');
     await this.assignmentService.validateTeamExists(dto.teamId, tenantId);
     await this.assignmentService.validateAssignmentUserIds(dto.assignments, tenantId);
     return await this.generatorService.generateRotationFromConfig(dto, tenantId, userId);
@@ -193,11 +169,9 @@ export class RotationService {
   async deleteRotationHistory(
     tenantId: number,
     teamId: number,
-    userRole: string,
     userId: number,
     patternId?: number,
   ): Promise<DeleteHistoryCountsResponse> {
-    this.assertAdminRole(userRole, 'delete rotation history');
     return await this.historyService.deleteRotationHistory(tenantId, teamId, userId, patternId);
   }
 
@@ -205,12 +179,10 @@ export class RotationService {
   async deleteRotationHistoryByDateRange(
     tenantId: number,
     teamId: number,
-    userRole: string,
     userId: number,
     startDate: string,
     endDate: string,
   ): Promise<DeleteHistoryCountsResponse> {
-    this.assertAdminRole(userRole, 'delete rotation history');
     return await this.historyService.deleteRotationHistoryByDateRange(
       tenantId,
       teamId,
@@ -224,23 +196,8 @@ export class RotationService {
   async deleteRotationHistoryEntry(
     historyId: number,
     tenantId: number,
-    userRole: string,
     userId: number,
   ): Promise<void> {
-    this.assertAdminRole(userRole, 'delete rotation history entries');
     await this.historyService.deleteRotationHistoryEntry(historyId, tenantId, userId);
-  }
-
-  // ============================================================
-  // PRIVATE HELPERS
-  // ============================================================
-
-  /**
-   * Assert that the user has admin or root role
-   */
-  private assertAdminRole(userRole: string, action: string): void {
-    if (userRole !== 'admin' && userRole !== 'root') {
-      throw new ForbiddenException(`Only admins can ${action}`);
-    }
   }
 }

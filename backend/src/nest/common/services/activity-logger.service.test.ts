@@ -17,7 +17,8 @@ import { ActivityLoggerService } from './activity-logger.service.js';
 // =============================================================
 
 function createMockDb() {
-  return { query: vi.fn() };
+  const queryFn = vi.fn();
+  return { query: queryFn, tenantQuery: queryFn, queryAsTenant: queryFn, tenantQueryOne: vi.fn() };
 }
 
 /** Mock row returned by resolveUserContext SELECT */

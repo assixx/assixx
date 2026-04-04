@@ -195,9 +195,10 @@ export class ChatWebSocketServer {
     interface UserActiveResult {
       is_active: number;
     }
-    const userRows = await this.db.query<UserActiveResult>(
+    const userRows = await this.db.queryAsTenant<UserActiveResult>(
       'SELECT is_active FROM users WHERE id = $1 AND tenant_id = $2',
       [userId, tenantId],
+      tenantId,
     );
     return userRows[0]?.is_active === IS_ACTIVE.ACTIVE;
   }

@@ -52,10 +52,14 @@ const VERIFIED_BY = 99;
 
 function createMockDb() {
   const mockClient = { query: vi.fn().mockResolvedValue({ rows: [] }) };
+  const qf = vi.fn();
+  const qof = vi.fn();
 
   return {
-    queryOne: vi.fn(),
-    query: vi.fn(),
+    queryOne: qof,
+    tenantQueryOne: qof,
+    query: qf,
+    tenantQuery: qf,
     transaction: vi.fn(
       async (callback: (client: typeof mockClient) => Promise<void>): Promise<void> => {
         await callback(mockClient);

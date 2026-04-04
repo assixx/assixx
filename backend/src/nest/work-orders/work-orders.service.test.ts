@@ -21,9 +21,14 @@ import type {
 
 const mockClient = { query: vi.fn() };
 
+const qf = vi.fn();
+const qof = vi.fn();
+
 const mockDb = {
-  query: vi.fn(),
-  queryOne: vi.fn(),
+  query: qf,
+  tenantQuery: qf,
+  queryOne: qof,
+  tenantQueryOne: qof,
   tenantTransaction: vi
     .fn()
     .mockImplementation(

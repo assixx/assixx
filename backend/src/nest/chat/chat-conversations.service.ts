@@ -118,7 +118,7 @@ export class ChatConversationsService {
     const userId = this.getUserId();
 
     // Check if user is participant
-    const participant = await this.databaseService.query<{ user_id: number }>(
+    const participant = await this.databaseService.tenantQuery<{ user_id: number }>(
       `SELECT user_id FROM chat_conversation_participants
        WHERE conversation_id = $1 AND user_id = $2 AND tenant_id = $3`,
       [conversationId, userId, tenantId],
@@ -128,7 +128,7 @@ export class ChatConversationsService {
       throw new NotFoundException('Conversation not found');
     }
 
-    const conversations = await this.databaseService.query<ConversationRow>(
+    const conversations = await this.databaseService.tenantQuery<ConversationRow>(
       `SELECT id, uuid, name, is_group, created_at, updated_at
        FROM chat_conversations
        WHERE id = $1 AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}`,
@@ -140,7 +140,7 @@ export class ChatConversationsService {
       throw new NotFoundException('Conversation not found');
     }
 
-    const participants = await this.databaseService.query<ParticipantRow>(
+    const participants = await this.databaseService.tenantQuery<ParticipantRow>(
       `SELECT cp.conversation_id, cp.user_id, cp.joined_at, cp.is_admin,
               u.username, u.first_name, u.last_name, u.profile_picture
        FROM chat_conversation_participants cp
@@ -237,7 +237,7 @@ export class ChatConversationsService {
     const tenantId = this.getTenantId();
     const userId = this.getUserId();
 
-    const participant = await this.databaseService.query<{
+    const participant = await this.databaseService.tenantQuery<{
       id: number;
       deleted_at: Date | null;
     }>(
@@ -253,7 +253,7 @@ export class ChatConversationsService {
 
     // Idempotent: always update deleted_at to NOW() regardless of current state.
     // Handles: re-delete from stale UI, re-hide after new messages surfaced conversation.
-    await this.databaseService.query(
+    await this.databaseService.tenantQuery(
       `UPDATE chat_conversation_participants SET deleted_at = NOW()
        WHERE conversation_id = $1 AND user_id = $2 AND tenant_id = $3`,
       [conversationId, userId, tenantId],
@@ -270,7 +270,7 @@ export class ChatConversationsService {
     userId: number,
     tenantId: number,
   ): Promise<void> {
-    const participant = await this.databaseService.query<{ user_id: number }>(
+    const participant = await this.databaseService.tenantQuery<{ user_id: number }>(
       `SELECT user_id FROM chat_conversation_participants
        WHERE conversation_id = $1 AND user_id = $2 AND tenant_id = $3`,
       [conversationId, userId, tenantId],
@@ -288,7 +288,7 @@ export class ChatConversationsService {
     conversationId: number,
     excludeUserId: number,
   ): Promise<number[]> {
-    const participants = await this.databaseService.query<{ user_id: number }>(
+    const participants = await this.databaseService.tenantQuery<{ user_id: number }>(
       `SELECT user_id FROM chat_conversation_participants WHERE conversation_id = $1`,
       [conversationId],
     );
@@ -301,7 +301,7 @@ export class ChatConversationsService {
    * Update conversation's updated_at timestamp
    */
   async updateConversationTimestamp(conversationId: number, tenantId: number): Promise<void> {
-    await this.databaseService.query(
+    await this.databaseService.tenantQuery(
       `UPDATE chat_conversations SET updated_at = NOW() WHERE id = $1 AND tenant_id = $2`,
       [conversationId, tenantId],
     );
@@ -316,7 +316,7 @@ export class ChatConversationsService {
    * WhatsApp-style: Show conversation if not deleted OR if new messages exist after deletion
    */
   private async getConversationCount(tenantId: number, userId: number): Promise<number> {
-    const countResult = await this.databaseService.query<{ count: string }>(
+    const countResult = await this.databaseService.tenantQuery<{ count: string }>(
       `SELECT COUNT(DISTINCT c.id) as count
        FROM chat_conversations c
        INNER JOIN chat_conversation_participants cp ON c.id = cp.conversation_id
@@ -343,7 +343,7 @@ export class ChatConversationsService {
     limit: number,
     offset: number,
   ): Promise<ConversationRow[]> {
-    return await this.databaseService.query<ConversationRow>(
+    return await this.databaseService.tenantQuery<ConversationRow>(
       `SELECT DISTINCT c.id, c.uuid, c.name, c.is_group, c.created_at, c.updated_at,
         (SELECT m.content FROM chat_messages m
          WHERE m.conversation_id = c.id
@@ -380,7 +380,7 @@ export class ChatConversationsService {
     conversationIds: number[],
   ): Promise<ParticipantRow[]> {
     const placeholders = conversationIds.map((_: number, i: number) => `$${i + 1}`).join(',');
-    return await this.databaseService.query<ParticipantRow>(
+    return await this.databaseService.tenantQuery<ParticipantRow>(
       `SELECT cp.conversation_id, cp.user_id, cp.joined_at, cp.is_admin,
               u.username, u.first_name, u.last_name, u.profile_picture
        FROM chat_conversation_participants cp
@@ -413,7 +413,7 @@ export class ChatConversationsService {
       unread_count: string | number;
     }
 
-    const rows = await this.databaseService.query<UnreadCountRow>(
+    const rows = await this.databaseService.tenantQuery<UnreadCountRow>(
       `SELECT
         m.conversation_id,
         COUNT(*) as unread_count
@@ -466,7 +466,7 @@ export class ChatConversationsService {
     }
 
     // WhatsApp-style: reset soft-delete when creator re-engages with conversation
-    await this.databaseService.query(
+    await this.databaseService.tenantQuery(
       `UPDATE chat_conversation_participants SET deleted_at = NULL
        WHERE conversation_id = $1 AND user_id = $2 AND tenant_id = $3
          AND deleted_at IS NOT NULL`,
@@ -487,7 +487,7 @@ export class ChatConversationsService {
       return;
     }
 
-    const validationResult = await this.databaseService.query<{ id: number }>(
+    const validationResult = await this.databaseService.tenantQuery<{ id: number }>(
       `SELECT id FROM users WHERE id = ANY($1::int[]) AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}`,
       [participantIds, tenantId],
     );
@@ -511,7 +511,7 @@ export class ChatConversationsService {
     isGroup: boolean,
   ): Promise<number> {
     const uuid = uuidv7();
-    const insertResult = await this.databaseService.query<{ id: number }>(
+    const insertResult = await this.databaseService.tenantQuery<{ id: number }>(
       `INSERT INTO chat_conversations (tenant_id, name, is_group, uuid, uuid_created_at, created_at, updated_at)
        VALUES ($1, $2, $3, $4, NOW(), NOW(), NOW())
        RETURNING id`,
@@ -535,7 +535,7 @@ export class ChatConversationsService {
     participantIds: number[],
   ): Promise<void> {
     // Add creator as admin
-    await this.databaseService.query(
+    await this.databaseService.tenantQuery(
       `INSERT INTO chat_conversation_participants (tenant_id, conversation_id, user_id, is_admin, joined_at)
        VALUES ($1, $2, $3, true, NOW())`,
       [tenantId, conversationId, creatorId],
@@ -543,7 +543,7 @@ export class ChatConversationsService {
 
     // Add other participants
     for (const participantId of participantIds) {
-      await this.databaseService.query(
+      await this.databaseService.tenantQuery(
         `INSERT INTO chat_conversation_participants (tenant_id, conversation_id, user_id, is_admin, joined_at)
          VALUES ($1, $2, $3, false, NOW())`,
         [tenantId, conversationId, participantId],
@@ -559,7 +559,7 @@ export class ChatConversationsService {
     user1Id: number,
     user2Id: number,
   ): Promise<number | null> {
-    const existing = await this.databaseService.query<{ id: number }>(
+    const existing = await this.databaseService.tenantQuery<{ id: number }>(
       `SELECT c.id
        FROM chat_conversations c
        WHERE c.tenant_id = $1

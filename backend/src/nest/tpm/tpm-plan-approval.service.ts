@@ -60,7 +60,7 @@ export class TpmPlanApprovalService implements OnModuleInit {
 
   /** Check if any TPM approval master is configured for this tenant (D6) */
   async hasApprovalConfig(tenantId: number): Promise<boolean> {
-    const rows = await this.db.query<{ count: string }>(
+    const rows = await this.db.tenantQuery<{ count: string }>(
       `SELECT COUNT(*)::text AS count
        FROM approval_configs
        WHERE addon_code = $1
@@ -73,7 +73,7 @@ export class TpmPlanApprovalService implements OnModuleInit {
 
   /** Check if a pending approval exists for this plan (D3) */
   async hasPendingApproval(tenantId: number, planUuid: string): Promise<boolean> {
-    const rows = await this.db.query<{ count: string }>(
+    const rows = await this.db.tenantQuery<{ count: string }>(
       `SELECT COUNT(*)::text AS count
        FROM approvals
        WHERE addon_code = $1
@@ -105,7 +105,7 @@ export class TpmPlanApprovalService implements OnModuleInit {
       // Resolve asset name if missing (RETURNING * doesn't include JOINs)
       let resolvedAssetName = assetName;
       if (resolvedAssetName === '') {
-        const rows = await this.db.query<{ asset_name: string }>(
+        const rows = await this.db.tenantQuery<{ asset_name: string }>(
           `SELECT a.name AS asset_name
            FROM tpm_maintenance_plans p
            JOIN assets a ON a.id = p.asset_id AND a.tenant_id = p.tenant_id
@@ -145,7 +145,7 @@ export class TpmPlanApprovalService implements OnModuleInit {
     }
 
     const placeholders = planUuids.map((_: string, i: number) => `$${i + 2}`).join(', ');
-    const rows = await this.db.query<{ source_uuid: string; status: string }>(
+    const rows = await this.db.tenantQuery<{ source_uuid: string; status: string }>(
       `SELECT DISTINCT ON (source_uuid) source_uuid, status
        FROM approvals
        WHERE addon_code = '${ADDON_CODE}'
@@ -213,7 +213,7 @@ export class TpmPlanApprovalService implements OnModuleInit {
     tenantId: number,
     approvalUuid: string,
   ): Promise<string | null> {
-    const rows = await this.db.query<{ source_uuid: string }>(
+    const rows = await this.db.tenantQuery<{ source_uuid: string }>(
       `SELECT source_uuid FROM approvals
        WHERE uuid = $1 AND tenant_id = $2 AND is_active = $3`,
       [approvalUuid, tenantId, IS_ACTIVE.ACTIVE],
@@ -228,7 +228,7 @@ export class TpmPlanApprovalService implements OnModuleInit {
     decidedBy: number,
   ): Promise<void> {
     // Use explicit tenant_id (no CLS context in event handler)
-    const planRows = await this.db.query<TpmMaintenancePlanRow>(
+    const planRows = await this.db.tenantQuery<TpmMaintenancePlanRow>(
       `SELECT * FROM tpm_maintenance_plans
        WHERE uuid = $1 AND tenant_id = $2 AND is_active = $3
        FOR UPDATE`,
@@ -242,7 +242,7 @@ export class TpmPlanApprovalService implements OnModuleInit {
 
     const newApprovalVersion = plan.approval_version + 1;
 
-    await this.db.query(
+    await this.db.tenantQuery(
       `UPDATE tpm_maintenance_plans
        SET approval_version = $1, revision_minor = 0, updated_at = NOW()
        WHERE id = $2 AND tenant_id = $3`,
@@ -250,7 +250,7 @@ export class TpmPlanApprovalService implements OnModuleInit {
     );
 
     // Insert revision snapshot for the approval event
-    await this.db.query(
+    await this.db.tenantQuery(
       `INSERT INTO tpm_plan_revisions
          (uuid, tenant_id, plan_id, revision_number, approval_version, revision_minor,
           name, asset_id, base_weekday, base_repeat_every, base_time,
@@ -296,7 +296,7 @@ export class TpmPlanApprovalService implements OnModuleInit {
   /** Find plans with missed approval decisions and sync version (onModuleInit) */
   private async reconcilePendingApprovals(): Promise<void> {
     try {
-      const rows = await this.db.query<{
+      const rows = await this.db.tenantQuery<{
         tenant_id: number;
         plan_uuid: string;
         plan_id: number;
@@ -326,7 +326,7 @@ export class TpmPlanApprovalService implements OnModuleInit {
       this.logger.warn(`Reconciling ${rows.length} plans with missed approval decisions`);
 
       for (const row of rows) {
-        await this.db.query(
+        await this.db.tenantQuery(
           `UPDATE tpm_maintenance_plans
            SET approval_version = $1, revision_minor = 0, updated_at = NOW()
            WHERE id = $2 AND tenant_id = $3`,

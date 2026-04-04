@@ -121,7 +121,7 @@ export class AssetAvailabilityService {
     assetId: number,
     tenantId: number,
   ): Promise<AssetAvailabilityRow | null> {
-    const rows = await this.databaseService.query<AssetAvailabilityRow>(
+    const rows = await this.databaseService.tenantQuery<AssetAvailabilityRow>(
       `SELECT
          asset_id,
          status,
@@ -156,7 +156,7 @@ export class AssetAvailabilityService {
 
     const placeholders = assetIds.map((_: number, i: number) => `$${i + 2}`).join(', ');
 
-    const rows = await this.databaseService.query<AssetAvailabilityRow>(
+    const rows = await this.databaseService.tenantQuery<AssetAvailabilityRow>(
       `SELECT DISTINCT ON (asset_id)
          asset_id,
          status,
@@ -218,7 +218,7 @@ export class AssetAvailabilityService {
     startDate: string,
     endDate: string,
   ): Promise<AssetAvailabilityHistoryEntry[]> {
-    const rows = await this.databaseService.query<AvailabilityRow>(
+    const rows = await this.databaseService.tenantQuery<AvailabilityRow>(
       `SELECT ma.id, ma.asset_id, ma.status, ma.start_date, ma.end_date,
               ma.reason, ma.notes, ma.created_by,
               CONCAT(u.first_name, ' ', u.last_name) AS created_by_name,
@@ -298,7 +298,7 @@ export class AssetAvailabilityService {
       year,
       month,
     );
-    const rows = await this.databaseService.query<AvailabilityRow>(query, params);
+    const rows = await this.databaseService.tenantQuery<AvailabilityRow>(query, params);
 
     const entries = rows.map((row: AvailabilityRow) => this.mapAvailabilityRowToEntry(row));
 
@@ -350,7 +350,7 @@ export class AssetAvailabilityService {
       notes: entry.notes,
     };
 
-    await this.databaseService.query(
+    await this.databaseService.tenantQuery(
       `UPDATE asset_availability
        SET status = $1, start_date = $2, end_date = $3, reason = $4, notes = $5, updated_at = NOW()
        WHERE id = $6 AND tenant_id = $7`,
@@ -406,7 +406,7 @@ export class AssetAvailabilityService {
       assetId: entry.asset_id,
     };
 
-    await this.databaseService.query(
+    await this.databaseService.tenantQuery(
       `DELETE FROM asset_availability WHERE id = $1 AND tenant_id = $2`,
       [entryId, tenantId],
     );
@@ -429,7 +429,7 @@ export class AssetAvailabilityService {
 
   /** Check if asset exists and is active */
   private async assetExists(assetId: number, tenantId: number): Promise<boolean> {
-    const rows = await this.databaseService.query<{ id: number }>(
+    const rows = await this.databaseService.tenantQuery<{ id: number }>(
       `SELECT id FROM assets WHERE id = $1 AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}`,
       [assetId, tenantId],
     );
@@ -438,7 +438,7 @@ export class AssetAvailabilityService {
 
   /** Resolve asset ID from UUID */
   private async resolveAssetIdByUuid(uuid: string, tenantId: number): Promise<number> {
-    const rows = await this.databaseService.query<{ id: number }>(
+    const rows = await this.databaseService.tenantQuery<{ id: number }>(
       `SELECT id FROM assets WHERE uuid = $1 AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}`,
       [uuid, tenantId],
     );
@@ -454,7 +454,7 @@ export class AssetAvailabilityService {
     uuid: string,
     tenantId: number,
   ): Promise<{ id: number; uuid: string; name: string }> {
-    const rows = await this.databaseService.query<{
+    const rows = await this.databaseService.tenantQuery<{
       id: number;
       uuid: string;
       name: string;
@@ -496,7 +496,7 @@ export class AssetAvailabilityService {
     dto: UpdateAssetAvailabilityDto,
     createdBy?: number,
   ): Promise<void> {
-    const overlapping = await this.databaseService.query<{ id: number }>(
+    const overlapping = await this.databaseService.tenantQuery<{ id: number }>(
       `SELECT id FROM asset_availability
        WHERE asset_id = $1
          AND tenant_id = $2
@@ -511,7 +511,7 @@ export class AssetAvailabilityService {
       );
     }
 
-    await this.databaseService.query(
+    await this.databaseService.tenantQuery(
       `INSERT INTO asset_availability
         (asset_id, tenant_id, status, start_date, end_date, reason, notes, created_by)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
@@ -595,7 +595,7 @@ export class AssetAvailabilityService {
     reason: string,
     userId: number,
   ): Promise<void> {
-    await this.databaseService.query(
+    await this.databaseService.tenantQuery(
       `INSERT INTO asset_availability
          (tenant_id, asset_id, status, start_date, end_date, reason, created_by)
        VALUES ($1, $2, 'maintenance', $3, $4, $5, $6)`,
@@ -608,7 +608,7 @@ export class AssetAvailabilityService {
     entryId: number,
     tenantId: number,
   ): Promise<AvailabilityRow | null> {
-    const rows = await this.databaseService.query<AvailabilityRow>(
+    const rows = await this.databaseService.tenantQuery<AvailabilityRow>(
       `SELECT id, asset_id, status, start_date, end_date, reason, notes,
               created_by, created_at, updated_at
        FROM asset_availability

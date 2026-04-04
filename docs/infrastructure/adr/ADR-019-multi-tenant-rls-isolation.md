@@ -3,7 +3,7 @@
 | Metadata                | Value                                                                        |
 | ----------------------- | ---------------------------------------------------------------------------- |
 | **Status**              | Accepted                                                                     |
-| **Date**                | 2026-02-07                                                                   |
+| **Date**                | 2026-02-07 (updated: 2026-04-04)                                             |
 | **Decision Makers**     | SCS-Technik Team                                                             |
 | **Affected Components** | PostgreSQL, Backend (DatabaseService, JwtAuthGuard, ClsModule)               |
 | **Supersedes**          | —                                                                            |
@@ -87,42 +87,49 @@ The application sets `app.tenant_id` via `set_config()` per transaction. Postgre
 
 ## Implementation Details
 
-### 1. Database Users (Dual-User Model)
+### 1. Database Users (Triple-User Model)
 
-| User          | Purpose             | RLS Applied?       | DDL Rights |
-| ------------- | ------------------- | ------------------ | ---------- |
-| `app_user`    | Backend connections | **Yes**            | No         |
-| `assixx_user` | Migrations, admin   | **No** (BYPASSRLS) | Yes        |
+| User          | Purpose                          | RLS Applied?       | DDL Rights |
+| ------------- | -------------------------------- | ------------------ | ---------- |
+| `app_user`    | Authenticated request queries    | **Yes** (strict)   | No         |
+| `sys_user`    | Cron, auth, signup, root, delete | **No** (BYPASSRLS) | No         |
+| `assixx_user` | Migrations, admin scripts        | **No** (BYPASSRLS) | Yes        |
 
-The backend connects **exclusively** as `app_user`. This user cannot bypass RLS — even if the application has a bug, PostgreSQL enforces isolation.
+**`app_user`** — Used for all authenticated tenant-scoped operations via `tenantTransaction()`. RLS is strict: queries without `set_config('app.tenant_id')` return **0 rows**.
 
-`assixx_user` (BYPASSRLS) is used only for:
+**`sys_user`** (BYPASSRLS, no DDL) — Used exclusively for cross-tenant operations:
+
+- Cron jobs (cross-tenant aggregation queries)
+- Auth service (login: user lookup before tenant context exists)
+- Signup service (tenant creation)
+- Root admin (cross-tenant management)
+- Tenant deletion (cleanup across all tables)
+
+**`assixx_user`** (BYPASSRLS + DDL) — Used only for:
 
 - Database migrations (`node-pg-migrate`)
 - Admin scripts via `psql`
 - Seed data operations
 
-### 2. Standard RLS Policy (77 of 79 tables)
+### 2. Standard RLS Policy — Strict Mode (110 of 117 tables)
 
 ```sql
 CREATE POLICY tenant_isolation ON table_name
     FOR ALL
     USING (
-        -- Clause 1: No tenant context set → allow all (Root/Admin access)
-        NULLIF(current_setting('app.tenant_id', true), '') IS NULL
-        -- Clause 2: Tenant context matches row → allow
-        OR tenant_id = NULLIF(current_setting('app.tenant_id', true), '')::integer
+        tenant_id = NULLIF(current_setting('app.tenant_id', true), '')::integer
     );
 ```
 
+**Strict mode behavior:**
+
+- When `app.tenant_id` is set → filters rows by tenant ✅
+- When `app.tenant_id` is NOT set → `NULLIF` returns NULL → `tenant_id = NULL` is never true → **0 rows returned** ✅
+- Cross-tenant operations use `sys_user` (BYPASSRLS) which ignores all policies
+
 **Why `NULLIF(current_setting(...), '')`?**
 
-PostgreSQL `set_config()` with `is_local=true` resets to empty string `''` (not `NULL`) after `COMMIT`. Without `NULLIF`:
-
-- `''::integer` would throw a cast error
-- `'' IS NULL` would be `FALSE`, blocking all queries
-
-`NULLIF('', '')` converts `''` → `NULL`, making `IS NULL` → `TRUE`, allowing unrestricted access when no tenant context is set.
+PostgreSQL `set_config()` with `is_local=true` resets to empty string `''` (not `NULL`) after `COMMIT`. `NULLIF('', '')` converts `''` → `NULL`, ensuring the comparison correctly blocks access.
 
 **`current_setting('app.tenant_id', true)`** — the `true` parameter means "return NULL if setting doesn't exist" (prevents errors on first use).
 
@@ -211,6 +218,11 @@ async tenantTransaction<T>(
 ): Promise<T> {
   const tenantId = this.cls.get<number | undefined>('tenantId');
   const userId = this.cls.get<number | undefined>('userId');
+
+  if (tenantId === undefined) {
+    throw new Error('tenantTransaction called without tenantId in CLS context');
+  }
+
   return await this.transaction(callback, { tenantId, userId });
 }
 ```
@@ -221,41 +233,93 @@ async tenantTransaction<T>(
 - Uses `SELECT set_config()` instead of `SET` because `SET` doesn't support parameterized queries (SQL injection risk)
 - `tenantId` and `userId` read from CLS (ADR-006), not from request parameters (prevents tampering)
 
+### 6b. DatabaseService Query API
+
+Every DB call MUST use the correct method. Using the wrong method is a security bug.
+
+| Method                                 | Pool     | RLS             | CLS needed? | Use case                                                              |
+| -------------------------------------- | -------- | --------------- | ----------- | --------------------------------------------------------------------- |
+| `query()`                              | app_user | Strict (blocks) | No          | **Global tables only** (addons, system_settings, pg catalog)          |
+| `tenantQuery()`                        | app_user | Yes (via CLS)   | **Yes**     | Authenticated tenant-scoped reads/writes                              |
+| `tenantQueryOne()`                     | app_user | Yes (via CLS)   | **Yes**     | Same, returns first row or null                                       |
+| `queryAsTenant(sql, params, tenantId)` | app_user | Yes (explicit)  | No          | WebSocket, JwtAuthGuard, logging services (explicit tenantId, no CLS) |
+| `tenantTransaction()`                  | app_user | Yes (via CLS)   | **Yes**     | Multi-statement tenant operations                                     |
+| `transaction(cb, {tenantId})`          | app_user | Yes (explicit)  | No          | Multi-statement with explicit tenantId                                |
+| `systemQuery()`                        | sys_user | **Bypass**      | No          | Cron jobs, auth login, signup, root admin, tenant deletion            |
+| `systemQueryOne()`                     | sys_user | **Bypass**      | No          | Same, returns first row or null                                       |
+| `systemTransaction()`                  | sys_user | **Bypass**      | No          | Cross-tenant transactions                                             |
+
+**Decision tree for new code:**
+
+```
+Is it a global table (addons, system_settings, pg catalog)?
+  → query()
+
+Is it a cron job, auth login, signup, root admin, or tenant deletion?
+  → systemQuery() / systemTransaction()
+
+Is it inside an HTTP request handler (CLS has tenantId)?
+  → tenantQuery() / tenantTransaction()
+
+Is it WebSocket, a guard, or a service with explicit tenantId param but no CLS?
+  → queryAsTenant(sql, params, tenantId)
+
+Is it inside a transaction callback (client.query)?
+  → client.query() directly (RLS context already set by parent transaction)
+```
+
 ### 7. Global Tables (No RLS)
 
-18 tables contain system-wide configuration data shared across all tenants:
+17 tables contain system-wide configuration data shared across all tenants:
 
-| Table                   | Reason                                      |
-| ----------------------- | ------------------------------------------- |
-| `plans`                 | Subscription plans (Basic, Pro, Enterprise) |
-| `features`              | Available features                          |
-| `plan_features`         | Plan-to-feature mapping                     |
-| `kvp_categories`        | Default KVP categories (seeds)              |
-| `machine_categories`    | Default asset categories (seeds)            |
-| `system_settings`       | Global system configuration                 |
-| `password_reset_tokens` | Stateless, short-lived tokens               |
-| `user_sessions`         | JWT sessions (validated by signature)       |
-| `pgmigrations`          | Migration tracking (node-pg-migrate)        |
+| Table                            | Reason                                            |
+| -------------------------------- | ------------------------------------------------- |
+| `addons`                         | Addon catalog (system-defined, seeds)             |
+| `archived_tenant_invoices`       | Billing archive (cross-tenant by design)          |
+| `asset_categories`               | Default asset categories (seeds)                  |
+| `blackboard_entry_organizations` | Junction table (FK-based isolation via parent)    |
+| `calendar_events_organizations`  | Junction table (FK-based isolation via parent)    |
+| `deletion_alerts`                | System-level deletion monitoring                  |
+| `deletion_partial_options`       | System-level deletion configuration               |
+| `document_shares`                | Share links (validated via parent document's RLS) |
+| `failed_file_deletions`          | System-level cleanup queue                        |
+| `kvp_attachments`                | Junction table (FK-based isolation via parent)    |
+| `kvp_categories`                 | Default KVP categories (seeds)                    |
+| `kvp_ratings`                    | Junction table (FK-based isolation via parent)    |
+| `kvp_status_history`             | Junction table (FK-based isolation via parent)    |
+| `password_reset_tokens`          | Stateless, short-lived tokens                     |
+| `pgmigrations`                   | Migration tracking (node-pg-migrate)              |
+| `system_settings`                | Global system configuration                       |
+| `user_sessions`                  | JWT sessions (validated by signature)             |
 
-These tables have **no `tenant_id` column** and **no RLS**. They are read-only for `app_user` (GRANTs: SELECT only on critical tables like `plans`).
+These tables have **no `tenant_id` column** and **no RLS**.
 
-### 8. Partitioned Tables
+### 8. GRANT Exceptions
+
+| Table                | GRANTs for `app_user` | Reason                                                             |
+| -------------------- | --------------------- | ------------------------------------------------------------------ |
+| `tpm_plan_revisions` | SELECT, INSERT only   | Append-only revision history — UPDATE/DELETE intentionally revoked |
+
+All other tables have the full `SELECT, INSERT, UPDATE, DELETE` grant set.
+
+### 9. Partitioned Tables
 
 `audit_trail` and `root_logs` use monthly partitioning (ADR-009). The **parent table** has RLS enabled. Partitions (`audit_trail_2026_01`, etc.) inherit the parent's RLS policies automatically — they do not need their own.
 
-**72 partition tables** show `rowsecurity = false` in `pg_tables` but are protected via their parent's policy.
+**192 partition tables** show `rowsecurity = false` in `pg_tables` but are protected via their parent's policy.
 
 ---
 
 ## Table Coverage Summary
 
-| Category                         | Count   | RLS              | Notes                  |
-| -------------------------------- | ------- | ---------------- | ---------------------- |
-| Tenant-scoped tables             | 79      | Enabled + Forced | 84 policies total      |
-| Global tables (no tenant_id)     | 18      | Not needed       | System config, seeds   |
-| Partitions (inherit from parent) | 72      | Inherited        | audit_trail, root_logs |
-| Tables with RLS but no policy    | **0**   | —                | Clean!                 |
-| **Total**                        | **170** | —                | —                      |
+| Category                         | Count   | RLS              | Notes                                  |
+| -------------------------------- | ------- | ---------------- | -------------------------------------- |
+| Tenant-scoped tables             | 117     | Enabled + Forced | 124 policies total                     |
+| Global tables (no tenant_id)     | 17      | Not needed       | System config, seeds, junction tables  |
+| Partitions (inherit from parent) | 192     | Inherited        | audit_trail, root_logs (monthly)       |
+| Partition defaults               | 2       | Inherited        | audit_trail_default, root_logs_default |
+| Tables with RLS but no policy    | **0**   | —                | Clean!                                 |
+| **Total**                        | **330** | —                | 138 base + 192 partitions              |
 
 ---
 
@@ -314,15 +378,16 @@ Use ORM middleware/scopes to automatically add `WHERE tenant_id = ?`.
 
 ### Positive
 
-1. **Impossible to bypass from application code** — even if a service forgets `WHERE tenant_id = ?`, RLS filters automatically
+1. **Impossible to bypass from application code** — even if a service forgets `WHERE tenant_id = ?`, RLS blocks access without tenant context (strict mode)
 2. **Defense in depth** — 3 independent layers (CLS, set_config, RLS policies)
-3. **Zero code changes needed** for tenant filtering — `SELECT * FROM users` automatically filtered
-4. **Root users work seamlessly** — when `app.tenant_id` is not set, policies allow all rows
-5. **Consistent pattern** — same `tenant_isolation` policy on all 79 tables
-6. **FORCE ROW LEVEL SECURITY** — even table owners can't bypass (prevents privilege escalation)
-7. **Transaction-scoped context** — `is_local=true` auto-clears on COMMIT, preventing context leakage between requests
-8. **Partition inheritance** — RLS on parent tables protects all partitions automatically
-9. **Audit-friendly** — policies are visible in `pg_policies` system catalog
+3. **Zero code changes needed** for tenant filtering — `SELECT * FROM users` automatically filtered within `tenantTransaction()`
+4. **Strict isolation by default** — queries without `set_config` return 0 rows (no silent bypass)
+5. **Triple-user model** — `app_user` (strict RLS), `sys_user` (BYPASSRLS, no DDL), `assixx_user` (DDL + BYPASSRLS)
+6. **Consistent pattern** — same `tenant_isolation` policy on all 117 tables
+7. **FORCE ROW LEVEL SECURITY** — even table owners can't bypass (prevents privilege escalation)
+8. **Transaction-scoped context** — `is_local=true` auto-clears on COMMIT, preventing context leakage between requests
+9. **Partition inheritance** — RLS on parent tables protects all partitions automatically
+10. **Audit-friendly** — policies are visible in `pg_policies` system catalog
 
 ### Negative
 
@@ -330,16 +395,18 @@ Use ORM middleware/scopes to automatically add `WHERE tenant_id = ?`.
 2. **Debugging complexity** — when data "disappears", must check if RLS context is set correctly
 3. **Migration discipline** — every new tenant-scoped table MUST include RLS setup (checklist in ADR-014)
 4. **EXISTS subqueries** — participant isolation policies use EXISTS, adding minor overhead on chat tables
-5. **Dual-user management** — must maintain GRANTs for both `app_user` and `assixx_user`
+5. **Triple-user management** — must maintain GRANTs for `app_user`, `sys_user`, and `assixx_user`
+6. **System pool awareness** — developers must choose the correct pool (regular vs system) for new services
 
 ### Risks & Mitigations
 
-| Risk                               | Mitigation                                                                                |
-| ---------------------------------- | ----------------------------------------------------------------------------------------- |
-| New table without RLS              | Migration checklist (ADR-014) enforces RLS for all tenant-scoped tables                   |
-| Context leakage between requests   | `is_local=true` + connection pool release + CLS request isolation                         |
-| Root user accidental data exposure | Root user has no `app.tenant_id` set → sees all data by design (this is correct behavior) |
-| Performance degradation            | `pg_stat_statements` monitoring (ADR-009), index on `tenant_id` column                    |
+| Risk                               | Mitigation                                                                |
+| ---------------------------------- | ------------------------------------------------------------------------- |
+| New table without RLS              | Migration checklist (ADR-014) enforces RLS for all tenant-scoped tables   |
+| Context leakage between requests   | `is_local=true` + connection pool release + CLS request isolation         |
+| Forgotten `set_config` blocks data | Strict RLS returns 0 rows → visible bug, not silent data leak (fail-safe) |
+| `sys_user` misuse                  | `systemQuery()` clearly named, code review catches inappropriate use      |
+| Performance degradation            | `pg_stat_statements` monitoring (ADR-009), index on `tenant_id` column    |
 
 ---
 
@@ -354,19 +421,26 @@ docker exec assixx-postgres psql -U app_user -d assixx -c "
   SELECT COUNT(*) AS tenant_1_users FROM users;
 "
 
-# 2. As app_user WITHOUT tenant context — sees all data (Root mode)
+# 2. As app_user WITHOUT tenant context — STRICT: returns 0 rows
 docker exec assixx-postgres psql -U app_user -d assixx -c "
-  SELECT COUNT(*) AS all_users FROM users;
+  SELECT COUNT(*) AS blocked_users FROM users;
+  -- Result: 0 (strict mode blocks all rows without tenant context)
 "
 
-# 3. Cross-tenant test — tenant 1 user cannot see tenant 2 data
+# 3. As sys_user WITHOUT tenant context — BYPASSRLS: sees all data
+docker exec assixx-postgres psql -U sys_user -d assixx -c "
+  SELECT COUNT(*) AS all_users FROM users;
+  -- Result: all users across all tenants
+"
+
+# 4. Cross-tenant test — tenant 1 user cannot see tenant 2 data
 docker exec assixx-postgres psql -U app_user -d assixx -c "
   SET app.tenant_id = '1';
   SELECT COUNT(*) FROM users WHERE tenant_id = 2;
   -- Result: 0 rows (even though tenant 2 has users)
 "
 
-# 4. Policy inventory
+# 5. Policy inventory
 docker exec assixx-postgres psql -U assixx_user -d assixx -c "
   SELECT tablename, policyname, cmd FROM pg_policies
   WHERE schemaname = 'public' ORDER BY tablename;

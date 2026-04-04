@@ -17,7 +17,12 @@ import { KvpCategoriesService } from './kvp-categories.service.js';
 // =============================================================
 
 function createMockDb() {
-  return { query: vi.fn() };
+  return {
+    query: vi.fn(),
+    queryOne: vi.fn(),
+    tenantQuery: vi.fn().mockResolvedValue([]),
+    tenantQueryOne: vi.fn().mockResolvedValue(null),
+  };
 }
 
 // =============================================================
@@ -41,24 +46,24 @@ describe('KvpCategoriesService', () => {
   describe('access control', () => {
     it('should allow root user access', async () => {
       // defaults query + custom query (Promise.all)
-      mockDb.query.mockResolvedValueOnce([]);
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       await expect(service.getCustomizable(10, 1, 'root')).resolves.toBeDefined();
     });
 
     it('should allow admin with has_full_access', async () => {
       // assertHasFullAccess → check user
-      mockDb.query.mockResolvedValueOnce([{ has_full_access: true }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ has_full_access: true }]);
       // defaults + custom
-      mockDb.query.mockResolvedValueOnce([]);
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       await expect(service.getCustomizable(10, 1, 'admin')).resolves.toBeDefined();
     });
 
     it('should deny admin without has_full_access', async () => {
-      mockDb.query.mockResolvedValueOnce([{ has_full_access: false }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ has_full_access: false }]);
 
       await expect(service.getCustomizable(10, 1, 'admin')).rejects.toThrow(ForbiddenException);
     });
@@ -68,13 +73,13 @@ describe('KvpCategoriesService', () => {
     });
 
     it('should deny admin when user row not found in DB', async () => {
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       await expect(service.getCustomizable(10, 1, 'admin')).rejects.toThrow(ForbiddenException);
     });
 
     it('should deny admin when has_full_access is null/undefined', async () => {
-      mockDb.query.mockResolvedValueOnce([{ has_full_access: null }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ has_full_access: null }]);
 
       await expect(service.getCustomizable(10, 1, 'admin')).rejects.toThrow(ForbiddenException);
     });
@@ -87,7 +92,7 @@ describe('KvpCategoriesService', () => {
   describe('getCustomizable', () => {
     it('should return defaults with override info and custom categories', async () => {
       // defaults query
-      mockDb.query.mockResolvedValueOnce([
+      mockDb.tenantQuery.mockResolvedValueOnce([
         {
           id: 1,
           name: 'Safety',
@@ -106,7 +111,7 @@ describe('KvpCategoriesService', () => {
         },
       ]);
       // custom query
-      mockDb.query.mockResolvedValueOnce([
+      mockDb.tenantQuery.mockResolvedValueOnce([
         {
           id: 100,
           custom_name: 'Custom Cat',
@@ -129,8 +134,8 @@ describe('KvpCategoriesService', () => {
     });
 
     it('should map custom category suggestion_count correctly', async () => {
-      mockDb.query.mockResolvedValueOnce([]);
-      mockDb.query.mockResolvedValueOnce([
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([
         {
           id: 200,
           custom_name: 'Custom With Count',
@@ -150,8 +155,8 @@ describe('KvpCategoriesService', () => {
     });
 
     it('should return empty defaults and custom when no categories exist', async () => {
-      mockDb.query.mockResolvedValueOnce([]);
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       const result = await service.getCustomizable(10, 1, 'root');
 
@@ -169,7 +174,7 @@ describe('KvpCategoriesService', () => {
   describe('upsertOverride', () => {
     it('should throw NotFoundException when global category not found', async () => {
       // assertGlobalCategoryExists → not found
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       await expect(service.upsertOverride(10, 999, 'Custom Name', 1, 'root')).rejects.toThrow(
         NotFoundException,
@@ -178,9 +183,9 @@ describe('KvpCategoriesService', () => {
 
     it('should upsert override and return id', async () => {
       // assertGlobalCategoryExists → found
-      mockDb.query.mockResolvedValueOnce([{ id: 1 }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ id: 1 }]);
       // INSERT ON CONFLICT RETURNING id
-      mockDb.query.mockResolvedValueOnce([{ id: 50 }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ id: 50 }]);
 
       const result = await service.upsertOverride(10, 1, 'Sicherheit', 1, 'root');
 
@@ -189,9 +194,9 @@ describe('KvpCategoriesService', () => {
 
     it('should throw Error when upsert returns no rows', async () => {
       // assertGlobalCategoryExists → found
-      mockDb.query.mockResolvedValueOnce([{ id: 1 }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ id: 1 }]);
       // INSERT ON CONFLICT returns empty array
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       await expect(service.upsertOverride(10, 1, 'Override Name', 1, 'root')).rejects.toThrow(
         'Failed to upsert override',
@@ -200,11 +205,11 @@ describe('KvpCategoriesService', () => {
 
     it('should check access for admin user before upserting', async () => {
       // assertHasFullAccess → admin with full access
-      mockDb.query.mockResolvedValueOnce([{ has_full_access: true }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ has_full_access: true }]);
       // assertGlobalCategoryExists → found
-      mockDb.query.mockResolvedValueOnce([{ id: 1 }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ id: 1 }]);
       // INSERT RETURNING id
-      mockDb.query.mockResolvedValueOnce([{ id: 60 }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ id: 60 }]);
 
       const result = await service.upsertOverride(10, 1, 'Admin Override', 1, 'admin');
 
@@ -218,11 +223,11 @@ describe('KvpCategoriesService', () => {
 
   describe('deleteOverride', () => {
     it('should delete override', async () => {
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       await service.deleteOverride(10, 1, 1, 'root');
 
-      expect(mockDb.query).toHaveBeenCalledWith(
+      expect(mockDb.tenantQuery).toHaveBeenCalledWith(
         expect.stringContaining('DELETE FROM kvp_categories_custom'),
         [1, 10],
       );
@@ -242,7 +247,7 @@ describe('KvpCategoriesService', () => {
   describe('createCustom', () => {
     it('should throw ForbiddenException when limit reached', async () => {
       // assertCategoryLimitNotReached → count = 20
-      mockDb.query.mockResolvedValueOnce([{ cnt: 20 }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ cnt: 20 }]);
 
       await expect(service.createCustom(10, 'New Cat', '#fff', 'star', 1, 'root')).rejects.toThrow(
         ForbiddenException,
@@ -251,9 +256,9 @@ describe('KvpCategoriesService', () => {
 
     it('should create custom category and return id', async () => {
       // assertCategoryLimitNotReached → count = 10
-      mockDb.query.mockResolvedValueOnce([{ cnt: 10 }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ cnt: 10 }]);
       // INSERT RETURNING id
-      mockDb.query.mockResolvedValueOnce([{ id: 100 }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ id: 100 }]);
 
       const result = await service.createCustom(
         10,
@@ -270,15 +275,15 @@ describe('KvpCategoriesService', () => {
 
     it('should create custom category without description (null fallback)', async () => {
       // assertCategoryLimitNotReached → count = 5
-      mockDb.query.mockResolvedValueOnce([{ cnt: 5 }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ cnt: 5 }]);
       // INSERT RETURNING id
-      mockDb.query.mockResolvedValueOnce([{ id: 101 }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ id: 101 }]);
 
       const result = await service.createCustom(10, 'No Desc Cat', '#000', 'circle', 1, 'root');
 
       expect(result.id).toBe(101);
       // Verify description was passed as null
-      expect(mockDb.query).toHaveBeenLastCalledWith(
+      expect(mockDb.tenantQuery).toHaveBeenLastCalledWith(
         expect.stringContaining('INSERT INTO kvp_categories_custom'),
         [10, 'No Desc Cat', null, '#000', 'circle'],
       );
@@ -286,9 +291,9 @@ describe('KvpCategoriesService', () => {
 
     it('should throw Error when insert returns no rows', async () => {
       // assertCategoryLimitNotReached → count = 5
-      mockDb.query.mockResolvedValueOnce([{ cnt: 5 }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ cnt: 5 }]);
       // INSERT returns empty array
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       await expect(service.createCustom(10, 'Fail Cat', '#fff', 'star', 1, 'root')).rejects.toThrow(
         'Failed to create custom category',
@@ -297,9 +302,9 @@ describe('KvpCategoriesService', () => {
 
     it('should use cnt ?? 0 fallback when limit check returns undefined row', async () => {
       // assertCategoryLimitNotReached → returns empty array (rows[0] undefined → cnt defaults to 0)
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
       // INSERT RETURNING id (should proceed since 0 < 20)
-      mockDb.query.mockResolvedValueOnce([{ id: 102 }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ id: 102 }]);
 
       const result = await service.createCustom(10, 'Fallback Cat', '#abc', 'flag', 1, 'root');
 
@@ -314,22 +319,22 @@ describe('KvpCategoriesService', () => {
   describe('deleteCustom', () => {
     it('should throw NotFoundException when custom category not found', async () => {
       // UPDATE SET is_active = 4 → no rows returned (not found or already deleted)
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       await expect(service.deleteCustom(10, 999, 1, 'root')).rejects.toThrow(NotFoundException);
     });
 
     it('should soft-delete custom category and return affected count', async () => {
       // UPDATE SET is_active = 4 → returns soft-deleted row
-      mockDb.query.mockResolvedValueOnce([{ id: 100 }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ id: 100 }]);
       // COUNT affected suggestions
-      mockDb.query.mockResolvedValueOnce([{ cnt: 3 }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ cnt: 3 }]);
 
       const result = await service.deleteCustom(10, 100, 1, 'root');
 
       expect(result.affectedSuggestions).toBe(3);
-      expect(mockDb.query).toHaveBeenCalledTimes(2);
-      expect(mockDb.query).toHaveBeenCalledWith(
+      expect(mockDb.tenantQuery).toHaveBeenCalledTimes(2);
+      expect(mockDb.tenantQuery).toHaveBeenCalledWith(
         expect.stringContaining(`SET is_active = ${IS_ACTIVE.DELETED}`),
         [100, 10],
       );
@@ -337,9 +342,9 @@ describe('KvpCategoriesService', () => {
 
     it('should soft-delete category with zero affected suggestions', async () => {
       // UPDATE SET is_active = 4 → returns soft-deleted row
-      mockDb.query.mockResolvedValueOnce([{ id: 100 }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ id: 100 }]);
       // COUNT affected suggestions → 0
-      mockDb.query.mockResolvedValueOnce([{ cnt: 0 }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ cnt: 0 }]);
 
       const result = await service.deleteCustom(10, 100, 1, 'root');
 
@@ -348,9 +353,9 @@ describe('KvpCategoriesService', () => {
 
     it('should default to 0 affected suggestions when count query returns empty', async () => {
       // UPDATE SET is_active = 4 → returns soft-deleted row
-      mockDb.query.mockResolvedValueOnce([{ id: 100 }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ id: 100 }]);
       // COUNT query returns empty array (rows[0] undefined → cnt ?? 0)
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       const result = await service.deleteCustom(10, 100, 1, 'root');
 
@@ -369,14 +374,14 @@ describe('KvpCategoriesService', () => {
 
     it('should update only name field', async () => {
       // UPDATE RETURNING id
-      mockDb.query.mockResolvedValueOnce([{ id: 1 }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ id: 1 }]);
 
       const result = await service.updateCustom(10, 1, 1, 'root', {
         name: 'Renamed Cat',
       });
 
       expect(result.id).toBe(1);
-      expect(mockDb.query).toHaveBeenCalledWith(expect.stringContaining('custom_name = $1'), [
+      expect(mockDb.tenantQuery).toHaveBeenCalledWith(expect.stringContaining('custom_name = $1'), [
         'Renamed Cat',
         1,
         10,
@@ -384,14 +389,14 @@ describe('KvpCategoriesService', () => {
     });
 
     it('should update only color field', async () => {
-      mockDb.query.mockResolvedValueOnce([{ id: 2 }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ id: 2 }]);
 
       const result = await service.updateCustom(10, 2, 1, 'root', {
         color: '#ff0000',
       });
 
       expect(result.id).toBe(2);
-      expect(mockDb.query).toHaveBeenCalledWith(expect.stringContaining('color = $1'), [
+      expect(mockDb.tenantQuery).toHaveBeenCalledWith(expect.stringContaining('color = $1'), [
         '#ff0000',
         2,
         10,
@@ -399,14 +404,14 @@ describe('KvpCategoriesService', () => {
     });
 
     it('should update only icon field', async () => {
-      mockDb.query.mockResolvedValueOnce([{ id: 3 }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ id: 3 }]);
 
       const result = await service.updateCustom(10, 3, 1, 'root', {
         icon: 'bolt',
       });
 
       expect(result.id).toBe(3);
-      expect(mockDb.query).toHaveBeenCalledWith(expect.stringContaining('icon = $1'), [
+      expect(mockDb.tenantQuery).toHaveBeenCalledWith(expect.stringContaining('icon = $1'), [
         'bolt',
         3,
         10,
@@ -414,14 +419,14 @@ describe('KvpCategoriesService', () => {
     });
 
     it('should update only description field', async () => {
-      mockDb.query.mockResolvedValueOnce([{ id: 4 }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ id: 4 }]);
 
       const result = await service.updateCustom(10, 4, 1, 'root', {
         description: 'New description',
       });
 
       expect(result.id).toBe(4);
-      expect(mockDb.query).toHaveBeenCalledWith(expect.stringContaining('description = $1'), [
+      expect(mockDb.tenantQuery).toHaveBeenCalledWith(expect.stringContaining('description = $1'), [
         'New description',
         4,
         10,
@@ -429,7 +434,7 @@ describe('KvpCategoriesService', () => {
     });
 
     it('should update multiple fields at once', async () => {
-      mockDb.query.mockResolvedValueOnce([{ id: 5 }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ id: 5 }]);
 
       const result = await service.updateCustom(10, 5, 1, 'root', {
         name: 'Updated',
@@ -439,7 +444,7 @@ describe('KvpCategoriesService', () => {
       });
 
       expect(result.id).toBe(5);
-      expect(mockDb.query).toHaveBeenCalledWith(expect.stringContaining('custom_name = $1'), [
+      expect(mockDb.tenantQuery).toHaveBeenCalledWith(expect.stringContaining('custom_name = $1'), [
         'Updated',
         '#aabbcc',
         'rocket',
@@ -451,7 +456,7 @@ describe('KvpCategoriesService', () => {
 
     it('should throw NotFoundException when custom category not found', async () => {
       // UPDATE returns empty array (not found or wrong tenant)
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       await expect(service.updateCustom(10, 999, 1, 'root', { name: 'Ghost' })).rejects.toThrow(
         NotFoundException,
@@ -466,9 +471,9 @@ describe('KvpCategoriesService', () => {
 
     it('should allow admin with has_full_access to update', async () => {
       // assertHasFullAccess → admin with full access
-      mockDb.query.mockResolvedValueOnce([{ has_full_access: true }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ has_full_access: true }]);
       // UPDATE RETURNING id
-      mockDb.query.mockResolvedValueOnce([{ id: 10 }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ id: 10 }]);
 
       const result = await service.updateCustom(10, 10, 1, 'admin', {
         name: 'Admin Updated',

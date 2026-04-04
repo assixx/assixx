@@ -15,9 +15,13 @@ import { AdminPermissionsService } from './admin-permissions.service.js';
 
 // Factory for mock DatabaseService
 function createMockDb() {
+  const query = vi.fn();
+  const queryOne = vi.fn();
   return {
-    query: vi.fn(),
-    queryOne: vi.fn(),
+    query,
+    queryOne,
+    tenantQuery: query,
+    tenantQueryOne: queryOne,
   };
 }
 
@@ -56,7 +60,9 @@ describe('SECURITY: AdminPermissionsService', () => {
 
   describe('checkAccess', () => {
     it('should return hasAccess: true when user has read permission', async () => {
-      mockDb.query.mockResolvedValueOnce([{ can_read: true, can_write: false, can_delete: false }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([
+        { can_read: true, can_write: false, can_delete: false },
+      ]);
 
       const result = await service.checkAccess(1, 10, 5, 'read');
 
@@ -65,7 +71,7 @@ describe('SECURITY: AdminPermissionsService', () => {
     });
 
     it('should return hasAccess: false when user lacks read permission', async () => {
-      mockDb.query.mockResolvedValueOnce([
+      mockDb.tenantQuery.mockResolvedValueOnce([
         { can_read: false, can_write: false, can_delete: false },
       ]);
 
@@ -75,7 +81,9 @@ describe('SECURITY: AdminPermissionsService', () => {
     });
 
     it('should check write permission when requested', async () => {
-      mockDb.query.mockResolvedValueOnce([{ can_read: true, can_write: true, can_delete: false }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([
+        { can_read: true, can_write: true, can_delete: false },
+      ]);
 
       const result = await service.checkAccess(1, 10, 5, 'write');
 
@@ -83,7 +91,9 @@ describe('SECURITY: AdminPermissionsService', () => {
     });
 
     it('should check delete permission when requested', async () => {
-      mockDb.query.mockResolvedValueOnce([{ can_read: true, can_write: true, can_delete: true }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([
+        { can_read: true, can_write: true, can_delete: true },
+      ]);
 
       const result = await service.checkAccess(1, 10, 5, 'delete');
 
@@ -91,7 +101,9 @@ describe('SECURITY: AdminPermissionsService', () => {
     });
 
     it('should return hasAccess: false when no write but write requested', async () => {
-      mockDb.query.mockResolvedValueOnce([{ can_read: true, can_write: false, can_delete: false }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([
+        { can_read: true, can_write: false, can_delete: false },
+      ]);
 
       const result = await service.checkAccess(1, 10, 5, 'write');
 
@@ -99,7 +111,9 @@ describe('SECURITY: AdminPermissionsService', () => {
     });
 
     it('should return permissions object on direct access', async () => {
-      mockDb.query.mockResolvedValueOnce([{ can_read: true, can_write: true, can_delete: false }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([
+        { can_read: true, can_write: true, can_delete: false },
+      ]);
 
       const result = await service.checkAccess(1, 10, 5, 'read');
 
@@ -111,7 +125,7 @@ describe('SECURITY: AdminPermissionsService', () => {
     });
 
     it('should return hasAccess: false when no permission row found', async () => {
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       const result = await service.checkAccess(1, 10, 5, 'read');
 
@@ -121,7 +135,9 @@ describe('SECURITY: AdminPermissionsService', () => {
     });
 
     it('should default to read permission level', async () => {
-      mockDb.query.mockResolvedValueOnce([{ can_read: true, can_write: false, can_delete: false }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([
+        { can_read: true, can_write: false, can_delete: false },
+      ]);
 
       const result = await service.checkAccess(1, 10, 5);
 
@@ -129,11 +145,11 @@ describe('SECURITY: AdminPermissionsService', () => {
     });
 
     it('should pass correct parameters to query', async () => {
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       await service.checkAccess(42, 7, 99, 'write');
 
-      expect(mockDb.query).toHaveBeenCalledWith(
+      expect(mockDb.tenantQuery).toHaveBeenCalledWith(
         expect.stringContaining('admin_user_id = $1'),
         [42, 7, 99],
       );
@@ -182,7 +198,7 @@ describe('SECURITY: AdminPermissionsService', () => {
         1,
       );
 
-      expect(mockDb.query).not.toHaveBeenCalled();
+      expect(mockDb.tenantQuery).not.toHaveBeenCalled();
     });
   });
 
@@ -193,10 +209,10 @@ describe('SECURITY: AdminPermissionsService', () => {
   describe('getAdminPermissions', () => {
     it('should return complete permissions response', async () => {
       // getUserRoleInfo
-      mockDb.query.mockResolvedValueOnce([{ role: 'admin', has_full_access: false }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ role: 'admin', has_full_access: false }]);
 
       // getAreaPermissions
-      mockDb.query.mockResolvedValueOnce([
+      mockDb.tenantQuery.mockResolvedValueOnce([
         {
           id: 1,
           name: 'Production',
@@ -209,7 +225,7 @@ describe('SECURITY: AdminPermissionsService', () => {
       ]);
 
       // getDepartmentPermissions
-      mockDb.query.mockResolvedValueOnce([
+      mockDb.tenantQuery.mockResolvedValueOnce([
         {
           id: 10,
           name: 'Assembly',
@@ -221,16 +237,16 @@ describe('SECURITY: AdminPermissionsService', () => {
       ]);
 
       // getLeadAreas
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       // getLeadDepartments
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       // getTotalAreas
-      mockDb.query.mockResolvedValueOnce([{ total: '5' }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ total: '5' }]);
 
       // getTotalDepartments
-      mockDb.query.mockResolvedValueOnce([{ total: '12' }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ total: '12' }]);
 
       const result = await service.getAdminPermissions(1, 10);
 
@@ -247,8 +263,8 @@ describe('SECURITY: AdminPermissionsService', () => {
     });
 
     it('should convert department_count string to number', async () => {
-      mockDb.query.mockResolvedValueOnce([{ role: 'admin', has_full_access: false }]);
-      mockDb.query.mockResolvedValueOnce([
+      mockDb.tenantQuery.mockResolvedValueOnce([{ role: 'admin', has_full_access: false }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([
         {
           id: 1,
           name: 'Area',
@@ -259,11 +275,11 @@ describe('SECURITY: AdminPermissionsService', () => {
           can_delete: false,
         },
       ]);
-      mockDb.query.mockResolvedValueOnce([]); // getDepartmentPermissions
-      mockDb.query.mockResolvedValueOnce([]); // getLeadAreas
-      mockDb.query.mockResolvedValueOnce([]); // getLeadDepartments
-      mockDb.query.mockResolvedValueOnce([{ total: '1' }]);
-      mockDb.query.mockResolvedValueOnce([{ total: '7' }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]); // getDepartmentPermissions
+      mockDb.tenantQuery.mockResolvedValueOnce([]); // getLeadAreas
+      mockDb.tenantQuery.mockResolvedValueOnce([]); // getLeadDepartments
+      mockDb.tenantQuery.mockResolvedValueOnce([{ total: '1' }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ total: '7' }]);
 
       const result = await service.getAdminPermissions(1, 10);
 
@@ -271,8 +287,8 @@ describe('SECURITY: AdminPermissionsService', () => {
     });
 
     it('should omit description when null in area', async () => {
-      mockDb.query.mockResolvedValueOnce([{ role: 'admin', has_full_access: false }]);
-      mockDb.query.mockResolvedValueOnce([
+      mockDb.tenantQuery.mockResolvedValueOnce([{ role: 'admin', has_full_access: false }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([
         {
           id: 1,
           name: 'Area',
@@ -283,11 +299,11 @@ describe('SECURITY: AdminPermissionsService', () => {
           can_delete: false,
         },
       ]);
-      mockDb.query.mockResolvedValueOnce([]); // getDepartmentPermissions
-      mockDb.query.mockResolvedValueOnce([]); // getLeadAreas
-      mockDb.query.mockResolvedValueOnce([]); // getLeadDepartments
-      mockDb.query.mockResolvedValueOnce([{ total: '1' }]);
-      mockDb.query.mockResolvedValueOnce([{ total: '0' }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]); // getDepartmentPermissions
+      mockDb.tenantQuery.mockResolvedValueOnce([]); // getLeadAreas
+      mockDb.tenantQuery.mockResolvedValueOnce([]); // getLeadDepartments
+      mockDb.tenantQuery.mockResolvedValueOnce([{ total: '1' }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ total: '0' }]);
 
       const result = await service.getAdminPermissions(1, 10);
 
@@ -295,7 +311,7 @@ describe('SECURITY: AdminPermissionsService', () => {
     });
 
     it('should throw NotFoundException when user not found', async () => {
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       await expect(service.getAdminPermissions(999, 10)).rejects.toThrow(NotFoundException);
     });
@@ -308,18 +324,18 @@ describe('SECURITY: AdminPermissionsService', () => {
   describe('setHasFullAccess', () => {
     it('should throw BadRequestException when granting full access to employee', async () => {
       // getUserRoleInfo → employee
-      mockDb.query.mockResolvedValueOnce([{ role: 'employee', has_full_access: false }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ role: 'employee', has_full_access: false }]);
 
       await expect(service.setHasFullAccess(1, true, 99, 10)).rejects.toThrow(BadRequestException);
     });
 
     it('should allow granting full access to admin', async () => {
       // getUserRoleInfo → admin
-      mockDb.query.mockResolvedValueOnce([{ role: 'admin', has_full_access: false }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ role: 'admin', has_full_access: false }]);
       // UPDATE RETURNING
-      mockDb.query.mockResolvedValueOnce([{ 1: 1 }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ 1: 1 }]);
       // createAuditLog
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       await expect(service.setHasFullAccess(1, true, 99, 10)).resolves.toBeUndefined();
     });
@@ -327,29 +343,29 @@ describe('SECURITY: AdminPermissionsService', () => {
     it('should allow revoking full access from employee (false is always ok)', async () => {
       // No getUserRoleInfo call when hasFullAccess=false (guard skipped)
       // UPDATE RETURNING
-      mockDb.query.mockResolvedValueOnce([{ 1: 1 }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ 1: 1 }]);
       // createAuditLog
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       await expect(service.setHasFullAccess(1, false, 99, 10)).resolves.toBeUndefined();
     });
 
     it('should throw NotFoundException when user not found during grant', async () => {
       // getUserRoleInfo → empty (user not found)
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       await expect(service.setHasFullAccess(999, true, 99, 10)).rejects.toThrow(NotFoundException);
     });
 
     it('should propagate CHECK constraint error (23514) as DB safety net', async () => {
       // getUserRoleInfo → admin (passes service-level check)
-      mockDb.query.mockResolvedValueOnce([{ role: 'admin', has_full_access: false }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ role: 'admin', has_full_access: false }]);
       // UPDATE triggers CHECK constraint violation (DB safety net)
       const pgError = Object.assign(
         new Error('new row violates check constraint "chk_employee_no_full_access"'),
         { code: '23514' },
       );
-      mockDb.query.mockRejectedValueOnce(pgError);
+      mockDb.tenantQuery.mockRejectedValueOnce(pgError);
 
       // Error must propagate — not swallowed
       await expect(service.setHasFullAccess(1, true, 99, 10)).rejects.toThrow(
@@ -360,7 +376,7 @@ describe('SECURITY: AdminPermissionsService', () => {
     it('should throw NotFoundException when revoking from non-existent user', async () => {
       // hasFullAccess=false → skips getUserRoleInfo
       // UPDATE RETURNING → empty
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       await expect(service.setHasFullAccess(999, false, 99, 10)).rejects.toThrow(NotFoundException);
     });
@@ -375,21 +391,21 @@ describe('SECURITY: AdminPermissionsService', () => {
 
     it('should delete existing and insert new permissions', async () => {
       // DELETE existing
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
       // INSERT new
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
       // createAuditLog
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       await service.setDepartmentPermissions(1, [10, 20], perms, 99, 5);
 
-      expect(mockDb.query).toHaveBeenCalledTimes(3);
-      expect(mockDb.query).toHaveBeenNthCalledWith(
+      expect(mockDb.tenantQuery).toHaveBeenCalledTimes(3);
+      expect(mockDb.tenantQuery).toHaveBeenNthCalledWith(
         1,
         expect.stringContaining('DELETE FROM admin_department_permissions'),
         [1, 5],
       );
-      expect(mockDb.query).toHaveBeenNthCalledWith(
+      expect(mockDb.tenantQuery).toHaveBeenNthCalledWith(
         2,
         expect.stringContaining('INSERT INTO admin_department_permissions'),
         expect.any(Array),
@@ -398,14 +414,14 @@ describe('SECURITY: AdminPermissionsService', () => {
 
     it('should skip INSERT when departmentIds is empty', async () => {
       // DELETE existing
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
       // createAuditLog
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       await service.setDepartmentPermissions(1, [], perms, 99, 5);
 
       // Only DELETE + audit (no INSERT)
-      expect(mockDb.query).toHaveBeenCalledTimes(2);
+      expect(mockDb.tenantQuery).toHaveBeenCalledTimes(2);
     });
   });
 
@@ -416,16 +432,16 @@ describe('SECURITY: AdminPermissionsService', () => {
   describe('removeDepartmentPermission', () => {
     it('should delete and log audit on success', async () => {
       // DELETE RETURNING
-      mockDb.query.mockResolvedValueOnce([{ 1: 1 }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ 1: 1 }]);
       // createAuditLog
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       await expect(service.removeDepartmentPermission(1, 10, 99, 5)).resolves.toBeUndefined();
-      expect(mockDb.query).toHaveBeenCalledTimes(2);
+      expect(mockDb.tenantQuery).toHaveBeenCalledTimes(2);
     });
 
     it('should throw NotFoundException when permission not found', async () => {
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       await expect(service.removeDepartmentPermission(1, 999, 99, 5)).rejects.toThrow(
         NotFoundException,
@@ -442,13 +458,13 @@ describe('SECURITY: AdminPermissionsService', () => {
 
     it('should assign permissions to multiple admins', async () => {
       // For admin 1: DELETE + INSERT + audit = 3 queries
-      mockDb.query.mockResolvedValueOnce([]);
-      mockDb.query.mockResolvedValueOnce([]);
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
       // For admin 2: DELETE + INSERT + audit = 3 queries
-      mockDb.query.mockResolvedValueOnce([]);
-      mockDb.query.mockResolvedValueOnce([]);
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       const result = await service.bulkUpdatePermissions([1, 2], 'assign', [10], perms, 99, 5);
 
@@ -459,8 +475,8 @@ describe('SECURITY: AdminPermissionsService', () => {
 
     it('should remove permissions (empty deptIds)', async () => {
       // For admin 1: DELETE existing + audit = 2 queries
-      mockDb.query.mockResolvedValueOnce([]);
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       const result = await service.bulkUpdatePermissions([1], 'remove', undefined, perms, 99, 5);
 
@@ -469,10 +485,10 @@ describe('SECURITY: AdminPermissionsService', () => {
 
     it('should collect errors without failing', async () => {
       // Admin 1: DELETE fails
-      mockDb.query.mockRejectedValueOnce(new Error('DB error'));
+      mockDb.tenantQuery.mockRejectedValueOnce(new Error('DB error'));
       // Admin 2: DELETE + audit
-      mockDb.query.mockResolvedValueOnce([]);
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       const result = await service.bulkUpdatePermissions([1, 2], 'remove', undefined, perms, 99, 5);
 
@@ -486,7 +502,7 @@ describe('SECURITY: AdminPermissionsService', () => {
       const result = await service.bulkUpdatePermissions([1], 'assign', undefined, perms, 99, 5);
 
       expect(result.successCount).toBe(0);
-      expect(mockDb.query).not.toHaveBeenCalled();
+      expect(mockDb.tenantQuery).not.toHaveBeenCalled();
     });
   });
 
@@ -499,25 +515,25 @@ describe('SECURITY: AdminPermissionsService', () => {
 
     it('should delete existing, insert new, cleanup memberships, and audit', async () => {
       // DELETE existing area perms
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
       // INSERT new area perms
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
       // cleanupEmployeeMemberships: DELETE teams CTE
-      mockDb.query.mockResolvedValueOnce([{ count: '2' }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ count: '2' }]);
       // cleanupEmployeeMemberships: DELETE depts CTE
-      mockDb.query.mockResolvedValueOnce([{ count: '1' }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ count: '1' }]);
       // createAuditLog
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       await service.setAreaPermissions(1, [10, 20], perms, 99, 5);
 
-      expect(mockDb.query).toHaveBeenCalledTimes(5);
-      expect(mockDb.query).toHaveBeenNthCalledWith(
+      expect(mockDb.tenantQuery).toHaveBeenCalledTimes(5);
+      expect(mockDb.tenantQuery).toHaveBeenNthCalledWith(
         1,
         expect.stringContaining('DELETE FROM admin_area_permissions'),
         [1, 5],
       );
-      expect(mockDb.query).toHaveBeenNthCalledWith(
+      expect(mockDb.tenantQuery).toHaveBeenNthCalledWith(
         2,
         expect.stringContaining('INSERT INTO admin_area_permissions'),
         expect.any(Array),
@@ -526,25 +542,25 @@ describe('SECURITY: AdminPermissionsService', () => {
 
     it('should remove all memberships when areaIds is empty', async () => {
       // DELETE existing area perms
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
       // cleanupEmployeeMemberships (empty areas):
       //   DELETE user_teams
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
       //   DELETE user_departments
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
       // createAuditLog
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       await service.setAreaPermissions(1, [], perms, 99, 5);
 
       // No INSERT (empty), but cleanup + audit
-      expect(mockDb.query).toHaveBeenCalledTimes(4);
-      expect(mockDb.query).toHaveBeenNthCalledWith(
+      expect(mockDb.tenantQuery).toHaveBeenCalledTimes(4);
+      expect(mockDb.tenantQuery).toHaveBeenNthCalledWith(
         2,
         expect.stringContaining('DELETE FROM user_teams'),
         [1, 5],
       );
-      expect(mockDb.query).toHaveBeenNthCalledWith(
+      expect(mockDb.tenantQuery).toHaveBeenNthCalledWith(
         3,
         expect.stringContaining('DELETE FROM user_departments'),
         [1, 5],
@@ -559,15 +575,15 @@ describe('SECURITY: AdminPermissionsService', () => {
   describe('removeAreaPermission', () => {
     it('should delete and log audit on success', async () => {
       // DELETE RETURNING
-      mockDb.query.mockResolvedValueOnce([{ 1: 1 }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ 1: 1 }]);
       // createAuditLog
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       await expect(service.removeAreaPermission(1, 10, 99, 5)).resolves.toBeUndefined();
     });
 
     it('should throw NotFoundException when area permission not found', async () => {
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       await expect(service.removeAreaPermission(1, 999, 99, 5)).rejects.toThrow(NotFoundException);
     });
@@ -587,7 +603,7 @@ describe('SECURITY: AdminPermissionsService', () => {
         1,
       );
 
-      expect(mockDb.query).not.toHaveBeenCalled();
+      expect(mockDb.tenantQuery).not.toHaveBeenCalled();
     });
   });
 
@@ -597,11 +613,11 @@ describe('SECURITY: AdminPermissionsService', () => {
 
   describe('getAdminPermissions — lead areas returned', () => {
     it('should map lead areas with read-only permissions', async () => {
-      mockDb.query.mockResolvedValueOnce([{ role: 'admin', has_full_access: false }]);
-      mockDb.query.mockResolvedValueOnce([]); // getAreaPermissions
-      mockDb.query.mockResolvedValueOnce([]); // getDepartmentPermissions
+      mockDb.tenantQuery.mockResolvedValueOnce([{ role: 'admin', has_full_access: false }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]); // getAreaPermissions
+      mockDb.tenantQuery.mockResolvedValueOnce([]); // getDepartmentPermissions
       // getLeadAreas — user is area_lead
-      mockDb.query.mockResolvedValueOnce([
+      mockDb.tenantQuery.mockResolvedValueOnce([
         {
           id: 5,
           name: 'Lead Area',
@@ -609,9 +625,9 @@ describe('SECURITY: AdminPermissionsService', () => {
           department_count: '2',
         },
       ]);
-      mockDb.query.mockResolvedValueOnce([]); // getLeadDepartments
-      mockDb.query.mockResolvedValueOnce([{ total: '3' }]);
-      mockDb.query.mockResolvedValueOnce([{ total: '0' }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]); // getLeadDepartments
+      mockDb.tenantQuery.mockResolvedValueOnce([{ total: '3' }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ total: '0' }]);
 
       const result = await service.getAdminPermissions(1, 10);
 
@@ -628,10 +644,10 @@ describe('SECURITY: AdminPermissionsService', () => {
     });
 
     it('should omit description from lead area when null', async () => {
-      mockDb.query.mockResolvedValueOnce([{ role: 'admin', has_full_access: false }]);
-      mockDb.query.mockResolvedValueOnce([]); // getAreaPermissions
-      mockDb.query.mockResolvedValueOnce([]); // getDepartmentPermissions
-      mockDb.query.mockResolvedValueOnce([
+      mockDb.tenantQuery.mockResolvedValueOnce([{ role: 'admin', has_full_access: false }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]); // getAreaPermissions
+      mockDb.tenantQuery.mockResolvedValueOnce([]); // getDepartmentPermissions
+      mockDb.tenantQuery.mockResolvedValueOnce([
         {
           id: 7,
           name: 'No Desc Area',
@@ -639,9 +655,9 @@ describe('SECURITY: AdminPermissionsService', () => {
           department_count: '0',
         },
       ]);
-      mockDb.query.mockResolvedValueOnce([]); // getLeadDepartments
-      mockDb.query.mockResolvedValueOnce([{ total: '1' }]);
-      mockDb.query.mockResolvedValueOnce([{ total: '0' }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]); // getLeadDepartments
+      mockDb.tenantQuery.mockResolvedValueOnce([{ total: '1' }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ total: '0' }]);
 
       const result = await service.getAdminPermissions(1, 10);
 
@@ -652,12 +668,12 @@ describe('SECURITY: AdminPermissionsService', () => {
 
   describe('getAdminPermissions — lead departments returned', () => {
     it('should map lead departments with read-only permissions via mapDepartmentRow', async () => {
-      mockDb.query.mockResolvedValueOnce([{ role: 'admin', has_full_access: false }]);
-      mockDb.query.mockResolvedValueOnce([]); // getAreaPermissions
-      mockDb.query.mockResolvedValueOnce([]); // getDepartmentPermissions
-      mockDb.query.mockResolvedValueOnce([]); // getLeadAreas
+      mockDb.tenantQuery.mockResolvedValueOnce([{ role: 'admin', has_full_access: false }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]); // getAreaPermissions
+      mockDb.tenantQuery.mockResolvedValueOnce([]); // getDepartmentPermissions
+      mockDb.tenantQuery.mockResolvedValueOnce([]); // getLeadAreas
       // getLeadDepartments — user is department_lead
-      mockDb.query.mockResolvedValueOnce([
+      mockDb.tenantQuery.mockResolvedValueOnce([
         {
           id: 20,
           name: 'Lead Dept',
@@ -666,8 +682,8 @@ describe('SECURITY: AdminPermissionsService', () => {
           area_name: 'Parent Area',
         },
       ]);
-      mockDb.query.mockResolvedValueOnce([{ total: '0' }]);
-      mockDb.query.mockResolvedValueOnce([{ total: '5' }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ total: '0' }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ total: '5' }]);
 
       const result = await service.getAdminPermissions(1, 10);
 
@@ -691,9 +707,9 @@ describe('SECURITY: AdminPermissionsService', () => {
 
   describe('getAdminPermissions — department with description', () => {
     it('should include description when not null', async () => {
-      mockDb.query.mockResolvedValueOnce([{ role: 'admin', has_full_access: true }]);
-      mockDb.query.mockResolvedValueOnce([]); // areas
-      mockDb.query.mockResolvedValueOnce([
+      mockDb.tenantQuery.mockResolvedValueOnce([{ role: 'admin', has_full_access: true }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]); // areas
+      mockDb.tenantQuery.mockResolvedValueOnce([
         {
           id: 10,
           name: 'Assembly',
@@ -703,10 +719,10 @@ describe('SECURITY: AdminPermissionsService', () => {
           can_delete: false,
         },
       ]);
-      mockDb.query.mockResolvedValueOnce([]); // getLeadAreas
-      mockDb.query.mockResolvedValueOnce([]); // getLeadDepartments
-      mockDb.query.mockResolvedValueOnce([{ total: '0' }]);
-      mockDb.query.mockResolvedValueOnce([{ total: '1' }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]); // getLeadAreas
+      mockDb.tenantQuery.mockResolvedValueOnce([]); // getLeadDepartments
+      mockDb.tenantQuery.mockResolvedValueOnce([{ total: '0' }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ total: '1' }]);
 
       const result = await service.getAdminPermissions(1, 10);
 
@@ -715,9 +731,9 @@ describe('SECURITY: AdminPermissionsService', () => {
     });
 
     it('should omit areaId and areaName when null', async () => {
-      mockDb.query.mockResolvedValueOnce([{ role: 'admin', has_full_access: false }]);
-      mockDb.query.mockResolvedValueOnce([]); // areas
-      mockDb.query.mockResolvedValueOnce([
+      mockDb.tenantQuery.mockResolvedValueOnce([{ role: 'admin', has_full_access: false }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]); // areas
+      mockDb.tenantQuery.mockResolvedValueOnce([
         {
           id: 10,
           name: 'Standalone',
@@ -729,10 +745,10 @@ describe('SECURITY: AdminPermissionsService', () => {
           can_delete: false,
         },
       ]);
-      mockDb.query.mockResolvedValueOnce([]); // getLeadAreas
-      mockDb.query.mockResolvedValueOnce([]); // getLeadDepartments
-      mockDb.query.mockResolvedValueOnce([{ total: '0' }]);
-      mockDb.query.mockResolvedValueOnce([{ total: '1' }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]); // getLeadAreas
+      mockDb.tenantQuery.mockResolvedValueOnce([]); // getLeadDepartments
+      mockDb.tenantQuery.mockResolvedValueOnce([{ total: '0' }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ total: '1' }]);
 
       const result = await service.getAdminPermissions(1, 10);
 
@@ -750,9 +766,9 @@ describe('SECURITY: AdminPermissionsService', () => {
     it('should not fail the main operation when audit log insert fails', async () => {
       const perms = { canRead: true, canWrite: false, canDelete: false };
       // DELETE existing
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
       // createAuditLog → fails
-      mockDb.query.mockRejectedValueOnce(new Error('Audit DB down'));
+      mockDb.tenantQuery.mockRejectedValueOnce(new Error('Audit DB down'));
 
       // setDepartmentPermissions with empty depts (skips INSERT) → just DELETE + audit
       await expect(service.setDepartmentPermissions(1, [], perms, 99, 5)).resolves.toBeUndefined();

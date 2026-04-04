@@ -196,7 +196,7 @@ export class AreasService {
     }
 
     const fullQuery = `${this.FIND_ALL_AREAS_QUERY}${whereClause}${scopeClause} GROUP BY a.id ORDER BY a.name`;
-    const rows = await this.db.query<AreaRow>(fullQuery, allParams);
+    const rows = await this.db.tenantQuery<AreaRow>(fullQuery, allParams);
 
     return rows.map((row: AreaRow) => this.mapToResponse(row));
   }
@@ -208,7 +208,7 @@ export class AreasService {
     this.logger.debug(`Fetching area ${id} for tenant ${tenantId}`);
 
     const query = `${this.FIND_ALL_AREAS_QUERY} AND a.id = $2 GROUP BY a.id`;
-    const rows = await this.db.query<AreaRow>(query, [tenantId, id]);
+    const rows = await this.db.tenantQuery<AreaRow>(query, [tenantId, id]);
 
     if (rows.length === 0 || rows[0] === undefined) {
       throw new NotFoundException('Area not found');
@@ -235,7 +235,7 @@ export class AreasService {
     }
 
     const [statsRows, typeRows] = await Promise.all([
-      this.db.query<StatsRow>(
+      this.db.tenantQuery<StatsRow>(
         `SELECT
           COUNT(*) as total_areas,
           SUM(CASE WHEN is_active = ${IS_ACTIVE.ACTIVE} THEN 1 ELSE 0 END) as active_areas,
@@ -244,7 +244,7 @@ export class AreasService {
         WHERE tenant_id = $1`,
         [tenantId],
       ),
-      this.db.query<TypeStatsRow>(
+      this.db.tenantQuery<TypeStatsRow>(
         `SELECT type, COUNT(*) as count
         FROM areas
         WHERE tenant_id = $1 AND is_active = ${IS_ACTIVE.ACTIVE}
@@ -279,7 +279,7 @@ export class AreasService {
   ): Promise<void> {
     if (leaderId === null || leaderId === undefined) return;
 
-    const rows = await this.db.query<{ id: number; role: string }>(
+    const rows = await this.db.tenantQuery<{ id: number; role: string }>(
       `SELECT id, role FROM users WHERE id = $1 AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}`,
       [leaderId, tenantId],
     );
@@ -308,7 +308,7 @@ export class AreasService {
     await this.validateLeader(dto.areaDeputyLeadId, tenantId);
 
     const areaUuid = uuidv7();
-    const rows = await this.db.query<{ id: number }>(
+    const rows = await this.db.tenantQuery<{ id: number }>(
       `INSERT INTO areas (
         tenant_id, name, description, area_lead_id, area_deputy_lead_id, type, capacity,
         address, created_by, is_active, uuid, uuid_created_at
@@ -418,7 +418,7 @@ export class AreasService {
     if (fields.length > 0) {
       fields.push('updated_at = CURRENT_TIMESTAMP');
       values.push(id, tenantId);
-      await this.db.query(
+      await this.db.tenantQuery(
         `UPDATE areas SET ${fields.join(', ')} WHERE id = $${values.length - 1} AND tenant_id = $${values.length}`,
         values,
       );
@@ -464,7 +464,7 @@ export class AreasService {
 
     const counts = await Promise.all(
       tables.map(async (table: string) => {
-        const rows = await this.db.query<{ id: number }>(
+        const rows = await this.db.tenantQuery<{ id: number }>(
           `SELECT id FROM ${table} WHERE area_id = $1 AND tenant_id = $2`,
           [id, tenantId],
         );
@@ -519,15 +519,15 @@ export class AreasService {
         .filter((s: CleanupStrategy) => s.count > 0)
         .map(async (s: CleanupStrategy) => {
           if (s.operation === 'UPDATE') {
-            await this.db.query(
+            await this.db.tenantQuery(
               `UPDATE ${s.table} SET area_id = NULL WHERE area_id = $1 AND tenant_id = $2`,
               [id, tenantId],
             );
           } else {
-            await this.db.query(`DELETE FROM ${s.table} WHERE area_id = $1 AND tenant_id = $2`, [
-              id,
-              tenantId,
-            ]);
+            await this.db.tenantQuery(
+              `DELETE FROM ${s.table} WHERE area_id = $1 AND tenant_id = $2`,
+              [id, tenantId],
+            );
           }
         }),
     );
@@ -570,7 +570,7 @@ export class AreasService {
       await this.removeAreaDependencies(id, tenantId, deps);
     }
 
-    await this.db.query('DELETE FROM areas WHERE id = $1 AND tenant_id = $2', [id, tenantId]);
+    await this.db.tenantQuery('DELETE FROM areas WHERE id = $1 AND tenant_id = $2', [id, tenantId]);
 
     await this.activityLogger.logDelete(
       tenantId,
@@ -604,7 +604,7 @@ export class AreasService {
     await this.getAreaById(areaId, tenantId);
 
     // Clear all existing department assignments for this area
-    await this.db.query(
+    await this.db.tenantQuery(
       `UPDATE departments SET area_id = NULL WHERE tenant_id = $1 AND area_id = $2`,
       [tenantId, areaId],
     );
@@ -612,7 +612,7 @@ export class AreasService {
     // Assign selected departments (if any)
     if (departmentIds.length > 0) {
       const placeholders = departmentIds.map((_: number, i: number) => `$${i + 3}`).join(', ');
-      await this.db.query(
+      await this.db.tenantQuery(
         `UPDATE departments SET area_id = $1 WHERE tenant_id = $2 AND id IN (${placeholders})`,
         [areaId, tenantId, ...departmentIds],
       );
@@ -633,14 +633,14 @@ export class AreasService {
 
     await this.getAreaById(areaId, tenantId);
 
-    await this.db.query(`UPDATE halls SET area_id = NULL WHERE tenant_id = $1 AND area_id = $2`, [
-      tenantId,
-      areaId,
-    ]);
+    await this.db.tenantQuery(
+      `UPDATE halls SET area_id = NULL WHERE tenant_id = $1 AND area_id = $2`,
+      [tenantId, areaId],
+    );
 
     if (hallIds.length > 0) {
       const placeholders = hallIds.map((_: number, i: number) => `$${i + 3}`).join(', ');
-      await this.db.query(
+      await this.db.tenantQuery(
         `UPDATE halls SET area_id = $1 WHERE tenant_id = $2 AND id IN (${placeholders})`,
         [areaId, tenantId, ...hallIds],
       );
@@ -666,7 +666,7 @@ export class AreasService {
   ): Promise<void> {
     if (oldLeadId === null) return;
 
-    const result = await this.db.query<{ count: string }>(
+    const result = await this.db.tenantQuery<{ count: string }>(
       `WITH affected AS (
          UPDATE vacation_requests vr
          SET approver_id = $1,

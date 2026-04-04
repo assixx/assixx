@@ -66,6 +66,7 @@
 - Employee Availability
 - Department and Machine Filters
 - Shift Information and Notes
+- Shift Swap Requests (Employee-to-Employee, 2-Step Approval)
 - Excel Export
 
 #### 7. **Chat System**

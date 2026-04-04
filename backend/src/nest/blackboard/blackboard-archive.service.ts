@@ -59,7 +59,7 @@ export class BlackboardArchiveService implements OnModuleInit {
    */
   private async archiveExpiredEntries(): Promise<void> {
     try {
-      const result = await this.db.query<{ count: string }>(
+      const result = await this.db.systemQuery<{ count: string }>(
         `WITH archived AS (
           UPDATE blackboard_entries
           SET is_active = $1, updated_at = NOW()
@@ -90,7 +90,7 @@ export class BlackboardArchiveService implements OnModuleInit {
   async archiveExpiredEntriesManual(): Promise<{ archivedCount: number }> {
     this.logger.log('Manual archival triggered');
 
-    const result = await this.db.query<{ count: string }>(
+    const result = await this.db.systemQuery<{ count: string }>(
       `WITH archived AS (
         UPDATE blackboard_entries
         SET is_active = $1, updated_at = NOW()

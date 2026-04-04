@@ -91,7 +91,7 @@ export class TpmColorConfigService {
    * every status key is always present in the result.
    */
   async getColors(tenantId: number): Promise<TpmColorConfigEntry[]> {
-    const rows = await this.db.query<TpmColorConfigRow>(
+    const rows = await this.db.tenantQuery<TpmColorConfigRow>(
       `SELECT * FROM tpm_color_config
        WHERE tenant_id = $1
        ORDER BY status_key`,
@@ -223,7 +223,7 @@ export class TpmColorConfigService {
   async getIntervalColors(tenantId: number): Promise<TpmColorConfigEntry[]> {
     const intervalKeys: readonly string[] = INTERVAL_TYPES_ORDERED;
 
-    const rows = await this.db.query<TpmColorConfigRow>(
+    const rows = await this.db.tenantQuery<TpmColorConfigRow>(
       `SELECT * FROM tpm_color_config
        WHERE tenant_id = $1 AND status_key = ANY($2)
        ORDER BY status_key`,
@@ -364,7 +364,7 @@ export class TpmColorConfigService {
   async getCategoryColors(tenantId: number): Promise<TpmCategoryColorConfigEntry[]> {
     const categoryKeys: readonly string[] = CATEGORY_KEYS_ORDERED;
 
-    const rows = await this.db.query<TpmColorConfigRow>(
+    const rows = await this.db.tenantQuery<TpmColorConfigRow>(
       `SELECT * FROM tpm_color_config
        WHERE tenant_id = $1 AND status_key = ANY($2)
        ORDER BY status_key`,

@@ -92,6 +92,26 @@ export class OrganigramController {
     return { deputyHasLeadScope: result };
   }
 
+  /** GET /organigram/swap-requests-enabled */
+  @Get('swap-requests-enabled')
+  async getSwapRequestsEnabled(
+    @TenantId() tenantId: number,
+  ): Promise<{ swapRequestsEnabled: boolean }> {
+    const enabled = await this.settingsService.getSwapRequestsEnabled(tenantId);
+    return { swapRequestsEnabled: enabled };
+  }
+
+  /** PATCH /organigram/swap-requests-enabled — root only */
+  @Patch('swap-requests-enabled')
+  @Roles('root')
+  async updateSwapRequestsEnabled(
+    @TenantId() tenantId: number,
+    @Body() body: { enabled: boolean },
+  ): Promise<{ swapRequestsEnabled: boolean }> {
+    const result = await this.settingsService.updateSwapRequestsEnabled(tenantId, body.enabled);
+    return { swapRequestsEnabled: result };
+  }
+
   @Put('positions')
   @Roles('root')
   @HttpCode(HttpStatus.OK)

@@ -34,8 +34,12 @@ vi.mock('./calendar.helpers.js', () => ({
 // Mock factories
 // =============================================================
 
-function createMockDb(): { query: ReturnType<typeof vi.fn> } {
-  return { query: vi.fn() };
+function createMockDb(): {
+  query: ReturnType<typeof vi.fn>;
+  tenantQuery: ReturnType<typeof vi.fn>;
+} {
+  const qf = vi.fn();
+  return { query: qf, tenantQuery: qf };
 }
 
 function createMockAddonVisits(): {

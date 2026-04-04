@@ -36,7 +36,8 @@ vi.mock('../../utils/event-bus.js', () => ({
 // =============================================================
 
 function createMockDb() {
-  return { query: vi.fn() };
+  const qf = vi.fn();
+  return { query: qf, tenantQuery: qf };
 }
 
 function createMockApprovalsService() {
@@ -131,8 +132,8 @@ describe('KvpApprovalService', () => {
     it('should create approval and set KVP to in_review', async () => {
       mockDb.query
         .mockResolvedValueOnce([createMockSuggestionRow()]) // findSuggestion
-        .mockResolvedValueOnce([]) // assertNoExistingApproval
-        .mockResolvedValueOnce([]); // updateSuggestionStatus
+        .mockResolvedValueOnce([]); // assertNoExistingApproval
+      mockDb.tenantQuery.mockResolvedValueOnce([]); // updateSuggestionStatus
 
       const result = await service.requestApproval(1, 23, 5);
 
@@ -145,7 +146,7 @@ describe('KvpApprovalService', () => {
         1,
         5,
       );
-      // updateSuggestionStatus called (3rd query)
+      // 2x query + 1x tenantQuery (shared fn)
       expect(mockDb.query).toHaveBeenCalledTimes(3);
     });
 
@@ -172,8 +173,8 @@ describe('KvpApprovalService', () => {
     it('should allow request for restored status', async () => {
       mockDb.query
         .mockResolvedValueOnce([createMockSuggestionRow({ status: 'restored' })])
-        .mockResolvedValueOnce([]) // no existing approval
-        .mockResolvedValueOnce([]); // update status
+        .mockResolvedValueOnce([]); // no existing approval
+      mockDb.tenantQuery.mockResolvedValueOnce([]); // update status
 
       const result = await service.requestApproval(1, 23, 5);
       expect(result.addonCode).toBe('kvp');
@@ -186,10 +187,8 @@ describe('KvpApprovalService', () => {
     });
 
     it('should create persistent notifications for approvers', async () => {
-      mockDb.query
-        .mockResolvedValueOnce([createMockSuggestionRow()])
-        .mockResolvedValueOnce([])
-        .mockResolvedValueOnce([]);
+      mockDb.query.mockResolvedValueOnce([createMockSuggestionRow()]).mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       await service.requestApproval(1, 23, 5);
 
@@ -292,8 +291,8 @@ describe('KvpApprovalService', () => {
       mockDb.query.mockResolvedValueOnce([{ source_uuid: '019ceec8-3992-731b-9b79-9e292307b3ea' }]);
       // findSuggestionByUuid
       mockDb.query.mockResolvedValueOnce([createMockSuggestionRow({ status: 'in_review' })]);
-      // syncKvpStatus UPDATE
-      mockDb.query.mockResolvedValueOnce([]);
+      // syncKvpStatus UPDATE (tenantQuery)
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
       // createDecisionNotification
       mockNotifications.createAddonNotification.mockResolvedValueOnce(undefined);
 
@@ -321,7 +320,7 @@ describe('KvpApprovalService', () => {
 
       mockDb.query.mockResolvedValueOnce([{ source_uuid: '019ceec8-3992-731b-9b79-9e292307b3ea' }]);
       mockDb.query.mockResolvedValueOnce([createMockSuggestionRow({ status: 'in_review' })]);
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
       mockNotifications.createAddonNotification.mockResolvedValueOnce(undefined);
 
       callback({
@@ -383,16 +382,10 @@ describe('KvpApprovalService', () => {
         decidedByUserId: 10,
       });
 
+      // 2x query lookups, but no tenantQuery UPDATE (idempotent — status already matches)
       await vi.waitFor(() => {
         expect(mockDb.query).toHaveBeenCalledTimes(2);
       });
-
-      // syncKvpStatus should have returned early (idempotent) — no UPDATE query
-      const updateCalls = mockDb.query.mock.calls.filter((c: unknown[]) => {
-        const sql = c[0] as string;
-        return sql.includes('UPDATE kvp_suggestions');
-      });
-      expect(updateCalls).toHaveLength(0);
     });
   });
 });

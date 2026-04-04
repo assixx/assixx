@@ -32,10 +32,15 @@ function createMockCls(values: Record<string, unknown> = {}) {
   };
 }
 
-function createService(pool = createMockPool(), cls = createMockCls()) {
+function createService(
+  pool = createMockPool(),
+  cls = createMockCls(),
+  systemPool = createMockPool(),
+) {
   return {
-    service: new DatabaseService(pool as never, cls as never),
+    service: new DatabaseService(pool as never, systemPool as never, cls as never),
     pool,
+    systemPool,
     cls,
   };
 }
@@ -247,13 +252,13 @@ describe('transaction', () => {
 // ============================================
 
 describe('tenantTransaction', () => {
-  it('should warn when tenantId is undefined in CLS', async () => {
+  it('should throw when tenantId is undefined in CLS', async () => {
     const cls = createMockCls({ userId: 5 }); // no tenantId
     const { service } = createService(undefined, cls);
 
-    await service.tenantTransaction(async () => 'ok');
-
-    expect(cls.get).toHaveBeenCalledWith('tenantId');
+    await expect(service.tenantTransaction(async () => 'ok')).rejects.toThrow(
+      'tenantTransaction called without tenantId in CLS context',
+    );
   });
 
   it('should read tenantId and userId from CLS', async () => {
@@ -267,6 +272,74 @@ describe('tenantTransaction', () => {
     expect(pool.mockClient.query).toHaveBeenCalledWith(expect.stringContaining('app.tenant_id'), [
       '10',
     ]);
+  });
+});
+
+// ============================================
+// tenantQuery / tenantQueryOne
+// ============================================
+
+describe('tenantQuery', () => {
+  it('should throw when tenantId is undefined in CLS', async () => {
+    const { service } = createService();
+
+    await expect(service.tenantQuery('SELECT * FROM users')).rejects.toThrow(
+      'tenantQuery called without tenantId in CLS context',
+    );
+  });
+
+  it('should execute query with RLS context when CLS has tenantId', async () => {
+    const cls = createMockCls({ tenantId: 5 });
+    const { service, pool } = createService(undefined, cls);
+    pool.mockClient.query.mockResolvedValueOnce({ rows: [] }); // BEGIN
+    pool.mockClient.query.mockResolvedValueOnce({ rows: [] }); // set_config
+    pool.mockClient.query.mockResolvedValueOnce({ rows: [{ id: 1 }] }); // actual query
+    pool.mockClient.query.mockResolvedValueOnce({ rows: [] }); // COMMIT
+
+    const result = await service.tenantQuery('SELECT * FROM users WHERE id = $1', [1]);
+
+    expect(result).toEqual([{ id: 1 }]);
+    expect(pool.mockClient.query).toHaveBeenCalledWith(expect.stringContaining('app.tenant_id'), [
+      '5',
+    ]);
+  });
+
+  it('should NOT use the system pool', async () => {
+    const cls = createMockCls({ tenantId: 5 });
+    const { service, pool, systemPool } = createService(undefined, cls);
+
+    await service.tenantQuery('SELECT 1');
+
+    expect(pool.connect).toHaveBeenCalled();
+    expect(systemPool.connect).not.toHaveBeenCalled();
+  });
+});
+
+describe('tenantQueryOne', () => {
+  it('should return first row when found', async () => {
+    const cls = createMockCls({ tenantId: 5 });
+    const { service, pool } = createService(undefined, cls);
+    pool.mockClient.query.mockResolvedValueOnce({ rows: [] }); // BEGIN
+    pool.mockClient.query.mockResolvedValueOnce({ rows: [] }); // set_config
+    pool.mockClient.query.mockResolvedValueOnce({ rows: [{ id: 1, name: 'Test' }] }); // query
+    pool.mockClient.query.mockResolvedValueOnce({ rows: [] }); // COMMIT
+
+    const result = await service.tenantQueryOne('SELECT * FROM users WHERE id = $1', [1]);
+
+    expect(result).toEqual({ id: 1, name: 'Test' });
+  });
+
+  it('should return null when no rows', async () => {
+    const cls = createMockCls({ tenantId: 5 });
+    const { service, pool } = createService(undefined, cls);
+    pool.mockClient.query.mockResolvedValueOnce({ rows: [] }); // BEGIN
+    pool.mockClient.query.mockResolvedValueOnce({ rows: [] }); // set_config
+    pool.mockClient.query.mockResolvedValueOnce({ rows: [] }); // query
+    pool.mockClient.query.mockResolvedValueOnce({ rows: [] }); // COMMIT
+
+    const result = await service.tenantQueryOne('SELECT * FROM users WHERE id = $1', [999]);
+
+    expect(result).toBeNull();
   });
 });
 
@@ -317,11 +390,100 @@ describe('isHealthy', () => {
 });
 
 describe('closePool', () => {
-  it('should call pool.end()', async () => {
-    const { service, pool } = createService();
+  it('should close both pools', async () => {
+    const { service, pool, systemPool } = createService();
 
     await service.closePool();
 
     expect(pool.end).toHaveBeenCalled();
+    expect(systemPool.end).toHaveBeenCalled();
+  });
+});
+
+// ============================================
+// systemQuery / systemQueryOne
+// ============================================
+
+describe('systemQuery', () => {
+  it('should delegate to systemPool.query and return rows', async () => {
+    const { service, systemPool } = createService();
+    systemPool.query.mockResolvedValue({ rows: [{ id: 1 }, { id: 2 }] });
+
+    const result = await service.systemQuery('SELECT * FROM tenants');
+
+    expect(result).toEqual([{ id: 1 }, { id: 2 }]);
+    expect(systemPool.query).toHaveBeenCalledWith('SELECT * FROM tenants', undefined);
+  });
+
+  it('should NOT use the regular pool', async () => {
+    const { service, pool, systemPool } = createService();
+    systemPool.query.mockResolvedValue({ rows: [] });
+
+    await service.systemQuery('SELECT 1');
+
+    expect(systemPool.query).toHaveBeenCalled();
+    expect(pool.query).not.toHaveBeenCalled();
+  });
+});
+
+describe('systemQueryOne', () => {
+  it('should return first row when found', async () => {
+    const { service, systemPool } = createService();
+    systemPool.query.mockResolvedValue({ rows: [{ id: 1, name: 'Tenant A' }] });
+
+    const result = await service.systemQueryOne('SELECT * FROM tenants WHERE id = $1', [1]);
+
+    expect(result).toEqual({ id: 1, name: 'Tenant A' });
+  });
+
+  it('should return null when no rows', async () => {
+    const { service, systemPool } = createService();
+    systemPool.query.mockResolvedValue({ rows: [] });
+
+    const result = await service.systemQueryOne('SELECT * FROM tenants WHERE id = $1', [999]);
+
+    expect(result).toBeNull();
+  });
+});
+
+// ============================================
+// systemTransaction
+// ============================================
+
+describe('systemTransaction', () => {
+  it('should BEGIN, execute callback, and COMMIT on systemPool', async () => {
+    const { service, systemPool } = createService();
+
+    const result = await service.systemTransaction(async (client) => {
+      await client.query('DELETE FROM audit_trail WHERE tenant_id = $1', [1]);
+      return 'cleaned';
+    });
+
+    expect(result).toBe('cleaned');
+    expect(systemPool.mockClient.query).toHaveBeenCalledWith('BEGIN');
+    expect(systemPool.mockClient.query).toHaveBeenCalledWith('COMMIT');
+    expect(systemPool.mockClient.release).toHaveBeenCalled();
+  });
+
+  it('should ROLLBACK on error and rethrow', async () => {
+    const { service, systemPool } = createService();
+
+    await expect(
+      service.systemTransaction(async () => {
+        throw new Error('System error');
+      }),
+    ).rejects.toThrow('System error');
+
+    expect(systemPool.mockClient.query).toHaveBeenCalledWith('ROLLBACK');
+    expect(systemPool.mockClient.release).toHaveBeenCalled();
+  });
+
+  it('should NOT use the regular pool', async () => {
+    const { service, pool, systemPool } = createService();
+
+    await service.systemTransaction(async () => 'ok');
+
+    expect(systemPool.connect).toHaveBeenCalled();
+    expect(pool.connect).not.toHaveBeenCalled();
   });
 });

@@ -7,7 +7,6 @@
 import {
   BadRequestException,
   ConflictException,
-  ForbiddenException,
   NotFoundException,
   NotImplementedException,
 } from '@nestjs/common';
@@ -30,7 +29,8 @@ function createServiceWithMock(): {
   mockPlansService: Record<string, ReturnType<typeof vi.fn>>;
   mockSwapService: Record<string, ReturnType<typeof vi.fn>>;
 } {
-  const mockDb = { query: vi.fn() };
+  const query = vi.fn();
+  const mockDb = { query, tenantQuery: query, tenantQueryOne: vi.fn() };
   const mockActivityLogger = {
     logCreate: vi.fn(),
     logUpdate: vi.fn(),
@@ -724,32 +724,16 @@ describe('ShiftsService – DB-mocked methods', () => {
   // ----------------------------------------------------------
 
   describe('createSwapRequest', () => {
-    it('throws ForbiddenException when shift does not belong to user', async () => {
-      // getShiftById returns shift owned by user 99
-      mockDb.query.mockResolvedValueOnce([createMockDbShift({ user_id: 99 })]);
-
-      await expect(
-        service.createSwapRequest(
-          { shiftId: 1, reason: 'test' },
-          1,
-          5, // different user
-        ),
-      ).rejects.toThrow(ForbiddenException);
-    });
-
-    it('delegates to shiftSwapService when ownership passes', async () => {
-      // getShiftById returns shift owned by user 5
-      mockDb.query.mockResolvedValueOnce([createMockDbShift({ user_id: 5 })]);
+    it('delegates to shiftSwapService (validation in sub-service)', async () => {
       const mockSwapResult = {
-        id: 1,
-        shiftId: 1,
-        requestedBy: 5,
-        status: 'pending',
+        uuid: 'test-uuid',
+        requesterId: 5,
+        status: 'pending_partner',
       };
       mockSwapService.createSwapRequest.mockResolvedValueOnce(mockSwapResult);
 
       const result = await service.createSwapRequest(
-        { shiftId: 1, reason: 'personal' } as never,
+        { targetId: 10, startDate: '2026-04-10', endDate: '2026-04-10' } as never,
         42,
         5,
       );
@@ -894,24 +878,11 @@ describe('ShiftsService – delegation methods', () => {
   });
 
   describe('updateSwapRequestStatus', () => {
-    it('delegates to shiftSwapService', async () => {
-      const mockResult = { message: 'Swap request updated' };
-      mockSwapService.updateSwapRequestStatus.mockResolvedValueOnce(mockResult);
+    it('returns legacy message (new flow uses respondToSwapRequest)', () => {
+      const result = service.updateSwapRequestStatus(1, { status: 'approved' } as never, 42, 5);
 
-      const result = await service.updateSwapRequestStatus(
-        1,
-        { status: 'approved' } as never,
-        42,
-        5,
-      );
-
-      expect(result).toEqual(mockResult);
-      expect(mockSwapService.updateSwapRequestStatus).toHaveBeenCalledWith(
-        1,
-        expect.anything(),
-        42,
-        5,
-      );
+      expect(result.message).toContain('approved');
+      expect(result.message).toContain('use new swap endpoints');
     });
   });
 });

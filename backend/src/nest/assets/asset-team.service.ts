@@ -24,7 +24,7 @@ export class AssetTeamService {
   async getAssetTeams(assetId: number, tenantId: number): Promise<AssetTeamResponse[]> {
     this.logger.debug(`Getting teams for asset ${assetId}`);
 
-    const rows = await this.db.query<DbAssetTeamRow>(
+    const rows = await this.db.tenantQuery<DbAssetTeamRow>(
       `
       SELECT mt.id, mt.team_id, t.name as team_name,
              t.department_id, d.name as department_name,
@@ -68,7 +68,7 @@ export class AssetTeamService {
 
     if (teamIds.length > 0) {
       const placeholders = teamIds.map((_: number, i: number) => `$${i + 2}`).join(', ');
-      const validTeams = await this.db.query<{ id: number }>(
+      const validTeams = await this.db.tenantQuery<{ id: number }>(
         `SELECT id FROM teams WHERE id IN (${placeholders}) AND tenant_id = $1`,
         [tenantId, ...teamIds],
       );
@@ -78,7 +78,7 @@ export class AssetTeamService {
       }
     }
 
-    await this.db.query('DELETE FROM asset_teams WHERE asset_id = $1 AND tenant_id = $2', [
+    await this.db.tenantQuery('DELETE FROM asset_teams WHERE asset_id = $1 AND tenant_id = $2', [
       assetId,
       tenantId,
     ]);
@@ -96,7 +96,7 @@ export class AssetTeamService {
         paramIndex += 4;
       }
 
-      await this.db.query(
+      await this.db.tenantQuery(
         `INSERT INTO asset_teams (tenant_id, asset_id, team_id, assigned_by, is_primary)
          VALUES ${valuePlaceholders.join(', ')}`,
         values,

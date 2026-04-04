@@ -15,7 +15,8 @@ import { DocumentAccessService } from './document-access.service.js';
 // =============================================================
 
 function createMockDb() {
-  return { query: vi.fn() };
+  const qf = vi.fn();
+  return { query: qf, tenantQuery: qf };
 }
 
 function makeDocument(overrides: Record<string, unknown> = {}) {

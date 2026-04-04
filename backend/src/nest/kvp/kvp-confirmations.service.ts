@@ -49,7 +49,7 @@ export class KvpConfirmationsService {
     query += visibility.clause;
     params.push(...visibility.params);
 
-    const rows = await this.db.query<{ count: number }>(query, params);
+    const rows = await this.db.tenantQuery<{ count: number }>(query, params);
     return { count: rows[0]?.count ?? 0 };
   }
 
@@ -65,7 +65,7 @@ export class KvpConfirmationsService {
     this.logger.log(`User ${userId} confirming suggestion ${uuid}`);
 
     // Get suggestion ID
-    const suggestionRows = await this.db.query<{ id: number }>(
+    const suggestionRows = await this.db.tenantQuery<{ id: number }>(
       'SELECT id FROM kvp_suggestions WHERE uuid = $1 AND tenant_id = $2',
       [uuid, tenantId],
     );
@@ -77,7 +77,7 @@ export class KvpConfirmationsService {
 
     // UPSERT: Insert if not exists, otherwise update is_confirmed
     // first_seen_at is only set on INSERT (never reset on re-confirm)
-    await this.db.query(
+    await this.db.tenantQuery(
       `INSERT INTO kvp_confirmations
          (tenant_id, suggestion_id, user_id, confirmed_at, first_seen_at, is_confirmed)
        VALUES ($1, $2, $3, NOW(), NOW(), true)
@@ -109,7 +109,7 @@ export class KvpConfirmationsService {
     this.logger.log(`User ${userId} unconfirming suggestion ${uuid}`);
 
     // Get suggestion ID
-    const suggestionRows = await this.db.query<{ id: number }>(
+    const suggestionRows = await this.db.tenantQuery<{ id: number }>(
       'SELECT id FROM kvp_suggestions WHERE uuid = $1 AND tenant_id = $2',
       [uuid, tenantId],
     );
@@ -120,7 +120,7 @@ export class KvpConfirmationsService {
     }
 
     // Set is_confirmed = false (preserve first_seen_at for "Neu" badge logic)
-    await this.db.query(
+    await this.db.tenantQuery(
       `UPDATE kvp_confirmations
        SET is_confirmed = false, confirmed_at = NULL
        WHERE tenant_id = $1 AND suggestion_id = $2 AND user_id = $3`,

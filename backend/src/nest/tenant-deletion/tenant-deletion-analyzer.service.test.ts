@@ -29,13 +29,22 @@ describe('TenantDeletionAnalyzer', () => {
   let analyzer: TenantDeletionAnalyzer;
   let mockDb: {
     query: ReturnType<typeof vi.fn>;
+    systemQuery: ReturnType<typeof vi.fn>;
     transaction: ReturnType<typeof vi.fn>;
+    systemTransaction: ReturnType<typeof vi.fn>;
   };
   let mockClient: { query: ReturnType<typeof vi.fn> };
 
   beforeEach(() => {
     vi.resetAllMocks();
-    mockDb = { query: vi.fn(), transaction: vi.fn() };
+    const queryFn = vi.fn();
+    const transactionFn = vi.fn();
+    mockDb = {
+      query: queryFn,
+      systemQuery: queryFn,
+      transaction: transactionFn,
+      systemTransaction: transactionFn,
+    };
     mockClient = { query: vi.fn() };
     analyzer = new TenantDeletionAnalyzer(mockDb as unknown as DatabaseService);
   });

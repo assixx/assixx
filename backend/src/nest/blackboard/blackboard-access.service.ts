@@ -39,7 +39,7 @@ export class BlackboardAccessService {
       WHERE u.id = $1
     `;
 
-    const rows = await this.db.query<UserDepartmentTeam>(query, [userId]);
+    const rows = await this.db.tenantQuery<UserDepartmentTeam>(query, [userId]);
     const user = rows[0];
 
     if (user === undefined) {
@@ -172,7 +172,7 @@ export class BlackboardAccessService {
    */
   async checkAdminEntryAccess(entryId: number, userId: number, tenantId: number): Promise<boolean> {
     // Check company-wide entries
-    const noAssignments = await this.db.query<{ count: number }>(
+    const noAssignments = await this.db.tenantQuery<{ count: number }>(
       `SELECT 1 FROM blackboard_entries e
        WHERE e.id = $1 AND e.tenant_id = $2
        AND NOT EXISTS (SELECT 1 FROM blackboard_entry_organizations WHERE entry_id = e.id)`,
@@ -181,7 +181,7 @@ export class BlackboardAccessService {
     if (noAssignments.length > 0) return true;
 
     // Check area access
-    const areaAccess = await this.db.query<{ count: number }>(
+    const areaAccess = await this.db.tenantQuery<{ count: number }>(
       `SELECT 1 FROM blackboard_entry_organizations beo
        JOIN admin_area_permissions aap ON beo.org_type = 'area' AND beo.org_id = aap.area_id
        WHERE beo.entry_id = $1 AND aap.admin_user_id = $2`,
@@ -190,7 +190,7 @@ export class BlackboardAccessService {
     if (areaAccess.length > 0) return true;
 
     // Check department access
-    const deptAccess = await this.db.query<{ count: number }>(
+    const deptAccess = await this.db.tenantQuery<{ count: number }>(
       `SELECT 1 FROM blackboard_entry_organizations beo
        JOIN departments d ON beo.org_type = 'department' AND beo.org_id = d.id
        LEFT JOIN admin_area_permissions aap ON d.area_id = aap.area_id AND aap.admin_user_id = $1
@@ -201,7 +201,7 @@ export class BlackboardAccessService {
     if (deptAccess.length > 0) return true;
 
     // Check team access
-    const teamAccess = await this.db.query<{ count: number }>(
+    const teamAccess = await this.db.tenantQuery<{ count: number }>(
       `SELECT 1 FROM blackboard_entry_organizations beo
        JOIN teams t ON beo.org_type = 'team' AND beo.org_id = t.id
        JOIN departments d ON t.department_id = d.id

@@ -38,7 +38,7 @@ export class CalendarCreationService {
     const eventUuid = uuidv7();
     const { orgLevel, departmentId, teamId, areaId } = this.determineOrgTarget(dto);
 
-    const result = await this.databaseService.query<{ id: number }>(
+    const result = await this.databaseService.tenantQuery<{ id: number }>(
       `INSERT INTO calendar_events
        (uuid, tenant_id, user_id, title, description, location, start_date, end_date, all_day,
         org_level, department_id, team_id, area_id, created_by_role, allow_attendees,
@@ -130,7 +130,7 @@ export class CalendarCreationService {
    */
   async addEventAttendee(eventId: number, userId: number, tenantId: number): Promise<void> {
     // Check if already attendee
-    const existing = await this.databaseService.query<{ user_id: number }>(
+    const existing = await this.databaseService.tenantQuery<{ user_id: number }>(
       `SELECT user_id FROM calendar_attendees WHERE event_id = $1 AND user_id = $2`,
       [eventId, userId],
     );
@@ -139,7 +139,7 @@ export class CalendarCreationService {
       return;
     }
 
-    await this.databaseService.query(
+    await this.databaseService.tenantQuery(
       `INSERT INTO calendar_attendees (event_id, user_id, tenant_id) VALUES ($1, $2, $3)`,
       [eventId, userId, tenantId],
     );

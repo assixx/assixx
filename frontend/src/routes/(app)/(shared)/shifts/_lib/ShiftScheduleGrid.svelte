@@ -10,12 +10,10 @@
   } from '$lib/asset-availability/constants';
 
   import { FULL_DAY_NAMES, SHIFT_TYPES } from './constants';
-  import ShiftScheduleLegend from './ShiftScheduleLegend.svelte';
   import { formatDate, getEmployeeDisplayName, getShiftTimeInfo } from './utils';
 
   import type { HierarchyLabels } from '$lib/types/hierarchy-labels';
   import type { Employee, ShiftDetailData, ShiftTimesMap } from './types';
-  import type { Snippet } from 'svelte';
 
   /**
    * Props interface for ShiftScheduleGrid
@@ -23,8 +21,6 @@
   interface Props {
     /** Dynamic hierarchy labels from layout */
     labels: HierarchyLabels;
-    /** Optional snippet rendered directly after the legend bar */
-    afterLegend?: Snippet | undefined;
     weekDates: Date[];
     weeklyNotes: string;
     canEditShifts: boolean;
@@ -50,11 +46,13 @@
     ondrop: (event: DragEvent, dateKey: string, shiftType: string) => void;
     onremoveEmployee: (dateKey: string, shiftType: string, employeeId: number) => void;
     onnotesChange: (notes: string) => void;
+
+    /** Click on an employee card (for swap requests). Undefined = disabled. */
+    onemployeeClick?: (employeeId: number, dateKey: string, shiftType: string) => void;
   }
 
   const {
     labels,
-    afterLegend,
     weekDates,
     weeklyNotes,
     canEditShifts,
@@ -72,6 +70,7 @@
     ondrop,
     onremoveEmployee,
     onnotesChange,
+    onemployeeClick,
   }: Props = $props();
 
   // Day names for data attributes
@@ -102,14 +101,35 @@
   }
 </script>
 
-<div class="week-schedule">
-  <!-- Asset Availability Legend -->
-  <ShiftScheduleLegend {labels} />
-
-  {#if afterLegend}
-    {@render afterLegend()}
+{#snippet employeeCardContent(empId: number, dateKey: string, shiftType: string)}
+  {@const emp = getEmployeeById(empId)}
+  {@const detail = getShiftDetail(`${dateKey}_${shiftType}_${empId}`)}
+  <span class="employee-name">
+    {#if emp !== undefined}
+      {getEmployeeDisplayName(emp)}
+    {:else if detail !== undefined}
+      {detail.firstName} {detail.lastName}
+    {:else}
+      Mitarbeiter #{empId}
+    {/if}
+  </span>
+  {#if canRemoveEmployee(dateKey, shiftType, empId)}
+    <button
+      type="button"
+      class="remove-btn"
+      onclick={(event: MouseEvent) => {
+        event.stopPropagation();
+        event.preventDefault();
+        onremoveEmployee(dateKey, shiftType, empId);
+      }}
+      aria-label="Mitarbeiter entfernen"
+    >
+      <i class="fas fa-times"></i>
+    </button>
   {/if}
+{/snippet}
 
+<div class="week-schedule">
   <!-- Schedule Header -->
   <div class="schedule-header">
     <div class="day-header">Schicht</div>
@@ -166,33 +186,29 @@
               <div class="empty-slot">{canEditShifts ? '+' : '-'}</div>
             {:else}
               {#each employeeIds as empId (empId)}
-                {@const emp = getEmployeeById(empId)}
-                {@const detail = getShiftDetail(`${dateKey}_${shiftType}_${empId}`)}
-                <div class="employee-card">
-                  <span class="employee-name">
-                    {#if emp !== undefined}
-                      {getEmployeeDisplayName(emp)}
-                    {:else if detail !== undefined}
-                      {detail.firstName} {detail.lastName}
-                    {:else}
-                      Mitarbeiter #{empId}
-                    {/if}
-                  </span>
-                  {#if canRemoveEmployee(dateKey, shiftType, empId)}
-                    <button
-                      type="button"
-                      class="remove-btn"
-                      onclick={(event) => {
-                        event.stopPropagation();
-                        event.preventDefault();
-                        onremoveEmployee(dateKey, shiftType, empId);
-                      }}
-                      aria-label="Mitarbeiter entfernen"
-                    >
-                      <i class="fas fa-times"></i>
-                    </button>
-                  {/if}
-                </div>
+                {#if onemployeeClick !== undefined}
+                  <div
+                    class="employee-card clickable"
+                    role="button"
+                    tabindex="0"
+                    onclick={() => {
+                      onemployeeClick(empId, dateKey, shiftType);
+                    }}
+                    onkeydown={(e: KeyboardEvent) => {
+                      if (e.key === 'Enter') {
+                        onemployeeClick(empId, dateKey, shiftType);
+                      }
+                    }}
+                  >
+                    <!-- eslint-disable-next-line @typescript-eslint/no-confusing-void-expression, sonarjs/no-use-of-empty-return-value -- Svelte {@render} syntax -->
+                    {@render employeeCardContent(empId, dateKey, shiftType)}
+                  </div>
+                {:else}
+                  <div class="employee-card">
+                    <!-- eslint-disable-next-line @typescript-eslint/no-confusing-void-expression, sonarjs/no-use-of-empty-return-value -- Svelte {@render} syntax -->
+                    {@render employeeCardContent(empId, dateKey, shiftType)}
+                  </div>
+                {/if}
               {/each}
             {/if}
           </div>
@@ -286,7 +302,7 @@ Beispiele:
   .shift-row {
     display: grid;
     grid-template-columns: 120px repeat(7, 1fr);
-    gap: 2px;
+    gap: 5px;
 
     background: transparent;
 
@@ -348,7 +364,7 @@ Beispiele:
     position: relative;
     backdrop-filter: blur(5px);
     cursor: pointer;
-    border: 1px solid var(--color-glass-border);
+    border: var(--glass-border);
     border-radius: var(--radius-xl);
 
     background: var(--glass-bg);
@@ -396,6 +412,10 @@ Beispiele:
 
   .shift-cell.locked .employee-card {
     pointer-events: none;
+  }
+
+  .shift-cell.locked .employee-card.clickable {
+    pointer-events: auto;
   }
 
   .shift-cell.asset-avail-maintenance {
@@ -525,6 +545,10 @@ Beispiele:
   .employee-card:hover {
     border-color: color-mix(in oklch, var(--color-primary) 50%, transparent);
     background: color-mix(in oklch, var(--color-primary) 25%, transparent);
+  }
+
+  .employee-card.clickable {
+    cursor: pointer;
   }
 
   .employee-card .employee-name {

@@ -141,24 +141,27 @@
   .employee-list {
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
+    gap: 4px;
   }
 
   .employee-item {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+
     cursor: grab;
+    margin: 1px 0;
+    border: 1px solid color-mix(in oklch, var(--color-primary) 30%, transparent);
+    border-radius: var(--radius-lg);
 
-    margin: 5px 0;
-    border: 1px solid var(--color-glass-border);
-    border-radius: var(--radius-xl);
-
-    background: var(--glass-bg-active);
-    padding: 8px 12px;
+    background: color-mix(in oklch, var(--color-primary) 15%, transparent);
+    padding: 6px 10px;
     user-select: none;
   }
 
   .employee-item:hover {
-    transform: translateX(2px);
-    background: var(--glass-bg-active);
+    border-color: color-mix(in oklch, var(--color-primary) 50%, transparent);
+    background: color-mix(in oklch, var(--color-primary) 25%, transparent);
   }
 
   .employee-item.dragging {
@@ -207,20 +210,21 @@
     transform: none;
     cursor: not-allowed;
     box-shadow: none;
-    background: inherit;
   }
 
   .employee-info {
     display: flex;
     flex: 1;
-    flex-direction: column;
-    gap: 6px;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px;
   }
 
   .employee-info .employee-name {
     color: var(--text-primary);
     font-weight: 600;
-    font-size: 14px;
+    font-size: 13px;
+    line-height: 1.3;
   }
 
   .employee-info .badge {

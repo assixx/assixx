@@ -30,7 +30,7 @@ export class RotationAssignmentService {
     patternId: number,
     tenantId: number,
   ): Promise<RotationAssignmentResponse[]> {
-    const rows = await this.databaseService.query<DbAssignmentRow>(
+    const rows = await this.databaseService.tenantQuery<DbAssignmentRow>(
       `SELECT a.*, u.username, u.first_name, u.last_name
        FROM shift_rotation_assignments a
        JOIN users u ON a.user_id = u.id
@@ -62,7 +62,7 @@ export class RotationAssignmentService {
       const { userId: assignUserId, group: shiftGroup } = assignment;
 
       // Check for existing active assignment
-      const existing = await this.databaseService.query<{ id: number }>(
+      const existing = await this.databaseService.tenantQuery<{ id: number }>(
         `SELECT id FROM shift_rotation_assignments
          WHERE tenant_id = $1 AND pattern_id = $2 AND user_id = $3
          AND (ends_at IS NULL OR ends_at > NOW())`,
@@ -71,7 +71,7 @@ export class RotationAssignmentService {
 
       if (existing.length > 0 && existing[0] !== undefined) {
         // Update existing assignment
-        await this.databaseService.query(
+        await this.databaseService.tenantQuery(
           `UPDATE shift_rotation_assignments
            SET shift_group = $1, starts_at = $2, ends_at = $3, updated_at = NOW()
            WHERE id = $4`,
@@ -80,7 +80,7 @@ export class RotationAssignmentService {
       } else {
         // Create new assignment
         const assignmentUuid = uuidv7();
-        await this.databaseService.query(
+        await this.databaseService.tenantQuery(
           `INSERT INTO shift_rotation_assignments
            (tenant_id, pattern_id, user_id, team_id, shift_group,
             rotation_order, can_override, starts_at, ends_at, is_active, assigned_by, uuid, uuid_created_at)
@@ -120,7 +120,7 @@ export class RotationAssignmentService {
    * Validates that a rotation pattern exists
    */
   private async validatePatternExists(patternId: number, tenantId: number): Promise<void> {
-    const result = await this.databaseService.query<{ id: number }>(
+    const result = await this.databaseService.tenantQuery<{ id: number }>(
       'SELECT id FROM shift_rotation_patterns WHERE id = $1 AND tenant_id = $2',
       [patternId, tenantId],
     );
@@ -134,7 +134,7 @@ export class RotationAssignmentService {
    */
   async validateTeamExists(teamId: number | null | undefined, tenantId: number): Promise<void> {
     if (teamId === undefined || teamId === null) return;
-    const teamResult = await this.databaseService.query<{ id: number }>(
+    const teamResult = await this.databaseService.tenantQuery<{ id: number }>(
       `SELECT id FROM teams WHERE id = $1 AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}`,
       [teamId, tenantId],
     );
@@ -152,7 +152,7 @@ export class RotationAssignmentService {
   ): Promise<void> {
     if (assignments.length === 0) return;
     const userIds = assignments.map((a: { userId: number }) => a.userId);
-    const userResult = await this.databaseService.query<{ id: number }>(
+    const userResult = await this.databaseService.tenantQuery<{ id: number }>(
       `SELECT id FROM users WHERE id = ANY($1::int[]) AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}`,
       [userIds, tenantId],
     );

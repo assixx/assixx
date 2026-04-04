@@ -29,8 +29,8 @@ vi.mock('node:fs/promises', () => ({
 // =============================================================
 
 const mockDb = {
-  query: vi.fn(),
-  queryOne: vi.fn(),
+  tenantQuery: vi.fn(),
+  tenantQueryOne: vi.fn(),
 };
 
 const mockActivityLogger = {
@@ -84,15 +84,15 @@ describe('WorkOrderPhotosService', () => {
   describe('addPhoto', () => {
     it('should upload a photo and return mapped API response', async () => {
       // resolveWorkOrder
-      mockDb.queryOne.mockResolvedValueOnce({
+      mockDb.tenantQueryOne.mockResolvedValueOnce({
         id: 42,
         title: 'Pumpe prüfen',
         status: 'open',
       });
       // enforcePhotoLimit
-      mockDb.queryOne.mockResolvedValueOnce({ count: '3' });
+      mockDb.tenantQueryOne.mockResolvedValueOnce({ count: '3' });
       // INSERT RETURNING *
-      mockDb.queryOne.mockResolvedValueOnce(makePhotoRow());
+      mockDb.tenantQueryOne.mockResolvedValueOnce(makePhotoRow());
 
       const result = await service.addPhoto(10, 5, 'wo-uuid', MOCK_FILE);
 
@@ -103,12 +103,12 @@ describe('WorkOrderPhotosService', () => {
       expect(result.sortOrder).toBe(0);
       expect(result.createdAt).toBe('2026-03-01T12:00:00.000Z');
 
-      expect(mockDb.queryOne).toHaveBeenCalledTimes(3);
+      expect(mockDb.tenantQueryOne).toHaveBeenCalledTimes(3);
     });
 
     it('should throw NotFoundException when work order does not exist', async () => {
       // resolveWorkOrder returns null
-      mockDb.queryOne.mockResolvedValueOnce(null);
+      mockDb.tenantQueryOne.mockResolvedValueOnce(null);
 
       await expect(service.addPhoto(10, 5, 'missing-wo', MOCK_FILE)).rejects.toThrow(
         NotFoundException,
@@ -116,7 +116,7 @@ describe('WorkOrderPhotosService', () => {
     });
 
     it('should throw BadRequestException when work order is completed', async () => {
-      mockDb.queryOne.mockResolvedValueOnce({
+      mockDb.tenantQueryOne.mockResolvedValueOnce({
         id: 42,
         title: 'Pumpe prüfen',
         status: 'completed',
@@ -128,7 +128,7 @@ describe('WorkOrderPhotosService', () => {
     });
 
     it('should throw BadRequestException when work order is verified', async () => {
-      mockDb.queryOne.mockResolvedValueOnce({
+      mockDb.tenantQueryOne.mockResolvedValueOnce({
         id: 42,
         title: 'Pumpe prüfen',
         status: 'verified',
@@ -140,13 +140,13 @@ describe('WorkOrderPhotosService', () => {
     });
 
     it('should accept application/pdf', async () => {
-      mockDb.queryOne.mockResolvedValueOnce({
+      mockDb.tenantQueryOne.mockResolvedValueOnce({
         id: 42,
         title: 'Pumpe prüfen',
         status: 'open',
       });
-      mockDb.queryOne.mockResolvedValueOnce({ count: '0' });
-      mockDb.queryOne.mockResolvedValueOnce(
+      mockDb.tenantQueryOne.mockResolvedValueOnce({ count: '0' });
+      mockDb.tenantQueryOne.mockResolvedValueOnce(
         makePhotoRow({ mime_type: 'application/pdf', file_name: 'report.pdf' }),
       );
 
@@ -161,13 +161,13 @@ describe('WorkOrderPhotosService', () => {
     });
 
     it('should accept image/png (regression)', async () => {
-      mockDb.queryOne.mockResolvedValueOnce({
+      mockDb.tenantQueryOne.mockResolvedValueOnce({
         id: 42,
         title: 'Pumpe prüfen',
         status: 'open',
       });
-      mockDb.queryOne.mockResolvedValueOnce({ count: '0' });
-      mockDb.queryOne.mockResolvedValueOnce(
+      mockDb.tenantQueryOne.mockResolvedValueOnce({ count: '0' });
+      mockDb.tenantQueryOne.mockResolvedValueOnce(
         makePhotoRow({ mime_type: 'image/png', file_name: 'screenshot.png' }),
       );
 
@@ -181,13 +181,13 @@ describe('WorkOrderPhotosService', () => {
     });
 
     it('should accept image/webp (regression)', async () => {
-      mockDb.queryOne.mockResolvedValueOnce({
+      mockDb.tenantQueryOne.mockResolvedValueOnce({
         id: 42,
         title: 'Pumpe prüfen',
         status: 'open',
       });
-      mockDb.queryOne.mockResolvedValueOnce({ count: '0' });
-      mockDb.queryOne.mockResolvedValueOnce(
+      mockDb.tenantQueryOne.mockResolvedValueOnce({ count: '0' });
+      mockDb.tenantQueryOne.mockResolvedValueOnce(
         makePhotoRow({ mime_type: 'image/webp', file_name: 'photo.webp' }),
       );
 
@@ -201,7 +201,7 @@ describe('WorkOrderPhotosService', () => {
     });
 
     it('should reject text/html with BadRequestException', async () => {
-      mockDb.queryOne.mockResolvedValueOnce({
+      mockDb.tenantQueryOne.mockResolvedValueOnce({
         id: 42,
         title: 'Pumpe prüfen',
         status: 'open',
@@ -217,7 +217,7 @@ describe('WorkOrderPhotosService', () => {
     });
 
     it('should reject application/zip with BadRequestException', async () => {
-      mockDb.queryOne.mockResolvedValueOnce({
+      mockDb.tenantQueryOne.mockResolvedValueOnce({
         id: 42,
         title: 'Pumpe prüfen',
         status: 'open',
@@ -233,7 +233,7 @@ describe('WorkOrderPhotosService', () => {
     });
 
     it('should reject application/javascript with BadRequestException', async () => {
-      mockDb.queryOne.mockResolvedValueOnce({
+      mockDb.tenantQueryOne.mockResolvedValueOnce({
         id: 42,
         title: 'Pumpe prüfen',
         status: 'open',
@@ -249,7 +249,7 @@ describe('WorkOrderPhotosService', () => {
     });
 
     it('should reject image/svg+xml with BadRequestException', async () => {
-      mockDb.queryOne.mockResolvedValueOnce({
+      mockDb.tenantQueryOne.mockResolvedValueOnce({
         id: 42,
         title: 'Pumpe prüfen',
         status: 'open',
@@ -266,13 +266,13 @@ describe('WorkOrderPhotosService', () => {
 
     it('should throw BadRequestException when photo limit is reached', async () => {
       // resolveWorkOrder
-      mockDb.queryOne.mockResolvedValueOnce({
+      mockDb.tenantQueryOne.mockResolvedValueOnce({
         id: 42,
         title: 'Pumpe prüfen',
         status: 'open',
       });
       // enforcePhotoLimit — count >= 10
-      mockDb.queryOne.mockResolvedValueOnce({ count: '10' });
+      mockDb.tenantQueryOne.mockResolvedValueOnce({ count: '10' });
 
       await expect(service.addPhoto(10, 5, 'wo-uuid', MOCK_FILE)).rejects.toThrow(
         BadRequestException,
@@ -281,15 +281,15 @@ describe('WorkOrderPhotosService', () => {
 
     it('should throw BadRequestException when INSERT returns null', async () => {
       // resolveWorkOrder
-      mockDb.queryOne.mockResolvedValueOnce({
+      mockDb.tenantQueryOne.mockResolvedValueOnce({
         id: 42,
         title: 'Pumpe prüfen',
         status: 'open',
       });
       // enforcePhotoLimit
-      mockDb.queryOne.mockResolvedValueOnce({ count: '0' });
+      mockDb.tenantQueryOne.mockResolvedValueOnce({ count: '0' });
       // INSERT returns null
-      mockDb.queryOne.mockResolvedValueOnce(null);
+      mockDb.tenantQueryOne.mockResolvedValueOnce(null);
 
       await expect(service.addPhoto(10, 5, 'wo-uuid', MOCK_FILE)).rejects.toThrow(
         BadRequestException,
@@ -303,7 +303,7 @@ describe('WorkOrderPhotosService', () => {
 
   describe('getPhotos', () => {
     it('should return mapped photo array', async () => {
-      mockDb.query.mockResolvedValueOnce([
+      mockDb.tenantQuery.mockResolvedValueOnce([
         makePhotoRow(),
         makePhotoRow({
           id: 2,
@@ -323,7 +323,7 @@ describe('WorkOrderPhotosService', () => {
     });
 
     it('should return empty array when no photos exist', async () => {
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       const result = await service.getPhotos(10, 'wo-uuid');
 
@@ -337,11 +337,11 @@ describe('WorkOrderPhotosService', () => {
 
   describe('getSourcePhotos', () => {
     it('should return mapped source photos for tpm_defect', async () => {
-      mockDb.queryOne.mockResolvedValueOnce({
+      mockDb.tenantQueryOne.mockResolvedValueOnce({
         source_type: 'tpm_defect',
         source_uuid: 'defect-uuid-123',
       });
-      mockDb.query.mockResolvedValueOnce([
+      mockDb.tenantQuery.mockResolvedValueOnce([
         {
           uuid: '019caf7b-be0f-70c4-b4e1-6b14d55c5bcd',
           file_path: 'uploads/tpm/2/defects/abc/photo.jpg',
@@ -363,11 +363,11 @@ describe('WorkOrderPhotosService', () => {
     });
 
     it('should return mapped source attachments for kvp_proposal', async () => {
-      mockDb.queryOne.mockResolvedValueOnce({
+      mockDb.tenantQueryOne.mockResolvedValueOnce({
         source_type: 'kvp_proposal',
         source_uuid: 'kvp-uuid-456',
       });
-      mockDb.query.mockResolvedValueOnce([
+      mockDb.tenantQuery.mockResolvedValueOnce([
         {
           uuid: '019c8b73-e82a-7489-8eb3-3824d80c734b',
           file_path: '/app/backend/uploads/kvp/2/187/photo.jpg',
@@ -386,11 +386,11 @@ describe('WorkOrderPhotosService', () => {
     });
 
     it('should return empty array when no source photos exist', async () => {
-      mockDb.queryOne.mockResolvedValueOnce({
+      mockDb.tenantQueryOne.mockResolvedValueOnce({
         source_type: 'tpm_defect',
         source_uuid: 'defect-uuid-123',
       });
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       const result = await service.getSourcePhotos(10, 'wo-uuid');
 
@@ -398,7 +398,7 @@ describe('WorkOrderPhotosService', () => {
     });
 
     it('should return empty array for manual work order', async () => {
-      mockDb.queryOne.mockResolvedValueOnce({
+      mockDb.tenantQueryOne.mockResolvedValueOnce({
         source_type: 'manual',
         source_uuid: null,
       });
@@ -406,11 +406,11 @@ describe('WorkOrderPhotosService', () => {
       const result = await service.getSourcePhotos(10, 'manual-wo-uuid');
 
       expect(result).toEqual([]);
-      expect(mockDb.query).not.toHaveBeenCalled();
+      expect(mockDb.tenantQuery).not.toHaveBeenCalled();
     });
 
     it('should return empty array when work order not found', async () => {
-      mockDb.queryOne.mockResolvedValueOnce(null);
+      mockDb.tenantQueryOne.mockResolvedValueOnce(null);
 
       const result = await service.getSourcePhotos(10, 'nonexistent-uuid');
 
@@ -425,7 +425,7 @@ describe('WorkOrderPhotosService', () => {
   describe('deletePhoto', () => {
     it('should delete photo from DB and trigger file cleanup', async () => {
       // find photo (owned by user 5)
-      mockDb.queryOne.mockResolvedValueOnce({
+      mockDb.tenantQueryOne.mockResolvedValueOnce({
         id: 1,
         file_path: 'uploads/work-orders/10/wo-uuid/photo.jpg',
         work_order_id: 42,
@@ -433,46 +433,46 @@ describe('WorkOrderPhotosService', () => {
         wo_status: 'open',
       });
       // DELETE query
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       await service.deletePhoto(10, 5, 'admin', 'photo-uuid');
 
-      expect(mockDb.queryOne).toHaveBeenCalledTimes(1);
-      expect(mockDb.query).toHaveBeenCalledTimes(1);
+      expect(mockDb.tenantQueryOne).toHaveBeenCalledTimes(1);
+      expect(mockDb.tenantQuery).toHaveBeenCalledTimes(1);
     });
 
     it('should allow admin to delete any photo', async () => {
-      mockDb.queryOne.mockResolvedValueOnce({
+      mockDb.tenantQueryOne.mockResolvedValueOnce({
         id: 1,
         file_path: 'uploads/work-orders/10/wo-uuid/photo.jpg',
         work_order_id: 42,
         uploaded_by: 99,
         wo_status: 'in_progress',
       });
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       await service.deletePhoto(10, 5, 'admin', 'photo-uuid');
 
-      expect(mockDb.query).toHaveBeenCalledTimes(1);
+      expect(mockDb.tenantQuery).toHaveBeenCalledTimes(1);
     });
 
     it('should allow employee to delete own photo', async () => {
-      mockDb.queryOne.mockResolvedValueOnce({
+      mockDb.tenantQueryOne.mockResolvedValueOnce({
         id: 1,
         file_path: 'uploads/work-orders/10/wo-uuid/photo.jpg',
         work_order_id: 42,
         uploaded_by: 5,
         wo_status: 'open',
       });
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       await service.deletePhoto(10, 5, 'employee', 'photo-uuid');
 
-      expect(mockDb.query).toHaveBeenCalledTimes(1);
+      expect(mockDb.tenantQuery).toHaveBeenCalledTimes(1);
     });
 
     it('should throw BadRequestException when work order is completed', async () => {
-      mockDb.queryOne.mockResolvedValueOnce({
+      mockDb.tenantQueryOne.mockResolvedValueOnce({
         id: 1,
         file_path: 'uploads/work-orders/10/wo-uuid/photo.jpg',
         work_order_id: 42,
@@ -486,7 +486,7 @@ describe('WorkOrderPhotosService', () => {
     });
 
     it('should throw BadRequestException when work order is verified', async () => {
-      mockDb.queryOne.mockResolvedValueOnce({
+      mockDb.tenantQueryOne.mockResolvedValueOnce({
         id: 1,
         file_path: 'uploads/work-orders/10/wo-uuid/photo.jpg',
         work_order_id: 42,
@@ -500,7 +500,7 @@ describe('WorkOrderPhotosService', () => {
     });
 
     it('should throw ForbiddenException when employee deletes other photo', async () => {
-      mockDb.queryOne.mockResolvedValueOnce({
+      mockDb.tenantQueryOne.mockResolvedValueOnce({
         id: 1,
         file_path: 'uploads/work-orders/10/wo-uuid/photo.jpg',
         work_order_id: 42,
@@ -514,7 +514,7 @@ describe('WorkOrderPhotosService', () => {
     });
 
     it('should throw NotFoundException when photo does not exist', async () => {
-      mockDb.queryOne.mockResolvedValueOnce(null);
+      mockDb.tenantQueryOne.mockResolvedValueOnce(null);
 
       await expect(service.deletePhoto(10, 5, 'admin', 'missing-photo-uuid')).rejects.toThrow(
         NotFoundException,

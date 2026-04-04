@@ -40,7 +40,12 @@ vi.mock('./surveys.helpers.js', () => ({
 // =============================================================
 
 function createMockDb() {
-  return { query: vi.fn() };
+  const queryFn = vi.fn();
+  return {
+    query: queryFn,
+    tenantQuery: queryFn,
+    tenantQueryOne: vi.fn().mockResolvedValue(null),
+  };
 }
 
 // =============================================================
@@ -63,8 +68,8 @@ describe('SurveyQuestionsService', () => {
 
   describe('loadSurveyQuestionsAndAssignments', () => {
     it('should return empty questions and assignments', async () => {
-      mockDb.query.mockResolvedValueOnce([]); // questions
-      mockDb.query.mockResolvedValueOnce([]); // assignments
+      mockDb.tenantQuery.mockResolvedValueOnce([]); // questions
+      mockDb.tenantQuery.mockResolvedValueOnce([]); // assignments
 
       const result = await service.loadSurveyQuestionsAndAssignments(1);
 
@@ -74,17 +79,17 @@ describe('SurveyQuestionsService', () => {
 
     it('should load questions with options attached', async () => {
       // questions
-      mockDb.query.mockResolvedValueOnce([
+      mockDb.tenantQuery.mockResolvedValueOnce([
         { id: 1, question_type: 'single_choice', survey_id: 1 },
         { id: 2, question_type: 'text', survey_id: 1 },
       ]);
       // options for questions
-      mockDb.query.mockResolvedValueOnce([
+      mockDb.tenantQuery.mockResolvedValueOnce([
         { id: 10, question_id: 1, option_text: 'Yes', order_position: 0 },
         { id: 11, question_id: 1, option_text: 'No', order_position: 1 },
       ]);
       // assignments
-      mockDb.query.mockResolvedValueOnce([{ id: 1, assignment_type: 'all' }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ id: 1, assignment_type: 'all' }]);
 
       const result = await service.loadSurveyQuestionsAndAssignments(1);
 
@@ -101,20 +106,20 @@ describe('SurveyQuestionsService', () => {
   describe('insertSurveyQuestions', () => {
     it('should insert questions without options', async () => {
       // INSERT question RETURNING id
-      mockDb.query.mockResolvedValueOnce([{ id: 1 }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ id: 1 }]);
 
       await service.insertSurveyQuestions(10, 1, [{ questionText: 'How?', questionType: 'text' }]);
 
-      expect(mockDb.query).toHaveBeenCalledTimes(1);
+      expect(mockDb.tenantQuery).toHaveBeenCalledTimes(1);
     });
 
     it('should insert questions with options', async () => {
       // INSERT question RETURNING id
-      mockDb.query.mockResolvedValueOnce([{ id: 1 }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ id: 1 }]);
       // INSERT option 1
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
       // INSERT option 2
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       await service.insertSurveyQuestions(10, 1, [
         {
@@ -124,7 +129,7 @@ describe('SurveyQuestionsService', () => {
         },
       ]);
 
-      expect(mockDb.query).toHaveBeenCalledTimes(3);
+      expect(mockDb.tenantQuery).toHaveBeenCalledTimes(3);
     });
   });
 
@@ -138,7 +143,7 @@ describe('SurveyQuestionsService', () => {
         question_type: 'text',
       });
 
-      expect(mockDb.query).not.toHaveBeenCalled();
+      expect(mockDb.tenantQuery).not.toHaveBeenCalled();
     });
 
     it('should skip for non-choice types', async () => {
@@ -147,19 +152,19 @@ describe('SurveyQuestionsService', () => {
         options: ['1', '2', '3'],
       });
 
-      expect(mockDb.query).not.toHaveBeenCalled();
+      expect(mockDb.tenantQuery).not.toHaveBeenCalled();
     });
 
     it('should insert options for single_choice', async () => {
-      mockDb.query.mockResolvedValueOnce([]);
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       await service.insertQuestionOptions(10, 1, {
         question_type: 'single_choice',
         options: ['Yes', 'No'],
       });
 
-      expect(mockDb.query).toHaveBeenCalledTimes(2);
+      expect(mockDb.tenantQuery).toHaveBeenCalledTimes(2);
     });
   });
 
@@ -169,11 +174,11 @@ describe('SurveyQuestionsService', () => {
 
   describe('insertSurveyAssignments', () => {
     it('should insert assignments', async () => {
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       await service.insertSurveyAssignments(10, 1, [{ type: 'all' }]);
 
-      expect(mockDb.query).toHaveBeenCalledTimes(1);
+      expect(mockDb.tenantQuery).toHaveBeenCalledTimes(1);
     });
   });
 });

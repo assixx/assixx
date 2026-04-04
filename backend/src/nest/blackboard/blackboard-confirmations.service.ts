@@ -30,7 +30,7 @@ export class BlackboardConfirmationsService {
     this.logger.log(`Confirming entry ${String(id)} for user ${userId}`);
 
     // SECURITY: Get user's tenant - only for ACTIVE users (is_active = 1)
-    const users = await this.db.query<{ tenant_id: number }>(
+    const users = await this.db.tenantQuery<{ tenant_id: number }>(
       `SELECT tenant_id FROM users WHERE id = $1 AND is_active = ${IS_ACTIVE.ACTIVE}`,
       [userId],
     );
@@ -44,7 +44,7 @@ export class BlackboardConfirmationsService {
 
     // UPSERT: Insert if not exists, otherwise update is_confirmed
     // first_seen_at is only set on INSERT (never reset on re-confirm)
-    await this.db.query(
+    await this.db.tenantQuery(
       `INSERT INTO blackboard_confirmations
          (tenant_id, entry_id, user_id, confirmed_at, first_seen_at, is_confirmed)
        VALUES ($1, $2, $3, NOW(), NOW(), true)
@@ -72,7 +72,7 @@ export class BlackboardConfirmationsService {
     this.logger.log(`Unconfirming entry ${String(id)} for user ${userId}`);
 
     // SECURITY: Get user's tenant - only for ACTIVE users (is_active = 1)
-    const users = await this.db.query<{ tenant_id: number }>(
+    const users = await this.db.tenantQuery<{ tenant_id: number }>(
       `SELECT tenant_id FROM users WHERE id = $1 AND is_active = ${IS_ACTIVE.ACTIVE}`,
       [userId],
     );
@@ -85,7 +85,7 @@ export class BlackboardConfirmationsService {
     const numericId = await this.resolveEntryId(id, tenantId);
 
     // Set is_confirmed = false (preserve first_seen_at for "Neu" badge logic)
-    await this.db.query(
+    await this.db.tenantQuery(
       `UPDATE blackboard_confirmations
        SET is_confirmed = false, confirmed_at = NULL
        WHERE entry_id = $1 AND user_id = $2`,
@@ -115,7 +115,7 @@ export class BlackboardConfirmationsService {
 
     // Get entry info
     const idColumn = typeof id === 'string' ? 'uuid' : 'id';
-    const entries = await this.db.query<{
+    const entries = await this.db.tenantQuery<{
       id: number;
       org_level: string;
       org_id: number;
@@ -147,7 +147,7 @@ export class BlackboardConfirmationsService {
       queryParams.push(entry.org_id);
     }
 
-    const users = await this.db.query<DbConfirmationUser>(usersQuery, queryParams);
+    const users = await this.db.tenantQuery<DbConfirmationUser>(usersQuery, queryParams);
     return users.map((user: DbConfirmationUser) =>
       dbToApi(user as unknown as Record<string, unknown>),
     );
@@ -159,7 +159,7 @@ export class BlackboardConfirmationsService {
    */
   async getUnconfirmedCount(userId: number, tenantId: number): Promise<{ count: number }> {
     // Get user info for visibility filtering
-    const users = await this.db.query<{
+    const users = await this.db.tenantQuery<{
       role: string;
       department_id: number | null;
       team_id: number | null;
@@ -201,7 +201,7 @@ export class BlackboardConfirmationsService {
       params.push(departmentId ?? 0, teamId ?? 0);
     }
 
-    const result = await this.db.query<{ count: string }>(query, params);
+    const result = await this.db.tenantQuery<{ count: string }>(query, params);
     const count = Number.parseInt(result[0]?.count ?? '0', 10);
 
     return { count };
@@ -212,7 +212,7 @@ export class BlackboardConfirmationsService {
    */
   private async resolveEntryId(id: number | string, tenantId: number): Promise<number> {
     const idColumn = typeof id === 'string' ? 'uuid' : 'id';
-    const entries = await this.db.query<{ id: number }>(
+    const entries = await this.db.tenantQuery<{ id: number }>(
       `SELECT id FROM blackboard_entries WHERE ${idColumn} = $1 AND tenant_id = $2`,
       [id, tenantId],
     );

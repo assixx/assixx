@@ -99,9 +99,9 @@ export class KvpService {
     const scope = await this.scopeService.getScope();
     if (scope.type !== 'none') return mapScopeToOrgInfo(scope);
 
-    const userId = this.cls.get<number>('userId');
-    const tenantId = this.cls.get<number>('tenantId');
-    const rows = await this.db.query<{
+    const userId = this.cls.get<number | undefined>('userId');
+    const tenantId = this.cls.get<number | undefined>('tenantId');
+    const rows = await this.db.tenantQuery<{
       team_ids: number[];
       dept_ids: number[];
       dept_area_ids: number[];
@@ -124,7 +124,7 @@ export class KvpService {
 
   /** Get user's assigned teams with their assets — for KVP create modal */
   async getMyOrganizations(userId: number, tenantId: number): Promise<UserTeamWithAssets[]> {
-    const rows = await this.db.query<{
+    const rows = await this.db.tenantQuery<{
       team_id: number;
       team_name: string;
       assets: { id: number; name: string }[] | null;
@@ -196,7 +196,7 @@ export class KvpService {
       ORDER BY name ASC
     `;
 
-    return await this.db.query<CategoryOption>(query, [tenantId]);
+    return await this.db.tenantQuery<CategoryOption>(query, [tenantId]);
   }
 
   /** Get dashboard statistics (tenant-wide + team-scoped for current user) */
@@ -218,7 +218,7 @@ export class KvpService {
         AND s.status != 'archived'
     `;
 
-    const rows = await this.db.query<DbDashboardStats>(query, [tenantId, userId]);
+    const rows = await this.db.tenantQuery<DbDashboardStats>(query, [tenantId, userId]);
     const stats = rows[0];
 
     if (stats === undefined) {
@@ -291,7 +291,7 @@ export class KvpService {
     query += ` ORDER BY s.created_at DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
     params.push(limit, offset);
 
-    const suggestions = await this.db.query<DbSuggestion>(query, params);
+    const suggestions = await this.db.tenantQuery<DbSuggestion>(query, params);
     const transformed = suggestions.map((s: DbSuggestion) => transformSuggestion(s));
 
     return {
@@ -308,7 +308,7 @@ export class KvpService {
   /** Execute count query by stripping confirmation JOIN and adjusting placeholders */
   private async executeCountQuery(query: string, params: unknown[]): Promise<number> {
     const { countQuery, countParams } = buildCountQuery(query, params);
-    const countRows = await this.db.query<{ total: number }>(countQuery, countParams);
+    const countRows = await this.db.tenantQuery<{ total: number }>(countQuery, countParams);
     return countRows[0]?.total ?? 0;
   }
 
@@ -333,7 +333,7 @@ export class KvpService {
 
     void userRole; // Suppress unused variable warning - kept for API compatibility
 
-    const rows = await this.db.query<DbSuggestion>(query, params);
+    const rows = await this.db.tenantQuery<DbSuggestion>(query, params);
     const suggestion = rows[0];
 
     if (suggestion === undefined) {
@@ -380,7 +380,7 @@ export class KvpService {
       RETURNING id
     `;
 
-    const rows = await this.db.query<{ id: number }>(query, [
+    const rows = await this.db.tenantQuery<{ id: number }>(query, [
       uuid,
       tenantId,
       dto.title,
@@ -411,7 +411,7 @@ export class KvpService {
 
   /** Resolve the user's team ID from user_teams */
   private async getUserTeamId(userId: number, tenantId: number): Promise<number> {
-    const rows = await this.db.query<{ team_id: number }>(
+    const rows = await this.db.tenantQuery<{ team_id: number }>(
       `SELECT team_id FROM user_teams WHERE user_id = $1 AND tenant_id = $2 LIMIT 1`,
       [userId, tenantId],
     );
@@ -436,7 +436,7 @@ export class KvpService {
 
     // Admin with has_full_access is unlimited
     if (userRole === 'admin') {
-      const accessRows = await this.db.query<{ has_full_access: boolean }>(
+      const accessRows = await this.db.tenantQuery<{ has_full_access: boolean }>(
         `SELECT has_full_access FROM users WHERE id = $1 AND tenant_id = $2`,
         [userId, tenantId],
       );
@@ -449,7 +449,7 @@ export class KvpService {
     // 0 = unlimited
     if (configuredLimit === 0) return;
 
-    const todayCount = await this.db.query<{ count: string }>(
+    const todayCount = await this.db.tenantQuery<{ count: string }>(
       `SELECT COUNT(*) as count
        FROM kvp_suggestions
        WHERE tenant_id = $1
@@ -470,7 +470,7 @@ export class KvpService {
 
   /** Read the KVP daily limit from tenant_addons.settings (default: 1) */
   private async getKvpDailyLimit(tenantId: number): Promise<number> {
-    const rows = await this.db.query<{ daily_limit: number | null }>(
+    const rows = await this.db.tenantQuery<{ daily_limit: number | null }>(
       `SELECT (ta.settings->>'daily_limit')::integer AS daily_limit
        FROM tenant_addons ta
        JOIN addons a ON ta.addon_id = a.id
@@ -490,7 +490,7 @@ export class KvpService {
 
   /** Update KVP addon settings for the tenant */
   async updateKvpSettings(tenantId: number, dailyLimit: number): Promise<{ dailyLimit: number }> {
-    await this.db.query(
+    await this.db.tenantQuery(
       `UPDATE tenant_addons ta
        SET settings = jsonb_set(
          COALESCE(ta.settings, '{}'::jsonb),
@@ -628,7 +628,7 @@ export class KvpService {
 
     params.push(id, tenantId);
     const query = `UPDATE kvp_suggestions SET ${updates.join(', ')} WHERE ${idColumn} = $${params.length - 1} AND tenant_id = $${params.length}`;
-    await this.db.query(query, params);
+    await this.db.tenantQuery(query, params);
 
     const updated = await this.getSuggestionById(id, tenantId, userId, userRole);
 
@@ -668,10 +668,10 @@ export class KvpService {
     }
 
     const idColumn = isUuid(id) ? 'uuid' : 'id';
-    await this.db.query(`DELETE FROM kvp_suggestions WHERE ${idColumn} = $1 AND tenant_id = $2`, [
-      id,
-      tenantId,
-    ]);
+    await this.db.tenantQuery(
+      `DELETE FROM kvp_suggestions WHERE ${idColumn} = $1 AND tenant_id = $2`,
+      [id, tenantId],
+    );
 
     await this.activityLogger.logDelete(
       tenantId,

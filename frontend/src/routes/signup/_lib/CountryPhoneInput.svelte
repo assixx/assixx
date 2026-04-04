@@ -213,7 +213,7 @@
   .country-option:hover {
     background: color-mix(in oklch, var(--color-primary) 20%, transparent);
     padding-left: 16px;
-    color: var(--color-white);
+    color: var(--color-text-primary);
   }
 
   .country-option:active {

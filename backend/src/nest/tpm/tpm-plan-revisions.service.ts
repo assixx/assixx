@@ -52,7 +52,7 @@ export class TpmPlanRevisionsService {
     limit: number,
   ): Promise<TpmPlanRevisionList> {
     // Verify plan exists and get current info
-    const plan = await this.db.queryOne<{
+    const plan = await this.db.tenantQueryOne<{
       id: number;
       name: string;
       revision_number: number;
@@ -75,7 +75,7 @@ export class TpmPlanRevisionsService {
     const offset = (page - 1) * limit;
 
     // Count total revisions
-    const countResult = await this.db.queryOne<{ count: string }>(
+    const countResult = await this.db.tenantQueryOne<{ count: string }>(
       `SELECT COUNT(*) AS count
        FROM tpm_plan_revisions
        WHERE plan_id = $1 AND tenant_id = $2`,
@@ -85,7 +85,7 @@ export class TpmPlanRevisionsService {
     const total = Number(countResult?.count ?? '0');
 
     // Fetch revisions with user names, newest first
-    const rows = await this.db.query<RevisionJoinRow>(
+    const rows = await this.db.tenantQuery<RevisionJoinRow>(
       `SELECT r.*,
               COALESCE(NULLIF(CONCAT(u.first_name, ' ', u.last_name), ' '), u.username) AS changed_by_name,
               COALESCE(a.name, 'Unbekannt') AS asset_name,
@@ -114,7 +114,7 @@ export class TpmPlanRevisionsService {
   }
 
   async getRevision(tenantId: number, revisionUuid: string): Promise<TpmPlanRevision> {
-    const row = await this.db.queryOne<RevisionJoinRow>(
+    const row = await this.db.tenantQueryOne<RevisionJoinRow>(
       `SELECT r.*,
               COALESCE(NULLIF(CONCAT(u.first_name, ' ', u.last_name), ' '), u.username) AS changed_by_name,
               COALESCE(a.name, 'Unbekannt') AS asset_name,

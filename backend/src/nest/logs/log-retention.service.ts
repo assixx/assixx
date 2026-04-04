@@ -17,7 +17,7 @@ import { Inject, Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { Pool } from 'pg';
 
-import { PG_POOL } from '../database/database.constants.js';
+import { SYSTEM_POOL } from '../database/database.constants.js';
 
 /** Default retention period in days if not configured per-tenant */
 const DEFAULT_RETENTION_DAYS = 365;
@@ -39,7 +39,7 @@ export class LogRetentionService implements OnModuleInit {
   private readonly logger = new Logger(LogRetentionService.name);
   private isPartitioningEnabled = false;
 
-  constructor(@Inject(PG_POOL) private readonly pool: Pool) {}
+  constructor(@Inject(SYSTEM_POOL) private readonly pool: Pool) {}
 
   /**
    * Check if partitioning is enabled on module init.

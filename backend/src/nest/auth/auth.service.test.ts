@@ -56,8 +56,8 @@ vi.mock('uuid', () => ({
 // Factories
 // =============================================================
 
-function createMockDb(): { query: ReturnType<typeof vi.fn> } {
-  return { query: vi.fn() };
+function createMockDb(): { systemQuery: ReturnType<typeof vi.fn> } {
+  return { systemQuery: vi.fn() };
 }
 
 function createMockJwtService(): {
@@ -101,14 +101,14 @@ function createMockUserRow(overrides?: Record<string, unknown>): Record<string, 
 
 /** Set up mocks for a successful login flow */
 function setupLoginMocks(db: MockDb, jwt: MockJwt, userOverrides?: Record<string, unknown>): void {
-  db.query.mockResolvedValueOnce([createMockUserRow(userOverrides)]); // findUserByEmail
+  db.systemQuery.mockResolvedValueOnce([createMockUserRow(userOverrides)]); // findUserByEmail
   mockBcryptCompare.mockResolvedValueOnce(true); // password match
   jwt.sign
     .mockReturnValueOnce('mock-access-token') // access
     .mockReturnValueOnce('mock-refresh-token'); // refresh
-  db.query.mockResolvedValueOnce([]); // storeRefreshToken
-  db.query.mockResolvedValueOnce([]); // updateLastLogin
-  db.query.mockResolvedValueOnce([]); // logLoginAudit
+  db.systemQuery.mockResolvedValueOnce([]); // storeRefreshToken
+  db.systemQuery.mockResolvedValueOnce([]); // updateLastLogin
+  db.systemQuery.mockResolvedValueOnce([]); // logLoginAudit
 }
 
 // =============================================================
@@ -207,7 +207,7 @@ describe('SECURITY: AuthService', () => {
     });
 
     it('should throw UnauthorizedException for unknown email', async () => {
-      mockDb.query.mockResolvedValueOnce([]); // no user found
+      mockDb.systemQuery.mockResolvedValueOnce([]); // no user found
 
       await expect(service.login(loginDto)).rejects.toThrow(UnauthorizedException);
     });
@@ -217,13 +217,13 @@ describe('SECURITY: AuthService', () => {
       [3, 'archived'],
       [4, 'deleted'],
     ])('should throw ForbiddenException for is_active=%i (%s) user', async (isActive) => {
-      mockDb.query.mockResolvedValueOnce([createMockUserRow({ is_active: isActive })]);
+      mockDb.systemQuery.mockResolvedValueOnce([createMockUserRow({ is_active: isActive })]);
 
       await expect(service.login(loginDto)).rejects.toThrow(ForbiddenException);
     });
 
     it('should throw UnauthorizedException for wrong password', async () => {
-      mockDb.query.mockResolvedValueOnce([createMockUserRow()]);
+      mockDb.systemQuery.mockResolvedValueOnce([createMockUserRow()]);
       mockBcryptCompare.mockResolvedValueOnce(false); // password mismatch
 
       await expect(service.login(loginDto)).rejects.toThrow(UnauthorizedException);
@@ -234,7 +234,7 @@ describe('SECURITY: AuthService', () => {
 
       await service.login({ email: 'ADMIN@TEST.DE', password: 'StrongP@ss1' });
 
-      const emailParam = (mockDb.query.mock.calls[0]?.[1] as string[])?.[0];
+      const emailParam = (mockDb.systemQuery.mock.calls[0]?.[1] as string[])?.[0];
       expect(emailParam).toBe('admin@test.de');
     });
 
@@ -243,18 +243,18 @@ describe('SECURITY: AuthService', () => {
 
       await service.login(loginDto);
 
-      // updateLastLogin is the 3rd db.query call (index 2)
-      const updateCall = mockDb.query.mock.calls[2];
+      // updateLastLogin is the 3rd db.systemQuery call (index 2)
+      const updateCall = mockDb.systemQuery.mock.calls[2];
       expect(updateCall?.[0]).toContain('UPDATE users SET last_login');
     });
 
     it('should not fail login when audit log fails', async () => {
-      mockDb.query.mockResolvedValueOnce([createMockUserRow()]); // findUser
+      mockDb.systemQuery.mockResolvedValueOnce([createMockUserRow()]); // findUser
       mockBcryptCompare.mockResolvedValueOnce(true);
       mockJwt.sign.mockReturnValueOnce('access-tok').mockReturnValueOnce('refresh-tok');
-      mockDb.query.mockResolvedValueOnce([]); // storeRefreshToken
-      mockDb.query.mockResolvedValueOnce([]); // updateLastLogin
-      mockDb.query.mockRejectedValueOnce(new Error('Audit DB error')); // logLoginAudit fails
+      mockDb.systemQuery.mockResolvedValueOnce([]); // storeRefreshToken
+      mockDb.systemQuery.mockResolvedValueOnce([]); // updateLastLogin
+      mockDb.systemQuery.mockRejectedValueOnce(new Error('Audit DB error')); // logLoginAudit fails
 
       const result = await service.login(loginDto);
 
@@ -278,8 +278,8 @@ describe('SECURITY: AuthService', () => {
 
       await service.login(loginDto, '192.168.1.1', 'Mozilla/5.0');
 
-      // storeRefreshToken is the 2nd db.query call (index 1)
-      const storeParams = mockDb.query.mock.calls[1]?.[1] as unknown[];
+      // storeRefreshToken is the 2nd db.systemQuery call (index 1)
+      const storeParams = mockDb.systemQuery.mock.calls[1]?.[1] as unknown[];
       expect(storeParams?.[5]).toBe('192.168.1.1'); // ip_address
       expect(storeParams?.[6]).toBe('Mozilla/5.0'); // user_agent
     });
@@ -325,10 +325,10 @@ describe('SECURITY: AuthService', () => {
     };
 
     function setupRegisterMocks(db: MockDb): void {
-      db.query.mockResolvedValueOnce([]); // findUserByEmail → no existing
+      db.systemQuery.mockResolvedValueOnce([]); // findUserByEmail → no existing
       mockBcryptHash.mockResolvedValueOnce('hashed-password');
-      db.query.mockResolvedValueOnce([{ id: 42 }]); // createUser RETURNING id
-      db.query.mockResolvedValueOnce([createMockUserRow({ id: 42 })]); // findUserById
+      db.systemQuery.mockResolvedValueOnce([{ id: 42 }]); // createUser RETURNING id
+      db.systemQuery.mockResolvedValueOnce([createMockUserRow({ id: 42 })]); // findUserById
     }
 
     it('should allow admin to create user', async () => {
@@ -354,7 +354,7 @@ describe('SECURITY: AuthService', () => {
     });
 
     it('should throw ConflictException when email already exists', async () => {
-      mockDb.query.mockResolvedValueOnce([createMockUserRow()]); // email found
+      mockDb.systemQuery.mockResolvedValueOnce([createMockUserRow()]); // email found
 
       await expect(service.register(registerDto, createAuthUser())).rejects.toThrow(
         ConflictException,
@@ -362,7 +362,7 @@ describe('SECURITY: AuthService', () => {
     });
 
     it('should throw UnauthorizedException for email with empty prefix', async () => {
-      mockDb.query.mockResolvedValueOnce([]); // no existing user
+      mockDb.systemQuery.mockResolvedValueOnce([]); // no existing user
 
       await expect(
         service.register({ ...registerDto, email: '@test.de' }, createAuthUser()),
@@ -378,10 +378,10 @@ describe('SECURITY: AuthService', () => {
     });
 
     it('should throw InternalServerErrorException when user retrieval fails', async () => {
-      mockDb.query.mockResolvedValueOnce([]); // no existing
+      mockDb.systemQuery.mockResolvedValueOnce([]); // no existing
       mockBcryptHash.mockResolvedValueOnce('hashed');
-      mockDb.query.mockResolvedValueOnce([{ id: 42 }]); // createUser
-      mockDb.query.mockResolvedValueOnce([]); // findUserById returns empty
+      mockDb.systemQuery.mockResolvedValueOnce([{ id: 42 }]); // createUser
+      mockDb.systemQuery.mockResolvedValueOnce([]); // findUserById returns empty
 
       await expect(service.register(registerDto, createAuthUser())).rejects.toThrow(
         InternalServerErrorException,
@@ -389,9 +389,9 @@ describe('SECURITY: AuthService', () => {
     });
 
     it('should throw InternalServerErrorException when INSERT returns no id', async () => {
-      mockDb.query.mockResolvedValueOnce([]); // no existing
+      mockDb.systemQuery.mockResolvedValueOnce([]); // no existing
       mockBcryptHash.mockResolvedValueOnce('hashed');
-      mockDb.query.mockResolvedValueOnce([]); // INSERT returns empty!
+      mockDb.systemQuery.mockResolvedValueOnce([]); // INSERT returns empty!
 
       await expect(service.register(registerDto, createAuthUser())).rejects.toThrow(
         InternalServerErrorException,
@@ -403,8 +403,8 @@ describe('SECURITY: AuthService', () => {
 
       await service.register({ ...registerDto, email: 'john.doe@company.com' }, createAuthUser());
 
-      // createUser INSERT is the 2nd db.query call (index 1)
-      const insertParams = mockDb.query.mock.calls[1]?.[1] as unknown[];
+      // createUser INSERT is the 2nd db.systemQuery call (index 1)
+      const insertParams = mockDb.systemQuery.mock.calls[1]?.[1] as unknown[];
       expect(insertParams?.[1]).toBe('john.doe'); // username
     });
   });
@@ -415,8 +415,8 @@ describe('SECURITY: AuthService', () => {
 
   describe('logout', () => {
     it('should revoke all tokens and return count', async () => {
-      mockDb.query.mockResolvedValueOnce([{ count: '5' }]); // revokeAllUserTokens
-      mockDb.query.mockResolvedValueOnce([]); // logLogoutAudit
+      mockDb.systemQuery.mockResolvedValueOnce([{ count: '5' }]); // revokeAllUserTokens
+      mockDb.systemQuery.mockResolvedValueOnce([]); // logLogoutAudit
 
       const result = await service.logout(createAuthUser());
 
@@ -424,8 +424,8 @@ describe('SECURITY: AuthService', () => {
     });
 
     it('should not fail when audit log fails', async () => {
-      mockDb.query.mockResolvedValueOnce([{ count: '2' }]); // revoke
-      mockDb.query.mockRejectedValueOnce(new Error('Audit fail')); // audit
+      mockDb.systemQuery.mockResolvedValueOnce([{ count: '2' }]); // revoke
+      mockDb.systemQuery.mockRejectedValueOnce(new Error('Audit fail')); // audit
 
       const result = await service.logout(createAuthUser());
 
@@ -433,8 +433,8 @@ describe('SECURITY: AuthService', () => {
     });
 
     it('should return 0 when no tokens to revoke', async () => {
-      mockDb.query.mockResolvedValueOnce([{ count: '0' }]); // none to revoke
-      mockDb.query.mockResolvedValueOnce([]); // audit
+      mockDb.systemQuery.mockResolvedValueOnce([{ count: '0' }]); // none to revoke
+      mockDb.systemQuery.mockResolvedValueOnce([]); // audit
 
       const result = await service.logout(createAuthUser());
 
@@ -442,8 +442,8 @@ describe('SECURITY: AuthService', () => {
     });
 
     it('should default to 0 when revokeAllUserTokens returns empty result', async () => {
-      mockDb.query.mockResolvedValueOnce([]); // empty result from CTE
-      mockDb.query.mockResolvedValueOnce([]); // audit
+      mockDb.systemQuery.mockResolvedValueOnce([]); // empty result from CTE
+      mockDb.systemQuery.mockResolvedValueOnce([]); // audit
 
       const result = await service.logout(createAuthUser());
 
@@ -451,12 +451,12 @@ describe('SECURITY: AuthService', () => {
     });
 
     it('should forward ipAddress and userAgent to logout audit', async () => {
-      mockDb.query.mockResolvedValueOnce([{ count: '1' }]); // revoke
-      mockDb.query.mockResolvedValueOnce([]); // logLogoutAudit
+      mockDb.systemQuery.mockResolvedValueOnce([{ count: '1' }]); // revoke
+      mockDb.systemQuery.mockResolvedValueOnce([]); // logLogoutAudit
 
       await service.logout(createAuthUser(), '10.0.0.1', 'Chrome/120');
 
-      const auditParams = mockDb.query.mock.calls[1]?.[1] as unknown[];
+      const auditParams = mockDb.systemQuery.mock.calls[1]?.[1] as unknown[];
       expect(auditParams?.[7]).toBe('10.0.0.1');
       expect(auditParams?.[8]).toBe('Chrome/120');
     });
@@ -468,7 +468,7 @@ describe('SECURITY: AuthService', () => {
 
   describe('getCurrentUser', () => {
     it('should return user when found', async () => {
-      mockDb.query.mockResolvedValueOnce([createMockUserRow()]);
+      mockDb.systemQuery.mockResolvedValueOnce([createMockUserRow()]);
 
       const result = await service.getCurrentUser(createAuthUser());
 
@@ -476,17 +476,17 @@ describe('SECURITY: AuthService', () => {
     });
 
     it('should throw NotFoundException when user not found', async () => {
-      mockDb.query.mockResolvedValueOnce([]); // no user
+      mockDb.systemQuery.mockResolvedValueOnce([]); // no user
 
       await expect(service.getCurrentUser(createAuthUser())).rejects.toThrow(NotFoundException);
     });
 
     it('should query with correct userId and tenantId', async () => {
-      mockDb.query.mockResolvedValueOnce([createMockUserRow()]);
+      mockDb.systemQuery.mockResolvedValueOnce([createMockUserRow()]);
 
       await service.getCurrentUser(createAuthUser({ id: 42, tenantId: 99 }));
 
-      const queryParams = mockDb.query.mock.calls[0]?.[1] as number[];
+      const queryParams = mockDb.systemQuery.mock.calls[0]?.[1] as number[];
       expect(queryParams?.[0]).toBe(42);
       expect(queryParams?.[1]).toBe(99);
     });
@@ -511,8 +511,8 @@ describe('SECURITY: AuthService', () => {
 
     it('should throw UnauthorizedException when token was already used', async () => {
       mockJwt.verify.mockReturnValueOnce(validDecodedPayload);
-      mockDb.query.mockResolvedValueOnce([{ used_at: new Date() }]); // already used
-      mockDb.query.mockResolvedValueOnce([{ count: '5' }]); // revoke family
+      mockDb.systemQuery.mockResolvedValueOnce([{ used_at: new Date() }]); // already used
+      mockDb.systemQuery.mockResolvedValueOnce([{ count: '5' }]); // revoke family
 
       await expect(service.refresh({ refreshToken: fakeRefreshToken })).rejects.toThrow(
         UnauthorizedException,
@@ -521,8 +521,8 @@ describe('SECURITY: AuthService', () => {
 
     it('should include security alert message on reuse detection', async () => {
       mockJwt.verify.mockReturnValueOnce(validDecodedPayload);
-      mockDb.query.mockResolvedValueOnce([{ used_at: new Date() }]);
-      mockDb.query.mockResolvedValueOnce([{ count: '3' }]);
+      mockDb.systemQuery.mockResolvedValueOnce([{ used_at: new Date() }]);
+      mockDb.systemQuery.mockResolvedValueOnce([{ count: '3' }]);
 
       await expect(service.refresh({ refreshToken: fakeRefreshToken })).rejects.toThrow(
         'Token reuse detected',
@@ -534,14 +534,14 @@ describe('SECURITY: AuthService', () => {
         ...validDecodedPayload,
         family: 'family-xyz-789',
       });
-      mockDb.query.mockResolvedValueOnce([{ used_at: new Date() }]);
-      mockDb.query.mockResolvedValueOnce([{ count: '4' }]);
+      mockDb.systemQuery.mockResolvedValueOnce([{ used_at: new Date() }]);
+      mockDb.systemQuery.mockResolvedValueOnce([{ count: '4' }]);
 
       await expect(service.refresh({ refreshToken: fakeRefreshToken })).rejects.toThrow(
         UnauthorizedException,
       );
 
-      expect(mockDb.query).toHaveBeenCalledWith(
+      expect(mockDb.systemQuery).toHaveBeenCalledWith(
         expect.stringContaining('UPDATE refresh_tokens SET is_revoked = true'),
         ['family-xyz-789'],
       );
@@ -549,8 +549,8 @@ describe('SECURITY: AuthService', () => {
 
     it('should default to 0 when revokeTokenFamily returns empty result', async () => {
       mockJwt.verify.mockReturnValueOnce(validDecodedPayload);
-      mockDb.query.mockResolvedValueOnce([{ used_at: new Date() }]); // token already used
-      mockDb.query.mockResolvedValueOnce([]); // revokeTokenFamily returns empty
+      mockDb.systemQuery.mockResolvedValueOnce([{ used_at: new Date() }]); // token already used
+      mockDb.systemQuery.mockResolvedValueOnce([]); // revokeTokenFamily returns empty
 
       await expect(service.refresh({ refreshToken: fakeRefreshToken })).rejects.toThrow(
         UnauthorizedException,
@@ -559,8 +559,8 @@ describe('SECURITY: AuthService', () => {
 
     it('should not treat unused token as reuse', async () => {
       mockJwt.verify.mockReturnValueOnce(validDecodedPayload);
-      mockDb.query.mockResolvedValueOnce([{ used_at: null }]); // not used
-      mockDb.query.mockResolvedValueOnce([
+      mockDb.systemQuery.mockResolvedValueOnce([{ used_at: null }]); // not used
+      mockDb.systemQuery.mockResolvedValueOnce([
         {
           id: 1,
           user_id: 1,
@@ -574,8 +574,8 @@ describe('SECURITY: AuthService', () => {
         },
       ]); // findValidRefreshToken
       mockJwt.sign.mockReturnValueOnce('new-access-token').mockReturnValueOnce('new-refresh-token');
-      mockDb.query.mockResolvedValueOnce([]); // storeRefreshToken
-      mockDb.query.mockResolvedValueOnce([]); // markTokenAsUsed
+      mockDb.systemQuery.mockResolvedValueOnce([]); // storeRefreshToken
+      mockDb.systemQuery.mockResolvedValueOnce([]); // markTokenAsUsed
 
       const result = await service.refresh({
         refreshToken: fakeRefreshToken,
@@ -587,10 +587,10 @@ describe('SECURITY: AuthService', () => {
 
     it('should not treat unknown token as reuse', async () => {
       mockJwt.verify.mockReturnValueOnce(validDecodedPayload);
-      mockDb.query.mockResolvedValueOnce([]); // isTokenAlreadyUsed → not found
-      mockDb.query.mockResolvedValueOnce([]); // findValidRefreshToken → not found
+      mockDb.systemQuery.mockResolvedValueOnce([]); // isTokenAlreadyUsed → not found
+      mockDb.systemQuery.mockResolvedValueOnce([]); // findValidRefreshToken → not found
       mockJwt.sign.mockReturnValueOnce('new-access-token').mockReturnValueOnce('new-refresh-token');
-      mockDb.query.mockResolvedValueOnce([]); // storeRefreshToken
+      mockDb.systemQuery.mockResolvedValueOnce([]); // storeRefreshToken
 
       const result = await service.refresh({
         refreshToken: fakeRefreshToken,
@@ -638,8 +638,8 @@ describe('SECURITY: AuthService', () => {
 
     it('should mark old token as used when storedToken exists', async () => {
       mockJwt.verify.mockReturnValueOnce(validDecodedPayload);
-      mockDb.query.mockResolvedValueOnce([{ used_at: null }]); // not used
-      mockDb.query.mockResolvedValueOnce([
+      mockDb.systemQuery.mockResolvedValueOnce([{ used_at: null }]); // not used
+      mockDb.systemQuery.mockResolvedValueOnce([
         {
           id: 1,
           user_id: 1,
@@ -653,13 +653,13 @@ describe('SECURITY: AuthService', () => {
         },
       ]); // token found in DB
       mockJwt.sign.mockReturnValueOnce('new-access').mockReturnValueOnce('new-refresh');
-      mockDb.query.mockResolvedValueOnce([]); // storeRefreshToken
-      mockDb.query.mockResolvedValueOnce([]); // markTokenAsUsed
+      mockDb.systemQuery.mockResolvedValueOnce([]); // storeRefreshToken
+      mockDb.systemQuery.mockResolvedValueOnce([]); // markTokenAsUsed
 
       await service.refresh({ refreshToken: fakeRefreshToken });
 
-      // markTokenAsUsed is the last db.query call
-      const lastCall = mockDb.query.mock.calls[mockDb.query.mock.calls.length - 1];
+      // markTokenAsUsed is the last db.systemQuery call
+      const lastCall = mockDb.systemQuery.mock.calls[mockDb.systemQuery.mock.calls.length - 1];
       expect(lastCall?.[0]).toContain('UPDATE refresh_tokens');
       expect(lastCall?.[0]).toContain('used_at');
       expect((lastCall?.[1] as string[])?.[0]).toBe(fakeTokenHash);
@@ -667,16 +667,16 @@ describe('SECURITY: AuthService', () => {
 
     it('should NOT mark old token when storedToken is null', async () => {
       mockJwt.verify.mockReturnValueOnce(validDecodedPayload);
-      mockDb.query.mockResolvedValueOnce([]); // isTokenAlreadyUsed → not found
-      mockDb.query.mockResolvedValueOnce([]); // findValidRefreshToken → null
+      mockDb.systemQuery.mockResolvedValueOnce([]); // isTokenAlreadyUsed → not found
+      mockDb.systemQuery.mockResolvedValueOnce([]); // findValidRefreshToken → null
       mockJwt.sign.mockReturnValueOnce('new-access').mockReturnValueOnce('new-refresh');
-      mockDb.query.mockResolvedValueOnce([]); // storeRefreshToken
+      mockDb.systemQuery.mockResolvedValueOnce([]); // storeRefreshToken
 
       await service.refresh({ refreshToken: fakeRefreshToken });
 
-      // Only 3 db.query calls: isTokenAlreadyUsed, findValid, storeRefresh
+      // Only 3 db.systemQuery calls: isTokenAlreadyUsed, findValid, storeRefresh
       // No markTokenAsUsed call
-      expect(mockDb.query).toHaveBeenCalledTimes(3);
+      expect(mockDb.systemQuery).toHaveBeenCalledTimes(3);
     });
 
     it('should skip family revocation when decoded.family is undefined', async () => {
@@ -685,14 +685,14 @@ describe('SECURITY: AuthService', () => {
         family: undefined, // no family
       });
       // Token found AND already used
-      mockDb.query.mockResolvedValueOnce([{ used_at: new Date() }]);
+      mockDb.systemQuery.mockResolvedValueOnce([{ used_at: new Date() }]);
 
       await expect(service.refresh({ refreshToken: fakeRefreshToken })).rejects.toThrow(
         UnauthorizedException,
       );
 
-      // Only 1 db.query call (isTokenAlreadyUsed), no revokeTokenFamily call
-      expect(mockDb.query).toHaveBeenCalledTimes(1);
+      // Only 1 db.systemQuery call (isTokenAlreadyUsed), no revokeTokenFamily call
+      expect(mockDb.systemQuery).toHaveBeenCalledTimes(1);
     });
   });
 });

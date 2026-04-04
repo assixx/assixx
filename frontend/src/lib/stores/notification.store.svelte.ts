@@ -28,6 +28,7 @@ export interface NotificationCounts {
   tpm: number;
   workOrders: number;
   approvals: number;
+  shiftSwap: number;
 }
 
 interface NotificationState {
@@ -56,6 +57,7 @@ function createInitialCounts(): NotificationCounts {
     tpm: 0,
     workOrders: 0,
     approvals: 0,
+    shiftSwap: 0,
   };
 }
 
@@ -92,6 +94,7 @@ const SSE_EVENT_TO_COUNT = new Map<string, CountType>([
   ['WORK_ORDER_VERIFIED', 'workOrders'],
   ['NEW_APPROVAL', 'approvals'],
   ['APPROVAL_DECIDED', 'approvals'],
+  ['NEW_SWAP_REQUEST', 'shiftSwap'],
 ]);
 
 function handleSSEEvent(state: NotificationState, event: NotificationEvent): void {
@@ -302,6 +305,8 @@ interface SSRCounts {
   workOrders?: { count: number };
   /** Pending approval notifications */
   approvals?: { count: number };
+  /** Pending shift swap consents */
+  shiftSwap?: { count: number };
 }
 
 /** Safely extract count from an optional API field (defensive against missing data) */
@@ -321,6 +326,7 @@ function initFromSSRData(state: NotificationState, counts: SSRCounts): void {
   const tpm = safeCount(counts.tpm);
   const workOrders = safeCount(counts.workOrders);
   const approvals = safeCount(counts.approvals);
+  const shiftSwap = safeCount(counts.shiftSwap);
 
   state.counts = {
     total:
@@ -333,7 +339,8 @@ function initFromSSRData(state: NotificationState, counts: SSRCounts): void {
       vacation +
       tpm +
       workOrders +
-      approvals,
+      approvals +
+      shiftSwap,
     chat,
     surveys,
     documents,
@@ -344,6 +351,7 @@ function initFromSSRData(state: NotificationState, counts: SSRCounts): void {
     tpm,
     workOrders,
     approvals,
+    shiftSwap,
   };
   state.lastUpdate = new Date();
 

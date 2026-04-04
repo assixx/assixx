@@ -72,7 +72,7 @@ export class WorkOrderPhotosService {
 
     const filePath = await this.writeToDisk(tenantId, workOrderUuid, file);
 
-    const row = await this.db.queryOne<WorkOrderPhotoWithNameRow>(
+    const row = await this.db.tenantQueryOne<WorkOrderPhotoWithNameRow>(
       `WITH inserted AS (
          INSERT INTO work_order_photos
            (uuid, tenant_id, work_order_id, uploaded_by, file_path, file_name, file_size, mime_type, sort_order)
@@ -105,7 +105,7 @@ export class WorkOrderPhotosService {
 
   /** List all photos for a work order */
   async getPhotos(tenantId: number, workOrderUuid: string): Promise<WorkOrderPhoto[]> {
-    const rows = await this.db.query<WorkOrderPhotoWithNameRow>(
+    const rows = await this.db.tenantQuery<WorkOrderPhotoWithNameRow>(
       `SELECT p.*, u.first_name, u.last_name
        FROM work_order_photos p
        JOIN work_orders wo ON p.work_order_id = wo.id
@@ -124,7 +124,7 @@ export class WorkOrderPhotosService {
     userRole: UserRole,
     photoUuid: string,
   ): Promise<void> {
-    const photo = await this.db.queryOne<{
+    const photo = await this.db.tenantQueryOne<{
       id: number;
       file_path: string;
       work_order_id: number;
@@ -154,7 +154,10 @@ export class WorkOrderPhotosService {
       throw new ForbiddenException('Nur eigene Fotos können gelöscht werden');
     }
 
-    await this.db.query(`DELETE FROM work_order_photos WHERE id = $1`, [photo.id]);
+    await this.db.tenantQuery(`DELETE FROM work_order_photos WHERE id = $1 AND tenant_id = $2`, [
+      photo.id,
+      tenantId,
+    ]);
 
     void this.deleteFileFromDisk(photo.file_path);
 
@@ -174,7 +177,7 @@ export class WorkOrderPhotosService {
     workOrderUuid: string,
     photoUuid: string,
   ): Promise<{ filePath: string; fileName: string; mimeType: string }> {
-    const row = await this.db.queryOne<{
+    const row = await this.db.tenantQueryOne<{
       file_path: string;
       file_name: string;
       mime_type: string;
@@ -200,7 +203,7 @@ export class WorkOrderPhotosService {
 
   /** Get photos/attachments from the source entity (TPM defect or KVP suggestion) — read-only */
   async getSourcePhotos(tenantId: number, workOrderUuid: string): Promise<SourcePhoto[]> {
-    const wo = await this.db.queryOne<{
+    const wo = await this.db.tenantQueryOne<{
       source_type: string;
       source_uuid: string | null;
     }>(
@@ -212,7 +215,7 @@ export class WorkOrderPhotosService {
     if (wo?.source_uuid === null || wo?.source_uuid === undefined) return [];
 
     if (wo.source_type === 'tpm_defect') {
-      const rows = await this.db.query<SourcePhotoRow>(
+      const rows = await this.db.tenantQuery<SourcePhotoRow>(
         `SELECT dp.uuid, dp.file_path, dp.file_name,
                 dp.file_size, dp.mime_type, dp.created_at
          FROM tpm_defect_photos dp
@@ -225,7 +228,7 @@ export class WorkOrderPhotosService {
     }
 
     if (wo.source_type === 'kvp_proposal') {
-      const rows = await this.db.query<SourcePhotoRow>(
+      const rows = await this.db.tenantQuery<SourcePhotoRow>(
         `SELECT ka.file_uuid AS uuid, ka.file_path, ka.file_name,
                 ka.file_size, ka.file_type AS mime_type, ka.uploaded_at AS created_at
          FROM kvp_attachments ka
@@ -248,7 +251,7 @@ export class WorkOrderPhotosService {
     tenantId: number,
     uuid: string,
   ): Promise<{ id: number; title: string; status: string }> {
-    const row = await this.db.queryOne<{
+    const row = await this.db.tenantQueryOne<{
       id: number;
       title: string;
       status: string;
@@ -264,7 +267,7 @@ export class WorkOrderPhotosService {
   }
 
   private async enforcePhotoLimit(workOrderId: number): Promise<void> {
-    const result = await this.db.queryOne<{ count: string }>(
+    const result = await this.db.tenantQueryOne<{ count: string }>(
       `SELECT COUNT(*) AS count FROM work_order_photos
        WHERE work_order_id = $1`,
       [workOrderId],

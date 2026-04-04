@@ -111,7 +111,7 @@ export class ScheduledMessageProcessorService implements OnModuleInit {
 
     try {
       // Get all due messages (FOR UPDATE SKIP LOCKED for concurrency safety)
-      const dueMessages = await this.db.query<ScheduledMessageRow>(
+      const dueMessages = await this.db.systemQuery<ScheduledMessageRow>(
         `SELECT * FROM chat_scheduled_messages
          WHERE is_active = $1 AND scheduled_for <= NOW()
          ORDER BY scheduled_for ASC
@@ -161,7 +161,7 @@ export class ScheduledMessageProcessorService implements OnModuleInit {
     const messageUuid = uuidv7();
 
     // 1. Insert the message into the messages table (with E2E fields if encrypted)
-    const insertResult = await this.db.query<{ id: number }>(
+    const insertResult = await this.db.systemQuery<{ id: number }>(
       `INSERT INTO chat_messages (
         tenant_id, conversation_id, sender_id, content,
         attachment_path, attachment_name, attachment_type, attachment_size,
@@ -193,13 +193,13 @@ export class ScheduledMessageProcessorService implements OnModuleInit {
     }
 
     // 2. Update conversation timestamp
-    await this.db.query(
+    await this.db.systemQuery(
       `UPDATE chat_conversations SET updated_at = NOW() WHERE id = $1 AND tenant_id = $2`,
       [scheduled.conversation_id, scheduled.tenant_id],
     );
 
     // 3. Mark scheduled message as sent
-    await this.db.query(
+    await this.db.systemQuery(
       `UPDATE chat_scheduled_messages SET is_active = $1, sent_at = NOW() WHERE id = $2`,
       [SCHEDULED_STATUS.SENT, scheduled.id],
     );
@@ -224,7 +224,7 @@ export class ScheduledMessageProcessorService implements OnModuleInit {
     try {
       // Get ALL participants including sender — scheduled messages are sent
       // by the processor, not the user, so sender also needs notification
-      const recipients = await this.db.query<RecipientRow>(
+      const recipients = await this.db.systemQuery<RecipientRow>(
         `SELECT user_id FROM chat_conversation_participants
          WHERE conversation_id = $1`,
         [scheduled.conversation_id],

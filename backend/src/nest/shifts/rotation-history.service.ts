@@ -83,7 +83,7 @@ export class RotationHistoryService {
 
     query += ' ORDER BY h.shift_date DESC, h.user_id';
 
-    const rows = await this.databaseService.query<DbHistoryRow>(query, params);
+    const rows = await this.databaseService.tenantQuery<DbHistoryRow>(query, params);
     return rows.map(
       (row: DbHistoryRow) =>
         dbToApi(row as unknown as Record<string, unknown>) as RotationHistoryResponse,
@@ -91,7 +91,7 @@ export class RotationHistoryService {
   }
 
   private async executeDeleteWithCount(query: string, params: unknown[]): Promise<number> {
-    const result = await this.databaseService.query<{ count: string }>(query, params);
+    const result = await this.databaseService.tenantQuery<{ count: string }>(query, params);
     return Number.parseInt(result[0]?.count ?? '0', 10);
   }
 
@@ -119,7 +119,7 @@ export class RotationHistoryService {
       `Deleting ${hasPatternId ? `pattern ${patternId}` : 'all patterns'} for team ${teamId}`,
     );
 
-    await this.databaseService.query('BEGIN', []);
+    await this.databaseService.tenantQuery('BEGIN', []);
 
     try {
       const params = hasPatternId ? [tenantId, teamId, patternId] : [tenantId, teamId];
@@ -156,7 +156,7 @@ export class RotationHistoryService {
         );
       }
 
-      await this.databaseService.query('COMMIT', []);
+      await this.databaseService.tenantQuery('COMMIT', []);
 
       void this.activityLogger.logDelete(
         tenantId,
@@ -173,7 +173,7 @@ export class RotationHistoryService {
 
       return { patterns, assignments, history, shifts, plans };
     } catch (error: unknown) {
-      await this.databaseService.query('ROLLBACK', []);
+      await this.databaseService.tenantQuery('ROLLBACK', []);
       throw error;
     }
   }
@@ -189,7 +189,7 @@ export class RotationHistoryService {
       `Deleting rotation history for team ${teamId} from ${startDate} to ${endDate}`,
     );
 
-    const result = await this.databaseService.query<{ count: string }>(
+    const result = await this.databaseService.tenantQuery<{ count: string }>(
       `WITH deleted AS (
         DELETE FROM shift_rotation_history
         WHERE tenant_id = $1 AND team_id = $2 AND shift_date >= $3 AND shift_date <= $4
@@ -223,7 +223,7 @@ export class RotationHistoryService {
   ): Promise<void> {
     this.logger.debug(`Deleting rotation history entry ${historyId} for tenant ${tenantId}`);
 
-    const result = await this.databaseService.query<{ count: string }>(
+    const result = await this.databaseService.tenantQuery<{ count: string }>(
       `WITH deleted AS (
         DELETE FROM shift_rotation_history WHERE id = $1 AND tenant_id = $2 RETURNING *
       ) SELECT COUNT(*) as count FROM deleted`,

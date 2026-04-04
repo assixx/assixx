@@ -37,7 +37,8 @@ export interface NavItem {
     | 'vacation'
     | 'tpm'
     | 'workOrders'
-    | 'approvals';
+    | 'approvals'
+    | 'shiftSwap';
   /** Tenant addon code — items with this field are hidden when addon is not active */
   addonCode?: string;
 }
@@ -448,6 +449,7 @@ const ADMIN_STATIC_BOTTOM: NavItem[] = [
     label: 'Schichtplanung',
     url: '/shifts',
     addonCode: 'shift_planning',
+    badgeType: 'shiftSwap',
   },
   {
     id: 'chat',
@@ -580,6 +582,7 @@ const EMPLOYEE_MENU_STATIC: NavItem[] = [
     label: 'Schichtplanung',
     url: '/shifts',
     addonCode: 'shift_planning',
+    badgeType: 'shiftSwap',
   },
   {
     id: 'settings',

@@ -17,6 +17,7 @@ import { TpmDueDateCronService } from './tpm-due-date-cron.service.js';
 function createMockDb() {
   return {
     query: vi.fn(),
+    systemQuery: vi.fn(),
     transaction: vi.fn(),
   };
 }
@@ -52,16 +53,16 @@ describe('TpmDueDateCronService', () => {
 
   describe('handleMorningCheck()', () => {
     it('should do nothing when no due cards found', async () => {
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.systemQuery.mockResolvedValueOnce([]);
 
       await service.handleMorningCheck();
 
-      expect(mockDb.query).toHaveBeenCalledTimes(1);
+      expect(mockDb.systemQuery).toHaveBeenCalledTimes(1);
       expect(mockDb.transaction).not.toHaveBeenCalled();
     });
 
     it('should trigger cascade for each asset group', async () => {
-      mockDb.query.mockResolvedValueOnce([
+      mockDb.systemQuery.mockResolvedValueOnce([
         { tenant_id: 10, asset_id: 1, max_interval_order: 3 },
         { tenant_id: 10, asset_id: 2, max_interval_order: 6 },
       ]);
@@ -74,17 +75,17 @@ describe('TpmDueDateCronService', () => {
 
       await service.handleMorningCheck();
 
-      expect(mockDb.query).toHaveBeenCalledTimes(1);
+      expect(mockDb.systemQuery).toHaveBeenCalledTimes(1);
       expect(mockDb.transaction).toHaveBeenCalledTimes(2);
       expect(mockCascade.triggerCascade).toHaveBeenCalledTimes(2);
     });
 
     it('should use correct GROUP BY query', async () => {
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.systemQuery.mockResolvedValueOnce([]);
 
       await service.handleMorningCheck();
 
-      const queryCall = mockDb.query.mock.calls[0];
+      const queryCall = mockDb.systemQuery.mock.calls[0];
       const sql = queryCall[0] as string;
       expect(sql).toContain('GROUP BY tenant_id, asset_id');
       expect(sql).toContain('MAX(interval_order)');
@@ -93,7 +94,7 @@ describe('TpmDueDateCronService', () => {
     });
 
     it('should continue processing if one group fails', async () => {
-      mockDb.query.mockResolvedValueOnce([
+      mockDb.systemQuery.mockResolvedValueOnce([
         { tenant_id: 10, asset_id: 1, max_interval_order: 3 },
         { tenant_id: 10, asset_id: 2, max_interval_order: 6 },
       ]);
@@ -115,11 +116,11 @@ describe('TpmDueDateCronService', () => {
 
   describe('handleEveningCheck()', () => {
     it('should call same logic as morning check', async () => {
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.systemQuery.mockResolvedValueOnce([]);
 
       await service.handleEveningCheck();
 
-      expect(mockDb.query).toHaveBeenCalledTimes(1);
+      expect(mockDb.systemQuery).toHaveBeenCalledTimes(1);
     });
   });
 });

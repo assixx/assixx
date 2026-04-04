@@ -102,13 +102,13 @@ export class HallsService {
     this.logger.debug(`Fetching halls for tenant ${tenantId}`);
 
     try {
-      const rows = await this.db.query<HallRow>(this.FIND_ALL_HALLS_QUERY, [tenantId]);
+      const rows = await this.db.tenantQuery<HallRow>(this.FIND_ALL_HALLS_QUERY, [tenantId]);
 
       return rows.map((hall: HallRow) => this.mapToResponse(hall, includeExtended));
     } catch (error: unknown) {
       this.logger.warn(`Extended query failed, using simple query: ${getErrorMessage(error)}`);
 
-      const rows = await this.db.query<HallRow>(
+      const rows = await this.db.tenantQuery<HallRow>(
         `SELECT * FROM halls WHERE tenant_id = $1 AND is_active IN (${IS_ACTIVE.INACTIVE}, ${IS_ACTIVE.ACTIVE}, ${IS_ACTIVE.ARCHIVED}) ORDER BY name`,
         [tenantId],
       );
@@ -121,7 +121,7 @@ export class HallsService {
     this.logger.debug(`Fetching hall ${id} for tenant ${tenantId}`);
 
     try {
-      const rows = await this.db.query<HallRow>(
+      const rows = await this.db.tenantQuery<HallRow>(
         `SELECT h.*, a.name as area_name
          FROM halls h
          LEFT JOIN areas a ON h.area_id = a.id
@@ -140,7 +140,7 @@ export class HallsService {
       }
       this.logger.warn(`Extended query failed, using simple query: ${getErrorMessage(error)}`);
 
-      const rows = await this.db.query<HallRow>(
+      const rows = await this.db.tenantQuery<HallRow>(
         'SELECT * FROM halls WHERE id = $1 AND tenant_id = $2',
         [id, tenantId],
       );
@@ -167,7 +167,7 @@ export class HallsService {
     const isActive = dto.isActive ?? 1;
     const hallUuid = uuidv7();
 
-    const rows = await this.db.query<{ id: number }>(
+    const rows = await this.db.tenantQuery<{ id: number }>(
       `INSERT INTO halls (name, description, area_id, is_active, tenant_id, created_by, uuid, uuid_created_at)
        VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
        RETURNING id`,
@@ -230,7 +230,7 @@ export class HallsService {
   ): Promise<HallResponse> {
     this.logger.log(`Updating hall ${id}`);
 
-    const existing = await this.db.query<HallRow>(
+    const existing = await this.db.tenantQuery<HallRow>(
       'SELECT * FROM halls WHERE id = $1 AND tenant_id = $2',
       [id, tenantId],
     );
@@ -250,7 +250,7 @@ export class HallsService {
     const { fields, values } = this.buildUpdateFields(dto);
     if (fields.length > 0) {
       values.push(id);
-      await this.db.query(
+      await this.db.tenantQuery(
         `UPDATE halls SET ${fields.join(', ')} WHERE id = $${values.length}`,
         values,
       );
@@ -283,7 +283,7 @@ export class HallsService {
   ): Promise<{ message: string }> {
     this.logger.log(`Deleting hall ${id}`);
 
-    const existing = await this.db.query<HallRow>(
+    const existing = await this.db.tenantQuery<HallRow>(
       'SELECT * FROM halls WHERE id = $1 AND tenant_id = $2',
       [id, tenantId],
     );
@@ -294,7 +294,7 @@ export class HallsService {
 
     const existingHall = existing[0];
 
-    await this.db.query('DELETE FROM halls WHERE id = $1', [id]);
+    await this.db.tenantQuery('DELETE FROM halls WHERE id = $1 AND tenant_id = $2', [id, tenantId]);
 
     await this.activityLogger.logDelete(
       tenantId,
@@ -315,7 +315,7 @@ export class HallsService {
   async getHallStats(tenantId: number): Promise<HallStats> {
     this.logger.debug(`Fetching hall stats for tenant ${tenantId}`);
 
-    const rows = await this.db.query<{ count: string }>(
+    const rows = await this.db.tenantQuery<{ count: string }>(
       'SELECT COUNT(*) as count FROM halls WHERE tenant_id = $1',
       [tenantId],
     );

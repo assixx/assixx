@@ -25,14 +25,14 @@ export class SurveyQuestionsService {
     questions: DbSurveyQuestion[];
     assignments: DbSurveyAssignment[];
   }> {
-    const questions = await this.db.query<DbSurveyQuestion>(
+    const questions = await this.db.tenantQuery<DbSurveyQuestion>(
       `SELECT * FROM survey_questions WHERE survey_id = $1 ORDER BY order_index`,
       [surveyId],
     );
     if (questions.length > 0) {
       const questionIds = questions.map((q: DbSurveyQuestion) => q.id);
       const placeholders = questionIds.map((_: number, idx: number) => `$${idx + 1}`).join(',');
-      const optionRows = await this.db.query<DbSurveyQuestionOption>(
+      const optionRows = await this.db.tenantQuery<DbSurveyQuestionOption>(
         `SELECT id, question_id, option_text, order_position FROM survey_question_options
          WHERE question_id IN (${placeholders}) ORDER BY question_id, order_position`,
         questionIds,
@@ -40,7 +40,7 @@ export class SurveyQuestionsService {
       const optionsMap = this.buildOptionsMap(optionRows);
       this.attachOptionsToQuestions(questions, optionsMap);
     }
-    const assignments = await this.db.query<DbSurveyAssignment>(
+    const assignments = await this.db.tenantQuery<DbSurveyAssignment>(
       `SELECT * FROM survey_assignments WHERE survey_id = $1`,
       [surveyId],
     );
@@ -55,7 +55,7 @@ export class SurveyQuestionsService {
   ): Promise<void> {
     for (const [index, q] of questions.entries()) {
       const questionData = buildQuestionData(q as QuestionInput, index);
-      const questionRows = await this.db.query<{ id: number }>(
+      const questionRows = await this.db.tenantQuery<{ id: number }>(
         `INSERT INTO survey_questions (tenant_id, survey_id, question_text, question_type, is_required, order_index)
          VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
         [
@@ -82,7 +82,7 @@ export class SurveyQuestionsService {
     const qType = questionData.question_type;
     if (qType !== 'single_choice' && qType !== 'multiple_choice') return;
     for (const [optIndex, optionText] of questionData.options.entries()) {
-      await this.db.query(
+      await this.db.tenantQuery(
         `INSERT INTO survey_question_options (tenant_id, question_id, option_text, order_position) VALUES ($1, $2, $3, $4)`,
         [tenantId, questionId, optionText, optIndex],
       );
@@ -97,7 +97,7 @@ export class SurveyQuestionsService {
   ): Promise<void> {
     for (const a of assignments) {
       const data = buildAssignmentData(a as AssignmentInput);
-      await this.db.query(
+      await this.db.tenantQuery(
         `INSERT INTO survey_assignments (tenant_id, survey_id, assignment_type, area_id, department_id, team_id, user_id)
          VALUES ($1, $2, $3, $4, $5, $6, $7)`,
         [

@@ -23,7 +23,6 @@ import {
 import { CurrentUser } from '../common/decorators/current-user.decorator.js';
 import { RequireAddon } from '../common/decorators/require-addon.decorator.js';
 import { RequirePermission } from '../common/decorators/require-permission.decorator.js';
-import { Roles } from '../common/decorators/roles.decorator.js';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard.js';
 import { RolesGuard } from '../common/guards/roles.guard.js';
 import type { JwtPayload } from '../common/interfaces/auth.interface.js';
@@ -100,25 +99,20 @@ export class RotationController {
 
   /** POST /api/v2/shifts/rotation/patterns */
   @Post('patterns')
-  @Roles('admin', 'root')
   @HttpCode(HttpStatus.CREATED)
+  @RequirePermission(SHIFT_ADDON, SHIFT_ROTATION, 'canWrite')
   async createRotationPattern(
     @CurrentUser() user: JwtPayload,
     @Body() dto: CreateRotationPatternDto,
   ): Promise<{ pattern: RotationPatternResponse }> {
     this.logger.debug(`Creating rotation pattern for tenant ${user.tenantId}`);
-    const pattern = await this.rotationService.createRotationPattern(
-      dto,
-      user.tenantId,
-      user.id,
-      user.role,
-    );
+    const pattern = await this.rotationService.createRotationPattern(dto, user.tenantId, user.id);
     return { pattern };
   }
 
   /** PUT /api/v2/shifts/rotation/patterns/uuid/:uuid */
   @Put('patterns/uuid/:uuid')
-  @Roles('admin', 'root')
+  @RequirePermission(SHIFT_ADDON, SHIFT_ROTATION, 'canWrite')
   async updateRotationPatternByUuid(
     @Param('uuid') uuid: string,
     @CurrentUser() user: JwtPayload,
@@ -129,7 +123,6 @@ export class RotationController {
       uuid,
       dto,
       user.tenantId,
-      user.role,
       user.id,
     );
     return { pattern };
@@ -140,7 +133,7 @@ export class RotationController {
    * @deprecated Use PUT /patterns/uuid/:uuid instead
    */
   @Put('patterns/:id')
-  @Roles('admin', 'root')
+  @RequirePermission(SHIFT_ADDON, SHIFT_ROTATION, 'canWrite')
   async updateRotationPattern(
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser() user: JwtPayload,
@@ -151,7 +144,6 @@ export class RotationController {
       id,
       dto,
       user.tenantId,
-      user.role,
       user.id,
     );
     return { pattern };
@@ -159,13 +151,13 @@ export class RotationController {
 
   /** DELETE /api/v2/shifts/rotation/patterns/uuid/:uuid */
   @Delete('patterns/uuid/:uuid')
-  @Roles('admin', 'root')
+  @RequirePermission(SHIFT_ADDON, SHIFT_ROTATION, 'canDelete')
   async deleteRotationPatternByUuid(
     @Param('uuid') uuid: string,
     @CurrentUser() user: JwtPayload,
   ): Promise<null> {
     this.logger.debug(`Deleting rotation pattern by UUID ${uuid}`);
-    await this.rotationService.deleteRotationPatternByUuid(uuid, user.tenantId, user.role, user.id);
+    await this.rotationService.deleteRotationPatternByUuid(uuid, user.tenantId, user.id);
     return null;
   }
 
@@ -174,13 +166,13 @@ export class RotationController {
    * @deprecated Use DELETE /patterns/uuid/:uuid instead
    */
   @Delete('patterns/:id')
-  @Roles('admin', 'root')
+  @RequirePermission(SHIFT_ADDON, SHIFT_ROTATION, 'canDelete')
   async deleteRotationPattern(
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser() user: JwtPayload,
   ): Promise<null> {
     this.logger.debug(`Deleting rotation pattern ${id}`);
-    await this.rotationService.deleteRotationPattern(id, user.tenantId, user.role, user.id);
+    await this.rotationService.deleteRotationPattern(id, user.tenantId, user.id);
     return null;
   }
 
@@ -188,7 +180,7 @@ export class RotationController {
 
   /** POST /api/v2/shifts/rotation/assign */
   @Post('assign')
-  @Roles('admin', 'root')
+  @RequirePermission(SHIFT_ADDON, SHIFT_ROTATION, 'canWrite')
   async assignUsersToPattern(
     @CurrentUser() user: JwtPayload,
     @Body() dto: AssignUsersToPatternDto,
@@ -198,7 +190,6 @@ export class RotationController {
       dto,
       user.tenantId,
       user.id,
-      user.role,
     );
     return { assignments };
   }
@@ -207,7 +198,7 @@ export class RotationController {
 
   /** POST /api/v2/shifts/rotation/generate */
   @Post('generate')
-  @Roles('admin', 'root')
+  @RequirePermission(SHIFT_ADDON, SHIFT_ROTATION, 'canWrite')
   async generateRotationShifts(
     @CurrentUser() user: JwtPayload,
     @Body() dto: GenerateRotationShiftsDto,
@@ -217,26 +208,20 @@ export class RotationController {
       dto,
       user.tenantId,
       user.id,
-      user.role,
     );
     return { generatedShifts };
   }
 
   /** POST /api/v2/shifts/rotation/generate-from-config */
   @Post('generate-from-config')
-  @Roles('admin', 'root')
+  @RequirePermission(SHIFT_ADDON, SHIFT_ROTATION, 'canWrite')
   async generateRotationFromConfig(
     @CurrentUser() user: JwtPayload,
     @Body() dto: GenerateRotationFromConfigDto,
   ): Promise<Record<string, unknown>> {
     this.logger.debug(`Generating rotation from config for tenant ${user.tenantId}`);
     // ResponseInterceptor wraps in { success, data, timestamp }
-    return await this.rotationService.generateRotationFromConfig(
-      dto,
-      user.tenantId,
-      user.id,
-      user.role,
-    );
+    return await this.rotationService.generateRotationFromConfig(dto, user.tenantId, user.id);
   }
 
   // ============= HISTORY =============
@@ -270,7 +255,7 @@ export class RotationController {
    * If only teamId: deletes ALL patterns for the team.
    */
   @Delete('history')
-  @Roles('admin', 'root')
+  @RequirePermission(SHIFT_ADDON, SHIFT_ROTATION, 'canDelete')
   async deleteRotationHistory(
     @CurrentUser() user: JwtPayload,
     @Query() query: DeleteRotationHistoryDto,
@@ -288,9 +273,8 @@ export class RotationController {
     const deletedCounts = await this.rotationService.deleteRotationHistory(
       user.tenantId,
       teamId,
-      user.role,
       user.id,
-      patternId, // Optional: if provided, only delete this pattern
+      patternId,
     );
     const message =
       hasPatternId ?
@@ -302,7 +286,7 @@ export class RotationController {
 
   /** DELETE /api/v2/shifts/rotation/history/week */
   @Delete('history/week')
-  @Roles('admin', 'root')
+  @RequirePermission(SHIFT_ADDON, SHIFT_ROTATION, 'canDelete')
   async deleteRotationHistoryByDateRange(
     @CurrentUser() user: JwtPayload,
     @Query() query: DeleteRotationHistoryByDateRangeDto,
@@ -316,7 +300,6 @@ export class RotationController {
     const deletedCounts = await this.rotationService.deleteRotationHistoryByDateRange(
       user.tenantId,
       query.teamId,
-      user.role,
       user.id,
       query.startDate,
       query.endDate,
@@ -329,13 +312,13 @@ export class RotationController {
 
   /** DELETE /api/v2/shifts/rotation/history/:id */
   @Delete('history/:id')
-  @Roles('admin', 'root')
+  @RequirePermission(SHIFT_ADDON, SHIFT_ROTATION, 'canDelete')
   async deleteRotationHistoryEntry(
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser() user: JwtPayload,
   ): Promise<{ message: string }> {
     this.logger.debug(`Deleting rotation history entry ${id}`);
-    await this.rotationService.deleteRotationHistoryEntry(id, user.tenantId, user.role, user.id);
+    await this.rotationService.deleteRotationHistoryEntry(id, user.tenantId, user.id);
     return { message: 'Entry deleted successfully' };
   }
 }

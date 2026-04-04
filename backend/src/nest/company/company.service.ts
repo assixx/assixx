@@ -38,7 +38,7 @@ export class CompanyService {
    * Get company data for the current tenant
    */
   async getCompanyData(tenantId: number): Promise<CompanyData> {
-    const rows = await this.db.query<DbCompanyRow>(
+    const rows = await this.db.tenantQuery<DbCompanyRow>(
       `SELECT company_name, street, house_number, postal_code, city, country_code, phone, email
        FROM tenants
        WHERE id = $1`,
@@ -100,7 +100,7 @@ export class CompanyService {
 
     const sql = `UPDATE tenants SET ${setClauses.join(', ')} WHERE id = $${paramIndex} RETURNING company_name, street, house_number, postal_code, city, country_code, phone, email`;
 
-    const rows = await this.db.query<DbCompanyRow>(sql, values);
+    const rows = await this.db.tenantQuery<DbCompanyRow>(sql, values);
 
     const row = rows[0];
     if (row === undefined) {

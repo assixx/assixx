@@ -32,7 +32,12 @@ function createServiceWithMock(): {
   mockAccessService: Record<string, ReturnType<typeof vi.fn>>;
   mockActivityLogger: Record<string, ReturnType<typeof vi.fn>>;
 } {
-  const mockDb = { query: vi.fn() };
+  const queryFn = vi.fn();
+  const mockDb = {
+    query: queryFn,
+    tenantQuery: queryFn,
+    tenantQueryOne: vi.fn().mockResolvedValue(null),
+  };
   const mockAccessService = {
     getUserAccessInfo: vi.fn(),
     applyAccessControl: vi.fn(),

@@ -20,7 +20,8 @@ import { TpmScheduleProjectionService } from './tpm-schedule-projection.service.
 // =============================================================
 
 function createMockDb() {
-  return { query: vi.fn() };
+  const qf = vi.fn();
+  return { query: qf, tenantQuery: qf };
 }
 type MockDb = ReturnType<typeof createMockDb>;
 

@@ -109,11 +109,11 @@ export class WebSocketMessageHandler {
       AND c.tenant_id = $2
       AND cp.tenant_id = $3
     `;
-    const participants = await this.db.query<ConversationParticipantResult>(participantQuery, [
-      conversationId,
+    const participants = await this.db.queryAsTenant<ConversationParticipantResult>(
+      participantQuery,
+      [conversationId, tenantId, tenantId],
       tenantId,
-      tenantId,
-    ]);
+    );
     return participants.map((p: ConversationParticipantResult) => p.user_id);
   }
 
@@ -123,7 +123,7 @@ export class WebSocketMessageHandler {
     tenantId: number,
     excludeUserId: number,
   ): Promise<number[]> {
-    const participants = await this.db.query<ConversationParticipantResult>(
+    const participants = await this.db.queryAsTenant<ConversationParticipantResult>(
       `SELECT cp.user_id
        FROM chat_conversation_participants cp
        JOIN chat_conversations c ON cp.conversation_id = c.id
@@ -132,6 +132,7 @@ export class WebSocketMessageHandler {
        AND cp.tenant_id = $3
        AND cp.user_id != $4`,
       [conversationId, tenantId, tenantId, excludeUserId],
+      tenantId,
     );
     return participants.map((p: ConversationParticipantResult) => p.user_id);
   }
@@ -141,13 +142,14 @@ export class WebSocketMessageHandler {
    * Used for presence broadcasts and snapshots.
    */
   async getConversationPartnerIds(userId: number, tenantId: number): Promise<number[]> {
-    const partners = await this.db.query<ConversationParticipantResult>(
+    const partners = await this.db.queryAsTenant<ConversationParticipantResult>(
       `SELECT DISTINCT cp2.user_id
        FROM chat_conversation_participants cp1
        JOIN chat_conversation_participants cp2 ON cp1.conversation_id = cp2.conversation_id
        JOIN chat_conversations c ON cp1.conversation_id = c.id
        WHERE cp1.user_id = $1 AND c.tenant_id = $2 AND cp2.user_id != $3`,
       [userId, tenantId, userId],
+      tenantId,
     );
     return partners.map((p: ConversationParticipantResult) => p.user_id);
   }
@@ -235,7 +237,7 @@ export class WebSocketMessageHandler {
     tenantId: number,
     userId: number,
   ): Promise<MarkReadResult | null> {
-    await this.db.query(
+    await this.db.queryAsTenant(
       `UPDATE chat_messages
        SET is_read = true
        WHERE id = $1
@@ -246,11 +248,13 @@ export class WebSocketMessageHandler {
          AND cp.user_id = $3
        )`,
       [messageId, tenantId, userId],
+      tenantId,
     );
 
-    const messageInfo = await this.db.query<MessageInfoResult>(
+    const messageInfo = await this.db.queryAsTenant<MessageInfoResult>(
       'SELECT sender_id, conversation_id FROM chat_messages WHERE id = $1',
       [messageId],
+      tenantId,
     );
 
     if (messageInfo.length > 0 && messageInfo[0] !== undefined) {
@@ -278,10 +282,11 @@ export class WebSocketMessageHandler {
     interface KeyVersionRow {
       key_version: number;
     }
-    const rows = await this.db.query<KeyVersionRow>(
+    const rows = await this.db.queryAsTenant<KeyVersionRow>(
       `SELECT key_version FROM e2e_user_keys
        WHERE tenant_id = $1 AND user_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}`,
       [tenantId, userId],
+      tenantId,
     );
     return rows[0]?.key_version === claimedVersion;
   }
@@ -306,18 +311,22 @@ export class WebSocketMessageHandler {
     interface InsertResult {
       id: number;
     }
-    const rows = await this.db.query<InsertResult>(messageQuery, [
-      conversationId,
-      senderId,
-      content,
+    const rows = await this.db.queryAsTenant<InsertResult>(
+      messageQuery,
+      [
+        conversationId,
+        senderId,
+        content,
+        tenantId,
+        isE2e ? e2eFields.encryptedContent : null,
+        isE2e ? e2eFields.e2eNonce : null,
+        isE2e,
+        isE2e ? e2eFields.e2eKeyVersion : null,
+        isE2e ? e2eFields.e2eKeyEpoch : null,
+        messageUuid,
+      ],
       tenantId,
-      isE2e ? e2eFields.encryptedContent : null,
-      isE2e ? e2eFields.e2eNonce : null,
-      isE2e,
-      isE2e ? e2eFields.e2eKeyVersion : null,
-      isE2e ? e2eFields.e2eKeyEpoch : null,
-      messageUuid,
-    ]);
+    );
 
     const insertedRow = rows[0];
     if (insertedRow === undefined) {
@@ -342,7 +351,7 @@ export class WebSocketMessageHandler {
       AND tenant_id = $2
       AND message_id IS NULL
     `;
-    await this.db.query(updateQuery, [messageId, tenantId, ...attachmentIds]);
+    await this.db.queryAsTenant(updateQuery, [messageId, tenantId, ...attachmentIds], tenantId);
     logger.info(`Linked ${attachmentIds.length} attachments to message ${messageId}`);
   }
 
@@ -368,7 +377,11 @@ export class WebSocketMessageHandler {
       file_size: number;
       mime_type: string;
     }
-    const rows = await this.db.query<AttachmentRow>(attachmentQuery, [tenantId, ...attachmentIds]);
+    const rows = await this.db.queryAsTenant<AttachmentRow>(
+      attachmentQuery,
+      [tenantId, ...attachmentIds],
+      tenantId,
+    );
 
     return rows.map((row: AttachmentRow) => ({
       id: row.id,
@@ -386,7 +399,11 @@ export class WebSocketMessageHandler {
       SELECT id, username, first_name, last_name, profile_picture as profile_picture_url
       FROM users WHERE id = $1 AND tenant_id = $2
     `;
-    const senderInfo = await this.db.query<UserInfoResult>(senderQuery, [userId, tenantId]);
+    const senderInfo = await this.db.queryAsTenant<UserInfoResult>(
+      senderQuery,
+      [userId, tenantId],
+      tenantId,
+    );
     return senderInfo[0];
   }
 

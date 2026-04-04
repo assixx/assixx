@@ -57,6 +57,8 @@ export const DashboardCountsSchema = z.object({
   tpm: CountItemSchema,
   /** Unread work order notifications (assignments, verifications) */
   workOrders: CountItemSchema,
+  /** Pending shift swap consents (requests where user is target + pending_partner) */
+  shiftSwap: CountItemSchema,
   /** Timestamp when counts were fetched */
   fetchedAt: z.string(),
 });

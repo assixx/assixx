@@ -27,14 +27,20 @@ describe('TenantDeletionAudit', () => {
   let audit: TenantDeletionAudit;
   let mockDb: {
     query: ReturnType<typeof vi.fn>;
+    systemQuery: ReturnType<typeof vi.fn>;
     transaction: ReturnType<typeof vi.fn>;
+    systemTransaction: ReturnType<typeof vi.fn>;
   };
 
   beforeEach(() => {
     vi.resetAllMocks();
+    const queryFn = vi.fn();
+    const transactionFn = vi.fn();
     mockDb = {
-      query: vi.fn(),
-      transaction: vi.fn(),
+      query: queryFn,
+      systemQuery: queryFn,
+      transaction: transactionFn,
+      systemTransaction: transactionFn,
     };
     audit = new TenantDeletionAudit(mockDb as unknown as DatabaseService);
   });

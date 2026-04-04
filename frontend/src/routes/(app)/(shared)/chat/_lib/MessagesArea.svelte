@@ -259,14 +259,6 @@
 
             <!-- Time + Read Indicator (using pre-formatted time) -->
             <div class="message-time">
-              {#if message.isE2e === true}
-                <span
-                  class="e2e-indicator"
-                  title="Ende-zu-Ende verschlüsselt"
-                >
-                  <i class="fas fa-lock"></i>
-                </span>
-              {/if}
               {message.formattedTime}
               {#if message.isOwn}
                 <span
@@ -575,13 +567,6 @@
   .message--scheduled-cancel:hover {
     background: color-mix(in oklch, var(--color-danger) 20%, transparent);
     color: var(--color-danger);
-  }
-
-  /* E2E encryption indicators */
-  .e2e-indicator {
-    color: var(--success-color, var(--color-success));
-    font-size: 0.65em;
-    margin-right: 2px;
   }
 
   .e2e-decrypt-failed {

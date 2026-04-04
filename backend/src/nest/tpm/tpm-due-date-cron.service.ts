@@ -101,7 +101,7 @@ export class TpmDueDateCronService implements OnModuleInit {
    * System-level query (no RLS context) — sees all tenants.
    */
   private async findDueCardGroups(): Promise<DueCardGroup[]> {
-    return await this.db.query<DueCardGroup>(
+    return await this.db.systemQuery<DueCardGroup>(
       `SELECT tenant_id, asset_id,
               MAX(interval_order) AS max_interval_order
        FROM tpm_cards

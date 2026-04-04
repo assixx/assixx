@@ -17,7 +17,8 @@ import { TpmShiftAssignmentsService } from './tpm-shift-assignments.service.js';
 // =============================================================
 
 function createMockDb() {
-  return { query: vi.fn() };
+  const queryFn = vi.fn();
+  return { query: queryFn, tenantQuery: queryFn, tenantQueryOne: vi.fn().mockResolvedValue(null) };
 }
 type MockDb = ReturnType<typeof createMockDb>;
 

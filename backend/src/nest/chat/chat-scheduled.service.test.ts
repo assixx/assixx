@@ -51,7 +51,10 @@ function createMockCls() {
 }
 
 function createMockDb() {
-  return { query: vi.fn() };
+  return {
+    tenantQuery: vi.fn(),
+    tenantQueryOne: vi.fn().mockResolvedValue(null),
+  };
 }
 
 function makeScheduledRow(overrides: Record<string, unknown> = {}) {
@@ -119,7 +122,7 @@ describe('ChatScheduledService', () => {
 
     it('should create scheduled message', async () => {
       const row = makeScheduledRow();
-      mockDb.query.mockResolvedValueOnce([row]);
+      mockDb.tenantQuery.mockResolvedValueOnce([row]);
 
       const result = await service.createScheduledMessage(
         {
@@ -167,7 +170,7 @@ describe('ChatScheduledService', () => {
 
     it('should set isE2e true when encryptedContent is provided', async () => {
       const row = makeScheduledRow();
-      mockDb.query.mockResolvedValueOnce([row]);
+      mockDb.tenantQuery.mockResolvedValueOnce([row]);
 
       await service.createScheduledMessage(
         {
@@ -180,14 +183,14 @@ describe('ChatScheduledService', () => {
         verifyAccess,
       );
 
-      const insertParams = mockDb.query.mock.calls[0]?.[1] as unknown[];
+      const insertParams = mockDb.tenantQuery.mock.calls[0]?.[1] as unknown[];
       expect(insertParams?.[3]).toBeNull(); // content = null (isE2e)
       expect(insertParams?.[9]).toBe('encrypted-data');
       expect(insertParams?.[11]).toBe(true); // isE2e
     });
 
     it('should throw BadRequestException when insert fails', async () => {
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       await expect(
         service.createScheduledMessage(
@@ -208,7 +211,7 @@ describe('ChatScheduledService', () => {
 
   describe('getScheduledMessages', () => {
     it('should return mapped messages', async () => {
-      mockDb.query.mockResolvedValueOnce([makeScheduledRow(), makeScheduledRow({ id: '2' })]);
+      mockDb.tenantQuery.mockResolvedValueOnce([makeScheduledRow(), makeScheduledRow({ id: '2' })]);
 
       const result = await service.getScheduledMessages();
 
@@ -222,13 +225,13 @@ describe('ChatScheduledService', () => {
 
   describe('getScheduledMessage', () => {
     it('should throw NotFoundException when not found', async () => {
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       await expect(service.getScheduledMessage('999')).rejects.toThrow(NotFoundException);
     });
 
     it('should return mapped message', async () => {
-      mockDb.query.mockResolvedValueOnce([makeScheduledRow()]);
+      mockDb.tenantQuery.mockResolvedValueOnce([makeScheduledRow()]);
 
       const result = await service.getScheduledMessage('1');
 
@@ -242,26 +245,30 @@ describe('ChatScheduledService', () => {
 
   describe('cancelScheduledMessage', () => {
     it('should throw NotFoundException when not found', async () => {
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       await expect(service.cancelScheduledMessage('999')).rejects.toThrow(NotFoundException);
     });
 
     it('should throw BadRequestException when already sent', async () => {
-      mockDb.query.mockResolvedValueOnce([makeScheduledRow({ is_active: IS_ACTIVE.DELETED })]);
+      mockDb.tenantQuery.mockResolvedValueOnce([
+        makeScheduledRow({ is_active: IS_ACTIVE.DELETED }),
+      ]);
 
       await expect(service.cancelScheduledMessage('1')).rejects.toThrow(BadRequestException);
     });
 
     it('should throw BadRequestException when already cancelled', async () => {
-      mockDb.query.mockResolvedValueOnce([makeScheduledRow({ is_active: IS_ACTIVE.INACTIVE })]);
+      mockDb.tenantQuery.mockResolvedValueOnce([
+        makeScheduledRow({ is_active: IS_ACTIVE.INACTIVE }),
+      ]);
 
       await expect(service.cancelScheduledMessage('1')).rejects.toThrow(BadRequestException);
     });
 
     it('should cancel successfully', async () => {
-      mockDb.query.mockResolvedValueOnce([makeScheduledRow()]);
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([makeScheduledRow()]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       const result = await service.cancelScheduledMessage('1');
 
@@ -276,7 +283,7 @@ describe('ChatScheduledService', () => {
   describe('getConversationScheduledMessages', () => {
     it('should verify access and return messages', async () => {
       const verifyAccess = vi.fn().mockResolvedValue(undefined);
-      mockDb.query.mockResolvedValueOnce([makeScheduledRow()]);
+      mockDb.tenantQuery.mockResolvedValueOnce([makeScheduledRow()]);
 
       const result = await service.getConversationScheduledMessages(1, verifyAccess);
 

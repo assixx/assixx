@@ -31,7 +31,7 @@ vi.mock('bcryptjs', () => ({
 // =============================================================
 
 function createMockDb() {
-  return { query: vi.fn() };
+  return { query: vi.fn(), systemQuery: vi.fn() };
 }
 
 function createMockUserRepo() {
@@ -115,7 +115,7 @@ describe('RootDeletionService', () => {
 
   describe('getDeletionStatus', () => {
     it('should return null when no active deletion', async () => {
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.systemQuery.mockResolvedValueOnce([]);
 
       const result = await service.getDeletionStatus(10);
 
@@ -123,7 +123,7 @@ describe('RootDeletionService', () => {
     });
 
     it('should return status with canApprove/canCancel flags', async () => {
-      mockDb.query.mockResolvedValueOnce([
+      mockDb.systemQuery.mockResolvedValueOnce([
         {
           id: 1,
           tenant_id: 10,
@@ -149,7 +149,7 @@ describe('RootDeletionService', () => {
     });
 
     it('should allow different user to approve', async () => {
-      mockDb.query.mockResolvedValueOnce([
+      mockDb.systemQuery.mockResolvedValueOnce([
         {
           id: 1,
           tenant_id: 10,
@@ -181,7 +181,7 @@ describe('RootDeletionService', () => {
   describe('performDeletionDryRun', () => {
     it('should return formatted dry run report', async () => {
       // tenant name lookup
-      mockDb.query.mockResolvedValueOnce([{ company_name: 'TestCorp' }]);
+      mockDb.systemQuery.mockResolvedValueOnce([{ company_name: 'TestCorp' }]);
 
       const result = await service.performDeletionDryRun(10);
 
@@ -198,7 +198,7 @@ describe('RootDeletionService', () => {
 
   describe('getAllDeletionRequests', () => {
     it('should return mapped deletion requests', async () => {
-      mockDb.query.mockResolvedValueOnce([
+      mockDb.systemQuery.mockResolvedValueOnce([
         {
           id: 1,
           tenant_id: 10,

@@ -23,8 +23,13 @@ vi.mock('uuid', () => ({
   v7: vi.fn().mockReturnValue('mock-uuid-v7'),
 }));
 
-function createMockDb(): { query: ReturnType<typeof vi.fn> } {
-  return { query: vi.fn() };
+function createMockDb(): {
+  query: ReturnType<typeof vi.fn>;
+  tenantQuery: ReturnType<typeof vi.fn>;
+  tenantQueryOne: ReturnType<typeof vi.fn>;
+} {
+  const query = vi.fn();
+  return { query, tenantQuery: query, tenantQueryOne: vi.fn() };
 }
 
 function createMinimalPattern(

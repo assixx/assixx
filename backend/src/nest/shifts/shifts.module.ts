@@ -7,6 +7,7 @@
  */
 import { Module } from '@nestjs/common';
 
+import { ApprovalsModule } from '../approvals/approvals.module.js';
 import { RotationAssignmentService } from './rotation-assignment.service.js';
 import { RotationGeneratorService } from './rotation-generator.service.js';
 import { RotationHistoryService } from './rotation-history.service.js';
@@ -20,8 +21,10 @@ import { ShiftTimesService } from './shift-times.service.js';
 import { ShiftsPermissionRegistrar } from './shifts-permission.registrar.js';
 import { ShiftsController } from './shifts.controller.js';
 import { ShiftsService } from './shifts.service.js';
+import { SwapApprovalBridgeService } from './swap-approval-bridge.service.js';
 
 @Module({
+  imports: [ApprovalsModule],
   controllers: [ShiftsController, RotationController, ShiftTimesController],
   providers: [
     ShiftsService,
@@ -33,6 +36,7 @@ import { ShiftsService } from './shifts.service.js';
     RotationAssignmentService,
     RotationGeneratorService,
     RotationHistoryService,
+    SwapApprovalBridgeService,
     // Permission registration (ADR-020)
     ShiftsPermissionRegistrar,
   ],

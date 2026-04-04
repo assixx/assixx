@@ -409,3 +409,7 @@ export interface AssetAvailabilityEntry {
   endDate: string;
   notes: string | null;
 }
+
+// Re-export OrganizationalScope for local use in shift state modules
+export type { OrganizationalScope } from '$lib/types/organizational-scope';
+export { DEFAULT_ORG_SCOPE } from '$lib/types/organizational-scope';

@@ -26,7 +26,6 @@ import { attachmentHeader } from '../../utils/content-disposition.js';
 import { CurrentUser } from '../common/decorators/current-user.decorator.js';
 import { RequireAddon } from '../common/decorators/require-addon.decorator.js';
 import { RequirePermission } from '../common/decorators/require-permission.decorator.js';
-import { Roles } from '../common/decorators/roles.decorator.js';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard.js';
 import { RolesGuard } from '../common/guards/roles.guard.js';
 import type { JwtPayload } from '../common/interfaces/auth.interface.js';
@@ -40,10 +39,12 @@ import { QueryAssignmentCountsDto } from './dto/query-assignment-counts.dto.js';
 import { QueryShiftPlanDto } from './dto/query-shift-plan.dto.js';
 import { QueryShiftsDto } from './dto/query-shifts.dto.js';
 import { QuerySwapRequestsDto } from './dto/query-swap-requests.dto.js';
+import { RespondSwapRequestDto } from './dto/respond-swap-request.dto.js';
 import { CreateShiftPlanDto } from './dto/shift-plan.dto.js';
 import { UpdateSwapRequestStatusDto } from './dto/swap-request-status.dto.js';
 import { UpdateShiftPlanDto } from './dto/update-shift-plan.dto.js';
 import { UpdateShiftDto } from './dto/update-shift.dto.js';
+import { ShiftSwapService } from './shift-swap.service.js';
 import type {
   AssignmentCountResponse,
   CalendarShiftResponse,
@@ -53,6 +54,7 @@ import type {
   SwapRequestResponse,
 } from './shifts.service.js';
 import { ShiftsService } from './shifts.service.js';
+import { SwapApprovalBridgeService } from './swap-approval-bridge.service.js';
 
 // ResponseInterceptor wraps ALL responses in { success, data, timestamp } (ADR-007).
 // Controllers return raw data only — NO manual { success, data } wrapping.
@@ -68,7 +70,11 @@ const SHIFT_SWAP = 'shift-swap';
 export class ShiftsController {
   private readonly logger = new Logger(ShiftsController.name);
 
-  constructor(private readonly shiftsService: ShiftsService) {}
+  constructor(
+    private readonly shiftsService: ShiftsService,
+    private readonly shiftSwapService: ShiftSwapService,
+    private readonly swapApprovalBridge: SwapApprovalBridgeService,
+  ) {}
 
   // ============= SHIFTS CRUD =============
 
@@ -108,7 +114,10 @@ export class ShiftsController {
     @Query() query: QuerySwapRequestsDto,
   ): Promise<SwapRequestResponse[]> {
     this.logger.debug(`Listing swap requests for tenant ${user.tenantId}`);
-    return await this.shiftsService.listSwapRequests(user.tenantId, query);
+    return await this.shiftsService.listSwapRequests(user.tenantId, {
+      userId: query.userId,
+      status: query.status,
+    });
   }
 
   /** POST /api/v2/shifts/swap-requests */
@@ -123,17 +132,89 @@ export class ShiftsController {
     return await this.shiftsService.createSwapRequest(dto, user.tenantId, user.id);
   }
 
-  /** PUT /api/v2/shifts/swap-requests/:id/status */
+  /** PUT /api/v2/shifts/swap-requests/:id/status — legacy, use new endpoints */
   @Put('swap-requests/:id/status')
-  @Roles('admin', 'root')
   @RequirePermission(SHIFT_ADDON, SHIFT_SWAP, 'canWrite')
-  async updateSwapRequestStatus(
+  updateSwapRequestStatus(
     @Param('id', ParseIntPipe) id: number,
     @CurrentUser() user: JwtPayload,
     @Body() dto: UpdateSwapRequestStatusDto,
+  ): { message: string } {
+    this.logger.debug(`Legacy: updating swap request ${id} status`);
+    return this.shiftsService.updateSwapRequestStatus(id, dto, user.tenantId, user.id);
+  }
+
+  /** GET /api/v2/shifts/swap-requests/my-consents */
+  @Get('swap-requests/my-consents')
+  @RequirePermission(SHIFT_ADDON, SHIFT_SWAP, 'canRead')
+  async getMyPendingConsents(@CurrentUser() user: JwtPayload): Promise<SwapRequestResponse[]> {
+    return await this.shiftSwapService.getMyPendingConsents(user.tenantId, user.id);
+  }
+
+  /** GET /api/v2/shifts/swap-requests/uuid/:uuid */
+  @Get('swap-requests/uuid/:uuid')
+  @RequirePermission(SHIFT_ADDON, SHIFT_SWAP, 'canRead')
+  async getSwapRequestByUuid(
+    @Param('uuid') uuid: string,
+    @CurrentUser() user: JwtPayload,
+  ): Promise<SwapRequestResponse> {
+    return await this.shiftSwapService.getSwapRequestByUuid(uuid, user.tenantId);
+  }
+
+  /**
+   * POST /api/v2/shifts/swap-requests/uuid/:uuid/respond — partner consent
+   *
+   * Approval creation lives here (not in service) to avoid circular dependency:
+   * SwapApprovalBridge → ShiftSwapService → (would need) SwapApprovalBridge.
+   * Controller orchestrates both services as composition root.
+   *
+   * TODO(Phase 6): Add SSE notification for both users after approval decision.
+   */
+  @Post('swap-requests/uuid/:uuid/respond')
+  @RequirePermission(SHIFT_ADDON, SHIFT_SWAP, 'canWrite')
+  async respondToSwapRequest(
+    @Param('uuid') uuid: string,
+    @CurrentUser() user: JwtPayload,
+    @Body() dto: RespondSwapRequestDto,
+  ): Promise<SwapRequestResponse> {
+    const result = await this.shiftSwapService.respondToSwapRequest(
+      uuid,
+      user.tenantId,
+      user.id,
+      dto.accept,
+      dto.note,
+    );
+
+    // If partner accepted → create approval for team lead
+    if (dto.accept) {
+      const dateStr =
+        result.swapScope === 'single_day' ?
+          new Date(result.startDate).toISOString().slice(0, 10)
+        : `${new Date(result.startDate).toISOString().slice(0, 10)} – ${new Date(result.endDate).toISOString().slice(0, 10)}`;
+      const scopeLabel = result.swapScope === 'week' ? ' (Ganze Woche)' : '';
+      const reqType = result.requesterShiftType !== '' ? ` (${result.requesterShiftType})` : '';
+      const tgtType = result.targetShiftType !== '' ? ` (${result.targetShiftType})` : '';
+
+      await this.swapApprovalBridge.createApprovalForSwap(
+        uuid,
+        user.tenantId,
+        result.requesterId ?? user.id,
+        `Schichttausch ${dateStr}${scopeLabel}: ${result.requesterName ?? 'User'}${reqType} ↔ ${result.targetName ?? 'User'}${tgtType}`,
+        result.reason ?? undefined,
+      );
+    }
+
+    return result;
+  }
+
+  /** POST /api/v2/shifts/swap-requests/uuid/:uuid/cancel */
+  @Post('swap-requests/uuid/:uuid/cancel')
+  @RequirePermission(SHIFT_ADDON, SHIFT_SWAP, 'canWrite')
+  async cancelSwapRequest(
+    @Param('uuid') uuid: string,
+    @CurrentUser() user: JwtPayload,
   ): Promise<{ message: string }> {
-    this.logger.debug(`Updating swap request ${id} status`);
-    return await this.shiftsService.updateSwapRequestStatus(id, dto, user.tenantId, user.id);
+    return await this.shiftSwapService.cancelSwapRequest(uuid, user.tenantId, user.id);
   }
 
   /** GET /api/v2/shifts/overtime */
@@ -186,7 +267,6 @@ export class ShiftsController {
 
   /** GET /api/v2/shifts/assignment-counts */
   @Get('assignment-counts')
-  @Roles('admin', 'root')
   @RequirePermission(SHIFT_ADDON, SHIFT_PLAN, 'canRead')
   async getAssignmentCounts(
     @CurrentUser() user: JwtPayload,
@@ -218,7 +298,6 @@ export class ShiftsController {
 
   /** GET /api/v2/shifts/export */
   @Get('export')
-  @Roles('admin', 'root')
   @RequirePermission(SHIFT_ADDON, SHIFT_PLAN, 'canRead')
   async exportShifts(
     @CurrentUser() user: JwtPayload,
@@ -261,7 +340,6 @@ export class ShiftsController {
 
   /** POST /api/v2/shifts/plan */
   @Post('plan')
-  @Roles('admin', 'root')
   @HttpCode(HttpStatus.CREATED)
   @RequirePermission(SHIFT_ADDON, SHIFT_PLAN, 'canWrite')
   async createShiftPlan(
@@ -301,7 +379,6 @@ export class ShiftsController {
 
   /** DELETE /api/v2/shifts/plan/uuid/:uuid */
   @Delete('plan/uuid/:uuid')
-  @Roles('admin', 'root')
   @RequirePermission(SHIFT_ADDON, SHIFT_PLAN, 'canDelete')
   async deleteShiftPlanByUuid(
     @Param('uuid') uuid: string,
@@ -317,7 +394,6 @@ export class ShiftsController {
    * @deprecated Use DELETE /api/v2/shifts/plan/uuid/:uuid instead
    */
   @Delete('plan/:id')
-  @Roles('admin', 'root')
   @RequirePermission(SHIFT_ADDON, SHIFT_PLAN, 'canDelete')
   async deleteShiftPlan(
     @Param('id', ParseIntPipe) id: number,
@@ -341,7 +417,6 @@ export class ShiftsController {
 
   /** POST /api/v2/shifts */
   @Post()
-  @Roles('admin', 'root')
   @HttpCode(HttpStatus.CREATED)
   @RequirePermission(SHIFT_ADDON, SHIFT_PLAN, 'canWrite')
   async createShift(
@@ -354,7 +429,6 @@ export class ShiftsController {
 
   /** PUT /api/v2/shifts/:id */
   @Put(':id')
-  @Roles('admin', 'root')
   @RequirePermission(SHIFT_ADDON, SHIFT_PLAN, 'canWrite')
   async updateShift(
     @Param('id', ParseIntPipe) id: number,
@@ -367,7 +441,6 @@ export class ShiftsController {
 
   /** DELETE /api/v2/shifts/week */
   @Delete('week')
-  @Roles('admin', 'root')
   @RequirePermission(SHIFT_ADDON, SHIFT_PLAN, 'canDelete')
   async deleteShiftsByWeek(
     @Query('teamId', ParseIntPipe) teamId: number,
@@ -381,7 +454,6 @@ export class ShiftsController {
 
   /** DELETE /api/v2/shifts/team */
   @Delete('team')
-  @Roles('admin', 'root')
   @RequirePermission(SHIFT_ADDON, SHIFT_PLAN, 'canDelete')
   async deleteShiftsByTeam(
     @Query('teamId', ParseIntPipe) teamId: number,
@@ -393,7 +465,6 @@ export class ShiftsController {
 
   /** DELETE /api/v2/shifts/:id */
   @Delete(':id')
-  @Roles('admin', 'root')
   @RequirePermission(SHIFT_ADDON, SHIFT_PLAN, 'canDelete')
   async deleteShift(
     @Param('id', ParseIntPipe) id: number,

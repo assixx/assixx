@@ -34,7 +34,7 @@ export class UserPositionService {
   ) {}
 
   async getByUser(tenantId: number, userId: number): Promise<UserPositionEntry[]> {
-    const rows = await this.db.query<UserPositionDetailRow>(
+    const rows = await this.db.tenantQuery<UserPositionDetailRow>(
       `SELECT up.*, pc.name AS position_name, pc.role_category
        FROM user_positions up
        INNER JOIN position_catalog pc ON pc.id = up.position_id
@@ -48,7 +48,7 @@ export class UserPositionService {
   }
 
   async getByPosition(tenantId: number, positionId: string): Promise<UserWithPositionRow[]> {
-    return await this.db.query<UserWithPositionRow>(
+    return await this.db.tenantQuery<UserWithPositionRow>(
       `SELECT u.id AS user_id, u.first_name, u.last_name, u.username
        FROM user_positions up
        INNER JOIN users u ON u.id = up.user_id AND u.is_active = $1
@@ -101,7 +101,7 @@ export class UserPositionService {
   async assign(tenantId: number, userId: number, positionId: string): Promise<void> {
     await this.assertPositionExists(tenantId, positionId);
 
-    await this.db.query(
+    await this.db.tenantQuery(
       `INSERT INTO user_positions (id, tenant_id, user_id, position_id)
        VALUES ($1, $2, $3, $4)
        ON CONFLICT (tenant_id, user_id, position_id) DO NOTHING`,
@@ -121,7 +121,7 @@ export class UserPositionService {
   }
 
   async unassign(tenantId: number, userId: number, positionId: string): Promise<void> {
-    const result = await this.db.query(
+    const result = await this.db.tenantQuery(
       `DELETE FROM user_positions
        WHERE tenant_id = $1 AND user_id = $2 AND position_id = $3`,
       [tenantId, userId, positionId],
@@ -144,7 +144,7 @@ export class UserPositionService {
   }
 
   async hasPosition(tenantId: number, userId: number, positionId: string): Promise<boolean> {
-    const rows = await this.db.query<{ exists: boolean }>(
+    const rows = await this.db.tenantQuery<{ exists: boolean }>(
       `SELECT EXISTS(
         SELECT 1 FROM user_positions
         WHERE tenant_id = $1 AND user_id = $2 AND position_id = $3
@@ -156,7 +156,7 @@ export class UserPositionService {
   }
 
   private async assertPositionExists(tenantId: number, positionId: string): Promise<void> {
-    const rows = await this.db.query<{ id: string }>(
+    const rows = await this.db.tenantQuery<{ id: string }>(
       `SELECT id FROM position_catalog
        WHERE tenant_id = $1 AND id = $2 AND is_active = $3`,
       [tenantId, positionId, IS_ACTIVE.ACTIVE],
