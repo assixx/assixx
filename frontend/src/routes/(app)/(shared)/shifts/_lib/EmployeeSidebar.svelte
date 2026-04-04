@@ -210,7 +210,6 @@
     transform: none;
     cursor: not-allowed;
     box-shadow: none;
-    background: inherit;
   }
 
   .employee-info {

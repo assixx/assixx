@@ -57,6 +57,9 @@ const API_ENDPOINTS = {
   ROTATION_HISTORY: '/shifts/rotation/history',
   ROTATION_ASSIGN: '/shifts/rotation/assign',
   ROTATION_GENERATE: '/shifts/rotation/generate',
+
+  // Swap Requests
+  SWAP_REQUESTS: '/shifts/swap-requests',
 } as const;
 
 // =============================================================================
@@ -606,6 +609,89 @@ export async function deleteRotationHistoryByWeek(
     `${API_ENDPOINTS.ROTATION_HISTORY}/week?teamId=${teamId}&startDate=${startDate}&endDate=${endDate}`,
   );
   return response.deletedCounts;
+}
+
+// =============================================================================
+// SWAP REQUESTS
+// =============================================================================
+
+/** Swap request response from API */
+export interface SwapRequestApiResponse {
+  uuid: string;
+  requesterId: number | null;
+  requesterName: string | null;
+  requesterShiftId: number | null;
+  requesterShiftDate: string;
+  requesterShiftType: string;
+  targetId: number | null;
+  targetName: string | null;
+  targetShiftId: number | null;
+  targetShiftDate: string;
+  targetShiftType: string;
+  teamId: number;
+  swapScope: 'single_day' | 'week' | 'date_range';
+  startDate: string;
+  endDate: string;
+  status: string;
+  reason: string | null;
+  partnerRespondedAt: string | null;
+  partnerNote: string | null;
+  approvalUuid: string | null;
+  createdAt: string;
+}
+
+/** Create a new swap request */
+export async function createSwapRequest(dto: {
+  requesterShiftId?: number;
+  targetShiftId?: number;
+  targetId: number;
+  swapScope: 'single_day' | 'week' | 'date_range';
+  startDate: string;
+  endDate: string;
+  reason?: string;
+}): Promise<SwapRequestApiResponse> {
+  return await apiClient.post<SwapRequestApiResponse>(API_ENDPOINTS.SWAP_REQUESTS, dto);
+}
+
+/** Respond to a swap request (partner consent) */
+export async function respondToSwapRequest(
+  uuid: string,
+  accept: boolean,
+  note?: string,
+): Promise<SwapRequestApiResponse> {
+  return await apiClient.post<SwapRequestApiResponse>(
+    `${API_ENDPOINTS.SWAP_REQUESTS}/uuid/${uuid}/respond`,
+    { accept, note },
+  );
+}
+
+/** Cancel a swap request */
+export async function cancelSwapRequest(uuid: string): Promise<{ message: string }> {
+  return await apiClient.post<{ message: string }>(
+    `${API_ENDPOINTS.SWAP_REQUESTS}/uuid/${uuid}/cancel`,
+    {},
+  );
+}
+
+/** Fetch pending consent requests for the current user */
+export async function fetchMyPendingConsents(): Promise<SwapRequestApiResponse[]> {
+  return await apiClient.get<SwapRequestApiResponse[]>(
+    `${API_ENDPOINTS.SWAP_REQUESTS}/my-consents`,
+  );
+}
+
+/** Fetch swaps awaiting team lead approval (filtered to current user) */
+export async function fetchMyActiveSwaps(userId: number): Promise<SwapRequestApiResponse[]> {
+  return await apiClient.get<SwapRequestApiResponse[]>(
+    `${API_ENDPOINTS.SWAP_REQUESTS}?status=pending_approval&userId=${userId}`,
+  );
+}
+
+/** Fetch swaps awaiting partner response (requester's outgoing) */
+export async function fetchMyOutgoingRequests(userId: number): Promise<SwapRequestApiResponse[]> {
+  return await apiClient.get<SwapRequestApiResponse[]>(
+    `${API_ENDPOINTS.SWAP_REQUESTS}?status=pending_partner&userId=${userId}`,
+  );
 }
 
 /** Response from deleteRotationHistoryByTeam - includes all deleted counts */

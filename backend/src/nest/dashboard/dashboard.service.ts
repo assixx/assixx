@@ -52,6 +52,7 @@ type AllCounts = [
   CountItem,
   CountItem,
   CountItem,
+  CountItem,
 ];
 
 @Injectable()
@@ -96,6 +97,7 @@ export class DashboardService {
       vacation,
       tpm,
       workOrders,
+      shiftSwap,
     ] = await this.fetchAllCounts(user, tenantId, canAccess);
 
     return {
@@ -109,6 +111,7 @@ export class DashboardService {
       vacation,
       tpm,
       workOrders,
+      shiftSwap,
       fetchedAt: new Date().toISOString(),
     };
   }
@@ -153,6 +156,7 @@ export class DashboardService {
       g(null, () => this.fetchVacationCount(uid, tenantId), EMPTY_COUNT),
       g('tpm', () => this.fetchTpmCount(uid, tenantId), EMPTY_COUNT),
       g('work_orders', () => this.fetchWorkOrdersCount(uid, tenantId), EMPTY_COUNT),
+      g('shift_planning', () => this.fetchShiftSwapCount(uid, tenantId), EMPTY_COUNT),
     ]);
   }
 
@@ -320,6 +324,23 @@ export class DashboardService {
          AND n.recipient_type = 'user'
          AND n.recipient_id = $2
          AND nrs.id IS NULL`,
+      [tenantId, userId],
+    );
+    return { count: Number.parseInt(rows[0]?.count ?? '0', 10) };
+  }
+
+  /**
+   * Fetch pending shift swap consent count.
+   * Counts swap requests where the user is the target and status is pending_partner.
+   */
+  private async fetchShiftSwapCount(userId: number, tenantId: number): Promise<{ count: number }> {
+    const rows = await this.db.query<{ count: string }>(
+      `SELECT COUNT(*) AS count
+       FROM shift_swap_requests
+       WHERE tenant_id = $1
+         AND target_id = $2
+         AND status = 'pending_partner'
+         AND is_active = 1`,
       [tenantId, userId],
     );
     return { count: Number.parseInt(rows[0]?.count ?? '0', 10) };

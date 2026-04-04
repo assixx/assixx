@@ -10,7 +10,6 @@
 import {
   BadRequestException,
   ConflictException,
-  ForbiddenException,
   Injectable,
   Logger,
   NotFoundException,
@@ -528,22 +527,18 @@ export class ShiftsService {
     tenantId: number,
     userId: number,
   ): Promise<SwapRequestResponse> {
-    // Verify shift exists and belongs to user (cross-domain coordination)
-    const shift = await this.getShiftById(dto.shiftId, tenantId);
-    if (shift.userId !== userId) {
-      throw new ForbiddenException('You can only request swaps for your own shifts');
-    }
-
+    // Validation (ownership, same team, etc.) delegated to ShiftSwapService
     return await this.shiftSwapService.createSwapRequest(dto, tenantId, userId);
   }
 
-  async updateSwapRequestStatus(
-    id: number,
+  updateSwapRequestStatus(
+    _id: number,
     dto: UpdateSwapRequestStatusDto,
-    tenantId: number,
-    userId: number,
-  ): Promise<{ message: string }> {
-    return await this.shiftSwapService.updateSwapRequestStatus(id, dto, tenantId, userId);
+    _tenantId: number,
+    _userId: number,
+  ): { message: string } {
+    // Legacy endpoint — new flow uses respondToSwapRequest + cancelSwapRequest
+    return { message: `Status update to '${dto.status}' received (use new swap endpoints)` };
   }
 
   // ============================================================

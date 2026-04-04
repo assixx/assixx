@@ -38,18 +38,29 @@ export const load: PageServerLoad = async ({ cookies, fetch }) => {
   }
 
   try {
-    const [settingsJson, tiersJson] = await Promise.all([
+    const [settingsJson, tiersJson, swapSettingJson] = await Promise.all([
       fetchJson<KvpSettings>(`${API_BASE}/kvp/settings`, token, fetch),
       fetchJson<RewardTier[]>(`${API_BASE}/kvp/reward-tiers`, token, fetch),
+      fetchJson<{ swapRequestsEnabled: boolean }>(
+        `${API_BASE}/organigram/swap-requests-enabled`,
+        token,
+        fetch,
+      ),
     ]);
 
     return {
       kvpSettings: settingsJson,
       rewardTiers: Array.isArray(tiersJson) ? tiersJson : [],
       loadError: settingsJson === null,
+      swapRequestsEnabled: swapSettingJson?.swapRequestsEnabled ?? false,
     };
   } catch (err: unknown) {
     log.error({ err }, 'Fetch error');
-    return { kvpSettings: null, rewardTiers: [] as RewardTier[], loadError: true };
+    return {
+      kvpSettings: null,
+      rewardTiers: [] as RewardTier[],
+      loadError: true,
+      swapRequestsEnabled: false,
+    };
   }
 };

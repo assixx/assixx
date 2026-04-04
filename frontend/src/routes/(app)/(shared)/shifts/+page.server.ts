@@ -290,6 +290,7 @@ function buildDeniedResponse(
     isAdminOrRoot,
     orgScope: DEFAULT_ORG_SCOPE,
     isManager: false,
+    swapRequestsEnabled: false,
   };
 }
 
@@ -299,13 +300,15 @@ function buildDeniedResponse(
 async function loadShiftsDataForUser(token: string, fetchFn: typeof fetch, userData: User) {
   const { isEmployee, primaryTeamId, isAdminOrRoot } = deriveRoleFlags(userData);
 
-  // Fetch org scope and shift times in parallel (both independent, both needed before batch)
-  const [orgScopeRaw, shiftTimesResult] = await Promise.all([
+  // Fetch org scope, shift times, and swap setting in parallel
+  const [orgScopeRaw, shiftTimesResult, swapSettingRaw] = await Promise.all([
     apiFetch<OrganizationalScope>('/users/me/org-scope', token, fetchFn),
     apiFetchWithPermission<ShiftTimeApiResponse[]>('/shift-times', token, fetchFn),
+    apiFetch<{ swapRequestsEnabled: boolean }>('/organigram/swap-requests-enabled', token, fetchFn),
   ]);
   const orgScope = orgScopeRaw ?? DEFAULT_ORG_SCOPE;
   const isManager = orgScope.type !== 'none';
+  const swapRequestsEnabled = swapSettingRaw?.swapRequestsEnabled ?? false;
 
   if (shiftTimesResult.permissionDenied) {
     return buildDeniedResponse(userData, primaryTeamId, isEmployee, isAdminOrRoot);
@@ -343,6 +346,7 @@ async function loadShiftsDataForUser(token: string, fetchFn: typeof fetch, userD
     isAdminOrRoot,
     orgScope,
     isManager,
+    swapRequestsEnabled,
   };
 }
 

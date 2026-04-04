@@ -85,7 +85,7 @@
     border-radius: 12px;
     background: color-mix(in oklch, var(--color-white) 2%, transparent);
     padding: 10px 20px;
-    color: var(--color-white);
+    color: var(--color-text-primary);
     font-weight: 500;
     font-size: 14px;
     text-decoration: none;
@@ -96,7 +96,7 @@
     box-shadow: 0 4px 12px color-mix(in oklch, var(--color-black) 15%, transparent);
     border-color: color-mix(in oklch, var(--color-white) 15%, transparent);
     background: color-mix(in oklch, var(--color-white) 5%, transparent);
-    color: var(--color-white);
+    color: var(--color-text-primary);
   }
 
   .back-button:active {

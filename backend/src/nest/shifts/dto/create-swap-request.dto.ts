@@ -1,19 +1,19 @@
 /**
  * Create Swap Request DTO
+ *
+ * Body for POST /shifts/swap-requests
+ * Shift IDs are optional — if missing, resolved by user_id + date in service.
  */
 import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';
 
-/**
- * Create swap request body
- */
 export const CreateSwapRequestSchema = z.object({
-  shiftId: z.number().int().positive('Shift ID is required'),
-  requestedWithUserId: z
-    .number()
-    .int()
-    .positive('Requested with user ID must be a positive integer')
-    .optional(),
+  requesterShiftId: z.number().int().positive().optional(),
+  targetShiftId: z.number().int().positive().optional(),
+  targetId: z.number().int().positive('Target user ID is required'),
+  swapScope: z.enum(['single_day', 'week', 'date_range']).default('single_day'),
+  startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Start date must be YYYY-MM-DD'),
+  endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'End date must be YYYY-MM-DD'),
   reason: z.string().trim().max(500, 'Reason cannot exceed 500 characters').optional(),
 });
 

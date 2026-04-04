@@ -46,6 +46,9 @@
     ondrop: (event: DragEvent, dateKey: string, shiftType: string) => void;
     onremoveEmployee: (dateKey: string, shiftType: string, employeeId: number) => void;
     onnotesChange: (notes: string) => void;
+
+    /** Click on an employee card (for swap requests). Undefined = disabled. */
+    onemployeeClick?: (employeeId: number, dateKey: string, shiftType: string) => void;
   }
 
   const {
@@ -67,6 +70,7 @@
     ondrop,
     onremoveEmployee,
     onnotesChange,
+    onemployeeClick,
   }: Props = $props();
 
   // Day names for data attributes
@@ -96,6 +100,34 @@
     return `asset-avail-${status}`;
   }
 </script>
+
+{#snippet employeeCardContent(empId: number, dateKey: string, shiftType: string)}
+  {@const emp = getEmployeeById(empId)}
+  {@const detail = getShiftDetail(`${dateKey}_${shiftType}_${empId}`)}
+  <span class="employee-name">
+    {#if emp !== undefined}
+      {getEmployeeDisplayName(emp)}
+    {:else if detail !== undefined}
+      {detail.firstName} {detail.lastName}
+    {:else}
+      Mitarbeiter #{empId}
+    {/if}
+  </span>
+  {#if canRemoveEmployee(dateKey, shiftType, empId)}
+    <button
+      type="button"
+      class="remove-btn"
+      onclick={(event: MouseEvent) => {
+        event.stopPropagation();
+        event.preventDefault();
+        onremoveEmployee(dateKey, shiftType, empId);
+      }}
+      aria-label="Mitarbeiter entfernen"
+    >
+      <i class="fas fa-times"></i>
+    </button>
+  {/if}
+{/snippet}
 
 <div class="week-schedule">
   <!-- Schedule Header -->
@@ -154,33 +186,29 @@
               <div class="empty-slot">{canEditShifts ? '+' : '-'}</div>
             {:else}
               {#each employeeIds as empId (empId)}
-                {@const emp = getEmployeeById(empId)}
-                {@const detail = getShiftDetail(`${dateKey}_${shiftType}_${empId}`)}
-                <div class="employee-card">
-                  <span class="employee-name">
-                    {#if emp !== undefined}
-                      {getEmployeeDisplayName(emp)}
-                    {:else if detail !== undefined}
-                      {detail.firstName} {detail.lastName}
-                    {:else}
-                      Mitarbeiter #{empId}
-                    {/if}
-                  </span>
-                  {#if canRemoveEmployee(dateKey, shiftType, empId)}
-                    <button
-                      type="button"
-                      class="remove-btn"
-                      onclick={(event) => {
-                        event.stopPropagation();
-                        event.preventDefault();
-                        onremoveEmployee(dateKey, shiftType, empId);
-                      }}
-                      aria-label="Mitarbeiter entfernen"
-                    >
-                      <i class="fas fa-times"></i>
-                    </button>
-                  {/if}
-                </div>
+                {#if onemployeeClick !== undefined}
+                  <div
+                    class="employee-card clickable"
+                    role="button"
+                    tabindex="0"
+                    onclick={() => {
+                      onemployeeClick(empId, dateKey, shiftType);
+                    }}
+                    onkeydown={(e: KeyboardEvent) => {
+                      if (e.key === 'Enter') {
+                        onemployeeClick(empId, dateKey, shiftType);
+                      }
+                    }}
+                  >
+                    <!-- eslint-disable-next-line @typescript-eslint/no-confusing-void-expression, sonarjs/no-use-of-empty-return-value -- Svelte {@render} syntax -->
+                    {@render employeeCardContent(empId, dateKey, shiftType)}
+                  </div>
+                {:else}
+                  <div class="employee-card">
+                    <!-- eslint-disable-next-line @typescript-eslint/no-confusing-void-expression, sonarjs/no-use-of-empty-return-value -- Svelte {@render} syntax -->
+                    {@render employeeCardContent(empId, dateKey, shiftType)}
+                  </div>
+                {/if}
               {/each}
             {/if}
           </div>
@@ -386,6 +414,10 @@ Beispiele:
     pointer-events: none;
   }
 
+  .shift-cell.locked .employee-card.clickable {
+    pointer-events: auto;
+  }
+
   .shift-cell.asset-avail-maintenance {
     border-top: 3px solid var(--color-amber);
   }
@@ -513,6 +545,10 @@ Beispiele:
   .employee-card:hover {
     border-color: color-mix(in oklch, var(--color-primary) 50%, transparent);
     background: color-mix(in oklch, var(--color-primary) 25%, transparent);
+  }
+
+  .employee-card.clickable {
+    cursor: pointer;
   }
 
   .employee-card .employee-name {

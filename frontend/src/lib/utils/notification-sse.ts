@@ -37,7 +37,8 @@ export type NotificationEventType =
   | 'WORK_ORDER_DUE_SOON'
   | 'WORK_ORDER_VERIFIED'
   | 'NEW_APPROVAL'
-  | 'APPROVAL_DECIDED';
+  | 'APPROVAL_DECIDED'
+  | 'NEW_SWAP_REQUEST';
 
 export interface NotificationEvent {
   type: NotificationEventType;

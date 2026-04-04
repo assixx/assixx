@@ -3,6 +3,8 @@
   import { onMount } from 'svelte';
 
   import PermissionDenied from '$lib/components/PermissionDenied.svelte';
+  import { notificationStore } from '$lib/stores/notification.store.svelte';
+  import { showWarningAlert } from '$lib/utils/alerts';
 
   import AdminActions from './_lib/AdminActions.svelte';
   import { fetchAssignmentCounts, fetchDepartments, fetchAssets, fetchTeams } from './_lib/api';
@@ -41,6 +43,8 @@
   import ShiftScheduleGrid from './_lib/ShiftScheduleGrid.svelte';
   import ShiftScheduleLegend from './_lib/ShiftScheduleLegend.svelte';
   import { shiftsState } from './_lib/state.svelte';
+  import SwapConsentBanner from './_lib/SwapConsentBanner.svelte';
+  import SwapRequestModal from './_lib/SwapRequestModal.svelte';
   import {
     formatWeekRange,
     getWeekStart,
@@ -76,6 +80,21 @@
   const ssrStaffingRules = $derived(data.staffingRules);
   const ssrOrgScope = $derived(data.orgScope);
   const ssrIsManager = $derived(data.orgScope.type !== 'none');
+  const swapEnabled = $derived(data.swapRequestsEnabled);
+
+  // Swap State
+  let swapBannerRef: { loadData: () => Promise<void> } | undefined = $state();
+  let showSwapModal = $state(false);
+  let swapTarget = $state<{
+    shiftId: number;
+    userId: number;
+    userName: string;
+    date: string;
+    shiftType: string;
+    requesterShiftId: number;
+    requesterDate: string;
+    requesterShiftType: string;
+  } | null>(null);
 
   // Build shift times map from SSR API data (tenant-configurable)
   const shiftTimesMap: ShiftTimesMap = $derived(
@@ -170,6 +189,8 @@
 
   onMount(() => {
     document.addEventListener('click', handleClickOutside, true);
+    // Reset shift swap badge when visiting shifts page
+    notificationStore.resetCount('shiftSwap');
     // Load shift plan when team was auto-selected (employees + single-team managers)
     if (ssrEmployeeTeamInfo !== null && ssrEmployeeTeamInfo.teamId !== 0) {
       void loadShiftPlan();
@@ -263,6 +284,49 @@
   function getShiftEmployees(dateKey: string, shiftType: string): number[] {
     return shiftsState.getShiftEmployees(dateKey, shiftType);
   }
+
+  /** Handle employee card click for swap requests */
+  function handleEmployeeClick(employeeId: number, dateKey: string, shiftType: string): void {
+    if (!swapEnabled || shiftsState.currentUserId === null) return;
+
+    if (employeeId === shiftsState.currentUserId) {
+      showWarningAlert('Du kannst nicht mit dir selbst tauschen');
+      return;
+    }
+
+    const emp = shiftsState.getEmployeeById(employeeId);
+    const empName =
+      emp !== undefined ? `${emp.firstName ?? ''} ${emp.lastName ?? ''}`.trim() : `#${employeeId}`;
+
+    // Find requester's shift on the same date (any shift type)
+    const allShiftKeys = Object.keys(shiftTimesMap);
+    let requesterShiftType: string | null = null;
+    for (const st of allShiftKeys) {
+      const emps = getShiftEmployees(dateKey, st);
+      if (emps.includes(shiftsState.currentUserId)) {
+        requesterShiftType = st;
+        break;
+      }
+    }
+
+    if (requesterShiftType === null) {
+      showWarningAlert('Du hast keine Schicht an diesem Tag zum Tauschen');
+      return;
+    }
+
+    // Shift IDs are resolved by the backend via user+date
+    swapTarget = {
+      shiftId: 0,
+      userId: employeeId,
+      userName: empName,
+      date: dateKey,
+      shiftType,
+      requesterShiftId: 0,
+      requesterDate: dateKey,
+      requesterShiftType,
+    };
+    showSwapModal = true;
+  }
 </script>
 
 <svelte:head>
@@ -349,6 +413,15 @@
       <!-- END card__header -->
 
       <div class="card__body">
+        <!-- Swap Consent Banner (pending requests for current user) -->
+        {#if swapEnabled}
+          <SwapConsentBanner
+            bind:this={swapBannerRef}
+            currentUserId={shiftsState.currentUserId ?? 0}
+            {labels}
+          />
+        {/if}
+
         <!-- Non-manager without Team - Error Notice -->
         {#if !shiftsState.isManager && !ssrEmployeeTeamInfo}
           <div class="department-notice">
@@ -409,6 +482,9 @@
               onnotesChange={(notes: string) => {
                 shiftsState.setWeeklyNotes(notes);
               }}
+              onemployeeClick={swapEnabled && !shiftsState.isManager ?
+                handleEmployeeClick
+              : undefined}
             />
 
             <!-- Right Column: Controls + Sidebar -->
@@ -432,6 +508,7 @@
               {/if}
               {#if shiftsState.isManager || shiftsState.employees.length > 0}
                 <EmployeeSidebar
+                  {labels}
                   employees={shiftsState.employees}
                   {weekDates}
                   canEditShifts={shiftsState.canEditShifts}
@@ -503,6 +580,31 @@
         syncRotationToggles();
       }}
       ongenerate={handleCustomRotationGenerate}
+    />
+  {/if}
+
+  <!-- Swap Request Modal -->
+  {#if showSwapModal && swapTarget !== null}
+    <SwapRequestModal
+      targetShiftId={swapTarget.shiftId}
+      targetUserId={swapTarget.userId}
+      targetUserName={swapTarget.userName}
+      targetShiftDate={swapTarget.date}
+      targetShiftType={swapTarget.shiftType}
+      requesterShiftId={swapTarget.requesterShiftId}
+      requesterShiftDate={swapTarget.requesterDate}
+      requesterShiftType={swapTarget.requesterShiftType}
+      onclose={() => {
+        showSwapModal = false;
+        swapTarget = null;
+      }}
+      onsubmitted={() => {
+        showSwapModal = false;
+        swapTarget = null;
+        if (swapBannerRef !== undefined) {
+          void swapBannerRef.loadData();
+        }
+      }}
     />
   {/if}
 {/if}
