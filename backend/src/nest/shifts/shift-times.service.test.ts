@@ -9,9 +9,13 @@ import { ShiftTimesService } from './shift-times.service.js';
 // =============================================================
 
 function createMockDb(): DatabaseService {
+  const query = vi.fn();
+  const queryOne = vi.fn();
   return {
-    query: vi.fn(),
-    queryOne: vi.fn(),
+    query,
+    queryOne,
+    tenantQuery: query,
+    tenantQueryOne: queryOne,
     transaction: vi.fn(),
   } as unknown as DatabaseService;
 }

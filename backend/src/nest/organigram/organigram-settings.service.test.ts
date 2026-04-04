@@ -10,8 +10,10 @@ import { DEFAULT_HIERARCHY_LABELS, DEFAULT_VIEWPORT } from './organigram.types.j
 // =============================================================
 
 function createMockDb() {
+  const qf = vi.fn();
   return {
-    query: vi.fn(),
+    query: qf,
+    tenantQuery: qf,
     tenantTransaction: vi.fn(),
     getUserId: vi.fn().mockReturnValue(1),
   };

@@ -32,6 +32,10 @@ function createMockDb() {
   return {
     query: vi.fn(),
     queryOne: vi.fn(),
+    tenantQuery: vi.fn(),
+    tenantQueryOne: vi.fn(),
+    systemQuery: vi.fn(),
+    systemQueryOne: vi.fn(),
     tenantTransaction: vi.fn(),
   };
 }
@@ -103,9 +107,9 @@ describe('AddonsService', () => {
     it('should start trial with correct 30-day end date', async () => {
       mockDb.queryOne.mockResolvedValueOnce(purchasableAddonRow());
       // No existing tenant_addons entry
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
       // INSERT (createTrial)
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       const result = await service.activateAddon(10, 'tpm', 1);
 
@@ -119,8 +123,8 @@ describe('AddonsService', () => {
 
     it('should use addon-specific trial_days when defined', async () => {
       mockDb.queryOne.mockResolvedValueOnce(purchasableAddonRow({ trial_days: 14 }));
-      mockDb.query.mockResolvedValueOnce([]);
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       const result = await service.activateAddon(10, 'tpm', 1);
 
@@ -131,8 +135,8 @@ describe('AddonsService', () => {
 
     it('should default to 30 days when addon.trial_days is null', async () => {
       mockDb.queryOne.mockResolvedValueOnce(purchasableAddonRow({ trial_days: null }));
-      mockDb.query.mockResolvedValueOnce([]);
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       const result = await service.activateAddon(10, 'tpm', 1);
 
@@ -159,17 +163,17 @@ describe('AddonsService', () => {
   describe('deactivateAddon', () => {
     it('should set status to cancelled and PRESERVE user permissions', async () => {
       mockDb.queryOne.mockResolvedValueOnce(purchasableAddonRow());
-      mockDb.query.mockResolvedValueOnce([{ id: 'uuid-123' }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ id: 'uuid-123' }]);
 
       await service.deactivateAddon(10, 'tpm', 1);
 
       // Verify UPDATE on tenant_addons (status → cancelled)
-      const updateCall = mockDb.query.mock.calls[0];
+      const updateCall = mockDb.tenantQuery.mock.calls[0];
       expect(updateCall?.[0]).toContain("status = 'cancelled'");
       expect(updateCall?.[0]).toContain('tenant_addons');
 
       // CRITICAL: No DELETE on user_addon_permissions
-      for (const call of mockDb.query.mock.calls) {
+      for (const call of mockDb.tenantQuery.mock.calls) {
         const sql = String(call[0]);
         expect(sql).not.toContain('user_addon_permissions');
         expect(sql.toUpperCase()).not.toMatch(/DELETE\s+FROM/);
@@ -186,7 +190,7 @@ describe('AddonsService', () => {
 
     it('should throw NotFoundException when addon not activated for tenant', async () => {
       mockDb.queryOne.mockResolvedValueOnce(purchasableAddonRow());
-      mockDb.query.mockResolvedValueOnce([]); // RETURNING id → 0 rows
+      mockDb.tenantQuery.mockResolvedValueOnce([]); // RETURNING id → 0 rows
 
       await expect(service.deactivateAddon(10, 'tpm', 1)).rejects.toThrow(NotFoundException);
     });
@@ -199,8 +203,8 @@ describe('AddonsService', () => {
   describe('reactivation', () => {
     it('should reactivate from cancelled with new trial period', async () => {
       mockDb.queryOne.mockResolvedValueOnce(purchasableAddonRow());
-      mockDb.query.mockResolvedValueOnce([{ id: 'uuid-existing', status: 'cancelled' }]);
-      mockDb.query.mockResolvedValueOnce([]); // UPDATE
+      mockDb.tenantQuery.mockResolvedValueOnce([{ id: 'uuid-existing', status: 'cancelled' }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]); // UPDATE
 
       const result = await service.activateAddon(10, 'tpm', 1);
 
@@ -210,8 +214,8 @@ describe('AddonsService', () => {
 
     it('should reactivate from expired with new trial period', async () => {
       mockDb.queryOne.mockResolvedValueOnce(purchasableAddonRow());
-      mockDb.query.mockResolvedValueOnce([{ id: 'uuid-existing', status: 'expired' }]);
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ id: 'uuid-existing', status: 'expired' }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       const result = await service.activateAddon(10, 'tpm', 1);
 
@@ -221,8 +225,8 @@ describe('AddonsService', () => {
 
     it('should keep active status when reactivating already active addon', async () => {
       mockDb.queryOne.mockResolvedValueOnce(purchasableAddonRow());
-      mockDb.query.mockResolvedValueOnce([{ id: 'uuid-existing', status: 'active' }]);
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ id: 'uuid-existing', status: 'active' }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       const result = await service.activateAddon(10, 'tpm', 1);
 
@@ -248,7 +252,7 @@ describe('AddonsService', () => {
 
     it('should return not_activated when no tenant_addons entry', async () => {
       mockDb.queryOne.mockResolvedValueOnce(purchasableAddonRow());
-      mockDb.queryOne.mockResolvedValueOnce(null); // No tenant_addons row
+      mockDb.tenantQueryOne.mockResolvedValueOnce(null); // No tenant_addons row
 
       const result = await service.getAddonStatus(10, 'tpm');
 
@@ -260,7 +264,7 @@ describe('AddonsService', () => {
       const trialEnd = new Date(MOCK_NOW.getTime() + 15 * DAY_MS);
 
       mockDb.queryOne.mockResolvedValueOnce(purchasableAddonRow());
-      mockDb.queryOne.mockResolvedValueOnce({
+      mockDb.tenantQueryOne.mockResolvedValueOnce({
         status: 'trial',
         trial_ends_at: trialEnd,
         activated_at: MOCK_NOW,
@@ -277,7 +281,7 @@ describe('AddonsService', () => {
       const trialEnd = new Date(MOCK_NOW.getTime() - 1 * DAY_MS);
 
       mockDb.queryOne.mockResolvedValueOnce(purchasableAddonRow());
-      mockDb.queryOne.mockResolvedValueOnce({
+      mockDb.tenantQueryOne.mockResolvedValueOnce({
         status: 'trial',
         trial_ends_at: trialEnd,
         activated_at: new Date('2026-02-08'),
@@ -290,7 +294,7 @@ describe('AddonsService', () => {
 
     it('should omit trialEndsAt when trial_ends_at is null', async () => {
       mockDb.queryOne.mockResolvedValueOnce(purchasableAddonRow());
-      mockDb.queryOne.mockResolvedValueOnce({
+      mockDb.tenantQueryOne.mockResolvedValueOnce({
         status: 'active',
         trial_ends_at: null,
         activated_at: MOCK_NOW,
@@ -306,7 +310,7 @@ describe('AddonsService', () => {
 
     it('should omit activatedAt when activated_at is null', async () => {
       mockDb.queryOne.mockResolvedValueOnce(purchasableAddonRow());
-      mockDb.queryOne.mockResolvedValueOnce({
+      mockDb.tenantQueryOne.mockResolvedValueOnce({
         status: 'cancelled',
         trial_ends_at: null,
         activated_at: null,
@@ -336,7 +340,7 @@ describe('AddonsService', () => {
 
     it('should return true for active purchasable addon', async () => {
       mockDb.queryOne.mockResolvedValueOnce({ id: 5, is_core: false });
-      mockDb.queryOne.mockResolvedValueOnce({ id: 'uuid-123' });
+      mockDb.tenantQueryOne.mockResolvedValueOnce({ id: 'uuid-123' });
 
       const result = await service.checkTenantAccess(10, 'tpm');
 
@@ -353,7 +357,7 @@ describe('AddonsService', () => {
 
     it('should return false when purchasable addon not active for tenant', async () => {
       mockDb.queryOne.mockResolvedValueOnce({ id: 5, is_core: false });
-      mockDb.queryOne.mockResolvedValueOnce(null); // No matching row
+      mockDb.tenantQueryOne.mockResolvedValueOnce(null); // No matching row
 
       const result = await service.checkTenantAccess(10, 'tpm');
 
@@ -470,7 +474,7 @@ describe('AddonsService', () => {
     }
 
     it('should return addons with not_activated status when no tenant entry', async () => {
-      mockDb.query.mockResolvedValueOnce([joinRow()]);
+      mockDb.tenantQuery.mockResolvedValueOnce([joinRow()]);
 
       const result = await service.getAvailableAddons(10);
 
@@ -480,7 +484,7 @@ describe('AddonsService', () => {
     });
 
     it('should return core addon with active status', async () => {
-      mockDb.query.mockResolvedValueOnce([
+      mockDb.tenantQuery.mockResolvedValueOnce([
         joinRow({ addon_id: 1, addon_code: 'dashboard', is_core: true }),
       ]);
 
@@ -494,7 +498,7 @@ describe('AddonsService', () => {
       const trialEnd = new Date(MOCK_NOW.getTime() + 15 * DAY_MS);
       const activatedAt = MOCK_NOW;
 
-      mockDb.query.mockResolvedValueOnce([
+      mockDb.tenantQuery.mockResolvedValueOnce([
         joinRow({
           ta_id: 'uuid-1',
           tenant_id: 10,
@@ -514,7 +518,7 @@ describe('AddonsService', () => {
     });
 
     it('should return cancelled addon as inactive', async () => {
-      mockDb.query.mockResolvedValueOnce([
+      mockDb.tenantQuery.mockResolvedValueOnce([
         joinRow({
           ta_id: 'uuid-2',
           tenant_id: 10,
@@ -531,7 +535,9 @@ describe('AddonsService', () => {
     });
 
     it('should map priceMonthly and trialDays from join row', async () => {
-      mockDb.query.mockResolvedValueOnce([joinRow({ price_monthly: '25.50', trial_days: 14 })]);
+      mockDb.tenantQuery.mockResolvedValueOnce([
+        joinRow({ price_monthly: '25.50', trial_days: 14 }),
+      ]);
 
       const result = await service.getAvailableAddons(10);
 
@@ -540,7 +546,9 @@ describe('AddonsService', () => {
     });
 
     it('should omit priceMonthly and trialDays when null', async () => {
-      mockDb.query.mockResolvedValueOnce([joinRow({ price_monthly: null, trial_days: null })]);
+      mockDb.tenantQuery.mockResolvedValueOnce([
+        joinRow({ price_monthly: null, trial_days: null }),
+      ]);
 
       const result = await service.getAvailableAddons(10);
 
@@ -549,11 +557,11 @@ describe('AddonsService', () => {
     });
 
     it('should pass tenantId to SQL query', async () => {
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       await service.getAvailableAddons(42);
 
-      const params = mockDb.query.mock.calls[0]?.[1] as number[];
+      const params = mockDb.tenantQuery.mock.calls[0]?.[1] as number[];
       expect(params[0]).toBe(42);
     });
   });
@@ -565,7 +573,7 @@ describe('AddonsService', () => {
   describe('getUsageStats', () => {
     it('should return mapped usage statistics', async () => {
       mockDb.queryOne.mockResolvedValueOnce(purchasableAddonRow());
-      mockDb.query.mockResolvedValueOnce([
+      mockDb.tenantQuery.mockResolvedValueOnce([
         { date: new Date('2026-03-10'), usage_count: 15, unique_users: 5 },
         { date: new Date('2026-03-11'), usage_count: 22, unique_users: 8 },
       ]);
@@ -590,7 +598,7 @@ describe('AddonsService', () => {
 
     it('should return empty array when no usage data', async () => {
       mockDb.queryOne.mockResolvedValueOnce(purchasableAddonRow());
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       const result = await service.getUsageStats(10, 'tpm', '2026-03-01', '2026-03-02');
 
@@ -599,11 +607,11 @@ describe('AddonsService', () => {
 
     it('should pass correct params to SQL', async () => {
       mockDb.queryOne.mockResolvedValueOnce(purchasableAddonRow({ id: 7 }));
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       await service.getUsageStats(10, 'tpm', '2026-03-01', '2026-03-31');
 
-      const params = mockDb.query.mock.calls[0]?.[1] as unknown[];
+      const params = mockDb.tenantQuery.mock.calls[0]?.[1] as unknown[];
       expect(params[0]).toBe(10);
       expect(params[1]).toBe(7);
       expect(params[2]).toBe('2026-03-01');
@@ -638,7 +646,7 @@ describe('AddonsService', () => {
     }
 
     it('should count core, active, trial, cancelled addons correctly', async () => {
-      mockDb.query.mockResolvedValueOnce([
+      mockDb.tenantQuery.mockResolvedValueOnce([
         joinRowForSummary({
           addon_id: 1,
           addon_code: 'dashboard',
@@ -695,7 +703,7 @@ describe('AddonsService', () => {
     });
 
     it('should return zeros when only core addons exist', async () => {
-      mockDb.query.mockResolvedValueOnce([
+      mockDb.tenantQuery.mockResolvedValueOnce([
         joinRowForSummary({
           addon_id: 1,
           addon_code: 'dashboard',
@@ -713,7 +721,7 @@ describe('AddonsService', () => {
     });
 
     it('should sum monthlyCost from multiple active addons', async () => {
-      mockDb.query.mockResolvedValueOnce([
+      mockDb.tenantQuery.mockResolvedValueOnce([
         joinRowForSummary({
           addon_id: 5,
           addon_code: 'tpm',
@@ -741,7 +749,7 @@ describe('AddonsService', () => {
     });
 
     it('should use 0 when active addon has no priceMonthly', async () => {
-      mockDb.query.mockResolvedValueOnce([
+      mockDb.tenantQuery.mockResolvedValueOnce([
         joinRowForSummary({
           addon_id: 5,
           addon_code: 'tpm',
@@ -760,7 +768,9 @@ describe('AddonsService', () => {
     });
 
     it('should handle not_activated addons (no tenant entry)', async () => {
-      mockDb.query.mockResolvedValueOnce([joinRowForSummary({ addon_id: 5, addon_code: 'tpm' })]);
+      mockDb.tenantQuery.mockResolvedValueOnce([
+        joinRowForSummary({ addon_id: 5, addon_code: 'tpm' }),
+      ]);
 
       const result = await service.getTenantAddonsSummary(10);
 
@@ -776,8 +786,8 @@ describe('AddonsService', () => {
 
   describe('getAllTenantsWithAddons', () => {
     it('should return tenants with addon summaries', async () => {
-      // First query: tenants list
-      mockDb.query.mockResolvedValueOnce([
+      // First query: tenants list (systemQuery — cross-tenant)
+      mockDb.systemQuery.mockResolvedValueOnce([
         {
           id: 1,
           subdomain: 'apitest',
@@ -792,7 +802,7 @@ describe('AddonsService', () => {
         },
       ]);
       // getAvailableAddons for tenant 1
-      mockDb.query.mockResolvedValueOnce([
+      mockDb.tenantQuery.mockResolvedValueOnce([
         {
           addon_id: 1,
           addon_code: 'dashboard',
@@ -812,7 +822,7 @@ describe('AddonsService', () => {
         },
       ]);
       // getAvailableAddons for tenant 3
-      mockDb.query.mockResolvedValueOnce([
+      mockDb.tenantQuery.mockResolvedValueOnce([
         {
           addon_id: 1,
           addon_code: 'dashboard',
@@ -863,7 +873,7 @@ describe('AddonsService', () => {
     });
 
     it('should return empty array when no tenants exist', async () => {
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.systemQuery.mockResolvedValueOnce([]);
 
       const result = await service.getAllTenantsWithAddons();
 

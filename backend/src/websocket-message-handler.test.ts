@@ -17,9 +17,10 @@ vi.mock('uuid', () => ({
 
 function createHandlerWithMock(): {
   handler: WebSocketMessageHandler;
-  mockDb: { query: ReturnType<typeof vi.fn> };
+  mockDb: { query: ReturnType<typeof vi.fn>; queryAsTenant: ReturnType<typeof vi.fn> };
 } {
-  const mockDb = { query: vi.fn() };
+  const queryFn = vi.fn();
+  const mockDb = { query: queryFn, queryAsTenant: queryFn };
   const handler = new WebSocketMessageHandler(mockDb as unknown as DatabaseService);
   return { handler, mockDb };
 }
@@ -54,7 +55,7 @@ function createE2eFields(overrides?: Partial<E2eFields>): E2eFields {
 
 describe('WebSocketMessageHandler – conversation queries', () => {
   let handler: WebSocketMessageHandler;
-  let mockDb: { query: ReturnType<typeof vi.fn> };
+  let mockDb: { query: ReturnType<typeof vi.fn>; queryAsTenant: ReturnType<typeof vi.fn> };
 
   beforeEach(() => {
     const result = createHandlerWithMock();
@@ -119,7 +120,7 @@ describe('WebSocketMessageHandler – conversation queries', () => {
 
 describe('WebSocketMessageHandler – resolveE2eFields', () => {
   let handler: WebSocketMessageHandler;
-  let mockDb: { query: ReturnType<typeof vi.fn> };
+  let mockDb: { query: ReturnType<typeof vi.fn>; queryAsTenant: ReturnType<typeof vi.fn> };
 
   beforeEach(() => {
     const result = createHandlerWithMock();
@@ -249,7 +250,7 @@ describe('WebSocketMessageHandler – resolveE2eFields', () => {
 
 describe('WebSocketMessageHandler – processMessage', () => {
   let handler: WebSocketMessageHandler;
-  let mockDb: { query: ReturnType<typeof vi.fn> };
+  let mockDb: { query: ReturnType<typeof vi.fn>; queryAsTenant: ReturnType<typeof vi.fn> };
 
   beforeEach(() => {
     const result = createHandlerWithMock();
@@ -413,7 +414,7 @@ describe('WebSocketMessageHandler – processMessage', () => {
 
 describe('WebSocketMessageHandler – markAsRead', () => {
   let handler: WebSocketMessageHandler;
-  let mockDb: { query: ReturnType<typeof vi.fn> };
+  let mockDb: { query: ReturnType<typeof vi.fn>; queryAsTenant: ReturnType<typeof vi.fn> };
 
   beforeEach(() => {
     const result = createHandlerWithMock();

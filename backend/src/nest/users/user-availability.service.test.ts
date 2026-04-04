@@ -23,11 +23,11 @@ import {
 
 function createServiceWithMock(): {
   service: UserAvailabilityService;
-  mockDb: { query: ReturnType<typeof vi.fn> };
+  mockDb: { tenantQuery: ReturnType<typeof vi.fn> };
   mockActivityLogger: Record<string, ReturnType<typeof vi.fn>>;
   mockUserRepo: Record<string, ReturnType<typeof vi.fn>>;
 } {
-  const mockDb = { query: vi.fn() };
+  const mockDb = { tenantQuery: vi.fn() };
   const mockActivityLogger = {
     logCreate: vi.fn(),
     logUpdate: vi.fn(),
@@ -239,7 +239,7 @@ describe('UserAvailabilityService – pure helpers', () => {
 
 describe('UserAvailabilityService – DB-mocked methods', () => {
   let service: UserAvailabilityService;
-  let mockDb: { query: ReturnType<typeof vi.fn> };
+  let mockDb: { tenantQuery: ReturnType<typeof vi.fn> };
   let mockActivityLogger: Record<string, ReturnType<typeof vi.fn>>;
   let mockUserRepo: Record<string, ReturnType<typeof vi.fn>>;
 
@@ -253,7 +253,7 @@ describe('UserAvailabilityService – DB-mocked methods', () => {
 
   describe('getUserAvailability', () => {
     it('returns null when no availability entry exists', async () => {
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       const result = await service.getUserAvailability(42, 1);
 
@@ -261,7 +261,7 @@ describe('UserAvailabilityService – DB-mocked methods', () => {
     });
 
     it('returns first availability entry', async () => {
-      mockDb.query.mockResolvedValueOnce([
+      mockDb.tenantQuery.mockResolvedValueOnce([
         {
           user_id: 42,
           status: 'vacation',
@@ -283,11 +283,11 @@ describe('UserAvailabilityService – DB-mocked methods', () => {
       const result = await service.getUserAvailabilityBatch([], 1);
 
       expect(result.size).toBe(0);
-      expect(mockDb.query).not.toHaveBeenCalled();
+      expect(mockDb.tenantQuery).not.toHaveBeenCalled();
     });
 
     it('returns map keyed by user_id', async () => {
-      mockDb.query.mockResolvedValueOnce([
+      mockDb.tenantQuery.mockResolvedValueOnce([
         {
           user_id: 1,
           status: 'available',
@@ -314,7 +314,7 @@ describe('UserAvailabilityService – DB-mocked methods', () => {
 
   describe('updateAvailability', () => {
     it('throws NotFoundException when user does not exist', async () => {
-      mockDb.query.mockResolvedValueOnce([]); // userExists returns false
+      mockDb.tenantQuery.mockResolvedValueOnce([]); // userExists returns false
 
       await expect(
         service.updateAvailability(
@@ -330,7 +330,7 @@ describe('UserAvailabilityService – DB-mocked methods', () => {
     });
 
     it('throws ConflictException when overlapping range exists', async () => {
-      mockDb.query
+      mockDb.tenantQuery
         .mockResolvedValueOnce([{ id: 42 }]) // userExists
         .mockResolvedValueOnce([{ id: 1 }]); // overlapping check returns match
 
@@ -350,7 +350,7 @@ describe('UserAvailabilityService – DB-mocked methods', () => {
 
   describe('updateAvailabilityEntry', () => {
     it('throws NotFoundException when entry does not exist', async () => {
-      mockDb.query.mockResolvedValueOnce([]); // findAvailabilityEntryById
+      mockDb.tenantQuery.mockResolvedValueOnce([]); // findAvailabilityEntryById
 
       await expect(
         service.updateAvailabilityEntry(
@@ -370,7 +370,7 @@ describe('UserAvailabilityService – DB-mocked methods', () => {
       vi.useFakeTimers();
       vi.setSystemTime(new Date('2025-06-15T12:00:00Z'));
 
-      mockDb.query.mockResolvedValueOnce([
+      mockDb.tenantQuery.mockResolvedValueOnce([
         {
           id: 1,
           user_id: 42,
@@ -404,13 +404,13 @@ describe('UserAvailabilityService – DB-mocked methods', () => {
 
   describe('deleteAvailabilityEntry', () => {
     it('throws NotFoundException when entry does not exist', async () => {
-      mockDb.query.mockResolvedValueOnce([]); // findAvailabilityEntryById
+      mockDb.tenantQuery.mockResolvedValueOnce([]); // findAvailabilityEntryById
 
       await expect(service.deleteAvailabilityEntry(999, 1, 10)).rejects.toThrow(NotFoundException);
     });
 
     it('deletes entry and logs activity', async () => {
-      mockDb.query
+      mockDb.tenantQuery
         .mockResolvedValueOnce([
           {
             id: 1,
@@ -430,7 +430,7 @@ describe('UserAvailabilityService – DB-mocked methods', () => {
       const result = await service.deleteAvailabilityEntry(1, 1, 10);
 
       expect(result.message).toBe('Availability entry deleted successfully');
-      expect(mockDb.query).toHaveBeenCalledTimes(2);
+      expect(mockDb.tenantQuery).toHaveBeenCalledTimes(2);
       expect(mockActivityLogger.logDelete).toHaveBeenCalledOnce();
     });
   });
@@ -439,13 +439,13 @@ describe('UserAvailabilityService – DB-mocked methods', () => {
     it('returns early when status is undefined', async () => {
       await service.insertAvailabilityHistoryIfNeeded(42, 1, undefined, null, null, null, null, 10);
 
-      expect(mockDb.query).not.toHaveBeenCalled();
+      expect(mockDb.tenantQuery).not.toHaveBeenCalled();
     });
 
     it('returns early when dates are null', async () => {
       await service.insertAvailabilityHistoryIfNeeded(42, 1, 'sick', null, null, null, null, 10);
 
-      expect(mockDb.query).not.toHaveBeenCalled();
+      expect(mockDb.tenantQuery).not.toHaveBeenCalled();
     });
 
     it('throws BadRequestException when end before start', async () => {
@@ -475,7 +475,7 @@ describe('UserAvailabilityService – DB-mocked methods', () => {
         10,
       );
 
-      expect(mockDb.query).not.toHaveBeenCalled();
+      expect(mockDb.tenantQuery).not.toHaveBeenCalled();
     });
 
     it('returns early when endDate is undefined', async () => {
@@ -490,11 +490,11 @@ describe('UserAvailabilityService – DB-mocked methods', () => {
         10,
       );
 
-      expect(mockDb.query).not.toHaveBeenCalled();
+      expect(mockDb.tenantQuery).not.toHaveBeenCalled();
     });
 
     it('throws ConflictException when overlapping range exists', async () => {
-      mockDb.query.mockResolvedValueOnce([{ id: 99 }]); // overlapping check
+      mockDb.tenantQuery.mockResolvedValueOnce([{ id: 99 }]); // overlapping check
 
       await expect(
         service.insertAvailabilityHistoryIfNeeded(
@@ -511,7 +511,7 @@ describe('UserAvailabilityService – DB-mocked methods', () => {
     });
 
     it('inserts record when dates are valid and no overlap', async () => {
-      mockDb.query
+      mockDb.tenantQuery
         .mockResolvedValueOnce([]) // no overlapping
         .mockResolvedValueOnce([]); // INSERT
 
@@ -526,9 +526,9 @@ describe('UserAvailabilityService – DB-mocked methods', () => {
         10,
       );
 
-      expect(mockDb.query).toHaveBeenCalledTimes(2);
+      expect(mockDb.tenantQuery).toHaveBeenCalledTimes(2);
       // Verify INSERT query params
-      const insertCall = mockDb.query.mock.calls[1] as unknown[];
+      const insertCall = mockDb.tenantQuery.mock.calls[1] as unknown[];
       const insertParams = insertCall[1] as unknown[];
       expect(insertParams).toEqual([
         42,
@@ -543,7 +543,7 @@ describe('UserAvailabilityService – DB-mocked methods', () => {
     });
 
     it('inserts record with null reason and notes when not provided', async () => {
-      mockDb.query
+      mockDb.tenantQuery
         .mockResolvedValueOnce([]) // no overlapping
         .mockResolvedValueOnce([]); // INSERT
 
@@ -558,8 +558,8 @@ describe('UserAvailabilityService – DB-mocked methods', () => {
         10,
       );
 
-      expect(mockDb.query).toHaveBeenCalledTimes(2);
-      const insertCall = mockDb.query.mock.calls[1] as unknown[];
+      expect(mockDb.tenantQuery).toHaveBeenCalledTimes(2);
+      const insertCall = mockDb.tenantQuery.mock.calls[1] as unknown[];
       const insertParams = insertCall[1] as unknown[];
       expect(insertParams).toEqual([42, 1, 'vacation', '2025-07-01', '2025-07-14', null, null, 10]);
     });
@@ -571,7 +571,7 @@ describe('UserAvailabilityService – DB-mocked methods', () => {
 
   describe('updateAvailability – success paths', () => {
     it('inserts availability when user exists, no overlap, valid dates', async () => {
-      mockDb.query
+      mockDb.tenantQuery
         .mockResolvedValueOnce([{ id: 42 }]) // userExists
         .mockResolvedValueOnce([]) // no overlapping
         .mockResolvedValueOnce([]); // INSERT
@@ -590,11 +590,11 @@ describe('UserAvailabilityService – DB-mocked methods', () => {
       );
 
       expect(result.message).toBe('Availability updated successfully');
-      expect(mockDb.query).toHaveBeenCalledTimes(3);
+      expect(mockDb.tenantQuery).toHaveBeenCalledTimes(3);
     });
 
     it('does not insert when dates are undefined (available status)', async () => {
-      mockDb.query.mockResolvedValueOnce([{ id: 42 }]); // userExists
+      mockDb.tenantQuery.mockResolvedValueOnce([{ id: 42 }]); // userExists
 
       const result = await service.updateAvailability(
         42,
@@ -608,11 +608,11 @@ describe('UserAvailabilityService – DB-mocked methods', () => {
 
       expect(result.message).toBe('Availability updated successfully');
       // Only userExists query, no insert
-      expect(mockDb.query).toHaveBeenCalledTimes(1);
+      expect(mockDb.tenantQuery).toHaveBeenCalledTimes(1);
     });
 
     it('throws BadRequestException for non-available status without dates', async () => {
-      mockDb.query.mockResolvedValueOnce([{ id: 42 }]); // userExists
+      mockDb.tenantQuery.mockResolvedValueOnce([{ id: 42 }]); // userExists
 
       await expect(
         service.updateAvailability(
@@ -628,7 +628,7 @@ describe('UserAvailabilityService – DB-mocked methods', () => {
     });
 
     it('throws BadRequestException when end date is before start date', async () => {
-      mockDb.query.mockResolvedValueOnce([{ id: 42 }]); // userExists
+      mockDb.tenantQuery.mockResolvedValueOnce([{ id: 42 }]); // userExists
 
       await expect(
         service.updateAvailability(
@@ -651,7 +651,7 @@ describe('UserAvailabilityService – DB-mocked methods', () => {
   describe('updateAvailabilityByUuid', () => {
     it('resolves UUID and delegates to updateAvailability', async () => {
       mockUserRepo.resolveUuidToId.mockResolvedValueOnce(42);
-      mockDb.query
+      mockDb.tenantQuery
         .mockResolvedValueOnce([{ id: 42 }]) // userExists
         .mockResolvedValueOnce([]) // no overlapping
         .mockResolvedValueOnce([]); // INSERT
@@ -695,7 +695,7 @@ describe('UserAvailabilityService – DB-mocked methods', () => {
   describe('getAvailabilityHistoryByUuid', () => {
     it('returns history result with employee info and entries', async () => {
       // findUserBasicInfoByUuid
-      mockDb.query.mockResolvedValueOnce([
+      mockDb.tenantQuery.mockResolvedValueOnce([
         {
           id: 42,
           uuid: 'abc-uuid',
@@ -705,7 +705,7 @@ describe('UserAvailabilityService – DB-mocked methods', () => {
         },
       ]);
       // history query
-      mockDb.query.mockResolvedValueOnce([
+      mockDb.tenantQuery.mockResolvedValueOnce([
         {
           id: 1,
           user_id: 42,
@@ -736,7 +736,7 @@ describe('UserAvailabilityService – DB-mocked methods', () => {
     });
 
     it('throws NotFoundException when user UUID not found', async () => {
-      mockDb.query.mockResolvedValueOnce([]); // findUserBasicInfoByUuid
+      mockDb.tenantQuery.mockResolvedValueOnce([]); // findUserBasicInfoByUuid
 
       await expect(service.getAvailabilityHistoryByUuid('nonexistent', 1)).rejects.toThrow(
         NotFoundException,
@@ -744,7 +744,7 @@ describe('UserAvailabilityService – DB-mocked methods', () => {
     });
 
     it('returns empty entries when no history exists', async () => {
-      mockDb.query
+      mockDb.tenantQuery
         .mockResolvedValueOnce([
           {
             id: 42,
@@ -776,7 +776,7 @@ describe('UserAvailabilityService – DB-mocked methods', () => {
       vi.useFakeTimers();
       vi.setSystemTime(new Date('2025-06-01T12:00:00Z'));
 
-      mockDb.query
+      mockDb.tenantQuery
         .mockResolvedValueOnce([
           {
             id: 1,
@@ -807,7 +807,7 @@ describe('UserAvailabilityService – DB-mocked methods', () => {
       );
 
       expect(result.message).toBe('Availability entry updated successfully');
-      expect(mockDb.query).toHaveBeenCalledTimes(2);
+      expect(mockDb.tenantQuery).toHaveBeenCalledTimes(2);
       expect(mockActivityLogger.logUpdate).toHaveBeenCalledOnce();
 
       // Verify logUpdate was called with old and new values
@@ -824,7 +824,7 @@ describe('UserAvailabilityService – DB-mocked methods', () => {
       vi.useFakeTimers();
       vi.setSystemTime(new Date('2025-06-15T12:00:00Z'));
 
-      mockDb.query
+      mockDb.tenantQuery
         .mockResolvedValueOnce([
           {
             id: 5,
@@ -861,7 +861,7 @@ describe('UserAvailabilityService – DB-mocked methods', () => {
       vi.useFakeTimers();
       vi.setSystemTime(new Date('2025-06-15T12:00:00Z'));
 
-      mockDb.query
+      mockDb.tenantQuery
         .mockResolvedValueOnce([
           {
             id: 3,
@@ -901,7 +901,7 @@ describe('UserAvailabilityService – DB-mocked methods', () => {
 
   describe('deleteAvailabilityEntry – edge cases', () => {
     it('deletes entry with null dates and logs activity', async () => {
-      mockDb.query
+      mockDb.tenantQuery
         .mockResolvedValueOnce([
           {
             id: 7,

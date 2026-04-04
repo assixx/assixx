@@ -77,7 +77,7 @@ export class ShiftTimesService {
 
   /** Get all shift times for a tenant. Lazy-initializes defaults if none exist. */
   async getByTenant(tenantId: number): Promise<ShiftTimeResponse[]> {
-    const rows = await this.db.query<DbShiftTimeRow>(
+    const rows = await this.db.tenantQuery<DbShiftTimeRow>(
       `SELECT shift_key, label, start_time::TEXT, end_time::TEXT, sort_order, is_active
        FROM shift_times
        WHERE tenant_id = $1 AND is_active = ${IS_ACTIVE.ACTIVE}
@@ -87,7 +87,7 @@ export class ShiftTimesService {
 
     if (rows.length === 0) {
       await this.ensureDefaults(tenantId);
-      const defaultRows = await this.db.query<DbShiftTimeRow>(
+      const defaultRows = await this.db.tenantQuery<DbShiftTimeRow>(
         `SELECT shift_key, label, start_time::TEXT, end_time::TEXT, sort_order, is_active
          FROM shift_times
          WHERE tenant_id = $1 AND is_active = ${IS_ACTIVE.ACTIVE}
@@ -109,7 +109,7 @@ export class ShiftTimesService {
     // Ensure defaults exist before updating
     await this.ensureDefaults(tenantId);
 
-    const rows = await this.db.query<DbShiftTimeRow>(
+    const rows = await this.db.tenantQuery<DbShiftTimeRow>(
       `UPDATE shift_times
        SET label = $1, start_time = $2::TIME, end_time = $3::TIME
        WHERE tenant_id = $4 AND shift_key = $5
@@ -155,7 +155,7 @@ export class ShiftTimesService {
   /** Reset all shift times to defaults for a tenant */
   async resetToDefaults(tenantId: number): Promise<ShiftTimeResponse[]> {
     for (const def of DEFAULT_SHIFT_TIMES) {
-      await this.db.query(
+      await this.db.tenantQuery(
         `UPDATE shift_times
          SET label = $1, start_time = $2::TIME, end_time = $3::TIME, is_active = ${IS_ACTIVE.ACTIVE}
          WHERE tenant_id = $4 AND shift_key = $5`,
@@ -168,7 +168,7 @@ export class ShiftTimesService {
 
   /** Insert default shift times if none exist for this tenant */
   async ensureDefaults(tenantId: number): Promise<void> {
-    const countResult = await this.db.query<{ count: string }>(
+    const countResult = await this.db.tenantQuery<{ count: string }>(
       'SELECT COUNT(*)::TEXT AS count FROM shift_times WHERE tenant_id = $1',
       [tenantId],
     );
@@ -179,7 +179,7 @@ export class ShiftTimesService {
     this.logger.log(`Initializing default shift times for tenant ${tenantId}`);
 
     for (const def of DEFAULT_SHIFT_TIMES) {
-      await this.db.query(
+      await this.db.tenantQuery(
         `INSERT INTO shift_times (tenant_id, shift_key, label, start_time, end_time, sort_order)
          VALUES ($1, $2, $3, $4::TIME, $5::TIME, $6)
          ON CONFLICT (tenant_id, shift_key) DO NOTHING`,

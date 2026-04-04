@@ -313,7 +313,7 @@ export class TpmExecutionsService {
 
   /** Get a single execution by UUID */
   async getExecution(tenantId: number, executionUuid: string): Promise<TpmCardExecution> {
-    const row = await this.db.queryOne<TpmExecutionJoinRow>(
+    const row = await this.db.tenantQueryOne<TpmExecutionJoinRow>(
       `${EXECUTION_SELECT}
        WHERE e.uuid = $1 AND e.tenant_id = $2`,
       [executionUuid, tenantId],
@@ -333,7 +333,7 @@ export class TpmExecutionsService {
     page: number,
     pageSize: number,
   ): Promise<PaginatedExecutions> {
-    const countResult = await this.db.queryOne<{ count: string }>(
+    const countResult = await this.db.tenantQueryOne<{ count: string }>(
       `SELECT COUNT(*) AS count
        FROM tpm_card_executions e
        JOIN tpm_cards c ON e.card_id = c.id
@@ -344,7 +344,7 @@ export class TpmExecutionsService {
     const total = Number.parseInt(countResult?.count ?? '0', 10);
     const offset = (page - 1) * pageSize;
 
-    const rows = await this.db.query<TpmExecutionJoinRow>(
+    const rows = await this.db.tenantQuery<TpmExecutionJoinRow>(
       `${EXECUTION_SELECT}
        WHERE c.uuid = $1 AND e.tenant_id = $2
        ORDER BY e.execution_date DESC, e.created_at DESC
@@ -366,7 +366,7 @@ export class TpmExecutionsService {
     page: number,
     pageSize: number,
   ): Promise<PaginatedExecutions> {
-    const countResult = await this.db.queryOne<{ count: string }>(
+    const countResult = await this.db.tenantQueryOne<{ count: string }>(
       `SELECT COUNT(*) AS count
        FROM tpm_card_executions
        WHERE tenant_id = $1 AND approval_status = 'pending'`,
@@ -376,7 +376,7 @@ export class TpmExecutionsService {
     const total = Number.parseInt(countResult?.count ?? '0', 10);
     const offset = (page - 1) * pageSize;
 
-    const rows = await this.db.query<TpmExecutionJoinRow>(
+    const rows = await this.db.tenantQuery<TpmExecutionJoinRow>(
       `${EXECUTION_SELECT}
        WHERE e.tenant_id = $1 AND e.approval_status = 'pending'
        ORDER BY e.created_at ASC
@@ -456,7 +456,7 @@ export class TpmExecutionsService {
 
   /** Get all photos for an execution, ordered by sort_order */
   async getPhotos(tenantId: number, executionUuid: string): Promise<TpmExecutionPhoto[]> {
-    const rows = await this.db.query<TpmCardExecutionPhotoRow>(
+    const rows = await this.db.tenantQuery<TpmCardExecutionPhotoRow>(
       `SELECT p.*
        FROM tpm_card_execution_photos p
        JOIN tpm_card_executions e ON p.execution_id = e.id
@@ -529,7 +529,7 @@ export class TpmExecutionsService {
 
   /** Get all photos for a defect, ordered by sort_order */
   async getDefectPhotos(tenantId: number, defectUuid: string): Promise<TpmDefectPhoto[]> {
-    const rows = await this.db.query<TpmDefectPhotoRow>(
+    const rows = await this.db.tenantQuery<TpmDefectPhotoRow>(
       `SELECT dp.*
        FROM tpm_defect_photos dp
        JOIN tpm_execution_defects d ON dp.defect_id = d.id
@@ -550,7 +550,7 @@ export class TpmExecutionsService {
     tenantId: number,
     executionUuid: string,
   ): Promise<TpmExecutionDefect[]> {
-    const rows = await this.db.query<TpmExecutionDefectRow>(
+    const rows = await this.db.tenantQuery<TpmExecutionDefectRow>(
       `SELECT d.*
        FROM tpm_execution_defects d
        JOIN tpm_card_executions e ON d.execution_id = e.id
@@ -569,7 +569,7 @@ export class TpmExecutionsService {
     page: number,
     pageSize: number,
   ): Promise<PaginatedDefects> {
-    const countResult = await this.db.queryOne<{ count: string }>(
+    const countResult = await this.db.tenantQueryOne<{ count: string }>(
       `SELECT COUNT(*) AS count
        FROM tpm_execution_defects d
        JOIN tpm_card_executions e ON d.execution_id = e.id
@@ -581,7 +581,7 @@ export class TpmExecutionsService {
     const total = Number.parseInt(countResult?.count ?? '0', 10);
     const offset = (page - 1) * pageSize;
 
-    const rows = await this.db.query<DefectWithContextRow>(
+    const rows = await this.db.tenantQuery<DefectWithContextRow>(
       `${DEFECT_WITH_CONTEXT_SELECT}
        WHERE c.uuid = $1 AND d.tenant_id = $2 AND d.is_active = ${IS_ACTIVE.ACTIVE}
        ORDER BY e.execution_date DESC, d.position_number ASC
@@ -604,7 +604,7 @@ export class TpmExecutionsService {
     page: number,
     pageSize: number,
   ): Promise<PaginatedPlanDefects> {
-    const countResult = await this.db.queryOne<{ count: string }>(
+    const countResult = await this.db.tenantQueryOne<{ count: string }>(
       `SELECT COUNT(*) AS count
        FROM tpm_execution_defects d
        JOIN tpm_card_executions e ON d.execution_id = e.id
@@ -617,7 +617,7 @@ export class TpmExecutionsService {
     const total = Number.parseInt(countResult?.count ?? '0', 10);
     const offset = (page - 1) * pageSize;
 
-    const rows = await this.db.query<PlanDefectWithContextRow>(
+    const rows = await this.db.tenantQuery<PlanDefectWithContextRow>(
       `${DEFECT_WITH_PLAN_CONTEXT_SELECT}
        WHERE p.uuid = $1 AND d.tenant_id = $2 AND d.is_active = ${IS_ACTIVE.ACTIVE}
        ORDER BY c.card_code ASC, e.execution_date DESC, d.position_number ASC
@@ -662,7 +662,7 @@ export class TpmExecutionsService {
 
     values.push(defectUuid, tenantId);
 
-    const row = await this.db.queryOne<TpmExecutionDefectRow>(
+    const row = await this.db.tenantQueryOne<TpmExecutionDefectRow>(
       `UPDATE tpm_execution_defects
        SET ${setClauses.join(', ')}
        WHERE uuid = $${idx} AND tenant_id = $${idx + 1} AND is_active = ${IS_ACTIVE.ACTIVE}
@@ -970,7 +970,7 @@ export class TpmExecutionsService {
 
   /** List active employees eligible as execution participants */
   async getEligibleParticipants(tenantId: number): Promise<EligibleParticipant[]> {
-    const rows = await this.db.query<{
+    const rows = await this.db.tenantQuery<{
       id: number;
       uuid: string;
       first_name: string;
@@ -1001,7 +1001,7 @@ export class TpmExecutionsService {
 
   /** Resolve team leads + admins who can approve for a asset */
   private async resolveApproverIds(tenantId: number, assetId: number): Promise<number[]> {
-    const rows = await this.db.query<{ user_id: number }>(
+    const rows = await this.db.tenantQuery<{ user_id: number }>(
       `SELECT DISTINCT t.team_lead_id AS user_id
        FROM teams t
        JOIN asset_teams mt ON t.id = mt.team_id AND mt.tenant_id = t.tenant_id

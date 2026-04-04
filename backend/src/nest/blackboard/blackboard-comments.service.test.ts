@@ -33,7 +33,8 @@ vi.mock('./blackboard.helpers.js', () => ({
 // =============================================================
 
 function createMockDb() {
-  return { query: vi.fn() };
+  const queryFn = vi.fn();
+  return { query: queryFn, tenantQuery: queryFn, tenantQueryOne: vi.fn().mockResolvedValue(null) };
 }
 
 function createMockActivityLogger() {

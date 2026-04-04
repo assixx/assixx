@@ -340,7 +340,7 @@ export class SettingsService {
 
     query += ` ORDER BY category, setting_key`;
 
-    const rows = await this.db.query<DbTenantSetting>(query, params);
+    const rows = await this.db.tenantQuery<DbTenantSetting>(query, params);
     return rows.map((row: DbTenantSetting) => this.mapTenantSetting(row));
   }
 
@@ -350,7 +350,7 @@ export class SettingsService {
   async getTenantSetting(key: string, tenantId: number): Promise<ParsedSetting> {
     this.logger.debug(`Fetching tenant setting: ${key}`);
 
-    const rows = await this.db.query<DbTenantSetting>(
+    const rows = await this.db.tenantQuery<DbTenantSetting>(
       `SELECT * FROM tenant_settings WHERE setting_key = $1 AND tenant_id = $2`,
       [key, tenantId],
     );
@@ -386,13 +386,13 @@ export class SettingsService {
 
     const serializedValue = this.serializeValue(data.setting_value, data.value_type ?? 'string');
 
-    const existing = await this.db.query<DbIdResult>(
+    const existing = await this.db.tenantQuery<DbIdResult>(
       `SELECT id FROM tenant_settings WHERE setting_key = $1 AND tenant_id = $2`,
       [data.setting_key, tenantId],
     );
 
     if (existing.length > 0) {
-      await this.db.query(
+      await this.db.tenantQuery(
         `UPDATE tenant_settings
          SET setting_value = $1, value_type = $2, category = $3, updated_at = NOW()
          WHERE setting_key = $4 AND tenant_id = $5`,
@@ -405,7 +405,7 @@ export class SettingsService {
         ],
       );
     } else {
-      await this.db.query(
+      await this.db.tenantQuery(
         `INSERT INTO tenant_settings
          (tenant_id, setting_key, setting_value, value_type, category)
          VALUES ($1, $2, $3, $4, $5)`,
@@ -449,7 +449,7 @@ export class SettingsService {
       throw new ForbiddenException('Only admins can delete tenant settings');
     }
 
-    const rows = await this.db.query<DbTenantSetting>(
+    const rows = await this.db.tenantQuery<DbTenantSetting>(
       `SELECT * FROM tenant_settings WHERE setting_key = $1 AND tenant_id = $2`,
       [key, tenantId],
     );
@@ -458,10 +458,10 @@ export class SettingsService {
       throw new NotFoundException(SETTING_NOT_FOUND);
     }
 
-    await this.db.query(`DELETE FROM tenant_settings WHERE setting_key = $1 AND tenant_id = $2`, [
-      key,
-      tenantId,
-    ]);
+    await this.db.tenantQuery(
+      `DELETE FROM tenant_settings WHERE setting_key = $1 AND tenant_id = $2`,
+      [key, tenantId],
+    );
 
     await this.createAuditLog(
       'tenant_setting_deleted',
@@ -522,7 +522,7 @@ export class SettingsService {
 
     query += ` ORDER BY team_id DESC, category, setting_key`;
 
-    const rows = await this.db.query<DbUserSetting>(query, params);
+    const rows = await this.db.tenantQuery<DbUserSetting>(query, params);
     return rows.map((row: DbUserSetting) => this.mapUserSetting(row));
   }
 
@@ -532,7 +532,7 @@ export class SettingsService {
   async getUserSetting(key: string, userId: number): Promise<ParsedSetting> {
     this.logger.debug(`Fetching user setting: ${key}`);
 
-    const rows = await this.db.query<DbUserSetting>(
+    const rows = await this.db.tenantQuery<DbUserSetting>(
       `SELECT * FROM user_settings WHERE setting_key = $1 AND user_id = $2`,
       [key, userId],
     );
@@ -620,7 +620,7 @@ export class SettingsService {
     const params: (string | number)[] = [key, userId, tenantId];
     if (teamId !== null) params.push(teamId);
 
-    const result = await this.db.query<DbIdResult>(
+    const result = await this.db.tenantQuery<DbIdResult>(
       `SELECT id FROM user_settings WHERE setting_key = $1 AND user_id = $2 AND tenant_id = $3 ${teamCondition}`,
       params,
     );
@@ -641,7 +641,7 @@ export class SettingsService {
     const params: (string | number)[] = [value, valueType, category, key, userId, tenantId];
     if (teamId !== null) params.push(teamId);
 
-    await this.db.query(
+    await this.db.tenantQuery(
       `UPDATE user_settings SET setting_value = $1, value_type = $2, category = $3, updated_at = NOW()
        WHERE setting_key = $4 AND user_id = $5 AND tenant_id = $6 ${teamCondition}`,
       params,
@@ -658,7 +658,7 @@ export class SettingsService {
     tenantId: number,
     teamId: number | null,
   ): Promise<void> {
-    await this.db.query(
+    await this.db.tenantQuery(
       `INSERT INTO user_settings (user_id, tenant_id, team_id, setting_key, setting_value, value_type, category)
        VALUES ($1, $2, $3, $4, $5, $6, $7)`,
       [userId, tenantId, teamId, key, value, valueType, category],
@@ -671,7 +671,7 @@ export class SettingsService {
   async deleteUserSetting(key: string, userId: number): Promise<{ success: boolean }> {
     this.logger.log(`Deleting user setting: ${key}`);
 
-    const rows = await this.db.query<DbUserSetting>(
+    const rows = await this.db.tenantQuery<DbUserSetting>(
       `SELECT * FROM user_settings WHERE setting_key = $1 AND user_id = $2`,
       [key, userId],
     );
@@ -682,7 +682,7 @@ export class SettingsService {
 
     const tenantId = rows[0]?.tenant_id ?? 0;
 
-    await this.db.query(`DELETE FROM user_settings WHERE setting_key = $1 AND user_id = $2`, [
+    await this.db.tenantQuery(`DELETE FROM user_settings WHERE setting_key = $1 AND user_id = $2`, [
       key,
       userId,
     ]);
@@ -716,7 +716,7 @@ export class SettingsService {
     }
 
     // SECURITY: Only return settings for ACTIVE users (is_active = 1)
-    const userRows = await this.db.query<DbIdResult>(
+    const userRows = await this.db.tenantQuery<DbIdResult>(
       `SELECT id FROM users WHERE id = $1 AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}`,
       [targetUserId, tenantId],
     );
@@ -971,7 +971,7 @@ export class SettingsService {
     userAgent?: string,
   ): Promise<void> {
     try {
-      await this.db.query(
+      await this.db.tenantQuery(
         `INSERT INTO root_logs (action, user_id, tenant_id, entity_type, new_values, ip_address, user_agent, created_at)
          VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())`,
         [

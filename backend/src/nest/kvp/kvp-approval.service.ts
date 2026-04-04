@@ -120,7 +120,7 @@ export class KvpApprovalService implements OnModuleInit {
   ): Promise<Approval | null> {
     const suggestion = await this.findSuggestion(tenantId, idOrUuid);
 
-    const rows = await this.db.query<ApprovalRow>(
+    const rows = await this.db.tenantQuery<ApprovalRow>(
       `SELECT uuid, source_uuid, status, decision_note
        FROM approvals
        WHERE addon_code = 'kvp'
@@ -142,7 +142,7 @@ export class KvpApprovalService implements OnModuleInit {
 
   /** Check if any approval master is configured for addon 'kvp' */
   async hasApprovalConfig(tenantId: number): Promise<boolean> {
-    const rows = await this.db.query<{ count: string }>(
+    const rows = await this.db.tenantQuery<{ count: string }>(
       `SELECT COUNT(*)::text AS count
        FROM approval_configs
        WHERE addon_code = 'kvp'
@@ -217,7 +217,7 @@ export class KvpApprovalService implements OnModuleInit {
   /** Find KVPs stuck in 'in_review' with a decided approval and sync them */
   private async reconcilePendingApprovals(): Promise<void> {
     try {
-      const stuckRows = await this.db.query<{
+      const stuckRows = await this.db.tenantQuery<{
         kvp_uuid: string;
         kvp_id: number;
         kvp_title: string;
@@ -285,7 +285,7 @@ export class KvpApprovalService implements OnModuleInit {
     idOrUuid: number | string,
   ): Promise<KvpSuggestionStub> {
     const idColumn = isUuid(idOrUuid) ? 'uuid' : 'id';
-    const rows = await this.db.query<KvpSuggestionStub>(
+    const rows = await this.db.tenantQuery<KvpSuggestionStub>(
       `SELECT id, uuid, title, status, submitted_by
        FROM kvp_suggestions
        WHERE ${idColumn} = $1 AND tenant_id = $2`,
@@ -304,7 +304,7 @@ export class KvpApprovalService implements OnModuleInit {
     tenantId: number,
     uuid: string,
   ): Promise<KvpSuggestionStub | null> {
-    const rows = await this.db.query<KvpSuggestionStub>(
+    const rows = await this.db.tenantQuery<KvpSuggestionStub>(
       `SELECT id, uuid, title, status, submitted_by
        FROM kvp_suggestions
        WHERE uuid = $1 AND tenant_id = $2`,
@@ -323,7 +323,7 @@ export class KvpApprovalService implements OnModuleInit {
   }
 
   private async assertNoExistingApproval(tenantId: number, suggestionUuid: string): Promise<void> {
-    const rows = await this.db.query<{ uuid: string }>(
+    const rows = await this.db.tenantQuery<{ uuid: string }>(
       `SELECT uuid FROM approvals
        WHERE addon_code = 'kvp'
          AND source_uuid = $1
@@ -344,7 +344,7 @@ export class KvpApprovalService implements OnModuleInit {
     tenantId: number,
     approvalUuid: string,
   ): Promise<string | null> {
-    const rows = await this.db.query<{ source_uuid: string }>(
+    const rows = await this.db.tenantQuery<{ source_uuid: string }>(
       `SELECT source_uuid FROM approvals
        WHERE uuid = $1 AND tenant_id = $2 AND is_active = $3`,
       [approvalUuid, tenantId, IS_ACTIVE.ACTIVE],
@@ -365,14 +365,14 @@ export class KvpApprovalService implements OnModuleInit {
     }
 
     if (approvalData.status === 'approved') {
-      await this.db.query(
+      await this.db.tenantQuery(
         `UPDATE kvp_suggestions
          SET status = 'approved', rejection_reason = NULL, implementation_date = NULL, updated_at = NOW()
          WHERE uuid = $1 AND tenant_id = $2`,
         [suggestion.uuid, tenantId],
       );
     } else if (approvalData.status === 'rejected') {
-      await this.db.query(
+      await this.db.tenantQuery(
         `UPDATE kvp_suggestions
          SET status = 'rejected', rejection_reason = $1, implementation_date = NULL, updated_at = NOW()
          WHERE uuid = $2 AND tenant_id = $3`,
@@ -394,7 +394,7 @@ export class KvpApprovalService implements OnModuleInit {
     uuid: string,
     status: string,
   ): Promise<void> {
-    await this.db.query(
+    await this.db.tenantQuery(
       `UPDATE kvp_suggestions
        SET status = $1, rejection_reason = NULL, implementation_date = NULL, updated_at = NOW()
        WHERE uuid = $2 AND tenant_id = $3`,

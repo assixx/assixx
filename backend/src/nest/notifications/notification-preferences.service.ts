@@ -28,7 +28,7 @@ export class NotificationPreferencesService {
   async getPreferences(userId: number, tenantId: number): Promise<NotificationPreferencesResponse> {
     this.logger.debug(`Getting preferences for user ${userId}`);
 
-    const rows = await this.db.query<DbNotificationPreferencesRow>(
+    const rows = await this.db.tenantQuery<DbNotificationPreferencesRow>(
       `SELECT * FROM notification_preferences
        WHERE user_id = $1 AND tenant_id = $2 AND notification_type = 'general'`,
       [userId, tenantId],
@@ -75,14 +75,14 @@ export class NotificationPreferencesService {
     smsNotifications: boolean,
     notificationTypesJson: string,
   ): Promise<void> {
-    const existing = await this.db.query<DbIdRow>(
+    const existing = await this.db.tenantQuery<DbIdRow>(
       `SELECT id FROM notification_preferences
        WHERE user_id = $1 AND tenant_id = $2 AND notification_type = 'general'`,
       [userId, tenantId],
     );
 
     if (existing.length > 0) {
-      await this.db.query(
+      await this.db.tenantQuery(
         `UPDATE notification_preferences
          SET email_notifications = $1, push_notifications = $2, sms_notifications = $3,
              preferences = $4, updated_at = NOW()
@@ -97,7 +97,7 @@ export class NotificationPreferencesService {
         ],
       );
     } else {
-      await this.db.query(
+      await this.db.tenantQuery(
         `INSERT INTO notification_preferences
          (user_id, tenant_id, email_notifications, push_notifications, sms_notifications, preferences, notification_type)
          VALUES ($1, $2, $3, $4, $5, $6, 'general')`,

@@ -132,7 +132,7 @@ export class TpmShiftAssignmentsService {
     const plan = await this.resolvePlanId(tenantId, planUuid);
 
     // Deactivate users NOT in the new list
-    await this.db.query(
+    await this.db.tenantQuery(
       `UPDATE tpm_plan_assignments
        SET is_active = ${IS_ACTIVE.DELETED}, updated_at = now()
        WHERE plan_id = $1
@@ -144,7 +144,7 @@ export class TpmShiftAssignmentsService {
 
     // Upsert each user (ON CONFLICT reactivates previously removed rows)
     for (const userId of userIds) {
-      await this.db.query(
+      await this.db.tenantQuery(
         `INSERT INTO tpm_plan_assignments
            (uuid, tenant_id, plan_id, user_id, scheduled_date, created_by, is_active, created_at, updated_at)
          VALUES ($1, $2, $3, $4, $5, $6, ${IS_ACTIVE.ACTIVE}, now(), now())
@@ -170,7 +170,7 @@ export class TpmShiftAssignmentsService {
     startDate: string,
     endDate: string,
   ): Promise<TpmPlanAssignment[]> {
-    const rows = await this.db.query<DbPlanAssignmentRow>(
+    const rows = await this.db.tenantQuery<DbPlanAssignmentRow>(
       `SELECT
         pa.uuid,
         pa.user_id,
@@ -217,7 +217,7 @@ export class TpmShiftAssignmentsService {
   ): Promise<TpmShiftAssignment[]> {
     this.logger.debug(`Fetching TPM assignments for tenant ${tenantId}: ${startDate} – ${endDate}`);
 
-    const rows = await this.db.query<DbShiftAssignmentRow>(
+    const rows = await this.db.tenantQuery<DbShiftAssignmentRow>(
       `SELECT DISTINCT
         mp.uuid AS plan_uuid,
         mp.asset_id,
@@ -277,7 +277,7 @@ export class TpmShiftAssignmentsService {
     const params: (number | string)[] = [tenantId, startDate, endDate];
     if (!isAdmin) params.push(userId);
 
-    const rows = await this.db.query<DbCalendarAssignmentRow>(
+    const rows = await this.db.tenantQuery<DbCalendarAssignmentRow>(
       `SELECT *
       FROM (
         SELECT DISTINCT
@@ -323,7 +323,7 @@ export class TpmShiftAssignmentsService {
 
   /** Resolve plan UUID to internal ID (with existence check) */
   private async resolvePlanId(tenantId: number, planUuid: string): Promise<DbPlanIdRow> {
-    const rows = await this.db.query<DbPlanIdRow>(
+    const rows = await this.db.tenantQuery<DbPlanIdRow>(
       `SELECT id, asset_id
        FROM tpm_maintenance_plans
        WHERE tenant_id = $1 AND uuid = $2 AND is_active = ${IS_ACTIVE.ACTIVE}`,
@@ -338,7 +338,7 @@ export class TpmShiftAssignmentsService {
 
   /** Load tenant-specific interval colors (fallback handled by caller) */
   private async loadIntervalColors(tenantId: number): Promise<Map<string, string>> {
-    const rows = await this.db.query<{
+    const rows = await this.db.tenantQuery<{
       status_key: string;
       color_hex: string;
     }>(

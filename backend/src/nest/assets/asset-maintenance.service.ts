@@ -56,7 +56,7 @@ export class AssetMaintenanceService {
   ): Promise<MaintenanceHistoryResponse[]> {
     this.logger.debug(`Getting maintenance history for asset ${assetId}`);
 
-    const rows = await this.db.query<DbMaintenanceRow>(
+    const rows = await this.db.tenantQuery<DbMaintenanceRow>(
       `
       SELECT mh.*,
              u1.username as performed_by_name,
@@ -86,7 +86,7 @@ export class AssetMaintenanceService {
     const assetStatus: AssetStatus = statusAfter === 'needs_repair' ? 'repair' : 'operational';
     const nextDate = hasContent(nextMaintenanceDate) ? new Date(nextMaintenanceDate) : null;
 
-    await this.db.query(
+    await this.db.tenantQuery(
       `UPDATE assets SET last_maintenance = $1, next_maintenance = $2, status = $3,
        updated_at = CURRENT_TIMESTAMP WHERE id = $4 AND tenant_id = $5`,
       [new Date(performedDate), nextDate, assetStatus, assetId, tenantId],
@@ -103,7 +103,7 @@ export class AssetMaintenanceService {
   ): Promise<MaintenanceHistoryResponse> {
     this.logger.log(`Adding maintenance record for asset ${data.assetId}`);
 
-    const rows = await this.db.query<{ id: number }>(
+    const rows = await this.db.tenantQuery<{ id: number }>(
       `INSERT INTO asset_maintenance_history (
         tenant_id, asset_id, maintenance_type, performed_date, performed_by,
         external_company, description, parts_replaced, cost, duration_hours,
@@ -153,7 +153,7 @@ export class AssetMaintenanceService {
   async getUpcomingMaintenance(tenantId: number, days: number = 30): Promise<AssetResponse[]> {
     this.logger.debug(`Getting upcoming maintenance for tenant ${tenantId}`);
 
-    const rows = await this.db.query<DbAssetRow>(
+    const rows = await this.db.tenantQuery<DbAssetRow>(
       `
       SELECT m.*, d.name as department_name
       FROM assets m
@@ -176,7 +176,7 @@ export class AssetMaintenanceService {
   async getStatistics(tenantId: number): Promise<AssetStatistics> {
     this.logger.debug(`Getting asset statistics for tenant ${tenantId}`);
 
-    const row = await this.db.queryOne<DbStatisticsRow>(
+    const row = await this.db.tenantQueryOne<DbStatisticsRow>(
       `
       SELECT
         COUNT(*) as total_assets,
@@ -226,7 +226,7 @@ export class AssetMaintenanceService {
     userId: number,
     description: string,
   ): Promise<void> {
-    await this.db.query(
+    await this.db.tenantQuery(
       `INSERT INTO asset_maintenance_history
          (tenant_id, asset_id, maintenance_type, performed_date,
           performed_by, description, status_after, created_by)
@@ -250,7 +250,7 @@ export class AssetMaintenanceService {
   async getCategories(): Promise<AssetCategory[]> {
     this.logger.debug('Getting asset categories');
 
-    const rows = await this.db.query<DbCategoryRow>(
+    const rows = await this.db.tenantQuery<DbCategoryRow>(
       `
       SELECT * FROM asset_categories
       WHERE is_active = ${IS_ACTIVE.ACTIVE}

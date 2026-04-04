@@ -74,7 +74,7 @@ export class AuditMetadataService {
     }
 
     try {
-      const rows = await this.db.query<QueryResultRow>(
+      const rows = await this.db.tenantQuery<QueryResultRow>(
         `SELECT * FROM ${lookup.table} WHERE ${lookup.column} = $1 AND tenant_id = $2 LIMIT 1`,
         [lookup.value, tenantId],
       );
@@ -116,7 +116,7 @@ export class AuditMetadataService {
     }
 
     try {
-      const rows = await this.db.query<QueryResultRow>(
+      const rows = await this.db.tenantQuery<QueryResultRow>(
         `SELECT ${mapping.nameField} FROM ${lookup.table} WHERE ${lookup.column} = $1 AND tenant_id = $2 LIMIT 1`,
         [lookup.value, tenantId],
       );

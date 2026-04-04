@@ -79,6 +79,7 @@ export const SortOrderSchema = z.enum(['asc', 'desc'], {
 /**
  * Swap request status enum
  */
-export const SwapRequestStatusSchema = z.enum(['pending', 'approved', 'rejected', 'cancelled'], {
-  message: 'Invalid status',
-});
+export const SwapRequestStatusSchema = z.enum(
+  ['pending_partner', 'pending_approval', 'approved', 'rejected', 'cancelled'],
+  { message: 'Invalid swap request status' },
+);

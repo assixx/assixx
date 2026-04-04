@@ -30,7 +30,7 @@ export class SurveyStatisticsService {
   ): Promise<SurveyStatisticsResponse> {
     this.logger.debug(`Computing statistics for survey ${surveyId}`);
 
-    const statsRows = await this.db.query<{
+    const statsRows = await this.db.tenantQuery<{
       total_responses: number | string;
       completed_responses: number | string;
       first_response: Date | null;
@@ -115,7 +115,7 @@ export class SurveyStatisticsService {
     } else {
       options = question.options ?? [];
     }
-    const answerRows = await this.db.query<{
+    const answerRows = await this.db.tenantQuery<{
       answer_options: string | number[];
     }>(
       `SELECT sa.answer_options FROM survey_answers sa WHERE sa.question_id = $1 AND sa.answer_options IS NOT NULL`,
@@ -149,7 +149,7 @@ export class SurveyStatisticsService {
       lastName?: string | null;
     }[]
   > {
-    const rows = await this.db.query<{
+    const rows = await this.db.tenantQuery<{
       answer_text: string | null;
       user_id: number | null;
       first_name: string | null;
@@ -182,7 +182,7 @@ export class SurveyStatisticsService {
     max: number | null;
     totalResponses: number;
   }> {
-    const statsRows = await this.db.query<{
+    const statsRows = await this.db.tenantQuery<{
       average: number | null;
       min: number | null;
       max: number | null;
@@ -209,7 +209,7 @@ export class SurveyStatisticsService {
   private async getDateQuestionStats(
     questionId: number,
   ): Promise<{ optionId: number; optionText: string; count: number }[]> {
-    const dateRows = await this.db.query<{
+    const dateRows = await this.db.tenantQuery<{
       answer_date: Date | string;
       count: number | string;
     }>(

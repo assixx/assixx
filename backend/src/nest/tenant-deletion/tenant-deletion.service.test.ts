@@ -50,7 +50,9 @@ describe('TenantDeletionService', () => {
   let service: TenantDeletionService;
   let mockDb: {
     query: ReturnType<typeof vi.fn>;
+    systemQuery: ReturnType<typeof vi.fn>;
     transaction: ReturnType<typeof vi.fn>;
+    systemTransaction: ReturnType<typeof vi.fn>;
   };
   let mockConfigService: { get: ReturnType<typeof vi.fn> };
   let mockExecutor: { executeDeletions: ReturnType<typeof vi.fn> };
@@ -69,7 +71,14 @@ describe('TenantDeletionService', () => {
   beforeEach(() => {
     vi.resetAllMocks();
 
-    mockDb = { query: vi.fn(), transaction: vi.fn() };
+    const queryFn = vi.fn();
+    const transactionFn = vi.fn();
+    mockDb = {
+      query: queryFn,
+      systemQuery: queryFn,
+      transaction: transactionFn,
+      systemTransaction: transactionFn,
+    };
     mockConfigService = { get: vi.fn().mockReturnValue(undefined) };
     mockExecutor = { executeDeletions: vi.fn() };
     mockExporter = { createTenantDataExport: vi.fn() };

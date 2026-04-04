@@ -122,7 +122,7 @@ export class BlackboardEntriesService {
       /SELECT e\.id.*FROM blackboard_entries e/,
       'SELECT COUNT(*) as total FROM blackboard_entries e',
     );
-    const rows = await this.db.query<CountResult>(countQuery, params);
+    const rows = await this.db.tenantQuery<CountResult>(countQuery, params);
     return rows[0]?.total ?? 0;
   }
 
@@ -136,7 +136,7 @@ export class BlackboardEntriesService {
     const offsetIdx = params.length + 2;
     const query = `${baseQuery} ORDER BY e.priority = 'urgent' DESC, e.priority = 'high' DESC, e.${filters.sortBy} ${filters.sortDir} LIMIT $${limitIdx} OFFSET $${offsetIdx}`;
     const paginatedParams = [...params, filters.limit, (filters.page - 1) * filters.limit];
-    return await this.db.query<DbBlackboardEntry>(query, paginatedParams);
+    return await this.db.tenantQuery<DbBlackboardEntry>(query, paginatedParams);
   }
 
   // ==========================================================================
@@ -175,7 +175,7 @@ export class BlackboardEntriesService {
       WHERE e.${idColumn} = $2 AND e.tenant_id = $3
     `;
 
-    const entries = await this.db.query<DbBlackboardEntry>(query, [userId, id, tenantId]);
+    const entries = await this.db.tenantQuery<DbBlackboardEntry>(query, [userId, id, tenantId]);
     const entry = entries[0];
 
     if (entry === undefined) {
@@ -297,7 +297,7 @@ export class BlackboardEntriesService {
     const expiresAt =
       dto.expiresAt !== undefined && dto.expiresAt !== null ? new Date(dto.expiresAt) : null;
 
-    const rows = await this.db.query<{ id: number }>(
+    const rows = await this.db.tenantQuery<{ id: number }>(
       `INSERT INTO blackboard_entries
        (uuid, tenant_id, title, content, org_level, org_id, area_id, author_id, expires_at, priority, color)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
@@ -333,26 +333,26 @@ export class BlackboardEntriesService {
     teamIds: number[],
     areaIds: number[],
   ): Promise<void> {
-    await this.db.query('DELETE FROM blackboard_entry_organizations WHERE entry_id = $1', [
+    await this.db.tenantQuery('DELETE FROM blackboard_entry_organizations WHERE entry_id = $1', [
       entryId,
     ]);
 
     for (const orgId of departmentIds) {
-      await this.db.query(
+      await this.db.tenantQuery(
         'INSERT INTO blackboard_entry_organizations (entry_id, org_type, org_id) VALUES ($1, $2, $3)',
         [entryId, 'department', orgId],
       );
     }
 
     for (const orgId of teamIds) {
-      await this.db.query(
+      await this.db.tenantQuery(
         'INSERT INTO blackboard_entry_organizations (entry_id, org_type, org_id) VALUES ($1, $2, $3)',
         [entryId, 'team', orgId],
       );
     }
 
     for (const orgId of areaIds) {
-      await this.db.query(
+      await this.db.tenantQuery(
         'INSERT INTO blackboard_entry_organizations (entry_id, org_type, org_id) VALUES ($1, $2, $3)',
         [entryId, 'area', orgId],
       );
@@ -393,7 +393,7 @@ export class BlackboardEntriesService {
     }
 
     const { query, params } = this.buildUpdateQuery(id, tenantId, dto, hasMultiOrg);
-    await this.db.query(query, params);
+    await this.db.tenantQuery(query, params);
 
     const numericId = await this.resolveNumericEntryId(id, tenantId);
 
@@ -540,7 +540,7 @@ export class BlackboardEntriesService {
     if (typeof id === 'number') {
       return id;
     }
-    const entries = await this.db.query<{ id: number }>(
+    const entries = await this.db.tenantQuery<{ id: number }>(
       'SELECT id FROM blackboard_entries WHERE uuid = $1 AND tenant_id = $2',
       [id, tenantId],
     );
@@ -586,7 +586,7 @@ export class BlackboardEntriesService {
     const idColumn = typeof id === 'string' ? 'uuid' : 'id';
     const numericId = (entry as Record<string, unknown>)['id'] as number;
 
-    await this.db.query(
+    await this.db.tenantQuery(
       `DELETE FROM blackboard_entries WHERE ${idColumn} = $1 AND tenant_id = $2`,
       [id, tenantId],
     );
@@ -689,7 +689,7 @@ export class BlackboardEntriesService {
     params.push(limit);
     query += ` ORDER BY e.priority = 'urgent' DESC, e.priority = 'high' DESC, e.created_at DESC LIMIT $${params.length}`;
 
-    const entries = await this.db.query<DbBlackboardEntry>(query, params);
+    const entries = await this.db.tenantQuery<DbBlackboardEntry>(query, params);
 
     for (const entry of entries) {
       processEntryContent(entry);

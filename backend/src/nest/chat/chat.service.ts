@@ -116,7 +116,7 @@ export class ChatService {
     tenantId: number,
     userId: number,
   ): Promise<UserPermissions> {
-    const userPerms = await this.databaseService.query<UserPermissions>(
+    const userPerms = await this.databaseService.tenantQuery<UserPermissions>(
       `SELECT u.role, ud.department_id
        FROM users u
        LEFT JOIN user_departments ud ON u.id = ud.user_id AND ud.tenant_id = u.tenant_id AND ud.is_primary = true
@@ -141,12 +141,12 @@ export class ChatService {
     const isPrivileged = currentUser.role === 'admin' || currentUser.role === 'root';
 
     if (isPrivileged) {
-      return await this.databaseService.query<ChatUserRow>(
+      return await this.databaseService.tenantQuery<ChatUserRow>(
         `${baseQuery} WHERE u.tenant_id = $1 AND u.id != $2 AND u.is_active = ${IS_ACTIVE.ACTIVE} AND u.role != 'dummy'`,
         [tenantId, userId],
       );
     }
-    return await this.databaseService.query<ChatUserRow>(
+    return await this.databaseService.tenantQuery<ChatUserRow>(
       `${baseQuery} WHERE u.tenant_id = $1 AND u.id != $2 AND u.is_active = ${IS_ACTIVE.ACTIVE} AND u.role != 'dummy' AND (ud.department_id = $3 OR u.role IN ('admin', 'root'))`,
       [tenantId, userId, currentUser.department_id],
     );

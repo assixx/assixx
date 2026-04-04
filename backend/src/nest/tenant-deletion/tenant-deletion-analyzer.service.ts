@@ -53,7 +53,7 @@ export class TenantDeletionAnalyzer {
     };
 
     // Check blockers
-    const legalHolds = await this.db.query<LegalHoldResult>(
+    const legalHolds = await this.db.systemQuery<LegalHoldResult>(
       'SELECT * FROM legal_holds WHERE tenant_id = $1 AND active = true',
       [tenantId],
     );
@@ -66,7 +66,7 @@ export class TenantDeletionAnalyzer {
     }
 
     // Count records in each table
-    await this.db.transaction(async (client: PoolClient) => {
+    await this.db.systemTransaction(async (client: PoolClient) => {
       const tables = await getTablesWithTenantId(client);
 
       for (const tableRow of tables) {

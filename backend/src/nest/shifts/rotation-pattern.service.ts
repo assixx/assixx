@@ -99,7 +99,7 @@ export class RotationPatternService {
 
     query += ' ORDER BY p.created_at DESC';
 
-    const rows = await this.databaseService.query<DbPatternRow>(query, params);
+    const rows = await this.databaseService.tenantQuery<DbPatternRow>(query, params);
     return rows.map((row: DbPatternRow) => this.patternRowToResponse(row));
   }
 
@@ -118,7 +118,7 @@ export class RotationPatternService {
       WHERE p.id = $1 AND p.tenant_id = $2
     `;
 
-    const rows = await this.databaseService.query<DbPatternRow>(query, [patternId, tenantId]);
+    const rows = await this.databaseService.tenantQuery<DbPatternRow>(query, [patternId, tenantId]);
 
     if (rows.length === 0 || rows[0] === undefined) {
       throw new NotFoundException(`Rotation pattern ${patternId} not found`);
@@ -131,7 +131,7 @@ export class RotationPatternService {
    * Ensures no active pattern with the same name exists
    */
   private async ensureUniquePatternName(name: string, tenantId: number): Promise<void> {
-    const existing = await this.databaseService.query<{ id: number }>(
+    const existing = await this.databaseService.tenantQuery<{ id: number }>(
       `SELECT id FROM shift_rotation_patterns WHERE name = $1 AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}`,
       [name, tenantId],
     );
@@ -164,7 +164,7 @@ export class RotationPatternService {
       RETURNING id
     `;
 
-    const result = await this.databaseService.query<{ id: number }>(insertQuery, [
+    const result = await this.databaseService.tenantQuery<{ id: number }>(insertQuery, [
       tenantId,
       dto.teamId ?? null,
       dto.name,
@@ -245,7 +245,7 @@ export class RotationPatternService {
     const tenantIdIndex = params.length + 2;
     params.push(patternId, tenantId);
 
-    await this.databaseService.query(
+    await this.databaseService.tenantQuery(
       `UPDATE shift_rotation_patterns SET ${updates.join(', ')} WHERE id = $${patternIdIndex} AND tenant_id = $${tenantIdIndex}`,
       params,
     );
@@ -276,7 +276,7 @@ export class RotationPatternService {
     const pattern = await this.getRotationPattern(patternId, tenantId);
 
     // Delete pattern (cascade will handle assignments and history)
-    await this.databaseService.query(
+    await this.databaseService.tenantQuery(
       'DELETE FROM shift_rotation_patterns WHERE id = $1 AND tenant_id = $2',
       [patternId, tenantId],
     );
@@ -299,7 +299,7 @@ export class RotationPatternService {
    * Resolve pattern UUID to internal ID
    */
   private async resolvePatternIdByUuid(uuid: string, tenantId: number): Promise<number> {
-    const result = await this.databaseService.query<{ id: number }>(
+    const result = await this.databaseService.tenantQuery<{ id: number }>(
       `SELECT id FROM shift_rotation_patterns WHERE uuid = $1 AND tenant_id = $2`,
       [uuid, tenantId],
     );

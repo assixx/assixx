@@ -224,7 +224,7 @@ export class DocumentsService {
     const total = await getDocumentsCount(this.databaseService, baseQuery, params);
 
     const paginatedQuery = `${baseQuery} ORDER BY d.uploaded_at DESC LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
-    const documents = await this.databaseService.query<DbDocument>(paginatedQuery, [
+    const documents = await this.databaseService.tenantQuery<DbDocument>(paginatedQuery, [
       ...params,
       limit,
       offset,
@@ -250,7 +250,7 @@ export class DocumentsService {
   ): Promise<DocumentResponse> {
     this.logger.debug(`Getting document ${documentId} for tenant ${tenantId}`);
 
-    const documents = await this.databaseService.query<DbDocument>(
+    const documents = await this.databaseService.tenantQuery<DbDocument>(
       `SELECT d.*, COALESCE(CONCAT(u.first_name, ' ', u.last_name), u.username) as uploaded_by_name
        FROM documents d
        LEFT JOIN users u ON d.created_by = u.id
@@ -284,7 +284,7 @@ export class DocumentsService {
   ): Promise<DocumentResponse | null> {
     this.logger.debug(`Getting document by fileUuid ${fileUuid}`);
 
-    const documents = await this.databaseService.query<DbDocument>(
+    const documents = await this.databaseService.tenantQuery<DbDocument>(
       `SELECT d.*, COALESCE(CONCAT(u.first_name, ' ', u.last_name), u.username) as uploaded_by_name
        FROM documents d
        LEFT JOIN users u ON d.created_by = u.id
@@ -335,7 +335,7 @@ export class DocumentsService {
     // Build and execute update
     const { updates, params, paramIndex } = buildDocumentUpdateClause(dto);
     params.push(documentId, tenantId);
-    await this.databaseService.query(
+    await this.databaseService.tenantQuery(
       `UPDATE documents SET ${updates.join(', ')} WHERE id = $${paramIndex} AND tenant_id = $${paramIndex + 1}`,
       params,
     );
@@ -384,7 +384,7 @@ export class DocumentsService {
     }
 
     // Soft delete (is_active = 4)
-    await this.databaseService.query(
+    await this.databaseService.tenantQuery(
       `UPDATE documents SET is_active = ${IS_ACTIVE.DELETED}, updated_at = NOW() WHERE id = $1 AND tenant_id = $2`,
       [documentId, tenantId],
     );
@@ -424,7 +424,7 @@ export class DocumentsService {
       throw new ForbiddenException('Only administrators can archive documents');
     }
 
-    await this.databaseService.query(
+    await this.databaseService.tenantQuery(
       `UPDATE documents SET is_active = ${IS_ACTIVE.ARCHIVED}, updated_at = NOW() WHERE id = $1 AND tenant_id = $2`,
       [documentId, tenantId],
     );
@@ -448,7 +448,7 @@ export class DocumentsService {
       throw new ForbiddenException('Only administrators can unarchive documents');
     }
 
-    await this.databaseService.query(
+    await this.databaseService.tenantQuery(
       `UPDATE documents SET is_active = ${IS_ACTIVE.ACTIVE}, updated_at = NOW() WHERE id = $1 AND tenant_id = $2`,
       [documentId, tenantId],
     );
@@ -483,7 +483,7 @@ export class DocumentsService {
     tenantId: number,
     userId: number,
   ): Promise<{ success: boolean }> {
-    await this.databaseService.query(
+    await this.databaseService.tenantQuery(
       `INSERT INTO document_read_status (document_id, user_id, tenant_id, read_at)
        VALUES ($1, $2, $3, NOW())
        ON CONFLICT (document_id, user_id, tenant_id) DO UPDATE SET read_at = NOW()`,
@@ -577,7 +577,7 @@ export class DocumentsService {
     }
 
     // Get unread count
-    const unreadResult = await this.databaseService.query<{ count: string }>(
+    const unreadResult = await this.databaseService.tenantQuery<{ count: string }>(
       `SELECT COUNT(*) as count FROM documents d
        WHERE d.tenant_id = $1 AND d.is_active = ${IS_ACTIVE.ACTIVE}
        AND NOT EXISTS (
@@ -591,7 +591,7 @@ export class DocumentsService {
     // Get storage (admin only)
     let storageUsed = 0;
     if (user.role === 'admin' || user.role === 'root') {
-      const storageResult = await this.databaseService.query<{ total: string }>(
+      const storageResult = await this.databaseService.tenantQuery<{ total: string }>(
         `SELECT COALESCE(SUM(file_size), 0) as total FROM documents WHERE tenant_id = $1 AND is_active = ${IS_ACTIVE.ACTIVE}`,
         [tenantId],
       );
@@ -599,7 +599,7 @@ export class DocumentsService {
     }
 
     // Get category counts
-    const categoryResults = await this.databaseService.query<{
+    const categoryResults = await this.databaseService.tenantQuery<{
       category: string;
       count: string;
     }>(
@@ -659,7 +659,7 @@ export class DocumentsService {
       params.push(userId);
     }
 
-    const result = await this.databaseService.query<{ count: string }>(query, params);
+    const result = await this.databaseService.tenantQuery<{ count: string }>(query, params);
     const count = Number.parseInt(result[0]?.count ?? '0', 10);
 
     return { count };
@@ -672,7 +672,7 @@ export class DocumentsService {
   ): Promise<{ folders: ChatFolderResponse[]; total: number }> {
     this.logger.debug(`Getting chat folders for user ${userId}`);
 
-    const folders = await this.databaseService.query<ChatFolderResponse>(
+    const folders = await this.databaseService.tenantQuery<ChatFolderResponse>(
       `SELECT DISTINCT ON (c.id)
          c.id as "conversationId",
          c.uuid as "conversationUuid",
@@ -746,7 +746,7 @@ export class DocumentsService {
    * @throws NotFoundException if document not found
    */
   private async resolveDocumentIdByUuid(uuid: string, tenantId: number): Promise<number> {
-    const result = await this.databaseService.query<{ id: number }>(
+    const result = await this.databaseService.tenantQuery<{ id: number }>(
       `SELECT id FROM documents WHERE uuid = $1 AND tenant_id = $2`,
       [uuid, tenantId],
     );
@@ -762,7 +762,7 @@ export class DocumentsService {
    * SECURITY: Only returns data for ACTIVE users (is_active = 1).
    */
   private async getUserById(userId: number, tenantId: number): Promise<{ role: string } | null> {
-    const rows = await this.databaseService.query<{ role: string }>(
+    const rows = await this.databaseService.tenantQuery<{ role: string }>(
       `SELECT role FROM users WHERE id = $1 AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}`,
       [userId, tenantId],
     );

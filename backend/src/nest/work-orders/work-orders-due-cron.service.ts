@@ -46,7 +46,7 @@ export class WorkOrderDueCronService {
     this.isProcessing = true;
 
     try {
-      const rows = await this.db.query<DueSoonRow>(
+      const rows = await this.db.systemQuery<DueSoonRow>(
         `SELECT uuid, tenant_id FROM work_orders
          WHERE is_active = ${IS_ACTIVE.ACTIVE}
            AND status IN ('open', 'in_progress')
@@ -69,7 +69,7 @@ export class WorkOrderDueCronService {
       for (const row of rows) {
         await this.notifications.notifyDueSoon(row.tenant_id, row.uuid.trim());
 
-        await this.db.query(
+        await this.db.systemQuery(
           `UPDATE work_orders SET due_soon_notified_at = NOW()
            WHERE uuid = $1 AND tenant_id = $2`,
           [row.uuid, row.tenant_id],

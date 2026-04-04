@@ -45,16 +45,6 @@
 
 <style>
   .legend-bar {
-    display: flex;
-    flex-direction: column;
-    gap: var(--spacing-3);
-    backdrop-filter: blur(10px);
-
-    margin-bottom: var(--spacing-4);
-    border: var(--glass-border);
-    border-radius: var(--radius-xl);
-
-    background: var(--glass-bg);
     padding: var(--spacing-3) var(--spacing-4);
   }
 

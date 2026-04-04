@@ -17,9 +17,10 @@ import type { DbSurvey } from './surveys.types.js';
 
 function createServiceWithMock(): {
   service: SurveyAccessService;
-  mockDb: { query: ReturnType<typeof vi.fn> };
+  mockDb: { query: ReturnType<typeof vi.fn>; tenantQuery: ReturnType<typeof vi.fn> };
 } {
-  const mockDb = { query: vi.fn() };
+  const qf = vi.fn();
+  const mockDb = { query: qf, tenantQuery: qf };
   const service = new SurveyAccessService(mockDb as unknown as DatabaseService);
   return { service, mockDb };
 }

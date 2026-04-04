@@ -94,7 +94,7 @@ export class UserRepository {
 
   /** Find active user by numeric ID */
   async findById(id: number, tenantId: number): Promise<UserBase | null> {
-    return await this.db.queryOne<UserBase>(
+    return await this.db.tenantQueryOne<UserBase>(
       `SELECT ${USER_BASE_COLUMNS}
        FROM users
        WHERE id = $1
@@ -106,7 +106,7 @@ export class UserRepository {
 
   /** Find active user by UUID */
   async findByUuid(uuid: string, tenantId: number): Promise<UserBase | null> {
-    return await this.db.queryOne<UserBase>(
+    return await this.db.tenantQueryOne<UserBase>(
       `SELECT ${USER_BASE_COLUMNS}
        FROM users
        WHERE uuid = $1
@@ -118,7 +118,7 @@ export class UserRepository {
 
   /** Find active user by email */
   async findByEmail(email: string, tenantId: number): Promise<UserBase | null> {
-    return await this.db.queryOne<UserBase>(
+    return await this.db.tenantQueryOne<UserBase>(
       `SELECT ${USER_BASE_COLUMNS}
        FROM users
        WHERE LOWER(email) = LOWER($1)
@@ -130,7 +130,7 @@ export class UserRepository {
 
   /** Get minimal user info by UUID (for display purposes) */
   async findMinimalByUuid(uuid: string, tenantId: number): Promise<UserMinimal | null> {
-    return await this.db.queryOne<UserMinimal>(
+    return await this.db.tenantQueryOne<UserMinimal>(
       `SELECT ${USER_MINIMAL_COLUMNS}
        FROM users
        WHERE uuid = $1
@@ -142,7 +142,7 @@ export class UserRepository {
 
   /** Get minimal user info by ID (for display purposes) */
   async findMinimalById(id: number, tenantId: number): Promise<UserMinimal | null> {
-    return await this.db.queryOne<UserMinimal>(
+    return await this.db.tenantQueryOne<UserMinimal>(
       `SELECT ${USER_MINIMAL_COLUMNS}
        FROM users
        WHERE id = $1
@@ -152,9 +152,9 @@ export class UserRepository {
     );
   }
 
-  /** Count active users by role */
+  /** Count active users by role — BYPASSRLS: called from root services (cross-tenant) */
   async countByRole(role: string, tenantId: number): Promise<number> {
-    const result = await this.db.queryOne<{ count: string }>(
+    const result = await this.db.systemQueryOne<{ count: string }>(
       `SELECT COUNT(*) as count
        FROM users
        WHERE role = $1
@@ -165,9 +165,9 @@ export class UserRepository {
     return Number.parseInt(result?.count ?? '0', 10);
   }
 
-  /** Count all active users for tenant */
+  /** Count all active users for tenant — BYPASSRLS: called from root services (cross-tenant) */
   async countAll(tenantId: number): Promise<number> {
-    const result = await this.db.queryOne<{ count: string }>(
+    const result = await this.db.systemQueryOne<{ count: string }>(
       `SELECT COUNT(*) as count
        FROM users
        WHERE tenant_id = $1
@@ -207,7 +207,7 @@ export class UserRepository {
 
     params.push(limit, offset);
 
-    return await this.db.query<UserBase>(
+    return await this.db.tenantQuery<UserBase>(
       `SELECT ${USER_BASE_COLUMNS}
        FROM users
        ${whereClause}
@@ -219,7 +219,7 @@ export class UserRepository {
 
   /** Check if active user exists */
   async exists(id: number, tenantId: number): Promise<boolean> {
-    const result = await this.db.queryOne<{ exists: boolean }>(
+    const result = await this.db.tenantQueryOne<{ exists: boolean }>(
       `SELECT EXISTS(
          SELECT 1 FROM users
          WHERE id = $1 AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}
@@ -231,7 +231,7 @@ export class UserRepository {
 
   /** Check if active user exists by UUID */
   async existsByUuid(uuid: string, tenantId: number): Promise<boolean> {
-    const result = await this.db.queryOne<{ exists: boolean }>(
+    const result = await this.db.tenantQueryOne<{ exists: boolean }>(
       `SELECT EXISTS(
          SELECT 1 FROM users
          WHERE uuid = $1 AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}
@@ -250,7 +250,7 @@ export class UserRepository {
       return [];
     }
 
-    const result = await this.db.query<{ id: number }>(
+    const result = await this.db.tenantQuery<{ id: number }>(
       `SELECT id FROM users
        WHERE id = ANY($1::int[])
          AND tenant_id = $2
@@ -263,7 +263,7 @@ export class UserRepository {
 
   /** Get user role by ID (for permission checks) */
   async getRole(id: number, tenantId: number): Promise<string | null> {
-    const result = await this.db.queryOne<{ role: string }>(
+    const result = await this.db.tenantQueryOne<{ role: string }>(
       `SELECT role FROM users
        WHERE id = $1 AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}`,
       [id, tenantId],
@@ -283,7 +283,7 @@ export class UserRepository {
    * IMPORTANT: Caller must validate is_active === 1 before allowing login.
    */
   async findForAuth(email: string): Promise<UserWithPassword | null> {
-    return await this.db.queryOne<UserWithPassword>(
+    return await this.db.systemQueryOne<UserWithPassword>(
       `SELECT ${USER_AUTH_COLUMNS}
        FROM users
        WHERE LOWER(email) = LOWER($1)`,
@@ -296,7 +296,7 @@ export class UserRepository {
    * Returns user regardless of status - caller MUST check is_active
    */
   async findForAuthById(id: number, tenantId: number): Promise<UserWithPassword | null> {
-    return await this.db.queryOne<UserWithPassword>(
+    return await this.db.systemQueryOne<UserWithPassword>(
       `SELECT ${USER_AUTH_COLUMNS}
        FROM users
        WHERE id = $1 AND tenant_id = $2`,
@@ -309,7 +309,7 @@ export class UserRepository {
    * Used for password validation (change password, etc.)
    */
   async getPasswordHash(id: number, tenantId: number): Promise<string | null> {
-    const result = await this.db.queryOne<{ password: string }>(
+    const result = await this.db.tenantQueryOne<{ password: string }>(
       `SELECT password FROM users
        WHERE id = $1 AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}`,
       [id, tenantId],
@@ -318,7 +318,7 @@ export class UserRepository {
   }
 
   async updateLastLogin(id: number): Promise<void> {
-    await this.db.query('UPDATE users SET last_login = NOW() WHERE id = $1', [id]);
+    await this.db.systemQuery('UPDATE users SET last_login = NOW() WHERE id = $1', [id]);
   }
 
   // =========================================================================
@@ -331,7 +331,7 @@ export class UserRepository {
    */
   async findByIdIncludeDeleted(id: number, tenantId: number): Promise<UserBase | null> {
     this.logger.warn(`findByIdIncludeDeleted called for user ${id} - audit/admin use only`);
-    return await this.db.queryOne<UserBase>(
+    return await this.db.tenantQueryOne<UserBase>(
       `SELECT ${USER_BASE_COLUMNS}
        FROM users
        WHERE id = $1 AND tenant_id = $2`,
@@ -341,7 +341,7 @@ export class UserRepository {
 
   /** Count users by status (for admin dashboard) */
   async countByStatus(status: IsActiveStatus, tenantId: number): Promise<number> {
-    const result = await this.db.queryOne<{ count: string }>(
+    const result = await this.db.tenantQueryOne<{ count: string }>(
       `SELECT COUNT(*) as count
        FROM users
        WHERE is_active = $1 AND tenant_id = $2`,
@@ -352,7 +352,7 @@ export class UserRepository {
 
   /** Get all user statuses with counts (for admin dashboard) */
   async getStatusCounts(tenantId: number): Promise<Map<IsActiveStatus, number>> {
-    const result = await this.db.query<{ is_active: number; count: string }>(
+    const result = await this.db.tenantQuery<{ is_active: number; count: string }>(
       `SELECT is_active, COUNT(*) as count
        FROM users
        WHERE tenant_id = $1
@@ -373,7 +373,7 @@ export class UserRepository {
 
   /** Resolve UUID to numeric ID (for active users only) */
   async resolveUuidToId(uuid: string, tenantId: number): Promise<number | null> {
-    const result = await this.db.queryOne<{ id: number }>(
+    const result = await this.db.tenantQueryOne<{ id: number }>(
       `SELECT id FROM users
        WHERE uuid = $1 AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}`,
       [uuid, tenantId],
@@ -383,7 +383,7 @@ export class UserRepository {
 
   /** Resolve numeric ID to UUID (for active users only) */
   async resolveIdToUuid(id: number, tenantId: number): Promise<string | null> {
-    const result = await this.db.queryOne<{ uuid: string }>(
+    const result = await this.db.tenantQueryOne<{ uuid: string }>(
       `SELECT uuid FROM users
        WHERE id = $1 AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}`,
       [id, tenantId],
@@ -404,7 +404,7 @@ export class UserRepository {
       excludeClause = ` AND id != $${params.length}`;
     }
 
-    const result = await this.db.queryOne<{ exists: boolean }>(
+    const result = await this.db.systemQueryOne<{ exists: boolean }>(
       `SELECT EXISTS(
          SELECT 1 FROM users
          WHERE LOWER(email) = $1

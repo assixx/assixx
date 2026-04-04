@@ -32,7 +32,8 @@ vi.mock('./kvp.helpers.js', () => ({
 // =============================================================
 
 function createMockDb() {
-  return { query: vi.fn() };
+  const qf = vi.fn();
+  return { query: qf, tenantQuery: qf };
 }
 
 function createMockActivityLogger() {
@@ -109,12 +110,13 @@ describe('KvpConfirmationsService', () => {
     it('should confirm suggestion with UPSERT', async () => {
       // SELECT suggestion
       mockDb.query.mockResolvedValueOnce([{ id: 42 }]);
-      // UPSERT confirmation
-      mockDb.query.mockResolvedValueOnce([]);
+      // UPSERT confirmation (tenantQuery)
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       const result = await service.confirmSuggestion('uuid-123', 5, 10);
 
       expect(result.success).toBe(true);
+      // 1x query (SELECT) + 1x tenantQuery (UPSERT) — shared fn
       expect(mockDb.query).toHaveBeenCalledTimes(2);
     });
   });
@@ -134,7 +136,7 @@ describe('KvpConfirmationsService', () => {
 
     it('should set is_confirmed = false', async () => {
       mockDb.query.mockResolvedValueOnce([{ id: 42 }]);
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       const result = await service.unconfirmSuggestion('uuid-123', 5, 10);
 

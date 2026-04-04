@@ -167,7 +167,7 @@ export class AuditTrailService {
    * Get audit entry by ID
    */
   async getEntryById(currentUser: NestAuthUser, id: number): Promise<AuditEntryResponse> {
-    const rows = await this.db.query<DbAuditEntry>(
+    const rows = await this.db.tenantQuery<DbAuditEntry>(
       `SELECT * FROM audit_trail WHERE id = $1 AND tenant_id = $2`,
       [id, currentUser.tenantId],
     );
@@ -207,25 +207,25 @@ export class AuditTrailService {
     );
 
     // Get total count
-    const totalRows = await this.db.query<DbCountResult>(
+    const totalRows = await this.db.tenantQuery<DbCountResult>(
       `SELECT COUNT(*) as total FROM audit_trail WHERE ${whereClause}`,
       params,
     );
 
     // Get action counts
-    const actionRows = await this.db.query<DbActionCountResult>(
+    const actionRows = await this.db.tenantQuery<DbActionCountResult>(
       `SELECT action, COUNT(*) as count FROM audit_trail WHERE ${whereClause} GROUP BY action`,
       params,
     );
 
     // Get resource type counts
-    const resourceRows = await this.db.query<DbResourceTypeCountResult>(
+    const resourceRows = await this.db.tenantQuery<DbResourceTypeCountResult>(
       `SELECT resource_type, COUNT(*) as count FROM audit_trail WHERE ${whereClause} GROUP BY resource_type`,
       params,
     );
 
     // Get user counts (top 10)
-    const userRows = await this.db.query<DbUserCountResult>(
+    const userRows = await this.db.tenantQuery<DbUserCountResult>(
       `SELECT user_id, user_name, COUNT(*) as count
        FROM audit_trail WHERE ${whereClause}
        GROUP BY user_id, user_name ORDER BY count DESC LIMIT 10`,
@@ -233,7 +233,7 @@ export class AuditTrailService {
     );
 
     // Get status counts
-    const statusRows = await this.db.query<DbStatusCountResult>(
+    const statusRows = await this.db.tenantQuery<DbStatusCountResult>(
       `SELECT status, COUNT(*) as count FROM audit_trail WHERE ${whereClause} GROUP BY status`,
       params,
     );
@@ -326,7 +326,7 @@ export class AuditTrailService {
 
     const whereClause = conditions.join(' AND ');
 
-    const rows = await this.db.query<DbAuditEntry>(
+    const rows = await this.db.tenantQuery<DbAuditEntry>(
       `SELECT * FROM audit_trail WHERE ${whereClause} ORDER BY created_at DESC`,
       params,
     );
@@ -404,7 +404,7 @@ export class AuditTrailService {
     cutoffDate.setDate(cutoffDate.getDate() - dto.olderThanDays);
 
     // Delete old entries and get count
-    const deleteResult = await this.db.query<DbCountResult>(
+    const deleteResult = await this.db.tenantQuery<DbCountResult>(
       `WITH deleted AS (
         DELETE FROM audit_trail WHERE tenant_id = $1 AND created_at < $2 RETURNING 1
       ) SELECT COUNT(*) as total FROM deleted`,
@@ -487,7 +487,7 @@ export class AuditTrailService {
     const { whereClause, params } = this.buildWhereClause(filter);
 
     // Get total count
-    const countRows = await this.db.query<DbCountResult>(
+    const countRows = await this.db.tenantQuery<DbCountResult>(
       `SELECT COUNT(*) as total FROM audit_trail WHERE ${whereClause}`,
       params,
     );
@@ -501,7 +501,7 @@ export class AuditTrailService {
     // Get entries
     const limitParamIndex = params.length + 1;
     const offsetParamIndex = params.length + 2;
-    const rows = await this.db.query<DbAuditEntry>(
+    const rows = await this.db.tenantQuery<DbAuditEntry>(
       `SELECT * FROM audit_trail WHERE ${whereClause}
        ORDER BY ${orderBy} ${order}
        LIMIT $${limitParamIndex} OFFSET $${offsetParamIndex}`,
@@ -637,7 +637,7 @@ export class AuditTrailService {
   ): Promise<void> {
     try {
       // Get user details
-      const userRows = await this.db.query<DbUserInfo>(
+      const userRows = await this.db.tenantQuery<DbUserInfo>(
         `SELECT username, role FROM users WHERE id = $1 AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}`,
         [userId, tenantId],
       );
@@ -648,7 +648,7 @@ export class AuditTrailService {
         return;
       }
 
-      await this.db.query(
+      await this.db.tenantQuery(
         `INSERT INTO audit_trail (
           tenant_id, user_id, user_name, user_role,
           action, resource_type, resource_id, resource_name,

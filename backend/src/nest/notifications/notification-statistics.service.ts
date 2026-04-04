@@ -35,28 +35,28 @@ export class NotificationStatisticsService {
     this.logger.debug(`Getting statistics for tenant ${tenantId}`);
 
     // Total count (PostgreSQL returns bigint as string)
-    const totalRows = await this.db.query<DbCountRow>(
+    const totalRows = await this.db.tenantQuery<DbCountRow>(
       `SELECT COUNT(*) as total FROM notifications WHERE tenant_id = $1`,
       [tenantId],
     );
     const total = Number.parseInt(totalRows[0]?.total ?? '0', 10);
 
     // By type
-    const byTypeRows = await this.db.query<DbTypeCountRow>(
+    const byTypeRows = await this.db.tenantQuery<DbTypeCountRow>(
       `SELECT type, COUNT(*) as count FROM notifications WHERE tenant_id = $1 GROUP BY type`,
       [tenantId],
     );
     const byType = rowsToRecord(byTypeRows, (r: DbTypeCountRow) => r.type);
 
     // By priority
-    const byPriorityRows = await this.db.query<DbPriorityCountRow>(
+    const byPriorityRows = await this.db.tenantQuery<DbPriorityCountRow>(
       `SELECT priority, COUNT(*) as count FROM notifications WHERE tenant_id = $1 GROUP BY priority`,
       [tenantId],
     );
     const byPriority = rowsToRecord(byPriorityRows, (r: DbPriorityCountRow) => r.priority);
 
     // Read rate
-    const readRateRows = await this.db.query<DbReadRateRow>(
+    const readRateRows = await this.db.tenantQuery<DbReadRateRow>(
       `SELECT COUNT(DISTINCT n.id) as total_notifications,
               COUNT(DISTINCT nrs.notification_id) as read_notifications
        FROM notifications n
@@ -70,7 +70,7 @@ export class NotificationStatisticsService {
     const readRate = totalNotifications > 0 ? readNotifications / totalNotifications : 0;
 
     // Trends (last 30 days)
-    const trendsRows = await this.db.query<DbDateCountRow>(
+    const trendsRows = await this.db.tenantQuery<DbDateCountRow>(
       `SELECT DATE(created_at) as date, COUNT(*) as count
        FROM notifications
        WHERE tenant_id = $1 AND created_at >= NOW() - INTERVAL '30 days'
@@ -97,7 +97,7 @@ export class NotificationStatisticsService {
    */
   async getPersonalStats(userId: number, tenantId: number): Promise<PersonalStatsResponse> {
     // Total notifications for user
-    const totalRows = await this.db.query<DbCountRow>(
+    const totalRows = await this.db.tenantQuery<DbCountRow>(
       `SELECT COUNT(*) as total FROM notifications n
        WHERE n.tenant_id = $1
        AND (n.recipient_type = 'all' OR (n.recipient_type = 'user' AND n.recipient_id = $2)
@@ -111,7 +111,7 @@ export class NotificationStatisticsService {
     const total = Number.parseInt(totalRows[0]?.total ?? '0', 10);
 
     // Unread count
-    const unreadRows = await this.db.query<DbCountRow>(
+    const unreadRows = await this.db.tenantQuery<DbCountRow>(
       `SELECT COUNT(*) as unread_count FROM notifications n
        LEFT JOIN notification_read_status nrs ON n.id = nrs.notification_id AND nrs.user_id = $2
        WHERE n.tenant_id = $1
@@ -127,7 +127,7 @@ export class NotificationStatisticsService {
     const unread = Number.parseInt(unreadRows[0]?.unread_count ?? '0', 10);
 
     // By type (UNREAD only - for badge counts)
-    const byTypeRows = await this.db.query<DbTypeCountRow>(
+    const byTypeRows = await this.db.tenantQuery<DbTypeCountRow>(
       `SELECT n.type, COUNT(*) as count FROM notifications n
        LEFT JOIN notification_read_status nrs ON n.id = nrs.notification_id AND nrs.user_id = $2
        WHERE n.tenant_id = $1

@@ -39,18 +39,16 @@ export interface ShiftPlanResponse {
 }
 
 /**
- * Swap request response
+ * Swap request types — re-exported from shift-swap.types.ts
+ * @see shift-swap.types.ts for the canonical definitions
  */
-export interface SwapRequestResponse {
-  id: number;
-  shiftId: number;
-  requestedBy: number;
-  requestedWith?: number | undefined;
-  status: string;
-  reason?: string | undefined;
-  message?: string | undefined;
-  [key: string]: unknown;
-}
+export type {
+  SwapRequestResponse,
+  SwapRequestFilters,
+  DbSwapRequestRow,
+  SwapRequestStatus,
+  SwapRequestScope,
+} from './shift-swap.types.js';
 
 /**
  * Calendar shift response
@@ -126,14 +124,6 @@ export interface ShiftPlanFilters {
 }
 
 /**
- * Swap request filters
- */
-export interface SwapRequestFilters {
-  userId?: number | undefined;
-  status?: string | undefined;
-}
-
-/**
  * Overtime filters
  */
 export interface OvertimeFilters {
@@ -186,19 +176,6 @@ export interface DbShiftRow {
   last_name?: string | undefined;
   department_name?: string | undefined;
   team_name?: string | undefined;
-}
-
-export interface DbSwapRequestRow {
-  id: number;
-  tenant_id: number;
-  shift_id: number;
-  requested_by: number;
-  requested_with: number | null;
-  status: string;
-  reason: string | null;
-  reviewed_by: number | null;
-  reviewed_at: Date | null;
-  created_at: Date;
 }
 
 export interface DbFavoriteRow {

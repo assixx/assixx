@@ -22,7 +22,7 @@ export class TpmDashboardService {
    * that have not been marked as read (no entry in notification_read_status).
    */
   async getUnreadCount(userId: number, tenantId: number): Promise<{ count: number }> {
-    const rows = await this.db.query<{ count: string }>(
+    const rows = await this.db.tenantQuery<{ count: string }>(
       `SELECT COUNT(*) AS count
        FROM notifications n
        LEFT JOIN notification_read_status nrs

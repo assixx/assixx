@@ -11,12 +11,12 @@ import { Pool } from 'pg';
 import { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import { ReadTrackingService } from '../common/services/read-tracking.service.js';
 import { AppConfigService } from '../config/config.service.js';
-import { PG_POOL } from './database.constants.js';
+import { PG_POOL, SYSTEM_POOL } from './database.constants.js';
 import { DatabaseService } from './database.service.js';
 import { PartitionHealthService } from './partition-health.service.js';
 import { UserRepository } from './repositories/user.repository.js';
 
-export { PG_POOL } from './database.constants.js';
+export { PG_POOL, SYSTEM_POOL } from './database.constants.js';
 
 @Global()
 @Module({
@@ -61,6 +61,42 @@ export { PG_POOL } from './database.constants.js';
       },
       inject: [AppConfigService],
     },
+    {
+      provide: SYSTEM_POOL,
+      useFactory: async (configService: AppConfigService): Promise<Pool> => {
+        const logger = new Logger('DatabaseModule');
+        const config = configService.systemDatabaseConfig;
+
+        const pool = new Pool({
+          host: config.host,
+          port: config.port,
+          database: config.database,
+          user: config.user,
+          password: config.password,
+          max: 5,
+          idleTimeoutMillis: 30000,
+          connectionTimeoutMillis: 5000,
+        });
+
+        try {
+          const client = await pool.connect();
+          client.release();
+          logger.log(
+            `System pool connected (${config.user}@${config.host}:${config.port}/${config.database})`,
+          );
+        } catch (error: unknown) {
+          logger.error('System pool connection failed', error);
+          throw error;
+        }
+
+        pool.on('error', (err: Error) => {
+          logger.error('Unexpected system pool error', err);
+        });
+
+        return pool;
+      },
+      inject: [AppConfigService],
+    },
     DatabaseService,
     PartitionHealthService,
     ActivityLoggerService,
@@ -69,6 +105,7 @@ export { PG_POOL } from './database.constants.js';
   ],
   exports: [
     PG_POOL,
+    SYSTEM_POOL,
     DatabaseService,
     PartitionHealthService,
     ActivityLoggerService,

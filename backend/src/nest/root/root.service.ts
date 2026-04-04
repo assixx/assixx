@@ -143,7 +143,7 @@ export class RootService {
     this.logger.debug(`Getting root users for tenant ${tenantId}`);
 
     // SECURITY: Only return active root users (is_active = 1)
-    const users = await this.db.query<DbUserRow>(
+    const users = await this.db.systemQuery<DbUserRow>(
       `SELECT u.*, ud.department_id
        FROM users u
        LEFT JOIN user_departments ud ON u.id = ud.user_id AND ud.tenant_id = u.tenant_id AND ud.is_primary = true
@@ -162,7 +162,7 @@ export class RootService {
     this.logger.debug(`Getting root user ${id} for tenant ${tenantId}`);
 
     // SECURITY: Only return active root users (is_active = 1)
-    const rows = await this.db.query<DbUserRow>(
+    const rows = await this.db.systemQuery<DbUserRow>(
       `SELECT u.*, ud.department_id
        FROM users u
        LEFT JOIN user_departments ud ON u.id = ud.user_id AND ud.tenant_id = u.tenant_id AND ud.is_primary = true
@@ -194,7 +194,7 @@ export class RootService {
     const hashedPassword = await bcrypt.hash(data.password, 12);
 
     try {
-      const userId = await this.db.tenantTransaction(
+      const userId = await this.db.systemTransaction(
         async (client: PoolClient) =>
           await this.insertRootUserRecord(
             client,
@@ -285,7 +285,7 @@ export class RootService {
       });
     }
 
-    await this.db.tenantTransaction(async (client: PoolClient) => {
+    await this.db.systemTransaction(async (client: PoolClient) => {
       const { fields, values, nextIndex } = buildUserUpdateFields(data);
       let paramIndex = nextIndex;
 
@@ -338,7 +338,7 @@ export class RootService {
     }
 
     // SECURITY: Check if at least one ACTIVE root user will remain (is_active = 1)
-    const rootCount = await this.db.query<DbCountRow>(
+    const rootCount = await this.db.systemQuery<DbCountRow>(
       `SELECT COUNT(*) as count FROM users WHERE role = 'root' AND tenant_id = $1 AND id != $2 AND is_active = ${IS_ACTIVE.ACTIVE}`,
       [tenantId, id],
     );
@@ -366,21 +366,21 @@ export class RootService {
     );
 
     // Delete related data first (foreign key constraints)
-    await this.db.query('DELETE FROM oauth_tokens WHERE user_id = $1 AND tenant_id = $2', [
+    await this.db.systemQuery('DELETE FROM oauth_tokens WHERE user_id = $1 AND tenant_id = $2', [
       id,
       tenantId,
     ]);
-    await this.db.query('DELETE FROM user_teams WHERE user_id = $1 AND tenant_id = $2', [
+    await this.db.systemQuery('DELETE FROM user_teams WHERE user_id = $1 AND tenant_id = $2', [
       id,
       tenantId,
     ]);
-    await this.db.query('DELETE FROM user_departments WHERE user_id = $1 AND tenant_id = $2', [
-      id,
-      tenantId,
-    ]);
+    await this.db.systemQuery(
+      'DELETE FROM user_departments WHERE user_id = $1 AND tenant_id = $2',
+      [id, tenantId],
+    );
 
     // Delete the user
-    await this.db.query('DELETE FROM users WHERE id = $1 AND tenant_id = $2', [id, tenantId]);
+    await this.db.systemQuery('DELETE FROM users WHERE id = $1 AND tenant_id = $2', [id, tenantId]);
   }
 
   // ==========================================================================
@@ -398,8 +398,10 @@ export class RootService {
       this.userRepository.countByRole('admin', tenantId),
       this.userRepository.countByRole('employee', tenantId),
       this.userRepository.countAll(tenantId),
-      this.db.query<DbCountRow>("SELECT COUNT(*) as count FROM tenants WHERE status = 'active'"),
-      this.db.query<DbAddonCodeRow>(
+      this.db.systemQuery<DbCountRow>(
+        "SELECT COUNT(*) as count FROM tenants WHERE status = 'active'",
+      ),
+      this.db.systemQuery<DbAddonCodeRow>(
         `SELECT a.code FROM addons a
          WHERE a.is_active = ${IS_ACTIVE.ACTIVE}
            AND (
@@ -523,7 +525,7 @@ export class RootService {
    * Get tenant subdomain
    */
   private async getTenantSubdomain(tenantId: number): Promise<string> {
-    const rows = await this.db.query<DbSubdomainRow>(
+    const rows = await this.db.systemQuery<DbSubdomainRow>(
       'SELECT subdomain FROM tenants WHERE id = $1',
       [tenantId],
     );

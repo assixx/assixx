@@ -23,16 +23,16 @@ function createDerivedState() {
 
   const isEmployee = $derived(userState.effectiveRole === 'employee');
 
+  /** Scope-based: user has management responsibility for at least one team */
+  const isManager = $derived(userState.orgScope.type !== 'none');
+
+  /** Scope-based: user can edit the currently selected team's shifts */
   const canEditShifts = $derived.by(() => {
-    if (userState.effectiveRole === 'root') return true;
-    if (userState.effectiveRole === 'admin' && userState.hasFullAccess) return true;
-    const ctx = contextState.selectedContext;
-    if (
-      ctx.teamLeaderId !== null &&
-      userState.currentUserId !== null &&
-      ctx.teamLeaderId === userState.currentUserId
-    ) {
-      return true;
+    const scope = userState.orgScope;
+    if (scope.type === 'full') return true;
+    if (scope.type === 'limited') {
+      const teamId = contextState.selectedContext.teamId;
+      return teamId !== null && scope.teamIds.includes(teamId);
     }
     return false;
   });
@@ -43,6 +43,9 @@ function createDerivedState() {
     },
     get isEmployee() {
       return isEmployee;
+    },
+    get isManager() {
+      return isManager;
     },
     get canEditShifts() {
       return canEditShifts;
@@ -91,9 +94,13 @@ export const shiftsState = {
   get hasFullAccess() {
     return userState.hasFullAccess;
   },
+  get orgScope() {
+    return userState.orgScope;
+  },
   setUser: userState.setUser,
   updateEffectiveRole: userState.updateEffectiveRole,
   setHasFullAccess: userState.setHasFullAccess,
+  setOrgScope: userState.setOrgScope,
 
   // Data state
   get areas() {
@@ -285,6 +292,9 @@ export const shiftsState = {
   },
   get isEmployee() {
     return derivedState.isEmployee;
+  },
+  get isManager() {
+    return derivedState.isManager;
   },
   get canEditShifts() {
     return derivedState.canEditShifts;

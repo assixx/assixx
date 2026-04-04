@@ -15,7 +15,7 @@ import { BlackboardArchiveService } from './blackboard-archive.service.js';
 // =============================================================
 
 function createMockDb() {
-  return { query: vi.fn() };
+  return { query: vi.fn(), systemQuery: vi.fn() };
 }
 
 // =============================================================
@@ -38,11 +38,11 @@ describe('BlackboardArchiveService', () => {
 
   describe('onModuleInit', () => {
     it('should archive expired entries on startup', async () => {
-      mockDb.query.mockResolvedValueOnce([{ count: '0' }]);
+      mockDb.systemQuery.mockResolvedValueOnce([{ count: '0' }]);
 
       await service.onModuleInit();
 
-      expect(mockDb.query).toHaveBeenCalledTimes(1);
+      expect(mockDb.systemQuery).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -52,21 +52,21 @@ describe('BlackboardArchiveService', () => {
 
   describe('archiveAtMidnight', () => {
     it('should archive entries', async () => {
-      mockDb.query.mockResolvedValueOnce([{ count: '3' }]);
+      mockDb.systemQuery.mockResolvedValueOnce([{ count: '3' }]);
 
       await service.archiveAtMidnight();
 
-      expect(mockDb.query).toHaveBeenCalledTimes(1);
+      expect(mockDb.systemQuery).toHaveBeenCalledTimes(1);
     });
   });
 
   describe('archiveBackup', () => {
     it('should archive entries as backup', async () => {
-      mockDb.query.mockResolvedValueOnce([{ count: '0' }]);
+      mockDb.systemQuery.mockResolvedValueOnce([{ count: '0' }]);
 
       await service.archiveBackup();
 
-      expect(mockDb.query).toHaveBeenCalledTimes(1);
+      expect(mockDb.systemQuery).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -76,7 +76,7 @@ describe('BlackboardArchiveService', () => {
 
   describe('archiveExpiredEntriesManual', () => {
     it('should return archived count', async () => {
-      mockDb.query.mockResolvedValueOnce([{ count: '5' }]);
+      mockDb.systemQuery.mockResolvedValueOnce([{ count: '5' }]);
 
       const result = await service.archiveExpiredEntriesManual();
 
@@ -84,7 +84,7 @@ describe('BlackboardArchiveService', () => {
     });
 
     it('should return 0 when nothing to archive', async () => {
-      mockDb.query.mockResolvedValueOnce([{ count: '0' }]);
+      mockDb.systemQuery.mockResolvedValueOnce([{ count: '0' }]);
 
       const result = await service.archiveExpiredEntriesManual();
 
@@ -98,7 +98,7 @@ describe('BlackboardArchiveService', () => {
 
   describe('error handling', () => {
     it('should not throw on DB error in cron', async () => {
-      mockDb.query.mockRejectedValueOnce(new Error('DB down'));
+      mockDb.systemQuery.mockRejectedValueOnce(new Error('DB down'));
 
       await expect(service.archiveAtMidnight()).resolves.toBeUndefined();
     });

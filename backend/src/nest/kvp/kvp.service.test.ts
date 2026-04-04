@@ -38,7 +38,8 @@ vi.mock('../../utils/event-bus.js', () => ({
 // =============================================================
 
 function createMockDb() {
-  return { query: vi.fn() };
+  const qf = vi.fn();
+  return { query: qf, tenantQuery: qf };
 }
 
 function createMockNotifications() {
@@ -839,8 +840,8 @@ describe('KvpService', () => {
     it('updates suggestion for owner (employee)', async () => {
       // getSuggestionById chain (existing)
       mockGetSuggestionByIdChain(mockDb, { submitted_by: 3 });
-      // UPDATE
-      mockDb.query.mockResolvedValueOnce([]);
+      // UPDATE (tenantQuery)
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
       // getSuggestionById chain (updated)
       mockGetSuggestionByIdChain(mockDb, { submitted_by: 3, title: 'Updated' });
 
@@ -866,7 +867,7 @@ describe('KvpService', () => {
 
     it('updates suggestion by UUID', async () => {
       mockGetSuggestionByIdChain(mockDb, { submitted_by: 3 });
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
       mockGetSuggestionByIdChain(mockDb, {
         submitted_by: 3,
         title: 'Via UUID',
@@ -881,7 +882,7 @@ describe('KvpService', () => {
       );
 
       expect(result.id).toBe(1);
-      const updateCall = mockDb.query.mock.calls[1];
+      const updateCall = mockDb.tenantQuery.mock.calls[0];
       expect(updateCall?.[0]).toContain('uuid');
     });
 
@@ -889,8 +890,8 @@ describe('KvpService', () => {
       // getSuggestionById chain (Q1 detail)
       mockGetSuggestionByIdChain(mockDb, { submitted_by: 99 });
       // assertCanUpdateStatus uses scope mock (default = full access)
-      // Q2: UPDATE
-      mockDb.query.mockResolvedValueOnce([]);
+      // Q2: UPDATE (tenantQuery)
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
       // getSuggestionById chain (Q4 detail)
       mockGetSuggestionByIdChain(mockDb, {
         submitted_by: 99,
@@ -924,8 +925,8 @@ describe('KvpService', () => {
 
     it('deletes own suggestion for employee', async () => {
       mockGetSuggestionByIdChain(mockDb, { submitted_by: 3 });
-      // DELETE
-      mockDb.query.mockResolvedValueOnce([]);
+      // DELETE (tenantQuery)
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       const result = await service.deleteSuggestion(1, 42, 3, 'employee');
 
@@ -935,7 +936,7 @@ describe('KvpService', () => {
 
     it('deletes suggestion by UUID', async () => {
       mockGetSuggestionByIdChain(mockDb, { submitted_by: 3 });
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       const result = await service.deleteSuggestion(
         '019450aa-bbbb-7ccc-dddd-eeeeeeeeeeee',
@@ -945,14 +946,14 @@ describe('KvpService', () => {
       );
 
       expect(result.message).toBe('Suggestion deleted successfully');
-      const deleteCall = mockDb.query.mock.calls[1];
+      const deleteCall = mockDb.tenantQuery.mock.calls[0];
       expect(deleteCall?.[0]).toContain('uuid');
     });
 
     it('allows root to delete any suggestion', async () => {
       mockGetSuggestionByIdChain(mockDb, { submitted_by: 99 });
-      // DELETE
-      mockDb.query.mockResolvedValueOnce([]);
+      // DELETE (tenantQuery)
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       const result = await service.deleteSuggestion(1, 42, 1, 'root');
 
@@ -1400,15 +1401,15 @@ describe('KvpService', () => {
 
   describe('updateKvpSettings', () => {
     it('should update daily limit and return new value', async () => {
-      mockDb.query.mockResolvedValueOnce([]); // UPDATE
+      mockDb.tenantQuery.mockResolvedValueOnce([]); // UPDATE
 
       const result = await service.updateKvpSettings(42, 10);
 
       expect(result).toEqual({ dailyLimit: 10 });
-      const sql = mockDb.query.mock.calls[0]?.[0] as string;
+      const sql = mockDb.tenantQuery.mock.calls[0]?.[0] as string;
       expect(sql).toContain('UPDATE tenant_addons');
       expect(sql).toContain('daily_limit');
-      const params = mockDb.query.mock.calls[0]?.[1] as unknown[];
+      const params = mockDb.tenantQuery.mock.calls[0]?.[1] as unknown[];
       expect(params).toEqual([10, 42]);
     });
   });

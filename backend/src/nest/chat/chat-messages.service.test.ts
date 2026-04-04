@@ -31,14 +31,16 @@ vi.mock('../../utils/event-bus.js', () => ({
 function createServiceWithMock(): {
   service: ChatMessagesService;
   mockDb: {
-    query: ReturnType<typeof vi.fn>;
+    tenantQuery: ReturnType<typeof vi.fn>;
+    tenantQueryOne: ReturnType<typeof vi.fn>;
     tenantTransaction: ReturnType<typeof vi.fn>;
   };
   mockCls: { get: ReturnType<typeof vi.fn> };
   mockE2eKeys: { validateKeyVersion: ReturnType<typeof vi.fn> };
 } {
   const mockDb = {
-    query: vi.fn(),
+    tenantQuery: vi.fn(),
+    tenantQueryOne: vi.fn().mockResolvedValue(null),
     tenantTransaction: vi.fn((callback: (client: unknown) => unknown) =>
       callback({
         query: vi.fn().mockResolvedValue({ rows: [] }),
@@ -129,7 +131,11 @@ describe('ChatMessagesService – pure helpers', () => {
 
 describe('ChatMessagesService – context helpers', () => {
   it('throws ForbiddenException when tenantId is undefined', () => {
-    const mockDb = { query: vi.fn(), tenantTransaction: vi.fn() };
+    const mockDb = {
+      tenantQuery: vi.fn(),
+      tenantQueryOne: vi.fn().mockResolvedValue(null),
+      tenantTransaction: vi.fn(),
+    };
     const mockCls = { get: vi.fn().mockReturnValue(undefined) };
     const mockE2eKeys = { validateKeyVersion: vi.fn() };
     const service = new ChatMessagesService(
@@ -142,7 +148,11 @@ describe('ChatMessagesService – context helpers', () => {
   });
 
   it('throws ForbiddenException when userId is undefined', () => {
-    const mockDb = { query: vi.fn(), tenantTransaction: vi.fn() };
+    const mockDb = {
+      tenantQuery: vi.fn(),
+      tenantQueryOne: vi.fn().mockResolvedValue(null),
+      tenantTransaction: vi.fn(),
+    };
     const mockCls = { get: vi.fn().mockReturnValue(undefined) };
     const mockE2eKeys = { validateKeyVersion: vi.fn() };
     const service = new ChatMessagesService(
@@ -217,7 +227,7 @@ describe('ChatMessagesService – stubs', () => {
 
 describe('ChatMessagesService – DB-mocked methods', () => {
   let service: ChatMessagesService;
-  let mockDb: { query: ReturnType<typeof vi.fn> };
+  let mockDb: { tenantQuery: ReturnType<typeof vi.fn>; tenantQueryOne: ReturnType<typeof vi.fn> };
 
   beforeEach(() => {
     const result = createServiceWithMock();
@@ -227,7 +237,7 @@ describe('ChatMessagesService – DB-mocked methods', () => {
 
   describe('getMessagesCount', () => {
     it('returns parsed count from query result', async () => {
-      mockDb.query.mockResolvedValueOnce([{ count: '42' }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ count: '42' }]);
 
       const count = await service['getMessagesCount']('WHERE m.conversation_id = $1', [1]);
 
@@ -235,7 +245,7 @@ describe('ChatMessagesService – DB-mocked methods', () => {
     });
 
     it('returns 0 when no results', async () => {
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       const count = await service['getMessagesCount']('WHERE m.conversation_id = $1', [1]);
 
@@ -245,13 +255,13 @@ describe('ChatMessagesService – DB-mocked methods', () => {
 
   describe('insertMessage', () => {
     it('inserts message and updates conversation timestamp', async () => {
-      mockDb.query
+      mockDb.tenantQuery
         .mockResolvedValueOnce([]) // INSERT message
         .mockResolvedValueOnce([]); // UPDATE conversation
 
       await service.insertMessage(1, 10, 5, 'Hello');
 
-      expect(mockDb.query).toHaveBeenCalledTimes(2);
+      expect(mockDb.tenantQuery).toHaveBeenCalledTimes(2);
     });
   });
 
@@ -259,7 +269,7 @@ describe('ChatMessagesService – DB-mocked methods', () => {
     it('skips query when messages array is empty', async () => {
       await service['attachDocumentsToMessages']([], 1);
 
-      expect(mockDb.query).not.toHaveBeenCalled();
+      expect(mockDb.tenantQuery).not.toHaveBeenCalled();
     });
 
     it('attaches documents to matching messages', async () => {
@@ -267,7 +277,7 @@ describe('ChatMessagesService – DB-mocked methods', () => {
         { id: 10, attachments: [] },
         { id: 20, attachments: [] },
       ] as never[];
-      mockDb.query.mockResolvedValueOnce([
+      mockDb.tenantQuery.mockResolvedValueOnce([
         {
           id: 1,
           message_id: 10,
@@ -282,7 +292,7 @@ describe('ChatMessagesService – DB-mocked methods', () => {
 
       await service['attachDocumentsToMessages'](messages, 1);
 
-      expect(mockDb.query).toHaveBeenCalledOnce();
+      expect(mockDb.tenantQuery).toHaveBeenCalledOnce();
       expect((messages[0] as { attachments: unknown[] }).attachments).toHaveLength(1);
       expect((messages[1] as { attachments: unknown[] }).attachments).toHaveLength(0);
     });
@@ -296,7 +306,7 @@ describe('ChatMessagesService – DB-mocked methods', () => {
         last_name: 'Doe',
         profile_picture: null,
       };
-      mockDb.query.mockResolvedValueOnce([sender]);
+      mockDb.tenantQuery.mockResolvedValueOnce([sender]);
 
       const result = await service['fetchSenderInfo'](5, 1);
 
@@ -304,7 +314,7 @@ describe('ChatMessagesService – DB-mocked methods', () => {
     });
 
     it('throws NotFoundException when sender not found or inactive', async () => {
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       await expect(service['fetchSenderInfo'](999, 1)).rejects.toThrow(NotFoundException);
     });
@@ -312,7 +322,7 @@ describe('ChatMessagesService – DB-mocked methods', () => {
 
   describe('getUnreadCount', () => {
     it('returns zero when no unread messages', async () => {
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       const result = await service.getUnreadCount();
 
@@ -321,7 +331,7 @@ describe('ChatMessagesService – DB-mocked methods', () => {
     });
 
     it('returns unread summary', async () => {
-      mockDb.query.mockResolvedValueOnce([
+      mockDb.tenantQuery.mockResolvedValueOnce([
         {
           conversationId: 1,
           conversationName: 'General',
@@ -341,7 +351,7 @@ describe('ChatMessagesService – DB-mocked methods', () => {
   describe('markAsRead', () => {
     it('marks conversation as read', async () => {
       const verifyAccess = vi.fn().mockResolvedValue(undefined);
-      mockDb.query
+      mockDb.tenantQuery
         .mockResolvedValueOnce([{ last_read_message_id: 10 }]) // getUnreadMessageEntries → last_read
         .mockResolvedValueOnce([]) // getUnreadMessageEntries → unread messages (none)
         .mockResolvedValueOnce([{ max_id: 42 }]) // MAX message id
@@ -356,7 +366,7 @@ describe('ChatMessagesService – DB-mocked methods', () => {
     it('emits messagesRead event when unread messages exist', async () => {
       const { eventBus } = await import('../../utils/event-bus.js');
       const verifyAccess = vi.fn().mockResolvedValue(undefined);
-      mockDb.query
+      mockDb.tenantQuery
         .mockResolvedValueOnce([{ last_read_message_id: 10 }]) // getUnreadMessageEntries → last_read
         .mockResolvedValueOnce([
           { messageId: 11, senderId: 2 },

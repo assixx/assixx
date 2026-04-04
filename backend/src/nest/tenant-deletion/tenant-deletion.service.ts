@@ -71,7 +71,7 @@ export class TenantDeletionService implements OnModuleDestroy {
     validateTenantId(tenantId);
     this.logger.warn(`STARTING DYNAMIC DELETION FOR TENANT ${tenantId}`);
 
-    return await this.db.transaction(async (client: PoolClient) => {
+    return await this.db.systemTransaction(async (client: PoolClient) => {
       try {
         await this.audit.checkLegalHolds(tenantId, client);
         const exportPath = await this.exporter.createTenantDataExport(tenantId, client);
@@ -116,7 +116,7 @@ export class TenantDeletionService implements OnModuleDestroy {
     validateTenantId(tenantId);
 
     // Check if already queued
-    const existing = await this.db.query<QueueRow>(
+    const existing = await this.db.systemQuery<QueueRow>(
       "SELECT * FROM tenant_deletion_queue WHERE tenant_id = $1 AND status IN ('pending_approval', 'processing')",
       [tenantId],
     );
@@ -126,7 +126,7 @@ export class TenantDeletionService implements OnModuleDestroy {
     }
 
     // Check legal holds
-    const legalHolds = await this.db.query<LegalHoldRow>(
+    const legalHolds = await this.db.systemQuery<LegalHoldRow>(
       'SELECT * FROM legal_holds WHERE tenant_id = $1 AND active = true',
       [tenantId],
     );
@@ -139,7 +139,7 @@ export class TenantDeletionService implements OnModuleDestroy {
     const scheduledDate = new Date();
     scheduledDate.setTime(scheduledDate.getTime() + GRACE_PERIOD_MINUTES * 60 * 1000);
 
-    const rows = await this.db.query<{ id: number }>(
+    const rows = await this.db.systemQuery<{ id: number }>(
       `INSERT INTO tenant_deletion_queue
        (tenant_id, created_by, scheduled_deletion_date, status, approval_status, deletion_reason, ip_address)
        VALUES ($1, $2, $3, 'pending_approval', 'pending', $4, $5)
@@ -150,7 +150,7 @@ export class TenantDeletionService implements OnModuleDestroy {
     const queueId = rows[0]?.id ?? 0;
 
     // Update tenant status
-    await this.db.query('UPDATE tenants SET deletion_status = $1 WHERE id = $2', [
+    await this.db.systemQuery('UPDATE tenants SET deletion_status = $1 WHERE id = $2', [
       'marked_for_deletion',
       tenantId,
     ]);
@@ -172,7 +172,7 @@ export class TenantDeletionService implements OnModuleDestroy {
     cancelledBy: number,
     isEmergencyStop: boolean = false,
   ): Promise<void> {
-    const queue = await this.db.query<QueueRow>(
+    const queue = await this.db.systemQuery<QueueRow>(
       "SELECT * FROM tenant_deletion_queue WHERE tenant_id = $1 AND status IN ('pending_approval', 'queued')",
       [tenantId],
     );
@@ -187,7 +187,7 @@ export class TenantDeletionService implements OnModuleDestroy {
     }
 
     if (isEmergencyStop) {
-      await this.db.query(
+      await this.db.systemQuery(
         `UPDATE tenant_deletion_queue
          SET status = 'cancelled',
              completed_at = NOW(),
@@ -201,14 +201,16 @@ export class TenantDeletionService implements OnModuleDestroy {
         `EMERGENCY STOP: Tenant ${tenantId} deletion stopped by user ${cancelledBy}`,
       );
     } else {
-      await this.db.query(
+      await this.db.systemQuery(
         "UPDATE tenant_deletion_queue SET status = 'cancelled', completed_at = NOW() WHERE id = $1",
         [firstQueueItem.id],
       );
       this.logger.log(`Deletion cancelled for tenant ${tenantId} by user ${cancelledBy}`);
     }
 
-    await this.db.query('UPDATE tenants SET deletion_status = NULL WHERE id = $1', [tenantId]);
+    await this.db.systemQuery('UPDATE tenants SET deletion_status = NULL WHERE id = $1', [
+      tenantId,
+    ]);
   }
 
   /**
@@ -216,7 +218,7 @@ export class TenantDeletionService implements OnModuleDestroy {
    */
   async processQueue(): Promise<void> {
     try {
-      const queueItems = await this.db.query<QueueRow>(
+      const queueItems = await this.db.systemQuery<QueueRow>(
         `SELECT * FROM tenant_deletion_queue
          WHERE status = 'queued'
          AND approval_status = 'approved'
@@ -287,7 +289,7 @@ export class TenantDeletionService implements OnModuleDestroy {
    * NOTE: approved_by column does not exist in DB schema — using second_approver_id instead
    */
   async approveDeletion(queueId: number, approvedBy: number, _comment?: string): Promise<void> {
-    await this.db.query(
+    await this.db.systemQuery(
       `UPDATE tenant_deletion_queue
        SET approval_status = 'approved',
            second_approver_id = $1,
@@ -301,7 +303,7 @@ export class TenantDeletionService implements OnModuleDestroy {
   }
 
   async rejectDeletion(queueId: number, rejectedBy: number, _reason?: string): Promise<void> {
-    const queueRows = await this.db.query<QueueRow>(
+    const queueRows = await this.db.systemQuery<QueueRow>(
       'SELECT tenant_id FROM tenant_deletion_queue WHERE id = $1',
       [queueId],
     );
@@ -335,7 +337,7 @@ export class TenantDeletionService implements OnModuleDestroy {
     scheduledDate?: Date;
     approvalStatus?: string;
   }> {
-    const rows = await this.db.query<QueueRow>(
+    const rows = await this.db.systemQuery<QueueRow>(
       `SELECT id, status, scheduled_deletion_date, approval_status
        FROM tenant_deletion_queue
        WHERE tenant_id = $1 AND status != 'cancelled'
@@ -372,7 +374,7 @@ export class TenantDeletionService implements OnModuleDestroy {
   }
 
   async retryDeletion(queueId: number): Promise<void> {
-    await this.db.query(
+    await this.db.systemQuery(
       `UPDATE tenant_deletion_queue
        SET status = 'queued',
            error_message = NULL,

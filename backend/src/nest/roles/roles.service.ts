@@ -179,7 +179,7 @@ export class RolesService {
     this.logger.log(`Checking role for user ${userId}, required: ${requiredRole}`);
 
     // SECURITY: Only check roles for ACTIVE users (is_active = 1)
-    const rows = await this.db.query<UserRoleRow>(
+    const rows = await this.db.tenantQuery<UserRoleRow>(
       `SELECT role FROM users WHERE id = $1 AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}`,
       [userId, tenantId],
     );

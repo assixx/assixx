@@ -311,7 +311,7 @@ export class TpmSlotAssistantService {
    * Used by the create-mode endpoint where no plan UUID exists yet.
    */
   async resolveAssetIdByUuid(tenantId: number, assetUuid: string): Promise<number> {
-    const row = await this.db.queryOne<{ id: number }>(
+    const row = await this.db.tenantQueryOne<{ id: number }>(
       `SELECT id FROM assets
        WHERE uuid = $1 AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}`,
       [assetUuid, tenantId],
@@ -333,7 +333,7 @@ export class TpmSlotAssistantService {
     startDate: string,
     endDate: string,
   ): Promise<TpmDueDateRow[]> {
-    return await this.db.query<TpmDueDateRow>(
+    return await this.db.tenantQuery<TpmDueDateRow>(
       `SELECT current_due_date::text, card_code, title
        FROM tpm_cards
        WHERE asset_id = $1
@@ -349,7 +349,7 @@ export class TpmSlotAssistantService {
 
   /** Data source 3: Fetch team members for a given team */
   private async fetchTeamMembers(tenantId: number, teamId: number): Promise<TeamMemberRow[]> {
-    return await this.db.query<TeamMemberRow>(
+    return await this.db.tenantQuery<TeamMemberRow>(
       `SELECT ut.user_id, u.username, u.first_name, u.last_name, u.profile_picture
        FROM user_teams ut
        JOIN users u ON ut.user_id = u.id AND u.tenant_id = ut.tenant_id
@@ -371,7 +371,7 @@ export class TpmSlotAssistantService {
 
     const { placeholders } = this.db.generateInPlaceholders(userIds.length, 3);
 
-    const rows = await this.db.query<UserAvailabilityRow>(
+    const rows = await this.db.tenantQuery<UserAvailabilityRow>(
       `SELECT user_id, status, start_date::text, end_date::text
        FROM user_availability
        WHERE tenant_id = $1
@@ -394,7 +394,7 @@ export class TpmSlotAssistantService {
 
   /** Data source 4: Fetch teams assigned to a asset via asset_teams */
   private async fetchAssetTeams(tenantId: number, assetId: number): Promise<AssetTeamRow[]> {
-    return await this.db.query<AssetTeamRow>(
+    return await this.db.tenantQuery<AssetTeamRow>(
       `SELECT mt.team_id, t.name AS team_name
        FROM asset_teams mt
        JOIN teams t ON mt.team_id = t.id AND t.tenant_id = mt.tenant_id

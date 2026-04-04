@@ -60,7 +60,7 @@ export class PositionCatalogService {
 
     query += ' ORDER BY role_category, sort_order, name';
 
-    const rows = await this.db.query<PositionCatalogRow>(query, params);
+    const rows = await this.db.tenantQuery<PositionCatalogRow>(query, params);
     return rows.map(mapPositionRowToApi);
   }
 
@@ -68,7 +68,7 @@ export class PositionCatalogService {
     await this.assertNameUnique(tenantId, dto.name, dto.roleCategory);
 
     const uuid = uuidv7();
-    const rows = await this.db.query<PositionCatalogRow>(
+    const rows = await this.db.tenantQuery<PositionCatalogRow>(
       `INSERT INTO position_catalog (id, tenant_id, name, role_category, sort_order)
        VALUES ($1, $2, $3, $4, $5)
        RETURNING *`,
@@ -114,7 +114,7 @@ export class PositionCatalogService {
       return mapPositionRowToApi(position);
     }
 
-    const rows = await this.db.query<PositionCatalogRow>(
+    const rows = await this.db.tenantQuery<PositionCatalogRow>(
       `UPDATE position_catalog SET ${setClauses.join(', ')}
        WHERE tenant_id = $1 AND id = $2 AND is_active = ${String(IS_ACTIVE.ACTIVE)}
        RETURNING *`,
@@ -149,7 +149,7 @@ export class PositionCatalogService {
     }
 
     try {
-      await this.db.query(
+      await this.db.tenantQuery(
         `UPDATE position_catalog SET is_active = $1
          WHERE tenant_id = $2 AND id = $3 AND is_active = $4`,
         [IS_ACTIVE.DELETED, tenantId, positionId, IS_ACTIVE.ACTIVE],
@@ -178,7 +178,7 @@ export class PositionCatalogService {
    */
   async ensureSystemPositions(tenantId: number): Promise<void> {
     for (const pos of SYSTEM_POSITIONS) {
-      await this.db.query(
+      await this.db.tenantQuery(
         `INSERT INTO position_catalog (id, tenant_id, name, role_category, is_system)
          VALUES ($1, $2, $3, $4, true)
          ON CONFLICT (tenant_id, name, role_category) WHERE is_active = 1 DO NOTHING`,
@@ -187,7 +187,7 @@ export class PositionCatalogService {
     }
 
     for (const [idx, pos] of DEFAULT_POSITIONS.entries()) {
-      await this.db.query(
+      await this.db.tenantQuery(
         `INSERT INTO position_catalog (id, tenant_id, name, role_category, sort_order)
          VALUES ($1, $2, $3, $4, $5)
          ON CONFLICT (tenant_id, name, role_category) WHERE is_active = 1 DO NOTHING`,
@@ -211,7 +211,7 @@ export class PositionCatalogService {
       params.push(excludeId);
     }
 
-    const rows = await this.db.query<PositionCatalogRow>(query, params);
+    const rows = await this.db.tenantQuery<PositionCatalogRow>(query, params);
     if (rows.length > 0) {
       throw new ConflictException(
         `Position "${name}" existiert bereits für Kategorie "${roleCategory}"`,
@@ -242,7 +242,7 @@ export class PositionCatalogService {
   }
 
   private async findOneOrFail(tenantId: number, positionId: string): Promise<PositionCatalogRow> {
-    const rows = await this.db.query<PositionCatalogRow>(
+    const rows = await this.db.tenantQuery<PositionCatalogRow>(
       `SELECT * FROM position_catalog
        WHERE tenant_id = $1 AND id = $2 AND is_active = $3`,
       [tenantId, positionId, IS_ACTIVE.ACTIVE],

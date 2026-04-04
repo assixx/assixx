@@ -235,7 +235,7 @@ export class DepartmentsService {
     const scopeParams: unknown[] = scope.type === 'limited' ? [scope.departmentIds] : [];
 
     try {
-      const rows = await this.db.query<DepartmentRow>(
+      const rows = await this.db.tenantQuery<DepartmentRow>(
         `${this.FIND_ALL_DEPARTMENTS_QUERY}${scopeFilter}`,
         [tenantId, tenantId, ...scopeParams],
       );
@@ -245,7 +245,7 @@ export class DepartmentsService {
       this.logger.warn(`Extended query failed, using simple query: ${getErrorMessage(error)}`);
 
       const simpleScope = scope.type === 'limited' ? ` AND id = ANY($2::int[])` : '';
-      const rows = await this.db.query<DepartmentRow>(
+      const rows = await this.db.tenantQuery<DepartmentRow>(
         `SELECT * FROM departments WHERE tenant_id = $1 AND is_active IN (${IS_ACTIVE.INACTIVE}, ${IS_ACTIVE.ACTIVE}, ${IS_ACTIVE.ARCHIVED})${simpleScope} ORDER BY name`,
         [tenantId, ...scopeParams],
       );
@@ -306,7 +306,7 @@ export class DepartmentsService {
     this.logger.debug(`Fetching department ${id} for tenant ${tenantId}`);
 
     try {
-      const rows = await this.db.query<DepartmentRow>(this.FIND_DEPARTMENT_BY_ID_QUERY, [
+      const rows = await this.db.tenantQuery<DepartmentRow>(this.FIND_DEPARTMENT_BY_ID_QUERY, [
         tenantId,
         id,
         tenantId,
@@ -323,7 +323,7 @@ export class DepartmentsService {
       }
       this.logger.warn(`Extended query failed, using simple query: ${getErrorMessage(error)}`);
 
-      const rows = await this.db.query<DepartmentRow>(
+      const rows = await this.db.tenantQuery<DepartmentRow>(
         'SELECT * FROM departments WHERE id = $1 AND tenant_id = $2',
         [id, tenantId],
       );
@@ -345,7 +345,7 @@ export class DepartmentsService {
     tenantId: number,
   ): Promise<void> {
     try {
-      const existing = await this.db.query<{ id: number }>(
+      const existing = await this.db.tenantQuery<{ id: number }>(
         'SELECT id FROM user_departments WHERE user_id = $1 AND department_id = $2 AND tenant_id = $3',
         [leaderId, departmentId, tenantId],
       );
@@ -355,7 +355,7 @@ export class DepartmentsService {
         return;
       }
 
-      await this.db.query(
+      await this.db.tenantQuery(
         `INSERT INTO user_departments (tenant_id, user_id, department_id, is_primary, assigned_at)
          VALUES ($1, $2, $3, true, NOW())`,
         [tenantId, leaderId, departmentId],
@@ -376,7 +376,7 @@ export class DepartmentsService {
   ): Promise<void> {
     if (leaderId === null || leaderId === undefined) return;
 
-    const rows = await this.db.query<{ id: number; role: string }>(
+    const rows = await this.db.tenantQuery<{ id: number; role: string }>(
       `SELECT id, role FROM users WHERE id = $1 AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}`,
       [leaderId, tenantId],
     );
@@ -411,7 +411,7 @@ export class DepartmentsService {
     const isActive = dto.isActive ?? 1;
 
     const departmentUuid = uuidv7();
-    const rows = await this.db.query<{ id: number }>(
+    const rows = await this.db.tenantQuery<{ id: number }>(
       `INSERT INTO departments (name, description, department_lead_id, department_deputy_lead_id, area_id, is_active, tenant_id, uuid, uuid_created_at)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
        RETURNING id`,
@@ -498,7 +498,7 @@ export class DepartmentsService {
   ): Promise<DepartmentResponse> {
     this.logger.log(`Updating department ${id}`);
 
-    const existing = await this.db.query<DepartmentRow>(
+    const existing = await this.db.tenantQuery<DepartmentRow>(
       'SELECT * FROM departments WHERE id = $1 AND tenant_id = $2',
       [id, tenantId],
     );
@@ -523,7 +523,7 @@ export class DepartmentsService {
     const { fields, values } = this.buildUpdateFields(dto);
     if (fields.length > 0) {
       values.push(id);
-      await this.db.query(
+      await this.db.tenantQuery(
         `UPDATE departments SET ${fields.join(', ')} WHERE id = $${values.length}`,
         values,
       );
@@ -564,7 +564,7 @@ export class DepartmentsService {
     departmentId: number,
     tenantId: number,
   ): Promise<number> {
-    const rows = await this.db.query<{ id: number }>(
+    const rows = await this.db.tenantQuery<{ id: number }>(
       `SELECT id FROM ${tableName} WHERE department_id = $1 AND tenant_id = $2`,
       [departmentId, tenantId],
     );
@@ -622,15 +622,15 @@ export class DepartmentsService {
     tenantId: number,
   ): Promise<void> {
     if (operation === 'UPDATE') {
-      await this.db.query(
+      await this.db.tenantQuery(
         `UPDATE ${tableName} SET department_id = NULL WHERE department_id = $1 AND tenant_id = $2`,
         [departmentId, tenantId],
       );
     } else {
-      await this.db.query(`DELETE FROM ${tableName} WHERE department_id = $1 AND tenant_id = $2`, [
-        departmentId,
-        tenantId,
-      ]);
+      await this.db.tenantQuery(
+        `DELETE FROM ${tableName} WHERE department_id = $1 AND tenant_id = $2`,
+        [departmentId, tenantId],
+      );
     }
   }
 
@@ -711,7 +711,7 @@ export class DepartmentsService {
   ): Promise<{ message: string }> {
     this.logger.log(`Deleting department ${id}, force: ${force}`);
 
-    const existing = await this.db.query<DepartmentRow>(
+    const existing = await this.db.tenantQuery<DepartmentRow>(
       'SELECT * FROM departments WHERE id = $1 AND tenant_id = $2',
       [id, tenantId],
     );
@@ -744,7 +744,10 @@ export class DepartmentsService {
       await this.removeDepartmentDependencies(id, tenantId, deps);
     }
 
-    await this.db.query('DELETE FROM departments WHERE id = $1', [id]);
+    await this.db.tenantQuery('DELETE FROM departments WHERE id = $1 AND tenant_id = $2', [
+      id,
+      tenantId,
+    ]);
 
     await this.activityLogger.logDelete(
       tenantId,
@@ -770,7 +773,7 @@ export class DepartmentsService {
   async getDepartmentMembers(id: number, tenantId: number): Promise<DepartmentMember[]> {
     this.logger.debug(`Fetching members for department ${id}`);
 
-    const existing = await this.db.query<DepartmentRow>(
+    const existing = await this.db.tenantQuery<DepartmentRow>(
       'SELECT * FROM departments WHERE id = $1 AND tenant_id = $2',
       [id, tenantId],
     );
@@ -791,7 +794,7 @@ export class DepartmentsService {
       is_active: number;
     }
 
-    const users = await this.db.query<UserRow>(
+    const users = await this.db.tenantQuery<UserRow>(
       `SELECT u.id, u.username, u.email, u.first_name, u.last_name, u.position, u.employee_id, u.role, u.is_active
        FROM users u
        JOIN user_departments ud ON u.id = ud.user_id AND ud.tenant_id = u.tenant_id
@@ -825,7 +828,7 @@ export class DepartmentsService {
 
     await this.getDepartmentById(departmentId, tenantId);
 
-    await this.db.query(
+    await this.db.tenantQuery(
       `DELETE FROM department_halls WHERE tenant_id = $1 AND department_id = $2`,
       [tenantId, departmentId],
     );
@@ -839,7 +842,7 @@ export class DepartmentsService {
         })
         .join(', ');
 
-      await this.db.query(
+      await this.db.tenantQuery(
         `INSERT INTO department_halls (tenant_id, department_id, hall_id, assigned_by, assigned_at)
          VALUES ${rows}`,
         values,
@@ -853,7 +856,7 @@ export class DepartmentsService {
    * Get hall IDs assigned to a department
    */
   async getDepartmentHallIds(departmentId: number, tenantId: number): Promise<number[]> {
-    const rows = await this.db.query<{ hall_id: number }>(
+    const rows = await this.db.tenantQuery<{ hall_id: number }>(
       `SELECT hall_id FROM department_halls WHERE department_id = $1 AND tenant_id = $2`,
       [departmentId, tenantId],
     );
@@ -871,10 +874,11 @@ export class DepartmentsService {
     }
 
     const [deptRows, teamRows] = await Promise.all([
-      this.db.query<CountResult>('SELECT COUNT(*) as count FROM departments WHERE tenant_id = $1', [
-        tenantId,
-      ]),
-      this.db.query<CountResult>('SELECT COUNT(*) as count FROM teams WHERE tenant_id = $1', [
+      this.db.tenantQuery<CountResult>(
+        'SELECT COUNT(*) as count FROM departments WHERE tenant_id = $1',
+        [tenantId],
+      ),
+      this.db.tenantQuery<CountResult>('SELECT COUNT(*) as count FROM teams WHERE tenant_id = $1', [
         tenantId,
       ]),
     ]);

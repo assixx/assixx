@@ -118,7 +118,7 @@ export class TpmScheduleProjectionService {
       params.push(excludePlanUuid);
     }
 
-    return await this.db.query<PlanRow>(
+    return await this.db.tenantQuery<PlanRow>(
       `SELECT
          p.uuid AS plan_uuid,
          p.name AS plan_name,

@@ -107,7 +107,7 @@ export class WorkOrderAssigneesService {
 
   /** List all assignees for a work order */
   async getAssignees(tenantId: number, workOrderUuid: string): Promise<WorkOrderAssignee[]> {
-    const rows = await this.db.query<WorkOrderAssigneeWithNameRow>(
+    const rows = await this.db.tenantQuery<WorkOrderAssigneeWithNameRow>(
       `SELECT a.*, u.first_name, u.last_name, u.profile_picture
        FROM work_order_assignees a
        JOIN users u ON a.user_id = u.id
@@ -192,7 +192,7 @@ export class WorkOrderAssigneesService {
 
   /** Team-filtered: only employees belonging to teams assigned to the asset */
   private async fetchTeamFilteredUsers(tenantId: number, assetId: number): Promise<EligibleUser[]> {
-    const rows = await this.db.query<{
+    const rows = await this.db.tenantQuery<{
       id: number;
       uuid: string;
       first_name: string;
@@ -216,7 +216,7 @@ export class WorkOrderAssigneesService {
     tenantId: number,
     teamIds: number[],
   ): Promise<EligibleUser[]> {
-    const rows = await this.db.query<{
+    const rows = await this.db.tenantQuery<{
       id: number;
       uuid: string;
       first_name: string;
@@ -237,7 +237,7 @@ export class WorkOrderAssigneesService {
 
   /** Fallback: all active employees for manual work orders */
   private async fetchAllEmployees(tenantId: number): Promise<EligibleUser[]> {
-    const rows = await this.db.query<{
+    const rows = await this.db.tenantQuery<{
       id: number;
       uuid: string;
       first_name: string;

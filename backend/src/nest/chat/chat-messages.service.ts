@@ -92,7 +92,7 @@ export class ChatMessagesService {
     const offset = (page - 1) * limit;
 
     // Get user's deleted_at timestamp for this conversation
-    const participantInfo = await this.databaseService.query<{
+    const participantInfo = await this.databaseService.tenantQuery<{
       deleted_at: Date | null;
     }>(
       `SELECT deleted_at FROM chat_conversation_participants
@@ -246,7 +246,7 @@ export class ChatMessagesService {
     const unreadMessages = await this.getUnreadMessageEntries(conversationId, userId, tenantId);
 
     // Get latest message ID
-    const latestMessage = await this.databaseService.query<{
+    const latestMessage = await this.databaseService.tenantQuery<{
       max_id: number | null;
     }>(
       `SELECT MAX(id) as max_id FROM chat_messages WHERE conversation_id = $1 AND tenant_id = $2`,
@@ -256,7 +256,7 @@ export class ChatMessagesService {
     const lastMessageId = latestMessage[0]?.max_id ?? 0;
 
     // Update last read
-    await this.databaseService.query(
+    await this.databaseService.tenantQuery(
       `UPDATE chat_conversation_participants
        SET last_read_message_id = $1, last_read_at = NOW()
        WHERE conversation_id = $2 AND user_id = $3 AND tenant_id = $4`,
@@ -280,7 +280,7 @@ export class ChatMessagesService {
     userId: number,
     tenantId: number,
   ): Promise<{ messageId: number; senderId: number }[]> {
-    const lastReadRow = await this.databaseService.query<{
+    const lastReadRow = await this.databaseService.tenantQuery<{
       last_read_message_id: number | null;
     }>(
       `SELECT last_read_message_id FROM chat_conversation_participants
@@ -290,7 +290,7 @@ export class ChatMessagesService {
 
     const lastReadId = lastReadRow[0]?.last_read_message_id ?? 0;
 
-    return await this.databaseService.query<{
+    return await this.databaseService.tenantQuery<{
       messageId: number;
       senderId: number;
     }>(
@@ -316,7 +316,7 @@ export class ChatMessagesService {
       lastMessageTime: Date;
     }
 
-    const rows = await this.databaseService.query<UnreadRow>(
+    const rows = await this.databaseService.tenantQuery<UnreadRow>(
       `SELECT
         c.id as "conversationId",
         c.name as "conversationName",
@@ -377,13 +377,13 @@ export class ChatMessagesService {
     content: string,
   ): Promise<void> {
     const messageUuid = uuidv7();
-    await this.databaseService.query(
+    await this.databaseService.tenantQuery(
       `INSERT INTO chat_messages (tenant_id, conversation_id, sender_id, content, uuid, uuid_created_at, created_at)
        VALUES ($1, $2, $3, $4, $5, NOW(), NOW())`,
       [tenantId, conversationId, senderId, content, messageUuid],
     );
 
-    await this.databaseService.query(
+    await this.databaseService.tenantQuery(
       `UPDATE chat_conversations SET updated_at = NOW() WHERE id = $1 AND tenant_id = $2`,
       [conversationId, tenantId],
     );
@@ -487,7 +487,7 @@ export class ChatMessagesService {
    * Get total count of messages matching the query
    */
   private async getMessagesCount(whereClause: string, params: unknown[]): Promise<number> {
-    const countResult = await this.databaseService.query<{ count: string }>(
+    const countResult = await this.databaseService.tenantQuery<{ count: string }>(
       `SELECT COUNT(*) as count FROM chat_messages m ${whereClause}`,
       params,
     );
@@ -506,7 +506,7 @@ export class ChatMessagesService {
     userId: number,
   ): Promise<MessageRow[]> {
     const queryParams = [...params, limit, offset];
-    return await this.databaseService.query<MessageRow>(
+    return await this.databaseService.tenantQuery<MessageRow>(
       `SELECT
         m.id, m.conversation_id, m.sender_id, m.content,
         m.attachment_path, m.attachment_name, m.attachment_type, m.attachment_size,
@@ -557,7 +557,7 @@ export class ChatMessagesService {
     }
 
     const placeholders = messageIds.map((_: number, i: number) => `$${i + 2}`).join(', ');
-    const rows = await this.databaseService.query<DocumentAttachmentRow>(
+    const rows = await this.databaseService.tenantQuery<DocumentAttachmentRow>(
       `SELECT id, message_id, file_uuid, filename, original_name, file_size, mime_type, uploaded_at
        FROM documents
        WHERE message_id IN (${placeholders})
@@ -593,7 +593,7 @@ export class ChatMessagesService {
     const messageUuid = uuidv7();
     const isE2e = e2eFields !== undefined;
 
-    const insertResult = await this.databaseService.query<{
+    const insertResult = await this.databaseService.tenantQuery<{
       id: number;
       uuid: string;
     }>(
@@ -631,7 +631,7 @@ export class ChatMessagesService {
    * SECURITY: Only returns info for ACTIVE users (is_active = 1)
    */
   private async fetchSenderInfo(senderId: number, tenantId: number): Promise<SenderInfo> {
-    const senderInfo = await this.databaseService.query<SenderInfo>(
+    const senderInfo = await this.databaseService.tenantQuery<SenderInfo>(
       `SELECT username, first_name, last_name, profile_picture FROM users WHERE id = $1 AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}`,
       [senderId, tenantId],
     );

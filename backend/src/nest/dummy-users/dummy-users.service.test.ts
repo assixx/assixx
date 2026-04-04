@@ -27,7 +27,8 @@ vi.mock('uuid', () => ({
 }));
 
 function createMockDb() {
-  return { query: vi.fn() };
+  const query = vi.fn();
+  return { query, tenantQuery: query, tenantQueryOne: vi.fn() };
 }
 type MockDb = ReturnType<typeof createMockDb>;
 

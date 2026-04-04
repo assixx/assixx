@@ -292,6 +292,15 @@ class NotificationEventBus extends EventEmitter {
     });
   }
 
+  emitSwapRequestCreated(
+    tenantId: number,
+    targetUserId: number,
+    swapRequest: { uuid: string; requesterName: string; startDate: string },
+  ): void {
+    logger.info(`[EventBus] Emitting swap.request.created for tenant ${tenantId}`);
+    this.emit('swap.request.created', { tenantId, targetUserId, swapRequest });
+  }
+
   // Get all active events
   getActiveEvents(): string[] {
     return this.eventNames() as string[];

@@ -213,7 +213,7 @@ export class AuditLoggingService {
    */
   private async logToAuditTrail(params: AuditLogParams): Promise<void> {
     try {
-      await this.db.query(
+      await this.db.queryAsTenant(
         `INSERT INTO audit_trail
          (tenant_id, user_id, user_name, user_role, action, resource_type,
           resource_id, resource_name, changes, ip_address, user_agent, status, error_message, request_id, created_at)
@@ -234,6 +234,7 @@ export class AuditLoggingService {
           params.errorMessage,
           params.requestId,
         ],
+        params.tenantId,
       );
     } catch (error: unknown) {
       // NEVER throw - logging failures should not break main operations

@@ -49,7 +49,7 @@ export class ShiftPlansService {
     }
 
     planQuery += ` ORDER BY created_at DESC LIMIT 1`;
-    const plans = await this.databaseService.query<DbShiftPlanRow>(planQuery, planParams);
+    const plans = await this.databaseService.tenantQuery<DbShiftPlanRow>(planQuery, planParams);
     return plans[0];
   }
 
@@ -61,7 +61,7 @@ export class ShiftPlansService {
     this.logger.debug(`Creating shift plan for tenant ${tenantId}`);
 
     const planUuid = uuidv7();
-    const planResult = await this.databaseService.query<{ id: number }>(
+    const planResult = await this.databaseService.tenantQuery<{ id: number }>(
       `INSERT INTO shift_plans (
         uuid, tenant_id, area_id, department_id, team_id, asset_id,
         name, start_date, end_date, shift_notes, created_by
@@ -113,7 +113,7 @@ export class ShiftPlansService {
   ): Promise<ShiftPlanResponse> {
     this.logger.debug(`Updating shift plan ${planId}, DTO: ${JSON.stringify(dto, null, 2)}`);
 
-    const plans = await this.databaseService.query<DbShiftPlanRow>(
+    const plans = await this.databaseService.tenantQuery<DbShiftPlanRow>(
       `SELECT * FROM shift_plans WHERE id = $1 AND tenant_id = $2`,
       [planId, tenantId],
     );
@@ -171,7 +171,7 @@ export class ShiftPlansService {
    * @throws NotFoundException
    */
   async resolveShiftPlanIdByUuid(uuid: string, tenantId: number): Promise<number> {
-    const result = await this.databaseService.query<{ id: number }>(
+    const result = await this.databaseService.tenantQuery<{ id: number }>(
       `SELECT id FROM shift_plans WHERE uuid = $1 AND tenant_id = $2`,
       [uuid, tenantId],
     );
@@ -205,7 +205,7 @@ export class ShiftPlansService {
   async deleteShiftPlan(planId: number, tenantId: number, userId: number): Promise<void> {
     this.logger.debug(`Deleting shift plan ${planId} for tenant ${tenantId}`);
 
-    const plans = await this.databaseService.query<DbShiftPlanRow>(
+    const plans = await this.databaseService.tenantQuery<DbShiftPlanRow>(
       `SELECT * FROM shift_plans WHERE id = $1 AND tenant_id = $2`,
       [planId, tenantId],
     );
@@ -217,16 +217,16 @@ export class ShiftPlansService {
     const plan = plans[0];
 
     // Delete associated shifts first
-    await this.databaseService.query(`DELETE FROM shifts WHERE plan_id = $1 AND tenant_id = $2`, [
-      planId,
-      tenantId,
-    ]);
+    await this.databaseService.tenantQuery(
+      `DELETE FROM shifts WHERE plan_id = $1 AND tenant_id = $2`,
+      [planId, tenantId],
+    );
 
     // Delete the plan
-    await this.databaseService.query(`DELETE FROM shift_plans WHERE id = $1 AND tenant_id = $2`, [
-      planId,
-      tenantId,
-    ]);
+    await this.databaseService.tenantQuery(
+      `DELETE FROM shift_plans WHERE id = $1 AND tenant_id = $2`,
+      [planId, tenantId],
+    );
 
     void this.activityLogger.logDelete(
       tenantId,
@@ -260,7 +260,7 @@ export class ShiftPlansService {
     for (const shift of shifts) {
       const startTimestamp = buildTimestamp(shift.date, shift.startTime);
       const endTimestamp = buildTimestamp(shift.date, shift.endTime);
-      const result = await this.databaseService.query<{ id: number }>(
+      const result = await this.databaseService.tenantQuery<{ id: number }>(
         `INSERT INTO shifts (
           tenant_id, plan_id, user_id, date, start_time, end_time, type,
           area_id, department_id, team_id, asset_id, created_by
@@ -315,7 +315,7 @@ export class ShiftPlansService {
       const startTimestamp = buildTimestamp(shift.date, shift.startTime, '08:00');
       const endTimestamp = buildTimestamp(shift.date, shift.endTime, '16:00');
 
-      const result = await this.databaseService.query<{ id: number }>(
+      const result = await this.databaseService.tenantQuery<{ id: number }>(
         `INSERT INTO shifts (
           tenant_id, plan_id, user_id, date, start_time, end_time, type,
           area_id, department_id, team_id, asset_id, created_by
@@ -366,7 +366,7 @@ export class ShiftPlansService {
     }
     if (updates.length > 0) {
       params.push(planId, tenantId);
-      await this.databaseService.query(
+      await this.databaseService.tenantQuery(
         `UPDATE shift_plans SET ${updates.join(', ')}, updated_at = NOW() WHERE id = $${idx++} AND tenant_id = $${idx}`,
         params,
       );
@@ -387,16 +387,16 @@ export class ShiftPlansService {
     );
     if (keepShiftIds.length > 0) {
       const placeholders = keepShiftIds.map((_: number, i: number) => `$${i + 3}`).join(', ');
-      await this.databaseService.query(
+      await this.databaseService.tenantQuery(
         `DELETE FROM shifts WHERE plan_id = $1 AND tenant_id = $2 AND id NOT IN (${placeholders})`,
         [planId, tenantId, ...keepShiftIds],
       );
       this.logger.debug(`Cleaned up orphaned shifts for plan ${planId}`);
     } else if (deleteAll) {
-      await this.databaseService.query(`DELETE FROM shifts WHERE plan_id = $1 AND tenant_id = $2`, [
-        planId,
-        tenantId,
-      ]);
+      await this.databaseService.tenantQuery(
+        `DELETE FROM shifts WHERE plan_id = $1 AND tenant_id = $2`,
+        [planId, tenantId],
+      );
       this.logger.debug(`Deleted all shifts for plan ${planId} (empty shifts array)`);
     }
   }
@@ -437,7 +437,7 @@ export class ShiftPlansService {
         )
     `;
 
-    const result = await this.databaseService.query<{ count: string }>(
+    const result = await this.databaseService.tenantQuery<{ count: string }>(
       `WITH deleted AS (${deleteQuery} RETURNING *) SELECT COUNT(*) as count FROM deleted`,
       [tenantId, teamId, minDate, ...keptParams],
     );

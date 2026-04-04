@@ -34,9 +34,13 @@ vi.mock('uuid', () => ({
 // =============================================================
 
 function createMockDb() {
+  const query = vi.fn();
+  const queryOne = vi.fn();
   return {
-    query: vi.fn(),
-    queryOne: vi.fn(),
+    query,
+    queryOne,
+    tenantQuery: query,
+    tenantQueryOne: queryOne,
     tenantTransaction: vi.fn(),
   };
 }

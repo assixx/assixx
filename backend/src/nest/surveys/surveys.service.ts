@@ -220,7 +220,10 @@ export class SurveysService {
     if (responseCount > 0) {
       throw new ConflictException('Cannot delete survey with existing responses');
     }
-    await this.db.query('DELETE FROM surveys WHERE id = $1 AND tenant_id = $2', [id, tenantId]);
+    await this.db.tenantQuery('DELETE FROM surveys WHERE id = $1 AND tenant_id = $2', [
+      id,
+      tenantId,
+    ]);
 
     await this.activityLogger.logDelete(
       tenantId,
@@ -241,7 +244,7 @@ export class SurveysService {
   /** Gets available survey templates */
   async getTemplates(tenantId: number): Promise<unknown[]> {
     this.logger.debug(`Getting templates for tenant ${tenantId}`);
-    const templateRows = await this.db.query<DbSurveyTemplate>(
+    const templateRows = await this.db.tenantQuery<DbSurveyTemplate>(
       `SELECT * FROM survey_templates WHERE tenant_id = $1 OR is_public = true ORDER BY name`,
       [tenantId],
     );
@@ -260,7 +263,7 @@ export class SurveysService {
     userAgent?: string,
   ): Promise<unknown> {
     this.logger.log(`Creating survey from template ${templateId}`);
-    const templateRows = await this.db.query<DbSurveyTemplate>(
+    const templateRows = await this.db.tenantQuery<DbSurveyTemplate>(
       `SELECT * FROM survey_templates WHERE id = $1 AND (tenant_id = $2 OR is_public = true)`,
       [templateId, tenantId],
     );
@@ -415,7 +418,7 @@ export class SurveysService {
 
   /** Loads a survey by numeric ID with questions and assignments */
   private async getSurveyByNumericId(surveyId: number, tenantId: number): Promise<DbSurvey | null> {
-    const surveyRows = await this.db.query<DbSurvey>(
+    const surveyRows = await this.db.tenantQuery<DbSurvey>(
       `SELECT s.*, u.first_name as creator_first_name, u.last_name as creator_last_name
        FROM surveys s LEFT JOIN users u ON s.created_by = u.id WHERE s.id = $1 AND s.tenant_id = $2`,
       [surveyId, tenantId],
@@ -431,7 +434,7 @@ export class SurveysService {
 
   /** Loads a survey by UUID with questions and assignments */
   private async getSurveyByUUID(uuid: string, tenantId: number): Promise<DbSurvey | null> {
-    const surveyRows = await this.db.query<DbSurvey>(
+    const surveyRows = await this.db.tenantQuery<DbSurvey>(
       `SELECT s.*, u.first_name as creator_first_name, u.last_name as creator_last_name
        FROM surveys s LEFT JOIN users u ON s.created_by = u.id WHERE s.uuid = $1 AND s.tenant_id = $2`,
       [uuid, tenantId],
@@ -472,7 +475,7 @@ export class SurveysService {
     userId: number,
   ): Promise<number> {
     const surveyUuid = uuidv7();
-    const surveyRows = await this.db.query<{ id: number }>(
+    const surveyRows = await this.db.tenantQuery<{ id: number }>(
       `INSERT INTO surveys (tenant_id, title, description, created_by, status, is_anonymous, is_mandatory, start_date, end_date, uuid)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING id`,
       [
@@ -497,7 +500,7 @@ export class SurveysService {
     dto: UpdateSurveyDto,
     tenantId: number,
   ): Promise<void> {
-    await this.db.query(
+    await this.db.tenantQuery(
       `UPDATE surveys SET title = COALESCE($1, title), description = COALESCE($2, description),
        status = COALESCE($3, status), is_anonymous = COALESCE($4, is_anonymous), is_mandatory = COALESCE($5, is_mandatory),
        start_date = COALESCE($6, start_date), end_date = COALESCE($7, end_date), updated_at = NOW()
@@ -525,7 +528,10 @@ export class SurveysService {
     userRole: string,
   ): Promise<void> {
     if (dto.questions !== undefined) {
-      await this.db.query('DELETE FROM survey_questions WHERE survey_id = $1', [id]);
+      await this.db.tenantQuery(
+        'DELETE FROM survey_questions WHERE survey_id = $1 AND tenant_id = $2',
+        [id, tenantId],
+      );
       await this.questionsService.insertSurveyQuestions(tenantId, id, dto.questions);
     }
     if (dto.assignments !== undefined) {
@@ -537,7 +543,10 @@ export class SurveysService {
           dto.assignments,
         );
       }
-      await this.db.query('DELETE FROM survey_assignments WHERE survey_id = $1', [id]);
+      await this.db.tenantQuery(
+        'DELETE FROM survey_assignments WHERE survey_id = $1 AND tenant_id = $2',
+        [id, tenantId],
+      );
       await this.questionsService.insertSurveyAssignments(tenantId, id, dto.assignments);
     }
   }

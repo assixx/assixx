@@ -96,7 +96,7 @@ export class TpmCardCascadeService {
     assetId: number,
     triggerIntervalOrder: number,
   ): Promise<CascadePreview> {
-    const rows = await this.db.query<TpmCardJoinRow>(
+    const rows = await this.db.tenantQuery<TpmCardJoinRow>(
       `SELECT c.*,
          p.uuid AS plan_uuid,
          m.name AS asset_name,

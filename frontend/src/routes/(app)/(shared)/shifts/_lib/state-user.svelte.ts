@@ -3,7 +3,9 @@
 // User state, role management, and permissions
 // =============================================================================
 
-import type { User } from './types';
+import { DEFAULT_ORG_SCOPE } from '$lib/types/organizational-scope';
+
+import type { OrganizationalScope, User } from './types';
 
 /**
  * Determine effective role based on user and storage settings
@@ -35,6 +37,7 @@ function createUserState() {
   let effectiveRole = $state('employee');
   let currentUserId = $state<number | null>(null);
   let hasFullAccess = $state(false);
+  let orgScope = $state(DEFAULT_ORG_SCOPE);
 
   function updateEffectiveRole() {
     effectiveRole = determineEffectiveRole(currentUser);
@@ -53,11 +56,16 @@ function createUserState() {
     hasFullAccess = access;
   }
 
+  function setOrgScope(scope: OrganizationalScope) {
+    orgScope = scope;
+  }
+
   function reset() {
     currentUser = null;
     effectiveRole = 'employee';
     currentUserId = null;
     hasFullAccess = false;
+    orgScope = DEFAULT_ORG_SCOPE;
   }
 
   return {
@@ -73,9 +81,13 @@ function createUserState() {
     get hasFullAccess() {
       return hasFullAccess;
     },
+    get orgScope() {
+      return orgScope;
+    },
     setUser,
     updateEffectiveRole,
     setHasFullAccess,
+    setOrgScope,
     reset,
   };
 }

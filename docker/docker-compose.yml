@@ -114,6 +114,9 @@ services:
       DB_USER: ${DB_USER}
       DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD must be set - use doppler run}
       DB_NAME: ${POSTGRES_DB}
+      # PostgreSQL System Connection (system_user with BYPASSRLS — for cron, auth, root)
+      DB_SYSTEM_USER: ${DB_SYSTEM_USER:-system_user}
+      DB_SYSTEM_PASSWORD: ${DB_SYSTEM_PASSWORD:?DB_SYSTEM_PASSWORD must be set - use doppler run}
       # SECURITY: Secrets are REQUIRED - no fallback defaults
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET must be set - use doppler run}
       JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:?JWT_REFRESH_SECRET must be set - use doppler run}
@@ -252,6 +255,9 @@ services:
       DB_USER: ${DB_USER}
       DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD must be set - use doppler run}
       DB_NAME: ${POSTGRES_DB}
+      # PostgreSQL System Connection (system_user with BYPASSRLS — for tenant deletion)
+      DB_SYSTEM_USER: ${DB_SYSTEM_USER:-system_user}
+      DB_SYSTEM_PASSWORD: ${DB_SYSTEM_PASSWORD:?DB_SYSTEM_PASSWORD must be set - use doppler run}
       # SECURITY: Secrets are REQUIRED - no fallback defaults
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET must be set - use doppler run}
       JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:?JWT_REFRESH_SECRET must be set - use doppler run}

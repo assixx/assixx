@@ -55,7 +55,7 @@ export class RootAdminService {
     this.logger.debug(`Getting admins for tenant ${tenantId}`);
 
     // SECURITY: Only return active admins (is_active = 1)
-    const admins = await this.db.query<DbUserRow>(
+    const admins = await this.db.systemQuery<DbUserRow>(
       `SELECT u.*, t.company_name as tenant_name
        FROM users u
        LEFT JOIN tenants t ON u.tenant_id = t.id
@@ -74,7 +74,7 @@ export class RootAdminService {
     this.logger.debug(`Getting admin ${id} for tenant ${tenantId}`);
 
     // SECURITY: Only return active admins (is_active = 1)
-    const rows = await this.db.query<DbUserRow & { tenant_name?: string }>(
+    const rows = await this.db.systemQuery<DbUserRow & { tenant_name?: string }>(
       `SELECT u.*, t.company_name as tenant_name
        FROM users u
        LEFT JOIN tenants t ON u.tenant_id = t.id
@@ -88,7 +88,7 @@ export class RootAdminService {
     }
 
     // Get last login
-    const lastLoginRows = await this.db.query<DbRootLogRow>(
+    const lastLoginRows = await this.db.systemQuery<DbRootLogRow>(
       `SELECT created_at FROM root_logs
        WHERE user_id = $1 AND action = 'login'
        ORDER BY created_at DESC LIMIT 1`,
@@ -118,7 +118,7 @@ export class RootAdminService {
     const hashedPassword = await bcrypt.hash(data.password, 12);
 
     try {
-      const userId = await this.db.tenantTransaction(
+      const userId = await this.db.systemTransaction(
         async (client: PoolClient) =>
           await this.insertAdminRecord(client, data, normalizedEmail, hashedPassword, tenantId),
       );
@@ -196,7 +196,7 @@ export class RootAdminService {
       });
     }
 
-    await this.db.tenantTransaction(async (client: PoolClient) => {
+    await this.db.systemTransaction(async (client: PoolClient) => {
       const { fields, values, nextIndex } = buildUserUpdateFields(data);
       let paramIndex = nextIndex;
 
@@ -255,7 +255,7 @@ export class RootAdminService {
       },
     );
 
-    await this.db.query('DELETE FROM users WHERE id = $1 AND tenant_id = $2', [id, tenantId]);
+    await this.db.systemQuery('DELETE FROM users WHERE id = $1 AND tenant_id = $2', [id, tenantId]);
   }
 
   /**
@@ -283,7 +283,7 @@ export class RootAdminService {
 
     query += ' ORDER BY created_at DESC';
 
-    const logs = await this.db.query<DbRootLogRow>(query, params);
+    const logs = await this.db.systemQuery<DbRootLogRow>(query, params);
 
     return logs.map((log: DbRootLogRow) => mapDbLogToAdminLog(log));
   }

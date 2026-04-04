@@ -122,6 +122,12 @@ interface NotificationEventData {
   };
   approverUserIds?: number[];
   requestedByUserId?: number;
+  targetUserId?: number;
+  swapRequest?: {
+    uuid: string;
+    requesterName: string;
+    startDate: string;
+  };
 }
 
 /**
@@ -156,6 +162,7 @@ const SSE_EVENTS = {
   WORKORDER_VERIFIED: 'workorder.verified',
   APPROVAL_CREATED: 'approval.created',
   APPROVAL_DECIDED: 'approval.decided',
+  SWAP_REQUEST_CREATED: 'swap.request.created',
 } as const;
 
 /**
@@ -496,6 +503,22 @@ function registerSSEHandlers(
 
   // Approvals — Core addon, always registered (no canAccess check)
   registerApprovalHandlers(handlers, userId, tenantId, eventSubject);
+
+  // Swap requests — notify target user when a swap is requested
+  if (canAccess('shift_planning')) {
+    const swapHandler = (eventData: NotificationEventData): void => {
+      if (eventData.tenantId !== tenantId) return;
+      if (eventData.targetUserId !== userId) return;
+      eventSubject.next({
+        data: {
+          type: 'NEW_SWAP_REQUEST',
+          timestamp: new Date().toISOString(),
+          swapRequest: eventData.swapRequest,
+        },
+      });
+    };
+    registerHandler(handlers, SSE_EVENTS.SWAP_REQUEST_CREATED, swapHandler);
+  }
 
   return handlers;
 }

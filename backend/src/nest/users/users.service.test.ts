@@ -51,18 +51,18 @@ vi.mock('uuid', () => ({
 
 function createMockDb() {
   const db = {
-    query: vi.fn(),
+    tenantQuery: vi.fn(),
     tenantTransaction: vi.fn(),
   };
   /**
    * Transaction callback receives a PoolClient-like object.
    * PoolClient.query() returns { rows: T[] } (pg QueryResult).
-   * DatabaseService.query() returns T[] (rows only).
+   * DatabaseService.tenantQuery() returns T[] (rows only).
    * The client proxy wraps the shared mock queue so existing
    * mockResolvedValueOnce setups work in the correct call order.
    */
   const clientQuery = vi.fn(async (...args: unknown[]) => {
-    const rows: unknown = await db.query(...args);
+    const rows: unknown = await db.tenantQuery(...args);
     return { rows: rows ?? [] };
   });
   db.tenantTransaction.mockImplementation(
@@ -199,11 +199,11 @@ describe('UsersService', () => {
       const userRow1 = makeUserRow({ id: 1 });
       const userRow2 = makeUserRow({ id: 2, email: 'anna@example.com' });
       // COUNT query
-      mockDb.query.mockResolvedValueOnce([{ count: '2' }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ count: '2' }]);
       // SELECT users
-      mockDb.query.mockResolvedValueOnce([userRow1, userRow2]);
+      mockDb.tenantQuery.mockResolvedValueOnce([userRow1, userRow2]);
       // getUserTeamsBatch (called because userIds.length > 0)
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       const query = {
         page: 1,
@@ -219,8 +219,8 @@ describe('UsersService', () => {
     });
 
     it('should return empty result when no users match', async () => {
-      mockDb.query.mockResolvedValueOnce([{ count: '0' }]);
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ count: '0' }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
       // No team batch query because userIds is empty
 
       const query = { page: 1, limit: 10 } as unknown as ListUsersQueryDto;
@@ -249,7 +249,7 @@ describe('UsersService', () => {
 
       expect(result.data).toHaveLength(0);
       expect(result.pagination.totalItems).toBe(0);
-      expect(mockDb.query).not.toHaveBeenCalled();
+      expect(mockDb.tenantQuery).not.toHaveBeenCalled();
     });
 
     it('should return scoped result with team data for limited scope', async () => {
@@ -272,11 +272,11 @@ describe('UsersService', () => {
       );
 
       // COUNT
-      mockDb.query.mockResolvedValueOnce([{ count: '1' }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ count: '1' }]);
       // SELECT users
-      mockDb.query.mockResolvedValueOnce([makeUserRow({ id: 5 })]);
+      mockDb.tenantQuery.mockResolvedValueOnce([makeUserRow({ id: 5 })]);
       // getUserTeamsBatch — returns team data
-      mockDb.query.mockResolvedValueOnce([
+      mockDb.tenantQuery.mockResolvedValueOnce([
         {
           user_id: 5,
           team_id: 100,
@@ -288,9 +288,9 @@ describe('UsersService', () => {
         },
       ]);
       // resolveScopeInfo — area names
-      mockDb.query.mockResolvedValueOnce([{ name: 'HQ' }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ name: 'HQ' }]);
       // resolveScopeInfo — dept names
-      mockDb.query.mockResolvedValueOnce([{ name: 'Eng' }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ name: 'Eng' }]);
 
       const query = { page: 1, limit: 10 } as unknown as ListUsersQueryDto;
       const result = await scopedService.listUsers(10, query);
@@ -311,13 +311,13 @@ describe('UsersService', () => {
     });
 
     it('should calculate totalPages correctly for partial last page', async () => {
-      mockDb.query.mockResolvedValueOnce([{ count: '25' }]);
-      mockDb.query.mockResolvedValueOnce(
+      mockDb.tenantQuery.mockResolvedValueOnce([{ count: '25' }]);
+      mockDb.tenantQuery.mockResolvedValueOnce(
         Array.from({ length: 10 }, (_, i) =>
           makeUserRow({ id: i + 1, email: `u${String(i)}@test.com` }),
         ),
       );
-      mockDb.query.mockResolvedValueOnce([]); // teams batch
+      mockDb.tenantQuery.mockResolvedValueOnce([]); // teams batch
 
       const query = { page: 1, limit: 10 } as unknown as ListUsersQueryDto;
       const result = await service.listUsers(10, query);
@@ -333,7 +333,7 @@ describe('UsersService', () => {
 
   describe('getUserById', () => {
     it('should throw NotFoundException when user not found', async () => {
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       await expect(service.getUserById(999, 10)).rejects.toThrow(NotFoundException);
     });
@@ -341,13 +341,13 @@ describe('UsersService', () => {
     it('should return enriched response with tenant info', async () => {
       const userRow = makeUserRow();
       // findUserById
-      mockDb.query.mockResolvedValueOnce([userRow]);
+      mockDb.tenantQuery.mockResolvedValueOnce([userRow]);
       // getUserDepartments (Promise.all[0])
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
       // getUserTeams (Promise.all[1])
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
       // getTenantInfo (Promise.all[3])
-      mockDb.query.mockResolvedValueOnce([{ company_name: 'Test Corp', subdomain: 'test' }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ company_name: 'Test Corp', subdomain: 'test' }]);
 
       const result = await service.getUserById(1, 10);
 
@@ -357,10 +357,10 @@ describe('UsersService', () => {
     });
 
     it('should omit tenant when tenant row not found', async () => {
-      mockDb.query.mockResolvedValueOnce([makeUserRow()]);
-      mockDb.query.mockResolvedValueOnce([]); // departments
-      mockDb.query.mockResolvedValueOnce([]); // teams
-      mockDb.query.mockResolvedValueOnce([]); // tenant → empty
+      mockDb.tenantQuery.mockResolvedValueOnce([makeUserRow()]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]); // departments
+      mockDb.tenantQuery.mockResolvedValueOnce([]); // teams
+      mockDb.tenantQuery.mockResolvedValueOnce([]); // tenant → empty
 
       const result = await service.getUserById(1, 10);
 
@@ -368,9 +368,9 @@ describe('UsersService', () => {
     });
 
     it('should enrich response with departments and teams', async () => {
-      mockDb.query.mockResolvedValueOnce([makeUserRow()]);
+      mockDb.tenantQuery.mockResolvedValueOnce([makeUserRow()]);
       // departments
-      mockDb.query.mockResolvedValueOnce([
+      mockDb.tenantQuery.mockResolvedValueOnce([
         {
           user_id: 1,
           department_id: 100,
@@ -379,7 +379,7 @@ describe('UsersService', () => {
         },
       ]);
       // teams
-      mockDb.query.mockResolvedValueOnce([
+      mockDb.tenantQuery.mockResolvedValueOnce([
         {
           user_id: 1,
           team_id: 200,
@@ -391,7 +391,7 @@ describe('UsersService', () => {
         },
       ]);
       // tenant
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       const result = await service.getUserById(1, 10);
 
@@ -419,20 +419,20 @@ describe('UsersService', () => {
 
     it('should throw ConflictException on duplicate email', async () => {
       // findUserByEmail → existing user found
-      mockDb.query.mockResolvedValueOnce([makeUserRow()]);
+      mockDb.tenantQuery.mockResolvedValueOnce([makeUserRow()]);
 
       await expect(service.createUser(createDto, 1, 10)).rejects.toThrow(ConflictException);
     });
 
     it('should create user and log activity', async () => {
       // findUserByEmail → no existing user
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
       // insertUserRecord → INSERT RETURNING id
-      mockDb.query.mockResolvedValueOnce([{ id: 5 }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ id: 5 }]);
       // fetchUserWithDepartments → findUserById
-      mockDb.query.mockResolvedValueOnce([makeUserRow({ id: 5, email: 'new@example.com' })]);
+      mockDb.tenantQuery.mockResolvedValueOnce([makeUserRow({ id: 5, email: 'new@example.com' })]);
       // fetchUserWithDepartments → getUserDepartments
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       const result = await service.createUser(createDto, 1, 10);
 
@@ -453,17 +453,17 @@ describe('UsersService', () => {
         departmentIds: [100, 200],
       } as unknown as CreateUserDto;
 
-      mockDb.query.mockResolvedValueOnce([]); // findUserByEmail
-      mockDb.query.mockResolvedValueOnce([{ id: 5 }]); // INSERT
-      mockDb.query.mockResolvedValueOnce([]); // assignUserDepartments dept 100
-      mockDb.query.mockResolvedValueOnce([]); // assignUserDepartments dept 200
-      mockDb.query.mockResolvedValueOnce([makeUserRow({ id: 5, email: 'new@example.com' })]); // fetchUser
-      mockDb.query.mockResolvedValueOnce([]); // getDepartments
+      mockDb.tenantQuery.mockResolvedValueOnce([]); // findUserByEmail
+      mockDb.tenantQuery.mockResolvedValueOnce([{ id: 5 }]); // INSERT
+      mockDb.tenantQuery.mockResolvedValueOnce([]); // assignUserDepartments dept 100
+      mockDb.tenantQuery.mockResolvedValueOnce([]); // assignUserDepartments dept 200
+      mockDb.tenantQuery.mockResolvedValueOnce([makeUserRow({ id: 5, email: 'new@example.com' })]); // fetchUser
+      mockDb.tenantQuery.mockResolvedValueOnce([]); // getDepartments
 
       await service.createUser(dtoWithDepts, 1, 10);
 
       // Verify department INSERT queries (calls 3 & 4, 0-indexed)
-      const deptCall1 = mockDb.query.mock.calls[2];
+      const deptCall1 = mockDb.tenantQuery.mock.calls[2];
       const deptSql = deptCall1?.[0] as string;
       expect(deptSql).toContain('INSERT INTO user_departments');
     });
@@ -475,12 +475,12 @@ describe('UsersService', () => {
         hasFullAccess: true,
       } as unknown as CreateUserDto;
 
-      mockDb.query.mockResolvedValueOnce([]); // findUserByEmail
-      mockDb.query.mockResolvedValueOnce([{ id: 5 }]); // INSERT
-      mockDb.query.mockResolvedValueOnce([
+      mockDb.tenantQuery.mockResolvedValueOnce([]); // findUserByEmail
+      mockDb.tenantQuery.mockResolvedValueOnce([{ id: 5 }]); // INSERT
+      mockDb.tenantQuery.mockResolvedValueOnce([
         makeUserRow({ id: 5, email: 'new@example.com', role: 'admin' }),
       ]); // fetchUser
-      mockDb.query.mockResolvedValueOnce([]); // getDepartments
+      mockDb.tenantQuery.mockResolvedValueOnce([]); // getDepartments
 
       await service.createUser(dtoWithAccess, 1, 10);
 
@@ -500,7 +500,7 @@ describe('UsersService', () => {
         hasFullAccess: true,
       } as unknown as CreateUserDto;
 
-      mockDb.query.mockResolvedValueOnce([]); // findUserByEmail
+      mockDb.tenantQuery.mockResolvedValueOnce([]); // findUserByEmail
 
       await expect(service.createUser(dtoEmployeeFullAccess, 1, 10)).rejects.toThrow(
         BadRequestException,
@@ -514,32 +514,32 @@ describe('UsersService', () => {
         hasFullAccess: true,
       } as unknown as CreateUserDto;
 
-      mockDb.query.mockResolvedValueOnce([]); // findUserByEmail
-      mockDb.query.mockResolvedValueOnce([{ id: 6 }]); // INSERT
-      mockDb.query.mockResolvedValueOnce([
+      mockDb.tenantQuery.mockResolvedValueOnce([]); // findUserByEmail
+      mockDb.tenantQuery.mockResolvedValueOnce([{ id: 6 }]); // INSERT
+      mockDb.tenantQuery.mockResolvedValueOnce([
         makeUserRow({ id: 6, email: 'new@example.com', role: 'admin' }),
       ]); // fetchUser
-      mockDb.query.mockResolvedValueOnce([]); // getDepartments
+      mockDb.tenantQuery.mockResolvedValueOnce([]); // getDepartments
 
       const result = await service.createUser(adminDto, 1, 10);
       expect(result.id).toBe(6);
     });
 
     it('should throw ConflictException on employee_number constraint violation', async () => {
-      mockDb.query.mockResolvedValueOnce([]); // findUserByEmail
+      mockDb.tenantQuery.mockResolvedValueOnce([]); // findUserByEmail
       // INSERT throws unique constraint on employee_number
       const pgError = Object.assign(new Error('unique violation'), {
         code: '23505',
         constraint: 'users_employee_number_tenant_id_key',
       });
-      mockDb.query.mockRejectedValueOnce(pgError);
+      mockDb.tenantQuery.mockRejectedValueOnce(pgError);
 
       await expect(service.createUser(createDto, 1, 10)).rejects.toThrow(ConflictException);
     });
 
     it('should throw InternalServerError when INSERT returns no id', async () => {
-      mockDb.query.mockResolvedValueOnce([]); // findUserByEmail
-      mockDb.query.mockResolvedValueOnce([]); // INSERT returns empty array
+      mockDb.tenantQuery.mockResolvedValueOnce([]); // findUserByEmail
+      mockDb.tenantQuery.mockResolvedValueOnce([]); // INSERT returns empty array
 
       await expect(service.createUser(createDto, 1, 10)).rejects.toThrow(
         InternalServerErrorException,
@@ -554,13 +554,13 @@ describe('UsersService', () => {
         hasFullAccess: true,
       } as unknown as CreateUserDto;
 
-      mockDb.query.mockResolvedValueOnce([]); // findUserByEmail
+      mockDb.tenantQuery.mockResolvedValueOnce([]); // findUserByEmail
       // INSERT triggers CHECK constraint violation
       const pgError = Object.assign(
         new Error('new row violates check constraint "chk_employee_no_full_access"'),
         { code: '23514' },
       );
-      mockDb.query.mockRejectedValueOnce(pgError);
+      mockDb.tenantQuery.mockRejectedValueOnce(pgError);
 
       // Error must NOT be swallowed — it propagates (not ConflictException, not silent)
       await expect(service.createUser(adminDto, 1, 10)).rejects.toThrow(
@@ -575,7 +575,7 @@ describe('UsersService', () => {
 
   describe('updateUser', () => {
     it('should throw NotFoundException when user not found', async () => {
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       const dto = {
         firstName: 'Updated',
@@ -586,9 +586,9 @@ describe('UsersService', () => {
 
     it('should throw ForbiddenException on unauthorized role change', async () => {
       // findUserById → existing user
-      mockDb.query.mockResolvedValueOnce([makeUserRow({ role: 'employee' })]);
+      mockDb.tenantQuery.mockResolvedValueOnce([makeUserRow({ role: 'employee' })]);
       // assertCanChangeRole → get acting user's has_full_access
-      mockDb.query.mockResolvedValueOnce([{ has_full_access: false }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ has_full_access: false }]);
 
       const dto = { role: 'admin' } as unknown as UpdateUserDto;
 
@@ -596,11 +596,11 @@ describe('UsersService', () => {
     });
 
     it('should allow root to change role', async () => {
-      mockDb.query.mockResolvedValueOnce([makeUserRow({ role: 'employee' })]);
+      mockDb.tenantQuery.mockResolvedValueOnce([makeUserRow({ role: 'employee' })]);
       // No assertCanChangeRole DB call for root
-      mockDb.query.mockResolvedValueOnce([]); // executeUserUpdate
-      mockDb.query.mockResolvedValueOnce([makeUserRow({ id: 1, role: 'admin' })]); // fetchUser
-      mockDb.query.mockResolvedValueOnce([]); // getDepartments
+      mockDb.tenantQuery.mockResolvedValueOnce([]); // executeUserUpdate
+      mockDb.tenantQuery.mockResolvedValueOnce([makeUserRow({ id: 1, role: 'admin' })]); // fetchUser
+      mockDb.tenantQuery.mockResolvedValueOnce([]); // getDepartments
 
       const dto = { role: 'admin' } as unknown as UpdateUserDto;
       const result = await service.updateUser(1, dto, 99, 'root', 10);
@@ -609,12 +609,12 @@ describe('UsersService', () => {
     });
 
     it('should allow admin with full access to change role', async () => {
-      mockDb.query.mockResolvedValueOnce([makeUserRow({ role: 'employee' })]);
+      mockDb.tenantQuery.mockResolvedValueOnce([makeUserRow({ role: 'employee' })]);
       // assertCanChangeRole → admin with full access
-      mockDb.query.mockResolvedValueOnce([{ has_full_access: true }]);
-      mockDb.query.mockResolvedValueOnce([]); // executeUserUpdate
-      mockDb.query.mockResolvedValueOnce([makeUserRow({ role: 'admin' })]); // fetchUser
-      mockDb.query.mockResolvedValueOnce([]); // getDepartments
+      mockDb.tenantQuery.mockResolvedValueOnce([{ has_full_access: true }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]); // executeUserUpdate
+      mockDb.tenantQuery.mockResolvedValueOnce([makeUserRow({ role: 'admin' })]); // fetchUser
+      mockDb.tenantQuery.mockResolvedValueOnce([]); // getDepartments
 
       const dto = { role: 'admin' } as unknown as UpdateUserDto;
       const result = await service.updateUser(1, dto, 2, 'admin', 10);
@@ -623,9 +623,11 @@ describe('UsersService', () => {
     });
 
     it('should throw ConflictException when changing to taken email', async () => {
-      mockDb.query.mockResolvedValueOnce([makeUserRow()]); // findUserById
+      mockDb.tenantQuery.mockResolvedValueOnce([makeUserRow()]); // findUserById
       // validateEmailUniqueness → findUserByEmail → found
-      mockDb.query.mockResolvedValueOnce([makeUserRow({ id: 2, email: 'taken@example.com' })]);
+      mockDb.tenantQuery.mockResolvedValueOnce([
+        makeUserRow({ id: 2, email: 'taken@example.com' }),
+      ]);
 
       const dto = {
         email: 'taken@example.com',
@@ -635,12 +637,12 @@ describe('UsersService', () => {
     });
 
     it('should update department assignments when provided', async () => {
-      mockDb.query.mockResolvedValueOnce([makeUserRow()]); // findUserById
-      mockDb.query.mockResolvedValueOnce([]); // executeUserUpdate
-      mockDb.query.mockResolvedValueOnce([]); // removeUserDepartments (DELETE)
-      mockDb.query.mockResolvedValueOnce([]); // assignUserDepartments dept 100
-      mockDb.query.mockResolvedValueOnce([makeUserRow()]); // fetchUser
-      mockDb.query.mockResolvedValueOnce([]); // getDepartments
+      mockDb.tenantQuery.mockResolvedValueOnce([makeUserRow()]); // findUserById
+      mockDb.tenantQuery.mockResolvedValueOnce([]); // executeUserUpdate
+      mockDb.tenantQuery.mockResolvedValueOnce([]); // removeUserDepartments (DELETE)
+      mockDb.tenantQuery.mockResolvedValueOnce([]); // assignUserDepartments dept 100
+      mockDb.tenantQuery.mockResolvedValueOnce([makeUserRow()]); // fetchUser
+      mockDb.tenantQuery.mockResolvedValueOnce([]); // getDepartments
 
       const dto = {
         firstName: 'Updated',
@@ -650,15 +652,15 @@ describe('UsersService', () => {
       await service.updateUser(1, dto, 99, 'root', 10);
 
       // Verify DELETE was called
-      const deleteSql = mockDb.query.mock.calls[2]?.[0] as string;
+      const deleteSql = mockDb.tenantQuery.mock.calls[2]?.[0] as string;
       expect(deleteSql).toContain('DELETE FROM user_departments');
     });
 
     it('should hash password when included in update', async () => {
-      mockDb.query.mockResolvedValueOnce([makeUserRow()]); // findUserById
-      mockDb.query.mockResolvedValueOnce([]); // executeUserUpdate
-      mockDb.query.mockResolvedValueOnce([makeUserRow()]); // fetchUser
-      mockDb.query.mockResolvedValueOnce([]); // getDepartments
+      mockDb.tenantQuery.mockResolvedValueOnce([makeUserRow()]); // findUserById
+      mockDb.tenantQuery.mockResolvedValueOnce([]); // executeUserUpdate
+      mockDb.tenantQuery.mockResolvedValueOnce([makeUserRow()]); // fetchUser
+      mockDb.tenantQuery.mockResolvedValueOnce([]); // getDepartments
 
       const dto = { password: 'NewSecurePass123!' } as unknown as UpdateUserDto;
 
@@ -668,13 +670,13 @@ describe('UsersService', () => {
     });
 
     it('should throw ConflictException on employee_number constraint during update', async () => {
-      mockDb.query.mockResolvedValueOnce([makeUserRow()]); // findUserById
+      mockDb.tenantQuery.mockResolvedValueOnce([makeUserRow()]); // findUserById
       // executeUserUpdate throws unique constraint
       const pgError = Object.assign(new Error('unique violation'), {
         code: '23505',
         constraint: 'users_employee_number_tenant_id_key',
       });
-      mockDb.query.mockRejectedValueOnce(pgError);
+      mockDb.tenantQuery.mockRejectedValueOnce(pgError);
 
       const dto = {
         employeeNumber: 'EMP999',
@@ -684,10 +686,10 @@ describe('UsersService', () => {
     });
 
     it('should delegate availability history update', async () => {
-      mockDb.query.mockResolvedValueOnce([makeUserRow()]); // findUserById
-      mockDb.query.mockResolvedValueOnce([]); // executeUserUpdate
-      mockDb.query.mockResolvedValueOnce([makeUserRow()]); // fetchUser
-      mockDb.query.mockResolvedValueOnce([]); // getDepartments
+      mockDb.tenantQuery.mockResolvedValueOnce([makeUserRow()]); // findUserById
+      mockDb.tenantQuery.mockResolvedValueOnce([]); // executeUserUpdate
+      mockDb.tenantQuery.mockResolvedValueOnce([makeUserRow()]); // fetchUser
+      mockDb.tenantQuery.mockResolvedValueOnce([]); // getDepartments
 
       const dto = {
         firstName: 'X',
@@ -710,7 +712,9 @@ describe('UsersService', () => {
 
     it('should throw BadRequestException when setting hasFullAccess=true on employee', async () => {
       // Existing user is an employee
-      mockDb.query.mockResolvedValueOnce([makeUserRow({ role: 'employee', has_full_access: 0 })]);
+      mockDb.tenantQuery.mockResolvedValueOnce([
+        makeUserRow({ role: 'employee', has_full_access: 0 }),
+      ]);
 
       const dto = { hasFullAccess: true } as unknown as UpdateUserDto;
 
@@ -719,7 +723,9 @@ describe('UsersService', () => {
 
     it('should throw BadRequestException when changing role TO employee with existing full access', async () => {
       // Existing user is admin with has_full_access = 1
-      mockDb.query.mockResolvedValueOnce([makeUserRow({ role: 'admin', has_full_access: 1 })]);
+      mockDb.tenantQuery.mockResolvedValueOnce([
+        makeUserRow({ role: 'admin', has_full_access: 1 }),
+      ]);
       // assertCanChangeRole → root, no DB call needed
 
       const dto = { role: 'employee' } as unknown as UpdateUserDto;
@@ -728,10 +734,14 @@ describe('UsersService', () => {
     });
 
     it('should allow setting hasFullAccess=true on admin', async () => {
-      mockDb.query.mockResolvedValueOnce([makeUserRow({ role: 'admin', has_full_access: 0 })]);
-      mockDb.query.mockResolvedValueOnce([]); // executeUserUpdate
-      mockDb.query.mockResolvedValueOnce([makeUserRow({ role: 'admin', has_full_access: 1 })]); // fetchUser
-      mockDb.query.mockResolvedValueOnce([]); // getDepartments
+      mockDb.tenantQuery.mockResolvedValueOnce([
+        makeUserRow({ role: 'admin', has_full_access: 0 }),
+      ]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]); // executeUserUpdate
+      mockDb.tenantQuery.mockResolvedValueOnce([
+        makeUserRow({ role: 'admin', has_full_access: 1 }),
+      ]); // fetchUser
+      mockDb.tenantQuery.mockResolvedValueOnce([]); // getDepartments
 
       const dto = { hasFullAccess: true } as unknown as UpdateUserDto;
       const result = await service.updateUser(1, dto, 99, 'root', 10);
@@ -741,13 +751,15 @@ describe('UsersService', () => {
 
     it('should propagate CHECK constraint error (23514) for chk_employee_no_full_access on update', async () => {
       // Scenario: DB CHECK fires as safety net during UPDATE
-      mockDb.query.mockResolvedValueOnce([makeUserRow({ role: 'admin', has_full_access: 0 })]); // findUserById
+      mockDb.tenantQuery.mockResolvedValueOnce([
+        makeUserRow({ role: 'admin', has_full_access: 0 }),
+      ]); // findUserById
       // executeUserUpdate triggers CHECK constraint
       const pgError = Object.assign(
         new Error('new row violates check constraint "chk_employee_no_full_access"'),
         { code: '23514' },
       );
-      mockDb.query.mockRejectedValueOnce(pgError);
+      mockDb.tenantQuery.mockRejectedValueOnce(pgError);
 
       const dto = { hasFullAccess: true } as unknown as UpdateUserDto;
 
@@ -768,7 +780,7 @@ describe('UsersService', () => {
     });
 
     it('should throw NotFoundException when user not found', async () => {
-      mockDb.query.mockResolvedValueOnce([]); // findUserById
+      mockDb.tenantQuery.mockResolvedValueOnce([]); // findUserById
 
       await expect(service.deleteUser(999, 2, 10)).rejects.toThrow(NotFoundException);
     });
@@ -776,14 +788,14 @@ describe('UsersService', () => {
     it(`should soft-delete user (is_active = ${IS_ACTIVE.DELETED})`, async () => {
       const userRow = makeUserRow();
       // findUserById
-      mockDb.query.mockResolvedValueOnce([userRow]);
+      mockDb.tenantQuery.mockResolvedValueOnce([userRow]);
       // UPDATE is_active = 4
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       const result = await service.deleteUser(1, 2, 10);
 
       expect(result.message).toBe('User deleted successfully');
-      const updateSql = mockDb.query.mock.calls[1]?.[0] as string;
+      const updateSql = mockDb.tenantQuery.mock.calls[1]?.[0] as string;
       expect(updateSql).toContain(`is_active = ${IS_ACTIVE.DELETED}`);
       expect(mockActivityLogger.logDelete).toHaveBeenCalled();
     });
@@ -795,19 +807,19 @@ describe('UsersService', () => {
 
   describe('archiveUser', () => {
     it('should throw NotFoundException when user not found', async () => {
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       await expect(service.archiveUser(999, 10)).rejects.toThrow(NotFoundException);
     });
 
     it('should set is_active to 3', async () => {
-      mockDb.query.mockResolvedValueOnce([makeUserRow()]);
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([makeUserRow()]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       const result = await service.archiveUser(1, 10);
 
       expect(result.message).toBe('User archived successfully');
-      const updateSql = mockDb.query.mock.calls[1]?.[0] as string;
+      const updateSql = mockDb.tenantQuery.mock.calls[1]?.[0] as string;
       expect(updateSql).toContain(`is_active = ${IS_ACTIVE.ARCHIVED}`);
     });
   });
@@ -818,19 +830,19 @@ describe('UsersService', () => {
 
   describe('unarchiveUser', () => {
     it('should throw NotFoundException when user not found', async () => {
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       await expect(service.unarchiveUser(999, 10)).rejects.toThrow(NotFoundException);
     });
 
     it('should set is_active to 1', async () => {
-      mockDb.query.mockResolvedValueOnce([makeUserRow({ is_active: IS_ACTIVE.ARCHIVED })]);
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([makeUserRow({ is_active: IS_ACTIVE.ARCHIVED })]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       const result = await service.unarchiveUser(1, 10);
 
       expect(result.message).toBe('User unarchived successfully');
-      const updateSql = mockDb.query.mock.calls[1]?.[0] as string;
+      const updateSql = mockDb.tenantQuery.mock.calls[1]?.[0] as string;
       expect(updateSql).toContain(`is_active = ${IS_ACTIVE.ACTIVE}`);
     });
   });
@@ -849,10 +861,10 @@ describe('UsersService', () => {
     it('should resolve UUID and apply scope check', async () => {
       mockUserRepo.resolveUuidToId.mockResolvedValueOnce(5);
       // getUserById chain: findUserById + getTenantInfo + getDepartments + getUserTeamsBatch
-      mockDb.query.mockResolvedValueOnce([makeUserRow({ id: 5 })]);
-      mockDb.query.mockResolvedValueOnce([{ company_name: 'TestCo', subdomain: 'test' }]);
-      mockDb.query.mockResolvedValueOnce([]);
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([makeUserRow({ id: 5 })]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ company_name: 'TestCo', subdomain: 'test' }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       const result = await service.getUserByUuid('valid-uuid', 10);
 
@@ -876,10 +888,10 @@ describe('UsersService', () => {
     it('should resolve UUID and return user WITHOUT scope check', async () => {
       mockUserRepo.resolveUuidToId.mockResolvedValueOnce(5);
       // getUserById chain: findUserById + getTenantInfo + getDepartments + getUserTeamsBatch
-      mockDb.query.mockResolvedValueOnce([makeUserRow({ id: 5 })]);
-      mockDb.query.mockResolvedValueOnce([{ company_name: 'TestCo', subdomain: 'test' }]);
-      mockDb.query.mockResolvedValueOnce([]);
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([makeUserRow({ id: 5 })]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ company_name: 'TestCo', subdomain: 'test' }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       const result = await service.getUserProfileByUuid('valid-uuid', 10);
 
@@ -895,10 +907,10 @@ describe('UsersService', () => {
   describe('updateUserByUuid', () => {
     it('should resolve UUID and delegate to updateUser', async () => {
       mockUserRepo.resolveUuidToId.mockResolvedValueOnce(5);
-      mockDb.query.mockResolvedValueOnce([makeUserRow({ id: 5 })]); // findUserById
-      mockDb.query.mockResolvedValueOnce([]); // executeUserUpdate
-      mockDb.query.mockResolvedValueOnce([makeUserRow({ id: 5 })]); // fetchUser
-      mockDb.query.mockResolvedValueOnce([]); // getDepartments
+      mockDb.tenantQuery.mockResolvedValueOnce([makeUserRow({ id: 5 })]); // findUserById
+      mockDb.tenantQuery.mockResolvedValueOnce([]); // executeUserUpdate
+      mockDb.tenantQuery.mockResolvedValueOnce([makeUserRow({ id: 5 })]); // fetchUser
+      mockDb.tenantQuery.mockResolvedValueOnce([]); // getDepartments
 
       const dto = { firstName: 'Via UUID' } as unknown as UpdateUserDto;
       const result = await service.updateUserByUuid('some-uuid', dto, 99, 'root', 10);
@@ -916,9 +928,9 @@ describe('UsersService', () => {
     it('should resolve UUID and delegate to deleteUser', async () => {
       mockUserRepo.resolveUuidToId.mockResolvedValueOnce(5);
       // deleteUser → findUserById
-      mockDb.query.mockResolvedValueOnce([makeUserRow({ id: 5 })]);
+      mockDb.tenantQuery.mockResolvedValueOnce([makeUserRow({ id: 5 })]);
       // deleteUser → UPDATE is_active = 4
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       const result = await service.deleteUserByUuid('some-uuid', 2, 10);
 
@@ -934,8 +946,8 @@ describe('UsersService', () => {
   describe('archiveUserByUuid', () => {
     it('should resolve UUID and delegate to archiveUser', async () => {
       mockUserRepo.resolveUuidToId.mockResolvedValueOnce(5);
-      mockDb.query.mockResolvedValueOnce([makeUserRow({ id: 5 })]); // findUserById
-      mockDb.query.mockResolvedValueOnce([]); // UPDATE is_active = ${IS_ACTIVE.ARCHIVED}
+      mockDb.tenantQuery.mockResolvedValueOnce([makeUserRow({ id: 5 })]); // findUserById
+      mockDb.tenantQuery.mockResolvedValueOnce([]); // UPDATE is_active = ${IS_ACTIVE.ARCHIVED}
 
       const result = await service.archiveUserByUuid('some-uuid', 10);
 
@@ -950,8 +962,10 @@ describe('UsersService', () => {
   describe('unarchiveUserByUuid', () => {
     it('should resolve UUID and delegate to unarchiveUser', async () => {
       mockUserRepo.resolveUuidToId.mockResolvedValueOnce(5);
-      mockDb.query.mockResolvedValueOnce([makeUserRow({ id: 5, is_active: IS_ACTIVE.ARCHIVED })]); // findUserById
-      mockDb.query.mockResolvedValueOnce([]); // UPDATE is_active = ${IS_ACTIVE.ACTIVE}
+      mockDb.tenantQuery.mockResolvedValueOnce([
+        makeUserRow({ id: 5, is_active: IS_ACTIVE.ARCHIVED }),
+      ]); // findUserById
+      mockDb.tenantQuery.mockResolvedValueOnce([]); // UPDATE is_active = ${IS_ACTIVE.ACTIVE}
 
       const result = await service.unarchiveUserByUuid('some-uuid', 10);
 
@@ -973,13 +987,13 @@ describe('UsersService', () => {
     } as unknown as CreateUserDto;
 
     it('should throw ConflictException on email constraint violation from INSERT', async () => {
-      mockDb.query.mockResolvedValueOnce([]); // findUserByEmail → no match
+      mockDb.tenantQuery.mockResolvedValueOnce([]); // findUserByEmail → no match
       // INSERT throws unique constraint on email (race condition)
       const pgError = Object.assign(new Error('unique violation'), {
         code: '23505',
         constraint: 'users_email_tenant_id_key',
       });
-      mockDb.query.mockRejectedValueOnce(pgError);
+      mockDb.tenantQuery.mockRejectedValueOnce(pgError);
 
       await expect(service.createUser(createDto, 1, 10)).rejects.toThrow(ConflictException);
     });
@@ -988,14 +1002,14 @@ describe('UsersService', () => {
   describe('updateUser – email constraint in catch block', () => {
     it('should throw ConflictException on email constraint violation from UPDATE', async () => {
       // findUserById → existing user
-      mockDb.query.mockResolvedValueOnce([makeUserRow({ id: 5 })]);
+      mockDb.tenantQuery.mockResolvedValueOnce([makeUserRow({ id: 5 })]);
       // No email change in dto → validateEmailUniqueness skipped
       // executeUserUpdate → UPDATE throws unique constraint on email (race condition)
       const pgError = Object.assign(new Error('unique violation'), {
         code: '23505',
         constraint: 'users_email_tenant_id_key',
       });
-      mockDb.query.mockRejectedValueOnce(pgError);
+      mockDb.tenantQuery.mockRejectedValueOnce(pgError);
 
       const dto = { firstName: 'Changed' } as unknown as UpdateUserDto;
 
@@ -1004,11 +1018,11 @@ describe('UsersService', () => {
 
     it('should throw InternalServerError when user disappears after update', async () => {
       // findUserById → existing user
-      mockDb.query.mockResolvedValueOnce([makeUserRow({ id: 5 })]);
+      mockDb.tenantQuery.mockResolvedValueOnce([makeUserRow({ id: 5 })]);
       // executeUserUpdate succeeds
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
       // fetchUserWithDepartments → findUserById returns null
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       const dto = { firstName: 'Ghost' } as unknown as UpdateUserDto;
 
@@ -1049,13 +1063,13 @@ describe('UsersService', () => {
       // getUserByUuid calls ensureUserInScope internally
       mockUserRepo.resolveUuidToId.mockResolvedValueOnce(999);
       // findUserById returns user
-      mockDb.query.mockResolvedValueOnce([makeUserRow({ id: 999 })]);
+      mockDb.tenantQuery.mockResolvedValueOnce([makeUserRow({ id: 999 })]);
       // getTenantInfo
-      mockDb.query.mockResolvedValueOnce([{ company_name: 'TestCo', subdomain: 'test' }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ company_name: 'TestCo', subdomain: 'test' }]);
       // getDepartments
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
       // getUserTeamsBatch
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       await expect(scopedService.getUserByUuid('some-uuid', 10)).rejects.toThrow(
         ForbiddenException,

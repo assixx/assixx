@@ -209,7 +209,7 @@ export class AdminPermissionsService {
     this.logger.log(`Setting department permissions for admin ${adminId}`);
 
     // Remove existing permissions
-    await this.db.query(
+    await this.db.tenantQuery(
       'DELETE FROM admin_department_permissions WHERE admin_user_id = $1 AND tenant_id = $2',
       [adminId, tenantId],
     );
@@ -272,7 +272,7 @@ export class AdminPermissionsService {
   ): Promise<void> {
     this.logger.log(`Removing department permission for admin ${adminId}, dept ${departmentId}`);
 
-    const result = await this.db.query<DbAffectedRows>(
+    const result = await this.db.tenantQuery<DbAffectedRows>(
       `DELETE FROM admin_department_permissions
        WHERE admin_user_id = $1 AND department_id = $2 AND tenant_id = $3
        RETURNING 1`,
@@ -394,7 +394,7 @@ export class AdminPermissionsService {
     this.logger.log(`Checking access for admin ${adminId} to department ${departmentId}`);
 
     // Check direct department permissions
-    const directPermissions = await this.db.query<DbPermissionResult>(
+    const directPermissions = await this.db.tenantQuery<DbPermissionResult>(
       `SELECT can_read, can_write, can_delete
        FROM admin_department_permissions
        WHERE admin_user_id = $1 AND department_id = $2 AND tenant_id = $3`,
@@ -435,7 +435,7 @@ export class AdminPermissionsService {
     this.logger.log(`Setting area permissions for user ${userId}`);
 
     // Remove existing area permissions
-    await this.db.query(
+    await this.db.tenantQuery(
       'DELETE FROM admin_area_permissions WHERE admin_user_id = $1 AND tenant_id = $2',
       [userId, tenantId],
     );
@@ -462,7 +462,7 @@ export class AdminPermissionsService {
         paramIndex += 7;
       }
 
-      await this.db.query(
+      await this.db.tenantQuery(
         `INSERT INTO admin_area_permissions
          (tenant_id, admin_user_id, area_id, can_read, can_write, can_delete, assigned_by)
          VALUES ${valueSets.join(', ')}`,
@@ -504,19 +504,19 @@ export class AdminPermissionsService {
       // No area permissions = remove ALL employee memberships
       this.logger.log(`Removing all employee memberships for user ${userId} (no area permissions)`);
 
-      await this.db.query('DELETE FROM user_teams WHERE user_id = $1 AND tenant_id = $2', [
+      await this.db.tenantQuery('DELETE FROM user_teams WHERE user_id = $1 AND tenant_id = $2', [
         userId,
         tenantId,
       ]);
-      await this.db.query('DELETE FROM user_departments WHERE user_id = $1 AND tenant_id = $2', [
-        userId,
-        tenantId,
-      ]);
+      await this.db.tenantQuery(
+        'DELETE FROM user_departments WHERE user_id = $1 AND tenant_id = $2',
+        [userId, tenantId],
+      );
       return;
     }
 
     // Remove user_teams for teams in departments outside allowed areas
-    const teamsDeleted = await this.db.query<{ count: string }>(
+    const teamsDeleted = await this.db.tenantQuery<{ count: string }>(
       `WITH deleted AS (
         DELETE FROM user_teams ut
         WHERE ut.user_id = $1
@@ -535,7 +535,7 @@ export class AdminPermissionsService {
     );
 
     // Remove user_departments for departments outside allowed areas
-    const deptsDeleted = await this.db.query<{ count: string }>(
+    const deptsDeleted = await this.db.tenantQuery<{ count: string }>(
       `WITH deleted AS (
         DELETE FROM user_departments ud
         WHERE ud.user_id = $1
@@ -561,7 +561,7 @@ export class AdminPermissionsService {
   ): Promise<void> {
     this.logger.log(`Removing area permission for user ${userId}, area ${areaId}`);
 
-    const result = await this.db.query<DbAffectedRows>(
+    const result = await this.db.tenantQuery<DbAffectedRows>(
       `DELETE FROM admin_area_permissions
        WHERE admin_user_id = $1 AND area_id = $2 AND tenant_id = $3
        RETURNING 1`,
@@ -608,7 +608,7 @@ export class AdminPermissionsService {
       }
     }
 
-    const result = await this.db.query<DbAffectedRows>(
+    const result = await this.db.tenantQuery<DbAffectedRows>(
       `UPDATE users SET has_full_access = $1 WHERE id = $2 AND tenant_id = $3 RETURNING 1`,
       [hasFullAccess, userId, tenantId],
     );
@@ -647,7 +647,7 @@ export class AdminPermissionsService {
     userId: number,
     tenantId: number,
   ): Promise<{ role: string; isRoot: boolean; hasFullAccess: boolean }> {
-    const rows = await this.db.query<DbRoleResult>(
+    const rows = await this.db.tenantQuery<DbRoleResult>(
       `SELECT role, has_full_access FROM users WHERE id = $1 AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}`,
       [userId, tenantId],
     );
@@ -671,7 +671,7 @@ export class AdminPermissionsService {
   }
 
   private async getAreaPermissions(userId: number, tenantId: number): Promise<AdminArea[]> {
-    const rows = await this.db.query<DbAreaPermissionRow>(
+    const rows = await this.db.tenantQuery<DbAreaPermissionRow>(
       `SELECT
         a.id,
         a.name,
@@ -709,7 +709,7 @@ export class AdminPermissionsService {
     adminId: number,
     tenantId: number,
   ): Promise<AdminDepartment[]> {
-    const rows = await this.db.query<DbDepartmentPermissionRow>(
+    const rows = await this.db.tenantQuery<DbDepartmentPermissionRow>(
       `SELECT
         d.id,
         d.name,
@@ -739,7 +739,7 @@ export class AdminPermissionsService {
    * Excludes areas already present in admin_area_permissions to avoid duplicates
    */
   private async getLeadAreas(userId: number, tenantId: number): Promise<AdminArea[]> {
-    const rows = await this.db.query<DbLeadAreaRow>(
+    const rows = await this.db.tenantQuery<DbLeadAreaRow>(
       `SELECT
         a.id,
         a.name,
@@ -780,7 +780,7 @@ export class AdminPermissionsService {
    * Excludes departments already present in admin_department_permissions to avoid duplicates
    */
   private async getLeadDepartments(userId: number, tenantId: number): Promise<AdminDepartment[]> {
-    const rows = await this.db.query<DbLeadDepartmentRow>(
+    const rows = await this.db.tenantQuery<DbLeadDepartmentRow>(
       `SELECT d.id, d.name, d.description, d.area_id, a.name AS area_name
       FROM departments d
       LEFT JOIN areas a ON d.area_id = a.id
@@ -839,7 +839,7 @@ export class AdminPermissionsService {
   }
 
   private async getTotalAreas(tenantId: number): Promise<number> {
-    const rows = await this.db.query<DbCountResult>(
+    const rows = await this.db.tenantQuery<DbCountResult>(
       'SELECT COUNT(*) as total FROM areas WHERE tenant_id = $1',
       [tenantId],
     );
@@ -847,7 +847,7 @@ export class AdminPermissionsService {
   }
 
   private async getTotalDepartments(tenantId: number): Promise<number> {
-    const rows = await this.db.query<DbCountResult>(
+    const rows = await this.db.tenantQuery<DbCountResult>(
       `SELECT COUNT(*) as total FROM departments WHERE tenant_id = $1 AND is_active = ${IS_ACTIVE.ACTIVE}`,
       [tenantId],
     );
@@ -881,7 +881,7 @@ export class AdminPermissionsService {
       paramIndex += 7;
     }
 
-    await this.db.query(
+    await this.db.tenantQuery(
       `INSERT INTO admin_department_permissions
        (admin_user_id, department_id, tenant_id, can_read, can_write, can_delete, assigned_by)
        VALUES ${valueSets.join(', ')}`,
@@ -916,7 +916,7 @@ export class AdminPermissionsService {
     details: string,
   ): Promise<void> {
     try {
-      await this.db.query(
+      await this.db.tenantQuery(
         `INSERT INTO root_logs (action, user_id, tenant_id, details, created_at)
          VALUES ($1, $2, $3, $4, NOW())`,
         [action, userId, tenantId, details],

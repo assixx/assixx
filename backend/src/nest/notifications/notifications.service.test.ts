@@ -19,12 +19,12 @@ import { NotificationsService } from './notifications.service.js';
 
 function createServiceWithMock(): {
   service: NotificationsService;
-  mockDb: { query: ReturnType<typeof vi.fn> };
+  mockDb: { tenantQuery: ReturnType<typeof vi.fn>; tenantQueryOne: ReturnType<typeof vi.fn> };
   mockPreferences: Record<string, ReturnType<typeof vi.fn>>;
   mockStatistics: Record<string, ReturnType<typeof vi.fn>>;
   mockAddon: Record<string, ReturnType<typeof vi.fn>>;
 } {
-  const mockDb = { query: vi.fn() };
+  const mockDb = { tenantQuery: vi.fn(), tenantQueryOne: vi.fn().mockResolvedValue(null) };
   const mockPreferences = {
     getPreferences: vi.fn(),
     upsertPreferences: vi.fn(),
@@ -55,7 +55,7 @@ function createServiceWithMock(): {
 
 describe('NotificationsService – DB-mocked methods', () => {
   let service: NotificationsService;
-  let mockDb: { query: ReturnType<typeof vi.fn> };
+  let mockDb: { tenantQuery: ReturnType<typeof vi.fn>; tenantQueryOne: ReturnType<typeof vi.fn> };
   let mockPreferences: Record<string, ReturnType<typeof vi.fn>>;
   let mockStatistics: Record<string, ReturnType<typeof vi.fn>>;
   let mockAddon: Record<string, ReturnType<typeof vi.fn>>;
@@ -71,25 +71,25 @@ describe('NotificationsService – DB-mocked methods', () => {
 
   describe('markAsRead', () => {
     it('throws NotFoundException when notification does not exist', async () => {
-      mockDb.query.mockResolvedValueOnce([]); // SELECT notification
+      mockDb.tenantQuery.mockResolvedValueOnce([]); // SELECT notification
 
       await expect(service.markAsRead(999, 1, 1)).rejects.toThrow(NotFoundException);
     });
 
     it('inserts read status for existing notification', async () => {
-      mockDb.query
+      mockDb.tenantQuery
         .mockResolvedValueOnce([{ id: 1, tenant_id: 1 }]) // notification found
         .mockResolvedValueOnce([]); // INSERT read status
 
       await service.markAsRead(1, 5, 1);
 
-      expect(mockDb.query).toHaveBeenCalledTimes(2);
+      expect(mockDb.tenantQuery).toHaveBeenCalledTimes(2);
     });
   });
 
   describe('markAllAsRead', () => {
     it('returns 0 when no unread notifications', async () => {
-      mockDb.query.mockResolvedValueOnce([]); // no unread
+      mockDb.tenantQuery.mockResolvedValueOnce([]); // no unread
 
       const result = await service.markAllAsRead(1, 1);
 
@@ -97,7 +97,7 @@ describe('NotificationsService – DB-mocked methods', () => {
     });
 
     it('marks multiple notifications as read', async () => {
-      mockDb.query
+      mockDb.tenantQuery
         .mockResolvedValueOnce([{ id: 1 }, { id: 2 }, { id: 3 }]) // 3 unread
         .mockResolvedValueOnce([]) // INSERT for id 1
         .mockResolvedValueOnce([]) // INSERT for id 2
@@ -111,7 +111,7 @@ describe('NotificationsService – DB-mocked methods', () => {
 
   describe('createNotification', () => {
     it('throws BadRequestException when insert fails', async () => {
-      mockDb.query.mockResolvedValueOnce([]); // INSERT returns no rows
+      mockDb.tenantQuery.mockResolvedValueOnce([]); // INSERT returns no rows
 
       await expect(
         service.createNotification(
@@ -128,7 +128,7 @@ describe('NotificationsService – DB-mocked methods', () => {
     });
 
     it('returns notification ID on success', async () => {
-      mockDb.query
+      mockDb.tenantQuery
         .mockResolvedValueOnce([{ id: 42 }]) // INSERT RETURNING id
         .mockResolvedValueOnce([]); // audit log INSERT
 
@@ -149,7 +149,7 @@ describe('NotificationsService – DB-mocked methods', () => {
 
   describe('deleteNotification', () => {
     it('throws NotFoundException when notification does not exist', async () => {
-      mockDb.query.mockResolvedValueOnce([]); // SELECT
+      mockDb.tenantQuery.mockResolvedValueOnce([]); // SELECT
 
       await expect(service.deleteNotification(999, 1, 1, 'admin')).rejects.toThrow(
         NotFoundException,
@@ -157,7 +157,7 @@ describe('NotificationsService – DB-mocked methods', () => {
     });
 
     it('throws NotFoundException for non-admin on others notification', async () => {
-      mockDb.query.mockResolvedValueOnce([
+      mockDb.tenantQuery.mockResolvedValueOnce([
         {
           id: 1,
           type: 'info',
@@ -173,7 +173,7 @@ describe('NotificationsService – DB-mocked methods', () => {
     });
 
     it('deletes notification for admin', async () => {
-      mockDb.query
+      mockDb.tenantQuery
         .mockResolvedValueOnce([
           {
             id: 1,
@@ -188,13 +188,13 @@ describe('NotificationsService – DB-mocked methods', () => {
 
       await service.deleteNotification(1, 5, 1, 'admin');
 
-      expect(mockDb.query).toHaveBeenCalledTimes(3);
+      expect(mockDb.tenantQuery).toHaveBeenCalledTimes(3);
     });
   });
 
   describe('resolveNotificationIdByUuid', () => {
     it('throws NotFoundException when UUID not found', async () => {
-      mockDb.query.mockResolvedValueOnce([]); // SELECT
+      mockDb.tenantQuery.mockResolvedValueOnce([]); // SELECT
 
       await expect(service['resolveNotificationIdByUuid']('non-existent-uuid', 1)).rejects.toThrow(
         NotFoundException,
@@ -202,7 +202,7 @@ describe('NotificationsService – DB-mocked methods', () => {
     });
 
     it('returns ID for valid UUID', async () => {
-      mockDb.query.mockResolvedValueOnce([{ id: 42 }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ id: 42 }]);
 
       const result = await service['resolveNotificationIdByUuid']('valid-uuid', 1);
 
@@ -329,7 +329,7 @@ describe('NotificationsService – DB-mocked methods', () => {
     };
 
     it('returns paginated notifications with defaults (page=1, limit=20)', async () => {
-      mockDb.query
+      mockDb.tenantQuery
         .mockResolvedValueOnce([fakeRow]) // main SELECT
         .mockResolvedValueOnce([{ total: '1' }]) // count query
         .mockResolvedValueOnce([{ unread_count: '1' }]); // unread count query
@@ -350,7 +350,7 @@ describe('NotificationsService – DB-mocked methods', () => {
     });
 
     it('uses provided page and limit from filters', async () => {
-      mockDb.query
+      mockDb.tenantQuery
         .mockResolvedValueOnce([]) // main SELECT (no results on page 3)
         .mockResolvedValueOnce([{ total: '50' }]) // total count
         .mockResolvedValueOnce([{ unread_count: '10' }]); // unread count
@@ -369,7 +369,7 @@ describe('NotificationsService – DB-mocked methods', () => {
     });
 
     it('handles unread filter', async () => {
-      mockDb.query
+      mockDb.tenantQuery
         .mockResolvedValueOnce([fakeRow]) // main SELECT with unread filter
         .mockResolvedValueOnce([{ total: '1' }])
         .mockResolvedValueOnce([{ unread_count: '1' }]);
@@ -378,12 +378,12 @@ describe('NotificationsService – DB-mocked methods', () => {
 
       expect(result.notifications).toHaveLength(1);
       // Verify the main query includes the unread filter
-      const mainQueryCall = mockDb.query.mock.calls[0];
+      const mainQueryCall = mockDb.tenantQuery.mock.calls[0];
       expect(mainQueryCall[0]).toContain('AND nrs.id IS NULL');
     });
 
     it('defaults to 0 when count rows are empty', async () => {
-      mockDb.query
+      mockDb.tenantQuery
         .mockResolvedValueOnce([]) // main SELECT
         .mockResolvedValueOnce([{}]) // count row without total field
         .mockResolvedValueOnce([{}]); // unread row without unread_count field
@@ -395,7 +395,7 @@ describe('NotificationsService – DB-mocked methods', () => {
     });
 
     it('handles type and priority filters', async () => {
-      mockDb.query
+      mockDb.tenantQuery
         .mockResolvedValueOnce([])
         .mockResolvedValueOnce([{ total: '0' }])
         .mockResolvedValueOnce([{ unread_count: '0' }]);
@@ -406,7 +406,7 @@ describe('NotificationsService – DB-mocked methods', () => {
       });
 
       // The query should contain type and priority filter params
-      const mainQueryParams = mockDb.query.mock.calls[0][1] as unknown[];
+      const mainQueryParams = mockDb.tenantQuery.mock.calls[0][1] as unknown[];
       expect(mainQueryParams).toContain('warning');
       expect(mainQueryParams).toContain('high');
     });
@@ -419,7 +419,7 @@ describe('NotificationsService – DB-mocked methods', () => {
   describe('createAuditLog – error handling', () => {
     it('swallows audit log insert errors without throwing', async () => {
       // createNotification calls createAuditLog internally
-      mockDb.query
+      mockDb.tenantQuery
         .mockResolvedValueOnce([{ id: 99 }]) // INSERT notification RETURNING id
         .mockRejectedValueOnce(new Error('DB connection lost')); // audit log INSERT fails
 
@@ -446,7 +446,7 @@ describe('NotificationsService – DB-mocked methods', () => {
   describe('updatePreferences', () => {
     it('delegates to preferences sub-service and creates audit log', async () => {
       mockPreferences.upsertPreferences.mockResolvedValueOnce(undefined);
-      mockDb.query.mockResolvedValueOnce([]); // audit log INSERT
+      mockDb.tenantQuery.mockResolvedValueOnce([]); // audit log INSERT
 
       await service.updatePreferences(5, 1, {
         emailNotifications: false,
@@ -466,12 +466,12 @@ describe('NotificationsService – DB-mocked methods', () => {
         }),
       );
       // Audit log should be called
-      expect(mockDb.query).toHaveBeenCalledTimes(1);
+      expect(mockDb.tenantQuery).toHaveBeenCalledTimes(1);
     });
 
     it('uses defaults when dto fields are undefined', async () => {
       mockPreferences.upsertPreferences.mockResolvedValueOnce(undefined);
-      mockDb.query.mockResolvedValueOnce([]); // audit log
+      mockDb.tenantQuery.mockResolvedValueOnce([]); // audit log
 
       await service.updatePreferences(5, 1, {} as never);
 
@@ -508,18 +508,18 @@ describe('NotificationsService – DB-mocked methods', () => {
 
   describe('markAsReadByUuid', () => {
     it('resolves UUID then marks as read', async () => {
-      mockDb.query
+      mockDb.tenantQuery
         .mockResolvedValueOnce([{ id: 10 }]) // resolveNotificationIdByUuid
         .mockResolvedValueOnce([{ id: 10, tenant_id: 1 }]) // markAsRead SELECT
         .mockResolvedValueOnce([]); // markAsRead INSERT read status
 
       await service.markAsReadByUuid('some-uuid-v7', 5, 1);
 
-      expect(mockDb.query).toHaveBeenCalledTimes(3);
+      expect(mockDb.tenantQuery).toHaveBeenCalledTimes(3);
     });
 
     it('throws NotFoundException if UUID does not exist', async () => {
-      mockDb.query.mockResolvedValueOnce([]); // UUID not found
+      mockDb.tenantQuery.mockResolvedValueOnce([]); // UUID not found
 
       await expect(service.markAsReadByUuid('nonexistent-uuid', 5, 1)).rejects.toThrow(
         NotFoundException,
@@ -529,7 +529,7 @@ describe('NotificationsService – DB-mocked methods', () => {
 
   describe('deleteNotificationByUuid', () => {
     it('resolves UUID then deletes notification', async () => {
-      mockDb.query
+      mockDb.tenantQuery
         .mockResolvedValueOnce([{ id: 10 }]) // resolveNotificationIdByUuid
         .mockResolvedValueOnce([
           {
@@ -545,11 +545,11 @@ describe('NotificationsService – DB-mocked methods', () => {
 
       await service.deleteNotificationByUuid('some-uuid-v7', 5, 1, 'admin');
 
-      expect(mockDb.query).toHaveBeenCalledTimes(4);
+      expect(mockDb.tenantQuery).toHaveBeenCalledTimes(4);
     });
 
     it('throws NotFoundException if UUID does not exist', async () => {
-      mockDb.query.mockResolvedValueOnce([]); // UUID not found
+      mockDb.tenantQuery.mockResolvedValueOnce([]); // UUID not found
 
       await expect(
         service.deleteNotificationByUuid('nonexistent-uuid', 5, 1, 'admin'),
@@ -563,7 +563,7 @@ describe('NotificationsService – DB-mocked methods', () => {
 
   describe('deleteNotification – additional branches', () => {
     it('allows root role to delete any notification', async () => {
-      mockDb.query
+      mockDb.tenantQuery
         .mockResolvedValueOnce([
           {
             id: 1,
@@ -579,11 +579,11 @@ describe('NotificationsService – DB-mocked methods', () => {
       // root user (id=5) deleting user 99's notification — should succeed
       await service.deleteNotification(1, 5, 1, 'root');
 
-      expect(mockDb.query).toHaveBeenCalledTimes(3);
+      expect(mockDb.tenantQuery).toHaveBeenCalledTimes(3);
     });
 
     it('allows owner to delete own notification', async () => {
-      mockDb.query
+      mockDb.tenantQuery
         .mockResolvedValueOnce([
           {
             id: 1,
@@ -599,11 +599,11 @@ describe('NotificationsService – DB-mocked methods', () => {
       // user 5 deleting their own notification with employee role
       await service.deleteNotification(1, 5, 1, 'employee');
 
-      expect(mockDb.query).toHaveBeenCalledTimes(3);
+      expect(mockDb.tenantQuery).toHaveBeenCalledTimes(3);
     });
 
     it('throws when non-admin tries to delete department notification', async () => {
-      mockDb.query.mockResolvedValueOnce([
+      mockDb.tenantQuery.mockResolvedValueOnce([
         {
           id: 1,
           type: 'info',
@@ -619,7 +619,7 @@ describe('NotificationsService – DB-mocked methods', () => {
     });
 
     it('passes ipAddress and userAgent to audit log', async () => {
-      mockDb.query
+      mockDb.tenantQuery
         .mockResolvedValueOnce([
           {
             id: 1,
@@ -635,7 +635,7 @@ describe('NotificationsService – DB-mocked methods', () => {
       await service.deleteNotification(1, 5, 1, 'admin', '192.168.1.1', 'TestAgent/1.0');
 
       // Verify the audit log query has ipAddress and userAgent
-      const auditCall = mockDb.query.mock.calls[2];
+      const auditCall = mockDb.tenantQuery.mock.calls[2];
       const auditParams = auditCall[1] as unknown[];
       expect(auditParams).toContain('192.168.1.1');
       expect(auditParams).toContain('TestAgent/1.0');
@@ -648,7 +648,7 @@ describe('NotificationsService – DB-mocked methods', () => {
 
   describe('createNotification – additional branches', () => {
     it('passes optional fields (metadata, scheduledFor, etc.) to query', async () => {
-      mockDb.query
+      mockDb.tenantQuery
         .mockResolvedValueOnce([{ id: 77 }]) // INSERT
         .mockResolvedValueOnce([]); // audit log
 
@@ -672,7 +672,7 @@ describe('NotificationsService – DB-mocked methods', () => {
       );
 
       expect(result.notificationId).toBe(77);
-      const insertParams = mockDb.query.mock.calls[0][1] as unknown[];
+      const insertParams = mockDb.tenantQuery.mock.calls[0][1] as unknown[];
       expect(insertParams).toContain('high');
       expect(insertParams).toContain(10); // recipientId
       expect(insertParams).toContain('/some/action');

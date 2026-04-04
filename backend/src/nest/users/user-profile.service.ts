@@ -75,7 +75,7 @@ export class UserProfileService {
     if (params.length > 0) {
       const paramIndex = params.length + 1;
       params.push(userId, tenantId);
-      await this.databaseService.query(
+      await this.databaseService.tenantQuery(
         `UPDATE users SET ${updates.join(', ')} WHERE id = $${paramIndex} AND tenant_id = $${paramIndex + 1}`,
         params,
       );
@@ -131,13 +131,13 @@ export class UserProfileService {
 
     // Hash and update new password
     const hashedPassword = await bcryptjs.hash(newPassword, 12);
-    await this.databaseService.query(
+    await this.databaseService.tenantQuery(
       `UPDATE users SET password = $1, updated_at = NOW() WHERE id = $2 AND tenant_id = $3`,
       [hashedPassword, userId, tenantId],
     );
 
     // SECURITY: Revoke all refresh tokens to force re-login on all sessions
-    const result = await this.databaseService.query<{ count: string }>(
+    const result = await this.databaseService.tenantQuery<{ count: string }>(
       `WITH updated AS (
          UPDATE refresh_tokens SET is_revoked = true WHERE user_id = $1 AND tenant_id = $2 RETURNING 1
        )
@@ -203,7 +203,7 @@ export class UserProfileService {
     // Store relative path in DB
     const relativePath = path.relative(process.cwd(), filePath);
 
-    await this.databaseService.query(
+    await this.databaseService.tenantQuery(
       `UPDATE users SET profile_picture = $1, updated_at = NOW() WHERE id = $2 AND tenant_id = $3`,
       [relativePath, userId, tenantId],
     );
@@ -258,7 +258,7 @@ export class UserProfileService {
     }
 
     // Clear DB field
-    await this.databaseService.query(
+    await this.databaseService.tenantQuery(
       `UPDATE users SET profile_picture = NULL, updated_at = NOW() WHERE id = $1 AND tenant_id = $2`,
       [userId, tenantId],
     );
@@ -304,7 +304,7 @@ export class UserProfileService {
    * SECURITY: Only returns ACTIVE users (is_active = 1)
    */
   private async findUserById(userId: number, tenantId: number): Promise<UserRow | null> {
-    const rows = await this.databaseService.query<UserRow>(
+    const rows = await this.databaseService.tenantQuery<UserRow>(
       `SELECT id, uuid, tenant_id, email, role, username, first_name, last_name,
               is_active, last_login, created_at, updated_at,
               phone, address, position, employee_number, profile_picture,

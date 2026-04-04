@@ -21,6 +21,8 @@ interface MockEnvVars {
   DB_NAME?: string;
   DB_USER?: string;
   DB_PASSWORD?: string;
+  DB_SYSTEM_USER?: string;
+  DB_SYSTEM_PASSWORD?: string;
   JWT_SECRET?: string;
   JWT_REFRESH_SECRET?: string;
   JWT_ACCESS_EXPIRY?: string;
@@ -38,6 +40,7 @@ interface MockEnvVars {
 /** Minimal valid env vars — only required fields */
 const VALID_ENV: MockEnvVars = {
   DB_PASSWORD: 'test-db-password',
+  DB_SYSTEM_PASSWORD: 'test-sys-password',
   JWT_SECRET: 'a'.repeat(32),
   JWT_REFRESH_SECRET: 'b'.repeat(32),
 };
@@ -73,6 +76,7 @@ describe('AppConfigService', () => {
     it('should throw when DB_PASSWORD is missing', () => {
       expect(() =>
         createService({
+          DB_SYSTEM_PASSWORD: 'test-sys-password',
           JWT_SECRET: 'a'.repeat(32),
           JWT_REFRESH_SECRET: 'b'.repeat(32),
         }),
@@ -83,6 +87,7 @@ describe('AppConfigService', () => {
       expect(() =>
         createService({
           DB_PASSWORD: 'pw',
+          DB_SYSTEM_PASSWORD: 'test-sys-password',
           JWT_SECRET: 'short',
           JWT_REFRESH_SECRET: 'b'.repeat(32),
         }),
@@ -93,6 +98,7 @@ describe('AppConfigService', () => {
       expect(() =>
         createService({
           DB_PASSWORD: 'pw',
+          DB_SYSTEM_PASSWORD: 'test-sys-password',
           JWT_SECRET: 'a'.repeat(32),
           JWT_REFRESH_SECRET: 'short',
         }),

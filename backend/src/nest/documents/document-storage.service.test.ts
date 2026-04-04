@@ -29,7 +29,7 @@ vi.mock('fs/promises', () => ({
 // =============================================================
 
 function createMockDb() {
-  return { query: vi.fn() };
+  return { tenantQuery: vi.fn(), tenantQueryOne: vi.fn().mockResolvedValue(null) };
 }
 
 function makeDocument(overrides: Record<string, unknown> = {}) {
@@ -66,7 +66,7 @@ describe('DocumentStorageService', () => {
 
   describe('getDocumentContent', () => {
     it('should increment download count and return content from blob', async () => {
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
       const doc = makeDocument({
         file_content: Buffer.from('blob-data'),
       });
@@ -75,11 +75,11 @@ describe('DocumentStorageService', () => {
 
       expect(result.originalName).toBe('My Report.pdf');
       expect(result.mimeType).toBe('application/pdf');
-      expect(mockDb.query).toHaveBeenCalledTimes(1);
+      expect(mockDb.tenantQuery).toHaveBeenCalledTimes(1);
     });
 
     it('should return content from filesystem', async () => {
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
       const doc = makeDocument({ file_path: 'uploads/test.pdf' });
 
       const result = await service.getDocumentContent(doc as never);

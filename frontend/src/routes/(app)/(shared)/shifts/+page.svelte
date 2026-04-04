@@ -3,6 +3,8 @@
   import { onMount } from 'svelte';
 
   import PermissionDenied from '$lib/components/PermissionDenied.svelte';
+  import { notificationStore } from '$lib/stores/notification.store.svelte';
+  import { showWarningAlert } from '$lib/utils/alerts';
 
   import AdminActions from './_lib/AdminActions.svelte';
   import { fetchAssignmentCounts, fetchDepartments, fetchAssets, fetchTeams } from './_lib/api';
@@ -39,7 +41,10 @@
   import ShiftAssignmentCounts from './_lib/ShiftAssignmentCounts.svelte';
   import ShiftControls from './_lib/ShiftControls.svelte';
   import ShiftScheduleGrid from './_lib/ShiftScheduleGrid.svelte';
+  import ShiftScheduleLegend from './_lib/ShiftScheduleLegend.svelte';
   import { shiftsState } from './_lib/state.svelte';
+  import SwapConsentBanner from './_lib/SwapConsentBanner.svelte';
+  import SwapRequestModal from './_lib/SwapRequestModal.svelte';
   import {
     formatWeekRange,
     getWeekStart,
@@ -73,7 +78,23 @@
   const ssrFavorites = $derived(data.favorites);
   const ssrEmployeeTeamInfo = $derived(data.employeeTeamInfo);
   const ssrStaffingRules = $derived(data.staffingRules);
-  const ssrIsEmployee = $derived(data.isEmployee);
+  const ssrOrgScope = $derived(data.orgScope);
+  const ssrIsManager = $derived(data.orgScope.type !== 'none');
+  const swapEnabled = $derived(data.swapRequestsEnabled);
+
+  // Swap State
+  let swapBannerRef: { loadData: () => Promise<void> } | undefined = $state();
+  let showSwapModal = $state(false);
+  let swapTarget = $state<{
+    shiftId: number;
+    userId: number;
+    userName: string;
+    date: string;
+    shiftType: string;
+    requesterShiftId: number;
+    requesterDate: string;
+    requesterShiftType: string;
+  } | null>(null);
 
   // Build shift times map from SSR API data (tenant-configurable)
   const shiftTimesMap: ShiftTimesMap = $derived(
@@ -86,7 +107,7 @@
   $effect(() => {
     const teamId = shiftsState.selectedContext.teamId;
     const week = shiftsState.currentWeek;
-    if (teamId === null || !shiftsState.showPlanningUI || !shiftsState.isAdmin) return;
+    if (teamId === null || !shiftsState.showPlanningUI || !shiftsState.isManager) return;
     const refDate = formatDate(getWeekStart(week));
     void fetchAssignmentCounts(teamId, refDate).then((result: AssignmentCount[]) => {
       baseAssignmentCounts = result;
@@ -130,9 +151,13 @@
     ssrInitialized = true;
 
     shiftsState.setUser(ssrUser);
+    // Set org scope BEFORE setAreas — derived isManager depends on it
+    shiftsState.setOrgScope(ssrOrgScope);
     shiftsState.setAreas(ssrAreas);
 
-    if (ssrIsEmployee && ssrEmployeeTeamInfo) {
+    // Auto-select team for non-managers AND single-team managers
+    // (employeeTeamInfo is set by server for both cases)
+    if (ssrEmployeeTeamInfo) {
       shiftsState.setEmployeeTeamInfo(ssrEmployeeTeamInfo);
       shiftsState.setTeams(ssrTeams);
       shiftsState.setSelectedContext({
@@ -144,6 +169,11 @@
       });
       shiftsState.setEmployees(convertSSRTeamMembersToEmployees(ssrTeamMembers));
       shiftsState.setShowPlanningUI(true);
+    }
+
+    // Set favorites for managers
+    if (ssrIsManager && ssrFavorites.length > 0) {
+      shiftsState.setFavorites(ssrFavorites);
     }
 
     shiftsState.setIsLoading(false);
@@ -159,7 +189,10 @@
 
   onMount(() => {
     document.addEventListener('click', handleClickOutside, true);
-    if (ssrIsEmployee && ssrEmployeeTeamInfo !== null && ssrEmployeeTeamInfo.teamId !== 0) {
+    // Reset shift swap badge when visiting shifts page
+    notificationStore.resetCount('shiftSwap');
+    // Load shift plan when team was auto-selected (employees + single-team managers)
+    if (ssrEmployeeTeamInfo !== null && ssrEmployeeTeamInfo.teamId !== 0) {
       void loadShiftPlan();
     }
     return () => {
@@ -251,17 +284,50 @@
   function getShiftEmployees(dateKey: string, shiftType: string): number[] {
     return shiftsState.getShiftEmployees(dateKey, shiftType);
   }
-</script>
 
-{#snippet assignmentCountsSnippet()}
-  {#if shiftsState.isAdmin}
-    <ShiftAssignmentCounts counts={assignmentCounts} />
-  {/if}
-  <WeekNavigation
-    {weekRangeText}
-    onnavigateWeek={navigateWeek}
-  />
-{/snippet}
+  /** Handle employee card click for swap requests */
+  function handleEmployeeClick(employeeId: number, dateKey: string, shiftType: string): void {
+    if (!swapEnabled || shiftsState.currentUserId === null) return;
+
+    if (employeeId === shiftsState.currentUserId) {
+      showWarningAlert('Du kannst nicht mit dir selbst tauschen');
+      return;
+    }
+
+    const emp = shiftsState.getEmployeeById(employeeId);
+    const empName =
+      emp !== undefined ? `${emp.firstName ?? ''} ${emp.lastName ?? ''}`.trim() : `#${employeeId}`;
+
+    // Find requester's shift on the same date (any shift type)
+    const allShiftKeys = Object.keys(shiftTimesMap);
+    let requesterShiftType: string | null = null;
+    for (const st of allShiftKeys) {
+      const emps = getShiftEmployees(dateKey, st);
+      if (emps.includes(shiftsState.currentUserId)) {
+        requesterShiftType = st;
+        break;
+      }
+    }
+
+    if (requesterShiftType === null) {
+      showWarningAlert('Du hast keine Schicht an diesem Tag zum Tauschen');
+      return;
+    }
+
+    // Shift IDs are resolved by the backend via user+date
+    swapTarget = {
+      shiftId: 0,
+      userId: employeeId,
+      userName: empName,
+      date: dateKey,
+      shiftType,
+      requesterShiftId: 0,
+      requesterDate: dateKey,
+      requesterShiftType,
+    };
+    showSwapModal = true;
+  }
+</script>
 
 <svelte:head>
   <title>Schichtplanung - Assixx</title>
@@ -305,8 +371,8 @@
           </div>
         {/if}
 
-        <!-- Admin Filter Controls (Extracted Component) -->
-        {#if shiftsState.isAdmin && shiftsState.employeeTeamInfo === null}
+        <!-- Filter Controls (for managers without auto-selected team) -->
+        {#if shiftsState.isManager && shiftsState.employeeTeamInfo === null}
           <FilterDropdowns
             {labels}
             areas={shiftsState.areas}
@@ -347,8 +413,17 @@
       <!-- END card__header -->
 
       <div class="card__body">
-        <!-- Employee without Team - Error Notice -->
-        {#if ssrIsEmployee && !ssrEmployeeTeamInfo}
+        <!-- Swap Consent Banner (pending requests for current user) -->
+        {#if swapEnabled}
+          <SwapConsentBanner
+            bind:this={swapBannerRef}
+            currentUserId={shiftsState.currentUserId ?? 0}
+            {labels}
+          />
+        {/if}
+
+        <!-- Non-manager without Team - Error Notice -->
+        {#if !shiftsState.isManager && !ssrEmployeeTeamInfo}
           <div class="department-notice">
             <div class="notice-icon">
               <i class="fas fa-exclamation-triangle"></i>
@@ -358,8 +433,8 @@
           </div>
         {/if}
 
-        <!-- Admin Notice (show when filters incomplete) -->
-        {#if !shiftsState.showPlanningUI && shiftsState.isAdmin}
+        <!-- Manager Notice (show when filters incomplete) -->
+        {#if !shiftsState.showPlanningUI && shiftsState.isManager}
           <div class="department-notice">
             <div class="notice-icon"><i class="fas fa-info-circle"></i></div>
             <h3>{labels.asset} auswählen</h3>
@@ -372,31 +447,21 @@
 
         <!-- Main Planning UI -->
         {#if shiftsState.showPlanningUI}
-          <!-- Shift Control Toggles (Admin Only) -->
-          {#if shiftsState.isAdmin}
-            <ShiftControls
-              autofillConfig={shiftsState.autofillConfig}
-              standardRotationEnabled={shiftsState.standardRotationEnabled}
-              customRotationEnabled={shiftsState.customRotationEnabled}
-              isPlanLocked={shiftsState.isPlanLocked}
-              onautofillChange={(enabled: boolean) => {
-                shiftsState.setAutofillConfig({ enabled });
-              }}
-              onstandardRotationChange={(enabled: boolean) => {
-                shiftsState.setStandardRotationEnabled(enabled);
-              }}
-              oncustomRotationChange={(enabled: boolean) => {
-                shiftsState.setCustomRotationEnabled(enabled);
-              }}
-            />
+          <!-- Legend + Navigation (full width, above grid) -->
+          <ShiftScheduleLegend {labels} />
+          {#if shiftsState.isManager}
+            <ShiftAssignmentCounts counts={assignmentCounts} />
           {/if}
+          <WeekNavigation
+            {weekRangeText}
+            onnavigateWeek={navigateWeek}
+          />
 
           <!-- Main Planning Area (enthält NUR week-schedule + employee-sidebar!) -->
           <div class="main-planning-area">
             <!-- Week Schedule (Extracted Component) -->
             <ShiftScheduleGrid
               {labels}
-              afterLegend={assignmentCountsSnippet}
               {weekDates}
               {shiftTimesMap}
               weeklyNotes={shiftsState.weeklyNotes}
@@ -417,28 +482,50 @@
               onnotesChange={(notes: string) => {
                 shiftsState.setWeeklyNotes(notes);
               }}
+              onemployeeClick={swapEnabled && !shiftsState.isManager ?
+                handleEmployeeClick
+              : undefined}
             />
 
-            <!-- Employee Sidebar (Extracted Component) -->
-            {#if shiftsState.isAdmin || shiftsState.employees.length > 0}
-              <EmployeeSidebar
-                {labels}
-                employees={shiftsState.employees}
-                {weekDates}
-                canEditShifts={shiftsState.canEditShifts}
-                isEditMode={shiftsState.isEditMode}
-                currentPlanId={shiftsState.currentPlanId}
-                hasRotationHistory={shiftsState.rotationHistoryMap.size > 0}
-                {minStaffCount}
-                ondragstart={handleDragStart}
-                ondragend={handleDragEnd}
-              />
-            {/if}
+            <!-- Right Column: Controls + Sidebar -->
+            <div class="sidebar-column">
+              {#if shiftsState.isManager}
+                <ShiftControls
+                  autofillConfig={shiftsState.autofillConfig}
+                  standardRotationEnabled={shiftsState.standardRotationEnabled}
+                  customRotationEnabled={shiftsState.customRotationEnabled}
+                  isPlanLocked={shiftsState.isPlanLocked}
+                  onautofillChange={(enabled: boolean) => {
+                    shiftsState.setAutofillConfig({ enabled });
+                  }}
+                  onstandardRotationChange={(enabled: boolean) => {
+                    shiftsState.setStandardRotationEnabled(enabled);
+                  }}
+                  oncustomRotationChange={(enabled: boolean) => {
+                    shiftsState.setCustomRotationEnabled(enabled);
+                  }}
+                />
+              {/if}
+              {#if shiftsState.isManager || shiftsState.employees.length > 0}
+                <EmployeeSidebar
+                  {labels}
+                  employees={shiftsState.employees}
+                  {weekDates}
+                  canEditShifts={shiftsState.canEditShifts}
+                  isEditMode={shiftsState.isEditMode}
+                  currentPlanId={shiftsState.currentPlanId}
+                  hasRotationHistory={shiftsState.rotationHistoryMap.size > 0}
+                  {minStaffCount}
+                  ondragstart={handleDragStart}
+                  ondragend={handleDragEnd}
+                />
+              {/if}
+            </div>
           </div>
           <!-- END main-planning-area -->
 
-          <!-- Admin Actions (Extracted Component) -->
-          {#if shiftsState.isAdmin}
+          <!-- Manager Actions (Extracted Component) -->
+          {#if shiftsState.isManager}
             <AdminActions
               currentPatternId={shiftsState.currentPatternId}
               isPlanLocked={shiftsState.isPlanLocked}
@@ -495,6 +582,31 @@
       ongenerate={handleCustomRotationGenerate}
     />
   {/if}
+
+  <!-- Swap Request Modal -->
+  {#if showSwapModal && swapTarget !== null}
+    <SwapRequestModal
+      targetShiftId={swapTarget.shiftId}
+      targetUserId={swapTarget.userId}
+      targetUserName={swapTarget.userName}
+      targetShiftDate={swapTarget.date}
+      targetShiftType={swapTarget.shiftType}
+      requesterShiftId={swapTarget.requesterShiftId}
+      requesterShiftDate={swapTarget.requesterDate}
+      requesterShiftType={swapTarget.requesterShiftType}
+      onclose={() => {
+        showSwapModal = false;
+        swapTarget = null;
+      }}
+      onsubmitted={() => {
+        showSwapModal = false;
+        swapTarget = null;
+        if (swapBannerRef !== undefined) {
+          void swapBannerRef.loadData();
+        }
+      }}
+    />
+  {/if}
 {/if}
 
 <style>
@@ -503,6 +615,13 @@
     display: grid;
     grid-template-columns: 1fr 320px;
     gap: var(--spacing-8);
+    align-items: start;
+  }
+
+  .sidebar-column {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-4);
   }
 
   .department-notice {

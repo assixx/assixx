@@ -31,9 +31,13 @@ const ENTITY_UUID = '019462ab-7e2a-7000-8000-000000000001';
 // =============================================================
 
 function createMockDb() {
+  const queryFn = vi.fn().mockResolvedValue([]);
   return {
-    query: vi.fn().mockResolvedValue([]),
+    query: queryFn,
+    tenantQuery: queryFn,
+    queryAsTenant: queryFn,
     queryOne: vi.fn().mockResolvedValue(null),
+    tenantQueryOne: vi.fn().mockResolvedValue(null),
   };
 }
 type MockDb = ReturnType<typeof createMockDb>;
@@ -60,16 +64,17 @@ describe('ReadTrackingService', () => {
     it('should execute UPSERT query with correct params', async () => {
       await service.markAsRead(CONFIG, ENTITY_ID, USER_ID, TENANT_ID);
 
-      expect(mockDb.query).toHaveBeenCalledExactlyOnceWith(
+      expect(mockDb.queryAsTenant).toHaveBeenCalledExactlyOnceWith(
         expect.stringContaining('INSERT INTO work_order_read_status'),
         [ENTITY_ID, USER_ID, TENANT_ID],
+        TENANT_ID,
       );
     });
 
     it('should use ON CONFLICT for idempotent upsert', async () => {
       await service.markAsRead(CONFIG, ENTITY_ID, USER_ID, TENANT_ID);
 
-      const sql = mockDb.query.mock.calls[0]?.[0] as string;
+      const sql = mockDb.queryAsTenant.mock.calls[0]?.[0] as string;
       expect(sql).toContain('ON CONFLICT');
       expect(sql).toContain('DO UPDATE SET read_at = NOW()');
     });
@@ -77,13 +82,13 @@ describe('ReadTrackingService', () => {
     it('should include config columns in SQL', async () => {
       await service.markAsRead(CONFIG, ENTITY_ID, USER_ID, TENANT_ID);
 
-      const sql = mockDb.query.mock.calls[0]?.[0] as string;
+      const sql = mockDb.queryAsTenant.mock.calls[0]?.[0] as string;
       expect(sql).toContain(CONFIG.entityColumn);
       expect(sql).toContain(CONFIG.tableName);
     });
 
     it('should swallow DB errors (fire-and-forget)', async () => {
-      mockDb.query.mockRejectedValue(new Error('connection refused'));
+      mockDb.queryAsTenant.mockRejectedValueOnce(new Error('connection refused'));
 
       await expect(
         service.markAsRead(CONFIG, ENTITY_ID, USER_ID, TENANT_ID),
@@ -91,7 +96,7 @@ describe('ReadTrackingService', () => {
     });
 
     it('should swallow non-Error thrown values', async () => {
-      mockDb.query.mockRejectedValue('string error');
+      mockDb.queryAsTenant.mockRejectedValueOnce('string error');
 
       await expect(
         service.markAsRead(CONFIG, ENTITY_ID, USER_ID, TENANT_ID),
@@ -105,32 +110,36 @@ describe('ReadTrackingService', () => {
 
   describe('markAsReadByUuid()', () => {
     it('should resolve UUID to ID and call markAsRead', async () => {
-      mockDb.queryOne.mockResolvedValue({ id: ENTITY_ID });
+      // Call 0 = UUID lookup SELECT, Call 1 = UPSERT INSERT
+      mockDb.queryAsTenant.mockResolvedValueOnce([{ id: ENTITY_ID }]);
+      mockDb.queryAsTenant.mockResolvedValueOnce([]);
 
       await service.markAsReadByUuid(CONFIG, ENTITY_UUID, USER_ID, TENANT_ID);
 
-      expect(mockDb.queryOne).toHaveBeenCalledExactlyOnceWith(
+      expect(mockDb.queryAsTenant).toHaveBeenCalledWith(
         expect.stringContaining(`SELECT id FROM ${CONFIG.entityTable}`),
         [ENTITY_UUID, TENANT_ID],
-      );
-      expect(mockDb.query).toHaveBeenCalledExactlyOnceWith(expect.stringContaining('INSERT INTO'), [
-        ENTITY_ID,
-        USER_ID,
         TENANT_ID,
-      ]);
+      );
+      expect(mockDb.queryAsTenant).toHaveBeenCalledWith(
+        expect.stringContaining('INSERT INTO'),
+        [ENTITY_ID, USER_ID, TENANT_ID],
+        TENANT_ID,
+      );
     });
 
     it('should use correct UUID column in lookup query', async () => {
-      mockDb.queryOne.mockResolvedValue({ id: ENTITY_ID });
+      mockDb.queryAsTenant.mockResolvedValueOnce([{ id: ENTITY_ID }]);
+      mockDb.queryAsTenant.mockResolvedValueOnce([]);
 
       await service.markAsReadByUuid(CONFIG, ENTITY_UUID, USER_ID, TENANT_ID);
 
-      const sql = mockDb.queryOne.mock.calls[0]?.[0] as string;
+      const sql = mockDb.queryAsTenant.mock.calls[0]?.[0] as string;
       expect(sql).toContain(CONFIG.entityUuidColumn);
     });
 
     it('should throw NotFoundException when UUID not found', async () => {
-      mockDb.queryOne.mockResolvedValue(null);
+      mockDb.queryAsTenant.mockResolvedValueOnce([]); // empty array = not found
 
       await expect(
         service.markAsReadByUuid(CONFIG, ENTITY_UUID, USER_ID, TENANT_ID),
@@ -138,7 +147,7 @@ describe('ReadTrackingService', () => {
     });
 
     it('should include entity info in NotFoundException message', async () => {
-      mockDb.queryOne.mockResolvedValue(null);
+      mockDb.queryAsTenant.mockResolvedValueOnce([]);
 
       await expect(
         service.markAsReadByUuid(CONFIG, ENTITY_UUID, USER_ID, TENANT_ID),
@@ -146,13 +155,14 @@ describe('ReadTrackingService', () => {
     });
 
     it('should not call markAsRead when UUID not found', async () => {
-      mockDb.queryOne.mockResolvedValue(null);
+      mockDb.queryAsTenant.mockResolvedValueOnce([]);
 
       await expect(
         service.markAsReadByUuid(CONFIG, ENTITY_UUID, USER_ID, TENANT_ID),
       ).rejects.toThrow();
 
-      expect(mockDb.query).not.toHaveBeenCalled();
+      // Only the UUID lookup call, no UPSERT call
+      expect(mockDb.queryAsTenant).toHaveBeenCalledTimes(1);
     });
   });
 });

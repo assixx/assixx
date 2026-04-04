@@ -85,7 +85,7 @@ export class TpmCardsService {
 
   /** Get a single card by UUID with full JOIN data */
   async getCard(tenantId: number, cardUuid: string): Promise<TpmCard> {
-    const row = await this.db.queryOne<TpmCardJoinRow>(
+    const row = await this.db.tenantQueryOne<TpmCardJoinRow>(
       `${CARD_SELECT_SQL}
        WHERE c.uuid = $1 AND c.tenant_id = $2 AND c.is_active = ${IS_ACTIVE.ACTIVE}`,
       [cardUuid, tenantId],
@@ -487,7 +487,7 @@ export class TpmCardsService {
   ): Promise<PaginatedCards> {
     const offset = (page - 1) * pageSize;
 
-    const countResult = await this.db.queryOne<{ count: string }>(
+    const countResult = await this.db.tenantQueryOne<{ count: string }>(
       `SELECT COUNT(*) AS count FROM tpm_cards c
        LEFT JOIN tpm_maintenance_plans p ON c.plan_id = p.id
        LEFT JOIN assets m ON c.asset_id = m.id AND m.tenant_id = c.tenant_id
@@ -498,7 +498,7 @@ export class TpmCardsService {
 
     const limitIdx = baseParams.length + 1;
     const offsetIdx = baseParams.length + 2;
-    const rows = await this.db.query<TpmCardJoinRow>(
+    const rows = await this.db.tenantQuery<TpmCardJoinRow>(
       `${CARD_SELECT_SQL}
        WHERE ${whereClause}
        ORDER BY c.interval_order ASC, c.sort_order ASC

@@ -14,8 +14,10 @@ import { TpmDashboardService } from './tpm-dashboard.service.js';
 // =============================================================
 
 function createMockDb() {
+  const qf = vi.fn();
   return {
-    query: vi.fn(),
+    query: qf,
+    tenantQuery: qf,
   };
 }
 type MockDb = ReturnType<typeof createMockDb>;

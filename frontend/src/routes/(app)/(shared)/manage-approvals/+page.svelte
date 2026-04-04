@@ -30,6 +30,7 @@
     sourceEntityType: string;
     sourceUuid: string;
     title: string;
+    description: string | null;
     requestedByName: string;
     status: 'pending' | 'approved' | 'rejected';
     priority: string;
@@ -75,6 +76,7 @@
     { value: 'kvp', label: 'KVP' },
     { value: 'tpm', label: 'TPM / Wartung' },
     { value: 'vacation', label: 'Urlaub' },
+    { value: 'shift_planning', label: 'Schichtplanung' },
     { value: 'blackboard', label: 'Schwarzes Brett' },
     { value: 'calendar', label: 'Kalender' },
     { value: 'surveys', label: 'Umfragen' },
@@ -102,10 +104,16 @@
     kvp: { cssClass: 'badge--info', label: 'KVP' },
     tpm: { cssClass: 'badge--dark', label: 'TPM' },
     vacation: { cssClass: 'badge--primary', label: 'Urlaub' },
+    shift_planning: { cssClass: 'badge--dark', label: 'Schichtplanung' },
     blackboard: { cssClass: 'badge--secondary', label: 'Schwarzes Brett' },
     calendar: { cssClass: 'badge--warning', label: 'Kalender' },
     surveys: { cssClass: 'badge--success', label: 'Umfragen' },
   };
+
+  function addonLabel(code: string): string {
+    const entry = (ADDON_BADGE as Record<string, { label: string } | undefined>)[code];
+    return entry !== undefined ? entry.label : code;
+  }
 
   /** Resolves the detail page URL for a given approval source, or null if no deep-link exists */
   function resolveSourceUrl(addonCode: string, sourceUuid: string): string | null {
@@ -337,7 +345,10 @@
                     markAsRead(approval);
                   }}
                 >
-                  <td class="td--title">
+                  <td
+                    class="td--title"
+                    title={approval.title}
+                  >
                     {#if sourceUrl !== null}
                       <a
                         href={sourceUrl}
@@ -348,6 +359,9 @@
                     {/if}
                     {#if isUnread(approval)}
                       <span class="badge badge--sm badge--success ml-2">Neu</span>
+                    {/if}
+                    {#if approval.description}
+                      <span class="td--description">{approval.description}</span>
                     {/if}
                   </td>
                   <td>
@@ -454,7 +468,7 @@
       </strong>
     </p>
     <p>
-      Modul: {activeApproval.addonCode} | Angefragt von: {activeApproval.requestedByName}
+      Modul: {addonLabel(activeApproval.addonCode)} | Angefragt von: {activeApproval.requestedByName}
     </p>
     {#if activeApproval.addonCode === 'kvp' && rewardTiers.length > 0}
       <div class="reward-select">
@@ -521,7 +535,7 @@
       </strong>
     </p>
     <p>
-      Modul: {activeApproval.addonCode} | Angefragt von: {activeApproval.requestedByName}
+      Modul: {addonLabel(activeApproval.addonCode)} | Angefragt von: {activeApproval.requestedByName}
     </p>
     <div class="confirm-modal__input-group">
       <textarea
@@ -561,10 +575,16 @@
 
   .td--title {
     font-weight: 600;
-    max-width: 300px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    max-width: 350px;
+  }
+
+  .td--description {
+    display: block;
+    color: var(--color-text-secondary);
+    font-size: 0.8rem;
+    font-weight: 400;
+    font-style: italic;
+    margin-top: var(--spacing-1);
   }
 
   .action-icons {

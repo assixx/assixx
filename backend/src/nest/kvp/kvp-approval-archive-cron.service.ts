@@ -46,7 +46,7 @@ export class KvpApprovalArchiveCronService implements OnModuleInit {
 
   private async archiveFinalKvps(): Promise<void> {
     try {
-      const result = await this.db.query<{ count: string }>(
+      const result = await this.db.systemQuery<{ count: string }>(
         `WITH archived AS (
           UPDATE kvp_suggestions
           SET status = 'archived', updated_at = NOW()

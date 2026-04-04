@@ -22,10 +22,10 @@ import {
 
 function createServiceWithMock(): {
   service: AssetAvailabilityService;
-  mockDb: { query: ReturnType<typeof vi.fn> };
+  mockDb: { tenantQuery: ReturnType<typeof vi.fn> };
   mockActivityLogger: Record<string, ReturnType<typeof vi.fn>>;
 } {
-  const mockDb = { query: vi.fn() };
+  const mockDb = { tenantQuery: vi.fn() };
   const mockActivityLogger = {
     logCreate: vi.fn(),
     logUpdate: vi.fn(),
@@ -259,7 +259,7 @@ describe('AssetAvailabilityService – pure helpers', () => {
 
 describe('AssetAvailabilityService – DB-mocked methods', () => {
   let service: AssetAvailabilityService;
-  let mockDb: { query: ReturnType<typeof vi.fn> };
+  let mockDb: { tenantQuery: ReturnType<typeof vi.fn> };
   let mockActivityLogger: Record<string, ReturnType<typeof vi.fn>>;
 
   beforeEach(() => {
@@ -271,7 +271,7 @@ describe('AssetAvailabilityService – DB-mocked methods', () => {
 
   describe('getAssetAvailability', () => {
     it('returns null when no availability entry exists', async () => {
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       const result = await service.getAssetAvailability(42, 1);
 
@@ -279,7 +279,7 @@ describe('AssetAvailabilityService – DB-mocked methods', () => {
     });
 
     it('returns first availability entry', async () => {
-      mockDb.query.mockResolvedValueOnce([
+      mockDb.tenantQuery.mockResolvedValueOnce([
         {
           asset_id: 42,
           status: 'maintenance',
@@ -301,11 +301,11 @@ describe('AssetAvailabilityService – DB-mocked methods', () => {
       const result = await service.getAssetAvailabilityBatch([], 1);
 
       expect(result.size).toBe(0);
-      expect(mockDb.query).not.toHaveBeenCalled();
+      expect(mockDb.tenantQuery).not.toHaveBeenCalled();
     });
 
     it('returns map keyed by asset_id', async () => {
-      mockDb.query.mockResolvedValueOnce([
+      mockDb.tenantQuery.mockResolvedValueOnce([
         {
           asset_id: 1,
           status: 'operational',
@@ -332,7 +332,7 @@ describe('AssetAvailabilityService – DB-mocked methods', () => {
 
   describe('resolveAssetIdByUuid', () => {
     it('returns asset ID for valid UUID', async () => {
-      mockDb.query.mockResolvedValueOnce([{ id: 42 }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ id: 42 }]);
 
       const result = await service['resolveAssetIdByUuid']('valid-uuid', 1);
 
@@ -340,7 +340,7 @@ describe('AssetAvailabilityService – DB-mocked methods', () => {
     });
 
     it('throws NotFoundException when UUID not found', async () => {
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       await expect(service['resolveAssetIdByUuid']('bad-uuid', 1)).rejects.toThrow(
         NotFoundException,
@@ -350,7 +350,7 @@ describe('AssetAvailabilityService – DB-mocked methods', () => {
 
   describe('getAssetAvailabilityForDateRange', () => {
     it('returns mapped entries for overlapping date range', async () => {
-      mockDb.query.mockResolvedValueOnce([
+      mockDb.tenantQuery.mockResolvedValueOnce([
         {
           id: 1,
           asset_id: 42,
@@ -380,7 +380,7 @@ describe('AssetAvailabilityService – DB-mocked methods', () => {
     });
 
     it('returns empty array when no overlapping entries', async () => {
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       const result = await service.getAssetAvailabilityForDateRange(
         42,
@@ -395,7 +395,7 @@ describe('AssetAvailabilityService – DB-mocked methods', () => {
 
   describe('updateAvailability', () => {
     it('throws NotFoundException when asset does not exist', async () => {
-      mockDb.query.mockResolvedValueOnce([]); // assetExists returns false
+      mockDb.tenantQuery.mockResolvedValueOnce([]); // assetExists returns false
 
       await expect(
         service.updateAvailability(
@@ -411,7 +411,7 @@ describe('AssetAvailabilityService – DB-mocked methods', () => {
     });
 
     it('throws ConflictException when overlapping range exists', async () => {
-      mockDb.query
+      mockDb.tenantQuery
         .mockResolvedValueOnce([{ id: 42 }]) // assetExists
         .mockResolvedValueOnce([{ id: 1 }]); // overlapping check returns match
 
@@ -429,7 +429,7 @@ describe('AssetAvailabilityService – DB-mocked methods', () => {
     });
 
     it('inserts record when no overlap exists', async () => {
-      mockDb.query
+      mockDb.tenantQuery
         .mockResolvedValueOnce([{ id: 42 }]) // assetExists
         .mockResolvedValueOnce([]) // no overlapping
         .mockResolvedValueOnce([]); // INSERT
@@ -445,13 +445,13 @@ describe('AssetAvailabilityService – DB-mocked methods', () => {
       );
 
       expect(result.message).toBe('Asset availability updated successfully');
-      expect(mockDb.query).toHaveBeenCalledTimes(3);
+      expect(mockDb.tenantQuery).toHaveBeenCalledTimes(3);
     });
   });
 
   describe('updateAvailability – operational status (no dates)', () => {
     it('skips insert when operational status has no dates', async () => {
-      mockDb.query.mockResolvedValueOnce([{ id: 42 }]); // assetExists
+      mockDb.tenantQuery.mockResolvedValueOnce([{ id: 42 }]); // assetExists
 
       const result = await service.updateAvailability(
         42,
@@ -460,27 +460,27 @@ describe('AssetAvailabilityService – DB-mocked methods', () => {
       );
 
       expect(result.message).toBe('Asset availability updated successfully');
-      expect(mockDb.query).toHaveBeenCalledTimes(1); // only assetExists, no insert
+      expect(mockDb.tenantQuery).toHaveBeenCalledTimes(1); // only assetExists, no insert
     });
   });
 
   describe('createFromTpmPlan', () => {
     it('inserts maintenance availability entry', async () => {
-      mockDb.query.mockResolvedValueOnce([]); // INSERT
+      mockDb.tenantQuery.mockResolvedValueOnce([]); // INSERT
 
       await service.createFromTpmPlan(1, 42, '2026-04-01', '2026-04-02', 'TPM Wartung', 10);
 
-      expect(mockDb.query).toHaveBeenCalledOnce();
-      const sql = mockDb.query.mock.calls[0]?.[0] as string;
+      expect(mockDb.tenantQuery).toHaveBeenCalledOnce();
+      const sql = mockDb.tenantQuery.mock.calls[0]?.[0] as string;
       expect(sql).toContain('INSERT INTO asset_availability');
-      const params = mockDb.query.mock.calls[0]?.[1] as unknown[];
+      const params = mockDb.tenantQuery.mock.calls[0]?.[1] as unknown[];
       expect(params).toEqual([1, 42, '2026-04-01', '2026-04-02', 'TPM Wartung', 10]);
     });
   });
 
   describe('updateAvailabilityByUuid', () => {
     it('throws NotFoundException when UUID not found', async () => {
-      mockDb.query.mockResolvedValueOnce([]); // resolveAssetIdByUuid
+      mockDb.tenantQuery.mockResolvedValueOnce([]); // resolveAssetIdByUuid
 
       await expect(
         service.updateAvailabilityByUuid(
@@ -496,7 +496,7 @@ describe('AssetAvailabilityService – DB-mocked methods', () => {
     });
 
     it('resolves UUID and delegates to updateAvailability', async () => {
-      mockDb.query
+      mockDb.tenantQuery
         .mockResolvedValueOnce([{ id: 42 }]) // resolveAssetIdByUuid
         .mockResolvedValueOnce([{ id: 42 }]) // assetExists (inside updateAvailability)
         .mockResolvedValueOnce([]) // no overlapping
@@ -518,7 +518,7 @@ describe('AssetAvailabilityService – DB-mocked methods', () => {
 
   describe('updateAvailabilityEntry', () => {
     it('throws NotFoundException when entry does not exist', async () => {
-      mockDb.query.mockResolvedValueOnce([]); // findAvailabilityEntryById
+      mockDb.tenantQuery.mockResolvedValueOnce([]); // findAvailabilityEntryById
 
       await expect(
         service.updateAvailabilityEntry(
@@ -538,7 +538,7 @@ describe('AssetAvailabilityService – DB-mocked methods', () => {
       vi.useFakeTimers();
       vi.setSystemTime(new Date('2026-03-15T12:00:00Z'));
 
-      mockDb.query.mockResolvedValueOnce([
+      mockDb.tenantQuery.mockResolvedValueOnce([
         {
           id: 1,
           asset_id: 42,
@@ -573,7 +573,7 @@ describe('AssetAvailabilityService – DB-mocked methods', () => {
       vi.useFakeTimers();
       vi.setSystemTime(new Date('2026-03-15T12:00:00Z'));
 
-      mockDb.query
+      mockDb.tenantQuery
         .mockResolvedValueOnce([
           {
             id: 1,
@@ -610,7 +610,7 @@ describe('AssetAvailabilityService – DB-mocked methods', () => {
       vi.useFakeTimers();
       vi.setSystemTime(new Date('2026-03-01T12:00:00Z'));
 
-      mockDb.query
+      mockDb.tenantQuery
         .mockResolvedValueOnce([
           {
             id: 1,
@@ -639,7 +639,7 @@ describe('AssetAvailabilityService – DB-mocked methods', () => {
       );
 
       expect(result.message).toBe('Asset availability entry updated successfully');
-      expect(mockDb.query).toHaveBeenCalledTimes(2);
+      expect(mockDb.tenantQuery).toHaveBeenCalledTimes(2);
       expect(mockActivityLogger.logUpdate).toHaveBeenCalledOnce();
 
       vi.useRealTimers();
@@ -648,13 +648,13 @@ describe('AssetAvailabilityService – DB-mocked methods', () => {
 
   describe('deleteAvailabilityEntry', () => {
     it('throws NotFoundException when entry does not exist', async () => {
-      mockDb.query.mockResolvedValueOnce([]); // findAvailabilityEntryById
+      mockDb.tenantQuery.mockResolvedValueOnce([]); // findAvailabilityEntryById
 
       await expect(service.deleteAvailabilityEntry(999, 1, 10)).rejects.toThrow(NotFoundException);
     });
 
     it('deletes entry and logs activity', async () => {
-      mockDb.query
+      mockDb.tenantQuery
         .mockResolvedValueOnce([
           {
             id: 1,
@@ -674,7 +674,7 @@ describe('AssetAvailabilityService – DB-mocked methods', () => {
       const result = await service.deleteAvailabilityEntry(1, 1, 10);
 
       expect(result.message).toBe('Asset availability entry deleted successfully');
-      expect(mockDb.query).toHaveBeenCalledTimes(2);
+      expect(mockDb.tenantQuery).toHaveBeenCalledTimes(2);
       expect(mockActivityLogger.logDelete).toHaveBeenCalledWith(
         1,
         10,
@@ -692,7 +692,7 @@ describe('AssetAvailabilityService – DB-mocked methods', () => {
 
   describe('getAvailabilityHistoryByUuid', () => {
     it('throws NotFoundException when asset UUID not found', async () => {
-      mockDb.query.mockResolvedValueOnce([]); // findAssetBasicInfoByUuid
+      mockDb.tenantQuery.mockResolvedValueOnce([]); // findAssetBasicInfoByUuid
 
       await expect(service.getAvailabilityHistoryByUuid('nonexistent-uuid', 1)).rejects.toThrow(
         NotFoundException,
@@ -700,7 +700,7 @@ describe('AssetAvailabilityService – DB-mocked methods', () => {
     });
 
     it('returns history with asset info and entries', async () => {
-      mockDb.query
+      mockDb.tenantQuery
         .mockResolvedValueOnce([{ id: 42, uuid: 'abc-123', name: 'CNC Mill A1' }]) // findAssetBasicInfoByUuid
         .mockResolvedValueOnce([
           {
@@ -731,7 +731,7 @@ describe('AssetAvailabilityService – DB-mocked methods', () => {
     });
 
     it('passes year and month filters through', async () => {
-      mockDb.query
+      mockDb.tenantQuery
         .mockResolvedValueOnce([{ id: 42, uuid: 'abc-123', name: 'CNC Mill A1' }]) // findAssetBasicInfoByUuid
         .mockResolvedValueOnce([]); // history query
 

@@ -24,7 +24,7 @@ vi.mock('uuid', () => ({
 // =============================================================
 
 function createMockDb() {
-  return { query: vi.fn() };
+  return { tenantQuery: vi.fn(), tenantQueryOne: vi.fn().mockResolvedValue(null) };
 }
 
 function createMockActivityLogger() {
@@ -66,7 +66,7 @@ describe('CalendarCreationService', () => {
 
   describe('insertEvent', () => {
     it('should insert event and return id', async () => {
-      mockDb.query.mockResolvedValueOnce([{ id: 42 }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ id: 42 }]);
 
       const result = await service.insertEvent(
         makeCreateDto() as never,
@@ -79,11 +79,11 @@ describe('CalendarCreationService', () => {
       );
 
       expect(result).toBe(42);
-      expect(mockDb.query).toHaveBeenCalledTimes(1);
+      expect(mockDb.tenantQuery).toHaveBeenCalledTimes(1);
     });
 
     it('should pass description as null when undefined', async () => {
-      mockDb.query.mockResolvedValueOnce([{ id: 1 }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ id: 1 }]);
 
       await service.insertEvent(
         makeCreateDto({ description: undefined }) as never,
@@ -95,12 +95,12 @@ describe('CalendarCreationService', () => {
         null,
       );
 
-      const params = mockDb.query.mock.calls[0]?.[1] as unknown[];
+      const params = mockDb.tenantQuery.mock.calls[0]?.[1] as unknown[];
       expect(params[4]).toBeNull();
     });
 
     it('should convert allDay boolean to integer', async () => {
-      mockDb.query.mockResolvedValueOnce([{ id: 1 }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ id: 1 }]);
 
       await service.insertEvent(
         makeCreateDto({ allDay: true }) as never,
@@ -112,12 +112,12 @@ describe('CalendarCreationService', () => {
         null,
       );
 
-      const params = mockDb.query.mock.calls[0]?.[1] as unknown[];
+      const params = mockDb.tenantQuery.mock.calls[0]?.[1] as unknown[];
       expect(params[8]).toBe(1);
     });
 
     it('should throw when insert returns no id', async () => {
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       await expect(
         service.insertEvent(makeCreateDto() as never, 10, 5, new Date(), new Date(), null, null),
@@ -131,20 +131,20 @@ describe('CalendarCreationService', () => {
 
   describe('addEventAttendee', () => {
     it('should skip if already attendee', async () => {
-      mockDb.query.mockResolvedValueOnce([{ user_id: 5 }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ user_id: 5 }]);
 
       await service.addEventAttendee(42, 5, 10);
 
-      expect(mockDb.query).toHaveBeenCalledTimes(1);
+      expect(mockDb.tenantQuery).toHaveBeenCalledTimes(1);
     });
 
     it('should insert attendee if not existing', async () => {
-      mockDb.query.mockResolvedValueOnce([]);
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       await service.addEventAttendee(42, 5, 10);
 
-      expect(mockDb.query).toHaveBeenCalledTimes(2);
+      expect(mockDb.tenantQuery).toHaveBeenCalledTimes(2);
     });
   });
 
@@ -155,25 +155,25 @@ describe('CalendarCreationService', () => {
   describe('addAttendeesToEvent', () => {
     it('should add creator only when no attendeeIds', async () => {
       // addEventAttendee for creator: check + insert
-      mockDb.query.mockResolvedValueOnce([]);
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       await service.addAttendeesToEvent(42, 5, undefined, 10);
 
-      expect(mockDb.query).toHaveBeenCalledTimes(2);
+      expect(mockDb.tenantQuery).toHaveBeenCalledTimes(2);
     });
 
     it('should add creator and additional attendees', async () => {
       // creator: check + insert
-      mockDb.query.mockResolvedValueOnce([]);
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
       // attendee 1: check + insert
-      mockDb.query.mockResolvedValueOnce([]);
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       await service.addAttendeesToEvent(42, 5, [8], 10);
 
-      expect(mockDb.query).toHaveBeenCalledTimes(4);
+      expect(mockDb.tenantQuery).toHaveBeenCalledTimes(4);
     });
   });
 
@@ -191,7 +191,7 @@ describe('CalendarCreationService', () => {
       const durationMs = 3600000; // 1h
 
       // For each child (2 children): insertEvent + addAttendeesToEvent (creator check + insert)
-      mockDb.query
+      mockDb.tenantQuery
         .mockResolvedValueOnce([{ id: 100 }]) // child 1 insertEvent
         .mockResolvedValueOnce([]) // child 1 attendee check
         .mockResolvedValueOnce([]) // child 1 attendee insert
@@ -202,7 +202,7 @@ describe('CalendarCreationService', () => {
       await service.createChildEvents(dates, makeCreateDto() as never, 10, 5, durationMs, 1);
 
       // 2 insertEvent calls (index 1 and 2, skipping index 0)
-      const insertCalls = mockDb.query.mock.calls.filter(
+      const insertCalls = mockDb.tenantQuery.mock.calls.filter(
         (call: unknown[]) =>
           typeof call[0] === 'string' &&
           (call[0] as string).includes('INSERT INTO calendar_events'),
@@ -220,7 +220,7 @@ describe('CalendarCreationService', () => {
         1,
       );
 
-      expect(mockDb.query).not.toHaveBeenCalled();
+      expect(mockDb.tenantQuery).not.toHaveBeenCalled();
     });
   });
 

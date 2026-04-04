@@ -30,10 +30,13 @@ vi.mock('uuid', () => ({
 
 function createServiceWithMock(): {
   service: ChatConversationsService;
-  mockDb: { query: ReturnType<typeof vi.fn> };
+  mockDb: { tenantQuery: ReturnType<typeof vi.fn>; tenantQueryOne: ReturnType<typeof vi.fn> };
   mockCls: { get: ReturnType<typeof vi.fn> };
 } {
-  const mockDb = { query: vi.fn() };
+  const mockDb = {
+    tenantQuery: vi.fn(),
+    tenantQueryOne: vi.fn().mockResolvedValue(null),
+  };
   const mockCls = {
     get: vi.fn((key: string) => {
       if (key === 'tenantId') return 1;
@@ -57,7 +60,7 @@ function createServiceWithMock(): {
 
 describe('ChatConversationsService – context helpers', () => {
   it('throws ForbiddenException when tenantId is undefined', () => {
-    const mockDb = { query: vi.fn() };
+    const mockDb = { tenantQuery: vi.fn(), tenantQueryOne: vi.fn().mockResolvedValue(null) };
     const mockCls = { get: vi.fn().mockReturnValue(undefined) };
     const service = new ChatConversationsService(
       mockCls as unknown as ClsService,
@@ -68,7 +71,7 @@ describe('ChatConversationsService – context helpers', () => {
   });
 
   it('throws ForbiddenException when userId is undefined', () => {
-    const mockDb = { query: vi.fn() };
+    const mockDb = { tenantQuery: vi.fn(), tenantQueryOne: vi.fn().mockResolvedValue(null) };
     const mockCls = { get: vi.fn().mockReturnValue(undefined) };
     const service = new ChatConversationsService(
       mockCls as unknown as ClsService,
@@ -85,7 +88,7 @@ describe('ChatConversationsService – context helpers', () => {
 
 describe('ChatConversationsService – DB-mocked methods', () => {
   let service: ChatConversationsService;
-  let mockDb: { query: ReturnType<typeof vi.fn> };
+  let mockDb: { tenantQuery: ReturnType<typeof vi.fn>; tenantQueryOne: ReturnType<typeof vi.fn> };
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -100,8 +103,8 @@ describe('ChatConversationsService – DB-mocked methods', () => {
 
   describe('getConversations', () => {
     it('should return empty data with pagination when no conversations', async () => {
-      mockDb.query.mockResolvedValueOnce([{ count: '0' }]); // getConversationCount
-      mockDb.query.mockResolvedValueOnce([]); // fetchConversationsPage
+      mockDb.tenantQuery.mockResolvedValueOnce([{ count: '0' }]); // getConversationCount
+      mockDb.tenantQuery.mockResolvedValueOnce([]); // fetchConversationsPage
 
       const result = await service.getConversations({ page: 1, limit: 20 });
 
@@ -122,7 +125,7 @@ describe('ChatConversationsService – DB-mocked methods', () => {
         last_message_is_e2e: false,
       };
 
-      mockDb.query
+      mockDb.tenantQuery
         .mockResolvedValueOnce([{ count: '1' }]) // count
         .mockResolvedValueOnce([convRow]) // conversations
         .mockResolvedValueOnce([
@@ -164,7 +167,7 @@ describe('ChatConversationsService – DB-mocked methods', () => {
         last_message_is_e2e: false,
       };
 
-      mockDb.query
+      mockDb.tenantQuery
         .mockResolvedValueOnce([{ count: '1' }])
         .mockResolvedValueOnce([convRow])
         .mockResolvedValueOnce([
@@ -193,13 +196,13 @@ describe('ChatConversationsService – DB-mocked methods', () => {
 
   describe('getConversation', () => {
     it('throws NotFoundException when user is not participant', async () => {
-      mockDb.query.mockResolvedValueOnce([]); // participant check
+      mockDb.tenantQuery.mockResolvedValueOnce([]); // participant check
 
       await expect(service.getConversation(999)).rejects.toThrow(NotFoundException);
     });
 
     it('throws NotFoundException when conversation does not exist', async () => {
-      mockDb.query
+      mockDb.tenantQuery
         .mockResolvedValueOnce([{ user_id: 5 }]) // participant check OK
         .mockResolvedValueOnce([]); // conversation not found
 
@@ -207,7 +210,7 @@ describe('ChatConversationsService – DB-mocked methods', () => {
     });
 
     it('should return conversation with participants', async () => {
-      mockDb.query
+      mockDb.tenantQuery
         .mockResolvedValueOnce([{ user_id: 5 }]) // participant check
         .mockResolvedValueOnce([
           // conversation
@@ -246,7 +249,7 @@ describe('ChatConversationsService – DB-mocked methods', () => {
     it('sets participant status to online when user is present', async () => {
       vi.mocked(mockPresenceStore.getOnlineUserIds).mockReturnValueOnce(new Set([5]));
 
-      mockDb.query
+      mockDb.tenantQuery
         .mockResolvedValueOnce([{ user_id: 5 }])
         .mockResolvedValueOnce([
           {
@@ -293,24 +296,24 @@ describe('ChatConversationsService – DB-mocked methods', () => {
 
   describe('deleteConversation', () => {
     it('throws ForbiddenException when user is not participant', async () => {
-      mockDb.query.mockResolvedValueOnce([]); // participant not found
+      mockDb.tenantQuery.mockResolvedValueOnce([]); // participant not found
 
       await expect(service.deleteConversation(999)).rejects.toThrow(ForbiddenException);
     });
 
     it('soft-deletes conversation for participant', async () => {
-      mockDb.query
+      mockDb.tenantQuery
         .mockResolvedValueOnce([{ id: 1, deleted_at: null }]) // participant found
         .mockResolvedValueOnce([]); // UPDATE deleted_at
 
       const result = await service.deleteConversation(1);
 
       expect(result.message).toBe('Conversation deleted successfully');
-      expect(mockDb.query).toHaveBeenCalledTimes(2);
+      expect(mockDb.tenantQuery).toHaveBeenCalledTimes(2);
     });
 
     it('is idempotent for already-deleted conversation', async () => {
-      mockDb.query
+      mockDb.tenantQuery
         .mockResolvedValueOnce([{ id: 1, deleted_at: new Date() }]) // already deleted
         .mockResolvedValueOnce([]); // UPDATE deleted_at again
 
@@ -326,13 +329,13 @@ describe('ChatConversationsService – DB-mocked methods', () => {
 
   describe('verifyConversationAccess', () => {
     it('throws ForbiddenException when not participant', async () => {
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       await expect(service.verifyConversationAccess(1, 5, 1)).rejects.toThrow(ForbiddenException);
     });
 
     it('succeeds when user is participant', async () => {
-      mockDb.query.mockResolvedValueOnce([{ user_id: 5 }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ user_id: 5 }]);
 
       await expect(service.verifyConversationAccess(1, 5, 1)).resolves.toBeUndefined();
     });
@@ -344,7 +347,7 @@ describe('ChatConversationsService – DB-mocked methods', () => {
 
   describe('getConversationRecipientIds', () => {
     it('returns participant IDs excluding sender', async () => {
-      mockDb.query.mockResolvedValueOnce([{ user_id: 1 }, { user_id: 5 }, { user_id: 10 }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ user_id: 1 }, { user_id: 5 }, { user_id: 10 }]);
 
       const result = await service.getConversationRecipientIds(1, 5);
 
@@ -352,7 +355,7 @@ describe('ChatConversationsService – DB-mocked methods', () => {
     });
 
     it('returns empty array when only sender is participant', async () => {
-      mockDb.query.mockResolvedValueOnce([{ user_id: 5 }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ user_id: 5 }]);
 
       const result = await service.getConversationRecipientIds(1, 5);
 
@@ -366,11 +369,11 @@ describe('ChatConversationsService – DB-mocked methods', () => {
 
   describe('updateConversationTimestamp', () => {
     it('executes UPDATE query', async () => {
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       await service.updateConversationTimestamp(1, 1);
 
-      expect(mockDb.query).toHaveBeenCalledOnce();
+      expect(mockDb.tenantQuery).toHaveBeenCalledOnce();
     });
   });
 
@@ -380,7 +383,7 @@ describe('ChatConversationsService – DB-mocked methods', () => {
 
   describe('getConversationCount (private)', () => {
     it('parses count string to number', async () => {
-      mockDb.query.mockResolvedValueOnce([{ count: '42' }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ count: '42' }]);
 
       const result = await service['getConversationCount'](1, 5);
 
@@ -388,7 +391,7 @@ describe('ChatConversationsService – DB-mocked methods', () => {
     });
 
     it('defaults to 0 when count is null', async () => {
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       const result = await service['getConversationCount'](1, 5);
 
@@ -401,11 +404,11 @@ describe('ChatConversationsService – DB-mocked methods', () => {
       const result = await service['getUnreadCounts']([], 5);
 
       expect(result.size).toBe(0);
-      expect(mockDb.query).not.toHaveBeenCalled();
+      expect(mockDb.tenantQuery).not.toHaveBeenCalled();
     });
 
     it('maps unread counts by conversation ID', async () => {
-      mockDb.query.mockResolvedValueOnce([
+      mockDb.tenantQuery.mockResolvedValueOnce([
         { conversation_id: 10, unread_count: '3' },
         { conversation_id: 20, unread_count: '7' },
       ]);
@@ -421,11 +424,11 @@ describe('ChatConversationsService – DB-mocked methods', () => {
     it('should skip validation for empty array', async () => {
       await service['validateParticipantIds']([], 1);
 
-      expect(mockDb.query).not.toHaveBeenCalled();
+      expect(mockDb.tenantQuery).not.toHaveBeenCalled();
     });
 
     it('should throw BadRequestException for invalid IDs', async () => {
-      mockDb.query.mockResolvedValueOnce([{ id: 1 }]); // only 1 valid
+      mockDb.tenantQuery.mockResolvedValueOnce([{ id: 1 }]); // only 1 valid
 
       await expect(service['validateParticipantIds']([1, 99], 1)).rejects.toThrow(
         BadRequestException,
@@ -433,7 +436,7 @@ describe('ChatConversationsService – DB-mocked methods', () => {
     });
 
     it('should pass when all IDs are valid', async () => {
-      mockDb.query.mockResolvedValueOnce([{ id: 1 }, { id: 2 }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ id: 1 }, { id: 2 }]);
 
       await expect(service['validateParticipantIds']([1, 2], 1)).resolves.toBeUndefined();
     });
@@ -441,7 +444,7 @@ describe('ChatConversationsService – DB-mocked methods', () => {
 
   describe('insertConversation (private)', () => {
     it('should return conversation ID on success', async () => {
-      mockDb.query.mockResolvedValueOnce([{ id: 42 }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ id: 42 }]);
 
       const result = await service['insertConversation'](1, 'Test', true);
 
@@ -449,7 +452,7 @@ describe('ChatConversationsService – DB-mocked methods', () => {
     });
 
     it('should throw BadRequestException when INSERT returns empty', async () => {
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       await expect(service['insertConversation'](1, undefined, false)).rejects.toThrow(
         BadRequestException,
@@ -466,19 +469,19 @@ describe('ChatConversationsService – DB-mocked methods', () => {
       const sendInitialMessage = vi.fn();
 
       // validateParticipantIds
-      mockDb.query.mockResolvedValueOnce([{ id: 2 }, { id: 3 }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ id: 2 }, { id: 3 }]);
       // insertConversation
-      mockDb.query.mockResolvedValueOnce([{ id: 42 }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ id: 42 }]);
       // addConversationParticipants: creator
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
       // addConversationParticipants: participant 2
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
       // addConversationParticipants: participant 3
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
       // getConversation -> participant check
-      mockDb.query.mockResolvedValueOnce([{ user_id: 5 }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ user_id: 5 }]);
       // getConversation -> conversation
-      mockDb.query.mockResolvedValueOnce([
+      mockDb.tenantQuery.mockResolvedValueOnce([
         {
           id: 42,
           uuid: 'mock-uuid-v7',
@@ -489,7 +492,7 @@ describe('ChatConversationsService – DB-mocked methods', () => {
         },
       ]);
       // getConversation -> participants
-      mockDb.query.mockResolvedValueOnce([
+      mockDb.tenantQuery.mockResolvedValueOnce([
         {
           conversation_id: 42,
           user_id: 5,
@@ -515,13 +518,13 @@ describe('ChatConversationsService – DB-mocked methods', () => {
       const sendInitialMessage = vi.fn();
 
       // findExisting1to1 -> found
-      mockDb.query.mockResolvedValueOnce([{ id: 99 }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ id: 99 }]);
       // reset soft-delete
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
       // getConversation -> participant check
-      mockDb.query.mockResolvedValueOnce([{ user_id: 5 }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ user_id: 5 }]);
       // getConversation -> conversation
-      mockDb.query.mockResolvedValueOnce([
+      mockDb.tenantQuery.mockResolvedValueOnce([
         {
           id: 99,
           uuid: 'existing-uuid',
@@ -532,7 +535,7 @@ describe('ChatConversationsService – DB-mocked methods', () => {
         },
       ]);
       // getConversation -> participants
-      mockDb.query.mockResolvedValueOnce([
+      mockDb.tenantQuery.mockResolvedValueOnce([
         {
           conversation_id: 99,
           user_id: 5,
@@ -554,19 +557,19 @@ describe('ChatConversationsService – DB-mocked methods', () => {
       const sendInitialMessage = vi.fn().mockResolvedValueOnce(undefined);
 
       // findExisting1to1 (1:1 with single participant -> checks existing)
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
       // validateParticipantIds
-      mockDb.query.mockResolvedValueOnce([{ id: 2 }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ id: 2 }]);
       // insertConversation
-      mockDb.query.mockResolvedValueOnce([{ id: 50 }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ id: 50 }]);
       // addConversationParticipants: creator + 1 participant
-      mockDb.query.mockResolvedValueOnce([]);
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
       // sendInitialMessage called here
       // getConversation -> participant check
-      mockDb.query.mockResolvedValueOnce([{ user_id: 5 }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ user_id: 5 }]);
       // getConversation -> conversation
-      mockDb.query.mockResolvedValueOnce([
+      mockDb.tenantQuery.mockResolvedValueOnce([
         {
           id: 50,
           uuid: 'new-uuid',
@@ -577,7 +580,7 @@ describe('ChatConversationsService – DB-mocked methods', () => {
         },
       ]);
       // getConversation -> participants
-      mockDb.query.mockResolvedValueOnce([
+      mockDb.tenantQuery.mockResolvedValueOnce([
         {
           conversation_id: 50,
           user_id: 5,
@@ -602,17 +605,17 @@ describe('ChatConversationsService – DB-mocked methods', () => {
       const sendInitialMessage = vi.fn();
 
       // findExisting1to1 → not found
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
       // validateParticipantIds
-      mockDb.query.mockResolvedValueOnce([{ id: 2 }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ id: 2 }]);
       // insertConversation
-      mockDb.query.mockResolvedValueOnce([{ id: 60 }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ id: 60 }]);
       // addConversationParticipants: creator + 1
-      mockDb.query.mockResolvedValueOnce([]);
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
       // getConversation chain
-      mockDb.query.mockResolvedValueOnce([{ user_id: 5 }]);
-      mockDb.query.mockResolvedValueOnce([
+      mockDb.tenantQuery.mockResolvedValueOnce([{ user_id: 5 }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([
         {
           id: 60,
           uuid: 'u',
@@ -622,7 +625,7 @@ describe('ChatConversationsService – DB-mocked methods', () => {
           updated_at: new Date(),
         },
       ]);
-      mockDb.query.mockResolvedValueOnce([
+      mockDb.tenantQuery.mockResolvedValueOnce([
         {
           conversation_id: 60,
           user_id: 5,
@@ -647,12 +650,12 @@ describe('ChatConversationsService – DB-mocked methods', () => {
       const sendInitialMessage = vi.fn();
 
       // findExisting1to1 → found
-      mockDb.query.mockResolvedValueOnce([{ id: 77 }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ id: 77 }]);
       // reset soft-delete
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
       // getConversation chain
-      mockDb.query.mockResolvedValueOnce([{ user_id: 5 }]);
-      mockDb.query.mockResolvedValueOnce([
+      mockDb.tenantQuery.mockResolvedValueOnce([{ user_id: 5 }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([
         {
           id: 77,
           uuid: 'u',
@@ -662,7 +665,7 @@ describe('ChatConversationsService – DB-mocked methods', () => {
           updated_at: new Date(),
         },
       ]);
-      mockDb.query.mockResolvedValueOnce([
+      mockDb.tenantQuery.mockResolvedValueOnce([
         {
           conversation_id: 77,
           user_id: 5,
@@ -687,13 +690,13 @@ describe('ChatConversationsService – DB-mocked methods', () => {
       const sendInitialMessage = vi.fn().mockResolvedValueOnce(undefined);
 
       // findExisting1to1 -> found
-      mockDb.query.mockResolvedValueOnce([{ id: 77 }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ id: 77 }]);
       // reset soft-delete
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
       // getConversation -> participant check
-      mockDb.query.mockResolvedValueOnce([{ user_id: 5 }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ user_id: 5 }]);
       // getConversation -> conversation
-      mockDb.query.mockResolvedValueOnce([
+      mockDb.tenantQuery.mockResolvedValueOnce([
         {
           id: 77,
           uuid: 'existing-uuid',
@@ -704,7 +707,7 @@ describe('ChatConversationsService – DB-mocked methods', () => {
         },
       ]);
       // getConversation -> participants
-      mockDb.query.mockResolvedValueOnce([
+      mockDb.tenantQuery.mockResolvedValueOnce([
         {
           conversation_id: 77,
           user_id: 5,
@@ -745,7 +748,7 @@ describe('ChatConversationsService – DB-mocked methods', () => {
 
   describe('findExisting1to1 (private)', () => {
     it('should return conversation ID when found', async () => {
-      mockDb.query.mockResolvedValueOnce([{ id: 99 }]);
+      mockDb.tenantQuery.mockResolvedValueOnce([{ id: 99 }]);
 
       const result = await service['findExisting1to1'](1, 5, 10);
 
@@ -753,7 +756,7 @@ describe('ChatConversationsService – DB-mocked methods', () => {
     });
 
     it('should return null when not found', async () => {
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       const result = await service['findExisting1to1'](1, 5, 10);
 

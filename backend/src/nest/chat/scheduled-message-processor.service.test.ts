@@ -34,7 +34,7 @@ vi.mock('../../utils/event-bus.js', () => ({
 // =============================================================
 
 function createMockDb() {
-  return { query: vi.fn() };
+  return { query: vi.fn(), systemQuery: vi.fn() };
 }
 
 function makeScheduledRow(overrides: Record<string, unknown> = {}) {
@@ -76,25 +76,25 @@ describe('ScheduledMessageProcessorService', () => {
 
   describe('processAtMinute', () => {
     it('should do nothing when no due messages', async () => {
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.systemQuery.mockResolvedValueOnce([]);
 
       await service.processAtMinute();
 
-      expect(mockDb.query).toHaveBeenCalledTimes(1);
+      expect(mockDb.systemQuery).toHaveBeenCalledTimes(1);
     });
 
     it('should process due messages successfully', async () => {
       const scheduled = makeScheduledRow();
       // getDueMessages
-      mockDb.query.mockResolvedValueOnce([scheduled]);
+      mockDb.systemQuery.mockResolvedValueOnce([scheduled]);
       // INSERT message RETURNING id
-      mockDb.query.mockResolvedValueOnce([{ id: 100 }]);
+      mockDb.systemQuery.mockResolvedValueOnce([{ id: 100 }]);
       // UPDATE conversation
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.systemQuery.mockResolvedValueOnce([]);
       // UPDATE scheduled_messages (mark sent)
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.systemQuery.mockResolvedValueOnce([]);
       // GET recipients
-      mockDb.query.mockResolvedValueOnce([{ user_id: 8 }, { user_id: 9 }]);
+      mockDb.systemQuery.mockResolvedValueOnce([{ user_id: 8 }, { user_id: 9 }]);
 
       await service.processAtMinute();
 
@@ -113,11 +113,11 @@ describe('ScheduledMessageProcessorService', () => {
 
     it('should use empty preview for E2E messages', async () => {
       const scheduled = makeScheduledRow({ is_e2e: true, content: null });
-      mockDb.query.mockResolvedValueOnce([scheduled]); // getDueMessages
-      mockDb.query.mockResolvedValueOnce([{ id: 200 }]); // INSERT
-      mockDb.query.mockResolvedValueOnce([]); // UPDATE conversation
-      mockDb.query.mockResolvedValueOnce([]); // UPDATE scheduled (mark sent)
-      mockDb.query.mockResolvedValueOnce([{ user_id: 8 }]); // recipients
+      mockDb.systemQuery.mockResolvedValueOnce([scheduled]); // getDueMessages
+      mockDb.systemQuery.mockResolvedValueOnce([{ id: 200 }]); // INSERT
+      mockDb.systemQuery.mockResolvedValueOnce([]); // UPDATE conversation
+      mockDb.systemQuery.mockResolvedValueOnce([]); // UPDATE scheduled (mark sent)
+      mockDb.systemQuery.mockResolvedValueOnce([{ user_id: 8 }]); // recipients
 
       await service.processAtMinute();
 
@@ -126,11 +126,11 @@ describe('ScheduledMessageProcessorService', () => {
 
     it('should fallback to empty preview when content is null and not E2E', async () => {
       const scheduled = makeScheduledRow({ content: null, is_e2e: false });
-      mockDb.query.mockResolvedValueOnce([scheduled]); // getDueMessages
-      mockDb.query.mockResolvedValueOnce([{ id: 201 }]); // INSERT
-      mockDb.query.mockResolvedValueOnce([]); // UPDATE conversation
-      mockDb.query.mockResolvedValueOnce([]); // UPDATE scheduled (mark sent)
-      mockDb.query.mockResolvedValueOnce([{ user_id: 8 }]); // recipients
+      mockDb.systemQuery.mockResolvedValueOnce([scheduled]); // getDueMessages
+      mockDb.systemQuery.mockResolvedValueOnce([{ id: 201 }]); // INSERT
+      mockDb.systemQuery.mockResolvedValueOnce([]); // UPDATE conversation
+      mockDb.systemQuery.mockResolvedValueOnce([]); // UPDATE scheduled (mark sent)
+      mockDb.systemQuery.mockResolvedValueOnce([{ user_id: 8 }]); // recipients
 
       await service.processAtMinute();
 
@@ -140,9 +140,9 @@ describe('ScheduledMessageProcessorService', () => {
     it('should handle send failure gracefully (per-message catch)', async () => {
       const scheduled = makeScheduledRow();
       // getDueMessages
-      mockDb.query.mockResolvedValueOnce([scheduled]);
+      mockDb.systemQuery.mockResolvedValueOnce([scheduled]);
       // INSERT fails
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.systemQuery.mockResolvedValueOnce([]);
 
       // Should not throw — error is caught per-message
       await expect(service.processAtMinute()).resolves.toBeUndefined();
@@ -155,11 +155,11 @@ describe('ScheduledMessageProcessorService', () => {
 
   describe('onModuleInit', () => {
     it('should process messages on startup', async () => {
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.systemQuery.mockResolvedValueOnce([]);
 
       await service.onModuleInit();
 
-      expect(mockDb.query).toHaveBeenCalledTimes(1);
+      expect(mockDb.systemQuery).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -171,7 +171,7 @@ describe('ScheduledMessageProcessorService', () => {
     it('should skip processing if already in progress', async () => {
       // Simulate slow processing by never resolving
       let resolveFirst: (() => void) | undefined;
-      mockDb.query.mockImplementationOnce(
+      mockDb.systemQuery.mockImplementationOnce(
         () =>
           new Promise<unknown[]>((resolve) => {
             resolveFirst = () => resolve([]);
@@ -185,7 +185,7 @@ describe('ScheduledMessageProcessorService', () => {
       await service.processAtMinute();
 
       // Only 1 query call (first one still pending, second skipped entirely)
-      expect(mockDb.query).toHaveBeenCalledTimes(1);
+      expect(mockDb.systemQuery).toHaveBeenCalledTimes(1);
 
       // Complete first call
       resolveFirst?.();

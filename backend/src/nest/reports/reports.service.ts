@@ -262,7 +262,7 @@ export class ReportsService {
    * Get employee metrics (current snapshot, not date-filtered)
    */
   private async getEmployeeMetrics(tenantId: number): Promise<EmployeeMetrics> {
-    const rows = await this.db.query<DbMetricsRow>(
+    const rows = await this.db.tenantQuery<DbMetricsRow>(
       `
       SELECT
         COUNT(*) as total,
@@ -299,7 +299,7 @@ export class ReportsService {
    * Get department metrics (current snapshot, not date-filtered)
    */
   private async getDepartmentMetrics(tenantId: number): Promise<DepartmentMetrics> {
-    const rows = await this.db.query<DbMetricsRow>(
+    const rows = await this.db.tenantQuery<DbMetricsRow>(
       `
       SELECT
         COUNT(DISTINCT d.id) as total,
@@ -335,7 +335,7 @@ export class ReportsService {
     dateFrom: string,
     dateTo: string,
   ): Promise<ShiftMetrics> {
-    const rows = await this.db.query<DbMetricsRow>(
+    const rows = await this.db.tenantQuery<DbMetricsRow>(
       `
       SELECT
         COUNT(*) as total_scheduled
@@ -364,7 +364,7 @@ export class ReportsService {
     dateFrom: string,
     dateTo: string,
   ): Promise<KvpMetrics> {
-    const rows = await this.db.query<DbMetricsRow>(
+    const rows = await this.db.tenantQuery<DbMetricsRow>(
       `
       SELECT
         COUNT(*) as total_suggestions,
@@ -400,7 +400,7 @@ export class ReportsService {
     dateFrom: string,
     dateTo: string,
   ): Promise<SurveyMetrics> {
-    const rows = await this.db.query<DbMetricsRow>(
+    const rows = await this.db.tenantQuery<DbMetricsRow>(
       `
       SELECT
         COUNT(DISTINCT s.id) as active_surveys,
@@ -444,7 +444,7 @@ export class ReportsService {
     dateTo: string,
   ): Promise<KvpParticipationMetrics> {
     // SECURITY: Only count ACTIVE employees (is_active = 1)
-    const rows = await this.db.query<DbMetricsRow>(
+    const rows = await this.db.tenantQuery<DbMetricsRow>(
       `
       SELECT
         COUNT(DISTINCT submitted_by) as participants,
@@ -517,7 +517,7 @@ export class ReportsService {
     const to = dateTo ?? this.getDefaultDateTo();
 
     const [headcountTrend, kvpParticipation] = await Promise.all([
-      this.db.query<DbHeadcountRow>(
+      this.db.tenantQuery<DbHeadcountRow>(
         `
         SELECT
           DATE(created_at) as date,
@@ -561,7 +561,7 @@ export class ReportsService {
     const from = dateFrom ?? this.getDefaultDateFrom();
     const to = dateTo ?? this.getDefaultDateTo();
 
-    const rows = await this.db.query<DbDepartmentRow>(
+    const rows = await this.db.tenantQuery<DbDepartmentRow>(
       `
       SELECT
         d.id as department_id,
@@ -674,7 +674,7 @@ export class ReportsService {
    */
   private async getShiftSummary(filters: ReportFilters): Promise<DbMetricsRow> {
     const { conditions, params } = this.buildShiftQueryConditions(filters);
-    const rows = await this.db.query<DbMetricsRow>(
+    const rows = await this.db.tenantQuery<DbMetricsRow>(
       `
       SELECT
         COUNT(*) as total_shifts,
@@ -695,7 +695,7 @@ export class ReportsService {
     from: string,
     to: string,
   ): Promise<DbShiftTypeRow[]> {
-    return await this.db.query<DbShiftTypeRow>(
+    return await this.db.tenantQuery<DbShiftTypeRow>(
       `
       SELECT
         type as shift_type,
@@ -776,7 +776,7 @@ export class ReportsService {
       params.push(categoryId);
     }
 
-    const rows = await this.db.query<DbMetricsRow>(
+    const rows = await this.db.tenantQuery<DbMetricsRow>(
       `
       SELECT
         COUNT(*) as total_suggestions,
@@ -799,7 +799,7 @@ export class ReportsService {
     from: string,
     to: string,
   ): Promise<DbKvpCategoryRow[]> {
-    return await this.db.query<DbKvpCategoryRow>(
+    return await this.db.tenantQuery<DbKvpCategoryRow>(
       `
       SELECT
         c.id as category_id,
@@ -826,7 +826,7 @@ export class ReportsService {
     from: string,
     to: string,
   ): Promise<DbKvpPerformerRow[]> {
-    return await this.db.query<DbKvpPerformerRow>(
+    return await this.db.tenantQuery<DbKvpPerformerRow>(
       `
       SELECT
         u.id as user_id,

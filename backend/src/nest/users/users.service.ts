@@ -496,7 +496,7 @@ export class UsersService {
     await this.ensureUserInScope(scope, userId, tenantId);
 
     // Soft delete (is_active = 4 = deleted)
-    await this.databaseService.query(
+    await this.databaseService.tenantQuery(
       `UPDATE users SET is_active = ${IS_ACTIVE.DELETED}, updated_at = NOW() WHERE id = $1 AND tenant_id = $2`,
       [userId, tenantId],
     );
@@ -526,7 +526,7 @@ export class UsersService {
       throw new NotFoundException(ERROR_MESSAGES.USER_NOT_FOUND);
     }
 
-    await this.databaseService.query(
+    await this.databaseService.tenantQuery(
       `UPDATE users SET is_active = ${IS_ACTIVE.ARCHIVED}, updated_at = NOW() WHERE id = $1 AND tenant_id = $2`,
       [userId, tenantId],
     );
@@ -541,7 +541,7 @@ export class UsersService {
       throw new NotFoundException(ERROR_MESSAGES.USER_NOT_FOUND);
     }
 
-    await this.databaseService.query(
+    await this.databaseService.tenantQuery(
       `UPDATE users SET is_active = ${IS_ACTIVE.ACTIVE}, updated_at = NOW() WHERE id = $1 AND tenant_id = $2`,
       [userId, tenantId],
     );
@@ -565,7 +565,7 @@ export class UsersService {
     if (actingUserRole === 'root') return;
 
     if (actingUserRole === 'admin') {
-      const rows = await this.databaseService.query<{
+      const rows = await this.databaseService.tenantQuery<{
         has_full_access: boolean;
       }>('SELECT has_full_access FROM users WHERE id = $1 AND tenant_id = $2', [
         actingUserId,
@@ -597,7 +597,7 @@ export class UsersService {
    * SECURITY: Only returns ACTIVE users (is_active = 1).
    */
   private async findUserById(userId: number, tenantId: number): Promise<UserRow | null> {
-    const rows = await this.databaseService.query<UserRow>(
+    const rows = await this.databaseService.tenantQuery<UserRow>(
       `SELECT id, uuid, tenant_id, email, role, username, first_name, last_name,
               is_active, last_login, created_at, updated_at,
               phone, address, position, employee_number, profile_picture,
@@ -616,7 +616,7 @@ export class UsersService {
    * SECURITY: Only returns ACTIVE users (is_active = 1).
    */
   private async findUserByEmail(email: string, tenantId: number): Promise<UserRow | null> {
-    const rows = await this.databaseService.query<UserRow>(
+    const rows = await this.databaseService.tenantQuery<UserRow>(
       `SELECT id, tenant_id, email FROM users WHERE email = $1 AND tenant_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}`,
       [email.toLowerCase(), tenantId],
     );
@@ -626,7 +626,7 @@ export class UsersService {
 
   /** Get user department assignments */
   private async getUserDepartments(userId: number, tenantId: number): Promise<UserDepartmentRow[]> {
-    return await this.databaseService.query<UserDepartmentRow>(
+    return await this.databaseService.tenantQuery<UserDepartmentRow>(
       `SELECT ud.user_id, ud.department_id, d.name as department_name, ud.is_primary
        FROM user_departments ud
        JOIN departments d ON ud.department_id = d.id
@@ -637,7 +637,7 @@ export class UsersService {
 
   /** Get user team assignments (includes department and area info from team chain) */
   private async getUserTeams(userId: number, tenantId: number): Promise<UserTeamRow[]> {
-    return await this.databaseService.query<UserTeamRow>(
+    return await this.databaseService.tenantQuery<UserTeamRow>(
       `SELECT
          ut.user_id,
          ut.team_id,
@@ -676,7 +676,7 @@ export class UsersService {
     limit: number,
     offset: number,
   ): Promise<{ total: number; users: UserRow[] }> {
-    const countResult = await this.databaseService.query<{ count: string }>(
+    const countResult = await this.databaseService.tenantQuery<{ count: string }>(
       `SELECT COUNT(*) as count FROM users WHERE ${whereClause}`,
       params,
     );
@@ -684,7 +684,7 @@ export class UsersService {
     const sortBy = mapSortField(query.sortBy ?? 'createdAt');
     const sortOrder = query.sortOrder === 'desc' ? 'DESC' : 'ASC';
 
-    const users = await this.databaseService.query<UserRow>(
+    const users = await this.databaseService.tenantQuery<UserRow>(
       `SELECT id, uuid, tenant_id, email, role, username, first_name, last_name,
               is_active, last_login, created_at, updated_at,
               phone, address, position, employee_number, profile_picture,
@@ -712,11 +712,11 @@ export class UsersService {
     if (scope.type !== 'limited') return undefined;
 
     const [areas, depts] = await Promise.all([
-      this.databaseService.query<{ name: string }>(
+      this.databaseService.tenantQuery<{ name: string }>(
         'SELECT name FROM areas WHERE id = ANY($1::int[]) AND tenant_id = $2',
         [scope.areaIds, tenantId],
       ),
-      this.databaseService.query<{ name: string }>(
+      this.databaseService.tenantQuery<{ name: string }>(
         'SELECT name FROM departments WHERE id = ANY($1::int[]) AND tenant_id = $2',
         [scope.departmentIds, tenantId],
       ),
@@ -774,7 +774,7 @@ export class UsersService {
     // Build parameterized query for user IDs
     // INHERITANCE-FIX: JOIN departments and areas for inheritance chain
     const placeholders = userIds.map((_: number, i: number) => `$${i + 2}`).join(', ');
-    const rows = await this.databaseService.query<UserTeamRow>(
+    const rows = await this.databaseService.tenantQuery<UserTeamRow>(
       `SELECT
          ut.user_id,
          ut.team_id,
@@ -816,7 +816,7 @@ export class UsersService {
 
   /** Get tenant info by ID */
   private async getTenantInfo(tenantId: number): Promise<TenantInfo | null> {
-    const rows = await this.databaseService.query<{
+    const rows = await this.databaseService.tenantQuery<{
       company_name: string;
       subdomain: string;
     }>(`SELECT company_name, subdomain FROM tenants WHERE id = $1`, [tenantId]);

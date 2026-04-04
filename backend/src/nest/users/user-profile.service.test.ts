@@ -45,7 +45,7 @@ vi.mock('fs', () => ({
 // =============================================================
 
 function createMockDb() {
-  return { query: vi.fn() };
+  return { tenantQuery: vi.fn() };
 }
 
 function createMockUserRepository() {
@@ -120,9 +120,9 @@ describe('UserProfileService', () => {
     it('should update limited fields and return response', async () => {
       const updatedRow = makeUserRow({ first_name: 'Updated' });
       // UPDATE query
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
       // findUserById after update
-      mockDb.query.mockResolvedValueOnce([updatedRow]);
+      mockDb.tenantQuery.mockResolvedValueOnce([updatedRow]);
 
       const dto = {
         firstName: 'Updated',
@@ -135,19 +135,19 @@ describe('UserProfileService', () => {
 
     it('should skip UPDATE when no fields provided', async () => {
       // No UPDATE query, just findUserById
-      mockDb.query.mockResolvedValueOnce([makeUserRow()]);
+      mockDb.tenantQuery.mockResolvedValueOnce([makeUserRow()]);
 
       const dto = {} as unknown as UpdateProfileDto;
       const result = await service.updateProfile(1, dto, 10);
 
       expect(result.email).toBe('max@example.com');
       // Only 1 query (findUserById), no UPDATE
-      expect(mockDb.query).toHaveBeenCalledTimes(1);
+      expect(mockDb.tenantQuery).toHaveBeenCalledTimes(1);
     });
 
     it('should throw NotFoundException when user vanishes after update', async () => {
-      mockDb.query.mockResolvedValueOnce([]); // UPDATE
-      mockDb.query.mockResolvedValueOnce([]); // findUserById → empty
+      mockDb.tenantQuery.mockResolvedValueOnce([]); // UPDATE
+      mockDb.tenantQuery.mockResolvedValueOnce([]); // findUserById → empty
 
       const dto = { firstName: 'Ghost' } as unknown as UpdateProfileDto;
 
@@ -181,17 +181,17 @@ describe('UserProfileService', () => {
       mockUserRepo.getPasswordHash.mockResolvedValueOnce('stored-hash');
       // bcryptjs.compare defaults to true (mocked)
       // bcryptjs.hash defaults to 'hashed-password' (mocked)
-      mockDb.query.mockResolvedValueOnce([]); // UPDATE users
-      mockDb.query.mockResolvedValueOnce([{ count: '2' }]); // revoke refresh_tokens
+      mockDb.tenantQuery.mockResolvedValueOnce([]); // UPDATE users
+      mockDb.tenantQuery.mockResolvedValueOnce([{ count: '2' }]); // revoke refresh_tokens
 
       const result = await service.changePassword(1, 10, 'current-password', 'new-password');
 
       expect(result.message).toBe('Password changed successfully');
-      expect(mockDb.query).toHaveBeenCalledWith(
+      expect(mockDb.tenantQuery).toHaveBeenCalledWith(
         expect.stringContaining('UPDATE users SET password'),
         expect.arrayContaining(['hashed-password', 1, 10]),
       );
-      expect(mockDb.query).toHaveBeenCalledWith(
+      expect(mockDb.tenantQuery).toHaveBeenCalledWith(
         expect.stringContaining('UPDATE refresh_tokens SET is_revoked'),
         [1, 10],
       );
@@ -204,26 +204,30 @@ describe('UserProfileService', () => {
 
   describe('getProfilePicturePath', () => {
     it('should throw NotFoundException when user not found', async () => {
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       await expect(service.getProfilePicturePath(999, 10)).rejects.toThrow(NotFoundException);
     });
 
     it('should throw NotFoundException when no profile picture set', async () => {
-      mockDb.query.mockResolvedValueOnce([makeUserRow()]);
+      mockDb.tenantQuery.mockResolvedValueOnce([makeUserRow()]);
 
       await expect(service.getProfilePicturePath(1, 10)).rejects.toThrow(NotFoundException);
     });
 
     it('should throw NotFoundException when file not on disk', async () => {
-      mockDb.query.mockResolvedValueOnce([makeUserRow({ profile_picture: 'uploads/pic.jpg' })]);
+      mockDb.tenantQuery.mockResolvedValueOnce([
+        makeUserRow({ profile_picture: 'uploads/pic.jpg' }),
+      ]);
       vi.mocked(fs.access).mockRejectedValueOnce(new Error('ENOENT'));
 
       await expect(service.getProfilePicturePath(1, 10)).rejects.toThrow(NotFoundException);
     });
 
     it('should return file path when picture exists', async () => {
-      mockDb.query.mockResolvedValueOnce([makeUserRow({ profile_picture: 'uploads/pic.jpg' })]);
+      mockDb.tenantQuery.mockResolvedValueOnce([
+        makeUserRow({ profile_picture: 'uploads/pic.jpg' }),
+      ]);
       // fs.access default resolves (mocked)
 
       const result = await service.getProfilePicturePath(1, 10);
@@ -238,7 +242,7 @@ describe('UserProfileService', () => {
 
   describe('updateProfilePicture', () => {
     it('should throw NotFoundException when user not found', async () => {
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       await expect(service.updateProfilePicture(999, '/some/path.jpg', 10)).rejects.toThrow(
         NotFoundException,
@@ -246,21 +250,23 @@ describe('UserProfileService', () => {
     });
 
     it('should store relative path and return updated user', async () => {
-      mockDb.query.mockResolvedValueOnce([makeUserRow()]); // findUserById
-      mockDb.query.mockResolvedValueOnce([]); // UPDATE profile_picture
-      mockDb.query.mockResolvedValueOnce([makeUserRow({ profile_picture: 'uploads/new.jpg' })]); // findUserById after
+      mockDb.tenantQuery.mockResolvedValueOnce([makeUserRow()]); // findUserById
+      mockDb.tenantQuery.mockResolvedValueOnce([]); // UPDATE profile_picture
+      mockDb.tenantQuery.mockResolvedValueOnce([
+        makeUserRow({ profile_picture: 'uploads/new.jpg' }),
+      ]); // findUserById after
 
       const result = await service.updateProfilePicture(1, `${process.cwd()}/uploads/new.jpg`, 10);
 
       expect(result).toBeDefined();
-      const updateSql = mockDb.query.mock.calls[1]?.[0] as string;
+      const updateSql = mockDb.tenantQuery.mock.calls[1]?.[0] as string;
       expect(updateSql).toContain('profile_picture');
     });
 
     it('should throw InternalServerError when user vanishes after update', async () => {
-      mockDb.query.mockResolvedValueOnce([makeUserRow()]); // findUserById
-      mockDb.query.mockResolvedValueOnce([]); // UPDATE profile_picture
-      mockDb.query.mockResolvedValueOnce([]); // findUserById after → empty
+      mockDb.tenantQuery.mockResolvedValueOnce([makeUserRow()]); // findUserById
+      mockDb.tenantQuery.mockResolvedValueOnce([]); // UPDATE profile_picture
+      mockDb.tenantQuery.mockResolvedValueOnce([]); // findUserById after → empty
 
       await expect(
         service.updateProfilePicture(1, `${process.cwd()}/uploads/new.jpg`, 10),
@@ -274,40 +280,46 @@ describe('UserProfileService', () => {
 
   describe('deleteProfilePicture', () => {
     it('should throw NotFoundException when user not found', async () => {
-      mockDb.query.mockResolvedValueOnce([]);
+      mockDb.tenantQuery.mockResolvedValueOnce([]);
 
       await expect(service.deleteProfilePicture(999, 10)).rejects.toThrow(NotFoundException);
     });
 
     it('should throw NotFoundException when no picture to delete', async () => {
-      mockDb.query.mockResolvedValueOnce([makeUserRow()]);
+      mockDb.tenantQuery.mockResolvedValueOnce([makeUserRow()]);
 
       await expect(service.deleteProfilePicture(1, 10)).rejects.toThrow(NotFoundException);
     });
 
     it('should throw BadRequestException on directory traversal', async () => {
-      mockDb.query.mockResolvedValueOnce([makeUserRow({ profile_picture: '../../../etc/passwd' })]);
+      mockDb.tenantQuery.mockResolvedValueOnce([
+        makeUserRow({ profile_picture: '../../../etc/passwd' }),
+      ]);
 
       await expect(service.deleteProfilePicture(1, 10)).rejects.toThrow(BadRequestException);
     });
 
     it('should delete file and clear DB field on success', async () => {
-      mockDb.query.mockResolvedValueOnce([makeUserRow({ profile_picture: 'uploads/avatar.jpg' })]);
+      mockDb.tenantQuery.mockResolvedValueOnce([
+        makeUserRow({ profile_picture: 'uploads/avatar.jpg' }),
+      ]);
       // fs.unlink default resolves (mocked)
-      mockDb.query.mockResolvedValueOnce([]); // UPDATE profile_picture = NULL
+      mockDb.tenantQuery.mockResolvedValueOnce([]); // UPDATE profile_picture = NULL
 
       const result = await service.deleteProfilePicture(1, 10);
 
       expect(result.message).toBe('Profile picture deleted successfully');
       expect(fs.unlink).toHaveBeenCalled();
-      const updateSql = mockDb.query.mock.calls[1]?.[0] as string;
+      const updateSql = mockDb.tenantQuery.mock.calls[1]?.[0] as string;
       expect(updateSql).toContain('profile_picture = NULL');
     });
 
     it('should continue when file deletion fails', async () => {
-      mockDb.query.mockResolvedValueOnce([makeUserRow({ profile_picture: 'uploads/missing.jpg' })]);
+      mockDb.tenantQuery.mockResolvedValueOnce([
+        makeUserRow({ profile_picture: 'uploads/missing.jpg' }),
+      ]);
       vi.mocked(fs.unlink).mockRejectedValueOnce(new Error('ENOENT'));
-      mockDb.query.mockResolvedValueOnce([]); // UPDATE profile_picture = NULL
+      mockDb.tenantQuery.mockResolvedValueOnce([]); // UPDATE profile_picture = NULL
 
       const result = await service.deleteProfilePicture(1, 10);
 
