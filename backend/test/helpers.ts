@@ -10,7 +10,7 @@
 import { execSync } from 'node:child_process';
 
 export const BASE_URL = 'http://localhost:3000/api/v2';
-export const APITEST_EMAIL = 'admin@apitest.de';
+const APITEST_EMAIL = 'admin@apitest.de';
 export const APITEST_PASSWORD = 'ApiTest12345!';
 
 /** Integration tests validate response shapes via assertions, not static types. */

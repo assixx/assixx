@@ -38,28 +38,9 @@ export const PASSWORD_REQUIREMENTS = {
 } as const;
 
 /**
- * Phone number requirements
- */
-export const PHONE_REQUIREMENTS = {
-  minDigits: 7,
-  maxDigits: 15,
-} as const;
-
-/**
  * Redirect delay after successful registration (in ms)
  */
 export const SUCCESS_REDIRECT_DELAY = 5000;
-
-/**
- * Password strength labels by score
- */
-export const PASSWORD_STRENGTH_LABELS: Record<number, string> = {
-  0: 'Sehr schwach',
-  1: 'Schwach',
-  2: 'Mittel',
-  3: 'Stark',
-  4: 'Sehr stark',
-} as const;
 
 /**
  * Validation error messages

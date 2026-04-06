@@ -17,7 +17,7 @@ const STATIC_ERROR_MESSAGES = {
 } as const;
 
 /** Error messages factory with dynamic hierarchy labels */
-export function createErrorMessages(labels: HierarchyLabels) {
+function createErrorMessages(labels: HierarchyLabels) {
   return {
     ...STATIC_ERROR_MESSAGES,
     NO_DEPARTMENT_SELECTED: `Bitte wählen Sie zuerst eine ${labels.department} aus`,
@@ -29,17 +29,6 @@ export type ShiftErrorMessages = ReturnType<typeof createErrorMessages>;
 
 /** Default error messages (backward-compatible static export) */
 export const ERROR_MESSAGES = createErrorMessages(DEFAULT_HIERARCHY_LABELS);
-
-/**
- * Success messages (German)
- */
-export const SUCCESS_MESSAGES = {
-  SHIFT_ASSIGNED: 'Schicht erfolgreich zugewiesen',
-  SCHEDULE_SAVED: 'Schichtplan erfolgreich gespeichert!',
-  SCHEDULE_UPDATED: 'Schichtplan wurde aktualisiert',
-  SCHEDULE_RESET: 'Schichtplan wurde zurückgesetzt',
-  PLAN_DELETED: 'Schichtplan wurde aus der Datenbank gelöscht',
-} as const;
 
 /**
  * Default shift time mappings (fallback when API data unavailable).
@@ -89,11 +78,6 @@ export const FULL_DAY_NAMES = [
   'Samstag',
   'Sonntag',
 ] as const;
-
-/**
- * Admin roles that can edit shifts
- */
-export const ADMIN_ROLES = ['admin', 'root', 'manager', 'team_lead'] as const;
 
 /**
  * Static dropdown placeholder texts (label-independent)

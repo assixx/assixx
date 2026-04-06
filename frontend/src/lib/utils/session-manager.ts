@@ -7,6 +7,7 @@
  * - TokenManager: Handles JWT token lifecycle and expiry
  */
 
+import { clearActiveRole } from './auth';
 import { createLogger } from './logger';
 import { getTokenManager } from './token-manager';
 
@@ -652,7 +653,7 @@ export class SessionManager {
     localStorage.removeItem('user');
     localStorage.removeItem('role');
     localStorage.removeItem('userRole');
-    localStorage.removeItem('activeRole');
+    clearActiveRole();
     localStorage.removeItem('tenantId');
 
     // SESSION DATA

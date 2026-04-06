@@ -101,18 +101,17 @@
    * Using :global since these are third-party elements we cannot scope.
    */
   :global {
-    /* EventCalendar CSS Variables */
-    :root {
-      --ec-border-color: oklch(87.3% 0.0001 263.28 / 35%);
-    }
-
     /* @EVENT-CALENDAR BUTTON OVERRIDES */
     .ec {
       --ec-bg-color: none !important;
-      --ec-border-color: unset !important;
+      --ec-border-color: oklch(0% 0 0 / 30%) !important; /* glass-border light */
       --ec-event-col-gap: 8px;
 
       color-scheme: none !important;
+    }
+
+    html.dark .ec {
+      --ec-border-color: oklch(100% 0 0 / 15%) !important; /* glass-border dark */
     }
 
     .ec-time-grid .ec-body .ec-day {
@@ -169,25 +168,7 @@
       color: var(--text-primary);
     }
 
-    /* DAY CELLS */
-    .ec-day-grid .ec-header,
-    .ec-day-grid .ec-all-day,
-    .ec-day-grid .ec-body,
-    .ec-day-grid .ec-days,
-    .ec-day-grid .ec-day,
-    .ec-day-grid .ec-day-head {
-      border-color: oklch(87.3% 0.0001 263.28 / 35%);
-    }
-
-    html:not(.dark) .ec-day-grid .ec-header,
-    html:not(.dark) .ec-day-grid .ec-all-day,
-    html:not(.dark) .ec-day-grid .ec-body,
-    html:not(.dark) .ec-day-grid .ec-days,
-    html:not(.dark) .ec-day-grid .ec-day,
-    html:not(.dark) .ec-day-grid .ec-day-head {
-      border-color: color-mix(in oklch, var(--color-black) 40.9%, transparent);
-    }
-
+    /* DAY CELLS — borders via --ec-border-color (set on .ec above) */
     .ec-day {
       position: relative;
       color: var(--text-primary);

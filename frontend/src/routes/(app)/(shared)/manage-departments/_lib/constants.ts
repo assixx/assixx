@@ -31,9 +31,6 @@ export function createDependencyLabels(labels: HierarchyLabels): Record<string, 
   };
 }
 
-/** Default dependency labels for non-Svelte contexts */
-export const DEPENDENCY_LABELS = createDependencyLabels(DEFAULT_HIERARCHY_LABELS);
-
 /** Static messages that don't depend on hierarchy labels */
 const STATIC_MESSAGES = {
   CREATE_FIRST_DEPARTMENT: 'Erstellen Sie den ersten Eintrag',

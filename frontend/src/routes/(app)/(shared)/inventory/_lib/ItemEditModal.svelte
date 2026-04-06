@@ -28,15 +28,18 @@
   const { item, fields, customValues, submitting, onclose, onsubmit }: Props = $props();
 
   // ── Standard Fields ──────────────────────────────────────────
-  let name = $state(item.name);
-  let description = $state(item.description ?? '');
-  let status = $state<InventoryItemStatus>(item.status);
-  let location = $state(item.location ?? '');
-  let manufacturer = $state(item.manufacturer ?? '');
-  let model = $state(item.model ?? '');
-  let serialNumber = $state(item.serial_number ?? '');
-  let yearOfManufacture = $state(item.year_of_manufacture?.toString() ?? '');
-  let notes = $state(item.notes ?? '');
+  // Edit form snapshots initial prop values — intentional one-time capture, not reactive
+  // svelte-ignore state_referenced_locally
+  const initialItem = { ...item };
+  let name = $state(initialItem.name);
+  let description = $state(initialItem.description ?? '');
+  let status = $state<InventoryItemStatus>(initialItem.status);
+  let location = $state(initialItem.location ?? '');
+  let manufacturer = $state(initialItem.manufacturer ?? '');
+  let model = $state(initialItem.model ?? '');
+  let serialNumber = $state(initialItem.serial_number ?? '');
+  let yearOfManufacture = $state(initialItem.year_of_manufacture?.toString() ?? '');
+  let notes = $state(initialItem.notes ?? '');
 
   // ── Custom Fields State ──────────────────────────────────────
   interface FieldState {
@@ -52,9 +55,13 @@
     valueBoolean: boolean;
   }
 
+  // svelte-ignore state_referenced_locally
+  const initialFields = [...fields];
+  // svelte-ignore state_referenced_locally
+  const initialCustomValues = [...customValues];
   const fieldStates = $state<FieldState[]>(
-    fields.map((f: InventoryCustomField) => {
-      const cv = customValues.find((v: CustomValueWithField) => v.fieldId === f.id);
+    initialFields.map((f: InventoryCustomField) => {
+      const cv = initialCustomValues.find((v: CustomValueWithField) => v.fieldId === f.id);
       return {
         fieldId: f.id,
         fieldName: f.fieldName,
@@ -107,7 +114,7 @@
   /** Compare form value with item value, return undefined if unchanged */
   function diffStr(formVal: string, itemVal: string | null): string | null | undefined {
     const trimmed = formVal.trim();
-    return trimmed === (itemVal ?? '') ? undefined : (trimmed || null);
+    return trimmed === (itemVal ?? '') ? undefined : trimmed || null;
   }
 
   function diffNullableFields(): Partial<UpdateItemPayload> {
@@ -352,7 +359,7 @@
                     required={fs.isRequired}
                   />
                 {:else if fs.fieldType === 'boolean'}
-                  <label class="flex items-center gap-2 cursor-pointer">
+                  <label class="flex cursor-pointer items-center gap-2">
                     <input
                       id="cf-{fs.fieldId}"
                       type="checkbox"

@@ -180,7 +180,7 @@
           bind:value={localTitle}
           required
           maxlength="255"
-          placeholder="z.B. Krane, Gabelstapler, Leitern"
+          placeholder="z.B. Kröne, Gabelstapler, Leitern"
         />
       </div>
 

@@ -9,6 +9,7 @@
   import { setLoginPassword } from '$lib/crypto/login-password-bridge';
   import { isDark } from '$lib/stores/theme.svelte';
   import { showInfoAlert } from '$lib/stores/toast';
+  import { setActiveRole } from '$lib/utils/auth';
   import { getTokenManager } from '$lib/utils/token-manager';
 
   import type { ActionData } from './$types';
@@ -286,7 +287,7 @@
             // Store user data
             localStorage.setItem('user', JSON.stringify(user));
             localStorage.setItem('userRole', user.role);
-            localStorage.setItem('activeRole', user.role);
+            setActiveRole(user.role);
 
             // Bridge login password for E2E key escrow recovery (ADR-022)
             // Must happen before redirect — consumed by e2e-state.initialize()

@@ -8,8 +8,6 @@ import {
   type PositionOption,
 } from '$lib/types/hierarchy-labels';
 
-import type { AvailabilityOption } from './types';
-
 export { STATUS_BADGE_CLASSES, STATUS_LABELS } from '@assixx/shared/constants';
 
 // Re-export shared availability constants (single source of truth)
@@ -47,18 +45,6 @@ export const POSITION_OPTIONS: readonly PositionOption[] = [
   { id: '', name: 'team_lead', roleCategory: 'employee' },
   { id: '', name: 'Wartungstechniker', roleCategory: 'employee' },
   { id: '', name: 'Sonstiges', roleCategory: 'employee' },
-] as const;
-
-/**
- * Availability status options with labels (legacy alias)
- */
-export const AVAILABILITY_OPTIONS: readonly AvailabilityOption[] = [
-  { value: 'available', label: 'Verfügbar' },
-  { value: 'vacation', label: 'Urlaub' },
-  { value: 'sick', label: 'Krank' },
-  { value: 'unavailable', label: 'Nicht verfügbar' },
-  { value: 'training', label: 'Schulung' },
-  { value: 'other', label: 'Sonstiges' },
 ] as const;
 
 /**

@@ -6,30 +6,7 @@ import { DEFAULT_HIERARCHY_LABELS, type HierarchyLabels } from '$lib/types/hiera
 
 import { EVENT_LEVEL_INFO } from './constants';
 
-import type { CalendarEvent, OrgLevel, User, EventLevelInfo } from './types';
-
-/**
- * Escape HTML to prevent XSS
- */
-export function escapeHtml(text: string | null | undefined): string {
-  if (text === null || text === undefined || text === '') return '';
-  return text.replace(/["&'<>]/g, (m) => {
-    switch (m) {
-      case '&':
-        return '&amp;';
-      case '<':
-        return '&lt;';
-      case '>':
-        return '&gt;';
-      case '"':
-        return '&quot;';
-      case "'":
-        return '&#039;';
-      default:
-        return m;
-    }
-  });
-}
+import type { CalendarEvent, OrgLevel, EventLevelInfo } from './types';
 
 /**
  * Get event level info for UI display
@@ -64,24 +41,9 @@ export function getEventLevelText(
 }
 
 /**
- * Get user display name
- */
-export function getUserDisplayName(user: User | undefined): string {
-  if (user === undefined) return 'Unbekannt';
-
-  const firstName = user.firstName ?? '';
-  const lastName = user.lastName ?? '';
-  const fullName = `${firstName} ${lastName}`.trim();
-
-  if (fullName !== '') return fullName;
-  if (user.username !== '') return user.username;
-  return user.email;
-}
-
-/**
  * Format date for display
  */
-export function formatDate(dateStr: string, options?: Intl.DateTimeFormatOptions): string {
+function formatDate(dateStr: string, options?: Intl.DateTimeFormatOptions): string {
   const date = new Date(dateStr);
   const defaultOptions: Intl.DateTimeFormatOptions = {
     weekday: 'long',
@@ -95,7 +57,7 @@ export function formatDate(dateStr: string, options?: Intl.DateTimeFormatOptions
 /**
  * Format time for display
  */
-export function formatTime(dateStr: string): string {
+function formatTime(dateStr: string): string {
   const date = new Date(dateStr);
   return date.toLocaleTimeString('de-DE', {
     hour: '2-digit',
@@ -160,7 +122,7 @@ export function getResponseIconClass(response: string): string {
 /**
  * Check if event is all day
  */
-export function isAllDayEvent(event: CalendarEvent): boolean {
+function isAllDayEvent(event: CalendarEvent): boolean {
   return event.allDay;
 }
 
@@ -170,26 +132,4 @@ export function isAllDayEvent(event: CalendarEvent): boolean {
 export function getUpcomingEventTimeStr(event: CalendarEvent): string {
   if (isAllDayEvent(event)) return 'Ganztaegig';
   return `${formatTime(event.startTime)} - ${formatTime(event.endTime)}`;
-}
-
-/**
- * Format relative time (e.g., "vor 2 Stunden", "vor 3 Tagen")
- */
-export function formatRelativeTime(dateStr: string): string {
-  const date = new Date(dateStr);
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffMins = Math.floor(diffMs / (1000 * 60));
-  const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-
-  if (diffMins < 1) return 'Gerade eben';
-  if (diffMins < 60) return `vor ${diffMins} Min.`;
-  if (diffHours < 24) return `vor ${diffHours} Std.`;
-  if (diffDays === 1) return 'Gestern';
-  if (diffDays < 7) return `vor ${diffDays} Tagen`;
-  if (diffDays < 30) return `vor ${Math.floor(diffDays / 7)} Wochen`;
-
-  // Fallback to date
-  return formatDate(dateStr, { day: 'numeric', month: 'short' });
 }

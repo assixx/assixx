@@ -57,21 +57,3 @@ export const PASSWORD_TOOLTIP =
 /** Info box text for readonly fields (Employee-specific) */
 export const READONLY_INFO_TEXT =
   'Als Mitarbeiter können Sie nur Ihr Passwort ändern. Für Änderungen an Ihrem Namen, E-Mail, Position oder anderen Feldern wenden Sie sich bitte an Ihren Administrator.';
-
-/** Strength labels (German) */
-export const STRENGTH_LABELS: Record<number, string> = {
-  0: 'Sehr schwach',
-  1: 'Schwach',
-  2: 'Ausreichend',
-  3: 'Gut',
-  4: 'Sehr stark',
-} as const;
-
-/** Strength bar colors */
-export const STRENGTH_COLORS: Record<number, string> = {
-  0: '#dc2626',
-  1: '#ea580c',
-  2: '#ca8a04',
-  3: '#65a30d',
-  4: '#16a34a',
-} as const;

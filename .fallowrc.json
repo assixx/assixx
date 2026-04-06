@@ -13,11 +13,7 @@
     "**/archive/**",
     "**/frontend/test/mocks/**"
   ],
-  "ignoreDependencies": [
-    "pino-http",
-    "pino-loki",
-    "pino-pretty"
-  ],
+  "ignoreDependencies": ["pino-http", "pino-loki", "pino-pretty"],
   "rules": {
     "unused-files": "warn",
     "unused-exports": "warn",

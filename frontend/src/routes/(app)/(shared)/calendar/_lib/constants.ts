@@ -36,7 +36,7 @@ export const ORG_LEVEL_COLORS: Record<OrgLevel, string> = {
  * Factory: Event level info for UI display
  * Dynamic labels for department/team/area, static for company/personal.
  */
-export function createEventLevelInfo(labels: HierarchyLabels): Record<OrgLevel, EventLevelInfo> {
+function createEventLevelInfo(labels: HierarchyLabels): Record<OrgLevel, EventLevelInfo> {
   return {
     company: { class: 'event-level-company', text: 'Firma', color: '#3498db' },
     department: {
@@ -136,31 +136,6 @@ export function createFilterOptions(labels: HierarchyLabels): readonly FilterOpt
 export const FILTER_OPTIONS: readonly FilterOption[] =
   createFilterOptions(DEFAULT_HIERARCHY_LABELS);
 
-/** Org level option shape for form selects */
-interface OrgLevelOption {
-  readonly value: string;
-  readonly label: string;
-  readonly icon: string;
-}
-
-/**
- * Factory: Org level options for form
- * Dynamic labels for department/team/area, static for personal/company.
- */
-export function createOrgLevelOptions(labels: HierarchyLabels): readonly OrgLevelOption[] {
-  return [
-    { value: 'personal', label: 'Persönlich', icon: 'fa-user' },
-    { value: 'company', label: 'Firma', icon: 'fa-building' },
-    { value: 'department', label: labels.department, icon: 'fa-sitemap' },
-    { value: 'team', label: labels.team, icon: 'fa-users' },
-    { value: 'area', label: labels.area, icon: 'fa-map-marked-alt' },
-  ];
-}
-
-/** Default org level options — backward-compatible static export */
-export const ORG_LEVEL_OPTIONS: readonly OrgLevelOption[] =
-  createOrgLevelOptions(DEFAULT_HIERARCHY_LABELS);
-
 /**
  * Work order calendar event color — uses design-system token --color-slate (oklch)
  * Einheitlich grau für alle Aufträge, unabhängig vom Status.
@@ -181,12 +156,6 @@ export const WORK_ORDER_PRIORITY_LABELS: Record<string, string> = {
   medium: 'Mittel',
   high: 'Hoch',
 };
-
-/**
- * TPM calendar event color — uses design-system token --color-amber (oklch)
- * Amber/orange-gelb für TPM-Wartungstermine, gut unterscheidbar von anderen Event-Typen.
- */
-export const TPM_EVENT_COLOR = 'var(--color-amber)';
 
 /** German shift type labels for TPM tooltips */
 export const TPM_SHIFT_TYPE_LABELS: Record<string, string> = {

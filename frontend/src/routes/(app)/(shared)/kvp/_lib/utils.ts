@@ -108,39 +108,12 @@ export function formatDate(dateString: string): string {
 }
 
 /**
- * Format currency for display (German locale)
- */
-export function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat('de-DE', {
-    style: 'currency',
-    currency: 'EUR',
-  }).format(amount);
-}
-
-/**
  * Check if icon string is a FontAwesome name (ASCII lowercase + hyphens)
  * vs an emoji (Unicode characters).
  * Global categories use emojis, custom categories use FA names.
  */
 export function isFaIcon(icon: string): boolean {
   return /^[a-z][a-z0-9-]*$/.test(icon);
-}
-
-/**
- * Escape HTML for safe rendering
- */
-export function escapeHtml(text: string): string {
-  const div = document.createElement('div');
-  div.textContent = text;
-  return div.innerHTML;
-}
-
-/**
- * Truncate text with ellipsis
- */
-export function truncateText(text: string, maxLength: number): string {
-  if (text.length <= maxLength) return text;
-  return text.slice(0, maxLength) + '...';
 }
 
 /**
@@ -200,37 +173,6 @@ export function debounce<T extends (...args: unknown[]) => void>(
       func(...args);
     }, wait);
   };
-}
-
-/**
- * Check if user can share suggestion (admin only, department level)
- */
-export function canShareSuggestion(suggestion: KvpSuggestion, effectiveRole: string): boolean {
-  return (
-    (effectiveRole === 'admin' || effectiveRole === 'root') && suggestion.orgLevel === 'department'
-  );
-}
-
-/**
- * Check if user can unshare suggestion
- * Allows unsharing for any shared suggestion (department, area, company)
- * - Admin/Root can always unshare
- * - Original sharer can unshare their own shares
- */
-export function canUnshareSuggestion(
-  suggestion: KvpSuggestion,
-  effectiveRole: string,
-  currentUserId: number | undefined,
-): boolean {
-  // Must be shared and not at team level (team is default, not "shared")
-  if (!suggestion.isShared || suggestion.orgLevel === 'team') {
-    return false;
-  }
-
-  // Admin/Root can always unshare, or the person who shared it
-  return (
-    effectiveRole === 'admin' || effectiveRole === 'root' || suggestion.sharedBy === currentUserId
-  );
 }
 
 /**

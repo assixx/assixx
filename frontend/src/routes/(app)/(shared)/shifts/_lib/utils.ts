@@ -3,7 +3,7 @@
 // Based on: frontend/src/scripts/shifts/utils.ts
 // =============================================================================
 
-import { DEFAULT_SHIFT_TIMES, SHIFT_TYPE_TO_API, SHIFT_TYPE_FROM_API } from './constants';
+import { DEFAULT_SHIFT_TIMES, SHIFT_TYPE_FROM_API } from './constants';
 
 import type {
   AvailabilityEntry,
@@ -51,20 +51,11 @@ export function formatDate(date: Date): string {
 /**
  * Format a date as DD.MM.YYYY (German format)
  */
-export function formatDateGerman(date: Date): string {
+function formatDateGerman(date: Date): string {
   const day = String(date.getDate()).padStart(2, '0');
   const month = String(date.getMonth() + 1).padStart(2, '0');
   const year = String(date.getFullYear());
   return `${day}.${month}.${year}`;
-}
-
-/**
- * Format a date as DD.MM. (short German format)
- */
-export function formatDateShort(date: Date): string {
-  const day = String(date.getDate()).padStart(2, '0');
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  return `${day}.${month}.`;
 }
 
 /**
@@ -76,13 +67,6 @@ export function getWeekNumber(date: Date): number {
   d.setUTCDate(d.getUTCDate() + 4 - dayNum);
   const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
   return Math.ceil(((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
-}
-
-/**
- * Get short day name in German
- */
-export function getDayName(date: Date): string {
-  return date.toLocaleDateString('de-DE', { weekday: 'short' });
 }
 
 /**
@@ -122,33 +106,6 @@ export function addWeeks(date: Date, weeks: number): Date {
   const result = new Date(date);
   result.setDate(result.getDate() + weeks * 7);
   return result;
-}
-
-/**
- * Add days to a date
- */
-export function addDays(date: Date, days: number): Date {
-  const result = new Date(date);
-  result.setDate(result.getDate() + days);
-  return result;
-}
-
-/**
- * Check if two dates are the same day
- */
-export function isSameDay(date1: Date, date2: Date): boolean {
-  return (
-    date1.getFullYear() === date2.getFullYear() &&
-    date1.getMonth() === date2.getMonth() &&
-    date1.getDate() === date2.getDate()
-  );
-}
-
-/**
- * Parse a date string and return a Date object
- */
-export function parseDate(dateString: string): Date {
-  return new Date(dateString);
 }
 
 // =============================================================================
@@ -209,42 +166,10 @@ export function getShiftTimeInfo(
 }
 
 /**
- * Get the start time for a shift type
- */
-export function getShiftStartTime(shiftType: string, shiftTimesMap?: ShiftTimesMap): string {
-  return getShiftTimeInfo(shiftType, shiftTimesMap).start;
-}
-
-/**
- * Get the end time for a shift type
- */
-export function getShiftEndTime(shiftType: string, shiftTimesMap?: ShiftTimesMap): string {
-  return getShiftTimeInfo(shiftType, shiftTimesMap).end;
-}
-
-/**
- * Get the display string for a shift time (e.g., "06:00 - 14:00")
- */
-export function getShiftTimeDisplay(shiftType: string, shiftTimesMap?: ShiftTimesMap): string {
-  const info = getShiftTimeInfo(shiftType, shiftTimesMap);
-  return `${info.start} - ${info.end}`;
-}
-
-/**
  * Get shift label by type
  */
 export function getShiftLabel(shiftType: string, shiftTimesMap?: ShiftTimesMap): string {
   return getShiftTimeInfo(shiftType, shiftTimesMap).label;
-}
-
-/**
- * Convert frontend shift type to API format (early -> F)
- */
-export function convertShiftTypeForAPI(frontendType: string): string {
-  if (frontendType in SHIFT_TYPE_TO_API) {
-    return SHIFT_TYPE_TO_API[frontendType as keyof typeof SHIFT_TYPE_TO_API];
-  }
-  return frontendType;
 }
 
 /**
@@ -295,7 +220,7 @@ function isDateInAvailabilityEntry(entry: AvailabilityEntry, date: Date): boolea
  * Get effective availability status for an employee on a specific date.
  * Checks ALL availability entries — returns the first matching non-available status.
  */
-export function getEffectiveAvailability(employee: Employee, date: Date): AvailabilityStatus {
+function getEffectiveAvailability(employee: Employee, date: Date): AvailabilityStatus {
   const entries = employee.availabilities;
   if (entries === undefined || entries.length === 0) {
     return 'available';
@@ -378,41 +303,4 @@ export function getOverlappingUnavailabilities(
   }
 
   return overlapping;
-}
-
-// =============================================================================
-// VALIDATION UTILITIES
-// =============================================================================
-
-/**
- * Check if a value is a non-null number (valid ID)
- */
-export function isValidId(value: number | null | undefined): value is number {
-  return value !== null && value !== undefined && value !== 0;
-}
-
-/**
- * Check if a string is non-empty
- */
-export function isNonEmpty(value: string | null | undefined): value is string {
-  return value !== null && value !== undefined && value !== '';
-}
-
-// =============================================================================
-// STRING UTILITIES
-// =============================================================================
-
-/**
- * Capitalize first letter of a string
- */
-export function capitalize(str: string): string {
-  return str.charAt(0).toUpperCase() + str.slice(1);
-}
-
-/**
- * Truncate a string to a maximum length
- */
-export function truncate(str: string, maxLength: number): string {
-  if (str.length <= maxLength) return str;
-  return str.slice(0, maxLength - 3) + '...';
 }

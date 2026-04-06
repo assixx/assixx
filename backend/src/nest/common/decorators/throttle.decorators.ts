@@ -10,19 +10,15 @@
  *
  * Usage:
  *   - AuthThrottle()    - 10 requests per 5 minutes (login/signup)
- *   - PublicThrottle()  - 100 requests per 15 minutes (public pages)
  *   - UserThrottle()    - 1000 requests per 15 minutes (authenticated users)
  *   - AdminThrottle()   - 2000 requests per 15 minutes (admin endpoints)
- *   - UploadThrottle()  - 20 requests per hour (file uploads)
  *   - ExportThrottle()  - 1 request per minute (bulk exports)
- *   - NoThrottle()      - Skip rate limiting (use sparingly!)
  */
 import { applyDecorators } from '@nestjs/common';
 import { SkipThrottle, Throttle } from '@nestjs/throttler';
 
 /** Time constants in milliseconds */
 const MS_MINUTE = 60_000;
-const MS_HOUR = 3_600_000;
 
 /** Return type for Throttle decorator factory */
 type ThrottleDecorator = MethodDecorator & ClassDecorator;
@@ -37,23 +33,6 @@ export const AuthThrottle = (): ThrottleDecorator =>
     Throttle({ auth: { limit: 10, ttl: 5 * MS_MINUTE } }),
     SkipThrottle({
       public: true,
-      user: true,
-      admin: true,
-      upload: true,
-      export: true,
-    }),
-  ) as ThrottleDecorator;
-
-/**
- * Public endpoints: 100 requests per 15 minutes
- * Use for: public pages, unauthenticated API calls
- * Skips: auth, user, admin, upload, export throttlers
- */
-export const PublicThrottle = (): ThrottleDecorator =>
-  applyDecorators(
-    Throttle({ public: { limit: 100, ttl: 15 * MS_MINUTE } }),
-    SkipThrottle({
-      auth: true,
       user: true,
       admin: true,
       upload: true,
@@ -96,23 +75,6 @@ export const AdminThrottle = (): ThrottleDecorator =>
   ) as ThrottleDecorator;
 
 /**
- * Upload endpoints: 20 requests per hour
- * Use for: file uploads, document creation
- * Skips: auth, public, user, admin, export throttlers
- */
-export const UploadThrottle = (): ThrottleDecorator =>
-  applyDecorators(
-    Throttle({ upload: { limit: 20, ttl: MS_HOUR } }),
-    SkipThrottle({
-      auth: true,
-      public: true,
-      user: true,
-      admin: true,
-      export: true,
-    }),
-  ) as ThrottleDecorator;
-
-/**
  * Export endpoints: 1 request per minute
  * Use for: audit log export, bulk data export
  * Prevents DoS via large export operations
@@ -129,9 +91,3 @@ export const ExportThrottle = (): ThrottleDecorator =>
       upload: true,
     }),
   ) as ThrottleDecorator;
-
-/**
- * Skip rate limiting entirely
- * Use sparingly! Only for health checks, internal endpoints
- */
-export const NoThrottle = (): ThrottleDecorator => SkipThrottle();

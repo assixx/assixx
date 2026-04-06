@@ -98,14 +98,10 @@ export function createVisibilityInfo(
   };
 }
 
-/** Backward-compatible static export */
-export const VISIBILITY_INFO: Record<OrgLevel, { icon: string; text: string }> =
-  createVisibilityInfo(DEFAULT_HIERARCHY_LABELS);
-
 /**
  * Factory: Share level text with dynamic hierarchy labels
  */
-export function createShareLevelText(labels: HierarchyLabels): Record<OrgLevel, string> {
+function createShareLevelText(labels: HierarchyLabels): Record<OrgLevel, string> {
   return {
     company: 'Firmenebene',
     department: `${labels.department}-Ebene`,
