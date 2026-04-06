@@ -62,7 +62,7 @@ describe('InventoryCustomFieldsService', () => {
       const result = await service.findByList('list-uuid-1');
 
       expect(result).toHaveLength(2);
-      expect(result[0]?.field_name).toBe('Tragkraft');
+      expect(result[0]?.fieldName).toBe('Tragkraft');
     });
 
     it('should return empty for list without fields', async () => {
@@ -89,8 +89,8 @@ describe('InventoryCustomFieldsService', () => {
         sortOrder: 0,
       } as never);
 
-      expect(result.field_name).toBe('Tragkraft');
-      expect(result.field_type).toBe('number');
+      expect(result.fieldName).toBe('Tragkraft');
+      expect(result.fieldType).toBe('number');
     });
 
     it('should reject when max fields reached (30)', async () => {
@@ -140,7 +140,7 @@ describe('InventoryCustomFieldsService', () => {
 
       const result = await service.update('field-uuid-1', { fieldName: 'Gewicht' } as never);
 
-      expect(result.field_name).toBe('Gewicht');
+      expect(result.fieldName).toBe('Gewicht');
     });
 
     it('should throw NotFoundException for missing field', async () => {
@@ -182,7 +182,7 @@ describe('InventoryCustomFieldsService', () => {
         sortOrder: 0,
       } as never);
 
-      expect(result.field_options).toBeNull();
+      expect(result.fieldOptions).toBeNull();
     });
 
     it('should handle update with partial fields', async () => {
@@ -190,7 +190,7 @@ describe('InventoryCustomFieldsService', () => {
 
       const result = await service.update('field-uuid-1', { sortOrder: 5 } as never);
 
-      expect(result.sort_order).toBe(5);
+      expect(result.sortOrder).toBe(5);
     });
 
     it('should pass IS_ACTIVE.DELETED in count query', async () => {
@@ -206,6 +206,53 @@ describe('InventoryCustomFieldsService', () => {
 
       const countParams = qf.mock.calls[0]?.[1] as unknown[];
       expect(countParams[1]).toBe(4); // IS_ACTIVE.DELETED
+    });
+
+    it('should return existing field when update has empty dto', async () => {
+      qf.mockResolvedValueOnce([makeFieldRow()]); // SELECT existing
+
+      const result = await service.update('field-uuid-1', {} as never);
+
+      expect(result.fieldName).toBe('Tragkraft');
+      expect(result.fieldType).toBe('number');
+    });
+
+    it('should map row to camelCase in findByList', async () => {
+      qf.mockResolvedValueOnce([makeFieldRow()]);
+
+      const result = await service.findByList('list-uuid-1');
+
+      expect(result[0]?.fieldName).toBe('Tragkraft');
+      expect(result[0]?.fieldType).toBe('number');
+      expect(result[0]?.fieldUnit).toBe('kg');
+      expect(result[0]?.isRequired).toBe(false);
+      expect(result[0]?.sortOrder).toBe(0);
+      expect(result[0]?.listId).toBe('list-uuid-1');
+      // snake_case properties should NOT exist
+      expect((result[0] as Record<string, unknown>).field_name).toBeUndefined();
+    });
+
+    it('should map row to camelCase in create', async () => {
+      qf.mockResolvedValueOnce([{ count: '0' }]);
+      qf.mockResolvedValueOnce([makeFieldRow({ field_type: 'boolean', is_required: true })]);
+
+      const result = await service.create('list-uuid-1', {
+        fieldName: 'Geprüft',
+        fieldType: 'boolean',
+        isRequired: true,
+        sortOrder: 1,
+      } as never);
+
+      expect(result.fieldType).toBe('boolean');
+      expect(result.isRequired).toBe(true);
+    });
+
+    it('should allow setting fieldUnit to null via update', async () => {
+      qf.mockResolvedValueOnce([makeFieldRow({ field_unit: null })]);
+
+      const result = await service.update('field-uuid-1', { fieldUnit: null } as never);
+
+      expect(result.fieldUnit).toBeNull();
     });
   });
 });

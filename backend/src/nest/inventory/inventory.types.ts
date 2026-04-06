@@ -185,6 +185,21 @@ export interface InventoryItemPhoto {
   createdAt: Date;
 }
 
+// ── Row → Application Mappers ──────────────────────────────────
+
+export function mapFieldRow(row: InventoryCustomFieldRow): InventoryCustomField {
+  return {
+    id: row.id,
+    listId: row.list_id,
+    fieldName: row.field_name,
+    fieldType: row.field_type,
+    fieldOptions: row.field_options,
+    fieldUnit: row.field_unit,
+    isRequired: row.is_required,
+    sortOrder: row.sort_order,
+  };
+}
+
 // ── Constants ───────────────────────────────────────────────────
 
 export const INVENTORY_ITEM_STATUSES: readonly InventoryItemStatus[] = [

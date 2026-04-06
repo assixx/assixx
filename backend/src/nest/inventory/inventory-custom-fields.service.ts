@@ -11,25 +11,26 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { DatabaseService } from '../database/database.service.js';
 import type { CreateCustomFieldDto } from './dto/create-custom-field.dto.js';
 import type { UpdateCustomFieldDto } from './dto/update-custom-field.dto.js';
-import type { InventoryCustomFieldRow } from './inventory.types.js';
-import { MAX_CUSTOM_FIELDS_PER_LIST } from './inventory.types.js';
+import type { InventoryCustomField, InventoryCustomFieldRow } from './inventory.types.js';
+import { MAX_CUSTOM_FIELDS_PER_LIST, mapFieldRow } from './inventory.types.js';
 
 @Injectable()
 export class InventoryCustomFieldsService {
   constructor(private readonly db: DatabaseService) {}
 
   /** All active field definitions for a list, ordered by sort_order */
-  async findByList(listId: string): Promise<InventoryCustomFieldRow[]> {
-    return await this.db.tenantQuery<InventoryCustomFieldRow>(
+  async findByList(listId: string): Promise<InventoryCustomField[]> {
+    const rows = await this.db.tenantQuery<InventoryCustomFieldRow>(
       `SELECT * FROM inventory_custom_fields
        WHERE list_id = $1 AND is_active != $2
        ORDER BY sort_order, field_name`,
       [listId, IS_ACTIVE.DELETED],
     );
+    return rows.map(mapFieldRow);
   }
 
   /** Add a custom field definition to a list */
-  async create(listId: string, dto: CreateCustomFieldDto): Promise<InventoryCustomFieldRow> {
+  async create(listId: string, dto: CreateCustomFieldDto): Promise<InventoryCustomField> {
     const countRows = await this.db.tenantQuery<{ count: string }>(
       `SELECT COUNT(*) AS count FROM inventory_custom_fields
        WHERE list_id = $1 AND is_active != $2`,
@@ -69,11 +70,11 @@ export class InventoryCustomFieldsService {
     if (created === undefined) {
       throw new Error('INSERT RETURNING returned no rows');
     }
-    return created;
+    return mapFieldRow(created);
   }
 
   /** Update a custom field definition (conditional field inclusion) */
-  async update(fieldId: string, dto: UpdateCustomFieldDto): Promise<InventoryCustomFieldRow> {
+  async update(fieldId: string, dto: UpdateCustomFieldDto): Promise<InventoryCustomField> {
     const { setClauses, params } = this.buildFieldSetClauses(dto);
 
     if (setClauses.length === 0) {
@@ -84,7 +85,7 @@ export class InventoryCustomFieldsService {
       if (existing.length === 0) {
         throw new NotFoundException('Custom Field nicht gefunden');
       }
-      return existing[0] as InventoryCustomFieldRow;
+      return mapFieldRow(existing[0] as InventoryCustomFieldRow);
     }
 
     const idIdx = params.length + 1;
@@ -100,7 +101,7 @@ export class InventoryCustomFieldsService {
     if (updated === undefined) {
       throw new NotFoundException('Custom Field nicht gefunden');
     }
-    return updated;
+    return mapFieldRow(updated);
   }
 
   /** Build SET clauses for dynamic partial update */

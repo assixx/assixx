@@ -8,7 +8,12 @@ import { createLogger } from '$lib/utils/logger';
 
 import { API_ENDPOINTS } from './constants';
 
-import type { CreateListPayload, InventoryList, UpdateListPayload } from './types';
+import type {
+  CreateListPayload,
+  InventoryList,
+  UpdateItemPayload,
+  UpdateListPayload,
+} from './types';
 
 const log = createLogger('InventoryApi');
 
@@ -47,6 +52,37 @@ export async function saveList(
 /** Soft-delete an inventory list */
 export async function deleteList(id: string): Promise<void> {
   await apiClient.delete(API_ENDPOINTS.list(id));
+}
+
+// ── Items ─────────────────────────────────────────────────────
+
+/** Update an inventory item */
+export async function updateItem(uuid: string, payload: UpdateItemPayload): Promise<void> {
+  await apiClient.patch(API_ENDPOINTS.item(uuid), payload);
+}
+
+/** Soft-delete an inventory item */
+export async function deleteItem(uuid: string): Promise<void> {
+  await apiClient.delete(API_ENDPOINTS.item(uuid));
+}
+
+// ── Photos ────────────────────────────────────────────────────
+
+/** Upload a photo for an inventory item (multipart) */
+export async function uploadItemPhoto(itemUuid: string, file: File): Promise<unknown> {
+  const formData = new FormData();
+  formData.append('file', file);
+  return await apiClient.post(API_ENDPOINTS.itemPhotos(itemUuid), formData);
+}
+
+/** Delete a photo */
+export async function deletePhoto(photoId: string): Promise<void> {
+  await apiClient.delete(`/inventory/photos/${photoId}`);
+}
+
+/** Update photo caption */
+export async function updatePhotoCaption(photoId: string, caption: string | null): Promise<void> {
+  await apiClient.patch(`/inventory/photos/${photoId}`, { caption });
 }
 
 // ── Categories ─────────────────────────────────────────────────

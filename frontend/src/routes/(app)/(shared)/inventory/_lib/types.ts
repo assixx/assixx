@@ -111,11 +111,35 @@ export interface InventoryItem {
   created_at: string;
 }
 
-/** Item detail with photos and custom values */
+/** Item detail with photos, custom values, and field definitions */
 export interface InventoryItemDetail {
   item: InventoryItem & { list_title: string; list_code_prefix: string };
   photos: InventoryItemPhoto[];
   customValues: CustomValueWithField[];
+  fields: InventoryCustomField[];
+}
+
+/** Payload for updating an item */
+export interface UpdateItemPayload {
+  name?: string;
+  description?: string | null;
+  status?: InventoryItemStatus;
+  location?: string | null;
+  manufacturer?: string | null;
+  model?: string | null;
+  serialNumber?: string | null;
+  yearOfManufacture?: number | null;
+  notes?: string | null;
+  customValues?: CustomValueInput[];
+}
+
+/** Custom value input for create/update */
+export interface CustomValueInput {
+  fieldId: string;
+  valueText?: string | null;
+  valueNumber?: number | null;
+  valueDate?: string | null;
+  valueBoolean?: boolean | null;
 }
 
 export interface InventoryItemPhoto {
@@ -138,10 +162,11 @@ export interface CustomValueWithField {
   valueBoolean: boolean | null;
 }
 
-/** Paginated items response */
+/** Paginated items response with custom values */
 export interface ItemsPage {
   items: InventoryItem[];
   total: number;
+  customValuesByItem: Record<string, CustomValueWithField[]>;
 }
 
 /** Form data for creating/editing an item */

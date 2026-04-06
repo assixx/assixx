@@ -12,11 +12,13 @@ import { DatabaseService } from '../database/database.service.js';
 import type { CreateListDto } from './dto/create-list.dto.js';
 import type { UpdateListDto } from './dto/update-list.dto.js';
 import type {
+  InventoryCustomField,
   InventoryCustomFieldRow,
   InventoryItemStatus,
   InventoryListRow,
   InventoryListWithCounts,
 } from './inventory.types.js';
+import { mapFieldRow } from './inventory.types.js';
 
 interface StatusCountRow {
   status: InventoryItemStatus;
@@ -54,7 +56,7 @@ export class InventoryListsService {
     const statusCounts = await this.db.tenantQuery<StatusCountRow & { list_id: string }>(
       `SELECT list_id, status, COUNT(*) AS count
        FROM inventory_items
-       WHERE list_id = ANY($1) AND is_active != $2
+       WHERE list_id = ANY($1::uuid[]) AND is_active != $2
        GROUP BY list_id, status`,
       [listIds, IS_ACTIVE.DELETED],
     );
@@ -80,7 +82,7 @@ export class InventoryListsService {
   /** Single list by ID with custom field definitions */
   async findById(listId: string): Promise<{
     list: InventoryListWithCounts;
-    fields: InventoryCustomFieldRow[];
+    fields: InventoryCustomField[];
   }> {
     const row = await this.db.tenantQueryOne<ListWithCountsRow>(
       `SELECT l.*,
@@ -108,7 +110,7 @@ export class InventoryListsService {
       counts[sc.status] = Number(sc.count);
     }
 
-    const fields = await this.db.tenantQuery<InventoryCustomFieldRow>(
+    const fieldRows = await this.db.tenantQuery<InventoryCustomFieldRow>(
       `SELECT * FROM inventory_custom_fields
        WHERE list_id = $1 AND is_active != $2
        ORDER BY sort_order, field_name`,
@@ -121,7 +123,7 @@ export class InventoryListsService {
         statusCounts: counts,
         totalItems: Number(row.total_items),
       },
-      fields,
+      fields: fieldRows.map(mapFieldRow),
     };
   }
 

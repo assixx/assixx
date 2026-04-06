@@ -94,6 +94,9 @@ eslint-report.json
 .stylelintcache
 .type-coverage
 
+# Fallow (dead-code analysis cache)
+.fallow/
+
 # Feature flags (local development only)
 frontend/public/feature-flags.js
 

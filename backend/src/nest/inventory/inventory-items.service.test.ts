@@ -88,10 +88,11 @@ describe('InventoryItemsService', () => {
   // ── findByList ──────────────────────────────────────────────
 
   describe('findByList', () => {
-    it('should return paginated items', async () => {
+    it('should return paginated items with custom values', async () => {
       const items = [makeItemRow({ code: 'KRN-001' }), makeItemRow({ code: 'KRN-002' })];
       qf.mockResolvedValueOnce([{ count: '2' }]);
       qf.mockResolvedValueOnce(items);
+      qf.mockResolvedValueOnce([]); // custom values batch
 
       const result = await service.findByList('list-uuid-1', {
         status: undefined,
@@ -102,11 +103,13 @@ describe('InventoryItemsService', () => {
 
       expect(result.total).toBe(2);
       expect(result.items).toHaveLength(2);
+      expect(result.customValuesByItem).toEqual({});
     });
 
     it('should filter by status', async () => {
       qf.mockResolvedValueOnce([{ count: '1' }]);
       qf.mockResolvedValueOnce([makeItemRow({ status: 'defective' })]);
+      qf.mockResolvedValueOnce([]); // custom values batch
 
       const result = await service.findByList('list-uuid-1', {
         status: 'defective',
@@ -122,6 +125,7 @@ describe('InventoryItemsService', () => {
     it('should filter by search term', async () => {
       qf.mockResolvedValueOnce([{ count: '1' }]);
       qf.mockResolvedValueOnce([makeItemRow({ name: 'Brückenkran' })]);
+      qf.mockResolvedValueOnce([]); // custom values batch
 
       const result = await service.findByList('list-uuid-1', {
         status: undefined,
@@ -169,17 +173,19 @@ describe('InventoryItemsService', () => {
   // ── findByUuid ──────────────────────────────────────────────
 
   describe('findByUuid', () => {
-    it('should return item with photos and custom values', async () => {
+    it('should return item with photos, custom values and fields', async () => {
       const item = { ...makeItemRow(), list_title: 'Kräne', list_code_prefix: 'KRN' };
       qof.mockResolvedValueOnce(item);
       qf.mockResolvedValueOnce([]); // photos
       qf.mockResolvedValueOnce([]); // custom values
+      qf.mockResolvedValueOnce([]); // field definitions
 
       const result = await service.findByUuid('item-uuid-1');
 
       expect(result.item.code).toBe('KRN-001');
       expect(result.photos).toHaveLength(0);
       expect(result.customValues).toHaveLength(0);
+      expect(result.fields).toHaveLength(0);
     });
 
     it('should throw NotFoundException for missing item', async () => {
@@ -465,6 +471,7 @@ describe('InventoryItemsService', () => {
     it('should handle combined status + search filter', async () => {
       qf.mockResolvedValueOnce([{ count: '1' }]);
       qf.mockResolvedValueOnce([makeItemRow()]);
+      qf.mockResolvedValueOnce([]); // custom values batch
 
       await service.findByList('list-uuid-1', {
         status: 'operational',
@@ -506,6 +513,88 @@ describe('InventoryItemsService', () => {
 
       const countSql = qf.mock.calls[0]?.[0] as string;
       expect(countSql).not.toContain('ILIKE');
+    });
+
+    it('should return existing item when update has no standard fields (only customValues)', async () => {
+      mockClient.query.mockResolvedValueOnce({ rows: [makeItemRow()] }); // SELECT
+      mockClient.query.mockResolvedValueOnce({ rows: [] }); // custom value upsert
+
+      const result = await service.update('item-uuid-1', {
+        customValues: [{ fieldId: 'f-1', valueText: 'test' }],
+      } as never);
+
+      expect(result.name).toBe('Brückenkran Halle A');
+      // First call should be SELECT (no SET clauses)
+      const sql = mockClient.query.mock.calls[0]?.[0] as string;
+      expect(sql).toContain('SELECT');
+    });
+
+    it('should allow setting nullable fields to null via update', async () => {
+      const updated = makeItemRow({ description: null, location: null });
+      mockClient.query.mockResolvedValueOnce({ rows: [updated] });
+
+      const result = await service.update('item-uuid-1', {
+        description: null,
+        location: null,
+      } as never);
+
+      expect(result.description).toBeNull();
+      expect(result.location).toBeNull();
+      // Should include both fields in SET clause
+      const sql = mockClient.query.mock.calls[0]?.[0] as string;
+      expect(sql).toContain('description');
+      expect(sql).toContain('location');
+    });
+
+    it('should batch-load custom values grouped by item_id', async () => {
+      const items = [
+        makeItemRow({ id: 'item-1', code: 'KRN-001' }),
+        makeItemRow({ id: 'item-2', code: 'KRN-002' }),
+      ];
+      qf.mockResolvedValueOnce([{ count: '2' }]); // count
+      qf.mockResolvedValueOnce(items); // items
+      qf.mockResolvedValueOnce([
+        { itemId: 'item-1', fieldId: 'f-1', fieldName: 'Gewicht', valueNumber: '500' },
+        { itemId: 'item-1', fieldId: 'f-2', fieldName: 'Typ', valueText: 'A' },
+        { itemId: 'item-2', fieldId: 'f-1', fieldName: 'Gewicht', valueNumber: '300' },
+      ]); // batch custom values
+
+      const result = await service.findByList('list-uuid-1', {
+        status: undefined,
+        search: undefined,
+        page: 1,
+        limit: 50,
+      });
+
+      expect(Object.keys(result.customValuesByItem)).toHaveLength(2);
+      expect(result.customValuesByItem['item-1']).toHaveLength(2);
+      expect(result.customValuesByItem['item-2']).toHaveLength(1);
+    });
+
+    it('should return fields in findByUuid', async () => {
+      const item = { ...makeItemRow(), list_title: 'Kräne', list_code_prefix: 'KRN' };
+      qof.mockResolvedValueOnce(item);
+      qf.mockResolvedValueOnce([]); // photos
+      qf.mockResolvedValueOnce([]); // custom values
+      qf.mockResolvedValueOnce([
+        {
+          id: 'f-1',
+          list_id: 'list-uuid-1',
+          field_name: 'Tragkraft',
+          field_type: 'number',
+          field_options: null,
+          field_unit: 'kg',
+          is_required: true,
+          sort_order: 0,
+        },
+      ]); // field definitions
+
+      const result = await service.findByUuid('item-uuid-1');
+
+      expect(result.fields).toHaveLength(1);
+      expect(result.fields[0]?.fieldName).toBe('Tragkraft');
+      expect(result.fields[0]?.fieldUnit).toBe('kg');
+      expect(result.fields[0]?.isRequired).toBe(true);
     });
 
     it('should handle multiple custom values on create', async () => {

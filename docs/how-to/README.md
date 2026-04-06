@@ -16,6 +16,7 @@
 | [HOW-TO-POSTGRESQL-CLI](./HOW-TO-POSTGRESQL-CLI.md)             | psql client setup on WSL2, meta-command reference           |
 | [HOW-TO-ENABLE-DEBUG-LOGGING](./HOW-TO-ENABLE-DEBUG-LOGGING.md) | Backend DEBUG + frontend PERF logging — opt-in activation   |
 | [HOW-TO-KNIP](./HOW-TO-KNIP.md)                                 | Dead code & unused dependency detection with Knip           |
+| [HOW-TO-FALLOW](./HOW-TO-FALLOW.md)                             | Dead code analysis with Fallow (Rust, fast, complementary to Knip) |
 
 ### Testing
 

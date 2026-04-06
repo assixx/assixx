@@ -15,12 +15,15 @@ import type { CustomValueInputSchema } from './dto/common.dto.js';
 import type { CreateItemDto } from './dto/create-item.dto.js';
 import type { UpdateItemDto } from './dto/update-item.dto.js';
 import type {
+  InventoryCustomField,
+  InventoryCustomFieldRow,
   InventoryCustomValueWithField,
   InventoryItemPhoto,
   InventoryItemRow,
   InventoryItemStatus,
   InventoryListRow,
 } from './inventory.types.js';
+import { mapFieldRow } from './inventory.types.js';
 
 interface ItemDetailRow extends InventoryItemRow {
   list_title: string;
@@ -33,7 +36,7 @@ type CustomValueInput = z.infer<typeof CustomValueInputSchema>;
 export class InventoryItemsService {
   constructor(private readonly db: DatabaseService) {}
 
-  /** Items for a specific list, with optional filters */
+  /** Items for a specific list, with optional filters + custom values */
   async findByList(
     listId: string,
     filters: {
@@ -42,7 +45,11 @@ export class InventoryItemsService {
       page: number;
       limit: number;
     },
-  ): Promise<{ items: InventoryItemRow[]; total: number }> {
+  ): Promise<{
+    items: InventoryItemRow[];
+    total: number;
+    customValuesByItem: Record<string, InventoryCustomValueWithField[]>;
+  }> {
     const { where, params, paramIndex } = this.buildItemFilters(listId, filters);
 
     const countRows = await this.db.tenantQuery<{ count: string }>(
@@ -60,7 +67,11 @@ export class InventoryItemsService {
       [...params, filters.limit, offset],
     );
 
-    return { items, total };
+    const customValuesByItem = await this.loadCustomValuesByItems(
+      items.map((i: InventoryItemRow) => i.id),
+    );
+
+    return { items, total, customValuesByItem };
   }
 
   /** Single item by UUID — used as QR code target */
@@ -68,6 +79,7 @@ export class InventoryItemsService {
     item: ItemDetailRow;
     photos: InventoryItemPhoto[];
     customValues: InventoryCustomValueWithField[];
+    fields: InventoryCustomField[];
   }> {
     const item = await this.db.tenantQueryOne<ItemDetailRow>(
       `SELECT i.*, l.title AS list_title, l.code_prefix AS list_code_prefix
@@ -103,7 +115,14 @@ export class InventoryItemsService {
       [uuid, IS_ACTIVE.DELETED],
     );
 
-    return { item, photos, customValues };
+    const fieldRows = await this.db.tenantQuery<InventoryCustomFieldRow>(
+      `SELECT * FROM inventory_custom_fields
+       WHERE list_id = $1 AND is_active != $2
+       ORDER BY sort_order, field_name`,
+      [item.list_id, IS_ACTIVE.DELETED],
+    );
+
+    return { item, photos, customValues, fields: fieldRows.map(mapFieldRow) };
   }
 
   /**
@@ -220,6 +239,34 @@ export class InventoryItemsService {
   }
 
   // ── Private Helpers ─────────────────────────────────────────────
+
+  /** Batch-load custom values for multiple items (1 query, grouped by item_id) */
+  private async loadCustomValuesByItems(
+    itemIds: string[],
+  ): Promise<Record<string, InventoryCustomValueWithField[]>> {
+    if (itemIds.length === 0) return {};
+
+    const rows = await this.db.tenantQuery<InventoryCustomValueWithField & { itemId: string }>(
+      `SELECT v.item_id AS "itemId", v.field_id AS "fieldId",
+              f.field_name AS "fieldName", f.field_type AS "fieldType",
+              f.field_unit AS "fieldUnit", f.is_required AS "isRequired",
+              v.value_text AS "valueText", v.value_number AS "valueNumber",
+              v.value_date AS "valueDate", v.value_boolean AS "valueBoolean"
+       FROM inventory_custom_values v
+       JOIN inventory_custom_fields f ON f.id = v.field_id
+       WHERE v.item_id = ANY($1::uuid[]) AND v.is_active != $2 AND f.is_active != $2
+       ORDER BY f.sort_order`,
+      [itemIds, IS_ACTIVE.DELETED],
+    );
+
+    const result: Record<string, InventoryCustomValueWithField[]> = {};
+    for (const row of rows) {
+      const { itemId, ...value } = row;
+      result[itemId] ??= [];
+      result[itemId].push(value);
+    }
+    return result;
+  }
 
   /** Lock list row, generate code, increment counter — all inside parent transaction */
   private async lockListAndGenerateCode(

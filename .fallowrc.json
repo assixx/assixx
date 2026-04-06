@@ -1,0 +1,31 @@
+{
+  "$schema": "https://raw.githubusercontent.com/fallow-rs/fallow/main/schema.json",
+  "entry": [
+    "backend/scripts/**/*.{js,ts}",
+    "backend/src/workers/deletion-worker.ts",
+    "frontend/src/instrumentation.server.ts",
+    "frontend/.storybook/*.js"
+  ],
+  "ignorePatterns": [
+    "**/database/migrations/**",
+    "**/database/seeds/**",
+    "**/customer/**",
+    "**/archive/**",
+    "**/frontend/test/mocks/**"
+  ],
+  "ignoreDependencies": [
+    "pino-http",
+    "pino-loki",
+    "pino-pretty"
+  ],
+  "rules": {
+    "unused-files": "warn",
+    "unused-exports": "warn",
+    "unused-types": "warn",
+    "unused-class-members": "off"
+  },
+  "health": {
+    "maxCyclomatic": 10,
+    "maxCognitive": 15
+  }
+}

@@ -181,9 +181,9 @@ describe('Inventory: Custom Fields', () => {
 
     expect(res.status).toBe(201);
     const body = (await res.json()) as JsonBody;
-    expect(body.data.field_name).toBe('Tragkraft');
-    expect(body.data.field_type).toBe('number');
-    expect(body.data.field_unit).toBe('kg');
+    expect(body.data.fieldName).toBe('Tragkraft');
+    expect(body.data.fieldType).toBe('number');
+    expect(body.data.fieldUnit).toBe('kg');
 
     fieldId = body.data.id as string;
   });
@@ -197,7 +197,7 @@ describe('Inventory: Custom Fields', () => {
 
     expect(res.status).toBe(200);
     const body = (await res.json()) as JsonBody;
-    expect(body.data.field_unit).toBe('t');
+    expect(body.data.fieldUnit).toBe('t');
   });
 });
 

@@ -323,5 +323,59 @@ describe('InventoryListsService', () => {
       const params = qf.mock.calls[0]?.[1] as unknown[];
       expect(params[0]).toBe(4); // IS_ACTIVE.DELETED = 4
     });
+
+    it('should return existing list when update has no changed fields', async () => {
+      const existing = makeListRow();
+      qof.mockResolvedValueOnce(existing); // existing check
+
+      const result = await service.update('list-uuid-1', {} as never);
+
+      expect(result.title).toBe('Kräne');
+      // No UPDATE query should be called (only the existing check)
+      expect(qf).not.toHaveBeenCalled();
+    });
+
+    it('should allow setting nullable fields to null via update', async () => {
+      qof.mockResolvedValueOnce(makeListRow()); // existing
+      qf.mockResolvedValueOnce([makeListRow({ description: null, category: null })]);
+
+      const result = await service.update('list-uuid-1', {
+        description: null,
+        category: null,
+      } as never);
+
+      expect(result.description).toBeNull();
+      expect(result.category).toBeNull();
+    });
+
+    it('should map fields to camelCase in findById', async () => {
+      qof.mockResolvedValueOnce({ ...makeListRow(), total_items: '0' });
+      qf.mockResolvedValueOnce([]); // status counts
+      qf.mockResolvedValueOnce([
+        {
+          id: 'f-1',
+          tenant_id: 1,
+          list_id: 'list-uuid-1',
+          field_name: 'Tragkraft',
+          field_type: 'number',
+          field_options: null,
+          field_unit: 'kg',
+          is_required: true,
+          sort_order: 0,
+          is_active: 1,
+          created_at: new Date(),
+          updated_at: new Date(),
+        },
+      ]); // fields
+
+      const result = await service.findById('list-uuid-1');
+
+      expect(result.fields).toHaveLength(1);
+      expect(result.fields[0]?.fieldName).toBe('Tragkraft');
+      expect(result.fields[0]?.fieldType).toBe('number');
+      expect(result.fields[0]?.fieldUnit).toBe('kg');
+      expect(result.fields[0]?.isRequired).toBe(true);
+      expect(result.fields[0]?.sortOrder).toBe(0);
+    });
   });
 });

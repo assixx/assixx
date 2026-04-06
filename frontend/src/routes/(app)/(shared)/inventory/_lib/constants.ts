@@ -105,6 +105,7 @@ export const API_ENDPOINTS = {
   item: (uuid: string) => `/inventory/items/${uuid}`,
   listFields: (listId: string) => `/inventory/lists/${listId}/fields`,
   field: (fieldId: string) => `/inventory/fields/${fieldId}`,
+  itemPhotos: (uuid: string) => `/inventory/items/${uuid}/photos`,
 } as const;
 
 // ── Form Defaults ──────────────────────────────────────────────

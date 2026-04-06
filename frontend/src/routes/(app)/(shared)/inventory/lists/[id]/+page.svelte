@@ -4,7 +4,7 @@
    * @module inventory/lists/[id]/+page
    *
    * Table view of all items in an inventory list.
-   * Supports filtering, item creation, and navigation to item detail.
+   * Supports filtering, item creation with custom fields, and navigation to item detail.
    */
   import { SvelteURLSearchParams } from 'svelte/reactivity';
 
@@ -23,7 +23,12 @@
   } from '../../_lib/constants';
 
   import type { PageData } from './$types';
-  import type { InventoryItemStatus } from '../../_lib/types';
+  import type {
+    CustomValueInput,
+    CustomValueWithField,
+    InventoryCustomField,
+    InventoryItemStatus,
+  } from '../../_lib/types';
 
   const log = createLogger('InventoryItemsPage');
   const apiClient = getApiClient();
@@ -34,6 +39,7 @@
   const items = $derived(data.items);
   const fields = $derived(data.fields);
   const total = $derived(data.total);
+  const customValuesByItem = $derived(data.customValuesByItem);
 
   // ── UI State ──────────────────────────────────────────────────
 
@@ -50,6 +56,18 @@
   let formNotes = $state('');
   let filterStatus = $state<InventoryItemStatus | ''>('');
   let searchQuery = $state('');
+
+  // Custom field values for create form
+  interface CreateFieldState {
+    fieldId: string;
+    fieldType: string;
+    valueText: string;
+    valueNumber: string;
+    valueDate: string;
+    valueBoolean: boolean;
+  }
+
+  let createFieldStates = $state<CreateFieldState[]>([]);
 
   const totalPages = $derived(Math.max(1, Math.ceil(total / 50)));
   const currentPage = $derived(data.currentPage);
@@ -71,19 +89,71 @@
     formSerialNumber = '';
     formYearOfManufacture = '';
     formNotes = '';
+    createFieldStates = fields.map((f: InventoryCustomField) => ({
+      fieldId: f.id,
+      fieldType: f.fieldType,
+      valueText: '',
+      valueNumber: '',
+      valueDate: '',
+      valueBoolean: false,
+    }));
+  }
+
+  function openCreateModal(): void {
+    resetForm();
+    showCreateModal = true;
+  }
+
+  function addIfNotEmpty(target: Record<string, unknown>, key: string, value: string): void {
+    const trimmed = value.trim();
+    if (trimmed !== '') target[key] = trimmed;
+  }
+
+  function collectCreateCustomValues(): CustomValueInput[] {
+    const cvs: CustomValueInput[] = [];
+    for (const fs of createFieldStates) {
+      const cv = buildCreateCvInput(fs);
+      if (cv !== null) cvs.push(cv);
+    }
+    return cvs;
+  }
+
+  function buildCreateCvInput(fs: CreateFieldState): CustomValueInput | null {
+    if (fs.fieldType === 'text' || fs.fieldType === 'select') {
+      return fs.valueText.trim() !== '' ?
+          { fieldId: fs.fieldId, valueText: fs.valueText.trim() }
+        : null;
+    }
+    if (fs.fieldType === 'number') {
+      return fs.valueNumber.trim() !== '' ?
+          { fieldId: fs.fieldId, valueNumber: Number(fs.valueNumber) }
+        : null;
+    }
+    if (fs.fieldType === 'date') {
+      return fs.valueDate !== '' ? { fieldId: fs.fieldId, valueDate: fs.valueDate } : null;
+    }
+    if (fs.fieldType === 'boolean') {
+      return { fieldId: fs.fieldId, valueBoolean: fs.valueBoolean };
+    }
+    return null;
   }
 
   function buildItemPayload(listId: string): Record<string, unknown> {
     const payload: Record<string, unknown> = { listId, name: formName.trim() };
-    if (formDescription.trim() !== '') payload.description = formDescription.trim();
+
+    addIfNotEmpty(payload, 'description', formDescription);
     if (formStatus !== 'operational') payload.status = formStatus;
-    if (formLocation.trim() !== '') payload.location = formLocation.trim();
-    if (formManufacturer.trim() !== '') payload.manufacturer = formManufacturer.trim();
-    if (formModel.trim() !== '') payload.model = formModel.trim();
-    if (formSerialNumber.trim() !== '') payload.serialNumber = formSerialNumber.trim();
+    addIfNotEmpty(payload, 'location', formLocation);
+    addIfNotEmpty(payload, 'manufacturer', formManufacturer);
+    addIfNotEmpty(payload, 'model', formModel);
+    addIfNotEmpty(payload, 'serialNumber', formSerialNumber);
     if (formYearOfManufacture.trim() !== '')
       payload.yearOfManufacture = Number(formYearOfManufacture);
-    if (formNotes.trim() !== '') payload.notes = formNotes.trim();
+    addIfNotEmpty(payload, 'notes', formNotes);
+
+    const cvs = collectCreateCustomValues();
+    if (cvs.length > 0) payload.customValues = cvs;
+
     return payload;
   }
 
@@ -120,6 +190,20 @@
     const params = new SvelteURLSearchParams(page.url.searchParams);
     params.set('page', String(p));
     void goto(`${page.url.pathname}?${params.toString()}`, { invalidateAll: true });
+  }
+
+  /** Get display value for a custom field from the batch-loaded values */
+  function getCustomValue(itemId: string, fieldId: string, fieldType: string): string {
+    const valuesMap: Partial<Record<string, CustomValueWithField[]>> = customValuesByItem;
+    const values = valuesMap[itemId];
+    if (values === undefined) return '—';
+    const cv = values.find((v: CustomValueWithField) => v.fieldId === fieldId);
+    if (cv === undefined) return '—';
+    if (fieldType === 'boolean') return cv.valueBoolean === true ? 'Ja' : 'Nein';
+    if (fieldType === 'number' && cv.valueNumber !== null) return cv.valueNumber;
+    if (fieldType === 'date' && cv.valueDate !== null)
+      return new Date(cv.valueDate).toLocaleDateString('de-DE');
+    return cv.valueText ?? '—';
   }
 </script>
 
@@ -164,7 +248,7 @@
     <button
       type="button"
       class="btn btn--primary"
-      onclick={() => (showCreateModal = true)}
+      onclick={openCreateModal}
     >
       <i class="fas fa-plus mr-2"></i>Neuer Gegenstand
     </button>
@@ -245,8 +329,10 @@
             <td class="text-secondary px-4 py-3 text-sm">{item.location ?? '—'}</td>
             <td class="text-secondary px-4 py-3 text-sm">{item.manufacturer ?? '—'}</td>
             <td class="px-4 py-3 font-mono text-sm">{item.serial_number ?? '—'}</td>
-            {#each fields as _field (_field.id)}
-              <td class="text-secondary px-4 py-3 text-sm">—</td>
+            {#each fields as field (field.id)}
+              <td class="text-secondary px-4 py-3 text-sm">
+                {getCustomValue(item.id, field.id, field.fieldType)}
+              </td>
             {/each}
           </tr>
         {:else}
@@ -297,60 +383,72 @@
   {#if showCreateModal}
     <!-- svelte-ignore a11y_no_static_element_interactions, a11y_click_events_have_key_events -->
     <div
-      class="modal-overlay"
+      class="modal-overlay modal-overlay--active"
       onclick={() => (showCreateModal = false)}
     >
       <!-- svelte-ignore a11y_no_static_element_interactions, a11y_click_events_have_key_events -->
       <div
-        class="modal-content glass-card max-w-lg p-6"
+        class="ds-modal ds-modal--lg"
         onclick={(e: MouseEvent) => {
           e.stopPropagation();
         }}
       >
-        <h2 class="mb-4 text-xl font-bold">
-          <i class="fas fa-plus mr-2"></i>Neuer Gegenstand
-        </h2>
+        <div class="ds-modal__header">
+          <h3 class="ds-modal__title">
+            <i class="fas fa-plus mr-2"></i>Neuer Gegenstand
+          </h3>
+          <button
+            type="button"
+            class="ds-modal__close"
+            aria-label="Schliessen"
+            onclick={() => (showCreateModal = false)}
+          >
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+
         <form
+          class="ds-modal__body"
           onsubmit={(e: SubmitEvent) => {
             e.preventDefault();
             void createItem();
           }}
         >
           <div class="grid gap-4">
-            <div>
+            <div class="form-field">
               <label
                 for="item-name"
-                class="label">Name *</label
+                class="form-field__label">Name *</label
               >
               <input
                 id="item-name"
                 type="text"
-                class="input"
+                class="form-field__control"
                 bind:value={formName}
                 required
               />
             </div>
-            <div>
+            <div class="form-field">
               <label
                 for="item-desc"
-                class="label">Beschreibung</label
+                class="form-field__label">Beschreibung</label
               >
               <textarea
                 id="item-desc"
-                class="input"
+                class="form-field__control"
                 rows="2"
                 bind:value={formDescription}
               ></textarea>
             </div>
             <div class="grid grid-cols-2 gap-4">
-              <div>
+              <div class="form-field">
                 <label
                   for="item-status"
-                  class="label">Status</label
+                  class="form-field__label">Status</label
                 >
                 <select
                   id="item-status"
-                  class="input"
+                  class="form-field__control"
                   bind:value={formStatus}
                 >
                   {#each Object.entries(ITEM_STATUS_LABELS) as [value, label] (value)}
@@ -358,100 +456,175 @@
                   {/each}
                 </select>
               </div>
-              <div>
+              <div class="form-field">
                 <label
                   for="item-location"
-                  class="label">Standort</label
+                  class="form-field__label">Standort</label
                 >
                 <input
                   id="item-location"
                   type="text"
-                  class="input"
+                  class="form-field__control"
                   bind:value={formLocation}
                 />
               </div>
             </div>
             <div class="grid grid-cols-2 gap-4">
-              <div>
+              <div class="form-field">
                 <label
                   for="item-manufacturer"
-                  class="label">Hersteller</label
+                  class="form-field__label">Hersteller</label
                 >
                 <input
                   id="item-manufacturer"
                   type="text"
-                  class="input"
+                  class="form-field__control"
                   bind:value={formManufacturer}
                 />
               </div>
-              <div>
+              <div class="form-field">
                 <label
                   for="item-model"
-                  class="label">Modell</label
+                  class="form-field__label">Modell</label
                 >
                 <input
                   id="item-model"
                   type="text"
-                  class="input"
+                  class="form-field__control"
                   bind:value={formModel}
                 />
               </div>
             </div>
             <div class="grid grid-cols-2 gap-4">
-              <div>
+              <div class="form-field">
                 <label
                   for="item-serial"
-                  class="label">Seriennummer</label
+                  class="form-field__label">Seriennummer</label
                 >
                 <input
                   id="item-serial"
                   type="text"
-                  class="input"
+                  class="form-field__control"
                   bind:value={formSerialNumber}
                 />
               </div>
-              <div>
+              <div class="form-field">
                 <label
                   for="item-year"
-                  class="label">Baujahr</label
+                  class="form-field__label">Baujahr</label
                 >
                 <input
                   id="item-year"
                   type="number"
-                  class="input"
+                  class="form-field__control"
                   min="1900"
                   max="2100"
                   bind:value={formYearOfManufacture}
                 />
               </div>
             </div>
-            <div>
+            <div class="form-field">
               <label
                 for="item-notes"
-                class="label">Notizen</label
+                class="form-field__label">Notizen</label
               >
               <textarea
                 id="item-notes"
-                class="input"
+                class="form-field__control"
                 rows="2"
                 bind:value={formNotes}
               ></textarea>
             </div>
+
+            <!-- Custom Fields (#3) -->
+            {#if createFieldStates.length > 0}
+              <div class="border-t border-[var(--color-border,rgb(255_255_255/10%))] pt-4">
+                <h4 class="mb-3 text-sm font-semibold text-[var(--color-text-secondary)]">
+                  <i class="fas fa-sliders-h mr-1"></i> Custom Fields
+                </h4>
+                {#each createFieldStates as fs, idx (fs.fieldId)}
+                  {@const fieldDef = fields.find((f) => f.id === fs.fieldId)}
+                  {#if fieldDef}
+                    <div class="form-field mb-3">
+                      <label
+                        class="form-field__label"
+                        for="create-cf-{fs.fieldId}"
+                      >
+                        {fieldDef.fieldName}
+                        {#if fieldDef.fieldUnit}<span class="text-xs font-normal"
+                            >({fieldDef.fieldUnit})</span
+                          >{/if}
+                        {#if fieldDef.isRequired}<span class="text-[var(--color-danger)]">*</span
+                          >{/if}
+                      </label>
+                      {#if fs.fieldType === 'text'}
+                        <input
+                          id="create-cf-{fs.fieldId}"
+                          type="text"
+                          class="form-field__control"
+                          bind:value={createFieldStates[idx].valueText}
+                          required={fieldDef.isRequired}
+                        />
+                      {:else if fs.fieldType === 'number'}
+                        <input
+                          id="create-cf-{fs.fieldId}"
+                          type="number"
+                          class="form-field__control"
+                          step="any"
+                          bind:value={createFieldStates[idx].valueNumber}
+                          required={fieldDef.isRequired}
+                        />
+                      {:else if fs.fieldType === 'date'}
+                        <input
+                          id="create-cf-{fs.fieldId}"
+                          type="date"
+                          class="form-field__control"
+                          bind:value={createFieldStates[idx].valueDate}
+                          required={fieldDef.isRequired}
+                        />
+                      {:else if fs.fieldType === 'boolean'}
+                        <label class="flex cursor-pointer items-center gap-2">
+                          <input
+                            id="create-cf-{fs.fieldId}"
+                            type="checkbox"
+                            bind:checked={createFieldStates[idx].valueBoolean}
+                          />
+                          <span class="text-sm">{fieldDef.fieldName}</span>
+                        </label>
+                      {:else if fs.fieldType === 'select' && fieldDef.fieldOptions}
+                        <select
+                          id="create-cf-{fs.fieldId}"
+                          class="form-field__control"
+                          bind:value={createFieldStates[idx].valueText}
+                          required={fieldDef.isRequired}
+                        >
+                          <option value="">-- Auswählen --</option>
+                          {#each fieldDef.fieldOptions as opt (opt)}
+                            <option value={opt}>{opt}</option>
+                          {/each}
+                        </select>
+                      {/if}
+                    </div>
+                  {/if}
+                {/each}
+              </div>
+            {/if}
           </div>
-          <div class="mt-6 flex justify-end gap-3">
+
+          <div class="ds-modal__footer">
             <button
               type="button"
-              class="btn btn--secondary"
+              class="btn btn-cancel"
               onclick={() => (showCreateModal = false)}
             >
               Abbrechen
             </button>
             <button
               type="submit"
-              class="btn btn--primary"
+              class="btn btn-primary"
               disabled={creating || formName.trim() === ''}
             >
-              {#if creating}<i class="fas fa-spinner fa-spin mr-2"></i>{/if}
+              {#if creating}<span class="spinner-ring spinner-ring--sm mr-2"></span>{/if}
               Erstellen
             </button>
           </div>

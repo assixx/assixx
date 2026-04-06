@@ -10,6 +10,7 @@ import { apiFetch, apiFetchWithPermission } from '$lib/server/api-fetch';
 
 import type { PageServerLoad } from './$types';
 import type {
+  CustomValueWithField,
   InventoryCustomField,
   InventoryItem,
   InventoryList,
@@ -28,6 +29,7 @@ const EMPTY_RESULT = {
   items: [] as InventoryItem[],
   total: 0,
   currentPage: 1,
+  customValuesByItem: {} as Record<string, CustomValueWithField[]>,
 };
 
 function buildItemsUrl(listId: string, pg: string, status?: string, search?: string): string {
@@ -62,13 +64,16 @@ function buildSuccessResult(
   itemsData: ItemsPage | null,
   pg: string,
 ) {
+  const emptyItems = { items: [], total: 0, customValuesByItem: {} };
+  const resolved = itemsData ?? emptyItems;
   return {
     permissionDenied: false as const,
     list: listData?.list ?? null,
     fields: listData?.fields ?? [],
-    items: itemsData?.items ?? [],
-    total: itemsData?.total ?? 0,
+    items: resolved.items,
+    total: resolved.total,
     currentPage: Number(pg),
+    customValuesByItem: resolved.customValuesByItem,
   };
 }
 
