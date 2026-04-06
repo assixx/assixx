@@ -10,21 +10,7 @@ import {
   showInfoAlert,
 } from '$lib/stores/toast';
 
-import { MESSAGES } from './constants';
-
 import type { ToastType } from './types';
-
-/** Error code to message mapping for picture upload */
-const PICTURE_UPLOAD_ERROR_MAP: Record<string, string> = {
-  INVALID_TYPE: MESSAGES.invalidImageType,
-  FILE_TOO_LARGE: MESSAGES.fileTooLarge,
-};
-
-/** Get error message for picture upload errors */
-export function getPictureUploadErrorMessage(error: unknown): string {
-  const code = error instanceof Error ? error.message : '';
-  return PICTURE_UPLOAD_ERROR_MAP[code] ?? MESSAGES.pictureUploadError;
-}
 
 /** Toast type to store function mapping */
 const TOAST_FN_MAP: Record<ToastType, (msg: string) => string> = {

@@ -454,16 +454,20 @@ docker exec assixx-postgres psql -U assixx_user -d assixx -c "
 ALTER TABLE new_table ENABLE ROW LEVEL SECURITY;
 ALTER TABLE new_table FORCE ROW LEVEL SECURITY;
 
+-- Strict mode: 0 rows without tenant context (no bypass clause!)
+-- Cross-tenant operations use sys_user (BYPASSRLS) instead.
 CREATE POLICY tenant_isolation ON new_table
     FOR ALL
     USING (
-        NULLIF(current_setting('app.tenant_id', true), '') IS NULL
-        OR tenant_id = NULLIF(current_setting('app.tenant_id', true), '')::integer
+        tenant_id = NULLIF(current_setting('app.tenant_id', true), '')::integer
     );
 
--- GRANTs for app_user
+-- GRANTs — Triple-User Model (app_user + sys_user)
 GRANT SELECT, INSERT, UPDATE, DELETE ON new_table TO app_user;
+GRANT SELECT, INSERT, UPDATE, DELETE ON new_table TO sys_user;
+-- If table has a SEQUENCE:
 GRANT USAGE, SELECT ON SEQUENCE new_table_id_seq TO app_user;
+GRANT USAGE, SELECT ON SEQUENCE new_table_id_seq TO sys_user;
 ```
 
 ---

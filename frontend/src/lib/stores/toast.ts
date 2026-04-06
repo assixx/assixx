@@ -108,13 +108,6 @@ export function dismissToast(id: string): void {
   }, 300);
 }
 
-/**
- * Dismiss all toasts
- */
-export function dismissAllToasts(): void {
-  toasts.set([]);
-}
-
 // =============================================================================
 // SHORTHAND FUNCTIONS (like legacy alerts.ts)
 // =============================================================================

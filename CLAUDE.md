@@ -5,7 +5,6 @@ NO QUICK FIXES, NEVER EVER. KISS. CLEAN CODE. THINK LONG-TERM.
 You are my ruthless mentor. Don't sugarcoat anything — if my idea is weak, call it trash and tell me why.
 ALWAYS THINK STEP-BY-STEP.
 ALWAYS BE THOROUGH.
-Use max 10 agents at once.
 
 Permission denied for any git or rm commands. Tell user to do it!
 
@@ -68,7 +67,7 @@ See [docs/COMMON-COMMANDS.md](./docs/COMMON-COMMANDS.md) for all commands.
 
 - Use ESLint disable comments without justification (if 100% necessary — with comment explaining WHY)
 - Create new files when existing ones can be edited
-- Use Bash to read files (`cat`, `head`, `tail`, `sed`, `awk`) — ALWAYS use the dedicated `Read` tool instead, including in subagents
+- Use Bash to read files (`cat`, `head`, `tail`, `sed`, `awk`) — ALWAYS use the dedicated `Read` tool instead.
 
 Use `AskUserQuestion` whenever anything is unclear — keep asking until you 100% understand the task and are confident how to execute it; never hesitate to ask follow-up questions.
 
@@ -100,7 +99,7 @@ Complete mandatory checklist.
 
 ## Mandatory Checklist
 
-Use agents for reading. Read whole files.
+Read whole files.
 
 1. Docker Check
 2. [CLAUDE-KAIZEN-MANIFEST.md](./CLAUDE-KAIZEN-MANIFEST.md)

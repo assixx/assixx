@@ -68,7 +68,6 @@ export {
   showConfirm,
   showConfirmDanger,
   showConfirmWarning,
-  showInfoModal,
 } from './alerts';
 
 // Organization filter utilities (Area/Department inheritance)

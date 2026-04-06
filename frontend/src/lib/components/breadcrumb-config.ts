@@ -155,6 +155,16 @@ const dynamicRoutes: DynamicRoute[] = [
     label: 'Benutzerprofil',
     icon: 'fa-id-card',
   },
+  {
+    pattern: /^\/inventory\/lists\/[^/]+$/,
+    label: 'Inventarliste',
+    icon: 'fa-list',
+  },
+  {
+    pattern: /^\/inventory\/items\/[^/]+$/,
+    label: 'Gegenstand',
+    icon: 'fa-cube',
+  },
 ];
 
 /**
@@ -273,6 +283,7 @@ const staticUrlMappings: Partial<Record<string, RouteMapping>> = {
   },
   '/work-orders/admin': { label: 'Alle Aufträge', icon: 'fa-clipboard-check' },
   '/manage-dummies': { label: 'Dummy-Benutzer verwalten', icon: 'fa-desktop' },
+  '/inventory': { label: 'Inventar', icon: 'fa-boxes-stacked' },
   '/settings/organigram': { label: 'Organigramm', icon: 'fa-sitemap' },
   '/settings/organigram/positions': {
     label: 'Positionen',
@@ -379,6 +390,18 @@ const staticDynamicIntermediates: DynamicIntermediate[] = [
     label: 'Arbeitsaufträge',
     href: '/work-orders',
     icon: 'fa-clipboard-check',
+  },
+  {
+    pattern: /^\/inventory\/lists\/[^/]+$/,
+    label: 'Inventar',
+    href: '/inventory',
+    icon: 'fa-boxes-stacked',
+  },
+  {
+    pattern: /^\/inventory\/items\/[^/]+$/,
+    label: 'Inventar',
+    href: '/inventory',
+    icon: 'fa-boxes-stacked',
   },
 ];
 

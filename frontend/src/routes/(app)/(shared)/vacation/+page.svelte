@@ -61,7 +61,7 @@
   // LOCAL UI STATE
   // ==========================================================================
 
-  let activeTab = $state<ViewTab>('my-requests');
+  let activeTab = $state<ViewTab>('incoming');
   let statusFilter = $state<VacationRequestStatus | 'all'>('all');
   let yearFilter = $state(new Date().getFullYear());
 

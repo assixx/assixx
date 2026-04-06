@@ -26,6 +26,7 @@
   let error: string | null = $state(null);
   let showToast = $state(false);
   let isTimeout = $state(false);
+  let emailRef: HTMLInputElement | undefined;
 
   // Toast auto-dismiss configuration (1:1 like legacy)
   const TOAST_DURATION_SECONDS = 3;
@@ -61,8 +62,11 @@
     }
   }
 
-  // URL parameter check after hydration
+  // Focus email input + URL parameter check after hydration
+  // Programmatic focus replaces HTML autofocus attribute which races
+  // with SvelteKit hydration → "Autofocus processing was blocked"
   onMount(() => {
+    emailRef?.focus();
     setTimeout(() => {
       checkForMessages();
     }, 0);
@@ -189,7 +193,7 @@
   <div class="help-button">?</div>
 </div>
 
-<div class="login-container">
+<main class="login-container">
   <!-- Login Form -->
   <div class="card login-card">
     <!-- Logo inside card -->
@@ -201,11 +205,19 @@
           window.location.reload();
         }}
       >
-        <img
-          src={isDark() ? '/images/logo_darkmode.png' : '/images/logo_lightmode.png'}
-          alt="Assixx Logo"
-          class="login-logo"
-        />
+        <picture>
+          <source
+            srcset={isDark() ? '/images/logo_darkmode.webp' : '/images/logo_lightmode.webp'}
+            type="image/webp"
+          />
+          <img
+            src={isDark() ? '/images/logo_darkmode.png' : '/images/logo_lightmode.png'}
+            alt="Assixx Logo"
+            class="login-logo"
+            width="180"
+            height="87"
+          />
+        </picture>
       </button>
     </div>
 
@@ -300,14 +312,13 @@
         >
           E-Mail
         </label>
-        <!-- svelte-ignore a11y_autofocus -->
         <input
+          bind:this={emailRef}
           type="email"
           id="email"
           name="email"
           class="form-field__control"
           required
-          autofocus
           autocomplete="email"
           bind:value={email}
           disabled={loading}
@@ -363,7 +374,7 @@
   <div class="login-company">
     <p class="text-secondary">© 2025 Assixx - Powered by Simon Öztürks Computer Service</p>
   </div>
-</div>
+</main>
 
 <style>
   /* Back Button */

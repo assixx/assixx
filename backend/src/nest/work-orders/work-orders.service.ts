@@ -446,7 +446,7 @@ export class WorkOrdersService {
     }
 
     const rows = await this.db.tenantQuery<CalendarWorkOrderRow>(
-      `SELECT wo.uuid, wo.title, wo.due_date, wo.status, wo.priority, wo.source_type
+      `SELECT wo.uuid, wo.title, wo.due_date::text AS due_date, wo.status, wo.priority, wo.source_type
        FROM work_orders wo
        WHERE ${conditions.join(' AND ')}
        ORDER BY wo.due_date`,

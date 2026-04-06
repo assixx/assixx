@@ -61,6 +61,7 @@ ADRs document important architectural decisions:
 | [ADR-036](./ADR-036-organizational-scope-access-control.md)                  | Organizational Scope Access Control                | Accepted   | 2026-03-14 |
 | [ADR-037](./ADR-037-approvals-architecture.md)                               | Approvals (Freigabe-System) Architecture           | Accepted   | 2026-03-17 |
 | [ADR-038](./ADR-038-position-catalog-architecture.md)                        | Position Catalog Architecture                      | Proposed   | 2026-03-17 |
+| [ADR-040](./ADR-040-inventory-addon-architecture.md)                         | Inventory Addon Architecture                       | Accepted   | 2026-04-06 |
 
 ## Template
 

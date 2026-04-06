@@ -37,6 +37,15 @@ dist/
 *.tsbuildinfo
 *.d.ts.map
 
+# Lighthouse (performance audit reports + Chrome temp data)
+lighthouse-*.json
+lighthouse-*.html
+undefined*
+**/wsl.localhost/
+**/GraphiteDawnCache/
+**/DawnWebGPUCache/
+*wsl.localhost*
+
 # Vite build artifacts in root
 /css/
 /js/

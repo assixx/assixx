@@ -91,6 +91,13 @@ const TRANSIENT_TABLES = [
   'assets',
   'teams',
   'departments',
+
+  // Inventory: photos → custom_values → custom_fields → items → lists (FK CASCADE safe)
+  'inventory_item_photos',
+  'inventory_custom_values',
+  'inventory_custom_fields',
+  'inventory_items',
+  'inventory_lists',
 ] as const;
 
 const CLEANUP_SQL = `

@@ -78,7 +78,9 @@ export type ActivityEntityType =
   | 'hall'
   | 'approval'
   | 'approval_config'
-  | 'position_catalog';
+  | 'position_catalog'
+  | 'inventory_list'
+  | 'inventory_item';
 
 /**
  * Parameters for logging an activity

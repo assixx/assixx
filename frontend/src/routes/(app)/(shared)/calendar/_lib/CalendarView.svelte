@@ -126,7 +126,7 @@
 
     .ec-button {
       border-radius: 12px !important;
-
+      border: var(--glass-border) !important;
       transition: all 0.2s ease;
     }
 
@@ -328,7 +328,7 @@
     }
 
     .shift-indicator.shift-S {
-      color: var(--color-yellow-400);
+      color: var(--color-amber-dark);
     }
 
     .shift-indicator.shift-N {
