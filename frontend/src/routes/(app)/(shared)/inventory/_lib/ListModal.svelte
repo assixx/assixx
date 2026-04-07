@@ -7,8 +7,10 @@
    */
   import { FORM_STATUS_OPTIONS } from '@assixx/shared/constants';
 
+  import { onClickOutsideDropdown } from '$lib/actions/click-outside';
+
   import { loadCategories } from './api';
-  import { DEFAULT_LIST_ICON, LIST_ICON_OPTIONS, MESSAGES } from './constants';
+  import { CODE_DIGIT_OPTIONS, DEFAULT_LIST_ICON, LIST_ICON_OPTIONS, MESSAGES } from './constants';
   import { categoryState } from './state.svelte';
   import { getCodePreview } from './utils';
 
@@ -70,6 +72,26 @@
   // Category autocomplete
   let showCategorySuggestions = $state(false);
   let categoryInputFocused = $state(false);
+
+  // Dropdown state (KVP-style — single source of truth for all dropdowns)
+  let activeDropdown = $state<string | null>(null);
+
+  function toggleDropdown(id: string): void {
+    activeDropdown = activeDropdown === id ? null : id;
+  }
+
+  function closeAllDropdowns(): void {
+    activeDropdown = null;
+  }
+
+  const digitsLabel = $derived(
+    CODE_DIGIT_OPTIONS.find((opt) => opt.value === localCodeDigits)?.label ?? '',
+  );
+  const statusLabel = $derived(
+    FORM_STATUS_OPTIONS.find((opt) => opt.value === localIsActive)?.label ?? '',
+  );
+
+  $effect(() => onClickOutsideDropdown(closeAllDropdowns));
 
   // Sync props to local state
   $effect(() => {
@@ -282,20 +304,38 @@
 
           <!-- Digits -->
           <div class="form-field">
-            <label
-              class="form-field__label"
-              for="list-digits">{MESSAGES.LABEL_CODE_DIGITS}</label
-            >
-            <select
-              id="list-digits"
-              class="form-field__control"
-              bind:value={localCodeDigits}
-            >
-              <option value={2}>2 (01-99)</option>
-              <option value={3}>3 (001-999)</option>
-              <option value={4}>4 (0001-9999)</option>
-              <option value={5}>5 (00001-99999)</option>
-            </select>
+            <span class="form-field__label">{MESSAGES.LABEL_CODE_DIGITS}</span>
+            <div class="dropdown">
+              <button
+                type="button"
+                class="dropdown__trigger"
+                class:active={activeDropdown === 'digits'}
+                onclick={() => {
+                  toggleDropdown('digits');
+                }}
+              >
+                <span>{digitsLabel}</span>
+                <i class="fas fa-chevron-down"></i>
+              </button>
+              <div
+                class="dropdown__menu"
+                class:active={activeDropdown === 'digits'}
+              >
+                {#each CODE_DIGIT_OPTIONS as opt (opt.value)}
+                  <button
+                    type="button"
+                    class="dropdown__option"
+                    class:dropdown__option--selected={localCodeDigits === opt.value}
+                    onclick={() => {
+                      localCodeDigits = opt.value;
+                      closeAllDropdowns();
+                    }}
+                  >
+                    {opt.label}
+                  </button>
+                {/each}
+              </div>
+            </div>
           </div>
         </div>
 
@@ -331,19 +371,38 @@
       <!-- Status (edit mode only) -->
       {#if isEditMode}
         <div class="form-field mb-4">
-          <label
-            class="form-field__label"
-            for="list-status">Status</label
-          >
-          <select
-            id="list-status"
-            class="form-field__control"
-            bind:value={localIsActive}
-          >
-            {#each FORM_STATUS_OPTIONS as opt (opt.value)}
-              <option value={opt.value}>{opt.label}</option>
-            {/each}
-          </select>
+          <span class="form-field__label">Status</span>
+          <div class="dropdown">
+            <button
+              type="button"
+              class="dropdown__trigger"
+              class:active={activeDropdown === 'status'}
+              onclick={() => {
+                toggleDropdown('status');
+              }}
+            >
+              <span>{statusLabel}</span>
+              <i class="fas fa-chevron-down"></i>
+            </button>
+            <div
+              class="dropdown__menu"
+              class:active={activeDropdown === 'status'}
+            >
+              {#each FORM_STATUS_OPTIONS as opt (opt.value)}
+                <button
+                  type="button"
+                  class="dropdown__option"
+                  class:dropdown__option--selected={localIsActive === opt.value}
+                  onclick={() => {
+                    localIsActive = opt.value;
+                    closeAllDropdowns();
+                  }}
+                >
+                  {opt.label}
+                </button>
+              {/each}
+            </div>
+          </div>
         </div>
       {/if}
     </div>

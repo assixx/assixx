@@ -21,6 +21,7 @@ import type {
 } from '../common/permission-registry/permission.types.js';
 import { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import { DatabaseService } from '../database/database.service.js';
+import type { OrganizationalScope } from '../hierarchy-permission/organizational-scope.types.js';
 import type { PermissionEntry } from './dto/index.js';
 
 /** DB row shape for user_addon_permissions SELECT */
@@ -223,7 +224,7 @@ export class UserPermissionsService {
     userUuid: string,
     permissions: PermissionEntry[],
     assignedByUserId: number,
-    delegatorScope?: import('../hierarchy-permission/organizational-scope.types.js').OrganizationalScope,
+    delegatorScope?: OrganizationalScope,
   ): Promise<{ applied: number }> {
     let userId = 0;
     let oldState = new Map<string, DbPermissionRow>();

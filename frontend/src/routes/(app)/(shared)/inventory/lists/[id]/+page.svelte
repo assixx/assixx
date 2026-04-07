@@ -11,6 +11,7 @@
   import { goto, invalidateAll } from '$app/navigation';
   import { page } from '$app/state';
 
+  import { onClickOutsideDropdown } from '$lib/actions/click-outside';
   import PermissionDenied from '$lib/components/PermissionDenied.svelte';
   import { showErrorAlert, showSuccessAlert } from '$lib/stores/toast';
   import { getApiClient } from '$lib/utils/api-client';
@@ -68,6 +69,21 @@
   }
 
   let createFieldStates = $state<CreateFieldState[]>([]);
+
+  // Dropdown state (KVP-style — single source of truth for create-modal dropdowns)
+  let activeDropdown = $state<string | null>(null);
+
+  function toggleDropdown(id: string): void {
+    activeDropdown = activeDropdown === id ? null : id;
+  }
+
+  function closeAllDropdowns(): void {
+    activeDropdown = null;
+  }
+
+  const formStatusLabel = $derived(ITEM_STATUS_LABELS[formStatus]);
+
+  $effect(() => onClickOutsideDropdown(closeAllDropdowns));
 
   const totalPages = $derived(Math.max(1, Math.ceil(total / 50)));
   const currentPage = $derived(data.currentPage);
@@ -442,19 +458,38 @@
             </div>
             <div class="grid grid-cols-2 gap-4">
               <div class="form-field">
-                <label
-                  for="item-status"
-                  class="form-field__label">Status</label
-                >
-                <select
-                  id="item-status"
-                  class="form-field__control"
-                  bind:value={formStatus}
-                >
-                  {#each Object.entries(ITEM_STATUS_LABELS) as [value, label] (value)}
-                    <option {value}>{label}</option>
-                  {/each}
-                </select>
+                <span class="form-field__label">Status</span>
+                <div class="dropdown">
+                  <button
+                    type="button"
+                    class="dropdown__trigger"
+                    class:active={activeDropdown === 'item-status'}
+                    onclick={() => {
+                      toggleDropdown('item-status');
+                    }}
+                  >
+                    <span>{formStatusLabel}</span>
+                    <i class="fas fa-chevron-down"></i>
+                  </button>
+                  <div
+                    class="dropdown__menu"
+                    class:active={activeDropdown === 'item-status'}
+                  >
+                    {#each Object.entries(ITEM_STATUS_LABELS) as [value, label] (value)}
+                      <button
+                        type="button"
+                        class="dropdown__option"
+                        class:dropdown__option--selected={formStatus === value}
+                        onclick={() => {
+                          formStatus = value as InventoryItemStatus;
+                          closeAllDropdowns();
+                        }}
+                      >
+                        {label}
+                      </button>
+                    {/each}
+                  </div>
+                </div>
               </div>
               <div class="form-field">
                 <label
@@ -592,17 +627,54 @@
                           <span class="text-sm">{fieldDef.fieldName}</span>
                         </label>
                       {:else if fs.fieldType === 'select' && fieldDef.fieldOptions}
-                        <select
-                          id="create-cf-{fs.fieldId}"
-                          class="form-field__control"
-                          bind:value={createFieldStates[idx].valueText}
-                          required={fieldDef.isRequired}
-                        >
-                          <option value="">-- Auswählen --</option>
-                          {#each fieldDef.fieldOptions as opt (opt)}
-                            <option value={opt}>{opt}</option>
-                          {/each}
-                        </select>
+                        <div class="dropdown">
+                          <button
+                            type="button"
+                            class="dropdown__trigger"
+                            class:active={activeDropdown === `create-cf-${fs.fieldId}`}
+                            onclick={() => {
+                              toggleDropdown(`create-cf-${fs.fieldId}`);
+                            }}
+                          >
+                            <span
+                              >{createFieldStates[idx].valueText !== '' ?
+                                createFieldStates[idx].valueText
+                              : '-- Auswählen --'}</span
+                            >
+                            <i class="fas fa-chevron-down"></i>
+                          </button>
+                          <div
+                            class="dropdown__menu"
+                            class:active={activeDropdown === `create-cf-${fs.fieldId}`}
+                          >
+                            <button
+                              type="button"
+                              class="dropdown__option"
+                              class:dropdown__option--selected={createFieldStates[idx].valueText ===
+                                ''}
+                              onclick={() => {
+                                createFieldStates[idx].valueText = '';
+                                closeAllDropdowns();
+                              }}
+                            >
+                              -- Auswählen --
+                            </button>
+                            {#each fieldDef.fieldOptions as opt (opt)}
+                              <button
+                                type="button"
+                                class="dropdown__option"
+                                class:dropdown__option--selected={createFieldStates[idx]
+                                  .valueText === opt}
+                                onclick={() => {
+                                  createFieldStates[idx].valueText = opt;
+                                  closeAllDropdowns();
+                                }}
+                              >
+                                {opt}
+                              </button>
+                            {/each}
+                          </div>
+                        </div>
                       {/if}
                     </div>
                   {/if}

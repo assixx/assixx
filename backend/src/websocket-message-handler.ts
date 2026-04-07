@@ -2,7 +2,7 @@ import { IS_ACTIVE } from '@assixx/shared/constants';
 import { v7 as uuidv7 } from 'uuid';
 import { z } from 'zod';
 
-import { DatabaseService } from './nest/database/database.service.js';
+import { type DatabaseService } from './nest/database/database.service.js';
 import { logger } from './utils/logger.js';
 
 // ============================================================================

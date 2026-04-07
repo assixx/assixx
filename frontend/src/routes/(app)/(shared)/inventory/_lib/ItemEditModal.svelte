@@ -5,6 +5,8 @@
    * Renders all standard item fields and dynamic custom fields
    * based on the list's field definitions.
    */
+  import { onClickOutsideDropdown } from '$lib/actions/click-outside';
+
   import { ITEM_STATUS_LABELS } from './constants';
 
   import type {
@@ -78,6 +80,21 @@
   );
 
   const isValid = $derived(name.trim().length > 0);
+
+  // Dropdown state (KVP-style — single source of truth for all dropdowns)
+  let activeDropdown = $state<string | null>(null);
+
+  function toggleDropdown(id: string): void {
+    activeDropdown = activeDropdown === id ? null : id;
+  }
+
+  function closeAllDropdowns(): void {
+    activeDropdown = null;
+  }
+
+  const statusLabel = $derived(ITEM_STATUS_LABELS[status]);
+
+  $effect(() => onClickOutsideDropdown(closeAllDropdowns));
 
   function collectCustomValues(states: FieldState[]): CustomValueInput[] {
     const inputs: CustomValueInput[] = [];
@@ -217,19 +234,38 @@
 
         <div class="grid grid-cols-2 gap-4">
           <div class="form-field">
-            <label
-              class="form-field__label"
-              for="edit-status">Status</label
-            >
-            <select
-              id="edit-status"
-              class="form-field__control"
-              bind:value={status}
-            >
-              {#each Object.entries(ITEM_STATUS_LABELS) as [value, label] (value)}
-                <option {value}>{label}</option>
-              {/each}
-            </select>
+            <span class="form-field__label">Status</span>
+            <div class="dropdown">
+              <button
+                type="button"
+                class="dropdown__trigger"
+                class:active={activeDropdown === 'status'}
+                onclick={() => {
+                  toggleDropdown('status');
+                }}
+              >
+                <span>{statusLabel}</span>
+                <i class="fas fa-chevron-down"></i>
+              </button>
+              <div
+                class="dropdown__menu"
+                class:active={activeDropdown === 'status'}
+              >
+                {#each Object.entries(ITEM_STATUS_LABELS) as [value, label] (value)}
+                  <button
+                    type="button"
+                    class="dropdown__option"
+                    class:dropdown__option--selected={status === value}
+                    onclick={() => {
+                      status = value as InventoryItemStatus;
+                      closeAllDropdowns();
+                    }}
+                  >
+                    {label}
+                  </button>
+                {/each}
+              </div>
+            </div>
           </div>
           <div class="form-field">
             <label
@@ -368,17 +404,52 @@
                     <span class="text-sm">{fs.fieldName}</span>
                   </label>
                 {:else if fs.fieldType === 'select' && fs.fieldOptions}
-                  <select
-                    id="cf-{fs.fieldId}"
-                    class="form-field__control"
-                    bind:value={fieldStates[idx].valueText}
-                    required={fs.isRequired}
-                  >
-                    <option value="">-- Auswählen --</option>
-                    {#each fs.fieldOptions as opt (opt)}
-                      <option value={opt}>{opt}</option>
-                    {/each}
-                  </select>
+                  <div class="dropdown">
+                    <button
+                      type="button"
+                      class="dropdown__trigger"
+                      class:active={activeDropdown === `cf-${fs.fieldId}`}
+                      onclick={() => {
+                        toggleDropdown(`cf-${fs.fieldId}`);
+                      }}
+                    >
+                      <span
+                        >{fieldStates[idx].valueText !== '' ?
+                          fieldStates[idx].valueText
+                        : '-- Auswählen --'}</span
+                      >
+                      <i class="fas fa-chevron-down"></i>
+                    </button>
+                    <div
+                      class="dropdown__menu"
+                      class:active={activeDropdown === `cf-${fs.fieldId}`}
+                    >
+                      <button
+                        type="button"
+                        class="dropdown__option"
+                        class:dropdown__option--selected={fieldStates[idx].valueText === ''}
+                        onclick={() => {
+                          fieldStates[idx].valueText = '';
+                          closeAllDropdowns();
+                        }}
+                      >
+                        -- Auswählen --
+                      </button>
+                      {#each fs.fieldOptions as opt (opt)}
+                        <button
+                          type="button"
+                          class="dropdown__option"
+                          class:dropdown__option--selected={fieldStates[idx].valueText === opt}
+                          onclick={() => {
+                            fieldStates[idx].valueText = opt;
+                            closeAllDropdowns();
+                          }}
+                        >
+                          {opt}
+                        </button>
+                      {/each}
+                    </div>
+                  </div>
                 {/if}
               </div>
             {/each}

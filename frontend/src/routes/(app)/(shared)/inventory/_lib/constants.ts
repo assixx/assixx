@@ -38,6 +38,15 @@ export const ITEM_STATUS_ICONS: Record<InventoryItemStatus, string> = {
   stored: 'fa-box',
 };
 
+// ── Code Digits Dropdown Options ──────────────────────────────
+
+export const CODE_DIGIT_OPTIONS: readonly { value: number; label: string }[] = [
+  { value: 2, label: '2 (01-99)' },
+  { value: 3, label: '3 (001-999)' },
+  { value: 4, label: '4 (0001-9999)' },
+  { value: 5, label: '5 (00001-99999)' },
+];
+
 // ── List Icon Picker ──────────────────────────────────────────
 
 export const DEFAULT_LIST_ICON = 'fa-box';

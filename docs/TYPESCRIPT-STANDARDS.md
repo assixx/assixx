@@ -1,7 +1,7 @@
 # Assixx TypeScript Standards
 
-> **Version:** 4.4.0
-> **Updated:** 2026-04-07
+> **Version:** 4.5.0
+> **Updated:** 2026-04-08
 > **Stack:** NestJS 11 + Fastify | SvelteKit 5 | PostgreSQL 17 + `pg`
 > **Based on:** ESLint + Prettier configs, Power of Ten Rules (NASA/JPL)
 > **Validation:** Zod schemas via `nestjs-zod` (NOT class-validator)
@@ -66,9 +66,34 @@ Non-negotiable strict settings based on Power of Ten Rules:
 
 **NOT enabled (yet) — tracked in [ADR-041](./infrastructure/adr/ADR-041-typescript-compiler-configuration.md) Open Items:**
 
-- `verbatimModuleSyntax: true` — would surface 41 NestJS interface imports that need `import type` rewrites
+- `verbatimModuleSyntax: true` — would surface 41 NestJS interface imports that need `import type` rewrites in ~30 decorator-bearing files. Partial coverage achieved via the ESLint rule below (catches 10/41 in non-decorator files). Full coverage deferred until a dedicated refactor PR.
 - `isolatedDeclarations: true` — would require explicit return types on every exported object literal member
 - `useDefineForClassFields: false` — defaults to `true` (matches NestJS official template, no NestJS-specific issue observed)
+
+**Type-Only Imports (ADR-041 Phase 2 Resolution, 2026-04-08):**
+
+The `@typescript-eslint/consistent-type-imports` rule is active for backend +
+shared source code. Type-only imports must use `import type` syntax or the
+inline `type` modifier:
+
+```typescript
+// CORRECT — inline type modifier (preferred, matches frontend convention)
+import { Injectable, type OnModuleInit } from '@nestjs/common';
+
+// CORRECT — separate type-only import statement
+import { Injectable } from '@nestjs/common';
+import type { OnModuleInit } from '@nestjs/common';
+
+// FORBIDDEN — inline `import('...').Type` annotation
+function foo(arg: import('pg').PoolClient) { ... }
+//                ^^^^^^^^^^^^^^^^^^^^^^^ ESLint error: disallowTypeAnnotations
+```
+
+**Caveat:** The rule auto-skips files containing class decorators (per
+[typescript-eslint upstream behavior](https://typescript-eslint.io/blog/changes-to-consistent-type-imports-with-decorators/)),
+so most NestJS service/controller/guard/pipe/filter files are exempted. This
+is documented behavior, not a bug. Full type-import enforcement for those
+files is tracked as an Open Item in ADR-041.
 
 **FORBIDDEN — never weaken strict in any tsconfig variant:**
 
@@ -949,6 +974,7 @@ Immediate rejection in code review:
 
 | Version | Date       | Changes                                                                                                                                                       |
 | ------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 4.5.0   | 2026-04-08 | ADR-041 Phase 2: `consistent-type-imports` ESLint rule for backend + shared, 10 type-import violations cleared (3 manual, 7 auto-fix), inline `import()` type annotations forbidden |
 | 4.4.0   | 2026-04-07 | ADR-041: Strict-everywhere policy, removed dead `baseUrl`/`paths`, added `noUncheckedSideEffectImports` + `strictBuiltinIteratorReturn`, lib bumped to ES2024 |
 | 4.3.0   | 2026-03-07 | Added Section 7.5 ID Param DTO Factory, No-Go #17, architectural test for inline ID validation in param DTOs                                                  |
 | 4.2.0   | 2026-03-07 | Added Section 7.4 IS_ACTIVE constants, No-Go #16 magic numbers, architectural test for is_active enforcement                                                  |

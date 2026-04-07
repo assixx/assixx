@@ -315,8 +315,8 @@ that touches frontend tooling chains:
     "type-check": "pnpm run sync:svelte && tsc --noEmit -p shared && tsc --noEmit -p frontend && tsc --noEmit -p backend && tsc --noEmit -p backend/test",
     "check": "pnpm run sync:svelte && tsc --noEmit -p frontend && tsc --noEmit -p backend",
     "lint:frontend": "pnpm run sync:svelte && cd frontend && NODE_OPTIONS='--max-old-space-size=8192' eslint .",
-    "lint:frontend:fix": "pnpm run sync:svelte && cd frontend && NODE_OPTIONS='--max-old-space-size=8192' eslint . --fix"
-  }
+    "lint:frontend:fix": "pnpm run sync:svelte && cd frontend && NODE_OPTIONS='--max-old-space-size=8192' eslint . --fix",
+  },
 }
 ```
 
@@ -340,16 +340,96 @@ scripts without the sync prefix.
 
 ---
 
+## Phase 2 Resolution (2026-04-08): Partial Type-Import Strictness
+
+After the primary ADR was applied, the question of `verbatimModuleSyntax`
+adoption was re-investigated. Goal: enforce explicit `import type` for
+type-only imports across the backend.
+
+### Lab Verification
+
+Two paths were evaluated against the current codebase:
+
+**Pfad A — `verbatimModuleSyntax: true` (TS compiler flag):**
+
+- Test: temporarily set the flag in `tsconfig.base.json` and run `pnpm exec tsc --noEmit -p backend`
+- Result: **41 `TS1484` errors** across **~30 files** in NestJS decorator-laden code (services, guards, interceptors, pipes, filters, registrars). Targets: `OnModuleInit`, `OnModuleDestroy`, `CanActivate`, `ExecutionContext`, `NestInterceptor`, `CallHandler`, `PipeTransform`, `ExceptionFilter`, `ArgumentsHost`, `ThrottlerLimitDetail`, `NestFastifyApplication`, `Transporter`, `SendMailOptions`, `Data`
+- Resolution requires manual edit of all 30+ files
+
+**Pfad B — `@typescript-eslint/consistent-type-imports` (ESLint rule):**
+
+- Test: temporarily added the rule to the backend ESLint section, ran lint on `backend/src/`
+- Result: **only 10 violations across 8 files** — far less than Pfad A
+- Reason: per [typescript-eslint blog 2024-03-25](https://typescript-eslint.io/blog/changes-to-consistent-type-imports-with-decorators/), the rule **deliberately skips files with decorators** when both `experimentalDecorators` and `emitDecoratorMetadata` are enabled. NestJS controllers/services/guards/etc. are all decorator-bearing, so the rule silently bypasses them. There is no override option.
+- Cross-verification:
+  - `jwt-auth.guard.ts` (has `@Injectable()`, imports `CanActivate`/`ExecutionContext` as runtime values) → **0 ESLint reports**
+  - `email-service.ts` (no decorators, imports `Transporter`/`SendMailOptions` as runtime values) → **1 ESLint error**
+
+### Decision
+
+**Pfad B for the 10 catchable violations now. Pfad A deferred.**
+
+Rationale:
+
+- Pfad B catches 10/41 = ~24% of the violations automatically and prevents future drift in non-decorator files (utils, workers, websocket, main.ts)
+- Pfad A would require ~30 manual edits in mid-feature work on `feature/inventory` — high branch-pollution risk for marginal benefit (the JS emit is bit-for-bit identical, the only gain is theoretical bundler-readiness)
+- The two paths are complementary, not exclusive: Pfad A can be added later when the decorator-file refactor is its own dedicated PR
+
+### Phase 2 Changes Applied
+
+1. Added `@typescript-eslint/consistent-type-imports` rule to backend section of root `eslint.config.mjs`
+2. Manually fixed 3 inline `import('...').Type` annotations (not auto-fixable):
+   - `nest/notifications/notifications.controller.ts:841` — `Subscriber` from `rxjs`
+   - `nest/user-permissions/user-permissions.service.ts:226` — `OrganizationalScope` from sibling module
+   - `nest/work-orders/work-orders-notification.service.ts:134` — `PoolClient` from `pg`
+3. Auto-fixed 7 type-only imports via `pnpm run lint:fix`:
+   - `nest/main.ts` — `NestFastifyApplication`
+   - `utils/email-service.ts` — `SendMailOptions`, `Transporter`
+   - `websocket-message-handler.ts` — entire import statement
+   - `websocket.ts` — multiple imports including `WebSocketData`, `IncomingMessage`, `Server`
+   - `workers/deletion-worker.ts` — entire import statement
+
+### Verification
+
+```
+pnpm exec eslint backend/src                              → exit 0, 0 violations
+pnpm exec tsc --noEmit -p shared                          → exit 0, 0 lines
+pnpm exec tsc --noEmit -p backend                         → exit 0, 0 lines
+pnpm exec tsc --noEmit -p backend/test                    → exit 0, 0 lines
+pnpm exec tsc --noEmit -p frontend                        → exit 0, 0 lines
+pnpm exec tsc --noEmit -p backend/tsconfig.build.json     → exit 0, 0 lines
+pnpm run validate:all                                     → === VALIDATE ALL PASSED ===
+```
+
+### Anti-Pattern Eliminated
+
+The 3 manually-fixed files contained inline `import('foo').Type` annotations
+in parameter and type-alias positions. This pattern is harder to read
+(reviewers must scan for `import()` patterns inline) and is now forbidden by
+the rule's `disallowTypeAnnotations: true` default. All future code is
+prevented from re-introducing it (in non-decorator files).
+
+### Rule (binding)
+
+**`@typescript-eslint/consistent-type-imports` is now active for backend +
+shared source.** Type-only imports must use `import type` syntax (or inline
+`type` modifier). The rule auto-fixes most violations via
+`pnpm run lint:fix`. Files containing class decorators are exempted by
+upstream rule logic — this is documented behavior, not a bug.
+
+---
+
 ## Open Items (Tracked, Not in Scope)
 
-| Item                                                                                               | Effort  | Risk             |
-| -------------------------------------------------------------------------------------------------- | ------- | ---------------- |
-| Enable `verbatimModuleSyntax` + fix 41 type-only imports                                           | ~1 h    | Low (mechanical) |
-| Add `@typescript-eslint/consistent-type-imports` to backend ESLint as alternative                  | ~10 min | Low              |
-| Re-evaluate `target: ES2023` bump (matches NestJS starter)                                         | ~30 min | Low              |
-| Re-evaluate `target: ES2024` (Node 24 native, no polyfills)                                        | ~30 min | Low              |
-| `backend/test/tsconfig.json` relaxes `noPropertyAccessFromIndexSignature` — review if still needed | ~15 min | Medium           |
-| **`shared/dist/` build dependency for frontend dev** — Vite dev server fails to resolve `@assixx/shared/*` if `shared/dist/` is missing or stale (per [ADR-015](./ADR-015-shared-package-architecture.md) conditional exports). Currently self-heals via Vite cache invalidation but is fragile. Consider adding `build:shared` as a pre-step to `dev:svelte`/`build:frontend`. | ~20 min | Medium |
+| Item                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | Effort  | Risk             |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- | ---------------- |
+| ~~Add `@typescript-eslint/consistent-type-imports` to backend ESLint as alternative~~ — **DONE 2026-04-08** (Phase 2 Resolution above)                                                                                                                                                                                                                                                                                                                                                                                                                                                | —       | —                |
+| Enable `verbatimModuleSyntax: true` in `tsconfig.base.json` — requires manual fix of ~38 type-only imports across ~30 NestJS decorator files (`OnModuleInit`, `CanActivate`, `ExecutionContext`, etc.). The ESLint rule cannot help here because it deliberately skips decorator-bearing files. Best done as an isolated PR on a dedicated branch. Code-quality benefit is mostly theoretical (future bundler migration to swc/esbuild). Can stay deferred until there's a concrete migration trigger.                                                                                | ~1 h    | Low (mechanical) |
+| Re-evaluate `target: ES2023` bump (matches NestJS starter)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | ~30 min | Low              |
+| Re-evaluate `target: ES2024` (Node 24 native, no polyfills)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | ~30 min | Low              |
+| `backend/test/tsconfig.json` relaxes `noPropertyAccessFromIndexSignature` — review if still needed                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | ~15 min | Medium           |
+| Extend `consistent-type-imports` rule to the backend test section (`backend/**/*.test.ts`, `backend/test/**/*.ts`) — currently rule is only in the strict src section. Test files would gain the same drift protection.                                                                                                                                                                                                                                                                                                                                                              | ~10 min | Low              |
+| **`shared/dist/` build dependency for frontend dev** — Vite dev server fails to resolve `@assixx/shared/*` if `shared/dist/` is missing or stale (per [ADR-015](./ADR-015-shared-package-architecture.md) conditional exports). Currently self-heals via Vite cache invalidation but is fragile. Consider adding `build:shared` as a pre-step to `dev:svelte`/`build:frontend`.                                                                                                                                                                                                       | ~20 min | Medium           |
 
 ---
 
