@@ -214,10 +214,17 @@ export class KvpApprovalService implements OnModuleInit {
   // STARTUP RECONCILIATION
   // ==========================================================================
 
-  /** Find KVPs stuck in 'in_review' with a decided approval and sync them */
+  /**
+   * Find KVPs stuck in 'in_review' with a decided approval and sync them.
+   *
+   * Runs in onModuleInit — no CLS context, no tenantId available.
+   * Uses systemQuery (sys_user, BYPASSRLS) for the cross-tenant scan;
+   * per-tenant writes inside syncKvpStatus use queryAsTenant with explicit
+   * tenantId from each row (still enforced by RLS via app_user).
+   */
   private async reconcilePendingApprovals(): Promise<void> {
     try {
-      const stuckRows = await this.db.tenantQuery<{
+      const stuckRows = await this.db.systemQuery<{
         kvp_uuid: string;
         kvp_id: number;
         kvp_title: string;
@@ -353,7 +360,15 @@ export class KvpApprovalService implements OnModuleInit {
     return rows[0]?.source_uuid.trim() ?? null;
   }
 
-  /** Sync KVP status — replicates buildSuggestionUpdateClause side effects */
+  /**
+   * Sync KVP status — replicates buildSuggestionUpdateClause side effects.
+   *
+   * Uses queryAsTenant (explicit tenantId, no CLS dependency) so this method
+   * works from both the EventBus handler (where CLS may or may not be
+   * inherited via async_hooks) and the onModuleInit reconciliation loop
+   * (where CLS is guaranteed absent). RLS is still enforced — queryAsTenant
+   * sets the app.tenant_id GUC for the transaction.
+   */
   private async syncKvpStatus(
     tenantId: number,
     suggestion: KvpSuggestionStub,
@@ -365,18 +380,20 @@ export class KvpApprovalService implements OnModuleInit {
     }
 
     if (approvalData.status === 'approved') {
-      await this.db.tenantQuery(
+      await this.db.queryAsTenant(
         `UPDATE kvp_suggestions
          SET status = 'approved', rejection_reason = NULL, implementation_date = NULL, updated_at = NOW()
          WHERE uuid = $1 AND tenant_id = $2`,
         [suggestion.uuid, tenantId],
+        tenantId,
       );
     } else if (approvalData.status === 'rejected') {
-      await this.db.tenantQuery(
+      await this.db.queryAsTenant(
         `UPDATE kvp_suggestions
          SET status = 'rejected', rejection_reason = $1, implementation_date = NULL, updated_at = NOW()
          WHERE uuid = $2 AND tenant_id = $3`,
         [approvalData.decisionNote ?? '', suggestion.uuid, tenantId],
+        tenantId,
       );
     }
 

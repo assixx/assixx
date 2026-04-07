@@ -61,12 +61,19 @@ function createMockDb(): {
   query: ReturnType<typeof vi.fn>;
   tenantQuery: ReturnType<typeof vi.fn>;
   tenantQueryOne: ReturnType<typeof vi.fn>;
+  queryAsTenant: ReturnType<typeof vi.fn>;
+  systemQuery: ReturnType<typeof vi.fn>;
 } {
+  // All DB entry points alias the same spy so tests can count total DB calls
+  // regardless of whether the service uses tenantQuery, queryAsTenant
+  // (explicit tenantId), or systemQuery (cross-tenant reconciliation).
   const queryFn = vi.fn().mockResolvedValue([]);
   return {
     query: queryFn,
     tenantQuery: queryFn,
     tenantQueryOne: vi.fn().mockResolvedValue(null),
+    queryAsTenant: queryFn,
+    systemQuery: queryFn,
   };
 }
 
