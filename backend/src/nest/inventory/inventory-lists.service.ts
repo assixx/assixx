@@ -8,6 +8,7 @@
 import { IS_ACTIVE } from '@assixx/shared/constants';
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 
+import { getErrorMessage } from '../common/utils/error.utils.js';
 import { DatabaseService } from '../database/database.service.js';
 import type { CreateListDto } from './dto/create-list.dto.js';
 import type { UpdateListDto } from './dto/update-list.dto.js';
@@ -127,34 +128,53 @@ export class InventoryListsService {
     };
   }
 
-  /** Create a new inventory list */
+  /**
+   * Create a new inventory list.
+   *
+   * The `idx_inventory_lists_unique_prefix` partial unique index
+   * (`tenant_id, code_prefix WHERE is_active <> 4`) enforces prefix uniqueness
+   * per tenant. A duplicate prefix is a user-correctable error, so we map the
+   * PostgreSQL 23505 violation to `ConflictException` (409). Without this
+   * mapping the raw pg error bubbles up as a 500 via `AllExceptionsFilter`.
+   *
+   * This mirrors the mapping pattern in `KvpRewardTiersService.create()` and
+   * closes a parity gap with `update()`, which uses a check-then-act pre-check
+   * for the same constraint.
+   */
   async create(dto: CreateListDto, createdBy: number): Promise<InventoryListRow> {
-    const rows = await this.db.tenantQuery<InventoryListRow>(
-      `INSERT INTO inventory_lists (
-        tenant_id, title, description, category, code_prefix, code_separator,
-        code_digits, icon, created_by
-      ) VALUES (
-        NULLIF(current_setting('app.tenant_id', true), '')::integer,
-        $1, $2, $3, $4, $5, $6, $7, $8
-      )
-      RETURNING *`,
-      [
-        dto.title,
-        dto.description ?? null,
-        dto.category ?? null,
-        dto.codePrefix,
-        dto.codeSeparator,
-        dto.codeDigits,
-        dto.icon ?? null,
-        createdBy,
-      ],
-    );
+    try {
+      const rows = await this.db.tenantQuery<InventoryListRow>(
+        `INSERT INTO inventory_lists (
+          tenant_id, title, description, category, code_prefix, code_separator,
+          code_digits, icon, created_by
+        ) VALUES (
+          NULLIF(current_setting('app.tenant_id', true), '')::integer,
+          $1, $2, $3, $4, $5, $6, $7, $8
+        )
+        RETURNING *`,
+        [
+          dto.title,
+          dto.description ?? null,
+          dto.category ?? null,
+          dto.codePrefix,
+          dto.codeSeparator,
+          dto.codeDigits,
+          dto.icon ?? null,
+          createdBy,
+        ],
+      );
 
-    const created = rows[0];
-    if (created === undefined) {
-      throw new Error('INSERT RETURNING returned no rows');
+      const created = rows[0];
+      if (created === undefined) {
+        throw new Error('INSERT RETURNING returned no rows');
+      }
+      return created;
+    } catch (error: unknown) {
+      if (getErrorMessage(error).includes('idx_inventory_lists_unique_prefix')) {
+        throw new ConflictException(`Kürzel "${dto.codePrefix}" wird bereits verwendet`);
+      }
+      throw error;
     }
-    return created;
   }
 
   /** Update an existing inventory list (conditional field inclusion) */

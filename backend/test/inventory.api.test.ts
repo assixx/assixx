@@ -93,7 +93,7 @@ describe('Inventory: Create List', () => {
     listId = body.data.id as string;
   });
 
-  it('should reject duplicate code prefix', async () => {
+  it('should reject duplicate code prefix with 409', async () => {
     const res = await fetch(`${API}/lists`, {
       method: 'POST',
       headers: authHeaders(auth.authToken),
@@ -105,8 +105,14 @@ describe('Inventory: Create List', () => {
       }),
     });
 
-    // Should fail with 409 Conflict or 500 (DB unique constraint)
-    expect(res.status).toBeGreaterThanOrEqual(400);
+    // idx_inventory_lists_unique_prefix unique violation must be mapped to
+    // 409 Conflict by InventoryListsService.create — not leaked as a raw 500
+    // via AllExceptionsFilter. Previously this assertion accepted 4xx/5xx;
+    // hardened after the 500 → 409 fix to lock the contract.
+    expect(res.status).toBe(409);
+    const body = (await res.json()) as JsonBody;
+    expect(body.success).toBe(false);
+    expect(JSON.stringify(body)).toContain('ATK');
   });
 });
 

@@ -167,6 +167,56 @@ describe('InventoryListsService', () => {
       expect(callParams[2]).toBe('Hebezeuge');
       expect(callParams[3]).toBe('HBT');
     });
+
+    it('should throw ConflictException when prefix is already used (unique_violation)', async () => {
+      // Simulate the raw PostgreSQL unique_violation that fires when the
+      // idx_inventory_lists_unique_prefix partial index rejects a duplicate.
+      // Without the catch block this would bubble up as a 500 via the
+      // AllExceptionsFilter instead of a clean 409.
+      qf.mockRejectedValueOnce(
+        new Error(
+          'duplicate key value violates unique constraint "idx_inventory_lists_unique_prefix"',
+        ),
+      );
+
+      let caught: unknown;
+      try {
+        await service.create(
+          {
+            title: 'Kräne 2',
+            codePrefix: 'KRN',
+            codeSeparator: '-',
+            codeDigits: 3,
+          } as never,
+          10,
+        );
+      } catch (error: unknown) {
+        caught = error;
+      }
+
+      expect(caught).toBeInstanceOf(ConflictException);
+      expect((caught as Error).message).toBe('Kürzel "KRN" wird bereits verwendet');
+    });
+
+    it('should rethrow non-constraint errors unchanged', async () => {
+      // Generic DB error (connection lost, syntax error, etc.) must NOT be
+      // silently converted to ConflictException — only the specific unique
+      // violation on idx_inventory_lists_unique_prefix gets mapped.
+      const genericError = new Error('connection terminated unexpectedly');
+      qf.mockRejectedValueOnce(genericError);
+
+      await expect(
+        service.create(
+          {
+            title: 'Kräne',
+            codePrefix: 'KRN',
+            codeSeparator: '-',
+            codeDigits: 3,
+          } as never,
+          10,
+        ),
+      ).rejects.toThrow('connection terminated unexpectedly');
+    });
   });
 
   // ── update ──────────────────────────────────────────────────
