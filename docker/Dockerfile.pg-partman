@@ -1,7 +1,9 @@
 # =============================================================================
 # PostgreSQL 17 + pg_partman 5.4.3 — Built from Source
 # =============================================================================
-# Base: Official postgres:17-alpine (maintained by PostgreSQL Docker Team)
+# Base: Official postgres:17.9-alpine (maintained by PostgreSQL Docker Team).
+#       Pinned to a specific patch version per ADR-027 Stage 1 — never
+#       postgres:17-alpine (rolling) or postgres:latest.
 # Extension: pg_partman from official pgpartman/pg_partman GitHub repo
 # Purpose: Automatic partition management for audit_trail + root_logs
 # =============================================================================

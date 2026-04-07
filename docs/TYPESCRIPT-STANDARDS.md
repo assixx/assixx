@@ -972,15 +972,15 @@ Immediate rejection in code review:
 
 ## Changelog
 
-| Version | Date       | Changes                                                                                                                                                       |
-| ------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Version | Date       | Changes                                                                                                                                                                             |
+| ------- | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 4.5.0   | 2026-04-08 | ADR-041 Phase 2: `consistent-type-imports` ESLint rule for backend + shared, 10 type-import violations cleared (3 manual, 7 auto-fix), inline `import()` type annotations forbidden |
-| 4.4.0   | 2026-04-07 | ADR-041: Strict-everywhere policy, removed dead `baseUrl`/`paths`, added `noUncheckedSideEffectImports` + `strictBuiltinIteratorReturn`, lib bumped to ES2024 |
-| 4.3.0   | 2026-03-07 | Added Section 7.5 ID Param DTO Factory, No-Go #17, architectural test for inline ID validation in param DTOs                                                  |
-| 4.2.0   | 2026-03-07 | Added Section 7.4 IS_ACTIVE constants, No-Go #16 magic numbers, architectural test for is_active enforcement                                                  |
-| 4.1.0   | 2026-03-07 | Added Section 7.3 getErrorMessage() pattern, No-Go #15 (error as Error) cast, architectural test enforcement                                                  |
-| 4.0.0   | 2026-02-17 | Major restructure: categorized, removed redundancy, removed legacy Express patterns, added official TS references, added changelog                            |
-| 3.1.0   | 2025-12-16 | Added DOM/browser patterns, dataset validation, catch callback rules                                                                                          |
-| 3.0.0   | 2025-10-xx | PostgreSQL migration, NestJS DI patterns, Zod validation                                                                                                      |
-| 2.0.0   | 2025-08-xx | Power of Ten integration, strict tsconfig                                                                                                                     |
-| 1.0.0   | 2025-07-xx | Initial TypeScript standards                                                                                                                                  |
+| 4.4.0   | 2026-04-07 | ADR-041: Strict-everywhere policy, removed dead `baseUrl`/`paths`, added `noUncheckedSideEffectImports` + `strictBuiltinIteratorReturn`, lib bumped to ES2024                       |
+| 4.3.0   | 2026-03-07 | Added Section 7.5 ID Param DTO Factory, No-Go #17, architectural test for inline ID validation in param DTOs                                                                        |
+| 4.2.0   | 2026-03-07 | Added Section 7.4 IS_ACTIVE constants, No-Go #16 magic numbers, architectural test for is_active enforcement                                                                        |
+| 4.1.0   | 2026-03-07 | Added Section 7.3 getErrorMessage() pattern, No-Go #15 (error as Error) cast, architectural test enforcement                                                                        |
+| 4.0.0   | 2026-02-17 | Major restructure: categorized, removed redundancy, removed legacy Express patterns, added official TS references, added changelog                                                  |
+| 3.1.0   | 2025-12-16 | Added DOM/browser patterns, dataset validation, catch callback rules                                                                                                                |
+| 3.0.0   | 2025-10-xx | PostgreSQL migration, NestJS DI patterns, Zod validation                                                                                                                            |
+| 2.0.0   | 2025-08-xx | Power of Ten integration, strict tsconfig                                                                                                                                           |
+| 1.0.0   | 2025-07-xx | Initial TypeScript standards                                                                                                                                                        |

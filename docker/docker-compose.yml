@@ -199,6 +199,14 @@ services:
     # 1. Build @assixx/shared (TS → JS for Node runtime resolution)
     # 2. Build backend (tsc for decorator metadata - tsx can't emit it)
     # 3. Run compiled JS with Node
+    #
+    # NOTE: A previous attempt (ADR-027 amendment 2026-04-08, ROLLED BACK)
+    # added `pnpm install --frozen-lockfile` to this entrypoint to mitigate
+    # the anonymous volume drift footgun. It failed at runtime with EACCES
+    # because the image's /app/node_modules is root-owned (Dockerfile.dev L46
+    # chowns only the /app entry, not contents) while the container runs as
+    # UID 1000 — pnpm could not mutate the volume. Reverted until a proper
+    # fix lands (build-as-UID-1000 in Dockerfile.dev, requires careful test).
     command: sh -c "pnpm --filter @assixx/shared run build && cd backend && pnpm run build && node dist/nest/main.js"
 
   # Redis für Rate-Limiting und Session Cache (REQUIRED for Backend)
@@ -323,6 +331,11 @@ services:
       start_interval: 5s
     # Worker command - run compiled JS (tsx can't handle parameter decorators like @Inject)
     # Backend build (via service_healthy dependency) populates dist/ on shared volume
+    #
+    # NOTE: A previous attempt (ADR-027 amendment 2026-04-08, ROLLED BACK) added
+    # `pnpm install --frozen-lockfile` to this entrypoint to mitigate volume drift.
+    # See backend service comment above for the EACCES failure mode that forced
+    # the rollback.
     command: ["node", "backend/dist/workers/deletion-worker.js"]
 
   # ===========================================================================

@@ -3,7 +3,7 @@
 | Metadata                | Value                                                                                            |
 | ----------------------- | ------------------------------------------------------------------------------------------------ |
 | **Status**              | Amended                                                                                          |
-| **Date**                | 2026-02-28 (amended 2026-04-07)                                                                  |
+| **Date**                | 2026-02-28 (amended 2026-04-07, 2026-04-08)                                                      |
 | **Decision Makers**     | SCS Technik                                                                                      |
 | **Affected Components** | `docker/Dockerfile`, `docker/Dockerfile.dev`, `docker/Dockerfile.frontend`, `docker-compose.yml` |
 
@@ -481,6 +481,205 @@ Without Renovate/Dependabot, version updates are manual. Recommended cadence:
 ### Affected Components Update
 
 The original ADR scoped only `docker/Dockerfile*`. This amendment extends scope to include `docker/docker-compose.yml` because the pinning rule applies to both `image:` directives (compose) and `FROM` directives (Dockerfiles).
+
+---
+
+## Amendment 2026-04-08: Pin-Strategy Hardening (CI Guard + Dependabot Coverage)
+
+### Context
+
+External review of the 2026-04-07 pinning amendment surfaced three concrete gaps:
+
+1. **No CI enforcement of Stage 1.** The pinning rule existed only as text in this
+   ADR. A future PR could reintroduce a rolling tag (`nginx:alpine`,
+   `redis:8-alpine`, etc.) and pass code review unnoticed.
+2. **Dependabot did not cover Docker.** `.github/dependabot.yml` existed (npm +
+   github-actions ecosystems) but did not track Docker images. The Grafana CVE
+   drift that triggered the 2026-04-07 amendment would have repeated.
+3. **Anonymous `node_modules` volume drift footgun** was documented under
+   §Troubleshooting but had no preventive mitigation.
+
+### Decision
+
+#### 1. CI Pin-Guard (Whitelist Approach)
+
+Added a `Verify image pinning (ADR-027 Stage 1)` step to the
+`docker-build-verification` job in `.github/workflows/code-quality-checks.yml`.
+
+The check uses a **whitelist** regex (every external image MUST have a
+semver-style tag with at least one dot OR a `@sha256:` digest) rather than a
+blacklist of forbidden patterns, because blacklists miss novel rolling
+patterns like `:edge`, `:nightly`, `:rc`, `:dev`, or missing-tag-entirely.
+
+```bash
+grep -E '^\s*(image:\s*\S+|FROM\s+\S+)' \
+       docker/docker-compose*.yml docker/Dockerfile* \
+   | grep -vE 'assixx-(backend|frontend|postgres):' \
+   | grep -vE ':[^[:space:]]*[0-9]+\.[0-9]+|@sha256:|node:\$\{NODE_VERSION'
+```
+
+Whitelisted exceptions:
+
+- `assixx-(backend|frontend|postgres):*` — locally-built images, version tag
+  is the build context not a registry pull
+- `node:${NODE_VERSION}` — ARG-substituted, the actual version is supplied
+  via compose `build.args` and is itself Stage-1 pinned (`24.14.0-alpine3.22`)
+
+Verified against current repo: zero false positives, catches `:latest`,
+`:alpine`, `:8`, `:8-alpine`, `:edge`, no-tag, and single-digit-only patterns.
+
+#### 2. Dependabot Coverage Extension
+
+`.github/dependabot.yml` extended with two new ecosystems:
+
+| Ecosystem        | Directory | Coverage                                                             |
+| ---------------- | --------- | -------------------------------------------------------------------- |
+| `docker`         | `/docker` | Only `/docker/Dockerfile` (the only standard-named one — see gap #4) |
+| `docker-compose` | `/docker` | All `image:` tags in `docker-compose.yml` (closes the PLG drift gap) |
+
+The `docker-compose` ecosystem reached general availability on
+[2025-02-25](https://github.blog/changelog/2025-02-25-dependabot-version-updates-now-support-docker-compose-in-general-availability/).
+PR grouping by stack (`plg-stack`, `infra`) keeps PR noise manageable.
+
+#### 3. Anonymous Volume Drift Mitigation — ATTEMPTED, ROLLED BACK 2026-04-08
+
+**First attempt (rolled back same day):** Backend and deletion-worker dev
+commands in `docker-compose.yml` were updated to prepend
+`pnpm install --frozen-lockfile` to the entrypoint chain, with the intent of
+syncing the anonymous `/app/node_modules` volume against `pnpm-lock.yaml` on
+every container start.
+
+**Failure mode at first runtime test:**
+
+```
+assixx-backend     | Scope: all 4 workspace projects
+assixx-backend     | Recreating /app/node_modules
+assixx-backend     |  EACCES  EACCES: permission denied, rmdir '/app/node_modules/.bin'
+assixx-backend exited with code 243 (restarting)
+```
+
+**Root cause analysis (3 layers):**
+
+1. **`Dockerfile.dev` L46 chowns `/app` non-recursively** (`chown 1000:1000 /app`,
+   not `chown -R`). The pre-existing inline comment justifies this:
+   _"Only chown specific dirs (not node_modules — would take 100+ seconds!)"_.
+   Consequence: image's `/app/node_modules` is **root-owned**, since the
+   build-time `pnpm install` ran as the default Docker root user.
+
+2. **Anonymous volume initialization preserves ownership** from the image
+   contents on first container start. The volume's `/app/node_modules` is
+   therefore root-owned.
+
+3. **Container runs as `user: "${UID:-1000}:${GID:-1000}"`** per compose. The
+   entrypoint `pnpm install` runs as UID 1000 against root-owned files.
+   Compounding this, pnpm decided to "Recreate" the volume (likely because
+   `node_modules/.modules.yaml` records the build-time store path
+   `/root/.local/share/pnpm/store` which doesn't match the runtime default
+   for UID 1000), then failed on `rmdir /app/node_modules/.bin` with EACCES.
+
+The hybrid approach was the wrong call. The pre-existing chown-only-/app was
+a warning sign about the volume ownership model that I missed during planning.
+Claiming "steady-state cost is <5s" without runtime testing was overconfident.
+
+**Rollback (2026-04-08):** Backend and deletion-worker `command:` directives
+restored to their original form. The frontend/package.json bind mount added
+to deletion-worker (which was a downstream prerequisite of the entrypoint
+install) was also reverted because it serves no purpose without the install.
+
+**Status of the underlying drift footgun: STILL OPEN.** The §Troubleshooting
+recovery procedure (`docker volume rm` + `--no-cache build`) remains the
+manual workaround. Tracked as future work below.
+
+#### 3a. Future Work: Proper Anonymous Volume Fix (Two Viable Approaches)
+
+**Option α — Build as UID 1000 from the start** (preferred but invasive):
+
+Restructure `Dockerfile.dev` to run all file-creating operations as UID 1000.
+Required changes:
+
+- Move `chown -R 1000:1000 /app` BEFORE `WORKDIR /app` and any `COPY`
+- Add `USER 1000:1000` before COPY/RUN sections that create files
+- Use `COPY --chown=1000:1000` for all COPY directives
+- Change pnpm cache mount target from `/root/.local/share/pnpm/store` to a
+  path writable by UID 1000 (e.g., `target=/app/.pnpm-store,uid=1000,gid=1000`)
+- Pin pnpm `--store-dir` explicitly so build-time and runtime agree
+
+Pros: clean, no ownership issues, no recreate trigger.
+Cons: requires verifying that BuildKit's cache mount with `uid=1000` works
+correctly across pnpm operations, and that NestJS build still works as 1000.
+Needs end-to-end test before merging.
+
+**Option β — chown -R after build-time install** (simpler, slower build):
+
+Add `chown -R 1000:1000 /app/node_modules` after the build-time pnpm install.
+Adds ~30-60s to image build (one-time cost). Plus pin `pnpm --store-dir` to
+a fixed path for build+runtime to avoid the "Recreating" trigger.
+
+Pros: minimal Dockerfile diff.
+Cons: build is slower; the recreate trigger may still need the store-dir pin
+to be fully eliminated.
+
+**Decision deferred** — both options need an isolated test on a branch with
+container restart verification before being committed to the main flow.
+
+#### 3b. What Survived the Rollback (Still Applied)
+
+The CI pin-guard (§1) and the Dependabot extension (§2) above are independent
+of the volume fix and remain in place. They were validated by static checks
+(YAML lint, regex tests against current files) and are safe.
+
+### Known Gaps NOT Closed by This Amendment
+
+1. **Custom-named Dockerfiles** — `Dockerfile.dev`, `Dockerfile.frontend`,
+   `Dockerfile.pg-partman` are NOT scanned by Dependabot's `docker` ecosystem
+   ([dependabot-core #4449](https://github.com/dependabot/dependabot-core/issues/4449)).
+   Mitigation: the Node version is supplied centrally via compose `build.args`,
+   so the canonical pin lives in `docker-compose.yml` (which `docker-compose`
+   ecosystem DOES track). The `postgres:17.9-alpine` in `Dockerfile.pg-partman`
+   remains a manual-review item — flagged in §Maintenance Workflow.
+2. **Stage 2 (digest pinning) is NOT adopted** by this amendment. See §Stage 2 Trigger Status below.
+
+### Stage 2 Trigger Status (2026-04-08)
+
+The 2026-04-07 amendment listed three trigger conditions for re-opening the
+Stage 2 (digest pinning) decision:
+
+| Trigger                                            | Met?                                                                       |
+| -------------------------------------------------- | -------------------------------------------------------------------------- |
+| Renovate or Dependabot adopted                     | **YES** — Dependabot now covers `docker` + `docker-compose`                |
+| Production deployment to multi-node infrastructure | NO — single-host deployment                                                |
+| Docker Scout or equivalent adopted                 | NO — Trivy in CI is not equivalent (build-time scan, not auto-remediation) |
+
+**Decision: Stage 2 remains DEFERRED.** Rationale: only one of three triggers
+is met, and the maintenance burden of digest pinning without auto-remediation
+(only auto-PRs) is still net-negative for current scale. Auto-PRs reduce the
+update _labor_, but every digest update still requires human review of the
+diff. Re-evaluate when a second trigger fires (production multi-node OR
+Docker Scout adoption).
+
+### Verification
+
+```bash
+# Pin-guard regex tested locally — zero false positives, all bad patterns caught
+grep -E '^\s*(image:\s*\S+|FROM\s+\S+)' docker/docker-compose*.yml docker/Dockerfile* \
+  | grep -vE 'assixx-(backend|frontend|postgres):' \
+  | grep -vE ':[^[:space:]]*[0-9]+\.[0-9]+|@sha256:|node:\$\{NODE_VERSION'
+# → no output (PASS)
+```
+
+CI verification will run on the next push to a PR branch.
+
+Container startup verification (anonymous volume sync) requires a manual
+test by the developer:
+
+```bash
+# Force a lockfile drift scenario
+cd /home/scs/projects/Assixx/docker
+doppler run -- docker-compose down
+doppler run -- docker-compose up -d backend
+# Backend logs should show "pnpm install" running, then build, then NestJS bootstrap
+docker logs assixx-backend --tail 50
+```
 
 ---
 
