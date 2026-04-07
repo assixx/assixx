@@ -1,20 +1,24 @@
 {
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "display": "Assixx Backend Production Build Configuration",
+
+  // ============================================================
+  // PRODUCTION BUILD CONFIG — Inherits ALL strict flags from
+  // tsconfig.json (which extends tsconfig.base.json).
+  //
+  // Rule: This config MUST NOT weaken any strict flag.
+  // It only adds production-specific exclusions.
+  //
+  // See ADR-041 for the full rationale.
+  // ============================================================
   "extends": "./tsconfig.json",
+
   "compilerOptions": {
-    "strict": false,
-    "noImplicitAny": false,
-    "strictNullChecks": false,
-    "strictPropertyInitialization": false,
-    "noPropertyAccessFromIndexSignature": false,
-    "noUncheckedIndexedAccess": false,
-    "exactOptionalPropertyTypes": false,
-    "module": "NodeNext",
-    "moduleResolution": "nodenext",
-    "allowSyntheticDefaultImports": true,
-    "esModuleInterop": true,
-    "skipLibCheck": true,
-    "types": ["node"]
+    // Production builds emit declaration files via composite,
+    // but no source maps for declarations (smaller dist).
+    "declarationMap": false
   },
+
   "exclude": [
     "node_modules",
     "dist",
@@ -22,6 +26,7 @@
     "**/*.test.ts",
     "**/*.spec.ts",
     "src/__tests__/**/*",
+    "src/**/__tests__/**/*",
     "src/**/*.test.ts",
     "src/**/*.spec.ts",
     "src/routes/v1/**/*",

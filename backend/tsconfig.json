@@ -19,14 +19,17 @@
     // - .mts (ES Module) vs .cts (CommonJS)
     // - Requires .js extensions in imports (ES Module standard)
     // ============================================================
-    "module": "NodeNext",
+    "module": "nodenext",
     "moduleResolution": "nodenext",
 
     // ============================================================
     // TARGET LIBRARY
-    // Node.js does NOT need DOM types
+    // Node.js does NOT need DOM types.
+    // ES2024 because Node 24 supports Object.groupBy, Promise.withResolvers,
+    // Array.fromAsync, etc. natively. target stays at ES2022 (set in base)
+    // for emit compatibility.
     // ============================================================
-    "lib": ["ES2022"],
+    "lib": ["ES2024"],
 
     // ============================================================
     // OUTPUT CONFIGURATION
@@ -61,22 +64,10 @@
     "isolatedModules": true,
 
     // ============================================================
-    // PATH MAPPING
-    // Enables cleaner imports: '@models/user' instead of '../../models/user'
-    // ============================================================
-    "baseUrl": "./src",
-    "paths": {
-      "@/*": ["./*"],
-      "@controllers/*": ["controllers/*"],
-      "@models/*": ["models/*"],
-      "@middleware/*": ["middleware/*"],
-      "@services/*": ["services/*"],
-      "@utils/*": ["utils/*"],
-      "@types/*": ["types/*"]
-    },
-
-    // ============================================================
     // TYPE DEFINITIONS
+    // Note: NO baseUrl/paths — verified zero usage in src/, and
+    // baseUrl is deprecated in TypeScript 6.0 (will error in 7.0).
+    // See ADR-041 for rationale.
     // ============================================================
     "types": ["node"],
     "typeRoots": ["./node_modules/@types", "./src/types"]

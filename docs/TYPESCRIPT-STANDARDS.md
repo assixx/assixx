@@ -1,12 +1,19 @@
 # Assixx TypeScript Standards
 
-> **Version:** 4.3.0
-> **Updated:** 2026-03-07
+> **Version:** 4.4.0
+> **Updated:** 2026-04-07
 > **Stack:** NestJS 11 + Fastify | SvelteKit 5 | PostgreSQL 17 + `pg`
 > **Based on:** ESLint + Prettier configs, Power of Ten Rules (NASA/JPL)
 > **Validation:** Zod schemas via `nestjs-zod` (NOT class-validator)
+> **Compiler ADR:** [ADR-041](./infrastructure/adr/ADR-041-typescript-compiler-configuration.md)
 
 Code that violates these standards will NOT be merged.
+
+**Strict-Everywhere Policy** ([ADR-041](./infrastructure/adr/ADR-041-typescript-compiler-configuration.md)):
+Production build configs (`backend/tsconfig.build.json`) MUST inherit the same
+strict flags as dev type-checks. Weakening any strict flag is forbidden, even
+in build-only configs. Reviewers must reject PRs that override strict flags
+to `false`.
 
 ---
 
@@ -23,9 +30,11 @@ Non-negotiable strict settings based on Power of Ten Rules:
     "strict": true,
     "strictNullChecks": true,
     "strictFunctionTypes": true,
+    "strictBindCallApply": true,
     "strictPropertyInitialization": true,
     "noImplicitAny": true,
     "noImplicitThis": true,
+    "alwaysStrict": true,
     "useUnknownInCatchVariables": true,
 
     // Code Quality
@@ -40,9 +49,38 @@ Non-negotiable strict settings based on Power of Ten Rules:
     "noPropertyAccessFromIndexSignature": true,
     "noImplicitOverride": true,
 
+    // TS 5.6+ Strictness Additions (ADR-041)
+    "noUncheckedSideEffectImports": true, // catches typo'd `import "./missing"`
+    "strictBuiltinIteratorReturn": true, // Map/Set/Array iterators return undefined
+
     // Dead Code Prevention
     "allowUnusedLabels": false,
     "allowUnreachableCode": false,
+
+    // Target & Library
+    "target": "ES2022", // emit compatibility
+    "lib": ["ES2024"], // IntelliSense for Node 24 native APIs
+  },
+}
+```
+
+**NOT enabled (yet) — tracked in [ADR-041](./infrastructure/adr/ADR-041-typescript-compiler-configuration.md) Open Items:**
+
+- `verbatimModuleSyntax: true` — would surface 41 NestJS interface imports that need `import type` rewrites
+- `isolatedDeclarations: true` — would require explicit return types on every exported object literal member
+- `useDefineForClassFields: false` — defaults to `true` (matches NestJS official template, no NestJS-specific issue observed)
+
+**FORBIDDEN — never weaken strict in any tsconfig variant:**
+
+```jsonc
+// ⛔ NEVER do this in build/test/eslint tsconfig variants:
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "strict": false, // ⛔ ADR-041 violation
+    "noImplicitAny": false, // ⛔
+    "strictNullChecks": false, // ⛔
+    "noUncheckedIndexedAccess": false, // ⛔
   },
 }
 ```
@@ -909,13 +947,14 @@ Immediate rejection in code review:
 
 ## Changelog
 
-| Version | Date       | Changes                                                                                                                            |
-| ------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| 4.3.0   | 2026-03-07 | Added Section 7.5 ID Param DTO Factory, No-Go #17, architectural test for inline ID validation in param DTOs                       |
-| 4.2.0   | 2026-03-07 | Added Section 7.4 IS_ACTIVE constants, No-Go #16 magic numbers, architectural test for is_active enforcement                       |
-| 4.1.0   | 2026-03-07 | Added Section 7.3 getErrorMessage() pattern, No-Go #15 (error as Error) cast, architectural test enforcement                       |
-| 4.0.0   | 2026-02-17 | Major restructure: categorized, removed redundancy, removed legacy Express patterns, added official TS references, added changelog |
-| 3.1.0   | 2025-12-16 | Added DOM/browser patterns, dataset validation, catch callback rules                                                               |
-| 3.0.0   | 2025-10-xx | PostgreSQL migration, NestJS DI patterns, Zod validation                                                                           |
-| 2.0.0   | 2025-08-xx | Power of Ten integration, strict tsconfig                                                                                          |
-| 1.0.0   | 2025-07-xx | Initial TypeScript standards                                                                                                       |
+| Version | Date       | Changes                                                                                                                                                       |
+| ------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 4.4.0   | 2026-04-07 | ADR-041: Strict-everywhere policy, removed dead `baseUrl`/`paths`, added `noUncheckedSideEffectImports` + `strictBuiltinIteratorReturn`, lib bumped to ES2024 |
+| 4.3.0   | 2026-03-07 | Added Section 7.5 ID Param DTO Factory, No-Go #17, architectural test for inline ID validation in param DTOs                                                  |
+| 4.2.0   | 2026-03-07 | Added Section 7.4 IS_ACTIVE constants, No-Go #16 magic numbers, architectural test for is_active enforcement                                                  |
+| 4.1.0   | 2026-03-07 | Added Section 7.3 getErrorMessage() pattern, No-Go #15 (error as Error) cast, architectural test enforcement                                                  |
+| 4.0.0   | 2026-02-17 | Major restructure: categorized, removed redundancy, removed legacy Express patterns, added official TS references, added changelog                            |
+| 3.1.0   | 2025-12-16 | Added DOM/browser patterns, dataset validation, catch callback rules                                                                                          |
+| 3.0.0   | 2025-10-xx | PostgreSQL migration, NestJS DI patterns, Zod validation                                                                                                      |
+| 2.0.0   | 2025-08-xx | Power of Ten integration, strict tsconfig                                                                                                                     |
+| 1.0.0   | 2025-07-xx | Initial TypeScript standards                                                                                                                                  |

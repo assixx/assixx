@@ -35,14 +35,29 @@
     // Power of Ten Regel 10: Force bracket notation for index signatures
     // Ensures explicit awareness when accessing dynamic keys
     "noPropertyAccessFromIndexSignature": true,
+    // TS 5.6+: catches typo'd or missing side-effect imports (e.g.
+    // `import "./missing"`). Pure strictness gain, no semantic change.
+    "noUncheckedSideEffectImports": true,
+    // TS 5.6+: built-in iterators (Map, Set, Array, generators) return
+    // IteratorResult<T, BuiltinIteratorReturn = undefined> instead of
+    // IteratorResult<T, any>. Catches bugs around `.next()` usage.
+    "strictBuiltinIteratorReturn": true,
+    // verbatimModuleSyntax intentionally NOT enabled (yet).
+    // Surfacing it would produce 41 TS1484 errors across 30+ NestJS
+    // files where type-only interfaces (OnModuleInit, CanActivate,
+    // ExecutionContext, etc.) are imported via runtime syntax.
+    // Tracking as a separate refactor — see ADR-041 § Open Items.
 
     // ============================================================
     // TARGET & LIBRARY
-    // ES2022 for modern JavaScript features
-    // Note: Individual projects add DOM for browser targets
+    // target ES2022 keeps emit compatible with older runtimes;
+    // lib ES2024 enables IntelliSense for newer APIs that Node 24
+    // and modern browsers natively support (Object.groupBy,
+    // Promise.withResolvers, Array.fromAsync, etc.).
+    // Note: Individual projects add DOM for browser targets.
     // ============================================================
     "target": "ES2022",
-    "lib": ["ES2022"],
+    "lib": ["ES2024"],
     "downlevelIteration": true, // Ermöglicht Iteration über NodeList, HTMLCollection, etc.
 
     // ============================================================

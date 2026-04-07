@@ -1,11 +1,11 @@
 # ADR-027: Dockerfile Hardening (Performance, Security, Best Practices)
 
-| Metadata                | Value                                                                      |
-| ----------------------- | -------------------------------------------------------------------------- |
-| **Status**              | Accepted                                                                   |
-| **Date**                | 2026-02-28                                                                 |
-| **Decision Makers**     | SCS Technik                                                                |
-| **Affected Components** | `docker/Dockerfile`, `docker/Dockerfile.dev`, `docker/Dockerfile.frontend` |
+| Metadata                | Value                                                                                            |
+| ----------------------- | ------------------------------------------------------------------------------------------------ |
+| **Status**              | Amended                                                                                          |
+| **Date**                | 2026-02-28 (amended 2026-04-07)                                                                  |
+| **Decision Makers**     | SCS Technik                                                                                      |
+| **Affected Components** | `docker/Dockerfile`, `docker/Dockerfile.dev`, `docker/Dockerfile.frontend`, `docker-compose.yml` |
 
 ---
 
@@ -308,6 +308,182 @@ docker/Dockerfile.frontend — 5 fixes (dumb-init, npm version, adduser group, s
 
 ---
 
+## Amendment 2026-04-07: Image Pinning Strategy + PLG Stack Bumps
+
+### Context
+
+A routine version audit (2026-04-07) found inconsistent pinning across the Docker stack. The original ADR-027 (2026-02-28) addressed Dockerfile **content** hardening but did not formalize an image **pinning strategy**. Result: 5 of 8 images were pinned to specific versions (Grafana, Loki, Prometheus, Node, pg_partman), while 3 used rolling tags (`nginx:alpine`, `redis:8-alpine`, `postgres:17-alpine`). The `docker-compose.yml` header even advised digest pinning — but the actual stack contradicted that advice.
+
+Additionally, the PLG observability stack had drifted behind upstream:
+
+- Grafana `12.3.1` → `12.4.2` (7 CVEs unpatched: CVE-2026-27876, -27877, -27879, -27880, -28375, -33375)
+- Prometheus `v3.9.1` → `v3.11.1` (2 minor versions; OTLP HTTP tracing startup fix in 3.11.1)
+- Loki `3.6.3` → `3.7.1` (Go and gRPC version upgrade)
+
+### Decision: Three-Stage Pinning Model — Stage 1 Mandatory
+
+| Stage   | Example                               | Reproducible? | Maintenance | Status                                     |
+| ------- | ------------------------------------- | ------------- | ----------- | ------------------------------------------ |
+| Stage 0 | `nginx:alpine`                        | No            | Zero        | **Forbidden**                              |
+| Stage 1 | `nginx:1.29.8-alpine`                 | Yes           | Manual      | **Mandatory** for all images               |
+| Stage 2 | `nginx:1.29.8-alpine@sha256:<digest>` | Cryptographic | High        | Deferred (see original §"Alternatives" #4) |
+
+**Rule:** Every `image:` directive in `docker-compose.yml` and every `FROM` directive in any `Dockerfile*` MUST use a fully-qualified version tag (Stage 1). Rolling tags (Stage 0) are not permitted.
+
+**Stage 2 trigger conditions** (re-open digest pinning decision when ANY of these occur):
+
+- Renovate or Dependabot adopted (auto-PRs eliminate manual digest update burden)
+- Production deployment to multi-node infrastructure
+- Docker Scout or equivalent adopted for automated CVE remediation
+
+### Rationale
+
+1. **Reproducibility** — Builds are byte-stable across Dev, CI, and Prod within a release cycle. The same `git checkout` produces the same image bytes regardless of clock time.
+2. **Trivy-compatible CVE tracking** — ADR-013 CVE scans need stable baselines for diff comparison. Rolling tags produce noise: "Why did this CVE disappear/appear without a code change?"
+3. **Self-consistency** — `docker-compose.yml` header already advises pinning. Stage 0 in 3 of 8 images contradicted that.
+4. **No new tooling required** — Pure config change, zero infrastructure cost.
+5. **Trade-off accepted** — Manual updates required. Mitigated by quarterly review (or future Renovate adoption).
+
+### Changes Applied (2026-04-07)
+
+**`docker/docker-compose.yml`:**
+
+| Line | Before                   | After                     | Reason                                   |
+| ---- | ------------------------ | ------------------------- | ---------------------------------------- |
+| 206  | `redis:8-alpine`         | `redis:8.6.2-alpine`      | Stage 0 → Stage 1                        |
+| 397  | `nginx:alpine`           | `nginx:1.29.8-alpine`     | Stage 0 → Stage 1                        |
+| 441  | `grafana/loki:3.6.3`     | `grafana/loki:3.7.1`      | Bump (Go/gRPC upgrade)                   |
+| 476  | `prom/prometheus:v3.9.1` | `prom/prometheus:v3.11.1` | Bump (2 minors; OTLP tracing fix)        |
+| 524  | `grafana/grafana:12.3.1` | `grafana/grafana:12.4.2`  | **CVE bump** (7 CVEs patched, see below) |
+
+**`docker/Dockerfile.pg-partman`:**
+
+| Line | Before                    | After                       | Reason            |
+| ---- | ------------------------- | --------------------------- | ----------------- |
+| 9    | `FROM postgres:17-alpine` | `FROM postgres:17.9-alpine` | Stage 0 → Stage 1 |
+
+**`docker/docker-compose.yml` header comment block:** Updated stale `postgres:17-alpine` example references to `postgres:17.9-alpine` for consistency.
+
+### Grafana CVEs Patched (12.3.1 → 12.4.2)
+
+- CVE-2026-27876
+- CVE-2026-27877
+- CVE-2026-27879
+- CVE-2026-27880
+- CVE-2026-28375
+- CVE-2026-33375
+
+### Verification
+
+Required after applying these changes:
+
+```bash
+cd /home/scs/projects/Assixx/docker
+
+# 1. Stop running stack (named external volumes for postgres/redis are preserved)
+doppler run -- docker-compose --profile observability --profile production down
+
+# 2. Pull all updated external image tags (Grafana, Loki, Prometheus, Redis, Nginx)
+doppler run -- docker-compose --profile observability --profile production pull
+
+# 3. Rebuild ALL locally-built images with no cache
+#    Required because: (a) the postgres base in Dockerfile.pg-partman changed,
+#    (b) any pnpm-lock.yaml drift means backend/frontend node_modules must be
+#    rebuilt — see Troubleshooting below for the anonymous volume footgun.
+doppler run -- docker-compose --profile production build --no-cache
+
+# 4. Apply
+doppler run -- docker-compose --profile observability --profile production up -d
+
+# 5. All containers must report (healthy)
+doppler run -- docker-compose --profile observability --profile production ps
+```
+
+**Loki 3.6 → 3.7 risk:** The release notes indicate only "Go and gRPC upgrade" — no documented config schema changes. If `assixx-loki` becomes unhealthy after restart, inspect `docker logs assixx-loki --tail 50` and verify `docker/loki/loki-config.yml` against the current Loki 3.7.x reference schema.
+
+### Troubleshooting: "Cannot find module" errors after stack update
+
+**Symptom:** After a stack update, the backend container enters a restart loop with hundreds of TypeScript errors like:
+
+```
+error TS2307: Cannot find module 'nestjs-zod' or its corresponding type declarations.
+error TS2339: Property 'startDate' does not exist on type 'CreateVacationRequestDto'.
+```
+
+— even though `backend/package.json` lists `nestjs-zod` and `pnpm-lock.yaml` is current.
+
+**Root cause:** The backend service mounts an **anonymous volume** at `/app/node_modules` (`docker-compose.yml` in the backend service `volumes:` block). Anonymous volumes have a critical lifecycle property:
+
+- They are populated **only on first container start** from the image's `/app/node_modules`
+- They persist across `docker-compose down`/`up` cycles (NOT removed without `-v`)
+- They are NOT removed by `docker system prune` or `docker builder prune -a`
+- They retain old `node_modules` content even when `package.json` and the image change
+
+Result: After adding a new dependency, `docker-compose build` rebuilds the image, but the **anonymous volume keeps its stale contents** and overlays the fresh image's `/app/node_modules` → new container sees the old `node_modules` → TypeScript compilation fails for any newly-added package.
+
+**Recovery procedure:**
+
+```bash
+cd /home/scs/projects/Assixx/docker
+
+# 1. Stop the stack (named external volumes — postgres/redis — are preserved)
+doppler run -- docker-compose --profile observability --profile production down
+
+# 2. Remove dangling anonymous volumes
+#    Safe: only deletes volumes not currently in use
+#    Spares named volumes like assixx_postgres_data
+docker volume ls -q -f dangling=true | xargs -r docker volume rm
+
+# 3. Full rebuild (ALL services with local Dockerfiles)
+doppler run -- docker-compose --profile production build --no-cache
+
+# 4. Restart — anonymous volumes are now re-populated from fresh images
+doppler run -- docker-compose --profile observability --profile production up -d
+```
+
+**Verification that the anonymous volume is the root cause:**
+
+```bash
+# List all volumes — anonymous volumes have hex-string names (e.g. 49afe23f...)
+docker volume ls
+
+# Inspect the suspect volume directly
+docker run --rm -v <hex-id>:/check alpine ls /check/<missing-module>
+# If output is "No such file or directory" → confirmed: rebuild required
+```
+
+**Prevention:** After ANY of these events, perform a full rebuild + dangling volume cleanup, NOT just a `restart`:
+
+- `pnpm add` / `pnpm remove` in any workspace package
+- Branch switch with `pnpm-lock.yaml` drift between branches
+- Running `cleanupdist` (deletes host `node_modules` but not container volumes)
+- Any change to `package.json` that affects backend dependencies
+- Image base bump in `Dockerfile.dev` (e.g., Node version change)
+
+### Maintenance Workflow
+
+Without Renovate/Dependabot, version updates are manual. Recommended cadence:
+
+| Component                    | Cadence       | Rationale                                     |
+| ---------------------------- | ------------- | --------------------------------------------- |
+| Grafana, Prometheus, Loki    | Monthly       | Active development, frequent CVE fixes        |
+| Postgres, Redis, Nginx, Node | Quarterly     | Stable, slow-moving, mostly patch releases    |
+| pg_partman                   | Semi-annually | Mature extension, releases are infrequent     |
+| **Any CVE announcement**     | **Immediate** | Apply within 48h regardless of normal cadence |
+
+### Anti-Patterns (Forbidden)
+
+- `image: <name>:latest` — never reproducible, version can change between containers in the same compose run
+- `image: <name>:<major>` (e.g., `redis:8`) — picks "latest within major", same issue at smaller scale
+- `image: <name>:<major>-alpine` (e.g., `nginx:alpine`, `redis:8-alpine`) — the original problem this amendment fixes
+- Mixing pinning strategies within the same compose file — produces audit/reproducibility confusion
+
+### Affected Components Update
+
+The original ADR scoped only `docker/Dockerfile*`. This amendment extends scope to include `docker/docker-compose.yml` because the pinning rule applies to both `image:` directives (compose) and `FROM` directives (Dockerfiles).
+
+---
+
 ## References
 
 - [Docker Build Best Practices](https://docs.docker.com/build/building/best-practices/)
@@ -317,4 +493,4 @@ docker/Dockerfile.frontend — 5 fixes (dumb-init, npm version, adduser group, s
 - [Docker Build Secrets](https://docs.docker.com/build/building/secrets/)
 - [Docker Scout Security Policies](https://docs.docker.com/scout/policy/)
 - [ADR-008: Dependency Version Management](./ADR-008-dependency-version-management.md) — Node/pnpm version strategy
-- [ADR-013: CI/CD Pipeline Hardening](./ADR-013-ci-cd-pipeline-hardening.md) — Build pipeline context
+- [ADR-013: CI/CD Pipeline Hardening](./ADR-013-ci-cd-pipeline-hardening.md) — Build pipeline context, Trivy scanning

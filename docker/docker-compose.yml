@@ -6,10 +6,10 @@
 # 1. All secrets are managed by Doppler. Start with: doppler run -- docker-compose up -d
 #    Without Doppler, required secrets (:? checks) will cause clear error messages.
 #
-# 2. IMAGE PINNING: This file uses version tags (e.g., postgres:17-alpine).
+# 2. IMAGE PINNING: This file uses version tags (e.g., postgres:17.9-alpine).
 #    For production deployments, consider pinning images with SHA256 digests:
-#      image: postgres:17-alpine@sha256:<digest>
-#    Get digests with: docker pull postgres:17-alpine && docker inspect --format='{{index .RepoDigests 0}}' postgres:17-alpine
+#      image: postgres:17.9-alpine@sha256:<digest>
+#    Get digests with: docker pull postgres:17.9-alpine && docker inspect --format='{{index .RepoDigests 0}}' postgres:17.9-alpine
 #
 # 3. See docker/.env.example for required environment variables.
 #
@@ -203,7 +203,7 @@ services:
 
   # Redis für Rate-Limiting und Session Cache (REQUIRED for Backend)
   redis:
-    image: redis:8-alpine
+    image: redis:8.6.2-alpine
     container_name: assixx-redis
     restart: unless-stopped
     # SECURITY: Redis with password authentication
@@ -394,7 +394,7 @@ services:
   # Nginx Reverse Proxy (Production)
   # ===========================================================================
   nginx:
-    image: nginx:alpine
+    image: nginx:1.29.8-alpine
     container_name: assixx-nginx
     restart: unless-stopped
     deploy:
@@ -438,7 +438,7 @@ services:
   # Loki - Log Aggregation
   # Receives logs from pino-loki transport
   loki:
-    image: grafana/loki:3.6.3
+    image: grafana/loki:3.7.1
     container_name: assixx-loki
     restart: unless-stopped
     deploy:
@@ -473,7 +473,7 @@ services:
   # Prometheus - Metrics Collection
   # Scrapes /api/v2/metrics from backend
   prometheus:
-    image: prom/prometheus:v3.9.1
+    image: prom/prometheus:v3.11.1
     container_name: assixx-prometheus
     restart: unless-stopped
     deploy:
@@ -521,7 +521,7 @@ services:
   # Grafana - Dashboards & Visualization
   # Pre-configured with Loki and Prometheus datasources
   grafana:
-    image: grafana/grafana:12.3.1
+    image: grafana/grafana:12.4.2
     container_name: assixx-grafana
     restart: unless-stopped
     deploy:

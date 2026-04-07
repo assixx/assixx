@@ -79,8 +79,17 @@ docker exec assixx-redis redis-cli -a 'dev_only_redis_p@ss_a1b2c3d4e5f6g7h8i9j0'
 pnpm install                  # Alle Dependencies installieren (NICHT npm oder yarn!)
 pnpm run dev:svelte           # SvelteKit Dev-Server starten (HMR auf :5173)
 pnpm run build                # Projekt bauen
-pnpm run type-check           # TypeScript-Kompilierung prüfen (ohne Output)
+pnpm run type-check           # TypeScript-Kompilierung prüfen (ohne Output) — auto svelte-kit sync
+pnpm run sync:svelte          # SvelteKit-Generated-Files (.svelte-kit/) regenerieren — Pflicht nach pnpm install / cleanup
 ```
+
+> **Wichtig (ADR-041, Build-Tooling-Discipline):** `frontend/tsconfig.json` extends
+> `./.svelte-kit/tsconfig.json`. Wenn diese Auto-Datei fehlt (frischer Checkout, `pnpm install`,
+> `clean`-Run), brechen `type-check`, `lint:frontend` und der `import-x` Resolver mit kryptischen
+> "Tsconfig not found" Errors zusammen. Die Scripts `type-check`, `lint:frontend`,
+> `lint:frontend:fix` und `check` rufen `sync:svelte` deshalb automatisch als Pre-Step auf.
+> Manueller Aufruf von `pnpm run sync:svelte` ist nur nötig wenn du `tsc -p frontend` oder
+> `pnpm exec eslint` direkt (außerhalb der Scripts) ausführen willst.
 
 ---
 
@@ -115,9 +124,16 @@ cd /home/scs/projects/Assixx/frontend && pnpm run format     # Frontend formatie
 ## 6. TypeScript
 
 ```bash
-docker exec assixx-backend pnpm run type-check               # Backend TypeScript-Check (0 Errors = Pflicht)
-cd /home/scs/projects/Assixx/frontend && pnpm run check      # Frontend svelte-check (Svelte + TS)
+pnpm run type-check                                          # Vollständiger Check: shared + frontend + backend + backend/test (mit auto svelte-kit sync)
+docker exec assixx-backend pnpm run type-check               # Backend-Container TypeScript-Check (0 Errors = Pflicht)
+cd /home/scs/projects/Assixx/frontend && pnpm run check      # Frontend svelte-check (Svelte + TS, hat eigenes svelte-kit sync)
+pnpm run sync:svelte                                         # `.svelte-kit/` regenerieren (nötig nach fresh checkout / pnpm install)
 ```
+
+> **Achtung:** Standalone `pnpm exec tsc --noEmit -p frontend` (ohne den Wrapper-Script)
+> schlägt fehl mit `TS5083: Cannot read file '.svelte-kit/tsconfig.json'` wenn das
+> Auto-Generated File fehlt. Vorher `pnpm run sync:svelte` aufrufen oder direkt
+> `pnpm run type-check` nutzen (das macht's automatisch). Siehe ADR-041.
 
 ---
 

@@ -6,7 +6,7 @@
 # Purpose: Automatic partition management for audit_trail + root_logs
 # =============================================================================
 
-FROM postgres:17-alpine
+FROM postgres:17.9-alpine
 
 ARG PG_PARTMAN_VERSION=v5.4.3
 
