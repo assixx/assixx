@@ -258,7 +258,7 @@
         Code-Schema: <code class="font-mono">{codeExample}</code>
         · {total}
         {total === 1 ? 'Gegenstand' : 'Gegenstände'}
-        {#if list.category}· {list.category}{/if}
+        {#if list.tags.length > 0}· {list.tags.map((t) => t.name).join(', ')}{/if}
       </p>
     </div>
     <button

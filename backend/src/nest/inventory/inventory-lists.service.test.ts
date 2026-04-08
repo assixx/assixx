@@ -3,12 +3,14 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { DatabaseService } from '../database/database.service.js';
 import { InventoryListsService } from './inventory-lists.service.js';
+import type { InventoryTagsService } from './inventory-tags.service.js';
 import type { InventoryListRow } from './inventory.types.js';
 
 // ── Mock Factories ──────────────────────────────────────────────
 
 const qf = vi.fn();
 const qof = vi.fn();
+const replaceTagsForListMock = vi.fn();
 
 function createMockDb() {
   return {
@@ -20,13 +22,18 @@ function createMockDb() {
   };
 }
 
+function createMockTagsService() {
+  return {
+    replaceTagsForList: replaceTagsForListMock,
+  };
+}
+
 function makeListRow(overrides: Partial<InventoryListRow> = {}): InventoryListRow {
   return {
     id: 'list-uuid-1',
     tenant_id: 1,
     title: 'Kräne',
     description: 'Brückenkräne und Portalkräne',
-    category: 'Lastaufnahmemittel',
     code_prefix: 'KRN',
     code_separator: '-',
     code_digits: 3,
@@ -45,22 +52,28 @@ function makeListRow(overrides: Partial<InventoryListRow> = {}): InventoryListRo
 describe('InventoryListsService', () => {
   let service: InventoryListsService;
   let mockDb: ReturnType<typeof createMockDb>;
+  let mockTags: ReturnType<typeof createMockTagsService>;
 
   beforeEach(() => {
     vi.clearAllMocks();
     mockDb = createMockDb();
-    service = new InventoryListsService(mockDb as unknown as DatabaseService);
+    mockTags = createMockTagsService();
+    service = new InventoryListsService(
+      mockDb as unknown as DatabaseService,
+      mockTags as unknown as InventoryTagsService,
+    );
   });
 
   // ── findAll ─────────────────────────────────────────────────
 
   describe('findAll', () => {
-    it('should return lists with status counts', async () => {
-      qf.mockResolvedValueOnce([{ ...makeListRow(), total_items: '5' }]);
+    it('should return lists with status counts and empty tags', async () => {
+      qf.mockResolvedValueOnce([{ ...makeListRow(), total_items: '5' }]); // lists
       qf.mockResolvedValueOnce([
         { list_id: 'list-uuid-1', status: 'operational', count: '3' },
         { list_id: 'list-uuid-1', status: 'defective', count: '2' },
-      ]);
+      ]); // status counts
+      qf.mockResolvedValueOnce([]); // tags
 
       const result = await service.findAll();
 
@@ -69,6 +82,7 @@ describe('InventoryListsService', () => {
       expect(result[0]?.statusCounts.operational).toBe(3);
       expect(result[0]?.statusCounts.defective).toBe(2);
       expect(result[0]?.statusCounts.repair).toBe(0);
+      expect(result[0]?.tags).toEqual([]);
     });
 
     it('should return empty array when no lists exist', async () => {
@@ -79,18 +93,53 @@ describe('InventoryListsService', () => {
       expect(result).toHaveLength(0);
     });
 
-    it('should handle lists with zero items', async () => {
+    it('should attach tags to the matching list', async () => {
       qf.mockResolvedValueOnce([{ ...makeListRow(), total_items: '0' }]);
-      qf.mockResolvedValueOnce([]);
+      qf.mockResolvedValueOnce([]); // status counts
+      qf.mockResolvedValueOnce([
+        {
+          list_id: 'list-uuid-1',
+          id: 'tag-1',
+          tenant_id: 1,
+          name: 'Lastaufnahmemittel',
+          icon: 'fa-anchor',
+          created_by: 10,
+          created_at: new Date(),
+          updated_at: new Date(),
+        },
+      ]); // tags
 
       const result = await service.findAll();
 
-      expect(result[0]?.totalItems).toBe(0);
-      expect(result[0]?.statusCounts.operational).toBe(0);
+      expect(result[0]?.tags).toHaveLength(1);
+      expect(result[0]?.tags[0]?.name).toBe('Lastaufnahmemittel');
+      expect(result[0]?.tags[0]?.icon).toBe('fa-anchor');
+    });
+
+    it('should pass tagIds filter to the SQL when provided', async () => {
+      qf.mockResolvedValueOnce([]);
+
+      await service.findAll({ tagIds: ['tag-uuid-a', 'tag-uuid-b'] });
+
+      const sql = qf.mock.calls[0]?.[0] as string;
+      const params = qf.mock.calls[0]?.[1] as unknown[];
+      expect(sql).toContain('EXISTS');
+      expect(sql).toContain('inventory_list_tags');
+      expect(params[1]).toEqual(['tag-uuid-a', 'tag-uuid-b']);
+    });
+
+    it('should NOT add EXISTS clause when tagIds is empty', async () => {
+      qf.mockResolvedValueOnce([]);
+
+      await service.findAll({ tagIds: [] });
+
+      const sql = qf.mock.calls[0]?.[0] as string;
+      expect(sql).not.toContain('EXISTS');
     });
 
     it('should map snake_case to camelCase', async () => {
       qf.mockResolvedValueOnce([{ ...makeListRow(), total_items: '0' }]);
+      qf.mockResolvedValueOnce([]);
       qf.mockResolvedValueOnce([]);
 
       const result = await service.findAll();
@@ -107,8 +156,9 @@ describe('InventoryListsService', () => {
   describe('findById', () => {
     it('should return list with fields', async () => {
       qof.mockResolvedValueOnce({ ...makeListRow(), total_items: '3' });
-      qf.mockResolvedValueOnce([{ status: 'operational', count: '3' }]);
-      qf.mockResolvedValueOnce([{ id: 'field-1', field_name: 'Tragkraft' }]);
+      qf.mockResolvedValueOnce([{ status: 'operational', count: '3' }]); // status counts
+      qf.mockResolvedValueOnce([]); // tags
+      qf.mockResolvedValueOnce([{ id: 'field-1', field_name: 'Tragkraft' }]); // fields
 
       const result = await service.findById('list-uuid-1');
 
@@ -127,9 +177,10 @@ describe('InventoryListsService', () => {
   // ── create ──────────────────────────────────────────────────
 
   describe('create', () => {
-    it('should create a list and return it', async () => {
+    it('should create a list and return it with tags', async () => {
       const created = makeListRow();
-      qf.mockResolvedValueOnce([created]);
+      qf.mockResolvedValueOnce([created]); // INSERT
+      qf.mockResolvedValueOnce([]); // tag fetch after insert
 
       const result = await service.create(
         {
@@ -142,17 +193,19 @@ describe('InventoryListsService', () => {
       );
 
       expect(result.title).toBe('Kräne');
-      expect(result.code_prefix).toBe('KRN');
+      expect(result.codePrefix).toBe('KRN');
+      expect(result.tags).toEqual([]);
+      expect(replaceTagsForListMock).not.toHaveBeenCalled();
     });
 
     it('should pass all fields to INSERT', async () => {
       qf.mockResolvedValueOnce([makeListRow()]);
+      qf.mockResolvedValueOnce([]); // tag fetch
 
       await service.create(
         {
           title: 'Hubtische',
           description: 'Alle Hubtische',
-          category: 'Hebezeuge',
           codePrefix: 'HBT',
           codeSeparator: '-',
           codeDigits: 4,
@@ -164,8 +217,46 @@ describe('InventoryListsService', () => {
       const callParams = qf.mock.calls[0]?.[1] as unknown[];
       expect(callParams[0]).toBe('Hubtische');
       expect(callParams[1]).toBe('Alle Hubtische');
-      expect(callParams[2]).toBe('Hebezeuge');
-      expect(callParams[3]).toBe('HBT');
+      expect(callParams[2]).toBe('HBT'); // codePrefix moved to position 3 after category removal
+      expect(callParams[3]).toBe('-');
+      expect(callParams[4]).toBe(4);
+    });
+
+    it('should call replaceTagsForList when tagIds provided', async () => {
+      qf.mockResolvedValueOnce([makeListRow()]);
+      qf.mockResolvedValueOnce([]); // tag fetch
+      replaceTagsForListMock.mockResolvedValueOnce(undefined);
+
+      await service.create(
+        {
+          title: 'Kräne',
+          codePrefix: 'KRN',
+          codeSeparator: '-',
+          codeDigits: 3,
+          tagIds: ['tag-1', 'tag-2'],
+        } as never,
+        10,
+      );
+
+      expect(replaceTagsForListMock).toHaveBeenCalledWith('list-uuid-1', ['tag-1', 'tag-2']);
+    });
+
+    it('should NOT call replaceTagsForList when tagIds is empty array', async () => {
+      qf.mockResolvedValueOnce([makeListRow()]);
+      qf.mockResolvedValueOnce([]); // tag fetch
+
+      await service.create(
+        {
+          title: 'Kräne',
+          codePrefix: 'KRN',
+          codeSeparator: '-',
+          codeDigits: 3,
+          tagIds: [],
+        } as never,
+        10,
+      );
+
+      expect(replaceTagsForListMock).not.toHaveBeenCalled();
     });
 
     it('should throw ConflictException when prefix is already used (unique_violation)', async () => {
@@ -222,13 +313,15 @@ describe('InventoryListsService', () => {
   // ── update ──────────────────────────────────────────────────
 
   describe('update', () => {
-    it('should update list fields', async () => {
+    it('should update list fields and return with tags', async () => {
       qof.mockResolvedValueOnce(makeListRow()); // existing check
-      qf.mockResolvedValueOnce([makeListRow({ title: 'Neuer Titel' })]);
+      qf.mockResolvedValueOnce([makeListRow({ title: 'Neuer Titel' })]); // UPDATE
+      qf.mockResolvedValueOnce([]); // tag fetch
 
       const result = await service.update('list-uuid-1', { title: 'Neuer Titel' } as never);
 
       expect(result.title).toBe('Neuer Titel');
+      expect(result.tags).toEqual([]);
     });
 
     it('should throw NotFoundException for missing list', async () => {
@@ -251,22 +344,36 @@ describe('InventoryListsService', () => {
     it('should allow prefix change when no conflict', async () => {
       qof.mockResolvedValueOnce(makeListRow({ code_prefix: 'KRN' }));
       qof.mockResolvedValueOnce(null); // no conflict
-      qf.mockResolvedValueOnce([makeListRow({ code_prefix: 'HBT' })]);
+      qf.mockResolvedValueOnce([makeListRow({ code_prefix: 'HBT' })]); // UPDATE
+      qf.mockResolvedValueOnce([]); // tag fetch
 
       const result = await service.update('list-uuid-1', { codePrefix: 'HBT' } as never);
 
-      expect(result.code_prefix).toBe('HBT');
+      expect(result.codePrefix).toBe('HBT');
     });
 
-    it('should skip prefix check when prefix unchanged', async () => {
-      qof.mockResolvedValueOnce(makeListRow({ code_prefix: 'KRN' }));
-      qf.mockResolvedValueOnce([makeListRow()]);
+    it('should call replaceTagsForList when tagIds provided in update', async () => {
+      qof.mockResolvedValueOnce(makeListRow());
+      qf.mockResolvedValueOnce([makeListRow({ title: 'Neuer Titel' })]); // UPDATE
+      qf.mockResolvedValueOnce([]); // tag fetch
+      replaceTagsForListMock.mockResolvedValueOnce(undefined);
 
-      await service.update('list-uuid-1', { codePrefix: 'KRN' } as never);
+      await service.update('list-uuid-1', {
+        title: 'Neuer Titel',
+        tagIds: ['tag-a'],
+      } as never);
 
-      // Only 2 DB calls: existing check + update (no conflict check)
-      expect(qof).toHaveBeenCalledTimes(1);
-      expect(qf).toHaveBeenCalledTimes(1);
+      expect(replaceTagsForListMock).toHaveBeenCalledWith('list-uuid-1', ['tag-a']);
+    });
+
+    it('should call replaceTagsForList with empty array to clear tags', async () => {
+      qof.mockResolvedValueOnce(makeListRow());
+      qf.mockResolvedValueOnce([]); // tag fetch (no SET clauses, no UPDATE)
+      replaceTagsForListMock.mockResolvedValueOnce(undefined);
+
+      await service.update('list-uuid-1', { tagIds: [] } as never);
+
+      expect(replaceTagsForListMock).toHaveBeenCalledWith('list-uuid-1', []);
     });
   });
 
@@ -286,36 +393,6 @@ describe('InventoryListsService', () => {
     });
   });
 
-  // ── getCategoryAutocomplete ─────────────────────────────────
-
-  describe('getCategoryAutocomplete', () => {
-    it('should return distinct categories', async () => {
-      qf.mockResolvedValueOnce([{ category: 'Hebezeuge' }, { category: 'Druckbehälter' }]);
-
-      const result = await service.getCategoryAutocomplete();
-
-      expect(result).toEqual(['Hebezeuge', 'Druckbehälter']);
-    });
-
-    it('should filter by query string', async () => {
-      qf.mockResolvedValueOnce([{ category: 'Hebezeuge' }]);
-
-      const result = await service.getCategoryAutocomplete('Hebe');
-
-      expect(result).toEqual(['Hebezeuge']);
-      const callParams = qf.mock.calls[0]?.[1] as unknown[];
-      expect(callParams[1]).toBe('%Hebe%');
-    });
-
-    it('should return empty array when no categories', async () => {
-      qf.mockResolvedValueOnce([]);
-
-      const result = await service.getCategoryAutocomplete();
-
-      expect(result).toEqual([]);
-    });
-  });
-
   // ── Edge Cases ──────────────────────────────────────────────
 
   describe('edge cases', () => {
@@ -329,6 +406,7 @@ describe('InventoryListsService', () => {
         { list_id: 'l2', status: 'operational', count: '5' },
         { list_id: 'l2', status: 'defective', count: '2' },
       ]);
+      qf.mockResolvedValueOnce([]); // tags
 
       const result = await service.findAll();
 
@@ -341,6 +419,7 @@ describe('InventoryListsService', () => {
     it('should return all 7 status counts initialized to 0', async () => {
       qf.mockResolvedValueOnce([{ ...makeListRow(), total_items: '0' }]);
       qf.mockResolvedValueOnce([]);
+      qf.mockResolvedValueOnce([]); // tags
 
       const result = await service.findAll();
       const counts = result[0]?.statusCounts;
@@ -356,6 +435,7 @@ describe('InventoryListsService', () => {
 
     it('should handle null description in create', async () => {
       qf.mockResolvedValueOnce([makeListRow({ description: null })]);
+      qf.mockResolvedValueOnce([]); // tag fetch
 
       const result = await service.create(
         { title: 'Test', codePrefix: 'TST', codeSeparator: '-', codeDigits: 3 } as never,
@@ -374,33 +454,22 @@ describe('InventoryListsService', () => {
       expect(params[0]).toBe(4); // IS_ACTIVE.DELETED = 4
     });
 
-    it('should return existing list when update has no changed fields', async () => {
+    it('should return existing list when update has no changed fields and no tagIds', async () => {
       const existing = makeListRow();
       qof.mockResolvedValueOnce(existing); // existing check
+      qf.mockResolvedValueOnce([]); // tag fetch (still happens for response building)
 
       const result = await service.update('list-uuid-1', {} as never);
 
       expect(result.title).toBe('Kräne');
-      // No UPDATE query should be called (only the existing check)
-      expect(qf).not.toHaveBeenCalled();
-    });
-
-    it('should allow setting nullable fields to null via update', async () => {
-      qof.mockResolvedValueOnce(makeListRow()); // existing
-      qf.mockResolvedValueOnce([makeListRow({ description: null, category: null })]);
-
-      const result = await service.update('list-uuid-1', {
-        description: null,
-        category: null,
-      } as never);
-
-      expect(result.description).toBeNull();
-      expect(result.category).toBeNull();
+      // Only the tag-fetch query — no UPDATE
+      expect(qf).toHaveBeenCalledTimes(1);
     });
 
     it('should map fields to camelCase in findById', async () => {
       qof.mockResolvedValueOnce({ ...makeListRow(), total_items: '0' });
       qf.mockResolvedValueOnce([]); // status counts
+      qf.mockResolvedValueOnce([]); // tags
       qf.mockResolvedValueOnce([
         {
           id: 'f-1',

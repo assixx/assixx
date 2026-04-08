@@ -21,36 +21,36 @@ export function getCodePreview(prefix: string, separator: string, digits: number
 export function getDefaultFormValues(): {
   title: string;
   description: string;
-  category: string;
   codePrefix: string;
   codeSeparator: string;
   codeDigits: number;
   icon: string;
   isActive: FormIsActiveStatus;
+  tagIds: string[];
 } {
-  return { ...FORM_DEFAULTS };
+  return { ...FORM_DEFAULTS, tagIds: [] };
 }
 
 /** Populate form values from an existing list (edit mode) */
 export function populateFormFromList(list: InventoryList): {
   title: string;
   description: string;
-  category: string;
   codePrefix: string;
   codeSeparator: string;
   codeDigits: number;
   icon: string;
   isActive: FormIsActiveStatus;
+  tagIds: string[];
 } {
   return {
     title: list.title,
     description: list.description ?? '',
-    category: list.category ?? '',
     codePrefix: list.codePrefix,
     codeSeparator: list.codeSeparator,
     codeDigits: list.codeDigits,
     icon: list.icon ?? '',
     isActive: (list.isActive === 4 ? 0 : list.isActive) as FormIsActiveStatus,
+    tagIds: list.tags.map((t) => t.id),
   };
 }
 

@@ -21,6 +21,23 @@ export type InventoryItemStatus =
 
 export type InventoryFieldType = 'text' | 'number' | 'date' | 'boolean' | 'select';
 
+// ── Tag Types ──────────────────────────────────────────────────
+
+/** A single inventory tag (label) */
+export interface InventoryTag {
+  id: string;
+  name: string;
+  icon: string | null;
+  createdBy: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** Tag enriched with how many lists currently reference it */
+export interface InventoryTagWithUsage extends InventoryTag {
+  usageCount: number;
+}
+
 // ── API Response Types ─────────────────────────────────────────
 
 /** Inventory list with aggregated item status counts */
@@ -28,7 +45,6 @@ export interface InventoryList {
   id: string;
   title: string;
   description: string | null;
-  category: string | null;
   codePrefix: string;
   codeSeparator: string;
   codeDigits: number;
@@ -38,6 +54,7 @@ export interface InventoryList {
   createdBy: number;
   createdAt: string;
   updatedAt: string;
+  tags: InventoryTag[];
   statusCounts: Record<InventoryItemStatus, number>;
   totalItems: number;
 }
@@ -60,35 +77,46 @@ export interface InventoryCustomField {
 export interface ListFormData {
   title: string;
   description: string;
-  category: string;
   codePrefix: string;
   codeSeparator: string;
   codeDigits: number;
   icon: string;
   isActive: FormIsActiveStatus;
+  tagIds: string[];
 }
 
 /** API payload for creating a list */
 export interface CreateListPayload {
   title: string;
   description?: string;
-  category?: string;
   codePrefix: string;
   codeSeparator?: string;
   codeDigits?: number;
   icon?: string;
+  tagIds?: string[];
 }
 
 /** API payload for updating a list */
 export interface UpdateListPayload {
   title?: string;
   description?: string | null;
-  category?: string | null;
   codePrefix?: string;
   codeSeparator?: string;
   codeDigits?: number;
   icon?: string | null;
   isActive?: FormIsActiveStatus;
+  tagIds?: string[];
+}
+
+/** API payload for creating/updating a tag */
+export interface CreateTagPayload {
+  name: string;
+  icon?: string | null;
+}
+
+export interface UpdateTagPayload {
+  name?: string;
+  icon?: string | null;
 }
 
 // ── Item Types ────────────────────────────────────────────────

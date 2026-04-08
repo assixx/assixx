@@ -2,22 +2,29 @@
 // INVENTORY - REACTIVE STATE (Svelte 5 Runes)
 // =============================================================================
 //
-// Minimal shared state for the inventory lists overview.
-// Most state lives in +page.svelte (Pattern A — page-level state).
-// This file provides cross-component reactive state if needed.
+// Cross-component reactive state for the inventory module. The page-level
+// state lives in +page.svelte (Pattern A). This file holds the *shared*
+// tag catalog used by both the list modal (TagInput typeahead) and the
+// inventory overview page (TagFilter, TagsManagement modal).
 
-// ── Category Autocomplete State ────────────────────────────────
+import type { InventoryTagWithUsage } from './types';
 
-let categorySuggestions = $state<string[]>([]);
+// ── Tag Catalog State ──────────────────────────────────────────
 
-export const categoryState = {
-  get suggestions(): string[] {
-    return categorySuggestions;
+let tags = $state<InventoryTagWithUsage[]>([]);
+
+export const tagsState = {
+  get tags(): InventoryTagWithUsage[] {
+    return tags;
   },
-  setSuggestions(values: string[]): void {
-    categorySuggestions = values;
+  set(values: InventoryTagWithUsage[]): void {
+    tags = values;
   },
   reset(): void {
-    categorySuggestions = [];
+    tags = [];
+  },
+  /** Find a tag by ID — returns undefined if missing */
+  findById(id: string): InventoryTagWithUsage | undefined {
+    return tags.find((t: InventoryTagWithUsage): boolean => t.id === id);
   },
 };

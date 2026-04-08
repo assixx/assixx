@@ -2,10 +2,10 @@
   /**
    * ListCard — Card component for inventory list overview
    *
-   * Shows list title, category, code prefix, item count,
+   * Shows list title, attached tags (chips), code prefix, item count,
    * and status breakdown badges.
    */
-  import { DEFAULT_LIST_ICON, MESSAGES } from './constants';
+  import { DEFAULT_LIST_ICON, DEFAULT_TAG_ICON, MESSAGES } from './constants';
   import StatusBadge from './StatusBadge.svelte';
   import { getCodePreview, getNonZeroStatusCounts } from './utils';
 
@@ -47,9 +47,6 @@
       <i class="fas {list.icon ?? DEFAULT_LIST_ICON} text-2xl text-(--color-primary)"></i>
       <div>
         <h3 class="card__title m-0 text-lg">{list.title}</h3>
-        {#if list.category}
-          <span class="text-sm text-(--color-text-secondary)">{list.category}</span>
-        {/if}
       </div>
     </div>
     <code class="inventory-list-card__code-preview">{codePreview}</code>
@@ -57,6 +54,17 @@
 
   <!-- Card Body -->
   <div class="card__body inventory-list-card__body">
+    {#if list.tags.length > 0}
+      <div class="inventory-list-card__tags">
+        {#each list.tags as tag (tag.id)}
+          <span class="inventory-list-card__tag-chip">
+            <i class="fas {tag.icon ?? DEFAULT_TAG_ICON}"></i>
+            <span>{tag.name}</span>
+          </span>
+        {/each}
+      </div>
+    {/if}
+
     {#if list.description}
       <p class="mb-3 line-clamp-2 text-sm text-(--color-text-secondary)">{list.description}</p>
     {/if}
@@ -161,5 +169,25 @@
     justify-content: space-between;
     padding-top: 0.75rem;
     border-top: 1px solid var(--color-border, rgb(255 255 255 / 10%));
+  }
+
+  .inventory-list-card__tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .inventory-list-card__tag-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.125rem 0.5rem;
+    background: rgb(33 150 243 / 12%);
+    border: 1px solid rgb(33 150 243 / 30%);
+    border-radius: 0.375rem;
+    color: var(--color-primary, #2196f3);
+    font-size: 0.6875rem;
+    line-height: 1.4;
   }
 </style>

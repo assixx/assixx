@@ -32,27 +32,35 @@ import { RequireAddon } from '../common/decorators/require-addon.decorator.js';
 import { RequirePermission } from '../common/decorators/require-permission.decorator.js';
 import type { MulterFile } from '../common/interfaces/multer.interface.js';
 import { ActivityLoggerService } from '../common/services/activity-logger.service.js';
-import { CreateCustomFieldDto } from './dto/create-custom-field.dto.js';
-import { CreateItemDto } from './dto/create-item.dto.js';
-import { CreateListDto } from './dto/create-list.dto.js';
-import { ItemsQueryDto } from './dto/items-query.dto.js';
-import { ReorderPhotosDto } from './dto/reorder-photos.dto.js';
-import { UpdateCustomFieldDto } from './dto/update-custom-field.dto.js';
-import { UpdateItemDto } from './dto/update-item.dto.js';
-import { UpdateListDto } from './dto/update-list.dto.js';
-import { UpdatePhotoCaptionDto } from './dto/update-photo-caption.dto.js';
+import {
+  CreateCustomFieldDto,
+  CreateItemDto,
+  CreateListDto,
+  CreateTagDto,
+  ItemsQueryDto,
+  ListsQueryDto,
+  ReorderPhotosDto,
+  UpdateCustomFieldDto,
+  UpdateItemDto,
+  UpdateListDto,
+  UpdatePhotoCaptionDto,
+  UpdateTagDto,
+} from './dto/index.js';
 import { InventoryCustomFieldsService } from './inventory-custom-fields.service.js';
 import { InventoryItemsService } from './inventory-items.service.js';
 import { InventoryListsService } from './inventory-lists.service.js';
 import { InventoryPhotosService } from './inventory-photos.service.js';
+import { InventoryTagsService } from './inventory-tags.service.js';
 import type {
   InventoryCustomField,
   InventoryCustomValueWithField,
   InventoryItemPhoto,
   InventoryItemPhotoRow,
   InventoryItemRow,
-  InventoryListRow,
+  InventoryList,
   InventoryListWithCounts,
+  InventoryTag,
+  InventoryTagWithUsage,
 } from './inventory.types.js';
 import { MAX_PHOTO_FILE_SIZE } from './inventory.types.js';
 
@@ -102,6 +110,7 @@ export class InventoryController {
     private readonly itemsService: InventoryItemsService,
     private readonly fieldsService: InventoryCustomFieldsService,
     private readonly photosService: InventoryPhotosService,
+    private readonly tagsService: InventoryTagsService,
     private readonly activityLogger: ActivityLoggerService,
   ) {}
 
@@ -109,8 +118,10 @@ export class InventoryController {
 
   @Get('lists')
   @RequirePermission(ADDON, MOD_LISTS, 'canRead')
-  async getLists(): Promise<InventoryListWithCounts[]> {
-    return await this.listsService.findAll();
+  async getLists(@Query() query: ListsQueryDto): Promise<InventoryListWithCounts[]> {
+    return await this.listsService.findAll(
+      query.tagIds === undefined ? undefined : { tagIds: query.tagIds },
+    );
   }
 
   @Post('lists')
@@ -119,15 +130,15 @@ export class InventoryController {
     @Body() dto: CreateListDto,
     @CurrentUser('id') userId: number,
     @CurrentUser('tenantId') tenantId: number,
-  ): Promise<InventoryListRow> {
+  ): Promise<InventoryList> {
     const created = await this.listsService.create(dto, userId);
     void this.activityLogger.log({
       tenantId,
       userId,
       action: 'create',
       entityType: 'inventory_list',
-      details: `Inventarliste erstellt: "${created.title}" (${created.code_prefix})`,
-      newValues: { id: created.id, title: created.title, codePrefix: created.code_prefix },
+      details: `Inventarliste erstellt: "${created.title}" (${created.codePrefix})`,
+      newValues: { id: created.id, title: created.title, codePrefix: created.codePrefix },
     });
     return created;
   }
@@ -148,7 +159,7 @@ export class InventoryController {
     @Body() dto: UpdateListDto,
     @CurrentUser('id') userId: number,
     @CurrentUser('tenantId') tenantId: number,
-  ): Promise<InventoryListRow> {
+  ): Promise<InventoryList> {
     const updated = await this.listsService.update(id, dto);
     void this.activityLogger.log({
       tenantId,
@@ -179,12 +190,69 @@ export class InventoryController {
     });
   }
 
-  // ── Categories ────────────────────────────────────────────────
+  // ── Tags ──────────────────────────────────────────────────────
 
-  @Get('categories')
+  @Get('tags')
   @RequirePermission(ADDON, MOD_LISTS, 'canRead')
-  async getCategories(@Query('q') q?: string): Promise<string[]> {
-    return await this.listsService.getCategoryAutocomplete(q);
+  async getTags(): Promise<InventoryTagWithUsage[]> {
+    return await this.tagsService.findAll();
+  }
+
+  @Post('tags')
+  @RequirePermission(ADDON, MOD_LISTS, 'canWrite')
+  async createTag(
+    @Body() dto: CreateTagDto,
+    @CurrentUser('id') userId: number,
+    @CurrentUser('tenantId') tenantId: number,
+  ): Promise<InventoryTag> {
+    const created = await this.tagsService.create(dto, userId);
+    void this.activityLogger.log({
+      tenantId,
+      userId,
+      action: 'create',
+      entityType: 'inventory_tag',
+      details: `Inventory-Tag erstellt: "${created.name}"`,
+      newValues: { id: created.id, name: created.name, icon: created.icon },
+    });
+    return created;
+  }
+
+  @Patch('tags/:tagId')
+  @RequirePermission(ADDON, MOD_LISTS, 'canWrite')
+  async updateTag(
+    @Param('tagId') tagId: string,
+    @Body() dto: UpdateTagDto,
+    @CurrentUser('id') userId: number,
+    @CurrentUser('tenantId') tenantId: number,
+  ): Promise<InventoryTag> {
+    const updated = await this.tagsService.update(tagId, dto);
+    void this.activityLogger.log({
+      tenantId,
+      userId,
+      action: 'update',
+      entityType: 'inventory_tag',
+      details: `Inventory-Tag aktualisiert: "${updated.name}"`,
+      newValues: { id: updated.id, name: updated.name, icon: updated.icon },
+    });
+    return updated;
+  }
+
+  @Delete('tags/:tagId')
+  @RequirePermission(ADDON, MOD_LISTS, 'canDelete')
+  async deleteTag(
+    @Param('tagId') tagId: string,
+    @CurrentUser('id') userId: number,
+    @CurrentUser('tenantId') tenantId: number,
+  ): Promise<void> {
+    await this.tagsService.delete(tagId);
+    void this.activityLogger.log({
+      tenantId,
+      userId,
+      action: 'delete',
+      entityType: 'inventory_tag',
+      details: `Inventory-Tag gelöscht (ID: ${tagId})`,
+      oldValues: { id: tagId },
+    });
   }
 
   // ── Custom Fields ─────────────────────────────────────────────

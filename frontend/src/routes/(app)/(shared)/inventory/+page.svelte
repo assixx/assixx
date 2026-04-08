@@ -28,6 +28,9 @@
   import { applyAllFilters } from './_lib/filters';
   import ListCard from './_lib/ListCard.svelte';
   import ListModal from './_lib/ListModal.svelte';
+  import { tagsState } from './_lib/state.svelte';
+  import TagFilterDropdown from './_lib/TagFilterDropdown.svelte';
+  import TagsManagementModal from './_lib/TagsManagementModal.svelte';
   import { getDefaultFormValues, populateFormFromList } from './_lib/utils';
 
   import type { PageData } from './$types';
@@ -40,6 +43,12 @@
   const { data }: { data: PageData } = $props();
 
   const allLists = $derived(data.lists);
+
+  // Sync the SSR-loaded tag catalog into shared state on every data change
+  // (initial load + invalidateAll() refreshes after mutations).
+  $effect(() => {
+    tagsState.set(data.tags);
+  });
 
   // Permission: all roles can read, write/delete depends on addon permissions
   // Optimistic client-side gating — actual enforcement is server-side via @RequirePermission
@@ -56,10 +65,12 @@
   let currentStatusFilter = $state<StatusFilter>('active');
   let currentSearchQuery = $state('');
   let searchOpen = $state(false);
+  let selectedFilterTagIds = $state<string[]>([]);
 
   // Modal States
   let showListModal = $state(false);
   let showDeleteModal = $state(false);
+  let showTagsModal = $state(false);
 
   // Edit State
   let currentEditId = $state<string | null>(null);
@@ -68,12 +79,12 @@
   // Form Fields
   let formTitle = $state('');
   let formDescription = $state('');
-  let formCategory = $state('');
   let formCodePrefix = $state('');
   let formCodeSeparator = $state('-');
   let formCodeDigits = $state(3);
   let formIcon = $state('');
   let formIsActive = $state<FormIsActiveStatus>(1);
+  let formTagIds = $state<string[]>([]);
 
   let submitting = $state(false);
 
@@ -85,7 +96,7 @@
   const modalTitle = $derived(isEditMode ? MESSAGES.MODAL_TITLE_EDIT : MESSAGES.MODAL_TITLE_ADD);
 
   const filteredLists = $derived(
-    applyAllFilters(allLists, currentStatusFilter, currentSearchQuery),
+    applyAllFilters(allLists, currentStatusFilter, currentSearchQuery, selectedFilterTagIds),
   );
 
   // =============================================================================
@@ -95,12 +106,12 @@
   async function handleFormSubmit(formData: {
     title: string;
     description: string;
-    category: string;
     codePrefix: string;
     codeSeparator: string;
     codeDigits: number;
     icon: string;
     isActive: FormIsActiveStatus;
+    tagIds: string[];
   }): Promise<void> {
     submitting = true;
 
@@ -154,12 +165,12 @@
     const values = populateFormFromList(list);
     formTitle = values.title;
     formDescription = values.description;
-    formCategory = values.category;
     formCodePrefix = values.codePrefix;
     formCodeSeparator = values.codeSeparator;
     formCodeDigits = values.codeDigits;
     formIcon = values.icon;
     formIsActive = values.isActive;
+    formTagIds = values.tagIds;
     showListModal = true;
   }
 
@@ -183,12 +194,19 @@
     const defaults = getDefaultFormValues();
     formTitle = defaults.title;
     formDescription = defaults.description;
-    formCategory = defaults.category;
     formCodePrefix = defaults.codePrefix;
     formCodeSeparator = defaults.codeSeparator;
     formCodeDigits = defaults.codeDigits;
     formIcon = defaults.icon;
     formIsActive = defaults.isActive;
+    formTagIds = defaults.tagIds;
+  }
+
+  async function handleTagsModalClose(): Promise<void> {
+    showTagsModal = false;
+    // Tags may have been renamed or deleted — refresh the list payload so
+    // ListCards reflect the new tag names/icons (and removed tags vanish).
+    await invalidateAll();
   }
 
   function openList(listId: string): void {
@@ -312,6 +330,29 @@
             </button>
           </div>
 
+          <!-- Tag Filter + Manage -->
+          <div class="flex items-center gap-2">
+            <TagFilterDropdown
+              selectedIds={selectedFilterTagIds}
+              onchange={(ids: string[]) => {
+                selectedFilterTagIds = ids;
+              }}
+            />
+            {#if canWrite}
+              <button
+                type="button"
+                class="btn btn-info"
+                onclick={() => {
+                  showTagsModal = true;
+                }}
+                title={MESSAGES.TAGS_MANAGE_BTN}
+              >
+                <i class="fas fa-tags mr-1"></i>
+                {MESSAGES.TAGS_MANAGE_BTN}
+              </button>
+            {/if}
+          </div>
+
           <!-- Search Input -->
           <div
             class="search-input-wrapper max-w-80"
@@ -367,9 +408,9 @@
                         query={currentSearchQuery}
                       />
                     </span>
-                    {#if list.category}
+                    {#if list.tags.length > 0}
                       <span class="ml-2 text-sm text-(--color-text-secondary)"
-                        >&rarr; {list.category}</span
+                        >&rarr; {list.tags.map((t) => t.name).join(', ')}</span
                       >
                     {/if}
                   </div>
@@ -449,16 +490,21 @@
       {modalTitle}
       {formTitle}
       {formDescription}
-      {formCategory}
       {formCodePrefix}
       {formCodeSeparator}
       {formCodeDigits}
       {formIcon}
       {formIsActive}
+      {formTagIds}
       {submitting}
       onclose={closeListModal}
       onsubmit={handleFormSubmit}
     />
+  {/if}
+
+  <!-- Tags Management Modal -->
+  {#if showTagsModal}
+    <TagsManagementModal onclose={() => void handleTagsModalClose()} />
   {/if}
 
   <!-- Delete Confirm Modal -->

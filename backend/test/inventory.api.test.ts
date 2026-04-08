@@ -214,7 +214,6 @@ describe('Inventory: Create List', () => {
       body: JSON.stringify({
         title: 'API Test Kräne',
         description: 'Integrationstests',
-        category: 'Lastaufnahmemittel',
         codePrefix: 'ATK',
         codeSeparator: '-',
         codeDigits: 3,
@@ -226,7 +225,8 @@ describe('Inventory: Create List', () => {
     expect(body.success).toBe(true);
     expect(body.data).toHaveProperty('id');
     expect(body.data.title).toBe('API Test Kräne');
-    expect(body.data.code_prefix).toBe('ATK');
+    expect(body.data.codePrefix).toBe('ATK');
+    expect(Array.isArray(body.data.tags)).toBe(true);
 
     listId = body.data.id as string;
   });
@@ -461,27 +461,152 @@ describe('Inventory: Update Item', () => {
   });
 });
 
-// ── Categories ──────────────────────────────────────────────────
+// ── Tags (V1.1) ─────────────────────────────────────────────────
 
-describe('Inventory: Categories Autocomplete', () => {
-  it('should return categories', async () => {
-    const res = await fetch(`${API}/categories`, {
-      headers: authOnly(auth.authToken),
+describe('Inventory: Tags CRUD', () => {
+  let tagId: string;
+  let secondTagId: string;
+
+  it('should create a tag with name + icon', async () => {
+    const res = await fetch(`${API}/tags`, {
+      method: 'POST',
+      headers: authHeaders(auth.authToken),
+      body: JSON.stringify({ name: 'API Lastaufnahmemittel', icon: 'fa-anchor' }),
     });
 
-    expect(res.status).toBe(200);
+    expect(res.status).toBe(201);
     const body = (await res.json()) as JsonBody;
-    expect(Array.isArray(body.data)).toBe(true);
+    expect(body.data.name).toBe('API Lastaufnahmemittel');
+    expect(body.data.icon).toBe('fa-anchor');
+    tagId = body.data.id as string;
   });
 
-  it('should filter categories by query', async () => {
-    const res = await fetch(`${API}/categories?q=Last`, {
+  it('should reject duplicate tag name (case-insensitive) with 409', async () => {
+    const res = await fetch(`${API}/tags`, {
+      method: 'POST',
+      headers: authHeaders(auth.authToken),
+      body: JSON.stringify({ name: 'api lastaufnahmemittel' }), // different case
+    });
+
+    expect(res.status).toBe(409);
+  });
+
+  it('should list tags with usage counts', async () => {
+    const res = await fetch(`${API}/tags`, {
       headers: authOnly(auth.authToken),
     });
 
     expect(res.status).toBe(200);
     const body = (await res.json()) as JsonBody;
     expect(Array.isArray(body.data)).toBe(true);
+    const found = (body.data as JsonBody[]).find((t: JsonBody) => t.id === tagId);
+    expect(found).toBeDefined();
+    expect(found?.usageCount).toBe(0); // not yet attached
+  });
+
+  it('should rename a tag', async () => {
+    const res = await fetch(`${API}/tags/${tagId}`, {
+      method: 'PATCH',
+      headers: authHeaders(auth.authToken),
+      body: JSON.stringify({ name: 'API Hebezeuge' }),
+    });
+
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as JsonBody;
+    expect(body.data.name).toBe('API Hebezeuge');
+  });
+
+  it('should attach tag to a list via PATCH /lists/:id', async () => {
+    // Create a second tag for multi-tag scenarios
+    const tagRes = await fetch(`${API}/tags`, {
+      method: 'POST',
+      headers: authHeaders(auth.authToken),
+      body: JSON.stringify({ name: 'API Stahltransport', icon: 'fa-truck' }),
+    });
+    secondTagId = ((await tagRes.json()) as JsonBody).data.id as string;
+
+    const res = await fetch(`${API}/lists/${listId}`, {
+      method: 'PATCH',
+      headers: authHeaders(auth.authToken),
+      body: JSON.stringify({ tagIds: [tagId, secondTagId] }),
+    });
+
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as JsonBody;
+    expect(Array.isArray(body.data.tags)).toBe(true);
+    expect((body.data.tags as JsonBody[]).length).toBe(2);
+  });
+
+  it('should filter lists by tagIds', async () => {
+    const res = await fetch(`${API}/lists?tagIds=${tagId}`, {
+      headers: authOnly(auth.authToken),
+    });
+
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as JsonBody;
+    const found = (body.data as JsonBody[]).find((l: JsonBody) => l.id === listId);
+    expect(found).toBeDefined();
+  });
+
+  it('should report usageCount > 0 after attaching to a list', async () => {
+    const res = await fetch(`${API}/tags`, {
+      headers: authOnly(auth.authToken),
+    });
+
+    const body = (await res.json()) as JsonBody;
+    const found = (body.data as JsonBody[]).find((t: JsonBody) => t.id === tagId);
+    expect(found?.usageCount).toBe(1);
+  });
+
+  it('should reject creating list with non-existing tag IDs (400)', async () => {
+    const res = await fetch(`${API}/lists`, {
+      method: 'POST',
+      headers: authHeaders(auth.authToken),
+      body: JSON.stringify({
+        title: 'Bad Tag List',
+        codePrefix: 'BTL',
+        codeSeparator: '-',
+        codeDigits: 3,
+        tagIds: ['00000000-0000-0000-0000-000000000000'],
+      }),
+    });
+
+    // List INSERT succeeds, but replaceTagsForList validates IDs and throws BadRequest
+    expect([400, 404]).toContain(res.status);
+  });
+
+  it('should clear tags via empty array on PATCH', async () => {
+    const res = await fetch(`${API}/lists/${listId}`, {
+      method: 'PATCH',
+      headers: authHeaders(auth.authToken),
+      body: JSON.stringify({ tagIds: [] }),
+    });
+
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as JsonBody;
+    expect((body.data.tags as JsonBody[]).length).toBe(0);
+  });
+
+  it('should hard-delete tag and cleanup junction', async () => {
+    const delRes = await fetch(`${API}/tags/${tagId}`, {
+      method: 'DELETE',
+      headers: authOnly(auth.authToken),
+    });
+    expect(delRes.status).toBe(200);
+
+    // Verify it's gone from listing
+    const listRes = await fetch(`${API}/tags`, {
+      headers: authOnly(auth.authToken),
+    });
+    const body = (await listRes.json()) as JsonBody;
+    const found = (body.data as JsonBody[]).find((t: JsonBody) => t.id === tagId);
+    expect(found).toBeUndefined();
+
+    // Cleanup remaining test tag
+    await fetch(`${API}/tags/${secondTagId}`, {
+      method: 'DELETE',
+      headers: authOnly(auth.authToken),
+    });
   });
 });
 

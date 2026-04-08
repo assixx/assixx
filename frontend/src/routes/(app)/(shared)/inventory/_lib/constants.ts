@@ -65,6 +65,14 @@ export const LIST_ICON_OPTIONS: readonly { icon: string; label: string }[] = [
   { icon: 'fa-gauge-high', label: 'Messgeräte' },
 ];
 
+// ── Tag Defaults ──────────────────────────────────────────────
+
+/** Fallback icon for tags created inline (no explicit icon picker) */
+export const DEFAULT_TAG_ICON = 'fa-tag';
+
+/** Hard cap matching backend MAX_TAGS_PER_LIST */
+export const MAX_TAGS_PER_LIST = 10;
+
 // ── Messages ───────────────────────────────────────────────────
 
 export const MESSAGES = {
@@ -92,16 +100,31 @@ export const MESSAGES = {
   FILTER_ALL_TITLE: 'Alle Listen',
   ITEMS_SINGULAR: 'Gegenstand',
   ITEMS_PLURAL: 'Gegenstände',
-  NO_CATEGORY: 'Keine Kategorie',
   LABEL_TITLE: 'Titel',
   LABEL_DESCRIPTION: 'Beschreibung',
-  LABEL_CATEGORY: 'Kategorie',
+  LABEL_TAGS: 'Tags',
   LABEL_CODE_PREFIX: 'Code-Prefix',
   LABEL_CODE_SEPARATOR: 'Trennzeichen',
   LABEL_CODE_DIGITS: 'Ziffernanzahl',
   LABEL_ICON: 'Icon',
   HINT_CODE_PREFIX: '2-5 Großbuchstaben, z.B. KRN',
   HINT_CODE_EXAMPLE: 'Beispiel-Code',
+  TAGS_PLACEHOLDER: 'Tag suchen oder neu erstellen…',
+  TAGS_NO_TAGS: 'Noch keine Tags angelegt',
+  TAGS_CREATE_HINT: 'Enter zum Erstellen',
+  TAGS_MAX_REACHED: `Maximal ${String(10)} Tags pro Liste`,
+  TAGS_MANAGE_BTN: 'Tags verwalten',
+  TAGS_MANAGE_TITLE: 'Tags verwalten',
+  TAGS_FILTER_LABEL: 'Nach Tags filtern',
+  TAGS_FILTER_ALL: 'Alle Tags',
+  TAGS_FILTER_NONE: 'Filter zurücksetzen',
+  TAG_DELETE_CONFIRM: 'Tag wirklich löschen? Er wird aus allen Listen entfernt.',
+  TAG_RENAME_DUPLICATE: 'Ein Tag mit diesem Namen existiert bereits',
+  TAG_SUCCESS_CREATED: 'Tag erstellt',
+  TAG_SUCCESS_UPDATED: 'Tag aktualisiert',
+  TAG_SUCCESS_DELETED: 'Tag gelöscht',
+  TAG_ERROR_SAVING: 'Fehler beim Speichern des Tags',
+  TAG_ERROR_DELETING: 'Fehler beim Löschen des Tags',
 } as const;
 
 // ── API Endpoints ──────────────────────────────────────────────
@@ -109,7 +132,8 @@ export const MESSAGES = {
 export const API_ENDPOINTS = {
   LISTS: '/inventory/lists',
   list: (id: string) => `/inventory/lists/${id}`,
-  CATEGORIES: '/inventory/categories',
+  TAGS: '/inventory/tags',
+  tag: (id: string) => `/inventory/tags/${id}`,
   ITEMS: '/inventory/items',
   item: (uuid: string) => `/inventory/items/${uuid}`,
   listFields: (listId: string) => `/inventory/lists/${listId}/fields`,
@@ -122,10 +146,10 @@ export const API_ENDPOINTS = {
 export const FORM_DEFAULTS = {
   title: '',
   description: '',
-  category: '',
   codePrefix: '',
   codeSeparator: '-',
   codeDigits: 3,
   icon: DEFAULT_LIST_ICON,
   isActive: 1 as const,
+  tagIds: [] as string[],
 };

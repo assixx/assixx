@@ -3,7 +3,7 @@
 | Metadata                | Value                                                                       |
 | ----------------------- | --------------------------------------------------------------------------- |
 | **Status**              | Accepted                                                                    |
-| **Date**                | 2026-04-06                                                                  |
+| **Date**                | 2026-04-06 (V1) / 2026-04-08 (V1.1 Tag amendment)                           |
 | **Decision Makers**     | SCS Technik                                                                 |
 | **Affected Components** | Backend (NestJS), Frontend (SvelteKit), Database (PostgreSQL), Addon System |
 
@@ -116,9 +116,106 @@ Placed in the `(shared)` route group (not `(admin)`) because all roles need acce
 - No item history timeline (V2)
 - No dashboard widgets (V2)
 
+---
+
+## V1.1 Amendment — Tag System (2026-04-08)
+
+The original V1 design used a single freetext `inventory_lists.category VARCHAR(100)` column with a distinct-value autocomplete endpoint. This proved inadequate: tenants need to label one list with **multiple** orthogonal concepts (e.g., a "Krane" list and a "Seile" list both belong to the "Lastaufnahmemittel" category, and both also belong to "Wartungspflichtig"), and they need to filter the overview by those labels.
+
+### Decision
+
+Replace the freetext `category` column with a normalized **N:M tag relation**:
+
+```
+inventory_tags                       inventory_list_tags
+──────────────                       ───────────────────
+id UUID PK                           list_id UUID FK ──┐
+tenant_id INT FK                     tag_id  UUID FK ──┴── PK
+name VARCHAR(50) NOT NULL            tenant_id INT FK
+icon VARCHAR(50)                     created_at
+created_by, timestamps               RLS strict (ADR-019)
+RLS strict (ADR-019)                 Indexes on tag_id, tenant_id
+GRANTs: app_user + sys_user
+UNIQUE INDEX (tenant_id, LOWER(name))
+```
+
+**Why normalized over JSONB array on inventory_lists:**
+
+- Renaming "Lastaufnahmemittel" → "Hebezeuge" = 1 UPDATE instead of N rows
+- Case-insensitive UNIQUE prevents typo duplicates ("Krane" vs "KRANE" rejected)
+- Filter by tag = simple JOIN/EXISTS, not JSONB path expression
+- Tag usage count is `COUNT(*) FROM inventory_list_tags GROUP BY tag_id` (gratis)
+- Future tag metadata (color, sort order) without touching every list
+
+**Why not polymorphic shared tags (KVP/Documents/etc.):**
+
+YAGNI. Only inventory needs this right now. Polymorphic FKs break referential integrity and complicate RLS. Refactor later if a second module needs the same shape — see ADR-016 for an analogous deferred-generalisation precedent.
+
+### Tag Lifecycle Rules
+
+- **Hard delete only** — no `is_active` column. The junction `ON DELETE CASCADE` cleans references automatically. Soft-deleted tags would create ghost UI ("invisible label still attached to a list").
+- **Case-insensitive uniqueness per tenant** — enforced via the functional unique index `idx_inventory_tags_tenant_name_lower`. The DB raises 23505 on duplicates; service catches and maps to `ConflictException` (409).
+- **Hard cap** — `MAX_TAGS_PER_LIST = 10`. Enforced both in the Zod DTO (frontend feedback) and in `replaceTagsForList` (defence in depth).
+- **No tag-on-item** — tags attach to lists only. Items inherit no tags. If item-level tags ever become a requirement, add a separate `inventory_item_tags` junction.
+
+### Permission Model
+
+Tag CRUD reuses the existing `inventory-lists` permission module — tags are list metadata, not a separate concern:
+
+- `GET /inventory/tags` → `inventory-lists.read`
+- `POST /inventory/tags` → `inventory-lists.write`
+- `PATCH /inventory/tags/:id` → `inventory-lists.write`
+- `DELETE /inventory/tags/:id` → `inventory-lists.delete`
+
+No new permission module required. Tag rename is `write` (not `delete`) because it affects every referencing list, but it does not destroy data.
+
+### Migration Path
+
+Four sequential migrations (Schema/Data discipline per DATABASE-MIGRATION-GUIDE.md):
+
+1. `*_inventory-tags-table` — create `inventory_tags` with RLS + GRANTs + functional unique index + trigger
+2. `*_inventory-list-tags-junction` — create `inventory_list_tags` with composite PK + indexes + RLS + GRANTs
+3. `*_inventory-migrate-categories-to-tags` — backfill: `DISTINCT (tenant_id, LOWER(category))` → `inventory_tags`, then link via `inventory_list_tags`. Idempotent / no-op when `category` is empty.
+4. `*_inventory-drop-category-column` — `ALTER TABLE inventory_lists DROP COLUMN category`
+
+Migration 3 is one-way (lossy rollback): the original casing of mixed-case duplicates is collapsed to `MIN(name)` per tenant. Documented in the migration header.
+
+### API Surface Changes (Breaking)
+
+- **Removed**: `GET /inventory/categories?q=` — replaced by `GET /inventory/tags`
+- **Added**: `POST /inventory/tags`, `PATCH /inventory/tags/:tagId`, `DELETE /inventory/tags/:tagId`
+- **Added query**: `GET /inventory/lists?tagIds=uuid1,uuid2` — comma-separated UUIDs, OR semantics
+- **Lists payload (create/update)**: `category` field removed, `tagIds: string[]` added
+- **Lists response**: `category` field removed, `tags: { id, name, icon, … }[]` added
+
+### Frontend Components
+
+- `TagInput.svelte` — chip input with typeahead from cached `tagsState`, inline-create on Enter (default icon `fa-tag`). Visual contract matches `form-field__control` via shared form-field tokens.
+- `TagFilterDropdown.svelte` — multi-select filter on the inventory overview, OR semantics, badge with selected count.
+- `TagsManagementModal.svelte` — list all tenant tags with usage counts; inline rename + icon picker; hard delete with confirmation.
+
+The shared `tagsState` (Svelte 5 rune in `_lib/state.svelte.ts`) is hydrated from SSR via `+page.server.ts`'s parallel fetch and refreshed after every mutation through `invalidateAll()` or explicit `loadTags()` calls.
+
+### Consequences (delta)
+
+**Positive:**
+
+- Tenants can now express multi-dimensional labels (a list can be both "Lastaufnahmemittel" and "Wartungspflichtig")
+- Filter and search by tag works across the whole inventory
+- Renaming a tag is a single global operation, not a search-and-replace per list
+- Tag catalog is discoverable (management modal) and reusable across lists
+
+**Negative:**
+
+- One additional table + junction = 2 more migrations to maintain
+- Tag CRUD adds 4 endpoints + 1 service to the inventory module surface area
+- Frontend has 3 new components (TagInput, TagFilterDropdown, TagsManagementModal)
+- Inline tag create from list modal uses the default `fa-tag` icon — explicit icon pick happens later via the management modal (one extra step for users who care about icons during list creation)
+
 ## References
 
 - [Inventory Masterplan](../../FEAT_INVENTORY_MASTERPLAN.md)
 - [ADR-033: Addon-based SaaS Model](./ADR-033-addon-based-saas-model.md)
 - [ADR-019: Multi-Tenant RLS Isolation](./ADR-019-multi-tenant-rls-isolation.md)
 - [ADR-020: Per-User Feature Permissions](./ADR-020-per-user-feature-permissions.md)
+- [ADR-016: Tenant-Customizable Seed Data](./ADR-016-tenant-customizable-seed-data.md) — analogous deferred-generalisation pattern

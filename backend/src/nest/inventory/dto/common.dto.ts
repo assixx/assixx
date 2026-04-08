@@ -40,10 +40,6 @@ export const InventoryFieldTypeSchema = z.enum(['text', 'number', 'date', 'boole
 
 // ── Query Schemas ───────────────────────────────────────────────
 
-export const CategoryQuerySchema = z.object({
-  q: z.string().trim().min(1).max(100).optional(),
-});
-
 export const ItemsQuerySchema = z.object({
   listId: z.uuid('Ungültige Listen-UUID'),
   status: InventoryItemStatusSchema.optional(),

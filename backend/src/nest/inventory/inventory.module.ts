@@ -13,6 +13,7 @@ import { InventoryItemsService } from './inventory-items.service.js';
 import { InventoryListsService } from './inventory-lists.service.js';
 import { InventoryPermissionRegistrar } from './inventory-permission.registrar.js';
 import { InventoryPhotosService } from './inventory-photos.service.js';
+import { InventoryTagsService } from './inventory-tags.service.js';
 import { InventoryController } from './inventory.controller.js';
 
 @Module({
@@ -24,12 +25,14 @@ import { InventoryController } from './inventory.controller.js';
     InventoryItemsService,
     InventoryCustomFieldsService,
     InventoryPhotosService,
+    InventoryTagsService,
   ],
   exports: [
     InventoryListsService,
     InventoryItemsService,
     InventoryCustomFieldsService,
     InventoryPhotosService,
+    InventoryTagsService,
   ],
 })
 // eslint-disable-next-line @typescript-eslint/no-extraneous-class -- NestJS @Module() decorated class

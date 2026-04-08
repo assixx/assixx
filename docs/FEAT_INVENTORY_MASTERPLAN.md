@@ -1,21 +1,22 @@
 # FEAT: Inventory — Equipment Tracking & Inspection System Masterplan
 
 > **Created:** 2026-04-03
-> **Version:** 1.0.0
-> **Status:** COMPLETE — All 6 Phases Done (5.4 QR deferred to V1.1)
+> **Version:** 1.1.0
+> **Status:** V1 COMPLETE + V1.1 Tag System SHIPPED (5.4 QR still deferred)
 > **Branch:** `feat/inventory`
 > **Author:** SCS Technik (Staff Engineer)
 > **Estimated Sessions:** 12
-> **Actual Sessions:** 11 / 12 (1 deferred)
+> **Actual Sessions:** 11 / 12 V1 + 1 V1.1 (1 V1 deferred)
 
 ---
 
 ## Changelog
 
-| Version | Date       | Change                                               |
-| ------- | ---------- | ---------------------------------------------------- |
-| 0.1.0   | 2026-04-03 | Initial Draft — 6 phases planned                     |
-| 0.1.1   | 2026-04-03 | Fix 4 critical + 6 major + 7 minor validation issues |
+| Version | Date       | Change                                                                                          |
+| ------- | ---------- | ----------------------------------------------------------------------------------------------- |
+| 0.1.0   | 2026-04-03 | Initial Draft — 6 phases planned                                                                |
+| 0.1.1   | 2026-04-03 | Fix 4 critical + 6 major + 7 minor validation issues                                            |
+| 1.1.0   | 2026-04-08 | V1.1 Tag System: replaces single-string `category` with normalized N:M tags + icon, see Phase 7 |
 
 ---
 
@@ -695,22 +696,106 @@ This is the **QR code target page**. Must work well on mobile.
 
 ---
 
+## Phase 7: Tag System (V1.1)
+
+> **Status:** ✅ DONE (2026-04-08)
+> **Trigger:** User feedback — single freetext `category` is inadequate. Tenants need multi-dimensional, reusable, filterable labels (e.g., a "Krane" list and a "Seile" list both belong to "Lastaufnahmemittel").
+> **ADR Reference:** ADR-040 amendment 2026-04-08
+
+### Why a normalized tag relation, not JSONB?
+
+- Renaming a tag = 1 UPDATE instead of N rows
+- Case-insensitive UNIQUE prevents duplicate-by-typo
+- Filter and usage-count queries are simple JOINs
+- Future tag metadata (color, sort) without per-row migration
+
+### Step 7.1: Database Migrations (4)
+
+1. `inventory_tags` — table + RLS strict + functional unique index on `(tenant_id, LOWER(name))` + GRANTs + trigger
+2. `inventory_list_tags` — junction with composite PK + RLS + GRANTs + indexes
+3. `inventory-migrate-categories-to-tags` — backfill existing categories → tags + junction (idempotent / no-op when empty)
+4. `inventory-drop-category-column` — `ALTER TABLE inventory_lists DROP COLUMN category`
+
+All 4 generated via `db:migrate:create`, dry-run passed, executed in order. Customer fresh-install synced.
+
+### Step 7.2: Backend
+
+- New `InventoryTagsService` — CRUD + `getOrCreateByNames` (case-insensitive batch upsert) + `replaceTagsForList` (validates IDs, atomic delete+insert in a single tenantTransaction) + `findAll` with usage counts
+- 4 new endpoints: `GET/POST/PATCH/DELETE /inventory/tags` — all gated by `inventory-lists.{read|write|delete}` permissions (no new permission module)
+- `InventoryListsService` updated:
+  - `category` removed from INSERT/UPDATE/SET-clause builder
+  - `findAll(filters?: { tagIds?: string[] })` — EXISTS clause for filter, OR semantics
+  - `findById` + `findAll` JOIN tags via parallel `fetchTagsForLists` helper
+  - `create`/`update` accept `tagIds: string[]` and call `replaceTagsForList`
+  - returns `InventoryList` (with tags) instead of bare `InventoryListRow`
+- `getCategoryAutocomplete` removed; `/inventory/categories` endpoint deleted
+- DTOs: `CreateTagDto`, `UpdateTagDto`, `TagIdParamDto`, `ListsQueryDto` (parses comma-separated `?tagIds=`); `CreateListDto` updated (tagIds, no category)
+- `ActivityEntityType` extended with `'inventory_tag'`
+
+### Step 7.3: Tests
+
+- `inventory-tags.service.test.ts` — 24 unit tests covering CRUD, case-insensitive uniqueness, getOrCreateByNames batch+dedupe+normalize, replaceTagsForList validation/dedupe/transaction
+- `inventory-lists.service.test.ts` — rewritten: removed category tests, added tag attachment / filter / mock-sequence tests, updated to camelCase response
+- `inventory.api.test.ts` — replaced Categories block with comprehensive Tags CRUD block (12 new assertions): create, duplicate-409, list-with-usage, rename, attach-via-PATCH, filter-by-tagIds, usage-after-attach, reject-bad-tag-id, clear-via-empty-array, hard-delete-cascade
+
+### Step 7.4: Frontend
+
+- `_lib/types.ts` — `InventoryTag`, `InventoryTagWithUsage`; `category` removed everywhere; `tags: InventoryTag[]` on `InventoryList`; `tagIds: string[]` on form/payload types
+- `_lib/state.svelte.ts` — `categoryState` removed, `tagsState` rune cache (read by TagInput, TagFilter, TagsManagement)
+- `_lib/api.ts` — `loadCategories` → removed; `loadTags`, `createTag`, `updateTag`, `deleteTag` added; payload builders updated
+- `_lib/filters.ts` — `filterByTags(lists, tagIds)` added with OR semantics; `filterBySearch` searches tag names
+- `_lib/TagInput.svelte` — chip input, typeahead from `tagsState`, inline create on Enter (default `fa-tag` icon), backspace-removes-last-chip, MAX_TAGS_PER_LIST guard, visual contract via shared `--form-field-*` tokens (matches every other input)
+- `_lib/TagFilterDropdown.svelte` — multi-select dropdown with checkbox rows, badge with count, click-outside close, clear-all button
+- `_lib/TagsManagementModal.svelte` — list of all tenant tags with usage counts, inline rename + icon picker, hard delete with usage warning
+- `_lib/ListModal.svelte` — category section replaced with TagInput
+- `_lib/ListCard.svelte` — chip strip with icons replaces single category text
+- `+page.svelte` — TagFilter dropdown + "Tags verwalten" button (`btn-info`) added to filter bar; tag-modal wiring; SSR data → tagsState sync via `$effect`
+- `+page.server.ts` — parallel `Promise.all` fetch of `/inventory/lists` + `/inventory/tags`
+- `lists/[id]/+page.svelte` — header line uses tag names instead of category
+
+### Step 7.5: Verification
+
+- Backend type-check: 0 errors
+- Backend lint: 0 errors
+- Backend unit tests: 127 passed (103 inventory + 24 new tags)
+- Backend API tests: 55 passed (43 existing + 12 new tag tests)
+- Frontend svelte-check: 0/0
+- Frontend lint: 0 errors
+- Stylelint: clean
+- `validate:all`: PASSED
+
+### Phase 7 — Definition of Done
+
+- [x] 4 migrations generated, dry-run, executed, customer-sync
+- [x] `inventory_lists.category` column dropped
+- [x] InventoryTagsService + 4 endpoints + permission-aligned
+- [x] InventoryListsService accepts `tagIds`, returns `tags`, filters by `?tagIds=`
+- [x] All references to `category` removed from backend + frontend
+- [x] Unit + API tests for tag CRUD, isolation, filter, cascade
+- [x] TagInput visually identical to other form fields (`--form-field-*` tokens)
+- [x] TagsManagementModal supports rename + icon change + hard delete
+- [x] ADR-040 amendment written
+- [x] All quality gates pass (type-check, lint, svelte-check, stylelint)
+
+---
+
 ## Session Tracking
 
-| Session | Phase | Description                         | Status   | Date       |
-| ------- | ----- | ----------------------------------- | -------- | ---------- |
-| 1       | 1     | Migration: ENUMs + core tables      | ✅ DONE  | 2026-04-05 |
-| 2       | 1     | Migration: custom fields + photos   | ✅ DONE  | 2026-04-05 |
-| 3       | 2     | Module skeleton + types + DTOs      | ✅ DONE  | 2026-04-05 |
-| 4       | 2     | ListsService + ItemsService         | ✅ DONE  | 2026-04-05 |
-| 5       | 2     | CustomFieldsService + PhotosService | ✅ DONE  | 2026-04-05 |
-| 6       | 2     | Controller (18 endpoints)           | ✅ DONE  | 2026-04-06 |
-| 7       | 3     | Unit tests (80+)                    | ✅ DONE  | 2026-04-06 |
-| 8       | 4     | API integration tests (25+)         | ✅ DONE  | 2026-04-06 |
-| 9       | 5     | Frontend: lists overview + modals   | ✅ DONE  | 2026-04-06 |
-| 10      | 5     | Frontend: items table + item detail | ✅ DONE  | 2026-04-06 |
-| 11      | 5     | Frontend: QR code + print + polish  | DEFERRED | V1.1       |
-| 12      | 6     | Integration + audit + ADR + cleanup | ✅ DONE  | 2026-04-06 |
+| Session | Phase | Description                                              | Status   | Date       |
+| ------- | ----- | -------------------------------------------------------- | -------- | ---------- |
+| 1       | 1     | Migration: ENUMs + core tables                           | ✅ DONE  | 2026-04-05 |
+| 2       | 1     | Migration: custom fields + photos                        | ✅ DONE  | 2026-04-05 |
+| 3       | 2     | Module skeleton + types + DTOs                           | ✅ DONE  | 2026-04-05 |
+| 4       | 2     | ListsService + ItemsService                              | ✅ DONE  | 2026-04-05 |
+| 5       | 2     | CustomFieldsService + PhotosService                      | ✅ DONE  | 2026-04-05 |
+| 6       | 2     | Controller (18 endpoints)                                | ✅ DONE  | 2026-04-06 |
+| 7       | 3     | Unit tests (80+)                                         | ✅ DONE  | 2026-04-06 |
+| 8       | 4     | API integration tests (25+)                              | ✅ DONE  | 2026-04-06 |
+| 9       | 5     | Frontend: lists overview + modals                        | ✅ DONE  | 2026-04-06 |
+| 10      | 5     | Frontend: items table + item detail                      | ✅ DONE  | 2026-04-06 |
+| 11      | 5     | Frontend: QR code + print + polish                       | DEFERRED | V1.1       |
+| 12      | 6     | Integration + audit + ADR + cleanup                      | ✅ DONE  | 2026-04-06 |
+| 13      | 7     | V1.1 Tag System (DB + Backend + Tests + Frontend + Docs) | ✅ DONE  | 2026-04-08 |
 
 ---
 

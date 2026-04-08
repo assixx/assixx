@@ -2,16 +2,19 @@
   /**
    * ListModal — Create/Edit inventory list modal
    *
-   * Fields: title, description, category (with autocomplete),
-   * code prefix, separator, digits, icon, isActive (edit only).
+   * Fields: title, description, tags (chip input), code prefix, separator,
+   * digits, icon, isActive (edit only).
+   *
+   * Tags are managed via the TagInput component which talks to the shared
+   * tagsState cache; the modal only carries the selected ID array as form
+   * state.
    */
   import { FORM_STATUS_OPTIONS } from '@assixx/shared/constants';
 
   import { onClickOutsideDropdown } from '$lib/actions/click-outside';
 
-  import { loadCategories } from './api';
   import { CODE_DIGIT_OPTIONS, DEFAULT_LIST_ICON, LIST_ICON_OPTIONS, MESSAGES } from './constants';
-  import { categoryState } from './state.svelte';
+  import TagInput from './TagInput.svelte';
   import { getCodePreview } from './utils';
 
   import type { FormIsActiveStatus } from './types';
@@ -21,12 +24,12 @@
     modalTitle: string;
     formTitle: string;
     formDescription: string;
-    formCategory: string;
     formCodePrefix: string;
     formCodeSeparator: string;
     formCodeDigits: number;
     formIcon: string;
     formIsActive: FormIsActiveStatus;
+    formTagIds: string[];
     submitting: boolean;
     onclose: () => void;
     onsubmit: (data: SubmitData) => void;
@@ -35,12 +38,12 @@
   export interface SubmitData {
     title: string;
     description: string;
-    category: string;
     codePrefix: string;
     codeSeparator: string;
     codeDigits: number;
     icon: string;
     isActive: FormIsActiveStatus;
+    tagIds: string[];
   }
 
   const {
@@ -48,12 +51,12 @@
     modalTitle,
     formTitle,
     formDescription,
-    formCategory,
     formCodePrefix,
     formCodeSeparator,
     formCodeDigits,
     formIcon,
     formIsActive,
+    formTagIds,
     submitting,
     onclose,
     onsubmit,
@@ -62,16 +65,12 @@
   // Local form state (synced from props via $effect)
   let localTitle = $state('');
   let localDescription = $state('');
-  let localCategory = $state('');
   let localCodePrefix = $state('');
   let localCodeSeparator = $state('-');
   let localCodeDigits = $state(3);
   let localIcon = $state(DEFAULT_LIST_ICON);
   let localIsActive = $state<FormIsActiveStatus>(1);
-
-  // Category autocomplete
-  let showCategorySuggestions = $state(false);
-  let categoryInputFocused = $state(false);
+  let localTagIds = $state<string[]>([]);
 
   // Dropdown state (KVP-style — single source of truth for all dropdowns)
   let activeDropdown = $state<string | null>(null);
@@ -97,12 +96,12 @@
   $effect(() => {
     localTitle = formTitle;
     localDescription = formDescription;
-    localCategory = formCategory;
     localCodePrefix = formCodePrefix;
     localCodeSeparator = formCodeSeparator;
     localCodeDigits = formCodeDigits;
     localIcon = formIcon;
     localIsActive = formIsActive;
+    localTagIds = [...formTagIds];
   });
 
   // Derived: code preview
@@ -124,39 +123,13 @@
     onsubmit({
       title: localTitle.trim(),
       description: localDescription.trim(),
-      category: localCategory.trim(),
       codePrefix: localCodePrefix.trim().toUpperCase(),
       codeSeparator: localCodeSeparator,
       codeDigits: localCodeDigits,
       icon: localIcon.trim(),
       isActive: localIsActive,
+      tagIds: localTagIds,
     });
-  }
-
-  async function handleCategoryInput(e: Event): Promise<void> {
-    const input = e.target as HTMLInputElement;
-    localCategory = input.value;
-
-    if (localCategory.trim().length >= 1) {
-      const suggestions = await loadCategories(localCategory.trim());
-      categoryState.setSuggestions(suggestions);
-      showCategorySuggestions = suggestions.length > 0;
-    } else {
-      showCategorySuggestions = false;
-    }
-  }
-
-  function selectCategory(cat: string): void {
-    localCategory = cat;
-    showCategorySuggestions = false;
-  }
-
-  function handleCategoryBlur(): void {
-    // Delay to allow click on suggestion
-    setTimeout(() => {
-      categoryInputFocused = false;
-      showCategorySuggestions = false;
-    }, 150);
   }
 </script>
 
@@ -222,44 +195,15 @@
         ></textarea>
       </div>
 
-      <!-- Category with autocomplete -->
-      <div
-        class="form-field mb-4"
-        style="position: relative;"
-      >
-        <label
-          class="form-field__label"
-          for="list-category">{MESSAGES.LABEL_CATEGORY}</label
-        >
-        <input
-          type="text"
-          id="list-category"
-          class="form-field__control"
-          value={localCategory}
-          oninput={(e) => void handleCategoryInput(e)}
-          onfocus={() => {
-            categoryInputFocused = true;
+      <!-- Tags -->
+      <div class="form-field mb-4">
+        <span class="form-field__label">{MESSAGES.LABEL_TAGS}</span>
+        <TagInput
+          selectedIds={localTagIds}
+          onchange={(ids: string[]) => {
+            localTagIds = ids;
           }}
-          onblur={handleCategoryBlur}
-          maxlength="100"
-          placeholder="z.B. Hebezeuge, Fahrzeuge, Steigtechnik"
-          autocomplete="off"
         />
-        {#if showCategorySuggestions && categoryInputFocused}
-          <div class="category-suggestions">
-            {#each categoryState.suggestions as cat (cat)}
-              <button
-                type="button"
-                class="category-suggestions__item"
-                onmousedown={() => {
-                  selectCategory(cat);
-                }}
-              >
-                {cat}
-              </button>
-            {/each}
-          </div>
-        {/if}
       </div>
 
       <!-- Code Settings Row -->
@@ -465,35 +409,5 @@
     font-size: 0.625rem;
     text-align: center;
     line-height: 1.2;
-  }
-
-  .category-suggestions {
-    position: absolute;
-    top: 100%;
-    left: 0;
-    right: 0;
-    z-index: 50;
-    background: var(--color-glass-bg, rgb(30 30 46 / 95%));
-    border: 1px solid var(--color-border, rgb(255 255 255 / 10%));
-    border-radius: 0.5rem;
-    box-shadow: 0 4px 12px rgb(0 0 0 / 30%);
-    max-height: 200px;
-    overflow-y: auto;
-  }
-
-  .category-suggestions__item {
-    display: block;
-    width: 100%;
-    padding: 0.5rem 0.75rem;
-    text-align: left;
-    border: none;
-    background: transparent;
-    color: var(--color-text-primary, #fff);
-    cursor: pointer;
-    font-size: 0.875rem;
-  }
-
-  .category-suggestions__item:hover {
-    background: var(--color-glass-hover, rgb(255 255 255 / 10%));
   }
 </style>

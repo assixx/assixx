@@ -25,7 +25,6 @@ export interface InventoryListRow {
   tenant_id: number;
   title: string;
   description: string | null;
-  category: string | null;
   code_prefix: string;
   code_separator: string;
   code_digits: number;
@@ -35,6 +34,20 @@ export interface InventoryListRow {
   created_by: number;
   created_at: Date;
   updated_at: Date;
+}
+
+export interface InventoryTagRow {
+  id: string;
+  tenant_id: number;
+  name: string;
+  icon: string | null;
+  created_by: number;
+  created_at: Date;
+  updated_at: Date;
+}
+
+export interface InventoryTagWithUsageRow extends InventoryTagRow {
+  usage_count: string;
 }
 
 export interface InventoryItemRow {
@@ -104,11 +117,23 @@ export interface InventoryItemPhotoRow {
 
 // ── Application Types (camelCase, for API responses) ────────────
 
+export interface InventoryTag {
+  id: string;
+  name: string;
+  icon: string | null;
+  createdBy: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface InventoryTagWithUsage extends InventoryTag {
+  usageCount: number;
+}
+
 export interface InventoryList {
   id: string;
   title: string;
   description: string | null;
-  category: string | null;
   codePrefix: string;
   codeSeparator: string;
   codeDigits: number;
@@ -118,6 +143,7 @@ export interface InventoryList {
   createdBy: number;
   createdAt: Date;
   updatedAt: Date;
+  tags: InventoryTag[];
 }
 
 export interface InventoryListWithCounts extends InventoryList {
@@ -200,6 +226,24 @@ export function mapFieldRow(row: InventoryCustomFieldRow): InventoryCustomField 
   };
 }
 
+export function mapTagRow(row: InventoryTagRow): InventoryTag {
+  return {
+    id: row.id,
+    name: row.name,
+    icon: row.icon,
+    createdBy: row.created_by,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+export function mapTagWithUsageRow(row: InventoryTagWithUsageRow): InventoryTagWithUsage {
+  return {
+    ...mapTagRow(row),
+    usageCount: Number(row.usage_count),
+  };
+}
+
 // ── Constants ───────────────────────────────────────────────────
 
 export const INVENTORY_ITEM_STATUSES: readonly InventoryItemStatus[] = [
@@ -225,3 +269,5 @@ export const STATUS_LABELS: Record<InventoryItemStatus, string> = {
 export const MAX_CUSTOM_FIELDS_PER_LIST = 30;
 export const MAX_PHOTOS_PER_ITEM = 20;
 export const MAX_PHOTO_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
+export const MAX_TAGS_PER_LIST = 10;
+export const MAX_TAG_NAME_LENGTH = 50;

@@ -10,9 +10,13 @@ import { API_ENDPOINTS } from './constants';
 
 import type {
   CreateListPayload,
+  CreateTagPayload,
   InventoryList,
+  InventoryTag,
+  InventoryTagWithUsage,
   UpdateItemPayload,
   UpdateListPayload,
+  UpdateTagPayload,
 } from './types';
 
 const log = createLogger('InventoryApi');
@@ -21,7 +25,7 @@ const apiClient = getApiClient();
 
 // ── Lists ──────────────────────────────────────────────────────
 
-/** Load all inventory lists with status counts */
+/** Load all inventory lists with status counts and tags */
 export async function loadLists(): Promise<InventoryList[]> {
   const result: unknown = await apiClient.get(API_ENDPOINTS.LISTS);
   return extractArray<InventoryList>(result);
@@ -85,21 +89,34 @@ export async function updatePhotoCaption(photoId: string, caption: string | null
   await apiClient.patch(`/inventory/photos/${photoId}`, { caption });
 }
 
-// ── Categories ─────────────────────────────────────────────────
+// ── Tags ───────────────────────────────────────────────────────
 
-/** Load category suggestions for autocomplete */
-export async function loadCategories(query?: string): Promise<string[]> {
+/** Load all inventory tags for the tenant with usage counts */
+export async function loadTags(): Promise<InventoryTagWithUsage[]> {
   try {
-    const endpoint =
-      query !== undefined && query.length > 0 ?
-        `${API_ENDPOINTS.CATEGORIES}?q=${encodeURIComponent(query)}`
-      : API_ENDPOINTS.CATEGORIES;
-    const result: unknown = await apiClient.get(endpoint);
-    return extractArray<string>(result);
+    const result: unknown = await apiClient.get(API_ENDPOINTS.TAGS);
+    return extractArray<InventoryTagWithUsage>(result);
   } catch (err: unknown) {
-    log.error({ err }, 'Error loading categories');
+    log.error({ err }, 'Error loading tags');
     return [];
   }
+}
+
+/** Create a new inventory tag */
+export async function createTag(payload: CreateTagPayload): Promise<InventoryTag> {
+  const result: unknown = await apiClient.post(API_ENDPOINTS.TAGS, payload);
+  return (result as { data: InventoryTag }).data;
+}
+
+/** Update tag (rename + change icon) */
+export async function updateTag(tagId: string, payload: UpdateTagPayload): Promise<InventoryTag> {
+  const result: unknown = await apiClient.patch(API_ENDPOINTS.tag(tagId), payload);
+  return (result as { data: InventoryTag }).data;
+}
+
+/** Hard-delete a tag (cascades junction) */
+export async function deleteTag(tagId: string): Promise<void> {
+  await apiClient.delete(API_ENDPOINTS.tag(tagId));
 }
 
 // ── Payload Builder ────────────────────────────────────────────
@@ -108,20 +125,20 @@ export async function loadCategories(query?: string): Promise<string[]> {
 export function buildCreatePayload(formData: {
   title: string;
   description: string;
-  category: string;
   codePrefix: string;
   codeSeparator: string;
   codeDigits: number;
   icon: string;
+  tagIds: string[];
 }): CreateListPayload {
   return {
     title: formData.title,
     description: formData.description.length > 0 ? formData.description : undefined,
-    category: formData.category.length > 0 ? formData.category : undefined,
     codePrefix: formData.codePrefix.toUpperCase(),
     codeSeparator: formData.codeSeparator,
     codeDigits: formData.codeDigits,
     icon: formData.icon.length > 0 ? formData.icon : undefined,
+    tagIds: formData.tagIds,
   };
 }
 
@@ -129,21 +146,21 @@ export function buildCreatePayload(formData: {
 export function buildUpdatePayload(formData: {
   title: string;
   description: string;
-  category: string;
   codePrefix: string;
   codeSeparator: string;
   codeDigits: number;
   icon: string;
   isActive: 0 | 1 | 3;
+  tagIds: string[];
 }): UpdateListPayload {
   return {
     title: formData.title,
     description: formData.description.length > 0 ? formData.description : null,
-    category: formData.category.length > 0 ? formData.category : null,
     codePrefix: formData.codePrefix.toUpperCase(),
     codeSeparator: formData.codeSeparator,
     codeDigits: formData.codeDigits,
     icon: formData.icon.length > 0 ? formData.icon : null,
     isActive: formData.isActive,
+    tagIds: formData.tagIds,
   };
 }

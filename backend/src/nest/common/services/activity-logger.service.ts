@@ -80,7 +80,8 @@ export type ActivityEntityType =
   | 'approval_config'
   | 'position_catalog'
   | 'inventory_list'
-  | 'inventory_item';
+  | 'inventory_item'
+  | 'inventory_tag';
 
 /**
  * Parameters for logging an activity
