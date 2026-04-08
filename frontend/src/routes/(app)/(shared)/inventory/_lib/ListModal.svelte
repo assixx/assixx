@@ -161,6 +161,7 @@
 </script>
 
 <div
+  id="inventory-list-modal"
   class="modal-overlay modal-overlay--active"
   role="dialog"
   aria-modal="true"
@@ -415,7 +416,7 @@
       >
       <button
         type="submit"
-        class="btn btn-primary"
+        class="btn btn-secondary"
         disabled={submitting || !isValid}
       >
         {#if submitting}

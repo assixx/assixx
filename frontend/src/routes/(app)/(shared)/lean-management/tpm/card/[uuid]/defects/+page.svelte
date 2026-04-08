@@ -662,7 +662,7 @@
           </button>
           <button
             type="submit"
-            class="btn btn-primary"
+            class="btn btn-secondary"
             disabled={editSubmitting}
           >
             {#if editSubmitting}
@@ -742,7 +742,7 @@
           >
           <button
             type="button"
-            class="btn btn-primary"
+            class="btn btn-secondary"
             onclick={() => {
               window.open(`/${previewPhoto.filePath}`, '_blank');
             }}><i class="fas fa-download mr-2"></i>Herunterladen</button

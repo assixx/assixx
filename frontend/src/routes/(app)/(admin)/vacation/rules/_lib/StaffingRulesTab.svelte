@@ -604,7 +604,7 @@
         </button>
         <button
           type="submit"
-          class="btn btn-primary"
+          class="btn btn-secondary"
           disabled={!canSubmit || isSaving}
         >
           <i class="fas fa-save mr-1"></i>

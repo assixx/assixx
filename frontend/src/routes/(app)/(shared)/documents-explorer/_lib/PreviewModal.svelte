@@ -128,7 +128,7 @@
         </button>
         <button
           type="button"
-          class="btn btn-primary"
+          class="btn btn-secondary"
           id="preview-download"
           onclick={() => {
             ondownload(document);

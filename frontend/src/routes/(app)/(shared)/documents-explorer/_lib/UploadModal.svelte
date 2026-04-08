@@ -421,7 +421,7 @@
         >
         <button
           type="submit"
-          class="btn btn-primary"
+          class="btn btn-secondary"
           disabled={uploadSubmitting}
         >
           <i class="fas fa-cloud-upload-alt mr-2"></i>

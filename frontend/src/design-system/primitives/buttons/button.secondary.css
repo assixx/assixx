@@ -80,21 +80,23 @@ html.dark .btn-secondary:active:not(:disabled) {
 }
 
 /* ========== DISABLED ========== */
+/* Behält Glass-Ästhetik bei — nur gedimmt, kein Solid-Gray-Flip */
 .btn-secondary:disabled,
 .btn-secondary.disabled {
-  opacity: 50%;
+  opacity: 55%;
   cursor: not-allowed;
   box-shadow: none;
-  border-color: var(--color-gray-300);
-  background: var(--color-gray-100);
-  color: var(--color-gray-500);
+  border-color: oklch(65.82% 0.169 248.81 / 35%); /* Brand blue, stark gedimmt */
+  background: oklch(65.82% 0.169 248.81 / 2%); /* Glass tint, fast unsichtbar */
+  color: var(--color-text-secondary);
 }
 
 html.dark .btn-secondary:disabled,
 html.dark .btn-secondary.disabled {
-  border-color: var(--color-gray-700);
-  background: var(--color-gray-800);
-  color: var(--color-gray-500);
+  box-shadow: none;
+  border-color: oklch(65.82% 0.169 248.81 / 22%);
+  background: oklch(65.82% 0.169 248.81 / 3%);
+  color: var(--color-text-secondary);
 }
 
 /* ========== LOADING ========== */

@@ -483,7 +483,7 @@
       >
       <button
         type="submit"
-        class="btn btn-primary">Speichern</button
+        class="btn btn-secondary">Speichern</button
       >
     </div>
   </form>
