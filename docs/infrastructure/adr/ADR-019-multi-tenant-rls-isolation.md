@@ -477,7 +477,7 @@ GRANT USAGE, SELECT ON SEQUENCE new_table_id_seq TO sys_user;
 - [PostgreSQL RLS Documentation](https://www.postgresql.org/docs/17/ddl-rowsecurity.html)
 - [ADR-005: Authentication Strategy](./ADR-005-authentication-strategy.md) — JWT Guard, DB lookup per request
 - [ADR-006: Multi-Tenant Context Isolation](./ADR-006-multi-tenant-context-isolation.md) — ClsService for request-scoped context
-- [ADR-009: Central Audit Logging](./ADR-009-user-role-assignment-permissions.md) — Audit trail with partitioning
+- [ADR-009: Central Audit Logging](./ADR-009-central-audit-logging.md) — Audit trail with partitioning
 - [ADR-014: Database & Migration Architecture](./ADR-014-database-migration-architecture.md) — Migration checklist includes RLS
 - [DATABASE-MIGRATION-GUIDE.md](../../DATABASE-MIGRATION-GUIDE.md) — RLS policy template, NULLIF pattern
 - [set_config() Documentation](https://www.postgresql.org/docs/17/functions-admin.html#FUNCTIONS-ADMIN-SET) — GUC variable management

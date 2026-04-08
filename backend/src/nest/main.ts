@@ -95,7 +95,10 @@ async function setupSecurity(app: NestFastifyApplication): Promise<void> {
   // Cookie parser
   await app.register(fastifyCookie);
 
-  // Multipart for file uploads
+  // Multipart for file uploads — load-bearing content-type parser.
+  // DO NOT REMOVE: required peer for @webundsoehne/nest-fastify-file-upload
+  // (FileInterceptor in 9 controllers). Removing this returns HTTP 415 on
+  // every upload endpoint. See docs/infrastructure/adr/ADR-042-multipart-file-upload-pipeline.md
   await app.register(import('@fastify/multipart'));
 
   // CORS - supports multiple origins from ALLOWED_ORIGINS env var (comma-separated)

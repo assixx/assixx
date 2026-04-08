@@ -26,12 +26,13 @@ ADRs document important architectural decisions:
 | [ADR-001](./ADR-001-rate-limiting.md)                                        | Rate Limiting Implementation                                 | Accepted   | 2026-01-06 |
 | [ADR-002](./ADR-002-alerting-monitoring.md)                                  | Alerting & Monitoring                                        | Accepted   | 2026-01-07 |
 | [ADR-003](./ADR-003-notification-system.md)                                  | Real-Time Notification System                                | Accepted   | 2026-01-11 |
-| [ADR-004](./ADR-004-persistent-notification-counts.md)                       | Persistent Notification Counts                               | Proposed   | 2026-01-14 |
+| [ADR-004](./ADR-004-persistent-notification-counts.md)                       | Persistent Notification Counts                               | Accepted   | 2026-01-14 |
 | [ADR-005](./ADR-005-authentication-strategy.md)                              | Authentication Strategy                                      | Accepted   | 2026-01-14 |
 | [ADR-006](./ADR-006-multi-tenant-context-isolation.md)                       | Multi-Tenant Context Isolation                               | Accepted   | 2026-01-14 |
 | [ADR-007](./ADR-007-api-response-standardization.md)                         | API Response Standardization                                 | Accepted   | 2026-01-14 |
 | [ADR-008](./ADR-008-dependency-version-management.md)                        | Dependency Version Management                                | Accepted   | 2026-01-15 |
-| [ADR-009](./ADR-009-user-role-assignment-permissions.md)                     | User Role Assignment & Permissions                           | Accepted   | 2026-01-22 |
+| [ADR-009](./ADR-009-central-audit-logging.md)                                | Central Audit Logging Architecture                           | Accepted   | 2026-01-15 |
+| [ADR-010](./ADR-010-user-role-assignment-permissions.md)                     | User Role Assignment & Permissions                           | Accepted   | 2026-01-22 |
 | [ADR-011](./ADR-011-shift-data-architecture.md)                              | Shift Data Architecture & Sync                               | Accepted   | 2026-01-25 |
 | [ADR-012](./ADR-012-frontend-route-security-groups.md)                       | Frontend Route Security Groups                               | Accepted   | 2026-01-26 |
 | [ADR-013](./ADR-013-ci-cd-pipeline-hardening.md)                             | CI/CD Pipeline Hardening                                     | Accepted   | 2026-01-26 |
@@ -44,7 +45,7 @@ ADRs document important architectural decisions:
 | [ADR-019](./ADR-019-multi-tenant-rls-isolation.md)                           | Multi-Tenant RLS Data Isolation                              | Accepted   | 2026-02-07 |
 | [ADR-020](./ADR-020-per-user-feature-permissions.md)                         | Per-User Feature Permission Control                          | Accepted   | 2026-02-07 |
 | [ADR-021](./ADR-021-e2e-encryption.md)                                       | E2E Encryption for 1:1 Chat                                  | Accepted   | 2026-02-10 |
-| [ADR-022](./ADR-022-e2e-key-escrow.md)                                       | E2E Key Escrow (Zero-Knowledge)                              | Proposed   | 2026-02-11 |
+| [ADR-022](./ADR-022-e2e-key-escrow.md)                                       | E2E Key Escrow (Zero-Knowledge)                              | Accepted   | 2026-02-11 |
 | [ADR-023](./ADR-023-vacation-request-architecture.md)                        | Vacation Request System Architecture                         | Accepted   | 2026-02-13 |
 | [ADR-024](./ADR-024-frontend-feature-guards.md)                              | Frontend Feature Guards                                      | Accepted   | 2026-02-15 |
 | [ADR-025](./ADR-025-pg-stat-statements-query-monitoring.md)                  | pg_stat_statements Query Monitoring                          | Accepted   | 2026-02-16 |
@@ -60,9 +61,11 @@ ADRs document important architectural decisions:
 | [ADR-035](./ADR-035-organizational-hierarchy-and-assignment-architecture.md) | Organizational Hierarchy & Assignment Architecture           | Accepted   | 2026-03-13 |
 | [ADR-036](./ADR-036-organizational-scope-access-control.md)                  | Organizational Scope Access Control                          | Accepted   | 2026-03-14 |
 | [ADR-037](./ADR-037-approvals-architecture.md)                               | Approvals (Freigabe-System) Architecture                     | Accepted   | 2026-03-17 |
-| [ADR-038](./ADR-038-position-catalog-architecture.md)                        | Position Catalog Architecture                                | Proposed   | 2026-03-17 |
+| [ADR-038](./ADR-038-position-catalog-architecture.md)                        | Position Catalog Architecture                                | Accepted   | 2026-03-17 |
+| [ADR-039](./ADR-039-per-tenant-deputy-scope-toggle.md)                       | Per-Tenant Deputy Scope Toggle                               | Proposed   | 2026-03-21 |
 | [ADR-040](./ADR-040-inventory-addon-architecture.md)                         | Inventory Addon Architecture                                 | Accepted   | 2026-04-06 |
 | [ADR-041](./ADR-041-typescript-compiler-configuration.md)                    | TypeScript Compiler Configuration & Strict-Everywhere Policy | Accepted   | 2026-04-07 |
+| [ADR-042](./ADR-042-multipart-file-upload-pipeline.md)                       | Multipart File Upload Pipeline (Fastify + Multer Bridge)     | Accepted   | 2026-04-08 |
 
 ## Template
 

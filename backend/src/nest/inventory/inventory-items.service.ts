@@ -6,7 +6,7 @@
  * Uses tenantQuery/tenantTransaction for all DB operations (strict RLS, ADR-019).
  */
 import { IS_ACTIVE } from '@assixx/shared/constants';
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import type { PoolClient } from 'pg';
 import type { z } from 'zod';
 
@@ -31,6 +31,7 @@ interface ItemDetailRow extends InventoryItemRow {
 }
 
 type CustomValueInput = z.infer<typeof CustomValueInputSchema>;
+type ValueKey = 'text' | 'number' | 'date' | 'boolean';
 
 @Injectable()
 export class InventoryItemsService {
@@ -293,6 +294,91 @@ export class InventoryItemsService {
     return { code, listId };
   }
 
+  /**
+   * Validate custom values against their field definitions.
+   *
+   * Defense-in-depth: Zod (CustomValueInputSchema) only validates form
+   * (each value column is independently nullish). The actual constraints —
+   * "required field must have a value", "number field needs valueNumber, not
+   * valueText", "select value must be in field_options" — depend on the field
+   * definition row, which Zod can't see.
+   *
+   * Throws BadRequestException on the first violation. Called inside
+   * tenantTransaction so a throw rolls the whole item create/update back.
+   */
+  private async validateCustomValues(
+    client: PoolClient,
+    customValues: CustomValueInput[],
+  ): Promise<void> {
+    if (customValues.length === 0) return;
+
+    const fieldIds = customValues.map((cv: CustomValueInput): string => cv.fieldId);
+    const fieldRows = await client.query<InventoryCustomFieldRow>(
+      `SELECT * FROM inventory_custom_fields
+       WHERE id = ANY($1::uuid[]) AND is_active != $2`,
+      [fieldIds, IS_ACTIVE.DELETED],
+    );
+
+    const fieldsById = new Map<string, InventoryCustomFieldRow>();
+    for (const row of fieldRows.rows) fieldsById.set(row.id, row);
+
+    for (const cv of customValues) {
+      const field = fieldsById.get(cv.fieldId);
+      if (field === undefined) {
+        throw new BadRequestException(`Custom Field ${cv.fieldId} nicht gefunden`);
+      }
+      this.assertValueMatchesField(field, cv);
+    }
+  }
+
+  /** Pure: assert one custom value satisfies its field definition. */
+  private assertValueMatchesField(field: InventoryCustomFieldRow, cv: CustomValueInput): void {
+    const providedKeys = this.providedValueKeys(cv);
+
+    if (providedKeys.length === 0) {
+      if (field.is_required) {
+        throw new BadRequestException(`Pflichtfeld "${field.field_name}" darf nicht leer sein`);
+      }
+      return;
+    }
+
+    if (providedKeys.length > 1) {
+      throw new BadRequestException(
+        `Custom Value für "${field.field_name}" darf nur einen Wert-Typ enthalten`,
+      );
+    }
+
+    const expectedKey: ValueKey = field.field_type === 'select' ? 'text' : field.field_type;
+    if (providedKeys[0] !== expectedKey) {
+      throw new BadRequestException(
+        `Wert für Feld "${field.field_name}" muss vom Typ ${field.field_type} sein`,
+      );
+    }
+
+    this.assertSelectOptionValid(field, cv);
+  }
+
+  /** Pure: which value-type columns are populated on this custom value? */
+  private providedValueKeys(cv: CustomValueInput): ValueKey[] {
+    const keys: ValueKey[] = [];
+    if (cv.valueText !== null && cv.valueText !== undefined) keys.push('text');
+    if (cv.valueNumber !== null && cv.valueNumber !== undefined) keys.push('number');
+    if (cv.valueDate !== null && cv.valueDate !== undefined) keys.push('date');
+    if (cv.valueBoolean !== null && cv.valueBoolean !== undefined) keys.push('boolean');
+    return keys;
+  }
+
+  /** Pure: enforce select-type values are members of field_options. */
+  private assertSelectOptionValid(field: InventoryCustomFieldRow, cv: CustomValueInput): void {
+    if (field.field_type !== 'select') return;
+    if (cv.valueText === null || cv.valueText === undefined) return;
+    if (!Array.isArray(field.field_options)) return;
+    if (field.field_options.includes(cv.valueText)) return;
+    throw new BadRequestException(
+      `Wert "${cv.valueText}" ist keine gültige Option für Feld "${field.field_name}"`,
+    );
+  }
+
   /** Upsert custom values for an item within an existing transaction */
   private async upsertCustomValues(
     client: PoolClient,
@@ -301,6 +387,15 @@ export class InventoryItemsService {
   ): Promise<void> {
     if (customValues === undefined || customValues.length === 0) return;
 
+    await this.validateCustomValues(client, customValues);
+
+    // Partial unique index `idx_inventory_custom_values_unique_field` was
+    // introduced by migration 20260406123459751 to allow soft-deleted rows
+    // to free their slot. Postgres ON CONFLICT (cols) cannot use a partial
+    // index unless the WHERE clause is repeated EXACTLY in the conflict
+    // target — and since the planner needs a literal, we substitute via
+    // template (not via $param). IS_ACTIVE.DELETED keeps the magic-number
+    // rule (ADR/IS_ACTIVE) satisfied.
     for (const cv of customValues) {
       await client.query(
         `INSERT INTO inventory_custom_values (
@@ -309,7 +404,8 @@ export class InventoryItemsService {
           NULLIF(current_setting('app.tenant_id', true), '')::integer,
           $1, $2, $3, $4, $5::date, $6
         )
-        ON CONFLICT (tenant_id, item_id, field_id) DO UPDATE SET
+        ON CONFLICT (tenant_id, item_id, field_id) WHERE is_active != ${String(IS_ACTIVE.DELETED)}
+        DO UPDATE SET
           value_text = EXCLUDED.value_text,
           value_number = EXCLUDED.value_number,
           value_date = EXCLUDED.value_date,

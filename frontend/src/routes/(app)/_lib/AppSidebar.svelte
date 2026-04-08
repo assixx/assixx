@@ -74,14 +74,21 @@
     }
   });
 
-  // Auto-open submenu for the currently active page
+  // Auto-open submenu for the currently active page.
+  // When the active page has no submenu parent (dashboard, profile, settings, …),
+  // collapse all open submenus — this is what happens on logo click.
   $effect(() => {
     if (collapsed) return;
 
     const activeParent = menuItems.find(
       (item: NavItem) => item.submenu !== undefined && isActive(item),
     );
-    if (activeParent === undefined) return;
+
+    if (activeParent === undefined) {
+      openSubmenus.clear();
+      openSubSubmenus.clear();
+      return;
+    }
 
     openSubmenus.add(activeParent.id);
 

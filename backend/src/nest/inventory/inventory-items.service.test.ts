@@ -1,9 +1,13 @@
-import { NotFoundException } from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { DatabaseService } from '../database/database.service.js';
 import { InventoryItemsService } from './inventory-items.service.js';
-import type { InventoryItemRow, InventoryListRow } from './inventory.types.js';
+import type {
+  InventoryCustomFieldRow,
+  InventoryItemRow,
+  InventoryListRow,
+} from './inventory.types.js';
 
 // ── Mock Factories ──────────────────────────────────────────────
 
@@ -40,6 +44,24 @@ function makeListRow(overrides: Partial<InventoryListRow> = {}): InventoryListRo
     icon: null,
     is_active: 1,
     created_by: 10,
+    created_at: new Date(),
+    updated_at: new Date(),
+    ...overrides,
+  };
+}
+
+function makeFieldRow(overrides: Partial<InventoryCustomFieldRow> = {}): InventoryCustomFieldRow {
+  return {
+    id: 'field-1',
+    tenant_id: 1,
+    list_id: 'list-uuid-1',
+    field_name: 'Tragkraft',
+    field_type: 'text',
+    field_options: null,
+    field_unit: null,
+    is_required: false,
+    sort_order: 0,
+    is_active: 1,
     created_at: new Date(),
     updated_at: new Date(),
     ...overrides,
@@ -273,6 +295,10 @@ describe('InventoryItemsService', () => {
       mockClient.query.mockResolvedValueOnce({ rows: [list] });
       mockClient.query.mockResolvedValueOnce({ rows: [] });
       mockClient.query.mockResolvedValueOnce({ rows: [makeItemRow()] });
+      // validateCustomValues field lookup: text-typed field for valueText payload
+      mockClient.query.mockResolvedValueOnce({
+        rows: [makeFieldRow({ id: 'field-1', field_type: 'text' })],
+      });
       mockClient.query.mockResolvedValueOnce({ rows: [] }); // custom value upsert
 
       await service.create(
@@ -284,8 +310,8 @@ describe('InventoryItemsService', () => {
         10,
       );
 
-      expect(mockClient.query).toHaveBeenCalledTimes(4);
-      const lastCall = mockClient.query.mock.calls[3] as unknown[];
+      expect(mockClient.query).toHaveBeenCalledTimes(5);
+      const lastCall = mockClient.query.mock.calls[4] as unknown[];
       expect(lastCall[0]).toContain('inventory_custom_values');
     });
 
@@ -351,13 +377,17 @@ describe('InventoryItemsService', () => {
 
     it('should upsert custom values on update', async () => {
       mockClient.query.mockResolvedValueOnce({ rows: [makeItemRow()] });
+      // validateCustomValues field lookup: number-typed field for valueNumber
+      mockClient.query.mockResolvedValueOnce({
+        rows: [makeFieldRow({ id: 'f-1', field_type: 'number' })],
+      });
       mockClient.query.mockResolvedValueOnce({ rows: [] }); // custom value upsert
 
       await service.update('item-uuid-1', {
         customValues: [{ fieldId: 'f-1', valueNumber: 1000 }],
       } as never);
 
-      expect(mockClient.query).toHaveBeenCalledTimes(2);
+      expect(mockClient.query).toHaveBeenCalledTimes(3);
     });
   });
 
@@ -517,6 +547,10 @@ describe('InventoryItemsService', () => {
 
     it('should return existing item when update has no standard fields (only customValues)', async () => {
       mockClient.query.mockResolvedValueOnce({ rows: [makeItemRow()] }); // SELECT
+      // validateCustomValues field lookup (text field for valueText payload)
+      mockClient.query.mockResolvedValueOnce({
+        rows: [makeFieldRow({ id: 'f-1', field_type: 'text' })],
+      });
       mockClient.query.mockResolvedValueOnce({ rows: [] }); // custom value upsert
 
       const result = await service.update('item-uuid-1', {
@@ -602,6 +636,14 @@ describe('InventoryItemsService', () => {
       mockClient.query.mockResolvedValueOnce({ rows: [list] });
       mockClient.query.mockResolvedValueOnce({ rows: [] });
       mockClient.query.mockResolvedValueOnce({ rows: [makeItemRow()] });
+      // validateCustomValues lookup: 3 fields with matching types
+      mockClient.query.mockResolvedValueOnce({
+        rows: [
+          makeFieldRow({ id: 'f-1', field_type: 'text' }),
+          makeFieldRow({ id: 'f-2', field_type: 'number' }),
+          makeFieldRow({ id: 'f-3', field_type: 'boolean' }),
+        ],
+      });
       mockClient.query.mockResolvedValueOnce({ rows: [] }); // cv 1
       mockClient.query.mockResolvedValueOnce({ rows: [] }); // cv 2
       mockClient.query.mockResolvedValueOnce({ rows: [] }); // cv 3
@@ -619,8 +661,171 @@ describe('InventoryItemsService', () => {
         10,
       );
 
-      // 3 (lock + increment + insert) + 3 custom values = 6
-      expect(mockClient.query).toHaveBeenCalledTimes(6);
+      // 3 (lock + increment + insert) + 1 (validate field lookup) + 3 cv inserts = 7
+      expect(mockClient.query).toHaveBeenCalledTimes(7);
+    });
+  });
+
+  // ── validateCustomValues (Type/Required/Select Validation) ───────
+
+  describe('validateCustomValues', () => {
+    /** Helper: stub the create() flow up to upsertCustomValues, queueing one field row. */
+    function setupCreateWithFields(fieldRows: InventoryCustomFieldRow[]): void {
+      mockClient.query.mockResolvedValueOnce({ rows: [makeListRow()] }); // 1: lock list
+      mockClient.query.mockResolvedValueOnce({ rows: [] }); // 2: UPDATE next_number
+      mockClient.query.mockResolvedValueOnce({ rows: [makeItemRow()] }); // 3: INSERT item
+      mockClient.query.mockResolvedValueOnce({ rows: fieldRows }); // 4: validate field lookup
+    }
+
+    it('should reject when fieldId does not exist in DB', async () => {
+      setupCreateWithFields([]); // no fields returned for the lookup
+
+      await expect(
+        service.create(
+          {
+            listId: 'list-uuid-1',
+            name: 'Kran',
+            customValues: [{ fieldId: 'unknown-field', valueText: 'foo' }],
+          } as never,
+          10,
+        ),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should reject required field with no value', async () => {
+      setupCreateWithFields([makeFieldRow({ id: 'f-req', field_type: 'text', is_required: true })]);
+
+      await expect(
+        service.create(
+          {
+            listId: 'list-uuid-1',
+            name: 'Kran',
+            customValues: [{ fieldId: 'f-req' }],
+          } as never,
+          10,
+        ),
+      ).rejects.toThrow(/Pflichtfeld/);
+    });
+
+    it('should allow optional field with no value', async () => {
+      setupCreateWithFields([
+        makeFieldRow({ id: 'f-opt', field_type: 'text', is_required: false }),
+      ]);
+
+      await expect(
+        service.create(
+          {
+            listId: 'list-uuid-1',
+            name: 'Kran',
+            customValues: [{ fieldId: 'f-opt' }],
+          } as never,
+          10,
+        ),
+      ).resolves.toBeDefined();
+    });
+
+    it('should reject valueText for a number field', async () => {
+      setupCreateWithFields([makeFieldRow({ id: 'f-num', field_type: 'number' })]);
+
+      await expect(
+        service.create(
+          {
+            listId: 'list-uuid-1',
+            name: 'Kran',
+            customValues: [{ fieldId: 'f-num', valueText: 'not-a-number' }],
+          } as never,
+          10,
+        ),
+      ).rejects.toThrow(/muss vom Typ number sein/);
+    });
+
+    it('should reject valueNumber for a date field', async () => {
+      setupCreateWithFields([makeFieldRow({ id: 'f-date', field_type: 'date' })]);
+
+      await expect(
+        service.create(
+          {
+            listId: 'list-uuid-1',
+            name: 'Kran',
+            customValues: [{ fieldId: 'f-date', valueNumber: 12345 }],
+          } as never,
+          10,
+        ),
+      ).rejects.toThrow(/muss vom Typ date sein/);
+    });
+
+    it('should reject when multiple value-type columns are set', async () => {
+      setupCreateWithFields([makeFieldRow({ id: 'f-text', field_type: 'text' })]);
+
+      await expect(
+        service.create(
+          {
+            listId: 'list-uuid-1',
+            name: 'Kran',
+            customValues: [{ fieldId: 'f-text', valueText: 'a', valueNumber: 1 }],
+          } as never,
+          10,
+        ),
+      ).rejects.toThrow(/nur einen Wert-Typ/);
+    });
+
+    it('should reject select value not in field_options', async () => {
+      setupCreateWithFields([
+        makeFieldRow({
+          id: 'f-sel',
+          field_type: 'select',
+          field_options: ['gut', 'mittel', 'schlecht'],
+        }),
+      ]);
+
+      await expect(
+        service.create(
+          {
+            listId: 'list-uuid-1',
+            name: 'Kran',
+            customValues: [{ fieldId: 'f-sel', valueText: 'kaputt' }],
+          } as never,
+          10,
+        ),
+      ).rejects.toThrow(/keine gültige Option/);
+    });
+
+    it('should accept select value present in field_options', async () => {
+      setupCreateWithFields([
+        makeFieldRow({
+          id: 'f-sel',
+          field_type: 'select',
+          field_options: ['gut', 'mittel', 'schlecht'],
+        }),
+      ]);
+      mockClient.query.mockResolvedValueOnce({ rows: [] }); // cv insert
+
+      await expect(
+        service.create(
+          {
+            listId: 'list-uuid-1',
+            name: 'Kran',
+            customValues: [{ fieldId: 'f-sel', valueText: 'gut' }],
+          } as never,
+          10,
+        ),
+      ).resolves.toBeDefined();
+    });
+
+    it('should accept boolean value for a boolean field', async () => {
+      setupCreateWithFields([makeFieldRow({ id: 'f-bool', field_type: 'boolean' })]);
+      mockClient.query.mockResolvedValueOnce({ rows: [] }); // cv insert
+
+      await expect(
+        service.create(
+          {
+            listId: 'list-uuid-1',
+            name: 'Kran',
+            customValues: [{ fieldId: 'f-bool', valueBoolean: false }],
+          } as never,
+          10,
+        ),
+      ).resolves.toBeDefined();
     });
   });
 });
