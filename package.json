@@ -138,9 +138,9 @@
     "@tailwindcss/vite": "^4.2.2",
     "@trivago/prettier-plugin-sort-imports": "^6.0.2",
     "@types/node": "^24.12.2",
-    "@vitest/coverage-v8": "^4.1.3",
-    "@vitest/eslint-plugin": "^1.6.14",
-    "@vitest/ui": "^4.1.3",
+    "@vitest/coverage-v8": "^4.1.4",
+    "@vitest/eslint-plugin": "^1.6.15",
+    "@vitest/ui": "^4.1.4",
     "concurrently": "^9.2.1",
     "eslint": "^10.2.0",
     "eslint-config-prettier": "^10.1.8",
@@ -167,7 +167,7 @@
     "tsx": "^4.21.0",
     "typescript": "5.9.3",
     "typescript-eslint": "^8.58.1",
-    "vite": "^8.0.7",
-    "vitest": "^4.1.3"
+    "vite": "^8.0.8",
+    "vitest": "^4.1.4"
   }
 }
