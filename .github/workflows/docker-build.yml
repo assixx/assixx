@@ -241,6 +241,16 @@ jobs:
             echo "tag=$SANITIZED" >> $GITHUB_OUTPUT
           fi
 
+      # Pre-pull via Docker so Trivy scans the local daemon image instead of
+      # re-fetching each layer from GHCR. Trivy's go-containerregistry client
+      # does not retry on HTTP/2 PROTOCOL_ERROR (stream RST mid-layer), which
+      # crashed the scan with "walk error: failed to extract the archive".
+      # docker pull has mature retry logic; Trivy then resolves the image from
+      # the local daemon (docker → containerd → remote fallback) and both Trivy
+      # steps share the same cached image (no duplicate layer download).
+      - name: Pre-pull image for Trivy
+        run: docker pull ${{ env.REGISTRY }}/${{ steps.lowercase.outputs.repository }}:${{ steps.trivy-tag.outputs.tag }}
+
       - name: Check for critical vulnerabilities (blocks PR)
         uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1 # v0.35.0
         with:
