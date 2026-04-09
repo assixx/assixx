@@ -104,14 +104,12 @@ export async function loadTags(): Promise<InventoryTagWithUsage[]> {
 
 /** Create a new inventory tag */
 export async function createTag(payload: CreateTagPayload): Promise<InventoryTag> {
-  const result: unknown = await apiClient.post(API_ENDPOINTS.TAGS, payload);
-  return (result as { data: InventoryTag }).data;
+  return await apiClient.post<InventoryTag>(API_ENDPOINTS.TAGS, payload);
 }
 
 /** Update tag (rename + change icon) */
 export async function updateTag(tagId: string, payload: UpdateTagPayload): Promise<InventoryTag> {
-  const result: unknown = await apiClient.patch(API_ENDPOINTS.tag(tagId), payload);
-  return (result as { data: InventoryTag }).data;
+  return await apiClient.patch<InventoryTag>(API_ENDPOINTS.tag(tagId), payload);
 }
 
 /** Hard-delete a tag (cascades junction) */

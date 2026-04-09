@@ -221,6 +221,7 @@
     flex-wrap: wrap;
     gap: 0.375rem;
     align-items: center;
+    width: 100%;
     backdrop-filter: var(--glass-form-backdrop);
     transition: var(--form-field-transition), var(--form-field-transition-shadow);
     border: var(--form-field-border);
@@ -231,7 +232,6 @@
     color: var(--form-field-text);
     font-size: var(--form-field-font-size);
     line-height: 1.5;
-    width: 100%;
   }
 
   .tag-input__chips:hover {
@@ -240,11 +240,11 @@
   }
 
   .tag-input__chips:focus-within {
-    border-color: var(--color-primary, #2196f3);
+    border-color: var(--color-primary);
   }
 
   .tag-input__chips--max {
-    border-color: var(--color-warning, #ff9800);
+    border-color: var(--color-warning);
   }
 
   .tag-input__field {
@@ -253,34 +253,44 @@
     padding: 0.25rem 0.375rem;
     border: none;
     background: transparent;
-    color: var(--color-text-primary, #fff);
+    color: var(--color-text-primary);
     font-size: 0.875rem;
     outline: none;
+  }
+
+  .tag-input__field::placeholder {
+    color: var(--color-text-placeholder);
   }
 
   .tag-input__hint {
     margin-top: 0.25rem;
     font-size: 0.75rem;
-    color: var(--color-text-secondary, #aaa);
+    color: var(--color-text-secondary);
   }
 
   .tag-input__hint--warn {
-    color: var(--color-warning, #ff9800);
+    color: var(--color-warning);
   }
 
+  /* Dropdown — mirrors design-system `.dropdown__menu` tokens so light/dark
+     both work automatically. Background uses --color-white with a dark-mode
+     override (same pattern as custom-dropdown.css). */
   .tag-input__dropdown {
     position: absolute;
-    top: 100%;
+    top: calc(100% + 5px);
     left: 0;
     right: 0;
-    z-index: 50;
-    margin-top: 0.25rem;
+    z-index: var(--z-dropdown);
     max-height: 240px;
     overflow-y: auto;
-    background: var(--color-glass-bg, rgb(30 30 46 / 95%));
-    border: 1px solid var(--color-border, rgb(255 255 255 / 10%));
-    border-radius: 0.5rem;
-    box-shadow: 0 4px 12px rgb(0 0 0 / 30%);
+    border: var(--glass-border);
+    border-radius: var(--radius-xl);
+    background: var(--color-white);
+    box-shadow: var(--shadow-md);
+  }
+
+  :global(html.dark) .tag-input__dropdown {
+    background: oklch(16.842% 0 271.152);
   }
 
   .tag-input__option {
@@ -291,25 +301,32 @@
     padding: 0.5rem 0.75rem;
     border: none;
     background: transparent;
-    color: var(--color-text-primary, #fff);
+    color: var(--color-text-primary);
     cursor: pointer;
     font-size: 0.875rem;
     text-align: left;
+    transition: all 0.15s ease;
   }
 
   .tag-input__option:hover {
-    background: var(--color-glass-hover, rgb(255 255 255 / 8%));
+    padding-left: 1rem;
+    background: color-mix(in oklch, var(--color-primary) 20%, transparent);
+    color: var(--color-text-primary);
   }
 
   .tag-input__option--create {
-    border-top: 1px solid var(--color-border, rgb(255 255 255 / 10%));
-    color: var(--color-primary, #2196f3);
+    border-top: 1px solid var(--color-glass-border);
+    color: var(--color-primary);
+  }
+
+  .tag-input__option--create:hover {
+    color: var(--color-text-primary);
   }
 
   .tag-input__option-count {
     margin-left: auto;
     font-size: 0.75rem;
-    color: var(--color-text-secondary, #aaa);
+    color: var(--color-text-secondary);
   }
 
   .tag-chip {
@@ -317,10 +334,10 @@
     align-items: center;
     gap: 0.375rem;
     padding: 0.25rem 0.5rem;
-    background: rgb(33 150 243 / 15%);
-    border: 1px solid rgb(33 150 243 / 35%);
+    border: 1px solid color-mix(in oklch, var(--color-primary) 35%, transparent);
     border-radius: 0.375rem;
-    color: var(--color-primary, #2196f3);
+    background: color-mix(in oklch, var(--color-primary) 15%, transparent);
+    color: var(--color-primary);
     font-size: 0.8125rem;
   }
 
@@ -336,14 +353,14 @@
     height: 1rem;
     padding: 0;
     border: none;
+    border-radius: 999px;
     background: transparent;
     color: inherit;
     cursor: pointer;
-    border-radius: 999px;
     font-size: 0.625rem;
   }
 
   .tag-chip__remove:hover {
-    background: rgb(33 150 243 / 25%);
+    background: color-mix(in oklch, var(--color-primary) 25%, transparent);
   }
 </style>

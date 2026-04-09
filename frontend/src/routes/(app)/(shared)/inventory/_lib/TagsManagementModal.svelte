@@ -4,14 +4,16 @@
    *
    * Lists all inventory tags with usage counts. Each row supports inline
    * rename + icon picker via an Edit button. Delete is hard delete and
-   * confirmed via window.confirm() because the action is irreversible
-   * (junction CASCADE removes the tag from every list).
+   * confirmed via the design-system ConfirmModal (junction CASCADE removes
+   * the tag from every list — irreversible).
    *
    * Refreshes tagsState on every mutation so other components (TagInput,
    * TagFilterDropdown, ListCard) see the change immediately.
    */
   import { showErrorAlert, showSuccessAlert } from '$lib/stores/toast';
   import { createLogger } from '$lib/utils/logger';
+
+  import ConfirmModal from '$design-system/components/confirm-modal/ConfirmModal.svelte';
 
   import { deleteTag, loadTags, updateTag } from './api';
   import { DEFAULT_TAG_ICON, LIST_ICON_OPTIONS, MESSAGES } from './constants';
@@ -33,6 +35,11 @@
   let saving = $state(false);
   // Non-reactive re-entry guard (see TagInput for the same pattern)
   let savingPending = false;
+
+  let showDeleteModal = $state(false);
+  let deletingTag = $state<InventoryTagWithUsage | null>(null);
+  let deleting = $state(false);
+  let deletingPending = false;
 
   const tags = $derived(tagsState.tags);
 
@@ -75,24 +82,37 @@
   }
   /* eslint-enable require-atomic-updates */
 
-  async function handleDelete(tag: InventoryTagWithUsage): Promise<void> {
-    const confirmMsg =
-      tag.usageCount > 0 ?
-        `${MESSAGES.TAG_DELETE_CONFIRM}\n\n(Wird aktuell von ${String(tag.usageCount)} Listen verwendet.)`
-      : MESSAGES.TAG_DELETE_CONFIRM;
+  function openDeleteModal(tag: InventoryTagWithUsage): void {
+    deletingTag = tag;
+    showDeleteModal = true;
+  }
 
-    if (!confirm(confirmMsg)) return;
+  function closeDeleteModal(): void {
+    showDeleteModal = false;
+    deletingTag = null;
+  }
 
+  /* eslint-disable require-atomic-updates -- Single-threaded JS runtime
+     + early return on `deletingPending` is a strict re-entry guard. */
+  async function confirmDelete(): Promise<void> {
+    const tag = deletingTag;
+    if (tag === null || deletingPending) return;
+    deletingPending = true;
+    deleting = true;
     try {
       await deleteTag(tag.id);
       await refreshCache();
       showSuccessAlert(MESSAGES.TAG_SUCCESS_DELETED);
+      closeDeleteModal();
     } catch (err: unknown) {
       log.error({ err }, 'Error deleting tag');
       const message = err instanceof Error ? err.message : MESSAGES.TAG_ERROR_DELETING;
       showErrorAlert(message);
     }
+    deleting = false;
+    deletingPending = false;
   }
+  /* eslint-enable require-atomic-updates */
 </script>
 
 <div
@@ -202,7 +222,9 @@
                     class="action-icon action-icon--delete"
                     title="Löschen"
                     aria-label="Tag löschen"
-                    onclick={() => void handleDelete(tag)}
+                    onclick={() => {
+                      openDeleteModal(tag);
+                    }}
                   >
                     <i class="fas fa-trash"></i>
                   </button>
@@ -223,6 +245,28 @@
     </div>
   </div>
 </div>
+
+<ConfirmModal
+  show={showDeleteModal}
+  id="delete-inventory-tag-modal"
+  title={MESSAGES.TAG_DELETE_CONFIRM_TITLE}
+  variant="danger"
+  icon="fa-exclamation-triangle"
+  submitting={deleting}
+  onconfirm={() => void confirmDelete()}
+  oncancel={closeDeleteModal}
+>
+  <strong>{deletingTag?.name ?? ''}</strong>
+  {MESSAGES.TAG_DELETE_CONFIRM_MESSAGE}
+  {#if deletingTag !== null && deletingTag.usageCount > 0}
+    <br /><br />
+    Wird aktuell von
+    <strong
+      >{deletingTag.usageCount}
+      {deletingTag.usageCount === 1 ? 'Liste' : 'Listen'}</strong
+    > verwendet.
+  {/if}
+</ConfirmModal>
 
 <style>
   .tags-mgmt {
