@@ -53,7 +53,10 @@
   let formManufacturer = $state('');
   let formModel = $state('');
   let formSerialNumber = $state('');
-  let formYearOfManufacture = $state('');
+  // Svelte 5 coerces <input type="number"> bind:value to `number | null`,
+  // so the form state MUST match that shape — using string here throws
+  // `trim is not a function` as soon as the user types a digit.
+  let formYearOfManufacture = $state<number | null>(null);
   let formNotes = $state('');
   let filterStatus = $state<InventoryItemStatus | ''>('');
   let searchQuery = $state('');
@@ -63,7 +66,8 @@
     fieldId: string;
     fieldType: string;
     valueText: string;
-    valueNumber: string;
+    /** number | null to match Svelte 5's <input type="number"> bind:value shape */
+    valueNumber: number | null;
     valueDate: string;
     valueBoolean: boolean;
   }
@@ -103,13 +107,13 @@
     formManufacturer = '';
     formModel = '';
     formSerialNumber = '';
-    formYearOfManufacture = '';
+    formYearOfManufacture = null;
     formNotes = '';
     createFieldStates = fields.map((f: InventoryCustomField) => ({
       fieldId: f.id,
       fieldType: f.fieldType,
       valueText: '',
-      valueNumber: '',
+      valueNumber: null,
       valueDate: '',
       valueBoolean: false,
     }));
@@ -141,9 +145,7 @@
         : null;
     }
     if (fs.fieldType === 'number') {
-      return fs.valueNumber.trim() !== '' ?
-          { fieldId: fs.fieldId, valueNumber: Number(fs.valueNumber) }
-        : null;
+      return fs.valueNumber !== null ? { fieldId: fs.fieldId, valueNumber: fs.valueNumber } : null;
     }
     if (fs.fieldType === 'date') {
       return fs.valueDate !== '' ? { fieldId: fs.fieldId, valueDate: fs.valueDate } : null;
@@ -163,8 +165,7 @@
     addIfNotEmpty(payload, 'manufacturer', formManufacturer);
     addIfNotEmpty(payload, 'model', formModel);
     addIfNotEmpty(payload, 'serialNumber', formSerialNumber);
-    if (formYearOfManufacture.trim() !== '')
-      payload.yearOfManufacture = Number(formYearOfManufacture);
+    if (formYearOfManufacture !== null) payload.yearOfManufacture = formYearOfManufacture;
     addIfNotEmpty(payload, 'notes', formNotes);
 
     const cvs = collectCreateCustomValues();
@@ -223,374 +224,540 @@
   }
 </script>
 
+<svelte:head>
+  <title>{list !== null ? `${list.title} · Inventar` : 'Inventar'}</title>
+</svelte:head>
+
 {#if data.permissionDenied}
   <PermissionDenied />
 {:else if list === null}
-  <div class="glass-card p-8 text-center">
-    <i class="fas fa-exclamation-triangle text-warning mb-4 text-4xl"></i>
-    <p class="text-lg">Inventarliste nicht gefunden</p>
-    <a
-      href="/inventory"
-      class="btn btn--primary mt-4">Zurück zur Übersicht</a
-    >
+  <div class="container">
+    <div class="card">
+      <div class="card__body">
+        <div class="empty-state">
+          <div class="empty-state__icon">
+            <i class="fas fa-exclamation-triangle"></i>
+          </div>
+          <h3 class="empty-state__title">Inventarliste nicht gefunden</h3>
+          <p class="empty-state__description">
+            Die angeforderte Liste existiert nicht oder wurde gelöscht.
+          </p>
+          <a
+            href="/inventory"
+            class="btn btn-primary"
+          >
+            <i class="fas fa-arrow-left"></i>
+            Zurück zur Übersicht
+          </a>
+        </div>
+      </div>
+    </div>
   </div>
 {:else}
-  <!-- Header -->
-  <div class="mb-6 flex items-center justify-between">
-    <div>
-      <div class="flex items-center gap-3">
-        <a
-          href="/inventory"
-          class="text-secondary hover:text-primary"
-          aria-label="Zurück zur Übersicht"
+  <div class="container">
+    <div class="card">
+      <div class="card__header">
+        <button
+          type="button"
+          class="btn btn-light mb-3"
+          onclick={() => {
+            void goto('/inventory');
+          }}
         >
-          <i class="fas fa-arrow-left"></i>
-        </a>
-        <h1 class="text-2xl font-bold">
-          {#if list.icon}<i class="fas {list.icon} mr-2"></i>{/if}
+          <i class="fas fa-arrow-left mr-2"></i>Zurück zur Übersicht
+        </button>
+
+        <h2 class="card__title">
+          {#if list.icon !== null && list.icon !== ''}<i class="fas {list.icon} mr-2"></i>{/if}
           {list.title}
-        </h1>
-      </div>
-      {#if list.description}
-        <p class="text-secondary mt-1 ml-8">{list.description}</p>
-      {/if}
-      <p class="text-secondary mt-1 ml-8 text-sm">
-        Code-Schema: <code class="font-mono">{codeExample}</code>
-        · {total}
-        {total === 1 ? 'Gegenstand' : 'Gegenstände'}
-        {#if list.tags.length > 0}· {list.tags.map((t) => t.name).join(', ')}{/if}
-      </p>
-    </div>
-    <button
-      type="button"
-      class="btn btn--primary"
-      onclick={openCreateModal}
-    >
-      <i class="fas fa-plus mr-2"></i>Neuer Gegenstand
-    </button>
-  </div>
+        </h2>
 
-  <!-- Filters -->
-  <div class="glass-card mb-4 flex flex-wrap items-center gap-3 p-3">
-    <div class="flex-1">
-      <input
-        type="text"
-        class="input input--sm w-full"
-        placeholder="Name, Code oder Seriennummer suchen..."
-        bind:value={searchQuery}
-        onkeydown={(e: KeyboardEvent) => {
-          if (e.key === 'Enter') applyFilter();
-        }}
-      />
-    </div>
-    <select
-      class="input input--sm w-48"
-      bind:value={filterStatus}
-      onchange={applyFilter}
-    >
-      <option value="">Alle Status</option>
-      {#each Object.entries(ITEM_STATUS_LABELS) as [value, label] (value)}
-        <option {value}>{label}</option>
-      {/each}
-    </select>
-    <button
-      type="button"
-      class="btn btn--secondary btn--sm"
-      onclick={applyFilter}
-      aria-label="Suche anwenden"
-    >
-      <i class="fas fa-search"></i>
-    </button>
-  </div>
+        {#if list.description !== null && list.description !== ''}
+          <p class="mt-2 text-(--color-text-secondary)">{list.description}</p>
+        {/if}
 
-  <!-- Items Table -->
-  <div class="glass-card overflow-x-auto">
-    <table class="w-full">
-      <thead>
-        <tr class="border-glass-border text-secondary border-b text-left text-sm">
-          <th class="px-4 py-3 font-medium">Code</th>
-          <th class="px-4 py-3 font-medium">Name</th>
-          <th class="px-4 py-3 font-medium">Status</th>
-          <th class="px-4 py-3 font-medium">Standort</th>
-          <th class="px-4 py-3 font-medium">Hersteller</th>
-          <th class="px-4 py-3 font-medium">Seriennr.</th>
-          {#each fields as field (field.id)}
-            <th class="px-4 py-3 font-medium">
-              {field.fieldName}
-              {#if field.fieldUnit}<span class="text-xs">({field.fieldUnit})</span>{/if}
-            </th>
-          {/each}
-        </tr>
-      </thead>
-      <tbody>
-        {#each items as item (item.id)}
-          <tr
-            class="border-glass-border hover:bg-glass-hover cursor-pointer border-b transition-colors"
-            role="link"
-            tabindex="0"
-            onclick={() => {
-              goToItem(item.id);
-            }}
-            onkeydown={(e: KeyboardEvent) => {
-              if (e.key === 'Enter') goToItem(item.id);
-            }}
-          >
-            <td class="px-4 py-3 font-mono text-sm font-semibold">{item.code}</td>
-            <td class="px-4 py-3">{item.name}</td>
-            <td class="px-4 py-3">
-              <span class="badge {ITEM_STATUS_BADGE_CLASSES[item.status]} badge--sm">
-                {ITEM_STATUS_LABELS[item.status]}
-              </span>
-            </td>
-            <td class="text-secondary px-4 py-3 text-sm">{item.location ?? '—'}</td>
-            <td class="text-secondary px-4 py-3 text-sm">{item.manufacturer ?? '—'}</td>
-            <td class="px-4 py-3 font-mono text-sm">{item.serial_number ?? '—'}</td>
-            {#each fields as field (field.id)}
-              <td class="text-secondary px-4 py-3 text-sm">
-                {getCustomValue(item.id, field.id, field.fieldType)}
-              </td>
-            {/each}
-          </tr>
-        {:else}
-          <tr>
-            <td
-              colspan={6 + fields.length}
-              class="text-secondary px-4 py-12 text-center"
+        <div class="inventory-detail__meta">
+          <span>
+            <i class="fas fa-hashtag mr-1"></i>
+            Code-Schema: <code class="inventory-detail__code">{codeExample}</code>
+          </span>
+          <span>
+            <i class="fas fa-boxes mr-1"></i>
+            {total}
+            {total === 1 ? 'Gegenstand' : 'Gegenstände'}
+          </span>
+          {#if list.tags.length > 0}
+            <span class="inventory-detail__tags">
+              <i class="fas fa-tags mr-1"></i>
+              {#each list.tags as tag (tag.id)}
+                <span class="badge badge--info badge--sm">
+                  {#if tag.icon !== null && tag.icon !== ''}
+                    <i class="fas {tag.icon} mr-1"></i>
+                  {/if}
+                  {tag.name}
+                </span>
+              {/each}
+            </span>
+          {/if}
+        </div>
+
+        <div class="mt-6 flex items-center justify-between gap-4">
+          <div class="dropdown">
+            <button
+              type="button"
+              class="dropdown__trigger inventory-detail__filter-trigger"
+              class:active={activeDropdown === 'filter-status'}
+              onclick={() => {
+                toggleDropdown('filter-status');
+              }}
             >
-              <i class="fas fa-inbox mb-2 text-3xl"></i>
-              <p>Keine Gegenstände in dieser Liste</p>
-            </td>
-          </tr>
-        {/each}
-      </tbody>
-    </table>
+              <span>
+                <i class="fas fa-filter mr-2"></i>
+                {filterStatus === '' ? 'Alle Status' : ITEM_STATUS_LABELS[filterStatus]}
+              </span>
+              <i class="fas fa-chevron-down"></i>
+            </button>
+            <div
+              class="dropdown__menu"
+              class:active={activeDropdown === 'filter-status'}
+            >
+              <button
+                type="button"
+                class="dropdown__option"
+                class:dropdown__option--selected={filterStatus === ''}
+                onclick={() => {
+                  filterStatus = '';
+                  closeAllDropdowns();
+                  applyFilter();
+                }}
+              >
+                Alle Status
+              </button>
+              {#each Object.entries(ITEM_STATUS_LABELS) as [value, label] (value)}
+                <button
+                  type="button"
+                  class="dropdown__option"
+                  class:dropdown__option--selected={filterStatus === value}
+                  onclick={() => {
+                    filterStatus = value as InventoryItemStatus;
+                    closeAllDropdowns();
+                    applyFilter();
+                  }}
+                >
+                  {label}
+                </button>
+              {/each}
+            </div>
+          </div>
+
+          <div class="search-input-wrapper max-w-80">
+            <div class="search-input">
+              <i class="search-input__icon fas fa-search"></i>
+              <input
+                type="search"
+                class="search-input__field"
+                placeholder="Name, Code oder Seriennummer…"
+                autocomplete="off"
+                bind:value={searchQuery}
+                onkeydown={(e: KeyboardEvent) => {
+                  if (e.key === 'Enter') applyFilter();
+                }}
+              />
+              <button
+                class="search-input__clear"
+                class:search-input__clear--visible={searchQuery.length > 0}
+                type="button"
+                aria-label="Suche löschen"
+                onclick={() => {
+                  searchQuery = '';
+                  applyFilter();
+                }}
+              >
+                <i class="fas fa-times"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card__body">
+        {#if items.length === 0}
+          <div class="empty-state">
+            <div class="empty-state__icon">
+              <i class="fas fa-inbox"></i>
+            </div>
+            <h3 class="empty-state__title">Keine Gegenstände</h3>
+            <p class="empty-state__description">
+              {#if searchQuery !== '' || filterStatus !== ''}
+                Keine Treffer für die aktuellen Filter. Filter zurücksetzen oder neuen Gegenstand
+                anlegen.
+              {:else}
+                Lege den ersten Gegenstand dieser Liste an — Code
+                <code>{codeExample}</code> wird automatisch vergeben.
+              {/if}
+            </p>
+            <button
+              type="button"
+              class="btn btn-primary"
+              onclick={openCreateModal}
+            >
+              <i class="fas fa-plus"></i>
+              Neuer Gegenstand
+            </button>
+          </div>
+        {:else}
+          <div class="table-responsive">
+            <table class="data-table data-table--hover data-table--striped">
+              <thead>
+                <tr>
+                  <th scope="col">Code</th>
+                  <th scope="col">Name</th>
+                  <th scope="col">Status</th>
+                  <th scope="col">Standort</th>
+                  <th scope="col">Hersteller</th>
+                  <th scope="col">Seriennr.</th>
+                  {#each fields as field (field.id)}
+                    <th scope="col">
+                      {field.fieldName}
+                      {#if field.fieldUnit !== null && field.fieldUnit !== ''}
+                        <span class="inventory-detail__unit">({field.fieldUnit})</span>
+                      {/if}
+                    </th>
+                  {/each}
+                </tr>
+              </thead>
+              <tbody>
+                {#each items as item (item.id)}
+                  <tr
+                    class="inventory-detail__row"
+                    role="link"
+                    tabindex="0"
+                    onclick={() => {
+                      goToItem(item.id);
+                    }}
+                    onkeydown={(e: KeyboardEvent) => {
+                      if (e.key === 'Enter') goToItem(item.id);
+                    }}
+                  >
+                    <td><code class="inventory-detail__code">{item.code}</code></td>
+                    <td class="font-medium">{item.name}</td>
+                    <td>
+                      <span class="badge {ITEM_STATUS_BADGE_CLASSES[item.status]}">
+                        {ITEM_STATUS_LABELS[item.status]}
+                      </span>
+                    </td>
+                    <td>{item.location ?? '—'}</td>
+                    <td>{item.manufacturer ?? '—'}</td>
+                    <td
+                      ><code class="inventory-detail__serial">{item.serial_number ?? '—'}</code></td
+                    >
+                    {#each fields as field (field.id)}
+                      <td>{getCustomValue(item.id, field.id, field.fieldType)}</td>
+                    {/each}
+                  </tr>
+                {/each}
+              </tbody>
+            </table>
+          </div>
+
+          {#if totalPages > 1}
+            <div class="inventory-detail__pagination">
+              <button
+                type="button"
+                class="btn btn-cancel btn-sm"
+                disabled={currentPage <= 1}
+                onclick={() => {
+                  goToPage(currentPage - 1);
+                }}
+                aria-label="Vorherige Seite"
+              >
+                <i class="fas fa-chevron-left"></i>
+              </button>
+              <span class="text-(--color-text-secondary)">
+                Seite {currentPage} von {totalPages}
+              </span>
+              <button
+                type="button"
+                class="btn btn-cancel btn-sm"
+                disabled={currentPage >= totalPages}
+                onclick={() => {
+                  goToPage(currentPage + 1);
+                }}
+                aria-label="Nächste Seite"
+              >
+                <i class="fas fa-chevron-right"></i>
+              </button>
+            </div>
+          {/if}
+        {/if}
+      </div>
+    </div>
   </div>
 
-  <!-- Pagination -->
-  {#if totalPages > 1}
-    <div class="mt-4 flex items-center justify-center gap-2">
-      <button
-        type="button"
-        class="btn btn--secondary btn--sm"
-        disabled={currentPage <= 1}
-        onclick={() => {
-          goToPage(currentPage - 1);
-        }}
-        aria-label="Vorherige Seite"
-      >
-        <i class="fas fa-chevron-left"></i>
-      </button>
-      <span class="text-secondary text-sm">Seite {currentPage} von {totalPages}</span>
-      <button
-        type="button"
-        class="btn btn--secondary btn--sm"
-        disabled={currentPage >= totalPages}
-        onclick={() => {
-          goToPage(currentPage + 1);
-        }}
-        aria-label="Nächste Seite"
-      >
-        <i class="fas fa-chevron-right"></i>
-      </button>
-    </div>
-  {/if}
+  <!-- Floating Action Button -->
+  <button
+    type="button"
+    class="btn-float"
+    onclick={openCreateModal}
+    aria-label="Neuer Gegenstand"
+  >
+    <i class="fas fa-plus"></i>
+  </button>
 
   <!-- Create Item Modal -->
   {#if showCreateModal}
-    <!-- svelte-ignore a11y_no_static_element_interactions, a11y_click_events_have_key_events -->
     <div
+      id="inventory-create-item-modal"
       class="modal-overlay modal-overlay--active"
-      onclick={() => (showCreateModal = false)}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="inventory-create-item-modal-title"
+      tabindex="-1"
     >
-      <!-- svelte-ignore a11y_no_static_element_interactions, a11y_click_events_have_key_events -->
-      <div
+      <form
         class="ds-modal ds-modal--lg"
-        onclick={(e: MouseEvent) => {
-          e.stopPropagation();
+        onsubmit={(e: SubmitEvent) => {
+          e.preventDefault();
+          void createItem();
         }}
       >
         <div class="ds-modal__header">
-          <h3 class="ds-modal__title">
-            <i class="fas fa-plus mr-2"></i>Neuer Gegenstand
+          <h3
+            class="ds-modal__title"
+            id="inventory-create-item-modal-title"
+          >
+            Neuer Gegenstand
           </h3>
           <button
             type="button"
             class="ds-modal__close"
-            aria-label="Schliessen"
-            onclick={() => (showCreateModal = false)}
+            aria-label="Schließen"
+            onclick={() => {
+              showCreateModal = false;
+            }}
           >
             <i class="fas fa-times"></i>
           </button>
         </div>
 
-        <form
-          class="ds-modal__body"
-          onsubmit={(e: SubmitEvent) => {
-            e.preventDefault();
-            void createItem();
-          }}
-        >
-          <div class="grid gap-4">
-            <div class="form-field">
+        <div class="ds-modal__body">
+          <div class="alert alert--warning mb-6">
+            <div class="alert__icon">
+              <i class="fas fa-info-circle"></i>
+            </div>
+            <div class="alert__content">
+              <strong class="alert__title">Hinweis:</strong>
+              <p class="alert__message">
+                Foto-Upload und QR-Label-Generierung sind erst nach dem Erstellen möglich. Der
+                Gegenstand erhält beim Speichern eine eindeutige ID, an die Fotos gebunden werden.
+                Öffnen Sie den Gegenstand anschließend aus der Tabelle, um Fotos hinzuzufügen.
+              </p>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
+            <div class="form-field md:col-span-2">
               <label
+                class="form-field__label"
                 for="item-name"
-                class="form-field__label">Name *</label
               >
+                Name
+                <span class="text-red-500">*</span>
+                <span class="form-field__hint">(1-255 Zeichen)</span>
+              </label>
               <input
                 id="item-name"
+                name="name"
                 type="text"
                 class="form-field__control"
-                bind:value={formName}
+                placeholder="Bezeichnung des Gegenstands"
                 required
+                minlength="1"
+                maxlength="255"
+                bind:value={formName}
               />
             </div>
-            <div class="form-field">
+
+            <div class="form-field md:col-span-2">
               <label
+                class="form-field__label"
                 for="item-desc"
-                class="form-field__label">Beschreibung</label
               >
+                Beschreibung
+                <span class="form-field__hint">(optional)</span>
+              </label>
               <textarea
                 id="item-desc"
+                name="description"
                 class="form-field__control"
-                rows="2"
+                placeholder="Optionale Zusatzinformationen"
+                rows="3"
                 bind:value={formDescription}
               ></textarea>
             </div>
-            <div class="grid grid-cols-2 gap-4">
-              <div class="form-field">
-                <span class="form-field__label">Status</span>
-                <div class="dropdown">
-                  <button
-                    type="button"
-                    class="dropdown__trigger"
-                    class:active={activeDropdown === 'item-status'}
-                    onclick={() => {
-                      toggleDropdown('item-status');
-                    }}
-                  >
-                    <span>{formStatusLabel}</span>
-                    <i class="fas fa-chevron-down"></i>
-                  </button>
-                  <div
-                    class="dropdown__menu"
-                    class:active={activeDropdown === 'item-status'}
-                  >
-                    {#each Object.entries(ITEM_STATUS_LABELS) as [value, label] (value)}
-                      <button
-                        type="button"
-                        class="dropdown__option"
-                        class:dropdown__option--selected={formStatus === value}
-                        onclick={() => {
-                          formStatus = value as InventoryItemStatus;
-                          closeAllDropdowns();
-                        }}
-                      >
-                        {label}
-                      </button>
-                    {/each}
-                  </div>
+
+            <div class="form-field">
+              <span
+                class="form-field__label"
+                id="item-status-label"
+              >
+                Status
+              </span>
+              <div class="dropdown">
+                <button
+                  type="button"
+                  class="dropdown__trigger"
+                  class:active={activeDropdown === 'item-status'}
+                  aria-labelledby="item-status-label"
+                  onclick={() => {
+                    toggleDropdown('item-status');
+                  }}
+                >
+                  <span>{formStatusLabel}</span>
+                  <i class="fas fa-chevron-down"></i>
+                </button>
+                <div
+                  class="dropdown__menu"
+                  class:active={activeDropdown === 'item-status'}
+                >
+                  {#each Object.entries(ITEM_STATUS_LABELS) as [value, label] (value)}
+                    <button
+                      type="button"
+                      class="dropdown__option"
+                      class:dropdown__option--selected={formStatus === value}
+                      onclick={() => {
+                        formStatus = value as InventoryItemStatus;
+                        closeAllDropdowns();
+                      }}
+                    >
+                      {label}
+                    </button>
+                  {/each}
                 </div>
               </div>
-              <div class="form-field">
-                <label
-                  for="item-location"
-                  class="form-field__label">Standort</label
-                >
-                <input
-                  id="item-location"
-                  type="text"
-                  class="form-field__control"
-                  bind:value={formLocation}
-                />
-              </div>
             </div>
-            <div class="grid grid-cols-2 gap-4">
-              <div class="form-field">
-                <label
-                  for="item-manufacturer"
-                  class="form-field__label">Hersteller</label
-                >
-                <input
-                  id="item-manufacturer"
-                  type="text"
-                  class="form-field__control"
-                  bind:value={formManufacturer}
-                />
-              </div>
-              <div class="form-field">
-                <label
-                  for="item-model"
-                  class="form-field__label">Modell</label
-                >
-                <input
-                  id="item-model"
-                  type="text"
-                  class="form-field__control"
-                  bind:value={formModel}
-                />
-              </div>
-            </div>
-            <div class="grid grid-cols-2 gap-4">
-              <div class="form-field">
-                <label
-                  for="item-serial"
-                  class="form-field__label">Seriennummer</label
-                >
-                <input
-                  id="item-serial"
-                  type="text"
-                  class="form-field__control"
-                  bind:value={formSerialNumber}
-                />
-              </div>
-              <div class="form-field">
-                <label
-                  for="item-year"
-                  class="form-field__label">Baujahr</label
-                >
-                <input
-                  id="item-year"
-                  type="number"
-                  class="form-field__control"
-                  min="1900"
-                  max="2100"
-                  bind:value={formYearOfManufacture}
-                />
-              </div>
-            </div>
+
             <div class="form-field">
               <label
-                for="item-notes"
-                class="form-field__label">Notizen</label
+                class="form-field__label"
+                for="item-location"
               >
+                Standort
+              </label>
+              <input
+                id="item-location"
+                name="location"
+                type="text"
+                class="form-field__control"
+                placeholder="z.B. Halle 2, Regal B-3"
+                bind:value={formLocation}
+              />
+            </div>
+
+            <div class="form-field">
+              <label
+                class="form-field__label"
+                for="item-manufacturer"
+              >
+                Hersteller
+              </label>
+              <input
+                id="item-manufacturer"
+                name="manufacturer"
+                type="text"
+                class="form-field__control"
+                bind:value={formManufacturer}
+              />
+            </div>
+
+            <div class="form-field">
+              <label
+                class="form-field__label"
+                for="item-model"
+              >
+                Modell
+              </label>
+              <input
+                id="item-model"
+                name="model"
+                type="text"
+                class="form-field__control"
+                bind:value={formModel}
+              />
+            </div>
+
+            <div class="form-field">
+              <label
+                class="form-field__label"
+                for="item-serial"
+              >
+                Seriennummer
+              </label>
+              <input
+                id="item-serial"
+                name="serialNumber"
+                type="text"
+                class="form-field__control"
+                bind:value={formSerialNumber}
+              />
+            </div>
+
+            <div class="form-field">
+              <label
+                class="form-field__label"
+                for="item-year"
+              >
+                Baujahr
+              </label>
+              <input
+                id="item-year"
+                name="yearOfManufacture"
+                type="number"
+                class="form-field__control"
+                min="1900"
+                max="2100"
+                bind:value={formYearOfManufacture}
+              />
+            </div>
+
+            <div class="form-field md:col-span-2">
+              <label
+                class="form-field__label"
+                for="item-notes"
+              >
+                Notizen
+                <span class="form-field__hint">(optional)</span>
+              </label>
               <textarea
                 id="item-notes"
+                name="notes"
                 class="form-field__control"
-                rows="2"
+                rows="3"
                 bind:value={formNotes}
               ></textarea>
             </div>
 
-            <!-- Custom Fields (#3) -->
             {#if createFieldStates.length > 0}
-              <div class="border-t border-[var(--color-border,rgb(255_255_255/10%))] pt-4">
-                <h4 class="mb-3 text-sm font-semibold text-[var(--color-text-secondary)]">
-                  <i class="fas fa-sliders-h mr-1"></i> Custom Fields
+              <div class="inventory-detail__custom-fields md:col-span-2">
+                <h4 class="inventory-detail__custom-fields-title">
+                  <i class="fas fa-sliders-h mr-1"></i>
+                  Benutzerdefinierte Felder
                 </h4>
                 {#each createFieldStates as fs, idx (fs.fieldId)}
                   {@const fieldDef = fields.find((f) => f.id === fs.fieldId)}
                   {#if fieldDef}
-                    <div class="form-field mb-3">
+                    <div class="form-field">
                       <label
                         class="form-field__label"
                         for="create-cf-{fs.fieldId}"
                       >
                         {fieldDef.fieldName}
-                        {#if fieldDef.fieldUnit}<span class="text-xs font-normal"
-                            >({fieldDef.fieldUnit})</span
-                          >{/if}
-                        {#if fieldDef.isRequired}<span class="text-[var(--color-danger)]">*</span
-                          >{/if}
+                        {#if fieldDef.fieldUnit !== null && fieldDef.fieldUnit !== ''}
+                          <span class="form-field__hint">({fieldDef.fieldUnit})</span>
+                        {/if}
+                        {#if fieldDef.isRequired}
+                          <span class="text-red-500">*</span>
+                        {/if}
                       </label>
                       {#if fs.fieldType === 'text'}
                         <input
@@ -618,13 +785,13 @@
                           required={fieldDef.isRequired}
                         />
                       {:else if fs.fieldType === 'boolean'}
-                        <label class="flex cursor-pointer items-center gap-2">
+                        <label class="inventory-detail__checkbox">
                           <input
                             id="create-cf-{fs.fieldId}"
                             type="checkbox"
                             bind:checked={createFieldStates[idx].valueBoolean}
                           />
-                          <span class="text-sm">{fieldDef.fieldName}</span>
+                          <span>{fieldDef.fieldName}</span>
                         </label>
                       {:else if fs.fieldType === 'select' && fieldDef.fieldOptions}
                         <div class="dropdown">
@@ -636,11 +803,11 @@
                               toggleDropdown(`create-cf-${fs.fieldId}`);
                             }}
                           >
-                            <span
-                              >{createFieldStates[idx].valueText !== '' ?
+                            <span>
+                              {createFieldStates[idx].valueText !== '' ?
                                 createFieldStates[idx].valueText
-                              : '-- Auswählen --'}</span
-                            >
+                              : '-- Auswählen --'}
+                            </span>
                             <i class="fas fa-chevron-down"></i>
                           </button>
                           <div
@@ -682,26 +849,120 @@
               </div>
             {/if}
           </div>
+        </div>
 
-          <div class="ds-modal__footer">
-            <button
-              type="button"
-              class="btn btn-cancel"
-              onclick={() => (showCreateModal = false)}
-            >
-              Abbrechen
-            </button>
-            <button
-              type="submit"
-              class="btn btn-primary"
-              disabled={creating || formName.trim() === ''}
-            >
-              {#if creating}<span class="spinner-ring spinner-ring--sm mr-2"></span>{/if}
-              Erstellen
-            </button>
-          </div>
-        </form>
-      </div>
+        <div class="ds-modal__footer ds-modal__footer--right">
+          <button
+            type="button"
+            class="btn btn-cancel"
+            onclick={() => {
+              showCreateModal = false;
+            }}
+          >
+            Abbrechen
+          </button>
+          <button
+            type="submit"
+            class="btn btn-secondary"
+            disabled={creating || formName.trim() === ''}
+          >
+            {#if creating}
+              <span class="spinner-ring spinner-ring--sm mr-2"></span>
+            {:else}
+              <i class="fas fa-save mr-2"></i>
+            {/if}
+            Erstellen
+          </button>
+        </div>
+      </form>
     </div>
   {/if}
 {/if}
+
+<style>
+  .inventory-detail__meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 1rem 1.5rem;
+    margin-top: 0.75rem;
+    color: var(--color-text-secondary);
+    font-size: 0.8125rem;
+  }
+
+  .inventory-detail__tags {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.375rem;
+  }
+
+  .inventory-detail__code {
+    display: inline-block;
+    padding: 0.125rem 0.5rem;
+    border-radius: 0.25rem;
+    background: var(--glass-bg);
+    color: var(--color-text-primary);
+    font-family: var(--font-mono, ui-monospace, 'SF Mono', monospace);
+    font-size: 0.8125rem;
+    font-weight: 600;
+  }
+
+  .inventory-detail__serial {
+    font-family: var(--font-mono, ui-monospace, 'SF Mono', monospace);
+    font-size: 0.8125rem;
+    color: var(--color-text-secondary);
+  }
+
+  .inventory-detail__unit {
+    font-size: 0.75rem;
+    font-weight: 400;
+    color: var(--color-text-secondary);
+  }
+
+  .inventory-detail__filter-trigger {
+    min-width: 14rem;
+  }
+
+  .inventory-detail__row {
+    cursor: pointer;
+  }
+
+  .inventory-detail__row:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: -2px;
+  }
+
+  .inventory-detail__pagination {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--color-glass-border);
+    font-size: 0.875rem;
+  }
+
+  .inventory-detail__custom-fields {
+    margin-top: 0.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--color-glass-border);
+  }
+
+  .inventory-detail__custom-fields-title {
+    margin: 0 0 0.75rem;
+    color: var(--color-text-secondary);
+    font-size: 0.875rem;
+    font-weight: 600;
+  }
+
+  .inventory-detail__checkbox {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    color: var(--color-text-primary);
+    font-size: 0.875rem;
+  }
+</style>
