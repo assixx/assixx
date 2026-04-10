@@ -6,7 +6,7 @@
 
 **Enterprise 2.0 Platform for Industrial Companies**
 
-[![Version](https://img.shields.io/badge/Version-0.4.10-blue.svg)](https://github.com/assixx-dev/Assixx)
+[![Version](https://img.shields.io/badge/Version-0.4.11-blue.svg)](https://github.com/assixx-dev/Assixx)
 [![Status](https://img.shields.io/badge/Status-Development-yellow.svg)](https://github.com/assixx-dev/Assixx)
 [![License](https://img.shields.io/badge/License-Proprietary-red.svg)](./LICENSE)
 
@@ -63,7 +63,7 @@ Development: `http://localhost:5173` | Production: `http://localhost`
 | ---------- | ---------------------------------- |
 | Backend    | NestJS 11 + Fastify + TypeScript   |
 | Frontend   | SvelteKit 5 + Tailwind v4          |
-| Database   | PostgreSQL 17 + Row Level Security |
+| Database   | PostgreSQL 18 + Row Level Security |
 | Cache      | Redis 7                            |
 | Real-Time  | WebSocket (Chat & Notifications)   |
 | Validation | Zod                                |

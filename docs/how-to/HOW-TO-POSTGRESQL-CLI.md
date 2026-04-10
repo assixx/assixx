@@ -10,8 +10,8 @@
 
 | Setting        | Value                                |
 | -------------- | ------------------------------------ |
-| **Version**    | PostgreSQL 17.7                      |
-| **Paket**      | `postgresql-client-17` (kein Server) |
+| **Version**    | PostgreSQL 18.3                      |
+| **Paket**      | `postgresql-client-18` (kein Server) |
 | **Host**       | `localhost`                          |
 | **Port**       | `5432` (Docker-exposed)              |
 | **Database**   | `assixx`                             |
@@ -53,7 +53,7 @@ sudo apt install -y postgresql-client-17
 
 ```bash
 psql --version
-# Erwartete Ausgabe: psql (PostgreSQL) 17.7
+# Erwartete Ausgabe: psql (PostgreSQL) 18.3
 ```
 
 ---

@@ -1,8 +1,8 @@
 # Assixx TypeScript Standards
 
-> **Version:** 4.5.0
-> **Updated:** 2026-04-08
-> **Stack:** NestJS 11 + Fastify | SvelteKit 5 | PostgreSQL 17 + `pg`
+> **Version:** 4.6.0
+> **Updated:** 2026-04-10
+> **Stack:** NestJS 11 + Fastify | SvelteKit 5 | PostgreSQL 18 + `pg`
 > **Based on:** ESLint + Prettier configs, Power of Ten Rules (NASA/JPL)
 > **Validation:** Zod schemas via `nestjs-zod` (NOT class-validator)
 > **Compiler ADR:** [ADR-041](./infrastructure/adr/ADR-041-typescript-compiler-configuration.md)
@@ -724,7 +724,7 @@ if (element instanceof HTMLElement) {
 
 ---
 
-## 9. Database (PostgreSQL 17)
+## 9. Database (PostgreSQL 18)
 
 ### 9.1 Query Patterns
 
@@ -974,6 +974,7 @@ Immediate rejection in code review:
 
 | Version | Date       | Changes                                                                                                                                                                             |
 | ------- | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 4.6.0   | 2026-04-10 | ADR-041 Phase 3: TypeScript 5.9.3 → 6.0.2 upgrade, removed deprecated `downlevelIteration` from tsconfig.base.json                                                                  |
 | 4.5.0   | 2026-04-08 | ADR-041 Phase 2: `consistent-type-imports` ESLint rule for backend + shared, 10 type-import violations cleared (3 manual, 7 auto-fix), inline `import()` type annotations forbidden |
 | 4.4.0   | 2026-04-07 | ADR-041: Strict-everywhere policy, removed dead `baseUrl`/`paths`, added `noUncheckedSideEffectImports` + `strictBuiltinIteratorReturn`, lib bumped to ES2024                       |
 | 4.3.0   | 2026-03-07 | Added Section 7.5 ID Param DTO Factory, No-Go #17, architectural test for inline ID validation in param DTOs                                                                        |

@@ -419,6 +419,62 @@ upstream rule logic — this is documented behavior, not a bug.
 
 ---
 
+## Phase 3 Resolution (2026-04-10): TypeScript 5.9.3 → 6.0.2 Upgrade
+
+The TS 6.0 upgrade path that was evaluated during the initial audit is now
+complete. All ecosystem dependencies were verified compatible before
+upgrading.
+
+### Compatibility Matrix (verified 2026-04-10)
+
+| Package             | Version  | TS 6.0 Peer Dep               | Status     |
+| ------------------- | -------- | ----------------------------- | ---------- |
+| `typescript-eslint` | 8.58.1   | `>=4.8.4 <6.1.0`              | Compatible |
+| `@sveltejs/kit`     | ~2.57.0  | `^5.3.3 \|\| ^6.0.0`          | Compatible |
+| `svelte-check`      | ^4.4.6   | `>=5.0.0`                     | Compatible |
+| `@nestjs/*`         | ~11.1.18 | No TS peer dep                | Compatible |
+| `nestjs-zod`        | ~5.3.0   | No TS peer dep                | Compatible |
+| `tsx`               | 4.21.0   | No TS peer dep (uses esbuild) | Compatible |
+
+### Changes Applied
+
+1. **`typescript` bumped from `5.9.3` to `6.0.2`** in root, backend, and
+   frontend `package.json` (workspace devDependency).
+
+2. **`downlevelIteration: true` removed from `tsconfig.base.json`** — hard
+   deprecated in TS 6.0 (will error). Unnecessary with `target: "ES2022"`
+   because iteration protocols (for-of on `NodeList`, `Map`, `Set`,
+   spread on iterables) are natively supported from ES2015+.
+
+### TS 6.0 Default Changes — Impact Assessment
+
+| New TS 6.0 Default              | Our Config                             | Impact           |
+| ------------------------------- | -------------------------------------- | ---------------- |
+| `types: []` (was auto-include)  | Backend: `"types": ["node"]`           | None             |
+| `strict: true` (was `false`)    | Already `true` in base                 | None             |
+| `target: ES2025` (was `ES3`)    | Explicitly `"ES2022"`                  | None             |
+| `module: esnext` (was `cjs`)    | Backend: `"nodenext"` explicit         | None             |
+| `moduleResolution: bundler`     | Backend: `"nodenext"`, FE: `"bundler"` | None             |
+| `esModuleInterop: true` always  | Already `true` in base                 | None (redundant) |
+| `downlevelIteration` deprecated | Removed (see above)                    | None             |
+
+No config change required beyond the `downlevelIteration` removal.
+The project's existing explicit configuration insulated it from all
+TS 6.0 default shifts.
+
+### Verification
+
+```
+pnpm run type-check (shared + frontend + backend + backend/test)  → 0 errors
+docker exec assixx-backend pnpm run lint                          → 0 errors
+cd frontend && pnpm run lint                                      → 0 errors
+svelte-check (2459 files)                                         → 0 errors, 0 warnings
+curl http://localhost:3000/health                                 → {"status":"ok"}
+tsc --version (in container)                                      → 6.0.2
+```
+
+---
+
 ## Open Items (Tracked, Not in Scope)
 
 | Item                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | Effort  | Risk             |

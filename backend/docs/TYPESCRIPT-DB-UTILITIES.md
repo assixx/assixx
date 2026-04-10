@@ -1,7 +1,7 @@
-# TypeScript Database Utilities Documentation (PostgreSQL 17)
+# TypeScript Database Utilities Documentation (PostgreSQL 18)
 
 > **Updated:** 2026-02-09
-> **Database:** PostgreSQL 17 with `pg` library v8.16.3
+> **Database:** PostgreSQL 18 with `pg` library v8.16.3
 > **Access:** `DatabaseService` via NestJS Dependency Injection
 
 ## Overview

@@ -24,13 +24,13 @@ READ FIRST: [CLAUDE-KAIZEN-MANIFEST.md](./CLAUDE-KAIZEN-MANIFEST.md)
 
 - **Project:** Multi-Tenant SaaS for Industrial Companies
 - **GitHub:** <https://github.com/assixx-dev/Assixx>
-- **Stack:** TypeScript, NestJS 11 + Fastify, PostgreSQL 17.7, Docker, Redis, SvelteKit 5, Nginx
+- **Stack:** TypeScript, NestJS 11 + Fastify, PostgreSQL 18.3, Docker, Redis, SvelteKit 5, Nginx
 - **Dev:** `pnpm run dev:svelte` at <http://localhost:5173>
 - **API:** <http://localhost:3000/api/v2/>
 - **Prod:** <http://localhost> (Nginx reverse proxy to SvelteKit:3001 + Backend:3000)
 - **Docker:** [docker/](./docker/)
 - **Package Manager:** pnpm 10.27.0 (`inject-workspace-packages=true`)
-- **Database:** PostgreSQL 17.7 + `pg` v8.16.3 (Port 5432), Redis (Port 6379)
+- **Database:** PostgreSQL 18.3 + `pg` v8.16.3 (Port 5432), Redis (Port 6379)
 
 **Multi-Tenant Isolation:** `tenant_id` = one company. Must never be mixed. See RLS in DB.
 
