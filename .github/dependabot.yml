@@ -14,7 +14,7 @@
 #                          Grafana/Loki/Prometheus/Redis/Nginx version tracking).
 #
 # NOT covered (manual or future Renovate adoption):
-#   - Dockerfile.pg-partman → FROM postgres:17.9-alpine is hardcoded, NOT via ARG
+#   - Dockerfile.pg-partman → FROM postgres:18.3-alpine is hardcoded, NOT via ARG
 #   - Dockerfile.dev / Dockerfile.frontend → Node version comes from compose ARG
 #     (so the Dockerfile-side default value can drift from the compose-injected one)
 

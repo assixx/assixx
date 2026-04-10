@@ -6,10 +6,10 @@
 # 1. All secrets are managed by Doppler. Start with: doppler run -- docker-compose up -d
 #    Without Doppler, required secrets (:? checks) will cause clear error messages.
 #
-# 2. IMAGE PINNING: This file uses version tags (e.g., postgres:17.9-alpine).
+# 2. IMAGE PINNING: This file uses version tags (e.g., postgres:18.3-alpine).
 #    For production deployments, consider pinning images with SHA256 digests:
-#      image: postgres:17.9-alpine@sha256:<digest>
-#    Get digests with: docker pull postgres:17.9-alpine && docker inspect --format='{{index .RepoDigests 0}}' postgres:17.9-alpine
+#      image: postgres:18.3-alpine@sha256:<digest>
+#    Get digests with: docker pull postgres:18.3-alpine && docker inspect --format='{{index .RepoDigests 0}}' postgres:18.3-alpine
 #
 # 3. See docker/.env.example for required environment variables.
 #
@@ -23,7 +23,7 @@ services:
     build:
       context: ..
       dockerfile: docker/Dockerfile.pg-partman
-    image: assixx-postgres:17-partman
+    image: assixx-postgres:18-partman
     container_name: assixx-postgres
     restart: unless-stopped
     deploy:
@@ -38,7 +38,7 @@ services:
     # pg_stat_statements: Query performance tracking (essential for optimization)
     # pg_partman_bgw: Automatic partition maintenance (daily)
     # track_io_timing: I/O statistics per query
-    # Reference: https://www.postgresql.org/docs/17/pgstatstatements.html
+    # Reference: https://www.postgresql.org/docs/18/pgstatstatements.html
     command:
       - "postgres"
       - "-c"
@@ -65,6 +65,9 @@ services:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set - use doppler run}
       POSTGRES_DB: ${POSTGRES_DB}
+      # PG18 changed default PGDATA from /var/lib/postgresql/data to
+      # /var/lib/postgresql/18/docker. Override to keep existing volume mount.
+      PGDATA: /var/lib/postgresql/data
       TZ: Europe/Berlin
     ports:
       # SECURITY: Bind to localhost only - not accessible from external networks

@@ -1,4 +1,4 @@
-// ESLint Configuration - PostgreSQL 17 + pg (Raw SQL) + TypeScript
+// ESLint Configuration - PostgreSQL 18 + pg (Raw SQL) + TypeScript
 // Modernized for typescript-eslint v8+ (unified package)
 // For more info, see https://typescript-eslint.io/getting-started/
 import js from '@eslint/js';
@@ -72,7 +72,7 @@ export default [
   prettierConfig, // Complexity rules werden von sonarjs/cognitive-complexity gehandhabt
 
   // =============================================================================
-  // PostgreSQL 17 + pg (Raw SQL) - Backend TypeScript Configuration
+  // PostgreSQL 18 + pg (Raw SQL) - Backend TypeScript Configuration
   // =============================================================================
   {
     files: ['backend/**/*.ts', 'backend/**/*.tsx', 'shared/**/*.ts'],

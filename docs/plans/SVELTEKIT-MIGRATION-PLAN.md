@@ -791,7 +791,7 @@ SvelteKit:     5.x (Latest)
 Svelte:        5.x (Runes API)
 Vite:          6.x
 Tailwind CSS:  4.x (@tailwindcss/vite)
-TypeScript:    5.7+
+TypeScript:    6.0+
 Node.js:       22.x (LTS)
 ```
 

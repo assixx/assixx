@@ -71,7 +71,7 @@ Beide Module folgen exakt demselben Pattern. Der einzige Unterschied:
 │  │ (Routes)     │  │ (Facade)     │  │ Service   │ │
 │  └──────────────┘  └──────────────┘  └─────┬──────┘ │
 ├────────────────────────────────────────────┼────────┤
-│  Database (PostgreSQL 17.7)                │        │
+│  Database (PostgreSQL 18.3)                │        │
 │  ┌─────────────────────────────────────────┴──────┐ │
 │  │ blackboard_comments / kvp_comments             │ │
 │  │ parent_id → self-referencing FK (CASCADE)      │ │

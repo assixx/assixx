@@ -1,7 +1,7 @@
 # Assixx Database Structure
 
 **Last Updated:** 2026-02-06
-**Database:** PostgreSQL 17.7
+**Database:** PostgreSQL 18.3
 **Status:** Synchronized with Production
 
 ## Current Structure
@@ -51,7 +51,7 @@ docker exec assixx-postgres pg_dump -U assixx_user -d assixx > backups/backup_$(
 
 ## Important Notes
 
-1. **PostgreSQL 17** with Row Level Security (RLS) for tenant isolation
+1. **PostgreSQL 18** with Row Level Security (RLS) for tenant isolation
 2. **Always Backup First** before any schema changes
 3. **Test Migrations** on development environment first
 4. **Foreign Keys**: Check constraints before dropping tables

@@ -73,7 +73,7 @@
 | **Cache**              | Redis 7                 | Redis 7                     | ✅ KEEP |
 | **Validation**         | Zod 4.x + nestjs-zod    | Zod 4.x + nestjs-zod        | ✅ KEEP |
 | **Testing**            | **Vitest 4.0.16**       | Vitest 4.x                  | ✅ DONE |
-| **TypeScript**         | 5.9.3                   | 5.9.x                       | ✅ KEEP |
+| **TypeScript**         | 6.0.2                   | 6.0.x                       | ✅ DONE |
 | **ORM**                | Raw SQL (pg)            | Raw SQL (pg)                | ✅ KEEP |
 
 **0 Changes Remaining! 4 Changes COMPLETED (NestJS, Fastify, Vitest, SvelteKit). 9 Things Already Optimal.**
@@ -199,7 +199,7 @@ Formatting:
 
 Type Checking:
   tool: TypeScript
-  version: 5.9.3
+  version: 6.0.2
   strictness: Maximum (all strict flags enabled)
   verdict: OPTIMAL
 ```
@@ -1161,7 +1161,7 @@ Pipelines:
 │                                                                  │
 ├─────────────────────────────────────────────────────────────────┤
 │                      DEVELOPMENT                                 │
-│  Node.js 24 LTS | pnpm 10 | TypeScript 5.9 | Vitest 3          │
+│  Node.js 24 LTS | pnpm 10 | TypeScript 6.0 | Vitest 4          │
 │  ESLint 9 | Prettier 3 | Docker Compose                        │
 └─────────────────────────────────────────────────────────────────┘
 ```
@@ -1176,7 +1176,7 @@ Pipelines:
 | ------------------------ | ------- | --------- | ------ |
 | node                     | 24.11.1 | >=24.11.1 | KEEP   |
 | pnpm                     | 10.24.0 | >=10.24.0 | KEEP   |
-| typescript               | 5.9.3   | >=5.9.0   | KEEP   |
+| typescript               | 6.0.2   | >=6.0.0   | DONE   |
 | @nestjs/core             | -       | >=11.0.0  | NEW    |
 | @nestjs/platform-fastify | -       | >=11.0.0  | NEW    |
 | @nestjs/websockets       | -       | >=11.0.0  | NEW    |
@@ -1744,7 +1744,7 @@ doppler run --config prd -- docker-compose --profile production up -d
 │ ✅ Redis 7                                  │
 │ ✅ Zod Validation (nestjs-zod)              │
 │ ✅ Tailwind 4                               │
-│ ✅ TypeScript 5.9 strict                    │
+│ ✅ TypeScript 6.0 strict                    │
 │ ✅ Docker Compose Setup                     │
 │ ✅ ESLint Security Rules                    │
 └─────────────────────────────────────────────┘

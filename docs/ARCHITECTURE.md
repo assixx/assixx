@@ -15,7 +15,7 @@ Multi-Tenant SaaS platform for industrial companies.
 | Node.js    | 24.x    | Runtime                 |
 | TypeScript | 5.x     | Language                |
 | NestJS     | 11.x    | Web framework (Fastify) |
-| PostgreSQL | 17.x    | Database                |
+| PostgreSQL | 18.x    | Database                |
 | Redis      | 7.x     | Sessions, rate limiting |
 | WebSocket  | native  | Real-time communication |
 | Zod        | 3.x     | Validation              |
@@ -302,7 +302,7 @@ Assixx/
 | Container       | Image          | Port | Purpose            |
 | --------------- | -------------- | ---- | ------------------ |
 | assixx-backend  | Node 24 Alpine | 3000 | API + static files |
-| assixx-postgres | PostgreSQL 17  | 5432 | Database           |
+| assixx-postgres | PostgreSQL 18  | 5432 | Database           |
 | assixx-redis    | Redis 7 Alpine | 6379 | Sessions, cache    |
 
 ### Development

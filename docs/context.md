@@ -3,7 +3,7 @@
 **NOW USING:**
 
 - API V2 (no V1 fallback)
-- PostgreSQL 17.7 + `pg` library v8.16.3
+- PostgreSQL 18.3 + `pg` library v8.16.3
 - `uuid` v13.0.0 (UUIDv7 everywhere - DB records AND files)
 - `is_active` INTEGER status: `0`=inactive, `1`=active, `3`=archive, `4`=deleted (soft delete)
 

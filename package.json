@@ -1,6 +1,6 @@
 {
   "name": "assixx",
-  "version": "0.4.10",
+  "version": "0.4.11",
   "type": "module",
   "main": "backend/dist/nest/main.js",
   "engines": {
@@ -155,7 +155,7 @@
     "node-pg-migrate": "8.0.4",
     "nodemon": "^3.1.14",
     "postcss-html": "1.8.1",
-    "prettier": "^3.8.1",
+    "prettier": "^3.8.2",
     "prettier-plugin-css-order": "^2.2.0",
     "prettier-plugin-svelte": "^3.5.1",
     "prettier-plugin-tailwindcss": "0.7.2",
@@ -166,7 +166,7 @@
     "stylelint-order": "^8.1.1",
     "stylelint-prettier": "^5.0.3",
     "tsx": "^4.21.0",
-    "typescript": "5.9.3",
+    "typescript": "6.0.2",
     "typescript-eslint": "^8.58.1",
     "vite": "^8.0.8",
     "vitest": "^4.1.4"
