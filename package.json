@@ -155,7 +155,7 @@
     "node-pg-migrate": "8.0.4",
     "nodemon": "^3.1.14",
     "postcss-html": "1.8.1",
-    "prettier": "^3.8.1",
+    "prettier": "^3.8.2",
     "prettier-plugin-css-order": "^2.2.0",
     "prettier-plugin-svelte": "^3.5.1",
     "prettier-plugin-tailwindcss": "0.7.2",
