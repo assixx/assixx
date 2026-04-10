@@ -89,6 +89,11 @@ export async function updatePhotoCaption(photoId: string, caption: string | null
   await apiClient.patch(`/inventory/photos/${photoId}`, { caption });
 }
 
+/** Reorder photos — photoIds array defines the new sort order */
+export async function reorderPhotos(itemUuid: string, photoIds: string[]): Promise<void> {
+  await apiClient.put(API_ENDPOINTS.itemPhotos(itemUuid) + '/reorder', { photoIds });
+}
+
 // ── Tags ───────────────────────────────────────────────────────
 
 /** Load all inventory tags for the tenant with usage counts */

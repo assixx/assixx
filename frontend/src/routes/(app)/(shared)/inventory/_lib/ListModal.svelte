@@ -243,7 +243,6 @@
               class="form-field__control"
               bind:value={localCodeSeparator}
               maxlength="3"
-              placeholder="-"
             />
           </div>
 

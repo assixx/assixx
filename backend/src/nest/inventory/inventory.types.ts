@@ -72,6 +72,8 @@ export interface InventoryItemRow {
   created_by: number;
   created_at: Date;
   updated_at: Date;
+  /** First photo path (populated by findByList via lateral subquery) */
+  thumbnail_path: string | null;
 }
 
 export interface InventoryCustomFieldRow {

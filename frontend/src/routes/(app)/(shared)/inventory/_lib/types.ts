@@ -137,6 +137,8 @@ export interface InventoryItem {
   notes: string | null;
   is_active: number;
   created_at: string;
+  /** First photo path (from list view lateral subquery) */
+  thumbnail_path: string | null;
 }
 
 /** Item detail with photos, custom values, and field definitions */

@@ -28,6 +28,7 @@
     CustomValueInput,
     CustomValueWithField,
     InventoryCustomField,
+    InventoryItem,
     InventoryItemStatus,
   } from '../../_lib/types';
 
@@ -60,6 +61,7 @@
   let formNotes = $state('');
   let filterStatus = $state<InventoryItemStatus | ''>('');
   let searchQuery = $state('');
+  let previewItem = $state<InventoryItem | null>(null);
 
   // Custom field values for create form
   interface CreateFieldState {
@@ -255,18 +257,18 @@
   </div>
 {:else}
   <div class="container">
+    <button
+      type="button"
+      class="btn btn-light mb-4"
+      onclick={() => {
+        void goto('/inventory');
+      }}
+    >
+      <i class="fas fa-arrow-left mr-2"></i>Zurück zur Übersicht
+    </button>
+
     <div class="card">
       <div class="card__header">
-        <button
-          type="button"
-          class="btn btn-light mb-3"
-          onclick={() => {
-            void goto('/inventory');
-          }}
-        >
-          <i class="fas fa-arrow-left mr-2"></i>Zurück zur Übersicht
-        </button>
-
         <h2 class="card__title">
           {#if list.icon !== null && list.icon !== ''}<i class="fas {list.icon} mr-2"></i>{/if}
           {list.title}
@@ -410,6 +412,10 @@
             <table class="data-table data-table--hover data-table--striped">
               <thead>
                 <tr>
+                  <th
+                    scope="col"
+                    class="inventory-detail__th-photo">Foto</th
+                  >
                   <th scope="col">Code</th>
                   <th scope="col">Name</th>
                   <th scope="col">Status</th>
@@ -439,6 +445,29 @@
                       if (e.key === 'Enter') goToItem(item.id);
                     }}
                   >
+                    <td
+                      class="inventory-detail__td-photo"
+                      onclick={(e: MouseEvent) => {
+                        if (item.thumbnail_path !== null) {
+                          e.stopPropagation();
+                          previewItem = item;
+                        }
+                      }}
+                    >
+                      {#if item.thumbnail_path !== null}
+                        <div class="inventory-detail__thumbnail">
+                          <img
+                            src="/{item.thumbnail_path}"
+                            alt={item.name}
+                            loading="lazy"
+                          />
+                        </div>
+                      {:else}
+                        <div class="inventory-detail__no-photo">
+                          <i class="fas fa-image"></i>
+                        </div>
+                      {/if}
+                    </td>
                     <td><code class="inventory-detail__code">{item.code}</code></td>
                     <td class="font-medium">{item.name}</td>
                     <td>
@@ -877,6 +906,60 @@
       </form>
     </div>
   {/if}
+
+  <!-- Photo Preview Modal -->
+  {#if previewItem !== null && previewItem.thumbnail_path !== null}
+    <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
+    <div
+      class="modal-overlay modal-overlay--active"
+      onclick={() => (previewItem = null)}
+      role="dialog"
+      aria-modal="true"
+      tabindex="-1"
+    >
+      <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
+      <div
+        class="ds-modal ds-modal--lg"
+        style="max-height: 95vh;"
+        onclick={(e: MouseEvent) => {
+          e.stopPropagation();
+        }}
+      >
+        <div class="ds-modal__header">
+          <h3 class="ds-modal__title">
+            <i class="fas fa-image mr-2 text-blue-400"></i>
+            {previewItem.name}
+          </h3>
+          <button
+            type="button"
+            class="ds-modal__close"
+            aria-label="Schliessen"
+            onclick={() => (previewItem = null)}
+          >
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        <div class="ds-modal__body p-0">
+          <div
+            class="flex min-h-[400px] w-full items-center justify-center"
+            style="background: var(--color-glass-bg, #111);"
+          >
+            <img
+              src="/{previewItem.thumbnail_path}"
+              alt={previewItem.name}
+              class="max-h-[80vh] max-w-full object-contain"
+            />
+          </div>
+          <div class="photo-preview-meta">
+            <span class="flex items-center gap-2">
+              <i class="fas fa-cube"></i>
+              {previewItem.code}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  {/if}
 {/if}
 
 <style>
@@ -963,6 +1046,61 @@
     gap: 0.5rem;
     cursor: pointer;
     color: var(--color-text-primary);
+    font-size: 0.875rem;
+  }
+
+  /* ── Item Thumbnail ──────────────────────────────────────── */
+
+  .inventory-detail__th-photo {
+    width: 7rem;
+  }
+
+  .inventory-detail__td-photo {
+    width: 7rem;
+    padding: 0.375rem !important;
+  }
+
+  .inventory-detail__thumbnail {
+    cursor: pointer;
+    overflow: hidden;
+    width: 5.75rem;
+    height: 5.75rem;
+    border: 2px solid transparent;
+    border-radius: var(--radius-lg, 0.5rem);
+    background: var(--color-glass-bg, rgb(255 255 255 / 5%));
+    transition: transform 0.2s ease;
+  }
+
+  .inventory-detail__thumbnail:hover {
+    transform: scale(1.05);
+    border-color: var(--color-primary, #3b82f6);
+  }
+
+  .inventory-detail__thumbnail img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .inventory-detail__no-photo {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 5.75rem;
+    height: 5.75rem;
+    border-radius: var(--radius-lg, 0.5rem);
+    background: var(--color-glass-bg, rgb(255 255 255 / 5%));
+    color: var(--color-text-secondary);
+    font-size: 0.875rem;
+  }
+
+  .photo-preview-meta {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    padding: 1rem;
+    border-top: 1px solid var(--color-border, rgb(255 255 255 / 10%));
+    color: var(--color-text-secondary);
     font-size: 0.875rem;
   }
 </style>

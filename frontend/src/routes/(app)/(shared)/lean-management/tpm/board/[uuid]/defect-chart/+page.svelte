@@ -29,8 +29,8 @@
 
   const CHART = {
     width: 1100,
-    height: 520,
-    padding: { top: 60, right: 40, bottom: 60, left: 70 },
+    height: 460,
+    padding: { top: 30, right: 40, bottom: 60, left: 70 },
   } as const;
 
   const plotWidth = CHART.width - CHART.padding.left - CHART.padding.right;
@@ -249,266 +249,311 @@
 
     {#if error !== null}
       <div class="card">
-        <div class="card__body p-6 text-center">
-          <i class="fas fa-exclamation-triangle mb-4 text-4xl text-(--color-danger)"></i>
-          <p class="text-(--color-text-secondary)">{error}</p>
+        <div class="card__body">
+          <div class="empty-state">
+            <div class="empty-state__icon">
+              <i class="fas fa-exclamation-triangle"></i>
+            </div>
+            <h3 class="empty-state__title">{MESSAGES.CHART_ERROR}</h3>
+            <p class="empty-state__description">{error}</p>
+            <button
+              type="button"
+              class="btn btn-primary mt-4"
+              onclick={goBack}
+            >
+              <i class="fas fa-arrow-left mr-2"></i>{MESSAGES.CHART_BACK}
+            </button>
+          </div>
         </div>
       </div>
     {:else if chartData === null}
       <div class="card">
-        <div class="card__body p-6 text-center">
-          <i class="fas fa-exclamation-triangle mb-4 text-4xl text-(--color-danger)"></i>
-          <p class="text-(--color-text-secondary)">{MESSAGES.CHART_ERROR}</p>
+        <div class="card__body">
+          <div class="empty-state">
+            <div class="empty-state__icon">
+              <i class="fas fa-exclamation-triangle"></i>
+            </div>
+            <h3 class="empty-state__title">{MESSAGES.CHART_ERROR}</h3>
+            <p class="empty-state__description">Daten konnten nicht geladen werden.</p>
+          </div>
         </div>
       </div>
     {:else}
-      <!-- Chart Card -->
-      <div class="chart-card">
-        <!-- SVG Chart -->
-        <svg
-          viewBox="0 0 {CHART.width} {CHART.height}"
-          class="chart-svg"
-          xmlns="http://www.w3.org/2000/svg"
+      <!-- Summary Stats -->
+      <div class="mb-6 grid grid-cols-1 gap-4 md:grid-cols-3">
+        <div class="card-stat card-stat--danger">
+          <div class="card-stat__icon">
+            <i class="fas fa-exclamation-circle"></i>
+          </div>
+          <div class="card-stat__content">
+            <div class="card-stat__value">{chartData.totalDetected}</div>
+            <div class="card-stat__label">{MESSAGES.CHART_LEGEND_DETECTED}</div>
+          </div>
+        </div>
+        <div class="card-stat card-stat--success">
+          <div class="card-stat__icon">
+            <i class="fas fa-check-circle"></i>
+          </div>
+          <div class="card-stat__content">
+            <div class="card-stat__value">{chartData.totalResolved}</div>
+            <div class="card-stat__label">{MESSAGES.CHART_LEGEND_RESOLVED}</div>
+          </div>
+        </div>
+        <div
+          class="card-stat"
+          class:card-stat--warning={chartData.totalDetected - chartData.totalResolved > 0}
+          class:card-stat--success={chartData.totalDetected - chartData.totalResolved === 0}
         >
-          <!-- Background -->
-          <rect
-            x={CHART.padding.left}
-            y={CHART.padding.top}
-            width={plotWidth}
-            height={plotHeight}
-            fill="var(--chart-plot-bg)"
-            stroke="var(--chart-plot-border)"
-            stroke-width="1"
-          />
+          <div class="card-stat__icon">
+            <i class="fas fa-clipboard-list"></i>
+          </div>
+          <div class="card-stat__content">
+            <div class="card-stat__value">
+              {chartData.totalDetected - chartData.totalResolved}
+            </div>
+            <div class="card-stat__label">Offen</div>
+          </div>
+        </div>
+      </div>
 
-          <!-- Title -->
-          <text
-            x={CHART.width / 2}
-            y="24"
-            text-anchor="middle"
-            class="chart-title"
-          >
-            {MESSAGES.CHART_HEADING}
-            {currentYear}
-          </text>
+      <!-- Chart Card -->
+      <div class="card chart-card">
+        <div class="card__header">
+          <div>
+            <h2 class="card__title">
+              <i class="fas fa-chart-line mr-2"></i>
+              {MESSAGES.CHART_HEADING}
+              {currentYear}
+            </h2>
+            <p class="mt-1 text-(--color-text-secondary)">
+              <span class="font-semibold">{chartData.assetName}</span>
+              — {chartData.planName}
+            </p>
+          </div>
+        </div>
 
-          <!-- Subtitle: Asset name -->
-          <text
-            x={CHART.width / 2}
-            y="44"
-            text-anchor="middle"
-            class="chart-subtitle"
-          >
-            {chartData.assetName} — {chartData.planName}
-          </text>
-
-          <!-- Grid: Horizontal lines -->
-          {#each yTicks as tick (tick)}
-            <line
-              x1={CHART.padding.left}
-              y1={yForValue(tick)}
-              x2={CHART.padding.left + plotWidth}
-              y2={yForValue(tick)}
-              stroke="var(--chart-grid)"
-              stroke-width="0.5"
-            />
-            <text
-              x={CHART.padding.left - 8}
-              y={yForValue(tick) + 4}
-              text-anchor="end"
-              class="chart-axis-label"
-            >
-              {tick}
-            </text>
-          {/each}
-
-          <!-- Grid: Vertical lines (every 2 weeks) -->
-          {#each Array.from({ length: 26 }, (_, i) => i * 2 + 1) as week (week)}
-            <line
-              x1={xForWeek(week)}
-              y1={CHART.padding.top}
-              x2={xForWeek(week)}
-              y2={CHART.padding.top + plotHeight}
-              stroke="var(--chart-grid)"
-              stroke-width="0.5"
-            />
-          {/each}
-
-          <!-- X-axis labels (every 2 weeks) -->
-          {#each Array.from({ length: 26 }, (_, i) => i * 2 + 1) as week (week)}
-            <text
-              x={xForWeek(week)}
-              y={CHART.padding.top + plotHeight + 18}
-              text-anchor="middle"
-              class="chart-axis-label"
-            >
-              {week}
-            </text>
-          {/each}
-
-          <!-- Y-axis label -->
-          <text
-            x="16"
-            y={CHART.padding.top + plotHeight / 2}
-            text-anchor="middle"
-            transform="rotate(-90, 16, {CHART.padding.top + plotHeight / 2})"
-            class="chart-axis-title"
-          >
-            {MESSAGES.CHART_Y_AXIS}
-          </text>
-
-          <!-- X-axis label -->
-          <text
-            x={CHART.padding.left + plotWidth / 2}
-            y={CHART.height - 8}
-            text-anchor="middle"
-            class="chart-axis-title"
-          >
-            {MESSAGES.CHART_X_AXIS}
-          </text>
-
+        <div class="card__body p-0">
           {#if hasData}
-            <!-- Line: Mängel erkannt (rot) -->
-            {#if detectedPoints.length > 0}
-              <polyline
-                points={detectedPoints}
-                fill="none"
-                stroke="var(--chart-detected)"
-                stroke-width="2"
-                stroke-linejoin="round"
+            <!-- SVG Chart -->
+            <svg
+              viewBox="0 0 {CHART.width} {CHART.height}"
+              class="chart-svg"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <!-- Background -->
+              <rect
+                x={CHART.padding.left}
+                y={CHART.padding.top}
+                width={plotWidth}
+                height={plotHeight}
+                fill="var(--chart-plot-bg)"
+                stroke="var(--chart-plot-border)"
+                stroke-width="1"
               />
-            {/if}
 
-            <!-- Line: Mängel behoben (grün) -->
-            {#if resolvedPoints.length > 0}
-              <polyline
-                points={resolvedPoints}
-                fill="none"
-                stroke="var(--chart-resolved)"
-                stroke-width="2"
-                stroke-linejoin="round"
-              />
-            {/if}
+              <!-- Grid: Horizontal lines -->
+              {#each yTicks as tick (tick)}
+                <line
+                  x1={CHART.padding.left}
+                  y1={yForValue(tick)}
+                  x2={CHART.padding.left + plotWidth}
+                  y2={yForValue(tick)}
+                  stroke="var(--chart-grid)"
+                  stroke-width="0.5"
+                />
+                <text
+                  x={CHART.padding.left - 8}
+                  y={yForValue(tick) + 4}
+                  text-anchor="end"
+                  class="chart-axis-label"
+                >
+                  {tick}
+                </text>
+              {/each}
 
-            <!-- Data points: Detected (rot) — only weeks with new defects -->
-            {#each detectedDotWeeks as week (week.week)}
-              <circle
-                cx={dotX(week.week, 'detected')}
-                cy={yForValue(week.cumulativeDetected)}
-                r="5"
-                fill="var(--chart-detected)"
-                stroke="var(--chart-dot-stroke)"
-                stroke-width="1.5"
-                class="chart-dot"
-                role="img"
-                aria-label="KW {week.week}: {week.cumulativeDetected} erkannt (+{week.detected})"
-                onmouseenter={(e: MouseEvent) => {
-                  handleDotHover(week, e);
-                }}
-                onmouseleave={handleDotLeave}
-              />
-            {/each}
+              <!-- Grid: Vertical lines (every 2 weeks) -->
+              {#each Array.from({ length: 26 }, (_, i) => i * 2 + 1) as week (week)}
+                <line
+                  x1={xForWeek(week)}
+                  y1={CHART.padding.top}
+                  x2={xForWeek(week)}
+                  y2={CHART.padding.top + plotHeight}
+                  stroke="var(--chart-grid)"
+                  stroke-width="0.5"
+                />
+              {/each}
 
-            <!-- Data points: Resolved (grün) — only weeks with resolved defects -->
-            {#each resolvedDotWeeks as week (week.week)}
-              <circle
-                cx={dotX(week.week, 'resolved')}
-                cy={yForValue(week.cumulativeResolved)}
-                r="5"
-                fill="var(--chart-resolved)"
-                stroke="var(--chart-dot-stroke)"
-                stroke-width="1.5"
-                class="chart-dot"
-                role="img"
-                aria-label="KW {week.week}: {week.cumulativeResolved} behoben (+{week.resolved})"
-                onmouseenter={(e: MouseEvent) => {
-                  handleDotHover(week, e);
-                }}
-                onmouseleave={handleDotLeave}
-              />
-            {/each}
+              <!-- X-axis labels (every 2 weeks) -->
+              {#each Array.from({ length: 26 }, (_, i) => i * 2 + 1) as week (week)}
+                <text
+                  x={xForWeek(week)}
+                  y={CHART.padding.top + plotHeight + 18}
+                  text-anchor="middle"
+                  class="chart-axis-label"
+                >
+                  {week}
+                </text>
+              {/each}
+
+              <!-- Y-axis label -->
+              <text
+                x="16"
+                y={CHART.padding.top + plotHeight / 2}
+                text-anchor="middle"
+                transform="rotate(-90, 16, {CHART.padding.top + plotHeight / 2})"
+                class="chart-axis-title"
+              >
+                {MESSAGES.CHART_Y_AXIS}
+              </text>
+
+              <!-- X-axis label -->
+              <text
+                x={CHART.padding.left + plotWidth / 2}
+                y={CHART.height - 8}
+                text-anchor="middle"
+                class="chart-axis-title"
+              >
+                {MESSAGES.CHART_X_AXIS}
+              </text>
+
+              <!-- Line: Mängel erkannt (rot) -->
+              {#if detectedPoints.length > 0}
+                <polyline
+                  points={detectedPoints}
+                  fill="none"
+                  stroke="var(--chart-detected)"
+                  stroke-width="2"
+                  stroke-linejoin="round"
+                />
+              {/if}
+
+              <!-- Line: Mängel behoben (grün) -->
+              {#if resolvedPoints.length > 0}
+                <polyline
+                  points={resolvedPoints}
+                  fill="none"
+                  stroke="var(--chart-resolved)"
+                  stroke-width="2"
+                  stroke-linejoin="round"
+                />
+              {/if}
+
+              <!-- Data points: Detected (rot) — only weeks with new defects -->
+              {#each detectedDotWeeks as week (week.week)}
+                <circle
+                  cx={dotX(week.week, 'detected')}
+                  cy={yForValue(week.cumulativeDetected)}
+                  r="5"
+                  fill="var(--chart-detected)"
+                  stroke="var(--chart-dot-stroke)"
+                  stroke-width="1.5"
+                  class="chart-dot"
+                  role="img"
+                  aria-label="KW {week.week}: {week.cumulativeDetected} erkannt (+{week.detected})"
+                  onmouseenter={(e: MouseEvent) => {
+                    handleDotHover(week, e);
+                  }}
+                  onmouseleave={handleDotLeave}
+                />
+              {/each}
+
+              <!-- Data points: Resolved (grün) — only weeks with resolved defects -->
+              {#each resolvedDotWeeks as week (week.week)}
+                <circle
+                  cx={dotX(week.week, 'resolved')}
+                  cy={yForValue(week.cumulativeResolved)}
+                  r="5"
+                  fill="var(--chart-resolved)"
+                  stroke="var(--chart-dot-stroke)"
+                  stroke-width="1.5"
+                  class="chart-dot"
+                  role="img"
+                  aria-label="KW {week.week}: {week.cumulativeResolved} behoben (+{week.resolved})"
+                  onmouseenter={(e: MouseEvent) => {
+                    handleDotHover(week, e);
+                  }}
+                  onmouseleave={handleDotLeave}
+                />
+              {/each}
+
+              <!-- Legend -->
+              <g
+                transform="translate({CHART.padding.left + plotWidth - 180}, {CHART.padding.top +
+                  12})"
+              >
+                <rect
+                  x="-8"
+                  y="-10"
+                  width="190"
+                  height="48"
+                  rx="4"
+                  fill="var(--chart-legend-bg)"
+                  stroke="var(--chart-legend-border)"
+                  stroke-width="0.5"
+                />
+                <!-- Detected -->
+                <line
+                  x1="0"
+                  y1="4"
+                  x2="20"
+                  y2="4"
+                  stroke="var(--chart-detected)"
+                  stroke-width="2"
+                />
+                <circle
+                  cx="10"
+                  cy="4"
+                  r="3.5"
+                  fill="var(--chart-detected)"
+                />
+                <text
+                  x="28"
+                  y="8"
+                  class="chart-legend-label">{MESSAGES.CHART_LEGEND_DETECTED}</text
+                >
+
+                <!-- Resolved -->
+                <line
+                  x1="0"
+                  y1="26"
+                  x2="20"
+                  y2="26"
+                  stroke="var(--chart-resolved)"
+                  stroke-width="2"
+                />
+                <circle
+                  cx="10"
+                  cy="26"
+                  r="3.5"
+                  fill="var(--chart-resolved)"
+                />
+                <text
+                  x="28"
+                  y="30"
+                  class="chart-legend-label">{MESSAGES.CHART_LEGEND_RESOLVED}</text
+                >
+              </g>
+            </svg>
           {:else}
-            <!-- Empty state inside chart -->
-            <text
-              x={CHART.width / 2}
-              y={CHART.padding.top + plotHeight / 2}
-              text-anchor="middle"
-              class="chart-empty"
-            >
-              {MESSAGES.CHART_EMPTY_TITLE}
-            </text>
-          {/if}
-
-          <!-- Legend -->
-          <g
-            transform="translate({CHART.padding.left + plotWidth - 180}, {CHART.padding.top + 12})"
-          >
-            <rect
-              x="-8"
-              y="-10"
-              width="190"
-              height="48"
-              rx="4"
-              fill="var(--chart-legend-bg)"
-              stroke="var(--chart-legend-border)"
-              stroke-width="0.5"
-            />
-            <!-- Detected -->
-            <line
-              x1="0"
-              y1="4"
-              x2="20"
-              y2="4"
-              stroke="var(--chart-detected)"
-              stroke-width="2"
-            />
-            <circle
-              cx="10"
-              cy="4"
-              r="3.5"
-              fill="var(--chart-detected)"
-            />
-            <text
-              x="28"
-              y="8"
-              class="chart-legend-label">{MESSAGES.CHART_LEGEND_DETECTED}</text
-            >
-
-            <!-- Resolved -->
-            <line
-              x1="0"
-              y1="26"
-              x2="20"
-              y2="26"
-              stroke="var(--chart-resolved)"
-              stroke-width="2"
-            />
-            <circle
-              cx="10"
-              cy="26"
-              r="3.5"
-              fill="var(--chart-resolved)"
-            />
-            <text
-              x="28"
-              y="30"
-              class="chart-legend-label">{MESSAGES.CHART_LEGEND_RESOLVED}</text
-            >
-          </g>
-        </svg>
-
-        <!-- Footer -->
-        <div class="chart-footer">
-          <span class="text-xs text-(--color-text-muted)">
-            {MESSAGES.CHART_FOOTER}
-          </span>
-          {#if hasData}
-            <span class="text-xs text-(--color-text-muted)">
-              Gesamt: {chartData.totalDetected} erkannt / {chartData.totalResolved} behoben · Offen: {chartData.totalDetected -
-                chartData.totalResolved}
-            </span>
+            <div class="empty-state">
+              <div class="empty-state__icon">
+                <i class="fas fa-chart-line"></i>
+              </div>
+              <h3 class="empty-state__title">{MESSAGES.CHART_EMPTY_TITLE}</h3>
+              <p class="empty-state__description">
+                Für {currentYear} liegen noch keine Mängeldaten vor.
+              </p>
+            </div>
           {/if}
         </div>
+
+        {#if hasData}
+          <div class="card__footer">
+            <span class="text-xs text-(--color-text-muted)">
+              {MESSAGES.CHART_FOOTER}
+            </span>
+          </div>
+        {/if}
       </div>
     {/if}
   </div>
@@ -559,11 +604,6 @@
     /* Legend box */
     --chart-legend-bg: oklch(100% 0 0 / 85%);
     --chart-legend-border: var(--color-border);
-
-    background: var(--glass-bg);
-    border-radius: var(--radius-lg);
-    border: 1px solid var(--color-glass-border);
-    overflow: hidden;
   }
 
   :global(html.dark) .chart-card {
@@ -583,18 +623,6 @@
     display: block;
   }
 
-  .chart-title {
-    font-size: 18px;
-    font-weight: 700;
-    fill: var(--color-text-primary);
-  }
-
-  .chart-subtitle {
-    font-size: 13px;
-    font-weight: 500;
-    fill: var(--color-text-secondary);
-  }
-
   .chart-axis-label {
     font-size: 10px;
     fill: var(--color-text-muted);
@@ -612,11 +640,6 @@
     fill: var(--color-text-primary);
   }
 
-  .chart-empty {
-    font-size: 14px;
-    fill: var(--color-text-muted);
-  }
-
   .chart-dot {
     cursor: pointer;
     transform-box: fill-box;
@@ -628,13 +651,9 @@
     transform: scale(1.4);
   }
 
-  .chart-footer {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+  .card__footer {
     padding: 0.5rem 1rem;
     border-top: 1px solid var(--color-glass-border);
-    background: var(--glass-bg);
   }
 
   .year-select {

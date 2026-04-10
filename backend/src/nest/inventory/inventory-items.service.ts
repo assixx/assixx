@@ -61,7 +61,13 @@ export class InventoryItemsService {
 
     const offset = (filters.page - 1) * filters.limit;
     const items = await this.db.tenantQuery<InventoryItemRow>(
-      `SELECT i.* FROM inventory_items i
+      `SELECT i.*, thumb.file_path AS thumbnail_path
+       FROM inventory_items i
+       LEFT JOIN LATERAL (
+         SELECT p.file_path FROM inventory_item_photos p
+         WHERE p.item_id = i.id AND p.is_active != ${String(IS_ACTIVE.DELETED)}
+         ORDER BY p.sort_order LIMIT 1
+       ) thumb ON true
        WHERE ${where}
        ORDER BY i.code
        LIMIT $${String(paramIndex)} OFFSET $${String(paramIndex + 1)}`,

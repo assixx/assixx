@@ -33,20 +33,23 @@
 
 <div
   class="card card--clickable inventory-list-card"
-  role="article"
->
-  <!-- Card Header — clickable to open list -->
-  <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
-  <div
-    class="card__header inventory-list-card__header"
-    onclick={() => {
+  role="button"
+  tabindex="0"
+  onclick={() => {
+    onopen(list.id);
+  }}
+  onkeydown={(e: KeyboardEvent) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
       onopen(list.id);
-    }}
-  >
+    }
+  }}
+>
+  <div class="card__header inventory-list-card__header">
     <div class="flex items-center gap-3">
       <i class="fas {list.icon ?? DEFAULT_LIST_ICON} text-2xl text-(--color-primary)"></i>
       <div>
-        <h3 class="card__title m-0 text-lg">{list.title}</h3>
+        <h3 class="inventory-list-card__title">{list.title}</h3>
       </div>
     </div>
     <code class="inventory-list-card__code-preview">{codePreview}</code>
@@ -90,18 +93,14 @@
     {/if}
   </div>
 
-  <!-- Card Footer — Actions -->
-  <div class="card__footer inventory-list-card__footer">
-    <button
-      type="button"
-      class="btn btn-primary btn-sm"
-      onclick={() => {
-        onopen(list.id);
-      }}
-    >
-      <i class="fas fa-list mr-1"></i>
-      Öffnen
-    </button>
+  <!-- Card Footer — Actions (stopPropagation prevents card-level onclick) -->
+  <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
+  <div
+    class="card__footer inventory-list-card__footer"
+    onclick={(e: MouseEvent) => {
+      e.stopPropagation();
+    }}
+  >
     <div class="flex gap-2">
       {#if canEdit}
         <button
@@ -138,23 +137,26 @@
     display: flex;
     flex-direction: column;
     height: 100%;
+    cursor: pointer;
   }
 
   .inventory-list-card__header {
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
-    cursor: pointer;
   }
 
-  .inventory-list-card__header:hover {
-    opacity: 85%;
+  .inventory-list-card__title {
+    margin: 0;
+    font-size: 1.125rem;
+    font-weight: 600;
+    line-height: 1.4;
   }
 
   .inventory-list-card__code-preview {
-    font-size: 0.75rem;
-    padding: 0.15rem 0.5rem;
-    border-radius: 0.25rem;
+    font-size: 0.875rem;
+    padding: 0.25rem 0.625rem;
+    border-radius: 0.375rem;
     background: var(--color-glass-bg, rgb(255 255 255 / 5%));
     white-space: nowrap;
   }
@@ -166,7 +168,7 @@
   .inventory-list-card__footer {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: flex-end;
     padding-top: 0.75rem;
     border-top: 1px solid var(--color-border, rgb(255 255 255 / 10%));
   }
