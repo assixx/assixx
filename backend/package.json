@@ -1,6 +1,6 @@
 {
   "name": "assixx-backend",
-  "version": "0.4.9",
+  "version": "0.4.10",
   "description": "Assixx Multi-Tenant SaaS Backend",
   "main": "dist/nest/main.js",
   "type": "module",
