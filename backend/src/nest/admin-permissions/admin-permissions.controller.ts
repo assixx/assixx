@@ -15,7 +15,17 @@
  * - PATCH  /admin-permissions/:userId/full-access                  - Set full access flag (root only)
  */
 import { IS_ACTIVE } from '@assixx/shared/constants';
-import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  NotFoundException,
+  Param,
+  ParseIntPipe,
+  Patch,
+  Post,
+} from '@nestjs/common';
 
 import { CurrentUser } from '../common/decorators/current-user.decorator.js';
 import { Roles } from '../common/decorators/roles.decorator.js';
@@ -58,6 +68,36 @@ export class AdminPermissionsController {
     private readonly adminPermissionsService: AdminPermissionsService,
     private readonly db: DatabaseService,
   ) {}
+
+  /** Validate target user is an active admin in caller's tenant, return their tenant_id */
+  private async resolveAdminTenant(adminId: number, tenantId: number): Promise<number> {
+    const rows = await this.db.queryAsTenant<{ tenant_id: number }>(
+      GET_ADMIN_TENANT_QUERY,
+      [adminId],
+      tenantId,
+    );
+
+    if (rows.length === 0 || rows[0] === undefined) {
+      throw new NotFoundException(ERROR_ADMIN_NOT_FOUND);
+    }
+
+    return rows[0].tenant_id;
+  }
+
+  /** Validate target user is active in caller's tenant, return their tenant_id */
+  private async resolveUserTenant(userId: number, tenantId: number): Promise<number> {
+    const rows = await this.db.queryAsTenant<{ tenant_id: number }>(
+      GET_USER_TENANT_QUERY,
+      [userId],
+      tenantId,
+    );
+
+    if (rows.length === 0 || rows[0] === undefined) {
+      throw new NotFoundException(ERROR_USER_NOT_FOUND);
+    }
+
+    return rows[0].tenant_id;
+  }
 
   /**
    * GET /admin-permissions/my
@@ -102,15 +142,9 @@ export class AdminPermissionsController {
   @Roles('root')
   async getAdminPermissions(
     @Param('adminId', ParseIntPipe) adminId: number,
+    @TenantId() tenantId: number,
   ): Promise<AdminPermissionsResponse> {
-    // Get the admin's tenant ID
-    const adminRows = await this.db.query<{ tenant_id: number }>(GET_ADMIN_TENANT_QUERY, [adminId]);
-
-    if (adminRows.length === 0 || adminRows[0] === undefined) {
-      throw new Error(ERROR_ADMIN_NOT_FOUND);
-    }
-
-    const targetTenantId = adminRows[0].tenant_id;
+    const targetTenantId = await this.resolveAdminTenant(adminId, tenantId);
     return await this.adminPermissionsService.getAdminPermissions(adminId, targetTenantId);
   }
 
@@ -123,17 +157,9 @@ export class AdminPermissionsController {
   async setPermissions(
     @Body() dto: SetPermissionsDto,
     @CurrentUser() user: JwtPayload,
+    @TenantId() tenantId: number,
   ): Promise<MessageResponse> {
-    // Get the admin's tenant ID
-    const adminRows = await this.db.query<{ tenant_id: number }>(GET_ADMIN_TENANT_QUERY, [
-      dto.adminId,
-    ]);
-
-    if (adminRows.length === 0 || adminRows[0] === undefined) {
-      throw new Error(ERROR_ADMIN_NOT_FOUND);
-    }
-
-    const targetTenantId = adminRows[0].tenant_id;
+    const targetTenantId = await this.resolveAdminTenant(dto.adminId, tenantId);
 
     // Set department permissions
     await this.adminPermissionsService.setDepartmentPermissions(
@@ -168,15 +194,9 @@ export class AdminPermissionsController {
     @Param('adminId', ParseIntPipe) adminId: number,
     @Param('departmentId', ParseIntPipe) departmentId: number,
     @CurrentUser() user: JwtPayload,
+    @TenantId() tenantId: number,
   ): Promise<MessageResponse> {
-    // Get the admin's tenant ID
-    const adminRows = await this.db.query<{ tenant_id: number }>(GET_ADMIN_TENANT_QUERY, [adminId]);
-
-    if (adminRows.length === 0 || adminRows[0] === undefined) {
-      throw new Error(ERROR_ADMIN_NOT_FOUND);
-    }
-
-    const targetTenantId = adminRows[0].tenant_id;
+    const targetTenantId = await this.resolveAdminTenant(adminId, tenantId);
 
     await this.adminPermissionsService.removeDepartmentPermission(
       adminId,
@@ -198,15 +218,9 @@ export class AdminPermissionsController {
     @Param('adminId', ParseIntPipe) adminId: number,
     @Param('groupId', ParseIntPipe) groupId: number,
     @CurrentUser() user: JwtPayload,
+    @TenantId() tenantId: number,
   ): Promise<MessageResponse> {
-    // Get the admin's tenant ID
-    const adminRows = await this.db.query<{ tenant_id: number }>(GET_ADMIN_TENANT_QUERY, [adminId]);
-
-    if (adminRows.length === 0 || adminRows[0] === undefined) {
-      throw new Error(ERROR_ADMIN_NOT_FOUND);
-    }
-
-    const targetTenantId = adminRows[0].tenant_id;
+    const targetTenantId = await this.resolveAdminTenant(adminId, tenantId);
 
     // DEPRECATED: Always throws NotFoundException - groups system removed (never returns)
     this.adminPermissionsService.removeGroupPermission(adminId, groupId, user.id, targetTenantId);
@@ -243,15 +257,9 @@ export class AdminPermissionsController {
     @Param('adminId', ParseIntPipe) adminId: number,
     @Param('departmentId', ParseIntPipe) departmentId: number,
     @Param('permissionLevel') permissionLevel: string,
+    @TenantId() tenantId: number,
   ): Promise<PermissionCheckResult> {
-    // Get the admin's tenant ID
-    const adminRows = await this.db.query<{ tenant_id: number }>(GET_ADMIN_TENANT_QUERY, [adminId]);
-
-    if (adminRows.length === 0 || adminRows[0] === undefined) {
-      throw new Error(ERROR_ADMIN_NOT_FOUND);
-    }
-
-    const targetTenantId = adminRows[0].tenant_id;
+    const targetTenantId = await this.resolveAdminTenant(adminId, tenantId);
     let level: PermissionLevel = 'read';
     if (permissionLevel === 'write') {
       level = 'write';
@@ -276,15 +284,9 @@ export class AdminPermissionsController {
   async checkAccess(
     @Param('adminId', ParseIntPipe) adminId: number,
     @Param('departmentId', ParseIntPipe) departmentId: number,
+    @TenantId() tenantId: number,
   ): Promise<PermissionCheckResult> {
-    // Get the admin's tenant ID
-    const adminRows = await this.db.query<{ tenant_id: number }>(GET_ADMIN_TENANT_QUERY, [adminId]);
-
-    if (adminRows.length === 0 || adminRows[0] === undefined) {
-      throw new Error(ERROR_ADMIN_NOT_FOUND);
-    }
-
-    const targetTenantId = adminRows[0].tenant_id;
+    const targetTenantId = await this.resolveAdminTenant(adminId, tenantId);
 
     return await this.adminPermissionsService.checkAccess(
       adminId,
@@ -304,15 +306,9 @@ export class AdminPermissionsController {
     @Param('userId', ParseIntPipe) userId: number,
     @Body() dto: SetAreaPermissionsDto,
     @CurrentUser() user: JwtPayload,
+    @TenantId() tenantId: number,
   ): Promise<MessageResponse> {
-    // Get user tenant
-    const userRows = await this.db.query<{ tenant_id: number }>(GET_USER_TENANT_QUERY, [userId]);
-
-    if (userRows.length === 0 || userRows[0] === undefined) {
-      throw new Error(ERROR_USER_NOT_FOUND);
-    }
-
-    const targetTenantId = userRows[0].tenant_id;
+    const targetTenantId = await this.resolveUserTenant(userId, tenantId);
 
     await this.adminPermissionsService.setAreaPermissions(
       userId,
@@ -335,15 +331,9 @@ export class AdminPermissionsController {
     @Param('userId', ParseIntPipe) userId: number,
     @Param('areaId', ParseIntPipe) areaId: number,
     @CurrentUser() user: JwtPayload,
+    @TenantId() tenantId: number,
   ): Promise<MessageResponse> {
-    // Get user tenant
-    const userRows = await this.db.query<{ tenant_id: number }>(GET_USER_TENANT_QUERY, [userId]);
-
-    if (userRows.length === 0 || userRows[0] === undefined) {
-      throw new Error(ERROR_USER_NOT_FOUND);
-    }
-
-    const targetTenantId = userRows[0].tenant_id;
+    const targetTenantId = await this.resolveUserTenant(userId, tenantId);
 
     await this.adminPermissionsService.removeAreaPermission(
       userId,
@@ -365,15 +355,9 @@ export class AdminPermissionsController {
     @Param('userId', ParseIntPipe) userId: number,
     @Body() dto: SetFullAccessDto,
     @CurrentUser() user: JwtPayload,
+    @TenantId() tenantId: number,
   ): Promise<MessageResponse> {
-    // Get user tenant
-    const userRows = await this.db.query<{ tenant_id: number }>(GET_USER_TENANT_QUERY, [userId]);
-
-    if (userRows.length === 0 || userRows[0] === undefined) {
-      throw new Error(ERROR_USER_NOT_FOUND);
-    }
-
-    const targetTenantId = userRows[0].tenant_id;
+    const targetTenantId = await this.resolveUserTenant(userId, tenantId);
 
     await this.adminPermissionsService.setHasFullAccess(
       userId,
