@@ -67,6 +67,7 @@ export const ICONS: Record<string, string> = {
   logs: '<i class="fas fa-list-alt"></i>',
   desktop: '<i class="fas fa-desktop"></i>',
   warehouse: '<i class="fas fa-warehouse"></i>',
+  'boxes-stacked': '<i class="fas fa-boxes-stacked"></i>',
   tasks: '<i class="fas fa-tasks"></i>',
 };
 
@@ -305,6 +306,13 @@ const ROOT_STATIC_BOTTOM: NavItem[] = [
     submenu: WORK_ORDERS_ADMIN_SUBMENU,
   },
   {
+    id: 'inventory',
+    icon: ICONS['boxes-stacked'],
+    label: 'Inventar',
+    url: '/inventory',
+    addonCode: 'inventory',
+  },
+  {
     id: 'approvals',
     icon: ICONS['check-double'],
     label: 'Freigaben',
@@ -437,6 +445,13 @@ const ADMIN_STATIC_BOTTOM: NavItem[] = [
     submenu: WORK_ORDERS_ADMIN_SUBMENU,
   },
   {
+    id: 'inventory',
+    icon: ICONS['boxes-stacked'],
+    label: 'Inventar',
+    url: '/inventory',
+    addonCode: 'inventory',
+  },
+  {
     id: 'approvals',
     icon: ICONS['check-double'],
     label: 'Freigaben',
@@ -567,6 +582,13 @@ const EMPLOYEE_MENU_STATIC: NavItem[] = [
     url: '/work-orders',
     badgeType: 'workOrders',
     addonCode: 'work_orders',
+  },
+  {
+    id: 'inventory',
+    icon: ICONS['boxes-stacked'],
+    label: 'Inventar',
+    url: '/inventory',
+    addonCode: 'inventory',
   },
   {
     id: 'chat',

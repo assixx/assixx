@@ -10,7 +10,7 @@ import { type INestApplicationContext, Logger } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import 'dotenv/config';
 import * as http from 'http';
-import { IncomingMessage, ServerResponse } from 'http';
+import { type IncomingMessage, type ServerResponse } from 'http';
 
 import { TenantDeletionService } from '../nest/tenant-deletion/tenant-deletion.service.js';
 import { DeletionWorkerModule } from './deletion-worker.module.js';

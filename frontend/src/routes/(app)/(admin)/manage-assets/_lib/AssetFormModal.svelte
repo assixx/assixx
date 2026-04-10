@@ -428,7 +428,7 @@
         </button>
         <button
           type="submit"
-          class="btn btn-primary"
+          class="btn btn-secondary"
           disabled={assetState.submitting}
         >
           {#if assetState.submitting}<span class="spinner-ring spinner-ring--sm mr-2"></span>{/if}

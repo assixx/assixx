@@ -4,13 +4,7 @@
 
 import { DEFAULT_HIERARCHY_LABELS, type HierarchyLabels } from '$lib/types/hierarchy-labels';
 
-import {
-  STATUS_BADGE_CLASSES,
-  STATUS_LABELS,
-  MACHINE_TYPE_LABELS,
-  MESSAGES,
-  type AssetMessages,
-} from './constants';
+import { MACHINE_TYPE_LABELS, MESSAGES, type AssetMessages } from './constants';
 
 import type { Asset, AssetFormData, AssetStatus, AssetStatusFilter, AssetTeamInfo } from './types';
 
@@ -30,20 +24,6 @@ export interface BadgeData {
 // =============================================================================
 // STATUS HELPERS
 // =============================================================================
-
-/**
- * Get CSS class for status badge
- */
-export function getStatusBadgeClass(status: AssetStatus): string {
-  return STATUS_BADGE_CLASSES[status];
-}
-
-/**
- * Get localized status label
- */
-export function getStatusLabel(status: AssetStatus): string {
-  return STATUS_LABELS[status];
-}
 
 // =============================================================================
 // BADGE HELPERS (for Table Display)
@@ -135,49 +115,12 @@ export function getAssetTypeLabel(type: string): string {
 // MAINTENANCE HELPERS
 // =============================================================================
 
-/** Get maintenance warning status */
-export function getMaintenanceWarningStatus(
-  nextMaintenance?: string,
-): 'overdue' | 'soon' | 'ok' | null {
-  if (nextMaintenance === undefined || nextMaintenance === '') return null;
-
-  const maintenanceDate = new Date(nextMaintenance);
-  const today = new Date();
-  const daysUntil = Math.floor(
-    (maintenanceDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24),
-  );
-
-  if (daysUntil < 0) {
-    return 'overdue';
-  } else if (daysUntil <= 7) {
-    return 'soon';
-  }
-  return 'ok';
-}
-
-/**
- * Format date for German locale display
- */
-export function formatDateDE(dateString?: string): string {
-  if (dateString === undefined || dateString === '') return '-';
-  const date = new Date(dateString);
-  return date.toLocaleDateString('de-DE');
-}
-
 /**
  * Format date string to YYYY-MM-DD for HTML date input
  */
-export function formatDateForInput(dateString?: string): string {
+function formatDateForInput(dateString?: string): string {
   if (dateString === undefined || dateString === '') return '';
   return new Date(dateString).toISOString().split('T')[0] ?? '';
-}
-
-/**
- * Format operating hours for display
- */
-export function formatOperatingHours(hours?: number): string {
-  if (hours === undefined || hours <= 0) return '-';
-  return `${hours}h`;
 }
 
 // =============================================================================

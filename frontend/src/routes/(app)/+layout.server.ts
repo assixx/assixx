@@ -221,6 +221,7 @@ const UNAUTHENTICATED_RESPONSE = {
   activeAddons: [] as string[],
   hierarchyLabels: DEFAULT_HIERARCHY_LABELS,
   orgScope: DEFAULT_ORG_SCOPE,
+  activeRole: null as string | null,
 } as const;
 
 /** Build authenticated response from user data, counts, theme, addons, and labels */
@@ -231,6 +232,7 @@ async function buildAuthenticatedResponse(
   addonsResponse: Response | null,
   labelsResponse: Response | null,
   scopeResponse: Response | null,
+  activeRole: string | null,
 ) {
   return {
     user: mapUserData(userData),
@@ -241,6 +243,7 @@ async function buildAuthenticatedResponse(
     activeAddons: await parseActiveAddons(addonsResponse),
     hierarchyLabels: await parseHierarchyLabels(labelsResponse),
     orgScope: await parseOrgScope(scopeResponse),
+    activeRole,
   };
 }
 
@@ -339,6 +342,9 @@ export const load: LayoutServerLoad = async ({ cookies, fetch, url, locals }) =>
     'Content-Type': 'application/json',
   };
 
+  // Read activeRole cookie for SSR banner rendering (non-sensitive UI state)
+  const activeRole = cookies.get('activeRole') ?? null;
+
   // Check if RBAC hook already fetched user data (saves ~50-80ms!)
   const rbacUser = locals.user as UserData | undefined;
 
@@ -362,12 +368,13 @@ export const load: LayoutServerLoad = async ({ cookies, fetch, url, locals }) =>
       addonsResponse,
       labelsResponse,
       scopeResponse,
+      activeRole,
     );
   }
 
   // SLOW PATH: RBAC hook didn't set user - fetch both in parallel
   log.warn({ pathname: url.pathname }, '🐢 SLOW PATH: No RBAC user, fetching /users/me + /counts');
-  return await loadUserWithFetch(cookies, fetch, headers, startTime, url.pathname);
+  return await loadUserWithFetch(cookies, fetch, headers, startTime, url.pathname, activeRole);
 };
 
 /** Load user via API fetch (slow path when RBAC user not available) */
@@ -377,6 +384,7 @@ async function loadUserWithFetch(
   headers: Record<string, string>,
   startTime: number,
   pathname: string,
+  activeRole: string | null,
 ) {
   const fetchStart = performance.now();
   const {
@@ -415,5 +423,6 @@ async function loadUserWithFetch(
     addonsResponse,
     labelsResponse,
     scopeResponse,
+    activeRole,
   );
 }

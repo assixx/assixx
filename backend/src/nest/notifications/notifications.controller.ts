@@ -31,7 +31,7 @@ import {
   Sse,
   UseGuards,
 } from '@nestjs/common';
-import { Observable, Subject, interval, map, merge, takeUntil } from 'rxjs';
+import { Observable, Subject, type Subscriber, interval, map, merge, takeUntil } from 'rxjs';
 
 import { eventBus } from '../../utils/event-bus.js';
 import { CurrentUser } from '../common/decorators/current-user.decorator.js';
@@ -838,7 +838,7 @@ export class NotificationsController {
     });
 
     // Merge streams
-    type SSESubscriber = import('rxjs').Subscriber<{ data: SSEMessageData }>;
+    type SSESubscriber = Subscriber<{ data: SSEMessageData }>;
     return merge(
       new Observable<{ data: SSEMessageData }>((subscriber: SSESubscriber) => {
         subscriber.next({ data: initialMessage });

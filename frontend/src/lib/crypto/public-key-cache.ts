@@ -84,8 +84,3 @@ async function fetchAndCachePublicKey(userId: number): Promise<CachedPublicKey |
 export function clearPublicKeyCache(): void {
   cache.clear();
 }
-
-/** Remove a specific user's cached key (e.g., after key reset notification) */
-export function invalidatePublicKey(userId: number): void {
-  cache.delete(userId);
-}

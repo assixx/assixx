@@ -27,8 +27,7 @@
 
 <div
   class="welcome-hero-custom relative mb-8 flex min-h-[120px] items-center
-    justify-between overflow-hidden rounded-xl border border-white/10 px-4 py-4
-    text-white shadow-sm backdrop-blur-[20px] backdrop-saturate-[180%]
+    justify-between overflow-hidden px-4 py-4
     md:px-6 md:py-5 lg:px-8 lg:py-6"
 >
   <!-- Floating sakura petals (generated via floatingDotsCount) -->
@@ -43,7 +42,7 @@
     <h1 class="mb-1 text-xl font-bold md:text-2xl lg:text-3xl">
       {MESSAGES.welcomeBack}
     </h1>
-    <p class="text-base text-white/90 md:text-lg">
+    <p class="welcome-subtitle text-base md:text-lg">
       {MESSAGES.niceToSeeYou}&nbsp;
       <span class="employee-name-hero text-2xl font-bold">{employeeName}</span>
     </p>
@@ -51,27 +50,15 @@
 </div>
 
 <style>
-  /* Welcome Hero Custom Background */
-  .welcome-hero-custom {
-    background: var(--glass-bg);
-    background-image:
-      radial-gradient(
-        circle at 20% 80%,
-        color-mix(in oklch, var(--color-white) 10%, transparent) 0%,
-        transparent 50%
-      ),
-      radial-gradient(
-        circle at 80% 20%,
-        oklch(38.4% 0.0484 232.42) 0%,
-        oklch(42.65% 0.0725 238.66 / 63%) 50%
-      );
+  .welcome-subtitle {
+    color: var(--color-text-secondary);
   }
 
   .employee-name-hero {
     background: linear-gradient(
       135deg,
-      var(--color-black) 0%,
-      var(--color-black) 33%,
+      var(--color-text-secondary) 0%,
+      var(--color-text-secondary) 33%,
       oklch(55.31% 0.1943 255.69) 66%,
       oklch(77.78% 0.1186 233.08) 83%,
       oklch(59.25% 0.2653 356.48) 100%

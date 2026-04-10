@@ -154,7 +154,7 @@
       </button>
       <button
         type="submit"
-        class={action === 'approve' ? 'btn btn-primary' : 'btn btn-danger'}
+        class={action === 'approve' ? 'btn btn-secondary' : 'btn btn-danger'}
       >
         {action === 'approve' ? 'Genehmigen' : 'Ablehnen'}
       </button>

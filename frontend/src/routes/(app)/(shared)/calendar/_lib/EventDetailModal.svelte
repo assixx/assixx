@@ -348,7 +348,7 @@
     min-width: 120px;
   }
 
-  .modal-actions :global(.btn-primary),
+  .modal-actions :global(.btn-secondary),
   .modal-actions :global(.btn-danger) {
     flex: 0 1 auto;
   }

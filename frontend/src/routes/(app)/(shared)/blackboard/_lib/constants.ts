@@ -132,10 +132,6 @@ export function createLevelFilterOptions(labels: HierarchyLabels): LevelFilterOp
   ];
 }
 
-/** Default level filter options (backward-compatible) */
-export const LEVEL_FILTER_OPTIONS: LevelFilterOption[] =
-  createLevelFilterOptions(DEFAULT_HIERARCHY_LABELS);
-
 // ============================================================================
 // Form Defaults
 // ============================================================================

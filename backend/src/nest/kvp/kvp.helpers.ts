@@ -187,7 +187,7 @@ export function buildVisibilityClause(
 }
 
 /** Build parameterized arrays for org-based visibility checks */
-export function buildOrgParams(
+function buildOrgParams(
   orgInfo: ExtendedUserOrgInfo,
   userId: number,
   startIdx: number,

@@ -1,4 +1,4 @@
-# ADR-009: User Role Assignment & Permission System
+# ADR-010: User Role Assignment & Permission System
 
 | Metadata                | Value                                                            |
 | ----------------------- | ---------------------------------------------------------------- |

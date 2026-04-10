@@ -8,6 +8,10 @@ export default defineConfig(({ mode }) => ({
   plugins: [
     // Sentry MUSS vor SvelteKit kommen!
     sentrySvelteKit({
+      // Dev: disable auto-instrumentation to prevent SvelteKit dev-mode warnings
+      // (history.pushState conflict with SvelteKit router, window.fetch wrapper).
+      // tracesSampleRate: 0 in dev → no spans collected → no value lost.
+      autoInstrument: mode !== 'development',
       autoUploadSourceMaps:
         process.env.SENTRY_AUTH_TOKEN !== undefined && process.env.SENTRY_AUTH_TOKEN !== '',
       sourceMapsUploadOptions: {

@@ -181,7 +181,7 @@
       </button>
       <button
         type="button"
-        class="btn btn-primary"
+        class="btn btn-secondary"
         onclick={() => void handleSubmit()}
         disabled={submitting}
       >

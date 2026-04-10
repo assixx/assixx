@@ -11,6 +11,7 @@
  * @see archive/frontend-legacy/src/scripts/components/navigation/handlers.ts
  */
 
+import { setActiveRole } from './auth';
 import { createLogger } from './logger';
 
 const log = createLogger('RoleSyncManager');
@@ -130,7 +131,7 @@ export class RoleSyncManager {
           log.info({ newRole }, 'BroadcastChannel: Role switched');
 
           // Update localStorage from the message (in case storage event didn't fire)
-          localStorage.setItem('activeRole', newRole);
+          setActiveRole(newRole);
           if (token !== undefined && token !== '') {
             localStorage.setItem('accessToken', token);
           }

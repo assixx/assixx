@@ -29,7 +29,7 @@ const STATIC_FOLDER_LABELS: Partial<Record<DocumentCategory, string>> = {
 };
 
 /** Factory: folder definitions with dynamic hierarchy labels */
-export function createFolderDefinitions(labels: HierarchyLabels) {
+function createFolderDefinitions(labels: HierarchyLabels) {
   const dynamicLabels: Record<DocumentCategory, string> = {
     ...STATIC_FOLDER_LABELS,
     team: `${labels.team} Dokumente`,
@@ -69,7 +69,7 @@ export const SORT_LABELS: Record<SortOption, string> = {
 };
 
 /** Factory: category labels with dynamic hierarchy labels */
-export function createCategoryLabels(labels: HierarchyLabels): Record<DocumentCategory, string> {
+function createCategoryLabels(labels: HierarchyLabels): Record<DocumentCategory, string> {
   return {
     all: 'Alle Dokumente',
     personal: 'Persönliche Dokumente',
@@ -128,7 +128,7 @@ export const CATEGORY_MAPPINGS: Record<string, CategoryMapping> = {
 };
 
 /** Factory: upload category options with dynamic hierarchy labels */
-export function createUploadCategoryOptions(labels: HierarchyLabels): {
+function createUploadCategoryOptions(labels: HierarchyLabels): {
   value: string;
   label: string;
   icon: string;
@@ -239,7 +239,7 @@ const BASE_MESSAGES = {
 } as const;
 
 /** Factory: documents messages with dynamic hierarchy labels */
-export function createDocumentsMessages(labels: HierarchyLabels) {
+function createDocumentsMessages(labels: HierarchyLabels) {
   return {
     ...BASE_MESSAGES,
     UPLOAD_NO_TEAM: `Sie müssen einem ${labels.team} zugeordnet sein, um ${labels.team}-Dokumente hochzuladen!`,

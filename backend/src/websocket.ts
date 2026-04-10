@@ -1,12 +1,12 @@
 import { IS_ACTIVE } from '@assixx/shared/constants';
-import { IncomingMessage, Server } from 'http';
+import { type IncomingMessage, type Server } from 'http';
 import { Redis } from 'ioredis';
-import { WebSocket, Data as WebSocketData, WebSocketServer } from 'ws';
+import { WebSocket, type Data as WebSocketData, WebSocketServer } from 'ws';
 import { z } from 'zod';
 
 import { CONNECTION_TICKET_PREFIX } from './nest/auth/connection-ticket.service.js';
 import type { PresenceStore } from './nest/chat/presence.store.js';
-import { DatabaseService } from './nest/database/database.service.js';
+import { type DatabaseService } from './nest/database/database.service.js';
 import { type ReadReceiptEntry, eventBus } from './utils/event-bus.js';
 import { logger } from './utils/logger.js';
 import {

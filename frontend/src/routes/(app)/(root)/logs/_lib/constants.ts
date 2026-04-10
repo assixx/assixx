@@ -3,7 +3,7 @@
  * Configuration, labels, and dropdown options
  */
 
-import { DEFAULT_HIERARCHY_LABELS, type HierarchyLabels } from '$lib/types/hierarchy-labels';
+import { type HierarchyLabels } from '$lib/types/hierarchy-labels';
 
 import type { DropdownOption } from './types';
 
@@ -63,9 +63,6 @@ export function createEntityOptions(labels: HierarchyLabels): DropdownOption[] {
     { value: 'kvp_suggestion', text: 'KVP-Vorschlag' },
   ];
 }
-
-/** Backward-compatible static export */
-export const ENTITY_OPTIONS = createEntityOptions(DEFAULT_HIERARCHY_LABELS);
 
 // ============================================================================
 // Timerange Dropdown Options
@@ -174,15 +171,6 @@ export const EXPORT_SOURCE_OPTIONS: DropdownOption[] = [
   { value: 'audit_trail', text: 'Audit Trail (API-Logs)' },
   { value: 'root_logs', text: 'System-Logs (Admin)' },
 ];
-
-/** Default export date range (last 30 days) */
-export const DEFAULT_EXPORT_DAYS = 30;
-
-/** Maximum export date range (365 days - enforced by backend) */
-export const MAX_EXPORT_DAYS = 365;
-
-/** Rate limit duration in milliseconds (1 minute) */
-export const EXPORT_RATE_LIMIT_MS = 60000;
 
 /** Quick timerange option interface */
 interface QuickTimerangeOption {

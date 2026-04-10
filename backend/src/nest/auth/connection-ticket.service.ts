@@ -57,9 +57,8 @@ export class ConnectionTicketService implements OnModuleDestroy {
   `;
 
   constructor(private readonly configService: ConfigService) {
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-arguments -- NestJS ConfigService uses NoInferType<T>, so TS cannot infer from default value; removing <string> causes no-unsafe-assignment
     const redisHost = this.configService.get<string>('REDIS_HOST', 'redis');
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-arguments -- same: NoInferType<T> prevents inference from numeric default
+
     const redisPort = this.configService.get<number>('REDIS_PORT', 6379);
     const redisPassword = this.configService.get<string>('REDIS_PASSWORD');
 

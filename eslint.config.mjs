@@ -262,6 +262,19 @@ export default [
       '@typescript-eslint/no-unsafe-return': 'error',
       '@typescript-eslint/no-unsafe-argument': 'error',
       '@typescript-eslint/only-throw-error': 'error',
+      // Enforce explicit `import type` for type-only imports (ADR-041 partial).
+      // NOTE: With experimentalDecorators + emitDecoratorMetadata, the rule
+      // automatically skips files that contain decorators. So this catches
+      // type-import drift only in non-decorator files (utils, workers,
+      // websocket, main.ts) — covering ~10 violations as of 2026-04-07.
+      // For full coverage including decorator files, see ADR-041 Open Items.
+      '@typescript-eslint/consistent-type-imports': [
+        'error',
+        {
+          prefer: 'type-imports',
+          fixStyle: 'inline-type-imports',
+        },
+      ],
 
       'no-eval': 'error',
       'no-implied-eval': 'error',

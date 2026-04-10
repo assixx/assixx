@@ -11,7 +11,6 @@ import {
   AVAILABILITY_BADGE_CLASSES,
   AVAILABILITY_ICONS,
   AVAILABILITY_LABELS,
-  AVAILABILITY_STATUS_LABELS,
 } from './constants';
 
 import type {
@@ -234,7 +233,7 @@ export function getPlannedAvailability(user: RootUser): string {
   const status = user.availabilityStatus ?? 'available';
   if (status === 'available') return '-';
 
-  const statusText = AVAILABILITY_STATUS_LABELS[status];
+  const statusText = AVAILABILITY_LABELS[status];
   const startDate = user.availabilityStart;
   const endDate = user.availabilityEnd;
 

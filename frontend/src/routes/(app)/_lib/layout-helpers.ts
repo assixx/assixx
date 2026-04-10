@@ -3,6 +3,8 @@
 // Pure functions with explicit deps (no $state, no runes)
 // =============================================================================
 
+import { clearActiveRole } from '$lib/utils/auth';
+
 import type { WebSocketCallbacks } from '../(shared)/chat/_lib/handlers';
 
 // ─── Presence WebSocket ──────────────────────────────────────────────
@@ -99,7 +101,7 @@ export async function performLogout(deps: LogoutDeps): Promise<void> {
 
   // Clear all tokens and role data from localStorage
   localStorage.removeItem('userRole');
-  localStorage.removeItem('activeRole');
+  clearActiveRole();
   localStorage.removeItem('token'); // Legacy token
   localStorage.removeItem('accessToken');
   // NOTE: refreshToken is in HttpOnly cookie, cleared by backend on /auth/logout

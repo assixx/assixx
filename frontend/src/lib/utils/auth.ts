@@ -51,23 +51,6 @@ export function getAuthToken(): string | null {
 }
 
 /**
- * Get refresh token status.
- *
- * INTERNAL USE ONLY - Do not import directly!
- * Use getTokenManager().getRefreshToken() instead.
- *
- * IMPORTANT: The actual refresh token is now in an HttpOnly cookie (cannot be read by JS).
- * This function returns a placeholder if user appears logged in (has accessToken).
- * Kept for internal backward compatibility only - NOT exported from index.ts.
- */
-export function getRefreshToken(): string | null {
-  if (!isBrowser()) return null;
-  // Can't read HttpOnly cookie, but assume it exists if we have accessToken
-  const accessToken = localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
-  return accessToken !== null ? 'HTTPONLY_COOKIE' : null;
-}
-
-/**
  * Set the auth token in localStorage.
  *
  * NOTE: Only stores accessToken. The refreshToken is now stored as an HttpOnly cookie
@@ -82,41 +65,6 @@ export function setAuthToken(token: string): void {
   // Token received timestamp (for clock skew fix)
   localStorage.setItem(STORAGE_KEYS.TOKEN_RECEIVED_AT, Date.now().toString());
   // NOTE: refreshToken is NOT stored in localStorage anymore (HttpOnly cookie)
-}
-
-/**
- * Remove the auth token (logout)
- *
- * NOTE: The HttpOnly refresh token cookie is cleared by the backend on /auth/logout.
- * This function only clears localStorage items that JavaScript can access.
- */
-export function removeAuthToken(): void {
-  if (!isBrowser()) return;
-
-  // ===========================================
-  // AUTH TOKENS (CRITICAL - must be cleared)
-  // ===========================================
-  localStorage.removeItem(STORAGE_KEYS.ACCESS_TOKEN);
-  // NOTE: refreshToken is in HttpOnly cookie, cleared by backend on logout
-  localStorage.removeItem(STORAGE_KEYS.TOKEN_RECEIVED_AT);
-  localStorage.removeItem(STORAGE_KEYS.TOKEN_LEGACY);
-  localStorage.removeItem('authToken'); // Legacy v1 token
-
-  // ===========================================
-  // USER DATA
-  // ===========================================
-  localStorage.removeItem('user');
-  localStorage.removeItem('role'); // Legacy role
-  clearUserRole(); // Clears userRole + activeRole
-
-  // NOTE: HttpOnly cookies (refreshToken) are cleared by backend on /auth/logout
-}
-
-/** Build Authorization header */
-export function getAuthHeader(): Record<string, string> {
-  const token = getAuthToken();
-  if (token === null) return {};
-  return { Authorization: `Bearer ${token}` };
 }
 
 // =============================================================================
@@ -148,28 +96,6 @@ export function getUserRole(): UserRole | null {
 }
 
 /**
- * Get the active role (for role switching functionality)
- * Falls back to getUserRole if no active role is set
- */
-export function getActiveRole(): UserRole | null {
-  if (!isBrowser()) return null;
-
-  const activeRole = localStorage.getItem(STORAGE_KEYS.ACTIVE_ROLE);
-
-  // Explicit null and empty string check and validate that the role is a valid UserRole
-  if (
-    activeRole !== null &&
-    activeRole !== '' &&
-    (activeRole === 'root' || activeRole === 'admin' || activeRole === 'employee')
-  ) {
-    return activeRole;
-  }
-
-  // Fall back to user's actual role
-  return getUserRole();
-}
-
-/**
  * Set user role in localStorage (for login)
  * Returns true if successful, false if invalid role
  */
@@ -186,13 +112,33 @@ export function setUserRole(role: string): boolean {
   return true;
 }
 
+// =============================================================================
+// ACTIVE ROLE MANAGEMENT (localStorage + Cookie for SSR)
+// =============================================================================
+
 /**
- * Clear user role from localStorage (for logout)
+ * Set the active role in localStorage AND as a cookie.
+ * The cookie enables SSR to render the role-switch banner without waiting for hydration.
+ * Not a security concern — activeRole is pure UI state ('admin'/'root'/'employee'),
+ * not an auth token. All real auth decisions use the JWT httpOnly cookie.
  */
-export function clearUserRole(): void {
+export function setActiveRole(role: string): void {
   if (!isBrowser()) return;
-  localStorage.removeItem(STORAGE_KEYS.USER_ROLE);
+  if (role !== 'root' && role !== 'admin' && role !== 'employee') {
+    log.error({ role }, 'Attempted to set invalid active role');
+    return;
+  }
+  localStorage.setItem(STORAGE_KEYS.ACTIVE_ROLE, role);
+  document.cookie = `activeRole=${role}; path=/; SameSite=Strict; max-age=86400`;
+}
+
+/**
+ * Clear the active role from localStorage AND cookie (logout / session destroy).
+ */
+export function clearActiveRole(): void {
+  if (!isBrowser()) return;
   localStorage.removeItem(STORAGE_KEYS.ACTIVE_ROLE);
+  document.cookie = 'activeRole=; path=/; max-age=0';
 }
 
 // =============================================================================
@@ -206,30 +152,6 @@ export function isAuthenticated(): boolean {
   const token = getAuthToken();
   const role = getUserRole();
   return token !== null && role !== null;
-}
-
-/**
- * Check if the current user is an admin (admin or root)
- */
-export function isAdmin(): boolean {
-  const role = getUserRole();
-  return role === 'admin' || role === 'root';
-}
-
-/**
- * Check if the current user is root
- */
-export function isRoot(): boolean {
-  const role = getUserRole();
-  return role === 'root';
-}
-
-/**
- * Check if the current user is an employee
- */
-export function isEmployee(): boolean {
-  const role = getUserRole();
-  return role === 'employee';
 }
 
 /**
@@ -279,49 +201,4 @@ export function getRoleDisplayName(role: UserRole | null): string {
     default:
       return 'Unbekannt';
   }
-}
-
-// =============================================================================
-// FULL LOGOUT (combines token + role cleanup)
-// =============================================================================
-
-/**
- * Full logout - clears ALL auth and session data
- * Call this when user logs out manually or session expires
- */
-export function logout(): void {
-  if (!isBrowser()) return;
-
-  // ===========================================
-  // STEP 1: Clear auth tokens (via removeAuthToken)
-  // ===========================================
-  removeAuthToken();
-
-  // ===========================================
-  // STEP 2: Clear session data
-  // ===========================================
-  localStorage.removeItem('tenantId');
-  localStorage.removeItem('lastActivity');
-
-  // ===========================================
-  // STEP 3: Clear fingerprint data
-  // ===========================================
-  localStorage.removeItem('browserFingerprint');
-  localStorage.removeItem('fingerprintTimestamp');
-
-  // ===========================================
-  // STEP 4: Clear UI state (clean slate on next login)
-  // ===========================================
-  localStorage.removeItem('sidebarCollapsed');
-  localStorage.removeItem('openSubmenu');
-  localStorage.removeItem('activeNavigation');
-  localStorage.removeItem('profilePictureCache');
-
-  // ===========================================
-  // STEP 5: Clear feature-specific state
-  // ===========================================
-  localStorage.removeItem('lastKvpClickTimestamp');
-  localStorage.removeItem('lastKnownKvpCount');
-  localStorage.removeItem('shifts_context');
-  localStorage.removeItem('rateLimitTimestamp');
 }

@@ -326,7 +326,7 @@
           >
           <button
             type="button"
-            class="btn btn-primary"
+            class="btn btn-secondary"
             onclick={downloadPhoto}><i class="fas fa-download mr-2"></i>Herunterladen</button
           >
         </div>

@@ -228,7 +228,7 @@
         >
         <button
           type="submit"
-          class="btn btn-primary"
+          class="btn btn-secondary"
           disabled={submitting}
         >
           {#if submitting}

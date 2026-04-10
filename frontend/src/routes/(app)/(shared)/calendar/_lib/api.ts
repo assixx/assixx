@@ -302,10 +302,16 @@ function formatWorkOrderForCalendar(wo: CalendarWorkOrder): EventInput {
   const statusLabel = WORK_ORDER_STATUS_LABELS[wo.status] ?? wo.status;
   const priorityLabel = WORK_ORDER_PRIORITY_LABELS[wo.priority] ?? wo.priority;
 
+  // allDay event needs explicit end (start + 1 day) to span exactly 1 cell
+  const nextDay = new Date(wo.dueDate + 'T00:00:00');
+  nextDay.setDate(nextDay.getDate() + 1);
+  const endDate = nextDay.toISOString().slice(0, 10);
+
   return {
     id: `wo:${wo.uuid}`,
     title: wo.title,
     start: wo.dueDate,
+    end: endDate,
     allDay: true,
     backgroundColor: WORK_ORDER_EVENT_COLOR,
     borderColor: WORK_ORDER_EVENT_COLOR,

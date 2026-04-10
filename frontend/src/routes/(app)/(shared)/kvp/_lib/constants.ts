@@ -203,10 +203,6 @@ export function createVisibilityInfo(
   };
 }
 
-/** Backward-compatible static export */
-export const VISIBILITY_INFO: Record<OrgLevel, { icon: string; text: string }> =
-  createVisibilityInfo(DEFAULT_HIERARCHY_LABELS);
-
 /**
  * Max file upload settings
  */
