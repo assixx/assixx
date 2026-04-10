@@ -187,7 +187,7 @@ docker exec -it assixx-postgres psql -U assixx_user -d assixx
 
 | Container                | Port | Purpose                |
 | ------------------------ | ---- | ---------------------- |
-| `assixx-postgres`        | 5432 | PostgreSQL 17 Database |
+| `assixx-postgres`        | 5432 | PostgreSQL 18 Database |
 | `assixx-redis`           | 6379 | Redis 7 Cache          |
 | `assixx-backend`         | 3000 | NestJS + Fastify API   |
 | `assixx-deletion-worker` | 3002 | Background worker      |

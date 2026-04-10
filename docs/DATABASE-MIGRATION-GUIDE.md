@@ -1,7 +1,7 @@
 # Database Migration Guide - PostgreSQL
 
 > **Last Update:** 2026-03-17
-> **Database:** PostgreSQL 17 with Row Level Security (RLS)
+> **Database:** PostgreSQL 18 with Row Level Security (RLS)
 > **Migration Tool:** `node-pg-migrate` 8.x (TypeScript)
 > **Previous Version:** See `DATABASE-MIGRATION-GUIDE-MYSQL-BACKUP.md` for MySQL guide
 
@@ -964,7 +964,7 @@ docker exec assixx-postgres psql -U assixx_user -d assixx \
 
 ### Prerequisites
 
-- Custom Docker Image: `docker/Dockerfile.pg-partman` (PostgreSQL 17 + pg_partman)
+- Custom Docker Image: `docker/Dockerfile.pg-partman` (PostgreSQL 18 + pg_partman)
 - `shared_preload_libraries` must include `pg_partman_bgw`
 - `max_locks_per_transaction=128` recommended
 

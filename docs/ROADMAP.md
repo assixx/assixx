@@ -2,7 +2,7 @@
 
 > **Letzte Aktualisierung:** 2026-04-02
 > **Version:** 0.4.9
-> **Tech Stack:** NestJS 11 + Fastify, SvelteKit 5, PostgreSQL 17 + RLS, Vitest
+> **Tech Stack:** NestJS 11 + Fastify, SvelteKit 5, PostgreSQL 18 + RLS, Vitest
 > **Domains:** assixx.com, assixx.de
 
 ---

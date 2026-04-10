@@ -14,7 +14,7 @@
     "strictPropertyInitialization": true, // Power of Ten: Klassen müssen initialisiert sein
     "noImplicitThis": true,
     "noImplicitAny": true,
-    "alwaysStrict": true,
+    "alwaysStrict": true, // redundant in TS 6.0 (always-on), kept for documentation
     "useUnknownInCatchVariables": true, // Power of Ten: catch(error) ist unknown, nicht any
     "allowUnusedLabels": false, // Power of Ten Regel 10: Prevent dead code (unused labels)
     "allowUnreachableCode": false, // Power of Ten Regel 10: Prevent dead code (unreachable statements)
@@ -58,7 +58,8 @@
     // ============================================================
     "target": "ES2022",
     "lib": ["ES2024"],
-    "downlevelIteration": true, // Ermöglicht Iteration über NodeList, HTMLCollection, etc.
+    // downlevelIteration removed — hard-deprecated in TS 6.0,
+    // and unnecessary with target ES2022 (iteration natively supported).
 
     // ============================================================
     // MODULE SYSTEM
@@ -66,8 +67,8 @@
     // Backend uses NodeNext, Frontend uses ESNext/bundler
     // ============================================================
     "resolveJsonModule": true,
-    "esModuleInterop": true,
-    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true, // redundant in TS 6.0 (always-on), kept for documentation
+    "allowSyntheticDefaultImports": true, // redundant in TS 6.0 (always-on), kept for documentation
 
     // ============================================================
     // FILE SYSTEM & CASING

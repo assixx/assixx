@@ -14,7 +14,7 @@ Before contributing, read [CODE-OF-CONDUCT.md](./docs/CODE-OF-CONDUCT.md) and th
 | ---------- | ---------------------------------- |
 | Backend    | NestJS 11 + Fastify                |
 | Frontend   | SvelteKit 5 + Tailwind v4          |
-| Database   | PostgreSQL 17 + Row Level Security |
+| Database   | PostgreSQL 18 + Row Level Security |
 | Cache      | Redis 7                            |
 | Secrets    | Doppler                            |
 | Validation | Zod (nestjs-zod)                   |

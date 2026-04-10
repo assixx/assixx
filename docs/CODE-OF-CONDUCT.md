@@ -11,7 +11,7 @@
 - [TYPESCRIPT-STANDARDS.md](./TYPESCRIPT-STANDARDS.md) - Code standards, ESLint rules
 - [POWER-OF-TEN-RULES.md](./POWER-OF-TEN-RULES.md) - NASA/JPL safety-critical rules
 - [eslint.config.js](../eslint.config.js) - Enforced rules
-- [DATABASE-MIGRATION-GUIDE.md](./DATABASE-MIGRATION-GUIDE.md) - PostgreSQL 17 + RLS
+- [DATABASE-MIGRATION-GUIDE.md](./DATABASE-MIGRATION-GUIDE.md) - PostgreSQL 18 + RLS
 
 ---
 
@@ -113,7 +113,7 @@ git merge --no-ff feature/xyz
 
 ---
 
-## Database (PostgreSQL 17)
+## Database (PostgreSQL 18)
 
 ```typescript
 // Parameterized queries - $1, $2, $3

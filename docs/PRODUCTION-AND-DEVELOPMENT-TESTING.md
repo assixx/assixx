@@ -59,7 +59,7 @@ Browser → Nginx (:80) ─┬→ /api/*     → Backend (:3000)
 | `assixx-backend`         | `assixx-backend:dev`   | NestJS + Fastify API   | 3000            |
 | `assixx-frontend`        | `assixx-frontend:prod` | SvelteKit SSR          | 3001            |
 | `assixx-nginx`           | `nginx:alpine`         | Reverse Proxy          | 80              |
-| `assixx-postgres`        | `postgres:17-alpine`   | PostgreSQL Database    | 5432            |
+| `assixx-postgres`        | `postgres:18-alpine`   | PostgreSQL Database    | 5432            |
 | `assixx-redis`           | `redis:7-alpine`       | Redis Cache            | 6379 (internal) |
 | `assixx-deletion-worker` | `assixx-backend:dev`   | Tenant Deletion Worker | 3002            |
 
@@ -405,7 +405,7 @@ echo "API:      http://localhost/api/v2/"
 | Component  | Version     | Notes                       |
 | ---------- | ----------- | --------------------------- |
 | Node.js    | 24.14.0 LTS | Alpine image                |
-| PostgreSQL | 17.7        | Alpine image                |
+| PostgreSQL | 18.3        | Alpine image                |
 | Nginx      | 1.29.4      | Alpine image                |
 | Redis      | 7.4.7       | Alpine image                |
 | NestJS     | 11.1.11     | Latest                      |
