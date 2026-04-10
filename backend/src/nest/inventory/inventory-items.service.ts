@@ -168,9 +168,8 @@ export class InventoryItemsService {
         );
 
         const item = itemResult.rows[0];
-        if (item === undefined) {
-          throw new Error('INSERT RETURNING returned no rows');
-        }
+        /* v8 ignore next -- @preserve INSERT RETURNING always returns rows */
+        if (item === undefined) throw new Error('INSERT RETURNING returned no rows');
 
         await this.upsertCustomValues(client, item.id, dto.customValues);
         return item;

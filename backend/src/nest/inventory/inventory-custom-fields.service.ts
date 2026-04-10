@@ -67,9 +67,8 @@ export class InventoryCustomFieldsService {
     );
 
     const created = rows[0];
-    if (created === undefined) {
-      throw new Error('INSERT RETURNING returned no rows');
-    }
+    /* v8 ignore next -- @preserve INSERT RETURNING always returns rows */
+    if (created === undefined) throw new Error('INSERT RETURNING returned no rows');
     return mapFieldRow(created);
   }
 

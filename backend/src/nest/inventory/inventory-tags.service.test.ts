@@ -218,6 +218,35 @@ describe('InventoryTagsService', () => {
       await expect(service.update('nonexistent', { name: 'X' })).rejects.toThrow(NotFoundException);
     });
 
+    it('should throw NotFoundException when UPDATE RETURNING is empty', async () => {
+      qof.mockResolvedValueOnce(makeTagRow()); // existing found
+      qf.mockResolvedValueOnce([]); // UPDATE returns empty (concurrent delete)
+
+      await expect(service.update('tag-uuid-1', { name: 'X' })).rejects.toThrow(NotFoundException);
+    });
+
+    it('should rethrow non-constraint errors on update', async () => {
+      qof.mockResolvedValueOnce(makeTagRow());
+      qf.mockRejectedValueOnce(new Error('connection terminated'));
+
+      await expect(service.update('tag-uuid-1', { name: 'X' })).rejects.toThrow(
+        'connection terminated',
+      );
+    });
+
+    it('should update both name and icon together', async () => {
+      qof.mockResolvedValueOnce(makeTagRow());
+      qf.mockResolvedValueOnce([makeTagRow({ name: 'Neu', icon: 'fa-star' })]);
+
+      const result = await service.update('tag-uuid-1', { name: 'Neu', icon: 'fa-star' });
+
+      expect(result.name).toBe('Neu');
+      expect(result.icon).toBe('fa-star');
+      const sql = qf.mock.calls[0]?.[0] as string;
+      expect(sql).toContain('name');
+      expect(sql).toContain('icon');
+    });
+
     it('should map duplicate-name on rename to ConflictException', async () => {
       qof.mockResolvedValueOnce(makeTagRow());
       qf.mockRejectedValueOnce(

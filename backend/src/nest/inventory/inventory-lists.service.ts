@@ -183,9 +183,8 @@ export class InventoryListsService {
       );
 
       const created = rows[0];
-      if (created === undefined) {
-        throw new Error('INSERT RETURNING returned no rows');
-      }
+      /* v8 ignore next -- @preserve INSERT RETURNING always returns rows */
+      if (created === undefined) throw new Error('INSERT RETURNING returned no rows');
       createdRow = created;
     } catch (error: unknown) {
       if (getErrorMessage(error).includes('idx_inventory_lists_unique_prefix')) {

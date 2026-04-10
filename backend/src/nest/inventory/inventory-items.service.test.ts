@@ -827,5 +827,106 @@ describe('InventoryItemsService', () => {
         ),
       ).resolves.toBeDefined();
     });
+
+    it('should accept date value for a date field', async () => {
+      setupCreateWithFields([makeFieldRow({ id: 'f-date', field_type: 'date' })]);
+      mockClient.query.mockResolvedValueOnce({ rows: [] }); // cv insert
+
+      await expect(
+        service.create(
+          {
+            listId: 'list-uuid-1',
+            name: 'Kran',
+            customValues: [{ fieldId: 'f-date', valueDate: '2026-04-10' }],
+          } as never,
+          10,
+        ),
+      ).resolves.toBeDefined();
+    });
+
+    it('should skip select option validation when field_options is not an array', async () => {
+      setupCreateWithFields([
+        makeFieldRow({ id: 'f-sel', field_type: 'select', field_options: null }),
+      ]);
+      mockClient.query.mockResolvedValueOnce({ rows: [] }); // cv insert
+
+      await expect(
+        service.create(
+          {
+            listId: 'list-uuid-1',
+            name: 'Kran',
+            customValues: [{ fieldId: 'f-sel', valueText: 'anything' }],
+          } as never,
+          10,
+        ),
+      ).resolves.toBeDefined();
+    });
+
+    it('should skip select option validation when valueText is null', async () => {
+      setupCreateWithFields([
+        makeFieldRow({
+          id: 'f-sel',
+          field_type: 'select',
+          field_options: ['a', 'b'],
+          is_required: false,
+        }),
+      ]);
+
+      await expect(
+        service.create(
+          {
+            listId: 'list-uuid-1',
+            name: 'Kran',
+            customValues: [{ fieldId: 'f-sel' }],
+          } as never,
+          10,
+        ),
+      ).resolves.toBeDefined();
+    });
+  });
+
+  // ── buildItemSetClauses — all field branches ──────────────────
+
+  describe('buildItemSetClauses coverage', () => {
+    it('should include manufacturer, model, serialNumber, yearOfManufacture, notes in SET', async () => {
+      const updated = makeItemRow({
+        manufacturer: 'NewMfg',
+        model: 'NewModel',
+        serial_number: 'SN-999',
+        year_of_manufacture: 2025,
+        notes: 'Notiz',
+      });
+      mockClient.query.mockResolvedValueOnce({ rows: [updated] });
+
+      const result = await service.update('item-uuid-1', {
+        manufacturer: 'NewMfg',
+        model: 'NewModel',
+        serialNumber: 'SN-999',
+        yearOfManufacture: 2025,
+        notes: 'Notiz',
+      } as never);
+
+      expect(result.manufacturer).toBe('NewMfg');
+      expect(result.model).toBe('NewModel');
+      expect(result.serial_number).toBe('SN-999');
+      expect(result.year_of_manufacture).toBe(2025);
+      expect(result.notes).toBe('Notiz');
+      const sql = mockClient.query.mock.calls[0]?.[0] as string;
+      expect(sql).toContain('manufacturer');
+      expect(sql).toContain('model');
+      expect(sql).toContain('serial_number');
+      expect(sql).toContain('year_of_manufacture');
+      expect(sql).toContain('notes');
+    });
+
+    it('should include status in SET when provided via update', async () => {
+      mockClient.query.mockResolvedValueOnce({ rows: [makeItemRow({ status: 'repair' })] });
+
+      const result = await service.update('item-uuid-1', { status: 'repair' } as never);
+
+      expect(result.status).toBe('repair');
+      const sql = mockClient.query.mock.calls[0]?.[0] as string;
+      expect(sql).toContain('status');
+    });
   });
 });

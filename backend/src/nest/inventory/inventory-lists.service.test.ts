@@ -466,6 +466,40 @@ describe('InventoryListsService', () => {
       expect(qf).toHaveBeenCalledTimes(1);
     });
 
+    it('should throw NotFoundException when UPDATE RETURNING is empty in update', async () => {
+      qof.mockResolvedValueOnce(makeListRow()); // existing check
+      qf.mockResolvedValueOnce([]); // UPDATE returns empty (concurrent delete)
+
+      await expect(
+        service.update('list-uuid-1', { title: 'Neuer Titel' } as never),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('should include description, codeSeparator, codeDigits, icon in SET clauses', async () => {
+      qof.mockResolvedValueOnce(makeListRow()); // existing check
+      qf.mockResolvedValueOnce([
+        makeListRow({
+          description: 'Neu',
+          code_separator: '.',
+          code_digits: 4,
+          icon: 'fa-box',
+        }),
+      ]); // UPDATE
+      qf.mockResolvedValueOnce([]); // tag fetch
+
+      const result = await service.update('list-uuid-1', {
+        description: 'Neu',
+        codeSeparator: '.',
+        codeDigits: 4,
+        icon: 'fa-box',
+      } as never);
+
+      expect(result.description).toBe('Neu');
+      expect(result.codeSeparator).toBe('.');
+      expect(result.codeDigits).toBe(4);
+      expect(result.icon).toBe('fa-box');
+    });
+
     it('should map fields to camelCase in findById', async () => {
       qof.mockResolvedValueOnce({ ...makeListRow(), total_items: '0' });
       qf.mockResolvedValueOnce([]); // status counts

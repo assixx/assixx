@@ -247,6 +247,80 @@ describe('InventoryCustomFieldsService', () => {
       expect(result.isRequired).toBe(true);
     });
 
+    it('should throw NotFoundException for empty-dto update when field does not exist', async () => {
+      qf.mockResolvedValueOnce([]); // SELECT returns empty
+
+      await expect(service.update('nonexistent', {} as never)).rejects.toThrow(NotFoundException);
+    });
+
+    it('should include all 6 fields in SET clauses when all provided', async () => {
+      qf.mockResolvedValueOnce([
+        makeFieldRow({
+          field_name: 'Gewicht',
+          field_type: 'number',
+          field_options: null,
+          field_unit: 'kg',
+          is_required: true,
+          sort_order: 5,
+        }),
+      ]);
+
+      await service.update('field-uuid-1', {
+        fieldName: 'Gewicht',
+        fieldType: 'number',
+        fieldOptions: null,
+        fieldUnit: 'kg',
+        isRequired: true,
+        sortOrder: 5,
+      } as never);
+
+      const sql = qf.mock.calls[0]?.[0] as string;
+      expect(sql).toContain('field_name');
+      expect(sql).toContain('field_type');
+      expect(sql).toContain('field_options');
+      expect(sql).toContain('field_unit');
+      expect(sql).toContain('is_required');
+      expect(sql).toContain('sort_order');
+    });
+
+    it('should JSON.stringify fieldOptions array in update', async () => {
+      qf.mockResolvedValueOnce([makeFieldRow({ field_options: ['a', 'b', 'c'] })]);
+
+      await service.update('field-uuid-1', {
+        fieldOptions: ['a', 'b', 'c'],
+      } as never);
+
+      const params = qf.mock.calls[0]?.[1] as unknown[];
+      expect(params[0]).toBe(JSON.stringify(['a', 'b', 'c']));
+    });
+
+    it('should pass null when fieldOptions is null in update', async () => {
+      qf.mockResolvedValueOnce([makeFieldRow({ field_options: null })]);
+
+      await service.update('field-uuid-1', {
+        fieldOptions: null,
+      } as never);
+
+      const params = qf.mock.calls[0]?.[1] as unknown[];
+      expect(params[0]).toBeNull();
+    });
+
+    it('should pass null for fieldOptions when null in create', async () => {
+      qf.mockResolvedValueOnce([{ count: '0' }]);
+      qf.mockResolvedValueOnce([makeFieldRow()]);
+
+      await service.create('list-uuid-1', {
+        fieldName: 'Test',
+        fieldType: 'text',
+        fieldOptions: null,
+        isRequired: false,
+        sortOrder: 0,
+      } as never);
+
+      const insertParams = qf.mock.calls[1]?.[1] as unknown[];
+      expect(insertParams[3]).toBeNull();
+    });
+
     it('should allow setting fieldUnit to null via update', async () => {
       qf.mockResolvedValueOnce([makeFieldRow({ field_unit: null })]);
 

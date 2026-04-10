@@ -461,6 +461,130 @@ describe('Inventory: Update Item', () => {
   });
 });
 
+// ── Photos (Upload, Caption, Reorder, Delete) ─────────────────────
+//
+// Exercises the full photo lifecycle including the drag-and-drop
+// reorder endpoint (PUT /items/:uuid/photos/reorder). Upload uses
+// multipart/form-data with a minimal 1x1 PNG generated in-memory.
+
+describe('Inventory: Photos Lifecycle', () => {
+  let photoIdA: string;
+  let photoIdB: string;
+
+  /** Create a minimal 1x1 red PNG as a File for FormData upload. */
+  function createTestPng(name: string): File {
+    // Minimal valid 1x1 PNG (68 bytes)
+    const png = Buffer.from(
+      'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==',
+      'base64',
+    );
+    return new File([png], name, { type: 'image/png' });
+  }
+
+  /** Upload a test photo and return the created photo ID. */
+  async function uploadTestPhoto(name: string): Promise<string> {
+    const form = new FormData();
+    form.append('file', createTestPng(name));
+    const res = await fetch(`${API}/items/${itemId}/photos`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${auth.authToken}` },
+      body: form,
+    });
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as JsonBody;
+    return body.data.id as string;
+  }
+
+  it('should upload first photo', async () => {
+    photoIdA = await uploadTestPhoto('test-photo-a.png');
+    expect(photoIdA).toBeDefined();
+  });
+
+  it('should upload second photo', async () => {
+    photoIdB = await uploadTestPhoto('test-photo-b.png');
+    expect(photoIdB).toBeDefined();
+  });
+
+  it('should list photos on item detail', async () => {
+    const res = await fetch(`${API}/items/${itemId}`, {
+      headers: authOnly(auth.authToken),
+    });
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as JsonBody;
+    const photos = body.data.photos as Array<{ id: string }>;
+    expect(photos.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it('should update photo caption', async () => {
+    const res = await fetch(`${API}/photos/${photoIdA}`, {
+      method: 'PATCH',
+      headers: authHeaders(auth.authToken),
+      body: JSON.stringify({ caption: 'Vorderansicht' }),
+    });
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as JsonBody;
+    expect(body.data.caption).toBe('Vorderansicht');
+  });
+
+  it('should reorder photos (swap order)', async () => {
+    // Reverse: B before A
+    const res = await fetch(`${API}/items/${itemId}/photos/reorder`, {
+      method: 'PUT',
+      headers: authHeaders(auth.authToken),
+      body: JSON.stringify({ photoIds: [photoIdB, photoIdA] }),
+    });
+    expect(res.status).toBe(200);
+
+    // Verify order persisted
+    const detailRes = await fetch(`${API}/items/${itemId}`, {
+      headers: authOnly(auth.authToken),
+    });
+    expect(detailRes.status).toBe(200);
+    const detailBody = (await detailRes.json()) as JsonBody;
+    const photos = detailBody.data.photos as Array<{ id: string }>;
+    expect(photos[0]?.id).toBe(photoIdB);
+    expect(photos[1]?.id).toBe(photoIdA);
+  });
+
+  it('should reject empty photoIds array with 400 (Zod min(1))', async () => {
+    const res = await fetch(`${API}/items/${itemId}/photos/reorder`, {
+      method: 'PUT',
+      headers: authHeaders(auth.authToken),
+      body: JSON.stringify({ photoIds: [] }),
+    });
+    expect(res.status).toBe(400);
+  });
+
+  it('should delete a photo', async () => {
+    const res = await fetch(`${API}/photos/${photoIdB}`, {
+      method: 'DELETE',
+      headers: authOnly(auth.authToken),
+    });
+    expect(res.status).toBe(200);
+  });
+
+  it('should show one less photo after deletion', async () => {
+    const res = await fetch(`${API}/items/${itemId}`, {
+      headers: authOnly(auth.authToken),
+    });
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as JsonBody;
+    const photos = body.data.photos as Array<{ id: string }>;
+    const deletedStillPresent = photos.find((p: { id: string }): boolean => p.id === photoIdB);
+    expect(deletedStillPresent).toBeUndefined();
+  });
+
+  afterAll(async () => {
+    // Cleanup remaining photo
+    if (photoIdA !== undefined) {
+      await fetch(`${API}/photos/${photoIdA}`, {
+        method: 'DELETE',
+        headers: authOnly(auth.authToken),
+      });
+    }
+  });
+});
+
 // ── Tags (V1.1) ─────────────────────────────────────────────────
 
 describe('Inventory: Tags CRUD', () => {
