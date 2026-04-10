@@ -18,6 +18,7 @@
   import { notificationStore } from '$lib/stores/notification.store.svelte';
   import { syncThemeFromSSR } from '$lib/stores/theme.svelte';
   import { getApiClient } from '$lib/utils/api-client';
+  import { setActiveRole } from '$lib/utils/auth';
   import { createLogger } from '$lib/utils/logger';
   import { perf, logPageLoadTiming, logResourceTiming } from '$lib/utils/perf-logger';
   import { getRoleSyncManager, type RoleSyncManager } from '$lib/utils/role-sync.svelte';
@@ -89,9 +90,18 @@
     typeof window === 'undefined' ? null : localStorage.getItem(key);
 
   const getInitialActiveRole = (): 'root' | 'admin' | 'employee' | 'dummy' => {
+    // Client: localStorage is the source of truth (most recent value)
     const stored = getStorageValue('activeRole');
     if (stored === 'root' || stored === 'admin' || stored === 'employee') {
       return stored;
+    }
+    // SSR: use cookie-based activeRole from server (enables banner rendering without hydration delay)
+    if (
+      data.activeRole === 'root' ||
+      data.activeRole === 'admin' ||
+      data.activeRole === 'employee'
+    ) {
+      return data.activeRole;
     }
     return (data.user?.role ?? 'employee') as 'root' | 'admin' | 'employee' | 'dummy';
   };
@@ -309,7 +319,7 @@
         userRole = ssrUser.role;
         localStorage.setItem('userRole', ssrUser.role);
         if (localStorage.getItem('activeRole') === null) {
-          localStorage.setItem('activeRole', ssrUser.role);
+          setActiveRole(ssrUser.role);
         }
       }
       if (localStorage.getItem('sidebarCollapsed') === 'true') {

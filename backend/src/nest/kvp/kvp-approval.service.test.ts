@@ -37,7 +37,10 @@ vi.mock('../../utils/event-bus.js', () => ({
 
 function createMockDb() {
   const qf = vi.fn();
-  return { query: qf, tenantQuery: qf };
+  // All DB entry points alias the same spy so tests can count total DB calls
+  // regardless of whether the service uses tenantQuery (CLS-scoped),
+  // queryAsTenant (explicit tenantId), or systemQuery (cross-tenant).
+  return { query: qf, tenantQuery: qf, queryAsTenant: qf, systemQuery: qf };
 }
 
 function createMockApprovalsService() {

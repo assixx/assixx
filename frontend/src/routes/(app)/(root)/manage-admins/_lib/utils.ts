@@ -12,7 +12,6 @@ import {
   AVAILABILITY_BADGE_CLASSES,
   AVAILABILITY_ICONS,
   AVAILABILITY_LABELS,
-  AVAILABILITY_STATUS_LABELS,
   BADGE_CLASS,
   MESSAGES,
   PASSWORD_CRACK_TIMES,
@@ -509,7 +508,7 @@ export function getPlannedAvailability(admin: Admin): string {
   const status = admin.availabilityStatus ?? 'available';
   if (status === 'available') return '-';
 
-  const statusText = AVAILABILITY_STATUS_LABELS[status];
+  const statusText = AVAILABILITY_LABELS[status];
   const startDate = admin.availabilityStart;
   const endDate = admin.availabilityEnd;
 

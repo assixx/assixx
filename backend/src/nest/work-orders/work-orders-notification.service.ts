@@ -7,6 +7,7 @@
  */
 import { IS_ACTIVE } from '@assixx/shared/constants';
 import { Injectable, Logger } from '@nestjs/common';
+import type { PoolClient } from 'pg';
 import { v7 as uuidv7 } from 'uuid';
 
 import { eventBus } from '../../utils/event-bus.js';
@@ -131,7 +132,7 @@ export class WorkOrderNotificationService {
     try {
       const colsPerRow = 8;
       await this.db.transaction(
-        async (client: import('pg').PoolClient) => {
+        async (client: PoolClient) => {
           const values = userIds.map(
             (_uid: number, i: number): string =>
               `($${i * colsPerRow + 1}, $${i * colsPerRow + 2}, $${i * colsPerRow + 3}, $${i * colsPerRow + 4}, $${i * colsPerRow + 5}, $${i * colsPerRow + 6}, $${i * colsPerRow + 7}, $${i * colsPerRow + 8})`,

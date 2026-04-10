@@ -73,8 +73,8 @@ export const STATUS_FILTER_OPTIONS: {
 export type ViewTab = 'my-requests' | 'incoming';
 
 export const VIEW_TABS: { value: ViewTab; label: string }[] = [
-  { value: 'my-requests', label: 'Meine Anträge' },
   { value: 'incoming', label: 'Eingehende Anträge' },
+  { value: 'my-requests', label: 'Meine Anträge' },
 ];
 
 /** Default pagination */

@@ -8,7 +8,6 @@ import {
   AVAILABILITY_BADGE_CLASSES,
   AVAILABILITY_ICONS,
   AVAILABILITY_LABELS,
-  AVAILABILITY_STATUS_LABELS,
   DEFAULT_BADGE_CLASS,
   INFO_BADGE_CLASS,
   INHERITED_BADGE_CLASS,
@@ -636,7 +635,7 @@ export function getPlannedAvailability(employee: Employee): string {
 
   // Get status label
 
-  const statusText = AVAILABILITY_STATUS_LABELS[status];
+  const statusText = AVAILABILITY_LABELS[status];
 
   // Format dates if available
   const startDate = employee.availabilityStart;

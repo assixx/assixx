@@ -148,20 +148,3 @@ export const MESSAGES = createDummyMessages(DEFAULT_HIERARCHY_LABELS);
 
 /** Minimum password length for dummies */
 export const MIN_PASSWORD_LENGTH = 12;
-
-/** Password strength levels */
-export const PASSWORD_STRENGTH_LABELS: Record<number, string> = {
-  0: 'Sehr schwach',
-  1: 'Schwach',
-  2: 'Mittel',
-  3: 'Stark',
-  4: 'Sehr stark',
-};
-
-export const PASSWORD_STRENGTH_COLORS: Record<number, string> = {
-  0: 'var(--color-danger)',
-  1: 'var(--color-danger)',
-  2: 'var(--color-warning)',
-  3: 'var(--color-success)',
-  4: 'var(--color-success)',
-};

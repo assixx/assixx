@@ -3,6 +3,7 @@
   import { resolve } from '$app/paths';
 
   import { showSuccessAlert, showWarningAlert, showErrorAlert } from '$lib/stores/toast';
+  import { setActiveRole } from '$lib/utils/auth';
   import { getErrorMessage } from '$lib/utils/error';
   import { createLogger } from '$lib/utils/logger';
   import { broadcastRoleSwitch } from '$lib/utils/role-sync.svelte';
@@ -151,7 +152,7 @@
       localStorage.setItem('accessToken', result.token);
     }
     if (result.user?.activeRole !== undefined) {
-      localStorage.setItem('activeRole', result.user.activeRole);
+      setActiveRole(result.user.activeRole);
 
       // CRITICAL: Broadcast role switch to other tabs
       // Uses BroadcastChannel + triggers storage event for cross-tab sync

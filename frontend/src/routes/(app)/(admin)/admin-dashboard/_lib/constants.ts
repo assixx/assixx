@@ -3,8 +3,7 @@
  * @module admin-dashboard/_lib/constants
  */
 
-import { DEFAULT_HIERARCHY_LABELS, type HierarchyLabels } from '$lib/types/hierarchy-labels';
-
+import type { HierarchyLabels } from '$lib/types/hierarchy-labels';
 import type { Priority, OrgLevel, BlackboardOrgLevel } from './types';
 
 /** Priority labels (German) */
@@ -14,14 +13,6 @@ export const PRIORITY_LABELS: Record<Priority, string> = {
   high: 'Hoch',
   urgent: 'Dringend',
 };
-
-/** Default dashboard stats */
-export const DEFAULT_STATS = {
-  employeeCount: 0,
-  documentCount: 0,
-  departmentCount: 0,
-  teamCount: 0,
-} as const;
 
 /** Dashboard list limits */
 export const LIST_LIMITS = {
@@ -86,6 +77,3 @@ export function createMessages(labels: HierarchyLabels) {
 
 /** Message type for component props */
 export type DashboardMessages = ReturnType<typeof createMessages>;
-
-/** Default messages (used in non-Svelte contexts) */
-export const MESSAGES = createMessages(DEFAULT_HIERARCHY_LABELS);

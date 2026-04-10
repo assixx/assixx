@@ -152,6 +152,26 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
 
+      # ADR-027 Stage 1 enforcement: every external image must have a semver-style
+      # tag (with at least one dot) or a sha256 digest. Whitelisted: locally-built
+      # assixx-* images and ${NODE_VERSION}-substituted FROM lines (compose injects
+      # the actual version via build args).
+      - name: Verify image pinning (ADR-027 Stage 1)
+        run: |
+          set -euo pipefail
+          UNPINNED=$(grep -E '^\s*(image:\s*\S+|FROM\s+\S+)' \
+                       docker/docker-compose*.yml docker/Dockerfile* \
+                     | grep -vE 'assixx-(backend|frontend|postgres):' \
+                     | grep -vE ':[^[:space:]]*[0-9]+\.[0-9]+|@sha256:|node:\$\{NODE_VERSION' \
+                     || true)
+          if [ -n "$UNPINNED" ]; then
+            echo "::error::ADR-027 violation: unpinned image tag(s) found."
+            echo "::error::Every external image must use a fully-qualified version tag (e.g. nginx:1.29.8-alpine) or a sha256 digest."
+            echo "$UNPINNED"
+            exit 1
+          fi
+          echo "ADR-027 Stage 1 OK: all image references are pinned."
+
       - name: Build Backend Docker Image
         run: |
           cd docker

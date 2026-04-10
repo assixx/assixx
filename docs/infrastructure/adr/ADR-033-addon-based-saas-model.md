@@ -108,6 +108,7 @@ Das bisherige 3-Tier-Modell (Basic €49 / Professional €149 / Enterprise €2
 | 22  | `tpm`            | TPM / Wartung           | Total Productive Maintenance — Kamishibai Board, Wartungspläne   | `tpm-plans` (R/W/D), `tpm-cards` (R/W/D), `tpm-executions` (R/W), `tpm-config` (R/W), `tpm-locations` (R/W/D)                                |
 | 23  | `reports`        | Berichte & Auswertungen | Unternehmensberichte, Analytics und Datenexporte                 | `reports-view` (R), `reports-export` (R/W)                                                                                                   |
 | 24  | `audit_trail`    | Protokoll & Audit       | Audit-Protokollierung, Compliance-Berichte                       | `audit-view` (R), `audit-export` (R/W), `audit-retention` (R/D)                                                                              |
+| 25  | `inventory`      | Inventar                | Betriebsmittel-Inventarverwaltung mit Listen, Custom Fields, QR  | `inventory-lists` (R/W/D), `inventory-items` (R/W/D)                                                                                         |
 
 ---
 

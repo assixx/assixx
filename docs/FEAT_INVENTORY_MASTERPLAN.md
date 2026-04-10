@@ -1,21 +1,22 @@
 # FEAT: Inventory — Equipment Tracking & Inspection System Masterplan
 
 > **Created:** 2026-04-03
-> **Version:** 0.1.0 (Draft)
-> **Status:** DRAFT — Phase 0 (Planning)
+> **Version:** 1.1.0
+> **Status:** V1 COMPLETE + V1.1 Tag System SHIPPED (5.4 QR still deferred)
 > **Branch:** `feat/inventory`
 > **Author:** SCS Technik (Staff Engineer)
 > **Estimated Sessions:** 12
-> **Actual Sessions:** 0 / 12
+> **Actual Sessions:** 11 / 12 V1 + 1 V1.1 (1 V1 deferred)
 
 ---
 
 ## Changelog
 
-| Version | Date       | Change                                               |
-| ------- | ---------- | ---------------------------------------------------- |
-| 0.1.0   | 2026-04-03 | Initial Draft — 6 phases planned                     |
-| 0.1.1   | 2026-04-03 | Fix 4 critical + 6 major + 7 minor validation issues |
+| Version | Date       | Change                                                                                          |
+| ------- | ---------- | ----------------------------------------------------------------------------------------------- |
+| 0.1.0   | 2026-04-03 | Initial Draft — 6 phases planned                                                                |
+| 0.1.1   | 2026-04-03 | Fix 4 critical + 6 major + 7 minor validation issues                                            |
+| 1.1.0   | 2026-04-08 | V1.1 Tag System: replaces single-string `category` with normalized N:M tags + icon, see Phase 7 |
 
 ---
 
@@ -251,8 +252,12 @@ frontend/src/routes/(app)/(shared)/inventory/
 > **UUID convention:** `DEFAULT gen_random_uuid()` in SQL (UUIDv4).
 > UUIDv7 is generated app-side via npm `uuid` package for new records.
 > See migration 20260311000000088 SPEC DEVIATION D1 for rationale.
+>
+> **RLS convention:** Strict mode (ADR-019 updated 2026-04-04). No bypass clause.
+> All new tables use `tenant_id = NULLIF(...)::integer` (returns 0 rows without context).
+> GRANTs for BOTH `app_user` AND `sys_user` (Triple-User Model).
 
-### Step 1.1: Create ENUMs + Core Tables [PENDING]
+### Step 1.1: Create ENUMs + Core Tables ✅ DONE (2026-04-05)
 
 **New migration:** `{timestamp}_inventory-core-tables.ts`
 
@@ -281,8 +286,8 @@ frontend/src/routes/(app)/(shared)/inventory/
    - `created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()`
    - `updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()`
    - `UNIQUE(tenant_id, code_prefix)` — prevents duplicate prefixes per tenant
-   - RLS policy: `tenant_isolation` (standard NULLIF pattern)
-   - GRANTs: `SELECT, INSERT, UPDATE, DELETE` to `app_user`
+   - RLS policy: `tenant_isolation` (**strict mode** — ADR-019, no bypass clause)
+   - GRANTs: `SELECT, INSERT, UPDATE, DELETE` to `app_user` **AND** `sys_user`
    - Index: `idx_inventory_lists_tenant ON (tenant_id) WHERE is_active = 1`
    - Trigger: `update_inventory_lists_updated_at` → `update_updated_at_column()`
 
@@ -309,15 +314,15 @@ frontend/src/routes/(app)/(shared)/inventory/
    - `created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()`
    - `updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()`
    - `UNIQUE(tenant_id, code)` — globally unique codes per tenant
-   - RLS policy: `tenant_isolation` (standard NULLIF pattern)
-   - GRANTs: `SELECT, INSERT, UPDATE, DELETE` to `app_user`
+   - RLS policy: `tenant_isolation` (**strict mode** — ADR-019, no bypass clause)
+   - GRANTs: `SELECT, INSERT, UPDATE, DELETE` to `app_user` **AND** `sys_user`
    - Indexes:
      - `idx_inventory_items_tenant ON (tenant_id) WHERE is_active = 1`
      - `idx_inventory_items_list ON (list_id) WHERE is_active = 1`
      - `idx_inventory_items_status ON (tenant_id, status) WHERE is_active = 1`
    - Trigger: `update_inventory_items_updated_at` → `update_updated_at_column()`
 
-### Step 1.2: Custom Fields + Photos Tables [PENDING]
+### Step 1.2: Custom Fields + Photos Tables ✅ DONE (2026-04-05)
 
 **New migration:** `{timestamp}_inventory-custom-fields-photos.ts`
 
@@ -335,7 +340,7 @@ frontend/src/routes/(app)/(shared)/inventory/
    - `created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()`
    - `updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()`
    - `UNIQUE(tenant_id, list_id, field_name)` — no duplicate field names per list
-   - RLS + GRANTs + Index on `(list_id) WHERE is_active = 1`
+   - RLS strict mode + GRANTs (app_user + sys_user) + Index on `(list_id) WHERE is_active = 1`
    - Trigger: `update_inventory_custom_fields_updated_at`
 
 2. Create table `inventory_custom_values`:
@@ -351,7 +356,7 @@ frontend/src/routes/(app)/(shared)/inventory/
    - `created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()`
    - `updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()`
    - `UNIQUE(tenant_id, item_id, field_id)` — one value per item-field pair
-   - RLS + GRANTs + Index on `(item_id) WHERE is_active = 1`
+   - RLS strict mode + GRANTs (app_user + sys_user) + Index on `(item_id) WHERE is_active = 1`
    - Trigger: `update_inventory_custom_values_updated_at`
 
 3. Create table `inventory_item_photos`:
@@ -364,9 +369,9 @@ frontend/src/routes/(app)/(shared)/inventory/
    - `is_active SMALLINT NOT NULL DEFAULT 1`
    - `created_by INTEGER NOT NULL REFERENCES users(id) ON DELETE RESTRICT`
    - `created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()`
-   - RLS + GRANTs + Index on `(item_id) WHERE is_active = 1`
+   - RLS strict mode + GRANTs (app_user + sys_user) + Index on `(item_id) WHERE is_active = 1`
 
-### Step 1.3: Addon Seed Data [PENDING]
+### Step 1.3: Addon Seed Data ✅ DONE (2026-04-05)
 
 **New migration:** `{timestamp}_inventory-addon-seed.ts`
 
@@ -424,7 +429,7 @@ customer fresh-install and regenerate seed data.
 > **Dependency:** Phase 1 complete
 > **Reference:** `backend/src/nest/tpm/` (similar pattern)
 
-### Step 2.1: Module Skeleton + Types + DTOs + Permissions [PENDING]
+### Step 2.1: Module Skeleton + Types + DTOs + Permissions ✅ DONE (2026-04-05)
 
 **New directory:** `backend/src/nest/inventory/`
 
@@ -447,7 +452,7 @@ backend/src/nest/inventory/
 
 Register `InventoryModule` in `app.module.ts`.
 
-### Step 2.2: InventoryListsService [PENDING]
+### Step 2.2: InventoryListsService ✅ DONE (2026-04-05)
 
 **Methods:**
 
@@ -458,7 +463,7 @@ Register `InventoryModule` in `app.module.ts`.
 - `softDelete(tenantId, listId)` — Soft-delete list (is_active = 4)
 - `getCategoryAutocomplete(tenantId, query)` — Distinct categories for autocomplete
 
-### Step 2.3: InventoryItemsService [PENDING]
+### Step 2.3: InventoryItemsService ✅ DONE (2026-04-05)
 
 **Methods:**
 
@@ -471,7 +476,7 @@ Register `InventoryModule` in `app.module.ts`.
 
 **Critical: Code auto-generation within transaction with row lock.**
 
-### Step 2.4: InventoryCustomFieldsService [PENDING]
+### Step 2.4: InventoryCustomFieldsService ✅ DONE (2026-04-05)
 
 **Methods:**
 
@@ -482,7 +487,7 @@ Register `InventoryModule` in `app.module.ts`.
 - `getValues(tenantId, itemId)` — All custom values for an item
 - `upsertValues(tenantId, itemId, values[])` — Batch upsert custom values
 
-### Step 2.5: InventoryPhotosService [PENDING]
+### Step 2.5: InventoryPhotosService ✅ DONE (2026-04-05)
 
 **Methods:**
 
@@ -492,7 +497,7 @@ Register `InventoryModule` in `app.module.ts`.
 - `reorder(tenantId, itemId, photoIds[])` — Reorder photos
 - `softDelete(tenantId, photoId)` — Delete photo
 
-### Step 2.6: InventoryController [PENDING]
+### Step 2.6: InventoryController ✅ DONE (2026-04-06)
 
 **Endpoints (18 total):**
 
@@ -538,7 +543,7 @@ Every endpoint: `@RequireAddon('inventory')` + `@RequirePermission(...)`.
 
 ---
 
-## Phase 3: Unit Tests
+## Phase 3: Unit Tests ✅ DONE (2026-04-06)
 
 > **Dependency:** Phase 2 complete
 
@@ -574,7 +579,7 @@ backend/src/nest/inventory/
 
 ---
 
-## Phase 4: API Integration Tests
+## Phase 4: API Integration Tests ✅ DONE (2026-04-06)
 
 > **Dependency:** Phase 3 complete
 
@@ -608,7 +613,7 @@ backend/src/nest/inventory/
 
 > **Dependency:** Phase 2 complete (backend endpoints available)
 
-### Step 5.1: Lists Overview Page [PENDING]
+### Step 5.1: Lists Overview Page ✅ DONE (2026-04-06)
 
 `(shared)/inventory/+page.svelte`
 
@@ -619,7 +624,7 @@ Card-based layout (like manage-halls/manage-teams):
 - "Neue Liste" button → modal (ListModal.svelte)
 - Design: reuse existing card components from design system
 
-### Step 5.2: Items Table Page [PENDING]
+### Step 5.2: Items Table Page ✅ DONE (2026-04-06)
 
 `(shared)/inventory/lists/[id]/+page.svelte`
 
@@ -631,7 +636,7 @@ Table layout with:
 - Filters: status dropdown, search
 - Click row → item detail page
 
-### Step 5.3: Item Detail Page [PENDING]
+### Step 5.3: Item Detail Page ✅ DONE (2026-04-06)
 
 `(shared)/inventory/items/[uuid]/+page.svelte`
 
@@ -644,7 +649,7 @@ This is the **QR code target page**. Must work well on mobile.
 - Status change dropdown
 - Edit button → modal
 
-### Step 5.4: QR Code Generation + Print [PENDING]
+### Step 5.4: QR Code Generation + Print [DEFERRED to V1.1]
 
 `QrLabel.svelte` component:
 
@@ -675,38 +680,122 @@ This is the **QR code target page**. Must work well on mobile.
 
 ### Integrations
 
-- [ ] Audit logging: item create/update/delete/status changes
-- [ ] Navigation: sidebar entry with inventory icon + addon guard
-- [ ] ADR: Write ADR for inventory addon architecture
-- [ ] Customer migrations: `./scripts/sync-customer-migrations.sh`
-- [ ] ADR-033 update: add inventory to addon catalog
+- [x] Audit logging: item create/update/delete/status changes ✅ (2026-04-06)
+- [x] Navigation: sidebar entry with inventory icon + addon guard ✅ (Step 5.1)
+- [x] ADR: Write ADR for inventory addon architecture ✅ ADR-040 (2026-04-06)
+- [x] Customer migrations: `./scripts/sync-customer-migrations.sh` ✅ (2026-04-06)
+- [x] ADR-033 update: add inventory to addon catalog ✅ (2026-04-06)
 
 ### Phase 6 — Definition of Done
 
-- [ ] Audit logging works end-to-end
-- [ ] Navigation entry visible when addon active, hidden when inactive
-- [ ] ADR written and reviewed
-- [ ] No open TODOs in code
-- [ ] Customer fresh-install updated
+- [x] Audit logging works end-to-end
+- [x] Navigation entry visible when addon active, hidden when inactive
+- [x] ADR written and reviewed
+- [x] No open TODOs in code
+- [x] Customer fresh-install updated
+
+---
+
+## Phase 7: Tag System (V1.1)
+
+> **Status:** ✅ DONE (2026-04-08)
+> **Trigger:** User feedback — single freetext `category` is inadequate. Tenants need multi-dimensional, reusable, filterable labels (e.g., a "Krane" list and a "Seile" list both belong to "Lastaufnahmemittel").
+> **ADR Reference:** ADR-040 amendment 2026-04-08
+
+### Why a normalized tag relation, not JSONB?
+
+- Renaming a tag = 1 UPDATE instead of N rows
+- Case-insensitive UNIQUE prevents duplicate-by-typo
+- Filter and usage-count queries are simple JOINs
+- Future tag metadata (color, sort) without per-row migration
+
+### Step 7.1: Database Migrations (4)
+
+1. `inventory_tags` — table + RLS strict + functional unique index on `(tenant_id, LOWER(name))` + GRANTs + trigger
+2. `inventory_list_tags` — junction with composite PK + RLS + GRANTs + indexes
+3. `inventory-migrate-categories-to-tags` — backfill existing categories → tags + junction (idempotent / no-op when empty)
+4. `inventory-drop-category-column` — `ALTER TABLE inventory_lists DROP COLUMN category`
+
+All 4 generated via `db:migrate:create`, dry-run passed, executed in order. Customer fresh-install synced.
+
+### Step 7.2: Backend
+
+- New `InventoryTagsService` — CRUD + `getOrCreateByNames` (case-insensitive batch upsert) + `replaceTagsForList` (validates IDs, atomic delete+insert in a single tenantTransaction) + `findAll` with usage counts
+- 4 new endpoints: `GET/POST/PATCH/DELETE /inventory/tags` — all gated by `inventory-lists.{read|write|delete}` permissions (no new permission module)
+- `InventoryListsService` updated:
+  - `category` removed from INSERT/UPDATE/SET-clause builder
+  - `findAll(filters?: { tagIds?: string[] })` — EXISTS clause for filter, OR semantics
+  - `findById` + `findAll` JOIN tags via parallel `fetchTagsForLists` helper
+  - `create`/`update` accept `tagIds: string[]` and call `replaceTagsForList`
+  - returns `InventoryList` (with tags) instead of bare `InventoryListRow`
+- `getCategoryAutocomplete` removed; `/inventory/categories` endpoint deleted
+- DTOs: `CreateTagDto`, `UpdateTagDto`, `TagIdParamDto`, `ListsQueryDto` (parses comma-separated `?tagIds=`); `CreateListDto` updated (tagIds, no category)
+- `ActivityEntityType` extended with `'inventory_tag'`
+
+### Step 7.3: Tests
+
+- `inventory-tags.service.test.ts` — 24 unit tests covering CRUD, case-insensitive uniqueness, getOrCreateByNames batch+dedupe+normalize, replaceTagsForList validation/dedupe/transaction
+- `inventory-lists.service.test.ts` — rewritten: removed category tests, added tag attachment / filter / mock-sequence tests, updated to camelCase response
+- `inventory.api.test.ts` — replaced Categories block with comprehensive Tags CRUD block (12 new assertions): create, duplicate-409, list-with-usage, rename, attach-via-PATCH, filter-by-tagIds, usage-after-attach, reject-bad-tag-id, clear-via-empty-array, hard-delete-cascade
+
+### Step 7.4: Frontend
+
+- `_lib/types.ts` — `InventoryTag`, `InventoryTagWithUsage`; `category` removed everywhere; `tags: InventoryTag[]` on `InventoryList`; `tagIds: string[]` on form/payload types
+- `_lib/state.svelte.ts` — `categoryState` removed, `tagsState` rune cache (read by TagInput, TagFilter, TagsManagement)
+- `_lib/api.ts` — `loadCategories` → removed; `loadTags`, `createTag`, `updateTag`, `deleteTag` added; payload builders updated
+- `_lib/filters.ts` — `filterByTags(lists, tagIds)` added with OR semantics; `filterBySearch` searches tag names
+- `_lib/TagInput.svelte` — chip input, typeahead from `tagsState`, inline create on Enter (default `fa-tag` icon), backspace-removes-last-chip, MAX_TAGS_PER_LIST guard, visual contract via shared `--form-field-*` tokens (matches every other input)
+- `_lib/TagFilterDropdown.svelte` — multi-select dropdown with checkbox rows, badge with count, click-outside close, clear-all button
+- `_lib/TagsManagementModal.svelte` — list of all tenant tags with usage counts, inline rename + icon picker, hard delete with usage warning
+- `_lib/ListModal.svelte` — category section replaced with TagInput
+- `_lib/ListCard.svelte` — chip strip with icons replaces single category text
+- `+page.svelte` — TagFilter dropdown + "Tags verwalten" button (`btn-info`) added to filter bar; tag-modal wiring; SSR data → tagsState sync via `$effect`
+- `+page.server.ts` — parallel `Promise.all` fetch of `/inventory/lists` + `/inventory/tags`
+- `lists/[id]/+page.svelte` — header line uses tag names instead of category
+
+### Step 7.5: Verification
+
+- Backend type-check: 0 errors
+- Backend lint: 0 errors
+- Backend unit tests: 127 passed (103 inventory + 24 new tags)
+- Backend API tests: 55 passed (43 existing + 12 new tag tests)
+- Frontend svelte-check: 0/0
+- Frontend lint: 0 errors
+- Stylelint: clean
+- `validate:all`: PASSED
+
+### Phase 7 — Definition of Done
+
+- [x] 4 migrations generated, dry-run, executed, customer-sync
+- [x] `inventory_lists.category` column dropped
+- [x] InventoryTagsService + 4 endpoints + permission-aligned
+- [x] InventoryListsService accepts `tagIds`, returns `tags`, filters by `?tagIds=`
+- [x] All references to `category` removed from backend + frontend
+- [x] Unit + API tests for tag CRUD, isolation, filter, cascade
+- [x] TagInput visually identical to other form fields (`--form-field-*` tokens)
+- [x] TagsManagementModal supports rename + icon change + hard delete
+- [x] ADR-040 amendment written
+- [x] All quality gates pass (type-check, lint, svelte-check, stylelint)
 
 ---
 
 ## Session Tracking
 
-| Session | Phase | Description                         | Status  | Date |
-| ------- | ----- | ----------------------------------- | ------- | ---- |
-| 1       | 1     | Migration: ENUMs + core tables      | PENDING |      |
-| 2       | 1     | Migration: custom fields + photos   | PENDING |      |
-| 3       | 2     | Module skeleton + types + DTOs      | PENDING |      |
-| 4       | 2     | ListsService + ItemsService         | PENDING |      |
-| 5       | 2     | CustomFieldsService + PhotosService | PENDING |      |
-| 6       | 2     | Controller (18 endpoints)           | PENDING |      |
-| 7       | 3     | Unit tests (80+)                    | PENDING |      |
-| 8       | 4     | API integration tests (25+)         | PENDING |      |
-| 9       | 5     | Frontend: lists overview + modals   | PENDING |      |
-| 10      | 5     | Frontend: items table + item detail | PENDING |      |
-| 11      | 5     | Frontend: QR code + print + polish  | PENDING |      |
-| 12      | 6     | Integration + audit + ADR + cleanup | PENDING |      |
+| Session | Phase | Description                                              | Status   | Date       |
+| ------- | ----- | -------------------------------------------------------- | -------- | ---------- |
+| 1       | 1     | Migration: ENUMs + core tables                           | ✅ DONE  | 2026-04-05 |
+| 2       | 1     | Migration: custom fields + photos                        | ✅ DONE  | 2026-04-05 |
+| 3       | 2     | Module skeleton + types + DTOs                           | ✅ DONE  | 2026-04-05 |
+| 4       | 2     | ListsService + ItemsService                              | ✅ DONE  | 2026-04-05 |
+| 5       | 2     | CustomFieldsService + PhotosService                      | ✅ DONE  | 2026-04-05 |
+| 6       | 2     | Controller (18 endpoints)                                | ✅ DONE  | 2026-04-06 |
+| 7       | 3     | Unit tests (80+)                                         | ✅ DONE  | 2026-04-06 |
+| 8       | 4     | API integration tests (25+)                              | ✅ DONE  | 2026-04-06 |
+| 9       | 5     | Frontend: lists overview + modals                        | ✅ DONE  | 2026-04-06 |
+| 10      | 5     | Frontend: items table + item detail                      | ✅ DONE  | 2026-04-06 |
+| 11      | 5     | Frontend: QR code + print + polish                       | DEFERRED | V1.1       |
+| 12      | 6     | Integration + audit + ADR + cleanup                      | ✅ DONE  | 2026-04-06 |
+| 13      | 7     | V1.1 Tag System (DB + Backend + Tests + Frontend + Docs) | ✅ DONE  | 2026-04-08 |
 
 ---
 

@@ -24,7 +24,3 @@ export const ENTITLEMENT_LABELS: Record<string, string> = {
   additionalDays: 'Zusätzliche Tage',
   carryOverExpiresAt: 'Übertrag verfällt am',
 };
-
-// ─── Default page size for employee list ────────────────────────────
-
-export const EMPLOYEES_PAGE_SIZE = 100;

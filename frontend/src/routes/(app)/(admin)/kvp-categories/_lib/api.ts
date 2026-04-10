@@ -4,22 +4,10 @@
 import { getApiClient } from '$lib/utils/api-client';
 import { createLogger } from '$lib/utils/logger';
 
-import type { CustomizableCategoriesData } from './types';
-
 const log = createLogger('KvpCategoriesApi');
 const apiClient = getApiClient();
 
 const BASE = '/kvp/categories';
-
-/** Fetch customizable categories (admin view) */
-export async function fetchCustomizable(): Promise<CustomizableCategoriesData | null> {
-  try {
-    return await apiClient.get<CustomizableCategoriesData>(`${BASE}/customizable`);
-  } catch (err: unknown) {
-    log.error({ err }, 'Error fetching customizable categories');
-    return null;
-  }
-}
 
 /** Upsert a name override for a global default category */
 export async function upsertOverride(categoryId: number, customName: string): Promise<boolean> {

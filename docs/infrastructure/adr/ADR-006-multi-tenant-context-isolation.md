@@ -6,6 +6,7 @@
 | **Date**                | 2026-01-14                                   |
 | **Decision Makers**     | SCS Technik                                  |
 | **Affected Components** | All Services, Database Queries, Interceptors |
+| **Related ADRs**        | ADR-005 (Auth), ADR-019 (RLS Enforcement)    |
 
 ---
 
@@ -191,7 +192,7 @@ CREATE POLICY tenant_isolation ON users
 |                      | Debugging more difficult        |
 |                      | Not all queries need isolation  |
 
-**Decision:** Partially used - RLS as an additional security layer, but not primary.
+**Decision:** Originally adopted as a secondary security layer. **Updated 2026-02-07 (see [ADR-019](./ADR-019-multi-tenant-rls-isolation.md)):** RLS is now the **primary database-layer enforcement** mechanism. CLS (this ADR) and RLS (ADR-019) are complementary — CLS propagates `tenantId` through the application layer, then `tenantTransaction()` injects it into PostgreSQL via `set_config('app.tenant_id', ...)` where strict-mode RLS policies block cross-tenant access at the engine level. Together they form the 3-layer Defense-in-Depth: CLS → `set_config` → RLS policies. The Cons listed above (SET required, pooling, debugging) were resolved by the `tenantTransaction()` wrapper and the Triple-User-Model (`app_user`/`sys_user`/`assixx_user`) documented in ADR-019.
 
 ---
 
@@ -317,3 +318,4 @@ export class TenantContext {
 - [Node.js AsyncLocalStorage](https://nodejs.org/api/async_context.html)
 - [Multi-Tenancy Patterns](https://docs.microsoft.com/en-us/azure/architecture/guide/multitenant/considerations/tenancy-models)
 - [ADR-005: Authentication Strategy](./ADR-005-authentication-strategy.md) - Sets CLS context
+- [ADR-019: Multi-Tenant RLS Isolation](./ADR-019-multi-tenant-rls-isolation.md) - Database-layer enforcement (complementary to this ADR)

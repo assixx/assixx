@@ -58,7 +58,7 @@ export function mapPlanRowToApi(row: TpmPlanJoinRow): TpmPlan {
 }
 
 /** Field mappings for plan update: [apiField, dbColumn] */
-export const PLAN_UPDATE_MAPPINGS: readonly FieldMapping[] = [
+const PLAN_UPDATE_MAPPINGS: readonly FieldMapping[] = [
   ['name', 'name'],
   ['baseWeekday', 'base_weekday'],
   ['baseRepeatEvery', 'base_repeat_every'],

@@ -1,7 +1,22 @@
-# To get started with Dependabot version updates, you'll need to specify which
-# package ecosystems to update and where the package manifests are located.
-# Please see the documentation for all configuration options:
+# Dependabot configuration — see ADR-027 (Image Pinning) and ADR-008 (Dependencies)
 # https://docs.github.com/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
+#
+# Coverage map (what is and is NOT auto-tracked):
+#   - npm                : All workspace dependencies (root pnpm workspace)
+#   - github-actions     : All workflow action versions
+#   - docker             : ONLY /docker/Dockerfile (production); Dependabot's docker
+#                          ecosystem ignores files with custom names like Dockerfile.dev
+#                          (see dependabot/dependabot-core#4449). NODE_VERSION ARG
+#                          default in /docker/Dockerfile is the canonical Node bump.
+#                          The other three Dockerfiles inherit via compose build args.
+#   - docker-compose     : All `image:` tags in /docker/docker-compose.yml
+#                          (closes the gap that ADR-027 amendment 2026-04-07 documented:
+#                          Grafana/Loki/Prometheus/Redis/Nginx version tracking).
+#
+# NOT covered (manual or future Renovate adoption):
+#   - Dockerfile.pg-partman → FROM postgres:17.9-alpine is hardcoded, NOT via ARG
+#   - Dockerfile.dev / Dockerfile.frontend → Node version comes from compose ARG
+#     (so the Dockerfile-side default value can drift from the compose-injected one)
 
 version: 2
 updates:
@@ -23,3 +38,30 @@ updates:
     directory: "/"
     schedule:
       interval: "monthly"
+
+  # Dockerfile FROM directives — only /docker/Dockerfile (the only standard-named one)
+  # See coverage map above for the limitation on custom Dockerfile names.
+  - package-ecosystem: "docker"
+    directory: "/docker"
+    schedule:
+      interval: "monthly"
+    open-pull-requests-limit: 5
+
+  # docker-compose `image:` tags — closes the PLG-stack drift gap (ADR-027 amendment)
+  # GA since 2025-02-25:
+  # https://github.blog/changelog/2025-02-25-dependabot-version-updates-now-support-docker-compose-in-general-availability/
+  - package-ecosystem: "docker-compose"
+    directory: "/docker"
+    schedule:
+      interval: "monthly"
+    open-pull-requests-limit: 5
+    # Group by stack to keep PR noise manageable
+    groups:
+      plg-stack:
+        patterns:
+          - "grafana/*"
+          - "prom/*"
+      infra:
+        patterns:
+          - "nginx"
+          - "redis"

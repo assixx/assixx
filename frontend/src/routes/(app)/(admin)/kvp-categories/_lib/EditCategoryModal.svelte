@@ -278,7 +278,7 @@
       </button>
       <button
         type="submit"
-        class="btn btn-primary"
+        class="btn btn-secondary"
         disabled={isUpdating}
       >
         {#if isUpdating}

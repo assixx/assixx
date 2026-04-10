@@ -12,25 +12,18 @@
 export {
   // Token management
   getAuthToken,
-  // getRefreshToken - REMOVED: Use TokenManager for refresh token handling
   setAuthToken,
-  removeAuthToken,
-  getAuthHeader,
   // Role management
   getUserRole,
-  getActiveRole,
   setUserRole,
-  clearUserRole,
+  // Active role (localStorage + Cookie for SSR banner)
+  setActiveRole,
+  clearActiveRole,
   // Role checks
   isAuthenticated,
-  isAdmin,
-  isRoot,
-  isEmployee,
   hasPermission,
   // Display helpers
   getRoleDisplayName,
-  // Full logout
-  logout,
   // Type
   type UserRole,
 } from './auth';
@@ -68,7 +61,6 @@ export {
   showConfirm,
   showConfirmDanger,
   showConfirmWarning,
-  showInfoModal,
 } from './alerts';
 
 // Organization filter utilities (Area/Department inheritance)

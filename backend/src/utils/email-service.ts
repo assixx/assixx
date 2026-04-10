@@ -4,7 +4,7 @@
  */
 import fs from 'fs';
 import jwt from 'jsonwebtoken';
-import nodemailer, { SendMailOptions, Transporter } from 'nodemailer';
+import nodemailer, { type SendMailOptions, type Transporter } from 'nodemailer';
 import path from 'path';
 
 import { getErrorMessage } from '../nest/common/utils/error.utils.js';

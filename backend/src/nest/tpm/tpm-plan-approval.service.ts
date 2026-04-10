@@ -293,10 +293,17 @@ export class TpmPlanApprovalService implements OnModuleInit {
   // Startup Reconciliation
   // ==========================================================================
 
-  /** Find plans with missed approval decisions and sync version (onModuleInit) */
+  /**
+   * Find plans with missed approval decisions and sync version (onModuleInit).
+   *
+   * Runs in onModuleInit — no CLS context. Uses systemQuery for the
+   * cross-tenant scan (sys_user, BYPASSRLS) and queryAsTenant for the
+   * per-tenant UPDATE with explicit tenantId from each row (app_user, RLS
+   * enforced via GUC).
+   */
   private async reconcilePendingApprovals(): Promise<void> {
     try {
-      const rows = await this.db.tenantQuery<{
+      const rows = await this.db.systemQuery<{
         tenant_id: number;
         plan_uuid: string;
         plan_id: number;
@@ -326,11 +333,12 @@ export class TpmPlanApprovalService implements OnModuleInit {
       this.logger.warn(`Reconciling ${rows.length} plans with missed approval decisions`);
 
       for (const row of rows) {
-        await this.db.tenantQuery(
+        await this.db.queryAsTenant(
           `UPDATE tpm_maintenance_plans
            SET approval_version = $1, revision_minor = 0, updated_at = NOW()
            WHERE id = $2 AND tenant_id = $3`,
           [row.approved_count, row.plan_id, row.tenant_id],
+          row.tenant_id,
         );
         this.logger.log(`Reconciled plan ${row.plan_uuid}: v${row.approved_count}.0`);
       }

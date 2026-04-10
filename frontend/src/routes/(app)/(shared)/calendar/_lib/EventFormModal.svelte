@@ -543,7 +543,7 @@
       </button>
       <button
         type="submit"
-        class="btn btn-primary"
+        class="btn btn-secondary"
       >
         <i class="fas fa-save"></i> Speichern
       </button>

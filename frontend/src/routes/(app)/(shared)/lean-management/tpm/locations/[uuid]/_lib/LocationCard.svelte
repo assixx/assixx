@@ -81,35 +81,39 @@
     <!-- Photo -->
     <div class="loc-card__photo">
       {#if hasPhoto}
-        <div
-          class="photo-thumbnail"
-          onclick={() => {
-            onPreviewPhoto(location);
-          }}
-          onkeydown={(e: KeyboardEvent) => {
-            if (e.key === 'Enter') onPreviewPhoto(location);
-          }}
-          role="button"
-          tabindex="0"
-        >
-          <img
-            src={getPhotoUrl(location)}
-            alt="Standort {location.title}"
-            loading="lazy"
-          />
-        </div>
-        {#if canWrite}
-          <button
-            type="button"
-            class="loc-card__photo-remove-btn"
+        <div class="loc-card__photo-wrapper">
+          <div
+            class="photo-thumbnail"
             onclick={() => {
-              onRemovePhoto(location);
+              onPreviewPhoto(location);
             }}
+            onkeydown={(e: KeyboardEvent) => {
+              if (e.key === 'Enter') onPreviewPhoto(location);
+            }}
+            role="button"
+            tabindex="0"
           >
-            <i class="fas fa-times mr-1"></i>
-            {MESSAGES.LOCATIONS_PHOTO_REMOVE}
-          </button>
-        {/if}
+            <img
+              src={getPhotoUrl(location)}
+              alt="Standort {location.title}"
+              loading="lazy"
+            />
+          </div>
+          {#if canWrite}
+            <button
+              type="button"
+              class="loc-card__photo-remove-btn"
+              title={MESSAGES.LOCATIONS_PHOTO_REMOVE}
+              aria-label={MESSAGES.LOCATIONS_PHOTO_REMOVE}
+              onclick={(e: MouseEvent) => {
+                e.stopPropagation();
+                onRemovePhoto(location);
+              }}
+            >
+              <i class="fas fa-times"></i>
+            </button>
+          {/if}
+        </div>
       {:else if canWrite}
         <button
           type="button"
@@ -194,21 +198,41 @@
     object-fit: cover;
   }
 
+  .loc-card__photo-wrapper {
+    position: relative;
+    width: 120px;
+  }
+
   .loc-card__photo-remove-btn {
+    position: absolute;
+    top: -0.375rem;
+    right: -0.375rem;
     display: flex;
     align-items: center;
-    margin-top: 0.375rem;
+    justify-content: center;
+    width: 1.375rem;
+    height: 1.375rem;
     padding: 0;
-    background: none;
-    border: none;
-    color: var(--color-text-muted);
-    font-size: 0.75rem;
+    background: var(--color-danger);
+    border: 2px solid var(--glass-bg);
+    border-radius: 50%;
+    color: #fff;
+    font-size: 0.625rem;
     cursor: pointer;
-    transition: color 0.2s ease;
+    opacity: 0%;
+    transform: scale(0.8);
+    transition:
+      opacity 0.15s ease,
+      transform 0.15s ease;
+  }
+
+  .loc-card__photo-wrapper:hover .loc-card__photo-remove-btn {
+    opacity: 100%;
+    transform: scale(1);
   }
 
   .loc-card__photo-remove-btn:hover {
-    color: var(--color-danger);
+    background: var(--color-danger-hover, #d32f2f);
   }
 
   .loc-card__upload-btn {

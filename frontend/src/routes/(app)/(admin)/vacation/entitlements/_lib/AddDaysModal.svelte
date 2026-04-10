@@ -97,7 +97,7 @@
       </button>
       <button
         type="submit"
-        class="btn btn-primary"
+        class="btn btn-secondary"
         disabled={!canAddDays || isSaving}
       >
         <i class="fas fa-check mr-1"></i>

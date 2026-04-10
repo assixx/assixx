@@ -71,7 +71,7 @@
       </button>
       <button
         type="submit"
-        class="btn btn-primary"
+        class="btn btn-secondary"
         disabled={!formRef}
       >
         <i class="fas fa-paper-plane mr-1"></i>

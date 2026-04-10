@@ -218,13 +218,14 @@ export function up(pgm: MigrationBuilder): void {
     CREATE POLICY tenant_isolation ON employee_skills
         FOR ALL
         USING (
-            NULLIF(current_setting('app.tenant_id', true), '') IS NULL
-            OR tenant_id = NULLIF(current_setting('app.tenant_id', true), '')::integer
+            tenant_id = NULLIF(current_setting('app.tenant_id', true), '')::integer
         );
 
-    -- Permissions for app_user (MANDATORY!)
+    -- Permissions for app_user + sys_user (MANDATORY — Triple-User Model!)
     GRANT SELECT, INSERT, UPDATE, DELETE ON employee_skills TO app_user;
+    GRANT SELECT, INSERT, UPDATE, DELETE ON employee_skills TO sys_user;
     GRANT USAGE, SELECT ON SEQUENCE employee_skills_id_seq TO app_user;
+    GRANT USAGE, SELECT ON SEQUENCE employee_skills_id_seq TO sys_user;
   `);
 }
 
@@ -496,7 +497,7 @@ Password: see docker/.env
 - [ ] Backup created (`pg_dump --format=custom --compress=9`)
 - [ ] Dry run executed (`./scripts/run-migrations.sh up --dry-run`)
 - [ ] RLS policy present (for tenant-isolated tables)
-- [ ] GRANTs for `app_user` present
+- [ ] GRANTs for `app_user` AND `sys_user` present (Triple-User Model)
 - [ ] `down()` implemented (or error for irreversible migrations)
 
 ### AFTER the Migration
@@ -600,18 +601,22 @@ await client.query('SET app.tenant_id = $1', [tenantId.toString()]);
 ### RLS Policy Template
 
 ```sql
--- Standard RLS policy for tenant tables
--- IMPORTANT: NULLIF() in the first part is MANDATORY!
--- After set_config() + COMMIT, app.tenant_id becomes '' (empty string), NOT NULL!
--- Without NULLIF, '' IS NULL = FALSE -> RLS blocks EVERYTHING!
+-- Standard RLS policy for tenant tables — STRICT MODE (ADR-019, updated 2026-04-04)
+-- Returns 0 rows when app.tenant_id is not set (no bypass clause!)
+-- Cross-tenant operations use sys_user (BYPASSRLS) instead.
+-- NULLIF converts '' → NULL after COMMIT, so tenant_id = NULL → always false → 0 rows.
 CREATE POLICY tenant_isolation ON table_name
     FOR ALL
     USING (
-        -- Root/Admin access (no tenant context or empty string)
-        NULLIF(current_setting('app.tenant_id', true), '') IS NULL
-        -- Or matching tenant
-        OR tenant_id = NULLIF(current_setting('app.tenant_id', true), '')::integer
+        tenant_id = NULLIF(current_setting('app.tenant_id', true), '')::integer
     );
+
+-- GRANTs — Triple-User Model (MANDATORY!)
+GRANT SELECT, INSERT, UPDATE, DELETE ON table_name TO app_user;
+GRANT SELECT, INSERT, UPDATE, DELETE ON table_name TO sys_user;
+-- If table has a SEQUENCE:
+GRANT USAGE, SELECT ON SEQUENCE table_name_id_seq TO app_user;
+GRANT USAGE, SELECT ON SEQUENCE table_name_id_seq TO sys_user;
 ```
 
 ### Testing RLS

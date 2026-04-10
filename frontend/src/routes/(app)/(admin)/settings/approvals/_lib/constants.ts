@@ -29,9 +29,6 @@ export function createApproverTypeOptions(
   ];
 }
 
-/** Backward-compat: static export with default labels */
-export const APPROVER_TYPE_OPTIONS: readonly ApproverOption[] = createApproverTypeOptions();
-
 /** Addons that support approval workflows */
 export const APPROVABLE_ADDONS: readonly { code: string; label: string }[] = [
   { code: 'kvp', label: 'KVP' },
