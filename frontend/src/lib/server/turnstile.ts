@@ -32,9 +32,15 @@ export async function verifyTurnstile(
   remoteIp: string,
   expectedAction: string,
 ): Promise<boolean> {
-  const secretKey = env.TURNSTILE_SECRET_KEY;
+  // svelte-kit sync emits a narrow `TURNSTILE_SECRET_KEY: string` locally
+  // (Doppler sets the var), but in CI the key is absent and typed as
+  // `string | undefined`. Widen through an optional-property annotation so
+  // the guard is meaningful in both environments and honours the documented
+  // "empty key → skip verification" contract.
+  const privateEnv: { TURNSTILE_SECRET_KEY?: string } = env;
+  const secretKey = privateEnv.TURNSTILE_SECRET_KEY;
 
-  if (secretKey === '') {
+  if (secretKey === undefined || secretKey === '') {
     log.warn('TURNSTILE_SECRET_KEY not configured — skipping verification');
     return true;
   }

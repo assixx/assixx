@@ -13,7 +13,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
 
-  import { PUBLIC_TURNSTILE_SITE_KEY } from '$env/static/public';
+  import { env } from '$env/dynamic/public';
 
   interface Props {
     /** Turnstile action name — must match server-side expectedAction */
@@ -28,7 +28,11 @@
   let container: HTMLDivElement | undefined = $state();
   let widgetId: string | null = $state(null);
 
-  const siteKey = PUBLIC_TURNSTILE_SITE_KEY;
+  // Widen through an optional-property annotation so the absent-key case
+  // survives svelte-kit's sync-time type generation. See lib/server/turnstile.ts
+  // for the full local/CI rationale.
+  const publicEnv: { PUBLIC_TURNSTILE_SITE_KEY?: string } = env;
+  const siteKey = publicEnv.PUBLIC_TURNSTILE_SITE_KEY ?? '';
 
   /** Token setter — extracted to avoid naming-convention lint on Turnstile callback keys */
   function setToken(t: string): void {

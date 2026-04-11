@@ -17,12 +17,14 @@
 
   import type { ActionData } from './$types';
 
-  import { PUBLIC_TURNSTILE_SITE_KEY } from '$env/static/public';
+  import { env } from '$env/dynamic/public';
 
   const { form }: { form: ActionData } = $props();
 
-  // Cloudflare Turnstile
-  const turnstileEnabled = PUBLIC_TURNSTILE_SITE_KEY !== '';
+  // Cloudflare Turnstile — widen via optional-property annotation so the
+  // absent-key case survives svelte-kit sync (see lib/server/turnstile.ts).
+  const publicEnv: { PUBLIC_TURNSTILE_SITE_KEY?: string } = env;
+  const turnstileEnabled = (publicEnv.PUBLIC_TURNSTILE_SITE_KEY ?? '') !== '';
   let turnstileToken = $state('');
   let turnstileRef: { reset: () => void } | undefined;
 
