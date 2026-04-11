@@ -42,11 +42,13 @@
   function renderWidget(): void {
     if (container === undefined || widgetId !== null || window.turnstile === undefined) return;
 
+    // NOTE: No `size` param — Cloudflare only accepts 'compact'|'flexible'|'normal'.
+    // Invisible rendering is configured in the Cloudflare Dashboard (Widget Mode),
+    // not via the client API. Setting size='invisible' here throws a TurnstileError.
     const options: TurnstileRenderOptions = {
       sitekey: siteKey,
       callback: setToken,
       theme: 'auto',
-      size: 'flexible',
       action,
       language: 'de',
     };
@@ -96,33 +98,6 @@
 {#if siteKey !== ''}
   <div
     bind:this={container}
-    class="turnstile-widget"
     aria-label="Sicherheitsprüfung"
   ></div>
-  <p class="turnstile-notice">
-    Geschützt durch Cloudflare Turnstile.
-    <a
-      href="https://www.cloudflare.com/privacypolicy/"
-      target="_blank"
-      rel="noopener noreferrer">Datenschutz</a
-    >
-  </p>
 {/if}
-
-<style>
-  .turnstile-widget {
-    min-height: 65px;
-  }
-
-  .turnstile-notice {
-    margin-top: 4px;
-    color: var(--text-secondary);
-    font-size: 11px;
-    text-align: center;
-  }
-
-  .turnstile-notice a {
-    color: var(--text-secondary);
-    text-decoration: underline;
-  }
-</style>

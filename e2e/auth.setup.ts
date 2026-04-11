@@ -7,7 +7,12 @@ setup('authenticate as admin', async ({ page }) => {
 
   await page.getByRole('textbox', { name: 'E-Mail' }).fill('admin@apitest.de');
   await page.getByRole('textbox', { name: 'Passwort' }).fill('ApiTest12345!');
-  await page.getByRole('button', { name: 'Anmelden' }).click();
+
+  // Wait for Turnstile token before clicking — fail fast with a clear message
+  // if the test keys ever stop populating the token (instead of a 30s click timeout).
+  const submitButton = page.getByRole('button', { name: 'Anmelden' });
+  await expect(submitButton).toBeEnabled({ timeout: 5000 });
+  await submitButton.click();
 
   await page.waitForURL('**/root-dashboard');
   await expect(page).toHaveTitle(/Assixx/);

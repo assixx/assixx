@@ -22,6 +22,7 @@ import crypto from 'node:crypto';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { NestAuthUser } from '../common/interfaces/auth.interface.js';
+import type { MailerService } from '../common/services/mailer.service.js';
 import type { DatabaseService } from '../database/database.service.js';
 import { AuthService } from './auth.service.js';
 
@@ -67,8 +68,13 @@ function createMockJwtService(): {
   return { sign: vi.fn(), verify: vi.fn() };
 }
 
+function createMockMailer(): { sendPasswordReset: ReturnType<typeof vi.fn> } {
+  return { sendPasswordReset: vi.fn().mockResolvedValue(undefined) };
+}
+
 type MockDb = ReturnType<typeof createMockDb>;
 type MockJwt = ReturnType<typeof createMockJwtService>;
+type MockMailer = ReturnType<typeof createMockMailer>;
 
 function createAuthUser(overrides: Partial<NestAuthUser> = {}): NestAuthUser {
   return {
@@ -119,15 +125,18 @@ describe('SECURITY: AuthService', () => {
   let service: AuthService;
   let mockDb: MockDb;
   let mockJwt: MockJwt;
+  let mockMailer: MockMailer;
 
   beforeEach(() => {
     mockBcryptCompare.mockReset();
     mockBcryptHash.mockReset();
     mockDb = createMockDb();
     mockJwt = createMockJwtService();
+    mockMailer = createMockMailer();
     service = new AuthService(
       mockDb as unknown as DatabaseService,
       mockJwt as unknown as JwtService,
+      mockMailer as unknown as MailerService,
     );
   });
 
@@ -693,6 +702,213 @@ describe('SECURITY: AuthService', () => {
 
       // Only 1 db.systemQuery call (isTokenAlreadyUsed), no revokeTokenFamily call
       expect(mockDb.systemQuery).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  // =============================================================
+  // forgotPassword — generates token, delegates email to MailerService
+  // =============================================================
+
+  describe('forgotPassword', () => {
+    it('should silently return when user does not exist', async () => {
+      mockDb.systemQuery.mockResolvedValueOnce([]); // findUserByEmail → none
+
+      await expect(service.forgotPassword({ email: 'unknown@test.de' })).resolves.toBeUndefined();
+
+      // Only the lookup query — no INSERT, no mailer call
+      expect(mockDb.systemQuery).toHaveBeenCalledTimes(1);
+      expect(mockMailer.sendPasswordReset).not.toHaveBeenCalled();
+    });
+
+    it.each([
+      [0, 'inactive'],
+      [3, 'archived'],
+      [4, 'deleted'],
+    ])('should silently return for is_active=%i (%s) user', async (isActive) => {
+      mockDb.systemQuery.mockResolvedValueOnce([createMockUserRow({ is_active: isActive })]);
+
+      await expect(service.forgotPassword({ email: 'admin@test.de' })).resolves.toBeUndefined();
+
+      expect(mockDb.systemQuery).toHaveBeenCalledTimes(1);
+      expect(mockMailer.sendPasswordReset).not.toHaveBeenCalled();
+    });
+
+    it('should invalidate existing tokens, insert hashed token, and call mailer on happy path', async () => {
+      mockDb.systemQuery
+        .mockResolvedValueOnce([createMockUserRow({ id: 7 })]) // findUserByEmail
+        .mockResolvedValueOnce([]) // UPDATE invalidate previous
+        .mockResolvedValueOnce([]); // INSERT new token
+
+      await service.forgotPassword({ email: 'admin@test.de' });
+
+      expect(mockDb.systemQuery).toHaveBeenCalledTimes(3);
+
+      // Verify previous tokens were invalidated
+      const invalidateCall = mockDb.systemQuery.mock.calls[1];
+      expect(invalidateCall?.[0]).toContain(
+        'UPDATE password_reset_tokens SET used = true WHERE user_id = $1',
+      );
+      expect((invalidateCall?.[1] as number[])[0]).toBe(7);
+
+      // Verify token stored as SHA-256 hash, NOT raw
+      const insertCall = mockDb.systemQuery.mock.calls[2];
+      expect(insertCall?.[0]).toContain('INSERT INTO password_reset_tokens');
+      const insertParams = insertCall?.[1] as unknown[];
+      const storedHash = insertParams[1] as string;
+      expect(storedHash).toMatch(/^[0-9a-f]{64}$/); // SHA-256 hex
+
+      // Verify mailer called with safe recipient projection
+      expect(mockMailer.sendPasswordReset).toHaveBeenCalledTimes(1);
+      const [recipient, rawToken, expiresAt] = mockMailer.sendPasswordReset.mock.calls[0] ?? [];
+      expect(recipient).toEqual({
+        email: 'admin@test.de',
+        firstName: 'Test',
+        lastName: 'Admin',
+      });
+      expect(typeof rawToken).toBe('string');
+      expect((rawToken as string).length).toBeGreaterThan(0);
+      expect(expiresAt).toBeInstanceOf(Date);
+    });
+
+    it('should NOT pass raw token to DB (raw goes only to mailer)', async () => {
+      mockDb.systemQuery
+        .mockResolvedValueOnce([createMockUserRow()])
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([]);
+
+      await service.forgotPassword({ email: 'admin@test.de' });
+
+      const insertParams = mockDb.systemQuery.mock.calls[2]?.[1] as unknown[];
+      const storedToken = insertParams[1] as string;
+      const rawToken =
+        (mockMailer.sendPasswordReset.mock.calls[0]?.[1] as string | undefined) ?? '';
+
+      expect(storedToken).not.toBe(rawToken);
+      // Verify hash matches sha256(rawToken)
+      const expectedHash = crypto.createHash('sha256').update(rawToken).digest('hex');
+      expect(storedToken).toBe(expectedHash);
+    });
+
+    it('should set token expiry approximately 60 minutes in the future', async () => {
+      mockDb.systemQuery
+        .mockResolvedValueOnce([createMockUserRow()])
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([]);
+
+      const before = Date.now();
+      await service.forgotPassword({ email: 'admin@test.de' });
+      const after = Date.now();
+
+      const insertParams = mockDb.systemQuery.mock.calls[2]?.[1] as unknown[];
+      const expiresAt = insertParams[2] as Date;
+      const expiryMs = expiresAt.getTime();
+
+      // 60 minutes = 3,600,000 ms — allow ±100ms drift
+      expect(expiryMs).toBeGreaterThanOrEqual(before + 60 * 60 * 1000 - 100);
+      expect(expiryMs).toBeLessThanOrEqual(after + 60 * 60 * 1000 + 100);
+    });
+
+    it('should propagate mailer rejection (mailer is responsible for swallowing failures)', async () => {
+      mockDb.systemQuery
+        .mockResolvedValueOnce([createMockUserRow()])
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([]);
+      mockMailer.sendPasswordReset.mockRejectedValueOnce(new Error('mailer crash'));
+
+      // forgotPassword does NOT wrap mailer in try/catch — that's the mailer's job.
+      // Test documents this contract: if mailer ever throws, AuthService bubbles it up.
+      await expect(service.forgotPassword({ email: 'admin@test.de' })).rejects.toThrow(
+        'mailer crash',
+      );
+    });
+  });
+
+  // =============================================================
+  // resetPassword — validates token, updates password, revokes refresh
+  // =============================================================
+
+  describe('resetPassword', () => {
+    const validResetDto = { token: 'raw-reset-token-xyz', password: 'NewStrongP@ss1' };
+
+    it('should throw UnauthorizedException for unknown/expired token', async () => {
+      mockDb.systemQuery.mockResolvedValueOnce([]); // SELECT returns nothing
+
+      await expect(service.resetPassword(validResetDto)).rejects.toThrow(UnauthorizedException);
+      expect(mockBcryptHash).not.toHaveBeenCalled();
+    });
+
+    it('should look up token by sha256 hash, not raw value', async () => {
+      mockDb.systemQuery.mockResolvedValueOnce([]); // not found
+
+      await expect(service.resetPassword(validResetDto)).rejects.toThrow(UnauthorizedException);
+
+      const lookupParams = mockDb.systemQuery.mock.calls[0]?.[1] as string[];
+      const expectedHash = crypto.createHash('sha256').update(validResetDto.token).digest('hex');
+      expect(lookupParams[0]).toBe(expectedHash);
+    });
+
+    it('should hash new password with bcrypt rounds=12 on happy path', async () => {
+      mockDb.systemQuery
+        .mockResolvedValueOnce([{ id: 99, user_id: 7 }]) // SELECT token row
+        .mockResolvedValueOnce([]) // UPDATE users
+        .mockResolvedValueOnce([]) // UPDATE password_reset_tokens used
+        .mockResolvedValueOnce([createMockUserRow({ id: 7 })]) // findUserById
+        .mockResolvedValueOnce([{ count: '3' }]); // revokeAllUserTokensByUserId
+      mockBcryptHash.mockResolvedValueOnce('new-hashed-pw');
+
+      await service.resetPassword(validResetDto);
+
+      expect(mockBcryptHash).toHaveBeenCalledWith('NewStrongP@ss1', 12);
+    });
+
+    it('should mark token as used and revoke refresh tokens by user_id (no tenant scope)', async () => {
+      mockDb.systemQuery
+        .mockResolvedValueOnce([{ id: 99, user_id: 7 }])
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([createMockUserRow({ id: 7 })])
+        .mockResolvedValueOnce([{ count: '2' }]);
+      mockBcryptHash.mockResolvedValueOnce('new-hash');
+
+      await service.resetPassword(validResetDto);
+
+      // Find the revoke call (last UPDATE refresh_tokens)
+      const revokeCall = mockDb.systemQuery.mock.calls.find(
+        (call) =>
+          typeof call[0] === 'string' &&
+          call[0].includes('UPDATE refresh_tokens SET is_revoked = true') &&
+          call[0].includes('WHERE user_id = $1') &&
+          !call[0].includes('tenant_id'),
+      );
+      expect(revokeCall).toBeDefined();
+      expect((revokeCall?.[1] as number[])[0]).toBe(7);
+    });
+
+    it('should NOT call revoke when findUserById returns null (defensive branch)', async () => {
+      mockDb.systemQuery
+        .mockResolvedValueOnce([{ id: 99, user_id: 7 }])
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([]); // findUserById → null
+      mockBcryptHash.mockResolvedValueOnce('new-hash');
+
+      await service.resetPassword(validResetDto);
+
+      // 4 calls: SELECT token, UPDATE users, UPDATE token used, SELECT findUserById
+      // No 5th call for revoke
+      expect(mockDb.systemQuery).toHaveBeenCalledTimes(4);
+    });
+
+    it('should default to 0 when revokeAllUserTokensByUserId returns empty result', async () => {
+      mockDb.systemQuery
+        .mockResolvedValueOnce([{ id: 99, user_id: 7 }])
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([createMockUserRow({ id: 7 })])
+        .mockResolvedValueOnce([]); // empty CTE result
+      mockBcryptHash.mockResolvedValueOnce('new-hash');
+
+      await expect(service.resetPassword(validResetDto)).resolves.toBeUndefined();
     });
   });
 });

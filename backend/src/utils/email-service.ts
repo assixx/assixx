@@ -268,6 +268,43 @@ function escapeHtmlTemplate(str: string): string {
   return str.replace(/["&'<>]/g, (match: string) => htmlEscapes[match] ?? match);
 }
 
+// Branding logo: inlined as CID attachment so it renders in every mail client
+// (no external image-blocking, no APP_URL dependency, works offline).
+// Asset is the dark-mode logo resized to ~280px (retina @2x for 140px display).
+const BRANDING_LOGO_CID = 'assixx-logo';
+const BRANDING_LOGO_FILENAME = 'logo.png';
+// Cache the Promise (not the Buffer) so the assignment is synchronous and
+// concurrent callers share a single fs.readFile — no race condition.
+let cachedBrandingLogo: Promise<Buffer> | null = null;
+
+interface BrandedTemplate {
+  html: string;
+  attachments: Attachment[];
+}
+
+function getBrandingLogoBuffer(): Promise<Buffer> {
+  if (cachedBrandingLogo !== null) return cachedBrandingLogo;
+  const logoPath = path.join(process.cwd(), 'templates/email/assets/logo.png');
+  const promise = fs.promises.readFile(logoPath);
+  cachedBrandingLogo = promise;
+  // On failure, drop the cache so the next call retries — otherwise a
+  // transient FS error would permanently break logo embedding.
+  promise.catch((): void => {
+    cachedBrandingLogo = null;
+  });
+  return promise;
+}
+
+async function getBrandingLogoAttachment(): Promise<Attachment> {
+  const content = await getBrandingLogoBuffer();
+  return {
+    filename: BRANDING_LOGO_FILENAME,
+    content,
+    cid: BRANDING_LOGO_CID,
+    contentType: 'image/png',
+  };
+}
+
 /**
  * Lädt ein E-Mail-Template und ersetzt Platzhalter
  * @param templateName - Name des Templates ohne .html-Erweiterung
@@ -307,6 +344,20 @@ async function loadTemplate(
       </html>
     `;
   }
+}
+
+/**
+ * Lädt ein Template UND hängt das Branding-Logo als CID-Attachment an.
+ * Caller passes both `html` and `attachments` to sendEmail() — the logo
+ * appears via `<img src="cid:assixx-logo">` in the template.
+ */
+async function loadBrandedTemplate(
+  templateName: string,
+  replacements: TemplateReplacements = {},
+): Promise<BrandedTemplate> {
+  const html = await loadTemplate(templateName, replacements);
+  const logoAttachment = await getBrandingLogoAttachment();
+  return { html, attachments: [logoAttachment] };
 }
 
 async function sendEmail(options: EmailOptions): Promise<EmailResult> {
@@ -465,12 +516,13 @@ async function sendNewDocumentNotification(user: User, document: Document): Prom
       unsubscribeUrl,
     };
 
-    const html: string = await loadTemplate('new-document', replacements);
+    const branded = await loadBrandedTemplate('new-document', replacements);
 
     return await sendEmail({
       to: user.email,
       subject: 'Neues Dokument für Sie verfügbar',
-      html,
+      html: branded.html,
+      attachments: branded.attachments,
       text: `Hallo ${userName},\n\nEin neues Dokument "${documentName}" wurde für Sie hochgeladen. Sie können es in Ihrem Dashboard einsehen.\n\nMit freundlichen Grüßen,\nIhr Assixx-Team`,
     });
   } catch (error: unknown) {
@@ -495,12 +547,13 @@ async function sendWelcomeEmail(user: User): Promise<EmailResult> {
       loginUrl: `${process.env['APP_URL'] ?? 'https://app.assixx.de'}/login.html`,
     };
 
-    const html: string = await loadTemplate('welcome', replacements);
+    const branded = await loadBrandedTemplate('welcome', replacements);
 
     return await sendEmail({
       to: user.email,
       subject: 'Willkommen bei Assixx',
-      html,
+      html: branded.html,
+      attachments: branded.attachments,
       text: `Hallo ${userName},\n\nWillkommen bei Assixx! Ihr Konto wurde erfolgreich erstellt. Sie können sich jetzt mit Ihren Anmeldedaten einloggen.\n\nMit freundlichen Grüßen,\nIhr Assixx-Team`,
     });
   } catch (error: unknown) {
@@ -601,4 +654,5 @@ export default {
   addToQueue,
   processQueue,
   generateUnsubscribeLink,
+  loadBrandedTemplate,
 };

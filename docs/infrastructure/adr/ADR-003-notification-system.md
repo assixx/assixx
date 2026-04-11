@@ -278,6 +278,46 @@ curl -X POST http://localhost:3000/api/v2/surveys \
 
 ## Email Notifications (Added 2026-04-10)
 
+### Architecture: NestJS MailerService Wrapper
+
+The legacy `backend/src/utils/email-service.ts` (Nodemailer with module-level
+state — transporter, queue, logo cache) is wrapped by a thin NestJS service:
+`backend/src/nest/common/services/mailer.service.ts`. Domain services
+(e.g. `AuthService`) inject `MailerService` via the constructor instead of
+calling `await import('../../utils/email-service.js')` inside business logic.
+
+**Why:**
+
+1. **No dynamic imports in domain code.** Dynamic `await import(...)` is a
+   KISS violation: it hides dependencies, breaks IDE navigation, and forces
+   tests to mock the module loader. The NestJS DI container handles lifecycle
+   and substitution natively.
+2. **Zero duplication.** The legacy module already exposes `loadTemplate`,
+   `loadBrandedTemplate`, `escapeHtmlTemplate` and `sendEmail`. The wrapper
+   composes these — it never reimplements template loading or HTML escaping.
+   `AuthService` previously carried duplicated `escapeHtml` + manual
+   `fs.readFile` template loading, all of which is now deleted.
+3. **Centralized failure swallowing.** `MailerService.sendPasswordReset()`
+   logs send failures and resolves normally. Callers can trust they will
+   never throw, which preserves the email enumeration prevention contract
+   (`forgot-password` always returns the same generic response).
+4. **Quiet bug fixed.** The previous inline implementation referenced
+   `cid:assixx-logo` in the HTML template but never attached the logo file —
+   resulting in broken images in every reset email. `loadBrandedTemplate`
+   attaches the CID image automatically.
+
+**Why NOT migrate `email-service.ts` itself to a `@Injectable()` class?**
+
+The legacy file holds module-level singleton state (transporter, queue,
+`isProcessingQueue` flag, branded logo buffer cache). Unwinding these into
+proper instance state would touch every caller — out of scope for an
+incremental refactor. Wrapping is the KISS-compliant first step; a full
+migration is tracked separately.
+
+**Future email types** (welcome, document notification, etc.) get their own
+typed method on `MailerService` instead of bypassing it. New domain services
+inject `MailerService` from `../common/services/mailer.service.js`.
+
 ### SMTP Transport
 
 The existing `email-service.ts` (Nodemailer) was connected to SMTP via environment variables:

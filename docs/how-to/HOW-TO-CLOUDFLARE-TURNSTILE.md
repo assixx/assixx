@@ -45,6 +45,25 @@ Browser                         SvelteKit Server              Cloudflare
 
 ---
 
+## Widget-Modus
+
+**Aktuell konfiguriert:** `Unsichtbar` (Cloudflare Dashboard).
+
+Der Widget-Modus wird **ausschließlich im Cloudflare Dashboard** gesetzt — NICHT im Client-Code. `size: 'invisible'` ist **kein gültiger Wert** für die Turnstile-Render-API. Cloudflare's eigene Validation lehnt ihn mit `TurnstileError: Invalid value for parameter "size", expected "compact", "flexible", or "normal"` ab. Mit Produktions-Site-Keys verschluckt Sentry den Error meist still, mit Test-Keys (E2E) wird er hart geworfen.
+
+**Korrekte Konfiguration:**
+
+| Stelle                                | Wert                                       |
+| ------------------------------------- | ------------------------------------------ |
+| Cloudflare Dashboard → Widget → Modus | `Unsichtbar`                               |
+| `Turnstile.svelte` → `options.size`   | **nicht setzen** (lasse Cloudflare wählen) |
+
+Im Invisible-Mode wird **nichts sichtbar gerendert** — kein Platzhalter, keine Ladeanimation. Die Challenge läuft auto-execute beim Widget-Render, der `callback` feuert sobald der Token da ist. Das `bind:token` Pattern funktioniert unverändert.
+
+**Falls auf `Verwaltet` oder `Nicht interaktiv` umgestellt wird:** Im Dashboard umstellen, im Code nichts ändern (Cloudflare wählt automatisch eine sinnvolle Default-Größe). Optional `size: 'flexible'` setzen wenn ein bestimmtes Layout gewünscht ist, plus `min-height: 65px` am Container damit kein Layout-Jump entsteht.
+
+---
+
 ## Dateien
 
 | Datei                                          | Zweck                                                       |
@@ -153,6 +172,33 @@ Cloudflare stellt offizielle Test-Keys bereit die auf jeder Domain funktionieren
 ### Kein Secret Key konfiguriert?
 
 Wenn `TURNSTILE_SECRET_KEY` leer ist, überspringt `verifyTurnstile()` die Prüfung und gibt `true` zurück. Das Widget wird trotzdem angezeigt (Site Key reicht), aber die Server-Verifizierung entfällt.
+
+---
+
+## E2E-Tests (Playwright)
+
+E2E-Tests nutzen die offiziellen Cloudflare-Test-Keys — **nicht** die Produktions-Keys, **nicht** den Disable-Hack mit leerem Site-Key.
+
+**Warum Test-Keys statt Disable:**
+
+- Headless Chromium kann die Invisible-Challenge nicht lösen (Bot-Fingerprint) → würde mit echtem Key hängen
+- Disable-Hack umgeht das Widget komplett → keine Test-Coverage für `Turnstile.svelte`, `verifyTurnstile()`, CSP
+- Test-Keys rendern + verifizieren real, lösen aber sofort auf → echte Coverage ohne Reibung
+
+**Konfiguration:** `playwright.config.ts` injiziert die Test-Keys beim Dev-Server-Start:
+
+```ts
+webServer: {
+  command: 'pnpm run dev:svelte',
+  reuseExistingServer: false,  // siehe Footgun unten
+  env: {
+    PUBLIC_TURNSTILE_SITE_KEY: '1x00000000000000000000AA',
+    TURNSTILE_SECRET_KEY: '1x0000000000000000000000000000000AA',
+  },
+},
+```
+
+**Footgun: `reuseExistingServer`** — `webServer.env` wird **nur** angewandt wenn Playwright den Server selbst startet. Mit `reuseExistingServer: true` und einem parallel laufenden `pnpm run dev:svelte` greift das Override nicht und der Test sieht den echten Site-Key → Button bleibt `disabled`. Deshalb steht der Wert auf `false`. Konsequenz: vor `pnpm run test:e2e` darf kein Dev-Server auf Port 5173 laufen.
 
 ---
 

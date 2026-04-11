@@ -28,7 +28,7 @@ import crypto from 'node:crypto';
 import { v7 as uuidv7 } from 'uuid';
 
 import type { NestAuthUser } from '../common/interfaces/auth.interface.js';
-import { getErrorMessage } from '../common/utils/error.utils.js';
+import { MailerService } from '../common/services/mailer.service.js';
 import { DatabaseService } from '../database/database.service.js';
 import type {
   ForgotPasswordDto,
@@ -139,6 +139,7 @@ export class AuthService {
   constructor(
     private readonly databaseService: DatabaseService,
     private readonly jwtService: JwtService,
+    private readonly mailer: MailerService,
   ) {}
 
   // ============================================
@@ -341,8 +342,16 @@ export class AuthService {
       [user.id, tokenHash, expiresAt],
     );
 
-    // Send reset email
-    await this.sendPasswordResetEmail(user, rawToken, expiresAt);
+    // Send reset email — never throws (failure is logged inside MailerService)
+    await this.mailer.sendPasswordReset(
+      {
+        email: user.email,
+        firstName: user.first_name,
+        lastName: user.last_name,
+      },
+      rawToken,
+      expiresAt,
+    );
 
     this.logger.log(`Password reset requested for user ${user.id}`);
   }
@@ -392,74 +401,6 @@ export class AuthService {
     }
 
     this.logger.log(`Password reset completed for user ${tokenRow.user_id}`);
-  }
-
-  /**
-   * Send password reset email via Nodemailer
-   */
-  private async sendPasswordResetEmail(
-    user: UserRow,
-    rawToken: string,
-    expiresAt: Date,
-  ): Promise<void> {
-    try {
-      const emailService = (await import('../../utils/email-service.js')).default;
-      const appUrl = process.env['APP_URL'] ?? 'http://localhost:5173';
-      const resetUrl = `${appUrl}/reset-password?token=${rawToken}`;
-      const fullName = [user.first_name, user.last_name].filter(Boolean).join(' ');
-      const userName = fullName !== '' ? fullName : user.email;
-
-      await emailService.sendEmail({
-        to: user.email,
-        subject: 'Passwort zurücksetzen — Assixx',
-        html: await this.loadPasswordResetTemplate({
-          userName,
-          resetUrl,
-          expiresAt: expiresAt.toLocaleString('de-DE', {
-            dateStyle: 'medium',
-            timeStyle: 'short',
-          }),
-        }),
-        text: `Hallo ${userName},\n\nSie haben angefordert, Ihr Passwort zurückzusetzen.\n\nKlicken Sie auf folgenden Link (gültig für 60 Minuten):\n${resetUrl}\n\nFalls Sie diese Anfrage nicht gestellt haben, ignorieren Sie diese E-Mail.\n\nMit freundlichen Grüßen,\nIhr Assixx-Team`,
-      });
-    } catch (error: unknown) {
-      // Log but don't throw — caller already returns generic response
-      this.logger.error(`Failed to send password reset email: ${getErrorMessage(error)}`);
-    }
-  }
-
-  /**
-   * Load password reset HTML template with placeholder replacement
-   */
-  private async loadPasswordResetTemplate(replacements: {
-    userName: string;
-    resetUrl: string;
-    expiresAt: string;
-  }): Promise<string> {
-    const fs = await import('node:fs/promises');
-    const path = await import('node:path');
-    const templatePath = path.join(process.cwd(), 'templates/email/password-reset.html');
-
-    let html = await fs.readFile(templatePath, 'utf8');
-    html = html.replace(/\{\{userName\}\}/g, this.escapeHtml(replacements.userName));
-    html = html.replace(/\{\{resetUrl\}\}/g, replacements.resetUrl);
-    html = html.replace(/\{\{expiresAt\}\}/g, this.escapeHtml(replacements.expiresAt));
-
-    return html;
-  }
-
-  /**
-   * Escape HTML entities in template values
-   */
-  private escapeHtml(str: string): string {
-    const escapes: Record<string, string> = {
-      '&': '&amp;',
-      '<': '&lt;',
-      '>': '&gt;',
-      '"': '&quot;',
-      "'": '&#39;',
-    };
-    return str.replace(/["&'<>]/g, (ch: string) => escapes[ch] ?? ch);
   }
 
   // ============================================

@@ -38,6 +38,8 @@ const PUBLIC_ROUTES = [
   '/',
   '/login',
   '/signup',
+  '/forgot-password',
+  '/reset-password',
   '/impressum',
   '/datenschutz',
   '/tenant-deletion-approve',

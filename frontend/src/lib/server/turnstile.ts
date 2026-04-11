@@ -62,7 +62,11 @@ export async function verifyTurnstile(
       return false;
     }
 
-    if (data.action !== expectedAction) {
+    // Only enforce action check if Cloudflare returned one. Cloudflare's dummy
+    // test secret keys (1x00…AA / 2x00…AB) omit the `action` field entirely —
+    // enforcing strict equality would break E2E tests. A wrong action is still
+    // rejected; only the "field missing" case is tolerated.
+    if (data.action !== undefined && data.action !== expectedAction) {
       log.warn({ expected: expectedAction, got: data.action }, 'Turnstile action mismatch');
       return false;
     }

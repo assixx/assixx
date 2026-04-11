@@ -196,303 +196,303 @@
 
 <SignupNav />
 
-<div class="signup-page">
-  <!-- Left: Hero image + branding -->
-  <div class="signup-hero">
-    <div class="signup-hero__overlay"></div>
-    <div class="signup-hero__content">
-      <img
-        src="/images/logo_darkmode.png"
-        alt="Assixx Logo"
-        class="signup-hero__logo"
-      />
-      <h1 class="signup-hero__title">Enterprise 2.0 für Industriefirmen</h1>
-      <p class="signup-hero__subtitle">
-        Wissensmanagement, Kommunikation und Kollaboration — von der Produktion bis zur Verwaltung.
-      </p>
-    </div>
-  </div>
-
-  <!-- Right: Form -->
-  <div class="signup-form-side">
-    <div class="signup-card">
-      <h2 class="signup-title">Konto erstellen</h2>
-      <p class="signup-subtitle">30 Tage kostenlos testen — keine Kreditkarte nötig</p>
-
-      <!-- Signup Form -->
-      <form
-        id="signupForm"
-        onsubmit={handleSubmit}
-      >
-        <!-- Company -->
-        <div class="form-field">
-          <label
-            class="form-field__label form-field__label--required"
-            for="company_name">Firmenname</label
-          >
-          <input
-            type="text"
-            id="company_name"
-            name="company_name"
-            class="form-field__control"
-            required
-            placeholder="Ihre Firma GmbH"
-            autocomplete="organization"
-            bind:value={companyName}
-            disabled={loading}
-          />
-        </div>
-
-        <SubdomainInput
-          bind:subdomain
-          disabled={loading}
+<div class="signup-layout">
+  <div class="signup-page">
+    <!-- Left: Hero image + branding -->
+    <div class="signup-hero">
+      <div class="signup-hero__overlay"></div>
+      <div class="signup-hero__content">
+        <img
+          src="/images/logo_darkmode.png"
+          alt="Assixx Logo"
+          class="signup-hero__logo"
         />
-
-        <div class="section-divider"></div>
-
-        <!-- Personal Info -->
-        <div class="name-row">
-          <div class="form-field">
-            <label
-              class="form-field__label form-field__label--required"
-              for="first_name">Vorname</label
-            >
-            <input
-              type="text"
-              id="first_name"
-              name="first_name"
-              class="form-field__control"
-              required
-              autocomplete="given-name"
-              bind:value={firstName}
-              disabled={loading}
-            />
-          </div>
-
-          <div class="form-field">
-            <label
-              class="form-field__label form-field__label--required"
-              for="last_name">Nachname</label
-            >
-            <input
-              type="text"
-              id="last_name"
-              name="last_name"
-              class="form-field__control"
-              required
-              autocomplete="family-name"
-              bind:value={lastName}
-              disabled={loading}
-            />
-          </div>
-        </div>
-
-        <div class="inline-row">
-          <div class="form-field">
-            <label
-              class="form-field__label form-field__label--required"
-              for="email">E-Mail</label
-            >
-            <input
-              type="email"
-              id="email"
-              name="email"
-              class="form-field__control"
-              required
-              placeholder="email@firma.de"
-              autocomplete="email"
-              bind:value={email}
-              oninput={handleEmailConfirmInput}
-              disabled={loading}
-            />
-          </div>
-
-          <div class="form-field">
-            <label
-              class="form-field__label form-field__label--required"
-              for="email_confirm">E-Mail bestätigen</label
-            >
-            <input
-              type="email"
-              id="email_confirm"
-              name="email_confirm"
-              class="form-field__control"
-              class:is-error={emailMatchError}
-              required
-              placeholder="email@firma.de"
-              bind:value={emailConfirm}
-              oninput={handleEmailConfirmInput}
-              disabled={loading}
-            />
-            {#if emailMatchError}
-              <p class="form-field__message form-field__message--error">
-                {emailMatchError}
-              </p>
-            {/if}
-          </div>
-        </div>
-
-        <CountryPhoneInput
-          bind:phone
-          bind:countryCode
-          disabled={loading}
-        />
-
-        <div class="section-divider"></div>
-
-        <!-- Password -->
-        <div class="inline-row">
-          <div class="form-field">
-            <label
-              class="form-field__label form-field__label--required"
-              for="password"
-            >
-              Passwort
-              <span class="tooltip ml-1">
-                <i class="fas fa-info-circle"></i>
-                <span
-                  class="tooltip__content tooltip__content--info tooltip__content--right"
-                  role="tooltip"
-                >
-                  Min. 12 Zeichen, max. 72 Zeichen. Enthält 3 von 4: Großbuchstaben,
-                  Kleinbuchstaben, Zahlen, Sonderzeichen (!@#$%^&*)
-                </span>
-              </span>
-            </label>
-            <div class="form-field__password-wrapper">
-              <input
-                type={showPassword ? 'text' : 'password'}
-                id="password"
-                name="password"
-                class="form-field__control"
-                required
-                minlength="12"
-                maxlength="72"
-                placeholder="Min. 12 Zeichen"
-                autocomplete="new-password"
-                bind:value={password}
-                oninput={handlePasswordInput}
-                disabled={loading}
-              />
-              <button
-                type="button"
-                class="form-field__password-toggle"
-                aria-label="Passwort anzeigen"
-                onclick={() => {
-                  togglePasswordVisibility('password');
-                }}
-              >
-                <i class="fas {showPassword ? 'fa-eye-slash' : 'fa-eye'}"></i>
-              </button>
-            </div>
-          </div>
-
-          <div
-            class="form-field"
-            class:is-error={passwordMatchError}
-            class:is-success={passwordConfirm !== '' && passwordMatch}
-          >
-            <label
-              class="form-field__label form-field__label--required"
-              for="password_confirm">Passwort bestätigen</label
-            >
-            <div class="form-field__password-wrapper">
-              <input
-                type={showPasswordConfirm ? 'text' : 'password'}
-                id="password_confirm"
-                name="password_confirm"
-                class="form-field__control"
-                class:is-error={passwordMatchError}
-                class:is-success={passwordConfirm !== '' && passwordMatch}
-                required
-                autocomplete="new-password"
-                bind:value={passwordConfirm}
-                oninput={handlePasswordConfirmInput}
-                disabled={loading}
-              />
-              <button
-                type="button"
-                class="form-field__password-toggle"
-                aria-label="Passwort anzeigen"
-                onclick={() => {
-                  togglePasswordVisibility('confirm');
-                }}
-              >
-                <i class="fas {showPasswordConfirm ? 'fa-eye-slash' : 'fa-eye'}"></i>
-              </button>
-            </div>
-            {#if passwordMatchError}
-              <p class="form-field__message form-field__message--error">
-                {passwordMatchError}
-              </p>
-            {:else if passwordConfirm !== '' && passwordMatch}
-              <p class="form-field__message form-field__message--success">
-                <i class="fas fa-check"></i> Passwörter stimmen überein
-              </p>
-            {/if}
-          </div>
-        </div>
-
-        {#if passwordStrength !== null || strengthLoading}
-          <PasswordStrengthIndicator
-            score={passwordStrength?.score ?? -1}
-            label={passwordStrength?.label ?? ''}
-            crackTime={passwordStrength?.crackTime ?? ''}
-            loading={strengthLoading}
-            feedback={passwordStrength?.feedback ?? null}
-          />
-        {/if}
-
-        <!-- Terms & Submit -->
-        <label class="terms-checkbox">
-          <input
-            type="checkbox"
-            id="termsCheckbox"
-            name="terms"
-            required
-            bind:checked={termsAccepted}
-            disabled={loading}
-          />
-          <span>
-            Ich akzeptiere die&nbsp;
-            <a
-              href={resolve('/TERMS-OF-USE.md')}
-              target="_blank"
-              rel="noopener noreferrer"
-              class="terms-link">Nutzungsbedingungen</a
-            >
-          </span>
-        </label>
-
-        <!-- Cloudflare Turnstile -->
-        <Turnstile
-          bind:this={turnstileRef}
-          bind:token={turnstileToken}
-          action="signup"
-        />
-
-        <button
-          type="submit"
-          class="btn btn-index signup-submit"
-          disabled={loading || !isFormValid}
-        >
-          {buttonText}
-        </button>
-
-        <p class="login-link-text">
-          Bereits registriert?
-          <a
-            href={resolve('/login')}
-            class="login-link">Anmelden</a
-          >
+        <h1 class="signup-hero__title">Enterprise 2.0 für Industriefirmen</h1>
+        <p class="signup-hero__subtitle">
+          Wissensmanagement, Kommunikation und Kollaboration — von der Produktion bis zur
+          Verwaltung.
         </p>
-      </form>
+      </div>
+    </div>
 
-      <div class="signup-legal">
-        <LegalFooter compact />
+    <!-- Right: Form -->
+    <div class="signup-form-side">
+      <div class="signup-card">
+        <h2 class="signup-title">Konto erstellen</h2>
+        <p class="signup-subtitle">30 Tage kostenlos testen — keine Kreditkarte nötig</p>
+
+        <!-- Signup Form -->
+        <form
+          id="signupForm"
+          onsubmit={handleSubmit}
+        >
+          <!-- Company -->
+          <div class="form-field">
+            <label
+              class="form-field__label form-field__label--required"
+              for="company_name">Firmenname</label
+            >
+            <input
+              type="text"
+              id="company_name"
+              name="company_name"
+              class="form-field__control"
+              required
+              placeholder="Ihre Firma GmbH"
+              autocomplete="organization"
+              bind:value={companyName}
+              disabled={loading}
+            />
+          </div>
+
+          <SubdomainInput
+            bind:subdomain
+            disabled={loading}
+          />
+
+          <div class="section-divider"></div>
+
+          <!-- Personal Info -->
+          <div class="name-row">
+            <div class="form-field">
+              <label
+                class="form-field__label form-field__label--required"
+                for="first_name">Vorname</label
+              >
+              <input
+                type="text"
+                id="first_name"
+                name="first_name"
+                class="form-field__control"
+                required
+                autocomplete="given-name"
+                bind:value={firstName}
+                disabled={loading}
+              />
+            </div>
+
+            <div class="form-field">
+              <label
+                class="form-field__label form-field__label--required"
+                for="last_name">Nachname</label
+              >
+              <input
+                type="text"
+                id="last_name"
+                name="last_name"
+                class="form-field__control"
+                required
+                autocomplete="family-name"
+                bind:value={lastName}
+                disabled={loading}
+              />
+            </div>
+          </div>
+
+          <div class="inline-row">
+            <div class="form-field">
+              <label
+                class="form-field__label form-field__label--required"
+                for="email">E-Mail</label
+              >
+              <input
+                type="email"
+                id="email"
+                name="email"
+                class="form-field__control"
+                required
+                placeholder="email@firma.de"
+                autocomplete="email"
+                bind:value={email}
+                oninput={handleEmailConfirmInput}
+                disabled={loading}
+              />
+            </div>
+
+            <div class="form-field">
+              <label
+                class="form-field__label form-field__label--required"
+                for="email_confirm">E-Mail bestätigen</label
+              >
+              <input
+                type="email"
+                id="email_confirm"
+                name="email_confirm"
+                class="form-field__control"
+                class:is-error={emailMatchError}
+                required
+                placeholder="email@firma.de"
+                bind:value={emailConfirm}
+                oninput={handleEmailConfirmInput}
+                disabled={loading}
+              />
+              {#if emailMatchError}
+                <p class="form-field__message form-field__message--error">
+                  {emailMatchError}
+                </p>
+              {/if}
+            </div>
+          </div>
+
+          <CountryPhoneInput
+            bind:phone
+            bind:countryCode
+            disabled={loading}
+          />
+
+          <div class="section-divider"></div>
+
+          <!-- Password -->
+          <div class="inline-row">
+            <div class="form-field">
+              <label
+                class="form-field__label form-field__label--required"
+                for="password"
+              >
+                Passwort
+                <span class="tooltip ml-1">
+                  <i class="fas fa-info-circle"></i>
+                  <span
+                    class="tooltip__content tooltip__content--info tooltip__content--right"
+                    role="tooltip"
+                  >
+                    Min. 12 Zeichen, max. 72 Zeichen. Enthält 3 von 4: Großbuchstaben,
+                    Kleinbuchstaben, Zahlen, Sonderzeichen (!@#$%^&*)
+                  </span>
+                </span>
+              </label>
+              <div class="form-field__password-wrapper">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  id="password"
+                  name="password"
+                  class="form-field__control"
+                  required
+                  minlength="12"
+                  maxlength="72"
+                  placeholder="Min. 12 Zeichen"
+                  autocomplete="new-password"
+                  bind:value={password}
+                  oninput={handlePasswordInput}
+                  disabled={loading}
+                />
+                <button
+                  type="button"
+                  class="form-field__password-toggle"
+                  aria-label="Passwort anzeigen"
+                  onclick={() => {
+                    togglePasswordVisibility('password');
+                  }}
+                >
+                  <i class="fas {showPassword ? 'fa-eye-slash' : 'fa-eye'}"></i>
+                </button>
+              </div>
+            </div>
+
+            <div
+              class="form-field"
+              class:is-error={passwordMatchError}
+              class:is-success={passwordConfirm !== '' && passwordMatch}
+            >
+              <label
+                class="form-field__label form-field__label--required"
+                for="password_confirm">Passwort bestätigen</label
+              >
+              <div class="form-field__password-wrapper">
+                <input
+                  type={showPasswordConfirm ? 'text' : 'password'}
+                  id="password_confirm"
+                  name="password_confirm"
+                  class="form-field__control"
+                  class:is-error={passwordMatchError}
+                  class:is-success={passwordConfirm !== '' && passwordMatch}
+                  required
+                  autocomplete="new-password"
+                  bind:value={passwordConfirm}
+                  oninput={handlePasswordConfirmInput}
+                  disabled={loading}
+                />
+                <button
+                  type="button"
+                  class="form-field__password-toggle"
+                  aria-label="Passwort anzeigen"
+                  onclick={() => {
+                    togglePasswordVisibility('confirm');
+                  }}
+                >
+                  <i class="fas {showPasswordConfirm ? 'fa-eye-slash' : 'fa-eye'}"></i>
+                </button>
+              </div>
+              {#if passwordMatchError}
+                <p class="form-field__message form-field__message--error">
+                  {passwordMatchError}
+                </p>
+              {:else if passwordConfirm !== '' && passwordMatch}
+                <p class="form-field__message form-field__message--success">
+                  <i class="fas fa-check"></i> Passwörter stimmen überein
+                </p>
+              {/if}
+            </div>
+          </div>
+
+          {#if passwordStrength !== null || strengthLoading}
+            <PasswordStrengthIndicator
+              score={passwordStrength?.score ?? -1}
+              label={passwordStrength?.label ?? ''}
+              crackTime={passwordStrength?.crackTime ?? ''}
+              loading={strengthLoading}
+              feedback={passwordStrength?.feedback ?? null}
+            />
+          {/if}
+
+          <!-- Terms & Submit -->
+          <label class="terms-checkbox">
+            <input
+              type="checkbox"
+              id="termsCheckbox"
+              name="terms"
+              required
+              bind:checked={termsAccepted}
+              disabled={loading}
+            />
+            <span>
+              Ich akzeptiere die&nbsp;
+              <a
+                href={resolve('/TERMS-OF-USE.md')}
+                target="_blank"
+                rel="noopener noreferrer"
+                class="terms-link">Nutzungsbedingungen</a
+              >
+            </span>
+          </label>
+
+          <!-- Cloudflare Turnstile -->
+          <Turnstile
+            bind:this={turnstileRef}
+            bind:token={turnstileToken}
+            action="signup"
+          />
+
+          <button
+            type="submit"
+            class="btn btn-index signup-submit"
+            disabled={loading || !isFormValid}
+          >
+            {buttonText}
+          </button>
+
+          <p class="login-link-text">
+            Bereits registriert?
+            <a
+              href={resolve('/login')}
+              class="login-link">Anmelden</a
+            >
+          </p>
+        </form>
       </div>
     </div>
   </div>
+  <LegalFooter compact />
 </div>
 
 <style>
@@ -500,11 +500,19 @@
    * SPLIT LAYOUT — GitHub-style: hero left, form right
    * ========================================================================= */
 
-  .signup-page {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
+  .signup-layout {
+    display: flex;
+    flex-direction: column;
     width: 100%;
     height: 100vh;
+  }
+
+  .signup-page {
+    display: grid;
+    flex: 1;
+    grid-template-columns: 1fr 1fr;
+    width: 100%;
+    min-height: 0;
     overflow: hidden;
   }
 
@@ -666,16 +674,6 @@
     color: var(--text-secondary);
     font-size: 13px;
     text-align: center;
-  }
-
-  .signup-legal {
-    margin-top: var(--spacing-4);
-    padding-top: var(--spacing-3);
-    border-top: 1px solid color-mix(in oklch, var(--color-white) 8%, transparent);
-  }
-
-  :global(html:not(.dark)) .signup-legal {
-    border-color: color-mix(in oklch, var(--color-black) 10%, transparent);
   }
 
   .login-link {

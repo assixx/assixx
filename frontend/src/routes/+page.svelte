@@ -3,7 +3,7 @@
 
   import { resolve } from '$app/paths';
 
-  import LegalFooter from '$lib/components/LegalFooter.svelte';
+  import LandingFooter from '$lib/components/LandingFooter.svelte';
   import Seo from '$lib/components/Seo.svelte';
   import ThemeToggle from '$lib/components/ThemeToggle.svelte';
   import { isDark } from '$lib/stores/theme.svelte';
@@ -104,7 +104,7 @@
   <PricingSection />
 
   <!-- Footer -->
-  <LegalFooter />
+  <LandingFooter />
 </div>
 
 <!-- End .landing-page -->

@@ -176,7 +176,7 @@
   <p class="legal-updated">Stand: April 2026</p>
 </main>
 
-<LegalFooter />
+<LegalFooter compact />
 
 <style>
   /* Header */

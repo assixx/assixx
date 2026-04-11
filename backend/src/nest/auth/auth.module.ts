@@ -11,13 +11,14 @@
  */
 import { Module } from '@nestjs/common';
 
+import { MailerService } from '../common/services/mailer.service.js';
 import { AuthController } from './auth.controller.js';
 import { AuthService } from './auth.service.js';
 import { ConnectionTicketService } from './connection-ticket.service.js';
 
 @Module({
   controllers: [AuthController],
-  providers: [AuthService, ConnectionTicketService],
+  providers: [AuthService, ConnectionTicketService, MailerService],
   exports: [AuthService, ConnectionTicketService],
 })
 // eslint-disable-next-line @typescript-eslint/no-extraneous-class -- NestJS modules are empty by design

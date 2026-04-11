@@ -35,6 +35,8 @@ declare global {
     'expired-callback'?: () => void; // eslint-disable-line @typescript-eslint/naming-convention -- Cloudflare Turnstile API
     'error-callback'?: () => void; // eslint-disable-line @typescript-eslint/naming-convention -- Cloudflare Turnstile API
     theme?: 'auto' | 'light' | 'dark';
+    // 'invisible' is NOT a valid value — Cloudflare API rejects it.
+    // Invisible widget mode is configured in the Cloudflare Dashboard, not here.
     size?: 'normal' | 'flexible' | 'compact';
     action?: string;
     language?: string;

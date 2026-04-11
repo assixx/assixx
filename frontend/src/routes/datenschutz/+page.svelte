@@ -338,6 +338,35 @@
       Rechtsgrundlage: Art. 6 Abs. 1 lit. b DSGVO (Vertragserfüllung bzw. vorvertragliche
       Maßnahmen).
     </p>
+
+    <h3>Cloudflare Turnstile (Spam- und Bot-Schutz)</h3>
+    <p>
+      Wir nutzen auf unseren Anmelde- und Registrierungsformularen den Bot-Schutz „Turnstile" des
+      Anbieters Cloudflare, Inc., 101 Townsend St, San Francisco, CA 94107, USA. Turnstile prüft
+      automatisiert, ob Eingaben in unseren Formularen von einem Menschen oder von einem
+      automatisierten Programm vorgenommen werden, und schützt uns so vor missbräuchlichen
+      Zugriffen. Hierzu wird ein technisches Token in Ihrem Browser erzeugt und an Cloudflare
+      übermittelt. Dabei werden in der Regel keine Cookies gesetzt und es findet kein
+      nutzerbezogenes Tracking statt.
+    </p>
+    <p>
+      Übermittelt werden insbesondere die IP-Adresse, technische Browser-Informationen sowie
+      Interaktionsdaten der aktuellen Sitzung. Diese Daten werden ausschließlich zum Schutz unserer
+      Formulare vor automatisierten Anfragen genutzt und nicht für Werbe- oder Trackingzwecke
+      verwendet. Die Speicherung erfolgt nur für die zur Bot-Abwehr erforderliche Dauer.
+    </p>
+    <p>
+      Rechtsgrundlage ist Art. 6 Abs. 1 lit. f DSGVO. Wir haben ein berechtigtes Interesse daran,
+      unsere Plattform vor missbräuchlicher automatisierter Ausspähung und vor Brute-Force-Angriffen
+      zu schützen. Eine Übermittlung in die USA kann nicht ausgeschlossen werden. Cloudflare ist
+      nach dem EU-US Data Privacy Framework zertifiziert. Weitere Informationen zum Datenschutz bei
+      Cloudflare finden Sie unter
+      <a
+        href="https://www.cloudflare.com/privacypolicy/"
+        target="_blank"
+        rel="noopener noreferrer">https://www.cloudflare.com/privacypolicy/</a
+      >.
+    </p>
   </section>
 
   <!-- ================================================================== -->
@@ -432,17 +461,9 @@
   </section>
 
   <p class="legal-updated">Stand: April 2026</p>
-  <p class="legal-source">
-    Erstellt mit Unterstützung von
-    <a
-      href="https://www.e-recht24.de"
-      target="_blank"
-      rel="noopener noreferrer">e-recht24.de</a
-    >, angepasst für Assixx.
-  </p>
 </main>
 
-<LegalFooter />
+<LegalFooter compact />
 
 <style>
   /* Header */
@@ -574,12 +595,6 @@
     color: var(--color-text-secondary);
     font-size: 0.875rem;
     opacity: 70%;
-  }
-
-  .legal-source {
-    color: var(--color-text-secondary);
-    font-size: 0.8125rem;
-    opacity: 50%;
   }
 
   @media (width < 768px) {

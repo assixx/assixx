@@ -34,22 +34,29 @@ export default defineConfig({
   /* Reporter */
   reporter: process.env['CI'] !== undefined ? 'html' : 'list',
 
-  /* Auto-start SvelteKit dev server (Svelte best practice) */
+  /* Auto-start SvelteKit dev server on a dedicated E2E port (5174) so tests
+   * can run in parallel with a manual dev-server on the default port (5173).
+   * @see docs/how-to/HOW-TO-CLOUDFLARE-TURNSTILE.md — E2E section
+   *
+   * Env-vars are set INLINE in the shell command (not via webServer.env) because
+   * `pnpm exec` strips/rewrites parts of the inherited env in Playwright's shell
+   * context and the override silently fails to reach `vite dev`. Inline Bash-style
+   * assignments have guaranteed precedence over .env files (verified manually).
+   *
+   * Cloudflare official test keys — always pass siteverify, work in headless.
+   * @see https://developers.cloudflare.com/turnstile/troubleshooting/testing/ */
   webServer: {
-    command: 'pnpm run dev:svelte',
-    url: 'http://localhost:5173',
-    reuseExistingServer: process.env['CI'] === undefined,
+    command:
+      'cd frontend && PUBLIC_TURNSTILE_SITE_KEY=1x00000000000000000000AA TURNSTILE_SECRET_KEY=1x0000000000000000000000000000000AA pnpm exec vite dev --port 5174 --strictPort',
+    url: 'http://localhost:5174',
+    reuseExistingServer: false,
     stdout: 'ignore',
     stderr: 'pipe',
-    /* Disable Turnstile in E2E — the widget can't solve in headless browsers */
-    env: {
-      PUBLIC_TURNSTILE_SITE_KEY: '',
-    },
   },
 
   /* Shared settings for all projects */
   use: {
-    baseURL: 'http://localhost:5173',
+    baseURL: 'http://localhost:5174',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
   },

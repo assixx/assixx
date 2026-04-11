@@ -397,7 +397,8 @@ export default defineConfig({
 **Setup:**
 
 - `webServer.command: 'pnpm run dev:svelte'` — auto-starts SvelteKit dev server
-- `webServer.reuseExistingServer: true` — reuses existing dev server locally
+- `webServer.reuseExistingServer: false` — never reuses; ensures `webServer.env` overrides actually apply (footgun: a parallel `pnpm run dev:svelte` would inject real Turnstile keys, see HOW-TO-CLOUDFLARE-TURNSTILE)
+- `webServer.env` — injects Cloudflare official Turnstile test keys (`1x00…AA`) so the invisible challenge auto-resolves in headless Chromium without bypassing the widget
 - `globalSetup` — flushes Redis rate-limit keys (same pattern as API tests)
 - `e2e/.auth/` — storageState files (gitignored)
 

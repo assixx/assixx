@@ -38,10 +38,13 @@ export default defineConfig(({ mode }) => ({
     port: 5173,
     strictPort: true, // Fail if port 5173 is unavailable
 
-    // HMR Configuration (Best Practice 2025)
+    // HMR Configuration — do NOT pin hmr.port. Vite defaults to server.port,
+    // which is correct when Vite runs on a non-default port (e.g. Playwright E2E
+    // starts a second instance on 5174 via CLI --port). A hardcoded hmr.port
+    // would make the HMR websocket try to connect to 5173 even when the server
+    // listens on 5174, breaking smoke tests with "WebSocket handshake 400".
     hmr: {
       overlay: true,
-      port: 5173,
       protocol: 'ws',
       host: 'localhost',
     },
