@@ -597,7 +597,7 @@ export async function handleDeleteSurveyWithInvalidate(
 // =============================================================================
 
 export function handleViewResults(surveyId: string): void {
-  void goto(`${resolve('/survey-results', {})}?surveyId=${surveyId}`);
+  void goto(`${resolve('/survey-results')}?surveyId=${surveyId}`);
 }
 
 // =============================================================================

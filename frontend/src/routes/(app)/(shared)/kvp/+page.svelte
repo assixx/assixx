@@ -106,7 +106,7 @@
         notificationStore.decrementCount('kvp');
       });
     }
-    void goto(resolve(`/kvp-detail?uuid=${uuid}`, {}));
+    void goto(resolve(`/kvp-detail?uuid=${uuid}`));
   }
 
   // ==========================================================================

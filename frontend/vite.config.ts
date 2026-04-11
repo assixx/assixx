@@ -102,13 +102,13 @@ export default defineConfig(({ mode }) => ({
         },
         // CRITICAL: Strip console.* and debugger in production builds
         // This removes ALL 331+ console calls from the production bundle
-        // Vite 8: esbuild.drop → rolldownOptions.output.minify.compress
+        // Vite 8: rolldownOptions.output.minify.compress (rolldown CompressOptions)
         ...(mode === 'production' ?
           {
             minify: {
               compress: {
-                drop_console: true,
-                drop_debugger: true,
+                dropConsole: true,
+                dropDebugger: true,
               },
             },
           }

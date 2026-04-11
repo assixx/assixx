@@ -2,7 +2,10 @@
   import { goto } from '$app/navigation';
   import { resolve } from '$app/paths';
 
+  import LegalFooter from '$lib/components/LegalFooter.svelte';
   import PasswordStrengthIndicator from '$lib/components/PasswordStrengthIndicator.svelte';
+  import Seo from '$lib/components/Seo.svelte';
+  import Turnstile from '$lib/components/Turnstile.svelte';
   import { showWarningAlert, showErrorAlert, showToast } from '$lib/stores/toast';
   import { analyzePassword, type PasswordStrengthResult } from '$lib/utils/password-strength';
 
@@ -19,6 +22,8 @@
     isPhoneValid,
     isPasswordValid,
   } from './_lib/validators';
+
+  import { PUBLIC_TURNSTILE_SITE_KEY } from '$env/static/public';
 
   // =========================================================================
   // FORM STATE
@@ -42,6 +47,11 @@
   let loading = $state(false);
   let emailMatchError: string | null = $state(null);
   let passwordMatchError: string | null = $state(null);
+
+  // Cloudflare Turnstile
+  const turnstileEnabled = PUBLIC_TURNSTILE_SITE_KEY !== '';
+  let turnstileToken = $state('');
+  let turnstileRef: { reset: () => void } | undefined;
 
   // =========================================================================
   // DERIVED
@@ -68,7 +78,8 @@
       isPasswordValid(password) &&
       passwordConfirm !== '' &&
       passwordMatch &&
-      termsAccepted,
+      termsAccepted &&
+      (!turnstileEnabled || turnstileToken !== ''),
   );
 
   const buttonText = $derived(loading ? 'Wird erstellt...' : 'Konto erstellen');
@@ -121,6 +132,26 @@
     loading = true;
 
     try {
+      // Verify Turnstile token server-side before registration
+      if (turnstileEnabled) {
+        if (turnstileToken === '') {
+          showErrorAlert('Bitte warten Sie, bis die Sicherheitsprüfung abgeschlossen ist.');
+          return;
+        }
+
+        const verifyRes = await fetch('/api/turnstile', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token: turnstileToken, action: 'signup' }),
+        });
+
+        if (!verifyRes.ok) {
+          turnstileRef?.reset();
+          showErrorAlert('Sicherheitsprüfung fehlgeschlagen. Bitte versuchen Sie es erneut.');
+          return;
+        }
+      }
+
       const payload = createRegisterPayload({
         companyName,
         subdomain,
@@ -142,10 +173,13 @@
         showProgress: true,
       });
 
+      turnstileRef?.reset();
+
       setTimeout(() => {
         void goto(resolve('/login'));
       }, SUCCESS_REDIRECT_DELAY);
     } catch (err: unknown) {
+      turnstileRef?.reset();
       const message = err instanceof Error ? err.message : ERROR_MESSAGES.unknownError;
       showErrorAlert(message);
     } finally {
@@ -154,9 +188,11 @@
   }
 </script>
 
-<svelte:head>
-  <title>Registrieren - Assixx</title>
-</svelte:head>
+<Seo
+  title="Registrieren - Assixx"
+  description="Registrieren Sie Ihr Unternehmen bei Assixx. Digitalisieren Sie Ihre Prozesse — von TPM bis Schichtplanung."
+  canonical="https://www.assixx.com/signup"
+/>
 
 <SignupNav />
 
@@ -428,6 +464,13 @@
           </span>
         </label>
 
+        <!-- Cloudflare Turnstile -->
+        <Turnstile
+          bind:this={turnstileRef}
+          bind:token={turnstileToken}
+          action="signup"
+        />
+
         <button
           type="submit"
           class="btn btn-index signup-submit"
@@ -444,6 +487,10 @@
           >
         </p>
       </form>
+
+      <div class="signup-legal">
+        <LegalFooter compact />
+      </div>
     </div>
   </div>
 </div>
@@ -619,6 +666,16 @@
     color: var(--text-secondary);
     font-size: 13px;
     text-align: center;
+  }
+
+  .signup-legal {
+    margin-top: var(--spacing-4);
+    padding-top: var(--spacing-3);
+    border-top: 1px solid color-mix(in oklch, var(--color-white) 8%, transparent);
+  }
+
+  :global(html:not(.dark)) .signup-legal {
+    border-color: color-mix(in oklch, var(--color-black) 10%, transparent);
   }
 
   .login-link {

@@ -76,7 +76,7 @@
   // DERIVED VALUES
   // =============================================================================
 
-  const uuid = $derived($page.params.uuid);
+  const uuid = $derived($page.params.uuid ?? '');
 
   /**
    * Permission logic for edit/delete:

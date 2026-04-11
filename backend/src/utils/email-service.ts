@@ -224,17 +224,20 @@ let transporter: Transporter | null = null;
 
 function initializeTransporter(config: EmailConfig | null = null): Transporter {
   const defaultConfig: EmailConfig = {
-    host: process.env['EMAIL_HOST'] ?? 'smtp.example.com',
-    port: Number.parseInt(process.env['EMAIL_PORT'] ?? '587', 10),
-    secure: process.env['EMAIL_SECURE'] === 'true',
+    host: process.env['SMTP_HOST'] ?? process.env['EMAIL_HOST'] ?? 'smtp.example.com',
+    port: Number.parseInt(process.env['SMTP_PORT'] ?? process.env['EMAIL_PORT'] ?? '587', 10),
+    secure: process.env['SMTP_SECURE'] === 'true' || process.env['EMAIL_SECURE'] === 'true',
     auth: {
-      user: process.env['EMAIL_USER'] ?? 'user@example.com',
-      pass: process.env['EMAIL_PASSWORD'] ?? '',
+      user: process.env['SMTP_USER'] ?? process.env['EMAIL_USER'] ?? '',
+      pass: process.env['SMTP_PASS'] ?? process.env['EMAIL_PASSWORD'] ?? '',
     },
   };
 
+  if (defaultConfig.auth.user === '') {
+    logger.warn('SMTP_USER not set — emails will likely fail to send');
+  }
   if (defaultConfig.auth.pass === '') {
-    logger.warn('EMAIL_PASSWORD not set — emails will likely fail to send');
+    logger.warn('SMTP_PASS not set — emails will likely fail to send');
   }
 
   const transportConfig: EmailConfig = config ?? defaultConfig;
@@ -320,7 +323,11 @@ async function sendEmail(options: EmailOptions): Promise<EmailResult> {
 
   try {
     // E-Mail-Absender aus Umgebungsvariablen oder Fallback
-    const from: string = options.from ?? process.env['EMAIL_FROM'] ?? 'Assixx <noreply@assixx.de>';
+    const from: string =
+      options.from ??
+      process.env['SMTP_FROM'] ??
+      process.env['EMAIL_FROM'] ??
+      'Assixx <noreply@assixx.de>';
 
     // HTML-Sanitization
     let sanitizedHtml: string | undefined = options.html;

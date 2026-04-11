@@ -66,6 +66,8 @@ ADRs document important architectural decisions:
 | [ADR-040](./ADR-040-inventory-addon-architecture.md)                         | Inventory Addon Architecture                                 | Accepted   | 2026-04-06 |
 | [ADR-041](./ADR-041-typescript-compiler-configuration.md)                    | TypeScript Compiler Configuration & Strict-Everywhere Policy | Accepted   | 2026-04-07 |
 | [ADR-042](./ADR-042-multipart-file-upload-pipeline.md)                       | Multipart File Upload Pipeline (Fastify + Multer Bridge)     | Accepted   | 2026-04-08 |
+| [ADR-043](./ADR-043-postgresql-18-upgrade.md)                                | PostgreSQL 17 → 18 Major Upgrade                             | Accepted   | 2026-04-10 |
+| [ADR-044](./ADR-044-seo-and-security-headers.md)                             | SEO Infrastructure & Security Headers                        | Accepted   | 2026-04-11 |
 
 ## Template
 

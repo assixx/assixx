@@ -7,8 +7,9 @@
  *
  * This enables SSR pages to access the auth token via cookies.
  */
-import { fail, redirect, type Cookies } from '@sveltejs/kit';
+import { fail, redirect, type ActionFailure, type Cookies } from '@sveltejs/kit';
 
+import { verifyTurnstile } from '$lib/server/turnstile';
 import { createLogger } from '$lib/utils/logger';
 
 import type { Actions, PageServerLoad } from './$types';
@@ -202,11 +203,33 @@ function getLoginErrorResponse(response: Response, result: LoginResponse, email:
   });
 }
 
+/** Verify Turnstile token from form data, return fail response on failure */
+async function verifyTurnstileFromForm(
+  request: Request,
+  turnstileToken: FormDataEntryValue | null,
+  email: string,
+): Promise<ActionFailure<{ error: string; email: string }> | null> {
+  const tokenValue = typeof turnstileToken === 'string' ? turnstileToken : '';
+  if (tokenValue === '') return null;
+
+  const ip = request.headers.get('x-forwarded-for') ?? request.headers.get('x-real-ip') ?? '';
+  const valid = await verifyTurnstile(tokenValue, ip, 'login');
+
+  if (!valid) {
+    return fail(403, {
+      error: 'Sicherheitsprüfung fehlgeschlagen. Bitte versuchen Sie es erneut.',
+      email,
+    });
+  }
+  return null;
+}
+
 export const actions: Actions = {
   default: async ({ request, cookies, fetch }) => {
     const formData = await request.formData();
     const email = formData.get('email');
     const password = formData.get('password');
+    const turnstileToken = formData.get('turnstileToken');
 
     if (!isValidStringField(email) || !isValidStringField(password)) {
       const emailValue = typeof email === 'string' ? email : '';
@@ -215,6 +238,9 @@ export const actions: Actions = {
         email: emailValue,
       });
     }
+
+    const turnstileError = await verifyTurnstileFromForm(request, turnstileToken, email);
+    if (turnstileError !== null) return turnstileError;
 
     try {
       const response = await fetch(`${API_BASE}/auth/login`, {

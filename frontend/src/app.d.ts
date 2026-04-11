@@ -27,6 +27,30 @@ declare global {
     // interface PageState {}
     // interface Platform {}
   }
+
+  /** Cloudflare Turnstile Widget render options */
+  interface TurnstileRenderOptions {
+    sitekey: string;
+    callback?: (token: string) => void;
+    'expired-callback'?: () => void; // eslint-disable-line @typescript-eslint/naming-convention -- Cloudflare Turnstile API
+    'error-callback'?: () => void; // eslint-disable-line @typescript-eslint/naming-convention -- Cloudflare Turnstile API
+    theme?: 'auto' | 'light' | 'dark';
+    size?: 'normal' | 'flexible' | 'compact';
+    action?: string;
+    language?: string;
+  }
+
+  /** Cloudflare Turnstile Widget API */
+  interface TurnstileApi {
+    render: (container: HTMLElement, options: TurnstileRenderOptions) => string;
+    reset: (widgetId: string) => void;
+    remove: (widgetId: string) => void;
+  }
+
+  interface Window {
+    turnstile?: TurnstileApi;
+    onTurnstileLoad?: () => void;
+  }
 }
 
 /**

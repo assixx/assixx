@@ -24,7 +24,7 @@
    */
   function resolveDynamicPath(path: string): string {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-argument -- Dynamic paths can't match SvelteKit's static route types
-    return resolve(path as any, {});
+    return resolve(path as any);
   }
 
   interface UserInfo {

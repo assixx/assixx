@@ -365,7 +365,7 @@
                 'Unbekannt'} am {formatDate(pendingDeletion.requestedAt)}
             </p>
             <a
-              href={resolve('/tenant-deletion-status', {})}
+              href={resolve('/tenant-deletion-status')}
               class="btn btn-warning mt-4"
             >
               <i class="fas fa-external-link-alt mr-2"></i>

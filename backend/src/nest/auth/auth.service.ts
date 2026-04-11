@@ -28,13 +28,16 @@ import crypto from 'node:crypto';
 import { v7 as uuidv7 } from 'uuid';
 
 import type { NestAuthUser } from '../common/interfaces/auth.interface.js';
+import { getErrorMessage } from '../common/utils/error.utils.js';
 import { DatabaseService } from '../database/database.service.js';
 import type {
+  ForgotPasswordDto,
   LoginDto,
   LoginResponse,
   RefreshDto,
   RefreshResponse,
   RegisterDto,
+  ResetPasswordDto,
 } from './dto/index.js';
 
 /**
@@ -305,6 +308,161 @@ export class AuthService {
   }
 
   // ============================================
+  // Password Reset Methods
+  // ============================================
+
+  /**
+   * Request password reset — generates token, sends email.
+   * SECURITY: Always returns generic message to prevent email enumeration.
+   */
+  async forgotPassword(dto: ForgotPasswordDto): Promise<void> {
+    const user = await this.findUserByEmail(dto.email);
+
+    // Silent return if user not found — never reveal if email exists
+    if (user?.is_active !== 1) {
+      return;
+    }
+
+    // Invalidate any existing unused tokens for this user
+    await this.databaseService.systemQuery(
+      `UPDATE password_reset_tokens SET used = true WHERE user_id = $1 AND used = false`,
+      [user.id],
+    );
+
+    // Generate cryptographically secure token
+    const rawToken = crypto.randomBytes(32).toString('hex');
+    const tokenHash = this.hashToken(rawToken);
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 60 minutes
+
+    // Store hashed token in DB
+    await this.databaseService.systemQuery(
+      `INSERT INTO password_reset_tokens (user_id, token, expires_at, used)
+       VALUES ($1, $2, $3, false)`,
+      [user.id, tokenHash, expiresAt],
+    );
+
+    // Send reset email
+    await this.sendPasswordResetEmail(user, rawToken, expiresAt);
+
+    this.logger.log(`Password reset requested for user ${user.id}`);
+  }
+
+  /**
+   * Reset password using token.
+   * Validates token, updates password, invalidates token.
+   */
+  async resetPassword(dto: ResetPasswordDto): Promise<void> {
+    const tokenHash = this.hashToken(dto.token);
+
+    // Find valid, unused, non-expired token
+    const rows = await this.databaseService.systemQuery<{
+      id: number;
+      user_id: number;
+    }>(
+      `SELECT id, user_id FROM password_reset_tokens
+       WHERE token = $1 AND used = false AND expires_at > NOW()`,
+      [tokenHash],
+    );
+
+    const tokenRow = rows[0];
+    if (tokenRow === undefined) {
+      throw new UnauthorizedException(
+        'Ungültiger oder abgelaufener Link. Bitte fordern Sie einen neuen an.',
+      );
+    }
+
+    // Hash new password
+    const hashedPassword = await bcryptjs.hash(dto.password, 12);
+
+    // Update password + invalidate token in one transaction
+    await this.databaseService.systemQuery(`UPDATE users SET password = $1 WHERE id = $2`, [
+      hashedPassword,
+      tokenRow.user_id,
+    ]);
+
+    await this.databaseService.systemQuery(
+      `UPDATE password_reset_tokens SET used = true WHERE id = $1`,
+      [tokenRow.id],
+    );
+
+    // Revoke all refresh tokens for security (force re-login on all devices)
+    const user = await this.findUserById(tokenRow.user_id);
+    if (user !== null) {
+      await this.revokeAllUserTokensByUserId(tokenRow.user_id);
+    }
+
+    this.logger.log(`Password reset completed for user ${tokenRow.user_id}`);
+  }
+
+  /**
+   * Send password reset email via Nodemailer
+   */
+  private async sendPasswordResetEmail(
+    user: UserRow,
+    rawToken: string,
+    expiresAt: Date,
+  ): Promise<void> {
+    try {
+      const emailService = (await import('../../utils/email-service.js')).default;
+      const appUrl = process.env['APP_URL'] ?? 'http://localhost:5173';
+      const resetUrl = `${appUrl}/reset-password?token=${rawToken}`;
+      const fullName = [user.first_name, user.last_name].filter(Boolean).join(' ');
+      const userName = fullName !== '' ? fullName : user.email;
+
+      await emailService.sendEmail({
+        to: user.email,
+        subject: 'Passwort zurücksetzen — Assixx',
+        html: await this.loadPasswordResetTemplate({
+          userName,
+          resetUrl,
+          expiresAt: expiresAt.toLocaleString('de-DE', {
+            dateStyle: 'medium',
+            timeStyle: 'short',
+          }),
+        }),
+        text: `Hallo ${userName},\n\nSie haben angefordert, Ihr Passwort zurückzusetzen.\n\nKlicken Sie auf folgenden Link (gültig für 60 Minuten):\n${resetUrl}\n\nFalls Sie diese Anfrage nicht gestellt haben, ignorieren Sie diese E-Mail.\n\nMit freundlichen Grüßen,\nIhr Assixx-Team`,
+      });
+    } catch (error: unknown) {
+      // Log but don't throw — caller already returns generic response
+      this.logger.error(`Failed to send password reset email: ${getErrorMessage(error)}`);
+    }
+  }
+
+  /**
+   * Load password reset HTML template with placeholder replacement
+   */
+  private async loadPasswordResetTemplate(replacements: {
+    userName: string;
+    resetUrl: string;
+    expiresAt: string;
+  }): Promise<string> {
+    const fs = await import('node:fs/promises');
+    const path = await import('node:path');
+    const templatePath = path.join(process.cwd(), 'templates/email/password-reset.html');
+
+    let html = await fs.readFile(templatePath, 'utf8');
+    html = html.replace(/\{\{userName\}\}/g, this.escapeHtml(replacements.userName));
+    html = html.replace(/\{\{resetUrl\}\}/g, replacements.resetUrl);
+    html = html.replace(/\{\{expiresAt\}\}/g, this.escapeHtml(replacements.expiresAt));
+
+    return html;
+  }
+
+  /**
+   * Escape HTML entities in template values
+   */
+  private escapeHtml(str: string): string {
+    const escapes: Record<string, string> = {
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#39;',
+    };
+    return str.replace(/["&'<>]/g, (ch: string) => escapes[ch] ?? ch);
+  }
+
+  // ============================================
   // Token Methods
   // ============================================
 
@@ -461,16 +619,19 @@ export class AuthService {
   }
 
   /**
-   * Find user by ID
+   * Find user by ID (with tenant scope)
    */
-  private async findUserById(userId: number, tenantId: number): Promise<UserRow | null> {
-    const rows = await this.databaseService.systemQuery<UserRow>(
-      `SELECT id, tenant_id, email, password, role, username, first_name, last_name,
-              is_active, last_login, created_at
-       FROM users
-       WHERE id = $1 AND tenant_id = $2`,
-      [userId, tenantId],
-    );
+  private async findUserById(userId: number, tenantId?: number): Promise<UserRow | null> {
+    const query =
+      tenantId !== undefined ?
+        `SELECT id, tenant_id, email, password, role, username, first_name, last_name,
+                is_active, last_login, created_at
+           FROM users WHERE id = $1 AND tenant_id = $2`
+      : `SELECT id, tenant_id, email, password, role, username, first_name, last_name,
+                is_active, last_login, created_at
+           FROM users WHERE id = $1`;
+    const params = tenantId !== undefined ? [userId, tenantId] : [userId];
+    const rows = await this.databaseService.systemQuery<UserRow>(query, params);
 
     return rows[0] ?? null;
   }
@@ -631,6 +792,24 @@ export class AuthService {
        )
        SELECT COUNT(*) as count FROM updated`,
       [userId, tenantId],
+    );
+
+    return Number.parseInt(result[0]?.count ?? '0', 10);
+  }
+
+  /**
+   * Revoke all tokens for a user by ID only (no tenant scope needed)
+   * Used during password reset to force re-login on all devices.
+   */
+  private async revokeAllUserTokensByUserId(userId: number): Promise<number> {
+    const result = await this.databaseService.systemQuery<{ count: string }>(
+      `WITH updated AS (
+         UPDATE refresh_tokens SET is_revoked = true
+         WHERE user_id = $1 AND is_revoked = false
+         RETURNING 1
+       )
+       SELECT COUNT(*) as count FROM updated`,
+      [userId],
     );
 
     return Number.parseInt(result[0]?.count ?? '0', 10);

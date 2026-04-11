@@ -109,7 +109,7 @@
       </div>
       <!-- eslint-disable svelte/no-navigation-without-resolve -- dynamic query string -->
       <a
-        href={`${resolve('/signup', {})}?plan=enterprise`}
+        href={`${resolve('/signup')}?plan=enterprise`}
         class="btn btn-index enterprise-box__button">Enterprise-Beratung anfragen</a
       >
       <!-- eslint-enable svelte/no-navigation-without-resolve -->

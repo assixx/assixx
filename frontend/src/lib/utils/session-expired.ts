@@ -19,7 +19,7 @@ export function isSessionExpiredError(err: unknown): boolean {
 
 /** Redirect to login page with session=expired query param. */
 export function handleSessionExpired(): void {
-  void goto(resolve('/login?session=expired', {}));
+  void goto(resolve('/login?session=expired'));
 }
 
 /** Check for session expired and redirect if so. Returns true if expired. */

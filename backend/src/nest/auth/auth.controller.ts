@@ -30,8 +30,21 @@ import { CustomThrottlerGuard } from '../common/guards/throttler.guard.js';
 import type { NestAuthUser } from '../common/interfaces/auth.interface.js';
 import { AuthService } from './auth.service.js';
 import { ConnectionTicketService } from './connection-ticket.service.js';
-import { ConnectionTicketDto, LoginDto, RefreshDto, RegisterDto } from './dto/index.js';
-import type { ConnectionTicketResponse, LoginResponse, RefreshResponse } from './dto/index.js';
+import {
+  ConnectionTicketDto,
+  ForgotPasswordDto,
+  LoginDto,
+  RefreshDto,
+  RegisterDto,
+  ResetPasswordDto,
+} from './dto/index.js';
+import type {
+  ConnectionTicketResponse,
+  ForgotPasswordResponse,
+  LoginResponse,
+  RefreshResponse,
+  ResetPasswordResponse,
+} from './dto/index.js';
 
 /**
  * Cookie configuration for SSR support
@@ -283,6 +296,45 @@ export class AuthController {
       isActive: foundUser.is_active,
       lastLogin: foundUser.last_login,
       createdAt: foundUser.created_at,
+    };
+  }
+
+  /**
+   * POST /auth/forgot-password
+   * Request password reset email (public, rate-limited)
+   *
+   * SECURITY: Always returns same message regardless of whether email exists.
+   * This prevents email enumeration attacks.
+   */
+  @Post('forgot-password')
+  @Public()
+  @UseGuards(CustomThrottlerGuard)
+  @AuthThrottle() // 10 requests per 5 minutes
+  @HttpCode(HttpStatus.OK)
+  async forgotPassword(@Body() dto: ForgotPasswordDto): Promise<ForgotPasswordResponse> {
+    await this.authService.forgotPassword(dto);
+
+    // Always return the same response — never reveal if email exists
+    return {
+      message:
+        'Falls ein Konto mit dieser E-Mail existiert, wurde ein Link zum Zurücksetzen gesendet.',
+    };
+  }
+
+  /**
+   * POST /auth/reset-password
+   * Reset password using token from email (public, rate-limited)
+   */
+  @Post('reset-password')
+  @Public()
+  @UseGuards(CustomThrottlerGuard)
+  @AuthThrottle() // 10 requests per 5 minutes
+  @HttpCode(HttpStatus.OK)
+  async resetPassword(@Body() dto: ResetPasswordDto): Promise<ResetPasswordResponse> {
+    await this.authService.resetPassword(dto);
+
+    return {
+      message: 'Passwort erfolgreich zurückgesetzt. Sie können sich jetzt anmelden.',
     };
   }
 

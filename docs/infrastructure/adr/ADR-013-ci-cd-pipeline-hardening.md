@@ -142,9 +142,19 @@ Chosen: CRITICAL only as gate. HIGH is informational in the CI logs but does not
 
 Chosen: Table format. Code Security is not enabled and not justified for current needs. When Code Security is activated, SARIF can be added back.
 
-### API Tests in CI: Bruno vs. Alternatives
+### API + E2E Tests in CI
 
-Intentionally not implemented. The decision whether to use Bruno, OpenAPI/Swagger, or Postman as the long-term API test tool is still pending. Once decided, the chosen tool should be integrated into CI.
+API integration tests (Vitest, 753 tests) and E2E browser tests (Playwright, 20 tests) both require Docker services (Backend, PostgreSQL, Redis). The current CI runners use standard `ubuntu-latest` without Docker Compose.
+
+**Options to enable in CI (not yet implemented):**
+
+| Option                         | Pros                      | Cons                                     |
+| ------------------------------ | ------------------------- | ---------------------------------------- |
+| Docker Compose in CI           | Same env as local         | Slow startup (~60s), complex setup       |
+| `services:` in GitHub Actions  | Native, no Compose needed | Limited to single containers per service |
+| Self-hosted runner with Docker | Full control, fast        | Maintenance overhead                     |
+
+**Current state:** Both test suites run locally only. Unit + frontend tests (no Docker) run in CI as merge gate. This is a deliberate trade-off — CI covers 7306 tests (unit + permission + frontend), local adds 773 (API + E2E).
 
 ---
 

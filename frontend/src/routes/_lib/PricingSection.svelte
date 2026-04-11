@@ -47,7 +47,7 @@
       </ul>
       <div class="pricing-card__footer">
         <a
-          href={resolve('/signup', {})}
+          href={resolve('/signup')}
           class="btn btn-secondary pricing-card__button">Jetzt starten</a
         >
       </div>
@@ -75,7 +75,7 @@
       </ul>
       <div class="pricing-card__footer">
         <a
-          href={resolve('/signup', {})}
+          href={resolve('/signup')}
           class="btn btn-index pricing-card__button pricing-card__button--transparent"
         >
           Kostenlos testen
@@ -103,7 +103,7 @@
       <div class="pricing-card__footer">
         <!-- eslint-disable svelte/no-navigation-without-resolve -- dynamic query string -->
         <a
-          href={`${resolve('/signup', {})}?plan=enterprise`}
+          href={`${resolve('/signup')}?plan=enterprise`}
           class="btn btn-secondary pricing-card__button">Beratung anfragen</a
         >
         <!-- eslint-enable svelte/no-navigation-without-resolve -->

@@ -82,6 +82,12 @@ temp/
 coverage/
 .nyc_output/
 
+# Playwright E2E
+e2e/.auth/
+e2e/test-results/
+playwright-report/
+.playwright-mcp/
+
 # Test directories
 **/__tests__/
 

@@ -5,7 +5,10 @@
   import { replaceState } from '$app/navigation';
   import { resolve } from '$app/paths';
 
+  import LegalFooter from '$lib/components/LegalFooter.svelte';
+  import Seo from '$lib/components/Seo.svelte';
   import ThemeToggle from '$lib/components/ThemeToggle.svelte';
+  import Turnstile from '$lib/components/Turnstile.svelte';
   import { setLoginPassword } from '$lib/crypto/login-password-bridge';
   import { isDark } from '$lib/stores/theme.svelte';
   import { showInfoAlert } from '$lib/stores/toast';
@@ -14,7 +17,14 @@
 
   import type { ActionData } from './$types';
 
+  import { PUBLIC_TURNSTILE_SITE_KEY } from '$env/static/public';
+
   const { form }: { form: ActionData } = $props();
+
+  // Cloudflare Turnstile
+  const turnstileEnabled = PUBLIC_TURNSTILE_SITE_KEY !== '';
+  let turnstileToken = $state('');
+  let turnstileRef: { reset: () => void } | undefined;
 
   // =============================================================================
   // SVELTE 5 RUNES - Reactive State
@@ -77,10 +87,12 @@
   // SVELTE 5 RUNES - Derived/Computed Values
   // =============================================================================
 
-  // Form validation - re-computed automatically when email/password change
+  // Form validation - re-computed automatically when email/password/turnstile change
   const isEmailValid = $derived(email.includes('@') && email.includes('.'));
   const isPasswordValid = $derived(password.length >= 8);
-  const isFormValid = $derived(isEmailValid && isPasswordValid);
+  const isFormValid = $derived(
+    isEmailValid && isPasswordValid && (!turnstileEnabled || turnstileToken !== ''),
+  );
 
   // Button text - computed from loading state
   const buttonText = $derived(loading ? 'Anmelden...' : 'Anmelden');
@@ -125,9 +137,8 @@
   // Event Handlers
   // =============================================================================
 
-  function handlePasswordReset(e: Event): void {
-    e.preventDefault();
-    showInfoAlert('Passwort zurücksetzen - Coming soon');
+  function handlePasswordReset(_e: Event): void {
+    window.location.href = resolve('/forgot-password');
   }
 
   function handleRequestAccess(e: Event): void {
@@ -175,13 +186,15 @@
   }
 </script>
 
-<svelte:head>
-  <title>Assixx - Login</title>
-</svelte:head>
+<Seo
+  title="Anmelden - Assixx"
+  description="Melden Sie sich bei Assixx an — der Enterprise-Plattform für Industrieunternehmen."
+  canonical="https://www.assixx.com/login"
+/>
 
 <!-- Back to Homepage Button -->
 <a
-  href={resolve('/', {})}
+  href={resolve('/')}
   class="back-button"
 >
   <span class="icon">←</span>
@@ -301,6 +314,9 @@
             return;
           }
 
+          // Reset Turnstile for retry (token is single-use)
+          turnstileRef?.reset();
+
           // On error, update() will populate form.error
           await update();
         };
@@ -345,6 +361,18 @@
         />
       </div>
 
+      <!-- Cloudflare Turnstile -->
+      <input
+        type="hidden"
+        name="turnstileToken"
+        value={turnstileToken}
+      />
+      <Turnstile
+        bind:this={turnstileRef}
+        bind:token={turnstileToken}
+        action="login"
+      />
+
       <div class="mt-6 flex justify-end">
         <button
           type="submit"
@@ -373,7 +401,7 @@
 
   <!-- Company Footer -->
   <div class="login-company">
-    <p class="text-secondary">© 2025 Assixx - Powered by Simon Öztürks Computer Service</p>
+    <LegalFooter compact />
   </div>
 </main>
 

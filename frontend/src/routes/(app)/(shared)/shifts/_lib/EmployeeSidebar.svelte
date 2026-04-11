@@ -76,7 +76,7 @@
         Mindestbesetzung: {minStaffCount}
       </span>
       <a
-        href={`${resolve('/vacation/rules', {})}?tab=staffing-rules`}
+        href={`${resolve('/vacation/rules')}?tab=staffing-rules`}
         class="action-icon action-icon--edit"
         title="Besetzungsregeln bearbeiten"
       >

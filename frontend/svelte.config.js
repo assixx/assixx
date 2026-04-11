@@ -35,7 +35,8 @@ const config = {
       directives: {
         'default-src': ['self'],
         // nonce added automatically by SvelteKit for inline scripts (SSR hydration)
-        'script-src': ['self'],
+        // Cloudflare Turnstile widget loads from challenges.cloudflare.com
+        'script-src': ['self', 'https://challenges.cloudflare.com'],
         // Allow styles: self + inline + Google Fonts
         'style-src': ['self', 'unsafe-inline', 'https://fonts.googleapis.com'],
         // Allow fonts: self + Google Fonts
@@ -52,6 +53,8 @@ const config = {
         'worker-src': ['self', 'blob:'],
         // Allow images: self + data URIs (for inline SVGs, etc.)
         'img-src': ['self', 'data:', 'blob:'],
+        // Cloudflare Turnstile renders challenge in an iframe
+        'frame-src': ['https://challenges.cloudflare.com'],
         // Security: block object embeds and frame ancestors
         'object-src': ['none'],
         'base-uri': ['self'],

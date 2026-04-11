@@ -74,7 +74,7 @@ export function checkAuth(): boolean {
   if (typeof localStorage === 'undefined') return false;
   const token = localStorage.getItem('accessToken');
   if (token === null) {
-    void goto(resolve('/login', {}));
+    void goto(resolve('/login'));
     return false;
   }
   return true;

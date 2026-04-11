@@ -222,7 +222,7 @@
 
     const token = localStorage.getItem('accessToken');
     if (token === null || token === '') {
-      void goto(resolve('/login', {}));
+      void goto(resolve('/login'));
       return;
     }
 

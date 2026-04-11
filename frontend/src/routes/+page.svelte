@@ -3,12 +3,31 @@
 
   import { resolve } from '$app/paths';
 
+  import LegalFooter from '$lib/components/LegalFooter.svelte';
+  import Seo from '$lib/components/Seo.svelte';
   import ThemeToggle from '$lib/components/ThemeToggle.svelte';
   import { isDark } from '$lib/stores/theme.svelte';
 
   import ModuleGrid from './_lib/ModuleGrid.svelte';
   import PricingSection from './_lib/PricingSection.svelte';
   import SecuritySection from './_lib/SecuritySection.svelte';
+
+  const STRUCTURED_DATA: Record<string, unknown> = {
+    '@context': 'https://schema.org',
+    '@type': 'SoftwareApplication',
+    name: 'Assixx',
+    applicationCategory: 'BusinessApplication',
+    operatingSystem: 'Web',
+    description:
+      'Enterprise 2.0 Platform für Industriefirmen — Wissensmanagement, Kommunikation und Kollaboration.',
+    url: 'https://www.assixx.com',
+    inLanguage: 'de',
+    author: {
+      '@type': 'Organization',
+      name: 'SCS-Technik',
+      url: 'https://www.scs-technik.de',
+    },
+  };
 
   // Body class for landing page (disables global gradient)
   onMount(() => {
@@ -23,9 +42,12 @@
   }
 </script>
 
-<svelte:head>
-  <title>Assixx - Enterprise 2.0 für Industriefirmen</title>
-</svelte:head>
+<Seo
+  title="Assixx - Enterprise 2.0 für Industriefirmen"
+  description="Multi-Tenant SaaS für Wissensmanagement, Kommunikation und Kollaboration in Industrieunternehmen. Von der Produktion bis zur Verwaltung — alles in einer Plattform."
+  canonical="https://www.assixx.com/"
+  jsonLd={STRUCTURED_DATA}
+/>
 
 <!-- Landing Page Container -->
 <div class="landing-page">
@@ -49,9 +71,9 @@
         <a href="#module">Module</a>
         <a href="#security">Sicherheit</a>
         <a href="#pricing">Preise</a>
-        <a href={resolve('/login', {})}>Anmelden</a>
+        <a href={resolve('/login')}>Anmelden</a>
         <a
-          href={resolve('/signup', {})}
+          href={resolve('/signup')}
           class="btn btn-index">Registrieren</a
         >
         <ThemeToggle />
@@ -67,7 +89,7 @@
       Alles in einer Plattform.
     </p>
     <a
-      href={resolve('/signup', {})}
+      href={resolve('/signup')}
       class="btn btn-index">Jetzt registrieren</a
     >
   </section>
@@ -82,9 +104,7 @@
   <PricingSection />
 
   <!-- Footer -->
-  <footer class="footer">
-    <p>&copy; 2026 Assixx. Alle Rechte vorbehalten.</p>
-  </footer>
+  <LegalFooter />
 </div>
 
 <!-- End .landing-page -->
@@ -220,14 +240,6 @@
     color: var(--color-white);
     animation: fade-in-up var(--duration-slow) var(--ease-out) both;
     animation-delay: 400ms;
-  }
-
-  /* Footer */
-  .footer {
-    border-top: var(--glass-border);
-    padding: var(--spacing-6) 5%;
-    color: var(--color-text-secondary);
-    text-align: center;
   }
 
   /* Light mode overrides */

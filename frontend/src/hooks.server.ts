@@ -34,7 +34,17 @@ const log = createLogger('hooks.server');
 const API_BASE = process.env.API_URL ?? 'http://localhost:3000/api/v2';
 
 /** Public routes - no authentication required */
-const PUBLIC_ROUTES = ['/', '/login', '/signup', '/tenant-deletion-approve', '/rate-limit'];
+const PUBLIC_ROUTES = [
+  '/',
+  '/login',
+  '/signup',
+  '/impressum',
+  '/datenschutz',
+  '/tenant-deletion-approve',
+  '/rate-limit',
+  '/robots.txt',
+  '/sitemap.xml',
+];
 
 /** Routes to skip authentication check (internal, assets, API proxy) */
 const SKIP_ROUTES_PREFIXES = ['/_app/', '/favicon', '/api/', '/sentry-tunnel', '/health'];
@@ -185,6 +195,45 @@ const authHandle: Handle = async ({ event, resolve }) => {
 };
 
 // ============================================================================
+// Security Headers
+// ============================================================================
+
+/** Routes that search engines may index (public-facing pages only) */
+const INDEXABLE_ROUTES = ['/', '/login', '/signup'];
+
+/**
+ * Security Headers Handle
+ *
+ * Adds defense-in-depth HTTP headers to all responses:
+ * - HSTS: Force HTTPS for 2 years
+ * - X-Content-Type-Options: Prevent MIME sniffing
+ * - X-Frame-Options: Clickjacking prevention (CSP backup)
+ * - Referrer-Policy: Privacy-safe referrer
+ * - Permissions-Policy: Restrict unused browser APIs
+ * - X-Robots-Tag: Block indexing for authenticated routes
+ *
+ * @see SCS website reference (next.config.ts security headers)
+ */
+const securityHeadersHandle: Handle = async ({ event, resolve }) => {
+  const response = await resolve(event);
+  const { pathname } = event.url;
+
+  response.headers.set('X-DNS-Prefetch-Control', 'on');
+  response.headers.set('Strict-Transport-Security', 'max-age=63072000; includeSubDomains; preload');
+  response.headers.set('X-Frame-Options', 'SAMEORIGIN');
+  response.headers.set('X-Content-Type-Options', 'nosniff');
+  response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+  response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+
+  // Block indexing for all non-public routes (belt-and-suspenders with robots.txt)
+  if (!INDEXABLE_ROUTES.includes(pathname)) {
+    response.headers.set('X-Robots-Tag', 'noindex, nofollow');
+  }
+
+  return response;
+};
+
+// ============================================================================
 // Request Logging
 // ============================================================================
 
@@ -281,6 +330,7 @@ const htmlMinificationHandle: Handle = async ({ event, resolve }) => {
  */
 export const handle: Handle = sequence(
   Sentry.sentryHandle(),
+  securityHeadersHandle,
   authHandle,
   requestLoggingHandle,
   htmlMinificationHandle,
