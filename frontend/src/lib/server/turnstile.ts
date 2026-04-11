@@ -33,11 +33,12 @@ export async function verifyTurnstile(
   expectedAction: string,
 ): Promise<boolean> {
   // svelte-kit sync emits a narrow `TURNSTILE_SECRET_KEY: string` locally
-  // (Doppler sets the var), but in CI the key is absent and typed as
-  // `string | undefined`. Widen through an optional-property annotation so
-  // the guard is meaningful in both environments and honours the documented
-  // "empty key → skip verification" contract.
-  const privateEnv: { TURNSTILE_SECRET_KEY?: string } = env;
+  // (Doppler sets the var), but in CI the key is absent entirely. An object
+  // annotation like `{ TURNSTILE_SECRET_KEY?: string }` trips the weak-type
+  // rule because CI's `env` has no overlapping named properties. Casting
+  // through a plain index-signature Record is the only shape that's
+  // symmetrically assignable in both environments.
+  const privateEnv = env as Record<string, string | undefined>;
   const secretKey = privateEnv.TURNSTILE_SECRET_KEY;
 
   if (secretKey === undefined || secretKey === '') {

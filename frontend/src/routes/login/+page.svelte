@@ -21,9 +21,9 @@
 
   const { form }: { form: ActionData } = $props();
 
-  // Cloudflare Turnstile — widen via optional-property annotation so the
-  // absent-key case survives svelte-kit sync (see lib/server/turnstile.ts).
-  const publicEnv: { PUBLIC_TURNSTILE_SITE_KEY?: string } = env;
+  // Cloudflare Turnstile — cast through a plain index-signature Record so
+  // the absent-key case survives svelte-kit sync (see lib/server/turnstile.ts).
+  const publicEnv = env as Record<string, string | undefined>;
   const turnstileEnabled = (publicEnv.PUBLIC_TURNSTILE_SITE_KEY ?? '') !== '';
   let turnstileToken = $state('');
   let turnstileRef: { reset: () => void } | undefined;

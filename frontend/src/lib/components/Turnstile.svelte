@@ -28,10 +28,10 @@
   let container: HTMLDivElement | undefined = $state();
   let widgetId: string | null = $state(null);
 
-  // Widen through an optional-property annotation so the absent-key case
-  // survives svelte-kit's sync-time type generation. See lib/server/turnstile.ts
-  // for the full local/CI rationale.
-  const publicEnv: { PUBLIC_TURNSTILE_SITE_KEY?: string } = env;
+  // Cast through a plain index-signature Record so the absent-key case
+  // survives svelte-kit's sync-time type generation (see lib/server/turnstile.ts
+  // for the weak-type rationale).
+  const publicEnv = env as Record<string, string | undefined>;
   const siteKey = publicEnv.PUBLIC_TURNSTILE_SITE_KEY ?? '';
 
   /** Token setter — extracted to avoid naming-convention lint on Turnstile callback keys */
