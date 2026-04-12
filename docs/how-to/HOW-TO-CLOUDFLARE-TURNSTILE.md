@@ -202,6 +202,44 @@ webServer: {
 
 ---
 
+## CI-Gotcha: Optional Public Env Vars
+
+`svelte-kit sync` generiert `.svelte-kit/ambient.d.ts` basierend auf `process.env` zur Sync-Zeit. Das erzeugt **asymmetrische Typen** zwischen lokaler Entwicklung und CI — und dieser Turnstile-Code ist davon betroffen, weil Site/Secret Keys per Design optional sind.
+
+| Umgebung            | Typ von `env.PUBLIC_TURNSTILE_SITE_KEY` (client) & `env.TURNSTILE_SECRET_KEY` (server) |
+| ------------------- | -------------------------------------------------------------------------------------- |
+| Lokal (mit Doppler) | spezifische Property `string` (benannt im generierten Ambient-Modul)                   |
+| CI (ohne Doppler)   | nicht vorhanden — nur Index-Signature `[key: string]: string \| undefined`             |
+
+**Folge:** Ein direkter Import via `$env/static/public` bricht in CI mit `Module '"$env/static/public"' has no exported member 'PUBLIC_TURNSTILE_SITE_KEY'`. Das widerspricht dem hier dokumentierten "leerer Key = Turnstile deaktiviert"-Vertrag — der static-Import kompiliert nicht mal, wenn der Key fehlt.
+
+**Richtiges Pattern — `$env/dynamic/*` plus Record-Cast:**
+
+```typescript
+// Client: Turnstile.svelte, login/+page.svelte, signup/+page.svelte
+import { env } from '$env/dynamic/public';
+
+const publicEnv = env as Record<string, string | undefined>;
+const siteKey = publicEnv.PUBLIC_TURNSTILE_SITE_KEY ?? '';
+
+// Server: lib/server/turnstile.ts
+import { env } from '$env/dynamic/private';
+
+const privateEnv = env as Record<string, string | undefined>;
+const secretKey = privateEnv.TURNSTILE_SECRET_KEY;
+if (secretKey === undefined || secretKey === '') {
+  // skip verification
+}
+```
+
+**Warum der Cast nötig ist:** Der naheliegende Versuch `const publicEnv: { PUBLIC_TURNSTILE_SITE_KEY?: string } = env` scheitert in CI an TypeScript's **Weak-Type-Regel**: Ein Typ mit ausschließlich optionalen benannten Properties (Weak Type) darf nur zugewiesen werden, wenn die Quelle mindestens eine benannte Property teilt. Index-Signaturen zählen dafür nicht. CI's `env` hat nur Runner-Vars (`GITHUB_STATE`, `USER`, `INIT_CWD` …) → keine Überschneidung → `no properties in common`. `Record<string, string | undefined>` ist dagegen **kein** Weak Type (nur Index-Signature, keine benannten Props), umgeht die Regel und ist symmetrisch zu beiden Env-Shapes zuweisbar.
+
+**Wann anwenden:** Für jede Env-Var, die zur Sync-Zeit legitim fehlen darf — Cloudflare Turnstile, optionale Analytics-Keys, Feature-Flags. Pflicht-Keys (DB-URL, JWT-Secret) dürfen weiter `$env/static/*` nutzen; dort IST es ein Build-Fehler wenn sie fehlen.
+
+**Warum nicht stattdessen Test-Keys im CI-Workflow injizieren:** Würde den Design-Bug maskieren. Frische Checkouts ohne Doppler kämen nicht mal durch `pnpm run check`, und die Env-Injection müsste in jedem Job mit `svelte-kit sync` wiederholt werden (aktuell `frontend-quality` und `unit-tests`). Der Code selbst ist die einzig ehrliche Stelle für die "optional"-Semantik.
+
+---
+
 ## CSP (Content Security Policy)
 
 Turnstile benötigt zwei CSP-Einträge in `svelte.config.js`:
