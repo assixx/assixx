@@ -529,13 +529,6 @@
 
   .holiday-list__item {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: var(--spacing-3) var(--spacing-4);
-    border-radius: var(--radius-md);
-    background: var(--glass-bg);
-    border: 1px solid var(--color-glass-border);
-    transition: border-color var(--transition-fast);
   }
 
   .holiday-list__item:hover {

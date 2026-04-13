@@ -219,6 +219,11 @@ const intermediateBreadcrumbs: Partial<Record<string, IntermediateCrumb>> = {
     href: '/work-orders',
     icon: 'fa-clipboard-check',
   },
+  '/lean-management/tpm/gesamtansicht': {
+    label: TPM_OVERVIEW_LABEL,
+    href: TPM_OVERVIEW_PATH,
+    icon: ICON_TOOLS,
+  },
 };
 
 /** Static URL mappings (hierarchy-independent) */
@@ -264,6 +269,10 @@ const staticUrlMappings: Partial<Record<string, RouteMapping>> = {
   '/lean-management/tpm/overview': {
     label: TPM_OVERVIEW_LABEL,
     icon: ICON_TOOLS,
+  },
+  '/lean-management/tpm/gesamtansicht': {
+    label: 'Gesamtansicht',
+    icon: 'fa-table',
   },
   '/tenant-deletion-status': {
     label: 'Tenant Löschstatus',

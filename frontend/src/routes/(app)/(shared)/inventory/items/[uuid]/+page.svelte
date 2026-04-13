@@ -696,28 +696,33 @@
           </button>
         </div>
         <div class="ds-modal__body p-0">
-          <div
-            class="flex min-h-[400px] w-full items-center justify-center"
-            style="background: var(--color-glass-bg, #111);"
-          >
+          <div class="preview-image-container">
             <img
               src={getPhotoUrl(previewPhoto.filePath)}
               alt={previewPhoto.caption ?? item.name}
-              class="max-h-[80vh] max-w-full object-contain"
             />
           </div>
-          <div class="photo-preview-meta">
+          <div class="preview-meta">
             <span class="flex items-center gap-2">
               <i class="fas fa-cube"></i>
-              {item.code}
+              <span>{item.code}</span>
             </span>
             {#if previewPhoto.caption}
               <span class="flex items-center gap-2">
                 <i class="fas fa-tag"></i>
-                {previewPhoto.caption}
+                <span>{previewPhoto.caption}</span>
               </span>
             {/if}
           </div>
+        </div>
+        <div class="ds-modal__footer">
+          <button
+            type="button"
+            class="btn btn-cancel"
+            onclick={() => (previewPhoto = null)}
+          >
+            <i class="fas fa-times mr-2"></i> Schließen
+          </button>
         </div>
       </div>
     </div>
@@ -940,16 +945,6 @@
     background: rgb(220 38 38);
   }
 
-  .photo-preview-meta {
-    display: flex;
-    align-items: center;
-    gap: 1.5rem;
-    padding: 1rem;
-    border-top: 1px solid var(--color-border, rgb(255 255 255 / 10%));
-    color: var(--color-text-secondary);
-    font-size: 0.875rem;
-  }
-
   /* ── Drag & Drop ─────────────────────────────────────────── */
 
   .photo-drag-handle {
@@ -1038,5 +1033,31 @@
     aspect-ratio: auto;
     padding: 2rem;
     width: 100%;
+  }
+
+  .preview-image-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+    min-height: 400px;
+    max-height: 70vh;
+    width: 100%;
+  }
+
+  .preview-image-container img {
+    max-width: 100%;
+    max-height: 70vh;
+    object-fit: contain;
+  }
+
+  .preview-meta {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    border-top: 1px solid var(--color-glass-border);
+    padding: 1rem;
+    color: var(--color-text-secondary);
+    font-size: 0.875rem;
   }
 </style>

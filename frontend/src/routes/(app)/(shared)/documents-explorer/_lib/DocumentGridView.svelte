@@ -3,6 +3,8 @@
     formatFileSize,
     formatRelativeDate,
     getDisplayName,
+    getFileExtension,
+    getFileTypeDisplayInfo,
     truncateFilename,
     isDocumentNew,
     canEditDocument,
@@ -28,52 +30,57 @@
 <div class="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
   {#each documents as doc (doc.id)}
     {@const isNew = isDocumentNew(doc)}
+    {@const displayName = getDisplayName(doc)}
+    {@const ext = getFileExtension(displayName)}
+    {@const typeInfo = getFileTypeDisplayInfo(doc.category, ext)}
     <!-- svelte-ignore a11y_click_events_have_key_events -->
     <!-- svelte-ignore a11y_no_static_element_interactions -->
     <div
-      class="document-card bg-surface-2 border-border-subtle cursor-pointer rounded-lg border
-        p-4 transition-all duration-200 hover:shadow-lg"
+      class="document-card card card--clickable card--compact card--no-margin"
       data-document-id={doc.id}
       onclick={() => {
         onpreview(doc);
       }}
     >
-      <div class="mb-4 flex items-start justify-between">
-        <div class="flex items-center gap-3">
-          <i class="fas fa-file-alt text-primary-500 text-3xl"></i>
-          <div class="flex flex-col gap-1">
-            {#if isNew}
-              <span class="bg-success-100 text-success-700 rounded px-2 py-0.5 text-xs font-medium"
-                >Neu</span
-              >
-            {/if}
-            {#if !doc.isRead}
-              <span class="bg-primary-100 text-primary-700 rounded px-2 py-0.5 text-xs font-medium"
-                >Ungelesen</span
-              >
-            {/if}
-          </div>
+      <!-- Icon + Badges -->
+      <div class="mb-3 flex items-start justify-between">
+        <i class="{typeInfo.iconClass} document-card__icon"></i>
+        <div class="document-card__badges">
+          {#if isNew}
+            <span class="document-card__badge document-card__badge--new">Neu</span>
+          {/if}
+          {#if !doc.isRead}
+            <span class="document-card__badge document-card__badge--unread">Ungelesen</span>
+          {/if}
+        </div>
+      </div>
+
+      <!-- Name + Category -->
+      <h3
+        class="text-content-primary mb-1 truncate text-sm leading-snug {!doc.isRead ?
+          'font-semibold'
+        : 'font-medium'}"
+        title={displayName}
+      >
+        {truncateFilename(displayName, 28)}
+      </h3>
+      <p class="text-content-secondary mb-3 text-xs">{doc.category}</p>
+
+      <!-- Footer: Meta + Actions -->
+      <div class="mt-auto flex items-center justify-between">
+        <div class="text-content-tertiary flex items-center gap-2 text-xs">
+          <span>{formatFileSize(doc.size)}</span>
+          <span class="text-border-subtle">&middot;</span>
+          <span>{formatRelativeDate(doc.uploadedAt)}</span>
         </div>
         {#if showActions}
-          <div class="flex items-center gap-1">
-            <button
-              type="button"
-              class="action-icon action-icon--info"
-              title="Vorschau"
-              aria-label="Vorschau anzeigen"
-              onclick={(e) => {
-                e.stopPropagation();
-                onpreview(doc);
-              }}
-            >
-              <i class="fas fa-eye"></i>
-            </button>
+          <div class="document-card__actions">
             <button
               type="button"
               class="action-icon action-icon--info"
               title="Herunterladen"
               aria-label="Dokument herunterladen"
-              onclick={(e) => {
+              onclick={(e: MouseEvent) => {
                 ondownload(doc, e);
               }}
             >
@@ -85,7 +92,7 @@
                 class="action-icon action-icon--edit"
                 title="Bearbeiten"
                 aria-label="Dokument bearbeiten"
-                onclick={(e) => {
+                onclick={(e: MouseEvent) => {
                   onedit(doc, e);
                 }}
               >
@@ -98,7 +105,7 @@
                 class="action-icon action-icon--delete"
                 title="Löschen"
                 aria-label="Dokument löschen"
-                onclick={(e) => {
+                onclick={(e: MouseEvent) => {
                   ondelete(doc, e);
                 }}
               >
@@ -108,21 +115,69 @@
           </div>
         {/if}
       </div>
-      <div class="mb-4">
-        <h3
-          class="text-content-primary mb-1 truncate text-sm font-medium {!doc.isRead ?
-            'font-semibold'
-          : ''}"
-          title={getDisplayName(doc)}
-        >
-          {truncateFilename(getDisplayName(doc), 30)}
-        </h3>
-        <p class="text-content-secondary text-xs">{doc.category}</p>
-      </div>
-      <div class="text-content-tertiary flex items-center justify-between text-xs">
-        <span>{formatFileSize(doc.size)}</span>
-        <span>{formatRelativeDate(doc.uploadedAt)}</span>
-      </div>
     </div>
   {/each}
 </div>
+
+<style>
+  .document-card {
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* File type icon — large, centered top-left anchor */
+  .document-card__icon {
+    font-size: 1.75rem;
+    color: var(--color-primary);
+    opacity: 80%;
+    transition: opacity 0.2s ease;
+  }
+
+  .document-card:hover .document-card__icon {
+    opacity: 100%;
+  }
+
+  /* Badges */
+  .document-card__badges {
+    display: flex;
+    gap: 0.25rem;
+  }
+
+  .document-card__badge {
+    border-radius: var(--radius-sm, 4px);
+    padding: 0.125rem 0.375rem;
+    font-size: 0.625rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+  }
+
+  .document-card__badge--new {
+    background: oklch(87% 0.12 145 / 20%);
+    color: var(--color-success);
+  }
+
+  .document-card__badge--unread {
+    background: oklch(65% 0.17 249 / 15%);
+    color: var(--color-primary);
+  }
+
+  /* Actions — reveal on hover */
+  .document-card__actions {
+    display: flex;
+    gap: 0.125rem;
+    opacity: 0%;
+    transition: opacity 0.15s ease;
+  }
+
+  .document-card:hover .document-card__actions {
+    opacity: 100%;
+  }
+
+  /* On touch devices, always show actions */
+  @media (hover: none) {
+    .document-card__actions {
+      opacity: 100%;
+    }
+  }
+</style>

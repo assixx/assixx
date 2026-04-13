@@ -356,6 +356,7 @@ export class TpmSlotAssistantService {
        WHERE ut.team_id = $1
          AND ut.tenant_id = $2
          AND u.is_active = ${IS_ACTIVE.ACTIVE}
+         AND u.role != 'dummy'
        ORDER BY u.last_name ASC, u.first_name ASC`,
       [teamId, tenantId],
     );

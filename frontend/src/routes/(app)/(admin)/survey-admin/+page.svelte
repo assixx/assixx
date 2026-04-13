@@ -511,17 +511,6 @@
     margin-top: var(--spacing-6);
   }
 
-  :global(.question-item) {
-    position: relative;
-
-    margin-bottom: var(--spacing-4);
-    border: 1px solid color-mix(in oklch, var(--color-white) 10%, transparent);
-    border-radius: var(--radius-xl);
-
-    background: color-mix(in oklch, var(--color-white) 5%, transparent);
-    padding: var(--spacing-6);
-  }
-
   :global(.question-header) {
     display: flex;
     justify-content: space-between;
