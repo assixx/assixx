@@ -336,7 +336,6 @@
     display: flex;
     align-items: center;
     gap: 10px;
-    border: var(--glass-border);
     border-radius: var(--radius-xl);
   }
 

@@ -691,10 +691,6 @@
     justify-content: flex-end;
     align-items: center;
     gap: 10px;
-    backdrop-filter: blur(10px);
-    margin-bottom: 20px;
-    margin-left: auto;
-    border: var(--glass-border);
     border-radius: var(--radius-xl);
     background: var(--glass-bg);
     padding: 10px;
