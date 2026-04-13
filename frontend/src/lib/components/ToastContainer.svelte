@@ -93,7 +93,7 @@
   }
 
   .notification.dismissing {
-    animation: slide-out-right 0.3s ease-in;
+    animation: slide-out-right 0.3s ease-in forwards;
   }
 
   @keyframes slide-in-right {
