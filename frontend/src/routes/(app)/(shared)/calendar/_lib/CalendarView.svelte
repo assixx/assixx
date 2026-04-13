@@ -124,19 +124,54 @@
     }
 
     .ec-button {
-      border-radius: 12px !important;
+      transition: var(--transition-all);
+      box-shadow: 0 1px 3px color-mix(in oklch, var(--color-black) 8%, transparent);
       border: var(--glass-border) !important;
-      transition: all 0.2s ease;
+      border-radius: 12px !important;
+      background: linear-gradient(
+        145deg,
+        oklch(90.61% 0 0 / 11%),
+        color-mix(in oklch, var(--color-gray-500) 15%, transparent)
+      ) !important;
+      color: var(--color-text-primary) !important;
     }
 
     .ec-button:hover {
-      color: var(--color-black) !important;
-      background-color: var(--color-icon-primary) !important;
+      box-shadow: 0 2px 6px color-mix(in oklch, var(--color-black) 12%, transparent);
+      background: linear-gradient(
+        145deg,
+        oklch(90.61% 0 0 / 18%),
+        color-mix(in oklch, var(--color-gray-500) 25%, transparent)
+      ) !important;
+      color: var(--color-text-primary) !important;
+    }
+
+    .ec-button:disabled {
+      opacity: 60%;
+      cursor: not-allowed;
+      box-shadow: none;
+      border-color: var(--color-gray-300) !important;
+      background: var(--color-gray-100) !important;
+      color: var(--color-gray-500) !important;
+    }
+
+    html.dark .ec-button:disabled {
+      border-color: var(--color-gray-700) !important;
+      background: var(--color-gray-800) !important;
+      color: var(--color-gray-500) !important;
     }
 
     .ec-active {
-      color: var(--color-black) !important;
-      background-color: var(--color-icon-primary) !important;
+      box-shadow: inset 0 1px 2px color-mix(in oklch, var(--color-black) 10%, transparent);
+      border-color: var(--color-gray-500) !important;
+      background: var(--color-gray-300) !important;
+      color: var(--color-text-primary) !important;
+    }
+
+    html.dark .ec-active {
+      box-shadow: inset 0 1px 3px color-mix(in oklch, var(--color-black) 30%, transparent);
+      border-color: var(--color-gray-600) !important;
+      background: var(--color-gray-700) !important;
     }
 
     .ec-button-group .ec-button {
@@ -193,7 +228,7 @@
     }
 
     .ec-today {
-      background-color: oklch(75.44% 0.1259 240.49 / 12%) !important;
+      background-color: transparent !important;
     }
 
     .ec-other-month {

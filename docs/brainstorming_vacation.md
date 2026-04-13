@@ -116,7 +116,7 @@ Mitarbeiter stellen UrlaubsAnträge, die von ihrem direkten Vorgesetzten genehmi
 - Feiertage werden bei Tagesberechnung abgezogen (z.B. Antrag Mo-Fr aber Mi ist Feiertag = 4 Tage statt 5)
 - **Eigene Tabelle:** `vacation_holidays` (UUID PK, UNIQUE tenant_id+holiday_date)
 - **Recurring:** `recurring=true` → jedes Jahr am gleichen Datum (matching via MONTH+DAY)
-- **V1 Limitation:** Bewegliche Feiertage (Ostern, Pfingsten) muessen JAEHRLICH manuell als non-recurring eingetragen werden
+- **V1 Limitation:** Bewegliche Feiertage (Ostern, Pfingsten) muessen Jährlich manuell als non-recurring eingetragen werden
 
 ### 4.6 Urlaubstagekonto
 

@@ -5,6 +5,6 @@
 // ─── Recurring labels ───────────────────────────────────────────────
 
 export const RECURRING_LABELS: Record<string, string> = {
-  true: 'Jaehrlich wiederkehrend',
+  true: 'Jährlich wiederkehrend',
   false: 'Einmalig',
 };
