@@ -2,11 +2,22 @@
   /**
    * Toast Container Component
    * Uses Design System toast primitives for consistent theming (light/dark)
+   *
+   * Migrated to Svelte 5 runes — legacy $store subscription broke hydration
+   * after vite-plugin-svelte 7 + Vite 8 upgrade (context.l is null).
    */
 
   import { goto } from '$app/navigation';
 
-  import { dismissToast, toasts, type ToastType } from '$lib/stores/toast';
+  import { dismissToast, toasts, type Toast, type ToastType } from '$lib/stores/toast';
+
+  let toastList: Toast[] = $state([]);
+
+  $effect(() => {
+    return toasts.subscribe((value: Toast[]) => {
+      toastList = value;
+    });
+  });
 
   /** Map toast type to FontAwesome icon class */
   function getIconClass(type: ToastType): string {
@@ -25,7 +36,7 @@
 </script>
 
 <div class="notification-container">
-  {#each $toasts as toast (toast.id)}
+  {#each toastList as toast (toast.id)}
     <div
       id="notification-{toast.id}"
       class="toast toast--{toast.type} notification"
