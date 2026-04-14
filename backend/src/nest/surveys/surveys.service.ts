@@ -13,7 +13,6 @@
 import {
   BadRequestException,
   ConflictException,
-  ForbiddenException,
   Injectable,
   Logger,
   NotFoundException,
@@ -186,7 +185,6 @@ export class SurveysService {
 
     const responseCount = existingSurvey['responseCount'];
     this.validateSurveyUpdate(
-      userRole,
       existingSurvey['status'] as string,
       typeof responseCount === 'number' ? responseCount : 0,
     );
@@ -551,11 +549,11 @@ export class SurveysService {
     }
   }
 
-  /** Validates update permissions and state */
-  private validateSurveyUpdate(userRole: string, status: string, responseCount: number): void {
-    if (userRole === 'employee') {
-      throw new ForbiddenException('Only admins can update surveys');
-    }
+  /**
+   * Validates update state constraints.
+   * Role/scope checks are handled by @RequirePermission + checkSurveyManagementAccess.
+   */
+  private validateSurveyUpdate(status: string, responseCount: number): void {
     if (status === 'active' && responseCount > 0) {
       throw new ConflictException('Cannot update survey with existing responses');
     }

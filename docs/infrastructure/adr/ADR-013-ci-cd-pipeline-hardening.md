@@ -105,11 +105,11 @@ GitHub deprecated Node.js 20 for Actions runners (forced Node.js 24 starting Jun
 
 **Three-scanner coverage now explicit:**
 
-| Scanner                     | Source DB                    | Scope                  | Trigger                       | Blocks PR?          |
-| --------------------------- | ---------------------------- | ---------------------- | ----------------------------- | ------------------- |
-| Dependabot Security Updates | GHSA                         | `pnpm-lock.yaml`       | Real-time on advisory publish | No (auto-PR only)   |
-| `pnpm audit` (new)          | npm Registry advisories      | `pnpm-lock.yaml`       | Every PR/push                 | Yes (HIGH+CRITICAL) |
-| Trivy                       | OS CVE feeds (NVD/OSV)       | Container image layers | On Docker build               | Yes (CRITICAL only) |
+| Scanner                     | Source DB               | Scope                  | Trigger                       | Blocks PR?          |
+| --------------------------- | ----------------------- | ---------------------- | ----------------------------- | ------------------- |
+| Dependabot Security Updates | GHSA                    | `pnpm-lock.yaml`       | Real-time on advisory publish | No (auto-PR only)   |
+| `pnpm audit` (new)          | npm Registry advisories | `pnpm-lock.yaml`       | Every PR/push                 | Yes (HIGH+CRITICAL) |
+| Trivy                       | OS CVE feeds (NVD/OSV)  | Container image layers | On Docker build               | Yes (CRITICAL only) |
 
 **Changes:**
 
@@ -135,13 +135,13 @@ GitHub deprecated Node.js 20 for Actions runners (forced Node.js 24 starting Jun
 
 **Alternatives considered:**
 
-| Option                              | Rejected because                                                                    |
-| ----------------------------------- | ----------------------------------------------------------------------------------- |
-| OSV-Scanner as 4th scanner          | Diminishing returns — Dependabot + pnpm audit + Trivy cover npm graph and OS layer  |
-| `--audit-level=critical` only       | Too permissive; HIGH npm CVEs (XSS, RCE) must block                                 |
-| `--prod` only (skip devDeps)        | Build-chain attacks bypass this; compromised devDeps can exfiltrate from CI runners |
-| Daily cadence for version updates   | PR noise; Dependabot security updates already fire real-time                        |
-| Auto-merge for patch updates        | Deferred until gate is stable; requires confidence in test coverage                 |
+| Option                            | Rejected because                                                                    |
+| --------------------------------- | ----------------------------------------------------------------------------------- |
+| OSV-Scanner as 4th scanner        | Diminishing returns — Dependabot + pnpm audit + Trivy cover npm graph and OS layer  |
+| `--audit-level=critical` only     | Too permissive; HIGH npm CVEs (XSS, RCE) must block                                 |
+| `--prod` only (skip devDeps)      | Build-chain attacks bypass this; compromised devDeps can exfiltrate from CI runners |
+| Daily cadence for version updates | PR noise; Dependabot security updates already fire real-time                        |
+| Auto-merge for patch updates      | Deferred until gate is stable; requires confidence in test coverage                 |
 
 **Consequences:**
 

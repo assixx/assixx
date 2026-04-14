@@ -6,6 +6,7 @@
 import { Module } from '@nestjs/common';
 
 import { NotificationsModule } from '../notifications/notifications.module.js';
+import { OrganigramSettingsService } from '../organigram/organigram-settings.service.js';
 import { SurveyAccessService } from './survey-access.service.js';
 import { SurveyQuestionsService } from './survey-questions.service.js';
 import { SurveyResponsesService } from './survey-responses.service.js';
@@ -23,6 +24,8 @@ import { SurveysService } from './surveys.service.js';
     SurveyQuestionsService,
     SurveyResponsesService,
     SurveyStatisticsService,
+    // ADR-039: per-tenant deputy scope toggle — read by SurveyAccessService
+    OrganigramSettingsService,
     // Permission registration (ADR-020)
     SurveysPermissionRegistrar,
   ],

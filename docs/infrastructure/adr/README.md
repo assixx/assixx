@@ -62,7 +62,7 @@ ADRs document important architectural decisions:
 | [ADR-036](./ADR-036-organizational-scope-access-control.md)                  | Organizational Scope Access Control                          | Accepted   | 2026-03-14 |
 | [ADR-037](./ADR-037-approvals-architecture.md)                               | Approvals (Freigabe-System) Architecture                     | Accepted   | 2026-03-17 |
 | [ADR-038](./ADR-038-position-catalog-architecture.md)                        | Position Catalog Architecture                                | Accepted   | 2026-03-17 |
-| [ADR-039](./ADR-039-per-tenant-deputy-scope-toggle.md)                       | Per-Tenant Deputy Scope Toggle                               | Proposed   | 2026-03-21 |
+| [ADR-039](./ADR-039-per-tenant-deputy-scope-toggle.md)                       | Per-Tenant Deputy Scope Toggle                               | Accepted   | 2026-03-21 |
 | [ADR-040](./ADR-040-inventory-addon-architecture.md)                         | Inventory Addon Architecture                                 | Accepted   | 2026-04-06 |
 | [ADR-041](./ADR-041-typescript-compiler-configuration.md)                    | TypeScript Compiler Configuration & Strict-Everywhere Policy | Accepted   | 2026-04-07 |
 | [ADR-042](./ADR-042-multipart-file-upload-pipeline.md)                       | Multipart File Upload Pipeline (Fastify + Multer Bridge)     | Accepted   | 2026-04-08 |

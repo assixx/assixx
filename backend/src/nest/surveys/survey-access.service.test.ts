@@ -8,6 +8,7 @@ import { ForbiddenException } from '@nestjs/common';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { DatabaseService } from '../database/database.service.js';
+import type { OrganigramSettingsService } from '../organigram/organigram-settings.service.js';
 import { SurveyAccessService } from './survey-access.service.js';
 import type { DbSurvey } from './surveys.types.js';
 
@@ -15,14 +16,22 @@ import type { DbSurvey } from './surveys.types.js';
 // Setup
 // ============================================================
 
-function createServiceWithMock(): {
+function createServiceWithMock(deputyScope: boolean = true): {
   service: SurveyAccessService;
   mockDb: { query: ReturnType<typeof vi.fn>; tenantQuery: ReturnType<typeof vi.fn> };
+  mockOrgSettings: { getDeputyHasLeadScope: ReturnType<typeof vi.fn> };
 } {
   const qf = vi.fn();
   const mockDb = { query: qf, tenantQuery: qf };
-  const service = new SurveyAccessService(mockDb as unknown as DatabaseService);
-  return { service, mockDb };
+  // ADR-039: deputy scope toggle — default true preserves legacy behavior for existing tests
+  const mockOrgSettings = {
+    getDeputyHasLeadScope: vi.fn().mockResolvedValue(deputyScope),
+  };
+  const service = new SurveyAccessService(
+    mockDb as unknown as DatabaseService,
+    mockOrgSettings as unknown as OrganigramSettingsService,
+  );
+  return { service, mockDb, mockOrgSettings };
 }
 
 /** Minimal DbSurvey factory for test brevity */
@@ -55,7 +64,7 @@ describe('SECURITY: SurveyAccessService – pure clause builders', () => {
 
   describe('buildVisibilityClause', () => {
     it('returns SQL fragment with tenant and user params', () => {
-      const clause = service['buildVisibilityClause']('$1', '$2');
+      const clause = service['buildVisibilityClause']('$1', '$2', true);
 
       expect(clause).toContain('s.created_by = $2');
       expect(clause).toContain('sa.assignment_type');
@@ -67,7 +76,7 @@ describe('SECURITY: SurveyAccessService – pure clause builders', () => {
     });
 
     it('substitutes custom parameter placeholders', () => {
-      const clause = service['buildVisibilityClause']('$5', '$6');
+      const clause = service['buildVisibilityClause']('$5', '$6', true);
 
       expect(clause).toContain('s.created_by = $6');
       expect(clause).toContain('aap.tenant_id = $5');
@@ -82,19 +91,19 @@ describe('SECURITY: SurveyAccessService – pure clause builders', () => {
     // ==========================================================
 
     it('REGRESSION: includes area_deputy_lead_id for area-assigned surveys', () => {
-      const clause = service['buildVisibilityClause']('$1', '$2');
+      const clause = service['buildVisibilityClause']('$1', '$2', true);
 
       expect(clause).toContain('area_deputy_lead_id');
     });
 
     it('REGRESSION: includes department_deputy_lead_id for dept-assigned surveys', () => {
-      const clause = service['buildVisibilityClause']('$1', '$2');
+      const clause = service['buildVisibilityClause']('$1', '$2', true);
 
       expect(clause).toContain('department_deputy_lead_id');
     });
 
     it('REGRESSION: includes team_deputy_lead_id for team-assigned surveys', () => {
-      const clause = service['buildVisibilityClause']('$1', '$2');
+      const clause = service['buildVisibilityClause']('$1', '$2', true);
 
       expect(clause).toContain('team_deputy_lead_id');
     });
@@ -102,7 +111,7 @@ describe('SECURITY: SurveyAccessService – pure clause builders', () => {
 
   describe('buildManagementVisibilityClause', () => {
     it('returns stricter SQL fragment for management access', () => {
-      const clause = service['buildManagementVisibilityClause']('$1', '$2');
+      const clause = service['buildManagementVisibilityClause']('$1', '$2', true);
 
       expect(clause).toContain('s.created_by = $2');
       expect(clause).toContain('area_lead_id');
@@ -113,7 +122,7 @@ describe('SECURITY: SurveyAccessService – pure clause builders', () => {
     });
 
     it('substitutes custom parameter placeholders', () => {
-      const clause = service['buildManagementVisibilityClause']('$3', '$4');
+      const clause = service['buildManagementVisibilityClause']('$3', '$4', true);
 
       expect(clause).toContain('s.created_by = $4');
       expect(clause).toContain('a.tenant_id = $3');
@@ -125,19 +134,19 @@ describe('SECURITY: SurveyAccessService – pure clause builders', () => {
     // ==========================================================
 
     it('REGRESSION: includes area_deputy_lead_id for area management', () => {
-      const clause = service['buildManagementVisibilityClause']('$1', '$2');
+      const clause = service['buildManagementVisibilityClause']('$1', '$2', true);
 
       expect(clause).toContain('area_deputy_lead_id');
     });
 
     it('REGRESSION: includes department_deputy_lead_id for dept management', () => {
-      const clause = service['buildManagementVisibilityClause']('$1', '$2');
+      const clause = service['buildManagementVisibilityClause']('$1', '$2', true);
 
       expect(clause).toContain('department_deputy_lead_id');
     });
 
     it('REGRESSION: includes team_deputy_lead_id for team management', () => {
-      const clause = service['buildManagementVisibilityClause']('$1', '$2');
+      const clause = service['buildManagementVisibilityClause']('$1', '$2', true);
 
       expect(clause).toContain('team_deputy_lead_id');
     });
@@ -275,6 +284,19 @@ describe('SECURITY: SurveyAccessService – DB-mocked methods', () => {
         .mockResolvedValueOnce([{ id: 10 }]);
 
       await expect(service.checkSurveyManagementAccess(10, 1, 5, 'admin')).resolves.toBeUndefined();
+    });
+
+    // ADR-020: Employee-lead with surveys-manage.canWrite + lead of assigned
+    // org unit can manage that survey. The role gate was removed from the
+    // controller; scope enforcement happens here via buildManagementVisibilityClause.
+    it('allows employee role when management visibility query returns rows (lead scenario)', async () => {
+      mockDb.query
+        .mockResolvedValueOnce([{ has_full_access: false }])
+        .mockResolvedValueOnce([{ id: 10 }]);
+
+      await expect(
+        service.checkSurveyManagementAccess(10, 1, 5, 'employee'),
+      ).resolves.toBeUndefined();
     });
 
     it('throws ForbiddenException when no management permission', async () => {
@@ -734,7 +756,7 @@ describe('SECURITY: SurveyAccessService – DB-mocked methods', () => {
 
   describe('validateSingleAssignment (private)', () => {
     it('skips leadership check when area assignment has no areaId', async () => {
-      await service['validateSingleAssignment']({ type: 'area', areaId: undefined }, 1, 1);
+      await service['validateSingleAssignment']({ type: 'area', areaId: undefined }, 1, 1, true);
 
       expect(mockDb.query).not.toHaveBeenCalled();
     });
@@ -744,13 +766,14 @@ describe('SECURITY: SurveyAccessService – DB-mocked methods', () => {
         { type: 'department', departmentId: undefined },
         1,
         1,
+        true,
       );
 
       expect(mockDb.query).not.toHaveBeenCalled();
     });
 
     it('skips leadership check when team assignment has no teamId', async () => {
-      await service['validateSingleAssignment']({ type: 'team', teamId: undefined }, 1, 1);
+      await service['validateSingleAssignment']({ type: 'team', teamId: undefined }, 1, 1, true);
 
       expect(mockDb.query).not.toHaveBeenCalled();
     });
@@ -761,18 +784,16 @@ describe('SECURITY: SurveyAccessService – DB-mocked methods', () => {
   // ============================================================
 
   // ==========================================================
-  // REGRESSION: LEADERSHIP_QUERIES include deputy checks
-  // These tests verify that the static SQL constants at the
-  // top of survey-access.service.ts include deputy_lead_id
-  // checks for ALL org levels. If a deputy check is removed,
-  // the corresponding test fails.
+  // REGRESSION: Leadership queries include deputy checks when deputyScope=true
+  // ADR-039: deputy predicates are conditional — flag=true emits them,
+  // flag=false omits them. These tests assert ON behavior (legacy default).
   // ==========================================================
 
-  describe('REGRESSION: LEADERSHIP_QUERIES include deputy checks', () => {
+  describe('REGRESSION: Leadership queries include deputy checks (deputyScope=true)', () => {
     it('area query includes area_deputy_lead_id', async () => {
       mockDb.query.mockResolvedValueOnce([{ id: 5 }]);
 
-      await service['validateLeadershipPermission']('area', 5, 1, 1);
+      await service['validateLeadershipPermission']('area', 5, 1, 1, true);
 
       const sql = mockDb.query.mock.calls[0]?.[0] as string;
       expect(sql).toContain('area_deputy_lead_id');
@@ -781,7 +802,7 @@ describe('SECURITY: SurveyAccessService – DB-mocked methods', () => {
     it('department query includes department_deputy_lead_id', async () => {
       mockDb.query.mockResolvedValueOnce([{ id: 3 }]);
 
-      await service['validateLeadershipPermission']('department', 3, 1, 1);
+      await service['validateLeadershipPermission']('department', 3, 1, 1, true);
 
       const sql = mockDb.query.mock.calls[0]?.[0] as string;
       expect(sql).toContain('department_deputy_lead_id');
@@ -790,7 +811,7 @@ describe('SECURITY: SurveyAccessService – DB-mocked methods', () => {
     it('department query includes area_deputy_lead_id (inherited)', async () => {
       mockDb.query.mockResolvedValueOnce([{ id: 3 }]);
 
-      await service['validateLeadershipPermission']('department', 3, 1, 1);
+      await service['validateLeadershipPermission']('department', 3, 1, 1, true);
 
       const sql = mockDb.query.mock.calls[0]?.[0] as string;
       expect(sql).toContain('area_deputy_lead_id');
@@ -799,7 +820,7 @@ describe('SECURITY: SurveyAccessService – DB-mocked methods', () => {
     it('team query includes team_deputy_lead_id', async () => {
       mockDb.query.mockResolvedValueOnce([{ id: 8 }]);
 
-      await service['validateLeadershipPermission']('team', 8, 1, 1);
+      await service['validateLeadershipPermission']('team', 8, 1, 1, true);
 
       const sql = mockDb.query.mock.calls[0]?.[0] as string;
       expect(sql).toContain('team_deputy_lead_id');
@@ -808,7 +829,7 @@ describe('SECURITY: SurveyAccessService – DB-mocked methods', () => {
     it('team query includes department_deputy_lead_id (inherited)', async () => {
       mockDb.query.mockResolvedValueOnce([{ id: 8 }]);
 
-      await service['validateLeadershipPermission']('team', 8, 1, 1);
+      await service['validateLeadershipPermission']('team', 8, 1, 1, true);
 
       const sql = mockDb.query.mock.calls[0]?.[0] as string;
       expect(sql).toContain('department_deputy_lead_id');
@@ -817,22 +838,79 @@ describe('SECURITY: SurveyAccessService – DB-mocked methods', () => {
     it('team query includes area_deputy_lead_id (inherited)', async () => {
       mockDb.query.mockResolvedValueOnce([{ id: 8 }]);
 
-      await service['validateLeadershipPermission']('team', 8, 1, 1);
+      await service['validateLeadershipPermission']('team', 8, 1, 1, true);
 
       const sql = mockDb.query.mock.calls[0]?.[0] as string;
       expect(sql).toContain('area_deputy_lead_id');
     });
   });
 
+  // ==========================================================
+  // ADR-039: Leadership queries OMIT deputy checks when deputyScope=false
+  // ==========================================================
+
+  describe('ADR-039: Leadership queries OMIT deputy checks (deputyScope=false)', () => {
+    it('area query does NOT include area_deputy_lead_id when flag is off', async () => {
+      mockDb.query.mockResolvedValueOnce([{ id: 5 }]);
+
+      await service['validateLeadershipPermission']('area', 5, 1, 1, false);
+
+      const sql = mockDb.query.mock.calls[0]?.[0] as string;
+      expect(sql).not.toContain('area_deputy_lead_id');
+      expect(sql).toContain('area_lead_id'); // primary lead predicate still present
+    });
+
+    it('department query does NOT include deputy_lead_id when flag is off', async () => {
+      mockDb.query.mockResolvedValueOnce([{ id: 3 }]);
+
+      await service['validateLeadershipPermission']('department', 3, 1, 1, false);
+
+      const sql = mockDb.query.mock.calls[0]?.[0] as string;
+      expect(sql).not.toContain('department_deputy_lead_id');
+      expect(sql).not.toContain('area_deputy_lead_id');
+      expect(sql).toContain('department_lead_id');
+    });
+
+    it('team query does NOT include deputy_lead_id when flag is off', async () => {
+      mockDb.query.mockResolvedValueOnce([{ id: 8 }]);
+
+      await service['validateLeadershipPermission']('team', 8, 1, 1, false);
+
+      const sql = mockDb.query.mock.calls[0]?.[0] as string;
+      expect(sql).not.toContain('team_deputy_lead_id');
+      expect(sql).not.toContain('department_deputy_lead_id');
+      expect(sql).not.toContain('area_deputy_lead_id');
+      expect(sql).toContain('team_lead_id');
+    });
+
+    it('buildVisibilityClause omits all deputy predicates when flag is off', () => {
+      const clause = service['buildVisibilityClause']('$1', '$2', false);
+      expect(clause).not.toContain('area_deputy_lead_id');
+      expect(clause).not.toContain('department_deputy_lead_id');
+      expect(clause).not.toContain('team_deputy_lead_id');
+      // primary leads still present
+      expect(clause).toContain('area_lead_id');
+      expect(clause).toContain('department_lead_id');
+      expect(clause).toContain('team_lead_id');
+    });
+
+    it('buildManagementVisibilityClause omits all deputy predicates when flag is off', () => {
+      const clause = service['buildManagementVisibilityClause']('$1', '$2', false);
+      expect(clause).not.toContain('area_deputy_lead_id');
+      expect(clause).not.toContain('department_deputy_lead_id');
+      expect(clause).not.toContain('team_deputy_lead_id');
+    });
+  });
+
   describe('validateLeadershipPermission (private)', () => {
     it('returns early when entityId is undefined', async () => {
-      await service['validateLeadershipPermission']('area', undefined, 1, 1);
+      await service['validateLeadershipPermission']('area', undefined, 1, 1, true);
 
       expect(mockDb.query).not.toHaveBeenCalled();
     });
 
-    it('returns early when entityType has no matching query', async () => {
-      await service['validateLeadershipPermission']('nonexistent_type', 5, 1, 1);
+    it('returns early when entityType is not area/department/team', async () => {
+      await service['validateLeadershipPermission']('nonexistent_type', 5, 1, 1, true);
 
       expect(mockDb.query).not.toHaveBeenCalled();
     });
@@ -841,7 +919,7 @@ describe('SECURITY: SurveyAccessService – DB-mocked methods', () => {
       mockDb.query.mockResolvedValueOnce([{ id: 5 }]);
 
       await expect(
-        service['validateLeadershipPermission']('area', 5, 1, 1),
+        service['validateLeadershipPermission']('area', 5, 1, 1, true),
       ).resolves.toBeUndefined();
 
       expect(mockDb.query).toHaveBeenCalledWith(expect.stringContaining('areas'), [5, 1, 1]);
@@ -850,7 +928,7 @@ describe('SECURITY: SurveyAccessService – DB-mocked methods', () => {
     it('throws ForbiddenException when leadership query returns empty', async () => {
       mockDb.query.mockResolvedValueOnce([]);
 
-      await expect(service['validateLeadershipPermission']('area', 5, 42, 7)).rejects.toThrow(
+      await expect(service['validateLeadershipPermission']('area', 5, 42, 7, true)).rejects.toThrow(
         'No leadership permission for area 5',
       );
     });
@@ -858,7 +936,7 @@ describe('SECURITY: SurveyAccessService – DB-mocked methods', () => {
     it('uses department query for department entityType', async () => {
       mockDb.query.mockResolvedValueOnce([{ id: 3 }]);
 
-      await service['validateLeadershipPermission']('department', 3, 1, 1);
+      await service['validateLeadershipPermission']('department', 3, 1, 1, true);
 
       const sql = mockDb.query.mock.calls[0]?.[0] as string;
       expect(sql).toContain('departments');
@@ -868,7 +946,7 @@ describe('SECURITY: SurveyAccessService – DB-mocked methods', () => {
     it('uses team query for team entityType', async () => {
       mockDb.query.mockResolvedValueOnce([{ id: 8 }]);
 
-      await service['validateLeadershipPermission']('team', 8, 1, 1);
+      await service['validateLeadershipPermission']('team', 8, 1, 1, true);
 
       const sql = mockDb.query.mock.calls[0]?.[0] as string;
       expect(sql).toContain('teams');

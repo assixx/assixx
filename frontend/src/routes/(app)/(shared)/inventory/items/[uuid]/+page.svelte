@@ -71,6 +71,14 @@
     if (previewIndex === null || photos.length === 0) return;
     previewIndex = (previewIndex + 1) % photos.length;
   }
+
+  function closePreview(): void {
+    previewIndex = null;
+  }
+
+  function stopPropagation(e: Event): void {
+    e.stopPropagation();
+  }
   let fileInput: HTMLInputElement | undefined = $state();
   let uploading = $state(false);
   let statusDropdownOpen = $state(false);
@@ -681,18 +689,21 @@
   {#if previewPhoto !== null && previewIndex !== null}
     <div
       class="modal-overlay modal-overlay--active"
-      onclick={() => (previewIndex = null)}
+      onclick={closePreview}
+      onkeydown={(e) => {
+        if (e.key === 'Escape') closePreview();
+      }}
       role="dialog"
       aria-modal="true"
       tabindex="-1"
     >
+      <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
       <div
         class="ds-modal ds-modal--lg"
         style="max-height: 95vh"
         role="document"
-        onclick={(e: MouseEvent) => {
-          e.stopPropagation();
-        }}
+        onclick={stopPropagation}
+        onkeydown={stopPropagation}
       >
         <div class="ds-modal__header">
           <h3 class="ds-modal__title">

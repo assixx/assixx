@@ -50,7 +50,7 @@
   }
 </script>
 
-<div class="data-list">
+<div class="data-list data-list--grid">
   <!-- Priorität -->
   <div class="data-list__item">
     <span class="data-list__label">{MESSAGES.DETAIL_PRIORITY}</span>
@@ -136,5 +136,31 @@
 
   .source-link:hover {
     text-decoration: underline;
+  }
+
+  /* ── Stammdaten data-list overrides (shared with inventory detail) ── */
+
+  .data-list--grid :global(.data-list__label) {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.6875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.75px;
+    opacity: 60%;
+  }
+
+  .data-list--grid :global(.data-list__label::before) {
+    flex-shrink: 0;
+    width: 3px;
+    height: 1em;
+    border-radius: 2px;
+    background: linear-gradient(180deg, var(--color-primary), var(--color-primary-light, #64b5f6));
+    content: '';
+  }
+
+  .data-list--grid :global(.data-list__value) {
+    font-size: 1rem;
+    font-weight: 500;
   }
 </style>

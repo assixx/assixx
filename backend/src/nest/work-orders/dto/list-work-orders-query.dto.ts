@@ -27,6 +27,8 @@ export const ListWorkOrdersQuerySchema = z.object({
   sourceUuid: z.uuid().optional(),
   assigneeUuid: z.uuid().optional(),
   isActive: IsActiveFilterSchema.optional(),
+  /** Filter: only overdue items (due_date < today AND status not done). Send "true" to enable. */
+  overdue: z.enum(['true']).optional(),
   page: PageSchema,
   limit: LimitSchema,
 });

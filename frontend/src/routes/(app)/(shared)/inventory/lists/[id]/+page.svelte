@@ -64,6 +64,14 @@
   let searchQuery = $state('');
   let previewItem = $state<InventoryItem | null>(null);
 
+  function closePreview(): void {
+    previewItem = null;
+  }
+
+  function stopPropagation(e: Event): void {
+    e.stopPropagation();
+  }
+
   // Custom field values for create form
   interface CreateFieldState {
     fieldId: string;
@@ -912,18 +920,21 @@
   {#if previewItem !== null && previewItem.thumbnail_path !== null}
     <div
       class="modal-overlay modal-overlay--active"
-      onclick={() => (previewItem = null)}
+      onclick={closePreview}
+      onkeydown={(e) => {
+        if (e.key === 'Escape') closePreview();
+      }}
       role="dialog"
       aria-modal="true"
       tabindex="-1"
     >
+      <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
       <div
         class="ds-modal ds-modal--lg"
         style="max-height: 95vh"
         role="document"
-        onclick={(e: MouseEvent) => {
-          e.stopPropagation();
-        }}
+        onclick={stopPropagation}
+        onkeydown={stopPropagation}
       >
         <div class="ds-modal__header">
           <h3 class="ds-modal__title">

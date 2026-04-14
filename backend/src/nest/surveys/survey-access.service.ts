@@ -3,31 +3,60 @@
  *
  * Handles visibility filtering, access control, and assignment validation.
  * Injected into the SurveysService facade.
+ *
+ * ADR-039: deputy-scope behavior is controlled by the per-tenant
+ * `deputyHasLeadScope` flag. When false, deputies do NOT inherit lead
+ * scope — they are titles only. All visibility/leadership SQL builders
+ * accept the flag and conditionally emit the `OR *_deputy_lead_id`
+ * predicates.
  */
 import { ForbiddenException, Injectable, Logger } from '@nestjs/common';
 
 import { DatabaseService } from '../database/database.service.js';
+import { OrganigramSettingsService } from '../organigram/organigram-settings.service.js';
 import type { AssignmentInput, DbSurvey, DbSurveyAssignment } from './surveys.types.js';
 
-/** SQL queries to verify leadership permissions per assignment entity type */
-const LEADERSHIP_QUERIES: Record<string, string> = {
-  area: `SELECT id FROM areas WHERE id = $1 AND (area_lead_id = $2 OR area_deputy_lead_id = $2) AND tenant_id = $3`,
-  department: `SELECT d.id FROM departments d
-    LEFT JOIN areas a ON d.area_id = a.id
-    WHERE d.id = $1 AND d.tenant_id = $3
-      AND (d.department_lead_id = $2 OR d.department_deputy_lead_id = $2 OR a.area_lead_id = $2 OR a.area_deputy_lead_id = $2)`,
-  team: `SELECT t.id FROM teams t
+/**
+ * Build leadership-check SQL per assignment entity type.
+ * Conditionally includes deputy-lead predicates based on ADR-039 tenant flag.
+ */
+function buildLeadershipQuery(
+  entityType: 'area' | 'department' | 'team',
+  deputyScope: boolean,
+): string {
+  const areaDeputy = deputyScope ? 'OR a.area_deputy_lead_id = $2' : '';
+  const deptDeputy = deputyScope ? 'OR d.department_deputy_lead_id = $2' : '';
+  const teamDeputy = deputyScope ? 'OR t.team_deputy_lead_id = $2' : '';
+
+  if (entityType === 'area') {
+    const areaDepInline = deputyScope ? 'OR area_deputy_lead_id = $2' : '';
+    return `SELECT id FROM areas
+      WHERE id = $1 AND (area_lead_id = $2 ${areaDepInline}) AND tenant_id = $3`;
+  }
+  if (entityType === 'department') {
+    return `SELECT d.id FROM departments d
+      LEFT JOIN areas a ON d.area_id = a.id
+      WHERE d.id = $1 AND d.tenant_id = $3
+        AND (d.department_lead_id = $2 ${deptDeputy} OR a.area_lead_id = $2 ${areaDeputy})`;
+  }
+  // team
+  return `SELECT t.id FROM teams t
     LEFT JOIN departments d ON t.department_id = d.id
     LEFT JOIN areas a ON d.area_id = a.id
     WHERE t.id = $1 AND t.tenant_id = $3
-      AND (t.team_lead_id = $2 OR t.team_deputy_lead_id = $2 OR d.department_lead_id = $2 OR d.department_deputy_lead_id = $2 OR a.area_lead_id = $2 OR a.area_deputy_lead_id = $2)`,
-};
+      AND (t.team_lead_id = $2 ${teamDeputy}
+        OR d.department_lead_id = $2 ${deptDeputy}
+        OR a.area_lead_id = $2 ${areaDeputy})`;
+}
 
 @Injectable()
 export class SurveyAccessService {
   private readonly logger = new Logger(SurveyAccessService.name);
 
-  constructor(private readonly db: DatabaseService) {}
+  constructor(
+    private readonly db: DatabaseService,
+    private readonly orgSettings: OrganigramSettingsService,
+  ) {}
 
   // ==========================================================================
   // ACCESS CHECKS
@@ -60,7 +89,8 @@ export class SurveyAccessService {
     const hasUnrestrictedAccess = await this.checkUnrestrictedAccess(userId, tenantId, userRole);
     if (hasUnrestrictedAccess) return;
 
-    const visibilityClause = this.buildVisibilityClause('$2', '$3');
+    const deputyScope = await this.orgSettings.getDeputyHasLeadScope(tenantId);
+    const visibilityClause = this.buildVisibilityClause('$2', '$3', deputyScope);
     const rows = await this.db.tenantQuery<{ id: number }>(
       `SELECT s.id FROM surveys s
        WHERE s.id = $1 AND s.tenant_id = $2
@@ -85,7 +115,8 @@ export class SurveyAccessService {
     const hasUnrestrictedAccess = await this.checkUnrestrictedAccess(userId, tenantId, userRole);
     if (hasUnrestrictedAccess) return;
 
-    const managementClause = this.buildManagementVisibilityClause('$2', '$3');
+    const deputyScope = await this.orgSettings.getDeputyHasLeadScope(tenantId);
+    const managementClause = this.buildManagementVisibilityClause('$2', '$3', deputyScope);
     const rows = await this.db.tenantQuery<{ id: number }>(
       `SELECT s.id FROM surveys s
        WHERE s.id = $1 AND s.tenant_id = $2
@@ -131,10 +162,15 @@ export class SurveyAccessService {
   ): Promise<Set<number>> {
     if (surveyIds.length === 0) return new Set();
 
+    const deputyScope = await this.orgSettings.getDeputyHasLeadScope(tenantId);
     const placeholders = surveyIds.map((_: number, idx: number) => `$${idx + 1}`).join(',');
     const tenantIdx = surveyIds.length + 1;
     const userIdx = surveyIds.length + 2;
-    const managementClause = this.buildManagementVisibilityClause(`$${tenantIdx}`, `$${userIdx}`);
+    const managementClause = this.buildManagementVisibilityClause(
+      `$${tenantIdx}`,
+      `$${userIdx}`,
+      deputyScope,
+    );
 
     const rows = await this.db.tenantQuery<{ id: number }>(
       `SELECT s.id FROM surveys s
@@ -196,8 +232,9 @@ export class SurveyAccessService {
     const hasUnrestrictedAccess = await this.checkUnrestrictedAccess(userId, tenantId, userRole);
     if (hasUnrestrictedAccess) return;
 
+    const deputyScope = await this.orgSettings.getDeputyHasLeadScope(tenantId);
     for (const raw of assignments) {
-      await this.validateSingleAssignment(raw as AssignmentInput, userId, tenantId);
+      await this.validateSingleAssignment(raw as AssignmentInput, userId, tenantId, deputyScope);
     }
   }
 
@@ -213,7 +250,8 @@ export class SurveyAccessService {
   async getPendingSurveyCount(userId: number, tenantId: number): Promise<{ count: number }> {
     this.logger.debug(`Getting pending survey count for user ${userId}, tenant ${tenantId}`);
 
-    const visibilityClause = this.buildVisibilityClause('$1', '$2');
+    const deputyScope = await this.orgSettings.getDeputyHasLeadScope(tenantId);
+    const visibilityClause = this.buildVisibilityClause('$1', '$2', deputyScope);
     const rows = await this.db.tenantQuery<{ count: number }>(
       `SELECT COUNT(DISTINCT s.id)::integer as count
        FROM surveys s
@@ -238,8 +276,18 @@ export class SurveyAccessService {
    * Mirrors calendar's buildVisibilityClause().
    * Returns SQL fragment: (s.created_by = $X OR EXISTS(...))
    * Expects `s` as the survey table alias.
+   *
+   * ADR-039: when deputyScope=false, deputy-lead predicates are omitted.
    */
-  private buildVisibilityClause(tenantParam: string, userParam: string): string {
+  private buildVisibilityClause(
+    tenantParam: string,
+    userParam: string,
+    deputyScope: boolean,
+  ): string {
+    const areaDep = deputyScope ? `OR a.area_deputy_lead_id = ${userParam}` : '';
+    const deptDep = deputyScope ? `OR d.department_deputy_lead_id = ${userParam}` : '';
+    const teamDep = deputyScope ? `OR t.team_deputy_lead_id = ${userParam}` : '';
+
     return `(
       s.created_by = ${userParam}
       OR EXISTS (
@@ -249,7 +297,7 @@ export class SurveyAccessService {
             EXISTS (SELECT 1 FROM admin_area_permissions aap
                     WHERE aap.admin_user_id = ${userParam} AND aap.area_id = sa.area_id AND aap.tenant_id = ${tenantParam})
             OR EXISTS (SELECT 1 FROM areas a
-                       WHERE a.id = sa.area_id AND (a.area_lead_id = ${userParam} OR a.area_deputy_lead_id = ${userParam}) AND a.tenant_id = ${tenantParam})
+                       WHERE a.id = sa.area_id AND (a.area_lead_id = ${userParam} ${areaDep}) AND a.tenant_id = ${tenantParam})
             OR EXISTS (SELECT 1 FROM user_departments ud
                        JOIN departments d ON ud.department_id = d.id
                        WHERE ud.user_id = ${userParam} AND ud.tenant_id = ${tenantParam} AND d.area_id = sa.area_id)
@@ -258,7 +306,7 @@ export class SurveyAccessService {
             EXISTS (SELECT 1 FROM admin_department_permissions adp
                     WHERE adp.admin_user_id = ${userParam} AND adp.department_id = sa.department_id AND adp.tenant_id = ${tenantParam})
             OR EXISTS (SELECT 1 FROM departments d
-                       WHERE d.id = sa.department_id AND (d.department_lead_id = ${userParam} OR d.department_deputy_lead_id = ${userParam}) AND d.tenant_id = ${tenantParam})
+                       WHERE d.id = sa.department_id AND (d.department_lead_id = ${userParam} ${deptDep}) AND d.tenant_id = ${tenantParam})
             OR EXISTS (SELECT 1 FROM user_departments ud
                        WHERE ud.user_id = ${userParam} AND ud.department_id = sa.department_id AND ud.tenant_id = ${tenantParam})
             OR EXISTS (SELECT 1 FROM departments d
@@ -269,7 +317,7 @@ export class SurveyAccessService {
             EXISTS (SELECT 1 FROM user_teams ut
                     WHERE ut.user_id = ${userParam} AND ut.team_id = sa.team_id AND ut.tenant_id = ${tenantParam})
             OR EXISTS (SELECT 1 FROM teams t
-                       WHERE t.id = sa.team_id AND (t.team_lead_id = ${userParam} OR t.team_deputy_lead_id = ${userParam}) AND t.tenant_id = ${tenantParam})
+                       WHERE t.id = sa.team_id AND (t.team_lead_id = ${userParam} ${teamDep}) AND t.tenant_id = ${tenantParam})
             OR EXISTS (SELECT 1 FROM teams t
                        JOIN admin_department_permissions adp ON adp.department_id = t.department_id
                        WHERE t.id = sa.team_id AND adp.admin_user_id = ${userParam} AND adp.tenant_id = ${tenantParam})
@@ -288,33 +336,43 @@ export class SurveyAccessService {
    * Build the management visibility WHERE clause for surveys.
    * Stricter than buildVisibilityClause(): only creator OR lead of assigned org unit.
    * Used for admin management operations (list/view/edit/delete in survey-admin).
+   *
+   * ADR-039: when deputyScope=false, deputies cannot manage — only direct leads.
    */
-  private buildManagementVisibilityClause(tenantParam: string, userParam: string): string {
+  private buildManagementVisibilityClause(
+    tenantParam: string,
+    userParam: string,
+    deputyScope: boolean,
+  ): string {
+    const areaDep = deputyScope ? `OR a.area_deputy_lead_id = ${userParam}` : '';
+    const deptDep = deputyScope ? `OR d.department_deputy_lead_id = ${userParam}` : '';
+    const teamDep = deputyScope ? `OR t.team_deputy_lead_id = ${userParam}` : '';
+
     return `(
       s.created_by = ${userParam}
       OR EXISTS (
         SELECT 1 FROM survey_assignments sa WHERE sa.survey_id = s.id AND (
           (sa.assignment_type = 'area' AND EXISTS (
             SELECT 1 FROM areas a
-            WHERE a.id = sa.area_id AND (a.area_lead_id = ${userParam} OR a.area_deputy_lead_id = ${userParam}) AND a.tenant_id = ${tenantParam}
+            WHERE a.id = sa.area_id AND (a.area_lead_id = ${userParam} ${areaDep}) AND a.tenant_id = ${tenantParam}
           ))
           OR (sa.assignment_type = 'department' AND (
             EXISTS (SELECT 1 FROM departments d
-                    WHERE d.id = sa.department_id AND (d.department_lead_id = ${userParam} OR d.department_deputy_lead_id = ${userParam}) AND d.tenant_id = ${tenantParam})
+                    WHERE d.id = sa.department_id AND (d.department_lead_id = ${userParam} ${deptDep}) AND d.tenant_id = ${tenantParam})
             OR EXISTS (SELECT 1 FROM departments d
                        JOIN areas a ON d.area_id = a.id
-                       WHERE d.id = sa.department_id AND (a.area_lead_id = ${userParam} OR a.area_deputy_lead_id = ${userParam}) AND a.tenant_id = ${tenantParam})
+                       WHERE d.id = sa.department_id AND (a.area_lead_id = ${userParam} ${areaDep}) AND a.tenant_id = ${tenantParam})
           ))
           OR (sa.assignment_type = 'team' AND (
             EXISTS (SELECT 1 FROM teams t
-                    WHERE t.id = sa.team_id AND (t.team_lead_id = ${userParam} OR t.team_deputy_lead_id = ${userParam}) AND t.tenant_id = ${tenantParam})
+                    WHERE t.id = sa.team_id AND (t.team_lead_id = ${userParam} ${teamDep}) AND t.tenant_id = ${tenantParam})
             OR EXISTS (SELECT 1 FROM teams t
                        JOIN departments d ON t.department_id = d.id
-                       WHERE t.id = sa.team_id AND (d.department_lead_id = ${userParam} OR d.department_deputy_lead_id = ${userParam}) AND d.tenant_id = ${tenantParam})
+                       WHERE t.id = sa.team_id AND (d.department_lead_id = ${userParam} ${deptDep}) AND d.tenant_id = ${tenantParam})
             OR EXISTS (SELECT 1 FROM teams t
                        JOIN departments d ON t.department_id = d.id
                        JOIN areas a ON d.area_id = a.id
-                       WHERE t.id = sa.team_id AND (a.area_lead_id = ${userParam} OR a.area_deputy_lead_id = ${userParam}) AND a.tenant_id = ${tenantParam})
+                       WHERE t.id = sa.team_id AND (a.area_lead_id = ${userParam} ${areaDep}) AND a.tenant_id = ${tenantParam})
           ))
         )
       )
@@ -376,7 +434,8 @@ export class SurveyAccessService {
     const offsetIdx = params.length + 2;
     params.push(limit, offset);
 
-    const visibilityClause = this.buildVisibilityClause('$1', '$2');
+    const deputyScope = await this.orgSettings.getDeputyHasLeadScope(tenantId);
+    const visibilityClause = this.buildVisibilityClause('$1', '$2', deputyScope);
     return await this.db.tenantQuery<DbSurvey>(
       `SELECT s.*, MAX(u.first_name) as creator_first_name, MAX(u.last_name) as creator_last_name,
        COUNT(DISTINCT sr.id) as response_count,
@@ -413,7 +472,8 @@ export class SurveyAccessService {
     const offsetIdx = params.length + 2;
     params.push(limit, offset);
 
-    const managementClause = this.buildManagementVisibilityClause('$1', '$2');
+    const deputyScope = await this.orgSettings.getDeputyHasLeadScope(tenantId);
+    const managementClause = this.buildManagementVisibilityClause('$1', '$2', deputyScope);
     return await this.db.tenantQuery<DbSurvey>(
       `SELECT s.*, MAX(u.first_name) as creator_first_name, MAX(u.last_name) as creator_last_name,
        COUNT(DISTINCT sr.id) as response_count,
@@ -438,6 +498,7 @@ export class SurveyAccessService {
     assignment: AssignmentInput,
     userId: number,
     tenantId: number,
+    deputyScope: boolean,
   ): Promise<void> {
     switch (assignment.type) {
       case 'all_users':
@@ -445,7 +506,13 @@ export class SurveyAccessService {
           'Only users with full access can assign to the entire company',
         );
       case 'area':
-        await this.validateLeadershipPermission('area', assignment.areaId, userId, tenantId);
+        await this.validateLeadershipPermission(
+          'area',
+          assignment.areaId,
+          userId,
+          tenantId,
+          deputyScope,
+        );
         break;
       case 'department':
         await this.validateLeadershipPermission(
@@ -453,10 +520,17 @@ export class SurveyAccessService {
           assignment.departmentId,
           userId,
           tenantId,
+          deputyScope,
         );
         break;
       case 'team':
-        await this.validateLeadershipPermission('team', assignment.teamId, userId, tenantId);
+        await this.validateLeadershipPermission(
+          'team',
+          assignment.teamId,
+          userId,
+          tenantId,
+          deputyScope,
+        );
         break;
       default:
         break;
@@ -469,12 +543,12 @@ export class SurveyAccessService {
     entityId: number | undefined,
     userId: number,
     tenantId: number,
+    deputyScope: boolean,
   ): Promise<void> {
     if (entityId === undefined) return;
+    if (entityType !== 'area' && entityType !== 'department' && entityType !== 'team') return;
 
-    const query = LEADERSHIP_QUERIES[entityType];
-    if (query === undefined) return;
-
+    const query = buildLeadershipQuery(entityType, deputyScope);
     const rows = await this.db.tenantQuery<{ id: number }>(query, [entityId, userId, tenantId]);
     if (rows.length === 0) {
       throw new ForbiddenException(`No leadership permission for ${entityType} ${entityId}`);
