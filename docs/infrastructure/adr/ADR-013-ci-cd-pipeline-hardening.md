@@ -3,7 +3,7 @@
 | Metadata                | Value                                                     |
 | ----------------------- | --------------------------------------------------------- |
 | **Status**              | Amended                                                   |
-| **Date**                | 2026-01-26 (amended 2026-02-05, 2026-03-21)               |
+| **Date**                | 2026-01-26 (amended 2026-02-05, 2026-03-21, 2026-04-14)   |
 | **Decision Makers**     | SCS Technik                                               |
 | **Affected Components** | GitHub Actions, code-quality-checks.yml, docker-build.yml |
 
@@ -98,6 +98,66 @@ GitHub deprecated Node.js 20 for Actions runners (forced Node.js 24 starting Jun
 | `pnpm/action-setup`          | v2  | v4  |
 | `docker/setup-buildx-action` | v3  | v4  |
 | `docker/login-action`        | v3  | v4  |
+
+### Fix 8: pnpm audit CI-Gate + Dependabot Security Cadence (Amendment 2026-04-14)
+
+**Background:** CI had no lockfile-level CVE gate. Trivy scans only the container image (OS packages + installed binaries), not the resolved pnpm graph. Dependabot alerts caught GHSA-tracked issues but fired only on new advisories — there was no hard gate at PR time, and version updates ran `monthly`, too slow for security-adjacent dependency drift.
+
+**Three-scanner coverage now explicit:**
+
+| Scanner                     | Source DB                    | Scope                  | Trigger                       | Blocks PR?          |
+| --------------------------- | ---------------------------- | ---------------------- | ----------------------------- | ------------------- |
+| Dependabot Security Updates | GHSA                         | `pnpm-lock.yaml`       | Real-time on advisory publish | No (auto-PR only)   |
+| `pnpm audit` (new)          | npm Registry advisories      | `pnpm-lock.yaml`       | Every PR/push                 | Yes (HIGH+CRITICAL) |
+| Trivy                       | OS CVE feeds (NVD/OSV)       | Container image layers | On Docker build               | Yes (CRITICAL only) |
+
+**Changes:**
+
+1. New CI job `security-audit` in `code-quality-checks.yml`:
+   - `pnpm audit --audit-level=high` fails PR on HIGH+CRITICAL
+   - `pnpm audit --audit-level=moderate` informational (Dependabot auto-patches these)
+   - Scans prod + dev — build-chain attacks (`ua-parser-js`, `event-stream`) bypass prod-only scans
+   - Escape hatch: `pnpm.auditConfig.ignoreCves` in `package.json` with WHY comment
+
+2. `.github/dependabot.yml` tuning:
+   - npm: `monthly` → `weekly` (Mon 06:00 Europe/Berlin)
+   - Labels: `dependencies`, `github-actions`, `docker`
+   - Commit-message prefixes: `chore(deps)`, `chore(deps-dev)`, `chore(ci)`, `chore(docker)`
+   - Groups by semver: `patch` + `minor` grouped; `major` as separate PRs (manual breaking review)
+   - `github-actions`, `docker`, `docker-compose` remain `monthly` (low churn, no runtime CVEs)
+
+3. GitHub repo settings activated (not file-based):
+   - Dependabot alerts: **Enabled**
+   - Dependabot security updates: **Enabled** (real-time auto-PRs)
+   - Grouped security updates: **Enabled**
+   - Secret scanning + Push protection: **Enabled**
+   - Private vulnerability reporting: **Enabled**
+
+**Alternatives considered:**
+
+| Option                              | Rejected because                                                                    |
+| ----------------------------------- | ----------------------------------------------------------------------------------- |
+| OSV-Scanner as 4th scanner          | Diminishing returns — Dependabot + pnpm audit + Trivy cover npm graph and OS layer  |
+| `--audit-level=critical` only       | Too permissive; HIGH npm CVEs (XSS, RCE) must block                                 |
+| `--prod` only (skip devDeps)        | Build-chain attacks bypass this; compromised devDeps can exfiltrate from CI runners |
+| Daily cadence for version updates   | PR noise; Dependabot security updates already fire real-time                        |
+| Auto-merge for patch updates        | Deferred until gate is stable; requires confidence in test coverage                 |
+
+**Consequences:**
+
+_Positive:_
+
+- CVE gate at PR time — stale branches can't merge with unpatched HIGH+CRITICAL
+- Security coverage across all three layers (dep graph + image + SAST already via Semgrep)
+- Weekly cadence catches drift faster without PR flood
+
+_Negative:_
+
+- One additional CI job (~30–60s, runs in parallel)
+- `pnpm audit` may surface unpatchable transitive CVEs — requires explicit `auditConfig.ignoreCves` entries
+- Weekly PRs need weekly review (vs monthly batch)
+
+---
 
 ### Fix 3: Cache re-enabled
 

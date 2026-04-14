@@ -22,22 +22,41 @@ version: 2
 updates:
   # Root workspace dependencies (pnpm workspace)
   # IMPORTANT: Only update from root for pnpm workspaces
+  # Note: Security updates fire REAL-TIME (ignore schedule) via Dependabot
+  # Security Updates setting — the interval below only governs version updates.
   - package-ecosystem: "npm"
     directory: "/"
     schedule:
-      interval: "monthly"
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "Europe/Berlin"
     open-pull-requests-limit: 10
-    # Reduce update frequency by grouping updates
+    labels:
+      - "dependencies"
+    commit-message:
+      prefix: "chore(deps)"
+      prefix-development: "chore(deps-dev)"
+      include: "scope"
+    # patch + minor gebündelt (low-risk, schnell mergbar).
+    # major bleibt bewusst ungrouped → einzelne PRs, manuelles Breaking-Review.
     groups:
-      dependencies:
-        patterns:
-          - "*"
+      patch-and-minor:
+        update-types:
+          - "patch"
+          - "minor"
 
-  # GitHub Actions
+  # GitHub Actions — monthly reicht (wenig Churn, keine Runtime-CVEs)
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "monthly"
+    labels:
+      - "dependencies"
+      - "github-actions"
+    commit-message:
+      prefix: "chore(ci)"
+      include: "scope"
 
   # Dockerfile FROM directives — only /docker/Dockerfile (the only standard-named one)
   # See coverage map above for the limitation on custom Dockerfile names.
@@ -46,6 +65,12 @@ updates:
     schedule:
       interval: "monthly"
     open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "docker"
+    commit-message:
+      prefix: "chore(docker)"
+      include: "scope"
 
   # docker-compose `image:` tags — closes the PLG-stack drift gap (ADR-027 amendment)
   # GA since 2025-02-25:
@@ -55,6 +80,12 @@ updates:
     schedule:
       interval: "monthly"
     open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "docker"
+    commit-message:
+      prefix: "chore(docker)"
+      include: "scope"
     # Group by stack to keep PR noise manageable
     groups:
       plg-stack:

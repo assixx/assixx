@@ -140,6 +140,39 @@ jobs:
           path: coverage/
           retention-days: 30
 
+  security-audit:
+    runs-on: ubuntu-latest
+    name: Security Audit (pnpm audit — CVE-Gate)
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v5
+        with:
+          version: 10.33.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: "24.14.0"
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # Blocks PR on HIGH or CRITICAL CVEs in prod OR dev deps.
+      # Build-chain attacks (ua-parser-js, event-stream) are real — scan all.
+      # If a CVE is unpatched/accepted, add to pnpm.auditConfig.ignoreCves in package.json.
+      - name: pnpm audit (HIGH+CRITICAL blocks)
+        run: pnpm audit --audit-level=high
+
+      - name: pnpm audit (MODERATE informational)
+        if: always()
+        run: pnpm audit --audit-level=moderate || true
+
   docker-build-verification:
     runs-on: ubuntu-latest
     name: Docker Build Verification (no push)
