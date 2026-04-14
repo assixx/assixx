@@ -73,6 +73,8 @@ test.describe('Smoke: Key Pages Load', () => {
     { path: '/chat', title: /Assixx/ },
     { path: '/inventory', title: /Assixx/ },
     { path: '/manage-approvals', title: /Assixx/ },
+    { path: '/surveys', title: /Assixx/ },
+    { path: '/manage-surveys', title: /Assixx/ },
   ];
 
   for (const { path, title } of pages) {

@@ -1,6 +1,6 @@
 /**
- * Survey Employee - Server-Side Data Loading
- * @module survey-employee/+page.server
+ * Surveys - Server-Side Data Loading
+ * @module surveys/+page.server
  *
  * SSR: Loads surveys and checks response status for each.
  */

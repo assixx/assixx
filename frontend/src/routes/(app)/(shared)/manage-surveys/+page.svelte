@@ -1,7 +1,7 @@
 <script lang="ts">
   /**
-   * Survey Admin - Page Component
-   * @module survey-admin/+page
+   * Manage Surveys - Page Component
+   * @module manage-surveys/+page
    *
    * Level 3 SSR: All data via $derived from SSR props, invalidateAll() after mutations.
    */

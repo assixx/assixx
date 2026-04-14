@@ -126,6 +126,24 @@ const WORK_ORDERS_ADMIN_SUBMENU: NavItem[] = [
   },
 ];
 
+/**
+ * Surveys submenu for users with manage rights (root, admin-with-full-access, any lead, deputy-with-lead-scope).
+ * Injected via `applySurveysVariant()` when `canManageSurveys` is true.
+ */
+const SURVEYS_MANAGE_SUBMENU: NavItem[] = [
+  {
+    id: 'surveys-my',
+    label: 'Meine Umfragen',
+    url: '/surveys',
+    badgeType: 'surveys',
+  },
+  {
+    id: 'surveys-manage',
+    label: 'Verwaltung',
+    url: '/manage-surveys',
+  },
+];
+
 /** KVP + Surveys + TPM submenu for root/admin (includes category management) */
 const LEAN_ADMIN_SUBMENU: NavItem[] = [
   {
@@ -149,7 +167,7 @@ const LEAN_ADMIN_SUBMENU: NavItem[] = [
   {
     id: 'surveys',
     label: LABELS.SURVEYS,
-    url: '/survey-admin',
+    url: '/surveys',
     badgeType: 'surveys',
     addonCode: 'surveys',
   },
@@ -556,7 +574,7 @@ const EMPLOYEE_MENU_STATIC: NavItem[] = [
       {
         id: 'surveys',
         label: LABELS.SURVEYS,
-        url: '/survey-employee',
+        url: '/surveys',
         badgeType: 'surveys',
         addonCode: 'surveys',
       },
@@ -881,4 +899,49 @@ export function filterMenuByScope(
   }
 
   return items;
+}
+
+/**
+ * Single source of truth for "darf der User Umfragen verwalten?".
+ *
+ * Allowed:
+ * - Root (immer)
+ * - Admin mit `hasFullAccess=true`
+ * - Jeder Lead (Team/Area/Department) — `orgScope.isAnyLead` deckt das ab
+ * - Deputies mit Lead-Scope — Backend merged Deputy-IDs in `leadXxxIds` wenn
+ *   Tenant-Toggle `deputyHasLeadScope` aktiv ist (ADR-039), d.h. `isAnyLead=true`.
+ *
+ * Used by:
+ * - `+layout.svelte` (sidebar submenu expansion via `applySurveysVariant`)
+ * - `/manage-surveys/+page.server.ts` (route guard — redirect to `/surveys` if false)
+ */
+export function canManageSurveys(
+  role: string | undefined,
+  hasFullAccess: boolean,
+  isAnyLead: boolean,
+): boolean {
+  return role === 'root' || (role === 'admin' && hasFullAccess) || isAnyLead;
+}
+
+/**
+ * Upgrade the "Umfragen" entry to a submenu with "Meine Umfragen" + "Verwaltung"
+ * when the user can manage surveys. Otherwise pass through unchanged (single /surveys link).
+ *
+ * Pipeline-wise this runs LAST, after addon filtering — if the surveys addon is inactive
+ * the entry is already gone and this function is a no-op.
+ */
+export function applySurveysVariant(items: NavItem[], canManage: boolean): NavItem[] {
+  if (!canManage) return items;
+
+  return items.map((item) => {
+    if (item.id !== NAV_ID_LEAN || item.submenu === undefined) return item;
+
+    const updatedSubmenu = item.submenu.map((child) =>
+      child.id === 'surveys' ?
+        { ...child, url: undefined, submenu: SURVEYS_MANAGE_SUBMENU }
+      : child,
+    );
+
+    return { ...item, submenu: updatedSubmenu };
+  });
 }

@@ -14,6 +14,8 @@ import { DEFAULT_ORG_SCOPE } from '$lib/types/organizational-scope';
 
 import {
   type NavItem,
+  applySurveysVariant,
+  canManageSurveys,
   filterMenuByAccess,
   filterMenuByAddons,
   filterMenuByScope,
@@ -116,7 +118,7 @@ function createTestMenu(): NavItem[] {
         {
           id: 'surveys',
           label: 'Umfragen',
-          url: '/survey-admin',
+          url: '/surveys',
           addonCode: 'surveys',
         },
       ],
@@ -695,5 +697,115 @@ describe('filterMenuByScope: dummy', () => {
     const result = filterMenuByScope(dummyMenuItems, DEFAULT_ORG_SCOPE, 'dummy');
 
     expect(collectIds(result)).not.toContain('approvals');
+  });
+});
+
+// =============================================================================
+// canManageSurveys
+// =============================================================================
+
+describe('canManageSurveys', () => {
+  it('should return true for root (regardless of other flags)', () => {
+    expect(canManageSurveys('root', false, false)).toBe(true);
+  });
+
+  it('should return true for admin with hasFullAccess', () => {
+    expect(canManageSurveys('admin', true, false)).toBe(true);
+  });
+
+  it('should return false for admin WITHOUT hasFullAccess and no lead scope', () => {
+    expect(canManageSurveys('admin', false, false)).toBe(false);
+  });
+
+  it('should return true for admin WITHOUT hasFullAccess BUT with lead scope', () => {
+    expect(canManageSurveys('admin', false, true)).toBe(true);
+  });
+
+  it('should return true for employee with any lead scope (team/area/dept/deputy)', () => {
+    expect(canManageSurveys('employee', false, true)).toBe(true);
+  });
+
+  it('should return false for pure employee (no lead, no deputy)', () => {
+    expect(canManageSurveys('employee', false, false)).toBe(false);
+  });
+
+  it('should ignore stray hasFullAccess on employee role', () => {
+    // Defensive: hasFullAccess on employee shouldn't happen in practice but
+    // if it does, it must NOT grant manage rights — only role-gated admin wins.
+    expect(canManageSurveys('employee', true, false)).toBe(false);
+  });
+
+  it('should return false when role is undefined', () => {
+    expect(canManageSurveys(undefined, true, false)).toBe(false);
+  });
+});
+
+// =============================================================================
+// applySurveysVariant
+// =============================================================================
+
+describe('applySurveysVariant: canManage=false', () => {
+  it('should return items unchanged (single /surveys link stays)', () => {
+    const menu = createTestMenu();
+    const result = applySurveysVariant(menu, false);
+
+    const surveys = findById(result, 'surveys');
+    expect(surveys?.url).toBe('/surveys');
+    expect(surveys?.submenu).toBeUndefined();
+  });
+});
+
+describe('applySurveysVariant: canManage=true', () => {
+  it('should expand surveys entry into submenu with Meine Umfragen + Verwaltung', () => {
+    const result = applySurveysVariant(createTestMenu(), true);
+    const surveys = findById(result, 'surveys');
+
+    expect(surveys?.url).toBeUndefined();
+    expect(surveys?.submenu).toBeDefined();
+    expect(surveys?.submenu).toHaveLength(2);
+
+    const ids = surveys?.submenu?.map((child) => child.id) ?? [];
+    expect(ids).toContain('surveys-my');
+    expect(ids).toContain('surveys-manage');
+  });
+
+  it('should point surveys-my to /surveys and surveys-manage to /manage-surveys', () => {
+    const result = applySurveysVariant(createTestMenu(), true);
+    const surveys = findById(result, 'surveys');
+
+    const my = surveys?.submenu?.find((c) => c.id === 'surveys-my');
+    const manage = surveys?.submenu?.find((c) => c.id === 'surveys-manage');
+
+    expect(my?.url).toBe('/surveys');
+    expect(manage?.url).toBe('/manage-surveys');
+  });
+
+  it('should preserve surveys label and addonCode', () => {
+    const result = applySurveysVariant(createTestMenu(), true);
+    const surveys = findById(result, 'surveys');
+
+    expect(surveys?.label).toBe('Umfragen');
+    expect(surveys?.addonCode).toBe('surveys');
+  });
+
+  it('should be a no-op when menu has no lean-management', () => {
+    const menu: NavItem[] = [{ id: 'dashboard', label: 'Dashboard', url: '/dashboard' }];
+    const result = applySurveysVariant(menu, true);
+
+    expect(result).toEqual(menu);
+  });
+
+  it('should be a no-op when lean submenu has no surveys child', () => {
+    const menu: NavItem[] = [
+      {
+        id: ID_LEAN,
+        label: 'LEAN',
+        submenu: [{ id: 'kvp', label: 'KVP', url: '/kvp' }],
+      },
+    ];
+    const result = applySurveysVariant(menu, true);
+
+    expect(findById(result, 'surveys')).toBeUndefined();
+    expect(findById(result, 'kvp')).toBeDefined();
   });
 });

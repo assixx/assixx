@@ -1,7 +1,7 @@
 <script lang="ts">
   /**
-   * Survey Employee - Page Component
-   * @module survey-employee/+page
+   * Surveys - Page Component
+   * @module surveys/+page
    *
    * Level 3 SSR: $derived for SSR data, invalidateAll() after mutations.
    */

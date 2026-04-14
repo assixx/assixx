@@ -174,12 +174,12 @@ const dynamicRoutes: DynamicRoute[] = [
 const intermediateBreadcrumbs: Partial<Record<string, IntermediateCrumb>> = {
   '/survey-results': {
     label: 'Umfragen',
-    href: '/survey-admin',
+    href: '/manage-surveys',
     icon: 'fa-poll',
   },
   '/survey-create': {
     label: 'Umfragen',
-    href: '/survey-admin',
+    href: '/manage-surveys',
     icon: 'fa-poll',
   },
   '/kvp-detail': { label: 'KVP', href: '/kvp', icon: 'fa-lightbulb' },
@@ -245,8 +245,8 @@ const staticUrlMappings: Partial<Record<string, RouteMapping>> = {
   '/kvp': { label: 'KVP', icon: 'fa-lightbulb' },
   '/kvp-categories': { label: 'Definitionen', icon: 'fa-tags' },
   '/kvp-detail': { label: 'KVP-Details', icon: ICON_INFO },
-  '/survey-admin': { label: 'Umfragen', icon: 'fa-poll' },
-  '/survey-employee': { label: 'Mitarbeiter-Umfrage', icon: 'fa-poll-h' },
+  '/manage-surveys': { label: 'Umfragen verwalten', icon: 'fa-poll' },
+  '/surveys': { label: 'Umfragen', icon: 'fa-poll-h' },
   '/survey-results': { label: 'Umfrage-Ergebnisse', icon: 'fa-chart-bar' },
   '/account-settings': { label: 'Konto-Einstellungen', icon: 'fa-user-cog' },
   '/settings/design': { label: 'Design', icon: 'fa-palette' },

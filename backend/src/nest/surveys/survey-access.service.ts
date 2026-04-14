@@ -335,7 +335,7 @@ export class SurveyAccessService {
   /**
    * Build the management visibility WHERE clause for surveys.
    * Stricter than buildVisibilityClause(): only creator OR lead of assigned org unit.
-   * Used for admin management operations (list/view/edit/delete in survey-admin).
+   * Used for admin management operations (list/view/edit/delete in manage-surveys).
    *
    * ADR-039: when deputyScope=false, deputies cannot manage — only direct leads.
    */

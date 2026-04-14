@@ -175,15 +175,16 @@
 - 104 Unit Tests + 24 API-Integrationstests
 - ADR-037
 
-### In Development
+#### 14. **Survey Tool (Umfragen)** (Kaufbares Addon)
 
-#### 14. **Survey Tool** (80% complete)
-
-- Admin can Create Surveys
-- Multiple Choice and Free Text
-- Anonymous/Non-Anonymous Options
-- Real-Time Results
-- Export Functions
+- Admin kann Umfragen erstellen (Multiple Choice, Free Text, Anonym/Nicht-Anonym)
+- Dynamische Sidebar: `/surveys` (Teilnehmen) für alle, `/manage-surveys` (Verwaltung) nur für Root, Admin-mit-full-access, Leads (Team/Area/Dept) und Deputies (ADR-039)
+- Route Guard auf `/manage-surveys` (Defense-in-Depth: Redirect zu `/surveys` wenn nicht berechtigt)
+- Legacy-Redirects für alte URLs (`/survey-admin` → `/manage-surveys`, `/survey-employee` → `/surveys`)
+- Drei Permission-Module: `surveys-manage`, `surveys-participate`, `surveys-results` (ADR-020)
+- Real-Time Badge-Counts via SSE (`NEW_SURVEY` Event)
+- Activity Logging für alle Mutationen
+- 205 Unit Tests + 10 API-Integrationstests
 
 ## Addon Status Matrix (ADR-033)
 
@@ -204,7 +205,7 @@
 | Dokumente             | Kaufbar | €10         | Live           |
 | Schichtplanung        | Kaufbar | €10         | Live           |
 | Chat                  | Kaufbar | €10         | Live           |
-| Umfragen              | Kaufbar | €10         | In Development |
+| Umfragen              | Kaufbar | €10         | Live           |
 | KVP                   | Kaufbar | €10         | Live           |
 | Urlaubsverwaltung     | Kaufbar | €10         | Live           |
 | TPM / Wartung         | Kaufbar | €10         | Live           |

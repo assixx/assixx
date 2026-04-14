@@ -75,6 +75,23 @@ interface ApiUserResponse {
   hasFullAccess?: boolean;
 }
 
+/**
+ * Legacy route redirects — keep bookmarks working after route renames.
+ * Renamed 2026-04-14: survey-admin → manage-surveys, survey-employee → surveys.
+ */
+const LEGACY_REDIRECTS = new Map<string, string>([
+  ['/survey-admin', '/manage-surveys'],
+  ['/survey-employee', '/surveys'],
+]);
+
+const legacyRedirectsHandle: Handle = async ({ event, resolve }) => {
+  const target = LEGACY_REDIRECTS.get(event.url.pathname);
+  if (target !== undefined) {
+    redirect(302, `${target}${event.url.search}`);
+  }
+  return await resolve(event);
+};
+
 /** Check if path should skip authentication */
 function shouldSkipAuth(pathname: string): boolean {
   if (SKIP_ROUTES_PREFIXES.some((prefix) => pathname.startsWith(prefix))) {
@@ -333,6 +350,7 @@ const htmlMinificationHandle: Handle = async ({ event, resolve }) => {
 export const handle: Handle = sequence(
   Sentry.sentryHandle(),
   securityHeadersHandle,
+  legacyRedirectsHandle,
   authHandle,
   requestLoggingHandle,
   htmlMinificationHandle,

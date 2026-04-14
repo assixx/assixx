@@ -38,6 +38,8 @@
   import { createPresenceCallbacks, formatTokenTime, performLogout } from './_lib/layout-helpers';
   import LogoutModal from './_lib/LogoutModal.svelte';
   import {
+    applySurveysVariant,
+    canManageSurveys,
     filterMenuByAccess,
     filterMenuByAddons,
     filterMenuByScope,
@@ -216,15 +218,21 @@
   // Navigation menu items - filtered by access level and tenant addon activation
   const hasFullAccess = $derived(data.user?.role === 'root' || Boolean(data.user?.hasFullAccess));
   const activeAddonsSet = $derived(new Set(data.activeAddons));
+  const canManageSurveysFlag = $derived(
+    canManageSurveys(data.user?.role, Boolean(data.user?.hasFullAccess), data.orgScope.isAnyLead),
+  );
   const menuItems = $derived(
-    filterMenuByAddons(
-      filterMenuByScope(
-        filterMenuByAccess(getMenuItemsForRole(currentRole, hierarchyLabels), hasFullAccess),
-        data.orgScope,
-        currentRole,
-        hierarchyLabels,
+    applySurveysVariant(
+      filterMenuByAddons(
+        filterMenuByScope(
+          filterMenuByAccess(getMenuItemsForRole(currentRole, hierarchyLabels), hasFullAccess),
+          data.orgScope,
+          currentRole,
+          hierarchyLabels,
+        ),
+        activeAddonsSet,
       ),
-      activeAddonsSet,
+      canManageSurveysFlag,
     ),
   );
 

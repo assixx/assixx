@@ -106,7 +106,7 @@
   }
 
   function handleNavigateBack(): void {
-    void goto(resolve('/survey-admin'));
+    void goto(resolve('/manage-surveys'));
   }
 
   function handleAccordionToggle(index: number): void {

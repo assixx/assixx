@@ -1,6 +1,6 @@
 /**
- * Survey Admin - Server-Side Data Loading
- * @module survey-admin/+page.server
+ * Manage Surveys - Server-Side Data Loading
+ * @module manage-surveys/+page.server
  *
  * SSR: Loads surveys, templates, and org data in parallel.
  */
@@ -8,6 +8,8 @@ import { redirect } from '@sveltejs/kit';
 
 import { apiFetch, apiFetchWithPermission } from '$lib/server/api-fetch';
 import { requireAddon } from '$lib/utils/addon-guard';
+
+import { canManageSurveys } from '../../_lib/navigation-config';
 
 import type { PageServerLoad } from './$types';
 import type { Survey, SurveyTemplate, Department, Team, Area, UserRole } from './_lib/types';
@@ -61,8 +63,13 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
   const token = cookies.get('accessToken');
   if (token === undefined || token === '') redirect(302, '/login');
 
-  const { user, activeAddons } = await parent();
+  const { user, activeAddons, orgScope } = await parent();
   requireAddon(activeAddons, 'surveys');
+
+  // Defense-in-depth: block direct URL access for users who can't manage surveys.
+  if (!canManageSurveys(user?.role, user?.hasFullAccess === true, orgScope.isAnyLead)) {
+    redirect(302, '/surveys');
+  }
 
   const result = await loadSurveyData(token, fetch);
 
