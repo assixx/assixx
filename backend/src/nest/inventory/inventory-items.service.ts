@@ -61,8 +61,11 @@ export class InventoryItemsService {
 
     const offset = (filters.page - 1) * filters.limit;
     const items = await this.db.tenantQuery<InventoryItemRow>(
-      `SELECT i.*, thumb.file_path AS thumbnail_path
+      `SELECT i.*,
+              thumb.file_path AS thumbnail_path,
+              NULLIF(TRIM(CONCAT(u.first_name, ' ', u.last_name)), '') AS created_by_name
        FROM inventory_items i
+       LEFT JOIN users u ON u.id = i.created_by
        LEFT JOIN LATERAL (
          SELECT p.file_path FROM inventory_item_photos p
          WHERE p.item_id = i.id AND p.is_active != ${String(IS_ACTIVE.DELETED)}
@@ -101,11 +104,14 @@ export class InventoryItemsService {
     }
 
     const photos = await this.db.tenantQuery<InventoryItemPhoto>(
-      `SELECT id, file_path AS "filePath", caption, sort_order AS "sortOrder",
-              created_by AS "createdBy", created_at AS "createdAt"
-       FROM inventory_item_photos
-       WHERE item_id = $1 AND is_active != $2
-       ORDER BY sort_order`,
+      `SELECT p.id, p.file_path AS "filePath", p.caption,
+              p.sort_order AS "sortOrder",
+              p.created_by AS "createdBy", p.created_at AS "createdAt",
+              NULLIF(TRIM(CONCAT(u.first_name, ' ', u.last_name)), '') AS "uploaderName"
+       FROM inventory_item_photos p
+       LEFT JOIN users u ON u.id = p.created_by
+       WHERE p.item_id = $1 AND p.is_active != $2
+       ORDER BY p.sort_order`,
       [uuid, IS_ACTIVE.DELETED],
     );
 

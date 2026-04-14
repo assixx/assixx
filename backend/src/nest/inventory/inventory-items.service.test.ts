@@ -91,6 +91,8 @@ function makeItemRow(overrides: Partial<InventoryItemRow> = {}): InventoryItemRo
     created_by: 10,
     created_at: new Date(),
     updated_at: new Date(),
+    thumbnail_path: null,
+    created_by_name: null,
     ...overrides,
   };
 }

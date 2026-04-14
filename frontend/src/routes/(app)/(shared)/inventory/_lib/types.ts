@@ -139,6 +139,8 @@ export interface InventoryItem {
   created_at: string;
   /** First photo path (from list view lateral subquery) */
   thumbnail_path: string | null;
+  /** Full name of the creator (from users JOIN) */
+  created_by_name: string | null;
 }
 
 /** Item detail with photos, custom values, and field definitions */
@@ -178,6 +180,7 @@ export interface InventoryItemPhoto {
   caption: string | null;
   sortOrder: number;
   createdAt: string;
+  uploaderName: string | null;
 }
 
 export interface CustomValueWithField {

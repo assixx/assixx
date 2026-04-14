@@ -27,6 +27,7 @@
   } from '../../_lib/api';
   import { ITEM_STATUS_BADGE_CLASSES, ITEM_STATUS_LABELS } from '../../_lib/constants';
   import ItemEditModal from '../../_lib/ItemEditModal.svelte';
+  import { formatDateTime } from '../../_lib/utils';
 
   import type { PageData } from './$types';
   import type {
@@ -56,7 +57,20 @@
   let showDeleteItemModal = $state(false);
   let editCaptionId = $state<string | null>(null);
   let editCaptionText = $state('');
-  let previewPhoto = $state<InventoryItemPhoto | null>(null);
+  let previewIndex = $state<number | null>(null);
+  const previewPhoto = $derived<InventoryItemPhoto | null>(
+    previewIndex !== null ? (photos[previewIndex] ?? null) : null,
+  );
+
+  function showPrevPhoto(): void {
+    if (previewIndex === null || photos.length === 0) return;
+    previewIndex = (previewIndex - 1 + photos.length) % photos.length;
+  }
+
+  function showNextPhoto(): void {
+    if (previewIndex === null || photos.length === 0) return;
+    previewIndex = (previewIndex + 1) % photos.length;
+  }
   let fileInput: HTMLInputElement | undefined = $state();
   let uploading = $state(false);
   let statusDropdownOpen = $state(false);
@@ -477,7 +491,7 @@
                     <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
                     <div
                       class="photo-thumbnail"
-                      onclick={() => (previewPhoto = photo)}
+                      onclick={() => (previewIndex = idx)}
                     >
                       <img
                         src={getPhotoUrl(photo.filePath)}
@@ -664,19 +678,18 @@
   {/if}
 
   <!-- Photo Preview Modal -->
-  {#if previewPhoto !== null}
-    <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
+  {#if previewPhoto !== null && previewIndex !== null}
     <div
       class="modal-overlay modal-overlay--active"
-      onclick={() => (previewPhoto = null)}
+      onclick={() => (previewIndex = null)}
       role="dialog"
       aria-modal="true"
       tabindex="-1"
     >
-      <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
       <div
         class="ds-modal ds-modal--lg"
-        style="max-height: 95vh;"
+        style="max-height: 95vh"
+        role="document"
         onclick={(e: MouseEvent) => {
           e.stopPropagation();
         }}
@@ -684,47 +697,87 @@
         <div class="ds-modal__header">
           <h3 class="ds-modal__title">
             <i class="fas fa-image mr-2 text-blue-400"></i>
-            {previewPhoto.caption ?? item.name}
+            <span>{previewPhoto.caption ?? item.name}</span>
           </h3>
           <button
             type="button"
             class="ds-modal__close"
-            aria-label="Schliessen"
-            onclick={() => (previewPhoto = null)}
+            aria-label="Schließen"
+            onclick={() => (previewIndex = null)}
           >
             <i class="fas fa-times"></i>
           </button>
         </div>
         <div class="ds-modal__body p-0">
-          <div class="preview-image-container">
+          <div class="bg-surface-1 flex h-[80vh] min-h-[600px] w-full items-center justify-center">
             <img
               src={getPhotoUrl(previewPhoto.filePath)}
               alt={previewPhoto.caption ?? item.name}
+              class="block max-h-full max-w-full object-contain"
             />
           </div>
-          <div class="preview-meta">
-            <span class="flex items-center gap-2">
-              <i class="fas fa-cube"></i>
-              <span>{item.code}</span>
-            </span>
-            {#if previewPhoto.caption}
+
+          <div class="bg-surface-2 border-border-subtle border-t p-4">
+            <div class="text-content-secondary flex flex-wrap items-center gap-6 text-sm">
               <span class="flex items-center gap-2">
-                <i class="fas fa-tag"></i>
-                <span>{previewPhoto.caption}</span>
+                <i class="fas fa-calendar-alt"></i>
+                <span>{formatDateTime(previewPhoto.createdAt)}</span>
               </span>
-            {/if}
+              {#if previewPhoto.uploaderName !== null && previewPhoto.uploaderName !== ''}
+                <span class="flex items-center gap-2">
+                  <i class="fas fa-user"></i>
+                  <span>{previewPhoto.uploaderName}</span>
+                </span>
+              {/if}
+              {#if previewPhoto.caption !== null && previewPhoto.caption !== ''}
+                <span class="flex items-center gap-2">
+                  <i class="fas fa-tag"></i>
+                  <span>{previewPhoto.caption}</span>
+                </span>
+              {/if}
+            </div>
           </div>
         </div>
         <div class="ds-modal__footer">
           <button
             type="button"
             class="btn btn-cancel"
-            onclick={() => (previewPhoto = null)}
+            onclick={() => (previewIndex = null)}
           >
             <i class="fas fa-times mr-2"></i> Schließen
           </button>
         </div>
       </div>
+
+      {#if photos.length > 1}
+        <button
+          type="button"
+          class="absolute top-1/2 left-6 z-10 flex h-12 w-12 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border-none bg-white/15 text-xl text-white transition-colors hover:bg-white/30"
+          onclick={(e: MouseEvent) => {
+            e.stopPropagation();
+            showPrevPhoto();
+          }}
+          aria-label="Vorheriges"
+        >
+          <i class="fas fa-chevron-left"></i>
+        </button>
+        <button
+          type="button"
+          class="absolute top-1/2 right-6 z-10 flex h-12 w-12 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border-none bg-white/15 text-xl text-white transition-colors hover:bg-white/30"
+          onclick={(e: MouseEvent) => {
+            e.stopPropagation();
+            showNextPhoto();
+          }}
+          aria-label="Nächstes"
+        >
+          <i class="fas fa-chevron-right"></i>
+        </button>
+        <div
+          class="absolute bottom-6 left-1/2 z-10 -translate-x-1/2 rounded-xl bg-black/50 px-3 py-1 text-sm text-white"
+        >
+          {previewIndex + 1} / {photos.length}
+        </div>
+      {/if}
     </div>
   {/if}
 
@@ -1033,31 +1086,5 @@
     aspect-ratio: auto;
     padding: 2rem;
     width: 100%;
-  }
-
-  .preview-image-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    overflow: hidden;
-    min-height: 400px;
-    max-height: 70vh;
-    width: 100%;
-  }
-
-  .preview-image-container img {
-    max-width: 100%;
-    max-height: 70vh;
-    object-fit: contain;
-  }
-
-  .preview-meta {
-    display: flex;
-    align-items: center;
-    gap: 1.5rem;
-    border-top: 1px solid var(--color-glass-border);
-    padding: 1rem;
-    color: var(--color-text-secondary);
-    font-size: 0.875rem;
   }
 </style>

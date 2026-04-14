@@ -22,6 +22,7 @@
     ITEM_STATUS_BADGE_CLASSES,
     ITEM_STATUS_LABELS,
   } from '../../_lib/constants';
+  import { formatDateTime } from '../../_lib/utils';
 
   import type { PageData } from './$types';
   import type {
@@ -909,7 +910,6 @@
 
   <!-- Photo Preview Modal -->
   {#if previewItem !== null && previewItem.thumbnail_path !== null}
-    <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
     <div
       class="modal-overlay modal-overlay--active"
       onclick={() => (previewItem = null)}
@@ -917,10 +917,10 @@
       aria-modal="true"
       tabindex="-1"
     >
-      <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
       <div
         class="ds-modal ds-modal--lg"
-        style="max-height: 95vh;"
+        style="max-height: 95vh"
+        role="document"
         onclick={(e: MouseEvent) => {
           e.stopPropagation();
         }}
@@ -928,29 +928,43 @@
         <div class="ds-modal__header">
           <h3 class="ds-modal__title">
             <i class="fas fa-image mr-2 text-blue-400"></i>
-            {previewItem.name}
+            <span>{previewItem.name}</span>
           </h3>
           <button
             type="button"
             class="ds-modal__close"
-            aria-label="Schliessen"
+            aria-label="Schließen"
             onclick={() => (previewItem = null)}
           >
             <i class="fas fa-times"></i>
           </button>
         </div>
         <div class="ds-modal__body p-0">
-          <div class="preview-image-container">
+          <div class="bg-surface-1 flex h-[80vh] min-h-[600px] w-full items-center justify-center">
             <img
               src="/{previewItem.thumbnail_path}"
               alt={previewItem.name}
+              class="block max-h-full max-w-full object-contain"
             />
           </div>
-          <div class="preview-meta">
-            <span class="flex items-center gap-2">
-              <i class="fas fa-cube"></i>
-              <span>{previewItem.code}</span>
-            </span>
+
+          <div class="bg-surface-2 border-border-subtle border-t p-4">
+            <div class="text-content-secondary flex flex-wrap items-center gap-6 text-sm">
+              <span class="flex items-center gap-2">
+                <i class="fas fa-cube"></i>
+                <span>{previewItem.code}</span>
+              </span>
+              <span class="flex items-center gap-2">
+                <i class="fas fa-calendar-alt"></i>
+                <span>{formatDateTime(previewItem.created_at)}</span>
+              </span>
+              {#if previewItem.created_by_name !== null && previewItem.created_by_name !== ''}
+                <span class="flex items-center gap-2">
+                  <i class="fas fa-user"></i>
+                  <span>{previewItem.created_by_name}</span>
+                </span>
+              {/if}
+            </div>
           </div>
         </div>
         <div class="ds-modal__footer">
@@ -1095,32 +1109,6 @@
     height: 5.75rem;
     border-radius: var(--radius-lg, 0.5rem);
     background: var(--color-glass-bg, rgb(255 255 255 / 5%));
-    color: var(--color-text-secondary);
-    font-size: 0.875rem;
-  }
-
-  .preview-image-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    overflow: hidden;
-    min-height: 400px;
-    max-height: 70vh;
-    width: 100%;
-  }
-
-  .preview-image-container img {
-    max-width: 100%;
-    max-height: 70vh;
-    object-fit: contain;
-  }
-
-  .preview-meta {
-    display: flex;
-    align-items: center;
-    gap: 1.5rem;
-    border-top: 1px solid var(--color-glass-border);
-    padding: 1rem;
     color: var(--color-text-secondary);
     font-size: 0.875rem;
   }
