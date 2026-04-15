@@ -75,7 +75,15 @@
 
   /* Main Background - Light theme */
   --main-bg: var(--color-gray-50);
-  --main-bg-gradient: oklch(97.87% 0.0057 264.53);
+
+  /* Two-point warm mesh — light-mode counterpart to dark-mode's cool blue glow.
+   * WHY: A single centred radial feels static on light bg; two asymmetrically
+   * placed warm highlights (yellow-orange + peach, both near-neutral chroma)
+   * create organic directionality like Linear/Vercel landing gradients, while
+   * staying subtle enough not to compete with UI. */
+  --main-bg-gradient:
+    radial-gradient(at 25% 15%, oklch(85% 0.05 75 /20%) 0%, transparent 30%),
+    radial-gradient(at 75% 85%, oklch(82% 0.045 45 / 40%) 0%, transparent 30%);
 
   /* Backgrounds */
   --color-surface: oklch(88.84% 0 0);

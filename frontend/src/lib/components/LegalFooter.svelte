@@ -92,19 +92,21 @@
     margin: 0 auto;
     padding: var(--spacing-3) var(--spacing-5);
     max-width: 1200px;
-    color: var(--text-secondary);
+    /* WHY: kanonisches Token statt Legacy-Alias `--text-secondary`
+     * (laut variables-light.css/variables-dark.css Header als Legacy markiert). */
+    color: var(--color-text-secondary);
     font-size: 0.8125rem;
     letter-spacing: 0.01em;
     text-align: center;
   }
 
   .legal-footer-compact__copy {
-    color: var(--text-secondary);
+    color: var(--color-text-secondary);
     font-weight: 500;
   }
 
   .legal-footer-compact__dot {
-    color: var(--text-secondary);
+    color: var(--color-text-secondary);
     opacity: 0.35;
   }
 
@@ -112,7 +114,7 @@
     position: relative;
     padding-bottom: 1px;
     transition: color 0.2s ease;
-    color: var(--text-secondary);
+    color: var(--color-text-secondary);
     text-decoration: none;
   }
 

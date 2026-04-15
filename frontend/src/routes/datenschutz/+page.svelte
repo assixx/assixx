@@ -1,10 +1,13 @@
 <script lang="ts">
-  import { resolve } from '$app/paths';
-
-  import LegalFooter from '$lib/components/LegalFooter.svelte';
+  /*
+   * Datenschutz uses the shared LandingHeader + LandingFooter (same
+   * markup and styles as the public landing page). Prior minimal
+   * "legal-header" was replaced per user request (2026-04-15) for
+   * visual consistency across the public surface.
+   */
+  import LandingFooter from '$lib/components/LandingFooter.svelte';
+  import LandingHeader from '$lib/components/LandingHeader.svelte';
   import Seo from '$lib/components/Seo.svelte';
-  import ThemeToggle from '$lib/components/ThemeToggle.svelte';
-  import { isDark } from '$lib/stores/theme.svelte';
 </script>
 
 <Seo
@@ -14,21 +17,8 @@
   noindex={true}
 />
 
-<!-- Navigation -->
-<header class="legal-header">
-  <a
-    href={resolve('/')}
-    class="legal-header__logo"
-  >
-    <img
-      src={isDark() ? '/images/logo_darkmode.png' : '/images/logo_lightmode.png'}
-      alt="Assixx Logo"
-      width="100"
-      height="48"
-    />
-  </a>
-  <ThemeToggle />
-</header>
+<!-- Shared top navigation (identical to landing page). -->
+<LandingHeader offLanding />
 
 <main class="legal-content">
   <div class="legal-hero">
@@ -463,31 +453,17 @@
   <p class="legal-updated">Stand: April 2026</p>
 </main>
 
-<LegalFooter compact />
+<LandingFooter />
 
 <style>
-  /* Header */
-  .legal-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin: 0 auto;
-    border-bottom: var(--glass-border);
-    padding: var(--spacing-4) 5%;
-    max-width: 1200px;
-  }
-
-  .legal-header__logo img {
-    display: block;
-    width: 100px;
-    height: auto;
-  }
-
   /* Content */
+  /* WHY: Breite auf 1200px angehoben (vorher 800px), damit Content-Container
+   * mit Header/Footer-Breite übereinstimmt — weniger "enge Spalte", mehr Luft.
+   * User-Feedback 2026-04-15. */
   .legal-content {
     margin: 0 auto;
     padding: var(--spacing-8) 5%;
-    max-width: 800px;
+    max-width: 1200px;
   }
 
   /* Hero title section */

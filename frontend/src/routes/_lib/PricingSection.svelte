@@ -5,271 +5,303 @@
 -->
 <script lang="ts">
   import { resolve } from '$app/paths';
+
+  import LandingEyebrow from './LandingEyebrow.svelte';
 </script>
 
 <section
   class="pricing"
   id="pricing"
 >
-  <h2>Einfach. Transparent. Modular.</h2>
-  <p class="pricing-subtitle">
-    Core-Paket + nur die Module die Sie brauchen — 30 Tage kostenlos testen
-  </p>
+  <div class="pricing__container">
+    <LandingEyebrow text="[ PREISE // CORE + ADDONS ]" />
+    <h2>Einfach. Transparent. Modular.</h2>
+    <p class="pricing-subtitle">
+      Core-Paket + nur die Module die Sie brauchen — 30 Tage kostenlos testen
+    </p>
 
-  <div class="pricing-grid">
-    <!-- Core Package -->
-    <div class="pricing-card">
-      <h3>Core-Paket</h3>
-      <div class="price">
-        €39
-        <span>/Monat</span>
-      </div>
-      <div class="unlimited-badge">
-        <i class="fas fa-infinity"></i>
-        Unbegrenzte Lizenzen inklusive
-      </div>
-      <ul class="plan-list">
-        <li>
-          <strong>Unbegrenzt</strong> Mitarbeiter
-        </li>
-        <li>
-          <strong>Unbegrenzt</strong> Abteilungsleiter (Admins)
-        </li>
-        <li>
-          <strong>Unbegrenzt</strong> Geschäftsführer (Root-User)
-        </li>
-        <li>100 GB Speicher</li>
-        <li>14 Core-Module inklusive</li>
-        <li>Dashboard & Kalender</li>
-        <li>Schwarzes Brett & Benachrichtigungen</li>
-        <li>Mitarbeiter, Teams & Abteilungen</li>
-        <li>Anlagen, Hallen & Freigaben</li>
-      </ul>
-      <div class="pricing-card__footer">
-        <a
-          href={resolve('/signup')}
-          class="btn btn-secondary pricing-card__button">Jetzt starten</a
-        >
-      </div>
-    </div>
-
-    <!-- Addon Store (Featured) -->
-    <div class="pricing-card featured u-relative">
-      <span class="badge badge--primary badge--lg badge--uppercase pricing-card__badge"
-        >Flexibel</span
-      >
-      <h3>Modul-Baukasten</h3>
-      <div class="price">
-        €10
-        <span>/Modul/Monat</span>
-      </div>
-      <ul class="plan-list">
-        <li>10 Zusatz-Module verfügbar</li>
-        <li>30 Tage kostenlos testen</li>
-        <li>Jederzeit aktivieren/deaktivieren</li>
-        <li>Berechtigungen bleiben erhalten</li>
-        <li>Dokumente & Chat</li>
-        <li>Schichtplanung & Urlaub</li>
-        <li>TPM & Arbeitsaufträge</li>
-        <li>Umfragen & KVP</li>
-      </ul>
-      <div class="pricing-card__footer">
-        <a
-          href={resolve('/signup')}
-          class="btn btn-index pricing-card__button pricing-card__button--transparent"
-        >
-          Kostenlos testen
-        </a>
-      </div>
-    </div>
-
-    <!-- Enterprise -->
-    <div class="pricing-card">
-      <h3>Enterprise</h3>
-      <div class="price">
-        Individuell
-        <span>auf Anfrage</span>
-      </div>
-      <ul class="plan-list">
-        <li>On-Premise Installation</li>
-        <li>Eigene Server-Infrastruktur</li>
-        <li>Dedizierter Support</li>
-        <li>SLA-Garantie 99.9%</li>
-        <li>Custom Branding</li>
-        <li>API-Zugang</li>
-        <li>Persönliches Onboarding</li>
-        <li>Compliance & Audit</li>
-      </ul>
-      <div class="pricing-card__footer">
-        <!-- eslint-disable svelte/no-navigation-without-resolve -- dynamic query string -->
-        <a
-          href={`${resolve('/signup')}?plan=enterprise`}
-          class="btn btn-secondary pricing-card__button">Beratung anfragen</a
-        >
-        <!-- eslint-enable svelte/no-navigation-without-resolve -->
-      </div>
-    </div>
-  </div>
-
-  <!-- Module Catalog -->
-  <div class="module-catalog">
-    <h3 class="module-catalog__title">Alle 24 Module im Überblick</h3>
-    <div class="catalog-columns">
-      <!-- Core Modules -->
-      <div class="catalog-group">
-        <h4 class="catalog-group__heading">
-          <i class="fas fa-shield-alt"></i>
-          Core-Module
-          <span class="catalog-group__badge catalog-group__badge--core">Inklusive</span>
-        </h4>
-        <ul class="catalog-list">
+    <div class="pricing-grid">
+      <!-- Core Package -->
+      <div class="pricing-card">
+        <h3>Core-Paket</h3>
+        <div class="price">
+          €39
+          <span>/Monat</span>
+        </div>
+        <div class="unlimited-badge">
+          <i class="fas fa-infinity"></i>
+          Unbegrenzte Lizenzen inklusive
+        </div>
+        <ul class="plan-list">
           <li>
-            <i class="fas fa-tachometer-alt"></i>
-            <span class="catalog-list__name">Dashboard</span>
-            <span class="catalog-list__desc">Zentrale Übersicht mit Kennzahlen</span>
+            <strong>Unbegrenzt</strong> Mitarbeiter
           </li>
           <li>
-            <i class="fas fa-calendar-alt"></i>
-            <span class="catalog-list__name">Kalender</span>
-            <span class="catalog-list__desc">Gemeinsamer Unternehmenskalender</span>
+            <strong>Unbegrenzt</strong> Abteilungsleiter (Admins)
           </li>
           <li>
-            <i class="fas fa-chalkboard"></i>
-            <span class="catalog-list__name">Schwarzes Brett</span>
-            <span class="catalog-list__desc">Digitales schwarzes Brett für Ankündigungen</span>
+            <strong>Unbegrenzt</strong> Geschäftsführer (Root-User)
           </li>
-          <li>
-            <i class="fas fa-cog"></i>
-            <span class="catalog-list__name">Einstellungen</span>
-            <span class="catalog-list__desc">Mandanten-Konfiguration</span>
-          </li>
-          <li>
-            <i class="fas fa-bell"></i>
-            <span class="catalog-list__name">Benachrichtigungen</span>
-            <span class="catalog-list__desc">Push & SSE-Streaming</span>
-          </li>
-          <li>
-            <i class="fas fa-users"></i>
-            <span class="catalog-list__name">Mitarbeiterverwaltung</span>
-            <span class="catalog-list__desc">Benutzer anlegen und verwalten</span>
-          </li>
-          <li>
-            <i class="fas fa-sitemap"></i>
-            <span class="catalog-list__name">Abteilungen</span>
-            <span class="catalog-list__desc">Organisationsstruktur</span>
-          </li>
-          <li>
-            <i class="fas fa-user-friends"></i>
-            <span class="catalog-list__name">Teams</span>
-            <span class="catalog-list__desc">Teams und Mitglieder zuordnen</span>
-          </li>
-          <li>
-            <i class="fas fa-sitemap"></i>
-            <span class="catalog-list__name">Organisationsstruktur</span>
-            <span class="catalog-list__desc">Bereiche, Abteilungen, Teams verwalten</span>
-          </li>
-          <li>
-            <i class="fas fa-warehouse"></i>
-            <span class="catalog-list__name">Hallen</span>
-            <span class="catalog-list__desc">Produktionshallen verwalten</span>
-          </li>
-          <li>
-            <i class="fas fa-industry"></i>
-            <span class="catalog-list__name">Anlagen & Maschinen</span>
-            <span class="catalog-list__desc">Verwaltung und Verfügbarkeitstracking</span>
-          </li>
-          <li>
-            <i class="fas fa-user-slash"></i>
-            <span class="catalog-list__name">Platzhalter-Benutzer</span>
-            <span class="catalog-list__desc">Anonyme Accounts für Fabrik-Bildschirme</span>
-          </li>
-          <li>
-            <i class="fas fa-check-double"></i>
-            <span class="catalog-list__name">Freigaben</span>
-            <span class="catalog-list__desc">Zentrales Genehmigungssystem</span>
-          </li>
-          <li>
-            <i class="fas fa-id-card"></i>
-            <span class="catalog-list__name">Benutzerprofile</span>
-            <span class="catalog-list__desc">Profilansicht und Mitarbeiterübersicht</span>
-          </li>
+          <li>100 GB Speicher</li>
+          <li>14 Core-Module inklusive</li>
+          <li>Dashboard & Kalender</li>
+          <li>Schwarzes Brett & Benachrichtigungen</li>
+          <li>Mitarbeiter, Teams & Abteilungen</li>
+          <li>Anlagen, Hallen & Freigaben</li>
         </ul>
+        <div class="pricing-card__footer">
+          <a
+            href={resolve('/signup')}
+            class="btn btn-secondary pricing-card__button">Jetzt starten</a
+          >
+        </div>
       </div>
 
-      <!-- Purchasable Addons -->
-      <div class="catalog-group">
-        <h4 class="catalog-group__heading">
-          <i class="fas fa-cubes"></i>
-          Zusatz-Module
-          <span class="catalog-group__badge catalog-group__badge--addon">€10/Monat</span>
-        </h4>
-        <ul class="catalog-list">
-          <li>
-            <i class="fas fa-folder-open"></i>
-            <span class="catalog-list__name">Dokumente</span>
-            <span class="catalog-list__desc">Dokumentenverwaltung mit Upload und Archiv</span>
-          </li>
-          <li>
-            <i class="fas fa-umbrella-beach"></i>
-            <span class="catalog-list__name">Urlaubsverwaltung</span>
-            <span class="catalog-list__desc">Anträge, Genehmigung, Kapazitätsprüfung</span>
-          </li>
-          <li>
-            <i class="fas fa-clock"></i>
-            <span class="catalog-list__name">Schichtplanung</span>
-            <span class="catalog-list__desc">Schichtpläne, Tauschbörse, Rotation</span>
-          </li>
-          <li>
-            <i class="fas fa-comments"></i>
-            <span class="catalog-list__name">Chat</span>
-            <span class="catalog-list__desc">Team-Chat mit Gesprächen und Nachrichten</span>
-          </li>
-          <li>
-            <i class="fas fa-poll"></i>
-            <span class="catalog-list__name">Umfragen</span>
-            <span class="catalog-list__desc">Erstellen, durchführen und auswerten</span>
-          </li>
-          <li>
-            <i class="fas fa-clipboard-list"></i>
-            <span class="catalog-list__name">Arbeitsaufträge</span>
-            <span class="catalog-list__desc">Mängelbeseitigung und Aufgabenverwaltung</span>
-          </li>
-          <li>
-            <i class="fas fa-chart-bar"></i>
-            <span class="catalog-list__name">Berichte</span>
-            <span class="catalog-list__desc">Analytics und Datenexporte</span>
-          </li>
-          <li>
-            <i class="fas fa-lightbulb"></i>
-            <span class="catalog-list__name">KVP</span>
-            <span class="catalog-list__desc">Kontinuierlicher Verbesserungsprozess</span>
-          </li>
-          <li>
-            <i class="fas fa-tools"></i>
-            <span class="catalog-list__name">TPM / Wartung</span>
-            <span class="catalog-list__desc">Kamishibai Board und Wartungspläne</span>
-          </li>
-          <li>
-            <i class="fas fa-file-signature"></i>
-            <span class="catalog-list__name">Protokoll & Audit</span>
-            <span class="catalog-list__desc">Audit-Protokollierung, Compliance-Berichte</span>
-          </li>
+      <!-- Addon Store (Featured) -->
+      <div class="pricing-card featured">
+        <p class="pricing-card__badge">[ FLEXIBEL ]</p>
+        <h3>Modul-Baukasten</h3>
+        <div class="price">
+          €10
+          <span>/Modul/Monat</span>
+        </div>
+        <ul class="plan-list">
+          <li>10 Zusatz-Module verfügbar</li>
+          <li>30 Tage kostenlos testen</li>
+          <li>Jederzeit aktivieren/deaktivieren</li>
+          <li>Berechtigungen bleiben erhalten</li>
+          <li>Dokumente & Chat</li>
+          <li>Schichtplanung & Urlaub</li>
+          <li>TPM & Arbeitsaufträge</li>
+          <li>Umfragen & KVP</li>
         </ul>
+        <div class="pricing-card__footer">
+          <a
+            href={resolve('/signup')}
+            class="btn btn-index pricing-card__button pricing-card__button--transparent"
+          >
+            Kostenlos testen
+          </a>
+        </div>
+      </div>
+
+      <!-- Enterprise -->
+      <div class="pricing-card">
+        <h3>Enterprise</h3>
+        <div class="price">
+          Individuell
+          <span>auf Anfrage</span>
+        </div>
+        <ul class="plan-list">
+          <li>On-Premise Installation</li>
+          <li>Eigene Server-Infrastruktur</li>
+          <li>Dedizierter Support</li>
+          <li>SLA-Garantie 99.9%</li>
+          <li>Custom Branding</li>
+          <li>API-Zugang</li>
+          <li>Persönliches Onboarding</li>
+          <li>Compliance & Audit</li>
+        </ul>
+        <div class="pricing-card__footer">
+          <!-- eslint-disable svelte/no-navigation-without-resolve -- dynamic query string -->
+          <a
+            href={`${resolve('/signup')}?plan=enterprise`}
+            class="btn btn-secondary pricing-card__button">Beratung anfragen</a
+          >
+          <!-- eslint-enable svelte/no-navigation-without-resolve -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Module Catalog -->
+    <div class="module-catalog">
+      <h3 class="module-catalog__title">Alle 24 Module im Überblick</h3>
+      <div class="catalog-columns">
+        <!-- Core Modules -->
+        <div class="catalog-group">
+          <h4 class="catalog-group__heading">
+            <i class="fas fa-shield-alt"></i>
+            Core-Module
+            <span class="catalog-group__badge catalog-group__badge--core">Inklusive</span>
+          </h4>
+          <ul class="catalog-list">
+            <li>
+              <i class="fas fa-tachometer-alt"></i>
+              <span class="catalog-list__name">Dashboard</span>
+              <span class="catalog-list__desc">Zentrale Übersicht mit Kennzahlen</span>
+            </li>
+            <li>
+              <i class="fas fa-calendar-alt"></i>
+              <span class="catalog-list__name">Kalender</span>
+              <span class="catalog-list__desc">Gemeinsamer Unternehmenskalender</span>
+            </li>
+            <li>
+              <i class="fas fa-chalkboard"></i>
+              <span class="catalog-list__name">Schwarzes Brett</span>
+              <span class="catalog-list__desc">Digitales schwarzes Brett für Ankündigungen</span>
+            </li>
+            <li>
+              <i class="fas fa-cog"></i>
+              <span class="catalog-list__name">Einstellungen</span>
+              <span class="catalog-list__desc">Mandanten-Konfiguration</span>
+            </li>
+            <li>
+              <i class="fas fa-bell"></i>
+              <span class="catalog-list__name">Benachrichtigungen</span>
+              <span class="catalog-list__desc">Push & SSE-Streaming</span>
+            </li>
+            <li>
+              <i class="fas fa-users"></i>
+              <span class="catalog-list__name">Mitarbeiterverwaltung</span>
+              <span class="catalog-list__desc">Benutzer anlegen und verwalten</span>
+            </li>
+            <li>
+              <i class="fas fa-sitemap"></i>
+              <span class="catalog-list__name">Abteilungen</span>
+              <span class="catalog-list__desc">Organisationsstruktur</span>
+            </li>
+            <li>
+              <i class="fas fa-user-friends"></i>
+              <span class="catalog-list__name">Teams</span>
+              <span class="catalog-list__desc">Teams und Mitglieder zuordnen</span>
+            </li>
+            <li>
+              <i class="fas fa-sitemap"></i>
+              <span class="catalog-list__name">Organisationsstruktur</span>
+              <span class="catalog-list__desc">Bereiche, Abteilungen, Teams verwalten</span>
+            </li>
+            <li>
+              <i class="fas fa-warehouse"></i>
+              <span class="catalog-list__name">Hallen</span>
+              <span class="catalog-list__desc">Produktionshallen verwalten</span>
+            </li>
+            <li>
+              <i class="fas fa-industry"></i>
+              <span class="catalog-list__name">Anlagen & Maschinen</span>
+              <span class="catalog-list__desc">Verwaltung und Verfügbarkeitstracking</span>
+            </li>
+            <li>
+              <i class="fas fa-user-slash"></i>
+              <span class="catalog-list__name">Platzhalter-Benutzer</span>
+              <span class="catalog-list__desc">Anonyme Accounts für Fabrik-Bildschirme</span>
+            </li>
+            <li>
+              <i class="fas fa-check-double"></i>
+              <span class="catalog-list__name">Freigaben</span>
+              <span class="catalog-list__desc">Zentrales Genehmigungssystem</span>
+            </li>
+            <li>
+              <i class="fas fa-id-card"></i>
+              <span class="catalog-list__name">Benutzerprofile</span>
+              <span class="catalog-list__desc">Profilansicht und Mitarbeiterübersicht</span>
+            </li>
+          </ul>
+        </div>
+
+        <!-- Purchasable Addons -->
+        <div class="catalog-group">
+          <h4 class="catalog-group__heading">
+            <i class="fas fa-cubes"></i>
+            Zusatz-Module
+            <span class="catalog-group__badge catalog-group__badge--addon">€10/Monat</span>
+          </h4>
+          <ul class="catalog-list">
+            <li>
+              <i class="fas fa-folder-open"></i>
+              <span class="catalog-list__name">Dokumente</span>
+              <span class="catalog-list__desc">Dokumentenverwaltung mit Upload und Archiv</span>
+            </li>
+            <li>
+              <i class="fas fa-umbrella-beach"></i>
+              <span class="catalog-list__name">Urlaubsverwaltung</span>
+              <span class="catalog-list__desc">Anträge, Genehmigung, Kapazitätsprüfung</span>
+            </li>
+            <li>
+              <i class="fas fa-clock"></i>
+              <span class="catalog-list__name">Schichtplanung</span>
+              <span class="catalog-list__desc">Schichtpläne, Tauschbörse, Rotation</span>
+            </li>
+            <li>
+              <i class="fas fa-comments"></i>
+              <span class="catalog-list__name">Chat</span>
+              <span class="catalog-list__desc">Team-Chat mit Gesprächen und Nachrichten</span>
+            </li>
+            <li>
+              <i class="fas fa-poll"></i>
+              <span class="catalog-list__name">Umfragen</span>
+              <span class="catalog-list__desc">Erstellen, durchführen und auswerten</span>
+            </li>
+            <li>
+              <i class="fas fa-clipboard-list"></i>
+              <span class="catalog-list__name">Arbeitsaufträge</span>
+              <span class="catalog-list__desc">Mängelbeseitigung und Aufgabenverwaltung</span>
+            </li>
+            <li>
+              <i class="fas fa-chart-bar"></i>
+              <span class="catalog-list__name">Berichte</span>
+              <span class="catalog-list__desc">Analytics und Datenexporte</span>
+            </li>
+            <li>
+              <i class="fas fa-lightbulb"></i>
+              <span class="catalog-list__name">KVP</span>
+              <span class="catalog-list__desc">Kontinuierlicher Verbesserungsprozess</span>
+            </li>
+            <li>
+              <i class="fas fa-tools"></i>
+              <span class="catalog-list__name">TPM / Wartung</span>
+              <span class="catalog-list__desc">Kamishibai Board und Wartungspläne</span>
+            </li>
+            <li>
+              <i class="fas fa-file-signature"></i>
+              <span class="catalog-list__name">Protokoll & Audit</span>
+              <span class="catalog-list__desc">Audit-Protokollierung, Compliance-Berichte</span>
+            </li>
+          </ul>
+        </div>
       </div>
     </div>
   </div>
 </section>
 
 <style>
+  /*
+    Section atmosphere matches ModuleGrid / SecuritySection: radial accent +
+    hairline top/bottom borders. Full-width section; inner container caps
+    content width.
+  */
+  /* Transparent — global --main-bg-gradient shows through */
   .pricing {
+    position: relative;
+    background: transparent;
+    padding: calc(var(--spacing-8) * 2.5) 5%;
+    overflow: hidden;
+  }
+
+  .pricing__container {
     margin: 0 auto;
-    padding: calc(var(--spacing-8) * 2) 5%;
     max-width: 1400px;
   }
 
+  /* Elegant top separator — shared pattern across all sections */
+  .pricing__container::before {
+    content: '';
+    display: block;
+    width: clamp(220px, 32vw, 420px);
+    height: 3px;
+    margin: 0 auto calc(var(--spacing-8) * 1.75);
+    background: linear-gradient(
+      to right,
+      transparent 0%,
+      color-mix(in oklch, var(--color-primary) 70%, transparent) 50%,
+      transparent 100%
+    );
+  }
+
+  /* Eyebrow moved to shared <LandingEyebrow> — see LandingEyebrow.svelte. */
+
   .pricing h2 {
     margin-bottom: var(--spacing-6);
-    color: var(--primary-color);
+    color: var(--color-text-primary);
     font-weight: 700;
     font-size: 3rem;
     letter-spacing: -0.5px;
@@ -287,23 +319,27 @@
     animation-delay: 100ms;
   }
 
+  /*
+    Pricing grid: 3 equal columns for clean comparison, generous gap.
+    No borders on cards — featured plan uses a primary tint to stand out.
+    Price becomes the dominant visual anchor.
+  */
   .pricing-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: var(--spacing-8);
+    grid-template-columns: repeat(3, 1fr);
+    gap: calc(var(--spacing-8) * 1.25);
     margin: 0 auto;
-    max-width: 1200px;
+    max-width: 1280px;
   }
 
   .pricing-card {
     display: flex;
     position: relative;
     flex-direction: column;
-    border: var(--glass-border);
     border-radius: var(--glass-card-radius);
-    background: var(--glass-bg);
-    padding: var(--spacing-8);
-    min-height: 550px;
+    background: transparent;
+    padding: calc(var(--spacing-8) * 1.5) var(--spacing-8);
+    min-height: 640px;
     overflow: hidden;
     text-align: center;
     transition: all var(--duration-normal) var(--ease-out);
@@ -324,34 +360,33 @@
 
   .pricing-card:hover {
     transform: translateY(-2px);
-    border-color: var(--color-border-hover);
-    background: var(--glass-bg-hover);
+    background: color-mix(in oklch, var(--color-text-primary) 3%, transparent);
   }
 
+  /* Featured: tinted bg differentiates without needing a border */
   .pricing-card.featured {
-    border-color: color-mix(in oklch, var(--color-primary) 30%, transparent);
-    background: color-mix(in oklch, var(--color-primary) 5%, transparent);
-    overflow: visible;
+    background: color-mix(in oklch, var(--color-primary) 6%, transparent);
   }
 
   .pricing-card.featured:hover {
     transform: translateY(-3px);
-    border-color: color-mix(in oklch, var(--color-primary) 50%, transparent);
+    background: color-mix(in oklch, var(--color-primary) 10%, transparent);
   }
 
   .pricing-card h3 {
-    margin-bottom: var(--spacing-4);
-    color: var(--primary-color);
+    margin: 0 0 var(--spacing-4) 0;
+    color: var(--color-text-primary);
     font-weight: 700;
-    font-size: 1.75rem;
-    letter-spacing: 0.5px;
+    font-size: clamp(1.75rem, 2.4vw, 2.25rem);
+    letter-spacing: -0.01em;
   }
 
   .price {
-    margin: var(--spacing-6) 0;
-    color: var(--primary-color);
+    margin: var(--spacing-4) 0 var(--spacing-6);
+    color: var(--color-text-primary);
     font-weight: 700;
-    font-size: 3.5rem;
+    font-size: clamp(2.25rem, 3.5vw, 3rem);
+    letter-spacing: -0.02em;
     line-height: 1;
   }
 
@@ -372,10 +407,11 @@
 
   .price span {
     display: block;
-    margin-top: var(--spacing-2);
+    margin-top: var(--spacing-3);
     color: var(--color-text-secondary);
     font-weight: 400;
-    font-size: 1rem;
+    font-size: 0.9375rem;
+    letter-spacing: 0.04em;
   }
 
   .plan-list {
@@ -388,11 +424,11 @@
 
   .plan-list li {
     position: relative;
-    padding: var(--spacing-2) 0;
-    padding-left: var(--spacing-8);
+    padding: calc(var(--spacing-2) * 1.25) 0;
+    padding-left: calc(var(--spacing-6) * 1.1);
     color: var(--color-text-secondary);
-    font-size: 15px;
-    line-height: 1.6;
+    font-size: 1rem;
+    line-height: 1.55;
   }
 
   .plan-list li::before {
@@ -403,14 +439,18 @@
     font-weight: 700;
   }
 
+  /*
+    Inline monospace eyebrow — consistent with [LABEL]-pattern used
+    in the other sections. Replaces the legacy floating dark pill.
+  */
   .pricing-card__badge {
-    position: absolute;
-    top: -12px;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 10;
-    background: oklch(17.92% 0.0441 230.72);
-    color: var(--color-white);
+    margin: 0 0 var(--spacing-3) 0;
+    color: var(--color-primary);
+    font-family: ui-monospace, 'JetBrains Mono', 'Fira Code', monospace;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
   }
 
   .pricing-card__footer {
@@ -419,10 +459,9 @@
   }
 
   .pricing-card__button {
-    padding: var(--spacing-4) var(--spacing-8);
     width: 100%;
     font-weight: 600;
-    font-size: 16px;
+    font-size: 1.0625rem;
   }
 
   .pricing-card__button--transparent {
@@ -451,10 +490,11 @@
     gap: var(--spacing-8);
   }
 
+  /* Catalog groups match the flat card treatment */
   .catalog-group {
-    border: var(--glass-border);
+    border: 1px solid color-mix(in oklch, var(--color-text-primary) 12%, transparent);
     border-radius: var(--glass-card-radius);
-    background: var(--glass-bg);
+    background: transparent;
     padding: var(--spacing-6);
     animation: fade-in-up var(--duration-slow) var(--ease-out) both;
   }
@@ -473,7 +513,7 @@
     gap: var(--spacing-3);
     margin-bottom: var(--spacing-6);
     padding-bottom: var(--spacing-4);
-    border-bottom: var(--glass-border);
+    border-bottom: 1px solid color-mix(in oklch, var(--color-text-primary) 12%, transparent);
     color: var(--primary-color);
     font-weight: 600;
     font-size: 1.1rem;

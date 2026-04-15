@@ -1,12 +1,9 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
-
   import { resolve } from '$app/paths';
 
   import LandingFooter from '$lib/components/LandingFooter.svelte';
+  import LandingHeader from '$lib/components/LandingHeader.svelte';
   import Seo from '$lib/components/Seo.svelte';
-  import ThemeToggle from '$lib/components/ThemeToggle.svelte';
-  import { isDark } from '$lib/stores/theme.svelte';
 
   import ModuleGrid from './_lib/ModuleGrid.svelte';
   import PricingSection from './_lib/PricingSection.svelte';
@@ -28,18 +25,6 @@
       url: 'https://www.scs-technik.de',
     },
   };
-
-  // Body class for landing page (disables global gradient)
-  onMount(() => {
-    document.body.classList.add('landing-page-active');
-    return () => {
-      document.body.classList.remove('landing-page-active');
-    };
-  });
-
-  function handleReloadPage(): void {
-    window.location.reload();
-  }
 </script>
 
 <Seo
@@ -51,35 +36,8 @@
 
 <!-- Landing Page Container -->
 <div class="landing-page">
-  <!-- Header -->
-  <header class="header">
-    <nav class="nav">
-      <div class="logo-container u-cursor-pointer">
-        <button
-          type="button"
-          class="logo-button"
-          onclick={handleReloadPage}
-        >
-          <img
-            src={isDark() ? '/images/logo_darkmode.png' : '/images/logo_lightmode.png'}
-            alt="Assixx Logo"
-            class="logo"
-          />
-        </button>
-      </div>
-      <div class="nav-links">
-        <a href="#module">Module</a>
-        <a href="#security">Sicherheit</a>
-        <a href="#pricing">Preise</a>
-        <a href={resolve('/login')}>Anmelden</a>
-        <a
-          href={resolve('/signup')}
-          class="btn btn-index">Registrieren</a
-        >
-        <ThemeToggle />
-      </div>
-    </nav>
-  </header>
+  <!-- Header — shared across public surface (Landing + Legal pages). -->
+  <LandingHeader />
 
   <!-- Hero Section -->
   <section class="hero">
@@ -117,62 +75,9 @@
     min-height: 100vh;
   }
 
-  /* Header - Glass nav bar */
-  .header {
-    padding: var(--spacing-4) 5%;
-    border-bottom: var(--glass-border);
-  }
-
-  /* Logo button reset */
-  .logo-button {
-    all: unset;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-  }
-
-  /* Navigation */
-  .nav {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin: 0 auto;
-    width: 100%;
-    max-width: 1200px;
-  }
-
-  .logo-container {
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-4);
-    cursor: pointer;
-    text-decoration: none;
-  }
-
-  .logo {
-    display: block;
-    transition: transform 0.3s ease;
-    cursor: pointer;
-    width: 120px;
-    height: auto;
-  }
-
-  .nav-links {
-    display: flex;
-    align-items: center;
-    gap: 2rem;
-  }
-
-  .nav-links a {
-    transition: color 0.3s ease;
-    color: var(--text-secondary);
-    font-weight: 500;
-    text-decoration: none;
-  }
-
-  .nav-links a:hover {
-    color: var(--color-white);
-  }
+  /* Header + nav styles now live in LandingHeader.svelte — shared with
+   * Legal pages (Impressum, Datenschutz) to guarantee identical markup
+   * and styling across the public surface. */
 
   /* Hero Section */
   .hero {
@@ -192,8 +97,15 @@
     background-repeat: no-repeat;
     padding: calc(var(--spacing-8) * 4) 5% calc(var(--spacing-8) * 2);
     max-width: 100%;
-    min-height: 70vh;
+
+    /*
+      Hero height: 815px hard floor (guarantees no collapse even on very
+      short viewports), grows with 65vh on taller monitors. max() picks
+      whichever is larger.
+    */
+    min-height: max(515px, 65vh);
     text-align: center;
+    margin-bottom: 150px;
   }
 
   .hero::before {
@@ -235,41 +147,73 @@
     animation-delay: 250ms;
   }
 
-  /* Hero CTA button: always white text (sits on dark image overlay in both modes) */
+  /*
+    Hero CTA: white on the dark hero overlay (default / dark mode).
+    Light mode swaps in a brighter hero image, so white becomes
+    unreadable — light-mode override below forces black.
+  */
   .hero :global(.btn) {
     color: var(--color-white);
     animation: fade-in-up var(--duration-slow) var(--ease-out) both;
     animation-delay: 400ms;
   }
 
-  /* Light mode overrides */
-  :global(html:not(.dark)) .nav-links a:hover {
-    color: var(--color-primary);
+  /* Light-mode hero btn: black text for contrast on the light hero image */
+  :global(html:not(.dark)) .hero :global(.btn) {
+    color: var(--color-black);
+  }
+
+  /*
+   * Light-mode hero image: softer, lifted-blacks variant of the default dark
+   * hero so the section doesn't read as "night mode" when the user toggles
+   * light. Dark mode (default) keeps the original asset untouched.
+   * Assets generated via ImageMagick from background_index_1920.jpg.
+   */
+  :global(html:not(.dark)) .hero {
+    background-image: url('/images/background_index_light_1920.jpg');
+    background-image: image-set(
+      url('/images/background_index_light.webp') type('image/webp'),
+      url('/images/background_index_light_1920.jpg') type('image/jpeg')
+    );
+  }
+
+  /*
+   * Light-mode overlay: the default hero uses a dark gradient (0% → 83.6%
+   * opacity of near-black) to lift white text off the image. On the light
+   * hero that overlay muddies the sky-blue image, so swap to a subtle white
+   * gradient that preserves image readability while keeping enough haze at
+   * the bottom for CTA contrast.
+   */
+  :global(html:not(.dark)) .hero::before {
+    background: linear-gradient(
+      to bottom,
+      oklch(100% 0 0 / 0%) 0%,
+      oklch(100% 0 0 / 0%) 50%,
+      oklch(100% 0 0 / 25%) 100%
+    );
+  }
+
+  /*
+   * Light-mode hero typography: source uses hardcoded white to sit on the
+   * dark overlay. In light mode we route through the design-system text
+   * tokens (see design-system/variables-light.css) so h1/p follow the theme
+   * and remain legible on the sky-blue hero.
+   */
+  :global(html:not(.dark)) .hero h1 {
+    color: var(--color-text-primary);
+    text-shadow: 0 1px 2px color-mix(in oklch, var(--color-white) 60%, transparent);
+  }
+
+  :global(html:not(.dark)) .hero p {
+    color: var(--color-text-secondary);
+    text-shadow: none;
   }
 
   /* Responsive */
   @media (width < 768px) {
-    .header {
-      padding: var(--spacing-3);
-    }
-
-    .nav {
-      flex-direction: column;
-      gap: var(--spacing-4);
-    }
-
-    .logo-container {
-      margin-bottom: var(--spacing-2);
-    }
-
-    .nav-links {
-      flex-wrap: wrap;
-      justify-content: center;
-      gap: var(--spacing-4);
-    }
-
     .hero {
-      min-height: 50vh;
+      /* Mobile: tighter clamp, still fluid */
+      min-height: clamp(420px, 55vh, 560px);
       padding: calc(var(--spacing-8) * 2) 5% var(--spacing-8);
     }
 

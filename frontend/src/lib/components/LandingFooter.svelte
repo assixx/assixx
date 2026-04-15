@@ -10,6 +10,11 @@
   <div class="landing-footer__inner">
     <div class="landing-footer__grid">
       <div class="landing-footer__brand">
+        <!--
+          Footer follows the active theme (see ADR/design decision change).
+          Logo flips with theme: dark-mode logo (white mark) on dark bg,
+          light-mode logo on light bg.
+        -->
         <img
           src={isDark() ? '/images/logo_darkmode.png' : '/images/logo_lightmode.png'}
           alt="Assixx"
@@ -117,15 +122,21 @@
 </footer>
 
 <style>
+  /*
+    Footer follows active theme via design-system tokens (see
+    design-system/variables-light.css + variables-dark.css). Previously
+    hardcoded white-on-black; that broke readability in light mode.
+    Brand accent (--color-primary) remains theme-neutral — legible on both.
+  */
   .landing-footer {
     position: relative;
-    border-top: var(--glass-border);
-    background: linear-gradient(
-      to bottom,
-      color-mix(in oklch, var(--color-text-primary, black) 3%, transparent),
-      color-mix(in oklch, var(--color-text-primary, black) 6%, transparent)
-    );
-    backdrop-filter: blur(12px);
+
+    /* Transparent — global --main-bg-gradient (body::after, z-index: -100)
+     * shows through, matching PricingSection/SecuritySection pattern.
+     * WHY: opaque --main-bg here covered the shared background gradient,
+     * breaking visual consistency across landing sections. */
+    background-color: transparent;
+    border-top: 1px solid var(--color-glass-border);
   }
 
   .landing-footer__inner {
@@ -154,7 +165,7 @@
   .landing-footer__tagline {
     margin: 0;
     max-width: 280px;
-    color: var(--text-secondary);
+    color: var(--color-text-tertiary);
     font-size: 0.875rem;
     line-height: 1.6;
   }
@@ -181,7 +192,7 @@
     display: flex;
     align-items: flex-start;
     gap: var(--spacing-2);
-    color: var(--text-secondary);
+    color: var(--color-text-secondary);
     font-size: 0.875rem;
     line-height: 1.5;
   }
@@ -194,26 +205,53 @@
     color: var(--color-primary);
   }
 
+  /* WHY: Hover-Parität mit LegalFooter (compact) — Farbe → --color-primary +
+   * animierter 1px-Underline via ::after. Einheitliches Hover-Feel über alle
+   * Footer-Links (siehe LegalFooter.svelte). */
   .landing-footer a {
+    position: relative;
+    padding-bottom: 1px;
     transition: color 0.2s ease;
-    color: var(--text-secondary);
+    color: var(--color-text-secondary);
     font-size: 0.875rem;
     text-decoration: none;
+  }
+
+  .landing-footer a::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    transform: scaleX(0);
+    transform-origin: center;
+    transition: transform 0.25s var(--ease-out, ease-out);
+    background: var(--color-primary);
+    height: 1px;
   }
 
   .landing-footer a:hover {
     color: var(--color-primary);
   }
 
+  .landing-footer a:hover::after {
+    transform: scaleX(1);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .landing-footer a::after {
+      transition: none;
+    }
+  }
+
   .landing-footer__bottom {
-    border-top: var(--glass-border);
+    border-top: 1px solid var(--color-glass-border);
     padding: var(--spacing-4) 5%;
     text-align: center;
   }
 
   .landing-footer__bottom p {
     margin: 0;
-    color: var(--text-secondary);
     font-size: 0.8125rem;
   }
 

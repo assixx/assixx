@@ -504,7 +504,10 @@
 
   .login-footer a {
     transition: color 0.3s ease;
-    color: #fff;
+
+    /* WHY: war hardcoded `#fff` → unsichtbar im Light Mode (weiß auf weiß).
+     * Token folgt Theme: dunkel im Light, hell im Dark Mode. */
+    color: var(--color-text-secondary);
     font-size: 13px;
     font-weight: 400;
     text-decoration: none;

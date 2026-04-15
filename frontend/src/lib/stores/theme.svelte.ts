@@ -49,19 +49,52 @@ export function toggleTheme(): void {
 }
 
 /**
+ * Briefly suppress all CSS transitions during a theme swap.
+ *
+ * WHY: CSS-Variable-Swap (e.g. --color-text-secondary) re-triggers every
+ * `transition: color/background/border` rule across the app, producing a
+ * 200–300ms „crawl". Adding `theme-switching` to <html> activates a global
+ * `transition: none !important` rule (see styles/tailwind/base.css). After
+ * one frame we remove it again so hover-transitions keep working.
+ */
+function suppressTransitionsDuringSwap(mutate: () => void): void {
+  if (!browser) {
+    mutate();
+    return;
+  }
+
+  const root = document.documentElement;
+  root.classList.add('theme-switching');
+  mutate();
+
+  // Force a synchronous reflow so the browser commits the class + new
+  // CSS-var values together — otherwise the rAF below might fire after
+  // the transition has already started.
+  void root.offsetHeight;
+
+  requestAnimationFrame(() => {
+    root.classList.remove('theme-switching');
+  });
+}
+
+/**
  * Apply theme to DOM + localStorage without API sync.
  * Used internally to avoid circular sync when loading from API.
  */
 function applyTheme(theme: 'dark' | 'light'): void {
   currentTheme = theme;
 
-  if (!browser) return;
-
-  if (theme === 'dark') {
-    document.documentElement.classList.add('dark');
-  } else {
-    document.documentElement.classList.remove('dark');
+  if (!browser) {
+    return;
   }
+
+  suppressTransitionsDuringSwap(() => {
+    if (theme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  });
 
   localStorage.setItem(STORAGE_KEY, theme);
 }
@@ -82,7 +115,11 @@ export function forceDark(): void {
 
   if (!browser) return;
 
-  document.documentElement.classList.add('dark');
+  // Same suppression as applyTheme: forceDark may flip light → dark on
+  // navigation to always-dark pages, which would otherwise „crawl" too.
+  suppressTransitionsDuringSwap(() => {
+    document.documentElement.classList.add('dark');
+  });
 }
 
 /**

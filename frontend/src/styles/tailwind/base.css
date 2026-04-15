@@ -127,13 +127,9 @@
     content: '';
   }
 
-  /* Disable gradient on landing page (has own background image)
-   * Uses :has() for SSR-friendly detection - no FOUC!
-   * .landing-page is rendered server-side, so gradient is hidden immediately
-   * Fallback: .landing-page-active class added via onMount (legacy browsers)
+  /* Disable gradient only in fullscreen overlays
+   * Landing page now uses the standard --main-bg-gradient too.
    */
-  body:has(.landing-page)::after,
-  body.landing-page-active::after,
   body.fullscreen-mode::after,
   body.calendar-fullscreen-mode::after {
     display: none;
@@ -242,4 +238,21 @@
    * Reason: overflow-x:visible doesn't enable scrolling!
    * See: design-system/primitives/data-display/table.base.css
    */
+}
+
+/* ============================================
+   THEME-SWITCH TRANSITION SUPPRESSION
+   ============================================
+   WHY: Theme-Toggle swappt CSS-Variablen (--color-text-*, --color-bg-*).
+   Jedes Element mit `transition: color/background/...` animiert dadurch
+   sichtbar 200–300ms — fühlt sich „träge" an. Hover-Transitions sollen
+   aber smooth bleiben. Lösung: theme.svelte.ts setzt kurz `theme-switching`
+   auf <html>, diese Regel killt ALLE transitions für genau einen Frame,
+   danach wird die Klasse via requestAnimationFrame wieder entfernt.
+   Un-layered + !important, damit keine Component-Style-Regel gewinnt. */
+html.theme-switching,
+html.theme-switching *,
+html.theme-switching *::before,
+html.theme-switching *::after {
+  transition: none !important;
 }
