@@ -166,3 +166,13 @@ export interface EntryFormData {
   teamIds: number[];
   areaIds: number[];
 }
+
+// ============================================================================
+// ADR-045 Layer 2 — Own effective permissions (GET /blackboard/my-permissions)
+// ============================================================================
+
+export interface BlackboardMyPermissions {
+  posts: { canRead: boolean; canWrite: boolean; canDelete: boolean };
+  comments: { canRead: boolean; canWrite: boolean; canDelete: boolean };
+  archive: { canRead: boolean; canWrite: boolean };
+}

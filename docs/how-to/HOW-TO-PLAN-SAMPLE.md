@@ -1,404 +1,536 @@
-# HOW TO: Feature Execution Masterplan erstellen
+# HOW TO: Execution Masterplan (Features + Optimizations)
 
-> **Version:** 1.0.0
-> **Erstellt:** 2026-02-14
-> **Quelle:** Extrahiert aus `FEAT_VACCATION_MASTERPLAN.md` (24 Sessions, 6 Phasen, 115+ Unit Tests, 33 API Tests)
-> **Zweck:** Template + Anleitung für strukturierte Feature-Planung auf Senior-Engineer-Niveau
-
----
-
-> **WICHTIG: Alle Masterpläne MÜSSEN in Englisch geschrieben werden.** Dieses Template ist auf Deutsch als Anleitung, aber der tatsächliche Masterplan — alle Phasen, Steps, Session-Protokolle, Risk Register, DoDs — wird ausschließlich auf Englisch verfasst. Kein Denglisch, kein Mix. Englisch. Punkt.
-
----
-
-## Warum ein Masterplan?
-
-Ohne Plan baust du ein Haus ohne Bauzeichnung. Du wirst fertig — aber die Türen passen nicht, die Rohre kreuzen sich, und beim dritten Umbau reißt du alles ab.
-
-Ein Masterplan ist kein Overhead. Er ist **Versicherung gegen Chaos**.
+> **Version:** 2.0.0
+> **Created:** 2026-02-14 • **Updated:** 2026-04-15 (v2 — optimization path + proof-gate integrated)
+> **Source:** Distilled from `FEAT_VACCATION_MASTERPLAN.md` (feature case, 24 sessions) and post-mortem
+> `FEAT_LAYOUT_LOAD_CACHE_MASTERPLAN.md` (optimization case — plan fully executed, then fully
+> discarded because the hypothesis was never empirically tested before implementation).
+> **Purpose:** Senior-engineer-level template for structured planning. Supports **two plan types**:
+> FEATURE (new module) and OPTIMIZATION (perf / architectural refactor with measurable target).
 
 ---
 
-## Template: FEAT\_{NAME}\_MASTERPLAN.md
-
-Kopiere das folgende Template und passe es an dein Feature an.
+> **EVERYTHING in this document AND the actual masterplan is written in English.**
+> No German, no mix. Applies to: phases, steps, session logs, risk register, DoDs, comments,
+> commit messages. The only allowed non-English content is user-facing UI strings in the
+> codebase itself (e.g., German labels in Svelte components).
 
 ---
+
+## Detect the Plan Type FIRST
+
+| Situation                                                                | Plan type        | Filename prefix             |
+| ------------------------------------------------------------------------ | ---------------- | --------------------------- |
+| New user-visible feature (CRUD, new module, new addon flow)              | **FEATURE**      | `FEAT_{NAME}_MASTERPLAN.md` |
+| New DB table + corresponding UI                                          | **FEATURE**      | `FEAT_{NAME}_MASTERPLAN.md` |
+| "Reduce X", "cache Y", "optimize Z", "speed up A"                        | **OPTIMIZATION** | `OPT_{NAME}_MASTERPLAN.md`  |
+| Architectural refactor with an expected **measurable** impact            | **OPTIMIZATION** | `OPT_{NAME}_MASTERPLAN.md`  |
+| Framework / dependency upgrade with performance or behavior implications | **OPTIMIZATION** | `OPT_{NAME}_MASTERPLAN.md`  |
+| Pure cosmetic refactor (rename, file reorg, no semantic change)          | No plan needed   | single PR                   |
+
+**One-line distinction:**
+
+- **FEATURE:** you know WHAT will be built. The spec is truth. Linear: DB → Backend → Frontend → Tests → Ship.
+- **OPTIMIZATION:** you HYPOTHESIZE that X will improve Y. The probe is truth. Cyclic: Baseline → Probe → (only if probe confirms) Implementation → Re-measure → Ship.
+
+Both plan types use this template — but OPTIMIZATION plans **MUST** complete §0.4–§0.6
+(Baseline + Hypothesis + Probe-Gate) **before** Phase 1 is allowed to start.
+
+---
+
+## Why a Masterplan?
+
+Without a plan you build a house without blueprints: you will finish, but the doors don't
+fit, the pipes cross, and on the third remodel you tear it all down. A masterplan is not
+overhead. It is insurance against chaos.
+
+For optimizations a second purpose applies: **proof instead of belief**. Without a
+proof-gate you invest hours in fixes that do nothing — that is exactly what happened
+on 2026-04-15 with the layout-load-cache failure (see `CLAUDE-KAIZEN-MANIFEST.md` if that
+entry exists).
+
+---
+
+## Template
+
+Copy the block below and fill it in for your specific plan.
 
 ````markdown
-# FEAT: {Feature Name} — Execution Masterplan
+# {FEAT | OPT}: {Short Name} — Execution Masterplan
 
+> **Plan type:** {FEATURE | OPTIMIZATION}
 > **Created:** {YYYY-MM-DD}
 > **Version:** 0.1.0 (Draft)
-> **Status:** DRAFT — Phase 0 (Planung)
-> **Branch:** `feat/{feature-name}`
-> **Spec:** [{spec-datei}](./{spec-datei})
-> **Context:** [{brainstorming-datei}](./{brainstorming-datei})
-> **Author:** {Name} (Senior Engineer)
-> **Estimated Sessions:** {X}
-> **Actual Sessions:** 0 / {X}
+> **Status:** DRAFT — Phase 0 (planning / baseline)
+> **Branch:** `{feat|perf}/{short-name}`
+> **Spec (FEATURE):** [{spec-file}](./{spec-file})
+> **Hypothesis (OPTIMIZATION):** {ONE sentence — "Changing X will reduce Y from A to B."}
+> **Kill criterion (OPTIMIZATION):** {Exact measurement that would disprove the hypothesis.}
+> **Author:** {Name}
+> **Estimated sessions:** {X}
+> **Actual sessions:** 0 / {X}
 
 ---
 
 ## Changelog
 
-| Version | Datum      | Änderung                                       |
-| ------- | ---------- | ---------------------------------------------- |
-| 0.1.0   | YYYY-MM-DD | Initial Draft — Phasen 1-6 geplant             |
-| 0.2.0   | YYYY-MM-DD | Phase 1 Detail-Design nach DB-Analyse          |
-| 1.0.0   | YYYY-MM-DD | Phase 1 COMPLETE — Migrationen angewendet      |
-| 1.1.0   | YYYY-MM-DD | Phase 2 COMPLETE — Backend fertig              |
-| 1.2.0   | YYYY-MM-DD | Phase 3 COMPLETE — Unit Tests grün             |
-| 2.0.0   | YYYY-MM-DD | Alle Phasen COMPLETE — Feature produktionsreif |
+| Version | Date       | Change                                               |
+| ------- | ---------- | ---------------------------------------------------- |
+| 0.1.0   | YYYY-MM-DD | Initial draft — phases outlined                      |
+| 0.2.0   | YYYY-MM-DD | Phase H (Hypothesis Probe) result — CONFIRMED/KILLED |
+| 1.0.0   | YYYY-MM-DD | Phase 1 COMPLETE — migrations applied (if any)       |
+| 1.1.0   | YYYY-MM-DD | Phase 2 COMPLETE — backend done                      |
+| 1.2.0   | YYYY-MM-DD | Phase 3 COMPLETE — unit tests green                  |
+| 2.0.0   | YYYY-MM-DD | All phases COMPLETE — shipped                        |
 
-> **Versionierungsregel:**
+> **Versioning rule:**
 >
-> - `0.x.0` = Planungsphase (Draft)
-> - `1.x.0` = Implementierung läuft (je Phase ein Minor-Bump)
-> - `2.0.0` = Feature vollständig abgeschlossen
-> - Patch `x.x.1` = Hotfix/Nacharbeit innerhalb einer Phase
+> - `0.x.0` = planning phase (draft)
+> - `1.x.0` = implementation in progress (minor bump per phase)
+> - `2.0.0` = fully complete
+> - Patch `x.x.1` = hotfix / touch-up within a phase
 
 ---
 
 ## 0. Prerequisites & Risk Assessment
 
-### 0.1 Must Be True Before Starting
+### 0.1 Must be true before starting (both plan types)
 
-- [ ] Docker Stack running (alle Container healthy)
-- [ ] DB Backup erstellt: `{backup_datei}` ({Größe})
-- [ ] Branch `feat/{feature-name}` checked out
-- [ ] Keine pending Migrations (aktueller Stand: Migration {N})
-- [ ] Abhängige Features fertig: {liste oder "keine"}
-- [ ] Spec/Requirements vom Stakeholder abgesegnet
+- [ ] Docker stack running (all containers healthy)
+- [ ] DB backup taken: `{file}` ({size}) _(OPTIMIZATION: only if schema change planned)_
+- [ ] Branch `{branch}` checked out
+- [ ] No pending migrations blocking
+- [ ] Dependent features shipped: {list or "none"}
+- [ ] Spec / hypothesis reviewed by a second pair of eyes
 
-### 0.2 Risk Register
+### 0.2 Risk register (both plan types)
 
-| #   | Risiko                        | Impact        | Wahrscheinlichkeit    | Mitigation                              | Verifikation                                      |
-| --- | ----------------------------- | ------------- | --------------------- | --------------------------------------- | ------------------------------------------------- |
-| R1  | {Beschreibung}                | {Hoch/Mittel} | {Hoch/Mittel/Niedrig} | {Konkrete Gegenmaßnahme}                | {Test/Query/Check der beweist, dass es wirkt}     |
-| R2  | Race Condition bei {X}        | Hoch          | Mittel                | `FOR UPDATE` Lock auf Row               | Unit Test: paralleler Approve → ConflictException |
-| R3  | Migration bricht bei Daten ab | Hoch          | Niedrig               | Pre-Check Query + RAISE EXCEPTION       | Dry-Run mit Testdaten vor Apply                   |
-| R4  | Cross-Modul-Abhängigkeit      | Mittel        | Hoch                  | Atomisches Deployment (gleiche Session) | Type-Check + bestehende Tests nach Deploy         |
+| #   | Risk                          | Impact        | Probability       | Mitigation                        | Verification                                    |
+| --- | ----------------------------- | ------------- | ----------------- | --------------------------------- | ----------------------------------------------- |
+| R1  | {description}                 | {High/Medium} | {High/Medium/Low} | {concrete countermeasure}         | {test / query / check proving the mitigation}   |
+| R2  | Race condition in {X}         | High          | Medium            | `FOR UPDATE` row lock             | Unit test: parallel approve → ConflictException |
+| R3  | Migration breaks on real data | High          | Low               | Pre-check query + RAISE EXCEPTION | Dry run on production-shape test data           |
+| R4  | Cross-module dependency       | Medium        | High              | Atomic deployment (same session)  | Type-check + existing tests after deploy        |
 
-> **Regel:** Jedes Risiko MUSS eine konkrete Mitigation UND eine Verifikation haben.
-> "Aufpassen" ist KEINE Mitigation. "Wird schon passen" ist KEINE Verifikation.
+> **Rule:** every risk MUST have a concrete mitigation AND a verification. "Be careful"
+> is NOT a mitigation. "Should be fine" is NOT a verification.
 
-### 0.3 Ecosystem Integration Points
+### 0.3 Ecosystem integration points (both plan types)
 
-| Bestehendes System         | Art der Integration                        | Phase | Verifiziert am |
-| -------------------------- | ------------------------------------------ | ----- | -------------- |
-| {z.B. audit_trail}         | Jede Statusänderung → Audit Entry          | 2     |                |
-| {z.B. EventBus}            | {N} neue typed Emit-Methoden               | 2     |                |
-| {z.B. SSE/Notifications}   | {N} neue Event-Handler                     | 2     |                |
-| {z.B. Permission Registry} | Neuer Registrar via OnModuleInit           | 2     |                |
-| {z.B. FeatureCheckService} | Feature-Gate auf jedem Controller-Endpoint | 2     |                |
-| {z.B. Kalender}            | Frontend-Merge: Daten im Kalender zeigen   | 5     |                |
+| Existing system             | Integration                             | Phase | Verified on |
+| --------------------------- | --------------------------------------- | ----- | ----------- |
+| {e.g., `audit_trail`}       | Every status change → audit entry       | 2     |             |
+| {e.g., EventBus}            | {N} new typed emit methods              | 2     |             |
+| {e.g., SSE / Notifications} | {N} new event handlers                  | 2     |             |
+| {e.g., Permission Registry} | New registrar via `OnModuleInit`        | 2     |             |
+| {e.g., FeatureCheckService} | Addon gate on every controller endpoint | 2     |             |
+| {e.g., Calendar}            | Frontend merge: data shown in calendar  | 5     |             |
 
-> **Warum diese Tabelle?** Sie zwingt dich, VOR dem Coding alle Berührungspunkte
-> zu identifizieren. Session 11 im Vacation-Masterplan hätte ohne diese Tabelle
-> 3 Integrationen vergessen.
+> **Why this table?** It forces you to identify every touchpoint BEFORE coding.
+
+---
+
+### 0.4 Baseline measurement (OPTIMIZATION only — N/A for FEATURE)
+
+> **Purpose:** concrete numbers. No prose.
+
+**What is being measured?**
+
+- **Metric 1:** {e.g., backend requests per 5-nav sequence for `/my-addons`}
+- **Metric 2:** {e.g., DB query count via `pg_stat_statements`}
+- **Metric 3:** {e.g., p95 response time on endpoint}
+
+**How is it measured?** (reproducible procedure, exact commands)
+
+```bash
+# Example: backend log pattern count
+doppler run -- docker-compose logs backend --since 5m 2>&1 \
+  | grep '"url"' | grep -oE 'api/v2/[a-z/-]+' | sort | uniq -c
+```
+
+**Baseline numbers** (fill in BEFORE Phase H):
+
+| Metric     | Baseline   |
+| ---------- | ---------- |
+| {metric 1} | {n + unit} |
+| {metric 2} | {n + unit} |
+| {metric 3} | {n + unit} |
+
+**§0.4 DoD:**
+
+- [ ] Every metric has a concrete number (no "seems slow", no "often")
+- [ ] Procedure is reproducible by another engineer
+- [ ] Numbers committed to the plan file
+
+> **Gate:** no Phase H without §0.4 numbers. Without baseline you cannot prove delta.
+
+---
+
+### 0.5 Hypothesis & kill criterion (OPTIMIZATION only)
+
+State, in ≤3 sentences:
+
+- **Hypothesis:** "Changing {X} will reduce {metric} from {baseline} to {target}."
+- **Mechanism:** "{Why this change should produce that effect — one sentence.}"
+- **Kill criterion:** "If Phase H probe shows {metric} is unchanged or regresses, the plan is killed."
+
+Weak hypotheses ("this should help", "it might be faster") are REJECTED. Either you can
+state the expected delta with numbers or you are not ready to plan.
+
+---
+
+## Phase H: Hypothesis Probe (OPTIMIZATION only — THE PROOF-GATE)
+
+> **Purpose:** prove or kill the hypothesis in **≤1 hour** of throwaway work.
+> FEATURE plans skip this phase entirely.
+
+### H.1 Probe design
+
+What is the **smallest possible experiment** that would confirm or disprove the hypothesis?
+
+Good probes:
+
+- Add one `console.log` inside a load function + do 5 navigations + count log lines
+- Add `Cache-Control: max-age=60` header to one endpoint + re-run baseline measurement
+- Write a 20-line prototype that does the fix on ONE code path + measure
+
+**Rule:** the probe must be **throwaway code**. Do not build the real solution here.
+Do not refactor. Do not bikeshed. The goal is an up-or-down signal in under an hour.
+
+### H.2 Expected outcome
+
+- If hypothesis TRUE: {metric X} drops from {baseline} to {predicted}.
+- If hypothesis FALSE: {metric X} stays at {baseline} (or gets worse).
+
+### H.3 Probe execution
+
+```
+{exact commands + code patch, inline}
+```
+
+### H.4 Probe result
+
+| Metric | Baseline | Probe | Delta | Verdict              |
+| ------ | -------- | ----- | ----- | -------------------- |
+| {m1}   | {n}      | {n}   | {Δ}   | {CONFIRMED / KILLED} |
+
+### Phase H — Definition of Done
+
+- [ ] Probe was **throwaway** (not the real fix — no refactoring, no tests)
+- [ ] Probe took < 1 hour to build and run
+- [ ] Numeric delta recorded in §H.4
+- [ ] Verdict is unambiguous: CONFIRMED or KILLED
+
+### Phase H — Hypothesis Gate
+
+- **If KILLED:** STOP. Do NOT proceed to Phase 1. Write a ≤100-word post-mortem
+  ("Why the hypothesis failed") and close the plan. The time invested was worth it —
+  you saved days of wrong-solution building.
+- **If CONFIRMED:** proceed to Phase 1. Delete the probe code (it served its purpose).
+
+> **Never** proceed with a "probably works" verdict. "Looks promising" = KILLED.
 
 ---
 
 ## Phase 1: Database Migrations
 
-> **Abhängigkeit:** Keine (erste Phase)
-> **Dateien:** {N} neue Migrationsdateien
-> **Letzte Migration:** `{dateiname}` → nächste ist `{nächste_nummer}`
+> **Dependency:** Phase 0 (FEATURE) or Phase H CONFIRMED (OPTIMIZATION).
+> **Skip entirely** if the plan does not touch DB schema.
 
-### Step 1.1: {Beschreibung} [STATUS]
+### Step 1.1: {Description} [STATUS]
 
-**Neue Dateien:**
+**New files:**
 
 - `database/migrations/{timestamp}_{name}.ts`
 
-**Was passiert:**
+**What happens:**
 
-1. {SQL-Operation 1}
-2. {SQL-Operation 2}
-3. {SQL-Operation 3}
+1. {SQL operation 1}
+2. {SQL operation 2}
+3. {SQL operation 3}
 
-**Mandatory Checklist pro Tabelle (Multi-Tenant!):**
+**Mandatory per-table checklist (multi-tenant!):**
 
 - [ ] `id UUID PRIMARY KEY` (UUIDv7)
 - [ ] `tenant_id INTEGER NOT NULL REFERENCES tenants(id) ON DELETE CASCADE`
 - [ ] `ENABLE ROW LEVEL SECURITY` + `FORCE ROW LEVEL SECURITY`
-- [ ] RLS Policy mit `NULLIF(current_setting('app.tenant_id', true), '')` Pattern
+- [ ] RLS policy using `NULLIF(current_setting('app.tenant_id', true), '')` pattern
 - [ ] `GRANT SELECT, INSERT, UPDATE, DELETE ON table TO app_user`
-- [ ] Keine Sequence-GRANTs nötig (UUID PK, nicht SERIAL)
-- [ ] Passende Indexes mit `WHERE is_active = 1` Partial Indexes
-- [ ] `is_active INTEGER NOT NULL DEFAULT 1` (Ausnahmen dokumentieren!)
-- [ ] `up()` UND `down()` implementiert
+- [ ] (UUID PK → no sequence GRANT needed)
+- [ ] Suitable indexes with `WHERE is_active = 1` partial predicates
+- [ ] `is_active INTEGER NOT NULL DEFAULT 1` (document exceptions!)
+- [ ] Both `up()` AND `down()` implemented
 
-**Verifikation:**
+**Verification:**
 
 ```bash
-docker exec assixx-postgres psql -U assixx_user -d assixx -c "\dt {tabellenname}"
-docker exec assixx-postgres psql -U assixx_user -d assixx -c "SELECT tablename, policyname FROM pg_policies WHERE tablename LIKE '{prefix}_%';"
+docker exec assixx-postgres psql -U assixx_user -d assixx -c "\d {tablename}"
+docker exec assixx-postgres psql -U assixx_user -d assixx \
+  -c "SELECT tablename, policyname FROM pg_policies WHERE tablename LIKE '{prefix}_%';"
 ```
-````
 
 ### Step 1.N: ... [STATUS]
 
-{Weitere Schritte analog}
+{Additional steps in the same format}
 
 ### Phase 1 — Definition of Done
 
-- [ ] {N} Migrationsdateien mit `up()` AND `down()`
-- [ ] Alle Migrationen bestehen Dry-Run: `doppler run -- ./scripts/run-migrations.sh up --dry-run`
-- [ ] Alle Migrationen erfolgreich angewendet
-- [ ] {N} neue Tabellen existieren mit RLS Policies ({N}/{N} verifiziert)
-- [ ] Backend kompiliert fehlerfrei nach Rename/Schema-Änderungen
-- [ ] Bestehende Tests laufen weiterhin durch
-- [ ] Backup vorhanden vor Migrationen
+- [ ] {N} migration files with both `up()` AND `down()`
+- [ ] Dry run passes: `doppler run -- ./scripts/run-migrations.sh up --dry-run`
+- [ ] All migrations applied successfully
+- [ ] {N} new tables exist with RLS policies ({N}/{N} verified)
+- [ ] Backend compiles after rename / schema changes
+- [ ] Existing tests still pass
+- [ ] Backup taken before migration
 
 ---
 
 ## Phase 2: Backend Module
 
-> **Abhängigkeit:** Phase 1 complete
-> **Referenz-Modul:** `backend/src/nest/{bestehendes_modul}/` (Dateistruktur kopieren)
+> **Dependency:** Phase 1 complete (or N/A).
+> **Reference module:** `backend/src/nest/{existing-module}/` (copy file structure)
 
-### Step 2.1: Module Skeleton + Types + DTOs [STATUS]
+### Step 2.1: Module skeleton + types + DTOs [STATUS]
 
-**Neues Verzeichnis:** `backend/src/nest/{feature}/`
+**New directory:** `backend/src/nest/{feature}/`
 
-**Dateistruktur:**
+**File structure:**
 
 ```
 backend/src/nest/{feature}/
-    {feature}.module.ts                    # NestJS Modul
-    {feature}.types.ts                     # Interfaces + DB Row Types
+    {feature}.module.ts                    # NestJS module
+    {feature}.types.ts                     # interfaces + DB row types
     {feature}.permissions.ts               # PermissionCategoryDef (ADR-020)
-    {feature}-permission.registrar.ts      # OnModuleInit Registrar
+    {feature}-permission.registrar.ts      # OnModuleInit registrar
     dto/
-        common.dto.ts                      # Wiederverwendbare Zod Schemas
-        index.ts                           # Barrel Export
-        {operation}.dto.ts                 # Je eine DTO pro Operation
+        common.dto.ts                      # reusable Zod schemas
+        index.ts                           # barrel export
+        {operation}.dto.ts                 # one DTO per operation
 ```
 
-**Registrierung in app.module.ts:**
+**Register in `app.module.ts`:**
 
-- [ ] `{Feature}Module` zu imports Array (alphabetisch sortiert)
+- [ ] `{Feature}Module` added to imports array (alphabetically sorted)
 
-### Step 2.2 - 2.N: Services (Abhängigkeitsreihenfolge!)
+### Step 2.2 – 2.N: Services (dependency order matters!)
 
-> **KRITISCH:** Services in der richtigen Reihenfolge implementieren!
-> Jeder Service darf nur von bereits implementierten Services abhängen.
+Implement services in the order their dependencies allow — each service may only depend on
+services already implemented.
 
-**Empfohlene Reihenfolge:**
+**Recommended order:**
 
-| #   | Service                     | Warum diese Reihenfolge                      |
-| --- | --------------------------- | -------------------------------------------- |
-| 2.2 | {Basis-Service}             | Keine Abhängigkeiten, wird von allen genutzt |
-| 2.3 | {Config/Settings-Service}   | Andere Services brauchen Config-Werte        |
-| 2.4 | {Berechnung-Service}        | Wird von Validierung + Core gebraucht        |
-| 2.5 | {CRUD-Service A}            | Eigenständig, wird von Core referenziert     |
-| 2.6 | {CRUD-Service B}            | Eigenständig, wird von Core referenziert     |
-| 2.7 | {Analyse/Capacity-Service}  | Braucht alle CRUD-Services als Input         |
-| 2.8 | {Core-Service (Mutationen)} | Das Herz — braucht ALLES                     |
-| 2.9 | {Notification-Service}      | Reagiert auf Core-Events                     |
+| #   | Service                       | Why this order                      |
+| --- | ----------------------------- | ----------------------------------- |
+| 2.2 | {Base service}                | No dependencies, used by all others |
+| 2.3 | {Config / settings service}   | Other services need config values   |
+| 2.4 | {Calculation service}         | Needed by validation + core         |
+| 2.5 | {CRUD service A}              | Standalone, referenced by core      |
+| 2.6 | {CRUD service B}              | Standalone, referenced by core      |
+| 2.7 | {Analysis / capacity service} | Needs all CRUD services as input    |
+| 2.8 | {Core service (mutations)}    | The heart — needs everything        |
+| 2.9 | {Notification service}        | Reacts to core events               |
 
-**Pro Service dokumentieren:**
+**Per service document:**
 
 ```markdown
 ### Step 2.X: {ServiceName} [STATUS]
 
-**Datei:** `backend/src/nest/{feature}/{service-name}.service.ts`
+**File:** `backend/src/nest/{feature}/{service-name}.service.ts`
 
-**Warum jetzt:** {Begründung der Reihenfolge}
+**Why now:** {order rationale}
 
-**Methoden:**
+**Methods:**
 
-- `methodA(tenantId, ...)` — {Beschreibung}
-- `methodB(tenantId, ...)` — {Beschreibung}
+- `methodA(tenantId, ...)` — {description}
+- `methodB(tenantId, ...)` — {description}
 
-**Abhängigkeiten:** {Liste der injizierten Services}
+**Dependencies:** {list of injected services}
 
-**Kritische Patterns:**
+**Critical patterns:**
 
-- Alle Queries via `db.tenantTransaction()` (ADR-019)
-- Return raw Data, KEIN `{ success, data }` Wrapping (ADR-007)
-- `$1, $2, $3` Placeholders (PostgreSQL)
-- `?? null` nicht `|| null` für Defaults
+- All queries via `db.tenantTransaction()` (ADR-019)
+- Return raw data, NO `{ success, data }` wrapping (ADR-007)
+- `$1, $2, $3` placeholders (PostgreSQL)
+- `?? null` not `|| null` for defaults
 ```
 
 ### Step 2.N+1: Controller [STATUS]
 
-**Datei:** `backend/src/nest/{feature}/{feature}.controller.ts`
+**File:** `backend/src/nest/{feature}/{feature}.controller.ts`
 
 **Endpoints ({N} total):**
 
-| Method | Route          | Guard/Permission | Beschreibung      |
-| ------ | -------------- | ---------------- | ----------------- |
-| GET    | /{feature}     | canRead          | Liste (paginiert) |
-| POST   | /{feature}     | canWrite         | Erstellen         |
-| GET    | /{feature}/:id | canRead          | Einzelnes Item    |
-| PATCH  | /{feature}/:id | canWrite         | Aktualisieren     |
-| DELETE | /{feature}/:id | canDelete        | Soft-Delete       |
+| Method | Route          | Guard / permission | Description      |
+| ------ | -------------- | ------------------ | ---------------- |
+| GET    | /{feature}     | canRead            | List (paginated) |
+| POST   | /{feature}     | canWrite           | Create           |
+| GET    | /{feature}/:id | canRead            | Fetch one        |
+| PATCH  | /{feature}/:id | canWrite           | Update           |
+| DELETE | /{feature}/:id | canDelete          | Soft-delete      |
 
-**Jeder Endpoint MUSS:**
+**Every endpoint MUST:**
 
-- [ ] `FeatureCheckService.checkTenantAccess(tenantId, '{feature}')` aufrufen
-- [ ] `@RequirePermission(...)` Decorator verwenden
-- [ ] Raw Data zurückgeben (ResponseInterceptor wrapped automatisch)
+- [ ] Call `FeatureCheckService.checkTenantAccess(tenantId, '{feature}')`
+- [ ] Use `@RequirePermission(...)` decorator
+- [ ] Return raw data (ResponseInterceptor wraps automatically)
 
 ### Phase 2 — Definition of Done
 
-- [ ] `{Feature}Module` registriert in `app.module.ts`
-- [ ] Alle {N} Services implementiert und injiziert
-- [ ] Controller mit allen {N} Endpoints
-- [ ] Permission Registrar registriert bei Module Init
-- [ ] Feature Check auf jedem Controller-Endpoint
-- [ ] `db.tenantTransaction()` für ALLE tenant-scoped Queries
-- [ ] KEIN Double-Wrapping — Services returnen raw Data (ADR-007)
-- [ ] EventBus-Methoden hinzugefügt (falls nötig)
-- [ ] SSE-Handler registriert (falls nötig)
-- [ ] `??` nicht `||`, kein `any`, explizite Boolean-Checks
-- [ ] ESLint 0 Errors: `docker exec assixx-backend pnpm exec eslint backend/src/nest/{feature}/`
-- [ ] Type-Check passed: `docker exec assixx-backend pnpm run type-check`
-- [ ] Alle DTOs nutzen Zod + `createZodDto()` Pattern
+- [ ] `{Feature}Module` registered in `app.module.ts`
+- [ ] All {N} services implemented and injected
+- [ ] Controller with all {N} endpoints
+- [ ] Permission registrar registered on module init
+- [ ] Addon check on every controller endpoint
+- [ ] `db.tenantTransaction()` for ALL tenant-scoped queries
+- [ ] NO double-wrapping — services return raw data (ADR-007)
+- [ ] EventBus methods added (if needed)
+- [ ] SSE handlers registered (if needed)
+- [ ] `??` not `||`, no `any`, explicit boolean checks
+- [ ] ESLint 0 errors: `docker exec assixx-backend pnpm exec eslint backend/src/nest/{feature}/`
+- [ ] Type-check passes: `docker exec assixx-backend pnpm run type-check`
+- [ ] All DTOs use Zod + `createZodDto()` pattern
+- [ ] _(OPTIMIZATION only)_ Quick spot-check confirms metric moved in the expected direction
 
 ---
 
 ## Phase 3: Unit Tests
 
-> **Abhängigkeit:** Phase 2 complete
-> **Pattern:** `backend/src/nest/{bestehendes_modul}/{modul}.service.test.ts`
+> **Dependency:** Phase 2 complete.
+> **Pattern:** `backend/src/nest/{existing-module}/{module}.service.test.ts`
 
-### Test-Dateien
+### Test files
 
 ```
 backend/src/nest/{feature}/
-    {feature}.service.test.ts              # {N} Tests (Core Mutations)
-    {feature}-{sub}.service.test.ts        # {N} Tests (Sub-Service)
+    {feature}.service.test.ts              # {N} tests (core mutations)
+    {feature}-{sub}.service.test.ts        # {N} tests (sub-service)
     ...
 ```
 
-### Kritische Test-Szenarien (MUSS abgedeckt sein)
+### Mandatory scenarios
 
-**Geschäftslogik:**
+**Business logic:**
 
-- [ ] Happy Path für jede Mutation
-- [ ] Validierungsfehler → BadRequestException
-- [ ] Duplikat/Konflikt → ConflictException
-- [ ] Fehlende Berechtigung → ForbiddenException
-- [ ] Nicht gefunden → NotFoundException
+- [ ] Happy path for each mutation
+- [ ] Validation error → `BadRequestException`
+- [ ] Duplicate / conflict → `ConflictException`
+- [ ] Missing permission → `ForbiddenException`
+- [ ] Not found → `NotFoundException`
 
-**Edge Cases:**
+**Edge cases:**
 
-- [ ] Grenzwerte (0, MAX, negative Werte)
-- [ ] Cross-{Domain}-Szenarien (z.B. jahresübergreifend)
-- [ ] Race Conditions (FOR UPDATE Lock verifizieren)
-- [ ] Self-Referenz-Schleifen (z.B. Self-Approval)
+- [ ] Boundary values (0, MAX, negative)
+- [ ] Cross-domain scenarios (e.g., across-year)
+- [ ] Race conditions (verify `FOR UPDATE` lock)
+- [ ] Self-reference loops (e.g., self-approval)
 
-**Datenintegrität:**
+**Data integrity:**
 
-- [ ] Tenant-Isolation (Tenant A sieht nicht Tenant B)
-- [ ] Cascade-Verhalten bei DELETE
-- [ ] Audit-Trail-Einträge werden geschrieben
+- [ ] Tenant isolation (tenant A cannot see tenant B)
+- [ ] Cascade behavior on DELETE
+- [ ] Audit-trail entries are written
 
 ### Phase 3 — Definition of Done
 
-- [ ] > = {N} Unit Tests total (Minimum: 75)
-- [ ] Alle Tests grün: `docker exec assixx-backend pnpm exec vitest run backend/src/nest/{feature}/`
-- [ ] Jeder ConflictException / BadRequestException Pfad abgedeckt
-- [ ] Edge Cases für {Domain-spezifische Szenarien} getestet
-- [ ] Race Condition getestet (falls relevant)
-- [ ] Coverage: Alle public Methoden haben mindestens 1 Test
+- [ ] ≥ {N} unit tests total (minimum 75 for a full module)
+- [ ] All tests green: `docker exec assixx-backend pnpm exec vitest run backend/src/nest/{feature}/`
+- [ ] Every ConflictException / BadRequestException path covered
+- [ ] Edge cases for {domain-specific scenarios} tested
+- [ ] Race condition tested (if relevant)
+- [ ] Coverage: every public method has at least one test
 
 ---
 
 ## Phase 4: API Integration Tests
 
-> **Abhängigkeit:** Phase 3 complete
-> **Pattern:** `backend/test/*.api.test.ts` (HOW-TO-TEST-WITH-VITEST.md)
+> **Dependency:** Phase 3 complete.
+> **Pattern:** `backend/test/*.api.test.ts` (`HOW-TO-TEST-WITH-VITEST.md`)
 
-### Test-Datei
+### Test file
 
 `backend/test/{feature}.api.test.ts`
 
-### Szenarien (>= 20 Assertions)
+### Scenarios (≥ 20 assertions)
 
-**Auth & Feature:**
+**Auth & addon gate:**
 
 - [ ] Unauthenticated → 401
-- [ ] Feature disabled → 403
+- [ ] Addon disabled → 403
 
-**CRUD pro Endpoint:**
+**CRUD per endpoint:**
 
-- [ ] POST → 201 (Happy Path)
-- [ ] POST → 400 (Validierungsfehler)
-- [ ] POST → 409 (Duplikat)
-- [ ] GET → 200 (paginiert, korrekte Struktur)
-- [ ] PATCH → 200 (Update)
-- [ ] DELETE → 200 (Soft-Delete)
+- [ ] POST → 201 (happy path)
+- [ ] POST → 400 (validation error)
+- [ ] POST → 409 (duplicate)
+- [ ] GET → 200 (paginated, correct structure)
+- [ ] PATCH → 200 (update)
+- [ ] DELETE → 200 (soft-delete)
 
 **RLS:**
 
-- [ ] Tenant A kann Tenant B Daten nicht sehen
+- [ ] Tenant A cannot see tenant B's data
 
 ### Phase 4 — Definition of Done
 
-- [ ] > = 20 API Integration Tests
-- [ ] Alle Tests grün
-- [ ] Tenant-Isolation verifiziert
-- [ ] Addon-Flag-Gating verifiziert
-- [ ] Pagination verifiziert auf List-Endpoints
+- [ ] ≥ 20 API integration tests
+- [ ] All tests green
+- [ ] Tenant isolation verified
+- [ ] Addon flag gating verified
+- [ ] Pagination verified on list endpoints
 
 ---
 
 ## Phase 5: Frontend
 
-> **Abhängigkeit:** Phase 2 complete (Backend-Endpoints verfügbar)
-> **Referenz:** `frontend/src/routes/(app)/(shared)/{bestehendes_modul}/`
+> **Dependency:** Phase 2 complete (backend endpoints available).
+> **Reference:** `frontend/src/routes/(app)/(shared)/{existing-module}/`
 
-### Route-Struktur
+### Route structure
 
 ```
 frontend/src/routes/(app)/
     (shared)/{feature}/
-        +page.svelte                # Hauptseite (rollenabhängig)
-        +page.server.ts             # Auth + SSR Data Loading
+        +page.svelte                # main page (role-dependent)
+        +page.server.ts             # auth + SSR data loading
         _lib/
-            api.ts                  # apiClient Wrapper
-            types.ts                # TypeScript Interfaces
-            constants.ts            # Deutsche Labels, Badges, Filter
-            state.svelte.ts         # Root State (re-exports Sub-States)
-            state-data.svelte.ts    # Data State ($state)
-            state-ui.svelte.ts      # UI State ($state für Filter, Modals)
-            {Component}.svelte      # Einzelne Komponenten
+            api.ts                  # apiClient wrapper
+            types.ts                # TypeScript interfaces
+            constants.ts            # German labels, badges, filters
+            state.svelte.ts         # root state (re-exports sub-states)
+            state-data.svelte.ts    # data state ($state)
+            state-ui.svelte.ts      # UI state ($state for filters, modals)
+            {Component}.svelte      # individual components
 
     (admin)/{feature}/
         {sub-route}/+page.svelte + +page.server.ts + _lib/
 ```
 
-### Step 5.1: Hauptseite [STATUS]
+### Step 5.1: Main page [STATUS]
 
-**Neue Dateien:** {N}
+**New files:** {N}
 
-**Qualitätsprüfung:**
+**Quality check:**
 
 ```bash
 cd frontend && pnpm exec svelte-check --tsconfig ./tsconfig.json
-cd frontend && pnpm exec eslint src/routes/(app)/(shared)/{feature}/
+cd frontend && pnpm exec eslint 'src/routes/(app)/(shared)/{feature}/'
 ```
 
-### Step 5.N: Weitere Seiten [STATUS]
+### Step 5.N: Additional pages [STATUS]
 
-{Analog}
+{Same format}
 
-### Frontend-Patterns (PFLICHT)
+### Mandatory frontend patterns
 
-**apiClient — KRITISCH (Kaizen-Bug!):**
+**apiClient (CRITICAL — past Kaizen bug!):**
 
 ```typescript
-// apiClient.get<T>() returned Data DIREKT (bereits unwrapped)
+// apiClient.get<T>() returns data DIRECTLY (already unwrapped)
 const data = await apiClient.get<MyType>('/my-endpoint');
-// data IST das MyType Objekt — NICHT { success, data: MyType }
+// `data` IS the MyType object — NOT { success, data: MyType }
 ```
 
-**State Management (Svelte 5 Runes):**
+**State management (Svelte 5 runes):**
 
 ```typescript
 // state-data.svelte.ts
@@ -406,218 +538,237 @@ let items = $state<MyType[]>([]);
 let selected = $state<MyType | null>(null);
 ```
 
-**+page.server.ts Pattern:**
+**+page.server.ts pattern:**
 
 ```typescript
 export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
   const token = cookies.get('accessToken');
-  if (!token) redirect(302, '/login');
+  if (token === undefined || token === '') redirect(302, '/login');
   const { user } = await parent();
-  // Feature Check + Data Loading
+  // addon check + data loading
 };
 ```
 
 ### Phase 5 — Definition of Done
 
-- [ ] Hauptseite rendert für alle relevanten Rollen
-- [ ] Alle CRUD-Operationen funktionieren über UI
-- [ ] Svelte 5 Runes ($state, $derived, $effect) verwendet
-- [ ] apiClient generic = DATA Shape (nicht Wrapper)
-- [ ] svelte-check 0 Errors, 0 Warnings
-- [ ] ESLint 0 Errors
-- [ ] Navigation Config aktualisiert (alle Rollen-Menüs)
-- [ ] Breadcrumb-Einträge hinzugefügt
-- [ ] Responsive Design (Mobile + Desktop)
-- [ ] Deutsche Labels/Texte überall
+- [ ] Main page renders for all relevant roles
+- [ ] All CRUD operations work via UI
+- [ ] Svelte 5 runes (`$state`, `$derived`, `$effect`) used
+- [ ] apiClient generic = DATA shape (not wrapper)
+- [ ] svelte-check 0 errors, 0 warnings
+- [ ] ESLint 0 errors
+- [ ] Navigation config updated (all role menus)
+- [ ] Breadcrumb entries added
+- [ ] Responsive design (mobile + desktop)
+- [ ] German labels / texts everywhere user-facing
 
 ---
 
-## Phase 6: Integration + Polish
+## Phase 6: Integration + Polish + ADR
 
-> **Abhängigkeit:** Phase 5 complete
+> **Dependency:** Phase 5 complete.
 
-### Integrationen
+### Integrations
 
-- [ ] {System A}: {Beschreibung der Integration}
-- [ ] {System B}: {Beschreibung der Integration}
-- [ ] Notification-System: Persistent DB Notifications + SSE + Badges
-- [ ] Audit Logging: ActivityLoggerService in alle Mutation-Services
-- [ ] Dashboard: Neuer Count in Dashboard-Widget
+- [ ] {System A}: {integration description}
+- [ ] {System B}: {integration description}
+- [ ] Notification system: persistent DB notifications + SSE + badges
+- [ ] Audit logging: `ActivityLoggerService` in every mutation service
+- [ ] Dashboard: new count in dashboard widget
 
-### Dokumentation
+### Documentation
 
-- [ ] ADR-{N} geschrieben (Architekturentscheidungen)
-- [ ] FEATURES.md aktualisiert
-- [ ] Customer-Migrations synchronisiert: `./scripts/sync-customer-migrations.sh`
+- [ ] ADR-{N} written (architectural decisions)
+- [ ] `FEATURES.md` updated
+- [ ] Customer migrations synced: `./scripts/sync-customer-migrations.sh`
+
+### _(OPTIMIZATION only)_ Phase Z: Re-measurement + Delta Gate
+
+Re-run the **exact procedure** from §0.4 and fill in:
+
+| Metric | Baseline (§0.4) | After | Delta | Expected | Verdict (PASS/FAIL) |
+| ------ | --------------- | ----- | ----- | -------- | ------------------- |
+| {m1}   | {n}             | {n}   | {Δ}   | {n}      | {PASS/FAIL}         |
+
+**Delta Gate:**
+
+- **All PASS** (delta within ±20 % of expected, right direction): proceed to ADR as "Accepted".
+- **Any FAIL:** revert implementation commits; post-mortem; re-enter Phase H with new hypothesis.
 
 ### Phase 6 — Definition of Done
 
-- [ ] Alle Integrationen funktionieren end-to-end
-- [ ] ADR geschrieben und reviewed
-- [ ] FEATURES.md Feature-Status aktualisiert
-- [ ] Keine offenen TODOs im Code (sofort implementieren, nicht TODO schreiben!)
+- [ ] All integrations work end-to-end
+- [ ] ADR written and reviewed — _(OPTIMIZATION:_ Status "Accepted" only if §Z all-PASS*)*
+- [ ] `FEATURES.md` feature status updated
+- [ ] No open TODOs in code (implement now, not later!)
+- [ ] _(OPTIMIZATION only)_ §Z delta table filled with verified numbers
 
 ---
 
 ## Session Tracking
 
-> **Regel:** Jede Session = ein logischer Arbeitsblock. Nicht zu klein (1 Funktion),
-> nicht zu groß (ganzes Modul). Ideal: 1-3 Stunden fokussierte Arbeit.
+> **Rule:** one session = one logical work block. Not too small (1 function), not too big
+> (entire module). Ideal: 1–3 hours of focused work.
 
-| Session | Phase | Beschreibung                       | Status | Datum      |
-| ------- | ----- | ---------------------------------- | ------ | ---------- |
-| 1       | 1     | Migration {N}: {Beschreibung}      | DONE   | YYYY-MM-DD |
-| 2       | 1     | Migration {N+1}: {Beschreibung}    | DONE   | YYYY-MM-DD |
-| 3       | 2     | Module Skeleton + Types + DTOs     | DONE   | YYYY-MM-DD |
-| 4       | 2     | {Basis-Service} + {Config-Service} |        |            |
-| 5       | 2     | {CRUD-Services}                    |        |            |
-| 6       | 2     | {Core-Service} + Controller        |        |            |
-| 7       | 3     | Unit Tests ({N}+ Tests)            |        |            |
-| 8       | 4     | API Integration Tests ({N}+ Tests) |        |            |
-| 9       | 5     | Frontend: Hauptseite               |        |            |
-| 10      | 5     | Frontend: Admin-Seiten             |        |            |
-| 11      | 6     | Integration + Polish + ADR         |        |            |
+| Session | Phase | Description                       | Status | Date       |
+| ------- | ----- | --------------------------------- | ------ | ---------- |
+| 1       | 0     | Baseline measurement              | DONE   | YYYY-MM-DD |
+| 2       | H     | Hypothesis probe (OPT only)       | DONE   | YYYY-MM-DD |
+| 3       | 1     | Migration {N}: {description}      | DONE   | YYYY-MM-DD |
+| 4       | 2     | Module skeleton + types + DTOs    |        |            |
+| 5       | 2     | {Base service} + {Config service} |        |            |
+| 6       | 2     | {CRUD services}                   |        |            |
+| 7       | 2     | {Core service} + controller       |        |            |
+| 8       | 3     | Unit tests ({N}+ tests)           |        |            |
+| 9       | 4     | API integration tests             |        |            |
+| 10      | 5     | Frontend: main page               |        |            |
+| 11      | 5     | Frontend: admin pages             |        |            |
+| 12      | 6     | Integration + polish + ADR + Z    |        |            |
 
-### Session-Protokoll (pro Session ausfüllen)
+### Session log (fill per session)
 
 ```markdown
-### Session {N} — {Datum}
+### Session {N} — {YYYY-MM-DD}
 
-**Ziel:** {Was soll erreicht werden}
-**Ergebnis:** {Was wurde tatsächlich erreicht}
-**Neue Dateien:** {Liste}
-**Geänderte Dateien:** {Liste}
-**Verifikation:**
+**Goal:** {what should be achieved}
+**Result:** {what was actually achieved}
+**New files:** {list}
+**Changed files:** {list}
+**Verification:**
 
-- ESLint: {0 Errors / N Errors → gefixt}
-- Type-Check: {0 Errors}
-- Tests: {N/N passed}
-  **Abweichungen vom Plan:** {Was lief anders als geplant und warum}
-  **Nächste Session:** {Was kommt als nächstes}
+- ESLint: {0 errors / N errors → fixed}
+- Type-check: {0 errors}
+- Tests: {N / N passed}
+- _(OPTIMIZATION only)_ Metric delta: {before → after}
+  **Deviations:** {what differed from plan and why}
+  **Next session:** {what comes next}
 ```
 
 ---
 
 ## Quick Reference: File Paths
 
-### Backend (neu)
+### Backend (new)
 
-| Datei                                                | Zweck               |
+| File                                                 | Purpose             |
 | ---------------------------------------------------- | ------------------- |
-| `backend/src/nest/{feature}/{feature}.module.ts`     | NestJS Modul        |
-| `backend/src/nest/{feature}/{feature}.controller.ts` | REST Controller     |
-| `backend/src/nest/{feature}/{feature}.service.ts`    | Core Business Logic |
-| `backend/src/nest/{feature}/{feature}.types.ts`      | Alle Interfaces     |
+| `backend/src/nest/{feature}/{feature}.module.ts`     | NestJS module       |
+| `backend/src/nest/{feature}/{feature}.controller.ts` | REST controller     |
+| `backend/src/nest/{feature}/{feature}.service.ts`    | Core business logic |
+| `backend/src/nest/{feature}/{feature}.types.ts`      | All interfaces      |
 | `backend/src/nest/{feature}/dto/*.ts`                | DTOs (Zod)          |
 
-### Backend (geändert)
+### Backend (modified)
 
-| Datei                            | Änderung                        |
-| -------------------------------- | ------------------------------- |
-| `backend/src/nest/app.module.ts` | Module Import hinzugefügt       |
-| `backend/src/utils/eventBus.ts`  | Event Interface + Emit-Methoden |
+| File                             | Change                         |
+| -------------------------------- | ------------------------------ |
+| `backend/src/nest/app.module.ts` | Module import added            |
+| `backend/src/utils/eventBus.ts`  | Event interface + emit methods |
 
-### Database (neu)
+### Database (new)
 
-| Datei                                       | Zweck         |
+| File                                        | Purpose       |
 | ------------------------------------------- | ------------- |
 | `database/migrations/{timestamp}_{name}.ts` | Migration {N} |
 
-### Frontend (neu)
+### Frontend (new)
 
-| Pfad                                                 | Zweck        |
-| ---------------------------------------------------- | ------------ |
-| `frontend/src/routes/(app)/(shared)/{feature}/`      | Hauptseite   |
-| `frontend/src/routes/(app)/(admin)/{feature}/{sub}/` | Admin-Seiten |
+| Path                                                 | Purpose     |
+| ---------------------------------------------------- | ----------- |
+| `frontend/src/routes/(app)/(shared)/{feature}/`      | Main page   |
+| `frontend/src/routes/(app)/(admin)/{feature}/{sub}/` | Admin pages |
 
 ---
 
 ## Spec Deviations
 
-> **Wichtig:** Wenn der Spec/Prompt vom tatsächlichen Code abweicht,
-> IMMER dem tatsächlichen Code folgen und die Abweichung hier dokumentieren.
+> If the spec / prompt contradicts the actual code, ALWAYS follow the code and document the
+> deviation here.
 
-| #   | Spec sagt     | Tatsächlicher Code  | Entscheidung               |
-| --- | ------------- | ------------------- | -------------------------- |
-| D1  | {Spec-Angabe} | {Was wirklich gilt} | {Was wir machen und warum} |
-
----
-
-## Known Limitations (V1 — Bewusst ausgeschlossen)
-
-> **Regel:** Explizit dokumentieren, was NICHT gebaut wird.
-> Verhindert Scope Creep und setzt Erwartungen.
-
-1. **{Limitation A}** — {Warum nicht in V1, Alternative}
-2. **{Limitation B}** — {Warum nicht in V1, Alternative}
-3. **{Limitation C}** — {Warum nicht in V1, Alternative}
+| #   | Spec says    | Actual code         | Decision             |
+| --- | ------------ | ------------------- | -------------------- |
+| D1  | {spec claim} | {what really holds} | {what we do and why} |
 
 ---
 
-## Post-Mortem (nach Abschluss ausfüllen)
+## Known Limitations (V1 — deliberately excluded)
 
-### Was lief gut
+> Write down explicitly what is NOT being built. Prevents scope creep, sets expectations.
 
-- {Punkt 1}
-- {Punkt 2}
-
-### Was lief schlecht
-
-- {Punkt 1 + wie wir es beim nächsten Mal vermeiden}
-- {Punkt 2 + wie wir es beim nächsten Mal vermeiden}
-
-### Metriken
-
-| Metrik                    | Geplant | Tatsächlich |
-| ------------------------- | ------- | ----------- |
-| Sessions                  | {N}     | {N}         |
-| Migrationsdateien         | {N}     | {N}         |
-| Neue Backend-Dateien      | {N}     | {N}         |
-| Neue Frontend-Dateien     | {N}     | {N}         |
-| Geänderte Dateien         | {N}     | {N}         |
-| Unit Tests                | {N}     | {N}         |
-| API Tests                 | {N}     | {N}         |
-| ESLint Errors bei Release | 0       | {N}         |
-| Spec Deviations           | 0       | {N}         |
+1. **{Limitation A}** — {why not in V1, alternative}
+2. **{Limitation B}** — {why not in V1, alternative}
+3. **{Limitation C}** — {why not in V1, alternative}
 
 ---
 
-**Dieses Dokument ist der Execution Plan. Jede Session startet hier,
-nimmt das nächste unchecked Item, und markiert es als done.**
+## Post-Mortem (fill after completion)
 
-```
+### What went well
 
-```
+- {point 1}
+- {point 2}
+
+### What went badly
+
+- {point 1 + how we avoid it next time}
+- {point 2 + how we avoid it next time}
+
+### Metrics
+
+| Metric                                   | Planned | Actual |
+| ---------------------------------------- | ------- | ------ |
+| Sessions                                 | {N}     | {N}    |
+| Migration files                          | {N}     | {N}    |
+| New backend files                        | {N}     | {N}    |
+| New frontend files                       | {N}     | {N}    |
+| Changed files                            | {N}     | {N}    |
+| Unit tests                               | {N}     | {N}    |
+| API tests                                | {N}     | {N}    |
+| ESLint errors at release                 | 0       | {N}    |
+| Spec deviations                          | 0       | {N}    |
+| _(OPTIMIZATION)_ Metric delta vs. target | {Δ}     | {Δ}    |
 
 ---
 
-## Anhang: Regeln für einen guten Masterplan
+**This document is the execution plan. Every session starts here, takes the next unchecked
+item, and marks it done. No coding starts before Phase 0 is green. For OPTIMIZATION plans,
+no real code starts before Phase H is CONFIRMED.**
+````
 
-### 1. Abhängigkeitsreihenfolge ist heilig
+---
+
+## Rules for a Good Masterplan
+
+### 1. Dependency order is sacred
 
 ```
-Phase 1 (DB) → Phase 2 (Backend) → Phase 3 (Unit Tests) → Phase 4 (API Tests) → Phase 5 (Frontend) → Phase 6 (Integration)
+FEATURE:      Phase 0 → 1 (DB) → 2 (Backend) → 3 (Unit) → 4 (API) → 5 (Frontend) → 6 (Integration + ADR)
+OPTIMIZATION: Phase 0 → 0.4 (Baseline) → 0.5 (Hypothesis) → H (Probe) → [only if CONFIRMED] 1–5 → 6 (+ §Z Delta)
 ```
 
-Niemals Phase 5 starten, bevor Phase 2 mindestens die Endpoints hat. Niemals Phase 3 starten, bevor Phase 2 die Services hat. Die Reihenfolge ist nicht verhandelbar.
+Never start Phase 5 before Phase 2 has at least the endpoints. Never start Phase 3 before
+Phase 2 has the services. The order is not negotiable. For optimizations, never start Phase
+1 before Phase H is CONFIRMED.
 
-### 2. Definition of Done = Vertrag mit dir selbst
+### 2. Definition of Done = contract with yourself
 
-Jede Phase hat eine DoD. Jeder Punkt ist eine Checkbox. Du darfst die nächste Phase NICHT starten, bevor alle Checkboxen der aktuellen Phase grün sind. Ausnahmen sind erlaubt — aber müssen mit Begründung dokumentiert werden.
+Every phase has a DoD. Every item is a checkbox. You may NOT start the next phase until
+every checkbox of the current phase is green. Exceptions are allowed but must be documented
+with justification.
 
-### 3. Session = Atomare Einheit
+### 3. Session = atomic unit
 
-Eine Session hat:
+A session has:
 
-- **Ein Ziel** (nicht fünf)
-- **Verifikation am Ende** (ESLint, Type-Check, Tests)
-- **Protokoll** (was wurde gemacht, was wich ab)
+- **One goal** (not five)
+- **Verification at the end** (ESLint, type-check, tests, _for OPT: metric_)
+- **A log entry** (what was done, what deviated)
 
-Wenn du eine Session nicht sauber abschließen kannst, ist sie zu groß. Teile sie auf.
+If you cannot close a session cleanly, it is too big — split it.
 
-### 4. Verifikation ist nicht optional
+### 4. Verification is not optional
 
-Nach JEDER Session:
+After EVERY session:
 
 ```bash
 # Backend
@@ -631,34 +782,65 @@ cd frontend && pnpm exec svelte-check --tsconfig ./tsconfig.json
 docker exec assixx-backend pnpm exec vitest run backend/src/nest/{feature}/
 ```
 
-Wenn du das nicht machst, akkumulierst du Schulden. Schulden kosten Zinsen. Session 22 im Vacation-Plan war ein reiner Refactoring-Session, weil die Datei über 800 Zeilen wuchs. Das hätte man früher fangen können.
+For OPTIMIZATION sessions also re-check the metric — lint-green is NOT DONE if the number
+hasn't moved.
 
-### 5. Risk Register ernst nehmen
+### 5. Take the risk register seriously
 
-Jedes identifizierte Risiko braucht:
+Every identified risk needs:
 
-- **Impact** (was passiert im Worst Case)
-- **Mitigation** (was tun wir dagegen)
-- **Verifikation** (wie prüfen wir, dass die Mitigation wirkt)
+- **Impact** (what happens in the worst case)
+- **Mitigation** (what we do about it)
+- **Verification** (how we check the mitigation works)
 
-"Aufpassen" ist keine Mitigation. "Unit Test für Szenario X" ist eine.
+"Be careful" is not a mitigation. "Unit test for scenario X" is.
 
-### 6. Spec Deviations sofort dokumentieren
+### 6. Document spec deviations immediately
 
-Wenn der Spec etwas sagt, der Code aber anders funktioniert → SOFORT in die Deviations-Tabelle. Nicht "merke ich mir" — aufschreiben. Session 5 im Vacation-Plan hat 3 Deviations gefunden, die ohne Dokumentation zu Bugs geführt hätten.
+If the spec says one thing and the code does another, put it in the deviations table
+IMMEDIATELY — not "I'll remember". Written down.
 
-### 7. Known Limitations = Anti-Scope-Creep
+### 7. Known Limitations = anti-scope-creep
 
-Schreibe explizit auf, was du NICHT baust. Das verhindert:
+Explicitly write what you are NOT building. Prevents:
 
-- Scope Creep ("ach, könnten wir nicht auch noch...")
-- Falsche Erwartungen ("ich dachte das kann auch X")
-- Endlose Sessions ("nur noch dieses eine Feature...")
+- Scope creep ("while we're in there, could we also…")
+- Wrong expectations ("I thought this also covered X")
+- Endless sessions ("just one more thing…")
 
-### 8. Masterplan IMMER auf Englisch
+### 8. Masterplan ALWAYS in English
 
-Der gesamte Masterplan — Phasen, Steps, Session-Protokolle, Risk Register, Spec Deviations, Known Limitations, Post-Mortem — wird auf Englisch geschrieben. Keine Ausnahmen. Deutsche Labels/Texte im Frontend-Code sind davon unberührt, aber die Dokumentation des Plans ist Englisch.
+The entire masterplan — phases, steps, session logs, risk register, spec deviations,
+known limitations, post-mortem — is written in English. No exceptions. German labels /
+texts in frontend UI are fine; the plan itself is English.
 
-### 9. Post-Mortem = Lernen für das nächste Feature
+### 9. Post-mortem = learning for the next plan
 
-Nach Abschluss: Was lief gut? Was lief schlecht? Konkrete Metriken (geplant vs. tatsächlich). Das ist kein Overhead — das ist Investment in dein zukünftiges Ich.
+After completion: what went well? What went badly? Concrete metrics (planned vs. actual).
+This is not overhead — it is investment in your future self.
+
+### 10. _(OPTIMIZATION only)_ PROVE before PRESCRIBE
+
+Do not write Phase 1+ code until Phase H has produced a numeric CONFIRMED verdict. Framework
+documentation is NOT proof — it describes intent, not observed runtime behavior. Lint-green
+is NOT proof of performance. The probe is the only proof.
+
+**Failure mode this rule exists to prevent** (2026-04-15 post-mortem):
+
+- Identified a backend log pattern (5 redundant fetch bursts per 5-nav sequence) ✅
+- Wrote a 600-line masterplan + ADR marking the fix "Accepted" ❌ (before probing)
+- Implemented all three invalidation triggers + the `depends()` refactor ❌ (still no probe)
+- Finally pulled the logs after Phase 3 — discovered the fix did **nothing** (SvelteKit
+  server loads rerun every navigation regardless of `depends()`) ❌
+- Net impact: hours wasted, all changes discarded.
+
+A 10-minute probe (one `console.log` in the load + 5 clicks) would have killed the plan
+at Phase H. That is the entire point of the proof-gate.
+
+---
+
+## Related
+
+- [HOW-TO-TEST-WITH-VITEST.md](./HOW-TO-TEST-WITH-VITEST.md) — writing API integration tests
+- [HOW-TO-INTEGRATE-FEATURE.md](./HOW-TO-INTEGRATE-FEATURE.md) — addon integration checklist
+- `CLAUDE-KAIZEN-MANIFEST.md` — failure catalogue (root of repo, if present)

@@ -5,7 +5,7 @@
 
 import { STATUS_TEXT_MAP, STATUS_BADGE_CLASS_MAP } from './constants';
 
-import type { Area, BufferData, Department, QuestionType, Team, UserRole } from './types';
+import type { BufferData, QuestionType } from './types';
 
 /**
  * Convert Buffer to string
@@ -167,72 +167,34 @@ export function validateEndDateInFuture(endDate: string): boolean {
 }
 
 // =============================================================================
-// PERMISSION-BASED ORG DATA FILTERING
+// COMPANY-WIDE ASSIGNMENT GATE
 // =============================================================================
 
 /**
- * User context needed for permission filtering
+ * Minimal user fields needed to decide company-wide assignment capability.
  */
 export interface CurrentUserContext {
   userId: number;
-  role: UserRole;
+  role: string;
   hasFullAccess: boolean;
 }
 
 /**
- * Result of filtering org data by user permissions
- */
-export interface FilteredOrgData {
-  canAssignCompanyWide: boolean;
-  areas: Area[];
-  departments: Department[];
-  teams: Team[];
-}
-
-/**
- * Filter areas/departments/teams based on user's leadership permissions.
+ * Whether the user may target the ENTIRE tenant with a new survey.
  *
- * Rules:
- * - root or hasFullAccess → everything visible, can assign company-wide
- * - Areas: only where user is area_lead_id
- * - Departments: where user is department_lead_id OR dept's area is led by user
- * - Teams: where team's department is in the user's manageable departments
+ * Only root and admins with full access may assign company-wide.
+ * Any scoped user (area/dept/team lead, deputy, scoped admin) must pick
+ * concrete Areas/Departments/Teams — backend enforces the same rule via
+ * scope-checked assignment writes.
+ *
+ * Area/Department/Team dropdown contents are NOT filtered client-side:
+ * the backend `/areas`, `/departments`, `/teams` endpoints already
+ * return scope-limited data via `ScopeService` (ADR-036 #4). Duplicating
+ * that filter here would diverge for deputy-leads (ADR-039 toggle).
+ *
+ * @see docs/infrastructure/adr/ADR-036-organizational-scope-access-control.md
+ * @see docs/infrastructure/adr/ADR-045-permission-visibility-design.md
  */
-export function filterOrgDataByPermissions(
-  user: CurrentUserContext,
-  areas: Area[],
-  departments: Department[],
-  teams: Team[],
-): FilteredOrgData {
-  if (user.role === 'root' || user.hasFullAccess) {
-    return { canAssignCompanyWide: true, areas, departments, teams };
-  }
-
-  const ledAreaIds = new Set(areas.filter((a) => a.areaLeadId === user.userId).map((a) => a.id));
-
-  const filteredAreas = areas.filter((a) => ledAreaIds.has(a.id));
-
-  const managedDeptIds = new Set(
-    departments
-      .filter(
-        (d) =>
-          d.departmentLeadId === user.userId ||
-          (d.areaId !== undefined && ledAreaIds.has(d.areaId)),
-      )
-      .map((d) => d.id),
-  );
-
-  const filteredDepartments = departments.filter((d) => managedDeptIds.has(d.id));
-
-  const filteredTeams = teams.filter(
-    (t) =>
-      t.departmentId !== undefined && t.departmentId !== null && managedDeptIds.has(t.departmentId),
-  );
-
-  return {
-    canAssignCompanyWide: false,
-    areas: filteredAreas,
-    departments: filteredDepartments,
-    teams: filteredTeams,
-  };
+export function canAssignSurveyCompanyWide(user: CurrentUserContext): boolean {
+  return user.role === 'root' || (user.role === 'admin' && user.hasFullAccess);
 }

@@ -190,30 +190,30 @@
 
 > **Modell:** Core + À-la-carte Addons (keine Plan-Tiers mehr, siehe ADR-033)
 
-| Addon                 | Typ     | Preis/Monat | Status         |
-| --------------------- | ------- | ----------- | -------------- |
-| Dashboard             | Core    | —           | Live           |
-| Mitarbeiterverwaltung | Core    | —           | Live           |
-| Abteilungen           | Core    | —           | Live           |
-| Teams                 | Core    | —           | Live           |
-| Kalender              | Core    | —           | Live           |
-| Schwarzes Brett       | Core    | —           | Live           |
-| Einstellungen         | Core    | —           | Live           |
-| Benachrichtigungen    | Core    | —           | Live           |
-| Organisationsstruktur | Core    | —           | Live           |
-| Freigaben             | Core    | —           | Live           |
-| Dokumente             | Kaufbar | €10         | Live           |
-| Schichtplanung        | Kaufbar | €10         | Live           |
-| Chat                  | Kaufbar | €10         | Live           |
-| Umfragen              | Kaufbar | €10         | Live           |
-| KVP                   | Kaufbar | €10         | Live           |
-| Urlaubsverwaltung     | Kaufbar | €10         | Live           |
-| TPM / Wartung         | Kaufbar | €10         | Live           |
-| Arbeitsaufträge       | Kaufbar | €10         | Live           |
-| Anlagen & Maschinen   | Kaufbar | €10         | Live           |
-| Berichte              | Kaufbar | €10         | Live           |
-| Protokoll & Audit     | Kaufbar | €10         | Live           |
-| Platzhalter-Benutzer  | Kaufbar | €10         | Live           |
+| Addon                 | Typ     | Preis/Monat | Status |
+| --------------------- | ------- | ----------- | ------ |
+| Dashboard             | Core    | —           | Live   |
+| Mitarbeiterverwaltung | Core    | —           | Live   |
+| Abteilungen           | Core    | —           | Live   |
+| Teams                 | Core    | —           | Live   |
+| Kalender              | Core    | —           | Live   |
+| Schwarzes Brett       | Core    | —           | Live   |
+| Einstellungen         | Core    | —           | Live   |
+| Benachrichtigungen    | Core    | —           | Live   |
+| Organisationsstruktur | Core    | —           | Live   |
+| Freigaben             | Core    | —           | Live   |
+| Dokumente             | Kaufbar | €10         | Live   |
+| Schichtplanung        | Kaufbar | €10         | Live   |
+| Chat                  | Kaufbar | €10         | Live   |
+| Umfragen              | Kaufbar | €10         | Live   |
+| KVP                   | Kaufbar | €10         | Live   |
+| Urlaubsverwaltung     | Kaufbar | €10         | Live   |
+| TPM / Wartung         | Kaufbar | €10         | Live   |
+| Arbeitsaufträge       | Kaufbar | €10         | Live   |
+| Anlagen & Maschinen   | Kaufbar | €10         | Live   |
+| Berichte              | Kaufbar | €10         | Live   |
+| Protokoll & Audit     | Kaufbar | €10         | Live   |
+| Platzhalter-Benutzer  | Kaufbar | €10         | Live   |
 
 ## Preismodell
 
@@ -284,7 +284,7 @@
 
 ### Q1 2025
 
-- [ ] Survey Tool (Completion)
+- [x] Survey Tool → **Live als "Umfragen" (2026-04-14, canManageSurveys + ADR-020 Permissions)**
 - [ ] Email Notifications
 - [ ] Extended Search Functionality
 

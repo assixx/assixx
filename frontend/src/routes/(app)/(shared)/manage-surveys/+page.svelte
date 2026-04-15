@@ -32,7 +32,7 @@
     questionTypeNeedsOptions,
     getTextFromBuffer,
     toBool,
-    filterOrgDataByPermissions,
+    canAssignSurveyCompanyWide,
   } from './_lib/utils';
 
   import type { PageData } from './$types';
@@ -57,10 +57,10 @@
   const teams = $derived(data.teams);
   const areas = $derived(data.areas);
 
-  // Permission-filtered org data for the assignment form
-  const filteredOrgData = $derived(
-    filterOrgDataByPermissions(data.currentUser, areas, departments, teams),
-  );
+  // ADR-036 #4: Backend `/areas`, `/departments`, `/teams` already scope-filter
+  // via ScopeService — client trusts the returned data. The only remaining
+  // client-side permission gate is "company-wide" (root / admin-full only).
+  const canAssignCompanyWide = $derived(canAssignSurveyCompanyWide(data.currentUser));
 
   // Derived computed values
   const activeSurveys = $derived(surveys.filter((s) => s.status === 'active'));
@@ -164,7 +164,7 @@
     const formState = await loadSurveyForEdit(surveyId);
     if (formState !== null) {
       // Reset company-wide if user lacks permission (UX guard, backend enforces too)
-      if (!filteredOrgData.canAssignCompanyWide && formState.formCompanyWide) {
+      if (!canAssignCompanyWide && formState.formCompanyWide) {
         formState.formCompanyWide = false;
       }
       applyFormState(formState);
@@ -458,10 +458,10 @@
     bind:formSelectedDepartments
     bind:formSelectedTeams
     bind:formQuestions
-    departments={filteredOrgData.departments}
-    teams={filteredOrgData.teams}
-    areas={filteredOrgData.areas}
-    canAssignCompanyWide={filteredOrgData.canAssignCompanyWide}
+    {departments}
+    {teams}
+    {areas}
+    {canAssignCompanyWide}
     onclose={handleCloseModal}
     onsavedraft={() => handleSaveSurvey('draft')}
     onsaveactive={() => handleSaveSurvey('active')}

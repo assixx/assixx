@@ -41,7 +41,6 @@ import {
   Query,
   Res,
   UploadedFile,
-  UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@webundsoehne/nest-fastify-file-upload';
@@ -52,14 +51,13 @@ import { attachmentHeader, inlineHeader } from '../../utils/content-disposition.
 import { CurrentUser } from '../common/decorators/current-user.decorator.js';
 import { RequireAddon } from '../common/decorators/require-addon.decorator.js';
 import { RequirePermission } from '../common/decorators/require-permission.decorator.js';
-import { Roles } from '../common/decorators/roles.decorator.js';
 import { TenantId } from '../common/decorators/tenant.decorator.js';
-import { RolesGuard } from '../common/guards/roles.guard.js';
 import type { NestAuthUser } from '../common/interfaces/auth.interface.js';
 import type { MulterFile } from '../common/interfaces/multer.interface.js';
 import type {
   BlackboardComment,
   BlackboardEntryResponse,
+  BlackboardMyPermissions,
   PaginatedBlackboardComments,
   PaginatedEntriesResult,
 } from './blackboard.service.js';
@@ -128,6 +126,17 @@ interface CommentCreatedResponse {
 @RequireAddon('blackboard')
 export class BlackboardController {
   constructor(private readonly blackboardService: BlackboardService) {}
+
+  /**
+   * GET /blackboard/my-permissions
+   * Return the calling user's effective blackboard permissions (ADR-045 Layer 2).
+   * Gated by `canRead` on posts — any user who can see the blackboard may query this.
+   */
+  @Get('my-permissions')
+  @RequirePermission(BB_ADDON, BB_POSTS, 'canRead')
+  async getMyPermissions(@CurrentUser() user: NestAuthUser): Promise<BlackboardMyPermissions> {
+    return await this.blackboardService.getMyPermissions(user.id, user.hasFullAccess);
+  }
 
   /**
    * GET /blackboard/entries
@@ -211,11 +220,11 @@ export class BlackboardController {
 
   /**
    * POST /blackboard/entries
-   * Create a new entry (admin/root only)
+   * Create a new entry. Gate: `blackboard.blackboard-posts.canWrite` (ADR-045).
+   * Permission resolves Role/Lead/Deputy/Full-Access via the Permission-Resolver;
+   * no role-whitelist needed here (see ADR-045).
    */
   @Post('entries')
-  @UseGuards(RolesGuard)
-  @Roles('admin', 'root')
   @RequirePermission(BB_ADDON, BB_POSTS, 'canWrite')
   @HttpCode(HttpStatus.CREATED)
   async createEntry(
@@ -228,11 +237,10 @@ export class BlackboardController {
 
   /**
    * PUT /blackboard/entries/:id
-   * Update an entry (admin/root only)
+   * Update an entry. Gate: `blackboard.blackboard-posts.canWrite` + Creator-Bypass
+   * (ADR-045 — service checks `authorId === user.id` for own posts).
    */
   @Put('entries/:id')
-  @UseGuards(RolesGuard)
-  @Roles('admin', 'root')
   @RequirePermission(BB_ADDON, BB_POSTS, 'canWrite')
   async updateEntry(
     @Param('id') id: string,
@@ -246,11 +254,10 @@ export class BlackboardController {
 
   /**
    * DELETE /blackboard/entries/:id
-   * Delete an entry (admin/root only)
+   * Delete an entry. Gate: `blackboard.blackboard-posts.canDelete` + Creator-Bypass
+   * (ADR-045 — service checks `authorId === user.id` for own posts).
    */
   @Delete('entries/:id')
-  @UseGuards(RolesGuard)
-  @Roles('admin', 'root')
   @RequirePermission(BB_ADDON, BB_POSTS, 'canDelete')
   async deleteEntry(
     @Param('id') id: string,
@@ -263,11 +270,9 @@ export class BlackboardController {
 
   /**
    * POST /blackboard/entries/:id/archive
-   * Archive an entry (admin/root only)
+   * Archive an entry. Gate: `blackboard.blackboard-archive.canWrite` (ADR-045).
    */
   @Post('entries/:id/archive')
-  @UseGuards(RolesGuard)
-  @Roles('admin', 'root')
   @RequirePermission(BB_ADDON, BB_ARCHIVE, 'canWrite')
   @HttpCode(HttpStatus.OK)
   async archiveEntry(
@@ -282,11 +287,9 @@ export class BlackboardController {
 
   /**
    * POST /blackboard/entries/:id/unarchive
-   * Unarchive an entry (admin/root only)
+   * Unarchive an entry. Gate: `blackboard.blackboard-archive.canWrite` (ADR-045).
    */
   @Post('entries/:id/unarchive')
-  @UseGuards(RolesGuard)
-  @Roles('admin', 'root')
   @RequirePermission(BB_ADDON, BB_ARCHIVE, 'canWrite')
   async unarchiveEntry(
     @Param('id') id: string,
@@ -329,11 +332,11 @@ export class BlackboardController {
 
   /**
    * GET /blackboard/entries/:id/confirmations
-   * Get confirmation status for an entry (admin/root only)
+   * Get confirmation status for an entry. Gate: `blackboard.blackboard-posts.canRead`
+   * on a management-scoped endpoint — Non-Managers typically won't have this in
+   * their UI even if they have `canRead` on posts (frontend hides it) (ADR-045).
    */
   @Get('entries/:id/confirmations')
-  @UseGuards(RolesGuard)
-  @Roles('admin', 'root')
   @RequirePermission(BB_ADDON, BB_POSTS, 'canRead')
   async getConfirmationStatus(
     @Param('id') id: string,
@@ -401,11 +404,10 @@ export class BlackboardController {
 
   /**
    * DELETE /blackboard/comments/:commentId
-   * Delete a comment (admin/root only). Replies cascade-delete.
+   * Delete a comment. Gate: `blackboard.blackboard-comments.canDelete` (ADR-045).
+   * Replies cascade-delete.
    */
   @Delete('comments/:commentId')
-  @UseGuards(RolesGuard)
-  @Roles('admin', 'root')
   @RequirePermission(BB_ADDON, BB_COMMENTS, 'canDelete')
   async deleteComment(
     @Param('commentId', ParseIntPipe) commentId: number,
@@ -420,11 +422,10 @@ export class BlackboardController {
 
   /**
    * POST /blackboard/entries/:id/attachments
-   * Upload attachment to an entry (admin/root only)
+   * Upload attachment to an entry. Gate: `blackboard.blackboard-posts.canWrite`
+   * + Creator-Bypass in service (ADR-045).
    */
   @Post('entries/:id/attachments')
-  @UseGuards(RolesGuard)
-  @Roles('admin', 'root')
   @RequirePermission(BB_ADDON, BB_POSTS, 'canWrite')
   @UseInterceptors(FileInterceptor('attachment', multerOptions))
   @HttpCode(HttpStatus.CREATED)
@@ -536,11 +537,10 @@ export class BlackboardController {
 
   /**
    * DELETE /blackboard/attachments/:attachmentId
-   * Delete attachment (admin/root only)
+   * Delete attachment. Gate: `blackboard.blackboard-posts.canDelete`
+   * + Creator-Bypass in service (ADR-045).
    */
   @Delete('attachments/:attachmentId')
-  @UseGuards(RolesGuard)
-  @Roles('admin', 'root')
   @RequirePermission(BB_ADDON, BB_POSTS, 'canDelete')
   async deleteAttachment(
     @Param() params: AttachmentIdParamDto,

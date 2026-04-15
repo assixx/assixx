@@ -12,12 +12,14 @@ ADRs document important architectural decisions:
 
 ## ADR Status
 
-| Status         | Meaning                                  |
-| -------------- | ---------------------------------------- |
-| **Proposed**   | Proposed, not yet decided                |
-| **Accepted**   | Accepted and implemented                 |
-| **Deprecated** | Outdated, superseded by a newer decision |
-| **Superseded** | Replaced by ADR-XXX                      |
+| Status         | Meaning                                                  |
+| -------------- | -------------------------------------------------------- |
+| **Proposed**   | Proposed, not yet decided                                |
+| **Accepted**   | Accepted and implemented                                 |
+| **Deprecated** | Outdated, superseded by a newer decision                 |
+| **Superseded** | Replaced by ADR-XXX                                      |
+| **Active**     | Implementation plan in progress (tracks an Accepted ADR) |
+| **Completed**  | Implementation plan finished (tracks an Accepted ADR)    |
 
 ## Index
 
@@ -32,15 +34,18 @@ ADRs document important architectural decisions:
 | [ADR-007](./ADR-007-api-response-standardization.md)                         | API Response Standardization                                 | Accepted   | 2026-01-14 |
 | [ADR-008](./ADR-008-dependency-version-management.md)                        | Dependency Version Management                                | Accepted   | 2026-01-15 |
 | [ADR-009](./ADR-009-central-audit-logging.md)                                | Central Audit Logging Architecture                           | Accepted   | 2026-01-15 |
+| [ADR-009 Plan](./ADR-009-implementation-plan.md)                             | ADR-009 Implementation Plan                                  | Completed  | 2026-01-19 |
 | [ADR-010](./ADR-010-user-role-assignment-permissions.md)                     | User Role Assignment & Permissions                           | Accepted   | 2026-01-22 |
 | [ADR-011](./ADR-011-shift-data-architecture.md)                              | Shift Data Architecture & Sync                               | Accepted   | 2026-01-25 |
 | [ADR-012](./ADR-012-frontend-route-security-groups.md)                       | Frontend Route Security Groups                               | Accepted   | 2026-01-26 |
+| [ADR-012 Plan](./ADR-012-implementation-plan.md)                             | ADR-012 Implementation Plan                                  | Completed  | 2026-01-26 |
 | [ADR-013](./ADR-013-ci-cd-pipeline-hardening.md)                             | CI/CD Pipeline Hardening                                     | Accepted   | 2026-01-26 |
 | [ADR-014](./ADR-014-database-migration-architecture.md)                      | Database & Migration Architecture                            | Accepted   | 2026-01-27 |
+| [ADR-014 Plan](./ADR-014-implementation-plan.md)                             | ADR-014 Implementation Plan                                  | Completed  | 2026-01-27 |
 | [ADR-015](./ADR-015-shared-package-architecture.md)                          | Shared Package Architecture & Plan                           | Accepted   | 2026-01-30 |
 | [ADR-016](./ADR-016-tenant-customizable-seed-data.md)                        | Tenant-Customizable Seed Data                                | Accepted   | 2026-02-02 |
 | [ADR-017](./ADR-017-design-system-theming-architecture.md)                   | Design System Theming Architecture                           | Accepted   | 2026-02-02 |
-| [ADR-017 Plan](./ADR-017-IMPLEMENTATION-PLAN.md)                             | ADR-017 Implementation Plan                                  | Active     | 2026-02-02 |
+| [ADR-017 Plan](./ADR-017-implementation-plan.md)                             | ADR-017 Implementation Plan                                  | Active     | 2026-02-02 |
 | [ADR-018](./ADR-018-testing-strategy.md)                                     | Testing Strategy (Unit + API)                                | Accepted   | 2026-02-04 |
 | [ADR-019](./ADR-019-multi-tenant-rls-isolation.md)                           | Multi-Tenant RLS Data Isolation                              | Accepted   | 2026-02-07 |
 | [ADR-020](./ADR-020-per-user-feature-permissions.md)                         | Per-User Feature Permission Control                          | Accepted   | 2026-02-07 |
@@ -68,6 +73,7 @@ ADRs document important architectural decisions:
 | [ADR-042](./ADR-042-multipart-file-upload-pipeline.md)                       | Multipart File Upload Pipeline (Fastify + Multer Bridge)     | Accepted   | 2026-04-08 |
 | [ADR-043](./ADR-043-postgresql-18-upgrade.md)                                | PostgreSQL 17 → 18 Major Upgrade                             | Accepted   | 2026-04-10 |
 | [ADR-044](./ADR-044-seo-and-security-headers.md)                             | SEO Infrastructure & Security Headers                        | Accepted   | 2026-04-11 |
+| [ADR-045](./ADR-045-permission-visibility-design.md)                         | Permission & Visibility Design — "Wer darf was?"             | Accepted   | 2026-04-15 |
 
 ## Template
 

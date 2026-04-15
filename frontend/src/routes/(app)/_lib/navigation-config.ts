@@ -527,15 +527,26 @@ function buildAdminMenuItems(labels: HierarchyLabels): NavItem[] {
   ];
 }
 
+/**
+ * Employee Blackboard — pinned directly under Dashboard.
+ *
+ * WHY: UX requirement (2026-04-15) — "Schwarzes Brett" must sit immediately
+ * below Dashboard for admin and employee roles. Extracted from
+ * EMPLOYEE_MENU_STATIC so `injectLeadItems()` can anchor teams/employees
+ * AFTER Blackboard instead of between Dashboard and Blackboard.
+ * Enforced by navigation-config.test.ts ("Blackboard pin position").
+ */
+const EMPLOYEE_BLACKBOARD_ITEM: NavItem = {
+  id: 'blackboard',
+  icon: ICONS.pin,
+  label: LABELS.BLACKBOARD,
+  url: '/blackboard',
+  badgeType: 'blackboard',
+  addonCode: 'blackboard',
+};
+
 const EMPLOYEE_MENU_STATIC: NavItem[] = [
-  {
-    id: 'blackboard',
-    icon: ICONS.pin,
-    label: LABELS.BLACKBOARD,
-    url: '/blackboard',
-    badgeType: 'blackboard',
-    addonCode: 'blackboard',
-  },
+  // Blackboard lives in EMPLOYEE_BLACKBOARD_ITEM (pinned above), not here.
   {
     id: 'documents',
     icon: ICONS.document,
@@ -647,6 +658,9 @@ const EMPLOYEE_MENU_STATIC: NavItem[] = [
 function buildEmployeeMenuItems(labels: HierarchyLabels): NavItem[] {
   return [
     { id: 'dashboard', icon: ICONS.home, label: 'Dashboard', url: '/employee-dashboard' },
+    // Blackboard pinned directly after Dashboard (UX requirement 2026-04-15).
+    // Must not be displaced by my-team or lead injection — see injectLeadItems.
+    EMPLOYEE_BLACKBOARD_ITEM,
     { id: 'my-team', icon: ICONS.team, label: `Meine ${labels.team}`, url: '/my-team' },
     ...EMPLOYEE_MENU_STATIC,
   ];
@@ -806,10 +820,19 @@ function injectBeforeProfile(items: NavItem[], item: NavItem): NavItem[] {
   return result;
 }
 
-/** Inject team management items for employee-leads after dashboard */
+/**
+ * Inject team management items for employee-leads.
+ *
+ * Anchor: AFTER Blackboard (UX requirement 2026-04-15 — Blackboard is pinned
+ * directly under Dashboard, lead items must not sit between them). Falls back
+ * to Dashboard when the Blackboard addon is disabled and already stripped by
+ * filterMenuByAddons (pipeline-order agnostic).
+ */
 function injectLeadItems(items: NavItem[], labels: HierarchyLabels): NavItem[] {
+  const blackboardIdx = items.findIndex((i: NavItem) => i.id === 'blackboard');
   const dashboardIdx = items.findIndex((i: NavItem) => i.id === 'dashboard');
-  const insertAt = dashboardIdx >= 0 ? dashboardIdx + 1 : 0;
+  const anchorIdx = blackboardIdx >= 0 ? blackboardIdx : dashboardIdx;
+  const insertAt = anchorIdx >= 0 ? anchorIdx + 1 : 0;
   const leadItems: NavItem[] = [
     {
       id: 'teams',
@@ -902,26 +925,47 @@ export function filterMenuByScope(
 }
 
 /**
- * Single source of truth for "darf der User Umfragen verwalten?".
+ * Canonical Layer-1 Management-Gate per ADR-045.
+ *
+ * Generic "Darf der User dieses Modul verwalten?"-Entscheidung — identisch für
+ * alle Feature-Module (Blackboard, Surveys, KVP-Kategorien, TPM-Config, …).
  *
  * Allowed:
- * - Root (immer)
+ * - Root (immer, by design)
  * - Admin mit `hasFullAccess=true`
  * - Jeder Lead (Team/Area/Department) — `orgScope.isAnyLead` deckt das ab
  * - Deputies mit Lead-Scope — Backend merged Deputy-IDs in `leadXxxIds` wenn
- *   Tenant-Toggle `deputyHasLeadScope` aktiv ist (ADR-039), d.h. `isAnyLead=true`.
+ *   Tenant-Toggle `deputy_has_lead_scope` aktiv ist (ADR-039), d.h. `isAnyLead=true`.
  *
- * Used by:
- * - `+layout.svelte` (sidebar submenu expansion via `applySurveysVariant`)
- * - `/manage-surveys/+page.server.ts` (route guard — redirect to `/surveys` if false)
+ * @see docs/infrastructure/adr/ADR-045-permission-visibility-design.md
  */
-export function canManageSurveys(
+export function canManage(
   role: string | undefined,
   hasFullAccess: boolean,
   isAnyLead: boolean,
 ): boolean {
   return role === 'root' || (role === 'admin' && hasFullAccess) || isAnyLead;
 }
+
+/**
+ * Lesbarkeits-Wrapper für Surveys (delegiert zu `canManage`).
+ *
+ * Used by:
+ * - `+layout.svelte` (sidebar submenu expansion via `applySurveysVariant`)
+ * - `/manage-surveys/+page.server.ts` (route guard — redirect to `/surveys` if false)
+ */
+export const canManageSurveys = canManage;
+
+/**
+ * Lesbarkeits-Wrapper für Blackboard (delegiert zu `canManage`).
+ *
+ * Used by:
+ * - `/blackboard/+page.svelte` (Create-Button-Gate)
+ * - `/blackboard/[uuid]/+page.svelte` (Archive/Unarchive-Button-Gate)
+ *
+ * Edit/Delete eigener Beiträge: zusätzlicher Creator-Bypass im Service.
+ */
+export const canManageBlackboard = canManage;
 
 /**
  * Upgrade the "Umfragen" entry to a submenu with "Meine Umfragen" + "Verwaltung"

@@ -809,3 +809,46 @@ describe('applySurveysVariant: canManage=true', () => {
     expect(findById(result, 'kvp')).toBeDefined();
   });
 });
+
+// =============================================================================
+// BLACKBOARD PIN POSITION — UX requirement 2026-04-15
+// WHY: "Schwarzes Brett" must always sit directly under Dashboard for root,
+//      admin and employee. No my-team, no lead injection in between.
+//      Regression guard — see navigation-config.ts EMPLOYEE_BLACKBOARD_ITEM.
+// =============================================================================
+
+describe('Blackboard pin position (directly under Dashboard)', () => {
+  it('should place blackboard at index 1 for root', () => {
+    const items = getMenuItemsForRole('root');
+    expect(items[0].id).toBe('dashboard');
+    expect(items[1].id).toBe('blackboard');
+  });
+
+  it('should place blackboard at index 1 for admin', () => {
+    const items = getMenuItemsForRole('admin');
+    expect(items[0].id).toBe('dashboard');
+    expect(items[1].id).toBe('blackboard');
+  });
+
+  it('should place blackboard at index 1 for employee (no lead)', () => {
+    const items = getMenuItemsForRole('employee');
+    expect(items[0].id).toBe('dashboard');
+    expect(items[1].id).toBe('blackboard');
+  });
+
+  it('should keep blackboard at index 1 after team-lead injection', () => {
+    const scope = scopeWith({ isTeamLead: true, isAnyLead: true });
+    const result = filterMenuByScope(employeeMenuItems, scope, 'employee');
+
+    expect(result[0].id).toBe('dashboard');
+    expect(result[1].id).toBe('blackboard');
+  });
+
+  it('should keep blackboard at index 1 after admin scope injection', () => {
+    const scope = scopeWith({ type: 'full' });
+    const result = filterMenuByScope(adminMenuItems, scope, 'admin');
+
+    expect(result[0].id).toBe('dashboard');
+    expect(result[1].id).toBe('blackboard');
+  });
+});

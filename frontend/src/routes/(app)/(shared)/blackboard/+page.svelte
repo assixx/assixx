@@ -20,6 +20,9 @@
   import { getApiClient } from '$lib/utils/api-client';
   import { createLogger } from '$lib/utils/logger';
 
+  // ADR-045: Layer-1 management gate (canManage) + Layer-2 fine-grained permissions
+  import { canManageBlackboard } from '../../_lib/navigation-config';
+
   const log = createLogger('BlackboardPage');
 
   // _lib/ imports
@@ -55,6 +58,17 @@
   const departments = $derived(data.departments);
   const teams = $derived(data.teams);
   const areas = $derived(data.areas);
+
+  // ADR-045 Layer 1 (Management-Gate): role + hasFullAccess + isAnyLead
+  // ADR-045 Layer 2 (Fine-grained): own effective canWrite for posts
+  const canManage = $derived(
+    canManageBlackboard(
+      data.user?.role ?? 'employee',
+      data.user?.hasFullAccess ?? false,
+      data.orgScope.isAnyLead,
+    ),
+  );
+  const canCreateEntry = $derived(canManage && data.myPermissions.posts.canWrite);
 
   // API Client for mutations
   const apiClient = getApiClient();
@@ -111,15 +125,6 @@
   let formTeamIds = $state<number[]>([]);
   let formAreaIds = $state<number[]>([]);
   let attachmentFiles = $state<File[] | null>(null);
-
-  // User State (client-side only - from localStorage)
-  let userRole = $state<string | null>(null);
-
-  // =============================================================================
-  // DERIVED VALUES
-  // =============================================================================
-
-  const isAdmin = $derived(userRole === 'admin' || userRole === 'root');
 
   // =============================================================================
   // URL NAVIGATION HELPERS (Level 3: goto() instead of fetchEntries())
@@ -396,15 +401,6 @@
   // LIFECYCLE
   // =============================================================================
 
-  // Set userRole from localStorage (client-side only for isAdmin check)
-  let mounted = false;
-  $effect(() => {
-    if (!mounted) {
-      mounted = true;
-      userRole = localStorage.getItem('activeRole') ?? localStorage.getItem('userRole');
-    }
-  });
-
   // Handle edit URL parameter - load entry and open edit modal
   let lastEditUuid = '';
   $effect(() => {
@@ -491,7 +487,7 @@
             onclick={toggleFullscreen}><i class="fas fa-expand"></i></button
           >
         </div>
-        {#if isAdmin}
+        {#if canCreateEntry}
           <button
             type="button"
             class="btn btn-primary"

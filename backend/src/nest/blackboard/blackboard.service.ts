@@ -20,6 +20,7 @@ import { BlackboardEntriesService } from './blackboard-entries.service.js';
 import type {
   BlackboardComment,
   BlackboardEntryResponse,
+  BlackboardMyPermissions,
   EntryFilters,
   PaginatedBlackboardComments,
   PaginatedEntriesResult,
@@ -30,6 +31,7 @@ import type { UpdateEntryDto } from './dto/update-entry.dto.js';
 // Re-export types for consumers
 export type {
   BlackboardEntryResponse,
+  BlackboardMyPermissions,
   PaginatedEntriesResult,
   PaginatedBlackboardComments,
   BlackboardComment,
@@ -46,6 +48,14 @@ export class BlackboardService {
     private readonly confirmationsService: BlackboardConfirmationsService,
     private readonly attachmentsService: BlackboardAttachmentsService,
   ) {}
+
+  // ==========================================================================
+  // ADR-045 LAYER-2 SELF-LOOKUP
+  // ==========================================================================
+
+  async getMyPermissions(userId: number, hasFullAccess: boolean): Promise<BlackboardMyPermissions> {
+    return await this.entriesService.getMyPermissions(userId, hasFullAccess);
+  }
 
   // ==========================================================================
   // ENTRY OPERATIONS (delegated to BlackboardEntriesService)

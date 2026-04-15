@@ -79,6 +79,7 @@ Use `AskUserQuestion` whenever anything is unclear — keep asking until you 100
 - Use TypeScript types (no `any`)
 - Use MCP Tools before anything else
 - Apply best-practice methods
+- Write all code comments and documentation (JSDoc, inline comments) in English.
 
 ---
 
@@ -114,7 +115,16 @@ Read whole files.
 11. [docs/how-to/README.md](./docs/how-to/README.md) (HOW-TO Guide Katalog)
 12. [docs/CODE-OF-CONDUCT-SVELTE.md](./docs/CODE-OF-CONDUCT-SVELTE.md)
 13. [docs/PRODUCTION-AND-DEVELOPMENT-TESTING.md](./docs/PRODUCTION-AND-DEVELOPMENT-TESTING.md) (Docker/Nginx/SvelteKit setup)
-14. All ADRs in [docs/infrastructure/adr/](./docs/infrastructure/adr/)
+14. **Essential ADRs** (immer lesen — Core-Architektur, Daten-Isolation, Terminologie-Fallen):
+    - [ADR-006](./docs/infrastructure/adr/ADR-006-multi-tenant-context-isolation.md) Multi-Tenant Context Isolation — `tenant_id` niemals vermischen
+    - [ADR-019](./docs/infrastructure/adr/ADR-019-multi-tenant-rls-isolation.md) Multi-Tenant RLS Isolation — `app_user` mit RLS, `assixx_user` BYPASSRLS
+    - [ADR-033](./docs/infrastructure/adr/ADR-033-addon-based-saas-model.md) Addon-basiertes SaaS-Modell — "Feature" deprecated, "Addon" ist Wahrheit
+    - [ADR-034](./docs/infrastructure/adr/ADR-034-hierarchy-labels-propagation.md) Hierarchy Labels — UI-Label ≠ DB-Spalte (Abteilung kann `area_id` sein)
+    - [ADR-041](./docs/infrastructure/adr/ADR-041-typescript-compiler-configuration.md) TypeScript Strict-Everywhere — strict darf in keinem tsconfig geschwächt werden
+    - [ADR-045](./docs/infrastructure/adr/ADR-045-permission-visibility-design.md) Permission & Visibility Design — 3-Layer-Stack (Addon → Management-Gate → Action-Permission), Meta-ADR
+
+    **Alle weiteren ADRs** bei relevantem Feature lesen: [docs/infrastructure/adr/README.md](./docs/infrastructure/adr/README.md)
+
 15. Fetch Svelte docs: https://svelte.dev/docs/svelte/overview, https://svelte.dev/docs/svelte/what-are-runes, https://svelte.dev/docs/kit/$app-paths#resolve
 16. [docs/COMMON-COMMANDS.md](./docs/COMMON-COMMANDS.md)
 17. Recap fast, then ask user that you're ready
@@ -164,6 +174,7 @@ See [docs/DATABASE-MIGRATION-GUIDE.md](./docs/DATABASE-MIGRATION-GUIDE.md)
 ## Code Standards
 
 - Comment WHY, not WHAT — self-explanatory code needs no comments
+- Every edit must carry key comments explaining the WHY and WHEREFORE with references (ADRs, issues, prior decisions) so intent is traceable — be thorough, not over-commenting.
 - Doc comments (`/** */`) for public APIs and non-obvious logic — no `@param`/`@returns` when TypeScript types are sufficient
 - No `any` — see [docs/TYPESCRIPT-STANDARDS.md](./docs/TYPESCRIPT-STANDARDS.md) for all TypeScript rules
 - KISS
