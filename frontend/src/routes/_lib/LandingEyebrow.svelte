@@ -20,7 +20,9 @@
 
 <p
   class="landing-eyebrow"
-  style="--eyebrow-accent: {accent};"
+  style="
+
+--eyebrow-accent: {accent};"
 >
   {text}
 </p>

@@ -108,7 +108,9 @@
       {#each features as feat, i (feat.num)}
         <article
           class="security-cell security-cell--{feat.area}"
-          style="--accent: {feat.accent}; --cell-delay: {150 + i * 70}ms;"
+          style="
+
+--accent: {feat.accent}; --cell-delay: {150 + i * 70}ms;"
         >
           <span
             class="security-cell__blob"
@@ -328,7 +330,7 @@
       color-mix(in oklch, var(--accent) 26%, transparent) 0%,
       transparent 60%
     );
-    opacity: 0.85;
+    opacity: 85%;
     transition: opacity var(--duration-normal) var(--ease-out);
   }
 
@@ -345,50 +347,50 @@
   }
 
   .security-cell:hover .security-cell__blob {
-    opacity: 1;
+    opacity: 100%;
   }
 
   /* --- Grid placements (Magic UI reference mapping) --- */
 
   /* Center, full-height tall — the hero claim */
   .security-cell--hero {
+    --blob-pos: 50% 12%;
+
     grid-column: 2;
     grid-row: 1 / 4;
     padding: calc(var(--spacing-8) * 1.1);
-
-    --blob-pos: 50% 12%;
   }
 
   /* Left column top (1×2 tall) */
   .security-cell--a {
+    --blob-pos: 88% 85%;
+
     grid-column: 1;
     grid-row: 1 / 3;
-
-    --blob-pos: 88% 85%;
   }
 
   /* Left column bottom (1×1) */
   .security-cell--b {
+    --blob-pos: 15% 50%;
+
     grid-column: 1;
     grid-row: 3;
-
-    --blob-pos: 15% 50%;
   }
 
   /* Right column top (1×1) */
   .security-cell--c {
+    --blob-pos: 80% 20%;
+
     grid-column: 3;
     grid-row: 1;
-
-    --blob-pos: 80% 20%;
   }
 
   /* Right column bottom (1×2 tall) */
   .security-cell--d {
+    --blob-pos: 20% 85%;
+
     grid-column: 3;
     grid-row: 2 / 4;
-
-    --blob-pos: 20% 85%;
   }
 
   /* --- Content --- */
@@ -415,7 +417,7 @@
   .security-cell__num {
     font-weight: 700;
     font-size: 0.8125rem;
-    opacity: 0.85;
+    opacity: 85%;
   }
 
   .security-cell__label {
@@ -456,7 +458,7 @@
     font-size: clamp(2.5rem, 5vw, 3.75rem);
     line-height: 1;
     letter-spacing: -0.04em;
-    opacity: 1;
+    opacity: 100%;
     text-shadow: 0 0 32px color-mix(in oklch, var(--accent) 35%, transparent);
   }
 
