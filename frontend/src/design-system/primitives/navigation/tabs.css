@@ -9,7 +9,7 @@
  * - Glass: Glassmorphic button tabs
  *
  * Usage:
- * <!-- Underline Tabs (default) -->
+ * \3c !-- Underline Tabs (default) -->
  * <div class="tabs">
  *   <div class="tabs__nav">
  *     <button class="tabs__tab tabs__tab--active">Overview</button>
@@ -21,7 +21,7 @@
  *   <div class="tabs__content">Settings content</div>
  * </div>
  *
- * <!-- Glass Tabs -->
+ * \3c !-- Glass Tabs -->
  * <div class="tabs tabs--glass">
  *   <div class="tabs__nav">
  *     <button class="tabs__tab tabs__tab--active">Tab 1</button>

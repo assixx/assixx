@@ -111,24 +111,6 @@ export function getCompletedDate(response: SurveyResponse): string {
 }
 
 /**
- * Get option texts from option IDs
- */
-export function getOptionTexts(question: SurveyQuestion, optionIds: number[]): string {
-  if (!question.options || question.options.length === 0) {
-    return `Option-IDs: ${optionIds.join(', ')}`;
-  }
-
-  const texts = optionIds
-    .map((id) => {
-      const option = question.options?.find((opt) => opt.optionId === id);
-      return option?.optionText ?? `ID ${id}`;
-    })
-    .filter((text) => text !== '');
-
-  return texts.length > 0 ? texts.join(', ') : 'Keine Optionen';
-}
-
-/**
  * Checks if a value is defined (not null and not undefined)
  */
 function isDefined<T>(value: T | null | undefined): value is T {
@@ -136,17 +118,20 @@ function isDefined<T>(value: T | null | undefined): value is T {
 }
 
 /**
- * Get answer display text
+ * Get answer display text for a completed response.
+ *
+ * WHY: the API returns already-resolved option labels (e.g. ["Ja"] for yes_no)
+ * in `answerOptions`, not numeric option IDs. The previous implementation
+ * called `getOptionTexts(question, ids)` with `ids === ["Ja"]`, failed the
+ * `optionId === "Ja"` lookup, and returned the fallback `` `ID ${id}` `` —
+ * hence the visible "ID Ja" bug. Joining the strings directly is correct for
+ * all choice variants and makes the `question` param obsolete.
  */
-export function getAnswerDisplayText(
-  question: SurveyQuestion,
-  answer: ResponseAnswer | undefined,
-): string {
+export function getAnswerDisplayText(answer: ResponseAnswer | undefined): string {
   if (!isDefined(answer)) {
     return 'Keine Antwort';
   }
 
-  // Check answerOptions BEFORE answerDate to prevent option IDs being formatted as dates
   if (isDefined(answer.answerText)) {
     return answer.answerText;
   }
@@ -156,7 +141,7 @@ export function getAnswerDisplayText(
   }
 
   if (isDefined(answer.answerOptions) && answer.answerOptions.length > 0) {
-    return getOptionTexts(question, answer.answerOptions);
+    return answer.answerOptions.join(', ');
   }
 
   if (isDefined(answer.answerDate)) {

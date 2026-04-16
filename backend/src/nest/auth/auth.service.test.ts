@@ -84,6 +84,7 @@ function createAuthUser(overrides: Partial<NestAuthUser> = {}): NestAuthUser {
     tenantId: 10,
     activeRole: 'admin',
     isRoleSwitched: false,
+    hasFullAccess: false,
     ...overrides,
   };
 }
@@ -112,6 +113,23 @@ function setupLoginMocks(db: MockDb, jwt: MockJwt, userOverrides?: Record<string
   jwt.sign
     .mockReturnValueOnce('mock-access-token') // access
     .mockReturnValueOnce('mock-refresh-token'); // refresh
+  db.systemQuery.mockResolvedValueOnce([]); // storeRefreshToken
+  db.systemQuery.mockResolvedValueOnce([]); // updateLastLogin
+  db.systemQuery.mockResolvedValueOnce([]); // logLoginAudit
+}
+
+/**
+ * Set up mocks for `loginWithVerifiedUser` — the password-less login path used
+ * by OAuth (plan §2.5 / §2.6). Identical DB sequence to `setupLoginMocks`
+ * MINUS the bcrypt.compare step (no password to verify).
+ */
+function setupLoginWithVerifiedUserMocks(
+  db: MockDb,
+  jwt: MockJwt,
+  userOverrides?: Record<string, unknown>,
+): void {
+  db.systemQuery.mockResolvedValueOnce([createMockUserRow(userOverrides)]); // findUserById
+  jwt.sign.mockReturnValueOnce('mock-access-token').mockReturnValueOnce('mock-refresh-token');
   db.systemQuery.mockResolvedValueOnce([]); // storeRefreshToken
   db.systemQuery.mockResolvedValueOnce([]); // updateLastLogin
   db.systemQuery.mockResolvedValueOnce([]); // logLoginAudit
@@ -316,6 +334,129 @@ describe('SECURITY: AuthService', () => {
         expect.objectContaining({
           secret: 'test-refresh-secret-for-vitest-unit-tests-minimum-32-characters-long',
         }),
+      );
+    });
+  });
+
+  // =============================================================
+  // loginWithVerifiedUser — OAuth-initiated session bootstrap.
+  // Plan §2.5 / §2.6 (ADR-046). Password-less variant of login() —
+  // caller already proved identity via an external provider (Microsoft).
+  // =============================================================
+
+  describe('loginWithVerifiedUser', () => {
+    const OAUTH_USER_ID = 1;
+    const OAUTH_TENANT_ID = 10;
+    const OAUTH_METHOD = 'oauth-microsoft';
+
+    it('returns tokens + safe user response for an OAuth-verified user', async () => {
+      setupLoginWithVerifiedUserMocks(mockDb, mockJwt);
+
+      const result = await service.loginWithVerifiedUser(
+        OAUTH_USER_ID,
+        OAUTH_TENANT_ID,
+        OAUTH_METHOD,
+      );
+
+      expect(result.accessToken).toBe('mock-access-token');
+      expect(result.refreshToken).toBe('mock-refresh-token');
+      expect(result.user.id).toBe(1);
+      expect(result.user.email).toBe('admin@test.de');
+      expect(result.user.role).toBe('admin');
+      expect(result.user.tenantId).toBe(10);
+    });
+
+    it('never calls bcrypt.compare (password path skipped)', async () => {
+      setupLoginWithVerifiedUserMocks(mockDb, mockJwt);
+
+      await service.loginWithVerifiedUser(OAUTH_USER_ID, OAUTH_TENANT_ID, OAUTH_METHOD);
+
+      expect(mockBcryptCompare).not.toHaveBeenCalled();
+    });
+
+    it('throws UnauthorizedException when the user lookup returns empty', async () => {
+      mockDb.systemQuery.mockResolvedValueOnce([]); // findUserById → null
+
+      await expect(
+        service.loginWithVerifiedUser(999, OAUTH_TENANT_ID, OAUTH_METHOD),
+      ).rejects.toThrow(UnauthorizedException);
+    });
+
+    it.each([
+      [0, 'inactive'],
+      [3, 'archived'],
+      [4, 'deleted'],
+    ])('throws ForbiddenException for is_active=%i (%s)', async (isActive) => {
+      mockDb.systemQuery.mockResolvedValueOnce([createMockUserRow({ is_active: isActive })]);
+
+      await expect(
+        service.loginWithVerifiedUser(OAUTH_USER_ID, OAUTH_TENANT_ID, OAUTH_METHOD),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('records the OAuth loginMethod in the audit row (new_values.login_method)', async () => {
+      setupLoginWithVerifiedUserMocks(mockDb, mockJwt);
+
+      await service.loginWithVerifiedUser(OAUTH_USER_ID, OAUTH_TENANT_ID, OAUTH_METHOD);
+
+      // logLoginAudit is the 4th db.systemQuery call (index 3):
+      //   0=findUserById, 1=storeRefreshToken, 2=updateLastLogin, 3=logLoginAudit
+      const auditCall = mockDb.systemQuery.mock.calls[3] as unknown[];
+      const auditParams = auditCall[1] as unknown[];
+      // `new_values` JSON is the 7th bound parameter ($7) in the root_logs INSERT
+      const newValuesParam = auditParams.find(
+        (p) => typeof p === 'string' && p.includes('login_method'),
+      );
+      expect(newValuesParam).toBeDefined();
+      expect(newValuesParam).toContain('"login_method":"oauth-microsoft"');
+    });
+
+    it('forwards ipAddress + userAgent to storeRefreshToken', async () => {
+      setupLoginWithVerifiedUserMocks(mockDb, mockJwt);
+
+      await service.loginWithVerifiedUser(
+        OAUTH_USER_ID,
+        OAUTH_TENANT_ID,
+        OAUTH_METHOD,
+        '192.168.1.1',
+        'Mozilla/5.0',
+      );
+
+      // storeRefreshToken is the 2nd db.systemQuery call (index 1)
+      const storeParams = mockDb.systemQuery.mock.calls[1]?.[1] as unknown[];
+      expect(storeParams?.[5]).toBe('192.168.1.1'); // ip_address
+      expect(storeParams?.[6]).toBe('Mozilla/5.0'); // user_agent
+    });
+
+    it('does not fail when the audit-log write throws (audit is bookkeeping, not a gate)', async () => {
+      mockDb.systemQuery.mockResolvedValueOnce([createMockUserRow()]); // findUserById
+      mockJwt.sign.mockReturnValueOnce('access-tok').mockReturnValueOnce('refresh-tok');
+      mockDb.systemQuery.mockResolvedValueOnce([]); // storeRefreshToken
+      mockDb.systemQuery.mockResolvedValueOnce([]); // updateLastLogin
+      mockDb.systemQuery.mockRejectedValueOnce(new Error('Audit DB error')); // logLoginAudit fails
+
+      const result = await service.loginWithVerifiedUser(
+        OAUTH_USER_ID,
+        OAUTH_TENANT_ID,
+        OAUTH_METHOD,
+      );
+
+      expect(result.accessToken).toBe('access-tok');
+    });
+
+    it('signs both access and refresh tokens (reuses existing rotation machinery)', async () => {
+      setupLoginWithVerifiedUserMocks(mockDb, mockJwt);
+
+      await service.loginWithVerifiedUser(OAUTH_USER_ID, OAUTH_TENANT_ID, OAUTH_METHOD);
+
+      expect(mockJwt.sign).toHaveBeenCalledTimes(2);
+      expect(mockJwt.sign).toHaveBeenCalledWith(
+        expect.objectContaining({ type: 'access' }),
+        expect.objectContaining({ secret: expect.any(String) }),
+      );
+      expect(mockJwt.sign).toHaveBeenCalledWith(
+        expect.objectContaining({ type: 'refresh' }),
+        expect.objectContaining({ secret: expect.any(String) }),
       );
     });
   });

@@ -54,6 +54,8 @@ cd .. && pnpm run dev:svelte
 Development: `http://localhost:5173` | Production: `http://localhost`
 
 > **Full setup guide:** [docs/DOCKER-SETUP.md](./docs/DOCKER-SETUP.md)
+>
+> **Microsoft OAuth sign-in** (optional — enables one-click root-user signup via Azure AD): requires a one-time Azure AD app registration + three Doppler secrets (`MICROSOFT_OAUTH_CLIENT_ID`, `MICROSOFT_OAUTH_CLIENT_SECRET`, `PUBLIC_APP_URL`). See [docs/how-to/HOW-TO-AZURE-AD-SETUP.md](./docs/how-to/HOW-TO-AZURE-AD-SETUP.md). Password signup works without it.
 
 ---
 

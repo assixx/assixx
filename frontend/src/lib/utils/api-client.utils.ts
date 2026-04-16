@@ -228,14 +228,27 @@ export function getContentType(options: RequestInit, config: ApiConfig): string 
 /**
  * Determine credentials mode for a request.
  *
- * Auth endpoints need 'include' to send HttpOnly refresh token cookie.
- * Other endpoints use 'omit' to avoid unnecessary cookie transmission.
+ * Always `'include'` — cookies (HttpOnly accessToken/refreshToken) serve as the
+ * canonical auth channel. The in-memory Bearer token from TokenManager is a
+ * client-side optimization on top of it.
+ *
+ * Previously, auth endpoints used `'include'` while others used `'omit'` as a
+ * perf micro-optimization ("don't send cookies unless needed"). That assumed
+ * the in-memory Bearer is always hydrated. It breaks after OAuth callback
+ * login: the backend sets cookies via 302-redirect but returns no JSON body,
+ * so TokenManager stays empty — with `'omit'` neither Cookie nor Bearer
+ * reaches the backend and every authenticated fetch 401s (e.g. `/e2e/keys`).
+ *
+ * `'include'` is safe here:
+ * - Same-origin in dev (Vite proxy) and prod (Nginx).
+ * - Backend CORS (`ALLOWED_ORIGINS`) is explicit and supports credentials.
+ * - Backend JWT guard (ADR-005) accepts either Cookie or `Authorization` header.
+ * - Cookie payload is a small JWT — negligible per-request overhead.
+ *
+ * @param _endpoint unused, kept as a hook for future per-endpoint tuning
  */
-export function getCredentialsMode(endpoint: string): RequestCredentials {
-  // Auth endpoints need cookies for HttpOnly refresh token
-  const authEndpoints = ['/auth/login', '/auth/logout', '/auth/refresh'];
-  const isAuthEndpoint = authEndpoints.some((auth) => endpoint.startsWith(auth));
-  return isAuthEndpoint ? 'include' : 'omit';
+export function getCredentialsMode(_endpoint: string): RequestCredentials {
+  return 'include';
 }
 
 /**

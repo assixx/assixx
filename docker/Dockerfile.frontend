@@ -15,7 +15,7 @@
 # Stage 1: Build
 # -----------------------------------------------------------------------------
 # Node version is configurable via docker-compose.yml build args
-ARG NODE_VERSION=24.14.0-alpine3.22
+ARG NODE_VERSION=24.14.0-bookworm-slim
 FROM node:${NODE_VERSION} AS builder
 LABEL org.opencontainers.image.authors="Assixx"
 
@@ -75,16 +75,23 @@ RUN pnpm deploy --filter=assixx-frontend --prod /deploy
 # Stage 2: Production
 # -----------------------------------------------------------------------------
 # Re-declare ARG for this stage (ARG scope is per-stage)
-ARG NODE_VERSION=24.14.0-alpine3.22
+ARG NODE_VERSION=24.14.0-bookworm-slim
 FROM node:${NODE_VERSION} AS production
 LABEL org.opencontainers.image.authors="Assixx"
 
-# Install dumb-init for proper signal handling + fix CVE-2025-64756
-# Create non-root user with proper group assignment
-RUN apk add --no-cache dumb-init && \
-    npm install -g npm@11.9.0 && \
-    addgroup -g 1001 -S nodejs && \
-    adduser -S sveltekit -u 1001 -G nodejs
+# Install dumb-init for proper signal handling + fix CVE-2025-64756.
+# Create non-root user with proper group assignment.
+#
+# Base is Debian slim (glibc), not Alpine (musl) — matches the backend
+# image so both tiers share one libc. Rationale documented in Dockerfile.dev
+# header (musl's getaddrinfo + Docker embedded DNS quirk on AAAA-only).
+# See moby#41651, bell-sw "Alpine DNS issues", ADR-027.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends dumb-init \
+    && rm -rf /var/lib/apt/lists/* \
+    && npm install -g npm@11.9.0 \
+    && groupadd -r -g 1001 nodejs \
+    && useradd -r -u 1001 -g nodejs --no-log-init sveltekit
 
 WORKDIR /app
 

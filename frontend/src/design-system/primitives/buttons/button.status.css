@@ -88,10 +88,10 @@
  *
  * USAGE EXAMPLE:
  * ```html
- * <!-- User is currently active -->
+ * \3c !-- User is currently active -->
  * <button class="btn btn-status-active">Deaktivieren</button>
  *
- * <!-- User is currently inactive -->
+ * \3c !-- User is currently inactive -->
  * <button class="btn btn-status-inactive">Aktivieren</button>
  * ```
  *

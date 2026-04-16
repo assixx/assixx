@@ -11,6 +11,7 @@ import type {
   Question,
   AnswerMap,
   Answer,
+  ResponseAnswer,
   SurveyAssignment,
 } from './types';
 
@@ -238,4 +239,45 @@ export function escapeHtml(text: string): string {
   const div = document.createElement('div');
   div.textContent = text;
   return div.innerHTML;
+}
+
+/**
+ * Discriminated result of {@link classifyAnswerDisplay}.
+ * Each variant carries only the fields the template needs, so the Svelte
+ * markup never has to re-check for null/undefined.
+ */
+export type AnswerDisplay =
+  | { kind: 'text'; text: string }
+  | { kind: 'rating'; value: number }
+  | { kind: 'number'; value: number }
+  | { kind: 'date'; date: string }
+  | { kind: 'options'; options: string[] }
+  | { kind: 'empty' };
+
+/**
+ * Decide how a completed survey answer should render.
+ *
+ * WHY: the API returns JSON `null` (not `undefined`) for empty answer_*
+ * columns — the DB columns are nullable. The previous inline template check
+ * `answer.answerText !== undefined` matched `null` and produced an empty <p>
+ * for yes_no / choice answers. `typeof` narrowing excludes null AND
+ * undefined in one step, and the discriminated return keeps the template
+ * null-safe without extra guards.
+ */
+export function classifyAnswerDisplay(answer: ResponseAnswer): AnswerDisplay {
+  if (typeof answer.answerText === 'string' && answer.answerText !== '') {
+    return { kind: 'text', text: answer.answerText };
+  }
+  if (typeof answer.answerNumber === 'number') {
+    return answer.questionType === 'rating' ?
+        { kind: 'rating', value: answer.answerNumber }
+      : { kind: 'number', value: answer.answerNumber };
+  }
+  if (typeof answer.answerDate === 'string' && answer.answerDate !== '') {
+    return { kind: 'date', date: answer.answerDate };
+  }
+  if (Array.isArray(answer.answerOptions) && answer.answerOptions.length > 0) {
+    return { kind: 'options', options: answer.answerOptions };
+  }
+  return { kind: 'empty' };
 }

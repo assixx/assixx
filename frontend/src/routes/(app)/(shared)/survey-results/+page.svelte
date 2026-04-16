@@ -418,7 +418,7 @@
                               {@const answer = response.answers?.find(
                                 (a: ResponseAnswer) => a.questionId === question.id,
                               )}
-                              {@const answerText = getAnswerDisplayText(question, answer)}
+                              {@const answerText = getAnswerDisplayText(answer)}
                               <div class="answer-item">
                                 <strong>{question.questionText}:</strong>
                                 <span>{answerText}</span>

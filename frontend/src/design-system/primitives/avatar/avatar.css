@@ -11,17 +11,17 @@
  * - Glassmorphism styling
  *
  * USAGE:
- *   <!-- Image Avatar -->
+ *   \3c !-- Image Avatar -->
  *   <div class="avatar">
  *     <img src="user.jpg" alt="User Name" class="avatar__image">
  *   </div>
  *
- *   <!-- Initials Avatar -->
+ *   \3c !-- Initials Avatar -->
  *   <div class="avatar avatar--color-1">
  *     <span class="avatar__initials">JD</span>
  *   </div>
  *
- *   <!-- With Status -->
+ *   \3c !-- With Status -->
  *   <div class="avatar avatar--color-2">
  *     <span class="avatar__initials">AB</span>
  *     <span class="avatar__status avatar__status--online"></span>

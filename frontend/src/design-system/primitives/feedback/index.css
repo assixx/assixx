@@ -111,7 +111,7 @@
  * === TOASTS ===
  * Container (add to body):
  *   <div class="toast-container toast-container--top-right">
- *     <!-- Toasts appear here -->
+ *     \3c !-- Toasts appear here -->
  *   </div>
  *
  * Toast:

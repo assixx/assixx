@@ -3,7 +3,7 @@
 | Metadata                | Value                             |
 | ----------------------- | --------------------------------- |
 | **Status**              | Accepted                          |
-| **Date**                | 2026-01-15                        |
+| **Date**                | 2026-01-15 (updated 2026-04-16)   |
 | **Decision Makers**     | SCS Technik                       |
 | **Affected Components** | Docker, pnpm, package.json, CI/CD |
 
@@ -45,9 +45,14 @@ During the development of Assixx, the question arose of how dependency versions 
 
 ```dockerfile
 # Dockerfile.frontend / Dockerfile.dev
-ARG NODE_VERSION=24.14.0-alpine3.22
+ARG NODE_VERSION=24.14.0-bookworm-slim
 FROM node:${NODE_VERSION}
 ```
+
+> **Base image note (2026-04-16):** Node-container bases use Debian
+> bookworm-slim (glibc), not Alpine (musl). See [ADR-027 Amendment
+> 2026-04-16](./ADR-027-dockerfile-hardening.md#amendment-2026-04-16-node-base-image--alpine--debian-slim-musl-dns-failure-class)
+> for the full rationale (musl DNS failure class with Docker embedded DNS).
 
 **Controlled via**:
 
@@ -210,9 +215,9 @@ Branch: main (stable)          Branch: testing/svelte-upgrade
 
 ```bash
 # docker/.env
-NODE_VERSION_PROD=24.14.0-alpine3.22  # Production: LTS
-NODE_VERSION_DEV=24.14.0-alpine3.22   # Development: can be set to a newer version
-PNPM_VERSION=10.28.0                   # Both environments
+NODE_VERSION_PROD=24.14.0-bookworm-slim  # Production: LTS (Debian slim, glibc — see ADR-027 amendment 2026-04-16)
+NODE_VERSION_DEV=24.14.0-bookworm-slim   # Development: can be set to a newer version
+PNPM_VERSION=10.28.0                      # Both environments
 ```
 
 ### Use Case: Upgrade Dev to Node 26, Prod Stays on Node 24
@@ -223,12 +228,12 @@ PNPM_VERSION=10.28.0                   # Both environments
 # docker/.env
 
 # BEFORE (both the same):
-NODE_VERSION_PROD=24.14.0-alpine3.22
-NODE_VERSION_DEV=24.14.0-alpine3.22
+NODE_VERSION_PROD=24.14.0-bookworm-slim
+NODE_VERSION_DEV=24.14.0-bookworm-slim
 
 # AFTER (only DEV changed):
-NODE_VERSION_PROD=24.14.0-alpine3.22      # \u2190 stays
-NODE_VERSION_DEV=26.0.0-alpine3.22        # \u2190 NEW
+NODE_VERSION_PROD=24.14.0-bookworm-slim   # \u2190 stays
+NODE_VERSION_DEV=26.0.0-bookworm-slim     # \u2190 NEW
 ```
 
 **Step 2: Rebuild backend**
@@ -251,10 +256,10 @@ docker-compose build backend
 
 **Summary:**
 
-| What             | Where         | Change                               |
-| ---------------- | ------------- | ------------------------------------ |
-| **One variable** | `docker/.env` | `NODE_VERSION_DEV=26.0.0-alpine3.22` |
-| **One command**  | Terminal      | `docker-compose build backend`       |
+| What             | Where         | Change                                  |
+| ---------------- | ------------- | --------------------------------------- |
+| **One variable** | `docker/.env` | `NODE_VERSION_DEV=26.0.0-bookworm-slim` |
+| **One command**  | Terminal      | `docker-compose build backend`          |
 
 Prod is **not** touched.
 
@@ -266,8 +271,8 @@ Prod is **not** touched.
 
 ```bash
 # docker/.env
-NODE_VERSION_PROD=26.0.0-alpine3.22       # \u2190 now also prod
-NODE_VERSION_DEV=26.0.0-alpine3.22
+NODE_VERSION_PROD=26.0.0-bookworm-slim    # \u2190 now also prod
+NODE_VERSION_DEV=26.0.0-bookworm-slim
 ```
 
 **Step 2: Rebuild frontend**
@@ -299,6 +304,27 @@ docker-compose --profile production build frontend
 
 ---
 
+## Update 2026-04-16: Node Base Image Family
+
+All example snippets in this ADR were rewritten from `24.14.0-alpine3.22`
+to `24.14.0-bookworm-slim`. This reflects the Node base-image family switch
+applied in [ADR-027 Amendment 2026-04-16](./ADR-027-dockerfile-hardening.md#amendment-2026-04-16-node-base-image--alpine--debian-slim-musl-dns-failure-class)
+(musl DNS failure class — Docker embedded DNS returned AAAA-only for
+many-A-record hosts, breaking every `fetch()` from inside the backend
+container).
+
+The strategy documented here — single-source-of-truth in `docker/.env`,
+ARG-propagation through compose to Dockerfiles, per-environment overrides,
+`--frozen-lockfile` enforcement — is **unchanged**. Only the concrete tag
+values moved from Alpine to Debian slim for the two Node images
+(`Dockerfile.dev`, `Dockerfile`, `Dockerfile.frontend`).
+
+Non-Node images (`postgres:18.3-alpine` via `Dockerfile.pg-partman`,
+`redis:8.6.2-alpine`, `nginx:1.29.8-alpine`) stay on Alpine — they issue
+no outbound HTTPS and are not affected by the musl DNS failure class.
+
+---
+
 ## References
 
 - [pnpm deploy Documentation](https://pnpm.io/cli/deploy)
@@ -306,3 +332,4 @@ docker-compose --profile production build frontend
 - [Docker Multi-Stage Builds](https://docs.docker.com/build/building/multi-stage/)
 - [Semantic Versioning](https://semver.org/)
 - [Node.js LTS Schedule](https://nodejs.org/en/about/releases/)
+- [ADR-027: Dockerfile Hardening](./ADR-027-dockerfile-hardening.md) — Amendment 2026-04-16 documents the Alpine → Debian slim migration for Node images

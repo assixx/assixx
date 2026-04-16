@@ -42,6 +42,16 @@ Use **pg_partman v5.4.3** to automatically manage partition creation. Built from
 | **Custom Dockerfile (chosen)**     | Official base image, version-pinned, zero third-party risk | Build step required                   |
 | Debian base                        | Guaranteed build compatibility                             | ~400MB vs ~90MB Alpine                |
 
+> **Note (2026-04-16):** The "Debian rejected due to size" trade-off above
+> applies only to this image. The Node runtime containers (backend,
+> frontend) were later migrated Alpine → Debian bookworm-slim for an
+> unrelated reason — see [ADR-027 Amendment 2026-04-16](./ADR-027-dockerfile-hardening.md#amendment-2026-04-16-node-base-image--alpine--debian-slim-musl-dns-failure-class)
+> (musl DNS failure class with Docker's IPv4-only embedded DNS, which
+> broke every outbound `fetch()` call in the Node containers). pg_partman
+> has no outbound HTTPS exposure, so this failure class does not apply
+> here and the Alpine base remains the correct choice for the postgres
+> image.
+
 ---
 
 ## Implementation

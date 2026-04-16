@@ -108,10 +108,14 @@ export interface ResponseAnswer {
   questionId: number;
   questionText: string;
   questionType?: string;
-  answerText?: string;
-  answerNumber?: number;
-  answerDate?: string;
-  answerOptions?: string[];
+  // API returns JSON null for unpopulated answer columns (survey_answers.answer_*
+  // are nullable in the DB). Previously typed as `string | undefined` only —
+  // that lie caused ResponseModal's `!== undefined` checks to treat null as
+  // "present" and render empty <p> tags for yes_no / choice answers.
+  answerText?: string | null;
+  answerNumber?: number | null;
+  answerDate?: string | null;
+  answerOptions?: string[] | null;
 }
 
 /**

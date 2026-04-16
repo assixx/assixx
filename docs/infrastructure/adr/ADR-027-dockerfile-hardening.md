@@ -3,7 +3,7 @@
 | Metadata                | Value                                                                                            |
 | ----------------------- | ------------------------------------------------------------------------------------------------ |
 | **Status**              | Amended                                                                                          |
-| **Date**                | 2026-02-28 (amended 2026-04-07, 2026-04-08)                                                      |
+| **Date**                | 2026-02-28 (amended 2026-04-07, 2026-04-08, 2026-04-16)                                          |
 | **Decision Makers**     | SCS Technik                                                                                      |
 | **Affected Components** | `docker/Dockerfile`, `docker/Dockerfile.dev`, `docker/Dockerfile.frontend`, `docker-compose.yml` |
 
@@ -680,6 +680,254 @@ doppler run -- docker-compose up -d backend
 # Backend logs should show "pnpm install" running, then build, then NestJS bootstrap
 docker logs assixx-backend --tail 50
 ```
+
+---
+
+## Amendment 2026-04-16: Node Base Image — Alpine → Debian Slim (musl DNS Failure Class)
+
+### Context
+
+During Phase 6 end-to-end testing of the Microsoft OAuth masterplan
+(`FEAT_MICROSOFT_OAUTH_MASTERPLAN.md`), the backend's OAuth token exchange
+against `https://login.microsoftonline.com/organizations/oauth2/v2.0/token`
+failed with `fetch failed / ENETUNREACH`, even though DNS and outbound TLS
+had been previously verified working for the same container.
+
+Diagnostic results from inside the container (musl 1.2.5 on Alpine 3.22,
+Node 24.14, Docker embedded DNS at `127.0.0.11`):
+
+| Probe                                                                | Result                                  |
+| -------------------------------------------------------------------- | --------------------------------------- |
+| `busybox nslookup -type=A login.microsoftonline.com 127.0.0.11`      | 7+ IPv4 addresses returned              |
+| `node -e 'dns.resolve4(...)' ` (c-ares, independent of libc)         | 232 IPv4 addresses returned             |
+| `node -e 'dns.lookup({family:4, all:true})'` (musl via libuv)        | 184 IPv4 addresses returned             |
+| `node -e 'dns.lookup({all:true})'` (musl AF_UNSPEC, default `fetch`) | **0 IPv4, 48 IPv6 only**                |
+| `nc -z 40.126.31.67 443` (direct v4 TCP connectivity)                | open                                    |
+| `fetch(MS token URL)`                                                | `TypeError: fetch failed` (ENETUNREACH) |
+
+c-ares + explicit `family:4` see the A records. musl's `getaddrinfo(AF_UNSPEC)`
+— which is what Node's `fetch`/undici use by default — returns AAAA-only. The
+Docker default bridge has no IPv6 routing → every connect attempt to the
+returned v6 addresses fails with `ENETUNREACH`.
+
+`dns.setDefaultResultOrder('ipv4first')` and `--dns-result-order=ipv4first`
+are glibc hints; musl ignores them. Confirmed empirically (ran the flag,
+still got v6-only).
+
+### Root Cause
+
+This is a known, documented failure class of the musl DNS stub resolver
+interacting with Docker's IPv4-only embedded DNS (127.0.0.11). References:
+
+- [moby/moby#41651 — Feature request: IPv6-enabled embedded DNS server](https://github.com/moby/moby/issues/41651)
+- [alpinelinux/docker-alpine#399 — DNS resolution uses ipv6 (AAAA) record requests even if ipv6 is not used](https://github.com/alpinelinux/docker-alpine/issues/399)
+- [netbirdio/netbird#2098 — musl getaddrinfo AF_UNSPEC semantics](https://github.com/netbirdio/netbird/issues/2098)
+- [bell-sw blog — How to deal with Alpine DNS issues](https://bell-sw.com/blog/how-to-deal-with-alpine-dns-issues/) (TCP fallback, EDNS0, parallel query race)
+
+The failure mode is: many-A-record hosts (Microsoft load-balanced endpoints
+have 100+ A records) exceed the 512-byte UDP DNS response cap. musl's DNS
+path does not send EDNS0 OPT records (no 4096-byte negotiation) and its
+TCP-fallback interaction with the Docker embedded resolver is fragile on
+NXDOMAIN races. The practical result is `dns.lookup(AF_UNSPEC)` returning
+AAAA-only for affected hosts.
+
+### Decision
+
+**Move all Node-runtime container images from Alpine (musl) to Debian
+bookworm-slim (glibc):**
+
+- `docker/Dockerfile.dev` (backend dev)
+- `docker/Dockerfile` (backend prod, both builder + production stages)
+- `docker/Dockerfile.frontend` (SvelteKit SSR, both builder + production stages)
+- `docker/docker-compose.yml` (`NODE_VERSION_DEV` + `NODE_VERSION_PROD` fallbacks)
+- `docker/.env` (`NODE_VERSION_DEV` + `NODE_VERSION_PROD` canonical values)
+
+**Explicitly NOT migrated** (scope-minimal):
+
+- `docker/Dockerfile.pg-partman` → stays on `postgres:18.3-alpine` (no outbound
+  HTTPS, no musl-DNS exposure; base swap would require a full pg_partman image
+  rebuild with large regression surface — see ADR-029)
+- `docker-compose.yml` `redis:8.6.2-alpine` (no outbound HTTPS)
+- `docker-compose.yml` `nginx:1.29.8-alpine` (no outbound HTTPS)
+
+Rationale for the scope line: the musl DNS failure class only triggers for
+containers that issue outbound HTTPS to many-A-record hosts from inside the
+Docker bridge network. Containers that only speak internal TCP (Postgres,
+Redis, Nginx reverse proxy to internal services) are architecturally
+unaffected. Keeping them on Alpine preserves their ~90 MB image footprint
+and avoids gratuitous change for non-problem code paths.
+
+### Syntax Diff (Alpine → Debian)
+
+| Concept              | Alpine (before)                          | Debian (after)                                                                                                  |
+| -------------------- | ---------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| Package install      | `apk add --no-cache dumb-init curl jq`   | `apt-get update && apt-get install -y --no-install-recommends dumb-init curl jq && rm -rf /var/lib/apt/lists/*` |
+| System group         | `addgroup -g 1001 -S nodejs`             | `groupadd -r -g 1001 nodejs`                                                                                    |
+| System user          | `adduser -S sveltekit -u 1001 -G nodejs` | `useradd -r -u 1001 -g nodejs --no-log-init sveltekit`                                                          |
+| Base image tag       | `24.14.0-alpine3.22`                     | `24.14.0-bookworm-slim`                                                                                         |
+| Image size (approx.) | ~180 MB                                  | ~280 MB                                                                                                         |
+
+`--no-log-init` on `useradd` prevents the 1000-MB `/var/lib/log/lastlog`
+sparse file that Debian's `useradd` otherwise initializes for system users.
+
+### Alternatives Considered
+
+**1. `dns.lookup` monkey-patch in `main.ts` (side-effect import that rewrites
+dns.lookup to default `family: 4`).** Rejected — this is a workaround, not a
+fix. Hides the real architectural mismatch and risks breaking any future
+v6-only service. The project's KISS + no-quick-fixes policy (`CLAUDE.md`)
+explicitly forbids this class of patch when an architectural fix is
+available.
+
+**2. Custom Undici dispatcher with `connect: { family: 4 }` globally.**
+Rejected — would require adding `undici` as a direct dep (Node 24 bundles
+it but does not expose it as a module path), and the global-dispatcher-sync
+between bundled and external undici instances is fragile (see
+`nodejs/undici#1775`). Also still a workaround.
+
+**3. Bypass Docker embedded DNS via `dns: [8.8.8.8, 1.1.1.1]` in compose.**
+Rejected — kills container-name resolution (service aliases like
+`backend`, `postgres`, `redis` all resolve via 127.0.0.11). Would break
+inter-container networking.
+
+**4. `dnsmasq` sidecar inside each Alpine container** (per bell-sw blog).
+Rejected — adds a process, complicates image, the bell-sw recommendation
+exists because the root cause is musl's DNS stack. Fixing the root cause
+(switch libc) is cleaner than layering another caching resolver.
+
+**5. Alpaquita Linux** (Alpine-compatible, glibc-based, BellSoft).
+Rejected — niche distribution, adds supply-chain/security-review burden
+over standard Debian slim, and the only measurable benefit over Debian is
+a smaller image footprint. Not worth the trade at current scale.
+
+**6. Migrate everything to Debian (Postgres + Redis + Nginx too).**
+Rejected — massive scope, Postgres-custom-image (pg_partman clang pinning,
+ADR-029) would need full re-validation, zero benefit for services that
+don't issue outbound HTTPS.
+
+### Consequences
+
+**Positive:**
+
+- Entire class of musl-DNS bugs is eliminated for Node runtimes, not just
+  the Microsoft OAuth case. Any future third-party HTTPS integration
+  (Stripe, SendGrid, S3, external OIDC providers) is insulated by default.
+- glibc implements EDNS0, TCP fallback, and RFC-compliant `AF_UNSPEC`
+  dual-stack ordering — matches the behaviour of most production Node
+  deployments (Vercel, Railway, Fly.io, Kubernetes Debian-based images).
+- `fetch`/undici's default DNS path now works without runtime flags.
+
+**Negative:**
+
+- Per-image size increase ~100 MB (Alpine ~180 MB → Debian slim ~280 MB)
+  for the 2 Node images. Absolute total ~200 MB added to disk. Acceptable.
+- Switch from `apk` to `apt-get` syntax and from `addgroup`/`adduser` to
+  `groupadd`/`useradd` in 3 Dockerfiles. One-off churn.
+- Anonymous `node_modules` volume drift (§Troubleshooting) must be resolved
+  on first container start after the base change — existing anon volumes
+  contain musl-built `.pnpm` store metadata that is ABI-incompatible with
+  glibc (native addons would break; pure-JS is fine but the `.pnpm` store
+  records the build environment). Recovery: `docker-compose rm -fv
+backend deletion-worker` (removes stopped containers + their anonymous
+  volumes, spares named external volumes).
+
+**Neutral:**
+
+- The CI pin-guard from Amendment 2026-04-08 continues to pass: the tag
+  `24.14.0-bookworm-slim` matches the `:[^[:space:]]*[0-9]+\.[0-9]+`
+  whitelist regex (contains `24.14.0`).
+- Dependabot's `docker-compose` ecosystem now tracks the new tag
+  automatically.
+
+### Post-Migration Incident (2026-04-16) — Anonymous Volume Data Loss
+
+Following the Alpine→Debian migration, a volume cleanup step incorrectly
+removed the named external data volumes `assixx_postgres_data` and
+`assixx_redis_data`:
+
+```bash
+# The §Troubleshooting recovery procedure (current text, circa 2026-04-08)
+docker volume ls -q -f dangling=true | xargs -r docker volume rm
+```
+
+**This command does NOT spare named volumes.** Docker's `dangling=true`
+filter matches any volume not currently attached to a running container,
+including named external volumes when the stack is `down`. Rerun from a
+cold stack (as the §Troubleshooting procedure prescribes) will therefore
+list both the anonymous `node_modules` volumes AND the named Postgres/Redis
+data volumes as "dangling", and `xargs docker volume rm` will remove all
+of them.
+
+**Recovery actually used:** Postgres data restored from
+`database/backups/full_backup_pre_oauth_phase1_20260416_160338.dump` via
+`pg_restore -U assixx_user -d assixx --no-owner`. Redis data regenerated
+(cache + rate-limit counters + connection tickets — tolerable reset).
+
+**Documentation correction (applied in this amendment):** the
+§Troubleshooting recovery snippet should use an exclusion filter:
+
+```bash
+# Safe: remove only hex-named (anonymous) dangling volumes, spare named ones
+docker volume ls -q -f dangling=true | grep -vE '^assixx_' | xargs -r docker volume rm
+```
+
+or, more scoped and without grep filtering, target the specific services:
+
+```bash
+# Safest: rm -fv operates only on the listed compose services' containers
+# and removes only THEIR anonymous volumes. Named external volumes untouched.
+doppler run -- docker-compose stop backend deletion-worker
+doppler run -- docker-compose rm -fv backend deletion-worker
+doppler run -- docker-compose up -d backend deletion-worker
+```
+
+Both forms are now the canonical recovery. The original bare
+`docker volume ls -f dangling=true | xargs rm` form is forbidden —
+it is not safe when named volumes have been detached from running
+containers for any reason (cold stack, compose version upgrade,
+inspection).
+
+### File Changes
+
+| File                               | Change                                                                                                                       |
+| ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `docker/Dockerfile.dev`            | `alpine3.22` → `bookworm-slim`; `apk add curl jq` → `apt-get install`; header comment links musl-bug refs                    |
+| `docker/Dockerfile` (backend prod) | Same base swap; `apk add dumb-init`/`addgroup`/`adduser` → `apt-get install dumb-init`/`groupadd`/`useradd -r --no-log-init` |
+| `docker/Dockerfile.frontend`       | Same swap in both builder + production stages                                                                                |
+| `docker/docker-compose.yml`        | Build-arg fallbacks for `NODE_VERSION_DEV` and `NODE_VERSION_PROD` → `24.14.0-bookworm-slim`                                 |
+| `docker/.env`                      | `NODE_VERSION_DEV` + `NODE_VERSION_PROD` → `24.14.0-bookworm-slim`                                                           |
+| `ADR-008`                          | Example snippets updated (see ADR-008 changelog 2026-04-16)                                                                  |
+| `ADR-029`                          | Cross-ref note added re: "Debian verworfen" trade-off scope                                                                  |
+
+### Verification
+
+```bash
+# Container libc is glibc, not musl
+docker exec assixx-backend sh -c 'ldd --version | head -1'
+  # → ldd (Debian GLIBC 2.36-9+deb12u13) 2.36
+
+# Default DNS path returns dual-stack with IPv4 present
+docker exec assixx-backend node -e \
+  'require("dns").lookup("login.microsoftonline.com",{all:true},(e,r)=>{
+     const f={};(r||[]).forEach(a=>f[a.family]=(f[a.family]||0)+1);
+     console.log(f)
+   })'
+  # → { '4': 194, '6': 200 }
+
+# OAuth token endpoint reachable — HTTP 400 with Microsoft error is SUCCESS
+# (proves the connection path; only the dummy grant_type=test is rejected)
+docker exec assixx-backend node -e \
+  'fetch("https://login.microsoftonline.com/organizations/oauth2/v2.0/token",
+         {method:"POST",
+          headers:{"Content-Type":"application/x-www-form-urlencoded"},
+          body:"grant_type=test"})
+    .then(async r => console.log("HTTP", r.status, (await r.text()).slice(0,80)))
+    .catch(e => console.log("ERR", e.message, e.cause?.code))'
+  # → HTTP 400 {"error":"unsupported_grant_type","error_description":"AADSTS70003:…
+```
+
+All three probes pass. The OAuth happy path (Microsoft token exchange +
+`jose` JWKS verification) now completes without any runtime workaround.
 
 ---
 

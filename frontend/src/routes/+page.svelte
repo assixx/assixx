@@ -103,7 +103,7 @@
       short viewports), grows with 65vh on taller monitors. max() picks
       whichever is larger.
     */
-    min-height: max(515px, 65vh);
+    min-height: max(700px, 65vh);
     text-align: center;
     margin-bottom: 150px;
   }

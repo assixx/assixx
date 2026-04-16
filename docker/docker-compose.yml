@@ -91,7 +91,7 @@ services:
       dockerfile: docker/Dockerfile.dev
       args:
         # Node/pnpm versions - configurable via .env (Single Source of Truth)
-        NODE_VERSION: ${NODE_VERSION_DEV:-24.14.0-alpine3.22}
+        NODE_VERSION: ${NODE_VERSION_DEV:-24.14.0-bookworm-slim}
         PNPM_VERSION: ${PNPM_VERSION:-10.33.0}
     image: assixx-backend:dev
     container_name: assixx-backend
@@ -123,6 +123,12 @@ services:
       # SECURITY: Secrets are REQUIRED - no fallback defaults
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET must be set - use doppler run}
       JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:?JWT_REFRESH_SECRET must be set - use doppler run}
+      # OAuth sign-in (V1: Microsoft only) — see docs/FEAT_MICROSOFT_OAUTH_MASTERPLAN.md
+      # PUBLIC_APP_URL: base URL the backend uses to derive OAuth redirect URIs (R4 mitigation).
+      # Boot fails fast if any of these are missing — matches the JWT_SECRET pattern.
+      PUBLIC_APP_URL: ${PUBLIC_APP_URL:?PUBLIC_APP_URL must be set - use doppler run}
+      MICROSOFT_OAUTH_CLIENT_ID: ${MICROSOFT_OAUTH_CLIENT_ID:?MICROSOFT_OAUTH_CLIENT_ID must be set - use doppler run}
+      MICROSOFT_OAUTH_CLIENT_SECRET: ${MICROSOFT_OAUTH_CLIENT_SECRET:?MICROSOFT_OAUTH_CLIENT_SECRET must be set - use doppler run}
       SMTP_HOST: ${SMTP_HOST}
       SMTP_PORT: ${SMTP_PORT}
       SMTP_USER: ${SMTP_USER}
@@ -350,7 +356,7 @@ services:
       dockerfile: docker/Dockerfile.frontend
       args:
         # Node/pnpm versions - configurable via .env (Single Source of Truth)
-        NODE_VERSION: ${NODE_VERSION_PROD:-24.14.0-alpine3.22}
+        NODE_VERSION: ${NODE_VERSION_PROD:-24.14.0-bookworm-slim}
         PNPM_VERSION: ${PNPM_VERSION:-10.33.0}
         # Sentry DSN for error tracking (embedded at build time)
         PUBLIC_SENTRY_DSN: ${PUBLIC_SENTRY_DSN:-}

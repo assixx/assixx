@@ -9,15 +9,16 @@
 
 ### Development & Tooling
 
-| Guide                                                           | Description                                                        |
-| --------------------------------------------------------------- | ------------------------------------------------------------------ |
-| [HOW-TO-CURL](./HOW-TO-CURL.md)                                 | API requests with curl — token handling, inline usage rules        |
-| [HOW-TO-DOPPLER-GUIDE](./HOW-TO-DOPPLER-GUIDE.md)               | Doppler secret management — setup, configs, CLI reference          |
-| [HOW-TO-POSTGRESQL-CLI](./HOW-TO-POSTGRESQL-CLI.md)             | psql client setup on WSL2, meta-command reference                  |
-| [HOW-TO-ENABLE-DEBUG-LOGGING](./HOW-TO-ENABLE-DEBUG-LOGGING.md) | Backend DEBUG + frontend PERF logging — opt-in activation          |
-| [HOW-TO-KNIP](./HOW-TO-KNIP.md)                                 | Dead code & unused dependency detection with Knip                  |
-| [HOW-TO-FALLOW](./HOW-TO-FALLOW.md)                             | Dead code analysis with Fallow (Rust, fast, complementary to Knip) |
-| [HOW-TO-CLOUDFLARE-TURNSTILE](./HOW-TO-CLOUDFLARE-TURNSTILE.md) | Bot-Schutz (Login/Signup) — Keys, CSP, Komponente, Fehler-Referenz |
+| Guide                                                           | Description                                                                                     |
+| --------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| [HOW-TO-CURL](./HOW-TO-CURL.md)                                 | API requests with curl — token handling, inline usage rules                                     |
+| [HOW-TO-DOPPLER-GUIDE](./HOW-TO-DOPPLER-GUIDE.md)               | Doppler secret management — setup, configs, CLI reference                                       |
+| [HOW-TO-POSTGRESQL-CLI](./HOW-TO-POSTGRESQL-CLI.md)             | psql client setup on WSL2, meta-command reference                                               |
+| [HOW-TO-ENABLE-DEBUG-LOGGING](./HOW-TO-ENABLE-DEBUG-LOGGING.md) | Backend DEBUG + frontend PERF logging — opt-in activation                                       |
+| [HOW-TO-KNIP](./HOW-TO-KNIP.md)                                 | Dead code & unused dependency detection with Knip                                               |
+| [HOW-TO-FALLOW](./HOW-TO-FALLOW.md)                             | Dead code analysis with Fallow (Rust, fast, complementary to Knip)                              |
+| [HOW-TO-CLOUDFLARE-TURNSTILE](./HOW-TO-CLOUDFLARE-TURNSTILE.md) | Bot-Schutz (Login/Signup) — Keys, CSP, Komponente, Fehler-Referenz                              |
+| [HOW-TO-AZURE-AD-SETUP](./HOW-TO-AZURE-AD-SETUP.md)             | Microsoft OAuth — Azure AD App Registration, Redirect URIs, Doppler-Secrets, Rotation (ADR-046) |
 
 ### Testing
 

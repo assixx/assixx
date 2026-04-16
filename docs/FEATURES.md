@@ -103,6 +103,18 @@
 - Status Audit Trail (append-only log with notes)
 - 5 Admin Pages: Anträge, Regeln, Urlaubsansprüche, Feiertage, Übersicht
 
+#### 10a. **Microsoft OAuth Sign-In für Tenant-Owner** (ADR-046 — System Feature)
+
+- SSO via Azure AD für die `root`-Rolle (Tenant-Owner); Signup + Login per Klick
+- Nur Work/School-Accounts (`/organizations/` Endpoint) — persönliche `@outlook.com`-Accounts werden von Microsoft abgelehnt (B2B-Filter)
+- 3-Schichten-Defense: PKCE (RFC 7636) + Single-Use State-Nonce (Redis GETDEL, 10 min TTL) + id_token-Signatur-Verifikation (JWKS-Cache 24h)
+- Atomare Tenant-Erstellung: tenant + user + oauth-link in **einer** Transaktion (R8 — keine halb-erstellten Tenants)
+- Signup-Ticket-Pattern: Callback → Redis `signup-ticket` (15 min TTL) → Company-Details-Formular → atomic GETDEL beim Submit
+- UNIQUE(provider, provider_user_id) — ein Microsoft-Konto → ein Assixx-Tenant (R3 duplicate-signup defence)
+- `admin`- und `employee`-Rollen bleiben auf Passwort-Auth (OAuth explizit out-of-scope für V1)
+- Frontend: Brand-Guideline-konformer "Mit Microsoft anmelden/registrieren"-Button, `/signup/oauth-complete` Pre-Fill-Formular
+- Architektur: ADR-046, HOW-TO: `docs/how-to/HOW-TO-AZURE-AD-SETUP.md`
+
 #### 10. **Addon-System** (ADR-033 — System Feature)
 
 - Addon-basiertes SaaS-Modell (ersetzt Plan-Tiers, siehe ADR-033)

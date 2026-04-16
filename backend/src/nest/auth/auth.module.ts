@@ -9,14 +9,21 @@
  * - JwtModule (for token operations)
  * - ConfigModule (for Redis configuration)
  */
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 
 import { MailerService } from '../common/services/mailer.service.js';
 import { AuthController } from './auth.controller.js';
 import { AuthService } from './auth.service.js';
 import { ConnectionTicketService } from './connection-ticket.service.js';
+// OAuth sign-in (V1: Microsoft only) — see docs/FEAT_MICROSOFT_OAUTH_MASTERPLAN.md
+// forwardRef: OAuthController injects AuthService (loginWithVerifiedUser) → OAuthModule
+// needs to import AuthModule back, which is the canonical circular-dep scenario
+// (NestJS docs: https://docs.nestjs.com/fundamentals/circular-dependency). Spec D15.
+// eslint-disable-next-line import-x/no-cycle -- justified: canonical NestJS forwardRef pattern (Spec Deviation D15)
+import { OAuthModule } from './oauth/oauth.module.js';
 
 @Module({
+  imports: [forwardRef(() => OAuthModule)],
   controllers: [AuthController],
   providers: [AuthService, ConnectionTicketService, MailerService],
   exports: [AuthService, ConnectionTicketService],

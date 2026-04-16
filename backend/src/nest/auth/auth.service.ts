@@ -183,8 +183,56 @@ export class AuthService {
     // Update last login
     await this.updateLastLogin(user.id, user.tenant_id);
 
-    // Log login for audit
+    // Log login for audit (default method 'password')
     await this.logLoginAudit(user, ipAddress, userAgent);
+
+    return {
+      accessToken: tokens.accessToken,
+      refreshToken: tokens.refreshToken,
+      user: this.buildSafeUserResponse(user),
+    };
+  }
+
+  /**
+   * Issue session tokens for a user whose identity has ALREADY been verified
+   * by an external mechanism (e.g. OAuth id_token signature + claims validation).
+   *
+   * Skips password check — the caller MUST guarantee authentication happened
+   * before invoking this. Currently called by `OAuthController` after a
+   * successful Microsoft OAuth login (plan §2.5 / §2.6).
+   *
+   * Reuses the same token-rotation machinery as `login()`, writes the same
+   * audit row, updates the same `last_login` column. The only difference is
+   * the `loginMethod` string that appears in the audit `new_values` JSON and
+   * the absence of a bcrypt.compare step.
+   */
+  async loginWithVerifiedUser(
+    userId: number,
+    tenantId: number,
+    loginMethod: string,
+    ipAddress?: string,
+    userAgent?: string,
+  ): Promise<LoginResponse> {
+    const user = await this.findUserById(userId, tenantId);
+    if (user === null) {
+      throw new UnauthorizedException('User not found');
+    }
+    if (user.is_active !== 1) {
+      throw new ForbiddenException('Ihr Account ist nicht aktiv');
+    }
+
+    const tokens = await this.generateTokensWithRotation(
+      user.id,
+      user.tenant_id,
+      user.role,
+      user.email,
+      undefined, // new family on every login, even OAuth
+      ipAddress,
+      userAgent,
+    );
+
+    await this.updateLastLogin(user.id, user.tenant_id);
+    await this.logLoginAudit(user, ipAddress, userAgent, loginMethod);
 
     return {
       accessToken: tokens.accessToken,
@@ -775,12 +823,17 @@ export class AuthService {
   }
 
   /**
-   * Log login for audit trail
+   * Log login for audit trail.
+   *
+   * `loginMethod` defaults to `'password'` for backward compatibility with the
+   * existing password-login caller. OAuth login passes `'oauth-microsoft'` (or
+   * future provider ids) so forensic logs distinguish authentication sources.
    */
   private async logLoginAudit(
     user: UserRow,
     ipAddress?: string,
     userAgent?: string,
+    loginMethod: string = 'password',
   ): Promise<void> {
     try {
       await this.databaseService.systemQuery(
@@ -797,7 +850,7 @@ export class AuthService {
           JSON.stringify({
             email: user.email,
             role: user.role,
-            login_method: 'password',
+            login_method: loginMethod,
           }),
           ipAddress ?? null,
           userAgent ?? null,

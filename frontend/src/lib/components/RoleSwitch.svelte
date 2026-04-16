@@ -3,10 +3,12 @@
   import { resolve } from '$app/paths';
 
   import { showSuccessAlert, showWarningAlert, showErrorAlert } from '$lib/stores/toast';
+  import { getApiClient } from '$lib/utils/api-client';
   import { setActiveRole } from '$lib/utils/auth';
   import { getErrorMessage } from '$lib/utils/error';
   import { createLogger } from '$lib/utils/logger';
   import { broadcastRoleSwitch } from '$lib/utils/role-sync.svelte';
+  import { getTokenManager } from '$lib/utils/token-manager';
 
   const log = createLogger('RoleSwitch');
 
@@ -178,21 +180,25 @@
     user?: { activeRole?: RoleType };
   }
 
-  async function executeRoleSwitch(endpoint: string, token: string): Promise<RoleSwitchResult> {
-    const response = await fetch(endpoint, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({}),
-    });
-
-    if (!response.ok) {
-      throw new Error('Fehler beim Rollenwechsel');
-    }
-
-    const json = (await response.json()) as RoleSwitchApiResponse;
+  /**
+   * Execute the role switch against the backend.
+   *
+   * Uses the shared `apiClient` (not a custom `fetch`) so we inherit:
+   *   - `credentials: 'include'` — cookie auth works when the in-memory
+   *     Bearer token is absent (OAuth login-success is cookie-only).
+   *   - Automatic Bearer-header attachment when TokenManager holds a token.
+   *   - Centralised error handling + retry-on-401 token refresh.
+   *
+   * The previous hand-rolled `fetch` with hard-coded `Authorization: Bearer`
+   * broke OAuth users because their `localStorage.accessToken` is null; the
+   * request went out without any auth and 401'd. Routing through `apiClient`
+   * unifies the path for password login and OAuth login.
+   */
+  async function executeRoleSwitch(endpoint: string): Promise<RoleSwitchResult> {
+    // apiClient prepends `/api/v2` internally, so strip that prefix here.
+    const relativeEndpoint =
+      endpoint.startsWith('/api/v2') ? endpoint.slice('/api/v2'.length) : endpoint;
+    const json = await getApiClient().post<RoleSwitchApiResponse>(relativeEndpoint, {});
     return json.data ?? json;
   }
 
@@ -220,8 +226,12 @@
     isSwitching = true;
     closeDropdown();
 
-    const token = localStorage.getItem('accessToken');
-    if (token === null || token === '') {
+    // Session check uses TokenManager's canonical session-signal predicate
+    // (accepts either in-memory Bearer OR the `accessTokenExp` cookie set by
+    // the backend on every auth event). The old `localStorage.getItem` gate
+    // wrongly assumed localStorage is the only truth — OAuth users have a
+    // valid session in cookies only, so the gate threw them to /login.
+    if (!getTokenManager().hasValidToken()) {
       void goto(resolve('/login'));
       return;
     }
@@ -234,7 +244,7 @@
     }
 
     try {
-      const result = await executeRoleSwitch(endpoint, token);
+      const result = await executeRoleSwitch(endpoint);
       updateStorageAfterSwitch(result);
       redirectToDashboard(result.user?.activeRole ?? targetRole);
     } catch (err: unknown) {

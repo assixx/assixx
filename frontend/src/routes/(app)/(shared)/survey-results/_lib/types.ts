@@ -108,7 +108,10 @@ export interface ResponseAnswer {
   answerText?: string | null;
   answerNumber?: number | null;
   answerDate?: string | null;
-  answerOptions?: number[] | null;
+  // API returns already-resolved option labels (e.g. ["Ja"]), not option IDs —
+  // yes_no / single_choice / multiple_choice all use the string-label shape.
+  // Previously typed as number[] which caused getOptionTexts to render "ID Ja".
+  answerOptions?: string[] | null;
 }
 
 /**

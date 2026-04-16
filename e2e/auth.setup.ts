@@ -10,7 +10,7 @@ setup('authenticate as admin', async ({ page }) => {
 
   // Wait for Turnstile token before clicking — fail fast with a clear message
   // if the test keys ever stop populating the token (instead of a 30s click timeout).
-  const submitButton = page.getByRole('button', { name: 'Anmelden' });
+  const submitButton = page.getByRole('button', { name: 'Anmelden', exact: true });
   await expect(submitButton).toBeEnabled({ timeout: 5000 });
   await submitButton.click();
 

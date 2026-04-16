@@ -621,7 +621,6 @@
     border: 1px solid var(--color-glass-border);
     border-radius: var(--radius-xl);
 
-    background: var(--glass-bg-active);
     padding: var(--spacing-6);
   }
 

@@ -3,6 +3,8 @@
   import { resolve } from '$app/paths';
 
   import LegalFooter from '$lib/components/LegalFooter.svelte';
+  import MicrosoftSignInButton from '$lib/components/MicrosoftSignInButton.svelte';
+  import OAuthDivider from '$lib/components/OAuthDivider.svelte';
   import PasswordStrengthIndicator from '$lib/components/PasswordStrengthIndicator.svelte';
   import Seo from '$lib/components/Seo.svelte';
   import Turnstile from '$lib/components/Turnstile.svelte';
@@ -222,6 +224,25 @@
       <div class="signup-card">
         <h2 class="signup-title">Konto erstellen</h2>
         <p class="signup-subtitle">30 Tage kostenlos testen — keine Kreditkarte nötig</p>
+
+        <!--
+          Microsoft OAuth entry point. Plan §5.3 requires:
+          (1) MicrosoftSignInButton with mode=signup ABOVE the manual signup form,
+          (2) On Microsoft signup success the backend redirects to
+              /signup/oauth-complete?ticket={uuid} (handled by Step 5.4),
+          (3) If R3 duplicate Microsoft account is detected, backend redirects
+              to /login?oauth=error&reason=already_linked — the user lands on
+              the login page, not here, so no signup-side error handler needed.
+          Disabled while the manual form is submitting to prevent parallel
+          navigations destabilising mid-request state.
+        -->
+        <div class="oauth-section">
+          <MicrosoftSignInButton
+            mode="signup"
+            disabled={loading}
+          />
+          <OAuthDivider />
+        </div>
 
         <!-- Signup Form -->
         <form
@@ -580,7 +601,12 @@
     display: flex;
     justify-content: center;
     align-items: flex-start;
-    padding: 115px 120px;
+
+    /* Asymmetric padding: top deliberately lower than bottom so the card
+       sits closer to the viewport top (UX request 2026-04-16 — "ein wenig
+       hochziehen"). Bottom stays generous because the form is long and
+       needs breathing room before the footer on scroll. */
+    padding: 60px 120px 115px;
     overflow-y: auto;
   }
 

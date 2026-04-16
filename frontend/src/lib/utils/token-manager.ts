@@ -52,6 +52,33 @@ function isBrowser(): boolean {
   return typeof window !== 'undefined';
 }
 
+/**
+ * Read the `accessTokenExp` cookie — a non-httpOnly companion cookie set by
+ * the backend alongside the httpOnly `accessToken`. Its value is the Unix
+ * timestamp (seconds since epoch) of the JWT's `exp` claim, exposed so the
+ * session-countdown UI can work without the JWT itself.
+ *
+ * Why: OAuth login-success is a 302 redirect (no JSON response body), so the
+ * classic "hydrate TokenManager from POST response" path is unreachable and
+ * the timer used to render "00:00 / expired" immediately after a fresh login.
+ * With this cookie as the canonical expiry source, the timer is auth-method
+ * agnostic and always correct.
+ *
+ * @see ADR-046 OAuth Sign-In — tokenExp-cookie pattern
+ * @returns Unix seconds, or null if the cookie is absent / malformed.
+ */
+function readAccessTokenExpCookie(): number | null {
+  if (!isBrowser()) return null;
+  const match = /(?:^|;\s*)accessTokenExp=([^;]+)/.exec(document.cookie);
+  // match[1] is guaranteed present by the capture group `([^;]+)` (1+ chars),
+  // but noUncheckedIndexedAccess still types it `string | undefined` — so we
+  // narrow explicitly with a runtime check that is effectively dead code.
+  const raw = match?.[1];
+  if (raw === undefined) return null;
+  const exp = Number.parseInt(raw, 10);
+  return Number.isFinite(exp) && exp > 0 ? exp : null;
+}
+
 export class TokenManager {
   private static instance: TokenManager | undefined;
   private accessToken: string | null = null;
@@ -208,6 +235,14 @@ export class TokenManager {
     localStorage.removeItem('tokenReceivedAt');
     localStorage.removeItem('user');
 
+    // Clear the non-httpOnly exp cookie client-side as belt-and-braces — the
+    // backend also clears it via the /auth/logout response (`clearAuthCookies`
+    // in auth.controller.ts), but wiping here guarantees `hasSessionSignal()`
+    // flips to false immediately, even if the logout API call is in flight.
+    if (isBrowser()) {
+      document.cookie = 'accessTokenExp=; Path=/; Max-Age=0';
+    }
+
     this.stopTimer();
 
     // GUARD: Don't redirect if already on login page
@@ -362,29 +397,49 @@ export class TokenManager {
   // TOKEN STATUS QUERIES
   // ========================================
 
+  /**
+   * Compute seconds remaining on the current session.
+   *
+   * Resolution order (first hit wins):
+   *   1. `accessTokenExp` cookie — canonical, set by backend on every auth
+   *      event (password login, OAuth login-success, OAuth signup, refresh).
+   *      This is the ONLY source that works for OAuth login-success because
+   *      that flow is a 302 redirect with no JSON body to hydrate localStorage.
+   *   2. `accessToken` JWT `exp` claim — fallback for legacy sessions that
+   *      predate the cookie rollout (pre-2026-04-16).
+   *   3. `tokenReceivedAt` + fixed 30-min lifetime — last-ditch fallback for
+   *      sessions where the token was stored without `exp` (shouldn't happen,
+   *      but keeps the timer honest instead of showing 0).
+   *
+   * Returns 0 only when no session material exists at all.
+   */
   public getRemainingTime(): number {
+    const now = Math.floor(Date.now() / 1000);
+
+    // 1. Canonical: exp cookie
+    const cookieExp = readAccessTokenExpCookie();
+    if (cookieExp !== null) {
+      return Math.max(0, cookieExp - now);
+    }
+
+    // No cookie and no token in localStorage → no session
     if (this.accessToken === null) {
       return 0;
     }
 
-    if (this.tokenReceivedAt === null) {
-      const payload = parseJwt(this.accessToken);
-      if (payload?.exp === undefined) {
-        return 0;
-      }
-
-      const now = Math.floor(Date.now() / 1000);
-      const remaining = payload.exp - now;
-      return Math.max(0, remaining);
+    // 2. Legacy fallback: decode the locally-stored JWT
+    const payload = parseJwt(this.accessToken);
+    if (payload?.exp !== undefined) {
+      return Math.max(0, payload.exp - now);
     }
 
-    const elapsedMs = Date.now() - this.tokenReceivedAt;
-    const elapsedSeconds = Math.floor(elapsedMs / 1000);
-
+    // 3. Last-ditch: received-at + fixed lifetime
+    if (this.tokenReceivedAt === null) {
+      return 0;
+    }
+    const elapsedSeconds = Math.floor((Date.now() - this.tokenReceivedAt) / 1000);
     const TOKEN_LIFETIME_SECONDS = 30 * 60;
-    const remaining = TOKEN_LIFETIME_SECONDS - elapsedSeconds;
-
-    return Math.max(0, remaining);
+    return Math.max(0, TOKEN_LIFETIME_SECONDS - elapsedSeconds);
   }
 
   public isExpiringSoon(thresholdSeconds: number = 600): boolean {
@@ -396,8 +451,29 @@ export class TokenManager {
     return this.getRemainingTime() === 0;
   }
 
+  /**
+   * True if a session is active and not yet expired.
+   *
+   * After OAuth login-success, `accessToken` in JS memory/localStorage is null
+   * (the flow is a 302 with no JSON body). The session is still real — it
+   * lives in the httpOnly `accessToken` cookie and is visible to JS only via
+   * the `accessTokenExp` companion cookie. Either signal counts as "have a
+   * session"; the timer and guard logic both rely on this.
+   */
   public hasValidToken(): boolean {
-    return this.accessToken !== null && !this.isExpired();
+    return this.hasSessionSignal() && !this.isExpired();
+  }
+
+  /**
+   * Private: true if we have ANY proof of an active session — either the
+   * in-memory JWT (set via setTokens after JSON auth response) or the
+   * non-httpOnly `accessTokenExp` cookie (set by backend on every auth event,
+   * including the 302-redirect OAuth login-success that cannot hydrate
+   * localStorage). Central predicate for timer start/tick guards and
+   * hasValidToken — ensures all three agree on "is there a session?".
+   */
+  private hasSessionSignal(): boolean {
+    return this.accessToken !== null || readAccessTokenExpCookie() !== null;
   }
 
   // ========================================
@@ -408,6 +484,11 @@ export class TokenManager {
   public onTimerUpdate(callback: (remainingSeconds: number) => void): () => void {
     this.callbacks.onTimerUpdate.push(callback);
     callback(this.getRemainingTime());
+
+    // Ensure the tick loop is running. First subscription after an auth event
+    // that only set cookies (OAuth login-success) needs this: setTokens was
+    // never called → restartTimer was never called → timer sat idle. Idempotent.
+    this.startTimer();
 
     return () => {
       const index = this.callbacks.onTimerUpdate.indexOf(callback);
@@ -454,9 +535,21 @@ export class TokenManager {
   // TIMER MANAGEMENT
   // ========================================
 
+  /**
+   * Start the countdown tick loop. Idempotent: safe to call repeatedly — only
+   * the first call with a valid session signal actually registers the interval.
+   *
+   * Guard uses `hasSessionSignal()` (not the old `accessToken !== null`) so
+   * that OAuth login-success — which lands with only the exp cookie and no
+   * localStorage token — can still start the timer. Before this fix the
+   * guard rejected cookie-only sessions and the widget froze until reload.
+   */
   private startTimer(): void {
     if (!isBrowser()) return;
-    if (this.accessToken === null) return;
+    if (!this.hasSessionSignal()) return;
+    // Idempotent: skip if an interval is already registered. Prevents duplicate
+    // intervals when onTimerUpdate subscribes after restartTimer has already run.
+    if (this.timerInterval !== null) return;
 
     const interval = this.getOptimalInterval();
     this.currentInterval = interval;
@@ -486,10 +579,12 @@ export class TokenManager {
   }
 
   private tick(): void {
-    // GUARD: Don't process expiry logic if there's no token
+    // GUARD: Don't process expiry logic if there's no session signal at all.
     // This prevents false "session expired" redirects on login page
-    // when user switches tabs (visibilitychange event triggers tick())
-    if (this.accessToken === null) {
+    // when user switches tabs (visibilitychange event triggers tick()).
+    // Accepts either signal (in-memory JWT or exp cookie) — same rationale
+    // as startTimer's guard; OAuth login-success has only the cookie.
+    if (!this.hasSessionSignal()) {
       return;
     }
 

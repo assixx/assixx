@@ -2,7 +2,12 @@
   /**
    * ResponseModal — Displays a user's completed survey response (read-only).
    */
-  import { getTextFromBuffer, formatDateTimeGerman, formatSurveyDate } from './utils';
+  import {
+    classifyAnswerDisplay,
+    formatDateTimeGerman,
+    formatSurveyDate,
+    getTextFromBuffer,
+  } from './utils';
 
   import type { Survey, SurveyResponse } from './types';
 
@@ -42,24 +47,23 @@
       </div>
       <div class="response-answers">
         {#each response.answers as answer (answer.questionId)}
+          {@const display = classifyAnswerDisplay(answer)}
           <div class="response-question">
             <h4>{answer.questionText}</h4>
             <div class="response-answer">
-              {#if answer.answerText !== undefined && answer.answerText !== ''}
-                <p>{answer.answerText}</p>
-              {:else if answer.answerNumber !== undefined}
-                {#if answer.questionType === 'rating'}
-                  <p>Bewertung: {answer.answerNumber}</p>
-                {:else}
-                  <p>{answer.answerNumber}</p>
-                {/if}
-              {:else if answer.answerDate !== undefined}
+              {#if display.kind === 'text'}
+                <p>{display.text}</p>
+              {:else if display.kind === 'rating'}
+                <p>Bewertung: {display.value}</p>
+              {:else if display.kind === 'number'}
+                <p>{display.value}</p>
+              {:else if display.kind === 'date'}
                 <p>
                   <i class="fas fa-calendar"></i>
-                  {formatSurveyDate(answer.answerDate)}
+                  {formatSurveyDate(display.date)}
                 </p>
-              {:else if answer.answerOptions !== undefined && answer.answerOptions.length > 0}
-                {#each answer.answerOptions as optionText, idx (idx)}
+              {:else if display.kind === 'options'}
+                {#each display.options as optionText, idx (idx)}
                   <p><i class="fas fa-check-square"></i> {optionText}</p>
                 {/each}
               {:else}

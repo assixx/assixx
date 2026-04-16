@@ -6,6 +6,8 @@
   import { resolve } from '$app/paths';
 
   import LegalFooter from '$lib/components/LegalFooter.svelte';
+  import MicrosoftSignInButton from '$lib/components/MicrosoftSignInButton.svelte';
+  import OAuthDivider from '$lib/components/OAuthDivider.svelte';
   import Seo from '$lib/components/Seo.svelte';
   import ThemeToggle from '$lib/components/ThemeToggle.svelte';
   import Turnstile from '$lib/components/Turnstile.svelte';
@@ -13,6 +15,7 @@
   import { isDark } from '$lib/stores/theme.svelte';
   import { showInfoAlert } from '$lib/stores/toast';
   import { setActiveRole } from '$lib/utils/auth';
+  import { mapOAuthErrorReason } from '$lib/utils/oauth';
   import { getTokenManager } from '$lib/utils/token-manager';
 
   import type { ActionData } from './$types';
@@ -52,7 +55,8 @@
 
   /**
    * Check for URL parameters on mount and show messages
-   * Handles: ?timeout=true, ?session=expired, ?ratelimit=expired
+   * Handles: ?timeout=true, ?session=expired, ?ratelimit=expired,
+   *          ?oauth=not-linked (Step 5.2), ?oauth=error&reason=… (Phase 6)
    */
   function checkForMessages() {
     if (typeof window === 'undefined') return;
@@ -64,6 +68,27 @@
         'Ihre Sitzung ist aus Sicherheitsgründen abgelaufen. Bitte melden Sie sich erneut an.',
       );
       // Clean up URL - SvelteKit's replaceState (safe inside afterNavigate)
+      replaceState(window.location.pathname, {});
+    } else if (urlParams.get('oauth') === 'not-linked') {
+      // Backend 302s here when an OAuth login succeeds at Microsoft but no
+      // `user_oauth_accounts` row exists for that provider_user_id.
+      // Plan §5.2: "Display server-returned banner 'Kein verknüpftes Assixx-Konto gefunden'".
+      // Reusing showError() matches the established ?timeout=/?session= pattern
+      // — URL-param-driven messages all flow through the same toast surface.
+      showError('Kein verknüpftes Assixx-Konto gefunden.');
+      replaceState(window.location.pathname, {});
+    } else if (urlParams.get('oauth') === 'error') {
+      // Phase 6 error-path UX (Plan §6 integrations). Backend 302s to
+      //   /login?oauth=error&reason=already_linked     (R3 — duplicate MS account)
+      //   /login?oauth=error&reason=callback_failed    (state replay, expired state, id-token verify fail)
+      //   /login?oauth=error&reason=missing_code       (provider returned no authorization code)
+      //   /login?oauth=error&reason=<sanitised MS code>(user denied consent, tenant mismatch, etc.)
+      //
+      // Reason slugs are whitelisted + URL-encoded by OAuthController.sanitiseErrorReason;
+      // we display a mapped German message to avoid leaking Microsoft error strings verbatim
+      // (Plan §6: "never expose Microsoft error strings verbatim").
+      const reason = urlParams.get('reason') ?? '';
+      showError(mapOAuthErrorReason(reason));
       replaceState(window.location.pathname, {});
     } else if (urlParams.get('ratelimit') === 'expired') {
       // Rate limit message - use warning style by setting isTimeout
@@ -376,10 +401,10 @@
           action="login"
         />
 
-        <div class="mt-6 flex justify-end">
+        <div class="mt-6">
           <button
             type="submit"
-            class="btn btn-index"
+            class="btn btn-index w-full"
             disabled={loading || !isFormValid}
           >
             {#if loading}
@@ -389,6 +414,23 @@
           </button>
         </div>
       </form>
+
+      <!--
+        Microsoft OAuth entry point (UI swap — previously ABOVE the form).
+        New reading order per UX request 2026-04-16: email/password is the
+        primary path, OAuth is the alternative. Hence:
+        (1) Divider first — connector "oder" after the submit button,
+        (2) Microsoft button second — the alternative identity option.
+        `disabled` stays tied to `loading` so a password submit in flight
+        cannot race with an OAuth redirect (same guarantee as §5.2 before).
+      -->
+      <div class="oauth-section">
+        <OAuthDivider label="oder" />
+        <MicrosoftSignInButton
+          mode="login"
+          disabled={loading}
+        />
+      </div>
 
       <!-- svelte-ignore a11y_invalid_attribute -->
       <div class="login-footer">

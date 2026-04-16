@@ -7,6 +7,8 @@
 import { BadRequestException, ConflictException } from '@nestjs/common';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import type { CompleteSignupDto } from '../auth/oauth/dto/index.js';
+import type { SignupTicket } from '../auth/oauth/oauth.types.js';
 import type { AppConfigService } from '../config/config.service.js';
 import type { DatabaseService } from '../database/database.service.js';
 import type { SignupDto } from './dto/index.js';
@@ -431,6 +433,237 @@ describe('SignupService – registration', () => {
       await expect(service.checkSubdomainAvailability('valid-sub')).rejects.toThrow(
         BadRequestException,
       );
+    });
+  });
+
+  // ============================================================
+  // registerTenantWithOAuth — OAuth signup path (plan §2.7, ADR-046).
+  //
+  // Mirrors the classic registerTenant but: email+billing_email are sourced
+  // from the OAuth ticket (NOT from the form), an unusable bcrypt hash is
+  // written to users.password, and a user_oauth_accounts row is inserted
+  // INSIDE the same transaction (R8 atomicity). D14: link-insert is inlined
+  // here instead of using OAuthAccountRepository to avoid a circular module
+  // dependency.
+  // ============================================================
+
+  describe('registerTenantWithOAuth', () => {
+    function createValidOAuthDto(): CompleteSignupDto {
+      return {
+        companyName: 'OAuth GmbH',
+        subdomain: 'oauth-gmbh',
+        phone: '+4930123456',
+        adminFirstName: 'Ada',
+        adminLastName: 'Admin',
+        ticket: 'ticket-uuid-v7',
+      } as CompleteSignupDto;
+    }
+
+    function createValidTicket(overrides: Partial<SignupTicket> = {}): SignupTicket {
+      return {
+        provider: 'microsoft',
+        providerUserId: 'ms-sub-abc',
+        email: 'ada@oauth-gmbh.de',
+        emailVerified: true,
+        displayName: 'Ada Admin',
+        microsoftTenantId: 'tid-xyz',
+        createdAt: Date.now(),
+        ...overrides,
+      };
+    }
+
+    function setupOAuthHappyPath(): void {
+      // 1. ensureSubdomainAvailable — subdomain free
+      mockDb.systemQuery.mockResolvedValueOnce([]);
+      // 2. Transaction callback receives mockClient
+      mockDb.systemTransaction.mockImplementation(async (cb: (c: unknown) => Promise<unknown>) =>
+        cb(mockClient),
+      );
+      // Inside the transaction, in order:
+      // createTenantForOAuth → INSERT tenants
+      mockClient.query.mockResolvedValueOnce({ rows: [{ id: 10 }] });
+      // createOAuthRootUser → INSERT users
+      mockClient.query.mockResolvedValueOnce({ rows: [{ id: 1 }] });
+      // createOAuthRootUser → UPDATE employee_id
+      mockClient.query.mockResolvedValueOnce({ rows: [] });
+      // activateTrialAddons — production mode returns early (no queries)
+      // insertOAuthAccountLink → INSERT user_oauth_accounts
+      mockClient.query.mockResolvedValueOnce({ rows: [] });
+      // 3. createOAuthAuditLog — INSERT root_logs
+      mockDb.systemQuery.mockResolvedValueOnce([]);
+    }
+
+    it('registers tenant + root user + oauth link in one transaction (happy path)', async () => {
+      setupOAuthHappyPath();
+
+      const result = await service.registerTenantWithOAuth(
+        createValidOAuthDto(),
+        createValidTicket(),
+        '127.0.0.1',
+        'TestAgent',
+      );
+
+      expect(result.tenantId).toBe(10);
+      expect(result.userId).toBe(1);
+      expect(result.subdomain).toBe('oauth-gmbh');
+      expect(result.message).toContain('Registration successful');
+      expect(result.trialEndsAt).toBeDefined();
+      expect(mockDb.systemTransaction).toHaveBeenCalledTimes(1);
+    });
+
+    it('uses oauthInfo.email for BOTH tenants.email AND billing_email (NOT dto fields)', async () => {
+      setupOAuthHappyPath();
+      const ticket = createValidTicket({ email: 'from-oauth@example.com' });
+
+      await service.registerTenantWithOAuth(createValidOAuthDto(), ticket);
+
+      // client.query #0 is the tenants INSERT; $3 = email, $11 = billing_email
+      const tenantInsertCall = mockClient.query.mock.calls[0] as unknown[];
+      const params = tenantInsertCall[1] as unknown[];
+      expect(params[2]).toBe('from-oauth@example.com'); // email
+      expect(params[10]).toBe('from-oauth@example.com'); // billing_email
+    });
+
+    it('inserts user_oauth_accounts inside the transaction with all OAuth fields', async () => {
+      setupOAuthHappyPath();
+      const ticket = createValidTicket();
+
+      await service.registerTenantWithOAuth(createValidOAuthDto(), ticket);
+
+      // client.query #3 is the user_oauth_accounts INSERT
+      const linkCall = mockClient.query.mock.calls[3] as unknown[];
+      const sql = linkCall[0] as string;
+      const params = linkCall[1] as unknown[];
+
+      expect(sql).toContain('INSERT INTO user_oauth_accounts');
+      expect(params[0]).toBe(10); // tenant_id
+      expect(params[1]).toBe(1); // user_id
+      expect(params[2]).toBe('microsoft'); // provider
+      expect(params[3]).toBe('ms-sub-abc'); // provider_user_id
+      expect(params[4]).toBe('ada@oauth-gmbh.de'); // email
+      expect(params[5]).toBe(true); // email_verified
+      expect(params[6]).toBe('Ada Admin'); // display_name
+      expect(params[7]).toBe('tid-xyz'); // microsoft_tenant_id
+    });
+
+    it('writes an oauth audit row with provider + sub + Microsoft tenant id (forensic trail)', async () => {
+      setupOAuthHappyPath();
+
+      await service.registerTenantWithOAuth(createValidOAuthDto(), createValidTicket());
+
+      // createOAuthAuditLog is the 2nd db.systemQuery call (index 1):
+      //   0 = ensureSubdomainAvailable, 1 = createOAuthAuditLog
+      const auditCall = mockDb.systemQuery.mock.calls[1] as unknown[];
+      const auditParams = auditCall[1] as unknown[];
+      expect(auditParams[0]).toBe('register_oauth'); // action
+      // new_values JSON (7th param, $7) contains the OAuth forensic fields.
+      // Keys follow snake_case with `oauth_` prefix (see createOAuthAuditLog).
+      const newValuesJson = auditParams.find(
+        (p) => typeof p === 'string' && p.includes('"oauth_provider"'),
+      ) as string | undefined;
+      expect(newValuesJson).toBeDefined();
+      const newValues = JSON.parse(newValuesJson!) as Record<string, unknown>;
+      expect(newValues['oauth_provider']).toBe('microsoft');
+      expect(newValues['oauth_provider_user_id']).toBe('ms-sub-abc');
+      expect(newValues['oauth_tenant_id']).toBe('tid-xyz');
+    });
+
+    it('translates Postgres 23505 unique_violation on link INSERT to ConflictException (R3)', async () => {
+      mockDb.systemQuery.mockResolvedValueOnce([]); // ensureSubdomainAvailable
+      mockDb.systemTransaction.mockImplementation(async (cb: (c: unknown) => Promise<unknown>) =>
+        cb(mockClient),
+      );
+      mockClient.query.mockResolvedValueOnce({ rows: [{ id: 10 }] }); // INSERT tenants
+      mockClient.query.mockResolvedValueOnce({ rows: [{ id: 1 }] }); // INSERT users
+      mockClient.query.mockResolvedValueOnce({ rows: [] }); // UPDATE employee_id
+      // insertOAuthAccountLink → Postgres unique_violation (R3: same MS sub twice)
+      const pgError = Object.assign(new Error('duplicate key value'), { code: '23505' });
+      mockClient.query.mockRejectedValueOnce(pgError);
+
+      await expect(
+        service.registerTenantWithOAuth(createValidOAuthDto(), createValidTicket()),
+      ).rejects.toThrow(ConflictException);
+    });
+
+    it('409 message is the German user-facing string (never leaks internals)', async () => {
+      mockDb.systemQuery.mockResolvedValueOnce([]);
+      mockDb.systemTransaction.mockImplementation(async (cb: (c: unknown) => Promise<unknown>) =>
+        cb(mockClient),
+      );
+      mockClient.query.mockResolvedValueOnce({ rows: [{ id: 10 }] });
+      mockClient.query.mockResolvedValueOnce({ rows: [{ id: 1 }] });
+      mockClient.query.mockResolvedValueOnce({ rows: [] });
+      const pgError = Object.assign(new Error('pg: violates unique constraint'), { code: '23505' });
+      mockClient.query.mockRejectedValueOnce(pgError);
+
+      await expect(
+        service.registerTenantWithOAuth(createValidOAuthDto(), createValidTicket()),
+      ).rejects.toThrow('Dieses Microsoft-Konto ist bereits mit einem Assixx-Tenant verknüpft.');
+    });
+
+    it('generic transaction error (not 23505) collapses to BadRequestException', async () => {
+      mockDb.systemQuery.mockResolvedValueOnce([]); // ensureSubdomainAvailable
+      mockDb.systemTransaction.mockRejectedValueOnce(new Error('connection reset by peer'));
+
+      await expect(
+        service.registerTenantWithOAuth(createValidOAuthDto(), createValidTicket()),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('rejects invalid subdomain BEFORE opening the transaction', async () => {
+      const dto = createValidOAuthDto();
+      dto.subdomain = 'ab'; // too short
+
+      await expect(service.registerTenantWithOAuth(dto, createValidTicket())).rejects.toThrow(
+        BadRequestException,
+      );
+
+      expect(mockDb.systemTransaction).not.toHaveBeenCalled();
+    });
+
+    it('rejects taken subdomain with ConflictException BEFORE opening the transaction', async () => {
+      mockDb.systemQuery.mockResolvedValueOnce([{ id: 1 }]); // subdomain already taken
+
+      await expect(
+        service.registerTenantWithOAuth(createValidOAuthDto(), createValidTicket()),
+      ).rejects.toThrow(ConflictException);
+
+      expect(mockDb.systemTransaction).not.toHaveBeenCalled();
+    });
+
+    it('succeeds even when the audit-log write fails (audit is bookkeeping, not a gate)', async () => {
+      mockDb.systemQuery.mockResolvedValueOnce([]); // ensureSubdomainAvailable
+      mockDb.systemTransaction.mockImplementation(async (cb: (c: unknown) => Promise<unknown>) =>
+        cb(mockClient),
+      );
+      mockClient.query.mockResolvedValueOnce({ rows: [{ id: 10 }] });
+      mockClient.query.mockResolvedValueOnce({ rows: [{ id: 1 }] });
+      mockClient.query.mockResolvedValueOnce({ rows: [] });
+      mockClient.query.mockResolvedValueOnce({ rows: [] }); // INSERT user_oauth_accounts OK
+      mockDb.systemQuery.mockRejectedValueOnce(new Error('Audit log DB down'));
+
+      const result = await service.registerTenantWithOAuth(
+        createValidOAuthDto(),
+        createValidTicket(),
+      );
+
+      expect(result.tenantId).toBe(10);
+      expect(result.userId).toBe(1);
+    });
+
+    it('hashes an unusable password (bcrypt called for OAuth users despite no password input)', async () => {
+      setupOAuthHappyPath();
+      mockBcryptHash.mockClear();
+
+      await service.registerTenantWithOAuth(createValidOAuthDto(), createValidTicket());
+
+      // The password never comes from the user — an unusable random value is hashed
+      // so password-login can't succeed against an OAuth-only account.
+      expect(mockBcryptHash).toHaveBeenCalledTimes(1);
+      const [plaintext, rounds] = mockBcryptHash.mock.calls[0] as [string, number];
+      expect(typeof plaintext).toBe('string');
+      expect(plaintext.length).toBeGreaterThanOrEqual(40); // ~43 base64url chars from 32 bytes
+      expect(rounds).toBe(12);
     });
   });
 });
