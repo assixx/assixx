@@ -1,0 +1,17 @@
+# ============================================================================
+# Trivy Vulnerability Suppressions - Assixx
+# ============================================================================
+# Every entry MUST have: CVE-ID, justification, source, review date.
+# Review before expiration date is MANDATORY. Otherwise Trivy re-flags it.
+# ----------------------------------------------------------------------------
+
+# CVE-2023-45853 - MiniZip integer overflow in zipOpenNewFileInZip4_64
+# STATUS: False Positive (Debian Security Tracker: "ignored")
+# REASON: contrib/minizip is NOT compiled into Debian's zlib1g binary package.
+#         The zlib source tree contains the code, but the deployed binary does not.
+#         NVD confirms: "MiniZip is not a supported part of the zlib product".
+# REFS:   https://security-tracker.debian.org/tracker/CVE-2023-45853
+#         https://nvd.nist.gov/vuln/detail/CVE-2023-45853
+#         https://github.com/aquasecurity/trivy/discussions/6722
+# REVIEW: Remove when base image upgrades to Debian Trixie (zlib1g 1:1.3+).
+CVE-2023-45853 exp:2026-10-17
