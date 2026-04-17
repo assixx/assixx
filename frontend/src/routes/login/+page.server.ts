@@ -9,6 +9,7 @@
  */
 import { fail, redirect, type ActionFailure, type Cookies } from '@sveltejs/kit';
 
+import { extractJwtExp } from '$lib/server/jwt-exp';
 import { verifyTurnstile } from '$lib/server/turnstile';
 import { createLogger } from '$lib/utils/logger';
 
@@ -94,6 +95,19 @@ function setAuthCookies(cookies: Cookies, data: LoginResponseData): void {
     httpOnly: false,
     maxAge: ACCESS_TOKEN_MAX_AGE,
   });
+
+  // accessTokenExp — non-httpOnly companion cookie holding the JWT's `exp`
+  // (Unix seconds). TokenManager reads this as its canonical expiry source.
+  // Without this set here, SvelteKit's server-side fetch strips the backend's
+  // Set-Cookie header → stale value from a prior OAuth session lingers and
+  // the header timer shows wrong remaining after password login.
+  //
+  // @see ADR-046 OAuth Sign-In (2026-04-16 amendment — 3-cookie invariant)
+  cookies.set('accessTokenExp', String(extractJwtExp(data.accessToken)), {
+    ...ACCESS_COOKIE_OPTIONS,
+    httpOnly: false,
+    maxAge: ACCESS_TOKEN_MAX_AGE,
+  });
 }
 
 /** Get redirect path based on user role */
@@ -114,11 +128,12 @@ interface MeResponse {
   role?: UserRole;
 }
 
-/** Clear all auth cookies */
+/** Clear all auth cookies — must mirror setAuthCookies 1:1 (3-cookie invariant). */
 function clearAuthCookies(cookies: Cookies): void {
   cookies.delete('accessToken', { path: '/' });
   cookies.delete('refreshToken', { path: '/api/v2/auth' });
   cookies.delete('userRole', { path: '/' });
+  cookies.delete('accessTokenExp', { path: '/' });
 }
 
 /** Extract role from /users/me response */

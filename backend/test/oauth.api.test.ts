@@ -163,8 +163,19 @@ describe('OAuth authorize — happy path (login)', () => {
     expect(location.searchParams.get('response_mode')).toBe('query');
   });
 
-  it('scope is `openid profile email` — no offline_access (D10, V1 does not store refresh tokens)', () => {
-    expect(location.searchParams.get('scope')).toBe('openid profile email');
+  it('scope is `openid profile email User.Read` — no offline_access (D10) — User.Read added 2026-04-17 for profile-photo sync', () => {
+    const scope = location.searchParams.get('scope');
+    // D10 invariant: we never request refresh-token storage.
+    expect(scope).not.toContain('offline_access');
+    // Partial §A4 reversal (FEAT_OAUTH_PROFILE_PHOTO) — User.Read required for Graph /me/photo.
+    expect(scope).toBe('openid profile email User.Read');
+  });
+
+  it('scope regression guard — User.Read MUST stay in the authorize request (FEAT_OAUTH_PROFILE_PHOTO)', () => {
+    const scope = location.searchParams.get('scope');
+    // Explicit substring assertion in addition to the full-string match above —
+    // makes a failed assertion in this test point straight at the User.Read drop.
+    expect(scope).toContain('User.Read');
   });
 
   it('omits prompt=consent on login mode', () => {
@@ -333,6 +344,9 @@ describe('OAuth signup-ticket peek — happy path (field whitelist)', () => {
     emailVerified: true,
     displayName: 'Peek Happy',
     microsoftTenantId: 'tid-peek',
+    // accessToken required since 2026-04-17 (FEAT_OAUTH_PROFILE_PHOTO / D7) — the
+    // isSignupTicket type guard rejects payloads without it.
+    accessToken: 'ms-access-token-peek-happy',
     createdAt: Date.now(),
   });
 
@@ -382,6 +396,7 @@ describe('OAuth signup-ticket peek — idempotent (two peeks both succeed)', () 
     emailVerified: true,
     displayName: null,
     microsoftTenantId: null,
+    accessToken: 'ms-access-token-peek-idem',
     createdAt: Date.now(),
   });
 
@@ -502,6 +517,7 @@ describe('OAuth complete-signup — happy path via seeded ticket', () => {
         emailVerified: true,
         displayName: 'OAuth Happy Path',
         microsoftTenantId: '00000000-0000-0000-0000-000000000001',
+        accessToken: 'ms-access-token-complete-signup-happy',
         createdAt: Date.now(),
       }),
       900,

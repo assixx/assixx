@@ -24,7 +24,62 @@ export interface PasswordResetRecipient {
   lastName: string | null;
 }
 
+/**
+ * Attachment shape for MailerService — abstracts the Nodemailer internal type
+ * so feature modules don't need to depend on nodemailer directly.
+ */
+export interface MailerAttachment {
+  filename: string;
+  content: Buffer;
+  contentType: string;
+}
+
+/**
+ * Context payload for a user-submitted bug report.
+ * All fields are already validated/sanitised by the caller's Zod DTO.
+ * `screenshots` is an array (0–3 images enforced by the controller).
+ */
+export interface BugReportPayload {
+  title: string;
+  categoryLabel: string;
+  description: string;
+  originUrl: string;
+  userAgent: string | undefined;
+  reporterEmail: string;
+  reporterName: string;
+  reporterUserId: number;
+  reporterTenantId: number;
+  reporterRole: string;
+  screenshots: MailerAttachment[];
+}
+
 const PASSWORD_RESET_EXPIRY_MINUTES = 60;
+
+/**
+ * Recipient for user-submitted bug reports. Configurable via env so staging can
+ * redirect away from production inbox without a code change. Default stays on
+ * the production inbox per product decision (info@assixx.com).
+ */
+const BUG_REPORT_RECIPIENT = process.env['FEEDBACK_EMAIL_TO'] ?? 'info@assixx.com';
+
+/**
+ * HTML-entity escape for values interpolated into the bug-report template.
+ * The legacy `email-service.ts` sanitiser strips dangerous tags/handlers but
+ * does NOT escape plaintext, so a user-supplied title like `</td><script>`
+ * would otherwise break the table layout. Scoped to this service to avoid
+ * leaking duplicate escape helpers into the public API.
+ */
+const HTML_ESCAPES: Readonly<Record<string, string>> = {
+  '&': '&amp;',
+  '<': '&lt;',
+  '>': '&gt;',
+  '"': '&quot;',
+  "'": '&#39;',
+};
+
+function escapeHtml(value: string): string {
+  return value.replace(/["&'<>]/g, (match: string): string => HTML_ESCAPES[match] ?? match);
+}
 
 @Injectable()
 export class MailerService {
@@ -76,6 +131,88 @@ export class MailerService {
         `Failed to send password reset email to ${recipient.email}: ${getErrorMessage(error)}`,
       );
     }
+  }
+
+  /**
+   * Forward a user-submitted bug report to the ops inbox.
+   *
+   * Throws on transport failure so the HTTP caller surfaces a real error to the
+   * user — silent swallow would let bug reports disappear without the user
+   * knowing (worse UX than password reset, where we hide existence on purpose).
+   */
+  async sendBugReport(payload: BugReportPayload): Promise<void> {
+    const result = await emailService.sendEmail({
+      to: BUG_REPORT_RECIPIENT,
+      subject: `[Assixx Bug-Report] [${payload.categoryLabel}] ${payload.title}`,
+      html: this.buildBugReportHtml(payload),
+      text: this.buildBugReportText(payload),
+      attachments: payload.screenshots,
+    });
+
+    if (!result.success) {
+      const reason = result.error ?? 'unknown error';
+      this.logger.error(
+        `Bug report email send failed (user=${String(payload.reporterUserId)}): ${reason}`,
+      );
+      throw new Error(`Bug-Report konnte nicht gesendet werden: ${reason}`);
+    }
+  }
+
+  private buildBugReportHtml(payload: BugReportPayload): string {
+    // Every user-supplied value is HTML-escaped here because the branded
+    // sanitiser in `email-service.ts` strips only dangerous tags/handlers —
+    // it does NOT escape plaintext. A user-supplied title like
+    // `</td><script>` would otherwise break the table layout.
+    const rows = [
+      ['Kategorie', payload.categoryLabel],
+      ['Titel', payload.title],
+      ['URL', payload.originUrl],
+      ['Reporter', `${payload.reporterName} <${payload.reporterEmail}>`],
+      ['User-ID', String(payload.reporterUserId)],
+      ['Tenant-ID', String(payload.reporterTenantId)],
+      ['Rolle', payload.reporterRole],
+      ['User-Agent', payload.userAgent ?? '—'],
+      ['Zeitpunkt', new Date().toISOString()],
+    ]
+      .map(
+        ([label, value]: string[]): string =>
+          `<tr><td style="padding:4px 12px 4px 0;color:#666;vertical-align:top;"><strong>${escapeHtml(label ?? '')}</strong></td><td style="padding:4px 0;">${escapeHtml(value ?? '')}</td></tr>`,
+      )
+      .join('');
+
+    const screenshotsHint =
+      payload.screenshots.length > 0 ?
+        `<p style="margin-top:16px;color:#666;font-size:12px;">📎 ${String(payload.screenshots.length)} Screenshot${payload.screenshots.length === 1 ? '' : 's'} im Anhang.</p>`
+      : '';
+
+    return [
+      '<html><body style="font-family:-apple-system,Segoe UI,sans-serif;font-size:14px;color:#222;">',
+      '<h2 style="margin:0 0 12px;color:#1976d2;">🐛 Neuer Bug-Report</h2>',
+      `<table style="border-collapse:collapse;margin-bottom:16px;">${rows}</table>`,
+      '<h3 style="margin:16px 0 8px;">Beschreibung</h3>',
+      `<pre style="white-space:pre-wrap;background:#f5f5f5;padding:12px;border-radius:4px;font-family:inherit;">${escapeHtml(payload.description)}</pre>`,
+      screenshotsHint,
+      '</body></html>',
+    ].join('');
+  }
+
+  private buildBugReportText(payload: BugReportPayload): string {
+    return [
+      'Neuer Bug-Report',
+      '',
+      `Kategorie:   ${payload.categoryLabel}`,
+      `Titel:       ${payload.title}`,
+      `URL:         ${payload.originUrl}`,
+      `Reporter:    ${payload.reporterName} <${payload.reporterEmail}>`,
+      `User-ID:     ${String(payload.reporterUserId)}`,
+      `Tenant-ID:   ${String(payload.reporterTenantId)}`,
+      `Rolle:       ${payload.reporterRole}`,
+      `User-Agent:  ${payload.userAgent ?? '—'}`,
+      `Zeitpunkt:   ${new Date().toISOString()}`,
+      '',
+      'Beschreibung:',
+      payload.description,
+    ].join('\n');
   }
 
   private buildUserName(recipient: PasswordResetRecipient): string {

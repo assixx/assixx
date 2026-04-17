@@ -91,3 +91,24 @@ export const ExportThrottle = (): ThrottleDecorator =>
       upload: true,
     }),
   ) as ThrottleDecorator;
+
+/**
+ * Feedback endpoints: 5 requests per hour.
+ * Use for: bug reports, feature requests — every submission triggers an
+ * outbound email, so flooding would hurt deliverability AND spam the ops
+ * inbox. 5/h is generous for genuine users and restrictive enough that a
+ * malicious authenticated client can't DoS the inbox.
+ * Overrides the `user` tier (which exists in module config) so the limit
+ * actually takes effect; all other tiers are skipped for isolation.
+ */
+export const FeedbackThrottle = (): ThrottleDecorator =>
+  applyDecorators(
+    Throttle({ user: { limit: 5, ttl: 60 * MS_MINUTE } }),
+    SkipThrottle({
+      auth: true,
+      public: true,
+      admin: true,
+      upload: true,
+      export: true,
+    }),
+  ) as ThrottleDecorator;

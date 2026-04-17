@@ -48,6 +48,7 @@ import type {
   SignupTicket,
   SignupTicketPreview,
 } from './oauth.types.js';
+import { ProfilePhotoService } from './profile-photo.service.js';
 import { MicrosoftProvider } from './providers/microsoft.provider.js';
 
 /** 15 min — plan §0.3. Long enough for the user to fill the signup form. */
@@ -69,6 +70,12 @@ export class OAuthService {
     private readonly provider: MicrosoftProvider,
     private readonly accountRepo: OAuthAccountRepository,
     private readonly signupService: SignupService,
+    /**
+     * FEAT_OAUTH_PROFILE_PHOTO (2026-04-17): best-effort Microsoft Graph photo
+     * sync. Called from both login-success and completeSignup paths. Never
+     * throws — failures degrade to a logger.warn and the calling flow proceeds.
+     */
+    private readonly profilePhotoService: ProfilePhotoService,
   ) {}
 
   /**
@@ -87,6 +94,13 @@ export class OAuthService {
    * Handle the provider redirect: consume state, exchange code, verify id_token,
    * then branch on the stored `mode`. State consumption is atomic GETDEL
    * (R2: replay defence) — reused states throw `UnauthorizedException`.
+   *
+   * The `tokens.accessToken` carried here is consumed in two distinct places:
+   *   - login-success → immediately by `profilePhotoService.syncIfChanged`,
+   *     then dropped when this method returns
+   *   - signup-continue → handed to `resolveSignupContinue` which stashes it in
+   *     the 15-min Redis ticket so `completeSignup` can complete the sync after
+   *     the user finishes the company-details form (Spec Deviation D7)
    */
   async handleCallback(code: string, state: string): Promise<CallbackResult> {
     const stored = await this.stateService.consume(state);
@@ -94,9 +108,21 @@ export class OAuthService {
     const info = await this.provider.verifyIdToken(tokens.idToken);
 
     if (stored.mode === 'login') {
-      return await this.resolveLogin(info);
+      const result = await this.resolveLogin(info);
+      if (result.mode === 'login-success') {
+        // Await (not fire-and-forget) — users expect the avatar to be in place
+        // on the first dashboard render. ETag cache keeps re-logins to a ~5 ms
+        // metadata call after the first sync. Failure is swallowed by the
+        // service's top-level try/catch (R1).
+        await this.profilePhotoService.syncIfChanged(
+          result.userId,
+          result.tenantId,
+          tokens.accessToken,
+        );
+      }
+      return result;
     }
-    return await this.resolveSignupContinue(info);
+    return await this.resolveSignupContinue(info, tokens.accessToken);
   }
 
   /**
@@ -139,12 +165,23 @@ export class OAuthService {
     userAgent?: string,
   ): Promise<SignupResponseData> {
     const oauthInfo = await this.consumeSignupTicket(ticketId);
-    return await this.signupService.registerTenantWithOAuth(
+    const result = await this.signupService.registerTenantWithOAuth(
       details,
       oauthInfo,
       ipAddress,
       userAgent,
     );
+    // Photo sync lives here (NOT inside SignupService) — see Spec Deviation D7.
+    // Keeping it in OAuthService avoids a SignupModule → OAuthModule dependency
+    // (OAuthModule already imports SignupModule, so the reverse would need a
+    // forwardRef). Runs AFTER the signup transaction commits — photo failure
+    // cannot roll back a valid tenant+user row (R1 best-effort contract).
+    await this.profilePhotoService.syncIfChanged(
+      result.userId,
+      result.tenantId,
+      oauthInfo.accessToken,
+    );
+    return result;
   }
 
   // === private: login path =================================================
@@ -170,11 +207,17 @@ export class OAuthService {
 
   /**
    * Signup branch: R3 early-check (same Microsoft account twice → 409), then
-   * stash the resolved identity in Redis under a single-use ticket. The
-   * company-details form (Phase 5) reads the ticket ID from the redirect query
-   * and submits it to `completeSignup` along with the form payload.
+   * stash the resolved identity + access token in Redis under a single-use ticket.
+   * The company-details form (Phase 5) reads the ticket ID from the redirect query
+   * and submits it to `completeSignup` along with the form payload; `completeSignup`
+   * uses the stashed `accessToken` to run the profile-photo sync after the user
+   * row exists (see SignupTicket docs for the security posture of ticket-stored
+   * tokens — Spec Deviation D7).
    */
-  private async resolveSignupContinue(info: OAuthUserInfo): Promise<CallbackResult> {
+  private async resolveSignupContinue(
+    info: OAuthUserInfo,
+    accessToken: string,
+  ): Promise<CallbackResult> {
     const existing = await this.accountRepo.findLinkedByProviderSub(
       PROVIDER_ID,
       info.providerUserId,
@@ -192,6 +235,7 @@ export class OAuthService {
       emailVerified: info.emailVerified,
       displayName: info.displayName,
       microsoftTenantId: info.microsoftTenantId,
+      accessToken,
       createdAt: Date.now(),
     };
     await this.redis.set(
@@ -250,6 +294,10 @@ export class OAuthService {
       typeof v['emailVerified'] === 'boolean' &&
       (typeof v['displayName'] === 'string' || v['displayName'] === null) &&
       (typeof v['microsoftTenantId'] === 'string' || v['microsoftTenantId'] === null) &&
+      // accessToken MUST be a non-empty string — a missing or empty token would
+      // make the downstream Graph call 401 immediately; reject at the gate.
+      typeof v['accessToken'] === 'string' &&
+      v['accessToken'] !== '' &&
       typeof v['createdAt'] === 'number'
     );
   }

@@ -570,11 +570,11 @@ cookie writer.
 
 ### Files touched by D (in addition to the earlier amendment table)
 
-| File                                                     | Change                                                                 |
-| -------------------------------------------------------- | ---------------------------------------------------------------------- |
+| File                                                     | Change                                                                     |
+| -------------------------------------------------------- | -------------------------------------------------------------------------- |
 | `backend/src/nest/auth/auth.controller.ts`               | `rotateAccessCookies` helper — 2-cookie rotation that leaves refresh alone |
-| `backend/src/nest/role-switch/role-switch.controller.ts` | All 3 POST endpoints inject `@Res` and call `rotateAccessCookies`      |
-| `frontend/src/lib/components/RoleSwitch.svelte`          | Custom `fetch` → `apiClient.post`; localStorage gate → `hasValidToken` |
+| `backend/src/nest/role-switch/role-switch.controller.ts` | All 3 POST endpoints inject `@Res` and call `rotateAccessCookies`          |
+| `frontend/src/lib/components/RoleSwitch.svelte`          | Custom `fetch` → `apiClient.post`; localStorage gate → `hasValidToken`     |
 
 ### Pattern-level takeaway (added to follow-up work)
 
@@ -589,13 +589,13 @@ is upgraded in urgency: every remaining call-site must migrate to either
 
 ### Files touched by this amendment
 
-| File                                                     | Change                                                                 |
-| -------------------------------------------------------- | ---------------------------------------------------------------------- |
-| `backend/src/nest/auth/auth.controller.ts`               | `EXP_COOKIE_OPTIONS`, `extractJwtExp`, `setAuthCookies`, `clearAuthCookies` + refactor of all 3 call sites |
-| `backend/src/nest/auth/oauth/oauth.controller.ts`        | `/dashboard` → `/login` (Bug A); adopt `setAuthCookies` (Bug C)        |
-| `frontend/src/lib/utils/api-client.utils.ts`             | `getCredentialsMode` always returns `'include'` (Bug B)                |
-| `frontend/src/lib/utils/token-manager.ts`                | `readAccessTokenExpCookie`, `hasSessionSignal`, cookie-first `getRemainingTime`, idempotent `startTimer`, `onTimerUpdate` self-kick, `clearTokens` client-side cookie wipe (Bug C + follow-up tick-freeze) |
-| `backend/test/oauth.api.test.ts`                         | New assertion for `accessTokenExp` cookie shape + value                |
+| File                                              | Change                                                                                                                                                                                                     |
+| ------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `backend/src/nest/auth/auth.controller.ts`        | `EXP_COOKIE_OPTIONS`, `extractJwtExp`, `setAuthCookies`, `clearAuthCookies` + refactor of all 3 call sites                                                                                                 |
+| `backend/src/nest/auth/oauth/oauth.controller.ts` | `/dashboard` → `/login` (Bug A); adopt `setAuthCookies` (Bug C)                                                                                                                                            |
+| `frontend/src/lib/utils/api-client.utils.ts`      | `getCredentialsMode` always returns `'include'` (Bug B)                                                                                                                                                    |
+| `frontend/src/lib/utils/token-manager.ts`         | `readAccessTokenExpCookie`, `hasSessionSignal`, cookie-first `getRemainingTime`, idempotent `startTimer`, `onTimerUpdate` self-kick, `clearTokens` client-side cookie wipe (Bug C + follow-up tick-freeze) |
+| `backend/test/oauth.api.test.ts`                  | New assertion for `accessTokenExp` cookie shape + value                                                                                                                                                    |
 
 ### Follow-up work (tracked, not in this amendment)
 
@@ -610,6 +610,87 @@ is upgraded in urgency: every remaining call-site must migrate to either
 
 ---
 
+## Amendment 2026-04-17: Bug E — Role-switch resets the session timer
+
+**Observed (manual, post-merge):** Header countdown jumped from e.g. 28:12
+back to 30:00 on every role-switch click. A user running low on session time
+could indefinitely extend their session by clicking root → admin → root →
+admin every ~29 minutes — a silent inactivity-timeout bypass. Confirmed
+identical behaviour for both OAuth-logged-in and password-logged-in sessions
+once the 3-cookie invariant was consistently enforced.
+
+**Root cause:** `RoleSwitchService.generateToken` called `jwtService.sign()`
+without overriding `expiresIn`, so the JwtModule's default (30 min) applied.
+Every role-switch minted a fresh 30-minute access token, and
+`rotateAccessCookies` dutifully wrote the fresh `accessTokenExp` to the
+browser — correct from the plumbing layer, but semantically wrong: role-switch
+changes only the `activeRole` claim, it is not a session renewal.
+
+**Why Bug D's fix exposed Bug E:** Before Bug D, the role-switched token was
+only visible via localStorage (Bearer path). With the 3-cookie rollout, the
+fresh `exp` also landed in the non-httpOnly `accessTokenExp` cookie that
+`TokenManager.getRemainingTime()` reads as its canonical source. The timer
+now reliably reflected the minted exp — so the "fresh 30 min" behaviour
+became visible where it had been hidden before.
+
+**Decision — preserve the caller's session exp on role-switch:**
+
+- `JwtAuthGuard.buildAuthUser` propagates the caller's JWT `exp` into the
+  `NestAuthUser` interface (new field `exp: number`, documented in
+  `backend/src/nest/common/interfaces/auth.interface.ts`).
+- `RoleSwitchController`'s three POST endpoints forward `user.exp` to the
+  service layer as an explicit `preserveExp` argument.
+- `RoleSwitchService.generateToken` signs the new JWT with
+  `expiresIn: max(preserveExp - nowSeconds, 1)` — overriding the module's
+  default 30-min. The floor of 1 second keeps jsonwebtoken from rejecting a
+  non-positive `expiresIn` in the sub-second race window where a barely-valid
+  token passes the guard and reaches the service.
+- Refresh-token cookie stays untouched — session identity is unchanged,
+  only a UI-state claim rotates.
+
+**Architectural framing:** Role-switch is a **claim change**, not a session
+refresh. Only the explicit `AuthService.refresh` flow (via refresh-token
+rotation, ADR-005) legitimately extends session lifetime. This matches
+industry convention for claims-based auth: `exp` belongs to the session,
+not the individual claim-carrying token.
+
+**Tests added (`role-switch.service.test.ts`, `|permission|` suite):**
+
+1. `should sign new token with remainingSeconds derived from preserveExp` —
+   asserts the `expiresIn` option is ≈(preserveExp − now) ± 2 s clock drift.
+2. `should floor expiresIn at 1s when caller token is already expired` —
+   proves the negative-delta race window collapses to a 1-second lease.
+3. `should NOT extend session on repeated role-switches (anti-bypass)` —
+   two switches in sequence; second `expiresIn` must be strictly less than
+   the first, demonstrating that the window only shrinks, never expands.
+
+All 14 role-switch service tests pass; full permission suite 572/572 green.
+
+### Files touched by E
+
+| File                                                        | Change                                                                                                                    |
+| ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `backend/src/nest/common/interfaces/auth.interface.ts`      | `NestAuthUser.exp: number` — carries caller's JWT exp through CLS-free path                                               |
+| `backend/src/nest/common/guards/jwt-auth.guard.ts`          | `buildAuthUser` propagates `payload.exp` into `NestAuthUser`                                                              |
+| `backend/src/nest/role-switch/role-switch.controller.ts`    | All 3 endpoints forward `user.exp` as `preserveExp` argument                                                              |
+| `backend/src/nest/role-switch/role-switch.service.ts`       | `generateToken` accepts `preserveExp`; overrides JwtModule default via `expiresIn`                                        |
+| `backend/src/nest/role-switch/role-switch.service.test.ts`  | 3 new tests for preserve-exp semantics + anti-bypass invariant                                                            |
+| `frontend/src/routes/login/+page.server.ts`                 | `setAuthCookies` writes `accessTokenExp`; `clearAuthCookies` mirrors — closes the gap that hid Bug E before               |
+| `frontend/src/routes/signup/oauth-complete/+page.server.ts` | Same 3-cookie-invariant fix as the login form action                                                                      |
+| `frontend/src/lib/server/jwt-exp.ts`                        | Shared server-side `extractJwtExp` helper — mirror of backend counterpart                                                 |
+| `backend/src/nest/auth/auth.controller.ts`                  | `COOKIE_OPTIONS`/`REFRESH_COOKIE_OPTIONS`/`EXP_COOKIE_OPTIONS` `maxAge` corrected from milliseconds to seconds (RFC 6265) |
+
+**Collateral fix (Cookie Max-Age unit bug):** While tracing Bug E,
+`@fastify/cookie` (wrapping `cookie@1.x`) was confirmed to write the
+`maxAge` option 1:1 into the `Max-Age=` header — and RFC 6265 specifies
+that value as **seconds**. The backend was writing `30 * 60 * 1000` (ms),
+producing `Max-Age=1800000` → ~20.83 days of browser persistence for access
+cookies, ~19 years for refresh cookies. The values were corrected to
+`30 * 60` and `7 * 24 * 60 * 60`. Not the direct cause of Bug E but an
+adjacent latent bug surfaced by the investigation.
+
+---
+
 ## References
 
 - [ADR-005: Authentication Strategy](./ADR-005-authentication-strategy.md) — JWT+refresh flow reused
@@ -619,7 +700,108 @@ is upgraded in urgency: every remaining call-site must migrate to either
 - [ADR-019: Multi-Tenant RLS Isolation](./ADR-019-multi-tenant-rls-isolation.md) — `systemQuery` for pre-auth cross-tenant reads
 - [ADR-044: SEO & Security Headers](./ADR-044-seo-and-security-headers.md) — CSP directive structure
 - [FEAT_MICROSOFT_OAUTH_MASTERPLAN.md](../../FEAT_MICROSOFT_OAUTH_MASTERPLAN.md) — execution plan, 17 spec deviations, session log
+- [FEAT_OAUTH_PROFILE_PHOTO_MASTERPLAN.md](../../FEAT_OAUTH_PROFILE_PHOTO_MASTERPLAN.md) — Amendment §A4 execution plan (profile-photo sync, Spec Deviations D1–D7)
 - [HOW-TO-AZURE-AD-SETUP.md](../../how-to/HOW-TO-AZURE-AD-SETUP.md) — Azure Portal registration + Doppler secrets
 - [RFC 7636 — PKCE for OAuth 2.0](https://datatracker.ietf.org/doc/html/rfc7636)
 - [Microsoft identity platform and OAuth 2.0 authorization code flow](https://learn.microsoft.com/en-us/entra/identity-platform/v2-oauth2-auth-code-flow)
 - [Microsoft Brand Guidelines for Sign-In Buttons](https://learn.microsoft.com/en-us/entra/identity-platform/howto-add-branding-in-apps)
+- [Microsoft Graph — Get profilePhoto](https://learn.microsoft.com/en-us/graph/api/profilephoto-get?view=graph-rest-1.0)
+
+---
+
+## Amendment 2026-04-17: §A4 partial reversal — Microsoft Graph profile-photo sync
+
+**Observed (product decision, 2026-04-17):** the avatar rendered for OAuth-provisioned tenant owners was a two-letter initial (`SÖ`) over a coloured tile. Competitors in the German B2B Mittelstand segment display the user's Microsoft 365 photo out of the box. Closing this gap lowers the "this product wasn't built for us" perception at first dashboard render — one of the highest-friction moments in the activation funnel.
+
+**Decision:** `§A4 — Store Microsoft access/refresh tokens` is **partially reversed**. Microsoft Graph `/me/photo` is called during the OAuth callback (login) and the `completeSignup` flow (signup) to sync the user's profile picture. The `access_token` is used **in-flight only** and is never written to a persistent store:
+
+- **Login path:** `OAuthService.handleCallback` awaits `ProfilePhotoService.syncIfChanged` inside the same request context. `tokens.accessToken` never leaves the stack frame.
+- **Signup path:** the access_token is carried through the existing Redis signup ticket (15-min TTL, single-use GETDEL, `oauth:` keyPrefix) — the same storage already trusted for the PKCE `codeVerifier`, which is strictly more sensitive. The token is consumed once by `OAuthService.completeSignup` (after `registerTenantWithOAuth` returns) and discarded.
+
+The "no token storage at the DB layer" invariant (encrypted at rest, rotation policy, incident-response plan for token theft) remains unchanged. Redis is transient, scoped, and bounded by TTL.
+
+### Scope change
+
+Azure AD authorize-request `scope` expanded from `openid profile email` to **`openid profile email User.Read`**. `User.Read` is a delegated Graph permission required for `/me/photo/$value` and auto-consented per-user (no admin consent gate). `ProfilePhoto.Read.All` was rejected — tenant-wide scope, needs admin consent, over-privileged. `offline_access` stays out (original D10 invariant untouched; we still do not store refresh tokens).
+
+### ETag-cached sync architecture
+
+```
+    Login / completeSignup
+           │
+           ▼
+    ProfilePhotoService.syncIfChanged(userId, tenantId, accessToken)
+           │
+           ├─ Manual-upload guard: skip if users.profile_picture prefix ≠ `oauth_`
+           │
+           ├─ Graph GET /me/photo                            (~200 B metadata)
+           │      │
+           │      ├─ 404  /  1x1 GIF placeholder → clear DB + file  → return
+           │      └─ 200 → PhotoMetadata { etag, width, height, contentType }
+           │
+           ├─ ETag compare against user_oauth_accounts.photo_etag
+           │      │
+           │      └─ match → skip binary, return (≥ 95 % of re-logins)
+           │
+           ├─ Graph GET /me/photos/240x240/$value            (~50 KB binary)
+           │      │
+           │      └─ 404 → fallback GET /me/photo/$value (largest available)
+           │
+           ├─ Write tmp file, RENAME to content-addressed path (Spec Deviation D4)
+           │   Path: uploads/profile_pictures/oauth_<uuid>_<etag8>.jpg
+           │
+           └─ Atomic DB transaction (explicit tenantId — ADR-019 pre-auth pool)
+                  UPDATE users SET profile_picture = <newPath>
+                  UPDATE user_oauth_accounts SET photo_etag = <newEtag>
+              On DB error → unlink newPath (orphan cleanup)
+              On success → unlink old oauth_*.jpg (stale cache)
+```
+
+Database artifact: `user_oauth_accounts.photo_etag VARCHAR(64)` added via migration `20260417094053371_add-oauth-photo-etag.ts` (nullable — existing OAuth users populate it on first successful sync).
+
+### Spec Deviations D4–D7 (recorded in the masterplan)
+
+| #   | Divergence                                                              | Why                                                                                                                     |
+| --- | ----------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| D4  | File rename happens BEFORE the DB update (masterplan: after)            | Crash-safety — DB reference to a non-existent file would never self-heal (ETag match on next run would skip)            |
+| D5  | `transaction({ tenantId })` used instead of `tenantTransaction`         | Pre-JWT context has no CLS tenantId; explicit option is the ADR-019-sanctioned pattern                                  |
+| D6  | `getProfilePicture` / `getUuid` as private helpers, not on UsersService | Trivial single-column reads; no second consumer to justify promoting                                                    |
+| D7  | Signup photo sync in `OAuthService.completeSignup`, not `SignupService` | Avoids SignupModule → OAuthModule circular dep; keeps OAuth orchestration inside one module; ticket carries accessToken |
+
+### Failure-mode contract
+
+`ProfilePhotoService.syncIfChanged` has a top-level try/catch and NEVER throws. Every failure (Graph 5xx, network, filesystem, DB) logs a warning and returns. The calling login/signup flow is unaffected. R1 from the masterplan is enforced by the `never-throw contract` unit tests.
+
+### Manual-upload protection
+
+If `users.profile_picture` points at a path whose filename does NOT start with the `oauth_` prefix, the sync is a no-op. The user chose their own picture; OAuth must not overwrite it. Enforced at the very start of `syncIfChanged` — no Graph call, no DB write.
+
+### Test coverage
+
+- 94 OAuth unit tests (30 new) cover ETag cache, metadata null, manual-upload skip, binary null, DB-rename ordering, orphan cleanup, provider throws, db-read throws.
+- 48 API tests (2 new) regression-guard the `User.Read` scope.
+- 3 existing API tests updated with `accessToken` on Redis-seeded `SignupTicket` fixtures (D7 consequence).
+
+### Azure AD consent impact
+
+Existing OAuth-linked users will see Microsoft's "Read your profile" consent screen on the first login after the deploy. Documented in `HOW-TO-AZURE-AD-SETUP.md`.
+
+### Files touched by this amendment
+
+| File                                                               | Change                                                                                             |
+| ------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------- |
+| `database/migrations/20260417094053371_add-oauth-photo-etag.ts`    | NEW — adds `user_oauth_accounts.photo_etag VARCHAR(64)`                                            |
+| `backend/src/nest/auth/oauth/profile-photo.service.ts`             | NEW — ETag-cached orchestrator                                                                     |
+| `backend/src/nest/auth/oauth/profile-photo.service.test.ts`        | NEW — 12 unit tests                                                                                |
+| `backend/src/nest/auth/oauth/providers/microsoft.provider.ts`      | `SCOPES` += `User.Read`; `fetchPhotoMetadata` + `fetchPhotoBinary` + helpers                       |
+| `backend/src/nest/auth/oauth/providers/microsoft.provider.test.ts` | +8 tests (5 metadata, 3 binary)                                                                    |
+| `backend/src/nest/auth/oauth/oauth.types.ts`                       | `PhotoMetadata` type; `SignupTicket.accessToken` field                                             |
+| `backend/src/nest/auth/oauth/oauth.service.ts`                     | Inject `ProfilePhotoService`; call from login-success + completeSignup; ticket carries accessToken |
+| `backend/src/nest/auth/oauth/oauth.service.test.ts`                | +3 tests (login sync, not-linked no-sync, signup sync); fixtures updated                           |
+| `backend/src/nest/auth/oauth/oauth-account.repository.ts`          | `getPhotoEtag` + `updatePhotoEtag`                                                                 |
+| `backend/src/nest/auth/oauth/oauth-account.repository.test.ts`     | +7 tests                                                                                           |
+| `backend/src/nest/auth/oauth/oauth.module.ts`                      | `ProfilePhotoService` in providers + exports                                                       |
+| `backend/test/oauth.api.test.ts`                                   | +2 scope assertions; 3 fixtures updated (accessToken)                                              |
+| `docs/how-to/HOW-TO-AZURE-AD-SETUP.md`                             | `User.Read` permission documented                                                                  |
+| `docs/FEATURES.md`                                                 | OAuth profile-photo sync mentioned                                                                 |
+| `docs/FEAT_OAUTH_PROFILE_PHOTO_MASTERPLAN.md`                      | NEW — execution plan                                                                               |

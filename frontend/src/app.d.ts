@@ -28,6 +28,15 @@ declare global {
     // interface Platform {}
   }
 
+  /**
+   * Build-time version constant, injected by Vite `define` from
+   * `frontend/package.json`. Syncs automatically with Changesets
+   * (`pnpm changeset:version` bumps the field → rebuild picks it up).
+   * See `frontend/vite.config.ts` and docs/how-to/HOW-TO-USE-CHANGESETS.md.
+   */
+  // eslint-disable-next-line @typescript-eslint/naming-convention -- Vite define convention uses __SCREAMING_SNAKE__
+  const __APP_VERSION__: string;
+
   /** Cloudflare Turnstile Widget render options */
   interface TurnstileRenderOptions {
     sitekey: string;

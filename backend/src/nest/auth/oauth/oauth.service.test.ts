@@ -26,6 +26,7 @@ import type { OAuthAccountRepository } from './oauth-account.repository.js';
 import type { OAuthStateService } from './oauth-state.service.js';
 import { OAuthService } from './oauth.service.js';
 import type { CallbackResult, OAuthTokens, OAuthUserInfo, SignupTicket } from './oauth.types.js';
+import type { ProfilePhotoService } from './profile-photo.service.js';
 import type { MicrosoftProvider } from './providers/microsoft.provider.js';
 
 // Mock uuidv7 for deterministic ticket IDs.
@@ -93,6 +94,17 @@ function createMockSignupService(): {
   return { registerTenantWithOAuth: vi.fn() };
 }
 
+/**
+ * ProfilePhotoService is best-effort: default mock resolves to undefined so
+ * it never blocks or throws. Individual tests that care about failure
+ * behaviour can override `syncIfChanged` per-test.
+ */
+function createMockProfilePhotoService(): {
+  syncIfChanged: ReturnType<typeof vi.fn>;
+} {
+  return { syncIfChanged: vi.fn().mockResolvedValue(undefined) };
+}
+
 function createOAuthTokens(overrides?: Partial<OAuthTokens>): OAuthTokens {
   return {
     accessToken: 'access-token',
@@ -144,6 +156,7 @@ describe('OAuthService', () => {
   let mockProvider: ReturnType<typeof createMockProvider>;
   let mockRepo: ReturnType<typeof createMockAccountRepo>;
   let mockSignup: ReturnType<typeof createMockSignupService>;
+  let mockPhoto: ReturnType<typeof createMockProfilePhotoService>;
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -152,12 +165,14 @@ describe('OAuthService', () => {
     mockProvider = createMockProvider();
     mockRepo = createMockAccountRepo();
     mockSignup = createMockSignupService();
+    mockPhoto = createMockProfilePhotoService();
     service = new OAuthService(
       mockRedis as unknown as Redis,
       mockState as unknown as OAuthStateService,
       mockProvider as unknown as MicrosoftProvider,
       mockRepo as unknown as OAuthAccountRepository,
       mockSignup as unknown as SignupService,
+      mockPhoto as unknown as ProfilePhotoService,
     );
   });
 
@@ -260,6 +275,30 @@ describe('OAuthService', () => {
       expect(mockRepo.updateLastLogin).not.toHaveBeenCalled();
     });
 
+    it('invokes profile photo sync on login-success with (userId, tenantId, accessToken)', async () => {
+      mockRepo.findLinkedByProviderSub.mockResolvedValueOnce({
+        tenant_id: TENANT_ID,
+        user_id: USER_ID,
+      });
+
+      await service.handleCallback('auth-code', 'state-uuid');
+
+      expect(mockPhoto.syncIfChanged).toHaveBeenCalledTimes(1);
+      expect(mockPhoto.syncIfChanged).toHaveBeenCalledWith(
+        USER_ID,
+        TENANT_ID,
+        'access-token', // from createOAuthTokens()
+      );
+    });
+
+    it('does NOT invoke photo sync when the provider-sub is not linked (nothing to sync to)', async () => {
+      mockRepo.findLinkedByProviderSub.mockResolvedValueOnce(null);
+
+      await service.handleCallback('auth-code', 'state-uuid');
+
+      expect(mockPhoto.syncIfChanged).not.toHaveBeenCalled();
+    });
+
     it('propagates state-replay errors from stateService.consume (R2 defence)', async () => {
       mockState.consume.mockRejectedValueOnce(new UnauthorizedException('Invalid state'));
       await expect(service.handleCallback('auth-code', 'replayed-state')).rejects.toThrow(
@@ -322,6 +361,7 @@ describe('OAuthService', () => {
       emailVerified: true,
       displayName: 'Admin Example',
       microsoftTenantId: 'tid-abc',
+      accessToken: 'ms-access-token-stashed',
       createdAt: Date.now(),
     };
 
@@ -333,6 +373,9 @@ describe('OAuthService', () => {
       expect(preview).not.toHaveProperty('providerUserId');
       expect(preview).not.toHaveProperty('microsoftTenantId');
       expect(preview).not.toHaveProperty('emailVerified');
+      // accessToken MUST never leak through the peek endpoint — it's the whole
+      // reason `SignupTicketPreview` is a distinct type (Spec Deviation D7).
+      expect(preview).not.toHaveProperty('accessToken');
     });
 
     it('reads from Redis via GET (non-consuming) — never calls GETDEL', async () => {
@@ -381,6 +424,7 @@ describe('OAuthService', () => {
       emailVerified: true,
       displayName: 'Admin Example',
       microsoftTenantId: 'tid-abc',
+      accessToken: 'ms-access-token-stashed',
       createdAt: Date.now(),
     };
 
@@ -399,6 +443,25 @@ describe('OAuthService', () => {
         'UA',
       );
       expect(result.tenantId).toBe(TENANT_ID);
+    });
+
+    it('invokes profile photo sync AFTER registerTenantWithOAuth — uses the ticket-stashed accessToken (D7)', async () => {
+      mockRedis.getdel.mockResolvedValueOnce(JSON.stringify(validTicketPayload));
+      mockSignup.registerTenantWithOAuth.mockResolvedValueOnce(createSignupResponse());
+
+      await service.completeSignup('ticket-x', createCompleteSignupDto());
+
+      expect(mockPhoto.syncIfChanged).toHaveBeenCalledTimes(1);
+      expect(mockPhoto.syncIfChanged).toHaveBeenCalledWith(
+        USER_ID,
+        TENANT_ID,
+        'ms-access-token-stashed', // from validTicketPayload.accessToken
+      );
+      // Order invariant: signup MUST succeed before the photo sync fires — a
+      // photo sync on a failed signup would target a tenant row that doesn't exist.
+      const photoCallOrder = mockPhoto.syncIfChanged.mock.invocationCallOrder[0] ?? 0;
+      const signupCallOrder = mockSignup.registerTenantWithOAuth.mock.invocationCallOrder[0] ?? 0;
+      expect(photoCallOrder).toBeGreaterThan(signupCallOrder);
     });
 
     it('throws UnauthorizedException when the ticket is unknown or expired (getdel null)', async () => {

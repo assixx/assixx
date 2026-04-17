@@ -4,12 +4,24 @@
   Trigger: Avatar + Name + Chevron → expands to show full details
 -->
 <script lang="ts">
+  import { resolve } from '$app/paths';
+
   import {
     type HierarchyLabels,
     DEFAULT_HIERARCHY_LABELS,
     resolvePositionDisplay,
   } from '$lib/types/hierarchy-labels';
   import { getAvatarColorClass, getProfilePictureUrl } from '$lib/utils/avatar-helpers';
+
+  /**
+   * Build-time version constant from `frontend/package.json`.
+   * Injected by Vite `define` (see frontend/vite.config.ts) and kept in lockstep
+   * with all workspace packages via Changesets Fixed-Group
+   * (docs/how-to/HOW-TO-USE-CHANGESETS.md).
+   */
+  const appVersion: string = __APP_VERSION__;
+
+  const versionInfoHref: string = resolve('/versioninfo');
 
   interface UserInfo {
     id?: number;
@@ -140,6 +152,35 @@
   </div>
 </div>
 
+<!--
+  Version + bug-report row — sits under the user card, outside the glass
+  container. Both links use the same dezente sidebar-version styling so the
+  row feels like a single utility bar. Hash `#bug-report` jumps straight to
+  the form section on /versioninfo. Hidden when sidebar is collapsed.
+-->
+{#if !collapsed}
+  <div class="sidebar-footer-links">
+    <a
+      href={versionInfoHref}
+      class="sidebar-version"
+      title="Versionsinfo & Changelog"
+    >
+      v{appVersion}
+    </a>
+    <span
+      class="sidebar-version-sep"
+      aria-hidden="true">·</span
+    >
+    <a
+      href="{versionInfoHref}#bug-report"
+      class="sidebar-version"
+      title="Fehler melden"
+    >
+      Fehler melden
+    </a>
+  </div>
+{/if}
+
 <style>
   .sidebar-footer {
     position: relative;
@@ -263,5 +304,45 @@
   .sidebar-footer :global(.badge) {
     margin-top: 4px;
     align-self: flex-start;
+  }
+
+  /* Row wrapper under the card — groups version + bug-report link inline.
+     Negative top margin tucks close to the glass container since
+     .sidebar-footer keeps its own 30px bottom margin for non-version layouts. */
+  .sidebar-footer-links {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 4px;
+
+    margin: -22px 8px 12px;
+  }
+
+  /* Both links share the same muted tone so the row reads as one utility
+     bar. Only the hover state diverges (primary-blue for the action). */
+  .sidebar-version {
+    padding: 2px 6px;
+
+    color: var(--text-secondary, color-mix(in oklch, var(--color-white) 65%, transparent));
+
+    font-size: 0.8rem;
+    font-variant-numeric: tabular-nums;
+    text-decoration: none;
+
+    letter-spacing: 0.3px;
+
+    transition: color 0.2s ease;
+  }
+
+  .sidebar-version:hover,
+  .sidebar-version:focus-visible {
+    color: var(--color-primary);
+    text-decoration: none;
+  }
+
+  .sidebar-version-sep {
+    color: var(--text-secondary, color-mix(in oklch, var(--color-white) 65%, transparent));
+    font-size: 0.8rem;
+    user-select: none;
   }
 </style>

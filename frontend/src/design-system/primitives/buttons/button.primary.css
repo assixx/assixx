@@ -25,7 +25,10 @@
     --shadow-btn-light,
     0 1px 3px color-mix(in oklch, var(--color-black) 8%, transparent)
   );
-  border: var(--glass-border);
+
+  /* Border matches input fields (ADR-017 token reuse) — same visual weight across
+   * the UI so buttons and form inputs read as the same family. */
+  border: var(--form-field-border);
 
   background: linear-gradient(
     145deg,
@@ -51,6 +54,35 @@
     oklch(90.61% 0 0 / 18%),
     color-mix(in oklch, var(--color-gray-500) 25%, transparent)
   );
+}
+
+/**
+ * Dark-mode overrides (ADR-017 §3 glassmorphism inversion — white overlays on dark).
+ *
+ * WHY: The base gradient + shadow tokens were designed around a LIGHT surface. On
+ *      pure-black --main-bg, the original ~11%/15% white alpha produced an effective
+ *      button lightness of ~7–10 % L* — barely distinguishable from the background —
+ *      and the hover delta was perceptually flat due to the eye's log lightness
+ *      response. Fix pushes the default into the ~14–22 % L* range (clearly "floating"
+ *      above bg), upgrades the border to 22 % (readable edge on black), and swaps
+ *      the invisible black drop-shadow for a real layered shadow: black outer for
+ *      depth on tinted surfaces + white inset sheen that reads as lift on pure black.
+ *      Hover bumps every channel so the transition is unmistakable.
+ */
+html.dark .btn-primary {
+  background: linear-gradient(145deg, oklch(50% 0 0 / 30%), oklch(0% 0 0 / 16%));
+
+  /* Dark border inherited from --form-field-border (20 % white via glass-form-border) —
+   * no explicit override needed. */
+  box-shadow: 0 2px 6px oklch(0% 0 0 / 55%);
+}
+
+html.dark .btn-primary:hover:not(:disabled) {
+  /* Same light→shadow gradient as default, top stop moderately brighter
+   * (58 % L @ 35 %) — visible lift without overshooting into "glassy". */
+  background: linear-gradient(145deg, oklch(58% 0 0 / 35%), oklch(0% 0 0 / 13%));
+  border-color: oklch(100% 0 0 / 23%);
+  box-shadow: 0 3px 9px oklch(0% 0 0 / 62%);
 }
 
 /* Active/Pressed State */
@@ -94,8 +126,11 @@ html.dark .btn-primary:active:not(:disabled) {
 
 html.dark .btn-primary:disabled,
 html.dark .btn-primary.disabled {
-  border-color: var(--color-gray-700);
-  background: var(--color-gray-800);
+  /* Muted version of the dark default gradient (35 % L @ 18 % top, barely any shadow
+   * bottom) so the button still reads as the same component — just "off". Base rule
+   * already applies opacity: 60 % and box-shadow: none; do not re-specify here. */
+  border-color: oklch(100% 0 0 / 8%);
+  background: linear-gradient(145deg, oklch(35% 0 0 / 18%), oklch(0% 0 0 / 8%));
 
   color: var(--color-gray-500);
 }

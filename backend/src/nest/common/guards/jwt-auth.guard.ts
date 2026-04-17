@@ -153,6 +153,9 @@ export class JwtAuthGuard implements CanActivate {
       isRoleSwitched: payload.isRoleSwitched ?? false,
       hasFullAccess: user.has_full_access,
       tenantId: user.tenant_id,
+      // Propagate JWT exp for downstream session-lifetime preservation
+      // (see NestAuthUser.exp doc + role-switch.service preserveExp).
+      exp: payload.exp,
       ...(user.first_name !== null && { firstName: user.first_name }),
       ...(user.last_name !== null && { lastName: user.last_name }),
     };

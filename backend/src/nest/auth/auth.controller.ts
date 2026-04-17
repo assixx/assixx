@@ -63,8 +63,12 @@ export const COOKIE_OPTIONS = {
   secure: process.env['NODE_ENV'] === 'production',
   sameSite: 'lax' as const,
   path: '/',
-  /** Access token expires in 30 minutes */
-  maxAge: 30 * 60 * 1000,
+  // Set-Cookie Max-Age is SECONDS per RFC 6265; cookie@1.x writes it 1:1.
+  // Previous `30 * 60 * 1000` produced `Max-Age=1800000` → ~20.83 days of
+  // browser persistence, so cookies lingered long after the JWT inside
+  // expired. That masked real logout/session bugs and leaked state between
+  // sessions on shared browsers. (2026-04-17)
+  maxAge: 30 * 60,
 };
 
 /**
@@ -83,8 +87,9 @@ export const REFRESH_COOKIE_OPTIONS = {
   secure: process.env['NODE_ENV'] === 'production',
   sameSite: 'strict' as const,
   path: '/api/v2/auth',
-  /** Refresh token expires in 7 days */
-  maxAge: 7 * 24 * 60 * 60 * 1000,
+  // Seconds per RFC 6265 — see COOKIE_OPTIONS note. Previous value was
+  // 1000× the intended 7 days (~19 years). (2026-04-17)
+  maxAge: 7 * 24 * 60 * 60,
 };
 
 /**
@@ -115,8 +120,9 @@ export const EXP_COOKIE_OPTIONS = {
   secure: process.env['NODE_ENV'] === 'production',
   sameSite: 'lax' as const,
   path: '/',
-  /** Mirrors access token lifetime (30 minutes) */
-  maxAge: 30 * 60 * 1000,
+  // Seconds per RFC 6265 — see COOKIE_OPTIONS note. Mirrors access token's
+  // 30-min lifetime so the companion cookie dies with the JWT. (2026-04-17)
+  maxAge: 30 * 60,
 };
 
 /**

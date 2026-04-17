@@ -13,21 +13,29 @@
  *   - `email_verified` claim, when present, MUST be `true` (R1).
  *   - All sensitive substrings redacted from error logs (R7).
  *
- * Spec deviation D10: scope `offline_access` intentionally NOT requested. We do not
- *   persist refresh tokens in V1 (no Microsoft Graph integration — see plan §2.4).
- *   Requesting it would trigger an extra "stay signed-in offline" consent prompt — bad
- *   B2B UX. If a future feature needs Graph access, add it back via a separate ADR.
+ * Spec deviation D10 (from ADR-046): scope `offline_access` intentionally NOT requested.
+ *   We do not persist refresh tokens. Requesting `offline_access` would trigger an
+ *   extra "stay signed-in offline" consent prompt — bad B2B UX. If a future feature
+ *   needs a long-lived token, add it back via a separate ADR.
+ *
+ * Scope `User.Read` (added 2026-04-17 with FEAT_OAUTH_PROFILE_PHOTO — partial reversal
+ *   of ADR-046 §A4): required so the initial `access_token` can call Microsoft Graph
+ *   `/me/photo/$value` during the OAuth callback to cache the user's profile picture.
+ *   The token is used in-flight ONLY and never persisted — the "no token storage"
+ *   invariant from ADR-046 §A4 still holds.
  *
  * @see docs/FEAT_MICROSOFT_OAUTH_MASTERPLAN.md (Phase 2, Step 2.3)
- * @see ADR-046 (to be written) for the V1 token-storage policy.
+ * @see docs/FEAT_OAUTH_PROFILE_PHOTO_MASTERPLAN.md (Phase 2, Step 2.1–2.2)
+ * @see docs/infrastructure/adr/ADR-046-oauth-sign-in.md (Amendment §A4 — Phase 6)
  * @see https://learn.microsoft.com/en-us/entra/identity-platform/v2-protocols-oidc
+ * @see https://learn.microsoft.com/en-us/graph/api/profilephoto-get?view=graph-rest-1.0
  */
 import { Inject, Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { type JWTPayload, createRemoteJWKSet, jwtVerify } from 'jose';
 
 import { getErrorMessage } from '../../../common/utils/error.utils.js';
-import type { OAuthTokens, OAuthUserInfo } from '../oauth.types.js';
+import type { OAuthTokens, OAuthUserInfo, PhotoMetadata } from '../oauth.types.js';
 import type { BuildAuthUrlParams, OAuthProvider } from './oauth-provider.interface.js';
 
 // === Microsoft Identity Platform v2.0 — /organizations/ endpoints ===========
@@ -38,12 +46,33 @@ const MS_JWKS_URL = 'https://login.microsoftonline.com/organizations/discovery/v
 /** v2.0 issuer format: https://login.microsoftonline.com/{tenant-guid}/v2.0 */
 const MS_ISSUER_PATTERN = /^https:\/\/login\.microsoftonline\.com\/[0-9a-f-]+\/v2\.0$/i;
 
-/** No `offline_access` — see header doc D10. */
-const SCOPES = 'openid profile email';
+/**
+ * Requested OAuth scopes:
+ * - `openid profile email` — OIDC core for id_token + UserInfo (ADR-046).
+ * - `User.Read` — Graph delegated permission to read the authenticated user's profile
+ *   (incl. `/me/photo/$value`). Used for profile-photo sync (FEAT_OAUTH_PROFILE_PHOTO).
+ *   Rejected alternative: `ProfilePhoto.Read.All` — tenant-wide, requires admin consent,
+ *   over-privileged for our per-user read. `User.Read` is auto-consented per-user.
+ * - `offline_access` — NOT requested, see header doc D10.
+ */
+const SCOPES = 'openid profile email User.Read';
 
 const JWKS_CACHE_MAX_AGE_MS = 24 * 60 * 60 * 1000;
 const FETCH_TIMEOUT_MS = 10_000;
 const CALLBACK_PATH = '/api/v2/auth/oauth/microsoft/callback';
+
+// === Microsoft Graph — profile-photo endpoints (FEAT_OAUTH_PROFILE_PHOTO) ====
+/** Metadata (~200 B) — used for ETag compare before binary download. */
+const MS_GRAPH_PHOTO_METADATA_URL = 'https://graph.microsoft.com/v1.0/me/photo';
+/** Primary binary endpoint — fixed 240x240 keeps payloads small + consistent across users. */
+const MS_GRAPH_PHOTO_BINARY_FIXED_URL = 'https://graph.microsoft.com/v1.0/me/photos/240x240/$value';
+/** Fallback — returns the largest size the user uploaded (used when 240x240 variant is absent). */
+const MS_GRAPH_PHOTO_BINARY_DEFAULT_URL = 'https://graph.microsoft.com/v1.0/me/photo/$value';
+
+/** Metadata call is tiny — tight timeout avoids dragging login latency on Graph issues. */
+const GRAPH_METADATA_TIMEOUT_MS = 5_000;
+/** Binary download can be up to ~50 KB — a little more headroom. */
+const GRAPH_BINARY_TIMEOUT_MS = 10_000;
 
 /** Header values + body keys that must never reach plaintext logs (R7). */
 const SENSITIVE_KEYS = [
@@ -130,6 +159,76 @@ export class MicrosoftProvider implements OAuthProvider {
     return MicrosoftProvider.projectClaimsToUserInfo(payload);
   }
 
+  /**
+   * Fetch the signed-in user's profile-photo metadata from Microsoft Graph.
+   *
+   * Intended for the ETag-cache path in `ProfilePhotoService`: if the returned ETag
+   * equals the stored `user_oauth_accounts.photo_etag`, the caller skips the binary
+   * fetch entirely (typical re-login saves ~50 KB).
+   *
+   * Failure mode: NEVER throws. Returns `null` on HTTP 404, 1x1-placeholder response,
+   * non-OK HTTP, network error, abort (timeout), or JSON parse error. The caller
+   * treats `null` as "no photo to sync" and continues the login/signup flow.
+   *
+   * @param accessToken — Short-lived Graph access token from the OAuth callback.
+   *                      Used in-flight only, never persisted (ADR-046 §A4 invariant).
+   */
+  async fetchPhotoMetadata(accessToken: string): Promise<PhotoMetadata | null> {
+    const response = await this.graphFetch(
+      MS_GRAPH_PHOTO_METADATA_URL,
+      accessToken,
+      GRAPH_METADATA_TIMEOUT_MS,
+    );
+    if (response === null) return null;
+    if (!response.ok) {
+      // 404 is the common "no photo" signal; still log higher-severity codes for ops.
+      if (response.status !== 404) {
+        this.logger.warn(`Graph metadata HTTP ${response.status}`);
+      }
+      return null;
+    }
+    try {
+      const json = (await response.json()) as Record<string, unknown>;
+      return MicrosoftProvider.projectPhotoMetadata(json);
+    } catch (error: unknown) {
+      this.logger.warn(`Graph metadata parse error: ${getErrorMessage(error)}`);
+      return null;
+    }
+  }
+
+  /**
+   * Fetch the signed-in user's profile-photo binary from Microsoft Graph.
+   *
+   * Tries the fixed 240x240 variant first (consistent avatar size, smaller payload).
+   * Falls back to the default `/me/photo/$value` (largest available) on 404 —
+   * covers the edge case where the user's original upload is smaller than 240x240
+   * so the fixed-size variant was never generated.
+   *
+   * Failure mode: same contract as `fetchPhotoMetadata` — never throws, returns
+   * `null` on any terminal error.
+   *
+   * @returns JPEG/PNG/GIF bytes, or `null` when no photo is available.
+   */
+  async fetchPhotoBinary(accessToken: string): Promise<Buffer | null> {
+    for (const url of [MS_GRAPH_PHOTO_BINARY_FIXED_URL, MS_GRAPH_PHOTO_BINARY_DEFAULT_URL]) {
+      const response = await this.graphFetch(url, accessToken, GRAPH_BINARY_TIMEOUT_MS);
+      if (response === null) continue;
+      if (response.status === 404) continue;
+      if (!response.ok) {
+        this.logger.warn(`Graph binary HTTP ${response.status}`);
+        return null;
+      }
+      try {
+        const arrayBuffer = await response.arrayBuffer();
+        return Buffer.from(arrayBuffer);
+      } catch (error: unknown) {
+        this.logger.warn(`Graph binary read error: ${getErrorMessage(error)}`);
+        return null;
+      }
+    }
+    return null;
+  }
+
   // === private helpers =====================================================
 
   private requireConfig(key: string): string {
@@ -173,6 +272,41 @@ export class MicrosoftProvider implements OAuthProvider {
     } catch (error: unknown) {
       this.logger.warn(`ID token verification failed: ${getErrorMessage(error)}`);
       throw new UnauthorizedException('Invalid ID token');
+    }
+  }
+
+  /**
+   * GET a Microsoft Graph URL with bearer auth + abort-controller timeout.
+   *
+   * Returns `null` only on network / abort errors. HTTP-level errors come back as a
+   * non-ok `Response` so the caller can distinguish semantic 404s (= "no photo",
+   * expected) from 5xx (= log-and-skip). No body is read here — that's the caller's
+   * concern because the two photo endpoints read different formats (JSON vs binary).
+   *
+   * The bearer token is passed via `Authorization` header only — never embedded in
+   * the URL, never logged. Error messages include only the URL (safe: hardcoded Graph
+   * endpoint, no user data) and the normalized error message.
+   */
+  private async graphFetch(
+    url: string,
+    accessToken: string,
+    timeoutMs: number,
+  ): Promise<Response | null> {
+    const controller = new AbortController();
+    const timeout = setTimeout((): void => {
+      controller.abort();
+    }, timeoutMs);
+    try {
+      return await fetch(url, {
+        method: 'GET',
+        headers: { Authorization: `Bearer ${accessToken}` },
+        signal: controller.signal,
+      });
+    } catch (error: unknown) {
+      this.logger.warn(`Graph fetch network error (${url}): ${getErrorMessage(error)}`);
+      return null;
+    } finally {
+      clearTimeout(timeout);
     }
   }
 
@@ -251,5 +385,48 @@ export class MicrosoftProvider implements OAuthProvider {
       displayName: p.name ?? null,
       microsoftTenantId: p.tid ?? null,
     };
+  }
+
+  /**
+   * Project the raw Graph `/me/photo` JSON into `PhotoMetadata` or filter to `null`.
+   *
+   * Filters out the "no photo" signals Graph returns in lieu of a 404:
+   *   - `width === 1 && height === 1` — 1x1 GIF placeholder
+   *   - empty `@odata.mediaEtag` — same signal, double-checked for robustness
+   *
+   * Missing / malformed fields get safe defaults (empty string, 0). The caller only
+   * distinguishes `null` vs non-null, so a partial-but-usable metadata beats a throw
+   * on a minor schema drift from Microsoft.
+   */
+  private static projectPhotoMetadata(json: Record<string, unknown>): PhotoMetadata | null {
+    const width = typeof json['width'] === 'number' ? json['width'] : 0;
+    const height = typeof json['height'] === 'number' ? json['height'] : 0;
+    const rawEtag = typeof json['@odata.mediaEtag'] === 'string' ? json['@odata.mediaEtag'] : '';
+    const contentType =
+      typeof json['@odata.mediaContentType'] === 'string' ?
+        json['@odata.mediaContentType']
+      : 'application/octet-stream';
+
+    // Graph returns a 1x1 GIF placeholder (+ empty ETag) when the user has no photo.
+    if ((width === 1 && height === 1) || rawEtag === '') {
+      return null;
+    }
+    return {
+      etag: MicrosoftProvider.normalizeEtag(rawEtag),
+      width,
+      height,
+      contentType,
+    };
+  }
+
+  /**
+   * Strip HTTP ETag syntax to a bare token suitable for a VARCHAR(64) column.
+   *
+   * Removes the optional `W/` weak-validator prefix and surrounding double quotes.
+   * Example: `W/"BA09D118"` → `BA09D118`. Idempotent — running it twice is a no-op.
+   */
+  private static normalizeEtag(raw: string): string {
+    const withoutWeak = raw.startsWith('W/') ? raw.slice(2) : raw;
+    return withoutWeak.replace(/^"|"$/g, '');
   }
 }

@@ -211,4 +211,73 @@ describe('OAuthAccountRepository', () => {
       expect(sql).toContain('updated_at = NOW()');
     });
   });
+
+  // ─── getPhotoEtag() ─────────────────────────────────────────────────────
+  // Profile-photo ETag cache (FEAT_OAUTH_PROFILE_PHOTO). Same pre-JWT context
+  // as updateLastLogin — explicit tenantId routed through queryAsTenant.
+
+  describe('getPhotoEtag()', () => {
+    it('returns the stored etag when the link exists', async () => {
+      mockDb.queryAsTenant.mockResolvedValueOnce([{ photo_etag: 'BA09D118' }]);
+
+      const etag = await repo.getPhotoEtag(TENANT_ID, USER_ID, 'microsoft');
+
+      expect(etag).toBe('BA09D118');
+    });
+
+    it('returns null when the column is NULL (first-ever sync path)', async () => {
+      mockDb.queryAsTenant.mockResolvedValueOnce([{ photo_etag: null }]);
+
+      const etag = await repo.getPhotoEtag(TENANT_ID, USER_ID, 'microsoft');
+
+      expect(etag).toBeNull();
+    });
+
+    it('returns null when no active link exists (zero rows)', async () => {
+      mockDb.queryAsTenant.mockResolvedValueOnce([]);
+
+      const etag = await repo.getPhotoEtag(TENANT_ID, USER_ID, 'microsoft');
+
+      expect(etag).toBeNull();
+    });
+
+    it('routes via queryAsTenant with explicit tenantId (ADR-019 pre-auth pool)', async () => {
+      mockDb.queryAsTenant.mockResolvedValueOnce([]);
+      await repo.getPhotoEtag(TENANT_ID, USER_ID, 'microsoft');
+      const [sql, params, tenantArg] = mockDb.queryAsTenant.mock.calls[0] ?? [];
+      expect(sql as string).toContain(`is_active = ${IS_ACTIVE.ACTIVE}`);
+      expect(params).toEqual([USER_ID, 'microsoft']);
+      expect(tenantArg).toBe(TENANT_ID);
+    });
+  });
+
+  // ─── updatePhotoEtag() ──────────────────────────────────────────────────
+
+  describe('updatePhotoEtag()', () => {
+    it('runs UPDATE on the caller-provided PoolClient (inside parent txn)', async () => {
+      const client = createMockClient();
+      await repo.updatePhotoEtag(client as unknown as PoolClient, USER_ID, 'microsoft', 'BA09D118');
+      expect(client.query).toHaveBeenCalledTimes(1);
+      expect(mockDb.queryAsTenant).not.toHaveBeenCalled();
+      expect(mockDb.systemQueryOne).not.toHaveBeenCalled();
+    });
+
+    it('passes the etag value as $1 and filters by user_id + provider + is_active', async () => {
+      const client = createMockClient();
+      await repo.updatePhotoEtag(client as unknown as PoolClient, USER_ID, 'microsoft', 'BA09D118');
+      const sql = client.query.mock.calls[0]?.[0] as string;
+      const params = client.query.mock.calls[0]?.[1] as unknown[];
+      expect(sql).toContain('SET photo_etag = $1');
+      expect(sql).toContain('updated_at = NOW()');
+      expect(sql).toContain(`is_active = ${IS_ACTIVE.ACTIVE}`);
+      expect(params).toEqual(['BA09D118', USER_ID, 'microsoft']);
+    });
+
+    it('accepts null to clear the etag (used when Graph reports "no photo")', async () => {
+      const client = createMockClient();
+      await repo.updatePhotoEtag(client as unknown as PoolClient, USER_ID, 'microsoft', null);
+      const params = client.query.mock.calls[0]?.[1] as unknown[];
+      expect(params?.[0]).toBeNull();
+    });
+  });
 });

@@ -4,7 +4,20 @@ import tailwindcss from '@tailwindcss/vite';
 import { visualizer } from 'rollup-plugin-visualizer';
 import { defineConfig } from 'vite';
 
+// Read package.json version at config-load time.
+// Sync with Changesets: `pnpm changeset:version` bumps this field → next build
+// picks up the new value automatically (no manual step required).
+// See docs/how-to/HOW-TO-USE-CHANGESETS.md.
+import pkg from './package.json' with { type: 'json' };
+
 export default defineConfig(({ mode }) => ({
+  // Build-time constant replacement.
+  // __APP_VERSION__ is substituted everywhere in source → version number in UI
+  // stays in lockstep with package.json (Fixed-Group via Changesets).
+  define: {
+    __APP_VERSION__: JSON.stringify(pkg.version),
+  },
+
   plugins: [
     // Sentry MUSS vor SvelteKit kommen!
     sentrySvelteKit({

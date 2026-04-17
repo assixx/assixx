@@ -47,6 +47,7 @@ import { DocumentsModule } from './documents/documents.module.js';
 import { DummyUsersModule } from './dummy-users/dummy-users.module.js';
 import { E2eEscrowModule } from './e2e-escrow/e2e-escrow.module.js';
 import { E2eKeysModule } from './e2e-keys/e2e-keys.module.js';
+import { FeedbackModule } from './feedback/feedback.module.js';
 import { HallsModule } from './halls/halls.module.js';
 import { InventoryModule } from './inventory/inventory.module.js';
 import { KvpModule } from './kvp/kvp.module.js';
@@ -188,6 +189,7 @@ import { WorkOrdersModule } from './work-orders/work-orders.module.js';
     ChatModule,
     CompanyModule,
     UserPermissionsModule,
+    FeedbackModule,
   ],
   providers: [
     // NOTE: Throttler Guard is NOT global — applied selectively via decorators.

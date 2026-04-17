@@ -404,7 +404,7 @@
         <div class="mt-6">
           <button
             type="submit"
-            class="btn btn-index w-full"
+            class="btn btn-primary w-full"
             disabled={loading || !isFormValid}
           >
             {#if loading}

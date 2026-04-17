@@ -100,16 +100,24 @@ with PKCE; implicit is a legacy fallback we don't need.
 ## Step 4 — Configure API Permissions
 
 1. Open **API permissions** in the left nav.
-2. The default state shows **Microsoft Graph → User.Read (Delegated)** —
-   **leave it as is**. Do NOT add scopes.
+2. The required state is **Microsoft Graph → User.Read (Delegated)** —
+   this is Azure's default for new app registrations. **Leave it.**
 
-**Why no extra scopes?** V1 does not call Microsoft Graph. The
-`openid profile email` scopes are OIDC-standard and implicit — they don't
-need to be listed here. Adding Graph scopes would trigger an admin-consent
-prompt on first sign-in that most customers can't approve without their
-IT admin — bad UX for first-time signup. When V2 adds Teams/calendar sync
-(per [ADR-046 A4](../infrastructure/adr/ADR-046-oauth-sign-in.md)), a
-dedicated ADR will cover the scope additions.
+**Why `User.Read`?** Sign-in itself uses the OIDC-standard
+`openid profile email` scopes (implicit, no configuration needed), AND
+**`User.Read`** — a delegated Graph permission required to sync the user's
+Microsoft 365 profile photo into the Assixx avatar (see
+[ADR-046 Amendment 2026-04-17](../infrastructure/adr/ADR-046-oauth-sign-in.md#amendment-2026-04-17-a4-partial-reversal--microsoft-graph-profile-photo-sync)).
+`User.Read` is auto-consented per-user — **no admin consent required**.
+Users see a "Read your profile" line on Microsoft's consent screen the first
+time they sign in after the scope rollout; that is expected and correct.
+
+**Do NOT** add `ProfilePhoto.Read.All` — it is tenant-wide and forces an
+admin-consent prompt most customers cannot approve without their IT team.
+
+**Do NOT** add `offline_access` — we do not store refresh tokens (ADR-046 D10).
+The Graph `access_token` is used in-flight during the OAuth callback only; it
+is never persisted to the database.
 
 **Important:** Do NOT click "Grant admin consent for {tenant}". That's for
 our internal AAD tenant, not our customers'. Customer tenant admins grant
@@ -276,7 +284,7 @@ Smoke-test the live endpoints (backend must be running):
 # 1. Authorize endpoint should 302 with all the PKCE+state params
 curl -s -o /dev/null -w "%{http_code} %{redirect_url}\n" \
   http://localhost:3000/api/v2/auth/oauth/microsoft/authorize?mode=login
-# Expected: 302 https://login.microsoftonline.com/organizations/oauth2/v2.0/authorize?client_id=...&scope=openid+profile+email&...
+# Expected: 302 https://login.microsoftonline.com/organizations/oauth2/v2.0/authorize?client_id=...&scope=openid+profile+email+User.Read&...
 
 # 2. Peek endpoint with a known-bad id — expect 400
 curl -s -o /dev/null -w "%{http_code}\n" \

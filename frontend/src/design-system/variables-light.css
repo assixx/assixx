@@ -99,6 +99,25 @@
   --color-icon-primary: var(--color-primary);
   --color-accent-bg: oklch(86.46% 0.0729 242.52);
 
+  /* Accent background gradient — used for highlighted surfaces (e.g. active sidebar item).
+   * Two-layer radial + diagonal linear mesh centred on the accent hue for depth.
+   * Lightness range tightened around --color-accent-bg (86.46%) so the border
+   * colour blends with the top/bottom edges — prevents visible light/dark bands
+   * on short elements like the 2.1rem sidebar link. */
+  --color-accent-bg-gradient:
+    radial-gradient(
+      ellipse 120% 50% at 30% 0%,
+      rgb(255 255 255 / 30%) 0%,
+      rgb(255 255 255 / 0%) 60%
+    ),
+    radial-gradient(ellipse 80% 60% at 80% 100%, oklch(78% 0.1 242.52 / 50%) 0%, transparent 65%),
+    linear-gradient(
+      in oklch 160deg,
+      oklch(90% 0.05 242.52) 0%,
+      oklch(86.46% 0.0729 242.52) 50%,
+      oklch(82% 0.095 242.52) 100%
+    );
+
   /* Stacked section background (Kamishibai board collapsed sections) */
   --color-section-stacked-bg: oklch(97.87% 0.0057 264.53);
   --color-section-header-bg: oklch(90.67% 0 0);

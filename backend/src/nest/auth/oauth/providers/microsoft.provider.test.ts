@@ -19,6 +19,9 @@ import type { ConfigService } from '@nestjs/config';
 import { jwtVerify } from 'jose';
 // Node URLSearchParams is a runtime global but not in the eslint test-globals list — import explicitly.
 import { URLSearchParams } from 'node:url';
+// TextEncoder same story — a Node/Web global that ESLint's no-undef can't see
+// without a globals entry. Imported explicitly to keep the test file lint-clean.
+import { TextEncoder } from 'node:util';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { MicrosoftProvider } from './microsoft.provider.js';
@@ -58,12 +61,15 @@ function createFetchResponse(init: {
   status: number;
   jsonBody?: Record<string, unknown>;
   textBody?: string;
+  /** For `fetchPhotoBinary` tests — mock the `arrayBuffer()` body. */
+  arrayBufferBody?: ArrayBuffer;
 }): Response {
   return {
     ok: init.ok,
     status: init.status,
     json: vi.fn().mockResolvedValue(init.jsonBody ?? {}),
     text: vi.fn().mockResolvedValue(init.textBody ?? ''),
+    arrayBuffer: vi.fn().mockResolvedValue(init.arrayBufferBody ?? new ArrayBuffer(0)),
   } as unknown as Response;
 }
 
@@ -143,15 +149,17 @@ describe('MicrosoftProvider', () => {
       expect(params.get('response_mode')).toBe('query');
     });
 
-    it('scope is `openid profile email` — NO offline_access (D10, no refresh-token storage in V1)', () => {
+    it('scope is `openid profile email User.Read` — NO offline_access (D10) — User.Read added for profile-photo sync (FEAT_OAUTH_PROFILE_PHOTO)', () => {
       const raw = provider.buildAuthorizationUrl({
         state: 'state-1',
         codeChallenge: 'challenge-1',
         mode: 'login',
       });
       const scope = new URL(raw).searchParams.get('scope');
-      expect(scope).toBe('openid profile email');
+      // D10 invariant: no refresh-token storage → offline_access stays out
       expect(scope).not.toContain('offline_access');
+      // Partial §A4 reversal (2026-04-17): User.Read required for Graph /me/photo call
+      expect(scope).toBe('openid profile email User.Read');
     });
 
     it('adds prompt=consent on signup mode (admin must actively approve)', () => {
@@ -262,6 +270,154 @@ describe('MicrosoftProvider', () => {
       await expect(provider.exchangeCodeForTokens('auth-code', 'verifier')).rejects.toThrow(
         UnauthorizedException,
       );
+    });
+  });
+
+  // ─── fetchPhotoMetadata() + fetchPhotoBinary() ──────────────────────────
+  // Graph profile-photo sync added 2026-04-17 (FEAT_OAUTH_PROFILE_PHOTO).
+  // Both methods MUST be defensive — login/signup cannot fail on Graph errors.
+
+  describe('fetchPhotoMetadata()', () => {
+    beforeEach(() => {
+      globalThis.fetch = vi.fn();
+    });
+
+    it('returns normalized PhotoMetadata on 200 — strips HTTP ETag quoting and W/ prefix', async () => {
+      vi.mocked(globalThis.fetch).mockResolvedValueOnce(
+        createFetchResponse({
+          ok: true,
+          status: 200,
+          jsonBody: {
+            '@odata.mediaEtag': 'W/"BA09D118"',
+            '@odata.mediaContentType': 'image/jpeg',
+            id: '240x240',
+            width: 240,
+            height: 240,
+          },
+        }),
+      );
+
+      const meta = await provider.fetchPhotoMetadata('access-token');
+
+      expect(meta).toEqual({
+        etag: 'BA09D118',
+        width: 240,
+        height: 240,
+        contentType: 'image/jpeg',
+      });
+    });
+
+    it('returns null on HTTP 404 — "user has no photo" is not an error', async () => {
+      vi.mocked(globalThis.fetch).mockResolvedValueOnce(
+        createFetchResponse({ ok: false, status: 404 }),
+      );
+
+      const meta = await provider.fetchPhotoMetadata('access-token');
+
+      expect(meta).toBeNull();
+    });
+
+    it('returns null on 1x1 GIF placeholder (Graph "no photo" sentinel) — width+height both 1', async () => {
+      vi.mocked(globalThis.fetch).mockResolvedValueOnce(
+        createFetchResponse({
+          ok: true,
+          status: 200,
+          jsonBody: {
+            '@odata.mediaEtag': '',
+            '@odata.mediaContentType': 'image/gif',
+            id: '1x1',
+            width: 1,
+            height: 1,
+          },
+        }),
+      );
+
+      const meta = await provider.fetchPhotoMetadata('access-token');
+
+      expect(meta).toBeNull();
+    });
+
+    it('returns null on fetch network error — NEVER throws (best-effort contract)', async () => {
+      vi.mocked(globalThis.fetch).mockRejectedValueOnce(new Error('ECONNRESET'));
+
+      const meta = await provider.fetchPhotoMetadata('access-token');
+
+      expect(meta).toBeNull();
+    });
+
+    it('attaches Bearer token via Authorization header — access_token never appears in URL', async () => {
+      vi.mocked(globalThis.fetch).mockResolvedValueOnce(
+        createFetchResponse({
+          ok: true,
+          status: 200,
+          jsonBody: {
+            '@odata.mediaEtag': '"abcd1234"',
+            '@odata.mediaContentType': 'image/jpeg',
+            id: '240x240',
+            width: 240,
+            height: 240,
+          },
+        }),
+      );
+
+      await provider.fetchPhotoMetadata('super-secret-token');
+
+      const [url, init] = vi.mocked(globalThis.fetch).mock.calls[0] ?? [];
+      expect(String(url)).toBe('https://graph.microsoft.com/v1.0/me/photo');
+      expect(String(url)).not.toContain('super-secret-token');
+      const headers = (init?.headers ?? {}) as Record<string, string>;
+      expect(headers['Authorization']).toBe('Bearer super-secret-token');
+    });
+  });
+
+  describe('fetchPhotoBinary()', () => {
+    beforeEach(() => {
+      globalThis.fetch = vi.fn();
+    });
+
+    it('returns a Buffer on 200 from the primary /photos/240x240/$value endpoint', async () => {
+      const payload = new TextEncoder().encode('JPEG-BYTES').buffer;
+      vi.mocked(globalThis.fetch).mockResolvedValueOnce(
+        createFetchResponse({ ok: true, status: 200, arrayBufferBody: payload }),
+      );
+
+      const result = await provider.fetchPhotoBinary('access-token');
+
+      expect(result).toBeInstanceOf(Buffer);
+      expect(result?.toString()).toBe('JPEG-BYTES');
+      // Only hit the primary endpoint when it succeeds — fallback must NOT fire.
+      expect(vi.mocked(globalThis.fetch)).toHaveBeenCalledTimes(1);
+      expect(String(vi.mocked(globalThis.fetch).mock.calls[0]?.[0])).toContain('/photos/240x240/');
+    });
+
+    it('falls back to /me/photo/$value when 240x240 variant returns 404 (upload smaller than 240px)', async () => {
+      vi.mocked(globalThis.fetch)
+        .mockResolvedValueOnce(createFetchResponse({ ok: false, status: 404 }))
+        .mockResolvedValueOnce(
+          createFetchResponse({
+            ok: true,
+            status: 200,
+            arrayBufferBody: new TextEncoder().encode('FALLBACK-BYTES').buffer,
+          }),
+        );
+
+      const result = await provider.fetchPhotoBinary('access-token');
+
+      expect(result?.toString()).toBe('FALLBACK-BYTES');
+      // Order matters: primary first, default second.
+      const calls = vi.mocked(globalThis.fetch).mock.calls;
+      expect(String(calls[0]?.[0])).toContain('/photos/240x240/');
+      expect(String(calls[1]?.[0])).toBe('https://graph.microsoft.com/v1.0/me/photo/$value');
+    });
+
+    it('returns null when both primary AND fallback endpoints 404', async () => {
+      vi.mocked(globalThis.fetch)
+        .mockResolvedValueOnce(createFetchResponse({ ok: false, status: 404 }))
+        .mockResolvedValueOnce(createFetchResponse({ ok: false, status: 404 }));
+
+      const result = await provider.fetchPhotoBinary('access-token');
+
+      expect(result).toBeNull();
     });
   });
 

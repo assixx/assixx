@@ -737,6 +737,15 @@
     gap: var(--spacing-3);
   }
 
+  /* Destructive action visually separated on the right edge.
+   * WHY: Standard UX pattern (primary actions left, destructive right) reduces
+   * misclick risk on Löschen. Using `order` + `margin-left: auto` keeps the
+   * template semantic (delete stays grouped with edit) while shifting visually. */
+  .action-buttons .btn-danger {
+    order: 2;
+    margin-left: auto;
+  }
+
   /* ─── Photo Gallery ──────── */
 
   .photo-gallery {

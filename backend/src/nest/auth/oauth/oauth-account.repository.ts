@@ -169,4 +169,66 @@ export class OAuthAccountRepository {
       tenantId,
     );
   }
+
+  /**
+   * Read the cached Graph profile-photo ETag for an active link.
+   *
+   * Returns `null` when the link does not exist (inactive / never linked) or
+   * when the ETag has not been populated yet (first successful sync will set
+   * it). Called from `ProfilePhotoService.syncIfChanged` BEFORE the JWT is
+   * issued — same pre-auth context as `updateLastLogin`, so `queryAsTenant`
+   * with explicit tenantId applies (ADR-019).
+   *
+   * @see docs/FEAT_OAUTH_PROFILE_PHOTO_MASTERPLAN.md (Phase 2, Step 2.4)
+   */
+  async getPhotoEtag(
+    tenantId: number,
+    userId: number,
+    provider: OAuthProviderId,
+  ): Promise<string | null> {
+    const rows = await this.db.queryAsTenant<{ photo_etag: string | null }>(
+      `SELECT photo_etag
+         FROM user_oauth_accounts
+        WHERE user_id = $1
+          AND provider = $2::oauth_provider
+          AND is_active = ${IS_ACTIVE.ACTIVE}
+        LIMIT 1`,
+      [userId, provider],
+      tenantId,
+    );
+    return rows[0]?.photo_etag ?? null;
+  }
+
+  /**
+   * Persist a new Graph profile-photo ETag (or `null` to clear it).
+   *
+   * Designed to run INSIDE a `tenantTransaction` started by the caller — the
+   * parent `ProfilePhotoService.syncIfChanged` updates `users.profile_picture`
+   * and this column atomically. Takes a `PoolClient` directly (not
+   * DatabaseService) because the parent already set `app.tenant_id` on that
+   * client via `setTenantContext()`. Mirrors the `createLink` contract.
+   *
+   * Silent on zero rows affected (link inactive / revoked between metadata
+   * fetch and this write) — photo sync is best-effort; the caller treats a
+   * missed update as "try again next login".
+   *
+   * @see docs/FEAT_OAUTH_PROFILE_PHOTO_MASTERPLAN.md (Phase 2, Step 2.4)
+   * @see ADR-019 — "inside a transaction callback → client.query() directly"
+   */
+  async updatePhotoEtag(
+    client: PoolClient,
+    userId: number,
+    provider: OAuthProviderId,
+    etag: string | null,
+  ): Promise<void> {
+    await client.query(
+      `UPDATE user_oauth_accounts
+          SET photo_etag = $1,
+              updated_at = NOW()
+        WHERE user_id = $2
+          AND provider = $3::oauth_provider
+          AND is_active = ${IS_ACTIVE.ACTIVE}`,
+      [etag, userId, provider],
+    );
+  }
 }

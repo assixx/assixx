@@ -29,6 +29,7 @@
  */
 import { error, fail, redirect, type Cookies } from '@sveltejs/kit';
 
+import { extractJwtExp } from '$lib/server/jwt-exp';
 import { createLogger } from '$lib/utils/logger';
 
 import type { Actions, PageServerLoad } from './$types';
@@ -185,6 +186,14 @@ function setAuthCookies(cookies: Cookies, access: string, refresh: string): void
   // userRole is readable by client JS (not httpOnly) — the router uses it
   // to pick the correct dashboard layout. OAuth signup always creates root.
   cookies.set('userRole', 'root', {
+    ...ACCESS_COOKIE_OPTIONS,
+    httpOnly: false,
+    maxAge: ACCESS_TOKEN_MAX_AGE,
+  });
+  // accessTokenExp — see login/+page.server.ts for full rationale.
+  // SvelteKit server-side fetch strips backend Set-Cookie → re-emit here or
+  // TokenManager's timer reads stale/absent cookie after OAuth signup.
+  cookies.set('accessTokenExp', String(extractJwtExp(access)), {
     ...ACCESS_COOKIE_OPTIONS,
     httpOnly: false,
     maxAge: ACCESS_TOKEN_MAX_AGE,

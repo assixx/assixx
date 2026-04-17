@@ -58,6 +58,36 @@ export interface OAuthUserInfo {
 }
 
 /**
+ * Microsoft Graph `/me/photo` metadata — used for ETag-cached profile-photo sync.
+ *
+ * Captured during the OAuth callback (requires the `User.Read` scope on the access
+ * token) and compared against `user_oauth_accounts.photo_etag` on each login. When
+ * the ETag matches the stored value the binary download is skipped — typical
+ * re-login saves the ~50 KB photo fetch.
+ *
+ * `etag` is the normalized `@odata.mediaEtag` value: HTTP-ETag double quotes and
+ * the optional `W/` weak-validator prefix stripped, leaving a bare token that fits
+ * the `VARCHAR(64)` column.
+ *
+ * The provider translates Graph's "no photo" signals (HTTP 404, 1x1 GIF placeholder,
+ * empty ETag) to `null` before reaching this type — every `PhotoMetadata` returned
+ * represents a real photo the caller can act on.
+ *
+ * @see docs/FEAT_OAUTH_PROFILE_PHOTO_MASTERPLAN.md (Phase 2, Step 2.2)
+ * @see https://learn.microsoft.com/en-us/graph/api/profilephoto-get?view=graph-rest-1.0
+ */
+export interface PhotoMetadata {
+  /** Normalized ETag — surrounding quotes and `W/` prefix stripped. Fits VARCHAR(64). */
+  etag: string;
+  /** Photo width in pixels. The `width === 1 && height === 1` placeholder is filtered out. */
+  width: number;
+  /** Photo height in pixels. */
+  height: number;
+  /** MIME type from `@odata.mediaContentType` (e.g. `image/jpeg`, `image/png`). */
+  contentType: string;
+}
+
+/**
  * Result of `OAuthService.handleCallback()` — discriminated union.
  *
  * Mapping to controller redirects:
@@ -75,6 +105,18 @@ export type CallbackResult =
 /**
  * Redis-stored signup ticket — bridges the OAuth callback (provider-resolved identity)
  * to the company-details form submission. 15-min TTL, single-use on `completeSignup()`.
+ *
+ * `accessToken` is carried so `OAuthService.completeSignup` can trigger the
+ * profile-photo sync (FEAT_OAUTH_PROFILE_PHOTO) right after tenant+user creation.
+ * Security posture (Spec Deviation D7, 2026-04-17):
+ *   - Stored in the same Redis instance that already holds the PKCE `codeVerifier`
+ *     (`OAuthState`) — which is strictly MORE sensitive than a short-lived access
+ *     token. So no new storage-tier risk surface.
+ *   - Single-use (GETDEL on consume) + 15-min TTL + Redis password + `oauth:`
+ *     keyPrefix isolation.
+ *   - NEVER exposed through the peek endpoint (see `SignupTicketPreview` below).
+ *   - ADR-046 §A4 "no token persistence" still holds at the DB layer — Redis is
+ *     transient, scoped, and bounded.
  */
 export interface SignupTicket {
   provider: OAuthProviderId;
@@ -83,6 +125,8 @@ export interface SignupTicket {
   emailVerified: boolean;
   displayName: string | null;
   microsoftTenantId: string | null;
+  /** Graph access token — consumed once by `ProfilePhotoService.syncIfChanged` and discarded. */
+  accessToken: string;
   createdAt: number;
 }
 

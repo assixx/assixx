@@ -113,7 +113,8 @@
 - UNIQUE(provider, provider_user_id) — ein Microsoft-Konto → ein Assixx-Tenant (R3 duplicate-signup defence)
 - `admin`- und `employee`-Rollen bleiben auf Passwort-Auth (OAuth explizit out-of-scope für V1)
 - Frontend: Brand-Guideline-konformer "Mit Microsoft anmelden/registrieren"-Button, `/signup/oauth-complete` Pre-Fill-Formular
-- Architektur: ADR-046, HOW-TO: `docs/how-to/HOW-TO-AZURE-AD-SETUP.md`
+- **Profilbild-Auto-Sync** (2026-04-17): Microsoft 365 Profilbild wird beim Signup und bei jedem Login via Microsoft Graph `/me/photo` übernommen. ETag-gecached (`user_oauth_accounts.photo_etag`) → 95 % der Re-Logins überspringen den Binary-Download. Manuell hochgeladene Bilder werden **nie** überschrieben (Filename-Prefix-Konvention `oauth_`). Best-effort — Graph-Fehler brechen Login/Signup nie. Scope: `User.Read` delegated, kein Admin-Consent nötig.
+- Architektur: ADR-046 (+ Amendment 2026-04-17), HOW-TO: `docs/how-to/HOW-TO-AZURE-AD-SETUP.md`
 
 #### 10. **Addon-System** (ADR-033 — System Feature)
 

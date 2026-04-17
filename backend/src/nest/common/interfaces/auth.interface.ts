@@ -24,6 +24,17 @@ export interface NestAuthUser extends BaseAuthUser {
   departmentId?: number;
   /** Team ID (for employees) */
   teamId?: number;
+  /**
+   * Expiration timestamp (Unix seconds) of the access token the caller
+   * authenticated with. Propagated from the JWT payload by JwtAuthGuard so
+   * downstream services (e.g. role-switch) can preserve the session lifetime
+   * when minting a new token for a claim-only change — otherwise every
+   * role-switch would issue a fresh 30-min token, which is (a) a silent
+   * inactivity-timeout bypass (users click role-switch periodically to
+   * extend the session indefinitely) and (b) visually jarring (header
+   * countdown jumps back to 30:00 on every switch).
+   */
+  exp: number;
 }
 
 /**

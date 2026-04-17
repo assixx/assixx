@@ -31,6 +31,9 @@ import { OAuthController } from './oauth.controller.js';
 import { OAuthService } from './oauth.service.js';
 // Tokens live in their own leaf file to avoid a service<->module import cycle.
 import { OAUTH_REDIS_CLIENT } from './oauth.tokens.js';
+// Profile-photo sync (FEAT_OAUTH_PROFILE_PHOTO) — registered but not yet wired
+// into OAuthService; Step 2.5 of the masterplan adds the consumer calls.
+import { ProfilePhotoService } from './profile-photo.service.js';
 import { MicrosoftProvider } from './providers/microsoft.provider.js';
 
 // Re-export tokens so existing import paths (`from './oauth.module.js'`) keep working
@@ -69,6 +72,7 @@ export { OAUTH_REDIS_CLIENT } from './oauth.tokens.js';
     OAuthStateService,
     MicrosoftProvider,
     OAuthAccountRepository,
+    ProfilePhotoService,
     OAuthService,
   ],
   exports: [
@@ -76,6 +80,7 @@ export { OAUTH_REDIS_CLIENT } from './oauth.tokens.js';
     OAuthStateService,
     MicrosoftProvider,
     OAuthAccountRepository,
+    ProfilePhotoService,
     OAuthService,
   ],
 })
