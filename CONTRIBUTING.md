@@ -51,7 +51,7 @@ See [HOW-TO-DOPPLER-GUIDE.md](./docs/how-to/HOW-TO-DOPPLER-GUIDE.md) for the ful
 ### 2. Clone & Start
 
 ```bash
-git clone https://github.com/assixx-dev/Assixx.git
+git clone https://github.com/assixx/Assixx.git
 cd Assixx
 
 # Install dependencies (npm/yarn are blocked)

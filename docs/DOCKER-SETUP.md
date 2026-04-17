@@ -21,7 +21,7 @@
 ## Quick Start (Automated)
 
 ```bash
-git clone https://github.com/assixx-dev/Assixx.git
+git clone https://github.com/assixx/Assixx.git
 cd Assixx/docker
 
 # With Doppler (team members):
@@ -49,7 +49,7 @@ Use this if the automated script fails or you prefer manual control.
 ### 1. Clone and install dependencies
 
 ```bash
-git clone https://github.com/assixx-dev/Assixx.git
+git clone https://github.com/assixx/Assixx.git
 cd Assixx
 pnpm install
 pnpm --filter @assixx/shared build
