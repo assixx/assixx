@@ -67,6 +67,13 @@ export default defineConfig(({ mode }) => ({
       '/api': {
         target: 'http://localhost:3000',
         changeOrigin: true,
+        // Ausnahme: /api/turnstile wird von SvelteKit selbst bedient
+        // (siehe frontend/src/routes/api/turnstile/+server.ts). Ohne
+        // diesen Bypass würde der Request an NestJS:3000 laufen und
+        // dort mit 404 NOT_FOUND beantwortet — Signup-Flow brechen.
+        // Wenn bypass einen Pfad zurückgibt, überspringt Vite den Proxy
+        // und SvelteKit's Router übernimmt. Siehe HOW-TO-CLOUDFLARE-TURNSTILE.md.
+        bypass: (req) => (req.url?.startsWith('/api/turnstile') === true ? req.url : undefined),
       },
       '/chat-ws': {
         target: 'ws://localhost:3000',

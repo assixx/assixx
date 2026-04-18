@@ -250,13 +250,20 @@ SELECT pg_stat_statements_reset();
 
 ### Empfohlene nächste Schritte
 
-| Priorität | Maßnahme                                        | Aufwand |
-| --------- | ----------------------------------------------- | ------- |
-| Niedrig   | BRIN-Index auf `audit_trail` Partitionen prüfen | 1h      |
-| Niedrig   | Root-Logs COUNT-Query optimieren (6 JOINs)      | 2h      |
-| Mittel    | Grafana Dashboard für pg_stat_statements        | 4h      |
-| Mittel    | pg_exporter Container für Prometheus-Scraping   | 3h      |
-| Niedrig   | `track_planning = on` temporär für Plan-Analyse | 15min   |
+| Priorität | Maßnahme                                        | Aufwand | Status                                                                                                                        |
+| --------- | ----------------------------------------------- | ------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| Niedrig   | BRIN-Index auf `audit_trail` Partitionen prüfen | 1h      | Offen                                                                                                                         |
+| Niedrig   | Root-Logs COUNT-Query optimieren (6 JOINs)      | 2h      | Erledigt 2026-02-16 (Denormalisierung, siehe ADR-009)                                                                         |
+| Mittel    | Grafana Dashboard für pg_stat_statements        | 4h      | Offen                                                                                                                         |
+| Mittel    | pg_exporter Container für Prometheus-Scraping   | 3h      | **Erledigt 2026-04-18** (siehe [ADR-002 Phase 5f](./ADR-002-alerting-monitoring.md#phase-5f-db--cache-visibility-2026-04-18)) |
+| Niedrig   | `track_planning = on` temporär für Plan-Analyse | 15min   | Offen                                                                                                                         |
+
+**Hinweis zur pg_exporter-Umsetzung (2026-04-18):** Phase 5f in ADR-002 ergänzt einen
+`prometheuscommunity/postgres-exporter:v0.18.0` Container, der `pg_up`, `pg_stat_database_*`,
+`pg_locks_count`, `pg_stat_bgwriter_*` und Replication-Lag scraped. **`pg_stat_statements`-Daten
+werden noch NICHT exportiert** — der Default-Collector ist deaktiviert. Aktivierung via
+`--collector.stat_statements` Flag wäre der nächste Schritt, falls Query-Level-Metriken in
+Grafana erscheinen sollen. Bis dahin bleibt CLI-Analyse via `psql` der Standardweg.
 
 ---
 

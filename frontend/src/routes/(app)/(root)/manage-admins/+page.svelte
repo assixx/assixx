@@ -481,6 +481,10 @@
           <button
             type="button"
             class="btn btn-primary"
+            disabled={!data.tenantVerified}
+            title={data.tenantVerified ? undefined : (
+              'Verifiziere zuerst Deine Firmen-Domain unter /settings/company-profile/domains.'
+            )}
             onclick={() => {
               currentEditId = null;
               applyFormState(FORM_DEFAULTS);
@@ -546,12 +550,18 @@
 <button
   type="button"
   class="btn-float"
+  disabled={!data.tenantVerified}
+  title={data.tenantVerified ?
+    'Administrator hinzufügen'
+  : 'Verifiziere zuerst Deine Firmen-Domain unter /settings/company-profile/domains.'}
   onclick={() => {
     currentEditId = null;
     applyFormState(FORM_DEFAULTS);
     showAdminModal = true;
   }}
-  aria-label="Administrator hinzufügen"
+  aria-label={data.tenantVerified ?
+    'Administrator hinzufügen'
+  : 'Administrator hinzufügen (deaktiviert: Domain nicht verifiziert)'}
 >
   <i class="fas fa-user-plus"></i>
 </button>

@@ -209,6 +209,15 @@ const intermediateBreadcrumbs: Partial<Record<string, IntermediateCrumb>> = {
     href: '/root-dashboard',
     icon: 'fa-cog',
   },
+  // Tenant Domain Verification (masterplan §5.1) — parent crumb points at
+  // Firmenprofil; the existing /settings/company-profile entry above provides
+  // its OWN parent (System → /root-dashboard), so the full crumb chain renders
+  // [Home → System → Firmenprofil → Domains].
+  '/settings/company-profile/domains': {
+    label: 'Firmenprofil',
+    href: '/settings/company-profile',
+    icon: 'fa-building',
+  },
   '/blackboard-detail': {
     label: 'Schwarzes Brett',
     href: '/blackboard',
@@ -300,6 +309,7 @@ const staticUrlMappings: Partial<Record<string, RouteMapping>> = {
   },
   '/settings/company': { label: 'Addon-Einstellungen', icon: 'fa-sliders-h' },
   '/settings/company-profile': { label: 'Firmenprofil', icon: 'fa-building' },
+  '/settings/company-profile/domains': { label: 'Domains', icon: 'fa-globe' },
 };
 
 /** Static dynamic intermediates (hierarchy-independent) */

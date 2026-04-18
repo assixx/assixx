@@ -1,0 +1,232 @@
+# =============================================================================
+# Grafana Alerting - Alert Rules (Production)
+# =============================================================================
+# Provisioned Loki-backed rules for the Assixx backend.
+#
+# Only env=production logs are evaluated — dev/test traffic is ignored
+# (Pino logger tags every log with env from NODE_ENV). Switch / add rules
+# here when staging gets its own environment; see HOW-TO-ALERTING.md.
+#
+# Level-label values verified in Loki (2026-04-18): debug, info, warning, error.
+# pino-loki emits the PAST TENSE (`warning`) not pino's internal `warn`.
+#
+# Datasource UID (Loki) = P8E80F9AEF21F6940. Stable — provisioned via
+# docker/grafana/provisioning/datasources/datasources.yml.
+#
+# Thresholds are conservative — start quiet, tune after 2 weeks of data.
+# Rationale lives inline in each rule so future tuners see the intent.
+#
+# Reference:
+#   https://grafana.com/docs/grafana/latest/alerting/set-up/provision-alerting-resources/file-provisioning/
+# =============================================================================
+
+apiVersion: 1
+
+groups:
+  - orgId: 1
+    name: backend-health
+    folder: Assixx
+    interval: 1m
+    rules:
+      # ---------------------------------------------------------------------
+      # RULE 1: Error rate elevated (warning tier)
+      # ---------------------------------------------------------------------
+      # Fires when the backend logs >10 errors in 10 minutes, sustained 10min.
+      # Rationale: 1 error/min sustained = systemic issue, not a one-off.
+      # Non-paging severity — goes to email digest, not Slack.
+      # ---------------------------------------------------------------------
+      - uid: assixx-error-rate-warning
+        title: Backend error rate elevated
+        condition: C
+        for: 10m
+        noDataState: OK
+        execErrState: Error
+        labels:
+          severity: warning
+          service: backend
+          component: logs
+        annotations:
+          summary: Backend error rate above 10 in 10 minutes
+          description: |
+            {{ $values.B }} errors observed in the last 10 minutes
+            (threshold: 10). Check Grafana Explore for patterns:
+            {app="assixx", service="backend", level="error", env="production"}
+          runbook_url: docs/how-to/HOW-TO-ALERTING.md#error-rate-elevated
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: P8E80F9AEF21F6940
+            model:
+              refId: A
+              queryType: instant
+              expr: 'sum(count_over_time({app="assixx", service="backend", level="error", env="production"}[10m]))'
+              intervalMs: 60000
+              maxDataPoints: 43200
+          - refId: B
+            relativeTimeRange:
+              from: 0
+              to: 0
+            datasourceUid: __expr__
+            model:
+              refId: B
+              type: reduce
+              expression: A
+              reducer: last
+              settings:
+                mode: replaceNN
+                replaceWithValue: 0
+          - refId: C
+            relativeTimeRange:
+              from: 0
+              to: 0
+            datasourceUid: __expr__
+            model:
+              refId: C
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator:
+                    type: gt
+                    params: [10]
+
+      # ---------------------------------------------------------------------
+      # RULE 2: Error rate critical (pageable)
+      # ---------------------------------------------------------------------
+      # Fires when >50 errors in 5 minutes, sustained 5min.
+      # Rationale: 10 errors/min sustained = real incident, page on-call.
+      # Goes to both email AND Slack (notification-policies.yml routing).
+      # ---------------------------------------------------------------------
+      - uid: assixx-error-rate-critical
+        title: Backend error rate critical
+        condition: C
+        for: 5m
+        noDataState: OK
+        execErrState: Error
+        labels:
+          severity: critical
+          service: backend
+          component: logs
+        annotations:
+          summary: Backend error rate above 50 in 5 minutes
+          description: |
+            {{ $values.B }} errors observed in the last 5 minutes
+            (threshold: 50). Sustained error flood — check Sentry for
+            grouped issues, then Loki Explore for log patterns:
+            {app="assixx", service="backend", level="error", env="production"}
+          runbook_url: docs/how-to/HOW-TO-ALERTING.md#error-rate-critical
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 300
+              to: 0
+            datasourceUid: P8E80F9AEF21F6940
+            model:
+              refId: A
+              queryType: instant
+              expr: 'sum(count_over_time({app="assixx", service="backend", level="error", env="production"}[5m]))'
+              intervalMs: 60000
+              maxDataPoints: 43200
+          - refId: B
+            relativeTimeRange:
+              from: 0
+              to: 0
+            datasourceUid: __expr__
+            model:
+              refId: B
+              type: reduce
+              expression: A
+              reducer: last
+              settings:
+                mode: replaceNN
+                replaceWithValue: 0
+          - refId: C
+            relativeTimeRange:
+              from: 0
+              to: 0
+            datasourceUid: __expr__
+            model:
+              refId: C
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator:
+                    type: gt
+                    params: [50]
+
+      # ---------------------------------------------------------------------
+      # RULE 3: Backend logs silent (service-down signal)
+      # ---------------------------------------------------------------------
+      # Fires when NO backend logs arrive for 10 minutes (for 5min).
+      # Rationale: backend always emits request + heartbeat-equivalent
+      # info logs. Total silence = process dead / network partition /
+      # Loki ingestion broken. Must page immediately.
+      #
+      # LogQL absent_over_time returns 1 when no match, empty otherwise.
+      # threshold > 0 matches only the "silent" case.
+      # noDataState: OK — if Loki itself is down Grafana shows NoData,
+      # we do NOT want to page on that (Loki has its own healthcheck).
+      # ---------------------------------------------------------------------
+      - uid: assixx-backend-logs-silent
+        title: Backend logs silent
+        condition: C
+        for: 5m
+        noDataState: OK
+        execErrState: OK
+        labels:
+          severity: critical
+          service: backend
+          component: logs
+        annotations:
+          summary: No backend logs received for 10 minutes
+          description: |
+            The production backend has not emitted any logs for at least
+            10 minutes. Likely causes: process crashed, network partition,
+            pino-loki transport broken, or Loki ingestion pipeline down.
+            Check: docker ps | grep assixx-backend
+          runbook_url: docs/how-to/HOW-TO-ALERTING.md#backend-logs-silent
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: P8E80F9AEF21F6940
+            model:
+              refId: A
+              queryType: instant
+              # Intentionally no env filter: any backend log counts as a
+              # liveness signal. Filtering by env="production" makes the rule
+              # permanently pending in dev/stg containers where no prod logs
+              # exist, which floods the mailbox after the first `for:` window.
+              # "Backend completely silent regardless of env" is the actual
+              # signal we care about.
+              expr: 'absent_over_time({app="assixx", service="backend"}[10m])'
+              intervalMs: 60000
+              maxDataPoints: 43200
+          - refId: B
+            relativeTimeRange:
+              from: 0
+              to: 0
+            datasourceUid: __expr__
+            model:
+              refId: B
+              type: reduce
+              expression: A
+              reducer: last
+              settings:
+                mode: replaceNN
+                replaceWithValue: 0
+          - refId: C
+            relativeTimeRange:
+              from: 0
+              to: 0
+            datasourceUid: __expr__
+            model:
+              refId: C
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator:
+                    type: gt
+                    params: [0]

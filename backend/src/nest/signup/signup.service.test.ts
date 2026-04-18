@@ -11,6 +11,7 @@ import type { CompleteSignupDto } from '../auth/oauth/dto/index.js';
 import type { SignupTicket } from '../auth/oauth/oauth.types.js';
 import type { AppConfigService } from '../config/config.service.js';
 import type { DatabaseService } from '../database/database.service.js';
+import type { DomainVerificationService } from '../domains/domain-verification.service.js';
 import type { SignupDto } from './dto/index.js';
 import { SignupService } from './signup.service.js';
 
@@ -32,6 +33,14 @@ const mockConfig = {
   isDevelopment: false,
 } as unknown as AppConfigService;
 
+// Stub for the new 3rd constructor arg (Step 2.8) — token-generator only.
+// Returns a fixed 64-hex string matching `crypto.randomBytes(32).toString('hex')`
+// shape so the seedPendingDomain INSERT's `verification_token` satisfies the
+// VARCHAR(64) DB column and the mocked DB doesn't care about the actual value.
+const mockDomainVerification = {
+  generateToken: vi.fn().mockReturnValue('a'.repeat(64)),
+} as unknown as DomainVerificationService;
+
 function createServiceWithMock(): {
   service: SignupService;
   mockDb: {
@@ -43,7 +52,11 @@ function createServiceWithMock(): {
     systemQuery: vi.fn(),
     systemTransaction: vi.fn(),
   };
-  const service = new SignupService(mockDb as unknown as DatabaseService, mockConfig);
+  const service = new SignupService(
+    mockDb as unknown as DatabaseService,
+    mockConfig,
+    mockDomainVerification,
+  );
   return { service, mockDb };
 }
 
@@ -364,7 +377,11 @@ describe('SignupService – registration', () => {
         systemQuery: vi.fn(),
         systemTransaction: vi.fn(),
       };
-      const devService = new SignupService(devDb as unknown as DatabaseService, devConfig);
+      const devService = new SignupService(
+        devDb as unknown as DatabaseService,
+        devConfig,
+        mockDomainVerification,
+      );
 
       // isSubdomainAvailable → available
       devDb.systemQuery.mockResolvedValueOnce([]);
@@ -377,6 +394,8 @@ describe('SignupService – registration', () => {
       // createRootUser INSERT
       mockClient.query.mockResolvedValueOnce({ rows: [{ id: 1 }] });
       // createRootUser UPDATE employee_id
+      mockClient.query.mockResolvedValueOnce({ rows: [] });
+      // seedPendingDomain INSERT tenant_domains (Step 2.8)
       mockClient.query.mockResolvedValueOnce({ rows: [] });
       // activateTrialAddons SELECT purchasable addons
       mockClient.query.mockResolvedValueOnce({
@@ -397,12 +416,13 @@ describe('SignupService – registration', () => {
 
       expect(result.tenantId).toBe(10);
 
-      // Dev-mode query selects purchasable addons (is_core = false)
-      const addonSelectCall = mockClient.query.mock.calls[3] as unknown[];
+      // Dev-mode query selects purchasable addons (is_core = false) —
+      // index shifts from 3 to 4 after Step 2.8's seedPendingDomain INSERT.
+      const addonSelectCall = mockClient.query.mock.calls[4] as unknown[];
       expect(addonSelectCall[0]).toContain('is_core = false');
 
-      // 3 setup queries + 1 addon SELECT + 3 addon INSERTs = 7
-      expect(mockClient.query).toHaveBeenCalledTimes(7);
+      // 3 setup + 1 seed-pending-domain + 1 addon SELECT + 3 addon INSERTs = 8
+      expect(mockClient.query).toHaveBeenCalledTimes(8);
     });
 
     it('should succeed even when audit log fails', async () => {
@@ -486,6 +506,8 @@ describe('SignupService – registration', () => {
       mockClient.query.mockResolvedValueOnce({ rows: [{ id: 1 }] });
       // createOAuthRootUser → UPDATE employee_id
       mockClient.query.mockResolvedValueOnce({ rows: [] });
+      // seedVerifiedDomain → INSERT tenant_domains(verified) (Step 2.8b)
+      mockClient.query.mockResolvedValueOnce({ rows: [] });
       // activateTrialAddons — production mode returns early (no queries)
       // insertOAuthAccountLink → INSERT user_oauth_accounts
       mockClient.query.mockResolvedValueOnce({ rows: [] });
@@ -530,8 +552,9 @@ describe('SignupService – registration', () => {
 
       await service.registerTenantWithOAuth(createValidOAuthDto(), ticket);
 
-      // client.query #3 is the user_oauth_accounts INSERT
-      const linkCall = mockClient.query.mock.calls[3] as unknown[];
+      // client.query #4 is the user_oauth_accounts INSERT
+      // (index shifted from 3 to 4 after Step 2.8b's seedVerifiedDomain INSERT).
+      const linkCall = mockClient.query.mock.calls[4] as unknown[];
       const sql = linkCall[0] as string;
       const params = linkCall[1] as unknown[];
 
@@ -576,6 +599,7 @@ describe('SignupService – registration', () => {
       mockClient.query.mockResolvedValueOnce({ rows: [{ id: 10 }] }); // INSERT tenants
       mockClient.query.mockResolvedValueOnce({ rows: [{ id: 1 }] }); // INSERT users
       mockClient.query.mockResolvedValueOnce({ rows: [] }); // UPDATE employee_id
+      mockClient.query.mockResolvedValueOnce({ rows: [] }); // seedVerifiedDomain (Step 2.8b)
       // insertOAuthAccountLink → Postgres unique_violation (R3: same MS sub twice)
       const pgError = Object.assign(new Error('duplicate key value'), { code: '23505' });
       mockClient.query.mockRejectedValueOnce(pgError);
@@ -593,6 +617,7 @@ describe('SignupService – registration', () => {
       mockClient.query.mockResolvedValueOnce({ rows: [{ id: 10 }] });
       mockClient.query.mockResolvedValueOnce({ rows: [{ id: 1 }] });
       mockClient.query.mockResolvedValueOnce({ rows: [] });
+      mockClient.query.mockResolvedValueOnce({ rows: [] }); // seedVerifiedDomain (Step 2.8b)
       const pgError = Object.assign(new Error('pg: violates unique constraint'), { code: '23505' });
       mockClient.query.mockRejectedValueOnce(pgError);
 
@@ -665,5 +690,301 @@ describe('SignupService – registration', () => {
       expect(plaintext.length).toBeGreaterThanOrEqual(40); // ~43 base64url chars from 32 bytes
       expect(rounds).toBe(12);
     });
+  });
+});
+
+// ============================================================
+// Business-email gate — Phase 3 §3 DoD
+//
+// WHY: `registerTenant()` validates BOTH `dto.email` AND `dto.adminEmail`
+// through the three-layer validator (§2.3 + v0.3.5 D31). These tests pin
+// the exact mapping of validator failure → controller error code +
+// verify that NO tenant touches the DB when the gate trips (must fail
+// before `ensureSubdomainAvailable` and `systemTransaction`).
+// ============================================================
+
+describe('SignupService.registerTenant — business-email gate (§3 DoD)', () => {
+  function createDto(overrides: Partial<SignupDto> = {}): SignupDto {
+    return {
+      companyName: 'Test GmbH',
+      subdomain: 'test-gmbh',
+      email: 'info@test-gmbh.de',
+      phone: '+49123456789',
+      adminEmail: 'admin@test-gmbh.de',
+      adminPassword: 'SecurePass123!',
+      adminFirstName: 'Max',
+      adminLastName: 'Mustermann',
+      ...overrides,
+    } as SignupDto;
+  }
+
+  let service: SignupService;
+  let mockDb: {
+    systemQuery: ReturnType<typeof vi.fn>;
+    systemTransaction: ReturnType<typeof vi.fn>;
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    const result = createServiceWithMock();
+    service = result.service;
+    mockDb = result.mockDb;
+  });
+
+  it('rejects gmail.com with FREE_EMAIL_PROVIDER and never opens a transaction', async () => {
+    const err = await service
+      .registerTenant(createDto({ email: 'contact@gmail.com', adminEmail: 'contact@gmail.com' }))
+      .catch((e: unknown) => e);
+
+    expect(err).toBeInstanceOf(BadRequestException);
+    expect(err).toMatchObject({ response: { code: 'FREE_EMAIL_PROVIDER' } });
+    // Fail-closed BEFORE touching the DB — no subdomain lookup, no tx.
+    expect(mockDb.systemQuery).not.toHaveBeenCalled();
+    expect(mockDb.systemTransaction).not.toHaveBeenCalled();
+  });
+
+  it('rejects a disposable address (mailinator.com) with DISPOSABLE_EMAIL', async () => {
+    const err = await service
+      .registerTenant(createDto({ email: 'x@mailinator.com', adminEmail: 'x@mailinator.com' }))
+      .catch((e: unknown) => e);
+
+    expect(err).toBeInstanceOf(BadRequestException);
+    expect(err).toMatchObject({ response: { code: 'DISPOSABLE_EMAIL' } });
+    expect(mockDb.systemTransaction).not.toHaveBeenCalled();
+  });
+
+  it('rejects a malformed address with INVALID_FORMAT', async () => {
+    const err = await service
+      .registerTenant(createDto({ email: 'not-an-email', adminEmail: 'not-an-email' }))
+      .catch((e: unknown) => e);
+
+    expect(err).toBeInstanceOf(BadRequestException);
+    expect(err).toMatchObject({ response: { code: 'INVALID_FORMAT' } });
+    expect(mockDb.systemTransaction).not.toHaveBeenCalled();
+  });
+
+  it('also validates dto.adminEmail (D31 — two separate fields, same gate)', async () => {
+    // `dto.email` is a clean business address, but `adminEmail` is freemail.
+    // Signup must still reject — the root login email IS the ownership claim
+    // (§0.2.5 #3), so a freemail adminEmail would defeat the whole verify
+    // flow by seeding `tenant_domains.domain = 'gmail.com'`.
+    const err = await service
+      .registerTenant(createDto({ email: 'info@firma.de', adminEmail: 'ceo@gmail.com' }))
+      .catch((e: unknown) => e);
+
+    expect(err).toBeInstanceOf(BadRequestException);
+    expect(err).toMatchObject({
+      response: { code: 'FREE_EMAIL_PROVIDER', field: 'adminEmail' },
+    });
+  });
+});
+
+// ============================================================
+// Transaction atomicity — Phase 3 §3 DoD (v0.3.4 D25)
+//
+// Inject a failure at each of the three INSERTs in the registration
+// transaction (tenants → users → tenant_domains). All three must collapse
+// to BadRequestException and NONE must write an audit row (audit runs
+// OUTSIDE the tx, so it only fires on tx success per the service shape).
+// With mocks we can't prove PG's ROLLBACK ran, but we CAN verify the
+// service short-circuits at the expected point and never calls audit.
+// ============================================================
+
+describe('SignupService.registerTenant — transaction atomicity (§3 DoD v0.3.4 D25)', () => {
+  function createDto(): SignupDto {
+    return {
+      companyName: 'Atomic GmbH',
+      subdomain: 'atomic',
+      email: 'info@atomic.de',
+      phone: '+49301234567',
+      adminEmail: 'admin@atomic.de',
+      adminPassword: 'SecurePass123!',
+      adminFirstName: 'Ada',
+      adminLastName: 'Lovelace',
+    } as SignupDto;
+  }
+
+  let service: SignupService;
+  let mockDb: {
+    systemQuery: ReturnType<typeof vi.fn>;
+    systemTransaction: ReturnType<typeof vi.fn>;
+  };
+  let mockClient: { query: ReturnType<typeof vi.fn> };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    const result = createServiceWithMock();
+    service = result.service;
+    mockDb = result.mockDb;
+    mockClient = { query: vi.fn() };
+    // isSubdomainAvailable — always succeeds; the atomicity tests target
+    // the post-subdomain-check window.
+    mockDb.systemQuery.mockResolvedValue([]);
+    mockDb.systemTransaction.mockImplementation(async (cb: (c: unknown) => Promise<unknown>) =>
+      cb(mockClient),
+    );
+  });
+
+  it('fails cleanly when the tenants INSERT (1st stmt) throws — no further queries, no audit', async () => {
+    mockClient.query.mockRejectedValueOnce(new Error('tenants INSERT failed'));
+
+    await expect(service.registerTenant(createDto())).rejects.toThrow(BadRequestException);
+
+    // Exactly one query fired (the failing tenants INSERT). The failure
+    // propagates up through the transaction callback without touching
+    // users / tenant_domains / audit — atomicity via short-circuit.
+    expect(mockClient.query).toHaveBeenCalledTimes(1);
+    // systemQuery was called once (isSubdomainAvailable) but NOT a second
+    // time (audit) — audit only fires after the transaction commits.
+    expect(mockDb.systemQuery).toHaveBeenCalledTimes(1);
+  });
+
+  it('fails cleanly when the users INSERT (2nd stmt) throws — tenants+users rolled back', async () => {
+    mockClient.query.mockResolvedValueOnce({ rows: [{ id: 10 }] }); // tenants INSERT OK
+    mockClient.query.mockRejectedValueOnce(new Error('users INSERT failed'));
+
+    await expect(service.registerTenant(createDto())).rejects.toThrow(BadRequestException);
+
+    // Stopped at the users INSERT — no employee_id UPDATE, no seedPending
+    // Domain, no activateTrialAddons, no audit.
+    expect(mockClient.query).toHaveBeenCalledTimes(2);
+    expect(mockDb.systemQuery).toHaveBeenCalledTimes(1); // subdomain only
+  });
+
+  it('fails cleanly when the tenant_domains INSERT (4th stmt) throws — full tx rolls back', async () => {
+    // Query sequence in executeRegistrationTransaction:
+    //   1. createTenant INSERT
+    //   2. createRootUser INSERT
+    //   3. createRootUser UPDATE employee_id
+    //   4. seedPendingDomain INSERT tenant_domains  ← inject here
+    //   5. activateTrialAddons (production mode: early-return, no queries)
+    mockClient.query.mockResolvedValueOnce({ rows: [{ id: 10 }] }); // tenants
+    mockClient.query.mockResolvedValueOnce({ rows: [{ id: 1 }] }); // users
+    mockClient.query.mockResolvedValueOnce({ rows: [] }); // UPDATE employee_id
+    mockClient.query.mockRejectedValueOnce(new Error('tenant_domains INSERT failed'));
+
+    await expect(service.registerTenant(createDto())).rejects.toThrow(BadRequestException);
+
+    // Exactly 4 queries fired — the failing seedPendingDomain is the 4th,
+    // activateTrialAddons never runs, and audit never writes.
+    expect(mockClient.query).toHaveBeenCalledTimes(4);
+    expect(mockDb.systemQuery).toHaveBeenCalledTimes(1);
+  });
+});
+
+// ============================================================
+// OAuth hardening — Phase 3 §3 DoD (v0.3.0 G1)
+//
+// Covers two DoD rows the existing OAuth block does not pin:
+//   (a) OAuth seeds `tenant_domains(status='verified')`, and the final
+//       response payload carries `tenantVerificationRequired: false`.
+//   (b) OAuth with a FREEMAIL Microsoft account still succeeds — Azure
+//       AD is the trust boundary, not our freemail list (§2.8b).
+// ============================================================
+
+describe('SignupService.registerTenantWithOAuth — verified-seed + freemail acceptance', () => {
+  // Why inline DTO / ticket objects instead of shared factories: the pre-
+  // existing OAuth describe block above (`registerTenantWithOAuth`) already
+  // defines `createValidOAuthDto` / `createValidTicket` / `setupOAuthHappyPath`
+  // in its own closure. Re-declaring identical factories here would trip
+  // `sonarjs/no-identical-functions`. Inlining keeps each test self-contained
+  // (readable diff + no cross-describe coupling) at the cost of a few extra
+  // literal-object lines.
+
+  let service: SignupService;
+  let mockDb: {
+    systemQuery: ReturnType<typeof vi.fn>;
+    systemTransaction: ReturnType<typeof vi.fn>;
+  };
+  let mockClient: { query: ReturnType<typeof vi.fn> };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    const result = createServiceWithMock();
+    service = result.service;
+    mockDb = result.mockDb;
+    mockClient = { query: vi.fn() };
+    // Arm the common happy-path sequence for the OAuth registration. Any test
+    // that needs a failure injection can overwrite the relevant mock slot
+    // with `mockRejectedValueOnce` after this setup — but none of the three
+    // below need to, so the arming stays in `beforeEach`.
+    mockDb.systemQuery.mockResolvedValueOnce([]); // ensureSubdomainAvailable
+    mockDb.systemTransaction.mockImplementation(async (cb: (c: unknown) => Promise<unknown>) =>
+      cb(mockClient),
+    );
+    mockClient.query.mockResolvedValueOnce({ rows: [{ id: 10 }] }); // tenants
+    mockClient.query.mockResolvedValueOnce({ rows: [{ id: 1 }] }); // users
+    mockClient.query.mockResolvedValueOnce({ rows: [] }); // UPDATE employee_id
+    mockClient.query.mockResolvedValueOnce({ rows: [] }); // seedVerifiedDomain
+    mockClient.query.mockResolvedValueOnce({ rows: [] }); // insertOAuthAccountLink
+    mockDb.systemQuery.mockResolvedValueOnce([]); // audit
+  });
+
+  const OAUTH_DTO = {
+    companyName: 'OAuth GmbH',
+    subdomain: 'oauth-gmbh',
+    phone: '+4930123456',
+    adminFirstName: 'Ada',
+    adminLastName: 'Admin',
+    ticket: 'ticket-uuid-v7',
+  } as CompleteSignupDto;
+
+  it('seeds tenant_domains with status=verified + verified_at NOW() (§2.8b)', async () => {
+    await service.registerTenantWithOAuth(OAUTH_DTO, {
+      provider: 'microsoft',
+      providerUserId: 'ms-sub-abc',
+      email: 'ada@oauth-gmbh.de',
+      emailVerified: true,
+      displayName: 'Ada Admin',
+      microsoftTenantId: 'tid-xyz',
+      createdAt: Date.now(),
+    });
+
+    // client.query #3 is seedVerifiedDomain — INSERT with literal 'verified'
+    // + NOW() for verified_at (no DNS dance, Azure AD is the trust boundary).
+    const seedCall = mockClient.query.mock.calls[3] as unknown as [string, unknown[]];
+    expect(seedCall[0]).toContain("'verified'");
+    expect(seedCall[0]).toContain('verified_at');
+    expect(seedCall[0]).toContain('NOW()');
+    expect(seedCall[1][1]).toBe('oauth-gmbh.de'); // extracted from oauthInfo.email
+  });
+
+  it('response payload has tenantVerificationRequired=false (frontend banner suppression)', async () => {
+    const result = await service.registerTenantWithOAuth(OAUTH_DTO, {
+      provider: 'microsoft',
+      providerUserId: 'ms-sub-abc',
+      email: 'ada@oauth-gmbh.de',
+      emailVerified: true,
+      displayName: 'Ada Admin',
+      microsoftTenantId: 'tid-xyz',
+      createdAt: Date.now(),
+    });
+
+    // Password-signup path returns `true` (needs DNS dance); OAuth path
+    // returns `false` so the Phase-5 banner stays hidden from day one.
+    expect(result.tenantVerificationRequired).toBe(false);
+  });
+
+  it('accepts a freemail Microsoft account — Azure AD is the trust boundary, NOT our list', async () => {
+    // §2.8b + §0.2.5 #17: a user whose Azure AD tenant owner identity is a
+    // personal `outlook.com` mailbox is still a valid OAuth signup. Our
+    // freemail filter is NOT invoked on the OAuth path — the IdP already
+    // attested ownership of the mailbox.
+    const result = await service.registerTenantWithOAuth(OAUTH_DTO, {
+      provider: 'microsoft',
+      providerUserId: 'ms-sub-freemail',
+      email: 'personal-owner@outlook.com',
+      emailVerified: true,
+      displayName: 'Ada Admin',
+      microsoftTenantId: 'tid-personal',
+      createdAt: Date.now(),
+    });
+
+    expect(result.tenantId).toBe(10);
+    expect(result.tenantVerificationRequired).toBe(false);
+    // Proof that seedVerifiedDomain still ran with outlook.com as the
+    // persisted value (matches the trust-boundary semantics in ADR-048).
+    const seedCall = mockClient.query.mock.calls[3] as unknown as [string, unknown[]];
+    expect(seedCall[1][1]).toBe('outlook.com');
   });
 });

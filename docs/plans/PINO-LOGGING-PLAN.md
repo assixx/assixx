@@ -983,6 +983,9 @@ frontend/
 - [x] Prometheus scrapet Backend
 - [x] Prometheus als Data Source in Grafana
 - [x] remote_write zu Grafana Cloud konfiguriert
+- [x] **postgres-exporter v0.18.0** Container — DB-Visibility (pg*up, connections, locks, bgwriter) — \_ergänzt 2026-04-18, siehe ADR-002 Phase 5f*
+- [x] **redis-exporter v1.74.0** Container — Cache-Visibility (hit ratio, memory, evictions) — _ergänzt 2026-04-18, siehe ADR-002 Phase 5f_
+- [x] **3 Alert-Rules als Code** — `docker/grafana/alerts/*.json` + idempotentes `apply.sh` (Backend Down, Postgres Down, Backend Memory >800MB) — _ergänzt 2026-04-18, siehe ADR-002 Phase 5g_
 
 **Phase 4d: Grafana Dashboards** ✅
 
@@ -1124,6 +1127,6 @@ grep -r "console\." frontend/build/
 
 ---
 
-**Last Updated:** 2026-01-13
+**Last Updated:** 2026-04-18
 **Author:** Assixx
-**Version:** 2.1.0 - Phase 2b Console Migration (HIGH Priority)
+**Version:** 2.2.0 - Phase 4c erweitert: postgres-exporter + redis-exporter + Alert-Rules-as-Code (siehe ADR-002 Phase 5f/5g)

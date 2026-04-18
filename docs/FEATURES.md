@@ -260,6 +260,13 @@
 - JWT with 24h Expiration
 - Tenant Isolation at DB Level
 - Session Management
+- **Tenant Domain Verification** (ADR-049): every tenant must prove DNS-TXT
+  ownership of its company domain before user-creation unlocks. Signup
+  hardening (3-layer email gate: format + disposable + freemail JSON) blocks
+  free-mail / disposable signups before tenant creation. Microsoft OAuth
+  signups auto-verify via Azure AD trust boundary (no DNS-TXT dance).
+  Architectural test (`shared/src/architectural.test.ts`) blocks any future
+  user-creation endpoint that skips the `assertVerified()` gate.
 
 ### Document Management in Detail
 

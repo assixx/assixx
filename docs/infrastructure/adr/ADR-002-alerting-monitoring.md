@@ -4,19 +4,22 @@
 
 ## Status
 
-**Accepted** - Implementation Phase 1, 2 & 3 Complete (2026-01-12)
+**Accepted** - Implementation Phase 1-5 + Production-Hardening (5f, 5g) Complete (2026-04-18)
 
 ### Implementation Progress
 
-| Phase | Component         | Status            | Notes                                                        |
-| ----- | ----------------- | ----------------- | ------------------------------------------------------------ |
-| 1a    | Pino Backend      | \u2705 Complete   | Replaced Winston, pino-pretty in dev, JSON in prod           |
-| 1b    | Pino Frontend     | \u2705 Complete   | logger.ts utility, esbuild.drop, security fixes (2026-01-12) |
-| 1c    | Console Migration | \u2705 Complete   | 334 calls \u2192 createLogger() - Best Practice (2026-01-13) |
-| 2     | Sentry Backend    | \u2705 Complete   | @sentry/nestjs integrated, 5xx errors only                   |
-| 3     | Sentry Frontend   | \u2705 Complete   | @sentry/sveltekit with Session Replay, explicit capture      |
-| 4     | Source Maps       | \U0001f532 Future | CI/CD Pipeline - not blocking for dev                        |
-| 5     | PLG Stack         | \u2705 Complete   | Prometheus + Loki + Grafana + pino-loki (2026-01-12)         |
+| Phase | Component             | Status            | Notes                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| ----- | --------------------- | ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1a    | Pino Backend          | \u2705 Complete   | Replaced Winston, pino-pretty in dev, JSON in prod                                                                                                                                                                                                                                                                                                                                                                           |
+| 1b    | Pino Frontend         | \u2705 Complete   | logger.ts utility, esbuild.drop, security fixes (2026-01-12)                                                                                                                                                                                                                                                                                                                                                                 |
+| 1c    | Console Migration     | \u2705 Complete   | 334 calls \u2192 createLogger() - Best Practice (2026-01-13)                                                                                                                                                                                                                                                                                                                                                                 |
+| 2     | Sentry Backend        | \u2705 Complete   | @sentry/nestjs integrated, 5xx errors only                                                                                                                                                                                                                                                                                                                                                                                   |
+| 3     | Sentry Frontend       | \u2705 Complete   | @sentry/sveltekit with Session Replay, explicit capture                                                                                                                                                                                                                                                                                                                                                                      |
+| 4     | Source Maps           | \U0001f532 Future | CI/CD Pipeline - not blocking for dev                                                                                                                                                                                                                                                                                                                                                                                        |
+| 5     | PLG Stack             | \u2705 Complete   | Prometheus + Loki + Grafana + pino-loki (2026-01-12)                                                                                                                                                                                                                                                                                                                                                                         |
+| 5f    | DB + Cache Visibility | \u2705 Complete   | postgres-exporter v0.18.0 + redis-exporter v1.74.0 scraped by Prometheus (2026-04-18)                                                                                                                                                                                                                                                                                                                                        |
+| 5g    | Alert Rules as Code   | \u2705 Complete   | 3 critical rules in `docker/grafana/alerts/*.json`, idempotent `apply.sh` (2026-04-18)                                                                                                                                                                                                                                                                                                                                       |
+| 5h    | Distributed Tracing   | \u2705 Complete   | OTel SDK + local Tempo + Grafana Cloud Tempo fan-out + log↔trace + exemplars + quota alert. See [ADR-048](./ADR-048-distributed-tracing-tempo-otel.md) + [FEAT_TEMPO_OTEL_MASTERPLAN.md](../../FEAT_TEMPO_OTEL_MASTERPLAN.md). Phase 1–5 shipped 2026-04-18 to 2026-04-19 (9 sessions). 7 Alert Rules live (added `07-tempo-cloud-quota-high`). Debug workflow: [HOW-TO-TRACE-DEBUG.md](../../how-to/HOW-TO-TRACE-DEBUG.md). |
 
 ### Files Created/Modified (Phase 1-3)
 
@@ -259,26 +262,33 @@ Sentry Self-Hosted is rejected due to disproportionate resource requirements (32
 - [x] Verify metrics flowing to Grafana Cloud Prometheus
 - [x] Verify logs flowing to Grafana Cloud Loki via pino-loki
 
-### New Containers (Phase 5)
+### New Containers (Phase 5 + 5f)
 
-| Container         | Image                | Port | Purpose         |
-| ----------------- | -------------------- | ---- | --------------- |
-| assixx-loki       | grafana/loki:3.x     | 3100 | Log aggregation |
-| assixx-grafana    | grafana/grafana:11.x | 3050 | Dashboards      |
-| assixx-prometheus | prom/prometheus:3.x  | 9090 | Metrics         |
+| Container                | Image                                         | Port | Purpose                                      |
+| ------------------------ | --------------------------------------------- | ---- | -------------------------------------------- |
+| assixx-loki              | grafana/loki:3.7.1                            | 3100 | Log aggregation                              |
+| assixx-grafana           | grafana/grafana:12.4.2                        | 3050 | Dashboards                                   |
+| assixx-prometheus        | prom/prometheus:v3.11.1                       | 9090 | Metrics scraper                              |
+| assixx-postgres-exporter | prometheuscommunity/postgres-exporter:v0.18.0 | 9187 | DB metrics (connections, locks, bgwriter)    |
+| assixx-redis-exporter    | oliver006/redis_exporter:v1.74.0-alpine       | 9121 | Cache metrics (hit ratio, memory, evictions) |
 
-### Environment Variables (Phase 5)
+### Environment Variables (Phase 5 + 5f + 5g)
 
-| Variable                     | Where      | Description                                        |
-| ---------------------------- | ---------- | -------------------------------------------------- |
-| `LOKI_URL`                   | Backend    | Loki endpoint (http://loki:3100)                   |
-| `GF_SECURITY_ADMIN_PASSWORD` | Grafana    | Admin password                                     |
-| `GF_SERVER_ROOT_URL`         | Grafana    | External URL                                       |
-| `GRAFANA_CLOUD_USER`         | Prometheus | Grafana Cloud Prometheus username (2910443)        |
-| `GRAFANA_CLOUD_API_KEY`      | Prometheus | Grafana Cloud API key (logs:write + metrics:write) |
-| `LOKI_HOST`                  | Backend    | Grafana Cloud Loki URL for pino-loki transport     |
-| `LOKI_USERNAME`              | Backend    | Grafana Cloud Loki username                        |
-| `LOKI_PASSWORD`              | Backend    | Grafana Cloud Loki API key                         |
+| Variable                        | Where                  | Description                                              |
+| ------------------------------- | ---------------------- | -------------------------------------------------------- |
+| `LOKI_URL`                      | Backend                | Loki endpoint (http://loki:3100)                         |
+| `GF_SECURITY_ADMIN_PASSWORD`    | Grafana                | Admin password                                           |
+| `GF_SERVER_ROOT_URL`            | Grafana                | External URL                                             |
+| `GRAFANA_CLOUD_USER`            | Prometheus             | Grafana Cloud Prometheus username (2910443)              |
+| `GRAFANA_CLOUD_API_KEY`         | Prometheus             | `MetricsPublisher` scope — remote_write (metrics + logs) |
+| **`GRAFANA_CLOUD_ADMIN_TOKEN`** | CLI (curl, grafanactl) | `Admin` scope — Provisioning-API (Phase 5g) + grafanactl |
+| `LOKI_HOST`                     | Backend                | Grafana Cloud Loki URL for pino-loki transport           |
+| `LOKI_USERNAME`                 | Backend                | Grafana Cloud Loki username                              |
+| `LOKI_PASSWORD`                 | Backend                | Grafana Cloud Loki API key                               |
+
+> **Separation of scopes:** `GRAFANA_CLOUD_API_KEY` darf NUR Metriken/Logs schreiben (remote_write),
+> kann aber keine Alerts/Dashboards verändern. `GRAFANA_CLOUD_ADMIN_TOKEN` hat volle Admin-Rechte —
+> nie für Backend-Processes verwenden, nur für CLI/Scripts. Bei Leak einzeln rotieren.
 
 ### Grafana Cloud URLs
 
@@ -290,9 +300,127 @@ Sentry Self-Hosted is rejected due to disproportionate resource requirements (32
 
 ### Resource Requirements
 
-| Component  | RAM        | CPU      | Storage         |
-| ---------- | ---------- | -------- | --------------- |
-| Loki       | 1-2 GB     | 0.5      | 10+ GB (logs)   |
-| Grafana    | 512 MB     | 0.25     | 100 MB          |
-| Prometheus | 1-2 GB     | 0.5      | 5+ GB (metrics) |
-| **Total**  | **3-5 GB** | **1.25** | **15+ GB**      |
+| Component         | RAM          | CPU      | Storage         |
+| ----------------- | ------------ | -------- | --------------- |
+| Loki              | 1-2 GB       | 0.5      | 10+ GB (logs)   |
+| Grafana           | 512 MB       | 0.25     | 100 MB          |
+| Prometheus        | 1-2 GB       | 0.5      | 5+ GB (metrics) |
+| postgres-exporter | 32-128 MB    | 0.1-0.5  | minimal         |
+| redis-exporter    | 16-64 MB     | 0.1-0.5  | minimal         |
+| **Total**         | **3-5.2 GB** | **1.45** | **15+ GB**      |
+
+---
+
+## Phase 5f: DB + Cache Visibility (2026-04-18)
+
+### Motivation
+
+Phase 5c instrumentierte das Backend (`/api/v2/metrics`), aber **PostgreSQL und Redis blieben blind**.
+Bei Multi-Tenant-SaaS ist DB-Latenz der #1 Performance-Killer — Backend-Metriken zeigen
+"Request slow", aber nicht **warum**. Ohne `up{job="postgres"}` kann Alerting nicht erkennen,
+ob die DB ueberhaupt scrapebar ist.
+
+### Implementation
+
+**Containers (siehe Tabelle oben):**
+
+- `assixx-postgres-exporter` — `prometheuscommunity/postgres-exporter:v0.18.0`
+  - DATA_SOURCE_URI/USER/PASS via Doppler (vermeidet URL-Encoding-Issues)
+  - `PG_EXPORTER_AUTO_DISCOVER_DATABASES=false` (Single-DB-Setup)
+  - Liefert: `pg_up`, `pg_stat_database_*`, `pg_locks_count`, `pg_stat_bgwriter_*`, replication lag
+- `assixx-redis-exporter` — `oliver006/redis_exporter:v1.74.0-alpine`
+  - `REDIS_PASSWORD` via Doppler
+  - Liefert: `redis_up`, `redis_keyspace_hits_total`, `redis_memory_used_bytes`,
+    `redis_connected_clients`, `redis_evicted_keys_total`
+
+**Prometheus scrape_configs:**
+
+```yaml
+- job_name: 'postgres'
+  static_configs:
+    - targets: ['postgres-exporter:9187']
+  scrape_interval: 30s
+
+- job_name: 'redis'
+  static_configs:
+    - targets: ['redis-exporter:9121']
+  scrape_interval: 30s
+```
+
+### Verification
+
+```bash
+curl -s http://localhost:9090/api/v1/targets | jq '.data.activeTargets[] | {job:.labels.job, health}'
+# All 4 jobs (assixx-backend, postgres, prometheus, redis) must show health=up
+```
+
+### Why This Matters
+
+Vor 5f: Prometheus konnte nicht zwischen "Backend slow" und "DB slow" unterscheiden.
+Nach 5f: Alert-Rule `up{job="postgres"} == 0` triggert SLO-Verletzungen direkt
+auf der DB-Ebene, bevor Backend ueberhaupt einen 500er erzeugt.
+
+---
+
+## Phase 5g: Alert Rules as Code (2026-04-18)
+
+### Motivation
+
+UI-erstellte Alert-Rules sind unsichtbar fuer Code-Review, nicht reproduzierbar
+(verschwinden bei Cloud-Account-Migration), und kollidieren mit der KISS-Disziplin
+"Single-Source-of-Truth in Git". Provisioning-API + JSON-in-Repo loest beides.
+
+### Implementation
+
+**Verzeichnisstruktur:**
+
+```
+docker/grafana/alerts/
+├── 01-backend-down.json          # critical, for=2m, up{job="assixx-backend"} < 1
+├── 02-postgres-down.json         # critical, for=2m, up{job="postgres"} < 1
+├── 03-backend-memory-high.json   # warning, for=5m, assixx_process_resident_memory_bytes > 800 MB
+├── apply.sh                      # idempotent (PUT mit deterministischen UIDs, 404→POST fallback)
+└── README.md                     # Workflow + Add/Edit/Rotate guidance
+```
+
+**Folder & Group:**
+
+- Folder UID: `assixx-prod-alerts` (separate von Cloud-Default-Folder `GrafanaCloud`)
+- Group `assixx-critical` — `severity=critical` Rules (Service-Outages)
+- Group `assixx-warning` — `severity=warning` Rules (OOM-Frueh-Warnungen)
+
+**Workflow:**
+
+```bash
+# Apply alle Rules (idempotent, jederzeit re-runnable)
+doppler run -- ./docker/grafana/alerts/apply.sh
+
+# Verify
+curl -s -H "Authorization: Bearer $GRAFANA_CLOUD_ADMIN_TOKEN" \
+  https://assixx.grafana.net/api/v1/provisioning/alert-rules \
+  | jq '.[] | select(.folderUID=="assixx-prod-alerts") | {title, severity:.labels.severity}'
+```
+
+### Provisioning-Strategie
+
+`X-Disable-Provenance: true` Header wird gesetzt, damit Rules in der UI
+fuer **Notfall-Hot-Fixes editierbar** bleiben. Die JSON in Git bleibt aber
+die Wahrheit — naechster `apply.sh`-Run ueberschreibt UI-Edits.
+
+### Token-Management
+
+| Variable                    | Where                | Scope                             |
+| --------------------------- | -------------------- | --------------------------------- |
+| `GRAFANA_CLOUD_API_KEY`     | Doppler / Prometheus | `MetricsPublisher` (remote_write) |
+| `GRAFANA_CLOUD_ADMIN_TOKEN` | Doppler / Manual-CLI | `Admin` (Provisioning-API)        |
+
+**Rotation:** alle 90 Tage (siehe `docker/grafana/alerts/README.md` Workflow).
+
+### Open Items (NOT in this ADR's Scope)
+
+| Item                                                              | Owner       | When               |
+| ----------------------------------------------------------------- | ----------- | ------------------ |
+| Notification Channel routing (Email/Slack/PagerDuty per severity) | Operations  | Vor erstem Go-Live |
+| Token-Rotation-Reminder (Calendar entry, 90d)                     | Operations  | T+90d nach Setup   |
+| Dashboards-as-Code (folgender ADR-Pass)                           | Engineering | Wenn 5+ Dashboards |
+| `grafanactl` evaluieren (ggf. Migration von curl-Script)          | Engineering | Wenn 10+ Rules     |

@@ -6,11 +6,16 @@
  */
 import { Module } from '@nestjs/common';
 
+import { DomainsModule } from '../domains/domains.module.js';
 import { DummyUsersPermissionRegistrar } from './dummy-users-permission.registrar.js';
 import { DummyUsersController } from './dummy-users.controller.js';
 import { DummyUsersService } from './dummy-users.service.js';
 
 @Module({
+  // DomainsModule provides `TenantVerificationService` — required by
+  // `DummyUsersService.create` to call `assertVerified(tenantId)` before
+  // any user-creation (§2.9, §0.2.5 #1 KISS gate).
+  imports: [DomainsModule],
   controllers: [DummyUsersController],
   providers: [DummyUsersService, DummyUsersPermissionRegistrar],
   exports: [DummyUsersService],

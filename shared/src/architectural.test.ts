@@ -17,9 +17,22 @@
  *   - docs/CODE-AUDIT-2026-02-25.md Maßnahme #13 (Shared db-helpers utility)
  */
 import { execSync } from 'node:child_process';
+import { readFileSync, readdirSync } from 'node:fs';
+import * as ts from 'typescript';
 import { describe, expect, it } from 'vitest';
 
-const ROOT = new URL('../../../', import.meta.url).pathname.replace(/\/$/, '');
+// Use `process.cwd()` (project root when vitest runs) instead of
+// `new URL('../../../', import.meta.url)` — the latter resolves to `file:///`
+// when the test lives at `<root>/shared/src/architectural.test.ts` because
+// `../../../` from `shared/src/` walks past the project root; its `.pathname`
+// is `/` → `.replace(/\/$/, '')` → empty string → ALL grepFiles() calls run
+// against `/backend/src/...` (absolute path outside the project) → rg returns
+// 0 matches → every architectural test passes as a false-negative. The bug
+// was masked until Step 2.11's tenant-verification gate added a rule that
+// SHOULD fail on the sanity-check allowlist flip but didn't — see 2026-04-18
+// debug log. `process.cwd()` is `/app` in Docker, `/home/scs/projects/Assixx`
+// on host — both point at the project root.
+const ROOT = process.cwd();
 
 /**
  * Run ripgrep and return matching files (empty array = no matches = good).
@@ -258,6 +271,129 @@ describe('Backend: Shared db-helpers (Maßnahme #13)', () => {
     expect(
       matches,
       `Found local STRING_AGG parser. Import parseStringAgg/parseStringAggNumbers from utils/db-helpers.js instead:\n${matches.join('\n')}`,
+    ).toEqual([]);
+  });
+});
+
+// =============================================================================
+// BACKEND: Tenant-Verification Gate (Plan 2 §2.9 + §2.11, ADR-048 pending)
+// =============================================================================
+//
+// Every `INSERT INTO users` in a `backend/src/nest/**/*.service.ts` file MUST
+// sit inside a method body that also calls `assertVerified(`, OR the method
+// must be on the bootstrap allowlist (signup paths that CREATE the first
+// `tenant_domains` row and therefore cannot be gated by it — gating would
+// deadlock every new tenant).
+//
+// Detection uses the TypeScript compiler AST (ts.createSourceFile) to resolve
+// the IMMEDIATE enclosing function of each INSERT literal — NOT the public
+// wrapper that indirectly calls it. Rationale: v0.3.5 D32 + v0.3.6 D33 —
+// pre-v0.3.6 plan listed public `createUser` / `createRootUser` etc. as gate
+// sites, but AST visitor-based resolution finds the PRIVATE helpers where
+// the SQL literal physically lives. Allowlisting the wrappers would silently
+// match nothing and the test would green-on-main while the gate had holes.
+//
+// Allowlist = two signup-bootstrap helpers only:
+//   - `signup.service.ts::createRootUser`        (password flow, seeds pending)
+//   - `signup.service.ts::createOAuthRootUser`   (OAuth flow, seeds verified)
+// All other matches MUST contain `assertVerified(` in their body.
+
+const USER_INSERT_ALLOWLIST = new Set<string>([
+  // Password signup bootstrap — seeds tenant_domains(status='pending') per §2.8.
+  'backend/src/nest/signup/signup.service.ts::createRootUser',
+  // OAuth signup bootstrap — seeds tenant_domains(status='verified') per §2.8b + §0.2.5 #17.
+  'backend/src/nest/signup/signup.service.ts::createOAuthRootUser',
+]);
+
+/**
+ * Extract the method/function name from an AST node, or null if the node
+ * is not a named method/function or has no name token (e.g. anonymous
+ * FunctionExpression in an arrow — those are not valid gate sites anyway
+ * because they can't hold an `INSERT INTO users` SQL literal by convention).
+ */
+function getMethodName(node: ts.Node, sf: ts.SourceFile): string | null {
+  if (!ts.isMethodDeclaration(node) && !ts.isFunctionDeclaration(node)) return null;
+  if (node.name === undefined) return null;
+  return node.name.getText(sf);
+}
+
+/**
+ * Inspect a single AST node: if it's a named method/function whose body
+ * contains `INSERT INTO users`, check that the body ALSO contains
+ * `assertVerified(` OR that the method is on the bootstrap allowlist.
+ * Pushes a violation string into `out` if neither condition is met.
+ */
+function checkMethodForGate(
+  relFile: string,
+  sf: ts.SourceFile,
+  node: ts.Node,
+  out: string[],
+): void {
+  if (
+    !(ts.isMethodDeclaration(node) || ts.isFunctionDeclaration(node)) ||
+    node.body === undefined
+  ) {
+    return;
+  }
+  const methodName = getMethodName(node, sf);
+  if (methodName === null) return;
+  const bodyText = node.body.getText(sf);
+  // Per-iteration regexes — avoid /g lastIndex leaking across calls.
+  if (!/INSERT\s+INTO\s+users\b/is.test(bodyText)) return;
+  const key = `${relFile}::${methodName}`;
+  if (USER_INSERT_ALLOWLIST.has(key)) return;
+  if (/\bassertVerified\(/.test(bodyText)) return;
+  out.push(
+    `${key} inserts into \`users\` but never calls \`assertVerified(...)\` in its body.\n` +
+      `  Fix: inject TenantVerificationService and call ` +
+      `\`await this.tenantVerification.assertVerified(tenantId)\` ` +
+      `before any DB write. See ADR-048 §2.9.`,
+  );
+}
+
+/**
+ * Find all `*.service.ts` files under `backend/src/nest/` that contain the
+ * literal `INSERT INTO users` (case-insensitive, whitespace-tolerant). Uses
+ * Node's `fs.readdirSync({ recursive: true })` + in-memory regex scan —
+ * does NOT depend on ripgrep being installed in the container (the shared
+ * `grepFiles()` helper silently returns `[]` when `rg` is missing, which
+ * would turn this test into a false-negative; discovered 2026-04-18 during
+ * Step 2.11 sanity-check).
+ */
+function findServiceFilesWithUserInsert(): string[] {
+  const root = `${ROOT}/backend/src/nest`;
+  const entries = readdirSync(root, { recursive: true, withFileTypes: true });
+  const out: string[] = [];
+  for (const entry of entries) {
+    if (!entry.isFile() || !entry.name.endsWith('.service.ts')) continue;
+    const abs = `${entry.parentPath}/${entry.name}`;
+    const text = readFileSync(abs, 'utf-8');
+    if (/INSERT\s+INTO\s+users\b/is.test(text)) {
+      // Normalize to project-relative path for the allowlist key format.
+      out.push(abs.replace(`${ROOT}/`, ''));
+    }
+  }
+  return out;
+}
+
+describe('Backend: Tenant-Verification Gate (ADR-048 §2.9)', () => {
+  it('every INSERT INTO users in a service must be gated by assertVerified() OR allowlisted', () => {
+    const files = findServiceFilesWithUserInsert();
+    const violations: string[] = [];
+
+    for (const relFile of files) {
+      const source = readFileSync(`${ROOT}/${relFile}`, 'utf-8');
+      const sf = ts.createSourceFile(relFile, source, ts.ScriptTarget.Latest, true);
+      const walk = (node: ts.Node): void => {
+        checkMethodForGate(relFile, sf, node, violations);
+        ts.forEachChild(node, walk);
+      };
+      walk(sf);
+    }
+
+    expect(
+      violations,
+      `Tenant-verification gate violations (Plan 2 §2.11):\n${violations.join('\n\n')}`,
     ).toEqual([]);
   });
 });

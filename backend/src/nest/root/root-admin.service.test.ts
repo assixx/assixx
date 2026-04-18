@@ -12,6 +12,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import type { DatabaseService } from '../database/database.service.js';
 import type { UserRepository } from '../database/repositories/user.repository.js';
+import type { TenantVerificationService } from '../domains/tenant-verification.service.js';
 import type { UserPositionService } from '../organigram/user-position.service.js';
 import { RootAdminService } from './root-admin.service.js';
 
@@ -141,6 +142,12 @@ describe('RootAdminService', () => {
       mockActivityLogger as unknown as ActivityLoggerService,
       mockUserRepo as unknown as UserRepository,
       mockUserPositions as unknown as UserPositionService,
+      // Step 2.9 KISS gate (§2.9 + D33) — assertVerified no-op so existing
+      // createAdmin tests see a verified tenant.
+      {
+        assertVerified: vi.fn().mockResolvedValue(undefined),
+        isVerified: vi.fn().mockResolvedValue(true),
+      } as unknown as TenantVerificationService,
     );
   });
 
@@ -205,9 +212,9 @@ describe('RootAdminService', () => {
       ).rejects.toThrow(ConflictException);
     });
 
-    it('should create admin and return id', async () => {
-      // INSERT RETURNING id
-      mockDb.systemQuery.mockResolvedValueOnce([{ id: 5 }]);
+    it('should create admin and return id + uuid', async () => {
+      // INSERT RETURNING id, uuid
+      mockDb.systemQuery.mockResolvedValueOnce([{ id: 5, uuid: 'mock-uuid-v7' }]);
 
       const result = await service.createAdmin(
         {
@@ -220,7 +227,7 @@ describe('RootAdminService', () => {
         1,
       );
 
-      expect(result).toBe(5);
+      expect(result).toEqual({ id: 5, uuid: 'mock-uuid-v7' });
       expect(mockActivityLogger.logCreate).toHaveBeenCalled();
     });
   });

@@ -12,6 +12,7 @@
 import { Module, forwardRef } from '@nestjs/common';
 
 import { MailerService } from '../common/services/mailer.service.js';
+import { DomainsModule } from '../domains/domains.module.js';
 import { AuthController } from './auth.controller.js';
 import { AuthService } from './auth.service.js';
 import { ConnectionTicketService } from './connection-ticket.service.js';
@@ -23,7 +24,9 @@ import { ConnectionTicketService } from './connection-ticket.service.js';
 import { OAuthModule } from './oauth/oauth.module.js';
 
 @Module({
-  imports: [forwardRef(() => OAuthModule)],
+  // DomainsModule provides `TenantVerificationService` — required by
+  // `AuthService.createUser` per §2.9 + D33 Option (a) KISS gate.
+  imports: [forwardRef(() => OAuthModule), DomainsModule],
   controllers: [AuthController],
   providers: [AuthService, ConnectionTicketService, MailerService],
   exports: [AuthService, ConnectionTicketService],

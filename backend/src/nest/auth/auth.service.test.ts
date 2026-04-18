@@ -24,6 +24,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { NestAuthUser } from '../common/interfaces/auth.interface.js';
 import type { MailerService } from '../common/services/mailer.service.js';
 import type { DatabaseService } from '../database/database.service.js';
+import type { TenantVerificationService } from '../domains/tenant-verification.service.js';
 import { AuthService } from './auth.service.js';
 
 // =============================================================
@@ -155,6 +156,13 @@ describe('SECURITY: AuthService', () => {
       mockDb as unknown as DatabaseService,
       mockJwt as unknown as JwtService,
       mockMailer as unknown as MailerService,
+      // Step 2.9 KISS gate — assertVerified no-op so register/createUser
+      // tests see a verified tenant. Tests exercising 403-path would
+      // `.mockRejectedValueOnce(...)` on this stub's assertVerified.
+      {
+        assertVerified: vi.fn().mockResolvedValue(undefined),
+        isVerified: vi.fn().mockResolvedValue(true),
+      } as unknown as TenantVerificationService,
     );
   });
 

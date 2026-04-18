@@ -19,6 +19,7 @@ import { v7 as uuidv7 } from 'uuid';
 import { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import { DatabaseService } from '../database/database.service.js';
 import { UserRepository } from '../database/repositories/user.repository.js';
+import { TenantVerificationService } from '../domains/tenant-verification.service.js';
 import { UserPositionService } from '../organigram/user-position.service.js';
 import {
   ERROR_CODES,
@@ -31,7 +32,8 @@ import type {
   AdminLog,
   AdminUser,
   CreateAdminRequest,
-  DbIdRow,
+  CreateAdminResult,
+  DbIdUuidRow,
   DbRootLogRow,
   DbUserRow,
   UpdateUserRequest,
@@ -46,6 +48,10 @@ export class RootAdminService {
     private readonly activityLogger: ActivityLoggerService,
     private readonly userRepository: UserRepository,
     private readonly userPositionService: UserPositionService,
+    // Step 2.9 KISS gate — assertVerified at top of `insertAdminRecord`
+    // (AST-enclosing helper of `INSERT INTO users`, v0.3.6 D33). tenantId
+    // is the helper's 5th parameter.
+    private readonly tenantVerification: TenantVerificationService,
   ) {}
 
   /**
@@ -104,13 +110,18 @@ export class RootAdminService {
   }
 
   /**
-   * Create new admin user
+   * Create new admin user.
+   *
+   * Returns both `id` and `uuid` so the controller can expose the uuid in the
+   * API response — the frontend uses it for the "Berechtigungen jetzt zuweisen?"
+   * toast-link (deep-link to /manage-admins/permission/{uuid}), matching the
+   * manage-employees flow. See ADR-045 (Permission Stack, Layer 2).
    */
   async createAdmin(
     data: CreateAdminRequest,
     tenantId: number,
     actingUserId: number,
-  ): Promise<number> {
+  ): Promise<CreateAdminResult> {
     this.logger.log(`Creating admin for tenant ${tenantId}`);
 
     const normalizedEmail = data.email.toLowerCase().trim();
@@ -118,7 +129,7 @@ export class RootAdminService {
     const hashedPassword = await bcrypt.hash(data.password, 12);
 
     try {
-      const userId = await this.db.systemTransaction(
+      const created = await this.db.systemTransaction(
         async (client: PoolClient) =>
           await this.insertAdminRecord(client, data, normalizedEmail, hashedPassword, tenantId),
       );
@@ -127,7 +138,7 @@ export class RootAdminService {
         tenantId,
         actingUserId,
         'user',
-        userId,
+        created.id,
         `Admin erstellt: ${normalizedEmail} (Rolle: admin)`,
         {
           email: normalizedEmail,
@@ -137,7 +148,7 @@ export class RootAdminService {
         },
       );
 
-      return userId;
+      return created;
     } catch (error: unknown) {
       handleDuplicateEntryError(error);
       throw error;
@@ -151,11 +162,16 @@ export class RootAdminService {
     email: string,
     hashedPassword: string,
     tenantId: number,
-  ): Promise<number> {
-    const result = await client.query<DbIdRow>(
+  ): Promise<CreateAdminResult> {
+    // KISS gate (§2.9 + §0.2.5 #1 + D33): helper-entry assertion. Arch-test
+    // (§2.11, regex `INSERT INTO users\b`) locks this site.
+    await this.tenantVerification.assertVerified(tenantId);
+    // RETURNING id, uuid — uuid is needed by the controller for the API response
+    // so the frontend can deep-link into the permission page without an extra GET.
+    const result = await client.query<DbIdUuidRow>(
       `INSERT INTO users (username, email, password, first_name, last_name, role, position, notes, employee_number, is_active, tenant_id, uuid, uuid_created_at)
        VALUES ($1, $2, $3, $4, $5, 'admin', NULL, $6, $7, 1, $8, $9, NOW())
-       RETURNING id`,
+       RETURNING id, uuid`,
       [
         email,
         email,
@@ -169,16 +185,16 @@ export class RootAdminService {
       ],
     );
 
-    const userId = result.rows[0]?.id;
-    if (userId === undefined) {
+    const row = result.rows[0];
+    if (row === undefined) {
       throw new BadRequestException('Failed to create admin');
     }
 
     if (data.positionIds !== undefined && data.positionIds.length > 0) {
-      await this.userPositionService.syncPositions(client, userId, tenantId, data.positionIds);
+      await this.userPositionService.syncPositions(client, row.id, tenantId, data.positionIds);
     }
 
-    return userId;
+    return { id: row.id, uuid: row.uuid };
   }
 
   /**

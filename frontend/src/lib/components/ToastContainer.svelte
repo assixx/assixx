@@ -51,16 +51,29 @@
         : ''}
       </span>
       {#if toast.action !== undefined}
+        <!--
+          Toast-Action-Button: zwei Varianten (ToastAction in stores/toast.ts):
+          1. onClick-Callback — z.B. Undo-Pattern (DELETE des gerade erstellten Records)
+          2. href-Navigation  — z.B. Quick-Link zu Folge-Seite (Berechtigungen zuweisen)
+          onClick hat Vorrang, weil es semantisch spezifischer ist.
+        -->
         <button
           type="button"
           class="btn btn-primary btn--sm"
           onclick={() => {
+            const action = toast.action;
+            if (action === undefined) return;
             dismissToast(toast.id);
-            void goto(toast.action?.href ?? '/');
+            if (action.onClick !== undefined) {
+              void action.onClick();
+            } else if (action.href !== undefined) {
+              void goto(action.href);
+            }
           }}
         >
           {toast.action.label}
-          <i class="fas fa-arrow-right"></i>
+          <i class="fas {toast.action.onClick !== undefined ? 'fa-rotate-left' : 'fa-arrow-right'}"
+          ></i>
         </button>
       {/if}
       {#if toast.showProgress === true && toast.duration !== undefined && toast.duration > 0}
@@ -87,9 +100,23 @@
   .notification {
     pointer-events: auto;
     width: max-content;
-    max-width: 500px;
+    max-width: 600px;
     margin-bottom: 10px;
     animation: slide-in-right 0.3s ease-out;
+    /*
+     * Override design-system .toast { align-items: flex-start } — sonst klebt der
+     * Action-Button (Rückgängig / Weiter →) oben am Container, während der Text
+     * durch line-height unten länger ist → optisch ungleich ausgerichtet.
+     * center → Icon, Text, Button auf derselben Höhe.
+     */
+    align-items: center;
+  }
+
+  /* Action-Button soll nicht umbrechen und nicht schrumpfen,
+     damit "Rückgängig ⟲" oder "Berechtigungen →" in einer Zeile bleibt. */
+  .notification :global(.btn) {
+    flex-shrink: 0;
+    white-space: nowrap;
   }
 
   .notification.dismissing {

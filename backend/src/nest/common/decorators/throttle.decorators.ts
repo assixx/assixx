@@ -93,6 +93,27 @@ export const ExportThrottle = (): ThrottleDecorator =>
   ) as ThrottleDecorator;
 
 /**
+ * Domain-Verify endpoint: 10 requests per 10 minutes.
+ * Use for: `POST /domains/:id/verify` — the only endpoint that emits outbound
+ * DNS (TXT-record lookup). Tight cap protects upstream resolvers and defends
+ * R11 (Docker bridge DNS exhaustion). Tier registered in `AppThrottlerModule`.
+ * Masterplan §2.7, ADR-048.
+ * Skips: auth, public, user, admin, upload, export throttlers.
+ */
+export const DomainVerifyThrottle = (): ThrottleDecorator =>
+  applyDecorators(
+    Throttle({ 'domain-verify': { limit: 10, ttl: 10 * MS_MINUTE } }),
+    SkipThrottle({
+      auth: true,
+      public: true,
+      user: true,
+      admin: true,
+      upload: true,
+      export: true,
+    }),
+  ) as ThrottleDecorator;
+
+/**
  * Feedback endpoints: 5 requests per hour.
  * Use for: bug reports, feature requests — every submission triggers an
  * outbound email, so flooding would hurt deliverability AND spam the ops

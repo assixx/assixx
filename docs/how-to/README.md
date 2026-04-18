@@ -9,23 +9,27 @@
 
 ### Development & Tooling
 
-| Guide                                                           | Description                                                                                     |
-| --------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
-| [HOW-TO-CURL](./HOW-TO-CURL.md)                                 | API requests with curl — token handling, inline usage rules                                     |
-| [HOW-TO-DOPPLER-GUIDE](./HOW-TO-DOPPLER-GUIDE.md)               | Doppler secret management — setup, configs, CLI reference                                       |
-| [HOW-TO-POSTGRESQL-CLI](./HOW-TO-POSTGRESQL-CLI.md)             | psql client setup on WSL2, meta-command reference                                               |
-| [HOW-TO-ENABLE-DEBUG-LOGGING](./HOW-TO-ENABLE-DEBUG-LOGGING.md) | Backend DEBUG + frontend PERF logging — opt-in activation                                       |
-| [HOW-TO-KNIP](./HOW-TO-KNIP.md)                                 | Dead code & unused dependency detection with Knip                                               |
-| [HOW-TO-FALLOW](./HOW-TO-FALLOW.md)                             | Dead code analysis with Fallow (Rust, fast, complementary to Knip)                              |
-| [HOW-TO-CLOUDFLARE-TURNSTILE](./HOW-TO-CLOUDFLARE-TURNSTILE.md) | Bot-Schutz (Login/Signup) — Keys, CSP, Komponente, Fehler-Referenz                              |
-| [HOW-TO-AZURE-AD-SETUP](./HOW-TO-AZURE-AD-SETUP.md)             | Microsoft OAuth — Azure AD App Registration, Redirect URIs, Doppler-Secrets, Rotation (ADR-046) |
+| Guide                                                           | Description                                                                                                            |
+| --------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| [HOW-TO-ALERTING](./HOW-TO-ALERTING.md)                         | Production alerting: Sentry issue rules + Grafana Loki rules, all provisioned as code                                  |
+| [HOW-TO-CURL](./HOW-TO-CURL.md)                                 | API requests with curl — token handling, inline usage rules                                                            |
+| [HOW-TO-DOPPLER-GUIDE](./HOW-TO-DOPPLER-GUIDE.md)               | Doppler secret management — setup, configs, CLI reference                                                              |
+| [HOW-TO-POSTGRESQL-CLI](./HOW-TO-POSTGRESQL-CLI.md)             | psql client setup on WSL2, meta-command reference                                                                      |
+| [HOW-TO-ENABLE-DEBUG-LOGGING](./HOW-TO-ENABLE-DEBUG-LOGGING.md) | Backend DEBUG + frontend PERF logging — opt-in activation                                                              |
+| [HOW-TO-KNIP](./HOW-TO-KNIP.md)                                 | Dead code & unused dependency detection with Knip                                                                      |
+| [HOW-TO-FALLOW](./HOW-TO-FALLOW.md)                             | Dead code analysis with Fallow (Rust, fast, complementary to Knip)                                                     |
+| [HOW-TO-CLOUDFLARE-TURNSTILE](./HOW-TO-CLOUDFLARE-TURNSTILE.md) | Bot-Schutz (Login/Signup) — Keys, CSP, Komponente, Fehler-Referenz                                                     |
+| [HOW-TO-AZURE-AD-SETUP](./HOW-TO-AZURE-AD-SETUP.md)             | Microsoft OAuth — Azure AD App Registration, Redirect URIs, Doppler-Secrets, Rotation (ADR-046)                        |
+| [HOW-TO-GRAFANA-CLI](./HOW-TO-GRAFANA-CLI.md)                   | `grafanactl` Observability-as-Code — Install, Cloud-Setup, Workflows, Abgrenzung zu `curl`-Approach (ADR-002 Phase 5g) |
+| [HOW-TO-TRACE-DEBUG](./HOW-TO-TRACE-DEBUG.md)                   | Debug slow/failing requests via distributed traces — complaint → trace_id → Tempo waterfall → root cause (ADR-048)     |
 
 ### Testing
 
-| Guide                                                   | Description                                                              |
-| ------------------------------------------------------- | ------------------------------------------------------------------------ |
-| [HOW-TO-TEST-WITH-VITEST](./HOW-TO-TEST-WITH-VITEST.md) | API integration tests — test tenant, helpers, templates, troubleshooting |
-| [HOW-TO-CREATE-TEST-USER](./HOW-TO-CREATE-TEST-USER.md) | Create test tenant + users after fresh install                           |
+| Guide                                                   | Description                                                                                                            |
+| ------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| [HOW-TO-TEST-WITH-VITEST](./HOW-TO-TEST-WITH-VITEST.md) | API integration tests (Tier 2) — test tenant, helpers, templates, troubleshooting                                      |
+| [HOW-TO-CREATE-TEST-USER](./HOW-TO-CREATE-TEST-USER.md) | Create test tenant + users after fresh install                                                                         |
+| [load/README.md](../../load/README.md)                  | Load & performance regression tests with k6 (Tier 4, see ADR-018 + ADR-048) — Docker-based, no local k6 install needed |
 
 ### Feature Development
 

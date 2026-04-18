@@ -20,7 +20,13 @@ import fastifyStatic from '@fastify/static';
 import { Logger as NestLogger } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { FastifyAdapter, type NestFastifyApplication } from '@nestjs/platform-fastify';
-import type { FastifyInstance } from 'fastify';
+import { trace } from '@opentelemetry/api';
+import type {
+  FastifyInstance,
+  FastifyReply,
+  FastifyRequest,
+  HookHandlerDoneFunction,
+} from 'fastify';
 import { Logger } from 'nestjs-pino';
 import path from 'path';
 import 'reflect-metadata';
@@ -33,6 +39,7 @@ import { ZodValidationPipe } from './common/pipes/zod-validation.pipe.js';
 import { getErrorMessage } from './common/utils/error.utils.js';
 import { DatabaseService } from './database/database.service.js';
 import { PartitionHealthService } from './database/partition-health.service.js';
+import { httpRequestDurationHistogram } from './metrics/http-request-duration.metric.js';
 
 /** Get uploads directory path (Docker: /app/uploads, volume mounted) */
 function getUploadsPath(): string {
@@ -67,6 +74,72 @@ function setupHealthCheck(fastify: FastifyInstance, partitionHealth: PartitionHe
       throw new Error('Test Sentry error from debug endpoint');
     });
   }
+}
+
+/**
+ * Register Fastify `onResponse` hook that observes the
+ * `assixx_http_request_duration_seconds` histogram for every HTTP request.
+ *
+ * Why `onResponse` (and not a NestJS interceptor):
+ *   - `reply.elapsedTime` measures the full Fastify lifecycle (routing,
+ *     hooks, handler, serialization, response-sent), which is the
+ *     canonical duration a latency metric should reflect.
+ *   - Interceptors only wrap the NestJS handler call, missing the time
+ *     spent in Fastify plugins (helmet, cookie, multipart, CORS).
+ *
+ * Exemplar emission is gated by PROMETHEUS_EXEMPLARS_ENABLED (Session 3b /
+ * Step 3.3.2). Stage 3b-a default is OFF → histogram observes without
+ * exemplars; on-wire output matches pre-3b metrics for backward compat.
+ * Flag ON → pulls `trace_id`/`span_id` from the active OTel span (shared
+ * via the Phase 2 NodeTracerProvider) and attaches them as OpenMetrics
+ * exemplar labels.
+ *
+ * @see docs/FEAT_TEMPO_OTEL_MASTERPLAN.md — Session 3b / Step 3.3.2
+ * @see docs/infrastructure/adr/ADR-048-distributed-tracing-tempo-otel.md
+ */
+function setupMetricsHook(fastify: FastifyInstance): void {
+  // Resolved at module-level boot — flag flip requires container recreation
+  // (same ceremony as OTEL_TEMPO_ENABLED). Keeping the read here (not
+  // top-level) localizes the env dependency to this function.
+  const exemplarsEnabled = process.env['PROMETHEUS_EXEMPLARS_ENABLED'] === 'true';
+
+  fastify.addHook(
+    'onResponse',
+    (request: FastifyRequest, reply: FastifyReply, done: HookHandlerDoneFunction): void => {
+      // Fastify reply.elapsedTime is in milliseconds; Prometheus convention
+      // for `*_seconds` histograms is seconds.
+      const durationSec = reply.elapsedTime / 1000;
+
+      // routeOptions.url gives the parameterized pattern (e.g. /users/:id),
+      // keeping label cardinality bounded. Missing on 404 fallback paths;
+      // fall back to 'unknown' to stay defensive.
+      const labels = {
+        method: request.method,
+        route: request.routeOptions.url ?? 'unknown',
+        status: String(reply.statusCode),
+      };
+
+      if (exemplarsEnabled) {
+        const span = trace.getActiveSpan();
+        const ctx = span?.spanContext();
+        if (ctx !== undefined) {
+          httpRequestDurationHistogram.observe({
+            labels,
+            value: durationSec,
+            exemplarLabels: { trace_id: ctx.traceId, span_id: ctx.spanId },
+          });
+        } else {
+          // Active span missing (worker path, probes, startup edge) — still
+          // record the duration without exemplar annotation.
+          httpRequestDurationHistogram.observe(labels, durationSec);
+        }
+      } else {
+        httpRequestDurationHistogram.observe(labels, durationSec);
+      }
+
+      done();
+    },
+  );
 }
 
 /** Register static file serving for user uploads only.
@@ -234,6 +307,10 @@ async function bootstrap(): Promise<void> {
   // Setup in order
   const partitionHealth = app.get(PartitionHealthService);
   setupHealthCheck(fastify, partitionHealth);
+  // ADR-048 Phase 3b / Session 3b: observe HTTP request duration into the
+  // assixx_http_request_duration_seconds histogram. Must register before
+  // app.listen() so the hook is active on the first request.
+  setupMetricsHook(fastify);
   await setupUploadsServing(app, uploadsPath);
   bootstrapLogger.log(`Uploads serving configured: ${uploadsPath}`);
 

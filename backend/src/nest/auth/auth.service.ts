@@ -30,6 +30,7 @@ import { v7 as uuidv7 } from 'uuid';
 import type { NestAuthUser } from '../common/interfaces/auth.interface.js';
 import { MailerService } from '../common/services/mailer.service.js';
 import { DatabaseService } from '../database/database.service.js';
+import { TenantVerificationService } from '../domains/tenant-verification.service.js';
 import type {
   ForgotPasswordDto,
   LoginDto,
@@ -140,6 +141,11 @@ export class AuthService {
     private readonly databaseService: DatabaseService,
     private readonly jwtService: JwtService,
     private readonly mailer: MailerService,
+    // Step 2.9 + D33 Option (a): assertVerified at top of `createUser(data)`
+    // (the AST-enclosing helper of `INSERT INTO users`, private, no bootstrap
+    // path reaches it — sole caller `register(dto, authUser: NestAuthUser)`
+    // enforces authenticated context via the type signature).
+    private readonly tenantVerification: TenantVerificationService,
   ) {}
 
   // ============================================
@@ -637,6 +643,11 @@ export class AuthService {
     lastName: string;
     role: string;
   }): Promise<number> {
+    // KISS gate (§2.9 + §0.2.5 #1 + D33 Option a): helper-entry assertion.
+    // Sole caller `register(dto, authUser: NestAuthUser)` enforces auth'd
+    // context via type signature — no bootstrap path reaches `createUser`.
+    // Arch-test (§2.11, regex `INSERT INTO users\b`) locks the invariant.
+    await this.tenantVerification.assertVerified(data.tenantId);
     const userUuid = uuidv7();
     const rows = await this.databaseService.systemQuery<{ id: number }>(
       `INSERT INTO users (tenant_id, username, email, password, first_name, last_name, role, is_active, uuid, uuid_created_at)

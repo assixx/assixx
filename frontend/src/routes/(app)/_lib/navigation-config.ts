@@ -244,12 +244,32 @@ const ORGANIGRAM_SUBMENU: NavItem[] = [
   },
 ];
 
+/**
+ * Firmenprofil submenu — added 2026-04-19 alongside Tenant Domain Verification
+ * (masterplan §5.1). Mirrors `ORGANIGRAM_SUBMENU` pattern: an "Übersicht" entry
+ * pointing at the existing `/settings/company-profile` overview page + one
+ * entry per sub-feature. Future company-profile sub-pages (legal, contact, …)
+ * land here without further nav-config restructuring.
+ */
+const COMPANY_PROFILE_SUBMENU: NavItem[] = [
+  {
+    id: 'company-profile-overview',
+    label: 'Übersicht',
+    url: '/settings/company-profile',
+  },
+  {
+    id: 'company-profile-domains',
+    label: 'Domains',
+    url: '/settings/company-profile/domains',
+  },
+];
+
 /** System settings submenu (root only) — ordered: identity → structure → config → workflow → appearance */
 const SYSTEM_SUBMENU: NavItem[] = [
   {
     id: 'company-profile',
     label: 'Firmenprofil',
-    url: '/settings/company-profile',
+    submenu: COMPANY_PROFILE_SUBMENU,
   },
   {
     id: 'organigram',

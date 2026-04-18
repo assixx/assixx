@@ -46,6 +46,8 @@
     getMenuItemsForRole,
   } from './_lib/navigation-config';
   import RoleSwitchBanner from './_lib/RoleSwitchBanner.svelte';
+  import SingleRootWarningBanner from './_lib/SingleRootWarningBanner.svelte';
+  import UnverifiedDomainBanner from './_lib/UnverifiedDomainBanner.svelte';
 
   import type { LayoutData } from './$types';
 
@@ -417,6 +419,22 @@
     {activeRole}
     onDismiss={dismissRoleSwitchBanner}
   />
+
+  <!-- Security banner: tenant has only one root user. Renders here (above
+       AppHeader) to match RoleSwitchBanner's placement. Condition-driven:
+       appears when rootCount === 1, disappears when a second root is added. -->
+  {#if data.rootCount === 1}
+    <SingleRootWarningBanner />
+  {/if}
+
+  <!-- Domain-verification banner (masterplan §5.3): shown to root + admin
+       when the tenant has zero verified domains. Disappears the moment one
+       gets verified — `(app)/+layout.server.ts` re-fetches `tenantVerified`
+       on `invalidateAll()` after the verify-success in /settings/.../domains
+       (v0.3.0 S4). Employees never see this banner per §0.2.5 #16. -->
+  {#if !data.tenantVerified && (userRole === 'root' || userRole === 'admin')}
+    <UnverifiedDomainBanner />
+  {/if}
 
   <AppHeader
     {sidebarCollapsed}

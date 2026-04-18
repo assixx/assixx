@@ -133,6 +133,9 @@ function createSignupResponse(): SignupResponseData {
     subdomain: 'test',
     trialEndsAt: '2026-05-01T00:00:00Z',
     message: 'ok',
+    // OAuth path auto-verifies the domain (§2.8b + §0.2.5 #17) — frontend
+    // suppresses the verification banner for OAuth-signed-up tenants.
+    tenantVerificationRequired: false,
   };
 }
 

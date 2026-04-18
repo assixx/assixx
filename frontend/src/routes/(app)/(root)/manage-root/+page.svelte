@@ -548,6 +548,10 @@
           <button
             type="button"
             class="btn btn-primary"
+            disabled={!data.tenantVerified}
+            title={data.tenantVerified ? undefined : (
+              'Verifiziere zuerst Deine Firmen-Domain unter /settings/company-profile/domains.'
+            )}
             onclick={openAddModal}><i class="fas fa-plus"></i> Root-Benutzer hinzufügen</button
           >
         </div>
@@ -662,8 +666,15 @@
 <button
   type="button"
   class="btn-float"
+  disabled={!data.tenantVerified}
+  title={data.tenantVerified ?
+    'Root-Benutzer hinzufügen'
+  : 'Verifiziere zuerst Deine Firmen-Domain unter /settings/company-profile/domains.'}
   onclick={openAddModal}
-  aria-label="Root-Benutzer hinzufügen"><i class="fas fa-user-shield"></i></button
+  aria-label={data.tenantVerified ?
+    'Root-Benutzer hinzufügen'
+  : 'Root-Benutzer hinzufügen (deaktiviert: Domain nicht verifiziert)'}
+  ><i class="fas fa-user-shield"></i></button
 >
 
 <RootUserModal

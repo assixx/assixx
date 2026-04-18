@@ -12,6 +12,13 @@
 
   let subdomainError: string | null = $state(null);
 
+  // Touched-Flag: Required-Empty erst NACH Blur anzeigen (kein aggressives
+  // Validieren beim ersten Öffnen). Analog zu companyName/firstName/lastName
+  // in +page.svelte. Invalid-Pattern-Fehler (subdomainError) bleibt davon
+  // unberührt — der greift ja nur wenn tatsächlich getippt wurde.
+  let touched = $state(false);
+  const showEmptyError = $derived(touched && subdomain === '');
+
   function handleInput(e: Event): void {
     const target = e.target as HTMLInputElement;
     subdomain = target.value.toLowerCase();
@@ -31,11 +38,15 @@
       id="subdomain"
       name="subdomain"
       class="subdomain-input"
+      class:is-error={showEmptyError || subdomainError !== null}
       required
       pattern="[a-z0-9\-]+"
       placeholder="ihre-firma"
       value={subdomain}
       oninput={handleInput}
+      onblur={() => {
+        touched = true;
+      }}
       {disabled}
     />
     <span class="subdomain-suffix">.assixx.com</span>
@@ -99,5 +110,19 @@
   .subdomain-input:focus + .subdomain-suffix {
     border-color: var(--primary-color);
     background: color-mix(in oklch, var(--color-white) 12%, transparent);
+  }
+
+  /* Error-State: roter Border analog zu `.form-field__control.is-error`
+     im Design-System. Suffix muss mitgefärbt werden, weil Input+Suffix
+     einen visuellen Border-Group bilden (border-right: none am Input). */
+  .subdomain-input.is-error {
+    border: var(--form-field-border-error);
+    border-right: none;
+    color: var(--form-field-text-error);
+  }
+
+  .subdomain-input.is-error + .subdomain-suffix {
+    border: var(--form-field-border-error);
+    border-left: none;
   }
 </style>

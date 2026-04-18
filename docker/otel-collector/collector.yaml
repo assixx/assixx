@@ -1,0 +1,133 @@
+# =============================================================================
+# OpenTelemetry Collector — Assixx Configuration
+# =============================================================================
+#
+# Role: aggregation + intelligent routing hub between applications and Tempo.
+# Receives OTLP spans from backend(s), applies tail-based sampling (smarter
+# than per-span head-sampling), batches, forwards to Tempo.
+#
+# Pipeline:
+#   NestJS (OTel SDK) --OTLP gRPC--> otel-collector:4317
+#                                          |
+#                                          v
+#                          memory_limiter → tail_sampling → batch
+#                                          |
+#                                          v
+#                                    Tempo:4317 (internal)
+#
+# Distribution: `-contrib` is mandatory — tail_sampling processor is NOT in
+# the core distribution (core has only probabilistic/head-sampling).
+#
+# Reference:
+#   - https://opentelemetry.io/docs/collector/configuration/
+#   - https://github.com/open-telemetry/opentelemetry-collector-contrib
+#   - ADR-048 Distributed Tracing with Tempo + OTel
+# =============================================================================
+
+receivers:
+  # OTLP is the OpenTelemetry-native wire protocol. gRPC for backends,
+  # HTTP for frontend-from-browser (not wired up yet — frontend stays on
+  # Sentry for Session Replay; see ADR-048).
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+processors:
+  # Backpressure guard — if collector OOMs, upstream requests don't fail,
+  # spans just get dropped. Critical in Dev where memory limits are tight.
+  memory_limiter:
+    check_interval: 1s
+    limit_mib: 400
+    spike_limit_mib: 100
+
+  # Tail-sampling decides PER TRACE after seeing all spans (not per-span
+  # upfront like head-sampling). Policies evaluate in order; first-match wins.
+  #
+  # Keep-rules:
+  #   1. Every trace that errored (HTTP 5xx, thrown exception, etc.)
+  #   2. Every trace that was slow (>500ms root-span duration)
+  #   3. 10% random sample of the rest (happy-path baseline)
+  #
+  # decision_wait: how long to buffer spans before deciding. 10s covers
+  # most request lifecycles in Assixx. Longer traces get dropped from buffer
+  # and decided on partial data (acceptable — interesting traces are rarely
+  # >10s).
+  tail_sampling:
+    decision_wait: 10s
+    num_traces: 50000
+    expected_new_traces_per_sec: 10
+    policies:
+      - name: errors-keep-all
+        type: status_code
+        status_code:
+          status_codes: [ERROR]
+      - name: slow-keep-all
+        type: latency
+        latency:
+          threshold_ms: 500
+      - name: random-sample
+        type: probabilistic
+        probabilistic:
+          sampling_percentage: 10
+
+  # Batch before export — cuts network overhead by ~10×.
+  batch:
+    timeout: 10s
+    send_batch_size: 512
+
+exporters:
+  # Primary: forward sampled traces to Tempo.
+  otlp/tempo:
+    endpoint: tempo:4317
+    tls:
+      insecure: true
+
+  # Secondary fan-out: Grafana Cloud Tempo (Phase 5, ADR-048 / FEAT_TEMPO_OTEL_MASTERPLAN).
+  # Plan §5.1 specified otlp/grafana-cloud (gRPC :443) — Spec Deviation D9:
+  # switched to otlphttp/ because gRPC-Go >=1.67 (collector-contrib 0.115.1 uses
+  # v1.68) enforces strict ALPN validation and Grafana Cloud's OTLP gateway
+  # triggers `cannot check peer: missing selected ALPN property` on the gRPC
+  # path. Upstream: open-telemetry/opentelemetry-collector-contrib#30538.
+  # Grafana Cloud's official onboarding also ships otlphttp/ — confirmed via
+  # https://github.com/grafana/opentelemetry-onboarding/blob/main/linux/collector.yaml.
+  # Endpoint base URL ends on /otlp — otlphttp auto-appends /v1/traces → final
+  # path /otlp/v1/traces (Grafana Cloud gateway's traces route).
+  # Env vars are Doppler-provisioned via docker-compose environment: block —
+  # see docs/how-to/HOW-TO-DOPPLER-GUIDE.md §8 + collector container env.
+  # Defaults inherited: compression=gzip, encoding=proto, timeout=30s,
+  # retry_on_failure + sending_queue both enabled by otlphttp base framework.
+  otlphttp/grafana-cloud:
+    endpoint: ${GRAFANA_CLOUD_OTLP_ENDPOINT}
+    headers:
+      authorization: "Basic ${GRAFANA_CLOUD_OTLP_AUTH_B64}"
+
+  # Debug: log metadata of every batch to stdout. Useful during setup-
+  # verification, disable once stable (switch verbosity to 'basic' → 'none'
+  # or remove exporter entirely).
+  debug:
+    verbosity: basic
+
+extensions:
+  # Exposed on :13133 for docker-compose healthcheck.
+  health_check:
+    endpoint: 0.0.0.0:13133
+
+service:
+  extensions: [health_check]
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, tail_sampling, batch]
+      # Fan-out: local Tempo (dev/always) + Grafana Cloud Tempo (Phase 5, ADR-048).
+      # KISS Deviation D8 — plan proposed profile-split or env-flag gating,
+      # we ship unconditional fan-out since dev tail-sampled volume (~30-100
+      # traces/day after ADR-048 §0.2 R3 policies) is negligible vs 50 GB Free
+      # Tier. Rollback = remove `otlphttp/grafana-cloud` from this list + restart.
+      # Exporter name reflects D9 (gRPC→HTTP switch, see exporters block comment).
+      exporters: [otlp/tempo, otlphttp/grafana-cloud, debug]
+  telemetry:
+    logs:
+      level: info

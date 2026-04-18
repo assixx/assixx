@@ -50,6 +50,11 @@ const MS_HOUR = 3_600_000;
             { name: 'upload', ttl: MS_HOUR, limit: 20 },
             // Export: 1 request per minute (audit log export)
             { name: 'export', ttl: MS_MINUTE, limit: 1 },
+            // Domain-Verify: 10 requests per 10 minutes
+            // Tight cap because `POST /domains/:id/verify` is the only endpoint
+            // emitting outbound DNS. Protects upstream resolvers + defends R11
+            // (Docker bridge DNS exhaustion). Masterplan §2.7, ADR-048.
+            { name: 'domain-verify', ttl: 10 * MS_MINUTE, limit: 10 },
           ],
           storage: new ThrottlerStorageRedisService(redisClient),
           // Custom error message with retry info (v6.5.0+)

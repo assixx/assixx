@@ -349,6 +349,24 @@ export default [
       'import-x/no-duplicates': 'error',
       'import-x/no-cycle': ['error', { maxDepth: 3, ignoreExternal: true }],
       'import-x/no-self-import': 'error',
+
+      // Plan 2 §2.10 — force freemail-domains.json access through the
+      // email-validator wrapper so the Set-lookup + lowercase-normalization
+      // invariants stay in ONE place. ADR-048 (pending). The sync strategy
+      // (monthly `pnpm run sync:freemail` + upstream PR to Kikobeats) only
+      // works if every caller uses the same `FREEMAIL_DOMAINS` Set.
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['**/domains/data/freemail-domains.json'],
+              message:
+                'Import from backend/src/nest/domains/email-validator.ts instead — the wrapper encapsulates the freemail Set + normalization (Plan 2 §2.10).',
+            },
+          ],
+        },
+      ],
     },
   }, // Security configuration for all TypeScript/JavaScript files
   {
@@ -460,6 +478,47 @@ export default [
       'max-lines-per-function': 'off',
       'no-console': 'off',
       'sonarjs/no-duplicate-string': 'off',
+    },
+  },
+
+  // =============================================================================
+  // scripts/*.ts — tsx-executed utilities (see scripts/tsconfig.json, ADR-041).
+  // WHY: Default espree parser throws "keyword 'interface' is reserved" on TS
+  // syntax. No other block matches scripts/**/*.ts, so the tseslint parser must
+  // be wired here explicitly. scripts/tsconfig.json already exists for IDE
+  // diagnostics — we reuse it via parserOptions.project for type-aware linting.
+  // Backend-Strict (60-line-cap, SonarJS complexity-10, SQL-Injection-AST)
+  // wäre Overkill für 120-Zeilen-tsx-Utilities → eigener Block mit Recommended.
+  // =============================================================================
+  {
+    files: ['scripts/**/*.ts'],
+    languageOptions: {
+      parser: tseslint.parser,
+      parserOptions: {
+        ecmaVersion: 2022,
+        sourceType: 'module',
+        project: './scripts/tsconfig.json',
+        tsconfigRootDir: import.meta.dirname,
+      },
+      globals: {
+        console: 'readonly',
+        process: 'readonly',
+        Buffer: 'readonly',
+        fetch: 'readonly',
+        AbortSignal: 'readonly',
+      },
+    },
+    plugins: {
+      '@typescript-eslint': tseslint.plugin,
+    },
+    rules: {
+      ...tseslint.plugin.configs.recommended.rules,
+      // Scripts log intentionally (tsx CLI utilities).
+      'no-console': 'off',
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
+      ],
     },
   },
 

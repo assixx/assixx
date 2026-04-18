@@ -1531,19 +1531,23 @@ services:
 
 ### 8.2 ✅ STACK COMPLETE
 
-| Was                         | Status      | Details                                                                         |
-| --------------------------- | ----------- | ------------------------------------------------------------------------------- |
-| Pino Logger                 | ✅ COMPLETE | nestjs-pino 4.5.0, pino-loki 3.0.0                                              |
-| Sensitive Data Sanitization | ✅ COMPLETE | Pino `redact` mit 40+ Pfaden                                                    |
-| Rate Limiting               | ✅ COMPLETE | Redis-based, @nestjs/throttler                                                  |
-| Health Check                | ✅ COMPLETE | GET /health, Docker healthcheck                                                 |
-| Sentry Error Tracking       | ✅ COMPLETE | Backend + Frontend SDK                                                          |
-| Loki Log Aggregation        | ✅ COMPLETE | Docker + pino-loki transport                                                    |
-| Grafana Dashboards          | ✅ COMPLETE | grafana:12.3.1, Port 3050                                                       |
-| Prometheus Metrics          | ✅ COMPLETE | prom/prometheus:v3.9.1                                                          |
-| Graceful Shutdown           | ✅ COMPLETE | SIGTERM/SIGINT/SIGHUP, Sentry.close(), enableShutdownHooks(), WebSocket cleanup |
+| Was                                   | Status      | Details                                                                                                                                                          |
+| ------------------------------------- | ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Pino Logger                           | ✅ COMPLETE | nestjs-pino 4.5.0, pino-loki 3.0.0                                                                                                                               |
+| Sensitive Data Sanitization           | ✅ COMPLETE | Pino `redact` mit 40+ Pfaden                                                                                                                                     |
+| Rate Limiting                         | ✅ COMPLETE | Redis-based, @nestjs/throttler                                                                                                                                   |
+| Health Check                          | ✅ COMPLETE | GET /health, Docker healthcheck                                                                                                                                  |
+| Sentry Error Tracking                 | ✅ COMPLETE | Backend + Frontend SDK                                                                                                                                           |
+| Loki Log Aggregation                  | ✅ COMPLETE | Docker + pino-loki transport                                                                                                                                     |
+| Grafana Dashboards                    | ✅ COMPLETE | grafana:12.3.1, Port 3050                                                                                                                                        |
+| Prometheus Metrics                    | ✅ COMPLETE | prom/prometheus:v3.11.1                                                                                                                                          |
+| **DB Visibility (Postgres-Exporter)** | ✅ COMPLETE | prometheuscommunity/postgres-exporter:v0.18.0 — pg_up, connections, locks, bgwriter (2026-04-18, ADR-002 Phase 5f)                                               |
+| **Cache Visibility (Redis-Exporter)** | ✅ COMPLETE | oliver006/redis_exporter:v1.74.0-alpine — hit ratio, memory, evictions (2026-04-18, ADR-002 Phase 5f)                                                            |
+| **Alert-Rules-as-Code**               | ✅ COMPLETE | 3 critical rules (Backend Down, Postgres Down, Backend Memory >800MB) in `docker/grafana/alerts/*.json` + idempotentes `apply.sh` (2026-04-18, ADR-002 Phase 5g) |
+| Graceful Shutdown                     | ✅ COMPLETE | SIGTERM/SIGINT/SIGHUP, Sentry.close(), enableShutdownHooks(), WebSocket cleanup                                                                                  |
 
 > **Phase 4 vollständig abgeschlossen am 13. Januar 2026.**
+> **Production-Hardening (DB/Cache-Exporters + Alerts-as-Code) ergänzt am 18. April 2026.**
 
 ---
 
@@ -1694,7 +1698,10 @@ doppler run --config prd -- docker-compose --profile production up -d
 │  ├── ✅ Sentry Frontend (@sentry/sveltekit 10.33.0)            │
 │  ├── ✅ Grafana Loki (Docker, pino-loki transport)             │
 │  ├── ✅ Prometheus Metrics (Docker)                            │
-│  ├── ✅ Grafana Dashboards (grafana:12.3.1, Port 3050)         │
+│  ├── ✅ postgres-exporter v0.18.0 (DB Visibility, 2026-04-18)  │
+│  ├── ✅ redis-exporter v1.74.0 (Cache Visibility, 2026-04-18)  │
+│  ├── ✅ Alert-Rules-as-Code (3 rules, 2026-04-18)              │
+│  ├── ✅ Grafana Dashboards (grafana:12.4.2, Port 3050)         │
 │  ├── ✅ Health Check Endpoint (/health)                        │
 │  └── ✅ Graceful Shutdown (Sentry, enableShutdownHooks, WS)    │
 │                         ↓                                       │

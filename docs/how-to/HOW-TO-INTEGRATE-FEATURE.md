@@ -127,8 +127,9 @@ private async ensureAddonEnabled(tenantId: number): Promise<void> {
 - [ ] Daten direkt zurückgeben — **NICHT** manuell wrappen (`ResponseInterceptor` macht das)
 - [ ] `@HttpCode()` korrekt gesetzt (201 für POST, 204 für DELETE/Withdraw)
 - [ ] Parametrisierte Routes **nach** statischen Routes (`:id` nach `/incoming`)
+- [ ] **Wenn der Endpoint einen User anlegt** (`INSERT INTO users`): Service-Methode MUSS `await this.tenantVerification.assertVerified(tenantId)` als ersten Aufruf im AST-enclosing Helper haben (ADR-049 KISS-Gate). Sonst CI-Fail durch `shared/src/architectural.test.ts`. Allowlist-Erweiterung nur im SELBEN PR + ADR-Update wenn der neue Bootstrap-Pfad den ersten User für einen Tenant erstellt (vor jeder `tenant_domains`-Zeile).
 
-> **Ref:** `backend/src/nest/vacation/vacation.controller.ts`
+> **Ref:** `backend/src/nest/vacation/vacation.controller.ts`, `backend/src/nest/users/users.service.ts:insertUserRecord` (ADR-049 KISS-Gate-Beispiel)
 
 ### 2.4 DTOs mit Zod
 

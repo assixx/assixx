@@ -50,6 +50,15 @@
   let emailMatchError: string | null = $state(null);
   let passwordMatchError: string | null = $state(null);
 
+  // Touched-Flag: Feld erst NACH erstem Blur validieren, damit User nicht
+  // sofort beim Öffnen der Seite rote Borders sieht. Pattern analog zu
+  // emailMatchError/passwordMatchError (nur on-interact) — verhindert
+  // "aggressive validation"-Antipattern. Gilt für die Required-Felder die
+  // sonst kein Match-Feedback haben.
+  let companyNameTouched = $state(false);
+  let firstNameTouched = $state(false);
+  let lastNameTouched = $state(false);
+
   // Cloudflare Turnstile — cast through a plain index-signature Record so
   // the absent-key case survives svelte-kit sync (see lib/server/turnstile.ts).
   const publicEnv = env as Record<string, string | undefined>;
@@ -260,10 +269,14 @@
               id="company_name"
               name="company_name"
               class="form-field__control"
+              class:is-error={companyNameTouched && companyName === ''}
               required
               placeholder="Ihre Firma GmbH"
               autocomplete="organization"
               bind:value={companyName}
+              onblur={() => {
+                companyNameTouched = true;
+              }}
               disabled={loading}
             />
           </div>
@@ -287,9 +300,13 @@
                 id="first_name"
                 name="first_name"
                 class="form-field__control"
+                class:is-error={firstNameTouched && firstName === ''}
                 required
                 autocomplete="given-name"
                 bind:value={firstName}
+                onblur={() => {
+                  firstNameTouched = true;
+                }}
                 disabled={loading}
               />
             </div>
@@ -304,9 +321,13 @@
                 id="last_name"
                 name="last_name"
                 class="form-field__control"
+                class:is-error={lastNameTouched && lastName === ''}
                 required
                 autocomplete="family-name"
                 bind:value={lastName}
+                onblur={() => {
+                  lastNameTouched = true;
+                }}
                 disabled={loading}
               />
             </div>
@@ -523,28 +544,39 @@
    * SPLIT LAYOUT — GitHub-style: hero left, form right
    * ========================================================================= */
 
+  /* Layout wächst mit Content — kein `height: 100vh` mehr, damit der
+     Footer natürlich unter die Fold rutscht. signup-page erzwingt
+     `min-height: 100vh`, sodass er bei kurzem Form auch den Viewport
+     füllt und der Footer erst beim Scrollen sichtbar wird.
+     (UX request 2026-04-18 — Footer soll nicht sofort sichtbar sein.) */
   .signup-layout {
     display: flex;
     flex-direction: column;
     width: 100%;
-    height: 100vh;
   }
 
   .signup-page {
     display: grid;
-    flex: 1;
     grid-template-columns: 1fr 1fr;
     width: 100%;
-    min-height: 0;
-    overflow: hidden;
+    min-height: 100vh;
   }
 
-  /* --- Left: Hero with background image --- */
+  /* --- Left: Hero with background image ---
+     `position: sticky` + `align-self: start` + `height: 100vh` verhindern
+     dass der Hero mit der Grid-Row stretcht, wenn die rechte Form wächst
+     (z. B. durch Password-Strength-Indicator). Ohne das würde der
+     zentrierte Hero-Content vertikal wandern, sobald sich die Row-Höhe
+     ändert (UX-Bug 2026-04-18). Sticky hält den Hero zusätzlich im
+     Viewport, während man nach unten zum Footer scrollt. */
   .signup-hero {
-    position: relative;
+    position: sticky;
+    top: 0;
+    align-self: start;
     display: flex;
     align-items: center;
     justify-content: center;
+    height: 100vh;
     background-image: url('/images/background_index_1920.jpg');
     background-image: image-set(
       url('/images/background_index.webp') type('image/webp'),
@@ -596,7 +628,9 @@
     line-height: 1.5;
   }
 
-  /* --- Right: Form side --- */
+  /* --- Right: Form side ---
+     Kein `overflow-y: auto` mehr — das Dokument selbst scrollt, damit der
+     Footer erst bei Scroll erscheint (statt innerhalb der Form-Side). */
   .signup-form-side {
     display: flex;
     justify-content: center;
@@ -607,7 +641,6 @@
        hochziehen"). Bottom stays generous because the form is long and
        needs breathing room before the footer on scroll. */
     padding: 60px 120px 115px;
-    overflow-y: auto;
   }
 
   .signup-card {
@@ -731,7 +764,12 @@
       grid-template-columns: 1fr;
     }
 
+    /* Mobile: Sticky + 100vh Hero würde den Viewport füllen und die Form
+       verdecken. Zurück auf natürliches Stacking. */
     .signup-hero {
+      position: static;
+      align-self: auto;
+      height: auto;
       min-height: 200px;
     }
 

@@ -497,7 +497,10 @@
               name="current_password"
               class="form-field__control"
               class:is-error={currentPasswordError}
-              autocomplete="current-password"
+              autocomplete="new-password"
+              data-lpignore="true"
+              data-1p-ignore
+              data-form-type="other"
               bind:value={currentPassword}
               required
             />

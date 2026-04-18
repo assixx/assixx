@@ -8,6 +8,7 @@
  */
 import { Module } from '@nestjs/common';
 
+import { DomainsModule } from '../domains/domains.module.js';
 import { HierarchyPermissionModule } from '../hierarchy-permission/hierarchy-permission.module.js';
 import { ScopeModule } from '../hierarchy-permission/scope.module.js';
 import { OrganigramModule } from '../organigram/organigram.module.js';
@@ -18,7 +19,9 @@ import { UsersController } from './users.controller.js';
 import { UsersService } from './users.service.js';
 
 @Module({
-  imports: [ScopeModule, HierarchyPermissionModule, OrganigramModule],
+  // DomainsModule provides `TenantVerificationService` — required by
+  // `UsersService.insertUserRecord` per §2.9 KISS gate (§0.2.5 #1).
+  imports: [ScopeModule, HierarchyPermissionModule, OrganigramModule, DomainsModule],
   controllers: [UsersController],
   providers: [UsersPermissionRegistrar, UserAvailabilityService, UserProfileService, UsersService],
   exports: [UsersService, UserAvailabilityService, UserProfileService],

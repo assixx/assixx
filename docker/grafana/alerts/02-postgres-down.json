@@ -1,0 +1,59 @@
+{
+  "uid": "assixx-postgres-down",
+  "title": "PostgreSQL Down",
+  "ruleGroup": "assixx-critical",
+  "folderUID": "assixx-prod-alerts",
+  "noDataState": "Alerting",
+  "execErrState": "Alerting",
+  "for": "2m",
+  "condition": "C",
+  "data": [
+    {
+      "refId": "A",
+      "queryType": "",
+      "relativeTimeRange": { "from": 600, "to": 0 },
+      "datasourceUid": "grafanacloud-prom",
+      "model": {
+        "expr": "up{job=\"postgres\"}",
+        "intervalMs": 60000,
+        "maxDataPoints": 43200,
+        "refId": "A"
+      }
+    },
+    {
+      "refId": "B",
+      "queryType": "",
+      "relativeTimeRange": { "from": 0, "to": 0 },
+      "datasourceUid": "__expr__",
+      "model": { "type": "reduce", "expression": "A", "reducer": "last", "refId": "B" }
+    },
+    {
+      "refId": "C",
+      "queryType": "",
+      "relativeTimeRange": { "from": 0, "to": 0 },
+      "datasourceUid": "__expr__",
+      "model": {
+        "type": "threshold",
+        "expression": "B",
+        "conditions": [
+          {
+            "evaluator": { "params": [1], "type": "lt" },
+            "operator": { "type": "and" },
+            "query": { "params": ["B"] },
+            "reducer": { "type": "last" },
+            "type": "query"
+          }
+        ],
+        "refId": "C"
+      }
+    }
+  ],
+  "annotations": {
+    "summary": "PostgreSQL ist nicht erreichbar (up=0 fuer 2 Minuten)",
+    "description": "Der postgres_exporter (assixx-postgres-exporter) antwortet nicht — entweder DB down oder Exporter down. Pruefe: docker ps, docker logs assixx-postgres-exporter, docker logs assixx-postgres"
+  },
+  "labels": {
+    "severity": "critical",
+    "service": "postgres"
+  }
+}

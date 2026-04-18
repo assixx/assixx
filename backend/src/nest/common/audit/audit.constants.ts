@@ -88,7 +88,12 @@ export const RESOURCE_TABLE_MAP: Record<string, { table: string; nameField: stri
   setting: { table: 'tenant_settings', nameField: 'setting_key' },
   role: { table: 'roles', nameField: 'name' },
   // Admin management resources
-  'admin-permission': { table: 'admin_permissions', nameField: 'id' },
+  // NOTE: 'admin-permission' intentionally NOT mapped here — it's an AGGREGATED
+  // resource (users.has_full_access + admin_area_permissions +
+  // admin_department_permissions). Handled by dedicated fetchers in
+  // AuditMetadataService (fetchAdminPermissionSnapshot / fetchAdminPermissionName).
+  // Previous entry pointed at non-existent table "admin_permissions" and
+  // caused spurious ERROR logs on every admin permission change.
   tenant: { table: 'tenants', nameField: 'company_name' },
   // Vacation module resources (ADR-023)
   request: { table: 'vacation_requests', nameField: 'id' },

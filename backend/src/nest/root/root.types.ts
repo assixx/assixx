@@ -107,6 +107,28 @@ export interface DbIdRow {
   id: number;
 }
 
+/**
+ * INSERT ... RETURNING id, uuid — used for create endpoints that need to expose
+ * the new record's UUID to the frontend (e.g. redirecting to a detail page).
+ * WHY: Frontend toast-with-link pattern (ADR-045 Layer-2 "my-permissions" flow,
+ * see manage-admins/manage-employees "Berechtigungen jetzt zuweisen?"-Link)
+ * requires the uuid in the same response — avoids an extra GET roundtrip.
+ */
+export interface DbIdUuidRow {
+  id: number;
+  uuid: string;
+}
+
+/**
+ * Result of creating an admin user.
+ * Includes uuid so controllers can expose it in the API response (frontend
+ * uses it for deep-link navigation to /manage-admins/permission/{uuid}).
+ */
+export interface CreateAdminResult {
+  id: number;
+  uuid: string;
+}
+
 export interface DbSubdomainRow {
   subdomain: string;
 }
@@ -176,6 +198,10 @@ export interface AdminLog {
 export interface DashboardStats {
   adminCount: number;
   employeeCount: number;
+  // WHY: Single-Root-Warning-Banner auf /root-dashboard. Nur wenn rootCount === 1
+  // wird der Sicherheitshinweis zum Anlegen eines zweiten Root-Users angezeigt.
+  // Gegenmaßnahme gegen Credential-Verlust bei Single-Root-Tenants.
+  rootCount: number;
   totalUsers: number;
   tenantCount?: number;
   activeAddons?: string[];

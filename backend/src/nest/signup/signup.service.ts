@@ -10,7 +10,7 @@ import { IS_ACTIVE } from '@assixx/shared/constants';
 import { BadRequestException, ConflictException, Injectable, Logger } from '@nestjs/common';
 import bcrypt from 'bcryptjs';
 import { randomBytes } from 'crypto';
-import type { PoolClient, QueryResultRow } from 'pg';
+import { DatabaseError, type PoolClient, type QueryResultRow } from 'pg';
 import { v7 as uuidv7 } from 'uuid';
 
 import type { CompleteSignupDto } from '../auth/oauth/dto/index.js';
@@ -19,6 +19,12 @@ import type { CompleteSignupDto } from '../auth/oauth/dto/index.js';
 import type { SignupTicket } from '../auth/oauth/oauth.types.js';
 import { AppConfigService } from '../config/config.service.js';
 import { DatabaseService } from '../database/database.service.js';
+import { DomainVerificationService } from '../domains/domain-verification.service.js';
+import {
+  type EmailValidationFailure,
+  extractDomain,
+  validateBusinessEmail,
+} from '../domains/email-validator.js';
 import type { SignupDto, SignupResponseData, SubdomainCheckResponseData } from './dto/index.js';
 
 // ============================================================================
@@ -67,6 +73,10 @@ export class SignupService {
   constructor(
     private readonly db: DatabaseService,
     private readonly config: AppConfigService,
+    // `DomainVerificationService` — used ONLY for token generation here; the
+    // DNS-TXT lookup side of that service is exercised from `DomainsService`
+    // (Step 2.5). Exported from `DomainsModule` (Step 2.8 wiring).
+    private readonly domainVerification: DomainVerificationService,
   ) {}
 
   /**
@@ -77,7 +87,13 @@ export class SignupService {
     ipAddress?: string,
     userAgent?: string,
   ): Promise<SignupResponseData> {
-    // Validation (no logging needed - errors throw)
+    // Validation (no logging needed - errors throw). Email gates first —
+    // cheapest check (synchronous, ~1ms), rejects freemail / disposable /
+    // malformed before we touch the DB. Both `email` AND `adminEmail`
+    // validated per v0.3.5 D31 — frontend sends same value today but a
+    // future API consumer could split them; defence-in-depth is cheap.
+    this.validateBusinessEmailOrThrow(dto.email, 'email');
+    this.validateBusinessEmailOrThrow(dto.adminEmail, 'adminEmail');
     this.validateSubdomainOrThrow(dto.subdomain);
     await this.ensureSubdomainAvailable(dto.subdomain);
 
@@ -104,6 +120,9 @@ export class SignupService {
         subdomain: dto.subdomain,
         trialEndsAt: result.trialEndsAt.toISOString(),
         message: 'Registration successful! You can now log in.',
+        // Password signup seeds `tenant_domains(pending)` — user must
+        // complete the DNS-TXT dance before creating more users (§2.8).
+        tenantVerificationRequired: true,
       };
     } catch (error: unknown) {
       this.logger.error('Registration failed:', error);
@@ -141,6 +160,124 @@ export class SignupService {
   }
 
   /**
+   * Validate an email against the three-layer business-email filter
+   * (format / disposable / freemail — §2.3). Called twice per signup (D31):
+   * once for `dto.email` (company contact), once for `dto.adminEmail` (root
+   * login). `field` is surfaced in the error payload so future API consumers
+   * sending distinct values can see which side failed; the stock frontend
+   * sends the same string to both so users see a single toast either way.
+   */
+  private validateBusinessEmailOrThrow(email: string, field: 'email' | 'adminEmail'): void {
+    const result = validateBusinessEmail(email);
+    if (result.valid) return;
+    // Exhaustive switch on the 3-member `EmailValidationFailure` union — no
+    // `default:` by design (same pattern as `DomainsService.throwForValidation
+    // Failure` in Step 2.5). Adding a 4th member in `email-validator.ts`
+    // breaks tsc here (return-type inference loses exhaustiveness), forcing
+    // a deliberate update. `??` fallback guards the optional `failure` prop.
+    const failure: EmailValidationFailure = result.failure ?? 'INVALID_FORMAT';
+    switch (failure) {
+      case 'INVALID_FORMAT':
+        throw new BadRequestException({
+          code: 'INVALID_FORMAT',
+          field,
+          message: 'Bitte gib eine gültige E-Mail-Adresse ein.',
+        });
+      case 'DISPOSABLE_EMAIL':
+        throw new BadRequestException({
+          code: 'DISPOSABLE_EMAIL',
+          field,
+          message:
+            'Wegwerf-E-Mail-Adressen sind nicht erlaubt. Bitte nutze Deine Firmen-E-Mail-Adresse.',
+        });
+      case 'FREE_EMAIL_PROVIDER':
+        throw new BadRequestException({
+          code: 'FREE_EMAIL_PROVIDER',
+          field,
+          message:
+            'Bitte nutze Deine Firmen-E-Mail-Adresse mit eigener Domain. Gmail, Outlook, GMX & Co. sind nicht erlaubt.',
+        });
+    }
+  }
+
+  /**
+   * Seed the initial `tenant_domains(pending)` row from the root-user's
+   * `adminEmail` domain (§0.2.5 #3 — root's own email is the ownership
+   * claim; prevents `attacker@gmail.com` claiming `victim.de`). Called
+   * INSIDE the enclosing `systemTransaction` so a downstream failure
+   * rolls back tenant + user + domain atomically. No DNS yet — the token
+   * lives in `verification_token` until the user pastes it into DNS TXT
+   * via `/settings/company-profile/domains` (Phase 5 UI).
+   */
+  private async seedPendingDomain(
+    client: PoolClient,
+    tenantId: number,
+    adminEmail: string,
+  ): Promise<void> {
+    const domain = extractDomain(adminEmail);
+    const token = this.domainVerification.generateToken();
+    await client.query(
+      `INSERT INTO tenant_domains
+         (tenant_id, domain, status, verification_token, is_primary)
+       VALUES ($1, $2, 'pending', $3, true)`,
+      [tenantId, domain, token],
+    );
+  }
+
+  /**
+   * Seed the initial `tenant_domains(verified)` row for OAuth signup (§2.8b,
+   * §0.2.5 #17). Azure AD already proved domain ownership at the IdP level
+   * (the customer's IT admin configured the Azure AD app registration with
+   * the allowed domains), so no DNS-TXT dance is required. The
+   * `verification_token` is still generated — NOT-NULL column + audit-trail
+   * integrity — but never redeemed; `status='verified'` is what unlocks
+   * user creation via `assertTenantVerified()`.
+   *
+   * MUST wrap the INSERT in a 23505 handler. The partial UNIQUE INDEX
+   * `idx_tenant_domains_domain_verified` (§1.1) rejects the INSERT when
+   * another tenant has already claimed the same domain as verified
+   * (e.g. password-signup tenant A verified `firma.de` via DNS TXT, then
+   * an OAuth signup for `x@firma.de` races in for tenant B). Without the
+   * catch, Postgres's raw 23505 error bubbles as a 500 to the OAuth
+   * callback — terrible UX for what is actually a "domain already taken"
+   * conflict. The enclosing `systemTransaction` rolls back on throw → no
+   * orphan tenant / user / oauth-link rows survive.
+   */
+  private async seedVerifiedDomain(
+    client: PoolClient,
+    tenantId: number,
+    oauthEmail: string,
+  ): Promise<void> {
+    const domain = extractDomain(oauthEmail);
+    // Token is generated for column-NOT-NULL + audit-trail integrity
+    // (§0.2.5 #17); the DNS-TXT redemption path is never taken for
+    // OAuth-seeded rows because they land at `status='verified'` directly.
+    const token = this.domainVerification.generateToken();
+    try {
+      await client.query(
+        `INSERT INTO tenant_domains
+           (tenant_id, domain, status, verification_token, verified_at, is_primary)
+         VALUES ($1, $2, 'verified', $3, NOW(), true)`,
+        [tenantId, domain, token],
+      );
+    } catch (err: unknown) {
+      // 23505 = unique_violation against `idx_tenant_domains_domain_verified`
+      // (the only UNIQUE constraint a fresh OAuth signup could hit — per-
+      // tenant-domain constraint can't fire on a brand-new tenantId). Map
+      // to a clean 409 ConflictException; the outer `systemTransaction`
+      // rolls back the tenant + user + oauth-link atomically on throw.
+      if (err instanceof DatabaseError && err.code === '23505') {
+        throw new ConflictException({
+          code: 'DOMAIN_ALREADY_CLAIMED',
+          message:
+            'Diese Domain gehört bereits einem anderen Assixx-Tenant. Bitte wende Dich an Deinen Assixx-Kontakt.',
+        });
+      }
+      throw err;
+    }
+  }
+
+  /**
    * Execute the registration transaction (create tenant, user, activate trial addons)
    */
   private async executeRegistrationTransaction(
@@ -156,6 +293,14 @@ export class SignupService {
 
       const tenantId = await this.createTenant(client, dto, trialEndsAt);
       const userId = await this.createRootUser(client, tenantId, dto);
+      // Seed `tenant_domains(pending)` from `dto.adminEmail` domain (§2.8 +
+      // D31 — root-login email is the ownership claim per §0.2.5 #3). Inside
+      // the same `systemTransaction` so any later failure rolls back the
+      // tenant + user + domain atomically; no orphan tenant without its
+      // claim row. Seed always succeeds: UNIQUE (tenant_id, domain) can't
+      // collide on a brand-new tenantId, and the verified-global index
+      // only blocks `status='verified'` rows.
+      await this.seedPendingDomain(client, tenantId, dto.adminEmail);
       await this.activateTrialAddons(client, tenantId);
 
       return { tenantId, userId, trialEndsAt };
@@ -432,6 +577,10 @@ export class SignupService {
         subdomain: dto.subdomain,
         trialEndsAt: result.trialEndsAt.toISOString(),
         message: 'Registration successful! You can now log in.',
+        // OAuth auto-verifies (§2.8b, §0.2.5 #17) — Azure AD is the trust
+        // boundary, domain claim is already proven at IdP level; frontend
+        // suppresses the verification banner for OAuth-signed-up tenants.
+        tenantVerificationRequired: false,
       };
     } catch (error: unknown) {
       // Let R3 (duplicate OAuth link) surface as 409 — translated in
@@ -459,6 +608,13 @@ export class SignupService {
 
       const tenantId = await this.createTenantForOAuth(client, dto, oauthInfo, trialEndsAt);
       const userId = await this.createOAuthRootUser(client, tenantId, dto, oauthInfo);
+      // Seed `tenant_domains(verified)` from Microsoft-provided OAuth email
+      // (§2.8b + §0.2.5 #17). Azure AD is the trust boundary, so the domain
+      // is auto-verified — no DNS-TXT dance. Placed immediately after the
+      // root-user INSERT (mirrors password path order in §2.8) so a 23505
+      // conflict rolls back tenant + user atomically before we reach
+      // `insertOAuthAccountLink`. The seeder catches 23505 → 409 clean.
+      await this.seedVerifiedDomain(client, tenantId, oauthInfo.email);
       await this.activateTrialAddons(client, tenantId);
       await this.insertOAuthAccountLink(client, tenantId, userId, oauthInfo);
 

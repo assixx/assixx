@@ -3,6 +3,12 @@
 > **Vitest 4.1** runs as a pnpm dependency — no global install needed!
 > 33 modules, 539 assertions, 100% passing.
 
+> **Scope of this guide:** functional API integration tests (Tier 2 in the
+> [ADR-018 test pyramid](../infrastructure/adr/ADR-018-testing-strategy.md)).
+> For **performance / load regression tests** (Tier 4, k6-based), see
+> [`load/README.md`](../../load/README.md) at the repo root — different tool,
+> different scope, different runtime (k6 in Docker, not Vitest in Node).
+
 ---
 
 ## Isolated Test Tenant: apitest

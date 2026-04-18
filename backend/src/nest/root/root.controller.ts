@@ -120,8 +120,11 @@ export class RootController {
     @Body() dto: CreateAdminDto,
     @TenantId() tenantId: number,
     @CurrentUser() user: JwtPayload,
-  ): Promise<{ message: string; adminId: number }> {
-    const adminId = await this.rootService.createAdmin(
+  ): Promise<{ message: string; adminId: number; uuid: string }> {
+    // uuid is returned so the frontend toast can deep-link to
+    // /manage-admins/permission/{uuid} for "Berechtigungen jetzt zuweisen?"
+    // (parity with manage-employees, ADR-045 Layer 2).
+    const { id, uuid } = await this.rootService.createAdmin(
       {
         email: dto.email,
         password: dto.password,
@@ -130,11 +133,15 @@ export class RootController {
         notes: dto.notes,
         employeeNumber: dto.employeeNumber,
         position: dto.position,
+        // positionIds must be forwarded — the service persists them via
+        // UserPositionService.syncPositions() into user_positions. Without
+        // this line the modal's multi-select is silently dropped.
+        positionIds: dto.positionIds,
       },
       tenantId,
       user.id,
     );
-    return { message: 'Admin user created successfully', adminId };
+    return { message: 'Admin user created successfully', adminId: id, uuid };
   }
 
   @Put('admins/:id')
@@ -155,6 +162,10 @@ export class RootController {
         employeeNumber: dto.employeeNumber,
         position: dto.position,
         role: dto.role,
+        // positionIds must be forwarded — the service syncs them into
+        // user_positions via UserPositionService. Without this the modal's
+        // position changes on edit are silently discarded.
+        positionIds: dto.positionIds,
       },
       tenantId,
     );
@@ -229,6 +240,11 @@ export class RootController {
         notes: dto.notes,
         employeeNumber: dto.employeeNumber,
         isActive: dto.isActive,
+        // positionIds must be forwarded — the service syncs them into
+        // user_positions via UserPositionService.syncPositions(). Without
+        // this line the modal's multi-select is silently dropped (same
+        // anti-pattern fixed for createAdmin in this controller).
+        positionIds: dto.positionIds,
       },
       tenantId,
       user.id,
@@ -253,6 +269,10 @@ export class RootController {
         notes: dto.notes,
         employeeNumber: dto.employeeNumber,
         isActive: dto.isActive,
+        // positionIds must be forwarded — the service syncs them into
+        // user_positions via UserPositionService. Without this line edit
+        // changes to the root user's positions are silently discarded.
+        positionIds: dto.positionIds,
       },
       tenantId,
     );

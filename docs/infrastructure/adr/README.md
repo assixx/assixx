@@ -74,6 +74,10 @@ ADRs document important architectural decisions:
 | [ADR-043](./ADR-043-postgresql-18-upgrade.md)                                | PostgreSQL 17 → 18 Major Upgrade                             | Accepted   | 2026-04-10 |
 | [ADR-044](./ADR-044-seo-and-security-headers.md)                             | SEO Infrastructure & Security Headers                        | Accepted   | 2026-04-11 |
 | [ADR-045](./ADR-045-permission-visibility-design.md)                         | Permission & Visibility Design — "Wer darf was?"             | Accepted   | 2026-04-15 |
+| [ADR-046](./ADR-046-oauth-sign-in.md)                                        | Microsoft OAuth Sign-In for Tenant-Owner                     | Amended    | 2026-04-16 |
+| [ADR-047](./ADR-047-claude-code-hook-strategy.md)                            | Claude Code Hook Strategy — Catalog Injection                | Accepted   | 2026-04-18 |
+| [ADR-048](./ADR-048-distributed-tracing-tempo-otel.md)                       | Distributed Tracing with Grafana Tempo + OpenTelemetry       | Accepted   | 2026-04-18 |
+| [ADR-049](./ADR-049-tenant-domain-verification.md)                           | Tenant Domain Verification                                   | Accepted   | 2026-04-19 |
 
 ## Template
 

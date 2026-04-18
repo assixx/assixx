@@ -56,6 +56,26 @@ export const ERROR_MESSAGES = {
 } as const;
 
 /**
+ * Email-validation error codes emitted by the backend signup-validation layer
+ * (`validateBusinessEmail` per masterplan §2.3 + ADR-048). Three codes —
+ * `DOMAIN_NO_MX` is intentionally NOT here per §0.2.5 #6 (no MX/SMTP at
+ * signup, only synchronous list-based validation: format + disposable
+ * (mailchecker) + freemail (committed `freemail-domains.json` Set).
+ *
+ * The keys MUST match the backend constants in
+ * `backend/src/nest/domains/email-validator.ts` byte-for-byte. The §5.4.2
+ * unit test asserts this drift-guard for each code.
+ *
+ * @see masterplan §5.2 (this wiring), §5.4.2 (drift-guard test)
+ */
+export const EMAIL_VALIDATION_MESSAGES: Record<string, string> = {
+  INVALID_FORMAT: 'Bitte gib eine gültige E-Mail-Adresse ein.',
+  DISPOSABLE_EMAIL: 'Wegwerf-E-Mail-Adressen sind nicht erlaubt. Bitte nutze Deine Firmen-E-Mail.',
+  FREE_EMAIL_PROVIDER:
+    'Bitte nutze Deine Firmen-E-Mail-Adresse. Gmail, Outlook, GMX & Co. sind nicht erlaubt.',
+};
+
+/**
  * Help message content
  */
 export const HELP_MESSAGE =

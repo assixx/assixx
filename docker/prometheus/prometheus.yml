@@ -28,6 +28,12 @@ remote_write:
     basic_auth:
       username: "2910443"
       password_file: /etc/prometheus/grafana_cloud_api_key
+    # ADR-048 Session 3b — forward OpenMetrics exemplars to Grafana Cloud.
+    # Verified upstream: Prometheus v3.11.1 config.go L1471
+    # `RemoteWriteConfig.SendExemplars bool yaml:"send_exemplars,omitempty"`.
+    # Default false; must be explicit opt-in. Without this, local Tempo-link
+    # works but Cloud UI has no exemplar dots on cloud-side graphs.
+    send_exemplars: true
 
 # Alertmanager configuration (optional - for future alerting)
 # alerting:
@@ -56,19 +62,27 @@ scrape_configs:
     scrape_interval: 15s
     scrape_timeout: 10s
 
+  # PostgreSQL Exporter — DB metrics (connections, locks, replication, bgwriter)
+  # WHY: Multi-Tenant SaaS — DB-Latenz ist der #1 Performance-Killer.
+  # Backend-Metrics zeigen "request slow", postgres-exporter zeigt "warum".
+  # @see docs/infrastructure/adr/ADR-002-alerting-monitoring.md
+  - job_name: "postgres"
+    static_configs:
+      - targets: ["postgres-exporter:9187"]
+    scrape_interval: 30s
+    scrape_timeout: 10s
+
+  # Redis Exporter — Cache metrics (hit ratio, memory, evictions, commands)
+  # WHY: Cache-Hit-Ratio ist Frühwarnsystem für Performance-Degradation.
+  - job_name: "redis"
+    static_configs:
+      - targets: ["redis-exporter:9121"]
+    scrape_interval: 30s
+    scrape_timeout: 10s
+
   # Assixx Frontend SvelteKit (optional - if metrics endpoint added)
   # - job_name: "assixx-frontend"
   #   static_configs:
   #     - targets: ["frontend:3001"]
   #   metrics_path: /metrics
   #   scrape_interval: 30s
-
-  # Redis Exporter (optional - add redis_exporter container)
-  # - job_name: "redis"
-  #   static_configs:
-  #     - targets: ["redis-exporter:9121"]
-
-  # PostgreSQL Exporter (optional - add postgres_exporter container)
-  # - job_name: "postgres"
-  #   static_configs:
-  #     - targets: ["postgres-exporter:9187"]

@@ -20,6 +20,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import type { DatabaseService } from '../database/database.service.js';
 import type { UserRepository } from '../database/repositories/user.repository.js';
+import type { TenantVerificationService } from '../domains/tenant-verification.service.js';
 import type { HierarchyPermissionService } from '../hierarchy-permission/hierarchy-permission.service.js';
 import type { ScopeService } from '../hierarchy-permission/scope.service.js';
 import type { UserPositionService } from '../organigram/user-position.service.js';
@@ -187,6 +188,14 @@ describe('UsersService', () => {
       mockScope as unknown as ScopeService,
       mockHierarchyPermission as unknown as HierarchyPermissionService,
       mockUserPositions as unknown as UserPositionService,
+      // Step 2.9 — assertVerified no-op so existing createUser tests see a
+      // verified tenant and exercise the happy path; a future "403 when
+      // tenant unverified" test would `.mockRejectedValueOnce(new Forbidden
+      // Exception(...))` on this same stub.
+      {
+        assertVerified: vi.fn().mockResolvedValue(undefined),
+        isVerified: vi.fn().mockResolvedValue(true),
+      } as unknown as TenantVerificationService,
     );
   });
 

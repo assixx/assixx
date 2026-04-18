@@ -204,6 +204,66 @@ async function parseOrgScope(response: Response | null): Promise<OrganizationalS
   }
 }
 
+/**
+ * Fetch rootCount only when the caller is a root user.
+ *
+ * Powers the SingleRootWarningBanner in +layout.svelte: if the tenant has
+ * exactly one root, the banner urges the user to create a second one
+ * (credential-loss guard). For admins/employees we short-circuit with 0 so
+ * the banner is never rendered and no /root/* call is made for them.
+ *
+ * Reuses /root/dashboard (already optimized) rather than introducing a
+ * dedicated endpoint — cheap since the backend RBAC guard still blocks
+ * non-root callers at the /root/* path anyway.
+ */
+async function fetchRootCount(
+  role: string,
+  fetchFn: typeof fetch,
+  headers: Record<string, string>,
+): Promise<number> {
+  if (role !== 'root') return 0;
+  try {
+    const response = await fetchFn(`${API_BASE}/root/dashboard`, { headers });
+    if (!response.ok) return 0;
+    const json = (await response.json()) as ApiResponse<{ rootCount?: number }>;
+    return json.data?.rootCount ?? 0;
+  } catch {
+    return 0;
+  }
+}
+
+/**
+ * Fetch tenant verification status (root + admin only — masterplan §5.3 + §0.2.5 #16).
+ *
+ * Powers the UnverifiedDomainBanner in +layout.svelte and the user-creation
+ * form `disabled` guards. When the call fails (network, 5xx) we fall back
+ * to `true` (verified) — we'd rather show no banner on a transient outage
+ * than scare the user with a "your tenant is unverified" message that may
+ * be wrong. The backend's `assertVerified()` gate is the authoritative
+ * source: if a non-verified tenant somehow gets `true` here, the very next
+ * user-creation attempt still 403s, so this is a UX fallback only.
+ *
+ * Employees never need this flag (no user-creation UI surfaced to them) —
+ * short-circuit with `true` to skip the network call entirely.
+ *
+ * @see masterplan §5.3 (banner + form guards), §2.7 (endpoint), §0.2.5 #16 (Root+Admin readable)
+ */
+async function fetchTenantVerified(
+  role: string,
+  fetchFn: typeof fetch,
+  headers: Record<string, string>,
+): Promise<boolean> {
+  if (role !== 'root' && role !== 'admin') return true;
+  try {
+    const response = await fetchFn(`${API_BASE}/domains/verification-status`, { headers });
+    if (!response.ok) return true;
+    const json = (await response.json()) as ApiResponse<{ verified: boolean }>;
+    return json.data?.verified ?? true;
+  } catch {
+    return true;
+  }
+}
+
 /** Clear auth cookies and redirect to login */
 function clearAuthAndRedirect(cookies: Parameters<LayoutServerLoad>[0]['cookies']): never {
   cookies.delete('accessToken', { path: '/' });
@@ -222,6 +282,13 @@ const UNAUTHENTICATED_RESPONSE = {
   hierarchyLabels: DEFAULT_HIERARCHY_LABELS,
   orgScope: DEFAULT_ORG_SCOPE,
   activeRole: null as string | null,
+  // Drives SingleRootWarningBanner. 0 for unauthenticated/non-root users —
+  // banner only renders when rootCount === 1 (see +layout.svelte).
+  rootCount: 0,
+  // Drives UnverifiedDomainBanner + user-creation-form guards. Default `true`
+  // for unauthenticated paths: the banner only renders when `false` AND user
+  // is root/admin, neither condition is met here (see +layout.svelte §5.3).
+  tenantVerified: true,
 } as const;
 
 /** Build authenticated response from user data, counts, theme, addons, and labels */
@@ -233,6 +300,8 @@ async function buildAuthenticatedResponse(
   labelsResponse: Response | null,
   scopeResponse: Response | null,
   activeRole: string | null,
+  rootCount: number,
+  tenantVerified: boolean,
 ) {
   return {
     user: mapUserData(userData),
@@ -244,6 +313,8 @@ async function buildAuthenticatedResponse(
     hierarchyLabels: await parseHierarchyLabels(labelsResponse),
     orgScope: await parseOrgScope(scopeResponse),
     activeRole,
+    rootCount,
+    tenantVerified,
   };
 }
 
@@ -350,15 +421,24 @@ export const load: LayoutServerLoad = async ({ cookies, fetch, url, locals }) =>
 
   if (rbacUser !== undefined) {
     // FAST PATH: Reuse user from RBAC hook - fetch counts, theme, addons + labels in parallel
+    // rootCount + tenantVerified fetched in the same Promise.all (role-gated:
+    // rootCount is root-only, tenantVerified is root+admin per §0.2.5 #16).
     const fetchStart = performance.now();
-    const { countsResponse, themeResponse, addonsResponse, labelsResponse, scopeResponse } =
-      await fetchCountsThemeAddonsAndLabels(fetch, headers);
+    const [
+      { countsResponse, themeResponse, addonsResponse, labelsResponse, scopeResponse },
+      rootCount,
+      tenantVerified,
+    ] = await Promise.all([
+      fetchCountsThemeAddonsAndLabels(fetch, headers),
+      fetchRootCount(rbacUser.role, fetch, headers),
+      fetchTenantVerified(rbacUser.role, fetch, headers),
+    ]);
     const fetchTime = Math.round(performance.now() - fetchStart);
     const totalTime = Math.round(performance.now() - startTime);
 
     log.debug(
       { userId: rbacUser.id, fetchTime, totalTime, path: url.pathname },
-      `⚡ FAST PATH: RBAC user reused, /counts + /theme + /addons + /labels fetched in parallel (${fetchTime}ms, total: ${totalTime}ms)`,
+      `⚡ FAST PATH: RBAC user reused, /counts + /theme + /addons + /labels + /verification-status fetched in parallel (${fetchTime}ms, total: ${totalTime}ms)`,
     );
 
     return await buildAuthenticatedResponse(
@@ -369,6 +449,8 @@ export const load: LayoutServerLoad = async ({ cookies, fetch, url, locals }) =>
       labelsResponse,
       scopeResponse,
       activeRole,
+      rootCount,
+      tenantVerified,
     );
   }
 
@@ -410,10 +492,18 @@ async function loadUserWithFetch(
     redirect(302, '/login');
   }
 
+  // Fetch rootCount + tenantVerified AFTER user data arrives — both are
+  // role-gated, and the role isn't known until /users/me resolves. Run them
+  // in parallel since they hit different endpoints.
+  const [rootCount, tenantVerified] = await Promise.all([
+    fetchRootCount(userData.role, fetchFn, headers),
+    fetchTenantVerified(userData.role, fetchFn, headers),
+  ]);
+
   const totalTime = Math.round(performance.now() - startTime);
   log.debug(
     { fetchTime, totalTime, path: pathname },
-    `🐢 SLOW PATH complete: /users/me + /counts + /theme + /addons + /labels fetched (${fetchTime}ms, total: ${totalTime}ms)`,
+    `🐢 SLOW PATH complete: /users/me + /counts + /theme + /addons + /labels + /verification-status fetched (${fetchTime}ms, total: ${totalTime}ms)`,
   );
 
   return await buildAuthenticatedResponse(
@@ -424,5 +514,7 @@ async function loadUserWithFetch(
     labelsResponse,
     scopeResponse,
     activeRole,
+    rootCount,
+    tenantVerified,
   );
 }

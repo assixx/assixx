@@ -174,7 +174,13 @@ export class SignupDto extends createZodDto(SignupSchema) {}
 // ========================================
 
 /**
- * Signup success response data
+ * Signup success response data.
+ *
+ * `tenantVerificationRequired` (§2.8) — `true` for password signup (new
+ * tenant must prove DNS TXT ownership of `adminEmail`'s domain before it
+ * can create further users), `false` for OAuth signup (§2.8b — Azure AD
+ * is the trust boundary, domain is auto-verified). Frontend reads this
+ * field to conditionally surface the "Verify your domain" banner.
  */
 export interface SignupResponseData {
   tenantId: number;
@@ -182,4 +188,5 @@ export interface SignupResponseData {
   subdomain: string;
   trialEndsAt: string;
   message: string;
+  tenantVerificationRequired: boolean;
 }
