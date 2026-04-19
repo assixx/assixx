@@ -156,7 +156,7 @@ Once the trace is open in Tempo, the flame/waterfall view shows every span. Read
 
 ### Cross-reference with logs
 
-Every span carries the trace_id. To see what the app _logged_ during that span, open Grafana → Explore → Loki → `{service="backend"} |~ "<TRACE_ID>"`. All log lines within that request show up, in order.
+Every span carries the trace*id. To see what the app \_logged* during that span, open Grafana → Explore → Loki → `{service="backend"} |~ "<TRACE_ID>"`. All log lines within that request show up, in order.
 
 ---
 

@@ -523,6 +523,49 @@ export default [
   },
 
   // =============================================================================
+  // load/**/*.ts — k6 load-test scripts (see load/tsconfig.json, ADR-018).
+  // WHY: Default espree parser chokes on TS syntax like `declare const __ENV`
+  // in load/lib/config.ts → "Parsing error: Unexpected token const". No other
+  // block in this config wires a TS parser for load/, so the file silently
+  // falls through to espree. We mirror the scripts/**/*.ts pattern: standalone
+  // tsconfig already exists for IDE + `tsc --noEmit -p load`, we reuse it via
+  // parserOptions.project. k6 runs TS natively via ESBuild ≥0.54, so no
+  // transpile step is involved. Backend-Strict rules (60-line-cap, complexity-10,
+  // SQL-Injection-AST) are irrelevant for one-off perf-regression scripts →
+  // Recommended-Ruleset genügt.
+  // =============================================================================
+  {
+    files: ['load/**/*.ts'],
+    languageOptions: {
+      parser: tseslint.parser,
+      parserOptions: {
+        ecmaVersion: 2022,
+        sourceType: 'module',
+        project: './load/tsconfig.json',
+        tsconfigRootDir: import.meta.dirname,
+      },
+      globals: {
+        // k6 test-runner globals. Runtime-specific imports (k6/http, k6/check)
+        // are declared per-file via ESM imports; __ENV is ambient-declared in
+        // load/lib/config.ts itself, so no global registration needed here.
+        console: 'readonly',
+      },
+    },
+    plugins: {
+      '@typescript-eslint': tseslint.plugin,
+    },
+    rules: {
+      ...tseslint.plugin.configs.recommended.rules,
+      // k6 scripts print baseline perf data to stdout by design.
+      'no-console': 'off',
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
+      ],
+    },
+  },
+
+  // =============================================================================
   // NOTE: Frontend configuration REMOVED - see frontend/eslint.config.mjs
   // Frontend has its own config with Svelte support + all strict rules
   // Run: cd frontend && pnpm run lint

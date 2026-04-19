@@ -7,13 +7,21 @@
  * with the RLS policy — they use the same value, so a mismatch fails closed
  * (0 rows) rather than leaking cross-tenant data.
  *
- * Two UNIQUE constraints in the schema (migration `20260417223358319_create-
- * tenant-domains.ts` §1.1) are the real arbiters of uniqueness — the service
- * lets the DB decide and catches `23505` to return user-friendly 409s:
+ * Two partial UNIQUE indexes in the schema are the real arbiters of
+ * uniqueness — the service lets the DB decide and catches `23505` to return
+ * user-friendly 409s:
  *
- *   - `tenant_domains_tenant_domain_unique (tenant_id, domain)` — fires on
- *     `addDomain()` INSERT when the same tenant already has this domain
- *     (any status). Mapped to `ConflictException({ code: 'DOMAIN_ALREADY_ADDED' })`.
+ *   - `tenant_domains_tenant_domain_unique (tenant_id, domain) WHERE is_active=1`
+ *     — fires on `addDomain()` INSERT when the same tenant already has this
+ *     domain ACTIVE (soft-deleted rows are excluded from the index predicate,
+ *     so re-add after `DELETE /domains/:id` works). Mapped to
+ *     `ConflictException({ code: 'DOMAIN_ALREADY_ADDED' })`. Shipped as a
+ *     plain UNIQUE CONSTRAINT in migration `20260417223358319_create-tenant-
+ *     domains.ts`; promoted to partial UNIQUE INDEX in
+ *     `20260419002936537_partial-tenant-domain-uniqueness.ts` (2026-04-19)
+ *     to match the soft-delete semantics of the sibling indexes — live
+ *     smoke-test uncovered that the §3 D22 soft-delete-round-trip unit test
+ *     only passed because the mock bypassed PostgreSQL's constraint check.
  *   - `idx_tenant_domains_domain_verified (domain) WHERE status='verified' AND
  *     is_active=1` — fires on `triggerVerify()` UPDATE when another tenant has
  *     already verified this domain (v0.3.2 D17: promoted from plain INDEX to

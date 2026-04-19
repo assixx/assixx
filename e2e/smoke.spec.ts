@@ -33,20 +33,61 @@ test.describe('Smoke: Sidebar Navigation', () => {
     await expect(nav.getByRole('link', { name: /Module/ })).toBeVisible();
   });
 
+  /*
+   * Navigation assertions use `page.waitForURL()` (30 s default navigation
+   * timeout) instead of `expect(page).toHaveURL()` (5 s expect timeout).
+   *
+   * WHY: ADR-049 added `/domains/verification-status` to the per-navigation
+   * fetch fan-out in (app)/+layout.server.ts. Combined with the 6 parallel
+   * API calls in calendar/+page.server.ts (dashboard / recently-added /
+   * departments / teams / areas / users) a click-driven client navigation
+   * to /calendar can exceed 5 s on a cold Vite dev-server that Playwright
+   * just spawned (reuseExistingServer: false). SvelteKit only flips the URL
+   * AFTER all server loads resolve, so `toHaveURL` with its expect-timeout
+   * flakes before navigation completes. `waitForURL` inherits the 30 s
+   * navigation timeout — the idiomatic Playwright pattern for post-click
+   * navigation waits.
+   */
   test('navigates to calendar', async ({ page }) => {
     await page.goto('/root-dashboard');
 
-    await page.getByRole('complementary').getByRole('link', { name: 'Kalender' }).click();
-
-    await expect(page).toHaveURL(/\/calendar/);
+    /*
+     * Promise.all + waitUntil: 'commit' required because:
+     * - Vanilla `expect(page).toHaveURL()` uses the 5 s expect-timeout and
+     *   flakes when (app)/+layout.server.ts + calendar/+page.server.ts fan
+     *   out to ~13 parallel API calls (ADR-049 added /verification-status
+     *   to the layout fetch set) on a cold Vite dev-server. SvelteKit only
+     *   flips the URL after all load functions resolve.
+     * - `waitForURL()` with the default `waitUntil: 'load'` was ALSO seen
+     *   to time out at 30 s because the calendar page's Svelte 5 reactive
+     *   init (shift-indicators + vacation-indicators + 4 state facades)
+     *   can delay the `load` event beyond the test timeout while the URL
+     *   itself already committed.
+     * - `waitUntil: 'commit'` returns as soon as the URL commits, which is
+     *   the semantic we actually want for a "sidebar navigates to X" test.
+     * - Registering `waitForURL` BEFORE the click (Promise.all) avoids the
+     *   micro-race where a fast synchronous navigation fires between click
+     *   and the await line.
+     *
+     * This is the official Playwright idiom for nav-triggering clicks.
+     */
+    await Promise.all([
+      page.waitForURL(/\/calendar/, { waitUntil: 'commit' }),
+      page.getByRole('complementary').getByRole('link', { name: 'Kalender' }).click(),
+    ]);
   });
 
   test('navigates to addons', async ({ page }) => {
     await page.goto('/root-dashboard');
 
-    await page.getByRole('complementary').getByRole('link', { name: 'Module' }).click();
-
-    await expect(page).toHaveURL(/\/addons/);
+    /* Same idiom as /calendar above — `waitUntil: 'commit'` captures the
+     * URL change as soon as it commits, without blocking on the target
+     * page's `load` event (which can be slow for pages with heavy Svelte 5
+     * reactive init). Consistent pattern across all sidebar-nav smoke tests. */
+    await Promise.all([
+      page.waitForURL(/\/addons/, { waitUntil: 'commit' }),
+      page.getByRole('complementary').getByRole('link', { name: 'Module' }).click(),
+    ]);
   });
 });
 

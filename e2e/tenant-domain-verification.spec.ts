@@ -54,10 +54,15 @@ test.describe('Tenant Domain Verification — page-mount smoke', () => {
   }) => {
     await page.goto('/settings/company-profile/domains');
 
-    // Page header + table render. Use the German UI strings from
-    // +page.svelte to lock in the user-visible contract.
+    // Page header + table render. Use the German UI string for the heading
+    // to lock in the user-visible contract; use the data-testid for the FAB
+    // because the page renders TWO buttons with the accessible name "Domain
+    // hinzufügen" — the FAB (always present) AND the empty-state button
+    // (only when domains.length === 0). Role-by-name would trip strict-mode
+    // duplicate-match if the empty-state ever rendered, so target the
+    // canonical FAB testid that always exists.
     await expect(page.getByRole('heading', { name: 'Firmen-Domains' })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Domain hinzufügen' })).toBeVisible();
+    await expect(page.getByTestId('add-domain-btn')).toBeVisible();
 
     // The pre-seeded apitest.de domain renders as a row.
     await expect(page.locator('[data-testid="domain-row"]').first()).toBeVisible();
@@ -75,33 +80,111 @@ test.describe('Tenant Domain Verification — page-mount smoke', () => {
   });
 });
 
-test.describe('Tenant Domain Verification — unverified-tenant happy path (DEFERRED)', () => {
-  // See file header for the full deferral rationale (SSR fetch can't be
-  // intercepted by Playwright; needs unverified test-tenant seed).
-  test.skip('unverified root sees banner → verifies → banner disappears + button unlocks (v0.3.0 S4)', () => {
-    // Original §5.4.3 walk-through:
-    //   (1) Log in as the unverified test-tenant root → Dashboard
-    //   (2) Assert UnverifiedDomainBanner is visible (locator with text
-    //       matching "Domain nicht verifiziert")
-    //   (3) Navigate to /manage-admins
-    //   (4) Assert "Administrator hinzufügen" submit button is disabled
-    //       + title contains "Verifiziere zuerst Deine Firmen-Domain"
-    //   (5) Navigate to /settings/company-profile/domains
-    //   (6) Click "Jetzt verifizieren" on the seeded pending row.
-    //       MOCK DNS via Playwright `page.route()` on
-    //       POST /api/v2/domains/:id/verify → return verified row.
-    //   (7) Assert success toast contains "verifiziert"
-    //   (8) Assert banner disappears WITHOUT a manual reload
-    //       (this IS the v0.3.0 S4 invalidateAll() contract)
-    //   (9) Navigate back to /manage-admins
-    //   (10) Assert "Administrator hinzufügen" is now ENABLED + tooltip gone
-    //   (11) Optional: actually create a user (form submit → 201)
+test.describe('Tenant Domain Verification — unverified-tenant static state', () => {
+  // Fresh context — do NOT inherit the apitest storageState from the file-level
+  // `test.use` above. These tests log in as the `unverified-e2e` seeded tenant
+  // (Phase 1 Step 1.3 seed extension, 2026-04-19) whose tenant_domains row has
+  // `status = 'pending'`, so `GET /api/v2/domains/verification-status` returns
+  // `{ verified: false }`, the UnverifiedDomainBanner renders, and
+  // `assertVerified()` blocks user-creation.
+  test.use({ storageState: { cookies: [], origins: [] } });
+
+  async function loginAsUnverifiedRoot(page: import('@playwright/test').Page): Promise<void> {
+    await page.goto('/login');
+    await page.getByRole('textbox', { name: 'E-Mail' }).fill('test@unverified-e2e.test');
+    await page.getByRole('textbox', { name: 'Passwort' }).fill('Unverified12345!');
+    const submitButton = page.getByRole('button', { name: 'Anmelden', exact: true });
+    // Cold-context budget: 30s. Each test in this describe uses a FRESH context
+    // (test.use storageState empty), so Turnstile's JS + iframe + siteverify
+    // round-trip pays a full cold-start cost on the FIRST test. Tests 2-N in
+    // the describe benefit from OS-level DNS/TLS reuse and complete in ~3-5s,
+    // but the first one consistently exceeded 15s on a fresh Playwright run.
+    // 30s matches Playwright's default click() timeout — the original behavior
+    // before this `toBeEnabled` guard was added — so the worst case is no
+    // worse than pre-guard. Fail-fast intent is preserved for the genuine
+    // "test keys broke" scenario (one 30s wait, not a 30s × N cascade).
+    await expect(submitButton).toBeEnabled({ timeout: 30000 });
+    await submitButton.click();
+    // Root lands on /root-dashboard — mirrors auth.setup.ts's apitest flow.
+    await page.waitForURL('**/root-dashboard');
+  }
+
+  test('unverified root sees UnverifiedDomainBanner on the dashboard', async ({ page }) => {
+    await loginAsUnverifiedRoot(page);
+
+    // Banner shows when `data.tenantVerified === false` AND role is root/admin
+    // per (app)/+layout.svelte:435. German string from UnverifiedDomainBanner.svelte.
+    const banner = page.locator('#unverified-domain-banner');
+    await expect(banner).toBeVisible();
+    await expect(banner).toContainText('Domain nicht verifiziert');
+    await expect(banner.getByRole('link', { name: 'Jetzt verifizieren' })).toHaveAttribute(
+      'href',
+      /\/settings\/company-profile\/domains/,
+    );
   });
 
-  test.skip('cross-browser: same flow runs green in Chromium + WebKit (Svelte-5 layout-invalidation parity)', () => {
-    // Per §5.4.3: "Run in both Chromium and WebKit (Firefox optional) to
-    // catch Safari-specific layout-invalidation bugs in Svelte-5 state
-    // propagation." Same blocker as above + Playwright project config
-    // would need a `webkit` entry in playwright.config.ts.
+  test('unverified root sees SingleRootWarningBanner HIDDEN (banner-priority-fix 2026-04-19)', async ({
+    page,
+  }) => {
+    await loginAsUnverifiedRoot(page);
+
+    // (app)/+layout.svelte:426 was changed 2026-04-19 to suppress the single-
+    // root banner while the tenant is unverified (creating a 2nd root routes
+    // through RootService.insertRootUserRecord → assertVerified() → 403, so
+    // the banner's CTA would drive the user into a guaranteed failure). This
+    // test locks that priority contract in.
+    await expect(page.locator('#single-root-warning-banner')).not.toBeVisible();
+  });
+
+  test('on /manage-admins the "Administrator hinzufügen" FAB is disabled with tooltip', async ({
+    page,
+  }) => {
+    await loginAsUnverifiedRoot(page);
+    await page.goto('/manage-admins');
+
+    // The floating action button is the canonical unlocked-gate target. When
+    // the tenant is unverified, `disabled={!data.tenantVerified}` on it must
+    // flip to true AND the title attribute carries the German remediation
+    // message (manage-admins/+page.svelte:554).
+    const fab = page.locator('.btn-float');
+    await expect(fab).toBeVisible();
+    await expect(fab).toBeDisabled();
+    await expect(fab).toHaveAttribute(
+      'title',
+      /Verifiziere zuerst Deine Firmen-Domain unter \/settings\/company-profile\/domains/,
+    );
+  });
+
+  test('domains page lists the pending row with a Verify button', async ({ page }) => {
+    await loginAsUnverifiedRoot(page);
+    await page.goto('/settings/company-profile/domains');
+
+    await expect(page.getByRole('heading', { name: 'Firmen-Domains' })).toBeVisible();
+    const row = page.locator('[data-testid="domain-row"]').first();
+    await expect(row).toBeVisible();
+    await expect(row).toContainText('unverified-e2e.test');
+    // Pending rows render a Verify button. Target by data-testid, not by
+    // accessible name — the button text "Jetzt verifizieren" (DomainRow.svelte)
+    // doesn't match the previous case-sensitive `/Verifizieren|Verify/` regex
+    // (lowercase "v" after the space). The testid contract is also more
+    // resilient to UI-string tweaks across the i18n surface.
+    await expect(row.getByTestId('verify-btn')).toBeVisible();
+  });
+});
+
+test.describe('Tenant Domain Verification — verify-success → invalidateAll (STILL DEFERRED)', () => {
+  // Unblocked by the unverified-e2e seed above for the static-state tests, but
+  // the verify-CLICK flow remains deferred because the DNS lookup the backend
+  // performs inside POST /api/v2/domains/:id/verify is a REAL resolver call
+  // against `_assixx-verify.unverified-e2e.test`, which NXDOMAINs (RFC 2606
+  // reserved `.test` TLD never resolves). So even if Playwright intercepts
+  // the client POST, the backend returns `status: 'pending'` and the UI
+  // stays unchanged. Fully exercising the invalidateAll() + SSR-refetch flow
+  // would need either (a) a test-only domain we control with a real TXT
+  // record, or (b) an orchestration that flips `tenant_domains.status` to
+  // 'verified' via direct DB mid-test while intercepting the verify POST.
+  // (b) is feasible but out of scope for the seed-addition delta.
+  test.skip('click Verify → toast + banner disappears in-tab + FAB unlocks (v0.3.0 S4)', () => {
+    /* Original §5.4.3 walk-through — see file header. */
   });
 });

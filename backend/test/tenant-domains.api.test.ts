@@ -621,6 +621,82 @@ describe('DELETE /domains/:id', () => {
 });
 
 // =============================================================================
+// Soft-delete + re-add round-trip (migration 20260419002936537 regression guard)
+// =============================================================================
+
+/**
+ * Guards the partial UNIQUE INDEX `tenant_domains_tenant_domain_unique`
+ * (`WHERE is_active = 1`) introduced by migration
+ * `20260419002936537_partial-tenant-domain-uniqueness.ts`.
+ *
+ * Before that migration the per-tenant-domain uniqueness was a plain UNIQUE
+ * CONSTRAINT — soft-deleted rows (is_active=4) kept occupying the uniqueness
+ * slot, so a re-add of the same domain returned 409 DOMAIN_ALREADY_ADDED even
+ * though `DELETE /domains/:id` had "removed" the row. Masterplan §3 D22
+ * unit-test only passed because the mock bypassed PostgreSQL's constraint
+ * check; live smoke-testing surfaced the gap on 2026-04-19.
+ *
+ * This test exercises the real PG constraint end-to-end — no mocks — so a
+ * future regression (e.g., someone accidentally re-adds a plain UNIQUE
+ * constraint on the same columns) trips CI immediately.
+ */
+describe('POST /domains after DELETE re-adds successfully (partial-index contract)', () => {
+  const roundtripDomain = `phase4-roundtrip-${RUN_SUFFIX}.de`;
+
+  it('re-add after soft-delete returns 201 with a FRESH token and a NEW row id', async () => {
+    // 1. Initial add — get first id + token.
+    const firstAdd = await fetch(`${BASE_URL}/domains`, {
+      method: 'POST',
+      headers: authHeaders(ROOT_TOKEN),
+      body: JSON.stringify({ domain: roundtripDomain }),
+    });
+    expect(firstAdd.status).toBe(201);
+    const firstJson = (await firstAdd.json()) as JsonBody;
+    const firstId = firstJson.data.id as string;
+    const firstToken = (firstJson.data.verificationInstructions as JsonBody).txtValue as string;
+
+    // 2. Soft-delete → 204.
+    const del = await fetch(`${BASE_URL}/domains/${firstId}`, {
+      method: 'DELETE',
+      headers: authOnly(ROOT_TOKEN),
+    });
+    expect(del.status).toBe(204);
+
+    // 3. Re-add same domain — would have been 409 DOMAIN_ALREADY_ADDED before
+    //    migration 20260419002936537; now must be 201 with a fresh row+token.
+    const secondAdd = await fetch(`${BASE_URL}/domains`, {
+      method: 'POST',
+      headers: authHeaders(ROOT_TOKEN),
+      body: JSON.stringify({ domain: roundtripDomain }),
+    });
+    expect(secondAdd.status).toBe(201);
+    const secondJson = (await secondAdd.json()) as JsonBody;
+    const secondId = secondJson.data.id as string;
+    const secondToken = (secondJson.data.verificationInstructions as JsonBody).txtValue as string;
+
+    // 4. Fresh identifiers — NOT the same row reactivated.
+    expect(secondId).not.toBe(firstId);
+    expect(secondToken).not.toBe(firstToken);
+
+    // 5. DB snapshot — both rows coexist: the soft-deleted with is_active=4
+    //    and the newly-added with is_active=1. The partial UNIQUE INDEX allows
+    //    this by scoping uniqueness to `WHERE is_active = 1`.
+    const activeRowCount = psqlSingle(
+      `SELECT COUNT(*) FROM tenant_domains WHERE tenant_id=1 AND domain='${roundtripDomain}' AND is_active=1`,
+    );
+    expect(activeRowCount).toBe('1');
+    const softDeletedCount = psqlSingle(
+      `SELECT COUNT(*) FROM tenant_domains WHERE tenant_id=1 AND domain='${roundtripDomain}' AND is_active=4`,
+    );
+    expect(softDeletedCount).toBe('1');
+
+    // Cleanup: soft-delete the re-added row so afterAll doesn't leave an
+    // orphan active row that would block a future re-run on the same RUN_SUFFIX.
+    softDeleteDomainById(secondId);
+  });
+});
+
+// =============================================================================
 // RLS cross-tenant isolation
 // =============================================================================
 
@@ -897,6 +973,7 @@ describe('Rate-limit tiers (§2.7) — domain-verify narrow tier', () => {
     expect(res.status).toBe(200);
   });
 
+  // eslint-disable-next-line vitest/no-disabled-tests -- ADR-049 §Test Coverage Tier 2: general `UserThrottle` (1000/15min) deferred — suite-runtime budget (~30s+ request bursts); tier definition is unit-tested. `.skip` over `.todo` to preserve the inline rationale as architectural documentation.
   it.skip('general UserThrottle (1000/15min) — deferred: would require 1000+ requests + slow the suite; covered by existing throttle unit tests', () => {
     // Rationale: the general UserThrottle limit is 1000 req / 15 min. Exercising
     // it would add ~30s+ of request bursts to an already-heavy integration
@@ -910,6 +987,19 @@ describe('Rate-limit tiers (§2.7) — domain-verify narrow tier', () => {
 // DEFERRED — covered at unit level or Phase 6 manual smoke
 // =============================================================================
 
+/* eslint-disable vitest/no-disabled-tests --
+ * ADR-049 §Test Coverage Tier 2: 3 deferred integration tests (DNS-positive
+ * verify + OAuth concurrent-race ×2). HTTP-layer mocking of `node:dns` and
+ * Microsoft's token/userinfo endpoints is infeasible from a backend-in-container
+ * + test-in-host setup — there is no process-hook from the test into the
+ * backend's resolver. Coverage IS in place at the unit tier via `vi.mock` in
+ * `domain-verification.service.test.ts` and `signup.service.test.ts`; the
+ * real-DNS path is Phase 6 manual smoke. `.skip` over `.todo` is deliberate:
+ * the test bodies preserve architectural intent (what WOULD be asserted once
+ * upstream mocking is supported) and map back to the unit-level replacements.
+ * The matching `eslint-enable` at EOF bounds the suppression so future appended
+ * tests don't silently inherit it.
+ */
 describe.skip('Deferred — DNS-positive verify', () => {
   it.skip('POST /:id/verify with matching TXT record flips to verified — DNS mock unavailable at HTTP layer; unit-tested in domain-verification.service.test.ts', () => {
     // Plan §4 calls for "mock DNS to return matching value" at the integration
@@ -934,3 +1024,4 @@ describe.skip('Deferred — OAuth concurrent-race (v0.3.4 D26)', () => {
     // Same rationale as above. Unit-level race coverage already in place.
   });
 });
+/* eslint-enable vitest/no-disabled-tests */

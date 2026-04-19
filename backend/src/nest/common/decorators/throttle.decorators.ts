@@ -13,6 +13,15 @@
  *   - UserThrottle()    - 1000 requests per 15 minutes (authenticated users)
  *   - AdminThrottle()   - 2000 requests per 15 minutes (admin endpoints)
  *   - ExportThrottle()  - 1 request per minute (bulk exports)
+ *
+ * Bug fix (2026-04-19, live smoke-test discovery): after Plan 2 §2.7 added the
+ * `domain-verify` tier (10/10min) to `AppThrottlerModule`, every non-domain-verify
+ * decorator in this file silently DID NOT skip it — so every authenticated
+ * endpoint ALSO counted against the tight 10/10min bucket and 429'd after 10
+ * requests. The SkipThrottle lists below now include `'domain-verify': true`
+ * everywhere for tier isolation. Rule for future tiers: when adding a new
+ * throttler to `AppThrottlerModule`, audit EVERY decorator here and add it to
+ * the SkipThrottle list unless you explicitly want cross-tier counting.
  */
 import { applyDecorators } from '@nestjs/common';
 import { SkipThrottle, Throttle } from '@nestjs/throttler';
@@ -26,7 +35,7 @@ type ThrottleDecorator = MethodDecorator & ClassDecorator;
 /**
  * Auth endpoints: 10 requests per 5 minutes
  * Use for: login, signup, password reset
- * Skips: public, user, admin, upload, export throttlers
+ * Skips: public, user, admin, upload, export, domain-verify throttlers
  */
 export const AuthThrottle = (): ThrottleDecorator =>
   applyDecorators(
@@ -37,13 +46,14 @@ export const AuthThrottle = (): ThrottleDecorator =>
       admin: true,
       upload: true,
       export: true,
+      'domain-verify': true,
     }),
   ) as ThrottleDecorator;
 
 /**
  * User endpoints: 1000 requests per 15 minutes
  * Use for: standard authenticated endpoints
- * Skips: auth, public, admin, upload, export throttlers
+ * Skips: auth, public, admin, upload, export, domain-verify throttlers
  */
 export const UserThrottle = (): ThrottleDecorator =>
   applyDecorators(
@@ -54,13 +64,14 @@ export const UserThrottle = (): ThrottleDecorator =>
       admin: true,
       upload: true,
       export: true,
+      'domain-verify': true,
     }),
   ) as ThrottleDecorator;
 
 /**
  * Admin endpoints: 2000 requests per 15 minutes
  * Use for: admin dashboard, bulk operations
- * Skips: auth, public, user, upload, export throttlers
+ * Skips: auth, public, user, upload, export, domain-verify throttlers
  */
 export const AdminThrottle = (): ThrottleDecorator =>
   applyDecorators(
@@ -71,6 +82,7 @@ export const AdminThrottle = (): ThrottleDecorator =>
       user: true,
       upload: true,
       export: true,
+      'domain-verify': true,
     }),
   ) as ThrottleDecorator;
 
@@ -78,7 +90,7 @@ export const AdminThrottle = (): ThrottleDecorator =>
  * Export endpoints: 1 request per minute
  * Use for: audit log export, bulk data export
  * Prevents DoS via large export operations
- * Skips: auth, public, user, admin, upload throttlers
+ * Skips: auth, public, user, admin, upload, domain-verify throttlers
  */
 export const ExportThrottle = (): ThrottleDecorator =>
   applyDecorators(
@@ -89,6 +101,7 @@ export const ExportThrottle = (): ThrottleDecorator =>
       user: true,
       admin: true,
       upload: true,
+      'domain-verify': true,
     }),
   ) as ThrottleDecorator;
 
@@ -131,5 +144,6 @@ export const FeedbackThrottle = (): ThrottleDecorator =>
       admin: true,
       upload: true,
       export: true,
+      'domain-verify': true,
     }),
   ) as ThrottleDecorator;

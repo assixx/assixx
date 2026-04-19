@@ -422,8 +422,14 @@
 
   <!-- Security banner: tenant has only one root user. Renders here (above
        AppHeader) to match RoleSwitchBanner's placement. Condition-driven:
-       appears when rootCount === 1, disappears when a second root is added. -->
-  {#if data.rootCount === 1}
+       appears when rootCount === 1, disappears when a second root is added.
+       ADR-049: suppressed while tenant is unverified. Creating a 2nd root
+       routes through RootService.insertRootUserRecord which calls
+       assertVerified() at entry and 403s on unverified tenants. Showing the
+       "Root hinzufügen" CTA in that state would drive the user into a
+       guaranteed failure. After domain verification the banner re-appears
+       automatically (rootCount is still 1) and the CTA is actionable. -->
+  {#if data.rootCount === 1 && data.tenantVerified}
     <SingleRootWarningBanner />
   {/if}
 

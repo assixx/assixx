@@ -46,10 +46,11 @@
 
 ### Database
 
-| Guide                                                         | Description                                                       |
-| ------------------------------------------------------------- | ----------------------------------------------------------------- |
-| [HOW-TO-RESET-DB-PROPERLY](./HOW-TO-RESET-DB-PROPERLY.md)     | Datenbank komplett zurücksetzen (Fresh Install, production-ready) |
-| [HOW-TO-RESET-POSTGRESQL-ID](./HOW-TO-RESET-POSTGRESQL-ID.md) | Reset PostgreSQL ID sequences after TRUNCATE                      |
+| Guide                                                         | Description                                                                                               |
+| ------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| [HOW-TO-RESET-DB-PROPERLY](./HOW-TO-RESET-DB-PROPERLY.md)     | Datenbank komplett zurücksetzen (Fresh Install, production-ready)                                         |
+| [HOW-TO-RESET-POSTGRESQL-ID](./HOW-TO-RESET-POSTGRESQL-ID.md) | Reset PostgreSQL ID sequences after TRUNCATE                                                              |
+| [HOW-TO-REMOVE-ONE-TENANT](./HOW-TO-REMOVE-ONE-TENANT.md)     | Einen einzelnen Tenant komplett löschen (inkl. FK-Cascade-Reihenfolge, Backup, Rollback, RESTRICT-Fallen) |
 
 ---
 

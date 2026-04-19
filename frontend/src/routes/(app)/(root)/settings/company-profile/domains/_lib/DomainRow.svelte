@@ -78,7 +78,7 @@
       {#if domain.status !== 'verified'}
         <button
           type="button"
-          class="btn btn-primary btn-sm"
+          class="btn btn-primary"
           disabled={isPending}
           onclick={() => {
             onverify(domain.id);
@@ -91,7 +91,7 @@
       {#if domain.status === 'verified' && !domain.isPrimary}
         <button
           type="button"
-          class="btn btn-secondary btn-sm"
+          class="btn btn-secondary"
           disabled={isPending}
           onclick={() => {
             onprimary(domain.id);
@@ -103,7 +103,7 @@
       {/if}
       <button
         type="button"
-        class="btn btn-danger btn-sm"
+        class="btn btn-danger"
         disabled={isPending}
         onclick={() => {
           onremove(domain.id);

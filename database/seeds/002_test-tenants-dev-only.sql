@@ -223,4 +223,61 @@ BEGIN
   FROM addons WHERE is_core = false AND is_active = 1;
 
   RAISE NOTICE 'Seeded scs: tenant_id=%, user_id=%, domain=scs-technik.de', v_tenant_id, v_user_id;
+
+  -- ==========================================================================
+  -- Tenant 5: unverified-e2e — E2E fixture for the unverified-domain UI flow
+  -- ==========================================================================
+  -- Unblocks masterplan §5.4.3 deferred Playwright tests: unverified-root login
+  -- → banner visible → user-creation buttons disabled → (optionally) verify
+  -- flow. Unlike the other 4 seed tenants, this one ships with a `pending`
+  -- `tenant_domains` row (not `verified`), so the `assertVerified()` gate
+  -- blocks user-creation and the UnverifiedDomainBanner renders.
+  --
+  -- The domain `unverified-e2e.test` uses RFC 2606 reserved `.test` TLD so a
+  -- real DNS lookup in the verify-flow will NXDOMAIN (stays pending) — a real
+  -- verification would require swapping the domain to one the test owns. The
+  -- E2E tests either assert the pending state directly OR mock the verify
+  -- endpoint via `page.route()` and flip the DB out-of-band.
+  --
+  -- Credentials: test@unverified-e2e.test / Unverified12345!
+  INSERT INTO tenants
+    (company_name, subdomain, email, phone, street, house_number, postal_code,
+     city, country_code, status, billing_email, uuid, uuid_created_at,
+     trial_ends_at)
+  VALUES
+    ('Unverified E2E Test', 'unverified-e2e', 'info@unverified-e2e.test', '+49301234570',
+     'E2Eweg', '5', '10120', 'Berlin', 'DE',
+     'trial', 'test@unverified-e2e.test', uuidv7(), NOW(),
+     NOW() + INTERVAL '14 days')
+  RETURNING id INTO v_tenant_id;
+
+  INSERT INTO users
+    (username, email, password, role, first_name, last_name, tenant_id, phone,
+     employee_number, has_full_access, is_active, uuid, uuid_created_at)
+  VALUES
+    ('test@unverified-e2e.test', 'test@unverified-e2e.test',
+     '$2b$12$VJ2fRilBr9hALLVlFtmXx.SErGr4uRgyHUuspkskVEqU0W0cXzLXy',
+     'root', 'Unverified', 'E2E', v_tenant_id, '+49301234570',
+     'SEED-UVE-001', true, 1, uuidv7(), NOW())
+  RETURNING id INTO v_user_id;
+
+  UPDATE users SET employee_id = 'UVE-R' || LPAD(v_user_id::text, 5, '0') WHERE id = v_user_id;
+
+  -- PENDING (not verified!) — this is the whole point of this tenant.
+  INSERT INTO tenant_domains
+    (tenant_id, domain, status, verification_token, verified_at, is_primary, is_active)
+  VALUES
+    (v_tenant_id, 'unverified-e2e.test', 'pending',
+     REPLACE(uuidv7()::text, '-', '') || REPLACE(uuidv7()::text, '-', ''),
+     NULL, true, 1);
+
+  INSERT INTO tenant_addons
+    (tenant_id, addon_id, status, trial_started_at, trial_ends_at, activated_at,
+     is_active, created_at, updated_at)
+  SELECT v_tenant_id, id, 'trial', NOW(),
+         NOW() + (COALESCE(trial_days, 30) || ' days')::INTERVAL,
+         NOW(), 1, NOW(), NOW()
+  FROM addons WHERE is_core = false AND is_active = 1;
+
+  RAISE NOTICE 'Seeded unverified-e2e: tenant_id=%, user_id=%, domain=unverified-e2e.test (PENDING)', v_tenant_id, v_user_id;
 END $$;

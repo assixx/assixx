@@ -65,7 +65,7 @@
         </dd>
         <button
           type="button"
-          class="btn btn-secondary btn-sm"
+          class="btn btn-secondary"
           aria-label="Host kopieren"
           onclick={() => copy(instructions.txtHost, 'Host')}
         >
@@ -89,7 +89,7 @@
         </dd>
         <button
           type="button"
-          class="btn btn-secondary btn-sm"
+          class="btn btn-secondary"
           aria-label="Value kopieren"
           onclick={() => copy(instructions.txtValue, 'Value')}
         >
