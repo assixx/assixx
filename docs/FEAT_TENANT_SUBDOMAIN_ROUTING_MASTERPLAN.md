@@ -2,28 +2,34 @@
 
 > **Plan type:** FEATURE
 > **Created:** 2026-04-19
-> **Version:** 0.1.0 (Draft)
+> **Version:** 0.2.0 (Pre-execution audit integrated — staff-engineer review 2026-04-19)
 > **Status:** DRAFT — Phase 0 (planning)
 > **Branch:** `feat/tenant-subdomain-routing` (to be created from `main` after `test/ui-ux` merges)
 > **Spec:** [ADR-050 Tenant Subdomain Routing](./infrastructure/adr/ADR-050-tenant-subdomain-routing.md)
 > **Author:** Simon Öztürk (Staff-Engineer assist)
-> **Estimated sessions:** 12
-> **Actual sessions:** 0 / 12
+> **Deployment context:** Greenfield (no live prod tenants as of 2026-04-19) —
+> see ADR-050 §"Deployment Context: Greenfield Launch" for impact on cutover.
+> **Infra decisions (user, 2026-04-19):** Registrar IONOS, DNS Cloudflare Free
+> tier in **DNS-only mode (grey cloud)** — NOT proxied, TLS terminates at our
+> origin Nginx.
+> **Estimated sessions:** 13 (Session 9b added for test-infra migration)
+> **Actual sessions:** 0 / 13
 
 ---
 
 ## Changelog
 
-| Version | Date       | Change                                                                         |
-| ------- | ---------- | ------------------------------------------------------------------------------ |
-| 0.1.0   | 2026-04-19 | Initial draft — phases outlined, R-table seeded, D-table seeded                |
-| 0.2.0   | TBD        | Pre-execution audit complete (D1–Dn resolved, R-table verified)                |
-| 1.0.0   | TBD        | Phase 1 (Infra) COMPLETE — wildcard DNS + cert + Nginx live in staging         |
-| 1.1.0   | TBD        | Phase 2 (Backend) COMPLETE — middleware + cross-check + CORS + handoff merged  |
-| 1.2.0   | TBD        | Phase 3 (Unit) COMPLETE — ≥25 unit tests + 3 architectural tests green         |
-| 1.3.0   | TBD        | Phase 4 (API) COMPLETE — ≥15 integration tests green                           |
-| 1.4.0   | TBD        | Phase 5 (Frontend) COMPLETE — hooks + branding + OAuth handoff in place        |
-| 2.0.0   | TBD        | Phase 6 (Cutover) COMPLETE — production live, ADR-050 backfilled to "Accepted" |
+| Version | Date       | Change                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| ------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 0.1.0   | 2026-04-19 | Initial draft — phases outlined, R-table seeded, D-table seeded                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| 0.2.0   | 2026-04-19 | **Staff-engineer pre-execution audit integrated.** User decisions: greenfield (no live tenants), DNS-only CF Free, IONOS registrar. R14 (backend port exposure) + R15 (handoff host mismatch) added. Step 1.0 (reserved-slug) + Step 1.6 (prod port isolation) added. Session 9b (test-infra migration) added. `trustProxy: true` verified already active in `main.ts:284`. D-table: 7 entries resolved, 2 new (D15, D16). Cutover simplified (no customer comms, no transitional redirect). Nginx Phase 1 reclassified from "modify" to "full HTTPS rewrite" (current nginx.conf is HTTP-only). |
+| 1.0.0   | TBD        | Phase 1 (Infra) COMPLETE — wildcard DNS + cert + Nginx live in staging                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| 1.1.0   | TBD        | Phase 2 (Backend) COMPLETE — middleware + cross-check + CORS + handoff merged                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| 1.2.0   | TBD        | Phase 3 (Unit) COMPLETE — ≥25 unit tests + 3 architectural tests green                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| 1.2.5   | TBD        | Session 9b COMPLETE — test-infra `X-Forwarded-Host` helper + all ~38 API-test files migrated                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| 1.3.0   | TBD        | Phase 4 (API) COMPLETE — ≥15 integration tests green                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| 1.4.0   | TBD        | Phase 5 (Frontend) COMPLETE — hooks + branding + OAuth handoff in place                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| 2.0.0   | TBD        | Phase 6 (Cutover) COMPLETE — production live, ADR-050 backfilled to "Accepted"                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 
 > **Versioning rule (per HOW-TO-PLAN-SAMPLE):** `0.x.0` = planning, `1.x.0` =
 > implementation in progress (minor bump per phase), `2.0.0` = fully complete.
@@ -34,39 +40,59 @@
 
 ### 0.1 Must be true before starting
 
+**Greenfield advantage (user confirmation 2026-04-19):** no live prod tenants.
+This removes several concerns (no forced re-login event, no data-at-rest
+migration risk, no bookmark-transition).
+
 - [ ] Docker stack running (all containers healthy — verify via
       `docker-compose ps` from `docker/`)
 - [ ] Branch `feat/tenant-subdomain-routing` checked out (after `test/ui-ux`
       merges to `main`)
 - [ ] No pending migrations blocking
 - [ ] Dependent features shipped: ADR-049 (tenant-domain verification — DONE
-      per smoke-test in this conversation)
+      per smoke-test fixes commit `8d2920171`)
 - [ ] ADR-050 reviewed and status flipped to "Accepted" by user
-- [ ] Doppler access verified for new secret `CLOUDFLARE_DNS_API_TOKEN`
-- [ ] Cloudflare account access verified (DNS zone `assixx.com` reachable)
-- [ ] Production deployment context confirmed: who owns `assixx.com` zone,
-      what's the load-balancer IP, is there an existing Nginx in prod or only the
-      docker `assixx-nginx` from `docker-compose --profile production`
-- [ ] DB backup taken (although no schema change, infra cutover impacts
-      prod-paying customers): `database/backups/pre-subdomain-routing.dump`
+- [ ] **IONOS → Cloudflare nameserver delegation configured** (IONOS UI:
+      set NS records for `assixx.com` to Cloudflare-assigned nameservers)
+- [ ] Doppler secrets configured: `CLOUDFLARE_DNS_API_TOKEN` (scoped to
+      `Zone:DNS:Edit` on `assixx.com` only) and new `OAUTH_STATE_SECRET`
+      (dedicated, NOT derived from `JWT_SECRET` — see ADR-050 §OAuth
+      handoff).
+- [ ] Cloudflare account access verified, **DNS-only mode selected** (grey
+      cloud, NOT proxied). TLS terminates at our origin Nginx.
+- [ ] Reserved-slug enforcement shipped (Zod enum in signup DTO + DB CHECK
+      constraint on `tenants.subdomain`). See ADR-050 §"Reserved Slug List".
+- [ ] Pre-prod tenants (staging test fixtures) have `tenants.subdomain`
+      populated and conformant to `^[a-z0-9-]+$` AND not in reserved list:
+      `SELECT id, subdomain FROM tenants WHERE subdomain IS NULL OR subdomain = '' OR subdomain !~ '^[a-z0-9-]+$' OR subdomain IN ('www','api','admin','app','assets','auth','cdn','docs','blog','grafana','health','localhost','mail','static','status','support','tempo','test');`
+      → must return zero rows.
+- [ ] **Production topology designed as greenfield** (ADR-050 §"Production
+      Topology Requirement"): `docker-compose.prod.yml` override exists that
+      drops `ports:` publish for `backend` + `frontend` services. Only
+      `nginx:443` is host-bound. This file is a Phase-0 deliverable — it
+      does not exist yet in the repo.
+- [ ] Prod host identified (VPS provider + public IP — greenfield decision
+      taken with ADR-050 rollout).
 
 ### 0.2 Risk register
 
-| #   | Risk                                                                                                          | Impact   | Probability | Mitigation                                                                                                                                                                                                   | Verification                                                                                                                                                                     |
-| --- | ------------------------------------------------------------------------------------------------------------- | -------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| R1  | Forgotten `cookies.set({ domain: '.assixx.com' })` re-introduces cross-tenant cookie leak                     | High     | Medium      | Architectural test (`shared/src/architectural.test.ts`) regex-bans `domain:` literal in any `cookies.set` call. CI fails on regression.                                                                      | Sanity-check: intentionally introduce `domain: '.assixx.com'` in a fixture file → CI red. Then revert.                                                                           |
-| R2  | Forgotten host-cross-check in a future custom auth flow lets JWT bypass subdomain                             | High     | Low         | Architectural test asserts every controller decorated with `@UseGuards(JwtAuthGuard)` is reachable only via the middleware-mounted route (`HostResolverMiddleware` consumer chain).                          | Architectural test enumerates `@UseGuards(JwtAuthGuard)` AST nodes, asserts each lives under a module that imports `TenantHostResolverMiddleware`.                               |
-| R3  | Wildcard cert renewal silent-fail → 100 % outage in 90 days                                                   | Critical | Medium      | Prometheus exporter for cert-expiry-days. Grafana alert at < 14 d (paste into `docker/grafana/alerts/_*.json` provisioning set per ADR-002 Phase 5g).                                                        | Manually advance cert clock in staging (or create a 7-day cert) → alert fires within 5 min.                                                                                      |
-| R4  | Subdomain typo (`scs-tehcnik.assixx.com`) → 444 confuses user                                                 | Low      | High        | Catch-all `default_server` returns SvelteKit 404 page for browser User-Agents (UA-sniff regex), 444 for non-browsers (scanners, curl).                                                                       | curl with browser UA → 404 HTML, curl without UA → connection-reset.                                                                                                             |
-| R5  | Internal services (cron, deletion-worker) call backend with no Host                                           | Medium   | Medium      | `extractSlug()` returns `null` for missing/non-matching Host. Internal callers continue using `systemQuery()` (BYPASSRLS, no tenant context required).                                                       | Unit test for `extractSlug(undefined)` → null. Integration test: deletion-worker's HTTP call to backend → 200 (no `CROSS_TENANT_HOST_MISMATCH` because `hostTenantId === null`). |
-| R6  | Microsoft OAuth `state` cookie set on apex doesn't reach the subdomain                                        | High     | High        | `state` cookie deliberately stays apex-scoped. The signed handoff-token mechanism is what crosses the origin boundary — `state` only validates the apex-side CSRF round-trip.                                | Tier 4 OAuth E2E: full flow on subdomain → Microsoft mock → apex callback → handoff swap → subdomain dashboard. Cookies inspected at every hop.                                  |
-| R7  | Cloudflare API token compromise → wildcard DNS hijack                                                         | Critical | Low         | Token scoped to `assixx.com` zone only, `Zone:DNS:Edit` permission only (no `Zone:Zone:Edit`). Stored in Doppler with strict access-control. Rotated monthly via runbook (HOW-TO-CLOUDFLARE-TOKEN-ROTATION). | Doppler audit log review monthly. Token scope verified at boot-time check (certbot pre-hook fails if token has any extra permission).                                            |
-| R8  | Existing test fixtures don't have `tenants.subdomain` populated                                               | Medium   | Medium      | Phase 0 grep scan: `SELECT id, subdomain FROM tenants WHERE subdomain IS NULL OR subdomain = '';` — must return zero rows. If non-zero, add backfill to Phase 1.                                             | Pre-Phase-1 query against staging DB. Must be 0 rows.                                                                                                                            |
-| R9  | Local dev breaks during transition (HMR, OAuth flow, etc.)                                                    | Medium   | Medium      | `extractSlug('localhost')` returns `null` → skip cross-check entirely on `localhost:5173`. OAuth dev-mode uses apex-only flow (no handoff). Documented in README.                                            | Dev smoke: `pnpm run dev:svelte`, login as `admin@apitest.de`, navigate to `/manage-admins`, all green.                                                                          |
-| R10 | SvelteKit `hooks.server.ts` change breaks existing routing                                                    | High     | Low         | Additive change only — current `hooks.server.ts` remains the base, new logic appends `event.locals.hostSlug` without modifying existing flow.                                                                | Existing E2E suite (smoke.spec.ts) green after Phase 5.                                                                                                                          |
-| R11 | Nginx regex `server_name ~^(?<slug>[a-z0-9-]+)\.assixx\.com$` matches deeper subdomains (`a.b.assixx.com`)    | Medium   | Low         | Anchored regex with character class `[a-z0-9-]+` (no dots). `nginx -t` config-test verifies, plus negative-test in Tier 2: `curl -H 'Host: a.b.assixx.com' …` → 444 (catch-all).                             | `nginx -t` passes. `curl --resolve a.b.assixx.com:443:127.0.0.1 https://a.b.assixx.com/` → connection-reset.                                                                     |
-| R12 | OAuth `return_to_slug` parameter tampering → redirect to attacker subdomain                                   | High     | Medium      | `return_to_slug` is part of the signed `state` cookie (HMAC over `nonce                                                                                                                                      |                                                                                                                                                                                  | return_to_slug`). Backend verifies signature before redirect, rejects mismatched slug. | Unit test: tampered `return_to_slug` → `BadRequestException('OAUTH_STATE_TAMPERED')`. Integration test: full flow with manually-tampered query param → 400. |
-| R13 | Redis cache poisoning: attacker sets `tenant:slug:firma-a → 999` → all firma-a traffic resolves to tenant 999 | Critical | Low         | Redis is internal-only (no exposed port, network-isolated to backend). Only `TenantHostResolverMiddleware` writes the cache. Cache key TTL 60 s — bounded blast radius even on compromise.                   | `docker exec assixx-redis redis-cli CONFIG GET bind` → only `127.0.0.1` and internal docker network. Verified via Trivy scan + Redis ACL audit.                                  |
+| #   | Risk                                                                                                                                                                                                | Impact   | Probability                                                                                                                                                    | Mitigation                                                                                                                                                                                                                                                                                           | Verification                                                                                                                                                                               |
+| --- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| R1  | Forgotten `cookies.set({ domain: '.assixx.com' })` re-introduces cross-tenant cookie leak                                                                                                           | High     | Medium                                                                                                                                                         | Architectural test (`shared/src/architectural.test.ts`) regex-bans `domain:` literal in any `cookies.set` call. CI fails on regression.                                                                                                                                                              | Sanity-check: intentionally introduce `domain: '.assixx.com'` in a fixture file → CI red. Then revert.                                                                                     |
+| R2  | Forgotten host-cross-check in a future custom auth flow lets JWT bypass subdomain                                                                                                                   | High     | Low                                                                                                                                                            | Architectural test asserts every controller decorated with `@UseGuards(JwtAuthGuard)` is reachable only via the middleware-mounted route (`HostResolverMiddleware` consumer chain).                                                                                                                  | Architectural test enumerates `@UseGuards(JwtAuthGuard)` AST nodes, asserts each lives under a module that imports `TenantHostResolverMiddleware`.                                         |
+| R3  | Wildcard cert renewal silent-fail → 100 % outage in 90 days                                                                                                                                         | Critical | Medium                                                                                                                                                         | Prometheus exporter for cert-expiry-days. Grafana alert at < 14 d (paste into `docker/grafana/alerts/_*.json` provisioning set per ADR-002 Phase 5g).                                                                                                                                                | Manually advance cert clock in staging (or create a 7-day cert) → alert fires within 5 min.                                                                                                |
+| R4  | Subdomain typo (`scs-tehcnik.assixx.com`) → 444 confuses user                                                                                                                                       | Low      | High                                                                                                                                                           | Catch-all `default_server` returns SvelteKit 404 page for browser User-Agents (UA-sniff regex), 444 for non-browsers (scanners, curl).                                                                                                                                                               | curl with browser UA → 404 HTML, curl without UA → connection-reset.                                                                                                                       |
+| R5  | Internal services (cron, deletion-worker) call backend with no Host                                                                                                                                 | Medium   | Medium                                                                                                                                                         | `extractSlug()` returns `null` for missing/non-matching Host. Internal callers continue using `systemQuery()` (BYPASSRLS, no tenant context required).                                                                                                                                               | Unit test for `extractSlug(undefined)` → null. Integration test: deletion-worker's HTTP call to backend → 200 (no `CROSS_TENANT_HOST_MISMATCH` because `hostTenantId === null`).           |
+| R6  | Microsoft OAuth `state` cookie set on apex doesn't reach the subdomain                                                                                                                              | High     | High                                                                                                                                                           | `state` cookie deliberately stays apex-scoped. The signed handoff-token mechanism is what crosses the origin boundary — `state` only validates the apex-side CSRF round-trip.                                                                                                                        | Tier 4 OAuth E2E: full flow on subdomain → Microsoft mock → apex callback → handoff swap → subdomain dashboard. Cookies inspected at every hop.                                            |
+| R7  | Cloudflare API token compromise → wildcard DNS hijack                                                                                                                                               | Critical | Low                                                                                                                                                            | Token scoped to `assixx.com` zone only, `Zone:DNS:Edit` permission only (no `Zone:Zone:Edit`). Stored in Doppler with strict access-control. Rotated monthly via runbook (HOW-TO-CLOUDFLARE-TOKEN-ROTATION).                                                                                         | Doppler audit log review monthly. Token scope verified at boot-time check (certbot pre-hook fails if token has any extra permission).                                                      |
+| R8  | Existing test fixtures don't have `tenants.subdomain` populated                                                                                                                                     | Medium   | Medium                                                                                                                                                         | Phase 0 grep scan: `SELECT id, subdomain FROM tenants WHERE subdomain IS NULL OR subdomain = '';` — must return zero rows. If non-zero, add backfill to Phase 1.                                                                                                                                     | Pre-Phase-1 query against staging DB. Must be 0 rows.                                                                                                                                      |
+| R9  | Local dev breaks during transition (HMR, OAuth flow, etc.)                                                                                                                                          | Medium   | Medium                                                                                                                                                         | `extractSlug('localhost')` returns `null` → skip cross-check entirely on `localhost:5173`. OAuth dev-mode uses apex-only flow (no handoff). Documented in README.                                                                                                                                    | Dev smoke: `pnpm run dev:svelte`, login as `admin@apitest.de`, navigate to `/manage-admins`, all green.                                                                                    |
+| R10 | SvelteKit `hooks.server.ts` change breaks existing routing                                                                                                                                          | High     | Low                                                                                                                                                            | Additive change only — current `hooks.server.ts` remains the base, new logic appends `event.locals.hostSlug` without modifying existing flow.                                                                                                                                                        | Existing E2E suite (smoke.spec.ts) green after Phase 5.                                                                                                                                    |
+| R11 | Nginx regex `server_name ~^(?<slug>[a-z0-9-]+)\.assixx\.com$` matches deeper subdomains (`a.b.assixx.com`)                                                                                          | Medium   | Low                                                                                                                                                            | Anchored regex with character class `[a-z0-9-]+` (no dots). `nginx -t` config-test verifies, plus negative-test in Tier 2: `curl -H 'Host: a.b.assixx.com' …` → 444 (catch-all).                                                                                                                     | `nginx -t` passes. `curl --resolve a.b.assixx.com:443:127.0.0.1 https://a.b.assixx.com/` → connection-reset.                                                                               |
+| R12 | OAuth `return_to_slug` parameter tampering → redirect to attacker subdomain                                                                                                                         | High     | Medium                                                                                                                                                         | `return_to_slug` is part of the signed `state` cookie (HMAC over `nonce                                                                                                                                                                                                                              |                                                                                                                                                                                            | return_to_slug`). Backend verifies signature before redirect, rejects mismatched slug. | Unit test: tampered `return_to_slug` → `BadRequestException('OAUTH_STATE_TAMPERED')`. Integration test: full flow with manually-tampered query param → 400. |
+| R13 | Redis cache poisoning: attacker sets `tenant:slug:firma-a → 999` → all firma-a traffic resolves to tenant 999                                                                                       | Critical | Low                                                                                                                                                            | Redis is internal-only (no exposed port, network-isolated to backend). Only `TenantHostResolverMiddleware` writes the cache. Cache key TTL 60 s — bounded blast radius even on compromise.                                                                                                           | `docker exec assixx-redis redis-cli CONFIG GET bind` → only `127.0.0.1` and internal docker network. Verified via Trivy scan + Redis ACL audit.                                            |
+| R14 | Backend `:3000` / frontend `:3001` reachable from public internet bypasses Nginx-enforced host-cross-check — valid JWT becomes cross-tenant skeleton key                                            | Critical | **High** (default `docker-compose.yml` publishes both ports for dev convenience, documented as feature in `docs/DOCKER-SETUP.md`; no prod-override exists yet) | `docker-compose.prod.yml` override drops `ports:` publish for `backend` + `frontend` services. Only `nginx` is host-bound (`:443`, and `:80` for HTTP→HTTPS redirect). Add architectural test asserting `docker-compose.prod.yml` overrides both services with `ports: !reset []`.                   | On prod host, from external network: `nmap -p 3000,3001 <prod-ip>` → both filtered/closed. `curl --max-time 5 -I https://<prod-ip>:3000/health` → connection timeout. Part of Phase 1 DoD. |
+| R15 | Tampered OAuth redirect lands handoff-token on wrong subdomain → subdomain sets cookies of tenant A on tenant B's origin (self-heals on next request via `JwtAuthGuard`, but surfaces confusing UX) | High     | Low                                                                                                                                                            | Handoff endpoint `POST /api/v2/auth/oauth/handoff` asserts `req.hostTenantId === decodedPayload.tenantId` before returning the auth payload. Throws `HANDOFF_HOST_MISMATCH` (distinct error code from `CROSS_TENANT_HOST_MISMATCH` to allow specific Loki/Grafana alerting on OAuth-flow anomalies). | Integration test: mint handoff token for tenant A, submit via subdomain-B host → 403 `HANDOFF_HOST_MISMATCH`. Token is NOT consumed (Redis GETDEL only happens after host-match passes).   |
 
 > **Rule (per HOW-TO-PLAN-SAMPLE §0.2):** every risk has concrete mitigation
 > AND verification. "Be careful" is NOT a mitigation. "Should be fine" is NOT
@@ -119,26 +145,112 @@ Skipped per the rule above.
 >
 > **Dependency:** Phase 0 complete (R-table sanity-checked, D-table audited).
 
-### Step 1.1: Cloudflare wildcard DNS record [PENDING]
+### Step 1.0: Reserved-slug enforcement (DB + DTO) [PENDING]
 
-**What happens:**
+> **ADR-050 §"Reserved Slug List" realization.** Must exist BEFORE any Nginx
+> config goes live — otherwise a future signup as slug `www` breaks apex
+> routing. Also required by Phase 0.1 pre-flight query.
 
-1. Log into Cloudflare → assixx.com zone → DNS records.
-2. Add record: `*` `A` `<load-balancer-IP>` Proxied=YES (orange cloud).
-3. Verify propagation: `dig +short firma-test.assixx.com @1.1.1.1`.
+**Database migration** (generated via `doppler run -- pnpm run db:migrate:create add-subdomain-reserved-check`):
 
-**Why proxied:** Cloudflare's proxy gives DDoS protection + edge caching for
-free; doesn't interfere with our origin TLS because Cloudflare terminates
-edge-TLS and re-establishes origin-TLS to our Nginx using the same wildcard
-cert.
+```typescript
+import type { MigrationBuilder } from 'node-pg-migrate';
+
+export function up(pgm: MigrationBuilder): void {
+  pgm.sql(`
+    ALTER TABLE tenants
+      ADD CONSTRAINT tenants_subdomain_reserved_check
+      CHECK (subdomain NOT IN (
+        'www','api','admin','app','assets','auth','cdn','docs','blog',
+        'grafana','health','localhost','mail','static','status','support',
+        'tempo','test'
+      ));
+  `);
+}
+
+export function down(pgm: MigrationBuilder): void {
+  pgm.sql(`ALTER TABLE tenants DROP CONSTRAINT IF EXISTS tenants_subdomain_reserved_check;`);
+}
+```
+
+**Backend DTO** (`backend/src/nest/signup/dto/signup.dto.ts` or wherever
+`subdomain` field lives):
+
+```typescript
+export const RESERVED_SUBDOMAINS = [
+  'www','api','admin','app','assets','auth','cdn','docs','blog',
+  'grafana','health','localhost','mail','static','status','support',
+  'tempo','test',
+] as const;
+
+// in the Zod schema:
+subdomain: z.string()
+  .min(3).max(63)
+  .regex(/^[a-z0-9-]+$/, 'Only lowercase letters, digits, and hyphens')
+  .refine((s) => !RESERVED_SUBDOMAINS.includes(s as (typeof RESERVED_SUBDOMAINS)[number]),
+    { message: 'This subdomain is reserved and cannot be used.' }),
+```
 
 **Verification:**
 
 ```bash
-# From any external host:
-dig +short '*.assixx.com' @1.1.1.1   # should resolve to Cloudflare IPs
-dig +short firma-test.assixx.com @1.1.1.1  # should resolve to Cloudflare IPs (proxied)
-curl -I https://firma-test.assixx.com/  # should connect (404 expected before Nginx config)
+# Apply migration
+doppler run -- ./scripts/run-migrations.sh up
+
+# Test: attempt to insert reserved slug → constraint rejects
+docker exec assixx-postgres psql -U assixx_user -d assixx -c \
+  "INSERT INTO tenants (name, subdomain, company_name, is_active) VALUES ('t', 'www', 'T', 1);"
+# → ERROR: new row for relation "tenants" violates check constraint "tenants_subdomain_reserved_check"
+
+# Test via API:
+curl -sX POST http://localhost:3000/api/v2/signup -H 'Content-Type: application/json' \
+  -d '{"subdomain":"www",...}' | jq '.error.details[] | select(.field=="subdomain")'
+# → { "field": "subdomain", "message": "This subdomain is reserved..." }
+```
+
+### Step 1.1: Cloudflare wildcard DNS record — DNS-only mode [PENDING]
+
+**Prerequisite:** IONOS nameserver delegation to Cloudflare already active
+(Phase 0.1 task). `whois assixx.com` must show Cloudflare-assigned
+nameservers, e.g. `adam.ns.cloudflare.com`.
+
+**What happens:**
+
+1. Log into Cloudflare → `assixx.com` zone → DNS records.
+2. Add apex records:
+   - `@` `A` `<prod-public-ip>` **Proxy=DNS-only (grey cloud)**
+   - `www` `CNAME` `assixx.com` **Proxy=DNS-only (grey cloud)**
+3. Add wildcard record:
+   - `*` `A` `<prod-public-ip>` **Proxy=DNS-only (grey cloud)**
+4. Verify propagation (allow up to 5 min for CF's global edge):
+   `dig +short firma-test.assixx.com @1.1.1.1` → resolves directly to our
+   prod IP (NOT to a Cloudflare edge IP — that's how we verify DNS-only).
+
+**Why DNS-only (grey cloud), NOT proxied (orange cloud) — user decision
+2026-04-19:**
+
+1. **TLS terminates at our origin Nginx.** No Cloudflare edge cert, no
+   origin-mode decision (Full-strict vs Flexible), single cert chain. One
+   Let's Encrypt wildcard, one renewal cycle.
+2. **No WebSocket/SSE idle-timeout risk.** CF Free tier enforces 100-s idle
+   on WebSockets — our `/chat-ws` would reconnect unnecessarily. DNS-only
+   bypasses this entirely.
+3. **No CF Proxy dependency in the hot path.** Our availability SLA stops at
+   our origin. CF proxy outages (rare but real) can't take down Assixx.
+4. **Upgrade path stays open.** Flip to orange-cloud later if DDoS or edge
+   caching becomes worth the trade-offs. Not blocked by this plan.
+
+**Verification:**
+
+```bash
+# From any external host (must resolve to OUR prod IP, not CF's):
+dig +short assixx.com @1.1.1.1              # → <prod-public-ip>
+dig +short www.assixx.com @1.1.1.1          # → <prod-public-ip>
+dig +short firma-test.assixx.com @1.1.1.1   # → <prod-public-ip>
+dig +short random.assixx.com @1.1.1.1       # → <prod-public-ip> (wildcard works)
+# Sanity check CF proxy is NOT in path:
+dig +short firma-test.assixx.com @1.1.1.1 | xargs -I{} whois {} | grep -i cloud
+# → should NOT contain "Cloudflare" (means proxy is off)
 ```
 
 ### Step 1.2: Doppler secret `CLOUDFLARE_DNS_API_TOKEN` [PENDING]
@@ -161,22 +273,43 @@ doppler secrets get CLOUDFLARE_DNS_API_TOKEN --plain --config prd | head -c 20
 **New file:** `docker/Dockerfile.certbot` (or use upstream `certbot/dns-cloudflare`
 image directly).
 
-**Modified file:** `docker/docker-compose.yml` — add service:
+**Modified file:** `docker/docker-compose.prod.yml` (NOT base `docker-compose.yml` —
+certbot is prod-only; base stays dev-focused). Add service:
 
 ```yaml
-certbot:
-  profiles: [production]
-  image: certbot/dns-cloudflare:latest
-  volumes:
-    - certs:/etc/letsencrypt
-    - ./certbot/cloudflare.ini:/cloudflare.ini:ro
-  command: renew --quiet --post-hook "nginx -s reload"
-  restart: unless-stopped
-  depends_on: [nginx]
+# docker/docker-compose.prod.yml — appended to R14 override from Step 1.6
+services:
+  certbot:
+    # ADR-027 Stage-1 pinning MANDATORY — verify current tag at
+    # https://hub.docker.com/r/certbot/dns-cloudflare/tags and pick the latest
+    # SemVer-shaped tag (e.g. v5.1.0 or similar). Never `latest`.
+    # CI pin-guard (ADR-027 Amendment 2026-04-08) blocks rolling tags.
+    image: certbot/dns-cloudflare:v5.1.0 # VERIFY BEFORE COMMIT — hub may have newer
+    volumes:
+      - certs:/etc/letsencrypt
+      - ./certbot/cloudflare.ini:/cloudflare.ini:ro
+    # Renewal loop: attempt every 12h. Certbot itself no-ops if cert has
+    # > 30 days remaining. Post-hook triggers nginx reload inside the nginx
+    # container (not this one) via docker exec.
+    entrypoint: /bin/sh -c
+    command: |
+      "while :; do
+         certbot renew --quiet --deploy-hook 'docker exec assixx-nginx nginx -s reload';
+         sleep 43200;
+       done"
+    restart: unless-stopped
+    depends_on: [nginx]
 
 volumes:
   certs:
+    name: assixx_certs
 ```
+
+> **Pin verification step (per ADR-027 memory-note `feedback_docker_image_tag_verification.md`):**
+> Docs/examples can be stale. Before committing, verify tag exists via
+> `curl -fsSL https://hub.docker.com/v2/repositories/certbot/dns-cloudflare/tags/v5.1.0 > /dev/null`
+> (200 = exists, 404 = pick the next patch). CI pin-guard will catch
+> rolling tags but can't catch a typo'd version.
 
 `./certbot/cloudflare.ini` (NOT in git, generated at deploy-time from Doppler):
 
@@ -209,12 +342,27 @@ docker run --rm -v <docker-compose-cert-volume>:/etc/letsencrypt certbot/certbot
 # Output should list: assixx.com (issuer Let's Encrypt, expiry > 80 days, SAN includes *.assixx.com)
 ```
 
-### Step 1.5: Nginx config split [PENDING]
+### Step 1.5: Nginx config — full HTTPS multi-server rewrite [PENDING]
 
-**Modified file:** `docker/nginx/nginx.conf` — replace single `server { server_name
-localhost; … }` with three blocks.
+> **Scope clarification (verified 2026-04-19):** current `docker/nginx/nginx.conf`
+> is HTTP-only on port 80 (`server_name localhost`). The entire `listen 443 ssl http2`
+> block is commented out (lines 207-318). This is NOT a "split existing block"
+> — it's a full rewrite from HTTP-only-dev to HTTPS-prod-ready with three
+> server blocks. Plan the change in a separate PR if scope becomes unwieldy.
+>
+> **Strategy:** split into two files:
+>
+> - `docker/nginx/nginx.dev.conf` — keep existing HTTP-only localhost config
+>   for `docker-compose --profile production up -d` on a dev host (internal
+>   testing without TLS).
+> - `docker/nginx/nginx.prod.conf` — new file with HTTPS + multi-server blocks
+>   below. Mounted via `docker-compose.prod.yml` override (Step 1.6).
 
-Reference structure from current `nginx.conf` (already has `default_server { return 444; }` — preserve verbatim):
+**New file:** `docker/nginx/nginx.prod.conf` — HTTPS multi-server config.
+
+Reference: preserve the `default_server { return 444; }` idiom from current
+`nginx.conf:35-39`, preserve SSE/WebSocket/security-header patterns from
+current `nginx.conf` sections §80-105 (SSE) and §159-174 (WebSocket).
 
 ```nginx
 # Catch-all (existing, preserved per current §35-39)
@@ -281,24 +429,89 @@ curl -kI https://firma-test.assixx.com/health | head -1  # → HTTP/2 200 (resol
 curl -kI -H 'Host: a.b.assixx.com' https://www.assixx.com/   # → connection reset (444 catch-all)
 ```
 
+### Step 1.6: Production port isolation (`docker-compose.prod.yml` override) [PENDING]
+
+> **R14 mitigation, critical security prerequisite.** Without this step, the
+> backend host-cross-check (Phase 2 Step 2.3) is trivially bypassable.
+
+**New file:** `docker/docker-compose.prod.yml` — overrides base `docker-compose.yml`
+to remove public port publishes from backend + frontend services. Only
+`nginx:443` (and `:80` for HTTP→HTTPS redirect) is exposed to the host.
+
+```yaml
+# docker/docker-compose.prod.yml
+# Usage: doppler run -- docker-compose -f docker-compose.yml -f docker-compose.prod.yml --profile production up -d
+services:
+  backend:
+    # R14 mitigation (ADR-050): no public port publish in prod.
+    # Backend is reachable only via nginx on the internal docker network.
+    ports: !reset []
+    environment:
+      NODE_ENV: production
+
+  frontend:
+    # Same — bypasses-Nginx access was a dev-convenience.
+    ports: !reset []
+
+  nginx:
+    # Mount the HTTPS prod config, publish 443 (plus :80 for redirect).
+    volumes:
+      - ./nginx/nginx.prod.conf:/etc/nginx/conf.d/default.conf:ro
+      - certs:/etc/letsencrypt:ro
+    ports:
+      - '80:80'
+      - '443:443'
+```
+
+**Verification (on prod host, from the public internet):**
+
+```bash
+# Both must time out / be filtered:
+nmap -p 3000 <prod-public-ip>     # filtered
+nmap -p 3001 <prod-public-ip>     # filtered
+curl --max-time 5 -I https://<prod-public-ip>:3000/health  # timeout
+curl --max-time 5 -I https://<prod-public-ip>:3001/        # timeout
+
+# Only 80 and 443 are reachable:
+nmap -p 80,443 <prod-public-ip>   # both open
+```
+
+**Architectural test** (`shared/src/architectural.test.ts` — added in Phase 2
+Step 2.6): parse `docker-compose.prod.yml`, assert `services.backend.ports`
+and `services.frontend.ports` are present AND resolve to empty-list override
+(`!reset []`). Prevents regression where a future edit silently re-exposes.
+
 ### Phase 1 — Definition of Done
 
-- [ ] Cloudflare wildcard DNS record live, propagated globally (verify from at
-      least 3 geographic regions via dnsmap or 1.1.1.1 / 8.8.8.8 / 9.9.9.9)
-- [ ] Doppler secret `CLOUDFLARE_DNS_API_TOKEN` set in prd config, verified
-      scope = `Zone:DNS:Edit` on `assixx.com` only
-- [ ] Certbot sidecar service in `docker-compose.yml`, dry-run `--dry-run`
-      succeeds
+- [ ] IONOS → Cloudflare nameserver delegation active (`whois assixx.com`
+      shows CF-assigned NS)
+- [ ] Cloudflare DNS records for apex, www, and wildcard `*` in DNS-only mode
+      (grey cloud), all A-records point to our prod public IP. Propagation
+      verified from 3 resolvers (1.1.1.1, 8.8.8.8, 9.9.9.9).
+- [ ] Doppler secrets set in prd config: `CLOUDFLARE_DNS_API_TOKEN`
+      (scope `Zone:DNS:Edit` on `assixx.com` only), `OAUTH_STATE_SECRET`
+      (32+ random bytes, dedicated — not derived from JWT_SECRET).
+- [ ] Certbot sidecar service in `docker-compose.prod.yml`, `--dry-run`
+      succeeds.
 - [ ] Wildcard cert issued, expiry > 80 days, SAN includes `*.assixx.com`
-- [ ] Nginx config has three server-blocks (apex, regex-subdomain, catch-all
-      444); `nginx -t` passes
+      AND `assixx.com` (apex covered separately per RFC 6125 §6.4.3).
+- [ ] `docker/nginx/nginx.prod.conf` has three server-blocks (apex, regex-
+      subdomain, catch-all `return 444`); `nginx -t` passes inside the
+      container.
 - [ ] `curl https://www.assixx.com/health` → 200
 - [ ] `curl https://firma-test.assixx.com/health` → 200 (verifies wildcard
       routing works end-to-end before backend changes)
-- [ ] `curl -H 'Host: a.b.assixx.com' …` → 444 (verifies catch-all anchors)
-- [ ] HTTP→HTTPS redirect verified with `curl -I http://www.assixx.com` → 301
-- [ ] Cert auto-renewal cron tested in staging by manually setting cert clock
-      forward (or using a 7-day staging cert)
+- [ ] `curl -H 'Host: a.b.assixx.com' https://www.assixx.com/` → connection
+      reset (verifies nested-subdomain regex rejection, falls through to
+      catch-all 444)
+- [ ] HTTP→HTTPS redirect verified with `curl -I http://www.assixx.com/` → 301
+- [ ] Cert auto-renewal cron tested in staging by manually advancing the
+      cert clock forward (or using a Let's Encrypt 7-day staging cert).
+- [ ] **R14 mitigation verified:** `docker-compose.prod.yml` override exists,
+      deployed on prod host, `nmap -p 3000,3001 <prod-ip>` returns filtered
+      for both. Test rerun from an external network (not the prod host
+      itself) — the prod host would see them as open because they bind to
+      `0.0.0.0` on the internal docker network interface.
 
 ---
 
@@ -403,10 +616,21 @@ credentials: true })` inside `setupGlobalMiddleware`.
 
 **Request body:** `{ token: string }` (the handoff-token from query param).
 
-**Behavior:** Redis GETDEL `oauth:handoff:${token}` → if found, returns
-`{ accessToken, refreshToken, user }` and caller (the subdomain
-oauth-complete page) sets cookies on its own host. If miss, 404 (consumed or
-expired).
+**Behavior (R15 mitigation — host-cross-check BEFORE Redis consume):**
+
+1. Read `req.hostTenantId` (set by `TenantHostResolverMiddleware` — Step 2.2).
+2. Redis **GET** (not GETDEL yet!) `oauth:handoff:${token}`.
+   - Miss → 404 `HANDOFF_TOKEN_INVALID`.
+3. Parse payload → `{ userId, tenantId, accessToken, refreshToken, user }`.
+4. **Assert `req.hostTenantId === payload.tenantId`.**
+   - Mismatch → 403 `HANDOFF_HOST_MISMATCH`. Token NOT consumed (attacker
+     cannot burn another user's token by targeting the wrong subdomain).
+5. Only now: Redis **DEL** `oauth:handoff:${token}` (single-use).
+6. Return auth payload → subdomain page `cookies.set(...)` on own host.
+
+**Rationale:** consuming on failed host-check would let an attacker
+denial-of-service a user's OAuth flow by intercepting and replaying to the
+wrong subdomain. Check first, consume second.
 
 **Modified file:** `backend/src/nest/auth/oauth/microsoft.provider.ts` (or
 wherever `state` is currently composed). Wrap `state` in HMAC-signed payload
@@ -695,19 +919,32 @@ payload. Cookies are now naturally scoped to the subdomain.
       Alert at `cert-expiry-days < 14`, severity = critical.
 - [ ] Loki host-label dimension: update `docker/loki/promtail.yml` (or
       equivalent) to extract `host` from log lines and attach as Loki label.
+      Enables alerting on `CROSS_TENANT_HOST_MISMATCH` / `HANDOFF_HOST_MISMATCH`
+      error codes filtered by host.
 - [ ] Email/notification URL templates: every outbound URL generation
-      (welcome email, password reset, notification SSE) must use the recipient's
-      tenant subdomain. New helper:
+      (welcome email, password reset, notification SSE, invite links) must
+      use the recipient's tenant subdomain. New helper:
       `getTenantBaseUrl(tenantId): Promise<string>` → resolves to
-      `https://${subdomain}.assixx.com`.
+      `https://${subdomain}.assixx.com`. Audit all template files under
+      `backend/src/nest/**/templates/` and `backend/src/nest/**/*-email.ts`.
 - [ ] WebSocket URL: chat client must use `wss://${current-host}/chat-ws`
       (already does — reads `window.location.host`, verify in code review).
-- [ ] Customer-facing email: one-time announcement
-      ("Your new URL is `<slug>.assixx.com`") to all existing tenant root
-      users. Template + send-script. Manual trigger.
-- [ ] 90-day transitional redirect: `www.assixx.com/dashboard` (or any
-      protected app route) for an authenticated user → 301 to
-      `https://${user.tenant.subdomain}.assixx.com${same-path}`.
+- [ ] **Greenfield cutover (no customer communication needed):** since there
+      are no live prod tenants at cutover time (ADR-050 §"Deployment Context"),
+      the "transitional redirect" and "customer announcement email" tasks
+      from the original plan draft are NOT NEEDED. The first tenant ever to
+      sign up in prod does so directly on the new topology — their signup
+      lands on `<slug>.assixx.com` from day one. Login page shows the
+      one-liner "Deine neue Adresse: <slug>.assixx.com" only if a future live
+      migration happens later (tracked as Followup for V2+).
+
+> **Dropped from original plan draft (reason: greenfield):**
+>
+> - ~~Customer-facing email announcement~~ — nobody to announce to.
+> - ~~90-day transitional `www → subdomain` redirect~~ — no live bookmarks exist.
+> - ~~Dual-cookie-scope transition~~ — would defeat the cookie-isolation
+>   property; the whole point of Modus A is that cookies never cross
+>   origins.
 
 ### ADR-050 backfill (RETROSPECTIVE)
 
@@ -761,20 +998,22 @@ appended (matching ADR-049's §Implementation Notes and §Test Coverage):
 > **Rule (per HOW-TO-PLAN-SAMPLE):** one session = one logical work block,
 > 1–3 hours focused.
 
-| Session | Phase | Description                                               | Status | Date |
-| ------- | ----- | --------------------------------------------------------- | ------ | ---- |
-| 1       | 0     | Pre-execution audit: D-table walk-through, R-table sanity |        |      |
-| 2       | 1     | Cloudflare DNS wildcard + Doppler API token               |        |      |
-| 3       | 1     | Certbot sidecar + initial wildcard cert                   |        |      |
-| 4       | 1     | Nginx config split + smoke test (no backend changes yet)  |        |      |
-| 5       | 2     | extractSlug() + middleware + JwtAuthGuard cross-check     |        |      |
-| 6       | 2     | CORS plugin + OAuth handoff endpoint + state-cookie HMAC  |        |      |
-| 7       | 2     | Architectural tests (3 new assertions)                    |        |      |
-| 8       | 3     | Unit tests (≥25 tests)                                    |        |      |
-| 9       | 4     | API integration tests (≥15 tests)                         |        |      |
-| 10      | 5     | hooks.server.ts + (public) route group + branding helper  |        |      |
-| 11      | 5     | OAuth handoff consumer page                               |        |      |
-| 12      | 6     | Integration + cutover + ADR-050 backfill                  |        |      |
+| Session | Phase | Description                                                                                    | Status | Date |
+| ------- | ----- | ---------------------------------------------------------------------------------------------- | ------ | ---- |
+| 1       | 0     | Pre-execution audit: D-table walk-through, R-table sanity (incl. R14/R15)                      |        |      |
+| 2       | 1     | Step 1.0 Reserved-slug migration + DTO + Step 1.6 `docker-compose.prod.yml` override           |        |      |
+| 3       | 1     | Step 1.1 DNS wildcard + Step 1.2 Doppler secrets (CF API token, OAUTH_STATE_SECRET)            |        |      |
+| 4       | 1     | Step 1.3 Certbot sidecar + Step 1.4 initial wildcard cert                                      |        |      |
+| 5       | 1     | Step 1.5 `nginx.prod.conf` full HTTPS rewrite + smoke test (no backend changes yet)            |        |      |
+| 6       | 2     | extractSlug() + TenantHostResolverMiddleware + JwtAuthGuard cross-check                        |        |      |
+| 7       | 2     | CORS plugin + OAuth handoff endpoint (with R15 host-cross-check) + state-cookie HMAC           |        |      |
+| 8       | 2     | Architectural tests (R1, R2, slug-parser, R14 compose-override, R15 handoff-check)             |        |      |
+| 9       | 3     | Unit tests (≥25 tests)                                                                         |        |      |
+| 9b      | 3     | **Test-infra migration:** `X-Forwarded-Host` injection helper, audit existing ~38 API tests    |        |      |
+| 10      | 4     | API integration tests (≥15 tests) incl. R14 (bypass via missing host) + R15 (handoff mismatch) |        |      |
+| 11      | 5     | hooks.server.ts + (public) route group + branding helper                                       |        |      |
+| 12      | 5     | OAuth handoff consumer page                                                                    |        |      |
+| 13      | 6     | Integration + cutover + ADR-050 backfill (greenfield — no customer comms needed)               |        |      |
 
 ### Session log template
 
@@ -862,21 +1101,23 @@ appended (matching ADR-049's §Implementation Notes and §Test Coverage):
 Per ADR-049 v0.1.0 → v1.0.0 pattern: surface discoveries BEFORE writing
 production code. Each D-entry is a question whose answer changes the plan.
 
-| #   | Question / Concern                                                                                                                                                                 | Resolution (filled in Session 1) |
-| --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------- |
-| D2  | What's the actual production load-balancer IP? (Cloudflare proxy means it can be any backend IP.)                                                                                  |                                  |
-| D3  | Are all existing tenants in DB populated with `subdomain`? Run: `SELECT COUNT(*) FROM tenants WHERE subdomain IS NULL OR subdomain = '' OR subdomain !~ '^[a-z0-9-]+$';`.          |                                  |
-| D4  | What's the regex Signup currently enforces on `subdomain`? Is it identical to `[a-z0-9-]+`? Verify by reading signup DTO.                                                          |                                  |
-| D5  | `extractSlug()` shared between BE+FE? If yes, lives in `shared/src/utils/`. If no, duplicate.                                                                                      |                                  |
-| D6  | OAuth `state` cookie today: where set, what scope (`Path`, `SameSite`, `Domain`)? Verify it's apex-scoped only.                                                                    |                                  |
-| D7  | `frontend/src/hooks.server.ts` current structure: how many handlers? Is `sequence()` used? Where to inject the host-extraction.                                                    |                                  |
-| D8  | Test infra: how does Vitest API-tests fake the Host header today? (We need to inject `X-Forwarded-Host` per-test.)                                                                 |                                  |
-| D9  | Vite dev-server: does it accept `*.localhost:5173` natively, or do we need a Vite config tweak (`server.allowedHosts`)?                                                            |                                  |
-| D10 | docker-compose.yml: is there an existing shared volume for certs, or do we add new volume + bind?                                                                                  |                                  |
-| D11 | Production deployment: does the operator currently terminate TLS at Cloudflare (proxied) or at our origin Nginx? Choice impacts whether we need origin-Nginx TLS at all.           |                                  |
-| D12 | `PUBLIC_APP_URL` value in production Doppler config: is it `https://www.assixx.com` (matches test) or different?                                                                   |                                  |
-| D13 | Existing `tenants.subdomain` collision potential: is there any tenant whose subdomain conflicts with a reserved DNS label (`www`, `api`, `admin`, `mail`, `static`)? Reserve list. |                                  |
-| D14 | OAuth handoff token: store in Redis or DB? Redis is faster, DB is more durable. Plan says Redis — verify Redis cluster has persistence enabled.                                    |                                  |
+| #   | Question / Concern                                                                                                      | Resolution                                                                                                                                                                                                                                                                                                                        |
+| --- | ----------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| D2  | What's the actual production load-balancer IP?                                                                          | **Open (greenfield).** No prod infra exists yet — IP will be assigned when the VPS is provisioned. Session 2 resolves: pick provider (Hetzner recommended based on DE market target), provision, record IP in Doppler `PROD_PUBLIC_IP`.                                                                                           |
+| D3  | Are all existing tenants in DB populated with `subdomain`?                                                              | **N/A in prod.** Greenfield — no live tenants. Staging fixtures are verified in Phase 0.1 query (includes reserved-slug check).                                                                                                                                                                                                   |
+| D4  | What's the regex Signup currently enforces on `subdomain`?                                                              | **TO VERIFY Session 1:** Read `backend/src/nest/signup/dto/*.ts` — must match `^[a-z0-9-]+$`. Step 1.0 overrides/adds reserved-slug refinement on top of whatever exists.                                                                                                                                                         |
+| D5  | `extractSlug()` shared between BE+FE?                                                                                   | **Decision: duplicate, NOT shared.** Backend lives in `backend/src/nest/common/utils/extract-slug.ts`, frontend in `frontend/src/lib/utils/extract-slug.ts`. Reason: `shared/` imports add build-order friction; logic is ~20 LOC; an architectural test asserts both implementations behave identically on a pinned test vector. |
+| D6  | OAuth `state` cookie today: where set, what scope?                                                                      | **TO VERIFY Session 1:** grep `backend/src/nest/auth/oauth/` for `state` cookie set. Must remain apex-scoped post-Phase-2 (the handoff-token, not the state cookie, crosses the origin boundary).                                                                                                                                 |
+| D7  | `hooks.server.ts` structure                                                                                             | **RESOLVED 2026-04-19:** Uses `sequence()` with 6 handlers (Sentry → securityHeaders → legacyRedirects → auth → logging → minification). `event.locals.hostSlug` extraction inserts BEFORE `authHandle` (so auth can consume it for future logging).                                                                              |
+| D8  | Test-infra: how does Vitest API-tests fake the Host header today?                                                       | **TO AUDIT Session 9b (dedicated session).** ~38 test files under `backend/test/`. Helper to add: `withTenantHost(request, slug)` that injects `X-Forwarded-Host: ${slug}.assixx.com`. Risk: existing tests may hard-fail if middleware finds mismatch — migration is per-file effort.                                            |
+| D9  | Vite dev-server: does it accept `*.localhost:5173`?                                                                     | **TO VERIFY Session 10 (Frontend):** probably works out of the box (Vite binds to all interfaces by default on modern versions). If not, add `server.allowedHosts: ['.localhost']` to `vite.config.ts`.                                                                                                                           |
+| D10 | docker-compose.yml: existing shared volume for certs?                                                                   | **RESOLVED 2026-04-19:** No existing cert volume. Step 1.3 adds named volume `certs` mounted to `certbot` (rw) and `nginx` (ro).                                                                                                                                                                                                  |
+| D11 | Production TLS termination: Cloudflare or origin Nginx?                                                                 | **RESOLVED 2026-04-19 (user decision):** origin Nginx. CF Free tier in DNS-only mode (grey cloud), NOT proxied. See Step 1.1 rationale.                                                                                                                                                                                           |
+| D12 | `PUBLIC_APP_URL` value in production Doppler                                                                            | **Default: `https://www.assixx.com`** (matches `microsoft.provider.test.ts:185` expectation). Session 2 verifies Doppler prd config.                                                                                                                                                                                              |
+| D13 | Existing tenants colliding with reserved slugs?                                                                         | **N/A (greenfield).** Step 1.0 enforces both CHECK-constraint + DTO-validation for all future signups.                                                                                                                                                                                                                            |
+| D14 | OAuth handoff token: Redis or DB?                                                                                       | **RESOLVED: Redis.** TTL=60s, single-use (DEL after host-cross-check passes — see Step 2.5). If Redis is unavailable, the whole OAuth flow fails loudly (circuit-break) — no DB fallback because the 60s TTL is meaningless in durable storage, and losing an in-flight OAuth is a 30s user annoyance, not a data loss.           |
+| D15 | **(NEW)** VPS provider choice for greenfield deployment?                                                                | **Session 2 decision.** Recommendation: Hetzner (DE market, EUR billing, matches target demographic) with a CX32 or CAX41. Backup-aware instance type (includes snapshot support).                                                                                                                                                |
+| D16 | **(NEW)** `docker-compose.prod.yml` — does it live in `docker/` alongside base, or in a separate `deployment/` subtree? | **Recommendation:** `docker/docker-compose.prod.yml` (same directory as base). Single source of compose files, simplest mental model. Session 2 commits the file.                                                                                                                                                                 |
 
 > **Rule:** every D-entry must be resolved BEFORE Phase 1 starts. Resolution
 > may modify R-table, file paths, or step content.

@@ -2,7 +2,7 @@
 
 Grafana Tempo stores traces. Only talks OTLP in from the OTel Collector, HTTP query API out to Grafana.
 
-- **Image**: `grafana/tempo:2.6.1` (35 MB — one of the smallest observability images)
+- **Image**: `grafana/tempo:2.10.4` (35 MB — one of the smallest observability images)
 - **Config**: [`tempo.yaml`](./tempo.yaml)
 - **Volume**: `tempo_data` (Docker named volume)
 - **Ports**:

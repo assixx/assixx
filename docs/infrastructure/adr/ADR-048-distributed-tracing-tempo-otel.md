@@ -64,7 +64,7 @@ Da `@sentry/nestjs` v8+ intern auf OpenTelemetry basiert, werden beide SDKs dens
              │ OTLP
              ▼
 ┌───────────────────────────────────────────────────────────────┐
-│  OTEL-COLLECTOR (otel/opentelemetry-collector-contrib:0.115.1) │
+│  OTEL-COLLECTOR (otel/opentelemetry-collector-contrib:0.150.1) │
 │  ├─ receiver: otlp (4317 gRPC, 4318 HTTP)                      │
 │  ├─ processor: memory_limiter (400 MiB)                        │
 │  ├─ processor: tail_sampling                                   │
@@ -76,7 +76,7 @@ Da `@sentry/nestjs` v8+ intern auf OpenTelemetry basiert, werden beide SDKs dens
 └────────────┬──────────────────────────────────────────────────┘
              ▼
 ┌───────────────────────────────────────────────────────────────┐
-│  TEMPO (grafana/tempo:2.6.1, Single-Binary)                    │
+│  TEMPO (grafana/tempo:2.10.4, Single-Binary)                   │
 │  ├─ OTLP-Receiver :4317 (internal only)                        │
 │  ├─ Storage: Local Volume (Dev) / S3-Compat (Prod-Option)      │
 │  ├─ Retention: 72 h                                            │

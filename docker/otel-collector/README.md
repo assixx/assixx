@@ -2,7 +2,7 @@
 
 Aggregation + tail-sampling hub for Assixx traces. All application telemetry transits here on the way to Tempo.
 
-- **Image**: `otel/opentelemetry-collector-contrib:0.115.1` — **contrib** distribution is mandatory (core has no `tail_sampling` processor)
+- **Image**: `otel/opentelemetry-collector-contrib:0.150.1` — **contrib** distribution is mandatory (core has no `tail_sampling` processor)
 - **Config**: [`collector.yaml`](./collector.yaml)
 - **Ports**:
   - `4317` (OTLP gRPC, published — backends connect here)

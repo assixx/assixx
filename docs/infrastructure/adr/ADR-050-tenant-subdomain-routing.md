@@ -48,6 +48,40 @@ vendor-controlled apex**. The pattern solves four orthogonal problems at once:
 7. **Local dev unchanged** — `localhost:5173` continues to work without
    `/etc/hosts` edits. Subdomain testing is opt-in.
 
+### Deployment Context: Greenfield Launch (no live tenants)
+
+As of ADR-050 acceptance, Assixx has **no production tenants in live use** —
+all current usage is local dev + staging. This is the single most important
+constraint shaping the cutover strategy:
+
+- **No forced re-login event to communicate** (no live sessions exist).
+- **No URL-bookmark migration** needed (no tenant has built workflows around
+  `www.assixx.com/dashboard` yet).
+- **No dual-cookie-scope transition** (which would defeat the cookie-isolation
+  property — see §Decision "Cookies: Browser-Native Isolation" below).
+- **Prod topology is a greenfield decision** in the scope of this ADR, not a
+  backwards-compat problem.
+
+This flips the risk calculus: instead of "migrate live system carefully," the
+problem is "design the launch topology correctly the first time." All of §6
+(Cutover) in the masterplan is therefore simpler than it would be for a live
+system.
+
+### DNS & TLS Provider Decision
+
+- **Registrar:** IONOS (domain `assixx.com` registered there).
+- **DNS authoritative:** Cloudflare (nameserver delegation from IONOS) —
+  Free tier, **DNS-only mode (grey cloud)**, NOT proxied.
+- **Rationale for "DNS-only, not proxied":** TLS termination stays at our
+  origin Nginx, not at Cloudflare edge. Single cert chain, no origin-mode
+  decision (Full-strict vs Flexible), no WebSocket-idle-timeout limits from
+  CF Free tier, no dependency on CF's proxy availability. We only use
+  Cloudflare for two things: authoritative DNS resolution and ACME DNS-01
+  API-token challenge.
+- **Upgrade path:** If we later want edge caching or DDoS mitigation, flip
+  records to orange-cloud (proxied) — separate decision, not blocked by this
+  ADR.
+
 ### Why NOT custom-domain hosting (`app.scs-technik.de` via CNAME)
 
 Modus B (Customer-Custom-Domain) was considered and rejected for V1. Three
@@ -102,6 +136,30 @@ would make the future Modus B work harder, not easier.
 The slug rules already enforced at signup (UNIQUE, RFC-1035 conformant
 `[a-z0-9-]+`) are exactly what Nginx's regex matches. **No DB schema change.**
 
+### Reserved Slug List
+
+The Nginx subdomain regex `[a-z0-9-]+` would otherwise happily match any
+slug — including ones that collide with the apex (`www`), map to future
+infra subdomains (`api`, `cdn`, `static`, `mail`, `status`), or confuse
+observability tooling (`admin`, `app`, `docs`, `blog`, `grafana`, `health`,
+`auth`, `assets`). These must be **hard-blocked at signup**, both at the
+application layer (Zod enum in the signup DTO) and at the database layer
+(PostgreSQL CHECK constraint on `tenants.subdomain`).
+
+Reserved set (V1):
+
+```
+www, api, admin, app, assets, auth, cdn, docs, blog, grafana, health,
+localhost, mail, static, status, support, tempo, test
+```
+
+Rationale: any slug we might plausibly want to use for our own infra in the
+next 24 months. The list is conservative — it's cheaper to un-reserve later
+than to reclaim a slug from a paying customer.
+
+**Enforcement is a hard prerequisite for Phase 1 Nginx rollout.** Without it,
+a future tenant could sign up as `www` and break the apex routing entirely.
+
 ### TLS: Single Wildcard Cert, Let's Encrypt DNS-01
 
 Wildcards are mandatory because HTTP-01 cannot validate `*.assixx.com`.
@@ -131,6 +189,43 @@ Two small additions to existing flow:
 
 CLS context (ADR-006) source remains the JWT, unchanged. Host is a
 _cross-check_, not a _source_.
+
+**Fastify `trustProxy` prerequisite:** already satisfied as of 2026-04-19 —
+`backend/src/nest/main.ts:284` configures the Fastify adapter with
+`trustProxy: true`. Without this, `req.hostname` / `req.hostname` would be
+derived from the raw socket peer instead of `X-Forwarded-Host`, and the
+middleware's Nginx-forwarded-host lookup would silently read wrong values.
+No change required, but any future refactor of the Fastify adapter must
+preserve this flag.
+
+### Production Topology Requirement: Backend Port Isolation
+
+The entire host-cross-check security model assumes every request reaches the
+backend **only through Nginx**. If the backend port (3000) or the frontend
+port (3001) is publicly reachable on the prod host, an attacker can bypass
+Nginx entirely and send `Host: anything` — the middleware sees it,
+`extractSlug()` returns `null` (apex case), the cross-check skips, and a
+valid JWT gives cross-tenant access.
+
+**Binding requirement:** prod deployment MUST have backend and frontend
+containers on an internal Docker network only, with only `nginx:443` bound
+to the public host. Achieved via a `docker-compose.prod.yml` override that
+removes the `ports:` publish for `backend` and `frontend` services (the
+current `docker/docker-compose.yml` publishes them as `3000:3000` /
+`3001:3001` for dev convenience, documented in `docs/DOCKER-SETUP.md` —
+that dev-convenience must not leak into prod).
+
+**Verification command** (part of Phase 1 DoD):
+
+```bash
+# On prod host, from the internet:
+nmap -p 3000,3001 <prod-public-ip>   # → both filtered/closed
+curl -I https://<prod-public-ip>:3000/health  # → connection timeout
+```
+
+This is not a "new" security measure — it is a prerequisite that existing
+architecture silently relied on without the cross-check. ADR-050 makes it
+an explicit, enforced invariant.
 
 ### Cookies: Browser-Native Isolation, Zero Code Change
 
@@ -171,6 +266,26 @@ scoped to the subdomain) via a new endpoint `POST /api/v2/auth/oauth/handoff`.
 The handoff-token is the only new piece of crypto: 32-byte random,
 single-use, server-side TTL, Redis-backed. Pattern mirrors cross-domain SSO
 flows used by every major B2B SaaS.
+
+**Handoff Cross-Check (Defense-in-Depth):** the handoff endpoint
+(`POST /api/v2/auth/oauth/handoff`) is unauthenticated by design (no JWT
+yet — that's what it's minting), so `JwtAuthGuard`'s cross-check does not
+protect it. The endpoint itself MUST assert
+`req.hostTenantId === decodedHandoffPayload.tenantId` before returning the
+auth cookies. Without this, a tampered redirect (attacker rewrites
+`Location:` from `firma-a.assixx.com` to `firma-b.assixx.com`) would cause
+the subdomain page to set firma-a cookies on firma-b's origin — immediately
+self-healing at the next authenticated request (403
+`CROSS_TENANT_HOST_MISMATCH`), but surfacing a confusing UX. The endpoint-
+level assertion closes the loop and produces a clean, actionable error
+code (`HANDOFF_HOST_MISMATCH`) instead.
+
+The state-cookie HMAC uses a dedicated secret `OAUTH_STATE_SECRET`
+(provisioned via Doppler, NOT derived from `JWT_SECRET` — different trust
+domains, different rotation cadence). Rotation strategy: dual-verify
+window of 5 minutes — during secret rotation, new HMACs sign with the new
+secret, verification accepts both old and new for 5 minutes to cover
+in-flight OAuth flows.
 
 ### Local Dev: Unchanged + Optional Subdomain-Routing
 
@@ -268,13 +383,15 @@ this ADR's slug then becomes the "fallback default tenant URL").
 > Operational risks (cert renewal failure, DNS propagation lag, etc.) are
 > tracked in the masterplan's R-table. Only architecture-level risks here.
 
-| Risk                                                                                      | Mitigation                                                                                                                                                             |
-| ----------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Forgotten `cookies.set({ domain: '.assixx.com' })` re-introduces cross-tenant cookie leak | Architectural test (`shared/src/architectural.test.ts`) regex-bans `domain:` literal in any `cookies.set` call. Mirrors ADR-049 §2.11 architectural test pattern.      |
-| Forgotten host-cross-check in a future custom auth flow lets JWT bypass subdomain         | Architectural test asserts every controller decorated with `@UseGuards(JwtAuthGuard)` is reachable only through the middleware-mounted path.                           |
-| Subdomain typo (`scs-tehcnik.assixx.com`) returns 444 (no body), confuses user            | Catch-all returns a small SvelteKit 404 page for browser User-Agents (UA sniff in Nginx). Preserves 444 for non-browsers (scanners, curl).                             |
-| Internal services (cron, deletion-worker) call backend with no Host                       | `extractSlug()` returns `null` for missing/non-matching Host. Internal callers continue using `systemQuery()` (BYPASSRLS) — no tenant context needed.                  |
-| Microsoft OAuth `state` cookie set on apex doesn't reach the subdomain                    | `state` cookie deliberately stays apex-scoped. The handoff-token mechanism is what crosses the origin boundary — `state` only validates the apex-side CSRF round-trip. |
+| Risk                                                                                                                                                                          | Mitigation                                                                                                                                                                                                                                                                                                  |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Forgotten `cookies.set({ domain: '.assixx.com' })` re-introduces cross-tenant cookie leak                                                                                     | Architectural test (`shared/src/architectural.test.ts`) regex-bans `domain:` literal in any `cookies.set` call. Mirrors ADR-049 §2.11 architectural test pattern.                                                                                                                                           |
+| Forgotten host-cross-check in a future custom auth flow lets JWT bypass subdomain                                                                                             | Architectural test asserts every controller decorated with `@UseGuards(JwtAuthGuard)` is reachable only through the middleware-mounted path.                                                                                                                                                                |
+| Subdomain typo (`scs-tehcnik.assixx.com`) returns 444 (no body), confuses user                                                                                                | Catch-all returns a small SvelteKit 404 page for browser User-Agents (UA sniff in Nginx). Preserves 444 for non-browsers (scanners, curl).                                                                                                                                                                  |
+| Internal services (cron, deletion-worker) call backend with no Host                                                                                                           | `extractSlug()` returns `null` for missing/non-matching Host. Internal callers continue using `systemQuery()` (BYPASSRLS) — no tenant context needed.                                                                                                                                                       |
+| Microsoft OAuth `state` cookie set on apex doesn't reach the subdomain                                                                                                        | `state` cookie deliberately stays apex-scoped. The handoff-token mechanism is what crosses the origin boundary — `state` only validates the apex-side CSRF round-trip.                                                                                                                                      |
+| **R14**: Backend `:3000` / frontend `:3001` reachable from public internet bypasses the Nginx-enforced host-cross-check, turning a valid JWT into a cross-tenant skeleton key | `docker-compose.prod.yml` override that drops `ports:` publish for `backend` + `frontend` services. Only `nginx:443` is host-bound. Phase 1 DoD includes `nmap -p 3000,3001 <prod-ip>` → filtered.                                                                                                          |
+| **R15**: Tampered OAuth redirect lands handoff-token on wrong subdomain — subdomain page sets cookies of tenant A on tenant B's origin                                        | Handoff endpoint asserts `req.hostTenantId === decodedPayload.tenantId` before returning cookies. Throws `HANDOFF_HOST_MISMATCH`. Next request's `JwtAuthGuard` would also catch it, but the endpoint-level check produces a clean error code and avoids the confusing "cookies set then instantly 403" UX. |
 
 ---
 
@@ -313,6 +430,7 @@ short-lived certs (90-day rotation) and HSTS preload.
 - ADR-006 — Multi-Tenant CLS Context (CLS source remains JWT; host is cross-check)
 - ADR-012 — Frontend Route Security Groups (`(public)` group for apex+subdomain dual-mount)
 - ADR-019 — Multi-Tenant RLS (unchanged)
+- ADR-027 — Dockerfile Hardening (Stage-1 image pinning MANDATORY for new certbot sidecar + `docker-compose.prod.yml`; CI pin-guard enforces this)
 - ADR-044 — SEO and Security Headers (header set replicated into both new server-blocks)
 - ADR-046 — OAuth Sign-In (centralized callback + handoff-token swap)
 - ADR-049 — Tenant Domain Verification (sibling concern; routing is separate)

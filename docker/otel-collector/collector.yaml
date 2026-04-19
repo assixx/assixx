@@ -80,17 +80,21 @@ processors:
 
 exporters:
   # Primary: forward sampled traces to Tempo.
-  otlp/tempo:
+  # Component name `otlp_grpc` (not legacy `otlp`) — the legacy alias was
+  # deprecated in collector-contrib 0.150.x with `"otlp" alias is deprecated;
+  # use "otlp_grpc" instead`. Removal is upstream-tracked for a future minor.
+  otlp_grpc/tempo:
     endpoint: tempo:4317
     tls:
       insecure: true
 
   # Secondary fan-out: Grafana Cloud Tempo (Phase 5, ADR-048 / FEAT_TEMPO_OTEL_MASTERPLAN).
   # Plan §5.1 specified otlp/grafana-cloud (gRPC :443) — Spec Deviation D9:
-  # switched to otlphttp/ because gRPC-Go >=1.67 (collector-contrib 0.115.1 uses
-  # v1.68) enforces strict ALPN validation and Grafana Cloud's OTLP gateway
-  # triggers `cannot check peer: missing selected ALPN property` on the gRPC
-  # path. Upstream: open-telemetry/opentelemetry-collector-contrib#30538.
+  # switched to otlphttp/ because gRPC-Go >=1.67 enforces strict ALPN validation
+  # and Grafana Cloud's OTLP gateway triggers `cannot check peer: missing
+  # selected ALPN property` on the gRPC path (originally observed on
+  # collector-contrib 0.115.1 / gRPC-Go v1.68). Upstream:
+  # open-telemetry/opentelemetry-collector-contrib#30538.
   # Grafana Cloud's official onboarding also ships otlphttp/ — confirmed via
   # https://github.com/grafana/opentelemetry-onboarding/blob/main/linux/collector.yaml.
   # Endpoint base URL ends on /otlp — otlphttp auto-appends /v1/traces → final
@@ -99,7 +103,9 @@ exporters:
   # see docs/how-to/HOW-TO-DOPPLER-GUIDE.md §8 + collector container env.
   # Defaults inherited: compression=gzip, encoding=proto, timeout=30s,
   # retry_on_failure + sending_queue both enabled by otlphttp base framework.
-  otlphttp/grafana-cloud:
+  # Component name `otlp_http` (not legacy `otlphttp`) — same 0.150.x
+  # alias deprecation: `"otlphttp" alias is deprecated; use "otlp_http" instead`.
+  otlp_http/grafana-cloud:
     endpoint: ${GRAFANA_CLOUD_OTLP_ENDPOINT}
     headers:
       authorization: "Basic ${GRAFANA_CLOUD_OTLP_AUTH_B64}"
@@ -127,7 +133,7 @@ service:
       # traces/day after ADR-048 §0.2 R3 policies) is negligible vs 50 GB Free
       # Tier. Rollback = remove `otlphttp/grafana-cloud` from this list + restart.
       # Exporter name reflects D9 (gRPC→HTTP switch, see exporters block comment).
-      exporters: [otlp/tempo, otlphttp/grafana-cloud, debug]
+      exporters: [otlp_grpc/tempo, otlp_http/grafana-cloud, debug]
   telemetry:
     logs:
       level: info

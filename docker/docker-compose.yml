@@ -635,7 +635,7 @@ services:
   # Query API exposed on :3200 for the Grafana Tempo datasource.
   # ===========================================================================
   tempo:
-    image: grafana/tempo:2.6.1
+    image: grafana/tempo:2.10.4
     container_name: assixx-tempo
     restart: unless-stopped
     deploy:
@@ -655,14 +655,16 @@ services:
       # 4317/4318 NOT published - internal OTLP receive only (collector → tempo)
     networks:
       - assixx-network
+    # NOTE: healthcheck disabled — grafana/tempo:2.10+ ships as distroless
+    # (no /bin/sh, no wget/curl/nc inside the container), so CMD-SHELL-based
+    # healthchecks fail with "exec: /bin/sh: no such file or directory".
+    # Same pattern as otel-collector-contrib (see below). Readiness is still
+    # queryable from outside via `curl http://localhost:3200/ready` — the
+    # HTTP endpoint is fine, only the in-container shell is missing.
+    # Downstream services (grafana, otel-collector) use `service_started`
+    # instead of `service_healthy` in their depends_on for this reason.
     healthcheck:
-      test:
-        ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3200/ready || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 30s
-      start_interval: 5s
+      disable: true
     profiles:
       - observability
       - production
@@ -674,7 +676,7 @@ services:
   # Distribution: contrib (needed for tail_sampling processor).
   # ===========================================================================
   otel-collector:
-    image: otel/opentelemetry-collector-contrib:0.115.1
+    image: otel/opentelemetry-collector-contrib:0.150.1
     container_name: assixx-otel-collector
     restart: unless-stopped
     deploy:
@@ -701,7 +703,7 @@ services:
       # 13133 and 8888 kept internal (healthcheck + collector-metrics)
     depends_on:
       tempo:
-        condition: service_healthy
+        condition: service_started
     networks:
       - assixx-network
     # NOTE: healthcheck omitted — the otel/opentelemetry-collector-contrib
@@ -717,7 +719,7 @@ services:
   # Grafana - Dashboards & Visualization
   # Pre-configured with Loki and Prometheus datasources
   grafana:
-    image: grafana/grafana:12.4.2
+    image: grafana/grafana:12.4.3
     container_name: assixx-grafana
     restart: unless-stopped
     deploy:
@@ -775,7 +777,7 @@ services:
       prometheus:
         condition: service_healthy
       tempo:
-        condition: service_healthy
+        condition: service_started
     networks:
       - assixx-network
     healthcheck:

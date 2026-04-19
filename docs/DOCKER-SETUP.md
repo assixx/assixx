@@ -21,8 +21,8 @@
 ## Quick Start (Automated)
 
 ```bash
-git clone https://github.com/assixx/Assixx.git
-cd Assixx/docker
+git clone https://github.com/assixx/assixx.git
+cd assixx/docker
 
 # With Doppler (team members):
 doppler run -- ./docker-init.sh
@@ -49,8 +49,8 @@ Use this if the automated script fails or you prefer manual control.
 ### 1. Clone and install dependencies
 
 ```bash
-git clone https://github.com/assixx/Assixx.git
-cd Assixx
+git clone https://github.com/assixx/assixx.git
+cd assixx
 pnpm install
 pnpm --filter @assixx/shared build
 ```
