@@ -1,6 +1,6 @@
 /**
- * Account Settings - Type Definitions
- * @module account-settings/_lib/types
+ * Company Settings - Type Definitions
+ * @module company-settings/_lib/types
  */
 
 /** Deletion status values */

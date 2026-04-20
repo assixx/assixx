@@ -10,7 +10,7 @@
  *   - Spätschicht: 14:00 - 22:00
  *   - Nachtschicht: 22:00 - 06:00
  *
- * Root users manage these via /account-settings.
+ * Root users manage these via /company-settings.
  * The service lazy-initializes defaults for new tenants.
  */
 import type { MigrationBuilder } from 'node-pg-migrate';

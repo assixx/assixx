@@ -13,6 +13,7 @@
 import { IS_ACTIVE } from '@assixx/shared/constants';
 import {
   BadRequestException,
+  ForbiddenException,
   Injectable,
   InternalServerErrorException,
   Logger,
@@ -26,6 +27,7 @@ import path from 'node:path';
 import { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import { DatabaseService } from '../database/database.service.js';
 import { UserRepository } from '../database/repositories/user.repository.js';
+import { SecuritySettingsService } from '../security-settings/security-settings.service.js';
 import type { UpdateProfileDto } from './dto/update-profile.dto.js';
 import { toSafeUserResponse } from './users.helpers.js';
 import type { SafeUserResponse, UserRow } from './users.types.js';
@@ -56,6 +58,10 @@ export class UserProfileService {
     private readonly databaseService: DatabaseService,
     private readonly userRepository: UserRepository,
     private readonly activityLogger: ActivityLoggerService,
+    // SecuritySettings gate: Root can lock self-service password changes for
+    // non-root users via `/security-settings/user-password-change-policy`.
+    // See ADR-045 (Layer-1 Management-Gate) + user-request 2026-04-20.
+    private readonly securitySettings: SecuritySettingsService,
   ) {}
 
   // ============================================
@@ -109,13 +115,32 @@ export class UserProfileService {
 
   /**
    * Change password (self-service)
+   *
+   * Security gate (ADR-045, user-request 2026-04-20): if the tenant's
+   * `security.allow_user_password_change` flag is `false` (default), only
+   * Root may rotate their password via this endpoint. Admins/Employees
+   * receive 403 until Root flips the flag in Company-Settings. This is the
+   * DB-authoritative enforcement point — Frontend hides the UI in addition,
+   * but even a direct API hit is blocked here.
    */
   async changePassword(
     userId: number,
     tenantId: number,
+    userRole: string,
     currentPassword: string,
     newPassword: string,
   ): Promise<{ message: string }> {
+    // Policy check FIRST — fail fast before doing bcrypt work. Root bypasses
+    // the gate because they must always be able to recover credentials.
+    if (userRole !== 'root') {
+      const allowed = await this.securitySettings.getUserPasswordChangePolicy(tenantId);
+      if (!allowed) {
+        throw new ForbiddenException(
+          'Self-service password change is disabled for this tenant. Contact your Root administrator.',
+        );
+      }
+    }
+
     // SECURITY: Get password hash for ACTIVE users only (is_active = 1)
     const passwordHash = await this.userRepository.getPasswordHash(userId, tenantId);
 

@@ -463,6 +463,66 @@ describe('POST /domains — positive path', () => {
 });
 
 // =============================================================================
+// POST /domains — cross-tenant pre-check (post-v1 "Option A" hardening, 2026-04-20)
+//
+// Adds surface the DOMAIN_ALREADY_CLAIMED 409 at add-time if another tenant has
+// already verified the domain, instead of letting the row sit pending forever
+// (the user can never win the DNS challenge — they don't control that domain).
+// Hermetic setup: a throwaway tenant is created via signup, its seeded pending
+// row is flipped to 'verified' via the DB helper (bypasses the DNS layer the
+// HTTP surface can't mock), then apitest-root tries to add the same domain.
+// =============================================================================
+
+describe('POST /domains — cross-tenant pre-check (DOMAIN_ALREADY_CLAIMED)', () => {
+  let foreignTenantId: number;
+  let foreignDomain: string;
+
+  beforeAll(async () => {
+    const fresh = await createFreshTenant('claim');
+    foreignTenantId = fresh.tenantId;
+    foreignDomain = fresh.domain;
+    // Flip the signup-seeded pending row to verified without exercising DNS.
+    // Same precedent as the user-creation-lock tests further down.
+    setDomainStatus(foreignTenantId, foreignDomain, 'verified');
+  });
+
+  it('rejects the add with 409 DOMAIN_ALREADY_CLAIMED', async () => {
+    const res = await fetch(`${BASE_URL}/domains`, {
+      method: 'POST',
+      headers: authHeaders(ROOT_TOKEN),
+      body: JSON.stringify({ domain: foreignDomain }),
+    });
+    const json = (await res.json()) as JsonBody;
+    expect(res.status).toBe(409);
+    expect(json.error?.code).toBe('DOMAIN_ALREADY_CLAIMED');
+    // Message is German + user-facing — locked here so a future refactor
+    // can't silently drop the "anderen Assixx-Tenant" phrasing that the UI
+    // toast relies on (frontend reads `err.message` via getApiErrorMessage,
+    // no client-side i18n layer between backend and toast).
+    expect(json.error?.message).toContain('anderen Assixx-Tenant');
+  });
+
+  it('allows the add when the foreign tenant has the domain only in pending', async () => {
+    // Flip foreign row back to pending. Pending-pending cross-tenant
+    // coexistence is explicitly allowed — preserves the masterplan's
+    // no-squatting-DoS property. The apitest INSERT must succeed.
+    setDomainStatus(foreignTenantId, foreignDomain, 'pending');
+    // Can't hit `NOW()` in setDomainStatus's verified-at for a pending flip —
+    // helper zeroes it to NULL, matching the invariant.
+
+    const res = await fetch(`${BASE_URL}/domains`, {
+      method: 'POST',
+      headers: authHeaders(ROOT_TOKEN),
+      body: JSON.stringify({ domain: foreignDomain }),
+    });
+    const json = (await res.json()) as JsonBody;
+    expect(res.status).toBe(201);
+    expect(json.data.status).toBe('pending');
+    CREATED_DOMAIN_IDS_APITEST.push(json.data.id as string);
+  });
+});
+
+// =============================================================================
 // POST /domains/:id/verify — DNS-negative path (HTTP-layer feasible)
 // =============================================================================
 

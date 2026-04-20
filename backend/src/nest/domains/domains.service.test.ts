@@ -81,6 +81,10 @@ interface MockClient {
 
 interface MockDb {
   tenantTransaction: ReturnType<typeof vi.fn>;
+  // systemQueryOne covers the cross-tenant pre-check inside addDomain()
+  // (post-v1 "Option A" hardening, 2026-04-20). Default resolves to `null`
+  // (= no conflicting row) so existing tests don't need to re-wire it.
+  systemQueryOne: ReturnType<typeof vi.fn>;
 }
 
 interface MockVerification {
@@ -101,6 +105,10 @@ function setup(): {
     tenantTransaction: vi
       .fn()
       .mockImplementation(async (cb: (c: MockClient) => Promise<unknown>) => cb(mockClient)),
+    // Default: "no other tenant has this verified" — keeps pre-existing
+    // addDomain tests green without extra wiring. Tests that exercise the
+    // cross-tenant-claim path override with `.mockResolvedValueOnce({id: …})`.
+    systemQueryOne: vi.fn().mockResolvedValue(null),
   };
   const mockVerification: MockVerification = {
     generateToken: vi.fn().mockReturnValue('b'.repeat(64)),
@@ -218,6 +226,69 @@ describe('DomainsService.addDomain', () => {
     // Must NOT be mapped to ConflictException — surfacing a mis-named
     // constraint as "already added" would hide a real schema bug.
     await expect(service.addDomain(42, 'firma.de')).rejects.not.toBeInstanceOf(ConflictException);
+  });
+
+  // ========================================================================
+  // Cross-tenant pre-check (post-v1 "Option A" hardening, 2026-04-20).
+  //
+  // Before this change, Tenant B could add a pending row for a domain that
+  // Tenant A had already verified — the row sat in Tenant B's UI unable to
+  // ever verify (B doesn't control A's DNS). The pre-check uses systemQuery
+  // (BYPASSRLS per ADR-019 §6b) to surface the conflict at add-time instead
+  // of at verify-time.
+  // ========================================================================
+
+  it('rejects with 409 DOMAIN_ALREADY_CLAIMED when another tenant has the domain verified', async () => {
+    const { service, mockDb, mockClient, mockVerification } = setup();
+    // Simulate the cross-tenant verified row surfaced via systemQuery.
+    // Real existing-tenant id is irrelevant — the pre-check only cares that
+    // ANY row exists; the `id` payload is opaque to the caller.
+    mockDb.systemQueryOne.mockResolvedValueOnce({ id: 'other-tenant-row-id' });
+
+    const err = await service.addDomain(42, 'firma.de').catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(ConflictException);
+    expect(err).toMatchObject({ response: { code: 'DOMAIN_ALREADY_CLAIMED' } });
+    // Fail-fast before spinning a token or touching the transaction — saves
+    // crypto work AND avoids emitting a stale INSERT on rollback.
+    expect(mockVerification.generateToken).not.toHaveBeenCalled();
+    expect(mockClient.query).not.toHaveBeenCalled();
+  });
+
+  it('allows the add when another tenant only has the domain in pending (no squatting-DoS)', async () => {
+    // Pending-pending coexistence is explicitly allowed — only verified
+    // cross-tenant rows block. Rationale: "pending = I want to try", verify
+    // is the real claim. The pre-check SQL (`WHERE status='verified'`)
+    // returns null even if a cross-tenant pending exists.
+    const { service, mockClient } = setup();
+    mockClient.query.mockResolvedValueOnce({
+      rows: [makeRow({ tenant_id: 42, domain: 'firma.de' })],
+    });
+
+    const result = await service.addDomain(42, 'firma.de');
+    expect(result.status).toBe('pending');
+    // INSERT ran (1 query), and no 409 was surfaced upstream.
+    expect(mockClient.query).toHaveBeenCalledTimes(1);
+  });
+
+  it('queries the system pool with correct params (cross-tenant scope, normalized domain)', async () => {
+    // Lock the pre-check's SQL shape: status='verified', is_active=1,
+    // tenant_id <> $N. A regression that accidentally drops the <>-predicate
+    // would collapse the error space (DOMAIN_ALREADY_ADDED would mask as
+    // DOMAIN_ALREADY_CLAIMED for same-tenant re-adds) and breaks the
+    // existing "soft-delete + re-add round-trip" contract.
+    const { service, mockDb, mockClient } = setup();
+    mockClient.query.mockResolvedValueOnce({ rows: [makeRow()] });
+
+    await service.addDomain(42, '  FIRMA.de ');
+
+    expect(mockDb.systemQueryOne).toHaveBeenCalledTimes(1);
+    const [sql, params] = mockDb.systemQueryOne.mock.calls[0] as [string, unknown[]];
+    expect(sql).toContain("status = 'verified'");
+    expect(sql).toContain('is_active = 1');
+    expect(sql).toContain('tenant_id <> $2');
+    // Normalization happens before the pre-check so the SELECT sees the
+    // same lowercase value the INSERT would persist.
+    expect(params).toEqual(['firma.de', 42]);
   });
 });
 

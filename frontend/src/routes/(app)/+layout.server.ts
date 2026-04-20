@@ -148,6 +148,24 @@ async function parseThemeSetting(response: Response | null): Promise<'dark' | 'l
   return null;
 }
 
+/**
+ * Parse `allow_user_password_change` policy from the security-settings API.
+ *
+ * Fallback on error = `false` (locked). Rationale: a transient 5xx should not
+ * suddenly expose the password-change UI to users whose Root admin locked it.
+ * "Fail closed" matches the DB-side default. See ADR-045 Layer-1 gate and
+ * user-request 2026-04-20.
+ */
+async function parseAllowUserPasswordChange(response: Response | null): Promise<boolean> {
+  if (response?.ok !== true) return false;
+  try {
+    const json = (await response.json()) as ApiResponse<{ allowed: boolean }>;
+    return json.data?.allowed === true;
+  } catch {
+    return false;
+  }
+}
+
 /** Addon data from /addons/my-addons endpoint */
 interface AddonWithTenantInfo {
   code: string;
@@ -289,6 +307,11 @@ const UNAUTHENTICATED_RESPONSE = {
   // for unauthenticated paths: the banner only renders when `false` AND user
   // is root/admin, neither condition is met here (see +layout.svelte §5.3).
   tenantVerified: true,
+  // Drives the password-change UI in admin/employee-profile.
+  // Default `false` on unauthenticated paths — the login page never shows
+  // profile forms anyway, so the exact value is irrelevant; `false` matches
+  // the server-side default and the fail-closed semantics of the parser.
+  allowUserPasswordChange: false,
 } as const;
 
 /** Build authenticated response from user data, counts, theme, addons, and labels */
@@ -299,6 +322,7 @@ async function buildAuthenticatedResponse(
   addonsResponse: Response | null,
   labelsResponse: Response | null,
   scopeResponse: Response | null,
+  passwordPolicyResponse: Response | null,
   activeRole: string | null,
   rootCount: number,
   tenantVerified: boolean,
@@ -315,6 +339,10 @@ async function buildAuthenticatedResponse(
     activeRole,
     rootCount,
     tenantVerified,
+    // Tenant-wide policy: when `false`, admin/employee-profile hide the
+    // password-change card. Root bypasses the gate in the backend + UI.
+    // See ADR-045 + user-request 2026-04-20.
+    allowUserPasswordChange: await parseAllowUserPasswordChange(passwordPolicyResponse),
   };
 }
 
@@ -328,21 +356,34 @@ async function fetchCountsThemeAddonsAndLabels(
   addonsResponse: Response | null;
   labelsResponse: Response | null;
   scopeResponse: Response | null;
+  passwordPolicyResponse: Response | null;
 }> {
-  const [countsResponse, themeResponse, addonsResponse, labelsResponse, scopeResponse] =
-    await Promise.all([
-      fetchFn(`${API_BASE}/dashboard/counts`, { headers }).catch(() => null),
-      fetchFn(`${API_BASE}/settings/user/theme`, { headers }).catch(() => null),
-      fetchFn(`${API_BASE}/addons/my-addons`, { headers }).catch(() => null),
-      fetchFn(`${API_BASE}/organigram/hierarchy-labels`, { headers }).catch(() => null),
-      fetchFn(`${API_BASE}/users/me/org-scope`, { headers }).catch(() => null),
-    ]);
+  const [
+    countsResponse,
+    themeResponse,
+    addonsResponse,
+    labelsResponse,
+    scopeResponse,
+    passwordPolicyResponse,
+  ] = await Promise.all([
+    fetchFn(`${API_BASE}/dashboard/counts`, { headers }).catch(() => null),
+    fetchFn(`${API_BASE}/settings/user/theme`, { headers }).catch(() => null),
+    fetchFn(`${API_BASE}/addons/my-addons`, { headers }).catch(() => null),
+    fetchFn(`${API_BASE}/organigram/hierarchy-labels`, { headers }).catch(() => null),
+    fetchFn(`${API_BASE}/users/me/org-scope`, { headers }).catch(() => null),
+    // Security policy — fetched in the same parallel batch so it does not
+    // add a waterfall step on every navigation.
+    fetchFn(`${API_BASE}/security-settings/user-password-change-policy`, { headers }).catch(
+      () => null,
+    ),
+  ]);
   return {
     countsResponse,
     themeResponse,
     addonsResponse,
     labelsResponse,
     scopeResponse,
+    passwordPolicyResponse,
   };
 }
 
@@ -357,6 +398,7 @@ async function fetchUserCountsThemeAddonsAndLabels(
   addonsResponse: Response | null;
   labelsResponse: Response | null;
   scopeResponse: Response | null;
+  passwordPolicyResponse: Response | null;
 }> {
   const [
     userResponse,
@@ -365,6 +407,7 @@ async function fetchUserCountsThemeAddonsAndLabels(
     addonsResponse,
     labelsResponse,
     scopeResponse,
+    passwordPolicyResponse,
   ] = await Promise.all([
     fetchFn(`${API_BASE}/users/me`, { headers }),
     fetchFn(`${API_BASE}/dashboard/counts`, { headers }).catch(() => null),
@@ -372,6 +415,9 @@ async function fetchUserCountsThemeAddonsAndLabels(
     fetchFn(`${API_BASE}/addons/my-addons`, { headers }).catch(() => null),
     fetchFn(`${API_BASE}/organigram/hierarchy-labels`, { headers }).catch(() => null),
     fetchFn(`${API_BASE}/users/me/org-scope`, { headers }).catch(() => null),
+    fetchFn(`${API_BASE}/security-settings/user-password-change-policy`, { headers }).catch(
+      () => null,
+    ),
   ]);
   return {
     userResponse,
@@ -380,6 +426,7 @@ async function fetchUserCountsThemeAddonsAndLabels(
     addonsResponse,
     labelsResponse,
     scopeResponse,
+    passwordPolicyResponse,
   };
 }
 
@@ -425,7 +472,14 @@ export const load: LayoutServerLoad = async ({ cookies, fetch, url, locals }) =>
     // rootCount is root-only, tenantVerified is root+admin per §0.2.5 #16).
     const fetchStart = performance.now();
     const [
-      { countsResponse, themeResponse, addonsResponse, labelsResponse, scopeResponse },
+      {
+        countsResponse,
+        themeResponse,
+        addonsResponse,
+        labelsResponse,
+        scopeResponse,
+        passwordPolicyResponse,
+      },
       rootCount,
       tenantVerified,
     ] = await Promise.all([
@@ -448,6 +502,7 @@ export const load: LayoutServerLoad = async ({ cookies, fetch, url, locals }) =>
       addonsResponse,
       labelsResponse,
       scopeResponse,
+      passwordPolicyResponse,
       activeRole,
       rootCount,
       tenantVerified,
@@ -476,6 +531,7 @@ async function loadUserWithFetch(
     addonsResponse,
     labelsResponse,
     scopeResponse,
+    passwordPolicyResponse,
   } = await fetchUserCountsThemeAddonsAndLabels(fetchFn, headers);
   const fetchTime = Math.round(performance.now() - fetchStart);
 
@@ -513,6 +569,7 @@ async function loadUserWithFetch(
     addonsResponse,
     labelsResponse,
     scopeResponse,
+    passwordPolicyResponse,
     activeRole,
     rootCount,
     tenantVerified,

@@ -78,7 +78,7 @@ Alle externen CSS-Dateien (`frontend/src/styles/*.css`) in Svelte `<style>` Blö
 | 3   | manage-teams.css     | 25     | manage-teams/+page.svelte     |
 | 4   | manage-admins.css    | 27     | manage-admins/+page.svelte    |
 | 5   | root-dashboard.css   | 32     | root-dashboard/+page.svelte   |
-| 6   | account-settings.css | 36     | account-settings/+page.svelte |
+| 6   | company-settings.css | 36     | company-settings/+page.svelte |
 | 7   | rate-limit.css       | 48     | rate-limit/+page.svelte       |
 
 **DoD Session 1:**

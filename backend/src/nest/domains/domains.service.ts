@@ -28,6 +28,17 @@
  *     UNIQUE INDEX so race-concurrent verify-flips can't both win). Mapped to
  *     `ConflictException({ code: 'DOMAIN_ALREADY_CLAIMED' })`.
  *
+ * Cross-tenant pre-check (2026-04-20 post-v1 hardening, "Option A"):
+ * `addDomain()` runs a `systemQuery` (BYPASSRLS — tenantTransaction's RLS
+ * context would hide the conflicting row) BEFORE the INSERT, checking whether
+ * ANY other tenant has this domain in `status='verified'` + `is_active=1`.
+ * If so, surface `DOMAIN_ALREADY_CLAIMED` immediately instead of letting the
+ * user add a pending row that can never verify (DNS ownership is elsewhere).
+ * The `idx_tenant_domains_domain_verified` race-safety-net inside
+ * `flipToVerified()` STAYS — it covers the narrow window between pre-check
+ * and another tenant's verify landing during this INSERT. Pending-pending
+ * coexistence across tenants remains allowed (no squatting-DoS vector).
+ *
  * @see docs/FEAT_TENANT_DOMAIN_VERIFICATION_MASTERPLAN.md §2.5
  * @see docs/FEAT_TENANT_DOMAIN_VERIFICATION_MASTERPLAN.md §0.2.5 #4 (freemail at add),
  *      §0.2.5 #10 (verificationInstructions only on add-response).
@@ -93,6 +104,15 @@ export class DomainsService {
       // INVALID_FORMAT so the switch is total without an unreachable default.
       this.throwForValidationFailure(validation.failure ?? 'INVALID_FORMAT');
     }
+    // Cross-tenant pre-check (post-v1 "Option A" hardening, 2026-04-20): block
+    // the INSERT if ANY other tenant already has this domain verified.
+    // Without this, Tenant B could add a pending row for Tenant A's verified
+    // domain — the row can never verify (Tenant B doesn't control the DNS)
+    // but sits around in the UI being confusing. The existing
+    // `idx_tenant_domains_domain_verified` partial UNIQUE INDEX (§ADR-049
+    // "Database Schema") stays as the race-safety-net at verify-time — this
+    // pre-check is a UX-layer earlier-surfacing, not a replacement.
+    await this.assertNoCrossTenantVerifiedClaim(tenantId, normalized);
     const token = this.domainVerification.generateToken();
 
     const row = await this.db.tenantTransaction(async (client: PoolClient) => {
@@ -192,6 +212,40 @@ export class DomainsService {
   }
 
   // ------------------------------ privates ------------------------------
+
+  /**
+   * Reject `addDomain()` with 409 DOMAIN_ALREADY_CLAIMED when another tenant
+   * already has this domain in `status='verified' AND is_active=1`.
+   *
+   * MUST run via `systemQuery` (BYPASSRLS) — `tenantTransaction` would apply
+   * the per-tenant RLS policy and hide the conflicting row, defeating the
+   * whole point (ADR-019 §6b: cross-tenant reads require the system pool).
+   *
+   * Own tenant is excluded (`tenant_id <> $2`) so the existing per-tenant
+   * `tenant_domains_tenant_domain_unique` still owns the "Diese Domain ist
+   * bereits für Deinen Tenant angelegt" (DOMAIN_ALREADY_ADDED) error path;
+   * this helper purely covers the cross-tenant case.
+   */
+  private async assertNoCrossTenantVerifiedClaim(
+    tenantId: number,
+    normalizedDomain: string,
+  ): Promise<void> {
+    const existing = await this.db.systemQueryOne<{ id: string }>(
+      `SELECT id FROM tenant_domains
+       WHERE domain = $1
+         AND status = 'verified'
+         AND is_active = ${IS_ACTIVE.ACTIVE}
+         AND tenant_id <> $2
+       LIMIT 1`,
+      [normalizedDomain, tenantId],
+    );
+    if (existing !== null) {
+      throw new ConflictException({
+        code: 'DOMAIN_ALREADY_CLAIMED',
+        message: 'Diese Domain ist bereits bei einem anderen Assixx-Tenant verifiziert.',
+      });
+    }
+  }
 
   private async findOneActive(
     client: PoolClient,

@@ -75,7 +75,7 @@ Browser Request → hooks.server.ts → (app)/+layout.server.ts → +page.server
 - `/chat` - OK (alle Rollen)
 - `/documents-explorer` - OK (alle Rollen)
 - `/kvp` - OK (alle Rollen)
-- `/account-settings` - OK (alle Rollen)
+- `/company-settings` - OK (alle Rollen)
 
 ---
 

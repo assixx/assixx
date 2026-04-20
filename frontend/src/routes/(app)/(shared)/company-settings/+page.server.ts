@@ -1,6 +1,6 @@
 /**
- * Account Settings - Server-Side Data Loading
- * @module account-settings/+page.server
+ * Company Settings - Server-Side Data Loading
+ * @module company-settings/+page.server
  *
  * SSR: Loads deletion status for the current tenant.
  */
@@ -13,7 +13,7 @@ import { createLogger } from '$lib/utils/logger';
 import type { PageServerLoad } from './$types';
 import type { DeletionStatusData, ShiftTimeData } from './_lib/types';
 
-const log = createLogger('AccountSettings');
+const log = createLogger('CompanySettings');
 
 /**
  * Check if data represents an empty nested response.
@@ -27,7 +27,7 @@ function isEmptyNestedResponse(data: unknown): boolean {
 }
 
 /**
- * Custom apiFetch for account-settings: silently returns null on 404
+ * Custom apiFetch for company-settings: silently returns null on 404
  * and filters out empty nested responses.
  */
 async function apiFetch<T>(
@@ -69,7 +69,7 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
     redirect(302, '/login');
   }
 
-  // Guard: only root can access account settings
+  // Guard: only root can access company settings
   const parentData = await parent();
   if (!parentData.user) {
     redirect(302, '/login');

@@ -1,7 +1,7 @@
 <script lang="ts">
   /**
-   * Account Settings - Page Component
-   * @module account-settings/+page
+   * Company Settings - Page Component
+   * @module company-settings/+page
    *
    * Level 3 SSR: $derived for SSR data, invalidateAll() after mutations.
    * Sections: Shift Times Configuration + Danger Zone (Tenant Deletion)
@@ -11,15 +11,22 @@
 
   import { createLogger } from '$lib/utils/logger';
 
-  const log = createLogger('AccountSettingsPage');
+  const log = createLogger('CompanySettingsPage');
 
   // Module imports
-  import { getRootUserCount, deleteTenant, saveShiftTimes, resetShiftTimes } from './_lib/api';
+  import {
+    getRootUserCount,
+    deleteTenant,
+    saveShiftTimes,
+    resetShiftTimes,
+    saveUserPasswordChangePolicy,
+  } from './_lib/api';
   import {
     DELETE_CONFIRMATION_TEXT,
     MIN_REASON_LENGTH,
     MIN_ROOT_USERS,
     MESSAGES,
+    SECURITY_MESSAGES,
     SHIFT_MESSAGES,
     SHIFT_KEY_INFO,
   } from './_lib/constants';
@@ -39,6 +46,16 @@
   const hasPendingDeletion = $derived(pendingDeletion !== null);
   const shiftPlanningEnabled = $derived(data.shiftPlanningEnabled);
   const ssrShiftTimes = $derived(data.shiftTimes);
+
+  // Security: tenant-wide policy comes via layout data inheritance
+  // (+layout.server.ts fetches it in parallel on every navigation).
+  //
+  // Svelte 5 writable $derived: `bind:checked` can mutate this local,
+  // and the mutation persists until `data.allowUserPasswordChange`
+  // changes (on `invalidateAll()` after save, or on navigation).
+  // Lets the checkbox flip optimistically and auto-sync with SSR.
+  let allowUserPasswordChange = $derived(data.allowUserPasswordChange);
+  let securitySaving = $state(false);
 
   // =============================================================================
   // UI STATE - Client-side only
@@ -131,6 +148,45 @@
     }
     // eslint-disable-next-line require-atomic-updates -- Unconditional reset after sync guard
     shiftSaving = false;
+  }
+
+  // =============================================================================
+  // SECURITY: user-password-change policy handler
+  // =============================================================================
+
+  /**
+   * Toggle handler for the "allow user password change" policy.
+   *
+   * Optimistic pattern: flip the local checkbox immediately (bind:checked
+   * already did that), then send to backend. On failure, revert to the
+   * SSR value so the UI cannot drift from the persisted state.
+   */
+  async function handleAllowUserPasswordChangeToggle(): Promise<void> {
+    if (securitySaving) return;
+    securitySaving = true;
+    // Snapshot the desired value BEFORE await — `allowUserPasswordChange`
+    // is a writable $derived, so reading it after await could return an
+    // updated SSR value if another invalidation landed meanwhile.
+    const desired = allowUserPasswordChange;
+    try {
+      await saveUserPasswordChangePolicy(desired);
+      showToast(SECURITY_MESSAGES.saved, 'success');
+      // Refresh layout data so the new policy propagates to every
+      // component that reads `data.allowUserPasswordChange` (profile
+      // tabs in other windows, etc.). Writable $derived re-syncs with
+      // the fresh SSR value automatically.
+      await invalidateAll();
+    } catch (err: unknown) {
+      log.error({ err }, 'Error saving user-password-change policy');
+      // Explicit revert: ESLint's race-condition check does not know
+      // that `securitySaving` guards re-entry, so assigning after await
+      // looks racy. Safe here because the guard prevents overlap.
+      // eslint-disable-next-line require-atomic-updates -- guarded by securitySaving
+      allowUserPasswordChange = data.allowUserPasswordChange;
+      showToast(SECURITY_MESSAGES.saveError, 'error');
+    }
+    // eslint-disable-next-line require-atomic-updates -- Unconditional reset after sync guard
+    securitySaving = false;
   }
 
   async function handleResetShiftTimes(): Promise<void> {
@@ -338,7 +394,54 @@
   </div>
 
   <!-- ================================================================= -->
-  <!-- SECTION 3: Danger Zone (Tenant Deletion)                          -->
+  <!-- SECTION 3: Security Policies (Root only — page is already          -->
+  <!-- guarded by +page.server.ts, but we keep the explicit role check    -->
+  <!-- on the checkbox as belt-and-suspenders.)                           -->
+  <!-- ================================================================= -->
+  <div class="card mb-8">
+    <div class="card__header">
+      <h2 class="card__title">
+        <i class="fas fa-shield-alt mr-2"></i>
+        {SECURITY_MESSAGES.title}
+      </h2>
+      <p class="mt-2 text-(--color-text-secondary)">
+        {SECURITY_MESSAGES.intro}
+      </p>
+    </div>
+    <div class="card__body">
+      <!-- Allow user password change toggle -->
+      <label
+        class="flex cursor-pointer items-start gap-3"
+        for="allow-user-password-change"
+      >
+        <input
+          id="allow-user-password-change"
+          type="checkbox"
+          class="mt-1"
+          bind:checked={allowUserPasswordChange}
+          onchange={handleAllowUserPasswordChangeToggle}
+          disabled={securitySaving}
+        />
+        <span class="flex-1">
+          <span class="font-medium text-(--color-text-primary)">
+            {SECURITY_MESSAGES.allowPwChangeLabel}
+          </span>
+          <span class="mt-1 block text-sm text-(--color-text-secondary)">
+            {SECURITY_MESSAGES.allowPwChangeHint}
+          </span>
+        </span>
+        {#if securitySaving}
+          <span
+            class="spinner-ring spinner-ring--sm"
+            aria-label="Speichere"
+          ></span>
+        {/if}
+      </label>
+    </div>
+  </div>
+
+  <!-- ================================================================= -->
+  <!-- SECTION 4: Danger Zone (Tenant Deletion)                          -->
   <!-- ================================================================= -->
   <div class="card card--danger-border">
     <div class="card__header">

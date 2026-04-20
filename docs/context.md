@@ -141,37 +141,37 @@ backend/src/nest/common/
 
 ### App Routes (authenticated)
 
-| Route                   | Purpose           | Components               |
-| ----------------------- | ----------------- | ------------------------ |
-| /admin-dashboard        | Admin Home        | Stats, Quick Actions     |
-| /employee-dashboard     | Employee Home     | Tasks, Notifications     |
-| /root-dashboard         | Root Home         | Tenant Overview          |
-| /admin-profile          | Admin Profile     | Edit Profile             |
-| /employee-profile       | Employee Profile  | Edit Profile             |
-| /root-profile           | Root Profile      | Edit Profile             |
-| /account-settings       | Settings          | Password, Preferences    |
-| /manage-employees       | Employee CRUD     | Table, Form Modal        |
-| /manage-admins          | Admin CRUD        | Table, Form Modal        |
-| /manage-teams           | Team CRUD         | Table, Form Modal        |
-| /manage-departments     | Dept CRUD         | Table, Form Modal        |
-| /manage-areas           | Area CRUD         | Table, Form Modal        |
-| /manage-assets          | Machine CRUD      | Table, Form Modal        |
-| /manage-root            | Root User CRUD    | Table, Form Modal        |
-| /blackboard             | Announcements     | List, Entry Modal        |
-| /blackboard/[uuid]      | Entry Detail      | Comments, Reactions      |
-| /calendar               | Calendar          | FullCalendar, Events     |
-| /chat                   | Messaging         | Conversations, WebSocket |
-| /documents-explorer     | File Manager      | Upload, Preview          |
-| /kvp                    | KVP List          | Suggestions              |
-| /kvp-detail             | KVP Detail        | Comments, Status         |
-| /shifts                 | Shift Planning    | Grid, Drag-Drop          |
-| /survey-admin           | Survey Management | Create, Edit             |
-| /survey-employee        | Answer Surveys    | Survey Form              |
-| /survey-results         | Survey Results    | Charts                   |
-| /features               | Feature Toggle    | Enable/Disable           |
-| /logs                   | Audit Logs        | Filter, Search           |
-| /storage-upgrade        | Storage Plans     | Upgrade Options          |
-| /tenant-deletion-status | Deletion Status   | Progress                 |
+| Route                   | Purpose           | Components                 |
+| ----------------------- | ----------------- | -------------------------- |
+| /admin-dashboard        | Admin Home        | Stats, Quick Actions       |
+| /employee-dashboard     | Employee Home     | Tasks, Notifications       |
+| /root-dashboard         | Root Home         | Tenant Overview            |
+| /admin-profile          | Admin Profile     | Edit Profile               |
+| /employee-profile       | Employee Profile  | Edit Profile               |
+| /root-profile           | Root Profile      | Edit Profile               |
+| /company-settings       | Company Settings  | Shift Times, Tenant Delete |
+| /manage-employees       | Employee CRUD     | Table, Form Modal          |
+| /manage-admins          | Admin CRUD        | Table, Form Modal          |
+| /manage-teams           | Team CRUD         | Table, Form Modal          |
+| /manage-departments     | Dept CRUD         | Table, Form Modal          |
+| /manage-areas           | Area CRUD         | Table, Form Modal          |
+| /manage-assets          | Machine CRUD      | Table, Form Modal          |
+| /manage-root            | Root User CRUD    | Table, Form Modal          |
+| /blackboard             | Announcements     | List, Entry Modal          |
+| /blackboard/[uuid]      | Entry Detail      | Comments, Reactions        |
+| /calendar               | Calendar          | FullCalendar, Events       |
+| /chat                   | Messaging         | Conversations, WebSocket   |
+| /documents-explorer     | File Manager      | Upload, Preview            |
+| /kvp                    | KVP List          | Suggestions                |
+| /kvp-detail             | KVP Detail        | Comments, Status           |
+| /shifts                 | Shift Planning    | Grid, Drag-Drop            |
+| /survey-admin           | Survey Management | Create, Edit               |
+| /survey-employee        | Answer Surveys    | Survey Form                |
+| /survey-results         | Survey Results    | Charts                     |
+| /features               | Feature Toggle    | Enable/Disable             |
+| /logs                   | Audit Logs        | Filter, Search             |
+| /storage-upgrade        | Storage Plans     | Upgrade Options            |
+| /tenant-deletion-status | Deletion Status   | Progress                   |
 
 ### Page Module Structure (\_lib/)
 

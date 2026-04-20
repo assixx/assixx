@@ -14,8 +14,11 @@
  * - SHA-256 token hashing (never store raw tokens)
  */
 import {
+  BadRequestException,
   ConflictException,
   ForbiddenException,
+  HttpException,
+  HttpStatus,
   Injectable,
   InternalServerErrorException,
   Logger,
@@ -24,6 +27,7 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import bcryptjs from 'bcryptjs';
+import { ClsService } from 'nestjs-cls';
 import crypto from 'node:crypto';
 import { v7 as uuidv7 } from 'uuid';
 
@@ -39,7 +43,24 @@ import type {
   RefreshResponse,
   RegisterDto,
   ResetPasswordDto,
+  SendPasswordResetLinkResponse,
 } from './dto/index.js';
+
+/**
+ * Internal return shape of `forgotPassword()` — consumed by the controller
+ * to decide the additive HTTP body (ADR-050 §2.1 / §2.2, Plan v0.4.4).
+ *
+ * - `blocked = true`  → user exists, is active, but role !== 'root'. Blocked-mail
+ *   has been sent; controller adds `blocked: true, reason: 'ROLE_NOT_ALLOWED'`
+ *   to the JSON body.
+ * - `blocked = false, delivered = false` → silent-drop (non-existent or
+ *   inactive user). No mail, no token. Preserves R1 enumeration contract.
+ * - `blocked = false, delivered = true`  → root happy-path. Reset mail sent.
+ */
+export interface ForgotPasswordResult {
+  readonly blocked: boolean;
+  readonly delivered: boolean;
+}
 
 /**
  * Token configuration
@@ -146,6 +167,11 @@ export class AuthService {
     // path reaches it — sole caller `register(dto, authUser: NestAuthUser)`
     // enforces authenticated context via the type signature).
     private readonly tenantVerification: TenantVerificationService,
+    // ADR-050: CLS supplies IP + User-Agent for the blocked-reset notification
+    // meta-block and for `logger.warn()` context on both gates. Populated in
+    // `app.module.ts` ClsModule.forRoot setup; trusts `trustProxy: true` at
+    // main.ts:284 so `req.ip` is the client (not Nginx egress).
+    private readonly cls: ClsService,
   ) {}
 
   // ============================================
@@ -368,15 +394,66 @@ export class AuthService {
 
   /**
    * Request password reset — generates token, sends email.
-   * SECURITY: Always returns generic message to prevent email enumeration.
+   *
+   * Two-gate defense-in-depth (ADR-050):
+   * 1. SILENT DROP (preserved — R1 enumeration contract): non-existent OR
+   *    inactive user → `{ blocked: false, delivered: false }`, no side effects.
+   * 2. ROLE GATE (new — §2.1): existing active user whose role !== 'root' is
+   *    denied. A blocked-notification mail is sent (paper trail for the
+   *    account holder), `logger.warn` records context; NO reset token is
+   *    generated. `has_full_access` + Lead-positions are intentionally NOT
+   *    honored here (§0.2.5 #1 #2 — data-visibility !== auth-self-service).
+   * 3. ROOT HAPPY PATH (unchanged): existing code — invalidate old tokens,
+   *    issue new token, send reset mail.
+   *
+   * The complementary redemption gate lives in `resetPassword()` (§2.6) and
+   * burns the token if an admin/employee token ever reaches redemption (belt
+   * AND suspenders).
+   *
+   * @see docs/FEAT_FORGOT_PASSWORD_ROLE_GATE_MASTERPLAN.md §2.1
+   * @see docs/infrastructure/adr/ADR-050-forgot-password-role-gate.md (pending Phase 6)
    */
-  async forgotPassword(dto: ForgotPasswordDto): Promise<void> {
+  async forgotPassword(dto: ForgotPasswordDto): Promise<ForgotPasswordResult> {
     const user = await this.findUserByEmail(dto.email);
 
-    // Silent return if user not found — never reveal if email exists
+    // Gate 1 — Silent drop: covers non-existent AND is_active ∈ {0, 3, 4}.
+    // NEVER reveal if the email exists (R1 no-leak contract; §0.2.5 #5).
     if (user?.is_active !== 1) {
-      return;
+      return { blocked: false, delivered: false };
     }
+
+    // Gate 2 — Role check: secure-default. Any value NOT the literal 'root'
+    // is blocked (R3). has_full_access + Lead-positions intentionally ignored
+    // for auth self-service (§0.2.5 #1 #2).
+    if (user.role !== 'root') {
+      // Typed as `string | undefined` so the `??` fall-back is type-honest:
+      // CLS could be empty at runtime if the middleware setup ever degrades.
+      const ip = this.cls.get<string | undefined>('ip') ?? 'unknown';
+      const userAgent = this.cls.get<string | undefined>('userAgent') ?? 'unknown';
+
+      // Option A+ (Phase 0 decision): the auto-interceptor writes the
+      // audit_trail row (via `isAuthEndpoint()` extension in audit.helpers.ts);
+      // block-semantic context (user_id, role, tenant) lives in this warn-log
+      // so Grafana/Loki can correlate.
+      this.logger.warn(
+        `Password-reset BLOCKED for user ${user.id} (role=${user.role}, tenant=${user.tenant_id}) from ${ip}`,
+      );
+
+      await this.mailer.sendPasswordResetBlocked(
+        {
+          email: user.email,
+          firstName: user.first_name,
+          lastName: user.last_name,
+        },
+        { ip, userAgent, timestamp: new Date() },
+      );
+
+      // Intentionally do NOT burn any pre-existing tokens here — the
+      // redemption gate in resetPassword() handles that. Defense-in-depth.
+      return { blocked: true, delivered: true };
+    }
+
+    // Root happy path — unchanged.
 
     // Invalidate any existing unused tokens for this user
     await this.databaseService.systemQuery(
@@ -408,21 +485,42 @@ export class AuthService {
     );
 
     this.logger.log(`Password reset requested for user ${user.id}`);
+    return { blocked: false, delivered: true };
   }
 
   /**
    * Reset password using token.
-   * Validates token, updates password, invalidates token.
+   *
+   * Redemption gate (ADR-050 §2.6 — the "suspenders" to the request-gate's
+   * "belt"): even if an admin/employee holds a valid token (pre-existing,
+   * leaked, or pre-plan-era), they CANNOT set a new password. The token is
+   * burned on block so a retry with the same token is impossible (R9).
+   *
+   * Gate order:
+   * 1. Token validity (existing behaviour — unchanged): 401 if not found /
+   *    used / expired.
+   * 2. NEW — target lifecycle: if the user was deleted or deactivated after
+   *    token issuance, burn the token and 401 (generic, no role leak).
+   * 3. NEW — role gate: if target role !== 'root', burn the token + 403
+   *    `ROLE_NOT_ALLOWED`. Explicit `ForbiddenException` (not 401) — token
+   *    was valid, this is an AUTHORIZATION failure (§0.2.5 #4).
+   * 4. Root happy path: hash new password, invalidate token, revoke
+   *    refresh-tokens (existing behaviour — unchanged below).
+   *
+   * @see docs/FEAT_FORGOT_PASSWORD_ROLE_GATE_MASTERPLAN.md §2.6
    */
   async resetPassword(dto: ResetPasswordDto): Promise<void> {
     const tokenHash = this.hashToken(dto.token);
 
-    // Find valid, unused, non-expired token
+    // Token-row lookup now also carries `initiated_by_user_id` (§2.8 origin-
+    // check). NULL = self-service token (§2.6 role-gate applies). NOT NULL =
+    // admin-initiated token (initiator-lifecycle check applies instead).
     const rows = await this.databaseService.systemQuery<{
       id: number;
       user_id: number;
+      initiated_by_user_id: number | null;
     }>(
-      `SELECT id, user_id FROM password_reset_tokens
+      `SELECT id, user_id, initiated_by_user_id FROM password_reset_tokens
        WHERE token = $1 AND used = false AND expires_at > NOW()`,
       [tokenHash],
     );
@@ -433,6 +531,27 @@ export class AuthService {
         'Ungültiger oder abgelaufener Link. Bitte fordern Sie einen neuen an.',
       );
     }
+
+    // Redemption gate — re-load the target and check lifecycle before doing
+    // anything expensive (bcrypt, writes). Applies to BOTH self-service and
+    // admin-initiated tokens: a deleted/deactivated target is always a 401
+    // + burn, regardless of how the token was issued.
+    const targetUser = await this.findUserById(tokenRow.user_id);
+    // Optional chain collapses both "deleted" (`null`) and "inactive"
+    // (`is_active !== 1`) into one branch — same semantics, one generic 401,
+    // no leak of which condition failed (keeps is_active private).
+    if (targetUser?.is_active !== 1) {
+      await this.burnToken(tokenRow.id);
+      throw new UnauthorizedException(
+        'Ungültiger oder abgelaufener Link. Bitte fordern Sie einen neuen an.',
+      );
+    }
+
+    // §2.8 — branch on token origin. Self-service path enforces the §2.6
+    // role-gate; admin-initiated path enforces initiator-lifecycle instead.
+    await this.enforceRedemptionOriginGate(tokenRow, targetUser);
+
+    // Happy path — hash new password, UPDATE users, mark token used.
 
     // Hash new password
     const hashedPassword = await bcryptjs.hash(dto.password, 12);
@@ -449,12 +568,208 @@ export class AuthService {
     );
 
     // Revoke all refresh tokens for security (force re-login on all devices)
-    const user = await this.findUserById(tokenRow.user_id);
-    if (user !== null) {
-      await this.revokeAllUserTokensByUserId(tokenRow.user_id);
-    }
+    await this.revokeAllUserTokensByUserId(tokenRow.user_id);
 
     this.logger.log(`Password reset completed for user ${tokenRow.user_id}`);
+  }
+
+  /**
+   * Burn a password-reset token (mark `used = true`) by row id.
+   *
+   * Used by the §2.6 redemption gate to invalidate tokens that reach
+   * redemption for a non-root target (or a target that was deleted/
+   * deactivated after issuance). Single-use / irreversible by design —
+   * attacker cannot retry with the same raw token.
+   *
+   * @see docs/FEAT_FORGOT_PASSWORD_ROLE_GATE_MASTERPLAN.md §2.6 + §0.2.5 #8
+   */
+  private async burnToken(tokenRowId: number): Promise<void> {
+    await this.databaseService.systemQuery(
+      `UPDATE password_reset_tokens SET used = true WHERE id = $1`,
+      [tokenRowId],
+    );
+  }
+
+  /**
+   * Enforce the redemption-gate based on token origin (ADR-050 §2.6 + §2.8).
+   *
+   * - `initiated_by_user_id` NULL → self-service token: require target role = 'root',
+   *   otherwise burn + 403 `ROLE_NOT_ALLOWED`.
+   * - `initiated_by_user_id` NOT NULL → admin-initiated token: require initiator
+   *   is still an active Root in the target's tenant, otherwise burn + generic 401.
+   *
+   * On success, returns void — caller proceeds to the bcrypt + UPDATE happy path.
+   */
+  private async enforceRedemptionOriginGate(
+    tokenRow: { id: number; user_id: number; initiated_by_user_id: number | null },
+    targetUser: UserRow,
+  ): Promise<void> {
+    if (tokenRow.initiated_by_user_id !== null) {
+      // Admin-initiated path — initiator-lifecycle check.
+      const initiator = await this.findUserById(tokenRow.initiated_by_user_id);
+      const initiatorValid =
+        initiator?.is_active === 1 &&
+        initiator.role === 'root' &&
+        initiator.tenant_id === targetUser.tenant_id;
+      if (!initiatorValid) {
+        await this.burnToken(tokenRow.id);
+        this.logger.warn(
+          `Admin-initiated reset-redemption BLOCKED: initiator ` +
+            `${tokenRow.initiated_by_user_id} is no longer a valid Root ` +
+            `(or tenant drift). Target=${targetUser.id}.`,
+        );
+        // Generic 401 — do NOT leak initiator-lifecycle details to the
+        // token-holder. From their POV, the token is simply invalid.
+        throw new UnauthorizedException(
+          'Ungültiger oder abgelaufener Link. Bitte fordern Sie einen neuen an.',
+        );
+      }
+      // Initiator check passed — SKIP the §2.6 self-service role-gate.
+      // Admin-initiated tokens are issued FOR admin/employee targets by
+      // design; blocking them on role would defeat the whole feature.
+      return;
+    }
+
+    // Self-service path (§2.6): only Root can redeem their own token.
+    if (targetUser.role !== 'root') {
+      await this.burnToken(tokenRow.id);
+      this.logger.warn(
+        `Self-service password-reset REDEMPTION BLOCKED for user ${targetUser.id} ` +
+          `(role=${targetUser.role}, tenant=${targetUser.tenant_id}) — token burned.`,
+      );
+      throw new ForbiddenException(
+        'Passwort-Reset nicht erlaubt. Wende Dich an einen Root-Benutzer in Deinem Unternehmen.',
+      );
+    }
+  }
+
+  /**
+   * Issue a password-reset link on behalf of another user (Root → admin/employee).
+   *
+   * Strict Root-only capability (ADR-050 §2.7, §0.2.5 #12 + #13). Complements
+   * the self-service block: admin/employee cannot reset themselves, but Root
+   * can delegate a reset flow to them on request. Root never sees the new
+   * credential — the target clicks the emailed link and sets their own
+   * password on the existing `/reset-password` page. Separation of duties.
+   *
+   * Gates (in order):
+   * 1. Target lookup — tenant-scoped via `findUserById(id, initiator.tenantId)`
+   *    so cross-tenant attempts return 404 instead of 400.
+   * 2. Target-Rule (§0.2.5 #12): Root-on-Root REJECTED (a second Root uses
+   *    /forgot-password self-service; prevents Root-takeover chains). Only
+   *    `admin` or `employee` targets accepted. Inactive users rejected.
+   * 3. Rate-limit per (initiator, target) — 1 / 15 min via DB-check on
+   *    `MAX(created_at)` in password_reset_tokens. No Throttler tier change.
+   * 4. Issue token identical to §2.1 root-happy-path + `initiated_by_user_id`.
+   * 5. Send admin-initiated email (§2.9) naming the initiator Root.
+   *
+   * @see docs/FEAT_FORGOT_PASSWORD_ROLE_GATE_MASTERPLAN.md §2.7
+   */
+  async sendAdminInitiatedResetLink(
+    targetUserId: number,
+    initiator: NestAuthUser,
+  ): Promise<SendPasswordResetLinkResponse> {
+    // 1. Tenant-scoped target lookup — fresh DB, never trust JWT payload
+    //    for role/is_active (ADR-005). Cross-tenant → null → 404.
+    const target = await this.findUserById(targetUserId, initiator.tenantId);
+    if (target === null) {
+      throw new NotFoundException('Benutzer nicht gefunden.');
+    }
+
+    // 2. Target-Rule (§0.2.5 #12) + 3. per-pair rate-limit (§0.3 row).
+    this.assertAdminInitiatedTargetAllowed(target);
+    await this.assertAdminInitiatedRateLimit(targetUserId, initiator.id);
+
+    // 4. Issue token — identical to §2.1 root-happy-path + initiated_by_user_id.
+    const rawToken = crypto.randomBytes(32).toString('hex');
+    const tokenHash = this.hashToken(rawToken);
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 60 min, §0.2.5 #12
+    await this.databaseService.systemQuery(
+      `INSERT INTO password_reset_tokens
+         (user_id, token, expires_at, used, initiated_by_user_id)
+       VALUES ($1, $2, $3, false, $4)`,
+      [target.id, tokenHash, expiresAt, initiator.id],
+    );
+
+    // 5. Send email (§2.9) — names the initiator Root explicitly in the body.
+    await this.mailer.sendPasswordResetAdminInitiated(
+      { email: target.email, firstName: target.first_name, lastName: target.last_name },
+      this.buildInitiatorName(initiator),
+      rawToken,
+      expiresAt,
+    );
+
+    this.logger.warn(
+      `Admin-initiated password-reset-link issued by root ${initiator.id} ` +
+        `(tenant=${initiator.tenantId}) for target ${target.id} (role=${target.role}).`,
+    );
+
+    return { message: `E-Mail gesendet an ${target.email}` };
+  }
+
+  /**
+   * Target-Rule (§0.2.5 #12): admin/employee only, same tenant, active.
+   * Root-on-Root REJECTED to prevent Root-takeover chains.
+   */
+  private assertAdminInitiatedTargetAllowed(target: UserRow): void {
+    if (target.role === 'root') {
+      throw new BadRequestException({
+        message:
+          'Root-Benutzer können keinen Passwort-Reset-Link für andere Root-Benutzer anfordern. Andere Root-Benutzer nutzen /forgot-password selbst.',
+        code: 'INVALID_TARGET_ROLE',
+      });
+    }
+    if (target.role !== 'admin' && target.role !== 'employee') {
+      throw new BadRequestException({
+        message: 'Ungültige Zielrolle.',
+        code: 'INVALID_TARGET_ROLE',
+      });
+    }
+    if (target.is_active !== 1) {
+      throw new BadRequestException({
+        message: 'Zielbenutzer ist nicht aktiv.',
+        code: 'INACTIVE_TARGET',
+      });
+    }
+  }
+
+  /**
+   * Per-pair rate-limit: 1 request / 15 min per (initiator Root, target user).
+   * DB-check on `MAX(created_at)` in password_reset_tokens — accurate per-pair
+   * scoping without Redis-infra change / new Throttler tier (§0.3 row).
+   */
+  private async assertAdminInitiatedRateLimit(
+    targetUserId: number,
+    initiatorUserId: number,
+  ): Promise<void> {
+    const recent = await this.databaseService.systemQuery<{ created_at: Date }>(
+      `SELECT created_at FROM password_reset_tokens
+       WHERE user_id = $1 AND initiated_by_user_id = $2
+       ORDER BY created_at DESC LIMIT 1`,
+      [targetUserId, initiatorUserId],
+    );
+    const lastIssued = recent[0];
+    if (lastIssued !== undefined && Date.now() - lastIssued.created_at.getTime() < 15 * 60 * 1000) {
+      throw new HttpException(
+        {
+          message: 'Bitte warte 15 Minuten, bevor Du erneut einen Link anforderst.',
+          code: 'RATE_LIMIT',
+        },
+        HttpStatus.TOO_MANY_REQUESTS,
+      );
+    }
+  }
+
+  /**
+   * Build a display name for the initiator Root shown in the admin-initiated
+   * reset email template. Falls back to email if no name fields are set
+   * (BaseAuthUser.firstName/lastName are optional per @assixx/shared).
+   */
+  private buildInitiatorName(initiator: NestAuthUser): string {
+    const first = initiator.firstName ?? '';
+    const last = initiator.lastName ?? '';
+    const full = `${first} ${last}`.trim();
+    return full !== '' ? full : initiator.email;
   }
 
   // ============================================

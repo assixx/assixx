@@ -60,6 +60,7 @@ import { ReportsModule } from './reports/reports.module.js';
 import { RoleSwitchModule } from './role-switch/role-switch.module.js';
 import { RolesModule } from './roles/roles.module.js';
 import { RootModule } from './root/root.module.js';
+import { SecuritySettingsModule } from './security-settings/security-settings.module.js';
 import { SettingsModule } from './settings/settings.module.js';
 import { ShiftsModule } from './shifts/shifts.module.js';
 import { SignupModule } from './signup/signup.module.js';
@@ -136,6 +137,12 @@ import { WorkOrdersModule } from './work-orders/work-orders.module.js';
           cls.set('requestId', cls.getId());
           cls.set('requestPath', req.url);
           cls.set('requestMethod', req.method);
+          // IP + User-Agent for audit/log context of anonymous auth flows
+          // (forgot-password blocked-mail meta, redemption-gate audit).
+          // `req.ip` honors `trustProxy: true` set in main.ts:284 → client IP,
+          // not Nginx egress. ADR-050 §2.1/§2.6; Plan v0.4.4 §0.5.
+          cls.set('ip', req.ip);
+          cls.set('userAgent', req.headers['user-agent'] ?? 'unknown');
         },
       },
     }),
@@ -182,6 +189,7 @@ import { WorkOrdersModule } from './work-orders/work-orders.module.js';
     RolesModule,
     RoleSwitchModule,
     RootModule,
+    SecuritySettingsModule,
     SettingsModule,
     ShiftsModule,
     SignupModule,

@@ -1,6 +1,6 @@
 /**
- * Account Settings - API Functions
- * @module account-settings/_lib/api
+ * Company Settings - API Functions
+ * @module company-settings/_lib/api
  */
 
 import { getApiClient } from '$lib/utils/api-client';
@@ -17,7 +17,7 @@ import type {
   ShiftTimeData,
 } from './types';
 
-const log = createLogger('AccountSettingsApi');
+const log = createLogger('CompanySettingsApi');
 
 const apiClient = getApiClient();
 
@@ -146,4 +146,26 @@ export async function saveShiftTimes(
 /** Reset shift times to system defaults */
 export async function resetShiftTimes(): Promise<ShiftTimeData[]> {
   return await apiClient.post<ShiftTimeData[]>('/shift-times/reset', {});
+}
+
+// =============================================================================
+// Security Settings API — user-password-change-policy (Root only)
+// =============================================================================
+
+/**
+ * Persist the "allow user password change" policy for the current tenant.
+ *
+ * Only Root may call this endpoint (backend enforces via `@Roles('root')`).
+ * Returns the new value echoed by the server so the caller can trust the
+ * persisted state even if the local checkbox gets out of sync.
+ *
+ * See ADR-045 + user-request 2026-04-20.
+ */
+export async function saveUserPasswordChangePolicy(
+  allowed: boolean,
+): Promise<{ allowed: boolean }> {
+  return await apiClient.put<{ allowed: boolean }>(
+    '/security-settings/user-password-change-policy',
+    { allowed },
+  );
 }

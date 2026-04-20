@@ -19,3 +19,4 @@ export {
   ResetPasswordSchema,
   type ResetPasswordResponse,
 } from './reset-password.dto.js';
+export type { SendPasswordResetLinkResponse } from './send-password-reset-link.dto.js';

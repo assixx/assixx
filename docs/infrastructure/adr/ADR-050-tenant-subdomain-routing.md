@@ -249,43 +249,70 @@ regex, not DB-driven — the regex shape IS the contract.
 
 ### OAuth (ADR-046): Centralized Callback, Post-Callback Handoff
 
+> **Correction 2026-04-20 (masterplan Session 1, D6 audit):** this section
+> was rewritten after an audit of the actual OAuth implementation showed
+> that `state` is not a cookie but a Redis-stored UUIDv7 token. The original
+> ADR text assumed a cookie-HMAC design that never existed in the codebase.
+> The functional behaviour described below is unchanged in shape —
+> `return_to_slug` still gates subdomain redirection — only the mechanism
+> is corrected. No new cryptographic secret (`OAUTH_STATE_SECRET`) is
+> required; the existing Redis-backed state payload is extended with one
+> additional field.
+
 `PUBLIC_APP_URL` stays `https://www.assixx.com` in production. The Microsoft
 Entra registered redirect-URI continues to be a single value:
 `https://www.assixx.com/api/v2/auth/oauth/microsoft/callback`. No
 re-registration, no per-tenant Entra app sprawl.
 
 When a user clicks "Sign in with Microsoft" on `tenant-a.assixx.com/login`,
-Nginx 307-redirects the INITIATE call to the apex. The apex backend stores
-`return_to_slug` in the signed `state` cookie alongside the CSRF nonce. After
-Microsoft callback succeeds, the backend mints a 60-second single-use
-`oauth_handoff_token`, redirects to
-`https://${return_to_slug}.assixx.com/signup/oauth-complete?token=…`. The
+Nginx 307-redirects the INITIATE call to the apex. The subdomain frontend
+passes `?return_to_slug=tenant-a` on the `/initiate` URL — the slug travels
+with the 307. The apex backend stores `return_to_slug` as a new field on
+the existing Redis-backed `OAuthState` payload (ADR-046 §4 Redis keyspace —
+`oauth:state:{uuidv7}`, TTL 600 s, GETDEL atomic single-use). The state
+UUID travels in the URL query through the Microsoft round-trip; the
+payload itself never leaves our Redis.
+
+On callback, `OAuthStateService.consume(state)` performs the atomic GETDEL
+and returns the server-stored payload including `returnToSlug`. Because
+the slug read at this step comes from Redis — not from the attacker-
+reachable URL — it cannot have been tampered with post-storage. Write-time
+tampering (attacker manipulates `?return_to_slug=` on `/initiate`) is
+neutralised structurally by the handoff endpoint's host cross-check below;
+see R12 and R15.
+
+If `returnToSlug` is undefined (user started on the apex), the callback
+behaves as pre-ADR-050: apex session, 302 to `/login` per ADR-046
+Amendment Bug A.
+
+If `returnToSlug` is set, the backend mints a 60-second single-use
+`oauth_handoff_token` (32-byte random, opaque to the client, `oauth:handoff:`
+Redis key namespace mirroring the existing `oauth:state:` / `oauth:signup-
+ticket:` pattern — see ADR-046 §4), redirects to
+`https://${returnToSlug}.assixx.com/signup/oauth-complete?token=…`. The
 subdomain page swaps the handoff-token for the real auth cookies (now
 scoped to the subdomain) via a new endpoint `POST /api/v2/auth/oauth/handoff`.
 
-The handoff-token is the only new piece of crypto: 32-byte random,
-single-use, server-side TTL, Redis-backed. Pattern mirrors cross-domain SSO
-flows used by every major B2B SaaS.
+The handoff-token is the only new piece of crypto surface: 32-byte random,
+single-use, server-side TTL, Redis-backed. No HMAC, no signature — the
+unguessability (128-bit entropy) plus atomic GETDEL-on-consume gives the
+same security properties as a signed token at a fraction of the complexity.
+Pattern mirrors cross-domain SSO flows used by every major B2B SaaS.
 
 **Handoff Cross-Check (Defense-in-Depth):** the handoff endpoint
 (`POST /api/v2/auth/oauth/handoff`) is unauthenticated by design (no JWT
 yet — that's what it's minting), so `JwtAuthGuard`'s cross-check does not
 protect it. The endpoint itself MUST assert
-`req.hostTenantId === decodedHandoffPayload.tenantId` before returning the
-auth cookies. Without this, a tampered redirect (attacker rewrites
-`Location:` from `firma-a.assixx.com` to `firma-b.assixx.com`) would cause
-the subdomain page to set firma-a cookies on firma-b's origin — immediately
-self-healing at the next authenticated request (403
-`CROSS_TENANT_HOST_MISMATCH`), but surfacing a confusing UX. The endpoint-
-level assertion closes the loop and produces a clean, actionable error
-code (`HANDOFF_HOST_MISMATCH`) instead.
-
-The state-cookie HMAC uses a dedicated secret `OAUTH_STATE_SECRET`
-(provisioned via Doppler, NOT derived from `JWT_SECRET` — different trust
-domains, different rotation cadence). Rotation strategy: dual-verify
-window of 5 minutes — during secret rotation, new HMACs sign with the new
-secret, verification accepts both old and new for 5 minutes to cover
-in-flight OAuth flows.
+`req.hostTenantId === decodedHandoffPayload.tenantId` BEFORE the Redis
+GETDEL. Order matters: failing the check without consuming lets an attacker
+target a valid token via the wrong subdomain without burning it (i.e.,
+does not create a DoS primitive against OAuth-in-flight users). Without
+this assertion, a tampered redirect (attacker rewrites `Location:` from
+`firma-a.assixx.com` to `firma-b.assixx.com`) would cause the subdomain
+page to set firma-a cookies on firma-b's origin — immediately self-healing
+at the next authenticated request (403 `CROSS_TENANT_HOST_MISMATCH`), but
+surfacing a confusing UX. The endpoint-level assertion closes the loop and
+produces a clean, actionable error code (`HANDOFF_HOST_MISMATCH`) instead.
 
 ### Local Dev: Unchanged + Optional Subdomain-Routing
 
@@ -389,7 +416,7 @@ this ADR's slug then becomes the "fallback default tenant URL").
 | Forgotten host-cross-check in a future custom auth flow lets JWT bypass subdomain                                                                                             | Architectural test asserts every controller decorated with `@UseGuards(JwtAuthGuard)` is reachable only through the middleware-mounted path.                                                                                                                                                                |
 | Subdomain typo (`scs-tehcnik.assixx.com`) returns 444 (no body), confuses user                                                                                                | Catch-all returns a small SvelteKit 404 page for browser User-Agents (UA sniff in Nginx). Preserves 444 for non-browsers (scanners, curl).                                                                                                                                                                  |
 | Internal services (cron, deletion-worker) call backend with no Host                                                                                                           | `extractSlug()` returns `null` for missing/non-matching Host. Internal callers continue using `systemQuery()` (BYPASSRLS) — no tenant context needed.                                                                                                                                                       |
-| Microsoft OAuth `state` cookie set on apex doesn't reach the subdomain                                                                                                        | `state` cookie deliberately stays apex-scoped. The handoff-token mechanism is what crosses the origin boundary — `state` only validates the apex-side CSRF round-trip.                                                                                                                                      |
+| ~~Microsoft OAuth `state` cookie set on apex doesn't reach the subdomain~~ **DELETED 2026-04-20 (D6 audit)**                                                                  | N/A — OAuth `state` is NOT a cookie; it is a Redis-stored UUIDv7 (ADR-046 §4). Cross-origin concern does not apply. `return_to_slug` lives in the Redis payload alongside `codeVerifier`, consumed atomically on callback via GETDEL.                                                                       |
 | **R14**: Backend `:3000` / frontend `:3001` reachable from public internet bypasses the Nginx-enforced host-cross-check, turning a valid JWT into a cross-tenant skeleton key | `docker-compose.prod.yml` override that drops `ports:` publish for `backend` + `frontend` services. Only `nginx:443` is host-bound. Phase 1 DoD includes `nmap -p 3000,3001 <prod-ip>` → filtered.                                                                                                          |
 | **R15**: Tampered OAuth redirect lands handoff-token on wrong subdomain — subdomain page sets cookies of tenant A on tenant B's origin                                        | Handoff endpoint asserts `req.hostTenantId === decodedPayload.tenantId` before returning cookies. Throws `HANDOFF_HOST_MISMATCH`. Next request's `JwtAuthGuard` would also catch it, but the endpoint-level check produces a clean error code and avoids the confusing "cookies set then instantly 403" UX. |
 

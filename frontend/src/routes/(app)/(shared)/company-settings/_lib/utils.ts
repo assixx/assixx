@@ -1,6 +1,6 @@
 /**
- * Account Settings - Utility Functions
- * @module account-settings/_lib/utils
+ * Company Settings - Utility Functions
+ * @module company-settings/_lib/utils
  */
 
 import {

@@ -25,6 +25,17 @@ export interface PasswordResetRecipient {
 }
 
 /**
+ * Metadata block for the blocked-reset notification (ADR-050 §2.3).
+ * Values originate from CLS context (`app.module.ts` setup) and the
+ * service-side `new Date()` at block-time.
+ */
+export interface PasswordResetBlockedMeta {
+  ip: string;
+  userAgent: string;
+  timestamp: Date;
+}
+
+/**
  * Attachment shape for MailerService — abstracts the Nodemailer internal type
  * so feature modules don't need to depend on nodemailer directly.
  */
@@ -134,6 +145,117 @@ export class MailerService {
   }
 
   /**
+   * Send a branded "password-reset blocked" notification.
+   *
+   * Fired when a non-root user (admin/employee) requests a reset via
+   * `/auth/forgot-password`. The target sees the block as a paper-trail —
+   * if they did NOT initiate the request, it flags a possible attempt on
+   * their mailbox; if they DID, it steers them toward contacting a root
+   * user in their tenant.
+   *
+   * Shares the branded-template + logo-attachment pipeline with
+   * `sendPasswordReset()`. Same silent-swallow-on-failure contract
+   * (enumeration safety — see class docstring).
+   *
+   * @see docs/FEAT_FORGOT_PASSWORD_ROLE_GATE_MASTERPLAN.md §2.3
+   * @see docs/infrastructure/adr/ADR-050-forgot-password-role-gate.md (pending Phase 6)
+   */
+  async sendPasswordResetBlocked(
+    recipient: PasswordResetRecipient,
+    meta: PasswordResetBlockedMeta,
+  ): Promise<void> {
+    try {
+      const userName = this.buildUserName(recipient);
+      const timestampFormatted = meta.timestamp.toLocaleString('de-DE', {
+        dateStyle: 'medium',
+        timeStyle: 'short',
+      });
+
+      const branded = await emailService.loadBrandedTemplate('password-reset-blocked', {
+        userName,
+        ip: meta.ip,
+        userAgent: meta.userAgent,
+        timestamp: timestampFormatted,
+      });
+
+      const result = await emailService.sendEmail({
+        to: recipient.email,
+        subject: 'Passwort-Reset nicht erlaubt — Assixx',
+        html: branded.html,
+        attachments: branded.attachments,
+        text: this.buildPasswordResetBlockedText(userName, meta.ip, timestampFormatted),
+      });
+
+      if (!result.success) {
+        this.logger.error(
+          `Password-reset BLOCKED email send failed for ${recipient.email}: ${result.error ?? 'unknown error'}`,
+        );
+      }
+    } catch (error: unknown) {
+      this.logger.error(
+        `Failed to send password-reset BLOCKED email to ${recipient.email}: ${getErrorMessage(error)}`,
+      );
+    }
+  }
+
+  /**
+   * Send a branded "Root-initiated password-reset" email to an admin or
+   * employee target. The body explicitly names the initiator Root
+   * (separation-of-duties paper-trail), and the link lands on the existing
+   * `/reset-password` page where the target sets their own new password
+   * (ADR-050 §2.9). Identical Nodemailer pipeline + silent-swallow-on-failure
+   * contract as `sendPasswordReset()` — R8 no-leak on SMTP errors preserved.
+   *
+   * @see docs/FEAT_FORGOT_PASSWORD_ROLE_GATE_MASTERPLAN.md §2.9
+   */
+  async sendPasswordResetAdminInitiated(
+    recipient: PasswordResetRecipient,
+    initiatorName: string,
+    rawToken: string,
+    expiresAt: Date,
+  ): Promise<void> {
+    try {
+      const appUrl = process.env['APP_URL'] ?? 'http://localhost:5173';
+      const resetUrl = `${appUrl}/reset-password?token=${rawToken}`;
+      const userName = this.buildUserName(recipient);
+      const expiresAtFormatted = expiresAt.toLocaleString('de-DE', {
+        dateStyle: 'medium',
+        timeStyle: 'short',
+      });
+
+      const branded = await emailService.loadBrandedTemplate('password-reset-admin-initiated', {
+        userName,
+        initiatorName,
+        resetUrl,
+        expiresAt: expiresAtFormatted,
+      });
+
+      const result = await emailService.sendEmail({
+        to: recipient.email,
+        subject: 'Passwort-Reset-Link (von Root-Benutzer angefordert) — Assixx',
+        html: branded.html,
+        attachments: branded.attachments,
+        text: this.buildPasswordResetAdminInitiatedText(
+          userName,
+          initiatorName,
+          resetUrl,
+          expiresAtFormatted,
+        ),
+      });
+
+      if (!result.success) {
+        this.logger.error(
+          `Admin-initiated password-reset email send failed for ${recipient.email}: ${result.error ?? 'unknown error'}`,
+        );
+      }
+    } catch (error: unknown) {
+      this.logger.error(
+        `Failed to send admin-initiated password-reset email to ${recipient.email}: ${getErrorMessage(error)}`,
+      );
+    }
+  }
+
+  /**
    * Forward a user-submitted bug report to the ops inbox.
    *
    * Throws on transport failure so the HTTP caller surfaces a real error to the
@@ -221,6 +343,55 @@ export class MailerService {
     );
     const fullName = parts.join(' ');
     return fullName !== '' ? fullName : recipient.email;
+  }
+
+  private buildPasswordResetAdminInitiatedText(
+    userName: string,
+    initiatorName: string,
+    resetUrl: string,
+    expiresAt: string,
+  ): string {
+    return [
+      `Hallo ${userName},`,
+      '',
+      `${initiatorName} (Root-Benutzer in Deinem Unternehmen) hat für Dich`,
+      'einen Passwort-Reset-Link angefordert.',
+      '',
+      `Klicke auf folgenden Link, um ein neues Passwort zu setzen (gültig bis ${expiresAt}):`,
+      resetUrl,
+      '',
+      `Falls Du oder ${initiatorName} diesen Link NICHT angefordert habt,`,
+      'ignoriere diese E-Mail und informiere umgehend Deinen IT-Support',
+      'oder einen anderen Root-Benutzer.',
+      '',
+      'Mit freundlichen Grüßen,',
+      'Dein Assixx-Team',
+    ].join('\n');
+  }
+
+  private buildPasswordResetBlockedText(userName: string, ip: string, timestamp: string): string {
+    // Plain-text fallback for clients that don't render HTML. Mirrors the
+    // wording of the HTML template (password-reset-blocked.html).
+    return [
+      `Hallo ${userName},`,
+      '',
+      'jemand (möglicherweise Du) hat für Dein Konto einen Passwort-Reset',
+      'angefordert.',
+      '',
+      'Aus Sicherheitsgründen dürfen in Deinem Unternehmen nur Root-Benutzer',
+      'ihr Passwort selbst zurücksetzen. Bitte wende Dich an einen',
+      'Root-Benutzer in Deinem Unternehmen, um Dein Passwort zurücksetzen',
+      'zu lassen.',
+      '',
+      'Falls Du diesen Reset NICHT angefordert hast, ignoriere diese Mail',
+      'oder informiere einen Root-Benutzer über den Vorfall.',
+      '',
+      `Zeitstempel: ${timestamp}`,
+      `IP-Adresse:  ${ip}`,
+      '',
+      'Mit freundlichen Grüßen,',
+      'Dein Assixx-Team',
+    ].join('\n');
   }
 
   private buildPasswordResetText(userName: string, resetUrl: string): string {

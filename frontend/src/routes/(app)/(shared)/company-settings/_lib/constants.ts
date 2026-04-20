@@ -1,6 +1,6 @@
 /**
- * Account Settings - Constants
- * @module account-settings/_lib/constants
+ * Company Settings - Constants
+ * @module company-settings/_lib/constants
  */
 
 import type { DeletionStatus } from './types';
@@ -51,6 +51,24 @@ export const SHIFT_MESSAGES = {
   reset: 'Schichtzeiten auf Standardwerte zurückgesetzt!',
   resetError: 'Fehler beim Zurücksetzen der Schichtzeiten',
   loadError: 'Fehler beim Laden der Schichtzeiten',
+} as const;
+
+/**
+ * Messages for the "user password change" policy toggle.
+ *
+ * UI copy is German (follows the rest of this page); the underlying API is
+ * English/boolean so localisation stays UI-only (ADR-034 note: no i18n
+ * framework yet, hard-code strings).
+ */
+export const SECURITY_MESSAGES = {
+  title: 'Sicherheit',
+  intro:
+    'Sicherheitsrichtlinien für diesen Tenant. Nur Root-Benutzer können diese Einstellungen ändern.',
+  allowPwChangeLabel: 'Admins und Mitarbeitern erlauben, ihr Passwort selbst zu ändern',
+  allowPwChangeHint:
+    'Wenn deaktiviert, können nur Root-Benutzer Passwörter ändern. Admins und Mitarbeiter sehen das Passwort-Änderungsformular in ihrem Profil nicht mehr. Standard: Deaktiviert.',
+  saved: 'Sicherheitsrichtlinie gespeichert.',
+  saveError: 'Fehler beim Speichern der Sicherheitsrichtlinie.',
 } as const;
 
 /** Shift key display info */

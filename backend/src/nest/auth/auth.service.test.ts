@@ -18,6 +18,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import type { JwtService } from '@nestjs/jwt';
+import type { ClsService } from 'nestjs-cls';
 import crypto from 'node:crypto';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -69,13 +70,41 @@ function createMockJwtService(): {
   return { sign: vi.fn(), verify: vi.fn() };
 }
 
-function createMockMailer(): { sendPasswordReset: ReturnType<typeof vi.fn> } {
-  return { sendPasswordReset: vi.fn().mockResolvedValue(undefined) };
+function createMockMailer(): {
+  sendPasswordReset: ReturnType<typeof vi.fn>;
+  sendPasswordResetBlocked: ReturnType<typeof vi.fn>;
+} {
+  return {
+    sendPasswordReset: vi.fn().mockResolvedValue(undefined),
+    // ADR-050: blocked-reset notification for non-root targets on the
+    // forgot-password request-gate (§2.1 / §2.3). Resolves in the default
+    // case — tests override with `.mockRejectedValueOnce(...)` when they
+    // need to exercise the "mailer crash" propagation contract.
+    sendPasswordResetBlocked: vi.fn().mockResolvedValue(undefined),
+  };
+}
+
+/**
+ * Minimal ClsService stand-in. AuthService only reads `ip` + `userAgent`
+ * via `cls.get<string | undefined>(...)` in the blocked-reset branch
+ * (ADR-050 §2.1); everything else is unused. Keeping the surface tiny
+ * keeps tests honest about which CLS keys the service touches.
+ */
+function createMockCls(): { get: ReturnType<typeof vi.fn>; set: ReturnType<typeof vi.fn> } {
+  return {
+    get: vi.fn((key: string) => {
+      if (key === 'ip') return '127.0.0.1';
+      if (key === 'userAgent') return 'vitest';
+      return undefined;
+    }),
+    set: vi.fn(),
+  };
 }
 
 type MockDb = ReturnType<typeof createMockDb>;
 type MockJwt = ReturnType<typeof createMockJwtService>;
 type MockMailer = ReturnType<typeof createMockMailer>;
+type MockCls = ReturnType<typeof createMockCls>;
 
 function createAuthUser(overrides: Partial<NestAuthUser> = {}): NestAuthUser {
   return {
@@ -145,6 +174,7 @@ describe('SECURITY: AuthService', () => {
   let mockDb: MockDb;
   let mockJwt: MockJwt;
   let mockMailer: MockMailer;
+  let mockCls: MockCls;
 
   beforeEach(() => {
     mockBcryptCompare.mockReset();
@@ -152,6 +182,7 @@ describe('SECURITY: AuthService', () => {
     mockDb = createMockDb();
     mockJwt = createMockJwtService();
     mockMailer = createMockMailer();
+    mockCls = createMockCls();
     service = new AuthService(
       mockDb as unknown as DatabaseService,
       mockJwt as unknown as JwtService,
@@ -163,6 +194,10 @@ describe('SECURITY: AuthService', () => {
         assertVerified: vi.fn().mockResolvedValue(undefined),
         isVerified: vi.fn().mockResolvedValue(true),
       } as unknown as TenantVerificationService,
+      // ADR-050 §2.1: CLS supplies IP + User-Agent for the blocked-reset
+      // notification meta-block. Only read in the non-root branch of
+      // `forgotPassword()`; silent-drop and root-happy paths don't touch it.
+      mockCls as unknown as ClsService,
     );
   });
 
@@ -859,14 +894,24 @@ describe('SECURITY: AuthService', () => {
   // =============================================================
 
   describe('forgotPassword', () => {
+    // ADR-050 §2.1 contract: return type is `ForgotPasswordResult` —
+    // `{ blocked: false, delivered: false }` for silent-drop paths
+    // (non-existent OR inactive), `{ blocked: true, delivered: true }` for
+    // the non-root role-block path, `{ blocked: false, delivered: true }`
+    // for the root happy path. The controller maps this to the HTTP body.
+
     it('should silently return when user does not exist', async () => {
       mockDb.systemQuery.mockResolvedValueOnce([]); // findUserByEmail → none
 
-      await expect(service.forgotPassword({ email: 'unknown@test.de' })).resolves.toBeUndefined();
+      await expect(service.forgotPassword({ email: 'unknown@test.de' })).resolves.toEqual({
+        blocked: false,
+        delivered: false,
+      });
 
       // Only the lookup query — no INSERT, no mailer call
       expect(mockDb.systemQuery).toHaveBeenCalledTimes(1);
       expect(mockMailer.sendPasswordReset).not.toHaveBeenCalled();
+      expect(mockMailer.sendPasswordResetBlocked).not.toHaveBeenCalled();
     });
 
     it.each([
@@ -876,15 +921,21 @@ describe('SECURITY: AuthService', () => {
     ])('should silently return for is_active=%i (%s) user', async (isActive) => {
       mockDb.systemQuery.mockResolvedValueOnce([createMockUserRow({ is_active: isActive })]);
 
-      await expect(service.forgotPassword({ email: 'admin@test.de' })).resolves.toBeUndefined();
+      await expect(service.forgotPassword({ email: 'admin@test.de' })).resolves.toEqual({
+        blocked: false,
+        delivered: false,
+      });
 
       expect(mockDb.systemQuery).toHaveBeenCalledTimes(1);
       expect(mockMailer.sendPasswordReset).not.toHaveBeenCalled();
+      expect(mockMailer.sendPasswordResetBlocked).not.toHaveBeenCalled();
     });
 
     it('should invalidate existing tokens, insert hashed token, and call mailer on happy path', async () => {
       mockDb.systemQuery
-        .mockResolvedValueOnce([createMockUserRow({ id: 7 })]) // findUserByEmail
+        // role: 'root' is required — the default createMockUserRow role
+        // is 'admin', which now hits the block-gate instead of the happy path.
+        .mockResolvedValueOnce([createMockUserRow({ id: 7, role: 'root' })]) // findUserByEmail
         .mockResolvedValueOnce([]) // UPDATE invalidate previous
         .mockResolvedValueOnce([]); // INSERT new token
 
@@ -921,7 +972,7 @@ describe('SECURITY: AuthService', () => {
 
     it('should NOT pass raw token to DB (raw goes only to mailer)', async () => {
       mockDb.systemQuery
-        .mockResolvedValueOnce([createMockUserRow()])
+        .mockResolvedValueOnce([createMockUserRow({ role: 'root' })])
         .mockResolvedValueOnce([])
         .mockResolvedValueOnce([]);
 
@@ -940,7 +991,7 @@ describe('SECURITY: AuthService', () => {
 
     it('should set token expiry approximately 60 minutes in the future', async () => {
       mockDb.systemQuery
-        .mockResolvedValueOnce([createMockUserRow()])
+        .mockResolvedValueOnce([createMockUserRow({ role: 'root' })])
         .mockResolvedValueOnce([])
         .mockResolvedValueOnce([]);
 
@@ -959,7 +1010,7 @@ describe('SECURITY: AuthService', () => {
 
     it('should propagate mailer rejection (mailer is responsible for swallowing failures)', async () => {
       mockDb.systemQuery
-        .mockResolvedValueOnce([createMockUserRow()])
+        .mockResolvedValueOnce([createMockUserRow({ role: 'root' })])
         .mockResolvedValueOnce([])
         .mockResolvedValueOnce([]);
       mockMailer.sendPasswordReset.mockRejectedValueOnce(new Error('mailer crash'));
@@ -996,12 +1047,18 @@ describe('SECURITY: AuthService', () => {
       expect(lookupParams[0]).toBe(expectedHash);
     });
 
+    // ADR-050 §2.6: Redemption-Gate-Reihenfolge lautet
+    // SELECT token → findUserById (redemption gate) → UPDATE users →
+    // UPDATE password_reset_tokens used → revokeAllUserTokensByUserId.
+    // findUserById MUSS einen `role: 'root'`-User liefern, sonst greift die
+    // Role-Check-Branch und wirft ForbiddenException + burnt den Token.
+
     it('should hash new password with bcrypt rounds=12 on happy path', async () => {
       mockDb.systemQuery
-        .mockResolvedValueOnce([{ id: 99, user_id: 7 }]) // SELECT token row
+        .mockResolvedValueOnce([{ id: 99, user_id: 7, initiated_by_user_id: null }]) // SELECT token row
+        .mockResolvedValueOnce([createMockUserRow({ id: 7, role: 'root' })]) // findUserById (redemption gate)
         .mockResolvedValueOnce([]) // UPDATE users
         .mockResolvedValueOnce([]) // UPDATE password_reset_tokens used
-        .mockResolvedValueOnce([createMockUserRow({ id: 7 })]) // findUserById
         .mockResolvedValueOnce([{ count: '3' }]); // revokeAllUserTokensByUserId
       mockBcryptHash.mockResolvedValueOnce('new-hashed-pw');
 
@@ -1012,11 +1069,11 @@ describe('SECURITY: AuthService', () => {
 
     it('should mark token as used and revoke refresh tokens by user_id (no tenant scope)', async () => {
       mockDb.systemQuery
-        .mockResolvedValueOnce([{ id: 99, user_id: 7 }])
-        .mockResolvedValueOnce([])
-        .mockResolvedValueOnce([])
-        .mockResolvedValueOnce([createMockUserRow({ id: 7 })])
-        .mockResolvedValueOnce([{ count: '2' }]);
+        .mockResolvedValueOnce([{ id: 99, user_id: 7, initiated_by_user_id: null }]) // SELECT token
+        .mockResolvedValueOnce([createMockUserRow({ id: 7, role: 'root' })]) // findUserById
+        .mockResolvedValueOnce([]) // UPDATE users
+        .mockResolvedValueOnce([]) // UPDATE token used
+        .mockResolvedValueOnce([{ count: '2' }]); // revoke CTE
       mockBcryptHash.mockResolvedValueOnce('new-hash');
 
       await service.resetPassword(validResetDto);
@@ -1033,27 +1090,34 @@ describe('SECURITY: AuthService', () => {
       expect((revokeCall?.[1] as number[])[0]).toBe(7);
     });
 
-    it('should NOT call revoke when findUserById returns null (defensive branch)', async () => {
+    it('should burn token + throw UnauthorizedException when target user vanished between issuance and redemption (redemption-gate lifecycle)', async () => {
+      // v0.5.1 behaviour change: under ADR-050 §2.6, a null `findUserById` is
+      // a redemption-gate failure (deleted/deactivated target). The token is
+      // burned and a generic UnauthorizedException is thrown — NO password
+      // update, NO revoke, NO leak of whether the user was missing vs inactive.
       mockDb.systemQuery
-        .mockResolvedValueOnce([{ id: 99, user_id: 7 }])
-        .mockResolvedValueOnce([])
-        .mockResolvedValueOnce([])
-        .mockResolvedValueOnce([]); // findUserById → null
-      mockBcryptHash.mockResolvedValueOnce('new-hash');
+        .mockResolvedValueOnce([{ id: 99, user_id: 7, initiated_by_user_id: null }]) // SELECT token
+        .mockResolvedValueOnce([]) // findUserById → null
+        .mockResolvedValueOnce([]); // burnToken UPDATE
 
-      await service.resetPassword(validResetDto);
+      await expect(service.resetPassword(validResetDto)).rejects.toThrow(UnauthorizedException);
 
-      // 4 calls: SELECT token, UPDATE users, UPDATE token used, SELECT findUserById
-      // No 5th call for revoke
-      expect(mockDb.systemQuery).toHaveBeenCalledTimes(4);
+      // Exactly 3 systemQuery calls: SELECT, findUserById, burnToken.
+      // No UPDATE users, no revoke.
+      expect(mockDb.systemQuery).toHaveBeenCalledTimes(3);
+
+      const burnCall = mockDb.systemQuery.mock.calls[2];
+      expect(burnCall?.[0]).toContain('UPDATE password_reset_tokens SET used = true');
+      expect((burnCall?.[1] as number[])[0]).toBe(99); // burn by token row id
+      expect(mockBcryptHash).not.toHaveBeenCalled();
     });
 
     it('should default to 0 when revokeAllUserTokensByUserId returns empty result', async () => {
       mockDb.systemQuery
-        .mockResolvedValueOnce([{ id: 99, user_id: 7 }])
-        .mockResolvedValueOnce([])
-        .mockResolvedValueOnce([])
-        .mockResolvedValueOnce([createMockUserRow({ id: 7 })])
+        .mockResolvedValueOnce([{ id: 99, user_id: 7, initiated_by_user_id: null }]) // SELECT token
+        .mockResolvedValueOnce([createMockUserRow({ id: 7, role: 'root' })]) // findUserById
+        .mockResolvedValueOnce([]) // UPDATE users
+        .mockResolvedValueOnce([]) // UPDATE token used
         .mockResolvedValueOnce([]); // empty CTE result
       mockBcryptHash.mockResolvedValueOnce('new-hash');
 

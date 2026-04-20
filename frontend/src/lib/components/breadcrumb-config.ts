@@ -257,7 +257,7 @@ const staticUrlMappings: Partial<Record<string, RouteMapping>> = {
   '/manage-surveys': { label: 'Umfragen verwalten', icon: 'fa-poll' },
   '/surveys': { label: 'Umfragen', icon: 'fa-poll-h' },
   '/survey-results': { label: 'Umfrage-Ergebnisse', icon: 'fa-chart-bar' },
-  '/account-settings': { label: 'Konto-Einstellungen', icon: 'fa-user-cog' },
+  '/company-settings': { label: 'Firmen-Einstellungen', icon: 'fa-building' },
   '/settings/design': { label: 'Design', icon: 'fa-palette' },
   '/storage-upgrade': { label: 'Speicher-Upgrade', icon: 'fa-hdd' },
   '/admin-profile': { label: 'Admin-Profil', icon: 'fa-user-shield' },

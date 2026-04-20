@@ -437,13 +437,18 @@ export class AuthController {
   @AuthThrottle() // 10 requests per 5 minutes
   @HttpCode(HttpStatus.OK)
   async forgotPassword(@Body() dto: ForgotPasswordDto): Promise<ForgotPasswordResponse> {
-    await this.authService.forgotPassword(dto);
-
-    // Always return the same response — never reveal if email exists
-    return {
-      message:
-        'Falls ein Konto mit dieser E-Mail existiert, wurde ein Link zum Zurücksetzen gesendet.',
-    };
+    // Additive response shape (ADR-050 §2.2 / Plan v0.4.4):
+    //   - root happy path + silent-drop → `{ message }` (byte-identical → R1)
+    //   - admin/employee blocked       → `{ message, blocked: true, reason: 'ROLE_NOT_ALLOWED' }`
+    // The `message` string is canonical and identical across all three paths
+    // so root vs silent-drop cannot be distinguished on the wire.
+    const result = await this.authService.forgotPassword(dto);
+    const message =
+      'Falls ein Konto mit dieser E-Mail existiert, wurde ein Link zum Zurücksetzen gesendet.';
+    if (result.blocked) {
+      return { message, blocked: true, reason: 'ROLE_NOT_ALLOWED' };
+    }
+    return { message };
   }
 
   /**

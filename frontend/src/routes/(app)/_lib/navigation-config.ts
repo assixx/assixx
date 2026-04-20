@@ -286,7 +286,18 @@ const SYSTEM_SUBMENU: NavItem[] = [
     label: 'Freigabe-Master',
     url: '/settings/approvals',
   },
-  { id: 'design', label: 'Design', url: '/settings/design' },
+  // Firmen-Einstellungen: system-level tenant config (shift times, tenant deletion, design).
+  // WHY subgroup: /company-settings is the root view (Shift Times + Danger Zone, root-only),
+  // Design is a sibling config surface (/settings/design). Grouping them keeps the
+  // System menu shallow and signals these as company-wide — not user — settings.
+  {
+    id: 'company-settings',
+    label: 'Firmen-Einstellungen',
+    submenu: [
+      { id: 'company-settings-overview', label: 'Übersicht', url: '/company-settings' },
+      { id: 'design', label: 'Design', url: '/settings/design' },
+    ],
+  },
 ];
 
 /** Static root menu items before "Verwalten" group */
@@ -371,10 +382,7 @@ const ROOT_STATIC_BOTTOM: NavItem[] = [
     id: 'profile',
     icon: ICONS.user,
     label: 'Mein Profil',
-    submenu: [
-      { id: 'profile-page', label: 'Profil', url: '/root-profile' },
-      { id: 'account-settings', label: 'Kontoeinstellungen', url: '/account-settings' },
-    ],
+    submenu: [{ id: 'profile-page', label: 'Profil', url: '/root-profile' }],
   },
   {
     id: 'system',

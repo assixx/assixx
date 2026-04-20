@@ -64,7 +64,7 @@ Each layout:
 - `employee-dashboard/`, `employee-profile/`
 - `chat/`, `blackboard/`, `calendar/`, `documents-explorer/`
 - `kvp/`, `kvp-detail/`, `survey-employee/`
-- `account-settings/`, `shifts/`
+- `company-settings/`, `shifts/`
 
 ### Stays in `(app)/` directly:
 
