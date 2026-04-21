@@ -360,7 +360,7 @@
           />
           <button
             type="button"
-            class="btn btn-primary"
+            class="btn btn-secondary"
             onclick={() => {
               triggerFileInput('profile-picture-input');
             }}
@@ -633,7 +633,7 @@
 
           <button
             type="submit"
-            class="btn btn-primary"
+            class="btn btn-secondary"
             disabled={passwordSaving}
           >
             {#if passwordSaving}<span class="spinner-ring spinner-ring--sm"></span>{:else}<i
