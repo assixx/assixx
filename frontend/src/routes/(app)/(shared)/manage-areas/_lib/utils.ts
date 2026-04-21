@@ -108,9 +108,7 @@ export function populateFormFromArea(
     address: area.address ?? '',
     departmentIds: getDepartmentIdsForArea(area.id, departments),
     hallIds: getHallIdsForArea(area.id, halls),
-    isActive: (area.isActive === IS_ACTIVE.DELETED ?
-      IS_ACTIVE.INACTIVE
-    : area.isActive) as FormIsActiveStatus,
+    isActive: area.isActive === IS_ACTIVE.DELETED ? IS_ACTIVE.INACTIVE : area.isActive,
   };
 }
 

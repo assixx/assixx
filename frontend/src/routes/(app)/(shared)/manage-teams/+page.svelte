@@ -236,7 +236,7 @@
     formDepartmentId = team.departmentId ?? null;
     formLeaderId = team.leaderId ?? null;
     formDeputyLeaderId = team.teamDeputyLeadId ?? null;
-    formIsActive = (team.isActive === 4 ? 0 : team.isActive) as FormIsActiveStatus;
+    formIsActive = team.isActive === 4 ? 0 : team.isActive;
 
     // Set member and asset IDs from fetched data
     formMemberIds = members.map((m) => m.id);

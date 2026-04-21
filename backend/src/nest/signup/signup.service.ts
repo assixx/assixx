@@ -757,7 +757,7 @@ export class SignupService {
     if (typeof error !== 'object' || error === null || !('code' in error)) {
       return false;
     }
-    return (error as { code: unknown }).code === '23505';
+    return error.code === '23505';
   }
 
   /**

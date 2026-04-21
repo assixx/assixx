@@ -75,7 +75,7 @@ function createSurveyDataState() {
       // Use Object.fromEntries to avoid dynamic delete
       answers = Object.fromEntries(
         Object.entries(answers).filter(([key]) => Number(key) !== questionId),
-      ) as AnswerMap;
+      );
     },
   };
 }

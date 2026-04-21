@@ -113,6 +113,6 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
   return {
     ...kvpData,
     showStats,
-    currentUser: mapParentUserToCurrentUser(parentData.user as ParentUser | null),
+    currentUser: mapParentUserToCurrentUser(parentData.user),
   };
 };

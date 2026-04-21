@@ -48,7 +48,7 @@ export async function fetchUserData(): Promise<User> {
   if (result.user === null) {
     throw new Error('User not authenticated');
   }
-  return result.user as unknown as User;
+  return result.user;
 }
 
 // =============================================================================

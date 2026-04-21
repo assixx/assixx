@@ -445,7 +445,7 @@
                 class="dropdown__option"
                 class:dropdown__option--selected={formData.recurrence === option.value}
                 onclick={() => {
-                  formData.recurrence = option.value as typeof formData.recurrence;
+                  formData.recurrence = option.value;
                   recurrenceDropdownOpen = false;
                 }}
               >
@@ -483,7 +483,7 @@
                   class="dropdown__option"
                   class:dropdown__option--selected={formData.recurrenceEndType === option.value}
                   onclick={() => {
-                    formData.recurrenceEndType = option.value as typeof formData.recurrenceEndType;
+                    formData.recurrenceEndType = option.value;
                     recurrenceEndDropdownOpen = false;
                   }}
                 >

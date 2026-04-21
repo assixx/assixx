@@ -116,7 +116,7 @@ export function populateFormFromUser(user: RootUser): {
     employeeNumber: user.employeeNumber ?? '',
     positionIds: [],
     notes: user.notes ?? '',
-    isActive: (user.isActive === 4 ? 0 : user.isActive) as FormIsActiveStatus,
+    isActive: user.isActive === 4 ? 0 : user.isActive,
   };
 }
 

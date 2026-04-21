@@ -29,6 +29,7 @@
  */
 import {
   Body,
+  ConflictException,
   Controller,
   Delete,
   Get,
@@ -171,12 +172,15 @@ export class OAuthController {
     } catch (error: unknown) {
       // State replay, expired state, malformed id_token, duplicate signup (R3) etc.
       // All HttpExceptions surface their status; unexpected errors collapse to generic.
-      const status = error instanceof HttpException ? error.getStatus() : 500;
+      const status =
+        error instanceof HttpException ? error.getStatus() : HttpStatus.INTERNAL_SERVER_ERROR;
       this.logger.warn(`OAuth callback failed (HTTP ${status}): ${getErrorMessage(error)}`);
-      // HttpStatus is a numeric enum — cast to number so the comparison doesn't
-      // trigger `@typescript-eslint/no-unsafe-enum-comparison` (status is `number`).
-      const reason =
-        status === (HttpStatus.CONFLICT as number) ? 'already_linked' : 'callback_failed';
+      // Discriminate on the exception class the service actually throws
+      // (oauth.service.ts:226 — `throw new ConflictException(...)` on R3 duplicate
+      // signup). `instanceof` matches the service contract directly and avoids
+      // comparing a `number` to `HttpStatus.CONFLICT`, which would trip
+      // `@typescript-eslint/no-unsafe-enum-comparison`.
+      const reason = error instanceof ConflictException ? 'already_linked' : 'callback_failed';
       await reply.redirect(`/login?oauth=error&reason=${reason}`, HttpStatus.FOUND);
     }
   }

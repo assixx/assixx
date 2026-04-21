@@ -251,7 +251,7 @@ export async function exportLogs(params: ExportLogsParams): Promise<void> {
       .json()
       .then((data: unknown): ApiErrorResponse => {
         if (typeof data === 'object' && data !== null) {
-          return data as ApiErrorResponse;
+          return data;
         }
         return { message: 'Export failed' };
       })

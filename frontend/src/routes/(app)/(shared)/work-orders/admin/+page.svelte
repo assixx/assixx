@@ -199,7 +199,7 @@
       let woUuid: string;
 
       if (editingItem !== null) {
-        await updateWorkOrder(editingItem.uuid, payload as UpdateWorkOrderPayload);
+        await updateWorkOrder(editingItem.uuid, payload);
         woUuid = editingItem.uuid;
         showSuccessAlert(MESSAGES.SUCCESS_UPDATED);
       } else {

@@ -198,7 +198,7 @@ export class TpmCardsService {
       }
 
       if (setClauses.length === 0) {
-        return mapCardRowToApi(existing as TpmCardJoinRow);
+        return mapCardRowToApi(existing);
       }
 
       params.push(cardUuid, tenantId);
@@ -241,7 +241,7 @@ export class TpmCardsService {
         [cardUuid, tenantId],
       );
 
-      return mapCardRowToApi(existing as TpmCardJoinRow);
+      return mapCardRowToApi(existing);
     });
 
     void this.activityLogger.logDelete(

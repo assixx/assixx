@@ -187,7 +187,7 @@
       {
         id: questionId,
         text: '',
-        type: 'text' as QuestionType,
+        type: 'text',
         isOptional: false,
         options: [],
       },

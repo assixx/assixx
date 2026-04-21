@@ -263,7 +263,7 @@ export function calculatePasswordStrength(password: string): PasswordStrengthRes
 
 /** Convert isActive to form status (deleted=4 becomes inactive=0) */
 function toFormStatus(isActive: IsActiveStatus): FormIsActiveStatus {
-  return (isActive === 4 ? 0 : isActive) as FormIsActiveStatus;
+  return isActive === 4 ? 0 : isActive;
 }
 
 /** Extract team IDs from employee (handles different API formats) */

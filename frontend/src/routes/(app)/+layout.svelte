@@ -107,7 +107,7 @@
     ) {
       return data.activeRole;
     }
-    return (data.user?.role ?? 'employee') as 'root' | 'admin' | 'employee' | 'dummy';
+    return data.user?.role ?? 'employee';
   };
 
   const isBannerDismissed = (role: string): boolean =>

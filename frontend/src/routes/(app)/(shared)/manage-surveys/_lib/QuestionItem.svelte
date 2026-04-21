@@ -113,7 +113,7 @@
             type="button"
             class="dropdown__option"
             onclick={() => {
-              ontypechange(option.value as QuestionType);
+              ontypechange(option.value);
             }}
           >
             {option.label}

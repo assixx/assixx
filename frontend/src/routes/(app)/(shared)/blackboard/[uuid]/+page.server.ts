@@ -70,7 +70,7 @@ export const load: PageServerLoad = async ({ cookies, fetch, params, parent }) =
     return {
       permissionDenied: true as const,
       entry: null,
-      comments: { comments: [], total: 0, hasMore: false } as PaginatedComments,
+      comments: { comments: [], total: 0, hasMore: false },
       attachments: [],
       currentUser: null,
       orgScope: parentData.orgScope,
@@ -97,7 +97,7 @@ export const load: PageServerLoad = async ({ cookies, fetch, params, parent }) =
     entry: result.data.entry,
     comments: result.data.comments ?? defaultComments,
     attachments: result.data.attachments ?? [],
-    currentUser: mapCurrentUser(parentData.user as ParentUser | null | undefined),
+    currentUser: mapCurrentUser(parentData.user),
     orgScope: parentData.orgScope,
     myPermissions: myPermissions ?? DEFAULT_MY_PERMISSIONS,
   };

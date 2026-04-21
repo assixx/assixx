@@ -23,7 +23,7 @@ function isEmptyNestedResponse(data: unknown): boolean {
   if (data === null || typeof data !== 'object') {
     return false;
   }
-  return 'data' in data && (data as { data: unknown }).data === null;
+  return 'data' in data && data.data === null;
 }
 
 /**

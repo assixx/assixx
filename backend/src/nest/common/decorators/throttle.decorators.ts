@@ -48,7 +48,7 @@ export const AuthThrottle = (): ThrottleDecorator =>
       export: true,
       'domain-verify': true,
     }),
-  ) as ThrottleDecorator;
+  );
 
 /**
  * User endpoints: 1000 requests per 15 minutes
@@ -66,7 +66,7 @@ export const UserThrottle = (): ThrottleDecorator =>
       export: true,
       'domain-verify': true,
     }),
-  ) as ThrottleDecorator;
+  );
 
 /**
  * Admin endpoints: 2000 requests per 15 minutes
@@ -84,7 +84,7 @@ export const AdminThrottle = (): ThrottleDecorator =>
       export: true,
       'domain-verify': true,
     }),
-  ) as ThrottleDecorator;
+  );
 
 /**
  * Export endpoints: 1 request per minute
@@ -103,7 +103,7 @@ export const ExportThrottle = (): ThrottleDecorator =>
       upload: true,
       'domain-verify': true,
     }),
-  ) as ThrottleDecorator;
+  );
 
 /**
  * Domain-Verify endpoint: 10 requests per 10 minutes.
@@ -124,7 +124,7 @@ export const DomainVerifyThrottle = (): ThrottleDecorator =>
       upload: true,
       export: true,
     }),
-  ) as ThrottleDecorator;
+  );
 
 /**
  * Feedback endpoints: 5 requests per hour.
@@ -146,4 +146,4 @@ export const FeedbackThrottle = (): ThrottleDecorator =>
       export: true,
       'domain-verify': true,
     }),
-  ) as ThrottleDecorator;
+  );

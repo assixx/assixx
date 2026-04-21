@@ -18,12 +18,7 @@
   const isFullscreen = $derived(isFullscreenPage($page.url.pathname));
 
   const breadcrumbItems = $derived(
-    generateBreadcrumbItems(
-      $page.url.pathname,
-      userRole,
-      hierarchyLabels,
-      $page.data as Record<string, unknown>,
-    ),
+    generateBreadcrumbItems($page.url.pathname, userRole, hierarchyLabels, $page.data),
   );
 </script>
 

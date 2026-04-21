@@ -89,7 +89,7 @@ export class BlackboardService {
     this.logger.debug(`Getting full entry ${String(id)} for tenant ${tenantId}`);
 
     const entry = await this.entriesService.getEntryById(id, tenantId, userId);
-    const numericId = (entry as Record<string, unknown>)['id'] as number;
+    const numericId = entry['id'] as number;
     const comments = await this.commentsService.getComments(numericId, tenantId);
     const attachments = await this.attachmentsService.getAttachments(numericId, tenantId, userId);
 
@@ -223,7 +223,7 @@ export class BlackboardService {
     userId: number,
   ): Promise<Record<string, unknown>> {
     const entry = await this.entriesService.getEntryById(entryId, tenantId, userId);
-    const numericId = (entry as Record<string, unknown>)['id'] as number;
+    const numericId = entry['id'] as number;
     return await this.attachmentsService.uploadAttachment(numericId, file, tenantId, userId);
   }
 
@@ -233,7 +233,7 @@ export class BlackboardService {
     userId: number,
   ): Promise<Record<string, unknown>[]> {
     const entry = await this.entriesService.getEntryById(entryId, tenantId, userId);
-    const numericId = (entry as Record<string, unknown>)['id'] as number;
+    const numericId = entry['id'] as number;
     return await this.attachmentsService.getAttachments(numericId, tenantId, userId);
   }
 

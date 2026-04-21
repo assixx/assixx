@@ -431,10 +431,7 @@ export class BlackboardEntriesService {
   ): Promise<BlackboardEntryResponse> {
     this.logger.log(`Updating entry ${String(id)}`);
 
-    const existingEntry = (await this.getEntryById(id, tenantId, userId)) as Record<
-      string,
-      unknown
-    >;
+    const existingEntry = await this.getEntryById(id, tenantId, userId);
 
     const hasMultiOrg =
       dto.departmentIds !== undefined || dto.teamIds !== undefined || dto.areaIds !== undefined;
@@ -638,7 +635,7 @@ export class BlackboardEntriesService {
     const entry = await this.getEntryById(id, tenantId, userId);
 
     const idColumn = typeof id === 'string' ? 'uuid' : 'id';
-    const numericId = (entry as Record<string, unknown>)['id'] as number;
+    const numericId = entry['id'] as number;
 
     await this.db.tenantQuery(
       `DELETE FROM blackboard_entries WHERE ${idColumn} = $1 AND tenant_id = $2`,
@@ -651,12 +648,12 @@ export class BlackboardEntriesService {
       userId,
       'blackboard',
       numericId,
-      `Blackboard-Eintrag gelöscht: ${(entry as Record<string, unknown>)['title'] as string}`,
+      `Blackboard-Eintrag gelöscht: ${entry['title'] as string}`,
       {
-        title: (entry as Record<string, unknown>)['title'],
-        isActive: (entry as Record<string, unknown>)['isActive'],
-        priority: (entry as Record<string, unknown>)['priority'],
-        orgLevel: (entry as Record<string, unknown>)['orgLevel'],
+        title: entry['title'],
+        isActive: entry['isActive'],
+        priority: entry['priority'],
+        orgLevel: entry['orgLevel'],
       },
     );
 

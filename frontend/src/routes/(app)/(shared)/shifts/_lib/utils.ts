@@ -177,7 +177,7 @@ export function getShiftLabel(shiftType: string, shiftTimesMap?: ShiftTimesMap):
  */
 export function convertShiftTypeFromDB(dbShiftType: string): ShiftType {
   if (dbShiftType in SHIFT_TYPE_FROM_API) {
-    return SHIFT_TYPE_FROM_API[dbShiftType as keyof typeof SHIFT_TYPE_FROM_API] as ShiftType;
+    return SHIFT_TYPE_FROM_API[dbShiftType as keyof typeof SHIFT_TYPE_FROM_API];
   }
   return dbShiftType as ShiftType;
 }

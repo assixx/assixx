@@ -92,7 +92,7 @@ export class AuditMetadataService {
         return null;
       }
 
-      return sanitizeData(rows[0] as Record<string, unknown>);
+      return sanitizeData(rows[0]);
     } catch (error: unknown) {
       const identifier = String(resourceId ?? resourceUuid);
       this.logger.warn(

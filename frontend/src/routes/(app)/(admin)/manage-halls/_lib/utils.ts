@@ -34,7 +34,7 @@ export function populateFormFromHall(hall: Hall): {
     name: hall.name,
     description: hall.description ?? '',
     areaId: hall.areaId ?? null,
-    isActive: (hall.isActive === 4 ? 0 : hall.isActive) as FormIsActiveStatus,
+    isActive: hall.isActive === 4 ? 0 : hall.isActive,
   };
 }
 

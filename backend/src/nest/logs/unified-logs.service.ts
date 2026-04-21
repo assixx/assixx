@@ -440,7 +440,7 @@ export class UnifiedLogsService {
 
     // If already an object (JSONB auto-parsed), return as-is
     if (typeof value === 'object') {
-      return value as Record<string, unknown>;
+      return value;
     }
 
     try {

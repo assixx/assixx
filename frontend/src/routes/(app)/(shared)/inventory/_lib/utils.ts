@@ -49,7 +49,7 @@ export function populateFormFromList(list: InventoryList): {
     codeSeparator: list.codeSeparator,
     codeDigits: list.codeDigits,
     icon: list.icon ?? '',
-    isActive: (list.isActive === 4 ? 0 : list.isActive) as FormIsActiveStatus,
+    isActive: list.isActive === 4 ? 0 : list.isActive,
     tagIds: list.tags.map((t) => t.id),
   };
 }

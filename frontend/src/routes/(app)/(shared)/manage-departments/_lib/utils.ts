@@ -88,7 +88,7 @@ export function populateFormFromDepartment(
     departmentLeadId: department.departmentLeadId ?? null,
     departmentDeputyLeadId: department.departmentDeputyLeadId ?? null,
     hallIds,
-    isActive: (department.isActive === 4 ? 0 : department.isActive) as FormIsActiveStatus,
+    isActive: department.isActive === 4 ? 0 : department.isActive,
   };
 }
 

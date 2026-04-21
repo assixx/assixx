@@ -337,7 +337,7 @@ function filterDeptChildrenByHall(dept: OrgChartNode, hallUuid: string): OrgChar
 
 /** Build a position key with optional suffix for ghost copies */
 function makeCtxKey(ctx: LayoutCtx, entityType: OrgEntityType, entityUuid: string): PositionKey {
-  return `${entityType}:${entityUuid}${ctx.keySuffix}` as PositionKey;
+  return `${entityType}:${entityUuid}${ctx.keySuffix}`;
 }
 
 /** Place a single node at the next leaf position */

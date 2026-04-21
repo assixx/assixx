@@ -262,7 +262,7 @@ export const tooltip = {
   /** Hide tooltip for specific element */
   hide(element: HTMLElement): void {
     if (!browser) return;
-    removeTooltip(element as TooltipElement);
+    removeTooltip(element);
   },
 
   /**

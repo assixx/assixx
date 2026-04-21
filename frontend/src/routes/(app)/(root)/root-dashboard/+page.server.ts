@@ -37,7 +37,7 @@ function processLogsResponse(logsData: LogsApiResponse | null): ActivityLog[] {
     return logsData.logs;
   }
   if (Array.isArray(logsData)) {
-    return logsData as unknown as ActivityLog[];
+    return logsData;
   }
   return [];
 }

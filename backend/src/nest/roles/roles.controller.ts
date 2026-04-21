@@ -46,7 +46,7 @@ export class RolesController {
    */
   @Get('assignable')
   getAssignableRoles(@CurrentUser() user: JwtPayload): Role[] {
-    return this.rolesService.getAssignableRoles(user.role as RoleName);
+    return this.rolesService.getAssignableRoles(user.role);
   }
 
   /**

@@ -205,8 +205,8 @@ export class CalendarService {
     // Calculate recurrence dates (first date is the original event)
     const recurrenceDates = calculateRecurrenceDates(
       startDate,
-      dto.recurrence as string | undefined,
-      dto.recurrenceEndType as string | undefined,
+      dto.recurrence,
+      dto.recurrenceEndType,
       dto.recurrenceCount,
       dto.recurrenceUntil,
     );
