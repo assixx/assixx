@@ -63,6 +63,18 @@ jobs:
     name: Frontend (Svelte Check, ESLint, Prettier, Stylelint)
     permissions:
       contents: read
+    # Dummy values for PUBLIC_* env vars consumed by `svelte-kit sync` during
+    # type generation. Without them, the generator emits a narrower module
+    # declaration for `$env/dynamic/public` (index-signature only, no concrete
+    # keys), which diverges from the local type that Doppler-backed dev uses.
+    # The divergence flips `@typescript-eslint/no-unnecessary-type-assertion`
+    # between local (silent) and CI (errors) on the `env as Record<...>` casts
+    # in Turnstile.svelte, login/+page.svelte, signup/+page.svelte.
+    # Values are compile-time only — never executed at runtime by lint/check.
+    # See ADR-041 (svelte-kit sync pre-step discipline).
+    env:
+      PUBLIC_SENTRY_DSN: ""
+      PUBLIC_TURNSTILE_SITE_KEY: ""
 
     steps:
       - uses: actions/checkout@v5
@@ -98,6 +110,13 @@ jobs:
     name: Unit Tests (Backend + Shared + Frontend)
     permissions:
       contents: read
+    # See frontend-quality job for rationale. frontend-unit tests import from
+    # $env/dynamic/public transitively via components under test; without these
+    # dummies, svelte-kit sync generates a divergent ambient.d.ts and tests see
+    # different types than locally.
+    env:
+      PUBLIC_SENTRY_DSN: ""
+      PUBLIC_TURNSTILE_SITE_KEY: ""
 
     steps:
       - uses: actions/checkout@v5
