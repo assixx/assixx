@@ -53,7 +53,26 @@
         </picture>
       </div>
 
-      {#if form?.success}
+      {#if form?.blocked}
+        <!--
+          ADR-051 §5.2 — Role-block panel.
+          Rendered ONLY for active admin/employee targets (backend returns
+          `blocked: true, reason: 'ROLE_NOT_ALLOWED'`). Message points the user
+          at a Root-Benutzer in ihrem Unternehmen — mirrors the blocked-email
+          copy (§2.3). NO form, NO retry button — the user must contact Root.
+        -->
+        <h1>Passwort-Reset nicht erlaubt</h1>
+        <p class="subtitle">
+          Du bist nicht berechtigt, Dein Passwort selbst zurückzusetzen. Bitte wende Dich an einen
+          Root-Benutzer in Deinem Unternehmen.
+        </p>
+        <div class="success-actions">
+          <a
+            href={resolve('/login')}
+            class="btn btn-index">Zurück zum Login</a
+          >
+        </div>
+      {:else if form?.success}
         <h1>E-Mail gesendet</h1>
         <p class="subtitle">
           Falls ein Konto mit <strong>{form.email}</strong> existiert, haben wir einen Link gesendet.

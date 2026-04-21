@@ -4,6 +4,7 @@
   import AppDatePicker from '$lib/components/AppDatePicker.svelte';
   import PasswordStrengthIndicator from '$lib/components/PasswordStrengthIndicator.svelte';
   import UserPositionChips from '$lib/components/UserPositionChips.svelte';
+  import { showErrorAlert, showSuccessAlert } from '$lib/stores/toast';
   import {
     DEFAULT_HIERARCHY_LABELS,
     isLeadPosition,
@@ -11,7 +12,9 @@
     type HierarchyLabels,
     type PositionOption,
   } from '$lib/types/hierarchy-labels';
+  import { ApiError } from '$lib/utils/api-client';
 
+  import { sendPasswordResetLink } from './api';
   import { POSITION_OPTIONS, MESSAGES, type EmployeeMessages } from './constants';
   import { getStatusBadgeClass, getStatusLabel, calculatePasswordStrength } from './utils';
 
@@ -52,11 +55,20 @@
     positionOptions?: PositionOption[];
     labels?: HierarchyLabels;
     onupgrade?: () => void;
+    /**
+     * ADR-051 §5.4: target for the Root-initiated password-reset-link button.
+     * Non-undefined → button renders. Undefined (create mode OR non-Root
+     * viewer) → no button. Parent gates both conditions since `(shared)`
+     * layout is admin+root accessible — the backend `@Roles('root')` is the
+     * authoritative check; this prop is UX polish that hides the button
+     * from admins so they don't click a feature they can't use.
+     */
+    resetLinkTarget?: { id: number; email: string };
   }
 
   /* eslint-disable prefer-const, @typescript-eslint/no-useless-default-assignment -- Svelte $bindable() requires let and is not a useless default */
   // prettier-ignore
-  let { show, isEditMode, modalTitle, allTeams, submitting, messages: msg = MESSAGES, positionOptions, labels: lbl = DEFAULT_HIERARCHY_LABELS, formFirstName = $bindable(), formLastName = $bindable(), formEmail = $bindable(), formEmailConfirm = $bindable(), formPassword = $bindable(), formPasswordConfirm = $bindable(), formEmployeeNumber = $bindable(), formPositionIds = $bindable(), formPhone = $bindable(), formDateOfBirth = $bindable(), formNotes = $bindable(), formIsActive = $bindable(), formTeamIds = $bindable(), emailError = $bindable(), passwordError = $bindable(), onclose, onsubmit, onvalidateemails, onvalidatepasswords, onupgrade }: Props = $props();
+  let { show, isEditMode, modalTitle, allTeams, submitting, messages: msg = MESSAGES, positionOptions, labels: lbl = DEFAULT_HIERARCHY_LABELS, formFirstName = $bindable(), formLastName = $bindable(), formEmail = $bindable(), formEmailConfirm = $bindable(), formPassword = $bindable(), formPasswordConfirm = $bindable(), formEmployeeNumber = $bindable(), formPositionIds = $bindable(), formPhone = $bindable(), formDateOfBirth = $bindable(), formNotes = $bindable(), formIsActive = $bindable(), formTeamIds = $bindable(), emailError = $bindable(), passwordError = $bindable(), onclose, onsubmit, onvalidateemails, onvalidatepasswords, onupgrade, resetLinkTarget }: Props = $props();
   /* eslint-enable prefer-const, @typescript-eslint/no-useless-default-assignment */
 
   // =============================================================================
@@ -108,6 +120,47 @@
   let passwordScore = $state(-1);
   let passwordLabel = $state('');
   let passwordTime = $state('');
+
+  // ADR-051 §5.4: loading-state for the "Passwort-Reset-Link senden" button.
+  // Disables the button during the in-flight request; the endpoint is
+  // DB-rate-limited 1/15 min per (root, target) pair — the spinner prevents
+  // double-submit which would 429.
+  let sendingResetLink = $state(false);
+
+  /**
+   * Handle the "Passwort-Reset-Link senden" action (ADR-051 §5.4).
+   *
+   * Identical semantics to manage-admins §5.3 — the code is duplicated by
+   * intent (plan §5.4 note: "copy-paste < premature abstraction"). 429 is
+   * detected via `err.status` because the api-client pre-empts with its
+   * own synthesized `RATE_LIMIT_EXCEEDED` before the body is parsed, so
+   * the backend's `code: 'RATE_LIMIT'` never reaches `err.code`.
+   */
+  async function handleSendResetLink(): Promise<void> {
+    if (resetLinkTarget === undefined) return;
+    // KISS: native confirm is fine for an irreversible-until-15-min action.
+    if (!confirm(MESSAGES.RESET_LINK_CONFIRM)) return;
+
+    sendingResetLink = true;
+    try {
+      await sendPasswordResetLink(resetLinkTarget.id);
+      showSuccessAlert(`${MESSAGES.RESET_LINK_SUCCESS}: ${resetLinkTarget.email}`);
+    } catch (err: unknown) {
+      let message: string = MESSAGES.RESET_LINK_ERROR_GENERIC;
+      if (err instanceof ApiError) {
+        if (err.status === 429) {
+          message = MESSAGES.RESET_LINK_ERROR_RATE_LIMIT;
+        } else if (err.code === 'INVALID_TARGET_ROLE') {
+          message = MESSAGES.RESET_LINK_ERROR_INVALID_TARGET;
+        } else if (err.code === 'INACTIVE_TARGET') {
+          message = MESSAGES.RESET_LINK_ERROR_INACTIVE;
+        }
+      }
+      showErrorAlert(message);
+    } finally {
+      sendingResetLink = false;
+    }
+  }
 
   // =============================================================================
   // DERIVED VALUES
@@ -673,6 +726,31 @@
           {/if}
         {/if}
       </div>
+
+      {#if resetLinkTarget !== undefined}
+        <!--
+          ADR-051 §5.4 — Root-initiated Password-Reset-Link.
+          Rendered only when parent passed a target (implies: edit mode +
+          Root viewer). Backend `@Roles('root')` is the authoritative gate.
+        -->
+        <div class="ds-modal__body">
+          <div class="form-field">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              onclick={handleSendResetLink}
+              disabled={sendingResetLink}
+            >
+              {#if sendingResetLink}
+                <span class="spinner-ring spinner-ring--sm mr-2"></span>
+              {:else}
+                <i class="fas fa-paper-plane mr-2"></i>
+              {/if}
+              {MESSAGES.BTN_SEND_RESET_LINK}
+            </button>
+          </div>
+        </div>
+      {/if}
 
       <div class="ds-modal__footer">
         <button

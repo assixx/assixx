@@ -267,6 +267,18 @@
   signups auto-verify via Azure AD trust boundary (no DNS-TXT dance).
   Architectural test (`shared/src/architectural.test.ts`) blocks any future
   user-creation endpoint that skips the `assertVerified()` gate.
+- **Forgot-Password Role-Gate + Root-Initiated Reset** (ADR-051): only
+  `root` users may self-reset via `/auth/forgot-password`. Two independent
+  gates (request + redemption) block admin/employee self-service; stolen
+  tokens are burned + 403 on redemption even if the attacker already holds
+  a valid hash. A Root can delegate a reset link to an admin/employee in
+  the same tenant via a button in the Edit-Modal of `/manage-admins` or
+  `/manage-employees` — separation of duties: Root issues the vehicle,
+  target user sets the password (Root never sees the new credential).
+  Root-on-Root admin-initiated reset is rejected to prevent takeover
+  chains. Per-pair rate-limit (1 / 15 min) implemented via DB-lookup on
+  `password_reset_tokens.initiated_by_user_id`. German-language blocked-
+  and admin-initiated email templates (dark-mode MSO-compatible).
 
 ### Document Management in Detail
 

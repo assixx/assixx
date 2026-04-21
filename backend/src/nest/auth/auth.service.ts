@@ -48,7 +48,7 @@ import type {
 
 /**
  * Internal return shape of `forgotPassword()` — consumed by the controller
- * to decide the additive HTTP body (ADR-050 §2.1 / §2.2, Plan v0.4.4).
+ * to decide the additive HTTP body (ADR-051 §2.1 / §2.2, Plan v0.4.4).
  *
  * - `blocked = true`  → user exists, is active, but role !== 'root'. Blocked-mail
  *   has been sent; controller adds `blocked: true, reason: 'ROLE_NOT_ALLOWED'`
@@ -167,7 +167,7 @@ export class AuthService {
     // path reaches it — sole caller `register(dto, authUser: NestAuthUser)`
     // enforces authenticated context via the type signature).
     private readonly tenantVerification: TenantVerificationService,
-    // ADR-050: CLS supplies IP + User-Agent for the blocked-reset notification
+    // ADR-051: CLS supplies IP + User-Agent for the blocked-reset notification
     // meta-block and for `logger.warn()` context on both gates. Populated in
     // `app.module.ts` ClsModule.forRoot setup; trusts `trustProxy: true` at
     // main.ts:284 so `req.ip` is the client (not Nginx egress).
@@ -395,7 +395,7 @@ export class AuthService {
   /**
    * Request password reset — generates token, sends email.
    *
-   * Two-gate defense-in-depth (ADR-050):
+   * Two-gate defense-in-depth (ADR-051):
    * 1. SILENT DROP (preserved — R1 enumeration contract): non-existent OR
    *    inactive user → `{ blocked: false, delivered: false }`, no side effects.
    * 2. ROLE GATE (new — §2.1): existing active user whose role !== 'root' is
@@ -411,7 +411,7 @@ export class AuthService {
    * AND suspenders).
    *
    * @see docs/FEAT_FORGOT_PASSWORD_ROLE_GATE_MASTERPLAN.md §2.1
-   * @see docs/infrastructure/adr/ADR-050-forgot-password-role-gate.md (pending Phase 6)
+   * @see docs/infrastructure/adr/ADR-051-forgot-password-role-gate.md §Decision — Gate 1
    */
   async forgotPassword(dto: ForgotPasswordDto): Promise<ForgotPasswordResult> {
     const user = await this.findUserByEmail(dto.email);
@@ -491,23 +491,30 @@ export class AuthService {
   /**
    * Reset password using token.
    *
-   * Redemption gate (ADR-050 §2.6 — the "suspenders" to the request-gate's
-   * "belt"): even if an admin/employee holds a valid token (pre-existing,
-   * leaked, or pre-plan-era), they CANNOT set a new password. The token is
-   * burned on block so a retry with the same token is impossible (R9).
+   * Redemption gate (ADR-051 §Decision — Gate 2, the "suspenders" to the
+   * request-gate's "belt"): even if an admin/employee holds a valid token
+   * (pre-existing, leaked, or pre-plan-era), they CANNOT set a new password.
+   * The token is burned on block so a retry with the same token is
+   * impossible (R9).
    *
    * Gate order:
    * 1. Token validity (existing behaviour — unchanged): 401 if not found /
    *    used / expired.
    * 2. NEW — target lifecycle: if the user was deleted or deactivated after
    *    token issuance, burn the token and 401 (generic, no role leak).
-   * 3. NEW — role gate: if target role !== 'root', burn the token + 403
-   *    `ROLE_NOT_ALLOWED`. Explicit `ForbiddenException` (not 401) — token
-   *    was valid, this is an AUTHORIZATION failure (§0.2.5 #4).
-   * 4. Root happy path: hash new password, invalidate token, revoke
-   *    refresh-tokens (existing behaviour — unchanged below).
+   * 3. NEW — origin-check (`initiated_by_user_id`): admin-initiated tokens
+   *    skip the role-gate and run the initiator-lifecycle check
+   *    (`enforceRedemptionOriginGate`); self-service tokens (NULL) continue
+   *    to the role-gate.
+   * 4. NEW — role gate (self-service path only): if target role !== 'root',
+   *    burn the token + 403 `ROLE_NOT_ALLOWED`. Explicit `ForbiddenException`
+   *    (not 401) — token was valid, this is an AUTHORIZATION failure
+   *    (§0.2.5 #4).
+   * 5. Root/admin-initiated happy path: hash new password, invalidate token,
+   *    revoke refresh-tokens (existing behaviour — unchanged below).
    *
-   * @see docs/FEAT_FORGOT_PASSWORD_ROLE_GATE_MASTERPLAN.md §2.6
+   * @see docs/FEAT_FORGOT_PASSWORD_ROLE_GATE_MASTERPLAN.md §2.6 + §2.8
+   * @see docs/infrastructure/adr/ADR-051-forgot-password-role-gate.md §Decision — Gate 2
    */
   async resetPassword(dto: ResetPasswordDto): Promise<void> {
     const tokenHash = this.hashToken(dto.token);
@@ -591,7 +598,7 @@ export class AuthService {
   }
 
   /**
-   * Enforce the redemption-gate based on token origin (ADR-050 §2.6 + §2.8).
+   * Enforce the redemption-gate based on token origin (ADR-051 §2.6 + §2.8).
    *
    * - `initiated_by_user_id` NULL → self-service token: require target role = 'root',
    *   otherwise burn + 403 `ROLE_NOT_ALLOWED`.
@@ -637,20 +644,29 @@ export class AuthService {
         `Self-service password-reset REDEMPTION BLOCKED for user ${targetUser.id} ` +
           `(role=${targetUser.role}, tenant=${targetUser.tenant_id}) — token burned.`,
       );
-      throw new ForbiddenException(
-        'Passwort-Reset nicht erlaubt. Wende Dich an einen Root-Benutzer in Deinem Unternehmen.',
-      );
+      // Object form carries `code: 'ROLE_NOT_ALLOWED'` through the global
+      // exception filter into `error.code` on the response body — the
+      // machine-readable signal the frontend matches against for the
+      // specific "contact your Root" UX (ADR-051 §2.2 mapping table +
+      // §5.3 error-toast copy). Throwing with a bare string would be
+      // normalized to `error.code: 'FORBIDDEN'`, losing the marker.
+      throw new ForbiddenException({
+        message:
+          'Passwort-Reset nicht erlaubt. Wende Dich an einen Root-Benutzer in Deinem Unternehmen.',
+        code: 'ROLE_NOT_ALLOWED',
+      });
     }
   }
 
   /**
    * Issue a password-reset link on behalf of another user (Root → admin/employee).
    *
-   * Strict Root-only capability (ADR-050 §2.7, §0.2.5 #12 + #13). Complements
-   * the self-service block: admin/employee cannot reset themselves, but Root
-   * can delegate a reset flow to them on request. Root never sees the new
-   * credential — the target clicks the emailed link and sets their own
-   * password on the existing `/reset-password` page. Separation of duties.
+   * Strict Root-only capability (ADR-051 §Decision — Root-Initiated Reset,
+   * §0.2.5 #12 + #13). Complements the self-service block: admin/employee
+   * cannot reset themselves, but Root can delegate a reset flow to them on
+   * request. Root never sees the new credential — the target clicks the
+   * emailed link and sets their own password on the existing
+   * `/reset-password` page. Separation of duties.
    *
    * Gates (in order):
    * 1. Target lookup — tenant-scoped via `findUserById(id, initiator.tenantId)`
@@ -664,6 +680,7 @@ export class AuthService {
    * 5. Send admin-initiated email (§2.9) naming the initiator Root.
    *
    * @see docs/FEAT_FORGOT_PASSWORD_ROLE_GATE_MASTERPLAN.md §2.7
+   * @see docs/infrastructure/adr/ADR-051-forgot-password-role-gate.md §Decision — Root-Initiated Reset
    */
   async sendAdminInitiatedResetLink(
     targetUserId: number,

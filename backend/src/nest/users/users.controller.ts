@@ -133,7 +133,7 @@ export class UsersController {
     private readonly availabilityService: UserAvailabilityService,
     private readonly scopeService: ScopeService,
     private readonly userPositionService: UserPositionService,
-    // ADR-050 §2.7: Root-initiated password-reset-link flow — credential
+    // ADR-051 §2.7: Root-initiated password-reset-link flow — credential
     // issuance stays in Auth-domain even though the HTTP route lives under
     // /users. Controller delegates straight to AuthService.
     private readonly authService: AuthService,
@@ -513,16 +513,20 @@ export class UsersController {
   /**
    * POST /users/:id/send-password-reset-link
    *
-   * Root-initiated password-reset-link (ADR-050 §2.7). Strict Root-only —
-   * NOT `canManage` / `@RequirePermission` (§0.2.5 #13): credential-issuance
-   * is an auth-boundary action, narrower than ADR-045 Layer-1. An
-   * admin-with-hasFullAccess cannot issue reset links.
+   * Root-initiated password-reset-link (ADR-051 §Decision — Root-Initiated
+   * Reset). Strict Root-only — NOT `canManage` / `@RequirePermission`
+   * (§0.2.5 #13): credential-issuance is an auth-boundary action, narrower
+   * than ADR-045 Layer-1. An admin-with-hasFullAccess cannot issue reset
+   * links.
    *
    * The target user gets an email with a link to `/reset-password`, clicks
    * it, and sets their own new password. Root never sees the credential —
    * separation of duties (admin-initiated tokens bypass the §2.6 role-gate
    * via §2.8 origin-check branch; the target's new password is bcrypt-hashed
    * only in `resetPassword()` redemption).
+   *
+   * @see docs/FEAT_FORGOT_PASSWORD_ROLE_GATE_MASTERPLAN.md §2.7
+   * @see docs/infrastructure/adr/ADR-051-forgot-password-role-gate.md §Decision — Root-Initiated Reset
    */
   @Post(':id/send-password-reset-link')
   @Roles('root')

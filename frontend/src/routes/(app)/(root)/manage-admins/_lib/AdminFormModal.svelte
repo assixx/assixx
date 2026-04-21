@@ -1,6 +1,7 @@
 <script lang="ts">
   import PasswordStrengthIndicator from '$lib/components/PasswordStrengthIndicator.svelte';
   import UserPositionChips from '$lib/components/UserPositionChips.svelte';
+  import { showErrorAlert, showSuccessAlert } from '$lib/stores/toast';
   import {
     DEFAULT_HIERARCHY_LABELS,
     isLeadPosition,
@@ -8,8 +9,10 @@
     type HierarchyLabels,
     type PositionOption,
   } from '$lib/types/hierarchy-labels';
+  import { ApiError } from '$lib/utils/api-client';
 
   import AdminOrganizationSection from './AdminOrganizationSection.svelte';
+  import { sendPasswordResetLink } from './api';
   import { POSITION_OPTIONS, MESSAGES, type AdminMessages } from './constants';
   import { calculatePasswordStrength } from './utils';
 
@@ -48,11 +51,19 @@
     positionOptions?: PositionOption[];
     ondowngrade?: () => void;
     labels?: HierarchyLabels;
+    /**
+     * ADR-051 §5.3: target for the "Passwort-Reset-Link senden" button.
+     * Non-undefined → button renders. Undefined (create mode) → no button.
+     * The parent page derives this from `currentEditId + admin.email` so
+     * the target user-id + email are available for the confirm-dialog and
+     * the API call.
+     */
+    resetLinkTarget?: { id: number; email: string };
   }
 
   /* eslint-disable prefer-const, @typescript-eslint/no-useless-default-assignment -- Svelte $bindable() requires let and is not a useless default */
   // prettier-ignore
-  let { show, isEditMode, modalTitle, allAreas, allDepartments, submitting, messages: msg = MESSAGES, positionOptions, labels: lbl = DEFAULT_HIERARCHY_LABELS, formFirstName = $bindable(), formLastName = $bindable(), formEmail = $bindable(), formEmailConfirm = $bindable(), formPassword = $bindable(), formPasswordConfirm = $bindable(), formEmployeeNumber = $bindable(), formPositionIds = $bindable(), formNotes = $bindable(), formIsActive = $bindable(), formHasFullAccess = $bindable(), formAreaIds = $bindable(), formDepartmentIds = $bindable(), onclose, onsubmit, onupgrade, ondowngrade }: Props = $props();
+  let { show, isEditMode, modalTitle, allAreas, allDepartments, submitting, messages: msg = MESSAGES, positionOptions, labels: lbl = DEFAULT_HIERARCHY_LABELS, formFirstName = $bindable(), formLastName = $bindable(), formEmail = $bindable(), formEmailConfirm = $bindable(), formPassword = $bindable(), formPasswordConfirm = $bindable(), formEmployeeNumber = $bindable(), formPositionIds = $bindable(), formNotes = $bindable(), formIsActive = $bindable(), formHasFullAccess = $bindable(), formAreaIds = $bindable(), formDepartmentIds = $bindable(), onclose, onsubmit, onupgrade, ondowngrade, resetLinkTarget }: Props = $props();
   /* eslint-enable prefer-const, @typescript-eslint/no-useless-default-assignment */
 
   // =============================================================================
@@ -94,6 +105,49 @@
   let passwordScore = $state(-1);
   let passwordLabel = $state('');
   let passwordTime = $state('');
+
+  // ADR-051 §5.3: loading-state for the "Passwort-Reset-Link senden" button.
+  // Disables the button + swaps the icon for a spinner during the in-flight
+  // request (the Root-initiated-reset endpoint is DB-rate-limited 1/15 min
+  // per (root, target) pair — visible UX feedback prevents double-submit).
+  let sendingResetLink = $state(false);
+
+  /**
+   * Handle the "Passwort-Reset-Link senden" action (ADR-051 §5.3).
+   *
+   * Pre-call confirmation via native `confirm()` — keeps KISS, no extra
+   * modal component required. Error mapping matches the three backend
+   * code markers (§2.7); unknown errors fall back to the generic string.
+   * 429 is detected via `err.status` because the api-client pre-empts 429
+   * with its own `ApiError('Rate limit exceeded', 'RATE_LIMIT_EXCEEDED')`
+   * BEFORE parsing the body, so the backend's `code: 'RATE_LIMIT'` never
+   * reaches the caller as `err.code`.
+   */
+  async function handleSendResetLink(): Promise<void> {
+    if (resetLinkTarget === undefined) return;
+    // KISS: native confirm is fine for an irreversible-until-15-min action.
+    if (!confirm(MESSAGES.RESET_LINK_CONFIRM)) return;
+
+    sendingResetLink = true;
+    try {
+      await sendPasswordResetLink(resetLinkTarget.id);
+      showSuccessAlert(`${MESSAGES.RESET_LINK_SUCCESS}: ${resetLinkTarget.email}`);
+    } catch (err: unknown) {
+      let message: string = MESSAGES.RESET_LINK_ERROR_GENERIC;
+      if (err instanceof ApiError) {
+        if (err.status === 429) {
+          message = MESSAGES.RESET_LINK_ERROR_RATE_LIMIT;
+        } else if (err.code === 'INVALID_TARGET_ROLE') {
+          message = MESSAGES.RESET_LINK_ERROR_INVALID_TARGET;
+        } else if (err.code === 'INACTIVE_TARGET') {
+          message = MESSAGES.RESET_LINK_ERROR_INACTIVE;
+        }
+      }
+      showErrorAlert(message);
+    } finally {
+      sendingResetLink = false;
+    }
+  }
 
   // =============================================================================
   // DERIVED VALUES
@@ -427,6 +481,31 @@
           {onupgrade}
           {ondowngrade}
         />
+
+        {#if resetLinkTarget !== undefined}
+          <!--
+            ADR-051 §5.3 — Root-initiated Password-Reset-Link.
+            Only rendered in edit mode when the parent passed a target.
+            Root triggers an email containing a /reset-password link;
+            the target sets their own password — Root never sees it.
+            Backend enforces @Roles('root') + per-pair DB-rate-limit 1/15 min.
+          -->
+          <div class="form-field">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              onclick={handleSendResetLink}
+              disabled={sendingResetLink}
+            >
+              {#if sendingResetLink}
+                <span class="spinner-ring spinner-ring--sm mr-2"></span>
+              {:else}
+                <i class="fas fa-paper-plane mr-2"></i>
+              {/if}
+              {MESSAGES.BTN_SEND_RESET_LINK}
+            </button>
+          </div>
+        {/if}
       </div>
 
       <div class="ds-modal__footer">

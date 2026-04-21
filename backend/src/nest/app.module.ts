@@ -140,7 +140,7 @@ import { WorkOrdersModule } from './work-orders/work-orders.module.js';
           // IP + User-Agent for audit/log context of anonymous auth flows
           // (forgot-password blocked-mail meta, redemption-gate audit).
           // `req.ip` honors `trustProxy: true` set in main.ts:284 → client IP,
-          // not Nginx egress. ADR-050 §2.1/§2.6; Plan v0.4.4 §0.5.
+          // not Nginx egress. ADR-051 §2.1/§2.6; Plan v0.4.4 §0.5.
           cls.set('ip', req.ip);
           cls.set('userAgent', req.headers['user-agent'] ?? 'unknown');
         },

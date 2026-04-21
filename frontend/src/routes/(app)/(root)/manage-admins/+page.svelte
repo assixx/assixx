@@ -597,6 +597,12 @@
   }}
   onupgrade={canUpgrade ? upgradeAdmin : undefined}
   ondowngrade={canUpgrade ? downgradeAdmin : undefined}
+  resetLinkTarget={isEditMode && currentEditId !== null ?
+    (() => {
+      const a = allAdmins.find((x) => x.id === currentEditId);
+      return a !== undefined ? { id: a.id, email: a.email } : undefined;
+    })()
+  : undefined}
 />
 
 <!-- Availability Modal Component -->

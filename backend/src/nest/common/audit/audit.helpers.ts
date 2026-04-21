@@ -242,7 +242,7 @@ export function isAuthEndpoint(path: string): boolean {
     path.includes('/auth/login') ||
     path.includes('/auth/logout') ||
     path.includes('/auth/refresh') ||
-    // ADR-050 two-gate coverage: without these, the anonymous forgot/reset
+    // ADR-051 two-gate coverage: without these, the anonymous forgot/reset
     // flows are skipped by `shouldSkipRequest` (audit-request-filter.service.ts:59-62)
     // and produce 0 audit_trail rows. Plan v0.4.4 §2.4 Option A+.
     path.includes('/auth/forgot-password') ||

@@ -25,7 +25,7 @@ export interface PasswordResetRecipient {
 }
 
 /**
- * Metadata block for the blocked-reset notification (ADR-050 §2.3).
+ * Metadata block for the blocked-reset notification (ADR-051 §2.3).
  * Values originate from CLS context (`app.module.ts` setup) and the
  * service-side `new Date()` at block-time.
  */
@@ -158,7 +158,7 @@ export class MailerService {
    * (enumeration safety — see class docstring).
    *
    * @see docs/FEAT_FORGOT_PASSWORD_ROLE_GATE_MASTERPLAN.md §2.3
-   * @see docs/infrastructure/adr/ADR-050-forgot-password-role-gate.md (pending Phase 6)
+   * @see docs/infrastructure/adr/ADR-051-forgot-password-role-gate.md (pending Phase 6)
    */
   async sendPasswordResetBlocked(
     recipient: PasswordResetRecipient,
@@ -203,7 +203,7 @@ export class MailerService {
    * employee target. The body explicitly names the initiator Root
    * (separation-of-duties paper-trail), and the link lands on the existing
    * `/reset-password` page where the target sets their own new password
-   * (ADR-050 §2.9). Identical Nodemailer pipeline + silent-swallow-on-failure
+   * (ADR-051 §2.9). Identical Nodemailer pipeline + silent-swallow-on-failure
    * contract as `sendPasswordReset()` — R8 no-leak on SMTP errors preserved.
    *
    * @see docs/FEAT_FORGOT_PASSWORD_ROLE_GATE_MASTERPLAN.md §2.9

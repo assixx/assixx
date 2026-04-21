@@ -34,7 +34,7 @@ import { UsersService } from './users.service.js';
     SecuritySettingsModule,
     // AuthModule provides `AuthService` — required by
     // `UsersController.sendPasswordResetLink` for Root-initiated password-reset
-    // flow (ADR-050 §2.7). Credential-issuance stays in Auth-domain even
+    // flow (ADR-051 §2.7). Credential-issuance stays in Auth-domain even
     // though the HTTP route shape lives under /users. AuthModule already
     // exports AuthService; no circular dep (auth/* never references Users).
     AuthModule,

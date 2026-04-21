@@ -3,7 +3,7 @@
 | Metadata                | Value                                                     |
 | ----------------------- | --------------------------------------------------------- |
 | **Status**              | Amended                                                   |
-| **Date**                | 2026-01-26 (amended 2026-02-05, 2026-03-21, 2026-04-14)   |
+| **Date**                | 2026-01-26 (amended 2026-02-05, 2026-03-21, 2026-04-14, 2026-04-21) |
 | **Decision Makers**     | SCS Technik                                               |
 | **Affected Components** | GitHub Actions, code-quality-checks.yml, docker-build.yml |
 
@@ -156,6 +156,20 @@ _Negative:_
 - One additional CI job (~30–60s, runs in parallel)
 - `pnpm audit` may surface unpatchable transitive CVEs — requires explicit `auditConfig.ignoreCves` entries
 - Weekly PRs need weekly review (vs monthly batch)
+
+---
+
+### Fix 9: svelte-kit sync Env Parity (Amendment 2026-04-21)
+
+**Problem:** `@typescript-eslint/no-unnecessary-type-assertion` was silent locally but errored in CI on three identical `env as Record<string, string | undefined>` casts (`Turnstile.svelte:34`, `login/+page.svelte:29`, `signup/+page.svelte:64`). Not a flaky test — a deterministic environment drift.
+
+**Root cause:** `svelte-kit sync` emits the `$env/dynamic/public` module declaration based on `PUBLIC_*` env vars present at sync time. Locally (Doppler-backed) the keys are set, so the generator emits concrete `PUBLIC_SENTRY_DSN: string; PUBLIC_TURNSTILE_SITE_KEY: string` alongside the `[key: PUBLIC_${string}]: string | undefined` index signature. The cast then legitimately widens `string` → `string | undefined`, so the lint rule stays silent. In CI the keys are absent, so only the index signature is emitted, `env` is already `string | undefined`, and the cast becomes a no-op → rule fires.
+
+**Fix:** Job-level `env:` block with empty-string dummies for `PUBLIC_SENTRY_DSN` and `PUBLIC_TURNSTILE_SITE_KEY` on `frontend-quality` and `unit-tests` (both run `svelte-kit sync`). Values steer the type generator only — never executed at runtime by lint/check/vitest.
+
+**Rule (binding):** any new `PUBLIC_*` env key that backend code treats as always-defined must also be injected as a dummy into any CI job that runs `svelte-kit sync`. Otherwise the type emitted in CI diverges from local and `strictTypeChecked` lint rules flip. See [ADR-041](./ADR-041-typescript-compiler-configuration.md) (svelte-kit sync pre-step discipline) for the related build-tooling discipline.
+
+**Alternative rejected:** three inline `eslint-disable-next-line` comments. Would scatter the workaround across three frontend files for a CI-only symptom, weaken a rule that catches real bugs elsewhere, and need re-justification at every review. Fixing CI parity once is cleaner.
 
 ---
 
