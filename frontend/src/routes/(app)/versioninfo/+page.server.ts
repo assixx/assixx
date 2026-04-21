@@ -1,20 +1,28 @@
 /**
  * /versioninfo — Server load.
  *
- * Renders the shared workspace CHANGELOG.md as sanitized HTML and ships the
+ * Renders the aggregated root CHANGELOG.md as sanitized HTML and ships the
  * build-time app version to the page. The markdown source is imported via
  * Vite's `?raw` suffix so it's bundled at build time — rebuild after
  * `pnpm changeset:version` picks up new entries automatically.
  *
+ * Why the ROOT CHANGELOG, not a per-package one:
+ *   `scripts/aggregate-changelog.mjs` merges backend + frontend + shared
+ *   CHANGELOGs into a single root file, stripping Changesets' auto-generated
+ *   dependency noise and deduplicating bullets that repeat across packages.
+ *   Prior to this the page read `shared/CHANGELOG.md`, which was almost
+ *   always empty (shared rarely receives direct changesets in the Fixed
+ *   Group) — so users saw ghost version headers.
+ *
  * @see docs/how-to/HOW-TO-USE-CHANGESETS.md
+ * @see scripts/aggregate-changelog.mjs — generator for the imported file
  * @see frontend/vite.config.ts — `define: { __APP_VERSION__ }`
  */
 import { marked } from 'marked';
 
-// Vite ?raw import — CHANGELOG.md bundled at build time from the workspace.
-// Path resolution (5 segments up): versioninfo → (app) → routes → src → frontend → <workspace root>.
-// Plus `shared/CHANGELOG.md` lands us at the file.
-import changelogRaw from '../../../../../shared/CHANGELOG.md?raw';
+// Vite ?raw import — aggregated CHANGELOG.md bundled at build time.
+// Path: versioninfo → (app) → routes → src → frontend → <workspace root>/CHANGELOG.md (5× ..).
+import changelogRaw from '../../../../../CHANGELOG.md?raw';
 
 import type { PageServerLoad } from './$types';
 

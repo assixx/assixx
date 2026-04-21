@@ -25,7 +25,15 @@
     isPasswordValid,
   } from './_lib/validators';
 
+  import type { PageData } from './$types';
+
   import { env } from '$env/dynamic/public';
+
+  // `data.brand` is populated by `(public)/+layout.server.ts` via
+  // `resolveBrand(hostSlug, tenantName)` — ADR-050 subdomain branding.
+  // Signup has no `+page.server.ts` load of its own, so `PageData` only
+  // surfaces the layout's `PublicLayoutData` shape.
+  const { data }: { data: PageData } = $props();
 
   // =========================================================================
   // FORM STATE
@@ -202,7 +210,7 @@
 </script>
 
 <Seo
-  title="Registrieren - Assixx"
+  title={`Registrieren - ${data.brand.title}`}
   description="Registrieren Sie Ihr Unternehmen bei Assixx. Digitalisieren Sie Ihre Prozesse — von TPM bis Schichtplanung."
   canonical="https://www.assixx.com/signup"
 />

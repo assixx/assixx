@@ -84,6 +84,37 @@ describe('OAuthStateService', () => {
         expect(payload.mode).toBe(mode);
       },
     );
+
+    // ADR-050 §OAuth: returnToSlug is optional — present when the flow starts
+    // on a subdomain, absent on apex-initiated flows. Covered by these two
+    // tests (roundtrip + absence).
+    it('round-trips returnToSlug into the payload when provided', async () => {
+      await service.create('login', 'verifier-abc', 'firma-a');
+      const payload = JSON.parse(mockRedis.set.mock.calls[0]?.[1] as string) as OAuthState;
+      expect(payload.returnToSlug).toBe('firma-a');
+    });
+
+    it('omits returnToSlug from the payload when not provided (apex flow)', async () => {
+      await service.create('login', 'verifier-abc');
+      const payload = JSON.parse(mockRedis.set.mock.calls[0]?.[1] as string) as OAuthState;
+      // Absent from the JSON entirely, not explicitly undefined — matches
+      // exactOptionalPropertyTypes (ADR-041) semantic.
+      expect('returnToSlug' in payload).toBe(false);
+    });
+
+    it('consume() returns returnToSlug when Redis payload carries it', async () => {
+      const payload: OAuthState = {
+        mode: 'login',
+        codeVerifier: 'verifier-abc',
+        createdAt: 1700000000000,
+        returnToSlug: 'firma-a',
+      };
+      mockRedis.getdel.mockResolvedValueOnce(JSON.stringify(payload));
+
+      const result = await service.consume(FIXED_UUID);
+
+      expect(result.returnToSlug).toBe('firma-a');
+    });
   });
 
   // ─── consume() ───────────────────────────────────────────────────────────

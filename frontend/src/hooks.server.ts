@@ -19,6 +19,8 @@ import { minify } from 'html-minifier-terser';
 
 import { dev } from '$app/environment';
 
+import { resilientFetch } from '$lib/server/resilient-fetch';
+import { extractSlug } from '$lib/utils/extract-slug';
 import { createLogger } from '$lib/utils/logger';
 
 import type { UserRole } from '@assixx/shared';
@@ -92,6 +94,39 @@ const legacyRedirectsHandle: Handle = async ({ event, resolve }) => {
   return await resolve(event);
 };
 
+// ============================================================================
+// Tenant Host Resolver (ADR-050)
+// ============================================================================
+
+/**
+ * Extract the tenant subdomain slug from the request host and expose it on
+ * `event.locals.hostSlug`. Consumed by the `(public)` route group's layout
+ * to fetch per-tenant branding.
+ *
+ * Must run BEFORE `authHandle` (D7 resolution — so downstream handlers can
+ * read `locals.hostSlug` if they ever need to). The handler itself is pure:
+ * it only writes `locals.hostSlug`, never rejects, never redirects, never
+ * short-circuits. Apex / localhost / unknown hosts resolve to `null` and
+ * subdomain routing becomes a no-op — mirrors the backend middleware's
+ * three-state semantics (`string` | `null`).
+ *
+ * Host source preference:
+ *   1. `X-Forwarded-Host` — set by the production Nginx reverse proxy
+ *      (trusted; single origin per ADR-050 §"Production Topology Requirement").
+ *   2. `event.url.hostname` — fallback when the request bypasses Nginx
+ *      (local dev on `localhost:5173`, direct-to-node SSR).
+ *
+ * @see docs/infrastructure/adr/ADR-050-tenant-subdomain-routing.md §Decision
+ * @see docs/FEAT_TENANT_SUBDOMAIN_ROUTING_MASTERPLAN.md Phase 5 Step 5.1
+ */
+const hostResolverHandle: Handle = async ({ event, resolve }) => {
+  const forwardedHost = event.request.headers.get('x-forwarded-host');
+  const hostSource =
+    forwardedHost !== null && forwardedHost !== '' ? forwardedHost : event.url.hostname;
+  event.locals.hostSlug = extractSlug(hostSource);
+  return await resolve(event);
+};
+
 /** Check if path should skip authentication */
 function shouldSkipAuth(pathname: string): boolean {
   if (SKIP_ROUTES_PREFIXES.some((prefix) => pathname.startsWith(prefix))) {
@@ -124,9 +159,16 @@ function extractUserData(json: ApiUserResponse): UserData | null {
   return null;
 }
 
-/** Fetch user data from API */
+/**
+ * Fetch user data from API.
+ *
+ * Uses {@link resilientFetch} because a raw `ECONNRESET` here (e.g. backend
+ * HMR rebuild, rolling deploy, brief OOM restart — the Fastify bootstrap
+ * window is ~3–4 s) would log the user out on every reload. Idempotent
+ * GET — safe to retry.
+ */
 async function fetchUserData(token: string): Promise<UserData | null> {
-  const response = await fetch(`${API_BASE}/users/me`, {
+  const response = await resilientFetch(`${API_BASE}/users/me`, {
     headers: {
       Authorization: `Bearer ${token}`,
       'Content-Type': 'application/json',
@@ -344,13 +386,16 @@ const htmlMinificationHandle: Handle = async ({ event, resolve }) => {
 /**
  * Combined handle hook
  *
- * Order: Sentry → Auth → Logging → Minification
- * Authorization is handled by route group layouts (@see ADR-012)
+ * Order: Sentry → Security Headers → Legacy Redirects → Host Resolver → Auth → Logging → Minification
+ * - Host Resolver (ADR-050) runs BEFORE Auth so `(public)` layout can read
+ *   `locals.hostSlug` during its load function.
+ * - Authorization is handled by route group layouts (@see ADR-012).
  */
 export const handle: Handle = sequence(
   Sentry.sentryHandle(),
   securityHeadersHandle,
   legacyRedirectsHandle,
+  hostResolverHandle,
   authHandle,
   requestLoggingHandle,
   htmlMinificationHandle,

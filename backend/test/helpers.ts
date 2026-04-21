@@ -99,6 +99,29 @@ export function authOnly(token: string): Record<string, string> {
 }
 
 /**
+ * Build an `X-Forwarded-Host` header for a given tenant slug (ADR-050,
+ * masterplan §Session 9b / D8 scope reduction).
+ *
+ * Why only here (not applied globally to every test): the existing 47 API
+ * tests hit `localhost:3000`. `extractSlug('localhost')` returns `null`
+ * (apex/dev case), so `TenantHostResolverMiddleware` sets
+ * `req.hostTenantId = null` and `JwtAuthGuard` skips the cross-check. Those
+ * tests remain green unchanged. This helper exists so the dedicated
+ * subdomain-routing test file can *opt into* host-based tenant resolution
+ * without poisoning the shared helpers.
+ *
+ * Compose with other headers via spread:
+ *   `{ ...authOnly(token), ...withTenantHost('firma-b') }`
+ *
+ * @see docs/infrastructure/adr/ADR-050-tenant-subdomain-routing.md §"Backend:
+ *   Pre-Auth Host Resolver + Post-Auth Cross-Check"
+ * @see docs/FEAT_TENANT_SUBDOMAIN_ROUTING_MASTERPLAN.md §Phase 4 / D8
+ */
+export function withTenantHost(slug: string): Record<string, string> {
+  return { 'X-Forwarded-Host': `${slug}.assixx.com` };
+}
+
+/**
  * Fetch with 429 retry. Use for any endpoint that might be rate-limited.
  */
 export async function fetchWithRetry(

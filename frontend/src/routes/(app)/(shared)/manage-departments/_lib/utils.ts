@@ -4,7 +4,14 @@
 
 import { STATUS_BADGE_CLASSES, STATUS_LABELS, FORM_DEFAULTS } from './constants';
 
-import type { Department, AdminUser, Area, IsActiveStatus, FormIsActiveStatus } from './types';
+import type {
+  AdminUser,
+  Area,
+  Department,
+  DepartmentHallEntry,
+  FormIsActiveStatus,
+  IsActiveStatus,
+} from './types';
 
 // =============================================================================
 // STATUS HELPERS
@@ -68,26 +75,38 @@ export function getHallCountText(count: number, hallLabel: string): string {
   return `${count} ${hallLabel}`;
 }
 
-/** Populate form from department data (for edit mode) */
-export function populateFormFromDepartment(
-  department: Department,
-  hallIds: number[] = [],
-): {
+/**
+ * Build tooltip text for hall badge: one hall name per line, annotated with
+ * its source ("Bereich" for inherited, "direkt" for cross-area junction).
+ */
+export function getHallTooltip(halls: DepartmentHallEntry[]): string {
+  if (halls.length === 0) return 'Keine zugeordnet';
+  return halls.map((h) => `${h.name} (${h.source === 'area' ? 'Bereich' : 'direkt'})`).join('\n');
+}
+
+/** Populate form from department data (for edit mode).
+ * Only cross-area ("direct") halls are form-editable — area-inherited halls
+ * are read-only and displayed separately. See DepartmentModal Section 1/2 UX.
+ */
+export function populateFormFromDepartment(department: Department): {
   name: string;
   description: string;
   areaId: number | null;
   departmentLeadId: number | null;
   departmentDeputyLeadId: number | null;
-  hallIds: number[];
+  directHallIds: number[];
   isActive: FormIsActiveStatus;
 } {
+  const directHallIds = (department.halls ?? [])
+    .filter((h) => h.source === 'direct')
+    .map((h) => h.id);
   return {
     name: department.name,
     description: department.description ?? '',
     areaId: department.areaId ?? null,
     departmentLeadId: department.departmentLeadId ?? null,
     departmentDeputyLeadId: department.departmentDeputyLeadId ?? null,
-    hallIds,
+    directHallIds,
     isActive: department.isActive === 4 ? 0 : department.isActive,
   };
 }

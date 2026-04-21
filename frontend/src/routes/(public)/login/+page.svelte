@@ -18,11 +18,14 @@
   import { mapOAuthErrorReason } from '$lib/utils/oauth';
   import { getTokenManager } from '$lib/utils/token-manager';
 
-  import type { ActionData } from './$types';
+  import type { ActionData, PageData } from './$types';
 
   import { env } from '$env/dynamic/public';
 
-  const { form }: { form: ActionData } = $props();
+  // `data.brand` is populated by `(public)/+layout.server.ts` via
+  // `resolveBrand(hostSlug, tenantName)` — ADR-050 subdomain branding.
+  // Apex / unknown slug → `data.brand.title === 'Assixx'`.
+  const { data, form }: { data: PageData; form: ActionData } = $props();
 
   // Cloudflare Turnstile — cast through a plain index-signature Record so
   // the absent-key case survives svelte-kit sync (see lib/server/turnstile.ts).
@@ -185,6 +188,19 @@
     redirectTo?: string;
   }
 
+  /**
+   * Session 12c (ADR-050): apex-login → subdomain-handoff result shape.
+   * No tokens on this branch (by design — cookies/tokens must land on the
+   * subdomain origin, not apex). Only the absolute redirect URL + minimal
+   * user info. Client navigates to the subdomain which then consumes the
+   * handoff token and sets up session state there.
+   */
+  interface HandoffRedirectData {
+    success: true;
+    redirectTo: string;
+    user: { role: string };
+  }
+
   /** Check if value is a non-null object */
   function isObject(value: unknown): value is Record<string, unknown> {
     return typeof value === 'object' && value !== null;
@@ -211,10 +227,24 @@
     if (!hasStringProp(data, 'refreshToken')) return false;
     return hasValidUser(data);
   }
+
+  /**
+   * Type guard for the Session 12c handoff-redirect shape. Distinguishing
+   * mark from normal login: `accessToken` is absent (tokens live inside the
+   * handoff token, to be consumed by the subdomain page). `redirectTo` is
+   * always a string (absolute URL pointing at the target subdomain).
+   */
+  function isHandoffRedirectData(data: unknown): data is HandoffRedirectData {
+    if (!isObject(data)) return false;
+    if (data.success !== true) return false;
+    if ('accessToken' in data) return false;
+    if (!hasStringProp(data, 'redirectTo')) return false;
+    return hasValidUser(data);
+  }
 </script>
 
 <Seo
-  title="Anmelden - Assixx"
+  title={`Anmelden - ${data.brand.title}`}
   description="Melden Sie sich bei Assixx an — der Enterprise-Plattform für Industrieunternehmen."
   canonical="https://www.assixx.com/login"
 />
@@ -317,6 +347,20 @@
           loading = true;
           return async ({ result, update }) => {
             loading = false;
+
+            // Session 12c (ADR-050): handoff-redirect branch MUST come FIRST.
+            // Shape has no accessToken/refreshToken (tokens live in the handoff
+            // token, to be consumed by the subdomain page after cross-origin
+            // navigation). We intentionally skip TokenManager.setTokens(),
+            // localStorage, setActiveRole() etc. — the subdomain's own
+            // `/signup/oauth-complete` consumer sets all of that on its own
+            // origin via Session 12's handleHandoff(). The login-password
+            // bridge (setLoginPassword) is also skipped — E2E key escrow
+            // recovery runs on the subdomain side after cookie-setup.
+            if (result.type === 'success' && isHandoffRedirectData(result.data)) {
+              window.location.href = result.data.redirectTo;
+              return;
+            }
 
             if (result.type === 'success' && isSuccessResultData(result.data)) {
               const { accessToken, user, redirectTo } = result.data;

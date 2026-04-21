@@ -148,65 +148,14 @@
   }
 
   /*
-    Hero CTA: white on the dark hero overlay (default / dark mode).
-    Light mode swaps in a brighter hero image, so white becomes
-    unreadable — light-mode override below forces black.
+    Hero CTA: white on the dark hero overlay. Hero uses the same dark
+    background asset in both light and dark mode (per product decision
+    2026-04-22 — light-mode variant removed), so white stays legible.
   */
   .hero :global(.btn) {
     color: var(--color-white);
     animation: fade-in-up var(--duration-slow) var(--ease-out) both;
     animation-delay: 400ms;
-  }
-
-  /* Light-mode hero btn: black text for contrast on the light hero image */
-  :global(html:not(.dark)) .hero :global(.btn) {
-    color: var(--color-black);
-  }
-
-  /*
-   * Light-mode hero image: softer, lifted-blacks variant of the default dark
-   * hero so the section doesn't read as "night mode" when the user toggles
-   * light. Dark mode (default) keeps the original asset untouched.
-   * Assets generated via ImageMagick from background_index_1920.jpg.
-   */
-  :global(html:not(.dark)) .hero {
-    background-image: url('/images/background_index_light_1920.jpg');
-    background-image: image-set(
-      url('/images/background_index_light.webp') type('image/webp'),
-      url('/images/background_index_light_1920.jpg') type('image/jpeg')
-    );
-  }
-
-  /*
-   * Light-mode overlay: the default hero uses a dark gradient (0% → 83.6%
-   * opacity of near-black) to lift white text off the image. On the light
-   * hero that overlay muddies the sky-blue image, so swap to a subtle white
-   * gradient that preserves image readability while keeping enough haze at
-   * the bottom for CTA contrast.
-   */
-  :global(html:not(.dark)) .hero::before {
-    background: linear-gradient(
-      to bottom,
-      oklch(100% 0 0 / 0%) 0%,
-      oklch(100% 0 0 / 0%) 50%,
-      oklch(100% 0 0 / 25%) 100%
-    );
-  }
-
-  /*
-   * Light-mode hero typography: source uses hardcoded white to sit on the
-   * dark overlay. In light mode we route through the design-system text
-   * tokens (see design-system/variables-light.css) so h1/p follow the theme
-   * and remain legible on the sky-blue hero.
-   */
-  :global(html:not(.dark)) .hero h1 {
-    color: var(--color-text-primary);
-    text-shadow: 0 1px 2px color-mix(in oklch, var(--color-white) 60%, transparent);
-  }
-
-  :global(html:not(.dark)) .hero p {
-    color: var(--color-text-secondary);
-    text-shadow: none;
   }
 
   /* Responsive */

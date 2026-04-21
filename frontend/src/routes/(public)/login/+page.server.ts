@@ -10,6 +10,7 @@
 import { fail, redirect, type ActionFailure, type Cookies } from '@sveltejs/kit';
 
 import { extractJwtExp } from '$lib/server/jwt-exp';
+import { resilientFetch } from '$lib/server/resilient-fetch';
 import { verifyTurnstile } from '$lib/server/turnstile';
 import { createLogger } from '$lib/utils/logger';
 
@@ -58,6 +59,30 @@ interface LoginResponseData {
     lastName: string;
     role: UserRole;
     tenantId: number;
+    // Session 12c (ADR-050): tenant routing slug. `null` only for legacy
+    // tenants with no subdomain populated — greenfield prod always has one.
+    subdomain: string | null;
+  };
+}
+
+/**
+ * Response shape of `POST /api/v2/auth/handoff/mint` (Session 12c).
+ *
+ * NestJS wraps every controller return in `{success, data: ...}` via the
+ * global response interceptor (same envelope as `/auth/login`). So the
+ * raw JSON body is `{success, data: {token, subdomain}}` — we read
+ * `.data.token` / `.data.subdomain`, not the top-level fields.
+ *
+ * `token` is the 64-hex-char handoff, `subdomain` is the target tenant slug.
+ * The frontend constructs `http[s]://<slug>.<apexOrLocalhost>/signup/oauth-complete?token=X`
+ * and redirects the browser there; that page (Session 12) consumes the token
+ * via `POST /api/v2/auth/oauth/handoff` and sets cookies on the subdomain.
+ */
+interface HandoffMintEnvelope {
+  success: boolean;
+  data?: {
+    token: string;
+    subdomain: string;
   };
 }
 
@@ -153,7 +178,12 @@ function isRedirectError(err: unknown): boolean {
  * This runs BEFORE the page renders, checking if user is already logged in.
  * If they have a valid token, they get redirected to their dashboard.
  */
-export const load: PageServerLoad = async ({ cookies, fetch }) => {
+// NOTE: We intentionally bypass SvelteKit's scoped `fetch` here. The target
+// `${API_BASE}/users/me` is cross-origin (backend :3000), so the enhancements
+// offered by the scoped fetch (same-origin cookie-forwarding, relative URL
+// resolution) add nothing. `resilientFetch` wraps the global fetch with
+// retry-on-ECONNRESET semantics that matter much more for this auth check.
+export const load: PageServerLoad = async ({ cookies }) => {
   const token = cookies.get('accessToken');
 
   if (token === undefined || token === '') {
@@ -161,7 +191,11 @@ export const load: PageServerLoad = async ({ cookies, fetch }) => {
   }
 
   try {
-    const response = await fetch(`${API_BASE}/users/me`, {
+    // resilientFetch retries transient network errors (ECONNRESET etc.) so an
+    // in-flight backend restart (HMR rebuild / rolling deploy / OOM recovery —
+    // ~3–4 s Fastify bootstrap window) does not bounce authenticated users
+    // back to the login page instead of their dashboard. GET — idempotent.
+    const response = await resilientFetch(`${API_BASE}/users/me`, {
       headers: {
         Authorization: `Bearer ${token}`,
         'Content-Type': 'application/json',
@@ -239,8 +273,92 @@ async function verifyTurnstileFromForm(
   return null;
 }
 
+/**
+ * Build the subdomain-scoped handoff URL the browser should navigate to
+ * after apex-login mint (Session 12c).
+ *
+ * Rules:
+ *   - `localhost`                → `{slug}.localhost` (dev)
+ *   - `assixx.com` / `www.assixx.com` → `{slug}.assixx.com` (prod apex)
+ *   - subdomain already          → swap first label (cross-subdomain redirect)
+ *
+ * Preserves protocol + port from the current request URL, so dev on
+ * `:5173` stays on `:5173` and prod stays on 443.
+ */
+function buildSubdomainHandoffUrl(slug: string, token: string, request: Request): string {
+  const url = new URL(request.url);
+  const hostname = url.hostname;
+
+  let newHost: string;
+  if (hostname === 'localhost' || hostname === 'assixx.com') {
+    newHost = `${slug}.${hostname}`;
+  } else if (hostname === 'www.assixx.com') {
+    newHost = `${slug}.assixx.com`;
+  } else {
+    // Subdomain context (incl. `foo.localhost`) — replace first label.
+    const parts = hostname.split('.');
+    parts[0] = slug;
+    newHost = parts.join('.');
+  }
+
+  const port = url.port ? `:${url.port}` : '';
+  return `${url.protocol}//${newHost}${port}/signup/oauth-complete?token=${encodeURIComponent(token)}`;
+}
+
+/**
+ * Session 12c (ADR-050): if the browser authenticated on the apex (or a
+ * different subdomain than the user's tenant), mint a handoff token and
+ * return an absolute redirect URL pointing at the correct subdomain.
+ *
+ * Extracted to keep the login action body under the 60-line / complexity-10
+ * ceiling. Returns `null` when no handoff is needed (user is already on
+ * their correct origin OR tenant has no subdomain configured), in which
+ * case the caller falls through to normal apex-cookie flow.
+ */
+async function buildHandoffRedirect(
+  data: LoginResponseData,
+  hostSlug: string | null,
+  fetchFn: typeof fetch,
+  request: Request,
+): Promise<string | null> {
+  const userSubdomain = data.user.subdomain;
+  if (userSubdomain === null || userSubdomain === hostSlug) {
+    // No subdomain configured, or user is already on the right origin.
+    return null;
+  }
+
+  const mintResp = await fetchFn(`${API_BASE}/auth/handoff/mint`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${data.accessToken}`,
+    },
+    body: JSON.stringify({ refreshToken: data.refreshToken }),
+  });
+
+  if (!mintResp.ok) {
+    // Defensive: mint failed. Caller logs + falls back to apex cookies.
+    log.error(
+      { status: mintResp.status, userSubdomain, hostSlug },
+      'Handoff mint failed after successful login — falling back to apex cookies',
+    );
+    return null;
+  }
+
+  // NestJS ResponseInterceptor wraps controller returns in `{success, data}`
+  // unconditionally for JSON responses (see app.module.ts APP_INTERCEPTOR
+  // registration). Read via `.data.xxx` — direct access returns undefined
+  // and produces "http://undefined.localhost:5173/?token=undefined" bugs.
+  const envelope = (await mintResp.json()) as HandoffMintEnvelope;
+  if (envelope.data === undefined) {
+    log.error({ envelope }, 'Handoff mint returned no `data` field — envelope shape drift?');
+    return null;
+  }
+  return buildSubdomainHandoffUrl(envelope.data.subdomain, envelope.data.token, request);
+}
+
 export const actions: Actions = {
-  default: async ({ request, cookies, fetch }) => {
+  default: async ({ request, cookies, fetch, locals }) => {
     const formData = await request.formData();
     const email = formData.get('email');
     const password = formData.get('password');
@@ -268,6 +386,21 @@ export const actions: Actions = {
 
       if (!isSuccessfulLogin(response, result)) {
         return getLoginErrorResponse(response, result, email);
+      }
+
+      // Session 12c (ADR-050): origin-aware branch. If user's tenant has a
+      // subdomain AND we're NOT on it, mint a handoff token so cookies land
+      // on the correct subdomain. Otherwise fall through to apex-cookie flow.
+      const handoffUrl = await buildHandoffRedirect(result.data, locals.hostSlug, fetch, request);
+      if (handoffUrl !== null) {
+        // IMPORTANT: do NOT setAuthCookies() — cookies must land on the
+        // subdomain origin, not apex. Subdomain page (Session 12 consumer)
+        // swaps the handoff token and sets cookies there.
+        return {
+          success: true,
+          redirectTo: handoffUrl,
+          user: { role: result.data.user.role },
+        };
       }
 
       setAuthCookies(cookies, result.data);

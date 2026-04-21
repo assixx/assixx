@@ -53,6 +53,7 @@ import { Public } from '../../common/decorators/public.decorator.js';
 import { AuthThrottle } from '../../common/decorators/throttle.decorators.js';
 import { CustomThrottlerGuard } from '../../common/guards/throttler.guard.js';
 import { getErrorMessage } from '../../common/utils/error.utils.js';
+import { extractSlug } from '../../common/utils/extract-slug.js';
 import type { SignupResponseData } from '../../signup/dto/index.js';
 // Reuse — single source of truth for the 3-cookie session shape
 // (access/refresh/accessTokenExp). See auth.controller.ts `setAuthCookies`.
@@ -64,6 +65,7 @@ import {
   CompleteSignupDto,
   TicketParamDto,
 } from './dto/index.js';
+import { OAuthHandoffService } from './oauth-handoff.service.js';
 import { OAuthService } from './oauth.service.js';
 import type { SignupTicketPreview } from './oauth.types.js';
 
@@ -99,6 +101,33 @@ function sanitiseErrorReason(error: string): string {
   return encodeURIComponent(stripped.slice(0, 80));
 }
 
+/**
+ * Resolve the originating subdomain for an OAuth /authorize call.
+ * Trusted source is `X-Forwarded-Host` (nginx-set, trustProxy:true).
+ * Fallback is the `return_to_slug` query param (used after nginx's 307
+ * subdomain→apex bounce, which drops the original Host). See ADR-050 §OAuth
+ * and masterplan §Step 2.5c for the trust model; R15 defuses fallback tampering.
+ */
+function resolveReturnToSlug(req: FastifyRequest, queryFallback?: string): string | undefined {
+  const fwd = req.headers['x-forwarded-host'];
+  const host =
+    typeof fwd === 'string' && fwd !== '' ? fwd
+    : Array.isArray(fwd) && fwd[0] !== undefined && fwd[0] !== '' ? fwd[0]
+    : (req.headers.host ?? undefined);
+  const fromHost = extractSlug(host);
+  if (fromHost !== null) return fromHost;
+  return queryFallback;
+}
+
+/**
+ * Build an absolute subdomain URL for a callback redirect target.
+ * `slug` has already been validated against the DB (state-service roundtrip)
+ * OR matches the AuthorizeQuerySchema regex — no additional sanitisation needed.
+ */
+function buildSubdomainUrl(slug: string, pathWithQuery: string): string {
+  return `https://${slug}.assixx.com${pathWithQuery}`;
+}
+
 @Controller('auth/oauth/microsoft')
 export class OAuthController {
   private readonly logger = new Logger(OAuthController.name);
@@ -109,6 +138,9 @@ export class OAuthController {
     // → circular. NestJS canonical resolution (see @see in file header).
     @Inject(forwardRef(() => AuthService))
     private readonly authService: AuthService,
+    // ADR-050 §OAuth: subdomain-initiated login mints a handoff token at callback
+    // time so cookies land on the subdomain origin (not apex). Apex flows unused.
+    private readonly handoffService: OAuthHandoffService,
   ) {}
 
   /**
@@ -123,9 +155,24 @@ export class OAuthController {
   @AuthThrottle()
   async authorize(
     @Query() query: AuthorizeQueryDto,
+    @Req() req: FastifyRequest,
     @Res({ passthrough: false }) reply: FastifyReply,
   ): Promise<void> {
-    const { url } = await this.oauthService.startAuthorization(query.mode);
+    // ADR-050 §OAuth: capture the originating subdomain so the callback can
+    // redirect back to `{slug}.assixx.com` via the handoff-token flow.
+    //
+    // Priority (masterplan §Step 2.5c):
+    //   1. X-Forwarded-Host — set by nginx in prod, trusted because Fastify
+    //      is configured with `trustProxy: true` (main.ts, ADR-050).
+    //      This is the correct source when the frontend calls /authorize
+    //      directly on the subdomain and nginx does NOT rewrite the URL.
+    //   2. `return_to_slug` query param — client-declared fallback used when
+    //      the request arrives after an nginx 307 subdomain→apex bounce that
+    //      loses the original Host header. Tamper-prone at this step, but
+    //      structurally defeated by the handoff endpoint's R15 host-check.
+    const returnToSlug = resolveReturnToSlug(req, query.return_to_slug);
+
+    const { url } = await this.oauthService.startAuthorization(query.mode, returnToSlug);
     await reply.redirect(url, HttpStatus.FOUND);
   }
 
@@ -298,6 +345,29 @@ export class OAuthController {
         ipAddress,
         userAgent,
       );
+
+      // ADR-050 §OAuth: subdomain-initiated flow → mint handoff token, redirect
+      // to subdomain where its SvelteKit SSR calls POST /api/v2/auth/oauth/handoff
+      // and sets cookies on the subdomain origin. Apex cookies here would NOT
+      // reach the subdomain (RFC 6265 §5.3 step 6) — so we deliberately do NOT
+      // call setAuthCookies() on this branch.
+      if (result.returnToSlug !== undefined) {
+        const token = await this.handoffService.mint({
+          userId: result.userId,
+          tenantId: result.tenantId,
+          accessToken: session.accessToken,
+          refreshToken: session.refreshToken,
+        });
+        await reply.redirect(
+          buildSubdomainUrl(
+            result.returnToSlug,
+            `/signup/oauth-complete?token=${encodeURIComponent(token)}`,
+          ),
+          HttpStatus.FOUND,
+        );
+        return;
+      }
+
       setAuthCookies(reply, session.accessToken, session.refreshToken);
       // Delegate role-routing to SvelteKit — `/login` load-function detects the
       // just-set session cookie, calls `/users/me`, and redirects to the
@@ -308,20 +378,31 @@ export class OAuthController {
       await reply.redirect('/login', HttpStatus.FOUND);
       return;
     }
-    if (result.mode === 'login-not-linked') {
-      await reply.redirect('/login?oauth=not-linked', HttpStatus.FOUND);
-      return;
-    }
+
+    // For the remaining result variants — login-not-linked, signup-continue,
+    // provider-error — the redirect path is the same regardless of origin, so
+    // the only thing returnToSlug changes is whether the redirect is absolute
+    // (to the subdomain) or relative (to whatever origin served the callback,
+    // i.e. the apex). Absolute-URL targeting avoids the browser staying on
+    // apex/login for subdomain-initiated flows.
+    const path = OAuthController.resolveRelativeRedirect(result);
+    const target =
+      result.returnToSlug !== undefined ? buildSubdomainUrl(result.returnToSlug, path) : path;
+    await reply.redirect(target, HttpStatus.FOUND);
+  }
+
+  /** Map the non-login-success CallbackResult variants to their relative path. */
+  private static resolveRelativeRedirect(
+    result: Exclude<Awaited<ReturnType<OAuthService['handleCallback']>>, { mode: 'login-success' }>,
+  ): string {
+    if (result.mode === 'login-not-linked') return '/login?oauth=not-linked';
     if (result.mode === 'signup-continue') {
-      await reply.redirect(
-        `/signup/oauth-complete?ticket=${encodeURIComponent(result.ticket)}`,
-        HttpStatus.FOUND,
-      );
-      return;
+      return `/signup/oauth-complete?ticket=${encodeURIComponent(result.ticket)}`;
     }
-    // `provider-error` branch — should be pre-handled by the `query.error` check
-    // in callback() before handleCallback() runs. Keep a safety net redirect.
+    // `provider-error` — pre-handled by the `query.error` check in callback()
+    // before handleCallback() runs, but keep a safety-net redirect for the
+    // service-thrown `provider-error` case.
     const reason = sanitiseErrorReason(result.reason);
-    await reply.redirect(`/login?oauth=error&reason=${reason}`, HttpStatus.FOUND);
+    return `/login?oauth=error&reason=${reason}`;
   }
 }

@@ -174,18 +174,77 @@ async function setupSecurity(app: NestFastifyApplication): Promise<void> {
   // every upload endpoint. See docs/infrastructure/adr/ADR-042-multipart-file-upload-pipeline.md
   await app.register(import('@fastify/multipart'));
 
-  // CORS - supports multiple origins from ALLOWED_ORIGINS env var (comma-separated)
-  const allowedOrigins = (
-    process.env['ALLOWED_ORIGINS'] ?? 'http://localhost:3000,http://localhost:5173'
-  )
-    .split(',')
-    .map((origin: string) => origin.trim());
+  // CORS — origin allowlist via regex callback (ADR-050 §Step 2.4).
+  //
+  // Static list (old behavior) doesn't scale to wildcard subdomain routing:
+  // every <slug>.assixx.com is a valid origin once ADR-050 ships, and the
+  // set is DB-driven, not env-driven. A callback with a pinned regex shape
+  // is the cleanest contract — the regex itself IS the policy.
+  //
+  // Allowed:
+  //   - apex:       https://assixx.com, https://www.assixx.com
+  //   - subdomain:  https://<slug>.assixx.com   (slug matches extractSlug regex)
+  //   - dev:        http://localhost:5173, http://*.localhost:5173
+  //
+  // Same-origin / non-browser requests arrive with `origin === undefined`;
+  // @fastify/cors short-circuits those before reaching the callback, but we
+  // accept explicitly for defense-in-depth on any future adapter change.
+  // Matches @fastify/cors `OriginFunction` signature — NestJS's Fastify
+  // adapter forwards `enableCors` straight to @fastify/cors, so the callback
+  // shape is dictated by that plugin (callback's 2nd arg is `origin`, not
+  // `allow`). Locally-declared instead of imported because `@fastify/cors`
+  // is a transitive dep via `@nestjs/platform-fastify` and not listed in
+  // `backend/package.json`. Declaring the type here keeps the import graph
+  // clean while preserving full type-safety at the call site.
+  type FastifyCorsOriginFn = (
+    origin: string | undefined,
+    callback: (err: Error | null, origin: boolean | string | RegExp) => void,
+  ) => void;
+
+  const corsOriginHandler: FastifyCorsOriginFn = (
+    requestOrigin: string | undefined,
+    callback: (err: Error | null, origin: boolean | string | RegExp) => void,
+  ) => {
+    if (requestOrigin === undefined || isAllowedCorsOrigin(requestOrigin)) {
+      // `true` = "reflect the request origin" — conventional dynamic-allowlist pattern.
+      callback(null, true);
+      return;
+    }
+    callback(new Error(`CORS origin not allowed: ${requestOrigin}`), false);
+  };
+
   app.enableCors({
-    origin: allowedOrigins,
+    origin: corsOriginHandler,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
   });
+}
+
+/**
+ * CORS origin allowlist — pure function so the policy is testable in
+ * isolation and greppable in one place.
+ *
+ * Regex shapes mirror `extractSlug()` (backend/src/nest/common/utils/extract-slug.ts)
+ * for subdomain matching. The apex/dev patterns are expressed explicitly
+ * rather than composed from extractSlug so the CORS surface stays auditable
+ * without cross-file reasoning.
+ *
+ * @see docs/infrastructure/adr/ADR-050-tenant-subdomain-routing.md §"CORS"
+ */
+const PROD_APEX_ORIGIN_REGEX = /^https:\/\/(?:www\.)?assixx\.com$/;
+const PROD_SUBDOMAIN_ORIGIN_REGEX = /^https:\/\/[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.assixx\.com$/;
+// Accepts both ports 5173 (normal `pnpm run dev:svelte`) and 5174 (Playwright
+// E2E parallel Vite instance, see `playwright.config.ts::webServer`). Without
+// 5174 the E2E login fails with `CORS origin not allowed: http://apitest.localhost:5174`.
+const DEV_ORIGIN_REGEX = /^http:\/\/(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)?localhost:517[34]$/;
+
+function isAllowedCorsOrigin(origin: string): boolean {
+  return (
+    PROD_APEX_ORIGIN_REGEX.test(origin) ||
+    PROD_SUBDOMAIN_ORIGIN_REGEX.test(origin) ||
+    DEV_ORIGIN_REGEX.test(origin)
+  );
 }
 
 // =============================================================================

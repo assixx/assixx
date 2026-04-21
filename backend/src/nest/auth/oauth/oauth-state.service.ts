@@ -47,11 +47,22 @@ export class OAuthStateService {
    *
    * @param mode 'login' or 'signup' — drives post-callback routing
    * @param codeVerifier RFC 7636 PKCE code_verifier (caller-generated, >=43 char URL-safe base64)
+   * @param returnToSlug Subdomain the user started the flow on, if any (ADR-050 §OAuth).
+   *                     Apex-initiated flows → omit. Subdomain-initiated flows → slug →
+   *                     callback mints a handoff-token and redirects to that subdomain.
    * @returns The state UUID (UUIDv7) to send to the provider's authorize endpoint
    */
-  async create(mode: OAuthMode, codeVerifier: string): Promise<string> {
+  async create(mode: OAuthMode, codeVerifier: string, returnToSlug?: string): Promise<string> {
     const state = uuidv7();
-    const payload: OAuthState = { mode, codeVerifier, createdAt: Date.now() };
+    // Conditional spread keeps payload.returnToSlug absent when undefined —
+    // mirrors exactOptionalPropertyTypes (ADR-041) and keeps the isOAuthState
+    // type-guard simple (undefined field ≠ explicitly-undefined field).
+    const payload: OAuthState = {
+      mode,
+      codeVerifier,
+      createdAt: Date.now(),
+      ...(returnToSlug !== undefined && { returnToSlug }),
+    };
     await this.redis.set(
       `${STATE_KEY_PREFIX}${state}`,
       JSON.stringify(payload),
@@ -100,10 +111,18 @@ export class OAuthStateService {
       return false;
     }
     const v = value as Record<string, unknown>;
-    return (
-      (v['mode'] === 'login' || v['mode'] === 'signup') &&
-      typeof v['codeVerifier'] === 'string' &&
-      typeof v['createdAt'] === 'number'
-    );
+    if (
+      !(v['mode'] === 'login' || v['mode'] === 'signup') ||
+      typeof v['codeVerifier'] !== 'string' ||
+      typeof v['createdAt'] !== 'number'
+    ) {
+      return false;
+    }
+    // ADR-050 §OAuth: returnToSlug optional — absent OR string. Anything else
+    // (number, null, object, array) is a tampered payload and rejects.
+    if (v['returnToSlug'] !== undefined && typeof v['returnToSlug'] !== 'string') {
+      return false;
+    }
+    return true;
   }
 }

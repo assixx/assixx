@@ -30,6 +30,7 @@
     getLeadDisplay,
     getTeamCountText,
     getHallCountText,
+    getHallTooltip,
     populateFormFromDepartment,
     getDefaultFormValues,
   } from './_lib/utils';
@@ -86,7 +87,7 @@
   let formAreaId: number | null = $state(null);
   let formDepartmentLeadId: number | null = $state(null);
   let formDepartmentDeputyLeadId: number | null = $state(null);
-  let formHallIds: number[] = $state([]);
+  let formDirectHallIds: number[] = $state([]);
   let formIsActive: FormIsActiveStatus = $state(1);
 
   // Form Submit Loading
@@ -125,7 +126,7 @@
     });
     const result = await apiSaveDepartment(payload, currentEditId);
     if (result.success && result.departmentId !== null) {
-      await apiAssignHalls(result.departmentId, formHallIds);
+      await apiAssignHalls(result.departmentId, formDirectHallIds);
       closeDepartmentModal();
       await invalidateAll();
       showSuccessAlert(isEditMode ? 'Erfolgreich aktualisiert' : 'Erfolgreich erstellt');
@@ -198,13 +199,13 @@
     const department = allDepartments.find((d) => d.id === departmentId);
     if (!department) return;
     currentEditId = departmentId;
-    const formData = populateFormFromDepartment(department, department.hallIds ?? []);
+    const formData = populateFormFromDepartment(department);
     formName = formData.name;
     formDescription = formData.description;
     formAreaId = formData.areaId;
     formDepartmentLeadId = formData.departmentLeadId;
     formDepartmentDeputyLeadId = formData.departmentDeputyLeadId;
-    formHallIds = formData.hallIds;
+    formDirectHallIds = formData.directHallIds;
     formIsActive = formData.isActive;
     showDepartmentModal = true;
   }
@@ -238,7 +239,7 @@
     formAreaId = defaults.areaId;
     formDepartmentLeadId = defaults.departmentLeadId;
     formDepartmentDeputyLeadId = defaults.departmentDeputyLeadId;
-    formHallIds = defaults.hallIds;
+    formDirectHallIds = defaults.directHallIds;
     formIsActive = defaults.isActive;
   }
 
@@ -538,7 +539,7 @@
                           class="badge {(dept.hallCount ?? 0) > 0 ?
                             'badge--info'
                           : 'badge--secondary'}"
-                          title={dept.hallNames ?? 'Keine zugeordnet'}
+                          title={getHallTooltip(dept.halls ?? [])}
                         >
                           {getHallCountText(dept.hallCount ?? 0, labels.hall)}
                         </span>
@@ -611,7 +612,7 @@
     bind:formAreaId
     bind:formDepartmentLeadId
     bind:formDepartmentDeputyLeadId
-    bind:formHallIds
+    bind:formDirectHallIds
     bind:formIsActive
     {allAreas}
     {allHalls}

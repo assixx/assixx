@@ -622,7 +622,13 @@ export class AreasService {
   }
 
   /**
-   * Assign halls to an area (clear-then-reassign)
+   * Assign halls to an area (clear-then-reassign).
+   *
+   * Side effect: removes redundant department_halls entries where the newly
+   * assigned halls were directly linked to departments of this same area.
+   * Reason: once a hall belongs to an area, all departments of that area
+   * inherit it implicitly (see department_halls migration docstring), so the
+   * explicit junction row becomes noise.
    */
   async assignHallsToArea(
     areaId: number,
@@ -642,6 +648,14 @@ export class AreasService {
       const placeholders = hallIds.map((_: number, i: number) => `$${i + 3}`).join(', ');
       await this.db.tenantQuery(
         `UPDATE halls SET area_id = $1 WHERE tenant_id = $2 AND id IN (${placeholders})`,
+        [areaId, tenantId, ...hallIds],
+      );
+
+      await this.db.tenantQuery(
+        `DELETE FROM department_halls
+         WHERE tenant_id = $1
+           AND hall_id IN (${placeholders})
+           AND department_id IN (SELECT id FROM departments WHERE tenant_id = $2 AND area_id = $1)`,
         [areaId, tenantId, ...hallIds],
       );
     }

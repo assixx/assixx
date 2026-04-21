@@ -26,6 +26,9 @@ import { SignupModule } from '../../signup/signup.module.js';
 // eslint-disable-next-line import-x/no-cycle -- justified: canonical NestJS forwardRef pattern (Spec Deviation D15)
 import { AuthModule } from '../auth.module.js';
 import { OAuthAccountRepository } from './oauth-account.repository.js';
+// ADR-050 §OAuth — cross-origin session handoff for subdomain OAuth flows.
+import { OAuthHandoffController } from './oauth-handoff.controller.js';
+import { OAuthHandoffService } from './oauth-handoff.service.js';
 import { OAuthStateService } from './oauth-state.service.js';
 import { OAuthController } from './oauth.controller.js';
 import { OAuthService } from './oauth.service.js';
@@ -47,7 +50,7 @@ export { OAUTH_REDIS_CLIENT } from './oauth.tokens.js';
   // loginWithVerifiedUser; AuthModule also imports OAuthModule → circular.
   // Resolved per NestJS canonical pattern (Spec Deviation D15).
   imports: [ConfigModule, SignupModule, forwardRef(() => AuthModule)],
-  controllers: [OAuthController],
+  controllers: [OAuthController, OAuthHandoffController],
   providers: [
     {
       provide: OAUTH_REDIS_CLIENT,
@@ -70,6 +73,7 @@ export { OAUTH_REDIS_CLIENT } from './oauth.tokens.js';
       },
     },
     OAuthStateService,
+    OAuthHandoffService,
     MicrosoftProvider,
     OAuthAccountRepository,
     ProfilePhotoService,
@@ -78,6 +82,7 @@ export { OAUTH_REDIS_CLIENT } from './oauth.tokens.js';
   exports: [
     OAUTH_REDIS_CLIENT,
     OAuthStateService,
+    OAuthHandoffService,
     MicrosoftProvider,
     OAuthAccountRepository,
     ProfilePhotoService,

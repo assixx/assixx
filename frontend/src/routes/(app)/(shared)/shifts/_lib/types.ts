@@ -378,7 +378,12 @@ export interface EmployeeTeamInfo {
 }
 
 /**
- * Shift assignment count per employee (week, month, year)
+ * Shift assignment count per employee (week, month, year).
+ *
+ * `weekInMonthCount` / `weekInYearCount` — intersection of current week
+ * with reference month/year. Used to re-merge unsaved local week edits
+ * into month/year totals when the week crosses a boundary (see the
+ * `assignmentCounts` derived in `+page.svelte`).
  */
 export interface AssignmentCount {
   employeeId: number;
@@ -387,6 +392,8 @@ export interface AssignmentCount {
   weekCount: number;
   monthCount: number;
   yearCount: number;
+  weekInMonthCount: number;
+  weekInYearCount: number;
 }
 
 /**

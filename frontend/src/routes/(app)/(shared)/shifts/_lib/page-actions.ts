@@ -13,6 +13,7 @@ import {
   showWarningAlert,
   showConfirm,
   showConfirmDanger,
+  showConfirmWarning,
 } from '$lib/utils/alerts';
 import { createLogger } from '$lib/utils/logger';
 
@@ -39,6 +40,30 @@ import { shiftsState } from './state.svelte';
 import type { ShiftTimesMap, ShiftFavorite, CustomRotationConfig } from './types';
 
 const log = createLogger('ShiftsActions');
+
+// =============================================================================
+// UNSAVED CHANGES GUARD
+// =============================================================================
+
+/**
+ * Gate für Aktionen, die den aktuellen weeklyShifts-State überschreiben würden
+ * (Wochen-Nav, Filter-Change, Route-Leave). Fragt den User per Warning-Modal,
+ * wenn isDirty === true — sonst fährt er still durch.
+ *
+ * WHY: Drag-and-Drop mutiert weeklyShifts lokal. Ohne Guard wirft jede
+ * Reload-Aktion (loadShiftPlan) die Änderungen weg — der User verliert Arbeit.
+ * Baseline-Tracking via captureSnapshot() nach Load + Save (siehe ADR-011 +
+ * state-shifts.svelte.ts isDirty).
+ *
+ * Returns: true = fortfahren, false = abbrechen
+ */
+export async function ensureDiscardConfirmed(): Promise<boolean> {
+  if (!shiftsState.isDirty) return true;
+  return await showConfirmWarning(
+    'Sie haben ungespeicherte Schichtzuweisungen. Fortfahren ohne zu speichern? Änderungen gehen verloren.',
+    'Ungespeicherte Änderungen',
+  );
+}
 
 // =============================================================================
 // SCHEDULE ACTIONS
@@ -71,6 +96,9 @@ export async function handleSaveSchedule(shiftTimesMap?: ShiftTimesMap): Promise
       shiftsState.setCurrentPlanId(result.planId);
     shiftsState.setIsPlanLocked(true);
     shiftsState.setIsEditMode(false);
+    // Gespeicherter Stand ist die neue Baseline — isDirty wird wieder false.
+    // Siehe ADR-011 + state-shifts.svelte.ts für die Snapshot-Semantik.
+    shiftsState.captureSnapshot();
     showSuccessAlert('Schichtplan erfolgreich gespeichert!');
   } catch (error: unknown) {
     if (

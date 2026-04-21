@@ -22,6 +22,19 @@ declare global {
     interface Locals {
       /** Authenticated user data (set by RBAC hook) */
       user: LocalsUser | null;
+      /**
+       * Tenant subdomain slug extracted from the request host by the
+       * `hostResolverHandle` in `hooks.server.ts`.
+       *
+       * - `string` → request came in on `<slug>.assixx.com`; `(public)`
+       *             layout should fetch per-tenant branding.
+       * - `null`   → apex / localhost / IP / nested subdomain / garbage;
+       *             use the default Assixx brand.
+       *
+       * @see docs/infrastructure/adr/ADR-050-tenant-subdomain-routing.md
+       * @see docs/FEAT_TENANT_SUBDOMAIN_ROUTING_MASTERPLAN.md Phase 5 Step 5.1
+       */
+      hostSlug: string | null;
     }
     // interface PageData {}
     // interface PageState {}

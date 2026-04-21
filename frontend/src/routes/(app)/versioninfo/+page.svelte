@@ -4,7 +4,8 @@
   Shows:
   - Current app version (build-time constant from vite `define`)
   - Development-status disclaimer
-  - Rendered CHANGELOG.md (from shared package)
+  - Rendered root CHANGELOG.md (aggregated from backend/frontend/shared by
+    scripts/aggregate-changelog.mjs — see docs/how-to/HOW-TO-USE-CHANGESETS.md)
   - "Fehler melden" button → scrolls to inline bug-report form (Phase 3)
 
   DOMPurify runs client-side only. SSR would require jsdom; we avoid the
@@ -85,7 +86,7 @@
         Änderungshistorie
       </h2>
       <p class="card__subtitle">
-        Generiert aus <code>shared/CHANGELOG.md</code> per Changesets.
+        Aggregiert aus Backend-, Frontend- und Shared-Änderungen per Changesets.
       </p>
     </div>
 

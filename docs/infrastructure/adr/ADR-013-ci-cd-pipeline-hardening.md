@@ -1,11 +1,11 @@
 # ADR-013: CI/CD Pipeline Hardening
 
-| Metadata                | Value                                                     |
-| ----------------------- | --------------------------------------------------------- |
-| **Status**              | Amended                                                   |
+| Metadata                | Value                                                               |
+| ----------------------- | ------------------------------------------------------------------- |
+| **Status**              | Amended                                                             |
 | **Date**                | 2026-01-26 (amended 2026-02-05, 2026-03-21, 2026-04-14, 2026-04-21) |
-| **Decision Makers**     | SCS Technik                                               |
-| **Affected Components** | GitHub Actions, code-quality-checks.yml, docker-build.yml |
+| **Decision Makers**     | SCS Technik                                                         |
+| **Affected Components** | GitHub Actions, code-quality-checks.yml, docker-build.yml           |
 
 ---
 

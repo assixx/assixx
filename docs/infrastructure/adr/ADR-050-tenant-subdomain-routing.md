@@ -2,7 +2,7 @@
 
 | Metadata                | Value                                                                                                                                                                                   |
 | ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Status**              | Proposed                                                                                                                                                                                |
+| **Status**              | Proposed (code-complete 2026-04-21 — infra hold until prod-VPS-test; flip to "Accepted" happens at Session 13 cutover per masterplan)                                                   |
 | **Date**                | 2026-04-19                                                                                                                                                                              |
 | **Decision Makers**     | Simon Öztürk (Staff-Engineer assist)                                                                                                                                                    |
 | **Affected Components** | Infra (DNS, Nginx, TLS), Backend (`auth/`, new host-resolver middleware, `oauth/`), Frontend (`hooks.server.ts`, `(public)` layout group, OAuth-callback handoff)                       |
@@ -198,6 +198,33 @@ middleware's Nginx-forwarded-host lookup would silently read wrong values.
 No change required, but any future refactor of the Fastify adapter must
 preserve this flag.
 
+**Object-identity note — middleware writes to `.raw`, guards read via `.raw`
+(D17, Session 10 runtime discovery, 2026-04-21):** NestJS class-middleware
+mounted via `MiddlewareConsumer.apply().forRoutes(...)` runs under
+`@fastify/middie`, which passes the **raw `IncomingMessage`** (not the
+Fastify-wrapped `FastifyRequest`) as the first argument of
+`use(req, res, next)`. The middleware therefore writes `hostTenantId` to
+the `IncomingMessage`. Fastify later exposes that same object on the
+wrapper as `FastifyRequest.raw`. Guards and controllers — which DO receive
+the `FastifyRequest` wrapper — MUST read the field via
+`(request as HostAwareRequest).raw.hostTenantId`. Reading bare
+`request.hostTenantId` in a guard/controller silently returns `undefined`
+because the field lives on `.raw`, not on the wrapper itself. The initial
+implementation did exactly that, turning the cross-tenant replay defence —
+"the single load-bearing line of the whole design" (§Decision above) —
+into a silent no-op in production. The Phase 4 API integration tests
+caught it on their first run (masterplan Changelog 0.9.0): a valid JWT
+for tenant A against `firma-b.assixx.com` returned 200 instead of 403.
+The fix ships: an explicit `HostAwareRequest` type
+(`FastifyRequest & { raw: IncomingMessage & HostAwareRaw }`), guard and
+handoff-controller reads via `.raw.hostTenantId`, and unit-test mocks that
+write into `mockRequest.raw` so regressions can't silently pass.
+**Regression guard:** `shared/src/architectural.test.ts` now contains a D17
+AST assertion that rejects any bare `req.hostTenantId` /
+`request.hostTenantId` PropertyAccess outside the middleware writer
+(Session 12b, 2026-04-21). Any future refactor attempting to reinstate
+the bare-access pattern fails CI.
+
 ### Production Topology Requirement: Backend Port Isolation
 
 The entire host-cross-check security model assumes every request reaches the
@@ -314,20 +341,54 @@ at the next authenticated request (403 `CROSS_TENANT_HOST_MISMATCH`), but
 surfacing a confusing UX. The endpoint-level assertion closes the loop and
 produces a clean, actionable error code (`HANDOFF_HOST_MISMATCH`) instead.
 
-### Local Dev: Unchanged + Optional Subdomain-Routing
+### Local Dev: Subdomain Routing First-Class (Session 12c-fix, 2026-04-21)
 
-`extractSlug()` returns `null` for `localhost`, IP literals, and apex hosts —
-host-cross-check is then skipped, JWT-tenantId is the sole source of truth,
-exactly as today. Devs who want to test subdomain routing add to
-`/etc/hosts`:
+`extractSlug()` returns `null` for plain `localhost`, IP literals, and apex
+hosts. For **`<slug>.localhost`** (single-label dev subdomain) it returns
+the slug — same semantics as `<slug>.assixx.com` in prod. This is
+**Session 12c-fix**: the initial implementation rejected all `.localhost`
+subdomains (`endsWith('.localhost') → null`), which silently defeated this
+ADR's own "opt-in dev subdomain testing" workflow: R14/R15 host-cross-check
+never fired in dev because `hostTenantId` stayed null. Apex-login →
+subdomain-handoff was untestable locally. The bug was caught during
+Session 12c integration testing (login on `localhost` → handoff to
+`testfirma.localhost` → 403 `HANDOFF_HOST_MISMATCH`).
+
+Corrected behaviour:
+
+| Host                | `extractSlug()` | Notes                                                        |
+| ------------------- | --------------- | ------------------------------------------------------------ |
+| `localhost`         | `null`          | plain = apex-equivalent, API-tests unaffected                |
+| `localhost:5173`    | `null`          | port stripped before check                                   |
+| `firma-a.localhost` | `'firma-a'`     | dev subdomain — DB lookup → `hostTenantId` → full R14/R15    |
+| `foo.bar.localhost` | `null`          | nested not allowed (mirrors prod `a.b.assixx.com` rejection) |
+| `127.0.0.1`         | `null`          | IPv4 literals — internal docker calls                        |
+| `<slug>.assixx.com` | `'<slug>'`      | prod subdomain                                               |
+
+Devs who want to test subdomain routing add to `/etc/hosts`:
 
 ```
-127.0.0.1 firma-a.localhost firma-b.localhost
+127.0.0.1 firma-a.localhost firma-b.localhost testfirma.localhost
 ```
 
-…and use `http://firma-a.localhost:5173/login`. Vite resolves `*.localhost`
-natively per RFC 6761. **Zero changes to dev-server config.** Opt-in per
-developer.
+…and use `http://firma-a.localhost:5173/login`. Vite's `allowedHosts:
+['.localhost']` (set in `vite.config.ts` Session 12c) accepts all
+`*.localhost` origins; the backend's `DEV_ORIGIN_REGEX` in `main.ts`
+mirrors the CORS shape. **Dev/prod parity is now real**: the same R14
+(backend port exposure), R15 (handoff host-mismatch), and
+`CROSS_TENANT_HOST_MISMATCH` cross-check invariants fire identically on
+`*.localhost` and `*.assixx.com`. Security footguns surface during dev
+instead of at staging rollout.
+
+**Per-dev opt-in preserved:** existing API tests (47 files) hit
+`http://localhost:3000` (plain `localhost`) without `X-Forwarded-Host` →
+`extractSlug('localhost') = null` → `hostTenantId = null` → cross-check
+skips. Zero test migration needed, test-infra stays hermetic.
+
+**Runbook:** [HOW-TO-LOCAL-SUBDOMAINS](../../how-to/HOW-TO-LOCAL-SUBDOMAINS.md)
+— step-by-step for adding a new local subdomain, including the
+Session 12c-fix-era pitfalls (email-domain vs routing-slug confusion,
+cross-origin cookies).
 
 ---
 

@@ -25,6 +25,37 @@ export interface OAuthState {
   codeVerifier: string;
   /** Epoch ms at creation — diagnostics only; expiry is Redis-driven. */
   createdAt: number;
+  /**
+   * Subdomain the user started the OAuth flow on, if any (ADR-050 §OAuth,
+   * masterplan §Step 2.5). Apex-initiated flows → undefined, same as today.
+   * Subdomain-initiated flows → slug → callback mints a handoff-token and
+   * redirects to `https://{slug}.assixx.com/signup/oauth-complete?token=…`.
+   *
+   * Server-stored (not a URL/cookie round-trip value) — URL-tampering at
+   * `/initiate` is neutralised structurally by the handoff endpoint's
+   * host cross-check (R15: `req.hostTenantId === payload.tenantId`).
+   */
+  returnToSlug?: string;
+}
+
+/**
+ * Redis-stored single-use handoff payload minted by the OAuth callback
+ * when a user completes login on a subdomain-initiated flow
+ * (ADR-050 §OAuth, masterplan §Step 2.5). 60-s TTL, consumed by
+ * `POST /api/v2/auth/oauth/handoff` which sets the auth cookies
+ * scoped to the subdomain origin.
+ *
+ * Only `login-success` callbacks produce a handoff — signup flows
+ * create the tenant inside the subsequent form submission, so there
+ * is no pre-existing tenantId to anchor the R15 host-check against.
+ */
+export interface OAuthHandoffPayload {
+  userId: number;
+  tenantId: number;
+  accessToken: string;
+  refreshToken: string;
+  /** Epoch ms at mint — diagnostics only; expiry is Redis-driven. */
+  createdAt: number;
 }
 
 /**
@@ -91,16 +122,21 @@ export interface PhotoMetadata {
  * Result of `OAuthService.handleCallback()` — discriminated union.
  *
  * Mapping to controller redirects:
- *   - `login-success`     -> set JWT cookies, 302 -> /dashboard
- *   - `login-not-linked`  -> 302 -> /login?oauth=not-linked
- *   - `signup-continue`   -> 302 -> /signup/oauth-complete?ticket={uuid}
- *   - `provider-error`    -> 302 -> /login?oauth=error&reason=...  (e.g. user denied consent)
+ *   - `login-success`     -> set JWT cookies, 302 -> /dashboard (apex)
+ *                            OR mint handoff-token + 302 -> https://{slug}.assixx.com/... (subdomain)
+ *   - `login-not-linked`  -> 302 -> /login?oauth=not-linked (same origin)
+ *   - `signup-continue`   -> 302 -> /signup/oauth-complete?ticket={uuid} (same origin)
+ *   - `provider-error`    -> 302 -> /login?oauth=error&reason=... (same origin)
+ *
+ * `returnToSlug` (ADR-050 §OAuth) travels through every variant so the
+ * controller can redirect back to the subdomain the user started on, not
+ * the apex. Apex-initiated flows leave it undefined — existing behaviour.
  */
 export type CallbackResult =
-  | { mode: 'login-success'; userId: number; tenantId: number }
-  | { mode: 'login-not-linked'; email: string }
-  | { mode: 'signup-continue'; ticket: string }
-  | { mode: 'provider-error'; reason: string };
+  | { mode: 'login-success'; userId: number; tenantId: number; returnToSlug?: string }
+  | { mode: 'login-not-linked'; email: string; returnToSlug?: string }
+  | { mode: 'signup-continue'; ticket: string; returnToSlug?: string }
+  | { mode: 'provider-error'; reason: string; returnToSlug?: string };
 
 /**
  * Redis-stored signup ticket — bridges the OAuth callback (provider-resolved identity)

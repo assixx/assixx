@@ -1,13 +1,13 @@
 # ADR-051: Forgot-Password Role-Gate + Root-Initiated Reset
 
-| Metadata                | Value                                                                                                                                                                                                                   |
-| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Status**              | Accepted                                                                                                                                                                                                                |
-| **Date**                | 2026-04-21                                                                                                                                                                                                              |
-| **Decision Makers**     | SCS-Technik Team (Simon Öztürk + Staff-Engineer assist)                                                                                                                                                                 |
+| Metadata                | Value                                                                                                                                                                                                                                                     |
+| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Status**              | Accepted                                                                                                                                                                                                                                                  |
+| **Date**                | 2026-04-21                                                                                                                                                                                                                                                |
+| **Decision Makers**     | SCS-Technik Team (Simon Öztürk + Staff-Engineer assist)                                                                                                                                                                                                   |
 | **Affected Components** | Backend (`auth/`, `users/`, `common/audit/`, `common/services/mailer.service.ts`, `app.module.ts`), CLS context, `password_reset_tokens` table + migration 140, two email templates, Frontend (`/forgot-password`, `/manage-admins`, `/manage-employees`) |
-| **Supersedes**          | —                                                                                                                                                                                                                       |
-| **Related ADRs**        | ADR-005 (JWT), ADR-006 (CLS Tenant-Context), ADR-010 (Roles & Hierarchy), ADR-019 (Multi-Tenant RLS), ADR-045 (Permission & Visibility Design), ADR-046 (Microsoft OAuth), ADR-049 (Tenant Domain Verification)         |
+| **Supersedes**          | —                                                                                                                                                                                                                                                         |
+| **Related ADRs**        | ADR-005 (JWT), ADR-006 (CLS Tenant-Context), ADR-010 (Roles & Hierarchy), ADR-019 (Multi-Tenant RLS), ADR-045 (Permission & Visibility Design), ADR-046 (Microsoft OAuth), ADR-049 (Tenant Domain Verification)                                           |
 
 ---
 
@@ -32,14 +32,14 @@ Before this ADR, `/auth/forgot-password` issued a reset link for any account who
 
 ### Threat Model
 
-| Actor                                                                    | Capability                                       | Mitigation in this ADR                                                                                                                            |
-| ------------------------------------------------------------------------ | ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| External attacker with admin's email address                             | Can POST `/auth/forgot-password`                 | **Request gate** blocks at role-check; blocked email is delivered as paper trail naming IP + timestamp.                                           |
-| External attacker holding a valid admin token (DB leak, historical copy) | Can POST `/auth/reset-password`                  | **Redemption gate** re-checks role; token is burned on block. Single-use, irreversible.                                                           |
-| Compromised Root triggers reset chain against other Roots in tenant      | Could serially seize every Root                  | Root-on-Root admin-initiated reset rejected at issuance (`INVALID_TARGET_ROLE`). A second Root uses `/forgot-password` self-service instead.      |
-| Ex-Root (demoted/deleted) issues token, target redeems later             | Could exfiltrate via stale link                  | Redemption gate re-verifies initiator lifecycle: must still be `role='root'`, `is_active=1`, same tenant. Failure → burn + 401 generic.           |
-| Role-enumeration via differential response                               | Probe response delta to distinguish admin/root   | Root-happy-path and silent-drop return byte-identical bodies. Blocked path reveals role only to an attacker who already knows the target exists. |
-| Email flood to notify or saturate a target's mailbox                     | SMTP abuse / notification spam                   | Existing `@AuthThrottle()` (10 req / 5 min per IP) + SMTP-provider sender-level rate-limits. Per-email tier deferred to v2.                      |
+| Actor                                                                    | Capability                                     | Mitigation in this ADR                                                                                                                           |
+| ------------------------------------------------------------------------ | ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| External attacker with admin's email address                             | Can POST `/auth/forgot-password`               | **Request gate** blocks at role-check; blocked email is delivered as paper trail naming IP + timestamp.                                          |
+| External attacker holding a valid admin token (DB leak, historical copy) | Can POST `/auth/reset-password`                | **Redemption gate** re-checks role; token is burned on block. Single-use, irreversible.                                                          |
+| Compromised Root triggers reset chain against other Roots in tenant      | Could serially seize every Root                | Root-on-Root admin-initiated reset rejected at issuance (`INVALID_TARGET_ROLE`). A second Root uses `/forgot-password` self-service instead.     |
+| Ex-Root (demoted/deleted) issues token, target redeems later             | Could exfiltrate via stale link                | Redemption gate re-verifies initiator lifecycle: must still be `role='root'`, `is_active=1`, same tenant. Failure → burn + 401 generic.          |
+| Role-enumeration via differential response                               | Probe response delta to distinguish admin/root | Root-happy-path and silent-drop return byte-identical bodies. Blocked path reveals role only to an attacker who already knows the target exists. |
+| Email flood to notify or saturate a target's mailbox                     | SMTP abuse / notification spam                 | Existing `@AuthThrottle()` (10 req / 5 min per IP) + SMTP-provider sender-level rate-limits. Per-email tier deferred to v2.                      |
 
 ---
 
@@ -69,14 +69,14 @@ The two-gate structure is not redundant. Gate 1 stops the common case (attacker 
 
 `ForgotPasswordResponse` DTO gains two optional fields: `blocked?: true`, `reason?: 'ROLE_NOT_ALLOWED'`. The old shape (`{ message: string }`) remains valid on root and silent-drop paths. Old clients reading only `message` degrade gracefully to a generic-success display on blocked paths (an accepted brief deploy-window inconsistency). No DTO migration, no byte-identity test-bloat, no frontend-sync pressure.
 
-| Case                                        | HTTP | Body                                                                                                                          |
-| ------------------------------------------- | ---- | ----------------------------------------------------------------------------------------------------------------------------- |
-| Root happy-path                             | 200  | `{ message }`                                                                                                                 |
-| Silent drop (non-existent or inactive)      | 200  | `{ message }` — **byte-identical** to Root happy-path                                                                         |
-| Blocked active admin/employee               | 200  | `{ message, blocked: true, reason: 'ROLE_NOT_ALLOWED' }`                                                                      |
-| Redemption: valid Root token + new password | 200  | `{ message }`                                                                                                                 |
-| Redemption: token bad / vanished / ghost    | 401  | generic NestJS exception shape                                                                                                |
-| Redemption: valid self-service, non-root    | 403  | `{ statusCode: 403, code: 'ROLE_NOT_ALLOWED', message, error: 'Forbidden' }` — token burned via `used = true`                 |
+| Case                                        | HTTP | Body                                                                                                          |
+| ------------------------------------------- | ---- | ------------------------------------------------------------------------------------------------------------- |
+| Root happy-path                             | 200  | `{ message }`                                                                                                 |
+| Silent drop (non-existent or inactive)      | 200  | `{ message }` — **byte-identical** to Root happy-path                                                         |
+| Blocked active admin/employee               | 200  | `{ message, blocked: true, reason: 'ROLE_NOT_ALLOWED' }`                                                      |
+| Redemption: valid Root token + new password | 200  | `{ message }`                                                                                                 |
+| Redemption: token bad / vanished / ghost    | 401  | generic NestJS exception shape                                                                                |
+| Redemption: valid self-service, non-root    | 403  | `{ statusCode: 403, code: 'ROLE_NOT_ALLOWED', message, error: 'Forbidden' }` — token burned via `used = true` |
 
 `ResetPasswordResponse` is unchanged — the 403 body is the NestJS-standard exception shape, not this DTO.
 
@@ -90,14 +90,14 @@ Guard: `@Roles('root')` — **strict Root-only, deliberately narrower than ADR-0
 
 Target rules, enforced in `AuthService.sendAdminInitiatedResetLink(targetId, initiator)`:
 
-| Condition                                                              | Response                                                                    |
-| ---------------------------------------------------------------------- | --------------------------------------------------------------------------- |
-| Target not found (including cross-tenant via tenant-scoped RLS lookup) | 404 `{ message: 'Benutzer nicht gefunden.' }`                               |
-| Target is `role='root'`                                                | 400 `{ code: 'INVALID_TARGET_ROLE' }` — Root-on-Root rejected (see below)   |
-| Target role not in `{admin, employee}`                                 | 400 `{ code: 'INVALID_TARGET_ROLE' }`                                       |
-| Target `is_active != 1`                                                | 400 `{ code: 'INACTIVE_TARGET' }`                                           |
-| `MAX(created_at) WHERE user_id=target AND initiated_by_user_id=root` within last 15 min | 429 `{ code: 'RATE_LIMIT' }`                             |
-| All checks pass                                                        | 200 `{ message }` — token issued with `initiated_by_user_id = initiator.id` |
+| Condition                                                                               | Response                                                                    |
+| --------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| Target not found (including cross-tenant via tenant-scoped RLS lookup)                  | 404 `{ message: 'Benutzer nicht gefunden.' }`                               |
+| Target is `role='root'`                                                                 | 400 `{ code: 'INVALID_TARGET_ROLE' }` — Root-on-Root rejected (see below)   |
+| Target role not in `{admin, employee}`                                                  | 400 `{ code: 'INVALID_TARGET_ROLE' }`                                       |
+| Target `is_active != 1`                                                                 | 400 `{ code: 'INACTIVE_TARGET' }`                                           |
+| `MAX(created_at) WHERE user_id=target AND initiated_by_user_id=root` within last 15 min | 429 `{ code: 'RATE_LIMIT' }`                                                |
+| All checks pass                                                                         | 200 `{ message }` — token issued with `initiated_by_user_id = initiator.id` |
 
 **Why Root-on-Root rejected?** A second Root in the tenant who has lost their password uses `/forgot-password` self-service — the Root path is always open. There is no legitimate business case where Root-A needs to reset Root-B's credential. Rejecting this shuts a Root-takeover chain: a compromised Root cannot grind through the other Roots and seize them one by one. A compromised Root can already do significant damage, but this specific lateral-move path is closed off.
 
@@ -319,15 +319,15 @@ ADR-049 ships **first** and provides the structural Break-Glass path: a DNS-veri
 
 ### Risks & Mitigations
 
-| Risk                                                                                   | Mitigation                                                                                                                              |
-| -------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| Developer forgets Gate 2 when modifying `resetPassword()`                              | Unit tests cover every gate branch (97/97 tests); regression is immediately visible.                                                   |
-| New column `initiated_by_user_id` not populated on new endpoint                        | Integration test asserts `initiated_by_user_id = initiator.id` after a successful admin-initiated call.                                |
-| Initiator demotion / deletion creates stale ghost-tokens                               | `ON DELETE SET NULL` + Gate 2 initiator-lifecycle check: ghost tokens fall through to the self-service role-gate, which blocks anyway. |
-| Role-enumeration exposure via `blocked: true`                                          | Accepted; primary defense is `@AuthThrottle()`.                                                                                         |
-| SMTP flakiness prevents a blocked-email from arriving                                  | Mailer method logs the failure and resolves (does not throw) — preserves no-leak contract; admin still sees the UI blocked branch.     |
-| Frontend regression drops the blocked branch                                           | svelte-check + ESLint run in CI; browser smoke in Phase 6 covers all three UI paths (root, blocked, silent-drop).                      |
-| `@Roles('root')` on the admin-initiated endpoint is accidentally widened to Layer-1   | Integration test: admin-caller (even with `hasFullAccess`) gets 403; employee-caller gets 403; unauthenticated gets 401.               |
+| Risk                                                                                | Mitigation                                                                                                                             |
+| ----------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| Developer forgets Gate 2 when modifying `resetPassword()`                           | Unit tests cover every gate branch (97/97 tests); regression is immediately visible.                                                   |
+| New column `initiated_by_user_id` not populated on new endpoint                     | Integration test asserts `initiated_by_user_id = initiator.id` after a successful admin-initiated call.                                |
+| Initiator demotion / deletion creates stale ghost-tokens                            | `ON DELETE SET NULL` + Gate 2 initiator-lifecycle check: ghost tokens fall through to the self-service role-gate, which blocks anyway. |
+| Role-enumeration exposure via `blocked: true`                                       | Accepted; primary defense is `@AuthThrottle()`.                                                                                        |
+| SMTP flakiness prevents a blocked-email from arriving                               | Mailer method logs the failure and resolves (does not throw) — preserves no-leak contract; admin still sees the UI blocked branch.     |
+| Frontend regression drops the blocked branch                                        | svelte-check + ESLint run in CI; browser smoke in Phase 6 covers all three UI paths (root, blocked, silent-drop).                      |
+| `@Roles('root')` on the admin-initiated endpoint is accidentally widened to Layer-1 | Integration test: admin-caller (even with `hasFullAccess`) gets 403; employee-caller gets 403; unauthenticated gets 401.               |
 
 ---
 

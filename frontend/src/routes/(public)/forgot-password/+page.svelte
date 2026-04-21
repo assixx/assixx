@@ -7,9 +7,10 @@
   import ThemeToggle from '$lib/components/ThemeToggle.svelte';
   import { isDark } from '$lib/stores/theme.svelte';
 
-  import type { ActionData } from './$types';
+  import type { ActionData, PageData } from './$types';
 
-  const { form }: { form: ActionData } = $props();
+  // `data.brand` is populated by `(public)/+layout.server.ts` (ADR-050).
+  const { data, form }: { data: PageData; form: ActionData } = $props();
 
   let email = $state('');
   let loading = $state(false);
@@ -18,7 +19,7 @@
 </script>
 
 <Seo
-  title="Passwort vergessen - Assixx"
+  title={`Passwort vergessen - ${data.brand.title}`}
   description="Setzen Sie Ihr Assixx-Passwort zurück."
 />
 

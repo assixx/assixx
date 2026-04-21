@@ -82,10 +82,16 @@ export class OAuthService {
    * Build the provider's authorize URL. The controller 302s the browser there.
    * PKCE pair is generated here so the verifier never leaves the backend
    * (only the challenge is sent to Microsoft).
+   *
+   * @param returnToSlug  Subdomain the user started the flow on, if any
+   *                      (ADR-050 §OAuth). Persisted in the Redis state payload
+   *                      so the callback can mint a handoff-token and redirect
+   *                      back to `https://{slug}.assixx.com/…`. Apex-initiated
+   *                      flows pass undefined and behave exactly as pre-ADR-050.
    */
-  async startAuthorization(mode: OAuthMode): Promise<{ url: string }> {
+  async startAuthorization(mode: OAuthMode, returnToSlug?: string): Promise<{ url: string }> {
     const { codeVerifier, codeChallenge } = OAuthService.generatePkce();
-    const state = await this.stateService.create(mode, codeVerifier);
+    const state = await this.stateService.create(mode, codeVerifier, returnToSlug);
     const url = this.provider.buildAuthorizationUrl({ state, codeChallenge, mode });
     return { url };
   }
@@ -107,8 +113,9 @@ export class OAuthService {
     const tokens = await this.provider.exchangeCodeForTokens(code, stored.codeVerifier);
     const info = await this.provider.verifyIdToken(tokens.idToken);
 
+    let result: CallbackResult;
     if (stored.mode === 'login') {
-      const result = await this.resolveLogin(info);
+      result = await this.resolveLogin(info);
       if (result.mode === 'login-success') {
         // Await (not fire-and-forget) — users expect the avatar to be in place
         // on the first dashboard render. ETag cache keeps re-logins to a ~5 ms
@@ -120,9 +127,17 @@ export class OAuthService {
           tokens.accessToken,
         );
       }
-      return result;
+    } else {
+      result = await this.resolveSignupContinue(info, tokens.accessToken);
     }
-    return await this.resolveSignupContinue(info, tokens.accessToken);
+
+    // ADR-050 §OAuth: thread the originating subdomain (if any) through to the
+    // controller so it can redirect back to `<slug>.assixx.com` instead of apex.
+    // Conditional spread — absent field on apex flows, matches
+    // exactOptionalPropertyTypes (ADR-041).
+    return stored.returnToSlug !== undefined ?
+        { ...result, returnToSlug: stored.returnToSlug }
+      : result;
   }
 
   /**

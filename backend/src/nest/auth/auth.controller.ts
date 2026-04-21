@@ -15,6 +15,7 @@ import {
   Get,
   HttpCode,
   HttpStatus,
+  NotFoundException,
   Post,
   Req,
   Res,
@@ -33,6 +34,7 @@ import { ConnectionTicketService } from './connection-ticket.service.js';
 import {
   ConnectionTicketDto,
   ForgotPasswordDto,
+  HandoffMintDto,
   LoginDto,
   RefreshDto,
   RegisterDto,
@@ -41,10 +43,15 @@ import {
 import type {
   ConnectionTicketResponse,
   ForgotPasswordResponse,
+  HandoffMintResponse,
   LoginResponse,
   RefreshResponse,
   ResetPasswordResponse,
 } from './dto/index.js';
+// Session 12c (ADR-050): reuse the handoff machinery from OAuth (Session 7)
+// for password-login → subdomain redirect. OAuthModule already exports this
+// service; AuthModule already imports OAuthModule (forwardRef, D15).
+import { OAuthHandoffService } from './oauth/oauth-handoff.service.js';
 
 /**
  * Cookie configuration for SSR support
@@ -270,6 +277,10 @@ export class AuthController {
   constructor(
     private readonly authService: AuthService,
     private readonly connectionTicketService: ConnectionTicketService,
+    // Session 12c (ADR-050): apex-login → subdomain-handoff mint path.
+    // OAuthHandoffService already mints the same payload shape; reusing it
+    // keeps one Redis keyspace + one consumer endpoint for both login paths.
+    private readonly handoffService: OAuthHandoffService,
   ) {}
 
   /**
@@ -300,6 +311,71 @@ export class AuthController {
     setAuthCookies(reply, result.accessToken, result.refreshToken);
 
     return result;
+  }
+
+  /**
+   * POST /auth/handoff/mint — single-use token for apex-login → subdomain redirect.
+   *
+   * Called by the frontend login action (`(public)/login/+page.server.ts`)
+   * when the user authenticated on the apex (`locals.hostSlug === null`)
+   * but their tenant has a subdomain. We mint a 32-byte opaque token into
+   * the SAME Redis keyspace the OAuth handoff uses (`oauth:handoff:{token}`,
+   * 60 s TTL) carrying the exact auth payload. The subdomain's
+   * `/signup/oauth-complete?token=X` page (Session 12) consumes it,
+   * performs the R15 host-cross-check, and sets cookies on its own origin.
+   *
+   * Security model:
+   *   - Bearer-authenticated (JwtAuthGuard): only a user who just logged in
+   *     on the apex can mint — nothing new accessible that their accessToken
+   *     doesn't already grant.
+   *   - Throttled via AuthThrottle() — same brute-force defence as /login.
+   *   - 404 when the tenant has no subdomain (greenfield: can't happen for
+   *     new signups because the DTO requires it; defensive regardless).
+   *
+   * @see docs/infrastructure/adr/ADR-050-tenant-subdomain-routing.md §OAuth (handoff reuse)
+   * @see docs/FEAT_TENANT_SUBDOMAIN_ROUTING_MASTERPLAN.md Session 12c
+   */
+  @Post('handoff/mint')
+  @UseGuards(CustomThrottlerGuard)
+  @AuthThrottle()
+  @HttpCode(HttpStatus.OK)
+  async mintHandoff(
+    @Body() dto: HandoffMintDto,
+    @CurrentUser() user: NestAuthUser,
+    @Req() req: FastifyRequest,
+  ): Promise<HandoffMintResponse> {
+    // The Bearer token header IS the accessToken we want to bake into the
+    // handoff payload. No need to derive it from anywhere else.
+    const authHeader = req.headers.authorization ?? '';
+    const accessToken = authHeader.replace(/^Bearer\s+/i, '');
+    if (accessToken === '') {
+      // Shouldn't happen under JwtAuthGuard, but defensive: reject with the
+      // same error code the guard would produce downstream.
+      throw new NotFoundException({
+        code: 'HANDOFF_MINT_MISSING_ACCESS_TOKEN',
+        message: 'Access token required in Authorization header.',
+      });
+    }
+
+    const subdomain = await this.authService.getSubdomainForTenant(user.tenantId);
+    if (subdomain === null) {
+      // Defensive: greenfield prod tenants always have a subdomain (signup
+      // DTO enforces). If we hit this, something is off with the tenant row
+      // — caller can't redirect to a subdomain that doesn't exist.
+      throw new NotFoundException({
+        code: 'HANDOFF_MINT_NO_SUBDOMAIN',
+        message: 'Tenant has no subdomain configured.',
+      });
+    }
+
+    const token = await this.handoffService.mint({
+      userId: user.id,
+      tenantId: user.tenantId,
+      accessToken,
+      refreshToken: dto.refreshToken,
+    });
+
+    return { token, subdomain };
   }
 
   /**

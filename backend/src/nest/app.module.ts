@@ -5,7 +5,7 @@
  * Main module that imports and configures all feature modules.
  * Sets up global providers like guards, interceptors, and filters.
  */
-import { Module } from '@nestjs/common';
+import { type MiddlewareConsumer, Module, type NestModule } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { JwtModule, type JwtModuleOptions } from '@nestjs/jwt';
@@ -37,6 +37,10 @@ import { TenantAddonGuard } from './common/guards/tenant-addon.guard.js';
 import { AuditTrailInterceptor } from './common/interceptors/audit-trail.interceptor.js';
 import { ResponseInterceptor } from './common/interceptors/response.interceptor.js';
 import { LoggerModule } from './common/logger/logger.module.js';
+// Tenant Host Resolver (ADR-050) — module provides Redis client +
+// middleware class; mount happens in `AppModule.configure()` below.
+import { TenantHostResolverMiddleware } from './common/middleware/tenant-host-resolver.middleware.js';
+import { TenantHostResolverModule } from './common/middleware/tenant-host-resolver.module.js';
 import { PermissionRegistryModule } from './common/permission-registry/permission-registry.module.js';
 import { CompanyModule } from './company/company.module.js';
 import { AppConfigModule } from './config/config.module.js';
@@ -66,6 +70,7 @@ import { ShiftsModule } from './shifts/shifts.module.js';
 import { SignupModule } from './signup/signup.module.js';
 import { SurveysModule } from './surveys/surveys.module.js';
 import { TeamsModule } from './teams/teams.module.js';
+import { TenantsModule } from './tenants/tenants.module.js';
 import { AppThrottlerModule } from './throttler/throttler.module.js';
 import { TpmModule } from './tpm/tpm.module.js';
 import { UserPermissionsModule } from './user-permissions/user-permissions.module.js';
@@ -154,6 +159,11 @@ import { WorkOrdersModule } from './work-orders/work-orders.module.js';
     // Feature modules register their permissions via OnModuleInit
     PermissionRegistryModule,
 
+    // Tenant Host Resolver (ADR-050) — provides Redis client + middleware
+    // class. The mount via MiddlewareConsumer.apply() lives in the
+    // AppModule.configure() hook below.
+    TenantHostResolverModule,
+
     // Rate Limiting Module (Redis-backed)
     AppThrottlerModule,
 
@@ -193,6 +203,7 @@ import { WorkOrdersModule } from './work-orders/work-orders.module.js';
     SettingsModule,
     ShiftsModule,
     SignupModule,
+    TenantsModule,
     VacationModule,
     WorkOrdersModule,
     TpmModule,
@@ -250,5 +261,29 @@ import { WorkOrdersModule } from './work-orders/work-orders.module.js';
     },
   ],
 })
-// eslint-disable-next-line @typescript-eslint/no-extraneous-class -- NestJS modules are empty by design
-export class AppModule {}
+export class AppModule implements NestModule {
+  /**
+   * Mount `TenantHostResolverMiddleware` BEFORE guards run on every route.
+   *
+   * Path pattern `{*path}` (not bare `*`) is the NestJS 11+ idiom — the
+   * framework switched to path-to-regexp v8 which rejects the legacy
+   * unnamed `*` wildcard. On Fastify specifically, using `*` causes
+   * `NestFactory.create()` to throw during middleware mount, the error
+   * gets swallowed by `bufferLogs: true` in main.ts bootstrap, and the
+   * container silently exits 1 after EventBus init with no log output.
+   * Verified on this codebase 2026-04-21.
+   *
+   * `{*path}` matches all routes including `@Public()` ones — guards
+   * still skip the cross-check on public endpoints, so the middleware
+   * pass is a no-op there (sets `req.hostTenantId` but nothing reads it).
+   * Uniform middleware coverage keeps the three-state semantics of
+   * `req.hostTenantId` consistent across the whole app.
+   *
+   * @see docs/infrastructure/adr/ADR-050-tenant-subdomain-routing.md §Decision
+   * @see docs/FEAT_TENANT_SUBDOMAIN_ROUTING_MASTERPLAN.md Phase 2 Step 2.2
+   * @see https://docs.nestjs.com/migration-guide#path-to-regexp-update
+   */
+  configure(consumer: MiddlewareConsumer): void {
+    consumer.apply(TenantHostResolverMiddleware).forRoutes('{*path}');
+  }
+}

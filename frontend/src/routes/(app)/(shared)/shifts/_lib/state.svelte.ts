@@ -166,6 +166,11 @@ export const shiftsState = {
   get hasShiftData() {
     return shiftDataState.hasShiftData;
   },
+  // WHY: Dirty-Flag für "Ungespeicherte Änderungen"-Guard. Basiert auf
+  // strukturellem Compare zu originalWeeklyShifts (siehe handlers.hasUnsavedChanges).
+  get isDirty() {
+    return shiftDataState.isDirty;
+  },
   setWeeklyShifts: shiftDataState.setWeeklyShifts,
   setShiftDetails: shiftDataState.setShiftDetails,
   setCurrentShiftNotes: shiftDataState.setCurrentShiftNotes,
@@ -176,6 +181,8 @@ export const shiftsState = {
   addShiftDetail(date: string, shiftType: string, employeeId: number, employee: Employee) {
     shiftDataState.addShiftDetail(date, shiftType, employeeId, employee);
   },
+  captureSnapshot: shiftDataState.captureSnapshot,
+  clearSnapshot: shiftDataState.clearSnapshot,
 
   // UI state
   get isLoading() {

@@ -16,6 +16,24 @@ import type { CreateDepartmentDto } from './dto/create-department.dto.js';
 import type { UpdateDepartmentDto } from './dto/update-department.dto.js';
 
 /**
+ * Hall entry in a department's effective hall list.
+ *
+ * WHY source?
+ * - 'area'   = hall is inherited via dept.area_id === hall.area_id (implicit)
+ * - 'direct' = hall is cross-area, explicitly assigned via department_halls
+ *
+ * See: database/migrations/20260317222159593_department-halls-junction-table.ts
+ * which documents that depts inherit all halls from their area by default.
+ * The junction table stores ADDITIONAL cross-area assignments only.
+ */
+export interface DepartmentHallEntry {
+  id: number;
+  name: string;
+  areaId: number | null;
+  source: 'area' | 'direct';
+}
+
+/**
  * Database department row type
  */
 export interface DepartmentRow {
@@ -36,8 +54,7 @@ export interface DepartmentRow {
   employee_names: string | undefined;
   team_count: number | undefined;
   team_names: string | undefined;
-  hall_ids: number[] | undefined;
-  hall_names: string | undefined;
+  halls: DepartmentHallEntry[] | null | undefined;
   hall_count: number | undefined;
 }
 
@@ -62,8 +79,7 @@ export interface DepartmentResponse {
   employeeNames: string | undefined;
   teamCount: number | undefined;
   teamNames: string | undefined;
-  hallIds: number[] | undefined;
-  hallNames: string | undefined;
+  halls: DepartmentHallEntry[] | undefined;
   hallCount: number | undefined;
 }
 
@@ -129,8 +145,17 @@ export class DepartmentsService {
   ) {}
 
   /**
-   * SQL query for fetching departments with employee/team counts via user_departments N:M
-   * Returns all non-deleted departments (is_active IN 0, 1, 3) for client-side filtering
+   * SQL query for fetching departments with employee/team counts via user_departments N:M.
+   *
+   * Returns all non-deleted departments (is_active IN 0, 1, 3) for client-side filtering.
+   *
+   * Halls per department are the UNION of two sources (see DepartmentHallEntry):
+   * - 'area'   : halls where halls.area_id = departments.area_id (implicit inheritance)
+   * - 'direct' : halls assigned via department_halls junction for cross-area cases
+   *
+   * Inherited halls and direct halls cannot overlap by construction: the validation
+   * in assignHallsToDepartment rejects same-area halls, and the 'direct' subquery
+   * explicitly filters to halls where hall.area_id != dept.area_id.
    */
   private readonly FIND_ALL_DEPARTMENTS_QUERY = `
     WITH employee_counts AS (
@@ -148,14 +173,36 @@ export class DepartmentsService {
       FROM teams GROUP BY department_id
     ),
     hall_assignments AS (
-      SELECT dh.department_id,
-        ARRAY_AGG(dh.hall_id ORDER BY h.name) as hall_ids,
-        COUNT(*) as count,
-        STRING_AGG(h.name, E'\\n' ORDER BY h.name) as names
-      FROM department_halls dh
-      JOIN halls h ON dh.hall_id = h.id
-      WHERE dh.tenant_id = $1
-      GROUP BY dh.department_id
+      SELECT department_id,
+        JSONB_AGG(
+          JSONB_BUILD_OBJECT(
+            'id', hall_id,
+            'name', hall_name,
+            'areaId', hall_area_id,
+            'source', source
+          ) ORDER BY hall_name
+        ) as halls,
+        COUNT(*)::int as hall_count
+      FROM (
+        SELECT d.id AS department_id,
+          h.id AS hall_id, h.name AS hall_name, h.area_id AS hall_area_id,
+          'area'::text AS source
+        FROM departments d
+        JOIN halls h ON h.area_id = d.area_id
+        WHERE d.tenant_id = $1
+          AND h.is_active = ${IS_ACTIVE.ACTIVE}
+        UNION ALL
+        SELECT dh.department_id,
+          h.id AS hall_id, h.name AS hall_name, h.area_id AS hall_area_id,
+          'direct'::text AS source
+        FROM department_halls dh
+        JOIN halls h ON dh.hall_id = h.id
+        JOIN departments d ON dh.department_id = d.id
+        WHERE dh.tenant_id = $1
+          AND h.is_active = ${IS_ACTIVE.ACTIVE}
+          AND (d.area_id IS NULL OR h.area_id IS DISTINCT FROM d.area_id)
+      ) src
+      GROUP BY department_id
     )
     SELECT d.*,
       CONCAT(COALESCE(u.first_name, ''), ' ', COALESCE(u.last_name, '')) as department_lead_name,
@@ -163,7 +210,8 @@ export class DepartmentsService {
       a.name as "areaName",
       COALESCE(ec.count, 0) as employee_count, COALESCE(ec.names, '') as employee_names,
       COALESCE(tc.count, 0) as team_count, COALESCE(tc.names, '') as team_names,
-      ha.hall_ids, COALESCE(ha.count, 0) as hall_count, COALESCE(ha.names, '') as hall_names
+      COALESCE(ha.halls, '[]'::jsonb) as halls,
+      COALESCE(ha.hall_count, 0) as hall_count
     FROM departments d
     LEFT JOIN users u ON d.department_lead_id = u.id
     LEFT JOIN users du ON d.department_deputy_lead_id = du.id
@@ -196,8 +244,7 @@ export class DepartmentsService {
       employeeNames: undefined,
       teamCount: undefined,
       teamNames: undefined,
-      hallIds: undefined,
-      hallNames: undefined,
+      halls: undefined,
       hallCount: undefined,
     };
 
@@ -209,9 +256,8 @@ export class DepartmentsService {
       response.employeeNames = dept.employee_names;
       response.teamCount = dept.team_count;
       response.teamNames = dept.team_names;
-      response.hallIds = dept.hall_ids ?? [];
-      response.hallNames = dept.hall_names;
-      response.hallCount = dept.hall_count;
+      response.halls = dept.halls ?? [];
+      response.hallCount = dept.hall_count ?? 0;
     }
 
     return response;
@@ -255,7 +301,8 @@ export class DepartmentsService {
   }
 
   /**
-   * SQL query for fetching a single department by ID (includes all statuses)
+   * SQL query for fetching a single department by ID (includes all statuses).
+   * Halls follow the same UNION semantics as FIND_ALL_DEPARTMENTS_QUERY.
    */
   private readonly FIND_DEPARTMENT_BY_ID_QUERY = `
     WITH employee_counts AS (
@@ -273,14 +320,36 @@ export class DepartmentsService {
       FROM teams GROUP BY department_id
     ),
     hall_assignments AS (
-      SELECT dh.department_id,
-        ARRAY_AGG(dh.hall_id ORDER BY h.name) as hall_ids,
-        COUNT(*) as count,
-        STRING_AGG(h.name, E'\\n' ORDER BY h.name) as names
-      FROM department_halls dh
-      JOIN halls h ON dh.hall_id = h.id
-      WHERE dh.tenant_id = $1
-      GROUP BY dh.department_id
+      SELECT department_id,
+        JSONB_AGG(
+          JSONB_BUILD_OBJECT(
+            'id', hall_id,
+            'name', hall_name,
+            'areaId', hall_area_id,
+            'source', source
+          ) ORDER BY hall_name
+        ) as halls,
+        COUNT(*)::int as hall_count
+      FROM (
+        SELECT d.id AS department_id,
+          h.id AS hall_id, h.name AS hall_name, h.area_id AS hall_area_id,
+          'area'::text AS source
+        FROM departments d
+        JOIN halls h ON h.area_id = d.area_id
+        WHERE d.tenant_id = $1
+          AND h.is_active = ${IS_ACTIVE.ACTIVE}
+        UNION ALL
+        SELECT dh.department_id,
+          h.id AS hall_id, h.name AS hall_name, h.area_id AS hall_area_id,
+          'direct'::text AS source
+        FROM department_halls dh
+        JOIN halls h ON dh.hall_id = h.id
+        JOIN departments d ON dh.department_id = d.id
+        WHERE dh.tenant_id = $1
+          AND h.is_active = ${IS_ACTIVE.ACTIVE}
+          AND (d.area_id IS NULL OR h.area_id IS DISTINCT FROM d.area_id)
+      ) src
+      GROUP BY department_id
     )
     SELECT d.*,
       CONCAT(COALESCE(u.first_name, ''), ' ', COALESCE(u.last_name, '')) as department_lead_name,
@@ -288,7 +357,8 @@ export class DepartmentsService {
       a.name as "areaName",
       COALESCE(ec.count, 0) as employee_count, COALESCE(ec.names, '') as employee_names,
       COALESCE(tc.count, 0) as team_count, COALESCE(tc.names, '') as team_names,
-      ha.hall_ids, COALESCE(ha.count, 0) as hall_count, COALESCE(ha.names, '') as hall_names
+      COALESCE(ha.halls, '[]'::jsonb) as halls,
+      COALESCE(ha.hall_count, 0) as hall_count
     FROM departments d
     LEFT JOIN users u ON d.department_lead_id = u.id
     LEFT JOIN users du ON d.department_deputy_lead_id = du.id
@@ -529,6 +599,8 @@ export class DepartmentsService {
       );
     }
 
+    await this.cleanupRedundantHallsOnAreaChange(id, dto.areaId, existingDept?.area_id, tenantId);
+
     if (dto.departmentLeadId !== undefined && dto.departmentLeadId !== null) {
       await this.ensureLeaderInDepartment(dto.departmentLeadId, id, tenantId);
     }
@@ -554,6 +626,30 @@ export class DepartmentsService {
     );
 
     return result;
+  }
+
+  /**
+   * Remove department_halls rows that become redundant when a department
+   * moves into an area whose halls it now inherits automatically.
+   *
+   * No-op when area is unchanged or cleared (set to null).
+   */
+  private async cleanupRedundantHallsOnAreaChange(
+    departmentId: number,
+    newAreaId: number | null | undefined,
+    oldAreaId: number | null | undefined,
+    tenantId: number,
+  ): Promise<void> {
+    const unchanged = newAreaId === undefined || newAreaId === oldAreaId || newAreaId === null;
+    if (unchanged) return;
+
+    await this.db.tenantQuery(
+      `DELETE FROM department_halls
+       WHERE tenant_id = $1
+         AND department_id = $2
+         AND hall_id IN (SELECT id FROM halls WHERE tenant_id = $1 AND area_id = $3)`,
+      [tenantId, departmentId, newAreaId],
+    );
   }
 
   /**
@@ -816,7 +912,16 @@ export class DepartmentsService {
   }
 
   /**
-   * Assign halls to a department (clear-then-reassign)
+   * Assign CROSS-AREA halls to a department (clear-then-reassign).
+   *
+   * Semantics (additive model, see ADR-034 + department_halls migration):
+   * - Halls where hall.area_id = dept.area_id are implicitly inherited via
+   *   the area relationship and MUST NOT be stored in department_halls.
+   * - department_halls only holds halls from OTHER areas, for departments
+   *   that physically operate across multiple buildings.
+   *
+   * Validation: any hallId matching dept.area_id is rejected with 400.
+   * The caller (UI) must only send cross-area hall IDs.
    */
   async assignHallsToDepartment(
     departmentId: number,
@@ -824,9 +929,26 @@ export class DepartmentsService {
     tenantId: number,
     assignedBy: number,
   ): Promise<{ message: string }> {
-    this.logger.log(`Assigning ${hallIds.length} halls to department ${departmentId}`);
+    this.logger.log(`Assigning ${hallIds.length} cross-area halls to department ${departmentId}`);
 
-    await this.getDepartmentById(departmentId, tenantId);
+    const dept = await this.getDepartmentById(departmentId, tenantId);
+
+    if (hallIds.length > 0 && dept.areaId !== undefined) {
+      const conflicts = await this.db.tenantQuery<{ id: number; name: string }>(
+        `SELECT id, name FROM halls
+         WHERE tenant_id = $1 AND area_id = $2 AND id = ANY($3::int[])`,
+        [tenantId, dept.areaId, hallIds],
+      );
+
+      if (conflicts.length > 0) {
+        const names = conflicts.map((h: { name: string }) => h.name).join(', ');
+        throw new BadRequestException(
+          `Die folgenden Hallen sind bereits über den Bereich zugeordnet und ` +
+            `können nicht erneut zugewiesen werden: ${names}. ` +
+            `Entferne sie bei Bedarf aus dem Bereich in der Bereichs-Verwaltung.`,
+        );
+      }
+    }
 
     await this.db.tenantQuery(
       `DELETE FROM department_halls WHERE tenant_id = $1 AND department_id = $2`,

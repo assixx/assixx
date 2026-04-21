@@ -2,6 +2,8 @@
   // SHIFTS PAGE - Svelte 5 + SSR
   import { onMount } from 'svelte';
 
+  import { beforeNavigate, goto } from '$app/navigation';
+
   import PermissionDenied from '$lib/components/PermissionDenied.svelte';
   import { notificationStore } from '$lib/stores/notification.store.svelte';
   import { showWarningAlert } from '$lib/utils/alerts';
@@ -22,6 +24,7 @@
   import EmployeeSidebar from './_lib/EmployeeSidebar.svelte';
   import FilterDropdowns from './_lib/FilterDropdowns.svelte';
   import {
+    ensureDiscardConfirmed,
     handleSaveSchedule,
     handleResetSchedule,
     handleDiscardWeek,
@@ -57,12 +60,7 @@
   import WeekNavigation from './_lib/WeekNavigation.svelte';
 
   import type { PageData } from './$types';
-  import type {
-    AssignmentCount,
-    ShiftDetailData,
-    ShiftTimesMap,
-    WeeklyShiftsMap,
-  } from './_lib/types';
+  import type { AssignmentCount, ShiftDetailData, ShiftTimesMap } from './_lib/types';
 
   // --- SSR DATA ---
   const { data }: { data: PageData } = $props();
@@ -114,33 +112,71 @@
     });
   });
 
-  /** Count per-employee assignments from local weeklyShifts state */
-  function countLocalWeek(): Record<number, number> {
-    const counts: Partial<Record<number, number>> = {};
-    const shifts: WeeklyShiftsMap = shiftsState.weeklyShifts;
-    for (const [, shiftMap] of shifts) {
-      for (const [, empIds] of shiftMap) {
-        for (const id of empIds) {
-          counts[id] = (counts[id] ?? 0) + 1;
-        }
-      }
-    }
-    return counts as Record<number, number>;
+  interface LocalWeekBucket {
+    week: number;
+    weekInMonth: number;
+    weekInYear: number;
   }
 
-  /** Merged counts: DB base adjusted by live local week state.
-   *  During transition (weeklyShifts cleared), show base counts as-is. */
+  /** Bump the tally for a single employee-shift occurrence. */
+  function bumpLocalBucket(
+    counts: Record<number, LocalWeekBucket>,
+    id: number,
+    inMonth: boolean,
+    inYear: boolean,
+  ): void {
+    const bucket = counts[id] ?? { week: 0, weekInMonth: 0, weekInYear: 0 };
+    bucket.week += 1;
+    if (inMonth) bucket.weekInMonth += 1;
+    if (inYear) bucket.weekInYear += 1;
+    counts[id] = bucket;
+  }
+
+  /**
+   * Per-employee local week tallies split by reference month/year membership.
+   *
+   * The map key is the YYYY-MM-DD date of each shift in `weeklyShifts`.
+   * We split the count into three buckets so the merge below can correctly
+   * update month/year totals when the current week spans a month or year
+   * boundary (e.g. KW 18 covering Apr 27 – May 3). A naive delta on the
+   * week total would over-/under-count at those boundaries.
+   */
+  function countLocalWeek(refMonth: number, refYear: number): Record<number, LocalWeekBucket> {
+    const counts: Record<number, LocalWeekBucket> = {};
+    for (const [dateKey, shiftMap] of shiftsState.weeklyShifts) {
+      // `dateKey` is YYYY-MM-DD — parse without timezone surprises.
+      const [yStr, mStr] = dateKey.split('-');
+      const y = Number.parseInt(yStr, 10);
+      const inYear = y === refYear;
+      const inMonth = inYear && Number.parseInt(mStr, 10) - 1 === refMonth;
+      for (const empIds of shiftMap.values()) {
+        for (const id of empIds) bumpLocalBucket(counts, id, inMonth, inYear);
+      }
+    }
+    return counts;
+  }
+
+  /**
+   * Merged counts: DB base adjusted by live local week state.
+   *
+   * During transition (weeklyShifts cleared) we show base counts as-is.
+   * For each period we subtract the DB's in-week contribution and add the
+   * local in-week contribution, so unsaved edits show correctly even when
+   * the current week straddles a month or year boundary.
+   */
   const assignmentCounts = $derived.by((): AssignmentCount[] => {
     if (shiftsState.weeklyShifts.size === 0) return baseAssignmentCounts;
-    const localWeek = countLocalWeek();
+    const weekStart = getWeekStart(shiftsState.currentWeek);
+    const refMonth = weekStart.getMonth();
+    const refYear = weekStart.getFullYear();
+    const local = countLocalWeek(refMonth, refYear);
     return baseAssignmentCounts.map((entry: AssignmentCount) => {
-      const localWk = localWeek[entry.employeeId] ?? 0;
-      const diff = localWk - entry.weekCount;
+      const l = local[entry.employeeId] ?? { week: 0, weekInMonth: 0, weekInYear: 0 };
       return {
         ...entry,
-        weekCount: localWk,
-        monthCount: entry.monthCount + diff,
-        yearCount: entry.yearCount + diff,
+        weekCount: l.week,
+        monthCount: entry.monthCount - entry.weekInMonthCount + l.weekInMonth,
+        yearCount: entry.yearCount - entry.weekInYearCount + l.weekInYear,
       };
     });
   });
@@ -187,6 +223,33 @@
     }
   }
 
+  // --- UNSAVED CHANGES — SPA NAVIGATION GUARD ---
+  // Cancel + async-confirm + re-goto Pattern: beforeNavigate ist synchron, unser
+  // Modal ist async. Flag `bypassNavGuard` verhindert Endlos-Loop beim
+  // programmatischen goto() nach erfolgreicher Bestätigung.
+  let bypassNavGuard = $state(false);
+
+  beforeNavigate((nav) => {
+    if (bypassNavGuard) return;
+    if (!shiftsState.isDirty) return;
+    // nav.type === 'leave' = Browser-Close/Reload — das regelt der
+    // beforeunload-Listener unten (native Browser-Dialog, keine Alternative).
+    if (nav.type === 'leave') return;
+    if (nav.to === null) return;
+    const targetUrl = nav.to.url;
+    nav.cancel();
+    void (async () => {
+      const confirmed = await ensureDiscardConfirmed();
+      if (!confirmed) return;
+      bypassNavGuard = true;
+      try {
+        await goto(targetUrl);
+      } finally {
+        bypassNavGuard = false;
+      }
+    })();
+  });
+
   onMount(() => {
     document.addEventListener('click', handleClickOutside, true);
     // Reset shift swap badge when visiting shifts page
@@ -195,13 +258,29 @@
     if (ssrEmployeeTeamInfo !== null && ssrEmployeeTeamInfo.teamId !== 0) {
       void loadShiftPlan();
     }
+
+    // Browser-Close / Reload / Tab-Close: native beforeunload. Browser zeigen
+    // aus Sicherheitsgründen IMMER ihren eigenen generischen Dialog — die
+    // Message wird ignoriert. preventDefault() reicht ab Chrome 119 / Firefox
+    // 44 / Safari 17 (returnValue ist deprecated, MDN).
+    const beforeUnloadHandler = (event: BeforeUnloadEvent) => {
+      if (shiftsState.isDirty) {
+        event.preventDefault();
+      }
+    };
+    window.addEventListener('beforeunload', beforeUnloadHandler);
+
     return () => {
       document.removeEventListener('click', handleClickOutside, true);
+      window.removeEventListener('beforeunload', beforeUnloadHandler);
     };
   });
 
   // --- DROPDOWN HANDLERS ---
+  // WHY: Jeder Filter-Change verwirft die aktuelle Woche via clearShiftData().
+  // Der Guard fragt den User zuerst, wenn isDirty — verhindert Datenverlust.
   async function handleAreaChange(areaId: number) {
+    if (!(await ensureDiscardConfirmed())) return;
     shiftsState.setSelectedContext({
       areaId,
       departmentId: null,
@@ -218,6 +297,7 @@
   }
 
   async function handleDepartmentChange(departmentId: number) {
+    if (!(await ensureDiscardConfirmed())) return;
     shiftsState.setSelectedContext({
       departmentId,
       teamId: null,
@@ -242,12 +322,14 @@
   });
 
   async function handleAssetChange(assetId: number): Promise<void> {
+    if (!(await ensureDiscardConfirmed())) return;
     shiftsState.setSelectedContext({ assetId });
     shiftsState.setShowPlanningUI(true);
     await loadShiftPlan();
   }
 
   async function handleTeamChange(teamId: number) {
+    if (!(await ensureDiscardConfirmed())) return;
     shiftsState.setSelectedContext({ teamId, assetId: null });
     shiftsState.clearShiftData();
     shiftsState.setShowPlanningUI(false);
@@ -269,6 +351,9 @@
   }
 
   async function navigateWeek(direction: number) {
+    // Der Kern-Bug: loadShiftPlan() überschreibt weeklyShifts — ohne Guard gehen
+    // ungespeicherte Drag-and-Drop-Änderungen verloren. Siehe ensureDiscardConfirmed.
+    if (!(await ensureDiscardConfirmed())) return;
     const newWeek = addWeeks(shiftsState.currentWeek, direction);
     shiftsState.setCurrentWeek(newWeek);
     await loadShiftPlan();

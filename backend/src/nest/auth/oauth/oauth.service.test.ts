@@ -206,11 +206,20 @@ describe('OAuthService', () => {
 
     it('stores mode in Redis state and propagates it to the provider URL builder', async () => {
       await service.startAuthorization('signup');
-      expect(mockState.create).toHaveBeenCalledWith('signup', expect.any(String));
+      // Third arg is `returnToSlug` (ADR-050 §OAuth) — undefined on apex flows.
+      expect(mockState.create).toHaveBeenCalledWith('signup', expect.any(String), undefined);
       const buildArgs = mockProvider.buildAuthorizationUrl.mock.calls[0]?.[0] as {
         mode: 'login' | 'signup';
       };
       expect(buildArgs.mode).toBe('signup');
+    });
+
+    // ADR-050 §OAuth: subdomain-initiated flow stores returnToSlug in the
+    // Redis state payload; callback uses it to mint a handoff token + redirect
+    // back to `{slug}.assixx.com` instead of apex.
+    it('propagates returnToSlug to the state service when provided', async () => {
+      await service.startAuthorization('login', 'firma-a');
+      expect(mockState.create).toHaveBeenCalledWith('login', expect.any(String), 'firma-a');
     });
   });
 

@@ -7,6 +7,8 @@
 import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';
 
+import { RESERVED_SUBDOMAINS } from './signup.dto.js';
+
 // ========================================
 // SCHEMA DEFINITION
 // ========================================
@@ -17,6 +19,14 @@ import { z } from 'zod';
  * - Must start with letter/number
  * - Cannot end with hyphen
  * - 3-50 characters
+ * - NOT in RESERVED_SUBDOMAINS (ADR-050)
+ *
+ * NOTE: schema shape is intentionally duplicated with `signup.dto.ts` —
+ * D4 resolution in the masterplan flags extraction to `shared/` as
+ * post-Phase-6 tech-debt. Importing `RESERVED_SUBDOMAINS` from the
+ * signup DTO keeps the list single-source while the regex stays local.
+ *
+ * @see docs/infrastructure/adr/ADR-050-tenant-subdomain-routing.md §"Reserved Slug List"
  */
 const SubdomainSchema = z
   .string()
@@ -26,7 +36,10 @@ const SubdomainSchema = z
     /^[a-z0-9][a-z0-9-]*[a-z0-9]$/,
     'Subdomain must contain only lowercase letters, numbers, and hyphens',
   )
-  .transform((val: string) => val.toLowerCase().trim());
+  .transform((val: string) => val.toLowerCase().trim())
+  .refine((val: string) => !(RESERVED_SUBDOMAINS as readonly string[]).includes(val), {
+    message: 'This subdomain is reserved and cannot be used.',
+  });
 
 /**
  * Subdomain availability check validation

@@ -14,6 +14,8 @@
   } from '$lib/types/hierarchy-labels';
   import { ApiError } from '$lib/utils/api-client';
 
+  import ConfirmModal from '$design-system/components/confirm-modal/ConfirmModal.svelte';
+
   import { sendPasswordResetLink } from './api';
   import { POSITION_OPTIONS, MESSAGES, type EmployeeMessages } from './constants';
   import { getStatusBadgeClass, getStatusLabel, calculatePasswordStrength } from './utils';
@@ -127,19 +129,40 @@
   // double-submit which would 429.
   let sendingResetLink = $state(false);
 
+  // Pre-call confirmation state — drives the design-system `ConfirmModal`
+  // (variant="danger"). Replaces the former native `confirm()` to match
+  // the destructive-action visual pattern used elsewhere in the app.
+  let showResetLinkConfirm = $state(false);
+
   /**
-   * Handle the "Passwort-Reset-Link senden" action (ADR-051 §5.4).
-   *
-   * Identical semantics to manage-admins §5.3 — the code is duplicated by
-   * intent (plan §5.4 note: "copy-paste < premature abstraction"). 429 is
-   * detected via `err.status` because the api-client pre-empts with its
-   * own synthesized `RATE_LIMIT_EXCEEDED` before the body is parsed, so
-   * the backend's `code: 'RATE_LIMIT'` never reaches `err.code`.
+   * Open the confirm-dialog for the "Passwort-Reset-Link senden" action
+   * (ADR-051 §5.4). The actual API call runs in `confirmSendResetLink`
+   * once the user accepts the ConfirmModal.
    */
-  async function handleSendResetLink(): Promise<void> {
+  function requestSendResetLink(): void {
     if (resetLinkTarget === undefined) return;
-    // KISS: native confirm is fine for an irreversible-until-15-min action.
-    if (!confirm(MESSAGES.RESET_LINK_CONFIRM)) return;
+    showResetLinkConfirm = true;
+  }
+
+  /**
+   * Cancel the ConfirmModal without calling the API.
+   */
+  function cancelSendResetLink(): void {
+    showResetLinkConfirm = false;
+  }
+
+  /**
+   * Execute the "Passwort-Reset-Link senden" action after ConfirmModal
+   * approval (ADR-051 §5.4). Identical error-mapping semantics to
+   * manage-admins §5.3 — the code is duplicated by intent (plan §5.4
+   * note: "copy-paste < premature abstraction"). 429 is detected via
+   * `err.status` because the api-client pre-empts with its own
+   * synthesized `RATE_LIMIT_EXCEEDED` before the body is parsed, so the
+   * backend's `code: 'RATE_LIMIT'` never reaches `err.code`.
+   */
+  async function confirmSendResetLink(): Promise<void> {
+    showResetLinkConfirm = false;
+    if (resetLinkTarget === undefined) return;
 
     sendingResetLink = true;
     try {
@@ -732,22 +755,42 @@
           ADR-051 §5.4 — Root-initiated Password-Reset-Link.
           Rendered only when parent passed a target (implies: edit mode +
           Root viewer). Backend `@Roles('root')` is the authoritative gate.
+
+          Styling: `btn-danger` signals the destructive/sensitive nature
+          (Root kicks off a credential-reset flow for another user). The
+          border-top + description paragraph mirror the Upgrade/Downgrade
+          "danger-zone" pattern and visually separate the action from the
+          form fields. `align-items: center` on the flex-column wrapper
+          overrides the default `stretch` so the inline-flex button
+          collapses to content-width and centers. Horizontal padding
+          tightened to 8px 12px (default: 8px 16px) per UX request.
         -->
         <div class="ds-modal__body">
-          <div class="form-field">
-            <button
-              type="button"
-              class="btn btn-secondary"
-              onclick={handleSendResetLink}
-              disabled={sendingResetLink}
+          <div class="mt-4 border-t border-(--color-border) pt-4">
+            <p class="mb-4 text-sm text-(--color-text-secondary)">
+              Sendet dem Mitarbeiter eine E-Mail mit einem Passwort-Reset-Link. Der Mitarbeiter kann
+              danach selbst ein neues Passwort setzen — Du siehst es nicht. Pro Empfänger 1× alle 15
+              Minuten möglich.
+            </p>
+            <div
+              class="form-field"
+              style="align-items: center;"
             >
-              {#if sendingResetLink}
-                <span class="spinner-ring spinner-ring--sm mr-2"></span>
-              {:else}
-                <i class="fas fa-paper-plane mr-2"></i>
-              {/if}
-              {MESSAGES.BTN_SEND_RESET_LINK}
-            </button>
+              <button
+                type="button"
+                class="btn btn-danger"
+                style="padding: 8px 12px;"
+                onclick={requestSendResetLink}
+                disabled={sendingResetLink}
+              >
+                {#if sendingResetLink}
+                  <span class="spinner-ring spinner-ring--sm mr-2"></span>
+                {:else}
+                  <i class="fas fa-paper-plane mr-2"></i>
+                {/if}
+                {MESSAGES.BTN_SEND_RESET_LINK}
+              </button>
+            </div>
           </div>
         </div>
       {/if}
@@ -770,3 +813,24 @@
     </form>
   </div>
 {/if}
+
+<!--
+  Confirm-Dialog for ADR-051 §5.4 Password-Reset-Link.
+  Rendered outside the parent `{#if show}` block so the ConfirmModal's
+  own modal-overlay stacks cleanly on top of EmployeeFormModal. The
+  reset flow is sensitive (Root triggers credential-change for another
+  user) → variant="danger".
+-->
+<ConfirmModal
+  show={showResetLinkConfirm}
+  id="employee-reset-link-confirm-modal"
+  title={MESSAGES.BTN_SEND_RESET_LINK}
+  variant="danger"
+  icon="fa-paper-plane"
+  confirmLabel={MESSAGES.BTN_SEND_RESET_LINK}
+  cancelLabel="Abbrechen"
+  onconfirm={confirmSendResetLink}
+  oncancel={cancelSendResetLink}
+>
+  {MESSAGES.RESET_LINK_CONFIRM}
+</ConfirmModal>

@@ -117,7 +117,7 @@
     "db:migrate:dry": "node-pg-migrate up --dry-run -f .node-pg-migraterc.json -m database/migrations",
     "db:seed": "./scripts/run-seeds.sh",
     "changeset": "changeset",
-    "changeset:version": "changeset version && node scripts/sync-root-version.mjs",
+    "changeset:version": "changeset version && node scripts/sync-root-version.mjs && node scripts/aggregate-changelog.mjs",
     "changeset:tag": "VERSION=$(node -p \"require('./package.json').version\") && git tag -a \"v$VERSION\" -m \"v$VERSION\"",
     "changeset:status": "changeset status"
   },
@@ -143,13 +143,13 @@
     "@storybook/addon-docs": "^10.3.5",
     "@storybook/addon-links": "^10.3.5",
     "@storybook/html-vite": "^10.3.5",
-    "@tailwindcss/vite": "^4.2.3",
+    "@tailwindcss/vite": "^4.2.4",
     "@trivago/prettier-plugin-sort-imports": "^6.0.2",
     "@types/k6": "1.7.0",
     "@types/node": "^24.12.2",
-    "@vitest/coverage-v8": "^4.1.4",
+    "@vitest/coverage-v8": "^4.1.5",
     "@vitest/eslint-plugin": "^1.6.16",
-    "@vitest/ui": "^4.1.4",
+    "@vitest/ui": "^4.1.5",
     "concurrently": "^9.2.1",
     "eslint": "^10.2.1",
     "eslint-config-prettier": "^10.1.8",
@@ -178,6 +178,6 @@
     "typescript": "6.0.3",
     "typescript-eslint": "^8.59.0",
     "vite": "^8.0.9",
-    "vitest": "^4.1.4"
+    "vitest": "^4.1.5"
   }
 }

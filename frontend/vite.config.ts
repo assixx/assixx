@@ -51,6 +51,18 @@ export default defineConfig(({ mode }) => ({
     port: 5173,
     strictPort: true, // Fail if port 5173 is unavailable
 
+    // Allow `*.localhost` subdomains for ADR-050 local subdomain-routing tests.
+    // Vite 5+ defaults allowedHosts to `['localhost']` as a DNS-rebinding
+    // defence; without this entry a request to `testfirma.localhost:5173`
+    // returns "Blocked request. This host is not allowed." and the whole dev
+    // flow on subdomains breaks. The leading dot is Vite's subdomain-wildcard
+    // marker — matches `firma-a.localhost`, `testfirma.localhost`, etc.
+    // Plain `localhost` stays allowed by default; this is purely additive.
+    //
+    // @see docs/infrastructure/adr/ADR-050-tenant-subdomain-routing.md §"Local Dev"
+    // @see docs/FEAT_TENANT_SUBDOMAIN_ROUTING_MASTERPLAN.md D9
+    allowedHosts: ['.localhost'],
+
     // HMR Configuration — do NOT pin hmr.port. Vite defaults to server.port,
     // which is correct when Vite runs on a non-default port (e.g. Playwright E2E
     // starts a second instance on 5174 via CLI --port). A hardcoded hmr.port

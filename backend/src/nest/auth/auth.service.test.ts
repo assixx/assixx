@@ -153,6 +153,9 @@ function setupLoginMocks(db: MockDb, jwt: MockJwt, userOverrides?: Record<string
   db.systemQuery.mockResolvedValueOnce([]); // storeRefreshToken
   db.systemQuery.mockResolvedValueOnce([]); // updateLastLogin
   db.systemQuery.mockResolvedValueOnce([]); // logLoginAudit
+  // Session 12c (ADR-050): login now calls getSubdomainForTenant before
+  // building the user response — one extra systemQuery per login path.
+  db.systemQuery.mockResolvedValueOnce([{ subdomain: 'test-tenant' }]); // getSubdomainForTenant
 }
 
 /**
@@ -170,6 +173,8 @@ function setupLoginWithVerifiedUserMocks(
   db.systemQuery.mockResolvedValueOnce([]); // storeRefreshToken
   db.systemQuery.mockResolvedValueOnce([]); // updateLastLogin
   db.systemQuery.mockResolvedValueOnce([]); // logLoginAudit
+  // Session 12c (ADR-050): same getSubdomainForTenant call as setupLoginMocks.
+  db.systemQuery.mockResolvedValueOnce([{ subdomain: 'test-tenant' }]); // getSubdomainForTenant
 }
 
 // =============================================================
@@ -332,6 +337,7 @@ describe('SECURITY: AuthService', () => {
       mockDb.systemQuery.mockResolvedValueOnce([]); // storeRefreshToken
       mockDb.systemQuery.mockResolvedValueOnce([]); // updateLastLogin
       mockDb.systemQuery.mockRejectedValueOnce(new Error('Audit DB error')); // logLoginAudit fails
+      mockDb.systemQuery.mockResolvedValueOnce([{ subdomain: 'test-tenant' }]); // getSubdomainForTenant
 
       const result = await service.login(loginDto);
 
@@ -484,6 +490,7 @@ describe('SECURITY: AuthService', () => {
       mockDb.systemQuery.mockResolvedValueOnce([]); // storeRefreshToken
       mockDb.systemQuery.mockResolvedValueOnce([]); // updateLastLogin
       mockDb.systemQuery.mockRejectedValueOnce(new Error('Audit DB error')); // logLoginAudit fails
+      mockDb.systemQuery.mockResolvedValueOnce([{ subdomain: 'test-tenant' }]); // getSubdomainForTenant
 
       const result = await service.loginWithVerifiedUser(
         OAUTH_USER_ID,

@@ -218,10 +218,16 @@ export class AuthService {
     // Log login for audit (default method 'password')
     await this.logLoginAudit(user, ipAddress, userAgent);
 
+    // Session 12c (ADR-050): include tenant subdomain so the frontend login
+    // action knows whether to redirect to a tenant-scoped origin (apex-login
+    // → handoff → subdomain). Separate query — avoids adding a JOIN on every
+    // user fetch when subdomain is only needed at login time.
+    const subdomain = await this.getSubdomainForTenant(user.tenant_id);
+
     return {
       accessToken: tokens.accessToken,
       refreshToken: tokens.refreshToken,
-      user: this.buildSafeUserResponse(user),
+      user: this.buildSafeUserResponse(user, subdomain),
     };
   }
 
@@ -266,10 +272,13 @@ export class AuthService {
     await this.updateLastLogin(user.id, user.tenant_id);
     await this.logLoginAudit(user, ipAddress, userAgent, loginMethod);
 
+    // Session 12c (ADR-050): same subdomain enrichment as password login.
+    const subdomain = await this.getSubdomainForTenant(user.tenant_id);
+
     return {
       accessToken: tokens.accessToken,
       refreshToken: tokens.refreshToken,
-      user: this.buildSafeUserResponse(user),
+      user: this.buildSafeUserResponse(user, subdomain),
     };
   }
 
@@ -1152,9 +1161,16 @@ export class AuthService {
   // ============================================
 
   /**
-   * Build safe user response (without sensitive data)
+   * Build safe user response (without sensitive data).
+   *
+   * `subdomain` is injected by the caller (not derived from `UserRow`) because
+   * the users table has no subdomain column — it lives on `tenants`. Callers
+   * resolve it via `getSubdomainForTenant()` before invoking this helper so
+   * the shape build stays synchronous and allocation-free.
+   *
+   * @see docs/FEAT_TENANT_SUBDOMAIN_ROUTING_MASTERPLAN.md Session 12c
    */
-  private buildSafeUserResponse(user: UserRow): LoginResponse['user'] {
+  private buildSafeUserResponse(user: UserRow, subdomain: string | null): LoginResponse['user'] {
     return {
       id: user.id,
       email: user.email,
@@ -1162,7 +1178,31 @@ export class AuthService {
       lastName: user.last_name ?? undefined,
       role: user.role,
       tenantId: user.tenant_id,
+      subdomain,
     };
+  }
+
+  /**
+   * Resolve the routing slug (`tenants.subdomain`) for a given tenant id.
+   *
+   * Returns `null` when the tenant row is missing (shouldn't happen under FK
+   * constraints) or when the `subdomain` column is null. In greenfield prod
+   * every tenant has a non-null subdomain (signup DTO enforces it), but the
+   * type stays nullable so callers must handle the edge case explicitly.
+   *
+   * Uses `systemQuery()` (BYPASSRLS) because this runs during login, before
+   * CLS tenant context is set — the middleware only populates `tenantId` AFTER
+   * the JWT has been decoded on a subsequent request.
+   *
+   * @see docs/infrastructure/adr/ADR-019-multi-tenant-rls-isolation.md §Triple-User
+   * @see docs/FEAT_TENANT_SUBDOMAIN_ROUTING_MASTERPLAN.md Session 12c
+   */
+  async getSubdomainForTenant(tenantId: number): Promise<string | null> {
+    const rows = await this.databaseService.systemQuery<{ subdomain: string | null }>(
+      'SELECT subdomain FROM tenants WHERE id = $1',
+      [tenantId],
+    );
+    return rows[0]?.subdomain ?? null;
   }
 
   /**

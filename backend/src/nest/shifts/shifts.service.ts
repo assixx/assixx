@@ -73,9 +73,19 @@ interface DbAssignmentCountRow {
   week_count: string;
   month_count: string;
   year_count: string;
+  week_in_month_count: string;
+  week_in_year_count: string;
 }
 
-/** UNION ALL query: shifts + shift_rotation_history with period FILTER */
+/**
+ * UNION ALL query: shifts + shift_rotation_history with period FILTER.
+ *
+ * Also emits `week_in_month_count` / `week_in_year_count` (intersection of
+ * week window AND month/year window). These let the frontend re-merge
+ * unsaved local week edits into month/year totals correctly when the
+ * current week straddles a month or year boundary — without them the
+ * frontend's delta math over-/under-counts at boundaries.
+ */
 const ASSIGNMENT_COUNTS_SQL = `
   WITH team_employees AS (
     SELECT DISTINCT ut.user_id
@@ -107,7 +117,19 @@ const ASSIGNMENT_COUNTS_SQL = `
     COUNT(a.date) FILTER (
       WHERE a.date >= DATE_TRUNC('year', $3::date)
         AND a.date < DATE_TRUNC('year', $3::date) + INTERVAL '1 year'
-    ) AS year_count
+    ) AS year_count,
+    COUNT(a.date) FILTER (
+      WHERE a.date >= DATE_TRUNC('week', $3::date)
+        AND a.date < DATE_TRUNC('week', $3::date) + INTERVAL '7 days'
+        AND a.date >= DATE_TRUNC('month', $3::date)
+        AND a.date < DATE_TRUNC('month', $3::date) + INTERVAL '1 month'
+    ) AS week_in_month_count,
+    COUNT(a.date) FILTER (
+      WHERE a.date >= DATE_TRUNC('week', $3::date)
+        AND a.date < DATE_TRUNC('week', $3::date) + INTERVAL '7 days'
+        AND a.date >= DATE_TRUNC('year', $3::date)
+        AND a.date < DATE_TRUNC('year', $3::date) + INTERVAL '1 year'
+    ) AS week_in_year_count
   FROM team_employees te
   JOIN users u ON u.id = te.user_id
   LEFT JOIN all_shifts a ON a.user_id = te.user_id
@@ -122,6 +144,8 @@ function mapAssignmentCountRow(r: DbAssignmentCountRow): AssignmentCountResponse
     weekCount: Number.parseInt(r.week_count, 10),
     monthCount: Number.parseInt(r.month_count, 10),
     yearCount: Number.parseInt(r.year_count, 10),
+    weekInMonthCount: Number.parseInt(r.week_in_month_count, 10),
+    weekInYearCount: Number.parseInt(r.week_in_year_count, 10),
   };
 }
 

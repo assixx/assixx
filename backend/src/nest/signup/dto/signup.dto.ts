@@ -14,11 +14,54 @@ import { EmailSchema } from '../../../schemas/common.schema.js';
 // ========================================
 
 /**
+ * Reserved subdomain slugs — hard-blocked at signup.
+ *
+ * WHY: these labels would collide with our own infra — apex (`www`),
+ * future infra-subdomains (`api`, `cdn`, `static`, `mail`, `status`,
+ * `support`), observability tooling (`admin`, `app`, `docs`, `blog`,
+ * `grafana`, `health`, `auth`, `assets`, `tempo`), and protocol-
+ * reserved literals (`localhost`, `test` per RFC 6761). Mirrored
+ * at the DB layer via `tenants_subdomain_reserved_check` CHECK
+ * constraint (migration 20260421102820830) as defense-in-depth.
+ *
+ * Keep in exact sync with the CHECK constraint. The list is
+ * conservative — cheaper to un-reserve later than reclaim from a
+ * paying customer.
+ *
+ * TECH-DEBT (post-Phase-6): this schema + regex is duplicated in
+ * `check-subdomain.dto.ts`. Extract to `shared/src/` when the slug
+ * validation gains more refinements. Tracked in D4 resolution.
+ *
+ * @see docs/infrastructure/adr/ADR-050-tenant-subdomain-routing.md §"Reserved Slug List"
+ */
+export const RESERVED_SUBDOMAINS = [
+  'www',
+  'api',
+  'admin',
+  'app',
+  'assets',
+  'auth',
+  'cdn',
+  'docs',
+  'blog',
+  'grafana',
+  'health',
+  'localhost',
+  'mail',
+  'static',
+  'status',
+  'support',
+  'tempo',
+  'test',
+] as const;
+
+/**
  * Subdomain validation pattern
  * - Only lowercase letters, numbers, and hyphens
  * - Must start with letter/number
  * - Cannot end with hyphen
  * - 3-50 characters
+ * - NOT in RESERVED_SUBDOMAINS (ADR-050)
  */
 const SubdomainSchema = z
   .string()
@@ -28,7 +71,10 @@ const SubdomainSchema = z
     /^[a-z0-9][a-z0-9-]*[a-z0-9]$/,
     'Subdomain must contain only lowercase letters, numbers, and hyphens',
   )
-  .transform((val: string) => val.toLowerCase().trim());
+  .transform((val: string) => val.toLowerCase().trim())
+  .refine((val: string) => !(RESERVED_SUBDOMAINS as readonly string[]).includes(val), {
+    message: 'This subdomain is reserved and cannot be used.',
+  });
 
 /**
  * Company name validation

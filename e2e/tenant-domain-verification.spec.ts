@@ -87,9 +87,27 @@ test.describe('Tenant Domain Verification — unverified-tenant static state', (
   // `status = 'pending'`, so `GET /api/v2/domains/verification-status` returns
   // `{ verified: false }`, the UnverifiedDomainBanner renders, and
   // `assertVerified()` blocks user-creation.
-  test.use({ storageState: { cookies: [], origins: [] } });
+  //
+  // Session 12c (ADR-050): override the global `apitest.localhost:5174` baseURL
+  // so `page.goto('/manage-admins')` etc. stay on the UNVERIFIED tenant's
+  // origin. Without this override, relative `page.goto()` calls would jump
+  // back to `apitest.localhost:5174` where the user has no cookies → silent
+  // auth-redirect → tests lose their fixture context.
+  //
+  // Prerequisite: `/etc/hosts` entry `127.0.0.1 unverified-e2e.localhost`.
+  // See docs/how-to/HOW-TO-LOCAL-SUBDOMAINS.md.
+  test.use({
+    storageState: { cookies: [], origins: [] },
+    baseURL: 'http://unverified-e2e.localhost:5174',
+  });
 
   async function loginAsUnverifiedRoot(page: import('@playwright/test').Page): Promise<void> {
+    // Relative URL — resolved against the describe-scoped
+    // `baseURL: 'http://unverified-e2e.localhost:5174'` from `test.use` above.
+    // Session 12c (ADR-050): stays on the unverified tenant's own subdomain
+    // so `hostSlug === user.subdomain` and the apex-handoff branch short-
+    // circuits. Cookies land on `unverified-e2e.localhost` → every subsequent
+    // `page.goto('/...')` in this describe stays on the same origin.
     await page.goto('/login');
     await page.getByRole('textbox', { name: 'E-Mail' }).fill('test@unverified-e2e.test');
     await page.getByRole('textbox', { name: 'Passwort' }).fill('Unverified12345!');

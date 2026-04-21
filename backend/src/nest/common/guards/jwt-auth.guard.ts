@@ -9,6 +9,7 @@ import { USER_ROLES } from '@assixx/shared';
 import {
   CanActivate,
   ExecutionContext,
+  ForbiddenException,
   Injectable,
   Logger,
   UnauthorizedException,
@@ -21,6 +22,10 @@ import { ClsService } from 'nestjs-cls';
 import { DatabaseService } from '../../database/database.service.js';
 import { IS_PUBLIC_KEY } from '../decorators/public.decorator.js';
 import type { JwtPayload, NestAuthUser, UserRole } from '../interfaces/auth.interface.js';
+// ADR-050 cross-tenant host check — the middleware (global, mounted in
+// app.module.ts `configure()`) populates `req.hostTenantId`; this guard
+// enforces it must match the JWT's tenantId.
+import type { HostAwareRequest } from '../middleware/tenant-host-resolver.middleware.js';
 
 /**
  * Database row type for user lookup
@@ -92,9 +97,53 @@ export class JwtAuthGuard implements CanActivate {
       this.cls.set('userRole', authUser.activeRole);
       this.cls.set('userEmail', authUser.email);
 
+      // ADR-050 cross-tenant host check — the load-bearing line of the
+      // whole subdomain-routing design. `req.hostTenantId` was set by
+      // `TenantHostResolverMiddleware` before this guard ran. Three-state
+      // semantics:
+      //
+      //   undefined → middleware did not run (test fixture) — skip
+      //   null      → apex / localhost / IP / unknown slug — skip
+      //   number    → subdomain resolved — MUST match JWT's tenantId
+      //
+      // A JWT minted for tenant A sent to `tenant-b.assixx.com` hits the
+      // `number` case with mismatch and throws 403. The discriminable
+      // error code (`CROSS_TENANT_HOST_MISMATCH`) is Loki-alertable; it
+      // is distinct from `HANDOFF_HOST_MISMATCH` (OAuth-flow-specific
+      // per ADR-050 §R15) so attacks on the two surfaces can be told
+      // apart in monitoring.
+      //
+      // @see docs/infrastructure/adr/ADR-050-tenant-subdomain-routing.md §"Backend: Pre-Auth Host Resolver + Post-Auth Cross-Check"
+      // @see docs/FEAT_TENANT_SUBDOMAIN_ROUTING_MASTERPLAN.md Phase 2 Step 2.3
+      // Read `hostTenantId` via `request.raw` — under the NestJS+Fastify adapter,
+      // class-based middleware (our TenantHostResolverMiddleware) runs through
+      // `@fastify/middie`, which hands the middleware the RAW IncomingMessage.
+      // That raw object is later exposed on FastifyRequest as `.raw`. Writing
+      // to `request.hostTenantId` directly here would silently read undefined
+      // on every request — turning this cross-check into a no-op. Discovered
+      // Session 10 via API integration test (masterplan Phase 4 D17).
+      const hostTenantId = (request as HostAwareRequest).raw.hostTenantId;
+      if (
+        hostTenantId !== undefined &&
+        hostTenantId !== null &&
+        hostTenantId !== authUser.tenantId
+      ) {
+        throw new ForbiddenException({
+          code: 'CROSS_TENANT_HOST_MISMATCH',
+          message: 'Token tenant does not match request host.',
+        });
+      }
+
       return true;
     } catch (error: unknown) {
       if (error instanceof UnauthorizedException) {
+        throw error;
+      }
+      // ADR-050 cross-tenant host mismatch must propagate with its
+      // original 403 + discriminable code (`CROSS_TENANT_HOST_MISMATCH`).
+      // Without this pass-through the generic catch below would mask it
+      // as a generic 401 and destroy the monitoring signal.
+      if (error instanceof ForbiddenException) {
         throw error;
       }
 

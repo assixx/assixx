@@ -48,15 +48,34 @@ export default defineConfig({
   webServer: {
     command:
       'cd frontend && PUBLIC_TURNSTILE_SITE_KEY=1x00000000000000000000AA TURNSTILE_SECRET_KEY=1x0000000000000000000000000000000AA pnpm exec vite dev --port 5174 --strictPort',
+    // Health-check stays on plain `localhost` — the Vite server listens on all
+    // `*.localhost` via `allowedHosts: ['.localhost']` (Session 12c), but the
+    // loopback readiness probe doesn't need a routed subdomain.
     url: 'http://localhost:5174',
     reuseExistingServer: false,
     stdout: 'ignore',
     stderr: 'pipe',
   },
 
-  /* Shared settings for all projects */
+  /* Shared settings for all projects
+   *
+   * baseURL uses `apitest.localhost:5174` instead of plain `localhost:5174`
+   * so that `auth.setup.ts` and every subsequent E2E test operates on the
+   * tenant's own origin — `locals.hostSlug === user.subdomain ('apitest')` →
+   * the Session 12c apex-handoff branch short-circuits → cookies land on
+   * the subdomain → `window.location.href = '/root-dashboard'` stays on the
+   * same origin → `waitForURL('**\/root-dashboard')` matches without a
+   * cross-origin detour through `/signup/oauth-complete?token=...`.
+   *
+   * Prerequisite: `/etc/hosts` contains `127.0.0.1 apitest.localhost`.
+   * On dev machines: one-time `echo "127.0.0.1 apitest.localhost" | sudo tee -a /etc/hosts`.
+   * On CI (future): dedicated setup step — tracked as follow-up.
+   *
+   * @see docs/infrastructure/adr/ADR-050-tenant-subdomain-routing.md §"Local Dev"
+   * @see docs/how-to/HOW-TO-LOCAL-SUBDOMAINS.md
+   */
   use: {
-    baseURL: 'http://localhost:5174',
+    baseURL: 'http://apitest.localhost:5174',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
   },

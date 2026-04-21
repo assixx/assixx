@@ -26,6 +26,13 @@ export class LoginDto extends createZodDto(LoginSchema) {}
 /**
  * Login response type
  * Note: Using explicit `| undefined` instead of `?` for exactOptionalPropertyTypes compliance
+ *
+ * `subdomain` is the tenant's routing slug (ADR-050). Always present in the
+ * shape; `null` when the tenant has no subdomain populated (legacy / orphan
+ * case — in greenfield prod every tenant is guaranteed to have one via the
+ * signup DTO regex, but the type stays nullable for safety). The frontend
+ * login action uses it to detect "logged in on apex, must redirect to
+ * tenant subdomain" (Session 12c handoff branch).
  */
 export interface LoginResponse {
   accessToken: string;
@@ -37,5 +44,6 @@ export interface LoginResponse {
     lastName: string | undefined;
     role: string;
     tenantId: number;
+    subdomain: string | null;
   };
 }

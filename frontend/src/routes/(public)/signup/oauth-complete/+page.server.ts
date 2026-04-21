@@ -29,10 +29,11 @@
  */
 import { error, fail, redirect, type Cookies } from '@sveltejs/kit';
 
-import { extractJwtExp } from '$lib/server/jwt-exp';
+import { extractJwtExp, extractJwtRole } from '$lib/server/jwt-exp';
 import { createLogger } from '$lib/utils/logger';
 
 import type { Actions, PageServerLoad } from './$types';
+import type { UserRole } from '@assixx/shared';
 
 const log = createLogger('OAuthCompleteSignup');
 
@@ -61,6 +62,19 @@ const REFRESH_COOKIE_OPTIONS = {
 const ACCESS_TOKEN_MAX_AGE = 30 * 60; // 30 min
 const REFRESH_TOKEN_MAX_AGE = 7 * 24 * 60 * 60; // 7 days
 
+/**
+ * Role → dashboard path map. MUST mirror
+ * `frontend/src/routes/(public)/login/+page.server.ts::getRedirectPath` —
+ * diverging here sends OAuth-login users to a different landing than
+ * password-login users, which would be a UX bug.
+ */
+const ROLE_DASHBOARD_PATHS: Record<UserRole, string> = {
+  root: '/root-dashboard',
+  admin: '/admin-dashboard',
+  employee: '/employee-dashboard',
+  dummy: '/blackboard',
+};
+
 // ─── Backend envelope types (response from NestJS wraps in {success, data|error}) ──
 
 interface PeekSuccess {
@@ -87,9 +101,59 @@ interface CompleteSuccess {
 }
 type CompleteResponse = CompleteSuccess | ApiError;
 
+/**
+ * `POST /auth/oauth/handoff` — response shape (ADR-050 §OAuth).
+ *
+ * CORRECTION 2026-04-21 (Session 12c): NestJS `ResponseInterceptor`
+ * (app.module.ts, APP_INTERCEPTOR) wraps EVERY JSON controller return in
+ * `{success: true, data: ..., timestamp}` unconditionally. The initial
+ * Session 12 implementation treated the body as unwrapped and would have
+ * silently returned `payload.accessToken === undefined` at runtime —
+ * latent bug (OAuth handoff path not yet end-to-end tested). Confirmed
+ * by the Session 10 API test at `tenant-subdomain-routing.api.test.ts:428`
+ * which asserts `body.data?.accessToken`.
+ *
+ * Error responses use NestJS's default exception shape; we only care about
+ * the HTTP status code for branching — no envelope access needed there.
+ */
+interface HandoffSuccessEnvelope {
+  success: boolean;
+  data?: {
+    accessToken: string;
+    refreshToken: string;
+    userId: number;
+    tenantId: number;
+  };
+}
+
 // ─── Load ────────────────────────────────────────────────────────────────────
 
-export const load: PageServerLoad = async ({ url, fetch }) => {
+/**
+ * `/signup/oauth-complete` serves TWO disjoint query shapes (ADR-050 §OAuth):
+ *
+ *   1. `?token=…` — OAuth-login handoff from the apex callback. The user has
+ *      an existing account; apex minted a single-use handoff token and 302'd
+ *      us to the correct subdomain. We swap the token for auth cookies
+ *      scoped to THIS origin (browser-default, RFC 6265 §5.3 step 6) and
+ *      redirect to the role-specific dashboard.
+ *
+ *   2. `?ticket=…` — OAuth-signup continuation (ADR-046). The user has no
+ *      account yet; the callback handed us a peek-able ticket so we can
+ *      pre-fill the company-details form. The form action consumes the
+ *      ticket atomically and creates tenant+user.
+ *
+ * Branch priority: `token` wins when both are present (pathological / tampered
+ * URL) — login users don't need the signup form. Neither present → bounce
+ * to `/signup` for fresh-start UX.
+ *
+ * @see docs/FEAT_TENANT_SUBDOMAIN_ROUTING_MASTERPLAN.md Phase 5 Step 5.4
+ */
+export const load: PageServerLoad = async ({ url, fetch, cookies, request }) => {
+  const handoffToken = url.searchParams.get('token');
+  if (handoffToken !== null && handoffToken !== '') {
+    return await handleHandoff(handoffToken, fetch, cookies, request);
+  }
+
   const ticket = url.searchParams.get('ticket');
   if (ticket === null || ticket === '') {
     // User landed here without an OAuth handoff — bounce them to the start.
@@ -123,6 +187,101 @@ export const load: PageServerLoad = async ({ url, fetch }) => {
     displayName: body.data.displayName,
   };
 };
+
+// ─── OAuth Handoff Branch (ADR-050) ──────────────────────────────────────────
+
+/**
+ * Swap a single-use handoff token for auth cookies scoped to the current
+ * (subdomain) origin, then redirect to the role-specific dashboard.
+ *
+ * Never returns normally — always throws a SvelteKit redirect/error. The
+ * return type is `never` via re-thrown `redirect()` / `error()`, so the
+ * caller's control flow falls through only in unreachable branches.
+ *
+ * R15 defence-in-depth: the `X-Forwarded-Host` header is explicitly
+ * propagated so the backend `TenantHostResolverMiddleware` resolves
+ * `req.hostTenantId` from the original subdomain — mismatching the payload
+ * tenantId triggers the handoff service's `HANDOFF_HOST_MISMATCH` 403.
+ * Without this header the backend would see `localhost` (dev) or the
+ * internal docker hostname (prod) and reject every handoff.
+ *
+ * @see backend/src/nest/auth/oauth/oauth-handoff.controller.ts
+ * @see backend/src/nest/auth/oauth/oauth-handoff.service.ts consume() R15 block
+ */
+async function handleHandoff(
+  token: string,
+  fetchFn: typeof fetch,
+  cookies: Cookies,
+  request: Request,
+): Promise<never> {
+  const forwardedHost = request.headers.get('x-forwarded-host') ?? new URL(request.url).hostname;
+
+  let response: Response;
+  try {
+    response = await fetchFn(`${API_BASE}/auth/oauth/handoff`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        // Nginx prod: already set by reverse proxy; re-setting is a no-op.
+        // Dev direct-to-backend (localhost:3000): we're the only source.
+        'X-Forwarded-Host': forwardedHost,
+      },
+      body: JSON.stringify({ token }),
+    });
+  } catch (err: unknown) {
+    log.error({ err }, 'Handoff fetch failed (network)');
+    error(500, 'Sitzung konnte nicht übernommen werden.');
+  }
+
+  // Map backend error codes to specific login-page error query-params so the
+  // login page can surface a targeted German message via its existing
+  // `?oauth=…` handling (login/+page.svelte already renders `?oauth=…` hints).
+  if (response.status === 400) {
+    log.warn('Handoff rejected: malformed token shape');
+    redirect(303, '/login?oauth=handoff-invalid');
+  }
+  if (response.status === 404) {
+    log.info('Handoff token expired or unknown');
+    redirect(303, '/login?oauth=handoff-expired');
+  }
+  if (response.status === 403) {
+    // R15: host cross-check mismatch. Legit token preserved (Redis GETDEL
+    // only fires on match) — user can retry the OAuth flow without losing
+    // a round-trip.
+    log.warn({ forwardedHost }, 'Handoff rejected: host mismatch (R15)');
+    redirect(303, '/login?oauth=handoff-host-mismatch');
+  }
+
+  if (!response.ok) {
+    log.error({ status: response.status }, 'Handoff failed unexpectedly');
+    error(500, 'Sitzung konnte nicht übernommen werden.');
+  }
+
+  const envelope = (await response.json()) as HandoffSuccessEnvelope;
+  if (envelope.data === undefined) {
+    // Envelope drift — if ResponseInterceptor ever changes shape or is
+    // disabled for this route, we fail closed rather than set undefined
+    // cookies. Logged for Loki alerting.
+    log.error({ envelope }, 'Handoff response missing `data` envelope field');
+    error(500, 'Sitzung konnte nicht übernommen werden.');
+  }
+  const { accessToken, refreshToken } = envelope.data;
+
+  let role: UserRole;
+  try {
+    role = extractJwtRole(accessToken);
+  } catch (err: unknown) {
+    // Drift guard: the backend always signs JWTs with a valid `role` claim
+    // (auth.service.ts::JwtPayload). Reaching this branch means either a
+    // corrupted token made it to us or the claim shape changed — either way
+    // we cannot safely route the user, so fail closed.
+    log.error({ err }, 'Handoff succeeded but JWT has no valid role claim');
+    error(500, 'Sitzung konnte nicht übernommen werden.');
+  }
+
+  setAuthCookies(cookies, accessToken, refreshToken, role);
+  redirect(303, ROLE_DASHBOARD_PATHS[role]);
+}
 
 // ─── Action ──────────────────────────────────────────────────────────────────
 
@@ -174,7 +333,17 @@ function buildCompleteSignupPayload(formData: FormData): {
   };
 }
 
-function setAuthCookies(cookies: Cookies, access: string, refresh: string): void {
+/**
+ * Set the 4-cookie auth-session state. MUST stay in shape-parity with
+ * `login/+page.server.ts::setAuthCookies` and `clearAuthCookies` (3-cookie
+ * invariant extended to 4 per ADR-046 §"3-cookie invariant" + userRole).
+ *
+ * `role` is passed explicitly rather than hardcoded: the OAuth-signup caller
+ * always supplies `'root'` (the flow creates a new tenant's root admin); the
+ * OAuth-login-handoff caller supplies the role extracted from the handed-off
+ * JWT (can be any `UserRole`).
+ */
+function setAuthCookies(cookies: Cookies, access: string, refresh: string, role: UserRole): void {
   cookies.set('accessToken', access, {
     ...ACCESS_COOKIE_OPTIONS,
     maxAge: ACCESS_TOKEN_MAX_AGE,
@@ -184,8 +353,8 @@ function setAuthCookies(cookies: Cookies, access: string, refresh: string): void
     maxAge: REFRESH_TOKEN_MAX_AGE,
   });
   // userRole is readable by client JS (not httpOnly) — the router uses it
-  // to pick the correct dashboard layout. OAuth signup always creates root.
-  cookies.set('userRole', 'root', {
+  // to pick the correct dashboard layout.
+  cookies.set('userRole', role, {
     ...ACCESS_COOKIE_OPTIONS,
     httpOnly: false,
     maxAge: ACCESS_TOKEN_MAX_AGE,
@@ -235,7 +404,10 @@ export const actions: Actions = {
         return fail(response.ok ? 500 : response.status, { error: message });
       }
 
-      setAuthCookies(cookies, body.data.accessToken, body.data.refreshToken);
+      // OAuth signup always creates a tenant's first root admin — the role
+      // was previously hardcoded inside setAuthCookies; now passed explicitly
+      // so the function can also serve the login-handoff branch (ADR-050).
+      setAuthCookies(cookies, body.data.accessToken, body.data.refreshToken, 'root');
 
       return {
         success: true,

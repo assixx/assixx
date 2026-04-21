@@ -22,6 +22,7 @@
 | [HOW-TO-AZURE-AD-SETUP](./HOW-TO-AZURE-AD-SETUP.md)             | Microsoft OAuth — Azure AD App Registration, Redirect URIs, Doppler-Secrets, Rotation (ADR-046)                        |
 | [HOW-TO-GRAFANA-CLI](./HOW-TO-GRAFANA-CLI.md)                   | `grafanactl` Observability-as-Code — Install, Cloud-Setup, Workflows, Abgrenzung zu `curl`-Approach (ADR-002 Phase 5g) |
 | [HOW-TO-TRACE-DEBUG](./HOW-TO-TRACE-DEBUG.md)                   | Debug slow/failing requests via distributed traces — complaint → trace_id → Tempo waterfall → root cause (ADR-048)     |
+| [HOW-TO-LOCAL-SUBDOMAINS](./HOW-TO-LOCAL-SUBDOMAINS.md)         | Neuen Tenant-Subdomain lokal testen — `/etc/hosts`-Eintrag, Fallstricke, Troubleshooting (ADR-050 Session 12c)         |
 
 ### Testing
 
