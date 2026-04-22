@@ -16,7 +16,7 @@ Multi-Tenant SaaS for knowledge management, communication, and collaboration in 
 
 ## Preview
 
-https://github.com/user-attachments/assets/7854f964-94d7-429a-83b5-bd11a5990770
+[Demo-Video ansehen](https://github.com/user-attachments/assets/7854f964-94d7-429a-83b5-bd11a5990770)
 
 ---
 
