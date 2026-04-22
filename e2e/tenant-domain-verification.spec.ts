@@ -81,54 +81,25 @@ test.describe('Tenant Domain Verification — page-mount smoke', () => {
 });
 
 test.describe('Tenant Domain Verification — unverified-tenant static state', () => {
-  // Fresh context — do NOT inherit the apitest storageState from the file-level
-  // `test.use` above. These tests log in as the `unverified-e2e` seeded tenant
-  // (Phase 1 Step 1.3 seed extension, 2026-04-19) whose tenant_domains row has
-  // `status = 'pending'`, so `GET /api/v2/domains/verification-status` returns
-  // `{ verified: false }`, the UnverifiedDomainBanner renders, and
-  // `assertVerified()` blocks user-creation.
+  // Shared auth via `unverified-auth.setup.ts` — one login per suite, storageState
+  // reused across all tests. Replaces the previous login-per-test pattern which
+  // tripped the login rate-limiter (ADR-001) after ~2 attempts.
   //
-  // Session 12c (ADR-050): override the global `apitest.localhost:5174` baseURL
-  // so `page.goto('/manage-admins')` etc. stay on the UNVERIFIED tenant's
-  // origin. Without this override, relative `page.goto()` calls would jump
-  // back to `apitest.localhost:5174` where the user has no cookies → silent
-  // auth-redirect → tests lose their fixture context.
+  // Session 12c (ADR-050): override the project-level `apitest.localhost:5174`
+  // baseURL so `page.goto('/manage-admins')` etc. stay on the UNVERIFIED tenant's
+  // origin. Cookies in `unverified.json` are scoped to `unverified-e2e.localhost`,
+  // so without the baseURL override relative `page.goto()` would jump back to
+  // apitest where the user has no cookies.
   //
   // Prerequisite: `/etc/hosts` entry `127.0.0.1 unverified-e2e.localhost`.
   // See docs/how-to/HOW-TO-LOCAL-SUBDOMAINS.md.
   test.use({
-    storageState: { cookies: [], origins: [] },
+    storageState: 'e2e/.auth/unverified.json',
     baseURL: 'http://unverified-e2e.localhost:5174',
   });
 
-  async function loginAsUnverifiedRoot(page: import('@playwright/test').Page): Promise<void> {
-    // Relative URL — resolved against the describe-scoped
-    // `baseURL: 'http://unverified-e2e.localhost:5174'` from `test.use` above.
-    // Session 12c (ADR-050): stays on the unverified tenant's own subdomain
-    // so `hostSlug === user.subdomain` and the apex-handoff branch short-
-    // circuits. Cookies land on `unverified-e2e.localhost` → every subsequent
-    // `page.goto('/...')` in this describe stays on the same origin.
-    await page.goto('/login');
-    await page.getByRole('textbox', { name: 'E-Mail' }).fill('test@unverified-e2e.test');
-    await page.getByRole('textbox', { name: 'Passwort' }).fill('Unverified12345!');
-    const submitButton = page.getByRole('button', { name: 'Anmelden', exact: true });
-    // Cold-context budget: 30s. Each test in this describe uses a FRESH context
-    // (test.use storageState empty), so Turnstile's JS + iframe + siteverify
-    // round-trip pays a full cold-start cost on the FIRST test. Tests 2-N in
-    // the describe benefit from OS-level DNS/TLS reuse and complete in ~3-5s,
-    // but the first one consistently exceeded 15s on a fresh Playwright run.
-    // 30s matches Playwright's default click() timeout — the original behavior
-    // before this `toBeEnabled` guard was added — so the worst case is no
-    // worse than pre-guard. Fail-fast intent is preserved for the genuine
-    // "test keys broke" scenario (one 30s wait, not a 30s × N cascade).
-    await expect(submitButton).toBeEnabled({ timeout: 30000 });
-    await submitButton.click();
-    // Root lands on /root-dashboard — mirrors auth.setup.ts's apitest flow.
-    await page.waitForURL('**/root-dashboard');
-  }
-
   test('unverified root sees UnverifiedDomainBanner on the dashboard', async ({ page }) => {
-    await loginAsUnverifiedRoot(page);
+    await page.goto('/root-dashboard');
 
     // Banner shows when `data.tenantVerified === false` AND role is root/admin
     // per (app)/+layout.svelte:435. German string from UnverifiedDomainBanner.svelte.
@@ -144,7 +115,7 @@ test.describe('Tenant Domain Verification — unverified-tenant static state', (
   test('unverified root sees SingleRootWarningBanner HIDDEN (banner-priority-fix 2026-04-19)', async ({
     page,
   }) => {
-    await loginAsUnverifiedRoot(page);
+    await page.goto('/root-dashboard');
 
     // (app)/+layout.svelte:426 was changed 2026-04-19 to suppress the single-
     // root banner while the tenant is unverified (creating a 2nd root routes
@@ -157,7 +128,6 @@ test.describe('Tenant Domain Verification — unverified-tenant static state', (
   test('on /manage-admins the "Administrator hinzufügen" FAB is disabled with tooltip', async ({
     page,
   }) => {
-    await loginAsUnverifiedRoot(page);
     await page.goto('/manage-admins');
 
     // The floating action button is the canonical unlocked-gate target. When
@@ -174,7 +144,6 @@ test.describe('Tenant Domain Verification — unverified-tenant static state', (
   });
 
   test('domains page lists the pending row with a Verify button', async ({ page }) => {
-    await loginAsUnverifiedRoot(page);
     await page.goto('/settings/company-profile/domains');
 
     await expect(page.getByRole('heading', { name: 'Firmen-Domains' })).toBeVisible();

@@ -137,7 +137,16 @@ test.describe('Smoke: Key Pages Load', () => {
           !e.includes('favicon') &&
           !e.includes('stylesheet') &&
           !e.includes('409') &&
-          !e.includes('the server responded with a status of'),
+          !e.includes('the server responded with a status of') &&
+          // ADR-022 Phase A: E2E init fails closed (no silent key rotation) when
+          // local IndexedDB is empty but the server holds a key from a previous
+          // run. Playwright always creates a fresh context (empty IndexedDB) but
+          // reuses the apitest storageState (persistent server-side E2E key), so
+          // this mismatch is the steady-state of the test harness, not a page-
+          // load regression. The race is only visible on pages slow enough for
+          // the async init to finish before the title check (/manage-approvals
+          // loads 46 approvals → ~1.8s, enough time).
+          !e.includes('E2eState'),
       );
       expect(criticalErrors).toHaveLength(0);
     });

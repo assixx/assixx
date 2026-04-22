@@ -83,8 +83,13 @@ export default defineConfig({
   /* Setup project: authenticates and saves storageState */
   projects: [
     {
+      // Matches both `auth.setup.ts` (apitest root) and
+      // `unverified-auth.setup.ts` (unverified-e2e root). Each setup logs in
+      // ONCE and writes storageState to e2e/.auth/*.json; tests that need that
+      // tenant's identity reference the saved file via `test.use` — avoids the
+      // login-per-test rate-limit cascade (ADR-001).
       name: 'auth-setup',
-      testMatch: /auth\.setup\.ts/,
+      testMatch: /.*\.setup\.ts/,
     },
     {
       name: 'chromium',
