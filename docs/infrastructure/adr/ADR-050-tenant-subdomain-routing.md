@@ -276,15 +276,42 @@ regex, not DB-driven — the regex shape IS the contract.
 
 ### OAuth (ADR-046): Centralized Callback, Post-Callback Handoff
 
+> **Amendment 2026-04-22 (Session 12c — OAuth login-success redirect bugfix):**
+> The `login-success` branch of the callback does NOT use `returnToSlug` any
+> more. It resolves the user's tenant subdomain from the DB via
+> `authService.getSubdomainForTenant(tenantId)` — the user's own slug is the
+> single source of truth, NOT the Startseiten-slug the user happened to
+> authenticate from. Rationale: OAuth users typically don't know their own
+> tenant slug; a Microsoft sign-in from `testfirma.localhost` for an account
+> belonging to `scs-technik` must land on `scs-technik.localhost`, not on
+> `testfirma.localhost` (where R15 `CROSS_TENANT_HOST_MISMATCH` would 403
+> every subsequent authenticated request). This mirrors Slack/Linear/Grafana
+> patterns and aligns the OAuth flow 1:1 with the password-login flow's
+> `buildHandoffRedirect()` (Session 12c, `(public)/login/+page.server.ts`).
+>
+> `returnToSlug` in the OAuth-State payload is preserved — it still governs
+> redirect targets for `login-not-linked`, `signup-continue`, and
+> `provider-error` variants, where Startseiten-context is the correct UX
+> anchor (error pages / new-tenant signup). Only `login-success` is
+> DB-authoritative.
+>
+> `buildSubdomainUrl(slug, path)` was also extracted to its own file
+> (`build-subdomain-url.ts`, 10 unit tests) and now derives apex+scheme+port
+> from `PUBLIC_APP_URL` — the same env var that drives the Azure
+> `redirect_uri`. Prior hardcoded `https://${slug}.assixx.com` silently
+> broke every dev subdomain handoff. Matches the frontend twin
+> `buildSubdomainHandoffUrl()` in the password-login flow.
+
 > **Correction 2026-04-20 (masterplan Session 1, D6 audit):** this section
 > was rewritten after an audit of the actual OAuth implementation showed
 > that `state` is not a cookie but a Redis-stored UUIDv7 token. The original
 > ADR text assumed a cookie-HMAC design that never existed in the codebase.
 > The functional behaviour described below is unchanged in shape —
-> `return_to_slug` still gates subdomain redirection — only the mechanism
-> is corrected. No new cryptographic secret (`OAUTH_STATE_SECRET`) is
-> required; the existing Redis-backed state payload is extended with one
-> additional field.
+> `return_to_slug` still gates subdomain redirection for
+> `login-not-linked` / `signup-continue` / `provider-error` branches (see
+> 2026-04-22 Amendment above for the `login-success` DB-authoritative path).
+> No new cryptographic secret (`OAUTH_STATE_SECRET`) is required; the
+> existing Redis-backed state payload is extended with one additional field.
 
 `PUBLIC_APP_URL` stays `https://www.assixx.com` in production. The Microsoft
 Entra registered redirect-URI continues to be a single value:

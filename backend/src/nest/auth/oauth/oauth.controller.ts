@@ -59,6 +59,7 @@ import type { SignupResponseData } from '../../signup/dto/index.js';
 // (access/refresh/accessTokenExp). See auth.controller.ts `setAuthCookies`.
 import { setAuthCookies } from '../auth.controller.js';
 import { AuthService } from '../auth.service.js';
+import { buildSubdomainUrl } from './build-subdomain-url.js';
 import {
   AuthorizeQueryDto,
   CallbackQueryDto,
@@ -119,14 +120,9 @@ function resolveReturnToSlug(req: FastifyRequest, queryFallback?: string): strin
   return queryFallback;
 }
 
-/**
- * Build an absolute subdomain URL for a callback redirect target.
- * `slug` has already been validated against the DB (state-service roundtrip)
- * OR matches the AuthorizeQuerySchema regex — no additional sanitisation needed.
- */
-function buildSubdomainUrl(slug: string, pathWithQuery: string): string {
-  return `https://${slug}.assixx.com${pathWithQuery}`;
-}
+// buildSubdomainUrl lives in its own file so it can be unit-tested as a pure
+// function without the NestJS test harness — see `build-subdomain-url.ts` +
+// `build-subdomain-url.test.ts`.
 
 @Controller('auth/oauth/microsoft')
 export class OAuthController {
@@ -337,45 +333,7 @@ export class OAuthController {
     reply: FastifyReply,
   ): Promise<void> {
     if (result.mode === 'login-success') {
-      const { ipAddress, userAgent } = getClientInfo(req);
-      const session = await this.authService.loginWithVerifiedUser(
-        result.userId,
-        result.tenantId,
-        OAUTH_LOGIN_METHOD,
-        ipAddress,
-        userAgent,
-      );
-
-      // ADR-050 §OAuth: subdomain-initiated flow → mint handoff token, redirect
-      // to subdomain where its SvelteKit SSR calls POST /api/v2/auth/oauth/handoff
-      // and sets cookies on the subdomain origin. Apex cookies here would NOT
-      // reach the subdomain (RFC 6265 §5.3 step 6) — so we deliberately do NOT
-      // call setAuthCookies() on this branch.
-      if (result.returnToSlug !== undefined) {
-        const token = await this.handoffService.mint({
-          userId: result.userId,
-          tenantId: result.tenantId,
-          accessToken: session.accessToken,
-          refreshToken: session.refreshToken,
-        });
-        await reply.redirect(
-          buildSubdomainUrl(
-            result.returnToSlug,
-            `/signup/oauth-complete?token=${encodeURIComponent(token)}`,
-          ),
-          HttpStatus.FOUND,
-        );
-        return;
-      }
-
-      setAuthCookies(reply, session.accessToken, session.refreshToken);
-      // Delegate role-routing to SvelteKit — `/login` load-function detects the
-      // just-set session cookie, calls `/users/me`, and redirects to the
-      // role-specific dashboard (`/root-dashboard` / `/admin-dashboard` / etc.).
-      // See frontend/src/routes/login/+page.server.ts `load` fn.
-      // Previously hard-coded `/dashboard` which does not exist as a SvelteKit
-      // route — every OAuth re-login 404'd before bouncing through /login.
-      await reply.redirect('/login', HttpStatus.FOUND);
+      await this.routeLoginSuccess(result.userId, result.tenantId, req, reply);
       return;
     }
 
@@ -389,6 +347,76 @@ export class OAuthController {
     const target =
       result.returnToSlug !== undefined ? buildSubdomainUrl(result.returnToSlug, path) : path;
     await reply.redirect(target, HttpStatus.FOUND);
+  }
+
+  /**
+   * Route the `login-success` callback variant.
+   *
+   * Single-source-of-truth for the redirect target is the USER's tenant
+   * subdomain (looked up from the DB via `authService.getSubdomainForTenant`),
+   * NOT the Startseiten-Subdomain (`returnToSlug` from the OAuth state payload).
+   * This mirrors the password-login flow's `buildHandoffRedirect()` in
+   * `frontend/src/routes/(public)/login/+page.server.ts` — a user who clicks
+   * "Sign in with Microsoft" on the wrong subdomain (or on apex) still lands
+   * on their own tenant's origin with cookies correctly scoped by the
+   * browser's same-origin policy (RFC 6265 §5.3 step 6).
+   *
+   * Flow:
+   *   1. Mint the session (shared JWT/refresh issuance — ADR-046 §7).
+   *   2. Resolve the user's own subdomain from the DB.
+   *   3. If subdomain is set (greenfield): mint a single-use handoff token
+   *      (ADR-050 §OAuth) and 302 to `<slug>.<apex>/signup/oauth-complete?token=…`
+   *      so the subdomain's SvelteKit SSR sets cookies on that origin.
+   *   4. Otherwise (legacy tenant with no subdomain): fall back to apex cookies
+   *      + 302 to `/login`, which then role-routes to the correct dashboard
+   *      (ADR-046 Amendment Bug A — `/login` not `/dashboard`).
+   *
+   * Extracted out of `routeCallbackResult` to keep both methods under the
+   * 60-line-per-function ceiling (`max-lines-per-function`).
+   *
+   * @see docs/infrastructure/adr/ADR-050-tenant-subdomain-routing.md §OAuth
+   * @see docs/infrastructure/adr/ADR-046-oauth-sign-in.md §"Amendment Bug A"
+   * @see backend/src/nest/auth/auth.controller.ts `mintHandoff()` — twin path
+   */
+  private async routeLoginSuccess(
+    userId: number,
+    tenantId: number,
+    req: FastifyRequest,
+    reply: FastifyReply,
+  ): Promise<void> {
+    const { ipAddress, userAgent } = getClientInfo(req);
+    const session = await this.authService.loginWithVerifiedUser(
+      userId,
+      tenantId,
+      OAUTH_LOGIN_METHOD,
+      ipAddress,
+      userAgent,
+    );
+
+    const userSubdomain = await this.authService.getSubdomainForTenant(tenantId);
+    if (userSubdomain !== null) {
+      // Handoff path — cookies land on the subdomain origin, NOT on apex,
+      // so we deliberately skip `setAuthCookies(reply, …)` here.
+      const token = await this.handoffService.mint({
+        userId,
+        tenantId,
+        accessToken: session.accessToken,
+        refreshToken: session.refreshToken,
+      });
+      await reply.redirect(
+        buildSubdomainUrl(
+          userSubdomain,
+          `/signup/oauth-complete?token=${encodeURIComponent(token)}`,
+        ),
+        HttpStatus.FOUND,
+      );
+      return;
+    }
+
+    // Legacy tenant (no subdomain) — apex cookies, SvelteKit `/login` load()
+    // role-routes to the correct dashboard.
+    setAuthCookies(reply, session.accessToken, session.refreshToken);
+    await reply.redirect('/login', HttpStatus.FOUND);
   }
 
   /** Map the non-login-success CallbackResult variants to their relative path. */
