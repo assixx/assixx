@@ -1349,8 +1349,8 @@ pnpm add pino
 | Aspekt       | Details                                                         |
 | ------------ | --------------------------------------------------------------- |
 | **Status**   | ✅ COMPLETE (13. Januar 2026)                                   |
-| **Backend**  | @sentry/nestjs 10.33.0, instrument.ts, beforeSend filters       |
-| **Frontend** | @sentry/sveltekit 10.33.0, instrumentation.server.ts            |
+| **Backend**  | @sentry/nestjs 10.33.1, instrument.ts, beforeSend filters       |
+| **Frontend** | @sentry/sveltekit 10.33.1, instrumentation.server.ts            |
 | **Features** | Distributed tracing, environment-aware sampling, PII protection |
 
 ```bash
@@ -1694,8 +1694,8 @@ doppler run --config prd -- docker-compose --profile production up -d
 │  PHASE 4: ALERTING & MONITORING ✅ COMPLETE                    │
 │  ═══════════════════════════════════════════                    │
 │  ├── ✅ Pino Logging (nestjs-pino 4.5.0 + pino-loki 3.0.0)     │
-│  ├── ✅ Sentry Error Tracking (@sentry/nestjs 10.33.0)         │
-│  ├── ✅ Sentry Frontend (@sentry/sveltekit 10.33.0)            │
+│  ├── ✅ Sentry Error Tracking (@sentry/nestjs 10.33.1)         │
+│  ├── ✅ Sentry Frontend (@sentry/sveltekit 10.33.1)            │
 │  ├── ✅ Grafana Loki (Docker, pino-loki transport)             │
 │  ├── ✅ Prometheus Metrics (Docker)                            │
 │  ├── ✅ postgres-exporter v0.18.0 (DB Visibility, 2026-04-18)  │

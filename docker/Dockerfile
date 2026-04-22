@@ -30,7 +30,7 @@ LABEL org.opencontainers.image.authors="Assixx"
 
 # Fix CVE-2025-64756: Update npm to get patched glob (>=11.1.0)
 # pnpm version configurable for consistency across environments
-ARG PNPM_VERSION=10.33.0
+ARG PNPM_VERSION=10.33.1
 RUN npm install -g npm@11.9.0 "pnpm@${PNPM_VERSION}"
 
 WORKDIR /app
@@ -76,7 +76,7 @@ LABEL org.opencontainers.image.authors="Assixx"
 # Note: CVE-2025-64118 (tar) is fixed via pnpm override in package.json
 # Non-root user created with `useradd -r` (system user, no home) —
 # Debian equivalent of BusyBox `adduser -S` from the prior Alpine image.
-ARG PNPM_VERSION=10.33.0
+ARG PNPM_VERSION=10.33.1
 RUN apt-get update \
     && apt-get install -y --no-install-recommends dumb-init \
     && rm -rf /var/lib/apt/lists/* \
