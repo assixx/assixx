@@ -16,11 +16,7 @@ Multi-Tenant SaaS for knowledge management, communication, and collaboration in 
 
 ## Preview
 
-<p align="center">
-  <video src="docs/screenshots/demo.mp4" autoplay muted loop playsinline controls width="800">
-    Your browser does not support the video tag.
-  </video>
-</p>
+https://github.com/user-attachments/assets/7854f964-94d7-429a-83b5-bd11a5990770
 
 ---
 
