@@ -148,24 +148,27 @@ interface HandoffSuccessEnvelope {
  *
  * @see docs/FEAT_TENANT_SUBDOMAIN_ROUTING_MASTERPLAN.md Phase 5 Step 5.4
  */
-export const load: PageServerLoad = async ({ url, fetch, cookies, request }) => {
-  const handoffToken = url.searchParams.get('token');
-  if (handoffToken !== null && handoffToken !== '') {
-    return await handleHandoff(handoffToken, fetch, cookies, request);
-  }
+/** Read a non-empty URL-search value or return null (collapses null + empty string). */
+function readQuery(url: URL, key: string): string | null {
+  const value = url.searchParams.get(key);
+  return value !== null && value !== '' ? value : null;
+}
 
-  const ticket = url.searchParams.get('ticket');
-  if (ticket === null || ticket === '') {
-    // User landed here without an OAuth handoff — bounce them to the start.
-    redirect(303, '/signup');
-  }
-
-  const response = await fetch(
+/**
+ * Fetch the signup ticket's peek data and shape it for the form page.
+ * Extracted from `load()` to keep its cyclomatic complexity under 10 —
+ * the peek path alone has 4 branches (404/400, !ok, !success, success).
+ */
+async function peekSignupTicket(
+  ticket: string,
+  fetchFn: typeof fetch,
+): Promise<{ ticket: string; email: string; displayName: string | null }> {
+  const response = await fetchFn(
     `${API_BASE}/auth/oauth/microsoft/signup-ticket/${encodeURIComponent(ticket)}`,
   );
 
-  // 404 = ticket unknown/expired; 400 = malformed id (tampered URL).
-  // Both collapse to the same UX: restart the OAuth flow from /signup.
+  // 404 = ticket unknown/expired; 400 = malformed id (tampered URL). Both
+  // collapse to the same UX: restart the OAuth flow from /signup.
   if (response.status === 404 || response.status === 400) {
     redirect(303, '/signup?oauth=ticket-expired');
   }
@@ -186,6 +189,26 @@ export const load: PageServerLoad = async ({ url, fetch, cookies, request }) => 
     email: body.data.email,
     displayName: body.data.displayName,
   };
+}
+
+export const load: PageServerLoad = async ({ url, fetch, cookies, request }) => {
+  const handoffToken = readQuery(url, 'token');
+  if (handoffToken !== null) {
+    // `?unlock=...` is ADR-050 × ADR-022 cross-origin escrow handoff:
+    // the apex login minted a single-use ticket carrying the wrappingKey.
+    // We preserve it verbatim into the final dashboard redirect so the
+    // (app) layout can consume it via e2e.bootstrapFromUnlockTicket before
+    // running initialize().
+    return await handleHandoff(handoffToken, fetch, cookies, request, readQuery(url, 'unlock'));
+  }
+
+  const ticket = readQuery(url, 'ticket');
+  if (ticket === null) {
+    // User landed here without an OAuth handoff — bounce them to the start.
+    redirect(303, '/signup');
+  }
+
+  return await peekSignupTicket(ticket, fetch);
 };
 
 // ─── OAuth Handoff Branch (ADR-050) ──────────────────────────────────────────
@@ -213,6 +236,7 @@ async function handleHandoff(
   fetchFn: typeof fetch,
   cookies: Cookies,
   request: Request,
+  unlockTicket: string | null,
 ): Promise<never> {
   const forwardedHost = request.headers.get('x-forwarded-host') ?? new URL(request.url).hostname;
 
@@ -280,7 +304,16 @@ async function handleHandoff(
   }
 
   setAuthCookies(cookies, accessToken, refreshToken, role);
-  redirect(303, ROLE_DASHBOARD_PATHS[role]);
+  // ADR-050 × ADR-022: forward the unlock ticket to the dashboard so the
+  // (app) layout can consume it client-side. We append it as a query param
+  // rather than e.g. a cookie because cookies are subdomain-scoped here and
+  // the layout needs to strip it from the URL ASAP anyway.
+  const dashboardPath = ROLE_DASHBOARD_PATHS[role];
+  const redirectTarget =
+    unlockTicket !== null ?
+      `${dashboardPath}?unlock=${encodeURIComponent(unlockTicket)}`
+    : dashboardPath;
+  redirect(303, redirectTarget);
 }
 
 // ─── Action ──────────────────────────────────────────────────────────────────

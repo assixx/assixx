@@ -18,8 +18,15 @@ const log = createLogger('E2eHandlers');
 // E2E Error Types
 // ==========================================================================
 
-/** Typed error codes for E2E failures that callers can switch on */
-export type E2eErrorCode = 'no_recipient_key' | 'encrypt_failed';
+/**
+ * Typed error codes for E2E failures that callers can switch on.
+ * - `no_recipient_key`: recipient has not registered their E2E public key.
+ * - `encrypt_failed`: encryption crypto operation failed (Worker/KDF/cipher).
+ * - `init_failed`: E2E init errored with `recoveryRequired` (ADR-022 key
+ *   divergence). 1:1 plaintext fallback MUST be blocked — silent downgrade
+ *   would make the user believe a message is encrypted when it is not.
+ */
+export type E2eErrorCode = 'no_recipient_key' | 'encrypt_failed' | 'init_failed';
 
 /** Error thrown when E2E encryption cannot proceed — caller must handle, not ignore */
 export class E2eError extends Error {
@@ -207,21 +214,47 @@ export async function prepareMessageForSending(params: {
     'prepareMessageForSending — entry',
   );
 
-  // Groups and non-E2E sessions → plaintext (correct behavior, not a fallback)
-  if (params.isGroup || params.recipientId === null || !e2e.state.isReady) {
+  // Groups and no-recipient cases are plaintext by design — group E2E is
+  // deferred per ADR-021 §"What remains plaintext".
+  if (params.isGroup || params.recipientId === null) {
     log.info(
-      {
-        reason:
-          params.isGroup ? 'group'
-          : params.recipientId === null ? 'no_recipient'
-          : 'e2e_not_ready',
-      },
-      'Sending plaintext (no E2E)',
+      { reason: params.isGroup ? 'group' : 'no_recipient' },
+      'Sending plaintext (E2E not applicable)',
     );
     return buildSendMessage(params.conversationId, params.content, params.attachmentIds);
   }
 
-  // 1:1 with E2E ready → must encrypt, never silently fall back
+  // 1:1 conversation. Three sub-cases for E2E readiness:
+  //
+  //   a) Init errored with recoveryRequired → THROW. Falling back to plaintext
+  //      would be a silent security downgrade: the UI + user both expect
+  //      encryption to be active on this 1:1 thread. Let the caller surface
+  //      a toast so the user can take action (ADR-021 §"No Silent Plaintext
+  //      Fallback", ADR-022 §key-divergence recovery path).
+  //
+  //   b) Init still in progress (isReady=false, recoveryRequired=false) →
+  //      plaintext is the pragmatic choice. This only happens in a short
+  //      window at layout mount before e2e.initialize() resolves; once resolved
+  //      the next message will encrypt. Accepting this tiny window avoids a
+  //      race where opening chat before E2E is warm would throw.
+  //
+  //   c) Ready (isReady=true) → encrypt (hot path).
+  if (e2e.state.recoveryRequired) {
+    log.error(
+      { recipientId: params.recipientId, e2eError: e2e.state.error },
+      'BLOCKED: E2E init errored — refusing plaintext fallback for 1:1',
+    );
+    throw new E2eError(
+      'E2E-Verschlüsselung ist auf diesem Gerät nicht verfügbar. Bitte kontaktiere deinen Admin.',
+      'init_failed',
+    );
+  }
+
+  if (!e2e.state.isReady) {
+    log.info({ reason: 'e2e_not_ready' }, 'Sending plaintext (E2E init in progress — transient)');
+    return buildSendMessage(params.conversationId, params.content, params.attachmentIds);
+  }
+
   return await encryptForRecipient(
     params.recipientId,
     params.content,

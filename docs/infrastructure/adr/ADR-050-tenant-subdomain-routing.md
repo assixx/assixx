@@ -417,6 +417,138 @@ skips. Zero test migration needed, test-infra stays hermetic.
 Session 12c-fix-era pitfalls (email-domain vs routing-slug confusion,
 cross-origin cookies).
 
+### Amendment 2026-04-22 — Logout Redirect: Always to Apex
+
+Every logout path — normal user-initiated logout, OAuth logout,
+session-expired auto-redirect, and the R15 `CROSS_TENANT_HOST_MISMATCH`
+403-catcher — MUST land on the apex `/login` page, NOT the current tenant
+subdomain's `/login`. The apex origin is derived from `PUBLIC_APP_URL` —
+the same single source of truth that drives `buildSubdomainUrl()` (OAuth
+handoff target) and the Microsoft OAuth `redirect_uri` (Azure
+registration).
+
+**Rationale.** The subdomain post-logout is semantically misleading: the
+tenant cookies are gone (cleared by `POST /auth/logout`), but the URL
+still signals a tenant context that no longer exists. Staying on
+`<slug>.assixx.com` after logout:
+
+1. **Breaks mental model** (Nielsen #1 Visibility of System Status): URL
+   says "you are in tenant X", state says "you are nobody" — incoherent.
+2. **Blocks tenant switching on shared devices**: User A cannot log User
+   B into a different tenant without manually editing the URL.
+3. **Wastes the marketing split** defined above (§Decision): apex is the
+   public/marketing/signup surface; returning there after logout is the
+   natural re-entry point for both direct login and new-tenant signup.
+
+Mirrors the Slack/Linear-style "return to the workspace selector"
+convention. Industry split was 50/50 during the 2026-04-22 survey (Slack,
+Atlassian, Twitter use apex+query-param; Linear, Notion, GitHub use
+apex-no-param) — the query-param variant was chosen for user feedback
+visibility.
+
+**Query-Param Namespace Split** (active action vs passive event):
+
+| Query                | Kind                 | Trigger                        | Toast tone |
+| -------------------- | -------------------- | ------------------------------ | ---------- |
+| _(no param)_         | neutral entry        | direct link / first visit      | —          |
+| `?logout=success`    | active user action   | user clicked Logout            | success    |
+| `?session=expired`   | passive system event | JWT/refresh token TTL expired  | warning    |
+| `?session=forbidden` | passive system event | CROSS_TENANT_HOST_MISMATCH 403 | error      |
+
+Two distinct namespaces (`logout=` for actions, `session=` for passive
+system events) because conflating them loses the semantic that the login
+page uses to pick the toast tone. Both are discriminable reasons
+(`success`/`expired`/`forbidden` are closed-set enums), not free-form
+messages — i18n and CI-regex-guardable.
+
+**Cross-Origin Mechanics.** Cookie-based flash messages (the SvelteKit
+default) fail across the subdomain → apex redirect: cookies on
+`<slug>.assixx.com` are not visible to `www.assixx.com`. Query-param is
+the only channel that survives a cross-origin `Location:` redirect
+cleanly. The login page reads the query in `checkForMessages()`, fires
+the matching toast, and calls `history.replaceState()` to drop the param
+(so reload / URL-share doesn't re-trigger the banner).
+
+**Implementation.** `frontend/src/lib/utils/build-apex-url.ts`:
+
+- `buildApexUrl(path, publicAppUrl?)` — 4-layer resolution priority:
+  (1) explicit `publicAppUrl` override (tests), (2) `env.PUBLIC_APP_URL`
+  from `$env/dynamic/public` (deployment contract), (3) browser-fallback
+  via `window.location` subdomain-strip (self-heals when Doppler env is
+  missing in local dev), (4) hardcoded `https://www.assixx.com` (SSR last
+  resort). Mirrors `buildSubdomainUrl()` structure and parity.
+- `buildLoginUrl(reason?, publicAppUrl?)` — `<apex>/login?<map[reason]>`.
+  `reason` is a closed-set `LoginRedirectReason` enum. No caller
+  constructs the query string directly — the `REASON_TO_QUERY` map is
+  the only legal place.
+
+**Browser-fallback rationale (added 2026-04-22 after smoke-test bug).**
+Initial implementation hardcoded `DEFAULT_PUBLIC_APP_URL = 'https://www.assixx.com'`
+as the only env-absent fallback. Manual smoke-test immediately revealed
+the bug: `pnpm run dev:svelte` (without Doppler) leaves
+`env.PUBLIC_APP_URL` undefined in the SvelteKit Vite dev server, so a
+logout on `http://testfirma.localhost:5173` redirected to the prod
+`https://www.assixx.com/login?logout=success` — wrong origin, wrong
+scheme. The fix derives apex from the current `window.location`
+hostname by stripping the subdomain label via the existing
+`extractSlug()` helper (ADR-050 §Decision). Prod convention
+(bare-`assixx.com` → `www.assixx.com`) is preserved by an explicit
+normalisation step. Dev ergonomics restored without changing the
+workflow (no mandatory `doppler run --` prefix).
+
+**Cross-origin navigation MUST use `window.location.href = ...`.**
+SvelteKit's `goto()` is client-router-bound and cannot leave the current
+origin — a silent no-op that would land the user on the subdomain
+`/login` (which is a valid page but wrong per this amendment). The three
+call-sites are:
+
+- `frontend/src/routes/(app)/_lib/layout-helpers.ts` → `performLogout()` — after E2E lock + localStorage clear, `window.location.href = buildLoginUrl('logout-success')`. The `navigate` dep was dropped from `LogoutDeps`: the destination is fixed by this amendment, not a caller choice.
+- `frontend/src/lib/utils/session-expired.ts` → `handleSessionExpired()` — `window.location.href = buildLoginUrl('session-expired')`. Previously `goto(resolve('/login?session=expired'))` which stayed on the subdomain.
+- `frontend/src/lib/utils/api-client.ts` → `handleForbidden()` — new branch: if 403 `data.error.code === 'CROSS_TENANT_HOST_MISMATCH'`, hard-navigate to `buildLoginUrl('session-forbidden')`. Precedence over ADDON_DISABLED + PERMISSION_DENIED branches: the discriminable error code is authoritative, message text is not.
+
+**No backend redirect changes** because `POST /auth/logout` returns
+200-JSON (not a 30x) — the frontend owns the post-logout navigation.
+OAuth logout reuses the normal logout endpoint; no separate path exists.
+
+**Regression guards.** Architectural tests in `shared/src/architectural.test.ts`
+(describe block "Frontend: Apex-Login Redirect Centralization (ADR-050 Amendment)")
+reject any hardcoded `/login?logout=success`, `/login?session=expired`,
+or `/login?session=forbidden` literal outside `build-apex-url.ts` and
+its test file. Any future route that copy-pastes a login redirect URL
+fails CI. The pre-existing
+`Frontend: Session-Expired Centralization` block's function-definition
+checks (no local `isSessionExpiredError` / `handleSessionExpired` /
+`handleUnauthorized` re-implementations) remain; the
+`goto("/login?session=expired")` literal-check was removed (superseded
+by the broader amendment check).
+
+**Files touched** (total surface):
+
+```
+frontend/src/lib/utils/build-apex-url.ts          (new)
+frontend/src/lib/utils/build-apex-url.test.ts     (new)
+frontend/src/lib/utils/session-expired.ts         (goto → window.location.href)
+frontend/src/lib/utils/api-client.ts              (handleForbidden gains CROSS_TENANT branch)
+frontend/src/routes/(app)/+layout.svelte          (drop `navigate` arg from performLogout)
+frontend/src/routes/(app)/_lib/layout-helpers.ts  (performLogout owns hard-nav)
+frontend/src/routes/(public)/login/+page.svelte   (checkForMessages handles new reasons)
+shared/src/architectural.test.ts                  (new describe block)
+```
+
+**What this amendment does NOT change:**
+
+- Backend endpoints, middleware, or guards — all unchanged.
+- `POST /auth/logout` contract — still 200-JSON, cookie-clear server-side.
+- OAuth login-success handoff flow (the pre-existing 2026-04-22 Amendment
+  above, which this amendment sits next to).
+- Cookie isolation model — still browser-native, still no `domain:` option
+  on `cookies.set`. R1 architectural guard unchanged.
+
+**Followup deferred:** Remember-last-tenant-slug on the apex login page
+(localStorage-backed "Recent workspaces" like Slack). Out of scope — the
+current amendment is pure redirect + toast. A second PR can layer on the
+UX helper once this ships.
+
 ---
 
 ## Alternatives Considered
@@ -556,3 +688,85 @@ short-lived certs (90-day rotation) and HSTS preload.
 - Nginx wildcard `server_name` regex: <https://nginx.org/en/docs/http/server_names.html#regex_names>
 - Let's Encrypt DNS-01 for wildcards: <https://letsencrypt.org/docs/challenge-types/#dns-01-challenge>
 - Execution masterplan: `docs/FEAT_TENANT_SUBDOMAIN_ROUTING_MASTERPLAN.md`
+
+---
+
+## Amendment 2026-04-22 — Escrow Unlock Handoff (ADR-022 Reconciliation)
+
+### Context
+
+The cross-origin redirect from apex (`www.assixx.com`) to subdomain
+(`<slug>.assixx.com`) kills module-scoped JS memory, which broke
+[ADR-022](./ADR-022-e2e-key-escrow.md)'s `login-password-bridge.ts`.
+With no password available on the subdomain, `e2e.initialize()` could
+not decrypt the escrow blob and fell through to
+`generateAndRegisterKey()`, colliding 409 with the pre-existing server
+key. The legacy auto-rotation fallback silently rewrote the server key
+on each collision — destroying ECDH shared secrets for every past
+counterparty, one-way, with no user consent. DB inspection surfaced
+users with up to 13 key versions accumulated in four days.
+
+### Decision
+
+Parallel to the OAuth handoff defined in §Decision "OAuth (ADR-046):
+Centralized Callback, Post-Callback Handoff", a second single-use Redis
+ticket now transports the escrow `wrappingKey` from apex to subdomain.
+Full design in
+[ADR-022 §Amendment 2026-04-22](./ADR-022-e2e-key-escrow.md#amendment-2026-04-22--cross-origin-unlock-handoff--restorative-rotation);
+the integration points with this ADR are:
+
+- **Redis keyspace:** `escrow:unlock:{uuidv7}`, TTL 60 s, `GETDEL`
+  atomic. Different prefix from `oauth:state:` / `oauth:handoff:` so
+  dev `FLUSHDB` isolates concerns.
+- **URL shape:** the apex handoff URL grows an optional `&unlock=<id>`
+  query param. `signup/oauth-complete/+page.server.ts` preserves it
+  verbatim through the 303 to the role dashboard; the `(app)` layout
+  strips it via `history.replaceState()` before `initialize()` runs,
+  so it does not leak into history, bookmarks, or the Referer header.
+- **Client-side derivation on apex:** the `use:enhance` callback
+  derives the wrappingKey via the Web Worker Argon2id path
+  (`cryptoBridge.deriveWrappingKey`). The password never crosses the
+  origin boundary; the server sees only the derived 32-byte key.
+- **Coexistence with OAuth:** OAuth users (no password) skip the ticket
+  entirely — apex just omits the `unlock` query param. The subdomain's
+  `bootstrapFromUnlockTicket` is a no-op when no param is present.
+
+### Host-cross-check parity
+
+The `consume-unlock` endpoint is authenticated (cookie-bearer after
+handoff), so `JwtAuthGuard`'s existing tenant-host cross-check
+(§Decision "Backend: Pre-Auth Host Resolver + Post-Auth Cross-Check")
+already fires: a ticket minted on apex for tenant A, replayed from
+`tenant-b.assixx.com`, gets rejected by the guard before reaching the
+service. No endpoint-level re-check is required here (unlike the
+unauthenticated OAuth handoff endpoint, which does need its own R15
+assertion).
+
+### Restorative rotation (single permitted rotation site)
+
+ADR-022 §Amendment also reintroduces a narrowly-gated
+`rotateKeyOnServer` call: after the subdomain unwraps escrow, if the
+server's active key disagrees with the escrow-canonical key, the
+server is rotated to match. This is authorised by the password proof
+implicit in successful escrow decryption and is documented as the
+**only** permitted rotation call site. The general automatic rotation
+on IndexedDB mismatch remains forbidden per
+[ADR-021 §Amendment 2026-04-22](./ADR-021-e2e-encryption.md#amendment-2026-04-22--no-auto-rotation--plaintext-fallback-block).
+
+### Consequences
+
+- Cross-origin login end-to-end for users with an existing escrow: no
+  data loss, no admin intervention, no 3-second Argon2id delay on the
+  subdomain (derivation happens once on apex).
+- ZK guarantee: the derived wrappingKey lives in Redis for up to 60 s.
+  Threat-model comparison is in ADR-022's Consequences section —
+  summary: equivalent to the server having the password at bcrypt
+  time, not a regression against rest-state DB dumps.
+- OAuth users remain exposed to the "no-escrow → device-change →
+  admin reset" limitation (documented in ADR-021 Consequences →
+  Negative #1). A future amendment could add a password step post-OAuth
+  to create an escrow; deferred.
+
+### Files Changed
+
+See [ADR-022 §Amendment 2026-04-22 — Files Changed](./ADR-022-e2e-key-escrow.md#files-changed).

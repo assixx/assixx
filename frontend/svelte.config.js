@@ -41,7 +41,8 @@ const config = {
         'style-src': ['self', 'unsafe-inline', 'https://fonts.googleapis.com'],
         // Allow fonts: self + Google Fonts
         'font-src': ['self', 'https://fonts.gstatic.com'],
-        // Allow connections: Sentry + WebSocket (dev + prod) + Microsoft OAuth.
+        // Allow connections: Sentry + WebSocket (dev + prod) + Microsoft OAuth
+        // + cross-origin within the ADR-050 tenant trust family.
         //
         // login.microsoftonline.com is whitelisted defensively per
         // FEAT_MICROSOFT_OAUTH_MASTERPLAN §0.3 / §5.6. V1's actual flow does
@@ -55,11 +56,32 @@ const config = {
         // re-auth, this directive is already correct. Whitelisting a non-used
         // origin is zero-harm — CSP is an allow-list, nothing else relies on
         // the domain being blocked.
+        //
+        // ADR-050 Amendment (Logout → Apex) — cross-origin HTTP access inside
+        // the `*.assixx.com` + `*.localhost` trust family:
+        //   - dev  `http://localhost:*` + `http://*.localhost:*` so a tenant
+        //     subdomain page can fetch() the apex (e.g. prefetch apex `/login`
+        //     before logout hard-nav to warm Vite's compile cache — without
+        //     this, the prefetch fails silently on CSP and the user sees a
+        //     500–1000 ms blank frame during cross-origin navigation).
+        //   - prod `https://assixx.com` + `https://*.assixx.com` so the same
+        //     prefetch works against the prod apex from any tenant subdomain.
+        // Cross-tenant data leak risk is structurally blocked elsewhere
+        // (ADR-050 §Decision R15 `CROSS_TENANT_HOST_MISMATCH` rejects any
+        // JWT whose tenant_id doesn't match the request host — opening
+        // connect-src only lets JS reach the apex, which is the public /
+        // marketing / signup surface with no tenant data).
         'connect-src': [
           'self',
           '*.ingest.de.sentry.io',
           '*.sentry.io',
+          // Dev (Vite dev server + optional subdomain routing via /etc/hosts)
+          'http://localhost:*',
+          'http://*.localhost:*',
           'ws://localhost:*',
+          // Prod (wildcard TLS cert covers apex + all tenant subdomains)
+          'https://assixx.com',
+          'https://*.assixx.com',
           'wss://*.assixx.com',
           'https://login.microsoftonline.com',
         ],

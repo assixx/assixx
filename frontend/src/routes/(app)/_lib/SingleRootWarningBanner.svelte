@@ -10,9 +10,12 @@
   signup (fresh tenant = 1 root) and disappears automatically once a second
   root is added. Parent gates mount via {#if stats.rootCount === 1}.
 
-  Dismiss is session-scoped (sessionStorage): the X button hides the banner
-  for the current browser tab/session only. On next login it reappears while
-  the underlying security condition persists — by design.
+  Dismiss is session-scoped via a session cookie (stirbt beim Browser-Close):
+  the X button writes the cookie and hides the banner locally. The gate in
+  +layout.svelte reads `data.singleRootBannerDismissed` (populated from the
+  same cookie in +layout.server.ts) — SSR therefore never emits the banner
+  after dismiss, eliminating the hydration flash we had with sessionStorage
+  (commit 2026-04-22).
 
   CSS classes are component-scoped (single-root-banner-*); CSS variables are
   shared with RoleSwitchBanner (--banner-warning-*) for visual parity.
@@ -21,16 +24,23 @@
   import { browser } from '$app/environment';
   import { resolve } from '$app/paths';
 
-  // sessionStorage key — namespaced to avoid collisions with other banners
-  const DISMISS_KEY = 'assixx.security.single-root-banner.dismissed';
+  // Cookie name — MUST stay in sync with SINGLE_ROOT_BANNER_DISMISS_COOKIE
+  // in `(app)/+layout.server.ts`. Session cookie (no Max-Age) so it dies on
+  // browser close, mirroring the previous sessionStorage semantics.
+  const DISMISS_COOKIE = 'assixx_single_root_banner_dismissed';
 
-  // Read dismiss state only on the client; SSR always renders the banner so
-  // it is visible on first paint (brief flash if dismissed is acceptable).
-  let dismissed = $state(browser && sessionStorage.getItem(DISMISS_KEY) === '1');
+  // Local hide — parent gate already honors the cookie on next navigation/SSR.
+  // `false` here is always correct: if the cookie was already set, the parent
+  // gate would not have mounted us in the first place.
+  let dismissed = $state(false);
 
   function handleDismiss(): void {
     if (browser) {
-      sessionStorage.setItem(DISMISS_KEY, '1');
+      // Session cookie: SameSite=Lax survives the OAuth-redirect round-trip,
+      // Path=/ so every authenticated route sees it, no Secure flag so it
+      // works on http://*.localhost during dev (browser ignores Secure on
+      // localhost anyway, but omitting is explicit).
+      document.cookie = `${DISMISS_COOKIE}=1; Path=/; SameSite=Lax`;
     }
     dismissed = true;
   }

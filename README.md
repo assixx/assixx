@@ -16,11 +16,11 @@ Multi-Tenant SaaS for knowledge management, communication, and collaboration in 
 
 ## Preview
 
-<p align="center"><strong>Dark Mode</strong></p>
-<p align="center"><img src="docs/screenshots/sample_dark.png" alt="Assixx Dark Mode"></p>
-
-<p align="center"><strong>Light Mode</strong></p>
-<p align="center"><img src="docs/screenshots/sample_light.png" alt="Assixx Light Mode"></p>
+<p align="center">
+  <video src="docs/screenshots/demo.mp4" autoplay muted loop playsinline controls width="800">
+    Your browser does not support the video tag.
+  </video>
+</p>
 
 ---
 

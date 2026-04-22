@@ -32,6 +32,7 @@ import {
   isTimeoutError,
   wrapError,
 } from './api-client.utils';
+import { buildLoginUrl } from './build-apex-url';
 import { createLogger } from './logger';
 import { perf } from './perf-logger';
 import { getTokenManager, registerCacheClearCallback } from './token-manager';
@@ -404,10 +405,33 @@ export class ApiClient {
 
   /**
    * Handle 403 Forbidden responses:
+   * - CROSS_TENANT_HOST_MISMATCH → hard-navigate to apex login (session-terminating)
    * - Addon not enabled → redirect to /addon-unavailable
    * - Permission denied → humanize message + throw ApiError
    */
   private handleForbidden(data: Record<string, unknown>): void {
+    // ADR-050 §Decision + R15: JWT decoded OK but request host does not
+    // match the token's tenantId. Session is effectively dead on the
+    // current origin — hard-navigate to apex so the user re-authenticates
+    // on a clean origin. Must take precedence over message-based branches
+    // below: the discriminable code is authoritative, the message text is
+    // not. Cookies on the wrong subdomain are orphaned (never read again).
+    const errorBag = data.error as { code?: string } | undefined;
+    const code =
+      typeof errorBag?.code === 'string' ? errorBag.code
+      : typeof data.code === 'string' ? data.code
+      : '';
+    if (code === 'CROSS_TENANT_HOST_MISMATCH') {
+      if (browser) {
+        window.location.href = buildLoginUrl('session-forbidden');
+      }
+      throw new ApiError(
+        'Sitzung passt nicht zum Mandanten — Weiterleitung zur Anmeldung.',
+        'CROSS_TENANT_HOST_MISMATCH',
+        403,
+      );
+    }
+
     const { message } = extractErrorMessage(data);
 
     if (message.toLowerCase().includes('addon is not enabled')) {

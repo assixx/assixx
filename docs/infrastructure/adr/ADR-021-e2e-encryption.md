@@ -492,3 +492,74 @@ Covers: key registration, 409 duplicate, own key retrieval, other user's key, te
 - [ADR-019: Multi-Tenant RLS Isolation](./ADR-019-multi-tenant-rls-isolation.md) — RLS policies on `e2e_user_keys` table
 - [XChaCha20 nonce size analysis](https://doc.libsodium.org/secret-key_cryptography/aead/chacha20-poly1305/xchacha20-poly1305_construction) — Why 24-byte nonce eliminates collision risk
 - [SvelteKit CSP](https://svelte.dev/docs/kit/configuration#csp) — Nonce-based CSP configuration
+
+---
+
+## Amendment 2026-04-22 — No-Auto-Rotation + Plaintext-Fallback Block
+
+### Context
+
+Investigating a chain of `Decryption failed: invalid tag` reports on
+`testfirma.localhost` surfaced two related defects in the Phase-0 implementation:
+
+1. `e2e-state.svelte.ts` auto-called `rotateKeyOnServer()` whenever the local
+   IndexedDB key did not match the server's active public key, and whenever a
+   fresh-key POST returned 409. Each rotation overwrote the server key with the
+   client's local (or freshly generated) public key — breaking every
+   counterparty's ECDH shared secret for every message encrypted to the
+   previously-active key. DB inspection showed one user with **13 key
+   versions in four days**, almost entirely from this path.
+
+2. `e2e-handlers.ts::prepareMessageForSending` treated `!e2e.state.isReady` as
+   a uniform "send plaintext" condition. When initialisation crashed (e.g.
+   cross-origin IndexedDB loss against a pre-existing server key) this meant
+   1:1 messages silently degraded to plaintext — a silent encryption
+   downgrade contradicting the ADR's "No Silent Plaintext Fallback" rule.
+
+### Decision
+
+**No automatic rotation in any code path.** Both auto-rotation call sites in
+`resolveExistingKey` (mismatch branch) and `generateAndRegisterKey` (409
+branch) now `throw` a typed `E2eKeyError` instead. The helper
+`rotateKeyOnServer` is preserved as a private function but is gated by a
+written SAFETY CONTRACT: the only permitted caller is the escrow-unwrap
+success path documented in [ADR-022 §Amendment 2026-04-22](./ADR-022-e2e-key-escrow.md#amendment-2026-04-22--cross-origin-unlock-handoff--restorative-rotation)
+(the caller holds a password-derived wrappingKey, proving identity).
+
+**Typed state for init failures.** `E2eState` now carries a
+`recoveryRequired: boolean` flag, set to `true` exactly when the init
+`throw` was an `E2eKeyError`. This distinguishes "init errored — admin
+reset required" from "init still running / no E2E ever set up".
+
+**Plaintext fallback is a recoverability-gated decision.** In
+`prepareMessageForSending`, a 1:1 conversation now branches on
+`recoveryRequired`:
+
+- `true` → throws `E2eError('init_failed', …)` — surfaced as a toast, no
+  plaintext send.
+- `false` AND `!isReady` → plaintext is allowed (accounts for the short
+  mount-window before `initialize()` resolves, and for users who never
+  set up E2E at all).
+- `isReady` → normal 1:1 encrypt path.
+
+Groups and no-recipient cases remain plaintext by design (per
+[§What Remains Plaintext](#what-remains-plaintext)).
+
+### Consequences
+
+- Legitimate cross-origin scenarios that previously auto-healed via rotation
+  now fail-closed unless the escrow path (ADR-022 amendment) covers them.
+  The ADR-050 subdomain flow relies on the escrow amendment below.
+- Users without a recoverable escrow + key mismatch require admin reset
+  (`DELETE /api/v2/e2e/keys/:userId`) — documented here, not a regression
+  relative to ADR-022's stated "Forgotten password = key loss" limitation.
+- Architectural test debt: the regression-guard asserting "no bare
+  `rotateKeyOnServer` call outside the escrow path" is not yet automated.
+  Tracked as follow-up.
+
+### Files Changed
+
+- `frontend/src/lib/crypto/e2e-state.svelte.ts` — `E2eKeyError`,
+  `recoveryRequired`, rotation-removal, `rotateKeyOnServer` SAFETY CONTRACT.
+- `frontend/src/routes/(app)/(shared)/chat/_lib/e2e-handlers.ts` —
+  `E2eErrorCode` gains `'init_failed'`; plaintext-fallback guard.

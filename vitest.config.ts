@@ -163,6 +163,12 @@ export default defineConfig({
         resolve: {
           alias: {
             '$app/environment': resolve(rootDir, './frontend/test/mocks/app-environment.ts'),
+            // ADR-050 Amendment: `build-apex-url.ts` reads `env.PUBLIC_APP_URL`
+            // via `$env/dynamic/public` — mock the module so utilities that
+            // consume env vars stay unit-testable without a full SvelteKit
+            // runtime. Tests pass `publicAppUrl` explicitly to exercise
+            // specific values; absence-of-env cases hit the helper's default.
+            '$env/dynamic/public': resolve(rootDir, './frontend/test/mocks/env-dynamic-public.ts'),
             $lib: resolve(rootDir, './frontend/src/lib'),
             '@assixx/shared/constants': resolve(rootDir, './shared/src/constants/index.ts'),
             '@assixx/shared/helpers': resolve(rootDir, './shared/src/helpers/index.ts'),

@@ -133,6 +133,16 @@
   // Logout Modal State
   let showLogoutModal = $state(false);
 
+  // Keeps the confirm modal as the visible UX surface from the moment the
+  // user clicks "Abmelden" until the apex login page paints. Flipped to
+  // true in the modal's onConfirm handler — the modal then shows its
+  // built-in spinner + disabled buttons via the ConfirmModal `submitting`
+  // prop. Browser paint-hold preserves the last frame of the old document
+  // during the cross-origin hard-nav, so the modal remains visible through
+  // the entire transition — no empty page between logout and login.
+  // See ADR-050 Amendment (Logout → Apex).
+  let isLoggingOut = $state(false);
+
   // Browser tab title base (without count prefix)
   let pageTitleBase = $state('Assixx');
 
@@ -241,6 +251,8 @@
   // --- API FUNCTIONS ---
 
   async function logout(): Promise<void> {
+    // No `navigate` dep: performLogout owns the redirect destination (apex
+    // login page via window.location.href) per ADR-050 Amendment.
     await performLogout({
       apiClient,
       onError: (err: unknown) => {
@@ -251,7 +263,6 @@
         clearPublicKeyCache();
         clearUserCache();
       },
-      navigate: (url: string) => goto(url, { replaceState: true }),
     });
 
     // CRITICAL: Reset ALL Svelte state to prevent stale data on re-login
@@ -259,6 +270,48 @@
     userRole = 'employee';
     activeRole = 'employee';
     tenant = null;
+  }
+
+  // =============================================================================
+  // E2E — ADR-050 × ADR-022 CROSS-ORIGIN ESCROW HANDOFF
+  // =============================================================================
+
+  /**
+   * Consume `?unlock=<ticketId>` from the URL (if present) before E2E init.
+   *
+   * Rationale: the subdomain's IndexedDB is empty on first visit after an
+   * apex-login redirect. Without the unlock ticket, `initialize()` would see
+   * `hasKey=false`, go through `generateAndRegisterKey()`, collide with the
+   * pre-existing server key (409), and — in Phase A — fail-closed. The
+   * ticket carries the wrappingKey derived on apex; consuming it loads the
+   * private key into this origin's IndexedDB and the normal `initialize()`
+   * then takes the happy path (`hasKey=true`, server match).
+   *
+   * URL hygiene: we strip `?unlock=` via `history.replaceState` before
+   * `initialize()` runs. The ticket is already single-use server-side, but
+   * leaving it in the address bar would surface in bookmarks, DevTools, and
+   * Referer headers on the first in-page click.
+   */
+  async function bootstrapE2eFromUrlAndInitialize(userId: number): Promise<void> {
+    const url = new URL(window.location.href);
+    const ticketId = url.searchParams.get('unlock');
+
+    if (ticketId !== null && ticketId !== '') {
+      // Strip the query param FIRST — if the bootstrap throws mid-flight we
+      // still want the URL clean. replaceState does not navigate.
+      url.searchParams.delete('unlock');
+      window.history.replaceState(window.history.state, '', url.toString());
+
+      const recovered = await e2e.bootstrapFromUnlockTicket(userId, ticketId);
+      if (!recovered) {
+        log.warn(
+          { userId },
+          'Unlock ticket did not recover E2E key — falling through to normal init',
+        );
+      }
+    }
+
+    await e2e.initialize(userId);
   }
 
   // =============================================================================
@@ -386,8 +439,23 @@
 
     // Initialize E2E encryption (generates keys if needed, uploads public key)
     // Silent — no user interaction required. Keys are device-bound + user-scoped.
+    //
+    // ADR-050 × ADR-022 cross-origin handoff: when the user authenticated on
+    // apex and was redirected here across an origin boundary, the apex login
+    // minted a single-use unlock ticket carrying the client-derived
+    // wrappingKey. If `?unlock=<ticketId>` is present in the URL, consume it
+    // FIRST — that loads the private key into this origin's IndexedDB without
+    // re-running Argon2id and without a password re-prompt. `initialize()`
+    // then sees `hasKey=true` and takes the happy path; the throw-on-mismatch
+    // from Phase A never fires.
+    //
+    // We strip `?unlock=` from the URL immediately via replaceState so the
+    // ticket ID does not leak into history, bookmarks, or copy-paste. The
+    // ticket is already single-use server-side, but client-side hygiene
+    // avoids surfacing it in DevTools or Referer headers on subsequent
+    // in-page navigations.
     if (ssrUser?.id !== undefined) {
-      void e2e.initialize(ssrUser.id);
+      void bootstrapE2eFromUrlAndInitialize(ssrUser.id);
     }
 
     // Connect WebSocket for presence tracking (user appears "online" app-wide)
@@ -428,8 +496,11 @@
        assertVerified() at entry and 403s on unverified tenants. Showing the
        "Root hinzufügen" CTA in that state would drive the user into a
        guaranteed failure. After domain verification the banner re-appears
-       automatically (rootCount is still 1) and the CTA is actionable. -->
-  {#if data.rootCount === 1 && data.tenantVerified}
+       automatically (rootCount is still 1) and the CTA is actionable.
+       singleRootBannerDismissed is SSR-read from the dismiss cookie — gating
+       it here (instead of inside the component with sessionStorage) prevents
+       the 1-second hydration flash on dev-mode OAuth-Login (commit 2026-04-22). -->
+  {#if data.rootCount === 1 && data.tenantVerified && !data.singleRootBannerDismissed}
     <SingleRootWarningBanner />
   {/if}
 
@@ -492,11 +563,17 @@
 
   <LogoutModal
     isVisible={showLogoutModal}
+    submitting={isLoggingOut}
     onCancel={() => {
       showLogoutModal = false;
     }}
     onConfirm={() => {
-      showLogoutModal = false;
+      // Don't close the modal here — leave it open with `submitting=true`
+      // so both buttons disable + the confirm button shows the built-in
+      // spinner. The modal stays on screen until the cross-origin hard-nav
+      // unloads the document. Paint-hold keeps this final frame visible
+      // until the apex login page is FCP-ready → no blank-flash between.
+      isLoggingOut = true;
       void logout();
     }}
   />

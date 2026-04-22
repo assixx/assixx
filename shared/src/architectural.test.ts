@@ -204,7 +204,8 @@ describe('Frontend: Catch-Block Typing', () => {
 });
 
 describe('Frontend: Session-Expired Centralization', () => {
-  const ALLOWED_FILE = 'frontend/src/lib/utils/session-expired.ts';
+  // Note: ALLOWED_FILE constant removed together with the goto-literal check
+  // (superseded by the Apex-Login Redirect Centralization block below).
 
   it('should not define local isSessionExpiredError functions in route files', () => {
     const violations = grepFiles('function isSessionExpiredError', 'frontend/src/routes');
@@ -233,16 +234,67 @@ describe('Frontend: Session-Expired Centralization', () => {
     ).toEqual([]);
   });
 
-  it('should only use goto("/login?session=expired") in the centralized utility', () => {
-    const matches = grepFiles('login\\?session=expired', 'frontend/src', '*.ts');
+  // NOTE: The "goto('/login?session=expired') literal centralization" check
+  // was superseded by the Apex-Login Redirect Centralization block below
+  // (ADR-050 Amendment). All 3 login-redirect literals (logout=success,
+  // session=expired, session=forbidden) are covered there, so the single-
+  // literal check here would be redundant (and wrong — the owner moved
+  // from session-expired.ts to build-apex-url.ts).
+});
 
-    const violations = matches.filter((f) => f !== ALLOWED_FILE);
+// =============================================================================
+// APEX-LOGIN REDIRECT CENTRALIZATION (ADR-050 Amendment — Logout → Apex)
+// =============================================================================
+//
+// Every post-logout / post-session-event redirect must land on the apex
+// `/login` page (not the current tenant subdomain). The query-param
+// namespace split (`logout=` active action vs `session=` passive event)
+// is encoded in `build-apex-url.ts`'s `REASON_TO_QUERY` map. Callers use
+// `buildLoginUrl(<reason>)` — NEVER hardcode the URL literal.
+//
+// If someone copy-pastes `/login?session=expired` into a new route, this
+// test catches it on the next CI run — before the drift compounds into
+// `?session=logout` vs `?session=ended` vs `?logout=ended` inconsistency.
+//
+// @see docs/infrastructure/adr/ADR-050-tenant-subdomain-routing.md
+//      §"Amendment — Logout → Apex"
+describe('Frontend: Apex-Login Redirect Centralization (ADR-050 Amendment)', () => {
+  /**
+   * Authoritative source + its test file for the `/login?<reason>=<value>`
+   * literal strings. The helper file defines the `REASON_TO_QUERY` map; the
+   * test file asserts the map's values. Every other caller must use
+   * `buildLoginUrl(reason)` — the lookup stays in one place so the namespace
+   * decision (logout= vs session=) cannot drift.
+   */
+  const ALLOWED_FILES = new Set<string>([
+    'frontend/src/lib/utils/build-apex-url.ts',
+    'frontend/src/lib/utils/build-apex-url.test.ts',
+  ]);
 
-    expect(
-      violations,
-      `Found direct goto('/login?session=expired') outside centralized utility. Use handleSessionExpired() from $lib/utils/session-expired.js instead:\n${violations.join('\n')}`,
-    ).toEqual([]);
-  });
+  /**
+   * The three discriminable reasons encoded in `LoginRedirectReason`.
+   * Extending this array is a codebase-wide refactor signal — the new
+   * reason must also appear in `REASON_TO_QUERY`, the login page's
+   * `checkForMessages()`, and this test.
+   */
+  const LOGIN_QUERY_LITERALS: { grepPattern: string; queryString: string }[] = [
+    { grepPattern: 'login\\?logout=success', queryString: 'logout=success' },
+    { grepPattern: 'login\\?session=expired', queryString: 'session=expired' },
+    { grepPattern: 'login\\?session=forbidden', queryString: 'session=forbidden' },
+  ];
+
+  for (const { grepPattern, queryString } of LOGIN_QUERY_LITERALS) {
+    it(`only build-apex-url.ts owns '/login?${queryString}' literal — use buildLoginUrl() elsewhere`, () => {
+      const tsMatches = grepFiles(grepPattern, 'frontend/src', '*.ts');
+      const svelteMatches = grepFiles(grepPattern, 'frontend/src', '*.svelte');
+      const violations = [...tsMatches, ...svelteMatches].filter((f) => !ALLOWED_FILES.has(f));
+
+      expect(
+        violations,
+        `Found hardcoded '/login?${queryString}' outside build-apex-url.ts. Use buildLoginUrl() with the appropriate LoginRedirectReason so the REASON_TO_QUERY map stays the single source of truth (ADR-050 Amendment — prevents namespace drift like ?session=logout vs ?logout=success):\n${violations.join('\n')}`,
+      ).toEqual([]);
+    });
+  }
 });
 
 describe('Backend: Shared db-helpers (Maßnahme #13)', () => {

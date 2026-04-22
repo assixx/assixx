@@ -289,6 +289,22 @@ function clearAuthAndRedirect(cookies: Parameters<LayoutServerLoad>[0]['cookies'
   redirect(302, '/login');
 }
 
+/**
+ * Cookie name for the Single-Root-Warning-Banner dismiss flag.
+ *
+ * WHY cookie (not sessionStorage, see commit 2026-04-22):
+ * sessionStorage is only readable on the client, so SSR always rendered the
+ * banner and hydration flipped it off — producing a visible "flash" on every
+ * page load for users who had dismissed it. Routing the dismiss state through
+ * a cookie lets the server decide *before* rendering whether to emit the
+ * banner at all. No HTML flash, no hydration mismatch, no Vite-dev-mode-
+ * specific 1s delay after OAuth-Login.
+ *
+ * NOT HttpOnly: the component must write it from the close-button handler.
+ * Value is a boolean UI flag, no secret — XSS surface is irrelevant.
+ */
+const SINGLE_ROOT_BANNER_DISMISS_COOKIE = 'assixx_single_root_banner_dismissed';
+
 /** Unauthenticated response */
 const UNAUTHENTICATED_RESPONSE = {
   user: null,
@@ -312,6 +328,9 @@ const UNAUTHENTICATED_RESPONSE = {
   // profile forms anyway, so the exact value is irrelevant; `false` matches
   // the server-side default and the fail-closed semantics of the parser.
   allowUserPasswordChange: false,
+  // Drives SingleRootWarningBanner visibility. Default `false` on
+  // unauthenticated paths — banner is gated by authentication anyway.
+  singleRootBannerDismissed: false,
 } as const;
 
 /** Build authenticated response from user data, counts, theme, addons, and labels */
@@ -326,6 +345,7 @@ async function buildAuthenticatedResponse(
   activeRole: string | null,
   rootCount: number,
   tenantVerified: boolean,
+  singleRootBannerDismissed: boolean,
 ) {
   return {
     user: mapUserData(userData),
@@ -343,6 +363,10 @@ async function buildAuthenticatedResponse(
     // password-change card. Root bypasses the gate in the backend + UI.
     // See ADR-045 + user-request 2026-04-20.
     allowUserPasswordChange: await parseAllowUserPasswordChange(passwordPolicyResponse),
+    // Server-read dismiss flag for the Single-Root-Warning-Banner — see
+    // SINGLE_ROOT_BANNER_DISMISS_COOKIE comment. When `true`, the banner
+    // is never emitted into the SSR HTML → no flash on hydration.
+    singleRootBannerDismissed,
   };
 }
 
@@ -463,56 +487,96 @@ export const load: LayoutServerLoad = async ({ cookies, fetch, url, locals }) =>
   // Read activeRole cookie for SSR banner rendering (non-sensitive UI state)
   const activeRole = cookies.get('activeRole') ?? null;
 
+  // SSR-read the Single-Root-Warning-Banner dismiss flag. Used by the layout
+  // gate to suppress the banner entirely on the server side when the user
+  // dismissed it — no more 1-second Vite-hydration flash (see commit 2026-04-22).
+  const singleRootBannerDismissed = cookies.get(SINGLE_ROOT_BANNER_DISMISS_COOKIE) === '1';
+
   // Check if RBAC hook already fetched user data (saves ~50-80ms!)
   const rbacUser = locals.user as UserData | undefined;
 
   if (rbacUser !== undefined) {
-    // FAST PATH: Reuse user from RBAC hook - fetch counts, theme, addons + labels in parallel
-    // rootCount + tenantVerified fetched in the same Promise.all (role-gated:
-    // rootCount is root-only, tenantVerified is root+admin per §0.2.5 #16).
-    const fetchStart = performance.now();
-    const [
-      {
-        countsResponse,
-        themeResponse,
-        addonsResponse,
-        labelsResponse,
-        scopeResponse,
-        passwordPolicyResponse,
-      },
-      rootCount,
-      tenantVerified,
-    ] = await Promise.all([
-      fetchCountsThemeAddonsAndLabels(fetch, headers),
-      fetchRootCount(rbacUser.role, fetch, headers),
-      fetchTenantVerified(rbacUser.role, fetch, headers),
-    ]);
-    const fetchTime = Math.round(performance.now() - fetchStart);
-    const totalTime = Math.round(performance.now() - startTime);
-
-    log.debug(
-      { userId: rbacUser.id, fetchTime, totalTime, path: url.pathname },
-      `⚡ FAST PATH: RBAC user reused, /counts + /theme + /addons + /labels + /verification-status fetched in parallel (${fetchTime}ms, total: ${totalTime}ms)`,
-    );
-
-    return await buildAuthenticatedResponse(
+    return await loadFastPath(
       rbacUser,
+      fetch,
+      headers,
+      startTime,
+      url.pathname,
+      activeRole,
+      singleRootBannerDismissed,
+    );
+  }
+
+  // SLOW PATH: RBAC hook didn't set user - fetch both in parallel
+  log.warn({ pathname: url.pathname }, '🐢 SLOW PATH: No RBAC user, fetching /users/me + /counts');
+  return await loadUserWithFetch(
+    cookies,
+    fetch,
+    headers,
+    startTime,
+    url.pathname,
+    activeRole,
+    singleRootBannerDismissed,
+  );
+};
+
+/**
+ * FAST PATH: Reuse user from RBAC hook - fetch counts, theme, addons + labels
+ * in parallel. rootCount + tenantVerified are role-gated (rootCount is
+ * root-only, tenantVerified is root+admin per masterplan §0.2.5 #16) and
+ * run in the same Promise.all.
+ *
+ * Extracted from `load()` to keep that handler under the 60-line limit after
+ * the singleRootBannerDismissed cookie was added (commit 2026-04-22).
+ */
+async function loadFastPath(
+  rbacUser: UserData,
+  fetchFn: typeof fetch,
+  headers: Record<string, string>,
+  startTime: number,
+  pathname: string,
+  activeRole: string | null,
+  singleRootBannerDismissed: boolean,
+) {
+  const fetchStart = performance.now();
+  const [
+    {
       countsResponse,
       themeResponse,
       addonsResponse,
       labelsResponse,
       scopeResponse,
       passwordPolicyResponse,
-      activeRole,
-      rootCount,
-      tenantVerified,
-    );
-  }
+    },
+    rootCount,
+    tenantVerified,
+  ] = await Promise.all([
+    fetchCountsThemeAddonsAndLabels(fetchFn, headers),
+    fetchRootCount(rbacUser.role, fetchFn, headers),
+    fetchTenantVerified(rbacUser.role, fetchFn, headers),
+  ]);
+  const fetchTime = Math.round(performance.now() - fetchStart);
+  const totalTime = Math.round(performance.now() - startTime);
 
-  // SLOW PATH: RBAC hook didn't set user - fetch both in parallel
-  log.warn({ pathname: url.pathname }, '🐢 SLOW PATH: No RBAC user, fetching /users/me + /counts');
-  return await loadUserWithFetch(cookies, fetch, headers, startTime, url.pathname, activeRole);
-};
+  log.debug(
+    { userId: rbacUser.id, fetchTime, totalTime, path: pathname },
+    `⚡ FAST PATH: RBAC user reused, /counts + /theme + /addons + /labels + /verification-status fetched in parallel (${fetchTime}ms, total: ${totalTime}ms)`,
+  );
+
+  return await buildAuthenticatedResponse(
+    rbacUser,
+    countsResponse,
+    themeResponse,
+    addonsResponse,
+    labelsResponse,
+    scopeResponse,
+    passwordPolicyResponse,
+    activeRole,
+    rootCount,
+    tenantVerified,
+    singleRootBannerDismissed,
+  );
+}
 
 /** Load user via API fetch (slow path when RBAC user not available) */
 async function loadUserWithFetch(
@@ -522,6 +586,7 @@ async function loadUserWithFetch(
   startTime: number,
   pathname: string,
   activeRole: string | null,
+  singleRootBannerDismissed: boolean,
 ) {
   const fetchStart = performance.now();
   const {
@@ -573,5 +638,6 @@ async function loadUserWithFetch(
     activeRole,
     rootCount,
     tenantVerified,
+    singleRootBannerDismissed,
   );
 }

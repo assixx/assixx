@@ -263,7 +263,10 @@ describe('LogFormattersService', () => {
       expect(result).toContain('[root_logs]');
     });
 
-    it('should include changed fields summary for update action', () => {
+    // ADR-009 P0-2 (2026-04-22): UPDATE/DELETE markers now render actual
+    // values (not just field names) for GDPR Art. 30 / SOC2 evidence.
+    // Marker names changed: [changed:…] → [diff:…], [deleted-fields:…] → [deleted:…].
+    it('should include diff with actual values for update action', () => {
       const entry = createMinimalEntry({
         action: 'update',
         changes: { updated: { name: 'New', status: 'active' }, _http: {} },
@@ -271,10 +274,11 @@ describe('LogFormattersService', () => {
 
       const result = service.formatLogAsTxt(entry);
 
-      expect(result).toContain('[changed: name, status]');
+      // No `previous` snapshot → (new) fallback marker (ADR-009 P0-3).
+      expect(result).toContain('[diff: name: (new) → "New"; status: (new) → "active"]');
     });
 
-    it('should include deleted-fields summary for delete action', () => {
+    it('should include deleted snapshot values for delete action', () => {
       const entry = createMinimalEntry({
         action: 'delete',
         changes: { deleted: { id: 1, name: 'Gone', email: 'x@y.de' }, _http: {} },
@@ -282,7 +286,7 @@ describe('LogFormattersService', () => {
 
       const result = service.formatLogAsTxt(entry);
 
-      expect(result).toContain('[deleted-fields: id, name, email]');
+      expect(result).toContain('[deleted: id=1, name="Gone", email="x@y.de"]');
     });
 
     it('should not include change summary when no changes', () => {
@@ -290,8 +294,9 @@ describe('LogFormattersService', () => {
 
       const result = service.formatLogAsTxt(entry);
 
-      expect(result).not.toContain('[changed:');
-      expect(result).not.toContain('[deleted-fields:');
+      expect(result).not.toContain('[diff:');
+      expect(result).not.toContain('[deleted:');
+      expect(result).not.toContain('[created:');
     });
   });
 
@@ -300,13 +305,19 @@ describe('LogFormattersService', () => {
   // =============================================================
 
   describe('generateCsvHeader', () => {
-    it('should return all 13 column headers as comma-separated line', () => {
+    // ADR-009 P1-1/P1-2 (2026-04-22): 13 base + 3 enrichment columns
+    // (Request ID, HTTP Method, Endpoint) appended for compliance auditing.
+    // Append-only to keep position indices stable for external CSV consumers.
+    it('should return all 16 column headers with base columns at stable positions', () => {
       const result = service.generateCsvHeader();
 
       const columns = result.trim().split(',');
-      expect(columns).toHaveLength(13);
+      expect(columns).toHaveLength(16);
       expect(columns[0]).toBe('ID');
       expect(columns[12]).toBe('Role Switched');
+      expect(columns[13]).toBe('Request ID');
+      expect(columns[14]).toBe('HTTP Method');
+      expect(columns[15]).toBe('Endpoint');
     });
   });
 

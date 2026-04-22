@@ -4,6 +4,7 @@
 // =============================================================================
 
 import { clearActiveRole } from '$lib/utils/auth';
+import { buildLoginUrl } from '$lib/utils/build-apex-url';
 
 import type { WebSocketCallbacks } from '../(shared)/chat/_lib/handlers';
 
@@ -79,15 +80,23 @@ export function formatTokenTime(remainingSeconds: number): TokenTimeResult {
 
 // ─── Logout ──────────────────────────────────────────────────────────
 
+/**
+ * Dependencies injected into {@link performLogout}. `navigate` deliberately
+ * NOT part of the contract: the post-logout destination is fixed (apex
+ * `/login?logout=success`) per ADR-050 Amendment and cross-origin from any
+ * tenant subdomain. The hard-navigate happens inside `performLogout` via
+ * `window.location.href`.
+ */
 interface LogoutDeps {
   apiClient: { post: (url: string) => Promise<unknown> };
   onError: (err: unknown) => void;
   lockE2E: () => Promise<void>;
   clearCaches: () => void;
-  navigate: (url: string) => Promise<void>;
 }
 
 export async function performLogout(deps: LogoutDeps): Promise<void> {
+  const loginUrl = buildLoginUrl('logout-success');
+
   try {
     // Call logout API first (while we still have a valid token)
     await deps.apiClient.post('/auth/logout');
@@ -99,7 +108,10 @@ export async function performLogout(deps: LogoutDeps): Promise<void> {
   await deps.lockE2E();
   deps.clearCaches();
 
-  // Clear all tokens and role data from localStorage
+  // Clear all tokens and role data from localStorage. Subdomain-scoped
+  // cookies are wiped server-side by POST /auth/logout (HttpOnly). The
+  // upcoming cross-origin navigation leaves anything we missed orphaned
+  // on the subdomain, where no authenticated request will read it again.
   localStorage.removeItem('userRole');
   clearActiveRole();
   localStorage.removeItem('token'); // Legacy token
@@ -108,10 +120,37 @@ export async function performLogout(deps: LogoutDeps): Promise<void> {
   localStorage.removeItem('tokenReceivedAt');
   localStorage.removeItem('user');
 
-  // Note: TokenManager in-memory state will be stale, but page navigation
-  // will reinitialize it. No need to call clearTokens() which would trigger
-  // a window.location redirect that we want to avoid.
+  // Prefetch the apex login route BEFORE the hard-nav so the Vite dev
+  // server's compile cache is primed and the browser already holds the
+  // HTML bytes for the target origin. The gain:
+  //   - Dev: first compile of /login after a fresh restart costs 200–500 ms
+  //     and otherwise happens during the cross-origin blank frame — the
+  //     reason the user perceives an "empty page" between logout and login.
+  //     After this prefetch, the subsequent nav hits a warm Vite cache →
+  //     login paints ~10x faster and the blank window collapses to the
+  //     browser's unavoidable document-swap frame (~50 ms).
+  //   - Prod: apex is usually same-host-family (edge-cached), so this is
+  //     a no-op cost-wise; no harm done.
+  // `mode: 'no-cors'` is deliberate — we cannot (and do not need to) read
+  // the response; we only care that the server processed the request and
+  // warmed its cache. `credentials: 'omit'` keeps the apex origin cookie-
+  // free which is the ADR-050 R1 isolation guarantee anyway (apex cookies
+  // would leak cross-tenant — architectural test R1 blocks this).
+  try {
+    await fetch(loginUrl, {
+      method: 'GET',
+      mode: 'no-cors',
+      credentials: 'omit',
+    });
+  } catch {
+    // Prefetch is best-effort; a network hiccup here MUST NOT block the
+    // actual navigation. Swallow silently and proceed to the hard-nav.
+  }
 
-  // Use SvelteKit's goto() for client-side navigation (no full page reload)
-  await deps.navigate('/login');
+  // ADR-050 Amendment (Logout → Apex): post-logout surface is the apex
+  // login page, not the tenant subdomain. Hard-navigate — SvelteKit's
+  // goto() is client-router-bound and cannot cross origins. The full page
+  // load also discards stale TokenManager in-memory state without
+  // triggering clearTokens()'s own redirect logic.
+  window.location.href = loginUrl;
 }

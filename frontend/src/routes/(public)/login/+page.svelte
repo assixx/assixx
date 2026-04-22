@@ -11,12 +11,16 @@
   import Seo from '$lib/components/Seo.svelte';
   import ThemeToggle from '$lib/components/ThemeToggle.svelte';
   import Turnstile from '$lib/components/Turnstile.svelte';
+  import { cryptoBridge } from '$lib/crypto/crypto-bridge';
   import { setLoginPassword } from '$lib/crypto/login-password-bridge';
   import { isDark } from '$lib/stores/theme.svelte';
-  import { showInfoAlert } from '$lib/stores/toast';
+  import { showInfoAlert, showSuccessAlert } from '$lib/stores/toast';
   import { setActiveRole } from '$lib/utils/auth';
+  import { createLogger } from '$lib/utils/logger';
   import { mapOAuthErrorReason } from '$lib/utils/oauth';
   import { getTokenManager } from '$lib/utils/token-manager';
+
+  const log = createLogger('LoginHandoff');
 
   import type { ActionData, PageData } from './$types';
 
@@ -58,19 +62,39 @@
 
   /**
    * Check for URL parameters on mount and show messages
-   * Handles: ?timeout=true, ?session=expired, ?ratelimit=expired,
+   * Handles: ?timeout=true, ?session=expired, ?session=forbidden (ADR-050),
+   *          ?logout=success (ADR-050 Amendment), ?ratelimit=expired,
    *          ?oauth=not-linked (Step 5.2), ?oauth=error&reason=… (Phase 6)
+   *
+   * ADR-050 Amendment namespaces:
+   *   logout=success  — active user action result (success tone)
+   *   session=expired — passive JWT expiry (warning tone via showError)
+   *   session=forbidden — passive CROSS_TENANT_HOST_MISMATCH (error tone)
    */
   function checkForMessages() {
     if (typeof window === 'undefined') return;
 
     const urlParams = new URLSearchParams(window.location.search);
 
-    if (urlParams.get('timeout') === 'true' || urlParams.get('session') === 'expired') {
+    if (urlParams.get('logout') === 'success') {
+      // ADR-050 Amendment: user-initiated logout completed. Success toast
+      // via global store (not local `showError`) because the login page's
+      // inline toast surface is error-styled (banner + progress bar).
+      showSuccessAlert('Sie wurden erfolgreich abgemeldet.');
+      replaceState(window.location.pathname, {});
+    } else if (urlParams.get('timeout') === 'true' || urlParams.get('session') === 'expired') {
       showError(
         'Ihre Sitzung ist aus Sicherheitsgründen abgelaufen. Bitte melden Sie sich erneut an.',
       );
       // Clean up URL - SvelteKit's replaceState (safe inside afterNavigate)
+      replaceState(window.location.pathname, {});
+    } else if (urlParams.get('session') === 'forbidden') {
+      // ADR-050 §Decision + R15: JWT decoded OK but host ≠ token tenant
+      // (CROSS_TENANT_HOST_MISMATCH). User redirected to apex; display as
+      // error-toned message — same surface as session=expired.
+      showError(
+        'Zugriff verweigert — Sitzung passt nicht zum angeforderten Mandanten. Bitte melden Sie sich erneut an.',
+      );
       replaceState(window.location.pathname, {});
     } else if (urlParams.get('oauth') === 'not-linked') {
       // Backend 302s here when an OAuth login succeeds at Microsoft but no
@@ -190,15 +214,23 @@
 
   /**
    * Session 12c (ADR-050): apex-login → subdomain-handoff result shape.
-   * No tokens on this branch (by design — cookies/tokens must land on the
-   * subdomain origin, not apex). Only the absolute redirect URL + minimal
-   * user info. Client navigates to the subdomain which then consumes the
-   * handoff token and sets up session state there.
+   *
+   * `accessToken` lives in JS heap memory only for the ~1s between login
+   * success and the cross-origin redirect, used exclusively to mint the
+   * escrow unlock ticket (ADR-050 × ADR-022). It is NEVER persisted here
+   * (no localStorage, no cookie on apex). Session tokens/cookies land on
+   * the subdomain via the handoff-token swap (Session 12 consumer).
+   *
+   * `user.id` is required because the Worker scopes IndexedDB per user;
+   * without it the wrappingKey could not be bound to the right origin
+   * namespace. `tenantId` is for cross-tenant debugging + future-proofing;
+   * the backend derives authoritative tenantId from the JWT, not here.
    */
   interface HandoffRedirectData {
     success: true;
     redirectTo: string;
-    user: { role: string };
+    user: { id: number; role: string; tenantId: number };
+    accessToken: string;
   }
 
   /** Check if value is a non-null object */
@@ -229,17 +261,135 @@
   }
 
   /**
-   * Type guard for the Session 12c handoff-redirect shape. Distinguishing
-   * mark from normal login: `accessToken` is absent (tokens live inside the
-   * handoff token, to be consumed by the subdomain page). `redirectTo` is
-   * always a string (absolute URL pointing at the target subdomain).
+   * ADR-050 × ADR-022 — cross-origin escrow-unlock-ticket mint.
+   *
+   * Runs client-side on apex AFTER successful login, BEFORE the redirect to
+   * the subdomain. Derives the escrow wrappingKey from the password the user
+   * just typed, mints a single-use Redis-backed ticket, and appends the
+   * ticket ID to the handoff URL so the subdomain can bootstrap E2E
+   * without a password re-prompt or a ~1s second Argon2id pass.
+   *
+   * Fail-closed by design: if ANY step fails (no escrow on server, network
+   * error, Worker crash, malformed response) we return the original
+   * `redirectTo` unchanged. The subdomain's layout will then fall through to
+   * `e2e.initialize()` which — per Phase A — fail-closes with a clear error
+   * if the server has a key it cannot recover. Better a loud fail than a
+   * silent rotation.
+   *
+   * Security: `accessToken` is used ONLY for the two authenticated fetches
+   * below and never leaves this function's scope. `wrappingKey` is derived
+   * inside the Worker and serialized ONCE into the POST body; it lives in
+   * this function's local scope until garbage-collected by the page unload.
+   */
+  async function mintUnlockTicketOrFallback(
+    redirectTo: string,
+    accessToken: string,
+    userId: number,
+    loginPasswordValue: string,
+  ): Promise<string> {
+    try {
+      // Spin up the Worker. On apex this opens a per-user IndexedDB with no
+      // existing key — a harmless no-op side-effect. The Worker is terminated
+      // by the page unload that follows the redirect; nothing persists here.
+      await cryptoBridge.init(userId);
+
+      // Fetch escrow metadata. If the user has no escrow yet (new user or
+      // legacy pre-ADR-022 account), there is nothing to unlock — skip.
+      const escrowResp = await fetch('/api/v2/e2e/escrow', {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      if (!escrowResp.ok) {
+        log.warn(
+          { status: escrowResp.status },
+          'Escrow fetch failed during handoff — continuing without unlock ticket',
+        );
+        return redirectTo;
+      }
+
+      // Backend ResponseInterceptor wraps responses in `{success, data}`
+      // (ADR-007 / ADR-050). `data === null` means "no escrow row" — valid.
+      const escrowBody = (await escrowResp.json()) as {
+        success?: boolean;
+        data?: {
+          encryptedBlob: string;
+          argon2Salt: string;
+          xchachaNonce: string;
+          argon2Params: { memory: number; iterations: number; parallelism: number };
+        } | null;
+      };
+      const escrow = escrowBody.data ?? null;
+      if (escrow === null) {
+        log.info('No escrow on server — skipping unlock ticket (first-time or legacy user)');
+        return redirectTo;
+      }
+
+      // Derive wrappingKey client-side — password never leaves the browser.
+      const wrappingKey = await cryptoBridge.deriveWrappingKey(
+        loginPasswordValue,
+        escrow.argon2Salt,
+        escrow.argon2Params,
+      );
+
+      // Mint the Redis ticket. 60s TTL, single-use GETDEL server-side.
+      const mintResp = await fetch('/api/v2/e2e/escrow/unlock-ticket', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({ wrappingKey }),
+      });
+      if (!mintResp.ok) {
+        log.warn(
+          { status: mintResp.status },
+          'Unlock ticket mint failed — continuing without ticket',
+        );
+        return redirectTo;
+      }
+      const mintBody = (await mintResp.json()) as {
+        success?: boolean;
+        data?: { ticketId: string };
+      };
+      const ticketId = mintBody.data?.ticketId;
+      if (typeof ticketId !== 'string' || ticketId === '') {
+        log.warn({ mintBody }, 'Unlock ticket response malformed — continuing without ticket');
+        return redirectTo;
+      }
+
+      // Append to redirect URL. The subdomain's (app) layout reads and
+      // strips `?unlock=` before `e2e.initialize()`.
+      const url = new URL(redirectTo);
+      url.searchParams.set('unlock', ticketId);
+      return url.toString();
+    } catch (err: unknown) {
+      log.warn(
+        { err: err instanceof Error ? err.message : 'unknown' },
+        'Unlock ticket flow threw — continuing without ticket',
+      );
+      return redirectTo;
+    }
+  }
+
+  /**
+   * Type guard for the Session 12c handoff-redirect shape.
+   *
+   * ADR-050 × ADR-022 (2026-04-22 amendment): this branch now DOES carry
+   * `accessToken` + `user.id` — used for the ephemeral apex-side escrow
+   * unlock-ticket mint. Distinguishing mark from the normal same-origin
+   * login: `refreshToken` is absent (the refresh token stays server-side
+   * inside the handoff-token payload, not exposed to apex JS at all).
    */
   function isHandoffRedirectData(data: unknown): data is HandoffRedirectData {
     if (!isObject(data)) return false;
     if (data.success !== true) return false;
-    if ('accessToken' in data) return false;
+    if ('refreshToken' in data) return false;
     if (!hasStringProp(data, 'redirectTo')) return false;
-    return hasValidUser(data);
+    if (!hasStringProp(data, 'accessToken')) return false;
+    if (!isObject(data.user)) return false;
+    if (typeof data.user.id !== 'number') return false;
+    if (typeof data.user.role !== 'string') return false;
+    if (typeof data.user.tenantId !== 'number') return false;
+    return true;
   }
 </script>
 
@@ -349,16 +499,29 @@
             loading = false;
 
             // Session 12c (ADR-050): handoff-redirect branch MUST come FIRST.
-            // Shape has no accessToken/refreshToken (tokens live in the handoff
-            // token, to be consumed by the subdomain page after cross-origin
-            // navigation). We intentionally skip TokenManager.setTokens(),
-            // localStorage, setActiveRole() etc. — the subdomain's own
+            // Refresh tokens land on the subdomain origin via handleHandoff
+            // (we don't persist them here). We do use the short-lived access
+            // token client-side for ONE purpose: minting the ADR-022 escrow
+            // unlock ticket so the subdomain can recover the E2E private key
+            // without a password re-prompt (2026-04-22 amendment). See
+            // `mintUnlockTicketOrFallback` above for the full rationale +
+            // fail-closed semantics.
+            //
+            // We intentionally skip TokenManager.setTokens(), localStorage,
+            // setActiveRole(), setLoginPassword() etc. — the subdomain's own
             // `/signup/oauth-complete` consumer sets all of that on its own
             // origin via Session 12's handleHandoff(). The login-password
-            // bridge (setLoginPassword) is also skipped — E2E key escrow
-            // recovery runs on the subdomain side after cookie-setup.
+            // bridge is moot because this is a cross-origin redirect; module
+            // memory dies at `window.location.href`.
             if (result.type === 'success' && isHandoffRedirectData(result.data)) {
-              window.location.href = result.data.redirectTo;
+              const { redirectTo, accessToken, user: handoffUser } = result.data;
+              const finalUrl = await mintUnlockTicketOrFallback(
+                redirectTo,
+                accessToken,
+                handoffUser.id,
+                password,
+              );
+              window.location.href = finalUrl;
               return;
             }
 

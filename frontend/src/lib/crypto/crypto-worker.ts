@@ -60,6 +60,40 @@ type WorkerRequest = { requestId: string } & (
       xchachaNonce: string;
       argon2Params: { memory: number; iterations: number; parallelism: number };
     }
+  | {
+      /**
+       * Argon2id-only derivation (no decryption, no IndexedDB side-effects).
+       *
+       * Used by the apex-login flow (ADR-050) to produce the wrappingKey for
+       * the cross-origin unlock ticket WITHOUT touching apex's IndexedDB.
+       * The subdomain later consumes the ticket via `unwrapWithDerivedKey`,
+       * which DOES store the decrypted private key in the subdomain origin's
+       * IndexedDB (the only origin that should hold it).
+       */
+      type: 'deriveWrappingKey';
+      password: string;
+      argon2Salt: string;
+      argon2Params: { memory: number; iterations: number; parallelism: number };
+    }
+  | {
+      /**
+       * Unwrap the private key using a pre-derived wrappingKey (skips Argon2id).
+       *
+       * Used by the ADR-050 cross-origin escrow-unlock handoff: apex derives
+       * the wrappingKey once during login, transports it via Redis single-use
+       * ticket, and the subdomain calls this handler with the pre-derived key.
+       * The subdomain never sees the password and avoids a second ~1s Argon2id
+       * pass on a fresh origin.
+       *
+       * Caller MUST ensure the wrappingKey is a base64-encoded 32-byte value
+       * (XChaCha20 key size); `unwrapFailed` is returned for wrong size or
+       * any XChaCha20 authentication failure.
+       */
+      type: 'unwrapWithDerivedKey';
+      wrappingKey: string;
+      encryptedBlob: string;
+      xchachaNonce: string;
+    }
   | { type: 'lock' }
   | { type: 'ping' }
 );
@@ -83,6 +117,7 @@ type WorkerResponse = { requestId: string } & (
     }
   | { type: 'privateKeyUnwrapped'; publicKey: string; fingerprint: string }
   | { type: 'unwrapFailed'; reason: string }
+  | { type: 'wrappingKeyDerived'; wrappingKey: string }
   | { type: 'locked' }
   | { type: 'pong' }
   | { type: 'error'; message: string }
@@ -626,6 +661,114 @@ async function handleUnwrapPrivateKey(
   }
 }
 
+/**
+ * Unwrap the private key blob using a pre-derived wrappingKey — no Argon2id.
+ *
+ * Invariants checked (defensive — callers can lie, Worker is the source of
+ * truth for crypto correctness):
+ *   - wrappingKey decodes to exactly 32 bytes (XChaCha20 key size)
+ *   - encryptedBlob + nonce are valid base64
+ *   - decrypt yields exactly 32 bytes (X25519 private key size)
+ *
+ * Any deviation → `unwrapFailed` with a descriptive reason. Never throw.
+ *
+ * ADR reference: ADR-050 (cross-origin handoff) + ADR-022 (escrow scheme).
+ */
+async function handleUnwrapWithDerivedKey(
+  requestId: string,
+  wrappingKeyBase64: string,
+  encryptedBlob: string,
+  xchachaNonce: string,
+): Promise<void> {
+  try {
+    const wrappingKey = fromBase64(wrappingKeyBase64);
+    if (wrappingKey.length !== 32) {
+      respond({
+        requestId,
+        type: 'unwrapFailed',
+        reason: `Invalid wrappingKey length: expected 32, got ${wrappingKey.length}`,
+      });
+      return;
+    }
+
+    const nonce = fromBase64(xchachaNonce);
+    const encryptedBytes = fromBase64(encryptedBlob);
+
+    const cipher = xchacha20poly1305(wrappingKey, nonce);
+    const decryptedKey = cipher.decrypt(encryptedBytes);
+
+    if (decryptedKey.length !== 32) {
+      respond({
+        requestId,
+        type: 'unwrapFailed',
+        reason: `Invalid key length: expected 32, got ${decryptedKey.length}`,
+      });
+      return;
+    }
+
+    const recoveredPublicKey = x25519.getPublicKey(decryptedKey);
+    const recoveredPublicKeyB64 = toBase64(recoveredPublicKey);
+
+    await storeKeyInDb(decryptedKey, recoveredPublicKeyB64);
+    privateKey = decryptedKey;
+    publicKeyBase64 = recoveredPublicKeyB64;
+    sharedSecretCache.clear();
+    epochKeyCache.clear();
+
+    respond({
+      requestId,
+      type: 'privateKeyUnwrapped',
+      publicKey: recoveredPublicKeyB64,
+      fingerprint: computeFingerprint(recoveredPublicKeyB64),
+    });
+  } catch (err: unknown) {
+    // "invalid tag" from XChaCha20 = wrong wrappingKey (Redis-stored value
+    // was tampered OR client-side Argon2id derivation diverged from server).
+    const reason = err instanceof Error ? err.message : 'Failed to unwrap with derived key';
+    respond({ requestId, type: 'unwrapFailed', reason });
+  }
+}
+
+/**
+ * Pure Argon2id derivation — returns the 32-byte wrappingKey as base64.
+ *
+ * No decryption, no IndexedDB access, no private-key manipulation. Used by
+ * the apex-login flow to mint the cross-origin escrow unlock ticket without
+ * touching apex's IndexedDB. The derived key is ephemeral — it lives in the
+ * Worker's reply message, gets stored server-side in Redis for 60s, and is
+ * consumed once by the subdomain.
+ *
+ * @see handleUnwrapWithDerivedKey — paired consumer on the subdomain.
+ */
+async function handleDeriveWrappingKey(
+  requestId: string,
+  password: string,
+  argon2Salt: string,
+  argon2Params: { memory: number; iterations: number; parallelism: number },
+): Promise<void> {
+  try {
+    const salt = fromBase64(argon2Salt);
+    const wrappingKeyHex = await argon2id({
+      password,
+      salt,
+      memorySize: argon2Params.memory,
+      iterations: argon2Params.iterations,
+      parallelism: argon2Params.parallelism,
+      hashLength: 32,
+      outputType: 'hex',
+    });
+    const wrappingKey = hexToBytes(wrappingKeyHex);
+    respond({
+      requestId,
+      type: 'wrappingKeyDerived',
+      wrappingKey: toBase64(wrappingKey),
+    });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Failed to derive wrapping key';
+    respond({ requestId, type: 'error', message });
+  }
+}
+
 /** Store a recovered/generated key in IndexedDB */
 async function storeKeyInDb(key: Uint8Array, publicKeyB64: string): Promise<void> {
   const db = await openDb();
@@ -691,6 +834,22 @@ async function handleEscrowMessage(request: WorkerRequest): Promise<boolean> {
         request.encryptedBlob,
         request.argon2Salt,
         request.xchachaNonce,
+        request.argon2Params,
+      );
+      return true;
+    case 'unwrapWithDerivedKey':
+      await handleUnwrapWithDerivedKey(
+        requestId,
+        request.wrappingKey,
+        request.encryptedBlob,
+        request.xchachaNonce,
+      );
+      return true;
+    case 'deriveWrappingKey':
+      await handleDeriveWrappingKey(
+        requestId,
+        request.password,
+        request.argon2Salt,
         request.argon2Params,
       );
       return true;

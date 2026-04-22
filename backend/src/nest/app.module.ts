@@ -66,6 +66,7 @@ import { RolesModule } from './roles/roles.module.js';
 import { RootModule } from './root/root.module.js';
 import { SecuritySettingsModule } from './security-settings/security-settings.module.js';
 import { SettingsModule } from './settings/settings.module.js';
+import { ShiftHandoverModule } from './shift-handover/shift-handover.module.js';
 import { ShiftsModule } from './shifts/shifts.module.js';
 import { SignupModule } from './signup/signup.module.js';
 import { SurveysModule } from './surveys/surveys.module.js';
@@ -201,6 +202,7 @@ import { WorkOrdersModule } from './work-orders/work-orders.module.js';
     RootModule,
     SecuritySettingsModule,
     SettingsModule,
+    ShiftHandoverModule,
     ShiftsModule,
     SignupModule,
     TenantsModule,

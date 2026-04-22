@@ -135,6 +135,14 @@ export interface UnifiedLogEntry {
 
   /** Was this action performed during role switch? */
   wasRoleSwitched?: boolean | undefined;
+
+  /**
+   * Request correlation UUID — groups all audit entries from the same HTTP request.
+   * Set by ClsModule middleware (ADR-006) and persisted in audit_trail.request_id.
+   * NULL for root_logs (column does not exist there) and pre-CLS legacy entries.
+   * Enables auditors to reconstruct "1 user action = N audit entries" sessions.
+   */
+  requestId?: string | undefined;
 }
 
 /**

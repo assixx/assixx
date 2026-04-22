@@ -26,11 +26,11 @@ Each `*.json` is a Grafana Provisioning-API payload, applied to
 Datasource: `grafanacloud-logs`. Queries use `env="production"` filter (outside of silent-check)
 damit Dev-Noise keine Alerts feuert.
 
-| File                                  | Severity | Trigger                                                   | Why                                                       |
-| ------------------------------------- | -------- | --------------------------------------------------------- | --------------------------------------------------------- |
-| `04-backend-error-rate-warning.json`  | warning  | `count_over_time({…level="error"…}[10m]) > 10` for 10 min | 1 Error/min sustained = systemic                          |
-| `05-backend-error-rate-critical.json` | critical | `count_over_time({…level="error"…}[5m]) > 50` for 5 min   | 10 Errors/min = real incident                             |
-| `06-backend-logs-silent.json`         | critical | `absent_over_time({…service="backend"}[10m])` for 5 min   | Process dead / transport broken — bewusst KEIN env-Filter |
+| File                                  | Severity | Trigger                                                                   | Why                                                                                                                                                                                                               |
+| ------------------------------------- | -------- | ------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `04-backend-error-rate-warning.json`  | warning  | `count_over_time({…level="error"…}[10m]) > 10` for 10 min                 | 1 Error/min sustained = systemic                                                                                                                                                                                  |
+| `05-backend-error-rate-critical.json` | critical | `count_over_time({…level="error"…}[5m]) > 50` for 5 min                   | 10 Errors/min = real incident                                                                                                                                                                                     |
+| `06-backend-logs-silent.json`         | critical | `absent_over_time({…service="backend", env="production"}[10m])` for 5 min | Process dead / transport broken — **PAUSED** (`isPaused: true`) bis Prod-Instanz live (ADR-050 Phase 1). Env-Filter konsistent mit 04+05; Dev-Stille ist kein Trigger. Aktivieren: `isPaused: false` + `apply.sh` |
 
 ### Grafana Cloud billing/usage (observability-cost protection)
 

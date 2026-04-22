@@ -14,6 +14,34 @@ import { consumeLoginPassword, clearLoginPassword } from './login-password-bridg
 
 const log = createLogger('E2eState');
 
+/** Escrow API path — single-source so future renames only touch one line. */
+const ESCROW_ENDPOINT = '/e2e/escrow';
+
+// =============================================================================
+// TYPED ERRORS
+// =============================================================================
+
+/**
+ * Thrown when local IndexedDB and server public key have diverged and escrow
+ * recovery is not possible (no password bridge available, wrong password, or
+ * no escrow blob). Fail-closed instead of silently rotating the server key —
+ * rotation destroys every counterparty's ability to decrypt historical
+ * messages (ADR-022 §Motivation, 2026-02-11 incident).
+ *
+ * Resolution: admin must reset the user's key via `DELETE /e2e/keys/:userId`,
+ * then the user regenerates on next login.
+ *
+ * @see docs/infrastructure/adr/ADR-022-e2e-key-escrow.md
+ */
+export class E2eKeyError extends Error {
+  readonly code: 'key_mismatch' | 'server_has_key_no_recovery';
+  constructor(code: 'key_mismatch' | 'server_has_key_no_recovery', message: string) {
+    super(message);
+    this.name = 'E2eKeyError';
+    this.code = code;
+  }
+}
+
 // =============================================================================
 // REACTIVE STATE
 // =============================================================================
@@ -31,6 +59,13 @@ interface E2eState {
   keyVersion: number | null;
   /** Error message if initialization failed */
   error: string | null;
+  /**
+   * True iff init failed with an E2eKeyError (unrecoverable key divergence).
+   * Distinguishes "init errored, recovery needed" from "init still running /
+   * never started". 1:1 chat MUST refuse plaintext fallback when this is true,
+   * otherwise the UI silently downgrades encryption without the user noticing.
+   */
+  recoveryRequired: boolean;
 }
 
 let e2eState = $state<E2eState>({
@@ -40,6 +75,7 @@ let e2eState = $state<E2eState>({
   keyVersion: null,
   persisted: false,
   error: null,
+  recoveryRequired: false,
 });
 
 /** Synchronous state setter — avoids require-atomic-updates false positives in async functions */
@@ -94,9 +130,14 @@ export const e2e = {
         keyVersion: resolved.keyVersion,
         persisted,
         error: null,
+        recoveryRequired: false,
       });
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'E2E initialization failed';
+      // ADR-022: distinguish "unrecoverable divergence" (needs admin reset) from
+      // "init crashed for other reasons" (transient, retry may help). Only the
+      // former must block plaintext fallback in 1:1 chat.
+      const recoveryRequired = err instanceof E2eKeyError;
       setE2eState({
         isReady: false,
         publicKey: null,
@@ -104,11 +145,134 @@ export const e2e = {
         keyVersion: null,
         persisted: false,
         error: message,
+        recoveryRequired,
       });
-      log.error({ err: message }, 'E2E initialization FAILED');
+      log.error({ err: message, recoveryRequired }, 'E2E initialization FAILED');
     } finally {
       // Safety net — ensure login password never lingers in memory
       clearLoginPassword();
+    }
+  },
+
+  /**
+   * Cross-origin escrow bootstrap (ADR-050 × ADR-022).
+   *
+   * Consumes a single-use unlock ticket minted on apex during login,
+   * fetches the escrow blob, and unwraps it with the pre-derived wrappingKey
+   * from the ticket — loading the private key into the subdomain's (new)
+   * IndexedDB without a password re-entry and without a second Argon2id
+   * pass.
+   *
+   * `userId` is required because the Worker scopes IndexedDB per user
+   * (`assixx-e2e-user-${userId}`); passing the wrong userId lands the key
+   * in the wrong namespace and the subsequent `initialize()` would miss it.
+   *
+   * Contract:
+   *   - MUST be called BEFORE `initialize()` in the subdomain's layout.
+   *     On success `initialize()` finds `hasKey=true` and takes the happy
+   *     path. On failure we fall through to normal `initialize()` which
+   *     then fail-closes per Phase A if the server has a key we can't
+   *     recover.
+   *   - Ticket is single-use → never retry on same ticket; a second call
+   *     triggers 401 and returns `false`.
+   *   - Non-fatal by contract: network errors, missing escrow blob, wrong
+   *     wrappingKey (blob tampered / derivation drift) all return `false`
+   *     rather than throw. Callers do not special-case the error shape.
+   *
+   * @returns `true` if a key was loaded from the ticket, `false` otherwise.
+   */
+  async bootstrapFromUnlockTicket(userId: number, ticketId: string): Promise<boolean> {
+    if (e2eState.isReady) {
+      return false;
+    }
+
+    try {
+      // 1. Ensure Worker is up with the correct user scope (idempotent).
+      await cryptoBridge.init(userId);
+
+      // 2. Consume the ticket — GETDEL atomic, single-use.
+      const apiClient = getApiClient();
+      const consumeResp = await apiClient.post<{ wrappingKey: string }>(
+        '/e2e/escrow/consume-unlock',
+        { ticketId },
+        { silent: true },
+      );
+      const { wrappingKey } = consumeResp;
+
+      // 3. Fetch the escrow blob metadata (blob, salt, nonce, params).
+      const escrow = await apiClient.get<EscrowData | null>(ESCROW_ENDPOINT);
+      if (escrow === null) {
+        log.warn('Unlock ticket consumed but no escrow blob on server — cannot bootstrap');
+        return false;
+      }
+
+      // 4. Unwrap using the pre-derived key — skips Argon2id.
+      const result = await cryptoBridge.unwrapKeyWithDerivedKey(
+        wrappingKey,
+        escrow.encryptedBlob,
+        escrow.xchachaNonce,
+      );
+      if (result === null) {
+        log.warn(
+          'Escrow unwrap failed with pre-derived key — wrappingKey may be stale or blob tampered',
+        );
+        return false;
+      }
+
+      log.info(
+        { fingerprint: result.fingerprint.substring(0, 16) + '…' },
+        'Private key bootstrapped from unlock ticket',
+      );
+
+      // 5. Align server-side active key with the escrow-canonical key.
+      //
+      // The escrow blob holds the user's long-term private key — the one they
+      // (or their IndexedDB) deposited intentionally via the password-derived
+      // wrappingKey. Over the lifetime of an account, the server's active key
+      // may have drifted from this canonical key via:
+      //   (a) past automatic rotations (now removed in Phase A) that fired
+      //       when IndexedDB was cleared on a new origin — the server was
+      //       rewritten to a freshly-generated key, but escrow was not
+      //       touched (escrow re-encryption only happens on password change
+      //       per ADR-022).
+      //   (b) legitimate multi-device sessions where a newer device
+      //       generated a key and uploaded it but the older device's escrow
+      //       (if password unchanged) still encodes the older key.
+      //
+      // In either case, the canonical key (the one stored in escrow) is
+      // what the user's counterparties have been encrypting to across most
+      // of the account's history — restoring it maximises decryptability
+      // of historical messages. The rotation is authorised by the password
+      // proof implicit in the escrow unwrap success (an attacker without
+      // the password cannot reach this branch). This is the single
+      // permitted call site for `rotateKeyOnServer` — do not add others.
+      const serverKey = await apiClient.get<ServerKeyData | null>('/e2e/keys/me');
+      if (serverKey !== null && serverKey.publicKey !== result.publicKey) {
+        log.warn(
+          {
+            escrowFingerprint: result.fingerprint.substring(0, 16) + '…',
+            serverFingerprint: serverKey.fingerprint.substring(0, 16) + '…',
+          },
+          'Server key diverges from escrow-canonical key — restoring escrow key on server',
+        );
+        await rotateKeyOnServer(result.publicKey);
+      } else if (serverKey === null) {
+        // Server has no active key (admin reset or data loss). Register the
+        // escrow-recovered key as the new active key. No rotation semantics
+        // here — this is a standard first-register via POST.
+        log.info('Server has no active key — registering escrow-recovered key');
+        await registerKeyOnServer(result.publicKey);
+      }
+
+      return true;
+    } catch (err: unknown) {
+      // 401 from consume-unlock = ticket expired/used/mismatched → non-fatal,
+      // fall through to normal initialize() which will handle hasKey=false.
+      log.warn(
+        { err: err instanceof Error ? err.message : 'unknown' },
+        'bootstrapFromUnlockTicketForUser failed — continuing with normal init',
+      );
+      return false;
     }
   },
 
@@ -128,7 +292,7 @@ export const e2e = {
     try {
       const wrapped = await cryptoBridge.wrapKey(newPassword);
       const apiClient = getApiClient();
-      await apiClient.put('/e2e/escrow', wrapped);
+      await apiClient.put(ESCROW_ENDPOINT, wrapped);
       log.info('Escrow blob re-encrypted with new password');
     } catch (err: unknown) {
       log.warn(
@@ -156,6 +320,7 @@ export const e2e = {
       keyVersion: null,
       persisted: false,
       error: null,
+      recoveryRequired: false,
     });
   },
 };
@@ -233,23 +398,38 @@ async function resolveExistingKey(): Promise<ResolvedKey> {
     };
   }
 
-  // MISMATCH: server has a different public key than our local private key.
-  // This happens when IndexedDB was cleared (container browser, cache clear)
-  // and a new key pair was generated locally. The server still has the old key.
-  // Fix: rotate the server key to match our current local key.
-  log.warn(
+  // MISMATCH: the server's active public key does not correspond to our
+  // locally stored private key. Historically this path auto-rotated the
+  // server key to match the local one — but that silently destroyed every
+  // counterparty's ability to decrypt historical messages with us (the
+  // ECDH shared secret shifts on key change). ADR-022 was introduced
+  // specifically to replace rotation with zero-knowledge escrow recovery.
+  //
+  // If we reach this branch, escrow recovery has already been attempted
+  // upstream (resolveOrRecoverKey) and either:
+  //   - succeeded → we would not be here (local key would match server)
+  //   - failed: no escrow blob, wrong password, or no password bridge
+  //     available (e.g. the login-password-bridge did not survive a
+  //     cross-origin redirect — ADR-050 × ADR-022 boundary).
+  //
+  // Fail-closed is the only safe path. Admin can unstick the user via
+  // `DELETE /api/v2/e2e/keys/:userId` (ADR-021 §E2E-Keys endpoints), after
+  // which the next login regenerates cleanly and creates a fresh escrow.
+  //
+  // Do NOT reintroduce automatic rotation here without first reading the
+  // 2026-02-11 incident writeup in ADR-022 §Motivation.
+  log.error(
     {
       localFingerprint: localFingerprint.substring(0, 16) + '…',
       serverFingerprint: serverKey.fingerprint.substring(0, 16) + '…',
     },
-    'KEY MISMATCH — server has different key than local. Rotating server key.',
+    'KEY MISMATCH — local and server keys diverged. Blocking E2E until admin reset.',
   );
-  const rotated = await rotateKeyOnServer(localPublicKey);
-  return {
-    publicKey: rotated.publicKey,
-    fingerprint: rotated.fingerprint,
-    keyVersion: rotated.keyVersion,
-  };
+  throw new E2eKeyError(
+    'key_mismatch',
+    'Dein E2E-Schlüssel auf diesem Gerät stimmt nicht mit dem Server überein. ' +
+      'Melde dich auf dem Ursprungsgerät an oder bitte den Admin, deinen Schlüssel zurückzusetzen.',
+  );
 }
 
 /** Generate a new key pair and upload to server */
@@ -261,17 +441,25 @@ async function generateAndRegisterKey(): Promise<ResolvedKey> {
   log.info('Uploading public key to server…');
   const serverResult = await registerKeyOnServer(generated.publicKey);
 
-  // If server returned a different key (409 conflict from another tab/session),
-  // our NEW local private key doesn't match the OLD server public key.
-  // Rotate server to match our new local key — otherwise ECDH shared secret diverges.
+  // If the server already has a different key (409 → fetch returned that key),
+  // we cannot safely reconcile: the counterpart private key is lost (escrow
+  // recovery already failed or was unavailable — see resolveOrRecoverKey).
+  // Silent rotation would destroy every counterparty's decryptability of
+  // existing messages (ADR-022 §Motivation). Fail-closed; admin reset via
+  // `DELETE /api/v2/e2e/keys/:userId` is the only safe path forward.
   if (serverResult.publicKey !== generated.publicKey) {
-    log.warn('Server has different key (conflict) — rotating to match new local key');
-    const rotated = await rotateKeyOnServer(generated.publicKey);
-    return {
-      publicKey: rotated.publicKey,
-      fingerprint: rotated.fingerprint,
-      keyVersion: rotated.keyVersion,
-    };
+    log.error(
+      {
+        generatedFingerprint: generated.fingerprint.substring(0, 16) + '…',
+        serverFingerprint: serverResult.fingerprint.substring(0, 16) + '…',
+      },
+      'Server has different E2E key and escrow recovery unavailable. Blocking E2E.',
+    );
+    throw new E2eKeyError(
+      'server_has_key_no_recovery',
+      'Auf dem Server existiert bereits ein E2E-Schlüssel, der auf diesem Gerät nicht ' +
+        'wiederhergestellt werden kann. Admin muss den Schlüssel zurücksetzen.',
+    );
   }
 
   log.info('Public key registered on server successfully');
@@ -312,18 +500,38 @@ async function ensureKeyOnServer(publicKey: string): Promise<ServerKeyData> {
   return await registerKeyOnServer(publicKey);
 }
 
-/** Rotate key on server: deactivate old + register new atomically (PUT /e2e/keys/me) */
+/**
+ * Rotate the server's active E2E key to match a locally-held private key.
+ *
+ * SAFETY CONTRACT — this function MUST NOT be called from automatic paths.
+ * It is callable ONLY after a successful escrow unwrap (see
+ * `bootstrapFromUnlockTicket`), because that path proves:
+ *   1. The caller knows the user's password (required to derive the
+ *      wrappingKey that unwrapped the escrow blob).
+ *   2. The local private key we're about to publish is the user's
+ *      CANONICAL key — the one they've stored in escrow themselves, and
+ *      therefore the one their counterparties have historically been
+ *      encrypting to across multiple rotation events.
+ *
+ * Under those two conditions rotation is RESTORATIVE, not destructive:
+ * the server's current active key is typically the result of a past
+ * buggy auto-rotation (now removed in Phase A); reverting it to the
+ * escrow-canonical key re-enables decryption of every message encrypted
+ * during any historical period where the active key matched escrow.
+ *
+ * Callers: `bootstrapFromUnlockTicket` only. Do not add new call sites
+ * without re-reading ADR-022 §Motivation and this docblock's SAFETY
+ * CONTRACT clauses.
+ */
 async function rotateKeyOnServer(publicKey: string): Promise<ServerKeyData> {
   const apiClient = getApiClient();
-  const result = await apiClient.put<ServerKeyData>('/e2e/keys/me', {
-    publicKey,
-  });
+  const result = await apiClient.put<ServerKeyData>('/e2e/keys/me', { publicKey });
   log.info(
     {
       keyVersion: result.keyVersion,
       fingerprint: result.fingerprint.substring(0, 16) + '…',
     },
-    'Server key rotated successfully',
+    'Server key rotated to escrow-canonical key',
   );
   return result;
 }
@@ -368,7 +576,7 @@ interface EscrowData {
 async function tryRecoverFromEscrow(password: string): Promise<boolean> {
   try {
     const apiClient = getApiClient();
-    const escrow = await apiClient.get<EscrowData | null>('/e2e/escrow');
+    const escrow = await apiClient.get<EscrowData | null>(ESCROW_ENDPOINT);
 
     if (escrow === null) {
       log.info('No escrow blob on server — will generate new key');
@@ -412,7 +620,7 @@ async function tryCreateEscrow(password: string): Promise<void> {
   try {
     const wrapped = await cryptoBridge.wrapKey(password);
     const apiClient = getApiClient();
-    await apiClient.post('/e2e/escrow', wrapped, { silent: true });
+    await apiClient.post(ESCROW_ENDPOINT, wrapped, { silent: true });
     log.info('Escrow blob created on server');
   } catch (err: unknown) {
     if (isConflictError(err)) {
@@ -433,7 +641,7 @@ async function tryCreateEscrow(password: string): Promise<void> {
 async function tryCreateEscrowIfMissing(password: string): Promise<void> {
   try {
     const apiClient = getApiClient();
-    const existing = await apiClient.get<EscrowData | null>('/e2e/escrow');
+    const existing = await apiClient.get<EscrowData | null>(ESCROW_ENDPOINT);
     if (existing !== null) {
       return; // Already has escrow — nothing to do
     }

@@ -20,13 +20,21 @@ import { TenantId } from '../common/decorators/tenant.decorator.js';
 import { AuthThrottle, UserThrottle } from '../common/decorators/throttle.decorators.js';
 import { CustomThrottlerGuard } from '../common/guards/throttler.guard.js';
 import type { NestAuthUser } from '../common/interfaces/auth.interface.js';
-import { StoreEscrowDto } from './dto/index.js';
+import {
+  ConsumeEscrowUnlockTicketDto,
+  CreateEscrowUnlockTicketDto,
+  StoreEscrowDto,
+} from './dto/index.js';
 import { E2eEscrowService } from './e2e-escrow.service.js';
 import type { E2eEscrowResponse } from './e2e-escrow.types.js';
+import { EscrowUnlockTicketService } from './escrow-unlock-ticket.service.js';
 
 @Controller('e2e/escrow')
 export class E2eEscrowController {
-  constructor(private readonly escrowService: E2eEscrowService) {}
+  constructor(
+    private readonly escrowService: E2eEscrowService,
+    private readonly unlockTicketService: EscrowUnlockTicketService,
+  ) {}
 
   /**
    * Store an initial escrow blob.
@@ -87,5 +95,63 @@ export class E2eEscrowController {
       dto.xchachaNonce,
       dto.argon2Params,
     );
+  }
+
+  /**
+   * Mint a single-use unlock ticket for cross-origin login handoff
+   * (ADR-050 × ADR-022). Called from the apex-login use:enhance callback
+   * AFTER the user has authenticated: the client derives the wrappingKey
+   * client-side via Argon2id (the Worker already has hash-wasm), POSTs it
+   * here, and appends the returned `ticketId` to the subdomain handoff URL.
+   *
+   * The subdomain's post-login layout then consumes via `POST consume-unlock`
+   * on its own origin (authenticated, host-cross-checked) to get the
+   * wrappingKey back without a second Argon2id round-trip or re-prompting
+   * the user for their password.
+   *
+   * Rate-limited with AuthThrottle — this endpoint is hit at most once per
+   * login, so 10 per 5 minutes is generous AND prevents a compromised
+   * client from flooding Redis with 60s TTL entries.
+   */
+  @Post('unlock-ticket')
+  @HttpCode(HttpStatus.CREATED)
+  @UseGuards(CustomThrottlerGuard)
+  @AuthThrottle()
+  async createUnlockTicket(
+    @Body() dto: CreateEscrowUnlockTicketDto,
+    @TenantId() tenantId: number,
+    @CurrentUser() user: NestAuthUser,
+  ): Promise<{ ticketId: string }> {
+    const ticketId = await this.unlockTicketService.create(user.id, tenantId, dto.wrappingKey);
+    return { ticketId };
+  }
+
+  /**
+   * Consume a single-use unlock ticket. Called from the subdomain (app)
+   * layout AFTER the handoff token has been swapped for auth cookies.
+   * Redis GETDEL is atomic; the ticket is bound to `{userId, tenantId}` at
+   * creation time, so a ticket intercepted cross-user cannot be redeemed.
+   *
+   * Host cross-check: the `CurrentUser` is derived from the JWT, and the
+   * subdomain middleware (ADR-050) already asserts `jwt.tenantId ===
+   * hostTenantId` in `JwtAuthGuard`. By the time this handler runs, the
+   * tuple is guaranteed consistent with the current request host → no
+   * additional check needed here.
+   *
+   * Rate-limited with UserThrottle — consume is called exactly once per
+   * handoff in the happy path; generous limits avoid spurious 429 on
+   * retries after transient failures.
+   */
+  @Post('consume-unlock')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(CustomThrottlerGuard)
+  @UserThrottle()
+  async consumeUnlockTicket(
+    @Body() dto: ConsumeEscrowUnlockTicketDto,
+    @TenantId() tenantId: number,
+    @CurrentUser() user: NestAuthUser,
+  ): Promise<{ wrappingKey: string }> {
+    const wrappingKey = await this.unlockTicketService.consume(dto.ticketId, user.id, tenantId);
+    return { wrappingKey };
   }
 }

@@ -148,7 +148,6 @@
     z-index: 10;
     backdrop-filter: blur(10px);
     border-top: 1px solid var(--color-glass-border);
-    background: var(--glass-bg-hover);
     padding: 10px 16px;
   }
 
@@ -158,7 +157,6 @@
     gap: 8px;
     border: 1px solid var(--color-glass-border-hover);
     border-radius: 20px;
-    background: var(--glass-bg-active);
     padding: 6px;
   }
 

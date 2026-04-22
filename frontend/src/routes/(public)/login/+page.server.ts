@@ -396,10 +396,26 @@ export const actions: Actions = {
         // IMPORTANT: do NOT setAuthCookies() — cookies must land on the
         // subdomain origin, not apex. Subdomain page (Session 12 consumer)
         // swaps the handoff token and sets cookies there.
+        //
+        // ADR-050 × ADR-022: include accessToken + user identity so the
+        // client-side use:enhance callback can mint the cross-origin escrow
+        // unlock ticket BEFORE the redirect. The accessToken lives in JS
+        // memory on the apex for a few hundred ms and is never persisted
+        // (no localStorage / cookie here) — it just buys authenticated
+        // access to `/e2e/escrow` + `/e2e/escrow/unlock-ticket` during the
+        // cross-origin handoff window. User id is needed because the Worker
+        // scopes IndexedDB per user (`assixx-e2e-user-${id}`); the tenant
+        // id is forwarded for future cross-tenant debugging only — backend
+        // derives authoritative tenantId from the JWT, not from client input.
         return {
           success: true,
           redirectTo: handoffUrl,
-          user: { role: result.data.user.role },
+          user: {
+            id: result.data.user.id,
+            role: result.data.user.role,
+            tenantId: result.data.user.tenantId,
+          },
+          accessToken: result.data.accessToken,
         };
       }
 
