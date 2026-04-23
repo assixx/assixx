@@ -21,6 +21,7 @@
    */
   import { onDestroy } from 'svelte';
 
+  import PermissionDenied from '$lib/components/PermissionDenied.svelte';
   import { checkSessionExpired } from '$lib/utils/session-expired';
 
   import { deleteTemplate, getTemplate, upsertTemplate } from './_lib/api-templates';
@@ -33,6 +34,11 @@
   const { data }: { data: PageData } = $props();
   const labels = $derived(data.hierarchyLabels);
   const teams = $derived(data.teams);
+  // ADR-020 §6: discriminated-union flag set by the SSR probe in
+  // +page.server.ts. When true, the canonical <PermissionDenied /> view
+  // replaces the whole template body — identical UX to /shifts and the
+  // other 31 addon-gated pages.
+  const permissionDenied = $derived(data.permissionDenied);
 
   // ── Local state ─────────────────────────────────────────────────────────
   let selectedTeamId = $state<number | null>(null);
@@ -45,6 +51,13 @@
   // 2-click delete confirm — auto-resets after 5 s of inactivity.
   let deleteConfirming = $state(false);
   let confirmTimer: ReturnType<typeof setTimeout> | null = null;
+
+  // Team-filter custom-dropdown state (design-system pattern,
+  // `frontend/src/design-system/primitives/dropdowns/custom-dropdown.css`).
+  // Click-outside mirrors `logs/_lib/FilterDropdown.svelte` — no wrapper
+  // component, just the canonical markup + state inline.
+  let teamDropdownOpen = $state(false);
+  let teamDropdownRef = $state<HTMLDivElement | undefined>(undefined);
 
   const builderState = createTemplateBuilderState();
 
@@ -63,6 +76,20 @@
     if (teamId !== null) {
       void loadTemplate(teamId);
     }
+  });
+
+  // Team-dropdown click-outside — close when user clicks anywhere outside
+  // the dropdown container (same pattern as logs/_lib/FilterDropdown).
+  $effect(() => {
+    function handleClickOutside(event: MouseEvent): void {
+      if (teamDropdownRef !== undefined && !teamDropdownRef.contains(event.target as Node)) {
+        teamDropdownOpen = false;
+      }
+    }
+    document.addEventListener('click', handleClickOutside, true);
+    return () => {
+      document.removeEventListener('click', handleClickOutside, true);
+    };
   });
 
   onDestroy(() => {
@@ -154,110 +181,176 @@
   <title>Übergabe-Vorlagen · Assixx</title>
 </svelte:head>
 
-<div class="page-container">
-  <header class="page-header">
-    <div>
-      <h1 class="text-2xl font-semibold">Übergabe-Vorlagen</h1>
-      <p class="text-sm text-(--color-text-secondary)">
-        Pro {labels.team.endsWith('s') ? labels.team.slice(0, -1) : labels.team} eine Vorlage — Felder
-        erscheinen im Übergabe-Modal jeder Schicht.
-      </p>
-    </div>
-  </header>
+{#if permissionDenied}
+  <PermissionDenied addonName="die Übergabe-Vorlagen" />
+{:else}
+  <div class="container">
+    <div class="card">
+      <!--
+        Canonical page-header pattern: container > card > card__header / card__body.
+        Matches /inventory, /manage-*, and all other addon-gated management pages.
+        Title + description + team-filter live in card__header; body carries the
+        FieldBuilder, empty-state, loading/error surfaces, and the sticky action-bar.
+      -->
+      <div class="card__header">
+        <h2 class="card__title">
+          <i class="fas fa-clipboard-list mr-2"></i>
+          Übergabe-Vorlagen
+        </h2>
+        <p class="mt-2 text-(--color-text-secondary)">
+          Pro {labels.team.endsWith('s') ? labels.team.slice(0, -1) : labels.team} eine Vorlage — Felder
+          erscheinen im Übergabe-Modal jeder Schicht.
+        </p>
 
-  {#if teams.length === 0}
-    <div class="alert alert--info mt-6">
-      <i class="fas fa-info-circle mr-2"></i>
-      Keine {labels.team} in deinem Bereich. Lege zuerst {labels.team} an, um Vorlagen zu konfigurieren.
-    </div>
-  {:else}
-    <section class="filter-row">
-      <label
-        class="form-field"
-        for="team-filter"
-      >
-        <span class="form-field__label">{labels.team} wählen</span>
-        <select
-          class="form-field__control"
-          id="team-filter"
-          value={selectedTeamId}
-          onchange={(e) => (selectedTeamId = Number(e.currentTarget.value))}
-          disabled={loading || saving}
-        >
-          {#each teams as team (team.id)}
-            <option value={team.id}>{team.name}</option>
-          {/each}
-        </select>
-      </label>
-    </section>
-
-    {#if loading}
-      <div class="flex items-center justify-center gap-3 py-12">
-        <div class="spinner-ring spinner-ring--md"></div>
-        <span class="text-(--color-text-secondary)">Lade Vorlage...</span>
+        {#if teams.length > 0}
+          <!--
+            Design-system custom-dropdown (Storybook `Design System/Dropdowns`,
+            CSS at design-system/primitives/dropdowns/custom-dropdown.css).
+            Markup used directly — no wrapper component; click-outside state
+            lives in the page's script block.
+          -->
+          <div class="team-filter mt-6">
+            <div class="form-field">
+              <span
+                class="form-field__label"
+                id="team-filter-label">{labels.team} wählen</span
+              >
+              <div
+                class="dropdown"
+                bind:this={teamDropdownRef}
+              >
+                <button
+                  type="button"
+                  class="dropdown__trigger"
+                  class:active={teamDropdownOpen}
+                  aria-labelledby="team-filter-label"
+                  aria-expanded={teamDropdownOpen}
+                  disabled={loading || saving}
+                  onclick={() => (teamDropdownOpen = !teamDropdownOpen)}
+                >
+                  <span>
+                    {selectedTeamName() === '' ? `${labels.team} wählen` : selectedTeamName()}
+                  </span>
+                  <i
+                    class="fas fa-chevron-down"
+                    aria-hidden="true"
+                  ></i>
+                </button>
+                <div
+                  class="dropdown__menu"
+                  class:active={teamDropdownOpen}
+                  role="listbox"
+                  aria-labelledby="team-filter-label"
+                >
+                  {#each teams as team (team.id)}
+                    <button
+                      type="button"
+                      class="dropdown__option"
+                      class:selected={selectedTeamId === team.id}
+                      role="option"
+                      aria-selected={selectedTeamId === team.id}
+                      onclick={() => {
+                        selectedTeamId = team.id;
+                        teamDropdownOpen = false;
+                      }}
+                    >
+                      {team.name}
+                    </button>
+                  {/each}
+                </div>
+              </div>
+            </div>
+          </div>
+        {/if}
       </div>
-    {:else if loadError !== null}
-      <div class="alert alert--danger mt-6">
-        <i class="fas fa-exclamation-circle mr-2"></i>{loadError}
+
+      <div class="card__body">
+        {#if teams.length === 0}
+          <div class="empty-state">
+            <div class="empty-state__icon">
+              <i class="fas fa-users-slash"></i>
+            </div>
+            <h3 class="empty-state__title">Keine {labels.team}</h3>
+            <p class="empty-state__description">
+              Keine {labels.team} in deinem Bereich. Lege zuerst {labels.team} an, um Vorlagen zu konfigurieren.
+            </p>
+          </div>
+        {:else if loading}
+          <div class="flex items-center justify-center gap-3 py-12">
+            <div class="spinner-ring spinner-ring--md"></div>
+            <span class="text-(--color-text-secondary)">Lade Vorlage...</span>
+          </div>
+        {:else if loadError !== null}
+          <div class="alert alert--danger">
+            <i class="fas fa-exclamation-circle mr-2"></i>{loadError}
+          </div>
+        {:else}
+          <FieldBuilder
+            builder={builderState}
+            disabled={saving}
+          />
+        {/if}
       </div>
-    {:else}
-      <section class="builder-section">
-        <FieldBuilder
-          builder={builderState}
-          disabled={saving}
-        />
-      </section>
 
-      <footer class="action-bar">
-        <div class="action-bar__status">
-          {#if builderState.dirty}
-            <span class="badge badge--warning">
-              <i class="fas fa-circle mr-1"></i>Ungespeicherte Änderungen
-            </span>
-          {:else}
-            <span class="text-sm text-(--color-text-tertiary)">
-              <i class="fas fa-check-circle mr-1"></i>Gespeichert
-            </span>
-          {/if}
-        </div>
-
-        <div class="action-bar__buttons">
-          <button
-            class="btn btn-secondary"
-            type="button"
-            disabled={!builderState.dirty || saving}
-            onclick={reset}
-          >
-            <i class="fas fa-undo mr-2"></i>Verwerfen
-          </button>
-
-          <button
-            class="btn btn-danger"
-            type="button"
-            disabled={saving || builderState.fields.length === 0}
-            onclick={requestDelete}
-          >
-            <i class="fas fa-trash-alt mr-2"></i>
-            {deleteConfirming ? 'Wirklich löschen?' : `Vorlage für „${selectedTeamName()}" löschen`}
-          </button>
-
-          <button
-            class="btn btn-primary"
-            type="button"
-            disabled={!builderState.canSave || saving}
-            onclick={save}
-          >
-            {#if saving}
-              <div class="spinner-ring spinner-ring--sm mr-2"></div>
+      <!--
+        Design-system card__footer (see Storybook `Design System/Cards`,
+        `kvp-categories/+page.svelte` Referenz).  Nur im Happy-Path gerendert
+        (Teams vorhanden, kein Loading/Error, FieldBuilder sichtbar).
+      -->
+      {#if teams.length > 0 && !loading && loadError === null}
+        <div class="card__footer flex items-center justify-between gap-4">
+          <div>
+            {#if builderState.dirty}
+              <span class="badge badge--warning">
+                <i class="fas fa-circle mr-1"></i>Ungespeicherte Änderungen
+              </span>
             {:else}
-              <i class="fas fa-save mr-2"></i>
+              <span class="text-sm text-(--color-text-tertiary)">
+                <i class="fas fa-check-circle mr-1"></i>Gespeichert
+              </span>
             {/if}
-            Speichern
-          </button>
+          </div>
+
+          <div class="flex flex-wrap gap-2">
+            <button
+              class="btn btn-secondary"
+              type="button"
+              disabled={!builderState.dirty || saving}
+              onclick={reset}
+            >
+              <i class="fas fa-undo mr-2"></i>Verwerfen
+            </button>
+
+            <button
+              class="btn btn-danger"
+              type="button"
+              disabled={saving || builderState.fields.length === 0}
+              onclick={requestDelete}
+            >
+              <i class="fas fa-trash-alt mr-2"></i>
+              {deleteConfirming ? 'Wirklich löschen?' : (
+                `Vorlage für „${selectedTeamName()}" löschen`
+              )}
+            </button>
+
+            <button
+              class="btn btn-primary"
+              type="button"
+              disabled={!builderState.canSave || saving}
+              onclick={save}
+            >
+              {#if saving}
+                <div class="spinner-ring spinner-ring--sm mr-2"></div>
+              {:else}
+                <i class="fas fa-save mr-2"></i>
+              {/if}
+              Speichern
+            </button>
+          </div>
         </div>
-      </footer>
-    {/if}
-  {/if}
+      {/if}
+    </div>
+  </div>
 
   {#if toast !== null}
     <div
@@ -270,50 +363,22 @@
       {toast.text}
     </div>
   {/if}
-</div>
+{/if}
 
 <style>
-  .page-container {
-    max-width: 1100px;
-    margin: 0 auto;
-    padding: 2rem 1.5rem 6rem;
-  }
+  /*
+   * Local overrides minimal — design-system owns everything else:
+   * .container, .card, .card__header/body/footer, .dropdown*, .btn*,
+   * .badge*, .empty-state*, .form-field*, .alert*.
+   *
+   * The only page-specific residual is the width-constraint on the team
+   * filter (design-system dropdown defaults to 100%; we want it narrow)
+   * and the fixed-position toast. Every former `.action-bar*` rule was
+   * replaced by `card__footer` + flex utilities in the template.
+   */
 
-  .page-header {
-    margin-bottom: 1.5rem;
-  }
-
-  .filter-row {
-    margin-bottom: 1.5rem;
-    max-width: 400px;
-  }
-
-  .builder-section {
-    margin-top: 1rem;
-  }
-
-  .action-bar {
-    position: sticky;
-    bottom: 0;
-
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 1rem;
-
-    margin-top: 2rem;
-    padding: 1rem 1.25rem;
-    border-top: 1px solid var(--color-border);
-    border-radius: 0.5rem;
-    background: var(--color-bg-elevated);
-    backdrop-filter: blur(8px);
-    box-shadow: 0 -2px 12px rgb(0 0 0 / 5%);
-  }
-
-  .action-bar__buttons {
-    display: flex;
-    gap: 0.75rem;
-    flex-wrap: wrap;
+  .team-filter {
+    max-width: 20rem;
   }
 
   .toast {

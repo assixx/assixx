@@ -15,8 +15,11 @@
   multi-week grid can see status without clicking. Accessible name via
   `aria-label`.
 
-  Click → `onopen(context)` — the modal is owned by the parent page so a
-  single `<ShiftHandoverModal>` instance handles the whole grid.
+  Click → `onopen(context)` — the parent page translates this into
+  `goto('/shift-handover/[uuid]')` (existing entry) or `/shift-handover/new`
+  (idempotent create trampoline). The in-grid modal was removed in
+  Session 15 (2026-04-23) because it flashed + inlined alerts instead
+  of using the global toast component.
 
   @see docs/FEAT_SHIFT_HANDOVER_MASTERPLAN.md §5.1
 -->

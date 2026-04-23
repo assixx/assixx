@@ -216,23 +216,53 @@ export class E2eKeysService {
   }
 
   /**
-   * Admin-only: Reset a user's key by marking current active key as deleted (is_active=4).
-   * User must regenerate keys on next login.
+   * Admin-only: Reset a user's key by marking the active key row as deleted
+   * (is_active=4) AND cascading the deletion to the escrow blob in the same
+   * transaction.
+   *
+   * Why the cascade is mandatory (ADR-022 §Motivation, 2026-04-23 incident):
+   * the escrow blob encrypts the private key that pairs with the revoked
+   * public key. Leaving the escrow active after reset produces an "orphan"
+   * blob that still resolves to the revoked private key. Any subsequent
+   * login with the user's password would successfully recover that private
+   * key from escrow — but the public half is gone from the server, so the
+   * recovered device's fingerprint no longer matches the (freshly registered)
+   * server key on other devices. This silently reintroduces the exact
+   * multi-device divergence class of bug that the admin reset is supposed
+   * to cure (symptom: "delete key in DB, error comes back on next load").
+   *
+   * Atomic via single tenantTransaction — if either UPDATE fails the whole
+   * reset aborts; no half-reset state can be observed.
+   *
+   * User must regenerate keys on next login. Old escrow blob is no longer
+   * recoverable (is_active=4), forcing a clean re-seed.
    */
   async resetKeys(tenantId: number, userId: number, adminId: number): Promise<void> {
     await this.db.tenantTransaction(async (client: PoolClient): Promise<void> => {
-      const result = await client.query(
+      const keyResult = await client.query(
         `UPDATE e2e_user_keys
            SET is_active = ${IS_ACTIVE.DELETED}
            WHERE tenant_id = $1 AND user_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}`,
         [tenantId, userId],
       );
 
-      if (result.rowCount === 0) {
+      if (keyResult.rowCount === 0) {
         throw new NotFoundException(`No active E2E key found for user ${userId}`);
       }
 
-      this.logger.warn(`Admin ${adminId} reset E2E key for user ${userId} in tenant ${tenantId}`);
+      // Cascade to escrow blob — orphan escrow = silent divergence (see JSDoc).
+      const escrowResult = await client.query(
+        `UPDATE e2e_key_escrow
+           SET is_active = ${IS_ACTIVE.DELETED}, updated_at = NOW()
+           WHERE tenant_id = $1 AND user_id = $2 AND is_active = ${IS_ACTIVE.ACTIVE}`,
+        [tenantId, userId],
+      );
+
+      const escrowCascaded = escrowResult.rowCount ?? 0;
+      this.logger.warn(
+        `Admin ${adminId} reset E2E key for user ${userId} in tenant ${tenantId} ` +
+          `(escrow cascaded: ${escrowCascaded} row${escrowCascaded === 1 ? '' : 's'})`,
+      );
     });
   }
 

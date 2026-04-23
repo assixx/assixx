@@ -12,27 +12,31 @@
  *   - `getCleanFields()` strips the `_*` props and returns the persisted
  *     `ShiftHandoverFieldDef[]` shape that the backend Zod schema accepts.
  *
- * Validation strategy (R7 mitigation):
+ * Validation strategy (R7 mitigation, post-2026-04-23 ADR-030 compliance):
  *   - Per-field structural checks produce inline German error messages
  *     keyed by `_uid` so the UI can highlight the offending row.
  *   - Cross-field (duplicate keys) is also computed locally so the UI can
- *     mark BOTH duplicates, not just the index returned by Zod.
- *   - When all per-field/cross-field checks pass, the SHARED schema
- *     (`ShiftHandoverTemplateFieldsSchema`) runs as the canonical gate so
- *     drift between client and backend is impossible.
+ *     mark BOTH duplicates.
+ *   - Backend Zod (`ShiftHandoverTemplateFieldsSchema` in
+ *     `backend/src/nest/shift-handover/field-validators.ts`) is the
+ *     authoritative validator on save: invalid payloads return 400 with
+ *     `details[]` that the UI surfaces. Per ADR-030 §7 (Spec Deviation #8
+ *     in the masterplan) Zod stays backend-only — the client mirrors the
+ *     same invariants here in TypeScript so the UX feedback loop is
+ *     instant without shipping the validator runtime to the browser.
  *
  * Architecture:
  *   - Top-level helpers (pure or array-mutating) hold the work, so the
  *     factory itself stays under the 60-LOC ESLint cap and reads as a thin
  *     dispatcher to the helpers + reactive accessors.
  *
+ * @see docs/infrastructure/adr/ADR-030-zod-validation-architecture.md §7
  * @see docs/FEAT_SHIFT_HANDOVER_MASTERPLAN.md §5.2 + §R7
  */
-import {
-  ShiftHandoverTemplateFieldsSchema,
-  type ShiftHandoverFieldDef,
-  type ShiftHandoverFieldOption,
-  type ShiftHandoverFieldType,
+import type {
+  ShiftHandoverFieldDef,
+  ShiftHandoverFieldOption,
+  ShiftHandoverFieldType,
 } from '@assixx/shared/shift-handover';
 
 const KEY_REGEX = /^[a-z][a-z0-9_]*$/;
@@ -177,13 +181,15 @@ function applyDuplicateMarkers(
   }
 }
 
-/** Final canonical gate via the SHARED schema (R7 mitigation). */
-function runSchemaGate(fields: readonly WorkingField[]): string | null {
-  const result = ShiftHandoverTemplateFieldsSchema.safeParse(fields.map(cleanField));
-  if (result.success) return null;
-  return result.error.issues[0]?.message ?? 'Validierung fehlgeschlagen.';
-}
-
+/**
+ * Compute the full validation state.
+ *
+ * Per-field + cross-field invariants are mirrored in
+ * `backend/src/nest/shift-handover/field-validators.ts` (Zod). Backend
+ * is authoritative on save — see ADR-030 §7 + Spec Deviation #8 in the
+ * masterplan. Local checks here exist only to give instant feedback in
+ * the builder UI without shipping Zod to the browser.
+ */
 function computeValidation(fields: readonly WorkingField[]): ValidationState {
   const perField = new Map<string, FieldErrors>();
   for (const f of fields) {
@@ -192,9 +198,8 @@ function computeValidation(fields: readonly WorkingField[]): ValidationState {
   }
   applyDuplicateMarkers(perField, fields, findDuplicateKeys(fields));
 
-  let global: string | null = null;
-  if (fields.length > FIELDS_MAX) global = `Maximal ${FIELDS_MAX} Felder pro Vorlage.`;
-  if (perField.size === 0 && global === null) global = runSchemaGate(fields);
+  const global: string | null =
+    fields.length > FIELDS_MAX ? `Maximal ${FIELDS_MAX} Felder pro Vorlage.` : null;
 
   return { ok: perField.size === 0 && global === null, perField, global };
 }

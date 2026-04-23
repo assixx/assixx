@@ -28,15 +28,15 @@
  * @see docs/infrastructure/adr/ADR-020-per-user-feature-permissions.md
  */
 import { IS_ACTIVE } from '@assixx/shared/constants';
-import {
-  type ShiftHandoverFieldDef,
-  ShiftHandoverTemplateFieldsSchema,
-} from '@assixx/shared/shift-handover';
+import { type ShiftHandoverFieldDef } from '@assixx/shared/shift-handover';
 import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import type { PoolClient } from 'pg';
 
 import { getErrorMessage } from '../common/index.js';
 import { DatabaseService } from '../database/database.service.js';
+// Zod schema lives backend-side per ADR-030 §7 — moved out of @assixx/shared
+// 2026-04-23 (Spec Deviation #8) so the SvelteKit client never imports Zod.
+import { ShiftHandoverTemplateFieldsSchema } from './field-validators.js';
 import {
   SHIFT_HANDOVER_ENTRIES_MODULE,
   SHIFT_HANDOVER_TEMPLATES_MODULE,

@@ -134,17 +134,17 @@ describe('ActiveShiftResolverService', () => {
       };
     }
 
-    it('returns false when the user is not an assignee (short-circuits)', async () => {
+    it('denies with not_assignee when the user is not on the roster (short-circuits)', async () => {
       // Mock only the resolveAssignees call; the window query must never run.
       mockDb.queryAsTenant.mockResolvedValueOnce([{ user_id: 99 }]);
 
       const result = await service.canWriteForShift(ctx());
 
-      expect(result).toBe(false);
+      expect(result).toEqual({ allowed: false, reason: 'not_assignee' });
       expect(mockDb.queryAsTenant).toHaveBeenCalledTimes(1);
     });
 
-    it('returns true when assignee writes on the same Berlin day (early slot)', async () => {
+    it('allows when assignee writes on the same Berlin day (early slot)', async () => {
       mockDb.queryAsTenant.mockResolvedValueOnce([{ user_id: 5 }]).mockResolvedValueOnce([
         {
           today_berlin: '2026-04-22',
@@ -154,10 +154,10 @@ describe('ActiveShiftResolverService', () => {
 
       const result = await service.canWriteForShift(ctx());
 
-      expect(result).toBe(true);
+      expect(result).toEqual({ allowed: true });
     });
 
-    it('returns true for a night shift opened before midnight Berlin (§R1 part 1)', async () => {
+    it('allows a night shift opened before midnight Berlin (§R1 part 1)', async () => {
       // User opens at Mon 23:30 Berlin (= 21:30 UTC CEST, 22:30 UTC CET).
       // shiftDate = Monday (today); straight same-day branch.
       mockDb.queryAsTenant.mockResolvedValueOnce([{ user_id: 5 }]).mockResolvedValueOnce([
@@ -175,10 +175,10 @@ describe('ActiveShiftResolverService', () => {
         }),
       );
 
-      expect(result).toBe(true);
+      expect(result).toEqual({ allowed: true });
     });
 
-    it('returns true for same night shift reopened after midnight, still within window (§R1 part 2 + §R5)', async () => {
+    it('allows same night shift reopened after midnight, still within window (§R1 part 2 + §R5)', async () => {
       // User opens at Tue 03:00 Berlin; shiftDate is still Monday; Berlin "today"
       // has rolled to Tuesday. Yesterday-night branch applies.
       mockDb.queryAsTenant.mockResolvedValueOnce([{ user_id: 5 }]).mockResolvedValueOnce([
@@ -196,10 +196,10 @@ describe('ActiveShiftResolverService', () => {
         }),
       );
 
-      expect(result).toBe(true);
+      expect(result).toEqual({ allowed: true });
     });
 
-    it('returns false for yesterday-night after the 24 h grace has elapsed', async () => {
+    it('denies with outside_window for yesterday-night after the 24 h grace has elapsed', async () => {
       mockDb.queryAsTenant.mockResolvedValueOnce([{ user_id: 5 }]).mockResolvedValueOnce([
         {
           today_berlin: '2026-04-22',
@@ -216,10 +216,10 @@ describe('ActiveShiftResolverService', () => {
         }),
       );
 
-      expect(result).toBe(false);
+      expect(result).toEqual({ allowed: false, reason: 'outside_window' });
     });
 
-    it('returns false for yesterday non-night slot (no overnight grace for early/late)', async () => {
+    it('denies with outside_window for yesterday non-night slot (no overnight grace for early/late)', async () => {
       mockDb.queryAsTenant.mockResolvedValueOnce([{ user_id: 5 }]).mockResolvedValueOnce([
         {
           today_berlin: '2026-04-22',
@@ -235,10 +235,10 @@ describe('ActiveShiftResolverService', () => {
         }),
       );
 
-      expect(result).toBe(false);
+      expect(result).toEqual({ allowed: false, reason: 'outside_window' });
     });
 
-    it('returns false for a future shift date', async () => {
+    it('denies with outside_window for a future shift date', async () => {
       mockDb.queryAsTenant.mockResolvedValueOnce([{ user_id: 5 }]).mockResolvedValueOnce([
         {
           today_berlin: '2026-04-22',
@@ -252,17 +252,18 @@ describe('ActiveShiftResolverService', () => {
         }),
       );
 
-      expect(result).toBe(false);
+      expect(result).toEqual({ allowed: false, reason: 'outside_window' });
     });
 
-    it('returns false when shift_times is not configured for this slot', async () => {
+    it('denies with shift_times_missing when the tenant has no row for this slot', async () => {
       // Assignee OK, but the window query returns zero rows → tenant has not
-      // configured the slot; fail closed.
+      // configured the slot; fail closed with a distinct reason so the UI
+      // can tell the user to contact IT instead of waiting for the right day.
       mockDb.queryAsTenant.mockResolvedValueOnce([{ user_id: 5 }]).mockResolvedValueOnce([]);
 
       const result = await service.canWriteForShift(ctx());
 
-      expect(result).toBe(false);
+      expect(result).toEqual({ allowed: false, reason: 'shift_times_missing' });
     });
   });
 

@@ -2,10 +2,15 @@
  * Shift Handover — Shared DTO Schemas.
  *
  * Schemas referenced by multiple DTOs in this module plus re-exports of
- * the shared-package field schemas so controller-adjacent code only has
- * to reach into `./dto` (no deep `@assixx/shared/shift-handover` imports
- * scattered across controllers).
+ * the local field-validators so controller-adjacent code only has to
+ * reach into `./dto` (no deep `../field-validators` imports scattered
+ * across controllers).
  *
+ * The Zod schemas re-exported below moved out of `@assixx/shared` on
+ * 2026-04-23 per ADR-030 §7 (Spec Deviation #8) so the SvelteKit client
+ * never imports Zod. See `../field-validators.ts` for the source.
+ *
+ * @see docs/infrastructure/adr/ADR-030-zod-validation-architecture.md §7
  * @see docs/FEAT_SHIFT_HANDOVER_MASTERPLAN.md §2.1
  */
 import { z } from 'zod';
@@ -15,7 +20,7 @@ import { SHIFT_HANDOVER_SLOTS, type ShiftHandoverSlot } from '../shift-handover.
 export {
   ShiftHandoverFieldDefSchema,
   ShiftHandoverTemplateFieldsSchema,
-} from '@assixx/shared/shift-handover';
+} from '../field-validators.js';
 
 /** V1 shift-key whitelist (plan §R13). Mirrors DB CHECK on `shift_handover_entries`. */
 export const ShiftKeySchema = z.enum([...SHIFT_HANDOVER_SLOTS] as [

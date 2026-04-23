@@ -88,7 +88,7 @@
     {#if mode === 'pending'}
       <button
         type="button"
-        class="btn btn-upload"
+        class="btn btn-primary"
       >
         <i class="fas fa-arrow-right"></i>
         Teilnehmen

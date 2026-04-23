@@ -54,7 +54,7 @@
  * @see docs/infrastructure/adr/ADR-019-multi-tenant-rls-isolation.md
  */
 import { IS_ACTIVE } from '@assixx/shared/constants';
-import { type ShiftHandoverFieldDef, buildEntryValuesSchema } from '@assixx/shared/shift-handover';
+import { type ShiftHandoverFieldDef } from '@assixx/shared/shift-handover';
 import {
   BadRequestException,
   ForbiddenException,
@@ -69,6 +69,9 @@ import { getErrorMessage } from '../common/index.js';
 import { ActivityLoggerService } from '../common/services/activity-logger.service.js';
 import { DatabaseService } from '../database/database.service.js';
 import { ActiveShiftResolverService } from './active-shift-resolver.service.js';
+// Zod schema lives backend-side per ADR-030 §7 — moved out of @assixx/shared
+// 2026-04-23 (Spec Deviation #8) so the SvelteKit client never imports Zod.
+import { buildEntryValuesSchema } from './field-validators.js';
 import { ShiftHandoverTemplatesService } from './shift-handover-templates.service.js';
 import { SHIFT_HANDOVER_CLOCK, type ShiftHandoverClock } from './shift-handover.tokens.js';
 import type {
@@ -93,6 +96,31 @@ const REOPENABLE_STATUSES: readonly ShiftHandoverEntryStatus[] = ['submitted'];
 
 const MAX_LIST_LIMIT = 100;
 const DEFAULT_LIST_LIMIT = 20;
+
+/**
+ * German user-facing messages for the 3 write-denied reasons from the
+ * resolver's `ShiftHandoverWriteDecision`. Surfaced verbatim to the UI
+ * via the global toast component — the `/shift-handover/new` SSR loader
+ * forwards the text as a `handover-error` query param on /shifts (see
+ * Session 15 modal → page migration, 2026-04-23).
+ *
+ * Kept here, not in the resolver, so the resolver stays UI-agnostic and
+ * can be reused for other callers (e.g. a future red-border hint on the
+ * shift-grid button — plan §5.1 Spec Deviation #7).
+ *
+ * Smoke-test finding 2026-04-23: the prior single English message
+ * "User may not create a draft for this shift right now" conflated all
+ * three causes and leaked English into the UI. This table splits them
+ * so the user learns WHICH cause applies.
+ */
+const WRITE_DENIED_MESSAGES: Record<
+  'not_assignee' | 'outside_window' | 'shift_times_missing',
+  string
+> = {
+  not_assignee: 'Du bist dieser Schicht nicht zugeteilt.',
+  outside_window: 'Diese Schicht liegt außerhalb des Schreibfensters.',
+  shift_times_missing: 'Schichtzeiten sind für diese Schicht nicht konfiguriert.',
+};
 
 export interface UpdateDraftInput {
   protocolText?: string;
@@ -392,7 +420,7 @@ export class ShiftHandoverEntriesService {
     shiftKey: ShiftHandoverSlot,
     userId: number,
   ): Promise<void> {
-    const allowed = await this.resolver.canWriteForShift({
+    const decision = await this.resolver.canWriteForShift({
       tenantId,
       teamId,
       shiftDate,
@@ -400,8 +428,8 @@ export class ShiftHandoverEntriesService {
       userId,
       nowUtc: this.clock(),
     });
-    if (!allowed) {
-      throw new ForbiddenException('User may not create a draft for this shift right now');
+    if (!decision.allowed) {
+      throw new ForbiddenException(WRITE_DENIED_MESSAGES[decision.reason]);
     }
   }
 

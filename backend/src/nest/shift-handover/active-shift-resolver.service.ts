@@ -41,7 +41,11 @@ import { IS_ACTIVE } from '@assixx/shared/constants';
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 
 import { DatabaseService } from '../database/database.service.js';
-import type { ActiveShiftContext, ShiftHandoverSlot } from './shift-handover.types.js';
+import type {
+  ActiveShiftContext,
+  ShiftHandoverSlot,
+  ShiftHandoverWriteDecision,
+} from './shift-handover.types.js';
 
 /**
  * Slot → `shifts.type` enum values. `shifts.type` is mixed-domain (slot
@@ -129,11 +133,18 @@ export class ActiveShiftResolverService {
 
   /**
    * Decides whether `ctx.userId` may write the handover for the given
-   * shift right now. Returns `false` for non-assignees, then applies the
-   * TZ-aware write-window rule (R5). Team-Lead bypass lives at the
-   * controller level (ADR-045 Layer 2), not here.
+   * shift right now. Returns a discriminated result so the caller can
+   * render a reason-specific message (smoke-test finding 2026-04-23 —
+   * a boolean collapsed 3 distinct causes into one unhelpful string).
+   *
+   * Rules applied in order:
+   *   1. user ∈ assignees → otherwise `{reason: 'not_assignee'}`
+   *   2. TZ-aware write-window check → `outside_window` or
+   *      `shift_times_missing` on failure
+   *
+   * Team-Lead bypass lives at the controller level (ADR-045 Layer 2), not here.
    */
-  async canWriteForShift(ctx: ActiveShiftContext): Promise<boolean> {
+  async canWriteForShift(ctx: ActiveShiftContext): Promise<ShiftHandoverWriteDecision> {
     const assignees = await this.resolveAssignees(
       ctx.tenantId,
       ctx.teamId,
@@ -141,18 +152,21 @@ export class ActiveShiftResolverService {
       ctx.shiftKey,
     );
     if (!assignees.includes(ctx.userId)) {
-      return false;
+      return { allowed: false, reason: 'not_assignee' };
     }
-    return await this.isWithinWriteWindow(ctx);
+    return await this.checkWriteWindow(ctx);
   }
 
   /**
    * Time-window sub-check, extracted to keep `canWriteForShift` flat
-   * (Power-of-Ten cognitive-complexity cap). Returns `true` iff shiftDate
-   * is today in Berlin, OR the active window is a night shift from the
-   * previous Berlin day that has not yet ended.
+   * (Power-of-Ten cognitive-complexity cap). Returns `{allowed: true}`
+   * iff shiftDate is today in Berlin, OR the active window is a night
+   * shift from the previous Berlin day that has not yet ended.
+   * Distinguishes `outside_window` from `shift_times_missing` so the
+   * caller can tell the user to contact IT instead of waiting for the
+   * right date.
    */
-  private async isWithinWriteWindow(ctx: ActiveShiftContext): Promise<boolean> {
+  private async checkWriteWindow(ctx: ActiveShiftContext): Promise<ShiftHandoverWriteDecision> {
     const shiftDateStr = toIsoDateUtc(ctx.shiftDate);
     const rows = await this.db.queryAsTenant<{
       today_berlin: string;
@@ -171,18 +185,20 @@ export class ActiveShiftResolverService {
     );
     const row = rows[0];
     if (row === undefined) {
-      return false; // shift_times not configured for this tenant+slot
+      return { allowed: false, reason: 'shift_times_missing' };
     }
     if (row.today_berlin === shiftDateStr) {
-      return true;
+      return { allowed: true };
     }
     if (ctx.shiftKey !== 'night') {
-      return false;
+      return { allowed: false, reason: 'outside_window' };
     }
     if (subtractOneDayIso(row.today_berlin) !== shiftDateStr) {
-      return false;
+      return { allowed: false, reason: 'outside_window' };
     }
-    return ctx.nowUtc.getTime() < row.shift_end_utc.getTime();
+    return ctx.nowUtc.getTime() < row.shift_end_utc.getTime() ?
+        { allowed: true }
+      : { allowed: false, reason: 'outside_window' };
   }
 
   /**

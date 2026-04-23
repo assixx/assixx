@@ -59,6 +59,10 @@ undefined*
 *.swp
 *.swo
 
+# ctags (generated from .ctags — regenerate with `ctags` at repo root)
+tags
+.ctags
+
 # Assixx
 .claude/
 CLAUDE.local.md

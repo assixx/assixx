@@ -131,10 +131,14 @@
   {/if}
 
   {#if builder.fields.length === 0}
+    <!-- Canonical design-system empty-state — matches /inventory, Storybook
+         `Design System/Empty States`. Local `.empty-state*` overrides removed. -->
     <div class="empty-state">
-      <i class="fas fa-clipboard-list empty-state__icon"></i>
-      <p class="empty-state__title">Noch keine Felder</p>
-      <p class="empty-state__hint">
+      <div class="empty-state__icon">
+        <i class="fas fa-clipboard-list"></i>
+      </div>
+      <h3 class="empty-state__title">Noch keine Felder</h3>
+      <p class="empty-state__description">
         Füge das erste Feld hinzu, um die Vorlage für dieses Team zu starten.
       </p>
     </div>
@@ -252,12 +256,15 @@
                 </select>
               </div>
 
-              <!-- Required -->
+              <!-- Required — canonical design-system toggle-switch, Storybook
+                   `Design System/Toggle Switch` (input.toggle-switch__input +
+                   span.toggle-switch__label). -->
               <div class="form-field">
                 <span class="form-field__label">Pflichtfeld</span>
                 <label class="toggle-switch">
                   <input
                     type="checkbox"
+                    class="toggle-switch__input"
                     checked={field.required}
                     {disabled}
                     onchange={(e) => {
@@ -265,7 +272,7 @@
                     }}
                   />
                   <span class="toggle-switch__slider"></span>
-                  <span class="toggle-switch__text">{field.required ? 'Ja' : 'Nein'}</span>
+                  <span class="toggle-switch__label">{field.required ? 'Ja' : 'Nein'}</span>
                 </label>
               </div>
             </div>
@@ -379,34 +386,11 @@
     gap: 1rem;
   }
 
-  .empty-state {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.5rem;
-
-    padding: 3rem 1rem;
-    border: 2px dashed var(--color-border);
-    border-radius: 0.5rem;
-    background: var(--color-bg-elevated);
-
-    text-align: center;
-  }
-
-  .empty-state__icon {
-    font-size: 2.5rem;
-    color: var(--color-text-tertiary);
-  }
-
-  .empty-state__title {
-    font-weight: 600;
-    color: var(--color-text-primary);
-  }
-
-  .empty-state__hint {
-    font-size: 0.875rem;
-    color: var(--color-text-secondary);
-  }
+  /*
+   * Local .empty-state* rules removed — design-system globals (Storybook
+   * `Design System/Empty States`) own the visual treatment. Drift-check:
+   * grep for `.empty-state` in this file should return 0 matches.
+   */
 
   .field-list {
     display: flex;

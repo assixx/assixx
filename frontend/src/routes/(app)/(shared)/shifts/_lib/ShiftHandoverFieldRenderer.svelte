@@ -151,10 +151,14 @@
       oninput={handleText}
     />
   {:else if field.type === 'boolean'}
+    <!-- Canonical design-system toggle-switch — Storybook `Design System/
+         Toggle Switch` (input.toggle-switch__input + span.toggle-switch__label).
+         Local CSS block removed; design-system globals own the visual. -->
     <label class="toggle-switch">
       <input
         id={`sh-field-${field.key}`}
         type="checkbox"
+        class="toggle-switch__input"
         checked={boolValue}
         {disabled}
         onchange={handleBoolean}
@@ -179,62 +183,8 @@
   {/if}
 </div>
 
-<style>
-  .toggle-switch {
-    display: inline-flex;
-    gap: var(--spacing-3);
-    align-items: center;
-    cursor: pointer;
-  }
-
-  .toggle-switch input {
-    position: absolute;
-    opacity: 0%;
-    width: 0;
-    height: 0;
-  }
-
-  .toggle-switch__slider {
-    display: inline-block;
-    position: relative;
-    transition: background 150ms ease;
-    border-radius: 999px;
-
-    background: var(--glass-bg-hover);
-
-    width: 44px;
-    height: 24px;
-  }
-
-  .toggle-switch__slider::after {
-    position: absolute;
-    top: 3px;
-    left: 3px;
-
-    transition: transform 150ms ease;
-    border-radius: 50%;
-    background: var(--text-primary);
-
-    width: 18px;
-    height: 18px;
-    content: '';
-  }
-
-  .toggle-switch input:checked + .toggle-switch__slider {
-    background: color-mix(in oklch, var(--color-primary) 55%, transparent);
-  }
-
-  .toggle-switch input:checked + .toggle-switch__slider::after {
-    transform: translateX(20px);
-  }
-
-  .toggle-switch input:disabled + .toggle-switch__slider {
-    opacity: 50%;
-    cursor: not-allowed;
-  }
-
-  .toggle-switch__label {
-    color: var(--text-secondary);
-    font-size: 13px;
-  }
-</style>
+<!--
+  No local <style> block — `.toggle-switch*` lives in the design-system
+  globals (Storybook `Design System/Toggle Switch`, see
+  frontend/src/design-system/primitives/toggles/toggle-switch.css).
+-->

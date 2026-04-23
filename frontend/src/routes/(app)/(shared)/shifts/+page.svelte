@@ -2,16 +2,19 @@
   // SHIFTS PAGE - Svelte 5 + SSR
   import { onMount } from 'svelte';
 
-  import { beforeNavigate, goto } from '$app/navigation';
+  import { beforeNavigate, goto, replaceState } from '$app/navigation';
+  import { resolve } from '$app/paths';
+  import { page } from '$app/stores';
 
   import PermissionDenied from '$lib/components/PermissionDenied.svelte';
   import { notificationStore } from '$lib/stores/notification.store.svelte';
-  import { showWarningAlert } from '$lib/utils/alerts';
+  import { showErrorAlert, showSuccessAlert, showWarningAlert } from '$lib/utils/alerts';
 
   import AdminActions from './_lib/AdminActions.svelte';
   import { fetchAssignmentCounts, fetchDepartments, fetchAssets, fetchTeams } from './_lib/api';
   import CustomRotationModal from './_lib/CustomRotationModal.svelte';
-  import { convertSSRTeamMembersToEmployees } from './_lib/data-loader';
+  // NOTE: SSR-conversion is plumbed through `shiftsState.setEmployeesFromSSR`
+  // (see `state.svelte.ts`) to stay under the 25-dep ESLint cap.
   import {
     handleDragStart,
     handleDragEnd,
@@ -43,7 +46,6 @@
   import RotationSetupModal from './_lib/RotationSetupModal.svelte';
   import ShiftAssignmentCounts from './_lib/ShiftAssignmentCounts.svelte';
   import ShiftControls from './_lib/ShiftControls.svelte';
-  import ShiftHandoverModal from './_lib/ShiftHandoverModal.svelte';
   import ShiftScheduleGrid from './_lib/ShiftScheduleGrid.svelte';
   import ShiftScheduleLegend from './_lib/ShiftScheduleLegend.svelte';
   import { createHandoverState, shiftsState } from './_lib/state.svelte';
@@ -203,15 +205,11 @@
     void week;
   });
 
-  function handleHandoverOpen(ctx: HandoverContext): void {
-    const teamId = shiftsState.selectedContext.teamId;
-    if (teamId === null) return;
-    handover.setModalTarget({ ...ctx, teamId });
-  }
-
   /**
    * ADR-045 Layer-1 canManage — derived from already-loaded layout data.
-   * Root / (admin + hasFullAccess) / any lead → true.
+   * Root / (admin + hasFullAccess) / any lead → true. Used by the button
+   * handler to decide whether a read-only-empty cell should toast instead
+   * of navigate (an employee peeking at a colleague's empty shift).
    */
   const canManageHandover = $derived(
     ssrUser.role === 'root' ||
@@ -219,40 +217,71 @@
       ssrOrgScope.type !== 'none',
   );
 
-  const modalTarget = $derived(handover.getModalTarget());
+  /**
+   * Button click → navigate to the dedicated detail page (Session 15
+   * modal → page migration). Behaviour by cell state:
+   *   - entry exists  → /shift-handover/${uuid}           (read or edit)
+   *   - no entry, writable (assignee OR manager)
+   *                    → /shift-handover/new?team&date&slot  (idempotent
+   *                       trampoline — backend getOrCreateDraft + redirect)
+   *   - no entry, read-only peek → warning toast, no nav
+   */
+  function handleHandoverOpen(ctx: HandoverContext): void {
+    const teamId = shiftsState.selectedContext.teamId;
+    if (teamId === null) return;
 
-  /** Assignee display names for the currently-targeted modal cell. */
-  const handoverAssigneeNames = $derived.by(() => {
-    if (modalTarget === null) return [] as string[];
-    const empIds = shiftsState.getShiftEmployees(modalTarget.shiftDate, modalTarget.shiftKey);
-    return empIds.map((id) => {
-      const emp = shiftsState.getEmployeeById(id);
-      if (emp === undefined) return `Mitarbeiter #${id}`;
-      const first = emp.firstName ?? '';
-      const last = emp.lastName ?? '';
-      const full = `${first} ${last}`.trim();
-      return full === '' ? emp.username : full;
+    const existingId = handover.lookupEntryId(ctx.shiftDate, ctx.shiftKey);
+    if (existingId !== null) {
+      void goto(resolve(`/shift-handover/${existingId}`));
+      return;
+    }
+
+    const empIds = shiftsState.getShiftEmployees(ctx.shiftDate, ctx.shiftKey);
+    const isAssignee = empIds.includes(shiftsState.currentUserId ?? -1);
+    if (!canManageHandover && !isAssignee) {
+      showWarningAlert('Für diese Schicht wurde keine Übergabe angelegt.');
+      return;
+    }
+
+    const qs = new URLSearchParams({
+      team: String(teamId),
+      date: ctx.shiftDate,
+      slot: ctx.shiftKey,
     });
-  });
+    void goto(resolve(`/shift-handover/new?${qs.toString()}`));
+  }
 
   /**
-   * Read-only when the current user is neither an assignee of the cell
-   * nor a manager (ADR-045). Submitted entries are also read-only for
-   * users without reopen rights (V2 would flip this when Lead clicks
-   * reopen).
+   * Toast-bridge for the /shift-handover/new trampoline + the detail page:
+   * both reach back to `/shifts` via redirect with a query flag so the
+   * German reason message (backend WRITE_DENIED_MESSAGES) stays visible
+   * as a global toast instead of an inline modal alert. After firing,
+   * `replaceState` strips the query so the URL stays clean and refreshes
+   * don't re-toast.
    */
-  const handoverModalReadOnly = $derived.by(() => {
-    if (modalTarget === null) return true;
-    const status = handover.getStatus(modalTarget.shiftDate, modalTarget.shiftKey);
-    if (status === 'submitted' && !canManageHandover) return true;
-    if (canManageHandover) return false;
-    const empIds = shiftsState.getShiftEmployees(modalTarget.shiftDate, modalTarget.shiftKey);
-    return !empIds.includes(shiftsState.currentUserId ?? -1);
-  });
-
-  const handoverExistingEntryId = $derived.by((): string | null => {
-    if (modalTarget === null) return null;
-    return handover.lookupEntryId(modalTarget.shiftDate, modalTarget.shiftKey);
+  let lastToastQuery = '';
+  // Extracted to keep the `$effect` below under the 10-complexity cap —
+  // three identical "if string non-null/non-empty → toast" branches
+  // collapse into one helper call per message.
+  const toastIfPresent = (msg: string | null, show: (m: string) => void): void => {
+    if (msg !== null && msg !== '') show(msg);
+  };
+  $effect(() => {
+    const q = $page.url.searchParams;
+    const errMsg = q.get('handover-error');
+    const okMsg = q.get('handover-success');
+    const infoMsg = q.get('handover-info');
+    const fingerprint = `${errMsg ?? ''}|${okMsg ?? ''}|${infoMsg ?? ''}`;
+    if (fingerprint === '||' || fingerprint === lastToastQuery) return;
+    lastToastQuery = fingerprint;
+    toastIfPresent(errMsg, showErrorAlert);
+    toastIfPresent(okMsg, showSuccessAlert);
+    toastIfPresent(infoMsg, showWarningAlert);
+    const cleaned = new URL($page.url);
+    cleaned.searchParams.delete('handover-error');
+    cleaned.searchParams.delete('handover-success');
+    cleaned.searchParams.delete('handover-info');
+    replaceState(cleaned.pathname + cleaned.search, {});
   });
 
   // --- SSR INIT ---
@@ -277,7 +306,7 @@
         assetId: null,
         teamLeaderId: ssrEmployeeTeamInfo.teamLeaderId,
       });
-      shiftsState.setEmployees(convertSSRTeamMembersToEmployees(ssrTeamMembers));
+      shiftsState.setEmployeesFromSSR(ssrTeamMembers);
       shiftsState.setShowPlanningUI(true);
     }
 
@@ -744,28 +773,9 @@
     />
   {/if}
 
-  <!-- Shift Handover Modal (Plan §5.1) -->
-  {#if modalTarget !== null}
-    {@const targetTeamId = modalTarget.teamId}
-    <ShiftHandoverModal
-      teamId={targetTeamId}
-      teamName={shiftsState.employeeTeamInfo?.teamName ??
-        shiftsState.teams.find((t) => t.id === targetTeamId)?.name ??
-        `${labels.team} #${targetTeamId}`}
-      teamLabel={labels.team}
-      shiftDate={modalTarget.shiftDate}
-      shiftKey={modalTarget.shiftKey}
-      assigneeNames={handoverAssigneeNames}
-      readOnly={handoverModalReadOnly}
-      existingEntryId={handoverExistingEntryId}
-      onclose={() => {
-        handover.setModalTarget(null);
-      }}
-      onmutated={() => {
-        void handover.refresh();
-      }}
-    />
-  {/if}
+  <!-- Shift Handover modal removed in Session 15 (modal → page migration).
+       The 📋 button now navigates to /shift-handover/[uuid] or the /new
+       trampoline. Toast-bridge below picks up the outcome on return. -->
 
   <!-- Swap Request Modal -->
   {#if showSwapModal && swapTarget !== null}

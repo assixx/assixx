@@ -3,6 +3,7 @@
 // Main entry point - composes all state modules
 // =============================================================================
 
+import { convertSSRTeamMembersToEmployees, type SSRTeamMember } from './data-loader';
 import { contextState } from './state-context.svelte';
 import { dataState } from './state-data.svelte';
 import { dropdownState } from './state-dropdowns.svelte';
@@ -139,6 +140,21 @@ export const shiftsState = {
   setTeams: dataState.setTeams,
   setTeamLeaders: dataState.setTeamLeaders,
   setEmployees: dataState.setEmployees,
+  /**
+   * SSR bootstrap helper: converts server-loaded team members into the
+   * runtime `Employee` shape before pushing them to `dataState`.
+   *
+   * WHY: `+page.svelte` orchestrates 26 runtime imports and trips the
+   * `import-x/max-dependencies` cap (25). Keeping the SSR-conversion
+   * plumbing here — next to the state it mutates — both satisfies the
+   * cap and puts the bootstrap logic in the layer that already owns
+   * `setEmployees`. `convertSSRTeamMembersToEmployees` stays exported
+   * from `data-loader.ts` for the other callers (plan-loader,
+   * page-actions).
+   */
+  setEmployeesFromSSR(ssrTeamMembers: SSRTeamMember[]): void {
+    dataState.setEmployees(convertSSRTeamMembersToEmployees(ssrTeamMembers));
+  },
   setTeamMembers: dataState.setTeamMembers,
   setSelectedEmployee: dataState.setSelectedEmployee,
   setEmployeeTeamInfo: dataState.setEmployeeTeamInfo,

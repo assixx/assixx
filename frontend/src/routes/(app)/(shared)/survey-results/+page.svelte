@@ -214,7 +214,7 @@
           <div class="export-actions">
             <button
               type="button"
-              class="btn btn-upload"
+              class="btn btn-secondary"
               id="export-excel"
               onclick={handleExportExcel}
               disabled={isExporting}
@@ -228,7 +228,7 @@
             </button>
             <button
               type="button"
-              class="btn btn-upload"
+              class="btn btn-secondary"
               id="export-pdf"
               onclick={handleExportPDF}
             >
@@ -236,7 +236,7 @@
             </button>
             <button
               type="button"
-              class="btn btn-upload"
+              class="btn btn-secondary"
               onclick={handlePrint}
             >
               <i class="fas fa-print"></i> Drucken

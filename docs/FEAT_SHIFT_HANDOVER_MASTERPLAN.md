@@ -1093,6 +1093,10 @@ After running: verify 3 new `CREATE TABLE shift_handover_*` blocks appear in `cu
 | 6   | §5.1: Modal renders attachments on load (implied by "Image upload (5 max)" in the DoD)                                                                  | Modal's attachment list starts empty on open; only session-freshly-uploaded attachments appear. Existing attachments for a reopened modal require a dedicated `GET /entries/:id/attachments` endpoint that does not exist in V1 | **2026-04-23 (Session 9):** The `ShiftHandoverEntryRow` returned by `GET /entries/:id` and `POST /entries` does **not** include attachments inline — rendering historical attachments would need either a new backend list endpoint or an embed on the entry response (both = scope expansion). V1 accepts the UX limitation: users who upload during session see their uploads; closing + reopening the modal clears the in-memory list. The backend still serves each attachment via the streaming endpoint + the buffer map is maintained only within the modal's lifetime. **V2 path:** either embed `attachments?: ShiftHandoverAttachment[]` on the entry response or add `GET /shift-handover/entries/:id/attachments`. Flagged in Known Limitation #14 (see below).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | 7   | §5.1: Red border state for "draft with missing required fields past shift-end"                                                                          | `ShiftHandoverButton` accepts the `hasRequiredGap` prop (wired + styled), but no caller sets it yet                                                                                                                             | **2026-04-23 (Session 9):** Evaluating the red-border state needs correlation across three data points — (a) live entry with status `draft`, (b) `schema_snapshot`/template field list with `required: true` fields, (c) shift-end-time from `shift_times` + current time. That correlation belongs in §5.3's read-view logic or a dedicated "handover-health" selector, not in the bulk-status loader which only knows `status`. V1 ships the prop surface so §5.3 can flip it on without component changes. UX impact: minor — the yellow draft state already signals "action needed"; the red border is refinement, not correctness.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
 
+| 9 | §5.1 + Session 9: entry form renders inside `ShiftHandoverModal.svelte` (modal over the shift grid) | Modal deleted; dedicated page routes `/shift-handover/[uuid]` + `/shift-handover/new` replace it | **2026-04-23 (Session 18, smoke-test iteration 4):** Modal pattern kept producing symptom bugs the whole plan long — inline `alert--danger`/`alert--warning` instead of global toasts (iteration 1), ~1-frame flash of the modal shell before `onclose()` on 403 (iteration 2), English backend strings leaking through `err.message` (iteration 3). Each band-aid fix exposed another layer: the modal's mount-first/load-later lifecycle was the root cause. Page migration fixes all three at once: SSR loader populates `data.entry` before paint (no flash), 403 on `/new` turns into `redirect(303, '/shifts?handover-error=...)` so the global toast bridge on `/shifts` emits the German reason from `WRITE_DENIED_MESSAGES` (no inline alert), permission-denied pattern matches `/blackboard/[uuid]` + ADR-020 §6 (consistent across 32 addon-gated pages now). Trade-offs accepted: (a) V1 omits assignee-display in the detail page (was in modal) — Known Limitation extended; entries.service owes an assignee-augmented DTO in V2. (b) Attachment-list parity remains V1-in-memory-only (same Spec Deviation #6). (c) ADR-052 "single `<ShiftHandoverModal>` owner" decision is superseded; ADR should be amended with a note pointing to this Spec Deviation. Files: **new** `shift-handover/[uuid]/+page.{server.ts,svelte}` + `shift-handover/new/+page.server.ts`; **deleted** `shifts/_lib/ShiftHandoverModal.svelte`; **modified** `shifts/+page.svelte` (modal render + derived state removed, toast bridge added), `shifts/_lib/state-handover.svelte.ts` (`modalTarget` state dropped), `lib/components/breadcrumb-config.ts` (intermediate + static mapping for `/shift-handover`). |
+
+| 8 | §2.1: Shared Zod field validators in `@assixx/shared/shift-handover` so backend + frontend run identical validation (R7) | Zod schemas + `buildEntryValuesSchema` moved to `backend/src/nest/shift-handover/field-validators.ts`; shared keeps only TypeScript types + `SHIFT_HANDOVER_FIELD_TYPES` const; frontend mirrors invariants in TS manual checks | **2026-04-23 (smoke-test prep):** ADR-030 §7 explicitly forbids Zod in the frontend ("Zod is NOT shared to the frontend. The `@assixx/shared` package contains only plain TypeScript types and constants"). Plan §2.1 silently violated this — the cross-cut table at line 1139 cited ADR-030 but contradicted its §7. The violation surfaced as a CSP console-error during the manual smoke test: Zod v4's `allowsEval()` capability probe (`new Function("")` in `zod/v4/core/util.js:157`) tripped the strict nonce-based `script-src` declared in `frontend/svelte.config.js`. Probe is harmless (graceful catch) but the browser logs every blocked eval. **Resolution:** rip Zod out of shared, keep the `ShiftHandoverFieldDef` type contract via a hand-rolled discriminated union (wire-compatible with the prior `z.infer`), move all schemas + validator factory to the backend, drop the frontend `runSchemaGate` step in `state-templates.svelte.ts` (its checks were already mirrored locally via `validateField` + `findDuplicateKeys` + `FIELDS_MAX`). Backend stays authoritative on submit (400 + `details[]`); R7 mitigation degrades from "identical schema parse on both sides" to "identical invariants enforced separately, backend authoritative" — UX impact zero, security impact zero (backend never trusted client). Files: `backend/src/nest/shift-handover/field-validators.ts` + `.test.ts` new; `shared/src/shift-handover/{field-types,index}.ts` rewritten; `shared/src/shift-handover/field-validators{,.test}.ts` stubbed for user `rm`; backend `shift-handover-templates.service.ts` + `shift-handover-entries.service.ts` + `dto/common.dto.ts` import-path swap; frontend `state-templates.svelte.ts` rework. Bundle: `zod` no longer reaches the SvelteKit build. |
+
 ---
 
 ## Known Limitations (V1 — deliberately excluded)
@@ -1284,6 +1288,253 @@ Add to `frontend/src/lib/components/Breadcrumb.svelte`:
 | API tests                | ≥25     |        |
 | ESLint errors at release | 0       |        |
 | Spec deviations          | 0       |        |
+
+---
+
+## Session 14 — Smoke-Test Finding: Permission-Denied UX Parity ✅ DONE (2026-04-23)
+
+### Problem (smoke-test reported by user)
+
+Auf `/shift-handover-templates` führt das Entfernen von `shift-handover-templates.canRead` (ADR-020 §6) **nicht** zur Standard-`<PermissionDenied />`-View, die alle 31 anderen addon-gated Seiten rendern. Stattdessen bleibt die Team-Auswahl sichtbar und ein generischer Toast `"Vorlage konnte nicht geladen werden."` erscheint beim Team-Switch.
+
+### Root cause
+
+`+page.server.ts` hat im SSR nur `/teams` via `apiFetch` geladen — `/teams` ist **nicht** durch `shift-handover-templates.canRead` gegated. Der echte gegatete Endpoint `/shift-handover/templates/:teamId` lief client-side über `getTemplate(teamId)` → 403 wurde als generischer Toast abgefangen statt als SSR-Entscheidung. Das verletzt ADR-020 §6 ("Applied to all 31 addon-gated pages: `requireAddon` + `apiFetchWithPermission`").
+
+### Fix
+
+- `+page.server.ts`: zusätzlich `apiFetchWithPermission<unknown>(\`/shift-handover/templates/${teams[0].id}\`, …)`Probe nach dem`/teams`-Fetch. Bei `probe.permissionDenied === true`→`{ permissionDenied: true as const, teams: [] }`zurückgeben. Kein Probe wenn`teams.length === 0`(bestehendes "Keine Teams"-Empty-State deckt UX; kein TeamId = kein Endpoint zum Proben). Referenz 1:1 zu`/shifts/+page.server.ts` (`apiFetchWithPermission('/shift-times', …)`+`buildDeniedResponse`).
+- `+page.svelte`: `import PermissionDenied from '$lib/components/PermissionDenied.svelte'` + `const permissionDenied = $derived(data.permissionDenied)` + Top-Level `{#if permissionDenied} <PermissionDenied addonName="die Übergabe-Vorlagen" /> {:else} …bestehender Body… {/if}`.
+
+### Verification
+
+- `pnpm exec svelte-check`: 2574 Files / 0 errors / 0 warnings (shift-handover-templates scope)
+- `pnpm exec eslint src/routes/(app)/(shared)/shift-handover-templates/`: 0 errors
+- Prettier `--write` auf beide Files: re-indented `{:else}`-Body korrekt
+
+### Files changed
+
+- `frontend/src/routes/(app)/(shared)/shift-handover-templates/+page.server.ts` (probe + diskriminierte Union-Return)
+- `frontend/src/routes/(app)/(shared)/shift-handover-templates/+page.svelte` (Import + `$derived` + `{#if}`-Wrapper)
+
+### Manual smoke path (user-owned)
+
+1. Root/Admin-mit-full öffnet `/shift-handover-templates` → normaler Builder erscheint (probe umgeht den PermissionGuard, da `hasFullAccess` bypasst).
+2. Für einen Employee-Team-Lead (oder Admin ohne `hasFullAccess`): User-Permission `shift-handover-templates.canRead` entfernen → Page-Reload → jetzt erscheint die `<PermissionDenied />`-View mit identischem `card > card-body > empty-state`-Layout wie auf `/shifts`, `/blackboard`, `/kvp` et al.
+
+---
+
+## Session 15 — Smoke-Test Finding: Page-Container Parity (`/inventory`-Pattern) ✅ DONE (2026-04-23)
+
+### Problem (smoke-test, user-reported)
+
+`/shift-handover-templates` verwendete einen page-lokalen `.page-container`-Wrapper mit custom `<header class="page-header"><h1>`. Alle anderen addon-gated Management-Seiten (insbesondere `/inventory` als Referenz) verwenden das Design-System-Trio `container > card > card__header + card__body` mit `h2.card__title` + Icon. Optische Drift → Seite fühlt sich „nicht wie Assixx" an.
+
+### Fix (UI only, keine Logik-Änderung)
+
+Template-Body komplett umstrukturiert entsprechend `/inventory/+page.svelte` Zeilen 266–424:
+
+- Outer-Wrapper `page-container` → `container` (Design-System).
+- `<header class="page-header">` + `<h1>` → `<div class="card__header">` + `<h2 class="card__title"><i class="fas fa-clipboard-list mr-2"></i>`.
+- Description-`p` zieht in `card__header` mit `mt-2 text-(--color-text-secondary)`.
+- Team-Filter-Dropdown zieht in `card__header` in `<div class="mt-6 flex items-center gap-4">` (1:1 analog Inventory's Filter-Row). Neue lokale CSS-Klasse `.team-filter { max-width: 20rem; flex-shrink: 0 }` für Breiten-Constraint.
+- Content (Builder, Loading, Error, Action-Bar) zieht in `<div class="card__body">`.
+- „Keine Teams"-Fall: vormals `alert--info` → jetzt korrekter `empty-state` mit `fas fa-users-slash`-Icon + Title + Description (matched Inventory's Empty-State-Semantik).
+- Toast bleibt am Top-Level (fixed position) außerhalb des Cards.
+
+Removed local styles: `.page-container`, `.page-header`, `.filter-row`, `.builder-section` (now redundant — Design-System übernimmt). Remaining local styles: `.team-filter`, `.action-bar*`, `.toast*` (page-specific).
+
+### Verification
+
+- `pnpm exec prettier --write`: unchanged (bereits Prettier-konform)
+- `pnpm exec svelte-check`: 2574 files / 0 errors / 0 warnings
+- `pnpm exec eslint`: 0 errors
+
+### Files changed
+
+- `frontend/src/routes/(app)/(shared)/shift-handover-templates/+page.svelte` (Template-Body + `<style>`-Block reduziert)
+
+### Manual smoke path (user-owned)
+
+1. Browser-HMR oder Reload → Seite zeigt jetzt den Standard-Card-Layout mit glassmorphic Container.
+2. Visuelle Parität gegen `/inventory` prüfen: gleicher `container`-Max-Width, gleiche `card__header`-Paddings, gleiche Typografie-Hierarchie (`h2.card__title` statt `h1`).
+3. `teams.length === 0`-Zustand: neue `<div class="empty-state">` mit Lock-äquivalentem Icon sichtbar (statt früher Info-Alert).
+
+---
+
+## Session 16 — Design-System Drift-Audit (Storybook-Parität) ✅ DONE (2026-04-23)
+
+### Scope
+
+Audit der Shift-Handover-UI-Files gegen `docs/CODE-OF-CONDUCT-SVELTE.md` + Storybook-Stories (`frontend/.storybook/stories/*`) auf Design-System-Drift. Ziel: canonical markup überall wo möglich, lokale CSS-Duplikate eliminieren.
+
+### Audit-Ergebnis
+
+**✅ Bereits korrekt:**
+
+- `ShiftHandoverModal.svelte` — `modal-overlay`, `ds-modal*`, `badge badge--success/warning`, `form-field*` alle canonical.
+- `ShiftHandoverButton.svelte` — custom `handover-btn` ist page-specific (shift-grid cell overlay, kein generischer Button).
+- `FieldTypeSelector.svelte` — `ds-modal*` canonical; `type-card` ist Action-Pattern (kein Radio-Selection), nicht `choice-card`-äquivalent.
+
+**❌ Drift gefixt:**
+
+| Datei                                                  | Befund                                                                                                                                          | Fix                                                                                                       |
+| ------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| `FieldBuilder.svelte` L133-140                         | `<div class="empty-state">` mit `<i class="__icon">` (statt wrapper-div), `<p class="__title">` (statt `h3`), `__hint` (statt `__description`)  | Canonical Markup: `<div class="__icon"><i/></div>` + `<h3 class="__title">` + `<p class="__description">` |
+| `FieldBuilder.svelte` `<style>` L382-409               | Lokale `.empty-state*` CSS-Duplikation der Design-System-Globals                                                                                | Komplett entfernt — Design-System (`design-system/primitives/data-display/empty-state.css`) übernimmt     |
+| `FieldBuilder.svelte` L259-268                         | `<input type="checkbox">` ohne `toggle-switch__input`-Klasse, `<span class="__text">` statt canonical `__label`                                 | Input-Klasse hinzu + span umbenannt                                                                       |
+| `ShiftHandoverFieldRenderer.svelte` L154-163           | `<input>` ohne `__input`-Klasse                                                                                                                 | Klasse hinzu                                                                                              |
+| `ShiftHandoverFieldRenderer.svelte` `<style>` L182-240 | Komplette lokale `.toggle-switch*` CSS-Duplikation (Slider, ::after-Thumb, checked-state, disabled-state) die die Design-System-Globals shadowt | `<style>`-Block komplett entfernt                                                                         |
+
+### Verification
+
+- `pnpm exec prettier --write`: beide Dateien unchanged (Prettier-konform)
+- `pnpm exec svelte-check`: 2574 files / 0 errors / 0 warnings
+- `pnpm exec eslint`: 0 errors
+
+### Files changed
+
+- `frontend/src/routes/(app)/(shared)/shift-handover-templates/_lib/FieldBuilder.svelte` (empty-state markup + toggle-switch + CSS-cleanup)
+- `frontend/src/routes/(app)/(shared)/shifts/_lib/ShiftHandoverFieldRenderer.svelte` (toggle-switch input-class + `<style>`-Block entfernt)
+
+### Manual smoke path (user-owned)
+
+1. `/shift-handover-templates` mit leerem Builder (neue Vorlage) → Empty-State rendert jetzt mit Design-System-Globals (matched `/inventory` Empty-State visuell 1:1).
+2. Toggle "Pflichtfeld" im FieldBuilder → iOS-style Slider mit canonical Look (Design-System `.toggle-switch__slider` Animation).
+3. Übergabe-Modal auf `/shifts` mit Boolean-Feld → gleicher Toggle-Look wie im Builder (gleicher Design-System-Pfad, keine Drift mehr).
+
+### Nicht gefixt (subjektive Custom-Styles, kein Violation)
+
+- `FieldBuilder.svelte` `field-row` / `options-block` / `field-row__handle` / `field-row__delete` — page-specific Grid + DnD-Handles.
+- `FieldTypeSelector.svelte` `type-grid` / `type-card` — Action-Pattern (click-to-pick), nicht `choice-card` (Radio-Selection).
+- `ShiftHandoverButton.svelte` `handover-btn` — absolute-positionierter Icon-Button im Shift-Grid-Kontext.
+
+Extraktion dieser Elemente in Design-System-Primitives (z. B. "card--clickable", "action-card") wäre ein separater Design-System-Erweiterungs-PR, nicht Teil dieses Features.
+
+---
+
+## Session 17 — Custom-Dropdown + Card-Footer (Design-System 1:1) ✅ DONE (2026-04-23)
+
+### Problem (user-reported smoke, 2. Runde)
+
+1. Team-Filter war `<select class="form-field__control">` (native) — User hat explizit `dropdown > dropdown__trigger + dropdown__menu + dropdown__option` verlangt (Design-System "Custom Dropdown", Storybook `Design System/Dropdowns`, CSS unter `design-system/primitives/dropdowns/custom-dropdown.css`).
+2. Action-Bar war page-lokale `<footer class="action-bar">` mit sticky-bottom + eigener CSS — obwohl Design-System `card__footer` exakt den Use-Case abdeckt (KVP-categories, TPM defect-chart als Referenz).
+
+### Fix (KISS — CSS direkt, kein Wrapper-Component)
+
+**Team-Filter:**
+
+- Inline-Markup in `+page.svelte` — KEIN neuer Wrapper-Component. Design-System-CSS übernimmt visuelle Behandlung, Page-Script hält nur State + click-outside-Effect.
+- Script: `let teamDropdownOpen = $state(false)` + `let teamDropdownRef = $state<HTMLDivElement | undefined>(undefined)` + `$effect` für document-level click-outside (Pattern analog `logs/_lib/FilterDropdown.svelte`).
+- Template: `<div class="form-field"><span class="form-field__label" id>…</span><div class="dropdown" bind:this={teamDropdownRef}><button class="dropdown__trigger" class:active={teamDropdownOpen} …><span>{selectedTeamName()}</span><i class="fas fa-chevron-down"/></button><div class="dropdown__menu" class:active={teamDropdownOpen}>{#each teams}<button class="dropdown__option" class:selected={…} role="option" …>{team.name}</button>{/each}</div></div></div>`
+- Width-Constraint via `.team-filter { max-width: 20rem }` (einziger page-lokaler Style-Rest).
+
+**Action-Bar → Card-Footer:**
+
+- `<footer class="action-bar">` → `<div class="card__footer flex items-center justify-between gap-4">` als Sibling von `card__body`, nur gerendert wenn `teams.length > 0 && !loading && loadError === null` (Happy-Path).
+- Status-Indicator (badge/text) links, Buttons rechts in `<div class="flex flex-wrap gap-2">`.
+- Kein sticky-bottom mehr — card\_\_footer folgt normalem Document-Flow (wie KVP-categories).
+- Lokale `.action-bar`, `.action-bar__buttons` CSS komplett entfernt (~18 Zeilen).
+
+**Orphan zum Aufräumen (User-Action nötig, ich darf kein `rm`):**
+
+- `frontend/src/lib/components/CustomDropdown.svelte` — ich hatte den Wrapper zuerst fälschlich angelegt. Richtiger Weg ist Inline-Markup direkt mit Design-System-Klassen, wie oben. → **Bitte `rm frontend/src/lib/components/CustomDropdown.svelte` laufen lassen.**
+
+### Nicht migriert (bewusst)
+
+- `FieldBuilder.svelte` per-row Typ-Select — bleibt `<select class="form-field__control">` native. Design-System-Guidance (`design-system/primitives/dropdowns/custom-dropdown.css` Top-Kommentar + README): _"Prefer native `<select>` when possible (better accessibility)"_. Per-row compact Inline-Select mit 8 statischen Optionen ohne Icons/Prices ist der Klassiker-Case für native. Falls Du explizit auch dort custom willst, sag's und ich ändere es.
+
+### Verification
+
+- `pnpm exec prettier --write`: formatiert (1 minor)
+- `pnpm exec svelte-check`: 2574 files / 0 errors / 0 warnings
+- `pnpm exec eslint`: 0 errors
+
+### Files changed
+
+- `frontend/src/routes/(app)/(shared)/shift-handover-templates/+page.svelte` (team-filter dropdown inline + card\_\_footer + `.action-bar*` CSS raus)
+
+### Manual smoke path (user-owned)
+
+1. HMR / Reload `/shift-handover-templates`.
+2. Team-Filter: klick auf Trigger → glass-Menu animiert auf, selected-Option hat ✓-Style, Option-Klick schließt + setzt Team, outside-Click schließt.
+3. Action-Zone unten: `card__footer` mit Glass-Background + Top-Border (wie KVP-categories Create-Modal-Footer). Buttons flow normal, kein Sticky mehr.
+4. Keine `.svelte-<hash>` mehr auf `action-bar` oder `form-field__control` (war eh native).
+
+---
+
+## Session 18 — Modal → Page Migration ✅ DONE (2026-04-23)
+
+### Problem (smoke-test iteration 4)
+
+User screenshot showed the in-grid `ShiftHandoverModal` rendering (a) the English backend error "User may not create a draft for this shift right now" inside an inline `alert--danger` in `.ds-modal__body`, and (b) the empty-state "Für diese Schicht wurde keine Übergabe angelegt." inside an `alert--warning` — both instead of using the global toast component. (c) The modal shell still flashed for ~1 frame on 403 because the overlay mounted before `loadOrCreateEntry` could run + call `onclose()`.
+
+Session 9 had locked the modal pattern from ADR-052. Three iterations of in-modal patches (Session 14 PermissionDenied, modal-flash guard, German reason messages) kept fixing symptoms without touching the architectural root — modal-mount-first/load-later is incompatible with "render only when we have data" UX.
+
+### Root cause
+
+Modal's declarative surface commits to painting as soon as the overlay is mounted. Any async-load failure after mount forces either a painted-then-closed flash OR an inline error alert — neither matches the app's global-toast contract. Dedicated detail pages (`/blackboard/[uuid]`, `/kvp-detail`) avoid this entirely because the SSR loader either populates the page or redirects before paint.
+
+### Fix
+
+Convert the modal to a dedicated route:
+
+- **`/shift-handover/[uuid]/+page.server.ts`** — SSR loader; `apiFetchWithPermission` on `/shift-handover/entries/:uuid`; on 403 returns `{permissionDenied: true}` so the standard `<PermissionDenied/>` component renders (ADR-020 §6 parity with 32 other addon-gated pages). 404 via SvelteKit `error(404, 'Übergabe nicht gefunden')`. Skips the live-template fetch for submitted entries (schema_snapshot is authoritative, R2).
+- **`/shift-handover/[uuid]/+page.svelte`** — ports the modal body (meta grid, Protokoll, custom fields, attachments, Speichern/Abschließen). No overlay, no `onclose`, no `svelte:window` Escape handler. `Zurück zur Schichtplanung` button calls `goto('/shifts')`.
+- **`/shift-handover/new/+page.server.ts`** — idempotent trampoline. Reads `?team&date&slot`, POSTs `/shift-handover/entries` (getOrCreateDraft), redirects to `/shift-handover/${uuid}` on 200 or to `/shifts?handover-error=<encoded>` on 403. The POST-in-a-load is one of the rare exceptions to the GET-only convention (see `api-fetch.ts`); used because the redirect is server-side and refresh-safe.
+- **Toast bridge in `/shifts/+page.svelte`** — `$effect` reads `?handover-error=` / `?handover-success=` / `?handover-info=` from `$page.url.searchParams`, fires the appropriate toast, `replaceState`s the URL to remove the params (prevents re-toast on refresh).
+- **`handleHandoverOpen` in `shifts/+page.svelte`** — navigates instead of setting modal target. If existing entry → `/shift-handover/${uuid}`; if writable-empty → `/shift-handover/new?...`; if read-only-empty → `showWarningAlert` in place (no navigation).
+- **Deleted:** `shifts/_lib/ShiftHandoverModal.svelte` (~500 LOC). Simplified `state-handover.svelte.ts` — dropped `modalTarget` state + `getModalTarget`/`setModalTarget`.
+- **Breadcrumb:** `lib/components/breadcrumb-config.ts` gains intermediate entry + static URL mapping for `/shift-handover` (parent "Schichtplanung" → `/shifts`).
+
+### Permission model (unchanged)
+
+- Layer 0 `requireAddon('shift_planning')` via parent layout data
+- Layer 1 `canManageHandover` derived in page from `role + hasFullAccess + orgScope.isAnyLead` (ADR-045)
+- Layer 2 `myPermissions.entries.{canRead,canWrite,canDelete}` from `/shift-handover/my-permissions` (ADR-020)
+- Backend still enforces assignee-check + write-window on every PATCH/submit → if the UI misjudges `canEdit` (V1 approximation), backend returns German toast via `WRITE_DENIED_MESSAGES`
+
+### Known Limitations (carried)
+
+- **No assignee display on the detail page** (V1). Modal had access to grid state; the page does not. Backend `ShiftHandoverEntryRow` would need an `assignees` augment (plan §Known Limitations → follow-up).
+- **Attachments list starts empty** on page load (same as modal — Spec Deviation #6). Users see session-uploaded attachments in memory; refresh clears the list.
+
+### Verification
+
+- Backend comment-only change (`shift-handover-entries.service.ts` JSDoc) + backend restart clean (`/health: ok`)
+- Frontend: `ShiftHandoverModal.svelte` removed; no dangling imports; `modalTarget`/`setModalTarget`/`getModalTarget` fully purged from `shifts/+page.svelte`
+- Hook-enforced validate:all runs after each edit
+
+### Files (delta summary)
+
+**Created:**
+
+- `frontend/src/routes/(app)/(shared)/shift-handover/[uuid]/+page.server.ts`
+- `frontend/src/routes/(app)/(shared)/shift-handover/[uuid]/+page.svelte`
+- `frontend/src/routes/(app)/(shared)/shift-handover/new/+page.server.ts`
+
+**Deleted:**
+
+- `frontend/src/routes/(app)/(shared)/shifts/_lib/ShiftHandoverModal.svelte`
+
+**Modified:**
+
+- `frontend/src/routes/(app)/(shared)/shifts/+page.svelte` — modal import + render + derived state removed, `handleHandoverOpen` navigates, toast-bridge `$effect`, new imports (`replaceState`, `page`, `resolve`, `showErrorAlert`, `showSuccessAlert`)
+- `frontend/src/routes/(app)/(shared)/shifts/_lib/state-handover.svelte.ts` — `modalTarget` + `getModalTarget` + `setModalTarget` dropped; `HandoverContext` no longer imported
+- `frontend/src/routes/(app)/(shared)/shifts/_lib/ShiftHandoverButton.svelte` — comment refresh
+- `frontend/src/lib/components/breadcrumb-config.ts` — `/shift-handover` intermediate + static mapping
+- `backend/src/nest/shift-handover/shift-handover-entries.service.ts` — `WRITE_DENIED_MESSAGES` JSDoc updated to point at the new toast-bridge path
+- `docs/FEAT_SHIFT_HANDOVER_MASTERPLAN.md` — this section + Spec Deviation #9
+
+### Manual smoke path (user-owned, next turn)
+
+1. Hard-reload `/shifts`. Click 📋 on a writable cell where no entry exists → URL flips to `/shift-handover/new?team=X&date=D&slot=early`, then `/shift-handover/${uuid}` (server redirect). Page renders form with header badge "Entwurf". No modal, no flash.
+2. Enter Protokoll + field values. Click **Speichern (Entwurf)** → toast "Entwurf gespeichert.", `goto('/shifts')`. Cell button flips to yellow.
+3. Click 📋 on the same cell again → `/shift-handover/${uuid}` (direct link from grid status map). Page reopens with prior values.
+4. Click **Übergabe abschließen** → toast "Übergabe abgeschlossen.", `goto('/shifts')`. Cell button flips to green.
+5. Click 📋 on a cell OUTSIDE your assignment (as an employee, non-Lead) → cell was empty → warning toast "Für diese Schicht wurde keine Übergabe angelegt." (no navigation).
+6. Click 📋 on a cell where someone else has a SUBMITTED entry and you're an employee → `/shift-handover/${uuid}` read-only view renders snapshot, no edit controls.
+7. Click 📋 on a past-shift cell → `/new` POSTs, backend returns 403 `outside_window`, redirect to `/shifts?handover-error=Diese+Schicht+liegt...` → toast fires + URL cleans itself. No modal flash.
 
 ---
 

@@ -1,21 +1,33 @@
 /**
- * Shift Handover — Custom-Field Type Definitions.
+ * Shift Handover — Custom-Field Type Definitions (pure types + const).
  *
  * Single source of truth for the 8 field types that a Team-Lead can attach
- * to a shift-handover template (Plan §Product Decisions #6). Consumed by
- * both backend (template upsert validation + dynamic entry-value schema)
- * and frontend (form-builder UI + pre-submit guard) to keep validation
- * parity (Plan §Risk R7).
+ * to a shift-handover template (Plan §Product Decisions #6). Consumed by:
+ *   - Backend validators (Zod schemas in
+ *     `backend/src/nest/shift-handover/field-validators.ts`)
+ *   - Backend services + DTOs
+ *   - Frontend form-builder UI + state-templates manual validators
  *
- * Invariants enforced by the Zod schemas below:
- *  - `key` matches a lowercase-start `[a-z0-9_]` pattern (DB-column-safe)
- *  - `select` fields MUST carry a non-empty `options` array
- *  - Simple types reject `options` by the union discriminator
- *  - A template holds at most 30 fields with no duplicate keys
+ * ARCHITECTURAL CONTRACT (ADR-030 §7 + ADR-015):
+ *   This file MUST stay Zod-free and contain only pure TypeScript types
+ *   plus `const` arrays. Zod schemas (`ShiftHandoverFieldDefSchema`,
+ *   `ShiftHandoverTemplateFieldsSchema`, `buildEntryValuesSchema`) live in
+ *   the backend — see file path above. The shared package is browser-safe
+ *   per ADR-015; importing Zod here would re-introduce the runtime
+ *   validator into the SvelteKit bundle and trip the strict CSP
+ *   (`new Function()` capability probe in `zod/v4/core/util.js:157`).
  *
+ * REWRITTEN 2026-04-23 — see Spec Deviation #8 in
+ * `docs/FEAT_SHIFT_HANDOVER_MASTERPLAN.md`. Original file declared
+ * everything via `z.infer<typeof Schema>`; new file mirrors the same
+ * structural contract with hand-rolled types so backend `z.infer` output
+ * and shared manual interfaces remain wire-compatible.
+ *
+ * @see docs/infrastructure/adr/ADR-030-zod-validation-architecture.md §7
+ * @see docs/infrastructure/adr/ADR-015-shared-package-architecture.md
  * @see docs/FEAT_SHIFT_HANDOVER_MASTERPLAN.md §2.1 + §R7
+ * @see backend/src/nest/shift-handover/field-validators.ts (Zod home)
  */
-import { z } from 'zod';
 
 /**
  * Simple field types — value storage is primitive. `select` is separate
@@ -38,60 +50,41 @@ export type ShiftHandoverSimpleFieldType = (typeof SHIFT_HANDOVER_SIMPLE_FIELD_T
 export type ShiftHandoverFieldType = (typeof SHIFT_HANDOVER_FIELD_TYPES)[number];
 
 /**
- * Field-key regex: lowercase-start, lowercase-alphanumeric-underscore.
- * 30-char cap keeps builder UI readable and leaves headroom for JSONB key storage.
+ * Select-field option pair. Backend Zod constraints (each field 1..100 chars)
+ * are enforced server-side; client-side manual validators mirror the same
+ * limits (see `state-templates.svelte.ts`).
  */
-const FIELD_KEY_REGEX = /^[a-z][a-z0-9_]*$/;
+export interface ShiftHandoverFieldOption {
+  value: string;
+  label: string;
+}
 
-const OptionSchema = z.object({
-  value: z.string().min(1).max(100),
-  label: z.string().min(1).max(100),
-});
+/** Common shape for all field definitions. */
+interface BaseFieldDef {
+  /** Lowercase-start, [a-z0-9_], ≤30 chars (DB-column-safe). Backend regex authoritative. */
+  key: string;
+  /** Human label, ≤100 chars (backend enforced). */
+  label: string;
+  /** Whether the field is mandatory at entry-submit time. */
+  required: boolean;
+}
 
-export type ShiftHandoverFieldOption = z.infer<typeof OptionSchema>;
+/** Simple field — primitive value storage, no extra metadata. */
+interface SimpleFieldDef extends BaseFieldDef {
+  type: ShiftHandoverSimpleFieldType;
+}
 
-const BaseFieldShape = {
-  key: z
-    .string()
-    .min(1)
-    .max(30)
-    .regex(FIELD_KEY_REGEX, 'key must start lowercase and contain only [a-z0-9_]'),
-  label: z.string().min(1).max(100),
-  required: z.boolean().default(false),
-};
-
-const SimpleFieldDefSchema = z.object({
-  ...BaseFieldShape,
-  type: z.enum([...SHIFT_HANDOVER_SIMPLE_FIELD_TYPES] as [
-    ShiftHandoverSimpleFieldType,
-    ...ShiftHandoverSimpleFieldType[],
-  ]),
-});
-
-const SelectFieldDefSchema = z.object({
-  ...BaseFieldShape,
-  type: z.literal('select'),
-  options: z.array(OptionSchema).min(1).max(50),
-});
+/** Select field — carries the option list (backend enforces 1..50 options). */
+interface SelectFieldDef extends BaseFieldDef {
+  type: 'select';
+  options: ShiftHandoverFieldOption[];
+}
 
 /**
- * One field definition. Union over `type`; `z.literal('select')` and the
- * simple-type enum are disjoint, so the union resolves unambiguously
- * without needing `z.discriminatedUnion` (not used elsewhere in this repo).
+ * One field definition. Discriminated union over `type`; the simple-type
+ * union and the literal `'select'` are disjoint so TypeScript narrows
+ * correctly on `field.type === 'select'` checks.
+ *
+ * Wire-compatible with backend `z.infer<typeof ShiftHandoverFieldDefSchema>`.
  */
-export const ShiftHandoverFieldDefSchema = z.union([SimpleFieldDefSchema, SelectFieldDefSchema]);
-export type ShiftHandoverFieldDef = z.infer<typeof ShiftHandoverFieldDefSchema>;
-
-/**
- * Full template fields array — max 30 per template (plan §2.2) and no
- * duplicate keys. The per-item schema checks structure; this wrapper
- * checks list-level invariants.
- */
-export const ShiftHandoverTemplateFieldsSchema = z
-  .array(ShiftHandoverFieldDefSchema)
-  .max(30, 'Template can hold at most 30 fields')
-  .refine(
-    (fields: ShiftHandoverFieldDef[]) =>
-      new Set(fields.map((f: ShiftHandoverFieldDef) => f.key)).size === fields.length,
-    { message: 'Duplicate field keys are not allowed' },
-  );
+export type ShiftHandoverFieldDef = SimpleFieldDef | SelectFieldDef;

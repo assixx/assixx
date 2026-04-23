@@ -169,7 +169,7 @@
       </div>
       <button
         type="submit"
-        class="btn btn-upload btn--sm"
+        class="btn btn-primary btn--sm"
         disabled={kvpDetailState.isAddingComment}
       >
         {#if kvpDetailState.isAddingComment}

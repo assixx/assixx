@@ -27,7 +27,7 @@
  * @see ./shift-handover-entries.service.ts
  */
 import type { ShiftHandoverFieldDef } from '@assixx/shared/shift-handover';
-import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { ActivityLoggerService } from '../common/services/activity-logger.service.js';
@@ -180,7 +180,7 @@ describe('ShiftHandoverEntriesService', () => {
 
     it('INSERTs a new draft after verifying the write window passes', async () => {
       const inserted = entryRow({ id: 'entry-new' });
-      mockResolver.canWriteForShift.mockResolvedValueOnce(true);
+      mockResolver.canWriteForShift.mockResolvedValueOnce({ allowed: true });
       mockClient.query
         .mockResolvedValueOnce(qResult([{ id: 1 }])) // shift_times check
         .mockResolvedValueOnce(qResult([])) // findEntry — none
@@ -215,22 +215,39 @@ describe('ShiftHandoverEntriesService', () => {
       expect(mockResolver.canWriteForShift).not.toHaveBeenCalled();
     });
 
-    it('throws ForbiddenException when the resolver rejects the write window', async () => {
-      mockResolver.canWriteForShift.mockResolvedValueOnce(false);
+    it('throws ForbiddenException with a German reason message when outside the write window', async () => {
+      mockResolver.canWriteForShift.mockResolvedValueOnce({
+        allowed: false,
+        reason: 'outside_window',
+      });
       mockClient.query
         .mockResolvedValueOnce(qResult([{ id: 1 }]))
         .mockResolvedValueOnce(qResult([])); // no existing
 
       await expect(
         service.getOrCreateDraft(1, 10, new Date('2026-04-22T00:00:00Z'), 'early', 5),
-      ).rejects.toThrow(ForbiddenException);
+      ).rejects.toThrow(/außerhalb des Schreibfensters/u);
       // INSERT must not run after forbidden check.
       expect(mockClient.query).toHaveBeenCalledTimes(2);
     });
 
+    it('throws ForbiddenException with the not_assignee German message when user is not on the roster', async () => {
+      mockResolver.canWriteForShift.mockResolvedValueOnce({
+        allowed: false,
+        reason: 'not_assignee',
+      });
+      mockClient.query
+        .mockResolvedValueOnce(qResult([{ id: 1 }]))
+        .mockResolvedValueOnce(qResult([]));
+
+      await expect(
+        service.getOrCreateDraft(1, 10, new Date('2026-04-22T00:00:00Z'), 'early', 5),
+      ).rejects.toThrow(/dieser Schicht nicht zugeteilt/u);
+    });
+
     it('falls back to a fetch when ON CONFLICT DO NOTHING returns no row (race)', async () => {
       const raced = entryRow({ id: 'entry-raced' });
-      mockResolver.canWriteForShift.mockResolvedValueOnce(true);
+      mockResolver.canWriteForShift.mockResolvedValueOnce({ allowed: true });
       mockClient.query
         .mockResolvedValueOnce(qResult([{ id: 1 }]))
         .mockResolvedValueOnce(qResult([])) // findEntry — none initially

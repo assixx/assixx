@@ -65,6 +65,15 @@ const dynamicRoutes: DynamicRoute[] = [
     icon: ICON_INFO,
   },
   { pattern: /^\/kvp\/[^/]+$/, label: 'KVP-Details', icon: ICON_INFO },
+  // Shift-Handover detail page (Session 15 modal→page rewrite).
+  // Pattern mirrors /blackboard/[uuid] — parent crumb comes from the
+  // `/shift-handover-detail` intermediateBreadcrumbs entry, which the
+  // dynamic-route handler looks up via `basePath + '-detail'`.
+  {
+    pattern: /^\/shift-handover\/[^/]+$/,
+    label: 'Übergabe',
+    icon: 'fa-clipboard-list',
+  },
   {
     pattern: /^\/manage-employees\/availability\/[^/]+$/,
     label: 'Employee Name Placeholder',
@@ -231,6 +240,16 @@ const intermediateBreadcrumbs: Partial<Record<string, IntermediateCrumb>> = {
     href: '/shifts',
     icon: 'fa-calendar',
   },
+  // Session 15 (2026-04-23): the shift-handover detail page replaced the
+  // in-grid modal. Crumb path mirrors the templates page — parent is the
+  // shift grid. Key uses the `-detail` suffix because the dynamic-route
+  // handler (buildDynamicRouteItems) looks it up via `basePath + '-detail'`
+  // from the UUID-param URL `/shift-handover/{uuid}` — see blackboard-detail.
+  '/shift-handover-detail': {
+    label: 'Schichtplanung',
+    href: '/shifts',
+    icon: 'fa-calendar',
+  },
   '/work-orders/admin': {
     label: 'Arbeitsaufträge',
     href: '/work-orders',
@@ -260,6 +279,7 @@ const staticUrlMappings: Partial<Record<string, RouteMapping>> = {
   '/documents-explorer': { label: 'Dokumente', icon: 'fa-file-alt' },
   '/shifts': { label: 'Schichtplan', icon: 'fa-clock' },
   '/shift-handover-templates': { label: 'Übergabe-Templates', icon: 'fa-clipboard-list' },
+  '/shift-handover': { label: 'Schichtübergabe', icon: 'fa-clipboard-list' },
   '/kvp': { label: 'KVP', icon: 'fa-lightbulb' },
   '/kvp-categories': { label: 'Definitionen', icon: 'fa-tags' },
   '/kvp-detail': { label: 'KVP-Details', icon: ICON_INFO },

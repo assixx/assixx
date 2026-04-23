@@ -18,7 +18,7 @@
  */
 import { redirect } from '@sveltejs/kit';
 
-import { apiFetch } from '$lib/server/api-fetch';
+import { apiFetch, apiFetchWithPermission } from '$lib/server/api-fetch';
 import { requireAddon } from '$lib/utils/addon-guard';
 
 import { canManageShiftHandoverTemplates } from '../../_lib/navigation-config';
@@ -52,9 +52,32 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
     redirect(302, '/shifts');
   }
 
-  const teams = await apiFetch<TemplateTeam[]>('/teams', token, fetch);
+  const teams = toSafeArray(await apiFetch<TemplateTeam[]>('/teams', token, fetch));
+
+  // Layer 2 — ADR-020 §6: SSR-probe the per-user gated endpoint so 403 surfaces
+  // as the canonical <PermissionDenied /> view instead of a client-side toast.
+  // Reference implementation: `/shifts/+page.server.ts` (apiFetchWithPermission
+  // on /shift-times → buildDeniedResponse → <PermissionDenied addonName="..." />).
+  //
+  // No probe possible without a teamId → when the user has zero teams in scope
+  // the existing "Keine Teams" empty-state covers the UX. A user with no teams
+  // has no permission-denied UX to show anyway (nothing to forbid).
+  if (teams.length > 0) {
+    const probe = await apiFetchWithPermission<unknown>(
+      `/shift-handover/templates/${teams[0].id}`,
+      token,
+      fetch,
+    );
+    if (probe.permissionDenied) {
+      return {
+        permissionDenied: true as const,
+        teams: [] as TemplateTeam[],
+      };
+    }
+  }
 
   return {
-    teams: toSafeArray(teams),
+    permissionDenied: false as const,
+    teams,
   };
 };

@@ -111,7 +111,7 @@
     {:else}
       <button
         type="button"
-        class="btn btn-upload"
+        class="btn btn-success"
         onclick={handleConfirm}
         disabled={confirming}
       >

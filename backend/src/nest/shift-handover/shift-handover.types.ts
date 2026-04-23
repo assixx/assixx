@@ -87,6 +87,27 @@ export interface ActiveShiftContext {
 }
 
 /**
+ * Discriminated result of `canWriteForShift`. Replaces the prior `boolean`
+ * return so callers can render a reason-specific message instead of a
+ * vague "may not create a draft" catch-all (smoke-test finding 2026-04-23).
+ *
+ *  - `not_assignee`        — user is not on the shift roster
+ *  - `outside_window`      — shift-date is not "today" in Europe/Berlin
+ *                            (and not a running night shift from yesterday)
+ *  - `shift_times_missing` — the tenant has no `shift_times` row for this
+ *                            slot, so the window cannot be evaluated
+ *
+ * German user-facing messages live in `shift-handover-entries.service.ts`
+ * at the throw site — the resolver stays UI-agnostic.
+ */
+export type ShiftHandoverWriteDecision =
+  | { allowed: true }
+  | {
+      allowed: false;
+      reason: 'not_assignee' | 'outside_window' | 'shift_times_missing';
+    };
+
+/**
  * Attachment upload limits (plan §2.4, §1.3). Exported so §2.6 controller's
  * `FileInterceptor({ limits: { fileSize: … } })` and the service's
  * defense-in-depth validation can reference one source of truth (mirrors

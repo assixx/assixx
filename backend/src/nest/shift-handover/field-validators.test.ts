@@ -3,17 +3,20 @@
  *
  * Covers each of the 8 custom-field types (happy + failure), required vs
  * optional handling, strict-mode unknown-key rejection, composition, and
- * the empty-template edge case. Back-end (`updateDraft`/`submitEntry`)
- * and front-end (entry-modal pre-submit guard) both build their Zod
- * schema here, so a regression in any branch drifts both layers at once.
+ * the empty-template edge case. Backend (`updateDraft`/`submitEntry`)
+ * runs `custom_values` through the same schema-builder used here.
+ *
+ * MOVED 2026-04-23 from `shared/src/shift-handover/field-validators.test.ts`
+ * — see Spec Deviation #8 in the masterplan and ADR-030 §7. Frontend no
+ * longer ships Zod; backend remains the authoritative validator.
  *
  * @see docs/FEAT_SHIFT_HANDOVER_MASTERPLAN.md §Phase 3 — Field validators
+ * @see docs/infrastructure/adr/ADR-030-zod-validation-architecture.md §7
  * @see ./field-validators.ts (source under test)
- * @see ./field-types.ts (`ShiftHandoverFieldDef` discriminated union)
  */
+import type { ShiftHandoverFieldDef } from '@assixx/shared/shift-handover';
 import { describe, expect, it } from 'vitest';
 
-import type { ShiftHandoverFieldDef } from './field-types.js';
 import { buildEntryValuesSchema } from './field-validators.js';
 
 describe('buildEntryValuesSchema', () => {

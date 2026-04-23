@@ -244,19 +244,52 @@ describe('E2eKeysService', () => {
 
   describe('resetKeys()', () => {
     it(`should mark active key as deleted (is_active = ${IS_ACTIVE.DELETED})`, async () => {
+      // 1st: UPDATE e2e_user_keys → 1 row
+      mockClient.query.mockResolvedValueOnce({ rowCount: 1 });
+      // 2nd: UPDATE e2e_key_escrow (cascade) → 1 row (escrow existed)
       mockClient.query.mockResolvedValueOnce({ rowCount: 1 });
 
       await service.resetKeys(1, 42, 1);
 
       const [sql, params] = mockClient.query.mock.calls[0] as [string, unknown[]];
       expect(sql).toContain(`is_active = ${IS_ACTIVE.DELETED}`);
+      expect(sql).toContain('e2e_user_keys');
       expect(params).toEqual([1, 42]);
     });
 
-    it('should throw NotFoundException when no active key found', async () => {
+    // ADR-022 cascade guarantee: admin reset MUST revoke the escrow blob in
+    // the same transaction. Orphan escrow causes the multi-device divergence
+    // bug (2026-04-23 incident: "delete key in DB but error comes back").
+    it('should cascade-revoke escrow blob in same transaction', async () => {
+      mockClient.query.mockResolvedValueOnce({ rowCount: 1 }); // keys UPDATE
+      mockClient.query.mockResolvedValueOnce({ rowCount: 1 }); // escrow UPDATE
+
+      await service.resetKeys(1, 42, 1);
+
+      expect(mockClient.query).toHaveBeenCalledTimes(2);
+      const [escrowSql, escrowParams] = mockClient.query.mock.calls[1] as [string, unknown[]];
+      expect(escrowSql).toContain('e2e_key_escrow');
+      expect(escrowSql).toContain(`is_active = ${IS_ACTIVE.DELETED}`);
+      expect(escrowSql).toContain('updated_at = NOW()');
+      expect(escrowParams).toEqual([1, 42]);
+    });
+
+    it('should succeed even when user has no escrow blob (cascade is best-effort)', async () => {
+      mockClient.query.mockResolvedValueOnce({ rowCount: 1 }); // keys UPDATE — found
+      mockClient.query.mockResolvedValueOnce({ rowCount: 0 }); // escrow UPDATE — no blob
+
+      await expect(service.resetKeys(1, 42, 1)).resolves.toBeUndefined();
+      expect(mockClient.query).toHaveBeenCalledTimes(2);
+    });
+
+    it('should throw NotFoundException when no active key found and SKIP escrow cascade', async () => {
       mockClient.query.mockResolvedValueOnce({ rowCount: 0 });
 
       await expect(service.resetKeys(1, 99, 1)).rejects.toThrow(NotFoundException);
+      // Escrow cascade MUST NOT fire if the key revocation had nothing to revoke —
+      // a missing active key means either already-reset or wrong user; cascading
+      // the escrow anyway would orphan-delete recoverable state.
+      expect(mockClient.query).toHaveBeenCalledTimes(1);
     });
   });
 });

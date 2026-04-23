@@ -131,7 +131,7 @@
       </button>
       <button
         type="button"
-        class="btn btn-icon btn-upload"
+        class="btn btn-icon btn-primary"
         aria-label={MESSAGES.labelSendMessage}
         onclick={onsend}
         disabled={!canSend}

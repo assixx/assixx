@@ -106,29 +106,36 @@ Read whole files.
 2. [CLAUDE-KAIZEN-MANIFEST.md](./CLAUDE-KAIZEN-MANIFEST.md)
 3. [docs/TYPESCRIPT-STANDARDS.md](./docs/TYPESCRIPT-STANDARDS.md) (mandatory for backend)
 4. [README.md](./README.md)
-5. [docs/DATABASE-MIGRATION-GUIDE.md](./docs/DATABASE-MIGRATION-GUIDE.md)
-6. [eslint.config.mjs](./eslint.config.mjs) and [frontend/eslint.config.mjs](./frontend/eslint.config.mjs)
-7. [docs/CODE-OF-CONDUCT.md](./docs/CODE-OF-CONDUCT.md)
-8. [frontend/src/styles/tailwind/base.css](./frontend/src/styles/tailwind/base.css) (UI context)
-9. [frontend/src/design-system/README.md](./frontend/src/design-system/README.md) (UI context)
-10. [backend/docs/ZOD-INTEGRATION-GUIDE.md](./backend/docs/ZOD-INTEGRATION-GUIDE.md)
-11. [docs/how-to/README.md](./docs/how-to/README.md) (HOW-TO Guide Katalog)
-12. [docs/CODE-OF-CONDUCT-SVELTE.md](./docs/CODE-OF-CONDUCT-SVELTE.md)
-13. [docs/PRODUCTION-AND-DEVELOPMENT-TESTING.md](./docs/PRODUCTION-AND-DEVELOPMENT-TESTING.md) (Docker/Nginx/SvelteKit setup)
-14. **Essential ADRs** (immer lesen — Core-Architektur, Daten-Isolation, Terminologie-Fallen):
-    - [ADR-006](./docs/infrastructure/adr/ADR-006-multi-tenant-context-isolation.md) Multi-Tenant Context Isolation — `tenant_id` niemals vermischen
-    - [ADR-019](./docs/infrastructure/adr/ADR-019-multi-tenant-rls-isolation.md) Multi-Tenant RLS Isolation — `app_user` mit RLS, `assixx_user` BYPASSRLS
-    - [ADR-033](./docs/infrastructure/adr/ADR-033-addon-based-saas-model.md) Addon-basiertes SaaS-Modell — "Feature" deprecated, "Addon" ist Wahrheit
-    - [ADR-034](./docs/infrastructure/adr/ADR-034-hierarchy-labels-propagation.md) Hierarchy Labels — UI-Label ≠ DB-Spalte (Abteilung kann `area_id` sein)
-    - [ADR-041](./docs/infrastructure/adr/ADR-041-typescript-compiler-configuration.md) TypeScript Strict-Everywhere — strict darf in keinem tsconfig geschwächt werden
-    - [ADR-045](./docs/infrastructure/adr/ADR-045-permission-visibility-design.md) Permission & Visibility Design — 3-Layer-Stack (Addon → Management-Gate → Action-Permission), Meta-ADR
+5. [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md) — navigation map: concept → entry-point (`file:line` + linked ADRs). **Read before deep-diving any area.**
+6. [docs/DATABASE-MIGRATION-GUIDE.md](./docs/DATABASE-MIGRATION-GUIDE.md)
+7. [eslint.config.mjs](./eslint.config.mjs) and [frontend/eslint.config.mjs](./frontend/eslint.config.mjs)
+8. [docs/CODE-OF-CONDUCT.md](./docs/CODE-OF-CONDUCT.md)
+9. [frontend/src/styles/tailwind/base.css](./frontend/src/styles/tailwind/base.css) (UI context)
+10. [frontend/src/design-system/README.md](./frontend/src/design-system/README.md) (UI context)
+11. [backend/docs/ZOD-INTEGRATION-GUIDE.md](./backend/docs/ZOD-INTEGRATION-GUIDE.md)
+12. [docs/how-to/README.md](./docs/how-to/README.md) (HOW-TO Guide Katalog)
+13. [docs/CODE-OF-CONDUCT-SVELTE.md](./docs/CODE-OF-CONDUCT-SVELTE.md)
+14. [docs/PRODUCTION-AND-DEVELOPMENT-TESTING.md](./docs/PRODUCTION-AND-DEVELOPMENT-TESTING.md) (Docker/Nginx/SvelteKit setup)
+15. **Essential ADRs** (always read — core architecture, data isolation, permission stack, terminology traps):
+    - [ADR-005](./docs/infrastructure/adr/ADR-005-authentication-strategy.md) Authentication Strategy — JWT guard, fresh DB lookup per request, sets CLS context
+    - [ADR-006](./docs/infrastructure/adr/ADR-006-multi-tenant-context-isolation.md) Multi-Tenant Context Isolation — never mix `tenant_id`, CLS via nestjs-cls
+    - [ADR-010](./docs/infrastructure/adr/ADR-010-user-role-assignment-permissions.md) User Role & Permissions — Root/Admin/Employee, `has_full_access`, Area/Department/Team leads, inheritance
+    - [ADR-012](./docs/infrastructure/adr/ADR-012-frontend-route-security-groups.md) Frontend Route Security — `(root)/(admin)/(shared)` fail-closed RBAC in SvelteKit
+    - [ADR-014](./docs/infrastructure/adr/ADR-014-database-migration-architecture.md) Database & Migration Architecture — node-pg-migrate, rollback, RLS checklist, Triple-User-Model
+    - [ADR-019](./docs/infrastructure/adr/ADR-019-multi-tenant-rls-isolation.md) Multi-Tenant RLS Isolation — `app_user` under RLS (strict), `sys_user`/`assixx_user` BYPASSRLS
+    - [ADR-020](./docs/infrastructure/adr/ADR-020-per-user-feature-permissions.md) Per-User Feature Permissions — `user_addon_permissions` (Layer 2 of ADR-045), decentralized registry
+    - [ADR-030](./docs/infrastructure/adr/ADR-030-zod-validation-architecture.md) Zod Validation Architecture — Zod + nestjs-zod as sole validation library, `createZodDto()`, central param factories
+    - [ADR-033](./docs/infrastructure/adr/ADR-033-addon-based-saas-model.md) Addon-based SaaS Model — "Feature" deprecated, "Addon" is the truth
+    - [ADR-034](./docs/infrastructure/adr/ADR-034-hierarchy-labels-propagation.md) Hierarchy Labels — UI label ≠ DB column (an "Abteilung" may be `area_id`)
+    - [ADR-041](./docs/infrastructure/adr/ADR-041-typescript-compiler-configuration.md) TypeScript Strict-Everywhere — strict flags must never be weakened in any tsconfig
+    - [ADR-045](./docs/infrastructure/adr/ADR-045-permission-visibility-design.md) Permission & Visibility Design — 3-layer stack (Addon → Management Gate → Action Permission), meta-ADR
 
-    **Alle weiteren ADRs** bei relevantem Feature lesen: [docs/infrastructure/adr/README.md](./docs/infrastructure/adr/README.md)
+    **All other ADRs** read on demand per relevant feature: [docs/infrastructure/adr/README.md](./docs/infrastructure/adr/README.md)
 
-15. Fetch Svelte docs: https://svelte.dev/docs/svelte/overview, https://svelte.dev/docs/svelte/what-are-runes, https://svelte.dev/docs/kit/$app-paths#resolve
-16. [docs/COMMON-COMMANDS.md](./docs/COMMON-COMMANDS.md)
-17. Recap fast, then ask user that you're ready
-18. `cd /home/scs/projects/Assixx && pwd` then quick recap and do nothin until user is telling you what to do.
+16. Fetch Svelte docs: https://svelte.dev/docs/svelte/overview, https://svelte.dev/docs/svelte/what-are-runes, https://svelte.dev/docs/kit/$app-paths#resolve
+17. [docs/COMMON-COMMANDS.md](./docs/COMMON-COMMANDS.md)
+18. `cd /home/scs/projects/Assixx && pwd`
+19. Signal exactly: **"Routine finished — ready."** — NO recap, NO summary, NO restated rules. A summary is token waste; the user already knows what they read. Then wait silently for user input.
 
 ---
 
