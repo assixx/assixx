@@ -18,11 +18,15 @@
  */
 import { Module } from '@nestjs/common';
 
+import { AddonCheckModule } from '../addon-check/addon-check.module.js';
+import { ScopeModule } from '../hierarchy-permission/scope.module.js';
 import { ActiveShiftResolverService } from './active-shift-resolver.service.js';
 import { ShiftHandoverAttachmentsService } from './shift-handover-attachments.service.js';
+import { ShiftHandoverCronService } from './shift-handover-cron.service.js';
 import { ShiftHandoverEntriesService } from './shift-handover-entries.service.js';
 import { ShiftHandoverPermissionRegistrar } from './shift-handover-permission.registrar.js';
 import { ShiftHandoverTemplatesService } from './shift-handover-templates.service.js';
+import { ShiftHandoverController } from './shift-handover.controller.js';
 import { SHIFT_HANDOVER_CLOCK, type ShiftHandoverClock } from './shift-handover.tokens.js';
 
 /**
@@ -34,12 +38,15 @@ import { SHIFT_HANDOVER_CLOCK, type ShiftHandoverClock } from './shift-handover.
 const REAL_CLOCK: ShiftHandoverClock = () => new Date();
 
 @Module({
+  imports: [AddonCheckModule, ScopeModule],
+  controllers: [ShiftHandoverController],
   providers: [
     ShiftHandoverPermissionRegistrar,
     ShiftHandoverTemplatesService,
     ActiveShiftResolverService,
     ShiftHandoverAttachmentsService,
     ShiftHandoverEntriesService,
+    ShiftHandoverCronService,
     { provide: SHIFT_HANDOVER_CLOCK, useValue: REAL_CLOCK },
   ],
   exports: [

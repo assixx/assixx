@@ -20,7 +20,7 @@
 # JWKS, any third-party HTTPS). glibc implements EDNS0, TCP fallback, and
 # RFC-compliant dual-stack semantics; the whole class disappears.
 # See ADR-027 (pinning), moby#41651, bell-sw "Alpine DNS issues".
-ARG NODE_VERSION=24.14.0-bookworm-slim
+ARG NODE_VERSION=24.15.0-bookworm-slim
 
 # -----------------------------------------------------------------------------
 # Stage 1: Build TypeScript

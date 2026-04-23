@@ -12,6 +12,7 @@
 | Guide                                                           | Description                                                                                                            |
 | --------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
 | [HOW-TO-ALERTING](./HOW-TO-ALERTING.md)                         | Production alerting: Sentry issue rules + Grafana Loki rules, all provisioned as code                                  |
+| [HOW-TO-BUMP-NODE](./HOW-TO-BUMP-NODE.md)                       | Upgrade Node.js version — 12-file checklist, Hub-tag verification, rebuild + validate pipeline, rollback               |
 | [HOW-TO-CURL](./HOW-TO-CURL.md)                                 | API requests with curl — token handling, inline usage rules                                                            |
 | [HOW-TO-DOPPLER-GUIDE](./HOW-TO-DOPPLER-GUIDE.md)               | Doppler secret management — setup, configs, CLI reference                                                              |
 | [HOW-TO-POSTGRESQL-CLI](./HOW-TO-POSTGRESQL-CLI.md)             | psql client setup on WSL2, meta-command reference                                                                      |

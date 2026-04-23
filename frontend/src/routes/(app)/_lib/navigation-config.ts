@@ -86,6 +86,28 @@ const BLACKBOARD_SUBMENU: NavItem[] = [
   },
 ];
 
+/**
+ * Shift-planning submenu (all roles, addon-gated).
+ *
+ * Base structure contains BOTH children. The `shift-handover-templates` child is
+ * removed by `applyShiftHandoverVariant()` when the user cannot manage templates
+ * (ADR-045 Layer-1 canManage gate). The child's own `addonCode: 'shift_planning'`
+ * is defense-in-depth — the parent's `addonCode` already strips the whole branch
+ * when the addon is inactive.
+ *
+ * @see docs/FEAT_SHIFT_HANDOVER_MASTERPLAN.md Session 11
+ * @see docs/infrastructure/adr/ADR-045-permission-visibility-design.md
+ */
+const SHIFT_SUBMENU: NavItem[] = [
+  { id: 'shift-plan', label: 'Schichtplanung', url: '/shifts', badgeType: 'shiftSwap' },
+  {
+    id: 'shift-handover-templates',
+    label: 'Übergabe-Templates',
+    url: '/shift-handover-templates',
+    addonCode: 'shift_planning',
+  },
+];
+
 /** Shared documents submenu (all roles) */
 const DOCUMENTS_SUBMENU: NavItem[] = [
   {
@@ -508,9 +530,8 @@ const ADMIN_STATIC_BOTTOM: NavItem[] = [
     id: 'shifts',
     icon: ICONS.clock,
     label: 'Schichtplanung',
-    url: '/shifts',
     addonCode: 'shift_planning',
-    badgeType: 'shiftSwap',
+    submenu: SHIFT_SUBMENU,
   },
   {
     id: 'chat',
@@ -659,9 +680,8 @@ const EMPLOYEE_MENU_STATIC: NavItem[] = [
     id: 'shifts',
     icon: ICONS.clock,
     label: 'Schichtplanung',
-    url: '/shifts',
     addonCode: 'shift_planning',
-    badgeType: 'shiftSwap',
+    submenu: SHIFT_SUBMENU,
   },
   {
     id: 'settings',
@@ -996,6 +1016,20 @@ export const canManageSurveys = canManage;
 export const canManageBlackboard = canManage;
 
 /**
+ * Lesbarkeits-Wrapper für Shift-Handover-Templates (delegiert zu `canManage`).
+ *
+ * Used by:
+ * - `/shift-handover-templates/+page.server.ts` (route guard — redirect to `/shifts` if false)
+ * - `applyShiftHandoverVariant` (added in Session 11 — sidebar submenu promotion)
+ *
+ * Layer-1 of the 3-layer permission stack (ADR-045): Addon → canManage → Action-Permission.
+ *
+ * @see docs/FEAT_SHIFT_HANDOVER_MASTERPLAN.md §5.2
+ * @see docs/infrastructure/adr/ADR-045-permission-visibility-design.md
+ */
+export const canManageShiftHandoverTemplates = canManage;
+
+/**
  * Upgrade the "Umfragen" entry to a submenu with "Meine Umfragen" + "Verwaltung"
  * when the user can manage surveys. Otherwise pass through unchanged (single /surveys link).
  *
@@ -1015,5 +1049,26 @@ export function applySurveysVariant(items: NavItem[], canManage: boolean): NavIt
     );
 
     return { ...item, submenu: updatedSubmenu };
+  });
+}
+
+/**
+ * Remove the "Übergabe-Templates" sub-entry from the Schichtplanung submenu
+ * when the user cannot manage shift-handover templates.
+ *
+ * Pipeline position: runs AFTER `filterMenuByAddons` — if the `shift_planning`
+ * addon is inactive, the parent Schichtplanung entry is already gone and this
+ * function is a no-op. Mirrors `applySurveysVariant` (ADR-045 Layer-1 canManage
+ * → sidebar visibility; see `canManageShiftHandoverTemplates` wrapper above).
+ *
+ * @see docs/FEAT_SHIFT_HANDOVER_MASTERPLAN.md Session 11
+ * @see docs/infrastructure/adr/ADR-045-permission-visibility-design.md
+ */
+export function applyShiftHandoverVariant(items: NavItem[], canManage: boolean): NavItem[] {
+  if (canManage) return items;
+  return items.map((item) => {
+    if (item.id !== 'shifts' || item.submenu === undefined) return item;
+    const submenu = item.submenu.filter((child) => child.id !== 'shift-handover-templates');
+    return { ...item, submenu };
   });
 }

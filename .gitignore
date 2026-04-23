@@ -85,6 +85,7 @@ coverage/
 # Playwright E2E
 e2e/.auth/
 e2e/test-results/
+test-results/
 playwright-report/
 .playwright-mcp/
 

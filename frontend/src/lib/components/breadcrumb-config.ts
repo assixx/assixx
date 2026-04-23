@@ -223,6 +223,14 @@ const intermediateBreadcrumbs: Partial<Record<string, IntermediateCrumb>> = {
     href: '/blackboard',
     icon: 'fa-clipboard',
   },
+  // Parent crumb matches the sidebar submenu name ("Schichtplanung") promoted
+  // in Session 11 via `applyShiftHandoverVariant`; clicking it returns the
+  // user to the shift grid. See FEAT_SHIFT_HANDOVER_MASTERPLAN Session 13.
+  '/shift-handover-templates': {
+    label: 'Schichtplanung',
+    href: '/shifts',
+    icon: 'fa-calendar',
+  },
   '/work-orders/admin': {
     label: 'Arbeitsaufträge',
     href: '/work-orders',
@@ -251,6 +259,7 @@ const staticUrlMappings: Partial<Record<string, RouteMapping>> = {
   '/documents': { label: 'Dokumente', icon: 'fa-file-alt' },
   '/documents-explorer': { label: 'Dokumente', icon: 'fa-file-alt' },
   '/shifts': { label: 'Schichtplan', icon: 'fa-clock' },
+  '/shift-handover-templates': { label: 'Übergabe-Templates', icon: 'fa-clipboard-list' },
   '/kvp': { label: 'KVP', icon: 'fa-lightbulb' },
   '/kvp-categories': { label: 'Definitionen', icon: 'fa-tags' },
   '/kvp-detail': { label: 'KVP-Details', icon: ICON_INFO },

@@ -10,9 +10,11 @@
   } from '$lib/asset-availability/constants';
 
   import { FULL_DAY_NAMES, SHIFT_TYPES } from './constants';
+  import ShiftHandoverButton from './ShiftHandoverButton.svelte';
   import { formatDate, getEmployeeDisplayName, getShiftTimeInfo } from './utils';
 
   import type { HierarchyLabels } from '$lib/types/hierarchy-labels';
+  import type { HandoverButtonStatus, HandoverContext, HandoverSlot } from './shift-handover-types';
   import type { Employee, ShiftDetailData, ShiftTimesMap } from './types';
 
   /**
@@ -49,6 +51,15 @@
 
     /** Click on an employee card (for swap requests). Undefined = disabled. */
     onemployeeClick?: (employeeId: number, dateKey: string, shiftType: string) => void;
+
+    /**
+     * Shift-handover integration (Plan §5.1). When `undefined` the 📋 button
+     * is not rendered — keeps the grid usable in contexts without the
+     * handover feature wired yet.
+     */
+    onhandoverClick?: (ctx: HandoverContext) => void;
+    /** `(dateKey, shiftKey)` → status. Missing key = 'none' (no entry). */
+    getHandoverStatus?: (dateKey: string, shiftKey: HandoverSlot) => HandoverButtonStatus;
   }
 
   const {
@@ -71,6 +82,8 @@
     onremoveEmployee,
     onnotesChange,
     onemployeeClick,
+    onhandoverClick,
+    getHandoverStatus,
   }: Props = $props();
 
   // Day names for data attributes
@@ -178,6 +191,19 @@
               class="asset-avail-dot avail-{availStatus}"
               title={MACHINE_AVAILABILITY_LABELS[statusKey]}
             ></span>
+          {/if}
+
+          <!-- Shift-handover 📋 button (Plan §5.1) -->
+          {#if onhandoverClick !== undefined && getHandoverStatus !== undefined}
+            <ShiftHandoverButton
+              status={getHandoverStatus(dateKey, shiftType)}
+              context={{ teamId: 0, shiftDate: dateKey, shiftKey: shiftType }}
+              onopen={(ctx: HandoverContext) => {
+                // teamId is injected by the parent via `onhandoverClick` —
+                // the grid is team-agnostic; the page wraps this handler.
+                onhandoverClick({ ...ctx, shiftDate: dateKey, shiftKey: shiftType });
+              }}
+            />
           {/if}
 
           <div class="employee-assignment">

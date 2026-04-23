@@ -4,10 +4,18 @@ test.describe('Smoke: Dashboard', () => {
   test('shows root dashboard with stats', async ({ page }) => {
     await page.goto('/root-dashboard');
 
-    const main = page.getByRole('main');
-    await expect(main.getByText('Admins')).toBeVisible();
-    await expect(main.getByText('Mitarbeiter')).toBeVisible();
-    await expect(main.getByText('Gesamte Benutzer')).toBeVisible();
+    /*
+     * Scope to #dashboard-data instead of <main>: the word "Mitarbeiter"
+     * also appears as a role badge in #activity-logs (role=employee →
+     * "Mitarbeiter"-Label), which triggered a strict-mode violation on
+     * 2026-04-23 when an employee activity showed up in the log. The
+     * intent of this smoke test is to verify the stat cards, so the
+     * stat-cards container is the right scope.
+     */
+    const stats = page.locator('#dashboard-data');
+    await expect(stats.getByText('Admins')).toBeVisible();
+    await expect(stats.getByText('Mitarbeiter')).toBeVisible();
+    await expect(stats.getByText('Gesamte Benutzer')).toBeVisible();
   });
 
   test('shows activity log table', async ({ page }) => {

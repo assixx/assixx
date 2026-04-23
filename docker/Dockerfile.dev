@@ -19,7 +19,7 @@
 # glibc implements EDNS0, TCP fallback, and RFC-compliant dual-stack, so the
 # whole failure class disappears by choosing the standards-compliant libc.
 # See moby#41651, bell-sw "Alpine DNS issues", alpinelinux/docker-alpine#399.
-ARG NODE_VERSION=24.14.0-bookworm-slim
+ARG NODE_VERSION=24.15.0-bookworm-slim
 FROM node:${NODE_VERSION}
 LABEL org.opencontainers.image.authors="Assixx"
 

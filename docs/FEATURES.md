@@ -199,6 +199,20 @@
 - Activity Logging für alle Mutationen
 - 205 Unit Tests + 10 API-Integrationstests
 
+#### 15. **Schichtübergabe-Protokoll (Shift Handover)** (Submodul des Schichtplanung-Addons)
+
+- Strukturierte Übergabe pro Schichtslot (`early`/`late`/`night`) statt Papier-Protokoll
+- Team-Lead konfiguriert Templates mit Custom Fields (8 Typen: text/textarea/integer/decimal/date/time/boolean/select)
+- Employee-Assignee schreibt Entwurf + submittet — Submit friert `schema_snapshot` ein (Drift-Safety, ADR-052 Decision 2)
+- Read-View gegen `schema_snapshot`, nicht gegen Live-Template (Compliance-Audit-Trail)
+- Bildanhänge (max. 5 pro Entry, je max. 5 MB; JPEG/PNG/WebP/HEIC)
+- 24h-Auto-Lock via `@Cron('0 */6 * * *', timeZone:'Europe/Berlin')` — Cross-Tenant-Sweep via `sys_user` (BYPASSRLS)
+- Sidebar-Submenu: `Schichtplanung ▸ Schichtplanung` (flach für alle) + `Schichtplanung ▸ Übergabe-Templates` (nur `canManage` via `applyShiftHandoverVariant`, ADR-045)
+- Zwei neue Permission-Module unter dem Addon `shift_planning`: `shift-handover-templates` (canRead/canWrite/canDelete) + `shift-handover-entries` (canRead/canWrite/canDelete)
+- Audit-Log-Einträge für Template-Upsert/Delete und Entry-Submit/Reopen (ActivityLoggerService)
+- 95 Unit Tests + 39 API-Integrationstests
+- ADR-052
+
 ## Addon Status Matrix (ADR-033)
 
 > **Modell:** Core + À-la-carte Addons (keine Plan-Tiers mehr, siehe ADR-033)

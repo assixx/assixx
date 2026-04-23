@@ -43,9 +43,10 @@
   import RotationSetupModal from './_lib/RotationSetupModal.svelte';
   import ShiftAssignmentCounts from './_lib/ShiftAssignmentCounts.svelte';
   import ShiftControls from './_lib/ShiftControls.svelte';
+  import ShiftHandoverModal from './_lib/ShiftHandoverModal.svelte';
   import ShiftScheduleGrid from './_lib/ShiftScheduleGrid.svelte';
   import ShiftScheduleLegend from './_lib/ShiftScheduleLegend.svelte';
-  import { shiftsState } from './_lib/state.svelte';
+  import { createHandoverState, shiftsState } from './_lib/state.svelte';
   import SwapConsentBanner from './_lib/SwapConsentBanner.svelte';
   import SwapRequestModal from './_lib/SwapRequestModal.svelte';
   import {
@@ -60,6 +61,7 @@
   import WeekNavigation from './_lib/WeekNavigation.svelte';
 
   import type { PageData } from './$types';
+  import type { HandoverContext } from './_lib/state.svelte';
   import type { AssignmentCount, ShiftDetailData, ShiftTimesMap } from './_lib/types';
 
   // --- SSR DATA ---
@@ -93,6 +95,15 @@
     requesterDate: string;
     requesterShiftType: string;
   } | null>(null);
+
+  // Shift-handover state (Plan §5.1). See `_lib/state-handover.svelte.ts`.
+  const handover = createHandoverState({
+    getTeamId: () => shiftsState.selectedContext.teamId,
+    getWeekRange: () => ({
+      from: formatDate(getWeekStart(shiftsState.currentWeek)),
+      to: formatDate(getWeekEnd(shiftsState.currentWeek)),
+    }),
+  });
 
   // Build shift times map from SSR API data (tenant-configurable)
   const shiftTimesMap: ShiftTimesMap = $derived(
@@ -179,6 +190,69 @@
         yearCount: entry.yearCount - entry.weekInYearCount + l.weekInYear,
       };
     });
+  });
+
+  // --- SHIFT HANDOVER (Plan §5.1) ---
+
+  $effect(() => {
+    // Re-run whenever team or week changes (both are read, triggering dep tracking).
+    const teamId = shiftsState.selectedContext.teamId;
+    const week = shiftsState.currentWeek;
+    if (teamId === null || !shiftsState.showPlanningUI) return;
+    void handover.refresh();
+    void week;
+  });
+
+  function handleHandoverOpen(ctx: HandoverContext): void {
+    const teamId = shiftsState.selectedContext.teamId;
+    if (teamId === null) return;
+    handover.setModalTarget({ ...ctx, teamId });
+  }
+
+  /**
+   * ADR-045 Layer-1 canManage — derived from already-loaded layout data.
+   * Root / (admin + hasFullAccess) / any lead → true.
+   */
+  const canManageHandover = $derived(
+    ssrUser.role === 'root' ||
+      (ssrUser.role === 'admin' && ssrUser.hasFullAccess === true) ||
+      ssrOrgScope.type !== 'none',
+  );
+
+  const modalTarget = $derived(handover.getModalTarget());
+
+  /** Assignee display names for the currently-targeted modal cell. */
+  const handoverAssigneeNames = $derived.by(() => {
+    if (modalTarget === null) return [] as string[];
+    const empIds = shiftsState.getShiftEmployees(modalTarget.shiftDate, modalTarget.shiftKey);
+    return empIds.map((id) => {
+      const emp = shiftsState.getEmployeeById(id);
+      if (emp === undefined) return `Mitarbeiter #${id}`;
+      const first = emp.firstName ?? '';
+      const last = emp.lastName ?? '';
+      const full = `${first} ${last}`.trim();
+      return full === '' ? emp.username : full;
+    });
+  });
+
+  /**
+   * Read-only when the current user is neither an assignee of the cell
+   * nor a manager (ADR-045). Submitted entries are also read-only for
+   * users without reopen rights (V2 would flip this when Lead clicks
+   * reopen).
+   */
+  const handoverModalReadOnly = $derived.by(() => {
+    if (modalTarget === null) return true;
+    const status = handover.getStatus(modalTarget.shiftDate, modalTarget.shiftKey);
+    if (status === 'submitted' && !canManageHandover) return true;
+    if (canManageHandover) return false;
+    const empIds = shiftsState.getShiftEmployees(modalTarget.shiftDate, modalTarget.shiftKey);
+    return !empIds.includes(shiftsState.currentUserId ?? -1);
+  });
+
+  const handoverExistingEntryId = $derived.by((): string | null => {
+    if (modalTarget === null) return null;
+    return handover.lookupEntryId(modalTarget.shiftDate, modalTarget.shiftKey);
   });
 
   // --- SSR INIT ---
@@ -570,6 +644,8 @@
               onemployeeClick={swapEnabled && !shiftsState.isManager ?
                 handleEmployeeClick
               : undefined}
+              onhandoverClick={handleHandoverOpen}
+              getHandoverStatus={handover.getStatus}
             />
 
             <!-- Right Column: Controls + Sidebar -->
@@ -665,6 +741,29 @@
         syncRotationToggles();
       }}
       ongenerate={handleCustomRotationGenerate}
+    />
+  {/if}
+
+  <!-- Shift Handover Modal (Plan §5.1) -->
+  {#if modalTarget !== null}
+    {@const targetTeamId = modalTarget.teamId}
+    <ShiftHandoverModal
+      teamId={targetTeamId}
+      teamName={shiftsState.employeeTeamInfo?.teamName ??
+        shiftsState.teams.find((t) => t.id === targetTeamId)?.name ??
+        `${labels.team} #${targetTeamId}`}
+      teamLabel={labels.team}
+      shiftDate={modalTarget.shiftDate}
+      shiftKey={modalTarget.shiftKey}
+      assigneeNames={handoverAssigneeNames}
+      readOnly={handoverModalReadOnly}
+      existingEntryId={handoverExistingEntryId}
+      onclose={() => {
+        handover.setModalTarget(null);
+      }}
+      onmutated={() => {
+        void handover.refresh();
+      }}
     />
   {/if}
 

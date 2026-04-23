@@ -286,6 +286,31 @@ export class ShiftHandoverEntriesService {
   }
 
   /**
+   * Read-scope helper for the controller (plan §2.6 "same-team" filter).
+   * Returns `true` iff the user has a `user_teams` row for the given team
+   * in the current tenant. RLS tenant-filter is enforced automatically
+   * (ADR-019).
+   *
+   * Scope resolution layering at the controller:
+   *  1. `hasFullAccess || role === 'root'` short-circuits (ADR-010).
+   *  2. `ScopeService.getScope().teamIds` covers management scope
+   *     (leads + hierarchy-permission cascades).
+   *  3. This method covers plain team membership (employees not in any
+   *     lead position but assigned to the team via `user_teams`).
+   *
+   * Kept on EntriesService (not on a generic helper) because it mirrors
+   * the module's existing `tenantQuery` usage and keeps the controller
+   * free from direct `DatabaseService` wiring.
+   */
+  async isTeamMember(userId: number, teamId: number): Promise<boolean> {
+    const rows = await this.db.tenantQuery<{ user_id: number }>(
+      `SELECT user_id FROM user_teams WHERE user_id = $1 AND team_id = $2 LIMIT 1`,
+      [userId, teamId],
+    );
+    return rows.length > 0;
+  }
+
+  /**
    * Cross-tenant bulk auto-lock. Runs on sys_user (BYPASSRLS) — the only
    * method in this service that does, because the sweep is intentionally
    * tenant-agnostic. Snapshots the current template per matched row via

@@ -99,6 +99,15 @@ export default defineConfig({
             '@assixx/shared/constants': resolve(rootDir, './shared/src/constants/index.ts'),
             '@assixx/shared/helpers': resolve(rootDir, './shared/src/helpers/index.ts'),
             '@assixx/shared/types': resolve(rootDir, './shared/src/types/index.ts'),
+            // Phase-2.1 addition (FEAT_SHIFT_HANDOVER §R14): the shared
+            // module is published via conditional exports in production,
+            // but Vitest resolves by alias in unit-test mode and needs
+            // an explicit entry so runtime imports don't hit Node's
+            // package lookup.
+            '@assixx/shared/shift-handover': resolve(
+              rootDir,
+              './shared/src/shift-handover/index.ts',
+            ),
             '@assixx/shared': resolve(rootDir, './shared/src/index.ts'),
           },
         },
@@ -128,6 +137,15 @@ export default defineConfig({
             '@assixx/shared/constants': resolve(rootDir, './shared/src/constants/index.ts'),
             '@assixx/shared/helpers': resolve(rootDir, './shared/src/helpers/index.ts'),
             '@assixx/shared/types': resolve(rootDir, './shared/src/types/index.ts'),
+            // Phase-2.1 addition (FEAT_SHIFT_HANDOVER §R14): the shared
+            // module is published via conditional exports in production,
+            // but Vitest resolves by alias in unit-test mode and needs
+            // an explicit entry so runtime imports don't hit Node's
+            // package lookup.
+            '@assixx/shared/shift-handover': resolve(
+              rootDir,
+              './shared/src/shift-handover/index.ts',
+            ),
             '@assixx/shared': resolve(rootDir, './shared/src/index.ts'),
           },
         },
@@ -173,6 +191,15 @@ export default defineConfig({
             '@assixx/shared/constants': resolve(rootDir, './shared/src/constants/index.ts'),
             '@assixx/shared/helpers': resolve(rootDir, './shared/src/helpers/index.ts'),
             '@assixx/shared/types': resolve(rootDir, './shared/src/types/index.ts'),
+            // Phase-2.1 addition (FEAT_SHIFT_HANDOVER §R14): the shared
+            // module is published via conditional exports in production,
+            // but Vitest resolves by alias in unit-test mode and needs
+            // an explicit entry so runtime imports don't hit Node's
+            // package lookup.
+            '@assixx/shared/shift-handover': resolve(
+              rootDir,
+              './shared/src/shift-handover/index.ts',
+            ),
             '@assixx/shared': resolve(rootDir, './shared/src/index.ts'),
           },
         },

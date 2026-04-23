@@ -311,3 +311,12 @@ export const shiftsState = {
   clearShiftData,
   reset,
 };
+
+// ──────────────────────────────────────────────────────────────────────────
+// Shift-handover passthrough (Plan §5.1) — re-exported from the main state
+// barrel so consumer pages (e.g. `+page.svelte`) don't add another module
+// to their import graph. Implementation lives in `./state-handover.svelte.ts`
+// to keep this file focused on pure shift-planning state.
+// ──────────────────────────────────────────────────────────────────────────
+export { createHandoverState } from './state-handover.svelte';
+export type { HandoverContext } from './shift-handover-types';

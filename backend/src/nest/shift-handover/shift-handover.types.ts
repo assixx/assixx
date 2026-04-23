@@ -109,3 +109,32 @@ export const SHIFT_HANDOVER_ALLOWED_MIME_TYPES = [
   'image/heic',
 ] as const;
 export type ShiftHandoverAllowedMimeType = (typeof SHIFT_HANDOVER_ALLOWED_MIME_TYPES)[number];
+
+/**
+ * TPM-/Blackboard-style `/my-permissions` response shape (plan §2.6).
+ *
+ * Layer-2 permissions only (ADR-045). Frontend computes the Layer-1
+ * `canManage` flag locally from `role + hasFullAccess + orgScope.isAnyLead`
+ * which are already loaded via SvelteKit layout data — keeping one source
+ * of truth per gate layer.
+ *
+ * Spec deviation (recorded in plan changelog): the plan's literal shape
+ * `{canManageTemplates, canWriteForToday}` is reshaped into this canonical
+ * TPM pattern because (a) `canWriteForToday` is a runtime per-slot check
+ * that belongs on the draft-create path, not a static permission flag;
+ * (b) `canManageTemplates` duplicates layout-data state and would drift.
+ *
+ * @see docs/FEAT_SHIFT_HANDOVER_MASTERPLAN.md §2.6
+ * @see docs/infrastructure/adr/ADR-020-per-user-feature-permissions.md
+ * @see docs/infrastructure/adr/ADR-045-permission-visibility-design.md
+ */
+export interface ShiftHandoverModulePermissions {
+  canRead: boolean;
+  canWrite: boolean;
+  canDelete: boolean;
+}
+
+export interface ShiftHandoverMyPermissions {
+  templates: ShiftHandoverModulePermissions;
+  entries: ShiftHandoverModulePermissions;
+}

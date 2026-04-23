@@ -81,12 +81,22 @@ const TRANSIENT_TABLES = [
   // Halls: created by halls API tests, no FK children
   'halls',
 
+  // Shifts: RESTRICT FK into departments — MUST delete before departments.
+  // Order: shift_swap_requests (RESTRICT → shifts) → shifts (CASCADE handles
+  // shift_assignments children). Shift-handover feature (2026-04) started
+  // writing real shift rows for apitest, which surfaced the blocker the
+  // prior teardown comment anticipated.
+  'shift_swap_requests',
+  'shifts',
+
+  // Document permissions: RESTRICT FK into both departments AND teams —
+  // MUST delete before either. Currently 0 rows for apitest but listed
+  // defensively so future document-scope tests don't re-break teardown.
+  'document_permissions',
+
   // Org structure: departments, teams, assets accumulate ~2-3 rows/run.
   // Order: assets first (tpm_cards already cleaned above), then teams
   // (FK CASCADE handles user_teams, asset_teams, etc.), then departments last.
-  // RESTRICT FKs: shifts + document_permissions reference departments/teams
-  // with RESTRICT — currently 0 rows for apitest tenant, but if they ever
-  // accumulate, add them BEFORE these three tables.
   // Seed data from 00-auth.api.test.ts is auto-recreated via WHERE NOT EXISTS.
   'assets',
   'teams',
@@ -98,6 +108,16 @@ const TRANSIENT_TABLES = [
   'inventory_custom_fields',
   'inventory_items',
   'inventory_lists',
+
+  // Organigram: user→position assignments. Table has NO is_active, so UNIQUE
+  // (tenant_id, user_id, position_id) blocks re-runs of organigram.api.test.ts
+  // once the same user is re-assigned to the same position. Hard-delete is
+  // the only viable cleanup (partial-unique-index wouldn't apply).
+  'user_positions',
+
+  // tenant_domains is intentionally NOT in this list — it needs a filtered
+  // DELETE (WHERE is_primary = false) to preserve the seed apitest.de row.
+  // See the dedicated statement in CLEANUP_SQL below.
 ] as const;
 
 const CLEANUP_SQL = `
@@ -127,6 +147,26 @@ BEGIN
   GET DIAGNOSTICS _deleted = ROW_COUNT;
   _total := _total + _deleted;
 
+  -- Tenant domains: preserve the seed primary (is_primary=true, e.g. apitest.de).
+  -- Backend blocks POST /users + /dummy-users with 403 if the tenant has no
+  -- verified primary domain (feat: add tenant domain as subdomain). Clean only
+  -- non-primary rows — active test-created and soft-deleted phase4 debris.
+  DELETE FROM tenant_domains WHERE tenant_id = _tenant_id AND is_primary = false;
+  GET DIAGNOSTICS _deleted = ROW_COUNT;
+  _total := _total + _deleted;
+
+  -- NOTE (2026-04-23): Accumulating role=admin/employee test users
+  -- (esp. perm-api-test-{timestamp}@apitest.de from user-permissions tests,
+  -- currently ~140 rows) are NOT cleaned here. Reason: 27 tables hold
+  -- RESTRICT FKs into users (password_reset_tokens, admin_logs, addon_usage_logs,
+  -- audit_trail children, etc.). Hard-deleting users would trip at least one
+  -- of them, and the list grows with every new feature module. Tests stay
+  -- correct because emails are unique (timestamp-based), so no UNIQUE collision
+  -- — it's pure storage bloat, not a correctness bug. A dedicated cleanup ADR
+  -- with per-FK strategy is the right way to address this; out of scope here.
+  -- See docs/how-to/HOW-TO-CREATE-TEST-USER.md for the intended baseline
+  -- (admin@apitest.de + employee@apitest.de).
+
   RAISE NOTICE 'apitest tenant (id=%): cleaned % rows (% from % tables + % dummy users)',
     _tenant_id, _total, _total - _deleted, array_length(_tables, 1), _deleted;
 END $$;
@@ -135,15 +175,24 @@ END $$;
 /**
  * Vitest globalTeardown hook — runs once after all API tests.
  * Cleans transient test data so the DB stays lean between runs.
+ *
+ * Failures MUST be loud: silently swallowing them (the previous behaviour) lets
+ * stale rows accumulate across runs, which then trip UNIQUE constraints and
+ * makes the next run fail in a way that looks like a product bug — wasting
+ * hours of debugging. See docs/DATABASE-MIGRATION-GUIDE.md "Migration Quality
+ * Standards → Required Patterns → FAIL LOUD" for the project-wide posture.
  */
 export function teardown(): void {
   try {
-    execSync('docker exec -i assixx-postgres psql -U assixx_user -d assixx', {
+    execSync('docker exec -i assixx-postgres psql -U assixx_user -d assixx -v ON_ERROR_STOP=1', {
       input: CLEANUP_SQL,
       stdio: ['pipe', 'pipe', 'pipe'],
       timeout: 30_000,
     });
-  } catch {
-    console.warn('[global-teardown] Tenant cleanup failed — data will be cleaned on next run');
+  } catch (error: unknown) {
+    const stderr = error instanceof Error && 'stderr' in error ? String(error.stderr) : '';
+    console.error('[global-teardown] Tenant cleanup FAILED — next run will start dirty');
+    if (stderr !== '') console.error(stderr);
+    throw error;
   }
 }

@@ -38,7 +38,9 @@
   import { createPresenceCallbacks, formatTokenTime, performLogout } from './_lib/layout-helpers';
   import LogoutModal from './_lib/LogoutModal.svelte';
   import {
+    applyShiftHandoverVariant,
     applySurveysVariant,
+    canManageShiftHandoverTemplates,
     canManageSurveys,
     filterMenuByAccess,
     filterMenuByAddons,
@@ -233,18 +235,32 @@
   const canManageSurveysFlag = $derived(
     canManageSurveys(data.user?.role, Boolean(data.user?.hasFullAccess), data.orgScope.isAnyLead),
   );
+  // Layer-1 canManage gate for the "Übergabe-Templates" sidebar sub-entry (ADR-045).
+  // Runs in the same position as `canManageSurveysFlag`; consumed by
+  // `applyShiftHandoverVariant` which is chained AFTER `filterMenuByAddons`.
+  // See FEAT_SHIFT_HANDOVER_MASTERPLAN Session 11.
+  const canManageShiftHandoverTemplatesFlag = $derived(
+    canManageShiftHandoverTemplates(
+      data.user?.role,
+      Boolean(data.user?.hasFullAccess),
+      data.orgScope.isAnyLead,
+    ),
+  );
   const menuItems = $derived(
-    applySurveysVariant(
-      filterMenuByAddons(
-        filterMenuByScope(
-          filterMenuByAccess(getMenuItemsForRole(currentRole, hierarchyLabels), hasFullAccess),
-          data.orgScope,
-          currentRole,
-          hierarchyLabels,
+    applyShiftHandoverVariant(
+      applySurveysVariant(
+        filterMenuByAddons(
+          filterMenuByScope(
+            filterMenuByAccess(getMenuItemsForRole(currentRole, hierarchyLabels), hasFullAccess),
+            data.orgScope,
+            currentRole,
+            hierarchyLabels,
+          ),
+          activeAddonsSet,
         ),
-        activeAddonsSet,
+        canManageSurveysFlag,
       ),
-      canManageSurveysFlag,
+      canManageShiftHandoverTemplatesFlag,
     ),
   );
 

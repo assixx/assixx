@@ -37,7 +37,16 @@ import type { PoolClient } from 'pg';
 
 import { getErrorMessage } from '../common/index.js';
 import { DatabaseService } from '../database/database.service.js';
-import type { ShiftHandoverTemplateRow } from './shift-handover.types.js';
+import {
+  SHIFT_HANDOVER_ENTRIES_MODULE,
+  SHIFT_HANDOVER_TEMPLATES_MODULE,
+  SHIFT_PLANNING_ADDON,
+} from './shift-handover.permissions.js';
+import type {
+  ShiftHandoverModulePermissions,
+  ShiftHandoverMyPermissions,
+  ShiftHandoverTemplateRow,
+} from './shift-handover.types.js';
 
 /**
  * Canonical SQL fragment for "tenant_id derived from the current RLS
@@ -45,6 +54,25 @@ import type { ShiftHandoverTemplateRow } from './shift-handover.types.js';
  * pattern verbatim so INSERT-target === policy-check value.
  */
 const TENANT_ID_FROM_RLS = `NULLIF(current_setting('app.tenant_id', true), '')::integer`;
+
+/**
+ * Short-circuit grant for Root / `has_full_access` users (ADR-010). Hoisted
+ * to module scope so the `getMyPermissions` fast-path stays a one-liner and
+ * keeps the function under the 60-LOC cap.
+ */
+const FULL_ACCESS_PERMISSIONS: ShiftHandoverModulePermissions = {
+  canRead: true,
+  canWrite: true,
+  canDelete: true,
+};
+
+/** Row shape for `user_addon_permissions` — same as TPM/Blackboard. */
+interface PermRow {
+  module_code: string;
+  can_read: boolean;
+  can_write: boolean;
+  can_delete: boolean;
+}
 
 @Injectable()
 export class ShiftHandoverTemplatesService {
@@ -136,6 +164,56 @@ export class ShiftHandoverTemplatesService {
     if (updated.length === 0) {
       throw new NotFoundException(`No active template found for team ${teamId}`);
     }
+  }
+
+  /**
+   * TPM-/Blackboard-style Layer-2 self-lookup (ADR-045). Returns the
+   * caller's effective `{canRead, canWrite, canDelete}` for the two
+   * `shift_planning` permission modules registered by this addon
+   * (`shift-handover-templates`, `shift-handover-entries`).
+   *
+   * Semantics mirror the canonical implementations in
+   * `backend/src/nest/tpm/tpm-plans.service.ts` and
+   * `backend/src/nest/blackboard/blackboard-entries.service.ts` verbatim —
+   * same short-circuit for `hasFullAccess`, same RLS-scoped query, same
+   * default-`false` resolution for missing rows. Copy-parity is deliberate:
+   * three identical self-checks across features form the ADR-045-Layer-2
+   * read pattern that the frontend relies on.
+   *
+   * Frontend computes the ADR-045-Layer-1 `canManage` flag from layout
+   * data (`role + hasFullAccess + orgScope.isAnyLead`); this method
+   * intentionally does not re-return it (would duplicate state and risk
+   * drift).
+   *
+   * @see docs/FEAT_SHIFT_HANDOVER_MASTERPLAN.md §2.6 `GET /my-permissions`
+   */
+  async getMyPermissions(
+    userId: number,
+    hasFullAccess: boolean,
+  ): Promise<ShiftHandoverMyPermissions> {
+    this.logger.debug(`getMyPermissions user=${userId} hasFullAccess=${hasFullAccess}`);
+    if (hasFullAccess) {
+      return { templates: FULL_ACCESS_PERMISSIONS, entries: FULL_ACCESS_PERMISSIONS };
+    }
+    const rows = await this.db.tenantQuery<PermRow>(
+      `SELECT module_code, can_read, can_write, can_delete
+         FROM user_addon_permissions
+        WHERE user_id = $1 AND addon_code = $2`,
+      [userId, SHIFT_PLANNING_ADDON],
+    );
+    const perms = new Map(rows.map((r: PermRow) => [r.module_code, r]));
+    const resolve = (code: string): ShiftHandoverModulePermissions => {
+      const row = perms.get(code);
+      return {
+        canRead: row?.can_read ?? false,
+        canWrite: row?.can_write ?? false,
+        canDelete: row?.can_delete ?? false,
+      };
+    };
+    return {
+      templates: resolve(SHIFT_HANDOVER_TEMPLATES_MODULE),
+      entries: resolve(SHIFT_HANDOVER_ENTRIES_MODULE),
+    };
   }
 
   /**

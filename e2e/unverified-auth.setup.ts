@@ -25,11 +25,15 @@ setup('authenticate as unverified root', async ({ page }) => {
   await page.getByRole('textbox', { name: 'E-Mail' }).fill('test@unverified-e2e.test');
   await page.getByRole('textbox', { name: 'Passwort' }).fill('Unverified12345!');
 
-  // Mirror auth.setup.ts — wait for Turnstile token (15s budget covers cold
-  // CDN on first suite run; `auth.setup.ts` warms the iframe cache but this
-  // setup may land on a fresh Turnstile context since it's a different origin).
+  // Turnstile budget: 30s (not 15s like auth.setup.ts). This setup runs on
+  // `unverified-e2e.localhost:5174` while `auth.setup.ts` runs on
+  // `apitest.localhost:5174` — different origin means the Turnstile iframe
+  // cache is cold, and the fresh challenge script takes ~10 s + buffer to
+  // unlock the submit button even with the official test keys (HOW-TO-CLOUDFLARE-TURNSTILE.md:
+  // "sofort" auto-resolve only applies once the challenge script is already
+  // loaded; the first-origin load is not instant).
   const submitButton = page.getByRole('button', { name: 'Anmelden', exact: true });
-  await expect(submitButton).toBeEnabled({ timeout: 15000 });
+  await expect(submitButton).toBeEnabled({ timeout: 30000 });
   await submitButton.click();
 
   await page.waitForURL('**/root-dashboard');

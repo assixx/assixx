@@ -15,7 +15,7 @@
 # Stage 1: Build
 # -----------------------------------------------------------------------------
 # Node version is configurable via docker-compose.yml build args
-ARG NODE_VERSION=24.14.0-bookworm-slim
+ARG NODE_VERSION=24.15.0-bookworm-slim
 FROM node:${NODE_VERSION} AS builder
 LABEL org.opencontainers.image.authors="Assixx"
 
@@ -84,7 +84,7 @@ RUN pnpm deploy --filter=assixx-frontend --prod /deploy
 # Stage 2: Production
 # -----------------------------------------------------------------------------
 # Re-declare ARG for this stage (ARG scope is per-stage)
-ARG NODE_VERSION=24.14.0-bookworm-slim
+ARG NODE_VERSION=24.15.0-bookworm-slim
 FROM node:${NODE_VERSION} AS production
 LABEL org.opencontainers.image.authors="Assixx"
 
