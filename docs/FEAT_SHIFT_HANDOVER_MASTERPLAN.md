@@ -2,7 +2,7 @@
 
 > **Plan type:** FEATURE
 > **Created:** 2026-04-21
-> **Version:** 0.16.0 (Session 13 docs + ADR shipped — ADR-052, FEATURES.md, Breadcrumb, ADR-README cross-ref; drift-fix on Session-10 state-templates helper; validate:all green; customer sync + manual smoke are user-owned residuals)
+> **Version:** 0.19.0 (Session 19 — Schlüssel-Input hidden in FieldBuilder; keys now fully auto-derived via `deriveUniqueKey` with duplicate-disambiguation + `'feld'` fallback; `updateKey`/`setKey` stranded code removed; grid template adjusted 4-col → 3-col; svelte-check 0/0/2579, ESLint 0)
 > **Status:** IMPLEMENTATION COMPLETE — Sessions 1-13 ✅ DONE for code + documentation. Two residual user-owned items before closing the masterplan: (a) run `./scripts/sync-customer-migrations.sh` to sync fresh-install schema/seeds, (b) execute the 7-stage manual smoke test in §Manual Smoke Test and tick the final Phase-5 DoD checkbox.
 > **Branch:** `feat/shift-handover` (to be created from `test/ui-ux` once approved)
 > **Spec:** This document. No external spec — captured from product owner conversation 2026-04-21.
@@ -887,15 +887,15 @@ frontend/src/routes/(app)/
 
 **Click-path — 7 stages:**
 
-| #   | Actor   | Action                                                                                                                                                                                                                                                                                                                                    | Expected outcome                                                                                                                                                                                                                                                                                                                                                                                                           |
-| --- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1   | T-Lead  | Log in → sidebar shows **Schichtplanung ▸** (submenu). Expand → child **Übergabe-Templates** visible. Click it.                                                                                                                                                                                                                           | Route `/shift-handover-templates`. Team filter dropdown populated with teams in scope (`labels.team` label per ADR-034).                                                                                                                                                                                                                                                                                                   |
-| 2   | T-Lead  | Select team X → FieldBuilder appears. Add one field for each of the 8 types: text / textarea / integer / decimal / date / time / boolean / select (for select, add ≥2 options). Set one field `required: true`. Click **Speichern**.                                                                                                      | Toast "Vorlage gespeichert." (4s). Reload page, re-select team X — all 8 fields re-render in the same order.                                                                                                                                                                                                                                                                                                               |
-| 3   | T-Lead  | Log out.                                                                                                                                                                                                                                                                                                                                  | —                                                                                                                                                                                                                                                                                                                                                                                                                          |
-| 4   | E-Early | Log in → Schichtplanung ▸ Schichtplanung (flat child, since `canManage === false` → templates child is variant-filtered out per Session 11 `applyShiftHandoverVariant`). Navigate to shift grid for date D.                                                                                                                               | Grid renders. The shift-cell for team X / D / early shows 📋 button in **grey** (no entry yet). Team-filter dropdown uses `labels.team`.                                                                                                                                                                                                                                                                                   |
-| 5   | E-Early | Click 📋 → modal opens. Verify meta: Datum dd.mm.yyyy + KW, Schicht **Frühschicht**, **{tenant's team label}** (not literal "Team" — proves the Session 12 fix), Zugeteilt = E-Early's name. Header badge = **Entwurf** (yellow). Fill Protokoll + all 8 custom fields. Upload 2 images (≤5 MB, PNG/JPEG). Click **Speichern (Entwurf)**. | Toast "Entwurf gespeichert." Modal closes. Re-open the same cell → values persist; badge still **Entwurf**.                                                                                                                                                                                                                                                                                                                |
-| 6   | E-Early | Re-open modal → click **Übergabe abschließen**.                                                                                                                                                                                                                                                                                           | Toast "Übergabe abgeschlossen." Badge flips to **Abgeschlossen** (green). All form controls disabled (`canEdit === false` because `isSubmitted`). Custom fields display values but cannot be edited. Image upload button hidden. The cell button color flips from yellow → **green**. Log out.                                                                                                                             |
-| 7   | E-Late  | Log in. Navigate to shift grid for date D. Click 📋 on team X / D / **late** cell → creates NEW draft for the late shift (separate row — per-slot granularity from `(tenant_id, team_id, shift_date, shift_key)` UNIQUE constraint). Also open 📋 on the **early** cell of date D.                                                        | Late cell: grey → modal opens with empty draft. Early cell: green → modal opens in **read-only** mode showing E-Early's submitted content. **Renders from `schema_snapshot`, not the live template** — the R2 test is: if T-Lead went back to `/shift-handover-templates` now and deleted one of the 8 fields, E-Late should STILL see the original 8 fields in E-Early's submitted entry. This is the drift-safety proof. |
+| #   | Actor   | Action                                                                                                                                                                                                                                                                                                                                                 | Expected outcome                                                                                                                                                                                                                                                                                                                                                                                                           |
+| --- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | T-Lead  | Log in → sidebar shows **Schichtplanung ▸** (submenu). Expand → child **Übergabe-Templates** visible. Click it.                                                                                                                                                                                                                                        | Route `/shift-handover-templates`. Team filter dropdown populated with teams in scope (`labels.team` label per ADR-034).                                                                                                                                                                                                                                                                                                   |
+| 2   | T-Lead  | Select team X → FieldBuilder appears. Add one field for each of the 7 offered types (Session 20): text / textarea / **Zahl** (unified `decimal`) / date / time / boolean / select (for select, add ≥2 options). Set one field `required: true`. Click **Speichern**.                                                                                   | Toast "Vorlage gespeichert." (4s). Reload page, re-select team X — all 7 fields re-render in the same order.                                                                                                                                                                                                                                                                                                               |
+| 3   | T-Lead  | Log out.                                                                                                                                                                                                                                                                                                                                               | —                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| 4   | E-Early | Log in → Schichtplanung ▸ Schichtplanung (flat child, since `canManage === false` → templates child is variant-filtered out per Session 11 `applyShiftHandoverVariant`). Navigate to shift grid for date D.                                                                                                                                            | Grid renders. The shift-cell for team X / D / early shows 📋 button in **grey** (no entry yet). Team-filter dropdown uses `labels.team`.                                                                                                                                                                                                                                                                                   |
+| 5   | E-Early | Click 📋 → modal opens. Verify meta: Datum dd.mm.yyyy + KW, Schicht **Frühschicht**, **{tenant's team label}** (not literal "Team" — proves the Session 12 fix), Zugeteilt = E-Early's name. Header badge = **Entwurf** (yellow). Fill Protokoll + all 7 custom fields (Session 20). Upload 2 images (≤5 MB, PNG/JPEG). Click **Speichern (Entwurf)**. | Toast "Entwurf gespeichert." Modal closes. Re-open the same cell → values persist; badge still **Entwurf**.                                                                                                                                                                                                                                                                                                                |
+| 6   | E-Early | Re-open modal → click **Übergabe abschließen**.                                                                                                                                                                                                                                                                                                        | Toast "Übergabe abgeschlossen." Badge flips to **Abgeschlossen** (green). All form controls disabled (`canEdit === false` because `isSubmitted`). Custom fields display values but cannot be edited. Image upload button hidden. The cell button color flips from yellow → **green**. Log out.                                                                                                                             |
+| 7   | E-Late  | Log in. Navigate to shift grid for date D. Click 📋 on team X / D / **late** cell → creates NEW draft for the late shift (separate row — per-slot granularity from `(tenant_id, team_id, shift_date, shift_key)` UNIQUE constraint). Also open 📋 on the **early** cell of date D.                                                                     | Late cell: grey → modal opens with empty draft. Early cell: green → modal opens in **read-only** mode showing E-Early's submitted content. **Renders from `schema_snapshot`, not the live template** — the R2 test is: if T-Lead went back to `/shift-handover-templates` now and deleted one of the 7 fields, E-Late should STILL see the original 7 fields in E-Early's submitted entry. This is the drift-safety proof. |
 
 **R2 drift-safety side-proof (optional but recommended):**
 
@@ -1535,6 +1535,211 @@ Convert the modal to a dedicated route:
 5. Click 📋 on a cell OUTSIDE your assignment (as an employee, non-Lead) → cell was empty → warning toast "Für diese Schicht wurde keine Übergabe angelegt." (no navigation).
 6. Click 📋 on a cell where someone else has a SUBMITTED entry and you're an employee → `/shift-handover/${uuid}` read-only view renders snapshot, no edit controls.
 7. Click 📋 on a past-shift cell → `/new` POSTs, backend returns 403 `outside_window`, redirect to `/shifts?handover-error=Diese+Schicht+liegt...` → toast fires + URL cleans itself. No modal flash.
+
+---
+
+## Session 19 — Smoke-Test Finding: Hide Schlüssel Input in FieldBuilder ✅ DONE (2026-04-24)
+
+### Problem (smoke-test, user-reported)
+
+On `/shift-handover-templates`, the FieldBuilder rendered a per-field
+"Schlüssel" text input next to "Bezeichnung". End-users have no concept of a
+column identifier and were confused. Quote: _"das verwirrt den user nur"_.
+
+### Root cause
+
+The original design ([masterplan §5.2](#step-52-template-config-page)) exposed
+the key for advanced disambiguation (e.g. two fields labelled "Menge" with
+different DB keys). In practice no end-user ever needs that: the key is a
+database-layer implementation detail, not a UX-level concept.
+
+Auto-derivation already existed (`deriveKey` label→slug, frozen once the user
+focused the input via `_keyTouched`), but the input was visible by default
+and the "(automatisch)" helper copy reinforced the sense that the user had to
+understand what it did.
+
+### Fix (UI removal + auto-derive hardening)
+
+**UI change — `FieldBuilder.svelte`:**
+
+- Removed the entire `<div class="form-field">…Schlüssel…</div>` block (the
+  `id="field-{uid}-key"` input). Comment marker left in place pointing at
+  this session for archaeology.
+- Grid `@media (width >= 768px)` `.field-row__grid` template changed
+  `2fr 2fr 1.5fr 1fr` → `3fr 1.5fr 1fr`. Label gets the reclaimed space; it
+  is the only free-text control left.
+- JSDoc banner updated: "Inline edit (label / required / type / options)" and
+  a paragraph explaining auto-key behaviour now lives under Session 19.
+
+**Tooltip copy — `FieldTypeSelector.svelte`:**
+
+- "Du kannst Bezeichnung, **Schlüssel** und Pflicht-Flag im nächsten Schritt
+  anpassen." → "Du kannst Bezeichnung und Pflicht-Flag im nächsten Schritt
+  anpassen." (removed Schlüssel from the user-facing affordance list).
+
+**State hardening — `state-templates.svelte.ts`:**
+
+- New helper `deriveUniqueKey(label, fields, selfUid)`:
+  - Calls `deriveKey(label)` as the base.
+  - Empty-label / symbols-only / digits-only labels fall back to `'feld'`
+    (German "field"). Without this, `validateField` would surface
+    "Schlüssel darf nicht leer sein." with no UI affordance to resolve.
+  - Disambiguates duplicates via `_2`, `_3`, … up to `_999`, with the base
+    trimmed before the suffix so `KEY_MAX_LENGTH` (30) is respected.
+- `setLabel` now calls `deriveUniqueKey` instead of `deriveKey` when
+  `!_keyTouched`. Legacy fields still load with `_keyTouched=true` from
+  `inflateField` so their manual keys are preserved.
+- Removed stranded `setKey` helper + `updateKey` interface method +
+  `updateKey` mutator body (CLAUDE.md: "delete unused code, no
+  backwards-compat hacks"). One JSDoc stub pointer left in place explaining
+  the rationale for future readers.
+
+### Invariants preserved
+
+| Invariant                           | How it stays intact                                                                                                                                                    |
+| ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `schema_snapshot` drift-safety (R2) | Only affects template-editor working state before save. Persisted snapshots are frozen by the backend on submit and never touched here.                                |
+| Legacy manual keys                  | `inflateField` sets `_keyTouched=true`; `setLabel` short-circuits before calling `deriveUniqueKey` for those fields.                                                   |
+| Backend Zod authority               | `ShiftHandoverTemplateFieldsSchema` still runs on save. If an edge case produces an invalid key (shouldn't happen with the new helper), the 400 toast fires as before. |
+| KEY_MAX_LENGTH (30)                 | `deriveUniqueKey` trims the base before appending the numeric suffix — total length ≤ 30.                                                                              |
+| KEY_REGEX                           | `deriveKey`'s regex chain is unchanged. `'feld'` fallback is regex-valid. Numeric suffixes stay in `[a-z0-9_]`.                                                        |
+
+### Verification
+
+- `cd frontend && pnpm run check` → 0 errors, 0 warnings, 2579 files
+- `pnpm exec eslint src/routes/(app)/(shared)/shift-handover-templates/` → exit 0
+- Hook-enforced validate:all after each edit (matches Session 18 discipline)
+- No changes to backend or shared package
+
+### Files changed
+
+**Modified:**
+
+- `frontend/src/routes/(app)/(shared)/shift-handover-templates/_lib/FieldBuilder.svelte` — Schlüssel `<div>` block removed; grid template 4→3 columns; JSDoc updated; delete-button migrated from local `.field-row__delete` (transparent, weak hover) to canonical design-system `.action-icon .action-icon--delete` (coral tinted hover + scale, matches `manage-admins/_lib/AdminTableRow.svelte`); icon `fa-trash-alt` → `fa-trash` for 1:1 parity; field-type `<select>` replaced by canonical `.dropdown/.dropdown__trigger/.dropdown__menu/.dropdown__option` custom dropdown (glassmorphism parity with team-filter); per-row open-state via single `openTypeDropdownUid` + `data-type-dropdown` attribute lookup + document click-outside `$effect`; "Feld hinzufügen" `btn-primary` → `btn-secondary`
+- `frontend/src/routes/(app)/(shared)/shift-handover-templates/_lib/FieldTypeSelector.svelte` — tooltip copy (Schlüssel reference dropped)
+- `frontend/src/routes/(app)/(shared)/shift-handover-templates/_lib/state-templates.svelte.ts` — `deriveUniqueKey` added; `setLabel` routed through it; `setKey` + `updateKey` (interface + mutator) removed; `canonicalize()` helper added + `isDirty` rewritten to use it (fixes false "Ungespeicherte Änderungen" badge on initial load — PostgreSQL `jsonb` sorts keys length-then-alphabetic on round-trip, which diverged from `cleanField`'s insertion order)
+- `frontend/src/routes/(app)/(shared)/shift-handover-templates/+page.svelte` — destructive "Vorlage löschen" action lifted from `card__footer` into top-right of `card__header` (flex-wrap row with the title); "Verwerfen" `btn-secondary` → `btn-cancel`; "Speichern" `btn-primary` → `btn-success`; "Gespeichert" check-circle icon tinted `--color-success` (text stays tertiary-gray for quiet status reading)
+- `docs/FEAT_SHIFT_HANDOVER_MASTERPLAN.md` — this section + version header bump to 0.19.0
+
+### Manual smoke path (user-owned, next turn)
+
+1. Open `/shift-handover-templates`, pick a team with an existing template → rows render with **Bezeichnung | Typ | Pflichtfeld** only (no Schlüssel column). Existing keys stay byte-identical on save (verify via backend payload if curious).
+2. Add two new fields both labelled "Menge" → first auto-keys to `menge`, second to `menge_2`. Save → toast "Vorlage gespeichert.", reload, keys persist.
+3. Add a field labelled "!!!" or "123" → auto-key falls back to `feld` (or `feld_2` if already taken). Save → accepted.
+4. Rename an existing field's label (legacy key like `qty_lb`) → key stays `qty_lb` (frozen by `_keyTouched=true` on server-loaded fields). Save → no silent rename, no schema_snapshot drift.
+5. Submit an entry against the template, then add a new field to the template and save → reopen the submitted entry → original fields still render (R2 drift-safety proof).
+
+---
+
+## Session 20 — Smoke-Test Finding: Integer + Decimal → Zahl Collapse ✅ DONE (2026-04-24)
+
+### Problem (smoke-test, user-reported)
+
+In both the field-type picker modal and the per-row type dropdown, the template
+builder offered **Ganze Zahl** (`integer`) and **Dezimalzahl** (`decimal`) as
+separate options. Quote: _"das ist das problem. ich will einfacher machen"_.
+End-users have no mental model for the distinction — they just want to capture
+"eine Zahl" (Stückzahl, Temperatur, Maß, whatever). The two-option UI forced
+them to guess the DB-layer type discipline of a JSONB validator.
+
+### Root cause
+
+The original design (plan §Product Decisions #6, Phase 1/2) mapped 1:1 to the
+backend Zod validators in `field-validators.ts`: `integer → z.number().int()`
+(rejects 42.5) vs `decimal → z.number()` (accepts any finite number). The
+discrimination is valid at the validator layer — but surfacing it in the
+end-user UI violates KISS. `decimal` is a superset of `integer` (any integer
+is a valid decimal), so one unified "Zahl" option covers every intended use
+case without losing expressiveness.
+
+### Fix (UI-only merge; wire contract unchanged)
+
+**Shared enum (`shared/src/shift-handover/field-types.ts`) — UNCHANGED.**
+`integer` stays in `SHIFT_HANDOVER_FIELD_TYPES` so that already-submitted
+`shift_handover_entries.schema_snapshot` rows with `type: 'integer'` remain
+wire-compatible. Backend Zod validators unchanged. Backend tests unchanged.
+**R2 drift-safety contract preserved.**
+
+**`FieldTypeSelector.svelte`:**
+
+- New local const `UI_FIELD_TYPES: readonly UiFieldType[]` derived from the
+  shared const via a type-predicate filter (`(t): t is UiFieldType => t !== 'integer'`).
+  `UiFieldType = Exclude<ShiftHandoverFieldType, 'integer'>`.
+- `TYPE_META` retyped to `Record<UiFieldType, …>` — removes the `integer`
+  entry entirely, so the picker renders 7 cards instead of 8.
+- `decimal` entry updated: label `"Dezimalzahl"` → `"Zahl"`, hint
+  `"z. B. Temperatur, Maß"` → `"z. B. Stückzahl, Temperatur, Maß"`, icon
+  `fa-calculator` → `fa-hashtag` (more immediately recognizable as "number").
+- Modal description unchanged beyond the implicit "Wähle den Typ" — the
+  confusion was in the card grid itself.
+
+**`FieldBuilder.svelte`:**
+
+- `TYPE_LABEL[integer]` and `TYPE_LABEL[decimal]` both resolve to `"Zahl"`.
+  Legacy fields loaded with `type: 'integer'` therefore display "Zahl" in
+  the dropdown trigger without any extra branching.
+- Identical `UiFieldType` + `UI_FIELD_TYPES` filter as the picker — the type
+  dropdown's `{#each}` now iterates 7 options, not 8.
+- Per-row "Zahl" option onclick: no-op guard. When the user selects "Zahl"
+  on a field whose current type is `integer` OR `decimal`, `updateType` is
+  NOT called. This prevents the surprise dirty-flag bug (same class Session
+  19 fixed for the jsonb round-trip) where re-selecting the already-shown
+  label would silently convert `integer → decimal` and mark the template
+  dirty without any visible change. For any other source type (`text` →
+  "Zahl", `date` → "Zahl", etc.), normal conversion fires and sets type
+  to `decimal` — the new unified number type for freshly-created fields.
+- `class:selected` + `aria-selected` on the "Zahl" option highlight when
+  `field.type === 'decimal'` OR `field.type === 'integer'`.
+
+### Invariants preserved
+
+| Invariant                                     | How it stays intact                                                                                                                               |
+| --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| R2 schema_snapshot drift-safety               | Shared enum unchanged. Entries submitted against legacy templates retain `type: 'integer'` in JSONB and render + validate identically on read.    |
+| Backend Zod authority                         | `field-validators.ts` untouched. `integer → z.number().int()` still enforced for any existing/legacy integer field. New fields save as `decimal`. |
+| Legacy integer templates                      | Keys stay `integer` at the wire until the user explicitly changes the type to a non-number option. Dropdown "Zahl" → "Zahl" is a no-op by design. |
+| No-surprise dirty-flag (Session 19 invariant) | Guard in dropdown onclick prevents silent `integer → decimal` conversion on passive interaction. User must actively change to a different type.   |
+| Entry-form rendering                          | Reads `schema_snapshot.type` per entry. Renders `integer` with `step="1"` and `decimal` with `step="any"` — both continue to work unchanged.      |
+| Field-limit constant (30)                     | Independent axis. Unaffected.                                                                                                                     |
+
+### Verification
+
+- `cd frontend && pnpm run check` → 2579 files, 0 errors, 0 warnings
+- `pnpm exec eslint src/routes/(app)/(shared)/shift-handover-templates/` → exit 0
+- No backend changes → no backend re-run required
+- No shared package changes → no `build:shared` required
+
+### Files changed
+
+**Modified:**
+
+- `frontend/src/routes/(app)/(shared)/shift-handover-templates/_lib/FieldTypeSelector.svelte` — `UI_FIELD_TYPES` local const + `UiFieldType` type alias; `TYPE_META` retyped to exclude `integer`; `decimal` entry relabeled to "Zahl" with combined hint and `fa-hashtag` icon; `{#each}` loop now iterates `UI_FIELD_TYPES`; JSDoc banner documents the Session-20 rationale
+- `frontend/src/routes/(app)/(shared)/shift-handover-templates/_lib/FieldBuilder.svelte` — `TYPE_LABEL[integer]` aliased to "Zahl"; `UiFieldType` + `UI_FIELD_TYPES` local; dropdown `{#each}` switched to `UI_FIELD_TYPES`; per-row "Zahl" option gains `isCurrentNumber` no-op guard so re-selecting the current label on a legacy integer field does not fire `updateType` (avoids surprise dirty-flag)
+- `docs/FEAT_SHIFT_HANDOVER_MASTERPLAN.md` — this section; §Manual Smoke Test Stage 2 + 5 + 7 updated from "8 types / 8 fields" to "7 types / 7 fields"; Stage 2 explicitly names "Zahl" as the merged number type
+
+### Manual smoke path (user-owned, next turn)
+
+1. `/shift-handover-templates` → existing template with a legacy `integer`
+   field opens → the type dropdown for that field shows **"Zahl"** (not
+   "Ganze Zahl"). No dirty-flag on initial load.
+2. Click the dropdown → menu lists 7 options (no "Ganze Zahl"). Click
+   "Zahl" (the currently-displayed label) → dropdown closes, still no
+   dirty-flag. The underlying `type: 'integer'` is preserved at the wire.
+3. Click "+ Feld hinzufügen" → modal shows 7 cards (no "Ganze Zahl"), the
+   number card reads **"Zahl"** with hint "z. B. Stückzahl, Temperatur, Maß"
+   and icon `fa-hashtag`. Select it → new row created with `type: 'decimal'`.
+4. Change the new "Zahl" field's type to "Text" and back to "Zahl" → type
+   cycles `decimal → text → decimal`. Save accepted.
+5. On a legacy `integer` field: change type to "Datum" (non-number), then
+   back to "Zahl" → ends up as `decimal`. This is the only path that
+   converts legacy `integer → decimal` (via an explicit non-number detour);
+   the dirty-flag appears honestly because the user did actively change the
+   type. Saving is accepted; future entries against this template validate
+   as `decimal`.
+6. Submit an entry against a template containing both legacy `integer` and
+   new `decimal` fields → both render with a number input and accept valid
+   values. Already-submitted entries (pre-Session-20) stay byte-identical
+   on re-open (R2 proof).
 
 ---
 

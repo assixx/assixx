@@ -2,10 +2,9 @@
   /**
    * Shift-Handover Template — Field-Type Picker Modal.
    *
-   * Renders the 8 supported custom-field types (plan §Product Decisions #6) as
-   * choice-cards. Selecting a card emits `onSelect(type)` so the parent
-   * (`FieldBuilder`) can append a new working field with sensible defaults via
-   * `state.addField(type)`.
+   * Renders the supported custom-field types as choice-cards. Selecting a card
+   * emits `onSelect(type)` so the parent (`FieldBuilder`) can append a new
+   * working field with sensible defaults via `state.addField(type)`.
    *
    * Pure UI: no API calls, no reactive imports — receives type list from
    * `@assixx/shared/shift-handover` so the runtime list stays in sync with the
@@ -13,6 +12,14 @@
    *
    * Modal classes mirror the canonical Session-9 `ShiftHandoverModal.svelte`
    * pattern (`modal-overlay`, `ds-modal`, `ds-modal__*`).
+   *
+   * Session 20 (2026-04-24): `integer` is no longer offered when creating a
+   * NEW field — end-users have no mental model for "ganze Zahl vs Dezimalzahl"
+   * and `decimal` (z.number()) already accepts integer values (`42` === `42.0`).
+   * `decimal` is presented as "Zahl". The shared enum still contains `integer`
+   * so legacy templates + already-submitted `schema_snapshot` entries stay
+   * wire-compatible (R2 drift-safety). See FEAT_SHIFT_HANDOVER_MASTERPLAN.md
+   * §Session 20.
    *
    * @see docs/FEAT_SHIFT_HANDOVER_MASTERPLAN.md §5.2
    */
@@ -28,16 +35,27 @@
 
   const { onSelect, onClose }: Props = $props();
 
-  /** Per-type German UI metadata. Order mirrors `SHIFT_HANDOVER_FIELD_TYPES`. */
-  const TYPE_META: Record<ShiftHandoverFieldType, { label: string; hint: string; icon: string }> = {
+  /**
+   * Types offered for NEW fields — excludes `integer` (Session 20).
+   * Derived from the shared const via a type-predicate filter so the narrowed
+   * element type (`UiFieldType`) is a strict subset of `ShiftHandoverFieldType`.
+   */
+  type UiFieldType = Exclude<ShiftHandoverFieldType, 'integer'>;
+  const UI_FIELD_TYPES: readonly UiFieldType[] = SHIFT_HANDOVER_FIELD_TYPES.filter(
+    (t): t is UiFieldType => t !== 'integer',
+  );
+
+  /** Per-type German UI metadata. Order mirrors `UI_FIELD_TYPES`. */
+  const TYPE_META: Record<UiFieldType, { label: string; hint: string; icon: string }> = {
     text: { label: 'Text', hint: 'Einzeilige Eingabe', icon: 'fa-font' },
     textarea: {
       label: 'Mehrzeiliger Text',
       hint: 'Längere Notiz / Bemerkung',
       icon: 'fa-align-left',
     },
-    integer: { label: 'Ganze Zahl', hint: 'z. B. Stückzahl, Anzahl Vorfälle', icon: 'fa-hashtag' },
-    decimal: { label: 'Dezimalzahl', hint: 'z. B. Temperatur, Maß', icon: 'fa-calculator' },
+    // Session 20: unified "Zahl" — accepts integers + decimals. `fa-hashtag` is
+    // more immediately recognizable as "number" than `fa-calculator`.
+    decimal: { label: 'Zahl', hint: 'z. B. Stückzahl, Temperatur, Maß', icon: 'fa-hashtag' },
     date: { label: 'Datum', hint: 'Tag-genaues Datum (YYYY-MM-DD)', icon: 'fa-calendar-day' },
     time: { label: 'Uhrzeit', hint: 'Stunden:Minuten (HH:MM)', icon: 'fa-clock' },
     boolean: { label: 'Ja / Nein', hint: 'Schalter — wahr oder falsch', icon: 'fa-toggle-on' },
@@ -95,11 +113,11 @@
 
     <div class="ds-modal__body">
       <p class="mb-4 text-sm text-(--color-text-secondary)">
-        Wähle den Typ des neuen Feldes. Du kannst Bezeichnung, Schlüssel und Pflicht-Flag im
-        nächsten Schritt anpassen.
+        Wähle den Typ des neuen Feldes. Du kannst Bezeichnung und Pflicht-Flag im nächsten Schritt
+        anpassen.
       </p>
       <div class="type-grid">
-        {#each SHIFT_HANDOVER_FIELD_TYPES as type (type)}
+        {#each UI_FIELD_TYPES as type (type)}
           <button
             class="type-card"
             type="button"

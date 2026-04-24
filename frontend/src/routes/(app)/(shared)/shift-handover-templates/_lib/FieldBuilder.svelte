@@ -4,13 +4,16 @@
    *
    * Renders the working field list with:
    *   - Drag-handle reorder (HTML5 native — no library, desktop-first)
-   *   - Inline edit (label / key / required / type / options for select)
+   *   - Inline edit (label / required / type / options for select)
    *   - Per-field German validation errors (from `builder.validation.perField`)
    *   - Add via `FieldTypeSelector` modal → `builder.addField(type)`
    *   - Delete via row trash button → `builder.removeField(uid)`
    *
-   * Auto-key behaviour: typing the label fills the key only until the user
-   * focuses/edits the key field — see `builder.updateLabel` / `builder.updateKey`.
+   * Auto-key behaviour (Session 19): the DB-column identifier (`key`) is fully
+   * auto-derived from the label and no longer user-editable. `deriveUniqueKey`
+   * in `state-templates` handles label→slug + duplicate disambiguation +
+   * `'feld'` fallback for pathological labels. Legacy fields load with
+   * `_keyTouched=true` so their manual keys stay canonical.
    *
    * @see docs/FEAT_SHIFT_HANDOVER_MASTERPLAN.md §5.2
    */
@@ -30,19 +33,59 @@
 
   const { builder, disabled = false }: Props = $props();
 
-  /** German label per type — displayed in the read-only type badge per row. */
+  /**
+   * German label per type. Session 20 (2026-04-24): `integer` and `decimal`
+   * both map to "Zahl" — end-users don't differentiate. Legacy fields loaded
+   * with `type: 'integer'` therefore display "Zahl" in the dropdown trigger
+   * without needing separate UI logic. Wire contract unchanged — only the
+   * label collapses. See `FieldTypeSelector.svelte` + masterplan §Session 20.
+   */
   const TYPE_LABEL: Record<ShiftHandoverFieldType, string> = {
     text: 'Text',
     textarea: 'Mehrzeiliger Text',
-    integer: 'Ganze Zahl',
-    decimal: 'Dezimalzahl',
+    integer: 'Zahl', // legacy alias — shown identically to `decimal`
+    decimal: 'Zahl',
     date: 'Datum',
     time: 'Uhrzeit',
     boolean: 'Ja / Nein',
     select: 'Auswahlliste',
   };
 
+  /**
+   * Types offered in the type-change dropdown for existing fields.
+   * Excludes `integer` (Session 20) so users cannot create NEW integer fields.
+   * Legacy fields already typed as `integer` keep their type via the no-op
+   * guard in the dropdown onclick below — switching "Zahl → Zahl" is literally
+   * a no-op and doesn't mark the template dirty.
+   */
+  type UiFieldType = Exclude<ShiftHandoverFieldType, 'integer'>;
+  const UI_FIELD_TYPES: readonly UiFieldType[] = SHIFT_HANDOVER_FIELD_TYPES.filter(
+    (t): t is UiFieldType => t !== 'integer',
+  );
+
   let typeSelectorOpen = $state(false);
+
+  // ── Type-dropdown open-state (Session 19) ────────────────────────────────
+  // Only one type-dropdown is open at a time across all rows — opening a new
+  // one implicitly closes the previous. Click-outside handler below closes
+  // whichever is currently open. Using a single UID (not a Set) because the
+  // design-system `.dropdown` pattern assumes single-instance open semantics
+  // (see /shift-handover-templates team filter + logs/_lib/FilterDropdown).
+  let openTypeDropdownUid = $state<string | null>(null);
+
+  $effect(() => {
+    function handleClickOutside(event: MouseEvent): void {
+      if (openTypeDropdownUid === null) return;
+      const container = document.querySelector(`[data-type-dropdown="${openTypeDropdownUid}"]`);
+      if (container !== null && !container.contains(event.target as Node)) {
+        openTypeDropdownUid = null;
+      }
+    }
+    document.addEventListener('click', handleClickOutside, true);
+    return () => {
+      document.removeEventListener('click', handleClickOutside, true);
+    };
+  });
 
   // ── Drag-and-drop state ──────────────────────────────────────────────────
   // Native HTML5 DnD: track source + hovered index; commit on drop.
@@ -113,8 +156,11 @@
         {builder.fields.length} von 30 Feldern · zum Sortieren ziehen
       </p>
     </div>
+    <!-- Session 19: btn-secondary instead of btn-primary — the primary CTA
+         on the page is "Speichern" in the card footer; an add-more-rows
+         action is a secondary/auxiliary affordance. -->
     <button
-      class="btn btn-primary"
+      class="btn btn-secondary"
       type="button"
       disabled={disabled || isAtFieldLimit()}
       onclick={openTypeSelector}
@@ -203,57 +249,85 @@
                 {/if}
               </div>
 
-              <!-- Key -->
-              <div class="form-field">
-                <label
-                  class="form-field__label"
-                  for="field-{field._uid}-key"
-                >
-                  Schlüssel
-                  {#if !field._keyTouched && field.label !== ''}
-                    <span class="text-xs text-(--color-text-tertiary)">(automatisch)</span>
-                  {/if}
-                </label>
-                <input
-                  class="form-field__control font-mono text-sm"
-                  class:is-error={fieldErrors.key !== undefined}
-                  id="field-{field._uid}-key"
-                  type="text"
-                  maxlength="30"
-                  value={field.key}
-                  {disabled}
-                  oninput={(e) => {
-                    builder.updateKey(field._uid, e.currentTarget.value);
-                  }}
-                />
-                {#if fieldErrors.key !== undefined}
-                  <span class="form-field__message form-field__message--error">
-                    {fieldErrors.key}
-                  </span>
-                {/if}
-              </div>
+              <!-- Key (Schlüssel) input intentionally removed in Session 19.
+                   End-users were confused by a column-identifier control that
+                   has no mental model outside DBA work. The key is now fully
+                   auto-derived from the label via `deriveUniqueKey()` in
+                   state-templates (label→slug + duplicate disambiguation +
+                   `'feld'` fallback for pathological labels). Legacy manual
+                   keys are preserved because `inflateField` sets
+                   `_keyTouched=true` on load, and `markSaved` freezes keys
+                   after first save — schema_snapshot contract (R2) intact.
+                   See FEAT_SHIFT_HANDOVER_MASTERPLAN.md §Session 19. -->
 
-              <!-- Type -->
+              <!-- Type — canonical design-system custom dropdown
+                   (Session 19, parity with the team-filter dropdown on the
+                   page). Native `<select>` replaced to match the glassmorphism
+                   aesthetic used throughout the app. Click-outside + open-UID
+                   state live in the <script> block. -->
               <div class="form-field">
-                <label
+                <span
                   class="form-field__label"
-                  for="field-{field._uid}-type"
+                  id="field-{field._uid}-type-label"
                 >
                   Typ
-                </label>
-                <select
-                  class="form-field__control"
-                  id="field-{field._uid}-type"
-                  value={field.type}
-                  {disabled}
-                  onchange={(e) => {
-                    builder.updateType(field._uid, e.currentTarget.value as ShiftHandoverFieldType);
-                  }}
+                </span>
+                <div
+                  class="dropdown"
+                  data-type-dropdown={field._uid}
                 >
-                  {#each SHIFT_HANDOVER_FIELD_TYPES as type (type)}
-                    <option value={type}>{TYPE_LABEL[type]}</option>
-                  {/each}
-                </select>
+                  <button
+                    type="button"
+                    class="dropdown__trigger"
+                    class:active={openTypeDropdownUid === field._uid}
+                    aria-labelledby="field-{field._uid}-type-label"
+                    aria-expanded={openTypeDropdownUid === field._uid}
+                    {disabled}
+                    onclick={() => {
+                      openTypeDropdownUid = openTypeDropdownUid === field._uid ? null : field._uid;
+                    }}
+                  >
+                    <span>{TYPE_LABEL[field.type]}</span>
+                    <i
+                      class="fas fa-chevron-down"
+                      aria-hidden="true"
+                    ></i>
+                  </button>
+                  <div
+                    class="dropdown__menu"
+                    class:active={openTypeDropdownUid === field._uid}
+                    role="listbox"
+                    aria-labelledby="field-{field._uid}-type-label"
+                  >
+                    {#each UI_FIELD_TYPES as type (type)}
+                      {@const isCurrentNumber =
+                        type === 'decimal' &&
+                        (field.type === 'integer' || field.type === 'decimal')}
+                      <button
+                        type="button"
+                        class="dropdown__option"
+                        class:selected={field.type === type || isCurrentNumber}
+                        role="option"
+                        aria-selected={field.type === type || isCurrentNumber}
+                        onclick={() => {
+                          // Session 20: selecting "Zahl" when the field is already
+                          // integer or decimal is a no-op — prevents surprise
+                          // dirty-flag for legacy `integer` templates (same class
+                          // of bug Session 19 fixed). For any other source type,
+                          // convert to `decimal` (the new unified "Zahl").
+                          if (isCurrentNumber) {
+                            openTypeDropdownUid = null;
+                            return;
+                          }
+                          builder.updateType(field._uid, type);
+                          openTypeDropdownUid = null;
+                        }}
+                      >
+                        {TYPE_LABEL[type]}
+                      </button>
+                    {/each}
+                  </div>
+                </div>
               </div>
 
               <!-- Required — canonical design-system toggle-switch, Storybook
@@ -347,8 +421,13 @@
             {/if}
           </div>
 
+          <!-- Session 19: canonical design-system action-icon (see
+               manage-admins AdminTableRow), defined in
+               design-system/primitives/buttons/button.action-icons.css.
+               `self-start` pins the icon to the top of the tall grid cell
+               since `.field-row` stretches its tracks. -->
           <button
-            class="field-row__delete"
+            class="action-icon action-icon--delete self-start"
             type="button"
             aria-label="Feld entfernen"
             title="Feld entfernen"
@@ -357,7 +436,7 @@
               builder.removeField(field._uid);
             }}
           >
-            <i class="fas fa-trash-alt"></i>
+            <i class="fas fa-trash"></i>
           </button>
         </li>
       {/each}
@@ -455,33 +534,17 @@
 
   @media (width >= 768px) {
     .field-row__grid {
-      grid-template-columns: 2fr 2fr 1.5fr 1fr;
+      /* Session 19: 3-column layout (Bezeichnung | Typ | Pflichtfeld) after
+         removing the Schlüssel input. Label gets the widest track because
+         it is the only free-text control left. */
+      grid-template-columns: 3fr 1.5fr 1fr;
     }
   }
 
-  .field-row__delete {
-    display: flex;
-    align-items: flex-start;
-    justify-content: center;
-
-    padding: 0.5rem;
-    border: 0;
-    border-radius: 0.375rem;
-    background: transparent;
-
-    color: var(--color-danger);
-    cursor: pointer;
-    transition: background 0.15s ease;
-  }
-
-  .field-row__delete:hover:not(:disabled) {
-    background: var(--color-danger-soft, rgb(244 67 54 / 10%));
-  }
-
-  .field-row__delete:disabled {
-    opacity: 40%;
-    cursor: not-allowed;
-  }
+  /* .field-row__delete* rules removed in Session 19 — the delete button now
+     uses the canonical design-system `.action-icon .action-icon--delete`
+     classes (see manage-admins AdminTableRow + button.action-icons.css).
+     Grep-check: `.field-row__delete` should match zero rules in this file. */
 
   .options-block {
     padding: 0.75rem;

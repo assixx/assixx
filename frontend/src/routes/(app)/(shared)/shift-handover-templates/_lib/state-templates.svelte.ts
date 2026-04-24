@@ -78,6 +78,10 @@ function newUid(): string {
  * Derive a DB-column-safe key from a German label.
  * Umlauts → ASCII expansion (ä→ae) per project convention; everything else
  * collapses to `_`. Result matches the shared `KEY_REGEX`.
+ *
+ * May return `''` for pathological labels (digits-only, symbols-only). Callers
+ * that need a guaranteed-valid key use `deriveUniqueKey()` which supplies the
+ * `'feld'` fallback + duplicate disambiguation (Session 19).
  */
 function deriveKey(label: string): string {
   return label
@@ -93,6 +97,43 @@ function deriveKey(label: string): string {
     .replace(/_+/g, '_')
     .replace(/^_|_$/g, '')
     .slice(0, KEY_MAX_LENGTH);
+}
+
+/**
+ * Derive a key guaranteed to (a) match `KEY_REGEX` and (b) be unique among
+ * the current working fields excluding `selfUid`.
+ *
+ * Rationale: the Schlüssel input was removed from `FieldBuilder` (Session 19)
+ * because end-users were confused by a column-identifier control they have no
+ * mental model for. Without a manual escape hatch, the auto-derive path MUST
+ * handle both degenerate cases itself — otherwise a duplicate label silently
+ * blocks `canSave` via `findDuplicateKeys` with no UI affordance to resolve.
+ *
+ * Strategy:
+ *   1. Base = `deriveKey(label)` — pathological labels (digits/symbols only)
+ *      fall back to `'feld'` (German "field").
+ *   2. If base is free, use it. Else append `_2`, `_3`, … capped at 999.
+ *   3. Suffixed candidates respect `KEY_MAX_LENGTH` — we trim the base BEFORE
+ *      appending so the suffix is always preserved.
+ *
+ * Legacy templates load with `_keyTouched=true` (see `inflateField`) so this
+ * function is never called for server-persisted fields — existing manual keys
+ * stay canonical and the schema_snapshot contract (R2) is untouched.
+ */
+function deriveUniqueKey(label: string, fields: readonly WorkingField[], selfUid: string): string {
+  const raw = deriveKey(label);
+  const base = raw === '' ? 'feld' : raw;
+  const taken = new Set(fields.filter((f) => f._uid !== selfUid).map((f) => f.key));
+  if (!taken.has(base)) return base;
+  for (let n = 2; n <= 999; n++) {
+    const suffix = `_${n}`;
+    const trimmed = base.slice(0, KEY_MAX_LENGTH - suffix.length);
+    const candidate = `${trimmed}${suffix}`;
+    if (!taken.has(candidate)) return candidate;
+  }
+  // Should never happen (would require 998 identical labels). If it does,
+  // let `findDuplicateKeys` surface the collision so backend Zod rejects.
+  return base;
 }
 
 function cleanField(w: WorkingField): ShiftHandoverFieldDef {
@@ -204,12 +245,46 @@ function computeValidation(fields: readonly WorkingField[]): ValidationState {
   return { ok: perField.size === 0 && global === null, perField, global };
 }
 
+/**
+ * Serialize a field definition with deterministic key order so the
+ * `JSON.stringify`-based equality check in `isDirty` doesn't falsely
+ * diverge when the two sides have different key-insertion orders.
+ *
+ * Why it's needed (Session 19 smoke-test finding): PostgreSQL `jsonb`
+ * stores object keys sorted by length-then-alphabetic, so a field that
+ * was saved as `{key, label, required, type}` returns on next load as
+ * `{key, type, label, required}`. `cleanField` produces our original
+ * insertion order → raw `JSON.stringify` diverges → `dirty=true` on
+ * initial render, showing "Ungespeicherte Änderungen" before the user
+ * has touched anything. Same issue on `ShiftHandoverFieldOption`
+ * (`{value, label}` on save, `{label, value}` after jsonb round-trip).
+ */
+function canonicalize(f: ShiftHandoverFieldDef): string {
+  if (f.type === 'select') {
+    return JSON.stringify({
+      type: 'select',
+      key: f.key,
+      label: f.label,
+      required: f.required,
+      options: f.options.map((o) => ({ value: o.value, label: o.label })),
+    });
+  }
+  return JSON.stringify({
+    type: f.type,
+    key: f.key,
+    label: f.label,
+    required: f.required,
+  });
+}
+
 function isDirty(
   fields: readonly WorkingField[],
   initial: readonly ShiftHandoverFieldDef[],
 ): boolean {
   if (fields.length !== initial.length) return true;
-  return fields.some((f, i) => JSON.stringify(cleanField(f)) !== JSON.stringify(initial[i]));
+  // Length-equal precondition above guarantees `initial[i]` is defined for
+  // every i in bounds, so no per-slot undefined guard is needed here.
+  return fields.some((f, i) => canonicalize(cleanField(f)) !== canonicalize(initial[i]));
 }
 
 // ── Mutator helpers (operate on the live $state array via reference) ────────
@@ -223,15 +298,18 @@ function setLabel(fields: WorkingField[], uid: string, label: string): void {
   if (f === undefined) return;
   f.label = label;
   // Auto-derive key only while the user hasn't manually touched it.
-  if (!f._keyTouched) f.key = deriveKey(label);
+  // `deriveUniqueKey` supplies `'feld'` fallback + duplicate disambiguation —
+  // required because the Schlüssel input was hidden in Session 19 (end-user
+  // confusion), so users no longer have a manual escape hatch for collisions
+  // or degenerate labels. Legacy fields load with `_keyTouched=true` and are
+  // never retouched here — schema_snapshot contract (R2) stays intact.
+  if (!f._keyTouched) f.key = deriveUniqueKey(label, fields, uid);
 }
 
-function setKey(fields: WorkingField[], uid: string, key: string): void {
-  const f = findField(fields, uid);
-  if (f === undefined) return;
-  f.key = key;
-  f._keyTouched = true;
-}
+// Note: `setKey`/`updateKey` removed in Session 19 when the Schlüssel input
+// was hidden. Keys are auto-derived from labels via `deriveUniqueKey` and no
+// longer user-editable from the template builder. Server-loaded fields keep
+// their manual keys via `_keyTouched=true` set in `inflateField`.
 
 function setRequired(fields: WorkingField[], uid: string, required: boolean): void {
   const f = findField(fields, uid);
@@ -299,7 +377,7 @@ export interface TemplateBuilderState {
   setInitial(fields: ShiftHandoverFieldDef[]): void;
   addField(type: ShiftHandoverFieldType): void;
   updateLabel(uid: string, label: string): void;
-  updateKey(uid: string, key: string): void;
+  // `updateKey` removed in Session 19 — keys are auto-derived.
   updateRequired(uid: string, required: boolean): void;
   updateType(uid: string, type: ShiftHandoverFieldType): void;
   addOption(uid: string): void;
@@ -345,9 +423,6 @@ function buildTemplateBuilderMutators(
     },
     updateLabel(uid, label) {
       setLabel(acc.getFields(), uid, label);
-    },
-    updateKey(uid, key) {
-      setKey(acc.getFields(), uid, key);
     },
     updateRequired(uid, required) {
       setRequired(acc.getFields(), uid, required);

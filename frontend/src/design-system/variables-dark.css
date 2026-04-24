@@ -101,7 +101,7 @@ html.dark {
   --shadow-btn-danger:
     0 2px 4px oklch(57.71% 0.2152 27.33 / 20%), inset 0 1px 0 oklch(100% 0 0 / 10%);
   --shadow-btn-danger-hover:
-    0 4px 12px oklch(57.71% 0.2152 27.33 / 30%), inset 0 1px 0 oklch(100% 0 0 / 15%);
+    0 3px 8px oklch(57.71% 0.2152 27.33 / 18%), inset 0 1px 0 oklch(100% 0 0 / 10%);
 
   /* Success Button - Green glow */
   --shadow-btn-success:

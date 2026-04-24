@@ -4,46 +4,87 @@
  * Purpose: Destructive actions (delete, remove, deactivate)
  * Usage: Delete user, Remove item, Destructive confirmations
  *
- * Visual: Red gradient with solid style (high visibility)
+ * Visual: Warm-red diagonal gradient (hue 35°) with premium dual-tone
+ * structure — echoes the neumorphic inset-highlight language used by
+ * btn-primary/secondary while carrying the destructive red signal.
+ *
+ * Design rationale (UI review 2026-04):
+ * - Rejected solid crimson fills → shouty, incoherent with the rest of
+ *   the system (btn-primary/secondary are glass + accent-border, NOT
+ *   solid fills).
+ * - Rejected glass-with-red-border variants → too subtle, didn't read
+ *   as destructive without hover.
+ * - Rejected pure red hue 27° → felt cold and corporate.
+ * - Chosen: warm red (hue 35°, slight orange tilt) diagonal gradient.
+ *   The warm hue reads as "heated/urgent" without the fire-engine
+ *   aggression of pure 27°. Dual-tone (lighter top-left → darker
+ *   bottom-right, 145°) + inset-white top-highlight gives it the same
+ *   premium neumorphic structure as btn-primary on dark.
  */
 
 .btn-danger {
-  box-shadow: var(--shadow-btn-danger);
-  border: 1px solid oklch(59.87% 0.2417 29.41);
-  background: linear-gradient(
-    135deg,
-    oklch(65.4% 0.191 28.82 / 15%),
-    oklch(57.67% 0.1764 32.97 / 80%)
-  );
+  /* Warm-red diagonal gradient — 145° matches btn-primary's angle for
+   * visual parity. Hue 35° (orange-red) picked over the brand red 27°
+   * for an approachable/warm tone that still reads clearly as "danger". */
+  background: linear-gradient(145deg, oklch(50% 0.22 35), oklch(28% 0.18 30));
+  border: 1px solid oklch(40% 0.2 32);
   padding: var(--spacing-2) var(--spacing-4);
-  color: var(--color-text-primary);
+  color: oklch(100% 0 0);
+
+  /* Outer drop-shadow tinted with the button's own hue (premium depth),
+   * plus an inset white sheen at the top edge — same neumorphic
+   * structure as btn-primary's dark-mode override. */
+  box-shadow:
+    0 2px 6px oklch(55% 0.22 35 / 30%),
+    inset 0 1px 0 oklch(100% 0 0 / 22%);
 }
 
-/* Hover — slightly brighter */
+/* Hover — both gradient stops brighten by ~6 %, outer glow grows, and
+ * the inset top-highlight intensifies. Keeps the same gradient direction
+ * so the transition reads as "lift", not "swap". */
 .btn-danger:hover:not(:disabled) {
-  box-shadow: var(--shadow-btn-danger-hover);
-  background: linear-gradient(135deg, oklch(65.4% 0.191 28.82 / 25%), oklch(60% 0.19 32.97 / 85%));
+  background: linear-gradient(145deg, oklch(56% 0.22 35), oklch(32% 0.18 30));
+  box-shadow:
+    0 4px 14px oklch(55% 0.22 35 / 40%),
+    inset 0 1px 0 oklch(100% 0 0 / 26%);
 }
 
-/* Focus state - Red focus ring */
+/* Focus — 3 px hue-matched ring layered over the button's own shadow. */
 .btn-danger:focus-visible {
-  box-shadow: var(--shadow-btn-danger), var(--shadow-focus-danger);
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+  box-shadow:
+    0 0 0 3px oklch(55% 0.22 35 / 45%),
+    0 2px 6px oklch(55% 0.22 35 / 30%),
+    inset 0 1px 0 oklch(100% 0 0 / 22%);
 }
 
 /**
- * WHY SOLID RED GRADIENT?
+ * Light-mode override.
  *
- * - Destructive actions need HIGH visibility
- * - Red is universal danger color
- * - Gradient makes it feel "heavy" (intentional friction)
- * - Solid style (not outline) = serious action
- * - Border reinforces boundaries
- *
- * BEST PRACTICE: Always confirm before danger actions
- * - Show modal: "Are you sure you want to delete X?"
- * - Require re-type of name for critical operations
- * - Provide undo option when possible
- *
+ * WHY: The dark-mode gradient (50 → 28 % L) is tuned around a pure-black
+ *      --main-bg. On a white/off-white surface the bottom stop reads as
+ *      near-black and the button loses its red identity. Light mode
+ *      therefore compresses the range (54 → 36 %) — both stops stay
+ *      clearly red against white, and the inset top-sheen is pushed
+ *      higher to compensate for the lighter surround.
+ */
+html:not(.dark) .btn-danger {
+  background: linear-gradient(145deg, oklch(54% 0.22 35), oklch(36% 0.2 30));
+  border-color: oklch(40% 0.2 32);
+  box-shadow:
+    0 2px 6px oklch(55% 0.22 35 / 22%),
+    inset 0 1px 0 oklch(100% 0 0 / 28%);
+}
+
+html:not(.dark) .btn-danger:hover:not(:disabled) {
+  background: linear-gradient(145deg, oklch(60% 0.22 35), oklch(40% 0.2 30));
+  box-shadow:
+    0 4px 14px oklch(55% 0.22 35 / 32%),
+    inset 0 1px 0 oklch(100% 0 0 / 32%);
+}
+
+/**
  * WHEN TO USE:
  * ✅ Delete buttons
  * ✅ Remove from list

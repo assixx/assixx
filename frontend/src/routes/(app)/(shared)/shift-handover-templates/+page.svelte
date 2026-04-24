@@ -193,14 +193,37 @@
         FieldBuilder, empty-state, loading/error surfaces, and the sticky action-bar.
       -->
       <div class="card__header">
-        <h2 class="card__title">
-          <i class="fas fa-clipboard-list mr-2"></i>
-          Übergabe-Vorlagen
-        </h2>
-        <p class="mt-2 text-(--color-text-secondary)">
-          Pro {labels.team.endsWith('s') ? labels.team.slice(0, -1) : labels.team} eine Vorlage — Felder
-          erscheinen im Übergabe-Modal jeder Schicht.
-        </p>
+        <!-- Session 19: title on the left, destructive delete action on the
+             right — matches the "header-owns-destructive-action" pattern
+             surfaced in smoke-test feedback. `flex-wrap` so the button drops
+             below the title on narrow viewports (the label carries the team
+             name and can be long). -->
+        <div class="flex flex-wrap items-start justify-between gap-4">
+          <div class="min-w-0">
+            <h2 class="card__title">
+              <i class="fas fa-clipboard-list mr-2"></i>
+              Übergabe-Vorlagen
+            </h2>
+            <p class="mt-2 text-(--color-text-secondary)">
+              Pro {labels.team.endsWith('s') ? labels.team.slice(0, -1) : labels.team} eine Vorlage —
+              Felder erscheinen im Übergabe-Modal jeder Schicht.
+            </p>
+          </div>
+
+          {#if teams.length > 0 && !loading && loadError === null}
+            <button
+              class="btn btn-danger shrink-0"
+              type="button"
+              disabled={saving || builderState.fields.length === 0}
+              onclick={requestDelete}
+            >
+              <i class="fas fa-trash-alt mr-2"></i>
+              {deleteConfirming ? 'Wirklich löschen?' : (
+                `Vorlage für „${selectedTeamName()}" löschen`
+              )}
+            </button>
+          {/if}
+        </div>
 
         {#if teams.length > 0}
           <!--
@@ -306,14 +329,21 @@
               </span>
             {:else}
               <span class="text-sm text-(--color-text-tertiary)">
-                <i class="fas fa-check-circle mr-1"></i>Gespeichert
+                <!-- Session 19: icon tinted `--color-success` — positive-state
+                     affordance. Text kept tertiary so the indicator reads as
+                     quiet status, not a loud success badge. -->
+                <i class="fas fa-check-circle mr-1 text-(--color-success)"></i>Gespeichert
               </span>
             {/if}
           </div>
 
           <div class="flex flex-wrap gap-2">
+            <!-- Session 19: btn-cancel per design-system Modal/Back
+                 convention (Design System/Buttons README §"Cancel/Back").
+                 btn-secondary is reserved for neutral auxiliary actions
+                 like "Feld hinzufügen"; "Verwerfen" is a revert/cancel. -->
             <button
-              class="btn btn-secondary"
+              class="btn btn-cancel"
               type="button"
               disabled={!builderState.dirty || saving}
               onclick={reset}
@@ -321,20 +351,15 @@
               <i class="fas fa-undo mr-2"></i>Verwerfen
             </button>
 
-            <button
-              class="btn btn-danger"
-              type="button"
-              disabled={saving || builderState.fields.length === 0}
-              onclick={requestDelete}
-            >
-              <i class="fas fa-trash-alt mr-2"></i>
-              {deleteConfirming ? 'Wirklich löschen?' : (
-                `Vorlage für „${selectedTeamName()}" löschen`
-              )}
-            </button>
+            <!-- Session 19: destructive action (btn-danger "Vorlage löschen")
+                 lifted out of the footer into the card header. Footer now
+                 only carries the save-flow (Verwerfen + Speichern). -->
 
+            <!-- Session 19: Speichern uses btn-success instead of btn-primary —
+                 aligns with the positive-action-green convention applied to
+                 "Übergabe abschließen" in the handover detail page. -->
             <button
-              class="btn btn-primary"
+              class="btn btn-success"
               type="button"
               disabled={!builderState.canSave || saving}
               onclick={save}
