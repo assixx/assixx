@@ -339,6 +339,10 @@ const staticUrlMappings: Partial<Record<string, RouteMapping>> = {
   '/settings/company': { label: 'Addon-Einstellungen', icon: 'fa-sliders-h' },
   '/settings/company-profile': { label: 'Firmenprofil', icon: 'fa-building' },
   '/settings/company-profile/domains': { label: 'Domains', icon: 'fa-globe' },
+  // Auth/RBAC fail-closed page (ADR-012). Without this entry the crumb
+  // falls back to the URL slug ("Permission Denied"). Use the German UI
+  // label and the same fa-ban icon as the page itself for consistency.
+  '/permission-denied': { label: 'Zugriff verweigert', icon: 'fa-ban' },
 };
 
 /** Static dynamic intermediates (hierarchy-independent) */
