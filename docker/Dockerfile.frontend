@@ -21,7 +21,7 @@ LABEL org.opencontainers.image.authors="Assixx"
 
 # Fix CVE-2025-64756: Update npm to get patched glob (>=11.1.0)
 # pnpm version is configurable for consistency across environments
-ARG PNPM_VERSION=10.33.1
+ARG PNPM_VERSION=10.33.2
 RUN npm install -g npm@11.9.0 "pnpm@${PNPM_VERSION}"
 
 WORKDIR /app

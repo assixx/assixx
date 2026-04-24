@@ -92,7 +92,7 @@ services:
       args:
         # Node/pnpm versions - configurable via .env (Single Source of Truth)
         NODE_VERSION: ${NODE_VERSION_DEV:-24.15.0-bookworm-slim}
-        PNPM_VERSION: ${PNPM_VERSION:-10.33.1}
+        PNPM_VERSION: ${PNPM_VERSION:-10.33.2}
     image: assixx-backend:dev
     container_name: assixx-backend
     restart: unless-stopped
@@ -377,7 +377,7 @@ services:
       args:
         # Node/pnpm versions - configurable via .env (Single Source of Truth)
         NODE_VERSION: ${NODE_VERSION_PROD:-24.15.0-bookworm-slim}
-        PNPM_VERSION: ${PNPM_VERSION:-10.33.1}
+        PNPM_VERSION: ${PNPM_VERSION:-10.33.2}
         # Sentry DSN for error tracking (embedded at build time)
         PUBLIC_SENTRY_DSN: ${PUBLIC_SENTRY_DSN:-}
       # BuildKit secrets - never persisted in image layers (unlike ARG/ENV)
