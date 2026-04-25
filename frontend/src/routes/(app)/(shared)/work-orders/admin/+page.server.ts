@@ -12,6 +12,7 @@ import { redirect } from '@sveltejs/kit';
 import { apiFetch, apiFetchWithPermission } from '$lib/server/api-fetch';
 import { assertTeamLevelAccess } from '$lib/server/manage-page-access';
 import { requireAddon } from '$lib/utils/addon-guard';
+import { buildLoginUrl } from '$lib/utils/build-apex-url';
 
 import type { PageServerLoad } from './$types';
 import type {
@@ -42,7 +43,7 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent, url }) => {
 
   const token = cookies.get('accessToken');
   if (token === undefined || token === '') {
-    redirect(302, '/login');
+    redirect(302, buildLoginUrl('session-expired', undefined, url));
   }
 
   requireAddon(activeAddons, 'work_orders');

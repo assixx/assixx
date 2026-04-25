@@ -121,6 +121,15 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
+      # ripgrep is required by `shared/src/architectural.test.ts` (grepFiles()).
+      # The helper now fails loudly when rg is missing instead of silently
+      # returning [] = "no violations" (false-negative bug, 2026-04-25).
+      # `ubuntu-latest` historically ships rg pre-installed but that is not a
+      # contract — install explicitly so a future runner-image change can't
+      # silently turn architectural enforcement back off.
+      - name: Install ripgrep (architectural-test dependency)
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends ripgrep
+
       - name: Install pnpm
         uses: pnpm/action-setup@v6
         with:

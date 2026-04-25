@@ -13,6 +13,7 @@ import { invalidateAll } from '$app/navigation';
 
 import { notificationStore } from '$lib/stores/notification.store.svelte';
 import { showAlert, showErrorAlert, showSuccessAlert, showWarningAlert } from '$lib/utils';
+import { buildLoginUrl } from '$lib/utils/build-apex-url';
 import { createLogger } from '$lib/utils/logger';
 import { getNotificationSSE, type NotificationEvent } from '$lib/utils/notification-sse';
 
@@ -294,7 +295,9 @@ export function createChatPageState(deps: ChatPageDeps) {
         showNotification(error, 'error');
       },
       onAuthError: () => {
-        window.location.href = '/login';
+        // ADR-050 Amendment 2026-04-22: cross-origin hard-nav to apex login.
+        // Relative `/login` would keep the user on the tenant subdomain.
+        window.location.href = buildLoginUrl('session-expired');
       },
       getActiveConversationId: () => activeConversation?.id ?? null,
       getCurrentUserId: () => currentUser?.id ?? 0,

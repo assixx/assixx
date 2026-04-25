@@ -9,13 +9,15 @@ import { redirect } from '@sveltejs/kit';
 import { apiFetch, apiFetchWithPermission } from '$lib/server/api-fetch';
 import { assertTeamLevelAccess } from '$lib/server/manage-page-access';
 import { requireAddon } from '$lib/utils/addon-guard';
+import { buildLoginUrl } from '$lib/utils/build-apex-url';
 
 import type { PageServerLoad } from './$types';
 import type { DefectChartData, TpmPlan } from '../../../_lib/types';
 
 export const load: PageServerLoad = async ({ cookies, fetch, parent, params, url }) => {
   const token = cookies.get('accessToken');
-  if (token === undefined || token === '') redirect(302, '/login');
+  if (token === undefined || token === '')
+    redirect(302, buildLoginUrl('session-expired', undefined, url));
 
   const parentData = await parent();
   assertTeamLevelAccess(parentData.orgScope, {
@@ -44,7 +46,7 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent, params, url
 
   const plan = planResult.data;
   const user = parentData.user;
-  if (!user) redirect(302, '/login');
+  if (!user) redirect(302, buildLoginUrl('session-expired', undefined, url));
 
   return {
     permissionDenied: false as const,

@@ -6,7 +6,7 @@
  * target the same tenant and have identical response-shape expectations.
  *
  * Why hardcoded apitest credentials?
- *   Same reason as ADR-018 / HOW-TO-TEST-WITH-VITEST: isolated test tenant,
+ *   Same reason as ADR-018 / HOW-TO-TEST: isolated test tenant,
  *   no real user data, no Doppler round-trip needed. Prod-grade load tests
  *   would use a dedicated benchmark tenant injected via __ENV.
  *

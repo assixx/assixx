@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { goto } from '$app/navigation';
   import { resolve } from '$app/paths';
 
   import LegalFooter from '$lib/components/LegalFooter.svelte';
@@ -9,6 +8,7 @@
   import Seo from '$lib/components/Seo.svelte';
   import Turnstile from '$lib/components/Turnstile.svelte';
   import { showWarningAlert, showErrorAlert, showToast } from '$lib/stores/toast';
+  import { buildLoginUrl } from '$lib/utils/build-apex-url';
   import { analyzePassword, type PasswordStrengthResult } from '$lib/utils/password-strength';
 
   import { registerUser, createRegisterPayload } from './_lib/api';
@@ -197,7 +197,10 @@
       turnstileRef?.reset();
 
       setTimeout(() => {
-        void goto(resolve('/login'));
+        // ADR-050 Amendment 2026-04-22: signup is on the apex (no tenant
+        // context yet) — buildLoginUrl resolves to apex regardless. Hard-nav
+        // (not goto) for parity with the rest of the apex-redirect surface.
+        window.location.href = buildLoginUrl();
       }, SUCCESS_REDIRECT_DELAY);
     } catch (err: unknown) {
       turnstileRef?.reset();

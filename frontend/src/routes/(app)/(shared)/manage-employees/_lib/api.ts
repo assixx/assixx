@@ -2,11 +2,9 @@
 // MANAGE EMPLOYEES - API FUNCTIONS
 // =============================================================================
 
-import { goto } from '$app/navigation';
-import { resolve } from '$app/paths';
-
 import { getApiClient, ApiError } from '$lib/utils/api-client';
 import { extractArray } from '$lib/utils/api-response';
+import { buildLoginUrl } from '$lib/utils/build-apex-url';
 import { createLogger } from '$lib/utils/logger';
 import { handleSessionExpired } from '$lib/utils/session-expired.js';
 
@@ -74,7 +72,8 @@ export function checkAuth(): boolean {
   if (typeof localStorage === 'undefined') return false;
   const token = localStorage.getItem('accessToken');
   if (token === null) {
-    void goto(resolve('/login'));
+    // ADR-050 Amendment 2026-04-22: cross-origin hard-nav to apex login.
+    window.location.href = buildLoginUrl('session-expired');
     return false;
   }
   return true;

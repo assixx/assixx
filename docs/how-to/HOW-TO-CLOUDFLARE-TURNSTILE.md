@@ -242,19 +242,21 @@ if (secretKey === undefined || secretKey === '') {
 
 ## CSP (Content Security Policy)
 
-Turnstile benötigt zwei CSP-Einträge in `svelte.config.js`:
+Turnstile benötigt drei CSP-Einträge in `svelte.config.js`:
 
 ```javascript
 csp: {
   directives: {
     'script-src': ['self', 'https://challenges.cloudflare.com'],
     'frame-src': ['https://challenges.cloudflare.com'],
+    'connect-src': ['self', 'https://challenges.cloudflare.com'],
   }
 }
 ```
 
 - `script-src` — Turnstile JavaScript laden
 - `frame-src` — Challenge-Widget rendert in einem iframe
+- `connect-src` — Widget POSTet Telemetrie/Flow-Daten an `/cdn-cgi/challenge-platform/h/g/flow/...` und holt PAT-Challenges. Ohne diesen Eintrag werden die XHRs von CSP geblockt, das Widget läuft im degradierten Pfad und die Konsole füllt sich mit CSP-Violations. @see https://developers.cloudflare.com/turnstile/reference/content-security-policy/
 
 ---
 

@@ -20,6 +20,7 @@ import { redirect } from '@sveltejs/kit';
 
 import { apiFetch, apiFetchWithPermission } from '$lib/server/api-fetch';
 import { requireAddon } from '$lib/utils/addon-guard';
+import { buildLoginUrl } from '$lib/utils/build-apex-url';
 
 import { canManageShiftHandoverTemplates } from '../../_lib/navigation-config';
 
@@ -36,9 +37,10 @@ function toSafeArray<T>(data: T[] | null): T[] {
   return Array.isArray(data) ? data : [];
 }
 
-export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
+export const load: PageServerLoad = async ({ cookies, fetch, parent, url }) => {
   const token = cookies.get('accessToken');
-  if (token === undefined || token === '') redirect(302, '/login');
+  if (token === undefined || token === '')
+    redirect(302, buildLoginUrl('session-expired', undefined, url));
 
   const { user, activeAddons, orgScope } = await parent();
   // Layer 0 — Addon-Subscription gate (ADR-033)

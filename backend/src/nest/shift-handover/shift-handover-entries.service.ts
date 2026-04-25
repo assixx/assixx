@@ -383,16 +383,16 @@ export class ShiftHandoverEntriesService {
                      FROM shift_handover_templates t
                     WHERE t.tenant_id = e.tenant_id
                       AND t.team_id   = e.team_id
-                      AND t.is_active = 1),
+                      AND t.is_active = ${IS_ACTIVE.ACTIVE}),
                   '[]'::jsonb
                 ),
                 updated_at      = now()
            FROM shift_times st
           WHERE st.tenant_id  = e.tenant_id
             AND st.shift_key  = e.shift_key
-            AND st.is_active  = 1
+            AND st.is_active = ${IS_ACTIVE.ACTIVE}
             AND e.status      = 'draft'::shift_handover_status
-            AND e.is_active   = 1
+            AND e.is_active = ${IS_ACTIVE.ACTIVE}
             AND ((e.shift_date + st.end_time) AT TIME ZONE 'Europe/Berlin' + interval '24 hours')
                 < $1::timestamptz
           RETURNING e.id`,

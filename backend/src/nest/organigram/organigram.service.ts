@@ -1,3 +1,4 @@
+import { IS_ACTIVE } from '@assixx/shared/constants';
 import { Injectable, NotFoundException } from '@nestjs/common';
 
 import { DatabaseService } from '../database/database.service.js';
@@ -227,7 +228,7 @@ export class OrganigramService {
               TRIM(CONCAT(u.first_name, ' ', u.last_name)) AS lead_name
        FROM areas a
        LEFT JOIN users u ON a.area_lead_id = u.id
-       WHERE a.tenant_id = $1 AND a.is_active = 1
+       WHERE a.tenant_id = $1 AND a.is_active = ${IS_ACTIVE.ACTIVE}
        ORDER BY a.name`,
       [tenantId],
     );
@@ -241,7 +242,7 @@ export class OrganigramService {
        FROM departments d
        LEFT JOIN users u ON d.department_lead_id = u.id
        LEFT JOIN areas pa ON d.area_id = pa.id
-       WHERE d.tenant_id = $1 AND d.is_active = 1
+       WHERE d.tenant_id = $1 AND d.is_active = ${IS_ACTIVE.ACTIVE}
        ORDER BY d.name`,
       [tenantId],
     );
@@ -261,7 +262,7 @@ export class OrganigramService {
          FROM user_teams
          GROUP BY team_id
        ) mc ON mc.team_id = t.id
-       WHERE t.tenant_id = $1 AND t.is_active = 1
+       WHERE t.tenant_id = $1 AND t.is_active = ${IS_ACTIVE.ACTIVE}
        ORDER BY t.name`,
       [tenantId],
     );
@@ -275,7 +276,7 @@ export class OrganigramService {
        FROM assets ast
        LEFT JOIN areas pa ON ast.area_id = pa.id
        LEFT JOIN departments pd ON ast.department_id = pd.id
-       WHERE ast.tenant_id = $1 AND ast.is_active = 1
+       WHERE ast.tenant_id = $1 AND ast.is_active = ${IS_ACTIVE.ACTIVE}
        ORDER BY ast.name`,
       [tenantId],
     );
@@ -310,8 +311,8 @@ export class OrganigramService {
        JOIN assets ast ON at2.asset_id = ast.id
        JOIN teams t ON at2.team_id = t.id
        WHERE at2.tenant_id = $1
-         AND ast.is_active = 1
-         AND t.is_active = 1
+         AND ast.is_active = ${IS_ACTIVE.ACTIVE}
+         AND t.is_active = ${IS_ACTIVE.ACTIVE}
        ORDER BY ast.name, t.name`,
       [tenantId],
     );
@@ -322,7 +323,7 @@ export class OrganigramService {
       `SELECT h.name, h.uuid AS hall_uuid, a.uuid AS area_uuid
        FROM halls h
        LEFT JOIN areas a ON h.area_id = a.id
-       WHERE h.tenant_id = $1 AND h.is_active = 1
+       WHERE h.tenant_id = $1 AND h.is_active = ${IS_ACTIVE.ACTIVE}
        ORDER BY h.name`,
       [tenantId],
     );
@@ -535,7 +536,7 @@ export class OrganigramService {
          FROM areas a
          LEFT JOIN users u ON a.area_lead_id = u.id
          LEFT JOIN users du ON a.area_deputy_lead_id = du.id
-         WHERE a.tenant_id = $1 AND a.uuid = $2 AND a.is_active = 1`,
+         WHERE a.tenant_id = $1 AND a.uuid = $2 AND a.is_active = ${IS_ACTIVE.ACTIVE}`,
         [tenantId, uuid],
       ),
       this.db.tenantQuery<DetailChildRow>(
@@ -544,7 +545,7 @@ export class OrganigramService {
          FROM departments d
          LEFT JOIN users u ON d.department_lead_id = u.id
          WHERE d.area_id = (SELECT id FROM areas WHERE uuid = $2 AND tenant_id = $1)
-           AND d.is_active = 1
+           AND d.is_active = ${IS_ACTIVE.ACTIVE}
          ORDER BY d.name`,
         [tenantId, uuid],
       ),
@@ -552,7 +553,7 @@ export class OrganigramService {
         `SELECT ast.uuid, ast.name, ast.status::text AS extra
          FROM assets ast
          WHERE ast.area_id = (SELECT id FROM areas WHERE uuid = $2 AND tenant_id = $1)
-           AND ast.is_active = 1
+           AND ast.is_active = ${IS_ACTIVE.ACTIVE}
          ORDER BY ast.name`,
         [tenantId, uuid],
       ),
@@ -560,7 +561,7 @@ export class OrganigramService {
         `SELECT h.uuid, h.name, NULL::text AS extra
          FROM halls h
          WHERE h.area_id = (SELECT id FROM areas WHERE uuid = $2 AND tenant_id = $1)
-           AND h.is_active = 1
+           AND h.is_active = ${IS_ACTIVE.ACTIVE}
          ORDER BY h.name`,
         [tenantId, uuid],
       ),
@@ -601,7 +602,7 @@ export class OrganigramService {
          LEFT JOIN users u ON d.department_lead_id = u.id
          LEFT JOIN users du ON d.department_deputy_lead_id = du.id
          LEFT JOIN areas pa ON d.area_id = pa.id
-         WHERE d.tenant_id = $1 AND d.uuid = $2 AND d.is_active = 1`,
+         WHERE d.tenant_id = $1 AND d.uuid = $2 AND d.is_active = ${IS_ACTIVE.ACTIVE}`,
         [tenantId, uuid],
       ),
       this.db.tenantQuery<DetailChildRow>(
@@ -611,7 +612,7 @@ export class OrganigramService {
          FROM teams t
          LEFT JOIN users u ON t.team_lead_id = u.id
          LEFT JOIN (SELECT team_id, COUNT(*)::int AS cnt FROM user_teams GROUP BY team_id) mc ON mc.team_id = t.id
-         WHERE t.department_id = ${sub} AND t.is_active = 1
+         WHERE t.department_id = ${sub} AND t.is_active = ${IS_ACTIVE.ACTIVE}
          ORDER BY t.name`,
         [tenantId, uuid],
       ),
@@ -624,7 +625,7 @@ export class OrganigramService {
       ),
       this.db.tenantQuery<DetailChildRow>(
         `SELECT ast.uuid, ast.name, ast.status::text AS extra FROM assets ast
-         WHERE ast.department_id = ${sub} AND ast.is_active = 1 ORDER BY ast.name`,
+         WHERE ast.department_id = ${sub} AND ast.is_active = ${IS_ACTIVE.ACTIVE} ORDER BY ast.name`,
         [tenantId, uuid],
       ),
     ]);
@@ -665,7 +666,7 @@ export class OrganigramService {
          LEFT JOIN users du ON t.team_deputy_lead_id = du.id
          LEFT JOIN departments pd ON t.department_id = pd.id
          LEFT JOIN areas pa ON pd.area_id = pa.id
-         WHERE t.tenant_id = $1 AND t.uuid = $2 AND t.is_active = 1`,
+         WHERE t.tenant_id = $1 AND t.uuid = $2 AND t.is_active = ${IS_ACTIVE.ACTIVE}`,
         [tenantId, uuid],
       ),
       this.db.tenantQuery<DetailChildRow>(
@@ -682,7 +683,7 @@ export class OrganigramService {
          FROM asset_teams at2
          JOIN assets ast ON at2.asset_id = ast.id
          WHERE at2.team_id = (SELECT id FROM teams WHERE uuid = $2 AND tenant_id = $1)
-           AND ast.is_active = 1
+           AND ast.is_active = ${IS_ACTIVE.ACTIVE}
          ORDER BY ast.name`,
         [tenantId, uuid],
       ),
@@ -721,7 +722,7 @@ export class OrganigramService {
          FROM assets ast
          LEFT JOIN areas pa ON ast.area_id = pa.id
          LEFT JOIN departments pd ON ast.department_id = pd.id
-         WHERE ast.tenant_id = $1 AND ast.uuid = $2 AND ast.is_active = 1`,
+         WHERE ast.tenant_id = $1 AND ast.uuid = $2 AND ast.is_active = ${IS_ACTIVE.ACTIVE}`,
         [tenantId, uuid],
       ),
       this.db.tenantQuery<DetailChildRow>(
@@ -729,7 +730,7 @@ export class OrganigramService {
          FROM asset_teams at2
          JOIN teams t ON at2.team_id = t.id
          WHERE at2.asset_id = (SELECT id FROM assets WHERE uuid = $2 AND tenant_id = $1)
-           AND t.is_active = 1
+           AND t.is_active = ${IS_ACTIVE.ACTIVE}
          ORDER BY t.name`,
         [tenantId, uuid],
       ),

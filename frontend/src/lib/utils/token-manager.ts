@@ -22,6 +22,7 @@
  * Cache clearing is handled by api-client via the AuthTokenProvider pattern.
  */
 
+import { buildLoginUrl, type LoginRedirectReason } from './build-apex-url';
 import { parseJwt } from './jwt-utils';
 import { createLogger } from './logger';
 
@@ -50,6 +51,34 @@ export function registerCacheClearCallback(callback: () => void): void {
 /** Check if we're in browser */
 function isBrowser(): boolean {
   return typeof window !== 'undefined';
+}
+
+/**
+ * Map a `LogoutReason` (token-manager / api-client domain) to a
+ * `LoginRedirectReason` (build-apex-url domain). Both enums encode the same
+ * intent at different abstraction layers — this adapter keeps the mapping in
+ * ONE place so future reason additions don't drift between the two type
+ * systems.
+ *
+ * Mapping rationale (ADR-050 Amendment 2026-04-22):
+ *  - `inactivity_timeout` → `inactivity-timeout` → `?timeout=true` (legacy
+ *    query the login page already handles with a friendlier inactivity copy)
+ *  - `token_expired` / `refresh_failed` → `session-expired` → `?session=expired`
+ *    (passive system event, warning-toned toast)
+ *  - `logout` (manual) → `session-expired` is the safe default. Manual logouts
+ *    today route through `performLogout()` which uses `'logout-success'`
+ *    directly — this branch only fires on programmatic auto-clear.
+ */
+function toLoginRedirectReason(reason: LogoutReason): LoginRedirectReason {
+  switch (reason) {
+    case 'inactivity_timeout':
+      return 'inactivity-timeout';
+    case 'token_expired':
+    case 'refresh_failed':
+      return 'session-expired';
+    case 'logout':
+      return 'session-expired';
+  }
 }
 
 /**
@@ -639,19 +668,15 @@ export class TokenManager {
 
     this.isRedirecting = true;
 
-    const params = new URLSearchParams();
-
-    switch (reason) {
-      case 'inactivity_timeout':
-        params.set('timeout', 'true');
-        break;
-      case 'token_expired':
-      case 'refresh_failed':
-        params.set('session', 'expired');
-        break;
-    }
-
-    const url = params.toString() !== '' ? `/login?${params.toString()}` : '/login';
+    // ADR-050 Amendment 2026-04-22: cross-origin redirect to apex login.
+    // The previous implementation built a relative `/login?session=expired`
+    // URL and called `window.location.replace(url)` — relative paths are
+    // resolved against the current origin, so a session-timeout on
+    // `<slug>.assixx.com` kept the user on the tenant subdomain (defeating
+    // the entire apex-redirect design). The fix routes through
+    // `buildLoginUrl()` which resolves to the absolute apex origin via the
+    // browser-fallback (env-or-window.location-derived).
+    const url = buildLoginUrl(toLoginRedirectReason(reason));
 
     log.warn({ reason, url }, 'Redirecting to login');
     window.location.replace(url);

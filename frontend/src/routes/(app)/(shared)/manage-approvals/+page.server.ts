@@ -10,6 +10,7 @@
 import { redirect } from '@sveltejs/kit';
 
 import { apiFetch } from '$lib/server/api-fetch';
+import { buildLoginUrl } from '$lib/utils/build-apex-url';
 import { createLogger } from '$lib/utils/logger';
 
 import type { OrganizationalScope } from '$lib/types/organizational-scope';
@@ -66,7 +67,7 @@ function hasManageAccess(
 export const load: PageServerLoad = async ({ cookies, fetch, parent, url }) => {
   const token = cookies.get('accessToken');
   if (token === undefined || token === '') {
-    redirect(302, '/login');
+    redirect(302, buildLoginUrl('session-expired', undefined, url));
   }
 
   const parentData = await parent();
@@ -75,7 +76,7 @@ export const load: PageServerLoad = async ({ cookies, fetch, parent, url }) => {
   // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- defense-in-depth
   if (user === null || user === undefined) {
     log.warn({ pathname: url.pathname }, 'RBAC: No user data');
-    redirect(302, '/login');
+    redirect(302, buildLoginUrl('session-expired', undefined, url));
   }
 
   if (!hasManageAccess(user.role, user.hasFullAccess, parentData.orgScope)) {

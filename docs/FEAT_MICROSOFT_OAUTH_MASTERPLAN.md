@@ -703,7 +703,7 @@ backend/src/nest/auth/oauth/
 ## Phase 4: API Integration Tests [✅ COMPLETE 2026-04-16]
 
 > **Dependency:** Phase 3 complete.
-> **Pattern:** `backend/test/*.api.test.ts` ([HOW-TO-TEST-WITH-VITEST.md](./how-to/HOW-TO-TEST-WITH-VITEST.md)).
+> **Pattern:** `backend/test/*.api.test.ts` ([HOW-TO-TEST.md](./how-to/HOW-TO-TEST.md)).
 
 **Result:** `backend/test/oauth.api.test.ts` (~440 lines, **35 tests passing**, well above ≥22 DoD target) runs HTTP against the real Dockerised backend, seeding Redis keys + asserting Postgres state via `docker exec` (port 6379 is not exposed to the host).
 

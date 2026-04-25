@@ -280,4 +280,4 @@ Kommt spaeter wenn Staging/Production vorbereitet wird.
 - [FEATURES.md](./FEATURES.md) -- Feature-Details und Preismodelle
 - [DATABASE-MIGRATION-GUIDE.md](./DATABASE-MIGRATION-GUIDE.md) -- PostgreSQL + RLS
 - [ADR Index](./infrastructure/adr/README.md) -- 39 Architecture Decision Records
-- [HOW-TO-TEST-WITH-VITEST.md](./how-to/HOW-TO-TEST-WITH-VITEST.md) -- Testing Guide
+- [HOW-TO-TEST.md](./how-to/HOW-TO-TEST.md) -- Testing Guide

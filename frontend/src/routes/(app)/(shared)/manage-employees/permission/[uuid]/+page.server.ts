@@ -9,6 +9,6 @@ import { loadPermissionData } from '$lib/server/load-permission-data';
 
 import type { PageServerLoad } from './$types';
 
-export const load: PageServerLoad = async ({ cookies, fetch, params }) => {
-  return await loadPermissionData({ cookies, fetch, params });
+export const load: PageServerLoad = async ({ cookies, fetch, params, url }) => {
+  return await loadPermissionData({ cookies, fetch, params, url });
 };

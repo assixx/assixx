@@ -49,13 +49,13 @@ const RESOLVE_APPROVERS_QUERY = `
   WITH requester_org AS (
     SELECT DISTINCT d.area_id, t.department_id, ut.team_id
     FROM user_teams ut
-    JOIN teams t ON t.id = ut.team_id AND t.is_active = 1
-    JOIN departments d ON d.id = t.department_id AND d.is_active = 1
+    JOIN teams t ON t.id = ut.team_id AND t.is_active = ${IS_ACTIVE.ACTIVE}
+    JOIN departments d ON d.id = t.department_id AND d.is_active = ${IS_ACTIVE.ACTIVE}
     WHERE ut.user_id = $2
     UNION
     SELECT DISTINCT d2.area_id, ud.department_id, NULL::integer AS team_id
     FROM user_departments ud
-    JOIN departments d2 ON d2.id = ud.department_id AND d2.is_active = 1
+    JOIN departments d2 ON d2.id = ud.department_id AND d2.is_active = ${IS_ACTIVE.ACTIVE}
     WHERE ud.user_id = $2
   )
   SELECT DISTINCT approver_id FROM (
@@ -65,7 +65,7 @@ const RESOLVE_APPROVERS_QUERY = `
     WHERE ac.addon_code = $1
       AND ac.approver_type = 'user'
       AND ac.approver_user_id IS NOT NULL
-      AND ac.is_active = 1
+      AND ac.is_active = ${IS_ACTIVE.ACTIVE}
       AND (
         (ac.scope_area_ids IS NULL AND ac.scope_department_ids IS NULL AND ac.scope_team_ids IS NULL)
         OR EXISTS (SELECT 1 FROM requester_org ro WHERE ro.area_id = ANY(ac.scope_area_ids))
@@ -81,10 +81,10 @@ const RESOLVE_APPROVERS_QUERY = `
     INNER JOIN user_teams ut ON ut.user_id = $2
     INNER JOIN teams t ON t.id = ut.team_id
       AND t.team_lead_id IS NOT NULL
-      AND t.is_active = 1
+      AND t.is_active = ${IS_ACTIVE.ACTIVE}
     WHERE ac.addon_code = $1
       AND ac.approver_type = 'team_lead'
-      AND ac.is_active = 1
+      AND ac.is_active = ${IS_ACTIVE.ACTIVE}
 
     UNION ALL
 
@@ -94,10 +94,10 @@ const RESOLVE_APPROVERS_QUERY = `
     INNER JOIN user_teams ut2 ON ut2.user_id = $2
     INNER JOIN teams t2 ON t2.id = ut2.team_id
       AND t2.team_deputy_lead_id IS NOT NULL
-      AND t2.is_active = 1
+      AND t2.is_active = ${IS_ACTIVE.ACTIVE}
     WHERE ac.addon_code = $1
       AND ac.approver_type = 'team_lead'
-      AND ac.is_active = 1
+      AND ac.is_active = ${IS_ACTIVE.ACTIVE}
 
     UNION ALL
 
@@ -108,10 +108,10 @@ const RESOLVE_APPROVERS_QUERY = `
     INNER JOIN departments d ON d.id = ud.department_id
     INNER JOIN areas a ON a.id = d.area_id
       AND a.area_lead_id IS NOT NULL
-      AND a.is_active = 1
+      AND a.is_active = ${IS_ACTIVE.ACTIVE}
     WHERE ac.addon_code = $1
       AND ac.approver_type = 'area_lead'
-      AND ac.is_active = 1
+      AND ac.is_active = ${IS_ACTIVE.ACTIVE}
 
     UNION ALL
 
@@ -122,10 +122,10 @@ const RESOLVE_APPROVERS_QUERY = `
     INNER JOIN departments d3 ON d3.id = ud3.department_id
     INNER JOIN areas a2 ON a2.id = d3.area_id
       AND a2.area_deputy_lead_id IS NOT NULL
-      AND a2.is_active = 1
+      AND a2.is_active = ${IS_ACTIVE.ACTIVE}
     WHERE ac.addon_code = $1
       AND ac.approver_type = 'area_lead'
-      AND ac.is_active = 1
+      AND ac.is_active = ${IS_ACTIVE.ACTIVE}
 
     UNION ALL
 
@@ -135,10 +135,10 @@ const RESOLVE_APPROVERS_QUERY = `
     INNER JOIN user_departments ud2 ON ud2.user_id = $2
     INNER JOIN departments d2 ON d2.id = ud2.department_id
       AND d2.department_lead_id IS NOT NULL
-      AND d2.is_active = 1
+      AND d2.is_active = ${IS_ACTIVE.ACTIVE}
     WHERE ac.addon_code = $1
       AND ac.approver_type = 'department_lead'
-      AND ac.is_active = 1
+      AND ac.is_active = ${IS_ACTIVE.ACTIVE}
 
     UNION ALL
 
@@ -148,10 +148,10 @@ const RESOLVE_APPROVERS_QUERY = `
     INNER JOIN user_departments ud4 ON ud4.user_id = $2
     INNER JOIN departments d4 ON d4.id = ud4.department_id
       AND d4.department_deputy_lead_id IS NOT NULL
-      AND d4.is_active = 1
+      AND d4.is_active = ${IS_ACTIVE.ACTIVE}
     WHERE ac.addon_code = $1
       AND ac.approver_type = 'department_lead'
-      AND ac.is_active = 1
+      AND ac.is_active = ${IS_ACTIVE.ACTIVE}
 
     UNION ALL
 
@@ -160,11 +160,11 @@ const RESOLVE_APPROVERS_QUERY = `
     FROM approval_configs ac
     INNER JOIN user_positions up ON up.position_id = ac.approver_position_id
     INNER JOIN users u ON u.id = up.user_id
-      AND u.is_active = 1
+      AND u.is_active = ${IS_ACTIVE.ACTIVE}
     WHERE ac.addon_code = $1
       AND ac.approver_type = 'position'
       AND ac.approver_position_id IS NOT NULL
-      AND ac.is_active = 1
+      AND ac.is_active = ${IS_ACTIVE.ACTIVE}
       AND (
         (ac.scope_area_ids IS NULL AND ac.scope_department_ids IS NULL AND ac.scope_team_ids IS NULL)
         OR EXISTS (SELECT 1 FROM requester_org ro WHERE ro.area_id = ANY(ac.scope_area_ids))

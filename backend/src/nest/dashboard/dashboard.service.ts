@@ -8,6 +8,7 @@
  * this service executes all queries server-side in parallel, reducing
  * network latency from ~150ms (5 parallel requests) to ~50ms (1 request).
  */
+import { IS_ACTIVE } from '@assixx/shared/constants';
 import { Injectable, Logger } from '@nestjs/common';
 
 import { BlackboardService } from '../blackboard/blackboard.service.js';
@@ -340,7 +341,7 @@ export class DashboardService {
        WHERE tenant_id = $1
          AND target_id = $2
          AND status = 'pending_partner'
-         AND is_active = 1`,
+         AND is_active = ${IS_ACTIVE.ACTIVE}`,
       [tenantId, userId],
     );
     return { count: Number.parseInt(rows[0]?.count ?? '0', 10) };

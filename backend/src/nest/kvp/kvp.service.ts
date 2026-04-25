@@ -476,7 +476,7 @@ export class KvpService {
        JOIN addons a ON ta.addon_id = a.id
        WHERE ta.tenant_id = $1
          AND a.code = 'kvp'
-         AND ta.is_active = 1`,
+         AND ta.is_active = ${IS_ACTIVE.ACTIVE}`,
       [tenantId],
     );
     return rows[0]?.daily_limit ?? 1;

@@ -702,7 +702,7 @@ shared/src/shift-handover/
 ## Phase 4: API Integration Tests
 
 > **Dependency:** Phase 3 complete.
-> **Pattern:** `backend/test/*.api.test.ts` per HOW-TO-TEST-WITH-VITEST.md.
+> **Pattern:** `backend/test/*.api.test.ts` per HOW-TO-TEST.md.
 
 ### Test file
 
@@ -1162,7 +1162,7 @@ After running: verify 3 new `CREATE TABLE shift_handover_*` blocks appear in `cu
 | --------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | HOW-TO-INTEGRATE-FEATURE    | End-to-end DoD checklist (DB, Backend, Frontend, Testing, Docs). Phase 6 verification.                                                                         |
 | HOW-TO-PLAN-SAMPLE          | This template. Plan-type=FEATURE.                                                                                                                              |
-| HOW-TO-TEST-WITH-VITEST     | Phase 4 API tests. **Fastify quirk:** `authHeaders(token)` for body requests, `authOnly(token)` for non-body. `loginApitest()` from `backend/test/helpers.ts`. |
+| HOW-TO-TEST                 | Phase 4 API tests. **Fastify quirk:** `authHeaders(token)` for body requests, `authOnly(token)` for non-body. `loginApitest()` from `backend/test/helpers.ts`. |
 | HOW-TO-CREATE-TEST-USER     | Reference if test tenant needs fresh user setup                                                                                                                |
 | DATABASE-MIGRATION-GUIDE.md | Phase 1 source of truth. Strict ADR-019 RLS template overrides HOW-TO-INTEGRATE-FEATURE §1.2 outdated bypass-clause template (R10).                            |
 | TYPESCRIPT-STANDARDS.md     | All Phase 2/3/5 code. `IS_ACTIVE` constants, `getErrorMessage()`, `createIdParamSchema` factory.                                                               |

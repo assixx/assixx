@@ -140,7 +140,7 @@ pnpm run sync:svelte                                         # `.svelte-kit/` re
 ## 7. Testing (Vitest)
 
 > **Config:** `vitest.config.ts` (Root) | **4 Projekte:** `api`, `unit`, `permission`, `frontend-unit`
-> **Details:** [HOW-TO-TEST-WITH-VITEST.md](./how-to/HOW-TO-TEST-WITH-VITEST.md)
+> **Details:** [HOW-TO-TEST.md](./how-to/HOW-TO-TEST.md)
 
 ```bash
 # API Integration Tests (gegen laufenden Docker-Backend)

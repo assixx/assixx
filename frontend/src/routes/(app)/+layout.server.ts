@@ -14,6 +14,7 @@ import { redirect } from '@sveltejs/kit';
 import { API_BASE } from '$lib/server/api-fetch';
 import { DEFAULT_HIERARCHY_LABELS } from '$lib/types/hierarchy-labels';
 import { DEFAULT_ORG_SCOPE } from '$lib/types/organizational-scope';
+import { buildLoginUrl } from '$lib/utils/build-apex-url';
 import { createLogger } from '$lib/utils/logger';
 
 import type { HierarchyLabels } from '$lib/types/hierarchy-labels';
@@ -282,11 +283,23 @@ async function fetchTenantVerified(
   }
 }
 
-/** Clear auth cookies and redirect to login */
-function clearAuthAndRedirect(cookies: Parameters<LayoutServerLoad>[0]['cookies']): never {
+/**
+ * Clear auth cookies and redirect to apex login (ADR-050 Amendment 2026-04-22).
+ *
+ * Fires only when an existing session is being terminated (cookies are about
+ * to be deleted) — `session-expired` is the correct semantic. The `url`
+ * parameter is the SvelteKit `event.url`, used by `buildLoginUrl` as the SSR
+ * fallback when `PUBLIC_APP_URL` is not injected (dev-without-Doppler), so
+ * a redirect from `<slug>.localhost:5173` lands on `localhost:5173` instead
+ * of the prod hardcoded default.
+ */
+function clearAuthAndRedirect(
+  cookies: Parameters<LayoutServerLoad>[0]['cookies'],
+  url: URL,
+): never {
   cookies.delete('accessToken', { path: '/' });
   cookies.delete('refreshToken', { path: '/api/v2/auth' });
-  redirect(302, '/login');
+  redirect(302, buildLoginUrl('session-expired', undefined, url));
 }
 
 /**
@@ -472,7 +485,12 @@ export const load: LayoutServerLoad = async ({ cookies, fetch, url, locals }) =>
 
   // Handle unauthenticated requests
   if (!hasToken && !isPublicPath(url.pathname)) {
-    redirect(302, '/login');
+    // ADR-050 Amendment 2026-04-22: cross-origin redirect to apex login.
+    // Defense-in-depth — hooks.server.ts:authHandle already redirects when
+    // the token is missing for a non-public path. When this fires, we don't
+    // know whether the user had a session that just died or never logged in,
+    // so use a neutral entry (no toast).
+    redirect(302, buildLoginUrl(undefined, undefined, url));
   }
 
   if (!hasToken) {
@@ -514,7 +532,7 @@ export const load: LayoutServerLoad = async ({ cookies, fetch, url, locals }) =>
     fetch,
     headers,
     startTime,
-    url.pathname,
+    url,
     activeRole,
     singleRootBannerDismissed,
   );
@@ -578,13 +596,19 @@ async function loadFastPath(
   );
 }
 
-/** Load user via API fetch (slow path when RBAC user not available) */
+/**
+ * Load user via API fetch (slow path when RBAC user not available).
+ *
+ * `url` is plumbed through so `clearAuthAndRedirect` and the malformed-JSON
+ * fallback below can produce ADR-050-compliant apex redirects with the
+ * dev-without-Doppler SSR fallback wired correctly.
+ */
 async function loadUserWithFetch(
   cookies: Parameters<LayoutServerLoad>[0]['cookies'],
   fetchFn: typeof fetch,
   headers: Record<string, string>,
   startTime: number,
-  pathname: string,
+  url: URL,
   activeRole: string | null,
   singleRootBannerDismissed: boolean,
 ) {
@@ -602,7 +626,7 @@ async function loadUserWithFetch(
 
   if (!userResponse.ok) {
     log.warn({ status: userResponse.status }, '/users/me failed');
-    clearAuthAndRedirect(cookies);
+    clearAuthAndRedirect(cookies, url);
   }
 
   const userJson = (await userResponse.json()) as ApiResponse<UserData>;
@@ -610,7 +634,9 @@ async function loadUserWithFetch(
 
   if (userData === undefined) {
     log.error('No user data in response');
-    redirect(302, '/login');
+    // ADR-050 Amendment 2026-04-22: cross-origin redirect to apex login.
+    // /users/me succeeded but returned malformed JSON — treat as auth corruption.
+    redirect(302, buildLoginUrl('session-expired', undefined, url));
   }
 
   // Fetch rootCount + tenantVerified AFTER user data arrives — both are
@@ -623,7 +649,7 @@ async function loadUserWithFetch(
 
   const totalTime = Math.round(performance.now() - startTime);
   log.debug(
-    { fetchTime, totalTime, path: pathname },
+    { fetchTime, totalTime, path: url.pathname },
     `🐢 SLOW PATH complete: /users/me + /counts + /theme + /addons + /labels + /verification-status fetched (${fetchTime}ms, total: ${totalTime}ms)`,
   );
 

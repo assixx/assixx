@@ -213,8 +213,10 @@
   .chat-sidebar-header {
     display: flex;
     align-items: center;
-    background: oklch(49.75% 0.1548 253.28 / 32%);
-    padding: 15px 10px 12px;
+    padding: 16px 10px 12px;
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--color-glass-border);
+    background: var(--glass-bg-hover);
   }
 
   .chat-title {

@@ -157,11 +157,17 @@ export const e2e = {
   /**
    * Cross-origin escrow bootstrap (ADR-050 × ADR-022).
    *
-   * Consumes a single-use unlock ticket minted on apex during login,
-   * fetches the escrow blob, and unwraps it with the pre-derived wrappingKey
-   * from the ticket — loading the private key into the subdomain's (new)
-   * IndexedDB without a password re-entry and without a second Argon2id
-   * pass.
+   * Consumes a single-use ticket minted on apex during login. Two ticket
+   * kinds are possible (discriminated by `bootstrap` field on the consume
+   * response):
+   *
+   *   1. **Unlock ticket** — escrow exists. Subdomain unwraps the existing
+   *      blob with the apex-derived wrappingKey, no Argon2id pass.
+   *   2. **Bootstrap ticket** (ADR-022 §"New-user scenario") — no escrow
+   *      yet, server has no active key. Subdomain generates the first
+   *      X25519 key pair, registers it, and creates the user's first
+   *      escrow blob using the apex-derived wrappingKey + carried salt
+   *      and params.
    *
    * `userId` is required because the Worker scopes IndexedDB per user
    * (`assixx-e2e-user-${userId}`); passing the wrong userId lands the key
@@ -179,7 +185,7 @@ export const e2e = {
    *     wrappingKey (blob tampered / derivation drift) all return `false`
    *     rather than throw. Callers do not special-case the error shape.
    *
-   * @returns `true` if a key was loaded from the ticket, `false` otherwise.
+   * @returns `true` if a key was loaded (or freshly bootstrapped), `false` otherwise.
    */
   async bootstrapFromUnlockTicket(userId: number, ticketId: string): Promise<boolean> {
     if (e2eState.isReady) {
@@ -187,84 +193,25 @@ export const e2e = {
     }
 
     try {
-      // 1. Ensure Worker is up with the correct user scope (idempotent).
+      // Ensure Worker is up with the correct user scope (idempotent).
       await cryptoBridge.init(userId);
 
-      // 2. Consume the ticket — GETDEL atomic, single-use.
+      // Consume the ticket — GETDEL atomic, single-use. Result carries the
+      // wrappingKey unconditionally + optional bootstrap fields (salt+params).
       const apiClient = getApiClient();
-      const consumeResp = await apiClient.post<{ wrappingKey: string }>(
+      const consumeResp = await apiClient.post<UnlockTicketConsumeResult>(
         '/e2e/escrow/consume-unlock',
         { ticketId },
         { silent: true },
       );
-      const { wrappingKey } = consumeResp;
 
-      // 3. Fetch the escrow blob metadata (blob, salt, nonce, params).
-      const escrow = await apiClient.get<EscrowData | null>(ESCROW_ENDPOINT);
-      if (escrow === null) {
-        log.warn('Unlock ticket consumed but no escrow blob on server — cannot bootstrap');
-        return false;
+      if (consumeResp.bootstrap !== undefined) {
+        // First-login bootstrap path — generate key + create first escrow.
+        return await bootstrapFreshEscrow(consumeResp.wrappingKey, consumeResp.bootstrap);
       }
 
-      // 4. Unwrap using the pre-derived key — skips Argon2id.
-      const result = await cryptoBridge.unwrapKeyWithDerivedKey(
-        wrappingKey,
-        escrow.encryptedBlob,
-        escrow.xchachaNonce,
-      );
-      if (result === null) {
-        log.warn(
-          'Escrow unwrap failed with pre-derived key — wrappingKey may be stale or blob tampered',
-        );
-        return false;
-      }
-
-      log.info(
-        { fingerprint: result.fingerprint.substring(0, 16) + '…' },
-        'Private key bootstrapped from unlock ticket',
-      );
-
-      // 5. Align server-side active key with the escrow-canonical key.
-      //
-      // The escrow blob holds the user's long-term private key — the one they
-      // (or their IndexedDB) deposited intentionally via the password-derived
-      // wrappingKey. Over the lifetime of an account, the server's active key
-      // may have drifted from this canonical key via:
-      //   (a) past automatic rotations (now removed in Phase A) that fired
-      //       when IndexedDB was cleared on a new origin — the server was
-      //       rewritten to a freshly-generated key, but escrow was not
-      //       touched (escrow re-encryption only happens on password change
-      //       per ADR-022).
-      //   (b) legitimate multi-device sessions where a newer device
-      //       generated a key and uploaded it but the older device's escrow
-      //       (if password unchanged) still encodes the older key.
-      //
-      // In either case, the canonical key (the one stored in escrow) is
-      // what the user's counterparties have been encrypting to across most
-      // of the account's history — restoring it maximises decryptability
-      // of historical messages. The rotation is authorised by the password
-      // proof implicit in the escrow unwrap success (an attacker without
-      // the password cannot reach this branch). This is the single
-      // permitted call site for `rotateKeyOnServer` — do not add others.
-      const serverKey = await apiClient.get<ServerKeyData | null>('/e2e/keys/me');
-      if (serverKey !== null && serverKey.publicKey !== result.publicKey) {
-        log.warn(
-          {
-            escrowFingerprint: result.fingerprint.substring(0, 16) + '…',
-            serverFingerprint: serverKey.fingerprint.substring(0, 16) + '…',
-          },
-          'Server key diverges from escrow-canonical key — restoring escrow key on server',
-        );
-        await rotateKeyOnServer(result.publicKey);
-      } else if (serverKey === null) {
-        // Server has no active key (admin reset or data loss). Register the
-        // escrow-recovered key as the new active key. No rotation semantics
-        // here — this is a standard first-register via POST.
-        log.info('Server has no active key — registering escrow-recovered key');
-        await registerKeyOnServer(result.publicKey);
-      }
-
-      return true;
+      // Existing escrow recovery path — unwrap with pre-derived key + restorative rotation.
+      return await recoverFromExistingEscrow(consumeResp.wrappingKey);
     } catch (err: unknown) {
       // 401 from consume-unlock = ticket expired/used/mismatched → non-fatal,
       // fall through to normal initialize() which will handle hasKey=false.
@@ -371,6 +318,23 @@ interface ServerKeyData {
   publicKey: string;
   fingerprint: string;
   keyVersion: number;
+}
+
+/**
+ * Mirror of the backend `UnlockTicketConsumeResult` (see
+ * `backend/src/nest/e2e-escrow/escrow-unlock-ticket.service.ts`).
+ *
+ * `wrappingKey` is always present. `bootstrap` is set iff the apex minted
+ * a bootstrap ticket — i.e. the user had no server-side escrow yet at
+ * login time (ADR-022 §"New-user scenario"). Subdomain branches on
+ * `bootstrap !== undefined`.
+ */
+interface UnlockTicketConsumeResult {
+  wrappingKey: string;
+  bootstrap?: {
+    argon2Salt: string;
+    argon2Params: { memory: number; iterations: number; parallelism: number };
+  };
 }
 
 /** Load existing key from IndexedDB and verify server has it */
@@ -652,4 +616,162 @@ async function tryCreateEscrowIfMissing(password: string): Promise<void> {
       'Escrow backfill check failed — non-fatal',
     );
   }
+}
+
+// =============================================================================
+// CROSS-ORIGIN BOOTSTRAP HELPERS (ADR-022 § "New-user scenario" + ADR-050)
+// =============================================================================
+
+/**
+ * Bootstrap branch — true first login on this user's account.
+ *
+ * Pre-condition: server has no active key (apex pre-checked via
+ * `/e2e/keys/me` before minting the bootstrap ticket — see
+ * `mintUnlockTicketOrFallback`). The Worker is initialised but has no key.
+ *
+ * Steps:
+ *   1. Generate fresh X25519 key pair → store in subdomain IndexedDB.
+ *   2. Register the public key on server (POST /e2e/keys → 201).
+ *   3. Wrap the in-memory private key with the apex-derived wrappingKey.
+ *   4. Persist the user's first escrow blob using the carried salt + params.
+ *
+ * Aborts (returns false) on any registration conflict (409 — race or
+ * unexpected server-side key) so `initialize()` runs normally and produces
+ * the appropriate fail-closed UX. Escrow-store failure is non-fatal: the
+ * key is registered, future same-origin logins backfill via
+ * `tryCreateEscrowIfMissing`.
+ */
+/**
+ * POST /e2e/keys with the freshly generated public key. Returns true if the
+ * server accepted the key AND echoed it back unchanged (race-free path).
+ * Returns false on 409 (race / pre-existing key) or any other error — the
+ * caller aborts the bootstrap in that case so the key/escrow stay coherent.
+ */
+async function registerBootstrapKeyOrAbort(generatedPublicKey: string): Promise<boolean> {
+  const apiClient = getApiClient();
+  try {
+    const serverKey = await apiClient.post<ServerKeyData>(
+      '/e2e/keys',
+      { publicKey: generatedPublicKey },
+      { silent: true },
+    );
+    if (serverKey.publicKey !== generatedPublicKey) {
+      log.warn('Server returned a different key after register — aborting bootstrap');
+      return false;
+    }
+    return true;
+  } catch (err: unknown) {
+    if (isConflictError(err)) {
+      log.warn(
+        'Bootstrap key register hit 409 — server already has a key, falling back to normal init',
+      );
+    } else {
+      log.warn(
+        { err: err instanceof Error ? err.message : 'unknown' },
+        'Bootstrap key register failed — falling back to normal init',
+      );
+    }
+    return false;
+  }
+}
+
+async function bootstrapFreshEscrow(
+  wrappingKey: string,
+  bootstrap: NonNullable<UnlockTicketConsumeResult['bootstrap']>,
+): Promise<boolean> {
+  const apiClient = getApiClient();
+
+  // 1. Generate fresh X25519 key pair (Worker + IndexedDB atomic).
+  const generated = await cryptoBridge.generateKeys();
+
+  // 2. Register on server. Helper handles the 409/error branches; on any
+  //    failure we abort and let initialize() fail-close cleanly.
+  if (!(await registerBootstrapKeyOrAbort(generated.publicKey))) {
+    return false;
+  }
+
+  // 3. Encrypt the just-generated private key with the apex-derived wrappingKey.
+  const wrapped = await cryptoBridge.wrapKeyWithDerivedKey(wrappingKey);
+
+  // 4. Persist the first escrow row (POST /e2e/escrow). On failure the key
+  //    is registered but escrow is missing — same-origin logins later
+  //    backfill via tryCreateEscrowIfMissing. Still return true: the key
+  //    is in IndexedDB + server, initialize() will mark E2E ready.
+  try {
+    await apiClient.post(
+      ESCROW_ENDPOINT,
+      {
+        encryptedBlob: wrapped.encryptedBlob,
+        argon2Salt: bootstrap.argon2Salt,
+        xchachaNonce: wrapped.xchachaNonce,
+        argon2Params: bootstrap.argon2Params,
+      },
+      { silent: true },
+    );
+    log.info(
+      { fingerprint: generated.fingerprint.substring(0, 16) + '…' },
+      'Escrow bootstrap complete — first escrow stored',
+    );
+  } catch (err: unknown) {
+    log.warn(
+      { err: err instanceof Error ? err.message : 'unknown' },
+      'Escrow create failed during bootstrap — key registered, escrow missing (next same-origin login retries)',
+    );
+  }
+
+  return true;
+}
+
+/**
+ * Existing-escrow recovery branch — preserved logic from the previous
+ * `bootstrapFromUnlockTicket` body. Unwraps the existing escrow blob with
+ * the apex-derived wrappingKey, then aligns the server's active key with
+ * the escrow-canonical key (the single permitted call site for
+ * `rotateKeyOnServer`, see SAFETY CONTRACT in that helper).
+ */
+async function recoverFromExistingEscrow(wrappingKey: string): Promise<boolean> {
+  const apiClient = getApiClient();
+
+  const escrow = await apiClient.get<EscrowData | null>(ESCROW_ENDPOINT);
+  if (escrow === null) {
+    log.warn('Unlock ticket consumed but no escrow blob on server — cannot bootstrap');
+    return false;
+  }
+
+  const result = await cryptoBridge.unwrapKeyWithDerivedKey(
+    wrappingKey,
+    escrow.encryptedBlob,
+    escrow.xchachaNonce,
+  );
+  if (result === null) {
+    log.warn(
+      'Escrow unwrap failed with pre-derived key — wrappingKey may be stale or blob tampered',
+    );
+    return false;
+  }
+
+  log.info(
+    { fingerprint: result.fingerprint.substring(0, 16) + '…' },
+    'Private key bootstrapped from unlock ticket',
+  );
+
+  // Align server-side active key with the escrow-canonical key.
+  // Rationale + SAFETY CONTRACT documented above on `rotateKeyOnServer`.
+  // This is the single permitted call site for that helper.
+  const serverKey = await apiClient.get<ServerKeyData | null>('/e2e/keys/me');
+  if (serverKey !== null && serverKey.publicKey !== result.publicKey) {
+    log.warn(
+      {
+        escrowFingerprint: result.fingerprint.substring(0, 16) + '…',
+        serverFingerprint: serverKey.fingerprint.substring(0, 16) + '…',
+      },
+      'Server key diverges from escrow-canonical key — restoring escrow key on server',
+    );
+    await rotateKeyOnServer(result.publicKey);
+  } else if (serverKey === null) {
+    log.info('Server has no active key — registering escrow-recovered key');
+    await registerKeyOnServer(result.publicKey);
+  }
+
+  return true;
 }

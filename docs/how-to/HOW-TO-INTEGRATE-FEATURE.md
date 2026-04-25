@@ -420,7 +420,7 @@ describe('Delete/Cleanup', () => {
 - [ ] Cleanup am Ende (erstellte Testdaten aufräumen)
 
 > **Ref:** `backend/test/vacation.api.test.ts`, `backend/test/helpers.ts`
-> **Guide:** `docs/how-to/HOW-TO-TEST-WITH-VITEST.md`
+> **Guide:** `docs/how-to/HOW-TO-TEST.md`
 
 ---
 

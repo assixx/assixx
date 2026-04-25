@@ -24,18 +24,31 @@ const LOGOUT_SUCCESS: LoginRedirectReason = 'logout-success';
 const SESSION_EXPIRED: LoginRedirectReason = 'session-expired';
 const SESSION_FORBIDDEN: LoginRedirectReason = 'session-forbidden';
 
+// Shared URL literals — extracted to satisfy sonarjs/no-duplicate-string after
+// the SSR-fallback tests were added (Phase 1 ADR-050 fix, 2026-04-25). These
+// are the canonical fixtures for the dev-apex / prod-apex / dev-subdomain
+// shapes referenced across both the browser-fallback and SSR-fallback test
+// suites — single source of truth keeps client/server parity literal-explicit.
+const DEV_APEX_URL = 'http://localhost:5173';
+const DEV_LOGIN_URL = 'http://localhost:5173/login';
+const DEV_LOGIN_LOGOUT = 'http://localhost:5173/login?logout=success';
+const DEV_LOGIN_SESSION_EXPIRED = 'http://localhost:5173/login?session=expired';
+const PROD_LOGIN_SESSION_EXPIRED = 'https://www.assixx.com/login?session=expired';
+const PROD_LOGIN_SESSION_FORBIDDEN = 'https://www.assixx.com/login?session=forbidden';
+// Canonical "user is on a tenant subdomain in dev" fixture — used by both
+// browser-fallback (setLocation) and SSR-fallback (new URL(...)) suites.
+const DEV_SUBDOMAIN_DASHBOARD = 'http://testfirma.localhost:5173/dashboard';
+
 describe('buildApexUrl', () => {
   describe('dev (PUBLIC_APP_URL=http://localhost:5173)', () => {
-    const publicAppUrl = 'http://localhost:5173';
+    const publicAppUrl = DEV_APEX_URL;
 
     it('returns origin + path unchanged', () => {
-      expect(buildApexUrl('/login', publicAppUrl)).toBe('http://localhost:5173/login');
+      expect(buildApexUrl('/login', publicAppUrl)).toBe(DEV_LOGIN_URL);
     });
 
     it('preserves query string in path', () => {
-      expect(buildApexUrl('/login?logout=success', publicAppUrl)).toBe(
-        'http://localhost:5173/login?logout=success',
-      );
+      expect(buildApexUrl('/login?logout=success', publicAppUrl)).toBe(DEV_LOGIN_LOGOUT);
     });
 
     it('preserves port', () => {
@@ -77,22 +90,18 @@ describe('buildApexUrl', () => {
 });
 
 describe('buildLoginUrl', () => {
-  const publicAppUrl = 'http://localhost:5173';
+  const publicAppUrl = DEV_APEX_URL;
 
   it('no reason → neutral /login (direct link / first visit)', () => {
-    expect(buildLoginUrl(undefined, publicAppUrl)).toBe('http://localhost:5173/login');
+    expect(buildLoginUrl(undefined, publicAppUrl)).toBe(DEV_LOGIN_URL);
   });
 
   it('logout-success → ?logout=success (active user action)', () => {
-    expect(buildLoginUrl(LOGOUT_SUCCESS, publicAppUrl)).toBe(
-      'http://localhost:5173/login?logout=success',
-    );
+    expect(buildLoginUrl(LOGOUT_SUCCESS, publicAppUrl)).toBe(DEV_LOGIN_LOGOUT);
   });
 
   it('session-expired → ?session=expired (passive JWT expiry)', () => {
-    expect(buildLoginUrl(SESSION_EXPIRED, publicAppUrl)).toBe(
-      'http://localhost:5173/login?session=expired',
-    );
+    expect(buildLoginUrl(SESSION_EXPIRED, publicAppUrl)).toBe(DEV_LOGIN_SESSION_EXPIRED);
   });
 
   it('session-forbidden → ?session=forbidden (CROSS_TENANT_HOST_MISMATCH)', () => {
@@ -153,9 +162,9 @@ describe('buildLoginUrl — browser-fallback (no env)', () => {
   }
 
   it('dev: `testfirma.localhost:5173` subdomain → strips to `localhost:5173` apex', () => {
-    setLocation('http://testfirma.localhost:5173/dashboard');
+    setLocation(DEV_SUBDOMAIN_DASHBOARD);
     try {
-      expect(buildLoginUrl(LOGOUT_SUCCESS)).toBe('http://localhost:5173/login?logout=success');
+      expect(buildLoginUrl(LOGOUT_SUCCESS)).toBe(DEV_LOGIN_LOGOUT);
     } finally {
       restoreLocation();
     }
@@ -166,7 +175,7 @@ describe('buildLoginUrl — browser-fallback (no env)', () => {
     // (explicit SAN on the wildcard cert); bare-apex strip must renormalise.
     setLocation('https://scs.assixx.com/dashboard');
     try {
-      expect(buildLoginUrl(SESSION_EXPIRED)).toBe('https://www.assixx.com/login?session=expired');
+      expect(buildLoginUrl(SESSION_EXPIRED)).toBe(PROD_LOGIN_SESSION_EXPIRED);
     } finally {
       restoreLocation();
     }
@@ -175,7 +184,7 @@ describe('buildLoginUrl — browser-fallback (no env)', () => {
   it('apex (no subdomain): `localhost:5173` → apex stays `localhost:5173`', () => {
     setLocation('http://localhost:5173/login');
     try {
-      expect(buildLoginUrl(LOGOUT_SUCCESS)).toBe('http://localhost:5173/login?logout=success');
+      expect(buildLoginUrl(LOGOUT_SUCCESS)).toBe(DEV_LOGIN_LOGOUT);
     } finally {
       restoreLocation();
     }
@@ -184,16 +193,14 @@ describe('buildLoginUrl — browser-fallback (no env)', () => {
   it('apex (no subdomain): `www.assixx.com` → apex stays `www.assixx.com`', () => {
     setLocation('https://www.assixx.com/login');
     try {
-      expect(buildLoginUrl(SESSION_FORBIDDEN)).toBe(
-        'https://www.assixx.com/login?session=forbidden',
-      );
+      expect(buildLoginUrl(SESSION_FORBIDDEN)).toBe(PROD_LOGIN_SESSION_FORBIDDEN);
     } finally {
       restoreLocation();
     }
   });
 
   it('explicit publicAppUrl param still wins over browser-fallback', () => {
-    setLocation('http://testfirma.localhost:5173/dashboard');
+    setLocation(DEV_SUBDOMAIN_DASHBOARD);
     try {
       // Explicit override → browser-fallback never consulted.
       expect(buildLoginUrl(LOGOUT_SUCCESS, 'https://assixx.com')).toBe(
@@ -202,5 +209,51 @@ describe('buildLoginUrl — browser-fallback (no env)', () => {
     } finally {
       restoreLocation();
     }
+  });
+});
+
+// =============================================================================
+// SSR fallback path — caller passes `event.url` so server-side redirects keep
+// dev parity even when `PUBLIC_APP_URL` is not injected into the SvelteKit
+// dev server. Mirrors the browser-fallback behaviour above; the same slug-strip
+// + www-normalisation logic feeds both paths via `deriveApexFromUrl()`.
+//
+// Drift between client and server fallback would surface as a logout from
+// `testfirma.localhost:5173` landing on different origins depending on which
+// code path fired — the bug class this block guards against.
+// =============================================================================
+describe('buildLoginUrl — SSR fallback (no env, no window, requestUrl provided)', () => {
+  it('dev: subdomain `testfirma.localhost:5173` → strips to `localhost:5173` apex', () => {
+    const requestUrl = new URL(DEV_SUBDOMAIN_DASHBOARD);
+    expect(buildLoginUrl(SESSION_EXPIRED, undefined, requestUrl)).toBe(DEV_LOGIN_SESSION_EXPIRED);
+  });
+
+  it('prod: subdomain `scs.assixx.com` → normalises to `www.assixx.com` apex', () => {
+    const requestUrl = new URL('https://scs.assixx.com/dashboard');
+    expect(buildLoginUrl(SESSION_EXPIRED, undefined, requestUrl)).toBe(PROD_LOGIN_SESSION_EXPIRED);
+  });
+
+  it('apex (no subdomain): `localhost:5173` → apex stays `localhost:5173`', () => {
+    const requestUrl = new URL('http://localhost:5173/login');
+    expect(buildLoginUrl(LOGOUT_SUCCESS, undefined, requestUrl)).toBe(DEV_LOGIN_LOGOUT);
+  });
+
+  it('apex (no subdomain): `www.assixx.com` → apex stays `www.assixx.com`', () => {
+    const requestUrl = new URL('https://www.assixx.com/login');
+    expect(buildLoginUrl(SESSION_FORBIDDEN, undefined, requestUrl)).toBe(
+      PROD_LOGIN_SESSION_FORBIDDEN,
+    );
+  });
+
+  it('explicit publicAppUrl param still wins over SSR fallback', () => {
+    const requestUrl = new URL(DEV_SUBDOMAIN_DASHBOARD);
+    expect(buildLoginUrl(LOGOUT_SUCCESS, 'https://assixx.com', requestUrl)).toBe(
+      'https://assixx.com/login?logout=success',
+    );
+  });
+
+  it('neutral entry (no reason) — bare /login on apex', () => {
+    const requestUrl = new URL(DEV_SUBDOMAIN_DASHBOARD);
+    expect(buildLoginUrl(undefined, undefined, requestUrl)).toBe(DEV_LOGIN_URL);
   });
 });

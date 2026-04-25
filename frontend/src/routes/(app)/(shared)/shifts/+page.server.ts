@@ -14,6 +14,7 @@ import { redirect } from '@sveltejs/kit';
 import { apiFetch, apiFetchWithPermission } from '$lib/server/api-fetch';
 import { DEFAULT_HIERARCHY_LABELS } from '$lib/types/hierarchy-labels';
 import { requireAddon } from '$lib/utils/addon-guard';
+import { buildLoginUrl } from '$lib/utils/build-apex-url';
 import { createLogger } from '$lib/utils/logger';
 
 import { deriveRoleFlags, resolveAutoTeam } from './_lib/server-helpers';
@@ -350,22 +351,22 @@ async function loadShiftsDataForUser(token: string, fetchFn: typeof fetch, userD
   };
 }
 
-export const load: PageServerLoad = async ({ cookies, fetch, parent }) => {
+export const load: PageServerLoad = async ({ cookies, fetch, parent, url }) => {
   const token = cookies.get('accessToken');
   if (token === undefined || token === '') {
-    redirect(302, '/login');
+    redirect(302, buildLoginUrl('session-expired', undefined, url));
   }
 
   const parentData = await parent();
   requireAddon(parentData.activeAddons, 'shift_planning');
   if (!parentData.user) {
-    redirect(302, '/login');
+    redirect(302, buildLoginUrl('session-expired', undefined, url));
   }
 
   const userData = await apiFetch<User>('/users/me', token, fetch);
   if (!userData) {
     log.error('Failed to fetch user data');
-    redirect(302, '/login');
+    redirect(302, buildLoginUrl('session-expired', undefined, url));
   }
 
   return await loadShiftsDataForUser(token, fetch, userData);

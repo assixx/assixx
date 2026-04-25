@@ -8,6 +8,7 @@
 import { redirect } from '@sveltejs/kit';
 
 import { API_BASE } from '$lib/server/api-fetch';
+import { buildLoginUrl } from '$lib/utils/build-apex-url';
 import { createLogger } from '$lib/utils/logger';
 
 // =============================================================================
@@ -101,7 +102,10 @@ export async function loadAvailabilityHistory<TEntity>(
 ): Promise<AvailabilityHistoryResult<TEntity>> {
   const log = createLogger(config.loggerName);
   const token = cookies.get('accessToken');
-  if (token === undefined || token === '') redirect(302, '/login');
+  // ADR-050 Amendment 2026-04-22: cross-origin redirect to apex login.
+  if (token === undefined || token === '') {
+    redirect(302, buildLoginUrl('session-expired', undefined, url));
+  }
 
   const { uuid } = params;
   const year = url.searchParams.get('year');

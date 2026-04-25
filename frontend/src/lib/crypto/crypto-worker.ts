@@ -94,6 +94,24 @@ type WorkerRequest = { requestId: string } & (
       encryptedBlob: string;
       xchachaNonce: string;
     }
+  | {
+      /**
+       * Wrap the in-memory private key with a pre-derived wrappingKey
+       * (skips Argon2id). Pairs with `deriveWrappingKey` on the apex side.
+       *
+       * Used by the ADR-022 §"New-user scenario" bootstrap path: the user
+       * has no escrow yet, the apex derived the wrappingKey from the
+       * password + a fresh salt, transported both via the Redis bootstrap
+       * ticket, and the subdomain wraps its just-generated private key
+       * with the same derived key. The resulting blob becomes the user's
+       * first escrow.
+       *
+       * Caller MUST have a private key loaded into the Worker (i.e. have
+       * called `generateKeys` before this handler).
+       */
+      type: 'wrapWithDerivedKey';
+      wrappingKey: string;
+    }
   | { type: 'lock' }
   | { type: 'ping' }
 );
@@ -118,6 +136,17 @@ type WorkerResponse = { requestId: string } & (
   | { type: 'privateKeyUnwrapped'; publicKey: string; fingerprint: string }
   | { type: 'unwrapFailed'; reason: string }
   | { type: 'wrappingKeyDerived'; wrappingKey: string }
+  | {
+      /**
+       * Response for `wrapWithDerivedKey` — XChaCha20-Poly1305 ciphertext
+       * + nonce, both base64. The blob is the user's private key encrypted
+       * under the apex-supplied wrappingKey, ready to be POSTed as the
+       * first escrow row (ADR-022 §"New-user scenario").
+       */
+      type: 'privateKeyWrappedWithDerivedKey';
+      encryptedBlob: string;
+      xchachaNonce: string;
+    }
   | { type: 'locked' }
   | { type: 'pong' }
   | { type: 'error'; message: string }
@@ -730,6 +759,61 @@ async function handleUnwrapWithDerivedKey(
 }
 
 /**
+ * Wrap the in-memory private key with a pre-derived wrappingKey — no Argon2id.
+ *
+ * Used by the ADR-022 §"New-user scenario" cross-origin bootstrap:
+ * the apex login derived the wrappingKey from `(password, fresh_salt)` and
+ * carried it in the bootstrap ticket. The subdomain (here) generated a
+ * fresh X25519 key pair via `handleGenerateKeys` and now encrypts that
+ * private key with the same wrappingKey to produce the user's first
+ * escrow blob.
+ *
+ * Invariants checked (defensive — never throw out of a Worker handler):
+ *   - wrappingKey decodes to exactly 32 bytes (XChaCha20 key size)
+ *   - private key is loaded into Worker memory
+ *
+ * Any deviation → `error` response with a descriptive message.
+ *
+ * @see handleDeriveWrappingKey — paired producer on the apex.
+ * @see handleUnwrapWithDerivedKey — symmetric counterpart for unlock path.
+ */
+function handleWrapWithDerivedKey(requestId: string, wrappingKeyBase64: string): void {
+  if (privateKey === null) {
+    respond({ requestId, type: 'error', message: 'No private key to wrap' });
+    return;
+  }
+
+  try {
+    const wrappingKey = fromBase64(wrappingKeyBase64);
+    if (wrappingKey.length !== 32) {
+      respond({
+        requestId,
+        type: 'error',
+        message: `Invalid wrappingKey length: expected 32, got ${wrappingKey.length}`,
+      });
+      return;
+    }
+
+    const nonce = randomBytes(ESCROW_NONCE_LENGTH);
+    const cipher = xchacha20poly1305(wrappingKey, nonce);
+    const encryptedBytes = cipher.encrypt(privateKey);
+
+    respond({
+      requestId,
+      type: 'privateKeyWrappedWithDerivedKey',
+      encryptedBlob: toBase64(encryptedBytes),
+      xchachaNonce: toBase64(nonce),
+    });
+  } catch (err: unknown) {
+    respond({
+      requestId,
+      type: 'error',
+      message: err instanceof Error ? err.message : 'Failed to wrap with derived key',
+    });
+  }
+}
+
+/**
  * Pure Argon2id derivation — returns the 32-byte wrappingKey as base64.
  *
  * No decryption, no IndexedDB access, no private-key manipulation. Used by
@@ -844,6 +928,9 @@ async function handleEscrowMessage(request: WorkerRequest): Promise<boolean> {
         request.encryptedBlob,
         request.xchachaNonce,
       );
+      return true;
+    case 'wrapWithDerivedKey':
+      handleWrapWithDerivedKey(requestId, request.wrappingKey);
       return true;
     case 'deriveWrappingKey':
       await handleDeriveWrappingKey(

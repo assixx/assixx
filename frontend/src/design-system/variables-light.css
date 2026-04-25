@@ -134,7 +134,14 @@
   /* Borders (theme-dependent — from colors.css refactor) */
   --color-border: var(--color-gray-300);
   --color-border-hover: oklch(65.82% 0.169 248.81 / 55%);
-  --color-glass-border: oklch(0% 0 0 / 8%);
+
+  /* WHY: --color-* tokens must be COLOR-only (no shorthand) — consumers write
+     `1px solid var(--color-glass-border)` (card.css:45, skeleton.css:252,
+     searchable-dropdown.css:33, chat-sidebar). A shorthand value here expands
+     to `1px solid 1px solid oklch(...)` and the browser drops the rule, which
+     is why glass borders silently disappeared in light mode. Use --glass-border
+     (line 131) when a shorthand is needed. */
+  --color-glass-border: oklch(0% 0 0 / 20%);
   --color-glass-border-hover: oklch(0% 0 0 / 15%);
 
   /* Glass Form (light mode) */

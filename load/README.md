@@ -65,13 +65,16 @@ docker run --rm --network=host \
 ```
 load/
 ├── lib/
-│   ├── config.ts   # BASE_URL, Credentials, Thresholds
-│   └── auth.ts     # loginApitest() + authOnly/authHeaders Helpers
+│   ├── config.ts    # BASE_URL, Credentials, Thresholds
+│   ├── auth.ts      # loginApitest() + authOnly/authHeaders Helpers
+│   └── payloads.ts  # POST-Body-Builder (Blackboard) + makeRunId()
 ├── tests/
-│   └── smoke.ts    # 1 VU × 1 min × 10 Endpoints
-├── results/        # JSON-Summaries (gitignored)
-├── tsconfig.json   # IDE-Types + standalone type-check
-└── README.md       # ← du bist hier
+│   ├── smoke.ts     # 1 VU × 1 min × 10 Endpoints (Pre-Release-Gate)
+│   └── baseline.ts  # 70/30 Read+Write Mix + WS-Soak (Capacity-Baseline)
+├── baselines/       # eingecheckte JSON-Snapshots (CI-Diff-Quelle)
+├── results/         # JSON-Summaries (gitignored)
+├── tsconfig.json    # IDE-Types + standalone type-check
+└── README.md        # ← du bist hier
 ```
 
 ---
@@ -108,31 +111,108 @@ http_req_duration: 'p(95)<500ms';
 
 ## Troubleshooting
 
-| Symptom                                               | Ursache                                 | Lösung                                                             |
-| ----------------------------------------------------- | --------------------------------------- | ------------------------------------------------------------------ |
-| `login returns 200: false, got 429`                   | Redis-Throttle voll                     | `docker exec assixx-redis redis-cli ... FLUSHDB`                   |
-| `login returns 200: false, got 401`                   | Passwort geändert oder Tenant fehlt     | HOW-TO-CREATE-TEST-USER folgen                                     |
-| `connect: connection refused`                         | Backend down                            | `cd docker && docker-compose up -d`                                |
-| `permission denied` auf `$PWD/load`                   | Docker-Mount-Rechte (selten)            | Absoluter Pfad: `-v /home/scs/projects/Assixx/load:/scripts`       |
-| Thresholds passen alle, aber `/tpm/plans/cards` → 403 | Addon `tpm` nicht für apitest aktiviert | `INSERT INTO tenant_addons ...` (siehe HOW-TO-TEST-WITH-VITEST §3) |
-| Endpoints liefern 404 statt 200                       | Route-Pfad hat sich geändert            | Smoke-Test updaten (`load/tests/smoke.ts`)                         |
+| Symptom                                               | Ursache                                 | Lösung                                                       |
+| ----------------------------------------------------- | --------------------------------------- | ------------------------------------------------------------ |
+| `login returns 200: false, got 429`                   | Redis-Throttle voll                     | `docker exec assixx-redis redis-cli ... FLUSHDB`             |
+| `login returns 200: false, got 401`                   | Passwort geändert oder Tenant fehlt     | HOW-TO-CREATE-TEST-USER folgen                               |
+| `connect: connection refused`                         | Backend down                            | `cd docker && docker-compose up -d`                          |
+| `permission denied` auf `$PWD/load`                   | Docker-Mount-Rechte (selten)            | Absoluter Pfad: `-v /home/scs/projects/Assixx/load:/scripts` |
+| Thresholds passen alle, aber `/tpm/plans/cards` → 403 | Addon `tpm` nicht für apitest aktiviert | `INSERT INTO tenant_addons ...` (siehe HOW-TO-TEST §3)       |
+| Endpoints liefern 404 statt 200                       | Route-Pfad hat sich geändert            | Smoke-Test updaten (`load/tests/smoke.ts`)                   |
+
+---
+
+## Baseline-Test (Capacity + WS-Soak)
+
+Geht über Smoke hinaus — gemischte Read/Write-Last + optionaler WebSocket-Soak,
+mit per-Tag-Thresholds und CI-Diff. Siehe Header-Kommentar in
+[`tests/baseline.ts`](./tests/baseline.ts) für die volle Begründung.
+
+### Zwei Profile (THROTTLER-CONSTRAINT, ADR-001)
+
+Rate-Limits sind PRO JWT-User-ID getrackt: `admin` = 2000/15min ≈ 2.2 req/s.
+**Single-Tenant @ >5 VU produziert 429s, keine Latency-Daten.** Daher:
+
+| Profil  | VU-Peak | Pool-Mindest | Wall-Time | Ziel                             |
+| ------- | ------- | ------------ | --------- | -------------------------------- |
+| `light` | 5       | 1 (apitest)  | ~5 min    | Regression-Detection + p95-Drift |
+| `full`  | 500     | 5+           | ~8 min    | Pool-Saturation-Bruchpunkt       |
+
+```bash
+# Light (Default — pre-merge regression check)
+pnpm run test:load:baseline
+
+# +WebSocket-Soak (50 persistente /chat-ws Verbindungen parallel)
+WS=1 pnpm run test:load:baseline
+
+# Full Capacity-Test (benötigt Multi-Tenant-Pool)
+PROFILE=full LOGINS='[
+  {"email":"admin@apitest.de","password":"ApiTest12345!"},
+  {"email":"admin@tenant2.de","password":"…"},
+  {"email":"admin@tenant3.de","password":"…"},
+  {"email":"admin@tenant4.de","password":"…"},
+  {"email":"admin@tenant5.de","password":"…"}
+]' pnpm run test:load:baseline
+```
+
+Setup() validiert Pool-Größe und bricht ab, wenn `PROFILE=full && pool<5`.
+
+### Cleanup (writes hinterlassen Blackboard-Einträge)
+
+```bash
+docker exec assixx-postgres psql -U assixx_user -d assixx -c \
+  "DELETE FROM blackboard_entries WHERE title LIKE 'LOAD-%';"
+```
+
+### Per-Tag-Thresholds
+
+```ts
+'http_req_duration{op:read}':  ['p(95)<100', 'p(99)<300']
+'http_req_duration{op:write}': ['p(95)<250', 'p(99)<800']
+'http_req_failed':             ['rate<0.001']
+'ws_connecting{scenario:ws_soak}': ['p(95)<500']
+```
+
+Tighter als Smoke (500/1000ms) — fängt echte Regressions, nicht erst Katastrophen.
+
+### CI-Diff (Regression-Gate)
+
+```bash
+# 1× initial: Baseline-Snapshot einchecken (nach approved perf-change)
+mv load/results/baseline-latest.json load/baselines/baseline-light.json
+
+# In CI bei jedem PR:
+pnpm run test:load:baseline
+pnpm run test:load:diff -- \
+  --baseline=load/baselines/baseline-light.json \
+  --current=load/results/baseline-latest.json
+# Exit 1 wenn p95/p99 um >20% regressed oder error-rate um >0.5pp gestiegen
+```
+
+### Baseline-Harvest (manuell, nach jedem Run)
+
+```bash
+# Top-10 langsamste Queries während des Test-Runs
+docker exec assixx-postgres psql -U assixx_user -d assixx -c \
+  "SELECT left(query,80), calls, round(mean_exec_time::numeric,2) AS avg_ms \
+   FROM pg_stat_statements WHERE query NOT LIKE '%pg_stat%' \
+   ORDER BY total_exec_time DESC LIMIT 10;"
+
+# Connection-Pool-Saturation prüfen
+docker exec assixx-postgres psql -U assixx_user -d assixx -c \
+  "SELECT count(*) FROM pg_stat_activity WHERE datname='assixx';"
+
+# Slow-Traces (>200ms) aus Tempo seit Test-Start (Tail-Sampling-Threshold ist 200ms — ADR-048)
+curl -s 'http://localhost:3200/api/search?minDuration=200ms&limit=20' | jq
+```
 
 ---
 
 ## Nächste Schritte (Post-MVP)
 
-Wenn Smoke stabil läuft (3+ Runs ohne Flake):
-
-1. **`tests/load-read.ts`** — 10 VUs × 5 min gemischte Read-Patterns (echte Lastkurve)
-2. **`tests/load-write.ts`** — POST/PUT (KVP, Blackboard-Post, Chat-Send) mit Cleanup
-3. **`tests/hot-path.ts`** — Login + `/me/org-scope` unter Stress → Throttle-Wirkung messen
-4. **Grafana Cloud remote_write** — Historie:
-   ```bash
-   docker run ... grafana/k6 run \
-     --out experimental-prometheus-rw=http://<grafana-cloud>/api/prom/push \
-     /scripts/tests/smoke.ts
-   ```
-5. **CI-Integration** — GitHub Action mit Service-Container (Postgres + Redis + Backend), Smoke pre-merge. Braucht Backend-Image im Registry.
+1. **Multi-Tenant-Seed-Skript** — `scripts/seed-load-test-tenants.ts` (5 Tenants + Admin-User je) damit `PROFILE=full` aus dem Stand der Box läuft
+2. **GitHub-Action** — Pre-Merge: light-Baseline + diff vs `load/baselines/baseline-light.json`. Nightly: full-Baseline + Grafana-Cloud-Push
+3. **Grafana-Dashboard "k6 Load Run"** — k6 → Prometheus remote_write, Panels: HTTP-p95-by-Tag, Top-Slow-Traces (Tempo), pg-Connections (postgres-exporter), Loki-Errors-mit-trace_id (Click-through)
 
 ---
 
@@ -151,4 +231,4 @@ Wenn Smoke stabil läuft (3+ Runs ohne Flake):
 
 - [k6 Docs](https://grafana.com/docs/k6/latest/) — TypeScript, Scenarios, Thresholds
 - [ADR-018](../docs/infrastructure/adr/ADR-018-testing-strategy.md) — Test-Strategie (Pyramide)
-- [HOW-TO-TEST-WITH-VITEST](../docs/how-to/HOW-TO-TEST-WITH-VITEST.md) — apitest-Tenant-Setup, Pattern-Referenz
+- [HOW-TO-TEST](../docs/how-to/HOW-TO-TEST.md) — apitest-Tenant-Setup, Pattern-Referenz

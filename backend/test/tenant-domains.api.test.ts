@@ -39,7 +39,7 @@ import { BASE_URL, type JsonBody, authHeaders, authOnly, flushThrottleKeys } fro
 
 const RUN_SUFFIX = Date.now();
 
-/** Apitest users — seeded in the fixture (see docs/how-to/HOW-TO-TEST-WITH-VITEST.md). */
+/** Apitest users — seeded in the fixture (see docs/how-to/HOW-TO-TEST.md). */
 const APITEST_ROOT = { email: 'admin@apitest.de', password: 'ApiTest12345!' };
 const APITEST_ADMIN = { email: 'perm-test-admin@apitest.de', password: 'ApiTest12345!' };
 const APITEST_EMPLOYEE = { email: 'employee@apitest.de', password: 'ApiTest12345!' };
@@ -540,7 +540,7 @@ describe('POST /domains/:id/verify — DNS negative path', () => {
     // Setup guard (not an assertion) — `expect()` is forbidden in `beforeAll`
     // by `vitest/no-standalone-expect`. Throw fails the whole describe with a
     // clear error if the setup POST broke; matches the org-scope.api.test.ts
-    // convention. Pattern documented in HOW-TO-TEST-WITH-VITEST.md §Auth.
+    // convention. Pattern documented in HOW-TO-TEST.md §Auth.
     if (res.status !== 201) {
       throw new Error(`Setup: POST /domains for verify test returned HTTP ${String(res.status)}`);
     }
