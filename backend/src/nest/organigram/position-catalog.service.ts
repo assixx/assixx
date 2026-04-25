@@ -181,7 +181,7 @@ export class PositionCatalogService {
       await this.db.tenantQuery(
         `INSERT INTO position_catalog (id, tenant_id, name, role_category, is_system)
          VALUES ($1, $2, $3, $4, true)
-         ON CONFLICT (tenant_id, name, role_category) WHERE is_active = 1 DO NOTHING`,
+         ON CONFLICT (tenant_id, name, role_category) WHERE is_active = ${IS_ACTIVE.ACTIVE} DO NOTHING`,
         [uuidv7(), tenantId, pos.name, pos.roleCategory],
       );
     }
@@ -190,7 +190,7 @@ export class PositionCatalogService {
       await this.db.tenantQuery(
         `INSERT INTO position_catalog (id, tenant_id, name, role_category, sort_order)
          VALUES ($1, $2, $3, $4, $5)
-         ON CONFLICT (tenant_id, name, role_category) WHERE is_active = 1 DO NOTHING`,
+         ON CONFLICT (tenant_id, name, role_category) WHERE is_active = ${IS_ACTIVE.ACTIVE} DO NOTHING`,
         [uuidv7(), tenantId, pos.name, pos.roleCategory, idx + 1],
       );
     }

@@ -145,7 +145,7 @@ function buildApprovalMasterClause(h: OrgPlaceholders): string {
     LEFT JOIN departments dep_kvp ON dep_kvp.id = s.department_id
     WHERE ac.addon_code = 'kvp'
       AND ac.tenant_id = s.tenant_id
-      AND ac.is_active = 1
+      AND ac.is_active = ${IS_ACTIVE.ACTIVE}
       AND (
         ac.approver_user_id = ${h.userId}
         OR ac.approver_position_id IN (

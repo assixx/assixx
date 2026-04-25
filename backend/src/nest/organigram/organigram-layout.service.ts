@@ -1,3 +1,4 @@
+import { IS_ACTIVE } from '@assixx/shared/constants';
 import { Injectable, Logger } from '@nestjs/common';
 import type { PoolClient } from 'pg';
 import { v7 as uuidv7 } from 'uuid';
@@ -17,7 +18,7 @@ export class OrganigramLayoutService {
       `SELECT uuid, entity_type, entity_uuid,
               position_x, position_y, width, height
        FROM org_chart_positions
-       WHERE tenant_id = $1 AND is_active = 1`,
+       WHERE tenant_id = $1 AND is_active = ${IS_ACTIVE.ACTIVE}`,
       [tenantId],
     );
 
@@ -64,7 +65,7 @@ export class OrganigramLayoutService {
     await this.db.tenantTransaction(async (client: PoolClient) => {
       await client.query(
         `UPDATE org_chart_positions
-         SET is_active = 4, updated_at = NOW()
+         SET is_active = ${IS_ACTIVE.DELETED}, updated_at = NOW()
          WHERE tenant_id = $1 AND entity_type = $2 AND entity_uuid = $3`,
         [tenantId, entityType, entityUuid],
       );

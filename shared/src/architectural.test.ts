@@ -38,15 +38,134 @@ import { describe, expect, it } from 'vitest';
 const ROOT = process.cwd();
 
 /**
+ * Pre-flight check: fail loud if `rg` is missing in the test environment.
+ *
+ * WHY: The previous `grepFiles()` swallowed exit 127 (rg-not-found) via
+ * `2>/dev/null || true`, returning [] = "no violations" = green test. That
+ * turned every grep-based architectural rule into a false-negative whenever
+ * the runner had no ripgrep — exactly what happened in WSL/dash post-install
+ * (rg was a Bash function from Claude Code, invisible to /bin/sh subprocesses).
+ * The dedicated canary `_canary-rg-debug.test.ts` exposed it; this guard
+ * folds that canary into every architectural run, so any future container or
+ * CI image without ripgrep fails loudly at module load instead of silently
+ * passing. Discovered 2026-04-25 — see also `findServiceFilesWithUserInsert()`
+ * below, which sidesteps rg entirely via Node fs.
+ *
+ * Install: `apt-get install -y ripgrep` (Debian/Ubuntu) or `brew install ripgrep`.
+ */
+(function assertRgAvailable(): void {
+  try {
+    execSync('command -v rg', { stdio: 'ignore' });
+  } catch {
+    throw new Error(
+      'ripgrep (`rg`) is not installed in this environment but architectural ' +
+        'tests depend on it for pattern enforcement. Without it, every grep-based ' +
+        'rule would silently pass as a false-negative. Install ripgrep:\n' +
+        '  Debian/Ubuntu: apt-get install -y ripgrep\n' +
+        '  macOS:         brew install ripgrep\n' +
+        '  Cargo:         cargo install ripgrep',
+    );
+  }
+})();
+
+/**
  * Run ripgrep and return matching files (empty array = no matches = good).
  * Returns file paths relative to ROOT.
+ *
+ * Exit-code handling (no more `|| true`):
+ *   - 0       → matches found, parse stdout
+ *   - 1       → no matches (by design in rg) → return []
+ *   - 127/2/… → real failure (rg missing, broken regex, bad path) → re-throw
+ *
+ * The `assertRgAvailable()` IIFE above guarantees `rg` exists, so 127 here
+ * would mean rg disappeared mid-run — still a bug worth surfacing.
  */
 function grepFiles(pattern: string, searchPath: string, glob?: string): string[] {
   const globArg = glob !== undefined ? `--glob '${glob}'` : '';
-  const cmd = `rg --files-with-matches ${globArg} -e '${pattern}' '${ROOT}/${searchPath}' 2>/dev/null || true`;
-  const result = execSync(cmd, { encoding: 'utf-8' }).trim();
+  const cmd = `rg --files-with-matches ${globArg} -e '${pattern}' '${ROOT}/${searchPath}'`;
+  let result: string;
+  try {
+    result = execSync(cmd, { encoding: 'utf-8' }).trim();
+  } catch (err: unknown) {
+    const status = (err as { status?: number }).status;
+    if (status === 1) return []; // rg convention: 1 = no matches
+    throw new Error(
+      `rg failed with exit ${String(status)} for pattern '${pattern}' in ` +
+        `'${searchPath}'. Stderr: ${(err as { stderr?: Buffer }).stderr?.toString() ?? '(none)'}`,
+      { cause: err }, // preserve-caught-error: keep original stack
+    );
+  }
   if (result === '') return [];
   return result.split('\n').map((f) => f.replace(`${ROOT}/`, ''));
+}
+
+/**
+ * Like {@link grepFiles}, but discards matches that occur inside doc-comments
+ * (` * `, `// `, `/* `) before deciding whether a file is a real violation.
+ *
+ * WHY: Architectural rules of the form "do not write `(error as Error)`" or
+ * "use IS_ACTIVE constants instead of `is_active = 1`" are routinely violated
+ * INSIDE doc-comments — files document the forbidden pattern as a negative
+ * example, e.g. `* Standards §7.3, no \`(error as Error)\` casts`. The
+ * `--files-with-matches` mode used by {@link grepFiles} cannot tell these
+ * apart from real code matches, so the file gets flagged for nothing more
+ * than its own self-documentation. Real code matches in production logic
+ * still surface — the filter only drops lines whose trimmed content begins
+ * with a comment marker.
+ *
+ * Limitation: heuristic-only. A line like `const x = '(error as Error)';`
+ * (literal string, not a comment) is correctly NOT filtered out — it doesn't
+ * start with a comment marker. Inside a multi-line JSDoc block, continuation
+ * lines that begin with the asterisk leader are also dropped, which is the
+ * desired behaviour.
+ */
+function grepFilesNonComment(pattern: string, searchPath: string, glob?: string): string[] {
+  const globArg = glob !== undefined ? `--glob '${glob}'` : '';
+  const cmd = `rg -n --no-heading ${globArg} -e '${pattern}' '${ROOT}/${searchPath}'`;
+  const result = runRgOrEmpty(cmd, pattern, searchPath);
+  if (result === '') return [];
+
+  const files = new Set<string>();
+  for (const rawLine of result.split('\n')) {
+    const parsed = parseRgLine(rawLine);
+    if (parsed === null || isCommentLine(parsed.content)) continue;
+    files.add(parsed.absPath.replace(`${ROOT}/`, ''));
+  }
+  return [...files].sort();
+}
+
+/** Run an rg command, treating exit 1 (no matches) as empty result. Other
+ *  non-zero exits are real failures (regex parse error, missing rg, etc.) and
+ *  re-throw with the original error chained for stack-trace preservation. */
+function runRgOrEmpty(cmd: string, pattern: string, searchPath: string): string {
+  try {
+    return execSync(cmd, { encoding: 'utf-8' }).trim();
+  } catch (err: unknown) {
+    const status = (err as { status?: number }).status;
+    if (status === 1) return '';
+    throw new Error(
+      `rg failed with exit ${String(status)} for pattern '${pattern}' in ` +
+        `'${searchPath}'. Stderr: ${(err as { stderr?: Buffer }).stderr?.toString() ?? '(none)'}`,
+      { cause: err },
+    );
+  }
+}
+
+/** Parse one `rg -n --no-heading` output line of the form
+ *  `<abs-path>:<lineNo>:<content>`. Returns null on unparseable lines. */
+function parseRgLine(rawLine: string): { absPath: string; content: string } | null {
+  const match = /^([^:]+):\d+:(.*)$/.exec(rawLine);
+  if (match === null) return null;
+  const [, absPath, content] = match;
+  if (absPath === undefined || content === undefined) return null;
+  return { absPath, content };
+}
+
+/** True if the line's trimmed code-portion begins with a comment marker
+ *  (JSDoc continuation, line-comment, block-comment open). */
+function isCommentLine(content: string): boolean {
+  const trimmed = content.trim();
+  return trimmed.startsWith('*') || trimmed.startsWith('//') || trimmed.startsWith('/*');
 }
 
 // =============================================================================
@@ -54,8 +173,11 @@ function grepFiles(pattern: string, searchPath: string, glob?: string): string[]
 // =============================================================================
 
 describe('Backend: Error Handling Patterns', () => {
+  // grepFilesNonComment: doc-comments routinely document the forbidden pattern
+  // as a negative example (e.g. `* Standards §7.3, no \`(error as Error)\` casts`)
+  // and would otherwise self-flag the file.
   it('should not use unsafe (error as Error) casts in production code', () => {
-    const violations = grepFiles('\\(error as Error\\)', 'backend/src', '*.ts').filter(
+    const violations = grepFilesNonComment('\\(error as Error\\)', 'backend/src', '*.ts').filter(
       (f) => !f.includes('.test.') && !f.includes('.spec.'),
     );
 
@@ -66,7 +188,7 @@ describe('Backend: Error Handling Patterns', () => {
   });
 
   it('should not use (err as Error) casts in production code', () => {
-    const violations = grepFiles('\\(err as Error\\)', 'backend/src', '*.ts').filter(
+    const violations = grepFilesNonComment('\\(err as Error\\)', 'backend/src', '*.ts').filter(
       (f) => !f.includes('.test.') && !f.includes('.spec.'),
     );
 
@@ -82,8 +204,15 @@ describe('Backend: Error Handling Patterns', () => {
 // =============================================================================
 
 describe('Backend: is_active Magic Number Prevention', () => {
+  // Pattern note: the original `[0134](?![0-9])` used a PCRE-only negative
+  // lookahead to prevent `is_active = 12` from matching `is_active = 1`.
+  // ripgrep's default Rust regex engine does not support look-around (rg
+  // would error with "look-around not supported"); enabling --pcre2 is a
+  // global flag we don't want to gate the helper on. Word-boundary `\b`
+  // gives the same guarantee — between digit and digit there's no boundary,
+  // so `is_active = 1` matches but `is_active = 12` does not match `1`.
   it('should not use hardcoded is_active = N in production .ts files (use IS_ACTIVE constants)', () => {
-    const violations = grepFiles('is_active\\s*=\\s*[0134](?![0-9])', 'backend/src', '*.ts')
+    const violations = grepFilesNonComment('is_active\\s*=\\s*[0134]\\b', 'backend/src', '*.ts')
       .filter((f) => !f.includes('.test.') && !f.includes('.spec.'))
       .filter((f) => !f.includes('/migrations/'));
 
@@ -94,7 +223,7 @@ describe('Backend: is_active Magic Number Prevention', () => {
   });
 
   it('should not use hardcoded is_active != N in production .ts files', () => {
-    const violations = grepFiles('is_active\\s*!=\\s*[0134](?![0-9])', 'backend/src', '*.ts')
+    const violations = grepFilesNonComment('is_active\\s*!=\\s*[0134]\\b', 'backend/src', '*.ts')
       .filter((f) => !f.includes('.test.') && !f.includes('.spec.'))
       .filter((f) => !f.includes('/migrations/'));
 
@@ -105,7 +234,7 @@ describe('Backend: is_active Magic Number Prevention', () => {
   });
 
   it('should not use hardcoded is_active IN (N, ...) in production .ts files', () => {
-    const violations = grepFiles('is_active\\s+IN\\s*\\([0134]', 'backend/src', '*.ts')
+    const violations = grepFilesNonComment('is_active\\s+IN\\s*\\([0134]', 'backend/src', '*.ts')
       .filter((f) => !f.includes('.test.') && !f.includes('.spec.'))
       .filter((f) => !f.includes('/migrations/'));
 
@@ -116,7 +245,7 @@ describe('Backend: is_active Magic Number Prevention', () => {
   });
 
   it('should not define local IS_ACTIVE constants (import from @assixx/shared/constants)', () => {
-    const violations = grepFiles('const IS_ACTIVE\\s*=', 'backend/src', '*.ts').filter(
+    const violations = grepFilesNonComment('const IS_ACTIVE\\s*=', 'backend/src', '*.ts').filter(
       (f) => !f.includes('.test.') && !f.includes('.spec.'),
     );
 
@@ -137,13 +266,44 @@ describe('Backend: WebSocket Type Safety', () => {
       `${ROOT}/backend/src/websocket.ts`,
       `${ROOT}/backend/src/websocket-message-handler.ts`,
     ];
-    const cmd = `rg -n -e ' as ' ${wsFiles.join(' ')} 2>/dev/null || true`;
-    const output = execSync(cmd, { encoding: 'utf-8' }).trim();
+    // No more `|| true` (per the grepFiles refactor 2026-04-25); rg returns
+    // exit 1 for "no matches" which we let propagate as success below.
+    const cmd = `rg -n -e ' as ' ${wsFiles.join(' ')}`;
+    let output: string;
+    try {
+      output = execSync(cmd, { encoding: 'utf-8' }).trim();
+    } catch (err: unknown) {
+      const status = (err as { status?: number }).status;
+      if (status === 1) return; // no matches → nothing to assert
+      throw new Error(`rg failed with exit ${String(status)} for ws-files`, { cause: err });
+    }
     if (output === '') return;
 
+    // Filter chain — three classes of legitimate `as` usage we don't want
+    // to flag (uncovered 2026-04-25 by the rg-canary expose):
+    //   1. `import { X as Y }` / `import { type X as Y }` — TS import alias
+    //   2. `as const` — TS literal-type assertion (safe by design)
+    //   3. Doc-comment lines (` * `, `// `, `/* `) — text containing the
+    //      word "as" but not a TS expression
+    //   4. SQL alias inside template literals — `column as column_alias`
+    //      under SELECT/UPDATE/INSERT/DELETE/FROM/JOIN/WHERE keywords
     const violations = output
       .split('\n')
-      .filter((line) => !line.includes('import ') && !line.includes('as const'));
+      .filter((line) => !line.includes('import ') && !line.includes('as const'))
+      .filter((line) => {
+        const match = /^[^:]+:\d+:(.*)$/.exec(line);
+        if (match === null) return false;
+        const content = match[1]?.trim() ?? '';
+        // Drop comment fragments
+        if (content.startsWith('*') || content.startsWith('//') || content.startsWith('/*')) {
+          return false;
+        }
+        // Drop SQL-context lines (template-literal aliasing)
+        if (/\b(SELECT|UPDATE|INSERT|DELETE|FROM|JOIN|WHERE)\b/i.test(content)) {
+          return false;
+        }
+        return true;
+      });
 
     expect(
       violations,
@@ -157,8 +317,16 @@ describe('Backend: WebSocket Type Safety', () => {
 // =============================================================================
 
 describe('Backend: ID Param DTO Factory', () => {
+  // grepFilesNonComment: doc-comments in param DTOs commonly document the
+  // alternative pattern verbatim (e.g. `* never inline \`z.coerce.number()\``)
+  // — that self-flag was the source of the 2026-04-25 false-positive on
+  // `template-id-param.dto.ts`.
   it('should not use inline z.coerce.number().int().positive() in param DTO files (use idField from common/dto)', () => {
-    const violations = grepFiles('z\\.coerce\\.number\\(\\)', 'backend/src/nest', '*-param.dto.ts');
+    const violations = grepFilesNonComment(
+      'z\\.coerce\\.number\\(\\)',
+      'backend/src/nest',
+      '*-param.dto.ts',
+    );
 
     expect(
       violations,
@@ -167,7 +335,11 @@ describe('Backend: ID Param DTO Factory', () => {
   });
 
   it('should not import IdSchema from common.schema.ts in param DTO files (use idField from common/dto)', () => {
-    const violations = grepFiles('schemas/common\\.schema', 'backend/src/nest', '*-param.dto.ts');
+    const violations = grepFilesNonComment(
+      'schemas/common\\.schema',
+      'backend/src/nest',
+      '*-param.dto.ts',
+    );
 
     expect(
       violations,
@@ -265,10 +437,18 @@ describe('Frontend: Apex-Login Redirect Centralization (ADR-050 Amendment)', () 
    * test file asserts the map's values. Every other caller must use
    * `buildLoginUrl(reason)` — the lookup stays in one place so the namespace
    * decision (logout= vs session=) cannot drift.
+   *
+   * `session-expired.test.ts` is an exception: it black-box-tests the central
+   * util's redirect URL by asserting the literal it should produce
+   * (`https://www.assixx.com/login?session=expired`). Without this allowance
+   * the test would have to mock `buildLoginUrl` (defeating the point of an
+   * end-to-end check) or live in the same file as `build-apex-url.test.ts`
+   * (mixing concerns). Discovered 2026-04-25 by the rg-canary refactor.
    */
   const ALLOWED_FILES = new Set<string>([
     'frontend/src/lib/utils/build-apex-url.ts',
     'frontend/src/lib/utils/build-apex-url.test.ts',
+    'frontend/src/lib/utils/session-expired.test.ts',
   ]);
 
   /**
@@ -285,8 +465,8 @@ describe('Frontend: Apex-Login Redirect Centralization (ADR-050 Amendment)', () 
 
   for (const { grepPattern, queryString } of LOGIN_QUERY_LITERALS) {
     it(`only build-apex-url.ts owns '/login?${queryString}' literal — use buildLoginUrl() elsewhere`, () => {
-      const tsMatches = grepFiles(grepPattern, 'frontend/src', '*.ts');
-      const svelteMatches = grepFiles(grepPattern, 'frontend/src', '*.svelte');
+      const tsMatches = grepFilesNonComment(grepPattern, 'frontend/src', '*.ts');
+      const svelteMatches = grepFilesNonComment(grepPattern, 'frontend/src', '*.svelte');
       const violations = [...tsMatches, ...svelteMatches].filter((f) => !ALLOWED_FILES.has(f));
 
       expect(

@@ -8,7 +8,7 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
 
-  import { goto } from '$app/navigation';
+  import { buildApexUrl } from '$lib/utils/build-apex-url';
 
   // =============================================================================
   // CONSTANTS
@@ -104,8 +104,15 @@
     }
 
     // Redirect to login after short delay
+    // ADR-050 Amendment 2026-04-22: cross-origin hard-nav to apex login.
+    // `goto()` is client-router-bound and cannot leave the tenant subdomain;
+    // a rate-limited user on `<slug>.assixx.com` would otherwise stay on the
+    // subdomain `/login`. `window.location.replace()` mirrors goto's
+    // `replaceState: true` (no history entry). `ratelimit=expired` is a
+    // bespoke query handled by the login page; not part of the canonical
+    // `LoginRedirectReason` enum so we go through `buildApexUrl` directly.
     setTimeout(() => {
-      void goto('/login?ratelimit=expired', { replaceState: true });
+      window.location.replace(buildApexUrl('/login?ratelimit=expired'));
     }, 1000);
   }
 
@@ -142,8 +149,9 @@
         localStorage.removeItem('rateLimitTimestamp');
       }
 
+      // Same apex-hop rationale as handleExpiredRateLimit's redirect above.
       setTimeout(() => {
-        void goto('/login?ratelimit=expired', { replaceState: true });
+        window.location.replace(buildApexUrl('/login?ratelimit=expired'));
       }, 500);
     }
   }

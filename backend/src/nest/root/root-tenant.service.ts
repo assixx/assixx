@@ -4,6 +4,7 @@
  * Handles tenant listing and storage information.
  * Extracted from root.service.ts — bounded context: tenant management.
  */
+import { IS_ACTIVE } from '@assixx/shared/constants';
 import { Injectable, Logger } from '@nestjs/common';
 
 import { DatabaseService } from '../database/database.service.js';
@@ -75,7 +76,7 @@ export class RootTenantService {
 
     // Get storage limit from tenant_storage (ADR-033: replaces plan-based limits)
     const storageRows = await this.db.systemQuery<DbTenantStorageRow>(
-      'SELECT storage_limit_gb FROM tenant_storage WHERE tenant_id = $1 AND is_active = 1',
+      `SELECT storage_limit_gb FROM tenant_storage WHERE tenant_id = $1 AND is_active = ${IS_ACTIVE.ACTIVE}`,
       [tenantId],
     );
 

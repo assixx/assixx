@@ -4,6 +4,7 @@
  * Immutable revision snapshots for ISO 9001 Chapter 7.5.3 compliance.
  * No mutations — revisions are created by TpmPlansService on create/update.
  */
+import { IS_ACTIVE } from '@assixx/shared/constants';
 import { Injectable, NotFoundException } from '@nestjs/common';
 
 import { toIsoString } from '../../utils/db-helpers.js';
@@ -64,7 +65,7 @@ export class TpmPlanRevisionsService {
               COALESCE(a.name, 'Unbekannt') AS asset_name
        FROM tpm_maintenance_plans p
        LEFT JOIN assets a ON a.id = p.asset_id
-       WHERE p.uuid = $1 AND p.tenant_id = $2 AND p.is_active IN (0, 1, 3)`,
+       WHERE p.uuid = $1 AND p.tenant_id = $2 AND p.is_active IN (${IS_ACTIVE.INACTIVE}, ${IS_ACTIVE.ACTIVE}, ${IS_ACTIVE.ARCHIVED})`,
       [planUuid, tenantId],
     );
 

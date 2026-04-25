@@ -24,8 +24,14 @@ FROM node:${NODE_VERSION}
 LABEL org.opencontainers.image.authors="Assixx"
 
 # Install development tools (Debian/apt, not Alpine/apk)
+# `ripgrep` is required by the architectural-pattern tests in
+# `shared/src/architectural.test.ts` — `grepFiles()` shells out to `rg` and
+# now fails loudly when it is missing (previously masked exit 127 with
+# `2>/dev/null || true`, turning every grep-based rule into a false-negative).
+# Discovered 2026-04-25; keeping `rg` baked into the dev image guarantees
+# Dev/CI parity for `pnpm run test:unit` whether run on host or in container.
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends curl jq \
+    && apt-get install -y --no-install-recommends curl jq ripgrep \
     && rm -rf /var/lib/apt/lists/*
 
 # Install pnpm globally (pinned version matching packageManager field)
